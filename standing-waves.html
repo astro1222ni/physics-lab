@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111044"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Reflection of Waves on a String and Standing Waves | Astro Ni Physics Lab">繩波的反射與駐波｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：脈波在固定端與自由端的反射（反射波倒立或正立），以及連續正弦波在繩上來回反射形成駐波，觀察共振頻率、波節與波腹。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111044">
+  <style>
+    /* 繩波的反射與駐波頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；下方共振曲線可水平拖曳選頻率，垂直方向仍可捲動頁面 */
+    #cv { aspect-ratio: auto; height: 360px; touch-action: pan-y; cursor: default; }
+    .sw button { min-height: 44px; }
+    .sw .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .sw .playbar button { flex: 1 1 auto; }
+    .sw .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sw .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .sw .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .sw .stage .status { margin: 6px 4px 0; }
+    .sw .slider input[type="range"] { height: 28px; margin: 0; }
+    .sw .slider label sub, dl.readout sub, .harm sub { font-size: .75em; }
+    .sw [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg-label:first-of-type { margin-top: 2px; }
+    .seg2, .seg3 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { grid-template-columns: 1fr 1fr 1fr; }
+    .seg2 button, .seg3 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .harm button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .harm { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 4px; }
+    .harm button { padding: 4px 4px; line-height: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+    .harm button b { font-size: calc(15px * var(--fs, 1)); }
+    .harm button small { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .harm button[aria-pressed="true"] small { color: var(--accent); }
+    .sw .checks label { min-height: 36px; }
+    .sw .checks input { width: 17px; height: 17px; }
+    .sw .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .sw dl.readout dd { white-space: nowrap; }
+    .sw dl.readout dd small { white-space: normal; }
+    dl.readout dd.wide { grid-column: 1 / -1; text-align: left; margin-bottom: 4px; white-space: normal; }
+    dl.readout dd.ok { color: var(--accent); font-weight: 700; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot2 { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .legend i.thick { height: 5px; border-radius: 3px; }
+    .legend .dia { width: 9px; height: 9px; border-radius: 1px; transform: rotate(45deg); margin-right: 8px; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#wave&quot;>Waves &amp;amp; Sound</a> / Superposition"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#wave">波動與聲音</a> ／ 波的疊加</nav>
+      <h1 data-en="Reflection of Waves on a String and Standing Waves">繩波的反射與駐波</h1>
+      <p data-en="Send a pulse along a string and see how it reflects from a fixed end (upside down) or a free end (the right way up). Then drive the string continuously: the waves going out and coming back add up to a standing wave, and at the resonant frequencies a large, clean pattern of nodes and antinodes builds up.">沿著繩子送出一個脈波，看它在固定端（倒立）與自由端（正立）如何反射；再讓振盪器連續送出正弦波，去與回的波疊加成駐波——頻率剛好是共振頻率時，會長出振幅很大、波節與波腹分明的駐波。</p>
+    </header>
+
+    <div class="lab sw">
+      <div class="stage">
+        <canvas id="cv" aria-label="繩波模擬畫布：繩子的形狀、入射波與反射波，駐波模式下方為共振曲線" data-en-aria-label="String wave simulation: the shape of the string with the incident and reflected waves; in standing-wave mode a resonance curve is shown below"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="send" type="button" data-en="Send a pulse">送出脈波</button>
+          <button id="steady" type="button" hidden data-en="Skip to steady state">跳到穩定狀態</button>
+          <button id="reset" type="button" data-en="Clear all" title="讓繩子回到靜止、時間歸零，滑桿設定不變" data-en-title="Bring the string back to rest and reset the clock; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--field)" data-en-html="<i class=&quot;thick&quot; style=&quot;background:var(--field)&quot;></i>String (sum)"><i class="thick" style="background:var(--field)"></i>繩子（合成波）</span>
+          <span style="color:var(--pos)" data-en-html="<i class=&quot;dash&quot;></i>Incident wave (→)"><i class="dash"></i>入射波（→）</span>
+          <span style="color:var(--neg)" data-en-html="<i class=&quot;dot2&quot;></i>Reflected wave (←)"><i class="dot2"></i>反射波（←）</span>
+          <span class="leg-b" style="color:var(--b-wave)" data-en-html="<i class=&quot;dash&quot;></i>Steady-state envelope"><i class="dash"></i>穩定後的包絡線</span>
+          <span class="leg-b" data-en-html="<i class=&quot;dia&quot; style=&quot;background:var(--accent)&quot;></i>Node"><i class="dia" style="background:var(--accent)"></i>波節</span>
+          <span class="leg-b" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Antinode"><i class="dot" style="background:var(--equi)"></i>波腹</span>
+        </div>
+        <p class="hint" id="hintA" data-en="The vertical axis (cm) is stretched compared with the horizontal axis (m) so the small sideways displacement is easy to see. The string is very long to the left, so the reflected pulse simply leaves the picture. The beads mark pieces of the string: they only move up and down.">縱軸（cm）比橫軸（m）放大很多，讓橫向位移看得清楚。繩子向左延伸很長，反射回來的脈波會直接離開畫面。繩上的小珠代表繩子的各小段：它們只上下振動，不會跟著波前進。</p>
+        <p class="hint" id="hintB" hidden data-en="The oscillator on the left sends waves of amplitude 1 cm; it absorbs part of each returning wave (70 % of the amplitude is reflected), so the amplitude settles to a steady value. Drag across the resonance curve to choose a frequency; it snaps to a resonance when you are close.">左端的振盪器送出振幅 1 cm 的正弦波，並吸收一部分回來的波（振幅反射 70%），所以振幅最後會穩定下來。在下方共振曲線上左右拖曳可以選頻率，接近共振時會自動對準。縱軸（cm）比橫軸（m）放大很多。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗模式</h2>
+          <div class="seg2" role="group" aria-label="實驗模式" data-en-aria-label="Experiment mode">
+            <button type="button" id="modeA" aria-pressed="true" data-en="Pulse reflection">脈波反射</button>
+            <button type="button" id="modeB" aria-pressed="false" data-en="Standing waves">駐波</button>
+          </div>
+          <p class="seg-label" id="endLabel" data-en="Reflecting end (right):">反射端（右端）：</p>
+          <div class="seg2" role="group" aria-labelledby="endLabel">
+            <button type="button" id="endFixed" aria-pressed="true" data-en="Fixed end">固定端</button>
+            <button type="button" id="endFree" aria-pressed="false" data-en="Free end">自由端</button>
+          </div>
+          <p class="hint" id="endHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="String and wave speed">繩子與波速</h2>
+          <div class="slider"><label for="L" data-en="String length L">繩長 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="1" max="3" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="v" data-en="Wave speed v">波速 v</label><output id="vo"></output>
+            <input id="v" type="range" min="0.5" max="4" step="0.1" value="2" data-decimals="2"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card" id="cardA">
+          <h2 data-en="Pulse">脈波</h2>
+          <p class="seg-label" id="shapeLabel" data-en="Shape:">形狀：</p>
+          <div class="seg3" role="group" aria-labelledby="shapeLabel">
+            <button type="button" id="shSine" aria-pressed="true" data-en="Half sine">半正弦</button>
+            <button type="button" id="shGauss" aria-pressed="false" data-en="Bell">鐘形</button>
+            <button type="button" id="shTri" aria-pressed="false" data-en="Lopsided">不對稱</button>
+          </div>
+          <div class="slider"><label for="w" data-en="Pulse width w">脈波寬度 w</label><output id="wo"></output>
+            <input id="w" type="range" min="0.1" max="0.8" step="0.05" value="0.4" data-decimals="2"></div>
+          <p class="hint" data-en="The lopsided pulse has a steep front edge, so you can see that the reflected pulse is also mirrored left–right: its steep edge still leads.">不對稱脈波的前緣陡、後緣緩，可以看出反射脈波也左右鏡射：陡的一邊仍然在前面。</p>
+        </section>
+
+        <section class="card" id="cardB" hidden>
+          <h2 data-en="Oscillator frequency">振盪器頻率</h2>
+          <div class="slider"><label for="f" data-en="Frequency f">頻率 f</label><output id="fo"></output>
+            <input id="f" type="range" min="0.04" max="12" step="0.01" value="1.2" data-decimals="3"></div>
+          <p class="seg-label" id="harmLabel" data-en="Resonant frequencies:">共振頻率：</p>
+          <div class="harm" id="harm" role="group" aria-labelledby="harmLabel"></div>
+          <p class="hint" id="pitchHint" data-en-html="Sound: the tone is a scaled audio analogy, not the real frequency of the string. The fundamental f<sub>1</sub> is played at 262 Hz (middle C) and every other frequency in proportion (the nth harmonic at n × 262 Hz); the louder the string vibrates, the louder the tone.">音效：聲音是「按比例放大」的類比，不是繩子真正的頻率——把基頻 f<sub>1</sub> 對應到 262 Hz（中央 C），其他頻率等比例換算（第 n 諧音 = n × 262 Hz）；繩子振得越大，聲音越大。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculated from the formulas">公式計算結果</h2>
+          <dl class="readout" id="calcA">
+            <dt data-en="Wave speed v">波速 v</dt><dd id="cAv">—</dd>
+            <dt data-en="String length L">繩長 L</dt><dd id="cAL">—</dd>
+            <dt data-en="Pulse width w">脈波寬度 w</dt><dd id="cAw">—</dd>
+            <dt data-en="Pulse reaches the end at">脈波中心抵達反射端</dt><dd id="cAhit">—</dd>
+            <dt data-en="Reflected pulse">反射脈波</dt><dd id="cAref">—</dd>
+          </dl>
+          <dl class="readout" id="calcB" hidden>
+            <dt data-en="Wave speed v">波速 v</dt><dd id="cBv">—</dd>
+            <dt data-en="String length L">繩長 L</dt><dd id="cBL">—</dd>
+            <dt data-en-html="Wavelength <span class=&quot;f&quot;>λ = v/f</span>">波長 <span class="f">λ = v/f</span></dt><dd id="cBlam">—</dd>
+            <dt id="cBf1t">基頻 f<sub>1</sub></dt><dd id="cBf1">—</dd>
+            <dt id="cBlistT" data-en="Resonant frequencies">共振頻率</dt><dd id="cBlist" class="wide">—</dd>
+            <dt data-en="Nearest resonance">最接近的共振</dt><dd id="cBnear">—</dd>
+            <dt data-en="Nodes / antinodes">波節數／波腹數</dt><dd id="cBcount">—</dd>
+            <dt data-en-html="Round-trip time <span class=&quot;f&quot;>2L/v</span>">往返時間 <span class="f">2L/v</span></dt><dd id="cBtr">—</dd>
+            <dt data-en="Steady amplitude (per wave)">穩定振幅（單一行進波）</dt><dd id="cBamp">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout" id="liveA">
+            <dt data-en="Time t">時間 t</dt><dd id="rAt">—</dd>
+            <dt data-en="Displacement at the end y(L)">端點位移 y(L)</dt><dd id="rAyL">—</dd>
+            <dt data-en="Largest displacement on the string">繩上最大位移</dt><dd id="rAmax">—</dd>
+          </dl>
+          <dl class="readout" id="liveB" hidden>
+            <dt data-en="Time t">時間 t</dt><dd id="rBt">—</dd>
+            <dt data-en="Round trips completed">已往返次數</dt><dd id="rBn">—</dd>
+            <dt data-en="Amplitude of the travelling waves">行進波目前振幅</dt><dd id="rBamp">—</dd>
+            <dt data-en="Oscillator end y(0)">振盪器端位移 y(0)</dt><dd id="rBy0">—</dd>
+            <dt data-en="Reflecting end y(L)">反射端位移 y(L)</dt><dd id="rByL">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showInc" type="checkbox" checked><span data-en="Incident wave">入射波</span></label>
+            <label><input id="showRef" type="checkbox" checked><span data-en="Reflected wave">反射波</span></label>
+            <label><input id="showSum" type="checkbox" checked><span data-en="String (sum)">繩子（合成）</span></label>
+            <label><input id="showBeads" type="checkbox" checked><span data-en="Beads">繩上小珠</span></label>
+            <label class="only-b" hidden><input id="showEnv" type="checkbox" checked><span data-en="Envelope">包絡線</span></label>
+            <label class="only-b" hidden><input id="showNodes" type="checkbox" checked><span data-en="Nodes and antinodes">波節與波腹</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="A wave on a stretched string travels at a speed \(v\) set by the tension and the mass per unit length. A shape that moves to the right without changing is \(y = g(x - vt)\); one moving to the left is \(y = h(x + vt)\). When two waves meet, the displacement of the string is simply the sum of the two — the <strong>principle of superposition</strong> — and after they pass through each other each wave carries on unchanged:">拉緊的繩子上，波以固定的速率 \(v\) 傳播（由張力與線密度決定）。形狀不變、向右傳的波可寫成 \(y = g(x - vt)\)，向左傳的波寫成 \(y = h(x + vt)\)。兩個波相遇時，繩子的位移就是兩者相加——<strong>疊加原理</strong>；穿過彼此之後，各自保持原來的形狀繼續前進：</p>
+      <div class="formula" data-en-html="\[ y(x,t) = y_{\text{incident}} + y_{\text{reflected}} \]">
+        \[ y(x,t) = y_{\text{入射}} + y_{\text{反射}} \]
+      </div>
+
+      <h3 data-en="Reflection at a fixed end and a free end">固定端與自由端的反射</h3>
+      <p data-en-html="Put the end of the string at \(x = L\). A pulse \(g(x - x_0 - vt)\) travels toward it. The reflected pulse can be found with a trick (the <strong>method of images</strong>): imagine the string carries on behind the end, with a mirror-image pulse coming the other way. The image is flipped left–right, and either upside down (fixed end) or upright (free end), so that the sum obeys the condition at the end:">讓繩子的端點在 \(x = L\)，脈波 \(g(x - x_0 - vt)\) 向它前進。反射波可以用一個巧妙的方法求得（<strong>鏡像法</strong>）：想像繩子延伸到端點後面，有一個「鏡像脈波」從另一邊迎面而來。它左右鏡射，並且倒立（固定端）或正立（自由端），使得兩者相加剛好滿足端點的條件：</p>
+      <div class="formula" data-en-html="\[ y_{\text{reflected}}(x,t) = s\, g(2L - x - x_0 - vt), \qquad s = \begin{cases} -1 &amp; \text{fixed end: }\ y(L,t) = 0 \\ +1 &amp; \text{free end: }\ \dfrac{\partial y}{\partial x}(L,t) = 0 \end{cases} \]">
+        \[ y_{\text{反射}}(x,t) = s\, g(2L - x - x_0 - vt), \qquad s = \begin{cases} -1 & \text{固定端：}\ y(L,t) = 0 \\ +1 & \text{自由端：}\ \dfrac{\partial y}{\partial x}(L,t) = 0 \end{cases} \]
+      </div>
+      <p data-en-html="At a <strong>fixed end</strong> the string cannot move, so the reflected pulse comes back <strong>upside down</strong> (a phase change of \(\pi\)). At a <strong>free end</strong> (a light ring sliding on a smooth rod) the string must stay horizontal there, so the pulse comes back <strong>upright</strong>, and while it is reflecting the end moves up to twice the pulse height.">在<strong>固定端</strong>，繩子不能動，反射波<strong>倒立</strong>回來（相位改變 \(\pi\)）。在<strong>自由端</strong>（套在光滑桿上的輕環），端點的繩子必須保持水平，反射波<strong>正立</strong>回來；反射的瞬間，端點的位移可達脈波高度的 2 倍。</p>
+
+      <h3 data-en="Standing waves">駐波</h3>
+      <p data-en-html="Now let an oscillator send a sine wave of amplitude \(A\), frequency \(f\) and wavelength \(\lambda = v/f\) toward a fixed end. The incident and reflected waves have the same amplitude and travel in opposite directions; their sum does not travel at all:">讓振盪器連續送出振幅 \(A\)、頻率 \(f\)、波長 \(\lambda = v/f\) 的正弦波，向固定端前進。入射波與反射波振幅相同、方向相反，相加之後的波不再前進：</p>
+      <div class="formula">
+        \[ A\sin(\omega t - kx) - A\sin(\omega t + kx) = -2A\sin(kx)\cos(\omega t), \qquad k = \frac{2\pi}{\lambda},\ \ \omega = 2\pi f \]
+      </div>
+      <p data-en-html="(Here \(x\) is measured from a fixed end.) Every point oscillates in step, with an amplitude \(2A\lvert\sin kx\rvert\) that depends on position. Points that never move are <strong>nodes</strong>; points with the largest amplitude \(2A\) are <strong>antinodes</strong>. Neighbouring nodes are half a wavelength apart, and the antinodes lie halfway between them:">（這裡 \(x\) 由固定端量起。）繩上每一點同步振動，振幅 \(2A\lvert\sin kx\rvert\) 隨位置而不同。永遠不動的點是<strong>波節</strong>，振幅最大（\(2A\)）的點是<strong>波腹</strong>。相鄰波節相距半個波長，波腹在兩個波節正中間：</p>
+      <div class="formula" data-en-html="\[ \text{Nodes: }\ x = 0,\ \frac{\lambda}{2},\ \lambda,\ \frac{3\lambda}{2},\ \dots \qquad \text{Antinodes: }\ x = \frac{\lambda}{4},\ \frac{3\lambda}{4},\ \frac{5\lambda}{4},\ \dots \]">
+        \[ \text{波節：}\ x = 0,\ \frac{\lambda}{2},\ \lambda,\ \frac{3\lambda}{2},\ \dots \qquad \text{波腹：}\ x = \frac{\lambda}{4},\ \frac{3\lambda}{4},\ \frac{5\lambda}{4},\ \dots \]
+      </div>
+
+      <h3 data-en="Resonant frequencies">共振頻率</h3>
+      <p data-en-html="The wave reflects back and forth between the two ends. Only when each round trip brings it back <strong>in step</strong> with the oscillator do the reflections keep adding up, and a large standing wave builds up — <strong>resonance</strong>. This happens when the string fits a whole number of half-wavelengths (both ends fixed, nodes at both ends) or an odd number of quarter-wavelengths (fixed–free, a node at the fixed end and an antinode at the free end):">波在兩端之間來回反射。只有每往返一次都和振盪器<strong>同相</strong>時，一次次的反射才會一直加強，長出振幅很大的駐波——這就是<strong>共振</strong>。條件是繩長剛好容納整數個半波長（兩端固定，兩端都是波節），或奇數個四分之一波長（一端固定一端自由：固定端是波節、自由端是波腹）：</p>
+      <div class="formula" data-en-html="\[ \text{Both ends fixed: }\ L = n\frac{\lambda}{2},\quad f_n = \frac{n v}{2L} = n f_1 \] \[ \text{One fixed, one free: }\ L = (2n-1)\frac{\lambda}{4},\quad f = \frac{(2n-1) v}{4L} \]">
+        \[ \text{兩端固定：}\ L = n\frac{\lambda}{2},\quad f_n = \frac{n v}{2L} = n f_1 \] \[ \text{一端固定一端自由：}\ L = (2n-1)\frac{\lambda}{4},\quad f = \frac{(2n-1) v}{4L} \]
+      </div>
+      <p data-en-html="With both ends fixed every whole-number multiple of \(f_1 = v/2L\) resonates, and the \(n\)th harmonic has \(n + 1\) nodes and \(n\) antinodes. With one free end only the odd multiples of \(f_1 = v/4L\) resonate (\(f_1, f_3, f_5, \dots\)), and the \(n\)th resonance has \(n\) nodes and \(n\) antinodes.">兩端固定時，\(f_1 = v/2L\) 的每一個整數倍都會共振，第 \(n\) 諧音有 \(n + 1\) 個波節、\(n\) 個波腹。一端自由時，只有 \(f_1 = v/4L\) 的奇數倍會共振（\(f_1, f_3, f_5, \dots\)），第 \(n\) 個共振頻率有 \(n\) 個波節、\(n\) 個波腹。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Fixed end: upside down.</strong> Send a pulse at a fixed end: while it reflects the end never moves, the incident and reflected pulses cancel there, and the pulse comes back inverted. Switch to a free end: the ring shoots up to twice the pulse height and the pulse comes back upright."><strong>固定端倒立</strong>：在固定端送出脈波，反射時端點始終不動，入射與反射脈波在端點互相抵消，脈波倒立回來。改成自由端：端點的環上升到脈波高度的 2 倍，脈波正立回來。</li>
+        <li data-en-html="<strong>Mirror left–right.</strong> Choose the lopsided pulse. The reflected pulse is mirrored left–right as well, so its steep edge still faces the way it is travelling."><strong>左右也鏡射</strong>：選「不對稱」脈波，反射脈波也左右鏡射，陡的一邊仍朝向前進方向。</li>
+        <li data-en-html="<strong>The beads don’t travel.</strong> Watch one bead: it only moves up and down as the pulse passes. The wave carries energy and shape along the string, not the string itself."><strong>小珠不會前進</strong>：盯著一顆小珠，脈波經過時它只上下移動。波傳遞的是能量與形狀，不是繩子本身。</li>
+        <li data-en-html="<strong>Build a standing wave.</strong> In standing-wave mode press a resonance button, e.g. \(f_3\). The amplitude grows with each round trip until it settles, with 4 nodes and 3 antinodes. The red and blue waves keep travelling, but their sum stands still in place."><strong>長出駐波</strong>：在駐波模式按共振按鈕（例如 \(f_3\)），每往返一次振幅就變大一些，最後穩定成 4 個波節、3 個波腹。紅色與藍色的波都還在前進，但相加起來卻停在原地振動。</li>
+        <li data-en-html="<strong>Off resonance.</strong> Move the frequency a little away from a resonance. The returning waves no longer arrive in step, the string is messy at first and settles to a small vibration, and the oscillator end is no longer a node."><strong>偏離共振</strong>：把頻率稍微調離共振，回來的波不再同相，一開始繩子亂動，最後只剩很小的振動，而且振盪器端不再是波節。</li>
+        <li data-en-html="<strong>Fixed–free: odd harmonics only.</strong> Switch to a free end: the lowest resonance halves (\(v/4L\) instead of \(v/2L\)), only \(f_1, f_3, f_5, \dots\) resonate, and the free end is always an antinode."><strong>一端自由只有奇數倍</strong>：改成自由端，最低的共振頻率減半（\(v/4L\) 而不是 \(v/2L\)），只有 \(f_1, f_3, f_5, \dots\) 會共振，自由端永遠是波腹。</li>
+        <li data-en-html="<strong>Longer string, lower notes.</strong> Change \(L\) or \(v\): the resonant frequencies are proportional to \(v/L\), which is why a guitar string sounds lower when it is longer or looser."><strong>弦越長音越低</strong>：改變 \(L\) 或 \(v\)，共振頻率與 \(v/L\) 成正比——吉他弦按得越長或越鬆，音就越低。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Nothing is integrated step by step. Every displacement is calculated from the exact travelling-wave solution of the wave equation \(\partial^2 y/\partial t^2 = v^2\,\partial^2 y/\partial x^2\) together with the method of images, so the boundary conditions hold exactly at every instant.">沒有逐步數值積分。每一點的位移都直接由波動方程式 \(\partial^2 y/\partial t^2 = v^2\,\partial^2 y/\partial x^2\) 的行進波解析解加上鏡像法算出，端點條件在每一瞬間都精確成立。</li>
+        <li data-en-html="In standing-wave mode the oscillator end acts like a fixed end for returning waves, but keeps only a fraction \(\rho = 0.7\) of their amplitude (the rest is absorbed); without this loss the amplitude at resonance would grow forever. If \(F(\tau)\) is the wave sent out at \(x = 0\), \(T_r = 2L/v\) the round-trip time and \(s = \mp 1\) the reflection at the far end, then">駐波模式中，振盪器端對回來的波而言像固定端，但只反射 \(\rho = 0.7\) 的振幅（其餘被吸收）；若完全沒有損耗，共振時振幅會無限增大。設 \(F(\tau)\) 為由 \(x = 0\) 送出的波、\(T_r = 2L/v\) 為往返時間、\(s = \mp 1\) 為遠端的反射係數，則</li>
+      </ul>
+      <div class="formula">
+        \[ F(\tau) = a\sin\omega\tau - \rho s\,F(\tau - T_r) = a\sum_{m=0}^{\lfloor \tau/T_r \rfloor} (-\rho s)^m \sin\omega(\tau - m T_r), \qquad y = F\!\left(t - \frac{x}{v}\right) + s\,F\!\left(t - \frac{2L - x}{v}\right) \]
+      </div>
+      <ul>
+        <li data-en-html="With \(a = 1\ \mathrm{cm}\) the steady amplitude at resonance is \(a/(1-\rho) \approx 3.3\ \mathrm{cm}\) per travelling wave, so the antinodes reach about \(6.7\ \mathrm{cm}\). The resonance curve below the string plots the steady amplitude divided by \(a\) against frequency.">振盪器振幅 \(a = 1\ \mathrm{cm}\)，共振時每個行進波的穩定振幅為 \(a/(1-\rho) \approx 3.3\ \mathrm{cm}\)，波腹約 \(6.7\ \mathrm{cm}\)。繩子下方的共振曲線畫出穩定振幅與 \(a\) 的比值隨頻率的變化。</li>
+        <li data-en="The pulse height is 3 cm. Changing a setting restarts the wave from rest. The animation runs in real time, or at 0.25× in slow motion.">脈波高度 3 cm。改變任何設定時，繩子從靜止重新開始。動畫以真實時間播放（慢動作為 0.25 倍）。</li>
+        <li data-en="The string is ideal: uniform, perfectly flexible, with small displacements and no friction along its length.">繩子視為理想繩：均勻、完全柔軟、位移很小，傳播途中沒有摩擦損耗。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111044"></script>
+  <script src="js/standing-waves-core.js?v=202611111044"></script>
+  <script src="js/sound.js?v=202611111044"></script>
+  <script src="js/numinput.js?v=202611111044"></script>
+  <script src="js/standing-waves.js?v=202611111044"></script>
+  <script src="js/firebase-config.js?v=202611111044"></script>
+  <script src="js/missions.js?v=202611111044" data-module="standing-waves"></script>
+  <script src="js/missions/standing-waves.js?v=202611111044"></script>
+  <script src="js/stats.js?v=202611111044" data-module="standing-waves"></script>
+  <script src="js/comments.js?v=202611111044"></script>
+</body>
+</html>

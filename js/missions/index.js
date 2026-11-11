@@ -5,8 +5,9 @@
 window.LAB_MISSION_MODULES = [
   { id: 'projectile', zh: '拋體運動', en: 'Projectile Motion' },
   { id: 'lens-mirror', zh: '透鏡與面鏡成像', en: 'Images in Lenses and Mirrors' },
-  { id: 'doppler', zh: '都卜勒效應', en: 'The Doppler Effect' }
+  { id: 'doppler', zh: '都卜勒效應', en: 'The Doppler Effect' },
+  { id: 'standing-waves', zh: '繩波的反射與駐波', en: 'Reflection of Waves on a String and Standing Waves' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves'];
