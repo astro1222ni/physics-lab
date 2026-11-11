@@ -12,11 +12,12 @@ window.LAB_MISSION_MODULES = [
   { id: 'collision', zh: '一維碰撞', en: 'Collisions in One Dimension' },
   { id: 'magnetic-particle', zh: '帶電粒子在磁場中運動', en: 'Charged Particles in a Magnetic Field' },
   { id: 'electric-field', zh: '電場與等位線', en: 'Electric Fields and Equipotentials' },
-  { id: 'dc-circuit', zh: '直流電路', en: 'DC Circuits' }
+  { id: 'dc-circuit', zh: '直流電路', en: 'DC Circuits' },
+  { id: 'photoelectric', zh: '光電效應', en: 'The Photoelectric Effect' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {

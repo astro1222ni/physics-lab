@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111121"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Photoelectric Effect | Astro Ni Physics Lab">光電效應｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整光的波長、強度、陰極金屬與光電管電壓，觀察光子打出光電子、電流與電壓的關係、停止電壓，並由密立坎圖的斜率求出普朗克常數。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111121">
+  <style>
+    /* 光電效應頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: auto; cursor: default; }
+    .graphs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+    @media (max-width: 640px) { .graphs { grid-template-columns: 1fr; } }
+    .graphs figure { margin: 0; }
+    .graphs canvas { display: block; width: 100%; height: 260px; aspect-ratio: auto; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; cursor: default; }
+    .graphs figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .pe button { min-height: 44px; }
+    .pe .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pe .playbar button { flex: 1 1 auto; }
+    .pe .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pe .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .pe .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .pe .stage .status { margin: 6px 4px 0; }
+    .pe .slider input[type="range"] { height: 28px; margin: 0; }
+    .pe .slider label sub, dl.readout sub { font-size: .75em; }
+    .pe [hidden] { display: none !important; }
+    .pe .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.big { font-weight: 700; color: var(--accent); }
+    .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-left: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,.18) inset; }
+    /* 波長滑桿上方的光譜條 */
+    .spectrum { position: relative; height: 14px; border-radius: 7px; margin: 2px 0 0; grid-column: 1 / -1;
+      background: linear-gradient(90deg, #5b4a73 0%, #6c4fa0 30%, #7a3fd0 38%, #8000ff 40%, #4b00ff 43.6%, #0060ff 47.1%, #00c0ff 52.1%, #00ff60 56.4%, #b0ff00 62.9%, #ffe000 67.1%, #ff8000 71.4%, #ff2000 80%, #c00000 90%, #701010 92.9%, #4a1414 100%); }
+    .spectrum .mark { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--text); box-shadow: 0 0 0 1.5px var(--surface); }
+    .spectrum .th { position: absolute; top: 15px; font-size: calc(11px * var(--fs, 1)); color: var(--muted); transform: translateX(-50%); white-space: nowrap; line-height: 1.2; }
+    .spectrum .th::before { content: ""; position: absolute; left: 50%; top: -16px; height: 15px; border-left: 2px dashed var(--muted); }
+    .spec-labels { display: flex; justify-content: space-between; grid-column: 1 / -1; font-size: calc(11px * var(--fs, 1)); color: var(--muted); margin-top: 16px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg3 button { padding: 4px 4px; line-height: 1.25; }
+    .seg3 button small { display: block; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg3 button[aria-pressed="true"] small { color: var(--accent); }
+    .vbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .vbtns button { line-height: 1.3; padding: 6px 8px; }
+    #sweep[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    #record { font-weight: 600; }
+    .fits { margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    .fits .row { border-top: 1px solid var(--border); padding: 6px 0; }
+    .fits .row:first-child { border-top: none; padding-top: 0; }
+    .fits .m { font-weight: 700; }
+    .fits .m i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+    .fits .v { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .fits .err { font-size: calc(12px * var(--fs, 1)); }
+    .fits .empty { color: var(--muted); }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Quantum phenomena"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 量子現象</nav>
+      <h1 data-en="The Photoelectric Effect">光電效應</h1>
+      <p data-en="Shine light on a metal in a vacuum phototube. Change the wavelength and intensity of the light, the metal and the voltage across the tube; watch photons knock out electrons, build up the current–voltage graph, measure the stopping voltage and find Planck’s constant from the slope of a Millikan plot.">把光照在真空光電管裡的金屬上。調整光的波長、強度、陰極金屬與光電管兩端的電壓，看光子把電子打出來，畫出電流與電壓的關係圖、測量停止電壓，再由密立坎圖的斜率求出普朗克常數。</p>
+    </header>
+
+    <div class="lab pe">
+      <div class="stage">
+        <canvas id="cv" aria-label="光電效應模擬畫布：光源照射真空光電管的陰極，光電子飛向陽極；右側為能量關係、電流表與可調電源" data-en-aria-label="Photoelectric effect simulation: a light source shines on the cathode of a vacuum phototube and photoelectrons fly towards the anode; the energy balance, an ammeter and an adjustable power supply are on the right"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除電流－電壓圖、密立坎圖的資料點與畫面上的粒子，滑桿設定不變" data-en-title="Clear the current–voltage graph, the Millikan points and the particles on screen; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Photoelectron"><i class="dot" style="background:var(--neg)"></i>光電子</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Photon (wave packet)"><i style="background:var(--equi)"></i>光子（波包）</span>
+          <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Electric field E between the plates"><i style="background:var(--field)"></i>兩板間的電場 E</span>
+        </div>
+        <p class="hint" data-en-html="Schematic, not to scale in time: the electrons move 2.5 × 10<sup>7</sup> times slower than in reality (1 s on screen = 40 ns), and each photon or electron drawn stands for a great many. The electron paths, the current and the meter readings are calculated exactly from the model below." id="scaleHint">示意圖：電子的運動放慢 2500 萬倍（畫面 1 秒 = 實際 40 ns），畫出的每個光子、電子都代表非常多個粒子；光子移動速度未依比例。電子的軌跡、電流與電表讀數都依下方的模型精確計算。</p>
+
+        <div class="graphs">
+          <figure>
+            <canvas id="iv" aria-label="電流對電壓的關係圖" data-en-aria-label="Graph of current against voltage"></canvas>
+            <figcaption data-en="Current I against voltage V: a point is added every time you change V (or use “Sweep”). Each colour is one set of light and metal.">電流 I 對電壓 V 的圖：每次改變 V（或按「自動掃描」）就加一個點；不同顏色代表不同的光與金屬組合。</figcaption>
+          </figure>
+          <figure>
+            <canvas id="mk" aria-label="密立坎圖：停止電壓對頻率" data-en-aria-label="Millikan plot: stopping voltage against frequency"></canvas>
+            <figcaption data-en-html="Millikan plot: each recorded stopping voltage V<sub>s</sub> against the frequency f, with a best-fit line for each metal. Slope = h/e.">密立坎圖：每次記錄的停止電壓 V<sub>s</sub> 對頻率 f，每種金屬畫一條最佳直線；斜率 = h/e。</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Light source">光源</h2>
+          <div class="slider"><label for="lam"><span data-en="Wavelength λ">波長 λ</span><span class="swatch" id="swatch"></span></label><output id="lamo"></output>
+            <div class="spectrum" id="spectrum" aria-hidden="true"><span class="th" id="thMark">λ<sub>0</sub></span><span class="mark" id="lamMark"></span></div>
+            <div class="spec-labels" aria-hidden="true"><span data-en="UV">紫外線</span><span data-en="Visible">可見光</span><span data-en="IR">紅外</span></div>
+            <input id="lam" type="range" min="100" max="800" step="1" value="400" data-decimals="1"></div>
+          <div class="slider"><label for="pw" data-en="Light intensity (power) P">光的強度（功率）P</label><output id="pwo"></output>
+            <input id="pw" type="range" min="0" max="100" step="1" value="60" data-decimals="1"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="metalLabel" data-en="Cathode metal (work function φ)">陰極金屬（功函數 φ）</h2>
+          <div class="seg3" role="group" aria-labelledby="metalLabel" id="metals"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Voltage across the tube">光電管電壓</h2>
+          <div class="slider"><label for="volt" data-en="Anode voltage V (relative to the cathode)">陽極電壓 V（相對於陰極）</label><output id="volto"></output>
+            <input id="volt" type="range" min="-5" max="5" step="0.01" value="1" data-decimals="2"></div>
+          <div class="vbtns">
+            <button type="button" id="sweep" aria-pressed="false" data-en="Sweep V">自動掃描 V</button>
+            <button type="button" id="record" data-en="Record stopping voltage">記錄停止電壓</button>
+          </div>
+          <p class="hint" data-en="V &lt; 0 slows the electrons down. Make V more and more negative until the ammeter just reads 0.000 nA, then press “Record stopping voltage” to add a point to the Millikan plot.">V &lt; 0 時電場使電子減速。把 V 往負的方向調，直到電流表剛好變成 0.000 nA，再按「記錄停止電壓」，就會在密立坎圖加一個點。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculated from the formulas">公式計算結果</h2>
+          <dl class="readout">
+            <dt data-en-html="Frequency <span class=&quot;f&quot;>f = c/λ</span>">頻率 <span class="f">f = c/λ</span></dt><dd id="rf">—</dd>
+            <dt data-en-html="Photon energy <span class=&quot;f&quot;>E = hf</span>">光子能量 <span class="f">E = hf</span></dt><dd id="rE">—</dd>
+            <dt data-en="Work function φ">功函數 φ</dt><dd id="rphi">—</dd>
+            <dt data-en-html="Max. kinetic energy <span class=&quot;f&quot;>K<sub>max</sub> = hf − φ</span>">最大動能 <span class="f">K<sub>max</sub> = hf − φ</span></dt><dd id="rK">—</dd>
+            <dt data-en-html="Stopping voltage <span class=&quot;f&quot;>V<sub>s</sub> = K<sub>max</sub>/e</span>">停止電壓 <span class="f">V<sub>s</sub> = K<sub>max</sub>/e</span></dt><dd id="rVs">—</dd>
+            <dt data-en-html="Threshold frequency <span class=&quot;f&quot;>f<sub>0</sub> = φ/h</span>">截止頻率 <span class="f">f<sub>0</sub> = φ/h</span></dt><dd id="rf0">—</dd>
+            <dt data-en-html="Threshold wavelength <span class=&quot;f&quot;>λ<sub>0</sub> = hc/φ</span>">截止波長 <span class="f">λ<sub>0</sub> = hc/φ</span></dt><dd id="rl0">—</dd>
+            <dt data-en-html="Photons per second <span class=&quot;f&quot;>N = P/hf</span>">每秒光子數 <span class="f">N = P/hf</span></dt><dd id="rN">—</dd>
+            <dt data-en-html="Saturation current <span class=&quot;f&quot;>I<sub>sat</sub> = ηeN</span>">飽和電流 <span class="f">I<sub>sat</sub> = ηeN</span></dt><dd id="rIs">—</dd>
+            <dt data-en="Photocurrent I (ammeter)">光電流 I（電流表）</dt><dd id="rI" class="big">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Millikan plot: best-fit lines">密立坎圖：最佳直線</h2>
+          <div class="fits" id="fits"></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Light of frequency \(f\) arrives in packets of energy — <strong>photons</strong> — each carrying \(E = hf = hc/\lambda\), where \(h = 6.626\times10^{-34}\ \mathrm{J\,s}\) is Planck’s constant. A photon gives <strong>all</strong> of its energy to <strong>one</strong> electron. To escape from the metal the electron needs at least the <strong>work function</strong> \(\phi\); whatever is left over is kinetic energy. The most energetic electrons therefore have (Einstein, 1905)">頻率 \(f\) 的光由一份一份的能量——<strong>光子</strong>——組成，每個光子的能量 \(E = hf = hc/\lambda\)，其中 \(h = 6.626\times10^{-34}\ \mathrm{J\,s}\) 是普朗克常數。一個光子把<strong>全部</strong>能量交給<strong>一個</strong>電子；電子要離開金屬，至少要付出<strong>功函數</strong> \(\phi\)，剩下的變成動能。所以最快的光電子動能為（愛因斯坦，1905）：</p>
+      <div class="formula">
+        \[ K_{\max} = hf - \phi \qquad (hf > \phi) \]
+      </div>
+      <p data-en-html="If \(hf \le \phi\) no electron can get out, however bright the light: more photons per second does not help when each one is too weak. The lowest frequency that works is the <strong>threshold frequency</strong>:">如果 \(hf \le \phi\)，不論光多強都打不出電子：每個光子的能量都不夠，光子再多也沒用。能打出電子的最低頻率稱為<strong>截止頻率</strong>：</p>
+      <div class="formula">
+        \[ f_0 = \frac{\phi}{h}, \qquad \lambda_0 = \frac{c}{f_0} = \frac{hc}{\phi}, \qquad hc \approx 1240\ \mathrm{eV\,nm} \]
+      </div>
+
+      <h3 data-en="Stopping voltage">停止電壓</h3>
+      <p data-en-html="Make the anode negative (\(V &lt; 0\)). The field between the plates pushes the electrons back, and an electron must spend kinetic energy \(e|V|\) to reach the anode. When \(|V|\) reaches the <strong>stopping voltage</strong> \(V_s\) even the fastest electrons turn back and the current drops to zero:">讓陽極的電位比陰極低（\(V &lt; 0\)）。兩板間的電場把電子往回推，電子要到達陽極必須花掉動能 \(e|V|\)。當 \(|V|\) 達到<strong>停止電壓</strong> \(V_s\) 時，連最快的電子也會折返，電流變成零：</p>
+      <div class="formula">
+        \[ eV_s = K_{\max} = hf - \phi \quad\Longrightarrow\quad V_s = \frac{h}{e}\,f - \frac{\phi}{e} \]
+      </div>
+      <p data-en-html="So a graph of \(V_s\) against \(f\) (a <strong>Millikan plot</strong>, after R. A. Millikan’s 1916 experiment) is a straight line. Its slope \(h/e\) is the same for every metal; its intercept on the \(f\) axis is \(f_0\) and on the \(V_s\) axis is \(-\phi/e\). Multiply the slope by \(e = 1.602\times10^{-19}\ \mathrm{C}\) to get \(h\).">所以 \(V_s\) 對 \(f\) 的圖（<strong>密立坎圖</strong>，來自密立坎 1916 年的實驗）是一條直線：斜率 \(h/e\) 對每種金屬都一樣，在 \(f\) 軸的截距是 \(f_0\)，在 \(V_s\) 軸的截距是 \(-\phi/e\)。把斜率乘上 \(e = 1.602\times10^{-19}\ \mathrm{C}\) 就得到 \(h\)。</p>
+
+      <h3 data-en="Current and intensity">電流與光的強度</h3>
+      <p data-en-html="Light of power \(P\) delivers \(N = P/hf\) photons per second. Each photon frees an electron with a small probability \(\eta\) (the quantum efficiency), so when every freed electron is collected the current reaches its <strong>saturation</strong> value">功率 \(P\) 的光每秒帶來 \(N = P/hf\) 個光子；每個光子以很小的機率 \(\eta\)（量子效率）打出一個電子。當所有光電子都被陽極收集時，電流達到<strong>飽和電流</strong>：</p>
+      <div class="formula">
+        \[ I_{\text{sat}} = \eta\, e N = \eta\, e\,\frac{P}{hf} \;\propto\; P \]
+      </div>
+      <p data-en-html="Doubling the intensity doubles the number of electrons and the current at every voltage, but leaves \(K_{\max}\) and \(V_s\) unchanged. At the same power, light of higher frequency has fewer (more energetic) photons, so its saturation current is smaller.">光的強度加倍，電子數加倍，每個電壓下的電流都加倍；但 \(K_{\max}\) 與 \(V_s\) 不變。功率相同時，頻率越高的光每個光子能量越大、光子數越少，所以飽和電流反而較小。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>A threshold, not a dimmer</strong>: choose sodium and red light (650 nm). Turn the intensity all the way up — nothing comes out. Now slide the wavelength down: electrons appear suddenly as soon as \(\lambda &lt; \lambda_0 = 544\ \mathrm{nm}\), even at low intensity."><strong>有門檻，不是越亮越好</strong>：選鈉、紅光（650 nm），把光調到最強——一個電子也沒有。再把波長往短的方向調，一過 \(\lambda_0 = 544\ \mathrm{nm}\) 就突然有電子射出，即使光很弱也一樣。</li>
+        <li data-en-html="<strong>\(K_{\max}\) does not depend on intensity</strong>: find the stopping voltage, then change the intensity. The current changes, but it still reaches zero at exactly the same \(V\)."><strong>\(K_{\max}\) 與光的強度無關</strong>：先找到停止電壓，再改變光的強度：電流變了，但仍在同一個 \(V\) 剛好歸零。</li>
+        <li data-en-html="<strong>Current \(\propto\) intensity</strong>: at any fixed voltage, doubling \(P\) doubles the reading on the ammeter; the whole \(I\)–\(V\) curve is stretched vertically."><strong>電流與光的強度成正比</strong>：在任一固定電壓，\(P\) 加倍、電流表讀數也加倍；整條 \(I\)–\(V\) 曲線在垂直方向等比例拉長。</li>
+        <li data-en-html="<strong>Saturation</strong>: with \(V &gt; 0\) the field pulls in the electrons that leave at large angles, and the current levels off at \(I_{\text{sat}}\) once every electron reaches the anode."><strong>飽和電流</strong>：\(V &gt; 0\) 時電場把斜向飛出的電子也拉向陽極；當所有光電子都到達陽極，電流就不再增加，達到 \(I_{\text{sat}}\)。</li>
+        <li data-en-html="<strong>Measure \(h\)</strong>: for one metal record the stopping voltage at three or more frequencies spread widely apart. The best-fit slope times \(e\) is Planck’s constant. Repeat with another metal: the line is parallel (same \(h\)) but shifted (different \(\phi\))."><strong>測量普朗克常數</strong>：同一種金屬，在三個以上、相差很大的頻率記錄停止電壓；最佳直線的斜率乘上 \(e\) 就是 \(h\)。換另一種金屬再做：直線互相平行（\(h\) 相同），但左右平移（\(\phi\) 不同）。</li>
+        <li data-en-html="<strong>Ultraviolet for most metals</strong>: zinc, copper and platinum need ultraviolet light (\(\lambda_0 &lt; 300\ \mathrm{nm}\)) — this is why Hertz (1887) saw sparks helped by UV light. Only the alkali metals respond to visible light."><strong>多數金屬要紫外線</strong>：鋅、銅、鉑都要紫外線（\(\lambda_0 &lt; 300\ \mathrm{nm}\)）才打得出電子——這正是赫茲（1887）發現紫外線讓火花更容易跳過的原因；只有鹼金屬在可見光下就有光電效應。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Photon energy, \(K_{\max}\), \(V_s\), \(f_0\) and \(\lambda_0\) come straight from the formulas above, with the exact SI values of \(h\), \(e\) and \(c\). The work functions are typical textbook values (Cs 2.1, K 2.3, Na 2.28, Zn 4.3, Cu 4.7, Pt 5.6 eV).">光子能量、\(K_{\max}\)、\(V_s\)、\(f_0\)、\(\lambda_0\) 直接由上面的公式計算，\(h\)、\(e\)、\(c\) 用 SI 定義值；功函數採課本常用值（Cs 2.1、K 2.3、Na 2.28、Zn 4.3、Cu 4.7、Pt 5.6 eV）。</li>
+        <li data-en-html="The tube is modelled as two parallel plates 1.0 cm apart (cathode 1.4 cm wide, anode 3.0 cm wide) with a uniform field \(E = V/d\) between them. Each electron leaves a random point of the cathode with a kinetic energy spread evenly between 0 and \(K_{\max}\) (a simplification) and a random direction following the cosine law, then moves with constant acceleration \(a = eV/(m_e d)\): its path is calculated exactly.">光電管簡化為相距 1.0 cm 的兩片平行板（陰極寬 1.4 cm、陽極寬 3.0 cm），板間為均勻電場 \(E = V/d\)。每個電子從陰極上隨機一點出發，動能在 0 到 \(K_{\max}\) 之間均勻分布（簡化），方向依餘弦定律隨機，之後做加速度 \(a = eV/(m_e d)\) 的等加速度運動，軌跡用精確公式計算。</li>
+        <li data-en-html="The ammeter shows the expected current \(I = \eta e N F\), where \(F\) is the fraction of electrons that land on the anode, found by integrating over all starting points, energies and directions (accurate to better than 0.01%). The quantum efficiency is taken as \(\eta = 10^{-3}\), a typical order of magnitude for a clean metal, and assumed independent of wavelength. The meter resolves 0.001 nA.">電流表顯示期望的電流 \(I = \eta e N F\)，\(F\) 是落在陽極上的電子比例，由所有出發點、能量與方向積分而得（誤差小於 0.01%）。量子效率取 \(\eta = 10^{-3}\)（乾淨金屬的典型數量級），並假設與波長無關；電流表解析度 0.001 nA。</li>
+        <li data-en-html="“Record stopping voltage” only accepts a voltage at which the meter reads zero but reads non-zero 0.05 V less negative, so each point on the Millikan plot is a genuine measurement of where the current just vanishes. The best-fit line is found by least squares.">「記錄停止電壓」只接受「電流表讀數為零，但電壓往正方向 0.05 V 時不為零」的電壓，所以密立坎圖上的每一點都是真正測到「電流剛好歸零」的位置；最佳直線用最小平方法求出。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111121"></script>
+  <script src="js/photoelectric-core.js?v=202611111121"></script>
+  <script src="js/sound.js?v=202611111121"></script>
+  <script src="js/numinput.js?v=202611111121"></script>
+  <script src="js/photoelectric.js?v=202611111121"></script>
+  <script src="js/firebase-config.js?v=202611111121"></script>
+  <script src="js/missions.js?v=202611111121" data-module="photoelectric"></script>
+  <script src="js/missions/photoelectric.js?v=202611111121"></script>
+  <script src="js/stats.js?v=202611111121" data-module="photoelectric"></script>
+  <script src="js/comments.js?v=202611111121"></script>
+</body>
+</html>
