@@ -3,6 +3,8 @@
   'use strict';
   const PC = window.ProjectileCore;
   const $ = function (id) { return document.getElementById(id); };
+  // 介面文字：英文模式用第二個字串（settings.js）
+  const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
 
   const SPEEDS = [0.1, 0.25, 0.5, 1, 2, 4, 8];
   const MAX_GHOSTS = 5;
@@ -332,8 +334,8 @@
     }
     // 等時距標記：相鄰兩點相隔相同時間
     if (state.show.dots && f.trail.length > 1) {
-      const T = cache.pred.T;
-      const dt = T > 0 ? niceStep(T / 12) : 0;
+      const Tf = cache.pred.T;
+      const dt = Tf > 0 ? niceStep(Tf / 12) : 0;
       if (dt > 0) {
         ctx.fillStyle = colors.surface;
         ctx.strokeStyle = colors.accent;
@@ -348,7 +350,7 @@
             m++;
           }
         }
-        haloText('標記間隔 ' + num(dt, dt < 0.1 ? 2 : dt < 1 ? 1 : 0) + ' s', cw - MARGIN.r - 4, MARGIN.t + 24, colors.muted, 'right', 'top');
+        haloText(T('標記間隔 ', 'Marker interval ') + num(dt, dt < 0.1 ? 2 : dt < 1 ? 1 : 0) + ' s', cw - MARGIN.r - 4, MARGIN.t + 24, colors.muted, 'right', 'top');
       }
     }
 
@@ -417,13 +419,13 @@
     $('rv').textContent = num(Math.hypot(s.vx, s.vy), 2) + ' m/s';
     $('rE').textContent = num(PC.energyPerMass(p, s), 1) + ' J/kg';
 
-    $('method').textContent = state.drag ? '數值解（RK4）' : '解析解';
+    $('method').textContent = state.drag ? T('數值解（RK4）', 'Numerical (RK4)') : T('解析解', 'Analytical');
     const id = cache.ideal;
-    const extra = function (v, d, unit) { return state.drag ? '<br><small>無阻力時 ' + num(v, d) + ' ' + unit + '</small>' : ''; };
+    const extra = function (v, d, unit) { return state.drag ? '<br><small>' + T('無阻力時 ', 'No drag: ') + num(v, d) + ' ' + unit + '</small>' : ''; };
     $('pT').innerHTML = num(pr.T, 2) + ' s' + extra(id.T, 2, 's');
     $('pR').innerHTML = num(pr.R, 2) + ' m' + extra(id.R, 2, 'm');
     $('pH').innerHTML = num(pr.H, 2) + ' m' + extra(id.H, 2, 'm');
-    $('pOpt').innerHTML = num(cache.opt.theta, 1) + '°<br><small>此時 R = ' + num(cache.opt.R, 2) + ' m</small>';
+    $('pOpt').innerHTML = num(cache.opt.theta, 1) + '°<br><small>' + T('此時 R = ', 'giving R = ') + num(cache.opt.R, 2) + ' m</small>';
     $('rVt').textContent = state.drag ? num(PC.terminalSpeed(p), 1) + ' m/s' : '—';
     $('status').textContent = state.status;
   }
@@ -431,12 +433,14 @@
   function renderGhosts() {
     const ul = $('ghosts');
     if (!state.ghosts.length) {
-      ul.innerHTML = '<li class="none"><span class="empty">尚無紀錄：按「發射」，落地後的軌跡會保留在這裡。</span></li>';
+      ul.innerHTML = '<li class="none"><span class="empty">' +
+        T('尚無紀錄：按「發射」，落地後的軌跡會保留在這裡。', 'Nothing saved yet: press “Launch”, and each trajectory is kept here after it lands.') + '</span></li>';
       return;
     }
+    const gap = T('　', '&emsp;');
     ul.innerHTML = state.ghosts.map(function (g) {
       return '<li><span class="sw" style="background:var(--' + GHOST_COLORS[g.color] + ')">' + g.n + '</span>' +
-        '<span>' + g.desc + '<br><span class="meta">R ' + num(g.R, 2) + ' m　H ' + num(g.H, 2) + ' m　T ' + num(g.T, 2) + ' s</span></span></li>';
+        '<span>' + g.desc + '<br><span class="meta">R ' + num(g.R, 2) + ' m' + gap + 'H ' + num(g.H, 2) + ' m' + gap + 'T ' + num(g.T, 2) + ' s</span></span></li>';
     }).join('');
   }
 
@@ -457,7 +461,7 @@
     const f = state.fly, s = f.s, p = cache.p;
     f.running = false;
     f.landed = true;
-    $('run').textContent = '再發射一次';
+    $('run').textContent = T('再發射一次', 'Launch again');
     state.launches++;
     // 抽樣保留軌跡（最多約 600 點）
     const every = Math.max(1, Math.ceil(f.trail.length / 600));
@@ -470,20 +474,24 @@
       color: (state.launches - 1) % GHOST_COLORS.length,
       pts: pts,
       R: s.x, H: Math.max(H, cache.pred.H), T: s.t,
-      desc: p.theta + '°，v<sub>0</sub> = ' + num(p.v0, 1) + ' m/s，g = ' + num(p.g, 2) +
-        (p.k > 0 ? '，有阻力 k/m = ' + fmtK(p.k) : '，無阻力') + (p.h0 > 0 ? '，h<sub>0</sub> = ' + num(p.h0, 1) + ' m' : '')
+      desc: p.theta + '°' + T('，', ', ') + 'v<sub>0</sub> = ' + num(p.v0, 1) + ' m/s' + T('，', ', ') + 'g = ' + num(p.g, 2) +
+        (p.k > 0 ? T('，有阻力 k/m = ', ', drag k/m = ') + fmtK(p.k) : T('，無阻力', ', no drag')) +
+        (p.h0 > 0 ? T('，', ', ') + 'h<sub>0</sub> = ' + num(p.h0, 1) + ' m' : '')
     });
     if (state.ghosts.length > MAX_GHOSTS) state.ghosts.shift();
     renderGhosts();
-    state.status = '第 ' + state.launches + ' 次發射落地：t = ' + num(s.t, 2) + ' s，射程 ' + num(s.x, 2) + ' m。';
+    state.status = T('第 ' + state.launches + ' 次發射落地：t = ' + num(s.t, 2) + ' s，射程 ' + num(s.x, 2) + ' m。',
+      'Flight ' + state.launches + ' landed: t = ' + num(s.t, 2) + ' s, range ' + num(s.x, 2) + ' m.');
   }
 
   function start() {
     const f = state.fly;
     f.running = true;
     f.launched = true;
-    $('run').textContent = '暫停';
-    state.status = state.drag && state.g === PC.G_PRESETS.moon ? '提醒：月球沒有大氣，這裡的阻力只是假想比較。' : '飛行中…';
+    $('run').textContent = T('暫停', 'Pause');
+    state.status = state.drag && state.g === PC.G_PRESETS.moon
+      ? T('提醒：月球沒有大氣，這裡的阻力只是假想比較。', 'Note: the Moon has no atmosphere, so drag here is only a hypothetical comparison.')
+      : T('飛行中…', 'In flight…');
     lastT = performance.now();
     cancelAnimationFrame(rafId); // 確保只有一個動畫迴圈
     rafId = requestAnimationFrame(tick);
@@ -491,7 +499,7 @@
 
   function resetFlight(msg) {
     newFlight();
-    $('run').textContent = '發射';
+    $('run').textContent = T('發射', 'Launch');
     state.status = msg || '';
     requestDraw();
   }
@@ -547,8 +555,8 @@
     const f = state.fly;
     if (f.running) {
       f.running = false;
-      $('run').textContent = '繼續';
-      state.status = '已暫停';
+      $('run').textContent = T('繼續', 'Resume');
+      state.status = T('已暫停', 'Paused');
       requestDraw();
       return;
     }
