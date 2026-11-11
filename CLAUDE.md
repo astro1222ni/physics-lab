@@ -28,7 +28,7 @@
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
 | `js/stats.js` | 瀏覽人次、操作次數、累計操作時間（Firebase Realtime Database，匿名數字） |
-| `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；`privacy.html` 為隱私說明 |
+| `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |
 | `firebase/database.rules.json` | 資料庫安全規則（修改後需請站長貼到 Firebase 主控台「規則」分頁並發布） |
 | `vendor/` | KaTeX、three.js 等第三方檔案（內建，不依賴 CDN；Firebase SDK 例外，從 gstatic 載入） |
@@ -52,7 +52,7 @@
 
 1. `for t in tests/*.test.js; do node "$t"; done` 全部通過。
 2. Playwright（已預裝，`require('playwright')`）實際開頁：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
-3. `python3 tools/stamp.py`，再 commit、push。
+3. `python3 tools/stamp.py`，再 commit、push。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
 
 ## Firebase（專案 astro-ni-physics-lab）
 

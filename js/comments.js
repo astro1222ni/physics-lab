@@ -380,6 +380,90 @@
     setInterval(renderList, 60000); // 更新「幾分鐘前」
   }
 
+  // ======================= 首次進站：鼓勵登入（可以「先逛逛」跳過） =======================
+  // 每個瀏覽器只出現一次；已登入、排行榜頁、隱私說明頁不出現。登入只是為了任務、星星、成就與留言，操作實驗不需要登入。
+  const WELCOME_KEY = 'lab-welcome-v1';
+  const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.2l-5.8 3.2 1.2-6.5L2.6 9.4l6.5-.8z"/></svg>';
+  let welcome = null;
+  function welcomeSeen() { try { return !!localStorage.getItem(WELCOME_KEY); } catch (e) { return true; } }
+  function welcomeMark(v) { try { localStorage.setItem(WELCOME_KEY, v); } catch (e) { /* 無法記錄時照樣關閉 */ } }
+  function maybeWelcome() {
+    if (welcome || state.user || welcomeSeen()) return;
+    if (/(?:privacy|leaderboard)\.html$/.test(location.pathname)) return;
+    const back = el('div', 'lab-welcome');
+    const box = el('div', 'lab-welcome-box');
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'lab-welcome-title');
+    const badge = el('div', 'lab-welcome-star');
+    badge.innerHTML = STAR_SVG;
+    box.appendChild(badge);
+    const h = el('h2', null, t('登入，開始收集倪的星星！', 'Sign in and start collecting Ni stars!'));
+    h.id = 'lab-welcome-title';
+    box.appendChild(h);
+    box.appendChild(el('p', 'lab-welcome-lead', t('每個實驗都有「任務模式」：動手操作實驗、達成指定的目標，就能獲得「倪的星星」。',
+      'Every experiment has a “Mission mode”: work the simulation to reach a goal and you earn Ni stars.')));
+    const ul = el('ul', 'lab-welcome-list');
+    [[t('任務分 10 級，越難星星越多（1～10 顆）', 'Missions have 10 levels — harder ones earn more stars (1 to 10)')],
+     [t('累積星星登上排行榜前 100 名', 'Collect stars and climb into the top 100')],
+     [t('還有公開與隱藏的成就等你解鎖', 'Unlock public and hidden achievements')]].forEach(function (r) {
+      const li = el('li');
+      li.innerHTML = STAR_SVG;
+      li.appendChild(el('span', null, r[0]));
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    const go = button('', 'primary lab-welcome-go', function () {
+      msg.textContent = '';
+      welcome.signing = true;
+      api.signIn().catch(function (e) { welcome && (welcome.signing = false); msg.textContent = errText(e); });
+    });
+    go.innerHTML = G_ICON;
+    go.appendChild(el('span', null, t('用 Google 帳號登入', 'Sign in with Google')));
+    const skip = button(t('先逛逛', 'Just look around'), 'lab-welcome-skip', function () { closeWelcome('skip'); });
+    const acts = el('div', 'lab-welcome-actions');
+    acts.appendChild(go);
+    acts.appendChild(skip);
+    box.appendChild(acts);
+    const msg = el('p', 'lab-welcome-msg');
+    msg.setAttribute('role', 'alert');
+    box.appendChild(msg);
+    const fine = el('p', 'lab-welcome-fine', t('不登入也可以操作所有實驗；之後隨時可以按右上角的「登入」。網站只顯示你自訂的暱稱，不會顯示 Google 姓名、大頭照或電子郵件。',
+      'You can use every experiment without signing in, and sign in later from the top-right corner. Only the nickname you choose is ever shown — never your Google name, photo or email. '));
+    const pv = document.createElement('a');
+    pv.href = 'privacy.html';
+    pv.textContent = t('隱私說明', 'Privacy');
+    fine.appendChild(pv);
+    box.appendChild(fine);
+    back.appendChild(box);
+    back.addEventListener('pointerdown', function (e) { if (e.target === back) closeWelcome('skip'); });
+    back.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); closeWelcome('skip'); return; }
+      if (e.key !== 'Tab') return;
+      const f = [].slice.call(box.querySelectorAll('button, a[href]'));
+      const i = f.indexOf(document.activeElement);
+      if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); }
+      else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+    });
+    welcome = { el: back, prev: document.activeElement, signing: false };
+    document.body.appendChild(back);
+    go.focus({ preventScroll: true });
+  }
+  function closeWelcome(how) {
+    if (!welcome) return;
+    welcomeMark(how);
+    const w = welcome;
+    welcome = null;
+    w.el.classList.add('out');
+    setTimeout(function () { w.el.remove(); }, 250);
+    if (w.prev && w.prev.focus && document.contains(w.prev)) w.prev.focus({ preventScroll: true });
+    // 從提示登入的實驗頁：直接打開任務模式
+    if (how === 'signed' && w.signing) {
+      const tg = document.querySelector('.ms-toggle');
+      if (tg && !tg.classList.contains('on')) { tg.click(); tg.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+  }
+
   // ======================= 啟動 =======================
   function start() {
     buildAccount();
@@ -394,6 +478,8 @@
         state.editingNick = false;
         state.ready = true;
         changed();
+        if (user) closeWelcome('signed');
+        else setTimeout(maybeWelcome, 600); // 讓頁面先出現，再跳出登入提示
         if (user) {
           Promise.all([api.getNickname(user.uid).catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
             if (!state.user || state.user.uid !== user.uid) return;
