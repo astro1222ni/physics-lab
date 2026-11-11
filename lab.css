@@ -246,6 +246,14 @@ dl.readout sup { font-size: .72em; line-height: 0; }
 .stats-bar .stat-label { color: var(--muted); }
 .stats-bar .stat-value { font-weight: 700; font-variant-numeric: tabular-nums; }
 .stats-bar .stats-title { font-weight: 700; color: var(--accent); }
+.stats-bar .stat[hidden] { display: none; }
+.stats-bar .online-dot {
+  display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; vertical-align: .05em;
+  background: var(--probe); box-shadow: 0 0 0 0 color-mix(in srgb, var(--probe) 55%, transparent);
+  animation: online-pulse 2.4s ease-out infinite;
+}
+@keyframes online-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--probe) 55%, transparent); } 70%, 100% { box-shadow: 0 0 0 7px transparent; } }
+@media (prefers-reduced-motion: reduce) { .stats-bar .online-dot { animation: none; } }
 .stats-total { margin-top: 18px; }
 .module-stats { margin: 8px 0 0 !important; font-size: calc(12px * var(--fs, 1)) !important; color: var(--muted); font-variant-numeric: tabular-nums; }
 

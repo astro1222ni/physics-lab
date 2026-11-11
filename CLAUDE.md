@@ -27,7 +27,7 @@
 | `js/hans-map.js` | 簡體對照表，由 `tools/build-hans.cjs` 產生（物理名詞對照在該檔 `PHRASES`） |
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
-| `js/stats.js` | 瀏覽人次、操作次數、累計操作時間（Firebase Realtime Database，匿名數字） |
+| `js/stats.js` | 瀏覽人次、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝每分頁一個隨機代號的心跳，150 秒內有心跳算在線） |
 | `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |
 | `firebase/database.rules.json` | 資料庫安全規則（修改後需請站長貼到 Firebase 主控台「規則」分頁並發布） |
@@ -56,6 +56,6 @@
 
 ## Firebase（專案 astro-ni-physics-lab）
 
-- Realtime Database（新加坡）：`stats/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`。
+- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
 - 此雲端工作環境連不到 Firebase 與 gstatic；Firebase 相關功能要用模擬後端測試，正式驗證請站長在網站上操作。

@@ -23,6 +23,25 @@
         }
       }
     },
+    "presence": {
+      ".read": true,
+      ".indexOn": [
+        "t"
+      ],
+      "$sid": {
+        ".write": true,
+        ".validate": "$sid.matches(/^[a-z0-9]{16}$/) && newData.hasChildren(['t', 'm'])",
+        "t": {
+          ".validate": "newData.isNumber() && newData.val() === now"
+        },
+        "m": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9-]{1,40}$/)"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "comments": {
       "$module": {
         ".read": true,
