@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111259"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Apparent Weight in an Elevator | Astro Ni Physics Lab">電梯中的視重（超重與失重）｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：站在電梯裡的體重計上搭電梯，觀察加速、等速、減速時體重計讀數的變化（超重與失重），畫出同步的 a–t、v–t、y–t 與讀數–t 圖；剪斷纜繩體驗完全失重，再用緊急煞車停下。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111259">
+  <style>
+    /* 電梯中的視重：頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 兩張畫布的高度由程式依寬度決定；畫布沒有拖曳操作，手機可以在上面捲動頁面 */
+    #cv, #gv { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    #cv { height: 440px; }
+    #gv { height: 380px; margin-top: 10px; }
+    .el button { min-height: 44px; }
+    .el [hidden] { display: none !important; }
+    .el .ctrlrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 2px 0; }
+    .el .ctrlrow .lbl { font-size: calc(14px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    .modeseg { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 6px; }
+    .modeseg button { padding: 6px 12px; line-height: 1.3; }
+    .modeseg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    /* 樓層按鈕：仿電梯操作盤的圓形按鈕，排隊中的樓層亮燈 */
+    .floorpad { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; padding: 10px; border-radius: 12px;
+      background: linear-gradient(180deg, var(--bg), var(--surface)); border: 1px solid var(--border); }
+    @media (min-width: 600px) { .floorpad { grid-template-columns: repeat(10, minmax(0, 1fr)); } }
+    .floorpad button { min-height: 48px; border-radius: 999px; padding: 0; font-weight: 700; font-variant-numeric: tabular-nums;
+      font-size: calc(15px * var(--fs, 1)); background: radial-gradient(circle at 35% 30%, var(--surface), var(--bg)); box-shadow: 0 1px 2px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.35); }
+    .floorpad button.lit { border-color: var(--star, #e0a100); color: var(--text); box-shadow: 0 0 0 2px var(--star, #e0a100), 0 0 10px var(--star, #e0a100); }
+    .floorpad button.here { color: var(--accent); border-color: var(--accent); }
+    .floorpad button:disabled { opacity: .45; cursor: not-allowed; }
+    .drivepad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 2px 0; }
+    .drivepad button { min-height: 56px; font-weight: 700; font-size: calc(15px * var(--fs, 1)); user-select: none; -webkit-user-select: none; touch-action: none; }
+    .drivepad button.held { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .drivepad .hint { grid-column: 1 / -1; margin: 0; }
+    .el .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .el .playbar button { flex: 1 1 auto; }
+    .el .playbar #cut { font-weight: 700; color: var(--pos); border-color: var(--pos); }
+    .el .playbar #cut.repair { color: var(--accent); border-color: var(--accent); }
+    .el .playbar #brake { font-weight: 700; }
+    .el .playbar #brake:not(:disabled) { background: var(--pos); border-color: var(--pos); color: var(--surface); }
+    .el .playbar button:disabled { opacity: .5; cursor: not-allowed; }
+    .el .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .el .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .el .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .el .stage .status { margin: 6px 4px 0; }
+    .el .slider input[type="range"] { height: 28px; margin: 0; }
+    .el .slider label sub, dl.readout sub { font-size: .75em; }
+    .el .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .el dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .el dl.readout dd { white-space: nowrap; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.big { font-size: calc(18px * var(--fs, 1)); font-weight: 700; color: var(--neg); }
+    .legend .band { width: 14px; height: 12px; border-radius: 3px; opacity: .55; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .mystery .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+    .mystery input { font: inherit; font-size: calc(15px * var(--fs, 1)); width: 7.5em; min-height: 44px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-variant-numeric: tabular-nums; }
+    .mystery .res { font-size: calc(14px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.4em; }
+    .mystery .res.ok { color: var(--probe); font-weight: 600; }
+    .mystery .res.no { color: var(--pos); }
+    .notes table.cases { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); margin: 8px 0; }
+    .notes table.cases th, .notes table.cases td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+    .notes table.cases th { background: var(--accent-soft); }
+    .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Newton’s laws"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 牛頓運動定律</nav>
+      <h1 data-en="Apparent Weight in an Elevator">電梯中的視重（超重與失重）</h1>
+      <p data-en="Stand on a bathroom scale in an elevator and ride it up and down. Watch how the reading changes while the elevator speeds up, moves steadily and slows down, compare the synchronised a–t, v–t, y–t and reading–t graphs, and see why the reading depends on the acceleration, not on the velocity. Then cut the cable to feel true weightlessness and stop the fall with the emergency brake.">站在電梯裡的體重計上搭電梯：電梯加速、等速、減速時，體重計的讀數怎麼變？對照同步的 a–t、v–t、y–t 與讀數–t 圖，看出讀數由「加速度」決定，而不是由速度決定。最後剪斷纜繩體驗完全失重，再用緊急煞車讓電梯停下來。</p>
+    </header>
+
+    <div class="lab el">
+      <div class="stage">
+        <canvas id="cv" aria-label="電梯模擬畫布：左邊是大樓與電梯井（高度依比例），中間是車廂內部：人站在體重計上、彈簧秤吊著物體、手上拿著小球；右邊是體重計刻度盤與人的受力圖" data-en-aria-label="Elevator simulation: on the left the building and the shaft (heights to scale); in the middle the inside of the car with a person on a bathroom scale, a mass on a spring scale and a ball in the hand; on the right the scale dial and the free-body diagram of the person"></canvas>
+
+        <div class="ctrlrow">
+          <span class="lbl" id="modeLabel" data-en="Control:">操作方式：</span>
+          <div class="modeseg" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeFloor" aria-pressed="true" data-en="Floor buttons">樓層按鈕</button>
+            <button type="button" id="modeManual" aria-pressed="false" data-en="Manual drive">手動駕駛</button>
+          </div>
+        </div>
+        <div class="floorpad" id="floorPad" role="group" aria-label="樓層按鈕" data-en-aria-label="Floor buttons"></div>
+        <div class="drivepad" id="drivePad" hidden>
+          <button type="button" id="driveUp" data-en="▲ Hold: accelerate up">▲ 按住：向上加速</button>
+          <button type="button" id="driveDown" data-en="▼ Hold: accelerate down">▼ 按住：向下加速</button>
+          <p class="hint" data-en="Hold a button to accelerate at A (up to the top speed V); release it and the elevator moves on at constant velocity. Hold the opposite button to slow down — the elevator stops when its velocity reaches zero. Near the top and bottom floors the controller slows the elevator down automatically. Keyboard: hold the ↑ / ↓ keys.">按住按鈕以 A 加速（最快到 V）；放開就維持等速。按住反方向的按鈕會減速，速度變成 0 時停住。快到頂樓或 1 樓時，控制器會自動減速。鍵盤：按住 ↑／↓ 鍵。</p>
+        </div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+          <button id="cut" type="button" data-en="Cut the cable">剪斷纜繩</button>
+          <button id="brake" type="button" disabled data-en="Emergency brake">緊急煞車</button>
+          <button id="ball" type="button" data-en="Drop the ball">放開小球</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有圖表與紀錄、修好纜繩，滑桿設定不變" data-en-title="Clear all graphs and records and repair the cable; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+
+        <canvas id="gv" aria-label="同步圖表：由上而下是加速度–時間、速度–時間、高度–時間與體重計讀數–時間圖，底色標出超重、失重與完全失重的階段" data-en-aria-label="Synchronised graphs: from top to bottom acceleration–time, velocity–time, height–time and scale reading–time, with the overweight, underweight and weightless phases shaded"></canvas>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--b-mech)&quot;></i>Overweight (reading &gt; true weight)"><i class="band" style="background:var(--b-mech)"></i>超重（視重 &gt; 實重）</span>
+          <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--b-wave)&quot;></i>Underweight (reading &lt; true weight)"><i class="band" style="background:var(--b-wave)"></i>失重（視重 &lt; 實重）</span>
+          <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--b-optics)&quot;></i>Weightless (reading 0)"><i class="band" style="background:var(--b-optics)"></i>完全失重（視重 = 0）</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Planned (still to come)"><i class="dash"></i>預定的運動（還沒發生）</span>
+          <span data-en-html="<i style=&quot;background:var(--muted);opacity:.4&quot;></i>Earlier rides (faded)"><i style="background:var(--muted);opacity:.4"></i>之前幾趟（淡色）</span>
+        </div>
+        <p class="hint" data-en-html="Up is positive. Heights in the building and inside the car are drawn to scale (the building’s width is not). Force arrows in the free-body diagram share one fixed scale (shown on the diagram); an arrow too long to fit is cut short and marked “≈”. The graphs of each ride start at t = 0 when the elevator sets off.">向上為正。大樓與車廂內的高度都依比例畫（大樓的寬度不依比例）。受力圖的力箭頭使用同一個固定比例（畫在圖上）；太長畫不下的箭頭會截短並標「≈」。每一趟的圖表從電梯出發時 t = 0 開始。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Elevator drive">電梯運轉</h2>
+          <div class="slider"><label for="A" data-en-html="Maximum acceleration <i>A</i>">最大加速度 <i>A</i></label><output id="Ao"></output>
+            <input id="A" type="range" min="0.5" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="V" data-en-html="Top speed <i>V</i>">最高速率 <i>V</i></label><output id="Vo"></output>
+            <input id="V" type="range" min="0.5" max="6" step="0.1" value="2.5" data-decimals="2"></div>
+          <p class="hint" data-en="Speeding up and slowing down both use A. A new setting applies from the next ride.">起動加速與停靠減速的大小都是 A。新的設定從下一趟開始生效。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Person and spring scale">人與彈簧秤</h2>
+          <div class="slider"><label for="m" data-en-html="Person’s mass <i>m</i>">人的質量 <i>m</i></label><output id="mo"></output>
+            <input id="m" type="range" min="30" max="100" step="1" value="60" data-decimals="1"></div>
+          <div class="slider"><label for="ms" data-en-html="Hanging mass <i>m</i><sub>s</sub>">吊掛物質量 <i>m</i><sub>s</sub></label><output id="mso"></output>
+            <input id="ms" type="range" min="0.5" max="2" step="0.1" value="1" data-decimals="2"></div>
+          <p class="hint" data-en="Spring constant k = 60 N/m. The ball is let go 1.25 m above the floor of the car.">彈簧的力常數 k = 60 N/m。小球從離車廂地板 1.25 m 的高度放開。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Cable break and emergency brake">纜繩斷裂與緊急煞車</h2>
+          <div class="slider"><label for="vt" data-en-html="Governor trip speed <i>v</i><sub>trip</sub>">限速器動作速率 <i>v</i><sub>trip</sub></label><output id="vto"></output>
+            <input id="vt" type="range" min="2" max="10" step="0.1" value="5" data-decimals="2"></div>
+          <div class="slider"><label for="ab" data-en-html="Braking deceleration <i>a</i><sub>b</sub>">煞車減速度 <i>a</i><sub>b</sub></label><output id="abo"></output>
+            <input id="ab" type="range" min="2" max="9.8" step="0.1" value="4.9" data-decimals="2"></div>
+          <p class="hint" data-en-html="After the cable breaks, the safety brake grips the rails automatically when the elevator falls at <i>v</i><sub>trip</sub> — or earlier, when you press “Emergency brake”. The red dashed line in the shaft shows where the elevator would stop. Changes apply from the next cable break.">纜繩斷了以後，下降速率達到 v<sub>trip</sub> 時安全鉗會自動夾住導軌煞車；也可以提早按「緊急煞車」。電梯井裡的紅色虛線是電梯會停下的位置。新的設定從下一次斷纜開始生效。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time of this ride t">本趟時間 t</dt><dd id="rt">—</dd>
+            <dt data-en="Height y (1F floor = 0)">高度 y（1F 地板 = 0）</dt><dd id="ry">—</dd>
+            <dt data-en="Velocity v">速度 v</dt><dd id="rv">—</dd>
+            <dt data-en="Acceleration a">加速度 a</dt><dd id="ra">—</dd>
+            <dt data-en="State">狀態</dt><dd id="rph">—</dd>
+            <dt data-en-html="Normal force <span class=&quot;f&quot;>N = m(g + a)</span>">正向力 <span class="f">N = m(g + a)</span></dt><dd id="rN">—</dd>
+            <dt data-en="Scale reading (apparent weight)">體重計讀數（視重）</dt><dd id="rR" class="big">—</dd>
+            <dt data-en-html="Spring scale <span class=&quot;f&quot;>T = m<sub>s</sub>(g + a)</span>">彈簧秤 <span class="f">T = m<sub>s</sub>(g + a)</span></dt><dd id="rT">—</dd>
+            <dt data-en="Ball’s fall time">小球落地時間</dt><dd id="rB">—</dd>
+          </dl>
+        </section>
+
+        <section class="card mystery">
+          <h2 data-en="Challenge: the mystery elevator">挑戰：神秘電梯</h2>
+          <p class="hint" data-en="The elevator goes to a random floor with a secret acceleration. The acceleration and velocity are hidden — use only the scale reading and the person’s mass to work out the size of the acceleration while it sets off.">電梯會用保密的加速度開到隨機的樓層，加速度與速度都會被遮住。只用體重計讀數與人的質量，算出電梯起動時加速度的大小。</p>
+          <div class="row">
+            <button type="button" id="mysGo" data-en="Start a mystery ride">神秘電梯出發</button>
+          </div>
+          <div class="row">
+            <label for="mysIn" data-en-html="Your answer |<i>a</i>| =">你的答案 |<i>a</i>| =</label>
+            <input id="mysIn" type="text" inputmode="decimal" autocomplete="off" disabled placeholder="0.00" data-en-placeholder="0.00"><span>m/s<sup>2</sup></span>
+            <button type="button" id="mysCheck" disabled data-en="Check">檢查</button>
+          </div>
+          <p class="res" id="mysRes" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="True weight and apparent weight">實重與視重</h3>
+      <p data-en-html="The Earth pulls on you with your <strong>weight</strong> \(W = mg\) (the true weight), whatever the elevator does. A bathroom scale does not measure this force: it measures how hard you press on it, which equals the <strong>normal force</strong> \(N\) it pushes back on you with. This reading is called the <strong>apparent weight</strong>. Take up as positive and let the elevator (and you) have acceleration \(a\). Only two forces act on you, so Newton’s second law gives">不論電梯怎麼動，地球對你的吸引力都是<strong>重量</strong> \(W = mg\)（實重）。體重計量的不是這個力，而是你壓在它上面的力，大小等於它把你往上推的<strong>正向力</strong> \(N\)，這個讀數稱為<strong>視重</strong>。取向上為正，設電梯（和你）的加速度為 \(a\)。你只受兩個力，由牛頓第二定律：</p>
+      <div class="formula">
+        \[ N - mg = ma \;\Rightarrow\; N = m(g + a) \]
+      </div>
+      <p data-en-html="The scale is marked in <strong>kilogram-weight</strong> (kgw, also written kgf): 1 kgw is the weight of a 1 kg mass, \(1\ \mathrm{kgw} = 9.8\ \mathrm{N}\). So a scale that feels a force \(N\) shows">體重計的刻度是<strong>公斤重</strong>（kgw）：1 公斤重是 1 kg 物體的重量，\(1\ \mathrm{kgw} = 9.8\ \mathrm{N}\)。所以體重計受到 \(N\) 的壓力時，顯示</p>
+      <div class="formula" data-en-html="\[ \text{reading (kgw)} = \frac{N}{9.8\ \mathrm{N/kgw}} = m\left(1 + \frac{a}{g}\right) \]">
+        \[ \text{讀數（kgw）} = \frac{N}{9.8\ \mathrm{N/kgw}} = m\left(1 + \frac{a}{g}\right) \]
+      </div>
+      <p data-en-html="At rest or at constant velocity (\(a = 0\)) the reading equals your mass in kgw; for example a 60 kg person reads 60 kgw. With \(a = +1.96\ \mathrm{m/s^2} = 0.2g\) the same person reads \(60 \times 1.2 = 72\ \mathrm{kgw}\).">靜止或等速（\(a = 0\)）時，讀數就是你的質量的公斤重數，例如 60 kg 的人顯示 60 kgw。若 \(a = +1.96\ \mathrm{m/s^2} = 0.2g\)，同一個人顯示 \(60 \times 1.2 = 72\ \mathrm{kgw}\)。</p>
+      <div class="tablewrap">
+        <table class="cases">
+          <thead><tr>
+            <th data-en="Motion of the elevator">電梯的運動</th>
+            <th data-en="Direction of a">a 的方向</th>
+            <th data-en="Reading">讀數</th>
+          </tr></thead>
+          <tbody>
+            <tr><td data-en="Speeding up going up; slowing down going down">加速上升；減速下降</td><td data-en="Up (a &gt; 0)">向上（a &gt; 0）</td><td data-en-html="\(N \gt mg\): <strong>overweight</strong>">\(N \gt mg\)：<strong>超重</strong></td></tr>
+            <tr><td data-en="Slowing down going up; speeding up going down">減速上升；加速下降</td><td data-en="Down (a &lt; 0)">向下（a &lt; 0）</td><td data-en-html="\(N \lt mg\): <strong>underweight</strong>">\(N \lt mg\)：<strong>失重</strong></td></tr>
+            <tr><td data-en="At rest, or moving up or down at constant velocity">靜止，或等速上升、等速下降</td><td data-en="a = 0">a = 0</td><td data-en-html="\(N = mg\): normal">\(N = mg\)：正常</td></tr>
+            <tr><td data-en="Free fall (cable broken) — even while still moving up">自由落體（纜繩斷裂）——即使還在往上運動</td><td data-en="a = −g">a = −g</td><td data-en-html="\(N = 0\): <strong>weightless</strong>">\(N = 0\)：<strong>完全失重</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p data-en-html="The reading depends only on the <strong>acceleration</strong>. Whether the elevator is going up or down, and how fast, makes no difference: moving up at a steady 6 m/s reads exactly the same as standing still.">讀數只由<strong>加速度</strong>決定，與電梯往上或往下、速度多快都無關：以 6 m/s 等速上升時的讀數，和靜止時完全一樣。</p>
+
+      <h3 data-en="Action–reaction pair, or not?">哪一對才是作用力與反作用力？</h3>
+      <p data-en-html="The scale pushes up on you with \(N\); by Newton’s third law you push down on the scale with a force \(N'\) of the same size. \(N\) and \(N'\) are an <strong>action–reaction pair</strong>: equal in size, opposite in direction, acting on <strong>different</strong> objects, always — even while the elevator accelerates. By contrast, \(mg\) and \(N\) both act on <strong>you</strong>. They are not a pair, and they are equal only when \(a = 0\). (The reaction to your weight is your pull on the Earth.)">體重計以 \(N\) 把你往上推；由牛頓第三定律，你以同樣大小的力 \(N'\) 往下壓體重計。\(N\) 與 \(N'\) 是<strong>一對作用力與反作用力</strong>：大小相等、方向相反、作用在<strong>不同</strong>物體上，而且永遠如此，電梯加速時也一樣。反觀 \(mg\) 與 \(N\) 都作用在<strong>你</strong>身上，它們不是一對，只有在 \(a = 0\) 時才相等。（重量的反作用力是你對地球的引力。）</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \vec{N}_{\text{scale on you}} = -\vec{N}'_{\text{you on scale}} \ \ \text{(always)} \\ N - mg = ma \ \ (N \ne mg \text{ when } a \ne 0) \end{gathered} \]">
+        \[ \begin{gathered} \vec{N}_{\text{秤對人}} = -\vec{N}'_{\text{人對秤}} \ \ \text{（永遠成立）} \\ N - mg = ma \ \ \text{（}a \ne 0 \text{ 時 } N \ne mg\text{）} \end{gathered} \]
+      </div>
+
+      <h3 data-en="A typical ride">一趟典型的行程</h3>
+      <p data-en-html="Pressing a floor button runs a trapezoidal velocity profile: speed up at \(A\) until the top speed \(V\), cruise, then slow down at \(A\) and stop exactly at the floor. For a trip of length \(d\):">按下樓層按鈕後，電梯以「梯形」的 v–t 圖運動：以 \(A\) 加速到最高速率 \(V\)，等速前進，再以 \(A\) 減速，剛好停在樓層。行程距離為 \(d\) 時：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} t_{\text{speeding up}} = t_{\text{slowing down}} = \frac{V}{A} \\ t_{\text{total}} = \frac{d}{V} + \frac{V}{A} \quad \left(d \ge \frac{V^{2}}{A}\right) \end{gathered} \]">
+        \[ \begin{gathered} t_{\text{加速}} = t_{\text{減速}} = \frac{V}{A} \\ t_{\text{總}} = \frac{d}{V} + \frac{V}{A} \quad \left(d \ge \frac{V^{2}}{A}\right) \end{gathered} \]
+      </div>
+      <p data-en-html="If the trip is too short to reach \(V\) (\(d \lt V^2/A\)), the v–t graph is a triangle with top speed \(\sqrt{Ad}\) and total time \(2\sqrt{d/A}\). In every case the area under the a–t graph is the change in velocity (zero for a whole trip) and the area under the v–t graph is the displacement.">如果行程太短、來不及加速到 \(V\)（\(d \lt V^2/A\)），v–t 圖是三角形，最高速率 \(\sqrt{Ad}\)、總時間 \(2\sqrt{d/A}\)。無論哪一種，a–t 圖下的面積都是速度的變化（整趟為零），v–t 圖下的面積就是位移。</p>
+
+      <h3 data-en="Cable break and emergency brake">纜繩斷裂與緊急煞車</h3>
+      <p data-en-html="If the cable breaks, gravity is the only force on the elevator, so it is in free fall with \(a = -g\): everything inside falls together, the scale reads \(0\), the spring scale reads \(0\) — complete weightlessness. When the downward speed reaches \(v_{\text{trip}}\) (or when you press the emergency brake), the safety brake grips the rails and slows the elevator at \(a_b\) (now \(a = +a_b\), upward), so the reading jumps to \(m(1 + a_b/g)\). Starting from rest, the total drop is">纜繩斷了以後，電梯只受重力，做 \(a = -g\) 的自由落體：車廂裡的東西一起落下，體重計讀數為 \(0\)、彈簧秤讀數也是 \(0\)，完全失重。下降速率達到 \(v_{\text{trip}}\)（或你按下緊急煞車）時，安全鉗夾住導軌，以 \(a_b\) 減速（這時 \(a = +a_b\)，向上），讀數跳到 \(m(1 + a_b/g)\)。從靜止開始，總共下降</p>
+      <div class="formula">
+        \[ \Delta y = \frac{v_{\text{trip}}^{2}}{2g} + \frac{v_{\text{trip}}^{2}}{2a_b} \]
+      </div>
+
+      <h3 data-en="Spring scale and a falling ball">彈簧秤與落下的小球</h3>
+      <p data-en-html="The mass \(m_s\) hanging on the spring obeys the same law: the spring pulls it with \(T = m_s(g + a)\), and the spring stretches by \(x = T/k\). Inside the elevator everything behaves as if gravity were \(g_{\text{eff}} = g + a\). A ball let go from height \(h\) therefore reaches the floor after">吊在彈簧下的物體 \(m_s\) 也一樣：彈簧拉它的力 \(T = m_s(g + a)\)，彈簧伸長 \(x = T/k\)。在電梯裡，一切就像重力加速度變成了 \(g_{\text{eff}} = g + a\)。所以從高度 \(h\) 放開的小球，落到地板需要</p>
+      <div class="formula">
+        \[ t = \sqrt{\frac{2h}{g + a}} \]
+      </div>
+      <p data-en-html="In free fall \(g + a = 0\): the ball floats in front of you until the brake starts.">自由落體時 \(g + a = 0\)：小球浮在你面前，直到開始煞車才落下。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Ride from 1F to 10F</strong> and watch the bands on the graphs: overweight while speeding up, normal while cruising, underweight while slowing down. Then ride back down: the order is reversed."><strong>從 1F 搭到 10F</strong>，看圖表的底色：加速時超重、等速時正常、減速時失重。再搭回 1F：順序剛好相反。</li>
+        <li data-en-html="<strong>Velocity does not matter</strong>: set \(V = 6\ \mathrm{m/s}\) and \(A = 1\ \mathrm{m/s^2}\). While the elevator cruises at 6 m/s the reading is exactly your mass in kgw."><strong>速度不影響讀數</strong>：設 \(V = 6\ \mathrm{m/s}\)、\(A = 1\ \mathrm{m/s^2}\)。電梯以 6 m/s 等速前進時，讀數剛好等於你的質量的公斤重數。</li>
+        <li data-en-html="<strong>Same reading, opposite motion</strong>: speeding up on the way up and slowing down on the way down give the same reading — both have an upward acceleration."><strong>運動相反，讀數相同</strong>：加速上升與減速下降的讀數一樣，因為加速度都向上。</li>
+        <li data-en-html="<strong>Find the acceleration from the reading</strong>: \(a = g\,(\text{reading}/m - 1)\). Try it on the mystery elevator."><strong>由讀數算加速度</strong>：\(a = g\,(\text{讀數}/m - 1)\)。到「神秘電梯」試試看。</li>
+        <li data-en-html="<strong>Cut the cable</strong>: the reading, the spring scale and the stretch all drop to zero together, and the dial needle swings to 0. Drop the ball during the fall — it floats."><strong>剪斷纜繩</strong>：體重計、彈簧秤讀數與彈簧伸長量同時變成 0，指針指向 0。在落下途中放開小球——它會浮在空中。</li>
+        <li data-en-html="<strong>Cut the cable while the elevator is going up</strong>: it keeps rising for a moment, yet the reading is already 0. Weightlessness means \(a = -g\), not “moving down”."><strong>在電梯上升途中剪斷纜繩</strong>：電梯還會再往上衝一小段，但讀數已經是 0。完全失重代表 \(a = -g\)，不是「往下運動」。</li>
+        <li data-en-html="<strong>Third law</strong>: on the free-body diagram the blue arrows \(N\) (on you) and \(N'\) (on the scale) are always the same length; the red \(mg\) arrow matches \(N\) only when \(a = 0\)."><strong>第三定律</strong>：受力圖中藍色的 \(N\)（作用在人）與 \(N'\)（作用在秤）永遠一樣長；紅色的 \(mg\) 只有在 \(a = 0\) 時才和 \(N\) 一樣長。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The motion is made of pieces of constant acceleration (speeding up, cruising, slowing down, free fall, braking). Each piece is calculated exactly with \(y = y_0 + v_0 t + \tfrac12 a t^2\) and \(v = v_0 + a t\), so there is no accumulated numerical error, and the graphs are drawn from the same exact formulas.">運動由一段一段的等加速度運動組成（加速、等速、減速、自由落體、煞車），每一段都用 \(y = y_0 + v_0 t + \tfrac12 a t^2\)、\(v = v_0 + a t\) 精確計算，沒有累積的數值誤差；圖表也直接由這些公式畫出。</li>
+        <li data-en="The person and the hanging mass move together with the elevator (at rest relative to it), so the scale and the spring scale respond instantly. A real scale needle and spring would wobble briefly when the acceleration changes suddenly.">人與吊掛物體隨電梯一起運動（相對電梯靜止），所以體重計與彈簧秤立即反映；真實的指針與彈簧在加速度突然改變時會短暫晃動。</li>
+        <li data-en="The ball moves under gravity alone once it is let go. Its height above the floor is a quadratic in time during each piece of the elevator’s motion, and the landing time is solved exactly piece by piece.">小球放開後只受重力。在電梯的每一段運動中，小球離地板的高度是時間的二次式，逐段精確解出落地時刻。</li>
+        <li data-en="g = 9.8 m/s², each floor is 3.0 m high (1F at y = 0, 10F at y = 27 m). Air resistance and the masses of the cable and the brake are ignored. Real elevators also smooth out the jerks at the start and end of each phase; here the acceleration changes in steps, as in textbook problems.">g = 9.8 m/s²，每層樓高 3.0 m（1F 在 y = 0、10F 在 y = 27 m）。不計空氣阻力與纜繩質量。真實的電梯會讓加速度平順地變化，這裡和課本題目一樣，加速度是一段一段的定值。</li>
+        <li data-en="The animation runs in real time (or at 0.25× in slow motion); the clock in the readings is the physical time.">動畫以真實時間播放（慢動作時為 0.25 倍）；讀數中的時間是物理時間。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111259"></script>
+  <script src="js/elevator-core.js?v=202611111259"></script>
+  <script src="js/sound.js?v=202611111259"></script>
+  <script src="js/numinput.js?v=202611111259"></script>
+  <script src="js/elevator.js?v=202611111259"></script>
+  <script src="js/firebase-config.js?v=202611111259"></script>
+  <script src="js/missions.js?v=202611111259" data-module="elevator"></script>
+  <script src="js/missions/elevator.js?v=202611111259"></script>
+  <script src="js/stats.js?v=202611111259" data-module="elevator"></script>
+  <script src="js/comments.js?v=202611111259"></script>
+</body>
+</html>
