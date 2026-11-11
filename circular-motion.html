@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111014"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Uniform Circular Motion | Astro Ni Physics Lab">等速圓周運動｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整半徑、週期（或速率）與質量，觀察等速圓周運動的速度與向心加速度向量、x 與 y 投影的簡諧運動，並剪斷繩子看物體沿切線飛出。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111014">
+  <style>
+    /* 等速圓周運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定（圓＋右側 y(t)＋下方 x(t)）；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: auto; cursor: default; }
+    .cm button { min-height: 44px; }
+    .cm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cm .playbar .grow { flex: 1 1 auto; }
+    .cm .playbar button { flex: 1 1 auto; }
+    .cm .playbar #cut { font-weight: 600; }
+    .cm .playbar #cut.cut-on { color: var(--pos); border-color: var(--pos); }
+    .cm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cm .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .cm .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .cm .stage .status { margin: 6px 4px 0; }
+    .cm .slider input[type="range"] { height: 28px; margin: 0; }
+    .cm .slider label sub, dl.readout sub { font-size: .75em; }
+    .cm [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .cm .checks label { min-height: 36px; }
+    .cm .checks input { width: 17px; height: 17px; }
+    .cm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Circular motion"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 圓周運動</nav>
+      <h1 data-en="Uniform Circular Motion">等速圓周運動</h1>
+      <p data-en="A ball tied to a string moves around a circle on a smooth horizontal table (seen from above). Change the radius, period or speed and mass, watch the velocity and centripetal acceleration vectors, see the x and y projections trace out cosine and sine curves, and cut the string to see where the ball goes.">細繩拉著小球在光滑水平桌面上繞圓心轉動（俯視圖）。調整半徑、週期或速率與質量，觀察速度與向心加速度向量、x 與 y 投影畫出的餘弦與正弦曲線，再剪斷繩子，看看小球往哪裡飛。</p>
+    </header>
+
+    <div class="lab cm">
+      <div class="stage">
+        <canvas id="cv" aria-label="等速圓周運動模擬畫布：俯視圖的圓周運動、速度與向心加速度向量，右側為 y 對時間的圖，下方為 x 對時間的圖" data-en-aria-label="Uniform circular motion simulation: top view of the motion with velocity and centripetal acceleration vectors, a y–t graph on the right and an x–t graph below"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="cut" type="button" data-en="Cut the string">剪斷繩子</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除軌跡、圖表與飛出的路徑，滑桿設定不變" data-en-title="Clear the trail, graphs and released path; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Circular path"><i class="dash"></i>圓周軌道</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v (tangent)"><i style="background:var(--pos)"></i>速度 v（切線方向）</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Centripetal acceleration a"><i style="background:var(--neg)"></i>向心加速度 a</span>
+          <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Net force F"><i style="background:var(--b-mech)"></i>合力（向心力）F</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>x projection"><i class="dot" style="background:var(--equi)"></i>x 投影</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-optics)&quot;></i>y projection"><i class="dot" style="background:var(--b-optics)"></i>y 投影</span>
+        </div>
+        <p class="hint" data-en-html="Top view; the ball moves anticlockwise and θ is measured from the +x axis. Arrows are drawn to a fixed scale on the grid: velocity 1 m/s → 0.3 m, acceleration 1 m/s<sup>2</sup> → 0.1 m, force 1 N → 0.2 m. An arrow too long to fit is cut short and marked “≈”.">俯視圖，小球逆時針轉動，θ 由 +x 軸量起。箭頭依固定比例畫在座標格上：速度每 1 m/s 畫 0.3 m、加速度每 1 m/s<sup>2</sup> 畫 0.1 m、力每 1 N 畫 0.2 m；太長畫不下的箭頭會截短並標「≈」。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Motion settings">運動條件</h2>
+          <div class="slider"><label for="r" data-en="Radius r">半徑 r</label><output id="ro"></output>
+            <input id="r" type="range" min="0.5" max="2" step="0.1" value="1.5" data-decimals="2"></div>
+          <p class="seg-label" id="holdLabel" data-en="When the radius changes, keep fixed:">改變半徑時保持不變的量：</p>
+          <div class="seg2" role="group" aria-labelledby="holdLabel">
+            <button type="button" id="holdT" aria-pressed="true" data-en="Period T">週期 T</button>
+            <button type="button" id="holdV" aria-pressed="false" data-en="Speed v">速率 v</button>
+          </div>
+          <div class="slider" id="boxT"><label for="T" data-en="Period T">週期 T</label><output id="To"></output>
+            <input id="T" type="range" min="1" max="8" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider" id="boxV" hidden><label for="v" data-en="Speed v">速率 v</label><output id="vo"></output>
+            <input id="v" type="range" min="1" max="8" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="m" data-en="Mass m">質量 m</label><output id="mo"></output>
+            <input id="m" type="range" min="0.1" max="2" step="0.1" value="0.5" data-decimals="2"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculated from the formulas">公式計算結果</h2>
+          <dl class="readout">
+            <dt data-en-html="Speed <span class=&quot;f&quot;>v = 2πr/T</span>">速率 <span class="f">v = 2πr/T</span></dt><dd id="dV">—</dd>
+            <dt id="dtT" data-en="Period T = 2πr/v">週期 T = 2πr/v</dt><dd id="dT">—</dd>
+            <dt data-en-html="Angular speed <span class=&quot;f&quot;>ω = 2π/T</span>">角速度 <span class="f">ω = 2π/T</span></dt><dd id="dW">—</dd>
+            <dt data-en-html="Frequency <span class=&quot;f&quot;>f = 1/T</span>">頻率 <span class="f">f = 1/T</span></dt><dd id="dF">—</dd>
+            <dt data-en-html="Centripetal acceleration <span class=&quot;f&quot;>a = v<sup>2</sup>/r</span>">向心加速度 <span class="f">a = v<sup>2</sup>/r</span></dt><dd id="dA">—</dd>
+            <dt data-en-html="Centripetal force <span class=&quot;f&quot;>F = mv<sup>2</sup>/r</span>">向心力 <span class="f">F = mv<sup>2</sup>/r</span></dt><dd id="dFc">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="rt">—</dd>
+            <dt data-en="Angle θ (from +x axis)">角位置 θ（由 +x 軸量起）</dt><dd id="rth">—</dd>
+            <dt data-en="Revolutions t/T">已轉圈數 t/T</dt><dd id="rn">—</dd>
+            <dt data-en="Position x">位置 x</dt><dd id="rx">—</dd>
+            <dt data-en="Position y">位置 y</dt><dd id="ry">—</dd>
+            <dt data-en="Speed |v|">速率 |v|</dt><dd id="rv">—</dd>
+            <dt data-en="Acceleration |a|">加速度 |a|</dt><dd id="ra">—</dd>
+            <dt data-en="Distance from centre">與圓心距離</dt><dd id="rd">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showV" type="checkbox" checked><span data-en="Velocity v">速度 v</span></label>
+            <label><input id="showA" type="checkbox" checked><span data-en="Acceleration a">加速度 a</span></label>
+            <label><input id="showF" type="checkbox"><span data-en="Net force F">合力 F</span></label>
+            <label><input id="showTrail" type="checkbox" checked><span data-en="Trail">軌跡</span></label>
+            <label><input id="showDots" type="checkbox" checked><span data-en="Equal-time markers">等時距標記</span></label>
+            <label><input id="showProj" type="checkbox" checked><span data-en="Projections">投影</span></label>
+          </div>
+          <p class="hint" data-en="The equal-time markers are placed every T/12. Equal spacing means constant speed — on the circle and after the string is cut.">等時距標記每隔 T/12 畫一個點；間距相等代表速率不變——在圓上如此，剪斷繩子後也是。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="In uniform circular motion the object goes round a circle of radius \(r\) at constant speed, taking a time \(T\) (the period) for each revolution. The angle swept per second is the angular speed \(\omega\):">等速圓周運動的物體以固定的速率繞半徑 \(r\) 的圓轉動，轉一圈的時間是週期 \(T\)。每秒掃過的角度稱為角速度 \(\omega\)：</p>
+      <div class="formula">
+        \[ \theta = \omega t, \qquad \omega = \frac{2\pi}{T} = 2\pi f, \qquad v = \frac{2\pi r}{T} = r\omega \]
+      </div>
+      <p data-en-html="The <strong>speed</strong> is constant, but the <strong>direction</strong> of the velocity keeps changing — it is always along the tangent — so the velocity changes and there must be an acceleration. Write the position as a vector and differentiate:">速率固定，但速度的<strong>方向</strong>一直在改變（永遠沿著切線），所以速度在變、一定有加速度。把位置寫成向量再對時間微分：</p>
+      <div class="formula">
+        \[ \vec{r} = r(\cos\omega t,\ \sin\omega t), \qquad \vec{v} = r\omega(-\sin\omega t,\ \cos\omega t), \qquad \vec{a} = -\omega^{2} r(\cos\omega t,\ \sin\omega t) = -\omega^{2}\vec{r} \]
+      </div>
+      <p data-en-html="So the acceleration always points <strong>toward the centre</strong> (centripetal acceleration), is perpendicular to the velocity, and has constant magnitude:">所以加速度永遠<strong>指向圓心</strong>（向心加速度），與速度垂直，大小固定：</p>
+      <div class="formula">
+        \[ a = \frac{v^{2}}{r} = \omega^{2} r = \frac{4\pi^{2} r}{T^{2}} \]
+      </div>
+      <p data-en-html="By Newton’s second law the net force must also point toward the centre. This “centripetal force” is not a new kind of force; it is the name for the net force that keeps the object on the circle. Here the ball moves on a smooth horizontal table, gravity is balanced by the normal force, and the net force is the tension in the string:">由牛頓第二定律，合力也一定指向圓心。「向心力」不是一種新的力，而是讓物體維持圓周運動的合力的名稱。這裡小球在光滑水平桌面上，重力與正向力抵消，合力就是繩子的張力：</p>
+      <div class="formula">
+        \[ F_{\text{net}} = m a = \frac{m v^{2}}{r} = m\omega^{2} r \]
+      </div>
+      <p data-en-html="Since the force is always perpendicular to the velocity it does no work, so the kinetic energy \(\tfrac12 m v^2\) stays constant.">力永遠和速度垂直，不作功，所以動能 \(\tfrac12 m v^2\) 保持不變。</p>
+
+      <h3 data-en="Projections are simple harmonic motion">投影是簡諧運動</h3>
+      <p data-en-html="The shadows of the ball on the two axes move back and forth along straight lines. Their positions are a cosine and a sine of time, with amplitude \(r\) and the same period \(T\); each obeys the simple harmonic motion equation:">小球在兩個座標軸上的「影子」沿直線來回運動，位置是時間的餘弦與正弦函數，振幅為 \(r\)、週期同為 \(T\)，各自滿足簡諧運動的方程式：</p>
+      <div class="formula">
+        \[ x = r\cos\omega t, \qquad y = r\sin\omega t, \qquad a_x = -\omega^{2} x, \qquad a_y = -\omega^{2} y \]
+      </div>
+
+      <h3 data-en="Cutting the string">剪斷繩子</h3>
+      <p data-en-html="Once the string is cut the net force is zero. By Newton’s first law the ball keeps the velocity it had at that instant and moves in a straight line along the tangent at constant speed \(v\). It does <strong>not</strong> fly straight outward. Because the position at the cut is perpendicular to the velocity, its distance from the centre a time \(\tau\) later is">繩子一剪斷，合力為零。由牛頓第一定律，小球保持剪斷瞬間的速度，沿切線以等速 \(v\) 做直線運動，<strong>不會</strong>沿半徑向外飛。剪斷瞬間位置與速度垂直，所以經過時間 \(\tau\) 後與圓心的距離為</p>
+      <div class="formula">
+        \[ d = \sqrt{r^{2} + v^{2}\tau^{2}} \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Double the speed, four times the acceleration</strong>: choose “keep fixed: speed v”, set \(r = 1\ \mathrm{m}\) and \(v = 2\ \mathrm{m/s}\) (so \(a = 4\ \mathrm{m/s^2}\)), then change to \(v = 4\ \mathrm{m/s}\). The acceleration becomes \(16\ \mathrm{m/s^2}\) and the blue arrow four times as long, because \(a = v^2/r\)."><strong>速率加倍，加速度變 4 倍</strong>：選「保持不變：速率 v」，設 \(r = 1\ \mathrm{m}\)、\(v = 2\ \mathrm{m/s}\)（\(a = 4\ \mathrm{m/s^2}\)），再改成 \(v = 4\ \mathrm{m/s}\)：加速度變成 \(16\ \mathrm{m/s^2}\)，藍色箭頭變 4 倍長，因為 \(a = v^2/r\)。</li>
+        <li data-en-html="<strong>Same period: \(a \propto r\)</strong>: choose “keep fixed: period T” with \(T = 2\ \mathrm{s}\) and try \(r = 0.5,\ 1,\ 2\ \mathrm{m}\). The speed and the acceleration both double each time, because \(v = 2\pi r/T\) and \(a = 4\pi^2 r/T^2\)."><strong>週期相同時 \(a \propto r\)</strong>：選「保持不變：週期 T」，\(T = 2\ \mathrm{s}\)，依序試 \(r = 0.5\)、\(1\)、\(2\ \mathrm{m}\)：速率與加速度每次都加倍，因為 \(v = 2\pi r/T\)、\(a = 4\pi^2 r/T^2\)。</li>
+        <li data-en-html="<strong>Same speed: \(a \propto 1/r\)</strong>: keep \(v\) fixed and halve the radius — the acceleration doubles. (A car taking a tighter bend at the same speed needs more friction.)"><strong>速率相同時 \(a \propto 1/r\)</strong>：固定 \(v\)、把半徑減半，加速度加倍（汽車用同樣速率過更急的彎，需要更大的摩擦力）。</li>
+        <li data-en-html="<strong>Cut the string at different angles</strong>: the ball always leaves along the tangent, in the direction of the red velocity arrow, and the equal-time markers stay equally spaced — constant velocity, as Newton’s first law says."><strong>在不同角度剪斷繩子</strong>：小球永遠沿切線、順著紅色速度箭頭的方向飛出；等時距標記的間距保持相等——等速度運動，正是牛頓第一定律。</li>
+        <li data-en-html="<strong>Projections are SHM</strong>: the \(x\)–\(t\) graph is a cosine and the \(y\)–\(t\) graph a sine, with amplitude \(r\) and period \(T\); \(y\) lags \(x\) by a quarter period. After the string is cut, both graphs turn into straight lines."><strong>投影是簡諧運動</strong>：\(x\)–\(t\) 圖是餘弦、\(y\)–\(t\) 圖是正弦，振幅 \(r\)、週期 \(T\)，\(y\) 比 \(x\) 慢四分之一週期。剪斷繩子後，兩張圖都變成直線。</li>
+        <li data-en-html="<strong>Mass changes the force, not the motion</strong>: change \(m\) — the motion and the acceleration stay the same, but the required centripetal force \(F = ma\) changes in proportion to \(m\) (turn on “Net force F”)."><strong>質量只影響力，不影響運動</strong>：改變 \(m\)，運動與加速度都不變，但需要的向心力 \(F = ma\) 與 \(m\) 成正比（打開「合力 F」比較）。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Every position, velocity and acceleration is calculated directly from the exact formulas above (analytical solution), so there is no accumulated numerical error however long it runs.">位置、速度與加速度全部直接由上面的公式計算（解析解），不論跑多久都沒有累積的數值誤差。</li>
+        <li data-en-html="After the string is cut, the motion is \(\vec{r}(t) = \vec{r}_{c} + \vec{v}_{c}\,(t - t_{c})\), where \(\vec{r}_{c}\) and \(\vec{v}_{c}\) are the position and velocity at the moment \(t_{c}\) of the cut.">剪斷後的運動是 \(\vec{r}(t) = \vec{r}_{c} + \vec{v}_{c}\,(t - t_{c})\)，其中 \(\vec{r}_{c}\)、\(\vec{v}_{c}\) 是剪斷瞬間 \(t_{c}\) 的位置與速度。</li>
+        <li data-en="The animation runs in real time (or at 0.25× in slow motion). Changing a setting while it runs keeps the ball’s current angle and restarts the clock from t = 0.">動畫以真實時間播放（慢動作時為 0.25 倍）。播放中改變條件時，小球保持目前的角位置，時間從 t = 0 重新計算。</li>
+        <li data-en="The ball is treated as a point mass; its size on screen is only for visibility. The string is massless and the table frictionless.">小球視為質點，畫面上的大小只是為了看得清楚；繩子質量不計，桌面無摩擦。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111014"></script>
+  <script src="js/circular-motion-core.js?v=202611111014"></script>
+  <script src="js/sound.js?v=202611111014"></script>
+  <script src="js/numinput.js?v=202611111014"></script>
+  <script src="js/circular-motion.js?v=202611111014"></script>
+  <script src="js/firebase-config.js?v=202611111014"></script>
+  <script src="js/stats.js?v=202611111014" data-module="circular-motion"></script>
+  <script src="js/comments.js?v=202611111014"></script>
+</body>
+</html>
