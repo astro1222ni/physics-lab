@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110810"></script>
+  <script src="js/settings.js?v=202611111010"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Projectile Motion | Astro Ni Physics Lab">拋體運動｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整初速、仰角、發射高度與重力加速度，觀察拋體軌跡、速度分量、射程與最大高度，並開啟空氣阻力和理想拋物線比較。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110810">
+  <link rel="stylesheet" href="lab.css?v=202611111010">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
@@ -62,6 +62,7 @@
         <div class="bar">
           <button id="run" class="primary" data-en="Launch">發射</button>
           <button id="reset" data-en="Reset">重設</button>
+          <button id="clearAll" type="button" data-en="Clear all">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="speed" for="speed"><span data-en="Playback speed">播放速度</span>
             <input id="speed" type="range" min="0" max="6" step="1" value="3">
@@ -83,13 +84,13 @@
         <section class="card">
           <h2 data-en="Launch conditions">發射條件</h2>
           <div class="slider"><label for="v0" data-en-html="Launch speed v<sub>0</sub>">初速 v<sub>0</sub></label><output id="v0o"></output>
-            <input id="v0" type="range" min="1" max="50" step="0.5" value="20"></div>
+            <input id="v0" type="range" min="1" max="50" step="0.5" value="20" data-decimals="2"></div>
           <div class="slider"><label for="theta" data-en="Launch angle θ">仰角 θ</label><output id="thetao"></output>
-            <input id="theta" type="range" min="0" max="90" step="1" value="45"></div>
+            <input id="theta" type="range" min="0" max="90" step="1" value="45" data-decimals="1"></div>
           <div class="slider"><label for="h0" data-en-html="Launch height h<sub>0</sub>">發射高度 h<sub>0</sub></label><output id="h0o"></output>
-            <input id="h0" type="range" min="0" max="50" step="0.5" value="0"></div>
+            <input id="h0" type="range" min="0" max="50" step="0.5" value="0" data-decimals="2"></div>
           <div class="slider"><label for="g" data-en="Gravitational acceleration g">重力加速度 g</label><output id="go"></output>
-            <input id="g" type="range" min="1" max="25" step="0.01" value="9.8"></div>
+            <input id="g" type="range" min="1" max="25" step="0.01" value="9.8" data-decimals="2"></div>
           <div class="presets" role="group" aria-label="重力加速度預設值" data-en-aria-label="Gravity presets">
             <button data-g="9.8" data-en-html="Earth<small>9.8</small>">地球<small>9.8</small></button>
             <button data-g="1.62" data-en-html="Moon<small>1.62</small>">月球<small>1.62</small></button>
@@ -203,12 +204,13 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110810"></script>
-  <script src="js/projectile-core.js?v=202611110810"></script>
-  <script src="js/sound.js?v=202611110810"></script>
-  <script src="js/projectile.js?v=202611110810"></script>
-  <script src="js/firebase-config.js?v=202611110810"></script>
-  <script src="js/stats.js?v=202611110810" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611110810"></script>
+  <script src="js/math.js?v=202611111010"></script>
+  <script src="js/projectile-core.js?v=202611111010"></script>
+  <script src="js/sound.js?v=202611111010"></script>
+  <script src="js/numinput.js?v=202611111010"></script>
+  <script src="js/projectile.js?v=202611111010"></script>
+  <script src="js/firebase-config.js?v=202611111010"></script>
+  <script src="js/stats.js?v=202611111010" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611111010"></script>
 </body>
 </html>

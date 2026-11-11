@@ -148,7 +148,7 @@
           const set = setValue(range, v);
           const p = Math.pow(10, inf.decimals);
           if (Math.round(v * p) / p !== set) {
-            hint(out, T('範圍 ', 'Range ') + show(inf.min, inf.decimals) + ' ～ ' + show(inf.max, inf.decimals));
+            hint(out, T('範圍 ', 'Range ') + show(inf.min, inf.decimals) + T(' ～ ', ' to ') + show(inf.max, inf.decimals));
           }
         } else if (inp.value.trim() !== '') {
           hint(out, T('請輸入數字', 'Please enter a number'));
@@ -175,7 +175,7 @@
     out.setAttribute('role', 'button');
     const label = function () {
       const lab = range.id && document.querySelector('label[for="' + range.id + '"]');
-      return T('點擊輸入數值', 'Click to type a value') + (lab ? '：' + lab.textContent.trim() : '');
+      return T('點擊輸入數值', 'Click to type a value') + (lab ? T('：', ': ') + lab.textContent.trim() : '');
     };
     out.setAttribute('title', label());
     out.addEventListener('click', function () { edit(range, out); });
