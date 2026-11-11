@@ -268,4 +268,123 @@ test('離開畫面時回傳 out，並記錄軌跡點', () => {
   }
 });
 
+// ---------- 三維：速度與磁場夾角 θ → 螺旋運動 ----------
+/** 以夾角 θ（度）發射：v⊥ 沿 +x、v∥ 沿 +z（B 沿 z 軸） */
+function pitched(v, deg, o) {
+  const c = MC.pitchComponents(v, deg);
+  return particle(Object.assign({ x: 0, y: 0, z: 0, vx: c.perp, vy: 0, vz: c.par }, o));
+}
+
+test('夾角分量：v⊥ = v sinθ、v∥ = v cosθ（90°、0°、180° 精確）', () => {
+  const v = 3e5;
+  let c = MC.pitchComponents(v, 90);
+  assert.strictEqual(c.perp, v); assert.strictEqual(c.par, 0);
+  c = MC.pitchComponents(v, 0);
+  assert.strictEqual(c.perp, 0); assert.strictEqual(c.par, v);
+  c = MC.pitchComponents(v, 180);
+  assert.strictEqual(c.perp, 0); assert.strictEqual(c.par, -v);
+  for (const d of [15, 30, 60, 120, 155]) {
+    c = MC.pitchComponents(v, d);
+    close(c.perp, v * Math.sin(d * Math.PI / 180), 1e-14);
+    close(c.par, v * Math.cos(d * Math.PI / 180), 1e-14);
+  }
+  const h = MC.helix(4 * u, 2 * e, v, 0.1, 60);
+  close(h.r, 4 * u * v * Math.sin(Math.PI / 3) / (2 * e * 0.1), 1e-14, 'r = mv⊥/(|q|B)');
+  close(h.T, 2 * Math.PI * 4 * u / (2 * e * 0.1), 1e-14, 'T');
+  close(h.pitch, 2 * Math.PI * 4 * u * v * 0.5 / (2 * e * 0.1), 1e-14, 'p = 2πm v∥/(|q|B)');
+  assert.strictEqual(MC.helix(4 * u, 2 * e, v, 0.1, 90).pitch, 0);
+  assert.ok(MC.helix(4 * u, 2 * e, v, 0.1, 120).pitch < 0, 'θ > 90°：沿 −z 前進');
+  assert.strictEqual(MC.helix(4 * u, 0, v, 0.1, 60).pitch, Infinity, 'q = 0：不轉，螺距無限大');
+});
+
+test('螺旋線：投影半徑 = mv⊥/(|q|B)，每個週期沿 B 前進一個螺距 v∥T', () => {
+  for (const [deg, q, B] of [[60, 2 * e, 0.1], [30, -e, 0.05], [135, 2 * e, -0.08]]) {
+    const v = 3e5, m = 4 * u;
+    const f = { Bz: B };
+    const p = pitched(v, deg, { q: q, m: m });
+    const h = MC.helix(m, q, v, B, deg);
+    const c = MC.center(p, f);
+    close(c.r, Math.abs(h.r), 1e-12, 'center().r');
+    const pts = run(p, f, 3 * h.T, h.T / 400);
+    let xmin = Infinity, xmax = -Infinity;
+    for (const s of pts) {
+      close(Math.hypot(s.x - c.x, s.y - c.y), Math.abs(h.r), 1e-9, '投影到 xy 平面到軸的距離');
+      xmin = Math.min(xmin, s.x); xmax = Math.max(xmax, s.x);
+    }
+    close((xmax - xmin) / 2, Math.abs(h.r), 1e-4, '投影直徑 / 2');
+    // 3 個週期後回到同一個 (x, y)（Boris 法的相位誤差約 (ωΔt)²/12），z 前進 3 個螺距
+    near(p.x, 0, 1e-3 * Math.abs(h.r), '回到同一 x'); near(p.y, 0, 1e-3 * Math.abs(h.r), '回到同一 y');
+    close(p.z, 3 * h.pitch, 1e-9, 'z = 3p');
+    close(p.turn, -Math.sign(q * B) * 3 * 2 * Math.PI, 1e-6, '轉了 3 圈');
+  }
+});
+
+test('螺旋線：v∥ 保持不變、速率（動能）守恆', () => {
+  const f = { Bz: 0.1 };
+  const p = pitched(3e5, 50, { vy: 1.1e5 });
+  const vz0 = p.vz, v0 = MC.speed(p), K0 = MC.kinetic(p);
+  close(v0, Math.hypot(3e5 * Math.sin(50 * Math.PI / 180), 1.1e5, 3e5 * Math.cos(50 * Math.PI / 180)), 1e-15, 'speed()');
+  close(K0, 0.5 * p.m * v0 * v0, 1e-14, 'kinetic() 含 vz');
+  const T = MC.period(p.m, p.q, 0.1);
+  MC.advance(p, f, 150 * T, { maxAngle: 0.2, maxStep: 1 });
+  assert.strictEqual(p.vz, vz0, 'v∥ 精確不變');
+  close(MC.speed(p), v0, 1e-10, '速率');
+  close(MC.kinetic(p), K0, 1e-10, '動能');
+  close(p.z, vz0 * p.t, 1e-12, 'z = v∥ t（等速）');
+  const F = MC.forces(p, f);
+  near(F.bx * p.vx + F.by * p.vy + F.bz * p.vz, 0, 1e-12 * Math.hypot(F.bx, F.by) * v0, '磁力垂直於速度');
+  assert.strictEqual(F.bz, 0, '磁力垂直於 B');
+  close(Math.hypot(F.bx, F.by), Math.abs(p.q) * Math.hypot(p.vx, p.vy) * 0.1, 1e-12, '|F| = |q|v⊥B');
+});
+
+test('θ = 90° 與原本的平面運動完全相同', () => {
+  for (const f of [{ Bz: 0.1 }, { Bz: -0.07, Ex: 3e3, Ey: -1e4 }, { Bz: 0.1, region: { xMin: 0.02 } }]) {
+    const c = MC.pitchComponents(2.5e5, 90);
+    const a = particle({ vx: c.perp * Math.cos(0.7), vy: c.perp * Math.sin(0.7) });           // 舊版：沒有 z
+    const b = particle({ vx: c.perp * Math.cos(0.7), vy: c.perp * Math.sin(0.7), z: 0, vz: c.par });
+    const ta = [], tb = [];
+    MC.advance(a, f, 2e-6, { trail: ta, trailSpacing: 1e-3 });
+    MC.advance(b, f, 2e-6, { trail: tb, trailSpacing: 1e-3 });
+    for (const k of ['x', 'y', 'vx', 'vy', 't', 'turn', 'tField']) assert.strictEqual(b[k], a[k], k);
+    assert.strictEqual(b.z, 0); assert.strictEqual(b.vz, 0);
+    assert.strictEqual(tb.length, ta.length, '軌跡點數');
+  }
+});
+
+test('θ = 0° 或 180°：沿 B 等速直線前進（不受磁力）', () => {
+  for (const deg of [0, 180]) {
+    const f = { Bz: 0.1 };
+    const p = pitched(3e5, deg);
+    assert.strictEqual(MC.center(p, f).r, 0, '半徑為 0');
+    const F = MC.forces(p, f);
+    assert.ok(F.bx === 0 && F.by === 0 && F.bz === 0, '磁力為零');
+    MC.advance(p, f, 1e-6);
+    assert.strictEqual(p.x, 0); assert.strictEqual(p.y, 0);
+    close(p.z, (deg === 0 ? 1 : -1) * 0.3, 1e-12, 'z = ±v t');
+    assert.strictEqual(p.vz, deg === 0 ? 3e5 : -3e5);
+  }
+});
+
+test('螺旋線的旋轉方向與平面時相同：B 射出紙面時正電荷順時針（從 +z 往下看）', () => {
+  for (const deg of [30, 90, 150]) {
+    const f = { Bz: 0.1 };
+    const p = pitched(3e5, deg);
+    const c = MC.center(p, f);
+    assert.ok(c.y < 0, '軸線在出發點下方');
+    MC.advance(p, f, MC.period(p.m, p.q, 0.1) / 8);
+    assert.ok(p.y < 0 && p.turn < 0, `θ=${deg}°：正電荷應順時針`);
+    assert.ok((p.x - c.x) * p.vy - (p.y - c.y) * p.vx < 0, '角動量 z 分量為負');
+    const n = pitched(3e5, deg, { q: -2 * e });
+    MC.advance(n, f, MC.period(n.m, n.q, 0.1) / 8);
+    assert.ok(n.y > 0 && n.turn > 0, `θ=${deg}°：負電荷應逆時針`);
+  }
+});
+
+test('三維範圍：沿 z 超出 bounds 時回傳 axis = z', () => {
+  const p = pitched(3e5, 45);
+  const stop = MC.advance(p, { Bz: 0.1 }, 1e-5, { bounds: { x0: -1, x1: 1, y0: -1, y1: 1, z0: -0.1, z1: 0.1 } });
+  assert.ok(stop && stop.reason === 'out' && stop.axis === 'z');
+  assert.ok(p.z > 0.1 && p.z < 0.1 + 1e-3);
+});
+
 console.log(`\n${passed} 項通過`);

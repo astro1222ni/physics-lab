@@ -452,4 +452,4 @@ html.lab-converting body { visibility: hidden; }
 .c-acts { display: flex; gap: 10px; align-items: center; margin-top: 6px; }
 .c-done { font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
 .c-empty { color: var(--muted); }
-.lab-account-menu[hidden], .lab-settings[hidden] { display: none; }
+.lab-account[hidden], .lab-account-menu[hidden], .lab-settings[hidden] { display: none; }

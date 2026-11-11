@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110728"></script>
+  <script src="js/settings.js?v=202611110810"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>帶電粒子在磁場中運動｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：調整電荷、質量、速度與磁場，觀察帶電粒子的圓周運動、半徑與週期、勞侖茲力，以及速度選擇器與 E×B 漂移。">
+  <title data-en="Charged Particles in a Magnetic Field | Astro Ni Physics Lab">帶電粒子在磁場中運動｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整電荷、質量、速度與磁場，觀察帶電粒子的圓周運動與螺旋運動、半徑、週期與螺距、勞侖茲力，以及速度選擇器與 E×B 漂移；可切換 3D 立體檢視。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110728">
+  <link rel="stylesheet" href="lab.css?v=202611110810">
   <style>
     /* 圖例中的磁場符號（用 CSS 畫，不依賴字型） */
     .legend .sym { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; position: relative; }
@@ -18,171 +18,241 @@
     .legend .sym.in::after { transform: rotate(-45deg); }
     .legend .dash { background: none !important; border-top: 2px dashed var(--muted); height: 0 !important; }
     .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .legend .bline { position: relative; background: var(--muted) !important; height: 2px !important; }
+    .legend .bline::after { content: ""; position: absolute; right: -2px; top: -4px; border: 5px solid transparent; border-left: 7px solid var(--muted); border-right: 0; }
     .mp-help { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .mp-help strong { color: var(--text); font-weight: 600; }
     .panel .btns button { min-height: 40px; }
+    /* 喇叭按鈕（與一維碰撞模組相同外觀） */
+    .panel .btns .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); min-height: 44px; }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
     .checks label { min-height: 32px; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
     dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
     dl.readout .hide { display: none; }
     .readout-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-bar #resetCam { min-height: 44px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      cursor: grab; aspect-ratio: 4 / 3;
+      /* 3D 背景：極淡的徑向暈影（中心亮、四角略暗），隨深淺色自動變化 */
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .proj-note { font-size: calc(13px * var(--fs, 1)); margin: 8px 4px 0; padding: 6px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--text); }
   </style>
 </head>
-<body>
+<body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電流的磁效應</nav>
-      <h1>帶電粒子在磁場中運動</h1>
-      <p>調整電荷、質量、速度與磁場，按「發射」觀察粒子的圓周運動；再加上電場，做出速度選擇器與 E×B 漂移。點擊或拖曳畫布可改變出發點。</p>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / Magnetic effects of currents"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電流的磁效應</nav>
+      <h1 data-en="Charged Particles in a Magnetic Field">帶電粒子在磁場中運動</h1>
+      <p data-en="Set the charge, mass, speed and magnetic field, then press “Launch” to watch the particle move in a circle — or, when v is not perpendicular to B, in a helix (switch to the 3D view). Add an electric field to build a velocity selector and see E×B drift. Click or drag on the 2D canvas to move the starting point.">調整電荷、質量、速度與磁場，按「發射」觀察粒子的圓周運動；速度與磁場不垂直時則是螺旋運動（可切換 3D 檢視）。再加上電場，做出速度選擇器與 E×B 漂移。點擊或拖曳 2D 畫布可改變出發點。</p>
     </header>
 
     <div class="lab">
-      <div class="stage">
-        <canvas id="cv" aria-label="帶電粒子在磁場中運動的模擬畫布"></canvas>
-        <div class="legend">
-          <span><i class="sym out"></i>B 射出紙面</span>
-          <span><i class="sym in"></i>B 射入紙面</span>
-          <span><i class="dot" style="background:var(--pos)"></i>正電荷</span>
-          <span><i class="dot" style="background:var(--neg)"></i>負電荷</span>
-          <span><i style="background:var(--probe)"></i>速度 v</span>
-          <span><i style="background:var(--equi)"></i>磁力 F（勞侖茲力）</span>
-          <span><i style="background:var(--field)"></i>電場 E、電力 qE</span>
-          <span><i class="dash"></i>圓軌道與圓心</span>
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
-        <p class="hint">時間以慢動作播放；畫面寬 24 cm。</p>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="帶電粒子在磁場中運動的模擬畫布" data-en-aria-label="Simulation canvas: charged particle in a magnetic field"></canvas>
+        <div id="view3"></div>
+        <p class="proj-note" id="projNote" hidden data-en="θ ≠ 90°: the 2D view shows the projection of the motion onto the plane perpendicular to B (the page), so the helix looks like a circle. The particle is also moving along B (the z axis) — switch to the 3D view to see the full helix.">θ ≠ 90°：2D 畫面是運動在垂直於 B 的平面（紙面）上的投影，所以螺旋線看起來是圓；粒子同時沿 B（z 軸）前進，切換到 3D 檢視可看到完整的螺旋線。</p>
+        <div class="legend">
+          <span class="l2"><i class="sym out"></i><span data-en="B out of the page">B 射出紙面</span></span>
+          <span class="l2"><i class="sym in"></i><span data-en="B into the page">B 射入紙面</span></span>
+          <span class="l3"><i class="bline"></i><span data-en="B field lines (along the z axis)">磁場 B（沿 z 軸）</span></span>
+          <span><i class="dot" style="background:var(--pos)"></i><span data-en="Positive charge">正電荷</span></span>
+          <span><i class="dot" style="background:var(--neg)"></i><span data-en="Negative charge">負電荷</span></span>
+          <span><i style="background:var(--probe)"></i><span data-en="Velocity v">速度 v</span></span>
+          <span><i style="background:var(--equi)"></i><span data-en="Magnetic force F (Lorentz force)">磁力 F（勞侖茲力）</span></span>
+          <span><i style="background:var(--field)"></i><span data-en="Electric field E, electric force qE">電場 E、電力 qE</span></span>
+          <span class="l2"><i class="dash"></i><span data-en="Circular orbit and center">圓軌道與圓心</span></span>
+          <span class="l3"><i class="dash"></i><span data-en="Gyration circle and helix axis">迴旋圓與螺旋軸</span></span>
+        </div>
+        <p class="hint l2" data-en="Time runs in slow motion; the view is 24 cm wide.">時間以慢動作播放；畫面寬 24 cm。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Floor grid: 2 cm; z-axis ticks in cm.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移；底面格線間距 2 cm，z 軸刻度以 cm 標示。</p>
       </div>
 
       <aside class="panel">
         <section class="card">
-          <h2>情境</h2>
+          <h2 data-en="Scenarios">情境</h2>
           <div class="btns">
-            <button data-preset="circle">等速圓周運動</button>
-            <button data-preset="region">射入磁場區</button>
-            <button data-preset="selector">速度選擇器</button>
-            <button data-preset="drift">E×B 漂移</button>
+            <button data-preset="circle" data-en="Uniform circular motion">等速圓周運動</button>
+            <button data-preset="helix" data-en="Helical motion">螺旋運動</button>
+            <button data-preset="region" data-en="Entering a field region">射入磁場區</button>
+            <button data-preset="selector" data-en="Velocity selector">速度選擇器</button>
+            <button data-preset="drift" data-en="E×B drift">E×B 漂移</button>
           </div>
         </section>
 
         <section class="card">
-          <h2>動畫</h2>
+          <h2 data-en="Animation">動畫</h2>
           <div class="btns">
             <button id="run" class="primary">發射</button>
-            <button id="reset">回到起點</button>
+            <button id="reset" data-en="Back to start">回到起點</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
-          <div class="slider"><label for="speed">慢動作</label><output id="speedo"></output>
+          <div class="slider"><label for="speed" data-en="Slow motion">慢動作</label><output id="speedo"></output>
             <input id="speed" type="range" min="0" max="4" step="1" value="2"></div>
           <div class="checks">
-            <label><input id="showTrail" type="checkbox" checked>軌跡</label>
-            <label><input id="showVec" type="checkbox" checked>速度與力的向量</label>
-            <label><input id="showOrbit" type="checkbox" checked>圓軌道與圓心</label>
+            <label><input id="showTrail" type="checkbox" checked><span data-en="Trail">軌跡</span></label>
+            <label><input id="showVec" type="checkbox" checked><span data-en="Velocity and force vectors">速度與力的向量</span></label>
+            <label><input id="showOrbit" type="checkbox" checked><span data-en="Orbit circle and center">圓軌道與圓心</span></label>
           </div>
           <p class="status" id="status"></p>
         </section>
 
         <section class="card">
-          <h2>磁場（垂直紙面）</h2>
-          <div class="slider"><label for="B">磁場 B</label><output id="Bo"></output>
+          <h2 data-en="Magnetic field (along z, perpendicular to the page)">磁場（沿 z 軸，垂直紙面）</h2>
+          <div class="slider"><label for="B" data-en="Magnetic field B">磁場 B</label><output id="Bo"></output>
             <input id="B" type="range" min="-200" max="200" step="5" value="100"></div>
           <div class="checks">
-            <label><input id="region" type="checkbox">只有右半邊有場（場區）</label>
+            <label><input id="region" type="checkbox"><span data-en="Field only in the right half (field region)">只有右半邊有場（場區）</span></label>
           </div>
         </section>
 
         <section class="card">
-          <h2>帶電粒子</h2>
-          <div class="slider"><label for="q">電荷 q</label><output id="qo"></output>
+          <h2 data-en="Charged particle">帶電粒子</h2>
+          <div class="slider"><label for="q" data-en="Charge q">電荷 q</label><output id="qo"></output>
             <input id="q" type="range" min="-3" max="3" step="1" value="2"></div>
-          <div class="slider"><label for="m">質量 m</label><output id="mo"></output>
+          <div class="slider"><label for="m" data-en="Mass m">質量 m</label><output id="mo"></output>
             <input id="m" type="range" min="1" max="40" step="1" value="4"></div>
-          <div class="slider"><label for="v">發射速率 v</label><output id="vo"></output>
+          <div class="slider"><label for="v" data-en="Launch speed v">發射速率 v</label><output id="vo"></output>
             <input id="v" type="range" min="0" max="5" step="0.1" value="3"></div>
-          <div class="slider"><label for="ang">發射方向（由 +x 軸逆時針）</label><output id="ango"></output>
+          <div class="slider"><label for="theta" data-en="Angle θ between v and B">速度與磁場的夾角 θ</label><output id="thetao"></output>
+            <input id="theta" type="range" min="0" max="180" step="5" value="90"></div>
+          <div class="slider"><label for="ang" data-en="Launch direction in the page (counterclockwise from +x)">發射方向（在紙面內，由 +x 軸逆時針）</label><output id="ango"></output>
             <input id="ang" type="range" min="-180" max="180" step="5" value="0"></div>
-          <p class="mp-help">q 以基本電荷 e 為單位，m 以原子質量單位 u 為單位（質子約 1 u，α 粒子為 +2e、4 u）。</p>
+          <p class="mp-help" data-en="q is in units of the elementary charge e and m in atomic mass units u (a proton is about 1 u; an α particle is +2e, 4 u). θ = 90° means v ⊥ B (a circle in the page); any other angle gives a helix along B.">q 以基本電荷 e 為單位，m 以原子質量單位 u 為單位（質子約 1 u，α 粒子為 +2e、4 u）。θ = 90° 時速度垂直於 B（紙面上的圓），其他角度則沿 B 做螺旋運動。</p>
         </section>
 
         <section class="card">
-          <h2>電場（垂直於發射方向）</h2>
-          <div class="slider"><label for="E">電場 E</label><output id="Eo"></output>
+          <h2 data-en="Electric field (perpendicular to the launch direction)">電場（垂直於發射方向）</h2>
+          <div class="slider"><label for="E" data-en="Electric field E">電場 E</label><output id="Eo"></output>
             <input id="E" type="range" min="-100" max="100" step="0.5" value="0"></div>
-          <p class="mp-help">正值：E 指向「發射方向逆時針轉 90°」。<br><span id="selHint"></span></p>
+          <p class="mp-help"><span data-en="Positive: E points 90° counterclockwise from the launch direction (in the page).">正值：E 指向「發射方向逆時針轉 90°」（在紙面內）。</span><br><span id="selHint"></span></p>
         </section>
 
         <section class="card">
-          <h2>讀數</h2>
+          <h2 data-en="Readings">讀數</h2>
           <dl class="readout">
-            <dt>半徑 r = mv/(|q|B)</dt><dd id="rR">—</dd>
-            <dt>週期 T = 2πm/(|q|B)</dt><dd id="rT">—</dd>
-            <dt>磁力 |F| = |q|vB</dt><dd id="rF">—</dd>
-            <dt class="eRow">電力 |q|E</dt><dd class="eRow" id="rFe">—</dd>
-            <dt class="eRow">漂移速度 E/B</dt><dd class="eRow" id="rVd">—</dd>
-            <dt>目前速率 v</dt><dd id="rv">—</dd>
-            <dt>動能 K</dt><dd id="rK">—</dd>
-            <dt>經過時間 t</dt><dd id="rt">—</dd>
-            <dt>速度方向轉過</dt><dd id="rTurn">—</dd>
-            <dt class="regRow">在場區內的時間</dt><dd class="regRow" id="rTf">—</dd>
+            <dt data-en="Radius r = mv⊥/(|q|B)">半徑 r = mv⊥/(|q|B)</dt><dd id="rR">—</dd>
+            <dt data-en="Period T = 2πm/(|q|B)">週期 T = 2πm/(|q|B)</dt><dd id="rT">—</dd>
+            <dt data-en="v⊥ = v sinθ">垂直分量 v⊥ = v sinθ</dt><dd id="rVperp">—</dd>
+            <dt data-en="v∥ = v cosθ">平行分量 v∥ = v cosθ</dt><dd id="rVpar">—</dd>
+            <dt data-en="Pitch p = v∥T">螺距 p = v∥T</dt><dd id="rP">—</dd>
+            <dt data-en="Magnetic force |F| = |q|v⊥B">磁力 |F| = |q|v⊥B</dt><dd id="rF">—</dd>
+            <dt class="eRow" data-en="Electric force |q|E">電力 |q|E</dt><dd class="eRow" id="rFe">—</dd>
+            <dt class="eRow" data-en="Drift speed E/B">漂移速度 E/B</dt><dd class="eRow" id="rVd">—</dd>
+            <dt data-en="Current speed v">目前速率 v</dt><dd id="rv">—</dd>
+            <dt data-en="Kinetic energy K">動能 K</dt><dd id="rK">—</dd>
+            <dt class="zRow" data-en="Displacement along B, z">沿 B 的位移 z</dt><dd class="zRow" id="rz">—</dd>
+            <dt data-en="Elapsed time t">經過時間 t</dt><dd id="rt">—</dd>
+            <dt data-en="Velocity has turned">速度方向轉過</dt><dd id="rTurn">—</dd>
+            <dt class="regRow" data-en="Time in field region">在場區內的時間</dt><dd class="regRow" id="rTf">—</dd>
           </dl>
-          <p class="readout-note">r、T 依目前的滑桿設定計算；1 eV = 1.602 × 10<sup>−19</sup> J。</p>
+          <p class="readout-note" data-en-html="r, T and p are computed from the current slider settings; “turned” counts the rotation of v⊥ about B. 1 eV = 1.602 × 10&lt;sup&gt;−19&lt;/sup&gt; J.">r、T、p 依目前的滑桿設定計算；「轉過」指 v⊥ 繞 B 轉過的圈數。1 eV = 1.602 × 10<sup>−19</sup> J。</p>
         </section>
       </aside>
     </div>
 
     <section class="notes">
-      <h2>背後的物理</h2>
-      <p>帶電粒子在磁場中所受的磁力稱為<strong>勞侖茲力</strong>，方向由右手定則決定（負電荷相反）：</p>
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="The magnetic force on a moving charged particle is called the &lt;strong&gt;Lorentz force&lt;/strong&gt;. Its direction is given by the right-hand rule (reversed for a negative charge):">帶電粒子在磁場中所受的磁力稱為<strong>勞侖茲力</strong>，方向由右手定則決定（負電荷相反）：</p>
       <div class="formula">
         \[ \vec F = q\,\vec v \times \vec B \qquad F = |q|\,vB\sin\theta \]
       </div>
-      <p>本模擬的磁場垂直紙面、速度在紙面內（\(\theta = 90^\circ\)），所以磁力的大小固定為 \(|q|vB\)，方向永遠垂直於速度。磁力只改變速度的方向、不改變速率，因此<strong>磁力不做功，動能不變</strong>。這個「大小固定、永遠垂直於速度」的力，正好提供等速圓周運動的向心力：</p>
+      <p data-en-html="Here the magnetic field is perpendicular to the page. When the velocity lies in the page (\(\theta = 90^\circ\)), the force has constant magnitude \(|q|vB\) and is always perpendicular to the velocity. It changes only the direction of the velocity, not the speed, so &lt;strong&gt;the magnetic force does no work and the kinetic energy stays constant&lt;/strong&gt;. A force of constant size that is always perpendicular to the velocity is exactly what uniform circular motion needs as its centripetal force:">本模擬的磁場垂直紙面。速度在紙面內（\(\theta = 90^\circ\)）時，磁力的大小固定為 \(|q|vB\)，方向永遠垂直於速度。磁力只改變速度的方向、不改變速率，因此<strong>磁力不做功，動能不變</strong>。這個「大小固定、永遠垂直於速度」的力，正好提供等速圓周運動的向心力：</p>
       <div class="formula">
         \[ |q|vB = \frac{mv^{2}}{r} \quad\Longrightarrow\quad r = \frac{mv}{|q|B} \]
         \[ T = \frac{2\pi r}{v} = \frac{2\pi m}{|q|B} \qquad f = \frac{1}{T} = \frac{|q|B}{2\pi m} \]
       </div>
-      <p>週期 \(T\) 與速率 \(v\) 無關：跑得快的粒子圓也比較大，繞一圈所需時間恰好相同（迴旋加速器就是利用這個性質）。</p>
+      <p data-en-html="The period \(T\) does not depend on the speed \(v\): a faster particle moves on a bigger circle and takes exactly the same time to go round (the cyclotron relies on this).">週期 \(T\) 與速率 \(v\) 無關：跑得快的粒子圓也比較大，繞一圈所需時間恰好相同（迴旋加速器就是利用這個性質）。</p>
 
-      <h3>速度選擇器</h3>
-      <p>再加上一個與 \(\vec v\)、\(\vec B\) 都垂直的電場，讓電力 \(q\vec E\) 與磁力 \(q\vec v\times\vec B\) 方向相反。兩力大小相等時合力為零，粒子直線前進：</p>
+      <h3 data-en="Helical motion: v not perpendicular to B">螺旋運動：速度與磁場不垂直</h3>
+      <p data-en-html="If the velocity makes an angle \(\theta\) with \(\vec B\), split it into a component perpendicular to the field and one parallel to it:">如果速度與 \(\vec B\) 的夾角為 \(\theta\)，把速度分解成垂直於磁場與平行於磁場的兩個分量：</p>
+      <div class="formula">
+        \[ v_{\perp} = v\sin\theta \qquad v_{\parallel} = v\cos\theta \]
+      </div>
+      <p data-en-html="The magnetic force \(q\vec v\times\vec B\) depends only on \(v_{\perp}\) and is perpendicular to \(\vec B\), so it cannot change \(v_{\parallel}\). Seen along the field, the particle moves in a circle with \(v_{\perp}\); along the field it moves steadily at \(v_{\parallel}\). Together they make a &lt;strong&gt;helix&lt;/strong&gt;. The distance travelled along \(\vec B\) in one period is called the &lt;strong&gt;pitch&lt;/strong&gt;:">磁力 \(q\vec v\times\vec B\) 只與 \(v_{\perp}\) 有關，而且垂直於 \(\vec B\)，所以不會改變 \(v_{\parallel}\)。沿著磁場方向看，粒子以 \(v_{\perp}\) 做等速圓周運動；沿著磁場方向則以 \(v_{\parallel}\) 等速前進，合起來就是<strong>螺旋線</strong>。每轉一圈沿 \(\vec B\) 前進的距離稱為<strong>螺距</strong>：</p>
+      <div class="formula">
+        \[ r = \frac{m v_{\perp}}{|q|B} \qquad T = \frac{2\pi m}{|q|B} \qquad p = v_{\parallel}T = \frac{2\pi m\, v_{\parallel}}{|q|B} \]
+      </div>
+      <p data-en-html="The period is the same as for a circle. At \(\theta = 90^\circ\) the pitch is zero and the helix becomes a circle; at \(\theta = 0^\circ\) or \(180^\circ\) the velocity is parallel to the field, there is no magnetic force, and the particle moves in a straight line along \(\vec B\). In the 2D view you see the projection onto the page (perpendicular to \(\vec B\)), so the helix looks like a circle of radius \(r\); the 3D view shows the whole helix.">週期與圓周運動相同。\(\theta = 90^\circ\) 時螺距為零，螺旋線變成圓；\(\theta = 0^\circ\) 或 \(180^\circ\) 時速度與磁場平行，完全不受磁力，粒子沿 \(\vec B\) 直線前進。2D 畫面看到的是投影到紙面（垂直於 \(\vec B\)）上的運動，所以螺旋線看起來是半徑 \(r\) 的圓；3D 檢視可以看到完整的螺旋。</p>
+      <ul>
+        <li data-en-html="&lt;strong&gt;Aurora&lt;/strong&gt;: charged particles from the solar wind spiral along the Earth’s magnetic field lines. The field lines dip into the atmosphere near the magnetic poles, so the particles strike air molecules at high latitudes and make them glow."><strong>極光</strong>：太陽風帶來的帶電粒子沿地球磁力線螺旋前進。磁力線在磁極附近伸入大氣，粒子在高緯度地區撞擊空氣分子使其發光。</li>
+        <li data-en-html="&lt;strong&gt;Magnetic bottle and the Van Allen belts&lt;/strong&gt;: where the field lines crowd together the field is stronger, and a spiralling particle is pushed back toward the weaker field — it is “reflected” (a magnetic mirror). The Earth’s field traps particles that bounce back and forth between the north and south hemispheres, forming the Van Allen radiation belts; fusion experiments use similar magnetic bottles to confine hot plasma."><strong>磁瓶與范艾倫輻射帶</strong>：磁力線變密的地方磁場較強，螺旋前進的粒子會被推回磁場較弱的一側，像被「反射」一樣（磁鏡）。地球磁場因此困住在南北半球之間來回彈跳的帶電粒子，形成范艾倫輻射帶；核融合實驗也用類似的磁瓶來約束高溫電漿。</li>
+      </ul>
+
+      <h3 data-en="Velocity selector">速度選擇器</h3>
+      <p data-en-html="Now add an electric field perpendicular to both \(\vec v\) and \(\vec B\), so that the electric force \(q\vec E\) points opposite to the magnetic force \(q\vec v\times\vec B\). When the two forces are equal in size the net force is zero and the particle moves in a straight line:">再加上一個與 \(\vec v\)、\(\vec B\) 都垂直的電場，讓電力 \(q\vec E\) 與磁力 \(q\vec v\times\vec B\) 方向相反。兩力大小相等時合力為零，粒子直線前進：</p>
       <div class="formula">
         \[ |q|E = |q|vB \quad\Longrightarrow\quad v = \frac{E}{B} \]
       </div>
-      <p>條件中沒有 \(q\) 和 \(m\)：只要速率剛好等於 \(E/B\)，不論正負電荷、質量多少都能直線通過；比較快的粒子磁力較大、比較慢的粒子電力較大，都會偏離。</p>
+      <p data-en-html="Neither \(q\) nor \(m\) appears in this condition: any particle whose speed is exactly \(E/B\) goes straight through, whatever its charge sign or mass. A faster particle feels a larger magnetic force and a slower one a relatively larger electric force, so both are deflected. (If \(\theta \ne 90^\circ\), only \(v_{\perp}\) matters: the condition becomes \(v_{\perp} = E/B\).)">條件中沒有 \(q\) 和 \(m\)：只要速率剛好等於 \(E/B\)，不論正負電荷、質量多少都能直線通過；比較快的粒子磁力較大、比較慢的粒子電力較大，都會偏離。（若 \(\theta \ne 90^\circ\)，只有 \(v_{\perp}\) 受磁力，條件變成 \(v_{\perp} = E/B\)。）</p>
 
-      <h3>延伸：E×B 漂移</h3>
-      <p>速率不等於 \(E/B\) 時，粒子一邊繞圈、一邊以固定的速度沿 \(\vec E\times\vec B\) 方向前進（由靜止釋放時軌跡是擺線）：</p>
+      <h3 data-en="Going further: E×B drift">延伸：E×B 漂移</h3>
+      <p data-en-html="When the speed is not \(E/B\), the particle circles while its center moves at a constant velocity along \(\vec E\times\vec B\) (released from rest, it traces a cycloid):">速率不等於 \(E/B\) 時，粒子一邊繞圈、一邊以固定的速度沿 \(\vec E\times\vec B\) 方向前進（由靜止釋放時軌跡是擺線）：</p>
       <div class="formula">
         \[ \vec v_{d} = \frac{\vec E \times \vec B}{B^{2}} \qquad |\vec v_{d}| = \frac{E}{B} \]
       </div>
-      <p>在以 \(\vec v_{d}\) 移動的座標系中看，電場的效果剛好被抵消，粒子只做半徑 \(m|\vec v - \vec v_{d}|/(|q|B)\) 的圓周運動。畫面上的虛線圓與圓心標記就是這個「導引中心」。</p>
+      <p data-en-html="In a frame moving with \(\vec v_{d}\) the electric field is exactly cancelled, and the particle simply moves in a circle of radius \(m|\vec v - \vec v_{d}|/(|q|B)\). The dashed circle and the center marker on the canvas show this “guiding center”.">在以 \(\vec v_{d}\) 移動的座標系中看，電場的效果剛好被抵消，粒子只做半徑 \(m|\vec v - \vec v_{d}|/(|q|B)\) 的圓周運動。畫面上的虛線圓與圓心標記就是這個「導引中心」。</p>
 
-      <h3>觀察重點</h3>
+      <h3 data-en="Things to observe">觀察重點</h3>
       <ul>
-        <li><strong>旋轉方向</strong>：磁場射出紙面時，正電荷<strong>順時針</strong>繞圈、負電荷逆時針。先用右手定則預測，再按「發射」驗證；把 B 改成射入紙面又如何？</li>
-        <li><strong>半徑</strong>：把 \(v\) 或 \(m\) 加倍、或把 \(|q|\) 或 \(B\) 加倍，半徑各變成幾倍？畫面上的 1 cm 方格可以直接量。</li>
-        <li><strong>週期與速率無關</strong>：改變發射速率，比較「經過時間」與「速度方向轉過的圈數」，算出週期是否改變。</li>
-        <li><strong>動能不變</strong>：純磁場中「目前速率」和「動能」始終不變；加上電場後動能就會改變，因為電力會做功。</li>
-        <li><strong>射入磁場區</strong>：垂直邊界射入的粒子走半圓，在距離入射點 \(2r\) 處反向射出，在場區內的時間是 \(T/2\)。質譜儀就是用 \(2r = 2mv/(|q|B)\) 來分辨不同質量的離子。</li>
-        <li><strong>速度選擇器</strong>：在「速度選擇器」情境中，只改 \(q\) 的正負或 \(m\)，粒子仍直線前進；只改 \(v\)，粒子就會偏轉。往哪一邊偏？</li>
+        <li data-en-html="&lt;strong&gt;Sense of rotation&lt;/strong&gt;: with B out of the page, a positive charge circles &lt;strong&gt;clockwise&lt;/strong&gt; and a negative charge counterclockwise. Predict with the right-hand rule first, then press “Launch” to check. What happens when B points into the page?"><strong>旋轉方向</strong>：磁場射出紙面時，正電荷<strong>順時針</strong>繞圈、負電荷逆時針。先用右手定則預測，再按「發射」驗證；把 B 改成射入紙面又如何？</li>
+        <li data-en-html="&lt;strong&gt;Radius&lt;/strong&gt;: if you double \(v\) or \(m\), or double \(|q|\) or \(B\), by what factor does the radius change? Measure it with the 1 cm grid on the canvas."><strong>半徑</strong>：把 \(v\) 或 \(m\) 加倍、或把 \(|q|\) 或 \(B\) 加倍，半徑各變成幾倍？畫面上的 1 cm 方格可以直接量。</li>
+        <li data-en-html="&lt;strong&gt;The period does not depend on speed&lt;/strong&gt;: change the launch speed and compare the elapsed time with the number of turns to see whether the period changes."><strong>週期與速率無關</strong>：改變發射速率，比較「經過時間」與「速度方向轉過的圈數」，算出週期是否改變。</li>
+        <li data-en-html="&lt;strong&gt;Kinetic energy stays constant&lt;/strong&gt;: in a pure magnetic field the current speed and kinetic energy never change; with an electric field the kinetic energy changes, because the electric force does work."><strong>動能不變</strong>：純磁場中「目前速率」和「動能」始終不變；加上電場後動能就會改變，因為電力會做功。</li>
+        <li data-en-html="&lt;strong&gt;Helix&lt;/strong&gt;: choose “Helical motion” and switch to the 3D view. Change \(\theta\): does the radius follow \(\sin\theta\) and the pitch \(\cos\theta\)? Does the period change? What happens at \(\theta = 0^\circ\), \(90^\circ\) and \(180^\circ\)? For \(\theta &amp;gt; 90^\circ\) the particle moves along \(-z\) — does it still circle the same way?"><strong>螺旋線</strong>：選「螺旋運動」並切換到 3D 檢視。改變 \(\theta\)：半徑是否隨 \(\sin\theta\)、螺距是否隨 \(\cos\theta\) 變化？週期有沒有改變？\(\theta = 0^\circ\)、\(90^\circ\)、\(180^\circ\) 時又如何？\(\theta &gt; 90^\circ\) 時粒子沿 \(-z\) 前進，繞圈方向有沒有改變？</li>
+        <li data-en-html="&lt;strong&gt;Speed and \(v_{\parallel}\) are conserved&lt;/strong&gt;: during a helix the readings “current speed” and “kinetic energy” stay fixed, and \(z\) grows by the same amount in every period — one pitch \(p\)."><strong>速率與 \(v_{\parallel}\) 守恆</strong>：螺旋運動時「目前速率」與「動能」不變，而且 \(z\) 每經過一個週期增加相同的量，正好是一個螺距 \(p\)。</li>
+        <li data-en-html="&lt;strong&gt;Entering a field region&lt;/strong&gt;: a particle entering perpendicular to the boundary follows a semicircle and leaves in the opposite direction, \(2r\) from where it entered, after spending \(T/2\) in the field. A mass spectrometer uses \(2r = 2mv/(|q|B)\) to separate ions of different mass."><strong>射入磁場區</strong>：垂直邊界射入的粒子走半圓，在距離入射點 \(2r\) 處反向射出，在場區內的時間是 \(T/2\)。質譜儀就是用 \(2r = 2mv/(|q|B)\) 來分辨不同質量的離子。</li>
+        <li data-en-html="&lt;strong&gt;Velocity selector&lt;/strong&gt;: in the “Velocity selector” scenario, changing only the sign of \(q\) or the mass \(m\) leaves the particle going straight; changing only \(v\) deflects it. Which way?"><strong>速度選擇器</strong>：在「速度選擇器」情境中，只改 \(q\) 的正負或 \(m\)，粒子仍直線前進；只改 \(v\)，粒子就會偏轉。往哪一邊偏？</li>
       </ul>
 
-      <h3>模擬方法與單位</h3>
+      <h3 data-en="Simulation method and units">模擬方法與單位</h3>
       <ul>
-        <li>使用真實的 SI 單位：電荷以基本電荷 \(e = 1.602\times 10^{-19}\ \mathrm{C}\) 為單位，質量以原子質量單位 \(1\ \mathrm{u} = 1.661\times 10^{-27}\ \mathrm{kg}\) 為單位，速率以 \(10^{5}\ \mathrm{m/s}\) 為單位，磁場以 \(\mathrm{mT}\)（\(10^{-3}\ \mathrm{T}\)）為單位。例如 α 粒子以 \(3\times 10^{5}\ \mathrm{m/s}\) 進入 \(0.1\ \mathrm{T}\) 的磁場，半徑約 \(6.2\ \mathrm{cm}\)、週期約 \(1.3\ \mu\mathrm{s}\)。</li>
-        <li>真實的運動只需百萬分之一秒，所以用慢動作播放：「慢動作」設定動畫中 1 秒對應的真實時間。</li>
-        <li>運動方程式 \(m\,\dfrac{d\vec v}{dt} = q(\vec E + \vec v\times\vec B)\) 以 <strong>Boris 法</strong>數值積分：每一小步先半個電場加速、再讓速度繞 \(\vec B\) 旋轉、最後再半個電場加速。純磁場時這一步是純旋轉，所以<strong>速率精確守恆</strong>，軌跡點也正好落在半徑 \(mv/(|q|B)\) 的圓上。</li>
-        <li>自適應步長：每一步速度方向最多轉 0.01 rad、位移不超過 0.01 cm；粒子跨越場區邊界時再把步長細分，讓進出場區的位置準確。</li>
-        <li>忽略重力（比磁力小好幾百萬倍以上）與粒子加速時的電磁輻射，也不考慮相對論效應（速率遠小於光速）。</li>
+        <li data-en-html="Real SI units are used: charge in units of the elementary charge \(e = 1.602\times 10^{-19}\ \mathrm{C}\), mass in atomic mass units \(1\ \mathrm{u} = 1.661\times 10^{-27}\ \mathrm{kg}\), speed in units of \(10^{5}\ \mathrm{m/s}\) and magnetic field in \(\mathrm{mT}\) (\(10^{-3}\ \mathrm{T}\)). For example, an α particle entering a \(0.1\ \mathrm{T}\) field at \(3\times 10^{5}\ \mathrm{m/s}\) has a radius of about \(6.2\ \mathrm{cm}\) and a period of about \(1.3\ \mu\mathrm{s}\).">使用真實的 SI 單位：電荷以基本電荷 \(e = 1.602\times 10^{-19}\ \mathrm{C}\) 為單位，質量以原子質量單位 \(1\ \mathrm{u} = 1.661\times 10^{-27}\ \mathrm{kg}\) 為單位，速率以 \(10^{5}\ \mathrm{m/s}\) 為單位，磁場以 \(\mathrm{mT}\)（\(10^{-3}\ \mathrm{T}\)）為單位。例如 α 粒子以 \(3\times 10^{5}\ \mathrm{m/s}\) 進入 \(0.1\ \mathrm{T}\) 的磁場，半徑約 \(6.2\ \mathrm{cm}\)、週期約 \(1.3\ \mu\mathrm{s}\)。</li>
+        <li data-en-html="The real motion lasts only microseconds, so it is played in slow motion: the “Slow motion” setting gives the real time that one second of animation represents.">真實的運動只需百萬分之一秒，所以用慢動作播放：「慢動作」設定動畫中 1 秒對應的真實時間。</li>
+        <li data-en-html="The equation of motion \(m\,\dfrac{d\vec v}{dt} = q(\vec E + \vec v\times\vec B)\) is integrated in three dimensions with the &lt;strong&gt;Boris method&lt;/strong&gt;: each small step applies half the electric kick, rotates the velocity about \(\vec B\), then applies the other half kick. In a pure magnetic field the step is a pure rotation, so &lt;strong&gt;the speed is conserved exactly&lt;/strong&gt;, \(v_{\parallel}\) does not change, and the projected points lie exactly on a circle of radius \(mv_{\perp}/(|q|B)\).">運動方程式 \(m\,\dfrac{d\vec v}{dt} = q(\vec E + \vec v\times\vec B)\) 以 <strong>Boris 法</strong>在三維空間中數值積分：每一小步先半個電場加速、再讓速度繞 \(\vec B\) 旋轉、最後再半個電場加速。純磁場時這一步是純旋轉，所以<strong>速率精確守恆</strong>、\(v_{\parallel}\) 不變，軌跡點投影到紙面也正好落在半徑 \(mv_{\perp}/(|q|B)\) 的圓上。</li>
+        <li data-en-html="Adaptive time step: in each step the velocity turns by at most 0.01 rad and the particle moves at most 0.01 cm; steps that cross the field-region boundary are subdivided so that the entry and exit points are accurate. The simulation stops when the particle leaves the 24 cm × 16 cm view or moves more than 48 cm along \(\vec B\).">自適應步長：每一步速度方向最多轉 0.01 rad、位移不超過 0.01 cm；粒子跨越場區邊界時再把步長細分，讓進出場區的位置準確。粒子離開 24 cm × 16 cm 的畫面，或沿 \(\vec B\) 移動超過 48 cm 時停止。</li>
+        <li data-en-html="Gravity (millions of times weaker than the magnetic force) and the radiation emitted by an accelerating charge are ignored, and relativity is not needed (the speeds are far below the speed of light).">忽略重力（比磁力小好幾百萬倍以上）與粒子加速時的電磁輻射，也不考慮相對論效應（速率遠小於光速）。</li>
+        <li data-en-html="The 3D view uses the three.js library (MIT license). It is downloaded only when you switch to 3D.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
     </section>
 
-    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110728"></script>
-  <script src="js/magnetic-particle-core.js?v=202611110728"></script>
-  <script src="js/magnetic-particle.js?v=202611110728"></script>
-  <script src="js/firebase-config.js?v=202611110728"></script>
-  <script src="js/stats.js?v=202611110728" data-module="magnetic-particle"></script>
-  <script src="js/comments.js?v=202611110728"></script>
+  <script src="js/math.js?v=202611110810"></script>
+  <script src="js/magnetic-particle-core.js?v=202611110810"></script>
+  <script src="js/sound.js?v=202611110810"></script>
+  <script src="js/magnetic-particle.js?v=202611110810"></script>
+  <script src="js/firebase-config.js?v=202611110810"></script>
+  <script src="js/stats.js?v=202611110810" data-module="magnetic-particle"></script>
+  <script src="js/comments.js?v=202611110810"></script>
 </body>
 </html>
