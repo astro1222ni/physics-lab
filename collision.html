@@ -2,33 +2,36 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110747"></script>
+  <script src="js/settings.js?v=202611110816"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Collisions in One Dimension | Astro Ni Physics Lab">一維碰撞｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整兩台車的質量、初速度與恢復係數，觀察碰撞前後總動量守恆，以及動能在非彈性碰撞中的損失。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110747">
+  <link rel="stylesheet" href="lab.css?v=202611110816">
   <style>
     /* 版面：桌機左欄為軌道、圖表、比較表，右欄為控制面板；手機依序為軌道、圖表、控制、比較表 */
     .lab.coll {
-      grid-template-areas: "track panel" "chart panel" "table panel";
-      grid-template-rows: auto auto 1fr;
+      grid-template-areas: "track panel" "chart panel" "force panel" "table panel";
+      grid-template-rows: auto auto auto 1fr;
     }
     .coll > .track-stage { grid-area: track; }
     .coll > .chart-stage { grid-area: chart; }
+    .coll > .force-stage { grid-area: force; }
     .coll > .panel { grid-area: panel; }
     .coll > .table-card { grid-area: table; align-self: start; }
     @media (max-width: 880px) {
-      .lab.coll { grid-template-areas: "track" "chart" "panel" "table"; grid-template-rows: none; }
+      .lab.coll { grid-template-areas: "track" "chart" "force" "panel" "table"; grid-template-rows: none; }
     }
 
     /* 畫布沒有拖曳操作，讓手機可以在畫布上捲動頁面 */
     .coll .stage canvas { touch-action: auto; cursor: default; }
     #track { aspect-ratio: 3 / 1; }
     #chart { aspect-ratio: 12 / 5; }
+    #force { aspect-ratio: 12 / 5; }
     @media (max-width: 560px) {
       #track { aspect-ratio: 2 / 1; }
       #chart { aspect-ratio: 5 / 4; }
+      #force { aspect-ratio: 3 / 2; }
     }
 
     .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 10px 4px 0; }
@@ -40,6 +43,11 @@
     .coll .slider input { height: 28px; }
     .coll .checks label { min-height: 32px; }
     .coll .stage .status { margin: 6px 4px 0; }
+    .coll [hidden] { display: none !important; }
+    .coll .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 4px; }
+    .coll .card .checks { margin: 4px 0 2px; }
+    .coll .slider input:disabled { opacity: 0.45; }
+    .coll .card .status:empty { display: none; }
     .coll .playbar .btns .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; color: var(--muted); font-size: calc(14px * var(--fs, 1)); }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
@@ -122,8 +130,17 @@
           <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
           <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
           <span data-en-html="&lt;i style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Total"><i style="background:var(--field)"></i>總和</span>
+          <span id="uLegend" hidden data-en-html="&lt;i style=&quot;background:var(--accent)&quot;&gt;&lt;/i&gt;Spring potential energy U"><i style="background:var(--accent)"></i>彈簧位能 U</span>
           <span id="ghostLegend" data-en-html="&lt;i style=&quot;background:none;border:1px dashed var(--muted);height:8px&quot;&gt;&lt;/i&gt;Values before the collision"><i style="background:none;border:1px dashed var(--muted);height:8px"></i>碰撞前的數值</span>
         </div>
+      </div>
+
+      <div class="stage force-stage" id="forceStage" hidden>
+        <div class="stage-head">
+          <h2 data-en="Force–time graph during contact">接觸期間的彈力–時間圖</h2>
+        </div>
+        <canvas id="force" aria-label="彈簧彈力隨時間變化的圖，陰影面積為衝量" data-en-aria-label="Graph of the spring force against time; the shaded area is the impulse"></canvas>
+        <p class="hint" data-en-html="The shaded area is the impulse the spring gives cart 2, \(J = \int F\,dt\), equal to cart 2’s change in momentum \(\Delta p_2\); cart 1 receives an impulse of the same size in the opposite direction, \(\Delta p_1 = -J\).">陰影面積就是彈簧給車 2 的衝量 \(J = \int F\,dt\)，等於車 2 的動量變化 \(\Delta p_2\)；車 1 受到大小相等、方向相反的衝量，\(\Delta p_1 = -J\)。</p>
       </div>
 
       <aside class="panel">
@@ -147,6 +164,7 @@
           <h2 data-en="Coefficient of restitution">恢復係數</h2>
           <div class="slider"><label for="e" data-en-html="\(e\) (0 perfectly inelastic, 1 elastic)">\(e\)（0 完全非彈性，1 彈性）</label><output id="eo"></output>
             <input id="e" type="range" min="0" max="1" step="0.05" value="1"></div>
+          <p class="status" id="eNote" hidden data-en-html="Ideal spring: the collision is elastic (\(e = 1\))">理想彈簧：碰撞為彈性（\(e = 1\)）</p>
           <div class="btns">
             <button data-preset="elastic" data-en="Elastic">彈性碰撞</button>
             <button data-preset="inelastic" data-en="Perfectly inelastic">完全非彈性</button>
@@ -154,6 +172,15 @@
             <button data-preset="heavy" data-en="Heavy hits light">重撞輕</button>
             <button data-preset="light" data-en="Light hits heavy">輕撞重</button>
           </div>
+        </section>
+
+        <section class="card" id="springCard">
+          <h2 data-en="Spring bumper">彈簧緩衝</h2>
+          <div class="checks"><label><input id="spring" type="checkbox"><span data-en="Add a spring bumper">加彈簧（彈簧緩衝）</span></label></div>
+          <p class="hint" data-en="Ideal massless spring, mounted on the front of cart 1">理想彈簧，質量不計；裝在車 1 前端</p>
+          <div class="slider"><label for="k" data-en-html="Spring constant \(k\)">彈力常數 \(k\)</label><output id="ko"></output>
+            <input id="k" type="range" min="0" max="100" step="2" value="50" disabled></div>
+          <p class="status" id="springNote"></p>
         </section>
 
         <section class="card">
@@ -165,6 +192,11 @@
             <dt data-en="CM velocity">質心速度</dt><dd id="rvcm">—</dd>
             <dt data-en="Total momentum">總動量</dt><dd id="rp">—</dd>
             <dt data-en="Total kinetic energy">總動能</dt><dd id="rK">—</dd>
+            <dt class="sp" hidden data-en-html="Compression \(x\)">壓縮量 \(x\)</dt><dd class="sp" hidden id="rx">—</dd>
+            <dt class="sp" hidden data-en-html="Spring force \(F = kx\)">彈力 \(F = kx\)</dt><dd class="sp" hidden id="rF">—</dd>
+            <dt class="sp" hidden data-en-html="Elastic PE \(U = \tfrac{1}{2}kx^2\)">彈性位能 \(U = \tfrac{1}{2}kx^2\)</dt><dd class="sp" hidden id="rU">—</dd>
+            <dt class="sp" hidden data-en-html="Total energy \(K + U\)">總能量 \(K + U\)</dt><dd class="sp" hidden id="rE">—</dd>
+            <dt class="sp" hidden data-en-html="Impulse so far \(J = \Delta p_2\)">至此的衝量 \(J = \Delta p_2\)</dt><dd class="sp" hidden id="rJ">—</dd>
           </dl>
         </section>
       </aside>
@@ -195,6 +227,10 @@
           <dt data-en="Kinetic energy lost">損失的動能</dt><dd id="lost">—</dd>
           <dt data-en-html="Formula \(\tfrac{1}{2}\mu(1-e^2)(v_1-v_2)^2\)">公式 \(\tfrac{1}{2}\mu(1-e^2)(v_1-v_2)^2\)</dt><dd id="lostF">—</dd>
           <dt data-en-html="\(e\) found from the velocities">由速度反算的 \(e\)</dt><dd id="eBack">—</dd>
+          <dt class="sp" hidden data-en-html="Contact time \(\Delta t = \pi\sqrt{\mu/k}\)">接觸時間 \(\Delta t = \pi\sqrt{\mu/k}\)</dt><dd class="sp" hidden id="sDt">—</dd>
+          <dt class="sp" hidden data-en-html="Maximum compression \(x_{\max} = u\sqrt{\mu/k}\)">最大壓縮量 \(x_{\max} = u\sqrt{\mu/k}\)</dt><dd class="sp" hidden id="sX">—</dd>
+          <dt class="sp" hidden data-en-html="Peak force \(F_{\max} = k\,x_{\max}\)">最大彈力 \(F_{\max} = k\,x_{\max}\)</dt><dd class="sp" hidden id="sF">—</dd>
+          <dt class="sp" hidden data-en-html="Impulse \(J = \int F\,dt = \Delta p_2 = -\Delta p_1\)">衝量 \(J = \int F\,dt = \Delta p_2 = -\Delta p_1\)</dt><dd class="sp" hidden id="sJ">—</dd>
         </dl>
         <p class="status" id="tableNote"></p>
       </section>
@@ -233,12 +269,34 @@
         <li data-en-html="Try making \(v_1\) smaller than \(v_2\) (for example, both carts moving right but cart 1, behind, moving more slowly): the carts never get closer, so they never collide.">試試看把 \(v_1\) 設得比 \(v_2\) 小（例如兩車都向右，但後面的車 1 比較慢）：兩車不會接近，也就不會碰撞。</li>
       </ul>
 
+      <h3 data-en="Adding a spring: watching the collision happen">加上彈簧：看見碰撞的過程</h3>
+      <p data-en-html="So far the collision has been treated as instantaneous. Tick “Add a spring bumper” and an &lt;strong&gt;ideal spring&lt;/strong&gt; (massless, obeying Hooke’s law \(F = kx\)) is mounted on the front of cart 1, so the collision becomes a process you can watch. The spring forces on the two carts are equal in size and opposite in direction, and by the &lt;strong&gt;impulse–momentum theorem&lt;/strong&gt;:">前面把碰撞當成瞬間完成。勾選「加彈簧」後，車 1 前端裝一條<strong>理想彈簧</strong>（質量不計、遵守虎克定律 \(F = kx\)），碰撞變成一段看得見的過程。兩車受到的彈力大小相等、方向相反，由<strong>衝量–動量定理</strong>：</p>
+      <div class="formula">
+        \[ J = \int F\,dt = \Delta p_2 = -\Delta p_1 \]
+      </div>
+      <p data-en-html="In the centre-of-mass frame the compression \(x\) obeys \(\mu\,\ddot{x} = -kx\): simple harmonic motion with angular frequency \(\omega = \sqrt{k/\mu}\). With the relative speed of approach \(u = v_1 - v_2\):">在質心參考系中，壓縮量 \(x\) 滿足 \(\mu\,\ddot{x} = -kx\)，是角頻率 \(\omega = \sqrt{k/\mu}\) 的簡諧運動；設接近的相對速度 \(u = v_1 - v_2\)：</p>
+      <div class="formula">
+        \[ x(t) = \frac{u}{\omega}\sin\omega t \qquad F(t) = kx(t) \]
+        \[ \Delta t = \frac{\pi}{\omega} = \pi\sqrt{\frac{\mu}{k}} \qquad x_{\max} = u\sqrt{\frac{\mu}{k}} \qquad F_{\max} = u\sqrt{k\mu} \]
+      </div>
+      <p data-en-html="During contact kinetic energy and elastic potential energy are exchanged while their sum stays constant; when the spring lets go it hands all the stored energy back, so the outcome is an elastic collision with \(e = 1\). The force–time graph is half a sine wave, and its area \(\int F\,dt = 2\mu u\) does not depend on \(k\).">接觸期間動能與彈性位能互相轉換，總和不變；彈簧放開時位能全部還給兩車，所以結果就是 \(e = 1\) 的彈性碰撞。彈力–時間圖是半個正弦，面積 \(\int F\,dt = 2\mu u\) 與 \(k\) 無關。</p>
+      <div class="formula">
+        \[ K_1 + K_2 + \tfrac{1}{2}kx^2 = \text{constant} \qquad U_{\max} = \tfrac{1}{2}k\,x_{\max}^2 = \tfrac{1}{2}\mu u^2 \]
+      </div>
+      <p data-en-html="&lt;strong&gt;At maximum compression&lt;/strong&gt; both carts have the same velocity, \(v_{\mathrm{cm}}\) — exactly the state just after a perfectly inelastic collision (\(e = 0\)). The energy stored in the spring at that moment, \(\tfrac{1}{2}\mu u^2\), equals the kinetic energy lost in a perfectly inelastic collision. The difference is that the spring gives the energy back; carts that stick together do not."><strong>最大壓縮的瞬間</strong>，兩車的速度相同，都等於 \(v_{\mathrm{cm}}\)——正是完全非彈性碰撞（\(e = 0\)）後的狀態；這時彈簧儲存的位能 \(\tfrac{1}{2}\mu u^2\) 恰好等於完全非彈性碰撞損失的動能。差別在於彈簧會把能量還回來，而黏在一起的兩車不會。</p>
+      <ul>
+        <li data-en-html="&lt;strong&gt;Use a stiffer spring&lt;/strong&gt; (larger \(k\)): the contact time gets shorter and the peak force larger, but the area under the force–time graph (the impulse) is the same, and so are the final velocities. This is how airbags and crash mats work: for the same change in momentum, a longer contact time means a smaller peak force."><strong>換硬一點的彈簧</strong>（\(k\) 變大）：接觸時間變短、最大彈力變大，但彈力–時間圖下的面積（衝量）一樣，碰撞後的速度也一樣。這就是安全氣囊、緩衝墊的原理：同樣的動量變化，拉長作用時間就能降低最大力。</li>
+        <li data-en-html="&lt;strong&gt;Watch the moment of maximum compression&lt;/strong&gt;: play in slow motion; when the force–time graph reaches its peak, the live readings show both carts at the same velocity, equal to the centre-of-mass velocity — total kinetic energy is at its minimum and elastic potential energy at its maximum."><strong>看最大壓縮的瞬間</strong>：用慢動作播放，彈力–時間圖到達頂點時，「即時數值」中兩車速度相同、都等於質心速度，總動能最小，彈性位能最大。</li>
+        <li data-en-html="&lt;strong&gt;Energy bar chart&lt;/strong&gt;: during contact the “Spring U” bar grows while the carts’ kinetic energy bars shrink, but the “Total” \(K_1 + K_2 + U\) never changes."><strong>能量長條圖</strong>：接觸期間「彈簧 U」的長條長出來、兩車動能的長條變短，但「總和」\(K_1 + K_2 + U\) 始終不變。</li>
+      </ul>
+
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en-html="The collision is treated as instantaneous. Before and after it each cart moves at constant velocity, so its position and velocity at any time come straight from an analytic formula — there is no build-up of numerical-integration error; each animation frame just moves time forward.">碰撞視為瞬間完成。碰撞前後兩車各自做等速度運動，所以任何時刻的位置與速度都直接由解析式算出，沒有數值積分的累積誤差；動畫的每一格只是把時間往前推。</li>
         <li data-en-html="Cart 1 is on the left and cart 2 on the right, so the carts approach each other only when \(v_1 &amp;gt; v_2\); they touch at \(t_c = d/(v_1 - v_2)\), where \(d\) is the gap between them.">車 1 在左、車 2 在右，只有 \(v_1 > v_2\) 時兩車才會接近；接觸時刻 \(t_c = d/(v_1 - v_2)\)，其中 \(d\) 是兩車之間的空隙。</li>
         <li data-en-html="So that the collision happens on screen, the program chooses the starting positions from the velocities so that the carts meet near the middle of the track.">為了讓碰撞發生在畫面中，程式會依速度自動安排兩車的起始位置，讓碰撞點落在軌道中央附近。</li>
         <li data-en-html="The carts get slightly bigger with mass only to make heavy and light easy to tell apart. This does not affect the calculation: the carts are treated as particles, and their length is used only to find the moment of contact.">車子的大小隨質量略為增加，只是為了容易辨認輕重，不影響計算（計算時把車子當成質點，只用到車長來決定接觸時刻）。</li>
+        <li data-en-html="With the spring added, it is treated as an &lt;strong&gt;ideal massless spring&lt;/strong&gt; obeying Hooke’s law, mounted on the front of cart 1; contact begins when its tip touches cart 2. During contact the centre of mass keeps moving at constant velocity and the relative motion follows the SHM formula \(x(t) = (u/\omega)\sin\omega t\), so the state is exact at every moment before, during and after contact, with no numerical integration. If the maximum compression would exceed 80% of the natural length, the program lengthens the natural length to \(x_{\max}/0.8\) for that run so the spring never bottoms out (a fully compressed spring would no longer be ideal). The force arrows are drawn in proportion to the spring force, with that run’s peak force as the full length.">加彈簧時，彈簧視為<strong>理想彈簧：質量不計</strong>、遵守虎克定律，裝在車 1 前端；彈簧尖端碰到車 2 時開始接觸。接觸期間質心照樣等速度前進，相對運動用簡諧運動的解析式 \(x(t) = (u/\omega)\sin\omega t\) 計算，所以接觸前、中、後任何時刻都精確，沒有數值積分。若最大壓縮量會超過自然長度的 80%，程式會把該次的自然長度加長為 \(x_{\max}/0.8\)，讓彈簧不會壓到底（壓到底就不再是理想彈簧）。彈力箭頭的長度與彈力成正比，以該次的最大彈力為滿格。</li>
         <li data-en-html="Each animation frame advances at most \(1/30\ \mathrm{s}\) (times 0.25 in slow motion), so the animation does not suddenly jump ahead when you come back from another tab or the device slows down.">動畫的每一格最多前進 \(1/30\ \mathrm{s}\)（慢動作時再乘以 0.25），切換分頁回來或裝置變慢時，動畫不會突然跳到後面。</li>
       </ul>
     </section>
@@ -248,12 +306,12 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110747"></script>
-  <script src="js/collision-core.js?v=202611110747"></script>
-  <script src="js/sound.js?v=202611110747"></script>
-  <script src="js/collision.js?v=202611110747"></script>
-  <script src="js/firebase-config.js?v=202611110747"></script>
-  <script src="js/stats.js?v=202611110747" data-module="collision"></script>
-  <script src="js/comments.js?v=202611110747"></script>
+  <script src="js/math.js?v=202611110816"></script>
+  <script src="js/collision-core.js?v=202611110816"></script>
+  <script src="js/sound.js?v=202611110816"></script>
+  <script src="js/collision.js?v=202611110816"></script>
+  <script src="js/firebase-config.js?v=202611110816"></script>
+  <script src="js/stats.js?v=202611110816" data-module="collision"></script>
+  <script src="js/comments.js?v=202611110816"></script>
 </body>
 </html>

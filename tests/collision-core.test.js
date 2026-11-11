@@ -168,4 +168,129 @@ test('不合理的參數會丟出錯誤', () => {
   assert.throws(() => CC.collide(1, 1, 1, 0, -0.1), RangeError);
 });
 
+// ---------- 彈簧緩衝 ----------
+const KS = [20, 63, 200, 650, 2000];
+function springSim(c, k, L0) {
+  const w1 = 1, w2 = 1.2;
+  // 兩車間空隙 = L0 + 1 m：接觸前先走一段
+  return CC.createSim({ m1: c.m1, m2: c.m2, v1: c.v1, v2: c.v2, e: 0.3, w1, w2, x1: 0, x2: w1 / 2 + L0 + 1 + w2 / 2, k, L0 });
+}
+
+test('彈簧：接觸時刻為彈簧尖端碰到車 2，接觸時間 Δt = π√(μ/k)', () => {
+  for (let n = 0; n < 60; n++) {
+    const c = randomCase(), k = KS[n % KS.length];
+    const sim = springSim(c, k, 50);
+    close(sim.tc, 1 / (c.v1 - c.v2), 1e-12, 't_c');
+    const mu = c.m1 * c.m2 / (c.m1 + c.m2);
+    close(sim.tr - sim.tc, Math.PI * Math.sqrt(mu / k), 1e-12, 'Δt');
+    const at = CC.stateAt(sim, sim.tc);
+    close((at.x2 - 0.6) - (at.x1 + 0.5), 50, 1e-12, '接觸瞬間空隙 = L0');
+    assert.strictEqual(sim.e, 1, '理想彈簧不使用 e');
+  }
+});
+
+test('彈簧：接觸期間每一刻總動量守恆、K + U 守恆、質心等速度', () => {
+  for (let n = 0; n < 40; n++) {
+    const c = randomCase(), k = KS[n % KS.length];
+    const sim = springSim(c, k, 50);
+    const s0 = CC.stateAt(sim, 0);
+    for (let i = 0; i <= 200; i++) {
+      const t = sim.tc - 0.1 + (sim.tr - sim.tc + 0.2) * i / 200;
+      const s = CC.stateAt(sim, t);
+      close(s.p, s0.p, 1e-12, `t=${t} 動量`);
+      close(s.K + s.U, s0.K, 1e-12, `t=${t} K + U`);
+      close(s.E, s0.K, 1e-12, `t=${t} E`);
+      close(s.xcm, s0.xcm + s0.vcm * t, 1e-12, `t=${t} 質心`);
+      assert.ok(s.x >= -1e-12, '壓縮量不可為負');
+      // 彈簧長度 = 兩車間空隙
+      if (s.contact) close((s.x2 - 0.6) - (s.x1 + 0.5), 50 - s.x, 1e-12, '彈簧長度 = L0 − x');
+    }
+  }
+});
+
+test('彈簧：最大壓縮量 x_max = u√(μ/k)，發生在 Δt/2，此時兩車同速 v_cm', () => {
+  for (let n = 0; n < 60; n++) {
+    const c = randomCase(), k = KS[n % KS.length];
+    const sim = springSim(c, k, 50);
+    const mu = c.m1 * c.m2 / (c.m1 + c.m2), u = c.v1 - c.v2;
+    const xmax = u * Math.sqrt(mu / k);
+    close(sim.contact.xmax, xmax, 1e-12);
+    close(sim.contact.Fmax, k * xmax, 1e-12);
+    const mid = CC.stateAt(sim, (sim.tc + sim.tr) / 2);
+    close(mid.x, xmax, 1e-12, '中點壓縮量');
+    const vcm = CC.vcm(c.m1, c.m2, c.v1, c.v2);
+    close(mid.v1, vcm, 1e-12); close(mid.v2, vcm, 1e-12);
+    // 此刻彈簧位能 = 完全非彈性碰撞損失的動能
+    close(mid.U, CC.keLoss(c.m1, c.m2, c.v1, c.v2, 0), 1e-12, 'U_max = ½μu²');
+    let best = 0;
+    for (let i = 0; i <= 400; i++) best = Math.max(best, CC.stateAt(sim, sim.tc + (sim.tr - sim.tc) * i / 400).x);
+    close(best, xmax, 1e-9, '取樣最大值');
+  }
+});
+
+test('彈簧：放開後速度等於彈性碰撞（e = 1）的結果，且狀態連續', () => {
+  for (let n = 0; n < 60; n++) {
+    const c = randomCase(), k = KS[n % KS.length];
+    const sim = springSim(c, k, 50);
+    const f = CC.collide(c.m1, c.m2, c.v1, c.v2, 1);
+    const after = CC.stateAt(sim, sim.tr + 1);
+    close(after.v1, f.v1, 1e-12); close(after.v2, f.v2, 1e-12);
+    assert.strictEqual(after.U, 0);
+    const a = CC.stateAt(sim, sim.tr - 1e-9), b = CC.stateAt(sim, sim.tr);
+    close(a.x1, b.x1, 1e-7, '放開瞬間 x1 連續'); close(a.x2, b.x2, 1e-7, '放開瞬間 x2 連續');
+    close(a.v1, b.v1, 1e-6, '放開瞬間 v1 連續'); close(a.v2, b.v2, 1e-6, '放開瞬間 v2 連續');
+    const c0 = CC.stateAt(sim, sim.tc - 1e-9), c1 = CC.stateAt(sim, sim.tc);
+    close(c0.x1, c1.x1, 1e-7); close(c0.v1, c1.v1, 1e-9, '開始接觸時 v1 連續');
+  }
+});
+
+test('彈簧：衝量 ∫F dt（數值積分）= |Δp1| = Δp2 = 2μu', () => {
+  for (let n = 0; n < 30; n++) {
+    const c = randomCase(), k = KS[n % KS.length];
+    const sim = springSim(c, k, 50);
+    const N = 2000, h = (sim.tr - sim.tc) / N;
+    let J = 0; // Simpson 法
+    for (let i = 0; i <= N; i++) {
+      const w = i === 0 || i === N ? 1 : i % 2 ? 4 : 2;
+      J += w * CC.stateAt(sim, Math.min(sim.tc + i * h, sim.tr - 1e-15)).F;
+    }
+    J *= h / 3;
+    const b = CC.stateAt(sim, 0), a = CC.stateAt(sim, sim.tr + 0.5);
+    close(J, -(a.p1 - b.p1), 1e-8, 'J = −Δp1');
+    close(J, a.p2 - b.p2, 1e-8, 'J = Δp2');
+    close(J, sim.contact.J, 1e-8, 'J = 2μu');
+  }
+});
+
+test('彈簧：k 越大接觸時間越短、最大彈力越大，但衝量與最後速度相同', () => {
+  const c = { m1: 2, m2: 3, v1: 3, v2: -1 };
+  let prev = null;
+  for (const k of KS) {
+    const s = CC.springContact(c.m1, c.m2, c.v1, c.v2, k);
+    if (prev) {
+      assert.ok(s.dt < prev.dt && s.Fmax > prev.Fmax);
+      close(s.J, prev.J, 1e-12);
+    }
+    prev = s;
+  }
+});
+
+test('不加彈簧時行為與原本相同（x = F = U = 0，tr = tc）', () => {
+  for (const e of ES) {
+    const p = { m1: 2, m2: 3, v1: 3, v2: -1, e, w1: 1, w2: 1.2, x1: 2, x2: 8 };
+    const a = CC.createSim(p), b = CC.createSim(Object.assign({ k: 0, L0: 1 }, p));
+    assert.strictEqual(a.spring, false); assert.strictEqual(b.spring, false);
+    assert.strictEqual(a.tr, a.tc); close(a.tc, ((8 - 0.6) - (2 + 0.5)) / 4, 1e-12);
+    for (let t = 0; t <= 6; t += 0.1) {
+      const sa = CC.stateAt(a, t), sb = CC.stateAt(b, t);
+      assert.deepStrictEqual(sa, sb);
+      assert.strictEqual(sa.U, 0); assert.strictEqual(sa.F, 0); assert.strictEqual(sa.contact, false);
+      const f = CC.collide(2, 3, 3, -1, e);
+      if (t >= a.tc) { close(sa.v1, f.v1, 1e-12); close(sa.v2, f.v2, 1e-12); }
+    }
+  }
+  assert.throws(() => CC.springContact(1, 1, 1, 0, 0), RangeError);
+  assert.throws(() => CC.createSim({ m1: 1, m2: 1, v1: 1, v2: 0, e: 1, w1: 1, w2: 1, x1: 0, x2: 5, k: 100, L0: 0 }), RangeError);
+});
+
 console.log(`\n${passed} 項通過`);

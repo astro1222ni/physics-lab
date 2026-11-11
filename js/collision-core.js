@@ -10,6 +10,13 @@
  *
  * 約定車 1 在左、車 2 在右；只有在 v1 > v2（兩車互相接近）時才會碰撞。
  * 碰撞視為瞬間完成：碰撞前後各自做等速度運動，所以任何時刻的狀態都有解析解。
+ *
+ * 彈簧緩衝（可選）：車 1 前端（右側）裝一條理想彈簧（質量不計、遵守虎克定律），
+ * 彈力常數 k（N/m）、自然長度 L0（m）。彈簧尖端碰到車 2 時開始接觸。
+ * 接觸期間兩車的相對運動是簡諧運動：
+ *   μ x'' = −k x，ω = √(k/μ)，壓縮量 x(τ) = (u/ω) sin(ωτ)，u = v1 − v2 > 0，τ = t − t_c
+ * 質心照樣等速度前進；接觸時間 Δt = π/ω，放開後的速度等於 e = 1 的彈性碰撞結果。
+ * 所以任何時刻（接觸前、中、後）的狀態仍然都有解析解。
  */
 (function (root) {
   'use strict';
@@ -92,42 +99,106 @@
   }
 
   /**
-   * 建立一次模擬。
-   * p: { m1, m2, v1, v2, e, w1, w2, x1, x2 } — w 為車長、x 為車中心位置（m）。
-   * 回傳的物件可交給 stateAt(sim, t) 求任何時刻的狀態（解析解，沒有累積誤差）。
+   * 理想彈簧緩衝的接觸參數（兩車必須互相接近，u = v1 − v2 > 0）。
+   *   ω = √(k/μ)、接觸時間 Δt = π/ω = π√(μ/k)
+   *   最大壓縮量 x_max = u/ω = u√(μ/k)、最大彈力 F_max = k x_max = u√(kμ)
+   *   彈簧給車 2 的衝量 J = ∫F dt = 2μu = Δp2 = −Δp1
+   *   最大位能 U_max = ½ k x_max² = ½ μ u²（等於完全非彈性碰撞損失的動能）
    */
-  function createSim(p) {
-    check(p.m1, p.m2, p.e);
-    const gap = (p.x2 - p.w2 / 2) - (p.x1 + p.w1 / 2);
-    const tc = timeToContact(gap, p.v1, p.v2);
-    const after = isFinite(tc) ? finalVelocities(p.m1, p.m2, p.v1, p.v2, p.e) : null;
+  function springContact(m1, m2, v1, v2, k) {
+    check(m1, m2, 1);
+    if (!(k > 0)) throw new RangeError('彈力常數 k 必須為正');
+    const mu = reducedMass(m1, m2), u = v1 - v2, omega = Math.sqrt(k / mu);
+    const xmax = u / omega;
     return {
-      m1: p.m1, m2: p.m2, v1: p.v1, v2: p.v2, e: p.e,
-      w1: p.w1, w2: p.w2, x1: p.x1, x2: p.x2,
-      tc: tc,                 // 碰撞時刻（s），不會碰撞時為 Infinity
-      after: after,           // 碰撞後速度，不會碰撞時為 null
-      xc1: isFinite(tc) ? p.x1 + p.v1 * tc : NaN, // 碰撞瞬間兩車中心位置
-      xc2: isFinite(tc) ? p.x2 + p.v2 * tc : NaN
+      mu: mu, u: u, omega: omega,
+      dt: Math.PI / omega,
+      xmax: xmax,
+      Fmax: k * xmax,
+      J: 2 * mu * u,
+      Umax: 0.5 * k * xmax * xmax
     };
   }
 
-  /** 時刻 t（s）的位置、速度、動量、動能、質心 */
+  /**
+   * 建立一次模擬。
+   * p: { m1, m2, v1, v2, e, w1, w2, x1, x2 } — w 為車長、x 為車中心位置（m）。
+   * 加彈簧時再給 k（N/m）與 L0（m，自然長度）；此時 e 不使用（理想彈簧為彈性碰撞，e = 1）。
+   * 回傳的物件可交給 stateAt(sim, t) 求任何時刻的狀態（解析解，沒有累積誤差）。
+   */
+  function createSim(p) {
+    const spring = p.k > 0;
+    const e = spring ? 1 : p.e;
+    check(p.m1, p.m2, e);
+    const L0 = spring ? p.L0 : 0;
+    if (spring && !(L0 > 0)) throw new RangeError('彈簧自然長度 L0 必須為正');
+    // 有彈簧時，彈簧尖端（車 1 右緣再往右 L0）碰到車 2 左緣就開始接觸
+    const gap = (p.x2 - p.w2 / 2) - (p.x1 + p.w1 / 2) - L0;
+    const tc = timeToContact(gap, p.v1, p.v2);
+    const after = isFinite(tc) ? finalVelocities(p.m1, p.m2, p.v1, p.v2, e) : null;
+    const sim = {
+      m1: p.m1, m2: p.m2, v1: p.v1, v2: p.v2, e: e,
+      w1: p.w1, w2: p.w2, x1: p.x1, x2: p.x2,
+      spring: spring, k: spring ? p.k : 0, L0: L0,
+      tc: tc,                 // 碰撞（開始接觸）時刻（s），不會碰撞時為 Infinity
+      tr: tc,                 // 分開時刻（s）；沒有彈簧時與 tc 相同
+      contact: null,          // 彈簧接觸參數（springContact）
+      after: after,           // 碰撞後速度，不會碰撞時為 null
+      xc1: isFinite(tc) ? p.x1 + p.v1 * tc : NaN, // 碰撞（開始接觸）瞬間兩車中心位置
+      xc2: isFinite(tc) ? p.x2 + p.v2 * tc : NaN
+    };
+    sim.xr1 = sim.xc1; sim.xr2 = sim.xc2;           // 分開瞬間兩車中心位置
+    if (spring && isFinite(tc)) {
+      const c = springContact(p.m1, p.m2, p.v1, p.v2, p.k);
+      sim.contact = c;
+      sim.tr = tc + c.dt;
+      // 接觸期間質心等速度前進；放開時壓縮量回到 0，兩車中心距離與接觸開始時相同
+      const vc = vcm(p.m1, p.m2, p.v1, p.v2);
+      sim.xr1 = sim.xc1 + vc * c.dt;
+      sim.xr2 = sim.xc2 + vc * c.dt;
+    }
+    return sim;
+  }
+
+  /**
+   * 時刻 t（s）的位置、速度、動量、動能、質心；
+   * 另有彈簧壓縮量 x（m）、彈力大小 F（N）、彈性位能 U（J）、總能量 E = K + U（沒有彈簧時 x = F = U = 0）。
+   */
   function stateAt(sim, t) {
-    let x1, x2, v1, v2;
+    let x1, x2, v1, v2, cx = 0;
     const hit = t >= sim.tc;
+    const M = sim.m1 + sim.m2;
     if (!hit) {
       v1 = sim.v1; v2 = sim.v2;
       x1 = sim.x1 + v1 * t; x2 = sim.x2 + v2 * t;
+    } else if (sim.spring && t < sim.tr) {
+      // 接觸中：質心等速度 + 相對運動為簡諧運動
+      const c = sim.contact, tau = t - sim.tc;
+      const vc = (sim.m1 * sim.v1 + sim.m2 * sim.v2) / M;
+      const s = Math.sin(c.omega * tau), co = Math.cos(c.omega * tau);
+      cx = c.u / c.omega * s;
+      const xcm0 = (sim.m1 * sim.xc1 + sim.m2 * sim.xc2) / M + vc * tau;
+      const r = (sim.xc2 - sim.xc1) - cx;     // 兩車中心距離
+      x1 = xcm0 - sim.m2 / M * r;
+      x2 = xcm0 + sim.m1 / M * r;
+      v1 = vc + sim.m2 / M * c.u * co;
+      v2 = vc - sim.m1 / M * c.u * co;
     } else {
       v1 = sim.after.v1; v2 = sim.after.v2;
-      x1 = sim.xc1 + v1 * (t - sim.tc); x2 = sim.xc2 + v2 * (t - sim.tc);
+      x1 = sim.xr1 + v1 * (t - sim.tr); x2 = sim.xr2 + v2 * (t - sim.tr);
     }
     const q = quantities(sim.m1, sim.m2, v1, v2);
     q.t = t;
     q.x1 = x1; q.x2 = x2;
     q.collided = hit;
-    q.xcm = (sim.m1 * x1 + sim.m2 * x2) / (sim.m1 + sim.m2);
-    q.vcm = q.p / (sim.m1 + sim.m2);
+    q.contact = sim.spring && hit && t < sim.tr;
+    q.released = hit && t >= sim.tr;
+    q.x = cx;
+    q.F = sim.k * cx;
+    q.U = 0.5 * sim.k * cx * cx;
+    q.E = q.K + q.U;
+    q.xcm = (sim.m1 * x1 + sim.m2 * x2) / M;
+    q.vcm = q.p / M;
     return q;
   }
 
@@ -140,6 +211,7 @@
     finalVelocities: finalVelocities,
     collide: collide,
     keLoss: keLoss,
+    springContact: springContact,
     timeToContact: timeToContact,
     quantities: quantities,
     summary: summary,
