@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111245"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Connected Bodies and the Atwood Machine | Astro Ni Physics Lab">連體運動與阿特午機｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：阿特午機、桌面木塊與懸掛物、推拉連體木塊、斜面與懸掛物。依比例畫出每個物體的受力圖與系統圖，比較 a = F合/m總 與每個物體的 F = ma，判斷靜摩擦，用光電計時器或手按碼錶量測 g。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111245">
+  <style>
+    /* 連體運動與阿特午機頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .lab.aw { grid-template-areas: "scene panel" "fbd panel" "data panel"; grid-template-rows: auto auto 1fr; }
+    .aw > .scene-stage { grid-area: scene; }
+    .aw > .fbd-stage { grid-area: fbd; }
+    .aw > .data-stage { grid-area: data; align-self: start; }
+    .aw > .panel { grid-area: panel; align-self: start; }
+    @media (max-width: 880px) { .lab.aw { grid-template-areas: "scene" "panel" "fbd" "data"; grid-template-rows: none; } }
+    .aw [hidden] { display: none !important; }
+
+    #scene, #fbd { aspect-ratio: auto; height: 420px; touch-action: auto; cursor: default; }
+    #fbd { height: 360px; }
+
+    /* 分頁：四種實驗 */
+    .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 0 0 10px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+    @media (max-width: 640px) { .tabs { grid-template-columns: 1fr 1fr; } }
+    .tabs button { min-height: 44px; border: 1px solid transparent; border-radius: 9px; background: transparent; font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 7px; line-height: 1.2; padding: 6px 6px; transition: background-color .18s ease-out, color .18s ease-out; }
+    .tabs button svg { width: 22px; height: 22px; flex: none; }
+    .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent); border-color: var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+    .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .stage .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .stage .bar button { min-height: 44px; }
+    .stage .bar .primary { min-width: 96px; }
+    #lap { font-weight: 700; color: var(--pos); border-color: var(--pos); min-width: 96px; }
+    #lap:disabled { opacity: .45; cursor: default; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .stage .status { margin: 8px 4px 0; }
+
+    .stage-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin: 2px 4px 8px; }
+    .stage-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .stage-head p { margin: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.hollow { background: none !important; border: 2px solid currentColor; height: 8px; width: 14px; border-radius: 2px; }
+
+    .slider input[type="range"] { height: 28px; margin: 0; }
+    .slider label sub, dl.readout sub { font-size: .75em; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 6px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; min-height: 44px; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .movebox { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .movebox button { min-height: 44px; padding: 6px 4px; line-height: 1.25; }
+    .movebox button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .checks label { min-height: 44px; }
+    .checks input { width: 17px; height: 17px; }
+
+    /* 系統觀點 vs 個別物體 */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 2px 2px; }
+    @media (max-width: 1100px) { .compare { grid-template-columns: 1fr; } }
+    .compare section { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; min-width: 0; }
+    .compare h3 { font-size: calc(14px * var(--fs, 1)); margin: 0 0 6px; color: var(--accent); }
+    .compare .eq { font-size: calc(14px * var(--fs, 1)); line-height: 1.7; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .compare .eq b { color: var(--text); }
+    .compare .eq .big { font-size: calc(16px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+    .compare .eq .note { color: var(--muted); font-size: calc(13px * var(--fs, 1)); display: block; margin-top: 4px; }
+    .compare table { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .compare th, .compare td { border-bottom: 1px solid var(--border); padding: 4px 4px; text-align: right; vertical-align: top; }
+    .compare th { color: var(--muted); font-weight: 600; }
+    .compare td:first-child, .compare th:first-child { text-align: left; }
+    .compare td small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .compare td + td, .compare th + th { white-space: nowrap; }
+    .compare td.ok { color: var(--probe); font-weight: 700; }
+
+    /* 量測紀錄 */
+    .tablewrap { overflow-x: auto; margin: 4px 2px 0; }
+    table.runs { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.runs th, table.runs td { border-bottom: 1px solid var(--border); padding: 5px 6px; text-align: right; white-space: nowrap; }
+    table.runs th { color: var(--muted); font-weight: 600; }
+    table.runs td:nth-child(2), table.runs th:nth-child(2) { text-align: left; white-space: normal; min-width: 9em; }
+    table.runs td small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    table.runs tr.new td { animation: rowin .9s ease-out; }
+    @keyframes rowin { from { background: var(--accent-soft); } to { background: transparent; } }
+    @media (prefers-reduced-motion: reduce) { table.runs tr.new td { animation: none; } }
+    .runs-empty { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin: 6px 4px; }
+    .data-stage .bar { margin-top: 8px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Newton’s laws"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 牛頓運動定律</nav>
+      <h1 data-en="Connected Bodies and the Atwood Machine">連體運動與阿特午機</h1>
+      <p data-en-html="Bodies tied together by strings or pushing on each other move with the same acceleration. Release an Atwood machine, a block on a table or an incline pulled by a hanging mass, or a train of blocks pushed or pulled by a force. Compare the system view a = F<sub>net</sub> / m<sub>total</sub> with F = ma for each body, read every force from the free-body diagrams drawn to scale, and time the motion to measure g.">用繩子連在一起或互相推擠的物體，會以相同的加速度運動。釋放阿特午機、被懸掛物拉動的桌面木塊或斜面木塊，或用外力推、拉一列木塊；比較「系統觀點」a = F<sub>合</sub> / m<sub>總</sub> 與每個物體各自的 F = ma，從依比例畫出的受力圖讀出每一個力，並計時量出重力加速度 g。</p>
+    </header>
+
+    <div class="lab aw">
+      <div class="stage scene-stage">
+        <div class="tabs" role="tablist" aria-label="選擇實驗" data-en-aria-label="Choose an experiment">
+          <button type="button" role="tab" id="tab1" aria-selected="true" aria-controls="panel1" data-mode="1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 3h18"/><circle cx="12" cy="7" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path fill="none" stroke="currentColor" stroke-width="1.4" d="M8.8 7v6M15.2 7v9"/><rect x="6.3" y="13" width="5" height="5" rx="1" fill="currentColor"/><rect x="13" y="16" width="4.4" height="4" rx="1" fill="currentColor" opacity=".6"/></svg><span data-en="Atwood machine">阿特午機</span></button>
+          <button type="button" role="tab" id="tab2" aria-selected="false" aria-controls="panel2" data-mode="2" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M2 11h16M4 11v10"/><rect x="5" y="6" width="7" height="5" rx="1" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.3" d="M12 8.5h7"/><circle cx="19.3" cy="11" r="2.3" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.3" d="M21.6 11v5"/><rect x="19.4" y="16" width="4.2" height="4" rx="1" fill="currentColor" opacity=".6"/></svg><span data-en="Table + hanger">桌面與懸掛</span></button>
+          <button type="button" role="tab" id="tab3" aria-selected="false" aria-controls="panel3" data-mode="3" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M1 19h22"/><rect x="3" y="12" width="5" height="7" rx="1" fill="currentColor" opacity=".6"/><rect x="9.5" y="11" width="6" height="8" rx="1" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M16 15h5M19 12.8l2.2 2.2-2.2 2.2"/></svg><span data-en="Push / pull blocks">推拉連體</span></button>
+          <button type="button" role="tab" id="tab4" aria-selected="false" aria-controls="panel4" data-mode="4" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2 20h15V8z"/><rect x="7.2" y="11.6" width="5" height="3.6" rx=".8" transform="rotate(-35 9.7 13.4)" fill="currentColor"/><circle cx="18.3" cy="7.2" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.3" d="M20.3 7.2v6"/><rect x="18.3" y="13.2" width="4" height="4" rx="1" fill="currentColor" opacity=".6"/></svg><span data-en="Incline + hanger">斜面與懸掛</span></button>
+        </div>
+        <canvas id="scene" aria-label="連體運動模擬畫布：實驗裝置、計時器與速度對時間的圖" data-en-aria-label="Connected-bodies simulation: the apparatus, the timer and a velocity–time graph"></canvas>
+        <div class="bar">
+          <button id="play" type="button" class="primary" data-en="Release">釋放</button>
+          <button id="lap" type="button" hidden disabled data-en="Stop watch">停錶</button>
+          <button id="reset" type="button" data-en="Put back" title="把物體放回起點，量測紀錄保留" data-en-title="Put the bodies back at the start; the measurement table is kept">放回起點</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除量測紀錄、速度圖並放回起點，滑桿設定不變" data-en-title="Clear the measurements and the graph and put the bodies back; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Weight mg"><i style="background:var(--field)"></i>重力 mg</span>
+          <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Tension T"><i style="background:var(--b-mech)"></i>張力 T</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Normal force N"><i style="background:var(--neg)"></i>正向力 N</span>
+          <span data-en-html="<i style=&quot;background:var(--b-optics)&quot;></i>Friction f"><i style="background:var(--b-optics)"></i>摩擦力 f</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Applied force F"><i style="background:var(--pos)"></i>外力 F</span>
+          <span data-en-html="<i style=&quot;background:var(--probe)&quot;></i>Contact force P"><i style="background:var(--probe)"></i>接觸力 P</span>
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Acceleration a"><i class="dash"></i>加速度 a</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;hollow&quot;></i>Reaction (third law)"><i class="hollow"></i>反作用力（第三定律）</span>
+        </div>
+        <p class="hint" id="hint" data-en-html="Press “Release” to let go from rest (or with the initial speed v<sub>0</sub>). The timer stops when the hanging mass lands, a block reaches the stopper, or the front block crosses the finish line.">按「釋放」從靜止（或以初速 v<sub>0</sub>）放手。懸掛物落地、木塊撞到擋板或前方木塊通過終點時，計時器停止。</p>
+      </div>
+
+      <div class="stage fbd-stage">
+        <div class="stage-head">
+          <h2 data-en="Free-body diagrams (to scale)">受力圖（依比例）</h2>
+          <p id="fbdNote" data-en="Every arrow uses the same force scale">所有箭頭使用同一個力的比例尺</p>
+        </div>
+        <canvas id="fbd" aria-label="每個物體的受力圖與整個系統沿繩子方向的受力圖" data-en-aria-label="Free-body diagram of each body, and the whole system straightened out along the string"></canvas>
+        <div class="compare">
+          <section>
+            <h3 data-en-html="System view: a = F<sub>net</sub> / m<sub>total</sub>">系統觀點：a = F<sub>合</sub> / m<sub>總</sub></h3>
+            <div class="eq" id="sysEq">—</div>
+          </section>
+          <section>
+            <h3 data-en="Each body: ΣF = ma">個別物體：ΣF = ma</h3>
+            <div class="eq" id="bodyEq">—</div>
+          </section>
+        </div>
+      </div>
+
+      <div class="stage data-stage">
+        <div class="stage-head">
+          <h2 data-en="Measurements">量測紀錄</h2>
+          <p data-en="a is worked out from the distance and the measured time">a 由距離與量到的時間反推</p>
+        </div>
+        <div class="tablewrap">
+          <table class="runs" id="runs" hidden>
+            <thead><tr>
+              <th>#</th>
+              <th data-en="Set-up">條件</th>
+              <th data-en-html="t (s)">t (s)</th>
+              <th data-en-html="a<sub>meas</sub> (m/s<sup>2</sup>)">a<sub>測</sub> (m/s<sup>2</sup>)</th>
+              <th data-en-html="a<sub>theory</sub> (m/s<sup>2</sup>)">a<sub>理論</sub> (m/s<sup>2</sup>)</th>
+              <th data-en-html="g<sub>meas</sub> (m/s<sup>2</sup>)">g<sub>推算</sub> (m/s<sup>2</sup>)</th>
+            </tr></thead>
+            <tbody id="runsBody"></tbody>
+          </table>
+        </div>
+        <p class="runs-empty" id="runsEmpty" data-en="No measurements yet. Each release that reaches the floor, the stopper or the finish line adds a row. “Clear all” empties the table.">還沒有量測紀錄。每次釋放後抵達地板、擋板或終點，就會新增一列；「全部清除」會清空表格。</p>
+      </div>
+
+      <aside class="panel">
+        <!-- ===================== 1 阿特午機 ===================== -->
+        <section class="card" id="panel1" role="tabpanel" aria-labelledby="tab1">
+          <h2 data-en="Atwood machine">阿特午機</h2>
+          <div class="slider"><label for="a1m1" data-en-html="Left mass m<sub>1</sub> (released from height h)">左邊質量 m<sub>1</sub>（從高度 h 釋放）</label><output id="a1m1o"></output>
+            <input id="a1m1" type="range" min="0.05" max="2" step="0.01" value="0.7" data-decimals="3"></div>
+          <div class="slider"><label for="a1m2" data-en-html="Right mass m<sub>2</sub> (on the floor)">右邊質量 m<sub>2</sub>（放在地上）</label><output id="a1m2o"></output>
+            <input id="a1m2" type="range" min="0.05" max="2" step="0.01" value="0.5" data-decimals="3"></div>
+          <p class="seg-label" data-en="Move one 10 g slotted mass (total mass unchanged):">搬一個 10 g 砝碼（總質量不變）：</p>
+          <div class="movebox">
+            <button type="button" id="move12" data-en-html="m<sub>1</sub> → m<sub>2</sub><small>Δm decreases</small>">m<sub>1</sub> → m<sub>2</sub><small>Δm 變小</small></button>
+            <button type="button" id="move21" data-en-html="m<sub>2</sub> → m<sub>1</sub><small>Δm increases</small>">m<sub>2</sub> → m<sub>1</sub><small>Δm 變大</small></button>
+          </div>
+          <div class="slider"><label for="a1h" data-en="Drop height h">落下高度 h</label><output id="a1ho"></output>
+            <input id="a1h" type="range" min="0.2" max="1" step="0.05" value="0.8" data-decimals="3"></div>
+          <div class="slider"><label for="a1v" data-en-html="Initial speed v<sub>0</sub> (m<sub>1</sub> downward)">初速 v<sub>0</sub>（m<sub>1</sub> 向下）</label><output id="a1vo"></output>
+            <input id="a1v" type="range" min="0" max="1.5" step="0.05" value="0" data-decimals="3"></div>
+          <p class="hint" data-en="Tap a number to type an exact value (masses to 1 g).">點一下數字可直接輸入精確數值（質量可到 1 g）。</p>
+        </section>
+
+        <!-- ===================== 2 桌面＋懸掛 ===================== -->
+        <section class="card" id="panel2" role="tabpanel" aria-labelledby="tab2" hidden>
+          <h2 data-en="Block on a table + hanging mass">桌面木塊＋懸掛物</h2>
+          <div class="slider"><label for="a2M" data-en="Block on the table M">桌上木塊 M</label><output id="a2Mo"></output>
+            <input id="a2M" type="range" min="0.1" max="3" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="a2m" data-en="Hanging mass m">懸掛物 m</label><output id="a2mo"></output>
+            <input id="a2m" type="range" min="0.01" max="2" step="0.01" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="a2us" data-en-html="Static friction coefficient μ<sub>s</sub>">靜摩擦係數 μ<sub>s</sub></label><output id="a2uso"></output>
+            <input id="a2us" type="range" min="0" max="1" step="0.01" value="0.4" data-decimals="3"></div>
+          <div class="slider"><label for="a2uk" data-en-html="Kinetic friction coefficient μ<sub>k</sub>">動摩擦係數 μ<sub>k</sub></label><output id="a2uko"></output>
+            <input id="a2uk" type="range" min="0" max="1" step="0.01" value="0.25" data-decimals="3"></div>
+          <div class="slider"><label for="a2d" data-en="Distance to the stopper d">到擋板的距離 d</label><output id="a2do"></output>
+            <input id="a2d" type="range" min="0.2" max="0.8" step="0.05" value="0.6" data-decimals="3"></div>
+          <div class="slider"><label for="a2v" data-en-html="Initial speed v<sub>0</sub> (toward the pulley)">初速 v<sub>0</sub>（朝滑輪）</label><output id="a2vo"></output>
+            <input id="a2v" type="range" min="0" max="1.5" step="0.05" value="0" data-decimals="3"></div>
+          <p class="hint" data-en-html="μ<sub>k</sub> cannot exceed μ<sub>s</sub>; moving one slider past the other moves both. Tap a number to type an exact value.">μ<sub>k</sub> 不會大於 μ<sub>s</sub>：把一個滑桿拉過另一個時兩個會一起移動。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <!-- ===================== 3 推拉連體 ===================== -->
+        <section class="card" id="panel3" role="tabpanel" aria-labelledby="tab3" hidden>
+          <h2 data-en="Blocks pushed or pulled">推拉連體木塊</h2>
+          <p class="seg-label" id="pushLabel" data-en="The force F:">外力 F：</p>
+          <div class="seg2" role="group" aria-labelledby="pushLabel">
+            <button type="button" id="modePush" aria-pressed="false" data-en="pushes the left block">推最左邊的木塊</button>
+            <button type="button" id="modePull" aria-pressed="true" data-en="pulls the right block">拉最右邊的木塊</button>
+          </div>
+          <p class="seg-label" id="nLabel" data-en="Number of blocks:">木塊數目：</p>
+          <div class="seg2" role="group" aria-labelledby="nLabel">
+            <button type="button" id="n2" aria-pressed="false" data-en="2 blocks">2 塊</button>
+            <button type="button" id="n3" aria-pressed="true" data-en="3 blocks">3 塊</button>
+          </div>
+          <div class="slider"><label for="a3m1" data-en-html="Mass m<sub>1</sub> (left)">質量 m<sub>1</sub>（左）</label><output id="a3m1o"></output>
+            <input id="a3m1" type="range" min="0.2" max="3" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="a3m2" data-en-html="Mass m<sub>2</sub>">質量 m<sub>2</sub></label><output id="a3m2o"></output>
+            <input id="a3m2" type="range" min="0.2" max="3" step="0.05" value="1.5" data-decimals="3"></div>
+          <div class="slider" id="box3m3"><label for="a3m3" data-en-html="Mass m<sub>3</sub> (right)">質量 m<sub>3</sub>（右）</label><output id="a3m3o"></output>
+            <input id="a3m3" type="range" min="0.2" max="3" step="0.05" value="2" data-decimals="3"></div>
+          <div class="slider"><label for="a3F" data-en="Applied force F (horizontal)">外力 F（水平）</label><output id="a3Fo"></output>
+            <input id="a3F" type="range" min="0" max="40" step="0.5" value="15" data-decimals="2"></div>
+          <div class="slider"><label for="a3us" data-en-html="Static friction coefficient μ<sub>s</sub> (floor)">靜摩擦係數 μ<sub>s</sub>（地面）</label><output id="a3uso"></output>
+            <input id="a3us" type="range" min="0" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="a3uk" data-en-html="Kinetic friction coefficient μ<sub>k</sub> (floor)">動摩擦係數 μ<sub>k</sub>（地面）</label><output id="a3uko"></output>
+            <input id="a3uk" type="range" min="0" max="1" step="0.01" value="0.15" data-decimals="3"></div>
+          <div class="slider"><label for="a3d" data-en="Distance to the finish line d">到終點線的距離 d</label><output id="a3do"></output>
+            <input id="a3d" type="range" min="0.3" max="1.2" step="0.05" value="0.8" data-decimals="3"></div>
+          <div class="slider"><label for="a3v" data-en-html="Initial speed v<sub>0</sub>">初速 v<sub>0</sub></label><output id="a3vo"></output>
+            <input id="a3v" type="range" min="0" max="1.5" step="0.05" value="0" data-decimals="3"></div>
+          <p class="hint" data-en="All blocks share the same friction coefficients. Tap a number to type an exact value.">所有木塊與地面的摩擦係數相同。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <!-- ===================== 4 斜面＋懸掛 ===================== -->
+        <section class="card" id="panel4" role="tabpanel" aria-labelledby="tab4" hidden>
+          <h2 data-en="Block on an incline + hanging mass">斜面木塊＋懸掛物</h2>
+          <div class="slider"><label for="a4M" data-en="Block on the incline M">斜面上的木塊 M</label><output id="a4Mo"></output>
+            <input id="a4M" type="range" min="0.1" max="3" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="a4m" data-en="Hanging mass m">懸掛物 m</label><output id="a4mo"></output>
+            <input id="a4m" type="range" min="0.01" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="a4th" data-en="Incline angle θ">斜面傾角 θ</label><output id="a4tho"></output>
+            <input id="a4th" type="range" min="0" max="60" step="1" value="30" data-decimals="1"></div>
+          <div class="slider"><label for="a4us" data-en-html="Static friction coefficient μ<sub>s</sub>">靜摩擦係數 μ<sub>s</sub></label><output id="a4uso"></output>
+            <input id="a4us" type="range" min="0" max="1" step="0.01" value="0.3" data-decimals="3"></div>
+          <div class="slider"><label for="a4uk" data-en-html="Kinetic friction coefficient μ<sub>k</sub>">動摩擦係數 μ<sub>k</sub></label><output id="a4uko"></output>
+            <input id="a4uk" type="range" min="0" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="a4d" data-en="Distance to each stopper d">到上、下擋板的距離 d</label><output id="a4do"></output>
+            <input id="a4d" type="range" min="0.2" max="0.7" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="a4v" data-en-html="Initial speed v<sub>0</sub> (up the incline)">初速 v<sub>0</sub>（沿斜面向上）</label><output id="a4vo"></output>
+            <input id="a4v" type="range" min="0" max="1.5" step="0.05" value="0" data-decimals="3"></div>
+          <p class="hint" data-en-html="μ<sub>k</sub> cannot exceed μ<sub>s</sub>. Tap a number to type an exact value.">μ<sub>k</sub> 不會大於 μ<sub>s</sub>。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Timing">計時方式</h2>
+          <div class="seg2" role="group" aria-label="計時方式" data-en-aria-label="Timing method">
+            <button type="button" id="timeGate" aria-pressed="true" data-en="Photogate timer">光電計時器</button>
+            <button type="button" id="timeHand" aria-pressed="false" data-en="Hand stopwatch">手按碼錶</button>
+          </div>
+          <p class="hint" id="timeHint" data-en="The photogate timer starts when the body is released and stops automatically, to 0.001 s.">光電計時器在釋放時開始、物體抵達時自動停止，讀到 0.001 s。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showForces" type="checkbox"><span data-en="Forces on the apparatus">實驗圖上畫力</span></label>
+            <label><input id="showPairs" type="checkbox" checked><span data-en="Third-law pairs at contacts">接觸處的第三定律力對</span></label>
+            <label><input id="showAcc" type="checkbox" checked><span data-en="Acceleration arrows">加速度箭頭</span></label>
+            <label><input id="showComp" type="checkbox" checked><span data-en="Weight components on the incline">斜面上的重力分量</span></label>
+          </div>
+          <p class="hint" data-en="Force arrows on the apparatus and in the free-body diagrams use one fixed scale for the current set-up (see the scale bar).">實驗圖與受力圖上的力箭頭，在目前的條件下使用固定的比例尺（見比例尺）。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Two ways to use Newton’s second law">牛頓第二定律的兩種用法</h3>
+      <p data-en-html="When bodies are joined by a taut string or push on each other, they move together with the same magnitude of acceleration \(a\). There are two equivalent ways to find it:">物體用拉緊的繩子連在一起或互相推擠時，會以相同大小的加速度 \(a\) 一起運動。有兩種等價的算法：</p>
+      <ul>
+        <li data-en-html="<strong>System view</strong>: treat all the bodies as one, measured along the direction of motion. Internal forces (string tensions between the bodies, contact forces between blocks) come in equal and opposite pairs and cancel, leaving only external forces: \[ a = \frac{F_{\text{net, external}}}{m_{\text{total}}} \]"><strong>系統觀點</strong>：把所有物體當成一個整體，沿運動方向來看。內力（物體之間的繩子張力、木塊之間的接觸力）成對抵消，只剩外力：\[ a = \frac{F_{\text{外力合力}}}{m_{\text{總}}} \]</li>
+        <li data-en-html="<strong>Each body on its own</strong>: draw a free-body diagram for every body and write \(\Sigma F = ma\). This is how internal forces such as the tension \(T\) are found.">
+<strong>個別物體</strong>：替每個物體畫受力圖，各自寫出 \(\Sigma F = ma\)。張力 \(T\) 這類內力要用這個方法求。</li>
+      </ul>
+
+      <h3 data-en="The Atwood machine">阿特午機</h3>
+      <p data-en-html="Two masses hang over a light, frictionless pulley. Taking “\(m_1\) moves down” as positive, the system view gives \(a\) at once, and either mass then gives \(T\):">兩個物體跨過輕而無摩擦的滑輪。以「\(m_1\) 往下」為正方向，系統觀點立刻得到 \(a\)，再由任一個物體求出 \(T\)：</p>
+      <div class="formula">
+        \[ a = \frac{(m_1 - m_2)\,g}{m_1 + m_2}, \qquad m_1 g - T = m_1 a \;\Rightarrow\; T = \frac{2 m_1 m_2\, g}{m_1 + m_2} \]
+      </div>
+      <p data-en-html="The tension always lies between \(m_2 g\) and \(m_1 g\). When \(m_2 \to 0\) the acceleration tends to \(g\) (free fall); when \(m_1 = m_2\) it is zero, and a push makes the system move at constant velocity (Newton’s first law). Atwood (1784) used this “diluted gravity” to slow the fall enough to time it by hand. Starting from rest and falling a height \(h\) in a time \(t\):">張力永遠介於 \(m_2 g\) 與 \(m_1 g\) 之間。\(m_2 \to 0\) 時 \(a \to g\)（自由落體）；\(m_1 = m_2\) 時 \(a = 0\)，推一下就會等速度運動（牛頓第一定律）。阿特午（1784 年）就是用這種「稀釋的重力」讓落下變慢，才能用手計時。從靜止落下高度 \(h\) 花了時間 \(t\)：</p>
+      <div class="formula">
+        \[ h = \tfrac12 a t^{2} \;\Rightarrow\; a = \frac{2h}{t^{2}}, \qquad g = a\,\frac{m_1 + m_2}{m_1 - m_2} \]
+      </div>
+      <p data-en-html="Moving 10 g slotted masses from one side to the other changes \(\Delta m = m_1 - m_2\) but keeps \(m_1 + m_2\) fixed, so \(a\) is proportional to \(\Delta m\): a straight line through the origin with slope \(g/(m_1 + m_2)\).">把 10 g 的砝碼從一邊搬到另一邊，\(\Delta m = m_1 - m_2\) 改變而 \(m_1 + m_2\) 不變，所以 \(a\) 與 \(\Delta m\) 成正比：一條通過原點、斜率 \(g/(m_1 + m_2)\) 的直線。</p>
+
+      <h3 data-en="Friction decides whether it moves">靜摩擦力決定動不動</h3>
+      <p data-en-html="For a block \(M\) on a table pulled by a hanging mass \(m\), first compare the pull with the maximum static friction. If \(mg \le \mu_s Mg\) nothing moves and the static friction is exactly \(mg\) (not \(\mu_s Mg\)). Otherwise:">桌上的木塊 \(M\) 被懸掛物 \(m\) 拉動時，先比較拉力與最大靜摩擦力：若 \(mg \le \mu_s Mg\)，兩者都不動，靜摩擦力恰為 \(mg\)（不是 \(\mu_s Mg\)）。否則：</p>
+      <div class="formula">
+        \[ a = \frac{(m - \mu_k M)\,g}{M + m}, \qquad T = m(g - a) = \frac{Mm\,g\,(1 + \mu_k)}{M + m} \]
+      </div>
+      <p data-en-html="On an incline of angle \(\theta\) the weight of the block has a component \(Mg\sin\theta\) down the slope and the normal force is \(Mg\cos\theta\). There are three possibilities:">在傾角 \(\theta\) 的斜面上，木塊重力沿斜面的分量是 \(Mg\sin\theta\)，正向力是 \(Mg\cos\theta\)，共有三種情況：</p>
+      <div class="formula" data-en-html="\[ \begin{aligned} m &gt; M(\sin\theta + \mu_s\cos\theta) &amp;:\quad a = \frac{m - M(\sin\theta + \mu_k\cos\theta)}{M + m}\,g \ \ \text{(up the slope)} \\ m &lt; M(\sin\theta - \mu_s\cos\theta) &amp;:\quad a = \frac{M(\sin\theta - \mu_k\cos\theta) - m}{M + m}\,g \ \ \text{(down the slope)} \\ \text{otherwise} &amp;:\quad a = 0,\ \ f_s = |mg - Mg\sin\theta| \end{aligned} \]">
+        \[ \begin{aligned} m &gt; M(\sin\theta + \mu_s\cos\theta) &amp;:\quad a = \frac{m - M(\sin\theta + \mu_k\cos\theta)}{M + m}\,g \ \ \text{（上滑）} \\ m &lt; M(\sin\theta - \mu_s\cos\theta) &amp;:\quad a = \frac{M(\sin\theta - \mu_k\cos\theta) - m}{M + m}\,g \ \ \text{（下滑）} \\ \text{其他} &amp;:\quad a = 0,\ \ f_s = |mg - Mg\sin\theta| \end{aligned} \]
+      </div>
+      <p data-en-html="Static friction points whichever way is needed to stop the motion; it can even be zero (when \(m = M\sin\theta\)). Kinetic friction always opposes the velocity, so if a block sent up the slope stops, friction has to be decided again before it slides back.">靜摩擦力的方向「看需要」，甚至可以是零（\(m = M\sin\theta\) 時）。動摩擦力永遠與速度相反；往上衝的木塊停下來時，要重新判斷靜摩擦力撐不撐得住，才知道會不會滑回來。</p>
+
+      <h3 data-en="Pushing and pulling a row of blocks">推、拉一列木塊</h3>
+      <p data-en-html="With a force \(F\) and the same \(\mu_k\) for every block, all blocks share \(a = (F - \mu_k\,\Sigma m\,g)/\Sigma m\). The force between two neighbours only has to accelerate (and drag) the blocks on the far side, so">以外力 \(F\) 推或拉、每塊木塊的 \(\mu_k\) 相同時，加速度都是 \(a = (F - \mu_k\,\Sigma m\,g)/\Sigma m\)。相鄰兩塊之間的力只需要帶動「另一側」的木塊，所以</p>
+      <div class="formula" data-en-html="\[ \text{pull:}\ \ T_{12} = \frac{m_1}{m_1 + m_2 + m_3}\,F,\quad T_{23} = \frac{m_1 + m_2}{m_1 + m_2 + m_3}\,F; \qquad \text{push:}\ \ P_{12} = \frac{m_2 + m_3}{m_1 + m_2 + m_3}\,F,\quad P_{23} = \frac{m_3}{m_1 + m_2 + m_3}\,F \]">
+        \[ \text{拉：}\ \ T_{12} = \frac{m_1}{m_1 + m_2 + m_3}\,F,\quad T_{23} = \frac{m_1 + m_2}{m_1 + m_2 + m_3}\,F; \qquad \text{推：}\ \ P_{12} = \frac{m_2 + m_3}{m_1 + m_2 + m_3}\,F,\quad P_{23} = \frac{m_3}{m_1 + m_2 + m_3}\,F \]
+      </div>
+      <p data-en-html="The string nearer the pulling hand carries the larger tension, and — surprisingly — these forces do not depend on \(\mu_k\) at all. The contact forces obey Newton’s third law: block 1 pushes block 2 forward with \(P\), and block 2 pushes block 1 back with the same \(P\). The two forces act on different bodies, so they never cancel each other in one free-body diagram.">越靠近拉力的那條繩子張力越大，而且這些力竟然與 \(\mu_k\) 無關。接觸力遵守牛頓第三定律：木塊 1 以 \(P\) 往前推木塊 2，木塊 2 也以同樣大小的 \(P\) 往後推木塊 1；這兩個力作用在不同物體上，所以不會在同一張受力圖裡互相抵消。</p>
+
+      <h3 data-en="After the landing">落地之後</h3>
+      <p data-en-html="When \(m_1\) lands, the string goes slack (\(T = 0\)) and \(m_2\) keeps rising by inertia as a body thrown upward, climbing a further \(v^{2}/2g\). When it falls back, the string snaps taut — a perfectly inelastic “collision” along the string, \(m_A v_A + m_B v_B = (m_A + m_B)\,v'\) — and the bodies bounce a few times, each time more gently.">\(m_1\) 落地時繩子鬆掉（\(T = 0\)），\(m_2\) 因慣性像鉛直上拋一樣繼續上升 \(v^{2}/2g\)；落回來時繩子突然拉緊，沿繩方向就像一次完全非彈性碰撞：\(m_A v_A + m_B v_B = (m_A + m_B)\,v'\)，之後還會彈跳幾次、越來越輕。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Diluted gravity</strong>: with \(m_1 = 0.60\ \mathrm{kg}\), \(m_2 = 0.40\ \mathrm{kg}\) the acceleration is \(g/5 = 1.96\ \mathrm{m/s^2}\). Compare the “system view” and the two free-body diagrams: \(m_1 g - T\) and \(T - m_2 g\) are both equal to \(ma\) of that body."><strong>稀釋的重力</strong>：\(m_1 = 0.60\ \mathrm{kg}\)、\(m_2 = 0.40\ \mathrm{kg}\) 時 \(a = g/5 = 1.96\ \mathrm{m/s^2}\)。比較「系統觀點」與兩張受力圖：\(m_1 g - T\) 與 \(T - m_2 g\) 都等於各自的 \(ma\)。</li>
+        <li data-en-html="<strong>Δm experiment</strong>: keep pressing “\(m_2 \to m_1\)” and time each release with the photogate. The measured \(a\) grows in equal steps, and every row of the table gives the same \(g\)."><strong>Δm 實驗</strong>：一直按「\(m_2 \to m_1\)」，每次都用光電計時器量一次。量到的 \(a\) 等量增加，而表格每一列推算出的 \(g\) 都一樣。</li>
+        <li data-en-html="<strong>Time it by hand</strong>: switch to the hand stopwatch and press “Stop watch” the moment \(m_1\) lands. With a large \(\Delta m\) your reaction time ruins the result; with a small \(\Delta m\) the fall takes several seconds and your \(g\) comes much closer — exactly why Atwood slowed the motion down."><strong>用手計時</strong>：改用手按碼錶，在 \(m_1\) 落地的瞬間按「停錶」。\(\Delta m\) 大時反應時間讓誤差很大；\(\Delta m\) 小時要落好幾秒，推算的 \(g\) 準得多——這正是阿特午要讓運動變慢的原因。</li>
+        <li data-en-html="<strong>Find the threshold</strong>: on a table with \(M = 1\ \mathrm{kg}\), \(\mu_s = 0.40\), the block stays put for \(m = 0.40\ \mathrm{kg}\) (static friction exactly \(mg\)) and moves for \(m = 0.41\ \mathrm{kg}\) — then the friction drops to \(\mu_k Mg\)."><strong>找臨界值</strong>：桌上 \(M = 1\ \mathrm{kg}\)、\(\mu_s = 0.40\)，\(m = 0.40\ \mathrm{kg}\) 時木塊不動（靜摩擦力恰為 \(mg\)），\(m = 0.41\ \mathrm{kg}\) 時開始動，摩擦力立刻變成 \(\mu_k Mg\)。</li>
+        <li data-en-html="<strong>Which string is tighter?</strong> Pull three blocks: the string next to your hand always has the larger tension. Change \(\mu_k\): the acceleration changes but the tensions do not."><strong>哪一條繩子比較緊？</strong>拉三塊木塊：靠近手的繩子張力一定比較大。改變 \(\mu_k\)：加速度改變，張力卻不變。</li>
+        <li data-en-html="<strong>Third-law pairs</strong>: push the blocks and look at the green arrows at each contact — equal in length, opposite in direction, on different blocks. The normal force on a block and the force of the block on the table form another pair (hollow arrows)."><strong>第三定律力對</strong>：推動木塊，看接觸處的綠色箭頭——等長、反向、作用在不同的木塊上。木塊受到的正向力與木塊壓桌面的力是另一對（空心箭頭）。</li>
+        <li data-en-html="<strong>Up, stop, back</strong>: on a 35° incline with a light hanging mass, give the block \(v_0\) up the slope. It slows down, stops, then slides back — friction changes direction at the turning point."><strong>上去、停下、回來</strong>：35° 斜面、懸掛物很輕，給木塊沿斜面向上的初速。它減速、停下，再滑回來——在折返點摩擦力換了方向。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Strings are light and inextensible, pulleys light and frictionless, \(g = 9.8\ \mathrm{m/s^2}\). The motion is made of pieces of constant acceleration solved exactly (no step-by-step numerical error). Each piece ends at an event — a stop, a landing, a stopper, the string going slack or snapping taut — where the forces are decided again, including the static-friction test.">繩子輕而不可伸長、滑輪輕而無摩擦，\(g = 9.8\ \mathrm{m/s^2}\)。運動分成好幾段等加速度運動，每一段都用解析解精確計算（沒有逐步累積的數值誤差）。每一段在某個事件結束——停下、落地、撞到擋板、繩子鬆掉或突然拉緊——再重新判斷受力，包括靜摩擦力撐不撐得住。</li>
+        <li data-en="Floors and stoppers are perfectly inelastic, and a slack string snapping taut is a perfectly inelastic interaction along the string. Once the speed after a jerk is below 2 mm/s, or 10 s after the first impact, the simulation stops (the remaining motion is too small or too long to matter).">地板與擋板是完全非彈性的；鬆掉的繩子突然拉緊，沿繩方向也是完全非彈性。繩子拉緊後速度小於 2 mm/s，或第一次撞擊後超過 10 s，就停止模擬（剩下的運動太小或太久）。</li>
+        <li data-en="When several surfaces could share the load of a body at rest (blocks at rest in a row, or a block resting against a stopper), the split of static friction is not fixed by Newton’s laws alone. The simulation assumes the load builds up gradually: the block that receives the force uses its own static friction first and passes on the rest.">靜止時若有幾個面可以分擔受力（靜止的一列木塊，或靠在擋板上的木塊），靜摩擦力如何分配無法只由牛頓定律決定。本模擬假設外力是慢慢加上的：直接受力的木塊先用掉自己的靜摩擦力，剩下的才傳下去。</li>
+        <li data-en="In the push/pull experiment the timing stops and the picture freezes when the front block crosses the finish line; what happens after that is not simulated.">推拉連體實驗中，前方木塊通過終點線時計時停止、畫面凍結，之後的運動不模擬。</li>
+        <li data-en="The photogate timer reads to 0.001 s. The hand stopwatch is stopped by you, so it includes your real reaction time; a run that used slow motion or was paused is marked in the table and is not a fair hand measurement.">光電計時器讀到 0.001 s；手按碼錶由你親手停錶，包含你真實的反應時間（用過慢動作或暫停的那一次會在表格中標示，不算公平的手按量測）。</li>
+        <li data-en="The sizes of the bodies only grow with mass so you can tell them apart; they do not affect the motion.">物體的大小只是隨質量變大以便分辨，不影響運動。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111245"></script>
+  <script src="js/atwood-core.js?v=202611111245"></script>
+  <script src="js/sound.js?v=202611111245"></script>
+  <script src="js/numinput.js?v=202611111245"></script>
+  <script src="js/atwood.js?v=202611111245"></script>
+  <script src="js/firebase-config.js?v=202611111245"></script>
+  <script src="js/missions.js?v=202611111245" data-module="atwood"></script>
+  <script src="js/missions/atwood.js?v=202611111245"></script>
+  <script src="js/stats.js?v=202611111245" data-module="atwood"></script>
+  <script src="js/comments.js?v=202611111245"></script>
+</body>
+</html>
