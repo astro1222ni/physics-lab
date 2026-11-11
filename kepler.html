@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111051"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Planetary Orbits and Kepler's Laws | Astro Ni Physics Lab">行星軌道與克卜勒定律｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：拖曳發射點與速度箭頭，發射衛星或行星，看圓、橢圓、拋物線與雙曲線軌道；驗證克卜勒第二定律（等時間掃過等面積）與第三定律（T² / a³ 為定值），認識圓周速率與脫離速率。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111051">
+  <style>
+    /* 行星軌道頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；只有按在起點或箭頭上才會拖曳，其他地方手機可以捲動頁面 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .kp button { min-height: 44px; }
+    .kp .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .kp .playbar button { flex: 1 1 auto; }
+    .kp .playbar #launch { font-weight: 700; }
+    .kp .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .kp .stage .status { margin: 6px 4px 0; }
+    .kp .slider input[type="range"] { height: 28px; margin: 0; }
+    .kp .slider label sub, dl.readout sub { font-size: .75em; }
+    .kp [hidden] { display: none !important; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .kp .checks label { min-height: 36px; }
+    .kp .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.kind { font-weight: 700; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    /* 速率刻度：v圓、v脫 在滑桿上的位置 */
+    .vgauge { position: relative; height: 20px; margin: -4px 0 2px; grid-column: 1 / -1; font-size: calc(11px * var(--fs, 1)); color: var(--muted); }
+    .vgauge span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; line-height: 1.2; padding-top: 5px; }
+    .vgauge span::before { content: ""; position: absolute; left: 50%; top: 0; width: 2px; height: 5px; margin-left: -1px; background: currentColor; border-radius: 1px; }
+    .vgauge .gc { color: var(--accent); }
+    .vgauge .ge { color: var(--b-mech); }
+    .vbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .vbtns button { padding: 6px; line-height: 1.25; font-size: calc(13px * var(--fs, 1)); }
+    .vbtns button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    /* 克卜勒第二、第三定律 */
+    .laws { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 16px; margin-top: 16px; align-items: start; }
+    @media (max-width: 880px) { .laws { grid-template-columns: minmax(0, 1fr); } }
+    .laws .card h2 { font-size: calc(16px * var(--fs, 1)); }
+    .areas { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(92px * var(--fs, 1)), 1fr)); gap: 6px; margin: 10px 0 6px; padding: 0; list-style: none; }
+    .areas li { border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; display: flex; justify-content: space-between; gap: 6px; align-items: baseline; }
+    .areas li span { color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .areas li.alt { background: var(--accent-soft); }
+    .areas li.now { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+    .areas-sum { font-size: calc(14px * var(--fs, 1)); margin: 6px 0 0; font-variant-numeric: tabular-nums; }
+    .k3wrap { overflow-x: auto; }
+    table.hist { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.hist th, table.hist td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.hist th { color: var(--muted); font-weight: 600; }
+    table.hist th:first-child, table.hist td:first-child { text-align: left; }
+    table.hist td.k { font-weight: 700; color: var(--accent); }
+    table.hist .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+    @media (max-width: 480px) { table.hist .ce { display: none; } table.hist th, table.hist td { padding: 5px 4px; } table.hist th, table.hist td.k { white-space: normal; vertical-align: bottom; } }
+    table.hist .empty td { text-align: center; color: var(--muted); padding: 12px 6px; white-space: normal; }
+    #chart { display: block; width: 100%; height: 280px; margin-top: 10px; border-radius: 8px; background: var(--canvas-bg); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Gravitation"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 萬有引力</nav>
+      <h1 data-en="Planetary Orbits and Kepler's Laws">行星軌道與克卜勒定律</h1>
+      <p data-en="Launch a planet around the Sun or a satellite around the Earth. Drag the starting point and the velocity arrow (or use the sliders) and see how the launch speed decides the shape of the orbit — circle, ellipse, parabola or hyperbola. Shade equal-time sectors to check Kepler's second law, and launch several orbits to check that T²/a³ is the same for all of them.">發射一顆繞太陽的行星，或繞地球的人造衛星。拖曳起點與速度箭頭（或用滑桿），看發射速率如何決定軌道的形狀——圓、橢圓、拋物線或雙曲線。打開等時間扇形驗證克卜勒第二定律，再發射幾條軌道，確認它們的 T²/a³ 都相同。</p>
+    </header>
+
+    <div class="lab kp">
+      <div class="stage">
+        <canvas id="cv" aria-label="行星軌道模擬畫布：中心天體、發射點與速度箭頭、軌道曲線、近日點與遠日點、等時間扇形" data-en-aria-label="Planetary orbit simulation: central body, launch point and velocity arrow, orbit curve, perihelion and aphelion, equal-time sectors"></canvas>
+        <div class="playbar">
+          <button id="launch" class="primary" type="button">發射</button>
+          <button id="play" type="button">暫停</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有軌道與第三定律的紀錄，滑桿設定不變" data-en-title="Clear all orbits and the third-law records; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Orbit in flight"><i style="background:var(--accent)"></i>飛行中的軌道</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Predicted orbit (not launched yet)"><i class="dash"></i>預測軌道（尚未發射）</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Circular speed ring"><i class="dot" style="background:var(--accent)"></i>圓周速率圈 v<sub>圓</sub></span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-mech)&quot;></i>Escape speed ring"><i class="dot" style="background:var(--b-mech)"></i>脫離速率圈 v<sub>脫</sub></span>
+        </div>
+        <p class="hint" data-en-html="Drag the <b>launch point</b> to move it and the <b>tip of the red arrow</b> to set the launch speed and direction. Arrow length is proportional to speed; when the tip reaches the green or orange dashed ring the speed equals the circular or the escape speed (the tip snaps onto the rings). Press “Launch”: earlier orbits stay as faint ghosts.">拖曳<b>發射點</b>可移動位置，拖曳<b>紅色箭頭的尖端</b>可設定發射速率與方向。箭頭長度與速率成正比；箭頭尖端碰到綠色或橙色虛線圈時，速率剛好等於圓周速率或脫離速率（靠近時會自動吸附）。按「發射」後，之前的軌道會留下淡淡的殘影。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Central body">中心天體</h2>
+          <div class="seg2" role="group" aria-label="中心天體" data-en-aria-label="Central body">
+            <button type="button" id="pSun" aria-pressed="true" data-en="Sun (planets)">太陽（行星）</button>
+            <button type="button" id="pEarth" aria-pressed="false" data-en="Earth (satellites)">地球（衛星）</button>
+          </div>
+          <div class="slider"><label for="M" id="Mlabel">質量 M（太陽質量的倍數）</label><output id="Mo"></output>
+            <input id="M" type="range" min="0.2" max="3" step="0.05" value="1" data-decimals="2"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Launch">發射條件</h2>
+          <div class="slider"><label for="r0" data-en-html="Distance from centre r<sub>0</sub>">與中心距離 r<sub>0</sub></label><output id="r0o"></output>
+            <input id="r0" type="range" min="0.3" max="2.5" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="v0" data-en-html="Launch speed v<sub>0</sub>">發射速率 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="2" max="120" step="0.1" value="35" data-decimals="2">
+            <div class="vgauge" id="vgauge" aria-hidden="true"><span class="gc" id="gC" data-en-html="v<sub>circ</sub>">v<sub>圓</sub></span><span class="ge" id="gE" data-en-html="v<sub>esc</sub>">v<sub>脫</sub></span></div></div>
+          <div class="vbtns">
+            <button type="button" id="setC" aria-pressed="false" data-en-html="v<sub>0</sub> = v<sub>circ</sub> (circle)">v<sub>0</sub> = v<sub>圓</sub>（圓軌道）</button>
+            <button type="button" id="setE" aria-pressed="false" data-en-html="v<sub>0</sub> = v<sub>esc</sub> (parabola)">v<sub>0</sub> = v<sub>脫</sub>（拋物線）</button>
+          </div>
+          <p class="hint" id="launchInfo"></p>
+          <div class="slider"><label for="al" data-en="Elevation α (from horizontal)">仰角 α（與水平方向的夾角）</label><output id="alo"></output>
+            <input id="al" type="range" min="-85" max="85" step="1" value="0" data-decimals="1"></div>
+          <p class="hint" data-en="“Horizontal” means perpendicular to the line from the centre; α > 0 tilts the launch outward. Tap a number to type an exact value.">「水平」指垂直於中心連線的方向；α &gt; 0 表示斜向外發射。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Time and view">時間與視野</h2>
+          <div class="slider"><label for="ts" data-en="Time scale (simulated time per second)">時間倍率（每秒模擬的時間）</label><output id="tso"></output>
+            <input id="ts" type="range" min="0" max="1000" step="1" value="500"></div>
+          <div class="slider"><label for="vw" data-en="View (distance from the centre to the nearest edge)">視野（中心到最近畫面邊緣的距離）</label><output id="vwo"></output>
+            <input id="vw" type="range" min="0" max="1000" step="1" value="500"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Orbit">軌道</h2>
+          <dl class="readout">
+            <dt data-en="Type">類型</dt><dd id="oType" class="kind">—</dd>
+            <dt data-en="Eccentricity e">離心率 e</dt><dd id="oE">—</dd>
+            <dt data-en="Semi-major axis a">半長軸 a</dt><dd id="oA">—</dd>
+            <dt data-en="Period T">週期 T</dt><dd id="oT">—</dd>
+            <dt id="oRpL">近日點距離 r<sub>p</sub></dt><dd id="oRp">—</dd>
+            <dt id="oRaL">遠日點距離 r<sub>a</sub></dt><dd id="oRa">—</dd>
+            <dt data-en-html="Specific energy <span class=&quot;f&quot;>ε = v<sup>2</sup>/2 − GM/r</span>">比能量 <span class="f">ε = v<sup>2</sup>/2 − GM/r</span></dt><dd id="oEn">—</dd>
+            <dt data-en-html="Specific angular momentum <span class=&quot;f&quot;>h = |r × v|</span>">比角動量 <span class="f">h = |r × v|</span></dt><dd id="oH">—</dd>
+          </dl>
+          <p class="hint" data-en="Specific = per kilogram of the orbiting body; both stay constant during the flight.">「比」表示每公斤的環繞物體；兩者在飛行中都保持不變。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time since launch t">發射後時間 t</dt><dd id="rT">—</dd>
+            <dt data-en="Distance r">距離 r</dt><dd id="rR">—</dd>
+            <dt data-en="Speed v">速率 v</dt><dd id="rV">—</dd>
+            <dt data-en-html="Circular speed here <span class=&quot;f&quot;>√(GM/r)</span>">此處圓周速率 <span class="f">√(GM/r)</span></dt><dd id="rVc">—</dd>
+            <dt data-en-html="Escape speed here <span class=&quot;f&quot;>√(2GM/r)</span>">此處脫離速率 <span class="f">√(2GM/r)</span></dt><dd id="rVe">—</dd>
+            <dt data-en-html="Vis-viva <span class=&quot;f&quot;>√(GM(2/r − 1/a))</span>">活力方程式 <span class="f">√(GM(2/r − 1/a))</span></dt><dd id="rVv">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showSec" type="checkbox"><span data-en="Equal-time sectors">等時間扇形</span></label>
+            <label><input id="showAx" type="checkbox" checked><span data-en="Apsides, a and foci">近／遠日點、a 與焦點</span></label>
+            <label><input id="showV" type="checkbox" checked><span data-en="Velocity arrow">速度箭頭</span></label>
+            <label><input id="showTrail" type="checkbox" checked><span data-en="Trail">軌跡</span></label>
+            <label><input id="showGhost" type="checkbox" checked><span data-en="Earlier orbits">之前的軌道</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="laws">
+      <section class="card">
+        <h2 data-en="Kepler's second law: equal areas in equal times">克卜勒第二定律：相等時間掃過相等面積</h2>
+        <label class="checks"><span style="display:inline-flex;align-items:center;gap:6px;min-height:44px"><input id="showSec2" type="checkbox"><span data-en="Shade the equal-time sectors on the orbit">在軌道上畫出等時間扇形</span></span></label>
+        <p class="hint" id="secInfo"></p>
+        <ul class="areas" id="areas"></ul>
+        <p class="areas-sum" id="areaSum"></p>
+      </section>
+      <section class="card">
+        <h2 data-en="Kepler's third law: T² ∝ a³">克卜勒第三定律：T² ∝ a³</h2>
+        <p class="hint" data-en="Every closed orbit you launch is recorded here. Orbits around the same central mass all have the same T²/a³ = 4π²/GM, whatever their size and shape.">每發射一條封閉（橢圓或圓）軌道就記錄一筆。繞同一個中心質量的軌道，不論大小與形狀，T²/a³ 都等於 4π²/GM。</p>
+        <div class="k3wrap"><table class="hist" id="hist"></table></div>
+        <canvas id="chart" aria-label="T 平方對 a 三次方的圖：繞同一中心質量的軌道落在同一條通過原點的直線上" data-en-aria-label="Graph of T squared against a cubed: orbits around the same central mass lie on one straight line through the origin"></canvas>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="The orbiting body (mass \(m\)) is pulled toward the central body (mass \(M \gg m\)) by Newton's law of universal gravitation. The force is central, so the motion stays in one plane:">環繞的物體（質量 \(m\)）受到中心天體（質量 \(M \gg m\)）的萬有引力，力永遠指向中心，所以運動保持在同一個平面上：</p>
+      <div class="formula">
+        \[ \vec{F} = -\frac{G M m}{r^{2}}\,\hat{r}, \qquad \vec{a} = -\frac{G M}{r^{2}}\,\hat{r} \]
+      </div>
+      <p data-en-html="Two quantities per kilogram stay constant: the mechanical energy \(\varepsilon\) and the angular momentum \(h\) (gravity does no net work around a closed orbit and exerts no torque about the centre):">每公斤的力學能 \(\varepsilon\) 與角動量 \(h\) 都守恆（萬有引力是保守力，而且對中心沒有力矩）：</p>
+      <div class="formula">
+        \[ \varepsilon = \frac{v^{2}}{2} - \frac{GM}{r} = \text{constant}, \qquad h = |\vec{r} \times \vec{v}| = r v \sin\theta = \text{constant} \]
+      </div>
+
+      <h3 data-en="Circular speed and escape speed">圓周速率與脫離速率</h3>
+      <p data-en-html="For a circular orbit gravity supplies exactly the centripetal force. To escape, the kinetic energy must be enough to bring \(\varepsilon\) up to zero:">圓軌道上，萬有引力剛好提供向心力；要脫離，動能必須讓 \(\varepsilon\) 至少等於零：</p>
+      <div class="formula">
+        \[ \frac{GMm}{r^{2}} = \frac{m v^{2}}{r} \Rightarrow v_{\text{circ}} = \sqrt{\frac{GM}{r}}, \qquad \frac{1}{2} m v^{2} - \frac{GMm}{r} = 0 \Rightarrow v_{\text{esc}} = \sqrt{\frac{2GM}{r}} = \sqrt{2}\, v_{\text{circ}} \]
+      </div>
+      <p data-en-html="Near the Earth's surface these are the first and second cosmic velocities, about \(7.9\ \mathrm{km/s}\) and \(11.2\ \mathrm{km/s}\).">在地球表面附近，這就是第一宇宙速度約 \(7.9\ \mathrm{km/s}\) 與第二宇宙速度約 \(11.2\ \mathrm{km/s}\)。</p>
+
+      <h3 data-en="The shape of the orbit is a conic section">軌道的形狀是圓錐曲線</h3>
+      <p data-en-html="Solving Newton's equation gives a conic with the central body at one focus, \(r = \dfrac{p}{1 + e\cos\nu}\), where \(\nu\) is the angle from the closest point (perihelion / perigee), \(p = h^{2}/GM\) and \(e\) is the eccentricity. The energy decides the type:">解牛頓運動方程式，得到以中心天體為一個焦點的圓錐曲線 \(r = \dfrac{p}{1 + e\cos\nu}\)，其中 \(\nu\) 是由最近點（近日點、近地點）量起的角度，\(p = h^{2}/GM\)，\(e\) 為離心率。能量決定軌道類型：</p>
+      <div class="formula" data-en-html="\[ e = \sqrt{1 + \frac{2\varepsilon h^{2}}{(GM)^{2}}}, \qquad \begin{cases} \varepsilon &lt; 0: &amp; 0 \le e &lt; 1,\ \text{ellipse (circle when } e = 0\text{)} \\ \varepsilon = 0: &amp; e = 1,\ \text{parabola} \\ \varepsilon &gt; 0: &amp; e &gt; 1,\ \text{hyperbola} \end{cases} \]">
+        \[ e = \sqrt{1 + \frac{2\varepsilon h^{2}}{(GM)^{2}}}, \qquad
+        \begin{cases} \varepsilon < 0: & 0 \le e < 1,\ \text{橢圓（}e = 0\text{ 時為圓）} \\ \varepsilon = 0: & e = 1,\ \text{拋物線} \\ \varepsilon > 0: & e > 1,\ \text{雙曲線} \end{cases} \]
+      </div>
+      <p data-en-html="For an ellipse the semi-major axis depends only on the energy, \(a = -\dfrac{GM}{2\varepsilon}\), which gives the <strong>vis-viva equation</strong> for the speed anywhere on the orbit, and the closest and farthest distances \(r_p = a(1-e)\), \(r_a = a(1+e)\):">橢圓的半長軸只由能量決定，\(a = -\dfrac{GM}{2\varepsilon}\)，由此得到軌道上任一點速率的<strong>活力方程式</strong>，以及最近與最遠距離 \(r_p = a(1-e)\)、\(r_a = a(1+e)\)：</p>
+      <div class="formula">
+        \[ v^{2} = GM\left(\frac{2}{r} - \frac{1}{a}\right) \]
+      </div>
+
+      <h3 data-en="Kepler's three laws">克卜勒三大定律</h3>
+      <ul>
+        <li data-en-html="<strong>First law</strong>: planets move on ellipses with the Sun at one focus."><strong>第一定律（軌道定律）</strong>：行星沿橢圓軌道運行，太陽在橢圓的一個焦點上。</li>
+        <li data-en-html="<strong>Second law</strong>: the line from the Sun to the planet sweeps out equal areas in equal times. This is conservation of angular momentum: in a short time \(\Delta t\) the swept triangle has area \(\tfrac12 r \cdot v\Delta t \sin\theta\), so"><strong>第二定律（面積定律）</strong>：太陽到行星的連線在相等時間內掃過相等的面積。這就是角動量守恆：極短時間 \(\Delta t\) 內掃過的三角形面積為 \(\tfrac12 r \cdot v\Delta t \sin\theta\)，所以</li>
+      </ul>
+      <div class="formula">
+        \[ \frac{\Delta A}{\Delta t} = \frac{1}{2} r v \sin\theta = \frac{h}{2} = \text{constant} \]
+      </div>
+      <ul>
+        <li data-en-html="<strong>Third law</strong>: the square of the period is proportional to the cube of the semi-major axis, and the constant depends only on the central mass:"><strong>第三定律（週期定律）</strong>：週期的平方與半長軸的三次方成正比，比值只與中心天體的質量有關：</li>
+      </ul>
+      <div class="formula">
+        \[ T = 2\pi\sqrt{\frac{a^{3}}{GM}}, \qquad \frac{T^{2}}{a^{3}} = \frac{4\pi^{2}}{GM} \]
+      </div>
+      <p data-en-html="For the Sun, measuring \(T\) in years and \(a\) in astronomical units (AU) gives \(T^{2}/a^{3} \approx 1\ \mathrm{yr^{2}/AU^{3}}\).">以太陽為中心，\(T\) 用年、\(a\) 用天文單位（AU）時，\(T^{2}/a^{3} \approx 1\ \mathrm{yr^{2}/AU^{3}}\)。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Speed decides the shape</strong>: launch horizontally (\(\alpha = 0\)) and raise \(v_0\) step by step. Below \(v_{\text{circ}}\) the launch point is the aphelion; at \(v_{\text{circ}}\) the orbit is a circle; between \(v_{\text{circ}}\) and \(v_{\text{esc}}\) the launch point is the perihelion; at \(v_{\text{esc}}\) it becomes a parabola and above it a hyperbola — the body never comes back."><strong>速率決定形狀</strong>：水平發射（\(\alpha = 0\)），把 \(v_0\) 一步步加大。小於 \(v_{\text{圓}}\) 時發射點是遠日點；等於 \(v_{\text{圓}}\) 時是圓；介於 \(v_{\text{圓}}\) 與 \(v_{\text{脫}}\) 之間時發射點變成近日點；等於 \(v_{\text{脫}}\) 時變成拋物線，再大就是雙曲線，一去不回。</li>
+        <li data-en-html="<strong>Same speed, different direction</strong>: keep \(v_0\) and change \(\alpha\). The energy is the same, so the semi-major axis \(a\) and the period \(T\) do not change — only the eccentricity and the orientation do."><strong>速率相同、方向不同</strong>：保持 \(v_0\)、只改仰角 \(\alpha\)。能量相同，所以半長軸 \(a\) 與週期 \(T\) 都不變，只有離心率與方向改變。</li>
+        <li data-en-html="<strong>Equal areas</strong>: turn on the equal-time sectors on an eccentric orbit. The sectors near perihelion are short and wide, those near aphelion long and thin, but all twelve areas are equal. The planet moves fastest at perihelion: \(v_p r_p = v_a r_a\)."><strong>面積相等</strong>：在偏心的軌道上打開等時間扇形。近日點附近的扇形短而寬，遠日點附近的細而長，但 12 塊面積都相等。行星在近日點最快：\(v_p r_p = v_a r_a\)。</li>
+        <li data-en-html="<strong>Kepler's third law</strong>: press “\(v_0 = v_{\text{circ}}\)”, then launch circles at \(r_0 = 0.5,\ 1,\ 2\ \mathrm{AU}\), and an ellipse or two. Every row of the table has the same \(T^{2}/a^{3}\), and all points lie on one line through the origin. Change \(M\) and launch again: the new points lie on a different line, because the constant is \(4\pi^{2}/GM\)."><strong>克卜勒第三定律</strong>：按「\(v_0 = v_{\text{圓}}\)」，在 \(r_0 = 0.5\)、\(1\)、\(2\ \mathrm{AU}\) 各發射一個圓軌道，再發射一兩個橢圓：表中每一列的 \(T^{2}/a^{3}\) 都相同，所有點落在同一條通過原點的直線上。改變 \(M\) 再發射：新的點落在另一條直線上，因為比值是 \(4\pi^{2}/GM\)。</li>
+        <li data-en-html="<strong>Satellites</strong>: choose the Earth. A satellite launched horizontally at \(r_0 = 42\,164\ \mathrm{km}\) at the circular speed (about \(3.07\ \mathrm{km/s}\)) has a period of one sidereal day, about \(23.93\ \mathrm{h}\) — a geostationary orbit. Launch too slowly from a low orbit and the satellite hits the Earth."><strong>人造衛星</strong>：選地球。在 \(r_0 = 42\,164\ \mathrm{km}\) 以圓周速率（約 \(3.07\ \mathrm{km/s}\)）水平發射，週期約 \(23.93\ \mathrm{h}\)，就是地球同步軌道。從低軌道發射得太慢，衛星會撞上地球。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="From the launch position and velocity the program calculates \(\varepsilon\), \(h\), the eccentricity vector (pointing to perihelion) \(\vec{e} = \dfrac{(v^{2} - GM/r)\,\vec{r} - (\vec{r}\cdot\vec{v})\,\vec{v}}{GM}\), \(a\) and the time of perihelion passage.">程式由發射時的位置與速度算出 \(\varepsilon\)、\(h\)、指向近日點的離心率向量 \(\vec{e} = \dfrac{(v^{2} - GM/r)\,\vec{r} - (\vec{r}\cdot\vec{v})\,\vec{v}}{GM}\)、\(a\) 與通過近日點的時刻。</li>
+        <li data-en-html="The position at any time comes from Kepler's equation, solved exactly to machine precision every frame: \(M = n(t - t_p) = E - e\sin E\) for an ellipse, \(M = e\sinh H - H\) for a hyperbola and Barker's equation for a parabola, with \(n = \sqrt{GM/|a|^{3}}\). There is no step-by-step integration, so energy and angular momentum are conserved exactly and the orbit never drifts.">任一時刻的位置由克卜勒方程式求出，每一幀都解到電腦的最高精度：橢圓 \(M = n(t - t_p) = E - e\sin E\)、雙曲線 \(M = e\sinh H - H\)、拋物線用 Barker 方程式，其中 \(n = \sqrt{GM/|a|^{3}}\)。沒有逐步的數值積分，能量與角動量完全守恆，軌道不會漂移。</li>
+        <li data-en-html="The sector areas in the table are measured geometrically from the drawn orbit (sum of thin triangles from the focus) and compared with \(h\,\Delta t/2\).">表中的扇形面積是由軌道的幾何形狀量出來的（以焦點為頂點的細長三角形加總），再與 \(h\,\Delta t/2\) 比較。</li>
+        <li data-en="The central body is fixed (its mass is much larger) and the orbiting body is a point mass. The Earth is drawn to scale; the Sun is drawn much larger than its real size so that it can be seen. Animation time is speeded up by the time scale shown.">中心天體視為固定不動（質量遠大於環繞物體），環繞物體視為質點。地球依比例畫出；太陽實際上非常小，為了看得見而畫得比實際大。動畫時間依「時間倍率」加快。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111051"></script>
+  <script src="js/kepler-core.js?v=202611111051"></script>
+  <script src="js/sound.js?v=202611111051"></script>
+  <script src="js/numinput.js?v=202611111051"></script>
+  <script src="js/kepler.js?v=202611111051"></script>
+  <script src="js/firebase-config.js?v=202611111051"></script>
+  <script src="js/missions.js?v=202611111051" data-module="kepler"></script>
+  <script src="js/missions/kepler.js?v=202611111051"></script>
+  <script src="js/stats.js?v=202611111051" data-module="kepler"></script>
+  <script src="js/comments.js?v=202611111051"></script>
+</body>
+</html>
