@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111124"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Faraday’s Law and Lenz’s Law | Astro Ni Physics Lab">法拉第定律與冷次定律｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：條形磁鐵穿過線圈、導體棒在磁場中的軌道上滑動，即時畫出磁通量 Φ、感應電動勢 ε 與感應電流 I 的時間圖，觀察 ε = −N dΦ/dt 與冷次定律的方向。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111124">
+  <style>
+    /* 法拉第定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；只有磁鐵可以左右拖曳，其他地方可以上下捲動頁面 */
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y; cursor: default; }
+    .fd button { min-height: 44px; }
+    .fd .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .fd .playbar button { flex: 1 1 auto; }
+    .fd .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .fd .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .fd .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .fd .stage .status { margin: 6px 4px 0; }
+    .fd .slider input[type="range"] { height: 28px; margin: 0; }
+    .fd [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 6px; }
+    .seg2, .seg3 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { grid-template-columns: 1fr 1fr 1fr; }
+    .seg2 button, .seg3 button { padding: 6px 6px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .fd .wide { width: 100%; margin-top: 8px; }
+    .fd #flip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+    .fd .checks label { min-height: 36px; }
+    .fd .checks input { width: 17px; height: 17px; }
+    .fd .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout sub { font-size: .75em; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / Induction"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電磁感應</nav>
+      <h1 data-en="Faraday’s Law and Lenz’s Law">法拉第定律與冷次定律</h1>
+      <p data-en="Push a bar magnet through a coil, or slide a metal rod along rails in a magnetic field. The graphs of magnetic flux Φ, induced emf ε and current I are drawn as it happens, so you can see that ε follows the slope of Φ — and the induced current always pushes back against the change.">把條形磁鐵推過線圈，或讓導體棒在磁場中的軌道上滑動。畫面即時畫出磁通量 Φ、感應電動勢 ε 與感應電流 I 的時間圖：ε 跟著 Φ 的斜率走，而感應電流永遠在「反抗」磁通量的變化。</p>
+    </header>
+
+    <div class="lab fd">
+      <div class="stage">
+        <canvas id="cv" aria-label="法拉第定律模擬畫布：左側為磁鐵與線圈（或導體棒與軌道），右側或下方為磁通量、感應電動勢與感應電流對時間的圖" data-en-aria-label="Faraday’s law simulation: the magnet and coil (or the rod on rails), with graphs of magnetic flux, induced emf and induced current against time"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除圖表並回到起點，滑桿設定不變" data-en-title="Clear the graphs and go back to the start; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legendA">
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>N pole"><i style="background:var(--pos)"></i>N 極</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>S pole"><i style="background:var(--neg)"></i>S 極</span>
+          <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Magnet’s field lines"><i style="background:var(--field)"></i>磁鐵的磁力線</span>
+          <span data-en-html="<i style=&quot;background:var(--b-em)&quot;></i>Field lines through the coil"><i style="background:var(--b-em)"></i>穿過線圈的磁力線</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Induced current"><i class="dot" style="background:var(--probe)"></i>感應電流</span>
+        </div>
+        <div class="legend" id="legendB" hidden>
+          <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Velocity v"><i style="background:var(--accent)"></i>速度 v</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Magnetic force BIL"><i style="background:var(--neg)"></i>磁力 BIL</span>
+          <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Applied force"><i style="background:var(--b-mech)"></i>外力</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Induced current"><i class="dot" style="background:var(--probe)"></i>感應電流</span>
+          <span data-en-html="<i style=&quot;background:var(--b-em)&quot;></i>Area of the loop (flux)"><i style="background:var(--b-em)"></i>迴路面積（磁通量）</span>
+        </div>
+        <p class="hint" id="hintA" data-en-html="Side view. Drag the magnet left and right, or let it move by itself. Neighbouring field lines carry equal flux, so the number of lines through the coil shows the flux. Only a few of the N turns are drawn. Current I &gt; 0 means the needle swings to the right.">側視圖。可以左右拖曳磁鐵，或讓它自動移動。相鄰兩條磁力線之間的磁通量相等，所以穿過線圈的磁力線條數代表磁通量。線圈只畫出 N 匝中的幾匝作示意。電流 I &gt; 0 時檢流計指針向右偏。</p>
+        <p class="hint" id="hintB" hidden data-en-html="Top view, drawn to scale. Arrows: velocity 1 m/s → 0.25 m; force 1 N → 0.4 m (an arrow too long to fit is cut short and marked “≈”). Φ is measured along the field; ε and I are positive when the current circulates right-handedly about the field direction (clockwise seen from above when B points into the page).">俯視圖，依比例繪製。箭頭比例：速度每 1 m/s 畫 0.25 m，力每 1 N 畫 0.4 m（太長的箭頭截短並標「≈」）。Φ 以磁場方向為正；ε、I &gt; 0 代表電流環繞方向與磁場方向成右手定則（磁場穿入紙面時為由上往下看順時針）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗</h2>
+          <div class="seg2" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" id="modeA" aria-pressed="true" data-en="Magnet and coil">磁鐵與線圈</button>
+            <button type="button" id="modeB" aria-pressed="false" data-en="Rod on rails">導體棒在軌道上</button>
+          </div>
+        </section>
+
+        <section class="card" id="cardA">
+          <h2 data-en="Magnet and coil">磁鐵與線圈</h2>
+          <p class="seg-label" id="motionLabel" data-en="How the magnet moves:">磁鐵的運動方式：</p>
+          <div class="seg3" role="group" aria-labelledby="motionLabel">
+            <button type="button" id="mvPass" aria-pressed="true" data-en="Steady pass">等速通過</button>
+            <button type="button" id="mvOsc" aria-pressed="false" data-en="Oscillate">來回振盪</button>
+            <button type="button" id="mvDrag" aria-pressed="false" data-en="Drag by hand">用手拖曳</button>
+          </div>
+          <div id="boxDir">
+            <p class="seg-label" id="dirLabel" data-en="Direction:">運動方向：</p>
+            <div class="seg2" role="group" aria-labelledby="dirLabel">
+              <button type="button" id="dirR" aria-pressed="true" data-en="Left → right">由左往右 →</button>
+              <button type="button" id="dirL" aria-pressed="false" data-en="← Right → left">← 由右往左</button>
+            </div>
+          </div>
+          <button type="button" id="flip" class="wide" aria-pressed="false" data-en="Turn the magnet round (N ⇄ S)">翻轉磁鐵（N ⇄ S）</button>
+          <div class="slider" id="boxV"><label for="v" data-en="Speed v">速率 v</label><output id="vo"></output>
+            <input id="v" type="range" min="0.05" max="2" step="0.05" value="0.2" data-decimals="3"></div>
+          <div class="slider" id="boxF" hidden><label for="f" data-en="Frequency f">頻率 f</label><output id="fo"></output>
+            <input id="f" type="range" min="0.2" max="2" step="0.1" value="0.5" data-decimals="2"></div>
+          <div class="slider"><label for="N" data-en="Turns N">匝數 N</label><output id="No"></output>
+            <input id="N" type="range" min="10" max="500" step="10" value="100" data-decimals="0"></div>
+          <div class="slider"><label for="a" data-en="Coil radius a">線圈半徑 a</label><output id="ao"></output>
+            <input id="a" type="range" min="2" max="5" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="Ra" data-en="Circuit resistance R">電路電阻 R</label><output id="Rao"></output>
+            <input id="Ra" type="range" min="1" max="100" step="1" value="10" data-decimals="1"></div>
+          <p class="hint" data-en="Tap a number to type an exact value. The magnet is 10 cm long; its pole flux is 0.40 mWb. The coil is 4 cm long.">點一下數字可直接輸入精確數值。磁鐵長 10 cm，由 N 極發出的磁通量為 0.40 mWb；線圈長 4 cm。</p>
+        </section>
+
+        <section class="card" id="cardB" hidden>
+          <h2 data-en="Rod on rails">導體棒在軌道上</h2>
+          <p class="seg-label" id="subLabel" data-en="Applied force:">外力的情況：</p>
+          <div class="seg3" role="group" aria-labelledby="subLabel">
+            <button type="button" id="subConst" aria-pressed="false" data-en="Pulled at steady speed">等速拉動</button>
+            <button type="button" id="subForce" aria-pressed="false" data-en="Constant force">定力拉動</button>
+            <button type="button" id="subRelease" aria-pressed="true" data-en="Push, then let go">給初速後放開</button>
+          </div>
+          <p class="seg-label" id="bdirLabel" data-en="Magnetic field:">磁場方向：</p>
+          <div class="seg2" role="group" aria-labelledby="bdirLabel">
+            <button type="button" id="bIn" aria-pressed="true" data-en="⊗ Into the page">⊗ 穿入紙面</button>
+            <button type="button" id="bOut" aria-pressed="false" data-en="⊙ Out of the page">⊙ 穿出紙面</button>
+          </div>
+          <div class="slider"><label for="B" data-en="Magnetic field B">磁場 B</label><output id="Bo"></output>
+            <input id="B" type="range" min="0.1" max="2" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="L" data-en="Rail spacing L">軌道間距 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="0.1" max="1" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="Rb" data-en="Resistance R">電阻 R</label><output id="Rbo"></output>
+            <input id="Rb" type="range" min="0.1" max="10" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="m" data-en="Rod mass m">棒的質量 m</label><output id="mo"></output>
+            <input id="m" type="range" min="0.05" max="1" step="0.05" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="v0" id="v0Label" data-en-html="Initial speed v<sub>0</sub>">初速 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="0" max="3" step="0.1" value="1.5" data-decimals="2"></div>
+          <div class="slider" id="boxFB" hidden><label for="FB" data-en="Applied force F">外力 F</label><output id="FBo"></output>
+            <input id="FB" type="range" min="0" max="2" step="0.05" value="0.4" data-decimals="3"></div>
+          <p class="hint" data-en="Rails 2.0 m long; the rod starts 0.30 m from the resistor. Friction and the resistance of the rod and rails are ignored.">軌道長 2.0 m，導體棒從距電阻 0.30 m 處出發。忽略摩擦力以及棒與軌道的電阻。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout" id="readA">
+            <dt data-en="Time t">時間 t</dt><dd id="aT">—</dd>
+            <dt data-en="Magnet position x (centre)">磁鐵位置 x（中心）</dt><dd id="aX">—</dd>
+            <dt data-en="Magnet velocity v">磁鐵速度 v</dt><dd id="aV">—</dd>
+            <dt data-en-html="Flux per turn <span class=&quot;f&quot;>Φ</span>">每匝磁通量 <span class="f">Φ</span></dt><dd id="aPhi">—</dd>
+            <dt data-en-html="Rate of change <span class=&quot;f&quot;>dΦ/dt</span>">變化率 <span class="f">dΦ/dt</span></dt><dd id="aDphi">—</dd>
+            <dt data-en-html="Induced emf <span class=&quot;f&quot;>ε = −N dΦ/dt</span>">感應電動勢 <span class="f">ε = −N dΦ/dt</span></dt><dd id="aEps">—</dd>
+            <dt data-en-html="Induced current <span class=&quot;f&quot;>I = ε/R</span>">感應電流 <span class="f">I = ε/R</span></dt><dd id="aI">—</dd>
+            <dt data-en="Direction (seen from the magnet’s side)">方向（從磁鐵那側看）</dt><dd id="aDir">—</dd>
+            <dt data-en="Coil end facing the magnet">線圈面向磁鐵的一端</dt><dd id="aPole">—</dd>
+            <dt data-en-html="Charge through the meter <span class=&quot;f&quot;>q</span>">流過檢流計的電量 <span class="f">q</span></dt><dd id="aQ">—</dd>
+            <dt data-en="Force of the coil on the magnet">線圈對磁鐵的力</dt><dd id="aF">—</dd>
+            <dt data-en-html="Electrical power <span class=&quot;f&quot;>P = εI</span>">電功率 <span class="f">P = εI</span></dt><dd id="aP">—</dd>
+          </dl>
+          <dl class="readout" id="readB" hidden>
+            <dt data-en="Time t">時間 t</dt><dd id="bT">—</dd>
+            <dt data-en="Rod position x">導體棒位置 x</dt><dd id="bX">—</dd>
+            <dt data-en="Rod velocity v">導體棒速度 v</dt><dd id="bV">—</dd>
+            <dt data-en-html="Flux <span class=&quot;f&quot;>Φ = BLx</span>">磁通量 <span class="f">Φ = BLx</span></dt><dd id="bPhi">—</dd>
+            <dt data-en-html="Rate of change <span class=&quot;f&quot;>dΦ/dt</span>">變化率 <span class="f">dΦ/dt</span></dt><dd id="bDphi">—</dd>
+            <dt data-en-html="Induced emf <span class=&quot;f&quot;>ε = −dΦ/dt</span>">感應電動勢 <span class="f">ε = −dΦ/dt</span></dt><dd id="bEps">—</dd>
+            <dt data-en-html="Current <span class=&quot;f&quot;>I = ε/R</span>">電流 <span class="f">I = ε/R</span></dt><dd id="bI">—</dd>
+            <dt data-en="Direction (seen from above)">方向（由上往下看）</dt><dd id="bDir">—</dd>
+            <dt data-en-html="Magnetic force <span class=&quot;f&quot;>F = BIL</span>">磁力 <span class="f">F = BIL</span></dt><dd id="bFb">—</dd>
+            <dt data-en="Applied force">外力</dt><dd id="bFe">—</dd>
+            <dt data-en-html="Heating power <span class=&quot;f&quot;>P = I<sup>2</sup>R</span>">發熱功率 <span class="f">P = I<sup>2</sup>R</span></dt><dd id="bP">—</dd>
+            <dt data-en="Heat produced Q">累積的焦耳熱 Q</dt><dd id="bQ">—</dd>
+            <dt data-en-html="Kinetic energy <span class=&quot;f&quot;>½mv<sup>2</sup></span>">動能 <span class="f">½mv<sup>2</sup></span></dt><dd id="bK">—</dd>
+            <dt data-en-html="Time constant <span class=&quot;f&quot;>τ = mR/(B<sup>2</sup>L<sup>2</sup>)</span>">時間常數 <span class="f">τ = mR/(B<sup>2</sup>L<sup>2</sup>)</span></dt><dd id="bTau">—</dd>
+            <dt id="bVtLabel" data-en-html="Terminal speed <span class=&quot;f&quot;>v<sub>t</sub> = FR/(B<sup>2</sup>L<sup>2</sup>)</span>">終端速度 <span class="f">v<sub>t</sub> = FR/(B<sup>2</sup>L<sup>2</sup>)</span></dt><dd id="bVt">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label id="chkLines"><input id="showLines" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
+            <label><input id="showCurrent" type="checkbox" checked><span data-en="Current direction">電流方向</span></label>
+            <label id="chkPoles"><input id="showPoles" type="checkbox" checked><span data-en="Induced poles">感應磁極</span></label>
+            <label><input id="showTangent" type="checkbox" checked><span data-en="Slope of Φ–t">Φ–t 的切線</span></label>
+          </div>
+          <p class="hint" data-en="The dashed line on the Φ–t graph is the tangent at the present moment; its slope is dΦ/dt. Compare it with the ε–t graph below it.">Φ–t 圖上的虛線是此刻的切線，斜率就是 dΦ/dt；和下方的 ε–t 圖比一比。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="The <strong>magnetic flux</strong> through a loop measures how much magnetic field passes through it. For a uniform field \(B\) at right angles to a flat area \(A\) it is simply \(\Phi_B = BA\); in general the field is added up over the area:">通過一個迴路的<strong>磁通量</strong>代表穿過它的磁場「有多少」。均勻磁場 \(B\) 垂直穿過面積 \(A\) 時就是 \(\Phi_B = BA\)；一般情況要把磁場在整個面積上加總：</p>
+      <div class="formula">\[ \Phi_B = \int \vec{B}\cdot d\vec{A}, \qquad 1\ \mathrm{Wb} = 1\ \mathrm{T\,m^{2}} \]</div>
+      <p data-en-html="<strong>Faraday’s law</strong>: whenever the flux through a circuit changes, an emf is induced in it. For a coil of \(N\) turns the emf is proportional to the <em>rate</em> of change of the flux — not to the flux itself:"><strong>法拉第定律</strong>：只要通過電路的磁通量改變，電路中就會產生感應電動勢。\(N\) 匝線圈的感應電動勢與磁通量的<em>變化率</em>成正比，而不是與磁通量本身成正比：</p>
+      <div class="formula">\[ \varepsilon = -N\,\frac{d\Phi_B}{dt}, \qquad I = \frac{\varepsilon}{R} \]</div>
+      <p data-en-html="On the graphs, \(\varepsilon\) at each moment is \(-N\) times the slope of the \(\Phi\)–\(t\) curve. Where \(\Phi\) is largest (the magnet in the middle of the coil) the slope is zero, so the emf is zero.">在圖上，任一時刻的 \(\varepsilon\) 等於 \(\Phi\)–\(t\) 曲線斜率的 \(-N\) 倍。\(\Phi\) 最大的地方（磁鐵在線圈正中央）斜率為零，所以電動勢為零。</p>
+      <p data-en-html="<strong>Lenz’s law</strong> is the minus sign: the induced current flows in the direction whose own magnetic field <em>opposes the change</em> in flux. When an N pole approaches, the coil end facing it becomes an N pole and pushes it away; when the N pole is pulled away, that end becomes an S pole and pulls it back. You must therefore do work to move the magnet, and that work becomes the electrical energy (and finally heat) in the circuit — Lenz’s law is energy conservation."><strong>冷次定律</strong>就是那個負號：感應電流的方向，使它自己產生的磁場<em>反抗磁通量的變化</em>。N 極接近時，線圈面向它的一端變成 N 極把它推開；N 極被拉走時，那一端變成 S 極把它拉回來。所以移動磁鐵一定要作功，這些功變成電路中的電能（最後變成熱）——冷次定律其實就是能量守恆。</p>
+      <div class="formula">\[ F_{\text{coil on magnet}}\,v = -I^{2}R \]</div>
+
+      <h3 data-en="A rod sliding on rails">導體棒在軌道上</h3>
+      <p data-en-html="A rod of length \(L\) moving at speed \(v\) across a uniform field \(B\) sweeps out area \(Lv\) every second, so the flux through the circuit changes at the rate \(BLv\):">長度 \(L\) 的導體棒以速度 \(v\) 在均勻磁場 \(B\) 中移動，每秒掃過面積 \(Lv\)，所以通過迴路的磁通量變化率為 \(BLv\)：</p>
+      <div class="formula">\[ \Phi_B = BLx, \qquad \varepsilon = BLv, \qquad I = \frac{BLv}{R}, \qquad F = BIL = \frac{B^{2}L^{2}v}{R} \]</div>
+      <p data-en-html="The magnetic force on the current in the rod always points against the motion (magnetic braking). If the rod is pushed and let go, Newton’s second law gives an exponential slowdown with time constant \(\tau\); all of its kinetic energy ends up as heat in the resistor:">棒中電流受到的磁力永遠與運動方向相反（電磁煞車）。給初速後放開，由牛頓第二定律得到指數衰減，時間常數為 \(\tau\)；它的動能最後全部變成電阻上的熱：</p>
+      <div class="formula">\[ m\frac{dv}{dt} = -\frac{B^{2}L^{2}}{R}\,v \;\Rightarrow\; v = v_{0}\,e^{-t/\tau},\quad \tau = \frac{mR}{B^{2}L^{2}}, \qquad \int_{0}^{\infty} I^{2}R\,dt = \tfrac12 m v_{0}^{2} \]</div>
+      <p data-en-html="It slides a total distance \(v_{0}\tau\). Pulled by a constant force \(F\), the rod speeds up until the magnetic force balances \(F\), at the terminal speed \(v_{t}\); from then on all the work done by \(F\) becomes heat:">總共滑行 \(v_{0}\tau\) 的距離。若以定力 \(F\) 拉動，棒會加速到磁力與 \(F\) 平衡，達到終端速度 \(v_{t}\)；此後外力作的功全部變成熱：</p>
+      <div class="formula">\[ v_{t} = \frac{FR}{B^{2}L^{2}}, \qquad v = v_{t} + (v_{0} - v_{t})\,e^{-t/\tau}, \qquad F v_{t} = I^{2}R \]</div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>ε follows the slope of Φ</strong>: with “Steady pass”, watch the dashed tangent on the Φ–t graph. Where it is steepest, ε is biggest; at the top of the Φ curve the tangent is flat and ε = 0."><strong>ε 跟著 Φ 的斜率走</strong>：選「等速通過」，看 Φ–t 圖上的切線：切線最陡時 ε 最大；Φ 曲線的最高點切線是平的，ε = 0。</li>
+        <li data-en-html="<strong>Two pulses, opposite signs</strong>: as the magnet enters, Φ increases; as it leaves, Φ decreases — so the needle swings one way, then the other."><strong>兩個方向相反的脈衝</strong>：磁鐵進入時 Φ 增加、離開時 Φ 減少，所以指針先往一邊偏，再往另一邊偏。</li>
+        <li data-en-html="<strong>Faster, more turns</strong>: doubling the speed or the number of turns doubles the peak emf. But the charge that flows while the magnet goes in, \(q = N\,\Delta\Phi/R\), does not depend on the speed at all."><strong>越快、匝數越多</strong>：速率或匝數加倍，峰值電動勢就加倍。但磁鐵「進入」的過程中流過的電量 \(q = N\,\Delta\Phi/R\) 卻與速率完全無關。</li>
+        <li data-en-html="<strong>Lenz’s law</strong>: turn on “Induced poles”. An approaching N pole always meets an N pole; a departing pole is always attracted. Turn the magnet round and every current reverses."><strong>冷次定律</strong>：打開「感應磁極」。接近的 N 極總是遇到 N 極；離開的磁極總是被吸引。翻轉磁鐵，所有電流方向都反過來。</li>
+        <li data-en-html="<strong>A surprise</strong>: send the magnet through from the right instead of the left. The needle still swings the same way first! Reversing the velocity reverses ε at each position, but the magnet now meets the coil with its other pole."><strong>意想不到</strong>：讓磁鐵改由右往左通過，指針第一次偏轉的方向竟然一樣！在同一位置把速度反向確實會讓 ε 反向，但現在先碰到線圈的是另一個磁極。</li>
+        <li data-en-html="<strong>Hold it still</strong>: drag the magnet into the middle of the coil and let go. The flux is at its largest, yet the current is zero — only a <em>change</em> of flux induces an emf."><strong>靜止不動</strong>：把磁鐵拖到線圈正中央再放手。磁通量最大，電流卻是零——只有磁通量「改變」才會感應出電動勢。</li>
+        <li data-en-html="<strong>Magnetic braking</strong>: with “Push, then let go”, v, ε and I all fall exponentially. Halve R or double L and the rod stops much sooner (τ ∝ R/L<sup>2</sup>). Check that the heat Q finally equals ½mv<sub>0</sub><sup>2</sup>."><strong>電磁煞車</strong>：選「給初速後放開」，v、ε、I 都呈指數衰減。把 R 減半或 L 加倍，棒停得快多了（τ ∝ R/L<sup>2</sup>）。驗證最後的焦耳熱 Q 等於 ½mv<sub>0</sub><sup>2</sup>。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The bar magnet is modelled by two magnetic poles \(\pm q\) near its ends (pole flux \(\Phi_0 = \mu_0 q = 0.40\ \mathrm{mWb}\), poles 8.4 cm apart). Integrating their field over a circular loop of radius \(a\), and adding the flux inside the magnet when the loop surrounds it, gives the exact smooth result \(\Phi = \tfrac{\Phi_0}{2}\big[g(x_N) - g(x_S)\big]\) with \(g(u) = u/\sqrt{u^{2}+a^{2}}\), where \(x_N, x_S\) are the poles’ distances from the loop.">條形磁鐵以兩端附近的兩個磁極 \(\pm q\) 表示（磁極磁通量 \(\Phi_0 = \mu_0 q = 0.40\ \mathrm{mWb}\)，兩極相距 8.4 cm）。把它們的磁場對半徑 \(a\) 的圓形線圈面積積分，線圈套住磁鐵時再加上磁鐵內部的磁通量，得到連續的精確結果 \(\Phi = \tfrac{\Phi_0}{2}\big[g(x_N) - g(x_S)\big]\)，其中 \(g(u) = u/\sqrt{u^{2}+a^{2}}\)，\(x_N, x_S\) 是兩極到線圈的距離。</li>
+        <li data-en-html="The \(N\) turns are spread evenly along the 4 cm coil; \(\Phi\) on the graph is the average flux per turn (also an exact formula), and \(\varepsilon = -N\,(d\Phi/dx)\,v\) is calculated by exact differentiation. The coil’s self-inductance is ignored.">\(N\) 匝線圈均勻分布在 4 cm 長的線圈上；圖中的 \(\Phi\) 是每匝的平均磁通量（同樣有精確公式），\(\varepsilon = -N\,(d\Phi/dx)\,v\) 用精確的微分計算。忽略線圈的自感。</li>
+        <li data-en-html="When you drag the magnet, it follows your finger through a stiff, critically damped spring so that its velocity — and therefore ε — is smooth.">用手拖曳時，磁鐵經由一條很硬、臨界阻尼的「彈簧」跟著手指移動，讓速度（以及 ε）連續變化。</li>
+        <li data-en-html="For the rod, position, speed, current and heat all come from the exact solutions above, so the energy balance holds exactly at every moment.">導體棒的位置、速度、電流與焦耳熱全部由上面的解析解計算，所以每一刻的能量都精確守恆。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111124"></script>
+  <script src="js/faraday-core.js?v=202611111124"></script>
+  <script src="js/sound.js?v=202611111124"></script>
+  <script src="js/numinput.js?v=202611111124"></script>
+  <script src="js/faraday.js?v=202611111124"></script>
+  <script src="js/firebase-config.js?v=202611111124"></script>
+  <script src="js/missions.js?v=202611111124" data-module="faraday"></script>
+  <script src="js/missions/faraday.js?v=202611111124"></script>
+  <script src="js/stats.js?v=202611111124" data-module="faraday"></script>
+  <script src="js/comments.js?v=202611111124"></script>
+</body>
+</html>

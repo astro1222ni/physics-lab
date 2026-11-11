@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111121"></script>
+  <script src="js/settings.js?v=202611111124"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</title>
   <meta name="description" content="高中物理互動模擬：依力學、熱學、波動、光學、電磁學、近代物理分類，調整參數、觀察動畫，所有運算都在你的瀏覽器中完成。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111121">
+  <link rel="stylesheet" href="lab.css?v=202611111124">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -85,10 +85,10 @@
           <h3 data-en="Ideal Gas Molecules">理想氣體分子模擬</h3>
           <p data-en-html="Change the temperature, volume and number of molecules to see the pressure and speed distribution, and connect it to &lt;span class=&quot;nb&quot;&gt;\(PV = nRT\).&lt;/span&gt;">調整溫度、體積與分子數，觀察壓力變化與分子速率分布，<span class="nb">連結 \(PV = nRT\)。</span></p>
         </div>
-        <a class="module live" href="standing-waves.html" data-module="standing-waves" data-keywords="波動 繩波 弦波 橫波 脈波 反射 固定端 自由端 反相 鏡像法 疊加 疊加原理 駐波 波節 波腹 共振 共振頻率 諧音 泛音 基頻 波長 頻率 波速 弦 振盪器 standing wave reflection pulse superposition node antinode harmonic resonance fundamental string fixed end free end">
-          <div class="module-meta"><span class="topic" data-en="Thermal equilibrium">熱平衡</span><span class="tag" data-en="Live">已上線</span></div>
+        <div class="module soon" data-keywords="比熱 熱容量 熱量 溫度 熱平衡 熱傳 卡 焦耳 heat">
+          <div class="module-meta"><span class="topic" data-en="Thermal equilibrium">熱平衡</span><span class="tag soon" data-en="Planned">規劃中</span></div>
           <h3 data-en="Specific Heat and Thermal Equilibrium">比熱與熱平衡</h3>
-          <p data-en="Switch between fixed and free ends to see reflected pulses come back inverted or upright, then drive the string to find its resonant frequencies and watch standing waves with nodes and antinodes build up.">切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。</p>
+          <p data-en="Mix objects with different masses, specific heats and temperatures, then predict and watch the final temperature.">混合不同質量、比熱與溫度的物體，預測並觀察最後的平衡溫度。</p>
         </div>
       </div>
     </section>
@@ -100,16 +100,16 @@
         <p data-en="Wave propagation, reflection and superposition, standing waves, sound and the Doppler effect">波的傳播、反射與疊加、駐波、聲波與都卜勒效應</p>
       </header>
       <div class="modules">
-        <div class="module soon" data-keywords="波動 繩波 橫波 反射 固定端 自由端 疊加 駐波 波節 波腹 波長 頻率 弦 standing wave">
+        <a class="module live" href="standing-waves.html" data-module="standing-waves" data-keywords="波動 繩波 弦波 橫波 脈波 反射 固定端 自由端 反相 鏡像法 疊加 疊加原理 駐波 波節 波腹 共振 共振頻率 諧音 泛音 基頻 波長 頻率 波速 弦 振盪器 standing wave reflection pulse superposition node antinode harmonic resonance fundamental string fixed end free end">
           <div class="module-meta"><span class="topic" data-en="Superposition">波的疊加</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="Reflection of Waves on a String and Standing Waves">繩波的反射與駐波</h3>
-          <p data-en="Switch between fixed and free ends to see the phase of the reflected wave and the nodes and antinodes of standing waves.">切換固定端與自由端，觀察反射波的相位，以及駐波的波節與波腹。</p>
+          <p data-en="Switch between fixed and free ends to see reflected pulses come back inverted or upright, then drive the string to find its resonant frequencies and watch standing waves with nodes and antinodes build up.">切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。</p>
         </a>
         <a class="module live" href="doppler.html" data-module="doppler" data-keywords="都卜勒 多普勒 都卜勒效應 聲波 頻率 音調 波源 觀察者 救護車 警笛 波長 波前 音速 超音速 音障 音爆 馬赫錐 馬赫數 震波 doppler effect sound wave frequency pitch siren ambulance wavefront wavelength speed of sound supersonic sonic boom mach cone shock wave">
           <div class="module-meta"><span class="topic" data-en="Sound waves">聲波</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="The Doppler Effect">都卜勒效應</h3>
           <p data-en="An ambulance sends out sound waves as it drives: watch the wavefronts bunch up in front and spread out behind, drag the listener to read the frequency heard, turn on the sound to hear the pitch drop, and go supersonic for a Mach cone and a sonic boom.">救護車一邊行駛一邊發出聲波：看前方波前被壓縮、後方被拉長，拖曳觀察者讀出聽到的頻率，打開音效聽音調由高變低，超過音速時出現馬赫錐與音爆。</p>
-        </div>
+        </a>
       </div>
     </section>
 
@@ -120,10 +120,10 @@
         <p data-en="Geometric optics (reflection, refraction, imaging) and wave optics (interference, diffraction)">幾何光學（反射、折射、成像）與物理光學（干涉、繞射）</p>
       </header>
       <div class="modules">
-        <div class="module soon" data-keywords="光 折射 折射率 司乃耳定律 斯涅耳 全反射 臨界角 光纖 入射角 snell refraction">
+        <a class="module live" href="refraction.html" data-module="refraction" data-keywords="折射 全反射 司乃耳定律 斯涅耳 折射率 臨界角 光密 光疏 法線 入射角 折射角 反射率 穿透率 菲涅耳 布魯斯特角 偏振 光纖 數值孔徑 鑽石 水 玻璃 波前 漸逝波 光速 幾何光學 refraction total internal reflection Snell critical angle refractive index Fresnel Brewster optical fibre fiber">
           <div class="module-meta"><span class="topic" data-en="Geometric optics">幾何光學</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="Refraction and Total Internal Reflection">折射與全反射</h3>
-          <p data-en="Change the angle of incidence and the two refractive indices to check Snell&#x27;s law and find the critical angle.">調整入射角與兩介質的折射率，驗證司乃耳定律，找出臨界角。</p>
+          <p data-en="Pick two media and drag the laser to see Snell&#x27;s law, how much light is reflected and refracted, the critical angle and total internal reflection, and how an optical fibre guides light.">選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。</p>
         </a>
         <a class="module live" href="lens-mirror.html" data-module="lens-mirror" data-keywords="凸透鏡 凹透鏡 凸面鏡 凹面鏡 平面鏡 面鏡 透鏡 球面鏡 成像 成像公式 透鏡公式 面鏡公式 焦距 焦點 曲率中心 曲率半徑 光心 鏡頂 主軸 主光線 物距 像距 實像 虛像 正立 倒立 放大 縮小 等大 放大率 放大鏡 投影機 反光鏡 化妝鏡 探照燈 共軛 近軸 幾何光學 lens mirror convex concave plane mirror focal length focus focal point centre of curvature principal axis principal rays ray diagram object distance image distance real image virtual image upright inverted magnification thin lens equation mirror equation magnifier projector">
           <div class="module-meta"><span class="topic" data-en="Geometric optics">幾何光學</span><span class="tag" data-en="Live">已上線</span></div>
@@ -165,11 +165,11 @@
           <h3 data-en="Charged Particles in a Magnetic Field">帶電粒子在磁場中運動</h3>
           <p data-en="Change the charge, mass, speed and magnetic field to see the orbit radius, period and Lorentz force.">調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。</p>
         </a>
-        <a class="module live" href="photoelectric.html" data-module="photoelectric" data-keywords="光電效應 光子 量子 截止頻率 底限頻率 臨界頻率 截止波長 功函數 逸出功 停止電壓 遏止電壓 截止電壓 光電子 光電流 飽和電流 光電管 愛因斯坦 普朗克常數 密立坎 photoelectric effect photon threshold frequency work function stopping voltage photocurrent saturation current Planck constant Millikan Einstein phototube">
+        <a class="module live" href="faraday.html" data-module="faraday" data-keywords="電磁感應 法拉第 法拉第定律 冷次 冷次定律 楞次 楞次定律 磁通量 感應電流 感應電動勢 電動勢 發電機 線圈 磁鐵 檢流計 導體棒 電磁煞車 渦電流 終端速度 induction faraday lenz flux emf coil magnet galvanometer generator rod rails magnetic braking">
           <div class="module-meta"><span class="topic" data-en="Induction">電磁感應</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="Faraday&#x27;s Law and Lenz&#x27;s Law">法拉第定律與冷次定律</h3>
-          <p data-en="Change the wavelength, intensity, metal and voltage to watch photoelectrons, measure the stopping voltage and find Planck’s constant from a Millikan plot.">調整光的波長、強度、陰極金屬與電壓，觀察光電子、測量停止電壓，並由密立坎圖的斜率求出普朗克常數。</p>
-        </div>
+          <p data-en="Push a magnet through a coil or slide a rod through a magnetic field, and watch the flux, induced emf and current graphs: ε = −N dΦ/dt and Lenz’s law in action.">移動磁鐵穿過線圈，或讓導體棒在磁場中滑動，即時畫出磁通量、感應電動勢與感應電流，觀察 ε = −N dΦ/dt 與冷次定律的方向。</p>
+        </a>
       </div>
     </section>
 
@@ -180,10 +180,10 @@
         <p data-en="The particle nature of light, atomic structure, the nucleus">光的粒子性、原子結構、原子核</p>
       </header>
       <div class="modules">
-        <div class="module soon" data-keywords="光子 量子 截止頻率 功函數 停止電壓 光電子 愛因斯坦 普朗克 photoelectric">
+        <a class="module live" href="photoelectric.html" data-module="photoelectric" data-keywords="光電效應 光子 量子 截止頻率 底限頻率 臨界頻率 截止波長 功函數 逸出功 停止電壓 遏止電壓 截止電壓 光電子 光電流 飽和電流 光電管 愛因斯坦 普朗克常數 密立坎 photoelectric effect photon threshold frequency work function stopping voltage photocurrent saturation current Planck constant Millikan Einstein phototube">
           <div class="module-meta"><span class="topic" data-en="Quantum phenomena">量子現象</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="The Photoelectric Effect">光電效應</h3>
-          <p data-en="Change the frequency and intensity of light and the metal to find the threshold frequency, the photoelectron energy and the stopping voltage.">調整光的頻率、強度與金屬種類，觀察截止頻率，以及光電子動能和停止電壓。</p>
+          <p data-en="Change the wavelength, intensity, metal and voltage to watch photoelectrons, measure the stopping voltage and find Planck’s constant from a Millikan plot.">調整光的波長、強度、陰極金屬與電壓，觀察光電子、測量停止電壓，並由密立坎圖的斜率求出普朗克常數。</p>
         </a>
         <div class="module soon" data-keywords="原子 能階 波耳模型 光譜 譜線 來曼系 巴耳末系 躍遷 hydrogen spectrum">
           <div class="module-meta"><span class="topic" data-en="Atomic structure">原子結構</span><span class="tag soon" data-en="Planned">規劃中</span></div>
@@ -203,10 +203,10 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/search.js?v=202611111121"></script>
-  <script src="js/math.js?v=202611111121"></script>
-  <script src="js/firebase-config.js?v=202611111121"></script>
-  <script src="js/stats.js?v=202611111121" data-summary></script>
-  <script src="js/comments.js?v=202611111121"></script>
+  <script src="js/search.js?v=202611111124"></script>
+  <script src="js/math.js?v=202611111124"></script>
+  <script src="js/firebase-config.js?v=202611111124"></script>
+  <script src="js/stats.js?v=202611111124" data-summary></script>
+  <script src="js/comments.js?v=202611111124"></script>
 </body>
 </html>

@@ -28,12 +28,15 @@ s = index.read_text(encoding='utf-8')
 if not (root / f'{a.slug}.html').exists():
     sys.exit(f'找不到 {a.slug}.html')
 
-pat = re.compile(
-    r'<(div|a) class="module[^"]*"(?P<attrs>[^>]*)>(?P<body>(?:(?!</(?:div|a)>\s*\n\s*<(?:div|a) class="module).)*?<h3[^>]*>'
-    + re.escape(a.title) + r'</h3>.*?)</\1>', re.S)
-m = pat.search(s)
-if not m:
-    sys.exit(f'找不到標題為「{a.title}」的卡片')
+# 逐張卡片比對（不跨卡片、不跨分支）：卡片 = class 為 "module" 或 "module …" 的 <div>/<a>，
+# 以同一縮排的結束標籤收尾；標題必須在這張卡片自己的 <h3> 裡。
+card_re = re.compile(r'^(?P<ind>[ \t]*)<(?P<tag>div|a) class="module(?: [^"]*)?"(?P<attrs>[^>]*)>(?P<body>.*?)\n(?P=ind)</(?P=tag)>',
+                     re.S | re.M)
+h3_re = re.compile(r'<h3[^>]*>' + re.escape(a.title) + r'</h3>')
+hits = [c for c in card_re.finditer(s) if h3_re.search(c.group('body'))]
+if len(hits) != 1:
+    sys.exit(f'標題為「{a.title}」的卡片找到 {len(hits)} 張，應該剛好 1 張')
+m = hits[0]
 
 attrs = m.group('attrs')
 attrs = re.sub(r'\s(href|data-module)="[^"]*"', '', attrs)
@@ -50,7 +53,8 @@ if a.desc or a.desc_en:
         return f'<p{p_attrs}>{html.escape(a.desc) if a.desc else text}</p>'
     body = re.sub(r'<p([^>]*)>(.*?)</p>', fix_p, body, count=1, flags=re.S)
 
-new = f'<a class="module live" href="{a.slug}.html" data-module="{a.slug}"{attrs}>{body}</a>'
+ind = m.group('ind')
+new = f'{ind}<a class="module live" href="{a.slug}.html" data-module="{a.slug}"{attrs}>{body}\n{ind}</a>'
 s = s[:m.start()] + new + s[m.end():]
 index.write_text(s, encoding='utf-8')
 print(f'已上線：{a.title} → {a.slug}.html')
