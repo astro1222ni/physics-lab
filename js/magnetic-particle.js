@@ -53,6 +53,7 @@
       q: par.q * MC.E_CHARGE, m: par.m * MC.AMU, t: 0, turn: 0, tField: 0
     };
     state.trail = [[state.p.x, state.p.y, 0]];
+    state.run = { cycles: 0, entered: false, entryY: 0, entryTurn: 0, passed: false, maxDev: 0 };
     ripples.length = 0;
     state.ended = false;
     state.status = '';
@@ -822,6 +823,33 @@
     S.sweep({ from: 760, to: 300, dur: 0.35, type: 'sine', gain: 0.5 });
   }
 
+  // ---------- 任務模式（missions.js）：只在使用者按下發射後的動畫中回報 ----------
+  // 每次發射期間滑桿不變（改任何滑桿都會讓粒子回到起點），所以 par 就是這一發的設定。
+  function missionBase() {
+    const q = par.q * MC.E_CHARGE, m = par.m * MC.AMU, B = par.B * 1e-3;
+    const h = MC.helix(m, q, par.v * 1e5, B, par.theta);
+    return {
+      q: par.q, m: par.m, v: par.v, B: par.B, E: par.E, theta: par.theta, ang: par.ang, region: par.region,
+      x0: state.start.x, y0: state.start.y,
+      r: h.r / CM, Tus: h.T * 1e6, pitch: h.pitch / CM,            // 依滑桿計算：cm、μs、cm
+      vd: par.B !== 0 ? Math.abs(par.E * 1e3 / B) : null            // E×B 漂移速率 m/s
+    };
+  }
+  function missionEmit(type, extra) {
+    if (window.LabMission) window.LabMission.emit(type, Object.assign(missionBase(), extra));
+  }
+  /** 全空間都有場時的迴旋週期（s）；否則為 Infinity */
+  function cyclePeriod() {
+    if (par.region || par.q === 0 || par.B === 0) return Infinity;
+    return MC.period(par.m * MC.AMU, par.q * MC.E_CHARGE, par.B * 1e-3);
+  }
+  /** 粒子離出發點的位移（cm）：沿發射方向的分量與垂直偏離 */
+  function offsets(x, y) {
+    const th = par.ang * Math.PI / 180;
+    const dx = x / CM - state.start.x, dy = y / CM - state.start.y;
+    return { dx: dx, dy: dy, along: dx * Math.cos(th) + dy * Math.sin(th), dev: Math.abs(-dx * Math.sin(th) + dy * Math.cos(th)) };
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0;
   function tick(t) {
@@ -829,19 +857,73 @@
     const dt = Math.min((t - lastT) / 1000, 1 / 30);
     lastT = t;
     const p = state.p;
+    const run = state.run;
     const f0 = fieldCfg();
     const rev0 = Math.floor(Math.abs(p.turn) / (2 * Math.PI));
     const in0 = MC.inField(f0, p.x);
-    const stop = MC.advance(p, f0, dt * par.speed * 1e-6, {
+    const turn0 = p.turn, t0 = p.t, z0 = p.z, x0 = p.x, y0 = p.y, vx0 = p.vx, vy0 = p.vy, tf0 = p.tField;
+    const trail0 = state.trail.length;
+    const opts = {
       bounds: BOUNDS, maxStep: 1e-4, maxAngle: 0.01,
       trail: state.trail,
       trailSpacing: Math.max(1e-4, 1.5 / scale * CM)
-    });
+    };
+    // 每經過一個迴旋週期 T（全空間有場時）停在「剛好 nT」的時刻回報一次：
+    // 這時導引中心恰好前進 v_d·nT（由靜止釋放時粒子正好在擺線的尖點）
+    const Tc = cyclePeriod();
+    let remain = dt * par.speed * 1e-6, stop = null;
+    while (remain > 0 && !stop) {
+      const tb = (run.cycles + 1) * Tc - p.t;
+      if (tb <= remain) {
+        stop = MC.advance(p, f0, Math.max(tb, 0), opts);
+        remain -= Math.max(tb, 0);
+        if (!stop) {
+          run.cycles++;
+          const o = offsets(p.x, p.y), d = Math.hypot(o.dx, o.dy);
+          missionEmit('cycle', { n: run.cycles, t: p.t * 1e6, dx: o.dx, dy: o.dy, disp: d, vavg: d * CM / p.t });
+        }
+      } else {
+        stop = MC.advance(p, f0, remain, opts);
+        remain = 0;
+      }
+    }
+    // 直線前進的檢查：軌跡上每一點離「出發點沿發射方向的直線」多遠
+    for (let i = Math.max(trail0 - 1, 0); i < state.trail.length; i++) {
+      const o = offsets(state.trail[i][0], state.trail[i][1]);
+      if (o.dev > run.maxDev) run.maxDev = o.dev;
+    }
     if (state.trail.length > TRAIL_MAX) state.trail.splice(0, state.trail.length - TRAIL_MAX);
+    // 速度方向每轉滿一圈回報一次：時間與 z 以這一格內的轉角線性內插（純磁場時轉角與時間成正比）
+    const rev1 = Math.floor(Math.abs(p.turn) / (2 * Math.PI));
+    for (let n = rev0 + 1; n <= rev1; n++) {
+      const a = Math.abs(turn0), b = Math.abs(p.turn), w = b > a ? (2 * Math.PI * n - a) / (b - a) : 1;
+      missionEmit('lap', { n: n, dir: p.turn > 0 ? 1 : -1, tLap: (t0 + w * (p.t - t0)) * 1e6, zLap: (z0 + w * (p.z - z0)) / CM });
+    }
+    // 場區：場外沒有力、粒子走直線，所以進出邊界的位置可由場外的直線精確推得
+    if (par.region) {
+      const xb = (W / 2) * CM, in1 = MC.inField(f0, p.x);
+      if (!in0 && (in1 || p.tField > tf0) && !run.entered && Math.abs(vx0) > 0) {
+        run.entered = true;
+        run.entryY = (y0 + vy0 * (xb - x0) / vx0) / CM;
+        run.entryTurn = turn0;
+      }
+      if (run.entered && !run.passed && !in1 && Math.abs(p.vx) > 0) {
+        run.passed = true;
+        missionEmit('region', {
+          entryY: run.entryY, exitY: (p.y - p.vy * (p.x - xb) / p.vx) / CM,
+          turnDeg: (p.turn - run.entryTurn) * 180 / Math.PI, tField: p.tField * 1e6
+        });
+      }
+    }
     // 音效跟著「模擬時間」：速度方向每轉滿 2π 嗶一聲（慢動作設定改變時節奏也跟著變）
-    if (Math.floor(Math.abs(p.turn) / (2 * Math.PI)) > rev0) { revolutionSound(); addRipple(chargeColor()); }
+    if (rev1 > rev0) { revolutionSound(); addRipple(chargeColor()); }
     if (par.region && MC.inField(f0, p.x) !== in0) { regionSound(!in0); addRipple(colors.accent); }
     if (stop) {
+      const o = offsets(p.x, p.y);
+      missionEmit('exit', {
+        axis: stop.axis, t: p.t * 1e6, along: o.along, maxDev: run.maxDev, disp: Math.hypot(o.dx, o.dy),
+        z: p.z / CM, turnDeg: p.turn * 180 / Math.PI
+      });
       exitSound();
       state.running = false;
       state.ended = true;

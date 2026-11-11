@@ -212,7 +212,14 @@
     return b;
   }
 
+  // 慶祝畫面依序顯示：同時完成多個任務時，一個接一個出現，不會疊在一起
+  let showUntil = 0;
   function celebrate(m) {
+    const now = Date.now(), wait = Math.max(0, showUntil - now);
+    showUntil = now + wait + (m.hidden ? 1600 : 2200) + 350;
+    setTimeout(function () { showCelebrate(m); }, wait);
+  }
+  function showCelebrate(m) {
     const ov = el('div', 'ms-celebrate');
     ov.setAttribute('role', 'status');
     const box = el('div', 'ms-celebrate-box');
