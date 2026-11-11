@@ -218,8 +218,34 @@
     return { K: K_, U: U, total: K_ + U };
   }
 
+  /**
+   * 某一點的完整量測：合電場（分量、大小、方向角）、各電荷單獨產生的電場大小總和 Esum，
+   * 電位 V 與各電荷電位絕對值總和 Vsum（用來判斷「幾乎抵消」的相對大小）。
+   * 方向角 dir 以 +x 軸逆時針量起，範圍 [0, 360)；E = 0 時為 NaN。
+   */
+  function probeInfo(charges, x, y) {
+    const e = fieldAt(charges, x, y);
+    let esum = 0, vsum = 0;
+    for (let i = 0; i < charges.length; i++) {
+      const c = charges[i];
+      if (c.q === 0) continue;
+      const ei = fieldAt([c], x, y);
+      esum += Math.hypot(ei.ex, ei.ey);
+      vsum += Math.abs(potentialAt([c], x, y));
+    }
+    const m = Math.hypot(e.ex, e.ey);
+    let dir = NaN;
+    if (m > 0 && isFinite(m)) {
+      dir = Math.atan2(e.ey, e.ex) * 180 / Math.PI;
+      if (dir < 0) dir += 360;
+      if (dir >= 360) dir -= 360;
+    }
+    return { ex: e.ex, ey: e.ey, E: m, Esum: esum, dir: dir, V: potentialAt(charges, x, y), Vsum: vsum };
+  }
+
   const api = {
     K: K, NC: NC, CM: CM,
+    probeInfo: probeInfo,
     fieldAt: fieldAt,
     potentialAt: potentialAt,
     traceFieldLine: traceFieldLine,

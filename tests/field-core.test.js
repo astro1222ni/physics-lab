@@ -102,4 +102,57 @@ test('靜止釋放的正試探電荷撞上負電荷', () => {
   close(p.y, 0, 1e-9, '應沿 x 軸直線運動');
 });
 
+test('probeInfo：等量同號中點 E = 0、Esum = 2kq/r²；電偶極中垂線上 V = 0、Vsum = 2kq/r', () => {
+  const like = [{ x: -2, y: 0, q: 3 }, { x: 2, y: 0, q: 3 }];
+  const a = FC.probeInfo(like, 0, 0);
+  assert.ok(a.E < 1e-9 * a.Esum, '中點合電場應為零');
+  assert.ok(isNaN(a.dir), 'E = 0 時方向無定義');
+  close(a.Esum, 2 * FC.K * 3e-9 / 0.02 ** 2, 1e-12);
+  const dip = [{ x: -2, y: 0, q: 3 }, { x: 2, y: 0, q: -3 }];
+  const b = FC.probeInfo(dip, 0, 2);
+  close(b.V, 0, 1e-12);
+  close(b.Vsum, 2 * FC.K * 3e-9 / (Math.SQRT2 * 0.02), 1e-12);
+  close(b.dir, 0, 1e-12); // 中垂線上 E 平行於由正指向負的方向（+x）
+});
+
+test('probeInfo：等量同號中垂線上方 E 朝正上方（90°），下方朝正下方（270°）', () => {
+  const like = [{ x: -2, y: 0, q: 3 }, { x: 2, y: 0, q: 3 }];
+  close(FC.probeInfo(like, 0, 2).dir, 90, 1e-12);
+  close(FC.probeInfo(like, 0, -2).dir, 270, 1e-12);
+});
+
+test('不等量異號（+4、−1，相距 d）的零電場點在小電荷外側距離 d 處', () => {
+  const c = [{ x: 0, y: 0, q: 4 }, { x: 3, y: 0, q: -1 }];
+  const p = FC.probeInfo(c, 6, 0);
+  assert.ok(p.E < 1e-12 * p.Esum, '應為零電場點');
+});
+
+test('不等量異號的零電位面是圓（阿波羅尼斯圓）：rA/rB = |qA/qB|', () => {
+  const c = [{ x: 0, y: 0, q: 4 }, { x: 4, y: 0, q: -2 }];
+  const cx = 4 + 4 / 3, R = 8 / 3; // n = 2：圓心在 B 外側 d/(n²−1)，半徑 n·d/(n²−1)
+  for (let a = 0; a < 360; a += 30) {
+    const t = a * Math.PI / 180;
+    const p = FC.probeInfo(c, cx + R * Math.cos(t), R * Math.sin(t));
+    assert.ok(Math.abs(p.V) < 1e-9 * p.Vsum, 'V 應為零（角度 ' + a + '°）');
+  }
+  // 圓的最低點：E 垂直於等位面，朝正上方指向圓內（低電位）
+  close(FC.probeInfo(c, cx, -R).dir, 90, 1e-9);
+});
+
+test('靜止釋放：軌跡與 q/m 無關，離場動能 ∝ q、速率 ∝ √(q/m)', () => {
+  const c = [{ x: 4, y: 4, q: 3 }, { x: 8, y: 4, q: -3 }];
+  const B = { x0: 0, x1: 12, y0: 0, y1: 8 };
+  function fly(q, m) {
+    const p = { x: 2, y: 6, vx: 0, vy: 0, q: q, m: m };
+    let stop = null, n = 0;
+    while (!stop && n < 60 * 600) { stop = FC.advance(c, p, 1 / 60, { bounds: B, stopRadius: 0.3 }); n++; }
+    assert.ok(stop && stop.reason === 'out', '應離開畫面');
+    return { x: p.x, y: p.y, v: Math.hypot(p.vx, p.vy), K: FC.energy(c, p).K };
+  }
+  const a = fly(1, 4), b = fly(1, 1), d = fly(2, 1);
+  close(b.x, a.x, 1e-3, '離場位置 x'); close(b.y, a.y, 1e-3, '離場位置 y');
+  close(b.v / a.v, 2, 2e-3, 'm 變 1/4，速率加倍');
+  close(d.K / b.K, 2, 2e-3, 'q 加倍，動能加倍');
+});
+
 console.log(`\n${passed} 項通過`);

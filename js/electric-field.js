@@ -22,6 +22,7 @@
     running: false,
     ended: false,
     released: false,   // 從起點釋放後為 true（區分「釋放」與「繼續」）
+    run: null,         // 這一趟的起點資料（任務模式用）：{ x0, y0, V0, total0, clean, maxD, returned }
     status: ''
   };
 
@@ -863,6 +864,39 @@
   }
 
 
+  // ---------- 任務模式（missions.js）：回報物理量 ----------
+  /** 場源與試探電荷在 (x, y) 的完整狀態（位置 cm、電量 nC、E N/C、V V） */
+  function snapshot(x, y) {
+    const c = state.charges, pr = state.probe;
+    const info = FC.probeInfo(c, x, y);
+    return {
+      qA: c[0].q, qB: c[1].q, xA: c[0].x, yA: c[0].y, xB: c[1].x, yB: c[1].y,
+      d: Math.hypot(c[0].x - c[1].x, c[0].y - c[1].y),
+      x: x, y: y, q: pr.q, m: pr.m,
+      ex: info.ex, ey: info.ey, E: info.E, Esum: info.Esum, dir: info.dir, V: info.V, Vsum: info.Vsum
+    };
+  }
+  /** 場源的「指紋」：判斷兩趟是不是在同樣的場中 */
+  function sourceSig() {
+    return state.charges.map(function (c) { return [c.x, c.y, c.q].join(','); }).join(';');
+  }
+  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  /** 試探電荷沒有在運動時，回報目前的靜態配置（使用者放好試探電荷或改了場源之後） */
+  function emitProbe(key) {
+    if (!window.LabMission || state.running) return;
+    emit('probe', Object.assign(snapshot(state.probe.x, state.probe.y), { key: key }));
+  }
+  /** 這一趟運動中改了電量、質量或場源：能量不再守恆，這一趟不算 */
+  function taint() { if (state.run && !state.ended) state.run.clean = false; }
+  /** 一趟運動的共同資料：起點、起點電位與總能量、是否乾淨 */
+  function runData() {
+    const pr = state.probe, r = state.run, en = FC.energy(state.charges, pr);
+    return Object.assign(snapshot(pr.x, pr.y), {
+      x0: r.x0, y0: r.y0, V0: r.V0, total0: r.total0, clean: r.clean, sig: sourceSig(),
+      v: Math.hypot(pr.vx, pr.vy) * 100, K: en.K, U: en.U, total: en.total
+    });
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0;
   function tick(t) {
@@ -873,6 +907,17 @@
     const stop = FC.advance(state.charges, pr, dt, { bounds: VIEW, stopRadius: 0.3 });
     pr.trail.push([pr.x, pr.y]);
     if (pr.trail.length > 4000) pr.trail.shift();
+    const run = state.run;
+    if (run) {
+      // 離開起點至少 1 cm 後又回到起點附近（靜止釋放 → 回到同一條等位線時速度為零，沿原路折返）
+      const dist = Math.hypot(pr.x - run.x0, pr.y - run.y0);
+      run.maxD = Math.max(run.maxD, dist);
+      if (!run.returned && run.maxD >= 1 && dist < 0.15) {
+        run.returned = true;
+        emit('return', { x0: run.x0, y0: run.y0, dist: dist, maxDist: run.maxD,
+          qA: state.charges[0].q, qB: state.charges[1].q, q: pr.q, m: pr.m, clean: run.clean });
+      }
+    }
     if (stop) {
       state.running = false;
       state.ended = true;
@@ -888,6 +933,13 @@
         ? T('試探電荷撞上了電荷 ' + state.charges[stop.charge].label + '。',
           'The test charge hit charge ' + state.charges[stop.charge].label + '.')
         : T('試探電荷離開了畫面。', 'The test charge left the screen.');
+      if (run) {
+        emit('end', Object.assign(runData(), {
+          reason: stop.reason,
+          hit: stop.reason === 'hit' ? stop.charge : -1,
+          hitQ: stop.reason === 'hit' ? state.charges[stop.charge].q : 0
+        }));
+      }
     }
     draw();
     if (state.running) requestAnimationFrame(tick);
@@ -908,6 +960,7 @@
     state.running = false;
     state.ended = false;
     state.released = false;
+    state.run = null;
     $('run').textContent = T('釋放', 'Release');
     state.status = '';
     requestDraw();
@@ -919,7 +972,7 @@
   function bindSlider(id, fmt, onInput) {
     const el = $(id), out = $(id + 'o');
     const update = function () { out.textContent = fmt(val(el)); };
-    el.addEventListener('input', function () { update(); onInput(val(el)); });
+    el.addEventListener('input', function () { update(); onInput(val(el)); taint(); });
     update();
     return {
       el: el,
@@ -933,6 +986,10 @@
   const sSep = bindSlider('sep', fmtCm, function (v) { placeSymmetric(v); invalidate(); });
   bindSlider('qp', fmtQ, function (v) { state.probe.q = v; requestDraw(); });
   bindSlider('mp', function (v) { return fmtNum(v) + ' g'; }, function (v) { state.probe.m = v; requestDraw(); });
+  // 放開滑桿（或打字輸入完成）時回報新的場源配置
+  [['qA', 'qA'], ['qB', 'qB'], ['sep', 'sep']].forEach(function (pair) {
+    $(pair[0]).addEventListener('change', function () { emitProbe(pair[1]); });
+  });
 
   function placeSymmetric(d) {
     state.charges[0].x = W / 2 - d / 2; state.charges[0].y = H / 2;
@@ -974,10 +1031,18 @@
       $('run').textContent = T('繼續', 'Resume');
       state.status = T('已暫停', 'Paused');
       requestDraw();
+      if (state.run) emit('pause', runData());
       return;
     }
     if (state.ended) resetProbe(); // 上一次已撞上電荷或離開畫面：從起點重新釋放
-    if (!state.released) { state.released = true; releaseSound(); } // 只在從起點釋放時發聲，暫停後繼續不再發聲
+    if (!state.released) { // 只在從起點釋放時發聲，暫停後繼續不再發聲
+      state.released = true;
+      releaseSound();
+      const pr = state.probe;
+      state.run = { x0: pr.x, y0: pr.y, V0: FC.potentialAt(state.charges, pr.x, pr.y),
+        total0: FC.energy(state.charges, pr).total, clean: true, maxD: 0, returned: false };
+      emit('release', Object.assign(snapshot(pr.x, pr.y), { V0: state.run.V0, total0: state.run.total0 }));
+    }
     setRunning(true);
   });
   $('resetProbe').addEventListener('click', function () { resetProbe(); });
@@ -1037,6 +1102,7 @@
     if (drag.type === 'charge') {
       state.charges[drag.i].x = w[0];
       state.charges[drag.i].y = w[1];
+      taint();
       syncSeparation();
       invalidate();
     } else {
@@ -1045,7 +1111,9 @@
   });
   const endDrag = function (ev) {
     const wasCharge = drag && drag.type === 'charge';
+    const wasProbe = drag && drag.type === 'probe';
     drag = null;
+    if (wasCharge || wasProbe) emitProbe(wasCharge ? 'drag' : 'probe');
     if (wasCharge) staticDirty = true; // 補畫電位標籤
     if (ev && ev.pointerType === 'mouse') setHover(chargeAt(eventWorld(ev)));
     else setHover(-1);
