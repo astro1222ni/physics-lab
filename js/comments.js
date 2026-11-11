@@ -175,6 +175,11 @@
       menu.innerHTML = '';
       menu.appendChild(el('p', 'lab-account-who', state.nickname ? t('暱稱：', 'Nickname: ') + state.nickname : t('尚未設定暱稱', 'No nickname yet')));
       if (state.admin) menu.appendChild(el('p', 'lab-account-admin', t('管理員', 'Administrator')));
+      const lb = document.createElement('a');
+      lb.className = 'lab-account-link';
+      lb.href = 'leaderboard.html';
+      lb.textContent = t('★ 我的星星與成就', '★ My stars & achievements');
+      menu.appendChild(lb);
       menu.appendChild(button(t('設定暱稱', 'Change nickname'), null, function () { close(); askNickname(); }));
       menu.appendChild(button(t('登出', 'Sign out'), null, function () { close(); api.signOut(); }));
     }
@@ -305,6 +310,7 @@
         state.msg = '';
         changed();
         guard(function () { return api.post(moduleId, state.user.uid, state.nickname, text); }).then(function () {
+          try { window.dispatchEvent(new Event('lab:commented')); } catch (e) { /* 成就系統用 */ }
           draft = '';
           state.busy = false;
           lastComposeKey = '';

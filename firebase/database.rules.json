@@ -165,6 +165,9 @@
         },
         "$other": {
           ".validate": false
+        },
+        "comments": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
         }
       }
     },

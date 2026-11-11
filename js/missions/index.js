@@ -13,3 +13,13 @@ window.LAB_MISSION_MODULES = [
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
 window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler'];
+
+/* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
+window.LAB_MODULE_BRANCH = {
+  'projectile': 'mech', 'collision': 'mech', 'circular-motion': 'mech', 'oscillation': 'mech', 'kepler': 'mech',
+  'ideal-gas': 'thermo', 'specific-heat': 'thermo',
+  'standing-waves': 'wave', 'doppler': 'wave',
+  'refraction': 'optics', 'lens-mirror': 'optics', 'slit-interference': 'optics',
+  'electric-field': 'em', 'capacitor': 'em', 'dc-circuit': 'em', 'magnetic-particle': 'em', 'faraday': 'em',
+  'photoelectric': 'modern', 'hydrogen-spectrum': 'modern', 'radioactive-decay': 'modern'
+};

@@ -139,7 +139,10 @@
         return api.getScore(st.user.uid).then(function (sc) {
           myScore = sc;
           if (!sc) { myRank = null; return; }
-          return api.countAbove(sc.stars).then(function (n) { myRank = n + 1; });
+          return api.countAbove(sc.stars).then(function (n) {
+            myRank = n + 1;
+            if (window.LabAchievements) window.LabAchievements.setRank(myRank, top.length); // 排行榜成就
+          });
         });
       }
     }).then(function () { renderMe(); renderProgress(); }).catch(function () {
@@ -175,6 +178,8 @@
       lastUid = uid;
     });
     refresh();
+    // 每 60 秒自動更新排行榜與名次（只在頁面顯示時）
+    setInterval(function () { if (document.visibilityState === 'visible') refresh(); }, 60000);
     // 登入狀態或任務資料載入後重新整理
     let wasReady = null;
     setInterval(function () {

@@ -34,9 +34,11 @@
   // ======================= 公開介面 =======================
   const LabMission = {
     register: function (moduleId, missions) {
-      registry[moduleId] = (registry[moduleId] || []).concat(missions.map(function (m) {
+      const have = {};
+      (registry[moduleId] || []).forEach(function (m) { have[m.id] = true; });
+      registry[moduleId] = (registry[moduleId] || []).concat(missions.filter(function (m) { return !have[m.id]; }).map(function (m) {
         return Object.assign({ mem: {} }, m);
-      }));
+      })); // 同一任務檔載入兩次也不會重複
       changed();
     },
     emit: function (type, data) {
@@ -177,7 +179,7 @@
     return guard(function () { return api.getScore(uid); }).then(function (sc) {
       return guard(function () { return api.complete(uid, m.id, stars, displayName(), state.pub, sc ? sc.stars : 0); });
     }).then(function () {
-      state.done[m.id] = { stars: stars };
+      state.done[m.id] = { stars: stars, at: Date.now() };
       m.pending = false;
       celebrate(m);
       changed();

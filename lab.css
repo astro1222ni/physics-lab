@@ -644,3 +644,13 @@ html.lab-converting body { visibility: hidden; }
 .ac-toast .ac-tx span { color: var(--text); font-weight: 600; }
 @keyframes ac-in { from { opacity: 0; transform: translateY(20px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .ac-toast { animation: none; } }
+.tier5 .ac-ico { background: conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b5de5, #ff6b6b); box-shadow: 0 0 10px rgba(155, 93, 229, .55); }
+.ac-cat { margin-top: 14px; }
+.ac-cat h3 { font-size: calc(15px * var(--fs, 1)); margin: 0 0 8px; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ac-bar { display: block; height: 6px; margin-top: 4px; border-radius: 99px; background: var(--border); overflow: hidden; }
+.ac-fill { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--star)); }
+.ac-tx .ac-prog { font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+.ac-tx .ac-tier { font-size: calc(11px * var(--fs, 1)); font-weight: 700; letter-spacing: .05em; }
+.ac-card { filter: grayscale(.9); }
+.ac-card.on { filter: none; }
+.lab-account-link { display: flex; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 8px; font-weight: 700; text-decoration: none; color: var(--text); background: var(--star-soft); border: 1px solid var(--star); }
