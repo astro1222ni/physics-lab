@@ -39,6 +39,7 @@
 - 頁面結構照現有模組：`.crumbs` 導覽（首頁／分支／主題）、`.lab`（畫布＋控制面板）、`.notes`（KaTeX 公式與觀察重點）、頁尾。
 - 頁尾前依序載入：KaTeX、`js/math.js`、物理核心、（有音效時）`js/sound.js`、`js/numinput.js`、頁面程式、`js/firebase-config.js`、`js/stats.js data-module="<模組>"`、`js/comments.js`。
 - **滑桿數字可直接輸入**（站長要求）：每個滑桿的數字放在同一個 `.slider` 的 `<output>`，由 `js/numinput.js` 自動變成可點擊輸入；讀值一律用 `LabNum.value(el)`，依實驗需要設定 `data-decimals`（打字精度可比滑桿細），`<output>` 顯示到該精度；非線性滑桿用 `LabNum.register`，程式改滑桿用 `LabNum.set` 或先 `LabNum.clear`。
+- **任務模式與倪的星星**（站長要求）：每個實驗設計約 8–12 個任務，難度 1–10 級（星星數 = 等級），另加 2–3 個**隱藏任務**（只給隱晦的提示句，完成時只說「隱藏任務完成」不說原因）。任務必須靠操作實驗達成特定標準（例如兩發射程相等），並先用物理核心確認每個任務都做得到。寫在 `js/missions/<模組>.js`（`LabMission.register`），模組程式在關鍵時刻 `LabMission.emit('事件', {物理量})`；頁面載入 `js/missions.js data-module="<模組>"` 與任務檔（在 firebase-config.js 之後）；把模組加入 `js/missions/index.js`。新增任務後請站長到排行榜頁按「同步任務清單」。
 - **全部清除**（站長要求）：會累積歷史紀錄的實驗（多條軌跡、比較用的舊軌跡、隨時間累積的圖表、統計直方圖等），在主要按鈕旁放「全部清除／Clear all」按鈕，清掉所有累積內容、回到可以重新開始的狀態，但保留目前的滑桿設定。
 - **音效**（站長要求「適合的都做」）：有教學意義的事件才加聲音（光學等非聲學現象不加）；頁面放 `#soundBtn` 音效開關（參考 collision），預設關閉；主要頻率 ≥ 250 Hz；持續變化的聲音用 `LabSound.voice`。
 - 公式一律用 KaTeX（`\( … \)`、`\[ … \]`）。**不可使用** Unicode 組合字元（例如向量箭頭 U+20D7）或上標數字字元 ⁰⁴⁵⁶⁷⁸⁹⁻（部分 Android 字型缺字）；讀數上標用 `<sup>`。
