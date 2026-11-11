@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111232"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Newton’s Second Law: The Dynamics Cart | Astro Ni Physics Lab">牛頓第二定律（力學車實驗）｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：用懸掛的砝碼拉動力學車，打點計時器在紙帶上打點，剪紙帶畫出 v–t 圖求加速度；平衡摩擦力、固定總質量畫 a–F 圖、固定拉力畫 a–1/(M+m) 圖，並比較張力 T 與近似值 mg。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111232">
+  <style>
+    /* 牛頓第二定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    .ns canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    #cv { height: 520px; }
+    #tapeCv { height: 330px; }
+    #gcv { height: 340px; }
+    .ns + .ns { margin-top: 16px; }
+    .ns button { min-height: 44px; }
+    .ns .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ns .playbar button { flex: 1 1 auto; }
+    .ns .playbar #go { font-weight: 700; min-width: 8em; }
+    .ns .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ns .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .ns .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .ns .stage .status { margin: 6px 4px 0; }
+    .ns .slider input[type="range"] { height: 28px; margin: 0; }
+    .ns .slider label sub, dl.readout sub, .ns .hint sub { font-size: .75em; }
+    .ns [hidden] { display: none !important; }
+    .ns .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ns .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .seg2 button, .seg4 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ns .checks label { min-height: 44px; }
+    .ns .checks input { width: 17px; height: 17px; flex: none; }
+    .ns .checks.col { flex-direction: column; gap: 2px; }
+    .ns .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ns .card .info { font-size: calc(13px * var(--fs, 1)); margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+    .ns .move { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 2px; }
+    .ns .move button { padding: 6px 6px; line-height: 1.3; font-size: calc(13px * var(--fs, 1)); }
+    .ns .move button:disabled, .ns button:disabled { opacity: .45; cursor: not-allowed; }
+    .ns .slider.locked output { color: var(--muted); }
+    .ns dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.warn { color: var(--pos); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.ok { color: var(--probe); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .ns .gtabs { margin: 0 2px 8px; }
+    .ns .gaxis { margin: 0 2px 8px; }
+    .ns .gaxis button { min-height: 44px; font-size: calc(13px * var(--fs, 1)); }
+    .tablewrap { overflow-x: auto; margin: 8px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.fixed { color: var(--accent); font-weight: 600; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); }
+    .ns .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Newton’s laws"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 牛頓運動定律</nav>
+      <h1 data-en="Newton’s Second Law: The Dynamics Cart">牛頓第二定律（力學車實驗）</h1>
+      <p data-en="A dynamics cart on a track is pulled by a string that runs over a pulley to a hanging mass. A ticker timer prints dots on a paper tape; cut the tape into equal-time strips to build the v–t graph and read off the acceleration. Balance friction by tilting the track, then collect data for the a–F and a–1/(M+m) graphs — the classic school experiment.">力學車放在軌道上，細繩經過滑輪掛著吊掛物。打點計時器在紙帶上打點，把紙帶剪成等時距的紙條貼成 v–t 圖，就能讀出加速度。先墊高軌道平衡摩擦力，再收集數據畫出 a–F 圖與 a–1/(M+m) 圖——這就是課本上的經典實驗。</p>
+    </header>
+
+    <!-- 第一部分：實驗裝置與操作 -->
+    <div class="lab ns">
+      <div class="stage">
+        <canvas id="cv" aria-label="力學車實驗裝置側視圖：軌道、打點計時器、紙帶、力學車、滑輪與吊掛物，左下方為小車與吊掛物的受力圖" data-en-aria-label="Side view of the apparatus: track, ticker timer, paper tape, dynamics cart, pulley and hanging mass, with free-body diagrams of the cart and the hanging mass at the lower left"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button" data-en="Release the cart">放開小車</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除紙帶、圖表與所有數據點，回到起點；滑桿設定不變" data-en-title="Clear the tape, the graphs and all data points and return the cart to the start; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Tension T"><i style="background:var(--accent)"></i>張力 T</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Weight Mg, mg"><i style="background:var(--pos)"></i>重力 Mg、mg</span>
+          <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Normal force N"><i style="background:var(--neg)"></i>正向力 N</span>
+          <span style="color:var(--equi)" data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Friction f"><i style="background:var(--equi)"></i>摩擦力 f</span>
+          <span style="color:var(--b-mech)" data-en-html="<i class=&quot;dash&quot;></i>Net force (= mass × a)"><i class="dash"></i>合力（＝質量 × a）</span>
+        </div>
+        <p class="hint" data-en-html="Side view, drawn to scale (the cart travels 50 cm to the end stop). In the free-body diagrams all arrows share one scale; the weight and normal force of the cart are much larger, so their arrows are cut short and marked “≈”. The dashed arrow Mg sin θ is the component of the cart’s weight along the tilted track.">側視圖，依比例繪製（小車由起點到擋板跑 50 cm）。受力圖中所有箭頭用同一個比例；小車的重力與正向力大很多，箭頭截短並標「≈」。虛線箭頭 Mg sin θ 是軌道傾斜時小車重力沿軌道的分量。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Masses and string">質量與細繩</h2>
+          <p class="seg-label" id="modeLabel" data-en="The string and hanging mass:">細繩與吊掛物：</p>
+          <div class="seg2" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeHang" aria-pressed="true" data-en="Hanging mass on">掛上吊掛物</button>
+            <button type="button" id="modePush" aria-pressed="false" data-en="Off — give a push">取下，推一下</button>
+          </div>
+          <div class="slider"><label for="M" data-en-html="Cart mass M (cart + its load)">小車質量 M（含車上砝碼）</label><output id="Mo"></output>
+            <input id="M" type="range" min="0.2" max="2" step="0.01" value="0.5" data-decimals="3"></div>
+          <div class="slider" id="boxm"><label for="m" data-en-html="Hanging mass m (hanger + slotted masses)">吊掛物質量 m（掛鉤＋槽碼）</label><output id="mo"></output>
+            <input id="m" type="range" min="0.01" max="0.5" step="0.005" value="0.05" data-decimals="3"></div>
+          <div class="move" id="moveBox">
+            <button type="button" id="toHang" data-en="Move 10 g: cart → hanger">10 g 槽碼：車上 → 吊鉤</button>
+            <button type="button" id="toCart" data-en="Move 10 g: hanger → cart">10 g 槽碼：吊鉤 → 車上</button>
+          </div>
+          <p class="hint" id="moveHint" data-en="Moving a slotted mass between the cart and the hanger changes the pulling weight mg but keeps the total mass M + m the same.">在車上與吊鉤之間移動槽碼：拉力 mg 改變，但總質量 M + m 不變。</p>
+          <div class="slider" id="boxv0" hidden><label for="v0" data-en-html="Push speed v<sub>0</sub>">推出的初速 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="0.05" max="1" step="0.01" value="0.3" data-decimals="3"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Friction and tilting the track">摩擦與平衡摩擦力</h2>
+          <div class="slider" id="boxmu"><label for="mu" data-en="Rolling friction coefficient μ">軌道的滾動摩擦係數 μ</label><output id="muo"></output>
+            <input id="mu" type="range" min="0" max="0.06" step="0.001" value="0.02" data-decimals="3"></div>
+          <div class="checks"><label><input id="mystery" type="checkbox"><span data-en="Mystery track (μ hidden — find it by experiment)">未知摩擦的軌道（μ 隱藏，要靠實驗找出來）</span></label></div>
+          <div class="slider"><label for="th" data-en="Track tilt θ (raise the end away from the pulley)">軌道傾角 θ（墊高遠離滑輪的一端）</label><output id="tho"></output>
+            <input id="th" type="range" min="0" max="5" step="0.05" value="0" data-decimals="2"></div>
+          <p class="info" id="tiltInfo">—</p>
+          <p class="hint" data-en="To balance friction: take the hanging mass off, give the cart a push and adjust θ until the dots on the tape are equally spaced (constant velocity). Then Mg sin θ = f, i.e. tan θ = μ.">平衡摩擦力：取下吊掛物、推一下小車，調整 θ 直到紙帶上的點間距相等（等速度）。此時 Mg sin θ = f，也就是 tan θ = μ。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Ticker timer and tape">打點計時器與紙帶</h2>
+          <p class="seg-label" id="freqLabel" data-en="Dot frequency f:">打點頻率 f：</p>
+          <div class="seg4" role="group" aria-labelledby="freqLabel">
+            <button type="button" data-f="60" aria-pressed="true">60 Hz</button>
+            <button type="button" data-f="50" aria-pressed="false">50 Hz</button>
+            <button type="button" data-f="20" aria-pressed="false">20 Hz</button>
+            <button type="button" data-f="10" aria-pressed="false">10 Hz</button>
+          </div>
+          <p class="hint" id="freqInfo">—</p>
+          <div class="slider"><label for="N" data-en="Dot intervals per strip N">每條紙條的打點間隔數 N</label><output id="No"></output>
+            <input id="N" type="range" min="1" max="12" step="1" value="6" data-decimals="0"></div>
+          <p class="info" id="tauInfo">—</p>
+          <div class="checks col">
+            <label><input id="noise" type="checkbox"><span data-en="Add reading error to the dots (about ±0.3 mm)">點的位置加入讀數誤差（約 ±0.3 mm）</span></label>
+            <label><input id="gatesOn" type="checkbox"><span data-en="Show the two photogates">顯示兩個光電閘</span></label>
+            <label><input id="fbdOn" type="checkbox" checked><span data-en="Free-body diagrams">受力圖</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：紙帶分析與數據圖表 -->
+    <div class="lab ns">
+      <div class="stage">
+        <h2 data-en="Ticker tape → strips → v–t graph">紙帶 → 剪成紙條 → v–t 圖</h2>
+        <p class="hint" data-en="Top: the tape, with the first dot (the moment of release) on the left; the dashed lines show where to cut. Bottom: the strips pasted side by side. Each strip covers the same time τ, so its length is the average velocity × τ; the line through the tops is the v–t graph and its slope is the acceleration.">上方是取下的紙帶，第一點（放開的瞬間）在左邊，虛線是剪開的位置。下方把紙條依序並排貼好：每條代表相同的時間 τ，長度 = 平均速度 × τ，連接紙條頂端的直線就是 v–t 圖，斜率就是加速度。</p>
+        <canvas id="tapeCv" aria-label="紙帶與剪貼紙條：上方為打點紙帶，下方為依序並排的紙條所構成的 v–t 圖與最佳直線" data-en-aria-label="The ticker tape (top) and the strips pasted side by side (bottom), forming a v–t graph with its best-fit line"></canvas>
+
+        <h2 style="margin-top:16px" data-en="Data: a–F and a–1/(M+m)">實驗數據：a–F 圖與 a–1/(M+m) 圖</h2>
+        <p class="hint" data-en="Each completed run with the hanging mass on is added automatically to the graph that is selected below.">每次掛著吊掛物跑到擋板，量得的加速度會自動加入下面選定的圖表。</p>
+        <div class="seg2 gtabs" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
+          <button type="button" id="exp1" aria-pressed="true" data-en-html="Experiment 1: change the force<br>(a–F)">實驗一：改變拉力<br>（a–F 圖）</button>
+          <button type="button" id="exp2" aria-pressed="false" data-en-html="Experiment 2: change the mass<br>(a–1/(M+m))">實驗二：改變質量<br>（a–1/(M+m) 圖）</button>
+        </div>
+        <div class="seg2 gaxis" id="axis1" role="group" aria-label="橫軸" data-en-aria-label="Horizontal axis">
+          <button type="button" data-ax="F" aria-pressed="true" data-en="x-axis: F = mg (N)">橫軸：F = mg（N）</button>
+          <button type="button" data-ax="m" aria-pressed="false" data-en="x-axis: m (kg)">橫軸：m（kg）</button>
+        </div>
+        <div class="seg2 gaxis" id="axis2" role="group" aria-label="橫軸" data-en-aria-label="Horizontal axis" hidden>
+          <button type="button" data-ax="inv" aria-pressed="true" data-en="x-axis: 1/(M+m)">橫軸：1/(M+m)</button>
+          <button type="button" data-ax="invM" aria-pressed="false" data-en="x-axis: 1/M (cart only)">橫軸：1/M（只算小車）</button>
+        </div>
+        <canvas id="gcv" aria-label="加速度對拉力或對總質量倒數的數據圖與最佳直線" data-en-aria-label="Graph of acceleration against force or against the reciprocal of the total mass, with the best-fit line"></canvas>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <div class="gbtns">
+          <button type="button" id="undo" data-en="Remove the last point">移除最後一點</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Measured from the tape">紙帶量測結果</h2>
+          <dl class="readout">
+            <dt data-en="Dots / strips">點數／紙條數</dt><dd id="rDots">—</dd>
+            <dt data-en-html="Time per strip <span class=&quot;f&quot;>τ = N/f</span>">每條時間 <span class="f">τ = N/f</span></dt><dd id="rTau">—</dd>
+            <dt data-en="Slope of v–t (acceleration)">v–t 圖斜率（加速度）</dt><dd id="rSlope">—</dd>
+            <dt data-en="Intercept (velocity at t = 0)">截距（t = 0 的速度）</dt><dd id="rIcpt">—</dd>
+            <dt data-en-html="Strip-length difference <span class=&quot;f&quot;>Δ(Δx) = aτ<sup>2</sup></span>">相鄰紙條長度差 <span class="f">Δ(Δx) = aτ<sup>2</sup></span></dt><dd id="rDD">—</dd>
+            <dt data-en="Run time to the end stop">跑到擋板的時間</dt><dd id="rTime">—</dd>
+          </dl>
+          <div id="gateBox" hidden>
+            <h2 style="margin-top:12px" data-en="Photogates (flag width 2.0 cm)">光電閘（遮光片寬 2.0 cm）</h2>
+            <dl class="readout">
+              <dt data-en="Gate 1 (at 10 cm)">光閘 1（10 cm 處）</dt><dd id="rG1">—</dd>
+              <dt data-en="Gate 2 (at 35 cm)">光閘 2（35 cm 處）</dt><dd id="rG2">—</dd>
+              <dt data-en-html="<span class=&quot;f&quot;>a = (v<sub>2</sub><sup>2</sup> − v<sub>1</sub><sup>2</sup>)/2d</span>"><span class="f">a = (v<sub>2</sub><sup>2</sup> − v<sub>1</sub><sup>2</sup>)/2d</span></dt><dd id="rGa">—</dd>
+            </dl>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculated from the formulas">公式計算（理論值）</h2>
+          <dl class="readout">
+            <dt data-en-html="Acceleration <span class=&quot;f&quot;>a</span>">加速度 <span class="f">a</span></dt><dd id="tA">—</dd>
+            <dt data-en-html="String tension <span class=&quot;f&quot;>T = m(g − a)</span>">繩張力 <span class="f">T = m(g − a)</span></dt><dd id="tT">—</dd>
+            <dt data-en-html="Hanging weight <span class=&quot;f&quot;>mg</span>">吊掛物重量 <span class="f">mg</span></dt><dd id="tW">—</dd>
+            <dt data-en="Error of the approximation T ≈ mg">近似 T ≈ mg 的誤差</dt><dd id="tDiff">—</dd>
+            <dt data-en-html="Friction <span class=&quot;f&quot;>f = μMg cos θ</span>">摩擦力 <span class="f">f = μMg cos θ</span></dt><dd id="tF">—</dd>
+            <dt data-en-html="Weight along the track <span class=&quot;f&quot;>Mg sin θ</span>">重力沿軌道分量 <span class="f">Mg sin θ</span></dt><dd id="tWp">—</dd>
+            <dt data-en-html="Net force on the cart <span class=&quot;f&quot;>Ma</span>">小車所受合力 <span class="f">Ma</span></dt><dd id="tNet">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 id="fitTitle" data-en="Best-fit line">最佳直線</h2>
+          <dl class="readout" id="fitOut">
+            <dt data-en="Data points">數據點</dt><dd id="fN">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="The cart (mass \(M\)) and the hanging mass (\(m\)) are joined by a light, inextensible string over a light, frictionless pulley, so they move together with the same acceleration \(a\) and the tension \(T\) is the same all along the string. Newton’s second law for each body (the track tilted by \(\theta\), friction \(f\) opposing the motion):">小車（質量 \(M\)）與吊掛物（質量 \(m\)）由輕繩相連，繩子經過輕而無摩擦的滑輪，所以兩者一起運動、加速度 \(a\) 相同，繩上各處的張力 \(T\) 也相同。對兩個物體分別寫牛頓第二定律（軌道傾角 \(\theta\)，摩擦力 \(f\) 與運動方向相反）：</p>
+      <div class="formula multi">
+        \[ T + Mg\sin\theta - f = Ma \] \[ mg - T = ma \] \[ f = \mu N = \mu Mg\cos\theta \]
+      </div>
+      <p data-en-html="Adding the two equations eliminates \(T\): the whole system \(M + m\) is accelerated by the net external force along the string.">兩式相加消去 \(T\)：整個系統 \(M + m\) 由沿著繩子方向的合外力加速。</p>
+      <div class="formula multi">
+        \[ a = \frac{mg + Mg\sin\theta - f}{M + m} \] \[ T = m(g - a) = Ma + f - Mg\sin\theta \]
+      </div>
+      <p data-en-html="On a level track (\(\theta = 0\)) this is \(a = (mg - f)/(M+m)\) and \(T = Ma + f\). The tension is always <strong>smaller</strong> than the hanging weight \(mg\), because the hanging mass is accelerating downward.">水平軌道（\(\theta = 0\)）時 \(a = (mg - f)/(M+m)\)、\(T = Ma + f\)。張力永遠<strong>小於</strong>吊掛物的重量 \(mg\)，因為吊掛物正在向下加速。</p>
+
+      <h3 data-en="Balancing friction">平衡摩擦力</h3>
+      <p data-en-html="Raise the end of the track away from the pulley until the component of the cart’s weight along the track cancels the friction. With the hanging mass removed, a gentle push then gives <strong>constant velocity</strong> (equally spaced dots):">把軌道遠離滑輪的一端墊高，讓小車重力沿軌道的分量抵消摩擦力。取下吊掛物推一下，小車就會<strong>等速</strong>前進（紙帶上的點間距相等）：</p>
+      <div class="formula multi">
+        \[ Mg\sin\theta = \mu Mg\cos\theta \] \[ \Longrightarrow\quad \tan\theta = \mu \]
+      </div>
+      <p data-en-html="The condition does not depend on \(M\), so the track stays balanced when you add masses to the cart. After balancing, the equations become simply">這個條件與 \(M\) 無關，所以之後在車上加減砝碼仍然保持平衡。平衡摩擦力之後：</p>
+      <div class="formula multi">
+        \[ a = \frac{mg}{M + m} \] \[ T = Ma = \frac{M}{M+m}\,mg \] \[ \frac{mg - T}{mg} = \frac{m}{M + m} \]
+      </div>
+      <p data-en-html="The textbook approximation “the string pulls the cart with \(F \approx mg\)” is good only when \(m \ll M\): its relative error is \(m/(M+m)\).">課本常用的近似「繩子拉小車的力 \(F \approx mg\)」只有在 \(m \ll M\) 時才準確，相對誤差是 \(m/(M+m)\)。</p>
+
+      <h3 data-en="Reading the ticker tape">讀打點紙帶</h3>
+      <p data-en-html="The ticker timer prints a dot every \(1/f\) second. In Taiwan it runs on the 60 Hz mains, so the default is 60 dots per second; counting every 6 intervals gives a convenient \(0.1\ \mathrm{s}\). Cut the tape into strips of \(N\) intervals, so that every strip covers the same time \(\tau = N/f\). A strip’s length \(\Delta x_n\) is the distance moved in that time, so \(\Delta x_n/\tau\) is the average velocity — which, for constant acceleration, equals the instantaneous velocity at the middle of the strip’s time interval. For constant acceleration the strips grow by the same amount every time:">打點計時器每隔 \(1/f\) 秒打一點。臺灣的家用電源是 60 Hz，所以預設每秒打 60 點；每 6 個間隔取一個計數點，恰好是 \(0.1\ \mathrm{s}\)。把紙帶每 \(N\) 個間隔剪成一條，每條代表相同的時間 \(\tau = N/f\)。紙條長度 \(\Delta x_n\) 是這段時間走的距離，\(\Delta x_n/\tau\) 就是平均速度；等加速度時，它等於這段時間中間時刻的瞬時速度。等加速度運動時，相鄰紙條每次增加的長度都相同：</p>
+      <div class="formula multi">
+        \[ \tau = \frac{N}{f} \] \[ v_n = \frac{\Delta x_n}{\tau} \] \[ \Delta x_{n+1} - \Delta x_n = a\tau^{2} \] \[ a = \frac{\Delta v}{\Delta t} \]
+      </div>
+      <p data-en-html="Pasting the strips side by side (same width, bottoms aligned) therefore gives a staircase whose tops lie on a straight line: the \(v\)–\(t\) graph. Its slope is \(a\); its intercept is the velocity at the first dot.">所以把紙條並排貼好（寬度相同、底部對齊），頂端會排成一直線，這就是 \(v\)–\(t\) 圖：斜率是 \(a\)，截距是第一點時的速度。</p>
+
+      <h3 data-en="Experiment 1: a against F at constant total mass">實驗一：固定總質量，改變拉力（a–F 圖）</h3>
+      <p data-en-html="After balancing friction, the force that accelerates the whole system \(M + m\) is \(F = mg\). To change \(F\) <strong>without</strong> changing the mass being accelerated, move slotted masses from the cart to the hanger: \(M + m\) stays the same, so \(a = F/(M+m)\) is a straight line through the origin with slope \(1/(M+m)\). Plotting \(a\) against \(m\) instead gives slope \(g/(M+m)\), so the slope times the total mass is a measurement of \(g\).">平衡摩擦力之後，加速整個系統 \(M + m\) 的力是 \(F = mg\)。想改變 \(F\) 又<strong>不</strong>改變被加速的質量，就把槽碼從車上移到吊鉤：\(M + m\) 不變，於是 \(a = F/(M+m)\) 是通過原點的直線，斜率為 \(1/(M+m)\)。若改以 \(m\) 為橫軸，斜率為 \(g/(M+m)\)，斜率乘以總質量就是重力加速度 \(g\) 的測量值。</p>
+      <div class="formula">
+        \[ a = \frac{F}{M+m} = \frac{g}{M+m}\,m \]
+      </div>
+      <p data-en-html="If you only add masses to the hanger (keeping \(M\)), the total mass grows as well: \(a = gm/(M+m)\) bends over and can never exceed \(g\). Compared with the textbook line \(a = mg/M\) the points fall further and further below it. If friction is not balanced, the line is still straight (at constant total mass) but no longer passes through the origin: it meets the \(F\) axis where the pull just overcomes friction.">如果只在吊鉤上加砝碼（\(M\) 不變），總質量也跟著變大：\(a = gm/(M+m)\) 會向下彎，永遠不會超過 \(g\)，而且愈來愈低於課本近似直線 \(a = mg/M\)。如果沒有平衡摩擦力，固定總質量時仍是直線，但不通過原點，而是交在 \(F\) 軸上「拉力剛好克服摩擦」的地方。</p>
+
+      <h3 data-en="Experiment 2: a against 1/(M+m) at constant hanging mass">實驗二：固定吊掛物，改變質量（a–1/(M+m) 圖）</h3>
+      <p data-en-html="Keep \(m\) (and so \(F = mg\)) fixed and change the cart’s load. Then \(a = mg \cdot \dfrac{1}{M+m}\): a straight line through the origin whose slope is the pulling force \(mg\). Plotting against \(1/M\) instead (ignoring the hanging mass) gives a curve that only approaches the line when \(M \gg m\).">固定 \(m\)（也就是 \(F = mg\) 固定），改變車上的砝碼，則 \(a = mg \cdot \dfrac{1}{M+m}\)：通過原點的直線，斜率就是拉力 \(mg\)。若改以 \(1/M\) 為橫軸（忽略吊掛物的質量），得到的是曲線，只有在 \(M \gg m\) 時才接近直線。</p>
+
+      <h3 data-en="Photogates">光電閘</h3>
+      <p data-en-html="A flag of width \(w\) on the cart blocks each gate for a time \(\Delta t\); \(v = w/\Delta t\) is the average speed through the gate. With the gate separation \(d\):">小車上寬 \(w\) 的遮光片擋住光閘的時間為 \(\Delta t\)，\(v = w/\Delta t\) 是通過光閘的平均速率。兩光閘相距 \(d\)：</p>
+      <div class="formula multi">
+        \[ v_1 = \frac{w}{\Delta t_1} \] \[ v_2 = \frac{w}{\Delta t_2} \] \[ a = \frac{v_2^{2} - v_1^{2}}{2d} \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Balance friction first</strong>: choose “Off — give a push”, release the cart and look at the tape. Shrinking spacing means friction wins; growing spacing means the track is tilted too much. Find the angle where the strips are all the same length — the v–t line is flat — and check that \(\tan\theta = \mu\)."><strong>先平衡摩擦力</strong>：選「取下，推一下」，放開小車看紙帶。間距愈來愈小代表摩擦力較大；愈來愈大代表墊得太高。找出紙條一樣長（v–t 圖是水平線）的角度，驗證 \(\tan\theta = \mu\)。</li>
+        <li data-en-html="<strong>The right way to vary F</strong>: in Experiment 1, use the “Move 10 g” buttons between runs. The points lie on a straight line through the origin, and 1/slope equals \(M + m\)."><strong>改變拉力的正確方法</strong>：做實驗一時，每次之間按「移動 10 g 槽碼」。數據點排成通過原點的直線，斜率的倒數等於 \(M + m\)。</li>
+        <li data-en-html="<strong>The naive way</strong>: keep \(M\) and only increase \(m\) (try \(m\) up to 0.30 kg with \(M = 0.50\ \mathrm{kg}\)). The points bend below the dashed line \(a = mg/M\)."><strong>只加吊掛砝碼會怎樣</strong>：\(M\) 不變、只增加 \(m\)（例如 \(M = 0.50\ \mathrm{kg}\)，\(m\) 加到 0.30 kg），數據點彎到虛線 \(a = mg/M\) 的下方。</li>
+        <li data-en-html="<strong>Forget to balance friction</strong>: set \(\theta = 0\) with \(\mu = 0.03\) and repeat Experiment 1. The line no longer passes through the origin."><strong>忘了平衡摩擦力</strong>：\(\mu = 0.03\)、\(\theta = 0\)，重做實驗一：直線不再通過原點。</li>
+        <li data-en-html="<strong>T is not mg</strong>: compare the tension with \(mg\) in the readout and in the hanging-mass diagram. The difference is exactly \(ma\)."><strong>張力不等於 mg</strong>：比較讀數與吊掛物受力圖中的 \(T\) 與 \(mg\)，兩者相差恰好是 \(ma\)。</li>
+        <li data-en-html="<strong>Different counting intervals</strong>: change \(N\) after a run — the same tape is re-cut. Longer strips give fewer points but each is less sensitive to reading errors (turn on the reading error to see this)."><strong>不同的計數間隔</strong>：跑完一次後改變 \(N\)，同一條紙帶會重新剪開。紙條較長時點數較少，但每點受讀數誤差的影響較小（打開「讀數誤差」比較看看）。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The motion has constant acceleration until the cart hits the end stop (or stops), so every position is calculated from the exact formulas \(x = v_0 t + \tfrac12 at^2\), \(v = v_0 + at\) — there is no numerical error.">小車在撞上擋板（或停下）之前都是等加速度運動，所有位置都直接由 \(x = v_0 t + \tfrac12 at^2\)、\(v = v_0 + at\) 計算，沒有數值誤差。</li>
+        <li data-en="The ticker prints its first dot at the instant of release (t = 0) and then every 1/f second. The tape’s own friction is ignored. With “reading error” on, each dot is shifted by a random amount (standard deviation 0.3 mm); the acceleration and the graph points then come from the noisy tape, exactly as in a real lab.">打點計時器在放開的瞬間（t = 0）打下第一點，之後每 1/f 秒一點；紙帶本身的摩擦不計。打開「讀數誤差」時，每一點的位置會隨機偏移（標準差 0.3 mm），加速度與圖上的數據點都由這條有誤差的紙帶算出，就像真實的實驗。</li>
+        <li data-en="The track’s rolling friction is f = μN, and the cart starts moving only if the pull (plus the weight component along the track) is larger than μN. The string and pulley are massless, the pulley frictionless, and the string stays parallel to the track. g = 9.8 m/s².">軌道的滾動摩擦力 f = μN；拉力（加上重力沿軌道的分量）大於 μN 小車才會起動。繩子與滑輪的質量不計、滑輪無摩擦，繩子與軌道保持平行。g = 9.8 m/s²。</li>
+        <li data-en="The mystery track picks a random μ between 0.015 and 0.045 each time it is turned on.">「未知摩擦的軌道」每次開啟時隨機選一個 0.015 到 0.045 之間的 μ。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111232"></script>
+  <script src="js/newton-second-core.js?v=202611111232"></script>
+  <script src="js/sound.js?v=202611111232"></script>
+  <script src="js/numinput.js?v=202611111232"></script>
+  <script src="js/newton-second.js?v=202611111232"></script>
+  <script src="js/firebase-config.js?v=202611111232"></script>
+  <script src="js/missions.js?v=202611111232" data-module="newton-second"></script>
+  <script src="js/missions/newton-second.js?v=202611111232"></script>
+  <script src="js/stats.js?v=202611111232" data-module="newton-second"></script>
+  <script src="js/comments.js?v=202611111232"></script>
+</body>
+</html>
