@@ -10,6 +10,8 @@
 - 站長偏好「**一步一步來**」：需要站長在 GitHub、Firebase 等網站操作時，一次只給一個步驟，附上**可以直接點的完整網址**，等站長回覆或拍照確認後再給下一步。
 - 站長常用平板拍螢幕照片回報；看照片時要確認細節（例如值有沒有引號）。
 - 站長是高中物理老師（Astro Ni YouTube 頻道），網站給學生使用，學生多為未成年人：留言、隱私要保守設計。
+- 有選擇要站長決定時，列出選項並給建議（先說推薦哪個、為什麼）。大批工作進行中只簡短回報進度，全部完成後再完整報告（附網址與重點）。
+- 雲端無法試聽音效、無法在實機上測手感：這類事情要請站長在平板或手機上確認。
 
 ## 最高原則
 
@@ -29,6 +31,11 @@
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
 | `js/stats.js` | 瀏覽人次、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝每分頁一個隨機代號的心跳，150 秒內有心跳算在線） |
+| `js/missions.js` | 任務模式「倪的星星」：`LabMission.register/emit`、任務面板、慶祝畫面、寫入完成紀錄；管理員登入時自動同步 `missionDefs` |
+| `js/missions/<模組>.js`、`js/missions/index.js` | 各實驗的任務定義；`index.js` 有三份清單：`LAB_MISSION_MODULES`（有任務的實驗）、`LAB_LIVE_MODULES`（已上線的實驗）、`LAB_MODULE_BRANCH`（實驗所屬分支） |
+| `js/achievements.js` | 成就系統（等級系列＋單項成就＋隱藏成就），由 `missions.js` 自動載入 |
+| `leaderboard.html`、`js/leaderboard.js` | 排行榜（前 100 名、自己的名次、公開設定、任務進度與總進度條、我的成就、規則說明、管理員區） |
+| `js/search.js`、`js/math.js` | 首頁搜尋；KaTeX 公式排版 |
 | `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |
 | `firebase/database.rules.json` | 資料庫安全規則（修改後需請站長貼到 Firebase 主控台「規則」分頁並發布） |
@@ -54,6 +61,21 @@
 - 首頁：在對應分支加卡片（`data-module`、`data-keywords` 同義詞、`data-en`），已上線的卡片用 `<a class="module live">`。
 - 手機 390 px 不可出現左右捲動；控制項觸控目標至少 44 px。
 
+## 任務、排行榜與成就（站長的設計決定）
+
+- 任務、星星、成就都**必須登入 Google 帳號**才記錄。操作實驗本身永遠不需要登入。
+- 每個任務只能領一次星星，星星數 = 難度等級（1–10）。隱藏任務的提示句要**非常非常隱晦**，完成時只恭喜、不說原因。
+- 排行榜公開前 100 名，登入後一定看得到自己的名次。同分同名次，先達到的人排前面。
+- 暱稱公開顯示，使用者要為自己的暱稱負責。選擇不公開時，只顯示第一個與最後一個字（`LabMission.mask`）。
+- 成就分公開與隱藏兩種，不加星星。站長說「以後實驗會非常非常多」，所以成就要做長遠：系列等級的門檻用數量級（k、M、G、T），級數很多，稱號要有意境。
+- 規則說明寫在排行榜頁，學生看得到。改了規則或判定方式，要同步更新說明。
+
+## 上線後不可隨意更動的約定
+
+- **實驗代號（slug）與網址不改**：統計、任務、成就、留言都用它當鍵，站長的 YouTube 影片也可能連到這些網址。
+- **已上線任務的代號與等級不改**：已完成的紀錄與總分都依賴它們。要調整難度，就改判定條件或容許值；真的要改等級或刪除任務，先和站長討論對已完成者的影響。成就系列的代號（`<系列>-<級>`）也一樣。
+- **同一時間只讓一個工作串修改網站**：換工作串前，舊的先 `git push`，新的先 `git pull`，避免互相覆蓋。
+
 ## 發布前檢查
 
 1. `npm test`（或 `for t in tests/*.test.js; do node "$t"; done`）全部通過。
@@ -62,6 +84,7 @@
 
 ## Firebase（專案 astro-ni-physics-lab）
 
-- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`。
+- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`scores/`、`userStats/`、`achievements/`。
+- 免費方案（Spark）限制：同時連線 100、儲存 1 GB、每月下載 10 GB。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
 - 雲端工作環境連不到 Firebase 與 gstatic；本機可以連，但測試一律用 `tools/mock-backend.js`，不要寫入正式資料庫。正式驗證請站長在網站上操作。
