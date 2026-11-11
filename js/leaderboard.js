@@ -104,6 +104,38 @@
     const wrap = $('progressList');
     wrap.innerHTML = '';
     const all = LM.all();
+    // 最上面：全部任務的總星數與總進度
+    let gotAll = 0, totalAll = 0, doneAll = 0, countAll = 0;
+    MODS.forEach(function (m) {
+      (all[m.id] || []).forEach(function (x) {
+        countAll++; totalAll += x.level;
+        if (st.done[x.id]) { doneAll++; gotAll += x.level; }
+      });
+    });
+    if (countAll) {
+      const pct = totalAll ? 100 * gotAll / totalAll : 0;
+      const tot = el('div', 'lb-prog lb-prog-total');
+      const head = el('div', 'lb-prog-total-head');
+      head.appendChild(el('span', 'lb-prog-name', T('全部任務', 'All missions')));
+      const big = el('span', 'lb-prog-total-stars');
+      big.appendChild(stars(gotAll));
+      big.appendChild(el('span', 'lb-prog-total-of', ' / ' + totalAll));
+      head.appendChild(big);
+      tot.appendChild(head);
+      const bar = el('span', 'lb-prog-bar');
+      const fill = el('span', 'lb-prog-fill');
+      fill.style.width = pct + '%';
+      bar.appendChild(fill);
+      bar.setAttribute('role', 'progressbar');
+      bar.setAttribute('aria-valuemin', '0');
+      bar.setAttribute('aria-valuemax', String(totalAll));
+      bar.setAttribute('aria-valuenow', String(gotAll));
+      bar.setAttribute('aria-label', T('總星數進度', 'Total star progress'));
+      tot.appendChild(bar);
+      tot.appendChild(el('span', 'lb-prog-num', T('已完成 ', 'Completed ') + doneAll + ' / ' + countAll + T(' 個任務　星星 ', ' missions · ') +
+        (pct >= 99.95 || pct === 0 ? pct.toFixed(0) : pct.toFixed(1)) + T('%', '% of the stars')));
+      wrap.appendChild(tot);
+    }
     MODS.forEach(function (m) {
       const list = all[m.id] || [];
       if (!list.length) return;
