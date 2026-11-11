@@ -17,6 +17,7 @@ window.LAB_MISSION_MODULES = [
   { id: 'faraday', zh: '法拉第定律與冷次定律', en: 'Faraday’s Law and Lenz’s Law' },
   { id: 'radioactive-decay', zh: '放射性衰變與半衰期', en: 'Radioactive Decay and Half-Life' },
   { id: 'circular-motion', zh: '等速圓周運動', en: 'Uniform Circular Motion' },
+  { id: 'oscillation', zh: '彈簧振子與單擺', en: 'Spring Oscillator and Pendulum' },
   { id: 'refraction', zh: '折射與全反射', en: 'Refraction and Total Internal Reflection' },
   { id: 'slit-interference', zh: '雙狹縫干涉與單狹縫繞射', en: 'Double-Slit Interference and Single-Slit Diffraction' }
 ];

@@ -80,6 +80,29 @@
     if (i > 0) b.splice(0, i);
   }
 
+  // ---------- 任務模式（missions.js）：回報物理量 ----------
+  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  /** 彈簧這一次釋放的條件（m kg、k N/m、A m、x0 m、b kg/s、週期 s、E0 J） */
+  function springInfo() {
+    const p = ss.p, sol = ss.sol;
+    return { mode: 'spring', m: p.m, k: p.k, A: p.A, x0: p.x0, damp: p.b > 0, b: p.b,
+      bc: OC.criticalDamping(p.m, p.k), regime: sol.regime, T0: sol.T0, Td: sol.Td, E0: ss.E0 };
+  }
+  /** 單擺這一次釋放的條件（L m、g m/s²、th0 度（大小）、m kg、b kg/s、週期 s、E0 J） */
+  function pendInfo() {
+    const p = ps.p;
+    return { mode: 'pendulum', L: p.L, g: p.g, th0: Math.abs(p.theta0), m: p.m, damp: p.b > 0, b: p.b,
+      T0: ps.T0, Tex: ps.Tex, E0: ps.E0 };
+  }
+  /** 新的轉折點：回報轉折點（第 n 個、時刻、離平衡點多遠），湊滿一個週期後回報實測週期 */
+  function emitTurn(info, turns, amp) {
+    if (!window.LabMission) return;
+    const n = turns.length - 1;
+    emit('turn', Object.assign(info, { n: n, t: turns[n], amp: amp }));
+    const Tm = measured(turns);
+    if (isFinite(Tm)) emit('period', Object.assign(info, { Tm: Tm }));
+  }
+
   /** 推進目前模式 dt 秒（物理時間），轉折點時發聲並加上波紋 */
   function advance(dt) {
     if (state.mode === 'spring') {
@@ -89,13 +112,24 @@
           const tt = n * Math.PI / ss.sol.omegaD;
           ss.turns.push(tt);
           turnEvent(Math.sign(ss.sol.state(tt).x));
+          emitTurn(springInfo(), ss.turns, Math.abs(ss.sol.state(tt).x));
         });
       }
       ss.t = t1;
+      // 任務：有阻尼時，力學能第一次降到釋放時的 0.01%（振幅剩 1%）＝停下來
+      if (ss.sol.regime !== 'none' && !ss.settled && ss.sol.state(t1).E <= 1e-4 * ss.E0) {
+        ss.settled = true;
+        if (window.LabMission) {
+          emit('settle', Object.assign(springInfo(), { t: OC.springSettleTime(ss.p, 1e-4), crossed: ss.sol.regime === 'under' }));
+        }
+      }
     } else {
       OC.pendulumAdvance(ps.p, ps.s, dt, {
         onStep: pushPend,
-        onTurn: function (t, th) { ps.turns.push(t); turnEvent(Math.sign(th)); }
+        onTurn: function (t, th) {
+          ps.turns.push(t); turnEvent(Math.sign(th));
+          emitTurn(pendInfo(), ps.turns, Math.abs(th) / DEG);
+        }
       });
       pushPend();
     }
@@ -1363,7 +1397,19 @@
     });
   });
 
-  $('play').addEventListener('click', function () { setRunning(!state.running); });
+  $('play').addEventListener('click', function () {
+    const was = state.running;
+    setRunning(!state.running);
+    if (!was || !window.LabMission) return;
+    // 任務：暫停瞬間的狀態（彈簧 x m、v m/s、a m/s²；單擺 th 度、om rad/s、al rad/s²；能量 J）
+    if (state.mode === 'spring') {
+      const st = ss.sol.state(ss.t);
+      emit('pause', Object.assign(springInfo(), { t: ss.t, x: st.x, v: st.v, a: st.a, KE: st.KE, PE: st.PE, E: st.E }));
+    } else {
+      const s = ps.s, e = OC.pendulumEnergy(ps.p, s);
+      emit('pause', Object.assign(pendInfo(), { t: s.t, th: s.th / DEG, om: s.om, al: OC.pendulumAccel(ps.p, s.th, s.om), KE: e.KE, PE: e.PE, E: e.E }));
+    }
+  });
   $('reset').addEventListener('click', function () { restart(); setRunning(true); });
   // 全部清除：兩個分頁的圖表、拖尾、轉折點紀錄與虛影都歸零，回到 t = 0 的釋放位置（保留滑桿設定），暫停待播放
   $('clearAll').addEventListener('click', function () {

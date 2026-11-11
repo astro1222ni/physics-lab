@@ -282,8 +282,32 @@
     }
   }
 
+  /**
+   * 有阻尼的彈簧振子（由 p.x0／p.A、p.v0 出發）：力學能第一次降到初始值 frac 倍的時刻（s）。
+   * 例如 frac = 1e-4 相當於振幅只剩 1%（任務模式用來判斷「停下來」）。
+   * 有阻尼時 dE/dt = −b v² ≤ 0，力學能只減不增，所以先倍增找上界、再二分即可；
+   * 過了這個時刻之後力學能不會再回升。無阻尼時傳回 Infinity。
+   */
+  function springSettleTime(p, frac) {
+    const sol = spring(p);
+    if (sol.regime === 'none') return Infinity;
+    const E0 = sol.state(0).E, target = frac * E0;
+    if (!(E0 > target)) return 0;
+    let lo = 0, hi = sol.T0 / 16, n = 0;
+    while (sol.state(hi).E > target) {
+      lo = hi; hi *= 2;
+      if (++n > 200) return Infinity;
+    }
+    for (let i = 0; i < 100 && hi - lo > 1e-12 * hi; i++) {
+      const mid = 0.5 * (lo + hi);
+      if (sol.state(mid).E > target) lo = mid; else hi = mid;
+    }
+    return hi;
+  }
+
   const api = {
     G_PRESETS: G_PRESETS,
+    springSettleTime: springSettleTime,
     DEG: DEG,
     linear: linear,
     springOmega: springOmega,

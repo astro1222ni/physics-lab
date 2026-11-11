@@ -260,4 +260,41 @@ test('單擺最大角速度 ω_max = √(2g(1 − cos θ0)/L)（能量守恆）'
   close(m, OC.pendulumMaxOmega(p), 1e-5);
 });
 
+// ---------------------------------------------------------------- 任務模式用的輔助函式
+
+test('springSettleTime：臨界阻尼由靜止釋放，E/E0 = [(1+u)² + u²]e^{−2u}（u = ω0 t）降到 1e-4 的時刻', () => {
+  const m = 0.5, k = 20, w = Math.sqrt(k / m);
+  const ts = OC.springSettleTime(SP({ b: OC.criticalDamping(m, k) }), 1e-4);
+  // 獨立用二分法解 f(u) = 1e-4
+  const f = (u) => ((1 + u) ** 2 + u * u) * Math.exp(-2 * u);
+  let lo = 1, hi = 20;
+  for (let i = 0; i < 200; i++) { const mid = (lo + hi) / 2; if (f(mid) > 1e-4) lo = mid; else hi = mid; }
+  close(ts * w, (lo + hi) / 2, 1e-9);
+  close(ts / OC.springPeriod(m, k), 1.108, 1e-3, '約 1.11 個週期');
+});
+
+test('springSettleTime：該時刻 E = frac·E0，力學能只減不增；無阻尼為 Infinity', () => {
+  for (const f of [0.5, 0.95, 1, 1.3, 4]) {
+    const p = SP({ b: f * OC.criticalDamping(0.5, 20) });
+    const sol = OC.spring(p), E0 = sol.state(0).E;
+    const ts = OC.springSettleTime(p, 1e-4);
+    close(sol.state(ts).E, 1e-4 * E0, 1e-6);
+    let prev = Infinity;
+    for (let i = 0; i <= 400; i++) { const E = sol.state(ts * i / 400).E; assert.ok(E <= prev * (1 + 1e-12)); prev = E; }
+    assert.ok(sol.state(ts * 0.999).E > 1e-4 * E0);
+  }
+  assert.strictEqual(OC.springSettleTime(SP({ b: 0 }), 1e-4), Infinity);
+});
+
+test('臨界阻尼是「不越過平衡點」中最快停下的：過阻尼越重越慢，欠阻尼雖快但會越過', () => {
+  const m = 0.5, k = 20, bc = OC.criticalDamping(m, k), T0 = OC.springPeriod(m, k);
+  const t = (f) => OC.springSettleTime(SP({ b: f * bc }), 1e-4) / T0;
+  assert.ok(t(1) < t(1.05) && t(1.05) < t(1.5) && t(1.5) < t(3));
+  assert.strictEqual(OC.spring(SP({ b: 0.9 * bc })).regime, 'under');
+  assert.ok(t(0.9) < t(1), 'ζ = 0.9 停得比較快，但它越過了平衡點');
+  // 重度過阻尼：慢根 r1 ≈ −ω0/(2ζ)，停下時間 ≈ ln(1e4)·ζ/ω0
+  const z = 20, w = Math.sqrt(k / m);
+  close(OC.springSettleTime(SP({ b: z * bc }), 1e-4), Math.log(1e4) / (2 * (z * w - Math.sqrt(z * z - 1) * w)), 2e-3);
+});
+
 console.log(passed + ' 項通過');
