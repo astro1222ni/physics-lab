@@ -236,7 +236,7 @@
     }
     const close = function () { ov.classList.add('out'); setTimeout(function () { ov.remove(); }, 300); };
     ov.addEventListener('click', close);
-    setTimeout(close, m.hidden ? 1800 : 2600);
+    setTimeout(close, m.hidden ? 1600 : 2200);
   }
 
   function buildPanel() {

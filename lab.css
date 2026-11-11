@@ -541,7 +541,7 @@ html.lab-converting body { visibility: hidden; }
 }
 .ms-stars svg, .lb-stars svg { width: 15px; height: 15px; fill: var(--star); }
 
-.ms-celebrate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: rgba(0,0,0,.25); animation: ms-fade .25s ease-out; cursor: pointer; }
+.ms-celebrate { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; background: transparent; animation: ms-fade .25s ease-out; pointer-events: none; } /* 不擋住操作：有時間限制的任務要能立刻繼續 */
 .ms-celebrate.out { opacity: 0; transition: opacity .3s; }
 .ms-celebrate-box {
   position: relative; min-width: min(320px, 86vw); padding: 26px 24px 22px; text-align: center;

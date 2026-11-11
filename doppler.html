@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111044"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Doppler Effect | Astro Ni Physics Lab">都卜勒效應｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：救護車（波源）一邊移動一邊發出聲波，觀察前方波前被壓縮、後方被拉長；拖曳觀察者，由推遲位置精確計算聽到的頻率 f′，並畫出 f′ 對時間的圖。超音速時出現馬赫錐與音爆，還能打開音效實際聽到音調由高變低。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111044">
+  <style>
+    /* 都卜勒效應頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 場景畫布可以拖曳觀察者（不捲動頁面）；下方 f′(t) 圖可以在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 360px; touch-action: none; cursor: crosshair; }
+    #graph { aspect-ratio: auto; height: 220px; margin-top: 8px; touch-action: auto; cursor: default; }
+    #cv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .dp button { min-height: 44px; }
+    .dp .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .dp .playbar button { flex: 1 1 auto; }
+    .dp .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dp .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .dp .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .dp .stage .status { margin: 6px 4px 0; }
+    .dp .slider input[type="range"] { height: 28px; margin: 0; }
+    .dp .slider label sub, dl.readout sub, dl.readout dt sub { font-size: .75em; }
+    .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .presets button { padding: 5px 4px; line-height: 1.25; }
+    .presets button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+    .dp .checks label { min-height: 36px; }
+    .dp .checks input { width: 17px; height: 17px; }
+    .dp .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; background: none !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#wave&quot;>Waves &amp; Sound</a> / Sound waves"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#wave">波動與聲音</a> ／ 聲波</nav>
+      <h1 data-en="The Doppler Effect">都卜勒效應</h1>
+      <p data-en="An ambulance (the sound source) drives along a road while its siren sends out wavefronts (top view). Watch them crowd together in front and spread out behind, drag the listener anywhere, and read the frequency f′ the listener hears — worked out exactly from where the source was when that sound left it. Turn on the sound to hear the pitch drop as it passes, and push the source past the speed of sound to see the Mach cone and the sonic boom.">救護車（波源）一邊沿著道路行駛、一邊發出聲波（俯視圖）。觀察前方的波前被擠在一起、後方被拉開；把觀察者拖到任何位置，讀出他聽到的頻率 f′——由「這個聲音發出時波源在哪裡」精確算出。打開音效聽聽看經過時音調由高變低，再把速度提高到超過音速，看看馬赫錐與音爆。</p>
+    </header>
+
+    <div class="lab dp">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="都卜勒效應模擬畫布：俯視圖中移動的波源、擴散的圓形波前與可拖曳的觀察者；選取後可用方向鍵移動觀察者" data-en-aria-label="Doppler effect simulation: top view of a moving source, expanding circular wavefronts and a draggable listener; when focused, the arrow keys move the listener"></canvas>
+        <canvas id="graph" aria-label="觀察者聽到的頻率 f′ 對時間 t 的圖" data-en-aria-label="Graph of the frequency f′ heard by the listener against time t"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有波前與 f′(t) 圖，波源回到起點重新開始；滑桿設定與觀察者位置不變" data-en-title="Clear all wavefronts and the f′(t) graph and send the source back to its start; slider settings and the listener’s position are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--b-wave)" data-en-html="<i class=&quot;ring&quot;></i>Wavefronts (one every 1/f)"><i class="ring"></i>波前（每 1/f 發出一個）</span>
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Wavefront reaching the listener now"><i class="dash"></i>此刻傳到觀察者的波前</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Source velocity v<sub>s</sub>"><i style="background:var(--pos)"></i>波源速度 v<sub>s</sub></span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Listener velocity v<sub>o</sub>"><i style="background:var(--neg)"></i>觀察者速度 v<sub>o</sub></span>
+        </div>
+        <p class="hint" data-en-html="Top view, distances in metres (scale bar at the bottom left); the ambulance and the listener are drawn enlarged, not to scale. A velocity arrow shows how far the object moves in 0.5 s. Tap anywhere on the picture, or drag the listener, to move the listener (when the picture is selected, the arrow keys move it 10 m at a time; Shift: 50 m). The faded ambulance marks where the source was when the sound now being heard left it.">俯視圖，距離以公尺計（比例尺在左下角）；救護車與觀察者的圖示放大顯示，未依比例。速度箭頭代表 0.5 秒內移動的距離。點畫面任一處或拖曳觀察者，可以改變觀察者的位置（選取畫面後，方向鍵每次移動 10 m，按住 Shift 為 50 m）。半透明的救護車標出「此刻聽到的聲音」發出時波源所在的位置。</p>
+        <p class="hint" data-en-html="Sound: the on-screen frequency f is only a few hertz so that the wavefronts can be seen, so the speaker plays a scaled-up tone — 660 Hz stands for f, and you hear 660 Hz × f′/f. It gets quieter as the listener gets farther from where the sound was emitted.">音效：畫面上的 f 只有幾 Hz（才看得見一圈一圈的波前），所以喇叭播放的音高按比例放大——以 660 Hz 代表 f，聽到的是 660 Hz × f′/f；距離聲音發出的位置越遠，音量越小。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Scenarios">情境</h2>
+          <div class="presets" role="group" aria-label="預設情境" data-en-aria-label="Preset scenarios">
+            <button type="button" data-preset="still" aria-pressed="false" data-en-html="At rest<small>v<sub>s</sub> = 0</small>">靜止<small>v<sub>s</sub> = 0</small></button>
+            <button type="button" data-preset="approach" aria-pressed="true" data-en-html="Source approaches<small>then passes</small>">波源靠近<small>再經過</small></button>
+            <button type="button" data-preset="recede" aria-pressed="false" data-en-html="Source recedes<small>v<sub>s</sub> = 120</small>">波源遠離<small>v<sub>s</sub> = 120</small></button>
+            <button type="button" data-preset="observer" aria-pressed="false" data-en-html="Listener moves<small>v<sub>o</sub> = −100</small>">觀察者移動<small>v<sub>o</sub> = −100</small></button>
+            <button type="button" data-preset="sonic" aria-pressed="false" data-en-html="Speed of sound<small>v<sub>s</sub> = v</small>">音速<small>v<sub>s</sub> = v</small></button>
+            <button type="button" data-preset="super" aria-pressed="false" data-en-html="Supersonic<small>v<sub>s</sub> = 1.6v</small>">超音速<small>v<sub>s</sub> = 1.6v</small></button>
+          </div>
+          <p class="hint" data-en="Scenarios use v = 340 m/s and start again from the beginning.">情境使用 v = 340 m/s，並從頭開始。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Settings">條件</h2>
+          <div class="slider"><label for="f" data-en="Source frequency f">波源頻率 f</label><output id="fo"></output>
+            <input id="f" type="range" min="0.5" max="4" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="v" data-en="Speed of sound v">聲速 v</label><output id="vo"></output>
+            <input id="v" type="range" min="150" max="600" step="5" value="340" data-decimals="1"></div>
+          <div class="slider"><label for="vs" data-en-html="Source speed v<sub>s</sub> (to the right)">波源速率 v<sub>s</sub>（向右）</label><output id="vso"></output>
+            <input id="vs" type="range" min="0" max="700" step="5" value="120" data-decimals="1"></div>
+          <div class="slider"><label for="vob" data-en-html="Listener velocity v<sub>o</sub> (right +)">觀察者速度 v<sub>o</sub>（向右為正）</label><output id="vobo"></output>
+            <input id="vob" type="range" min="-150" max="150" step="5" value="0" data-decimals="1"></div>
+          <p class="hint" data-en-html="Tap a number to type an exact value. Changing f, v or v<sub>s</sub> starts again from the beginning; changing the listener’s velocity does not.">點一下數字可直接輸入精確數值。改變 f、v 或 v<sub>s</sub> 會從頭開始；改變觀察者速度則不會。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="What the listener hears">觀察者聽到的聲音</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="rt">—</dd>
+            <dt data-en-html="Frequency heard f′">聽到的頻率 f′</dt><dd id="rf" class="big">—</dd>
+            <dt data-en-html="Ratio f′/f">比值 f′/f</dt><dd id="rr">—</dd>
+            <dt data-en-html="Tone played <span class=&quot;f&quot;>660 Hz × f′/f</span>">播放音高 <span class="f">660 Hz × f′/f</span></dt><dd id="rp">—</dd>
+            <dt data-en-html="Source velocity toward listener u<sub>s</sub>">波源速度朝向觀察者的分量 u<sub>s</sub></dt><dd id="rus">—</dd>
+            <dt data-en-html="Listener velocity toward source u<sub>o</sub>">觀察者速度朝向波源的分量 u<sub>o</sub></dt><dd id="ruo">—</dd>
+            <dt data-en="Sound emitted … ago">這個聲音發出於</dt><dd id="rte">—</dd>
+            <dt data-en="Source–listener distance now">波源與觀察者目前距離</dt><dd id="rd">—</dd>
+            <dt data-en="Source position x">波源位置 x</dt><dd id="rsx">—</dd>
+            <dt data-en="Listener position (x, y)">觀察者位置 (x, y)</dt><dd id="rpos">—</dd>
+          </dl>
+          <p class="hint" data-en-html="u<sub>s</sub> and u<sub>o</sub> are measured along the line from where the source was when it emitted this sound to where the listener is now; f′ = f (v + u<sub>o</sub>)/(v − u<sub>s</sub>).">u<sub>s</sub>、u<sub>o</sub> 沿著「聲音發出時的波源位置 → 觀察者目前位置」這條連線量；f′ = f (v + u<sub>o</sub>)/(v − u<sub>s</sub>)。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculated from the formulas">公式計算結果</h2>
+          <dl class="readout">
+            <dt data-en-html="Mach number <span class=&quot;f&quot;>M = v<sub>s</sub>/v</span>">馬赫數 <span class="f">M = v<sub>s</sub>/v</span></dt><dd id="dM">—</dd>
+            <dt data-en-html="Wavelength at rest <span class=&quot;f&quot;>λ = v/f</span>">靜止時波長 <span class="f">λ = v/f</span></dt><dd id="dL">—</dd>
+            <dt data-en-html="Ahead <span class=&quot;f&quot;>λ<sub>front</sub> = (v − v<sub>s</sub>)/f</span>">前方波長 <span class="f">λ<sub>前</sub> = (v − v<sub>s</sub>)/f</span></dt><dd id="dLa">—</dd>
+            <dt data-en-html="Behind <span class=&quot;f&quot;>λ<sub>back</sub> = (v + v<sub>s</sub>)/f</span>">後方波長 <span class="f">λ<sub>後</sub> = (v + v<sub>s</sub>)/f</span></dt><dd id="dLb">—</dd>
+            <dt data-en-html="Listener straight ahead <span class=&quot;f&quot;>f (v − v<sub>o</sub>)/(v − v<sub>s</sub>)</span>">觀察者在正前方 <span class="f">f (v − v<sub>o</sub>)/(v − v<sub>s</sub>)</span></dt><dd id="dFa">—</dd>
+            <dt data-en-html="Listener straight behind <span class=&quot;f&quot;>f (v + v<sub>o</sub>)/(v + v<sub>s</sub>)</span>">觀察者在正後方 <span class="f">f (v + v<sub>o</sub>)/(v + v<sub>s</sub>)</span></dt><dd id="dFb">—</dd>
+            <dt data-en-html="Mach angle <span class=&quot;f&quot;>sin θ = v/v<sub>s</sub></span>">馬赫角 <span class="f">sin θ = v/v<sub>s</sub></span></dt><dd id="dTh">—</dd>
+          </dl>
+          <p class="hint" data-en-html="“Ahead” and “behind” are along the road, with v<sub>o</sub> positive to the right (the source’s direction of travel).">「正前方／正後方」指沿著道路方向；v<sub>o</sub> 以向右（波源前進方向）為正。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showFronts" type="checkbox" checked><span data-en="Wavefronts">波前</span></label>
+            <label><input id="showLambda" type="checkbox" checked><span data-en="Wavelength labels">波長標註</span></label>
+            <label><input id="showRet" type="checkbox" checked><span data-en="Where the sound was emitted">聲音發出位置</span></label>
+            <label><input id="showVel" type="checkbox" checked><span data-en="Velocity arrows">速度箭頭</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="A source of frequency \(f\) sends out one wavefront every period \(1/f\). Each wavefront spreads out from the point where it was emitted at the speed of sound \(v\), which depends only on the air, not on how the source moves. If the source is at rest the wavefronts are concentric circles a wavelength apart:">頻率 \(f\) 的波源每隔一個週期 \(1/f\) 發出一個波前。每個波前從「發出時波源所在的位置」以聲速 \(v\) 向四周擴散；聲速只由空氣決定，與波源怎麼動無關。波源靜止時，波前是一圈圈同心圓，間距為一個波長：</p>
+      <div class="formula">
+        \[ \lambda = \frac{v}{f} \]
+      </div>
+
+      <h3 data-en="A moving source squeezes the waves in front">波源運動：前方被壓縮、後方被拉長</h3>
+      <p data-en-html="During one period the wavefront travels \(v/f\), but the source also moves \(v_s/f\) in the same direction before it emits the next one. So the spacing in front shrinks and the spacing behind grows:">一個週期內，波前走了 \(v/f\)，但波源也同方向前進了 \(v_s/f\) 才發出下一個波前。所以前方的間距變短、後方的間距變長：</p>
+      <div class="formula" data-en-html="\[ \lambda_{\text{front}} = \frac{v - v_s}{f}, \qquad \lambda_{\text{back}} = \frac{v + v_s}{f} \]">
+        \[ \lambda_{\text{前}} = \frac{v - v_s}{f}, \qquad \lambda_{\text{後}} = \frac{v + v_s}{f} \]
+      </div>
+      <p data-en-html="A listener at rest receives these waves at speed \(v\), so hears \(f' = v/\lambda\):">靜止的觀察者以速率 \(v\) 接收這些波，聽到 \(f' = v/\lambda\)：</p>
+      <div class="formula" data-en-html="\[ f'_{\text{approaching}} = f\,\frac{v}{v - v_s} \gt f, \qquad f'_{\text{receding}} = f\,\frac{v}{v + v_s} \lt f \]">
+        \[ f'_{\text{靠近}} = f\,\frac{v}{v - v_s} \gt f, \qquad f'_{\text{遠離}} = f\,\frac{v}{v + v_s} \lt f \]
+      </div>
+
+      <h3 data-en="A moving listener meets the waves faster or slower">觀察者運動：遇到波前的快慢改變</h3>
+      <p data-en-html="If the listener moves, the wavelength in the air does not change, but the waves pass the listener at the relative speed \(v \pm v_o\). Putting both effects together gives the Doppler formula — use the upper signs when the motion is <strong>toward</strong> the other one:">觀察者運動時，空氣中的波長不變，但波相對於觀察者的速率變成 \(v \pm v_o\)。把兩種效應合起來，就是都卜勒效應公式——<strong>朝向</strong>對方運動時取上面的符號：</p>
+      <div class="formula">
+        \[ f' = f\,\frac{v \pm v_o}{v \mp v_s} \]
+      </div>
+      <p data-en-html="Moving the source and moving the listener at the same speed do <strong>not</strong> give the same result, because the air (the medium) is at rest.">波源動與觀察者動，就算速率相同，結果也<strong>不一樣</strong>，因為空氣（介質）是靜止的。</p>
+
+      <h3 data-en="When the source passes beside you">波源從旁邊經過</h3>
+      <p data-en-html="The sound you hear now left the source a little earlier, from where the source <strong>was</strong> (the faded ambulance). Only the velocity components along the line from that point to you matter. With \(\hat{R}\) the unit vector from the emission point to the listener, \(u_s = \hat{R}\cdot\vec{v}_s\) and \(u_o = -\hat{R}\cdot\vec{v}_o\):">你現在聽到的聲音，是波源稍早在它<strong>當時</strong>的位置（半透明的救護車）發出的。只有沿著「那個位置 → 你」這條連線的速度分量有影響。令 \(\hat{R}\) 為由發出位置指向觀察者的單位向量，\(u_s = \hat{R}\cdot\vec{v}_s\)、\(u_o = -\hat{R}\cdot\vec{v}_o\)：</p>
+      <div class="formula">
+        \[ f' = f\,\frac{v + u_o}{v - u_s} \]
+      </div>
+      <p data-en-html="As the ambulance goes by, \(u_s\) changes smoothly from \(+v_s\) to \(-v_s\), so the pitch slides from high to low; it equals \(f\) for the sound emitted when the ambulance was right beside you.">救護車經過時，\(u_s\) 由 \(+v_s\) 連續變成 \(-v_s\)，音調由高平滑地滑到低；救護車正好在你身旁時發出的那段聲音，你聽到的就是 \(f\)。</p>
+
+      <h3 data-en="Faster than sound: the Mach cone">超過音速：馬赫錐與音爆</h3>
+      <p data-en-html="When \(v_s \ge v\) the source catches up with its own wavefronts. Behind it they pile up along a cone (in 2D, two lines) — a shock wave. Its half-angle \(\theta\) obeys">當 \(v_s \ge v\)，波源追上自己發出的波前，波前在後方沿著一個圓錐（平面上是兩條直線）疊在一起，形成震波。錐的半頂角 \(\theta\) 滿足</p>
+      <div class="formula">
+        \[ \sin\theta = \frac{v}{v_s} = \frac{1}{M}, \qquad M = \frac{v_s}{v} \]
+      </div>
+      <p data-en-html="Ahead of the cone nothing is heard at all. When the cone sweeps over the listener, a huge number of wavefronts arrive at once: the sonic boom. After that the listener hears <strong>two</strong> sounds at the same time — one emitted while the source was receding, and one emitted earlier while it was approaching faster than sound, which arrives in reverse order (the formula gives \(f' \lt 0\); the graph shows \(|f'|\) as a dashed line).">在錐的前方完全聽不到聲音。錐面掃過觀察者時，大量波前同時抵達，就是音爆。之後觀察者會同時聽到<strong>兩個</strong>聲音：一個是波源遠離時發出的，另一個是更早、波源以超過音速靠近時發出的，它以相反的時間順序抵達（公式算出 \(f' \lt 0\)，圖上以虛線畫出 \(|f'|\)）。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Count the spacing</strong>: in “Source approaches” with \(v_s = 120\ \mathrm{m/s}\) and \(f = 2\ \mathrm{Hz}\), the wavelength labels read \(\lambda_{\text{front}} = 110\ \mathrm{m}\) and \(\lambda_{\text{back}} = 230\ \mathrm{m}\), against \(170\ \mathrm{m}\) at rest."><strong>量一量間距</strong>：在「波源靠近」，\(v_s = 120\ \mathrm{m/s}\)、\(f = 2\ \mathrm{Hz}\)，波長標註顯示 \(\lambda_{\text{前}} = 110\ \mathrm{m}\)、\(\lambda_{\text{後}} = 230\ \mathrm{m}\)，靜止時是 \(170\ \mathrm{m}\)。</li>
+        <li data-en-html="<strong>High, then low</strong>: turn on the sound and run “Source approaches”. The \(f'(t)\) graph starts near \(f\,v/(v - v_s)\), slides down as the ambulance passes and ends near \(f\,v/(v + v_s)\) — the dashed reference lines."><strong>先高後低</strong>：打開音效，執行「波源靠近」。\(f'(t)\) 圖一開始接近 \(f\,v/(v - v_s)\)，救護車經過時往下滑，最後接近 \(f\,v/(v + v_s)\)（圖上的虛線參考線）。</li>
+        <li data-en-html="<strong>Closer to the road, sharper drop</strong>: drag the listener right next to the road and run it again — the pitch drops more suddenly. Far from the road it changes slowly."><strong>離道路越近，音調掉得越急</strong>：把觀察者拖到緊鄰道路的地方再跑一次，音調下降得更突然；離道路遠時則慢慢改變。</li>
+        <li data-en-html="<strong>Source moves vs listener moves</strong>: compare \(v_s = 100\ \mathrm{m/s}\) toward a still listener with a listener moving at \(v_o = 100\ \mathrm{m/s}\) toward a still source: \(2 \times 340/240 = 2.83\ \mathrm{Hz}\) versus \(2 \times 440/340 = 2.59\ \mathrm{Hz}\)."><strong>波源動與觀察者動</strong>：比較波源以 \(v_s = 100\ \mathrm{m/s}\) 靠近靜止的觀察者，和觀察者以 \(v_o = 100\ \mathrm{m/s}\) 靠近靜止的波源：\(2 \times 340/240 = 2.83\ \mathrm{Hz}\) 與 \(2 \times 440/340 = 2.59\ \mathrm{Hz}\)。</li>
+        <li data-en-html="<strong>The sound barrier</strong>: at \(v_s = v\) all the wavefronts touch at the front of the source, and a listener ahead hears nothing until the source arrives."><strong>音障</strong>：\(v_s = v\) 時所有波前在波源前端碰在一起，前方的觀察者在波源到達之前什麼都聽不到。</li>
+        <li data-en-html="<strong>Supersonic</strong>: in “Supersonic” (\(M = 1.6\)) the cone’s half-angle is \(\theta = \sin^{-1}(1/1.6) \approx 38.7^\circ\). Watch for the boom when the cone reaches the listener, then the two sounds."><strong>超音速</strong>：「超音速」（\(M = 1.6\)）的錐半頂角 \(\theta = \sin^{-1}(1/1.6) \approx 38.7^\circ\)。注意錐面掃到觀察者時的音爆，以及之後同時出現的兩個聲音。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The source and the listener move at constant velocity; the air is at rest. The source starts sounding at \(t = 0\) and sends out a wavefront every \(1/f\); each is a circle of radius \(v(t - t_e)\) around the source’s position at its emission time \(t_e\).">波源與觀察者做等速運動，空氣靜止。波源在 \(t = 0\) 開始發聲，每隔 \(1/f\) 發出一個波前；每個波前是以發出時刻 \(t_e\) 的波源位置為圓心、半徑 \(v(t - t_e)\) 的圓。</li>
+        <li data-en-html="The sound reaching the listener at time \(t\) was emitted at the time \(t_e\) that satisfies \(|\vec{r}_o(t) - \vec{r}_s(t_e)| = v(t - t_e)\). For straight-line motion this is a quadratic equation in \(t - t_e\), solved exactly (two roots inside the Mach cone, none outside it).">在時刻 \(t\) 傳到觀察者的聲音，是在滿足 \(|\vec{r}_o(t) - \vec{r}_s(t_e)| = v(t - t_e)\) 的時刻 \(t_e\) 發出的。等速直線運動時這是 \(t - t_e\) 的二次方程式，直接求精確解（馬赫錐內有兩個根，錐外沒有根）。</li>
+        <li data-en-html="The listener hears the phase \(f\,t_e(t)\), so \(f' = f\,\mathrm{d}t_e/\mathrm{d}t\); differentiating the condition above gives exactly \(f' = f\,(v + u_o)/(v - u_s)\). The unit tests check this against the textbook formula, a numerical derivative and the conservation of the number of wavefronts.">觀察者聽到的相位是 \(f\,t_e(t)\)，所以 \(f' = f\,\mathrm{d}t_e/\mathrm{d}t\)；對上面的條件微分，正好得到 \(f' = f\,(v + u_o)/(v - u_s)\)。單元測試用課本公式、數值微分與「波前個數守恆」驗證。</li>
+        <li data-en="Distances are in metres and the animation runs in real time (or 0.25× in slow motion). Dragging the listener moves them instantly; that drag is not counted as a velocity.">距離以公尺計，動畫以真實時間播放（慢動作時為 0.25 倍）。拖曳觀察者是直接把他搬到新位置，拖曳的動作不算速度。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111044"></script>
+  <script src="js/doppler-core.js?v=202611111044"></script>
+  <script src="js/sound.js?v=202611111044"></script>
+  <script src="js/numinput.js?v=202611111044"></script>
+  <script src="js/doppler.js?v=202611111044"></script>
+  <script src="js/firebase-config.js?v=202611111044"></script>
+  <script src="js/missions.js?v=202611111044" data-module="doppler"></script>
+  <script src="js/missions/doppler.js?v=202611111044"></script>
+  <script src="js/stats.js?v=202611111044" data-module="doppler"></script>
+  <script src="js/comments.js?v=202611111044"></script>
+</body>
+</html>
