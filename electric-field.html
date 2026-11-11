@@ -4,114 +4,114 @@
   <meta charset="utf-8">
   <script src="js/settings.js?v=202611110728"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>電場與等位線｜Astro Ni 物理實驗室</title>
+  <title data-en="Electric Fields and Equipotentials | Astro Ni Physics Lab">電場與等位線｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：拖曳點電荷，觀察電力線、等位線，並釋放試探電荷驗證能量守恆。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="lab.css?v=202611110728">
 </head>
-<body>
+<body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 靜電學</nav>
-      <h1>電場與等位線</h1>
-      <p>拖曳電荷 A、B 改變位置；點擊空白處放置試探電荷，再按「釋放」觀察它在電場中的運動。</p>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / Electrostatics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 靜電學</nav>
+      <h1 data-en="Electric Fields and Equipotentials">電場與等位線</h1>
+      <p data-en="Drag charges A and B to move them; click an empty spot to place a test charge, then press “Release” to watch it move in the electric field.">拖曳電荷 A、B 改變位置；點擊空白處放置試探電荷，再按「釋放」觀察它在電場中的運動。</p>
     </header>
 
     <div class="lab">
       <div class="stage">
-        <canvas id="cv" aria-label="電場模擬畫布"></canvas>
+        <canvas id="cv" aria-label="電場模擬畫布" data-en-aria-label="Electric field simulation canvas"></canvas>
         <div class="legend">
-          <span><i style="background:var(--field)"></i>電力線</span>
-          <span><i style="background:var(--equi)"></i>等位線</span>
-          <span><i style="background:var(--pos)"></i>高電位</span>
-          <span><i style="background:var(--neg)"></i>低電位</span>
-          <span><i style="background:var(--probe)"></i>試探電荷受力方向</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Field lines"><i style="background:var(--field)"></i>電力線</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Equipotentials"><i style="background:var(--equi)"></i>等位線</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;High potential"><i style="background:var(--pos)"></i>高電位</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Low potential"><i style="background:var(--neg)"></i>低電位</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Force on the test charge"><i style="background:var(--probe)"></i>試探電荷受力方向</span>
         </div>
       </div>
 
       <aside class="panel">
         <section class="card">
-          <h2>場源電荷</h2>
-          <div class="slider"><label for="qA">電荷 A 的電量</label><output id="qAo"></output>
+          <h2 data-en="Source charges">場源電荷</h2>
+          <div class="slider"><label for="qA" data-en="Charge of A">電荷 A 的電量</label><output id="qAo"></output>
             <input id="qA" type="range" min="-5" max="5" step="0.5" value="3"></div>
-          <div class="slider"><label for="qB">電荷 B 的電量</label><output id="qBo"></output>
+          <div class="slider"><label for="qB" data-en="Charge of B">電荷 B 的電量</label><output id="qBo"></output>
             <input id="qB" type="range" min="-5" max="5" step="0.5" value="-3"></div>
-          <div class="slider"><label for="sep">A、B 間距（水平置中）</label><output id="sepo"></output>
+          <div class="slider"><label for="sep" data-en="A–B separation (centred)">A、B 間距（水平置中）</label><output id="sepo"></output>
             <input id="sep" type="range" min="1" max="9" step="0.1" value="4"></div>
           <div class="btns">
-            <button data-preset="dipole">電偶極</button>
-            <button data-preset="like">等量同號</button>
-            <button data-preset="unequal">不等量</button>
-            <button data-preset="single">單一電荷</button>
+            <button data-preset="dipole" data-en="Dipole">電偶極</button>
+            <button data-preset="like" data-en="Equal like charges">等量同號</button>
+            <button data-preset="unequal" data-en="Unequal charges">不等量</button>
+            <button data-preset="single" data-en="Single charge">單一電荷</button>
           </div>
         </section>
 
         <section class="card">
-          <h2>顯示</h2>
+          <h2 data-en="Display">顯示</h2>
           <div class="checks">
-            <label><input id="showLines" type="checkbox" checked>電力線</label>
-            <label><input id="showEqui" type="checkbox" checked>等位線</label>
-            <label><input id="showHeat" type="checkbox" checked>電位色階</label>
-            <label><input id="showGrid" type="checkbox" checked>1 cm 方格</label>
+            <label><input id="showLines" type="checkbox" checked><span data-en="Field lines">電力線</span></label>
+            <label><input id="showEqui" type="checkbox" checked><span data-en="Equipotentials">等位線</span></label>
+            <label><input id="showHeat" type="checkbox" checked><span data-en="Potential shading">電位色階</span></label>
+            <label><input id="showGrid" type="checkbox" checked><span data-en="1 cm grid">1 cm 方格</span></label>
           </div>
         </section>
 
         <section class="card">
-          <h2>試探電荷</h2>
-          <div class="slider"><label for="qp">電量 q</label><output id="qpo"></output>
+          <h2 data-en="Test charge">試探電荷</h2>
+          <div class="slider"><label for="qp" data-en="Charge q">電量 q</label><output id="qpo"></output>
             <input id="qp" type="range" min="-3" max="3" step="0.1" value="1"></div>
-          <div class="slider"><label for="mp">質量 m</label><output id="mpo"></output>
+          <div class="slider"><label for="mp" data-en="Mass m">質量 m</label><output id="mpo"></output>
             <input id="mp" type="range" min="0.2" max="5" step="0.1" value="1"></div>
           <div class="btns">
-            <button id="run" class="primary">釋放</button>
-            <button id="resetProbe">回到起點</button>
+            <button id="run" class="primary" data-en="Release">釋放</button>
+            <button id="resetProbe" data-en="Back to start">回到起點</button>
           </div>
           <p class="status" id="status"></p>
         </section>
 
         <section class="card">
-          <h2>試探電荷所在位置</h2>
+          <h2 data-en="At the test charge">試探電荷所在位置</h2>
           <dl class="readout">
-            <dt>電場 |E|</dt><dd id="rE">—</dd>
-            <dt>E 的方向</dt><dd id="rDir">—</dd>
-            <dt>電位 V</dt><dd id="rV">—</dd>
-            <dt>受力 |F| = |q|E</dt><dd id="rF">—</dd>
-            <dt>速率 v</dt><dd id="rv">—</dd>
-            <dt>動能 K</dt><dd id="rK">—</dd>
-            <dt>電位能 U = qV</dt><dd id="rU">—</dd>
-            <dt>總能量 K + U</dt><dd id="rT">—</dd>
+            <dt data-en="Field |E|">電場 |E|</dt><dd id="rE">—</dd>
+            <dt data-en="Direction of E">E 的方向</dt><dd id="rDir">—</dd>
+            <dt data-en="Potential V">電位 V</dt><dd id="rV">—</dd>
+            <dt data-en="Force |F| = |q|E">受力 |F| = |q|E</dt><dd id="rF">—</dd>
+            <dt data-en="Speed v">速率 v</dt><dd id="rv">—</dd>
+            <dt data-en="Kinetic energy K">動能 K</dt><dd id="rK">—</dd>
+            <dt data-en="Potential energy U = qV">電位能 U = qV</dt><dd id="rU">—</dd>
+            <dt data-en="Total energy K + U">總能量 K + U</dt><dd id="rT">—</dd>
           </dl>
         </section>
       </aside>
     </div>
 
     <section class="notes">
-      <h2>背後的物理</h2>
-      <p>每一個點電荷產生的電場與電位，依疊加原理相加：</p>
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en="The electric fields and potentials of the individual point charges simply add, by the superposition principle:">每一個點電荷產生的電場與電位，依疊加原理相加：</p>
       <div class="formula">
         \[ \vec{E}(\vec{r}) = \sum_i \frac{k\,q_i\,(\vec{r}-\vec{r}_i)}{\left|\vec{r}-\vec{r}_i\right|^{3}} \]
         \[ V(\vec{r}) = \sum_i \frac{k\,q_i}{\left|\vec{r}-\vec{r}_i\right|} \qquad \vec{E} = -\nabla V \]
         \[ k \approx 8.99\times 10^{9}\ \mathrm{N\cdot m^{2}/C^{2}} \]
       </div>
 
-      <h3>觀察重點</h3>
+      <h3 data-en="Things to look for">觀察重點</h3>
       <ul>
-        <li><strong>電力線條數與電量成正比</strong>（高斯定律）：把 A 改成 \(+4\ \mathrm{nC}\)、B 改成 \(-2\ \mathrm{nC}\)，數數看終止在 B 的線少了多少，多出來的線跑到哪裡去？</li>
-        <li><strong>電力線處處垂直於等位線</strong>，且沿電力線方向電位下降。</li>
-        <li><strong>等量同號電荷</strong>的中點電場為零，但電位不為零；<strong>電偶極</strong>的中垂線上電位為零，但電場不為零。</li>
-        <li>釋放試探電荷時，<strong>動能 + 電位能保持定值</strong>，即 \(K + qV = \text{定值}\)（力學能守恆）。注意：試探電荷不會沿著電力線走，因為它有慣性。</li>
+        <li data-en-html="&lt;strong&gt;The number of field lines is proportional to the charge&lt;/strong&gt; (Gauss&#x27;s law): set A to \(+4\ \mathrm{nC}\) and B to \(-2\ \mathrm{nC}\). Count how many fewer lines now end on B — where do the extra lines go?"><strong>電力線條數與電量成正比</strong>（高斯定律）：把 A 改成 \(+4\ \mathrm{nC}\)、B 改成 \(-2\ \mathrm{nC}\)，數數看終止在 B 的線少了多少，多出來的線跑到哪裡去？</li>
+        <li data-en-html="&lt;strong&gt;Field lines are everywhere perpendicular to the equipotentials&lt;/strong&gt;, and the potential drops along the direction of the field lines."><strong>電力線處處垂直於等位線</strong>，且沿電力線方向電位下降。</li>
+        <li data-en-html="For &lt;strong&gt;two equal like charges&lt;/strong&gt; the field at the midpoint is zero but the potential is not; on the perpendicular bisector of a &lt;strong&gt;dipole&lt;/strong&gt; the potential is zero but the field is not."><strong>等量同號電荷</strong>的中點電場為零，但電位不為零；<strong>電偶極</strong>的中垂線上電位為零，但電場不為零。</li>
+        <li data-en-html="Once the test charge is released, &lt;strong&gt;kinetic energy + electric potential energy stays constant&lt;/strong&gt;: \(K + qV = \text{constant}\) (conservation of mechanical energy). Note that the test charge does not move along a field line, because it has inertia.">釋放試探電荷時，<strong>動能 + 電位能保持定值</strong>，即 \(K + qV = \text{定值}\)（力學能守恆）。注意：試探電荷不會沿著電力線走，因為它有慣性。</li>
       </ul>
 
-      <h3>模擬方法</h3>
+      <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li>電力線：從電荷出發，以四階 Runge–Kutta 法沿電場方向逐步描線，每條線的出發角度平均分配。</li>
-        <li>等位線：在格點上計算電位，再用 marching squares 演算法找出等值線；電位等級取 \(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\)。</li>
-        <li>試探電荷運動：自適應步長的 velocity-Verlet 積分，靠近電荷時自動縮小時間步長以維持能量守恆。</li>
-        <li>試探電荷只用來量測，不會反過來推動場源電荷（場源電荷固定不動）。</li>
+        <li data-en="Field lines: traced step by step from each charge along the field direction with the fourth-order Runge–Kutta method; the starting angles are spread evenly around the charge.">電力線：從電荷出發，以四階 Runge–Kutta 法沿電場方向逐步描線，每條線的出發角度平均分配。</li>
+        <li data-en-html="Equipotentials: the potential is computed on a grid, and the marching squares algorithm finds the contours; the levels are \(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\).">等位線：在格點上計算電位，再用 marching squares 演算法找出等值線；電位等級取 \(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\)。</li>
+        <li data-en="Motion of the test charge: velocity-Verlet integration with an adaptive step — the time step shrinks automatically near a charge so that energy stays conserved.">試探電荷運動：自適應步長的 velocity-Verlet 積分，靠近電荷時自動縮小時間步長以維持能量守恆。</li>
+        <li data-en="The test charge only probes the field; it does not push the source charges in return (the source charges are held fixed).">試探電荷只用來量測，不會反過來推動場源電荷（場源電荷固定不動）。</li>
       </ul>
     </section>
 
-    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · Every calculation happens in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>

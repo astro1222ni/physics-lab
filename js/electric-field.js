@@ -3,6 +3,7 @@
   'use strict';
   const FC = window.FieldCore;
   const $ = function (id) { return document.getElementById(id); };
+  const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
 
   // ---------- 世界座標（cm，y 向上） ----------
   const W = 12, H = 8;
@@ -252,7 +253,7 @@
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('1 cm', sx0 + scale + 6, sy0 + 6);
+    ctx.fillText(T('1 cm', '1 cm'), sx0 + scale + 6, sy0 + 6);
 
     updateReadout(e);
   }
@@ -283,7 +284,7 @@
     if (em > 0 && isFinite(em)) {
       let deg = Math.atan2(e.ey, e.ex) * 180 / Math.PI;
       if (deg < 0) deg += 360;
-      $('rDir').textContent = deg.toFixed(1) + '°（由 +x 逆時針）';
+      $('rDir').textContent = deg.toFixed(1) + T('°（由 +x 逆時針）', '° (CCW from +x)');
     } else {
       $('rDir').textContent = '—';
     }
@@ -310,19 +311,20 @@
     if (stop) {
       state.running = false;
       state.ended = true;
-      $('run').textContent = '釋放';
+      $('run').textContent = T('釋放', 'Release');
       state.status = stop.reason === 'hit'
-        ? '試探電荷撞上了電荷 ' + state.charges[stop.charge].label + '。'
-        : '試探電荷離開了畫面。';
+        ? T('試探電荷撞上了電荷 ' + state.charges[stop.charge].label + '。',
+          'The test charge hit charge ' + state.charges[stop.charge].label + '.')
+        : T('試探電荷離開了畫面。', 'The test charge left the screen.');
     }
     draw();
     if (state.running) requestAnimationFrame(tick);
   }
   function setRunning(on) {
     state.running = on;
-    $('run').textContent = on ? '暫停' : '繼續';
+    $('run').textContent = on ? T('暫停', 'Pause') : T('繼續', 'Resume');
     if (on) {
-      state.status = '運動中…（總能量應保持不變）';
+      state.status = T('運動中…（總能量應保持不變）', 'Moving… (the total energy should stay constant)');
       lastT = performance.now();
       requestAnimationFrame(tick);
     }
@@ -333,7 +335,7 @@
     pr.x = pr.home.x; pr.y = pr.home.y; pr.vx = 0; pr.vy = 0; pr.trail = [[pr.x, pr.y]];
     state.running = false;
     state.ended = false;
-    $('run').textContent = '釋放';
+    $('run').textContent = T('釋放', 'Release');
     state.status = '';
     requestDraw();
   }
@@ -388,8 +390,8 @@
   $('run').addEventListener('click', function () {
     if (state.running) {
       state.running = false;
-      $('run').textContent = '繼續';
-      state.status = '已暫停';
+      $('run').textContent = T('繼續', 'Resume');
+      state.status = T('已暫停', 'Paused');
       requestDraw();
       return;
     }
