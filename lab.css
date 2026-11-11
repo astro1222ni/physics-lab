@@ -210,3 +210,23 @@ footer.site { margin-top: 32px; font-size: 13px; color: var(--muted); border-top
 dl.readout sup { font-size: .72em; line-height: 0; }
 .crumbs { font-size: 14px; color: var(--muted); }
 .nb { white-space: nowrap; }
+
+/* ---------- 統計（stats.js） ---------- */
+.stats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 22px;
+  margin: 0 0 14px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 14px;
+}
+.stats-bar .stat { display: inline-flex; align-items: baseline; gap: 8px; }
+.stats-bar .stat-label { color: var(--muted); }
+.stats-bar .stat-value { font-weight: 700; font-variant-numeric: tabular-nums; }
+.stats-bar .stats-title { font-weight: 700; color: var(--accent); }
+.stats-total { margin-top: 18px; }
+.module-stats { margin: 8px 0 0 !important; font-size: 12px !important; color: var(--muted); font-variant-numeric: tabular-nums; }

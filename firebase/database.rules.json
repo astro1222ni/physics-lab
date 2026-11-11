@@ -1,0 +1,25 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "stats": {
+      ".read": true,
+      "$module": {
+        ".validate": "$module.matches(/^[a-z0-9-]{1,40}$/) && newData.hasChildren()",
+        "views": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
+        },
+        "ops": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 300"
+        },
+        "seconds": {
+          ".write": true,
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 180"
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
