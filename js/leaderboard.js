@@ -173,7 +173,15 @@
     let lastUid = null;
     api.onAuth(function (user) {
       const uid = user && user.uid;
-      if (uid && uid !== lastUid) api.isAdmin(uid).then(function (a) { admin = a; $('admin').hidden = !a; });
+      if (uid && uid !== lastUid) api.isAdmin(uid).then(function (a) {
+        admin = a; $('admin').hidden = !a;
+        if (!a) return;
+        // 管理員打開排行榜時，自動同步所有模組的任務清單
+        loaded.then(function () { return LM._autoSync(); }).then(function (n) {
+          if (n > 0) $('syncMsg').textContent = T('已自動同步 ', 'Auto-synced ') + n + T(' 個新任務。', ' new missions.');
+          else if (n === 0) $('syncMsg').textContent = T('任務清單已是最新，不需要同步。', 'The mission list is already up to date.');
+        });
+      });
       if (!uid) { admin = false; $('admin').hidden = true; }
       lastUid = uid;
     });

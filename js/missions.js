@@ -22,7 +22,7 @@
   const script = document.currentScript;
   const pageModule = script && script.getAttribute('data-module'); // 模組頁面才有；排行榜頁沒有
   const registry = {}; // moduleId → [mission]
-  const hooks = { complete: [], ready: [] };
+  const hooks = { complete: [], ready: [], synced: [] };
   function fire(name, arg) { hooks[name].forEach(function (f) { try { f(arg); } catch (e) { /* 忽略 */ } }); }
   const listeners = [];
   const state = {
@@ -57,7 +57,8 @@
     mask: mask,
     // 排行榜頁用
     _state: state,
-    _ready: function () { return api ? Promise.resolve(api) : (ready || Promise.resolve(null)); }
+    _ready: function () { return api ? Promise.resolve(api) : (ready || Promise.resolve(null)); },
+    _autoSync: function () { return autoSync(); }
   };
   window.LabMission = LabMission;
 
@@ -152,6 +153,12 @@
         state.ready = !user;
         changed();
         if (!user) return;
+        // 管理員登入時，自動把本頁任務同步到資料庫（不必再手動按「同步任務清單」）
+        if (api.isAdmin) api.isAdmin(user.uid).then(function (a) {
+          if (!a || !state.user || state.user.uid !== user.uid) return;
+          adminUid = user.uid;
+          afterLoad(autoSync);
+        });
         Promise.all([api.getProfile(user.uid).catch(function () { return {}; }), api.getDone(user.uid).catch(function () { return {}; })]).then(function (r) {
           if (!state.user || state.user.uid !== user.uid) return;
           state.nickname = r[0].nickname || null;
@@ -164,6 +171,33 @@
       });
       return api;
     }).catch(function () { state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
+  }
+
+  // ======================= 管理員：自動同步任務清單 =======================
+  // 比對資料庫 missionDefs 與本頁已註冊的任務；有新任務或星星數不同時才寫入（只增改、不刪除）。
+  // 回傳寫入的任務數；非管理員或失敗時回傳 -1。
+  let adminUid = null;
+  function afterLoad(fn) {
+    if (document.readyState === 'complete') fn();
+    else window.addEventListener('load', function () { fn(); }, { once: true });
+  }
+  function autoSync() {
+    if (!api || !api.get || !adminUid || !state.user || state.user.uid !== adminUid) return Promise.resolve(-1);
+    return guard(function () { return api.get('missionDefs'); }).then(function (cur) {
+      cur = cur || {};
+      const defs = {};
+      Object.keys(registry).forEach(function (k) {
+        registry[k].forEach(function (m) { if (!cur[m.id] || cur[m.id].stars !== m.level) defs[m.id] = m.level; });
+      });
+      const n = Object.keys(defs).length;
+      if (!n) return 0;
+      return guard(function () { return api.syncDefs(defs); }).then(function () {
+        state.adminMsg = T('（管理員）已自動同步 ', '(Admin) Auto-synced ') + n + T(' 個任務到資料庫。', ' missions to the database.');
+        changed();
+        fire('synced', n);
+        return n;
+      });
+    }).catch(function () { return -1; });
   }
 
   // ======================= 完成任務 =======================
@@ -325,6 +359,7 @@
           'Mission mode is on: reach a goal by working the experiment and the mission completes automatically. Each mission pays out once.')));
       }
       if (state.msg) panel.appendChild(el('p', 'ms-msg', state.msg));
+      if (state.adminMsg) panel.appendChild(el('p', 'ms-note', state.adminMsg));
       const rules = el('details', 'ms-rules');
       rules.appendChild(el('summary', null, T('星星怎麼賺？', 'How do I earn stars?')));
       const ul = el('ul');
