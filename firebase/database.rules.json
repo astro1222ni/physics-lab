@@ -2,7 +2,6 @@
   "rules": {
     ".read": false,
     ".write": false,
-
     "stats": {
       ".read": true,
       "$module": {
@@ -19,26 +18,38 @@
           ".write": "newData.exists()",
           ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 180"
         },
-        "$other": { ".validate": false }
-      }
-    },
-
-    "comments": {
-      "$module": {
-        ".read": true,
-        ".indexOn": ["createdAt"],
-        "$cid": {
-          ".write": "auth != null && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists() && (data.child('uid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)))",
-          ".validate": "$module.matches(/^[a-z0-9-]{1,40}$/) && newData.hasChildren(['uid', 'nickname', 'text', 'createdAt']) && newData.parent().parent().parent().child('rateLimit').child(auth.uid).val() === now",
-          "uid": { ".validate": "newData.val() === auth.uid" },
-          "nickname": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
-          "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500" },
-          "createdAt": { ".validate": "newData.val() === now" },
-          "$other": { ".validate": false }
+        "$other": {
+          ".validate": false
         }
       }
     },
-
+    "comments": {
+      "$module": {
+        ".read": true,
+        ".indexOn": [
+          "createdAt"
+        ],
+        "$cid": {
+          ".write": "auth != null && ((!data.exists() && newData.exists()) || (data.exists() && !newData.exists() && (data.child('uid').val() === auth.uid || root.child('admins').child(auth.uid).val() === true)))",
+          ".validate": "$module.matches(/^[a-z0-9-]{1,40}$/) && newData.hasChildren(['uid', 'nickname', 'text', 'createdAt']) && newData.parent().parent().parent().child('rateLimit').child(auth.uid).val() === now",
+          "uid": {
+            ".validate": "newData.val() === auth.uid"
+          },
+          "nickname": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+          },
+          "text": {
+            ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 500"
+          },
+          "createdAt": {
+            ".validate": "newData.val() === now"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
     "rateLimit": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
@@ -46,16 +57,21 @@
         ".validate": "newData.val() === now && (!data.exists() || now - data.val() >= 20000)"
       }
     },
-
     "profiles": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
-        "nickname": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20" },
-        "$other": { ".validate": false }
+        "nickname": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+        },
+        "$other": {
+          ".validate": false
+        },
+        "pub": {
+          ".validate": "newData.isBoolean()"
+        }
       }
     },
-
     "reports": {
       ".read": true,
       "$module": {
@@ -68,11 +84,55 @@
         }
       }
     },
-
     "admins": {
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": false
+      }
+    },
+    "missionDefs": {
+      ".read": true,
+      "$mid": {
+        ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+        ".validate": "$mid.matches(/^[a-z0-9-]{1,60}$/) && newData.hasChildren(['stars']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 10"
+      }
+    },
+    "completions": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$mid": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+          ".validate": "newData.hasChildren(['stars', 'at']) && root.child('missionDefs').child($mid).exists() && newData.child('stars').val() === root.child('missionDefs').child($mid).child('stars').val() && newData.child('at').val() === now && newData.parent().parent().parent().child('scores').child($uid).child('last').val() === $mid",
+          "stars": {},
+          "at": {},
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "scores": {
+      ".read": true,
+      ".indexOn": [
+        "stars"
+      ],
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        ".validate": "newData.hasChildren(['stars', 'name', 'last', 'pub']) && newData.child('stars').isNumber() && ((data.exists() && newData.child('stars').val() === data.child('stars').val() && newData.child('last').val() === data.child('last').val()) || (!root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('completions').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === (data.exists() ? data.child('stars').val() : 0) + root.child('missionDefs').child(newData.child('last').val()).child('stars').val()))",
+        "stars": {},
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+        },
+        "last": {
+          ".validate": "newData.isString() && newData.val().matches(/^[a-z0-9-]{1,60}$/)"
+        },
+        "pub": {
+          ".validate": "newData.isBoolean()"
+        },
+        "at": {},
+        "$other": {
+          ".validate": false
+        }
       }
     }
   }

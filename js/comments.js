@@ -35,7 +35,7 @@
       import(SDK + 'firebase-database.js')
     ]).then(function (m) {
       const A = m[0], Au = m[1], D = m[2];
-      const app = A.initializeApp(cfg);
+      const app = A.getApps().length ? A.getApp() : A.initializeApp(cfg); // 任務系統可能已先初始化
       const auth = Au.getAuth(app);
       const db = D.getDatabase(app);
       const provider = new Au.GoogleAuthProvider();

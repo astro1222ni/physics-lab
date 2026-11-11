@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111030"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Ni Stars Leaderboard | Astro Ni Physics Lab">倪的星星排行榜｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="完成實驗任務獲得「倪的星星」，看看自己的排名。">
+  <link rel="stylesheet" href="lab.css?v=202611111030">
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
+      <h1 class="lb-title"><span class="lb-star" aria-hidden="true"></span><span data-en="Ni Stars Leaderboard">倪的星星排行榜</span></h1>
+      <p data-en="Open “Mission mode” on any experiment and reach the goals by working the simulation. Each mission earns its stars once — harder missions earn more, from 1 to 10 stars. Hidden missions only give a cryptic hint.">在每個實驗打開「任務模式」，透過操作實驗達成指定的目標，就能獲得「倪的星星」。每個任務只能領一次，越難的任務星星越多（1～10 顆）；隱藏任務只會給你隱晦的提示。</p>
+    </header>
+
+    <section class="lb-me" id="me" aria-live="polite"></section>
+
+    <section class="lb-board">
+      <h2 data-en="Top 100">前 100 名</h2>
+      <ol class="lb-list" id="list"><li class="lb-empty" data-en="Loading…">載入中…</li></ol>
+    </section>
+
+    <section class="lb-progress" id="progress" hidden>
+      <h2 data-en="My missions">我的任務進度</h2>
+      <div id="progressList"></div>
+    </section>
+
+    <section class="lb-admin" id="admin" hidden>
+      <h2 data-en="Administrator">管理員</h2>
+      <p data-en="After new missions are added to the site, press this once so the database knows how many stars each mission is worth.">網站新增任務後，請按一次這個按鈕，讓資料庫知道每個任務值多少顆星星。</p>
+      <button type="button" class="primary" id="sync" data-en="Sync mission list">同步任務清單</button>
+      <p class="lb-admin-msg" id="syncMsg"></p>
+    </section>
+
+    <footer class="site"><a href="index.html" data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
+  </div>
+
+  <script src="js/sound.js?v=202611111030"></script>
+  <script src="js/firebase-config.js?v=202611111030"></script>
+  <script src="js/missions.js?v=202611111030"></script>
+  <script src="js/missions/index.js?v=202611111030"></script>
+  <script src="js/leaderboard.js?v=202611111030"></script>
+  <script src="js/comments.js?v=202611111030"></script>
+</body>
+</html>

@@ -1068,6 +1068,14 @@
     startPuff(s.x, Math.hypot(s.vx, s.vy)); // 落地揚塵（純裝飾）
     if (state.ghosts.length > MAX_GHOSTS) state.ghosts.shift();
     renderGhosts();
+    // 任務模式（missions.js）：回報這次落地的結果
+    if (window.LabMission) {
+      window.LabMission.emit('landed', {
+        v0: p.v0, theta: p.theta, h0: p.h0, g: p.g, k: p.k, drag: p.k > 0,
+        R: s.x, H: Math.max(H, cache.pred.H), T: s.t, vImpact: Math.hypot(s.vx, s.vy),
+        optTheta: cache.opt ? cache.opt.theta : null, n: state.launches
+      });
+    }
     state.status = T('第 ' + state.launches + ' 次發射落地：t = ' + num(s.t, 2) + ' s，射程 ' + num(s.x, 2) + ' m。',
       'Flight ' + state.launches + ' landed: t = ' + num(s.t, 2) + ' s, range ' + num(s.x, 2) + ' m.');
   }
