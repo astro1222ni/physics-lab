@@ -2,6 +2,7 @@
 
 高中物理互動模擬網站。網址：https://astro1222ni.github.io/physics-lab/
 推送到 `main` 後由 GitHub Pages 自動部署（約 1–2 分鐘）。
+**接手或開新工作串時，先讀 `HANDOFF.md`**（目前狀態、開發工具、整合流程、待辦事項）。
 
 ## 與站長合作的方式
 
@@ -33,6 +34,10 @@
 | `firebase/database.rules.json` | 資料庫安全規則（修改後需請站長貼到 Firebase 主控台「規則」分頁並發布） |
 | `vendor/` | KaTeX、three.js 等第三方檔案（內建，不依賴 CDN；Firebase SDK 例外，從 gstatic 載入） |
 | `tools/stamp.py` | 在 HTML 的 CSS/JS 連結加版本號防快取；**修改 CSS/JS 後、commit 前執行** |
+| `tools/make_live.py` | 把首頁「規劃中」卡片改成已上線的連結卡片 |
+| `tools/run-tests.cjs`、`tools/check-pages.cjs` | `npm test`（全部單元測試）、`npm run check`／`npm run shots`（Playwright 版面與語言檢查，自帶伺服器） |
+| `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言），Playwright `addInitScript` 載入 |
+| `docs/briefs/` | 製作新模組、任務、替舊模組補任務的說明（交給背景助手時使用） |
 
 ## 新增或修改模組的慣例
 
@@ -50,12 +55,12 @@
 
 ## 發布前檢查
 
-1. `for t in tests/*.test.js; do node "$t"; done` 全部通過。
-2. Playwright（已預裝，`require('playwright')`）實際開頁：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
+1. `npm test`（或 `for t in tests/*.test.js; do node "$t"; done`）全部通過。
+2. `npm run check`（Playwright）實際開頁，並用 `npm run shots -- <代號>` 存截圖親自看：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
 3. `python3 tools/stamp.py`，再 commit、push。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
 
 ## Firebase（專案 astro-ni-physics-lab）
 
 - Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
-- 此雲端工作環境連不到 Firebase 與 gstatic；Firebase 相關功能要用模擬後端測試，正式驗證請站長在網站上操作。
+- 雲端工作環境連不到 Firebase 與 gstatic；本機可以連，但測試一律用 `tools/mock-backend.js`，不要寫入正式資料庫。正式驗證請站長在網站上操作。

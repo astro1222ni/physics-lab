@@ -1,0 +1,98 @@
+# 交接說明（雲端工作串 → 本機工作串「Astro Ni 物理實驗室」）
+
+交接日期：2026-11-11。接手的工作串請先讀完 **CLAUDE.md**（規則與慣例），再讀這份（目前狀態、工具、待辦）。
+
+## 一、網站目前的狀態
+
+- 網址：https://astro1222ni.github.io/physics-lab/ ，推送到 `main` 後由 GitHub Pages 自動部署，約 1–2 分鐘生效。
+- **24 個實驗全部上線，每一個都有任務**：共 350 個任務，其中 72 個是隱藏任務，總計 1857 顆星。首頁已經沒有「規劃中」的卡片。
+
+| 分支 | 實驗（代號） |
+|---|---|
+| 力學 | 拋體運動（projectile）、牛頓第二定律（newton-second）、斜面與摩擦力（incline-friction）、連體運動與阿特午機（atwood）、電梯中的視重（elevator）、一維碰撞（collision）、等速圓周運動（circular-motion）、彈簧振子與單擺（oscillation）、行星軌道與克卜勒定律（kepler） |
+| 熱學 | 理想氣體分子模擬（ideal-gas）、比熱與熱平衡（specific-heat） |
+| 波動與聲音 | 繩波的反射與駐波（standing-waves）、都卜勒效應（doppler） |
+| 光學 | 折射與全反射（refraction）、透鏡與面鏡成像（lens-mirror）、雙狹縫干涉與單狹縫繞射（slit-interference） |
+| 電磁學 | 電場與等位線（electric-field）、平行板電容器（capacitor）、直流電路（dc-circuit）、帶電粒子在磁場中運動（magnetic-particle）、法拉第定律與冷次定律（faraday） |
+| 近代物理 | 光電效應（photoelectric）、氫原子能階與光譜（hydrogen-spectrum）、放射性衰變與半衰期（radioactive-decay） |
+
+- 全站功能：
+  - 搜尋、統計：瀏覽、操作、時間，以及「目前在線」人數。
+  - 齒輪設定：繁體／简体／English、字體大小、深淺色、音效與音量。
+  - Google 登入與留言；首次進站的登入提示，可按「先逛逛」略過。
+  - 任務模式「倪的星星」、排行榜（含總星數進度條）、成就系統（數量級門檻 k、M、G、T）。
+
+## 二、Firebase（專案 astro-ni-physics-lab）
+
+- 資料庫規則：`firebase/database.rules.json` 的最新版本（含 `presence/` 在線人數）**已由站長貼到主控台並發布**。
+- 以後只要改了規則檔，就要請站長再貼一次，**一步一步帶**：
+  1. 打開 GitHub 上的規則檔，按「複製」：https://github.com/astro1222ni/physics-lab/blob/main/firebase/database.rules.json
+  2. 打開 Firebase 規則頁，全選後貼上取代：https://console.firebase.google.com/project/astro-ni-physics-lab/database/astro-ni-physics-lab-default-rtdb/rules
+  3. 按「發布」。
+- **任務清單會自動同步**：站長用管理員帳號登入後，打開排行榜頁或任何實驗頁，`js/missions.js` 就會自動把新任務寫進 `missionDefs`。新增任務後，只要請站長登入並打開排行榜頁一次就好。2026-11-11 已同步全部 350 個任務。
+- 本機可以連到 Firebase，雲端那邊連不到。但**測試時不要寫入正式資料庫**，請改用 `tools/mock-backend.js`。
+
+## 三、本機開發環境
+
+需要安裝 Git、Node.js（LTS）、Python 3。在專案資料夾執行：
+
+```
+npm install                       # 安裝 playwright 與 opencc-js（只是開發工具，網站本身不需要）
+npx playwright install chromium   # 第一次使用 Playwright 時安裝瀏覽器
+npm test                          # 所有物理核心單元測試（目前 24 個測試檔）
+npm run check                     # 用 Playwright 打開全部頁面，檢查 4 種組合（自帶網頁伺服器）
+npm run check -- kepler atwood    # 只檢查指定頁面
+npm run shots -- kepler           # 同上，另外存截圖到 .shots/（一定要親自看）
+npm run serve                     # 開本機網頁伺服器 http://localhost:8000/
+npm run hans                      # 重新產生簡體對照表 js/hans-map.js（改了 tools/build-hans.cjs 的 PHRASES 之後）
+python tools/stamp.py             # 版本號防快取（Windows 可用 py tools/stamp.py）
+```
+
+## 四、新增實驗的流程（已經順過 20 幾次）
+
+1. 製作：照 `docs/briefs/new-module.md`。任務照 `docs/briefs/missions.md`；替既有實驗補任務照 `docs/briefs/add-missions.md`。可以交給背景助手平行製作，但每個助手只能改自己的檔案。
+2. 檢查助手的成果：
+   - `npm test`
+   - `npm run shots -- <代號>`，並親自看截圖
+   - 抽查物理數字，例如用公式驗算畫面上的讀數
+   - 確認沒有上標／下標數字字元
+   - 隱藏任務的提示句要夠隱晦
+3. 整合（只有主工作串做，不交給助手）：
+   - `js/missions/index.js` 有三個地方要加：`LAB_MISSION_MODULES`、`LAB_LIVE_MODULES`、`LAB_MODULE_BRANCH`。
+   - 首頁卡片：已有「規劃中」卡片時，用 `python tools/make_live.py <代號> <卡片標題> --desc … --desc-en … --keywords …`。這支工具已修正為逐張比對，不會再跨卡片誤改。沒有卡片時，照現有卡片的格式手動新增。
+   - `python tools/stamp.py`。
+4. 提交：**只 `git add` 這次要發布的檔案**，不要用 `git add -u`／`-A`，以免背景助手做到一半的檔案被推上線。然後 push 到 `main`。
+5. 請站長登入並打開排行榜頁一次（自動同步任務），再告訴站長網址與重點。
+
+## 五、踩過的坑（已修好，但要記得）
+
+- `make_live.py` 舊版會跨卡片比對，曾把折射、比熱、駐波、都卜勒、法拉第、光電效應的卡片弄錯，已全部修正。
+- 繪圖文字也不可用 ⁸、₂ 這類上標／下標數字字元。HTML 用 `<sup>`／`<sub>`；畫布要自己畫小字上標，可參考 `js/kepler.js` 的 `fillSup`。
+- 簡體對照：OpenCC 會把「抬」轉成「擡」、把「鎝」轉成缺字的「𨱏」，已在 `tools/build-hans.cjs` 用 `OVERRIDES` 修正。物理名詞的兩岸用語放在 `PHRASES`。
+- 動態載入的檔案要帶版本號，否則會讀到舊快取：任務檔沿用 `missions.js`／`achievements.js` 的 `?v=`，簡體表沿用 `settings.js` 的 `?v=`。
+- 「目前在線」是匿名心跳：每個分頁一個隨機代號，60 秒送一次，150 秒內有心跳就算在線。規則允許任何人寫入或刪除 `presence/`，被灌假人數只影響顯示。
+
+## 六、還沒決定或待辦的事
+
+1. **下一批實驗**（站長還沒選）。建議依序做：
+   1. 等加速度直線運動（x–t、v–t、a–t 圖、自由落體）
+   2. 功與能、力學能守恆（雲霄飛車、彈簧）
+   3. 力的合成與分解、靜力平衡與力矩
+   4. 電流的磁效應（直導線、線圈、螺線管、平行導線）
+   5. 水波干涉
+   6. 聲波與共鳴管
+   7. 相對運動
+   8. 交流電、發電機與變壓器
+   9. 光的偏振
+   10. 物質波與電子繞射
+2. **光電效應的鉑功函數**：目前用 5.6 eV（手冊上多晶鉑的值），有些教科書寫 6.35 eV。已問站長，還沒回覆。
+3. 建議先讓學生試用、收集回饋，例如哪裡看不懂、哪個任務太難、手機哪裡不好操作。
+4. 小問題：滑桿旁可點擊的數字（`js/numinput.js` 的 `.lab-num`）觸控高度約 25 px，低於 44 px 的規範，可以考慮加大。
+5. Firebase 免費方案（Spark）同時連線上限是 100。留言與任務使用即時連線，全班同時上線還好；如果人數會超過，要考慮升級，或減少即時監聽。
+
+## 七、與站長合作（摘要，詳見 CLAUDE.md）
+
+- 一律用繁體中文（臺灣用語）。
+- 需要站長在網站上操作時，一次只給一步，附完整網址，等站長回覆或拍照確認再給下一步。
+- 學生多為未成年人，留言與隱私都要保守設計。
+- 物理正確第一，美感同樣重要，學生操作不消耗任何 AI 額度。
