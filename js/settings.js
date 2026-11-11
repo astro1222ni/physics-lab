@@ -16,7 +16,7 @@
   'use strict';
 
   const KEY = 'lab-settings';
-  const DEFAULTS = { lang: 'zh-Hant', theme: 'auto', fs: 1, sound: false };
+  const DEFAULTS = { lang: 'zh-Hant', theme: 'auto', fs: 1, sound: false, volume: 1 };
   const FONT_STEPS = [
     { v: 0.9, zh: '小', en: 'S' },
     { v: 1, zh: '標準', en: 'M' },
@@ -33,6 +33,7 @@
     if (['auto', 'light', 'dark'].indexOf(out.theme) < 0) out.theme = DEFAULTS.theme;
     if (!FONT_STEPS.some(function (f) { return f.v === out.fs; })) out.fs = DEFAULTS.fs;
     out.sound = out.sound === true;
+    if ([0.3, 0.6, 1].indexOf(out.volume) < 0) out.volume = DEFAULTS.volume;
     return out;
   }
   function save() {
@@ -212,11 +213,11 @@
   const T = isEn ? {
     gear: 'Settings', title: 'Settings', lang: 'Language', font: 'Text size', theme: 'Appearance',
     auto: 'System', light: 'Light', dark: 'Dark', reset: 'Reset to defaults', close: 'Close', preview: 'Sample text 物理',
-    sound: 'Sound effects', on: 'On', off: 'Off'
+    sound: 'Sound effects', on: 'On', off: 'Off', volume: 'Volume', vS: 'Low', vM: 'Medium', vL: 'High'
   } : {
     gear: '設定', title: '設定', lang: '語言 Language', font: '字體大小', theme: '外觀',
     auto: '跟隨系統', light: '淺色', dark: '深色', reset: '恢復預設值', close: '關閉', preview: '範例文字 Physics',
-    sound: '音效', on: '開', off: '關'
+    sound: '音效', on: '開', off: '關', volume: '音量', vS: '小', vM: '中', vL: '大'
   };
 
   const GEAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94a7.6 7.6 0 0 0 .05-.94 7.6 7.6 0 0 0-.05-.94l2.03-1.58a.5.5 0 0 0 .12-.63l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.1 7.1 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.49.42l-.36 2.54a7.4 7.4 0 0 0-1.63.94l-2.39-.96a.5.5 0 0 0-.6.22L2.67 8.85a.5.5 0 0 0 .12.63l2.03 1.58a7.8 7.8 0 0 0 0 1.88l-2.03 1.58a.5.5 0 0 0-.12.63l1.92 3.32c.13.22.39.3.6.22l2.39-.96c.5.38 1.04.7 1.63.94l.36 2.54c.04.24.25.42.49.42h3.84c.25 0 .46-.18.5-.42l.36-2.54a7.1 7.1 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.63l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>';
@@ -258,6 +259,7 @@
         { v: 'auto', label: T.auto }, { v: 'light', label: T.light }, { v: 'dark', label: T.dark }
       ], st.theme) +
       group(T.sound, 'sound', [{ v: false, label: T.off }, { v: true, label: T.on }], st.sound) +
+      group(T.volume, 'volume', [{ v: 0.3, label: T.vS }, { v: 0.6, label: T.vM }, { v: 1, label: T.vL }], st.volume) +
       '<button type="button" class="lab-set-reset">' + T.reset + '</button>';
 
     wrap.appendChild(btn);
@@ -280,7 +282,7 @@
       if (b) {
         const name = b.getAttribute('data-set');
         const raw = b.getAttribute('data-val');
-        const val = name === 'fs' ? parseFloat(raw) : name === 'sound' ? raw === 'true' : raw;
+        const val = (name === 'fs' || name === 'volume') ? parseFloat(raw) : name === 'sound' ? raw === 'true' : raw;
         if (st[name] === val) return;
         st[name] = val;
         save();
@@ -291,7 +293,7 @@
         if (name === 'theme') applyTheme();
         if (name === 'fs') applyFont();
         notify(name, val);
-        if (name === 'sound') return;
+        if (name === 'sound' || name === 'volume') return;
         window.dispatchEvent(new Event('lab:themechange')); // 畫布重畫
         window.dispatchEvent(new Event('resize'));
       } else if (e.target.closest('.lab-set-reset')) {

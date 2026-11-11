@@ -19,6 +19,13 @@
   const MASTER = 1.0;
   let ctx = null;
   let master = null;
+  let out = null;
+
+  // 齒輪設定的「音量」：小／中／大（預設大）
+  function volume() {
+    const v = window.LabSettings && window.LabSettings.get && window.LabSettings.get('volume');
+    return typeof v === 'number' ? v : 1;
+  }
 
   function enabled() {
     return !!(window.LabSettings && window.LabSettings.get && window.LabSettings.get('sound'));
@@ -30,20 +37,31 @@
     if (!AC) return null;
     if (!ctx) {
       ctx = new AC();
-      // 壓縮器：讓整體夠大聲，又不會在多個聲音疊加時爆音
+      // 訊號鏈：各聲音 → master → 壓縮器（拉近大小聲）→ 補償增益 → 限幅器（峰值不超過約 -1 dBFS）→ 音量 → 喇叭
+      // 小喇叭聽起來夠大聲，同時多個聲音疊加也不會破音。
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -12;
-      comp.knee.value = 8;
-      comp.ratio.value = 4;
-      comp.attack.value = 0.002;
-      comp.release.value = 0.15;
-      const makeup = ctx.createGain(); // 壓縮後補回音量（約 +7 dB），峰值仍低於 0 dBFS
-      makeup.gain.value = 2.2;
+      comp.threshold.value = -24;
+      comp.knee.value = 6;
+      comp.ratio.value = 6;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.2;
+      const makeup = ctx.createGain();
+      makeup.gain.value = 5.5;
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -2;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.08;
+      out = ctx.createGain();
+      out.gain.value = volume();
       master = ctx.createGain();
       master.gain.value = MASTER;
       master.connect(comp);
       comp.connect(makeup);
-      makeup.connect(ctx.destination);
+      makeup.connect(limiter);
+      limiter.connect(out);
+      out.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
@@ -121,7 +139,8 @@
 
   // 從設定打開音效時，播放一聲提示音
   window.addEventListener('lab:settingschange', function (e) {
-    if (e.detail && e.detail.name === 'sound' && e.detail.value) {
+    if (e.detail && e.detail.name === 'volume' && out) out.gain.value = volume();
+    if (e.detail && ((e.detail.name === 'sound' && e.detail.value) || e.detail.name === 'volume')) {
       tone({ freq: 880, dur: 0.12, gain: 0.25 });
       tone({ freq: 1320, dur: 0.15, gain: 0.2, delay: 0.1 });
     }
