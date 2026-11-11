@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611110658"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Privacy | Astro Ni Physics Lab">隱私說明｜Astro Ni 物理實驗室</title>
+  <link rel="stylesheet" href="lab.css?v=202611110658">
+  <style>
+    .doc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px clamp(16px, 3vw, 28px); }
+    .doc h2 { font-size: calc(18px * var(--fs, 1)); margin: 22px 0 6px; }
+    .doc h2:first-child { margin-top: 0; }
+    .doc ul { padding-left: 1.3em; }
+    .doc li { margin: 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
+      <h1 data-en="Privacy">隱私說明</h1>
+      <p data-en="Last updated: 11 November 2026">更新日期：2026 年 11 月 11 日</p>
+    </header>
+
+    <div class="doc">
+      <h2 data-en="Using the experiments">使用實驗</h2>
+      <p data-en="All simulations run in your own browser. Using them needs no sign-in, and nothing you do in an experiment is sent to an AI service.">所有模擬都在你自己的瀏覽器中運算。使用實驗不需要登入，你在實驗中的操作也不會傳送到任何 AI 服務。</p>
+
+      <h2 data-en="Usage statistics">使用統計</h2>
+      <p data-en="To show view counts, interaction counts and time spent, the site adds anonymous numbers to a Firebase database. Nothing that identifies you is recorded — no name, account, IP address or device information.">為了顯示瀏覽人次、操作次數與累計操作時間，網站會把匿名的數字累加到 Firebase 資料庫。這些數字不包含任何能辨識你的資料，例如姓名、帳號、IP 位址或裝置資訊。</p>
+
+      <h2 data-en="Settings">設定</h2>
+      <p data-en="Your language, text size and appearance choices are stored only in your own browser (localStorage) and are never uploaded.">你選擇的語言、字體大小與外觀只存在你自己的瀏覽器（localStorage），不會上傳。</p>
+
+      <h2 data-en="Signing in and comments">登入與留言</h2>
+      <ul>
+        <li data-en="Signing in with a Google account is optional and only needed to post comments. Sign-in is handled by Google's Firebase Authentication; the site receives a random user ID from it.">用 Google 帳號登入是選擇性的，只有留言時才需要。登入由 Google 的 Firebase Authentication 處理，網站會從中取得一組隨機的使用者代號。</li>
+        <li data-en="Firebase Authentication keeps the account's email address and name so that you can sign in again. The site never displays them.">Firebase Authentication 會保存帳號的電子郵件與姓名，讓你下次能再登入；網站不會顯示這些資料。</li>
+        <li data-en="Comments are shown publicly with the nickname you choose, the text and the time posted — never your Google name, photo or email.">留言會公開顯示你自訂的暱稱、留言內容與時間，不會顯示 Google 姓名、大頭照或電子郵件。</li>
+        <li data-en="You can delete your own comments at any time. The site administrator may delete comments that are inappropriate; a comment reported by several people is hidden automatically until it is reviewed.">你可以隨時刪除自己的留言。網站管理者可以刪除不當留言；被多人檢舉的留言會自動隱藏，等待管理者確認。</li>
+        <li data-en="Please do not include personal details such as phone numbers, addresses or school names in comments.">請不要在留言中寫下電話、地址、學校等個人資料。</li>
+      </ul>
+
+      <h2 data-en="Removing your data">刪除資料</h2>
+      <p data-en="To remove your sign-in record and nickname, contact the administrator through the Astro Ni YouTube channel.">如果你希望刪除登入紀錄與暱稱，請透過 Astro Ni YouTube 頻道與網站管理者聯繫。</p>
+    </div>
+
+    <footer class="site"><a href="index.html" data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</a></footer>
+  </div>
+  <script src="js/firebase-config.js?v=202611110658"></script>
+  <script src="js/comments.js?v=202611110658"></script>
+</body>
+</html>
