@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111244"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Ideal Gas Molecules | Astro Ni Physics Lab">理想氣體分子模擬｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：三維容器裡的硬球分子不停碰撞，由撞牆的動量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT、方均根速率與馬克士威速率分布；再用活塞做等溫、等容、等壓與絕熱過程。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111244">
+  <style>
+    /* 理想氣體頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 容器畫布：左右拖曳活塞（觸控時上下滑動仍可捲動頁面）；圖表畫布沒有拖曳操作 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv.grab { cursor: grab; }
+    #cv.grabbing { cursor: grabbing; }
+    .ig button { min-height: 44px; }
+    .ig .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ig .playbar > button { flex: 1 1 auto; }
+    .ig .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ig .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .ig .speedbox .seg3 { flex: 1 1 auto; }
+    .ig .stage .status { margin: 6px 4px 0; }
+    .ig .slider input[type="range"] { height: 28px; margin: 0; }
+    .ig .slider label sub, dl.readout sub { font-size: .75em; }
+    .ig [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 6px 0 6px; }
+    .seg3, .seg4, .seg5 { display: grid; gap: 6px; }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(2, 1fr); }
+    .seg5 { grid-template-columns: repeat(5, 1fr); }
+    .seg3 button, .seg4 button, .seg5 button { padding: 4px 4px; line-height: 1.2; }
+    .seg5 button { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3px 2px; }
+    .seg5 button b { font-size: calc(15px * var(--fs, 1)); }
+    .seg5 button small { font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .seg5 button .sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; vertical-align: 1px; }
+    .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"], .seg5 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg5 button:disabled { opacity: .35; cursor: not-allowed; }
+    .ig .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .ig .row2 button { flex: 1 1 auto; }
+    .ig .checks label { min-height: 44px; }
+    .ig .checks input { width: 17px; height: 17px; }
+    .ig .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ig .info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); line-height: 1.55; }
+    .ig .info strong { color: var(--text); }
+    .ig .slider.off { opacity: .55; }
+    .ig .slider .note { grid-column: 1 / -1; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+    @media (max-width: 640px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+    .chart { min-width: 0; margin: 0; }
+    .chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin: 0 2px 6px; min-height: 44px; }
+    .chart-head h3 { font-size: calc(14px * var(--fs, 1)); margin: 0; }
+    .chart-head .seg3 { min-width: 0; flex: 0 1 210px; }
+    .chart-head .seg3 button { font-size: calc(13px * var(--fs, 1)); padding: 2px 4px; }
+    .chart canvas { display: block; width: 100%; height: 240px; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; }
+    .ig .legend.small { margin-top: 6px; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) fit-content(62%); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd .good { color: var(--probe); font-weight: 700; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout .sep { grid-column: 1 / -1; border-top: 1px solid var(--border); margin: 4px 0 2px; }
+    .ovl { text-decoration: overline; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .bar { width: 9px; height: 12px; border-radius: 2px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#thermo&quot;>Heat</a> / Kinetic theory"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#thermo">熱學</a> ／ 氣體動力論</nav>
+      <h1 data-en="Ideal Gas Molecules">理想氣體分子模擬</h1>
+      <p data-en="Hundreds of atoms fly around a three-dimensional box and bounce off each other and the walls. The pressure is measured from the momentum they give to the walls. Check PV = NkT, the average kinetic energy (3/2)kT, the root-mean-square speed and the Maxwell speed distribution, then use the piston and the heat bath for isothermal, isochoric, isobaric and adiabatic processes.">數百個原子在立體容器裡飛來飛去，彼此碰撞、撞擊器壁。由分子撞牆傳給器壁的動量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT、方均根速率與馬克士威速率分布；再用活塞與恆溫槽做等溫、等容、等壓與絕熱過程。</p>
+    </header>
+
+    <div class="lab ig">
+      <div class="stage">
+        <canvas id="cv" aria-label="理想氣體模擬畫布：立體玻璃容器中的氣體分子、右側可拖曳的活塞、壓力計與溫度計" data-en-aria-label="Ideal gas simulation: gas molecules in a 3D glass container, a draggable piston on the right, a pressure gauge and a thermometer"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除速率分布、過程圖與能量收支的累積資料；滑桿設定與氣體不變" data-en-title="Clear the accumulated speed histogram, process graph and energy totals; the sliders and the gas are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
+            <div class="seg3" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false" data-en="Slow 0.2×">慢 0.2×</button>
+              <button type="button" id="sp1" aria-pressed="true">1×</button>
+              <button type="button" id="sp2" aria-pressed="false">5×</button>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; id=&quot;lgA&quot; style=&quot;background:var(--b-wave)&quot;></i>Gas molecules (colour = element)"><i class="dot" id="lgA" style="background:var(--b-wave)"></i>氣體分子（顏色代表元素）</span>
+          <span id="lgBath" data-en-html="<i style=&quot;background:var(--b-thermo)&quot;></i>Heat-bath walls (glow = temperature)"><i style="background:var(--b-thermo)"></i>恆溫壁（光暈顏色代表溫度）</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Impacts on the piston"><i style="background:var(--equi)"></i>撞擊活塞的位置</span>
+        </div>
+        <p class="hint" data-en-html="Drag the piston handle left or right to change the volume (isothermal and adiabatic processes). Tap a molecule to follow its path. Time runs about 5 × 10<sup>10</sup> times slower than in reality: 1 second on screen is 20 ps. The molecules are drawn at their true size relative to the box.">左右拖曳活塞的把手可以改變體積（等溫與絕熱過程）；點一下分子可以追蹤它的路徑。時間放慢約 5 × 10<sup>10</sup> 倍：畫面上 1 秒＝ 20 ps。分子與容器依相同比例繪製。</p>
+
+        <div class="charts">
+          <figure class="chart">
+            <div class="chart-head"><h3 data-en="Speed distribution">分子速率分布</h3></div>
+            <canvas id="hist" aria-label="分子速率分布直方圖與馬克士威分布曲線" data-en-aria-label="Histogram of molecular speeds with the Maxwell distribution curve"></canvas>
+          </figure>
+          <figure class="chart">
+            <div class="chart-head"><h3 id="gTitle" data-en="Process graph">過程圖</h3>
+              <div class="seg3" role="group" aria-labelledby="gTitle">
+                <button type="button" id="gPV" aria-pressed="true">P–V</button>
+                <button type="button" id="gPT" aria-pressed="false">P–T</button>
+                <button type="button" id="gVT" aria-pressed="false">V–T</button>
+              </div>
+            </div>
+            <canvas id="pv" aria-label="氣體狀態的過程圖：壓力對體積、壓力對溫度或體積對溫度" data-en-aria-label="Process graph of the gas state: pressure against volume, pressure against temperature or volume against temperature"></canvas>
+          </figure>
+        </div>
+        <div class="legend small">
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Isothermal"><i class="dot" style="background:var(--accent)"></i>等溫</span>
+          <span style="color:var(--b-optics)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-optics)&quot;></i>Isochoric"><i class="dot" style="background:var(--b-optics)"></i>等容</span>
+          <span style="color:var(--equi)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Isobaric"><i class="dot" style="background:var(--equi)"></i>等壓</span>
+          <span style="color:var(--b-thermo)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-thermo)&quot;></i>Adiabatic"><i class="dot" style="background:var(--b-thermo)"></i>絕熱</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Theory curve"><i class="dash"></i>理論曲線</span>
+        </div>
+        <p class="hint" data-en-html="Bars: measured speeds of the molecules (recent ~100 ps, a running average); curve: the Maxwell distribution for the measured temperature; ticks under the axis: the molecules right now. Each dot on the process graph is a measurement averaged over 40 ps.">長條：分子速率的量測統計（最近約 100 ps 的移動平均）；曲線：依量到的溫度畫出的馬克士威分布；橫軸下方的短線：此刻每個分子的速率。過程圖上每一點是 40 ps 的平均量測值。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="modeTitle" data-en="Process">熱力學過程</h2>
+          <div class="seg4" role="group" aria-labelledby="modeTitle">
+            <button type="button" id="mIso" aria-pressed="true" data-en="Isothermal">等溫</button>
+            <button type="button" id="mIsoV" aria-pressed="false" data-en="Isochoric">等容</button>
+            <button type="button" id="mIsoP" aria-pressed="false" data-en="Isobaric">等壓</button>
+            <button type="button" id="mAdi" aria-pressed="false" data-en="Adiabatic">絕熱</button>
+          </div>
+          <p class="info" id="modeInfo"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Gas">氣體</h2>
+          <p class="seg-label" id="spALabel" data-en="Element (monatomic gas)">氣體種類（單原子氣體）</p>
+          <div class="seg5" role="group" aria-labelledby="spALabel" id="segA"></div>
+          <div class="checks" style="margin-top:8px"><label><input id="mix" type="checkbox"><span data-en="Mix in a second gas">混合第二種氣體</span></label></div>
+          <div id="mixBox" hidden>
+            <p class="seg-label" id="spBLabel" data-en="Second gas">第二種氣體</p>
+            <div class="seg5" role="group" aria-labelledby="spBLabel" id="segB"></div>
+            <div class="slider"><label for="frac" data-en="Fraction of the second gas">第二種氣體所佔比例</label><output id="fraco"></output>
+              <input id="frac" type="range" min="10" max="90" step="5" value="50" data-decimals="0"></div>
+          </div>
+          <div class="slider"><label for="N" data-en="Number of molecules N">分子數 N</label><output id="No"></output>
+            <input id="N" type="range" min="20" max="300" step="10" value="200" data-decimals="0"></div>
+          <div class="row2">
+            <button type="button" id="reinit" data-en="Refill (Maxwell)">重新放入（馬克士威分布）</button>
+            <button type="button" id="same" data-en="Give all the same speed">改成同一速率（非平衡）</button>
+          </div>
+          <p class="hint" data-en="“Give all the same speed” keeps the total energy but gives every molecule the same speed in a random direction — a state far from equilibrium. Watch collisions turn it back into a Maxwell distribution (best seen in the adiabatic process).">「改成同一速率」保持總能量不變，但讓每個分子的速率都相同、方向隨機，這是遠離平衡的狀態；觀察碰撞如何讓它回到馬克士威分布（在絕熱過程中最清楚）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="State of the gas">氣體狀態</h2>
+          <div class="slider" id="boxT"><label for="T" id="TLabel" data-en="Heat-bath temperature T">恆溫槽溫度 T</label><output id="To"></output>
+            <input id="T" type="range" min="50" max="1000" step="10" value="300" data-decimals="1"><span class="note" id="TNote" hidden></span></div>
+          <div class="slider" id="boxV"><label for="V" data-en="Volume V">體積 V</label><output id="Vo"></output>
+            <input id="V" type="range" min="4000" max="12000" step="50" value="8000" data-decimals="0"><span class="note" id="VNote" hidden></span></div>
+          <div class="slider" id="boxP" hidden><label for="P" data-en="Pressure kept at P">維持的壓力 P</label><output id="Po"></output>
+            <input id="P" type="range" min="0" max="1000" step="1" value="500"><span class="note" id="PNote" hidden></span></div>
+          <p class="hint" data-en="Tap a number to type an exact value. The container is 20 nm × 20 nm in cross-section; V = 400 nm² × piston position.">點一下數字可直接輸入精確數值。容器截面 20 nm × 20 nm，體積 V ＝ 400 nm<sup>2</sup> × 活塞位置。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Measurements">測量結果</h2>
+          <dl class="readout" id="ro">
+            <dt data-en="Averaging time">平均時間</dt><dd id="rWin">—</dd>
+            <dt data-en-html="Pressure <span class=&quot;f&quot;>P</span> (from wall impulses)">壓力 <span class="f">P</span>（由撞牆衝量）</dt><dd id="rP">—</dd>
+            <dt data-en-html="Ideal gas <span class=&quot;f&quot;>NkT/V</span>">理想氣體 <span class="f">NkT/V</span></dt><dd id="rPth">—</dd>
+            <dt data-en-html="Temperature <span class=&quot;f&quot;>T</span> (from kinetic energy)">溫度 <span class="f">T</span>（由平均動能）</dt><dd id="rT">—</dd>
+            <dt data-en-html="Volume <span class=&quot;f&quot;>V</span>">體積 <span class="f">V</span></dt><dd id="rV">—</dd>
+            <dt data-en-html="Amount <span class=&quot;f&quot;>n = N/N<sub>A</sub></span>">莫耳數 <span class="f">n = N/N<sub>A</sub></span></dt><dd id="rn">—</dd>
+            <dd class="sep" aria-hidden="true"></dd>
+            <dt data-en="Mean kinetic energy per molecule">每個分子的平均動能</dt><dd id="rKE">—</dd>
+            <dt data-en-html="RMS speed <span class=&quot;f&quot;>v<sub>rms</sub></span>">方均根速率 <span class="f">v<sub>rms</sub></span></dt><dd id="rV2">—</dd>
+            <dt data-en="Wall hits">撞牆次數</dt><dd id="rHit">—</dd>
+            <dt data-en="Collisions between molecules">分子間碰撞</dt><dd id="rColl">—</dd>
+            <dd class="sep" aria-hidden="true"></dd>
+            <dt data-en-html="Heat from the bath <span class=&quot;f&quot;>Q</span>">恆溫槽給的熱 <span class="f">Q</span></dt><dd id="rQ">—</dd>
+            <dt data-en-html="Work by the piston <span class=&quot;f&quot;>W</span>">活塞對氣體作功 <span class="f">W</span></dt><dd id="rW">—</dd>
+            <dt data-en-html="Change in internal energy <span class=&quot;f&quot;>ΔU</span>">內能變化 <span class="f">ΔU</span></dt><dd id="rU">—</dd>
+          </dl>
+          <p class="hint" data-en="± is the statistical uncertainty (one standard error). Measurements restart whenever the state changes; Q, W and ΔU add up from the last “Clear all”.">± 為統計不確定度（一個標準誤差）。狀態改變時重新開始平均；Q、W、ΔU 從上次「全部清除」開始累計。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showTrack" type="checkbox"><span data-en="Follow one molecule">追蹤一個分子</span></label>
+            <label><input id="showImp" type="checkbox" checked><span data-en="Impacts on the piston">撞擊活塞的位置</span></label>
+            <label><input id="showSpeed" type="checkbox"><span data-en="Colour by speed">依速率上色</span></label>
+          </div>
+          <p class="hint" data-en="Colour by speed: blue is slower and red faster than the most probable speed.">依速率上色：比最可能速率慢的偏藍、快的偏紅。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Kinetic theory pictures a gas as a huge number of tiny molecules in random motion. The molecules are much smaller than the distances between them, exert no forces on each other except during collisions, and all collisions are perfectly elastic. The pressure of the gas is the average force per unit area from the molecules hitting the walls.">氣體動力論把氣體看成極多個做無規則運動的微小分子：分子本身的大小比彼此的距離小得多，除了碰撞以外沒有交互作用，所有碰撞都是完全彈性碰撞。氣體的壓力，就是分子不斷撞擊器壁時，器壁單位面積受到的平均作用力。</p>
+
+      <h3 data-en="Pressure from molecular impacts">由分子撞牆求壓力</h3>
+      <p data-en-html="Take a molecule of mass \(m\) in a box of length \(L\) along \(x\). Each time it hits the end wall its \(x\)-momentum changes by \(2mv_x\), and it comes back every \(2L/v_x\). The average force it exerts is therefore \(2mv_x \div (2L/v_x) = mv_x^2/L\). Adding up \(N\) molecules and using \(\langle v_x^2\rangle = \langle v^2\rangle/3\) (no direction is special):">質量 \(m\) 的分子在 \(x\) 方向長 \(L\) 的容器中運動，每次撞到端面，\(x\) 方向動量改變 \(2mv_x\)，每隔 \(2L/v_x\) 撞一次，所以平均作用力是 \(2mv_x \div (2L/v_x) = mv_x^2/L\)。把 \(N\) 個分子加起來，並利用 \(\langle v_x^2\rangle = \langle v^2\rangle/3\)（沒有哪個方向特別）：</p>
+      <div class="formula">
+        \[ P = \frac{F}{A} = \frac{N m\langle v_x^2\rangle}{L A} = \frac{1}{3}\,\frac{N}{V}\,m\langle v^{2}\rangle = \frac{2}{3}\,\frac{N}{V}\,\langle E_k\rangle \]
+      </div>
+      <p data-en-html="Comparing with the ideal gas law \(PV = NkT = nRT\) shows what temperature means at the molecular level — the average translational kinetic energy:">與理想氣體方程式 \(PV = NkT = nRT\) 比較，就得到溫度在分子層次的意義——分子平均移動動能：</p>
+      <div class="formula">
+        \[ \langle E_k\rangle = \frac{1}{2}m\langle v^2\rangle = \frac{3}{2}kT, \qquad v_{\text{rms}} = \sqrt{\langle v^2\rangle} = \sqrt{\frac{3kT}{m}} = \sqrt{\frac{3RT}{M}} \]
+      </div>
+      <p data-en-html="Here \(k = 1.380649\times10^{-23}\ \mathrm{J/K}\) is Boltzmann’s constant, \(N_A = 6.022\times10^{23}\ \mathrm{mol^{-1}}\), \(R = N_A k = 8.314\ \mathrm{J/(mol\,K)}\), \(n = N/N_A\) is the amount in moles and \(M\) the molar mass. The simulation measures \(P\) from the impulses on all six walls and \(T\) from the kinetic energy of the molecules, and compares them.">其中 \(k = 1.380649\times10^{-23}\ \mathrm{J/K}\) 為波茲曼常數、\(N_A = 6.022\times10^{23}\ \mathrm{mol^{-1}}\)、\(R = N_A k = 8.314\ \mathrm{J/(mol\,K)}\)，\(n = N/N_A\) 是莫耳數、\(M\) 是莫耳質量。模擬由六面器壁受到的衝量量出 \(P\)，由分子動能算出 \(T\)，再互相比較。</p>
+
+      <h3 data-en="The Maxwell speed distribution">馬克士威速率分布</h3>
+      <p data-en-html="Collisions keep reshuffling the speeds, yet in equilibrium the fraction of molecules with speeds between \(v\) and \(v + dv\) settles down to \(f(v)\,dv\) with">碰撞讓分子的速率不斷改變，但達到平衡後，速率介於 \(v\) 與 \(v + dv\) 之間的分子比例固定為 \(f(v)\,dv\)：</p>
+      <div class="formula">
+        \[ f(v) = 4\pi\left(\frac{m}{2\pi kT}\right)^{3/2} v^{2}\,e^{-mv^{2}/2kT}, \qquad \int_0^\infty f(v)\,dv = 1 \]
+      </div>
+      <p data-en-html="Three characteristic speeds (in the ratio \(\sqrt2 : \sqrt{8/\pi} : \sqrt3 \approx 1 : 1.13 : 1.22\)) are marked on the histogram:">直方圖上標出三個特徵速率（比值 \(\sqrt2 : \sqrt{8/\pi} : \sqrt3 \approx 1 : 1.13 : 1.22\)）：</p>
+      <div class="formula" data-en-html="\[ v_p = \sqrt{\frac{2kT}{m}}\ \ (\text{most probable}), \qquad \bar v = \sqrt{\frac{8kT}{\pi m}}\ \ (\text{mean}), \qquad v_{\text{rms}} = \sqrt{\frac{3kT}{m}} \]">
+        \[ v_p = \sqrt{\frac{2kT}{m}}\ \ (\text{最可能速率}), \qquad \bar v = \sqrt{\frac{8kT}{\pi m}}\ \ (\text{平均速率}), \qquad v_{\text{rms}} = \sqrt{\frac{3kT}{m}} \]
+      </div>
+
+      <h3 data-en="The gas laws">氣體定律</h3>
+      <div class="formula" data-en-html="\[ \underbrace{PV = \text{const}}_{\text{Boyle } (T\text{ fixed})}, \qquad \underbrace{\frac{V}{T} = \text{const}}_{\text{Charles } (P\text{ fixed})}, \qquad \underbrace{\frac{P}{T} = \text{const}}_{\text{Gay-Lussac } (V\text{ fixed})} \]">
+        \[ \underbrace{PV = \text{常數}}_{\text{波以耳（}T\text{ 固定）}}, \qquad \underbrace{\frac{V}{T} = \text{常數}}_{\text{查理（}P\text{ 固定）}}, \qquad \underbrace{\frac{P}{T} = \text{常數}}_{\text{給呂薩克（}V\text{ 固定）}} \]
+      </div>
+      <p data-en-html="All three come from \(PV = NkT\). Note that \(T\) must be the absolute temperature: on the P–T and V–T graphs the straight lines head for the origin, \(T = 0\ \mathrm{K}\) (−273.15 °C). The pressure does not depend on the mass of the molecules — at the same \(N\), \(V\) and \(T\) every gas has the same pressure (Avogadro). In a mixture each gas contributes its own partial pressure \(P_i = N_i kT/V\) and \(P = P_1 + P_2\) (Dalton).">三者都來自 \(PV = NkT\)。注意 \(T\) 必須用絕對溫度：P–T 圖與 V–T 圖上的直線都指向原點 \(T = 0\ \mathrm{K}\)（−273.15 °C）。壓力與分子質量無關——相同的 \(N\)、\(V\)、\(T\)，任何氣體的壓力都相同（亞佛加厥）。混合氣體中，各成分各自貢獻分壓 \(P_i = N_i kT/V\)，總壓 \(P = P_1 + P_2\)（道耳頓分壓定律）。</p>
+
+      <h3 data-en="Mixtures: equal energy, different speeds">混合氣體：動能相同、速率不同</h3>
+      <p data-en-html="In a mixture at temperature \(T\) the light and the heavy molecules have the <strong>same</strong> mean kinetic energy \(\tfrac32 kT\) (equipartition), so the lighter ones move faster:">溫度 \(T\) 的混合氣體中，輕分子與重分子的平均動能<strong>相同</strong>，都是 \(\tfrac32 kT\)（能量均分），所以輕的分子跑得比較快：</p>
+      <div class="formula">
+        \[ \tfrac12 m_1\langle v_1^2\rangle = \tfrac12 m_2\langle v_2^2\rangle \quad\Longrightarrow\quad \frac{v_{\text{rms},1}}{v_{\text{rms},2}} = \sqrt{\frac{m_2}{m_1}} \]
+      </div>
+
+      <h3 data-en="Work, heat and adiabatic processes">功、熱與絕熱過程</h3>
+      <p data-en-html="The internal energy of a monatomic ideal gas is the kinetic energy of its atoms, \(U = \tfrac32 NkT = \tfrac32 nRT\). It changes by the heat \(Q\) from the walls and the work \(W\) done on the gas by the piston (first law of thermodynamics). When a molecule bounces off a piston moving with velocity \(u\), its velocity \(v_x\) becomes \(2u - v_x\): an approaching piston speeds the molecules up (compression heats the gas) and a retreating one slows them down.">單原子理想氣體的內能就是原子的動能 \(U = \tfrac32 NkT = \tfrac32 nRT\)。內能的改變來自器壁傳入的熱 \(Q\) 與活塞對氣體作的功 \(W\)（熱力學第一定律）。分子撞上以速度 \(u\) 移動的活塞，反彈後的速度由 \(v_x\) 變成 \(2u - v_x\)：活塞迎面推進時分子變快（壓縮使氣體升溫），活塞後退時分子變慢。</p>
+      <div class="formula" data-en-html="\[ \Delta U = Q + W, \qquad \text{adiabatic } (Q = 0):\quad PV^{\gamma} = \text{const},\quad TV^{\gamma - 1} = \text{const},\quad \gamma = \frac{C_P}{C_V} = \frac{5}{3} \]">
+        \[ \Delta U = Q + W, \qquad \text{絕熱（}Q = 0\text{）}:\quad PV^{\gamma} = \text{常數},\quad TV^{\gamma - 1} = \text{常數},\quad \gamma = \frac{C_P}{C_V} = \frac{5}{3} \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Pressure is impacts</strong>: turn on the sound — every tick is a molecule hitting the piston. Add molecules or raise the temperature and the ticks come faster and harder; the measured \(P\) agrees with \(NkT/V\)."><strong>壓力就是撞擊</strong>：打開音效，每一聲「滴答」都是分子撞上活塞。增加分子數或提高溫度，撞擊更頻繁、更猛烈，量到的 \(P\) 與 \(NkT/V\) 一致。</li>
+        <li data-en-html="<strong>Boyle’s law</strong>: in the isothermal process halve the volume (8000 → 4000 nm<sup>3</sup>). The pressure doubles and the dots on the P–V graph follow the hyperbola \(PV = \text{const}\)."><strong>波以耳定律</strong>：在等溫過程中把體積減半（8000 → 4000 nm<sup>3</sup>），壓力加倍，P–V 圖上的點沿著雙曲線 \(PV = \text{常數}\)。</li>
+        <li data-en-html="<strong>Gay-Lussac and Charles</strong>: in the isochoric process change \(T\) and watch the P–T graph; in the isobaric process the piston moves by itself and the V–T graph is a straight line through the origin."><strong>給呂薩克與查理定律</strong>：在等容過程中改變 \(T\)，看 P–T 圖；在等壓過程中活塞自動移動，V–T 圖是一條通過原點的直線。</li>
+        <li data-en-html="<strong>Same pressure for every gas</strong>: switch between helium and xenon with the same \(N\), \(V\) and \(T\). Xenon atoms are 33 times heavier and much slower, yet the pressure is the same."><strong>壓力與氣體種類無關</strong>：在相同的 \(N\)、\(V\)、\(T\) 下切換氦與氙。氙原子重了 33 倍、慢得多，壓力卻一樣。</li>
+        <li data-en-html="<strong>Equal energy, different speeds</strong>: mix helium and argon. Both histograms fit Maxwell curves at the same \(T\), the mean kinetic energies are equal, and \(v_{\text{rms}}\) differ by \(\sqrt{39.95/4.00} \approx 3.16\)."><strong>動能相同、速率不同</strong>：混合氦與氬，兩組直方圖都符合同一個溫度的馬克士威曲線，平均動能相等，\(v_{\text{rms}}\) 卻相差 \(\sqrt{39.95/4.00} \approx 3.16\) 倍。</li>
+        <li data-en-html="<strong>Equilibrium from chaos</strong>: choose the adiabatic process and press “Give all the same speed”. The histogram starts as a single spike; collisions alone spread it into the Maxwell distribution, and in a mixture they equalize the kinetic energies of the two gases."><strong>由混亂走向平衡</strong>：選絕熱過程，按「改成同一速率」。直方圖一開始是一根尖峰，只靠分子間的碰撞就散開成馬克士威分布；混合氣體則會讓兩種分子的平均動能變得相等。</li>
+        <li data-en-html="<strong>Adiabatic vs isothermal</strong>: compress the gas in the adiabatic process. With no heat flowing out, all the work raises the temperature, so the P–V curve is steeper than the isotherm (\(PV^{5/3} = \text{const}\)) and \(\Delta U = W\)."><strong>絕熱與等溫</strong>：在絕熱過程中壓縮氣體。沒有熱量流出，外界作的功全部變成內能，溫度上升，所以 P–V 曲線比等溫線陡（\(PV^{5/3} = \text{常數}\)），而且 \(\Delta U = W\)。</li>
+        <li data-en-html="<strong>A heat engine</strong>: go round a closed loop on the P–V graph (for example heat at constant volume, expand at constant pressure, cool at constant volume, compress at constant pressure). The gas returns to its starting state, so \(\Delta U = 0\), but it has done net work equal to the area of the loop."><strong>熱機</strong>：在 P–V 圖上繞一個封閉的循環（例如等容加熱 → 等壓膨脹 → 等容冷卻 → 等壓壓縮）。氣體回到原來的狀態，\(\Delta U = 0\)，卻對外作了淨功，大小等於循環圍成的面積。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The molecules are hard spheres in three dimensions. For every pair the exact moment of contact is found by solving a quadratic equation, and the collision exchanges momentum along the line of centres, so momentum and kinetic energy are conserved to rounding error. Wall impacts are also handled at their exact times.">分子是三維的硬球。每一對分子都解二次方程式求出接觸的精確時刻，碰撞沿兩球連心線交換動量，動量與動能守恆到捨入誤差；撞牆也在精確的時刻處理。</li>
+        <li data-en-html="Units: lengths in nm, times in ps, masses in u (\(1\ \mathrm{u} = 1.6605\times10^{-27}\ \mathrm{kg}\)), so all readings are real SI values. With 200 helium atoms in 8000 nm<sup>3</sup> at 300 K the pressure is about 1 atm.">單位：長度 nm、時間 ps、質量 u（\(1\ \mathrm{u} = 1.6605\times10^{-27}\ \mathrm{kg}\)），所有讀數都是真實的 SI 數值。200 個氦原子在 8000 nm<sup>3</sup>、300 K 時，壓力約為 1 大氣壓。</li>
+        <li data-en-html="Pressure is measured, not calculated: \(P = \sum(\text{impulses on all walls}) \div (\text{wall area} \times \text{time})\). The uncertainty comes from splitting the averaging time into batches. \(V\) is the space available to the centres of the molecules.">壓力是「量」出來的，不是算出來的：\(P = \sum(\text{所有器壁受到的衝量}) \div (\text{器壁面積} \times \text{時間})\)；不確定度由把平均時間分成數批、比較各批的差異求得。\(V\) 指分子中心可以到達的空間。</li>
+        <li data-en-html="Real atoms are about 0.26–0.4 nm across; here they are 0.44–0.56 nm so that collisions are frequent enough to watch. Because the molecules take up a little room, the measured pressure is slightly higher than \(NkT/V\) — by the factor \(Z = 1 + \tfrac{2\pi}{3}\tfrac{N}{V}d^{3}\), at most about 3 % here. This is one reason real gases are not perfectly ideal.">真實原子的直徑約 0.26～0.4 nm；這裡取 0.44～0.56 nm，讓碰撞頻繁到看得見。分子本身佔一點空間，量到的壓力會比 \(NkT/V\) 略大，倍數為 \(Z = 1 + \tfrac{2\pi}{3}\tfrac{N}{V}d^{3}\)（本模擬最多約 3%），這正是真實氣體不完全理想的原因之一。</li>
+        <li data-en-html="Heat bath: in the isothermal, isochoric and isobaric processes the five fixed walls are in contact with a heat bath. A molecule that hits them is re-emitted with a velocity drawn from the Maxwell distribution of the bath temperature, so energy flows in or out until the gas has the bath temperature. In the adiabatic process the walls are insulating: a molecule bounces off with the same speed in a random direction (the wall is rough on the molecular scale), so no energy is exchanged.">恆溫槽：等溫、等容、等壓過程中，五面固定的器壁與恆溫槽接觸。撞上這些牆的分子，會依恆溫槽溫度的馬克士威分布重新射出，能量就在牆與氣體之間流動，直到氣體與恆溫槽同溫。絕熱過程中器壁不導熱：分子撞牆後速率不變、方向隨機（器壁在分子尺度上是粗糙的），沒有能量交換。</li>
+        <li data-en-html="There are only a few hundred molecules, so the instantaneous temperature and pressure fluctuate around their averages — by about \(\sqrt{2/3N}\), roughly 6 % for \(N = 200\). That is why the readings are averaged over time and given with a statistical uncertainty. When you switch to the adiabatic process the gas keeps exactly the energy it has at that instant.">分子只有數百個，瞬間的溫度與壓力會在平均值附近起伏，幅度約為 \(\sqrt{2/3N}\)（\(N = 200\) 時約 6%）。所以讀數都取一段時間的平均，並附上統計不確定度；切換到絕熱過程時，氣體保有那一瞬間的能量。</li>
+        <li data-en-html="The piston moves slowly compared with the molecules (at most 1 % of their mean speed), so the processes are quasi-static; while it moves, the clock speeds up and the screen shows “Fast-forward”. In the isobaric process a controller moves the piston so that the pressure gauge stays at the set value, like a piston loaded with a fixed weight.">活塞相對分子移動得很慢（最多為分子平均速率的 1%），所以過程是準靜態的；活塞移動時時間會自動快轉，畫面上會標示「快轉」。等壓過程中，由控制器依壓力計讀數移動活塞，使壓力保持在設定值，相當於活塞上放了固定重量的砝碼。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111244"></script>
+  <script src="js/ideal-gas-core.js?v=202611111244"></script>
+  <script src="js/sound.js?v=202611111244"></script>
+  <script src="js/numinput.js?v=202611111244"></script>
+  <script src="js/ideal-gas.js?v=202611111244"></script>
+  <script src="js/firebase-config.js?v=202611111244"></script>
+  <script src="js/missions.js?v=202611111244" data-module="ideal-gas"></script>
+  <script src="js/missions/ideal-gas.js?v=202611111244"></script>
+  <script src="js/stats.js?v=202611111244" data-module="ideal-gas"></script>
+  <script src="js/comments.js?v=202611111244"></script>
+</body>
+</html>
