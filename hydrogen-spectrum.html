@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111220"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Hydrogen Energy Levels and Spectra | Astro Ni Physics Lab">氫原子能階與光譜｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：波耳模型的氫原子能階圖與軌道，點選能階讓電子躍遷、放出或吸收光子，對照來曼系、巴耳末系、帕申系的譜線；射入自訂能量的光子、游離原子，並觀察放電管的發射光譜與白光穿過氫氣的吸收光譜。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111220">
+  <style>
+    /* 氫原子能階與光譜頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布只有點選，沒有拖曳，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 560px; touch-action: manipulation; cursor: default; }
+    .hs button { min-height: 44px; }
+    .hs [hidden] { display: none !important; }
+    .hs .lvbar { display: grid; grid-template-columns: auto repeat(8, minmax(0, 1fr)); align-items: center; gap: 6px; margin: 10px 2px 0; }
+    .hs .lvbar .lvlabel { font-size: calc(14px * var(--fs, 1)); color: var(--muted); padding-right: 2px; white-space: nowrap; }
+    .hs .lvbar button { padding: 4px 2px; font-variant-numeric: tabular-nums; font-weight: 600; line-height: 1.15; }
+    .hs .lvbar button small { display: block; font-weight: 500; font-size: calc(11px * var(--fs, 1)); color: var(--muted); }
+    .hs .lvbar button[aria-current="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    .hs .lvbar button[aria-current="true"] small { color: var(--accent); }
+    @media (max-width: 560px) {
+      .hs .lvbar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .hs .lvbar .lvlabel { grid-column: 1 / -1; }
+    }
+    .hs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hs .playbar button { flex: 1 1 auto; }
+    .hs .playbar #fire { flex: 2 1 auto; }
+    .hs .stage .status { margin: 6px 4px 0; }
+    .hs .slider input[type="range"] { height: 28px; margin: 0; }
+    .hs .slider label sub, dl.readout sub { font-size: .75em; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg2 button, .seg3 button { padding: 4px 4px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .hs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .hs .card .btnrow { display: flex; gap: 8px; margin-top: 8px; }
+    .hs .card .btnrow button { flex: 1 1 auto; }
+    .hs .checks label { min-height: 36px; }
+    .hs .checks input { width: 17px; height: 17px; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    #cardState dl.readout, #cardPhoton dl.readout { grid-template-columns: minmax(6.5em, 1fr) auto; }
+    #cardState dl.readout dd, #cardPhoton dl.readout dd { min-width: 0; overflow-wrap: anywhere; }
+    #cardState dl.readout dt .f, #cardPhoton dl.readout dt .f { display: block; font-size: calc(12px * var(--fs, 1)); line-height: 1.3; }
+    #cardState dl.readout dt, #cardState dl.readout dd, #cardPhoton dl.readout dt, #cardPhoton dl.readout dd { padding: 2px 0; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .hs .photonbox { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 0 0; }
+    .hs .photonbox dd { margin: 0; text-align: right; color: var(--text); font-variant-numeric: tabular-nums; }
+    table.lines { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.lines th { color: var(--muted); font-weight: 600; text-align: right; padding: 2px 4px; border-bottom: 1px solid var(--border); }
+    table.lines th:first-child, table.lines td:first-child { text-align: left; }
+    table.lines td { text-align: right; padding: 2px 4px; border-bottom: 1px solid var(--grid); }
+    table.lines td .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    .legend .sw-uv, .legend .sw-ir { width: 18px; height: 10px; border-radius: 2px; }
+    .legend .sw-uv { background: repeating-linear-gradient(135deg, var(--hs-uv, #8a7fb0) 0 3px, var(--hs-uv2, rgba(138,127,176,.35)) 3px 6px) !important; }
+    .legend .sw-ir { background: repeating-linear-gradient(135deg, var(--hs-ir, #8a5a50) 0 3px, var(--hs-ir2, rgba(138,90,80,.35)) 3px 6px) !important; }
+    .legend .arrow-dn, .legend .arrow-up { width: 0 !important; height: 0 !important; background: none !important; border-left: 5px solid transparent; border-right: 5px solid transparent; border-radius: 0 !important; margin: 0 8px 0 4px !important; }
+    .legend .arrow-dn { border-top: 9px solid var(--text); }
+    .legend .arrow-up { border-bottom: 9px solid var(--text); }
+    .notes .tablewrap { overflow-x: auto; margin: 8px 0; }
+    .notes table.series { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); min-width: 100%; font-variant-numeric: tabular-nums; }
+    .notes table.series th, .notes table.series td { padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    .notes table.series th { color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Atomic structure"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 原子結構</nav>
+      <h1 data-en="Hydrogen Energy Levels and Spectra">氫原子能階與光譜</h1>
+      <p data-en="Bohr’s model of the hydrogen atom: tap an energy level to make the electron jump. Falling to a lower level emits a photon whose energy is exactly the energy difference; jumping up needs a photon of exactly the right energy. Collect the Lyman, Balmer and Paschen lines, fire photons of your own, ionise the atom, and compare the emission spectrum of a discharge tube with the absorption spectrum of white light passing through hydrogen.">波耳的氫原子模型：點選能階讓電子躍遷。掉到較低能階時放出一個光子，能量剛好等於能階差；往上跳則需要吸收能量剛好的光子。收集來曼系、巴耳末系、帕申系的譜線，自己設定光子射向原子、把原子游離，並比較放電管的發射光譜與白光穿過氫氣的吸收光譜。</p>
+    </header>
+
+    <div class="lab hs">
+      <div class="stage">
+        <canvas id="cv" aria-label="氫原子模擬畫布：左邊是能階圖，右邊是波耳軌道（或放電管、白光吸收裝置），下方是全波段光譜與可見光放大光譜" data-en-aria-label="Hydrogen atom simulation: the energy-level diagram on the left, the Bohr orbits (or the discharge tube, or the white-light absorption set-up) on the right, and the full spectrum with a magnified visible spectrum below"></canvas>
+        <div class="lvbar" id="lvbar" role="group" aria-labelledby="lvlabel">
+          <span class="lvlabel" id="lvlabel" data-en="Jump to:">躍遷到：</span>
+          <button type="button" data-n="1">n = 1<small>−13.6 eV</small></button>
+          <button type="button" data-n="2">n = 2<small>−3.40</small></button>
+          <button type="button" data-n="3">n = 3<small>−1.51</small></button>
+          <button type="button" data-n="4">n = 4<small>−0.85</small></button>
+          <button type="button" data-n="5">n = 5<small>−0.54</small></button>
+          <button type="button" data-n="6">n = 6<small>−0.38</small></button>
+          <button type="button" data-n="7">n = 7<small>−0.28</small></button>
+          <button type="button" data-n="inf" data-en-html="∞<small>ionise</small>">∞<small>游離</small></button>
+        </div>
+        <div class="playbar">
+          <button id="fire" type="button" class="primary">射入光子</button>
+          <button id="play" type="button" class="primary" hidden data-en="Pause the discharge">暫停放電</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除光譜上累積的譜線與統計，電子回到基態，滑桿設定不變" data-en-title="Clear the accumulated spectral lines and counts and return the electron to the ground state; slider settings are kept">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;arrow-dn&quot;></i>Emission (down)"><i class="arrow-dn"></i>發射（往下）</span>
+          <span data-en-html="<i class=&quot;arrow-up&quot;></i>Absorption (up, dashed)"><i class="arrow-up"></i>吸收（往上，虛線）</span>
+          <span data-en-html="<i class=&quot;sw-uv&quot;></i>Ultraviolet (false colour)"><i class="sw-uv"></i>紫外線（假色）</span>
+          <span data-en-html="<i class=&quot;sw-ir&quot;></i>Infrared (false colour)"><i class="sw-ir"></i>紅外線（假色）</span>
+        </div>
+        <p class="hint" data-en-html="The energy axis and the orbit radii (r ∝ n<sup>2</sup>) are drawn to scale; the sizes of the nucleus and electron and the shape of the photon wave packets are only schematic. The electron’s orbit is shown about 8 × 10<sup>15</sup> times slower than in reality. All wavelengths are <strong>vacuum</strong> wavelengths (in air they are about 0.03% shorter, e.g. Hα: 656.47 nm in vacuum, 656.28 nm in air).">能量軸與軌道半徑（r ∝ n<sup>2</sup>）都依比例；原子核與電子的大小、光子波包的形狀只是示意。電子繞行的動畫比實際慢約 8 × 10<sup>15</sup> 倍。所有波長都是<strong>真空中</strong>的值（在空氣中約短 0.03%，例如 Hα：真空 656.47 nm，空氣中 656.28 nm）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="seg3" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" id="modeAtom" aria-pressed="true" data-en="One atom">單一原子</button>
+            <button type="button" id="modeTube" aria-pressed="false" data-en="Discharge tube">放電管</button>
+            <button type="button" id="modeAbs" aria-pressed="false" data-en="White light">白光吸收</button>
+          </div>
+          <p class="hint" id="modeHint"></p>
+        </section>
+
+        <section class="card" id="cardGun">
+          <h2 data-en="Fire a photon">射入光子</h2>
+          <p class="seg-label" id="gunByLabel" data-en="Set the photon by:">設定光子的：</p>
+          <div class="seg2" role="group" aria-labelledby="gunByLabel">
+            <button type="button" id="byE" aria-pressed="true" data-en="Energy E">能量 E</button>
+            <button type="button" id="byL" aria-pressed="false" data-en="Wavelength λ">波長 λ</button>
+          </div>
+          <div class="slider" id="boxE"><label for="gE" data-en="Photon energy E">光子能量 E</label><output id="gEo"></output>
+            <input id="gE" type="range" min="0" max="1000" step="1" value="884" data-decimals="4"></div>
+          <div class="slider" id="boxL" hidden><label for="gL" data-en="Wavelength λ (vacuum)">波長 λ（真空）</label><output id="gLo"></output>
+            <input id="gL" type="range" min="0" max="1000" step="1" value="116" data-decimals="2"></div>
+          <dl class="photonbox" id="gunInfo"></dl>
+          <div class="btnrow"><button type="button" id="fire2" class="primary" data-en="Fire the photon">射入光子</button></div>
+          <p class="hint" data-en="Tap a number to type an exact value. The atom absorbs the photon only if its energy matches an energy-level difference (within ±0.005 eV), or if it is enough to ionise the atom.">點一下數字可直接輸入精確數值。只有能量剛好等於能階差（誤差 ±0.005 eV 內），或足以讓原子游離的光子才會被吸收。</p>
+        </section>
+
+        <section class="card" id="cardTube" hidden>
+          <h2 data-en="Discharge tube">放電管</h2>
+          <div class="slider"><label for="tK" data-en="Kinetic energy of the colliding electrons K">撞擊電子的動能 K</label><output id="tKo"></output>
+            <input id="tK" type="range" min="8" max="13.5" step="0.01" value="13.4" data-decimals="3"></div>
+          <p class="hint" data-en="Fast electrons in the tube collide with hydrogen atoms in the ground state. An electron can only lift an atom to a level whose energy above the ground state is at most K. Changing K starts a new count.">放電管中的快速電子撞擊基態的氫原子；只有比基態高出不超過 K 的能階才能被激發。改變 K 會重新計數。</p>
+          <dl class="readout">
+            <dt data-en="Collisions">撞擊次數</dt><dd id="tImp">—</dd>
+            <dt data-en="Atoms excited">被激發的原子</dt><dd id="tExc">—</dd>
+            <dt data-en="Photons emitted">放出的光子</dt><dd id="tPh">—</dd>
+            <dt data-en="Highest level reached">最高可激發到</dt><dd id="tTop">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" id="cardLines" hidden>
+          <h2 data-en="Photons counted in each line">各譜線的光子數</h2>
+          <table class="lines">
+            <thead><tr><th data-en="Line">譜線</th><th data-en="λ (nm)">λ (nm)</th><th data-en="Count">光子數</th><th data-en="Share">比例</th><th data-en="Expected">理論</th></tr></thead>
+            <tbody id="linesBody"></tbody>
+          </table>
+          <p class="hint" data-en="“Share” is the fraction of all photons counted; “Expected” is the exact average from the transition probabilities (NIST). The more photons, the closer they agree.">「比例」是占全部光子的比例；「理論」是由躍遷機率（NIST）算出的精確平均值。光子越多，兩者越接近。</p>
+        </section>
+
+        <section class="card" id="cardAbs" hidden>
+          <h2 data-en="White light through hydrogen">白光穿過氫氣</h2>
+          <p class="seg-label" id="gasLabel" data-en="The hydrogen gas is:">氫氣的狀態：</p>
+          <div class="seg2" role="group" aria-labelledby="gasLabel">
+            <button type="button" id="gasCold" aria-pressed="true" data-en="Cool (room temperature)">冷（室溫）</button>
+            <button type="button" id="gasHot" aria-pressed="false" data-en="Hot (≈ 10 000 K)">熱（約 10000 K）</button>
+          </div>
+          <p class="hint" id="absHint"></p>
+        </section>
+
+        <section class="card" id="cardState">
+          <h2 data-en="The electron now">電子目前的狀態</h2>
+          <dl class="readout">
+            <dt data-en="Level n">能階 n</dt><dd id="sN">—</dd>
+            <dt data-en-html="Energy <span class=&quot;f&quot;>E = −13.6/n<sup>2</sup> eV</span>">能量 <span class="f">E = −13.6/n<sup>2</sup> eV</span></dt><dd id="sE">—</dd>
+            <dt data-en-html="Orbit radius <span class=&quot;f&quot;>r = n<sup>2</sup> × 0.529 Å</span>">軌道半徑 <span class="f">r = n<sup>2</sup> × 0.529 Å</span></dt><dd id="sR">—</dd>
+            <dt data-en-html="Speed <span class=&quot;f&quot;>v = 2.19 × 10<sup>6</sup>/n m/s</span>">速率 <span class="f">v = 2.19 × 10<sup>6</sup>/n m/s</span></dt><dd id="sV">—</dd>
+            <dt data-en-html="Angular momentum <span class=&quot;f&quot;>L = nh/2π</span>">角動量 <span class="f">L = nh/2π</span></dt><dd id="sL">—</dd>
+            <dt data-en="Time for one orbit T">繞一圈的時間 T</dt><dd id="sT">—</dd>
+            <dt data-en-html="Matter wavelength <span class=&quot;f&quot;>λ = 2πr/n</span>">物質波波長 <span class="f">λ = 2πr/n</span></dt><dd id="sDB">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" id="cardPhoton">
+          <h2 data-en="Last photon">最近一個光子</h2>
+          <dl class="readout">
+            <dt data-en="Transition">躍遷</dt><dd id="pTr">—</dd>
+            <dt data-en-html="Energy <span class=&quot;f&quot;>ΔE = hf</span>">能量 <span class="f">ΔE = hf</span></dt><dd id="pE">—</dd>
+            <dt data-en="Frequency f">頻率 f</dt><dd id="pF">—</dd>
+            <dt data-en-html="Wavelength <span class=&quot;f&quot;>λ = hc/ΔE</span>">波長 <span class="f">λ = hc/ΔE</span></dt><dd id="pL">—</dd>
+            <dt data-en="Series and line">線系與譜線</dt><dd id="pS">—</dd>
+            <dt data-en="Region">波段</dt><dd id="pR">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" id="cardShow">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showWave" type="checkbox" checked><span data-en="Matter wave (standing wave)">物質波（駐波）</span></label>
+            <label><input id="showZoom" type="checkbox" checked><span data-en="Zoom the orbit view automatically">軌道畫面自動縮放</span></label>
+          </div>
+          <p class="hint" data-en="With automatic zoom the view follows the electron’s orbit; the scale bar shows the current scale. Tap an orbit to make the electron jump there.">自動縮放時畫面會跟著電子的軌道放大縮小，比例尺顯示目前的比例。點一下軌道也能讓電子躍遷到那一層。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Bohr’s model of hydrogen">波耳的氫原子模型</h3>
+      <p data-en-html="In 1913 Bohr proposed that the electron moves on circular orbits around the proton, held by the Coulomb force, but only on orbits whose angular momentum is a whole number of \(h/2\pi\). On these <strong>stationary orbits</strong> the electron does not radiate; light is emitted or absorbed only when it jumps between orbits.">1913 年，波耳提出：電子受質子的庫侖力吸引做圓周運動，但只能在角動量為 \(h/2\pi\) 整數倍的軌道上。在這些<strong>穩定軌道</strong>上電子不會輻射；只有在軌道之間躍遷時才放出或吸收光。</p>
+      <div class="formula">
+        \[ \frac{ke^{2}}{r^{2}} = \frac{mv^{2}}{r}, \qquad L = mvr = n\frac{h}{2\pi}\quad(n = 1, 2, 3, \dots) \]
+      </div>
+      <p data-en="Solving these two equations together gives the radius, speed and energy of the n-th orbit:">兩式聯立，得到第 n 個軌道的半徑、速率與能量：</p>
+      <div class="formula">
+        \[ r_n = n^{2} a_0 = n^{2}\times 0.529\ \text{Å}, \qquad v_n = \frac{2.19\times10^{6}}{n}\ \mathrm{m/s}, \qquad E_n = -\frac{ke^{2}}{2r_n} = -\frac{13.6\ \mathrm{eV}}{n^{2}} \]
+      </div>
+      <p data-en-html="The kinetic energy is \(-E_n\) and the potential energy is \(2E_n\). The energy is negative because the electron is bound; \(E = 0\) (\(n \to \infty\)) means the electron has just been freed. The <strong>ionisation energy</strong> of hydrogen in the ground state is therefore 13.6 eV. In de Broglie’s picture the condition \(L = nh/2\pi\) means that exactly \(n\) matter wavelengths fit around the orbit: \(2\pi r_n = n\lambda\) (turn on “Matter wave”).">動能為 \(-E_n\)、位能為 \(2E_n\)。能量為負，表示電子被束縛；\(E = 0\)（\(n \to \infty\)）代表電子剛好掙脫。所以基態氫原子的<strong>游離能</strong>是 13.6 eV。用德布羅意的物質波來看，\(L = nh/2\pi\) 等於說軌道一圈剛好容納 \(n\) 個物質波波長：\(2\pi r_n = n\lambda\)（勾選「物質波」觀察）。</p>
+
+      <h3 data-en="Photons and the Rydberg formula">光子與芮得柏公式</h3>
+      <p data-en-html="When the electron drops from level n<sub>i</sub> to n<sub>f</sub> it emits one photon carrying the energy difference; to go up it must absorb a photon with exactly that energy:">電子由 n<sub>i</sub> 掉到 n<sub>f</sub> 時放出一個光子，帶走兩能階的能量差；要往上跳，則必須吸收能量剛好相同的光子：</p>
+      <div class="formula">
+        \[ \Delta E = E_{i} - E_{f} = hf = \frac{hc}{\lambda}, \qquad \frac{1}{\lambda} = R_{\mathrm{H}}\left(\frac{1}{n_f^{2}} - \frac{1}{n_i^{2}}\right), \qquad R_{\mathrm{H}} = 1.0968\times10^{7}\ \mathrm{m^{-1}} \]
+      </div>
+      <p data-en-html="Lines that end on the same lower level form a series. As n<sub>i</sub> → ∞ the lines crowd together towards the series limit, whose photon energy equals the ionisation energy of the lower level.">落到同一個能階的譜線組成一個線系。n<sub>i</sub> 越大，譜線越擠，最後趨近「系限」；系限光子的能量剛好等於該能階的游離能。</p>
+      <div class="tablewrap">
+        <table class="series">
+          <thead><tr><th data-en="Series">線系</th><th data-en-html="n<sub>f</sub>">n<sub>f</sub></th><th data-en="Region">波段</th><th data-en="First line">第一條線</th><th data-en="Series limit">系限</th></tr></thead>
+          <tbody>
+            <tr><td data-en="Lyman">來曼系</td><td>1</td><td data-en="Ultraviolet">紫外線</td><td>Lyα 121.57 nm</td><td>91.18 nm</td></tr>
+            <tr><td data-en="Balmer">巴耳末系</td><td>2</td><td data-en="Visible (+ near UV)">可見光（與近紫外）</td><td>Hα 656.47 nm</td><td>364.70 nm</td></tr>
+            <tr><td data-en="Paschen">帕申系</td><td>3</td><td data-en="Infrared">紅外線</td><td>Paα 1875.6 nm</td><td>820.6 nm</td></tr>
+            <tr><td data-en="Brackett">布拉克系</td><td>4</td><td data-en="Infrared">紅外線</td><td>Brα 4052 nm</td><td>1459 nm</td></tr>
+            <tr><td data-en="Pfund">蒲芬系</td><td>5</td><td data-en="Infrared">紅外線</td><td>Pfα 7460 nm</td><td>2279 nm</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p data-en-html="The four visible Balmer lines are Hα 656 nm (red), Hβ 486 nm (blue-green), Hγ 434 nm (blue-violet) and Hδ 410 nm (violet). <strong>Vacuum or air?</strong> Light travels a little more slowly in air (\(n \approx 1.00028\)), so its wavelength there is about 0.03% shorter. Many textbooks quote air wavelengths (Hα 656.3 nm); this simulation always uses vacuum wavelengths (Hα 656.47 nm), and shows the air value alongside. Lyman lines are in the “vacuum ultraviolet”: air absorbs them, so they can only be observed in a vacuum spectrometer.">可見光的四條巴耳末線是 Hα 656 nm（紅）、Hβ 486 nm（青藍）、Hγ 434 nm（藍紫）、Hδ 410 nm（紫）。<strong>真空還是空氣？</strong>光在空氣中稍慢（\(n \approx 1.00028\)），波長約短 0.03%。許多課本列的是空氣中的波長（Hα 656.3 nm）；本模擬一律用真空波長（Hα 656.47 nm），並在旁邊附上空氣中的值。來曼系屬於「真空紫外線」，會被空氣吸收，只能用真空光譜儀觀測。</p>
+
+      <h3 data-en="Absorption and ionisation">吸收與游離</h3>
+      <p data-en-html="An atom absorbs a photon only if the photon’s energy matches the difference between its present level and a higher one; any other photon passes straight through. A photon with more energy than the ionisation energy \(|E_n|\) can always be absorbed: the electron is freed and carries off the extra energy as kinetic energy \(K = hf - |E_n|\). Above \(E = 0\) the energies are continuous. The reverse process, a free electron captured by the proton, emits a photon of energy \(K + |E_n|\) (a continuous spectrum beyond each series limit).">原子只吸收能量剛好等於「目前能階與某個較高能階之差」的光子，其他光子直接穿過。能量超過游離能 \(|E_n|\) 的光子則一定能被吸收：電子掙脫原子，多出的能量變成動能 \(K = hf - |E_n|\)；\(E > 0\) 的能量是連續的。反過來，自由電子被質子捕獲時放出能量 \(K + |E_n|\) 的光子（在系限之外形成連續光譜）。</p>
+
+      <h3 data-en="Emission and absorption spectra">發射光譜與吸收光譜</h3>
+      <p data-en="A glowing gas (for example in a discharge tube) gives an emission spectrum of bright lines on a dark background. White light passing through a gas gives an absorption spectrum: dark lines on a continuous spectrum, at exactly the same wavelengths as the bright lines, because each line is the same energy difference. But a gas can only absorb from the levels its atoms are actually in. Cool hydrogen has almost all its atoms in n = 1, so it absorbs only the Lyman lines (ultraviolet) and is transparent to visible light. Dark Balmer lines appear only when some atoms are in n = 2 — in hot gas such as the atmosphere of a star at about 10 000 K.">發光的氣體（例如放電管）產生發射光譜：暗背景上的明線。白光穿過氣體則產生吸收光譜：連續光譜上的暗線，位置與明線完全相同，因為它們對應同樣的能階差。但氣體只能從原子實際所在的能階吸收。冷的氫氣幾乎所有原子都在 n = 1，只會吸收來曼系（紫外線），對可見光是透明的；要原子有一部分在 n = 2——例如約 10000 K 的恆星大氣——才看得到巴耳末暗線。</p>
+
+      <h3 data-en="The discharge tube">放電管</h3>
+      <p data-en-html="In a discharge tube, electrons accelerated by the voltage collide with hydrogen atoms. A collision can lift an atom from n = 1 to level n only if the electron’s kinetic energy \(K\) is at least \(E_n - E_1\): 10.2 eV for n = 2, 12.09 eV for n = 3 (the first visible line, Hα, needs at least this), 12.75 eV for n = 4, and so on — the same idea as the Franck–Hertz experiment. An excited atom then falls back within nanoseconds, often in several steps (a <strong>cascade</strong>). Which way it goes is decided by chance, with probabilities given by the Einstein coefficients \(A\):">放電管中，被電壓加速的電子撞擊氫原子。只有當電子的動能 \(K\) 至少等於 \(E_n - E_1\) 時，才能把原子由 n = 1 激發到 n：n = 2 需要 10.2 eV、n = 3 需要 12.09 eV（第一條可見光 Hα 至少要這麼多）、n = 4 需要 12.75 eV……這就是夫蘭克－赫茲實驗的想法。被激發的原子在幾奈秒內掉回來，常常分好幾步（<strong>串級</strong>）；往哪一層掉由機率決定，機率正比於愛因斯坦係數 \(A\)：</p>
+      <div class="formula">
+        \[ P(n \to n') = \frac{A_{n n'}}{\sum_{k<n} A_{n k}}, \qquad P(3\to2) = \frac{4.41\times10^{7}}{5.58\times10^{7} + 4.41\times10^{7}} \approx 44\% \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Bigger jumps, more energetic photons</strong>: from n = 2 go up to n = 3, 4, 5, 6 and fall back each time. The Balmer lines move from red to violet and crowd towards 364.7 nm."><strong>跳得越遠，光子能量越大</strong>：從 n = 2 依序跳到 n = 3、4、5、6 再掉回來，巴耳末線由紅變紫，越來越擠，趨近 364.7 nm。</li>
+        <li data-en-html="<strong>Energy is conserved in a cascade</strong>: from n = 4, fall 4 → 3 → 2 → 1 and add the three photon energies (0.66 + 1.89 + 10.20 eV); they equal the single 4 → 1 photon, 12.75 eV."><strong>串級時能量守恆</strong>：從 n = 4 依序掉到 3、2、1，三個光子的能量加起來（0.66 + 1.89 + 10.20 eV）等於直接 4 → 1 的 12.75 eV。</li>
+        <li data-en-html="<strong>Only exact energies are absorbed</strong>: fire a 10.00 eV photon at the ground state — it passes through. Try 10.20 eV."><strong>只吸收剛好的能量</strong>：用 10.00 eV 的光子射向基態原子，光子直接穿過；改成 10.20 eV 試試看。</li>
+        <li data-en-html="<strong>The same photon, different atoms</strong>: a 486 nm (Hβ) photon passes through a ground-state atom but is absorbed by an atom in n = 2."><strong>同一個光子，不同的原子</strong>：486 nm（Hβ）的光子穿過基態原子，卻會被 n = 2 的原子吸收。</li>
+        <li data-en-html="<strong>Orbits grow as \(n^2\)</strong>: watch the scale bar as the electron jumps; the n = 7 orbit is 49 times as large as n = 1, and the electron moves 7 times more slowly."><strong>軌道大小 \(\propto n^2\)</strong>：電子躍遷時注意比例尺；n = 7 的軌道是 n = 1 的 49 倍大，速率只有 1/7。</li>
+        <li data-en-html="<strong>Discharge thresholds</strong>: in the discharge tube, lower K below 12.09 eV — the tube goes dark to the eye even though it still emits Lyman α. Below 10.2 eV nothing at all is emitted."><strong>放電管的門檻</strong>：把 K 降到 12.09 eV 以下，管子在肉眼看來變暗了，雖然仍放出來曼 α 紫外線；降到 10.2 eV 以下則完全不發光。</li>
+        <li data-en-html="<strong>Cool gas is transparent to visible light</strong>: in “White light”, compare cool and hot hydrogen. The dark Balmer lines appear only in the hot gas, exactly where the bright lines of the discharge tube are."><strong>冷氫氣對可見光透明</strong>：在「白光吸收」比較冷、熱兩種氫氣；巴耳末暗線只在熱氫氣出現，位置正是放電管明線的位置。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Energies use the hydrogen Rydberg constant \(R_{\mathrm{H}} = R_\infty/(1 + m_e/m_p) = 1.09678\times10^{7}\ \mathrm{m^{-1}}\), which allows for the motion of the proton (reduced mass), so \(E_1 = -13.598\ \mathrm{eV}\) and the wavelengths agree with measured values to about 0.01 nm. Constants are CODATA 2018. The orbit radius is the electron–proton distance \(n^{2}a_0(1 + m_e/m_p)\) and the speed is \(\alpha c/n\); the 0.05% correction does not show at the displayed precision.">能量使用考慮質子運動（約化質量）的氫原子芮得柏常數 \(R_{\mathrm{H}} = R_\infty/(1 + m_e/m_p) = 1.09678\times10^{7}\ \mathrm{m^{-1}}\)，所以 \(E_1 = -13.598\ \mathrm{eV}\)，算出的波長與實測值相差約 0.01 nm；常數取自 CODATA 2018。軌道半徑為電子與質子的距離 \(n^{2}a_0(1 + m_e/m_p)\)、速率為 \(\alpha c/n\)，0.05% 的修正在顯示的位數下看不出來。</li>
+        <li data-en-html="Air wavelengths use the Edlén (1966) formula for standard air, the same as the NIST Atomic Spectra Database.">空氣中的波長用標準空氣的 Edlén（1966）公式換算，與 NIST 原子光譜資料庫相同。</li>
+        <li data-en-html="Real spectral lines are extremely narrow (about \(10^{-4}\) eV at room temperature). To make the experiment playable, a photon is absorbed if its energy is within ±0.005 eV of an energy difference. Levels up to n = 60 are included for absorption; the diagram labels n = 1 to 7.">真實的譜線非常窄（室溫下寬度約 \(10^{-4}\) eV）。為了方便操作，本模擬只要光子能量與能階差相差在 ±0.005 eV 以內就算吻合。吸收時考慮到 n = 60 的能階；能階圖只標示 n = 1 到 7。</li>
+        <li data-en-html="Transition probabilities are the Einstein \(A\) coefficients of the NIST Atomic Spectra Database (Wiese &amp; Fuhr 2009) for n ≤ 7, averaged over the sublevels with their statistical weights. The page’s tests recompute them from the exact hydrogen wavefunctions.">躍遷機率採用 NIST 原子光譜資料庫（Wiese &amp; Fuhr 2009）n ≤ 7 的愛因斯坦 \(A\) 係數（各次能階依統計權重平均）；本頁的測試以精確的氫原子波函數重新計算驗證。</li>
+        <li data-en-html="Discharge tube (simplified): every collision with enough energy excites the atom; the level reached is chosen with probability proportional to the oscillator strength \(f_{1n}\) (the high-energy Born approximation). Levels n ≥ 8, which together have less than 3% of the oscillator strength, are left out. Each excited atom then cascades down at random according to the \(A\) coefficients, and every photon is counted. The relative line strengths therefore depend on this excitation model; the branching at each level is exact.">放電管（簡化模型）：能量足夠的撞擊都會激發原子；激發到哪一層的機率正比於振子強度 \(f_{1n}\)（高能電子的玻恩近似），n ≥ 8 的能階（振子強度合計不到 3%）省略。被激發的原子依 \(A\) 係數隨機串級掉回基態，每個光子都被計數。所以各譜線的相對強度取決於這個激發模型，但每一層往下掉的分支比是精確的。</li>
+        <li data-en-html="Colours: visible wavelengths are converted to screen colours with the CIE 1931 colour-matching functions (analytic fit of Wyman, Sloan &amp; Shirley 2013). Ultraviolet and infrared are invisible and are drawn in a marked false colour. The tube’s glow is the mixture of its visible lines weighted by their photon energy.">顏色：可見光的波長用 CIE 1931 配色函數（Wyman、Sloan 與 Shirley 2013 的解析近似）換成螢幕顏色；紫外線、紅外線看不見，以標明的假色表示。放電管的光色是各條可見光譜線依光子能量加權混合的顏色。</li>
+        <li data-en="Bohr’s model gets the energy levels of hydrogen right, but electrons do not really move on circular orbits; quantum mechanics replaces the orbits with probability clouds. The orbits here are the picture of Bohr’s model.">波耳模型算出的氫原子能階是正確的，但電子並不是真的在圓形軌道上運動；量子力學以機率分布（電子雲）取代軌道。這裡畫的是波耳模型的圖像。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111220"></script>
+  <script src="js/hydrogen-spectrum-core.js?v=202611111220"></script>
+  <script src="js/numinput.js?v=202611111220"></script>
+  <script src="js/hydrogen-spectrum.js?v=202611111220"></script>
+  <script src="js/firebase-config.js?v=202611111220"></script>
+  <script src="js/missions.js?v=202611111220" data-module="hydrogen-spectrum"></script>
+  <script src="js/missions/hydrogen-spectrum.js?v=202611111220"></script>
+  <script src="js/stats.js?v=202611111220" data-module="hydrogen-spectrum"></script>
+  <script src="js/comments.js?v=202611111220"></script>
+</body>
+</html>
