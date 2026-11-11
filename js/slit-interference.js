@@ -3,6 +3,9 @@
   'use strict';
   const SC = window.SlitCore;
   const $ = function (id) { return document.getElementById(id); };
+  const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
+  // 波長顏色名稱的英文（core 只回傳中文）
+  const COLOR_EN = { '紫光': 'violet', '藍光': 'blue', '青光': 'cyan', '綠光': 'green', '黃光': 'yellow', '橙光': 'orange', '紅光': 'red' };
   const NM = 1e-9, UM = 1e-6, MM = 1e-3;
   const ZOOMS = [2, 5, 10, 20, 30, 50, 80, 120, 200, 300, 500]; // 屏幕顯示範圍 ±Y（mm）
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11,6 +14,7 @@
     mode: 'double',  // single | double | grating
     N: 5,            // 光柵模式的狹縫數
     lam: 550,        // nm
+    white: false,    // true = 白光（各波長光強相加）
     a: 40,           // μm
     d: 120,          // μm
     L: 1,            // m
@@ -22,9 +26,16 @@
   };
 
   function slitCount() { return state.mode === 'single' ? 1 : state.mode === 'double' ? 2 : state.N; }
+  // 白光模式：讀數與級數標示以 550 nm 為參考波長，與波長有關的量另列 400 nm 與 700 nm 的值
+  const REF_NM = 550, WL_LO = 400, WL_HI = 700;
+  const SPEC = SC.whiteSpectrum(75, 380, 750, 6500); // 380–750 nm 共 75 個波長（波數等間隔），6500 K 黑體光譜加權
+  const wtmp = [0, 0, 0, 0];
   function params() {
-    return { N: slitCount(), a: state.a * UM, d: state.d * UM, lambda: state.lam * NM, L: state.L };
+    return { N: slitCount(), a: state.a * UM, d: state.d * UM, lambda: (state.white ? REF_NM : state.lam) * NM, L: state.L };
   }
+  function withLam(p, nm) { return Object.assign({}, p, { lambda: nm * NM }); }
+  /** 屏幕上 y 處的相對光強：單色光或白光總和 */
+  function Itot(p, y) { return state.white ? SC.whiteAt(p, y, SPEC, wtmp)[0] : SC.intensity(p, y); }
   function halfRange() { return ZOOMS[state.zoom] * MM; }
 
   // ---------- 顏色 ----------
@@ -38,6 +49,21 @@
   const DARK = { bg: '#05080a', label: 'rgba(232, 238, 240, 0.9)', dim: 'rgba(200, 212, 216, 0.62)', barrier: '#7d8a8f', screen: '#cfd6d9' };
 
   function waveRGB() { return SC.wavelengthToRGB(state.lam); }
+  /** lab.css 色彩代號（#rgb、#rrggbb 或 rgb()）→ [r, g, b] */
+  function tokenRGB(name) {
+    const v = (colors[name] || '').trim();
+    let m = v.match(/^#([0-9a-f]{3,8})$/i);
+    if (m) {
+      let h = m[1];
+      if (h.length < 6) h = h.split('').map(function (c) { return c + c; }).join('');
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    m = v.match(/rgba?\(([^)]+)\)/);
+    if (m) return m[1].split(',').slice(0, 3).map(function (x) { return parseFloat(x); });
+    return [128, 128, 128];
+  }
+  /** 畫布背景是否為深色（深色模式下光暈稍強、淺色模式下陰影稍強） */
+  function darkCanvas() { const c = tokenRGB('canvas-bg'); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] < 110; }
   function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
 
   // ---------- 數字格式（不使用上標數字字元） ----------
@@ -74,10 +100,17 @@
   const fieldImg = document.createElement('canvas');
   const fieldCtx = fieldImg.getContext('2d');
 
+  function lamPxOf(nm, s) { return (7 + 7 * (nm - 380) / 370) * Math.max(0.75, s); }
+  // 白光示意圖：用藍、綠、紅三個波長的波疊加（顏色取接近原色，三色波峰重疊處為白色）
+  const WHITE_COMPS = [
+    { nm: 460, col: [70, 110, 255] },
+    { nm: 535, col: [70, 235, 70] },
+    { nm: 640, col: [255, 70, 60] }
+  ];
   function sceneGeometry() {
     const W = scene.w, H = scene.h;
     const s = H / 400;
-    const lamPx = (7 + 7 * (state.lam - 380) / 370) * Math.max(0.75, s);
+    const lamPx = lamPxOf(state.white ? REF_NM : state.lam, s);
     const N = slitCount();
     let dPx = 0, aPx;
     if (N === 1) {
@@ -92,56 +125,84 @@
     return { W: W, H: H, bx: Math.round(W * 0.2), sx: W - 16, lamPx: lamPx, dPx: dPx, aPx: aPx, N: N, cy: H / 2 };
   }
 
+  // cos、sin 查表（示意圖用，相位誤差 < 0.002 rad，肉眼看不出差別）
+  const LUT_N = 4096, LUT_K = LUT_N / (2 * Math.PI);
+  const COS = new Float32Array(LUT_N), SIN = new Float32Array(LUT_N);
+  for (let i = 0; i < LUT_N; i++) { COS[i] = Math.cos(i / LUT_K); SIN[i] = Math.sin(i / LUT_K); }
+
   function computeField() {
     const g = sceneGeometry();
     const gw = Math.ceil(g.W / CELL), gh = Math.ceil(g.H / CELL);
-    const k = 2 * Math.PI / g.lamPx;
-    // 每條狹縫切成 ns 個子波源，間距不超過 λ/3，避免出現假的「光柵」繞射
-    let ns = Math.max(1, Math.ceil(g.aPx / (g.lamPx / 3)));
-    ns = Math.min(ns, 12, Math.max(2, Math.floor(72 / g.N)));
-    if (g.aPx < g.lamPx / 3) ns = 1;
-    const src = [];
+    const s = g.H / 400;
+    const specs = state.white
+      ? WHITE_COMPS.map(function (c) { return { lamPx: lamPxOf(c.nm, s), col: c.col, scale: 0.62 }; })
+      : [{ lamPx: g.lamPx, col: null, scale: 1 }];
+    const comps = computeComponents(g, gw, gh, specs);
     const slits = [];
+    for (let i = 0; i < g.N; i++) slits.push(g.cy + (i - (g.N - 1) / 2) * g.dPx);
+    fieldImg.width = gw; fieldImg.height = gh;
+    field = { gw: gw, gh: gh, bxCell: Math.ceil(g.bx / CELL), comps: comps, g: g, slits: slits,
+      img: fieldCtx.createImageData(gw, gh) };
+  }
+
+  // 各波長成分的子波疊加振幅（複數 re + i·im）；所有成分共用同一組子波源，一次算完
+  // spec.col 為 null 時用目前波長的顏色
+  function computeComponents(g, gw, gh, specs) {
+    const nc = specs.length;
+    const minLam = Math.min.apply(null, specs.map(function (c) { return c.lamPx; }));
+    // 每條狹縫切成 ns 個子波源，間距不超過 λ/3，避免出現假的「光柵」繞射
+    let ns = Math.max(1, Math.ceil(g.aPx / (minLam / 3)));
+    ns = Math.min(ns, 12, Math.max(2, Math.floor(72 / g.N)));
+    if (g.aPx < minLam / 3) ns = 1;
+    const src = [];
     for (let i = 0; i < g.N; i++) {
       const c = g.cy + (i - (g.N - 1) / 2) * g.dPx;
-      slits.push(c);
       for (let j = 0; j < ns; j++) src.push(ns === 1 ? c : c - g.aPx / 2 + (j + 0.5) * g.aPx / ns);
     }
     const n = gw * gh;
-    const re = new Float32Array(n), im = new Float32Array(n), avg = new Float32Array(n);
+    const out = specs.map(function (c) {
+      return { k: 2 * Math.PI / c.lamPx, lamPx: c.lamPx, col: c.col, scale: c.scale,
+        re: new Float32Array(n), im: new Float32Array(n), avg: new Float32Array(n), norm: 0 };
+    });
+    const kk = new Float64Array(nc), sr = new Float64Array(nc), si = new Float64Array(nc);
+    for (let c = 0; c < nc; c++) kk[c] = out[c].k * LUT_K;
     const bxCell = Math.ceil(g.bx / CELL);
-    let norm = 0;
     for (let cx = bxCell; cx < gw; cx++) {
       const x = (cx + 0.5) * CELL - g.bx;
-      const dist = Math.sqrt(x + g.lamPx); // 補償 1/√r 的衰減，讓遠處也看得到波前
       for (let cy = 0; cy < gh; cy++) {
         const y = (cy + 0.5) * CELL;
-        let sr = 0, si = 0;
+        for (let c = 0; c < nc; c++) { sr[c] = 0; si[c] = 0; }
         for (let q = 0; q < src.length; q++) {
           const dy = y - src[q];
           const r = Math.sqrt(x * x + dy * dy) + 0.5;
           const w = 1 / Math.sqrt(r);
-          const ph = k * r;
-          sr += w * Math.cos(ph);
-          si += w * Math.sin(ph);
+          for (let c = 0; c < nc; c++) {
+            const idx = (kk[c] * r) & (LUT_N - 1); // 相位 k·r 換成查表索引（k·r > 0）
+            sr[c] += w * COS[idx];
+            si[c] += w * SIN[idx];
+          }
         }
         const o = cy * gw + cx;
-        re[o] = sr * dist; im[o] = si * dist;
-        const m2 = re[o] * re[o] + im[o] * im[o];
-        if (x > 2 * g.lamPx && m2 > norm) norm = m2;
+        for (let c = 0; c < nc; c++) {
+          const f = out[c];
+          const dist = Math.sqrt(x + f.lamPx); // 補償 1/√r 的衰減，讓遠處也看得到波前
+          f.re[o] = sr[c] * dist; f.im[o] = si[c] * dist;
+          const m2 = f.re[o] * f.re[o] + f.im[o] * f.im[o];
+          if (x > 2 * f.lamPx && m2 > f.norm) f.norm = m2;
+        }
       }
     }
-    norm = Math.sqrt(norm) || 1;
-    for (let o = 0; o < n; o++) {
-      re[o] /= norm; im[o] /= norm;
-      avg[o] = Math.min(1, re[o] * re[o] + im[o] * im[o]);
-    }
-    fieldImg.width = gw; fieldImg.height = gh;
-    field = { gw: gw, gh: gh, bxCell: bxCell, re: re, im: im, avg: avg, k: k, g: g, slits: slits,
-      img: fieldCtx.createImageData(gw, gh) };
+    out.forEach(function (f) {
+      const norm = Math.sqrt(f.norm) || 1;
+      for (let o = 0; o < n; o++) {
+        f.re[o] /= norm; f.im[o] /= norm;
+        f.avg[o] = Math.min(1, f.re[o] * f.re[o] + f.im[o] * f.im[o]);
+      }
+    });
+    return out;
   }
 
-  let phase = 0;
+  const phases = [0, 0, 0]; // 各波長成分的相位 ωt
   function drawScene() {
     if (!scene.w) return;
     if (!field) computeField();
@@ -149,24 +210,35 @@
     ctx.setTransform(scene.dpr, 0, 0, scene.dpr, 0, 0);
 
     // 波場影像
-    const col = waveRGB();
     const img = field.img, data = img.data, gw = field.gw, gh = field.gh;
-    const cp = Math.cos(phase), sp = Math.sin(phase);
+    const comps = field.comps, nc = comps.length;
+    const cols = [], cps = [], sps = [];
+    for (let c = 0; c < nc; c++) {
+      const col = comps[c].col || waveRGB();
+      cols.push([col[0] * comps[c].scale, col[1] * comps[c].scale, col[2] * comps[c].scale]);
+      cps.push(Math.cos(phases[c])); sps.push(Math.sin(phases[c]));
+    }
     for (let cy = 0; cy < gh; cy++) {
       for (let cx = 0; cx < gw; cx++) {
         const o = cy * gw + cx;
-        let b;
-        if (cx < field.bxCell) {
-          // 入射的平面波：cos(k(x − x_b) − ωt)
-          const v = Math.cos(field.k * ((cx + 0.5) * CELL - g.bx) - phase);
-          b = 0.85 * Math.max(0, v) + 0.22;
-        } else {
-          const v = field.re[o] * cp + field.im[o] * sp; // Re(A e^(−iωt))
-          b = 0.85 * Math.max(0, v) + 0.22 * field.avg[o];
+        let R = 0, G = 0, B = 0;
+        for (let c = 0; c < nc; c++) {
+          const f = comps[c];
+          let b;
+          if (cx < field.bxCell) {
+            // 入射的平面波：cos(k(x − x_b) − ωt)
+            const v = Math.cos(f.k * ((cx + 0.5) * CELL - g.bx) - phases[c]);
+            // 白光的入射光：三色以較柔和的波峰疊在明亮的白色光束上
+            b = nc > 1 ? 0.5 * Math.max(0, v) + 0.42 : 0.85 * Math.max(0, v) + 0.22;
+          } else {
+            const v = f.re[o] * cps[c] + f.im[o] * sps[c]; // Re(A e^(−iωt))
+            b = 0.85 * Math.max(0, v) + 0.22 * f.avg[o];
+          }
+          if (b > 1) b = 1;
+          R += cols[c][0] * b; G += cols[c][1] * b; B += cols[c][2] * b;
         }
-        if (b > 1) b = 1;
         const p = o * 4;
-        data[p] = col[0] * b; data[p + 1] = col[1] * b; data[p + 2] = col[2] * b; data[p + 3] = 255;
+        data[p] = R; data[p + 1] = G; data[p + 2] = B; data[p + 3] = 255; // Uint8ClampedArray 自動截在 255
       }
     }
     fieldCtx.putImageData(img, 0, 0);
@@ -174,6 +246,7 @@
     ctx.fillRect(0, 0, W, H);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(fieldImg, 0, 0, gw * CELL, gh * CELL);
+    if (nc > 1) beamDepth(g, H);
 
     // 擋板與狹縫
     ctx.fillStyle = DARK.barrier;
@@ -191,11 +264,11 @@
     ctx.font = '12px system-ui, sans-serif';
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
-    label('入射光  λ = ' + state.lam + ' nm', 8, 8, DARK.label);
+    label(state.white ? T('入射光：白光', 'Incident light: white') : T('入射光', 'Incident light') + '  λ = ' + state.lam + ' nm', 8, 8, DARK.label);
     ctx.textAlign = 'right';
-    label('屏幕', g.sx - 6, 8, DARK.label);
+    label(T('屏幕', 'Screen'), g.sx - 6, 8, DARK.label);
     ctx.textAlign = 'center';
-    label(state.mode === 'single' ? '單狹縫' : state.mode === 'double' ? '雙狹縫' : slitCount() + ' 條狹縫', g.bx, H - 40, DARK.label);
+    label(state.mode === 'single' ? T('單狹縫', 'Single slit') : state.mode === 'double' ? T('雙狹縫', 'Double slit') : T(slitCount() + ' 條狹縫', slitCount() + ' slits'), g.bx, H - 40, DARK.label);
 
     // 尺寸：a 或 d
     ctx.strokeStyle = DARK.label;
@@ -227,7 +300,7 @@
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.font = '11px system-ui, sans-serif';
-    label('示意圖（未依比例）', 8, 26, DARK.dim);
+    label(T('示意圖（未依比例）', 'Schematic (not to scale)'), 8, 26, DARK.dim);
 
     function label(t, x, y, c) {
       ctx.lineWidth = 3;
@@ -260,6 +333,24 @@
     }
   }
 
+  // 白光入射光束的立體感：光束上下緣漸暗、靠近擋板處有極淡的光暈（只在入射區域，波峰位置不變）
+  function beamDepth(g, H) {
+    const ctx = scene.ctx;
+    const v = ctx.createLinearGradient(0, 0, 0, H);
+    v.addColorStop(0, 'rgba(5, 8, 10, 0.55)');
+    v.addColorStop(0.22, 'rgba(5, 8, 10, 0.08)');
+    v.addColorStop(0.5, 'rgba(5, 8, 10, 0)');
+    v.addColorStop(0.78, 'rgba(5, 8, 10, 0.08)');
+    v.addColorStop(1, 'rgba(5, 8, 10, 0.55)');
+    ctx.fillStyle = v;
+    ctx.fillRect(0, 0, g.bx, H);
+    const glow = ctx.createLinearGradient(g.bx - 26, 0, g.bx, 0);
+    glow.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    glow.addColorStop(1, 'rgba(255, 255, 255, 0.14)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(g.bx - 26, 0, 26, H);
+  }
+
   // 動畫：只在示意圖可見、分頁在前景、且使用者未暫停時執行
   let sceneVisible = true, animReq = 0, lastT = 0;
   function animLoop(t) {
@@ -269,7 +360,7 @@
     lastT = t;
     if (!field) computeField();
     const v = 34; // 波前前進速率（CSS px/s）
-    phase = (phase + field.k * v * dt) % (2 * Math.PI);
+    field.comps.forEach(function (c, i) { phases[i] = (phases[i] + c.k * v * dt) % (2 * Math.PI); });
     drawScene();
     animReq = requestAnimationFrame(animLoop);
   }
@@ -308,47 +399,39 @@
     ctx.fillStyle = colors['canvas-bg'];
     ctx.fillRect(0, 0, l.W, l.H);
 
-    // ---- 取樣：每個裝置像素一欄；條紋比像素細時，在欄內多點取樣求平均與最大、最小值 ----
-    const cols = Math.max(2, Math.round(l.PW * dpr));
-    const physPerCol = 2 * Y / cols;
-    const feature = p.N === 1 ? p.lambda * p.L / p.a : p.lambda * p.L / (p.N * p.d);
-    const K = Math.max(1, Math.min(64, Math.ceil(6 * physPerCol / feature)));
-    const resolved = feature / (2 * Y / l.PW) >= 4; // 最細的特徵至少 4 個 CSS 像素
+    // ---- 取樣（參數改變時才重算；移動游標只重畫） ----
+    const S = sampleCache(p, l, dpr, Y);
+    const cols = S.cols, physPerCol = S.physPerCol, resolved = S.resolved;
+    const avg = S.avg, mn = S.mn, mx = S.mx, mid = S.mid;
     $('densityHint').hidden = resolved;
-    const avg = new Float32Array(cols), mn = new Float32Array(cols), mx = new Float32Array(cols), mid = new Float32Array(cols);
-    for (let i = 0; i < cols; i++) {
-      const y0 = -Y + i * physPerCol;
-      let s = 0, lo = Infinity, hi = -Infinity;
-      for (let j = 0; j < K; j++) {
-        const v = SC.intensity(p, y0 + (j + 0.5) * physPerCol / K);
-        s += v; if (v < lo) lo = v; if (v > hi) hi = v;
-      }
-      avg[i] = s / K; mn[i] = lo; mx[i] = hi;
-      mid[i] = SC.intensity(p, y0 + 0.5 * physPerCol);
-    }
+    $('lgComp').hidden = !S.comp; // 白光的單色成分曲線只在條紋可分辨時畫出
 
     // ---- 屏幕（正面看）：亮度正比於 I（在線性亮度空間相乘，再轉回 sRGB） ----
     ctx.fillStyle = colors.muted;
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('屏幕上看到的條紋', l.PL, l.ST - 11);
-    const strip = document.createElement('canvas');
-    strip.width = cols; strip.height = 1;
-    const sctx = strip.getContext('2d');
-    const simg = sctx.createImageData(cols, 1);
-    for (let i = 0; i < cols; i++) {
-      simg.data[i * 4] = SC.linearToSrgb(lin[0] * avg[i]);
-      simg.data[i * 4 + 1] = SC.linearToSrgb(lin[1] * avg[i]);
-      simg.data[i * 4 + 2] = SC.linearToSrgb(lin[2] * avg[i]);
-      simg.data[i * 4 + 3] = 255;
+    ctx.fillText(T('屏幕上看到的條紋', 'Fringes seen on the screen'), l.PL, l.ST - 11);
+    const strip = S.strip;
+    if (!S.stripDone) {
+      const sctx = strip.getContext('2d');
+      const simg = sctx.createImageData(cols, 1);
+      for (let i = 0; i < cols; i++) {
+        // 白光：各波長顏色加權相加後的線性 RGB；單色光：亮度正比於 I
+        simg.data[i * 4] = SC.linearToSrgb(S.rgb ? S.rgb[i * 3] : lin[0] * avg[i]);
+        simg.data[i * 4 + 1] = SC.linearToSrgb(S.rgb ? S.rgb[i * 3 + 1] : lin[1] * avg[i]);
+        simg.data[i * 4 + 2] = SC.linearToSrgb(S.rgb ? S.rgb[i * 3 + 2] : lin[2] * avg[i]);
+        simg.data[i * 4 + 3] = 255;
+      }
+      sctx.putImageData(simg, 0, 0);
+      S.stripDone = true;
     }
-    sctx.putImageData(simg, 0, 0);
     ctx.fillStyle = DARK.bg;
     ctx.fillRect(l.PL - 4, l.ST, l.PW + 8, l.SH);
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(strip, l.PL, l.ST, l.PW, l.SH);
     ctx.imageSmoothingEnabled = true;
+    if (state.white) stripDepth(l);
     ctx.strokeStyle = colors.border;
     ctx.lineWidth = 1;
     ctx.strokeRect(l.PL - 4.5, l.ST - 0.5, l.PW + 9, l.SH + 1);
@@ -389,7 +472,7 @@
     }
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('y（mm）', l.PL + l.PW, l.H - 1);
+    ctx.fillText(T('y（mm）', 'y (mm)'), l.PL + l.PW, l.H - 1);
     ctx.strokeStyle = colors.muted;
     ctx.beginPath();
     ctx.moveTo(l.PL, l.GB + 0.5); ctx.lineTo(l.PL + l.PW, l.GB + 0.5);
@@ -407,33 +490,50 @@
       for (let i = 0; i < cols; i++) ctx.lineTo(xc(i), iy(mid[i]));
       ctx.lineTo(xc(cols - 1), l.GB);
       ctx.closePath();
-      ctx.fillStyle = rgba(col, 0.38);
-      ctx.fill();
+      if (state.white) spectralFill(S, l);
+      else { ctx.fillStyle = rgba(col, 0.38); ctx.fill(); }
+      // 白光：淡淡畫出三個單色成分各自的 I/I0
+      if (S.comp) S.comp.forEach(function (c) {
+        ctx.beginPath();
+        for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(c.v[i])); else ctx.moveTo(xc(i), iy(c.v[i])); }
+        ctx.strokeStyle = rgba(c.rgb, 0.75);
+        ctx.lineWidth = 1.1;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      });
       ctx.beginPath();
       for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(mid[i])); else ctx.moveTo(xc(i), iy(mid[i])); }
-      ctx.strokeStyle = colors.field;
-      ctx.lineWidth = 1.6;
-      ctx.lineJoin = 'round';
-      ctx.stroke();
+      if (state.white) tubeStroke(1.8);
+      else {
+        ctx.strokeStyle = colors.field;
+        ctx.lineWidth = 1.6;
+        ctx.lineJoin = 'round';
+        ctx.stroke();
+      }
     } else {
       // 條紋太密：每一欄畫出該欄內強度的最小值到最大值
       ctx.beginPath();
       for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(mx[i])); else ctx.moveTo(xc(i), iy(mx[i])); }
       for (let i = cols - 1; i >= 0; i--) ctx.lineTo(xc(i), iy(mn[i]));
       ctx.closePath();
-      ctx.fillStyle = rgba(col, 0.55);
-      ctx.fill();
+      if (state.white) spectralFill(S, l);
+      else { ctx.fillStyle = rgba(col, 0.55); ctx.fill(); }
       ctx.beginPath();
       for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(mx[i])); else ctx.moveTo(xc(i), iy(mx[i])); }
-      ctx.strokeStyle = colors.field;
-      ctx.lineWidth = 1;
-      ctx.stroke();
+      if (state.white) tubeStroke(1.2);
+      else {
+        ctx.strokeStyle = colors.field;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
     }
     // 單狹縫包絡線（虛線）
     if (state.showEnv && p.N > 1) {
       ctx.beginPath();
       for (let i = 0; i < cols; i += Math.max(1, Math.round(dpr))) {
-        const v = SC.envelope(p, -Y + (i + 0.5) * physPerCol);
+        const ye = -Y + (i + 0.5) * physPerCol;
+        const v = state.white ? SC.whiteEnvelope(p, ye, SPEC) : SC.envelope(p, ye);
         if (i) ctx.lineTo(xc(i), iy(v)); else ctx.moveTo(xc(i), iy(v));
       }
       ctx.setLineDash([6, 4]);
@@ -448,6 +548,123 @@
     updateCursorReadout(p);
   }
 
+  // ---------- 白光圖形的質感（只是疊在上面的裝飾，不改變任何位置與比例） ----------
+  // 屏幕條紋的立體感：上下緣略暗（像被照亮的屏幕表面）、頂邊 1 px 高光、底邊 1 px 暗線。
+  // 每一列都乘上同一個係數，所以沿 y 方向的相對亮度不變。
+  function stripDepth(l) {
+    const ctx = pat.ctx, x = l.PL - 4, w = l.PW + 8, y = l.ST, h = l.SH;
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, 'rgba(0, 0, 0, 0.30)');
+    g.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
+    g.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    ctx.fillRect(x, y, w, 1);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillRect(x, y + h - 1, w, 1);
+  }
+
+  // 強度曲線下方以該處的實際顏色（色度，亮度拉到最大）填色，往基線逐漸淡出，呈現光譜的層次。
+  // 色度圖每組參數只算一次；淺色模式稍微壓暗，讓白色的中央亮紋在淺底上仍看得見。
+  function hueImage(S, dark) {
+    const f = dark ? 1 : 0.8;
+    S.hue = S.hue || {};
+    if (S.hue[f]) return S.hue[f];
+    const cv = document.createElement('canvas');
+    cv.width = S.cols; cv.height = 1;
+    const c2 = cv.getContext('2d'), img = c2.createImageData(S.cols, 1);
+    for (let i = 0; i < S.cols; i++) {
+      // 填色只用來提示色調：在線性 RGB 中把彩度略為提高 1.5 倍（屏幕條紋本身仍是未加工的顏色）
+      const r0 = S.rgb[i * 3], g0 = S.rgb[i * 3 + 1], b0 = S.rgb[i * 3 + 2], mean = (r0 + g0 + b0) / 3;
+      const r = Math.max(0, mean + 1.5 * (r0 - mean)), g = Math.max(0, mean + 1.5 * (g0 - mean)), b = Math.max(0, mean + 1.5 * (b0 - mean));
+      const m = Math.max(r, g, b);
+      const k = m > 1e-6 ? f / m : 0;
+      img.data[i * 4] = SC.linearToSrgb(m > 1e-6 ? r * k : 0.5 * f);
+      img.data[i * 4 + 1] = SC.linearToSrgb(m > 1e-6 ? g * k : 0.5 * f);
+      img.data[i * 4 + 2] = SC.linearToSrgb(m > 1e-6 ? b * k : 0.5 * f);
+      img.data[i * 4 + 3] = 255;
+    }
+    c2.putImageData(img, 0, 0);
+    return (S.hue[f] = cv);
+  }
+  // 以目前路徑為範圍（呼叫前已建立好封閉路徑）
+  function spectralFill(S, l) {
+    const ctx = pat.ctx, dark = darkCanvas(), bg = tokenRGB('canvas-bg');
+    ctx.save();
+    ctx.clip();
+    ctx.globalAlpha = dark ? 0.72 : 0.85;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(hueImage(S, dark), l.PL, l.GT, l.PW, l.GB - l.GT);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 1;
+    const g = ctx.createLinearGradient(0, l.GT, 0, l.GB);
+    g.addColorStop(0, rgba(bg, 0));
+    g.addColorStop(1, rgba(bg, dark ? 0.45 : 0.35));
+    ctx.fillStyle = g;
+    ctx.fillRect(l.PL, l.GT, l.PW, l.GB - l.GT);
+    ctx.restore();
+  }
+  // 總光強曲線畫成兩層（底層背景色描邊把曲線與填色、成分曲線隔開；深色模式另加極淡光暈），沿用目前路徑
+  function tubeStroke(w) {
+    const ctx = pat.ctx, dark = darkCanvas(), fc = tokenRGB('field');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    if (dark) { ctx.strokeStyle = rgba(fc, 0.16); ctx.lineWidth = w + 5; ctx.stroke(); }
+    ctx.strokeStyle = rgba(tokenRGB('canvas-bg'), 0.85);
+    ctx.lineWidth = w + 2.4;
+    ctx.stroke();
+    ctx.strokeStyle = colors.field;
+    ctx.lineWidth = w;
+    ctx.stroke();
+  }
+
+  // 取樣：每個裝置像素一欄（白光最多 1.5 倍 CSS 像素，以免計算太久）；
+  // 條紋比像素細時，在欄內多點取樣求平均與最大、最小值
+  let sCache = null;
+  function sampleCache(p, l, dpr, Y) {
+    const white = state.white;
+    const cols = Math.max(2, Math.round(l.PW * (white ? Math.min(dpr, 1.5) : dpr)));
+    const key = [white, p.N, p.a, p.d, p.lambda, p.L, Y, cols, l.PW].join('|');
+    if (sCache && sCache.key === key) return sCache;
+    const physPerCol = 2 * Y / cols;
+    const lamMin = white ? SPEC.lambda[0] : p.lambda; // 白光最細的條紋由最短波長決定
+    const feature = p.N === 1 ? lamMin * p.L / p.a : lamMin * p.L / (p.N * p.d);
+    const K = Math.max(1, Math.min(white ? 16 : 64, Math.ceil(6 * physPerCol / feature)));
+    const resolved = feature / (2 * Y / l.PW) >= 4; // 最細的特徵至少 4 個 CSS 像素
+    const avg = new Float32Array(cols), mn = new Float32Array(cols), mx = new Float32Array(cols), mid = new Float32Array(cols);
+    const rgb = white ? new Float32Array(cols * 3) : null;
+    const w = [0, 0, 0, 0];
+    for (let i = 0; i < cols; i++) {
+      const y0 = -Y + i * physPerCol;
+      let s = 0, lo = Infinity, hi = -Infinity, R = 0, G = 0, B = 0;
+      for (let j = 0; j < K; j++) {
+        const yy = y0 + (j + 0.5) * physPerCol / K;
+        let v;
+        if (white) { SC.whiteAt(p, yy, SPEC, w); v = w[0]; R += w[1]; G += w[2]; B += w[3]; }
+        else v = SC.intensity(p, yy);
+        s += v; if (v < lo) lo = v; if (v > hi) hi = v;
+      }
+      avg[i] = s / K; mn[i] = lo; mx[i] = hi;
+      if (white) { rgb[i * 3] = R / K; rgb[i * 3 + 1] = G / K; rgb[i * 3 + 2] = B / K; }
+      mid[i] = K === 1 ? s : Itot(p, y0 + 0.5 * physPerCol);
+    }
+    let comp = null;
+    if (white && resolved) {
+      comp = [450, 550, 650].map(function (nm) {
+        const q = withLam(p, nm), v = new Float32Array(cols);
+        for (let i = 0; i < cols; i++) v[i] = SC.intensity(q, -Y + (i + 0.5) * physPerCol);
+        return { v: v, rgb: SC.wavelengthToRGB(nm) };
+      });
+    }
+    const strip = document.createElement('canvas');
+    strip.width = cols; strip.height = 1;
+    sCache = { key: key, cols: cols, physPerCol: physPerCol, resolved: resolved, avg: avg, mn: mn, mx: mx, mid: mid,
+      rgb: rgb, comp: comp, strip: strip, stripDone: false };
+    return sCache;
+  }
+
   function niceStep(span, maxTicks) {
     const raw = span / maxTicks;
     const p10 = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -459,10 +676,10 @@
     const ctx = pat.ctx, l = layout, Y = halfRange();
     let marks, title;
     if (p.N === 1) {
-      title = '暗紋 m';
+      title = T('暗紋 m', 'min m');
       marks = SC.singleSlitDarks(p).filter(function (o) { return Math.abs(o.y) <= Y; });
     } else {
-      title = '亮紋 m';
+      title = T('亮紋 m', 'max m');
       // 只取 |y| ≤ Y 的級數，避免數百個級數全都計算
       const sMax = SC.sinTheta(Y, p.L);
       const mMax = Math.floor(sMax * p.d / p.lambda);
@@ -514,14 +731,14 @@
       ctx.font = '12px system-ui, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'top';
-      ctx.fillText('點擊或拖曳讀取數值', l.PL + l.PW - 4, l.GT + 2);
+      ctx.fillText(T('點擊或拖曳讀取數值', 'Click or drag to read values'), l.PL + l.PW - 4, l.GT + 2);
       return;
     }
     const y = state.cursorY;
     if (Math.abs(y) > halfRange()) return;
     const ctx = pat.ctx, l = layout;
     const x = yToX(y);
-    const I = SC.intensity(p, y);
+    const I = Itot(p, y);
     const py = l.GB - I * (l.GB - l.GT);
     ctx.strokeStyle = colors.probe;
     ctx.lineWidth = 1.5;
@@ -566,33 +783,53 @@
     const s = SC.sinTheta(y, p.L);
     $('cY').textContent = fmtLen(y);
     $('cTh').textContent = (Math.asin(s) * 180 / Math.PI).toFixed(3).replace('-', '−') + '°';
-    $('cPd').textContent = (p.d * s / p.lambda).toFixed(2).replace('-', '−') + ' λ';
-    $('cPa').textContent = (p.a * s / p.lambda).toFixed(2).replace('-', '−') + ' λ';
-    $('cI').textContent = SC.intensity(p, y).toFixed(3);
+    if (state.white) {
+      // 白光沒有單一波長：程差以長度表示
+      $('cPd').textContent = fmtLen(p.d * s);
+      $('cPa').textContent = fmtLen(p.a * s);
+      $('cI').textContent = Itot(p, y).toFixed(3) + T('（各色總和）', ' (all colours)');
+    } else {
+      $('cPd').textContent = (p.d * s / p.lambda).toFixed(2).replace('-', '−') + ' λ';
+      $('cPa').textContent = (p.a * s / p.lambda).toFixed(2).replace('-', '−') + ' λ';
+      $('cI').textContent = SC.intensity(p, y).toFixed(3);
+    }
   }
 
   // ---------- 條紋特徵讀數 ----------
+  // 白光：與波長有關的量列出 400 nm 與 700 nm 的值，例如「3.33–5.83 mm」
+  function fmtRange(v1, v2) {
+    if (!isFinite(v1) || !isFinite(v2)) return '—';
+    const m = Math.max(Math.abs(v1), Math.abs(v2));
+    const u = m < 0.01 * MM ? [UM, ' μm'] : m < 1 ? [MM, ' mm'] : [1, ' m'];
+    return num(v1 / u[0]) + '–' + num(v2 / u[0]) + u[1];
+  }
+  function lenOf(p, fn) {
+    if (!state.white) return fmtLen(fn(p));
+    return fmtRange(fn(withLam(p, WL_LO)), fn(withLam(p, WL_HI)));
+  }
   function updateReadout() {
     const p = params();
-    $('rW').textContent = fmtLen(SC.centralWidth(p));
-    const wx = SC.centralWidthExact(p);
-    $('rWx').textContent = isFinite(wx) ? fmtLen(wx) : '沒有暗紋（a ≤ λ）';
-    $('rWs').textContent = fmtLen(p.lambda * p.L / p.a);
+    ['rW', 'rWx', 'rWs', 'rDy', 'rY1'].forEach(function (id) { $(id).classList.toggle('nw', state.white); });
+    $('rW').textContent = lenOf(p, SC.centralWidth);
+    const wx = SC.centralWidthExact(state.white ? withLam(p, WL_HI) : p);
+    $('rWx').textContent = isFinite(wx) ? lenOf(p, SC.centralWidthExact) : T('沒有暗紋（a ≤ λ）', 'no dark fringes (a ≤ λ)');
+    $('rWs').textContent = lenOf(p, function (q) { return q.lambda * q.L / q.a; });
     if (p.N > 1) {
-      $('rDy').textContent = fmtLen(SC.fringeSpacing(p));
-      const s1 = p.lambda / p.d;
-      $('rY1').textContent = s1 < 1 ? fmtLen(SC.yFromSin(s1, p.L)) : '—';
+      $('rDy').textContent = lenOf(p, SC.fringeSpacing);
+      const s1 = (state.white ? WL_HI * NM : p.lambda) / p.d;
+      $('rY1').textContent = s1 < 1 ? lenOf(p, function (q) { return SC.yFromSin(q.lambda / q.d, q.L); }) : '—';
       const k = SC.missingOrderStep(p.d, p.a);
-      $('rRatio').textContent = k ? String(k) + '（整數）' : (p.d / p.a).toFixed(2);
-      $('rCount').textContent = SC.fringesInCentral(p) + ' 條';
+      $('rRatio').textContent = k ? String(k) + T('（整數）', ' (integer)') : (p.d / p.a).toFixed(2);
+      const nc = SC.fringesInCentral(p);
+      $('rCount').textContent = T(nc + ' 條', String(nc));
       const miss = $('rMissing');
       if (k) {
         const list = [];
         for (let m = k; m * p.lambda < p.d && list.length < 3; m += k) list.push('±' + m);
-        miss.textContent = list.length ? list.join('、') + (list.length === 3 ? '… 級' : ' 級') : '—';
+        miss.textContent = list.length ? T(list.join('、') + (list.length === 3 ? '… 級' : ' 級'), list.join(', ') + (list.length === 3 ? ', …' : '')) : '—';
         miss.classList.add('flag');
       } else {
-        miss.textContent = '無（d/a 不是整數）';
+        miss.textContent = T('無（d/a 不是整數）', 'none (d/a is not an integer)');
         miss.classList.remove('flag');
       }
     }
@@ -622,14 +859,14 @@
   }
   function lamLabel(v) {
     return '<span class="swatch" style="background:rgb(' + SC.wavelengthToRGB(v).join(',') + ')"></span>' +
-      v + ' nm <span class="sub">（' + SC.colorName(v) + '）</span>';
+      v + ' nm <span class="sub">' + T('（' + SC.colorName(v) + '）', '(' + COLOR_EN[SC.colorName(v)] + ')') + '</span>';
   }
   const sLam = bindSlider('lam', lamLabel, function (v) { state.lam = v; invalidateScene(); }, true);
   const sA = bindSlider('a', function (v) { return v + ' μm'; }, function (v) {
     state.a = v;
     if (state.mode !== 'single' && state.d <= v) {
       state.d = Math.min(400, v + 1); sD.set(state.d);
-      setStatus('縫距 d 必須大於縫寬 a，已自動加大 d。');
+      setStatus(T('縫距 d 必須大於縫寬 a，已自動加大 d。', 'The slit separation d must be larger than the slit width a, so d has been increased.'));
     } else setStatus('');
     invalidateScene();
   });
@@ -638,12 +875,12 @@
     if (state.a >= v) {
       state.a = Math.max(5, v - 1); sA.set(state.a);
       if (state.d <= state.a) { state.d = state.a + 1; sD.set(state.d); }
-      setStatus('縫寬 a 必須小於縫距 d，已自動縮小 a。');
+      setStatus(T('縫寬 a 必須小於縫距 d，已自動縮小 a。', 'The slit width a must be smaller than the slit separation d, so a has been reduced.'));
     } else setStatus('');
     invalidateScene();
   });
   bindSlider('L', function (v) { return v.toFixed(2) + ' m'; }, function (v) { state.L = v; requestDraw(); });
-  bindSlider('N', function (v) { return v + ' 條'; }, function (v) { state.N = v; invalidateScene(); });
+  bindSlider('N', function (v) { return T(v + ' 條', String(v)); }, function (v) { state.N = v; invalidateScene(); });
   const sZoom = bindSlider('zoom', function (v) { return fmtZoom(ZOOMS[v]); }, function (v) { state.zoom = v; requestDraw(); });
   function setStatus(t) { $('status').textContent = t; }
 
@@ -652,7 +889,7 @@
   });
 
   $('autoZoom').addEventListener('click', function () {
-    const p = params();
+    const p = state.white ? withLam(params(), WL_HI) : params();
     let target = SC.centralWidthExact(p) / 2 * 2.05;
     if (!isFinite(target)) target = Infinity;
     let i = 0;
@@ -678,10 +915,22 @@
     b.addEventListener('click', function () { setMode(b.dataset.mode); });
   });
 
+  function setSource(src) {
+    state.white = src === 'white';
+    document.querySelectorAll('[data-src]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.src === src)); });
+    $('monoRows').hidden = state.white;
+    $('whiteRows').hidden = !state.white;
+    $('whiteNote').hidden = !state.white;
+    invalidateScene();
+  }
+  document.querySelectorAll('[data-src]').forEach(function (b) {
+    b.addEventListener('click', function () { setSource(b.dataset.src); });
+  });
+
   $('showEnv').addEventListener('change', function (ev) { state.showEnv = ev.target.checked; requestDraw(); });
   $('showOrders').addEventListener('change', function (ev) { state.showOrders = ev.target.checked; requestDraw(); });
 
-  function syncAnimButton() { $('anim').textContent = state.anim ? '暫停動畫' : '播放動畫'; }
+  function syncAnimButton() { $('anim').textContent = state.anim ? T('暫停動畫', 'Pause animation') : T('播放動畫', 'Play animation'); }
   $('anim').addEventListener('click', function () {
     state.anim = !state.anim;
     syncAnimButton();
@@ -727,7 +976,7 @@
     for (let w = 380; w <= 750; w += 10) {
       stops.push('rgb(' + SC.wavelengthToRGB(w).join(',') + ') ' + ((w - 380) / 370 * 100).toFixed(1) + '%');
     }
-    $('spectrum').style.background = 'linear-gradient(90deg,' + stops.join(',') + ')';
+    document.querySelectorAll('.spectrum').forEach(function (e) { e.style.background = 'linear-gradient(90deg,' + stops.join(',') + ')'; });
   })();
 
   // ---------- 啟動 ----------

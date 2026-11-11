@@ -11,6 +11,7 @@
  *   β = π a sinθ / λ，α = π d sinθ / λ
  *   N = 2 時第二個因子化簡為 cos² α。
  * 屏幕上的位置 y 換成角度時使用精確關係 sinθ = y / √(y² + L²)，不用小角度近似。
+ * 白光：各波長光強加權相加（不同波長不同調），見 whiteSpectrum、whiteAt。
  */
 (function (root) {
   'use strict';
@@ -171,6 +172,126 @@
     return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
   }
 
+  // ====================================================================
+  // 白光：可見光各波長彼此不同調，屏幕上的光強直接相加
+  //   I_白(y) = Σ w(λ) I_λ(y)，Σ w = 1，所以中央 I_白(0) = 1
+  //   顏色 = Σ w(λ) I_λ(y) rgb(λ)（線性 RGB），rgb(λ) 經白平衡使 Σ w rgb = (1, 1, 1)
+  // ====================================================================
+
+  /** 非對稱高斯（CIE 配色函數解析近似用） */
+  function g2(x, mu, s1, s2) {
+    const t = (x - mu) / (x < mu ? s1 : s2);
+    return Math.exp(-0.5 * t * t);
+  }
+  /** CIE 1931 2° 配色函數的解析近似（Wyman, Sloan & Shirley 2013），nm → [x_bar, y_bar, z_bar] */
+  function cieXYZ(nm) {
+    return [
+      1.056 * g2(nm, 599.8, 37.9, 31.0) + 0.362 * g2(nm, 442.0, 16.0, 26.7) - 0.065 * g2(nm, 501.1, 20.4, 26.2),
+      0.821 * g2(nm, 568.8, 46.9, 40.5) + 0.286 * g2(nm, 530.9, 16.3, 31.1),
+      1.217 * g2(nm, 437.0, 11.8, 36.0) + 0.681 * g2(nm, 459.0, 26.0, 13.8)
+    ];
+  }
+  /** XYZ → 線性 sRGB（D65） */
+  function xyzToLinearRGB(c) {
+    return [
+      3.2406 * c[0] - 1.5372 * c[1] - 0.4986 * c[2],
+      -0.9689 * c[0] + 1.8758 * c[1] + 0.0415 * c[2],
+      0.0557 * c[0] - 0.2040 * c[1] + 1.0570 * c[2]
+    ];
+  }
+  /** 黑體輻射的相對光譜（普朗克定律），nm、K → 相對值 */
+  function planck(nm, T) {
+    const l = nm * 1e-9;
+    return 1 / (Math.pow(l, 5) * (Math.exp(1.4387769e-2 / (l * T)) - 1));
+  }
+
+  /**
+   * 白光光譜取樣：n 個波長，在波數 1/λ 上均勻分布於 [lo, hi] nm 之間（λ 由小到大）。
+   * 波數等間隔時 β、α 隨取樣點成等差數列，whiteAtSin 可用三角函數遞推，不必每個波長都算 sin。
+   * 權重 w ∝ S(λ)·λ^2（S 為 T K 黑體光譜，預設 6500 K，近似日光；λ^2 為 dλ = λ^2 d(1/λ) 的換算），Σ w = 1。
+   * 每個波長的顏色 r, g, b 為線性 sRGB（負值，即超出色域的部分，取 0），
+   * 再逐通道乘上白平衡係數，使 Σ w·rgb = (1, 1, 1)，也就是中央亮紋為白色。
+   * 回傳 { n, nm, lambda, w, r, g, b, k0, dk }（lambda 單位 m；第 i 個波數 1/λ = k0 + i·dk，單位 1/m）。
+   */
+  function whiteSpectrum(n, lo, hi, T) {
+    n = n || 75; lo = lo || 380; hi = hi || 750; T = T || 6500;
+    const out = { n: n, nm: new Float64Array(n), lambda: new Float64Array(n), w: new Float64Array(n),
+      r: new Float64Array(n), g: new Float64Array(n), b: new Float64Array(n),
+      k0: 1e9 / lo, dk: n === 1 ? 0 : (1e9 / hi - 1e9 / lo) / (n - 1) };
+    if (n === 1) out.k0 = 2e9 / (lo + hi);
+    let sw = 0;
+    const sum = [0, 0, 0];
+    for (let i = 0; i < n; i++) {
+      const lam = 1 / (out.k0 + i * out.dk);
+      const nm = lam * 1e9;
+      out.nm[i] = nm;
+      out.lambda[i] = lam;
+      out.w[i] = planck(nm, T) * nm * nm;
+      sw += out.w[i];
+      const c = xyzToLinearRGB(cieXYZ(nm));
+      out.r[i] = Math.max(0, c[0]); out.g[i] = Math.max(0, c[1]); out.b[i] = Math.max(0, c[2]);
+    }
+    for (let i = 0; i < n; i++) {
+      out.w[i] /= sw;
+      sum[0] += out.w[i] * out.r[i]; sum[1] += out.w[i] * out.g[i]; sum[2] += out.w[i] * out.b[i];
+    }
+    for (let i = 0; i < n; i++) { out.r[i] /= sum[0]; out.g[i] /= sum[1]; out.b[i] /= sum[2]; }
+    return out;
+  }
+  let defaultSpectrum = null;
+  function spectrumOrDefault(spec) { return spec || defaultSpectrum || (defaultSpectrum = whiteSpectrum()); }
+
+  /**
+   * 白光在 sinθ = s 方向的總光強與顏色（p 的 lambda 不使用）。
+   * 寫入 out = [I, R, G, B]：I = Σ w I_λ（0–1），R/G/B 為線性 RGB（中央為 1，其他處 0–1）。
+   */
+  function whiteAtSin(p, s, spec, out) {
+    spec = spectrumOrDefault(spec);
+    out = out || [0, 0, 0, 0];
+    const N = p.N || 1, n = spec.n;
+    // β_i = π a s k_i、α_i = π d s k_i，k_i = k0 + i·dk：用旋轉遞推 sin、cos（誤差約 1e−14）
+    const b0 = Math.PI * p.a * s * spec.k0, db = Math.PI * p.a * s * spec.dk;
+    const a0 = Math.PI * p.d * s * spec.k0, da = Math.PI * p.d * s * spec.dk;
+    let beta = b0, sb = Math.sin(b0), cb = Math.cos(b0);
+    let sa = Math.sin(a0), ca = Math.cos(a0), sn = Math.sin(N * a0), cn = Math.cos(N * a0);
+    const sdb = Math.sin(db), cdb = Math.cos(db), sda = Math.sin(da), cda = Math.cos(da);
+    const sdn = Math.sin(N * da), cdn = Math.cos(N * da);
+    let I = 0, R = 0, G = 0, B = 0, t;
+    for (let i = 0; i < n; i++) {
+      let f1;
+      if (Math.abs(beta) < 1e-8) f1 = 1;
+      else { t = sb / beta; f1 = t * t; }
+      let f2;
+      if (N <= 1) f2 = 1;
+      else if (N === 2) f2 = ca * ca;
+      else if (Math.abs(sa) < 1e-6) f2 = multiSlitFactor(s, p.d, spec.lambda[i], N); // 主極大附近改用精確算法
+      else { t = sn / (N * sa); f2 = Math.min(1, t * t); }
+      const v = spec.w[i] * f1 * f2;
+      I += v; R += v * spec.r[i]; G += v * spec.g[i]; B += v * spec.b[i];
+      t = sb * cdb + cb * sdb; cb = cb * cdb - sb * sdb; sb = t; beta += db;
+      t = sa * cda + ca * sda; ca = ca * cda - sa * sda; sa = t;
+      t = sn * cdn + cn * sdn; cn = cn * cdn - sn * sdn; sn = t;
+    }
+    out[0] = Math.min(1, I); out[1] = Math.min(1, R); out[2] = Math.min(1, G); out[3] = Math.min(1, B);
+    return out;
+  }
+  /** 屏幕上 y 處的白光總光強與顏色，見 whiteAtSin */
+  function whiteAt(p, y, spec, out) {
+    return whiteAtSin(p, sinTheta(y, p.L), spec, out);
+  }
+  /** 白光的總光強 I/I0（中央為 1） */
+  function whiteIntensity(p, y, spec) {
+    return whiteAt(p, y, spec)[0];
+  }
+  /** 白光的單狹縫包絡線 Σ w [sin β / β]² */
+  function whiteEnvelope(p, y, spec) {
+    spec = spectrumOrDefault(spec);
+    const s = sinTheta(y, p.L);
+    let I = 0;
+    for (let i = 0; i < spec.n; i++) I += spec.w[i] * singleSlitFactor(s, p.a, spec.lambda[i]);
+    return I;
+  }
+
   const api = {
     sinTheta: sinTheta,
     yFromSin: yFromSin,
@@ -189,7 +310,13 @@
     wavelengthToRGB: wavelengthToRGB,
     colorName: colorName,
     srgbToLinear: srgbToLinear,
-    linearToSrgb: linearToSrgb
+    linearToSrgb: linearToSrgb,
+    cieXYZ: cieXYZ,
+    whiteSpectrum: whiteSpectrum,
+    whiteAtSin: whiteAtSin,
+    whiteAt: whiteAt,
+    whiteIntensity: whiteIntensity,
+    whiteEnvelope: whiteEnvelope
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

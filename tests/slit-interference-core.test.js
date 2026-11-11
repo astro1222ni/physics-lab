@@ -215,4 +215,113 @@ test('sRGB 與線性亮度互為反函數', () => {
   for (let c = 0; c <= 255; c++) assert.strictEqual(SC.linearToSrgb(SC.srgbToLinear(c)), c);
 });
 
+// ---------------- 白光 ----------------
+const SPEC = SC.whiteSpectrum(75, 380, 750, 6500);
+
+test('白光光譜：75 個波長、權重和為 1、白平衡後 Σ w·rgb = (1, 1, 1)', () => {
+  assert.strictEqual(SPEC.n, 75);
+  close(SPEC.nm[0], 380, 1e-12); close(SPEC.nm[74], 750, 1e-12);
+  let sw = 0; const c = [0, 0, 0];
+  for (let i = 0; i < SPEC.n; i++) {
+    assert.ok(SPEC.w[i] > 0 && SPEC.r[i] >= 0 && SPEC.g[i] >= 0 && SPEC.b[i] >= 0);
+    sw += SPEC.w[i]; c[0] += SPEC.w[i] * SPEC.r[i]; c[1] += SPEC.w[i] * SPEC.g[i]; c[2] += SPEC.w[i] * SPEC.b[i];
+  }
+  close(sw, 1, 1e-12);
+  c.forEach((v) => close(v, 1, 1e-12));
+  // 紅端以 R 為主、藍端以 B 為主
+  assert.ok(SPEC.r[64] > SPEC.g[64] && SPEC.r[64] > SPEC.b[64], '700 nm 偏紅');
+  assert.ok(SPEC.b[14] > SPEC.r[14] && SPEC.b[14] > SPEC.g[14], '450 nm 偏藍');
+});
+
+test('白光：遞推計算與逐一波長直接相加一致', () => {
+  for (const N of [1, 2, 3, 10]) {
+    const p = { N: N, a: 37 * um, d: 113 * um, L: 1 };
+    for (let k = 0; k < 400; k++) {
+      const s = (k % 2 ? -1 : 1) * Math.pow(k / 400, 2) * 0.6;
+      let I = 0, R = 0;
+      for (let i = 0; i < SPEC.n; i++) {
+        const v = SPEC.w[i] * SC.intensitySin(Object.assign({ lambda: SPEC.lambda[i] }, p), s);
+        I += v; R += v * SPEC.r[i];
+      }
+      const c = SC.whiteAtSin(p, s, SPEC);
+      assert.ok(Math.abs(c[0] - Math.min(1, I)) < 1e-9 && Math.abs(c[1] - Math.min(1, R)) < 1e-9, `N = ${N}, s = ${s}: ${c[0]} vs ${I}`);
+    }
+  }
+});
+
+test('白光：中央 y = 0 光強最大（= 1）且顏色為中性白（R = G = B）', () => {
+  for (const N of [1, 2, 5, 10]) {
+    const p = Object.assign({}, P2, { N: N });
+    const c = SC.whiteAt(p, 0, SPEC);
+    close(c[0], 1, 1e-12, `N = ${N} I`);
+    close(c[1], 1, 1e-9, `N = ${N} R`); close(c[2], 1, 1e-9, `N = ${N} G`); close(c[3], 1, 1e-9, `N = ${N} B`);
+    for (let y = -0.05; y <= 0.05; y += 1e-5) {
+      if (Math.abs(y) < 1e-9) continue;
+      assert.ok(SC.whiteAt(p, y, SPEC)[0] < 1, `N = ${N}, y = ${y}`);
+    }
+  }
+});
+
+test('白光：總光強在 [0, 1] 之間且左右對稱，顏色通道也在 [0, 1]', () => {
+  for (const N of [1, 2, 3, 10]) {
+    const p = Object.assign({}, P2, { N: N, a: 20 * um, d: 75 * um, L: 0.8 });
+    for (let y = 0; y <= 0.3; y += 3.7e-5) {
+      const a = SC.whiteAt(p, y, SPEC), b = SC.whiteAt(p, -y, SPEC);
+      for (let k = 0; k < 4; k++) {
+        assert.ok(a[k] >= 0 && a[k] <= 1, `N = ${N}, y = ${y}, ch ${k} = ${a[k]}`);
+        close(b[k], a[k], 1e-9, `對稱 N = ${N}, y = ${y}`);
+      }
+      close(SC.whiteIntensity(p, y, SPEC), a[0], 1e-12);
+    }
+  }
+});
+
+test('白光雙狹縫：第 1 級亮紋紅端比紫端離中央更遠（內緣偏藍、外緣偏紅）', () => {
+  // 單一波長的第 1 級亮紋位置（局部極大）
+  const yv = localMax(Object.assign({}, P2, { lambda: 400 * nm }), SC.yFromSin(400 * nm / P2.d, 1), 0.5e-3);
+  const yr = localMax(Object.assign({}, P2, { lambda: 700 * nm }), SC.yFromSin(700 * nm / P2.d, 1), 0.5e-3);
+  assert.ok(yr > yv * 1.6, `紅 ${yr}、紫 ${yv}`);
+  // 白光顏色：第 1 級範圍內 R 通道的峰值位置比 B 通道外側
+  let yR = 0, yB = 0, mR = -1, mB = -1;
+  for (let y = 2.4e-3; y <= 6.4e-3; y += 1e-6) {
+    const c = SC.whiteAt(P2, y, SPEC);
+    if (c[1] > mR) { mR = c[1]; yR = y; }
+    if (c[3] > mB) { mB = c[3]; yB = y; }
+  }
+  assert.ok(yR > yB + 1e-3, `R 峰 ${yR}、B 峰 ${yB}`);
+  // 第 1 級內緣偏藍、外緣偏紅
+  const inner = SC.whiteAt(P2, 3.2e-3, SPEC), outer = SC.whiteAt(P2, 5.6e-3, SPEC);
+  assert.ok(inner[3] > inner[1], '內緣 B > R');
+  assert.ok(outer[1] > outer[3], '外緣 R > B');
+});
+
+test('白光光柵：第 1 級主亮紋位置符合 d sinθ = λ（400 nm 與 700 nm）', () => {
+  const p = { N: 10, a: 20 * um, d: 75 * um, L: 1 };
+  const ys = {};
+  for (const w of [400, 700]) {
+    const q = Object.assign({}, p, { lambda: w * nm });
+    const y = localMax(q, SC.yFromSin(w * nm / p.d, p.L), 0.2e-3);
+    // 單狹縫包絡線的斜率讓峰值稍微偏向中央（< 0.2%）；干涉因子本身在 d sinθ = λ 恰為 1
+    close(p.d * SC.sinTheta(y, p.L), w * nm, 2e-3, `${w} nm`);
+    close(SC.multiSlitFactor(w * nm / p.d, p.d, w * nm, p.N), 1, 1e-12);
+    ys[w] = y;
+  }
+  assert.ok(ys[700] > ys[400]);
+  // 白光總和中，兩個位置的顏色分別偏紫與偏紅
+  const cv = SC.whiteAt(p, ys[400], SPEC), cr = SC.whiteAt(p, ys[700], SPEC);
+  assert.ok(cv[3] > cv[2] && cr[1] > cr[2] && cr[1] > cr[3]);
+  // 第 2 級紅端越過第 3 級紫端：光譜重疊
+  assert.ok(2 * 700 * nm / p.d > 3 * 400 * nm / p.d);
+});
+
+test('白光包絡線：中央為 1、對稱、不小於白光總光強', () => {
+  const p = Object.assign({}, P2, { N: 5 });
+  close(SC.whiteEnvelope(p, 0, SPEC), 1, 1e-12);
+  for (let y = 1e-4; y < 0.04; y += 3.3e-4) {
+    const e = SC.whiteEnvelope(p, y, SPEC);
+    close(SC.whiteEnvelope(p, -y, SPEC), e, 1e-12);
+    assert.ok(SC.whiteAt(p, y, SPEC)[0] <= e + 1e-12);
+  }
+});
+
 console.log(`\n${passed} 項通過`);

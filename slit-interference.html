@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110728"></script>
+  <script src="js/settings.js?v=202611110757"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室</title>
+  <title data-en="Double-Slit Interference and Single-Slit Diffraction | Astro Ni Physics Lab">雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整波長、縫寬、縫距與屏幕距離，觀察單狹縫繞射、雙狹縫干涉與光柵的明暗條紋、光強分布與缺級。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110728">
+  <link rel="stylesheet" href="lab.css?v=202611110757">
   <style>
     /* 本頁專用樣式：只使用 lab.css 的顏色變數，深色模式自動跟著切換 */
     .stage canvas#scene { aspect-ratio: 2 / 1; touch-action: pan-y; cursor: default; }
@@ -23,11 +23,15 @@
 
     .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
     .seg button { padding: 8px 6px; text-align: center; line-height: 1.3; }
+    .seg.two { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-bottom: 6px; }
+    #whiteRows .status { margin: 4px 0 6px; }
+    dl.readout dd.nw { white-space: nowrap; }
+    #whiteRows .spectrum { margin-bottom: 8px; }
     .seg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
 
     .spectrum { height: 8px; border-radius: 4px; margin: 2px 0 0; border: 1px solid var(--border); }
     .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--border); }
-    .slider[hidden], dl.readout [hidden] { display: none; }
+    .slider[hidden], dl.readout [hidden], .legend [hidden], #monoRows[hidden], #whiteRows[hidden] { display: none; }
     .slider output .sub { font-weight: 400; color: var(--muted); }
     .range-row { display: flex; align-items: center; gap: 8px; }
     .range-row input { flex: 1; min-width: 0; accent-color: var(--accent); }
@@ -43,156 +47,179 @@
     }
   </style>
 </head>
-<body>
+<body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 物理光學</nav>
-      <h1>雙狹縫干涉與單狹縫繞射</h1>
-      <p>調整波長、縫寬、縫距與屏幕距離，觀察屏幕上明暗條紋的顏色、間距與光強分布；在下方的強度圖上點擊或拖曳可讀出各點數值。</p>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#optics&quot;&gt;Optics&lt;/a&gt; / Physical optics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 物理光學</nav>
+      <h1 data-en="Double-Slit Interference and Single-Slit Diffraction">雙狹縫干涉與單狹縫繞射</h1>
+      <p data-en="Change the wavelength, slit width, slit separation and screen distance, and watch the colour, spacing and intensity of the bright and dark fringes on the screen. Click or drag on the intensity graph below to read off the values at any point.">調整波長、縫寬、縫距與屏幕距離，觀察屏幕上明暗條紋的顏色、間距與光強分布；在下方的強度圖上點擊或拖曳可讀出各點數值。</p>
     </header>
 
     <div class="lab">
       <div class="stage">
-        <canvas id="scene" aria-label="俯視示意圖：光波通過狹縫後向外擴散並互相干涉"></canvas>
+        <canvas id="scene" data-en-aria-label="Top view: light waves spread out from the slits and interfere with each other" aria-label="俯視示意圖：光波通過狹縫後向外擴散並互相干涉"></canvas>
         <div class="stage-row">
-          <p class="hint">上圖為俯視示意圖（未依比例）：亮色為波峰，可看到從狹縫散開的波前互相疊加。</p>
+          <p class="hint" data-en="The top view is a schematic (not to scale): bright bands are wave crests, showing the wavefronts spreading from the slits and overlapping.">上圖為俯視示意圖（未依比例）：亮色為波峰，可看到從狹縫散開的波前互相疊加。</p>
           <button id="anim" type="button">暫停動畫</button>
         </div>
-        <canvas id="pattern" tabindex="0" aria-label="屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖；可點擊、拖曳或用左右方向鍵移動游標"></canvas>
+        <canvas id="pattern" tabindex="0" data-en-aria-label="Fringes on the screen and graph of relative intensity I/I0 against position y; click, drag or use the left and right arrow keys to move the cursor" aria-label="屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖；可點擊、拖曳或用左右方向鍵移動游標"></canvas>
         <div class="legend">
-          <span><i id="lgCurve" style="background:var(--field)"></i>相對光強 I/I<sub>0</sub></span>
-          <span id="lgEnv"><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)"></i>單狹縫包絡線</span>
-          <span><i style="background:var(--probe)"></i>游標</span>
+          <span data-en-html="&lt;i id=&quot;lgCurve&quot; style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Relative intensity I/I&lt;sub&gt;0&lt;/sub&gt;"><i id="lgCurve" style="background:var(--field)"></i>相對光強 I/I<sub>0</sub></span>
+          <span id="lgEnv" data-en-html="&lt;i style=&quot;background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)&quot;&gt;&lt;/i&gt;Single-slit envelope"><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)"></i>單狹縫包絡線</span>
+          <span id="lgComp" hidden data-en-html="&lt;i style=&quot;background:linear-gradient(90deg,#0046ff 0 33%,#a3ff00 33% 67%,#ff0000 67%)&quot;&gt;&lt;/i&gt;I/I&lt;sub&gt;0&lt;/sub&gt; at 450, 550, 650 nm"><i style="background:linear-gradient(90deg,#0046ff 0 33%,#a3ff00 33% 67%,#ff0000 67%)"></i>450、550、650 nm 各自的 I/I<sub>0</sub></span>
+          <span data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Cursor"><i style="background:var(--probe)"></i>游標</span>
         </div>
-        <p class="hint" id="densityHint" hidden>條紋太密，畫面像素不足以分辨每一條亮紋：請縮小顯示範圍。</p>
+        <p class="hint" id="densityHint" hidden data-en="The fringes are too dense for the screen to show each bright fringe: reduce the display range.">條紋太密，畫面像素不足以分辨每一條亮紋：請縮小顯示範圍。</p>
       </div>
 
       <aside class="panel">
         <section class="card">
-          <h2>狹縫類型</h2>
-          <div class="seg" role="group" aria-label="狹縫類型">
-            <button type="button" data-mode="single" aria-pressed="false">單狹縫</button>
-            <button type="button" data-mode="double" aria-pressed="true">雙狹縫</button>
-            <button type="button" data-mode="grating" aria-pressed="false">多狹縫<br>（光柵）</button>
+          <h2 data-en="Slit type">狹縫類型</h2>
+          <div class="seg" role="group" aria-label="狹縫類型" data-en-aria-label="Slit type">
+            <button type="button" data-mode="single" aria-pressed="false" data-en="Single slit">單狹縫</button>
+            <button type="button" data-mode="double" aria-pressed="true" data-en="Double slit">雙狹縫</button>
+            <button type="button" data-mode="grating" aria-pressed="false" data-en-html="Multi-slit&lt;br&gt;(grating)">多狹縫<br>（光柵）</button>
           </div>
-          <div class="slider" id="nRow" hidden><label for="N">狹縫數 N</label><output id="No"></output>
+          <div class="slider" id="nRow" hidden><label for="N" data-en="Number of slits N">狹縫數 N</label><output id="No"></output>
             <input id="N" type="range" min="2" max="10" step="1" value="5"></div>
         </section>
 
         <section class="card">
-          <h2>光源與幾何</h2>
-          <div class="slider"><label for="lam">波長 λ</label><output id="lamo"></output>
-            <input id="lam" type="range" min="380" max="750" step="1" value="550">
-            <div class="spectrum" id="spectrum" style="grid-column:1/-1"></div></div>
-          <div class="btns">
-            <button type="button" data-lam="650">紅光雷射 650 nm</button>
-            <button type="button" data-lam="532">綠光雷射 532 nm</button>
-            <button type="button" data-lam="405">藍紫光 405 nm</button>
+          <h2 data-en="Light source and geometry">光源與幾何</h2>
+          <div class="seg two" role="group" aria-label="光源" data-en-aria-label="Light source">
+            <button type="button" data-src="mono" aria-pressed="true" data-en="Monochromatic">單色光</button>
+            <button type="button" data-src="white" aria-pressed="false" data-en="White light">白光</button>
           </div>
-          <div class="slider"><label for="a">縫寬 a</label><output id="ao"></output>
+          <div id="monoRows">
+          <div class="slider"><label for="lam" data-en="Wavelength λ">波長 λ</label><output id="lamo"></output>
+            <input id="lam" type="range" min="380" max="750" step="1" value="550">
+            <div class="spectrum" style="grid-column:1/-1"></div></div>
+          <div class="btns">
+            <button type="button" data-lam="650" data-en="Red laser 650 nm">紅光雷射 650 nm</button>
+            <button type="button" data-lam="532" data-en="Green laser 532 nm">綠光雷射 532 nm</button>
+            <button type="button" data-lam="405" data-en="Violet 405 nm">藍紫光 405 nm</button>
+          </div>
+          </div>
+          <div id="whiteRows" hidden>
+            <p class="status" data-en="Visible light from 380 to 750 nm, weighted by a 6500 K blackbody spectrum (close to daylight). The intensities of all wavelengths add up.">可見光 380–750 nm 的連續光譜，以 6500 K 黑體光譜加權（接近日光），各波長的光強直接相加。</p>
+            <div class="spectrum"></div>
+          </div>
+          <div class="slider"><label for="a" data-en="Slit width a">縫寬 a</label><output id="ao"></output>
             <input id="a" type="range" min="5" max="100" step="1" value="40"></div>
-          <div class="slider" id="dRow"><label for="d">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
+          <div class="slider" id="dRow"><label for="d" data-en="Slit separation d (centre to centre)">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
             <input id="d" type="range" min="10" max="400" step="1" value="120"></div>
-          <div class="slider"><label for="L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
+          <div class="slider"><label for="L" data-en="Slit-to-screen distance L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
             <input id="L" type="range" min="0.3" max="3" step="0.05" value="1"></div>
           <p class="status" id="status"></p>
         </section>
 
         <section class="card">
-          <h2>顯示</h2>
-          <div class="slider"><label for="zoom">屏幕顯示範圍</label><output id="zoomo"></output></div>
+          <h2 data-en="Display">顯示</h2>
+          <div class="slider"><label for="zoom" data-en="Screen range shown">屏幕顯示範圍</label><output id="zoomo"></output></div>
           <div class="range-row">
-            <input id="zoom" type="range" min="0" max="10" step="1" value="4" aria-label="屏幕顯示範圍">
-            <button type="button" id="autoZoom">自動</button>
+            <input id="zoom" type="range" min="0" max="10" step="1" value="4" aria-label="屏幕顯示範圍" data-en-aria-label="Screen range shown">
+            <button type="button" id="autoZoom" data-en="Auto">自動</button>
           </div>
           <div class="checks" style="margin-top:10px">
-            <label><input id="showEnv" type="checkbox" checked>單狹縫包絡線</label>
-            <label><input id="showOrders" type="checkbox" checked>標示亮紋級數 m</label>
+            <label><input id="showEnv" type="checkbox" checked><span data-en="Single-slit envelope">單狹縫包絡線</span></label>
+            <label><input id="showOrders" type="checkbox" checked><span data-en="Label fringe orders m">標示亮紋級數 m</span></label>
           </div>
         </section>
 
         <section class="card">
-          <h2>條紋特徵</h2>
+          <h2 data-en="Fringe properties">條紋特徵</h2>
           <dl class="readout">
-            <dt data-m="multi">亮紋間距 Δy ≈ λL/d</dt><dd data-m="multi" id="rDy">—</dd>
-            <dt data-m="multi">第 1 級亮紋位置（精確）</dt><dd data-m="multi" id="rY1">—</dd>
-            <dt>中央亮帶寬度 ≈ 2λL/a</dt><dd id="rW">—</dd>
-            <dt>中央亮帶寬度（精確）</dt><dd id="rWx">—</dd>
-            <dt data-m="single">兩側亮帶寬度 ≈ λL/a</dt><dd data-m="single" id="rWs">—</dd>
-            <dt data-m="multi">縫距與縫寬比 d/a</dt><dd data-m="multi" id="rRatio">—</dd>
-            <dt data-m="multi">中央亮帶內的亮紋數</dt><dd data-m="multi" id="rCount">—</dd>
-            <dt data-m="multi">缺級</dt><dd data-m="multi" id="rMissing">—</dd>
+            <dt data-m="multi" data-en="Fringe spacing Δy ≈ λL/d">亮紋間距 Δy ≈ λL/d</dt><dd data-m="multi" id="rDy">—</dd>
+            <dt data-m="multi" data-en="1st-order maximum position (exact)">第 1 級亮紋位置（精確）</dt><dd data-m="multi" id="rY1">—</dd>
+            <dt data-en="Central maximum width ≈ 2λL/a">中央亮帶寬度 ≈ 2λL/a</dt><dd id="rW">—</dd>
+            <dt data-en="Central maximum width (exact)">中央亮帶寬度（精確）</dt><dd id="rWx">—</dd>
+            <dt data-m="single" data-en="Side maximum width ≈ λL/a">兩側亮帶寬度 ≈ λL/a</dt><dd data-m="single" id="rWs">—</dd>
+            <dt data-m="multi" data-en="Separation-to-width ratio d/a">縫距與縫寬比 d/a</dt><dd data-m="multi" id="rRatio">—</dd>
+            <dt data-m="multi" data-en="Bright fringes in central maximum">中央亮帶內的亮紋數</dt><dd data-m="multi" id="rCount">—</dd>
+            <dt data-m="multi" data-en="Missing orders">缺級</dt><dd data-m="multi" id="rMissing">—</dd>
           </dl>
+          <p class="status" id="whiteNote" hidden data-en="White light: quantities that depend on λ are given as the range from λ = 400 nm to 700 nm; fringe orders are marked at 550 nm.">白光：與波長有關的量列出 λ = 400 nm 至 700 nm 的範圍；亮紋級數標在 550 nm 的位置。</p>
         </section>
 
         <section class="card">
-          <h2>游標位置</h2>
+          <h2 data-en="Cursor position">游標位置</h2>
           <dl class="readout">
-            <dt>屏幕位置 y</dt><dd id="cY">—</dd>
-            <dt>角度 θ</dt><dd id="cTh">—</dd>
-            <dt data-m="multi">程差 d sinθ</dt><dd data-m="multi" id="cPd">—</dd>
+            <dt data-en="Screen position y">屏幕位置 y</dt><dd id="cY">—</dd>
+            <dt data-en="Angle θ">角度 θ</dt><dd id="cTh">—</dd>
+            <dt data-m="multi" data-en="Path difference d sinθ">程差 d sinθ</dt><dd data-m="multi" id="cPd">—</dd>
             <dt>a sinθ</dt><dd id="cPa">—</dd>
-            <dt>相對光強 I/I<sub>0</sub></dt><dd id="cI">—</dd>
+            <dt data-en-html="Relative intensity I/I&lt;sub&gt;0&lt;/sub&gt;">相對光強 I/I<sub>0</sub></dt><dd id="cI">—</dd>
           </dl>
-          <p class="status" id="cHint">在強度圖或條紋上點擊、拖曳，或用左右方向鍵移動游標。</p>
+          <p class="status" id="cHint" data-en="Click or drag on the graph or the fringes, or use the left and right arrow keys to move the cursor.">在強度圖或條紋上點擊、拖曳，或用左右方向鍵移動游標。</p>
         </section>
       </aside>
     </div>
 
     <section class="notes">
-      <h2>背後的物理</h2>
-      <p>依惠更斯原理，每條狹縫上的每一點都可視為新的波源。屏幕距離遠大於狹縫尺寸時（夫朗和斐繞射），在角度 \(\theta\) 方向上，\(N\) 條寬度 \(a\)、縫距 \(d\) 的狹縫產生的相對光強為</p>
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="By Huygens' principle, every point on each slit acts as a new source of wavelets. When the screen is far away compared with the size of the slits (Fraunhofer diffraction), the relative intensity in direction \(\theta\) produced by \(N\) slits of width \(a\) and separation \(d\) is">依惠更斯原理，每條狹縫上的每一點都可視為新的波源。屏幕距離遠大於狹縫尺寸時（夫朗和斐繞射），在角度 \(\theta\) 方向上，\(N\) 條寬度 \(a\)、縫距 \(d\) 的狹縫產生的相對光強為</p>
       <div class="formula">
         \[ I(\theta) = I_0 \left[\frac{\sin\beta}{\beta}\right]^{2} \left[\frac{\sin N\alpha}{N\sin\alpha}\right]^{2} \]
         \[ \beta = \frac{\pi a\sin\theta}{\lambda}, \qquad \alpha = \frac{\pi d\sin\theta}{\lambda} \]
       </div>
-      <p>雙狹縫（\(N = 2\)）時第二個因子化簡為 \(\cos^{2}\alpha\)：</p>
+      <p data-en-html="For a double slit (\(N = 2\)) the second factor simplifies to \(\cos^{2}\alpha\):">雙狹縫（\(N = 2\)）時第二個因子化簡為 \(\cos^{2}\alpha\)：</p>
       <div class="formula">
         \[ I(\theta) = I_0 \cos^{2}\!\left(\frac{\pi d\sin\theta}{\lambda}\right) \left[\frac{\sin\beta}{\beta}\right]^{2} \]
       </div>
-      <p>\(\cos^{2}\) 這一項是兩縫光波的<strong>干涉</strong>，決定亮紋的位置；\([\sin\beta/\beta]^{2}\) 是每一條狹縫自己的<strong>繞射</strong>，像一條包絡線決定各亮紋的亮度。屏幕上位置 \(y\) 與角度的關係為 \(\sin\theta = y/\sqrt{y^{2} + L^{2}}\)。</p>
-      <div class="formula">
+      <p data-en-html="The \(\cos^{2}\) term is the &lt;strong&gt;interference&lt;/strong&gt; of the waves from the two slits and sets where the bright fringes are; \([\sin\beta/\beta]^{2}\) is the &lt;strong&gt;diffraction&lt;/strong&gt; by each slit on its own, which acts as an envelope setting how bright each fringe is. Position \(y\) on the screen is related to the angle by \(\sin\theta = y/\sqrt{y^{2} + L^{2}}\).">\(\cos^{2}\) 這一項是兩縫光波的<strong>干涉</strong>，決定亮紋的位置；\([\sin\beta/\beta]^{2}\) 是每一條狹縫自己的<strong>繞射</strong>，像一條包絡線決定各亮紋的亮度。屏幕上位置 \(y\) 與角度的關係為 \(\sin\theta = y/\sqrt{y^{2} + L^{2}}\)。</p>
+      <div class="formula" data-en-html="\[ \text{Interference maxima: }\ d\sin\theta = m\lambda \] \[ \text{Interference minima: }\ d\sin\theta = \left(m + \tfrac{1}{2}\right)\lambda \] \[ \text{Single-slit minima: }\ a\sin\theta = m\lambda \]">
         \[ \text{干涉亮紋：}\ d\sin\theta = m\lambda \]
         \[ \text{干涉暗紋：}\ d\sin\theta = \left(m + \tfrac{1}{2}\right)\lambda \]
         \[ \text{單狹縫暗紋：}\ a\sin\theta = m\lambda \]
       </div>
-      <p>干涉的 \(m = 0, \pm 1, \pm 2, \ldots\)；單狹縫暗紋的 \(m = \pm 1, \pm 2, \ldots\)，<span class="nb">\(m \neq 0\)</span>（\(\theta = 0\) 是中央亮帶的正中央，不是暗紋）。</p>
-      <p>角度很小時 \(\sin\theta \approx \tan\theta = y/L\)，得到常用的近似式：</p>
-      <div class="formula">
+      <p data-en-html="For interference \(m = 0, \pm 1, \pm 2, \ldots\); for single-slit minima \(m = \pm 1, \pm 2, \ldots\), &lt;span class=&quot;nb&quot;&gt;\(m \neq 0\)&lt;/span&gt; (\(\theta = 0\) is the middle of the central maximum, not a dark fringe).">干涉的 \(m = 0, \pm 1, \pm 2, \ldots\)；單狹縫暗紋的 \(m = \pm 1, \pm 2, \ldots\)，<span class="nb">\(m \neq 0\)</span>（\(\theta = 0\) 是中央亮帶的正中央，不是暗紋）。</p>
+      <p data-en-html="For small angles \(\sin\theta \approx \tan\theta = y/L\), which gives the familiar approximations:">角度很小時 \(\sin\theta \approx \tan\theta = y/L\)，得到常用的近似式：</p>
+      <div class="formula" data-en-html="\[ \Delta y \approx \frac{\lambda L}{d} \] \[ \text{central maximum width} \approx \frac{2\lambda L}{a} \]">
         \[ \Delta y \approx \frac{\lambda L}{d} \]
         \[ \text{中央亮帶寬度} \approx \frac{2\lambda L}{a} \]
       </div>
-      <p>若 \(d/a = k\) 為整數，第 \(\pm k, \pm 2k, \ldots\) 級干涉亮紋恰好落在單狹縫暗紋上而消失，稱為<strong>缺級</strong>；此時中央亮帶內有 \(2k - 1\) 條亮紋。</p>
+      <p data-en-html="If \(d/a = k\) is an integer, the interference maxima of orders \(\pm k, \pm 2k, \ldots\) fall exactly on single-slit minima and vanish. These are called &lt;strong&gt;missing orders&lt;/strong&gt;; there are then \(2k - 1\) bright fringes within the central maximum.">若 \(d/a = k\) 為整數，第 \(\pm k, \pm 2k, \ldots\) 級干涉亮紋恰好落在單狹縫暗紋上而消失，稱為<strong>缺級</strong>；此時中央亮帶內有 \(2k - 1\) 條亮紋。</p>
 
-      <h3>觀察重點</h3>
+      <h3 data-en="White light">白光</h3>
+      <p data-en-html="White light contains all the visible wavelengths (about 380–750 nm). Each wavelength forms its own set of fringes, at positions proportional to the wavelength, for example \(\Delta y \approx \lambda L/d\): red fringes are wider apart than violet ones.">白光包含可見光的各種波長（約 380–750 nm）。每一種波長各自形成一組條紋，條紋的位置與波長成正比，例如 \(\Delta y \approx \lambda L/d\)：紅光的條紋較寬，紫光的較窄。</p>
+      <p data-en-html="Light of different wavelengths is incoherent — there is no fixed phase relation between them, so they produce no steady interference with each other. The &lt;strong&gt;intensities simply add&lt;/strong&gt; on the screen:">不同波長的光彼此不同調，它們之間沒有固定的相位關係，不會形成穩定的干涉，所以屏幕上各波長的<strong>光強直接相加</strong>：</p>
+      <div class="formula" data-en-html="\[ I_{\text{white}}(y) = \sum_{\lambda} w(\lambda)\, I_{\lambda}(y), \qquad \sum_{\lambda} w(\lambda) = 1 \]">
+        \[ I_{\text{白}}(y) = \sum_{\lambda} w(\lambda)\, I_{\lambda}(y), \qquad \sum_{\lambda} w(\lambda) = 1 \]
+      </div>
+      <p data-en-html="At the very centre \(\theta = 0\) the path difference is zero for every wavelength, so the central maxima of all colours coincide and the central fringe is &lt;strong&gt;white&lt;/strong&gt;. The \(m\)th-order maximum is at \(\sin\theta = m\lambda/d\), nearest the centre for violet and farthest for red, so the side fringes are bluish-violet on the inner edge and reddish on the outer edge. At higher orders the colours spread further apart and fringes of different orders and colours overlap, mixing into greyish white, and the fringes fade out.">在正中央 \(\theta = 0\)，所有波長的程差都是 0，各色的中央亮紋完全重疊，所以中央亮紋是<strong>白色</strong>。第 \(m\) 級亮紋在 \(\sin\theta = m\lambda/d\)，紫光離中央最近、紅光最遠，所以兩側亮紋內緣偏藍紫、外緣偏紅。級數越高，各色條紋散得越開，不同級數、不同顏色的亮紋互相重疊，混成灰白色，條紋就看不清楚了。</p>
+      <p data-en-html="&lt;strong&gt;Grating spectra&lt;/strong&gt;: the principal maxima of a grating are very narrow, so within each order the maxima for different wavelengths separate into a spectrum running from violet to red. Because \(2 \times 700\ \text{nm} &gt; 3 \times 400\ \text{nm}\), the red end of the 2nd-order spectrum reaches past the violet end of the 3rd-order spectrum, so the 2nd, 3rd and higher-order spectra overlap."><strong>光柵光譜</strong>：光柵的主亮紋很細，同一級裡不同波長的亮紋彼此分開，排成一條由紫到紅的光譜。因為 \(2 \times 700\ \text{nm} > 3 \times 400\ \text{nm}\)，第 2 級光譜的紅端會越過第 3 級光譜的紫端，第 2、3 級（以及更高級）光譜互相重疊。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li><strong>波長越長，條紋越寬</strong>：把波長從藍紫光 405 nm 拉到紅光 650 nm，亮紋間距與中央亮帶都變寬，比值約為 <span class="nb">\(650/405 \approx 1.6\)。</span></li>
-        <li><strong>單狹縫的中央亮帶寬度是兩側亮帶的兩倍</strong>，而且兩側亮帶很暗：第一個側亮帶只有約 \(0.047\,I_0\)。縫寬 \(a\) 越窄，中央亮帶反而越寬。</li>
-        <li><strong>雙狹縫的亮紋間距只由 \(d\) 決定</strong>：改變縫寬 \(a\) 時，亮紋位置不動，只有亮度（包絡線）改變；改變 \(d\) 時，包絡線不動，亮紋變疏或變密。</li>
-        <li><strong>缺級</strong>：預設 \(a = 40\ \text{μm}\)、\(d = 120\ \text{μm}\)，\(d/a = 3\)，看看第 \(\pm 3\) 級亮紋到哪裡去了？把 \(d\) 調成 \(135\ \text{μm}\)（\(d/a\) 不再是整數），第 3 級又會以很暗的亮紋重新出現。</li>
-        <li><strong>多狹縫（光柵）</strong>：主亮紋的位置仍是 \(d\sin\theta = m\lambda\)，但 \(N\) 越大主亮紋越細、越銳利，兩個主亮紋之間有 \(N - 1\) 條暗紋與 \(N - 2\) 條很暗的次亮紋，這就是光柵能精確量測波長的原因。</li>
-        <li><strong>小角度近似何時失效</strong>：把 \(a\) 調到最小、\(L\) 調短並把顯示範圍放大，比較「中央亮帶寬度」的近似值與精確值，以及遠處亮紋的間距是否還相等。</li>
+        <li data-en-html="&lt;strong&gt;Longer wavelength, wider fringes&lt;/strong&gt;: move the wavelength from violet 405 nm to red 650 nm and both the fringe spacing and the central maximum widen, by a factor of about &lt;span class=&quot;nb&quot;&gt;\(650/405 \approx 1.6\).&lt;/span&gt;"><strong>波長越長，條紋越寬</strong>：把波長從藍紫光 405 nm 拉到紅光 650 nm，亮紋間距與中央亮帶都變寬，比值約為 <span class="nb">\(650/405 \approx 1.6\)。</span></li>
+        <li data-en-html="&lt;strong&gt;For a single slit the central maximum is twice as wide as the side maxima&lt;/strong&gt;, and the side maxima are faint: the first one is only about \(0.047\,I_0\). The narrower the slit width \(a\), the wider the central maximum becomes."><strong>單狹縫的中央亮帶寬度是兩側亮帶的兩倍</strong>，而且兩側亮帶很暗：第一個側亮帶只有約 \(0.047\,I_0\)。縫寬 \(a\) 越窄，中央亮帶反而越寬。</li>
+        <li data-en-html="&lt;strong&gt;For a double slit the fringe spacing depends only on \(d\)&lt;/strong&gt;: changing the slit width \(a\) leaves the fringe positions where they are and only changes their brightness (the envelope); changing \(d\) leaves the envelope where it is while the fringes spread out or crowd together."><strong>雙狹縫的亮紋間距只由 \(d\) 決定</strong>：改變縫寬 \(a\) 時，亮紋位置不動，只有亮度（包絡線）改變；改變 \(d\) 時，包絡線不動，亮紋變疏或變密。</li>
+        <li data-en-html="&lt;strong&gt;Missing orders&lt;/strong&gt;: by default \(a = 40\ \text{μm}\) and \(d = 120\ \text{μm}\), so \(d/a = 3\). Where have the \(\pm 3\) order fringes gone? Set \(d\) to \(135\ \text{μm}\) (so \(d/a\) is no longer an integer) and the 3rd order reappears as a very faint fringe."><strong>缺級</strong>：預設 \(a = 40\ \text{μm}\)、\(d = 120\ \text{μm}\)，\(d/a = 3\)，看看第 \(\pm 3\) 級亮紋到哪裡去了？把 \(d\) 調成 \(135\ \text{μm}\)（\(d/a\) 不再是整數），第 3 級又會以很暗的亮紋重新出現。</li>
+        <li data-en-html="&lt;strong&gt;Multiple slits (grating)&lt;/strong&gt;: the principal maxima are still at \(d\sin\theta = m\lambda\), but the larger \(N\), the narrower and sharper they become. Between two principal maxima there are \(N - 1\) minima and \(N - 2\) very faint secondary maxima, which is why a diffraction grating can measure wavelengths precisely."><strong>多狹縫（光柵）</strong>：主亮紋的位置仍是 \(d\sin\theta = m\lambda\)，但 \(N\) 越大主亮紋越細、越銳利，兩個主亮紋之間有 \(N - 1\) 條暗紋與 \(N - 2\) 條很暗的次亮紋，這就是光柵能精確量測波長的原因。</li>
+        <li data-en-html="&lt;strong&gt;When the small-angle approximation breaks down&lt;/strong&gt;: set \(a\) to its minimum, shorten \(L\) and widen the display range, then compare the approximate and exact central maximum widths, and check whether distant fringes are still equally spaced."><strong>小角度近似何時失效</strong>：把 \(a\) 調到最小、\(L\) 調短並把顯示範圍放大，比較「中央亮帶寬度」的近似值與精確值，以及遠處亮紋的間距是否還相等。</li>
+        <li data-en-html="&lt;strong&gt;White light&lt;/strong&gt;: switch the light source to white light. With a double slit the central fringe is white, the side fringes are bluish-violet on the inside and reddish on the outside, and further out they blend into greyish white. Switch to multiple slits with \(N = 10\) to see a separate spectrum in each order, and the overlap of the 2nd- and 3rd-order spectra."><strong>白光</strong>：把光源切換成白光，雙狹縫的中央亮紋是白色，兩側亮紋內緣偏藍紫、外緣偏紅，再往外就混成灰白色；切換到多狹縫並把 \(N\) 調到 10，可看到各級分開的光譜，以及第 2、3 級光譜的重疊。</li>
       </ul>
 
-      <h3>模擬方法</h3>
+      <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li>強度圖與屏幕條紋直接由上面的 \(I(\theta)\) 公式計算，\(\sin\theta\) 一律用精確關係 \(y/\sqrt{y^{2} + L^{2}}\)，不使用小角度近似；「≈」的讀數才是近似公式的結果。</li>
-        <li>模型假設平面單色光垂直入射、屏幕位於遠場（夫朗和斐條件 \(L \gg (\text{狹縫總寬})^{2}/\lambda\)，實驗上也可在狹縫後加凸透鏡達成），並忽略傾斜因子與距離造成的強度衰減，所以中央強度恆為 \(I_0\)。</li>
-        <li>屏幕條紋的亮度正比於 \(I\)，顏色由波長以常見的分段近似換算成螢幕的 sRGB 顏色（可見光邊緣的紫光與深紅光看起來較暗）。條紋小於一個像素時，該像素顯示其範圍內的平均亮度。</li>
-        <li>俯視示意圖把每條狹縫分成數個惠更斯子波源，疊加各子波的振幅 \(\cos(kr - \omega t)/\sqrt{r}\) 畫出波峰；為了看得見波長，圖中的波長、縫寬與縫距都經過放大，只保留 \(d/a\) 與趨勢，並非實際比例。</li>
+        <li data-en-html="The intensity graph and the screen fringes are calculated directly from the \(I(\theta)\) formula above, always with the exact relation \(y/\sqrt{y^{2} + L^{2}}\) for \(\sin\theta\) rather than the small-angle approximation; only the readouts marked “≈” come from the approximate formulas.">強度圖與屏幕條紋直接由上面的 \(I(\theta)\) 公式計算，\(\sin\theta\) 一律用精確關係 \(y/\sqrt{y^{2} + L^{2}}\)，不使用小角度近似；「≈」的讀數才是近似公式的結果。</li>
+        <li data-en-html="The model assumes monochromatic plane waves at normal incidence and a screen in the far field (the Fraunhofer condition \(L \gg (\text{total slit width})^{2}/\lambda\), which in practice can also be met by placing a convex lens after the slits). It ignores the obliquity factor and the drop in intensity with distance, so the central intensity is always \(I_0\).">模型假設平面單色光垂直入射、屏幕位於遠場（夫朗和斐條件 \(L \gg (\text{狹縫總寬})^{2}/\lambda\)，實驗上也可在狹縫後加凸透鏡達成），並忽略傾斜因子與距離造成的強度衰減，所以中央強度恆為 \(I_0\)。</li>
+        <li data-en-html="The brightness of the screen fringes is proportional to \(I\), and the wavelength is converted to an sRGB screen colour with a common piecewise approximation (violet and deep red at the edges of the visible spectrum look dimmer). Where fringes are narrower than a pixel, the pixel shows the average brightness across it.">屏幕條紋的亮度正比於 \(I\)，顏色由波長以常見的分段近似換算成螢幕的 sRGB 顏色（可見光邊緣的紫光與深紅光看起來較暗）。條紋小於一個像素時，該像素顯示其範圍內的平均亮度。</li>
+        <li data-en-html="The top view splits each slit into several Huygens wavelet sources and adds up their amplitudes \(\cos(kr - \omega t)/\sqrt{r}\) to draw the wave crests. To make the wavelength visible, the wavelength, slit width and slit separation are all magnified in the drawing: only \(d/a\) and the trends are kept, not the true scale.">俯視示意圖把每條狹縫分成數個惠更斯子波源，疊加各子波的振幅 \(\cos(kr - \omega t)/\sqrt{r}\) 畫出波峰；為了看得見波長，圖中的波長、縫寬與縫距都經過放大，只保留 \(d/a\) 與趨勢，並非實際比例。</li>
+        <li data-en-html="In white-light mode 75 wavelengths are taken between 380 and 750 nm (equally spaced in wavenumber 1/λ), and the \(I_{\lambda}\) are added with weights from a 6500 K blackbody spectrum. The colour is converted to sRGB using the CIE 1931 colour-matching functions (an analytic approximation) and balanced so that the central fringe is white. The top view represents white light with just three wavelengths — blue, green and red — added together.">白光模式在 380–750 nm 之間取 75 個波長（波數 1/λ 等間隔），以 6500 K 黑體光譜加權後把各波長的 \(I_{\lambda}\) 相加；顏色用 CIE 1931 配色函數（解析近似）換算成 sRGB，並校正成中央亮紋為白色。俯視示意圖則只用藍、綠、紅三個波長的波疊加來表示白光。</li>
       </ul>
     </section>
 
-    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110728"></script>
-  <script src="js/slit-interference-core.js?v=202611110728"></script>
-  <script src="js/slit-interference.js?v=202611110728"></script>
-  <script src="js/firebase-config.js?v=202611110728"></script>
-  <script src="js/stats.js?v=202611110728" data-module="slit-interference"></script>
-  <script src="js/comments.js?v=202611110728"></script>
+  <script src="js/math.js?v=202611110757"></script>
+  <script src="js/slit-interference-core.js?v=202611110757"></script>
+  <script src="js/slit-interference.js?v=202611110757"></script>
+  <script src="js/firebase-config.js?v=202611110757"></script>
+  <script src="js/stats.js?v=202611110757" data-module="slit-interference"></script>
+  <script src="js/comments.js?v=202611110757"></script>
 </body>
 </html>
