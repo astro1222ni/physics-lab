@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110810"></script>
+  <script src="js/settings.js?v=202611111010"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electric Fields and Equipotentials | Astro Ni Physics Lab">電場與等位線｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：拖曳點電荷，觀察電力線、等位線，並釋放試探電荷驗證能量守恆。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110810">
+  <link rel="stylesheet" href="lab.css?v=202611111010">
   <style>
     /* 喇叭按鈕（與一維碰撞相同外觀）：切換全站音效設定 */
     .panel .btns .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); min-height: 44px; }
@@ -16,6 +16,34 @@
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+
+    /* 本頁畫布專用的視覺代號（陰影、暈影、光暈強度、標籤底框）；淺色與深色各一組 */
+    :root {
+      --ef-shadow: rgba(24, 40, 46, 0.30);
+      --ef-vignette: rgba(24, 40, 46, 0.07);
+      --ef-glow: 0.34;
+      --ef-pill: rgba(255, 255, 255, 0.88);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ef-shadow: rgba(0, 0, 0, 0.60);
+        --ef-vignette: rgba(0, 0, 0, 0.30);
+        --ef-glow: 0.55;
+        --ef-pill: rgba(23, 32, 36, 0.86);
+      }
+    }
+    :root[data-theme="dark"] {
+      --ef-shadow: rgba(0, 0, 0, 0.60);
+      --ef-vignette: rgba(0, 0, 0, 0.30);
+      --ef-glow: 0.55;
+      --ef-pill: rgba(23, 32, 36, 0.86);
+    }
+    /* 圖例：等位線用虛線樣本、高低電位用與色階相同的漸層 */
+    .stage .legend span:nth-child(2) i { background: repeating-linear-gradient(90deg, var(--equi) 0 5px, transparent 5px 8px) !important; }
+    .stage .legend span:nth-child(3) i,
+    .stage .legend span:nth-child(4) i { height: 10px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--border); }
+    .stage .legend span:nth-child(3) i { background: linear-gradient(90deg, var(--canvas-bg), var(--pos)) !important; }
+    .stage .legend span:nth-child(4) i { background: linear-gradient(90deg, var(--canvas-bg), var(--neg)) !important; }
   </style>
 </head>
 <body data-en-ready>
@@ -42,11 +70,11 @@
         <section class="card">
           <h2 data-en="Source charges">場源電荷</h2>
           <div class="slider"><label for="qA" data-en="Charge of A">電荷 A 的電量</label><output id="qAo"></output>
-            <input id="qA" type="range" min="-5" max="5" step="0.5" value="3"></div>
+            <input id="qA" type="range" data-decimals="2" min="-5" max="5" step="0.5" value="3"></div>
           <div class="slider"><label for="qB" data-en="Charge of B">電荷 B 的電量</label><output id="qBo"></output>
-            <input id="qB" type="range" min="-5" max="5" step="0.5" value="-3"></div>
+            <input id="qB" type="range" data-decimals="2" min="-5" max="5" step="0.5" value="-3"></div>
           <div class="slider"><label for="sep" data-en="A–B separation (centred)">A、B 間距（水平置中）</label><output id="sepo"></output>
-            <input id="sep" type="range" min="1" max="9" step="0.1" value="4"></div>
+            <input id="sep" type="range" data-decimals="2" min="1" max="9" step="0.1" value="4"></div>
           <div class="btns">
             <button data-preset="dipole" data-en="Dipole">電偶極</button>
             <button data-preset="like" data-en="Equal like charges">等量同號</button>
@@ -68,9 +96,9 @@
         <section class="card">
           <h2 data-en="Test charge">試探電荷</h2>
           <div class="slider"><label for="qp" data-en="Charge q">電量 q</label><output id="qpo"></output>
-            <input id="qp" type="range" min="-3" max="3" step="0.1" value="1"></div>
+            <input id="qp" type="range" data-decimals="2" min="-3" max="3" step="0.1" value="1"></div>
           <div class="slider"><label for="mp" data-en="Mass m">質量 m</label><output id="mpo"></output>
-            <input id="mp" type="range" min="0.2" max="5" step="0.1" value="1"></div>
+            <input id="mp" type="range" data-decimals="2" min="0.2" max="5" step="0.1" value="1"></div>
           <div class="btns">
             <button id="run" class="primary" data-en="Release">釋放</button>
             <button id="resetProbe" data-en="Back to start">回到起點</button>
@@ -126,12 +154,13 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110810"></script>
-  <script src="js/field-core.js?v=202611110810"></script>
-  <script src="js/sound.js?v=202611110810"></script>
-  <script src="js/electric-field.js?v=202611110810"></script>
-  <script src="js/firebase-config.js?v=202611110810"></script>
-  <script src="js/stats.js?v=202611110810" data-module="electric-field"></script>
-  <script src="js/comments.js?v=202611110810"></script>
+  <script src="js/math.js?v=202611111010"></script>
+  <script src="js/field-core.js?v=202611111010"></script>
+  <script src="js/sound.js?v=202611111010"></script>
+  <script src="js/numinput.js?v=202611111010"></script>
+  <script src="js/electric-field.js?v=202611111010"></script>
+  <script src="js/firebase-config.js?v=202611111010"></script>
+  <script src="js/stats.js?v=202611111010" data-module="electric-field"></script>
+  <script src="js/comments.js?v=202611111010"></script>
 </body>
 </html>
