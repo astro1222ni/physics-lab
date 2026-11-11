@@ -453,3 +453,42 @@ html.lab-converting body { visibility: hidden; }
 .c-done { font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
 .c-empty { color: var(--muted); }
 .lab-account[hidden], .lab-account-menu[hidden], .lab-settings[hidden] { display: none; }
+
+/* ---------- 點擊數字直接輸入（numinput.js） ---------- */
+.lab-num {
+  cursor: text;
+  border-bottom: 1px dashed var(--muted);
+  border-radius: 2px;
+  padding: 0 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+.lab-num:hover, .lab-num:focus-visible { border-bottom-color: var(--accent); color: var(--accent); outline: none; background: var(--accent-soft); }
+.lab-num-edit { display: inline-flex; align-items: center; gap: 4px; justify-self: end; }
+.lab-num-edit input {
+  width: 6.5em;
+  min-height: 34px;
+  padding: 2px 8px;
+  font: inherit;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+}
+.lab-num-edit input:focus { outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.lab-num-pm { min-width: 34px; min-height: 34px; padding: 0 6px; font-weight: 700; }
+.lab-num-hint {
+  position: absolute;
+  z-index: 50;
+  max-width: 220px;
+  padding: 6px 10px;
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--surface);
+  background: var(--text);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .2);
+  pointer-events: none;
+}
+.lab-num-hint[hidden] { display: none; }
