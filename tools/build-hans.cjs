@@ -38,6 +38,10 @@ for (const [a, b] of ranges) {
     if (s !== ch && [...s].length === 1) pairs[ch] = s;
   }
 }
+// OpenCC 單字轉換的例外：抬 在兩岸都寫作「抬」（OpenCC 誤轉成異體字「擡」）；
+// 鎝（臺灣的鎝元素名）會被轉成多數字型沒有的「𨱏」，大陸用字是「锝」。
+const OVERRIDES = { '抬': null, '鎝': '锝' };
+for (const k of Object.keys(OVERRIDES)) { if (OVERRIDES[k]) pairs[k] = OVERRIDES[k]; else delete pairs[k]; }
 // 確保轉換結果不會再被轉一次（重複套用時結果不變）
 for (const k of Object.keys(pairs)) if (pairs[pairs[k]] && pairs[pairs[k]] !== pairs[k]) delete pairs[k];
 

@@ -21,12 +21,13 @@ window.LAB_MISSION_MODULES = [
   { id: 'hydrogen-spectrum', zh: '氫原子能階與光譜', en: 'Hydrogen Energy Levels and Spectra' },
   { id: 'specific-heat', zh: '比熱與熱平衡', en: 'Specific Heat and Thermal Equilibrium' },
   { id: 'newton-second', zh: '牛頓第二定律（力學車實驗）', en: 'Newton’s Second Law: The Dynamics Cart' },
+  { id: 'incline-friction', zh: '斜面與摩擦力', en: 'Inclines and Friction' },
   { id: 'refraction', zh: '折射與全反射', en: 'Refraction and Total Internal Reflection' },
   { id: 'slit-interference', zh: '雙狹縫干涉與單狹縫繞射', en: 'Double-Slit Interference and Single-Slit Diffraction' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {

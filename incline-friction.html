@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111234"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Inclines and Friction | Astro Ni Physics Lab">斜面與摩擦力｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：改變斜面角度、質量與接觸面材質，觀察靜摩擦力「需要多少給多少」、最大靜摩擦力與動摩擦力；慢慢抬高斜面找臨界角，用光電門量下滑加速度求動摩擦係數，並沿斜面或水平推木塊。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111234">
+  <style>
+    /* 斜面與摩擦力頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 上方畫布（斜面＋受力圖）可以拖曳木板，不讓頁面捲動；下方畫布（圖表）讓手機可以在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 400px; touch-action: none; cursor: default; }
+    #cvg { aspect-ratio: auto; height: 240px; touch-action: auto; cursor: default; margin-top: 8px; }
+    .inc button { min-height: 44px; }
+    .inc .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .inc .playbar button { flex: 1 1 auto; }
+    .inc .playbar #play { min-width: 6.5em; }
+    .inc .playbar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+    .inc .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .inc .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .inc .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .inc .stage .status { margin: 6px 4px 0; }
+    .inc .slider input[type="range"] { height: 28px; margin: 0; }
+    .inc .slider label sub, dl.readout sub, .inc .hint sub { font-size: .75em; }
+    .inc [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .inc .checks label { min-height: 36px; }
+    .inc .checks input { width: 17px; height: 17px; }
+    .inc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .inc select {
+      font: inherit; font-size: calc(15px * var(--fs, 1)); width: 100%; min-height: 44px; padding: 6px 10px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .inc .field-label { display: block; font-size: calc(14px * var(--fs, 1)); margin: 6px 0 4px; }
+    .inc .mu-line { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+    .inc dl.readout { grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); }
+    .inc dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout .sep { grid-column: 1 / -1; border-top: 1px solid var(--border); margin: 4px 0 2px; height: 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.hollow { background: none !important; border: 2px solid currentColor; height: 4px; width: 14px; }
+    .records { margin: 0; padding-left: 1.4em; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .records li { margin: 0 0 6px; }
+    .records li small { color: var(--muted); }
+    .records-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0; }
+    .guess { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font-size: calc(14px * var(--fs, 1)); }
+    .guess input {
+      font: inherit; font-size: calc(16px * var(--fs, 1)); min-height: 44px; padding: 4px 10px; width: 100%; box-sizing: border-box;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums;
+    }
+    .guess-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .guess-btns button { flex: 1 1 auto; }
+    .guess-out { font-size: calc(14px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.4em; }
+    .guess-out .ok { color: var(--probe); font-weight: 700; }
+    .guess-out .no { color: var(--pos); font-weight: 700; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Newton’s laws"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 牛頓運動定律</nav>
+      <h1 data-en="Inclines and Friction">斜面與摩擦力</h1>
+      <p data-en-html="A block sits on a board that you can tilt. Change the angle, the mass and the surfaces in contact; watch static friction adjust itself up to its maximum μ<sub>s</sub>N and then drop to kinetic friction μ<sub>k</sub>N. Raise the board slowly to find the critical angle, time the slide with two photogates to measure μk, and push the block along the incline or horizontally.">木塊放在可以抬高的木板上。改變斜面角度、質量與接觸面的材質，觀察靜摩擦力「需要多少給多少」，直到最大靜摩擦力 μ<sub>s</sub>N 後滑動、改為動摩擦力 μ<sub>k</sub>N。慢慢抬高斜面找出臨界角，用兩個光電門量下滑時間求出動摩擦係數，也可以沿斜面或水平推木塊。</p>
+    </header>
+
+    <div class="lab inc">
+      <div class="stage">
+        <canvas id="cv" aria-label="斜面與摩擦力模擬畫布：可抬高的木板、木塊、光電門，以及木塊的受力圖" data-en-aria-label="Incline and friction simulation: a tiltable board with a block and photogates, and the block’s free-body diagram"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Release">放手</button>
+          <button id="raise" type="button" data-en="Raise slowly" title="以每秒 2° 慢慢抬高斜面，木塊一開始滑動就停" data-en-title="Raise the board at 2° per second; stops as soon as the block starts to slide">慢慢抬高</button>
+          <button id="ramp" type="button" data-en="Increase force" title="外力 F 由目前的值慢慢增加，畫出摩擦力–外力圖" data-en-title="Increase the applied force F steadily from its current value and plot friction against F">慢慢加力</button>
+          <button id="place" type="button" data-en="Back to start" title="把木塊放回起點並用手扶住" data-en-title="Put the block back at the start and hold it">放回起點</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除圖表、殘影與測量紀錄，木塊回到起點；滑桿設定不變" data-en-title="Clear the graphs, ghost images and records and put the block back; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cvg" aria-label="圖表：位置或速度對時間的圖，以及摩擦力對外力的圖" data-en-aria-label="Graphs: position or velocity against time, and friction against applied force"></canvas>
+        <div class="legend">
+          <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Weight W = mg"><i style="background:var(--neg)"></i>重力 W = mg</span>
+          <span style="color:var(--neg)" data-en-html="<i class=&quot;dash&quot;></i>Components of W"><i class="dash"></i>重力的分量</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Normal force N"><i style="background:var(--accent)"></i>正向力 N</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Friction f"><i style="background:var(--pos)"></i>摩擦力 f</span>
+          <span style="color:var(--b-mech)" data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Applied force F"><i style="background:var(--b-mech)"></i>外力 F</span>
+          <span style="color:var(--b-optics)" data-en-html="<i class=&quot;hollow&quot;></i>Net force ΣF"><i class="hollow"></i>合力 ΣF</span>
+        </div>
+        <p class="hint" data-en-html="Signs: along the incline, <strong>down the slope is positive</strong> for x, v, a, friction and net force; the applied force F is positive when it <strong>pushes up</strong> (or, for a horizontal push, towards the slope). Free-body diagram arrows are drawn to scale (scale bar in its corner); the F arrow on the board only shows the direction. Drag the handle at the raised end of the board to change the angle.">正負號：沿斜面方向，x、v、a、摩擦力與合力一律以<strong>沿斜面向下為正</strong>；外力 F 則以<strong>往上推</strong>（水平推時：推向斜面）為正。受力圖的箭頭依比例畫（比例尺在受力圖角落）；木板上的 F 箭頭只表示方向。拖曳木板抬高那一端的把手可以改變角度。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Incline and block">斜面與木塊</h2>
+          <div class="slider"><label for="theta" data-en="Angle θ">斜面角度 θ</label><output id="thetao"></output>
+            <input id="theta" type="range" min="0" max="90" step="0.1" value="20" data-decimals="2"></div>
+          <div class="slider"><label for="mass" data-en="Mass m">質量 m</label><output id="masso"></output>
+            <input id="mass" type="range" min="0.5" max="5" step="0.1" value="2" data-decimals="2"></div>
+          <label class="field-label" for="surf" data-en="Surfaces in contact">接觸面</label>
+          <select id="surf">
+            <option value="wood" data-en="Wood on wood">木頭／木頭</option>
+            <option value="steel" data-en="Steel on steel">鋼／鋼</option>
+            <option value="rubber" data-en="Rubber on dry concrete">橡膠／乾混凝土</option>
+            <option value="glass" data-en="Glass on glass">玻璃／玻璃</option>
+            <option value="snow" data-en="Waxed wood on wet snow">打蠟木板／濕雪</option>
+            <option value="ice" data-en="Ice on ice">冰／冰</option>
+            <option value="custom" data-en="Custom μs and μk">自訂 μs 與 μk</option>
+            <option value="mystery" data-en="Mystery surface (measure it!)">神秘表面（自己量量看！）</option>
+          </select>
+          <div id="customBox" hidden>
+            <div class="slider"><label for="mus" data-en-html="Static coefficient μ<sub>s</sub>">靜摩擦係數 μ<sub>s</sub></label><output id="muso"></output>
+              <input id="mus" type="range" min="0" max="1.5" step="0.01" value="0.6" data-decimals="3"></div>
+            <div class="slider"><label for="muk" data-en-html="Kinetic coefficient μ<sub>k</sub>">動摩擦係數 μ<sub>k</sub></label><output id="muko"></output>
+              <input id="muk" type="range" min="0" max="1.5" step="0.01" value="0.4" data-decimals="3"></div>
+          </div>
+          <p class="mu-line" id="muLine"></p>
+          <p class="hint" data-en="Tap a number to type an exact value. Coefficients are typical values; real surfaces vary.">點一下數字可直接輸入精確數值。摩擦係數為典型值，實際會因表面狀況而不同。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Applied force">外力</h2>
+          <p class="seg-label" id="modeLabel" data-en="Direction of the force:">外力方向：</p>
+          <div class="seg2" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeAlong" aria-pressed="true" data-en="Along the incline">沿斜面</button>
+            <button type="button" id="modeHoriz" aria-pressed="false" data-en="Horizontal">水平</button>
+          </div>
+          <div class="slider"><label for="force" id="forceLabel" data-en="Force F (+ pushes up)">外力 F（正：往上推）</label><output id="forceo"></output>
+            <input id="force" type="range" min="-50" max="100" step="0.1" value="0" data-decimals="2"></div>
+          <p class="hint" id="forceHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Release">放手</h2>
+          <p class="seg-label" id="startLabel" data-en="Start from:">起點：</p>
+          <div class="seg2" role="group" aria-labelledby="startLabel">
+            <button type="button" id="startTop" aria-pressed="true" data-en="Top of the board">木板頂端</button>
+            <button type="button" id="startBottom" aria-pressed="false" data-en="Bottom of the board">木板底端</button>
+          </div>
+          <div class="slider"><label for="v0" data-en-html="Speed when released v<sub>0</sub> (+ down the slope)">放手時的初速 v<sub>0</sub>（向下為正）</label><output id="v0o"></output>
+            <input id="v0" type="range" min="-5" max="5" step="0.1" value="0" data-decimals="2"></div>
+          <p class="hint" data-en-html="A negative v<sub>0</sub> launches the block up the slope. The block is held by hand until you press “Release”.">v<sub>0</sub> 為負代表往上射出。按「放手」之前，木塊由手扶著不動。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Forces now">受力分析（即時）</h2>
+          <dl class="readout">
+            <dt data-en-html="Weight <span class=&quot;f&quot;>W = mg</span>">重力 <span class="f">W = mg</span></dt><dd id="rW">—</dd>
+            <dt data-en-html="Along the slope <span class=&quot;f&quot;>mg sin θ</span>">沿斜面分量 <span class="f">mg sin θ</span></dt><dd id="rWpar">—</dd>
+            <dt data-en-html="Into the slope <span class=&quot;f&quot;>mg cos θ</span>">垂直斜面分量 <span class="f">mg cos θ</span></dt><dd id="rWperp">—</dd>
+            <dt id="rFdt" data-en="Applied force F">外力 F</dt><dd id="rF">—</dd>
+            <dt data-en="Normal force N">正向力 N</dt><dd id="rN">—</dd>
+            <dt data-en="Friction f">摩擦力 f</dt><dd id="rf">—</dd>
+            <dt data-en-html="Maximum static friction <span class=&quot;f&quot;>μ<sub>s</sub>N</span>">最大靜摩擦力 <span class="f">μ<sub>s</sub>N</span></dt><dd id="rfs">—</dd>
+            <dt data-en-html="Kinetic friction <span class=&quot;f&quot;>μ<sub>k</sub>N</span>">動摩擦力 <span class="f">μ<sub>k</sub>N</span></dt><dd id="rfk">—</dd>
+            <dt id="rPdt" data-en="Stop / hand">擋板／手的力</dt><dd id="rP">—</dd>
+            <dt data-en="Net force ΣF">合力 ΣF</dt><dd id="rNet">—</dd>
+            <dt data-en="Acceleration a">加速度 a</dt><dd id="rA">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Motion and energy">運動與能量</h2>
+          <dl class="readout">
+            <dt data-en="Time t (since release)">時間 t（放手起算）</dt><dd id="rt">—</dd>
+            <dt data-en="Position x (from the top start)">位置 x（由頂端起點量起）</dt><dd id="rx">—</dd>
+            <dt data-en="Velocity v">速度 v</dt><dd id="rv">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en-html="Photogate 1 (x = 0.50 m) t<sub>1</sub>">光電門 1（x = 0.50 m）t<sub>1</sub></dt><dd id="rg1">—</dd>
+            <dt data-en-html="Photogate 2 (x = 1.50 m) t<sub>2</sub>">光電門 2（x = 1.50 m）t<sub>2</sub></dt><dd id="rg2">—</dd>
+            <dt data-en-html="From the gates <span class=&quot;f&quot;>a = 2(x<sub>2</sub> − x<sub>1</sub>)/(t<sub>2</sub><sup>2</sup> − t<sub>1</sub><sup>2</sup>)</span>">由光電門 <span class="f">a = 2(x<sub>2</sub> − x<sub>1</sub>)/(t<sub>2</sub><sup>2</sup> − t<sub>1</sub><sup>2</sup>)</span></dt><dd id="rga">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en-html="Heat from friction <span class=&quot;f&quot;>Q = μ<sub>k</sub>N × path</span>">摩擦生熱 <span class="f">Q = μ<sub>k</sub>N × 路徑長</span></dt><dd id="rQ">—</dd>
+            <dt data-en-html="Work by gravity W<sub>g</sub>">重力作功 W<sub>g</sub></dt><dd id="rWg">—</dd>
+            <dt data-en-html="Work by the applied force W<sub>F</sub>">外力作功 W<sub>F</sub></dt><dd id="rWF">—</dd>
+            <dt data-en-html="Kinetic energy <span class=&quot;f&quot;>½mv<sup>2</sup></span>">動能 <span class="f">½mv<sup>2</sup></span></dt><dd id="rK">—</dd>
+          </dl>
+          <p class="hint" data-en="The gate formula assumes the block was released from rest at x = 0 at t = 0 with nothing changed during the slide.">光電門公式假設木塊在 t = 0 由 x = 0 靜止釋放，而且滑動中沒有改變任何條件。</p>
+        </section>
+
+        <section class="card" id="mysteryCard" hidden>
+          <h2 data-en="Mystery surface: your answer">神秘表面：你的測量結果</h2>
+          <p class="hint" style="margin:0 0 10px" data-en-html="μ<sub>s</sub>, μ<sub>k</sub> and the friction readings are hidden. Measure them: find the critical angle, and time a slide with the photogates. You get 3 checks per surface; a check only says whether you are within 2%.">μ<sub>s</sub>、μ<sub>k</sub> 與摩擦力的讀數都藏起來了。自己量：找出臨界角，再用光電門量下滑的時間。每個表面可以核對 3 次，只會告訴你是否在 2% 以內。</p>
+          <div class="guess">
+            <label for="gS" data-en-html="μ<sub>s</sub> =">μ<sub>s</sub> =</label><input id="gS" type="text" inputmode="decimal" autocomplete="off" placeholder="0.000" data-en-placeholder="0.000">
+            <label for="gK" data-en-html="μ<sub>k</sub> =">μ<sub>k</sub> =</label><input id="gK" type="text" inputmode="decimal" autocomplete="off" placeholder="0.000" data-en-placeholder="0.000">
+          </div>
+          <div class="guess-btns">
+            <button type="button" id="gCheck" class="primary" data-en="Check">核對</button>
+            <button type="button" id="gNew" data-en="New mystery surface">換一個神秘表面</button>
+          </div>
+          <p class="guess-out" id="gOut" aria-live="polite"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Measurement log">測量紀錄</h2>
+          <p class="records-empty" id="recEmpty" data-en="Nothing recorded yet. Release the block, raise the board or increase the force.">還沒有紀錄。放手、慢慢抬高斜面或慢慢加力看看。</p>
+          <ol class="records" id="records"></ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <p class="seg-label" id="graphLabel" data-en="Motion graph:">運動圖表：</p>
+          <div class="seg2" role="group" aria-labelledby="graphLabel">
+            <button type="button" id="graphV" aria-pressed="true" data-en="v–t graph">v–t 圖</button>
+            <button type="button" id="graphX" aria-pressed="false" data-en="x–t graph">x–t 圖</button>
+          </div>
+          <div class="checks" style="margin-top:10px">
+            <label><input id="showComp" type="checkbox" checked><span data-en="Components of W">重力的分量</span></label>
+            <label><input id="showNet" type="checkbox" checked><span data-en="Net force ΣF">合力 ΣF</span></label>
+            <label><input id="showCrit" type="checkbox" checked><span data-en="Critical angle θc line">臨界角 θc 參考線</span></label>
+            <label><input id="showMarks" type="checkbox" checked><span data-en="Ghost images every 0.1 s">每 0.1 s 的殘影</span></label>
+          </div>
+          <p class="hint" data-en="The ghost images are like a multi-flash photo taken every 0.1 s: growing gaps mean the block is speeding up, equal gaps mean constant velocity.">殘影就像每 0.1 s 拍一張的連續閃光照片：間距越來越大代表加速，間距相等代表等速度。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Resolve the weight \(mg\) into a component <strong>along</strong> the incline and one <strong>perpendicular</strong> to it. The surface pushes back with the normal force \(N\); with no applied force it just balances the perpendicular component:">把重力 \(mg\) 分解成<strong>沿斜面</strong>與<strong>垂直斜面</strong>兩個分量。斜面以正向力 \(N\) 頂住木塊；沒有外力時，正向力剛好抵消垂直分量：</p>
+      <div class="formula">
+        \[ W_{\parallel} = mg\sin\theta, \qquad W_{\perp} = mg\cos\theta, \qquad N = mg\cos\theta \]
+      </div>
+
+      <h3 data-en="Static friction: as much as needed, up to a limit">靜摩擦力：需要多少給多少，但有上限</h3>
+      <p data-en-html="While the block is at rest, static friction is whatever force keeps it at rest — it can be any size and point either way along the incline, but it cannot exceed the <strong>maximum static friction</strong> \(\mu_s N\). If the required friction would be larger, the block starts to slide and the friction becomes <strong>kinetic friction</strong>, which has a fixed size and opposes the sliding. For real surfaces \(\mu_k < \mu_s\), so the friction <strong>drops</strong> the moment the block starts to move:">木塊靜止時，靜摩擦力是「讓木塊保持靜止所需要的力」——大小、沿斜面向上或向下都可以，但不能超過<strong>最大靜摩擦力</strong> \(\mu_s N\)。如果需要的摩擦力比這個還大，木塊就開始滑動，摩擦力改為大小固定、與滑動方向相反的<strong>動摩擦力</strong>。真實的接觸面 \(\mu_k < \mu_s\)，所以一開始滑動，摩擦力會<strong>突然變小</strong>：</p>
+      <div class="formula" data-en-html="\[ 0 \le f_s \le \mu_s N \quad(\text{at rest}), \qquad f_k = \mu_k N \quad(\text{sliding}) \]">
+        \[ 0 \le f_s \le \mu_s N \quad(\text{靜止}), \qquad f_k = \mu_k N \quad(\text{滑動}) \]
+      </div>
+
+      <h3 data-en="The critical angle">臨界角（休止角）</h3>
+      <p data-en-html="With no applied force, the block stays at rest as long as \(mg\sin\theta \le \mu_s\, mg\cos\theta\). Raise the board slowly: the block starts to slide at the critical angle \(\theta_c\). The mass cancels, so every block of the same material slips at the same angle:">沒有外力時，只要 \(mg\sin\theta \le \mu_s\, mg\cos\theta\)，木塊就不會動。慢慢抬高斜面，木塊在臨界角 \(\theta_c\) 開始滑動。質量消掉了，所以同材質的木塊不論輕重都在同一個角度開始滑：</p>
+      <div class="formula">
+        \[ \tan\theta_c = \mu_s \]
+      </div>
+
+      <h3 data-en="Sliding down and measuring μk">下滑與測量動摩擦係數</h3>
+      <p data-en-html="Once sliding down, Newton’s second law along the incline (down positive) gives a constant acceleration. Released from rest at \(x = 0\), the block passes the gates at \(x_1\) and \(x_2\) at times \(t_1\) and \(t_2\) with \(x = \tfrac12 a t^2\), so the gates give \(a\), and \(a\) gives \(\mu_k\):">往下滑動時，沿斜面（向下為正）用牛頓第二定律，得到固定的加速度。由 \(x = 0\) 靜止釋放，木塊在 \(t_1\)、\(t_2\) 通過位置 \(x_1\)、\(x_2\) 的光電門，\(x = \tfrac12 a t^2\)，由此求出 \(a\)，再求出 \(\mu_k\)：</p>
+      <div class="formula">
+        \[ ma = mg\sin\theta - \mu_k mg\cos\theta \;\Rightarrow\; a = g(\sin\theta - \mu_k\cos\theta) \]
+        \[ a = \frac{2(x_2 - x_1)}{t_2^{2} - t_1^{2}}, \qquad \mu_k = \tan\theta - \frac{a}{g\cos\theta} \]
+      </div>
+      <p data-en-html="If \(\tan\theta = \mu_k\) the acceleration is zero: a block that is already moving slides at <strong>constant velocity</strong>. But because \(\mu_s > \mu_k\), a block placed at rest at this angle does not start by itself — it needs a nudge. If \(\tan\theta < \mu_k\), a sliding block slows down, stops, and is held again by static friction.">若 \(\tan\theta = \mu_k\)，加速度為零：已經在滑的木塊會<strong>等速</strong>下滑。但因為 \(\mu_s > \mu_k\)，在這個角度靜止放著的木塊不會自己開始動，要輕推一下。若 \(\tan\theta < \mu_k\)，滑動的木塊會減速、停下，然後重新被靜摩擦力「黏住」。</p>
+
+      <h3 data-en="Pushing along the incline">沿斜面推</h3>
+      <p data-en-html="Push up the slope with a force \(F\). At rest, the friction needed is \(f = F - mg\sin\theta\) (down positive): it points up the slope when \(F\) is small and <strong>reverses direction</strong> when \(F > mg\sin\theta\). The block starts to move up only when \(F > mg(\sin\theta + \mu_s\cos\theta)\); while it slides up,">沿斜面往上推，推力為 \(F\)。靜止時需要的摩擦力是 \(f = F - mg\sin\theta\)（向下為正）：\(F\) 小時摩擦力沿斜面向上，\(F > mg\sin\theta\) 之後<strong>改為向下</strong>。要 \(F > mg(\sin\theta + \mu_s\cos\theta)\) 才推得動；往上滑動時</p>
+      <div class="formula" data-en-html="\[ F - mg\sin\theta - \mu_k mg\cos\theta = m a_{\text{up}} \]">
+        \[ F - mg\sin\theta - \mu_k mg\cos\theta = m a_{\text{上}} \]
+      </div>
+
+      <h3 data-en="Pushing horizontally">水平推</h3>
+      <p data-en-html="A horizontal push \(F\) has a component \(F\cos\theta\) up the slope, but its other component \(F\sin\theta\) presses the block into the surface, so the normal force — and the friction — grow:">水平推力 \(F\) 有沿斜面向上的分量 \(F\cos\theta\)，但另一個分量 \(F\sin\theta\) 把木塊壓向斜面，使正向力與摩擦力都變大：</p>
+      <div class="formula" data-en-html="\[ N = mg\cos\theta + F\sin\theta, \qquad F\cos\theta - mg\sin\theta - \mu_k(mg\cos\theta + F\sin\theta) = m a_{\text{up}} \]">
+        \[ N = mg\cos\theta + F\sin\theta, \qquad F\cos\theta - mg\sin\theta - \mu_k(mg\cos\theta + F\sin\theta) = m a_{\text{上}} \]
+      </div>
+      <p data-en-html="To start it moving up you need \(F(\cos\theta - \mu_s\sin\theta) > mg(\sin\theta + \mu_s\cos\theta)\). When \(\cos\theta \le \mu_s\sin\theta\), that is \(\theta \ge 90^\circ - \theta_c\), no horizontal push however large can move the block up the slope (“self-locking”).">要推得動需要 \(F(\cos\theta - \mu_s\sin\theta) > mg(\sin\theta + \mu_s\cos\theta)\)。當 \(\cos\theta \le \mu_s\sin\theta\)，也就是 \(\theta \ge 90^\circ - \theta_c\) 時，水平推力再大也推不上去（自鎖現象）。</p>
+
+      <h3 data-en="Friction turns work into heat">摩擦力作功變成熱</h3>
+      <p data-en-html="Kinetic friction always opposes the sliding, so its work is negative and equals minus the heat produced. It depends on the <strong>path length</strong> (up and back counts twice), not on the displacement. The work–energy theorem holds at every moment:">動摩擦力永遠與滑動方向相反，作負功，大小等於產生的熱。它和<strong>路徑長</strong>有關（上去再下來要算兩段），不是位移。功能定理在任何時刻都成立：</p>
+      <div class="formula" data-en-html="\[ Q = -W_f = \mu_k N \times (\text{path length}), \qquad \Delta\!\left(\tfrac12 m v^2\right) = W_g + W_F + W_f \]">
+        \[ Q = -W_f = \mu_k N \times (\text{路徑長}), \qquad \Delta\!\left(\tfrac12 m v^2\right) = W_g + W_F + W_f \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Find the critical angle</strong>: release the block at a small angle, then press “Raise slowly”. For wood (\(\mu_s = 0.50\)) it slips at \(\theta_c = \tan^{-1}0.50 \approx 26.6^\circ\) — whatever the mass."><strong>找臨界角</strong>：在小角度放手，再按「慢慢抬高」。木頭（\(\mu_s = 0.50\)）在 \(\theta_c = \tan^{-1}0.50 \approx 26.6^\circ\) 開始滑——不論質量多少。</li>
+        <li data-en-html="<strong>Watch the friction drop</strong>: as soon as it slips the red friction arrow becomes shorter (\(\mu_s N \to \mu_k N\)), so a block that just started to slide speeds up even though the angle has not changed."><strong>看摩擦力突然變小</strong>：一開始滑，紅色的摩擦力箭頭立刻變短（\(\mu_s N \to \mu_k N\)），所以角度沒變，剛開始滑的木塊也會加速。</li>
+        <li data-en-html="<strong>The classic friction graph</strong>: set \(\theta = 0\) and press “Increase force”. Friction equals the pull, rising in a straight line up to \(\mu_s mg\), then drops to \(\mu_k mg\). On a slope the same line is shifted down by \(mg\sin\theta\) and passes through zero — static friction changes direction."><strong>經典摩擦力圖</strong>：設 \(\theta = 0\)、按「慢慢加力」。摩擦力等於拉力，沿直線上升到 \(\mu_s mg\)，然後降到 \(\mu_k mg\)。在斜面上，這條直線整個往下移 \(mg\sin\theta\)，而且會穿過零——靜摩擦力換了方向。</li>
+        <li data-en-html="<strong>Measure μk</strong>: release the block from rest at an angle above \(\theta_c\), read \(t_1\) and \(t_2\) from the photogates, and compute \(a\) and \(\mu_k\). Try the mystery surface and check your answer."><strong>量 μk</strong>：在大於 \(\theta_c\) 的角度靜止釋放，讀光電門的 \(t_1\)、\(t_2\)，算出 \(a\) 與 \(\mu_k\)。試試神秘表面，再核對你的答案。</li>
+        <li data-en-html="<strong>Constant velocity needs a nudge</strong>: set \(\tan\theta = \mu_k\) (wood: \(16.7^\circ\)). Released at rest it stays put; give it \(v_0 > 0\) and the ghost images are equally spaced."><strong>等速度要先推一下</strong>：讓 \(\tan\theta = \mu_k\)（木頭：\(16.7^\circ\)）。靜止放手不會動；給它 \(v_0 > 0\)，殘影的間距就完全相等。</li>
+        <li data-en-html="<strong>Up and back</strong>: start at the bottom with a negative \(v_0\). Going up it slows at \(g(\sin\theta + \mu_k\cos\theta)\); if \(\tan\theta > \mu_s\) it comes back down more gently, at \(g(\sin\theta - \mu_k\cos\theta)\), and returns slower than it left. Compare the heat \(Q\) with the loss of kinetic energy."><strong>上去再下來</strong>：從底端以負的 \(v_0\) 射出。上坡時以 \(g(\sin\theta + \mu_k\cos\theta)\) 減速；若 \(\tan\theta > \mu_s\) 會滑回來，下坡加速度較小，為 \(g(\sin\theta - \mu_k\cos\theta)\)，回到底端時比出發時慢。比較摩擦生熱 \(Q\) 與動能的減少。</li>
+        <li data-en-html="<strong>Horizontal push</strong>: choose “Horizontal” and watch \(N\) grow with \(F\). On a steep slope (wood: above \(63.4^\circ\)) even the maximum push cannot move the block up."><strong>水平推</strong>：選「水平」，看正向力 \(N\) 隨 \(F\) 變大。斜面很陡時（木頭：超過 \(63.4^\circ\)），推力開到最大也推不上去。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="While the forces stay the same the acceleration is constant, so position and velocity follow the exact formulas \(x = x_0 + v_0 t + \tfrac12 a t^2\). The moments when the velocity reaches zero, when the block hits a stop and when it crosses a photogate are found by solving these equations exactly.">力不變時加速度固定，位置與速度直接用 \(x = x_0 + v_0 t + \tfrac12 a t^2\) 的精確公式計算；速度歸零、撞到擋板、通過光電門的時刻都由公式精確解出。</li>
+        <li data-en-html="When the velocity reaches zero, the block sticks if the required static friction is at most \(\mu_s N\); otherwise it immediately slides the other way. When the angle or the force is changed gradually (“Raise slowly”, “Increase force”), the simulation takes steps of 2 ms of simulated time, so the slipping angle or force is found to within 0.004° or 0.02 N.">速度歸零時，如果需要的靜摩擦力不超過 \(\mu_s N\) 就停住，否則立刻往回滑。「慢慢抬高」與「慢慢加力」時，模擬時間每 2 ms 更新一次角度或外力，所以開始滑動的角度或外力誤差在 0.004° 或 0.02 N 以內。</li>
+        <li data-en-html="The block is treated as a particle that slides without tipping; its size on screen is to scale. The board is assumed to rotate slowly, so its own rotation does not affect the block. The block stops dead when it hits a stop (the lost kinetic energy is shown separately from the friction heat). While it rests against a stop, the split between static friction and the stop’s push is not unique; the simulation takes the friction at its maximum \(\mu_s N\).">木塊視為只滑動、不翻倒的質點，畫面上的大小依比例。木板視為緩慢轉動，不考慮木板本身轉動的影響。撞到擋板時木塊立即停止（損失的動能與摩擦生熱分開計算）。靠在擋板上時，靜摩擦力與擋板的推力如何分配在力學上不唯一，模擬取摩擦力為最大值 \(\mu_s N\)。</li>
+        <li data-en-html="The photogates report the time and the instantaneous speed when the centre of the block passes. \(g = 9.8\ \mathrm{m/s^2}\).">光電門記錄木塊中心通過的時刻與當時的瞬時速度。\(g = 9.8\ \mathrm{m/s^2}\)。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111234"></script>
+  <script src="js/incline-friction-core.js?v=202611111234"></script>
+  <script src="js/sound.js?v=202611111234"></script>
+  <script src="js/numinput.js?v=202611111234"></script>
+  <script src="js/incline-friction.js?v=202611111234"></script>
+  <script src="js/firebase-config.js?v=202611111234"></script>
+  <script src="js/missions.js?v=202611111234" data-module="incline-friction"></script>
+  <script src="js/missions/incline-friction.js?v=202611111234"></script>
+  <script src="js/stats.js?v=202611111234" data-module="incline-friction"></script>
+  <script src="js/comments.js?v=202611111234"></script>
+</body>
+</html>

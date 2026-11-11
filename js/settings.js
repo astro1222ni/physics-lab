@@ -163,11 +163,13 @@
     });
   }
 
+  // 簡體對照表沿用本檔的版本號（?v=…），更新對照表後不會讀到舊快取
+  const HANS_VER = (((document.currentScript || {}).src || '').match(/\?v=\d+/) || [''])[0];
   function startHans() {
     const done = function () { html.classList.remove('lab-converting'); };
     setTimeout(done, 2500); // 萬一對照表載入失敗，也不要讓畫面一直隱藏
     const s = document.createElement('script');
-    s.src = 'js/hans-map.js';
+    s.src = 'js/hans-map.js' + HANS_VER;
     s.onerror = done;
     s.onload = function () {
       if (!window.LAB_HANS) { done(); return; }
