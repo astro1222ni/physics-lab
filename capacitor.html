@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111048"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Parallel-Plate Capacitor | Astro Ni Physics Lab">平行板電容器｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整平行板電容器的面積、板距與介電質，比較「接上電池（V 固定）」與「充電後斷開（Q 固定）」時電容、電量、電壓、電場與能量如何變化。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111048">
+  <style>
+    /* 平行板電容器頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；canvas 允許上下捲動，拖曳上板／介電質時由程式攔截 */
+    #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; cursor: default; }
+    .cap button { min-height: 44px; }
+    .cap .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cap .playbar .modes { flex: 2 1 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .cap .playbar .modes button { padding: 6px 8px; line-height: 1.25; }
+    .cap .playbar .modes button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .cap .playbar .tools { flex: 1 1 180px; display: flex; gap: 8px; }
+    .cap .playbar .tools button { flex: 1 1 auto; }
+    .cap .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cap .stage .status { margin: 6px 4px 0; }
+    .cap .slider input[type="range"] { height: 28px; margin: 0; }
+    .cap .slider label sub, dl.readout sub { font-size: .75em; }
+    .cap .slider.off { opacity: .55; }
+    .cap [hidden] { display: none !important; }
+    .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 6px; }
+    .presets button { padding: 4px 4px; line-height: 1.2; font-size: calc(13px * var(--fs, 1)); }
+    .presets button small { display: block; color: var(--muted); font-size: calc(11.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .presets button[aria-pressed="true"] small { color: var(--accent); }
+    .cap .checks label { min-height: 36px; }
+    .cap .checks input { width: 17px; height: 17px; }
+    .cap .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cap .card .modeline { font-size: calc(13px * var(--fs, 1)); margin: -2px 0 8px; color: var(--muted); }
+    .cap .card .modeline b { color: var(--accent); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout.cmpr dd { white-space: nowrap; }
+    dl.readout.cmpr dd small { white-space: normal; }
+    .tr { display: inline-block; min-width: 4.6em; margin-left: 6px; padding: 0 6px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; text-align: center; line-height: 1.6; white-space: nowrap; }
+    .tr.up { color: var(--pos); background: color-mix(in srgb, var(--pos) 13%, transparent); }
+    .tr.down { color: var(--neg); background: color-mix(in srgb, var(--neg) 13%, transparent); }
+    .tr.same { color: var(--muted); background: color-mix(in srgb, var(--muted) 12%, transparent); font-weight: 600; }
+    .tr.none { color: var(--muted); font-weight: 400; }
+    .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .legend .ring { width: 8px !important; height: 8px !important; border-radius: 50%; background: none !important; border: 2px solid currentColor; }
+    .cmp { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); margin: 8px 0 4px; font-variant-numeric: tabular-nums; }
+    .cmp th, .cmp td { border-bottom: 1px solid var(--border); padding: 5px 4px; text-align: center; }
+    .cmp th { color: var(--muted); font-weight: 600; }
+    .cmp td:first-child, .cmp th:first-child { text-align: left; }
+    .cmp tr.grp td { background: var(--accent-soft); font-weight: 700; text-align: left; }
+    .cmp .u { color: var(--pos); font-weight: 700; }
+    .cmp .d { color: var(--neg); font-weight: 700; }
+    .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / Electrostatics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 靜電學</nav>
+      <h1 data-en="Parallel-Plate Capacitor">平行板電容器</h1>
+      <p data-en="Two metal plates face each other across a small gap. Change the plate area, the separation and the dielectric between them, and compare what happens when the capacitor stays connected to the battery (V fixed) with what happens after it is charged and disconnected (Q fixed) — a classic exam question. The arrows next to each reading show how it changed from the previous state.">兩片金屬平板隔著小小的間隙相對。調整平板面積、板距與兩板之間的介電質，比較電容器「一直接著電池（V 固定）」與「充電後斷開（Q 固定）」時各個量的變化——這是考試的經典題型。每個讀數旁的箭頭顯示它與前一個狀態相比是變大還是變小。</p>
+    </header>
+
+    <div class="lab cap">
+      <div class="stage">
+        <canvas id="cv" aria-label="平行板電容器模擬畫布：側視圖的兩片平板、板上的正負電荷、兩板間的電場線、可推入的介電質板，以及電池、開關與導線" data-en-aria-label="Parallel-plate capacitor simulation: side view of the two plates with their charges, the field lines between them, a sliding dielectric slab, and the battery, switch and wires"></canvas>
+        <div class="playbar">
+          <div class="modes" role="group" aria-label="連接方式" data-en-aria-label="Connection">
+            <button type="button" id="modeV" aria-pressed="true" data-en-html="Battery connected<br>(V fixed)">接上電池<br>（V 固定）</button>
+            <button type="button" id="modeQ" aria-pressed="false" data-en-html="Charged, then disconnected<br>(Q fixed)">充電後斷開<br>（Q 固定）</button>
+          </div>
+          <div class="tools">
+            <button id="reset" type="button" data-en="Reset" title="恢復預設的面積、板距、電壓與介電質" data-en-title="Restore the default area, separation, voltage and dielectric">重設</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Free charge + / −"><i class="dot" style="background:var(--pos)"></i>自由電荷 ＋／－</span>
+          <span style="color:var(--b-optics)" data-en-html="<i class=&quot;ring&quot;></i>Bound charge on the dielectric"><i class="ring"></i>介電質表面的束縛電荷</span>
+          <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Electric field lines"><i style="background:var(--field)"></i>電場線</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Electrons moving in the wire"><i class="dot" style="background:var(--neg)"></i>導線中移動的電子</span>
+        </div>
+        <p class="hint" id="scaleHint" data-en="Side view, not to scale: the gap is drawn much larger than the plates. The spacing of the charges is inversely proportional to the surface charge density σ, and the spacing of the field lines to E. Drag the top plate up or down to change d, and drag the dielectric slab sideways.">側視示意圖（未依比例）：板距方向放大許多倍。電荷符號越密代表電荷面密度 σ 越大，電場線越密代表 E 越大（間距與 σ、E 成反比）。可上下拖曳上板改變板距，左右拖曳介電質板。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Capacitor">電容器</h2>
+          <p class="modeline" id="modeLine"></p>
+          <div class="slider"><label for="A" data-en="Plate area A">平板面積 A</label><output id="Ao"></output>
+            <input id="A" type="range" min="50" max="400" step="10" value="100" data-decimals="1"></div>
+          <div class="slider"><label for="d" data-en="Separation d">板距 d</label><output id="do"></output>
+            <input id="d" type="range" min="1" max="10" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider" id="boxV"><label for="Vb" data-en-html="Battery voltage V<sub>0</sub>">電池電壓 V<sub>0</sub></label><output id="Vbo"></output>
+            <input id="Vb" type="range" min="1" max="20" step="0.5" value="10" data-decimals="2"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Dielectric between the plates">兩板間的介電質</h2>
+          <div class="presets" role="group" aria-label="介電質" data-en-aria-label="Dielectric">
+            <button type="button" data-k="1" data-en-html="Air<small>κ = 1</small>">空氣<small>κ = 1</small></button>
+            <button type="button" data-k="3.5" data-en-html="Paper<small>κ = 3.5</small>">紙<small>κ = 3.5</small></button>
+            <button type="button" data-k="5" data-en-html="Glass<small>κ = 5</small>">玻璃<small>κ = 5</small></button>
+            <button type="button" data-k="6" data-en-html="Mica<small>κ = 6</small>">雲母<small>κ = 6</small></button>
+            <button type="button" data-k="80" data-en-html="Water<small>κ = 80</small>">水<small>κ = 80</small></button>
+            <button type="button" id="kCustom" disabled data-en-html="Other<small>slider</small>">其他<small>用滑桿</small></button>
+          </div>
+          <div class="slider"><label for="k" data-en="Dielectric constant κ">介電常數 κ</label><output id="ko"></output>
+            <input id="k" type="range" min="0" max="1000" step="1" value="0"></div>
+          <div class="slider" id="boxF"><label for="f" data-en="Fraction inserted">插入比例</label><output id="fo"></output>
+            <input id="f" type="range" min="0" max="100" step="1" value="100" data-decimals="1"></div>
+          <p class="hint" id="fHint" data-en="The slab is as thick as the gap. Partly inserted, it acts as two capacitors in parallel (dielectric part and air part).">介電質板厚度等於板距；部分插入時，相當於「介電質部分」與「空氣部分」兩個電容器並聯。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings (arrows: compared with the previous state)">讀數（箭頭：與前一狀態比較）</h2>
+          <dl class="readout cmpr">
+            <dt data-en-html="Capacitance <i>C</i><small class=&quot;f&quot;>C = κε<sub>0</sub>A/d</small>">電容 <i>C</i><small class="f">C = κε<sub>0</sub>A/d</small></dt><dd id="rC">—</dd>
+            <dt data-en-html="Charge <i>Q</i><small class=&quot;f&quot;>±Q = CV</small>">電量 <i>Q</i><small class="f">±Q = CV</small></dt><dd id="rQ">—</dd>
+            <dt data-en-html="Voltage <i>V</i><small class=&quot;f&quot;>V = Q/C</small>">電壓 <i>V</i><small class="f">V = Q/C</small></dt><dd id="rV">—</dd>
+            <dt data-en-html="Field in the gap <i>E</i><small class=&quot;f&quot;>E = V/d</small>">板間電場 <i>E</i><small class="f">E = V/d</small></dt><dd id="rE">—</dd>
+            <dt data-en-html="Stored energy <i>U</i><small class=&quot;f&quot;>U = ½CV<sup>2</sup></small>">儲存能量 <i>U</i><small class="f">U = ½CV<sup>2</sup></small></dt><dd id="rU">—</dd>
+            <dt data-en-html="Energy density <i>u</i><small class=&quot;f&quot;>u = ½κε<sub>0</sub>E<sup>2</sup></small>">能量密度 <i>u</i><small class="f">u = ½κε<sub>0</sub>E<sup>2</sup></small></dt><dd id="ru">—</dd>
+            <dt data-en-html="Force between plates <i>F</i><small class=&quot;f&quot;>F = Q<sup>2</sup>/(2ε<sub>0</sub>A)</small>">兩板吸引力 <i>F</i><small class="f">F = Q<sup>2</sup>/(2ε<sub>0</sub>A)</small></dt><dd id="rF">—</dd>
+            <dt data-en-html="Surface charge density σ">電荷面密度 σ</dt><dd id="rS">—</dd>
+          </dl>
+          <p class="hint" id="lastStep"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showLines" type="checkbox" checked><span data-en="Field lines">電場線</span></label>
+            <label><input id="showFringe" type="checkbox"><span data-en="Fringe field (sketch)">邊緣場（示意）</span></label>
+            <label><input id="showBound" type="checkbox" checked><span data-en="Bound charges">束縛電荷</span></label>
+            <label><input id="showDip" type="checkbox" checked><span data-en="Polarized molecules (sketch)">分子極化（示意）</span></label>
+            <label><input id="showFlow" type="checkbox" checked><span data-en="Charge flow in wires">導線中的電荷流動</span></label>
+          </div>
+          <p class="hint" data-en="The flow of electrons is shown in slow motion. In a real circuit with ordinary wires it is over in far less than a microsecond.">電子流動以慢動作示意；真實電路中通常不到百萬分之一秒就完成。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="When a battery is connected, it pushes electrons off one plate and onto the other until the voltage between the plates equals the battery voltage. The plates carry equal and opposite charges \(\pm Q\), proportional to the voltage; the constant of proportionality is the <strong>capacitance</strong> \(C\):">接上電池時，電池把電子從一片平板搬到另一片，直到兩板間的電壓等於電池電壓為止。兩板帶等量異號電荷 \(\pm Q\)，電量與電壓成正比，比例常數就是<strong>電容</strong> \(C\)：</p>
+      <div class="formula">
+        \[ Q = CV, \qquad C = \frac{\kappa\,\varepsilon_0 A}{d}, \qquad \varepsilon_0 = 8.85\times10^{-12}\ \mathrm{C^2/(N\,m^2)} \]
+      </div>
+      <p data-en-html="The charge spreads evenly over the inner faces of the plates with surface density \(\sigma = Q/A\). Between large plates the field is uniform; outside it is (almost) zero. With air between the plates:">電荷均勻分布在兩板的內側表面，面密度 \(\sigma = Q/A\)。兩板很大時，板間是均勻電場，板外電場（幾乎）為零。兩板之間是空氣時：</p>
+      <div class="formula">
+        \[ E = \frac{\sigma}{\varepsilon_0} = \frac{V}{d} \]
+      </div>
+
+      <h3 data-en="Dielectrics">介電質</h3>
+      <p data-en-html="A dielectric (an insulator such as paper, glass or mica) is <strong>polarized</strong> by the field: its molecules line up, leaving a layer of <strong>bound charge</strong> on each face, opposite in sign to the neighbouring plate. These bound charges cancel part of the free charge, so the same free charge produces a field \(\kappa\) times weaker — or, with the battery holding the voltage fixed, the plates can hold \(\kappa\) times as much charge. The <strong>dielectric constant</strong> \(\kappa\) is 1 for vacuum (and almost exactly 1 for air).">介電質（紙、玻璃、雲母等絕緣體）在電場中會<strong>極化</strong>：分子沿電場排列，在兩個表面留下與相鄰平板異號的<strong>束縛電荷</strong>。束縛電荷抵消一部分自由電荷，所以同樣的自由電荷只產生 \(1/\kappa\) 的電場；換句話說，電壓固定時平板可以多存 \(\kappa\) 倍的電荷。<strong>介電常數</strong> \(\kappa\) 在真空中為 1，空氣也幾乎等於 1。</p>
+      <div class="formula">
+        \[ \sigma_{\text{b}} = (\kappa - 1)\,\varepsilon_0 E, \qquad \sigma_{\text{free}} - \sigma_{\text{b}} = \varepsilon_0 E \]
+      </div>
+      <p data-en-html="Here the slab is exactly as thick as the gap and slides in from the side. With a fraction \(f\) of the area covered, the dielectric part and the air part have the same voltage \(V\) and the same separation \(d\) — they are <strong>two capacitors in parallel</strong>, and the field \(E = V/d\) is the same in both:">這裡的介電質板厚度恰好等於板距，從側面推入。蓋住面積的比例為 \(f\) 時，介電質部分與空氣部分的電壓都是 \(V\)、板距都是 \(d\)，是<strong>兩個電容器並聯</strong>，兩部分的電場都是 \(E = V/d\)：</p>
+      <div class="formula">
+        \[ C = \frac{\varepsilon_0 (1-f)A}{d} + \frac{\kappa\,\varepsilon_0 f A}{d} = \frac{\varepsilon_0 A}{d}\,\bigl[\,1 + f(\kappa - 1)\,\bigr] \]
+      </div>
+      <p data-en-html="Compare a slab of thickness \(t\) lying flat and covering the whole area: then the air layer and the dielectric layer carry the same charge and their voltages add — <strong>two capacitors in series</strong>:">對照：若厚度 \(t\) 的介電質板平放、蓋滿整個面積，空氣層與介電質層帶相同電量、電壓相加，是<strong>兩個電容器串聯</strong>：</p>
+      <div class="formula">
+        \[ \frac{1}{C} = \frac{d - t}{\varepsilon_0 A} + \frac{t}{\kappa\,\varepsilon_0 A} \quad\Rightarrow\quad C = \frac{\varepsilon_0 A}{d - t + t/\kappa} \]
+      </div>
+
+      <h3 data-en="Energy and force">能量與力</h3>
+      <p data-en-html="Charging a capacitor takes work, which is stored as electric potential energy in the field between the plates. Dividing by the volume \(Ad\) gives the energy density:">把電容器充電需要作功，這些功以電位能的形式儲存在兩板間的電場中。除以體積 \(Ad\) 得到能量密度：</p>
+      <div class="formula">
+        \[ U = \tfrac12 CV^{2} = \tfrac12 QV = \frac{Q^{2}}{2C}, \qquad u = \tfrac12\,\kappa\,\varepsilon_0 E^{2} \]
+      </div>
+      <p data-en-html="The plates attract each other. Each plate feels the field of the <em>other</em> plate only, \(\sigma/2\varepsilon_0 = E/2\), so the force is half of \(QE\). It does not depend on \(d\); with \(Q\) fixed, pulling the plates apart by \(\Delta d\) takes work \(F\,\Delta d\), which is exactly the increase in stored energy:">兩板互相吸引。每片平板只受到<em>另一片</em>平板的電場 \(\sigma/2\varepsilon_0 = E/2\)，所以力是 \(QE\) 的一半，而且與 \(d\) 無關。\(Q\) 固定時，把兩板拉開 \(\Delta d\) 所作的功 \(F\,\Delta d\) 恰好等於能量的增加：</p>
+      <div class="formula">
+        \[ F = \frac{Q^{2}}{2\varepsilon_0 A} = \tfrac12 QE, \qquad F\,\Delta d = \frac{Q^{2}}{2\varepsilon_0 A}\,\Delta d = \Delta\!\left(\frac{Q^{2}}{2C}\right) = \Delta U \]
+      </div>
+      <p data-en-html="With the battery connected the energy accounts are different: pulling the plates apart sends charge \(|\Delta Q|\) back into the battery. The battery does work \(V\Delta Q\) (negative), the stored energy changes by \(\tfrac12 V\Delta Q\), and the hand pulling the plates does work \(-\tfrac12 V\Delta Q > 0\).">接著電池時，能量帳不一樣：拉開兩板會把電量 \(|\Delta Q|\) 推回電池。電池作功 \(V\Delta Q\)（為負），電容器能量變化 \(\tfrac12 V\Delta Q\)，拉板的外力作功 \(-\tfrac12 V\Delta Q > 0\)。</p>
+
+      <h3 data-en="V fixed or Q fixed?">V 固定還是 Q 固定？</h3>
+      <p data-en-html="First decide which quantity cannot change: if the battery stays connected, \(V\) is fixed; if the capacitor was disconnected, the charge has nowhere to go and \(Q\) is fixed. Then use \(C = \kappa\varepsilon_0A/d\), \(Q = CV\), \(E = V/d\) and \(U = \tfrac12 CV^2\):">先判斷哪個量不會變：電池一直接著，\(V\) 固定；斷開後電荷無處可去，\(Q\) 固定。再用 \(C = \kappa\varepsilon_0A/d\)、\(Q = CV\)、\(E = V/d\)、\(U = \tfrac12 CV^2\) 推論：</p>
+      <div class="tablewrap">
+        <table class="cmp">
+          <thead><tr><th data-en="Change">改變</th><th>C</th><th>Q</th><th>V</th><th>E</th><th>U</th></tr></thead>
+          <tbody>
+            <tr class="grp"><td colspan="6" data-en="Battery connected (V fixed)">接上電池（V 固定）</td></tr>
+            <tr><td data-en="d doubled">d 加倍</td><td class="d">×½</td><td class="d">×½</td><td data-en="same">不變</td><td class="d">×½</td><td class="d">×½</td></tr>
+            <tr><td data-en="A doubled">A 加倍</td><td class="u">×2</td><td class="u">×2</td><td data-en="same">不變</td><td data-en="same">不變</td><td class="u">×2</td></tr>
+            <tr><td data-en="dielectric κ filled in">填入介電質 κ</td><td class="u">×κ</td><td class="u">×κ</td><td data-en="same">不變</td><td data-en="same">不變</td><td class="u">×κ</td></tr>
+            <tr class="grp"><td colspan="6" data-en="Charged, then disconnected (Q fixed)">充電後斷開（Q 固定）</td></tr>
+            <tr><td data-en="d doubled">d 加倍</td><td class="d">×½</td><td data-en="same">不變</td><td class="u">×2</td><td data-en="same">不變</td><td class="u">×2</td></tr>
+            <tr><td data-en="A doubled">A 加倍</td><td class="u">×2</td><td data-en="same">不變</td><td class="d">×½</td><td class="d">×½</td><td class="d">×½</td></tr>
+            <tr><td data-en="dielectric κ filled in">填入介電質 κ</td><td class="u">×κ</td><td data-en="same">不變</td><td class="d">×1/κ</td><td class="d">×1/κ</td><td class="d">×1/κ</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Double d with the battery connected</strong>: set \(d = 2\ \mathrm{mm}\), then \(4\ \mathrm{mm}\). \(C\), \(Q\), \(E\) and \(U\) all halve (every arrow shows ×0.50) and electrons flow back toward the battery; only \(V\) stays the same."><strong>接著電池把板距加倍</strong>：\(d\) 由 \(2\ \mathrm{mm}\) 改成 \(4\ \mathrm{mm}\)。\(C\)、\(Q\)、\(E\)、\(U\) 都減半（箭頭都顯示 ×0.50），電子流回電池；只有 \(V\) 不變。</li>
+        <li data-en-html="<strong>Now disconnect and do it again</strong>: press “Charged, then disconnected”, then change \(d\) from \(2\) to \(4\ \mathrm{mm}\). The charge cannot leave, so \(Q\) and \(E\) stay the same — the field lines keep their spacing — while \(V\) and \(U\) double. The extra energy comes from the work done pulling the plates apart."><strong>斷開後再做一次</strong>：按「充電後斷開」，再把 \(d\) 由 \(2\) 改成 \(4\ \mathrm{mm}\)。電荷跑不掉，\(Q\) 與 \(E\) 不變（電場線疏密不變），\(V\) 與 \(U\) 加倍；多出來的能量來自拉開兩板所作的功。</li>
+        <li data-en-html="<strong>Slide in glass with the battery connected</strong>: choose glass and drag the slab in. Electrons keep flowing and the free charge on the plates beside the glass becomes 5 times as dense, but the field lines do not change, because the bound charges on the glass cancel the extra charge. \(E = V/d\) is fixed by the battery."><strong>接著電池推入玻璃</strong>：選玻璃，把介電質板拖進去。電子持續流動，玻璃那一側平板上的自由電荷變成 5 倍密，但電場線不變——多出來的電荷被玻璃表面的束縛電荷抵消，\(E = V/d\) 由電池決定。</li>
+        <li data-en-html="<strong>Slide in glass after disconnecting</strong>: now \(Q\) is fixed, so the voltage, the field and the energy all drop. The capacitor’s energy decreases: the field pulls the slab in."><strong>斷開後推入玻璃</strong>：\(Q\) 固定，電壓、電場與能量都下降。能量減少，代表電場會把介電質板「吸」進去。</li>
+        <li data-en-html="<strong>Halfway in</strong>: with the slab half inserted, \(C\) is exactly halfway between the air value and the full-slab value — the two parts are in parallel."><strong>推入一半</strong>：介電質板推入一半時，\(C\) 恰好在「全是空氣」與「全部填滿」兩個值的正中間——兩部分是並聯。</li>
+        <li data-en-html="<strong>The force does not depend on d</strong>: with air between the plates and \(Q\) fixed, change \(d\): the force \(F = Q^2/(2\varepsilon_0A)\) stays the same, so the energy grows in proportion to \(d\)."><strong>吸引力與板距無關</strong>：兩板間是空氣、\(Q\) 固定時改變 \(d\)，吸引力 \(F = Q^2/(2\varepsilon_0A)\) 不變，所以能量與 \(d\) 成正比增加。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="All readings come straight from the formulas above for ideal plates: uniform field between the plates, no field outside (the optional fringe field is only a sketch). The plates are square, with side \(\sqrt{A}\).">所有讀數直接由上面的理想平行板公式計算：板間為均勻電場、板外沒有電場（可選的「邊緣場」只是示意）。平板為正方形，邊長 \(\sqrt{A}\)。</li>
+        <li data-en-html="With the battery connected, a change makes the charge relax toward the new value \(Q = CV\) as in an RC circuit, \(q(t) = Q + (q_0 - Q)\,e^{-t/\tau}\), shown in slow motion. The readings always show the final values.">接著電池時，條件改變後電量像 RC 電路一樣趨近新的 \(Q = CV\)：\(q(t) = Q + (q_0 - Q)\,e^{-t/\tau}\)，以慢動作顯示；讀數一律顯示最後的平衡值。</li>
+        <li data-en="“Previous state” is the state before your last change. Several quick moves of the same slider count as one change.">「前一狀態」是最近一次改變之前的狀態；連續拖曳同一個滑桿算作一次改變。</li>
+        <li data-en="The force between the plates is given only for an air gap; with a solid dielectric in the gap it depends on how the slab touches the plates, which is beyond this model.">兩板吸引力只在兩板間是空氣時計算；有固體介電質時，力與介電質和平板的接觸方式有關，超出這個模型的範圍。</li>
+        <li data-en="Water is included because of its very large κ; real tap water conducts a little, so a capacitor would slowly leak through it.">水的 κ 很大，所以列入比較；實際的自來水會稍微導電，電容器會經由水慢慢漏電。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111048"></script>
+  <script src="js/capacitor-core.js?v=202611111048"></script>
+  <script src="js/sound.js?v=202611111048"></script>
+  <script src="js/numinput.js?v=202611111048"></script>
+  <script src="js/capacitor.js?v=202611111048"></script>
+  <script src="js/firebase-config.js?v=202611111048"></script>
+  <script src="js/missions.js?v=202611111048" data-module="capacitor"></script>
+  <script src="js/missions/capacitor.js?v=202611111048"></script>
+  <script src="js/stats.js?v=202611111048" data-module="capacitor"></script>
+  <script src="js/comments.js?v=202611111048"></script>
+</body>
+</html>
