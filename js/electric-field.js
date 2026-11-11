@@ -441,6 +441,8 @@
   // ---------- 啟動 ----------
   readColors();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); invalidate(); });
+  // 齒輪設定切換深淺色時也重畫（settings.js）
+  window.addEventListener('lab:themechange', function () { readColors(); invalidate(); });
   if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
   else window.addEventListener('resize', resize);
   resize();

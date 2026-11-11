@@ -735,6 +735,8 @@
   syncAnimButton();
   setMode(state.mode);
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); requestDraw(); });
+  // 齒輪設定切換深淺色時也重畫（settings.js）
+  window.addEventListener('lab:themechange', function () { readColors(); requestDraw(); });
 
   function onResize() {
     sizeCanvas(scene);

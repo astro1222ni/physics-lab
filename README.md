@@ -45,3 +45,13 @@ for t in tests/*.test.js; do node "$t"; done
 - 計算方式：每載入一次頁面瀏覽人次 +1；拖曳畫布、放開滑桿、按按鈕、切換勾選各算一次操作；頁面在前景且最近 30 秒內有操作時才計時。
 - 資料庫網址填在 `js/firebase-config.js` 的 `databaseURL`；留空時統計停用、頁面照常運作。
 - 資料庫安全規則在 `firebase/database.rules.json`：任何人只能讀取統計、只能「增加」數字，且每次增加有上限，無法竄改或清除。
+
+## 齒輪設定（語言、字體大小、外觀）
+
+`js/settings.js` 放在每頁 `<head>`（緊接在 `<meta charset>` 之後，不加 `defer`），設定存在瀏覽器 localStorage。
+
+- **简体中文**：載入 `js/hans-map.js`，將頁面文字、之後更新的文字與畫布文字轉為簡體，並套用物理名詞對照（電位→电势、向量→矢量、勞侖茲→洛伦兹…）。
+  對照表由 `tools/build-hans.cjs` 產生（字元取自 OpenCC），要增修名詞對照請改該檔的 `PHRASES` 後重新執行。
+- **English**：元素加上 `data-en`、`data-en-html`（含公式）、`data-en-placeholder`、`data-en-aria-label`；整頁翻譯完成後在 `<body>` 加 `data-en-ready`，否則會顯示「尚未翻譯」提示。程式中的字串用 `LabSettings.t('中文', 'English')`。
+- **字體大小**：CSS 一律寫成 `font-size: calc(14px * var(--fs, 1))`；畫布文字會自動縮放。
+- **外觀**：切換時發出 `lab:themechange` 事件，各模組收到後重新讀取顏色並重畫。

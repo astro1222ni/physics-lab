@@ -25,12 +25,23 @@
 
   function norm(s) {
     s = (s || '').normalize('NFKC').toLowerCase();
+    // 簡體模式：兩邊都轉成簡體（含物理名詞，例如 電位→电势、勞侖茲→洛伦兹）再比對
+    const toHans = window.LabSettings && window.LabSettings.toHans;
+    if (toHans) return toHans(s).replace(/\\[()[\]]/g, ' ').replace(/[\\{}^_$]/g, '');
     let out = '';
     for (const ch of s) out += S2T[ch] || ch;
     return out.replace(/\\[()[\]]/g, ' ').replace(/[\\{}^_$]/g, '');
   }
 
   // ---------- 建立索引 ----------
+  const EN = window.LabSettings && window.LabSettings.lang === 'en';
+  function en(el) { return el ? el.getAttribute('data-en') || '' : ''; }
+  function enDesc(el) {
+    if (!el) return '';
+    const h = el.getAttribute('data-en-html');
+    if (h) { const d = document.createElement('div'); d.innerHTML = h; return d.textContent; }
+    return el.getAttribute('data-en') || '';
+  }
   const items = [];
   document.querySelectorAll('.module').forEach(function (card) {
     const section = card.closest('.branch');
@@ -38,24 +49,34 @@
     const branch = section ? (section.querySelector('.branch-head h2') || {}).textContent || '' : '';
     const topic = (card.querySelector('.topic') || {}).textContent || '';
     const desc = (card.querySelector('h3 + p') || card.querySelector('p') || {}).textContent || '';
-    const keywords = (card.getAttribute('data-keywords') || '').split(/\s+/).filter(Boolean);
+    const h3 = card.querySelector('h3'), topicEl = card.querySelector('.topic');
+    const descEl = card.querySelector('h3 + p') || card.querySelector('p');
+    const branchEl = section && section.querySelector('.branch-head h2');
+    const enText = { title: en(h3), topic: en(topicEl), branch: en(branchEl), desc: enDesc(descEl) };
+    // 英文標題、主題也拿來比對，所以中英文關鍵字都搜得到
+    const keywords = (card.getAttribute('data-keywords') || '').split(/\s+/).filter(Boolean)
+      .concat([enText.title, enText.topic, enText.branch].filter(Boolean));
     items.push({
-      title: title.trim(),
-      branch: branch.trim(),
-      topic: topic.trim(),
-      desc: desc.trim(),
+      title: (EN && enText.title || title).trim(),
+      branch: (EN && enText.branch || branch).trim(),
+      topic: (EN && enText.topic || topic).trim(),
+      desc: (EN && enText.desc || desc).trim(),
       keywords: keywords,
       href: card.tagName === 'A' ? card.getAttribute('href') : null,
       color: section ? section.style.getPropertyValue('--c') : '',
-      n: {
-        title: norm(title),
-        branch: norm(branch),
-        topic: norm(topic),
-        desc: norm(desc),
-        keywords: keywords.map(norm)
-      }
+      raw: { title: EN && enText.title || title, branch: branch, topic: topic, desc: desc + ' ' + enText.desc }
     });
   });
+  function buildNorm(it) {
+    it.n = {
+      title: norm(it.raw.title),
+      branch: norm(it.raw.branch),
+      topic: norm(it.raw.topic),
+      desc: norm(it.raw.desc),
+      keywords: it.keywords.map(norm)
+    };
+  }
+  items.forEach(buildNorm);
 
   // ---------- 比對與排序 ----------
   function score(item, terms) {
@@ -99,9 +120,18 @@
     }
   }
 
-  const SUGGEST = ['電場', '動量', '折射', '干涉', '磁場', '波'];
+  const SUGGEST = EN ? ['field', 'momentum', 'light', 'wave', 'magnetic'] : ['電場', '動量', '折射', '干涉', '磁場', '波'];
+
+  // 簡體對照表在頁面載入後才到，第一次搜尋時再用它重建索引
+  let indexedHans = false;
+  function reindex() {
+    if (indexedHans || !(window.LabSettings && window.LabSettings.toHans)) return;
+    items.forEach(buildNorm);
+    indexedHans = true;
+  }
 
   function render() {
+    reindex();
     const raw = input.value.trim();
     list.innerHTML = '';
     if (!raw) { list.hidden = true; status.textContent = ''; return; }
@@ -113,7 +143,7 @@
     if (!results.length) {
       list.hidden = true;
       status.textContent = '';
-      status.appendChild(document.createTextNode('找不到「' + raw + '」相關的實驗。試試：'));
+      status.appendChild(document.createTextNode(EN ? 'No experiments match "' + raw + '". Try: ' : '找不到「' + raw + '」相關的實驗。試試：'));
       SUGGEST.forEach(function (w) {
         const b = document.createElement('button');
         b.type = 'button';
@@ -126,7 +156,9 @@
     }
 
     const live = results.filter(function (r) { return r.item.href; }).length;
-    status.textContent = '找到 ' + results.length + ' 個實驗' + (live ? '（' + live + ' 個已上線）' : '（都還在規劃中）');
+    status.textContent = EN
+      ? results.length + (results.length === 1 ? ' experiment found' : ' experiments found') + (live ? ' (' + live + ' live)' : ' (all still planned)')
+      : '找到 ' + results.length + ' 個實驗' + (live ? '（' + live + ' 個已上線）' : '（都還在規劃中）');
 
     results.forEach(function (r) {
       const it = r.item;
@@ -138,10 +170,10 @@
 
       const meta = document.createElement('span');
       meta.className = 'search-meta';
-      meta.textContent = it.branch + '・' + it.topic;
+      meta.textContent = it.branch + (EN ? ' · ' : '・') + it.topic;
       const tag = document.createElement('span');
       tag.className = 'tag' + (it.href ? '' : ' soon');
-      tag.textContent = it.href ? '已上線' : '規劃中';
+      tag.textContent = it.href ? (EN ? 'Live' : '已上線') : (EN ? 'Planned' : '規劃中');
       const head = document.createElement('span');
       head.className = 'search-head';
       head.appendChild(meta);
@@ -156,7 +188,7 @@
       if (r.hits.length) {
         const why = document.createElement('span');
         why.className = 'search-why';
-        why.textContent = '相關：' + r.hits.filter(function (h, i, a) { return a.indexOf(h) === i; }).join('、');
+        why.textContent = (EN ? 'Matches: ' : '相關：') + r.hits.filter(function (h, i, a) { return a.indexOf(h) === i; }).join('、');
         box.appendChild(why);
       }
       li.appendChild(box);

@@ -2,11 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
+  <script src="js/settings.js?v=202611110644"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>一維碰撞｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整兩台車的質量、初速度與恢復係數，觀察碰撞前後總動量守恆，以及動能在非彈性碰撞中的損失。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110638">
+  <link rel="stylesheet" href="lab.css?v=202611110644">
   <style>
     /* 版面：桌機左欄為軌道、圖表、比較表，右欄為控制面板；手機依序為軌道、圖表、控制、比較表 */
     .lab.coll {
@@ -41,7 +42,7 @@
     .coll .stage .status { margin: 6px 4px 0; }
 
     .stage-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 4px 8px; }
-    .stage-head h2 { font-size: 15px; margin: 0; }
+    .stage-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
     .seg button { border: 0; border-radius: 0; min-height: 34px; padding: 4px 12px; background: var(--surface); }
     .seg button + button { border-left: 1px solid var(--border); }
@@ -52,22 +53,22 @@
       border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid var(--equi); }
 
     .table-scroll { overflow-x: auto; }
-    table.compare { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+    table.compare { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
     table.compare th, table.compare td { padding: 4px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
     table.compare thead th { color: var(--muted); font-weight: 600; text-align: right; }
     table.compare thead th:first-child { text-align: left; }
     table.compare tbody th { text-align: left; font-weight: 500; }
     table.compare td { text-align: right; }
-    table.compare tr.group th { color: var(--muted); font-size: 13px; font-weight: 600; padding-top: 10px; border-bottom: 0; }
+    table.compare tr.group th { color: var(--muted); font-size: calc(13px * var(--fs, 1)); font-weight: 600; padding-top: 10px; border-bottom: 0; }
     table.compare tr.total th, table.compare tr.total td { font-weight: 650; }
     table.compare .katex { font-size: 1.05em; }
-    .loss { margin: 12px 0 0; font-size: 14px; display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
+    .loss { margin: 12px 0 0; font-size: calc(14px * var(--fs, 1)); display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; }
     .loss dt { color: var(--muted); }
     .loss dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
     .loss dd strong { color: var(--pos); }
     .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
     @media (max-width: 400px) {
-      table.compare { font-size: 13px; }
+      table.compare { font-size: calc(13px * var(--fs, 1)); }
       table.compare th, table.compare td { padding: 4px 5px; }
     }
   </style>
@@ -241,10 +242,10 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110638"></script>
-  <script src="js/collision-core.js?v=202611110638"></script>
-  <script src="js/collision.js?v=202611110638"></script>
-  <script src="js/firebase-config.js?v=202611110638"></script>
-  <script src="js/stats.js?v=202611110638" data-module="collision"></script>
+  <script src="js/math.js?v=202611110644"></script>
+  <script src="js/collision-core.js?v=202611110644"></script>
+  <script src="js/collision.js?v=202611110644"></script>
+  <script src="js/firebase-config.js?v=202611110644"></script>
+  <script src="js/stats.js?v=202611110644" data-module="collision"></script>
 </body>
 </html>

@@ -33,14 +33,15 @@
   if (moduleId && !/^[a-z0-9-]{1,40}$/.test(moduleId)) return;
 
   // ---------- 格式 ----------
-  function fmtInt(n) { return Math.round(n || 0).toLocaleString('zh-TW'); }
+  const EN = window.LabSettings && window.LabSettings.lang === 'en';
+  function fmtInt(n) { return Math.round(n || 0).toLocaleString(EN ? 'en-US' : 'zh-TW'); }
   function fmtTime(sec) {
     sec = Math.round(sec || 0);
-    if (sec < 60) return sec + ' 秒';
+    if (sec < 60) return sec + (EN ? ' s' : ' 秒');
     const m = Math.floor(sec / 60), h = Math.floor(m / 60);
-    if (h === 0) return m + ' 分';
-    if (h >= 100) return fmtInt(h) + ' 小時';
-    return h + ' 小時 ' + (m % 60) + ' 分';
+    if (h === 0) return m + (EN ? ' min' : ' 分');
+    if (h >= 100) return fmtInt(h) + (EN ? ' h' : ' 小時');
+    return EN ? h + ' h ' + (m % 60) + ' min' : h + ' 小時 ' + (m % 60) + ' 分';
   }
 
   function bar(items, extraClass) {
@@ -57,7 +58,9 @@
     el.querySelector('[data-k="ops"]').textContent = fmtInt(s.ops);
     el.querySelector('[data-k="seconds"]').textContent = fmtTime(s.seconds);
   }
-  const ITEMS = [['瀏覽人次', 'views'], ['操作次數', 'ops'], ['累計操作時間', 'seconds']];
+  const ITEMS = EN
+    ? [['Views', 'views'], ['Interactions', 'ops'], ['Time spent', 'seconds']]
+    : [['瀏覽人次', 'views'], ['操作次數', 'ops'], ['累計操作時間', 'seconds']];
   function insertAfterHeader(el) {
     const top = document.querySelector('header.top');
     if (top) top.insertAdjacentElement('afterend', el);
@@ -74,7 +77,7 @@
   // ======================= 首頁：所有模組的累計 =======================
   if (isSummary) {
     const totalBar = bar(ITEMS, 'stats-total');
-    totalBar.insertAdjacentHTML('afterbegin', '<span class="stats-title">全站累計</span>');
+    totalBar.insertAdjacentHTML('afterbegin', '<span class="stats-title">' + (EN ? 'Site total' : '全站累計') + '</span>');
     insertAfterHeader(totalBar);
     const refresh = function () {
       getJSON('/stats').then(function (all) {
@@ -99,7 +102,9 @@
             line.className = 'module-stats';
             card.appendChild(line);
           }
-          line.textContent = '瀏覽 ' + fmtInt(s.views) + '・操作 ' + fmtInt(s.ops) + ' 次・' + fmtTime(s.seconds);
+          line.textContent = EN
+            ? fmtInt(s.views) + ' views · ' + fmtInt(s.ops) + ' interactions · ' + fmtTime(s.seconds)
+            : '瀏覽 ' + fmtInt(s.views) + '・操作 ' + fmtInt(s.ops) + ' 次・' + fmtTime(s.seconds);
         });
       }).catch(function () { totalBar.hidden = true; });
     };
