@@ -69,7 +69,7 @@
 4. 從第二部分由上往下挑**還沒打勾**的 1–3 件，每次改動控制在能親自檢查完的量。
 5. **不可以**：改實驗代號、網址、已上線任務的代號與等級；改 `firebase/database.rules.json`；寫入正式 Firebase（測試一律擋外連、用 `tools/mock-backend.js`）；照抄講義文字或圖（有著作權）；刪除既有內容或功能；改物理數值卻沒有測試與來源。
 6. 改完一定跑 `node tools/verify.cjs`（完整版）全過；改到畫面的頁面用 `npm run shots -- <代號>` 並**親自看截圖**；沒過就把自己這一輪改的檔案還原（`git checkout -- <檔案>`），紀錄寫原因。
-7. 全過後 `py tools/stamp.py`，**只 `git add` 自己改的檔案**，commit（中文說明＋ `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`），`git push`。
+7. 全過後 `py tools/stamp.py`，**只 `git add` 自己改的檔案**，commit（中文說明＋ `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`），`git -c credential.interactive=never -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push origin main`（要登入或卡住會自己停；推不上去就在紀錄寫「推送失敗：需要站長登入 GitHub」，不要重試到天亮）。
 8. 在第二部分把做完的項目改成 `[x]` 加日期；在 `docs/auto-optimize-log.md` 最上面加一段（日期、做了什麼、網址、檢查結果、下次要做什麼），寫給站長看得懂的中文。
 9. 發現流程本身可以更好（某個檢查抓不到、某個工具很慢），把改進寫進這份文件第四部分，能自己修的工具就修。
 

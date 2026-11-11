@@ -86,7 +86,7 @@
 0. 開始改網站時建立 `.editing`（每日自動優化看到就跳過），push 完刪掉。
 1. `npm run verify` 全過（含 `npm test`、任務證明、頁面檢查；提醒清單列進 `docs/WORLD-CLASS.md`）。
 2. `npm run check`（Playwright）實際開頁，並用 `npm run shots -- <代號>` 存截圖親自看：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
-3. `python3 tools/stamp.py`，再 commit、push。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
+3. `python3 tools/stamp.py`，再 commit、push（推送一律用 `git -c credential.interactive=never -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push origin main`：要登入時不會跳出看不到的視窗乾等，卡住 60 秒就停；失敗就開核可卡請站長登入，不可讓它掛整晚）。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
 
 ## Firebase（專案 astro-ni-physics-lab）
 
