@@ -22,6 +22,8 @@
   const script = document.currentScript;
   const pageModule = script && script.getAttribute('data-module'); // 模組頁面才有；排行榜頁沒有
   const registry = {}; // moduleId → [mission]
+  const hooks = { complete: [], ready: [] };
+  function fire(name, arg) { hooks[name].forEach(function (f) { try { f(arg); } catch (e) { /* 忽略 */ } }); }
   const listeners = [];
   const state = {
     module: pageModule, user: null, nickname: null, pub: true,
@@ -48,6 +50,8 @@
       });
     },
     all: function () { return registry; },
+    on: function (name, fn) { if (hooks[name]) hooks[name].push(fn); },
+    module: pageModule,
     mask: mask,
     // 排行榜頁用
     _state: state,
@@ -118,7 +122,12 @@
           Object.keys(defs).forEach(function (id) { u['missionDefs/' + id] = { stars: defs[id] }; });
           return D.update(D.ref(db), u);
         },
-        isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); }
+        isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
+        // 通用：讀取、多路徑寫入、伺服器端遞增與時間戳（成就系統使用）
+        get: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
+        update: function (map) { return D.update(D.ref(db), map); },
+        inc: function (n) { return D.increment(n); },
+        now: function () { return D.serverTimestamp(); }
       };
     });
   }
@@ -148,6 +157,7 @@
           state.done = r[1] || {};
           state.ready = true;
           changed();
+          fire('ready', state);
         });
       });
       return api;
@@ -171,6 +181,7 @@
       m.pending = false;
       celebrate(m);
       changed();
+      fire('complete', m);
     }).catch(function (e) {
       m.pending = false;
       const c = (e && (e.code || e.message)) || '';
@@ -296,7 +307,7 @@
           e.preventDefault();
           const v = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, 20);
           if (!v) return;
-          guard(function () { return api.setNickname(state.user.uid, v); }).then(function () { state.nickname = v; changed(); })
+          guard(function () { return api.setNickname(state.user.uid, v); }).then(function () { state.nickname = v; changed(); fire('ready', state); })
             .catch(function () { state.msg = T('暱稱儲存失敗，請再試一次。', 'Could not save the nickname.'); changed(); });
         });
         panel.appendChild(f);
@@ -305,6 +316,20 @@
           'Mission mode is on: reach a goal by working the experiment and the mission completes automatically. Each mission pays out once.')));
       }
       if (state.msg) panel.appendChild(el('p', 'ms-msg', state.msg));
+      const rules = el('details', 'ms-rules');
+      rules.appendChild(el('summary', null, T('星星怎麼賺？', 'How do I earn stars?')));
+      const ul = el('ul');
+      [T('必須登入 Google 帳號並打開任務模式，才會判定與記錄。', 'Sign in with Google and turn on Mission mode — only then are missions checked and recorded.'),
+        T('任務難度分 1～10 級，完成後獲得與等級相同數量的「倪的星星」。', 'Missions have levels 1–10; completing one earns that many Ni stars.'),
+        T('每個任務只能領一次星星，重複完成不會再得星。', 'Each mission pays out once; repeating it earns nothing more.'),
+        T('隱藏任務只有一句隱晦的提示，完成時不會說明原因，需要自己反覆嘗試。', 'Hidden missions only give a cryptic hint and are never explained — keep experimenting.'),
+        T('成就是收藏用的徽章，不加星星；排行榜只看星星。', 'Achievements are collectible badges and add no stars; the leaderboard counts stars only.')
+      ].forEach(function (t) { ul.appendChild(el('li', null, t)); });
+      rules.appendChild(ul);
+      const more = el('a', null, T('完整規則與排行榜 →', 'Full rules and leaderboard →'));
+      more.href = 'leaderboard.html#rules';
+      rules.appendChild(more);
+      panel.appendChild(rules);
 
       // 任務清單可收合，讓實驗畫面不會被推得太遠
       const det = el('details', 'ms-details');
@@ -336,6 +361,11 @@
   function start() {
     // 模組的任務檔在本檔之後載入；等 DOM 完成再建立面板
     if (state.module) buildPanel();
+    if (enabled && !window.LabAchievements && script) {
+      const a = document.createElement('script');
+      a.src = script.getAttribute('src').replace(/missions\.js/, 'achievements.js');
+      document.body.appendChild(a);
+    }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else setTimeout(start, 0);

@@ -134,6 +134,52 @@
           ".validate": false
         }
       }
+    },
+    "userStats": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        "ops": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 300"
+        },
+        "seconds": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 180"
+        },
+        "modules": {
+          "$m": {
+            ".validate": "$m.matches(/^[a-z0-9-]{1,40}$/) && newData.val() === true"
+          }
+        },
+        "days": {
+          "$d": {
+            ".validate": "$d.matches(/^[0-9]{8}$/)",
+            "$m": {
+              ".validate": "$m.matches(/^[a-z0-9-]{1,40}$/) && newData.val() === true"
+            }
+          }
+        },
+        "flags": {
+          "$f": {
+            ".validate": "$f.matches(/^[a-z]{1,20}$/) && newData.val() === true"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "achievements": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$aid": {
+          ".write": "auth != null && auth.uid === $uid && !data.exists() && newData.exists()",
+          ".validate": "$aid.matches(/^[a-z0-9-]{1,40}$/) && newData.hasChildren(['at']) && newData.child('at').val() === now",
+          "at": {},
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }

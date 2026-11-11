@@ -5,3 +5,6 @@
 window.LAB_MISSION_MODULES = [
   { id: 'projectile', zh: '拋體運動', en: 'Projectile Motion' }
 ];
+
+/* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle'];

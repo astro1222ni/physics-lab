@@ -162,6 +162,7 @@
     }).catch(function () { $('syncMsg').textContent = T('同步失敗：請確認你是管理員，且資料庫規則已更新。', 'Sync failed: check you are an administrator and the database rules are up to date.'); });
   });
 
+  if (window.LabAchievements) window.LabAchievements.renderInto($('achBox'));
   if (!LM) { renderMe(); return; }
   LM._ready().then(function (b) {
     api = b;

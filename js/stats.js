@@ -159,6 +159,7 @@
         pending[k] -= sent[k];
         server[k] += sent[k];
       });
+      try { window.dispatchEvent(new CustomEvent('lab:statsflush', { detail: { module: moduleId, views: sent.views, ops: sent.ops, seconds: sent.seconds } })); } catch (e) { /* 舊瀏覽器忽略 */ }
     }).catch(function () { /* 失敗時保留在 pending，下次再送 */ })
       .then(function () { sending = false; render(); if (done) done(); });
   }
