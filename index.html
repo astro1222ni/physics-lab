@@ -6,7 +6,7 @@
   <title>Astro Ni 物理實驗室</title>
   <meta name="description" content="高中物理互動模擬：依力學、熱學、波動、光學、電磁學、近代物理分類，調整參數、觀察動畫，所有運算都在你的瀏覽器中完成。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110632">
+  <link rel="stylesheet" href="lab.css?v=202611110638">
 </head>
 <body>
   <div class="wrap">
@@ -15,6 +15,16 @@
       <h1>高中物理・互動模擬實驗室</h1>
       <p>拖曳、調整旋鈕，親手驗證物理定律。所有計算都在你的瀏覽器裡完成，不需登入，也不會連線到任何 AI 服務。</p>
     </header>
+
+    <div class="search" role="search">
+      <label for="q" class="search-label">搜尋實驗</label>
+      <div class="search-box">
+        <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <input id="q" type="search" placeholder="輸入關鍵字，例如：電場、動量、折射、勞侖茲力" autocomplete="off" enterkeyhint="search" aria-controls="search-results" aria-describedby="search-status">
+      </div>
+      <p id="search-status" class="search-status" aria-live="polite"></p>
+      <ul id="search-results" class="search-results" hidden></ul>
+    </div>
 
     <nav class="branch-nav" aria-label="物理分支">
       <a href="#mech" style="--c:var(--b-mech)">力學</a>
@@ -32,27 +42,27 @@
         <p>運動學、牛頓運動定律、動量與能量、圓周運動、簡諧運動、萬有引力</p>
       </header>
       <div class="modules">
-        <a class="module live" href="projectile.html" data-module="projectile">
+        <a class="module live" href="projectile.html" data-module="projectile" data-keywords="平拋 斜拋 水平拋射 鉛直上拋 射程 最大高度 飛行時間 仰角 初速 重力加速度 拋物線 空氣阻力 終端速度 月球 火星 projectile">
           <div class="module-meta"><span class="topic">運動學</span><span class="tag">已上線</span></div>
           <h3>拋體運動</h3>
           <p>調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。</p>
         </a>
-        <a class="module live" href="collision.html" data-module="collision">
+        <a class="module live" href="collision.html" data-module="collision" data-keywords="動量 動量守恆 衝量 恢復係數 彈性碰撞 非彈性碰撞 完全非彈性 動能 質心 速度交換 collision momentum">
           <div class="module-meta"><span class="topic">動量與能量</span><span class="tag">已上線</span></div>
           <h3>一維碰撞</h3>
           <p>調整質量、初速度與恢復係數，觀察動量守恆，以及彈性與非彈性碰撞的動能變化。</p>
         </a>
-        <div class="module soon">
+        <div class="module soon" data-keywords="向心力 向心加速度 角速度 週期 頻率 半徑 切線速度 circular">
           <div class="module-meta"><span class="topic">圓周運動</span><span class="tag soon">規劃中</span></div>
           <h3>等速圓周運動</h3>
           <p>顯示速度與向心加速度向量，調整半徑與週期，<span class="nb">驗證 \(a = v^2/r\)。</span></p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="簡諧運動 SHM 虎克定律 彈力 彈性位能 擺長 週期 小角度近似 振幅 pendulum spring">
           <div class="module-meta"><span class="topic">簡諧運動</span><span class="tag soon">規劃中</span></div>
           <h3>彈簧振子與單擺</h3>
           <p>同步顯示位移、速度、加速度與能量隨時間的圖形，比較小角度近似的誤差。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="萬有引力 重力 克卜勒 等面積定律 橢圓軌道 衛星 逃逸速度 行星 太陽 gravity kepler orbit">
           <div class="module-meta"><span class="topic">萬有引力</span><span class="tag soon">規劃中</span></div>
           <h3>行星軌道與克卜勒定律</h3>
           <p>調整初速度發射衛星，觀察圓、橢圓與逃逸軌道，驗證等面積定律。</p>
@@ -67,12 +77,12 @@
         <p>溫度與熱量、理想氣體、氣體動力論</p>
       </header>
       <div class="modules">
-        <div class="module soon">
+        <div class="module soon" data-keywords="氣體動力論 理想氣體 PV=nRT 壓力 溫度 體積 分子速率 方均根速率 波以耳 查理 gas">
           <div class="module-meta"><span class="topic">氣體動力論</span><span class="tag soon">規劃中</span></div>
           <h3>理想氣體分子模擬</h3>
           <p>調整溫度、體積與分子數，觀察壓力變化與分子速率分布，<span class="nb">連結 \(PV = nRT\)。</span></p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="比熱 熱容量 熱量 溫度 熱平衡 熱傳 卡 焦耳 heat">
           <div class="module-meta"><span class="topic">熱平衡</span><span class="tag soon">規劃中</span></div>
           <h3>比熱與熱平衡</h3>
           <p>混合不同質量、比熱與溫度的物體，預測並觀察最後的平衡溫度。</p>
@@ -87,12 +97,12 @@
         <p>波的傳播、反射與疊加、駐波、聲波與都卜勒效應</p>
       </header>
       <div class="modules">
-        <div class="module soon">
+        <div class="module soon" data-keywords="波動 繩波 橫波 反射 固定端 自由端 疊加 駐波 波節 波腹 波長 頻率 弦 standing wave">
           <div class="module-meta"><span class="topic">波的疊加</span><span class="tag soon">規劃中</span></div>
           <h3>繩波的反射與駐波</h3>
           <p>切換固定端與自由端，觀察反射波的相位，以及駐波的波節與波腹。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="聲波 聲音 頻率 波源 觀察者 音調 doppler">
           <div class="module-meta"><span class="topic">聲波</span><span class="tag soon">規劃中</span></div>
           <h3>都卜勒效應</h3>
           <p>調整波源與觀察者的速度，看波前如何被壓縮或拉長，並計算觀察到的頻率。</p>
@@ -107,17 +117,17 @@
         <p>幾何光學（反射、折射、成像）與物理光學（干涉、繞射）</p>
       </header>
       <div class="modules">
-        <div class="module soon">
+        <div class="module soon" data-keywords="光 折射 折射率 司乃耳定律 斯涅耳 全反射 臨界角 光纖 入射角 snell refraction">
           <div class="module-meta"><span class="topic">幾何光學</span><span class="tag soon">規劃中</span></div>
           <h3>折射與全反射</h3>
           <p>調整入射角與兩介質的折射率，驗證司乃耳定律，找出臨界角。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="凸透鏡 凹透鏡 凸面鏡 凹面鏡 焦距 焦點 實像 虛像 成像公式 放大率 lens mirror">
           <div class="module-meta"><span class="topic">幾何光學</span><span class="tag soon">規劃中</span></div>
           <h3>透鏡與面鏡成像</h3>
           <p>拖曳物體位置，即時畫出主光線與像的位置、大小、正倒與虛實。</p>
         </div>
-        <a class="module live" href="slit-interference.html" data-module="slit-interference">
+        <a class="module live" href="slit-interference.html" data-module="slit-interference" data-keywords="光 干涉 繞射 雙狹縫 單狹縫 楊氏 光柵 波長 亮紋 暗紋 條紋間距 缺級 光強 雷射 物理光學 波動光學 interference diffraction">
           <div class="module-meta"><span class="topic">物理光學</span><span class="tag">已上線</span></div>
           <h3>雙狹縫干涉與單狹縫繞射</h3>
           <p>調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。</p>
@@ -132,27 +142,27 @@
         <p>靜電學、電路、電流的磁效應、電磁感應</p>
       </header>
       <div class="modules">
-        <a class="module live" href="electric-field.html" data-module="electric-field">
+        <a class="module live" href="electric-field.html" data-module="electric-field" data-keywords="電場 電力線 等位線 電位 電位能 庫侖 庫侖定律 點電荷 電偶極 試探電荷 靜電 E=-∇V electric field">
           <div class="module-meta"><span class="topic">靜電學</span><span class="tag">已上線</span></div>
           <h3>電場與等位線</h3>
           <p>拖曳點電荷、調整電量，即時畫出電力線與等位線；釋放試探電荷，觀察它的運動與能量守恆。</p>
         </a>
-        <div class="module soon">
+        <div class="module soon" data-keywords="電容 電容器 介電質 板距 電場 儲存能量 capacitor">
           <div class="module-meta"><span class="topic">靜電學</span><span class="tag soon">規劃中</span></div>
           <h3>平行板電容器</h3>
           <p>調整板距、面積與介電質，觀察電容、電場與儲存能量的變化。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="電流 電壓 電阻 歐姆定律 串聯 並聯 電池 克希荷夫 電功率 circuit">
           <div class="module-meta"><span class="topic">電路</span><span class="tag soon">規劃中</span></div>
           <h3>直流電路</h3>
           <p>組合電池與電阻的串並聯，即時顯示各支路的電流與電位差。</p>
         </div>
-        <a class="module live" href="magnetic-particle.html" data-module="magnetic-particle">
+        <a class="module live" href="magnetic-particle.html" data-module="magnetic-particle" data-keywords="磁場 磁力 勞侖茲力 羅倫茲力 圓周運動 迴旋半徑 週期 速度選擇器 質譜儀 迴旋加速器 E×B ExB 漂移 帶電粒子 lorentz magnetic">
           <div class="module-meta"><span class="topic">電流的磁效應</span><span class="tag">已上線</span></div>
           <h3>帶電粒子在磁場中運動</h3>
           <p>調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。</p>
         </a>
-        <div class="module soon">
+        <div class="module soon" data-keywords="電磁感應 法拉第 冷次 楞次 磁通量 感應電流 感應電動勢 發電機 線圈 磁鐵 induction">
           <div class="module-meta"><span class="topic">電磁感應</span><span class="tag soon">規劃中</span></div>
           <h3>法拉第定律與冷次定律</h3>
           <p>移動磁鐵或線圈，觀察磁通量變化與感應電流的方向和大小。</p>
@@ -167,17 +177,17 @@
         <p>光的粒子性、原子結構、原子核</p>
       </header>
       <div class="modules">
-        <div class="module soon">
+        <div class="module soon" data-keywords="光子 量子 截止頻率 功函數 停止電壓 光電子 愛因斯坦 普朗克 photoelectric">
           <div class="module-meta"><span class="topic">量子現象</span><span class="tag soon">規劃中</span></div>
           <h3>光電效應</h3>
           <p>調整光的頻率、強度與金屬種類，觀察截止頻率，以及光電子動能和停止電壓。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="原子 能階 波耳模型 光譜 譜線 來曼系 巴耳末系 躍遷 hydrogen spectrum">
           <div class="module-meta"><span class="topic">原子結構</span><span class="tag soon">規劃中</span></div>
           <h3>氫原子能階與光譜</h3>
           <p>點選電子躍遷，對照放出光子的波長與光譜線系列。</p>
         </div>
-        <div class="module soon">
+        <div class="module soon" data-keywords="原子核 放射性 衰變 半衰期 α β γ 指數衰減 核物理 radioactive">
           <div class="module-meta"><span class="topic">原子核</span><span class="tag soon">規劃中</span></div>
           <h3>放射性衰變與半衰期</h3>
           <p>以大量原子核的隨機衰變，看出指數衰減曲線與半衰期。</p>
@@ -190,8 +200,9 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110632"></script>
-  <script src="js/firebase-config.js?v=202611110632"></script>
-  <script src="js/stats.js?v=202611110632" data-summary></script>
+  <script src="js/search.js?v=202611110638"></script>
+  <script src="js/math.js?v=202611110638"></script>
+  <script src="js/firebase-config.js?v=202611110638"></script>
+  <script src="js/stats.js?v=202611110638" data-summary></script>
 </body>
 </html>
