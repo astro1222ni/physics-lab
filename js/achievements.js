@@ -18,6 +18,7 @@
   const st = LM._state;
   const self = document.currentScript || document.querySelector('script[src*="achievements.js"]');
   const base = self ? self.getAttribute('src').replace(/achievements\.js.*$/, '') : 'js/';
+  const ver = self ? ((self.getAttribute('src') || '').match(/\?v=\d+/) || [''])[0] : ''; // 動態載入的任務檔沿用版本號，避免舊快取
 
   // ---------- 載入全站實驗清單與所有任務定義（只註冊，不在本頁判定） ----------
   function loadScript(src) {
@@ -27,10 +28,10 @@
       document.body.appendChild(s);
     });
   }
-  const listReady = (window.LAB_LIVE_MODULES ? Promise.resolve() : loadScript(base + 'missions/index.js')).then(function () {
+  const listReady = (window.LAB_LIVE_MODULES ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver)).then(function () {
     const all = LM.all();
     return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !all[m.id]; })
-      .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js'); }));
+      .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js' + ver); }));
   });
   const live = function () { return window.LAB_LIVE_MODULES || []; };
   const branchOf = function (m) { return (window.LAB_MODULE_BRANCH || {})[m]; };

@@ -25,7 +25,8 @@
   const loaded = Promise.all(MODS.map(function (m) {
     return new Promise(function (resolve) {
       const s = document.createElement('script');
-      s.src = 'js/missions/' + m.id + '.js';
+      const v = ((document.currentScript || document.querySelector('script[src*="leaderboard.js"]') || {}).src || '').match(/\?v=\d+/);
+      s.src = 'js/missions/' + m.id + '.js' + (v ? v[0] : '');
       s.onload = s.onerror = resolve;
       document.body.appendChild(s);
     });
@@ -165,6 +166,8 @@
     }).catch(function () { $('syncMsg').textContent = T('同步失敗：請確認你是管理員，且資料庫規則已更新。', 'Sync failed: check you are an administrator and the database rules are up to date.'); });
   });
 
+  let autoSynced = 0; // 本頁載入時 missions.js 已自動同步的任務數
+  if (LM) LM.on('synced', function (n) { autoSynced += n; });
   if (window.LabAchievements) window.LabAchievements.renderInto($('achBox'));
   if (!LM) { renderMe(); return; }
   LM._ready().then(function (b) {
@@ -178,7 +181,7 @@
         if (!a) return;
         // 管理員打開排行榜時，自動同步所有模組的任務清單
         loaded.then(function () { return LM._autoSync(); }).then(function (n) {
-          if (n > 0) $('syncMsg').textContent = T('已自動同步 ', 'Auto-synced ') + n + T(' 個新任務。', ' new missions.');
+          if (autoSynced > 0) $('syncMsg').textContent = T('已自動同步 ', 'Auto-synced ') + autoSynced + T(' 個新任務。', ' new missions.');
           else if (n === 0) $('syncMsg').textContent = T('任務清單已是最新，不需要同步。', 'The mission list is already up to date.');
         });
       });

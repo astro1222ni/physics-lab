@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111119"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="DC Circuits | Astro Ni Physics Lab">直流電路｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋。點選電阻調整大小、按開關、用探針量電位差，看電流、端電壓、功率與燈泡亮度，並以克希何夫定律解出每個支路。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111119">
+  <style>
+    /* 直流電路頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；點元件、節點（觸控也可），沒有拖曳，手機可在畫布上捲動頁面 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: manipulation; cursor: default; }
+    #pr { aspect-ratio: auto; height: 200px; touch-action: auto; cursor: default; margin-top: 10px; }
+    .dc button { min-height: 44px; }
+    .dc .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .dc .playbar button { flex: 1 1 auto; }
+    .dc .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dc .stage .status { margin: 6px 4px 0; }
+    .dc .slider input[type="range"] { height: 28px; margin: 0; }
+    .dc [hidden] { display: none !important; }
+    .presets { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .presets button { padding: 6px 6px; line-height: 1.3; }
+    .presets button[aria-pressed="true"], .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { min-width: 52px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+    .chips button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chips button.sw { color: var(--muted); }
+    .chips button.sw.on { color: var(--probe); border-color: var(--probe); }
+    .chips button.sw.off { color: var(--pos); border-color: var(--pos); border-style: dashed; }
+    .dc .checks label { min-height: 44px; }
+    .dc .checks input { width: 17px; height: 17px; }
+    .dc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .selname { font-weight: 700; color: var(--accent); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout sub, .parts sub { font-size: .75em; }
+    .parts-wrap { overflow-x: auto; }
+    table.parts { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.parts th, table.parts td { padding: 4px 4px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.parts th { color: var(--muted); font-weight: 600; }
+    table.parts th:first-child, table.parts td:first-child { text-align: left; }
+    table.parts tr.sel td { color: var(--accent); font-weight: 700; }
+    table.parts tr.total td { border-bottom: none; font-weight: 700; }
+    .legend .grad { width: 44px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--neg), var(--field), var(--pos)); opacity: .75; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / Circuits"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電路</nav>
+      <h1 data-en="DC Circuits">直流電路</h1>
+      <p data-en="Build intuition for series and parallel circuits, a battery’s internal resistance and the Wheatstone bridge. Tap a resistor or bulb to change its resistance, tap a switch to open or close it, and tap two points to measure the potential difference between them. Every current is found with Kirchhoff’s laws.">串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋。點一下電阻或燈泡調整電阻值、點開關切換開與關，再點兩個接點量它們之間的電位差。每個支路的電流都由克希何夫定律解出來。</p>
+    </header>
+
+    <div class="lab dc">
+      <div class="stage">
+        <canvas id="cv" aria-label="直流電路模擬畫布：電路圖、沿導線移動的電荷、燈泡亮度、電流標示與三用電表探針" data-en-aria-label="DC circuit simulation: circuit diagram with moving charges, glowing bulbs, current labels and multimeter probes"></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Pause">暫停</button>
+          <button id="clearProbe" type="button" data-en="Remove probes" title="移除兩支探針" data-en-title="Remove both probes">移除探針</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span id="lgCarrier" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--pos)"></i>移動的電荷（傳統電流方向）</span>
+          <span data-en-html="<i class=&quot;grad&quot;></i>Potential: low → high"><i class="grad"></i>電位：低 → 高</span>
+          <span data-en-html="<i style=&quot;background:var(--probe)&quot;></i>Voltmeter probes"><i style="background:var(--probe)"></i>電壓表探針</span>
+        </div>
+        <p class="hint" data-en-html="Tap a <strong>resistor or bulb</strong> to select it, a <strong>switch</strong> to open or close it, and two <strong>junction dots</strong> to place the red (+) and black (COM) probes. Potentials are measured from the battery’s negative terminal (0 V). The charges move at a speed proportional to the current (about 0.7 grid squares per second for 1 A; very large currents are capped), and a bulb’s glow is proportional to its power (full glow at 6 W).">點<strong>電阻或燈泡</strong>可選取、點<strong>開關</strong>可切換、點兩個<strong>接點</strong>放上紅（＋）、黑（COM）探針。電位以電池負極為 0 V。電荷移動的速率與電流成正比（1 A 約每秒 0.7 格，電流很大時有上限），燈泡的亮度與消耗功率成正比（6 W 最亮）。</p>
+        <canvas id="pr" hidden aria-label="輸出功率與負載電阻的關係圖" data-en-aria-label="Graph of output power against load resistance"></canvas>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Circuit">電路</h2>
+          <div class="presets" role="group" aria-label="選擇電路" data-en-aria-label="Choose a circuit">
+            <button type="button" data-preset="single" aria-pressed="true" data-en="Single resistor">單一電阻</button>
+            <button type="button" data-preset="series" aria-pressed="false" data-en="Series">串聯</button>
+            <button type="button" data-preset="parallel" aria-pressed="false" data-en="Parallel">並聯</button>
+            <button type="button" data-preset="mixed" aria-pressed="false" data-en="Series–parallel">串並聯混合</button>
+            <button type="button" data-preset="internal" aria-pressed="false" data-en="Internal resistance">電池內電阻</button>
+            <button type="button" data-preset="wheatstone" aria-pressed="false" data-en="Wheatstone bridge">惠斯登電橋</button>
+          </div>
+          <div id="countBox" hidden>
+            <p class="seg-label" id="countLabel" data-en="Number of bulbs:">燈泡數量：</p>
+            <div class="seg2" role="group" aria-labelledby="countLabel">
+              <button type="button" id="count2" aria-pressed="false" data-en="2 bulbs">2 個</button>
+              <button type="button" id="count3" aria-pressed="true" data-en="3 bulbs">3 個</button>
+            </div>
+          </div>
+          <p class="hint" data-en="Choosing a circuit loads its starting values.">選擇電路時會載入該電路的預設數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Battery">電池</h2>
+          <div class="slider"><label for="emf" data-en="EMF ε">電動勢 ε</label><output id="emfo"></output>
+            <input id="emf" type="range" min="1.5" max="12" step="0.5" value="6" data-decimals="2"></div>
+          <div class="slider"><label for="rin" data-en="Internal resistance r">內電阻 r</label><output id="rino"></output>
+            <input id="rin" type="range" min="0" max="5" step="0.1" value="0" data-decimals="2"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Components">元件</h2>
+          <div class="chips" id="chips" role="group" aria-label="元件：點電阻選取、點開關切換" data-en-aria-label="Components: tap a resistor to select it, a switch to toggle it"></div>
+          <div class="slider" id="rBox"><label for="rsel" id="rselLabel">電阻</label><output id="rselo"></output>
+            <input id="rsel" type="range" min="0" max="1000" step="1" value="500"></div>
+          <p class="hint" data-en="Tap a number to type an exact value (0.5–100 Ω). The slider is logarithmic.">點一下數字可直接輸入精確數值（0.5–100 Ω）；滑桿是對數刻度。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Circuit readings">電路讀數</h2>
+          <dl class="readout">
+            <dt data-en-html="Equivalent resistance <span class=&quot;f&quot;>R<sub>eq</sub></span>">等效電阻 <span class="f">R<sub>eq</sub></span></dt><dd id="dReq">—</dd>
+            <dt data-en-html="Total current <span class=&quot;f&quot;>I = ε/(R<sub>eq</sub> + r)</span>">總電流 <span class="f">I = ε/(R<sub>eq</sub> + r)</span></dt><dd id="dI">—</dd>
+            <dt data-en-html="Terminal voltage <span class=&quot;f&quot;>V = ε − Ir</span>">端電壓 <span class="f">V = ε − Ir</span></dt><dd id="dV">—</dd>
+            <dt data-en-html="Battery power <span class=&quot;f&quot;>εI</span>">電池總功率 <span class="f">εI</span></dt><dd id="dPe">—</dd>
+            <dt data-en-html="Loss in r <span class=&quot;f&quot;>I<sup>2</sup>r</span>">內電阻損耗 <span class="f">I<sup>2</sup>r</span></dt><dd id="dPi">—</dd>
+            <dt data-en-html="Output power <span class=&quot;f&quot;>VI</span>">輸出功率 <span class="f">VI</span></dt><dd id="dPo">—</dd>
+            <dt data-en-html="Efficiency <span class=&quot;f&quot;>η = V/ε</span>">效率 <span class="f">η = V/ε</span></dt><dd id="dEta">—</dd>
+            <dt data-en="Probes (red − black)">探針電位差（紅 − 黑）</dt><dd id="dProbe">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Every component">各元件</h2>
+          <div class="parts-wrap">
+            <table class="parts">
+              <thead><tr><th data-en="Part">元件</th><th>R (Ω)</th><th>I (A)</th><th>V (V)</th><th>P (W)</th></tr></thead>
+              <tbody id="partsBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" data-en="Current I is the conventional current through the part; V = IR is the voltage across it.">I 是流過元件的電流（傳統電流），V = IR 是元件兩端的電壓。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showLabels" type="checkbox" checked><span data-en="Current labels">電流標示</span></label>
+            <label><input id="showPot" type="checkbox" checked><span data-en="Potential colours">電位顏色</span></label>
+            <label><input id="electrons" type="checkbox"><span data-en="Show electron flow">顯示電子流</span></label>
+            <label><input id="hum" type="checkbox"><span data-en="Power hum (with sound on)">功率嗡嗡聲（需開音效）</span></label>
+          </div>
+          <p class="hint" data-en="Electrons are negative, so they drift opposite to the conventional current. The hum gets louder as the battery delivers more power.">電子帶負電，移動方向與傳統電流方向相反。嗡嗡聲的音量隨電池的總功率變大。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="A battery pushes charge round a closed circuit. Its <strong>electromotive force</strong> \(\varepsilon\) is the work it does on each coulomb of charge; part of that energy is lost inside the battery, whose internal resistance is \(r\). For a resistor, <strong>Ohm’s law</strong> relates the voltage across it to the current through it:">電池推動電荷沿封閉電路流動。<strong>電動勢</strong> \(\varepsilon\) 是電池對每庫侖電荷所作的功；其中一部分能量消耗在電池內部，電池的內電阻為 \(r\)。對電阻而言，<strong>歐姆定律</strong>描述兩端電壓與電流的關係：</p>
+      <div class="formula">
+        \[ V = IR, \qquad P = IV = I^{2}R = \frac{V^{2}}{R} \]
+      </div>
+
+      <h3 data-en="Series and parallel">串聯與並聯</h3>
+      <p data-en-html="In <strong>series</strong> the same current passes through every resistor and the voltages add up. In <strong>parallel</strong> every branch has the same voltage and the currents add up:">串聯時每個電阻的<strong>電流相同</strong>、電壓相加；並聯時每個支路的<strong>電壓相同</strong>、電流相加：</p>
+      <div class="formula">
+        \[ R_{\text{series}} = R_{1} + R_{2} + R_{3}, \qquad \frac{1}{R_{\text{parallel}}} = \frac{1}{R_{1}} + \frac{1}{R_{2}} + \frac{1}{R_{3}} \]
+      </div>
+
+      <h3 data-en="Kirchhoff’s laws">克希何夫定律</h3>
+      <p data-en-html="Two rules are enough to solve any circuit. The <strong>current law</strong> (charge is conserved): the currents flowing into any junction equal the currents flowing out. The <strong>voltage law</strong> (energy is conserved): going round any closed loop, the rises and drops of potential add up to zero:">任何電路都可以用兩條定律解出來。<strong>電流定律</strong>（電荷守恆）：流入任一接點的電流等於流出的電流。<strong>電壓定律</strong>（能量守恆）：沿任一封閉迴路繞一圈，電位的升降總和為零：</p>
+      <div class="formula">
+        \[ \sum_{\text{junction}} I_{\text{in}} = \sum_{\text{junction}} I_{\text{out}}, \qquad \sum_{\text{loop}} \Delta V = 0 \]
+      </div>
+
+      <h3 data-en="Internal resistance and terminal voltage">內電阻與端電壓</h3>
+      <p data-en-html="With a load \(R\) connected, the current and the voltage between the battery’s terminals are">接上負載 \(R\) 時，電流與電池兩極之間的電壓（端電壓）為</p>
+      <div class="formula">
+        \[ I = \frac{\varepsilon}{R + r}, \qquad V = \varepsilon - Ir = \frac{R}{R + r}\,\varepsilon, \qquad \eta = \frac{V}{\varepsilon} = \frac{R}{R + r} \]
+      </div>
+      <p data-en-html="The terminal voltage equals the EMF only when no current flows. The power delivered to the load is largest when the load matches the internal resistance (\(R = r\)), but then half of the energy is wasted inside the battery:">只有沒有電流時，端電壓才等於電動勢。負載得到的功率在 \(R = r\) 時最大，但此時有一半的能量浪費在電池內部：</p>
+      <div class="formula">
+        \[ P_{\text{out}} = \frac{\varepsilon^{2} R}{(R + r)^{2}} \le \frac{\varepsilon^{2}}{4r}, \qquad \varepsilon I = I^{2} r + I^{2} R \]
+      </div>
+
+      <h3 data-en="The Wheatstone bridge">惠斯登電橋</h3>
+      <p data-en-html="Two voltage dividers share the same battery and a galvanometer G joins their midpoints C and D. No current flows through G when C and D are at the same potential, which happens when">兩組分壓電路接在同一個電池上，中點 C、D 之間接檢流計 G。當 C、D 電位相同時，檢流計沒有電流，條件是</p>
+      <div class="formula">
+        \[ \frac{R_{1}}{R_{2}} = \frac{R_{3}}{R_{x}} \quad\Longrightarrow\quad R_{x} = \frac{R_{2}R_{3}}{R_{1}} \]
+      </div>
+      <p data-en-html="This balance condition does not depend on the battery or on the galvanometer, which is why the bridge is a precise way to measure an unknown resistance.">平衡條件與電池、檢流計都無關，所以電橋可以精確測量未知電阻。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Series bulbs share the voltage</strong>: with three identical bulbs in series each gets \(\varepsilon/3\) and only \(1/9\) of the power one bulb would get on its own — they glow dimly. Open the switch and every bulb goes out."><strong>串聯的燈泡分電壓</strong>：三個相同燈泡串聯，每個只分到 \(\varepsilon/3\)，功率只有單獨接上時的 \(1/9\)，所以很暗；打開開關，所有燈泡一起熄滅。</li>
+        <li data-en-html="<strong>Parallel branches are independent</strong> (with \(r = 0\)): open one branch’s switch — the other bulbs keep exactly the same brightness, but the total current drops. Now set \(r = 2\ \Omega\) and repeat: the remaining bulbs get slightly brighter, because the terminal voltage rises."><strong>並聯的支路互不影響</strong>（\(r = 0\) 時）：打開一個支路的開關，其他燈泡亮度完全不變，但總電流變小。再把 \(r\) 設為 \(2\ \Omega\) 重做一次：剩下的燈泡會稍微變亮，因為端電壓上升了。</li>
+        <li data-en-html="<strong>Check Kirchhoff’s current law</strong> in the series–parallel circuit: the current through L1 equals the sum of the currents through L2 and L3. The smaller resistance takes the larger share."><strong>驗證電流定律</strong>：在串並聯混合電路中，流過 L1 的電流等於 L2 與 L3 的電流和；電阻較小的支路分到較多電流。</li>
+        <li data-en-html="<strong>Terminal voltage</strong>: in the internal-resistance circuit the probes start on the battery terminals. Lower the load \(R\): the current grows and the terminal voltage falls below \(\varepsilon\). Open the switch: the meter reads exactly \(\varepsilon\)."><strong>端電壓</strong>：在「電池內電阻」電路，探針一開始就夾在電池兩極。把負載 \(R\) 調小，電流變大、端電壓比 \(\varepsilon\) 小越多；打開開關，電表讀數就正好是 \(\varepsilon\)。</li>
+        <li data-en-html="<strong>Maximum power</strong>: watch the graph below the circuit while you change \(R\). The peak is at \(R = r\), where the efficiency is only 50%."><strong>最大功率</strong>：改變 \(R\) 時看電路下方的圖，最高點在 \(R = r\)，此時效率只有 50%。</li>
+        <li data-en-html="<strong>Balance the bridge</strong>: adjust \(R_{x}\) until the galvanometer needle points to zero, then check that \(R_{1}/R_{2} = R_{3}/R_{x}\). Change \(\varepsilon\) or the galvanometer’s resistance — the bridge stays balanced."><strong>讓電橋平衡</strong>：調整 \(R_{x}\) 直到檢流計指針歸零，再驗證 \(R_{1}/R_{2} = R_{3}/R_{x}\)；改變 \(\varepsilon\) 或檢流計的電阻，電橋仍然平衡。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The circuit is solved exactly by <strong>nodal analysis</strong>: Kirchhoff’s current law at every junction gives a set of linear equations for the node potentials, solved by Gaussian elimination. A battery with internal resistance is replaced by an equivalent current source in parallel with \(r\); an ideal battery (\(r = 0\)) adds one extra equation \(V_{+} - V_{-} = \varepsilon\).">電路以<strong>節點分析法</strong>精確求解：在每個接點寫克希何夫電流定律，得到節點電位的聯立一次方程式，再用高斯消去法解出。有內電阻的電池換成等效的電流源並聯 \(r\)；理想電池（\(r = 0\)）多加一條方程式 \(V_{+} - V_{-} = \varepsilon\)。</li>
+        <li data-en="Wires and closed switches have zero resistance: the points they join are merged into one node before solving. An open switch carries no current; parts cut off from the battery have no current and no defined potential.">導線與閉合的開關電阻為零，求解前先把它們連接的點合併成同一個節點；斷開的開關沒有電流，與電池斷開的部分沒有電流，電位也沒有定義。</li>
+        <li data-en="The bulbs are treated as fixed resistors (in a real bulb the filament’s resistance rises as it heats up). The meters are ideal: the voltmeter draws no current.">燈泡視為電阻固定的元件（真實燈泡的燈絲變熱後電阻會變大）。電表都是理想電表：電壓表不取電流。</li>
+        <li data-en="The moving dots only show the direction and the relative size of the current; real electrons drift far more slowly (about a millimetre per second or less).">移動的點只表示電流的方向與相對大小；真實電子的漂移速率慢得多（大約每秒 1 毫米或更慢）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111119"></script>
+  <script src="js/dc-circuit-core.js?v=202611111119"></script>
+  <script src="js/sound.js?v=202611111119"></script>
+  <script src="js/numinput.js?v=202611111119"></script>
+  <script src="js/dc-circuit.js?v=202611111119"></script>
+  <script src="js/firebase-config.js?v=202611111119"></script>
+  <script src="js/missions.js?v=202611111119" data-module="dc-circuit"></script>
+  <script src="js/missions/dc-circuit.js?v=202611111119"></script>
+  <script src="js/stats.js?v=202611111119" data-module="dc-circuit"></script>
+  <script src="js/comments.js?v=202611111119"></script>
+</body>
+</html>
