@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111040"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Images in Lenses and Mirrors | Astro Ni Physics Lab">透鏡與面鏡成像｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：選擇凸透鏡、凹透鏡、凹面鏡、凸面鏡或平面鏡，拖曳物體改變物距，即時畫出三條主光線、實像與虛像，並以成像公式 1/p + 1/q = 1/f 與放大率 m = −q/p 驗證像的位置、大小與正倒。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111040">
+  <style>
+    /* 透鏡與面鏡成像頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .stage canvas#cv { aspect-ratio: 2 / 1; cursor: default; }
+    .stage canvas#cv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 560px) { .stage canvas#cv { aspect-ratio: 6 / 5; } }
+    .lm button { min-height: 44px; }
+    .lm .slider input[type="range"] { height: 28px; margin: 0; }
+    .lm .slider label sub, dl.readout sub { font-size: .75em; }
+    .lm [hidden] { display: none !important; }
+    .elems { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .elems button { display: flex; align-items: center; gap: 8px; padding: 6px 8px; text-align: left; line-height: 1.25; }
+    .elems button svg { width: 26px; height: 26px; flex: none; color: var(--muted); }
+    .elems button[data-el="plane-mirror"] { grid-column: 1 / -1; justify-content: center; }
+    .elems button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+    .elems button[aria-pressed="true"] svg { color: var(--accent); }
+    .cases { display: grid; gap: 6px; }
+    .cases button { display: grid; grid-template-columns: minmax(5.6em, auto) 1fr; align-items: center; gap: 2px 10px; padding: 6px 10px; text-align: left; line-height: 1.3; }
+    .cases .cond { font-variant-numeric: tabular-nums; font-weight: 650; white-space: nowrap; }
+    .cases .res { color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    .cases button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+    .cases button[aria-pressed="true"] .cond, .cases button[aria-pressed="true"] .res { color: var(--accent); }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.nature { font-weight: 650; color: var(--b-optics); }
+    dl.readout sup { font-size: .72em; }
+    .lm .checks label { min-height: 36px; }
+    .lm .checks input { width: 18px; height: 18px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .legend i.arrow { width: 4px; height: 14px; border-radius: 2px; vertical-align: -2px; }
+    .stage .hint + .hint { margin-top: 4px; }
+    .table-scroll { overflow-x: auto; }
+    table.signs { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); margin: 8px 0 4px; }
+    table.signs th, table.signs td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+    table.signs thead th { color: var(--muted); font-weight: 600; }
+    table.signs tbody th { white-space: nowrap; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#optics&quot;&gt;Optics&lt;/a&gt; / Geometric optics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 幾何光學</nav>
+      <h1 data-en="Images in Lenses and Mirrors">透鏡與面鏡成像</h1>
+      <p data-en="Choose a convex or concave lens, a concave, convex or plane mirror, and drag the object along the principal axis. The principal rays find the image for you: where it is, how big it is, whether it is upright or inverted, and whether it is real or virtual — checked against the lens equation 1/p + 1/q = 1/f.">選擇凸透鏡、凹透鏡、凹面鏡、凸面鏡或平面鏡，沿主軸拖曳物體：主光線會即時找出像的位置、大小、正立或倒立、實像或虛像，並與成像公式 1/p + 1/q = 1/f 互相驗證。</p>
+    </header>
+
+    <div class="lab lm">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="透鏡與面鏡成像模擬畫布：主軸、焦點、物體、主光線與像；拖曳物體可改變物距，拖曳物體頂端可改變物高，也可用方向鍵調整" data-en-aria-label="Lens and mirror imaging simulation: principal axis, focal points, object, principal rays and image; drag the object to change the object distance, drag its tip to change its height, or use the arrow keys"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend">
+          <span style="color:var(--equi)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Object"><i class="arrow" style="background:var(--equi)"></i>物體</span>
+          <span style="color:var(--b-optics)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--b-optics)&quot;&gt;&lt;/i&gt;Image (dashed: virtual)"><i class="arrow" style="background:var(--b-optics)"></i>像（虛線：虛像）</span>
+          <span style="color:var(--pos)" data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Parallel to the axis"><i style="background:var(--pos)"></i>平行主軸的光</span>
+          <span style="color:var(--probe)" id="lgCenter" data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Through the optical centre"><i style="background:var(--probe)"></i>經過光心的光</span>
+          <span style="color:var(--probe)" id="lgVertex" hidden data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;To the vertex"><i style="background:var(--probe)"></i>射向鏡頂的光</span>
+          <span style="color:var(--neg)" id="lgFocal" data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Through (or toward) F"><i style="background:var(--neg)"></i>經過（或射向）F 的光</span>
+          <span style="color:var(--b-wave)" id="lgRadius" hidden data-en-html="&lt;i style=&quot;background:var(--b-wave)&quot;&gt;&lt;/i&gt;Through (or toward) C"><i style="background:var(--b-wave)"></i>經過（或射向）C 的光</span>
+          <span style="color:var(--muted)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Extension (not real light)"><i class="dash"></i>延長線（不是真實光線）</span>
+        </div>
+        <p class="hint" data-en="Drag the object (or tap to the left of the element) to change the object distance p; drag its tip to change its height. It snaps to F and 2F. On the keyboard: ← → move the object, ↑ ↓ change its height (Shift for bigger steps). Lengths are to scale; the curvature of the lens or mirror surface is drawn only schematically — the rays bend on the plane through the centre (thin-lens, paraxial model).">拖曳物體（或點擊元件左側）可改變物距 p，拖曳物體頂端可改變物高；靠近 F 與 2F 時會自動吸附。鍵盤：← → 移動物體、↑ ↓ 改變物高（按住 Shift 移動較多）。長度依實際比例；透鏡與鏡面的彎曲只是示意，光線在通過中心、垂直主軸的平面上轉折（薄透鏡、近軸近似）。</p>
+        <p class="hint" data-en="Sign convention (as in Taiwanese textbooks): real is positive. p > 0 for a real object; q > 0 for a real image and q < 0 for a virtual image; f > 0 for converging elements (convex lens, concave mirror) and f < 0 for diverging ones (concave lens, convex mirror); m > 0 upright, m < 0 inverted.">符號約定（課本「實正虛負」）：實物 p &gt; 0；實像 q &gt; 0、虛像 q &lt; 0；會聚元件（凸透鏡、凹面鏡）f &gt; 0、發散元件（凹透鏡、凸面鏡）f &lt; 0；m &gt; 0 正立、m &lt; 0 倒立。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="elemTitle" data-en="Optical element">光學元件</h2>
+          <div class="elems" role="group" aria-labelledby="elemTitle">
+            <button type="button" data-el="convex-lens" aria-pressed="true"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M13 2 Q19 13 13 24 Q7 13 13 2 Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-en="Convex lens">凸透鏡</span></button>
+            <button type="button" data-el="concave-lens" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M8.5 2 H17.5 Q13 13 17.5 24 H8.5 Q13 13 8.5 2 Z" fill="currentColor" fill-opacity=".18" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-en="Concave lens">凹透鏡</span></button>
+            <button type="button" data-el="concave-mirror" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M10 2 Q17 13 10 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M15.2 6 l3 -2 M16.6 10 l3 -2 M17.1 14 l3 -2 M16.6 18 l3 -2 M15.2 22 l3 -2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".6"/></svg><span data-en="Concave mirror">凹面鏡</span></button>
+            <button type="button" data-el="convex-mirror" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M15 2 Q8 13 15 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M14.4 7 l3 -2 M12.7 11 l3 -2 M12.2 15 l3 -2 M12.7 19 l3 -2 M14.4 23 l3 -2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".6"/></svg><span data-en="Convex mirror">凸面鏡</span></button>
+            <button type="button" data-el="plane-mirror" aria-pressed="false"><svg viewBox="0 0 26 26" aria-hidden="true"><path d="M12 2 V24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M13.5 6 l3 -2 M13.5 10 l3 -2 M13.5 14 l3 -2 M13.5 18 l3 -2 M13.5 22 l3 -2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity=".6"/></svg><span data-en="Plane mirror">平面鏡</span></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Object and focal length">物體與焦距</h2>
+          <div class="slider" id="boxF"><label for="f" data-en="Focal length (magnitude) |f|">焦距大小 |f|</label><output id="fo"></output>
+            <input id="f" type="range" min="5" max="20" step="0.5" value="10" data-decimals="2"></div>
+          <p class="hint" id="planeNote" hidden data-en="A plane mirror has no focus: f = ∞, so 1/f = 0.">平面鏡沒有焦點：f = ∞，即 1/f = 0。</p>
+          <div class="slider"><label for="p" data-en="Object distance p">物距 p</label><output id="po"></output>
+            <input id="p" type="range" min="1" max="45" step="0.5" value="25" data-decimals="2"></div>
+          <div class="slider"><label for="h" data-en="Object height h">物高 h</label><output id="ho"></output>
+            <input id="h" type="range" min="1" max="10" step="0.5" value="6" data-decimals="2"></div>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card" id="casesCard">
+          <h2 id="casesTitle" data-en="Where is the object?">物體位置與成像規律</h2>
+          <div class="cases" role="group" aria-labelledby="casesTitle">
+            <button type="button" data-case="beyond2F" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
+            <button type="button" data-case="at2F" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
+            <button type="button" data-case="between" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
+            <button type="button" data-case="atF" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
+            <button type="button" data-case="insideF" aria-pressed="false"><span class="cond"></span><span class="res"></span></button>
+          </div>
+          <p class="hint" id="casesHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Image">成像結果</h2>
+          <dl class="readout">
+            <dt data-en="Focal length f">焦距 f</dt><dd id="rF">—</dd>
+            <dt data-en="Object distance p">物距 p</dt><dd id="rP">—</dd>
+            <dt data-en="Image distance q">像距 q</dt><dd id="rQ">—</dd>
+            <dt data-en="Magnification m = −q/p">放大率 m = −q/p</dt><dd id="rM">—</dd>
+            <dt data-en="Image height h′ = mh">像高 h′ = mh</dt><dd id="rH">—</dd>
+            <dt data-en="Image">像的性質</dt><dd id="rType" class="nature">—</dd>
+            <dt data-en="1/p + 1/q">1/p + 1/q</dt><dd id="rSum">—</dd>
+            <dt data-en="1/f">1/f</dt><dd id="rInvF">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showRays" type="checkbox" checked><span data-en="Principal rays">主光線</span></label>
+            <label><input id="showFan" type="checkbox"><span data-en="Many rays">多條光線</span></label>
+            <label><input id="showExt" type="checkbox" checked><span data-en="Extension lines">延長線</span></label>
+            <label><input id="showDim" type="checkbox" checked><span data-en="Distances p, q">距離 p、q</span></label>
+            <label><input id="showFlow" type="checkbox"><span data-en="Moving light">光的行進</span></label>
+          </div>
+          <p class="hint" data-en="“Many rays” sends a fan of rays from the tip of the object to the whole element: every one of them passes through (or appears to come from) the same image point.">「多條光線」由物體頂端射出一整束光到整個元件上：每一條都會經過（或反向延長後經過）同一個像點。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Every point of the object sends light in all directions. After a lens or mirror, the rays from one object point either meet again at one point — a <strong>real image</strong>, which can be caught on a screen — or spread out as if they came from one point behind them — a <strong>virtual image</strong>, which you can only see by looking into the lens or mirror. For a thin lens, or a spherical mirror with rays close to the axis, the object distance \(p\), the image distance \(q\) and the focal length \(f\) obey the same <strong>lens (mirror) equation</strong>:">物體上每一點都向四面八方發出光。經過透鏡或面鏡後，同一點發出的光若重新<strong>會聚</strong>於一點，就是<strong>實像</strong>（可以用屏幕接到）；若只是<strong>發散</strong>、但反向延長線交於一點，就是<strong>虛像</strong>（只能看著透鏡或鏡子才看得到）。對薄透鏡、以及光線靠近主軸的球面鏡，物距 \(p\)、像距 \(q\) 與焦距 \(f\) 滿足同一個<strong>成像公式</strong>：</p>
+      <div class="formula">
+        \[ \frac{1}{p} + \frac{1}{q} = \frac{1}{f}, \qquad m = \frac{h'}{h} = -\frac{q}{p}, \qquad f_{\text{mirror}} = \frac{R}{2} \]
+      </div>
+      <p data-en-html="The same equation works for all four elements once the signs are fixed. This page uses the convention of Taiwanese high-school textbooks, “real is positive”:">只要約定好正負號，四種元件都用同一個公式。本頁採用臺灣高中課本的「實正虛負」約定：</p>
+      <div class="table-scroll">
+        <table class="signs">
+          <thead><tr><th data-en="Quantity">物理量</th><th data-en="Positive (+)">正（＋）</th><th data-en="Negative (−)">負（－）</th></tr></thead>
+          <tbody>
+            <tr><th data-en-html="Object distance \(p\)">物距 \(p\)</th><td data-en="Real object (always, here)">實物（本頁一律為正）</td><td data-en="Virtual object (not used here)">虛物（本頁不討論）</td></tr>
+            <tr><th data-en-html="Image distance \(q\)">像距 \(q\)</th><td data-en="Real image — lens: on the other side; mirror: in front">實像——透鏡：在另一側；面鏡：在鏡前</td><td data-en="Virtual image — lens: on the object’s side; mirror: behind it">虛像——透鏡：與物體同側；面鏡：在鏡後</td></tr>
+            <tr><th data-en-html="Focal length \(f\)">焦距 \(f\)</th><td data-en="Converging: convex lens, concave mirror">會聚：凸透鏡、凹面鏡</td><td data-en="Diverging: concave lens, convex mirror">發散：凹透鏡、凸面鏡</td></tr>
+            <tr><th data-en-html="Magnification \(m\)">放大率 \(m\)</th><td data-en="Upright image">正立的像</td><td data-en="Inverted image">倒立的像</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p data-en-html="A plane mirror is the limit \(f \to \infty\): \(1/q = -1/p\), so \(q = -p\) and \(m = 1\) — an upright, same-size virtual image as far behind the mirror as the object is in front.">平面鏡是 \(f \to \infty\) 的極限：\(1/q = -1/p\)，所以 \(q = -p\)、\(m = 1\)——在鏡後與物體等距處，形成正立、等大的虛像。</p>
+
+      <h3 data-en="The principal rays">主光線作圖</h3>
+      <p data-en-html="Two rays from the tip of the object are enough to locate the tip of the image; textbooks use rays whose paths are easy to predict:">由物體頂端畫出兩條光線就能找到像的頂端；課本使用路徑容易預測的幾條光線：</p>
+      <ul>
+        <li data-en-html="<strong>Parallel to the axis</strong> → after the element it passes through the focus (convex lens: F′; concave mirror: F), or, for a diverging element, leaves as if it came from the focus.">平行主軸的光 → 經過元件後通過焦點（凸透鏡為 F′、凹面鏡為 F）；發散元件則是反向延長線通過焦點。</li>
+        <li data-en-html="<strong>Through (or toward) the focus F</strong> → leaves parallel to the axis.">經過（或射向）焦點 F 的光 → 平行主軸射出。</li>
+        <li data-en-html="<strong>Lens: through the optical centre</strong> → goes straight on. <strong>Mirror: through (or toward) the centre of curvature C</strong> → hits the mirror along a normal and comes straight back. (Mirror, alternative: a ray to the vertex reflects symmetrically about the axis.)">透鏡：經過光心的光 → 直線前進。面鏡：經過（或射向）曲率中心 C 的光 → 垂直打在鏡面上，沿原路反射（另一條常用的光線：射向鏡頂的光，對主軸對稱反射）。</li>
+      </ul>
+      <p data-en-html="Where the rays really cross, a real image forms (solid image arrow). If they diverge, extend them backwards with dashed lines; where the extensions cross is the virtual image (dashed image arrow). From similar triangles in this construction you can derive both the lens equation and \(m = -q/p\).">光線真的交會處形成實像（實線箭頭）；若光線發散，就把它們反向延長（虛線），延長線的交點就是虛像（虛線箭頭）。由作圖中的相似三角形，可以推導出成像公式與 \(m = -q/p\)。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Bring the object in from far away</strong> (convex lens or concave mirror): beyond 2F the image is real, inverted and reduced; at 2F it is the same size (\(q = 2f\), \(m = -1\)); between F and 2F it is real, inverted and magnified, and runs off to infinity as the object reaches F; inside F it suddenly becomes virtual, upright and magnified — a magnifying glass, or a make-up mirror."><strong>把物體由遠處移近</strong>（凸透鏡或凹面鏡）：在 2F 以外成倒立縮小實像；在 2F 上成等大實像（\(q = 2f\)、\(m = -1\)）；在 F 與 2F 之間成倒立放大實像，越接近 F 像越遠越大；進入 F 以內，突然變成正立放大的虛像——這就是放大鏡與化妝鏡。</li>
+        <li data-en-html="<strong>Object at F</strong>: all rays leave parallel and never meet — no image (it is “at infinity”). Spotlights and car headlamps put the bulb at the focus of a concave mirror for this reason."><strong>物體在焦點上</strong>：所有光線平行射出、永不相交，不成像（像在無窮遠）。探照燈、車燈把燈泡放在凹面鏡的焦點，就是利用這個性質。</li>
+        <li data-en-html="<strong>Diverging elements</strong> (concave lens, convex mirror): wherever you put the object, the image is virtual, upright and reduced, and lies between the element and its focus. That is why a convex mirror at a road corner shows a wide but small view."><strong>發散元件</strong>（凹透鏡、凸面鏡）：不論物體放在哪裡，都成正立、縮小的虛像，而且像一定在元件與焦點之間。路口的凸面鏡（反光鏡）看得廣、但影像較小，就是這個原因。</li>
+        <li data-en-html="<strong>Check the numbers</strong>: the panel shows \(1/p + 1/q\) next to \(1/f\) — they always agree. Then swap object and image: put the object where the image was, and the new image appears where the object was (the light path is reversible)."><strong>驗證數字</strong>：面板上的 \(1/p + 1/q\) 與 \(1/f\) 永遠相等。再把物體移到原來像的位置，新的像會出現在原來物體的位置（光路可逆）。</li>
+        <li data-en-html="<strong>Turn on “Many rays”</strong>: every ray from the tip of the object, not only the three principal rays, passes through the same image point. The principal rays are just the easiest ones to draw."><strong>打開「多條光線」</strong>：不只三條主光線，物體頂端發出的每一條光線都經過同一個像點；主光線只是最容易作圖的那幾條。</li>
+        <li data-en-html="<strong>Change the height</strong>: \(q\) does not depend on \(h\), and the image height grows in proportion, \(h' = mh\). Change \(|f|\) instead and the whole pattern scales."><strong>改變物高</strong>：\(q\) 與 \(h\) 無關，像高與物高成正比 \(h' = mh\)；改變 \(|f|\) 則整個成像規律依比例縮放。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The image is calculated from the lens equation \(1/q = 1/f - 1/p\) and \(m = -q/p\).">像的位置與大小直接由成像公式 \(1/q = 1/f - 1/p\) 與 \(m = -q/p\) 計算。</li>
+        <li data-en-html="Every ray is traced independently with the paraxial thin-element rule: a ray reaching the element at height \(y\) with slope \(u\) leaves with slope \(u' = u - y/f\) (a mirror reverses its horizontal direction). The drawn rays therefore really cross at the calculated image; the unit tests check this for all four elements.">每一條光線都用近軸薄元件的規則各自追跡：在元件上高度 \(y\)、斜率 \(u\) 的光線，出射斜率為 \(u' = u - y/f\)（面鏡則水平方向反轉）。所以畫出的光線確實交於計算出的像點，單元測試對四種元件都驗證過。</li>
+        <li data-en="This is the ideal thin-lens, paraxial model used in textbooks. Real spherical mirrors and thick lenses have aberrations: rays far from the axis do not meet exactly at one point.">這是課本使用的理想薄透鏡、近軸模型。真實的球面鏡與厚透鏡有像差：離主軸很遠的光線不會剛好交於一點。</li>
+        <li data-en="Distances are drawn to scale (see the 10 cm scale bar). The curvature of the lens and mirror surfaces is exaggerated or reduced only for display.">距離依實際比例繪製（見「10 cm」比例尺）；透鏡與鏡面的彎曲程度只是示意。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111040"></script>
+  <script src="js/lens-mirror-core.js?v=202611111040"></script>
+  <script src="js/numinput.js?v=202611111040"></script>
+  <script src="js/lens-mirror.js?v=202611111040"></script>
+  <script src="js/firebase-config.js?v=202611111040"></script>
+  <script src="js/missions.js?v=202611111040" data-module="lens-mirror"></script>
+  <script src="js/missions/lens-mirror.js?v=202611111040"></script>
+  <script src="js/stats.js?v=202611111040" data-module="lens-mirror"></script>
+  <script src="js/comments.js?v=202611111040"></script>
+</body>
+</html>

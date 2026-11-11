@@ -282,7 +282,7 @@
       tLabel.textContent = state.on ? T('任務模式：開', 'Mission mode: on') : T('任務模式', 'Mission mode');
       summary.textContent = state.user && state.ready
         ? T('已完成 ', 'Done ') + n + ' / ' + list.length + T('　星星 ', ' · stars ') + got + ' / ' + total
-        : T('共 ', '') + list.length + T(' 個任務', ' missions');
+        : (EN ? list.length + ' missions' : '共 ' + list.length + ' 個任務');
       panel.hidden = !state.on;
       if (!state.on) return;
       panel.innerHTML = '';

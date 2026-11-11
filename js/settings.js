@@ -62,7 +62,7 @@
   }
   window.LabSettings = {
     lang: st.lang,
-    t: function (zh, en) { return isEn && en ? en : zh; },
+    t: function (zh, en) { return isEn && typeof en === 'string' ? en : zh; }, // 英文可以是空字串
     get: function (name) { return st[name]; },
     // 目前只開放模組頁面直接切換音效（例如頁面上的喇叭按鈕）
     set: function (name, value) {
