@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111232"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Specific Heat and Thermal Equilibrium | Astro Ni Physics Lab">比熱與熱平衡｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：把加熱過的金屬塊或冰塊放進量熱器的水中，觀察兩者溫度逐漸接近熱平衡、放熱等於吸熱；用固定功率的加熱器畫出冰的加熱曲線，看見熔化與沸騰的平台，由斜率測量比熱；比較同樣熱量下不同材料的溫度變化。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111232">
+  <style>
+    /* 比熱與熱平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定（實驗裝置＋溫度–時間圖＋熱量圖）；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 460px; touch-action: auto; cursor: default; }
+    .sh button { min-height: 44px; }
+    .sh .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .sh .playbar button { flex: 1 1 auto; }
+    .sh .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sh .speedbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 8px 2px 0; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .sh .speedbar .seg4 { flex: 1 1 220px; }
+    .sh .stage .status { margin: 6px 4px 0; }
+    .sh .slider input[type="range"] { height: 28px; margin: 0; }
+    .sh .slider label sub, dl.readout sub { font-size: .75em; }
+    .sh [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 6px 0 6px; }
+    .seg3, .seg4 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    .seg3 button, .seg4 button { padding: 6px 4px; line-height: 1.25; }
+    .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(68px * var(--fs, 1)), 1fr)); gap: 6px; margin: 2px 0 6px; }
+    .chips button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 4px 2px; line-height: 1.2; min-height: 50px; }
+    .chips button .sw { width: 22px; height: 8px; border-radius: 3px; margin-bottom: 3px; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .18); }
+    .chips button b { font-size: calc(14px * var(--fs, 1)); }
+    .chips button small { font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .chips button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+    .chips button[aria-pressed="true"] b { color: var(--accent); }
+    .sh .checks label { min-height: 44px; }
+    .sh .checks input { width: 17px; height: 17px; }
+    .sh .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .sh .info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); line-height: 1.55; }
+    .sh .info strong { color: var(--text); }
+    .sh .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; align-items: center; }
+    .sh .row2 button { flex: 1 1 auto; }
+    .sh .guess { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .sh .guess input { flex: 1 1 90px; min-width: 0; min-height: 44px; font: inherit; font-size: calc(16px * var(--fs, 1)); padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .sh .guess input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .sh .verdict { margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); min-height: 1.4em; }
+    .sh .verdict.good { color: var(--probe); font-weight: 700; }
+    .sh .verdict.bad { color: var(--pos); }
+    .sh table.pts { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin-top: 8px; }
+    .sh table.pts th, .sh table.pts td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--border); }
+    .sh table.pts th { color: var(--muted); font-weight: 600; }
+    .sh table.pts th:first-child, .sh table.pts td:first-child { text-align: left; }
+    .sh table.pts td small { color: var(--muted); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .notes table.mat { border-collapse: collapse; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; min-width: 280px; }
+    .notes table.mat th, .notes table.mat td { padding: 4px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+    .notes table.mat th:first-child, .notes table.mat td:first-child { text-align: left; }
+    .notes table.mat th { color: var(--muted); font-weight: 600; }
+    .notes .tablewrap { overflow-x: auto; }
+    .notes .src { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#thermo&quot;>Heat</a> / Thermal equilibrium"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#thermo">熱學</a> ／ 熱平衡</nav>
+      <h1 data-en="Specific Heat and Thermal Equilibrium">比熱與熱平衡</h1>
+      <p data-en="Drop a heated metal block or a piece of ice into the water of a calorimeter and watch the two temperatures approach each other until they reach thermal equilibrium — the heat given out equals the heat taken in. Then heat ice with a constant-power heater to draw its heating curve with the melting and boiling plateaus, measure a specific heat from the slope, and compare how much different materials warm up when they receive the same heat.">把加熱過的金屬塊或冰塊放進量熱器的水中，看兩者的溫度逐漸接近、達到熱平衡——放出的熱量等於吸收的熱量。再用固定功率的加熱器加熱冰塊，畫出有熔化與沸騰平台的加熱曲線、由斜率測出比熱，並比較不同材料吸收同樣的熱量後，溫度各升高多少。</p>
+    </header>
+
+    <div class="lab sh">
+      <div class="stage">
+        <canvas id="cv" aria-label="比熱與熱平衡模擬畫布：左邊是實驗裝置的剖面圖，右邊是溫度對時間的圖與熱量長條圖" data-en-aria-label="Specific heat simulation: a cut-away view of the apparatus, a temperature–time graph and a bar chart of the heat exchanged"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Drop the sample in">放入樣品</button>
+          <button id="rec" type="button" hidden data-en="Record (t, T)">記錄 (t, T)</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有保留的曲線、紀錄點與這一次的實驗，滑桿設定不變" data-en-title="Clear all kept curves, recorded points and this run; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="speedbar">
+          <span id="speedLabel" data-en="Playback speed">播放速度</span>
+          <div class="seg4" role="group" aria-labelledby="speedLabel">
+            <button type="button" data-speed="1" aria-pressed="false">1×</button>
+            <button type="button" data-speed="10" aria-pressed="true">10×</button>
+            <button type="button" data-speed="50" aria-pressed="false">50×</button>
+            <button type="button" data-speed="200" aria-pressed="false">200×</button>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legCal">
+          <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Sample T<sub>1</sub>"><i style="background:var(--b-mech)"></i>樣品 T<sub>1</sub></span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Water T<sub>2</sub>"><i style="background:var(--neg)"></i>水 T<sub>2</sub></span>
+          <span style="color:var(--probe)" data-en-html="<i class=&quot;dash&quot;></i>Predicted T<sub>f</sub>"><i class="dash"></i>預測的 T<sub>f</sub></span>
+          <span data-en-html="<i style=&quot;background:var(--b-thermo)&quot;></i>Heat flow"><i style="background:var(--b-thermo)"></i>熱流</span>
+        </div>
+        <div class="legend" id="legHeat" hidden>
+          <span data-en-html="<i style=&quot;background:var(--b-thermo)&quot;></i>Temperature T"><i style="background:var(--b-thermo)"></i>溫度 T</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Prediction"><i class="dash"></i>預測</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Recorded point"><i class="dot" style="background:var(--equi)"></i>紀錄點</span>
+          <span data-en-html="<i style=&quot;background:var(--accent-soft);height:10px&quot;></i>Phase-change plateau"><i style="background:var(--accent-soft);height:10px"></i>相變平台</span>
+        </div>
+        <div class="legend" id="legCmp" hidden></div>
+        <p class="hint" id="stageHint" data-en-html="Cut-away side view; the cup and the sample are drawn to scale. The glow colour around an object only shows its temperature (red = hot, blue = cold). Faded curves on the graph are earlier runs.">剖面側視圖，杯子與樣品依實際比例繪製；物體周圍光暈的顏色只代表溫度（紅＝熱、藍＝冷）。圖上變淡的曲線是先前幾次的結果。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗</h2>
+          <div class="seg3" role="group" aria-label="實驗模式" data-en-aria-label="Experiment mode">
+            <button type="button" id="modeCal" aria-pressed="true" data-en="Calorimeter">量熱器混合</button>
+            <button type="button" id="modeHeat" aria-pressed="false" data-en="Heating curve">加熱曲線</button>
+            <button type="button" id="modeCmp" aria-pressed="false" data-en="Compare">比熱比較</button>
+          </div>
+          <p class="hint" id="modeHint"></p>
+        </section>
+
+        <!-- ===== 量熱器 ===== -->
+        <section class="card" data-mode="cal">
+          <h2 data-en="Sample">樣品</h2>
+          <div class="chips" id="calMats" role="group" aria-label="樣品材料" data-en-aria-label="Sample material"></div>
+          <div class="slider"><label for="m1" data-en-html="Mass m<sub>1</sub>">質量 m<sub>1</sub></label><output id="m1o"></output>
+            <input id="m1" type="range" min="0.01" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="T1" data-en-html="Temperature T<sub>1</sub>">溫度 T<sub>1</sub></label><output id="T1o"></output>
+            <input id="T1" type="range" min="-20" max="200" step="1" value="100" data-decimals="2"></div>
+          <p class="hint" id="sampleHint"></p>
+        </section>
+
+        <section class="card" data-mode="cal">
+          <h2 data-en="Water in the calorimeter">量熱器中的水</h2>
+          <div class="slider"><label for="m2" data-en-html="Mass m<sub>2</sub>">質量 m<sub>2</sub></label><output id="m2o"></output>
+            <input id="m2" type="range" min="0.05" max="0.5" step="0.01" value="0.25" data-decimals="3"></div>
+          <div class="slider"><label for="T2" data-en-html="Temperature T<sub>2</sub>">溫度 T<sub>2</sub></label><output id="T2o"></output>
+            <input id="T2" type="range" min="0" max="100" step="1" value="20" data-decimals="2"></div>
+          <div class="slider"><label for="cc" data-en-html="Heat capacity of the cup C<sub>cup</sub>">量熱杯的熱容量 C<sub>杯</sub></label><output id="cco"></output>
+            <input id="cc" type="range" min="0" max="500" step="10" value="0" data-decimals="1"></div>
+          <div class="checks">
+            <label><input id="stir" type="checkbox" checked><span data-en="Stir">攪拌</span></label>
+            <label><input id="lossC" type="checkbox"><span data-en="Heat loss (poorly insulated cup)">散熱（杯子保溫不良）</span></label>
+          </div>
+          <p class="hint" data-en="Tap a number to type an exact value. The cup starts at the water temperature. Heat loss goes to the room at 25 °C.">點一下數字可直接輸入精確數值。量熱杯的初溫與水相同；散熱是散到 25 °C 的室內。</p>
+        </section>
+
+        <!-- ===== 加熱曲線 ===== -->
+        <section class="card" data-mode="heat" hidden>
+          <h2 data-en="Substance and heater">加熱的物質與加熱器</h2>
+          <div class="chips" id="heatMats" role="group" aria-label="加熱的物質" data-en-aria-label="Substance heated"></div>
+          <div class="slider"><label for="hm" data-en="Mass m">質量 m</label><output id="hmo"></output>
+            <input id="hm" type="range" min="0.05" max="1" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="hT" data-en-html="Starting temperature T<sub>0</sub>">起始溫度 T<sub>0</sub></label><output id="hTo"></output>
+            <input id="hT" type="range" min="-30" max="100" step="1" value="-20" data-decimals="1"></div>
+          <div class="slider"><label for="hP" data-en="Heater power P">加熱器功率 P</label><output id="hPo"></output>
+            <input id="hP" type="range" min="10" max="3000" step="10" value="1000" data-decimals="1"></div>
+          <div class="checks">
+            <label><input id="lossH" type="checkbox"><span data-en="Heat loss (no insulation)">散熱（容器沒有隔熱）</span></label>
+          </div>
+          <p class="hint" id="heatHint" data-en="Water starting at 0 °C or below is ice. The run stops when all the water has boiled away (or a solid reaches 250 °C).">水的起始溫度 ≤ 0 °C 時是冰。水全部汽化（或固體到達 250 °C）時停止。</p>
+        </section>
+
+        <section class="card" data-mode="heat" hidden>
+          <h2 data-en="Data you record">你記錄的數據</h2>
+          <p class="hint" data-en-html="Press “Record (t, T)” below the graph (pause first if you like) to read the thermometer and the clock. From the last two points: \(c = \dfrac{P\,\Delta t}{m\,\Delta T}\).">按圖下方的「記錄 (t, T)」讀取時鐘與溫度計（可以先暫停）。由最後兩個點計算：\(c = \dfrac{P\,\Delta t}{m\,\Delta T}\)。</p>
+          <table class="pts" id="ptsTable"><thead><tr><th>#</th><th>t (s)</th><th>T (°C)</th></tr></thead><tbody></tbody></table>
+          <dl class="readout" id="ptsCalc" style="margin-top:8px">
+            <dt data-en-html="Slope <span class=&quot;f&quot;>ΔT/Δt</span>">斜率 <span class="f">ΔT/Δt</span></dt><dd id="pSlope">—</dd>
+            <dt data-en-html="<span class=&quot;f&quot;>c = PΔt/(mΔT)</span>"><span class="f">c = PΔt/(mΔT)</span></dt><dd id="pC">—</dd>
+            <dt data-en-html="<span class=&quot;f&quot;>PΔt/m</span>"><span class="f">PΔt/m</span></dt><dd id="pL">—</dd>
+          </dl>
+        </section>
+
+        <!-- ===== 比熱比較 ===== -->
+        <section class="card" data-mode="cmp" hidden>
+          <h2 data-en="Same heater, same mass">同樣的加熱器、同樣的質量</h2>
+          <div class="chips" id="cmpMats" role="group" aria-label="比較的材料（可複選）" data-en-aria-label="Materials compared (choose several)"></div>
+          <div class="slider"><label for="cm" data-en="Mass of each m">每個物體的質量 m</label><output id="cmo"></output>
+            <input id="cm" type="range" min="0.1" max="2" step="0.1" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="cP" data-en="Power of each heater P">每個加熱器的功率 P</label><output id="cPo"></output>
+            <input id="cP" type="range" min="10" max="2000" step="10" value="500" data-decimals="1"></div>
+          <div class="slider"><label for="cT" data-en-html="Starting temperature T<sub>0</sub>">起始溫度 T<sub>0</sub></label><output id="cTo"></output>
+            <input id="cT" type="range" min="0" max="50" step="1" value="20" data-decimals="1"></div>
+          <p class="hint" data-en="Every object receives the same heat Q = Pt at the same time. Tap a material to add or remove it.">每個物體在同一時間都吸收同樣的熱量 Q = Pt。點一下材料可加入或移除。</p>
+        </section>
+
+        <!-- ===== 神秘金屬 ===== -->
+        <section class="card" id="mysCard" hidden>
+          <h2 data-en="Mystery metal">神秘金屬</h2>
+          <p class="hint" data-en="Its specific heat is hidden. Measure it — drop it into water, or heat it — and work out c, then check your answer.">它的比熱被藏起來了。先做實驗（放進水中，或用加熱器加熱），算出比熱 c，再核對你的答案。</p>
+          <div class="guess">
+            <label for="guessC" data-en="Your c =">你算出的 c =</label>
+            <input id="guessC" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 500" data-en-placeholder="e.g. 500">
+            <span>J/(kg·K)</span>
+          </div>
+          <div class="row2">
+            <button type="button" id="guessBtn" data-en="Check">核對</button>
+            <button type="button" id="newMys" data-en="New mystery metal">換一塊神秘金屬</button>
+          </div>
+          <p class="verdict" id="verdict" aria-live="polite"></p>
+        </section>
+
+        <!-- ===== 讀數 ===== -->
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Heat, specific heat and heat capacity">熱量、比熱與熱容量</h3>
+      <p data-en-html="To raise the temperature of an object of mass \(m\) by \(\Delta T\) it must absorb the heat \(Q\). The <strong>specific heat</strong> \(c\) is the heat needed per kilogram per kelvin, and the <strong>heat capacity</strong> \(C = mc\) is the heat needed by the whole object per kelvin:">質量 \(m\) 的物體溫度升高 \(\Delta T\)，需要吸收熱量 \(Q\)。<strong>比熱</strong> \(c\) 是每公斤升高 1 K 所需的熱量，<strong>熱容量</strong> \(C = mc\) 是整個物體升高 1 K 所需的熱量：</p>
+      <div class="formula">\[ Q = m c\,\Delta T = C\,\Delta T, \qquad C = m c \]</div>
+      <p data-en-html="A temperature change of 1 °C is the same as 1 K. Water has an unusually large specific heat, \(4186\ \mathrm{J/(kg\cdot K)}\), which is why the old unit, the calorie, was defined from it: \(1\ \mathrm{cal/(g\cdot {}^{\circ}C)}\), with \(1\ \mathrm{cal} = 4.186\ \mathrm{J}\).">溫度變化 1 °C 與 1 K 相同。水的比熱特別大，\(4186\ \mathrm{J/(kg\cdot K)}\)；舊的熱量單位「卡」就是由水定義的：水的比熱 \(1\ \mathrm{cal/(g\cdot {}^{\circ}C)}\)，\(1\ \mathrm{cal} = 4.186\ \mathrm{J}\)。</p>
+
+      <h3 data-en="Thermal equilibrium and mixing">熱平衡與混合</h3>
+      <p data-en-html="When objects at different temperatures touch, heat flows from the hotter to the colder until they all reach the same temperature \(T_f\) — <strong>thermal equilibrium</strong>. In an insulated calorimeter no energy is lost, so the heat given out equals the heat taken in. Adding up \(Q = mc\,(T_f - T_i)\) for every object (positive when it gains heat):">溫度不同的物體互相接觸時，熱由高溫流向低溫，直到所有物體的溫度相同（\(T_f\)），稱為<strong>熱平衡</strong>。在隔熱的量熱器中沒有能量散失，所以放出的熱量等於吸收的熱量。把每個物體的 \(Q = mc\,(T_f - T_i)\) 加起來（吸熱為正）：</p>
+      <div class="formula">\[ \begin{gathered} \sum m c\,(T_f - T_i) = 0 \;\Longrightarrow\; T_f = \frac{\sum m c\,T_i}{\sum m c} \\[4pt] T_f = \frac{m_1 c_1 T_1 + (m_2 c_2 + C_{\text{cup}})\,T_2}{m_1 c_1 + m_2 c_2 + C_{\text{cup}}} \end{gathered} \]</div>
+      <p data-en-html="So \(T_f\) is an average of the starting temperatures weighted by the <strong>heat capacities</strong>, not by the masses. The calorimeter cup itself also absorbs heat; its heat capacity \(C_{\text{cup}}\) is often given as a <strong>water equivalent</strong> — the mass of water with the same heat capacity, \(C_{\text{cup}}/c_{\text{water}}\).">所以 \(T_f\) 是各初溫依<strong>熱容量</strong>（而不是質量）加權的平均。量熱杯本身也會吸熱，它的熱容量 \(C_{\text{杯}}\) 常用<strong>水當量</strong>表示：熱容量相同的水的質量 \(C_{\text{杯}}/c_{\text{水}}\)。</p>
+      <p data-en-html="If the specific heat of the sample is unknown, measure \(T_f\) and solve the same equation for \(c_1\):">如果樣品的比熱未知，量出 \(T_f\) 之後，用同一個式子解出 \(c_1\)：</p>
+      <div class="formula">\[ c_1 = \frac{(m_2 c_2 + C_{\text{cup}})(T_f - T_2)}{m_1 (T_1 - T_f)} \]</div>
+
+      <h3 data-en="Latent heat and the heating curve">潛熱與加熱曲線</h3>
+      <p data-en-html="During melting and boiling the temperature stays constant even though heat keeps flowing in: the energy goes into changing the phase. The heat needed is the <strong>latent heat</strong>:">熔化與沸騰的過程中，雖然持續吸熱，溫度卻保持不變，因為能量用來改變物質的狀態（相）。所需的熱量稱為<strong>潛熱</strong>：</p>
+      <div class="formula">\[ \begin{gathered} Q = m L \\[4pt] L_f = 3.34\times10^{5}\ \mathrm{J/kg}\ (\approx 80\ \mathrm{cal/g}) \\ L_v = 2.26\times10^{6}\ \mathrm{J/kg}\ (\approx 539\ \mathrm{cal/g}) \end{gathered} \]</div>
+      <p data-en-html="With a heater of constant power \(P\) and no heat loss, the heat received in time \(t\) is \(Q = Pt\). On a graph of temperature against time each sloping part is a straight line with slope \(P/(mc)\), and each flat part (plateau) lasts \(mL/P\):">用固定功率 \(P\) 的加熱器加熱、沒有散熱時，經過時間 \(t\) 吸收的熱量 \(Q = Pt\)。溫度對時間的圖上，每一段斜線的斜率是 \(P/(mc)\)，每一段水平的平台持續 \(mL/P\)：</p>
+      <div class="formula">\[ \begin{gathered} \frac{\Delta T}{\Delta t} = \frac{P}{m c} \;\Longrightarrow\; c = \frac{P\,\Delta t}{m\,\Delta T} \\[4pt] t_{\text{plateau}} = \frac{m L}{P} \end{gathered} \]</div>
+      <p data-en-html="Melting 1 kg of ice takes as much heat as warming 1 kg of water by about 80 °C, and boiling it away takes more than five times the heat needed to warm it from 0 °C to 100 °C — look at how long the boiling plateau is.">融化 1 kg 的冰所需的熱量，大約可讓 1 kg 的水升高 80 °C；把水全部煮乾所需的熱量，超過把它從 0 °C 加熱到 100 °C 的五倍——看看沸騰的平台有多長。</p>
+
+      <h3 data-en="Mixing ice with water">冰與水混合</h3>
+      <p data-en-html="Compare the heat the water can give out by cooling to 0 °C, \(Q_{\text{out}} = (m_2 c_2 + C_{\text{cup}})(T_2 - 0)\), with the heat the ice needs to warm to 0 °C, \(Q_1 = m_1 c_{\text{ice}}(0 - T_1)\), and then to melt completely, \(Q_2 = m_1 L_f\):">先比較水降到 0 °C 能放出的熱量 \(Q_{\text{放}} = (m_2 c_2 + C_{\text{杯}})(T_2 - 0)\)，與冰升溫到 0 °C 所需的熱量 \(Q_1 = m_1 c_{\text{冰}}(0 - T_1)\)、再全部融化所需的熱量 \(Q_2 = m_1 L_f\)：</p>
+      <ul>
+        <li data-en-html="\(Q_{\text{out}} \ge Q_1 + Q_2\): all the ice melts and the mixture ends above 0 °C; use \(\sum Q = 0\) including the melting term.">\(Q_{\text{放}} \ge Q_1 + Q_2\)：冰全部融化，最後溫度高於 0 °C；把熔化的熱量也寫進 \(\sum Q = 0\)。</li>
+        <li data-en-html="\(Q_1 \le Q_{\text{out}} < Q_1 + Q_2\): only part of the ice melts and the mixture stays at \(T_f = 0\ {}^{\circ}\mathrm{C}\); the mass melted is \((Q_{\text{out}} - Q_1)/L_f\).">\(Q_1 \le Q_{\text{放}} < Q_1 + Q_2\)：只有部分的冰融化，最後停在 \(T_f = 0\ {}^{\circ}\mathrm{C}\)；融化的質量為 \((Q_{\text{放}} - Q_1)/L_f\)。</li>
+        <li data-en-html="\(Q_{\text{out}} < Q_1\): the ice is so cold that some of the water freezes instead (it gives out \(m L_f\) as it freezes).">\(Q_{\text{放}} < Q_1\)：冰太冷了，反而有一部分的水結冰（結冰時放出 \(m L_f\)）。</li>
+      </ul>
+
+      <h3 data-en="How fast is equilibrium reached?">多快達到熱平衡？</h3>
+      <p data-en-html="The rate of heat flow is roughly proportional to the temperature difference (Newton’s law of cooling), \(P = k\,(T_1 - T_2)\), where \(k = hA\) depends on the contact area \(A\) and on stirring. Then the temperature difference decays exponentially:">熱流的快慢大約與溫差成正比（牛頓冷卻定律）：\(P = k\,(T_1 - T_2)\)，其中 \(k = hA\) 與接觸面積 \(A\)、有沒有攪拌有關。於是溫差以指數方式減小：</p>
+      <div class="formula">\[ \begin{gathered} T_1 - T_2 = (T_1 - T_2)_0\, e^{-t/\tau} \\[4pt] \tau = \frac{1}{k}\,\frac{C_1 C_2}{C_1 + C_2} \end{gathered} \]</div>
+      <p data-en-html="Stirring makes \(k\) larger, so equilibrium is reached sooner, but it does not change \(T_f\): the final temperature depends only on energy conservation.">攪拌讓 \(k\) 變大、更快達到熱平衡，但不會改變 \(T_f\)：最後的溫度只由能量守恆決定。</p>
+
+      <h3 data-en="Specific heats used in this simulation">本模擬使用的比熱資料</h3>
+      <div class="tablewrap">
+        <table class="mat">
+          <thead><tr><th data-en="Material">物質</th><th data-en-html="c (J/(kg·K))">c（J/(kg·K)）</th><th data-en-html="Density (kg/m<sup>3</sup>)">密度（kg/m<sup>3</sup>）</th></tr></thead>
+          <tbody>
+            <tr><td data-en="Water (liquid)">水（液態）</td><td>4186</td><td>1000</td></tr>
+            <tr><td data-en="Ice (about −10 °C)">冰（約 −10 °C）</td><td>2100</td><td>917</td></tr>
+            <tr><td data-en="Steam (about 100 °C)">水蒸氣（約 100 °C）</td><td>2010</td><td>—</td></tr>
+            <tr><td data-en="Aluminium">鋁</td><td>900</td><td>2700</td></tr>
+            <tr><td data-en="Glass (soda-lime)">玻璃（鈉鈣玻璃）</td><td>840</td><td>2500</td></tr>
+            <tr><td data-en="Iron">鐵</td><td>450</td><td>7870</td></tr>
+            <tr><td data-en="Copper">銅</td><td>385</td><td>8960</td></tr>
+            <tr><td data-en="Lead">鉛</td><td>128</td><td>11340</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="src" data-en-html="Values near 25 °C and 1 atm, rounded, from the CRC Handbook of Chemistry and Physics (glass: typical soda-lime glass). Latent heats of water: \(L_f = 3.34\times10^{5}\ \mathrm{J/kg}\) at 0 °C, \(L_v = 2.26\times10^{6}\ \mathrm{J/kg}\) at 100 °C. The mystery metals are also real metals.">數值為約 25 °C、1 大氣壓下的四捨五入值，取自 CRC Handbook of Chemistry and Physics（玻璃為一般鈉鈣玻璃的典型值）。水的潛熱：0 °C 時 \(L_f = 3.34\times10^{5}\ \mathrm{J/kg}\)，100 °C 時 \(L_v = 2.26\times10^{6}\ \mathrm{J/kg}\)。神秘金屬也都是真實的金屬。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Heat lost = heat gained</strong>: drop the 0.2 kg aluminium block at 100 °C into 0.2 kg of water at 20 °C. The bars show the same amount of heat on both sides, and the final temperature is only about 34 °C — much closer to the water, because water’s heat capacity is about 4.7 times larger."><strong>放熱 = 吸熱</strong>：把 0.2 kg、100 °C 的鋁塊放進 0.2 kg、20 °C 的水。長條圖兩邊的熱量一樣多，最後溫度只有約 34 °C——比較接近水溫，因為水的熱容量大約是鋁塊的 4.7 倍。</li>
+        <li data-en-html="<strong>Same mass, different metals</strong>: repeat with iron, copper and lead of the same mass and temperature. The smaller \(c\), the less the water warms up. Lead (\(c = 128\)) hardly changes the water temperature at all."><strong>同質量、不同金屬</strong>：用相同質量與溫度的鐵、銅、鉛重做一次。比熱越小，水升溫越少；鉛（\(c = 128\)）幾乎不改變水溫。</li>
+        <li data-en-html="<strong>Stirring</strong>: turn stirring off. Equilibrium takes about four times as long, but \(T_f\) is exactly the same."><strong>攪拌</strong>：關掉攪拌，達到熱平衡的時間變成約 4 倍，但 \(T_f\) 完全一樣。</li>
+        <li data-en-html="<strong>Ice</strong>: drop ice at −10 °C into warm water and change the amounts until some ice is left, until it just all melts, and until even some of the water freezes."><strong>冰塊</strong>：把 −10 °C 的冰放進溫水，調整兩者的量，試出「冰剩下一些」、「冰剛好全部融化」，甚至「水反而結冰」的情況。</li>
+        <li data-en-html="<strong>Heating curve</strong>: heat 0.2 kg of ice from −20 °C. The slopes of the three sloping parts are different because \(c_{\text{ice}}\), \(c_{\text{water}}\) are different; the boiling plateau is about 6.8 times as long as the melting plateau, because \(L_v/L_f \approx 6.8\)."><strong>加熱曲線</strong>：加熱 0.2 kg、−20 °C 的冰。冰與水的比熱不同，所以斜線的斜率不同；沸騰平台大約是熔化平台的 6.8 倍長，因為 \(L_v/L_f \approx 6.8\)。</li>
+        <li data-en-html="<strong>Measure \(c\) from the slope</strong>: record two points on the liquid part and compare \(P\Delta t/(m\Delta T)\) with 4186. Then turn on heat loss and try again — where should the two points be so that the loss hardly matters?"><strong>由斜率測比熱</strong>：在液態的部分記錄兩個點，把 \(P\Delta t/(m\Delta T)\) 與 4186 比較。再打開散熱重做——兩個點要取在哪裡，散熱的影響才最小？</li>
+        <li data-en-html="<strong>Comparison</strong>: with the same heat \(Q = Pt\), \(\Delta T = Q/(mc)\). Lead warms about 33 times as fast as water."><strong>比熱比較</strong>：吸收同樣的熱量 \(Q = Pt\) 時，\(\Delta T = Q/(mc)\)；鉛升溫的速度大約是水的 33 倍。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Each object stores its heat content (enthalpy \(H\)). Its temperature is a piecewise-linear function of \(H\): \(dH = C\,dT\) while warming, and a flat step of height \(mL\) at 0 °C and 100 °C for water.">每個物體記錄它所含的熱能（焓 \(H\)）。溫度是 \(H\) 的分段線性函數：升溫時 \(dH = C\,dT\)，水在 0 °C 與 100 °C 各有一段高度為 \(mL\) 的平台。</li>
+        <li data-en-html="The predicted \(T_f\) is found exactly from conservation of the total enthalpy, including melting, freezing and boiling.">預測的 \(T_f\) 由總焓守恆精確求出（包括熔化、結冰與沸騰）。</li>
+        <li data-en-html="Heat flows between the sample and the water by \(P = k\,(T_1 - T_2)\) with \(k = hA\) for a cube-shaped sample (\(h = 250\) or, stirred, \(1000\ \mathrm{W/(m^2\cdot K)}\)). Within each stage the exponential solution is used exactly, so the heat lost by one object is exactly the heat gained by the other, and the run ends at the predicted \(T_f\). Each object is assumed to have a uniform temperature; water that melts from the ice is counted with the sample until the end.">樣品與水之間的熱流為 \(P = k\,(T_1 - T_2)\)，\(k = hA\)（樣品視為正立方體；\(h = 250\)，攪拌時 \(1000\ \mathrm{W/(m^2\cdot K)}\)）。每一段都使用精確的指數解，所以一方放出的熱量正好等於另一方吸收的熱量，最後一定到達預測的 \(T_f\)。每個物體視為溫度均勻；冰融化成的水在計算上仍算在樣品裡，直到最後才與杯中的水同溫。</li>
+        <li data-en-html="With heat loss on, the water and cup also lose \(k_e\,(T_2 - 25\ {}^{\circ}\mathrm{C})\) (\(k_e = 1.5\ \mathrm{W/K}\) for the cup, \(3\ \mathrm{W/K}\) for the heater’s container); the heat lost is shown so that the energy still adds up.">打開散熱時，水與杯子還會散失 \(k_e\,(T_2 - 25\ {}^{\circ}\mathrm{C})\) 的熱流（量熱杯 \(k_e = 1.5\ \mathrm{W/K}\)，加熱實驗的容器 \(3\ \mathrm{W/K}\)）；散失的熱量也會顯示，能量的帳目仍然平衡。</li>
+        <li data-en-html="Everything happens at a pressure of 1 atm. When water boils in the heating experiment the steam escapes; in the calorimeter the steam is counted as part of the water.">全部在 1 大氣壓下進行。加熱實驗中水沸騰產生的水蒸氣會跑掉；量熱器中產生的水蒸氣仍算在水的部分。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111232"></script>
+  <script src="js/specific-heat-core.js?v=202611111232"></script>
+  <script src="js/sound.js?v=202611111232"></script>
+  <script src="js/numinput.js?v=202611111232"></script>
+  <script src="js/specific-heat.js?v=202611111232"></script>
+  <script src="js/firebase-config.js?v=202611111232"></script>
+  <script src="js/missions.js?v=202611111232" data-module="specific-heat"></script>
+  <script src="js/missions/specific-heat.js?v=202611111232"></script>
+  <script src="js/stats.js?v=202611111232" data-module="specific-heat"></script>
+  <script src="js/comments.js?v=202611111232"></script>
+</body>
+</html>
