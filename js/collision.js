@@ -3,6 +3,8 @@
   'use strict';
   const CC = window.CollisionCore;
   const $ = function (id) { return document.getElementById(id); };
+  // 介面文字：英文模式取英文，其餘取中文（簡體由 settings.js 自動轉換）
+  const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
 
   // ---------- 世界座標（m，向右為正） ----------
   const L = 12;           // 畫面中軌道長度
@@ -335,23 +337,26 @@
     ctx.font = '600 12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    haloText(ctx, '質心', cx + 10, trackY + 12, colors.text);
+    haloText(ctx, T('質心', 'CM'), cx + 10, trackY + 12, colors.text);
 
     // 左上角：時間與參考系
     ctx.font = (narrow ? 11 : 13) + 'px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    haloText(ctx, 't = ' + num(state.t, 2) + ' s' + (state.cmFrame ? '　質心參考系' : ''), 8, 7, colors.muted);
+    haloText(ctx, 't = ' + num(state.t, 2) + ' s' + (state.cmFrame ? T('　質心參考系', '   CM frame') : ''), 8, 7, colors.muted);
   }
 
   // ---------- 圖表共用 ----------
   const SERIES = [
-    { key: '1', label: '車 1' },
-    { key: '2', label: '車 2' },
-    { key: '', label: '總和' }
+    { key: '1', label: T('車 1', 'Cart 1') },
+    { key: '2', label: T('車 2', 'Cart 2') },
+    { key: '', label: T('總和', 'Total') }
   ];
   function seriesColor(i) { return [colors.pos, colors.neg, colors.field][i]; }
   function valuesOf(q, kind) { return kind === 'p' ? [q.p1, q.p2, q.p] : [q.K1, q.K2, q.K]; }
+
+  const TITLE_P = T('動量 p（kg·m/s）', 'Momentum p (kg·m/s)');
+  const TITLE_K = T('動能 K（J）', 'Kinetic energy K (J)');
 
   // ---------- 長條圖 ----------
   function drawBars(st) {
@@ -360,8 +365,8 @@
     ctx.fillStyle = colors['canvas-bg'];
     ctx.fillRect(0, 0, w, h);
     const half = w / 2;
-    barPanel(ctx, 0, 0, half, h, 'p', '動量 p（kg·m/s）', st);
-    barPanel(ctx, half, 0, half, h, 'K', '動能 K（J）', st);
+    barPanel(ctx, 0, 0, half, h, 'p', TITLE_P, st);
+    barPanel(ctx, half, 0, half, h, 'K', TITLE_K, st);
     ctx.strokeStyle = colors.border;
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(half, 10); ctx.lineTo(half, h - 10); ctx.stroke();
@@ -448,19 +453,19 @@
     ctx.fillStyle = colors['canvas-bg'];
     ctx.fillRect(0, 0, w, h);
     if (w >= 520) {
-      timePanel(ctx, 0, 0, w / 2, h, 'p', '動量 p（kg·m/s）', st);
-      timePanel(ctx, w / 2, 0, w / 2, h, 'K', '動能 K（J）', st);
+      timePanel(ctx, 0, 0, w / 2, h, 'p', TITLE_P, st);
+      timePanel(ctx, w / 2, 0, w / 2, h, 'K', TITLE_K, st);
     } else {
-      timePanel(ctx, 0, 0, w, h / 2, 'p', '動量 p（kg·m/s）', st);
-      timePanel(ctx, 0, h / 2, w, h / 2, 'K', '動能 K（J）', st);
+      timePanel(ctx, 0, 0, w, h / 2, 'p', TITLE_P, st);
+      timePanel(ctx, 0, h / 2, w, h / 2, 'K', TITLE_K, st);
     }
   }
 
   function timePanel(ctx, x0, y0, pw, ph, kind, title, st) {
     const sim = state.sim, ax = state.scales[kind], lo = ax.lo, hi = ax.hi;
     const left = x0 + 44, right = x0 + pw - 26, top = y0 + 28, bottom = y0 + ph - 22;
-    const T = state.tEnd;
-    const X = function (t) { return left + t / T * (right - left); };
+    const tMax = state.tEnd;
+    const X = function (t) { return left + t / tMax * (right - left); };
     const Y = function (v) { return bottom - (v - lo) / (hi - lo) * (bottom - top); };
 
     ctx.font = '600 12px system-ui, sans-serif';
@@ -468,6 +473,7 @@
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.text;
     ctx.fillText(title, x0 + 8, y0 + 6);
+    const titleRight = x0 + 8 + ctx.measureText(title).width;
 
     // 軸與刻度
     ctx.font = '11px system-ui, sans-serif';
@@ -486,10 +492,10 @@
     ctx.beginPath(); ctx.moveTo(left, Y(0)); ctx.lineTo(right, Y(0)); ctx.stroke();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    const step = T > 5 ? 2 : 1;
-    for (let t = 0; t <= T + 1e-9; t += step) ctx.fillText(String(t), X(t), bottom + 4);
+    const step = tMax > 5 ? 2 : 1;
+    for (let t = 0; t <= tMax + 1e-9; t += step) ctx.fillText(String(t), X(t), bottom + 4);
     ctx.textAlign = 'right';
-    ctx.fillText('t（s）', left - 5, bottom + 4);
+    ctx.fillText(T('t（s）', 't (s)'), left - 5, bottom + 4);
 
     // 碰撞時刻
     if (isFinite(sim.tc)) {
@@ -501,7 +507,14 @@
       ctx.fillStyle = colors.muted;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillText('碰撞', X(sim.tc), top - 4);
+      const label = T('碰撞', 'Collision'), lx = X(sim.tc);
+      // 窄畫面上標籤若會壓到圖表標題，改放在虛線右側
+      if (lx - ctx.measureText(label).width / 2 < titleRight + 6) {
+        ctx.textAlign = 'left';
+        ctx.fillText(label, Math.max(lx + 4, titleRight + 6), top - 4);
+      } else {
+        ctx.fillText(label, lx, top - 4);
+      }
     }
 
     // 數值曲線（碰撞前後各為常數，碰撞瞬間跳躍）
@@ -539,7 +552,7 @@
       const xx = Math.min(X(t) + 4, right + 2);
       ctx.fillStyle = seriesColor(e.i);
       ctx.fillRect(xx, e.y - 1, 5, 2);
-      haloText(ctx, ['1', '2', '總'][e.i], xx + 7, e.y, colors.text);
+      haloText(ctx, ['1', '2', T('總', 'Σ')][e.i], xx + 7, e.y, colors.text);
     });
   }
 
@@ -555,14 +568,18 @@
     const sim = state.sim, s = state.sum;
     let msg;
     if (!s.collides) {
-      msg = '兩車沒有互相接近（v1 ≤ v2），不會碰撞。';
+      msg = T('兩車沒有互相接近（v1 ≤ v2），不會碰撞。', 'The carts are not approaching each other (v1 ≤ v2), so they will not collide.');
     } else if (state.t < sim.tc) {
-      msg = '兩車互相接近，將在 t = ' + num(sim.tc, 2) + ' s 相撞。';
+      msg = T('兩車互相接近，將在 t = ' + num(sim.tc, 2) + ' s 相撞。',
+        'The carts are approaching each other and will collide at t = ' + num(sim.tc, 2) + ' s.');
     } else {
-      msg = 't = ' + num(sim.tc, 2) + ' s 碰撞：總動量不變，' +
-        (s.lost > 1e-9 ? '動能減少 ' + num(s.lost, 2) + ' J（' + num(100 * s.lost / s.before.K, 1) + '%）。' : '總動能也不變（彈性碰撞）。');
+      const pct = num(100 * s.lost / s.before.K, 1);
+      msg = T('t = ' + num(sim.tc, 2) + ' s 碰撞：總動量不變，' +
+        (s.lost > 1e-9 ? '動能減少 ' + num(s.lost, 2) + ' J（' + pct + '%）。' : '總動能也不變（彈性碰撞）。'),
+        'Collision at t = ' + num(sim.tc, 2) + ' s: total momentum is unchanged; ' +
+        (s.lost > 1e-9 ? 'kinetic energy falls by ' + num(s.lost, 2) + ' J (' + pct + '%).' : 'total kinetic energy is unchanged too (elastic collision).'));
     }
-    if (state.running && !state.ended && state.slow) msg += '（慢動作）';
+    if (state.running && !state.ended && state.slow) msg += T('（慢動作）', ' (slow motion)');
     $('status').textContent = msg;
   }
 
@@ -576,13 +593,36 @@
       $('t' + k + 'd').textContent = num(a[k] - b[k], r[1], true);
     });
     $('lost').innerHTML = s.collides
-      ? '<strong>' + num(s.lost, 3) + ' J</strong>（' + (b.K > 0 ? num(100 * s.lost / b.K, 1) : '0.0') + '%）'
+      ? '<strong>' + num(s.lost, 3) + ' J</strong>' + T('（', ' (') + (b.K > 0 ? num(100 * s.lost / b.K, 1) : '0.0') + T('%）', '%)')
       : '0 J';
     $('lostF').textContent = s.collides ? num(s.lostFormula, 3) + ' J' : '—';
     $('eBack').textContent = s.collides ? num(s.eMeasured, 2) : '—';
     $('tableNote').textContent = s.collides
-      ? '碰撞後的數值由公式直接算出；播放動畫後，「即時數值」會與此表的碰撞後數值相同。'
-      : '兩車不會碰撞，所以「碰撞後」與「碰撞前」相同。';
+      ? T('碰撞後的數值由公式直接算出；播放動畫後，「即時數值」會與此表的碰撞後數值相同。',
+        'The “After” values come straight from the formulas; once the animation has played, the live readings match the “After” column of this table.')
+      : T('兩車不會碰撞，所以「碰撞後」與「碰撞前」相同。', 'The carts do not collide, so “After” is the same as “Before”.');
+  }
+
+  // ---------- 音效（sound.js；音效關閉時 LabSound 什麼都不做） ----------
+  /**
+   * 碰撞聲：音量隨碰撞的「激烈程度」增加，音色隨 e 改變。
+   * 激烈程度用質心系中的動能 ½μ(v1 − v2)²（可用來碰撞的能量），取對數壓縮並設上限，避免刺耳。
+   * e 接近 1 → 短而清脆（濾波頻率高）；e 接近 0 → 低沉而較長的悶響（濾波頻率低）。
+   */
+  function impactSound() {
+    const S = window.LabSound;
+    if (!S || !S.enabled()) return;
+    const sim = state.sim, u = sim.v1 - sim.v2;
+    const eCm = 0.5 * CC.reducedMass(sim.m1, sim.m2) * u * u;
+    const hard = Math.max(0, Math.min(1, Math.log10(1 + eCm) / Math.log10(1 + 150)));
+    const gain = 0.08 + 0.42 * hard;
+    const e = sim.e;
+    S.noise({ dur: 0.04 + 0.18 * (1 - e), gain: gain, filter: 300 + 2700 * e * e, q: 0.8 + 0.8 * e });
+    S.tone({ freq: 110 + 1000 * e, dur: 0.03 + 0.12 * (1 - e), type: e > 0.5 ? 'triangle' : 'sine', gain: gain * (0.25 + 0.25 * (1 - e)) });
+  }
+  function playSound() {
+    const S = window.LabSound;
+    if (S && S.enabled()) S.tone({ freq: 660, dur: 0.07, gain: 0.08 });
   }
 
   // ---------- 動畫 ----------
@@ -596,7 +636,10 @@
     if (!state.running) return;
     const dt = Math.min((now - lastT) / 1000, 1 / 30) * (state.slow ? 0.25 : 1);
     lastT = now;
+    const prevT = state.t;
     state.t = Math.min(state.tEnd, state.t + dt);
+    // 碰撞聲：動畫時間跨過碰撞時刻的那一格發出一次（慢動作、重播也一樣）
+    if (prevT < state.sim.tc && state.t >= state.sim.tc) impactSound();
     const st = CC.stateAt(state.sim, state.t);
     if (state.t >= state.tEnd || (state.t > state.sim.tc && offscreen(st)) || (!isFinite(state.sim.tc) && offscreen(st))) {
       state.running = false;
@@ -607,7 +650,7 @@
     if (state.running) requestAnimationFrame(tick);
   }
   function updatePlayButton() {
-    $('play').textContent = state.running ? '暫停' : state.ended ? '重新播放' : state.t > 0 ? '繼續' : '播放';
+    $('play').textContent = state.running ? T('暫停', 'Pause') : state.ended ? T('重新播放', 'Replay') : state.t > 0 ? T('繼續', 'Resume') : T('播放', 'Play');
   }
   $('play').addEventListener('click', function () {
     if (state.running) {
@@ -618,6 +661,7 @@
     }
     if (state.ended) { state.t = 0; state.ended = false; }
     state.running = true;
+    playSound();
     updatePlayButton();
     lastT = performance.now();
     requestAnimationFrame(tick);
@@ -629,6 +673,20 @@
     updatePlayButton();
     requestDraw();
   });
+  // 喇叭按鈕：切換全站音效設定（齒輪面板也能切換，兩邊同步）
+  function updateSoundButton() {
+    const on = !!(window.LabSettings && window.LabSettings.get('sound'));
+    $('soundBtn').setAttribute('aria-pressed', String(on));
+    $('soundLabel').textContent = on ? T('音效：開', 'Sound: on') : T('音效：關', 'Sound: off');
+  }
+  $('soundBtn').addEventListener('click', function () {
+    if (window.LabSettings) window.LabSettings.set('sound', !window.LabSettings.get('sound'));
+    updateSoundButton();
+  });
+  window.addEventListener('lab:settingschange', function (ev) {
+    if (ev.detail && ev.detail.name === 'sound') updateSoundButton();
+  });
+  updateSoundButton();
   $('slow').addEventListener('change', function (ev) { state.slow = ev.target.checked; requestDraw(); });
   $('cmFrame').addEventListener('change', function (ev) { state.cmFrame = ev.target.checked; requestDraw(); });
 

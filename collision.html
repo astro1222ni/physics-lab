@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110728"></script>
+  <script src="js/settings.js?v=202611110744"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>一維碰撞｜Astro Ni 物理實驗室</title>
+  <title data-en="Collisions in One Dimension | Astro Ni Physics Lab">一維碰撞｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整兩台車的質量、初速度與恢復係數，觀察碰撞前後總動量守恆，以及動能在非彈性碰撞中的損失。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110728">
+  <link rel="stylesheet" href="lab.css?v=202611110744">
   <style>
     /* 版面：桌機左欄為軌道、圖表、比較表，右欄為控制面板；手機依序為軌道、圖表、控制、比較表 */
     .lab.coll {
@@ -40,6 +40,11 @@
     .coll .slider input { height: 28px; }
     .coll .checks label { min-height: 32px; }
     .coll .stage .status { margin: 6px 4px 0; }
+    .coll .playbar .btns .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; color: var(--muted); font-size: calc(14px * var(--fs, 1)); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
 
     .stage-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 0 4px 8px; }
     .stage-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
@@ -73,180 +78,182 @@
     }
   </style>
 </head>
-<body>
+<body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 動量與能量</nav>
-      <h1>一維碰撞</h1>
-      <p>兩台車在無摩擦的水平軌道上相撞。調整質量、初速度與恢復係數 \(e\)，按「播放」觀察碰撞前後的動量與動能。</p>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#mech&quot;&gt;Mechanics&lt;/a&gt; / Momentum &amp;amp; energy"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 動量與能量</nav>
+      <h1 data-en="Collisions in One Dimension">一維碰撞</h1>
+      <p data-en-html="Two carts collide on a frictionless horizontal track. Set the masses, the initial velocities and the coefficient of restitution \(e\), then press “Play” to watch momentum and kinetic energy before and after the collision.">兩台車在無摩擦的水平軌道上相撞。調整質量、初速度與恢復係數 \(e\)，按「播放」觀察碰撞前後的動量與動能。</p>
     </header>
 
     <div class="lab coll">
       <div class="stage track-stage">
-        <canvas id="track" aria-label="兩台車在軌道上碰撞的動畫"></canvas>
+        <canvas id="track" aria-label="兩台車在軌道上碰撞的動畫" data-en-aria-label="Animation of two carts colliding on a track"></canvas>
         <div class="playbar">
           <div class="btns">
-            <button id="play" class="primary">播放</button>
-            <button id="reset">重設</button>
+            <button id="play" class="primary" data-en="Play">播放</button>
+            <button id="reset" data-en="Reset">重設</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
           <div class="checks">
-            <label><input id="slow" type="checkbox">慢動作（0.25 倍速）</label>
-            <label><input id="cmFrame" type="checkbox">以質心為參考系</label>
+            <label><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25 倍速）</span></label>
+            <label><input id="cmFrame" type="checkbox"><span data-en="Centre-of-mass frame">以質心為參考系</span></label>
           </div>
         </div>
         <p class="status" id="status" role="status"></p>
         <div class="legend">
-          <span><i style="background:var(--pos)"></i>車 1</span>
-          <span><i style="background:var(--neg)"></i>車 2</span>
-          <span><i class="tri"></i>質心</span>
-          <span><i class="dot" style="background:var(--equi)"></i>質心每 0.25 s 的位置</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
+          <span data-en-html="&lt;i class=&quot;tri&quot;&gt;&lt;/i&gt;Centre of mass"><i class="tri"></i>質心</span>
+          <span data-en-html="&lt;i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Centre of mass every 0.25 s"><i class="dot" style="background:var(--equi)"></i>質心每 0.25 s 的位置</span>
         </div>
       </div>
 
       <div class="stage chart-stage">
         <div class="stage-head">
-          <h2 id="chartTitle">動量與動能</h2>
-          <div class="seg" role="group" aria-label="圖表類型">
-            <button id="modeBars" aria-pressed="true">長條圖</button>
-            <button id="modeTime" aria-pressed="false">時間圖</button>
+          <h2 id="chartTitle" data-en="Momentum and kinetic energy">動量與動能</h2>
+          <div class="seg" role="group" aria-label="圖表類型" data-en-aria-label="Chart type">
+            <button id="modeBars" aria-pressed="true" data-en="Bar chart">長條圖</button>
+            <button id="modeTime" aria-pressed="false" data-en="Time graph">時間圖</button>
           </div>
         </div>
-        <canvas id="chart" aria-label="兩車動量與動能的即時圖表"></canvas>
+        <canvas id="chart" aria-label="兩車動量與動能的即時圖表" data-en-aria-label="Live chart of the momentum and kinetic energy of the two carts"></canvas>
         <div class="legend">
-          <span><i style="background:var(--pos)"></i>車 1</span>
-          <span><i style="background:var(--neg)"></i>車 2</span>
-          <span><i style="background:var(--field)"></i>總和</span>
-          <span id="ghostLegend"><i style="background:none;border:1px dashed var(--muted);height:8px"></i>碰撞前的數值</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Total"><i style="background:var(--field)"></i>總和</span>
+          <span id="ghostLegend" data-en-html="&lt;i style=&quot;background:none;border:1px dashed var(--muted);height:8px&quot;&gt;&lt;/i&gt;Values before the collision"><i style="background:none;border:1px dashed var(--muted);height:8px"></i>碰撞前的數值</span>
         </div>
       </div>
 
       <aside class="panel">
         <section class="card">
-          <h2><span class="swatch" style="background:var(--pos)"></span>車 1（左）</h2>
-          <div class="slider"><label for="m1">質量 \(m_1\)</label><output id="m1o"></output>
+          <h2 data-en-html="&lt;span class=&quot;swatch&quot; style=&quot;background:var(--pos)&quot;&gt;&lt;/span&gt;Cart 1 (left)"><span class="swatch" style="background:var(--pos)"></span>車 1（左）</h2>
+          <div class="slider"><label for="m1" data-en-html="Mass \(m_1\)">質量 \(m_1\)</label><output id="m1o"></output>
             <input id="m1" type="range" min="0.5" max="10" step="0.5" value="2"></div>
-          <div class="slider"><label for="v1">初速度 \(v_1\)（向右為正）</label><output id="v1o"></output>
+          <div class="slider"><label for="v1" data-en-html="Initial velocity \(v_1\) (right is positive)">初速度 \(v_1\)（向右為正）</label><output id="v1o"></output>
             <input id="v1" type="range" min="-5" max="5" step="0.5" value="3"></div>
         </section>
 
         <section class="card">
-          <h2><span class="swatch" style="background:var(--neg)"></span>車 2（右）</h2>
-          <div class="slider"><label for="m2">質量 \(m_2\)</label><output id="m2o"></output>
+          <h2 data-en-html="&lt;span class=&quot;swatch&quot; style=&quot;background:var(--neg)&quot;&gt;&lt;/span&gt;Cart 2 (right)"><span class="swatch" style="background:var(--neg)"></span>車 2（右）</h2>
+          <div class="slider"><label for="m2" data-en-html="Mass \(m_2\)">質量 \(m_2\)</label><output id="m2o"></output>
             <input id="m2" type="range" min="0.5" max="10" step="0.5" value="3"></div>
-          <div class="slider"><label for="v2">初速度 \(v_2\)（向右為正）</label><output id="v2o"></output>
+          <div class="slider"><label for="v2" data-en-html="Initial velocity \(v_2\) (right is positive)">初速度 \(v_2\)（向右為正）</label><output id="v2o"></output>
             <input id="v2" type="range" min="-5" max="5" step="0.5" value="-1"></div>
         </section>
 
         <section class="card">
-          <h2>恢復係數</h2>
-          <div class="slider"><label for="e">\(e\)（0 完全非彈性，1 彈性）</label><output id="eo"></output>
+          <h2 data-en="Coefficient of restitution">恢復係數</h2>
+          <div class="slider"><label for="e" data-en-html="\(e\) (0 perfectly inelastic, 1 elastic)">\(e\)（0 完全非彈性，1 彈性）</label><output id="eo"></output>
             <input id="e" type="range" min="0" max="1" step="0.05" value="1"></div>
           <div class="btns">
-            <button data-preset="elastic">彈性碰撞</button>
-            <button data-preset="inelastic">完全非彈性</button>
-            <button data-preset="swap">等質量彈性（速度交換）</button>
-            <button data-preset="heavy">重撞輕</button>
-            <button data-preset="light">輕撞重</button>
+            <button data-preset="elastic" data-en="Elastic">彈性碰撞</button>
+            <button data-preset="inelastic" data-en="Perfectly inelastic">完全非彈性</button>
+            <button data-preset="swap" data-en="Equal masses, elastic (velocities swap)">等質量彈性（速度交換）</button>
+            <button data-preset="heavy" data-en="Heavy hits light">重撞輕</button>
+            <button data-preset="light" data-en="Light hits heavy">輕撞重</button>
           </div>
         </section>
 
         <section class="card">
-          <h2>即時數值</h2>
+          <h2 data-en="Live readings">即時數值</h2>
           <dl class="readout">
-            <dt>時間 t</dt><dd id="rt">—</dd>
-            <dt>車 1 速度</dt><dd id="rv1">—</dd>
-            <dt>車 2 速度</dt><dd id="rv2">—</dd>
-            <dt>質心速度</dt><dd id="rvcm">—</dd>
-            <dt>總動量</dt><dd id="rp">—</dd>
-            <dt>總動能</dt><dd id="rK">—</dd>
+            <dt data-en="Time t">時間 t</dt><dd id="rt">—</dd>
+            <dt data-en="Cart 1 velocity">車 1 速度</dt><dd id="rv1">—</dd>
+            <dt data-en="Cart 2 velocity">車 2 速度</dt><dd id="rv2">—</dd>
+            <dt data-en="CM velocity">質心速度</dt><dd id="rvcm">—</dd>
+            <dt data-en="Total momentum">總動量</dt><dd id="rp">—</dd>
+            <dt data-en="Total kinetic energy">總動能</dt><dd id="rK">—</dd>
           </dl>
         </section>
       </aside>
 
       <section class="card table-card">
-        <h2>碰撞前後比較</h2>
+        <h2 data-en="Before and after the collision">碰撞前後比較</h2>
         <div class="table-scroll">
           <table class="compare">
             <thead>
-              <tr><th>物理量</th><th>碰撞前</th><th>碰撞後</th><th>變化量</th></tr>
+              <tr><th data-en="Quantity">物理量</th><th data-en="Before">碰撞前</th><th data-en="After">碰撞後</th><th data-en="Change">變化量</th></tr>
             </thead>
             <tbody>
-              <tr class="group"><th colspan="4">速度（m/s）</th></tr>
+              <tr class="group"><th colspan="4" data-en="Velocity (m/s)">速度（m/s）</th></tr>
               <tr><th>\(v_1\)</th><td id="tv1b"></td><td id="tv1a"></td><td id="tv1d"></td></tr>
               <tr><th>\(v_2\)</th><td id="tv2b"></td><td id="tv2a"></td><td id="tv2d"></td></tr>
-              <tr class="group"><th colspan="4">動量（kg·m/s）</th></tr>
+              <tr class="group"><th colspan="4" data-en="Momentum (kg·m/s)">動量（kg·m/s）</th></tr>
               <tr><th>\(p_1 = m_1 v_1\)</th><td id="tp1b"></td><td id="tp1a"></td><td id="tp1d"></td></tr>
               <tr><th>\(p_2 = m_2 v_2\)</th><td id="tp2b"></td><td id="tp2a"></td><td id="tp2d"></td></tr>
-              <tr class="total"><th>總動量</th><td id="tpb"></td><td id="tpa"></td><td id="tpd"></td></tr>
-              <tr class="group"><th colspan="4">動能（J）</th></tr>
+              <tr class="total"><th data-en="Total momentum">總動量</th><td id="tpb"></td><td id="tpa"></td><td id="tpd"></td></tr>
+              <tr class="group"><th colspan="4" data-en="Kinetic energy (J)">動能（J）</th></tr>
               <tr><th>\(K_1\)</th><td id="tK1b"></td><td id="tK1a"></td><td id="tK1d"></td></tr>
               <tr><th>\(K_2\)</th><td id="tK2b"></td><td id="tK2a"></td><td id="tK2d"></td></tr>
-              <tr class="total"><th>總動能</th><td id="tKb"></td><td id="tKa"></td><td id="tKd"></td></tr>
+              <tr class="total"><th data-en="Total kinetic energy">總動能</th><td id="tKb"></td><td id="tKa"></td><td id="tKd"></td></tr>
             </tbody>
           </table>
         </div>
         <dl class="loss">
-          <dt>損失的動能</dt><dd id="lost">—</dd>
-          <dt>公式 \(\tfrac{1}{2}\mu(1-e^2)(v_1-v_2)^2\)</dt><dd id="lostF">—</dd>
-          <dt>由速度反算的 \(e\)</dt><dd id="eBack">—</dd>
+          <dt data-en="Kinetic energy lost">損失的動能</dt><dd id="lost">—</dd>
+          <dt data-en-html="Formula \(\tfrac{1}{2}\mu(1-e^2)(v_1-v_2)^2\)">公式 \(\tfrac{1}{2}\mu(1-e^2)(v_1-v_2)^2\)</dt><dd id="lostF">—</dd>
+          <dt data-en-html="\(e\) found from the velocities">由速度反算的 \(e\)</dt><dd id="eBack">—</dd>
         </dl>
         <p class="status" id="tableNote"></p>
       </section>
     </div>
 
     <section class="notes">
-      <h2>背後的物理</h2>
-      <p>軌道沒有摩擦，兩車碰撞時彼此的作用力是內力，系統在水平方向不受外力，所以<strong>總動量守恆</strong>：</p>
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="The track is frictionless. The forces the carts exert on each other during the collision are internal forces, and there is no external horizontal force on the system, so &lt;strong&gt;total momentum is conserved&lt;/strong&gt;:">軌道沒有摩擦，兩車碰撞時彼此的作用力是內力，系統在水平方向不受外力，所以<strong>總動量守恆</strong>：</p>
       <div class="formula">
         \[ m_1 v_1 + m_2 v_2 = m_1 v_1' + m_2 v_2' \]
       </div>
-      <p>只靠動量守恆還解不出兩個未知數 \(v_1'\)、\(v_2'\)。另一個條件由<strong>恢復係數</strong> \(e\) 描述：碰撞後「分離的相對速度」與碰撞前「接近的相對速度」之比。</p>
+      <p data-en-html="Conservation of momentum alone cannot give the two unknowns \(v_1&#x27;\) and \(v_2&#x27;\). The second condition comes from the &lt;strong&gt;coefficient of restitution&lt;/strong&gt; \(e\): the ratio of the relative speed of separation after the collision to the relative speed of approach before it.">只靠動量守恆還解不出兩個未知數 \(v_1'\)、\(v_2'\)。另一個條件由<strong>恢復係數</strong> \(e\) 描述：碰撞後「分離的相對速度」與碰撞前「接近的相對速度」之比。</p>
       <div class="formula">
         \[ e = -\frac{v_1' - v_2'}{v_1 - v_2} \qquad 0 \le e \le 1 \]
       </div>
-      <p>\(e = 1\) 為彈性碰撞（動能守恆），\(e = 0\) 為完全非彈性碰撞（兩車黏在一起），\(0 < e < 1\) 為非彈性碰撞。兩式聯立，得到碰撞後的速度：</p>
+      <p data-en-html="\(e = 1\) is an elastic collision (kinetic energy is conserved), \(e = 0\) is a perfectly inelastic collision (the carts stick together), and \(0 &amp;lt; e &amp;lt; 1\) is an inelastic collision. Solving the two equations together gives the velocities after the collision:">\(e = 1\) 為彈性碰撞（動能守恆），\(e = 0\) 為完全非彈性碰撞（兩車黏在一起），\(0 < e < 1\) 為非彈性碰撞。兩式聯立，得到碰撞後的速度：</p>
       <div class="formula">
         \[ v_1' = \frac{m_1 v_1 + m_2 v_2 - e\,m_2 (v_1 - v_2)}{m_1 + m_2} \qquad v_2' = \frac{m_1 v_1 + m_2 v_2 + e\,m_1 (v_1 - v_2)}{m_1 + m_2} \]
       </div>
-      <p>代入 \(e = 0\)，兩車以共同速度前進，這正是質心速度：</p>
+      <p data-en-html="With \(e = 0\), the two carts move off with a common velocity — exactly the velocity of the centre of mass:">代入 \(e = 0\)，兩車以共同速度前進，這正是質心速度：</p>
       <div class="formula">
         \[ v_1' = v_2' = v_{\mathrm{cm}} = \frac{m_1 v_1 + m_2 v_2}{m_1 + m_2} \]
       </div>
-      <p>碰撞損失的動能（轉為熱、聲音與車體形變）可寫成約化質量 \(\mu\) 與相對速度的形式：</p>
+      <p data-en-html="The kinetic energy lost in the collision (converted to heat, sound and deformation of the carts) can be written in terms of the reduced mass \(\mu\) and the relative velocity:">碰撞損失的動能（轉為熱、聲音與車體形變）可寫成約化質量 \(\mu\) 與相對速度的形式：</p>
       <div class="formula">
         \[ \Delta K = K - K' = \frac{1}{2}\,\mu\,(1 - e^2)\,(v_1 - v_2)^2 \qquad \mu = \frac{m_1 m_2}{m_1 + m_2} \]
       </div>
 
-      <h3>觀察重點</h3>
+      <h3 data-en="Things to notice">觀察重點</h3>
       <ul>
-        <li><strong>總動量永遠不變</strong>：把 \(e\) 從 1 拉到 0，長條圖中「總和」的動量長條始終一樣長；但 \(e < 1\) 時總動能的長條在碰撞瞬間變短。損失的動能和 \(1 - e^2\) 成正比。</li>
-        <li><strong>作用力與反作用力</strong>：比較表中 \(\Delta p_1\) 與 \(\Delta p_2\) 大小相等、正負相反，因為兩車受到的衝量 \(J = F\,\Delta t\) 大小相等、方向相反（牛頓第三運動定律）。</li>
-        <li><strong>等質量彈性碰撞會交換速度</strong>：按「等質量彈性」，原本靜止的車 2 帶走車 1 全部的速度，車 1 停下來。</li>
-        <li><strong>重撞輕</strong>：重車幾乎不減速，輕車以接近 \(2v_1\) 的速度彈出。<strong>輕撞重</strong>：輕車反彈，重車只得到很小的速度。</li>
-        <li><strong>質心做等速度運動</strong>：地面上每 0.25 s 留下一個質心位置的標記，碰撞前後間距完全相同。勾選「以質心為參考系」，質心靜止不動，兩車在碰撞前的動量大小相等、方向相反；碰撞後各自反向，速率變為原來的 \(e\) 倍。</li>
-        <li>試試看把 \(v_1\) 設得比 \(v_2\) 小（例如兩車都向右，但後面的車 1 比較慢）：兩車不會接近，也就不會碰撞。</li>
+        <li data-en-html="&lt;strong&gt;Total momentum never changes&lt;/strong&gt;: drag \(e\) from 1 down to 0 and the “Total” momentum bar in the bar chart stays the same length; but when \(e &amp;lt; 1\), the total kinetic energy bar gets shorter at the instant of the collision. The kinetic energy lost is proportional to \(1 - e^2\)."><strong>總動量永遠不變</strong>：把 \(e\) 從 1 拉到 0，長條圖中「總和」的動量長條始終一樣長；但 \(e < 1\) 時總動能的長條在碰撞瞬間變短。損失的動能和 \(1 - e^2\) 成正比。</li>
+        <li data-en-html="&lt;strong&gt;Action and reaction&lt;/strong&gt;: in the table, \(\Delta p_1\) and \(\Delta p_2\) are equal in size and opposite in sign, because the impulses \(J = F\,\Delta t\) on the two carts are equal in magnitude and opposite in direction (Newton’s third law)."><strong>作用力與反作用力</strong>：比較表中 \(\Delta p_1\) 與 \(\Delta p_2\) 大小相等、正負相反，因為兩車受到的衝量 \(J = F\,\Delta t\) 大小相等、方向相反（牛頓第三運動定律）。</li>
+        <li data-en-html="&lt;strong&gt;Equal masses in an elastic collision swap velocities&lt;/strong&gt;: press “Equal masses, elastic” — cart 2, initially at rest, takes all of cart 1’s velocity and cart 1 stops."><strong>等質量彈性碰撞會交換速度</strong>：按「等質量彈性」，原本靜止的車 2 帶走車 1 全部的速度，車 1 停下來。</li>
+        <li data-en-html="&lt;strong&gt;Heavy hits light&lt;/strong&gt;: the heavy cart barely slows down and the light cart shoots off at nearly \(2v_1\). &lt;strong&gt;Light hits heavy&lt;/strong&gt;: the light cart bounces back and the heavy cart gains only a small velocity."><strong>重撞輕</strong>：重車幾乎不減速，輕車以接近 \(2v_1\) 的速度彈出。<strong>輕撞重</strong>：輕車反彈，重車只得到很小的速度。</li>
+        <li data-en-html="&lt;strong&gt;The centre of mass moves at constant velocity&lt;/strong&gt;: a marker is left on the track every 0.25 s at the position of the centre of mass, and the spacing is exactly the same before and after the collision. Tick “Centre-of-mass frame” and the centre of mass stays still: before the collision the two carts have momenta equal in size and opposite in direction; after it each one reverses, with its speed multiplied by \(e\)."><strong>質心做等速度運動</strong>：地面上每 0.25 s 留下一個質心位置的標記，碰撞前後間距完全相同。勾選「以質心為參考系」，質心靜止不動，兩車在碰撞前的動量大小相等、方向相反；碰撞後各自反向，速率變為原來的 \(e\) 倍。</li>
+        <li data-en-html="Try making \(v_1\) smaller than \(v_2\) (for example, both carts moving right but cart 1, behind, moving more slowly): the carts never get closer, so they never collide.">試試看把 \(v_1\) 設得比 \(v_2\) 小（例如兩車都向右，但後面的車 1 比較慢）：兩車不會接近，也就不會碰撞。</li>
       </ul>
 
-      <h3>模擬方法</h3>
+      <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li>碰撞視為瞬間完成。碰撞前後兩車各自做等速度運動，所以任何時刻的位置與速度都直接由解析式算出，沒有數值積分的累積誤差；動畫的每一格只是把時間往前推。</li>
-        <li>車 1 在左、車 2 在右，只有 \(v_1 > v_2\) 時兩車才會接近；接觸時刻 \(t_c = d/(v_1 - v_2)\)，其中 \(d\) 是兩車之間的空隙。</li>
-        <li>為了讓碰撞發生在畫面中，程式會依速度自動安排兩車的起始位置，讓碰撞點落在軌道中央附近。</li>
-        <li>車子的大小隨質量略為增加，只是為了容易辨認輕重，不影響計算（計算時把車子當成質點，只用到車長來決定接觸時刻）。</li>
-        <li>動畫的每一格最多前進 \(1/30\ \mathrm{s}\)（慢動作時再乘以 0.25），切換分頁回來或裝置變慢時，動畫不會突然跳到後面。</li>
+        <li data-en-html="The collision is treated as instantaneous. Before and after it each cart moves at constant velocity, so its position and velocity at any time come straight from an analytic formula — there is no build-up of numerical-integration error; each animation frame just moves time forward.">碰撞視為瞬間完成。碰撞前後兩車各自做等速度運動，所以任何時刻的位置與速度都直接由解析式算出，沒有數值積分的累積誤差；動畫的每一格只是把時間往前推。</li>
+        <li data-en-html="Cart 1 is on the left and cart 2 on the right, so the carts approach each other only when \(v_1 &amp;gt; v_2\); they touch at \(t_c = d/(v_1 - v_2)\), where \(d\) is the gap between them.">車 1 在左、車 2 在右，只有 \(v_1 > v_2\) 時兩車才會接近；接觸時刻 \(t_c = d/(v_1 - v_2)\)，其中 \(d\) 是兩車之間的空隙。</li>
+        <li data-en-html="So that the collision happens on screen, the program chooses the starting positions from the velocities so that the carts meet near the middle of the track.">為了讓碰撞發生在畫面中，程式會依速度自動安排兩車的起始位置，讓碰撞點落在軌道中央附近。</li>
+        <li data-en-html="The carts get slightly bigger with mass only to make heavy and light easy to tell apart. This does not affect the calculation: the carts are treated as particles, and their length is used only to find the moment of contact.">車子的大小隨質量略為增加，只是為了容易辨認輕重，不影響計算（計算時把車子當成質點，只用到車長來決定接觸時刻）。</li>
+        <li data-en-html="Each animation frame advances at most \(1/30\ \mathrm{s}\) (times 0.25 in slow motion), so the animation does not suddenly jump ahead when you come back from another tab or the device slows down.">動畫的每一格最多前進 \(1/30\ \mathrm{s}\)（慢動作時再乘以 0.25），切換分頁回來或裝置變慢時，動畫不會突然跳到後面。</li>
       </ul>
     </section>
 
-    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · Every calculation runs in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110728"></script>
-  <script src="js/collision-core.js?v=202611110728"></script>
-  <script src="js/collision.js?v=202611110728"></script>
-  <script src="js/firebase-config.js?v=202611110728"></script>
-  <script src="js/stats.js?v=202611110728" data-module="collision"></script>
-  <script src="js/comments.js?v=202611110728"></script>
+  <script src="js/math.js?v=202611110744"></script>
+  <script src="js/collision-core.js?v=202611110744"></script>
+  <script src="js/sound.js?v=202611110744"></script>
+  <script src="js/collision.js?v=202611110744"></script>
+  <script src="js/firebase-config.js?v=202611110744"></script>
+  <script src="js/stats.js?v=202611110744" data-module="collision"></script>
+  <script src="js/comments.js?v=202611110744"></script>
 </body>
 </html>
