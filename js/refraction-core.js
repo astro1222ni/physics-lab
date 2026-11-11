@@ -188,6 +188,47 @@
     };
   }
 
+  /**
+   * 界面的完整量測（任務模式用）：光從 n1 射向 n2，入射角 th1（rad），真空波長 lambda0。
+   * 回傳 { th2, tir, crit, brew, dev, R, T, Rs, Rp, lam1, lam2, v1, v2, depth }
+   *   th2   折射角（全反射時 NaN）
+   *   crit  臨界角（n1 ≤ n2 時 NaN）；brew 布魯斯特角（n1 = n2 時沒有界面，NaN）
+   *   dev   折射光的偏向角 |θ1 − θ2|（全反射時 NaN）
+   *   lam1、lam2  兩介質中的波長（與 lambda0 同單位）；v1、v2 光速（m/s）
+   *   depth 全反射時漸逝波強度的穿透深度（與 lambda0 同單位；不是全反射時 NaN）
+   */
+  function interfaceInfo(n1, n2, th1, lambda0) {
+    const f = fresnel(n1, n2, th1);
+    return {
+      th2: f.theta2, tir: f.tir,
+      crit: criticalAngle(n1, n2),
+      brew: n1 === n2 ? NaN : brewsterAngle(n1, n2),
+      dev: f.tir ? NaN : Math.abs(th1 - f.theta2),
+      R: f.R, T: f.T, Rs: f.Rs, Rp: f.Rp,
+      lam1: wavelengthIn(lambda0, n1), lam2: wavelengthIn(lambda0, n2),
+      v1: speed(n1), v2: speed(n2),
+      depth: penetrationDepth(n1, n2, th1, lambda0)
+    };
+  }
+
+  /**
+   * 光纖端面與側面的量測（任務模式用；與畫面大小無關）：由折射率 n0 的介質以 thIn（rad，相對於光纖軸）射入。
+   * 回傳 { thR, phi, crit, acc, NA, guided, entryT, wallR }
+   *   thR 端面折射角；phi 側面入射角 = 90° − thR；crit 纖芯→包層臨界角；acc 最大接收角（不能導光時 NaN）
+   *   guided 側面是否全反射（光被限制在纖芯中）；entryT 端面穿透率；wallR 側面每次反射的反射率（非偏振）
+   */
+  function fibreInfo(nCore, nClad, thIn, n0) {
+    n0 = n0 || 1;
+    const entry = fresnel(n0, nCore, Math.abs(thIn));
+    const thR = refractionAngle(n0, nCore, Math.abs(thIn));
+    const phi = Math.PI / 2 - thR;
+    const wall = fresnel(nCore, nClad, phi);
+    return {
+      thR: thR, phi: phi, crit: criticalAngle(nCore, nClad), acc: acceptanceAngle(nCore, nClad, n0),
+      NA: numericalAperture(nCore, nClad), guided: wall.tir, entryT: entry.T, wallR: wall.R
+    };
+  }
+
   /** 雷射波長（nm）→ 顯示用 RGB（與 slit-interference-core 相同的近似） */
   function wavelengthToRGB(nm) {
     let r = 0, g = 0, b = 0;
@@ -221,6 +262,8 @@
     numericalAperture: numericalAperture,
     acceptanceAngle: acceptanceAngle,
     fibreTrace: fibreTrace,
+    interfaceInfo: interfaceInfo,
+    fibreInfo: fibreInfo,
     wavelengthToRGB: wavelengthToRGB
   };
 

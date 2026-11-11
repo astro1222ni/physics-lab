@@ -117,8 +117,35 @@
     return Math.max(0, k1 - k0);
   }
 
+  /**
+   * 剪斷繩子後的直線路徑與定點 P = (px, py) 的關係（任務模式用）：
+   * 沿剪斷後的射線（只往前，τ ≥ 0）找最接近 P 的時刻 tau 與當時的距離 miss（m）。
+   * P 在剪斷點後方時 tau = 0、miss = 剪斷點到 P 的距離。
+   */
+  function passPoint(p, tCut, px, py) {
+    const c = stateAt(p, tCut);
+    const v2 = c.vx * c.vx + c.vy * c.vy;
+    const tau = Math.max(0, ((px - c.x) * c.vx + (py - c.y) * c.vy) / v2);
+    return { tau: tau, miss: Math.hypot(c.x + c.vx * tau - px, c.y + c.vy * tau - py) };
+  }
+
+  /**
+   * 逆時針轉動時，要在哪個角位置（rad，[0, 2π)）剪斷繩子，小球才會沿切線通過圓外一點 P。
+   * 從 P 到圓有兩條切線；逆時針運動時，只有切點在 P 方向「順時針側」的那一條是朝 P 前進：
+   *   θ = φ − arccos(r/|P|)，φ 為 P 的方向角。P 不在圓外（|P| ≤ r）時傳回 NaN。
+   * 從切點到 P 的距離為 √(|P|² − r²)。
+   */
+  function aimAngle(r, px, py) {
+    const D = Math.hypot(px, py);
+    if (!(D > r)) return NaN;
+    const th = wrapAngle(Math.atan2(py, px) - Math.acos(r / D));
+    return th >= TWO_PI ? 0 : th; // −1e-17 這種捨入誤差會被 wrapAngle 變成 2π
+  }
+
   const api = {
     TWO_PI: TWO_PI,
+    passPoint: passPoint,
+    aimAngle: aimAngle,
     omegaOf: omegaOf,
     speedFromPeriod: speedFromPeriod,
     periodFromSpeed: periodFromSpeed,

@@ -23,7 +23,7 @@ window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscill
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
-  'projectile': 'mech', 'collision': 'mech', 'circular-motion': 'mech', 'oscillation': 'mech', 'kepler': 'mech',
+  'projectile': 'mech', 'collision': 'mech', 'newton-second': 'mech', 'incline-friction': 'mech', 'atwood': 'mech', 'elevator': 'mech', 'circular-motion': 'mech', 'oscillation': 'mech', 'kepler': 'mech',
   'ideal-gas': 'thermo', 'specific-heat': 'thermo',
   'standing-waves': 'wave', 'doppler': 'wave',
   'refraction': 'optics', 'lens-mirror': 'optics', 'slit-interference': 'optics',

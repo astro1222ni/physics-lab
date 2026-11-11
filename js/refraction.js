@@ -1033,6 +1033,7 @@
     else if (state.mode === 'wave') drawWaveScene();
     else drawFibreScene();
     drawChart();
+    scheduleMission();
   }
   function requestDraw() {
     if (pending) return;
@@ -1244,6 +1245,31 @@
     ev.preventDefault();
     applyChartAngle(Math.max(0, Math.min(89.9 * DEG, v)));
   });
+
+  // ---------- 任務模式（missions.js）：設定穩定下來後回報一次目前的光學量 ----------
+  // 只在使用者親自操作之後才回報（預設狀態不會意外完成任務）；拖曳雷射時不回報，放開後才回報。
+  let missionTimer = 0, userActed = false;
+  ['input', 'change', 'click', 'pointerdown', 'keydown'].forEach(function (t) {
+    document.querySelector('.lab').addEventListener(t, function (e) { if (e.isTrusted) userActed = true; }, true);
+  });
+  function scheduleMission() {
+    if (!window.LabMission || !userActed) return;
+    clearTimeout(missionTimer);
+    if (dragging) return;
+    missionTimer = setTimeout(function () {
+      const toDeg = function (r) { return r / DEG; };
+      const a = RC.interfaceInfo(state.n1, state.n2, state.th1, state.nm);
+      const b = RC.fibreInfo(state.nCore, state.nClad, state.thIn, 1);
+      window.LabMission.emit('setup', {
+        mode: state.mode, nm: state.nm,
+        n1: state.n1, n2: state.n2, th1: toDeg(state.th1), th2: toDeg(a.th2), tir: a.tir,
+        crit: toDeg(a.crit), brew: toDeg(a.brew), dev: toDeg(a.dev),
+        R: a.R, T: a.T, Rs: a.Rs, Rp: a.Rp, lam1: a.lam1, lam2: a.lam2, v1: a.v1, v2: a.v2, depth: a.depth / state.nm,
+        nCore: state.nCore, nClad: state.nClad, thIn: toDeg(state.thIn), thR: toDeg(b.thR), phi: toDeg(b.phi),
+        fCrit: toDeg(b.crit), acc: toDeg(b.acc), NA: b.NA, guided: b.guided, entryT: b.entryT, wallR: b.wallR
+      });
+    }, 300);
+  }
 
   // ---------- 啟動 ----------
   function onTheme() { readColors(); syncPresets(); syncLegend(); syncAnimButton(); requestDraw(); }

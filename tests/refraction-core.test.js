@@ -204,4 +204,56 @@ test('雷射顏色：650 nm 偏紅、532 nm 偏綠、405 nm 偏藍紫', () => {
   assert.ok(v[2] > v[1] && v[0] > 0);
 });
 
+test('interfaceInfo：與 fresnel、臨界角、布魯斯特角一致；波長 λ0/n、光速 c/n', () => {
+  for (const [n1, n2] of PAIRS) for (const d of [0, 10, 30, 45, 60, 80]) {
+    const th = rad(d), a = RC.interfaceInfo(n1, n2, th, 532), f = RC.fresnel(n1, n2, th);
+    assert.strictEqual(a.tir, f.tir);
+    close(a.R, f.R, 0); close(a.Rp, f.Rp, 0);
+    close(a.lam2, 532 / n2, 1e-12); close(a.v1, RC.C / n1, 1e-6);
+    if (!f.tir) close(a.dev, Math.abs(th - f.theta2), 1e-15); else assert.ok(isNaN(a.dev) && isNaN(a.th2));
+    if (n1 > n2) close(a.crit, Math.asin(n2 / n1), 1e-15); else assert.ok(isNaN(a.crit));
+    if (n1 === n2) assert.ok(isNaN(a.brew)); else close(a.brew, Math.atan(n2 / n1), 1e-15);
+  }
+});
+
+test('interfaceInfo：布魯斯特角入射時反射光與折射光垂直（θ1 + θ2 = 90°）且 Rp = 0', () => {
+  for (const [n1, n2] of [[1, 1.5], [1, Math.sqrt(3)], [1.5, 1], [2.42, 1.33]]) {
+    const tb = RC.brewsterAngle(n1, n2), a = RC.interfaceInfo(n1, n2, tb, 650);
+    close(deg(tb + a.th2), 90, 1e-9);
+    assert.ok(a.Rp < 1e-25);
+  }
+  close(deg(RC.brewsterAngle(1, Math.sqrt(3))), 60, 1e-12);
+});
+
+test('臨界角與布魯斯特角互餘 ⇔ (n2/n1)² = (√5 − 1)/2（黃金比例）；此時布魯斯特角入射的折射角 = 臨界角', () => {
+  const k = Math.sqrt((Math.sqrt(5) - 1) / 2), n1 = 1 / k, n2 = 1;
+  const a = RC.interfaceInfo(n1, n2, RC.brewsterAngle(n1, n2), 532);
+  close(deg(a.crit + a.brew), 90, 1e-9);
+  close(deg(a.th2), deg(a.crit), 1e-6);
+});
+
+test('interfaceInfo：全反射的穿透深度在臨界角附近很大、角度越大越淺；垂直入射反射率 ((n1 − n2)/(n1 + n2))²', () => {
+  const tc = RC.criticalAngle(1.5, 1);
+  const d1 = RC.interfaceInfo(1.5, 1, tc + rad(0.05), 1).depth, d2 = RC.interfaceInfo(1.5, 1, rad(60), 1).depth;
+  assert.ok(d1 > 1 && d2 < 0.1 && d1 > d2);
+  assert.ok(isNaN(RC.interfaceInfo(1.5, 1, rad(30), 1).depth));
+  close(RC.interfaceInfo(1, 1.925, 0, 532).R, Math.pow(0.925 / 2.925, 2), 1e-12);
+});
+
+test('fibreInfo：射入角 ≤ 最大接收角時側面全反射，超過就漏光；NA ≥ 1 時任何角度都導光', () => {
+  for (const [c, cl] of [[1.5, 1.33], [1.48, 1.46], [1.421, 1.33]]) {
+    const ta = RC.acceptanceAngle(c, cl, 1);
+    assert.ok(RC.fibreInfo(c, cl, ta - rad(0.05), 1).guided);
+    assert.ok(!RC.fibreInfo(c, cl, ta + rad(0.05), 1).guided);
+    const f = RC.fibreInfo(c, cl, ta, 1);
+    close(f.phi, f.crit, 1e-9, '恰在接收角：側面入射角 = 臨界角');
+    close(f.NA, Math.sqrt(c * c - cl * cl), 1e-12);
+  }
+  close(deg(RC.fibreInfo(1.421, 1.33, 0, 1).acc), 30.02, 0.01);
+  for (const d of [0, 45, 80, 89.9]) assert.ok(RC.fibreInfo(1.5, 1, rad(d), 1).guided, '空氣包層的玻璃纖芯 NA > 1');
+  const f = RC.fibreInfo(1.5, 1.33, rad(70), 1);
+  close(f.entryT, RC.fresnel(1, 1.5, rad(70)).T, 0);
+  close(f.wallR, RC.fresnel(1.5, 1.33, f.phi).R, 0);
+});
+
 console.log(`\n${passed} 項通過` + (process.exitCode ? '，有失敗項目' : ''));

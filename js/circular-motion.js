@@ -877,6 +877,31 @@
     S.tone({ freq: 330, dur: 0.12, type: 'sine', gain: 0.3, delay: 0.01 });
   }
 
+  // ---------- 任務模式（missions.js）：回報物理量 ----------
+  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  /** 目前的運動條件與公式計算結果（r m、T s、m kg、v m/s、ω rad/s、f Hz、a m/s²、F N） */
+  function setting() {
+    const d = CC.derived(params());
+    return { r: d.r, T: d.T, m: d.m, v: d.v, omega: d.omega, f: d.f, a: d.a, F: d.F, hold: state.hold };
+  }
+  function sameSetting(a, b) { return !!(a && b) && a.r === b.r && a.T === b.T && a.m === b.m && a.hold === b.hold; }
+  let committed = null; // 上一次回報的設定（一開始是預設值）
+  /** 使用者放開滑桿、打完數字或切換「保持不變的量」之後，回報新的設定（附上前一個設定 prev） */
+  function emitParams() {
+    const cur = setting();
+    if (sameSetting(cur, committed)) return;
+    const prev = committed;
+    committed = cur;
+    emit('params', Object.assign({ prev: prev }, cur));
+  }
+  /** 剪斷瞬間的資料：剪斷角 theta（度，由 +x 軸逆時針，[0, 360)）、位置與速度 */
+  function cutData() {
+    const c = CC.stateAt(params(), state.tCut);
+    let th = CC.wrapAngle(c.theta) * 180 / Math.PI;
+    if (th >= 360) th -= 360;
+    return Object.assign(setting(), { theta0: state.theta0, tCut: state.tCut, theta: th, xc: c.x, yc: c.y, vx: c.vx, vy: c.vy });
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0, loopOn = false;
   function tick(tNow) {
@@ -891,6 +916,9 @@
         tickSound();
         if (!reducedMotion) state.fx.push({ type: 'ring', x: state.r, y: 0, t0: tNow, dur: 420 });
       }
+      // 任務：從上次改條件（或接回繩子）起，不間斷地轉滿一圈、兩圈……
+      const n0 = Math.floor(CC.turns(p, t0) + 1e-9), n1 = Math.floor(CC.turns(p, state.t) + 1e-9);
+      if (n1 > n0) emit('lap', Object.assign(setting(), { n: n1 }));
     } else {
       const s = now(), out = VIEW_HALF + L.ballR / L.k + 0.05;
       if (Math.abs(s.x) > out || Math.abs(s.y) > out) {
@@ -898,6 +926,7 @@
         state.ended = true;
         setStatus(T('小球沿切線以等速直線飛出畫面（牛頓第一定律）。按「接回繩子」重新開始。',
           'The ball flew off along the tangent in a straight line at constant speed (Newton’s first law). Press “Reattach the string” to start again.'));
+        emit('exit', Object.assign(cutData(), { tau: state.t - state.tCut, x: s.x, y: s.y }));
       }
     }
     updateButtons();
@@ -937,6 +966,14 @@
       state.running = false;
       updateButtons();
       requestDraw();
+      // 任務：暫停瞬間的狀態（繩子還在：角位置與投影的加速度；已剪斷：剪斷後經過的時間 tau 與離圓心的距離 d）
+      const s = now(), cut = state.tCut != null;
+      let th = NaN;
+      if (!cut) { th = CC.wrapAngle(s.theta) * 180 / Math.PI; if (th >= 360) th -= 360; }
+      emit('pause', Object.assign(setting(), {
+        attached: !cut, t: state.t, theta: th, x: s.x, y: s.y, vx: s.vx, vy: s.vy, ax: s.ax, ay: s.ay,
+        d: Math.hypot(s.x, s.y), tau: cut ? state.t - state.tCut : 0
+      }));
       return;
     }
     if (state.ended) { reattach(true); return; }
@@ -957,6 +994,7 @@
     updateButtons();
     startLoop();
     requestDraw();
+    emit('cut', cutData());
   });
 
   // 全部清除：清掉軌跡、x–t／y–t 圖與剪斷後的路徑，回到 t = 0（滑桿設定不變）
@@ -1030,6 +1068,8 @@
       if ((el === elT && state.hold !== 'T') || (el === elV && state.hold !== 'v')) return;
       paramsChanged(readSliders);
     });
+    // 任務：放開滑桿或打完數字（拖曳途中經過的值不算）
+    el.addEventListener('change', function () { emitParams(); });
   });
 
   function setHold(h) {
@@ -1044,6 +1084,7 @@
     const el = h === 'T' ? elT : elV;
     if (window.LabNum) window.LabNum.set(el, target); // 會觸發 input 事件 → paramsChanged
     else { el.value = target; el.dispatchEvent(new Event('input')); }
+    emitParams();
   }
   $('holdT').addEventListener('click', function () { setHold('T'); });
   $('holdV').addEventListener('click', function () { setHold('v'); });
@@ -1051,6 +1092,7 @@
   // ---------- 啟動 ----------
   readColors();
   readSliders();
+  committed = setting();
   refreshOutputs();
   updateButtons();
   function themeChanged() { readColors(); if (L) buildBackground(); requestDraw(); }

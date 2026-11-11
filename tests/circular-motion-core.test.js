@@ -225,4 +225,59 @@ test('wrapAngle 落在 [0, 2π)', () => {
   }
 });
 
+test('aimAngle：在該角度剪斷，路徑通過 P，經過 τ = √(|P|² − r²)/v 抵達', () => {
+  const pts = [[2, 2], [-2, 0], [0, -2.2], [1.9, -1.4]];
+  for (const o of CASES) {
+    for (const P0 of pts) {
+      const r = o.r || 1.5;
+      if (Math.hypot(P0[0], P0[1]) <= r) continue;
+      const th = CC.aimAngle(r, P0[0], P0[1]);
+      assert.ok(th >= 0 && th < 2 * Math.PI, '角度在 [0, 2π)');
+      const p = P({ r: r, T: o.T || 3, theta0: th });
+      const q = CC.passPoint(p, 0, P0[0], P0[1]);
+      close(q.miss, 0, 1e-9, '應通過 P');
+      const L = Math.sqrt(P0[0] ** 2 + P0[1] ** 2 - r * r);
+      close(q.tau, L / CC.derived(p).v, 1e-9, '抵達時間');
+      // 另一條切線（切點在逆時針側）：小球背向 P 前進，不會通過
+      const other = CC.wrapAngle(Math.atan2(P0[1], P0[0]) + Math.acos(r / Math.hypot(P0[0], P0[1])));
+      const q2 = CC.passPoint(P({ r: r, T: o.T || 3, theta0: other }), 0, P0[0], P0[1]);
+      close(q2.tau, 0, 1e-12, '背向 P：最接近點就是剪斷點');
+      close(q2.miss, L, 1e-9);
+    }
+  }
+});
+
+test('aimAngle 特例：r = 2 m、P = (2, 2) 在 θ = 0 剪斷（筆直向上）；P 在圓內為 NaN', () => {
+  close(CC.aimAngle(2, 2, 2), 0, 1e-12);
+  assert.ok(isNaN(CC.aimAngle(1.5, 1, 1)));
+  assert.ok(isNaN(CC.aimAngle(1.5, 1.5, 0)));
+});
+
+test('passPoint 與 releasedStateAt 一致：τ 時刻的位置與 P 的距離就是 miss', () => {
+  const p = P({ r: 1.2, T: 2 * Math.PI * 1.2 / 1.6, theta0: 0.4 });
+  for (const tc of [0, 0.7, 3.1]) {
+    const q = CC.passPoint(p, tc, -2, 0.3);
+    const s = CC.releasedStateAt(p, tc, tc + q.tau);
+    close(Math.hypot(s.x + 2, s.y - 0.3), q.miss, 1e-9);
+  }
+});
+
+test('飛鏢解：r = 1.2 m、v = 1.6 m/s，在 θ = 180° − arccos 0.6 剪斷，恰好 1 s 後通過 (−2, 0)，此時距圓心 2 m', () => {
+  const r = 1.2, T = CC.periodFromSpeed(r, 1.6);
+  const th = CC.aimAngle(r, -2, 0);
+  close(th * 180 / Math.PI, 180 - Math.acos(0.6) * 180 / Math.PI, 1e-12);
+  const p = P({ r: r, T: T, theta0: th });
+  const q = CC.passPoint(p, 0, -2, 0);
+  close(q.tau, 1, 1e-12); close(q.miss, 0, 1e-9);
+  close(CC.releaseDistance(p, 1), 2, 1e-12, 'd = √(r² + v²τ²)');
+});
+
+test('剪斷後距圓心 2r 的時刻 τ = √3 r/v = √3/ω（切線走過 √3 r）', () => {
+  for (const o of CASES) {
+    const p = P(o), d = CC.derived(p);
+    close(CC.releaseDistance(p, Math.sqrt(3) / d.omega), 2 * p.r, 1e-12);
+    close(CC.exitTime(p, 2 * p.r), Math.sqrt(3) * p.r / d.v, 1e-12);
+  }
+});
+
 console.log(`\n${passed} 項通過`);

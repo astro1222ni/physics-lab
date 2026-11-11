@@ -292,7 +292,58 @@
     return I;
   }
 
+  /**
+   * 條紋圖形的整體特徵（任務模式用）。p = { N, a, d, lambda, L }（SI）。回傳（長度單位 m）：
+   *   dy        小角度近似的亮紋間距 λL/d（N = 1 時 NaN）
+   *   y1        第 1 級亮紋的精確位置（N = 1 或 λ ≥ d 時 NaN）
+   *   W         中央亮帶寬度（精確；a ≤ λ 時 Infinity）
+   *   k         缺級的級數間隔（d/a 為整數時 = d/a；否則或 N = 1 時 0）
+   *   nCentral  中央亮帶內的亮紋數（N = 1 時 NaN）
+   *   y400、y700 波長 400 nm、700 nm 的第 1 級亮紋位置（白光第 1 級光譜的兩端；N = 1 時 NaN）
+   */
+  function patternInfo(p) {
+    const multi = (p.N || 1) > 1;
+    const first = function (lam) { const s = lam / p.d; return multi && s < 1 ? yFromSin(s, p.L) : NaN; };
+    return {
+      dy: multi ? fringeSpacing(p) : NaN,
+      y1: first(p.lambda),
+      W: centralWidthExact(p),
+      k: multi ? missingOrderStep(p.d, p.a) : 0,
+      nCentral: multi ? fringesInCentral(p) : NaN,
+      y400: first(400e-9), y700: first(700e-9)
+    };
+  }
+
+  /**
+   * 屏幕上 y 處（游標）的量測（任務模式用）。p = { N, a, d, lambda, L }；spec 有值時為白光。回傳：
+   *   sin、theta（rad）
+   *   pathD、pathA  程差 d sinθ、a sinθ（m；N = 1 時 pathD = NaN）
+   *   pd、pa        以波長為單位的程差 d sinθ/λ、a sinθ/λ（白光時 NaN）
+   *   I             相對光強 I/I0（白光為各色總和）
+   *   R、G、B       白光的顏色（線性 RGB，中央為 1）；單色光時 NaN
+   */
+  function pointInfo(p, y, spec) {
+    const s = sinTheta(y, p.L);
+    const multi = (p.N || 1) > 1;
+    const out = {
+      sin: s, theta: Math.asin(s),
+      pathD: multi ? p.d * s : NaN, pathA: p.a * s,
+      pd: NaN, pa: NaN, I: NaN, R: NaN, G: NaN, B: NaN
+    };
+    if (spec) {
+      const w = whiteAtSin(p, s, spec);
+      out.I = w[0]; out.R = w[1]; out.G = w[2]; out.B = w[3];
+    } else {
+      out.pd = multi ? p.d * s / p.lambda : NaN;
+      out.pa = p.a * s / p.lambda;
+      out.I = intensitySin(p, s);
+    }
+    return out;
+  }
+
   const api = {
+    patternInfo: patternInfo,
+    pointInfo: pointInfo,
     sinTheta: sinTheta,
     yFromSin: yFromSin,
     singleSlitFactor: singleSlitFactor,

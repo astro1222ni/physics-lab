@@ -1173,6 +1173,7 @@
       updateReadout();
       drawPattern();
       if (!state.anim || !sceneVisible) drawScene();
+      scheduleMission();
     });
   }
   function invalidateScene() { field = null; requestDraw(); }
@@ -1296,7 +1297,7 @@
   pat.cv.addEventListener('pointermove', function (ev) {
     if (dragging || ev.pointerType === 'mouse') setCursorFromEvent(ev);
   });
-  const endDrag = function () { dragging = false; };
+  const endDrag = function () { dragging = false; scheduleMission(); };
   pat.cv.addEventListener('pointerup', endDrag);
   pat.cv.addEventListener('pointercancel', endDrag);
   pat.cv.addEventListener('keydown', function (ev) {
@@ -1311,6 +1312,35 @@
     state.cursorY = Math.max(-halfRange(), Math.min(halfRange(), y));
     requestDraw();
   });
+
+  // ---------- 任務模式（missions.js）：設定與游標穩定下來後回報一次 ----------
+  // 只在使用者親自操作之後才回報（預設狀態不會意外完成任務）；拖曳游標時不回報，放開後才回報。
+  let missionTimer = 0, userActed = false;
+  ['input', 'change', 'click', 'pointerdown', 'keydown'].forEach(function (t) {
+    document.querySelector('.lab').addEventListener(t, function (e) { if (e.isTrusted) userActed = true; }, true);
+  });
+  function scheduleMission() {
+    if (!window.LabMission || !userActed) return;
+    clearTimeout(missionTimer);
+    if (dragging) return;
+    missionTimer = setTimeout(function () {
+      const p = params(), pi = SC.patternInfo(p), mm = function (m) { return m / MM; };
+      const data = {
+        mode: state.mode, N: p.N, white: state.white, lam: state.white ? NaN : state.lam,
+        a: state.a, d: p.N > 1 ? state.d : NaN, L: state.L,
+        dy: mm(pi.dy), y1: mm(pi.y1), W: mm(pi.W), k: pi.k, nCentral: pi.nCentral, y400: mm(pi.y400), y700: mm(pi.y700),
+        cursor: state.cursorY !== null
+      };
+      if (data.cursor) {
+        const c = SC.pointInfo(p, state.cursorY, state.white ? SPEC : null);
+        Object.assign(data, {
+          y: mm(state.cursorY), theta: c.theta * 180 / Math.PI, pathD: c.pathD / NM, pathA: c.pathA / NM,
+          pd: c.pd, pa: c.pa, I: c.I, R: c.R, G: c.G, B: c.B
+        });
+      }
+      window.LabMission.emit('setup', data);
+    }, 300);
+  }
 
   // ---------- 光譜色帶 ----------
   (function () {

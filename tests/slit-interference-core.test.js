@@ -324,4 +324,59 @@ test('白光包絡線：中央為 1、對稱、不小於白光總光強', () => 
   }
 });
 
+test('patternInfo：亮紋間距 λL/d、第 1 級精確位置、缺級間隔、中央亮帶亮紋數；單狹縫沒有干涉量', () => {
+  const a = SC.patternInfo(P2);
+  close(a.dy, 550 * nm / (120 * um), 1e-12);
+  close(a.y1, SC.yFromSin(550 / 120000, 1), 1e-12);
+  close(a.W, SC.centralWidthExact(P2), 1e-12);
+  assert.strictEqual(a.k, 3);
+  assert.strictEqual(a.nCentral, 5);
+  close(a.y400, SC.yFromSin(400 * nm / (120 * um), 1), 1e-12);
+  assert.ok(a.y700 > a.y400);
+  const s = SC.patternInfo(Object.assign({}, P2, { N: 1 }));
+  assert.ok(isNaN(s.dy) && isNaN(s.y1) && isNaN(s.nCentral) && isNaN(s.y400) && s.k === 0);
+  close(s.W, a.W, 1e-12, '中央亮帶寬度只由縫寬決定');
+  // 白光光柵：第 1 級光譜展開寬度 ≈ L·Δλ/d（d = 20 μm、L = 2 m → 約 30 mm）
+  const g = SC.patternInfo({ N: 10, a: 5 * um, d: 20 * um, lambda: 550 * nm, L: 2 });
+  close(g.y700 - g.y400, 2 * 300 * nm / (20 * um), 2e-3);
+});
+
+test('pointInfo：亮紋處程差為整數個波長、缺級處全暗；白光中央為白色', () => {
+  const at = (P, m) => SC.yFromSin(m * P.lambda / P.d, P.L);
+  for (const m of [1, 2, 4]) {
+    const c = SC.pointInfo(P2, at(P2, m));
+    close(c.pd, m, 1e-12);
+    close(c.pathD, m * 550 * nm, 1e-12);
+    close(c.I, SC.singleSlitFactor(c.sin, P2.a, P2.lambda), 1e-12, '主亮紋強度 = 包絡線');
+    assert.ok(isNaN(c.R));
+  }
+  const miss = SC.pointInfo(P2, at(P2, 3)); // d/a = 3：第 3 級缺級
+  close(miss.pa, 1, 1e-12);
+  near0(miss.I, 1e-25);
+  const w = SC.pointInfo(P2, 0, SPEC);
+  close(w.I, 1, 1e-12); close(w.R, 1, 1e-9); close(w.G, 1, 1e-9); close(w.B, 1, 1e-9);
+  assert.ok(isNaN(w.pd));
+  const one = SC.pointInfo(Object.assign({}, P2, { N: 1 }), 0.01);
+  assert.ok(isNaN(one.pathD) && isNaN(one.pd) && one.pa > 0);
+});
+
+test('兩色重合：同一處 d sinθ = 3000 nm 時 750、600、500 nm 分別是第 4、5、6 級；窄縫（d/a = 20）時都很亮', () => {
+  const P = { N: 2, a: 5 * um, d: 100 * um, L: 1 };
+  const y = SC.yFromSin(3000 * nm / P.d, 1);
+  [[750, 4], [600, 5], [500, 6]].forEach(([w, m]) => {
+    const c = SC.pointInfo(Object.assign({}, P, { lambda: w * nm }), y);
+    close(c.pd, m, 1e-9);
+    assert.ok(c.I > 0.7, `${w} nm I = ${c.I}`);
+  });
+});
+
+test('白光：高級條紋處各色混合回到接近白色（飽和度低），第 1 級外緣偏紅', () => {
+  const P = { N: 2, a: 5 * um, d: 400 * um, lambda: 550 * nm, L: 1 };
+  const c = SC.pointInfo(P, SC.yFromSin(5000 * nm / P.d, 1), SPEC);
+  const mx = Math.max(c.R, c.G, c.B), mn = Math.min(c.R, c.G, c.B);
+  assert.ok((mx - mn) / mx < 0.05 && c.I > 0.4, `飽和度 ${(mx - mn) / mx}`);
+  const r = SC.pointInfo(P2, SC.yFromSin(680 * nm / P2.d, 1), SPEC);
+  assert.ok(r.R > 1.4 * r.G && r.R > 3 * r.B && r.I > 0.2);
+});
+
 console.log(`\n${passed} 項通過`);
