@@ -315,6 +315,12 @@
     }
   }
 
+  /** 等時距標記的時間間隔（秒）；沒有飛行時傳回 0 */
+  function markerStep() {
+    const Tf = cache.pred.T;
+    return Tf > 0 ? niceStep(Tf / 12) : 0;
+  }
+
   function interpX(pts, t) {
     for (let i = 1; i < pts.length; i++) {
       if (pts[i][2] >= t) {
@@ -334,8 +340,7 @@
     }
     // 等時距標記：相鄰兩點相隔相同時間
     if (state.show.dots && f.trail.length > 1) {
-      const Tf = cache.pred.T;
-      const dt = Tf > 0 ? niceStep(Tf / 12) : 0;
+      const dt = markerStep();
       if (dt > 0) {
         ctx.fillStyle = colors.surface;
         ctx.strokeStyle = colors.accent;
@@ -444,6 +449,44 @@
     }).join('');
   }
 
+  // ---------- 音效（sound.js；音效關閉或沒有載入時完全不呼叫） ----------
+  function sound() {
+    const S = window.LabSound;
+    return S && S.enabled() ? S : null;
+  }
+  function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+  /** 發射「咻」：上滑音加一點氣流噪音；初速越大越響、音越高 */
+  function launchSound(v0) {
+    const S = sound(); if (!S) return;
+    const n = clamp01(Math.log(1 + v0) / Math.log(1 + 50));
+    S.sweep({ from: 280 + 120 * n, to: 650 + 650 * n, dur: 0.16 + 0.08 * n, type: 'triangle', gain: 0.35 + 0.35 * n });
+    S.noise({ dur: 0.14 + 0.08 * n, gain: 0.15 + 0.25 * n, filter: 1500 + 1800 * n, q: 0.8, attack: 0.03 });
+  }
+  /**
+   * 落地「咚」：音量隨落地速率增加（取對數壓縮，輕落地也聽得到）；
+   * 落地越猛，噪音成分越亮、越短促。主要頻率 ≥ 250 Hz，加一個泛音讓小喇叭也有厚度。
+   */
+  function landSound(v) {
+    const S = sound(); if (!S) return;
+    const hard = clamp01(Math.log10(1 + v) / Math.log10(1 + 60));
+    const gain = 0.45 + 0.5 * hard;
+    S.noise({ dur: 0.1 + 0.06 * (1 - hard), gain: gain, filter: 700 + 1600 * hard, q: 0.7, filterType: 'lowpass' });
+    const f0 = 255 + 70 * hard;
+    S.sweep({ from: f0 * 1.35, to: f0, dur: 0.14, type: 'triangle', gain: gain * 0.75 });
+    S.tone({ freq: f0 * 2.02, dur: 0.07, type: 'sine', gain: gain * 0.3 });
+  }
+  /** 等時距標記的輕「滴」聲：音高隨高度（離地越高越高），很小聲 */
+  let lastTickAt = -1;
+  function markerSound(y) {
+    const S = sound(); if (!S) return;
+    const now = performance.now();
+    if (now - lastTickAt < 70) return; // 高倍速播放時避免連成一串
+    lastTickAt = now;
+    const top = Math.max(1e-6, cache.pred.H);
+    const u = clamp01(y / top);
+    S.tone({ freq: 700 + 500 * u, dur: 0.035, type: 'sine', gain: 0.16 });
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0, rafId = 0;
   function tick(now) {
@@ -451,8 +494,16 @@
     if (!f.running) return;
     const dt = Math.min((now - lastT) / 1000, 1 / 30) * state.speed;
     lastT = now;
+    const t0 = f.s.t;
     const landed = PC.advance(cache.p, f.s, dt, { trail: f.trail });
-    if (landed) land();
+    if (landed) {
+      // 落地聲：在模擬時間跨過落地時刻的那一格發出一次（任何播放速度、暫停後繼續都一樣）
+      if (f.s.t > 0) landSound(Math.hypot(f.s.vx, f.s.vy));
+      land();
+    } else if (state.show.dots) {
+      const step = markerStep();
+      if (step > 0 && Math.floor(f.s.t / step + 1e-9) > Math.floor(t0 / step + 1e-9)) markerSound(f.s.y);
+    }
     draw();
     if (f.running) rafId = requestAnimationFrame(tick);
   }
@@ -486,6 +537,7 @@
 
   function start() {
     const f = state.fly;
+    if (!f.launched) launchSound(cache.p.v0); // 只在真正發射時「咻」一聲，暫停後繼續不再發聲
     f.running = true;
     f.launched = true;
     $('run').textContent = T('暫停', 'Pause');
@@ -564,6 +616,20 @@
     start();
   });
   $('reset').addEventListener('click', function () { resetFlight(); });
+  // 喇叭按鈕：切換全站音效設定（齒輪面板也能切換，兩邊同步）
+  function updateSoundButton() {
+    const on = !!(window.LabSettings && window.LabSettings.get('sound'));
+    $('soundBtn').setAttribute('aria-pressed', String(on));
+    $('soundLabel').textContent = on ? T('音效：開', 'Sound: on') : T('音效：關', 'Sound: off');
+  }
+  $('soundBtn').addEventListener('click', function () {
+    if (window.LabSettings) window.LabSettings.set('sound', !window.LabSettings.get('sound'));
+    updateSoundButton();
+  });
+  window.addEventListener('lab:settingschange', function (ev) {
+    if (ev.detail && ev.detail.name === 'sound') updateSoundButton();
+  });
+  updateSoundButton();
   $('clearGhosts').addEventListener('click', function () {
     state.ghosts = [];
     renderGhosts();

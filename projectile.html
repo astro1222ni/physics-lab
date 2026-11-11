@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110728"></script>
+  <script src="js/settings.js?v=202611110801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Projectile Motion | Astro Ni Physics Lab">拋體運動｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整初速、仰角、發射高度與重力加速度，觀察拋體軌跡、速度分量、射程與最大高度，並開啟空氣阻力和理想拋物線比較。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110728">
+  <link rel="stylesheet" href="lab.css?v=202611110801">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
@@ -39,6 +39,13 @@
     .ghosts li.none { display: block; }
     .ghosts .empty { display: block; color: var(--muted); }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    /* 喇叭按鈕（與一維碰撞相同外觀）：切換全站音效設定 */
+    .stage .bar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); min-height: 44px; }
+    .stage .bar button { min-height: 44px; } /* 同一列的發射／重設／音效按鈕等高，觸控目標 ≥ 44 px */
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
   </style>
 </head>
 <body data-en-ready>
@@ -55,6 +62,7 @@
         <div class="bar">
           <button id="run" class="primary" data-en="Launch">發射</button>
           <button id="reset" data-en="Reset">重設</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="speed" for="speed"><span data-en="Playback speed">播放速度</span>
             <input id="speed" type="range" min="0" max="6" step="1" value="3">
             <output id="speedo"></output></label>
@@ -195,11 +203,12 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110728"></script>
-  <script src="js/projectile-core.js?v=202611110728"></script>
-  <script src="js/projectile.js?v=202611110728"></script>
-  <script src="js/firebase-config.js?v=202611110728"></script>
-  <script src="js/stats.js?v=202611110728" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611110728"></script>
+  <script src="js/math.js?v=202611110801"></script>
+  <script src="js/projectile-core.js?v=202611110801"></script>
+  <script src="js/sound.js?v=202611110801"></script>
+  <script src="js/projectile.js?v=202611110801"></script>
+  <script src="js/firebase-config.js?v=202611110801"></script>
+  <script src="js/stats.js?v=202611110801" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611110801"></script>
 </body>
 </html>

@@ -21,6 +21,7 @@
     probe: { x: 6, y: 6, vx: 0, vy: 0, q: 1, m: 1, home: { x: 6, y: 6 }, trail: [] },
     running: false,
     ended: false,
+    released: false,   // 從起點釋放後為 true（區分「釋放」與「繼續」）
     status: ''
   };
 
@@ -298,6 +299,36 @@
     $('status').textContent = state.status;
   }
 
+  // ---------- 音效（sound.js；音效關閉或沒有載入時完全不呼叫） ----------
+  function sound() {
+    const S = window.LabSound;
+    return S && S.enabled() ? S : null;
+  }
+  function clamp01(x) { return Math.max(0, Math.min(1, x)); }
+  /** 釋放：柔和的兩聲上行提示音 */
+  function releaseSound() {
+    const S = sound(); if (!S) return;
+    S.tone({ freq: 587, dur: 0.12, type: 'sine', gain: 0.4 });
+    S.tone({ freq: 880, dur: 0.16, type: 'sine', gain: 0.32, delay: 0.07 });
+  }
+  /**
+   * 撞上場源電荷：短促的「滋」電擊聲（高頻噪音 + 下滑的方波 + 鋸齒波嗡聲）。
+   * 音量隨撞擊速率增加（cm/s 取對數壓縮），撞得越快越亮。
+   */
+  function zapSound(v) {
+    const S = sound(); if (!S) return;
+    const hard = clamp01(Math.log10(1 + v * 100) / Math.log10(1 + 100));
+    const gain = 0.45 + 0.5 * hard;
+    S.noise({ dur: 0.07 + 0.07 * hard, gain: gain, filter: 2600 + 2200 * hard, q: 1.6 });
+    S.sweep({ from: 1300 + 700 * hard, to: 420, dur: 0.1, type: 'square', gain: gain * 0.45 });
+    S.tone({ freq: 330 + 110 * hard, dur: 0.09 + 0.05 * hard, type: 'sawtooth', gain: gain * 0.4 });
+  }
+  /** 離開畫面：柔和的下滑音 */
+  function exitSound() {
+    const S = sound(); if (!S) return;
+    S.sweep({ from: 760, to: 300, dur: 0.4, type: 'triangle', gain: 0.45 });
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0;
   function tick(t) {
@@ -311,6 +342,7 @@
     if (stop) {
       state.running = false;
       state.ended = true;
+      if (stop.reason === 'hit') zapSound(Math.hypot(pr.vx, pr.vy)); else exitSound();
       $('run').textContent = T('釋放', 'Release');
       state.status = stop.reason === 'hit'
         ? T('試探電荷撞上了電荷 ' + state.charges[stop.charge].label + '。',
@@ -335,6 +367,7 @@
     pr.x = pr.home.x; pr.y = pr.home.y; pr.vx = 0; pr.vy = 0; pr.trail = [[pr.x, pr.y]];
     state.running = false;
     state.ended = false;
+    state.released = false;
     $('run').textContent = T('釋放', 'Release');
     state.status = '';
     requestDraw();
@@ -396,9 +429,24 @@
       return;
     }
     if (state.ended) resetProbe(); // 上一次已撞上電荷或離開畫面：從起點重新釋放
+    if (!state.released) { state.released = true; releaseSound(); } // 只在從起點釋放時發聲，暫停後繼續不再發聲
     setRunning(true);
   });
   $('resetProbe').addEventListener('click', function () { resetProbe(); });
+  // 喇叭按鈕：切換全站音效設定（齒輪面板也能切換，兩邊同步）
+  function updateSoundButton() {
+    const on = !!(window.LabSettings && window.LabSettings.get('sound'));
+    $('soundBtn').setAttribute('aria-pressed', String(on));
+    $('soundLabel').textContent = on ? T('音效：開', 'Sound: on') : T('音效：關', 'Sound: off');
+  }
+  $('soundBtn').addEventListener('click', function () {
+    if (window.LabSettings) window.LabSettings.set('sound', !window.LabSettings.get('sound'));
+    updateSoundButton();
+  });
+  window.addEventListener('lab:settingschange', function (ev) {
+    if (ev.detail && ev.detail.name === 'sound') updateSoundButton();
+  });
+  updateSoundButton();
 
   // ---------- 拖曳 ----------
   let drag = null;
