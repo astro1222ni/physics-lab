@@ -10,9 +10,11 @@
 | 檔案 | 用途 |
 | --- | --- |
 | `index.html` | 實驗室首頁，依物理分支分類（力學、熱學、波動與聲音、光學、電磁學、近代物理） |
-| `electric-field.html` | 模組：電場與等位線 |
-| `js/field-core.js` | 靜電場物理核心（純計算，與畫面無關） |
-| `js/electric-field.js` | 該模組的繪圖與互動 |
+| `<模組>.html` | 各模組頁面：`electric-field`、`projectile`、`collision`、`slit-interference`、`magnetic-particle` |
+| `js/<模組>-core.js` | 各模組的物理核心（純計算，與畫面無關；電場模組為 `field-core.js`） |
+| `js/<模組>.js` | 各模組的繪圖與互動 |
+| `js/firebase-config.js` | Firebase 設定（資料庫網址、登入用的網頁設定） |
+| `js/stats.js` | 瀏覽人次、操作次數、累計操作時間 |
 | `js/math.js` | 以 KaTeX 排版頁面中 `\( … \)`、`\[ … \]` 標記的公式 |
 | `lab.css` | 共用樣式（含深色模式） |
 | `vendor/katex/` | KaTeX 0.16.9（MIT 授權），內建於網站中，不依賴外部 CDN |
@@ -21,7 +23,7 @@
 ## 測試
 
 ```sh
-node tests/field-core.test.js
+for t in tests/*.test.js; do node "$t"; done
 ```
 
 測試內容包括：點電荷公式、疊加原理、E = −∇V、電力線起訖、等位線形狀，以及試探電荷運動時力學能守恆。
@@ -41,5 +43,5 @@ node tests/field-core.test.js
 - 模組頁面：`<script src="js/stats.js" data-module="模組代號"></script>`，在標題下方顯示該模組的數字。
 - 首頁：`<script src="js/stats.js" data-summary></script>`，顯示全站累計；卡片加上 `data-module="模組代號"` 會顯示該模組的數字。
 - 計算方式：每載入一次頁面瀏覽人次 +1；拖曳畫布、放開滑桿、按按鈕、切換勾選各算一次操作；頁面在前景且最近 30 秒內有操作時才計時。
-- 資料庫網址填在 `js/stats.js` 的 `DB_URL`；留空時統計停用、頁面照常運作。
+- 資料庫網址填在 `js/firebase-config.js` 的 `databaseURL`；留空時統計停用、頁面照常運作。
 - 資料庫安全規則在 `firebase/database.rules.json`：任何人只能讀取統計、只能「增加」數字，且每次增加有上限，無法竄改或清除。

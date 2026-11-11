@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整波長、縫寬、縫距與屏幕距離，觀察單狹縫繞射、雙狹縫干涉與光柵的明暗條紋、光強分布與缺級。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611110632">
+  <style>
+    /* 本頁專用樣式：只使用 lab.css 的顏色變數，深色模式自動跟著切換 */
+    .stage canvas#scene { aspect-ratio: 2 / 1; touch-action: pan-y; cursor: default; }
+    .stage canvas#pattern { aspect-ratio: 2 / 1; margin-top: 10px; touch-action: pan-y; }
+    .stage canvas#pattern:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 600px) {
+      .stage canvas#scene { aspect-ratio: 3 / 2; }
+      .stage canvas#pattern { aspect-ratio: 5 / 4; }
+    }
+    .stage-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 8px 4px 0; }
+    .stage-row .hint { margin: 0; flex: 1 1 220px; }
+    .stage-row button { padding: 5px 12px; font-size: 13px; }
+
+    .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .seg button { padding: 8px 6px; text-align: center; line-height: 1.3; }
+    .seg button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+
+    .spectrum { height: 8px; border-radius: 4px; margin: 2px 0 0; border: 1px solid var(--border); }
+    .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--border); }
+    .slider[hidden], dl.readout [hidden] { display: none; }
+    .slider output .sub { font-weight: 400; color: var(--muted); }
+    .range-row { display: flex; align-items: center; gap: 8px; }
+    .range-row input { flex: 1; min-width: 0; accent-color: var(--accent); }
+    .range-row button { padding: 4px 10px; font-size: 13px; }
+
+    dl.readout dd.flag { color: var(--equi); font-weight: 600; }
+    dl.readout dt i, .notes i.v { font-family: "Times New Roman", serif; font-size: 1.08em; }
+    dl.readout sub, dl.readout sup { font-size: .72em; line-height: 0; }
+
+    @media (pointer: coarse) {
+      .slider input[type="range"], .range-row input { height: 28px; }
+      .seg button { padding: 10px 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 物理光學</nav>
+      <h1>雙狹縫干涉與單狹縫繞射</h1>
+      <p>調整波長、縫寬、縫距與屏幕距離，觀察屏幕上明暗條紋的顏色、間距與光強分布；在下方的強度圖上點擊或拖曳可讀出各點數值。</p>
+    </header>
+
+    <div class="lab">
+      <div class="stage">
+        <canvas id="scene" aria-label="俯視示意圖：光波通過狹縫後向外擴散並互相干涉"></canvas>
+        <div class="stage-row">
+          <p class="hint">上圖為俯視示意圖（未依比例）：亮色為波峰，可看到從狹縫散開的波前互相疊加。</p>
+          <button id="anim" type="button">暫停動畫</button>
+        </div>
+        <canvas id="pattern" tabindex="0" aria-label="屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖；可點擊、拖曳或用左右方向鍵移動游標"></canvas>
+        <div class="legend">
+          <span><i id="lgCurve" style="background:var(--field)"></i>相對光強 I/I<sub>0</sub></span>
+          <span id="lgEnv"><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)"></i>單狹縫包絡線</span>
+          <span><i style="background:var(--probe)"></i>游標</span>
+        </div>
+        <p class="hint" id="densityHint" hidden>條紋太密，畫面像素不足以分辨每一條亮紋：請縮小顯示範圍。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2>狹縫類型</h2>
+          <div class="seg" role="group" aria-label="狹縫類型">
+            <button type="button" data-mode="single" aria-pressed="false">單狹縫</button>
+            <button type="button" data-mode="double" aria-pressed="true">雙狹縫</button>
+            <button type="button" data-mode="grating" aria-pressed="false">多狹縫<br>（光柵）</button>
+          </div>
+          <div class="slider" id="nRow" hidden><label for="N">狹縫數 N</label><output id="No"></output>
+            <input id="N" type="range" min="2" max="10" step="1" value="5"></div>
+        </section>
+
+        <section class="card">
+          <h2>光源與幾何</h2>
+          <div class="slider"><label for="lam">波長 λ</label><output id="lamo"></output>
+            <input id="lam" type="range" min="380" max="750" step="1" value="550">
+            <div class="spectrum" id="spectrum" style="grid-column:1/-1"></div></div>
+          <div class="btns">
+            <button type="button" data-lam="650">紅光雷射 650 nm</button>
+            <button type="button" data-lam="532">綠光雷射 532 nm</button>
+            <button type="button" data-lam="405">藍紫光 405 nm</button>
+          </div>
+          <div class="slider"><label for="a">縫寬 a</label><output id="ao"></output>
+            <input id="a" type="range" min="5" max="100" step="1" value="40"></div>
+          <div class="slider" id="dRow"><label for="d">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
+            <input id="d" type="range" min="10" max="400" step="1" value="120"></div>
+          <div class="slider"><label for="L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="0.3" max="3" step="0.05" value="1"></div>
+          <p class="status" id="status"></p>
+        </section>
+
+        <section class="card">
+          <h2>顯示</h2>
+          <div class="slider"><label for="zoom">屏幕顯示範圍</label><output id="zoomo"></output></div>
+          <div class="range-row">
+            <input id="zoom" type="range" min="0" max="10" step="1" value="4" aria-label="屏幕顯示範圍">
+            <button type="button" id="autoZoom">自動</button>
+          </div>
+          <div class="checks" style="margin-top:10px">
+            <label><input id="showEnv" type="checkbox" checked>單狹縫包絡線</label>
+            <label><input id="showOrders" type="checkbox" checked>標示亮紋級數 m</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>條紋特徵</h2>
+          <dl class="readout">
+            <dt data-m="multi">亮紋間距 Δy ≈ λL/d</dt><dd data-m="multi" id="rDy">—</dd>
+            <dt data-m="multi">第 1 級亮紋位置（精確）</dt><dd data-m="multi" id="rY1">—</dd>
+            <dt>中央亮帶寬度 ≈ 2λL/a</dt><dd id="rW">—</dd>
+            <dt>中央亮帶寬度（精確）</dt><dd id="rWx">—</dd>
+            <dt data-m="single">兩側亮帶寬度 ≈ λL/a</dt><dd data-m="single" id="rWs">—</dd>
+            <dt data-m="multi">縫距與縫寬比 d/a</dt><dd data-m="multi" id="rRatio">—</dd>
+            <dt data-m="multi">中央亮帶內的亮紋數</dt><dd data-m="multi" id="rCount">—</dd>
+            <dt data-m="multi">缺級</dt><dd data-m="multi" id="rMissing">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2>游標位置</h2>
+          <dl class="readout">
+            <dt>屏幕位置 y</dt><dd id="cY">—</dd>
+            <dt>角度 θ</dt><dd id="cTh">—</dd>
+            <dt data-m="multi">程差 d sinθ</dt><dd data-m="multi" id="cPd">—</dd>
+            <dt>a sinθ</dt><dd id="cPa">—</dd>
+            <dt>相對光強 I/I<sub>0</sub></dt><dd id="cI">—</dd>
+          </dl>
+          <p class="status" id="cHint">在強度圖或條紋上點擊、拖曳，或用左右方向鍵移動游標。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2>背後的物理</h2>
+      <p>依惠更斯原理，每條狹縫上的每一點都可視為新的波源。屏幕距離遠大於狹縫尺寸時（夫朗和斐繞射），在角度 \(\theta\) 方向上，\(N\) 條寬度 \(a\)、縫距 \(d\) 的狹縫產生的相對光強為</p>
+      <div class="formula">
+        \[ I(\theta) = I_0 \left[\frac{\sin\beta}{\beta}\right]^{2} \left[\frac{\sin N\alpha}{N\sin\alpha}\right]^{2} \]
+        \[ \beta = \frac{\pi a\sin\theta}{\lambda}, \qquad \alpha = \frac{\pi d\sin\theta}{\lambda} \]
+      </div>
+      <p>雙狹縫（\(N = 2\)）時第二個因子化簡為 \(\cos^{2}\alpha\)：</p>
+      <div class="formula">
+        \[ I(\theta) = I_0 \cos^{2}\!\left(\frac{\pi d\sin\theta}{\lambda}\right) \left[\frac{\sin\beta}{\beta}\right]^{2} \]
+      </div>
+      <p>\(\cos^{2}\) 這一項是兩縫光波的<strong>干涉</strong>，決定亮紋的位置；\([\sin\beta/\beta]^{2}\) 是每一條狹縫自己的<strong>繞射</strong>，像一條包絡線決定各亮紋的亮度。屏幕上位置 \(y\) 與角度的關係為 \(\sin\theta = y/\sqrt{y^{2} + L^{2}}\)。</p>
+      <div class="formula">
+        \[ \text{干涉亮紋：}\ d\sin\theta = m\lambda \]
+        \[ \text{干涉暗紋：}\ d\sin\theta = \left(m + \tfrac{1}{2}\right)\lambda \]
+        \[ \text{單狹縫暗紋：}\ a\sin\theta = m\lambda \]
+      </div>
+      <p>干涉的 \(m = 0, \pm 1, \pm 2, \ldots\)；單狹縫暗紋的 \(m = \pm 1, \pm 2, \ldots\)，<span class="nb">\(m \neq 0\)</span>（\(\theta = 0\) 是中央亮帶的正中央，不是暗紋）。</p>
+      <p>角度很小時 \(\sin\theta \approx \tan\theta = y/L\)，得到常用的近似式：</p>
+      <div class="formula">
+        \[ \Delta y \approx \frac{\lambda L}{d} \]
+        \[ \text{中央亮帶寬度} \approx \frac{2\lambda L}{a} \]
+      </div>
+      <p>若 \(d/a = k\) 為整數，第 \(\pm k, \pm 2k, \ldots\) 級干涉亮紋恰好落在單狹縫暗紋上而消失，稱為<strong>缺級</strong>；此時中央亮帶內有 \(2k - 1\) 條亮紋。</p>
+
+      <h3>觀察重點</h3>
+      <ul>
+        <li><strong>波長越長，條紋越寬</strong>：把波長從藍紫光 405 nm 拉到紅光 650 nm，亮紋間距與中央亮帶都變寬，比值約為 <span class="nb">\(650/405 \approx 1.6\)。</span></li>
+        <li><strong>單狹縫的中央亮帶寬度是兩側亮帶的兩倍</strong>，而且兩側亮帶很暗：第一個側亮帶只有約 \(0.047\,I_0\)。縫寬 \(a\) 越窄，中央亮帶反而越寬。</li>
+        <li><strong>雙狹縫的亮紋間距只由 \(d\) 決定</strong>：改變縫寬 \(a\) 時，亮紋位置不動，只有亮度（包絡線）改變；改變 \(d\) 時，包絡線不動，亮紋變疏或變密。</li>
+        <li><strong>缺級</strong>：預設 \(a = 40\ \text{μm}\)、\(d = 120\ \text{μm}\)，\(d/a = 3\)，看看第 \(\pm 3\) 級亮紋到哪裡去了？把 \(d\) 調成 \(135\ \text{μm}\)（\(d/a\) 不再是整數），第 3 級又會以很暗的亮紋重新出現。</li>
+        <li><strong>多狹縫（光柵）</strong>：主亮紋的位置仍是 \(d\sin\theta = m\lambda\)，但 \(N\) 越大主亮紋越細、越銳利，兩個主亮紋之間有 \(N - 1\) 條暗紋與 \(N - 2\) 條很暗的次亮紋，這就是光柵能精確量測波長的原因。</li>
+        <li><strong>小角度近似何時失效</strong>：把 \(a\) 調到最小、\(L\) 調短並把顯示範圍放大，比較「中央亮帶寬度」的近似值與精確值，以及遠處亮紋的間距是否還相等。</li>
+      </ul>
+
+      <h3>模擬方法</h3>
+      <ul>
+        <li>強度圖與屏幕條紋直接由上面的 \(I(\theta)\) 公式計算，\(\sin\theta\) 一律用精確關係 \(y/\sqrt{y^{2} + L^{2}}\)，不使用小角度近似；「≈」的讀數才是近似公式的結果。</li>
+        <li>模型假設平面單色光垂直入射、屏幕位於遠場（夫朗和斐條件 \(L \gg (\text{狹縫總寬})^{2}/\lambda\)，實驗上也可在狹縫後加凸透鏡達成），並忽略傾斜因子與距離造成的強度衰減，所以中央強度恆為 \(I_0\)。</li>
+        <li>屏幕條紋的亮度正比於 \(I\)，顏色由波長以常見的分段近似換算成螢幕的 sRGB 顏色（可見光邊緣的紫光與深紅光看起來較暗）。條紋小於一個像素時，該像素顯示其範圍內的平均亮度。</li>
+        <li>俯視示意圖把每條狹縫分成數個惠更斯子波源，疊加各子波的振幅 \(\cos(kr - \omega t)/\sqrt{r}\) 畫出波峰；為了看得見波長，圖中的波長、縫寬與縫距都經過放大，只保留 \(d/a\) 與趨勢，並非實際比例。</li>
+      </ul>
+    </section>
+
+    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611110632"></script>
+  <script src="js/slit-interference-core.js?v=202611110632"></script>
+  <script src="js/slit-interference.js?v=202611110632"></script>
+  <script src="js/firebase-config.js?v=202611110632"></script>
+  <script src="js/stats.js?v=202611110632" data-module="slit-interference"></script>
+</body>
+</html>

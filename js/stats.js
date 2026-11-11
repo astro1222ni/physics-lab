@@ -17,9 +17,8 @@
 (function () {
   'use strict';
 
-  // Firebase Realtime Database 網址（例：https://xxxx-default-rtdb.asia-southeast1.firebasedatabase.app）
-  // 留空時統計功能停用，頁面照常運作。
-  const DB_URL = '';
+  // Firebase Realtime Database 網址來自 js/firebase-config.js；留空時統計功能停用，頁面照常運作。
+  const DB_URL = (window.LAB_FIREBASE && window.LAB_FIREBASE.databaseURL) || '';
 
   const IDLE_LIMIT = 30;     // 秒：超過這段時間沒有操作就停止計時
   const FLUSH_EVERY = 15;    // 秒：累積多久送出一次
@@ -81,8 +80,14 @@
       getJSON('/stats').then(function (all) {
         all = all || {};
         const sum = { views: 0, ops: 0, seconds: 0 };
-        Object.keys(all).forEach(function (k) {
-          ['views', 'ops', 'seconds'].forEach(function (f) { sum[f] += +all[k][f] || 0; });
+        // 只加總首頁上列出的模組
+        const listed = {};
+        document.querySelectorAll('[data-module]').forEach(function (el) {
+          if (el !== script) listed[el.getAttribute('data-module')] = true;
+        });
+        Object.keys(listed).forEach(function (k) {
+          const m = all[k] || {};
+          ['views', 'ops', 'seconds'].forEach(function (f) { sum[f] += +m[f] || 0; });
         });
         fill(totalBar, sum);
         document.querySelectorAll('[data-module]').forEach(function (card) {

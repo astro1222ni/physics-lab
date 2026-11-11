@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>拋體運動｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整初速、仰角、發射高度與重力加速度，觀察拋體軌跡、速度分量、射程與最大高度，並開啟空氣阻力和理想拋物線比較。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611110632">
+  <style>
+    /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
+    .stage canvas { cursor: pointer; }
+    .stage .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .stage .bar .status { margin: 0; flex: 1 1 200px; }
+    .lab button { min-height: 40px; }
+    .slider input[type="range"] { height: 28px; margin: 0; }
+    .slider label sub, dl.readout sub { font-size: .75em; }
+    .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: -2px; }
+    .presets button { padding: 6px 4px; line-height: 1.25; }
+    .presets button small { display: block; color: var(--muted); font-size: 12px; }
+    .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+    .speed { display: flex; align-items: center; gap: 8px; font-size: 14px; flex: 1 1 100%; }
+    .speed input { flex: 1; min-width: 0; accent-color: var(--accent); }
+    .speed output { min-width: 3.2em; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; min-height: 32px; }
+    .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .dim { opacity: .45; }
+    .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+    .method { font-size: 12px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+    dl.readout dd small { color: var(--muted); font-size: 12px; }
+    .checks label { min-height: 32px; }
+    .checks input { width: 17px; height: 17px; }
+    .ghosts { list-style: none; margin: 0 0 10px; padding: 0; font-size: 13px; display: grid; gap: 6px; }
+    .ghosts li { display: grid; grid-template-columns: 22px 1fr; gap: 0 8px; align-items: start; }
+    .ghosts .sw { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 6px; color: var(--surface); font-weight: 700; font-size: 12px; margin-top: 1px; }
+    .ghosts .meta { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ghosts li.none { display: block; }
+    .ghosts .empty { display: block; color: var(--muted); }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 運動學</nav>
+      <h1>拋體運動</h1>
+      <p>調整初速、仰角、發射高度與重力加速度，按「發射」觀察軌跡與速度分量；開啟空氣阻力，和理想拋物線比較。</p>
+    </header>
+
+    <div class="lab">
+      <div class="stage">
+        <canvas id="cv" aria-label="拋體運動模擬畫布：顯示軌跡、速度向量與座標軸"></canvas>
+        <div class="bar">
+          <button id="run" class="primary">發射</button>
+          <button id="reset">重設</button>
+          <label class="speed" for="speed">播放速度
+            <input id="speed" type="range" min="0" max="6" step="1" value="3">
+            <output id="speedo"></output></label>
+          <p class="status" id="status" aria-live="polite"></p>
+        </div>
+        <div class="legend">
+          <span style="color:var(--accent)"><i style="background:var(--accent)"></i>目前軌跡</span>
+          <span style="color:var(--accent)"><i class="dash"></i>預測軌跡</span>
+          <span id="legIdeal" style="color:var(--muted)"><i class="dash"></i>理想拋物線（無阻力）</span>
+          <span><i style="background:var(--pos)"></i>速度 v</span>
+          <span><i style="background:var(--neg)"></i>v<sub>x</sub></span>
+          <span><i style="background:var(--equi)"></i>v<sub>y</sub></span>
+        </div>
+        <p class="hint">在畫布上拖曳可直接調整仰角；每次落地的軌跡會保留下來（最多 5 條）方便比較。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2>發射條件</h2>
+          <div class="slider"><label for="v0">初速 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="1" max="50" step="0.5" value="20"></div>
+          <div class="slider"><label for="theta">仰角 θ</label><output id="thetao"></output>
+            <input id="theta" type="range" min="0" max="90" step="1" value="45"></div>
+          <div class="slider"><label for="h0">發射高度 h<sub>0</sub></label><output id="h0o"></output>
+            <input id="h0" type="range" min="0" max="50" step="0.5" value="0"></div>
+          <div class="slider"><label for="g">重力加速度 g</label><output id="go"></output>
+            <input id="g" type="range" min="1" max="25" step="0.01" value="9.8"></div>
+          <div class="presets" role="group" aria-label="重力加速度預設值">
+            <button data-g="9.8">地球<small>9.8</small></button>
+            <button data-g="1.62">月球<small>1.62</small></button>
+            <button data-g="3.71">火星<small>3.71</small></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>空氣阻力</h2>
+          <label class="toggle"><input id="drag" type="checkbox">加入空氣阻力（與速率平方成正比）</label>
+          <div id="dragBox" class="dim">
+            <div class="slider"><label for="k">阻力係數 k/m</label><output id="ko"></output>
+              <input id="k" type="range" min="-3" max="-0.5" step="0.01" value="-2" disabled></div>
+            <dl class="readout">
+              <dt>終端速率 v<sub>t</sub> = √(mg/k)</dt><dd id="rVt">—</dd>
+            </dl>
+            <p class="hint">參考值：棒球約 0.005、足球約 0.013、桌球約 0.14、羽毛球約 0.26 m<sup>−1</sup>。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>即時讀數</h2>
+          <dl class="readout">
+            <dt>時間 t</dt><dd id="rt">—</dd>
+            <dt>水平位置 x</dt><dd id="rx">—</dd>
+            <dt>高度 y</dt><dd id="ry">—</dd>
+            <dt>水平速度 v<sub>x</sub></dt><dd id="rvx">—</dd>
+            <dt>鉛直速度 v<sub>y</sub></dt><dd id="rvy">—</dd>
+            <dt>速率 |v|</dt><dd id="rv">—</dd>
+            <dt>力學能／質量</dt><dd id="rE">—</dd>
+          </dl>
+          <p class="hint">力學能／質量 = ½v<sup>2</sup> + gy，以地面為重力位能零點。</p>
+        </section>
+
+        <section class="card">
+          <h2>預測結果<span class="method" id="method">解析解</span></h2>
+          <dl class="readout">
+            <dt>飛行時間 T</dt><dd id="pT">—</dd>
+            <dt>水平射程 R</dt><dd id="pR">—</dd>
+            <dt>最大高度 H（離地）</dt><dd id="pH">—</dd>
+            <dt>射程最大的仰角</dt><dd id="pOpt">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2>比較軌跡</h2>
+          <ul class="ghosts" id="ghosts"></ul>
+          <div class="btns"><button id="clearGhosts">清除比較軌跡</button></div>
+        </section>
+
+        <section class="card">
+          <h2>顯示</h2>
+          <div class="checks">
+            <label><input id="showPred" type="checkbox" checked>預測軌跡</label>
+            <label><input id="showV" type="checkbox" checked>速度向量</label>
+            <label><input id="showComp" type="checkbox" checked>速度分量</label>
+            <label><input id="showDots" type="checkbox" checked>等時距標記</label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2>背後的物理</h2>
+      <p>忽略空氣阻力時，物體只受重力，水平方向不受力（等速度運動），鉛直方向是加速度為 \(-g\) 的等加速度運動。兩個方向各自獨立：</p>
+      <div class="formula">
+        \[ x = v_0\cos\theta\, t, \qquad y = h_0 + v_0\sin\theta\, t - \tfrac{1}{2} g t^{2} \]
+        \[ v_x = v_0\cos\theta, \qquad v_y = v_0\sin\theta - g t \]
+      </div>
+      <p>消去時間 \(t\)，軌跡是一條開口向下的拋物線：</p>
+      <div class="formula">
+        \[ y = h_0 + x\tan\theta - \frac{g\,x^{2}}{2 v_0^{2}\cos^{2}\theta} \]
+      </div>
+      <p>從地面發射（\(h_0 = 0\)）時，飛行時間、最大高度與水平射程為：</p>
+      <div class="formula">
+        \[ T = \frac{2 v_0 \sin\theta}{g}, \qquad H = \frac{v_0^{2}\sin^{2}\theta}{2g}, \qquad R = \frac{v_0^{2}\sin 2\theta}{g} \]
+      </div>
+      <p>從高度 \(h_0\) 發射時，飛行時間是 \(h_0 + v_0\sin\theta\,t - \tfrac12 g t^2 = 0\) 的正根，射程最大的仰角 \(\theta^{*}\) 也有公式：</p>
+      <div class="formula">
+        \[ T = \frac{v_0\sin\theta + \sqrt{v_0^{2}\sin^{2}\theta + 2 g h_0}}{g}, \qquad R = v_0\cos\theta\, T \]
+        \[ \tan\theta^{*} = \frac{v_0}{\sqrt{v_0^{2} + 2 g h_0}}, \qquad R_{\max} = \frac{v_0}{g}\sqrt{v_0^{2} + 2 g h_0} \]
+      </div>
+      <p>加入空氣阻力時，阻力與速度反向、大小與速率平方成正比（\(k = \tfrac12 \rho C_D A\)），運動方程式沒有簡單的公式解，只能數值求解：</p>
+      <div class="formula">
+        \[ \vec{a} = -g\,\hat{y} - \frac{k}{m}\,|\vec{v}|\,\vec{v}, \qquad v_t = \sqrt{\frac{mg}{k}} \]
+      </div>
+
+      <h3>觀察重點</h3>
+      <ul>
+        <li><strong>互補角射程相等</strong>：\(h_0 = 0\)、無阻力時，先用 \(30^\circ\) 發射，再改成 \(60^\circ\) 發射，兩次落點相同，因為 \(\sin 2\theta = \sin(180^\circ - 2\theta)\)。比較紀錄中的最大高度與飛行時間，哪一個比較大？</li>
+        <li><strong>45° 射程最大</strong>：\(h_0 = 0\) 時 \(\sin 2\theta\) 在 \(\theta = 45^\circ\) 最大。把 \(h_0\) 調高，看看「射程最大的仰角」怎麼變？（會小於 \(45^\circ\)）</li>
+        <li><strong>水平與鉛直運動互相獨立</strong>：打開等時距標記，相鄰標記的水平間距都相等（\(v_x\) 不變），鉛直間距則逐漸改變。速度分量 \(v_x\) 的箭頭長度始終不變。</li>
+        <li><strong>水平拋射</strong>：把仰角調成 \(0^\circ\)、\(h_0 = 20\ \mathrm{m}\)，改變初速多發射幾次——落地時間都是 \(\sqrt{2h_0/g}\)，只有射程不同。</li>
+        <li><strong>換一個星球</strong>：同樣的初速與仰角，在月球上射程與最大高度約是地球的 \(9.8/1.62 \approx 6\) 倍，因為 \(R\)、\(H\)、\(T\) 都與 \(g\) 成反比。</li>
+        <li><strong>力學能守恆</strong>：無阻力時，\(\tfrac12 v^2 + g y\) 在整個飛行過程中保持不變；有阻力時則持續減少，減少的部分轉換為熱能。</li>
+        <li><strong>空氣阻力的影響</strong>：射程與最大高度都變小，軌跡不再左右對稱——下降段比上升段陡、也比較久。這時射程最大的仰角會<strong>低於</strong> \(45^\circ\)，阻力越大偏離越多。（月球沒有大氣，在月球上開啟阻力只是假想比較。）</li>
+      </ul>
+
+      <h3>模擬方法</h3>
+      <ul>
+        <li>無阻力時，飛行時間、射程、最大高度與最佳仰角直接用上面的公式計算（解析解）。</li>
+        <li>有阻力時，以四階 Runge–Kutta 法（RK4）積分運動方程式，時間步長取理想飛行時間的千分之一（介於 0.1 ms 到 10 ms）；最後一步再用二分法找出 \(y = 0\) 的精確落地時刻，最高點則找 \(v_y = 0\) 的時刻。</li>
+        <li>有阻力時，射程最大的仰角以黃金分割搜尋在 \(0^\circ\)～\(90^\circ\) 之間找出。</li>
+        <li>動畫使用同一套 RK4 積分器逐格推進；在等加速度的情況下 RK4 沒有截斷誤差，所以無阻力的動畫會準確落在解析解預測的位置，力學能也保持不變。</li>
+        <li>物體視為質點，不考慮旋轉（馬格努斯效應）與風；\(g\) 視為定值。</li>
+      </ul>
+    </section>
+
+    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611110632"></script>
+  <script src="js/projectile-core.js?v=202611110632"></script>
+  <script src="js/projectile.js?v=202611110632"></script>
+  <script src="js/firebase-config.js?v=202611110632"></script>
+  <script src="js/stats.js?v=202611110632" data-module="projectile"></script>
+</body>
+</html>

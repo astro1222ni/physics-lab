@@ -6,7 +6,7 @@
   <title>Astro Ni 物理實驗室</title>
   <meta name="description" content="高中物理互動模擬：依力學、熱學、波動、光學、電磁學、近代物理分類，調整參數、觀察動畫，所有運算都在你的瀏覽器中完成。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110621">
+  <link rel="stylesheet" href="lab.css?v=202611110632">
 </head>
 <body>
   <div class="wrap">
@@ -32,16 +32,16 @@
         <p>運動學、牛頓運動定律、動量與能量、圓周運動、簡諧運動、萬有引力</p>
       </header>
       <div class="modules">
-        <div class="module soon">
-          <div class="module-meta"><span class="topic">運動學</span><span class="tag soon">規劃中</span></div>
+        <a class="module live" href="projectile.html" data-module="projectile">
+          <div class="module-meta"><span class="topic">運動學</span><span class="tag">已上線</span></div>
           <h3>拋體運動</h3>
           <p>調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。</p>
-        </div>
-        <div class="module soon">
-          <div class="module-meta"><span class="topic">動量與能量</span><span class="tag soon">規劃中</span></div>
+        </a>
+        <a class="module live" href="collision.html" data-module="collision">
+          <div class="module-meta"><span class="topic">動量與能量</span><span class="tag">已上線</span></div>
           <h3>一維碰撞</h3>
           <p>調整質量、初速度與恢復係數，觀察動量守恆，以及彈性與非彈性碰撞的動能變化。</p>
-        </div>
+        </a>
         <div class="module soon">
           <div class="module-meta"><span class="topic">圓周運動</span><span class="tag soon">規劃中</span></div>
           <h3>等速圓周運動</h3>
@@ -117,11 +117,11 @@
           <h3>透鏡與面鏡成像</h3>
           <p>拖曳物體位置，即時畫出主光線與像的位置、大小、正倒與虛實。</p>
         </div>
-        <div class="module soon">
-          <div class="module-meta"><span class="topic">物理光學</span><span class="tag soon">規劃中</span></div>
+        <a class="module live" href="slit-interference.html" data-module="slit-interference">
+          <div class="module-meta"><span class="topic">物理光學</span><span class="tag">已上線</span></div>
           <h3>雙狹縫干涉與單狹縫繞射</h3>
           <p>調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。</p>
-        </div>
+        </a>
       </div>
     </section>
 
@@ -147,11 +147,11 @@
           <h3>直流電路</h3>
           <p>組合電池與電阻的串並聯，即時顯示各支路的電流與電位差。</p>
         </div>
-        <div class="module soon">
-          <div class="module-meta"><span class="topic">電流的磁效應</span><span class="tag soon">規劃中</span></div>
+        <a class="module live" href="magnetic-particle.html" data-module="magnetic-particle">
+          <div class="module-meta"><span class="topic">電流的磁效應</span><span class="tag">已上線</span></div>
           <h3>帶電粒子在磁場中運動</h3>
           <p>調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。</p>
-        </div>
+        </a>
         <div class="module soon">
           <div class="module-meta"><span class="topic">電磁感應</span><span class="tag soon">規劃中</span></div>
           <h3>法拉第定律與冷次定律</h3>
@@ -190,7 +190,8 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110621"></script>
-  <script src="js/stats.js?v=202611110621" data-summary></script>
+  <script src="js/math.js?v=202611110632"></script>
+  <script src="js/firebase-config.js?v=202611110632"></script>
+  <script src="js/stats.js?v=202611110632" data-summary></script>
 </body>
 </html>

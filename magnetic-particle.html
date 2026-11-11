@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>帶電粒子在磁場中運動｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：調整電荷、質量、速度與磁場，觀察帶電粒子的圓周運動、半徑與週期、勞侖茲力，以及速度選擇器與 E×B 漂移。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611110632">
+  <style>
+    /* 圖例中的磁場符號（用 CSS 畫，不依賴字型） */
+    .legend .sym { display: inline-block; width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px; position: relative; }
+    .legend .sym.out { border: 1.5px solid var(--muted); border-radius: 50%; }
+    .legend .sym.out::after { content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: var(--muted); }
+    .legend .sym.in::before, .legend .sym.in::after { content: ""; position: absolute; left: 50%; top: 0; width: 1.5px; height: 100%; margin-left: -0.75px; background: var(--muted); }
+    .legend .sym.in::before { transform: rotate(45deg); }
+    .legend .sym.in::after { transform: rotate(-45deg); }
+    .legend .dash { background: none !important; border-top: 2px dashed var(--muted); height: 0 !important; }
+    .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .mp-help { font-size: 13px; color: var(--muted); margin: 0 0 8px; }
+    .mp-help strong { color: var(--text); font-weight: 600; }
+    .panel .btns button { min-height: 40px; }
+    .checks label { min-height: 32px; }
+    dl.readout dt { min-width: 0; }
+    dl.readout .hide { display: none; }
+    .readout-note { font-size: 12px; color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電流的磁效應</nav>
+      <h1>帶電粒子在磁場中運動</h1>
+      <p>調整電荷、質量、速度與磁場，按「發射」觀察粒子的圓周運動；再加上電場，做出速度選擇器與 E×B 漂移。點擊或拖曳畫布可改變出發點。</p>
+    </header>
+
+    <div class="lab">
+      <div class="stage">
+        <canvas id="cv" aria-label="帶電粒子在磁場中運動的模擬畫布"></canvas>
+        <div class="legend">
+          <span><i class="sym out"></i>B 射出紙面</span>
+          <span><i class="sym in"></i>B 射入紙面</span>
+          <span><i class="dot" style="background:var(--pos)"></i>正電荷</span>
+          <span><i class="dot" style="background:var(--neg)"></i>負電荷</span>
+          <span><i style="background:var(--probe)"></i>速度 v</span>
+          <span><i style="background:var(--equi)"></i>磁力 F（勞侖茲力）</span>
+          <span><i style="background:var(--field)"></i>電場 E、電力 qE</span>
+          <span><i class="dash"></i>圓軌道與圓心</span>
+        </div>
+        <p class="hint">時間以慢動作播放；畫面寬 24 cm。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2>情境</h2>
+          <div class="btns">
+            <button data-preset="circle">等速圓周運動</button>
+            <button data-preset="region">射入磁場區</button>
+            <button data-preset="selector">速度選擇器</button>
+            <button data-preset="drift">E×B 漂移</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>動畫</h2>
+          <div class="btns">
+            <button id="run" class="primary">發射</button>
+            <button id="reset">回到起點</button>
+          </div>
+          <div class="slider"><label for="speed">慢動作</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0" max="4" step="1" value="2"></div>
+          <div class="checks">
+            <label><input id="showTrail" type="checkbox" checked>軌跡</label>
+            <label><input id="showVec" type="checkbox" checked>速度與力的向量</label>
+            <label><input id="showOrbit" type="checkbox" checked>圓軌道與圓心</label>
+          </div>
+          <p class="status" id="status"></p>
+        </section>
+
+        <section class="card">
+          <h2>磁場（垂直紙面）</h2>
+          <div class="slider"><label for="B">磁場 B</label><output id="Bo"></output>
+            <input id="B" type="range" min="-200" max="200" step="5" value="100"></div>
+          <div class="checks">
+            <label><input id="region" type="checkbox">只有右半邊有場（場區）</label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>帶電粒子</h2>
+          <div class="slider"><label for="q">電荷 q</label><output id="qo"></output>
+            <input id="q" type="range" min="-3" max="3" step="1" value="2"></div>
+          <div class="slider"><label for="m">質量 m</label><output id="mo"></output>
+            <input id="m" type="range" min="1" max="40" step="1" value="4"></div>
+          <div class="slider"><label for="v">發射速率 v</label><output id="vo"></output>
+            <input id="v" type="range" min="0" max="5" step="0.1" value="3"></div>
+          <div class="slider"><label for="ang">發射方向（由 +x 軸逆時針）</label><output id="ango"></output>
+            <input id="ang" type="range" min="-180" max="180" step="5" value="0"></div>
+          <p class="mp-help">q 以基本電荷 e 為單位，m 以原子質量單位 u 為單位（質子約 1 u，α 粒子為 +2e、4 u）。</p>
+        </section>
+
+        <section class="card">
+          <h2>電場（垂直於發射方向）</h2>
+          <div class="slider"><label for="E">電場 E</label><output id="Eo"></output>
+            <input id="E" type="range" min="-100" max="100" step="0.5" value="0"></div>
+          <p class="mp-help">正值：E 指向「發射方向逆時針轉 90°」。<br><span id="selHint"></span></p>
+        </section>
+
+        <section class="card">
+          <h2>讀數</h2>
+          <dl class="readout">
+            <dt>半徑 r = mv/(|q|B)</dt><dd id="rR">—</dd>
+            <dt>週期 T = 2πm/(|q|B)</dt><dd id="rT">—</dd>
+            <dt>磁力 |F| = |q|vB</dt><dd id="rF">—</dd>
+            <dt class="eRow">電力 |q|E</dt><dd class="eRow" id="rFe">—</dd>
+            <dt class="eRow">漂移速度 E/B</dt><dd class="eRow" id="rVd">—</dd>
+            <dt>目前速率 v</dt><dd id="rv">—</dd>
+            <dt>動能 K</dt><dd id="rK">—</dd>
+            <dt>經過時間 t</dt><dd id="rt">—</dd>
+            <dt>速度方向轉過</dt><dd id="rTurn">—</dd>
+            <dt class="regRow">在場區內的時間</dt><dd class="regRow" id="rTf">—</dd>
+          </dl>
+          <p class="readout-note">r、T 依目前的滑桿設定計算；1 eV = 1.602 × 10<sup>−19</sup> J。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2>背後的物理</h2>
+      <p>帶電粒子在磁場中所受的磁力稱為<strong>勞侖茲力</strong>，方向由右手定則決定（負電荷相反）：</p>
+      <div class="formula">
+        \[ \vec F = q\,\vec v \times \vec B \qquad F = |q|\,vB\sin\theta \]
+      </div>
+      <p>本模擬的磁場垂直紙面、速度在紙面內（\(\theta = 90^\circ\)），所以磁力的大小固定為 \(|q|vB\)，方向永遠垂直於速度。磁力只改變速度的方向、不改變速率，因此<strong>磁力不做功，動能不變</strong>。這個「大小固定、永遠垂直於速度」的力，正好提供等速圓周運動的向心力：</p>
+      <div class="formula">
+        \[ |q|vB = \frac{mv^{2}}{r} \quad\Longrightarrow\quad r = \frac{mv}{|q|B} \]
+        \[ T = \frac{2\pi r}{v} = \frac{2\pi m}{|q|B} \qquad f = \frac{1}{T} = \frac{|q|B}{2\pi m} \]
+      </div>
+      <p>週期 \(T\) 與速率 \(v\) 無關：跑得快的粒子圓也比較大，繞一圈所需時間恰好相同（迴旋加速器就是利用這個性質）。</p>
+
+      <h3>速度選擇器</h3>
+      <p>再加上一個與 \(\vec v\)、\(\vec B\) 都垂直的電場，讓電力 \(q\vec E\) 與磁力 \(q\vec v\times\vec B\) 方向相反。兩力大小相等時合力為零，粒子直線前進：</p>
+      <div class="formula">
+        \[ |q|E = |q|vB \quad\Longrightarrow\quad v = \frac{E}{B} \]
+      </div>
+      <p>條件中沒有 \(q\) 和 \(m\)：只要速率剛好等於 \(E/B\)，不論正負電荷、質量多少都能直線通過；比較快的粒子磁力較大、比較慢的粒子電力較大，都會偏離。</p>
+
+      <h3>延伸：E×B 漂移</h3>
+      <p>速率不等於 \(E/B\) 時，粒子一邊繞圈、一邊以固定的速度沿 \(\vec E\times\vec B\) 方向前進（由靜止釋放時軌跡是擺線）：</p>
+      <div class="formula">
+        \[ \vec v_{d} = \frac{\vec E \times \vec B}{B^{2}} \qquad |\vec v_{d}| = \frac{E}{B} \]
+      </div>
+      <p>在以 \(\vec v_{d}\) 移動的座標系中看，電場的效果剛好被抵消，粒子只做半徑 \(m|\vec v - \vec v_{d}|/(|q|B)\) 的圓周運動。畫面上的虛線圓與圓心標記就是這個「導引中心」。</p>
+
+      <h3>觀察重點</h3>
+      <ul>
+        <li><strong>旋轉方向</strong>：磁場射出紙面時，正電荷<strong>順時針</strong>繞圈、負電荷逆時針。先用右手定則預測，再按「發射」驗證；把 B 改成射入紙面又如何？</li>
+        <li><strong>半徑</strong>：把 \(v\) 或 \(m\) 加倍、或把 \(|q|\) 或 \(B\) 加倍，半徑各變成幾倍？畫面上的 1 cm 方格可以直接量。</li>
+        <li><strong>週期與速率無關</strong>：改變發射速率，比較「經過時間」與「速度方向轉過的圈數」，算出週期是否改變。</li>
+        <li><strong>動能不變</strong>：純磁場中「目前速率」和「動能」始終不變；加上電場後動能就會改變，因為電力會做功。</li>
+        <li><strong>射入磁場區</strong>：垂直邊界射入的粒子走半圓，在距離入射點 \(2r\) 處反向射出，在場區內的時間是 \(T/2\)。質譜儀就是用 \(2r = 2mv/(|q|B)\) 來分辨不同質量的離子。</li>
+        <li><strong>速度選擇器</strong>：在「速度選擇器」情境中，只改 \(q\) 的正負或 \(m\)，粒子仍直線前進；只改 \(v\)，粒子就會偏轉。往哪一邊偏？</li>
+      </ul>
+
+      <h3>模擬方法與單位</h3>
+      <ul>
+        <li>使用真實的 SI 單位：電荷以基本電荷 \(e = 1.602\times 10^{-19}\ \mathrm{C}\) 為單位，質量以原子質量單位 \(1\ \mathrm{u} = 1.661\times 10^{-27}\ \mathrm{kg}\) 為單位，速率以 \(10^{5}\ \mathrm{m/s}\) 為單位，磁場以 \(\mathrm{mT}\)（\(10^{-3}\ \mathrm{T}\)）為單位。例如 α 粒子以 \(3\times 10^{5}\ \mathrm{m/s}\) 進入 \(0.1\ \mathrm{T}\) 的磁場，半徑約 \(6.2\ \mathrm{cm}\)、週期約 \(1.3\ \mu\mathrm{s}\)。</li>
+        <li>真實的運動只需百萬分之一秒，所以用慢動作播放：「慢動作」設定動畫中 1 秒對應的真實時間。</li>
+        <li>運動方程式 \(m\,\dfrac{d\vec v}{dt} = q(\vec E + \vec v\times\vec B)\) 以 <strong>Boris 法</strong>數值積分：每一小步先半個電場加速、再讓速度繞 \(\vec B\) 旋轉、最後再半個電場加速。純磁場時這一步是純旋轉，所以<strong>速率精確守恆</strong>，軌跡點也正好落在半徑 \(mv/(|q|B)\) 的圓上。</li>
+        <li>自適應步長：每一步速度方向最多轉 0.01 rad、位移不超過 0.01 cm；粒子跨越場區邊界時再把步長細分，讓進出場區的位置準確。</li>
+        <li>忽略重力（比磁力小好幾百萬倍以上）與粒子加速時的電磁輻射，也不考慮相對論效應（速率遠小於光速）。</li>
+      </ul>
+    </section>
+
+    <footer class="site"><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611110632"></script>
+  <script src="js/magnetic-particle-core.js?v=202611110632"></script>
+  <script src="js/magnetic-particle.js?v=202611110632"></script>
+  <script src="js/firebase-config.js?v=202611110632"></script>
+  <script src="js/stats.js?v=202611110632" data-module="magnetic-particle"></script>
+</body>
+</html>
