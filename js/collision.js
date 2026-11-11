@@ -615,14 +615,19 @@
     const sim = state.sim, u = sim.v1 - sim.v2;
     const eCm = 0.5 * CC.reducedMass(sim.m1, sim.m2) * u * u;
     const hard = Math.max(0, Math.min(1, Math.log10(1 + eCm) / Math.log10(1 + 150)));
-    const gain = 0.08 + 0.42 * hard;
+    const gain = 0.5 + 0.5 * hard; // 輕碰也聽得到，重撞最大聲
     const e = sim.e;
-    S.noise({ dur: 0.04 + 0.18 * (1 - e), gain: gain, filter: 300 + 2700 * e * e, q: 0.8 + 0.8 * e });
-    S.tone({ freq: 110 + 1000 * e, dur: 0.03 + 0.12 * (1 - e), type: e > 0.5 ? 'triangle' : 'sine', gain: gain * (0.25 + 0.25 * (1 - e)) });
+    // 撞擊的「噪音」成分：彈性 → 高頻清脆；非彈性 → 較低沉、較長（仍在小喇叭聽得到的範圍）
+    S.noise({ dur: 0.07 + 0.16 * (1 - e), gain: gain, filter: 900 + 3100 * e, q: 0.6 + 0.6 * e,
+      filterType: e < 0.4 ? 'lowpass' : 'bandpass' });
+    // 物體本身的「音高」成分：基音加一個泛音，讓小喇叭也能表現出低沉感
+    const f0 = 230 + 650 * e;
+    S.tone({ freq: f0, dur: 0.08 + 0.14 * (1 - e), type: 'triangle', gain: gain * 0.7 });
+    S.tone({ freq: f0 * 2.01, dur: 0.05 + 0.08 * (1 - e), type: 'sine', gain: gain * 0.35 });
   }
   function playSound() {
     const S = window.LabSound;
-    if (S && S.enabled()) S.tone({ freq: 660, dur: 0.07, gain: 0.08 });
+    if (S && S.enabled()) S.tone({ freq: 880, dur: 0.08, gain: 0.25 });
   }
 
   // ---------- 動畫 ----------

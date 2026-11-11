@@ -10,12 +10,13 @@
  *   LabSound.sweep({ from: 300, to: 900, dur: 0.25 })                 // 咻
  *   LabSound.enabled()  → 目前是否開啟
  * 所有函式在音效關閉時什麼都不做，可放心呼叫。
- * gain 是 0–1 的相對音量（最後還會乘上總音量 0.6，避免太大聲）。
+ * gain 是 0–1 的相對音量；輸出端有壓縮器避免爆音。
+ * 手機與平板的小喇叭幾乎播不出 200 Hz 以下的聲音，主要頻率請放在 250 Hz 以上。
  */
 (function () {
   'use strict';
 
-  const MASTER = 0.6;
+  const MASTER = 1.0;
   let ctx = null;
   let master = null;
 
@@ -29,9 +30,20 @@
     if (!AC) return null;
     if (!ctx) {
       ctx = new AC();
+      // 壓縮器：讓整體夠大聲，又不會在多個聲音疊加時爆音
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -12;
+      comp.knee.value = 8;
+      comp.ratio.value = 4;
+      comp.attack.value = 0.002;
+      comp.release.value = 0.15;
+      const makeup = ctx.createGain(); // 壓縮後補回音量（約 +7 dB），峰值仍低於 0 dBFS
+      makeup.gain.value = 2.2;
       master = ctx.createGain();
       master.gain.value = MASTER;
-      master.connect(ctx.destination);
+      master.connect(comp);
+      comp.connect(makeup);
+      makeup.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') ctx.resume();
     return ctx;
