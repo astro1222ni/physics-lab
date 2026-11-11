@@ -258,15 +258,15 @@
   }
 
   // ---------- 數字格式 ----------
-  const SUP = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
+  // 科學記號用 HTML <sup> 排版，不依賴特殊上標字元（部分裝置字型缺字）
   function sci(v, unit) {
     if (!isFinite(v)) return '—';
     const a = Math.abs(v);
     if (a === 0) return '0 ' + unit;
-    if (a >= 0.01 && a < 1e4) return Number(v.toPrecision(3)).toLocaleString('en-US') + ' ' + unit;
+    if (a >= 0.01 && a < 1e4) return Number(v.toPrecision(3)).toLocaleString('en-US').replace('-', '−') + ' ' + unit;
     const ex = Math.floor(Math.log10(a));
     const m = v / Math.pow(10, ex);
-    return m.toFixed(2) + ' × 10' + String(ex).split('').map(function (c) { return SUP[c]; }).join('') + ' ' + unit;
+    return m.toFixed(2).replace('-', '−') + ' × 10<sup>' + String(ex).replace('-', '−') + '</sup> ' + unit;
   }
   // 能量固定以 μJ、小數三位顯示，總能量守恆時數字才會「看得出」不變
   function fmtJ(j) {
@@ -279,7 +279,7 @@
   function updateReadout(e) {
     const pr = state.probe;
     const em = Math.hypot(e.ex, e.ey);
-    $('rE').textContent = sci(em, 'N/C');
+    $('rE').innerHTML = sci(em, 'N/C');
     if (em > 0 && isFinite(em)) {
       let deg = Math.atan2(e.ey, e.ex) * 180 / Math.PI;
       if (deg < 0) deg += 360;
@@ -287,10 +287,10 @@
     } else {
       $('rDir').textContent = '—';
     }
-    $('rV').textContent = sci(FC.potentialAt(state.charges, pr.x, pr.y), 'V');
-    $('rF').textContent = sci(Math.abs(pr.q) * FC.NC * em, 'N');
+    $('rV').innerHTML = sci(FC.potentialAt(state.charges, pr.x, pr.y), 'V');
+    $('rF').innerHTML = sci(Math.abs(pr.q) * FC.NC * em, 'N');
     const en = FC.energy(state.charges, pr);
-    $('rv').textContent = sci(Math.hypot(pr.vx, pr.vy) * 100, 'cm/s');
+    $('rv').innerHTML = sci(Math.hypot(pr.vx, pr.vy) * 100, 'cm/s');
     $('rK').textContent = fmtJ(en.K);
     $('rU').textContent = fmtJ(en.U);
     $('rT').textContent = fmtJ(en.total);
