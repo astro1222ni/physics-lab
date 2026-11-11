@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111128"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Radioactive Decay and Half-Life | Astro Ni Physics Lab">放射性衰變與半衰期｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：成千上萬個原子核隨機衰變，看出指數衰減曲線、半衰期與活度；比較真實核種（碘-131、碳-14、鈷-60…）、衰變鏈的暫態平衡，以及擲骰子的比喻。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111128">
+  <style>
+    /* 放射性衰變頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定（原子核方陣＋N(t) 圖＋活度圖）；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 460px; touch-action: auto; cursor: default; }
+    .rd button { min-height: 44px; }
+    .rd .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rd .playbar button { flex: 1 1 auto; }
+    .rd .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rd .stage .status { margin: 6px 4px 0; }
+    .rd .slider input[type="range"] { height: 28px; margin: 0; }
+    .rd .slider label sub, dl.readout sub { font-size: .75em; }
+    .rd [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 6px 0 6px; }
+    .seg2, .seg4 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    .seg2 button, .seg4 button { padding: 6px 4px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg2 .wide { grid-column: 1 / -1; }
+    .rd .checks label { min-height: 40px; }
+    .rd .checks input { width: 17px; height: 17px; }
+    .rd .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rd .info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); line-height: 1.55; }
+    .rd .info strong { color: var(--text); }
+    .rd .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .rd .row2 button { flex: 1 1 auto; }
+    .rd .verdict { margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); min-height: 1.4em; }
+    .rd .verdict.good { color: var(--probe); font-weight: 700; }
+    .rd .verdict.bad { color: var(--pos); }
+    #ro { grid-template-columns: minmax(0, 1fr) fit-content(58%); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend .bar { width: 8px; height: 12px; border-radius: 2px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Nuclear physics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 原子核</nav>
+      <h1 data-en="Radioactive Decay and Half-Life">放射性衰變與半衰期</h1>
+      <p data-en="Every radioactive nucleus decays at random: nobody can say when a particular nucleus will decay, yet a large group always loses half its members in the same time — the half-life. Watch thousands of nuclei decay, compare the count with the exponential law, listen to the Geiger counter, try real isotopes, a decay chain, and a table full of dice.">每個放射性原子核都是隨機衰變的：沒有人能預測某一個原子核何時衰變，但一大群原子核每經過固定的時間，總是剩下一半——這段時間就是半衰期。觀察成千上萬個原子核衰變，比較數量與指數衰減的理論，聽聽蓋革計數器的聲音，再試試真實核種、衰變鏈，以及一桌子的骰子。</p>
+    </header>
+
+    <div class="lab rd">
+      <div class="stage">
+        <canvas id="cv" aria-label="放射性衰變模擬畫布：左邊是原子核方陣，右邊是剩餘數量 N 對時間的圖與活度圖" data-en-aria-label="Radioactive decay simulation: a grid of nuclei, a graph of the number remaining against time, and an activity graph"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="roll" type="button" hidden data-en="Roll once">擲一次</button>
+          <button id="again" type="button" data-en="New run" title="保留這次的曲線（變淡），用同樣的設定重新開始" data-en-title="Keep this curve (faded) and start again with the same settings">新的一輪</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有保留的曲線與這一輪的資料，滑桿設定不變" data-en-title="Clear all kept curves and this run’s data; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span id="lgP" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-modern)&quot;></i>Undecayed nucleus"><i class="dot" style="background:var(--b-modern)"></i>未衰變的原子核</span>
+          <span id="lgD" hidden data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-optics)&quot;></i>Daughter nucleus (radioactive)"><i class="dot" style="background:var(--b-optics)"></i>子核（仍有放射性）</span>
+          <span id="lgS" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--muted)&quot;></i>Decayed"><i class="dot" style="background:var(--muted)"></i>已衰變</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Decay flash"><i class="dot" style="background:var(--equi)"></i>衰變閃光</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Theory"><i class="dash"></i>理論曲線</span>
+          <span data-en-html="<i class=&quot;bar&quot; style=&quot;background:var(--equi)&quot;></i>Measured activity"><i class="bar" style="background:var(--equi)"></i>實測活度</span>
+        </div>
+        <p class="hint" id="stageHint" data-en-html="Each dot is one nucleus. The graph shows the fraction still undecayed, N/N<sub>0</sub>, against time in half-lives; the faded curves are earlier runs. The activity bars are the average number of decays per unit time in each quarter of a half-life.">每個小球代表一個原子核。圖表的縱軸是尚未衰變的比例 N/N<sub>0</sub>，橫軸是經過幾個半衰期；變淡的曲線是先前幾輪的結果。活度長條是每 1/4 個半衰期內，平均每單位時間的衰變次數。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Sample">樣本</h2>
+          <div class="seg2" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" id="modeNuc" aria-pressed="true" data-en="Nuclei">原子核</button>
+            <button type="button" id="modeDice" aria-pressed="false" data-en="Dice analogy">骰子比喻</button>
+          </div>
+          <p class="seg-label" id="nLabel" data-en-html="Number at the start, N<sub>0</sub>:">開始時的數量 N<sub>0</sub>：</p>
+          <div class="seg4" role="group" aria-labelledby="nLabel" id="nSeg">
+            <button type="button" data-n="100" aria-pressed="false">100</button>
+            <button type="button" data-n="400" aria-pressed="false">400</button>
+            <button type="button" data-n="1600" aria-pressed="true">1600</button>
+            <button type="button" data-n="10000" aria-pressed="false">10000</button>
+          </div>
+          <p class="hint" data-en="Changing the number starts a new run; the old curve is kept, faded.">改變數量會開始新的一輪，舊的曲線會變淡保留。</p>
+        </section>
+
+        <section class="card" id="cardIso">
+          <h2 data-en="Isotope">核種</h2>
+          <div class="seg2" role="group" aria-label="核種" data-en-aria-label="Isotope" id="isoSeg">
+            <button type="button" data-p="custom" aria-pressed="true" data-en="Custom">自訂</button>
+            <button type="button" data-p="i131" aria-pressed="false" data-en="Iodine-131">碘-131</button>
+            <button type="button" data-p="c14" aria-pressed="false" data-en="Carbon-14">碳-14</button>
+            <button type="button" data-p="co60" aria-pressed="false" data-en="Cobalt-60">鈷-60</button>
+            <button type="button" data-p="rn222" aria-pressed="false" data-en="Radon-222">氡-222</button>
+            <button type="button" data-p="mo99" aria-pressed="false" data-en="Mo-99 → Tc-99m">鉬-99 → 鎝-99m</button>
+            <button type="button" data-p="mystery" aria-pressed="false" class="wide" data-en="Mystery nuclide (unknown half-life)">神秘核種（半衰期未知）</button>
+          </div>
+          <div id="boxCustom">
+            <div class="slider"><label for="th" data-en-html="Half-life T<sub>1/2</sub>">半衰期 T<sub>1/2</sub></label><output id="tho"></output>
+              <input id="th" type="range" min="0.5" max="20" step="0.1" value="3" data-decimals="2"></div>
+            <div class="checks"><label><input id="chain" type="checkbox"><span data-en="Decay chain: parent → daughter → stable">衰變鏈：母核 → 子核 → 穩定核</span></label></div>
+            <div class="slider" id="boxTh2" hidden><label for="th2" data-en-html="Daughter half-life T<sub>1/2</sub>′">子核半衰期 T<sub>1/2</sub>′</label><output id="th2o"></output>
+              <input id="th2" type="range" min="0.2" max="30" step="0.1" value="1" data-decimals="2"></div>
+          </div>
+          <p class="info" id="isoInfo"></p>
+        </section>
+
+        <section class="card" id="cardMystery" hidden>
+          <h2 data-en="Find the half-life">找出半衰期</h2>
+          <p class="hint" style="margin-top:0" data-en="The half-life is hidden. Run the experiment, then move the guess until the dotted curve follows the data, and submit. Only your first answer for each sample counts.">半衰期被隱藏了。先讓實驗跑一段時間，再調整猜測值，讓點線曲線貼合資料，然後提交。每個樣本只算第一次的答案。</p>
+          <div class="slider"><label for="guess" data-en-html="Your guess T<sub>1/2</sub>">猜測的 T<sub>1/2</sub></label><output id="guesso"></output>
+            <input id="guess" type="range" min="1" max="15" step="0.05" value="5" data-decimals="2"></div>
+          <div class="row2">
+            <button type="button" id="submit" data-en="Submit answer">提交答案</button>
+            <button type="button" id="newSample" data-en="New sample">換一個樣本</button>
+          </div>
+          <p class="verdict" id="verdict" aria-live="polite"></p>
+        </section>
+
+        <section class="card" id="cardDice" hidden>
+          <h2 data-en="Dice rules">骰子規則</h2>
+          <p class="hint" style="margin-top:0" data-en-html="Every roll, each die on the table is rolled once. A die that shows <strong>6</strong> “decays” and leaves the table. The chance is exactly 1/6 for every die on every roll, however long it has been on the table — just like a nucleus.">每一擲，桌上的每顆骰子都擲一次；擲出 <strong>6 點</strong>的骰子就「衰變」離開桌面。不論骰子已經在桌上多久，每一擲擲出 6 點的機率永遠是 1/6——就像原子核一樣。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Speed and display">速度與顯示</h2>
+          <div class="slider"><label for="spd" data-en="Playback speed">播放速度</label><output id="spdo"></output>
+            <input id="spd" type="range" min="-1" max="1" step="0.05" value="0"></div>
+          <div class="checks">
+            <label><input id="log" type="checkbox"><span data-en="Log scale">對數座標</span></label>
+            <label><input id="showTh" type="checkbox" checked><span data-en="Theory curve">理論曲線</span></label>
+            <label><input id="showMk" type="checkbox" checked><span data-en="Half-life markers">半衰期標記</span></label>
+          </div>
+          <p class="hint" data-en="Tap a number to type an exact value. On a log scale an exponential decay becomes a straight line.">點一下數字可直接輸入精確數值。在對數座標上，指數衰減會變成一條直線。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="An unstable nucleus can emit an α particle, a β particle or a γ ray and turn into another nucleus. The moment it does so is completely random: the nucleus has no memory, and in any short time \(\Delta t\) it decays with the same probability whatever its age. That probability is proportional to \(\Delta t\), with the <strong>decay constant</strong> \(\lambda\) as the constant of proportionality:">不穩定的原子核會放出 α 粒子、β 粒子或 γ 射線，變成另一種原子核。衰變的時刻完全隨機：原子核沒有「記憶」，不論它已經存在多久，在很短的時間 \(\Delta t\) 內衰變的機率都一樣，而且與 \(\Delta t\) 成正比，比例常數就是<strong>衰變常數</strong> \(\lambda\)：</p>
+      <div class="formula">
+        \[ P(\text{decay in } \Delta t) \approx \lambda\,\Delta t, \qquad \Delta N = -\lambda N\,\Delta t \;\;\Rightarrow\;\; \frac{dN}{dt} = -\lambda N \]
+      </div>
+      <p data-en-html="The solution is an exponential decay. After every <strong>half-life</strong> \(T_{1/2}\) the number left is halved:">解出來是指數衰減。每經過一個<strong>半衰期</strong> \(T_{1/2}\)，剩下的數量減半：</p>
+      <div class="formula">
+        \[ N(t) = N_0\, e^{-\lambda t} = N_0 \left(\tfrac{1}{2}\right)^{t/T_{1/2}}, \qquad T_{1/2} = \frac{\ln 2}{\lambda} \approx \frac{0.693}{\lambda} \]
+      </div>
+      <p data-en-html="The average lifetime of a nucleus is the <strong>mean life</strong> \(\tau\). After one mean life a fraction \(1/e \approx 36.8\%\) is left:">原子核平均能存在的時間稱為<strong>平均壽命</strong> \(\tau\)；經過一個平均壽命，剩下 \(1/e \approx 36.8\%\)：</p>
+      <div class="formula">
+        \[ \tau = \frac{1}{\lambda} = \frac{T_{1/2}}{\ln 2} \approx 1.44\,T_{1/2}, \qquad N(\tau) = \frac{N_0}{e} \]
+      </div>
+      <p data-en-html="The <strong>activity</strong> \(A\) is the number of decays per unit time — what a Geiger counter counts. It is proportional to the number of nuclei left, so it decays with the same half-life (SI unit: becquerel, \(1\ \mathrm{Bq} = 1\) decay per second):"><strong>活度</strong> \(A\) 是每單位時間的衰變次數，也就是蓋革計數器數到的次數。它與剩下的原子核數成正比，所以也以同樣的半衰期衰減（SI 單位：貝克，\(1\ \mathrm{Bq} = \) 每秒 1 次衰變）：</p>
+      <div class="formula">
+        \[ A = -\frac{dN}{dt} = \lambda N = A_0\, e^{-\lambda t} \]
+      </div>
+
+      <h3 data-en="Random, yet predictable">隨機，卻可以預測</h3>
+      <p data-en-html="The exponential law describes the <em>average</em>. In one run each nucleus survives a time \(t\) with probability \(p = e^{-\lambda t}\), so the number left follows a binomial distribution. Its spread grows only like \(\sqrt{N_0}\), so the <strong>relative</strong> fluctuation shrinks as \(1/\sqrt{N_0}\): 100 nuclei wander visibly around the curve, 10 000 follow it closely.">指數定律描述的是<em>平均</em>。在一次實驗中，每個原子核活過時間 \(t\) 的機率是 \(p = e^{-\lambda t}\)，剩下的數量服從二項分布。它的漲落只隨 \(\sqrt{N_0}\) 增加，所以<strong>相對</strong>漲落隨 \(1/\sqrt{N_0}\) 變小：100 個原子核會明顯在曲線附近亂跳，10 000 個則緊貼曲線。</p>
+      <div class="formula">
+        \[ \overline{N} = N_0\, p, \qquad \sigma_N = \sqrt{N_0\, p\,(1-p)}, \qquad \frac{\sigma_N}{\overline{N}} \propto \frac{1}{\sqrt{N_0}} \]
+      </div>
+      <p data-en-html="Taking logarithms gives a straight line, \(\ln N = \ln N_0 - \lambda t\): on a log scale the slope is \(-\lambda\). The simulation fits such a line to the data (weighting each point by \(N\)) to estimate the half-life.">取對數會得到直線 \(\ln N = \ln N_0 - \lambda t\)：在對數座標上斜率就是 \(-\lambda\)。模擬用這條直線擬合資料（每一點以 \(N\) 加權），估計半衰期。</p>
+
+      <h3 data-en="Decay chains">衰變鏈</h3>
+      <p data-en-html="Often the daughter nucleus is radioactive too: parent \(P \xrightarrow{\lambda_1} D \xrightarrow{\lambda_2} S\) (stable). The daughter is produced by the parent and removed by its own decay:">子核常常也有放射性：母核 \(P \xrightarrow{\lambda_1}\) 子核 \(D \xrightarrow{\lambda_2}\) 穩定核 \(S\)。子核一方面由母核產生，一方面自己衰變：</p>
+      <div class="formula">
+        \[ \frac{dP}{dt} = -\lambda_1 P, \qquad \frac{dD}{dt} = \lambda_1 P - \lambda_2 D, \qquad P + D + S = N_0 \]
+      </div>
+      <p data-en-html="With only parent nuclei at the start, the solution (Bateman’s equations) is">若一開始只有母核，解（Bateman 方程式）為</p>
+      <div class="formula">
+        \[ D(t) = N_0\,\frac{\lambda_1}{\lambda_2 - \lambda_1}\left(e^{-\lambda_1 t} - e^{-\lambda_2 t}\right), \qquad t_{\max} = \frac{\ln(\lambda_2/\lambda_1)}{\lambda_2 - \lambda_1} \]
+      </div>
+      <p data-en-html="The daughter builds up, peaks at \(t_{\max}\) and then dies away. If the daughter is shorter-lived (\(\lambda_2 > \lambda_1\)), after a while it decays as fast as it is produced and follows the parent with a fixed ratio — <strong>transient equilibrium</strong>. If \(\lambda_2 \gg \lambda_1\) the two activities become equal (<strong>secular equilibrium</strong>). (When \(\lambda_1 = \lambda_2 = \lambda\), \(D = N_0 \lambda t\, e^{-\lambda t}\).)">子核先累積、在 \(t_{\max}\) 達到最多，然後逐漸消失。如果子核比較短命（\(\lambda_2 > \lambda_1\)），一段時間後它衰變的速率追上產生的速率，以固定比例跟著母核一起衰減——這就是<strong>暫態平衡</strong>；若 \(\lambda_2 \gg \lambda_1\)，兩者的活度相等（<strong>長期平衡</strong>）。（\(\lambda_1 = \lambda_2 = \lambda\) 時，\(D = N_0 \lambda t\, e^{-\lambda t}\)。）</p>
+      <div class="formula">
+        \[ \frac{D}{P} \to \frac{\lambda_1}{\lambda_2 - \lambda_1} = \frac{T'_{1/2}}{T_{1/2} - T'_{1/2}}, \qquad \frac{A_D}{A_P} \to \frac{\lambda_2}{\lambda_2 - \lambda_1} \]
+      </div>
+      <p data-en-html="Hospitals use exactly this: a molybdenum-99 “generator” (\(T_{1/2} = 66\) h) keeps producing technetium-99m (\(T_{1/2} = 6.0\) h) for medical imaging, which is washed out once a day.">醫院正是利用這個現象：鉬-99「發生器」（半衰期 66 小時）不斷產生醫學造影用的鎝-99m（半衰期 6.0 小時），每天沖洗取出一次。</p>
+
+      <h3 data-en="The dice analogy">骰子比喻</h3>
+      <p data-en-html="Roll many dice and remove every die that shows a six. Each roll removes on average 1/6 of the dice on the table, so after \(n\) rolls">擲很多顆骰子，擲出 6 點的就拿走。每一擲平均拿走桌上的 1/6，所以擲 \(n\) 次後剩下</p>
+      <div class="formula">
+        \[ N_n = N_0 \left(\tfrac{5}{6}\right)^{n}, \qquad n_{1/2} = \frac{\ln 2}{\ln(6/5)} \approx 3.80 \text{ rolls} \]
+      </div>
+
+      <h3 data-en="The isotopes">核種資料</h3>
+      <ul>
+        <li data-en-html="<strong>Iodine-131</strong>: β<sup>−</sup> decay, \(T_{1/2} = 8.02\) days → xenon-131. Used to treat thyroid disease; released in reactor accidents."><strong>碘-131</strong>：β<sup>−</sup> 衰變，\(T_{1/2} = 8.02\) 天 → 氙-131。用於治療甲狀腺疾病，也是核電事故的主要放射性物質之一。</li>
+        <li data-en-html="<strong>Carbon-14</strong>: β<sup>−</sup> decay, \(T_{1/2} = 5730\) years → nitrogen-14. Living things keep a constant fraction of C-14; after death it decays — radiocarbon dating."><strong>碳-14</strong>：β<sup>−</sup> 衰變，\(T_{1/2} = 5730\) 年 → 氮-14。生物活著時體內碳-14 比例固定，死後開始衰減，可用來推算年代（碳十四定年）。</li>
+        <li data-en-html="<strong>Cobalt-60</strong>: β<sup>−</sup> decay with γ rays, \(T_{1/2} = 5.27\) years → nickel-60. Used in radiotherapy and to sterilise medical equipment."><strong>鈷-60</strong>：β<sup>−</sup> 衰變並放出 γ 射線，\(T_{1/2} = 5.27\) 年 → 鎳-60。用於放射治療與醫療器材滅菌。</li>
+        <li data-en-html="<strong>Radon-222</strong>: α decay, \(T_{1/2} = 3.82\) days → polonium-218. A gas that seeps from rocks into buildings. (Its daughters are radioactive too; here only the radon itself is counted.)"><strong>氡-222</strong>：α 衰變，\(T_{1/2} = 3.82\) 天 → 釙-218。會從岩石滲入室內的放射性氣體（它的子核也有放射性，這裡只計算氡本身）。</li>
+        <li data-en-html="<strong>Molybdenum-99 → technetium-99m</strong>: \(T_{1/2} = 65.94\) h and \(6.01\) h. The technetium-99m becomes technetium-99, whose half-life (about 211 000 years) is so long that it is counted as stable here."><strong>鉬-99 → 鎝-99m</strong>：半衰期分別為 \(65.94\) 小時與 \(6.01\) 小時。鎝-99m 衰變成鎝-99，鎝-99 的半衰期約 21 萬年，這裡視為穩定核。</li>
+      </ul>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Small and large samples</strong>: run 100 nuclei several times (press “New run”), then 10 000. The faded curves of 100 nuclei scatter widely; those of 10 000 lie almost on the theory curve."><strong>樣本大小</strong>：用 100 個原子核跑幾輪（按「新的一輪」），再用 10 000 個跑。100 個的舊曲線散得很開，10 000 個的幾乎都落在理論曲線上。</li>
+        <li data-en-html="<strong>The half-life does not depend on how many are left</strong>: from 1 to 1/2, from 1/2 to 1/4, from 1/4 to 1/8 — each takes one half-life. Turn on the markers and check."><strong>半衰期與剩下多少無關</strong>：從 1 到 1/2、從 1/2 到 1/4、從 1/4 到 1/8，每一段都花一個半衰期。打開半衰期標記比對看看。</li>
+        <li data-en-html="<strong>Log scale</strong>: the curve becomes a straight line until only a few nuclei are left, where it becomes ragged."><strong>對數座標</strong>：曲線變成直線；直到只剩下少數幾個原子核時才變得參差不齊。</li>
+        <li data-en-html="<strong>Listen</strong>: with the sound on, every decay is a click. The clicks come at random — never evenly spaced — and become rarer as the sample decays."><strong>聽聲音</strong>：打開音效，每一次衰變就是一聲「喀」。聲音的間隔是隨機的，從不規律；樣本越衰變，聲音越稀疏。</li>
+        <li data-en-html="<strong>Real isotopes</strong>: iodine-131 and carbon-14 behave exactly alike on the graph — only the time scale differs, by a factor of about 260 000."><strong>真實核種</strong>：碘-131 和碳-14 在圖上的行為一模一樣，只是時間尺度相差約 26 萬倍。</li>
+        <li data-en-html="<strong>Decay chain</strong>: choose Mo-99 → Tc-99m. The daughter (purple) builds up, peaks and then decays in step with the parent: on the log scale the two lines become parallel (transient equilibrium)."><strong>衰變鏈</strong>：選鉬-99 → 鎝-99m。子核（紫色）先累積、達到最多，然後與母核同步衰減；在對數座標上兩條線變成平行（暫態平衡）。</li>
+        <li data-en-html="<strong>Long-lived daughter</strong>: in a custom chain make the daughter’s half-life longer than the parent’s. There is no equilibrium; the daughter outlives the parent."><strong>長命的子核</strong>：在自訂的衰變鏈中，讓子核的半衰期比母核長：沒有平衡，子核會比母核活得更久。</li>
+        <li data-en-html="<strong>Dice</strong>: roll 10 000 dice. About half are gone after 3.8 rolls on average, even though no die “knows” how long it has been on the table."><strong>骰子</strong>：擲 10 000 顆骰子，平均約 3.8 擲後剩下一半，雖然沒有一顆骰子「知道」自己在桌上待了多久。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Every nucleus is simulated individually. In each animation step of length \(\Delta t\) an undecayed nucleus decays with the exact probability \(1 - e^{-\lambda \Delta t}\) (not the approximation \(\lambda\Delta t\)), so the statistics are exactly those of continuous exponential decay whatever the step size — two half-steps are equivalent to one full step.">每個原子核都個別模擬。在每一個長度為 \(\Delta t\) 的動畫步驟中，未衰變的原子核以精確的機率 \(1 - e^{-\lambda \Delta t}\) 衰變（不是近似的 \(\lambda\Delta t\)），所以不論步長多大，統計性質都與連續時間的指數衰變完全相同——兩個半步等於一個整步。</li>
+        <li data-en-html="In a decay chain each step uses the exact transition probabilities, including a parent that becomes a daughter and decays again within the same step; on average this reproduces the Bateman solution, and \(P + D + S = N_0\) at every step.">衰變鏈的每一步也使用精確的轉移機率（包括同一步內母核變成子核、子核又再衰變的情形），平均起來正好是 Bateman 解，而且每一步都保持 \(P + D + S = N_0\)。</li>
+        <li data-en="Random numbers come from a seedable generator (each run gets a new seed), so the physics core can be tested with reproducible results.">亂數由可設定種子的產生器產生（每一輪換一個新種子），物理核心因此能用可重現的結果做測試。</li>
+        <li data-en="Real half-lives are scaled so that one half-life of the parent lasts 4 seconds of animation at 1× speed; the readings show the real time. For a custom nuclide one second of simulation is one real second at 1×.">真實核種的半衰期經過縮放：在 1× 速度下，母核一個半衰期相當於動畫 4 秒，讀數顯示真實的時間。自訂核種在 1× 速度下，模擬的 1 秒就是真實的 1 秒。</li>
+        <li data-en="With the sound on, each decay produces one click at its own random moment. When decays become too frequent to hear separately, a random fraction of them is played (the status line says how many), which keeps the clicks random.">開啟音效時，每次衰變在它自己的隨機時刻發出一聲。衰變太頻繁、聽不出個別聲音時，會隨機抽出一部分播放（狀態列會說明比例），聲音仍然保持隨機。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111128"></script>
+  <script src="js/radioactive-decay-core.js?v=202611111128"></script>
+  <script src="js/sound.js?v=202611111128"></script>
+  <script src="js/numinput.js?v=202611111128"></script>
+  <script src="js/radioactive-decay.js?v=202611111128"></script>
+  <script src="js/firebase-config.js?v=202611111128"></script>
+  <script src="js/missions.js?v=202611111128" data-module="radioactive-decay"></script>
+  <script src="js/missions/radioactive-decay.js?v=202611111128"></script>
+  <script src="js/stats.js?v=202611111128" data-module="radioactive-decay"></script>
+  <script src="js/comments.js?v=202611111128"></script>
+</body>
+</html>

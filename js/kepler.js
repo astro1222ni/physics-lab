@@ -986,12 +986,31 @@
       (closed ? T('；總和 = πab = ', '; sum = πab = ') + num(K.ellipseArea(el) / areaUnit(), d) + ' ' + unit : ''));
   }
 
+  // 畫含上標的文字：'10^8' 的 8 畫成小字上標（不使用部分 Android 字型缺字的 Unicode 上標數字）
+  function fillSup(c, text, x, y, align) {
+    const parts = String(text).split(/\^(-?\d+)/); // 偶數索引為一般文字，奇數索引為上標
+    const base = c.font, m = base.match(/(\d+(?:\.\d+)?)px/), px = m ? +m[1] : 12;
+    const small = base.replace(/(\d+(?:\.\d+)?)px/, (px * 0.72).toFixed(1) + 'px');
+    let width = 0;
+    parts.forEach(function (p, i) { c.font = i % 2 ? small : base; width += c.measureText(p).width; });
+    const keep = c.textAlign;
+    let cx = align === 'right' ? x - width : x;
+    c.textAlign = 'left';
+    const lift = (c.textBaseline === 'top' ? 0.1 : 0.38) * px;
+    parts.forEach(function (p, i) {
+      c.font = i % 2 ? small : base;
+      c.fillText(p, cx, i % 2 ? y - lift : y);
+      cx += c.measureText(p).width;
+    });
+    c.font = base; c.textAlign = keep;
+  }
+
   // ---------- 第三定律：紀錄表與 T²–a³ 圖 ----------
   function k3Units() {
     // 太陽：T 用年、a 用 AU；地球：T² 用 10^8 s²、a³ 用 10^21 m³（比值 = 10^13 s²/m³）
     return isSun()
       ? { x: function (a) { return Math.pow(a / K.AU, 3); }, y: function (t) { return Math.pow(t / K.YEAR, 2); }, xl: 'a³ (AU³)', yl: 'T² (yr²)' }
-      : { x: function (a) { return Math.pow(a, 3) / 1e21; }, y: function (t) { return t * t / 1e8; }, xl: 'a³ (10²¹ m³)', yl: 'T² (10⁸ s²)' };
+      : { x: function (a) { return Math.pow(a, 3) / 1e21; }, y: function (t) { return t * t / 1e8; }, xl: 'a³ (10^21 m³)', yl: 'T² (10^8 s²)' };
   }
   function ratioHTML(Tp, a) {
     const r = Tp * Tp / (a * a * a);
@@ -1066,9 +1085,9 @@
     c.font = '600 12px system-ui, sans-serif';
     c.fillStyle = colors.muted;
     c.textAlign = 'right'; c.textBaseline = 'bottom';
-    c.fillText(U.xl, w - padR, h - 2);
+    fillSup(c, U.xl, w - padR, h - 2, 'right');
     c.textAlign = 'left'; c.textBaseline = 'top';
-    c.fillText(U.yl, padL + 4, 2);
+    fillSup(c, U.yl, padL + 4, 2, 'left');
     // 直線：目前質量（虛線）與紀錄中的各質量
     c.save();
     c.beginPath(); c.rect(padL, padT, w - padL - padR, h - padT - padB); c.clip();
