@@ -8,7 +8,8 @@ window.LAB_MISSION_MODULES = [
   { id: 'doppler', zh: '都卜勒效應', en: 'The Doppler Effect' },
   { id: 'standing-waves', zh: '繩波的反射與駐波', en: 'Reflection of Waves on a String and Standing Waves' },
   { id: 'capacitor', zh: '平行板電容器', en: 'Parallel-Plate Capacitor' },
-  { id: 'kepler', zh: '行星軌道與克卜勒定律', en: "Planetary Orbits and Kepler's Laws" }
+  { id: 'kepler', zh: '行星軌道與克卜勒定律', en: "Planetary Orbits and Kepler's Laws" },
+  { id: 'collision', zh: '一維碰撞', en: 'Collisions in One Dimension' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */

@@ -350,7 +350,7 @@
         head.appendChild(el('strong', 'ms-title', m.hidden ? T('隱藏任務', 'Hidden mission') : L(m.title)));
         if (state.done[m.id]) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
         li.appendChild(head);
-        li.appendChild(el('p', 'ms-desc', m.hidden ? '「' + L(m.riddle) + '」' : L(m.desc)));
+        li.appendChild(el('p', 'ms-desc', m.hidden ? T('「', '“') + L(m.riddle) + T('」', '”') : L(m.desc)));
         ol.appendChild(li);
       });
       det.appendChild(ol);

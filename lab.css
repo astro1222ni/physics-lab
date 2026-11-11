@@ -644,7 +644,8 @@ html.lab-converting body { visibility: hidden; }
 .ac-toast .ac-tx span { color: var(--text); font-weight: 600; }
 @keyframes ac-in { from { opacity: 0; transform: translateY(20px) scale(.9); } }
 @media (prefers-reduced-motion: reduce) { .ac-toast { animation: none; } }
-.tier5 .ac-ico { background: conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b5de5, #ff6b6b); box-shadow: 0 0 10px rgba(155, 93, 229, .55); }
+.tier5 .ac-ico { background: radial-gradient(circle at 35% 30%, #f2ffff, #4fc3d9 55%, #1b7f9a); box-shadow: 0 0 8px rgba(79, 195, 217, .55); }
+.tier6 .ac-ico { background: conic-gradient(from 0deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #9b5de5, #ff6b6b); box-shadow: 0 0 10px rgba(155, 93, 229, .55); }
 .ac-cat { margin-top: 14px; }
 .ac-cat h3 { font-size: calc(15px * var(--fs, 1)); margin: 0 0 8px; color: var(--accent); font-variant-numeric: tabular-nums; }
 .ac-bar { display: block; height: 6px; margin-top: 4px; border-radius: 99px; background: var(--border); overflow: hidden; }
@@ -654,3 +655,14 @@ html.lab-converting body { visibility: hidden; }
 .ac-card { filter: grayscale(.9); }
 .ac-card.on { filter: none; }
 .lab-account-link { display: flex; align-items: center; min-height: 42px; padding: 0 12px; border-radius: 8px; font-weight: 700; text-decoration: none; color: var(--text); background: var(--star-soft); border: 1px solid var(--star); }
+
+.ac-series { align-items: flex-start; }
+.ac-lv { font-size: calc(13px * var(--fs, 1)); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ac-tx .ac-title { color: var(--text); font-weight: 700; }
+.ac-tx .ac-next { font-size: calc(12px * var(--fs, 1)); }
+.ac-titles { margin-top: 4px; font-size: calc(12px * var(--fs, 1)); }
+.ac-titles > summary { cursor: pointer; color: var(--accent); }
+.ac-titles ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+.ac-titles li { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ac-titles li.got { color: var(--text); font-weight: 700; }
+.ac-titles li.got::before { content: "✓ "; color: var(--star); }

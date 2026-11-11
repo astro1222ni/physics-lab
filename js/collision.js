@@ -1318,6 +1318,8 @@
     if (prevT < state.sim.tc && state.t >= state.sim.tc) {
       if (state.sim.spring) springSound(); else impactSound();
     }
+    // 任務模式：動畫時間跨過「碰撞結束」（沒有彈簧時即碰撞瞬間；有彈簧時為分開瞬間）時回報一次
+    if (prevT < state.sim.tr && state.t >= state.sim.tr) emitCollision();
     const st = CC.stateAt(state.sim, state.t);
     if (state.t >= state.tEnd || (state.t > state.sim.tr && offscreen(st)) || (!isFinite(state.sim.tc) && offscreen(st))) {
       state.running = false;
@@ -1326,6 +1328,20 @@
     updatePlayButton();
     draw();
     if (state.running) requestAnimationFrame(tick);
+  }
+  /** 任務模式（missions.js）：回報這次碰撞的完整結果（全部取自物理核心的解析解） */
+  function emitCollision() {
+    if (!window.LabMission) return;
+    const sim = state.sim, s = state.sum, c = sim.contact, p = state.p;
+    window.LabMission.emit('collision', {
+      m1: sim.m1, m2: sim.m2, v1: sim.v1, v2: sim.v2, e: sim.e, eSet: p.e,
+      spring: sim.spring, k: sim.k,
+      v1f: sim.after.v1, v2f: sim.after.v2, vcm: s.vcm,
+      p: s.before.p, pAfter: s.after.p, K: s.before.K, KAfter: s.after.K,
+      lost: s.lost, lostFrac: s.before.K > 0 ? s.lost / s.before.K : 0, eMeasured: s.eMeasured,
+      cmFrame: state.cmFrame, slow: state.slow,
+      dt: c ? c.dt : null, xmax: c ? c.xmax : null, Fmax: c ? c.Fmax : null, J: c ? c.J : null, Umax: c ? c.Umax : null
+    });
   }
   function updatePlayButton() {
     $('play').textContent = state.running ? T('暫停', 'Pause') : state.ended ? T('重新播放', 'Replay') : state.t > 0 ? T('繼續', 'Resume') : T('播放', 'Play');
