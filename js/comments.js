@@ -72,7 +72,7 @@
           const u = {};
           u['comments/' + mod + '/' + key] = { uid: uid, nickname: nickname, text: text, createdAt: D.serverTimestamp() };
           u['rateLimit/' + uid] = D.serverTimestamp();
-          return D.update(r(''), u);
+          return D.update(D.ref(db), u); // 根節點：ref(db) 不能寫成 ref(db, '')
         },
         remove: function (mod, id) { return D.remove(r('comments/' + mod + '/' + id)); },
         report: function (mod, id, uid) { return D.set(r('reports/' + mod + '/' + id + '/' + uid), true); }
@@ -108,6 +108,7 @@
     if (/PERMISSION_DENIED|permission/i.test(c)) return t('送出失敗：留言太頻繁（請隔 20 秒），或內容不符合規定。', 'Could not post: please wait 20 seconds between comments, or check the content.');
     if (/popup-closed|cancelled-popup/.test(c)) return t('已取消登入。', 'Sign-in cancelled.');
     if (/unauthorized-domain/.test(c)) return t('這個網址尚未獲准使用登入，請聯絡網站管理者。', 'Sign-in is not enabled for this address yet.');
+    if (/timeout/.test(c)) return t('伺服器沒有回應，請檢查網路後再試一次。', 'The server did not respond — check your connection and try again.');
     if (/network/i.test(c)) return t('網路連線有問題，請稍後再試。', 'Network problem — please try again.');
     return t('發生錯誤，請稍後再試。', 'Something went wrong — please try again.');
   }
@@ -118,6 +119,14 @@
   let api = null;
   const listeners = [];
   function changed() { listeners.forEach(function (f) { f(); }); }
+
+  // 把可能同步丟出錯誤的呼叫包成 Promise，並加上逾時，避免畫面卡住
+  function guard(fn, ms) {
+    return new Promise(function (resolve, reject) {
+      const timer = setTimeout(function () { reject({ code: 'timeout' }); }, ms || 15000);
+      Promise.resolve().then(fn).then(function (v) { clearTimeout(timer); resolve(v); }, function (e) { clearTimeout(timer); reject(e); });
+    });
+  }
 
   function signIn() {
     state.msg = '';
@@ -188,7 +197,7 @@
   function saveNickname(n) {
     n = cleanNick(n);
     if (!n) return Promise.resolve();
-    return api.setNickname(state.user.uid, n).then(function () {
+    return guard(function () { return api.setNickname(state.user.uid, n); }).then(function () {
       state.nickname = n;
       state.editingNick = false;
       state.msg = '';
@@ -295,7 +304,7 @@
         state.busy = true;
         state.msg = '';
         changed();
-        api.post(moduleId, state.user.uid, state.nickname, text).then(function () {
+        guard(function () { return api.post(moduleId, state.user.uid, state.nickname, text); }).then(function () {
           draft = '';
           state.busy = false;
           lastComposeKey = '';
@@ -341,14 +350,14 @@
         if (me && (c.uid === me || state.admin)) {
           acts.appendChild(button(t('刪除', 'Delete'), 'c-link', function () {
             if (!window.confirm(t('確定要刪除這則留言嗎？', 'Delete this comment?'))) return;
-            api.remove(moduleId, c.id).catch(function (e) { state.msg = errText(e); changed(); });
+            guard(function () { return api.remove(moduleId, c.id); }).catch(function (e) { state.msg = errText(e); changed(); });
           }));
         }
         if (me && c.uid !== me) {
           if (reps[me]) acts.appendChild(el('span', 'c-done', t('已檢舉', 'Reported')));
           else acts.appendChild(button(t('檢舉', 'Report'), 'c-link', function () {
             if (!window.confirm(t('這則留言不當嗎？檢舉後，若有多人檢舉會自動隱藏。', 'Report this comment as inappropriate? It is hidden automatically after several reports.'))) return;
-            api.report(moduleId, c.id, me).catch(function (e) { state.msg = errText(e); changed(); });
+            guard(function () { return api.report(moduleId, c.id, me); }).catch(function (e) { state.msg = errText(e); changed(); });
           }));
         }
         if (acts.childNodes.length) li.appendChild(acts);
