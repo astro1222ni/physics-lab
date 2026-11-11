@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Physics Lab">等位線與電場（導電紙實驗）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用探針與三用電表（或檢流計零位法）在導電紙上找等電位點、描等位線，畫出垂直的電力線，由 ΔV/Δd 估算電場，還能看 3D 電位地形。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/equipotential.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/equipotential.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/equipotential.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/equipotential.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="等位線與電場（導電紙實驗）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用探針與三用電表（或檢流計零位法）在導電紙上找等電位點、描等位線，畫出垂直的電力線，由 ΔV/Δd 估算電場，還能看 3D 電位地形。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/equipotential.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/equipotential.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="等位線與電場（導電紙實驗）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"等位線與電場（導電紙實驗）","alternateName":"Equipotential Lines and the Electric Field (Conducting Paper)","description":"用探針與三用電表（或檢流計零位法）在導電紙上找等電位點、描等位線，畫出垂直的電力線，由 ΔV/Δd 估算電場，還能看 3D 電位地形。","url":"https://astro1222ni.github.io/physics-lab/equipotential.html","image":"https://astro1222ni.github.io/physics-lab/img/og/equipotential.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","靜電學（Electrostatics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
+    .eq #cv:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 4px var(--accent); }
+    .eq + .eq { margin-top: 16px; }
+    .eq button { min-height: 44px; }
+    .eq [hidden] { display: none !important; }
+    .eq button:disabled { opacity: .45; cursor: not-allowed; }
+    .eq .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .eq .playbar > button { flex: 1 1 auto; }
+    .eq .playbar #rec { font-weight: 700; min-width: 7em; flex-grow: 2; }
+    .eq .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .eq .stage .status { margin: 6px 4px 0; }
+    .eq .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .eq .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 6px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg2 button, .seg3 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .eq .slider input[type="range"] { height: 28px; margin: 0; }
+    .eq .slider label sub, dl.readout sub, .eq .hint sub, table.data sub { font-size: .75em; }
+    .eq .checks label { min-height: 44px; }
+    .eq .checks input { width: 17px; height: 17px; flex: none; }
+    .eq .checks.col { flex-direction: column; gap: 0; }
+    .eq .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .eq .card .btns { margin-top: 8px; }
+    .eq .card .btns button { flex: 1 1 auto; }
+    .eq dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(18px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+    dl.readout dd.note { color: var(--muted); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.warn { color: var(--pos); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.ok { color: var(--probe); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    #power[aria-pressed="true"] { background: var(--probe); border-color: var(--probe); color: var(--surface); font-weight: 700; }
+    #power { font-weight: 700; width: 100%; margin-top: 4px; }
+    /* 探針微調方向鍵 */
+    .nudge { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+    .nudge button { padding: 4px; font-size: calc(18px * var(--fs, 1)); line-height: 1; }
+    /* 步驟清單 */
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 4px 5px 34px; border-radius: 8px; color: var(--muted); line-height: 1.45; }
+    ol.steps li::before { content: counter(st); position: absolute; left: 6px; top: 5px; width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border); text-align: center; line-height: 18px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); background: var(--surface); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; border-color: var(--probe); color: var(--probe); }
+    ol.steps li.now { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    ol.steps li.now::before { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+    /* 數據表 */
+    .tablewrap { overflow-x: auto; margin: 8px 2px 0; max-height: 460px; overflow-y: auto; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 7px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; line-height: 1.35; }
+    table.data thead th { position: sticky; top: 0; color: var(--muted); font-weight: 600; background: var(--surface); text-align: center; z-index: 1; }
+    table.data thead th small { font-weight: 500; font-size: .85em; display: block; }
+    table.data td.g { text-align: left; font-weight: 600; }
+    table.data td.g i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 25%, transparent); }
+    table.data tr.latest > * { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); padding: 12px; white-space: normal; }
+    .tsum { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    /* 圖例 */
+    .legend .lg-mark i { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(90deg, var(--neg), var(--pos)); }
+    .legend .lg-eq i { height: 3px; background: linear-gradient(90deg, var(--neg), var(--muted), var(--pos)); }
+    .legend .lg-fl i { background: var(--field); }
+    .legend .lg-th i { background: repeating-linear-gradient(90deg, var(--equi) 0 3px, transparent 3px 6px); }
+    .legend .lg-st i { background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 9px); }
+    .legend .lg-surf i { width: 30px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, var(--neg), var(--muted), var(--pos)); }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 2px 0; }
+    .notes .q li { margin: 6px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / <a href=&quot;index.html#ch-electrostatics&quot;>Electrostatics</a>"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ <a href="index.html#ch-electrostatics">靜電學</a></nav>
+      <h1 data-en="Equipotential Lines and the Electric Field (Conducting Paper)">等位線與電場（導電紙實驗）</h1>
+      <p data-en="The textbook experiment: a DC supply drives a steady current through a sheet of carbon conducting paper between two silver electrodes. Touch the paper with two probes connected to a multimeter or a galvanometer, find the points where the meter reads zero (or a chosen voltage), press “Record”, and trace the equipotential lines. Then draw the field lines at right angles to them, estimate E = ΔV/Δd and compare it with the computed field. Switch to 3D to see the potential as a landscape.">課本的必做實驗：直流電源讓穩定電流流過碳質導電紙上的兩個銀電極之間。用接著三用電表或檢流計的兩支探針輕觸紙面，找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫出與等位線垂直的電力線，由 E = ΔV/Δd 估算電場，與程式算出的電場比較。切換到 3D 可以看到電位像一片起伏的地形。</p>
+    </header>
+
+    <!-- 第一部分：實驗桌（導電紙、電極、探針、電源與電表） -->
+    <div class="lab eq">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D lab bench">2D 實驗桌</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D potential landscape">3D 電位地形</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動，方向鍵微調，Enter 記錄" data-en-aria-label="Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it, use the arrow keys to fine-tune and Enter to record"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
+          <button id="undo" type="button" data-en="Delete last point">刪除最後一點</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除所有方格紙上的記錄點、等位線、電力線與估算結果；電極與電表設定不變" data-en-title="Clear all recorded points, lines and estimates on every sheet; the electrode and meter settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="lg-mark" data-en-html="<i></i>Recorded points"><i></i>記錄點</span>
+          <span class="lg-eq" data-en-html="<i></i>Measured equipotentials"><i></i>量到的等位線</span>
+          <span class="lg-fl" data-en-html="<i></i>Field lines drawn from them"><i></i>依等位線畫的電力線</span>
+          <span class="lg-th" data-en-html="<i></i>Computed equipotentials"><i></i>計算的等位線</span>
+          <span class="lg-st" data-en-html="<i></i>Computed current lines"><i></i>計算的電流線</span>
+          <span class="lg-surf l3" data-en-html="<i></i>Height = potential (blue: low, red: high)"><i></i>高度＝電位（藍低、紅高）</span>
+        </div>
+        <p class="hint l2" data-en="Top view, drawn to scale: the paper is 30 cm × 20 cm with a 1 cm grid (the real carbon paper is black; it is drawn light here so the marks stand out). Drag a probe — or tap the paper to move the selected probe there. Turn on “fine drag” or use the arrow buttons for small steps.">俯視圖，依比例繪製：導電紙 30 cm × 20 cm，方格 1 cm（真實的碳質紙是黑色的，這裡畫成淺色以便看清記號）。拖曳探針，或點一下紙面把「選取的探針」移過去；打開「精細拖曳」或用方向鍵可以小步移動。</p>
+        <p class="hint l3" data-en="Height of the surface = potential at that point of the paper (same solution as the 2D view). Drag to rotate, pinch or scroll to zoom. Current flows straight “downhill”, along the steepest slope — that is why the field lines cross the equipotentials at right angles.">曲面的高度＝導電紙上該點的電位（與 2D 用同一個數值解）。拖曳旋轉，雙指或滾輪縮放。電流沿著「最陡的下坡」流，所以電力線與等位線（等高線）垂直。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps"></ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Electrodes and power supply">電極與電源</h2>
+          <div class="seg3" role="group" aria-label="電極形狀" data-en-aria-label="Electrode shape">
+            <button type="button" data-type="circles" aria-pressed="true" data-en="Two circles">兩圓形電極</button>
+            <button type="button" data-type="bars" aria-pressed="false" data-en="Parallel bars">平行長條</button>
+            <button type="button" data-type="barCircle" aria-pressed="false" data-en="Bar and circle">長條與圓形</button>
+          </div>
+          <div class="slider"><label for="d" id="dLabel">電極間距 d</label><output id="do"></output>
+            <input id="d" type="range" min="4" max="26" step="0.5" value="14" data-decimals="1"></div>
+          <div class="slider" id="boxA"><label for="a" data-en="Radius of the circular electrode a">圓形電極半徑 a</label><output id="ao"></output>
+            <input id="a" type="range" min="0.3" max="1.5" step="0.05" value="0.75" data-decimals="2"></div>
+          <div class="slider" id="boxL" hidden><label for="L" data-en="Length of the bar electrode L">長條電極長度 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="4" max="20" step="1" value="20" data-decimals="0"></div>
+          <div class="slider"><label for="V0" data-en-html="Supply voltage V<sub>0</sub>">電源電壓 V<sub>0</sub></label><output id="V0o"></output>
+            <input id="V0" type="range" min="1" max="12" step="0.5" value="6" data-decimals="1"></div>
+          <button type="button" id="power" aria-pressed="false" data-en="Switch on the supply">接通電源</button>
+          <p class="hint" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Meter and probes">電表與探針</h2>
+          <p class="seg-label" id="meterLabel" data-en="Meter between the probes:">接在兩探針之間的電表：</p>
+          <div class="seg2" role="group" aria-labelledby="meterLabel">
+            <button type="button" data-meter="dmm" aria-pressed="true" data-en="Multimeter">三用電表</button>
+            <button type="button" data-meter="galv" aria-pressed="false" data-en="Galvanometer (null)">檢流計（零位法）</button>
+          </div>
+          <p class="seg-label" id="errLabel" data-en="Conditions:">實驗條件：</p>
+          <div class="seg2" role="group" aria-labelledby="errLabel">
+            <button type="button" data-noise="0" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" data-noise="1" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <p class="seg-label" id="selLabel" data-en="Probe to move:">要移動的探針：</p>
+          <div class="seg2" role="group" aria-labelledby="selLabel">
+            <button type="button" data-sel="n2" aria-pressed="true" data-en="Red N2 (moving)">紅探針 N2（移動）</button>
+            <button type="button" data-sel="n1" aria-pressed="false" data-en="Black N1 (fixed)">黑探針 N1（固定）</button>
+          </div>
+          <div class="nudge" role="group" aria-label="微調選取的探針（每次 0.05 cm）" data-en-aria-label="Nudge the selected probe (0.05 cm per press)">
+            <button type="button" data-nx="-1" data-ny="0" aria-label="向左" data-en-aria-label="Left">←</button>
+            <button type="button" data-nx="0" data-ny="1" aria-label="向上" data-en-aria-label="Up">↑</button>
+            <button type="button" data-nx="0" data-ny="-1" aria-label="向下" data-en-aria-label="Down">↓</button>
+            <button type="button" data-nx="1" data-ny="0" aria-label="向右" data-en-aria-label="Right">→</button>
+          </div>
+          <div class="checks"><label><input id="fine" type="checkbox"><span data-en="Fine drag (probe moves 1/5 of the finger)">精細拖曳（探針只走手指的 1/5）</span></label></div>
+          <div class="btns">
+            <button type="button" id="clip" data-en="Clip N1 to the negative electrode (0 V)">黑探針夾到負極（0 V）</button>
+          </div>
+          <p class="hint" id="meterHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：數據表與分析 -->
+    <div class="lab eq">
+      <div class="stage">
+        <h2 data-en="Data: the points on the grid paper">數據表：方格紙上的記錄點</h2>
+        <p class="hint" data-en="Points measured with the same position of N1 and (almost) the same reading belong to one equipotential line. The potential of a line is the potential of N1 (measured from the negative electrode) plus the reading.">黑探針 N1 位置相同、讀數（幾乎）相同的點屬於同一條等位線。這條線的電位＝N1 的電位（對負極量得）＋讀數。</p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <p class="tsum" id="tsum"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Meter readings">讀數</h2>
+          <dl class="readout">
+            <dt id="rMeterLabel">電表讀數</dt><dd id="rMeter" class="big">—</dd>
+            <dt data-en="Red probe N2 (x, y)">紅探針 N2（x, y）</dt><dd id="rN2">—</dd>
+            <dt data-en="Black probe N1 (x, y)">黑探針 N1（x, y）</dt><dd id="rN1">—</dd>
+            <dt data-en="Probe separation Δs">兩探針距離 Δs</dt><dd id="rDs">—</dd>
+            <dt data-en-html="Two-probe estimate <span class=&quot;f&quot;>ΔV/Δs</span>">兩探針估算 <span class="f">ΔV/Δs</span></dt><dd id="rDvDs">—</dd>
+            <dt data-en="Supply current I">電源輸出電流 I</dt><dd id="rI">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Drawing and analysis">作圖與分析</h2>
+          <div class="checks col">
+            <label><input id="drawLines" type="checkbox"><span data-en="Join the points of each line with a smooth curve">把同一條線的點連成平滑的等位線</span></label>
+            <label><input id="drawField" type="checkbox"><span data-en="Draw field lines at right angles to them">畫出與等位線垂直的電力線</span></label>
+          </div>
+          <div class="btns"><button type="button" id="est" data-en="Estimate E at the red probe">估算紅探針處的電場</button></div>
+          <dl class="readout" id="estOut">
+            <dt data-en="Lines used">用到的兩條線</dt><dd id="eLines">—</dd>
+            <dt data-en="Distance between them Δd">兩線距離 Δd</dt><dd id="eDd">—</dd>
+            <dt data-en-html="Estimate <span class=&quot;f&quot;>ΔV/Δd</span>">估算 <span class="f">ΔV/Δd</span></dt><dd id="eEst">—</dd>
+            <dt data-en="Computed (midpoint)">計算值（中點）</dt><dd id="eCalc">—</dd>
+            <dt data-en="Difference">差異</dt><dd id="eErr">—</dd>
+          </dl>
+          <p class="hint" data-en="Put the red probe between two of your lines (an electrode also counts as an equipotential). Δd is measured between the nearest points of the two lines.">把紅探針放在兩條量到的等位線之間（電極本身也是等位線），Δd 是兩條線上離探針最近的兩點之間的距離。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Computed by the simulation (answer key)">模擬程式的計算值（對照答案）</h2>
+          <div class="checks col">
+            <label><input id="showTheory" type="checkbox"><span data-en="Computed equipotentials (every 1 V)">計算的等位線（每 1 V）</span></label>
+            <label><input id="showStream" type="checkbox"><span data-en="Computed current lines (= field lines)">計算的電流線（＝電力線）</span></label>
+            <label><input id="showHeat" type="checkbox"><span data-en="Potential shading">電位色階</span></label>
+          </div>
+          <dl class="readout">
+            <dt data-en="Potential at N2">N2 處的電位</dt><dd id="cV">—</dd>
+            <dt data-en="Field |E| at N2">N2 處的電場 |E|</dt><dd id="cE">—</dd>
+            <dt data-en="Direction of E">E 的方向</dt><dd id="cDir">—</dd>
+            <dt data-en="Current density |J|">電流密度 |J|</dt><dd id="cJ">—</dd>
+            <dt data-en="Resistance between the electrodes">兩電極之間的電阻</dt><dd id="cR">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="About the experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en="Use the steady current in a conducting sheet to find points of equal potential and draw equipotential lines.">利用導電紙上的穩定電流，找出電位相等的點，描出等位線。</li>
+        <li data-en="Draw the field lines from the equipotential lines and see how the field depends on the shape of the electrodes.">由等位線畫出電力線，觀察電場的分布與電極形狀的關係。</li>
+        <li data-en-html="Estimate the field strength from the spacing of the lines, \(E \approx \Delta V/\Delta d\).">由等位線的間距估算電場的大小 \(E \approx \Delta V/\Delta d\)。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="Carbon conducting paper with printed silver electrodes (two dots, two parallel bars, …), DC power supply, a multimeter (or a galvanometer / microammeter), two metal probes, leads, grid paper. Some schools use an “electric field tray” instead: an acrylic tray of weak salt water with metal electrodes standing in it and grid paper underneath — the physics is the same.">碳質導電紙（印有銀電極：兩個圓點、兩條平行長條……）、直流電源供應器、三用電表（或檢流計、微安培計）、金屬探針 2 支、導線、方格紙。有些學校改用「電場形成盤」：壓克力盤裝淡食鹽水，放入金屬電極，盤下墊方格紙，原理完全相同。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="<strong>Equipotentials and field lines.</strong> Moving along an equipotential line costs no work, so the field has no component along it: <strong>field lines cross equipotential lines at right angles</strong> and point from high to low potential. Where the lines are close together the field is strong:"><strong>等位線與電力線。</strong>沿著等位線移動電荷不必作功，所以電場沒有沿著等位線的分量：<strong>電力線與等位線處處垂直</strong>，並由高電位指向低電位。等位線愈密，電場愈強：</p>
+      <div class="formula multi">
+        \[ \vec E = -\nabla V \] \[ E \approx \frac{\Delta V}{\Delta d} \]
+      </div>
+      <p data-en-html="<strong>Why a current-carrying paper shows an electric field.</strong> The paper is a thin, uniform resistor. A steady current \(\vec J = \sigma \vec E\) (Ohm’s law, \(\sigma\) = conductivity) cannot pile up charge anywhere, so \(\nabla\cdot\vec J = 0\). With uniform \(\sigma\) this gives Laplace’s equation — exactly the equation the electrostatic potential obeys in empty space:"><strong>為什麼通電的導電紙能顯示電場？</strong>導電紙是一張又薄又均勻的電阻。穩定電流 \(\vec J = \sigma \vec E\)（歐姆定律，\(\sigma\) 為導電度）不能在任何地方堆積電荷，所以 \(\nabla\cdot\vec J = 0\)；\(\sigma\) 均勻時就得到拉普拉斯方程式——和真空中靜電位所滿足的方程式一模一樣：</p>
+      <div class="formula multi">
+        \[ \nabla\cdot\vec J = 0,\quad \vec J = \sigma\vec E = -\sigma\nabla V \] \[ \Longrightarrow\quad \frac{\partial^{2} V}{\partial x^{2}} + \frac{\partial^{2} V}{\partial y^{2}} = 0 \]
+      </div>
+      <p data-en-html="The metal electrodes have negligible resistance, so each one is an equipotential (\(V_0\) and \(0\)). Same equation + same electrode potentials ⇒ the same pattern: the current lines on the paper are the field lines, and the equipotentials are the ones of the <strong>two-dimensional</strong> electrostatic problem — the cross-section of two long parallel charged cylinders (or plates). For two small circular electrodes far from the edges the result is the potential of two line charges:">金屬電極的電阻可以忽略，各自是一個等位體（\(V_0\) 與 \(0\)）。方程式相同、電極電位相同，圖形就相同：紙上的電流線就是電力線，等位線就是<strong>二維</strong>靜電問題的等位線——相當於兩根很長的平行帶電圓柱（或平板）的截面。兩個小圓形電極離紙邊很遠時，電位就是兩條線電荷的電位：</p>
+      <div class="formula">
+        \[ V = \frac{V_0}{2} + \frac{V_0}{2\ln K}\,\ln\frac{r_-}{r_+} \]
+      </div>
+      <p data-en-html="Here \(r_+\) and \(r_-\) are the distances to two points inside the electrodes (slightly off their centres) and \(K\) is fixed by the electrode size. For two parallel bars running from one edge of the paper to the other, the potential falls linearly between them and the field is uniform, \(E = V_0/d\). The pattern looks very much like the field of two opposite point charges, but it is the 2D (logarithmic) version, so the details differ: e.g. far away the potential falls off like \(1/r\) for a 2D dipole instead of \(1/r^{2}\).">其中 \(r_+\)、\(r_-\) 是到電極內兩個點（略偏離圓心）的距離，\(K\) 由電極大小決定。兩條平行長條從紙的一邊接到另一邊時，兩板之間的電位隨距離線性下降，電場均勻：\(E = V_0/d\)。圖形和兩個異號點電荷的電場很像，但它是二維（對數）的版本，細節不同：例如遠處的電位，二維電偶極以 \(1/r\) 遞減，而不是 \(1/r^{2}\)。</p>
+      <p data-en-html="<strong>The edges of the paper.</strong> No current can leave through an edge, so the field there is parallel to the edge (\(\partial V/\partial n = 0\)): <strong>equipotential lines meet the edge at right angles</strong>, and field lines that would have bulged outward are squeezed along the edge. Near the edges the pattern therefore differs from the field in open space; in the middle of a large sheet the difference is small.">
+        <strong>紙的邊緣。</strong>電流不能從紙邊流出去，所以紙邊上的電場與邊平行（\(\partial V/\partial n = 0\)）：<strong>等位線與紙邊垂直相交</strong>，原本會向外鼓出去的電力線被擠成沿著紙邊走。所以靠近紙邊的圖形和空間中的電場不同；在大張紙的中央，差別很小。</p>
+      <p data-en-html="<strong>The null method.</strong> The galvanometer between the two probes reads zero exactly when the probes are at the same potential. At balance no current flows through the meter, so the measurement does not disturb the current in the paper. A sensitive voltmeter (a digital multimeter draws almost no current) can be used in the same way."><strong>零位法。</strong>兩探針之間的檢流計讀數為零，正好表示兩探針等電位；平衡時沒有電流流過電表，所以量測不會干擾紙上的電流。靈敏的伏特計（數位三用電表幾乎不取用電流）也可以這樣使用。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en="Connect the electrodes to the DC supply (left electrode to +) and switch it on.">把電極接到直流電源（左邊電極接正極），接通電源。</li>
+        <li data-en="Connect the two probes to the meter. Hold the black probe N1 still on the paper (or clip it to the negative electrode).">兩支探針接到電表。黑探針 N1 固定按在紙上某一點（或夾在負極上）。</li>
+        <li data-en="Slide the red probe N2 over the paper until the meter reads zero (or the chosen voltage, e.g. 1.00 V, 2.00 V…). Mark the point on the grid paper.">移動紅探針 N2，直到電表讀數為零（或選定的電壓，例如 1.00 V、2.00 V……），在方格紙上記下位置。</li>
+        <li data-en="Find at least five such points spread across the paper — one equipotential line. Then move N1 (or change the target voltage) and repeat for the next line.">在紙上不同地方找出至少 5 個這樣的點，就是一條等位線。再移動 N1（或換目標電壓），重複做下一條。</li>
+        <li data-en="Join the points of each line with a smooth curve.">把同一條線的點連成平滑曲線。</li>
+        <li data-en="Draw field lines: start on the positive electrode, cross every equipotential at a right angle and end on the negative electrode; add arrows from high to low potential.">畫電力線：從正極出發，與每一條等位線垂直相交，終止於負極；箭頭由高電位指向低電位。</li>
+        <li data-en-html="Pick a point between two lines, measure their distance \(\Delta d\), and calculate \(E \approx \Delta V/\Delta d\).">在兩條等位線之間選一點，量出兩線的距離 \(\Delta d\)，算出 \(E \approx \Delta V/\Delta d\)。</li>
+      </ol>
+
+      <h3 data-en="Precautions">注意事項</h3>
+      <ul>
+        <li data-en="Touch the paper lightly, keeping the probe upright. Pressing hard or dragging scratches the thin carbon layer and changes its resistance.">探針要垂直、輕輕接觸紙面。用力壓或拖著刮，會刮傷薄薄的碳層，改變它的電阻。</li>
+        <li data-en="Keep the paper flat and the electrode contacts tight; a loose contact makes the electrode potential uncertain.">紙要平、電極的接點要夾緊；接觸不良時電極的電位就不確定。</li>
+        <li data-en="Copy each point to the grid paper right away, using the printed grid so the positions match.">每找到一點就立刻對照紙上的方格，記到方格紙的相同位置。</li>
+        <li data-en="Spread the points of each line out widely, including near the edges of the paper, so the curve is well defined.">同一條線的點要分散開來，也要包括靠近紙邊的地方，曲線才畫得準。</li>
+        <li data-en="With a salt-water tray: use only a little salt (strong brine is electrolysed and gives off chlorine), keep the water shallower than the electrodes, and keep the tray level.">使用電場形成盤時：食鹽只放少許（濃食鹽水會被電解產生氯氣），水深不要超過電極，盤子要水平。</li>
+        <li data-en="Switch the supply off when you are finished.">做完實驗要關掉電源。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol class="q">
+        <li data-en="Why is a zero reading of the galvanometer a reliable sign of equal potentials, even if the meter is not calibrated? Why can a sensitive voltmeter replace it?">為什麼即使檢流計沒有校準，讀數為零仍然可靠地表示兩點等電位？為什麼可以改用靈敏的伏特計？</li>
+        <li data-en="Why do your equipotential lines meet the edges of the paper at right angles? Would the lines look the same on a much larger sheet?">為什麼你的等位線碰到紙邊時都與紙邊垂直？換成大很多的紙，等位線還會一樣嗎？</li>
+        <li data-en="How can you tell from your drawing where the field is strongest? Check it with the estimate E = ΔV/Δd at two places.">從你畫的圖如何看出哪裡電場最強？用 E = ΔV/Δd 在兩個地方估算來驗證。</li>
+        <li data-en="Why must the field lines meet the surface of an electrode at right angles?">為什麼電力線一定與電極表面垂直？</li>
+        <li data-en="Compare your pattern for two circular electrodes with the field of two opposite point charges. What is the same, and what is different?">比較兩圓形電極的圖形與兩個異號點電荷的電場：哪裡相同？哪裡不同？</li>
+        <li data-en="For parallel bars that run from edge to edge, why is the potential exactly a straight-line function of x? What changes when the bars are shorter than the paper?">平行長條從紙的一邊接到另一邊時，為什麼電位恰好隨 x 線性變化？長條比紙短時有什麼改變？</li>
+        <li data-en="If the carbon layer were thicker in some places, would the equipotentials move? (Try “With errors”, which makes the paper slightly non-uniform.)">如果碳層有些地方比較厚，等位線會移動嗎？（試試「含誤差」，紙的導電度會有一點不均勻。）</li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The middle line</strong>: with two equal circular electrodes, clip N1 to the negative electrode and look for \(V_0/2\). The points lie on the perpendicular bisector — by symmetry."><strong>正中間的線</strong>：兩個相同的圓形電極，把 N1 夾到負極、找 \(V_0/2\) 的點：它們都在兩電極連線的中垂線上——對稱性。</li>
+        <li data-en-html="<strong>Crowded near the electrodes</strong>: the 1 V lines are close together next to a small electrode and far apart in the middle. Make the electrodes smaller and the crowding gets worse."><strong>電極旁最擁擠</strong>：每隔 1 V 的等位線在小電極旁很密，中間很疏。把電極半徑調小，擠得更厲害。</li>
+        <li data-en-html="<strong>A uniform field</strong>: parallel bars from edge to edge give equally spaced straight lines and E = V0/d everywhere between them. Shorten the bars and watch the lines bulge out around the ends."><strong>均勻電場</strong>：從紙邊接到紙邊的平行長條，等位線是等間距的直線，兩板之間處處 E = V<sub>0</sub>/d。把長條縮短，看等位線在兩端向外鼓出。</li>
+        <li data-en-html="<strong>Behind the bars</strong>: with full-length bars there is no current behind a bar, and the whole region there is at the bar’s potential."><strong>長條的背後</strong>：從邊到邊的長條背後沒有電流，那一整塊都和長條同電位。</li>
+        <li data-en-html="<strong>Corners</strong>: the current hardly reaches the corners of the paper; the field there is very weak."><strong>角落</strong>：電流幾乎到不了紙的角落，那裡的電場非常弱。</li>
+        <li data-en-html="<strong>Sound</strong>: with the sound on and the galvanometer selected, the meter hums louder the further it is from zero — a null detector you can hear.">
+          <strong>聽聲音找零點</strong>：打開音效、選檢流計，指針離零愈遠嗡嗡聲愈大，聲音消失就是等電位——用耳朵找零點。</li>
+      </ul>
+
+      <h3 data-en="The 3D view: the potential landscape">3D 檢視：電位地形</h3>
+      <p data-en-html="In 3D the height of the surface above each point of the paper is its potential \(V(x, y)\). The positive electrode holds up a plateau at \(V_0\), the negative one pins the surface down to \(0\). The equipotential lines are contour lines of this landscape, and the field \(\vec E = -\nabla V\) points straight downhill, along the steepest slope — so the current lines run down the slopes and cross every contour line at a right angle. Steep slopes mean strong fields. At the insulating edges the surface meets the edge “flat”, with no slope across it.">在 3D 中，曲面在紙上每一點的高度就是該點的電位 \(V(x, y)\)。正極把曲面撐起一塊高度 \(V_0\) 的平台，負極把曲面釘在 \(0\)。等位線就是這片地形的等高線；電場 \(\vec E = -\nabla V\) 指向最陡的下坡方向，所以電流線沿著山坡往下流，與每一條等高線垂直；坡愈陡，電場愈強。在不導電的紙邊，曲面垂直於紙邊的方向是平的（沒有坡度）。</p>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The paper (30 cm × 20 cm) is covered by a square grid with spacing 0.125 cm. On it Laplace’s equation \(\nabla\cdot(\sigma\nabla V) = 0\) is written in finite-volume form: the electrodes are fixed potentials, and the edges carry no current. Where a circular electrode cuts a grid line, the true distance to the circle is used (the symmetric second-order method of Gibou et al.). The equations are solved by conjugate gradients with a multigrid V-cycle as preconditioner, once for each electrode setting; tests compare the result with the exact linear potential of edge-to-edge bars and with the two-line-charge solution and its images.">導電紙（30 cm × 20 cm）鋪上間距 0.125 cm 的方格網，以有限體積法寫出拉普拉斯方程式 \(\nabla\cdot(\sigma\nabla V) = 0\)：電極是固定電位，紙邊沒有電流流出。圓形電極切過格線的地方，用到圓周的實際距離（Gibou 等人的對稱二階方法）。方程式用「以多重網格 V 循環為前置條件的共軛梯度法」求解，每一種電極設定解一次；單元測試把結果與「邊到邊平行長條的線性電位」以及「兩條線電荷與其鏡像」的解析解比較。</li>
+        <li data-en="Potentials and fields between grid points are interpolated. Because the equation is linear, the solution is computed for 1 V and scaled to the supply voltage.">格點之間的電位與電場用內插求得。方程式是線性的，所以只解 1 V 的情形，再乘以電源電壓。</li>
+        <li data-en-html="Sheet resistance of the paper R<sub>s</sub> = 5 kΩ per square (typical carbon paper); the supply current is the current through the middle line of the paper. The multimeter reads to 0.01 V and draws no current. The galvanometer has ±50 μA full scale and 50 kΩ in its circuit (meter plus probe contacts); as long as it is close to zero its tiny current is neglected.">導電紙的面電阻 R<sub>s</sub> = 5 kΩ/□（一般碳質紙的數量級）；電源電流是流過紙中線的總電流。三用電表讀到 0.01 V，不取用電流。檢流計滿刻度 ±50 μA，迴路總電阻 50 kΩ（電表加探針接觸電阻）；接近零時取用的微小電流忽略不計。</li>
+        <li data-en="“With errors”: the conductivity of the paper varies smoothly by about ±4 % (a new random sheet each time), the meter has a small zero offset (up to ±0.015 V) and its last digit flickers (standard deviation 0.008 V; galvanometer 0.15 μA), and each point is marked on the grid paper with a random error of about 0.05 cm. The computed values (answer key) always belong to the sheet actually in use.">「含誤差」：導電紙的導電度有約 ±4 % 的平滑起伏（每次開啟換一張隨機的紙）、電表有小小的零點偏差（最多 ±0.015 V）且最後一位會跳動（標準差 0.008 V；檢流計 0.15 μA），每一點描到方格紙上時有約 0.05 cm 的隨機誤差。「計算值」永遠是目前這張紙的真實值。</li>
+        <li data-en-html="Field lines from your data: only what you measured is used — the electrodes (V<sub>0</sub> and 0) and the points of your equipotential lines are taken as known potentials, and the potential in between is filled in as smoothly as possible (Laplace’s equation on a coarse grid with insulating edges). Your lines are contour lines of this filled-in potential, so lines drawn straight downhill cross each of them at a right angle. They start on your line closest to half the supply voltage, spaced so that equal current flows between neighbouring lines (denser where the field is stronger), and run to both electrodes. The computed current lines are spaced the same way.">由數據畫電力線：只用量到的資料——電極（V<sub>0</sub> 與 0）與每一條量測線上的點當作已知電位，中間的電位用「最平滑」的方式補起來（在粗網格上解拉普拉斯方程式，紙邊不導電）。量測線就是這個補好的電位的等高線，沿下坡方向畫出的線自然與每一條量測線垂直。起點放在電位最接近電源一半的量測線上，間隔讓相鄰兩線之間流過的電流相等（電場愈強，線愈密），再往兩邊畫到電極。計算的電流線也用同樣的方式分配。</li>
+        <li data-en="The 3D landscape uses the same solution (every second grid point). It uses the three.js library (MIT license), which is downloaded only when you switch to 3D.">3D 地形使用同一個數值解（每隔一個格點取一點），以 three.js 函式庫（MIT 授權）繪製，只有切換到 3D 時才會下載。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/equipotential-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/equipotential-3d.js?v=202611120013"></script>
+  <script src="js/equipotential.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="equipotential"></script>
+  <script src="js/missions/equipotential.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

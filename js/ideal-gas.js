@@ -49,6 +49,7 @@
   };
 
   let gas = null;
+  let view3 = null;                    // 3D 檢視（js/ideal-gas-3d.js；切換到 3D 時才建立）
   const meterLong = new G.Meter(5);   // 狀態穩定後的長時間平均（讀數、任務）
   const meterShort = new G.Meter(2);  // 最近 40 ps（過程圖、壓力計）
   const hist = [new Float64Array(NB), new Float64Array(NB)];
@@ -404,8 +405,9 @@
     x.fillRect(0, 0, SPR, SPR);
   }
   /** 依速率上色：v/v_p 由 0 到 2（藍 → 中性 → 紅） */
-  function speedLevelColor(l) {
-    const u = l / (SPEED_LEVELS - 1); // 0..1，0.5 = 最可能速率
+  function speedLevelColor(l) { return speedColorAt(l / (SPEED_LEVELS - 1)); }
+  /** 同一個色階的連續版本（3D 檢視也用）：u = v/(2v_p)，0..1，0.5 = 最可能速率 */
+  function speedColorAt(u) {
     if (u < 0.5) return mix(colors.neg, colors.field, u / 0.5 * 0.8);
     return mix(colors.field, colors.pos, 0.2 + (u - 0.5) / 0.5 * 0.8);
   }
@@ -482,7 +484,8 @@
   let lastChartAt = 0;
   function drawAll(force) {
     if (!gas || !BOX) return;
-    drawBox();
+    if (view3 && view3.active) view3.frame(); // 3D 檢視：畫同一個氣體狀態
+    else drawBox();
     const now = performance.now();
     if (force !== false || now - lastChartAt >= 100) {
       lastChartAt = now;
@@ -821,14 +824,19 @@
   }
 
   /** 壓力計（指針）與溫度計 */
-  function drawGauges() {
+  /** 壓力計與溫度計的讀數（每幀呼叫一次；2D 畫布與 3D 檢視共用） */
+  function gaugeValues() {
     const Pm = lastShort && lastShort.t > 8 ? kPa(lastShort.P) : null;
     const Tm = lastShort && lastShort.t > 8 ? lastShort.T : G.temperature(gas);
     if (Pm != null) pGauge = pGauge == null ? Pm : pGauge + 0.25 * (Pm - pGauge);
+    return { T: Tm, P: pGauge, Pth: kPa(G.idealP(gas.n, Tgas(), Vnow())) };
+  }
+  function drawGauges() {
+    const gv = gaugeValues(), Tm = gv.T;
     // ---- 壓力計：右上角 ----
     const R = narrow ? 30 : 40;
     const gx = cw - R - (narrow ? 12 : 18), gy = R + (narrow ? 12 : 16);
-    const Pth = kPa(G.idealP(gas.n, Tgas(), Vnow()));
+    const Pth = gv.Pth;
     const full = niceUp(Math.max(Pth, pGauge || 0) * 1.25 || 100);
     // 錶殼
     const rim = ctx.createLinearGradient(gx - R, gy - R, gx + R, gy + R);
@@ -912,33 +920,45 @@
     pill(ctx, 'T = ' + num(Tm, 0) + ' K', tx0 + bulb + tlen + 8, ty, tcol === colors.muted ? colors.text : shade(tcol, colors.dark ? 0.25 : -0.15), '700 ' + (narrow ? 11 : 13) + 'px system-ui, sans-serif', 0.82);
   }
 
-  function drawLabels(Lx) {
-    const f1 = '600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif';
-    // 左上：時間與速率
-    ctx.textAlign = 'left';
-    let line = 't = ' + num(gas.t, gas.t < 1000 ? 1 : 0) + ' ps';
+  /** 時間與播放速率（2D 畫布與 3D 檢視共用） */
+  function timeText() {
+    const line = 't = ' + num(gas.t, gas.t < 1000 ? 1 : 0) + ' ps';
     const rate = curRate();
     let note;
     if (state.ff) note = T('快轉 ×', 'Fast-forward ×') + num(rate / BASE_RATE, 0);
     else if (state.speed !== 1) note = SPEEDS[state.speed] + '×';
     else note = T('1 s ＝ 20 ps', '1 s = 20 ps');
+    return line + '   ' + note;
+  }
+  /** 底座正面的標籤：恆溫槽溫度或絕熱（2D 與 3D 共用） */
+  function baseLabelInfo() {
+    if (bathOn()) return { text: T('恆溫槽 ', 'Heat bath ') + num(gas.bath.T, gas.bath.T % 1 ? 1 : 0) + ' K' + (gas.bath.T !== state.Tset ? ' → ' + num(state.Tset, state.Tset % 1 ? 1 : 0) + ' K' : ''), color: shade(tempColor(state.Tset), colors.dark ? 0.3 : -0.25) };
+    return { text: T('絕熱：器壁不導熱', 'Adiabatic: insulating walls'), color: colors['b-thermo'] };
+  }
+  /** 把手旁的提示（沒有提示時回傳 null；2D 與 3D 共用） */
+  function knobHintInfo() {
+    if (state.mode === 'isochoric') return { text: T('活塞固定', 'Piston locked'), color: colors.muted };
+    if (state.mode === 'isobaric') return state.pistonStop ? { text: T('活塞已到底', 'Piston at its stop'), color: colors.pos } : { text: T('自動維持壓力', 'Holds the pressure'), color: colors.equi };
+    if (!state.dragged) return { text: T('← 拖曳 →', '← drag →'), color: colors.accent };
+    return null;
+  }
+  function drawLabels(Lx) {
+    const f1 = '600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif';
+    // 左上：時間與速率
+    ctx.textAlign = 'left';
     // 桌機放在溫度計下方；手機放在左下角（上方留給溫度計與壓力計）
-    pill(ctx, line + '   ' + note, narrow ? 10 : 16, narrow ? ch - 12 : 54, state.ff ? colors.equi : colors.muted, f1, 0.78);
+    pill(ctx, timeText(), narrow ? 10 : 16, narrow ? ch - 12 : 54, state.ff ? colors.equi : colors.muted, f1, 0.78);
     // 底座正面：恆溫槽／絕熱
     const lp = P2(XH * 0.32, -1.1, LZ + 1.4);
     ctx.textAlign = 'center';
-    let baseRect;
-    if (bathOn()) baseRect = pill(ctx, T('恆溫槽 ', 'Heat bath ') + num(gas.bath.T, gas.bath.T % 1 ? 1 : 0) + ' K' + (gas.bath.T !== state.Tset ? ' → ' + num(state.Tset, state.Tset % 1 ? 1 : 0) + ' K' : ''), lp[0], lp[1], shade(tempColor(state.Tset), colors.dark ? 0.3 : -0.25), '700 ' + (narrow ? 10 : 12) + 'px system-ui, sans-serif', 0.8);
-    else baseRect = pill(ctx, T('絕熱：器壁不導熱', 'Adiabatic: insulating walls'), lp[0], lp[1], colors['b-thermo'], '700 ' + (narrow ? 10 : 12) + 'px system-ui, sans-serif', 0.8);
+    const bl = baseLabelInfo();
+    const baseRect = pill(ctx, bl.text, lp[0], lp[1], bl.color, '700 ' + (narrow ? 10 : 12) + 'px system-ui, sans-serif', 0.8);
     // 把手旁的提示
     if (pistonHit) {
       const k = pistonHit.knob;
       const fy = k[1] + k[2] + (narrow ? 10 : 12);
-      let txt = null, col = colors.muted;
-      if (state.mode === 'isochoric') { txt = T('活塞固定', 'Piston locked'); }
-      else if (state.mode === 'isobaric') { txt = state.pistonStop ? T('活塞已到底', 'Piston at its stop') : T('自動維持壓力', 'Holds the pressure'); col = state.pistonStop ? colors.pos : colors.equi; }
-      else if (!state.dragged) { txt = T('← 拖曳 →', '← drag →'); col = colors.accent; }
-      if (txt) { ctx.textAlign = 'center'; pill(ctx, txt, Math.min(cw - 40, k[0]), Math.min(ch - 12, fy), col, f1, 0.8); }
+      const kh = knobHintInfo();
+      if (kh) { ctx.textAlign = 'center'; pill(ctx, kh.text, Math.min(cw - 40, k[0]), Math.min(ch - 12, fy), kh.color, f1, 0.8); }
     }
     if (state.lag) {
       ctx.textAlign = 'right';
@@ -1785,6 +1805,13 @@
     gas.trackPts.length = 0;
     gas.trackPts.push(gas.x[i], gas.y[i], gas.z[i]);
   }
+  /** 點選分子：開始追蹤它（2D 與 3D 共用） */
+  function followMolecule(i) {
+    state.show.track = true;
+    $('showTrack').checked = true;
+    pickTrack(i);
+    requestDraw();
+  }
 
   // 喇叭按鈕：切換全站音效設定（齒輪面板也能切換，兩邊同步）
   function updateSoundButton() {
@@ -1833,20 +1860,37 @@
     }
     return (lo + hi) / 2;
   }
+  /** 等容、等壓時活塞不能拖曳（在狀態列說明原因）；2D 與 3D 共用 */
+  function pistonLocked() {
+    if (state.mode === 'isochoric') { setStatus(T('等容過程：活塞固定。要改變體積，請選「等溫」或「絕熱」。', 'Isochoric process: the piston is locked. Choose “Isothermal” or “Adiabatic” to change the volume.')); return true; }
+    if (state.mode === 'isobaric') { setStatus(T('等壓過程：活塞由壓力自動控制。', 'Isobaric process: the pressure controls the piston.')); return true; }
+    return false;
+  }
+  function beginPistonDrag(ev) {
+    state.dragged = true;
+    interacted(ev);
+    if (!state.running) { state.running = true; updateButtons(); startLoop(); }
+  }
+  /** 拖曳活塞到位置 x（nm）：與「體積」滑桿相同，活塞以有限速率移過去（準靜態）；2D 與 3D 共用 */
+  function dragPistonTo(x) {
+    const V = Math.max(4000, Math.min(12000, Math.round(x * AREA)));
+    syncing = true;
+    if (window.LabNum) window.LabNum.set(elV, V); else elV.value = V;
+    syncing = false;
+    refreshOutputs();
+    gas.piston.target = val(elV) / AREA;
+  }
   let grabOff = 0;
   cv.addEventListener('pointerdown', function (ev) {
     const p = pointerPos(ev), touch = ev.pointerType === 'touch';
     if (overPiston(p, touch)) {
-      if (state.mode === 'isochoric') { setStatus(T('等容過程：活塞固定。要改變體積，請選「等溫」或「絕熱」。', 'Isochoric process: the piston is locked. Choose “Isothermal” or “Adiabatic” to change the volume.')); return; }
-      if (state.mode === 'isobaric') { setStatus(T('等壓過程：活塞由壓力自動控制。', 'Isobaric process: the pressure controls the piston.')); return; }
+      if (pistonLocked()) return;
       dragging = true;
-      state.dragged = true;
-      interacted(ev);
+      beginPistonDrag(ev);
       grabOff = worldXAt(p[0]) - gas.Lx;
       try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
       cv.classList.add('grabbing');
       ev.preventDefault();
-      if (!state.running) { state.running = true; updateButtons(); startLoop(); }
       requestDraw();
       return;
     }
@@ -1856,23 +1900,12 @@
       const d = Math.hypot(sx[i] - p[0], sy[i] - p[1]) - sr[i];
       if (d < bd) { bd = d; best = i; }
     }
-    if (best >= 0) {
-      state.show.track = true;
-      $('showTrack').checked = true;
-      pickTrack(best);
-      requestDraw();
-    }
+    if (best >= 0) followMolecule(best);
   });
   cv.addEventListener('pointermove', function (ev) {
     const p = pointerPos(ev);
     if (dragging) {
-      const x = worldXAt(p[0]) - grabOff;
-      const V = Math.max(4000, Math.min(12000, Math.round(x * AREA)));
-      syncing = true;
-      if (window.LabNum) window.LabNum.set(elV, V); else elV.value = V;
-      syncing = false;
-      refreshOutputs();
-      gas.piston.target = val(elV) / AREA;
+      dragPistonTo(worldXAt(p[0]) - grabOff);
       return;
     }
     const over = overPiston(p, ev.pointerType === 'touch') && (state.mode === 'isothermal' || state.mode === 'adiabatic');
@@ -1888,6 +1921,101 @@
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!dragging && hoverPiston) { hoverPiston = false; cv.classList.remove('grab'); requestDraw(); } });
 
+  // ======================= 3D 檢視 =======================
+  // three.js（vendor/three/）只在切換到 3D 時才以 import() 動態載入；場景程式在 js/ideal-gas-3d.js。
+  // 3D 只「讀」同一個氣體（gas）的狀態來畫；模擬仍由上面的 step() 推進，所以 2D 與 3D 的物理、時間完全相同。
+  // view3：目前的 3D 檢視（宣告在檔案開頭，切回 2D 時釋放）
+  let threeLib = null;   // { THREE, OrbitControls }
+  let loadToken = 0;
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+
+  function webglAvailable() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    } catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 3D 檢視讀取狀態與操作模擬用的介面（只有拖曳活塞、點選分子會改變設定，與 2D 的操作相同） */
+  function host3Api() {
+    return {
+      T: T, num: num, host: host3,
+      C: { LY: LY, LZ: LZ, LX_MIN: LX_MIN, LX_MAX: LX_MAX, PT: PT, XH: XH, AREA: AREA },
+      state: state, reducedMotion: reducedMotion,
+      gas: function () { return gas; },
+      colors: function () { return colors; },
+      bathOn: bathOn, Tgas: Tgas, speciesOf: speciesOf,
+      tempColor: tempColor, mix: mix, shade: shade, spColor: spColor, speedColorAt: speedColorAt,
+      impacts: function () { return impacts; },
+      hud: function () {
+        const gv = gaugeValues(), tc = tempColor(gv.T);
+        return { T: gv.T, Tcol: tc === colors.muted ? colors.text : shade(tc, colors.dark ? 0.25 : -0.15), P: gv.P, Pth: gv.Pth,
+          time: timeText(), ff: state.ff, lag: state.lag, running: state.running };
+      },
+      baseLabel: baseLabelInfo, knobHint: knobHintInfo,
+      canDrag: function () { return state.mode === 'isothermal' || state.mode === 'adiabatic'; },
+      pistonLocked: pistonLocked, beginDrag: beginPistonDrag, dragTo: dragPistonTo, endDrag: requestDraw,
+      follow: followMolecule,
+      contextLost: function () {
+        setView('2d');
+        viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+      }
+    };
+  }
+
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable() || !window.IdealGas3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return; // 載入期間已切回 2D
+        stage.classList.add('is3d');
+        view3 = window.IdealGas3D.create(lib, host3Api());
+        viewMsg.textContent = '';
+        $('resetCam').hidden = false;
+        drawAll();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      $('resetCam').hidden = true;
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed('2d');
+    $('resetCam').hidden = true;
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+
   // ======================= 啟動 =======================
   readColors();
   buildSpeciesButtons();
@@ -1898,7 +2026,11 @@
   gas.piston.target = val(elV) / AREA;
   gas.Lx = gas.piston.target;
   updateModeUI();
-  function themeChanged() { readColors(); buildSprites(); if (BOX) buildBackground(); requestDraw(); }
+  function themeChanged() {
+    readColors(); buildSprites(); if (BOX) buildBackground();
+    if (view3 && view3.active) view3.onTheme();
+    requestDraw();
+  }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {

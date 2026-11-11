@@ -3,3 +3,4 @@ package-lock.json
 .shots/
 .DS_Store
 Thumbs.db
+.editing

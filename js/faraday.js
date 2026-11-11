@@ -1,7 +1,13 @@
-/* faraday.js — 「法拉第定律與冷次定律」模組的畫面與互動（物理計算在 faraday-core.js） */
+/* faraday.js — 「法拉第定律與冷次定律」模組的畫面與互動（物理計算在 faraday-core.js）
+ * 3D 立體檢視在 js/faraday-3d.js：按「3D 立體」時才載入它與 three.js（vendor/three/），預設維持 2D。 */
 (function () {
   'use strict';
   const FC = window.FaradayCore;
+  // 本檔的版本號（tools/stamp.py 加在網址上），延遲載入 faraday-3d.js 時沿用，避免拿到快取的舊檔
+  const SELF_VER = (function () {
+    const sc = document.currentScript, m = sc && /[?&]v=(\w+)/.exec(sc.src);
+    return m ? '?v=' + m[1] : '';
+  })();
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
@@ -37,6 +43,8 @@
     show: { lines: true, current: true, poles: true, tangent: true },
     fx: []
   };
+  let view3 = null;      // 目前的 3D 檢視（切回 2D 時釋放）
+  function is3D() { return !!(view3 && view3.active); }
 
   // ---------- 色彩（lab.css 代號） ----------
   let colors = {};
@@ -242,7 +250,7 @@
       const gx = sw + gap, gw = cw - gx, sh = (H - 2 * gap) / 3;
       for (let i = 0; i < 3; i++) strips.push({ x: gx, y: i * (sh + gap), w: gw, h: sh });
     } else {
-      const sh0 = Math.round(cw * 0.84);
+      const sh0 = Math.round(cw * (is3D() ? 1 : 0.84)); // 3D 檢視在手機上用正方形
       S = { x: 0, y: 0, w: cw, h: sh0 };
       const sh = Math.max(100, Math.round(cw * 0.3));
       for (let i = 0; i < 3; i++) strips.push({ x: 0, y: sh0 + gap + i * (sh + gap), w: cw, h: sh });
@@ -274,6 +282,7 @@
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr);
     cv.height = Math.round(ch * dpr);
+    place3();
     buildBackground();
     draw();
   }
@@ -489,9 +498,12 @@
     ctx.clearRect(0, 0, cw, ch);
     ctx.drawImage(bg, 0, 0, cw, ch);
     const s = state.mode === 'A' ? snapA() : snapB();
-    if (state.mode === 'A') drawSceneA(s); else drawSceneB(s);
+    const v3 = is3D();
+    // 3D 檢視時，左邊（或上方）的實驗畫面由 3D 畫布蓋住，只畫圖表
+    if (!v3) { if (state.mode === 'A') drawSceneA(s); else drawSceneB(s); }
     drawGraphs(s);
     updateReadout(s);
+    if (v3) view3.frame(s);
   }
 
   // ======================= 模式 A：磁鐵與線圈 =======================
@@ -1414,8 +1426,8 @@
     acted();
     state.mode = m;
     press(['modeA', 'modeB'], m === 'A' ? 'modeA' : 'modeB');
-    ['cardA', 'legendA', 'hintA', 'readA', 'chkLines', 'chkPoles'].forEach(function (id) { $(id).hidden = m !== 'A'; });
-    ['cardB', 'legendB', 'hintB', 'readB'].forEach(function (id) { $(id).hidden = m !== 'B'; });
+    ['cardA', 'legendA', 'hintA', 'hint3A', 'readA', 'chkLines', 'chkPoles'].forEach(function (id) { $(id).hidden = m !== 'A'; });
+    ['cardB', 'legendB', 'hintB', 'hint3B', 'readB'].forEach(function (id) { $(id).hidden = m !== 'B'; });
     stopVoice();
     state.needle = 0;
     restartRun(!reducedMotion);
@@ -1528,30 +1540,40 @@
     return [ev.clientX - r.left, ev.clientY - r.top];
   }
   function hitMagnet(p, touch) {
-    if (state.mode !== 'A' || !L) return false;
+    if (state.mode !== 'A' || !L || is3D()) return false;
     const x = magnetAt(state.t).x, r = magnetRect(x), m = touch ? 14 : 6;
     return p[0] >= r.x - m && p[0] <= r.x + r.w + m && p[1] >= r.y - m - 4 && p[1] <= r.y + r.h + m + 4;
   }
-  cv.addEventListener('pointerdown', function (ev) {
-    const p = canvasPos(ev);
-    if (!hitMagnet(p, ev.pointerType !== 'mouse')) return;
-    ev.preventDefault();
+  /** 抓住磁鐵：xp 為指標所在的 x（m）。2D 與 3D 共用 */
+  function grabMagnet(xp) {
     acted();
     const A = state.A;
     if (A.motion !== 'drag') setMotion('drag', true);
     A.dragging = true;
     A.everDragged = true;
-    A.grab = (p[0] - XA(A.dx)) / L.A.k;
+    A.grab = xp - A.dx;
     A.target = A.dx;
-    try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
     if (!state.running) { state.running = true; state.ended = false; setStatus(''); updateButtons(); startLoop(); }
     requestDraw();
+  }
+  /** 拖曳中：磁鐵經由臨界阻尼的彈簧跟著指標，範圍與 2D 畫面相同 */
+  function moveMagnet(xp) {
+    const A = state.A;
+    if (!A.dragging) return;
+    const lim = Math.min(FC.DRAG_X, L.A.view - FC.MAG.len / 2);
+    A.target = clamp(xp - A.grab, -lim, lim);
+  }
+  cv.addEventListener('pointerdown', function (ev) {
+    const p = canvasPos(ev);
+    if (!hitMagnet(p, ev.pointerType !== 'mouse')) return;
+    ev.preventDefault();
+    try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
+    grabMagnet((p[0] - L.A.cx) / L.A.k);
   });
   cv.addEventListener('pointermove', function (ev) {
     const p = canvasPos(ev), A = state.A;
     if (A.dragging) {
-      const lim = Math.min(FC.DRAG_X, L.A.view - FC.MAG.len / 2);
-      A.target = clamp((p[0] - L.A.cx) / L.A.k - A.grab, -lim, lim);
+      if (!is3D()) moveMagnet((p[0] - L.A.cx) / L.A.k);
       return;
     }
     if (ev.pointerType === 'mouse') {
@@ -1567,14 +1589,119 @@
   }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
-  cv.addEventListener('pointerleave', function () { if (state.A.hover) { state.A.hover = false; cv.style.cursor = 'default'; requestDraw(); } });
+  cv.addEventListener('pointerleave', function () { if (state.A.hover && !is3D()) { state.A.hover = false; cv.style.cursor = 'default'; requestDraw(); } });
+
+  // =====================================================================
+  // 3D 檢視（js/faraday-3d.js 與 three.js 都在切換到 3D 時才動態載入）
+  // 3D 畫布蓋在 2D 畫布的實驗畫面區（L.S）上，右側（或下方）的 Φ、ε、I 圖表照常由 2D 畫布畫。
+  // =====================================================================
+  let threeLib = null, loadToken = 0;
+  const stageEl = cv.closest('.stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  function place3() {
+    if (!L) return;
+    const S = L.S;
+    host3.style.left = S.x + 'px';
+    host3.style.top = S.y + 'px';
+    host3.style.width = S.w + 'px';
+    host3.style.height = S.h + 'px';
+  }
+  function webglAvailable() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    } catch (e) { return false; }
+  }
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = resolve;
+      el.onerror = function () { reject(new Error('cannot load ' + src)); };
+      document.head.appendChild(el);
+    });
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    const mod3 = window.Faraday3D ? Promise.resolve() : loadScript(new URL('js/faraday-3d.js' + SELF_VER, document.baseURI).href);
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js'), mod3]).then(function (mods) {
+      if (!window.Faraday3D) throw new Error('Faraday3D missing');
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 給 3D 檢視讀取狀態、操作磁鐵的介面（3D 只負責畫，物理量全部來自這裡） */
+  const bridge3 = {
+    FC: FC, T: T, state: state, LINES: LINES,
+    SCALE_VA: SCALE_VA, SCALE_VB: SCALE_VB, SCALE_FB: SCALE_FB, SLOW: SLOW,
+    colors: function () { return colors; },
+    scale: function () { return state.scale; },
+    pB: pB,
+    num: num, rangeText: function (r) { return rangeText(r); }, circText: function (c) { return circText(c); },
+    grabMagnet: function (xp) { grabMagnet(xp); },
+    moveMagnet: function (xp) { moveMagnet(xp); },
+    endDrag: function () { endDrag(); },
+    setHover: function (h) { if (state.A.hover !== h) { state.A.hover = h; requestDraw(); } },
+    lost: function () {
+      setView('2d');
+      viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+    }
+  };
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (is3D()) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable()) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return; // 載入期間已切回 2D
+        stageEl.classList.add('is3d');
+        view3 = window.Faraday3D.create(lib, host3, bridge3);
+        state.A.hover = false;
+        viewMsg.textContent = '';
+        $('resetCam').hidden = false;
+        resize(); // 手機上實驗畫面改成正方形，並把 3D 畫布放到實驗畫面區
+        requestAnimationFrame(function () { if (is3D()) draw(); });
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stageEl.classList.remove('is3d');
+      $('resetCam').hidden = true;
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      state.A.hover = false;
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stageEl.classList.remove('is3d');
+    setPressed('2d');
+    $('resetCam').hidden = true;
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
 
   // ---------- 啟動 ----------
   readColors();
   readSliders();
   refreshOutputs();
   restartRun(state.running);
-  function themeChanged() { readColors(); if (L) buildBackground(); requestDraw(); }
+  function themeChanged() { readColors(); if (L) buildBackground(); if (is3D()) view3.onTheme(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {

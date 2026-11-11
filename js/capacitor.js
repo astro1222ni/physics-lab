@@ -996,7 +996,7 @@
   const LABELS = {
     A: function () { return T('面積 A', 'area A'); },
     d: function () { return T('板距 d', 'separation d'); },
-    Vb: function () { return T('電池電壓 V₀', 'battery voltage V₀'); },
+    Vb: function () { return T('電池電壓 V<sub>0</sub>', 'battery voltage V<sub>0</sub>'); },
     k: function () { return T('介電常數 κ', 'dielectric constant κ'); },
     f: function () { return T('插入比例', 'fraction inserted'); },
     mode: function () { return T('連接方式', 'connection'); }
@@ -1027,7 +1027,7 @@
     if (!g) return;
     const to = describe(g.key);
     const modeTxt = state.mode === 'V' ? T('（V 固定）', ' (V fixed)') : T('（Q 固定）', ' (Q fixed)');
-    $('lastStep').textContent = g.from === to ? '' :
+    $('lastStep').innerHTML = g.from === to ? '' : // 只含程式產生的文字（V<sub>0</sub> 下標不可用 Unicode 下標字元）
       T('前一狀態 → 現在：', 'Previous → now: ') + LABELS[g.key]() + ' ' + g.from + ' → ' + to + (g.key === 'mode' ? '' : modeTxt);
   }
 
@@ -1101,7 +1101,7 @@
     requestDraw();
   }
 
-  function setStatus(msg) { $('status').textContent = msg || ''; }
+  function setStatus(msg) { $('status').innerHTML = msg || ''; } // 訊息都由程式產生；下標用 <sub>，不可用 Unicode 下標字元
 
   // ---------- 連接方式 ----------
   function setMode(m) {
@@ -1114,8 +1114,8 @@
       setStatus(T('開關斷開：電荷無處可去，Q 固定。改變 d、A 或 κ，看看 V、E、U 怎麼變。',
         'Switch open: the charge has nowhere to go, so Q is fixed. Change d, A or κ and watch V, E and U.'));
     } else {
-      setStatus(T('開關接上：電池讓兩板間的電壓等於 V₀，電荷流動直到 Q = CV₀。',
-        'Switch closed: the battery makes the voltage between the plates equal V₀; charge flows until Q = CV₀.'));
+      setStatus(T('開關接上：電池讓兩板間的電壓等於 V<sub>0</sub>，電荷流動直到 Q = CV<sub>0</sub>。',
+        'Switch closed: the battery makes the voltage between the plates equal V<sub>0</sub>; charge flows until Q = CV<sub>0</sub>.'));
     }
     state.mode = m;
     switchSound(m === 'V');

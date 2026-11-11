@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Resonance in an Air Column: Measuring the Speed of Sound | Astro Ni Physics Lab">氣柱的共鳴（共鳴管測聲速）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="敲響音叉、拖曳蓄水桶降低水面，用響度計找出共鳴位置並套上橡皮筋，由相鄰共鳴點的間距求出波長、聲速與管口修正。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="氣柱的共鳴（共鳴管測聲速）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="敲響音叉、拖曳蓄水桶降低水面，用響度計找出共鳴位置並套上橡皮筋，由相鄰共鳴點的間距求出波長、聲速與管口修正。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/resonance-tube.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/resonance-tube.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="氣柱的共鳴（共鳴管測聲速）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"氣柱的共鳴（共鳴管測聲速）","alternateName":"Resonance in an Air Column: Measuring the Speed of Sound","description":"敲響音叉、拖曳蓄水桶降低水面，用響度計找出共鳴位置並套上橡皮筋，由相鄰共鳴點的間距求出波長、聲速與管口修正。","url":"https://astro1222ni.github.io/physics-lab/resonance-tube.html","image":"https://astro1222ni.github.io/physics-lab/img/og/resonance-tube.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","聲波（Sound Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 氣柱的共鳴頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布可以上下捲動頁面，只有蓄水桶的拖曳把手（#tank）攔下觸控 */
+    .rt #cv { aspect-ratio: auto; height: 560px; touch-action: pan-y; cursor: default; }
+    .rt #gcv { aspect-ratio: auto; height: 326px; touch-action: pan-y; cursor: default; }
+    .rt + .rt { margin-top: 16px; }
+    .rt button { min-height: 44px; }
+    .rt [hidden] { display: none !important; }
+    .rt .cvwrap { position: relative; }
+    /* 蓄水桶的拖曳把手：透明、蓋在畫布上的蓄水桶軌道，位置由程式設定 */
+    .rt #tank { position: absolute; left: 0; top: 0; width: 60px; height: 100px; touch-action: none; cursor: ns-resize;
+      border-radius: 10px; outline: none; -webkit-tap-highlight-color: transparent; }
+    .rt #tank:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent); }
+    .rt .waterbar { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); align-items: center; gap: 6px; margin: 10px 2px 0; }
+    .rt .waterbar .wl { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); padding-right: 2px; line-height: 1.25; }
+    .rt .waterbar button { padding: 4px 2px; font-variant-numeric: tabular-nums; white-space: nowrap; font-size: calc(13px * var(--fs, 1)); }
+    @media (max-width: 420px) { .rt .waterbar { gap: 5px; } .rt .waterbar button { font-size: calc(12.5px * var(--fs, 1)); } }
+    .rt .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 2px 0; }
+    .rt .playbar button { flex: 1 1 auto; }
+    .rt .playbar #strike { font-weight: 700; min-width: 7.5em; }
+    .rt .playbar #record { font-weight: 600; }
+    .rt .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rt .stage .status { margin: 6px 4px 0; }
+    .rt .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .rt .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .rt .slider input[type="range"] { height: 28px; margin: 0; }
+    .rt .slider label sub, dl.readout sub, .rt .hint sub, table.data sub { font-size: .75em; }
+    .rt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .forks { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .seg2 button, .forks button { padding: 4px 4px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+    .forks button small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .seg2 button[aria-pressed="true"], .forks button[aria-pressed="true"], .gtabs button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .forks button[aria-pressed="true"] small { color: var(--accent); }
+    .rt .checks label { min-height: 44px; }
+    .rt .checks input { width: 17px; height: 17px; flex: none; }
+    .rt .checks.col { flex-direction: column; gap: 0; }
+    /* 步驟清單：目前步驟反白、完成打勾 */
+    .steps { list-style: none; counter-reset: st; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .steps li { counter-increment: st; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start;
+      padding: 6px 8px; border-radius: 8px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; color: var(--muted); transition: background-color .2s ease-out; }
+    .steps li::before { content: counter(st); width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center;
+      font-weight: 700; font-size: calc(12px * var(--fs, 1)); border: 1.5px solid var(--border); color: var(--muted); box-sizing: border-box; }
+    .steps li.done::before { content: "✓"; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    .steps li.cur { background: var(--accent-soft); color: var(--text); }
+    .steps li.cur::before { border-color: var(--accent); color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) { .steps li { transition: none; } }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .rt dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .rt dl.readout dd { white-space: nowrap; }
+    dl.readout dd.wide { grid-column: 1 / -1; text-align: left; white-space: normal; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.warn { color: var(--pos); }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dia { width: 9px; height: 9px; border-radius: 1px; transform: rotate(45deg); margin-right: 8px; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.band { height: 6px; border-radius: 2px; }
+    /* 2D／3D 檢視切換（與帶電粒子、電場模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .stage.is3d .cvwrap { display: none; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    .stage.is3d #hint2d { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 4 / 3; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 3 / 4; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .rt3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .rt3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; line-height: 1.25; font-weight: 600; font-variant-numeric: tabular-nums;
+      font-size: calc(12px * var(--fs, 1)); color: var(--text); will-change: transform;
+      text-shadow: 0 0 3px var(--canvas-bg), 0 0 3px var(--canvas-bg), 0 0 2px var(--canvas-bg); }
+    .rt3-lbl.tick { color: var(--muted); font-weight: 500; font-size: calc(11px * var(--fs, 1)); }
+    .rt3-meter { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px; margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .rt3-meter b { font-size: calc(18px * var(--fs, 1)); color: var(--accent); }
+    /* 數據表 */
+    .gtabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 2px 8px; }
+    .gtabs button { min-height: 44px; font-size: calc(13px * var(--fs, 1)); line-height: 1.3; padding: 4px 6px; }
+    .tablewrap { overflow-x: auto; margin: 8px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    table.data tr.cur td { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data td.nn { color: var(--accent); font-weight: 700; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    .rt .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .guess { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+    .guess input { font: inherit; font-size: calc(16px * var(--fs, 1)); width: 7.5em; min-height: 44px; padding: 6px 10px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); font-variant-numeric: tabular-nums; }
+    .guess input:focus { outline: none; border-color: var(--accent); }
+    .guess-out { margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .guess-out:empty { display: none; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .equip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 4px 18px; padding-left: 1.3em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#wave&quot;&gt;Waves &amp;amp; Sound&lt;/a&gt; / &lt;a href=&quot;index.html#ch-sound&quot;&gt;Sound waves&lt;/a&gt;"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#wave">波動與聲音</a> ／ <a href="index.html#ch-sound">聲波</a></nav>
+      <h1 data-en="Resonance in an Air Column: Measuring the Speed of Sound">氣柱的共鳴（共鳴管測聲速）</h1>
+      <p data-en="The textbook experiment. Strike a tuning fork and hold it over a glass tube that is partly filled with water. Lower the water slowly by moving the reservoir: at certain water levels the air column suddenly sounds loud — resonance. Mark those levels, use the distance between neighbouring resonances to find the wavelength and the speed of sound, and compare it with the value expected at room temperature.">課本的必做實驗。敲響音叉放在裝了水的玻璃管口上方，移動蓄水桶讓管內水面慢慢下降：水面到了某些位置，管內的空氣柱會突然發出很響的聲音——這就是共鳴。把這些位置記錄下來，由相鄰共鳴點的距離求出波長與聲速，再和室溫下的理論值比較。</p>
+    </header>
+
+    <!-- 第一部分：實驗裝置與操作 -->
+    <div class="lab rt">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" aria-label="共鳴管實驗裝置：上方是音叉，玻璃管旁有公分刻度，管內有水，蓄水桶以橡皮管連通；右側是響度計與「響度對水面位置」的掃描曲線" data-en-aria-label="The resonance-tube apparatus: the tuning fork above, the glass tube with a centimetre scale and water inside, the reservoir joined by a rubber hose; on the right, the loudness meter and the scan of loudness against water level"></canvas>
+          <div id="tank" role="slider" tabindex="0" aria-label="蓄水桶：上下拖曳改變管內水面" data-en-aria-label="Reservoir: drag up or down to change the water level in the tube" aria-valuemin="2" aria-valuemax="98" aria-valuenow="40"></div>
+        </div>
+        <div id="view3"></div>
+        <p class="rt3-meter l3" id="meter3" aria-live="off"></p>
+        <div class="waterbar" role="group" aria-label="微調水面" data-en-aria-label="Fine-tune the water level">
+          <span class="wl" data-en-html="Water<br>level">水面<br>微調</span>
+          <button type="button" id="up10" aria-label="水面上升 1 cm" data-en-aria-label="Raise the water by 1 cm">▲ 1 cm</button>
+          <button type="button" id="up1" aria-label="水面上升 1 mm" data-en-aria-label="Raise the water by 1 mm">▲ 1 mm</button>
+          <button type="button" id="dn1" aria-label="水面下降 1 mm" data-en-aria-label="Lower the water by 1 mm">▼ 1 mm</button>
+          <button type="button" id="dn10" aria-label="水面下降 1 cm" data-en-aria-label="Lower the water by 1 cm">▼ 1 cm</button>
+        </div>
+        <div class="playbar">
+          <button id="strike" class="primary" type="button" data-en="Strike the fork">敲音叉</button>
+          <button id="record" type="button" data-en="Record (rubber band)">記錄（套橡皮筋）</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、橡皮筋與響度掃描曲線；滑桿設定不變" data-en-title="Clear the data table, the rubber bands and the loudness scans; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--b-wave)" data-en-html="<i style=&quot;background:var(--b-wave)&quot;></i>Displacement amplitude of the air"><i style="background:var(--b-wave)"></i>空氣的位移振幅</span>
+          <span data-en-html="<i class=&quot;dia&quot; style=&quot;background:var(--accent)&quot;></i>Node"><i class="dia" style="background:var(--accent)"></i>波節</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Antinode"><i class="dot" style="background:var(--equi)"></i>波腹</span>
+          <span style="color:var(--pos)" data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--pos)&quot;></i>Rubber band (recorded)"><i class="band" style="background:var(--pos)"></i>橡皮筋（已記錄）</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Theoretical curve"><i class="dash"></i>理論曲線</span>
+        </div>
+        <p class="hint" id="hint2d" data-en="Heights are to scale (the tube is 100 cm long, the scale reads 0 at the mouth); the tube and the reservoir are drawn wider than they really are. The air moves up and down along the tube (a longitudinal wave): the coloured band shows how far each layer moves, drawn sideways so it can be seen. The dots are layers of air in slow motion. Drag the reservoir (or use the buttons) to move the water; the curve on the right is your scan of loudness against water level.">高度依比例（管長 100 cm，刻度 0 在管口）；管子與蓄水桶的寬度放大了。管內空氣沿著管子上下振動（縱波），彩色帶表示每一層空氣振動的幅度，為了看得見畫成橫向。小點是放慢的空氣層。拖曳蓄水桶（或按按鈕）移動水面；右側曲線是你掃描過的「響度對水面位置」。</p>
+        <p class="hint l3" data-en="3D view: the glass tube with its scale, the water, the rubber bands and the tuning fork. Inside the tube, thin rings are layers of air moving up and down (slow motion), and the translucent shape shows the displacement amplitude. Drag to rotate, pinch or scroll to zoom. The water level and the fork are controlled with the same buttons and sliders.">3D 檢視：有刻度的玻璃管、水、橡皮筋與音叉。管內的細圓環是上下振動的空氣層（慢動作），半透明的形狀表示位移振幅。拖曳可旋轉、兩指或滾輪可縮放；水面與音叉一樣用按鈕和滑桿操作。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps">
+            <li data-step="0" data-en="Read the thermometer and pick a tuning fork (note its frequency).">讀溫度計、選一支音叉（記下它的頻率）。</li>
+            <li data-step="1" data-en="Raise the reservoir until the water is close to the mouth of the tube (within 5 cm).">把蓄水桶拉高，讓管內水面接近管口（5 cm 以內）。</li>
+            <li data-step="2" data-en="Strike the fork and hold it 1–2 cm above the mouth, prongs vibrating along the tube.">敲響音叉，拿到管口上方 1–2 cm，振動方向與管子平行。</li>
+            <li data-step="3" data-en="Lower the water slowly. Where the sound is loudest, fine-tune up and down and press “Record” to mark it with a rubber band.">慢慢降低水面；聲音最響時上下微調找出最響的位置，按「記錄」套上橡皮筋。</li>
+            <li data-step="4" data-en="Keep lowering to find and record the second (and third) resonance.">繼續降低水面，找出並記錄第二個（第三個）共鳴位置。</li>
+            <li data-step="5" data-en="Use the analysis below: λ = 2 × spacing, v = fλ. Then change the fork or the room temperature and repeat.">看下方的分析：λ = 2 × 間距、v = fλ。再換一支音叉或改變室溫，重做一次。</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Sound source">聲源</h2>
+          <div class="forks" role="group" aria-label="選擇聲源" data-en-aria-label="Choose the sound source" id="forks">
+            <button type="button" data-src="fork" data-f="384" aria-pressed="false">384<small>Hz</small></button>
+            <button type="button" data-src="fork" data-f="440" aria-pressed="false">440<small>Hz</small></button>
+            <button type="button" data-src="fork" data-f="512" aria-pressed="true">512<small>Hz</small></button>
+            <button type="button" data-src="fork" data-f="640" aria-pressed="false">640<small>Hz</small></button>
+            <button type="button" data-src="fork" data-f="768" aria-pressed="false">768<small>Hz</small></button>
+            <button type="button" data-src="fork" data-f="1024" aria-pressed="false">1024<small>Hz</small></button>
+            <button type="button" data-src="mystery" aria-pressed="false" data-en-html="?<small>mystery</small>">?<small>神秘音叉</small></button>
+            <button type="button" data-src="app" aria-pressed="false" data-en-html="App<small>phone</small>">App<small>手機發聲</small></button>
+          </div>
+          <div class="slider" id="boxApp" hidden><label for="fApp" data-en="Phone app frequency f">手機 App 的頻率 f</label><output id="fAppo"></output>
+            <input id="fApp" type="range" min="250" max="1500" step="1" value="500" data-decimals="1"></div>
+          <p class="hint" id="srcHint">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Conditions">實驗條件</h2>
+          <div class="slider"><label for="temp" data-en="Room temperature T (thermometer)">室溫 T（溫度計讀數）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="0" max="40" step="0.5" value="25" data-decimals="1"></div>
+          <div class="slider"><label for="dia" data-en="Inner diameter of the tube d">玻璃管內徑 d</label><output id="diao"></output>
+            <input id="dia" type="range" min="1.6" max="5" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="lev" data-en="Water level L (distance from the mouth)">水面位置 L（距管口）</label><output id="levo"></output>
+            <input id="lev" type="range" min="2" max="98" step="0.1" value="40" data-decimals="1"></div>
+          <p class="seg-label" id="errLabel" data-en="Measurement:">測量：</p>
+          <div class="seg2" role="group" aria-labelledby="errLabel">
+            <button type="button" id="ideal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" id="noisy" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <p class="hint" id="errHint">—</p>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks col">
+            <label><input id="showEnv" type="checkbox" checked><span data-en="Displacement amplitude, nodes and antinodes">位移振幅、波節與波腹</span></label>
+            <label><input id="showParts" type="checkbox" checked><span data-en="Layers of air (slow motion)">空氣層的振動（慢動作）</span></label>
+            <label><input id="showTheory" type="checkbox"><span data-en="Theoretical loudness curve">理論響度曲線</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：數據表與分析 -->
+    <div class="lab rt">
+      <div class="stage">
+        <h2 data-en="Data table and graph">數據表與圖</h2>
+        <p class="hint" data-en="Each “Record” adds the reading of the water level (to the nearest millimetre, like a real scale) for the present fork, temperature and tube. Readings within 4 cm of each other are treated as repeats of the same resonance and averaged. The highlighted rows belong to the present conditions.">每按一次「記錄」，就把目前的水面讀數（和真的尺一樣讀到 1 mm）加進表格，並記下當時的音叉、室溫與管徑。相距 4 cm 以內的讀數視為同一個共鳴點的重複測量，取平均。反白的列是目前條件下的數據。</p>
+        <div class="gtabs" role="group" aria-label="選擇圖表" data-en-aria-label="Choose the graph">
+          <button type="button" id="gLn" aria-pressed="true" data-en-html="L–n graph<br>(this fork)">L–n 圖<br>（目前的音叉）</button>
+          <button type="button" id="gLf" aria-pressed="false" data-en-html="λ–1/f graph<br>(all forks)">λ–1/f 圖<br>（所有音叉）</button>
+        </div>
+        <canvas id="gcv" aria-label="數據圖：共鳴位置 L 對共鳴次序 n，或波長對頻率倒數，含最佳直線" data-en-aria-label="Data graph: resonance position L against its order n, or wavelength against 1/f, with the best-fit line"></canvas>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <div class="gbtns">
+          <button type="button" id="undo" data-en="Remove the last reading">刪除最後一筆</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis (present conditions)">分析（目前的條件）</h2>
+          <dl class="readout">
+            <dt data-en="Readings / resonances">讀數筆數／共鳴點數</dt><dd id="aN">—</dd>
+            <dt data-en="Resonance positions">共鳴位置（平均）</dt><dd id="aLs" class="wide">—</dd>
+            <dt data-en-html="Spacing <span class=&quot;f&quot;>ΔL = λ/2</span>">相鄰間距 <span class="f">ΔL = λ/2</span></dt><dd id="aDL">—</dd>
+            <dt data-en-html="Wavelength <span class=&quot;f&quot;>λ</span>">波長 <span class="f">λ</span></dt><dd id="aLam">—</dd>
+            <dt data-en-html="Speed of sound <span class=&quot;f&quot;>v = fλ</span>">聲速 <span class="f">v = fλ</span></dt><dd id="aV">—</dd>
+            <dt data-en="Difference from theory">與理論值相差</dt><dd id="aErr">—</dd>
+            <dt data-en-html="End correction <span class=&quot;f&quot;>e</span>">管口修正 <span class="f">e</span></dt><dd id="aE">—</dd>
+            <dt data-en-html="First resonance only <span class=&quot;f&quot;>4fL<sub>1</sub></span>">只用第一共鳴 <span class="f">4fL<sub>1</sub></span></dt><dd id="aNaive">—</dd>
+            <dd id="aNote" class="wide" hidden></dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Theory at this temperature">此溫度的理論值</h2>
+          <dl class="readout">
+            <dt data-en-html="<span class=&quot;f&quot;>v = 331.3√(1 + T/273.15)</span>"><span class="f">v = 331.3√(1 + T/273.15)</span></dt><dd id="tV">—</dd>
+            <dt data-en-html="Textbook approximation <span class=&quot;f&quot;>331 + 0.6T</span>">課本近似 <span class="f">331 + 0.6T</span></dt><dd id="tVl">—</dd>
+            <dt data-en-html="End correction <span class=&quot;f&quot;>e ≈ 0.61r</span>">管口修正 <span class="f">e ≈ 0.61r</span></dt><dd id="tE">—</dd>
+            <dt data-en="Speed from the λ–1/f graph">λ–1/f 圖求得的聲速</dt><dd id="tFit">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" id="guessCard" hidden>
+          <h2 data-en="Mystery fork">神秘音叉</h2>
+          <p class="hint" style="margin-top:0" data-en="The frequency of this fork is hidden. Measure the wavelength, work out the speed of sound at this temperature, and calculate f = v/λ.">這支音叉的頻率看不到。量出波長，算出此溫度的聲速，再由 f = v/λ 推算頻率。</p>
+          <div class="guess">
+            <label for="guessF" data-en="f =">f =</label>
+            <input id="guessF" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" aria-label="推算的頻率（Hz）" data-en-aria-label="Your frequency (Hz)">
+            <span>Hz</span>
+            <button type="button" id="guessBtn" data-en="Check">核對</button>
+          </div>
+          <p class="guess-out" id="guessOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="See how the resonance of an air column is linked to standing waves: the column sounds loudly only when a standing wave fits into it.">觀察空氣柱的共鳴與駐波的關係：只有管內剛好能形成駐波時，空氣柱才會大聲共鳴。</li>
+        <li data-en="Use a sound of known frequency (a tuning fork, or a phone app) to measure the speed of sound in air, and compare it with the value expected at room temperature.">用頻率已知的聲音（音叉或手機 App）測量空氣中的聲速，並與室溫下的理論值比較。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <ul class="equip">
+        <li data-en="Glass tube with a centimetre scale (0 at the mouth)">玻璃管（附公分刻度，管口為 0）</li>
+        <li data-en="Stand with clamps">鐵架與夾具</li>
+        <li data-en="Water reservoir and rubber hose">蓄水桶與橡皮管（連通管）</li>
+        <li data-en="Tuning forks of several frequencies and a rubber mallet">數支不同頻率的音叉、橡皮槌</li>
+        <li data-en="Rubber bands to mark the water level">橡皮筋數條（標記水面位置）</li>
+        <li data-en="Thermometer">溫度計</li>
+        <li data-en="(Optional) a phone with a tone-generator or sound-meter app">（可選）手機：發聲或測分貝的 App</li>
+      </ul>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <p data-en-html="The tuning fork sends sound waves down the tube. They reflect from the water surface and come back up, reflect again at the open mouth, and so on. The air touching the water cannot move up or down, so the water surface is a <strong>displacement node</strong>; at the open mouth the air can move freely, so there is a <strong>displacement antinode</strong> there. A standing wave with a node at one end and an antinode at the other fits only when the column holds an odd number of quarter-wavelengths. At those lengths every reflection arrives back in step with the fork, the vibration builds up and the column sounds loud — <strong>resonance</strong>.">音叉把聲波送進管內，聲波在水面反射回來，到了管口又反射回去，如此來回。貼著水面的空氣不能上下移動，所以水面是<strong>位移的波節</strong>；管口的空氣可以自由進出，那裡是<strong>位移的波腹</strong>。一端是波節、一端是波腹的駐波，只有在氣柱長度剛好是四分之一波長的奇數倍時才放得進去。這時每一次反射回來的波都和音叉同步，振動越疊越大，空氣柱就大聲響起——這就是<strong>共鳴</strong>。</p>
+      <p data-en-html="In reality the antinode is not exactly at the mouth but a little outside it, by the <strong>end correction</strong> \(e\). For a round tube with a thin wall, theory gives \(e \approx 0.6\,r\) (\(r\) = inner radius). With \(L\) measured from the mouth to the water:">實際上開口端的波腹不在管口，而是在管口外一小段距離 \(e\)，稱為<strong>管口修正</strong>。管壁很薄的圓管，理論上 \(e \approx 0.6\,r\)（\(r\) 為管的內半徑）。若 \(L\) 是管口到水面的距離：</p>
+      <div class="formula multi">
+        \[ L_n + e = (2n - 1)\,\frac{\lambda}{4} \] \[ n = 1, 2, 3, \dots \]
+      </div>
+      <p data-en-html="The end correction is hard to measure directly, but it disappears when we subtract two neighbouring resonances: they are always half a wavelength apart.">管口修正不容易直接量，但兩個相鄰的共鳴位置相減時它就消失了：相鄰共鳴點永遠相距半個波長。</p>
+      <div class="formula multi">
+        \[ L_{n+1} - L_n = \frac{\lambda}{2} \] \[ v = f\lambda = 2f\,(L_2 - L_1) \] \[ e = \frac{\lambda}{4} - L_1 \]
+      </div>
+      <p data-en-html="With three or more resonances, plot \(L_n\) against \(n\): the points lie on the straight line \(L_n = \tfrac{\lambda}{2}\,n - \left(\tfrac{\lambda}{4} + e\right)\). Its slope is \(\lambda/2\) and its intercept is \(-(\lambda/4 + e)\). Using only the first resonance and ignoring \(e\), \(v = 4fL_1\), always gives too small a value.">有三個以上的共鳴點時，畫 \(L_n\) 對 \(n\) 的圖：各點落在直線 \(L_n = \tfrac{\lambda}{2}\,n - \left(\tfrac{\lambda}{4} + e\right)\) 上，斜率是 \(\lambda/2\)，截距是 \(-(\lambda/4 + e)\)。若只用第一個共鳴點、忽略 \(e\)，以 \(v = 4fL_1\) 計算，得到的聲速一定偏小。</p>
+      <h3 data-en="The speed of sound depends on temperature">聲速與溫度</h3>
+      <p data-en-html="Sound travels faster in warmer air. For an ideal gas \(v \propto \sqrt{T}\) (absolute temperature), so with \(T\) in °C">溫度越高，聲音傳得越快。理想氣體的聲速與絕對溫度的平方根成正比，所以（\(T\) 用 °C）</p>
+      <div class="formula multi">
+        \[ v = 331.3\sqrt{1 + \frac{T}{273.15}}\ \mathrm{m/s} \] \[ \approx (331 + 0.6\,T)\ \mathrm{m/s} \]
+      </div>
+      <p data-en-html="The straight-line form used in the textbook agrees with the square-root formula to better than 0.3% between 0 °C and 40 °C. When the room is warmer, the wavelength of the same fork is longer, so all the resonances move further down the tube.">課本用的直線近似式，在 0 °C 到 40 °C 之間和平方根公式相差不到 0.3%。室溫較高時，同一支音叉的波長較長，所有共鳴位置都往下移（離管口更遠）。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en="Slip a few rubber bands onto the tube; you will slide them to the resonance levels.">先在玻璃管上套幾條橡皮筋，之後用來標記共鳴時的水面。</li>
+        <li data-en="Fill the tube through the reservoir, then raise the reservoir until the water in the tube is just below the mouth (the two water levels are always equal, like any connected vessels).">由蓄水桶把水灌進管內，再把蓄水桶慢慢拉高，讓管內水面接近管口（連通管的兩邊水面一樣高）。</li>
+        <li data-en="Read the thermometer and note the frequency stamped on the fork. Strike the fork with the rubber mallet and hold it 1–2 cm above the mouth, with the prongs vibrating along the tube. Do not let the fork touch the glass.">讀溫度計、記下音叉上標示的頻率。用橡皮槌敲音叉，拿到管口上方 1–2 cm，讓叉臂的振動方向與管子平行；不要讓音叉碰到玻璃管。</li>
+        <li data-en="Lower the reservoir slowly. When the sound becomes loudest, move the water a little up and down to find the loudest level (a sound-meter app helps) and mark it with a rubber band.">慢慢降低蓄水桶。聲音變得最響時，讓水面上下微調，找出最響的位置（可以用手機的分貝計 App 幫忙），套上橡皮筋做記號。</li>
+        <li data-en="Keep lowering the water to find the next resonances, until the water cannot go lower. Measure each mark from the mouth.">繼續降低水面，找出下一個、再下一個共鳴位置，直到水面不能再降。量出每條橡皮筋到管口的距離。</li>
+        <li data-en="Twice the spacing of neighbouring marks is the wavelength; v = fλ. Compare it with the value from the room temperature.">相鄰兩記號距離的兩倍就是波長，聲速 v = fλ；再與由室溫算出的理論值比較。</li>
+        <li data-en="Repeat with forks of other frequencies.">換不同頻率的音叉，重複以上步驟。</li>
+      </ol>
+
+      <h3 data-en="Things to watch out for">注意事項</h3>
+      <ul>
+        <li data-en="Sound in air is a longitudinal wave, so the prongs should vibrate along the axis of the tube, close to the mouth but never touching the glass.">空氣中的聲波是縱波，叉臂的振動方向要和管子的軸平行；靠近管口，但絕不能碰到玻璃。</li>
+        <li data-en="Move the water slowly near a resonance: the loud region is only about a centimetre wide, and it is easy to pass straight through it.">在共鳴點附近要慢慢移動水面：響的範圍只有大約 1 cm 寬，很容易一下子就錯過。</li>
+        <li data-en="Read the scale with your eye level with the bottom of the curved water surface (the meniscus) to avoid parallax.">讀刻度時，視線要和凹液面的底部同高，避免視差。</li>
+        <li data-en="A tuning fork fades within seconds: strike it again before comparing loudness, with about the same force each time.">音叉的聲音幾秒內就會變小：比較響度前要重新敲，而且每次力道差不多。</li>
+        <li data-en="Use the temperature of the air inside the room at the time of the experiment; a change of 1 °C changes the speed of sound by about 0.6 m/s.">要用實驗當時的室溫；溫度差 1 °C，聲速大約差 0.6 m/s。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en-html="Why is \(v = 2f(L_2 - L_1)\) more accurate than \(v = 4fL_1\)?">為什麼 \(v = 2f(L_2 - L_1)\) 比 \(v = 4fL_1\) 準確？</li>
+        <li data-en="If the room becomes warmer, do the resonance levels move up or down? Why?">如果室溫升高，共鳴位置會往上移還是往下移？為什麼？</li>
+        <li data-en="With a fork of twice the frequency, how does the spacing of the resonances change, and do you find more or fewer of them in the same tube?">換成頻率加倍的音叉，共鳴點的間距怎麼變？同一支管子可以找到比較多還是比較少個共鳴點？</li>
+        <li data-en="The water can be lowered to 98 cm below the mouth. What is the lowest fork frequency for which you can still find a resonance?">水面最低只能降到距管口 98 cm。頻率最低多少的音叉，還找得到共鳴？</li>
+        <li data-en="Why must the prongs vibrate along the tube rather than across it?">為什麼叉臂的振動方向要和管子平行，而不是垂直？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="The end correction \(e\) cancels in \(L_2 - L_1\); \(4fL_1\) leaves it out and so is too small by \(4fe\).">兩個共鳴位置相減時管口修正 \(e\) 抵消；\(4fL_1\) 少算了 \(e\)，結果偏小 \(4fe\)。</li>
+          <li data-en-html="Down. \(v\) increases, so \(\lambda = v/f\) increases and every \(L_n = (2n-1)\lambda/4 - e\) becomes larger.">往下移（離管口更遠）。聲速變大，波長 \(\lambda = v/f\) 變長，每個 \(L_n = (2n-1)\lambda/4 - e\) 都變大。</li>
+          <li data-en="The spacing λ/2 is halved, so about twice as many resonances fit into the tube.">間距 λ/2 變成一半，同一支管子大約可以找到兩倍多的共鳴點。</li>
+          <li data-en-html="The first resonance needs \(\lambda/4 \le L_{\max} + e\), so \(f \ge v/[4(L_{\max} + e)]\) — about 87 Hz at 25 °C.">第一個共鳴要 \(\lambda/4 \le L_{\max} + e\)，所以 \(f \ge v/[4(L_{\max} + e)]\)，25 °C 時大約 87 Hz。</li>
+          <li data-en="The air in the tube can only be pushed along the tube; prongs moving along the axis push and pull the air column directly and drive it most strongly.">管內的空氣只能沿著管子被推動；叉臂沿管軸振動時，直接推拉空氣柱，驅動的效果最好。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Find the first resonance by ear.</strong> Turn on the sound, strike the fork, and drag the reservoir slowly downward from the top. The loudness jumps up sharply in a narrow range; the scan on the right shows a sharp peak."><strong>用耳朵找第一個共鳴</strong>：打開音效、敲音叉，由上往下慢慢拖曳蓄水桶。響度會在很窄的範圍內突然變大，右側的掃描曲線出現一個尖峰。</li>
+        <li data-en-html="<strong>Node at the water, antinode outside the mouth.</strong> At resonance the coloured band is zero at the water surface and widest a little above the mouth — that distance is \(e\)."><strong>水面是波節、波腹在管口外</strong>：共鳴時，彩色帶在水面寬度為零，最寬的地方在管口上方一點點——那段距離就是 \(e\)。</li>
+        <li data-en-html="<strong>Deeper resonances are weaker and wider.</strong> A longer column loses more energy on the way up and down."><strong>越深的共鳴越弱、越寬</strong>：氣柱越長，聲波來回時損失的能量越多。</li>
+        <li data-en-html="<strong>Thick and thin tubes.</strong> Measure the same fork in a 1.6 cm and a 5.0 cm tube: the spacing stays the same, but the resonances in the thick tube are closer to the mouth by the difference of the end corrections."><strong>粗管與細管</strong>：同一支音叉在內徑 1.6 cm 與 5.0 cm 的管子各量一次：間距不變，但粗管的共鳴位置比較靠近管口，差距就是兩者管口修正的差。</li>
+        <li data-en-html="<strong>Warm and cold rooms.</strong> Change the room temperature from 10 °C to 35 °C and watch the resonances move down."><strong>冷天與熱天</strong>：把室溫由 10 °C 改成 35 °C，看共鳴位置往下移。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Speed of sound: \(v = 331.3\sqrt{1 + T/273.15}\) m/s (dry air). End correction: \(e = 0.6133\,r\), the low-frequency value for an open, unflanged round tube (Levine and Schwinger). Resonance: \(L_n + e = (2n-1)\lambda/4\).">聲速：\(v = 331.3\sqrt{1 + T/273.15}\) m/s（乾燥空氣）。管口修正：\(e = 0.6133\,r\)，這是無凸緣開口圓管的低頻理論值（Levine 與 Schwinger）。共鳴條件：\(L_n + e = (2n-1)\lambda/4\)。</li>
+        <li data-en-html="Loudness: the wave sent in by the fork bounces between the water (a rigid end) and the mouth. Each round trip it travels an extra \(2(L+e)\) and keeps a fraction \(\rho\) of its amplitude. Adding all the reflections gives the amplification \(G = 1/\lvert 1 + \rho\,e^{-i\,2k(L+e)}\rvert\); the meter shows the relative loudness \(20\log_{10} G\) in dB. \(\rho = 0.95 \times e^{-(kr)^2/2} \times e^{-2\alpha L}\): radiation from the mouth, damping by the tube wall (\(\alpha = 3\times10^{-5}\sqrt{f}/r\) per metre) and a factor 0.95 for other losses (a wobbly water surface, a rough wall, the joints), chosen so the resonances are about as wide as with real school apparatus.">響度：音叉送進的聲波在水面（剛性端）與管口之間來回反射，每往返一次多走 \(2(L+e)\)，振幅保留 \(\rho\) 倍。把所有反射波相加，得到放大倍數 \(G = 1/\lvert 1 + \rho\,e^{-i\,2k(L+e)}\rvert\)；響度計顯示的是相對響度 \(20\log_{10} G\)（dB）。\(\rho = 0.95 \times e^{-(kr)^2/2} \times e^{-2\alpha L}\)：分別是管口的輻射損失、管壁的阻尼（\(\alpha = 3\times10^{-5}\sqrt{f}/r\)，單位 1/m），以及其他損耗（水面晃動、管壁不平、接頭等）合併的 0.95；這個值讓共鳴寬度接近學校實際的儀器。</li>
+        <li data-en-html="The coloured band is the standing-wave amplitude \(\propto G\,\lvert\sin ky\rvert\) (\(y\) = height above the water), drawn as an ideal standing wave. The dots are layers of air moving with this amplitude, slowed down to about one vibration per second and greatly exaggerated.">彩色帶是駐波的振幅 \(\propto G\,\lvert\sin ky\rvert\)（\(y\) 為水面以上的高度），畫成理想的駐波。小點是以此振幅上下振動的空氣層，放慢成大約每秒振動一次，振幅也放大很多。</li>
+        <li data-en="The struck fork fades with a time constant of 10 s; below about 8% of its starting amplitude the meter stops reading. The phone app keeps a steady tone.">敲擊後的音叉振幅以 10 s 的時間常數衰減，低於起始振幅約 8% 時響度計不再讀數。手機 App 則持續發出穩定的聲音。</li>
+        <li data-en="Readings are rounded to 1 mm. “With errors” adds a random reading error (standard deviation 1 mm, from the meniscus and parallax) and makes the meter flicker by about ±1 dB, as a real sound meter does in a classroom.">讀數取到 1 mm。「含誤差」時，每筆讀數另加隨機誤差（標準差 1 mm，來自凹液面與視差），響度計也會像在教室中一樣跳動約 ±1 dB。</li>
+        <li data-en="Analysis: readings within 4 cm are averaged as one resonance; the order n of each resonance is worked out from the positions themselves (they should be close to (n − ½)·λ/2); then a least-squares line L = (λ/2)n − (λ/4 + e) gives λ and e. The mystery fork has a random frequency between 300 and 900 Hz, chosen when the page loads or everything is cleared.">分析：相距 4 cm 以內的讀數平均成一個共鳴點；每個共鳴點是第幾次共鳴，由位置本身推定（應該接近 (n − ½)·λ/2）；再用最小平方法擬合直線 L = (λ/2)n − (λ/4 + e)，求出 λ 與 e。神秘音叉的頻率在 300 到 900 Hz 之間隨機選定，載入頁面或按「全部清除」時重新選。</li>
+        <li data-en="3D view: the same physics drives the picture; the tube, water level, rubber bands and the displacement amplitude come from the same calculations as the 2D view. Heights are to scale; the tube is drawn 3 times wider than it really is, so the layers of air inside can be seen. It uses the three.js library (MIT licence), which is downloaded only when you switch to 3D.">3D 檢視：畫面與 2D 使用相同的物理計算（管子、水面、橡皮筋與位移振幅）。高度依真實比例，管徑放大 3 倍示意，才看得見管內的空氣層。使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/resonance-tube-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/resonance-tube-3d.js?v=202611120013"></script>
+  <script src="js/resonance-tube.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="resonance-tube"></script>
+  <script src="js/missions/resonance-tube.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="resonance-tube"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

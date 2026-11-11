@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Ohm’s Law and Circuits: Measuring Resistance | Astro Ni Physics Lab">歐姆定律與電路（電阻的測量）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用電源、電阻箱、毫安培計與伏特計畫出導線的 I–V 圖，比較安培計內接與外接的系統誤差，看燈泡為何不遵守歐姆定律。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ohms-law.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ohms-law.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ohms-law.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ohms-law.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="歐姆定律與電路（電阻的測量）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用電源、電阻箱、毫安培計與伏特計畫出導線的 I–V 圖，比較安培計內接與外接的系統誤差，看燈泡為何不遵守歐姆定律。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/ohms-law.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/ohms-law.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="歐姆定律與電路（電阻的測量）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"歐姆定律與電路（電阻的測量）","alternateName":"Ohm’s Law and Circuits: Measuring Resistance","description":"用電源、電阻箱、毫安培計與伏特計畫出導線的 I–V 圖，比較安培計內接與外接的系統誤差，看燈泡為何不遵守歐姆定律。","url":"https://astro1222ni.github.io/physics-lab/ohms-law.html","image":"https://astro1222ni.github.io/physics-lab/img/og/ohms-law.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電路學（Electric Circuits）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 歐姆定律與電路頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    .oh canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    .oh #cv { height: 460px; }
+    .oh #mv { height: 250px; margin-top: 10px; }
+    .oh #gcv { height: 340px; }
+    .oh + .oh { margin-top: 16px; }
+    .oh button { min-height: 44px; }
+    .oh [hidden] { display: none !important; }
+    .oh .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .oh .playbar button { flex: 1 1 auto; }
+    .oh .playbar #rec { font-weight: 700; min-width: 7em; }
+    .oh .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .oh .stage .status { margin: 6px 4px 0; }
+    .oh .stage .status.warn { color: var(--pos); font-weight: 600; }
+    .oh .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .oh .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .oh .slider input[type="range"] { height: 28px; margin: 0; }
+    .oh .slider label sub, dl.readout sub, .oh .hint sub, table.data sub, .oh .info sub { font-size: .75em; }
+    .oh .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .oh .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg-label:first-of-type { margin-top: 2px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .elems { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .seg2 button, .seg3 button, .elems button { padding: 4px 4px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+    .elems button { font-size: calc(13px * var(--fs, 1)); }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .elems button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    /* 接法按鈕：內含小電路圖 */
+    .methods button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 6px; }
+    .methods svg { width: 100%; max-width: 128px; height: auto; display: block; }
+    .methods svg .ln { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+    .methods svg .vl { fill: none; stroke: var(--probe); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .methods svg .mc { fill: var(--surface); stroke: currentColor; stroke-width: 1.5; }
+    .methods svg .vc { fill: var(--surface); stroke: var(--probe); stroke-width: 1.6; }
+    .methods svg text { font: 700 9px system-ui, sans-serif; fill: currentColor; text-anchor: middle; dominant-baseline: central; }
+    .methods svg .vt { fill: var(--probe); }
+    .methods small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }
+    .methods button[aria-pressed="true"] small { color: var(--accent); }
+    .oh .zerorow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .oh .zerorow button { flex: 1 1 auto; }
+    /* 步驟清單：目前步驟反白、完成打勾 */
+    .steps { list-style: none; counter-reset: st; margin: 0; padding: 0; display: grid; gap: 2px; }
+    .steps li { counter-increment: st; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; align-items: start;
+      padding: 6px 8px; border-radius: 8px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; color: var(--muted); transition: background-color .2s ease-out; }
+    .steps li::before { content: counter(st); width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center;
+      font-weight: 700; font-size: calc(12px * var(--fs, 1)); border: 1.5px solid var(--border); color: var(--muted); box-sizing: border-box; }
+    .steps li.done::before { content: "✓"; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    .steps li.cur { background: var(--accent-soft); color: var(--text); }
+    .steps li.cur::before { border-color: var(--accent); color: var(--accent); }
+    .steps li .prog { grid-column: 2; margin-top: -4px; color: var(--accent); font-size: calc(12px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+    @media (prefers-reduced-motion: reduce) { .steps li { transition: none; } }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .oh dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .oh dl.readout dd { white-space: nowrap; }
+    dl.readout dd.wide { grid-column: 1 / -1; text-align: left; white-space: normal; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.warn { color: var(--pos); }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    /* 數據表 */
+    .tablewrap { overflow: auto; margin: 8px 2px 0; max-height: 300px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    table.data tr.other td { color: var(--muted); }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data td.m-ext { color: var(--neg); font-weight: 600; }
+    table.data td.m-int { color: var(--pos); font-weight: 600; }
+    table.data td.good { color: var(--probe); font-weight: 700; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    .oh .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .oh .gbtns button { flex: 1 1 auto; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .equip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: 4px 18px; padding-left: 1.3em; }
+    .notes .tblnote { overflow-x: auto; }
+    .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: center; white-space: nowrap; }
+    .notes table.spec th { color: var(--muted); font-weight: 600; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / &lt;a href=&quot;index.html#ch-circuits&quot;&gt;Electric Circuits&lt;/a&gt;"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ <a href="index.html#ch-circuits">電路學</a></nav>
+      <h1 data-en="Ohm’s Law and Circuits: Measuring Resistance">歐姆定律與電路（電阻的測量）</h1>
+      <p data-en="The textbook experiment on your desk: a DC power supply, a decade resistance box, a milliammeter and a voltmeter. Raise the voltage step by step, record the meter readings and draw the I–V graph. Compare the two ways of connecting the voltmeter and see why each one gives a slightly wrong resistance, watch a light bulb break Ohm’s law, and finally check with a digital multimeter.">把課本實驗搬到桌上：直流電源供應器、十進位可變電阻箱、毫安培計與伏特計。逐次調高電壓、記錄電表讀數、畫出 I–V 圖。比較伏特計的兩種接法，看看各自為什麼量到的電阻會有一點點偏差；再看燈泡如何不遵守歐姆定律，最後用三用電表直接驗證。</p>
+    </header>
+
+    <!-- 第一部分：實驗桌與電表 -->
+    <div class="lab oh">
+      <div class="stage">
+        <canvas id="cv" aria-label="實驗桌：毫安培計、待測元件、伏特計、可變電阻箱與直流電源供應器，以紅黑導線連接，導線上的小點代表移動的電荷" data-en-aria-label="The lab bench: milliammeter, the component under test, voltmeter, decade resistance box and DC power supply joined by red and black leads; the dots on the leads are moving charges"></canvas>
+        <canvas id="mv" aria-label="兩個電表的錶面特寫：指針、刻度、目前的檔位與讀數" data-en-aria-label="Close-up of the two meter faces: needle, scale, selected range and reading"></canvas>
+        <div class="playbar">
+          <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
+          <button id="undo" type="button" data-en="Remove last point">移除最後一點</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、I–V 圖與三用電表的紀錄；電源、電阻箱與電表的設定不變" data-en-title="Clear the data table, the I–V graph and the multimeter readings; the supply, box and meter settings are kept">全部清除</button>
+          <button id="dmm" type="button" data-en="Multimeter (Ω)">三用電表量電阻</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--equi)"></i>移動的電荷（傳統電流方向）</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Red lead (+)"><i style="background:var(--pos)"></i>紅色導線（＋）</span>
+          <span data-en-html="<i style=&quot;background:var(--muted)&quot;></i>Black lead (−, COM)"><i style="background:var(--muted)"></i>黑色導線（－）</span>
+          <span style="color:var(--probe)" data-en-html="<i style=&quot;background:var(--probe)&quot;></i>Voltmeter leads"><i style="background:var(--probe)"></i>伏特計的導線（外圈綠色）</span>
+        </div>
+        <p class="hint" id="cvHint" data-en-html="The charges move at a speed proportional to the current; the scale is tied to the milliammeter range (a full-scale current moves them about 60 px per second). The voltmeter branch carries only a tiny current, so its charges creep. The meters below are a close-up of the same two meters: read the needle against the scale of the range in use.">電荷移動的速率與電流成正比，比例跟著毫安培計的檔位（滿刻度電流約每秒 60 像素）。伏特計那一路只分到很小的電流，所以電荷幾乎不動。下方是同兩個電表的錶面特寫：依照所用的檔位讀刻度。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps">
+            <li data-step="0" data-en="Zero the meters: with no current, each needle must rest on 0 (in “With errors” mode press “Zero the meters”).">電表歸零：沒有電流時指針要指在 0（含誤差模式要按「電表歸零」）。</li>
+            <li data-step="1" data-en="Choose the component and the connection; start the meters on their largest ranges.">選待測元件與接法；電表先用最大的檔位。</li>
+            <li data-step="2" data-en="Raise the supply from 0 V step by step; use the range that gives the largest deflection without going off the scale, and press “Record” each time (6 points or more).">電源由 0 V 逐次調高；換到指針偏轉最大又不超出刻度的檔位，每次按「記錄」（至少 6 點）。</li>
+            <li data-step="3" data-en="Look at the I–V graph: the slope of the best-fit line through the origin is 1/R.">看 I–V 圖：通過原點的最佳直線，斜率就是 1/R。</li>
+            <li data-step="4" data-en="Repeat with the other connection and compare the two results.">換另一種接法重做，比較兩個結果。</li>
+            <li data-step="5" data-en="Repeat for other components (copper wire a, nichrome wire e, the bulb…).">換其他元件重做（銅線 a、鎳鉻線 e、燈泡……）。</li>
+            <li data-step="6" data-en="Turn the supply down to 0 V and measure the component directly with the multimeter.">把電源調到 0 V，用三用電表直接量元件的電阻。</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Power supply and resistance box">電源與可變電阻箱</h2>
+          <div class="slider"><label for="emf" data-en-html="Supply voltage (emf) ε">電源供應器的輸出（電動勢）ε</label><output id="emfo"></output>
+            <input id="emf" type="range" min="0" max="15" step="0.05" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="box" data-en-html="Decade resistance box R<sub>box</sub>">可變電阻箱 R<sub>箱</sub></label><output id="boxo"></output>
+            <input id="box" type="range" min="0" max="1000" step="1" value="260" data-decimals="0"></div>
+          <p class="hint" data-en="The supply has an internal resistance of 0.5 Ω (including its leads). The resistance box limits the current; its four dials give 0–9999 Ω. Tap a number to type an exact value.">電源內電阻（含導線）0.5 Ω。電阻箱用來限制電流，四個旋鈕可調 0–9999 Ω。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Component under test">待測元件</h2>
+          <div class="elems" role="group" aria-label="選擇待測元件" data-en-aria-label="Choose the component under test">
+            <button type="button" data-el="a" aria-pressed="false" data-en="Cu wire a">銅線 a</button>
+            <button type="button" data-el="b" aria-pressed="true" data-en="Cu wire b">銅線 b</button>
+            <button type="button" data-el="c" aria-pressed="false" data-en="Cu wire c">銅線 c</button>
+            <button type="button" data-el="d" aria-pressed="false" data-en="Cu wire d">銅線 d</button>
+            <button type="button" data-el="e" aria-pressed="false" data-en="NiCr wire e">鎳鉻線 e</button>
+            <button type="button" data-el="carbon" aria-pressed="false" data-en="Carbon resistor">碳膜電阻</button>
+            <button type="button" data-el="X" aria-pressed="false" data-en="Mystery X">神秘電阻 X</button>
+            <button type="button" data-el="lamp" aria-pressed="false" data-en="Bulb">小燈泡</button>
+          </div>
+          <p class="info" id="elInfo">—</p>
+          <div class="zerorow">
+            <button type="button" id="reveal" hidden data-en="Peel off the tape (show the colour code)">撕開膠帶（看色環）</button>
+            <button type="button" id="newLamp" hidden data-en="Fit a new bulb">換一顆新燈泡</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Connection and meters">接法與電表</h2>
+          <p class="seg-label" id="mLabel" data-en="Where the voltmeter is connected:">伏特計接在哪裡：</p>
+          <div class="seg2 methods" role="group" aria-labelledby="mLabel">
+            <button type="button" data-m="ext" aria-pressed="false">
+              <svg viewBox="0 0 128 46" aria-hidden="true"><path class="ln" d="M4 32H26M42 32H58M58 32l3-5 4 10 4-10 4 10 4-10 4 10 3-5M84 32H124"/><circle class="mc" cx="34" cy="32" r="8"/><text x="34" y="32">A</text><path class="vl" d="M52 32V11H63M79 11H90V32"/><circle class="vc" cx="71" cy="11" r="8"/><text class="vt" x="71" y="11">V</text><circle cx="52" cy="32" r="2" fill="currentColor"/><circle cx="90" cy="32" r="2" fill="currentColor"/></svg>
+              <span data-en-html="Ammeter outside<small>V across R only</small>">安培計外接法<small>伏特計只跨元件</small></span>
+            </button>
+            <button type="button" data-m="int" aria-pressed="true">
+              <svg viewBox="0 0 128 46" aria-hidden="true"><path class="ln" d="M4 32H26M42 32H58M58 32l3-5 4 10 4-10 4 10 4-10 4 10 3-5M84 32H124"/><circle class="mc" cx="34" cy="32" r="8"/><text x="34" y="32">A</text><path class="vl" d="M16 32V11H54M70 11H98V32"/><circle class="vc" cx="62" cy="11" r="8"/><text class="vt" x="62" y="11">V</text><circle cx="16" cy="32" r="2" fill="currentColor"/><circle cx="98" cy="32" r="2" fill="currentColor"/></svg>
+              <span data-en-html="Ammeter inside<small>V across A + R</small>">安培計內接法<small>伏特計跨安培計＋元件</small></span>
+            </button>
+          </div>
+          <p class="seg-label" id="aLabel" data-en="Milliammeter range:">毫安培計檔位：</p>
+          <div class="seg3" id="rangeA" role="group" aria-labelledby="aLabel">
+            <button type="button" data-r="0" aria-pressed="false">5 mA</button>
+            <button type="button" data-r="1" aria-pressed="true">50 mA</button>
+            <button type="button" data-r="2" aria-pressed="false">500 mA</button>
+          </div>
+          <p class="seg-label" id="vLabel" data-en="Voltmeter range:">伏特計檔位：</p>
+          <div class="seg2" id="rangeV" role="group" aria-labelledby="vLabel">
+            <button type="button" data-r="0" aria-pressed="true">3 V</button>
+            <button type="button" data-r="1" aria-pressed="false">15 V</button>
+          </div>
+          <p class="info" id="meterInfo">—</p>
+          <p class="seg-label" id="eLabel" data-en="Readings:">讀數：</p>
+          <div class="seg2" id="modeSeg" role="group" aria-labelledby="eLabel">
+            <button type="button" data-mode="ideal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" data-mode="real" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <div class="zerorow">
+            <button type="button" id="zeroBtn" hidden data-en="Zero the meters (turn the screws)">電表歸零（轉動歸零螺絲）</button>
+          </div>
+          <p class="hint" id="modeHint" data-en="Ideal: you read exactly where the needle points. With errors: the needles start slightly off zero, and each reading is estimated to half of the smallest division with a small random error. The meters’ internal resistances are always there.">理想：指針指到哪就讀到哪。含誤差：指針一開始沒有對準 0，每次讀數估讀到最小刻度的一半，並帶有小小的隨機誤差。兩種模式下，電表的內電阻都存在。</p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：I–V 圖、數據表與分析 -->
+    <div class="lab oh">
+      <div class="stage">
+        <h2 data-en="I–V graph and data table">I–V 圖與數據表</h2>
+        <p class="hint" id="gHint" data-en="Voltage V on the horizontal axis and current I on the vertical axis, as in the textbook. Points for the component that is selected; blue = ammeter outside, red = ammeter inside. Solid lines: best-fit lines through the origin; dashed line: the true resistance.">與課本相同，橫軸是電壓 V、縱軸是電流 I。圖上是目前選定元件的數據點：藍色為外接法、紅色為內接法；實線是通過原點的最佳直線，虛線是元件真正的電阻。</p>
+        <canvas id="gcv" aria-label="電流對電壓的 I–V 圖：數據點、最佳直線與真實電阻的直線" data-en-aria-label="I–V graph of current against voltage: data points, best-fit lines and the line of the true resistance"></canvas>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="fitTitle" data-en="Analysis">分析結果</h2>
+          <dl class="readout" id="fitOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card">
+          <h2 data-en="What is really happening in the circuit">電路中的真實情況</h2>
+          <dl class="readout" id="trueOut"><dt>—</dt><dd>—</dd></dl>
+          <p class="hint" data-en="These values are calculated exactly from Kirchhoff’s laws. The meters cannot show them all: that is where the systematic error comes from.">這些數值由克希何夫定律精確解出；電表沒辦法全部量到，系統誤差就是從這裡來的。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Summary of results">結果整理</h2>
+          <div class="tablewrap" style="margin:0"><table class="data" id="sum"></table></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Learn to wire a circuit with an ammeter in series and a voltmeter in parallel, and use them to measure the resistance of a metal wire.">學會把安培計串聯、伏特計並聯接進電路，並用它們測量金屬導線的電阻。</li>
+        <li data-en="Check Ohm’s law: for a metal at constant temperature the current is proportional to the voltage.">驗證歐姆定律：溫度不變的金屬，電流與電壓成正比。</li>
+        <li data-en="Understand the systematic error caused by the meters themselves, and choose the better connection for a low or a high resistance.">了解電表本身造成的系統誤差，並依待測電阻的大小選擇較好的接法。</li>
+        <li data-en="Use a multimeter to measure a resistance directly.">練習用三用電表直接量電阻。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <ul class="equip">
+        <li data-en="DC power supply (0–15 V)">直流電源供應器（0–15 V）</li>
+        <li data-en="Decade resistance box (0–9999 Ω)">十進位可變電阻箱（0–9999 Ω）</li>
+        <li data-en="Milliammeter (5 / 50 / 500 mA)">毫安培計（5／50／500 mA 三檔）</li>
+        <li data-en="Voltmeter (3 / 15 V)">伏特計（3／15 V 兩檔）</li>
+        <li data-en="Digital multimeter with probes">數位三用電表（含測試棒）</li>
+        <li data-en="Components: copper and nichrome wires, a carbon resistor, a small bulb">待測元件：銅線、鎳鉻線、碳膜電阻、小燈泡</li>
+        <li data-en="Red and black connecting leads">紅、黑接線數條</li>
+      </ul>
+      <p data-en-html="The wires used here (resistivity at 20 °C: copper 1.7 × 10<sup>−8</sup> Ω·m, nichrome 1.5 × 10<sup>−6</sup> Ω·m):">本模擬使用的導線（20 °C 的電阻率：銅 1.7 × 10<sup>−8</sup> Ω·m、鎳鉻合金 1.5 × 10<sup>−6</sup> Ω·m）：</p>
+      <div class="tblnote">
+        <table class="spec">
+          <tr><th data-en="Wire">導線</th><th>a</th><th>b</th><th>c</th><th>d</th><th>e</th></tr>
+          <tr><th data-en="Material">材料</th><td data-en="Cu">銅</td><td data-en="Cu">銅</td><td data-en="Cu">銅</td><td data-en="Cu">銅</td><td data-en="NiCr">鎳鉻</td></tr>
+          <tr><th data-en="Diameter (mm)">直徑（mm）</th><td>0.28</td><td>0.14</td><td>0.28</td><td>0.14</td><td>0.14</td></tr>
+          <tr><th data-en="Length (m)">長度（m）</th><td>10</td><td>10</td><td>20</td><td>20</td><td>10</td></tr>
+          <tr><th data-en="ρL/A (Ω)">ρL/A（Ω）</th><td>2.76</td><td>11.0</td><td>5.52</td><td>22.1</td><td>974</td></tr>
+        </table>
+      </div>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Ohm’s law and resistivity">歐姆定律與電阻率</h3>
+      <p data-en-html="For a metal kept at the same temperature, the current \(I\) through it is proportional to the voltage \(V\) across it. The constant ratio is its resistance \(R\); it depends on the material (resistivity \(\rho\)), the length \(L\) and the cross-sectional area \(A\) of the wire:">溫度維持不變的金屬，流過的電流 \(I\) 與兩端的電壓 \(V\) 成正比，比值固定，就是它的電阻 \(R\)。電阻由材料（電阻率 \(\rho\)）、導線長度 \(L\) 與截面積 \(A\) 決定：</p>
+      <div class="formula multi">
+        \[ R = \frac{V}{I} \] \[ R = \rho\,\frac{L}{A} = \rho\,\frac{4L}{\pi d^{2}} \]
+      </div>
+      <p data-en-html="On an \(I\)–\(V\) graph (\(V\) horizontal, \(I\) vertical) an ohmic conductor gives a straight line through the origin with slope \(1/R\). Doubling the length doubles \(R\); halving the diameter makes \(R\) four times as large.">在 \(I\)–\(V\) 圖上（橫軸 \(V\)、縱軸 \(I\)），遵守歐姆定律的導體是一條通過原點的直線，斜率為 \(1/R\)。長度加倍，電阻加倍；直徑減半，電阻變成 4 倍。</p>
+
+      <h3 data-en="Real meters disturb the circuit">真實的電表會影響電路</h3>
+      <p data-en-html="An ideal ammeter has no resistance and an ideal voltmeter draws no current. Real ones have an internal resistance: \(r_A\) for the ammeter (a few ohms or less) and \(r_V\) for the voltmeter (thousands of ohms). Here the milliammeter drops 0.1 V at full scale, so \(r_A = 20\ \Omega\), \(2\ \Omega\) and \(0.2\ \Omega\) on the 5, 50 and 500 mA ranges; the voltmeter has 1000 Ω per volt of range, so \(r_V = 3\ \mathrm{k\Omega}\) and \(15\ \mathrm{k\Omega}\). Because of this, the measured value \(R' = V/I\) is never exactly \(R\).">理想的安培計沒有電阻，理想的伏特計不會分走電流。真實的電表都有內電阻：安培計的 \(r_A\) 只有幾歐姆以下，伏特計的 \(r_V\) 有幾千歐姆。本模擬的毫安培計在滿刻度時兩端電壓 0.1 V，所以 5、50、500 mA 三檔的 \(r_A\) 分別是 \(20\ \Omega\)、\(2\ \Omega\)、\(0.2\ \Omega\)；伏特計每伏特的檔位有 1000 Ω，所以 \(r_V = 3\ \mathrm{k\Omega}\) 與 \(15\ \mathrm{k\Omega}\)。因此，量到的 \(R' = V/I\) 永遠不會剛好等於 \(R\)。</p>
+      <p data-en-html="<strong>Ammeter inside</strong> (voltmeter across the ammeter and \(R\)): the ammeter reads the true current, but the voltmeter also includes the voltage across the ammeter. The result is always <strong>too large</strong>, by exactly \(r_A\):"><strong>安培計內接法</strong>（伏特計跨在安培計與 \(R\) 兩端）：安培計量到的是真正的電流，但伏特計多量了安培計上的電壓，所以結果一定<strong>偏大</strong>，剛好多了 \(r_A\)：</p>
+      <div class="formula multi">
+        \[ R' = \frac{I R + I r_A}{I} = R + r_A \]
+      </div>
+      <p data-en-html="<strong>Ammeter outside</strong> (voltmeter across \(R\) only): the voltmeter reads the true voltage, but the ammeter also counts the small current that goes through the voltmeter. The result is always <strong>too small</strong>: it is \(R\) in parallel with \(r_V\):"><strong>安培計外接法</strong>（伏特計只跨在 \(R\) 兩端）：伏特計量到的是真正的電壓，但安培計多算了流過伏特計的小電流，所以結果一定<strong>偏小</strong>，等於 \(R\) 與 \(r_V\) 並聯：</p>
+      <div class="formula multi">
+        \[ R' = \frac{V}{\dfrac{V}{R} + \dfrac{V}{r_V}} = \frac{R\,r_V}{R + r_V} \]
+      </div>
+      <p data-en-html="The relative errors are \(r_A/R\) (inside) and about \(R/r_V\) (outside). So use the ammeter-inside connection for a <strong>high</strong> resistance (\(R \gg r_A\)) and the ammeter-outside connection for a <strong>low</strong> one (\(R \ll r_V\)). The two errors are equal at \(R \approx \sqrt{r_A r_V}\).">兩種接法的相對誤差分別是 \(r_A/R\)（內接）與約 \(R/r_V\)（外接）。所以<strong>高電阻</strong>（\(R \gg r_A\)）用安培計內接法，<strong>低電阻</strong>（\(R \ll r_V\)）用安培計外接法；兩者誤差相同的分界大約在 \(R \approx \sqrt{r_A r_V}\)。</p>
+      <div class="formula multi" data-en-html="\[ \frac{R'-R}{R}\Big|_{\text{inside}} = \frac{r_A}{R} \] \[ \frac{R-R'}{R}\Big|_{\text{outside}} = \frac{R}{R + r_V} \]">
+        \[ \frac{R'-R}{R}\Big|_{\text{內接}} = \frac{r_A}{R} \] \[ \frac{R-R'}{R}\Big|_{\text{外接}} = \frac{R}{R + r_V} \]
+      </div>
+
+      <h3 data-en="A light bulb is not ohmic">燈泡不遵守歐姆定律</h3>
+      <p data-en-html="The tungsten filament of a bulb gets hotter as the current grows, and the resistance of tungsten rises roughly as \(T^{1.2}\). The \(I\)–\(V\) graph therefore bends towards the \(V\) axis: \(V/I\) keeps increasing. A small 2.5 V, 0.3 A bulb has about 8.3 Ω when lit, but only about 0.7 Ω when cold — more than ten times less. That is why a multimeter, which measures with a tiny current, gives such a small value.">燈泡的鎢絲在電流變大時溫度升高，鎢的電阻大約與 \(T^{1.2}\) 成正比，所以 \(I\)–\(V\) 圖會向 \(V\) 軸彎下去：\(V/I\) 一直變大。額定 2.5 V、0.3 A 的小燈泡發光時約 8.3 Ω，冷的時候只有約 0.7 Ω，相差十倍以上。這也是三用電表（用很小的電流量）量燈泡時，讀數小得驚人的原因。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en="Before connecting anything, check that both needles point to zero; if not, turn the zero-adjust screw under the needle. Note which terminals are + (red, current in) and − (black, current out).">接線前先確認兩個電表的指針都指在 0，沒有的話轉動指針下方的歸零螺絲。分清楚紅色＋（電流流入）與黑色－（電流流出）的接頭。</li>
+        <li data-en="Connect the supply, the resistance box, the milliammeter and the component in series. Connect the voltmeter in parallel: across the component only (ammeter outside) or across the ammeter and the component (ammeter inside). Use the largest range on both meters.">把電源、電阻箱、毫安培計與待測元件串聯；伏特計並聯在元件兩端（安培計外接法），或跨在安培計與元件兩端（安培計內接法）。兩個電表都先接最大檔位。</li>
+        <li data-en="Start the supply at 0 V and raise it a little at a time. If a needle moves only a little, change to a smaller range — the reading is most accurate when the needle swings well past the middle. Record V and I each time.">電源由 0 V 開始，每次調高一點。指針偏轉太小時換小一點的檔位——指針偏轉超過一半時讀數最準。每次記下 V 與 I。</li>
+        <li data-en="Plot I against V and draw the best straight line through the origin. R is the reciprocal of its slope.">畫出 I–V 圖，作通過原點的最佳直線，斜率的倒數就是 R。</li>
+        <li data-en="Change to the other connection and repeat. Then repeat for other wires (and the bulb).">改用另一種接法重做；再換其他導線（以及燈泡）重做。</li>
+        <li data-en="Finally, switch off the supply, take the component out of the circuit and measure it with the multimeter on its Ω setting.">最後關掉電源、把元件從電路上拆下，用三用電表的 Ω 檔直接量它的電阻。</li>
+      </ol>
+
+      <h3 data-en="Things to watch out for">注意事項</h3>
+      <ul>
+        <li data-en="An ammeter must be in series and a voltmeter in parallel. An ammeter connected across a component is almost a short circuit and can be destroyed.">安培計一定要串聯、伏特計一定要並聯。把安培計並聯在元件兩端幾乎等於短路，可能燒壞電表。</li>
+        <li data-en="Always start on the largest range and move down. A needle slammed past full scale can bend.">檔位一律由大到小換。指針猛力打過滿刻度可能會撞彎。</li>
+        <li data-en="Read with your eye straight in front of the needle: on meters with a mirror strip, the needle should hide its own reflection (no parallax). Estimate to half of the smallest division.">讀數時眼睛要正對指針：有鏡面的電表，指針要和鏡中倒影重合（避免視差）。估讀到最小刻度的一半。</li>
+        <li data-en="Do not leave a large current flowing for long: thin wires warm up and their resistance changes. Measure quickly and switch off between readings.">不要讓大電流長時間流過：細導線會發熱，電阻跟著改變。量完一筆就把電流調小。</li>
+        <li data-en="Never measure resistance with the multimeter while the circuit is powered, and take the component out of the circuit first; otherwise you measure it in parallel with the rest of the circuit.">三用電表量電阻時，電路一定不能通電，而且要先把元件從電路上拆下，否則量到的是它和電路其他部分並聯後的電阻。</li>
+        <li data-en="A bulb has a rated voltage. Far above it the filament melts.">燈泡有額定電壓，遠超過額定電壓時燈絲會燒斷。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="Copper wire b (about 11 Ω) measured with the ammeter inside on the 50 mA range gives about 13 Ω. Where do the extra 2 Ω come from, and how would you get a better value?">銅線 b（約 11 Ω）用安培計內接法、50 mA 檔量，得到約 13 Ω。多出來的 2 Ω 是哪裡來的？要怎麼量得更準？</li>
+        <li data-en="For the nichrome wire e (about 974 Ω), which connection is better? Estimate both errors.">鎳鉻線 e（約 974 Ω）用哪一種接法比較準？估計兩種接法的誤差。</li>
+        <li data-en-html="Why are the two errors equal at about √(r<sub>A</sub> r<sub>V</sub>)?">為什麼兩種接法的誤差在大約 √(r<sub>A</sub> r<sub>V</sub>) 時一樣大？</li>
+        <li data-en="The I–V graph of the bulb is curved. Does the bulb obey Ohm’s law? What is its resistance?">燈泡的 I–V 圖是彎的。燈泡遵守歐姆定律嗎？它的電阻是多少？</li>
+        <li data-en="The multimeter shows about 0.7 Ω for the bulb, but V/I at 2.5 V is about 8 Ω. Is one of the measurements wrong?">三用電表量燈泡只有約 0.7 Ω，但 2.5 V 時的 V/I 約 8 Ω。是其中一個量錯了嗎？</li>
+        <li data-en="Wires a and c have the same diameter, a and b the same length. What do their resistances tell you?">導線 a 與 c 直徑相同，a 與 b 長度相同。它們的電阻告訴你什麼？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="The voltmeter also measures the voltage across the ammeter, whose internal resistance on the 50 mA range is 2 Ω: \(R' = R + r_A\). Use the ammeter-outside connection (error only about \(R/r_V \approx 0.4\%\)), or at least the 500 mA range (\(r_A = 0.2\ \Omega\)).">伏特計連安培計上的電壓也量進去了，50 mA 檔的內電阻是 2 Ω：\(R' = R + r_A\)。改用安培計外接法（誤差只有約 \(R/r_V \approx 0.4\%\)），或至少換 500 mA 檔（\(r_A = 0.2\ \Omega\)）。</li>
+          <li data-en-html="Ammeter inside: \(+r_A/R\) = +2.1% on the 5 mA range, +0.2% on the 50 mA range. Ammeter outside: about \(-R/(R + r_V)\) = −6.1% on the 15 V range, −24.5% on the 3 V range. The inside connection is clearly better.">內接法：\(+r_A/R\)，5 mA 檔 +2.1%、50 mA 檔 +0.2%。外接法：約 \(-R/(R + r_V)\)，15 V 檔 −6.1%、3 V 檔 −24.5%。內接法明顯比較準。</li>
+          <li data-en-html="Set \(r_A/R = R/(R + r_V)\). When \(R \ll r_V\) this is \(r_A/R \approx R/r_V\), i.e. \(R^{2} \approx r_A r_V\).">令 \(r_A/R = R/(R + r_V)\)。當 \(R \ll r_V\) 時就是 \(r_A/R \approx R/r_V\)，也就是 \(R^{2} \approx r_A r_V\)。</li>
+          <li data-en="No: V/I is not constant. At each point you can still define R = V/I, which grows from about 0.7 Ω to about 8 Ω as the filament heats up.">不遵守：V/I 不是定值。每一點仍可定義 R = V/I，燈絲變熱時它由約 0.7 Ω 增加到約 8 Ω。</li>
+          <li data-en="Both are right. The multimeter measures the cold filament (300 K); at 2.5 V the filament is at about 2400 K, and tungsten’s resistance is about 12 times larger there.">兩個都對。三用電表量的是冷燈絲（約 300 K）；2.5 V 時燈絲約 2400 K，鎢在這個溫度的電阻大約是室溫的 12 倍。</li>
+          <li data-en-html="\(R_c \approx 2R_a\): resistance is proportional to length. \(R_b \approx 4R_a\): halving the diameter divides the area by 4, so resistance is inversely proportional to the area. Together: \(R = \rho L/A\).">\(R_c \approx 2R_a\)：電阻與長度成正比。\(R_b \approx 4R_a\)：直徑減半、截面積變成 1/4，電阻與截面積成反比。合起來就是 \(R = \rho L/A\)。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The default setting hides an error.</strong> Copper wire b with the ammeter inside gives about 13 Ω, not 11 Ω. Switch to the ammeter-outside connection and record again: the two lines on the graph have clearly different slopes."><strong>預設狀態藏著誤差</strong>：銅線 b 用安培計內接法，量到約 13 Ω 而不是 11 Ω。改用外接法再記錄一次，圖上兩條直線的斜率明顯不同。</li>
+        <li data-en-html="<strong>The range changes the error.</strong> With the ammeter inside, the 500 mA range has a ten times smaller \(r_A\) than the 50 mA range — but each division is ten times larger. Precision and accuracy pull in opposite directions."><strong>檔位會改變誤差</strong>：內接法時，500 mA 檔的 \(r_A\) 比 50 mA 檔小十倍，但每一小格也大十倍。精密度與準確度互相拉扯。</li>
+        <li data-en-html="<strong>High resistance.</strong> Measure nichrome wire e with both connections. Now the outside connection is far off, especially on the 3 V range."><strong>高電阻</strong>：用兩種接法量鎳鉻線 e，這次換成外接法誤差很大，尤其是 3 V 檔。</li>
+        <li data-en-html="<strong>Mystery resistor X.</strong> Decide which connection is better before you measure it, then peel off the tape and compare with the colour code (gold band: ±5%)."><strong>神秘電阻 X</strong>：先判斷用哪一種接法比較好再量，量完撕開膠帶，和色環的標示值比較（金色環代表 ±5%）。</li>
+        <li data-en-html="<strong>The bulb.</strong> Record ten points from 0.1 V to 2.5 V across the bulb. The graph bends; V/I in the table keeps rising. Then turn the supply to 0 V and use the multimeter."><strong>燈泡</strong>：讓燈泡兩端電壓由 0.1 V 到 2.5 V 記錄十點，圖形彎曲，表中的 V/I 一直上升。再把電源調到 0 V，用三用電表量看看。</li>
+        <li data-en-html="<strong>Zero error.</strong> In “With errors” mode, record a full set <em>without</em> zeroing the meters: the best straight line no longer fits well near the origin, and the result is off. Zero the meters and repeat."><strong>零點誤差</strong>：在「含誤差」模式下，<em>不</em>歸零就記錄一整組數據：數據點在原點附近對不上通過原點的直線，結果也偏掉了。歸零後再做一次比較看看。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The circuit (supply with internal resistance 0.5 Ω, resistance box, milliammeter, component and voltmeter) is solved exactly with Kirchhoff’s laws by modified nodal analysis. Every current and voltage, including the tiny current through the voltmeter and the voltage across the ammeter, comes from that solution.">整個電路（內電阻 0.5 Ω 的電源、電阻箱、毫安培計、待測元件與伏特計）以修正節點分析（克希何夫定律）精確求解；每一個電流與電壓，包括流過伏特計的微小電流與安培計兩端的電壓，都來自這個解。</li>
+        <li data-en-html="Wires: \(R = \rho L/A\) at 20 °C, and their temperature is assumed constant (real thin wires warm up a little at large currents). Carbon resistor: marked 100 Ω ±5%, actually 98.6 Ω. Mystery resistor: a value from the E12 series between 47 Ω and 680 Ω, within ±4% of its marking, chosen at random when the page loads.">導線：\(R = \rho L/A\)（20 °C），並假設溫度不變（真實的細導線在大電流下會稍微變熱）。碳膜電阻：標示 100 Ω ±5%，實際 98.6 Ω。神秘電阻：載入頁面時，由 E12 系列 47 Ω 到 680 Ω 之間隨機選一個標示值，實際值在標示值的 ±4% 以內。</li>
+        <li data-en-html="Bulb: \(R = R_0 (T/300\,\mathrm{K})^{1.2}\) with \(R_0 = 0.687\ \Omega\). In the steady state the electrical power equals the heat lost by conduction and radiation, \(I^{2}R = K_c (T - T_0) + K_r (T^{4} - T_0^{4})\), with the constants chosen so the bulb draws 0.30 A at 2.5 V (filament 2400 K, 15% of the heat lost by conduction). The rest of the circuit is reduced to its Thévenin equivalent and the filament temperature is found by heating it up from room temperature. Above 3200 K (about 5 V) the filament burns out.">燈泡：\(R = R_0 (T/300\,\mathrm{K})^{1.2}\)，\(R_0 = 0.687\ \Omega\)。穩定時電功率等於傳導與輻射散失的熱：\(I^{2}R = K_c (T - T_0) + K_r (T^{4} - T_0^{4})\)，常數使燈泡在 2.5 V 時電流為 0.30 A（燈絲 2400 K，15% 的熱由傳導散失）。把電路其餘部分化成戴維寧等效電路，從室溫開始讓燈絲升溫，找出到達的平衡溫度；超過 3200 K（約 5 V）燈絲燒斷。</li>
+        <li data-en="Meters: the needle shows the true current through the milliammeter or the true voltage across the voltmeter, with a slightly damped swing. “Ideal” readings are exactly where the needle points. “With errors”: each needle starts 0.3–1 division off zero until it is zeroed, and each reading has a random estimation error (standard deviation 0.15 division) and is rounded to half a division. Beyond full scale the needle hits its stop and cannot be read.">電表：指針顯示流過毫安培計的真實電流、伏特計兩端的真實電壓，擺動略帶阻尼。「理想」的讀數就是指針的位置。「含誤差」：歸零前每根指針偏離 0 約 0.3–1 小格；每次讀數帶有隨機的估讀誤差（標準差 0.15 小格），並取到半小格。超過滿刻度時指針撞到底，無法讀數。</li>
+        <li data-en="Analysis: the best straight line through the origin, I = kV, minimises the squared deviations of I; then R = 1/k. The line with an intercept is also calculated to show whether the data really pass through the origin.">分析：通過原點的最佳直線 I = kV，使 I 的偏差平方和最小，R = 1/k。另外計算含截距的直線，檢查數據是否真的通過原點。</li>
+        <li data-en="Multimeter: a 3½-digit meter (up to 1999 counts) that chooses its range automatically. With errors: ±(0.8% + 2 digits).">三用電表：3½ 位（最大顯示 1999）、自動換檔。含誤差時另有 ±(0.8% + 2 個字) 的誤差。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/ohms-law-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/ohms-law.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="ohms-law"></script>
+  <script src="js/missions/ohms-law.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="ohms-law"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

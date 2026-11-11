@@ -1,9 +1,12 @@
-/* electric-field.js — 「電場與等位線」模組的畫面與互動（物理計算在 field-core.js） */
+/* electric-field.js — 「電場與等位線」模組的畫面與互動（物理計算在 field-core.js）
+ * 2D 畫布是預設檢視；3D 檢視（等位面與立體電力線）在 js/electric-field-3d.js，
+ * three.js（vendor/three/）只有切換到 3D 時才以 import() 動態載入。 */
 (function () {
   'use strict';
   const FC = window.FieldCore;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
+  let view3 = null;      // 目前的 3D 檢視（切回 2D 時釋放）
 
   // ---------- 世界座標（cm，y 向上） ----------
   const W = 12, H = 8;
@@ -759,6 +762,7 @@
   }
 
   function draw() {
+    if (view3 && view3.active) { draw3(); return; }
     if (!cv.width || !cv.height) return;
     if (!cache) compute();
     if (staticDirty) drawStatic();
@@ -789,6 +793,12 @@
   function rippleLoop() {
     requestDraw();
     if (ripples.length) requestAnimationFrame(rippleLoop);
+  }
+  /** 3D 檢視時：2D 的格點電位、等位線（z = 0 截面）照常計算，交給 3D 畫在 z = 0 平面上 */
+  function draw3() {
+    if (!cache) compute();
+    view3.frame();
+    updateReadout(FC.fieldAt(state.charges, state.probe.x, state.probe.y));
   }
 
   // ---------- 數字格式 ----------
@@ -1123,11 +1133,125 @@
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag) setHover(-1); });
 
+  // =====================================================================
+  // 3D 檢視（three.js，切換到 3D 時才以 import() 動態載入 vendor/three/；場景在 js/electric-field-3d.js）
+  // =====================================================================
+  let threeLib = null;   // { THREE, OrbitControls }
+  let loadToken = 0;
+  let cut3 = false;      // 剖半：拿掉 z > 0 的上半部，看等位面的內部
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+
+  function webglAvailable() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    } catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  function create3D(lib) {
+    return window.ElectricField3D.create(lib, {
+      host: host3, W: W, H: H, Z: 4, levels: LEVELS, state: state,
+      getCache: function () { if (!cache) compute(); return cache; },
+      heatCanvas: heatCanvas,
+      colors: function () { return colors; },
+      rgb: function () { return rgb; },
+      T: T, fmtQ: fmtQ,
+      reducedMotion: function () { return reducedMotion; },
+      potKey: $('potKey'),
+      isCut: function () { return cut3; },
+      onLost: function () {
+        setView('2d');
+        viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+      }
+    });
+  }
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function updateViewTools() {
+    const is3 = !!(view3 && view3.active);
+    $('resetCam').hidden = !is3;
+    $('cut3d').hidden = !is3;
+    $('cut3d').setAttribute('aria-pressed', String(cut3));
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable() || !window.ElectricField3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return; // 載入期間已切回 2D
+        // 先讓「載入中」的訊息畫出來，再計算等位面（約零點一秒）
+        requestAnimationFrame(function () {
+          if (token !== loadToken) return;
+          try {
+            stage.classList.add('is3d');
+            if (!cache) compute();
+            view3 = create3D(lib);
+          } catch (err) {
+            if (window.console) console.warn('3D view unavailable:', err);
+            fail3D();
+            return;
+          }
+          viewMsg.textContent = '';
+          updateViewTools();
+          draw();
+        });
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      updateViewTools();
+      staticDirty = true;
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    updateViewTools();
+    staticDirty = true;
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('cut3d').addEventListener('click', function () {
+    cut3 = !cut3;
+    updateViewTools();
+    if (view3) view3.setCut(cut3);
+  });
+
   // ---------- 啟動 ----------
+  function onTheme() {
+    readColors();
+    invalidate();
+    if (view3 && view3.active) view3.onTheme();
+  }
   readColors();
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); invalidate(); });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
   // 齒輪設定切換深淺色（以及語言、字體大小）時也重畫（settings.js）
-  window.addEventListener('lab:themechange', function () { readColors(); invalidate(); });
+  window.addEventListener('lab:themechange', onTheme);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
   else window.addEventListener('resize', resize);
   resize();

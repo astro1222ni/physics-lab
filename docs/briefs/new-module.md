@@ -30,3 +30,6 @@ Files, test results, controls, teaching points, sound events, data-decimals, ver
 - Never use Unicode superscript/subscript digit characters (⁰⁴⁵⁶⁷⁸⁹⁻ etc.) anywhere — not in HTML, not in canvas text. In HTML use <sup>/<sub>; on canvas draw the superscript yourself with a smaller font (² ³ ¹ ½ are fine).
 - Mission events must only fire after the user has actually operated a control (verify the default state and the initial autoplay trigger nothing).
 - Other agents are building other modules in the same repo at the same time: touch ONLY your own files listed above.
+
+## Saving CPU (site owner, 2026-11-11)
+Any Playwright script you write must launch Chromium with `const { launch } = require('G:/physics-lab/tools/browser.cjs'); const browser = await launch();` (same options as chromium.launch). It renders on the Intel iGPU — never the RTX 4070, which is reserved for video — at below-normal priority; plain chromium.launch() falls back to SwiftShader and burns CPU. Still block every non-local request. `npm run check`, `npm run shots`, `npm run verify` already use it.

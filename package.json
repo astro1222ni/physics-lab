@@ -6,6 +6,9 @@
     "test": "node tools/run-tests.cjs",
     "check": "node tools/check-pages.cjs",
     "shots": "node tools/check-pages.cjs --shots",
+    "thumbs": "node tools/make-thumbs.cjs",
+    "seo": "node tools/seo.cjs",
+    "verify": "node tools/verify.cjs",
     "hans": "node tools/build-hans.cjs",
     "serve": "python -m http.server 8000"
   },

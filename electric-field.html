@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Electric Fields and Equipotentials | Astro Ni Physics Lab">電場與等位線｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：拖曳點電荷，觀察電力線、等位線，並釋放試探電荷驗證能量守恆。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="拖曳點電荷、調整電量，即時畫出電力線與等位線；釋放試探電荷，觀察它的運動與能量守恆。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/electric-field.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/electric-field.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/electric-field.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/electric-field.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="電場與等位線｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="拖曳點電荷、調整電量，即時畫出電力線與等位線；釋放試探電荷，觀察它的運動與能量守恆。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/electric-field.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/electric-field.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="電場與等位線的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"電場與等位線","alternateName":"Electric Fields and Equipotentials","description":"拖曳點電荷、調整電量，即時畫出電力線與等位線；釋放試探電荷，觀察它的運動與能量守恆。","url":"https://astro1222ni.github.io/physics-lab/electric-field.html","image":"https://astro1222ni.github.io/physics-lab/img/og/electric-field.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","靜電學（Electrostatics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 喇叭按鈕（與一維碰撞相同外觀）：切換全站音效設定 */
     .panel .btns .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); min-height: 44px; }
@@ -39,11 +59,59 @@
       --ef-pill: rgba(23, 32, 36, 0.86);
     }
     /* 圖例：等位線用虛線樣本、高低電位用與色階相同的漸層 */
-    .stage .legend span:nth-child(2) i { background: repeating-linear-gradient(90deg, var(--equi) 0 5px, transparent 5px 8px) !important; }
-    .stage .legend span:nth-child(3) i,
-    .stage .legend span:nth-child(4) i { height: 10px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--border); }
-    .stage .legend span:nth-child(3) i { background: linear-gradient(90deg, var(--canvas-bg), var(--pos)) !important; }
-    .stage .legend span:nth-child(4) i { background: linear-gradient(90deg, var(--canvas-bg), var(--neg)) !important; }
+    .legend .lg-field i { background: var(--field); }
+    .legend .lg-probe i { background: var(--probe); }
+    .legend .lg-equi i { background: repeating-linear-gradient(90deg, var(--equi) 0 5px, transparent 5px 8px); }
+    .legend .lg-hi i, .legend .lg-lo i, .legend .lg-surf i { height: 10px; border-radius: 5px; box-shadow: inset 0 0 0 1px var(--border); }
+    .legend .lg-hi i { background: linear-gradient(90deg, var(--canvas-bg), var(--pos)); }
+    .legend .lg-lo i { background: linear-gradient(90deg, var(--canvas-bg), var(--neg)); }
+    .legend .lg-surf i { width: 30px; background: linear-gradient(90deg, var(--neg), color-mix(in srgb, var(--canvas-bg) 55%, var(--muted)), var(--pos)); }
+
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .view-tools button { min-height: 44px; }
+    .view-tools button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      cursor: grab; aspect-ratio: 4 / 3;
+      /* 3D 背景：極淡的徑向暈影（中心亮、四角略暗），隨深淺色自動變化 */
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 5 / 4; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 3D 場景上的文字標籤（HTML，跟著字體設定縮放、簡體自動轉換） */
+    .ef3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .ef3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; line-height: 1.25; font-weight: 600; font-variant-numeric: tabular-nums;
+      font-size: calc(12.5px * var(--fs, 1)); color: var(--text); will-change: transform; }
+    .ef3-chg { padding: 2px 10px; border-radius: 999px; background: var(--ef-pill); border: 1px solid color-mix(in srgb, var(--c, var(--muted)) 60%, transparent);
+      box-shadow: 0 1px 4px var(--ef-shadow); }
+    .ef3-chg b { color: var(--c, var(--muted)); margin-right: 6px; }
+    .ef3-axis, .ef3-tick, .ef3-plane, .ef3-f { text-shadow: 0 0 3px var(--canvas-bg), 0 0 3px var(--canvas-bg), 0 0 2px var(--canvas-bg); }
+    .ef3-axis { font-size: calc(15px * var(--fs, 1)); color: var(--muted); }
+    .ef3-tick { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .ef3-plane { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .ef3-f { font-size: calc(14px * var(--fs, 1)); color: var(--probe); font-weight: 700; }
+    @media (max-width: 600px) {
+      .ef3-lbl { font-size: calc(11px * var(--fs, 1)); }
+      .ef3-chg { padding: 1px 7px; }
+      .ef3-tick, .ef3-plane { font-size: calc(10.5px * var(--fs, 1)); }
+    }
+    /* 等位面的電位色票 */
+    .pot-key { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 6px 4px 0; font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .pot-key:empty { display: none; }
+    .pot-key .pk-title { margin-right: 4px; }
+    .pot-key .pk { display: inline-flex; align-items: center; gap: 3px; }
+    .pot-key .pk i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 18%, transparent); }
   </style>
 </head>
 <body data-en-ready>
@@ -51,19 +119,35 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / Electrostatics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 靜電學</nav>
       <h1 data-en="Electric Fields and Equipotentials">電場與等位線</h1>
-      <p data-en="Drag charges A and B to move them; click an empty spot to place a test charge, then press “Release” to watch it move in the electric field.">拖曳電荷 A、B 改變位置；點擊空白處放置試探電荷，再按「釋放」觀察它在電場中的運動。</p>
+      <p data-en="Drag charges A and B to move them; click an empty spot to place a test charge, then press “Release” to watch it move in the electric field. Switch to the 3D view to see the equipotential surfaces and field lines in space.">拖曳電荷 A、B 改變位置；點擊空白處放置試探電荷，再按「釋放」觀察它在電場中的運動。切換到 3D 立體檢視，可看到空間中的等位面與電力線。</p>
     </header>
 
     <div class="lab">
-      <div class="stage">
-        <canvas id="cv" aria-label="電場模擬畫布" data-en-aria-label="Electric field simulation canvas"></canvas>
-        <div class="legend">
-          <span data-en-html="&lt;i style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Field lines"><i style="background:var(--field)"></i>電力線</span>
-          <span data-en-html="&lt;i style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Equipotentials"><i style="background:var(--equi)"></i>等位線</span>
-          <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;High potential"><i style="background:var(--pos)"></i>高電位</span>
-          <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Low potential"><i style="background:var(--neg)"></i>低電位</span>
-          <span data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Force on the test charge"><i style="background:var(--probe)"></i>試探電荷受力方向</span>
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="cut3d" hidden aria-pressed="false" title="拿掉 z > 0 的上半部，看等位面的內部" data-en-title="Remove the half above the plane (z > 0) to look inside the surfaces" data-en="Cut in half">剖半看內部</button>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
         </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="電場模擬畫布" data-en-aria-label="Electric field simulation canvas"></canvas>
+        <div id="view3"></div>
+        <div class="legend">
+          <span class="lg-field" data-en-html="&lt;i&gt;&lt;/i&gt;Field lines"><i></i>電力線</span>
+          <span class="lg-equi l2" data-en-html="&lt;i&gt;&lt;/i&gt;Equipotentials"><i></i>等位線</span>
+          <span class="lg-hi l2" data-en-html="&lt;i&gt;&lt;/i&gt;High potential"><i></i>高電位</span>
+          <span class="lg-lo l2" data-en-html="&lt;i&gt;&lt;/i&gt;Low potential"><i></i>低電位</span>
+          <span class="lg-surf l3" data-en-html="&lt;i&gt;&lt;/i&gt;Equipotential surfaces (red: high, blue: low potential)"><i></i>等位面（紅：高電位，藍：低電位）</span>
+          <span class="lg-equi l3" data-en-html="&lt;i&gt;&lt;/i&gt;Equipotential lines of the 2D view (on z = 0)"><i></i>2D 的等位線（在 z = 0 平面上）</span>
+          <span class="lg-probe" data-en-html="&lt;i&gt;&lt;/i&gt;Force on the test charge"><i></i>試探電荷受力方向</span>
+        </div>
+        <div class="pot-key l3" id="potKey"></div>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. The 2D view is the z = 0 plane (1 cm grid); everything is mirror-symmetric above and below it.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。2D 畫面就是 z = 0 的平面（格線 1 cm），上下兩側鏡面對稱。</p>
       </div>
 
       <aside class="panel">
@@ -140,12 +224,27 @@
         <li data-en-html="Once the test charge is released, &lt;strong&gt;kinetic energy + electric potential energy stays constant&lt;/strong&gt;: \(K + qV = \text{constant}\) (conservation of mechanical energy). Note that the test charge does not move along a field line, because it has inertia.">釋放試探電荷時，<strong>動能 + 電位能保持定值</strong>，即 \(K + qV = \text{定值}\)（力學能守恆）。注意：試探電荷不會沿著電力線走，因為它有慣性。</li>
       </ul>
 
+      <h3 data-en="The 3D view: equipotential surfaces and field lines in space">3D 檢視：空間中的等位面與電力線</h3>
+      <p data-en-html="Real charges live in three-dimensional space. Press “3D view” and the 2D picture becomes the &lt;strong&gt;z = 0 plane&lt;/strong&gt; through the charges (with \(z\) perpendicular to the page). The potential at any point in space is">真實的電荷在三維空間中。按「3D 立體」，2D 畫面就變成穿過電荷的 <strong>z = 0 平面</strong>（\(z\) 軸垂直於紙面）。空間中任一點的電位是</p>
+      <div class="formula">
+        \[ V(x, y, z) = \sum_i \frac{k\,q_i}{\sqrt{(x-x_i)^{2} + (y-y_i)^{2} + z^{2}}} \]
+      </div>
+      <ul>
+        <li data-en-html="&lt;strong&gt;Equipotential “lines” are really surfaces.&lt;/strong&gt; Each dashed line of the 2D view is where a closed surface wrapping the charges cuts the z = 0 plane. Press “Cut in half” to remove the half above the plane: the rims of the surfaces lie exactly on the 2D equipotential lines."><strong>等位「線」其實是等位「面」。</strong>2D 畫面上的每一條虛線，都是一個包住電荷的封閉曲面被 z = 0 平面切開的截面。按「剖半看內部」拿掉平面上方的一半，等位面的切口正好落在 2D 的等位線上。</li>
+        <li data-en-html="&lt;strong&gt;Field lines leave a positive charge in every direction in space&lt;/strong&gt; and cross every equipotential surface at right angles, because \(\vec E = -\nabla V\)."><strong>電力線從正電荷向空間中的四面八方發出</strong>，並且處處垂直穿過等位面，因為 \(\vec E = -\nabla V\)。</li>
+        <li data-en-html="&lt;strong&gt;In 3D&lt;/strong&gt;, the number of field lines per unit area (of a surface perpendicular to them) is proportional to \(E\) — Gauss’s law. A flat 2D drawing shows the lines of only one plane, so it can show this only roughly."><strong>在 3D 中</strong>，穿過（與電力線垂直的）單位面積的電力線條數正比於 \(E\)，這就是高斯定律；平面的 2D 圖只畫出一個平面上的線，只能大致呈現這件事。</li>
+        <li data-en-html="With two charges, the whole picture is symmetric about the line through A and B: the 3D surfaces are the 2D lines spun around that axis. For a &lt;strong&gt;dipole&lt;/strong&gt; the \(V = 0\) surface is the flat plane that bisects AB; for &lt;strong&gt;unequal&lt;/strong&gt; opposite charges it becomes a sphere around the smaller charge. For &lt;strong&gt;two equal like charges&lt;/strong&gt;, two separate bubbles merge into one “peanut” as the potential decreases.">兩個電荷時，整張圖對 A、B 連線呈軸對稱：3D 的等位面就是 2D 的等位線繞這條軸旋轉一圈。<strong>電偶極</strong>的 \(V = 0\) 等位面是 AB 的中垂面；<strong>不等量</strong>異號電荷時，它變成包住電量較小那個電荷的球面。<strong>等量同號電荷</strong>的等位面隨電位降低，從兩個分開的泡泡合成一個「花生」形。</li>
+        <li data-en-html="The test charge stays in the z = 0 plane: by symmetry the field there has no \(z\)-component.">試探電荷一直留在 z = 0 平面上：由對稱性，那裡的電場沒有 \(z\) 分量。</li>
+      </ul>
+
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
         <li data-en="Field lines: traced step by step from each charge along the field direction with the fourth-order Runge–Kutta method; the starting angles are spread evenly around the charge.">電力線：從電荷出發，以四階 Runge–Kutta 法沿電場方向逐步描線，每條線的出發角度平均分配。</li>
         <li data-en-html="Equipotentials: the potential is computed on a grid, and the marching squares algorithm finds the contours; the levels are \(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\).">等位線：在格點上計算電位，再用 marching squares 演算法找出等值線；電位等級取 \(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\)。</li>
         <li data-en="Motion of the test charge: velocity-Verlet integration with an adaptive step — the time step shrinks automatically near a charge so that energy stays conserved.">試探電荷運動：自適應步長的 velocity-Verlet 積分，靠近電荷時自動縮小時間步長以維持能量守恆。</li>
         <li data-en="The test charge only probes the field; it does not push the source charges in return (the source charges are held fixed).">試探電荷只用來量測，不會反過來推動場源電荷（場源電荷固定不動）。</li>
+        <li data-en-html="3D view: the potential and field of each charge at distance \(r\) come from the same physics code as the 2D view, and are added in three dimensions. The potential is computed on a 3D grid (spacing 0.125 cm, 0.25 cm while a slider is moving) and the surfaces at the same levels as the 2D lines (\(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\)) are extracted with the “surface nets” method (a relative of marching cubes); every vertex is then moved onto the exact surface with Newton’s method, and the shading normal is the direction of \(\vec E\). Field lines start from points spread evenly over a small sphere around each charge (a Fibonacci spiral, 8 lines per nC) and are traced with the Runge–Kutta method. The view is mirror-symmetric about z = 0, so the half below the plane is drawn as a mirror image. The 3D region is 12 cm × 8 cm × 8 cm; the surfaces fade out near its edges. The charge balls are drawn larger than real point charges.">3D 檢視：每個電荷在距離 \(r\) 處的電位與電場，用與 2D 相同的物理程式計算，再在三維空間中疊加。在 3D 格點上計算電位（間距 0.125 cm，拖曳滑桿時暫用 0.25 cm），以「surface nets」方法（marching cubes 的同類方法）找出與 2D 等位線相同等級（\(\pm 100,\ \pm 200,\ \pm 400,\ \ldots\ \mathrm{V}\)）的等位面，每個頂點再用牛頓法移到精確的曲面上，光影的法向量就是 \(\vec E\) 的方向。電力線從電荷周圍小球面上平均分布的起點出發（Fibonacci 螺旋，每 nC 8 條），以 Runge–Kutta 法描線。畫面對 z = 0 鏡面對稱，平面下方的一半以鏡像畫出。3D 區域為 12 cm × 8 cm × 8 cm，等位面在邊緣附近淡出；電荷小球的大小只是示意。</li>
+        <li data-en-html="The 3D view uses the three.js library (MIT license). It is downloaded only when you switch to 3D.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
     </section>
 
@@ -154,15 +253,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/field-core.js?v=202611111312"></script>
-  <script src="js/sound.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/electric-field.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="electric-field"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/field-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/electric-field-3d.js?v=202611120013"></script>
+  <script src="js/electric-field.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="electric-field"></script>
   <script src="js/missions/electric-field.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="electric-field"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="electric-field"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

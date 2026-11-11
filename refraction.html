@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Refraction and Total Internal Reflection | Astro Ni Physics Lab">折射與全反射｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：選擇上下兩種介質並拖曳雷射改變入射角，觀察司乃耳定律、菲涅耳方程式決定的反射與折射光強、臨界角與全反射、波前在介質中變短，以及光纖中的全反射導光。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/refraction.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/refraction.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/refraction.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/refraction.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="折射與全反射｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/refraction.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/refraction.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="折射與全反射的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"折射與全反射","alternateName":"Refraction and Total Internal Reflection","description":"選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。","url":"https://astro1222ni.github.io/physics-lab/refraction.html","image":"https://astro1222ni.github.io/physics-lab/img/og/refraction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 折射與全反射頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .stage canvas#cv { aspect-ratio: 3 / 2; }
@@ -46,7 +66,7 @@
     dl.readout dd.flag { color: var(--pos); font-weight: 650; }
     dl.readout dd small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
     dl.readout [hidden], .card[hidden], [data-m][hidden] { display: none; }
-    .checks label { min-height: 36px; }
+    .checks label { min-height: 44px; }
     .checks input { width: 18px; height: 18px; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
@@ -70,7 +90,7 @@
           <button id="anim" type="button" hidden>暫停動畫</button>
         </div>
         <div class="legend" id="legend">
-          <span style="color:var(--beam)" data-en-html="&lt;i style=&quot;background:var(--beam)&quot;&gt;&lt;/i&gt;Light ray (brightness ∝ intensity)"><i style="background:var(--beam)"></i>光線（亮度隨光強）</span>
+          <span data-en-html="&lt;i style=&quot;background:var(--beam)&quot;&gt;&lt;/i&gt;Light ray (brightness ∝ intensity)"><i style="background:var(--beam)"></i>光線（亮度隨光強）</span>
           <span style="color:var(--muted)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Normal"><i class="dash"></i>法線</span>
           <span style="color:var(--equi)" data-m="ray wave" data-en-html="&lt;i style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Angles of incidence and reflection"><i style="background:var(--equi)"></i>入射角、反射角</span>
           <span style="color:var(--accent)" data-m="ray wave" data-en-html="&lt;i style=&quot;background:var(--accent)&quot;&gt;&lt;/i&gt;Angle of refraction"><i style="background:var(--accent)"></i>折射角</span>
@@ -266,14 +286,14 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/refraction-core.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/refraction.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="refraction"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/refraction-core.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/refraction.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="refraction"></script>
   <script src="js/missions/refraction.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="refraction"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="refraction"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

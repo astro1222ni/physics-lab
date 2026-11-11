@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Faraday’s Law and Lenz’s Law | Astro Ni Physics Lab">法拉第定律與冷次定律｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：條形磁鐵穿過線圈、導體棒在磁場中的軌道上滑動，即時畫出磁通量 Φ、感應電動勢 ε 與感應電流 I 的時間圖，觀察 ε = −N dΦ/dt 與冷次定律的方向。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="移動磁鐵穿過線圈，或讓導體棒在磁場中滑動，即時畫出磁通量、感應電動勢與感應電流，觀察 ε = −N dΦ/dt 與冷次定律的方向。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/faraday.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/faraday.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/faraday.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/faraday.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="法拉第定律與冷次定律｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="移動磁鐵穿過線圈，或讓導體棒在磁場中滑動，即時畫出磁通量、感應電動勢與感應電流，觀察 ε = −N dΦ/dt 與冷次定律的方向。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/faraday.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/faraday.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="法拉第定律與冷次定律的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"法拉第定律與冷次定律","alternateName":"Faraday's Law and Lenz's Law","description":"移動磁鐵穿過線圈，或讓導體棒在磁場中滑動，即時畫出磁通量、感應電動勢與感應電流，觀察 ε = −N dΦ/dt 與冷次定律的方向。","url":"https://astro1222ni.github.io/physics-lab/faraday.html","image":"https://astro1222ni.github.io/physics-lab/img/og/faraday.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電磁感應（Electromagnetic Induction）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 法拉第定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；只有磁鐵可以左右拖曳，其他地方可以上下捲動頁面 */
@@ -32,7 +52,7 @@
     .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
     .fd .wide { width: 100%; margin-top: 8px; }
     .fd #flip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
-    .fd .checks label { min-height: 36px; }
+    .fd .checks label { min-height: 44px; }
     .fd .checks input { width: 17px; height: 17px; }
     .fd .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
@@ -40,6 +60,39 @@
     dl.readout sub { font-size: .75em; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .fd .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    /* 3D 畫布蓋在 2D 畫布的實驗畫面區上（位置由 js/faraday.js 設定），圖表仍由 2D 畫布畫 */
+    .cvwrap { position: relative; }
+    #view3 { position: absolute; left: 0; top: 0; width: 0; height: 0; display: none; border-radius: 8px; overflow: hidden; }
+    .stage.is3d #view3 { display: block; }
+    #view3 canvas.cv3 {
+      display: block; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 8px; touch-action: none; cursor: grab;
+      /* 3D 背景：極淡的徑向暈影（中心亮、四角略暗），隨深淺色自動變化 */
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    #view3 canvas.cv3:active { cursor: grabbing; }
+    #view3 .ov3 { position: absolute; inset: 0; pointer-events: none; font: 600 calc(12.5px * var(--fs, 1))/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; font-variant-numeric: tabular-nums; }
+    #view3 .p { position: absolute; padding: 2px 9px; border-radius: 10px; white-space: nowrap; color: var(--text);
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    #view3 .tl { left: 8px; top: 8px; }
+    #view3 .tr { right: 8px; top: 8px; font-weight: 500; text-align: right; }
+    #view3 .mid { left: 50%; top: 40px; transform: translateX(-50%); font-weight: 500; }
+    #view3 .bl { position: absolute; left: 8px; bottom: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+    #view3 .bl .p { position: static; }
+    @media (max-width: 600px) {
+      #view3 .ov3 { font-size: calc(11.5px * var(--fs, 1)); }
+      #view3 .tr { top: 36px; left: 8px; right: auto; text-align: left; }
+      #view3 .mid { top: 64px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -47,12 +100,23 @@
     <header class="top">
       <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / Induction"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電磁感應</nav>
       <h1 data-en="Faraday’s Law and Lenz’s Law">法拉第定律與冷次定律</h1>
-      <p data-en="Push a bar magnet through a coil, or slide a metal rod along rails in a magnetic field. The graphs of magnetic flux Φ, induced emf ε and current I are drawn as it happens, so you can see that ε follows the slope of Φ — and the induced current always pushes back against the change.">把條形磁鐵推過線圈，或讓導體棒在磁場中的軌道上滑動。畫面即時畫出磁通量 Φ、感應電動勢 ε 與感應電流 I 的時間圖：ε 跟著 Φ 的斜率走，而感應電流永遠在「反抗」磁通量的變化。</p>
+      <p data-en="Push a bar magnet through a coil, or slide a metal rod along rails in a magnetic field. The graphs of magnetic flux Φ, induced emf ε and current I are drawn as it happens, so you can see that ε follows the slope of Φ — and the induced current always pushes back against the change. Switch to the 3D view to see the magnet, the coil and the field lines in three dimensions.">把條形磁鐵推過線圈，或讓導體棒在磁場中的軌道上滑動。畫面即時畫出磁通量 Φ、感應電動勢 ε 與感應電流 I 的時間圖：ε 跟著 Φ 的斜率走，而感應電流永遠在「反抗」磁通量的變化。也可以切換到 3D 檢視，看立體的磁鐵、線圈與磁力線。</p>
     </header>
 
     <div class="lab fd">
       <div class="stage">
-        <canvas id="cv" aria-label="法拉第定律模擬畫布：左側為磁鐵與線圈（或導體棒與軌道），右側或下方為磁通量、感應電動勢與感應電流對時間的圖" data-en-aria-label="Faraday’s law simulation: the magnet and coil (or the rod on rails), with graphs of magnetic flux, induced emf and induced current against time"></canvas>
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" aria-label="法拉第定律模擬畫布：左側為磁鐵與線圈（或導體棒與軌道），右側或下方為磁通量、感應電動勢與感應電流對時間的圖" data-en-aria-label="Faraday’s law simulation: the magnet and coil (or the rod on rails), with graphs of magnetic flux, induced emf and induced current against time"></canvas>
+          <div id="view3"></div>
+        </div>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
           <button id="reset" type="button" data-en="Clear all" title="清除圖表並回到起點，滑桿設定不變" data-en-title="Clear the graphs and go back to the start; slider settings are kept">全部清除</button>
@@ -66,6 +130,7 @@
           <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Magnet’s field lines"><i style="background:var(--field)"></i>磁鐵的磁力線</span>
           <span data-en-html="<i style=&quot;background:var(--b-em)&quot;></i>Field lines through the coil"><i style="background:var(--b-em)"></i>穿過線圈的磁力線</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Induced current"><i class="dot" style="background:var(--probe)"></i>感應電流</span>
+          <span class="l3" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-em);opacity:.5&quot;></i>Flux disc inside the coil (darker = larger Φ)"><i class="dot" style="background:var(--b-em);opacity:.5"></i>線圈內的磁通量圓盤（越深 Φ 越大）</span>
         </div>
         <div class="legend" id="legendB" hidden>
           <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Velocity v"><i style="background:var(--accent)"></i>速度 v</span>
@@ -73,9 +138,12 @@
           <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Applied force"><i style="background:var(--b-mech)"></i>外力</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Induced current"><i class="dot" style="background:var(--probe)"></i>感應電流</span>
           <span data-en-html="<i style=&quot;background:var(--b-em)&quot;></i>Area of the loop (flux)"><i style="background:var(--b-em)"></i>迴路面積（磁通量）</span>
+          <span class="l3" data-en-html="<i style=&quot;background:var(--b-em);opacity:.6&quot;></i>Uniform field B (3D arrows)"><i style="background:var(--b-em);opacity:.6"></i>均勻磁場 B（立體箭頭）</span>
         </div>
-        <p class="hint" id="hintA" data-en-html="Side view. Drag the magnet left and right, or let it move by itself. Neighbouring field lines carry equal flux, so the number of lines through the coil shows the flux. Only a few of the N turns are drawn. Current I &gt; 0 means the needle swings to the right.">側視圖。可以左右拖曳磁鐵，或讓它自動移動。相鄰兩條磁力線之間的磁通量相等，所以穿過線圈的磁力線條數代表磁通量。線圈只畫出 N 匝中的幾匝作示意。電流 I &gt; 0 時檢流計指針向右偏。</p>
-        <p class="hint" id="hintB" hidden data-en-html="Top view, drawn to scale. Arrows: velocity 1 m/s → 0.25 m; force 1 N → 0.4 m (an arrow too long to fit is cut short and marked “≈”). Φ is measured along the field; ε and I are positive when the current circulates right-handedly about the field direction (clockwise seen from above when B points into the page).">俯視圖，依比例繪製。箭頭比例：速度每 1 m/s 畫 0.25 m，力每 1 N 畫 0.4 m（太長的箭頭截短並標「≈」）。Φ 以磁場方向為正；ε、I &gt; 0 代表電流環繞方向與磁場方向成右手定則（磁場穿入紙面時為由上往下看順時針）。</p>
+        <p class="hint l2" id="hintA" data-en-html="Side view. Drag the magnet left and right, or let it move by itself. Neighbouring field lines carry equal flux, so the number of lines through the coil shows the flux. Only a few of the N turns are drawn. Current I &gt; 0 means the needle swings to the right.">側視圖。可以左右拖曳磁鐵，或讓它自動移動。相鄰兩條磁力線之間的磁通量相等，所以穿過線圈的磁力線條數代表磁通量。線圈只畫出 N 匝中的幾匝作示意。電流 I &gt; 0 時檢流計指針向右偏。</p>
+        <p class="hint l2" id="hintB" hidden data-en-html="Top view, drawn to scale. Arrows: velocity 1 m/s → 0.25 m; force 1 N → 0.4 m (an arrow too long to fit is cut short and marked “≈”). Φ is measured along the field; ε and I are positive when the current circulates right-handedly about the field direction (clockwise seen from above when B points into the page).">俯視圖，依比例繪製。箭頭比例：速度每 1 m/s 畫 0.25 m，力每 1 N 畫 0.4 m（太長的箭頭截短並標「≈」）。Φ 以磁場方向為正；ε、I &gt; 0 代表電流環繞方向與磁場方向成右手定則（磁場穿入紙面時為由上往下看順時針）。</p>
+        <p class="hint l3" id="hint3A" data-en-html="3D view: drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan; you can also drag the magnet along the coil axis. All N turns of the coil are drawn (with many turns each turn is too thin to see, so the winding is drawn as a texture with N stripes). The field lines are the same set as in 2D, turned round the axis in 8 directions, so the number of lines through the coil still shows the flux. Floor grid 1 cm (thick lines 5 cm).">3D 檢視：拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移；也可以沿線圈軸拖曳磁鐵。線圈畫出全部 N 匝（匝數多時每匝太細，改用 N 條沿螺旋排列的紋理）。磁力線與 2D 是同一組，繞線圈軸轉 8 個方向，所以穿過線圈的條數仍代表磁通量。桌面格線 1 cm（粗線 5 cm）。</p>
+        <p class="hint l3" id="hint3B" hidden data-en-html="3D view: drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. The rails lie on the table; the 2D top view looks straight down on them. The blue arrows are the uniform field B (stronger field, darker arrows). Velocity and force arrows use the same scale as in 2D (1 m/s → 0.25 m, 1 N → 0.4 m). Floor grid 10 cm (thick lines 50 cm).">3D 檢視：拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。軌道平放在桌面上，2D 的俯視圖就是從正上方往下看。藍色箭頭是均勻磁場 B（磁場越強顏色越深）；速度與力的箭頭比例與 2D 相同（1 m/s → 0.25 m、1 N → 0.4 m）。桌面格線 10 cm（粗線 50 cm）。</p>
       </div>
 
       <aside class="panel">
@@ -227,6 +295,9 @@
         <li data-en-html="The \(N\) turns are spread evenly along the 4 cm coil; \(\Phi\) on the graph is the average flux per turn (also an exact formula), and \(\varepsilon = -N\,(d\Phi/dx)\,v\) is calculated by exact differentiation. The coil’s self-inductance is ignored.">\(N\) 匝線圈均勻分布在 4 cm 長的線圈上；圖中的 \(\Phi\) 是每匝的平均磁通量（同樣有精確公式），\(\varepsilon = -N\,(d\Phi/dx)\,v\) 用精確的微分計算。忽略線圈的自感。</li>
         <li data-en-html="When you drag the magnet, it follows your finger through a stiff, critically damped spring so that its velocity — and therefore ε — is smooth.">用手拖曳時，磁鐵經由一條很硬、臨界阻尼的「彈簧」跟著手指移動，讓速度（以及 ε）連續變化。</li>
         <li data-en-html="For the rod, position, speed, current and heat all come from the exact solutions above, so the energy balance holds exactly at every moment.">導體棒的位置、速度、電流與焦耳熱全部由上面的解析解計算，所以每一刻的能量都精確守恆。</li>
+        <li data-en-html="<strong>3D view</strong>: it uses exactly the same numbers as the 2D view — the magnet position, flux, current, galvanometer needle, and the rod’s position and forces all come from the same physics core at the same moment. The field is symmetric about the coil axis, so the 3D field lines are the 2D lines (equal flux between neighbours) turned round the axis in 8 directions; the lines that cross the coil’s middle plane inside radius \(a\) are highlighted. The disc inside the coil is tinted by the flux per turn \(\Phi\). The coil has all \(N\) turns, wound right-handedly; the glowing dots and small arrows on the wire move in the direction of the induced current, faster when \(|I|\) is larger.">
+          <strong>3D 檢視</strong>：與 2D 用完全相同的數值——磁鐵位置、磁通量、電流、檢流計指針，以及導體棒的位置與受力，都在同一時刻由同一個物理核心算出。磁場對線圈軸對稱，所以立體的磁力線就是 2D 的磁力線（相鄰兩條之間磁通量相等）繞軸轉 8 個方向；在線圈中央平面上落在半徑 \(a\) 以內的磁力線會加亮。線圈內的圓盤顏色依每匝磁通量 \(\Phi\) 變深。線圈畫出全部 \(N\) 匝（右手螺旋繞法），導線上的光點與小箭頭沿感應電流的方向移動，\(|I|\) 越大移動越快。</li>
+        <li data-en-html="The 3D view uses the three.js library (MIT license). It is downloaded only when you switch to 3D.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
     </section>
 
@@ -235,15 +306,15 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/faraday-core.js?v=202611111312"></script>
-  <script src="js/sound.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/faraday.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="faraday"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/faraday-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/faraday.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="faraday"></script>
   <script src="js/missions/faraday.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="faraday"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="faraday"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

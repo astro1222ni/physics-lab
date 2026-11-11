@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Charge-to-Mass Ratio of the Electron | Astro Ni Physics Lab">電子的荷質比｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="電子束在亥姆霍茲線圈的均勻磁場中繞成發光的圓：調電壓與電流、用游標量直徑，作圖求出電子的荷質比 e/m；含視差、儀器誤差、螺旋運動與可旋轉的 3D 實驗裝置。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/e-over-m.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/e-over-m.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/e-over-m.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/e-over-m.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="電子的荷質比｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="電子束在亥姆霍茲線圈的均勻磁場中繞成發光的圓：調電壓與電流、用游標量直徑，作圖求出電子的荷質比 e/m；含視差、儀器誤差、螺旋運動與可旋轉的 3D 實驗裝置。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/e-over-m.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/e-over-m.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="電子的荷質比的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"電子的荷質比","alternateName":"Charge-to-Mass Ratio of the Electron","description":"電子束在亥姆霍茲線圈的均勻磁場中繞成發光的圓：調電壓與電流、用游標量直徑，作圖求出電子的荷質比 e/m；含視差、儀器誤差、螺旋運動與可旋轉的 3D 實驗裝置。","url":"https://astro1222ni.github.io/physics-lab/e-over-m.html","image":"https://astro1222ni.github.io/physics-lab/img/og/e-over-m.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["近代物理（Modern Physics）","量子現象（Quantum Phenomena）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/e-over-m.js 與 js/e-over-m-3d.js 讀取 */
+    :root {
+      --eom-board: #1b262b; --eom-board-2: #0f171a; --eom-copper: #b9733a; --eom-beam: #47efd2;
+      --eom-led: #ff3b30; --eom-heat: #ff9a3c; --eom-ruler: #f1ede1; --eom-hair: #ff4d4d; --eom-metal: #9aa7ad;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --eom-board: #0d1417; --eom-board-2: #070b0d; --eom-copper: #c98a4e; --eom-beam: #52f5d9;
+        --eom-led: #ff4a3d; --eom-heat: #ffa54f; --eom-ruler: #d8d3c4; --eom-hair: #ff5a52; --eom-metal: #8a979d;
+      }
+    }
+    :root[data-theme="dark"] {
+      --eom-board: #0d1417; --eom-board-2: #070b0d; --eom-copper: #c98a4e; --eom-beam: #52f5d9;
+      --eom-led: #ff4a3d; --eom-heat: #ffa54f; --eom-ruler: #d8d3c4; --eom-hair: #ff5a52; --eom-metal: #8a979d;
+    }
+    .eom button { min-height: 44px; }
+    /* 畫布高度由程式依寬度決定；只有水平拖曳游標，手機上可以在畫布上直向捲動頁面 */
+    .eom #cv { aspect-ratio: auto; height: 560px; touch-action: pan-y; cursor: default; }
+    .eom .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .eom .playbar button { flex: 1 1 auto; }
+    .eom #power[aria-pressed="true"] { background: var(--pos); border-color: var(--pos); color: #fff; font-weight: 700; }
+    .eom #power[aria-pressed="false"] { font-weight: 700; color: var(--pos); border-color: var(--pos); }
+    .eom #record { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .eom .stage .status { margin: 6px 4px 0; color: var(--text); }
+    .eom .slider input[type="range"] { height: 28px; margin: 0; }
+    .eom .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .eom .slider { margin: 4px 0 6px; }
+    .eom .slider label sub, dl.readout sub { font-size: .75em; }
+    .eom [hidden] { display: none !important; }
+    .eom .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .eom .checks label { min-height: 44px; }
+    .eom .checks input { width: 18px; height: 18px; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dt .f { white-space: nowrap; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
+    /* 實驗步驟 */
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 0 5px 34px; color: var(--muted); line-height: 1.45; }
+    ol.steps li::before {
+      content: counter(st); position: absolute; left: 0; top: 4px; width: 24px; height: 24px; border-radius: 50%;
+      display: grid; place-items: center; font-size: calc(12px * var(--fs, 1)); font-weight: 700;
+      border: 1.5px solid var(--border); color: var(--muted); background: var(--surface);
+    }
+    ol.steps li.now { color: var(--text); font-weight: 600; }
+    ol.steps li.now::before { border-color: var(--accent); color: var(--surface); background: var(--accent); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; border-color: var(--probe); color: var(--probe); }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 4 / 3; touch-action: none;
+      background: var(--eom-board-2);
+      background: radial-gradient(ellipse at 50% 38%, var(--eom-board) 0%, var(--eom-board-2) 78%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.05; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .legend .glow { background: var(--eom-beam) !important; box-shadow: 0 0 6px var(--eom-beam); }
+    /* 數據表與分析 */
+    .eom-data { margin-top: 16px; }
+    .eom-data h2 { font-size: calc(17px * var(--fs, 1)); }
+    .eom-data .grid { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+    @media (max-width: 1100px) { .eom-data .grid { grid-template-columns: minmax(0, 1fr); } }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    table.rec { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.rec th, table.rec td { padding: 6px 7px; text-align: right; border-bottom: 1px solid var(--border); }
+    table.rec th { color: var(--muted); font-weight: 600; background: var(--bg); position: sticky; top: 0; }
+    table.rec th:first-child, table.rec td:first-child { text-align: center; }
+    table.rec tbody tr:last-child td { border-bottom: none; }
+    table.rec td.em { font-weight: 700; }
+    table.rec tr.empty td { text-align: center; color: var(--muted); white-space: normal; padding: 14px 8px; }
+    table.rec .tag { display: inline-block; font-size: calc(11px * var(--fs, 1)); padding: 0 5px; margin-left: 4px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+    #gcv { display: block; width: 100%; height: 300px; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; }
+    .result { margin-top: 10px; }
+    .result dd { font-weight: 600; }
+    .eom-data .btns { margin-top: 10px; }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Quantum phenomena"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 量子現象</nav>
+      <h1 data-en="Charge-to-Mass Ratio of the Electron">電子的荷質比</h1>
+      <p data-en="A textbook experiment you can do at home: electrons accelerated through a voltage V enter the uniform magnetic field of a pair of Helmholtz coils and trace a glowing circle in a bulb of low-pressure helium. Slide the two cursors to measure the diameter, record your data, and work out e/m from a graph. Switch to 3D to walk round the real apparatus.">課本實驗搬回家做：電子經電壓 V 加速後射入亥姆霍茲線圈的均勻磁場，在低壓氦氣玻璃球中畫出發光的圓。移動左右游標量出直徑、記錄數據，再作圖求出電子的荷質比 e/m。切換到 3D 可以繞著真實的實驗裝置看。</p>
+    </header>
+
+    <div class="lab eom">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D front view">2D 正面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D apparatus">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="電子荷質比實驗裝置的正面圖：亥姆霍茲線圈、玻璃球中發光的電子束圓圈、左右游標與標尺、電源供應器的電表；右側（手機在下方）是兩個游標的放大鏡與視差俯視圖。可左右拖曳游標。" data-en-aria-label="Front view of the e/m apparatus: Helmholtz coils, the glowing electron beam circle in the glass bulb, the left and right cursors with the scale, and the meters of the power supply; at the side (below on phones) are magnifiers for the two cursors and a top view of the line of sight. Drag a cursor sideways to move it."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button type="button" id="power" aria-pressed="false" data-en="Power on">開啟電源</button>
+          <button type="button" id="record" class="primary" data-en="Record">記錄</button>
+          <button type="button" id="undo" data-en="Delete last row">刪除上一筆</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除數據表與分析圖，旋鈕與游標的設定不變" data-en-title="Clear the data table and the graph; knob and cursor settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span><i class="glow"></i><span data-en="Electron beam (glowing helium)">電子束（氦氣受撞擊發光）</span></span>
+          <span><i style="background:var(--eom-hair)"></i><span data-en="Cursor hairlines (front and back)">游標的前、後細線</span></span>
+          <span><i style="background:var(--eom-copper)"></i><span data-en="Helmholtz coils">亥姆霍茲線圈</span></span>
+          <span class="l3"><i style="background:var(--muted)"></i><span data-en="Magnetic field lines (calculated)">磁力線（計算結果）</span></span>
+        </div>
+        <p class="hint l2" data-en="Front view, looking along the coil axis: the magnetic field B points out of the screen, towards you. Drag a cursor (or its magnifier, for fine adjustment) sideways; the magnifiers show each hairline against the edge of the beam.">正面圖，沿著線圈軸線看過去：磁場 B 由畫面指向你。左右拖曳游標（拖放大鏡可以微調）；放大鏡中可以看到細線與電子束邊緣是否對齊。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Everything is drawn to scale in centimetres; the beam and the field lines are calculated from the same physics as the 2D view.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。所有物件都依實際尺寸（公分）繪製；電子束與磁力線由與 2D 相同的物理計算而來。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps">
+            <li data-en="Turn both knobs down to zero, then press “Power on”.">把兩個旋鈕轉到最小，再按「開啟電源」。</li>
+            <li data-en="Raise the voltage and the coil current until a complete, clear circle appears.">調高加速電壓與線圈電流，直到出現完整、清楚的圓。</li>
+            <li data-en="Set the accelerating voltage to 100 V (read the meter).">把加速電壓調到 100 V（看電表讀數）。</li>
+            <li data-en="Read the coil current I; B at the centre follows from N and I.">讀出線圈電流 I，由匝數 N 與 I 算出中心磁場 B。</li>
+            <li data-en="Line the cursors up with the left and right edges of the beam, then press “Record”.">移動游標對準電子束的最左與最右端，按「記錄」。</li>
+            <li data-en="Repeat at 150 V, 200 V and 250 V, then look at the analysis.">改成 150 V、200 V、250 V 重做，看分析結果。</li>
+          </ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Power supply knobs">電源供應器旋鈕</h2>
+          <div class="slider"><label for="V" data-en="Accelerating voltage V (knob)">加速電壓 V（旋鈕）</label><output id="Vo"></output>
+            <input id="V" type="range" min="0" max="300" step="1" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="I" data-en="Coil current I (knob)">線圈電流 I（旋鈕）</label><output id="Io"></output>
+            <input id="I" type="range" min="0" max="2.5" step="0.01" value="0" data-decimals="2"></div>
+          <div class="btns"><button type="button" id="demo" data-en="Quick start (150 V, 1.40 A)">快速開機（150 V、1.40 A）</button></div>
+          <p class="hint" data-en="Record the meter readings, not the knob settings — in “With errors” mode the meters are slightly off. Coils: N = 130 turns each, radius R = 15.0 cm, separated by R.">記錄要用電表的讀數，不是旋鈕的設定（「含誤差」模式中電表略有偏差）。線圈：每個 N = 130 匝、半徑 R = 15.0 cm，兩線圈相距 R。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Measuring the diameter">測量直徑</h2>
+          <div class="slider"><label for="xL" data-en="Left cursor">左游標</label><output id="xLo"></output>
+            <input id="xL" type="range" min="0" max="10" step="0.01" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="xR" data-en="Right cursor">右游標</label><output id="xRo"></output>
+            <input id="xR" type="range" min="10" max="20" step="0.01" value="18" data-decimals="2"></div>
+          <p class="seg-label" id="modeLabel" data-en="Instrument">儀器</p>
+          <div class="seg2" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeIdeal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" id="modeReal" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <div class="checks">
+            <label><input id="parallax" type="checkbox"><span data-en="Parallax (where your eye is matters)">視差（眼睛的位置會影響讀數）</span></label>
+          </div>
+          <div class="slider" id="eyeBox" hidden><label for="eye" data-en="Eye position (on the scale)">眼睛的水平位置（對應標尺）</label><output id="eyeo"></output>
+            <input id="eye" type="range" min="0" max="20" step="0.1" value="10" data-decimals="1"></div>
+          <p class="hint" id="modeHint" data-en="Ideal: perfectly uniform field, exact meters, and you always look straight at each cursor.">理想：磁場完全均勻、電表準確，而且每次讀數時眼睛都正對游標。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Voltmeter V">電壓表 V</dt><dd id="rV">—</dd>
+            <dt data-en="Ammeter I">電流表 I</dt><dd id="rI">—</dd>
+            <dt data-en-html="Centre field <span class=&quot;f&quot;>B = 8μ<sub>0</sub>NI/(√125 R)</span>">中心磁場 <span class="f">B = 8μ<sub>0</sub>NI/(√125 R)</span></dt><dd id="rB">—</dd>
+            <dt data-en="Left cursor reading">左游標讀數</dt><dd id="rxL">—</dd>
+            <dt data-en="Right cursor reading">右游標讀數</dt><dd id="rxR">—</dd>
+            <dt data-en-html="Diameter <span class=&quot;f&quot;>D = x<sub>R</sub> − x<sub>L</sub></span>">直徑 <span class="f">D = x<sub>右</sub> − x<sub>左</sub></span></dt><dd id="rD">—</dd>
+            <dt data-en="Radius r = D/2">半徑 r = D/2</dt><dd id="rr">—</dd>
+            <dt data-en="Beam">電子束</dt><dd id="rBeam">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Going further: tilt the gun">延伸：轉動電子槍</h2>
+          <div class="slider"><label for="alpha" data-en="Gun tilt α out of the circle’s plane">電子槍轉角 α（離開圓的平面）</label><output id="alphao"></output>
+            <input id="alpha" type="range" min="0" max="15" step="0.5" value="0" data-decimals="1"></div>
+          <p class="hint" data-en="When the beam is not perpendicular to B it spirals along the field (a helix). Look at it in 3D. Set α back to 0° to take measurements.">電子束不垂直於磁場時，會沿著磁場方向螺旋前進。切換到 3D 看得最清楚。量直徑前要把 α 轉回 0°。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showLabels" type="checkbox" checked><span data-en="Labels">名稱標示</span></label>
+            <label><input id="showField" type="checkbox" checked><span data-en="Field and current direction">磁場與電流方向</span></label>
+            <label><input id="showDots" type="checkbox" checked><span data-en="Moving electrons (slow motion)">電子運動（慢動作）</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card eom-data" id="dataCard">
+      <h2 data-en="Data table and analysis">數據表與分析</h2>
+      <div class="grid">
+        <div>
+          <div class="tablewrap">
+            <table class="rec" id="recTable">
+              <thead><tr>
+                <th>#</th>
+                <th data-en-html="V (V)">V（V）</th>
+                <th data-en-html="I (A)">I（A）</th>
+                <th data-en-html="B (10<sup>−4</sup> T)">B（10<sup>−4</sup> T）</th>
+                <th data-en-html="x<sub>L</sub> (cm)">x<sub>左</sub>（cm）</th>
+                <th data-en-html="x<sub>R</sub> (cm)">x<sub>右</sub>（cm）</th>
+                <th data-en-html="D (cm)">D（cm）</th>
+                <th data-en-html="r (cm)">r（cm）</th>
+                <th data-en-html="e/m (10<sup>11</sup> C/kg)">e/m（10<sup>11</sup> C/kg）</th>
+              </tr></thead>
+              <tbody id="recBody"></tbody>
+            </table>
+          </div>
+          <dl class="readout result">
+            <dt data-en="Mean of the rows">各次 e/m 的平均</dt><dd id="aMean">—</dd>
+            <dt data-en="Best-fit slope (through the origin)">最佳直線斜率（通過原點）</dt><dd id="aFit">—</dd>
+            <dt data-en="Accepted value">公認值</dt><dd id="aAcc">—</dd>
+          </dl>
+          <p class="hint" data-en-html="Each row: \(B = \dfrac{8\mu_0 N I}{\sqrt{125}\,R}\), \(r = D/2\), \(\dfrac{e}{m} = \dfrac{2V}{B^2 r^2}\). The graph plots \(2V\) against \((Br)^2\); its slope is \(e/m\).">每一列：\(B = \dfrac{8\mu_0 N I}{\sqrt{125}\,R}\)，\(r = D/2\)，\(\dfrac{e}{m} = \dfrac{2V}{B^2 r^2}\)。右圖以 \(2V\) 對 \((Br)^2\) 作圖，斜率就是 \(e/m\)。</p>
+        </div>
+        <figure style="margin:0">
+          <canvas id="gcv" aria-label="分析圖：縱軸 2V，橫軸 (Br)²，記錄的數據點、通過原點的最佳直線與公認值的參考線" data-en-aria-label="Analysis graph: 2V against (Br)² for the recorded points, the best-fit line through the origin and a reference line for the accepted value"></canvas>
+        </figure>
+      </div>
+    </section>
+
+    <section class="notes">
+      <h2 data-en="Purpose">實驗目的</h2>
+      <p data-en="Bend an electron beam into a circle with the nearly uniform magnetic field of a pair of Helmholtz coils, measure the circle, and combine it with the accelerating voltage and the field to find the electron’s charge-to-mass ratio e/m. Compare your result with the accepted value.">利用亥姆霍茲線圈產生近似均勻的磁場，讓電子束彎成圓形；量出圓的大小，配合加速電壓與磁場求出電子的荷質比 e/m，再與公認值比較。</p>
+
+      <h2 data-en="Apparatus">實驗器材</h2>
+      <ul>
+        <li data-en="A pair of identical coaxial coils (Helmholtz coils): N = 130 turns each, radius R = 15.0 cm, placed R apart, carrying the same current in the same direction.">一對相同、同軸的圓形線圈（亥姆霍茲線圈）：每個 N = 130 匝、半徑 R = 15.0 cm，兩線圈相距 R，通以同方向、同大小的電流。</li>
+        <li data-en="A glass bulb (16 cm across) filled with helium at very low pressure, with an electron gun inside: a hot cathode emits electrons, which are accelerated towards the anode and leave through a small hole as a narrow beam.">玻璃球（直徑 16 cm）：內有極低壓的氦氣與電子槍；熱陰極放出電子，被加速電壓推向陽極，從小孔射出成為細細的電子束。</li>
+        <li data-en="Two sliding cursors with hairlines on a scale in front of the bulb (reading to 0.1 mm), used to mark the left and right edges of the beam.">玻璃球前方的標尺與左右兩個可滑動的游標（附細線，最小讀數 0.1 mm），用來對準電子束的左右兩端。</li>
+        <li data-en="A power supply with knobs and digital meters for the accelerating voltage V and the coil current I.">電源供應器：加速電壓 V 與線圈電流 I 的調整旋鈕與數字電表。</li>
+      </ul>
+
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. The electron is accelerated">1. 電子被加速</h3>
+      <p data-en-html="An electron starting almost at rest is accelerated through a potential difference \(V\). The electric force does work \(eV\), all of which becomes kinetic energy:">電子幾乎由靜止出發，經過電位差 \(V\) 加速，電力所做的功 \(eV\) 全部變成動能：</p>
+      <div class="formula">\[ eV = \tfrac12 m v^2 \quad\Longrightarrow\quad v = \sqrt{\frac{2eV}{m}} \]</div>
+      <h3 data-en="2. The magnetic force bends it into a circle">2. 磁力讓它轉成圓</h3>
+      <p data-en-html="Inside the coils the velocity is perpendicular to \(\vec B\). The magnetic force \(evB\) is always perpendicular to the velocity, so it changes only the direction of motion and acts as the centripetal force:">在線圈中，速度與 \(\vec B\) 垂直。磁力 \(evB\) 永遠垂直於速度，只改變運動方向，正好當作向心力：</p>
+      <div class="formula">\[ evB = \frac{m v^2}{r} \quad\Longrightarrow\quad r = \frac{mv}{eB} \]</div>
+      <h3 data-en="3. Eliminate v">3. 消去速率 v</h3>
+      <p data-en-html="Squaring \(mv = eBr\) gives \(m^2v^2 = e^2B^2r^2\); with \(mv^2 = 2eV\) from step 1:">把 \(mv = eBr\) 平方得 \(m^2v^2 = e^2B^2r^2\)，再用第 1 步的 \(mv^2 = 2eV\)：</p>
+      <div class="formula">\[ \frac{e}{m} = \frac{2V}{B^2 r^2} \qquad\text{equivalently}\qquad 2V = \frac{e}{m}\,(Br)^2 \]</div>
+      <p data-en-html="So a graph of \(2V\) against \((Br)^2\) is a straight line through the origin whose slope is \(e/m\). Note that \(r \propto \sqrt V/B\): doubling the current halves the circle, and four times the voltage is needed to double it.">所以 \(2V\) 對 \((Br)^2\) 作圖是一條通過原點的直線，斜率就是 \(e/m\)。也可以看出 \(r \propto \sqrt V/B\)：電流加倍，圓縮成一半；電壓要變成 4 倍，圓才會變成 2 倍大。</p>
+      <h3 data-en="4. The field of the Helmholtz coils">4. 亥姆霍茲線圈的磁場</h3>
+      <p data-en-html="On the axis of one circular coil of \(N\) turns, a distance \(a\) from its centre, the field is \(B_1 = \dfrac{\mu_0 N I R^2}{2(a^2 + R^2)^{3/2}}\). The midpoint of the Helmholtz pair is \(a = R/2\) from each coil, and the two fields add:">單一圓形線圈（\(N\) 匝）的軸上、距圓心 \(a\) 處，磁場為 \(B_1 = \dfrac{\mu_0 N I R^2}{2(a^2 + R^2)^{3/2}}\)。亥姆霍茲線圈的中點距兩個線圈都是 \(a = R/2\)，兩個磁場同方向相加：</p>
+      <div class="formula">\[ B = 2\cdot\frac{\mu_0 N I R^2}{2\left[(R/2)^2 + R^2\right]^{3/2}} = \frac{8\mu_0 N I}{\sqrt{125}\,R} \approx 0.7155\,\frac{\mu_0 N I}{R} \]</div>
+      <p data-en-html="With \(N = 130\), \(R = 0.150\ \mathrm{m}\) and \(\mu_0 = 4\pi\times10^{-7}\ \mathrm{T\,m/A}\): \(B \approx 7.79\times10^{-4}\ \mathrm{T}\) for every ampere. Why this spacing? When the coils are exactly \(R\) apart, the terms that make the field change with position cancel up to second order, so near the centre the field is very uniform: in the plane of the beam it is only 0.23 % weaker 4 cm from the axis and about 1.3 % weaker 6 cm out.">代入 \(N = 130\)、\(R = 0.150\ \mathrm{m}\)、\(\mu_0 = 4\pi\times10^{-7}\ \mathrm{T\,m/A}\)：每 1 A 的電流產生 \(B \approx 7.79\times10^{-4}\ \mathrm{T}\)。為什麼間距要等於半徑？兩線圈相距恰好 \(R\) 時，讓磁場隨位置改變的項一直抵消到二階，中心附近的磁場非常均勻：在電子束的平面上，離軸 4 cm 只弱 0.23%，離軸 6 cm 約弱 1.3%。</p>
+      <h3 data-en="5. Why we can see the beam">5. 為什麼看得到電子束</h3>
+      <p data-en="The bulb holds a little helium at very low pressure. A few of the fast electrons collide with helium atoms and excite them; the atoms then emit light, marking the path. Because the gas is so thin, almost all electrons keep their energy, and the path is the same as in a vacuum. Below about 25 V the electrons do not have enough energy to excite helium, so there is no glow.">玻璃球內有極稀薄的氦氣。少數高速電子撞到氦原子，使原子激發，原子回到低能量時放出光，標出了電子走過的路徑。氣體非常稀薄，絕大多數電子的能量不受影響，路徑與在真空中相同。加速電壓低於約 25 V 時，電子能量不足以激發氦原子，看不到光。</p>
+
+      <h2 data-en="Procedure">步驟</h2>
+      <ol>
+        <li data-en="Darken the room. Turn the accelerating-voltage and coil-current knobs to zero, then switch on; wait a few seconds for the cathode to warm up.">讓教室變暗。先把加速電壓與線圈電流的旋鈕轉到最小，再打開電源，等幾秒讓陰極加熱。</li>
+        <li data-en="Raise the voltage until the straight beam appears, then raise the coil current until the beam closes into a full, sharp circle.">調高加速電壓，出現直線的電子束後，再調高線圈電流，直到電子束彎成完整、清楚的圓。</li>
+        <li data-en="Set the voltage to 100 V on the meter and note the current I on the ammeter. Work out B at the centre from N, R and I.">把電壓表調到 100 V，讀出電流表的 I，由 N、R、I 算出中心磁場 B。</li>
+        <li data-en="Slide the left and right cursors so their hairlines just touch the middle of the beam at its leftmost and rightmost points, looking straight at each cursor. The diameter is the difference of the two readings; r = D/2. Record V, I and D.">移動左、右游標，使細線恰好對準電子束最左與最右處的中央；讀每一邊時眼睛都要正對該游標。兩個讀數相減就是直徑 D，r = D/2。記錄 V、I、D。</li>
+        <li data-en="Repeat at 150 V, 200 V and 250 V (adjust the current each time to keep a good-sized circle), compute e/m for each row, and find the slope of 2V against (Br)².">改成 150 V、200 V、250 V 重做（每次調電流讓圓大小適中），算出每一次的 e/m，並由 2V 對 (Br)² 的斜率求出 e/m。</li>
+      </ol>
+
+      <h2 data-en="Precautions">注意事項</h2>
+      <ul>
+        <li data-en="The accelerating voltage is a few hundred volts: always start from zero and do not touch the terminals.">加速電壓高達數百伏特：一定從零開始調，不要碰觸接線端子。</li>
+        <li data-en="Do not leave a large coil current on for a long time: the coils heat up.">線圈電流不要長時間開得很大，線圈會發熱。</li>
+        <li data-en="Avoid parallax: the cursors are about 9.5 cm in front of the beam. Put your eye directly in front of the cursor you are reading, so that its front and back hairlines overlap. Reading both edges from one place in front of the middle makes the diameter look about 21 % too small here!">避免視差：游標在電子束前方約 9.5 cm。讀哪一邊，眼睛就移到那個游標的正前方，讓游標的前、後兩條細線重合。如果眼睛停在中央讀兩邊，本裝置量到的直徑會小約 21%！</li>
+        <li data-en="The beam has a finite width; line the hairline up with the middle of the beam on both sides.">電子束有一點寬度，兩邊都要對準電子束的中央。</li>
+        <li data-en="Choose medium-sized circles. Small circles give a larger relative reading error; large circles pass far from the axis where the field is weaker, so they come out too big and e/m too small.">圓的大小要適中：圓太小，讀數的相對誤差大；圓太大，電子經過離軸較遠、磁場較弱的地方，圓會偏大，算出的 e/m 偏小。</li>
+        <li data-en="The Earth’s magnetic field also acts on the electrons. Turn the apparatus so that the coil axis points east–west; then the horizontal component of the Earth’s field has no part along the axis.">地球磁場也會作用在電子上。把裝置轉到線圈軸線指向東西方向，地磁的水平分量就沒有沿著軸線的部分。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li data-en-html="Which quantities must you measure to find \(e/m\)? Which are constants of the apparatus?">要求出 \(e/m\)，必須測量哪些量？哪些是儀器的常數？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Measure \(V\), \(I\) (to get \(B\)) and the diameter \(D\). \(N\) and \(R\) are fixed by the coils.">測量 \(V\)、\(I\)（用來算 \(B\)）與直徑 \(D\)；\(N\)、\(R\) 是線圈的常數。</p></details></li>
+        <li data-en-html="Keep \(V\) fixed and double the coil current. What happens to the radius? Check it in the simulation.">\(V\) 不變、線圈電流加倍，半徑變成幾倍？在模擬中驗證。
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(B\) doubles and \(r = mv/(eB)\) halves.">\(B\) 加倍，\(r = mv/(eB)\) 變成一半。</p></details></li>
+        <li data-en-html="To keep the same circle when \(V\) is doubled, by what factor must \(I\) change?">把 \(V\) 加倍，要讓圓的大小不變，電流要變成幾倍？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(r \propto \sqrt V/I\), so \(I\) must be multiplied by \(\sqrt2 \approx 1.41\).">\(r \propto \sqrt V/I\)，所以 \(I\) 要乘以 \(\sqrt2 \approx 1.41\)。</p></details></li>
+        <li data-en-html="If you read both cursors from a point directly in front of the centre of the bulb, will your \(e/m\) be too big or too small?">如果在玻璃球正中央的前方讀兩個游標，算出的 \(e/m\) 會偏大還是偏小？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="The beam is behind the scale, so it looks smaller: \(D\) is too small, and since \(e/m \propto 1/r^2\) the result is too big (here by about 60 %).">電子束在標尺後方，看起來比較小：\(D\) 偏小，而 \(e/m \propto 1/r^2\)，所以結果偏大（本裝置約大 60%）。</p></details></li>
+        <li data-en-html="Why is the result too small when the circle almost touches the glass?">圓大到快碰到玻璃時，為什麼算出的 \(e/m\) 偏小？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Far from the axis the real field is weaker than the centre value \(B\) used in the calculation, so the actual circle is larger than \(mv/(eB)\).">離軸遠的地方，實際磁場比計算時用的中心磁場 \(B\) 弱，圓比 \(mv/(eB)\) 大。</p></details></li>
+        <li data-en="Why must the gas in the bulb be at a very low pressure?">為什麼玻璃球中的氣體壓力要非常低？
+          <details><summary data-en="Answer">參考答案</summary><p data-en="So that most electrons travel the whole circle without colliding; only a few collisions are needed to make the path visible.">讓大多數電子能繞完整圈而不碰撞；只需要少數的碰撞就足以讓路徑發光。</p></details></li>
+      </ol>
+
+      <h2 data-en="Going further: helical motion">延伸：螺旋運動</h2>
+      <p data-en-html="Turn the gun by an angle \(\alpha\) out of the plane of the circle. The velocity then has a component \(v\sin\alpha\) along \(\vec B\), which the magnetic force cannot change, and a component \(v\cos\alpha\) perpendicular to it, which keeps circling. The beam becomes a helix:">把電子槍轉一個角度 \(\alpha\)，離開圓的平面。速度就有沿 \(\vec B\) 的分量 \(v\sin\alpha\)（磁力無法改變它）與垂直分量 \(v\cos\alpha\)（繼續繞圈），電子束變成螺旋線：</p>
+      <div class="formula">\[ r = \frac{m v\cos\alpha}{eB}, \qquad T = \frac{2\pi m}{eB}, \qquad p = v\sin\alpha\cdot T = 2\pi\,\frac{mv}{eB}\,\sin\alpha \]</div>
+      <p data-en="In “With errors” mode the real coil field grows slightly towards the windings, so a helix with a small angle can be pushed back — a small magnetic mirror. Look at it in 3D.">在「含誤差」模式中，真實線圈的磁場越靠近導線越強，角度小的螺旋可能被推回來——這就是小型的「磁鏡」。在 3D 中觀察。</p>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en-html="Change only \(V\): the circle grows as \(\sqrt V\). Change only \(I\): the radius goes as \(1/I\).">只改 \(V\)：圓隨 \(\sqrt V\) 變大；只改 \(I\)：半徑與 \(1/I\) 成正比。</li>
+        <li data-en-html="With the moving electrons on, compare how long one lap takes at different voltages but the same current: the period \(T = 2\pi m/(eB)\) does not depend on the speed. (With sound on, the pitch follows the lap frequency.)">打開「電子運動」，在電流相同、電壓不同時比較繞一圈的時間：週期 \(T = 2\pi m/(eB)\) 與速率無關。（打開音效時，音高跟著繞圈的頻率變。）</li>
+        <li data-en="Turn on parallax, keep your eye in the middle and measure: the diameter comes out about 21 % too small. Then move your eye in front of each cursor in turn until its two hairlines overlap.">打開「視差」，眼睛停在中央量直徑：會小約 21%。再把眼睛輪流移到每個游標的正前方，直到前後兩條細線重合。</li>
+        <li data-en="In “With errors” mode, compare a small circle with one that nearly fills the bulb.">在「含誤差」模式中，比較小圓與幾乎填滿玻璃球的大圓所算出的 e/m。</li>
+      </ul>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="Constants: \(e = 1.602176634\times10^{-19}\ \mathrm{C}\), \(m = 9.1093837015\times10^{-31}\ \mathrm{kg}\) (CODATA 2018), so \(e/m = 1.7588\times10^{11}\ \mathrm{C/kg}\); \(\mu_0 = 4\pi\times10^{-7}\ \mathrm{T\,m/A}\). At 300 V, \(v/c \approx 0.034\), so relativity changes the radius by less than 0.03 % and is ignored.">常數：\(e = 1.602176634\times10^{-19}\ \mathrm{C}\)、\(m = 9.1093837015\times10^{-31}\ \mathrm{kg}\)（CODATA 2018），\(e/m = 1.7588\times10^{11}\ \mathrm{C/kg}\)；\(\mu_0 = 4\pi\times10^{-7}\ \mathrm{T\,m/A}\)。300 V 時 \(v/c \approx 0.034\)，相對論使半徑改變不到 0.03%，不予考慮。</li>
+        <li data-en="“Ideal”: the field is exactly the centre value B everywhere, the beam is the exact circle (or helix), the meters are exact and you always look straight at each cursor.">「理想」：磁場處處等於中心值 B，軌跡是精確的圓（或螺旋線），電表準確，讀數時眼睛永遠正對游標。</li>
+        <li data-en-html="“With errors”: the field of each coil is calculated exactly off the axis (closed form with complete elliptic integrals, each coil treated as \(N\) turns of radius \(R\)) and the two coils are added; the electron is then followed with the Boris method (each step rotates the velocity by at most 0.004 rad, so the speed is conserved exactly). The meters have a small calibration error (up to 0.4 % for V and 0.3 % for I, different every time you load the page) and are rounded to their last digit.">「含誤差」：每個線圈離軸的磁場用完全橢圓積分的封閉公式精確計算（每個線圈視為 \(N\) 匝、半徑 \(R\) 的圓線圈），兩個線圈相加；再用 Boris 法追蹤電子（每一步速度方向最多轉 0.004 rad，速率精確守恆）。電表有小小的校正誤差（電壓最多 0.4%、電流最多 0.3%，每次開啟頁面都不同），並四捨五入到最後一位。</li>
+        <li data-en-html="Parallax: the cursors and the scale are \(d = 9.5\ \mathrm{cm}\) in front of the beam and your eye is \(L = 35\ \mathrm{cm}\) in front of the scale. A point of the beam lines up with the scale at \(x' = x + (x_{\text{eye}} - x)\,\dfrac{d}{L + d}\), so with your eye fixed the circle looks \(L/(L+d) \approx 0.79\) times as big. Each cursor has hairlines on its front and back faces 1.6 cm apart; they overlap only when your eye is straight in front of it.">視差：游標與標尺在電子束前方 \(d = 9.5\ \mathrm{cm}\)，眼睛在標尺前方 \(L = 35\ \mathrm{cm}\)。電子束上的一點看起來對齊標尺上的 \(x' = x + (x_{\text{眼}} - x)\,\dfrac{d}{L + d}\)，所以眼睛不動時，圓看起來只有實際的 \(L/(L+d) \approx 0.79\) 倍。每個游標的前、後面各有一條細線（相距 1.6 cm），只有眼睛正對游標時兩條線才會重合。</li>
+        <li data-en="The beam starts at the gun 4.5 cm below the centre of the bulb and is stopped where it meets the glass (inner radius 7.9 cm) or the back of the gun. The moving electrons are shown in slow motion: 1 s on screen is 16 ns of real time.">電子束從球心下方 4.5 cm 的電子槍射出，碰到玻璃（內半徑 7.9 cm）或回到電子槍後端就停止。「電子運動」以慢動作顯示：畫面上 1 秒相當於真實的 16 奈秒。</li>
+        <li data-en="The 3D view uses the three.js library (MIT licence), which is downloaded only when you switch to 3D. The coils, bulb, gun, scale and cursors are drawn to scale; the beam is the same calculated path as in 2D, and the field lines are traced through the calculated coil field in a horizontal plane through the axis.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。線圈、玻璃球、電子槍、標尺與游標都依實際尺寸繪製；電子束與 2D 是同一條計算出的路徑，磁力線則是在通過軸線的水平面上，沿計算出的線圈磁場描出來的。</li>
+        <li data-en="Sound (off by default): the pitch of the short tone is the electrons’ lap frequency eB/(2πm), scaled down by about 40 000 into the audible range, so it depends only on the current.">音效（預設關閉）：短音的音高是電子繞圈的頻率 eB/(2πm) 縮小約 4 萬倍到聽得見的範圍，所以只和電流有關。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/e-over-m-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/e-over-m-3d.js?v=202611120013"></script>
+  <script src="js/e-over-m.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="e-over-m"></script>
+  <script src="js/missions/e-over-m.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="e-over-m"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

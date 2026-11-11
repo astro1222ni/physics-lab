@@ -1506,6 +1506,7 @@
     document.addEventListener('visibilitychange', onVisible);
     canvas.addEventListener('webglcontextlost', function (ev) {
       ev.preventDefault();
+      if (!api.active) return; // 切回 2D 時自己釋放的（forceContextLoss），不是意外中斷
       setView('2d');
       viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
     });

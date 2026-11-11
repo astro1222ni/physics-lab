@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://astro1222ni.github.io/physics-lab/sitemap.xml

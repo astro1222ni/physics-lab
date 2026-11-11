@@ -8,6 +8,11 @@
   // 滑桿讀值：打字輸入的精確值（numinput.js）優先
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  // 本檔的版本號（?v=）：切換到 3D 時動態載入的 js/kepler-3d.js 沿用同一個版本號，避免讀到舊快取
+  const SCRIPT_V = (function () {
+    const s = document.currentScript, m = s && /[?&]v=(\w+)/.exec(s.src);
+    return m ? m[1] : '';
+  })();
   const TAU = Math.PI * 2;
   const DEG = Math.PI / 180;
 
@@ -406,6 +411,14 @@
   }
 
   function draw() {
+    if (view3 && view3.active) {
+      // 3D 檢視：2D 畫布隱藏、不必重畫；到期的裝飾效果照樣移除（否則動畫迴圈不會停）
+      const tNow = performance.now();
+      state.fx = state.fx.filter(function (e) { return tNow - e.t0 < e.dur; });
+      view3.frame();
+      updateReadout();
+      return;
+    }
     if (!cw) return;
     if (bgDirty) buildBackground();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1547,6 +1560,116 @@
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag) setHover(null); });
 
+  // =====================================================================
+  // 3D 檢視：切換到 3D 時才載入 js/kepler-3d.js 與 three.js（vendor/three/，以 import() 動態載入）；
+  // 切回 2D 時整個釋放。3D 畫的是同一份物理（下面的 bridge 把本檔的狀態與 kepler-core.js 的計算交給它）。
+  // =====================================================================
+  let view3 = null;      // 目前的 3D 檢視（切回 2D 時釋放）
+  let threeLib = null;   // { THREE, OrbitControls }
+  let loadToken = 0;
+  let cone3 = false;     // 3D 的「圓錐截痕」
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  const bridge = {
+    K: K, T: T, state: state, colors: colors, reducedMotion: reducedMotion, coneOn: false,
+    P: P, isSun: isSun, mainOrbit: mainOrbit, preview: preview, previewDiffers: previewDiffers, flightState: flightState,
+    launchVec: launchVec, launchSig: launchSig, vCirc0: vCirc0, vEsc0: vEsc0, conicPts: conicPts,
+    sectorTimes: sectorTimes, currentSector: currentSector, apsisNames: apsisNames,
+    fmtDist: fmtDist, fmtArea: fmtArea, fmtTime: fmtTime, fmtE: fmtE, kindText: kindText, kindColor: kindColor, tsText: tsText,
+    num: num, sig: sig, group: group, niceStep: niceStep, alpha: alpha, shade: shade, col: col,
+    onContextLost: function () {
+      setView('2d');
+      viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+    }
+  };
+
+  function webglAvailable() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    } catch (e) { return false; }
+  }
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      if (window.Kepler3D) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { s.remove(); reject(new Error('Failed to load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function loadThree() {
+    if (threeLib && window.Kepler3D) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    const own = new URL('js/kepler-3d.js' + (SCRIPT_V ? '?v=' + SCRIPT_V : ''), document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js'), loadScript(own)]).then(function (mods) {
+      if (!window.Kepler3D) throw new Error('kepler-3d.js did not load');
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function updateViewNotes() {
+    const is3 = !!(view3 && view3.active);
+    $('resetCam').hidden = !is3;
+    $('camBar').hidden = !is3;
+    $('coneNote').hidden = !(is3 && cone3);
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable()) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return; // 載入期間已切回 2D
+        bridge.coneOn = cone3;
+        view3 = window.Kepler3D.create(lib, host3, bridge);
+        stage.classList.add('is3d');
+        viewMsg.textContent = '';
+        updateViewNotes();
+        requestAnimationFrame(function () { if (view3) { view3.onShow(); draw(); } });
+        draw();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      updateViewNotes();
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    updateViewNotes();
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('camTop').addEventListener('click', function () { if (view3) view3.camTo('top'); });
+  $('camEdge').addEventListener('click', function () { if (view3) view3.camTo('edge'); });
+  $('cone3').addEventListener('click', function () {
+    cone3 = !cone3;
+    $('cone3').setAttribute('aria-pressed', String(cone3));
+    updateViewNotes();
+    if (view3) { view3.setCone(cone3); draw(); }
+  });
+
   // ---------- 啟動 ----------
   readColors();
   applyPreset('sun');
@@ -1558,6 +1681,7 @@
     for (const id in lastText) delete lastText[id];
     refreshOutputs();
     updateHistory();
+    if (view3 && view3.active) view3.onTheme();
     requestDraw();
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);

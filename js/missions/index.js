@@ -26,11 +26,21 @@ window.LAB_MISSION_MODULES = [
   { id: 'atwood', zh: '連體運動與阿特午機', en: 'Connected Bodies and the Atwood Machine' },
   { id: 'elevator', zh: '電梯中的視重（超重與失重）', en: 'Apparent Weight in an Elevator' },
   { id: 'refraction', zh: '折射與全反射', en: 'Refraction and Total Internal Reflection' },
-  { id: 'slit-interference', zh: '雙狹縫干涉與單狹縫繞射', en: 'Double-Slit Interference and Single-Slit Diffraction' }
+  { id: 'slit-interference', zh: '雙狹縫干涉與單狹縫繞射', en: 'Double-Slit Interference and Single-Slit Diffraction' },
+  { id: 'free-fall', zh: '自由落體與斜面上的運動', en: 'Free Fall and Motion on an Incline' },
+  { id: 'ripple-tank', zh: '水波槽實驗', en: 'Ripple Tank' },
+  { id: 'resonance-tube', zh: '氣柱的共鳴（共鳴管測聲速）', en: 'Resonance in an Air Column: Measuring the Speed of Sound' },
+  { id: 'refractive-index', zh: '折射率的測定（插針法）', en: 'Measuring the Refractive Index (Pin Method)' },
+  { id: 'e-over-m', zh: '電子的荷質比', en: 'Charge-to-Mass Ratio of the Electron' },
+  { id: 'ohms-law', zh: '歐姆定律與電路（電阻的測量）', en: 'Ohm’s Law and Circuits: Measuring Resistance' },
+  { id: 'equipotential', zh: '等位線與電場（導電紙實驗）', en: 'Equipotential Lines and the Electric Field (Conducting Paper)' },
+  { id: 'thin-lens', zh: '薄透鏡的成像', en: 'Thin Lens Imaging' },
+  { id: 'microwave', zh: '認識電磁波（微波實驗）', en: 'Meeting Electromagnetic Waves: Microwave Experiments' },
+  { id: 'current-balance', zh: '電流天平', en: 'Current Balance' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -39,5 +49,15 @@ window.LAB_MODULE_BRANCH = {
   'standing-waves': 'wave', 'doppler': 'wave',
   'refraction': 'optics', 'lens-mirror': 'optics', 'slit-interference': 'optics',
   'electric-field': 'em', 'capacitor': 'em', 'dc-circuit': 'em', 'magnetic-particle': 'em', 'faraday': 'em',
-  'photoelectric': 'modern', 'hydrogen-spectrum': 'modern', 'radioactive-decay': 'modern'
+  'photoelectric': 'modern', 'hydrogen-spectrum': 'modern', 'radioactive-decay': 'modern',
+  'free-fall': 'mech',
+  'ripple-tank': 'wave',
+  'resonance-tube': 'wave',
+  'refractive-index': 'optics',
+  'e-over-m': 'modern',
+  'ohms-law': 'em',
+  'equipotential': 'em',
+  'thin-lens': 'optics',
+  'microwave': 'em',
+  'current-balance': 'em'
 };

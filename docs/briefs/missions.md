@@ -15,3 +15,6 @@ Do:
    (Do NOT edit js/missions/index.js — the lead adds your module there.)
 4. Verify in Playwright with a mock backend: set window.LAB_MISSIONS_BACKEND and window.LAB_COMMENTS_BACKEND via an init script (see the mock in tools/mock-backend.js — it needs missionDefs: pre-seed localStorage 'mdb' missionDefs with your ids → levels, or extend the mock), turn on mission mode, perform at least 3 missions including a hidden one, confirm the celebration appears once and repeats don't award again. English: mission texts in en mode have no CJK.
 Report the mission list (id, level, title, condition, and the proven solution) in your final report.
+
+## Saving CPU (site owner, 2026-11-11)
+Any Playwright script you write must launch Chromium with `const { launch } = require('G:/physics-lab/tools/browser.cjs'); const browser = await launch();` (same options as chromium.launch). It renders on the Intel iGPU — never the RTX 4070, which is reserved for video — at below-normal priority; plain chromium.launch() falls back to SwiftShader and burns CPU. Still block every non-local request. `npm run check`, `npm run shots`, `npm run verify` already use it.

@@ -45,12 +45,15 @@
   const items = [];
   document.querySelectorAll('.module').forEach(function (card) {
     const section = card.closest('.branch');
-    const title = (card.querySelector('h3') || {}).textContent || '';
+    // 卡片標題是 h4（分支 h2 → 章 h3 → 實驗 h4）；「主題」用卡片所在的章名（小分類）
+    const h3 = card.querySelector('h4, h3');
+    const chapter = card.closest('.chapter');
+    const topicEl = (chapter && chapter.querySelector('.chapter-head [data-en]')) || card.querySelector('.topic');
+    const title = (h3 || {}).textContent || '';
     const branch = section ? (section.querySelector('.branch-head h2') || {}).textContent || '' : '';
-    const topic = (card.querySelector('.topic') || {}).textContent || '';
-    const desc = (card.querySelector('h3 + p') || card.querySelector('p') || {}).textContent || '';
-    const h3 = card.querySelector('h3'), topicEl = card.querySelector('.topic');
-    const descEl = card.querySelector('h3 + p') || card.querySelector('p');
+    const topic = (topicEl || {}).textContent || '';
+    const descEl = card.querySelector('h4 + p, h3 + p') || card.querySelector('p');
+    const desc = (descEl || {}).textContent || '';
     const branchEl = section && section.querySelector('.branch-head h2');
     const enText = { title: en(h3), topic: en(topicEl), branch: en(branchEl), desc: enDesc(descEl) };
     // 英文標題、主題也拿來比對，所以中英文關鍵字都搜得到
@@ -170,7 +173,7 @@
 
       const meta = document.createElement('span');
       meta.className = 'search-meta';
-      meta.textContent = it.branch + (EN ? ' · ' : '・') + it.topic;
+      meta.textContent = it.branch + (it.topic && it.topic !== it.branch ? (EN ? ' · ' : '・') + it.topic : '');
       const tag = document.createElement('span');
       tag.className = 'tag' + (it.href ? '' : ' soon');
       tag.textContent = it.href ? (EN ? 'Live' : '已上線') : (EN ? 'Planned' : '規劃中');

@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Measuring the Refractive Index (Pin Method) | Astro Ni Physics Lab">折射率的測定（插針法）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用大頭針透過玻璃磚或半圓形水盒找出光的路徑，量入射角與折射角，由兩角正弦的關係圖斜率求出折射率。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/refractive-index.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/refractive-index.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/refractive-index.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/refractive-index.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="折射率的測定（插針法）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用大頭針透過玻璃磚或半圓形水盒找出光的路徑，量入射角與折射角，由兩角正弦的關係圖斜率求出折射率。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/refractive-index.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/refractive-index.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="折射率的測定（插針法）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"折射率的測定（插針法）","alternateName":"Measuring the Refractive Index (Pin Method)","description":"用大頭針透過玻璃磚或半圓形水盒找出光的路徑，量入射角與折射角，由兩角正弦的關係圖斜率求出折射率。","url":"https://astro1222ni.github.io/physics-lab/refractive-index.html","image":"https://astro1222ni.github.io/physics-lab/img/og/refractive-index.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 折射率的測定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ri canvas { aspect-ratio: auto; }
+    #cv { height: 560px; outline: none; }
+    #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+    #view { height: 180px; margin-top: 8px; touch-action: pan-y; cursor: ew-resize; }
+    #graph { height: 340px; touch-action: auto; cursor: default; }
+    .ri + .ri { margin-top: 16px; }
+    .ri button { min-height: 44px; }
+    .ri button:disabled { opacity: .45; cursor: not-allowed; }
+    .ri [hidden] { display: none !important; }
+    .ri .playbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .ri .playbar button { flex: 1 1 auto; }
+    .ri .playbar #drawBtn { font-weight: 700; flex: 2 1 12em; }
+    .ri .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); }
+    .ri .stage .status.ok { color: var(--probe); }
+    .ri .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ri .view-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; margin: 14px 4px 0; }
+    .ri .view-head h2 { margin: 0; font-size: calc(15px * var(--fs, 1)); }
+    .ri .view-head span { font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .ri .viewbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 2px 0; }
+    .ri .viewbar .seg2 { flex: 1 1 200px; }
+    .ri .nudge { display: flex; align-items: center; gap: 6px; flex: 1 1 240px; }
+    .ri .nudge button { flex: 1 1 0; padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+    .ri .nudge .sel { flex: 0 1 auto; font-size: calc(13px * var(--fs, 1)); color: var(--muted); text-align: center; min-width: 4.5em; line-height: 1.25; }
+    .ri .nudge .sel b { color: var(--accent); }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: 1fr 1fr; }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(2, 1fr); }
+    .seg2 button, .seg3 button, .seg4 button { padding: 5px 6px; line-height: 1.25; font-size: calc(13px * var(--fs, 1)); }
+    .seg2 button small, .seg4 button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg-label:first-of-type { margin-top: 0; }
+    .ri .slider input[type="range"] { height: 28px; margin: 0; }
+    .ri .checks { flex-direction: column; gap: 0; margin-top: 8px; }
+    .ri .checks label { min-height: 44px; }
+    .ri .checks input { width: 18px; height: 18px; flex: none; }
+    .ri .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 0 5px 34px; line-height: 1.45; color: var(--muted); }
+    ol.steps li::before { content: counter(st); position: absolute; left: 0; top: 4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: calc(13px * var(--fs, 1)); font-weight: 700; border: 1.5px solid var(--border); color: var(--muted); background: var(--surface); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    ol.steps li.now { color: var(--text); font-weight: 600; }
+    ol.steps li.now::before { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dd.ok { color: var(--probe); font-weight: 650; }
+    dl.readout dd.bad { color: var(--pos); }
+    .ri dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ri .readbox { margin: 14px 4px 0; padding-top: 12px; border-top: 1px solid var(--border); }
+    .ri .readbox h2 { margin: 0 0 8px; font-size: calc(15px * var(--fs, 1)); }
+    .ri .readgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px 28px; align-items: start; }
+    .ri .readgrid h3 { margin: 0 0 4px; font-size: calc(14px * var(--fs, 1)); font-weight: 650; color: var(--text); }
+    dl.readout dt.sec { grid-column: 1 / -1; color: var(--text); font-weight: 650; margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; }
+    dl.readout dt.sec:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+    dl.readout sub { font-size: .75em; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { display: inline-block; width: 10px !important; height: 10px !important; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; margin: 10px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.mat, table.data th:nth-child(2) { text-align: left; }
+    table.data td.mat i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.other td { color: var(--muted); }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    table.data sub { font-size: .75em; }
+    .ri .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .ri .reveal { width: 100%; margin-top: 10px; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes details { margin: 4px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 32px; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    @media (max-width: 560px) {
+      #view { height: 170px; }
+      #graph { height: 300px; }
+    }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#optics&quot;>Optics</a> / <a href=&quot;index.html#ch-geometrical-optics&quot;>Geometrical optics</a>"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ <a href="index.html#ch-geometrical-optics">幾何光學</a></nav>
+      <h1 data-en="Measuring the Refractive Index (Pin Method)">折射率的測定（插針法）</h1>
+      <p data-en-html="The textbook experiment: stick pins into graph paper on a cork board, look at them through a semicircular dish of water or a rectangular glass block, and line up their images to find the path of the light. Then take the block away, draw the rays and the normal, measure the angles with a protractor and plot sin θ<sub>1</sub> against sin θ<sub>2</sub> — the slope is the refractive index.">課本實驗：在軟木板上的方格紙插大頭針，透過裝水的半圓形透明盒或長方形玻璃磚看針的像，讓針的像排成一直線，找出光走的路徑。再拿走透明塊，畫出光線與法線，用量角器量角度，畫出 sin θ<sub>1</sub> 對 sin θ<sub>2</sub> 的圖——斜率就是折射率。</p>
+    </header>
+
+    <!-- 第一部分：插針與觀察 -->
+    <div class="lab ri">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="俯視圖：軟木板上的方格紙、透明塊、大頭針與眼睛。拖曳針或眼睛可以移動；選取後可用方向鍵微調" data-en-aria-label="Top view: graph paper on a cork board with the transparent block, the pins and the eye. Drag a pin or the eye to move it; after selecting it, the arrow keys fine-tune it"></canvas>
+        <div class="playbar">
+          <button id="drawBtn" class="primary" type="button" data-en="Remove the block and draw the rays">移走透明塊，畫出光路</button>
+          <button id="recBtn" type="button" disabled data-en="Record">記錄</button>
+          <button id="clearAll" type="button" title="清除數據表、紙上的舊光路，針回到針插、透明塊放回；材料與設定不變" data-en-title="Clear the data table and the old rays on the paper, return the pins to the pincushion and put the block back; the material and settings are kept" data-en="Clear all">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+
+        <div class="view-head">
+          <h2 data-en="What the eye sees">眼睛看到的景象</h2>
+          <span id="viewNote" data-en="horizontal angles magnified; the lower part of each pin is seen through the block">水平方向放大；針的下半段是透過透明塊看到的</span>
+        </div>
+        <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體" data-en-aria-label="What the eye sees: the upper part of each pin is seen directly, the lower part through the block; drag sideways to fine-tune the selected object"></canvas>
+        <div class="viewbar">
+          <div class="seg2" role="group" aria-label="視野" data-en-aria-label="Field of view">
+            <button type="button" data-zoom="wide" aria-pressed="true" data-en-html="Wide&lt;small&gt;±12°&lt;/small&gt;">廣角<small>±12°</small></button>
+            <button type="button" data-zoom="zoom" aria-pressed="false" data-en-html="Magnified ×4&lt;small&gt;±3°&lt;/small&gt;">放大 ×4<small>±3°</small></button>
+          </div>
+          <div class="nudge">
+            <button type="button" id="nudgeL" aria-label="選取的物體向左微移" data-en-aria-label="Nudge the selected object left">◀</button>
+            <span class="sel" id="selName">—</span>
+            <button type="button" id="nudgeR" aria-label="選取的物體向右微移" data-en-aria-label="Nudge the selected object right">▶</button>
+          </div>
+        </div>
+        <div class="legend">
+          <span style="color:var(--pos)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Pins on the incident side"><i class="dot" style="background:var(--pos)"></i>入射側的針</span>
+          <span style="color:var(--neg)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Pins on the viewing side"><i class="dot" style="background:var(--neg)"></i>觀察側的針</span>
+          <span style="color:var(--equi)" data-en-html="<i style=&quot;background:var(--equi)&quot;></i>θ<sub>1</sub> (in air)"><i style="background:var(--equi)"></i>θ<sub>1</sub>（空氣中）</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>θ<sub>2</sub> (in the block)"><i style="background:var(--accent)"></i>θ<sub>2</sub>（透明塊中）</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Normal N"><i class="dash"></i>法線 N</span>
+        </div>
+        <p class="hint" data-en="Top view drawn to scale (the grid is 1 cm). Drag pins out of the pincushion at the top right; drag the eye to look from another place. Tap a pin or the eye to select it, then use ◀ ▶, the arrow keys, or drag sideways in the eye’s view to fine-tune it.">俯視圖依比例繪製（方格 1 cm）。從右上角的針插拖出大頭針，拖曳眼睛可以換個位置看。點一下針或眼睛就會選取它，再用 ◀ ▶、方向鍵，或在「眼睛看到的景象」中左右拖曳微調。</p>
+        <section class="readbox" aria-live="off">
+          <h2 data-en="Readings">讀數</h2>
+          <div class="readgrid" id="readout"></div>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps"></ol>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Block and material">透明塊與材料</h2>
+          <p class="seg-label" id="shapeLabel" data-en="Shape:">形狀：</p>
+          <div class="seg2" role="group" aria-labelledby="shapeLabel">
+            <button type="button" data-shape="semi" aria-pressed="false" data-en="Semicircular">半圓形</button>
+            <button type="button" data-shape="rect" aria-pressed="true" data-en="Rectangular">長方形</button>
+          </div>
+          <p class="seg-label" id="matLabel" data-en="Material (accepted n):">材料（公認折射率）：</p>
+          <div class="seg4" role="group" aria-labelledby="matLabel">
+            <button type="button" data-mat="water" aria-pressed="false" data-en-html="Water&lt;small&gt;1.333&lt;/small&gt;">水<small>1.333</small></button>
+            <button type="button" data-mat="acrylic" aria-pressed="false" data-en-html="Acrylic&lt;small&gt;1.49&lt;/small&gt;">壓克力<small>1.49</small></button>
+            <button type="button" data-mat="crown" aria-pressed="true" data-en-html="Crown glass&lt;small&gt;1.52&lt;/small&gt;">冕牌玻璃<small>1.52</small></button>
+            <button type="button" data-mat="unknown" aria-pressed="false" data-en-html="Unknown&lt;small&gt;n = ?&lt;/small&gt;">未知樣品<small>n = ?</small></button>
+          </div>
+          <p class="hint" id="matHint">—</p>
+          <div id="rectBox">
+            <div class="slider"><label for="t" data-en="Block thickness t (between L and L′)">透明塊厚度 t（L 到 L′）</label><output id="to"></output>
+              <input id="t" type="range" min="2" max="8" step="0.1" value="6" data-decimals="2"></div>
+          </div>
+          <div id="semiBox" hidden>
+            <p class="seg-label" id="dirLabel" data-en="Light enters through:">光射入的一面：</p>
+            <div class="seg2" role="group" aria-labelledby="dirLabel">
+              <button type="button" data-dir="fwd" aria-pressed="true" data-en-html="Flat face&lt;small&gt;air → block&lt;/small&gt;">平面<small>空氣 → 透明塊</small></button>
+              <button type="button" data-dir="rev" aria-pressed="false" data-en-html="Curved face&lt;small&gt;total internal reflection&lt;/small&gt;">弧面<small>延伸：全反射</small></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Measuring tools and errors">量測工具與誤差</h2>
+          <p class="seg-label" id="resLabel" data-en="Protractor reading resolution:">量角器讀到：</p>
+          <div class="seg2" role="group" aria-labelledby="resLabel">
+            <button type="button" data-res="1" aria-pressed="true">1°</button>
+            <button type="button" data-res="0.5" aria-pressed="false">0.5°</button>
+          </div>
+          <p class="seg-label" id="errLabel" data-en="Errors:">誤差：</p>
+          <div class="seg2" role="group" aria-labelledby="errLabel">
+            <button type="button" data-err="0" aria-pressed="true" data-en-html="Ideal&lt;small&gt;rounding only&lt;/small&gt;">理想<small>只有刻度取捨</small></button>
+            <button type="button" data-err="1" aria-pressed="false" data-en-html="With errors&lt;small&gt;random + systematic&lt;/small&gt;">含誤差<small>隨機＋系統</small></button>
+          </div>
+          <div class="checks">
+            <label><input id="hint" type="checkbox"><span data-en="Show the true light path (hint)">顯示真正的光路（提示）</span></label>
+            <label><input id="prot" type="checkbox" checked><span data-en="Protractor and angle marks">量角器與角度標示</span></label>
+          </div>
+          <p class="hint" data-en="The ruler’s smallest division is 1 mm; lengths are read to 0.1 mm by estimation.">直尺最小刻度 1 mm，長度估計到 0.1 mm。</p>
+        </section>
+
+      </aside>
+    </div>
+
+    <!-- 第二部分：數據與分析 -->
+    <div class="lab ri">
+      <div class="stage">
+        <h2 data-en-html="Data table and the sin θ&lt;sub&gt;1&lt;/sub&gt;–sin θ&lt;sub&gt;2&lt;/sub&gt; graph">數據表與 sin θ<sub>1</sub>–sin θ<sub>2</sub> 圖</h2>
+        <canvas id="graph" aria-label="sin θ1 對 sin θ2 的數據點、過原點的最佳直線與公認值直線" data-en-aria-label="Data points of sin θ1 against sin θ2 with the best-fit line through the origin and the line for the accepted value"></canvas>
+        <div class="legend" id="gLegend"></div>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <div class="gbtns">
+          <button type="button" id="undo" data-en="Remove the last row">移除最後一筆</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析結果</h2>
+          <div id="methodBox" hidden>
+            <p class="seg-label" id="methodLabel" data-en="Semicircle rows: sines from">半圓形的數據，sin 值來自：</p>
+            <div class="seg2" role="group" aria-labelledby="methodLabel">
+              <button type="button" data-method="prot" aria-pressed="true" data-en-html="Protractor&lt;small&gt;sin θ&lt;/small&gt;">量角器<small>sin θ</small></button>
+              <button type="button" data-method="ruler" aria-pressed="false" data-en-html="Ruler&lt;small&gt;x / R&lt;/small&gt;">直尺<small>x / R</small></button>
+            </div>
+          </div>
+          <dl class="readout" id="fit" style="margin-top:8px"></dl>
+          <button type="button" class="reveal" id="reveal" hidden data-en="Reveal the unknown sample’s n">揭曉未知樣品的折射率</button>
+          <p class="hint" data-en="Each material has its own best-fit line through the origin; the analysis is for the material selected now.">每種材料各有一條過原點的最佳直線；這裡顯示目前選取的材料。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en="See how light bends when it passes from air into a transparent material, and check Snell’s law.">觀察光由空氣進入透明物質時的偏折，驗證司乃耳定律。</li>
+        <li data-en="Use pins to trace the path of light through water, acrylic and glass, and measure their refractive indices.">用插針法找出光在水、壓克力、玻璃中走的路徑，測出它們的折射率。</li>
+        <li data-en="Extension: measure the sideways shift caused by a rectangular block, and find the critical angle with the semicircular block.">延伸：量長方形透明塊造成的側向位移；用半圓形透明塊找出臨界角。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="Polystyrene (or cork) board, graph paper, long pins, a transparent semicircular dish (half filled with water), a rectangular glass or acrylic block, a protractor, a ruler, a pair of compasses and a pencil.">保麗龍板（或軟木板）、方格紙、長的大頭針數支、透明半圓形盒（裝水到半滿）、長方形玻璃磚或壓克力磚、量角器、直尺、圓規、鉛筆。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="At the surface between air (\(n \approx 1\)) and a material of refractive index \(n\), the angle in air \(\theta_1\) and the angle in the material \(\theta_2\), both measured from the normal, obey Snell’s law:">在空氣（\(n \approx 1\)）與折射率 \(n\) 的物質的界面上，空氣中的角 \(\theta_1\) 與物質中的角 \(\theta_2\)（都由法線量起）遵守司乃耳定律：</p>
+      <div class="formula multi">
+        \[ \sin\theta_1 = n\sin\theta_2 \] \[ n = \frac{\sin\theta_1}{\sin\theta_2} \]
+      </div>
+      <p data-en-html="<strong>Why the pins work.</strong> You see a pin in the direction from which its light reaches your eye. If two pins look as if they are one behind the other, the light from both comes to the eye along the same straight line — so that line is a real light path. The pins on the eye’s side therefore mark where the light leaves the block, and the pins on the far side mark where it came from. Light paths are reversible, so it does not matter that the light actually travels from the pins to the eye."><strong>插針為什麼有用？</strong>我們看到一根針，是看到它射進眼睛的光從哪個方向來。兩根針看起來前後重疊，表示兩者的光沿同一條直線進入眼睛——這條線就是一條真實的光路。所以觀察側的針標出光離開透明塊後的路徑，另一側的針標出光進入前的路徑。光路可逆，光從哪一頭走都一樣。</p>
+      <p data-en-html="<strong>Semicircular dish.</strong> Light is aimed at the centre \(O\) of the flat face. Inside, the refracted ray runs along a radius, so it meets the curved wall at right angles and is not bent again: only one refraction has to be considered. If a circle of radius \(R\) is drawn around \(O\), the distances \(x_1\) and \(x_2\) from the normal to where the two rays cross the circle give the sines directly, so a ruler can replace the protractor:"><strong>半圓形透明盒</strong>：讓光射向平面的圓心 \(O\)。折射後的光在盒內沿著半徑走，碰到圓弧時與弧面垂直，不再偏折，所以只需要考慮一次折射。以 \(O\) 為圓心畫半徑 \(R\) 的圓，兩條光線與圓的交點到法線的距離 \(x_1\)、\(x_2\) 直接給出 sin 值，用直尺就能代替量角器：</p>
+      <div class="formula multi">
+        \[ \sin\theta_1 = \frac{x_1}{R} \] \[ \sin\theta_2 = \frac{x_2}{R} \] \[ n = \frac{x_1}{x_2} \]
+      </div>
+      <p data-en-html="<strong>Rectangular block.</strong> The light is refracted twice, at \(O\) on the top face \(L\) and at \(O'\) on the bottom face \(L'\). When the faces are parallel, the angle inside is the same at both faces (\(\theta_3 = \theta_2\)), so the light leaves at \(\theta_4 = \theta_1\): the emergent ray is <strong>parallel</strong> to the incident ray but shifted sideways. The path inside has length \(OO' = t/\cos\theta_2\), and the shift is the side of a right triangle opposite the angle \(\theta_1 - \theta_2\):"><strong>長方形透明塊</strong>：光在上表面 \(L\) 的 \(O\) 點與下表面 \(L'\) 的 \(O'\) 點各折射一次。兩面平行時，塊內的光在兩面的角相同（\(\theta_3 = \theta_2\)），所以射出時 \(\theta_4 = \theta_1\)：出射光與入射光<strong>平行</strong>，只是往旁邊錯開。塊內的光路長 \(OO' = t/\cos\theta_2\)，側向位移是以 \(\theta_1 - \theta_2\) 為角的直角三角形的對邊：</p>
+      <div class="formula multi">
+        \[ \frac{\sin\theta_1}{\sin\theta_2} = \frac{\sin\theta_4}{\sin\theta_3} = n \] \[ d = \frac{t\,\sin(\theta_1 - \theta_2)}{\cos\theta_2} \]
+      </div>
+      <p data-en-html="<strong>Using all the data.</strong> Since \(\sin\theta_1 = n\sin\theta_2\), the graph of \(\sin\theta_1\) against \(\sin\theta_2\) is a straight line through the origin with slope \(n\). The best line through the origin (least squares) has slope"><strong>用全部的數據</strong>：因為 \(\sin\theta_1 = n\sin\theta_2\)，以 \(\sin\theta_2\) 為橫軸、\(\sin\theta_1\) 為縱軸作圖，是一條通過原點、斜率為 \(n\) 的直線。過原點的最佳直線（最小平方法）的斜率為</p>
+      <div class="formula" data-en-html="\[ n = \frac{\sum \sin\theta_1 \sin\theta_2}{\sum \sin^{2}\theta_2}, \qquad \text{percent error} = \frac{n_\text{meas} - n_\text{acc}}{n_\text{acc}} \times 100\% \]">
+        \[ n = \frac{\sum \sin\theta_1 \sin\theta_2}{\sum \sin^{2}\theta_2}, \qquad \text{百分誤差} = \frac{n_\text{測} - n_\text{公認}}{n_\text{公認}} \times 100\% \]
+      </div>
+      <p data-en-html="<strong>Critical angle.</strong> If the light enters through the curved face and travels along a radius to \(O\), it meets the flat face from inside. It can get out only if \(\theta_2\) is smaller than the critical angle \(\theta_c\); beyond it, all the light is reflected back into the block:"><strong>臨界角</strong>：若光由弧面射入、沿半徑到達 \(O\)，就是從塊內射向平面。只有當 \(\theta_2\) 小於臨界角 \(\theta_c\) 時光才出得去；超過臨界角，光全部反射回塊內：</p>
+      <div class="formula">
+        \[ \sin\theta_c = \frac{1}{n} \]
+      </div>
+
+      <h3 data-en="Procedure">步驟</h3>
+      <p><strong data-en="Semicircular dish of water:">半圓形透明盒（裝水）：</strong></p>
+      <ol>
+        <li data-en="On the graph paper draw a line L and the normal N that crosses it at O. Draw a circle of the dish’s radius about O and mark five points on the upper-left part of the circle, 1, 2, 3, 4 and 5 cm from N.">在方格紙上畫直線 L，以及在 O 點與它垂直的法線 N；以 O 為圓心、盒子的半徑畫圓，在左上方的圓周上標出到 N 的距離為 1、2、3、4、5 cm 的五個點。</li>
+        <li data-en="Put the paper on the board. Fill the dish to about half with water and set its straight side exactly on L with its centre at O. Push a pin in vertically at O.">把紙鋪在板上，盒子裝水約半滿，直徑的一邊對齊 L、中心對準 O，在 O 點垂直插一根針。</li>
+        <li data-en="Push a pin in at the first point. Looking through the water from the curved side with one eye, move your head until the two pins appear one behind the other, then push in a third pin so that it hides the other two.">在第一個點插針。在弧面那一側用單眼透過水看，移動頭的位置直到兩根針重疊，再插第三根針，使它把前兩根都擋住。</li>
+        <li data-en-html="Repeat for the other four points. Remove the dish, draw the rays, and measure x<sub>1</sub> and x<sub>2</sub> (or the angles).">其餘四個點照做。拿走盒子，畫出光線，量 x<sub>1</sub>、x<sub>2</sub>（或量角度）。</li>
+      </ol>
+      <p><strong data-en="Rectangular block:">長方形玻璃磚：</strong></p>
+      <ol>
+        <li data-en="Draw a line L, lay a long side of the block on it and trace the opposite side as L′.">畫直線 L，把玻璃磚的長邊靠在 L 上，沿另一個長邊描出 L′。</li>
+        <li data-en="Push pin B in just behind L and pin A a few centimetres further back at a slant.">在 L 後方近處插針 B，斜後方遠一點插針 A。</li>
+        <li data-en="Look through the block from the L′ side and move your eye until the images of A and B line up. Push in C and D along this line of sight so that all four look like one pin.">從 L′ 那一側透過玻璃磚看，移動眼睛直到 A、B 的像重疊；在這條視線上插 C、D，使四根針看起來像同一根。</li>
+        <li data-en-html="Remove the block. Draw AB to meet L at O, CD to meet L′ at O′, join OO′ and draw the normal at O. Measure θ<sub>1</sub> and θ<sub>2</sub>.">拿走玻璃磚。延長 AB 交 L 於 O、延長 CD 交 L′ 於 O′，連接 OO′，過 O 畫法線，量 θ<sub>1</sub> 與 θ<sub>2</sub>。</li>
+        <li data-en="Keep B where it is, move A to a new place and repeat.">B 不動、移動 A 的位置，重做幾次。</li>
+      </ol>
+
+      <h3 data-en="Things to watch">注意事項</h3>
+      <ul>
+        <li data-en="Push the pins in vertically and line up the parts of the pins seen through the block — the tops sticking out above the block are not bent and will not line up.">針要垂直插。對齊的是透過透明塊看到的下半段；露在透明塊上方的針頭沒有被折射，不會對齊。</li>
+        <li data-en="Use one eye and keep it low, close to the level of the paper.">用單眼看，眼睛放低、接近紙面。</li>
+        <li data-en="Keep the two pins on the same side several centimetres apart: a small sideways error then makes only a small error in the direction of the line.">同一側的兩根針要離遠一點（幾公分）：插歪一點點時，畫出的直線方向誤差比較小。</li>
+        <li data-en="Do not let the block move during a trial. Use angles between about 15° and 70°: small angles give large relative errors, and at large angles the images are faint and the reflection strong.">一次實驗中透明塊不可移動。入射角取約 15° 到 70°：角度太小相對誤差大，太大則像變暗、反射變強。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol>
+        <li><span data-en="Why is the light aimed at the centre of the semicircular dish?">半圓形透明盒為什麼要讓光從圓心射入？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Inside, the refracted ray then lies along a radius and meets the curved wall at right angles, so it is not bent there. Only the refraction at the flat face matters, and θ<sub>2</sub> can be measured at O.">這樣折射光在盒內沿半徑前進，碰到弧面時與弧面垂直、不會再偏折，只需考慮平面上的一次折射，θ<sub>2</sub> 直接在 O 點量。</p></details></li>
+        <li><span data-en="Is the result more accurate with the two pins on one side close together or far apart? With a thin block or a thick one?">同一側兩根針靠近一點比較準，還是離遠一點比較準？用薄的還是厚的透明塊比較準？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Far apart: the same small sideways error then turns the line through a smaller angle. A thicker block makes the path OO′ longer, so the same error at O′ gives a smaller error in θ<sub>2</sub>.">離遠一點：同樣插偏一點點，直線轉動的角度比較小。厚的透明塊使塊內的光路 OO′ 比較長，O′ 位置的同樣誤差造成的 θ<sub>2</sub> 誤差比較小。</p></details></li>
+        <li><span data-en="If the two long faces of the block were not parallel, could you still measure n? Would the emergent ray still be parallel to the incident ray?">如果玻璃磚的兩個長邊不平行，還能測折射率嗎？出射光還會和入射光平行嗎？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Yes — only the angles at O are needed (or θ<sub>3</sub> and θ<sub>4</sub> at O′ with the normal to L′). The emergent ray would no longer be parallel to the incident ray, so the pins also tell you whether the faces are parallel.">可以，只要量 O 點的入射角與折射角（或在 O′ 點對 L′ 的法線量 θ<sub>3</sub>、θ<sub>4</sub>）。但出射光不再與入射光平行，所以由四根針也能判斷兩面是否平行。</p></details></li>
+        <li><span data-en-html="Your sin θ<sub>1</sub>–sin θ<sub>2</sub> line does not pass through the origin, and data taken from the left and from the right give different slopes. What could be wrong?">sin θ<sub>1</sub>–sin θ<sub>2</sub> 的直線不通過原點，而且左側入射與右側入射的斜率不同，可能是什麼原因？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="A systematic error in the direction of the normal — for example the block was not lined up exactly with L. Every angle measured on one side is then too large and on the other side too small. Taking data from both sides and fitting them together largely cancels the error.">法線的方向有系統誤差，例如透明塊沒有對準 L：在一側量到的角度都偏大，另一側都偏小。左右兩側都取數據一起作圖，誤差大部分會抵消。</p></details></li>
+        <li><span data-en="Light enters through the curved face. Beyond which angle can you no longer see pin P through O? How is that related to n?">光由弧面射入時，P 的角度超過多少就再也看不到 P 的像通過 O？這和折射率有什麼關係？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Beyond the critical angle \(\theta_c\), where \(\sin\theta_c = 1/n\): for water about 48.6°, acrylic 42.2°, crown glass 41.1°. Just below it the image becomes very faint, because almost all the light is reflected.">超過臨界角 \(\theta_c\)（\(\sin\theta_c = 1/n\)）：水約 48.6°、壓克力約 42.2°、冕牌玻璃約 41.1°。接近臨界角時像會變得很暗，因為大部分的光都被反射了。</p></details></li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The broken pin.</strong> In the eye’s view, the part of a pin seen through the block is shifted sideways from its top. Only when the lower parts line up are you on the light path."><strong>斷掉的針</strong>：在「眼睛看到的景象」中，透過透明塊看到的下半段和上面的針頭錯開了。要讓下半段排成一直線，才是在光路上。</li>
+        <li data-en-html="<strong>Take the block away.</strong> After removing the block, look again: A and B no longer line up with C and D, because the light no longer bends."><strong>拿走透明塊再看一次</strong>：A、B 不再和 C、D 對齊，因為光不再偏折。</li>
+        <li data-en-html="<strong>Parallel but shifted.</strong> With the rectangular block, compare the measured shift \(d\) with the formula, and see it grow with \(\theta_1\) and with the thickness \(t\)."><strong>平行但錯開</strong>：長方形透明塊的側向位移 \(d\) 量出來和公式比一比；\(\theta_1\) 越大、厚度 \(t\) 越厚，\(d\) 越大。</li>
+        <li data-en-html="<strong>Ruler or protractor?</strong> With the semicircular dish, switch the analysis between the protractor and the ruler (\(x/R\)) and compare the scatter of the points."><strong>直尺還是量角器？</strong>半圓形的數據可以切換用量角器或直尺（\(x/R\)）計算，比較數據點散開的程度。</li>
+        <li data-en-html="<strong>Total internal reflection.</strong> Let the light enter through the curved face, turn on the light-path hint and move P around the arc: the refracted ray fades and disappears at \(\theta_c\)."><strong>全反射</strong>：改由弧面射入、打開光路提示，讓 P 沿圓弧移動：折射光越來越暗，到 \(\theta_c\) 時消失。</li>
+        <li data-en-html="<strong>Hunting a systematic error.</strong> Choose “With errors”, then take data with A on the left and on the right of the normal. Compare the slopes for the two sides."><strong>找出系統誤差</strong>：選「含誤差」，分別把 A 插在法線的左邊和右邊取數據，比較兩邊的斜率。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Every ray is traced in two dimensions (the plane of the paper): at each surface the vector form of Snell’s law gives the new direction, total internal reflection happens beyond the critical angle, and the unpolarised Fresnel transmittance sets how bright an image is.">光線在紙面上做二維追跡：每個界面都用向量形式的司乃耳定律決定新的方向，超過臨界角就全反射；像的亮暗由非偏振光的菲涅耳穿透率決定。</li>
+        <li data-en="The image of a pin is found the way the eye finds it: rays are sent out from the pin in many directions, and the one that reaches the eye after passing through the block is located by bisection. Lining up the pins is therefore a real refraction test, not a line drawn in advance.">針的像用眼睛看到它的方式求出：從針向各方向發出光線，用二分法找出穿過透明塊後恰好進入眼睛的那一條。所以「對齊」是真正依折射計算的結果，不是事先畫好的線。</li>
+        <li data-en="The eye looks almost along the paper, about 1 cm above it; pins very close to the eye look thick and slightly blurred, as they would in real life. In the eye’s view the horizontal angles are to scale and magnified; the heights are a perspective sketch. A pin shaft is 0.6 mm thick, and two images count as overlapping when they differ by less than about half a pin width.">眼睛幾乎貼著紙面（高約 1 cm）看；離眼睛很近的針看起來又粗又有點模糊，和真實情況一樣。「眼睛看到的景象」中水平方向的角度依比例並放大，上下方向是透視示意。針身直徑 0.6 mm，兩個像相差不到約半根針寬就算重疊。</li>
+        <li data-en="Readings: the protractor is read to 1° or 0.5° and the ruler to 0.01 cm. With errors on, each reading also has a random error (standard deviation 0.25° or 0.02 cm), and the block is placed turned by a hidden 0.6° to 1.4° from L — a systematic error that stays the same until you press “Clear all”.">讀數：量角器取到 1° 或 0.5°，直尺取到 0.01 cm。選「含誤差」時，每個讀數再加上隨機誤差（標準差 0.25° 或 0.02 cm），而且透明塊放歪了一個隱藏的 0.6°～1.4°（沒對準 L）——這是系統誤差，按「全部清除」前都不變。</li>
+        <li data-en="Accepted values for yellow light (589 nm) at room temperature: water 1.333 (CRC Handbook of Chemistry and Physics), acrylic (PMMA) 1.49 and crown glass 1.52 (BK7 is 1.517; Schott optical glass data, and E. Hecht, Optics). The unknown sample is a random value between 1.42 and 1.68. Dispersion and the thin walls of the water dish are ignored.">公認值（黃光 589 nm、室溫）：水 1.333（CRC Handbook of Chemistry and Physics），壓克力（PMMA）1.49、冕牌玻璃 1.52（BK7 為 1.517；Schott 光學玻璃資料、E. Hecht《Optics》）。未知樣品的折射率在 1.42～1.68 之間隨機。忽略色散，也忽略水盒的薄壁。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/refractive-index-core.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/refractive-index.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="refractive-index"></script>
+  <script src="js/missions/refractive-index.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="refractive-index"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

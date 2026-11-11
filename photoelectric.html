@@ -2,12 +2,33 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Photoelectric Effect | Astro Ni Physics Lab">光電效應｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：調整光的波長、強度、陰極金屬與光電管電壓，觀察光子打出光電子、電流與電壓的關係、停止電壓，並由密立坎圖的斜率求出普朗克常數。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="調整光的波長、強度、陰極金屬與電壓，觀察光電子、測量停止電壓，並由密立坎圖的斜率求出普朗克常數。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/photoelectric.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/photoelectric.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/photoelectric.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/photoelectric.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="光電效應｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="調整光的波長、強度、陰極金屬與電壓，觀察光電子、測量停止電壓，並由密立坎圖的斜率求出普朗克常數。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/photoelectric.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/photoelectric.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="光電效應的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"光電效應","alternateName":"The Photoelectric Effect","description":"調整光的波長、強度、陰極金屬與電壓，觀察光電子、測量停止電壓，並由密立坎圖的斜率求出普朗克常數。","url":"https://astro1222ni.github.io/physics-lab/photoelectric.html","image":"https://astro1222ni.github.io/physics-lab/img/og/photoelectric.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["近代物理（Modern Physics）","量子現象（Quantum Phenomena）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 光電效應頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -188,7 +209,7 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en-html="Photon energy, \(K_{\max}\), \(V_s\), \(f_0\) and \(\lambda_0\) come straight from the formulas above, with the exact SI values of \(h\), \(e\) and \(c\). The work functions are typical textbook values (Cs 2.1, K 2.3, Na 2.28, Zn 4.3, Cu 4.7, Pt 5.6 eV).">光子能量、\(K_{\max}\)、\(V_s\)、\(f_0\)、\(\lambda_0\) 直接由上面的公式計算，\(h\)、\(e\)、\(c\) 用 SI 定義值；功函數採課本常用值（Cs 2.1、K 2.3、Na 2.28、Zn 4.3、Cu 4.7、Pt 5.6 eV）。</li>
+        <li data-en-html="Photon energy, \(K_{\max}\), \(V_s\), \(f_0\) and \(\lambda_0\) come straight from the formulas above, with the exact SI values of \(h\), \(e\) and \(c\). The work functions are typical textbook values (Cs 2.1, K 2.3, Na 2.28, Zn 4.3, Cu 4.7, Pt 5.6 eV). Some textbooks list 6.35 eV for platinum; measured work functions depend on the surface condition (crystal face, cleanliness) and the measuring method, so different tables can disagree.">光子能量、\(K_{\max}\)、\(V_s\)、\(f_0\)、\(\lambda_0\) 直接由上面的公式計算，\(h\)、\(e\)、\(c\) 用 SI 定義值；功函數採課本常用值（Cs 2.1、K 2.3、Na 2.28、Zn 4.3、Cu 4.7、Pt 5.6 eV）。有些課本的鉑寫 6.35 eV：功函數的實測值會隨金屬表面狀態（晶面、乾淨程度）與量測方法而不同，所以不同的表會有差異。</li>
         <li data-en-html="The tube is modelled as two parallel plates 1.0 cm apart (cathode 1.4 cm wide, anode 3.0 cm wide) with a uniform field \(E = V/d\) between them. Each electron leaves a random point of the cathode with a kinetic energy spread evenly between 0 and \(K_{\max}\) (a simplification) and a random direction following the cosine law, then moves with constant acceleration \(a = eV/(m_e d)\): its path is calculated exactly.">光電管簡化為相距 1.0 cm 的兩片平行板（陰極寬 1.4 cm、陽極寬 3.0 cm），板間為均勻電場 \(E = V/d\)。每個電子從陰極上隨機一點出發，動能在 0 到 \(K_{\max}\) 之間均勻分布（簡化），方向依餘弦定律隨機，之後做加速度 \(a = eV/(m_e d)\) 的等加速度運動，軌跡用精確公式計算。</li>
         <li data-en-html="The ammeter shows the expected current \(I = \eta e N F\), where \(F\) is the fraction of electrons that land on the anode, found by integrating over all starting points, energies and directions (accurate to better than 0.01%). The quantum efficiency is taken as \(\eta = 10^{-3}\), a typical order of magnitude for a clean metal, and assumed independent of wavelength. The meter resolves 0.001 nA.">電流表顯示期望的電流 \(I = \eta e N F\)，\(F\) 是落在陽極上的電子比例，由所有出發點、能量與方向積分而得（誤差小於 0.01%）。量子效率取 \(\eta = 10^{-3}\)（乾淨金屬的典型數量級），並假設與波長無關；電流表解析度 0.001 nA。</li>
         <li data-en-html="“Record stopping voltage” only accepts a voltage at which the meter reads zero but reads non-zero 0.05 V less negative, so each point on the Millikan plot is a genuine measurement of where the current just vanishes. The best-fit line is found by least squares.">「記錄停止電壓」只接受「電流表讀數為零，但電壓往正方向 0.05 V 時不為零」的電壓，所以密立坎圖上的每一點都是真正測到「電流剛好歸零」的位置；最佳直線用最小平方法求出。</li>
@@ -200,15 +221,15 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/photoelectric-core.js?v=202611111312"></script>
-  <script src="js/sound.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/photoelectric.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="photoelectric"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/photoelectric-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/photoelectric.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="photoelectric"></script>
   <script src="js/missions/photoelectric.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="photoelectric"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="photoelectric"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

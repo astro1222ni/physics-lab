@@ -55,7 +55,10 @@
     return { M: state.M, m: state.m, mu: mu(), theta: state.thDeg * DEG, attached: state.attached };
   }
 
-  // ---------- 色彩（lab.css 代號） ----------
+  // ---------- 色彩（lab.css 代號）與共用繪圖工具（js/drawkit.js 的 LabDraw） ----------
+  const LD = window.LabDraw;
+  const FF = LD.FONT;
+  const alpha = LD.alpha, shade = LD.shade, mix = LD.mix, roundRect = LD.roundRect;
   let colors = {};
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
@@ -76,25 +79,13 @@
     colors.woodLo = d ? shade(colors.equi, -0.68) : shade(colors.equi, 0.02);
     colors.brass = d ? shade(colors.equi, -0.05) : shade(colors.equi, 0.35);
     colors.dev = d ? shade(colors.muted, -0.55) : shade(colors.field, 0.08);
-  }
-  function rgbOf(c) {
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(c).trim());
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    const n = String(c).match(/[\d.]+/g);
-    return n && n.length >= 3 ? [+n[0], +n[1], +n[2]] : [128, 128, 128];
-  }
-  function alpha(c, a) { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; }
-  /** f > 0 往白色混合、f < 0 往黑色混合 */
-  function shade(c, f) {
-    const r = rgbOf(c), t = f > 0 ? 255 : 0, k = Math.abs(f);
-    return 'rgb(' + r.map(function (x) { return Math.round(x + (t - x) * k); }).join(',') + ')';
-  }
-  function mix(a, b, t) {
-    const p = rgbOf(a), q = rgbOf(b);
-    return 'rgb(' + p.map(function (x, i) { return Math.round(x + (q[i] - x) * t); }).join(',') + ')';
+    colors.devHi = d ? shade(colors.muted, -0.3) : shade(colors.field, 0.3);
+    colors.steel = d ? shade(colors.muted, -0.12) : shade(colors.muted, 0.3);
+    colors.string = d ? shade(colors.muted, 0.3) : shade(colors.muted, -0.3);
+    colors.panel = d ? shade(colors.surface, 0.02) : colors.surface;
   }
   function isDark() {
-    const r = rgbOf(getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg'));
+    const r = LD.rgb(getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg'));
     return (r[0] + r[1] + r[2]) / 3 < 100;
   }
 
@@ -123,76 +114,43 @@
   }
   const MS2 = ' m/s<sup>2</sup>';
 
-  // ---------- 共用繪圖工具 ----------
-  function roundRect(c, x, y, w, h, r) {
-    r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
+  // ---------- 共用繪圖工具（LabDraw 的薄包裝，保留本模組原本的呼叫方式） ----------
+  /** 標籤高度（與 LabDraw.pill 的底框一致） */
+  function pillH(c, text, font) {
+    c.font = font || '600 12px ' + FF;
+    return LD.textHeight(c.measureText(text), 15) + 3;
   }
-  /** 有半透明圓角底框的標籤；c.textAlign 決定水平對齊，垂直置中於 y */
-  function pill(c, text, x, y, color, font, bgAlpha) {
-    c.font = font || '600 12px system-ui, sans-serif';
-    c.textBaseline = 'middle';
-    const m = c.measureText(text), tw = m.width;
-    const fh = m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : 15;
-    const ph = fh + 3, pw = tw + 10;
-    const al = c.textAlign;
-    const bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - tw - 5 : x - 5;
-    c.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.86 : bgAlpha);
-    roundRect(c, bx, y - ph / 2, pw, ph, ph / 2);
-    c.fill();
-    c.fillStyle = color;
-    c.fillText(text, x, y + 0.5);
-    return { x: bx, y: y - ph / 2, w: pw, h: ph };
+  /**
+   * 圓角底框標籤（LabDraw.pill，全站同款：半透明底＋語意色細框）。
+   * 對齊由 c.textAlign 決定（left：文字從 x 開始；right：文字結束在 x），y 為垂直中心；傳回底框 {x, y, w, h}。
+   */
+  function pill(c, text, x, y, color, font) {
+    const al = c.textAlign === 'center' ? 'center' : (c.textAlign === 'right' || c.textAlign === 'end') ? 'right' : 'left';
+    font = font || '600 12px ' + FF;
+    const ph = pillH(c, text, font);
+    const bx = al === 'left' ? x - 6 : al === 'right' ? x + 6 : x;
+    const r = LD.pill(c, text, bx, y + ph / 2, color, al, font);
+    c.textAlign = al;
+    return r;
   }
   function textW(c, text, font) { c.font = font; return c.measureText(text).width; }
-  /** 一般文字加背景色描邊（halo） */
-  function haloText(c, text, x, y, color, font) {
-    c.font = font;
-    c.lineJoin = 'round';
-    c.strokeStyle = alpha(colors['canvas-bg'], 0.9);
-    c.lineWidth = 3;
-    c.strokeText(text, x, y);
-    c.fillStyle = color;
-    c.fillText(text, x, y);
-  }
 
   /**
-   * 向量箭頭：箭身寬 lw，箭頭長約 4 倍箭身寬、兩側略帶弧度（與其他模組一致）。
+   * 向量箭頭（LabDraw.arrow：略帶弧度的箭頭、背景色描邊、箭身高光；全站幾何一致）。
+   * 尖端位置 = 起點 + 方向 × len，與物理比例一致。
    * broken 為 true 時在箭身畫截斷記號（箭頭太長、未依比例）；dashed 為 true 時箭身用虛線。
+   * gapColor：截斷處的底色（預設受力圖面板色）。
    */
-  function arrow(c, x0, y0, ux, uy, len, lw, color, broken, dashed) {
+  function arrow(c, x0, y0, ux, uy, len, lw, color, broken, dashed, gapColor) {
     if (len < 1) return;
-    const head = Math.min(4 * lw, len), hw = 1.7 * lw;
-    const xt = x0 + ux * len, yt = y0 + uy * len;
-    const xh = xt - ux * head, yh = yt - uy * head;
-    const nx = -uy, ny = ux;
-    c.strokeStyle = color;
-    c.fillStyle = color;
-    c.lineCap = 'round';
-    if (len > head + 1) {
-      c.lineWidth = lw;
-      if (dashed) c.setLineDash([lw * 2, lw * 1.8]);
-      c.beginPath(); c.moveTo(x0, y0); c.lineTo(xh + ux * head * 0.3, yh + uy * head * 0.3); c.stroke();
-      c.setLineDash([]);
-    }
-    c.beginPath();
-    c.moveTo(xt, yt);
-    c.quadraticCurveTo(xt - ux * head * 0.45 + nx * hw * 0.35, yt - uy * head * 0.45 + ny * hw * 0.35, xh + nx * hw, yh + ny * hw);
-    c.lineTo(xh + ux * head * 0.2, yh + uy * head * 0.2);
-    c.lineTo(xh - nx * hw, yh - ny * hw);
-    c.quadraticCurveTo(xt - ux * head * 0.45 - nx * hw * 0.35, yt - uy * head * 0.45 - ny * hw * 0.35, xt, yt);
-    c.closePath();
-    c.fill();
+    LD.arrow(c, x0, y0, x0 + ux * len, y0 + uy * len, color, lw, dashed ? { dash: [lw * 2, lw * 1.8] } : null);
     if (broken) {
+      const nx = -uy, ny = ux;
       const mx = x0 + ux * len * 0.5, my = y0 + uy * len * 0.5, s = 2.2 * lw;
-      c.strokeStyle = colors.surface;
-      c.lineWidth = lw + 2;
+      c.save();
+      c.lineCap = 'round';
+      c.strokeStyle = gapColor || colors.panel;
+      c.lineWidth = lw + 4;
       c.beginPath(); c.moveTo(mx - ux * 2.5, my - uy * 2.5); c.lineTo(mx + ux * 2.5, my + uy * 2.5); c.stroke();
       c.strokeStyle = color;
       c.lineWidth = 1.5;
@@ -203,7 +161,17 @@
         c.lineTo(bx + nx * s - ux * 2, by + ny * s - uy * 2);
       });
       c.stroke();
+      c.restore();
     }
+  }
+  /** 便宜的投影（不用 shadowBlur）：同形狀往右下偏移、低透明度，疊兩層 */
+  function softDrop(c, path, a, dx, dy) {
+    c.save();
+    c.fillStyle = LD.shadowInk(a * 0.5);
+    c.translate(dx * 1.8, dy * 1.8); path(c); c.fill();
+    c.fillStyle = LD.shadowInk(a);
+    c.translate(-dx * 0.8, -dy * 0.8); path(c); c.fill();
+    c.restore();
   }
 
   function niceStep(raw) {
@@ -276,50 +244,80 @@
     drawA();
   }
 
-  /** 不變的圖層：背景、桌子、軌道、墊木、打點計時器、擋板、滑輪支架（傾角或主題改變時重畫） */
+  /** 不變的圖層：背景、牆面格線、桌子、軌道、墊木、打點計時器、擋板、滑輪支架、受力圖面板（傾角、主題、受力圖開關改變時重畫） */
   function buildBg() {
     bg.width = cv.width; bg.height = cv.height;
-    const c = bgc, k = A.k;
+    const c = bgc, k = A.k, dk = colors.dark;
     c.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
     c.clearRect(0, 0, A.w, A.h);
-    const base = colors['canvas-bg'];
-    // 背景：中心亮、四角暗的極淡暈影
-    const rg = c.createRadialGradient(A.w * 0.45, A.h * 0.3, A.h * 0.1, A.w * 0.45, A.h * 0.3, Math.max(A.w, A.h) * 0.85);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.035) : base);
-    rg.addColorStop(1, shade(base, colors.dark ? -0.3 : -0.05));
-    c.fillStyle = rg;
-    roundRect(c, 0, 0, A.w, A.h, 8);
-    c.fill();
-
-    // 桌子：桌面（側面看到前緣）與兩支桌腳
+    // 背景：--canvas-bg 加極淡暈影（LabDraw.backdrop）
+    LD.backdrop(c, A.w, A.h);
     const yT = Y(0), slab = 0.03 * k;
     const xL = -2, xR = X(0);
-    // 桌面下的柔和陰影
-    const sg = c.createLinearGradient(0, yT + slab, 0, yT + slab + 0.06 * k);
-    sg.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.35 : 0.12) + ')');
-    sg.addColorStop(1, 'rgba(0,0,0,0)');
+    // 牆面格線（依比例：主格線 10 cm、次格線 2 cm，與桌緣對齊），只畫在桌面上方，越往上越淡
+    c.save();
+    c.beginPath(); c.rect(0, 0, A.w, yT); c.clip();
+    c.globalAlpha = 0.75;
+    LD.grid(c, 0, 0, A.w, yT, 0.1 * k, 0.02 * k, X(0), yT);
+    c.globalAlpha = 1;
+    const fade = c.createLinearGradient(0, 0, 0, yT * 0.7);
+    fade.addColorStop(0, alpha(colors['canvas-bg'], 0.75));
+    fade.addColorStop(1, alpha(colors['canvas-bg'], 0));
+    c.fillStyle = fade;
+    c.fillRect(0, 0, A.w, yT * 0.7);
+    c.restore();
+
+    // 桌腳（桌面下方、受力圖面板後面；純裝飾）：在桌面的陰影裡，顏色偏暗、往下漸漸融入背景
+    const lx0 = X(-0.078), lx1 = X(-0.056);
+    const legC = mix(colors.wood, colors['canvas-bg'], dk ? 0.35 : 0.45);
+    const lg = c.createLinearGradient(lx0, 0, lx1, 0);
+    lg.addColorStop(0, shade(legC, -0.12));
+    lg.addColorStop(0.35, shade(legC, 0.12));
+    lg.addColorStop(1, shade(legC, -0.3));
+    c.fillStyle = lg;
+    c.fillRect(lx0, yT + slab, lx1 - lx0, A.h - yT - slab + 2);
+    const lfade = c.createLinearGradient(0, yT + slab, 0, A.h);
+    lfade.addColorStop(0, alpha(colors['canvas-bg'], 0));
+    lfade.addColorStop(1, alpha(colors['canvas-bg'], 0.7));
+    c.fillStyle = lfade;
+    c.fillRect(lx0 - 1, yT + slab, lx1 - lx0 + 2, A.h - yT - slab + 2);
+    // 桌面下的柔和陰影（壓在桌腳上方）
+    const sg = c.createLinearGradient(0, yT + slab, 0, yT + slab + 0.07 * k);
+    sg.addColorStop(0, LD.shadowInk(dk ? 0.42 : 0.16));
+    sg.addColorStop(1, LD.shadowInk(0));
     c.fillStyle = sg;
-    c.fillRect(xL, yT + slab, xR - xL, 0.06 * k);
-    // 桌面前緣
+    c.fillRect(xL, yT + slab, xR - xL + 2, 0.07 * k);
+    // 桌面前緣：上亮下暗的木頭漸層、頂邊高光、底邊暗線、極淡木紋
     const wg = c.createLinearGradient(0, yT, 0, yT + slab);
     wg.addColorStop(0, colors.woodHi);
-    wg.addColorStop(0.35, colors.wood);
+    wg.addColorStop(0.3, colors.wood);
     wg.addColorStop(1, colors.woodLo);
     c.fillStyle = wg;
     roundRect(c, xL, yT, xR - xL, slab, 3);
     c.fill();
-    c.strokeStyle = alpha(shade(colors.woodHi, 0.3), 0.7);
+    c.save();
+    roundRect(c, xL, yT, xR - xL, slab, 3);
+    c.clip();
+    c.strokeStyle = alpha(colors.woodLo, dk ? 0.35 : 0.22);
     c.lineWidth = 1;
-    c.beginPath(); c.moveTo(xL, Math.round(yT) + 0.5); c.lineTo(xR - 2, Math.round(yT) + 0.5); c.stroke();
-    // 木紋（極淡）
-    c.strokeStyle = alpha(colors.woodLo, 0.25);
     c.beginPath();
-    for (let i = 0; i < 3; i++) {
-      const yy = yT + slab * (0.35 + 0.22 * i);
+    for (let i = 0; i < 4; i++) {
+      const yy = yT + slab * (0.3 + 0.18 * i);
       c.moveTo(xL, yy);
-      c.bezierCurveTo(xR * 0.3, yy - 1.5, xR * 0.6, yy + 1.5, xR - 3, yy);
+      c.bezierCurveTo(xR * 0.3, yy - 1.5 + i * 0.5, xR * 0.62, yy + 1.5, xR, yy - 0.5);
     }
     c.stroke();
+    c.fillStyle = alpha(shade(colors.woodHi, 0.45), dk ? 0.45 : 0.8);
+    c.fillRect(xL, Math.round(yT), xR - xL, 1);
+    c.fillStyle = alpha(shade(colors.woodLo, -0.45), 0.6);
+    c.fillRect(xL, yT + slab - 1, xR - xL, 1);
+    // 右端的端面（較亮的一窄條，像看到桌角）
+    const eg = c.createLinearGradient(xR - 4, 0, xR, 0);
+    eg.addColorStop(0, alpha(shade(colors.woodHi, 0.3), 0));
+    eg.addColorStop(1, alpha(shade(colors.woodHi, 0.3), dk ? 0.35 : 0.55));
+    c.fillStyle = eg;
+    c.fillRect(xR - 4, yT, 4, slab);
+    c.restore();
 
     const th = state.thDeg * DEG;
     // 墊木：撐起軌道遠離滑輪的一端
@@ -328,40 +326,64 @@
       const hR = -sR * Math.sin(th); // 墊木右緣上方軌道底部的高度
       const x0 = X(PIVOT_X + sL * Math.cos(th)), x1 = X(PIVOT_X + sR * Math.cos(th));
       const yTop = Y(hR);
-      const bgd = c.createLinearGradient(0, yTop, 0, yT);
-      bgd.addColorStop(0, colors.woodHi);
-      bgd.addColorStop(1, colors.wood);
-      c.fillStyle = bgd;
-      roundRect(c, x0, yTop, x1 - x0, yT - yTop, 2);
-      c.fill();
-      c.strokeStyle = alpha(colors.woodLo, 0.6);
-      c.lineWidth = 1;
-      roundRect(c, x0 + 0.5, yTop + 0.5, x1 - x0 - 1, yT - yTop - 1, 2);
-      c.stroke();
+      LD.contactShadow(c, (x0 + x1) / 2, yT, (x1 - x0) / 2, 0);
+      LD.block(c, x0, yTop, x1 - x0, yT - yTop, colors.wood, { r: 2, shadow: false, stroke: alpha(colors.woodLo, 0.7) });
+      if (yT - yTop > 6) {
+        c.strokeStyle = alpha(colors.woodLo, 0.3);
+        c.lineWidth = 1;
+        c.beginPath();
+        c.moveTo(x0 + 2, yTop + (yT - yTop) * 0.4); c.lineTo(x1 - 2, yTop + (yT - yTop) * 0.45);
+        c.stroke();
+      }
     }
 
     // 軌道（鋁軌）
     c.save();
     railFrame(c);
     const rs0 = TRACK_S0 * k, rw = -TRACK_S0 * k, rh = RAIL_H * k;
-    // 接觸陰影
-    c.fillStyle = 'rgba(0,0,0,' + (colors.dark ? 0.3 : 0.12) + ')';
-    c.fillRect(rs0 + 2, -1, rw - 4, 2.5);
+    // 接觸陰影：軌道下緣的柔和暗帶
+    const cs = c.createLinearGradient(0, -1, 0, 4);
+    cs.addColorStop(0, LD.shadowInk(dk ? 0.5 : 0.22));
+    cs.addColorStop(1, LD.shadowInk(0));
+    c.fillStyle = cs;
+    c.fillRect(rs0 + 2, -1, rw - 4, 5);
     const rg2 = c.createLinearGradient(0, -rh, 0, 0);
     rg2.addColorStop(0, colors.metalHi);
-    rg2.addColorStop(0.45, colors.metal);
+    rg2.addColorStop(0.18, shade(colors.metalHi, dk ? 0.08 : 0.25));
+    rg2.addColorStop(0.5, colors.metal);
     rg2.addColorStop(1, colors.metalLo);
     c.fillStyle = rg2;
     roundRect(c, rs0, -rh, rw, rh, 2.5);
     c.fill();
-    c.strokeStyle = alpha(shade(colors.metalHi, 0.5), 0.8);
+    c.save();
+    roundRect(c, rs0, -rh, rw, rh, 2.5);
+    c.clip();
+    // 下方的凸緣線與兩端的端蓋
+    c.fillStyle = alpha(colors.metalLo, 0.55);
+    c.fillRect(rs0, -rh * 0.3, rw, 1);
+    c.fillStyle = alpha(shade(colors.metalHi, 0.6), dk ? 0.35 : 0.6);
+    c.fillRect(rs0, -rh * 0.3 + 1, rw, 1);
+    const capW = Math.max(3, 0.01 * k);
+    [rs0, -capW].forEach(function (x) {
+      const g = c.createLinearGradient(0, -rh, 0, 0);
+      g.addColorStop(0, shade(colors.rubber, 0.3));
+      g.addColorStop(1, colors.rubber);
+      c.fillStyle = g;
+      c.fillRect(x, -rh, capW, rh);
+    });
+    c.restore();
+    c.strokeStyle = alpha(shade(colors.metalHi, 0.5), dk ? 0.5 : 0.85);
     c.lineWidth = 1;
-    c.beginPath(); c.moveTo(rs0 + 2, -rh + 0.5); c.lineTo(-2, -rh + 0.5); c.stroke();
+    c.beginPath(); c.moveTo(rs0 + 3, -rh + 0.5); c.lineTo(-3, -rh + 0.5); c.stroke();
+    roundRect(c, rs0 + 0.5, -rh + 0.5, rw - 1, rh - 1, 2.5);
+    c.strokeStyle = alpha(colors.metalLo, 0.6);
+    c.stroke();
     // 尺規：由小車前端的起點量起，每 1 cm 一小格、5 cm 中格、10 cm 標數字
     const sFront0 = S_REAR0 + CART_L;
     const cm = 0.01 * k;
-    c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.4);
+    c.strokeStyle = alpha(colors.text, dk ? 0.5 : 0.45);
     c.lineWidth = 1;
+    c.lineCap = 'butt';
     c.beginPath();
     for (let i = 0; i <= D * 100; i++) {
       const xx = (sFront0 + i * 0.01) * k;
@@ -372,78 +394,124 @@
     }
     c.stroke();
     if (!A.narrow) {
-      c.font = '600 9px system-ui, sans-serif';
-      c.fillStyle = alpha(colors.text, 0.7);
+      c.font = '600 9px ' + FF;
+      c.fillStyle = alpha(colors.text, dk ? 0.85 : 0.75);
       c.textAlign = 'center';
       c.textBaseline = 'bottom';
       for (let i = 0; i <= D * 100; i += 10) c.fillText(String(i), (sFront0 + i * 0.01) * k, -1);
       c.textAlign = 'left';
       c.fillText('cm', (sFront0 + D + 0.012) * k, -1);
     }
-    // 擋板（橡皮）
+    // 擋板（橡皮）與固定座
     const bx = S_END * k, bh = 0.05 * k;
-    const bgb = c.createLinearGradient(bx, 0, bx + 0.016 * k, 0);
-    bgb.addColorStop(0, shade(colors.rubber, 0.25));
-    bgb.addColorStop(1, colors.rubber);
-    c.fillStyle = bgb;
-    roundRect(c, bx, -bh, 0.016 * k, bh - rh + 1, 3);
-    c.fill();
     c.fillStyle = colors.metalLo;
-    c.fillRect(bx + 0.016 * k, -rh - 0.012 * k, 0.012 * k, 0.012 * k);
-    // 打點計時器
-    drawTicker(c, k, false);
+    roundRect(c, bx + 0.012 * k, -rh - 0.012 * k, 0.016 * k, 0.012 * k + 1, 1.5);
+    c.fill();
+    c.fillStyle = alpha(shade(colors.metalHi, 0.4), 0.6);
+    c.fillRect(bx + 0.012 * k, -rh - 0.012 * k, 0.016 * k, 1);
+    LD.block(c, bx, -bh, 0.016 * k, bh - rh + 1, colors.rubber, { r: 3, shadow: false });
+    // 打點計時器（機身；振動臂每一幀另外畫）
+    drawTicker(c, k);
     c.restore();
 
     // 滑輪支架：夾在桌子右緣
     const pc = pulleyCenter();
     const px = X(pc[0]), py = Y(pc[1]);
-    c.fillStyle = colors.metalLo;
-    roundRect(c, X(-0.012), yT - 3, X(0.006) - X(-0.012), slab + 6, 2);
-    c.fill();
-    const rod = c.createLinearGradient(px - 2, 0, px + 2, 0);
+    const rod = c.createLinearGradient(px - 3, 0, px + 3, 0);
     rod.addColorStop(0, colors.metalHi);
+    rod.addColorStop(0.5, colors.metal);
     rod.addColorStop(1, colors.metalLo);
     c.strokeStyle = rod;
     c.lineWidth = Math.max(2.5, 0.006 * k);
     c.lineCap = 'round';
     c.beginPath(); c.moveTo(X(-0.003), yT + slab * 0.5); c.lineTo(px, py); c.stroke();
+    LD.block(c, X(-0.012), yT - 3, X(0.006) - X(-0.012), slab + 6, colors.steel, { r: 2 });
+    c.fillStyle = alpha(colors.metalLo, 0.9);
+    c.beginPath(); c.arc((X(-0.012) + X(0.006)) / 2, yT + slab * 0.5, Math.max(1.2, 0.0025 * k), 0, Math.PI * 2); c.fill();
+
+    // 受力圖面板（卡片：淡漸層、柔和投影、頂邊高光）
+    if (state.show.fbd) [A.fbdC, A.fbdH].forEach(function (R) { drawPanelCard(c, R); });
   }
 
-  /** 打點計時器（在軌道座標中畫）；arm：振動臂往下打的程度 0–1 */
-  function drawTicker(c, k, arm) {
-    const s0 = -0.995 * k, s1 = -0.925 * k, h0 = -RAIL_H * k, h1 = -0.075 * k;
-    // 底座
-    c.fillStyle = 'rgba(0,0,0,' + (colors.dark ? 0.35 : 0.15) + ')';
-    c.beginPath(); c.ellipse((s0 + s1) / 2, h0, (s1 - s0) * 0.55, 2, 0, 0, Math.PI * 2); c.fill();
-    const g = c.createLinearGradient(0, h1, 0, h0);
-    g.addColorStop(0, shade(colors.dev, 0.28));
-    g.addColorStop(1, shade(colors.dev, -0.15));
+  function drawPanelCard(c, R) {
+    const dk = colors.dark;
+    c.save();
+    c.shadowColor = dk ? 'rgba(0,0,0,0.45)' : alpha(colors.text, 0.13);
+    c.shadowBlur = 14;
+    c.shadowOffsetY = 3;
+    roundRect(c, R.x, R.y, R.w, R.h, 10);
+    const g = c.createLinearGradient(0, R.y, 0, R.y + R.h);
+    g.addColorStop(0, shade(colors.panel, dk ? 0.03 : 0));
+    g.addColorStop(1, mix(colors.panel, colors['canvas-bg'], dk ? 0.35 : 0.55));
     c.fillStyle = g;
-    roundRect(c, s0, h1 + 0.012 * k, s1 - s0, h0 - h1 - 0.012 * k, 3);
     c.fill();
-    c.strokeStyle = alpha(shade(colors.dev, 0.6), 0.6);
+    c.restore();
+    c.strokeStyle = alpha(colors.text, dk ? 0.12 : 0.09);
     c.lineWidth = 1;
-    c.beginPath(); c.moveTo(s0 + 3, h1 + 0.012 * k + 0.5); c.lineTo(s1 - 3, h1 + 0.012 * k + 0.5); c.stroke();
-    // 線圈窗
-    c.fillStyle = alpha(colors.equi, 0.75);
-    roundRect(c, s0 + 0.008 * k, h1 + 0.022 * k, 0.022 * k, 0.018 * k, 2);
+    roundRect(c, R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1, 10);
+    c.stroke();
+    c.strokeStyle = alpha('#ffffff', dk ? 0.06 : 0.9);
+    c.beginPath(); c.moveTo(R.x + 10, R.y + 1.5); c.lineTo(R.x + R.w - 10, R.y + 1.5); c.stroke();
+  }
+
+  /** 打點計時器機身（在軌道座標中畫，放在靜態圖層） */
+  function drawTicker(c, k) {
+    const s0 = -0.995 * k, s1 = -0.925 * k, h0 = -RAIL_H * k, h1 = -0.075 * k;
+    const top = h1 + 0.012 * k;
+    // 底座的接觸陰影
+    LD.contactShadow(c, (s0 + s1) / 2, h0, (s1 - s0) / 2, 0);
+    LD.block(c, s0, top, s1 - s0, h0 - top, colors.dev, { r: 3 });
+    // 機身側面的散熱條紋
+    c.strokeStyle = alpha(shade(colors.dev, -0.4), 0.45);
+    c.lineWidth = 1;
+    c.beginPath();
+    for (let i = 0; i < 3; i++) {
+      const xx = Math.round(s1 - 0.008 * k - i * 0.005 * k) + 0.5;
+      c.moveTo(xx, top + 0.012 * k); c.lineTo(xx, h0 - 0.02 * k);
+    }
+    c.stroke();
+    // 線圈窗（銅線圈）
+    const wx = s0 + 0.008 * k, wy = h1 + 0.022 * k, ww = 0.022 * k, wh = 0.018 * k;
+    const cg = c.createLinearGradient(0, wy, 0, wy + wh);
+    cg.addColorStop(0, shade(colors.brass, 0.35));
+    cg.addColorStop(0.5, colors.brass);
+    cg.addColorStop(1, shade(colors.brass, -0.3));
+    c.fillStyle = cg;
+    roundRect(c, wx, wy, ww, wh, 2);
     c.fill();
+    c.strokeStyle = alpha(shade(colors.brass, -0.45), 0.5);
+    c.beginPath();
+    for (let y = wy + 2; y < wy + wh - 1; y += 2) { c.moveTo(wx + 1, Math.round(y) + 0.5); c.lineTo(wx + ww - 1, Math.round(y) + 0.5); }
+    c.stroke();
     // 紙帶通過的縫
-    c.fillStyle = alpha(colors['canvas-bg'], 0.85);
+    c.fillStyle = alpha(shade(colors.dev, -0.5), 0.8);
     c.fillRect(s0 - 1, -TAPE_H * k - 1.5, s1 - s0 + 2, 3);
     // 複寫紙圓盤
     const cx = S_TICK * k, cy = -(TAPE_H + 0.008) * k, r = 0.009 * k;
-    const dg = c.createRadialGradient(cx - r * 0.3, cy - r * 0.3, r * 0.1, cx, cy, r);
-    dg.addColorStop(0, shade(colors.rubber, 0.35));
-    dg.addColorStop(1, colors.rubber);
+    const dg = c.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+    dg.addColorStop(0, shade(colors.rubber, 0.4));
+    dg.addColorStop(0.7, colors.rubber);
+    dg.addColorStop(1, shade(colors.rubber, -0.3));
     c.fillStyle = dg;
     c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
-    // 振動臂
+    c.fillStyle = alpha(colors.metalHi, 0.8);
+    c.beginPath(); c.arc(cx, cy, Math.max(0.8, r * 0.22), 0, Math.PI * 2); c.fill();
+  }
+  /** 打點計時器的振動臂（每一幀畫）；arm：往下打的程度 0–1 */
+  function drawTickerArm(c, k, arm) {
+    const s0 = -0.995 * k, h1 = -0.075 * k;
+    const cx = S_TICK * k;
     const ay = h1 + 0.008 * k + (arm ? 0.004 * k * arm : 0);
-    c.strokeStyle = colors.metalHi;
-    c.lineWidth = Math.max(2, 0.004 * k);
     c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.strokeStyle = shade(colors.metalLo, -0.2);
+    c.lineWidth = Math.max(2, 0.004 * k) + 1;
     c.beginPath(); c.moveTo(s0 + 0.01 * k, h1 + 0.012 * k); c.lineTo(cx, ay); c.lineTo(cx, ay + 0.006 * k); c.stroke();
+    c.strokeStyle = colors.metalHi;
+    c.lineWidth = Math.max(2, 0.004 * k) - 0.6;
+    c.stroke();
+    c.fillStyle = colors.metalLo;
+    c.beginPath(); c.arc(s0 + 0.01 * k, h1 + 0.012 * k, Math.max(1.4, 0.003 * k), 0, Math.PI * 2); c.fill();
   }
 
   // ---------- 裝置：每一幀的動態部分 ----------
@@ -477,11 +545,12 @@
     c.restore();
     if (state.show.gates) drawGates(c, k, x, true);
 
-    // 打點計時器的振動臂（打點瞬間動一下）與火花
+    // 打點計時器的振動臂（打點瞬間往下壓一下）與打點的小波紋（純裝飾）
     c.save();
     railFrame(c);
     const armOn = state.phase === 'running' && !reducedMotion ? tickerArm() : 0;
-    if (armOn) drawTicker(c, k, armOn);
+    drawTickerArm(c, k, armOn);
+    if (armOn > 0.05) LD.ripple(c, S_TICK * k, -TAPE_H * k, Math.max(2, 0.004 * k), 1 - armOn, colors.ink);
     c.restore();
 
     drawPulleyString(c, k, x);
@@ -499,6 +568,7 @@
 
   function drawTapeOnTrack(c, k, sR, x) {
     const hT = -TAPE_H * k, tw = Math.max(2, 0.006 * k);
+    c.lineJoin = 'round';
     // 尾巴：從計時器左邊垂下
     c.strokeStyle = colors.paperEdge;
     c.lineWidth = tw + 1;
@@ -518,52 +588,54 @@
     c.strokeStyle = colors.paper;
     c.lineWidth = tw;
     c.stroke();
+    // 紙面上緣的細高光（紙帶有一點厚度）
+    c.strokeStyle = alpha('#ffffff', colors.dark ? 0.18 : 0.6);
+    c.lineWidth = 0.8;
+    c.beginPath(); c.moveTo(-0.925 * k, hT - tw / 2 + 0.6); c.lineTo(sR * k, hT - tw / 2 + 0.6); c.stroke();
     // 紙帶上的點（隨小車移動）：第 k 點在 s = 打點針 + (x − x_k)
     const tp = state.tape;
     if (!tp || !tp.printed) return;
     c.fillStyle = colors.ink;
     const r = Math.max(0.9, Math.min(1.6, 0.0022 * k));
+    c.beginPath();
     for (let i = 0; i < tp.printed; i++) {
       const s = S_TICK + (x - tp.trueX[i]);
       if (s > sR - 0.002 || s < -0.93) continue;
-      c.beginPath(); c.arc(s * k, hT, r, 0, Math.PI * 2); c.fill();
+      c.moveTo(s * k + r, hT); c.arc(s * k, hT, r, 0, Math.PI * 2);
     }
+    c.fill();
   }
 
   function drawCart(c, k, sR) {
     const x0 = sR * k, x1 = (sR + CART_L) * k;
     const yB = -BODY_B * k, yT = -BODY_T * k;
     const wy = -(RAIL_H + WHEEL_R) * k, wr = WHEEL_R * k;
-    // 接觸陰影
-    const sh = c.createRadialGradient((x0 + x1) / 2, -RAIL_H * k, 2, (x0 + x1) / 2, -RAIL_H * k, (x1 - x0) * 0.6);
-    sh.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.4 : 0.22) + ')');
-    sh.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = sh;
-    c.beginPath(); c.ellipse((x0 + x1) / 2, -RAIL_H * k, (x1 - x0) * 0.6, Math.max(2, 0.006 * k), 0, 0, Math.PI * 2); c.fill();
-    // 車身
+    const wheels = [sR + 0.032, sR + CART_L - 0.032];
+    const dk = colors.dark;
+    // 接觸陰影：車身下方一片柔和的影子、每個輪子與軌道接觸處一小片
+    LD.contactShadow(c, (x0 + x1) / 2, -RAIL_H * k, (x1 - x0) * 0.52, 0.3);
+    wheels.forEach(function (s) { LD.contactShadow(c, s * k, -RAIL_H * k, wr * 0.95, 0); });
+    // 車身：上亮下暗的立體方塊（LabDraw.block：頂邊高光、底邊暗線、輕微投影）
     const body = colors['b-mech'];
-    const g = c.createLinearGradient(0, yT, 0, yB);
-    g.addColorStop(0, shade(body, 0.28));
-    g.addColorStop(0.5, body);
-    g.addColorStop(1, shade(body, -0.22));
-    c.fillStyle = g;
-    roundRect(c, x0, yT, x1 - x0, yB - yT, Math.max(3, 0.008 * k));
-    c.fill();
-    c.strokeStyle = alpha(shade(body, 0.6), 0.9);
+    LD.block(c, x0, yT, x1 - x0, yB - yT, body, { r: Math.max(3, 0.008 * k) });
+    // 側面刻出來的凹槽（上暗下亮）與兩端的螺絲
+    const ym = Math.round((yT + yB) / 2) + 0.5;
     c.lineWidth = 1;
-    c.beginPath(); c.moveTo(x0 + 4, yT + 0.5); c.lineTo(x1 - 4, yT + 0.5); c.stroke();
-    c.strokeStyle = alpha(shade(body, -0.45), 0.8);
-    c.beginPath(); c.moveTo(x0 + 3, yB - 0.5); c.lineTo(x1 - 3, yB - 0.5); c.stroke();
-    // 側面的凹槽線
-    c.strokeStyle = alpha(shade(body, -0.35), 0.5);
-    c.beginPath(); c.moveTo(x0 + 0.012 * k, (yT + yB) / 2); c.lineTo(x1 - 0.012 * k, (yT + yB) / 2); c.stroke();
+    c.lineCap = 'round';
+    c.strokeStyle = alpha(shade(body, -0.45), 0.55);
+    c.beginPath(); c.moveTo(x0 + 0.014 * k, ym); c.lineTo(x1 - 0.014 * k, ym); c.stroke();
+    c.strokeStyle = alpha(shade(body, 0.55), dk ? 0.35 : 0.5);
+    c.beginPath(); c.moveTo(x0 + 0.014 * k, ym + 1); c.lineTo(x1 - 0.014 * k, ym + 1); c.stroke();
+    if (k * 0.0025 >= 1) {
+      [x0 + 0.0075 * k, x1 - 0.0075 * k].forEach(function (bx) {
+        LD.ball(c, bx, ym, Math.max(1.2, 0.0024 * k), colors.steel, { shadow: false, glow: 0 });
+      });
+    }
     // 前方掛鉤、尾端紙帶夾
     c.strokeStyle = colors.metalLo;
     c.lineWidth = Math.max(1.5, 0.003 * k);
     c.beginPath(); c.arc(x1 + 0.005 * k, -HOOK_H * k, Math.max(2, 0.004 * k), -Math.PI * 0.6, Math.PI * 0.6); c.stroke();
-    c.fillStyle = colors.metal;
-    roundRect(c, x0 - 0.006 * k, -(TAPE_H + 0.006) * k, 0.008 * k, 0.012 * k, 1.5);
-    c.fill();
+    LD.block(c, x0 - 0.006 * k, -(TAPE_H + 0.006) * k, 0.008 * k, 0.012 * k, colors.steel, { r: 1.5, shadow: false });
     // 車上的鐵條砝碼（每條 0.25 kg，兩欄往上疊，最後一條依比例變薄）
     const load = Math.max(0, state.M - M_CART0);
     const nFull = Math.floor(load / BAR_KG + 1e-9), rem = load - nFull * BAR_KG;
@@ -578,31 +650,27 @@
       const hh = Math.max(1.5, BAR_H * k * fr);
       const yy = tops[col] - hh;
       tops[col] = yy;
-      const gb = c.createLinearGradient(0, yy, 0, yy + hh);
-      gb.addColorStop(0, colors.metalHi);
-      gb.addColorStop(1, colors.metalLo);
-      c.fillStyle = gb;
-      roundRect(c, bxl, yy, colW, hh, Math.min(2, hh / 2));
-      c.fill();
-      c.strokeStyle = alpha(colors.metalLo, 0.8);
-      c.lineWidth = 0.8;
-      c.stroke();
+      LD.block(c, bxl, yy, colW, hh, colors.steel, { r: Math.min(2, hh / 2), shadow: false, stroke: alpha(colors.metalLo, 0.85) });
     });
-    // 車輪（隨位移轉動）
+    // 車輪（隨位移轉動）：橡膠輪胎、金屬輪框、三支輻條、左上的高光弧
     const ang = state.x / WHEEL_R;
-    [sR + 0.032, sR + CART_L - 0.032].forEach(function (s) {
+    wheels.forEach(function (s) {
       const cx = s * k;
-      const wg = c.createRadialGradient(cx - wr * 0.3, wy - wr * 0.3, wr * 0.1, cx, wy, wr);
-      wg.addColorStop(0, shade(colors.rubber, 0.35));
-      wg.addColorStop(1, colors.rubber);
+      const wg = c.createRadialGradient(cx - wr * 0.3, wy - wr * 0.35, wr * 0.1, cx, wy, wr);
+      wg.addColorStop(0, shade(colors.rubber, 0.38));
+      wg.addColorStop(0.72, colors.rubber);
+      wg.addColorStop(1, shade(colors.rubber, -0.35));
       c.fillStyle = wg;
       c.beginPath(); c.arc(cx, wy, wr, 0, Math.PI * 2); c.fill();
-      const hg = c.createRadialGradient(cx - wr * 0.15, wy - wr * 0.15, 0, cx, wy, wr * 0.55);
-      hg.addColorStop(0, colors.metalHi);
+      const hg = c.createRadialGradient(cx - wr * 0.18, wy - wr * 0.2, 0, cx, wy, wr * 0.56);
+      hg.addColorStop(0, shade(colors.metalHi, 0.35));
+      hg.addColorStop(0.6, colors.metalHi);
       hg.addColorStop(1, colors.metal);
       c.fillStyle = hg;
-      c.beginPath(); c.arc(cx, wy, wr * 0.55, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(cx, wy, wr * 0.56, 0, Math.PI * 2); c.fill();
       c.strokeStyle = alpha(colors.metalLo, 0.9);
+      c.lineWidth = Math.max(0.8, wr * 0.08);
+      c.stroke();
       c.lineWidth = Math.max(1, wr * 0.12);
       c.beginPath();
       for (let i = 0; i < 3; i++) {
@@ -610,6 +678,11 @@
         c.moveTo(cx, wy); c.lineTo(cx + Math.cos(a) * wr * 0.5, wy + Math.sin(a) * wr * 0.5);
       }
       c.stroke();
+      c.fillStyle = colors.metalLo;
+      c.beginPath(); c.arc(cx, wy, Math.max(1, wr * 0.13), 0, Math.PI * 2); c.fill();
+      c.strokeStyle = alpha('#ffffff', dk ? 0.14 : 0.3);
+      c.lineWidth = Math.max(0.8, wr * 0.1);
+      c.beginPath(); c.arc(cx, wy, wr * 0.82, Math.PI * 1.08, Math.PI * 1.45); c.stroke();
     });
     // 光電閘用的遮光片（車頭的細桿上，前緣與車頭對齊）
     if (state.show.gates) {
@@ -617,12 +690,7 @@
       c.strokeStyle = colors.metalLo;
       c.lineWidth = Math.max(1.5, 0.003 * k);
       c.beginPath(); c.moveTo(fx1 - 0.006 * k, yT); c.lineTo(fx1 - 0.006 * k, fy0); c.stroke();
-      const gf = c.createLinearGradient(0, fy1, 0, fy0);
-      gf.addColorStop(0, shade(colors.rubber, 0.3));
-      gf.addColorStop(1, colors.rubber);
-      c.fillStyle = gf;
-      roundRect(c, fx0, fy1, fx1 - fx0, fy0 - fy1, 1.5);
-      c.fill();
+      LD.block(c, fx0, fy1, fx1 - fx0, fy0 - fy1, colors.rubber, { r: 1.5, shadow: false });
     }
   }
 
@@ -636,67 +704,55 @@
       const h0 = -0.098 * k, h1 = -0.138 * k, hw = 0.014 * k;
       if (!front) {
         // 支桿（夾在軌道側面）與後臂
-        const rg = c.createLinearGradient(s + hw - 3, 0, s + hw + 3, 0);
+        const rg = c.createLinearGradient(s + hw * 0.6 - 2, 0, s + hw * 0.6 + 2, 0);
         rg.addColorStop(0, colors.metalHi);
         rg.addColorStop(1, colors.metalLo);
         c.strokeStyle = rg;
         c.lineWidth = Math.max(2, 0.004 * k);
+        c.lineCap = 'round';
         c.beginPath(); c.moveTo(s + hw * 0.6, -RAIL_H * k * 0.5); c.lineTo(s + hw * 0.6, h1); c.stroke();
-        c.fillStyle = shade(colors.dev, -0.1);
-        roundRect(c, s - hw, h1, 2 * hw, h0 - h1, 3);
-        c.fill();
-        // 標號
-        c.font = '700 ' + (A.narrow ? 8 : 10) + 'px system-ui, sans-serif';
-        c.textAlign = 'center';
-        c.textBaseline = 'bottom';
-        c.fillStyle = colors.muted;
-        c.fillText(String(i + 1), s, h1 - 3);
-        return;
+        LD.block(c, s - hw, h1, 2 * hw, h0 - h1, shade(colors.dev, -0.12), { r: 3, shadow: false });
+        return; // 標號在 drawLabels 最後畫（避開小車質量標籤）
       }
       // 前臂：半透明，看得到後面的遮光片
       const g = c.createLinearGradient(0, h1, 0, h0);
       g.addColorStop(0, alpha(shade(colors.dev, 0.35), 0.62));
-      g.addColorStop(1, alpha(shade(colors.dev, 0.05), 0.62));
+      g.addColorStop(1, alpha(shade(colors.dev, 0.02), 0.62));
       c.fillStyle = g;
       roundRect(c, s - hw, h1, 2 * hw, h0 - h1, 3);
       c.fill();
-      c.strokeStyle = alpha(shade(colors.dev, 0.6), 0.7);
+      c.strokeStyle = alpha(shade(colors.dev, -0.3), 0.5);
       c.lineWidth = 1;
-      c.beginPath(); c.moveTo(s - hw + 3, h1 + 0.5); c.lineTo(s + hw - 3, h1 + 0.5); c.stroke();
+      roundRect(c, s - hw + 0.5, h1 + 0.5, 2 * hw - 1, h0 - h1 - 1, 3);
+      c.stroke();
+      c.strokeStyle = alpha(shade(colors.dev, 0.7), 0.7);
+      c.beginPath(); c.moveTo(s - hw + 3, h1 + 1.5); c.lineTo(s + hw - 3, h1 + 1.5); c.stroke();
       // 光束（虛線）
       const yb = -0.116 * k;
-      c.strokeStyle = alpha(blocked ? colors.pos : colors.probe, 0.85);
+      c.strokeStyle = alpha(blocked ? colors.pos : colors.probe, 0.9);
       c.lineWidth = 1.2;
       c.setLineDash([2, 2]);
       c.beginPath(); c.moveTo(s - hw + 2, yb); c.lineTo(s + hw - 2, yb); c.stroke();
       c.setLineDash([]);
-      // 指示燈：被遮住時變紅
+      // 指示燈：被遮住時變紅、亮起光暈
       const lc = blocked ? colors.pos : colors.probe, lr = Math.max(1.8, 0.0035 * k);
-      const lx = s, ly = h1 + 0.007 * k;
-      if (blocked && !reducedMotion) {
-        const halo = c.createRadialGradient(lx, ly, 0, lx, ly, lr * 3.5);
-        halo.addColorStop(0, alpha(lc, 0.7));
-        halo.addColorStop(1, alpha(lc, 0));
-        c.fillStyle = halo;
-        c.beginPath(); c.arc(lx, ly, lr * 3.5, 0, Math.PI * 2); c.fill();
-      }
-      c.fillStyle = lc;
-      c.beginPath(); c.arc(lx, ly, lr, 0, Math.PI * 2); c.fill();
+      LD.ball(c, s, h1 + 0.007 * k, lr, lc, { shadow: false, glow: blocked && !reducedMotion ? 0.75 : 0 });
     });
     c.restore();
   }
 
   function drawPulleyString(c, k, x) {
-    const th = state.thDeg * DEG;
+    const th = state.thDeg * DEG, dk = colors.dark;
     const pc = pulleyCenter(), px = X(pc[0]), py = Y(pc[1]), R = PULLEY_R * k;
     // 繩子
     if (state.attached) {
       const hook = L2P(S_REAR0 + x + CART_L + 0.009, HOOK_H);
       const tan = L2P(PULLEY_S, HOOK_H);
       const yHook = Y(pc[1] - HANG0 - x);
-      c.strokeStyle = shade(colors.muted, colors.dark ? 0.25 : -0.25);
+      c.strokeStyle = colors.string;
       c.lineWidth = Math.max(1.2, 0.0025 * k);
       c.lineCap = 'round';
+      c.lineJoin = 'round';
       c.beginPath();
       c.moveTo(hook[0], hook[1]);
       c.lineTo(tan[0], tan[1]);
@@ -705,32 +761,39 @@
       c.stroke();
       drawHanger(c, k, px + R, yHook);
     }
-    // 滑輪（隨繩子轉動）
-    const g = c.createRadialGradient(px - R * 0.35, py - R * 0.35, R * 0.1, px, py, R);
-    g.addColorStop(0, colors.metalHi);
-    g.addColorStop(0.6, colors.metal);
+    // 滑輪（隨繩子轉動）：投影、金屬漸層、輪溝、四支輻條、輪軸
+    const disc = function (g) { g.beginPath(); g.arc(px, py, R, 0, Math.PI * 2); };
+    softDrop(c, disc, dk ? 0.35 : 0.13, 1, 1.6);
+    const g = c.createRadialGradient(px - R * 0.35, py - R * 0.38, R * 0.08, px, py, R);
+    g.addColorStop(0, shade(colors.metalHi, 0.4));
+    g.addColorStop(0.35, colors.metalHi);
+    g.addColorStop(0.8, colors.metal);
     g.addColorStop(1, colors.metalLo);
     c.fillStyle = g;
-    c.beginPath(); c.arc(px, py, R, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = alpha(colors.metalLo, 0.9);
+    disc(c); c.fill();
+    c.strokeStyle = alpha(colors.metalLo, 0.95);
     c.lineWidth = Math.max(1, R * 0.12);
     c.beginPath(); c.arc(px, py, R * 0.82, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = alpha(shade(colors.metalHi, 0.5), dk ? 0.3 : 0.6);
+    c.lineWidth = 1;
+    c.beginPath(); c.arc(px, py, R * 0.82 + Math.max(1, R * 0.12) * 0.5 + 0.5, Math.PI * 1.05, Math.PI * 1.55); c.stroke();
     const ang = x / PULLEY_R;
+    c.strokeStyle = alpha(colors.metalLo, 0.9);
     c.lineWidth = Math.max(1, R * 0.1);
+    c.lineCap = 'round';
     c.beginPath();
     for (let i = 0; i < 4; i++) {
       const a = ang + i * Math.PI / 2;
       c.moveTo(px + Math.cos(a) * R * 0.2, py + Math.sin(a) * R * 0.2);
-      c.lineTo(px + Math.cos(a) * R * 0.78, py + Math.sin(a) * R * 0.78);
+      c.lineTo(px + Math.cos(a) * R * 0.74, py + Math.sin(a) * R * 0.74);
     }
     c.stroke();
-    c.fillStyle = colors.metalLo;
-    c.beginPath(); c.arc(px, py, Math.max(2, R * 0.18), 0, Math.PI * 2); c.fill();
+    LD.ball(c, px, py, Math.max(2, R * 0.2), colors.steel, { shadow: false, glow: 0 });
   }
 
   /** 吊掛物：掛鉤、細桿、底盤與槽碼（依質量疊高） */
   function drawHanger(c, k, x, yTop) {
-    const hookH = 0.018 * k;
+    const hookH = 0.018 * k, dk = colors.dark;
     const stack = Math.max(0, state.m - M_HOOK) * STACK_PER_KG * k;
     const rodL = Math.max(0.05 * k, stack + 0.014 * k);
     const yBase = yTop + hookH + rodL;
@@ -750,13 +813,16 @@
     c.strokeStyle = rg;
     c.lineWidth = Math.max(2, 0.004 * k);
     c.beginPath(); c.moveTo(x, yTop + hookH); c.lineTo(x, yBase); c.stroke();
-    // 槽碼：每 10 g 一片，片太薄時改成每 50 g、100 g 一條分隔線
+    // 槽碼與底盤的投影（掛在空中，只有很淡的偏移影子）
+    const yS = yBase - stack;
+    softDrop(c, function (g) { roundRect(g, x - discW / 2 - 1, yS, discW + 2, stack + baseH, 2); }, dk ? 0.3 : 0.1, 1, 1.4);
+    // 槽碼：每 10 g 一片，片太薄時改成每 50 g、100 g 一條分隔線；橫向漸層＝圓柱的光澤
     if (stack > 0.5) {
-      const yS = yBase - stack;
       const gb = c.createLinearGradient(x - discW / 2, 0, x + discW / 2, 0);
-      gb.addColorStop(0, shade(colors.brass, -0.18));
-      gb.addColorStop(0.35, shade(colors.brass, 0.3));
-      gb.addColorStop(1, shade(colors.brass, -0.3));
+      gb.addColorStop(0, shade(colors.brass, -0.22));
+      gb.addColorStop(0.28, shade(colors.brass, 0.38));
+      gb.addColorStop(0.45, shade(colors.brass, 0.12));
+      gb.addColorStop(1, shade(colors.brass, -0.38));
       c.fillStyle = gb;
       roundRect(c, x - discW / 2, yS, discW, stack, Math.min(2, stack / 2));
       c.fill();
@@ -769,75 +835,107 @@
         c.moveTo(x - discW / 2 + 1, yy); c.lineTo(x + discW / 2 - 1, yy);
       }
       c.stroke();
+      // 每片的上緣細高光
+      c.strokeStyle = alpha(shade(colors.brass, 0.7), dk ? 0.25 : 0.45);
+      c.beginPath();
+      for (let q = per; q < state.m - M_HOOK - 1e-9; q += per) {
+        const yy = Math.round(yBase - q * STACK_PER_KG * k) + 1.5;
+        c.moveTo(x - discW / 2 + 2, yy); c.lineTo(x + discW / 2 - 2, yy);
+      }
+      c.stroke();
       // 中間的缺口（槽）
       c.fillStyle = alpha(shade(colors.brass, -0.55), 0.5);
       c.fillRect(x - 1, yS, 2, stack);
+      roundRect(c, x - discW / 2 + 0.5, yS + 0.5, discW - 1, stack - 1, Math.min(2, stack / 2));
+      c.strokeStyle = alpha(shade(colors.brass, -0.45), 0.45);
+      c.stroke();
     }
     // 底盤
-    const bgd = c.createLinearGradient(0, yBase, 0, yBase + baseH);
-    bgd.addColorStop(0, colors.metalHi);
-    bgd.addColorStop(1, colors.metalLo);
-    c.fillStyle = bgd;
-    roundRect(c, x - discW / 2 - 1, yBase, discW + 2, baseH, baseH / 2);
-    c.fill();
+    LD.block(c, x - discW / 2 - 1, yBase, discW + 2, baseH, colors.steel, { r: baseH / 2, shadow: false });
     A.hangerBox = { x: x, y0: yTop, y1: yBase + baseH };
   }
 
   function drawLabels(c, k, x) {
-    const small = A.narrow ? 10 : 12;
-    const f = '600 ' + small + 'px system-ui, sans-serif';
-    const fb = '700 ' + small + 'px system-ui, sans-serif';
+    const small = A.narrow ? 11 : 12;
+    const f = '600 ' + small + 'px ' + FF;
+    const fb = '700 ' + small + 'px ' + FF;
     const used = []; // 角落標籤的位置，小車標籤要避開
+    const ph = pillH(c, 'θ 0', f);
     // 左上角：傾角與慢動作
-    let yy = 14;
+    let yy = 5 + ph / 2;
     c.textAlign = 'left';
     if (state.thDeg > 0.001) {
       used.push(pill(c, 'θ = ' + num(state.thDeg, 2) + '°' + T('（墊高 ', ' (raised ') + num(NS.heightFromAngle(state.thDeg * DEG, 1) * 100, 1) + T(' cm）', ' cm)'),
-        10, yy, colors.text, f, 0.8));
-      yy += A.narrow ? 20 : 24;
+        10, yy, colors.text, f));
+      yy += ph + 4;
     }
-    if (state.slow) used.push(pill(c, T('慢動作 0.25×', 'Slow motion 0.25×'), 10, yy, colors.accent, f, 0.8));
+    if (state.slow) used.push(pill(c, T('慢動作 0.25×', 'Slow motion 0.25×'), 10, yy, colors.accent, f));
     // 右上角：時間與速度
     if (state.run && state.phase !== 'ready') {
       const v = NS.vAt(state.run, state.t);
       c.textAlign = 'right';
-      used.push(pill(c, 't = ' + num(state.t, 3) + ' s', A.w - 8, 14, colors.text, f, 0.8));
-      used.push(pill(c, 'v = ' + num(v, 3) + ' m/s', A.w - 8, A.narrow ? 34 : 38, colors.text, f, 0.8));
+      used.push(pill(c, 't = ' + num(state.t, 3) + ' s', A.w - 10, 5 + ph / 2, colors.text, f));
+      used.push(pill(c, 'v = ' + num(v, 3) + ' m/s', A.w - 10, 9 + ph * 1.5, colors.text, f));
     }
-    // 小車質量（跟著小車走；碰到角落標籤時往旁邊讓開）
+    // 寬畫面：打點計時器的名稱（先畫，小車標籤要避開它）
+    if (!A.narrow) {
+      const tk = L2P(-0.96, 0.08);
+      c.textAlign = 'left';
+      used.push(pill(c, T('打點計時器', 'Ticker timer'), tk[0] - 0.035 * k, tk[1] - 8, colors.muted, f));
+    }
+    // 小車質量（跟著小車走；碰到角落標籤時往旁邊讓開，不可跑出畫面）
     const rows = Math.ceil(Math.max(0, state.M - M_CART0 - 0.004) / BAR_KG / 2);
     const top = L2P(S_REAR0 + x + CART_L / 2, BODY_T + 0.012 + rows * BAR_H + (state.show.gates ? 0.07 : 0));
     const mt = 'M = ' + num(state.M, 3) + ' kg';
-    const w = textW(c, mt, fb) + 10, h = 18;
-    let cx = top[0];
-    const cy = top[1] - 4;
-    used.forEach(function (r) {
-      if (cy + h / 2 < r.y || cy - h / 2 > r.y + r.h) return;
-      if (cx + w / 2 + 3 > r.x && cx - w / 2 - 3 < r.x + r.w) {
-        cx = (r.x + r.w / 2 > cx) ? r.x - w / 2 - 4 : r.x + r.w + w / 2 + 4;
-      }
-    });
+    const w = textW(c, mt, fb) + 12, h = pillH(c, mt, fb);
+    let cy = Math.max(h / 2 + 2, top[1] - 4);
+    const hit = function (q) {
+      return used.some(function (r) { return cy + h / 2 > r.y - 2 && cy - h / 2 < r.y + r.h + 2 && q + w / 2 + 3 > r.x && q - w / 2 - 3 < r.x + r.w; });
+    };
+    const inside = function (q) { return q - w / 2 >= 2 && q + w / 2 <= A.w - 2; };
+    let cx = Math.max(w / 2 + 2, Math.min(A.w - w / 2 - 2, top[0]));
+    if (hit(cx)) {
+      const cands = [];
+      used.forEach(function (r) { cands.push(r.x + r.w + w / 2 + 5, r.x - w / 2 - 5); });
+      cands.sort(function (a, b) { return Math.abs(a - top[0]) - Math.abs(b - top[0]); });
+      const ok = cands.find(function (q) { return inside(q) && !hit(q); });
+      if (ok !== undefined) cx = ok;
+    }
+    // 真的放不下（窄畫面＋大字＋角落標籤很多）：受力圖打開時省略（小車受力圖的副標已寫 M）；
+    // 受力圖關閉時桌面下方是空的，改放在小車正下方的桌子底下。都不蓋住其他文字。
+    let skipM = false;
+    if (hit(cx)) {
+      if (state.show.fbd) skipM = true;
+      else { cy = Y(0) + 0.03 * k + h / 2 + 6; cx = Math.max(w / 2 + 2, Math.min(A.w - w / 2 - 2, top[0])); }
+    }
     c.textAlign = 'center';
-    pill(c, mt, cx, cy, colors['b-mech'], fb, 0.8);
+    const mBox = skipM ? null : pill(c, mt, cx, cy, colors['b-mech'], fb);
+    // 光電閘標號（閘的正上方）：被小車質量標籤擋住時暫時不畫，不讓文字疊在一起
+    if (state.show.gates) {
+      const gf = '700 11px ' + FF, gh = pillH(c, '2', gf) - 3;
+      GATE_X.forEach(function (gx, i) {
+        const p = L2P(S_REAR0 + CART_L + gx, 0.138 + 3 / k);
+        const gb = { x: p[0] - 7, y: p[1] - gh - 1, w: 14, h: gh + 2 };
+        if (mBox && overlaps(gb, mBox)) return;
+        LD.haloText(c, String(i + 1), p[0], p[1], colors.muted, 'center', 'bottom', gf);
+      });
+    }
     // 吊掛物質量（受力圖關閉時才標在畫面上；打開時寫在受力圖標題）
     if (state.attached && A.hangerBox && !state.show.fbd) {
       c.textAlign = 'right';
       pill(c, 'm = ' + num(state.m, 3) + ' kg', A.hangerBox.x - 0.03 * k, (A.hangerBox.y0 + A.hangerBox.y1) / 2,
-        shade(colors.equi, colors.dark ? 0.15 : -0.15), fb, 0.8);
+        shade(colors.equi, colors.dark ? 0.15 : -0.15), fb);
     }
     // 打點計時器：機身上印頻率；寬畫面在上方加名稱
     if (!A.narrow) {
       c.save();
       railFrame(c);
-      c.font = '700 9px system-ui, sans-serif';
+      c.font = '700 9px ' + FF;
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.fillStyle = alpha(colors['canvas-bg'], 0.9);
+      c.fillStyle = colors.dark ? alpha(colors.text, 0.9) : alpha(colors['canvas-bg'], 0.95);
       c.fillText(state.freq + ' Hz', -0.96 * k + 0.012 * k, -0.05 * k);
       c.restore();
-      const tk = L2P(-0.96, 0.08);
-      c.textAlign = 'left';
-      pill(c, T('打點計時器', 'Ticker timer'), tk[0] - 0.035 * k, tk[1] - 8, colors.muted, f, 0.75);
     }
   }
 
@@ -847,10 +945,18 @@
     state.fx.forEach(function (e) {
       const u = (now - e.t0) / e.dur;
       if (e.type === 'hit') {
+        // 撞上擋板：短暫閃光＋兩圈向外淡出的波紋
         const p = L2P(S_END, 0.04);
-        c.strokeStyle = alpha(colors['b-mech'], 0.6 * (1 - u));
-        c.lineWidth = 2;
-        c.beginPath(); c.arc(p[0], p[1], 6 + 26 * u, 0, Math.PI * 2); c.stroke();
+        if (u < 0.45) {
+          const fr = 4 + 16 * u, fa = 0.55 * (1 - u / 0.45);
+          const fg = c.createRadialGradient(p[0], p[1], 0, p[0], p[1], fr);
+          fg.addColorStop(0, alpha(shade(colors['b-mech'], 0.5), fa));
+          fg.addColorStop(1, alpha(colors['b-mech'], 0));
+          c.fillStyle = fg;
+          c.beginPath(); c.arc(p[0], p[1], fr, 0, Math.PI * 2); c.fill();
+        }
+        LD.ripple(c, p[0], p[1], 9, u, colors['b-mech']);
+        LD.ripple(c, p[0], p[1], 5, Math.min(1, u * 1.5), colors['b-mech']);
       } else if (e.type === 'push') {
         const p = L2P(S_REAR0 - 0.01, 0.045);
         c.globalAlpha = 1 - u;
@@ -881,54 +987,122 @@
   }
 
   /** 字型大小自動縮小到放得下 maxW */
-  function fitFont(c, text, weight, size, maxW) {
+  function fitFont(c, text, weight, size, maxW, minSize) {
     let fsz = size;
-    c.font = weight + ' ' + fsz + 'px system-ui, sans-serif';
-    while (fsz > 8 && c.measureText(text).width > maxW) { fsz -= 0.5; c.font = weight + ' ' + fsz + 'px system-ui, sans-serif'; }
+    const lo = minSize || 8;
+    c.font = weight + ' ' + fsz + 'px ' + FF;
+    while (fsz - 0.5 >= lo && c.measureText(text).width > maxW) { fsz -= 0.5; c.font = weight + ' ' + fsz + 'px ' + FF; }
     return c.font;
   }
-  function panel(c, R, title, sub) {
-    c.fillStyle = alpha(colors.surface, colors.dark ? 0.9 : 0.93);
-    roundRect(c, R.x, R.y, R.w, R.h, 10);
-    c.fill();
-    c.strokeStyle = alpha(colors.text, 0.1);
-    c.lineWidth = 1;
-    roundRect(c, R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1, 10);
-    c.stroke();
-    const fs = A.narrow ? 11 : 13;
+  /**
+   * 受力圖面板的標題與副標（面板本身的卡片畫在靜態圖層）。titles：[完整標題, 放不下時的短標題]；
+   * 副標 = sub（質量）＋ status（運動狀態），放不下時先省略狀態。傳回標題區的底緣（y）。
+   */
+  function panel(c, R, titles, sub, status) {
+    const fs = A.narrow ? 11 : 13, fss = 11, room = R.w - 18;
     c.textAlign = 'left';
     c.textBaseline = 'top';
-    fitFont(c, title, '700', fs, R.w - 16);
+    let title = titles[0];
+    if (textW(c, title, '700 ' + fs + 'px ' + FF) > room && titles[1]) title = titles[1];
+    fitFont(c, title, '700', fs, room);
+    // 行高 ≈ 1.2 em（fontBoundingBox 約 1.33 em）
+    const th = 0.9 * LD.textHeight(c.measureText(title), fs * 1.33);
+    const y0 = R.y + 6;
     c.fillStyle = colors.text;
-    c.fillText(title, R.x + 9, R.y + 7);
+    c.fillText(title, R.x + 9, y0);
+    let bottom = y0 + th;
     if (sub) {
-      fitFont(c, sub, '600', fs - 2, R.w - 16);
+      let line = status ? sub + T('，', ', ') + status : sub;
+      if (status && textW(c, line, '600 ' + fss + 'px ' + FF) > room) line = sub;
+      fitFont(c, line, '600', fss, room);
       c.fillStyle = colors.muted;
-      c.fillText(sub, R.x + 9, R.y + 9 + fs + 2);
+      c.fillText(line, R.x + 9, bottom);
+      bottom += 0.9 * LD.textHeight(c.measureText(line), fss * 1.33);
     }
+    return bottom + 1;
   }
 
-  /** 箭頭旁的標籤：放在箭頭尖端外側；放不下時改放在尖端上方（alt = −1）或下方（alt = 1） */
-  function forceLabel(c, text, x, y, ux, uy, color, font, R, alt) {
+  /** 多行標籤的總高度（第一行完整行高，之後每行略緊） */
+  function linesH(lh, n) { return lh + lh * 0.86 * (n - 1) + 3; }
+  /**
+   * 多行圓角底框標籤（與 LabDraw.pill 同款）。align：left（x 為文字左緣）／right（文字右緣）／center；y 為垂直中心。
+   * pad：左右內距（預設 6，與 LabDraw.pill 相同；空間很緊時可用 4）。
+   */
+  function pillLines(c, lines, x, y, color, font, align, pad) {
+    pad = pad == null ? 6 : pad;
     c.font = font;
-    const w = c.measureText(text).width + 10, h = 16;
-    let lx = x + ux * 10, ly = y + uy * 10;
-    let al = Math.abs(ux) > 0.5 ? (ux > 0 ? 'left' : 'right') : 'center';
-    if (Math.abs(ux) <= 0.5) ly += uy * 2;
-    const dy = (alt || -1) * 13;
-    if (al === 'left' && lx + w > R.x + R.w - 4) { al = 'right'; lx = Math.min(x + 4, R.x + R.w - 6); ly = y + dy; }
-    if (al === 'right' && lx - w < R.x + 4) { al = 'left'; lx = Math.max(x - 4, R.x + 6); ly = y + dy; }
-    if (al === 'center') lx = Math.max(R.x + w / 2 + 4, Math.min(R.x + R.w - w / 2 - 4, lx));
-    ly = Math.max(R.y + h / 2 + 2, Math.min(R.y + R.h - h / 2 - 2, ly));
-    c.textAlign = al;
-    pill(c, text, lx, ly, color, font, 0.82);
+    const lh = LD.textHeight(c.measureText(lines[0]), 15);
+    let tw = 0;
+    lines.forEach(function (l) { tw = Math.max(tw, c.measureText(l).width); });
+    const pw = tw + 2 * pad, ph = linesH(lh, lines.length);
+    const bx = align === 'center' ? x - pw / 2 : align === 'right' ? x + 6 - pw : x - 6;
+    const by = y - ph / 2;
+    roundRect(c, bx, by, pw, ph, Math.min(ph / 2, 8));
+    c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.86 : 0.9);
+    c.fill();
+    c.strokeStyle = alpha(color, colors.dark ? 0.45 : 0.35);
+    c.lineWidth = 1;
+    c.stroke();
+    c.fillStyle = color;
+    c.textBaseline = 'middle';
+    c.textAlign = align === 'center' ? 'center' : align;
+    const tx = align === 'center' ? bx + pw / 2 : align === 'right' ? bx + pw - pad : bx + pad;
+    lines.forEach(function (l, i) { c.fillText(l, tx, by + 1.5 + lh * 0.5 + lh * 0.86 * i + 0.5); });
+    return { x: bx, y: by, w: pw, h: ph };
+  }
+  function overlaps(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
+
+  /**
+   * 箭頭旁的標籤，依序嘗試幾個位置，取第一個在面板內、又不碰到 avoid（比例尺、其他標籤、箭頭）的位置：
+   *  水平的箭頭：尖端外側 → 尖端內側的上方或下方（alt = −1 先試上方、1 先試下方）
+   *  垂直的箭頭：尖端外側（置中）→ 尖端旁的右側或左側（pref = 'left' 先試左側）
+   * top：標題區底緣（標籤不可蓋到標題）。dry 為 true 時只傳回會放的位置、不畫。
+   */
+  function forceLabel(c, text, x, y, ux, uy, color, font, R, alt, top, avoid, pref, dry) {
+    c.font = font;
+    const w = c.measureText(text).width + 12, h = pillH(c, text, font);
+    top = top || R.y + 2;
+    avoid = avoid || [];
+    const clampY = function (v) { return Math.max(top + h / 2, Math.min(R.y + R.h - h / 2 - 2, v)); };
+    const boxOf = function (q) {
+      const bx = q.a === 'center' ? q.x - w / 2 : q.a === 'right' ? q.x + 6 - w : q.x - 6;
+      return { x: bx, y: q.y - h / 2, w: w, h: h };
+    };
+    const inPanel = function (b) { return b.x >= R.x + 1.5 && b.x + b.w <= R.x + R.w - 1.5; }; // 留 0.5 px 容差（浮點誤差）
+    const hits = function (b) { return avoid.some(function (r) { return r && overlaps(b, r); }); };
+    const cands = [];
+    if (Math.abs(ux) > 0.5) {
+      cands.push({ a: ux > 0 ? 'left' : 'right', x: x + ux * 10, y: clampY(y + uy * 10) });
+      const inward = ux > 0 ? 'right' : 'left';
+      const xi = ux > 0 ? Math.min(x + 4, R.x + R.w - 6) : Math.max(x - 4, R.x + 6);
+      const d = (alt || -1) * (h / 2 + 5);
+      cands.push({ a: inward, x: xi, y: clampY(y + d) });
+      cands.push({ a: inward, x: xi, y: clampY(y - d) });
+    } else {
+      const ly = clampY(y + uy * (h / 2 + 2));
+      const coversTip = uy < 0 ? ly + h / 2 > y + 3 : ly - h / 2 < y - 3;
+      if (!coversTip) cands.push({ a: 'center', x: Math.max(R.x + w / 2 + 4, Math.min(R.x + R.w - w / 2 - 4, x)), y: ly });
+      // 尖端旁：往上的箭頭放在尖端下方一點，往下的放在尖端上方一點
+      const yy = uy < 0 ? clampY(y + h / 2 - 2) : clampY(y - h / 2 + 2);
+      const sides = [{ a: 'left', x: Math.min(x + 12, R.x + R.w - w + 4), y: yy }, { a: 'right', x: Math.max(x - 12, R.x + w - 4), y: yy }];
+      if (pref === 'left') sides.reverse();
+      cands.push(sides[0], sides[1]);
+    }
+    // 放在箭頭旁的標籤不可橫跨箭身（會蓋住箭頭尖端）
+    const crosses = function (q, b) { return q.a !== 'center' && Math.abs(ux) <= 0.5 && b.x < x && b.x + b.w > x; };
+    const clean = cands.find(function (q) { const b = boxOf(q); return inPanel(b) && !hits(b) && !crosses(q, b); });
+    const pick = clean || cands.find(function (q) { return inPanel(boxOf(q)); }) || cands[cands.length > 1 ? 1 : 0];
+    if (dry) { const bb = boxOf(pick); bb.q = pick; bb.clean = !!clean; return bb; }
+    c.textAlign = pick.a;
+    return pill(c, text, pick.x, pick.y, color, font);
   }
 
   function drawFBD(c) {
     const fb = fbdForces();
     const RC = A.fbdC, RH = A.fbdH;
-    const fs = A.narrow ? 10 : 12;
-    const font = '600 ' + fs + 'px system-ui, sans-serif';
+    const fs = A.narrow ? 11 : 12;
+    const font = '600 ' + fs + 'px ' + FF;
+    const fontS = '600 11px ' + FF;
     const lw = A.narrow ? 2.2 : 2.8;
     const unit = ' N';
     const st = {
@@ -937,11 +1111,17 @@
       push: T('推出後運動中', 'moving'),
       rest: T('停下後靜止', 'at rest')
     }[fb.mode];
-    panel(c, RC, T('小車受力圖', 'Forces on the cart'), 'M = ' + num(state.M, 3) + ' kg' + T('，', ', ') + st);
-    panel(c, RH, T('吊掛物受力圖', 'Forces on the hanger'), fb.attached ? 'm = ' + num(state.m, 3) + ' kg' + T('，', ', ') + st : '');
+    const hbC = panel(c, RC, [T('小車受力圖', 'Forces on the cart'), T('小車受力圖', 'Cart forces')], 'M = ' + num(state.M, 3) + ' kg', st);
+    const hbH = panel(c, RH, [T('吊掛物受力圖', 'Forces on the hanger'), T('吊掛物受力圖', 'Hanger forces')], fb.attached ? 'm = ' + num(state.m, 3) + ' kg' : '', st);
 
     // 比例：小的力（T、f、Mg sinθ、合力、吊掛物的 mg）共用一個比例，讓它們看得清楚
-    const hdr = A.narrow ? 38 : 48, foot = 22;
+    // 標題區高度與原本相同；字體放大時才加高，箭頭不會蓋到標題
+    // 底部比例尺區：字體放大時跟著加高，Mg 的標籤才不會壓到比例尺（字體 ×1 時與原本相同）
+    const ks = 1 + (((window.LabSettings && LabSettings.get('fs')) || 1) - 1) * 0.7;
+    // 字體放大時標題區也加高：被截斷的 N 箭頭尖端上方只留 16 px，要放得下 N 的標籤（字體 ×1 時與原本相同）
+    const hLab = ks > 1 ? pillH(c, 'N', font) - 13 : 0;
+    const hdr = Math.max(A.narrow ? 38 : 48, Math.ceil(hbC - RC.y + hLab), Math.ceil(hbH - RH.y + hLab));
+    const foot = ks > 1 ? Math.ceil(22 * ks + 2) : 22;
     const cxC = RC.x + RC.w / 2, topC = RC.y + hdr, botC = RC.y + RC.h - foot;
     const cyC = (topC + botC) / 2;
     const halfW = RC.w / 2 - 14, halfV = (botC - topC) / 2 - 16;
@@ -958,147 +1138,266 @@
     const lenOf = function (F) { return myst ? (F > 1e-9 ? nominal : 0) : F * kF; };
     const vtxt = function (F) { return myst ? '' : ' = ' + sig(F, 3) + unit; };
 
+    // 比例尺／示意說明（左下角，半透明底框）：先算好位置，力的標籤要避開
+    const footY = RC.y + RC.h - 10;
+    let footRect, sv = 0, sl = 0, footText;
+    if (myst) {
+      footText = T('示意圖（未依比例）：μ 未知', 'Not to scale: μ unknown');
+      const f2 = fitFont(c, footText, '600', 11, RC.w - 24);
+      const bh = pillH(c, footText, f2);
+      footRect = { x: RC.x + 6, y: footY - bh / 2, w: textW(c, footText, f2) + 12, h: bh, font: f2 };
+    } else {
+      const cands = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
+      sv = cands[0];
+      cands.forEach(function (q) { if (q * kF <= Math.min(60, RC.w * 0.3)) sv = q; });
+      sl = sv * kF;
+      footText = num(sv, sv < 0.1 ? 2 : sv < 1 ? 1 : 0) + ' N';
+      const bh = pillH(c, footText, fontS);
+      footRect = { x: RC.x + 5, y: footY - bh / 2, w: sl + textW(c, footText, fontS) + 24, h: bh, font: fontS };
+    }
+
     const th = fb.th, ux = Math.cos(th), uy = Math.sin(th); // 沿軌道朝滑輪（畫布座標）
     const nx = Math.sin(th), ny = -Math.cos(th);             // 垂直軌道向上
-    // 小車：示意方塊（隨軌道傾斜）
+    // 小車：示意方塊（隨軌道傾斜）、接觸面（細線＋斜線）
+    const bw = A.narrow ? 28 : 46, bh = A.narrow ? 14 : 24;
     c.save();
     c.translate(cxC, cyC);
     c.rotate(th);
-    const bw = A.narrow ? 28 : 46, bh = A.narrow ? 14 : 24;
-    const gb = c.createLinearGradient(0, -bh / 2, 0, bh / 2);
-    gb.addColorStop(0, alpha(colors['b-mech'], 0.35));
-    gb.addColorStop(1, alpha(colors['b-mech'], 0.18));
-    c.fillStyle = gb;
-    roundRect(c, -bw / 2, -bh / 2, bw, bh, 4);
-    c.fill();
-    c.strokeStyle = alpha(colors['b-mech'], 0.6);
+    c.lineCap = 'round';
+    c.strokeStyle = alpha(colors.muted, 0.6);
     c.lineWidth = 1;
-    c.stroke();
-    // 軌道面
-    c.strokeStyle = alpha(colors.muted, 0.5);
     c.beginPath(); c.moveTo(-bw, bh / 2 + 0.5); c.lineTo(bw, bh / 2 + 0.5); c.stroke();
+    c.strokeStyle = alpha(colors.muted, 0.28);
+    c.beginPath();
+    for (let xh = -bw + 5; xh <= bw; xh += 5) { c.moveTo(xh, bh / 2 + 1.5); c.lineTo(xh - 4, bh / 2 + 5.5); }
+    c.stroke();
+    c.globalAlpha = colors.dark ? 0.6 : 0.5;
+    LD.block(c, -bw / 2, -bh / 2, bw, bh, colors['b-mech'], { r: 4, shadow: false });
+    c.globalAlpha = 1;
     c.restore();
-    // 大的力（Mg、N）：太長就截短並標「≈」
+
+    // ---- 箭頭（先畫全部箭頭，標籤最後畫在上面）----
+    const bigs = [];
     const big = function (F, dx, dy, color, label) {
       const full = F * kF, maxL = halfV;
       const brk = full > maxL;
       const len = Math.min(full, maxL);
-      arrow(c, cxC, cyC, dx, dy, len, lw, color, brk);
-      forceLabel(c, label + ' = ' + sig(F, 3) + unit + (brk ? ' ≈' : ''), cxC + dx * len, cyC + dy * len, dx, dy, color, font, RC);
+      arrow(c, cxC, cyC, dx, dy, len, lw, color, brk, false, colors.panel);
+      bigs.push({ text: label + ' = ' + sig(F, 3) + unit + (brk ? ' ≈' : ''), x: cxC + dx * len, y: cyC + dy * len, dx: dx, dy: dy, color: color });
     };
     big(fb.N, nx, ny, colors.neg, 'N');
     big(fb.Mg, 0, 1, colors.pos, 'Mg');
-    // 沿軌道的力。寬畫面：標籤放在箭頭尖端外側；窄畫面：標籤上下錯開排在中心兩側，避免互相重疊
-    const stacked = A.narrow;
-    const side = function (text, x, y, al, color, weight) {
-      const room = al === 'left' ? RC.x + RC.w - 4 - x : x - RC.x - 4;
-      const f2 = fitFont(c, text, weight || '600', fs, room - 10);
-      c.textAlign = al;
-      pill(c, text, al === 'left' ? x + 5 : x - 5, y, color, f2, 0.82);
-    };
-    if (fb.T > 1e-9) {
-      const l = lenOf(fb.T);
-      arrow(c, cxC, cyC, ux, uy, l, lw, colors.accent);
-      if (stacked) side('T' + vtxt(fb.T), cxC + 4, cyC - 13, 'left', colors.accent);
-      else forceLabel(c, 'T' + vtxt(fb.T), cxC + ux * l, cyC + uy * l, ux, uy, colors.accent, font, RC, -1);
-    }
-    if (fb.f > 1e-9) {
-      const l = lenOf(fb.f);
-      arrow(c, cxC, cyC, -ux, -uy, l, lw, colors.equi);
-      const lab = (fb.mode === 'static' || fb.mode === 'rest' ? T('f（靜）', 'f (static)') : 'f') + (myst ? ' = ?' : vtxt(fb.f));
-      if (stacked) side(lab, cxC - 4, cyC + 13, 'right', colors.equi);
-      else forceLabel(c, lab, cxC - ux * l, cyC - uy * l, -ux, -uy, colors.equi, font, RC, 1);
-    }
-    if (fb.Wpar > 1e-9) {
-      const l = fb.Wpar * kF, off = A.narrow ? 7 : 9;
-      const ox = -nx * off, oy = -ny * off;
-      arrow(c, cxC + ox, cyC + oy, ux, uy, Math.min(l, halfW), lw * 0.75, alpha(colors.pos, 0.8), l > halfW, true);
-      const wt = 'Mg sinθ' + (myst ? '' : ' = ' + sig(fb.Wpar, 2) + unit);
-      if (stacked) side(wt, cxC + 4, cyC + 24, 'left', alpha(colors.pos, 0.95));
-      else if (l > 14) {
-        c.textAlign = 'left';
-        pill(c, wt, cxC + ox + ux * Math.min(l, halfW) * 0.5 - 6, cyC + oy + uy * Math.min(l, halfW) * 0.5 + 12, alpha(colors.pos, 0.95), '600 ' + (fs - 1) + 'px system-ui, sans-serif', 0.75);
-      }
-    }
+    const lT = fb.T > 1e-9 ? lenOf(fb.T) : 0, lf = fb.f > 1e-9 ? lenOf(fb.f) : 0;
+    if (lT) arrow(c, cxC, cyC, ux, uy, lT, lw, colors.accent);
+    if (lf) arrow(c, cxC, cyC, -ux, -uy, lf, lw, colors.equi);
+    const offW = A.narrow ? 7 : 9;
+    const lWp = fb.Wpar > 1e-9 ? fb.Wpar * kF : 0;
+    const oxW = -nx * offW, oyW = -ny * offW;
+    if (lWp) arrow(c, cxC + oxW, cyC + oyW, ux, uy, Math.min(lWp, halfW), lw * 0.75, alpha(colors.pos, 0.85), lWp > halfW, true, colors.panel);
     // 合力（虛線）：畫在方塊上方，平行軌道
-    const offN = (A.narrow ? 27 : 24);
+    const offN = 24;
     const nxp = cxC + nx * offN, nyp = cyC + ny * offN;
-    if (Math.abs(fb.net) > 1e-9) {
-      const l = myst ? nominal * 0.7 : Math.abs(fb.net) * kF, sgn = fb.net > 0 ? 1 : -1;
-      arrow(c, nxp, nyp, ux * sgn, uy * sgn, l, lw * 0.8, colors['b-mech'], false, true);
-      // 標籤：放得下就放在箭頭尖端外側，否則放在箭頭上方
-      const nt = T('合力 Ma', 'net Ma') + vtxt(Math.abs(fb.net)), nw = textW(c, nt, font) + 10;
-      const tipX = nxp + ux * sgn * l, tipY = nyp + uy * sgn * l;
-      if (stacked) side(nt, nxp + (sgn > 0 ? 0 : 0), nyp - 13, sgn > 0 ? 'left' : 'right', colors['b-mech']);
-      else if (sgn > 0 && tipX + 8 + nw <= RC.x + RC.w - 4) { c.textAlign = 'left'; pill(c, nt, tipX + 8, tipY - 1, colors['b-mech'], font, 0.82); }
-      else if (sgn < 0 && tipX - 8 - nw >= RC.x + 4) { c.textAlign = 'right'; pill(c, nt, tipX - 8, tipY - 1, colors['b-mech'], font, 0.82); }
-      else {
-        c.textAlign = 'left';
-        const lx = Math.max(RC.x + 6, Math.min(RC.x + RC.w - nw - 2, Math.min(nxp, tipX) + 5));
-        pill(c, nt, lx, Math.min(nyp, tipY) - 13, colors['b-mech'], font, 0.82);
+    const sgn = fb.net > 0 ? 1 : -1;
+    const lN = Math.abs(fb.net) > 1e-9 ? (myst ? nominal * 0.7 : Math.abs(fb.net) * kF) : 0;
+    if (lN) arrow(c, nxp, nyp, ux * sgn, uy * sgn, lN, lw * 0.8, colors['b-mech'], false, true);
+    // 受力點（方塊中心）
+    LD.ball(c, cxC, cyC, lw * 1.1, colors.text, { shadow: false, glow: 0 });
+
+    // ---- 標籤 ----
+    const placed = [footRect];
+    const fText = lf ? (fb.mode === 'static' || fb.mode === 'rest' ? T('f（靜）', 'f (static)') : 'f') + (myst ? ' = ?' : vtxt(fb.f)) : '';
+    const wText = lWp ? 'Mg sinθ' + (myst ? '' : ' = ' + sig(fb.Wpar, 2) + unit) : '';
+    if (A.narrow) {
+      // 窄畫面：沿軌道的力的標籤排在中心線左右兩側，由軸往外堆疊、互不重疊；放不下就拆成兩行（名稱／= 數值）。
+      // N、Mg 的標籤先找好位置；沿軌道的標籤碰到它們時，先看 N／Mg 的標籤能不能換到別處（不碰任何標籤），不行就換下一個備案。
+      const lanes = { R: { up: cyC - 3, dn: cyC + 3 }, L: { up: cyC - 3, dn: cyC + 3 } };
+      const bigPref = function (b) { return lN && sgn > 0 && b.dy < 0 ? 'left' : 'right'; };
+      const dryBig = function (i, avoid) {
+        const b = bigs[i];
+        return forceLabel(c, b.text, b.x, b.y, b.dx, b.dy, null, font, RC, -1, hbC, avoid, bigPref(b), true);
+      };
+      const bigB = [dryBig(0, [footRect]), null];
+      bigB[1] = dryBig(1, [footRect, bigB[0]]);
+      const bigsMove = function (box) {
+        for (let i = 0; i < 2; i++) {
+          if (!overlaps(box, bigB[i])) continue;
+          const t = dryBig(i, [footRect, bigB[1 - i], box].concat(placed));
+          if (!t.clean) return false;
+          bigB[i] = t;
+        }
+        return true;
+      };
+      const stackLabel = function (text, sideR, dir, pref, limit, color, force, at) {
+        const lane = lanes[sideR ? 'R' : 'L'];
+        const x = sideR ? cxC + 3 : cxC - 3;
+        const room = (sideR ? RC.x + RC.w - 2 - x : x - RC.x - 2) - 12;
+        // 一行 → 一行（內距縮小）→ 兩行（名稱／= 數值）→ 兩行（內距縮小）→ 兩行並縮小字體（實際字級不小於 11 px）
+        let lines = [text], f2 = font, pad = 6;
+        const tw = textW(c, text, font), minF = 11 / ks;
+        const cut = text.indexOf(' = ');
+        const two = cut > 0 ? [text.slice(0, cut), text.slice(cut + 1)] : null;
+        const tw2 = two ? Math.max(textW(c, two[0], font), textW(c, two[1], font)) : Infinity;
+        if (tw <= room) { /* 一行 */ }
+        else if (tw <= room + 4) pad = 4;
+        else if (two && tw2 <= room) lines = two;
+        else if (two && tw2 <= room + 4) { lines = two; pad = 4; }
+        else if (two) { lines = two; pad = 4; f2 = fitFont(c, textW(c, two[0], font) > textW(c, two[1], font) ? two[0] : two[1], '600', fs, room + 4, minF); }
+        else f2 = fitFont(c, text, '600', fs, room, minF);
+        c.font = f2;
+        const h = linesH(LD.textHeight(c.measureText(lines[0]), 15), lines.length);
+        let cy;
+        if (at != null) cy = at(h); // 指定位置（備案）
+        else if (dir < 0) cy = Math.min(pref, Math.min(lane.up, limit == null ? Infinity : limit) - h / 2);
+        else cy = Math.max(pref, Math.max(lane.dn, limit == null ? -Infinity : limit) + h / 2);
+        c.font = f2;
+        const pw = Math.max.apply(null, lines.map(function (l) { return c.measureText(l).width; })) + 2 * pad;
+        const box = { x: sideR ? x : x - pw, y: cy - h / 2, w: pw, h: h };
+        if (!force) {
+          if (box.y < hbC || box.y + box.h > RC.y + RC.h - 2) return false;
+          if ([footRect].concat(placed).some(function (r) { return overlaps(box, r); })) return false;
+          if (!bigsMove(box)) return false;
+        }
+        if (dir < 0) lane.up = Math.min(lane.up, box.y - 3); else lane.dn = Math.max(lane.dn, box.y + h + 3);
+        const xx = sideR ? x + 6 : x - 6, al = sideR ? 'left' : 'right';
+        placed.push(pillLines(c, lines, xx, cy, color, f2, al, pad));
+        return true;
+      };
+      const atNyp = function () { return nyp; };
+      const aboveN = function (h) { return bigB[0].y - 2 - h / 2; };
+      const belowMg = function (h) { return bigB[1].y + bigB[1].h + 2 + h / 2; };
+      // 合力：窄畫面省略「合力」兩字（虛線箭頭在圖例中已說明）。依序試：緊貼在合力箭頭上方 →
+      // 箭頭起點另一側、與箭頭同高 → N 標籤的上方
+      if (lN) {
+        const mt = 'Ma' + vtxt(Math.abs(fb.net)), mc = colors['b-mech'];
+        stackLabel(mt, sgn > 0, -1, Infinity, nyp - 3, mc) ||
+          stackLabel(mt, sgn < 0, -1, Infinity, null, mc, false, atNyp) ||
+          stackLabel(mt, sgn > 0, -1, Infinity, null, mc, false, aboveN) ||
+          stackLabel(mt, sgn < 0, -1, Infinity, null, mc, false, aboveN) ||
+          stackLabel(mt, sgn > 0, -1, Infinity, nyp - 3, mc, true);
+      } else {
+        const zt = T('合力 = 0', 'net force = 0'), mc = colors['b-mech'];
+        stackLabel(zt, true, -1, nyp - 6, null, mc) || stackLabel(zt, false, -1, nyp - 6, null, mc) ||
+          stackLabel(zt, true, -1, nyp - 6, null, mc, true);
       }
-    } else if (stacked) {
-      side(T('合力 = 0', 'net force = 0'), nxp, nyp - 6, 'left', colors['b-mech']);
+      // T：放在 T 箭頭下方（上方是合力箭頭與它的標籤）；軌道傾斜時也要在 Mg sinθ 的虛線箭頭下方
+      const dnR = lWp ? cyC + offW + 4 + Math.max(0, uy * Math.min(lWp, halfW)) : cyC + 3 + Math.max(0, uy * lT);
+      if (lT) stackLabel('T' + vtxt(fb.T), true, 1, -Infinity, dnR, colors.accent) || stackLabel('T' + vtxt(fb.T), true, 1, -Infinity, dnR, colors.accent, true);
+      if (lf) stackLabel(fText, false, 1, cyC + 13, null, colors.equi) || stackLabel(fText, false, 1, cyC + 13, null, colors.equi, true);
+      if (lWp) {
+        stackLabel(wText, true, 1, cyC + 24, cyC + offW + 4, colors.pos) ||
+          stackLabel(wText, false, 1, cyC + 24, cyC + offW + 4, colors.pos) ||
+          stackLabel(wText, true, 1, cyC + 24, null, colors.pos, false, belowMg) ||
+          stackLabel(wText, false, 1, cyC + 24, null, colors.pos, false, belowMg) ||
+          stackLabel(wText, true, 1, cyC + 24, cyC + offW + 4, colors.pos, true);
+      }
+      // N、Mg 的標籤：畫在上面找好的位置
+      bigs.forEach(function (b, i) { c.textAlign = bigB[i].q.a; pill(c, b.text, bigB[i].q.x, bigB[i].q.y, b.color, font); });
     } else {
-      c.textAlign = 'left';
-      pill(c, T('合力 = 0', 'net force = 0'), cxC + bw / 2 + 8, nyp - 4, colors['b-mech'], font, 0.82);
+      // 寬畫面：標籤放在箭頭尖端外側；放不下時改放在尖端內側的上方或下方，並避開其他標籤與合力箭頭
+      if (lN) {
+        // 合力：放得下就放在箭頭尖端外側，否則放在箭頭上方
+        const nt = T('合力 Ma', 'net Ma') + vtxt(Math.abs(fb.net)), nw = textW(c, nt, font) + 12;
+        const tipX = nxp + ux * sgn * lN, tipY = nyp + uy * sgn * lN;
+        placed.push({ x: Math.min(nxp, tipX) - 2, y: Math.min(nyp, tipY) - 4, w: Math.abs(tipX - nxp) + 4, h: Math.abs(tipY - nyp) + 8 });
+        if (sgn > 0 && tipX + 8 + nw <= RC.x + RC.w - 4) { c.textAlign = 'left'; placed.push(pill(c, nt, tipX + 10, tipY - 1, colors['b-mech'], font)); }
+        else if (sgn < 0 && tipX - 8 - nw >= RC.x + 4) { c.textAlign = 'right'; placed.push(pill(c, nt, tipX - 10, tipY - 1, colors['b-mech'], font)); }
+        else {
+          c.textAlign = 'left';
+          const lx = Math.max(RC.x + 12, Math.min(RC.x + RC.w - nw, Math.min(nxp, tipX) + 11));
+          placed.push(pill(c, nt, lx, Math.min(nyp, tipY) - 14, colors['b-mech'], font));
+        }
+      } else {
+        c.textAlign = 'left';
+        placed.push(pill(c, T('合力 = 0', 'net force = 0'), cxC + bw / 2 + 10, nyp - 4, colors['b-mech'], font));
+      }
+      if (lWp && lWp > 14) {
+        c.textAlign = 'left';
+        placed.push(pill(c, wText, cxC + oxW + ux * Math.min(lWp, halfW) * 0.5 - 6, cyC + oyW + uy * Math.min(lWp, halfW) * 0.5 + 13, colors.pos, fontS));
+      }
+      if (lT) placed.push(forceLabel(c, 'T' + vtxt(fb.T), cxC + ux * lT, cyC + uy * lT, ux, uy, colors.accent, font, RC, -1, hbC, placed));
+      if (lf) placed.push(forceLabel(c, fText, cxC - ux * lf, cyC - uy * lf, -ux, -uy, colors.equi, font, RC, 1, hbC, placed));
+    }
+    // N、Mg 的標籤（寬畫面）：放在尖端外側；被標題、比例尺或其他標籤擋住時改放在尖端旁（先試合力標籤的另一側）
+    if (!A.narrow) {
+      bigs.forEach(function (b) {
+        forceLabel(c, b.text, b.x, b.y, b.dx, b.dy, b.color, font, RC, -1, hbC, placed, lN && sgn > 0 && b.dy < 0 ? 'left' : 'right');
+      });
     }
     // 比例尺／示意說明
+    roundRect(c, footRect.x, footRect.y, footRect.w, footRect.h, footRect.h / 2);
+    c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.8 : 0.88);
+    c.fill();
+    c.strokeStyle = alpha(colors.muted, 0.3);
+    c.lineWidth = 1;
+    c.stroke();
     c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    c.fillStyle = colors.muted;
     if (myst) {
-      pill(c, T('示意圖（未依比例）：μ 未知', 'Not to scale: μ unknown'), RC.x + 8, RC.y + RC.h - 11, colors.muted, '600 ' + (fs - 1) + 'px system-ui, sans-serif', 0.7);
+      c.font = footRect.font;
+      c.fillText(footText, footRect.x + 6, footY + 0.5);
     } else {
-      const cands = [0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10];
-      let sv = cands[0];
-      cands.forEach(function (q) { if (q * kF <= Math.min(60, RC.w * 0.3)) sv = q; });
-      const sl = sv * kF, y = RC.y + RC.h - 11;
+      const x0 = footRect.x + 7;
       c.strokeStyle = colors.muted;
       c.lineWidth = 1.5;
+      c.lineCap = 'round';
       c.beginPath();
-      c.moveTo(RC.x + 10, y - 3); c.lineTo(RC.x + 10, y + 3);
-      c.moveTo(RC.x + 10, y); c.lineTo(RC.x + 10 + sl, y);
-      c.moveTo(RC.x + 10 + sl, y - 3); c.lineTo(RC.x + 10 + sl, y + 3);
+      c.moveTo(x0, footY - 3); c.lineTo(x0, footY + 3);
+      c.moveTo(x0, footY); c.lineTo(x0 + sl, footY);
+      c.moveTo(x0 + sl, footY - 3); c.lineTo(x0 + sl, footY + 3);
       c.stroke();
-      c.font = '600 ' + (fs - 1) + 'px system-ui, sans-serif';
-      c.fillStyle = colors.muted;
-      c.textBaseline = 'middle';
-      c.fillText(num(sv, sv < 0.1 ? 2 : sv < 1 ? 1 : 0) + ' N', RC.x + 16 + sl, y);
+      c.font = fontS;
+      c.fillText(footText, x0 + sl + 6, footY + 0.5);
     }
 
     // 吊掛物
     if (!fb.attached) {
       c.textAlign = 'center';
       c.textBaseline = 'middle';
-      c.font = '600 ' + fs + 'px system-ui, sans-serif';
+      c.font = '600 ' + fs + 'px ' + FF;
       c.fillStyle = colors.muted;
       c.fillText(T('已取下', 'removed'), RH.x + RH.w / 2, RH.y + RH.h / 2);
       return;
     }
     const hw = A.narrow ? 14 : 18, hh = A.narrow ? 20 : 26;
-    const gh = c.createLinearGradient(cxH - hw / 2, 0, cxH + hw / 2, 0);
-    gh.addColorStop(0, alpha(colors.equi, 0.25));
-    gh.addColorStop(0.4, alpha(colors.equi, 0.45));
-    gh.addColorStop(1, alpha(colors.equi, 0.2));
-    c.fillStyle = gh;
-    roundRect(c, cxH - hw / 2, cyH - hh / 2, hw, hh, 3);
-    c.fill();
-    c.strokeStyle = alpha(colors.equi, 0.7);
-    c.lineWidth = 1;
-    c.stroke();
-    const lT = lenOf(fb.T), lW = myst ? nominal * 1.1 : fb.mg * kF;
-    arrow(c, cxH, cyH, 0, -1, lT, lw, colors.accent);
-    forceLabel(c, 'T' + vtxt(fb.T), cxH, cyH - lT, 0, -1, colors.accent, font, RH);
+    c.globalAlpha = colors.dark ? 0.65 : 0.55;
+    LD.block(c, cxH - hw / 2, cyH - hh / 2, hw, hh, colors.brass, { r: 3, shadow: false });
+    c.globalAlpha = 1;
+    const lTH = lenOf(fb.T), lW = myst ? nominal * 1.1 : fb.mg * kF;
+    arrow(c, cxH, cyH, 0, -1, lTH, lw, colors.accent);
     arrow(c, cxH, cyH, 0, 1, lW, lw, colors.pos);
-    forceLabel(c, 'mg' + (myst ? '' : ' = ' + sig(fb.mg, 3) + unit), cxH, cyH + lW, 0, 1, colors.pos, font, RH);
-    if (fb.netH > 1e-9) {
-      const l = myst ? nominal * 0.4 : fb.netH * kF, ox = cxH + hw / 2 + 12;
-      arrow(c, ox, cyH, 0, 1, l, lw * 0.8, colors['b-mech'], false, true);
-      const mf = '600 ' + (fs - 1) + 'px system-ui, sans-serif';
+    const lNH = fb.netH > 1e-9 ? (myst ? nominal * 0.4 : fb.netH * kF) : 0, oxH = cxH + hw / 2 + 12;
+    if (lNH) arrow(c, oxH, cyH, 0, 1, lNH, lw * 0.8, colors['b-mech'], false, true);
+    LD.ball(c, cxH, cyH, lw * 1.1, colors.text, { shadow: false, glow: 0 });
+    const placedH = [];
+    const tTxt = 'T' + vtxt(fb.T), mgTxt = 'mg' + (myst ? '' : ' = ' + sig(fb.mg, 3) + unit);
+    if (lNH) {
+      // 合力標籤：放在虛線箭頭尖端下方；會碰到 mg 的標籤時（合力很大、箭頭很長），改放在箭頭起點上方
       const mt = (A.narrow ? 'ma' : T('合力 ma', 'net ma')) + vtxt(fb.netH);
-      const mw = textW(c, mt, mf) + 10;
-      c.textAlign = 'left';
-      pill(c, mt, Math.max(cxH + 6, Math.min(ox - 4, RH.x + RH.w - mw - 2)), cyH + l + 14, colors['b-mech'], mf, 0.82);
+      const mw = textW(c, mt, fontS) + 12;
+      const room = RH.x + RH.w - 2 - (cxH + 6);
+      const cut = mt.indexOf(' = ');
+      const lines = mw <= room || cut < 0 ? [mt] : [mt.slice(0, cut), mt.slice(cut + 1)];
+      c.font = fontS;
+      let lwid = 0;
+      lines.forEach(function (l) { lwid = Math.max(lwid, c.measureText(l).width + 12); });
+      const lh = lines.length > 1 ? linesH(LD.textHeight(c.measureText(lines[0]), 15), lines.length) : pillH(c, mt, fontS);
+      const lx = lines.length > 1 ? cxH + 12 : Math.max(cxH + 12, Math.min(oxH + 2, RH.x + RH.w - mw + 4));
+      let ly = cyH + lNH + 15 + (lines.length > 1 ? 7 : 0);
+      const mgB = forceLabel(c, mgTxt, cxH, cyH + lW, 0, 1, null, font, RH, 1, hbH, [], null, true);
+      const tB = forceLabel(c, tTxt, cxH, cyH - lTH, 0, -1, null, font, RH, -1, hbH, [], null, true);
+      const boxAt = function (y) { return { x: lx - 6, y: y - lh / 2, w: lwid, h: lh }; };
+      if (overlaps(boxAt(ly), mgB) || ly + lh / 2 > RH.y + RH.h - 2) {
+        // 備案一：箭頭起點上方；備案二：蓋在虛線箭頭中段（箭頭夠長，起點與尖端仍看得到）
+        const alt = cyH - 3 - lh / 2, mid = cyH + lNH / 2;
+        if (!overlaps(boxAt(alt), tB)) ly = alt;
+        else if (lNH > lh + 16 && !overlaps(boxAt(mid), mgB) && !overlaps(boxAt(mid), tB)) ly = mid;
+      }
+      if (lines.length > 1) placedH.push(pillLines(c, lines, lx, ly, colors['b-mech'], fontS, 'left'));
+      else { c.textAlign = 'left'; placedH.push(pill(c, mt, lx, ly, colors['b-mech'], fontS)); }
     }
+    forceLabel(c, tTxt, cxH, cyH - lTH, 0, -1, colors.accent, font, RH, -1, hbH, placedH);
+    forceLabel(c, mgTxt, cxH, cyH + lW, 0, 1, colors.pos, font, RH, 1, hbH, placedH);
   }
 
   // ======================= 紙帶與 v–t 圖 =======================
@@ -1125,57 +1424,83 @@
     return { dots: dots, st: st, freq: tp.freq, N: state.N, done: tp.done };
   }
 
+  /** 置中的提示文字（半透明圓角底框，可換行） */
+  function noteBox(c, text, cx, cy, maxW, color, font) {
+    c.font = font;
+    const lines = wrapLines(c, text, maxW - 24);
+    const lh = LD.textHeight(c.measureText(lines[0] || ''), 15);
+    let tw = 0;
+    lines.forEach(function (l) { tw = Math.max(tw, c.measureText(l).width); });
+    const pw = tw + 28, ph = lh * lines.length + 14;
+    roundRect(c, cx - pw / 2, cy - ph / 2, pw, ph, 10);
+    c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.82 : 0.88);
+    c.fill();
+    c.strokeStyle = alpha(colors.muted, 0.28);
+    c.lineWidth = 1;
+    c.setLineDash([4, 3]);
+    c.stroke();
+    c.setLineDash([]);
+    c.fillStyle = color;
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    lines.forEach(function (l, i) { c.fillText(l, cx, cy + (i - (lines.length - 1) / 2) * lh + 0.5); });
+  }
+
   function drawTape() {
     if (!TL) return;
-    const c = tctx, W = TL.w, H = TL.h;
+    const c = tctx, W = TL.w, H = TL.h, dk = colors.dark;
     c.setTransform(TL.dpr, 0, 0, TL.dpr, 0, 0);
     c.clearRect(0, 0, W, H);
-    const base = colors['canvas-bg'];
-    const bgg = c.createLinearGradient(0, 0, 0, H);
-    bgg.addColorStop(0, base);
-    bgg.addColorStop(1, shade(base, colors.dark ? -0.25 : -0.04));
-    c.fillStyle = bgg;
-    roundRect(c, 0, 0, W, H, 8);
-    c.fill();
+    LD.backdrop(c, W, H);
 
     const an = analysis();
-    const fs = TL.narrow ? 10 : 11;
-    const font = '600 ' + fs + 'px system-ui, sans-serif';
+    const fs = 11;
+    const font = '600 ' + fs + 'px ' + FF;
+    const fontT = '600 11px ' + FF; // 刻度數字
     // ---- 上方：紙帶 ----
     const m0 = 14, tapeY = 42, tapeH = TL.narrow ? 22 : 26;
     const kx = (W - 2 * m0 - 16) / D;
     const X0 = m0 + 8;
-    // 紙帶本體（稍微有陰影的紙）
+    // 紙帶本體：紙的漸層、柔和投影、上緣高光、兩端撕開的鋸齒
+    const tapePath = function (g) {
+      g.beginPath();
+      g.moveTo(m0, tapeY);
+      g.lineTo(W - m0, tapeY);
+      for (let i = 0; i <= 6; i++) g.lineTo(W - m0 + (i % 2 ? -2.5 : 0), tapeY + tapeH * i / 6);
+      g.lineTo(m0, tapeY + tapeH);
+      for (let i = 6; i >= 0; i--) g.lineTo(m0 + (i % 2 ? 2.5 : 0), tapeY + tapeH * i / 6);
+      g.closePath();
+    };
     c.save();
-    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.45 : 0.14) + ')';
-    c.shadowBlur = 5;
-    c.shadowOffsetY = 1.5;
+    c.shadowColor = dk ? 'rgba(0,0,0,0.5)' : alpha(colors.text, 0.18);
+    c.shadowBlur = 6;
+    c.shadowOffsetY = 2;
     const pg = c.createLinearGradient(0, tapeY, 0, tapeY + tapeH);
-    pg.addColorStop(0, shade(colors.paper, 0.15));
-    pg.addColorStop(1, colors.paper);
+    pg.addColorStop(0, shade(colors.paper, 0.2));
+    pg.addColorStop(0.6, colors.paper);
+    pg.addColorStop(1, shade(colors.paper, -0.05));
     c.fillStyle = pg;
-    c.fillRect(m0, tapeY, W - 2 * m0, tapeH);
+    tapePath(c);
+    c.fill();
     c.restore();
-    c.strokeStyle = alpha(colors.paperEdge, 0.8);
+    c.strokeStyle = alpha(colors.paperEdge, 0.85);
     c.lineWidth = 1;
-    c.strokeRect(m0 + 0.5, tapeY + 0.5, W - 2 * m0 - 1, tapeH - 1);
+    tapePath(c);
+    c.stroke();
+    c.fillStyle = alpha('#ffffff', dk ? 0.12 : 0.7);
+    c.fillRect(m0 + 3, tapeY + 1, W - 2 * m0 - 6, 1);
     const cy = tapeY + tapeH / 2;
     if (an) {
       const N = an.N, J = an.st.list.length;
-      // 紙條區塊交錯淡色、剪開的虛線、編號
+      // 紙條區塊交錯淡色、編號
       for (let j = 0; j < J; j++) {
         const s = an.st.list[j];
         const a = X0 + an.dots[j * N].x * kx, b = X0 + an.dots[(j + 1) * N].x * kx;
-        if (j % 2 === 0) { c.fillStyle = alpha(colors.accent, colors.dark ? 0.14 : 0.08); c.fillRect(a, tapeY + 1, b - a, tapeH - 2); }
-        if (b - a >= (TL.narrow ? 11 : 14)) {
-          c.textAlign = 'center';
-          c.textBaseline = 'bottom';
-          c.font = '700 ' + fs + 'px system-ui, sans-serif';
-          c.fillStyle = colors.accent;
-          c.fillText(String(s.j + 1), (a + b) / 2, tapeY - 3);
-        }
+        if (j % 2 === 0) { c.fillStyle = alpha(colors.accent, dk ? 0.16 : 0.09); c.fillRect(a, tapeY + 1, b - a, tapeH - 2); }
+        if (b - a >= (TL.narrow ? 12 : 14)) LD.haloText(c, String(s.j + 1), (a + b) / 2, tapeY - 4, colors.accent, 'center', 'bottom', '700 ' + fs + 'px ' + FF);
       }
-      c.strokeStyle = alpha(colors.text, 0.45);
+      // 剪開的虛線
+      c.strokeStyle = alpha(colors.text, dk ? 0.55 : 0.45);
       c.setLineDash([3, 3]);
       c.lineWidth = 1;
       c.beginPath();
@@ -1185,30 +1510,36 @@
       }
       c.stroke();
       c.setLineDash([]);
-      // 點：計數點（每 N 點）較大
+      // 點：計數點（每 N 點）較大，外加一圈極淡的墨暈
+      c.fillStyle = alpha(colors.ink, 0.18);
+      c.beginPath();
+      an.dots.forEach(function (q, i) { if (i % N === 0) { const xx = X0 + q.x * kx; c.moveTo(xx + 3.6, cy); c.arc(xx, cy, 3.6, 0, Math.PI * 2); } });
+      c.fill();
+      c.fillStyle = colors.ink;
+      c.beginPath();
       an.dots.forEach(function (q, i) {
-        const xx = X0 + q.x * kx;
-        const big = i % N === 0;
-        c.fillStyle = colors.ink;
-        c.beginPath(); c.arc(xx, cy, big ? 2.3 : 1.5, 0, Math.PI * 2); c.fill();
+        const xx = X0 + q.x * kx, r = i % N === 0 ? 2.3 : 1.5;
+        c.moveTo(xx + r, cy); c.arc(xx, cy, r, 0, Math.PI * 2);
       });
-      c.textBaseline = 'middle';
+      c.fill();
+      // 上方說明：左「第 0 點＝放開的瞬間」、右「點數與打點間隔」；放不下時改用短句，再放不下就只留左邊
       c.font = font;
-      c.fillStyle = colors.muted;
-      c.textAlign = 'left';
-      c.fillText(T('← 第 0 點＝放開的瞬間', '← dot 0 = moment of release'), m0, 12);
-      c.textAlign = 'right';
-      c.fillText(an.dots.length + T(' 點，每 1/', ' dots, one every 1/') + an.freq + T(' s 一點', ' s'), W - m0, 12);
+      const room = W - 2 * m0 - 14;
+      let tL = T('← 第 0 點＝放開的瞬間', '← dot 0 = moment of release');
+      let tR = an.dots.length + T(' 點，每 1/', ' dots, one every 1/') + an.freq + T(' s 一點', ' s');
+      if (c.measureText(tL).width + c.measureText(tR).width > room) {
+        tL = T('← 第 0 點＝放開', '← dot 0 = release');
+        tR = an.dots.length + T(' 點・每 1/', ' dots · 1/') + an.freq + ' s';
+      }
+      const showR = c.measureText(tL).width + c.measureText(tR).width <= room;
+      LD.haloText(c, tL, m0, 13, colors.muted, 'left', 'middle', font);
+      if (showR) LD.haloText(c, tR, W - m0, 13, colors.muted, 'right', 'middle', font);
     } else {
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = font;
-      c.fillStyle = colors.muted;
-      c.fillText(T('放開小車後，打點的紙帶會出現在這裡', 'The dotted tape appears here after you release the cart'), W / 2, cy);
+      noteBox(c, T('放開小車後，打點的紙帶會出現在這裡', 'The dotted tape appears here after you release the cart'), W / 2, cy, W - 2 * m0 - 10, colors.muted, font);
     }
     // 尺：每 1 cm 一格，每 5 cm 標數字
     const ry = tapeY + tapeH + 2;
-    c.strokeStyle = alpha(colors.text, 0.35);
+    c.strokeStyle = alpha(colors.text, dk ? 0.45 : 0.38);
     c.lineWidth = 1;
     c.beginPath();
     for (let i = 0; i <= D * 100; i++) {
@@ -1218,8 +1549,8 @@
       c.moveTo(xx, ry); c.lineTo(xx, ry + len);
     }
     c.stroke();
-    c.font = '600 ' + (fs - 1) + 'px system-ui, sans-serif';
-    c.fillStyle = alpha(colors.text, 0.6);
+    c.font = fontT;
+    c.fillStyle = alpha(colors.text, dk ? 0.7 : 0.62);
     c.textAlign = 'center';
     c.textBaseline = 'top';
     for (let i = 10; i < D * 100; i += 10) c.fillText(i + ' cm', X0 + i * 0.01 * kx, ry + 7);
@@ -1228,12 +1559,13 @@
     const top = tapeY + tapeH + 56, bot = H - 30;
     const left = TL.narrow ? 40 : 48, right = W - (TL.narrow ? 44 : 54);
     const P = { x: left, y: top, w: right - left, h: bot - top };
+    // 圖區底板（極淡）
+    roundRect(c, P.x - 1, P.y - 6, P.w + 2, P.h + 6, 4);
+    c.fillStyle = alpha(colors.surface, dk ? 0.28 : 0.55);
+    c.fill();
     if (!an || an.st.list.length === 0) {
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = font;
-      c.fillStyle = colors.muted;
-      c.fillText(an ? T('紙條還不夠長，等小車多跑一段……', 'Not a full strip yet…') : T('紙條會依序貼在這裡，排成 v–t 圖', 'The strips will be pasted here, side by side, to form the v–t graph'), W / 2, (top + bot) / 2);
+      noteBox(c, an ? T('紙條還不夠長，等小車多跑一段……', 'Not a full strip yet…') : T('紙條會依序貼在這裡，排成 v–t 圖', 'The strips will be pasted here, side by side, to form the v–t graph'),
+        P.x + P.w / 2, (top + bot) / 2, P.w - 10, colors.muted, font);
       return;
     }
     const st = an.st, tau = st.tau, list = st.list;
@@ -1244,61 +1576,81 @@
     const yMaxCm = niceMax(Math.max(Lmax * 100, 0.5), 4);
     const tx = function (t) { return P.x + t / tMax * P.w; };
     const ly = function (Lm) { return P.y + P.h - (Lm * 100) / yMaxCm * P.h; };
-    // 格線與座標軸
+    // 兩級格線：主格線（每個刻度）與次格線
     const yStep = niceStep(yMaxCm / 4);
-    c.strokeStyle = alpha(colors.text, 0.07);
+    const tStep = niceStep(tMax / (TL.narrow ? 4 : 6));
+    const ySub = yStep / (P.h * yStep / yMaxCm >= 40 ? 5 : 2);
+    const gridLines = function (step, a, vert) {
+      c.strokeStyle = alpha(colors.text, a);
+      c.beginPath();
+      for (let v = step; v <= yMaxCm + 1e-9; v += step) { const yy = Math.round(ly(v / 100)) + 0.5; c.moveTo(P.x, yy); c.lineTo(P.x + P.w, yy); }
+      if (vert) for (let t = vert; t <= tMax + 1e-9; t += vert) { const xx = Math.round(tx(t)) + 0.5; c.moveTo(xx, P.y); c.lineTo(xx, P.y + P.h); }
+      c.stroke();
+    };
     c.lineWidth = 1;
-    c.beginPath();
-    for (let v = yStep; v <= yMaxCm + 1e-9; v += yStep) { const yy = Math.round(ly(v / 100)) + 0.5; c.moveTo(P.x, yy); c.lineTo(P.x + P.w, yy); }
-    c.stroke();
-    // 紙條
+    gridLines(ySub, dk ? 0.05 : 0.04, 0);
+    gridLines(yStep, dk ? 0.11 : 0.1, tStep);
+    // 紙條：右下的淡影子（貼在紙上的感覺）、紙的漸層、細框、上緣高光
     const gapPx = Math.min(3, P.w / list.length * 0.08);
     list.forEach(function (s) {
       const xa = tx(s.t0) + gapPx / 2, xb = tx(s.t1) - gapPx / 2;
       const yb = ly(0), yt = ly(Math.max(0, s.L));
       const hgt = yb - yt;
+      if (hgt > 0.5) {
+        c.fillStyle = LD.shadowInk(dk ? 0.28 : 0.1);
+        c.fillRect(xa + 1.5, yt + 1.5, xb - xa, hgt - 1.5);
+      }
       const g = c.createLinearGradient(xa, 0, xb, 0);
-      g.addColorStop(0, shade(colors.paper, 0.12));
-      g.addColorStop(1, shade(colors.paper, -0.04));
+      g.addColorStop(0, shade(colors.paper, 0.16));
+      g.addColorStop(0.5, shade(colors.paper, 0.05));
+      g.addColorStop(1, shade(colors.paper, -0.06));
       c.fillStyle = g;
       c.fillRect(xa, yt, xb - xa, hgt);
       c.strokeStyle = alpha(colors.paperEdge, 0.9);
       c.strokeRect(Math.round(xa) + 0.5, Math.round(yt) + 0.5, Math.max(0, Math.round(xb - xa) - 1), Math.max(0, Math.round(hgt) - 1));
+      if (hgt > 3) { c.fillStyle = alpha('#ffffff', dk ? 0.1 : 0.55); c.fillRect(xa + 1, yt + 1, xb - xa - 2, 1); }
       // 紙條上的點（剪下後轉成直的）
       const mid = (xa + xb) / 2;
       c.fillStyle = alpha(colors.ink, 0.85);
+      c.beginPath();
       const d0 = an.dots[s.j * an.N].x;
       for (let i = s.j * an.N; i <= (s.j + 1) * an.N; i++) {
         const yy = yb - (an.dots[i].x - d0) / Math.max(s.L, 1e-12) * hgt;
-        c.beginPath(); c.arc(mid, yy, i % an.N === 0 ? 1.8 : 1.2, 0, Math.PI * 2); c.fill();
+        const r = i % an.N === 0 ? 1.8 : 1.2;
+        c.moveTo(mid + r, yy); c.arc(mid, yy, r, 0, Math.PI * 2);
       }
+      c.fill();
     });
-    // 紙條頂端中點與最佳直線
-    c.fillStyle = colors.accent;
-    list.forEach(function (s) {
-      c.beginPath(); c.arc(tx(s.t), ly(s.L), 3, 0, Math.PI * 2); c.fill();
-    });
+    // 最佳直線（虛線，底下墊一層背景色讓它在紙條上也清楚）
     if (st.fit) {
       c.save();
       c.beginPath(); c.rect(P.x, P.y - 4, P.w, P.h + 4); c.clip();
-      c.strokeStyle = colors.pos;
-      c.lineWidth = 2;
-      c.setLineDash([7, 5]);
+      c.lineCap = 'round';
       c.beginPath();
       c.moveTo(tx(0), ly((st.fit.intercept) * tau));
       c.lineTo(tx(tMax), ly((st.fit.slope * tMax + st.fit.intercept) * tau));
+      c.strokeStyle = alpha(colors['canvas-bg'], 0.7);
+      c.lineWidth = 4.5;
+      c.stroke();
+      c.strokeStyle = colors.pos;
+      c.lineWidth = 2;
+      c.setLineDash([7, 5]);
       c.stroke();
       c.setLineDash([]);
       c.restore();
     }
+    // 紙條頂端中點（立體小球）
+    const rb = TL.narrow ? 3 : 3.4;
+    list.forEach(function (s) { LD.ball(c, tx(s.t), ly(s.L), rb, colors.accent); });
     // 座標軸
-    c.strokeStyle = alpha(colors.muted, 0.8);
+    c.strokeStyle = alpha(colors.muted, 0.85);
     c.lineWidth = 1;
     c.beginPath();
     c.moveTo(P.x + 0.5, P.y - 4); c.lineTo(P.x + 0.5, P.y + P.h + 0.5); c.lineTo(P.x + P.w, P.y + P.h + 0.5);
     c.moveTo(P.x + P.w + 0.5, P.y - 4); c.lineTo(P.x + P.w + 0.5, P.y + P.h);
+    for (let t = 0; t <= tMax + 1e-9; t += tStep) { const xx = Math.round(tx(t)) + 0.5; c.moveTo(xx, P.y + P.h); c.lineTo(xx, P.y + P.h + 3.5); }
     c.stroke();
-    c.font = '600 ' + (fs - 1) + 'px system-ui, sans-serif';
+    c.font = fontT;
     c.fillStyle = colors.muted;
     c.textBaseline = 'middle';
     const dY = decOf(yStep);
@@ -1308,25 +1660,22 @@
       c.textAlign = 'left';
       c.fillText(sig(v / 100 / tau, 2), P.x + P.w + 4, ly(v / 100));
     }
-    const tStep = niceStep(tMax / (TL.narrow ? 4 : 6));
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    for (let t = 0; t <= tMax + 1e-9; t += tStep) c.fillText(num(t, decOf(tStep)), tx(t), P.y + P.h + 4);
-    c.font = '700 ' + fs + 'px system-ui, sans-serif';
-    c.textAlign = 'left';
-    c.textBaseline = 'bottom';
-    c.fillStyle = colors.text;
-    c.fillText('Δx (cm)', 4, P.y - 9);
-    c.textAlign = 'right';
-    c.fillText('v (m/s)', W - 4, P.y - 9);
-    c.textAlign = 'right';
-    c.textBaseline = 'top';
-    c.fillText('t (s)', P.x + P.w, P.y + P.h + 16);
-    // 斜率標籤
+    for (let t = 0; t <= tMax + 1e-9; t += tStep) c.fillText(num(t, decOf(tStep)), tx(t), P.y + P.h + 5);
+    const tf = '700 ' + fs + 'px ' + FF;
+    LD.haloText(c, 'Δx (cm)', 4, P.y - 9, colors.text, 'left', 'bottom', tf);
+    LD.haloText(c, 'v (m/s)', W - 4, P.y - 9, colors.text, 'right', 'bottom', tf);
+    LD.haloText(c, 't (s)', P.x + P.w, P.y + P.h + 17, colors.text, 'right', 'top', tf);
+    // 斜率標籤：放在資料比較少的那一角（加速時左上、減速時右上）
     if (st.fit) {
-      c.textAlign = 'left';
-      pill(c, T('斜率 = 加速度 a = ', 'slope = acceleration a = ') + num(st.fit.slope, 3) + ' m/s²', P.x + 8, P.y + 8, colors.pos, '700 ' + fs + 'px system-ui, sans-serif', 0.85);
-      if (!TL.narrow) pill(c, 'τ = ' + num(tau, 3) + ' s', P.x + 8, P.y + 30, colors.muted, font, 0.75);
+      const sTxt = T('斜率 = 加速度 a = ', 'slope = acceleration a = ') + num(st.fit.slope, 3) + ' m/s²';
+      const sf = '700 ' + fs + 'px ' + FF;
+      const onRight = st.fit.slope < 0;
+      c.textAlign = onRight ? 'right' : 'left';
+      const xP = onRight ? P.x + P.w - 10 : P.x + 10;
+      const b = pill(c, sTxt, xP, P.y + 10, colors.pos, sf);
+      if (!TL.narrow) { c.textAlign = onRight ? 'right' : 'left'; pill(c, 'τ = ' + num(tau, 3) + ' s', xP, b.y + b.h + 4 + b.h / 2, colors.muted, font); }
     }
   }
 
@@ -1380,20 +1729,28 @@
     });
   }
 
+  let gPulse = null, gAnim = false; // 新數據點的波紋（純裝飾）
+  function pulseGraph() {
+    if (reducedMotion) return;
+    gPulse = { t0: performance.now(), exp: state.exp };
+    if (gAnim) return;
+    gAnim = true;
+    const step = function () {
+      drawGraph();
+      if (gPulse && performance.now() - gPulse.t0 < 650) requestAnimationFrame(step);
+      else { gPulse = null; gAnim = false; drawGraph(); }
+    };
+    requestAnimationFrame(step);
+  }
+
   function drawGraph() {
     if (!GL) return;
-    const c = gctx, W = GL.w, H = GL.h, exp = state.exp;
+    const c = gctx, W = GL.w, H = GL.h, exp = state.exp, dk = colors.dark;
     c.setTransform(GL.dpr, 0, 0, GL.dpr, 0, 0);
     c.clearRect(0, 0, W, H);
-    const base = colors['canvas-bg'];
-    const rg = c.createRadialGradient(W * 0.5, H * 0.4, H * 0.1, W * 0.5, H * 0.4, Math.max(W, H) * 0.8);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.03) : base);
-    rg.addColorStop(1, shade(base, colors.dark ? -0.28 : -0.045));
-    c.fillStyle = rg;
-    roundRect(c, 0, 0, W, H, 8);
-    c.fill();
-    const fs = GL.narrow ? 10 : 11;
-    const font = '600 ' + fs + 'px system-ui, sans-serif';
+    LD.backdrop(c, W, H);
+    const fs = 11;
+    const font = '600 ' + fs + 'px ' + FF;
     const si = seriesInfo(exp);
     const P = { x: GL.narrow ? 46 : 58, y: 34, w: 0, h: 0 };
     P.w = W - P.x - 16; P.h = H - P.y - 44;
@@ -1422,109 +1779,118 @@
     if (yMin < 0) yMin = -niceMax(-yMin * 1.15, 4);
     const px = function (x) { return P.x + x / xMax * P.w; };
     const py = function (y) { return P.y + P.h - (y - yMin) / (yMax - yMin) * P.h; };
-    // 格線
+    // 圖區底板（極淡）
+    roundRect(c, P.x - 1, P.y - 1, P.w + 2, P.h + 2, 4);
+    c.fillStyle = alpha(colors.surface, dk ? 0.28 : 0.55);
+    c.fill();
+    // 兩級格線：主格線（每個刻度）透明度約 0.10，次格線（刻度的一半）約 0.04
     const xs = niceStep(xMax / (GL.narrow ? 4 : 6)), ys = niceStep((yMax - yMin) / 5);
     c.lineWidth = 1;
-    [[0.04, xs / 2, ys / 2], [0.1, xs, ys]].forEach(function (lv) {
-      c.strokeStyle = alpha(colors.text, lv[0] * (colors.dark ? 0.8 : 1));
+    [[dk ? 0.05 : 0.04, xs / 2, ys / 2], [dk ? 0.11 : 0.1, xs, ys]].forEach(function (lv) {
+      c.strokeStyle = alpha(colors.text, lv[0]);
       c.beginPath();
       for (let x = lv[1]; x <= xMax + 1e-9; x += lv[1]) { const xx = Math.round(px(x)) + 0.5; c.moveTo(xx, P.y); c.lineTo(xx, P.y + P.h); }
       for (let y = Math.ceil(yMin / lv[2]) * lv[2]; y <= yMax + 1e-9; y += lv[2]) { const yy = Math.round(py(y)) + 0.5; c.moveTo(P.x, yy); c.lineTo(P.x + P.w, yy); }
       c.stroke();
     });
-    c.strokeStyle = alpha(colors.muted, 0.85);
+    // 座標軸與刻度
+    c.strokeStyle = alpha(colors.muted, 0.9);
     c.beginPath();
-    c.moveTo(Math.round(px(0)) + 0.5, P.y); c.lineTo(Math.round(px(0)) + 0.5, P.y + P.h);
-    c.moveTo(P.x, Math.round(py(0)) + 0.5); c.lineTo(P.x + P.w, Math.round(py(0)) + 0.5);
+    const ax0 = Math.round(px(0)) + 0.5, ay0 = Math.round(py(0)) + 0.5;
+    c.moveTo(ax0, P.y); c.lineTo(ax0, P.y + P.h);
+    c.moveTo(P.x, ay0); c.lineTo(P.x + P.w, ay0);
+    for (let x = 0; x <= xMax + 1e-9; x += xs) { const xx = Math.round(px(x)) + 0.5; c.moveTo(xx, P.y + P.h); c.lineTo(xx, P.y + P.h + 3.5); }
     c.stroke();
     c.font = font;
     c.fillStyle = colors.muted;
     c.textAlign = 'center';
     c.textBaseline = 'top';
-    for (let x = 0; x <= xMax + 1e-9; x += xs) c.fillText(num(x, decOf(xs)), px(x), P.y + P.h + 4);
+    for (let x = 0; x <= xMax + 1e-9; x += xs) c.fillText(num(x, decOf(xs)), px(x), P.y + P.h + 5);
     c.textAlign = 'right';
     c.textBaseline = 'middle';
-    for (let y = Math.ceil(yMin / ys - 1e-9) * ys; y <= yMax + 1e-9; y += ys) c.fillText(num(y, decOf(ys)), P.x - 5, py(y));
+    for (let y = Math.ceil(yMin / ys - 1e-9) * ys; y <= yMax + 1e-9; y += ys) c.fillText(num(y, decOf(ys)), P.x - 6, py(y));
     // 軸標題
-    const tf = '700 ' + (fs + 1) + 'px system-ui, sans-serif';
-    c.textBaseline = 'bottom';
-    richText(c, [['a (m/s²)', 0]], 6, P.y - 10, tf, colors.text, 'left');
+    const tf = '700 ' + (fs + 1) + 'px ' + FF;
+    LD.haloText(c, 'a (m/s²)', 6, P.y - 10, colors.text, 'left', 'bottom', tf);
     c.textBaseline = 'top';
     const xt = exp === 1 ? (si.ax === 'm' ? [[T('m（吊掛物質量，kg）', 'm (hanging mass, kg)'), 0]] : [['F = mg (N)', 0]])
       : si.ax === 'invM' ? [['1/M (kg', 0], ['−1', 1], [')', 0]] : [['1/(M+m) (kg', 0], ['−1', 1], [')', 0]];
-    richText(c, xt, P.x + P.w, P.y + P.h + 20, tf, colors.text, 'right');
+    richText(c, xt, P.x + P.w, P.y + P.h + 21, tf, colors.text, 'right');
 
     if (!si.pts.length) {
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.font = font;
-      c.fillStyle = colors.muted;
       const msg = exp === 1
         ? T('實驗一：固定 M + m，用「移動 10 g 槽碼」改變拉力，每跑一次加一點', 'Experiment 1: keep M + m fixed and use “Move 10 g” to change the force; each run adds a point')
         : T('實驗二：固定 m，改變小車質量 M，每跑一次加一點', 'Experiment 2: keep m fixed and change the cart mass M; each run adds a point');
-      wrapText(c, msg, P.x + P.w / 2, P.y + P.h / 2, P.w - 30, fs + 6);
+      noteBox(c, msg, P.x + P.w / 2, P.y + P.h / 2, Math.min(P.w - 20, 420), colors.muted, font);
       return;
     }
     c.save();
     c.beginPath(); c.rect(P.x, P.y - 2, P.w + 2, P.h + 4); c.clip();
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
     // 近似曲線（虛線）
     if (ref) {
-      c.strokeStyle = alpha(colors.muted, 0.9);
-      c.lineWidth = 1.5;
-      c.setLineDash([6, 5]);
       c.beginPath();
       for (let i = 0; i <= 60; i++) { const x = xMax * i / 60, y = ref.f(x); if (i) c.lineTo(px(x), py(y)); else c.moveTo(px(x), py(y)); }
+      c.strokeStyle = alpha(colors['canvas-bg'], 0.7);
+      c.lineWidth = 4;
+      c.stroke();
+      c.strokeStyle = alpha(colors.muted, 0.95);
+      c.lineWidth = 1.6;
+      c.setLineDash([6, 5]);
       c.stroke();
       c.setLineDash([]);
     }
-    // 最佳直線
+    // 最佳直線（底下墊一層背景色）
     if (si.fit) {
       const x0 = 0, x1 = xMax;
-      c.strokeStyle = colors.accent;
-      c.lineWidth = 2.2;
-      c.lineCap = 'round';
-      c.beginPath(); c.moveTo(px(x0), py(si.fit.intercept)); c.lineTo(px(x1), py(si.fit.slope * x1 + si.fit.intercept)); c.stroke();
-    }
-    // 數據點（球狀）
-    si.pts.forEach(function (p, i) {
-      const x = px(si.xs[i]), y = py(si.ys[i]), r = GL.narrow ? 4.5 : 5.5;
-      const col = colors['b-mech'];
-      const g = c.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-      g.addColorStop(0, shade(col, 0.55));
-      g.addColorStop(1, shade(col, -0.25));
-      c.fillStyle = g;
-      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = colors['canvas-bg'];
-      c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(px(x0), py(si.fit.intercept)); c.lineTo(px(x1), py(si.fit.slope * x1 + si.fit.intercept));
+      c.strokeStyle = alpha(colors['canvas-bg'], 0.75);
+      c.lineWidth = 5.5;
       c.stroke();
+      c.strokeStyle = colors.accent;
+      c.lineWidth = 2.4;
+      c.stroke();
+    }
+    // 數據點（立體小球）；最新的一點加外圈，剛加入時有一圈波紋
+    const r = GL.narrow ? 4.8 : 5.6;
+    si.pts.forEach(function (p, i) {
+      const x = px(si.xs[i]), y = py(si.ys[i]);
+      const col = colors['b-mech'];
       if (i === state.latest[exp]) {
-        c.strokeStyle = alpha(col, 0.6);
+        c.strokeStyle = alpha(col, 0.55);
         c.lineWidth = 1.5;
-        c.beginPath(); c.arc(x, y, r + 4, 0, Math.PI * 2); c.stroke();
+        c.beginPath(); c.arc(x, y, r + 4.5, 0, Math.PI * 2); c.stroke();
+        if (gPulse && gPulse.exp === exp) LD.ripple(c, x, y, r + 3, (performance.now() - gPulse.t0) / 650, col);
       }
+      LD.ball(c, x, y, r, col);
     });
     c.restore();
     // 圖例
     c.textAlign = 'left';
-    let lx = P.x + 8;
-    const lyy = P.y + 10;
+    let lx = P.x + 10;
+    const lyy = P.y + 13;
     if (si.fit) {
       const txt = T('最佳直線', 'best fit');
-      c.strokeStyle = colors.accent; c.lineWidth = 2.2;
+      c.strokeStyle = colors.accent; c.lineWidth = 2.4; c.lineCap = 'round';
       c.beginPath(); c.moveTo(lx, lyy); c.lineTo(lx + 16, lyy); c.stroke();
-      const b = pill(c, txt, lx + 22, lyy, colors.accent, font, 0.7);
-      lx = b.x + b.w + 8;
+      c.textAlign = 'left';
+      const b = pill(c, txt, lx + 28, lyy, colors.accent, font);
+      lx = b.x + b.w + 10;
     }
     if (ref) {
-      c.strokeStyle = colors.muted; c.lineWidth = 1.5; c.setLineDash([5, 4]);
+      c.strokeStyle = colors.muted; c.lineWidth = 1.6; c.setLineDash([5, 4]);
       c.beginPath(); c.moveTo(lx, lyy); c.lineTo(lx + 16, lyy); c.stroke(); c.setLineDash([]);
-      pill(c, ref.label, lx + 22, lyy, colors.muted, font, 0.7);
+      c.textAlign = 'left';
+      pill(c, ref.label, lx + 28, lyy, colors.muted, font);
     }
   }
 
-  function wrapText(c, text, x, y, maxW, lh) {
-    const words = /[㐀-鿿]/.test(text) ? Array.from(text) : text.split(' ');
-    const sep = /[㐀-鿿]/.test(text) ? '' : ' ';
+  /** 把文字依寬度拆成多行（中文逐字、英文逐詞） */
+  function wrapLines(c, text, maxW) {
+    const cjk = /[㐀-鿿]/.test(text);
+    const words = cjk ? Array.from(text) : text.split(' ');
+    const sep = cjk ? '' : ' ';
     const lines = [];
     let line = '';
     words.forEach(function (w) {
@@ -1532,6 +1898,10 @@
       if (c.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
     });
     if (line) lines.push(line);
+    return lines;
+  }
+  function wrapText(c, text, x, y, maxW, lh) {
+    const lines = wrapLines(c, text, maxW);
     lines.forEach(function (l, i) { c.fillText(l, x, y + (i - (lines.length - 1) / 2) * lh); });
   }
 
@@ -1763,7 +2133,8 @@
       msg = T('只剪出 ', 'Only ') + used + T(' 條紙條，無法可靠地求斜率（沒有加入圖表）：把 N 調小或提高打點頻率。', ' strips — too few for a reliable slope (not added to the graph). Use a smaller N or a higher dot frequency.');
     } else {
       const pt = addPoint(tp.snap, aM);
-      msg = T('撞上擋板。紙帶量得 a = ', 'Hit the end stop. From the tape a = ') + num(aM, 3) + T(' m/s²，已加入實驗', ' m/s², added to Experiment ') + (state.exp === 1 ? T('一', '1') : T('二', '2')) + T('（第 ', ' (point ') + (pt + 1) + T(' 點）。', ').');
+      pulseGraph();
+      msg =T('撞上擋板。紙帶量得 a = ', 'Hit the end stop. From the tape a = ') + num(aM, 3) + T(' m/s²，已加入實驗', ' m/s², added to Experiment ') + (state.exp === 1 ? T('一', '1') : T('二', '2')) + T('（第 ', ' (point ') + (pt + 1) + T(' 點）。', ').');
     }
     setStatus(msg);
     updateButtons();
@@ -1981,7 +2352,7 @@
   });
   $('noise').addEventListener('change', function (ev) { state.noise = ev.target.checked; physChanged(); });
   $('gatesOn').addEventListener('change', function (ev) { state.show.gates = ev.target.checked; requestDraw(); });
-  $('fbdOn').addEventListener('change', function (ev) { state.show.fbd = ev.target.checked; requestDraw(); });
+  $('fbdOn').addEventListener('change', function (ev) { state.show.fbd = ev.target.checked; if (A) buildBg(); requestDraw(); });
 
   // 圖表：選擇實驗與橫軸
   function setExp(e) {

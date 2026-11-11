@@ -168,5 +168,25 @@ node tools/mission-proofs/<代號>.js # 證明該實驗的每個任務都做得�
 15. 牛頓運動定律的系列實驗：力學車、斜面、連體運動、電梯。
 16. 首次進站的登入提示，可以「先逛逛」略過；雙狹縫任務的容許值放寬。
 17. 交接到本機工作串（本文件）。
+18. 2026-11-11：入口頁面每個實驗都要有縮圖；開始做 2D 優化與 3D（「3D 能做的就儘量做，同步做」）。
+19. 2026-11-11：首頁分類改成「大分類（物理分支）→ 小分類（選修物理講義各章）」，小分類**只寫章名、不寫第幾章**。
+20. 2026-11-11：選修物理講義裡的實驗，模擬是**必做**的實驗室（清單見第十節）。
+21. 2026-11-11：「把它變成國際一流、最權威最知名的物理實驗室網站……每一個面向都要做到世界第一。自動優化要自動進行，不要我開口。」→ `docs/WORLD-CLASS.md`、每日自動優化（第十節）。
+22. 2026-11-11：不要用英文跟站長交談（含進度回報、待辦清單）。
 
 另外：`astro1222ni/personal-core-knowledge-info` 是 Google OAuth 審核用的說明網站。最早的實驗室副本已從該倉庫移除（commit c8caedd），以後不要把實驗室放回去。
+
+## 十、本機工作串新增的工具與流程（2026-11-11）
+
+- **首頁結構**：`<section class="branch">` 裡先有章名按鈕列 `<nav class="chapter-nav">`，再來是 `<div class="chapters">`，每章一個 `<section class="chapter" id="ch-…">`（章名 `<h3 class="chapter-head">`），卡片放在該章的 `<div class="modules">`。卡片只有縮圖、標題 `<h4 data-en>`、說明 `<p data-en>`。還沒有實驗的章，按鈕是 `<span class="soon">`；加了第一個實驗就改成 `<a href="#ch-…">`，數量徽章由 `js/home.js` 自動算。
+- **縮圖**：`npm run thumbs -- <代號>`（`tools/make-thumbs.cjs`）。每個實驗 6 張（三語 × 深淺色）720×405 WebP，存 `img/thumbs/`，版本表自動寫進 `js/thumbs.js`；新實驗要在工具的 `PREP` 加一列（按哪個按鈕、等多久、裁哪裡）。
+- **分享卡與搜尋引擎**：`npm run seo`（`tools/seo.cjs`）從首頁卡片與縮圖產生 1200×630 分享卡 `img/og/`、每頁 `<!-- SEO-BEGIN -->` 區塊（說明、Open Graph、hreflang、schema.org 結構化資料）、`sitemap.xml`、`robots.txt`。`js/settings.js` 支援 `?lang=en`／`?lang=zh-Hans` 網址（只當次套用，不蓋掉使用者存的語言；第一次來的訪客會記住）。
+- **共用繪圖工具** `js/drawkit.js`（`window.LabDraw`）：立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動切換。2D 優化照 `docs/briefs/visual-polish.md`，3D 照 `docs/briefs/add-3d.md`，課本實驗照 `docs/briefs/textbook-experiment.md`。
+- **一鍵總檢查**：`npm run verify`（`tools/verify.cjs`）＝單元測試＋全部任務證明＋靜態稽核＋介面稽核（觸控目標、對比、名稱、頁面重量）＋頁面檢查；`-- --quick` 只跑前三項。結果存 `.shots/verify-report.json`。發布前要全過。
+- **自動優化**：藍圖與待改清單在 `docs/WORLD-CLASS.md`，紀錄在 `docs/auto-optimize-log.md`。排程「每天 01:40｜Astro Ni 物理實驗室自動優化」照清單做 1–3 件、總檢查全過才推。**主工作串開始改網站時建立 `.editing`（已列入 .gitignore），push 完刪掉**；排程看到 8 小時內的 `.editing` 就跳過。
+- **選修物理講義的必做實驗**（講義在 `D:\物理講義電子檔\選修物理Ⅰ–Ⅴ`，文字要用 CID→Big5 解碼才讀得到，方法在 `docs/briefs/textbook-experiment.md`）：自由落體與斜面運動（free-fall）、牛頓第二運動定律（newton-second，已有）、水波槽（ripple-tank）、氣柱的共鳴（resonance-tube）、折射率的測定（refractive-index）、薄透鏡成像（thin-lens）、干涉與繞射（slit-interference，已有）、等位線與電場（equipotential）、電流天平（current-balance）、認識電磁波（microwave）、歐姆定律與電路（ohms-law）、電子的荷質比（e-over-m）。選修物理Ⅱ沒有正式實驗。11/11 十二個全部上線（新做的 10 個放在首頁對應的章；荷質比、水波槽、等位線、電流天平、微波另有 3D）。縮圖取景設定在 `tools/make-thumbs.cjs` 的 PREP（可用 `eval` 先執行頁面測試介面，例如折射率用 `window.__ri.place` 插針）。
+
+- **物理實驗室核可室**：要站長決定的事一律開卡 https://claude.ai/artifact/XEAkzxm5585i8fzHEiHMfQ （資料 `items/<id>`：ep、topic、title、body、links、media、order、status、created、result；站長的回覆在 `answers/<id>`：choice ok／change、note）。每次回到工作串先查 answers、照做、把卡改 closed 並寫 result。11/11 已決定：自動優化全自動、鉑功函數維持 5.6 eV 並註明 6.35 eV、「關於本站」頁與 CC BY-NC 4.0 授權。
+- **關於本站與授權**：`about.html`（作者、物理怎麼把關、引用格式、授權、隱私）、`LICENSE.md`。首頁、排行榜、隱私說明頁尾都有連結；`tools/seo.cjs` 產生它的 `AboutPage` 結構化資料。內容寫到站長本人，改動前要開卡問站長。
+- **3D 檢視共通做法**：three.js 只在第一次切到 3D 時載入；切回 2D 時 `dispose()` 先把 `active` 設成 false 再 `forceContextLoss()`，`webglcontextlost` 處理程式要先檢查 `active`（否則會誤跳「3D 中斷」）；透明材質先轉色彩空間再乘 alpha（否則玻璃變白霧）。
+- **英文模式檢查的例外**：刻意保留的中文（人名、頻道名、中文引用範例）在元素上標 `lang="zh-Hant"`，`check-pages` 會略過。

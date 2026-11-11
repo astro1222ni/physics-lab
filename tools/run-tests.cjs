@@ -4,6 +4,7 @@
 const { spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+require('./browser.cjs').lowerPriority(); // 低於標準優先權，CPU 先讓給影片等工作（測試檔會繼承）
 
 const dir = path.join(__dirname, '..', 'tests');
 const files = fs.readdirSync(dir).filter(f => f.endsWith('.test.js')).sort();

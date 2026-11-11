@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Free Fall and Motion on an Incline | Astro Ni Physics Lab">自由落體與斜面上的運動｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用碼錶與點痕校正打點計時器，讓滑車沿斜面下滑、重物自由落下，從紙帶畫出 x–t、v–t、a–t 圖，求加速度與重力加速度 g。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/free-fall.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/free-fall.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/free-fall.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/free-fall.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="自由落體與斜面上的運動｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用碼錶與點痕校正打點計時器，讓滑車沿斜面下滑、重物自由落下，從紙帶畫出 x–t、v–t、a–t 圖，求加速度與重力加速度 g。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/free-fall.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/free-fall.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="自由落體與斜面上的運動的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"自由落體與斜面上的運動","alternateName":"Free Fall and Motion on an Incline","description":"用碼錶與點痕校正打點計時器，讓滑車沿斜面下滑、重物自由落下，從紙帶畫出 x–t、v–t、a–t 圖，求加速度與重力加速度 g。","url":"https://astro1222ni.github.io/physics-lab/free-fall.html","image":"https://astro1222ni.github.io/physics-lab/img/og/free-fall.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","直線運動（Motion in a Straight Line）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 自由落體與斜面頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度與實驗部分決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    .ff canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    #cv { height: 440px; }
+    #tcv { height: 250px; }
+    #gcv { height: 480px; }
+    .ff + .ff { margin-top: 16px; }
+    .ff button { min-height: 44px; }
+    .ff [hidden] { display: none !important; }
+    .ff .modebar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 10px; }
+    .ff .modebar button { padding: 6px 6px; line-height: 1.3; font-size: calc(14px * var(--fs, 1)); }
+    .ff .modebar button b { display: block; font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .ff .modebar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .ff .modebar button[aria-pressed="true"] b { color: var(--accent); }
+    .ff .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ff .playbar > button { flex: 1 1 auto; }
+    .ff .playbar #go { font-weight: 700; min-width: 9em; }
+    .ff .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ff .speedbox { display: inline-flex; align-items: center; gap: 6px; flex: 1 1 auto; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .ff .speedbox .seg3 { flex: 1 1 auto; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .seg2 button, .seg3 button, .seg4 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ff button:disabled { opacity: .45; cursor: not-allowed; }
+    .ff .stage .status { margin: 6px 4px 0; }
+    .ff .slider input[type="range"] { height: 28px; margin: 0; }
+    .ff .slider label sub, dl.readout sub, .ff .hint sub, table.data sub { font-size: .75em; }
+    .ff .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ff .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .ff .checks label { min-height: 44px; }
+    .ff .checks input { width: 17px; height: 17px; flex: none; }
+    .ff .checks.col { flex-direction: column; gap: 0; }
+    .ff .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ff .card .info { font-size: calc(13px * var(--fs, 1)); margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+    .ff .slider.locked output { color: var(--muted); }
+    .ff dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.note { color: var(--muted); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.warn { color: var(--pos); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.ok { color: var(--probe); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    /* 步驟清單 */
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 4px 5px 34px; border-radius: 8px; color: var(--muted); line-height: 1.45; }
+    ol.steps li::before { content: counter(st); position: absolute; left: 6px; top: 5px; width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border); text-align: center; line-height: 18px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); background: var(--surface); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; border-color: var(--probe); color: var(--probe); }
+    ol.steps li.now { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    ol.steps li.now::before { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+    .ff .stepnote { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 數據表（仿課本的錯開表格：位移、速度寫在兩點之間，加速度寫在兩段速度之間） */
+    .tablewrap { overflow-x: auto; margin: 8px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 7px; text-align: right; border: 1px solid var(--border); white-space: nowrap; line-height: 1.35; }
+    table.data thead th { color: var(--muted); font-weight: 600; background: var(--accent-soft); text-align: center; }
+    table.data thead th small { font-weight: 500; font-size: .85em; display: block; }
+    table.data tbody th { text-align: center; font-weight: 600; color: var(--text); }
+    table.data td.gap { background: repeating-linear-gradient(135deg, transparent 0 5px, var(--border) 5px 6px); }
+    table.data td.mid { color: var(--accent); }
+    table.data td.acc { color: var(--pos); }
+    table.data tr.latest > * { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); border: none; padding: 10px; white-space: normal; }
+    table.data tfoot td { color: var(--muted); text-align: left; border: none; padding-top: 6px; white-space: normal; }
+    .ff .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .ff .gbtns button { flex: 1 1 auto; }
+    .ff .gbtns #rec { font-weight: 700; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 2px 0; }
+    .notes .q li { margin: 6px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Motion in a straight line"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 直線運動</nav>
+      <h1 data-en="Free Fall and Motion on an Incline">自由落體與斜面上的運動</h1>
+      <p data-en="The textbook experiment, done at home: first measure the time between two dots of the ticker timer with a stopwatch, then let a cart roll down a tilted track and a weight fall freely. Mark every fourth dot on the paper tape, read the positions with a ruler and press “Record” to fill in the data table; the x–t, v–t and a–t graphs, the acceleration and g follow. Switch on the realistic errors to see why the measured g usually comes out a little small.">課本的必做實驗，在家也能做：先用碼錶與點痕數量出打點計時器相鄰兩點的時間，再讓滑車沿斜面下滑、讓重物自由落下。在紙帶上每隔 4 個點畫一條線，用直尺讀出各點的位置，按「記錄」填進數據表，就能畫出 x–t、v–t、a–t 圖，求出加速度與重力加速度 g。打開「含誤差」，看看量到的 g 為什麼常常比 9.8 小一點。</p>
+    </header>
+
+    <!-- 第一部分：實驗裝置與操作 -->
+    <div class="lab ff">
+      <div class="stage">
+        <div class="modebar" role="group" aria-label="實驗的三個部分" data-en-aria-label="The three parts of the experiment">
+          <button type="button" data-mode="calib" aria-pressed="false" data-en-html="<b>Part 1</b>Timer interval">  <b>①</b>計時器的時距</button>
+          <button type="button" data-mode="incline" aria-pressed="true" data-en-html="<b>Part 2</b>Incline">  <b>②</b>斜面上的運動</button>
+          <button type="button" data-mode="fall" aria-pressed="false" data-en-html="<b>Part 3</b>Free fall">  <b>③</b>自由落體</button>
+        </div>
+        <canvas id="cv" aria-label="實驗裝置圖：打點計時器、紙帶與滑車軌道（或鉛直架設的計時器與重物、或手拉紙帶與碼錶）" data-en-aria-label="The apparatus: ticker timer, paper tape and cart on a tilted track (or a vertical timer with a falling weight, or a tape pulled by hand with a stopwatch)"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">啟動打點計時器</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除紙帶、數據表、圖表、計時器校正與 a–sinθ 圖的所有數據；滑桿設定不變" data-en-title="Clear the tapes, data tables, graphs, timer calibration and the a–sinθ points; the slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox" id="speedBox"><span data-en="Speed">播放</span>
+            <div class="seg3" role="group" aria-label="播放速度" data-en-aria-label="Playback speed">
+              <button type="button" data-speed="1" aria-pressed="false">1×</button>
+              <button type="button" data-speed="0.25" aria-pressed="true">¼×</button>
+              <button type="button" data-speed="0.1" aria-pressed="false">1/10×</button>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="sceneHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps"></ol>
+          <p class="stepnote" id="stepNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Apparatus">裝置</h2>
+          <div class="slider" id="boxH"><label for="h" data-en="Height difference of the track ends h">軌道兩端的高度差 h</label><output id="ho"></output>
+            <input id="h" type="range" min="1" max="60" step="0.5" value="20" data-decimals="2"></div>
+          <div class="slider" id="boxM"><label for="M" data-en="Cart mass M">滑車質量 M</label><output id="Mo"></output>
+            <input id="M" type="range" min="0.2" max="2" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider" id="boxm" hidden><label for="m" data-en="Mass of the falling weight m">重物質量 m</label><output id="mo"></output>
+            <input id="m" type="range" min="0.05" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <p class="info" id="setupInfo">—</p>
+          <p class="seg-label" id="freqLabel" data-en="Ticker timer:">打點計時器：</p>
+          <div class="seg4" role="group" aria-labelledby="freqLabel">
+            <button type="button" data-f="60" aria-pressed="true">60 Hz</button>
+            <button type="button" data-f="50" aria-pressed="false">50 Hz</button>
+            <button type="button" data-f="20" aria-pressed="false">20 Hz</button>
+            <button type="button" data-f="0" aria-pressed="false" data-en="Unknown">未知</button>
+          </div>
+          <p class="hint" id="freqInfo">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Errors">誤差</h2>
+          <div class="seg2" role="group" aria-label="理想或含誤差" data-en-aria-label="Ideal or with errors">
+            <button type="button" id="idealBtn" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" id="realBtn" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <div id="errBox" hidden>
+            <div class="checks col">
+              <label id="boxRead"><input id="errRead" type="checkbox" checked><span data-en="Reading error of the ruler (about ±0.3 mm)">尺的讀數誤差（約 ±0.3 mm）</span></label>
+              <label id="boxReact"><input id="errReact" type="checkbox" checked><span data-en="Reaction time on the stopwatch">按碼錶的反應時間</span></label>
+            </div>
+            <div class="slider" id="boxF"><label for="fr" data-en="Friction of the tape in the timer f">紙帶與計時器的摩擦力 f</label><output id="fro"></output>
+              <input id="fr" type="range" min="0" max="0.3" step="0.005" value="0.05" data-decimals="3"></div>
+            <div class="slider" id="boxMu"><label for="mu" data-en="Rolling friction coefficient of the track μ">軌道的滾動摩擦係數 μ</label><output id="muo"></output>
+              <input id="mu" type="range" min="0" max="0.05" step="0.001" value="0.01" data-decimals="4"></div>
+            <div class="slider" id="boxK"><label for="kg" data-en-html="Air resistance F = kv<sup>2</sup>, coefficient k">空氣阻力 F = kv<sup>2</sup> 的係數 k</label><output id="kgo"></output>
+              <input id="kg" type="range" min="0" max="20" step="0.1" value="0.4" data-decimals="2"></div>
+          </div>
+          <p class="hint" id="errHint" data-en="Ideal: no friction, no air resistance, exact readings. With errors: choose the error sources below.">理想：沒有摩擦與空氣阻力，讀數完全準確。含誤差：可選擇下面的誤差來源。</p>
+          <p class="hint" data-en="Tap a number to type an exact value.">點一下數字可直接輸入精確數值。</p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：紙帶、數據表與圖表 -->
+    <div class="lab ff">
+      <div class="stage">
+        <h2 id="tapeTitle" data-en="The paper tape">紙帶</h2>
+        <p class="hint" id="tapeHint"></p>
+        <canvas id="tcv" aria-label="取下的紙帶：點痕、每隔 n 個點畫的計數線、對齊第 0 點的直尺與讀數放大鏡" data-en-aria-label="The tape taken off the timer: the dots, the counting lines every n dots, a ruler lined up with dot 0 and a magnifier for reading the position"></canvas>
+        <div class="gbtns">
+          <button type="button" id="rec" class="primary" data-en="Record">記錄</button>
+          <button type="button" id="recAll" data-en="Record all">全部記錄</button>
+          <button type="button" id="undoRow" data-en="Delete the last row">刪除最後一列</button>
+        </div>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+
+        <h2 style="margin-top:16px" id="graphTitle" data-en="Graphs">圖表</h2>
+        <p class="hint" id="graphHint"></p>
+        <canvas id="gcv" aria-label="由數據表畫出的 x–t 圖、v–t 圖、a–t 圖與各次實驗的 a–sinθ 圖" data-en-aria-label="The x–t, v–t and a–t graphs drawn from the data table, and the a–sinθ graph of all the runs"></canvas>
+        <div class="gbtns" id="sumBtns">
+          <button type="button" id="undoSum" data-en="Remove the last point of the a–sinθ graph">移除 a–sinθ 圖的最後一點</button>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardTape">
+          <h2 data-en="Marking the tape">紙帶處理</h2>
+          <div class="slider"><label for="n" data-en="Draw a line every n dots">每隔 n 個點畫一條線</label><output id="no"></output>
+            <input id="n" type="range" min="1" max="10" step="1" value="4" data-decimals="0"></div>
+          <div class="slider"><label for="j0" data-en="Dot 0 = which dot after the release">第 0 點＝放手後的第幾個點</label><output id="j0o"></output>
+            <input id="j0" type="range" min="1" max="30" step="1" value="3" data-decimals="0"></div>
+          <p class="seg-label" id="dtLabel" data-en="Time between two dots Δt used in the analysis:">分析時相鄰兩點的時間 Δt 用：</p>
+          <div class="seg2" role="group" aria-labelledby="dtLabel">
+            <button type="button" id="dtNom" aria-pressed="true" data-en="Rated value 1/f">標示值 1/f</button>
+            <button type="button" id="dtCal" aria-pressed="false" data-en="Measured in Part 1">步驟①量得的值</button>
+          </div>
+          <p class="info" id="tauInfo">—</p>
+          <p class="hint" data-en="The first dots after the release lie very close together (and on top of the dots printed before the release), so pick a clear dot as dot 0. Changing n or dot 0 clears the table.">剛放手時的點很密，還和放手前打在同一處的點痕重疊，所以要選一個清楚的點當第 0 點。改變 n 或第 0 點會清除表格。</p>
+        </section>
+
+        <section class="card" id="cardRes">
+          <h2 data-en="Results from the tape">紙帶分析結果</h2>
+          <dl class="readout" id="resOut"></dl>
+        </section>
+
+        <section class="card" id="cardTheory">
+          <h2 id="theoryTitle" data-en="Theory (conditions of this tape)">理論值（這條紙帶的條件）</h2>
+          <dl class="readout" id="thOut"></dl>
+        </section>
+
+        <section class="card" id="cardSum">
+          <h2 data-en="a–sinθ graph (all runs)">a–sinθ 圖（各次實驗）</h2>
+          <dl class="readout" id="sumOut"></dl>
+          <p class="hint" data-en="A tape is added automatically when its whole table is recorded. Free fall is plotted at sinθ = 1 (θ = 90°).">表格全部記錄完成時，這次的加速度會自動加入。自由落體畫在 sinθ = 1（θ = 90°）的位置。</p>
+        </section>
+
+        <section class="card" id="cardCal" hidden>
+          <h2 data-en="Timer interval">計時器的時距</h2>
+          <dl class="readout" id="calOut"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="About the experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en="Use the trail of dots that a moving object leaves on a paper tape to tell what kind of motion it is.">利用物體運動時在紙帶上留下的點痕，判斷物體的運動狀態。</li>
+        <li data-en-html="Describe how position, velocity and acceleration change with time using \(x\)–\(t\), \(v\)–\(t\) and \(a\)–\(t\) graphs; measure the acceleration of a cart on an incline and the acceleration of free fall \(g\).">用 \(x\)–\(t\)、\(v\)–\(t\)、\(a\)–\(t\) 圖表示位置、速度、加速度與時間的關係，量出斜面上滑車的加速度與自由落體的加速度 \(g\)。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="Ticker timer, stopwatch, a roll of paper tape, a weight, a ruler, a dynamics cart and its track — plus a stand to raise one end of the track (or to hold the timer upright) and a soft pad for the falling weight.">打點計時器、碼錶、紙帶一捲、重物、直尺、滑車與滑車軌道；另外需要墊高軌道一端（或把計時器垂直架起來）的支架，以及接住重物的軟墊。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="<strong>Time between two dots.</strong> The ticker timer strikes the tape at a fixed rate \(f\), so neighbouring dots are always \(\Delta t = 1/f\) apart in time, however fast the tape moves. If \(N\) dots are printed while the tape is pulled for a time \(T\), there are only \(N - 1\) gaps between them:"><strong>相鄰兩點的時間。</strong>打點計時器以固定的頻率 \(f\) 敲打紙帶，不論紙帶走得多快，相鄰兩點的時間都是 \(\Delta t = 1/f\)。拉動紙帶 \(T\) 秒打出 \(N\) 個點時，點和點之間只有 \(N - 1\) 個間隔：</p>
+      <div class="formula">\[ \Delta t = \frac{T}{N - 1} \]</div>
+      <p data-en-html="The count is uncertain by about one gap and the stopwatch by your reaction time (about 0.1–0.2 s), so a longer pull gives a more precise \(\Delta t\).">點數會有大約一個間隔的不確定，碼錶也會有反應時間（約 0.1–0.2 s）的誤差，所以拉得愈久，求出的 \(\Delta t\) 愈準。</p>
+      <p data-en-html="<strong>Velocity from the tape.</strong> Mark dot 0 and then every \(n\)-th dot; neighbouring marks are \(\tau = n\,\Delta t\) apart. Dividing each displacement by \(\tau\) gives the average velocity of that stretch. For constant acceleration the velocity changes linearly, so the average velocity equals the instantaneous velocity at the <em>middle</em> of the stretch:"><strong>由紙帶求速度。</strong>從第 0 點起每隔 \(n\) 個點畫一條線，相鄰兩條線的時間是 \(\tau = n\,\Delta t\)。每一段的位移除以 \(\tau\) 就是這一段的平均速度。等加速度時速度隨時間線性變化，所以平均速度恰好等於這一段<em>中點時刻</em>的瞬時速度：</p>
+      <div class="formula multi">\[ \bar v_i = \frac{x_{i+1} - x_i}{\tau} = \frac{v(t_i) + v(t_{i+1})}{2} = v\!\left(t_i + \tfrac{\tau}{2}\right) \] \[ \bar a_i = \frac{\bar v_{i+1} - \bar v_i}{\tau} \]</div>
+      <p data-en-html="The points \(\bar v_i\) then lie on a straight line in the \(v\)–\(t\) graph whose slope is the acceleration and whose intercept is the velocity at dot 0 (dot 0 is <em>not</em> the moment of release, so the intercept is not zero). Equivalently, neighbouring displacements grow by the same amount every time: \(\Delta x_{i+1} - \Delta x_i = a\tau^{2}\).">於是 \(v\)–\(t\) 圖上的點排成一直線，斜率就是加速度，截距是第 0 點的速度（第 0 點<em>不是</em>放手的瞬間，所以截距不為零）。換個說法：相鄰兩段的位移每次都增加同樣多，\(\Delta x_{i+1} - \Delta x_i = a\tau^{2}\)。</p>
+      <p data-en-html="<strong>Incline and free fall.</strong> On a smooth incline of angle \(\theta\) (track length \(L\), ends differing in height by \(h\)) only the component of gravity along the track accelerates the cart. Friction in the track (\(\mu\)) and the drag of the tape in the timer (\(f\)) slow it down; free fall is the special case \(\theta = 90^\circ\):"><strong>斜面與自由落體。</strong>在傾角 \(\theta\) 的光滑斜面上（軌道長 \(L\)、兩端高度差 \(h\)），只有重力沿斜面的分量使滑車加速。軌道的摩擦（\(\mu\)）與紙帶穿過計時器的摩擦（\(f\)）會使它變慢；自由落體就是 \(\theta = 90^\circ\) 的特例：</p>
+      <div class="formula multi">\[ \sin\theta = \frac{h}{L} \] \[ a = g\sin\theta - \mu g\cos\theta - \frac{f}{M} \] \[ \theta = 90^\circ:\ \ a = g - \frac{f}{m} \]</div>
+      <p data-en-html="Galileo used the incline to “dilute” gravity so that the motion is slow enough to time. Without friction \(a/\sin\theta = g\) for every angle, so the \(a\)–\(\sin\theta\) graph is a straight line of slope \(g\) through the origin, ending at free fall (\(\sin\theta = 1\)). Friction shifts the line down but hardly changes its slope. Air resistance \(F = kv^{2}\) grows with speed, so with it the acceleration is no longer constant: \(a = g - \tfrac{f}{m} - \tfrac{k}{m}v^{2}\), and the \(a\)–\(t\) graph slopes downward.">伽利略用斜面「沖淡」重力，讓運動慢到可以計時。沒有摩擦時，不論角度多大，\(a/\sin\theta = g\)，所以 \(a\)–\(\sin\theta\) 圖是通過原點、斜率為 \(g\) 的直線，一直延伸到自由落體（\(\sin\theta = 1\)）。摩擦使直線往下平移，斜率卻幾乎不變。空氣阻力 \(F = kv^{2}\) 隨速率變大，有空氣阻力時加速度不再固定：\(a = g - \tfrac{f}{m} - \tfrac{k}{m}v^{2}\)，\(a\)–\(t\) 圖會往下斜。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <p data-en-html="<strong>① Time between two dots.</strong> Thread the tape through the timer. Start the timer, pull the tape and start the stopwatch at the same moment; stop both after a while. Read the time \(T\), count the dots \(N\), record, and work out \(\Delta t = T/(N-1)\). Repeat a few times and average."><strong>① 計時器相鄰點痕的時間。</strong>把紙帶穿過計時器。啟動計時器、開始拉紙帶並同時按下碼錶，拉一段時間後一起停止。讀出時間 \(T\)、數出點數 \(N\)，記錄並算出 \(\Delta t = T/(N-1)\)；多做幾次取平均。</p>
+      <p data-en-html="<strong>② Motion on an incline.</strong> Raise one end of the track; fix the timer at the top end and clip the tape (about 1 m) to the back of the cart, laying the rest of it out smoothly. Start the timer, then let go of the cart. On the tape choose a clear dot as dot 0 and draw a line every 4 dots. Taking dot 0 as \(t = 0\), \(x = 0\), record \(t\) and \(x\) of dots 0, 4, 8, … and draw the \(x\)–\(t\) graph; divide each displacement by its time to get the average velocities (plotted at the middle times) for the \(v\)–\(t\) graph; finally the changes of neighbouring average velocities give the average accelerations for the \(a\)–\(t\) graph."><strong>② 斜面上的運動。</strong>把軌道一端墊高，計時器固定在斜面頂端，紙帶（約 1 m）一端夾在滑車尾部，其餘部分放平順。先啟動計時器，再放開滑車。在紙帶上選一個清楚的點當第 0 點，每隔 4 個點畫一條線。以第 0 點為 \(t = 0\)、\(x = 0\)，記錄第 0、4、8……點的 \(t\) 與 \(x\)，畫 \(x\)–\(t\) 圖；各段位移除以時間得到平均速度（畫在中點時刻），畫 \(v\)–\(t\) 圖；再由相鄰平均速度的變化得到平均加速度，畫 \(a\)–\(t\) 圖。</p>
+      <p data-en-html="<strong>③ Free fall.</strong> Clamp the timer upright, hang the weight from the tape and put a pad underneath. Start the timer, let go of the weight and analyse the tape exactly as in ②."><strong>③ 自由落體。</strong>把計時器垂直夾在支架上，紙帶下端接上重物，下方放軟墊。啟動計時器後放開重物，用和 ② 相同的方法分析紙帶。</p>
+
+      <h3 data-en="Precautions">注意事項</h3>
+      <ul>
+        <li data-en="Start the timer before letting go, and let go without pushing. The dots printed before the release all land on the same spot.">先啟動計時器再放手，放手時不要推。放手前打的點都會疊在同一個位置。</li>
+        <li data-en="Thread the tape straight through the guide so that it is not twisted and does not rub more than necessary; a heavier weight makes the tape friction matter less.">紙帶要平直穿過計時器的導槽，不可扭轉，減少不必要的摩擦；重物重一點，摩擦的影響就小一點。</li>
+        <li data-en="Lay the ruler along the tape with its zero exactly on dot 0, look straight down on the scale (no parallax) and estimate one digit beyond the smallest division (0.1 mm on a millimetre ruler).">直尺沿著紙帶放，0 刻度對準第 0 點；讀數時視線要垂直尺面（避免視差），估計到最小刻度的下一位（毫米尺估讀到 0.1 mm）。</li>
+        <li data-en="Ignore the dots printed after the cart hits the end stop or the weight lands — they pile up in one place.">滑車撞到擋板、重物落地之後打的點會疊在一起，不可列入分析。</li>
+        <li data-en="Catch the cart before it hits the end stop hard, and keep fingers away from the falling weight.">滑車撞上擋板前最好用手擋住；重物落下的路徑上不可有手。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol class="q">
+        <li data-en-html="Why is the time between two dots \(T/(N-1)\) and not \(T/N\)? If you pull for only 1 s at 60 Hz, how large can the error be?">相鄰兩點的時間為什麼是 \(T/(N-1)\) 而不是 \(T/N\)？用 60 Hz 的計時器只拉 1 s，誤差可能有多大？</li>
+        <li data-en-html="The average velocity of a stretch is plotted at the <em>middle</em> of its time interval. Why is this exact for constant acceleration? Is it still exact when air resistance is important?">每段的平均速度畫在這段時間的<em>中點</em>。為什麼等加速度時這樣做完全準確？空氣阻力很大時還準確嗎？</li>
+        <li data-en-html="The \(v\)–\(t\) line does not pass through the origin. What does its intercept mean? Can you work out how long before dot 0 the object was released?">\(v\)–\(t\) 圖的直線不通過原點，截距代表什麼？你能推算出物體是在第 0 點之前多久放開的嗎？</li>
+        <li data-en-html="Measured values of \(g\) usually come out below \(9.8\ \mathrm{m/s^2}\). List the reasons and how to reduce each of them.">實際量到的 \(g\) 通常小於 \(9.8\ \mathrm{m/s^2}\)。原因有哪些？各要怎麼減少？</li>
+        <li data-en-html="If the timer really runs 1% faster than its rated frequency but you use the rated \(\Delta t\), by what percentage is your \(g\) wrong, and in which direction?">如果計時器實際的頻率比標示值快 1%，你卻用標示的 \(\Delta t\) 計算，量到的 \(g\) 偏差幾 %？偏大還是偏小？</li>
+        <li data-en-html="Plot \(a\) against \(\sin\theta\) for several heights. What does the slope tell you? Why is the intercept negative on a track with friction?">用幾個不同的高度差畫 \(a\)–\(\sin\theta\) 圖。斜率代表什麼？有摩擦的軌道上，截距為什麼是負的？</li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Equal times, growing gaps</strong>: in slow motion with the sound on, the ticks keep a steady beat while the dots on the tape move further and further apart."><strong>時間相等、間距變大</strong>：用慢動作、打開音效，打點的「嗒嗒」聲節奏固定，紙帶上的點間距卻愈來愈大。</li>
+        <li data-en-html="<strong>The staircase of differences</strong>: in the ideal setting every \(\bar a\) in the table is the same, and neighbouring \(\Delta x\) differ by exactly \(a\tau^{2}\)."><strong>位移差固定</strong>：理想條件下，表格中每個 \(\bar a\) 都相同，相鄰兩段的 \(\Delta x\) 恰好相差 \(a\tau^{2}\)。</li>
+        <li data-en-html="<strong>Heavier is better</strong>: switch on the errors and drop weights of 0.05 kg and 1 kg. The tape friction \(f\) slows the light weight much more, because the deceleration is \(f/m\)."><strong>重物重一點比較準</strong>：打開含誤差，分別讓 0.05 kg 與 1 kg 的重物落下。紙帶摩擦 \(f\) 造成的減速是 \(f/m\)，輕的重物受影響大得多。</li>
+        <li data-en-html="<strong>Galileo’s ramp</strong>: record several heights and the free fall. In the ideal case all points of the \(a\)–\(\sin\theta\) graph lie on one line of slope \(g\) through the origin."><strong>伽利略的斜面</strong>：用幾個不同的高度差各做一次，再做一次自由落體。理想條件下，\(a\)–\(\sin\theta\) 圖的所有點都在一條通過原點、斜率為 \(g\) 的直線上。</li>
+        <li data-en-html="<strong>Air resistance</strong>: drop a 0.05 kg weight with \(k = 20\ \mathrm{g/m}\). The \(a\)–\(t\) graph now slopes downward and the \(x\)–\(t\) points leave the parabola."><strong>空氣阻力</strong>：讓 0.05 kg 的重物在 \(k = 20\ \mathrm{g/m}\) 時落下，\(a\)–\(t\) 圖變成往下斜，\(x\)–\(t\) 圖的點也偏離拋物線。</li>
+        <li data-en-html="<strong>The unknown timer</strong>: choose the “Unknown” timer, measure its \(\Delta t\) in Part 1 and use it to analyse a free fall. A sloppy calibration shows up twice as large in \(g\), because \(g \propto 1/\Delta t^{2}\)."><strong>頻率未知的計時器</strong>：選「未知」，先在 ① 量出 \(\Delta t\)，再用它分析自由落體。校正的誤差會以兩倍放大到 \(g\) 上，因為 \(g \propto 1/\Delta t^{2}\)。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The motion is calculated from exact formulas. Without air resistance \(x = \tfrac12 a t^{2}\). With air resistance \(F = kv^{2}\) the equation \(a = a_0 - \tfrac{k}{m}v^{2}\) has the exact solution \(v = v_T \tanh(t\sqrt{a_0 k/m})\), \(x = \tfrac{m}{k}\ln\cosh(t\sqrt{a_0 k/m})\) with terminal speed \(v_T = \sqrt{a_0 m/k}\), where \(a_0\) is the acceleration without air resistance. There is no numerical error.">運動由精確的公式計算。沒有空氣阻力時 \(x = \tfrac12 a t^{2}\)；有空氣阻力 \(F = kv^{2}\) 時，\(a = a_0 - \tfrac{k}{m}v^{2}\) 有精確解 \(v = v_T \tanh(t\sqrt{a_0 k/m})\)、\(x = \tfrac{m}{k}\ln\cosh(t\sqrt{a_0 k/m})\)，終端速度 \(v_T = \sqrt{a_0 m/k}\)，\(a_0\) 是沒有空氣阻力時的加速度。沒有數值誤差。</li>
+        <li data-en="The timer prints a dot every 1/f second from the moment it is switched on; the dots printed before the release and after the end stop or landing pile up on one spot. The cart or weight starts from rest only if gravity along the motion is larger than the friction (static and rolling friction are taken as equal). The tape is massless, the track straight, g = 9.8 m/s².">計時器從啟動起每 1/f 秒打一點；放手前、撞到擋板或落地後打的點都疊在同一處。只有沿運動方向的重力分量大於摩擦力時，滑車或重物才會由靜止開始運動（靜摩擦與滾動摩擦取相同的係數）。紙帶質量不計、軌道是直的，g = 9.8 m/s²。</li>
+        <li data-en="With errors on: each ruler reading gets a random error (standard deviation 0.3 mm) and is rounded to 0.1 mm; the error belongs to the dot, so reading the same dot again gives the same value. Each press of the stopwatch is late by a random 0.10–0.30 s. The tape friction f is a constant average force (the hammer blows of the timer are smoothed out). In the ideal setting readings are exact (the table shows rounded values, but the calculations use the exact ones).">含誤差時：每個尺的讀數加上隨機誤差（標準差 0.3 mm）並取到 0.1 mm；誤差跟著那一點，重讀同一點會得到同一個值。每次按碼錶都會隨機慢 0.10–0.30 s。紙帶摩擦 f 取固定的平均力（計時器一下一下的敲擊平均起來）。理想時讀數完全準確（表格顯示的是取捨後的數字，計算用的是精確值）。</li>
+        <li data-en="The unknown timer is a buzzer-type timer whose frequency is chosen at random between 22 and 38 Hz every time you select it. The pulling hand does not move at a steady speed, so the dots of Part 1 are unevenly spaced — only their number matters.">「未知」計時器是電鈴式計時器，每次選它時隨機取 22 到 38 Hz 之間的一個頻率。① 用手拉紙帶的速度忽快忽慢，所以點的間距不均勻——重要的只是點的數目。</li>
+        <li data-en="The apparatus is drawn to scale in a slanted (oblique) projection: positions along the motion are exact, the depth is only there to show the shape of the objects. The timer close-up is a schematic and not to scale.">裝置圖依比例繪製，用斜投影畫出立體感：沿運動方向的位置完全依比例，深度只是為了看出物體的形狀。計時器放大圖是示意圖，未依比例。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/free-fall-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/free-fall.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="free-fall"></script>
+  <script src="js/missions/free-fall.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="free-fall"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

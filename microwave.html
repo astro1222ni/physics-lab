@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Meeting Electromagnetic Waves: Microwave Experiments | Astro Ni Physics Lab">認識電磁波（微波實驗）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用微波發射器、接收器與角度計驗證反射定律、量稜鏡折射率，由駐波波節量出波長與頻率，再用偏極柵證明電磁波是橫波。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/microwave.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/microwave.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/microwave.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/microwave.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="認識電磁波（微波實驗）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用微波發射器、接收器與角度計驗證反射定律、量稜鏡折射率，由駐波波節量出波長與頻率，再用偏極柵證明電磁波是橫波。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/microwave.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/microwave.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="認識電磁波（微波實驗）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"認識電磁波（微波實驗）","alternateName":"Meeting Electromagnetic Waves: Microwave Experiments","description":"用微波發射器、接收器與角度計驗證反射定律、量稜鏡折射率，由駐波波節量出波長與頻率，再用偏極柵證明電磁波是橫波。","url":"https://astro1222ni.github.io/physics-lab/microwave.html","image":"https://astro1222ni.github.io/physics-lab/img/og/microwave.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電磁感應（Electromagnetic Induction）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 認識電磁波（微波實驗）頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .mw canvas { aspect-ratio: auto; }
+    #cv { height: 560px; outline: none; touch-action: pan-y; cursor: default; }
+    #cv.grab { cursor: grab; }
+    #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+    #graph { height: 340px; touch-action: auto; cursor: default; }
+    .mw + .mw { margin-top: 16px; }
+    .mw button { min-height: 44px; }
+    .mw button:disabled { opacity: .45; cursor: not-allowed; }
+    .mw [hidden] { display: none !important; }
+    .mw .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .mw .modes button { padding: 4px 6px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .mw .modes button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .mw .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .mw .modes button[aria-pressed="true"] small { color: var(--surface); opacity: .85; }
+    @media (max-width: 560px) { .mw .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-bar .vb-r { display: flex; gap: 8px; flex-wrap: wrap; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 { position: relative; }
+    #view3 .meter3 { position: absolute; right: 8px; bottom: 8px; padding: 4px 10px; border-radius: 8px; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--surface) 88%, transparent); border: 1px solid var(--border); font-size: calc(13px * var(--fs, 1)); pointer-events: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .mw .playbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .mw .playbar button { flex: 1 1 auto; }
+    .mw .playbar #recBtn { font-weight: 700; flex: 2 1 11em; }
+    .mw .nudge { display: flex; align-items: center; gap: 6px; margin: 8px 2px 0; }
+    .mw .nudge button { flex: 1 1 0; padding: 4px 6px; font-size: calc(14px * var(--fs, 1)); touch-action: manipulation; user-select: none; -webkit-user-select: none; font-variant-numeric: tabular-nums; }
+    .mw .nudge .sel { flex: 1.3 1 0; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); line-height: 1.25; min-width: 0; }
+    .mw .nudge .sel b { color: var(--accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .mw .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); }
+    .mw .stage .status.ok { color: var(--probe); }
+    .mw .stage .status.warn { color: var(--pos); }
+    .mw .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .seg2, .seg3 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: 1fr 1fr; }
+    .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .seg5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+    .seg2 button, .seg3 button, .seg5 button { padding: 5px 4px; line-height: 1.25; font-size: calc(13px * var(--fs, 1)); }
+    .seg2 button small, .seg3 button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg5 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .card > .seg-label:first-of-type { margin-top: 0; }
+    .mw .slider input[type="range"] { height: 28px; margin: 0; }
+    .mw .checks { flex-direction: column; gap: 0; margin-top: 6px; }
+    .mw .checks label { min-height: 44px; }
+    .mw .checks input { width: 18px; height: 18px; flex: none; }
+    .mw .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .mw .gridbox { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 4px; }
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 0 5px 34px; line-height: 1.45; color: var(--muted); }
+    ol.steps li::before { content: counter(st); position: absolute; left: 0; top: 4px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: calc(13px * var(--fs, 1)); font-weight: 700; border: 1.5px solid var(--border); color: var(--muted); background: var(--surface); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+    ol.steps li.now { color: var(--text); font-weight: 600; }
+    ol.steps li.now::before { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    .mw dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dd.ok { color: var(--probe); font-weight: 650; }
+    dl.readout dd.bad { color: var(--pos); }
+    dl.readout dt.sec { grid-column: 1 / -1; color: var(--text); font-weight: 650; margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; }
+    dl.readout dt.sec:first-child { margin-top: 0; border-top: 0; padding-top: 0; }
+    dl.readout sub, .slider label sub, table.data sub { font-size: .75em; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { display: inline-block; width: 10px !important; height: 10px !important; border-radius: 50%; }
+    .legend .grad { background: linear-gradient(90deg, var(--neg), color-mix(in srgb, var(--canvas-bg) 70%, var(--text)), var(--pos)) !important; height: 8px !important; width: 34px !important; }
+    .tablewrap { overflow-x: auto; margin: 10px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.pending td { color: var(--muted); font-style: italic; }
+    table.data td.good { color: var(--probe); }
+    table.data td.off { color: var(--pos); }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    .mw .gbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .mw .reveal { width: 100%; margin-top: 10px; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes details { margin: 4px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 32px; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    @media (max-width: 560px) { #graph { height: 290px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / <a href=&quot;index.html#ch-induction&quot;>Electromagnetic induction</a>"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ <a href="index.html#ch-induction">電磁感應</a></nav>
+      <h1 data-en="Meeting Electromagnetic Waves: Microwave Experiments">認識電磁波（微波實驗）</h1>
+      <p data-en="The textbook experiment with a microwave transmitter, a receiver and a goniometer. Microwaves are invisible, but they behave like every other wave: check the law of reflection with a metal plate, measure the refractive index of a polystyrene prism, find the nodes of a standing wave to measure the wavelength and frequency, and use metal grids to show that electromagnetic waves are transverse. The meter readings come from adding up the waves.">課本實驗：微波發射器、接收器與角度計。微波看不見，但它和所有的波一樣：用金屬板驗證反射定律、用聚苯乙烯稜鏡量折射率、找出駐波的波節來量波長與頻率，再用偏極柵證明電磁波是橫波。電表的讀數都是把波疊加起來算出來的。</p>
+    </header>
+
+    <!-- 第一部分：實驗台 -->
+    <div class="lab mw">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
+          <button type="button" data-mode="reflect" aria-pressed="true" data-en-html="Reflection<small>Part 1</small>">反射<small>實驗一</small></button>
+          <button type="button" data-mode="refract" aria-pressed="false" data-en-html="Refraction<small>Part 2</small>">折射<small>實驗二</small></button>
+          <button type="button" data-mode="standing" aria-pressed="false" data-en-html="Standing waves<small>Part 3</small>">駐波與波長<small>實驗三</small></button>
+          <button type="button" data-mode="polar" aria-pressed="false" data-en-html="Polarization<small>Part 4</small>">偏振<small>實驗四</small></button>
+        </div>
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D top view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="vb-r">
+            <button type="button" id="waveBtn" aria-pressed="true" data-en="Pause the waves">暫停波動</button>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="俯視圖：角度計、微波發射器與接收器、金屬板或稜鏡或偏極柵、電場的波動，下方是毫安培計與讀數掃描圖。可拖曳接收器或探針" data-en-aria-label="Top view: the goniometer, the microwave transmitter and receiver, the metal plate, prism or grids, and the electric field of the waves; below are the milliammeter and a scan of the readings. Drag the receiver or the probe"></canvas>
+        <div id="view3"></div>
+        <div class="nudge" id="nudge">
+          <button type="button" id="nudgeLL" aria-label="大幅減少" data-en-aria-label="Big step down">◀◀</button>
+          <button type="button" id="nudgeL" aria-label="微調減少" data-en-aria-label="Small step down">◀</button>
+          <span class="sel" id="nudgeName">—</span>
+          <button type="button" id="nudgeR" aria-label="微調增加" data-en-aria-label="Small step up">▶</button>
+          <button type="button" id="nudgeRR" aria-label="大幅增加" data-en-aria-label="Big step up">▶▶</button>
+        </div>
+        <div class="playbar">
+          <button id="recBtn" class="primary" type="button" data-en="Record">記錄</button>
+          <button id="clearAll" type="button" title="清除四個實驗的數據表與讀數掃描，探針回到中點；滑桿設定不變" data-en-title="Clear the data tables and reading scans of all four parts and put the probe back at the middle; slider settings are kept" data-en="Clear all">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend l2" id="legend2">
+          <span data-en-html="<i class=&quot;grad&quot;></i>Electric field: red = up (out of the screen), blue = down"><i class="grad"></i>電場：紅＝向上（指出畫面）、藍＝向下</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Reading scan"><i style="background:var(--accent)"></i>讀數掃描</span>
+          <span id="legNormal" style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Normal"><i class="dash"></i>法線</span>
+        </div>
+        <p class="hint l2" id="hint2" data-en="Top view, drawn to scale (cm). The colours show the electric field of the microwaves at one instant; the waves are slowed down about ten billion times. Drag the receiver (or the probe) on the picture, or use ◀ ▶ under it.">俯視圖，依比例繪製（cm）。顏色是某一瞬間微波的電場；波動放慢了大約一百億倍。可以在圖上拖曳接收器（或探針），也可以用下方的 ◀ ▶ 微調。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. The apparatus is drawn to scale; the arrows along the beam are the electric field E (slowed down) computed from the same physics as the 2D view.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。器材依實際尺寸繪製；沿著光束的箭頭是電場 E（放慢），和 2D 用同一套物理計算。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="stepsTitle" data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps"></ol>
+        </section>
+
+        <!-- 實驗一：反射 -->
+        <section class="card" id="ctl-reflect">
+          <h2 data-en="Part 1: the metal plate">實驗一：金屬反射板</h2>
+          <p class="seg-label" id="plateLabel" data-en="Metal plate on the turntable:">轉軸上的金屬反射板：</p>
+          <div class="seg2" role="group" aria-labelledby="plateLabel">
+            <button type="button" data-plate="0" aria-pressed="true" data-en-html="Removed&lt;small&gt;align the horns&lt;/small&gt;">取下<small>先對準兩喇叭</small></button>
+            <button type="button" data-plate="1" aria-pressed="false" data-en-html="In place&lt;small&gt;reflection&lt;/small&gt;">裝上<small>反射實驗</small></button>
+          </div>
+          <div class="slider"><label for="thetaI" data-en-html="Angle of incidence θ&lt;sub&gt;i&lt;/sub&gt; (plate’s turntable)">入射角 θ<sub>i</sub>（轉動金屬板）</label><output id="thetaIo"></output>
+            <input id="thetaI" type="range" min="10" max="85" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="psiR" data-en="Goniometer reading ψ (receiver arm)">角度計讀數 ψ（接收臂）</label><output id="psiRo"></output>
+            <input id="psiR" type="range" min="30" max="180" step="0.5" value="180" data-decimals="1"></div>
+          <p class="hint" data-en-html="ψ is the angle between the two arms. The angle of reflection is θ&lt;sub&gt;r&lt;/sub&gt; = ψ − θ&lt;sub&gt;i&lt;/sub&gt;.">ψ 是兩臂之間的夾角；反射角 θ<sub>r</sub> = ψ − θ<sub>i</sub>。</p>
+        </section>
+
+        <!-- 實驗二：折射 -->
+        <section class="card" id="ctl-refract" hidden>
+          <h2 data-en="Part 2: the prism (smallest angle A = 30°)">實驗二：稜鏡（最小內角 A = 30°）</h2>
+          <p class="seg-label" id="matLabel" data-en="Prism material (n at about 10 GHz):">稜鏡材料（約 10 GHz 的折射率）：</p>
+          <div class="seg3" role="group" aria-labelledby="matLabel">
+            <button type="button" data-mat="polystyrene" aria-pressed="true" data-en-html="Polystyrene&lt;small&gt;1.59&lt;/small&gt;">聚苯乙烯<small>1.59</small></button>
+            <button type="button" data-mat="paraffin" aria-pressed="false" data-en-html="Paraffin wax&lt;small&gt;1.49&lt;/small&gt;">石蠟<small>1.49</small></button>
+            <button type="button" data-mat="unknown" aria-pressed="false" data-en-html="Unknown&lt;small&gt;n = ?&lt;/small&gt;">未知材料<small>n = ?</small></button>
+          </div>
+          <div class="slider"><label for="psiP" data-en="Goniometer reading ψ (receiver arm)">角度計讀數 ψ（接收臂）</label><output id="psiPo"></output>
+            <input id="psiP" type="range" min="110" max="180" step="0.5" value="180" data-decimals="1"></div>
+          <p class="hint" data-en-html="The transmitter is pressed against the face next to the 30° corner, so the waves enter without bending and meet the slanted face at 30°. Deviation δ = 180° − ψ, angle of refraction θ&lt;sub&gt;2&lt;/sub&gt; = 30° + δ.">發射器緊貼 30° 角旁邊的那一面，微波直直射入，在斜面上的入射角就是 30°。偏向角 δ = 180° − ψ，折射角 θ<sub>2</sub> = 30° + δ。</p>
+        </section>
+
+        <!-- 實驗三：駐波 -->
+        <section class="card" id="ctl-standing" hidden>
+          <h2 data-en="Part 3: the probe between transmitter and plate">實驗三：發射器與反射板之間的探針</h2>
+          <div class="slider"><label for="probe" data-en="Probe position on the scale x (cm)">探針在尺上的刻度 x（cm）</label><output id="probeo"></output>
+            <input id="probe" type="range" min="14" max="68" step="0.05" value="40" data-decimals="2"></div>
+          <div class="slider"><label for="nNodes" data-en="Count to the N-th node (N)">數到第 N 個波節（N）</label><output id="nNodeso"></output>
+            <input id="nNodes" type="range" min="1" max="10" step="1" value="5" data-decimals="0"></div>
+          <p class="hint" data-en="The transmitter’s mouth is at 10.0 cm on the scale and the plate at 70.0 cm (60 cm apart). Move the probe slowly — the needle needs a moment to settle.">發射器開口在刻度 10.0 cm、反射板在 70.0 cm（相距 60 cm）。探針要慢慢移動——指針需要一點時間才會穩定。</p>
+        </section>
+
+        <!-- 實驗四：偏振 -->
+        <section class="card" id="ctl-polar" hidden>
+          <h2 data-en="Part 4: polarizing grids">實驗四：偏極柵</h2>
+          <div class="slider"><label for="dist" data-en="Distance between the horn mouths d (cm)">兩喇叭開口的距離 d（cm）</label><output id="disto"></output>
+            <input id="dist" type="range" min="30" max="70" step="0.1" value="55" data-decimals="2"></div>
+          <div class="gridbox">
+            <div class="checks"><label><input id="g1on" type="checkbox"><span data-en="Grid 1 (near the transmitter)">偏極柵 1（靠近發射器）</span></label></div>
+            <div class="slider"><label for="g1" data-en="Slits of grid 1 from horizontal">柵 1 隙縫與水平的夾角</label><output id="g1o"></output>
+              <input id="g1" type="range" min="0" max="180" step="5" value="0" data-decimals="1"></div>
+          </div>
+          <div class="gridbox">
+            <div class="checks"><label><input id="g2on" type="checkbox"><span data-en="Grid 2 (near the receiver)">偏極柵 2（靠近接收器）</span></label></div>
+            <div class="slider"><label for="g2" data-en="Slits of grid 2 from horizontal θ">柵 2 隙縫與水平的夾角 θ</label><output id="g2o"></output>
+              <input id="g2" type="range" min="0" max="180" step="5" value="0" data-decimals="1"></div>
+            <div class="seg5" role="group" aria-label="柵 2 的角度" data-en-aria-label="Angle of grid 2">
+              <button type="button" data-g2="0">0°</button><button type="button" data-g2="30">30°</button><button type="button" data-g2="45">45°</button><button type="button" data-g2="60">60°</button><button type="button" data-g2="90">90°</button>
+            </div>
+          </div>
+          <div class="gridbox">
+            <div class="slider"><label for="rxRot" data-en="Receiver turned about its axis ρ (explore)">接收器繞軸轉動 ρ（延伸）</label><output id="rxRoto"></output>
+              <input id="rxRot" type="range" min="0" max="180" step="5" value="0" data-decimals="1"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Transmitter and meter">發射器與電表</h2>
+          <p class="seg-label" id="freqLabel" data-en="Transmitter frequency:">發射器的頻率：</p>
+          <div class="seg3" role="group" aria-labelledby="freqLabel">
+            <button type="button" data-freq="10.525" aria-pressed="true" data-en-html="10.525 GHz&lt;small&gt;common kit&lt;/small&gt;">10.525 GHz<small>常見機型</small></button>
+            <button type="button" data-freq="9.4" aria-pressed="false" data-en-html="9.4 GHz&lt;small&gt;other kit&lt;/small&gt;">9.4 GHz<small>另一種機型</small></button>
+            <button type="button" data-freq="unknown" aria-pressed="false" data-en-html="Unknown&lt;small&gt;f = ?&lt;/small&gt;">未知<small>f = ?</small></button>
+          </div>
+          <p class="seg-label" id="errLabel" data-en="Errors:">誤差：</p>
+          <div class="seg2" role="group" aria-labelledby="errLabel">
+            <button type="button" data-err="0" aria-pressed="true" data-en-html="Ideal&lt;small&gt;meter read to 0.01 mA&lt;/small&gt;">理想<small>讀到 0.01 mA</small></button>
+            <button type="button" data-err="1" aria-pressed="false" data-en-html="With errors&lt;small&gt;noise + misalignment&lt;/small&gt;">含誤差<small>雜訊＋沒對準</small></button>
+          </div>
+          <div class="slider"><label for="sens" data-en="Receiver sensitivity">接收器靈敏度</label><output id="senso"></output>
+            <input id="sens" type="range" min="0" max="1000" step="1" value="500" data-decimals="2"></div>
+          <p class="hint" data-en="Turn the sensitivity down if the needle goes off the scale. Keep it the same while you compare readings.">指針超過滿刻度時把靈敏度調低；互相比較的讀數要用同一個靈敏度。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：數據與分析 -->
+    <div class="lab mw">
+      <div class="stage">
+        <h2 id="dataTitle">—</h2>
+        <canvas id="graph" aria-label="目前這個實驗的數據圖" data-en-aria-label="Graph of the data for the current part"></canvas>
+        <div class="legend" id="gLegend"></div>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <div class="gbtns">
+          <button type="button" id="undo" data-en="Remove the last row">移除最後一筆</button>
+        </div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析結果</h2>
+          <dl class="readout" id="fit"></dl>
+          <button type="button" class="reveal" id="reveal" hidden>—</button>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en="Use a microwave transmitter and receiver to check that microwaves obey the law of reflection and Snell’s law of refraction.">用微波發射器與接收器，確認微波遵守反射定律與司乃耳折射定律。</li>
+        <li data-en="Set up a standing wave with a metal reflector and measure the wavelength (and so the frequency) of the microwaves.">用金屬反射板造出駐波，量出微波的波長，進而求出頻率。</li>
+        <li data-en="Use polarizing grids to show that microwaves are polarized — evidence that electromagnetic waves are transverse.">用偏極柵證明微波有偏振的現象——電磁波是橫波的證據。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="Microwave transmitter and receiver (horn antennas on stands), a goniometer (a protractor with a fixed arm and a movable arm, each with a centimetre scale), a metal reflecting plate with a holder, a polystyrene prism on a turntable, two polarizing grids, a probe antenna, a milliammeter and leads.">微波發射器與接收器（喇叭天線，附固定座）、角度計（有刻度的轉盤，一支固定臂、一支可動臂，兩臂都有公分刻度）、金屬反射板與支撐座、聚苯乙烯稜鏡與轉動支撐座、偏極柵兩片、探針天線、毫安培計、導線。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="<strong>Microwaves are electromagnetic waves.</strong> Like light they travel at \(c \approx 3.00\times10^{8}\ \mathrm{m/s}\), and \(c = f\lambda\). Microwaves have wavelengths from about a millimetre to about a metre. The transmitter here oscillates at about 10 GHz, so"><strong>微波是電磁波。</strong>和光一樣以 \(c \approx 3.00\times10^{8}\ \mathrm{m/s}\) 前進，而且 \(c = f\lambda\)。微波的波長大約從 1 毫米到 1 公尺。這裡的發射器每秒振盪約 100 億次（約 10 GHz），所以</p>
+      <div class="formula">
+        \[ \lambda = \frac{c}{f} = \frac{3.00\times10^{8}\ \mathrm{m/s}}{1.05\times10^{10}\ \mathrm{Hz}} \approx 2.85\ \mathrm{cm} \]
+      </div>
+      <p data-en-html="The wavelength is a few centimetres — large enough to measure with a ruler, which is why microwaves are ideal for studying wave behaviour of electromagnetic waves. The receiver contains a diode detector; for weak signals its current is proportional to the <strong>square</strong> of the electric field, i.e. to the intensity: \(I \propto E^{2}\).">波長只有幾公分，用尺就量得到，所以微波很適合拿來研究電磁波的波動性質。接收器裡有二極體檢波器：訊號不強時，它的電流與電場的<strong>平方</strong>成正比，也就是與強度成正比：\(I \propto E^{2}\)。</p>
+      <p data-en-html="<strong>Reflection.</strong> A metal is a very good conductor: the electric field along its surface must be zero, so the plate sends the wave back as from a mirror image of the transmitter. The strongest reflected signal is found where"><strong>反射</strong>：金屬是良導體，表面上沿著板面的電場必須為零，所以金屬板把波反射回來，就像有一個發射器的鏡像在板子後面發出波。反射最強的方向滿足</p>
+      <div class="formula multi">
+        \[ \theta_r = \theta_i \] \[ \psi = \theta_i + \theta_r \]
+      </div>
+      <p data-en-html="<strong>Refraction.</strong> In the prism the microwaves are slower, \(v = c/n\). Where they leave the slanted face, Snell’s law holds. The waves enter the first face head-on, so inside they meet the slanted face at the prism angle \(A\). If the receiver finds the beam turned through \(\delta\):"><strong>折射</strong>：微波在稜鏡中比較慢，\(v = c/n\)，從斜面射出時遵守司乃耳定律。微波垂直射入第一面、不偏折，所以在斜面上的入射角就是稜鏡的頂角 \(A\)。若接收器發現光束偏轉了 \(\delta\)：</p>
+      <div class="formula multi">
+        \[ n_1\sin\theta_1 = n_2\sin\theta_2 \] \[ n\sin A = \sin\theta_2,\quad \theta_2 = A + \delta \] \[ n = \frac{\sin(A+\delta)}{\sin A} \]
+      </div>
+      <p data-en-html="<strong>Standing waves.</strong> The wave from the transmitter and the wave reflected by the plate travel in opposite directions with the same frequency. Added together they form a standing wave: nodes (minimum reading) and antinodes (maximum) stay in place. Since the field is zero at the metal surface, the plate is a node, and neighbouring nodes are half a wavelength apart. If the probe passes \(N\) nodes over a distance \(\Delta x\):"><strong>駐波</strong>：發射器發出的波與金屬板反射的波頻率相同、方向相反，疊加後形成駐波：波節（讀數最小）與波腹（讀數最大）的位置固定不動。金屬板表面的電場為零，所以板面是波節，相鄰兩波節相距半個波長。探針移動 \(\Delta x\) 經過 \(N\) 個波節，則</p>
+      <div class="formula multi">
+        \[ \Delta x = N\cdot\frac{\lambda}{2} \] \[ \lambda = \frac{2\,\Delta x}{N} \] \[ f = \frac{c}{\lambda} \]
+      </div>
+      <p data-en-html="With \(N = 5\) the distance is \(2.5\lambda\), so \(\lambda = \Delta x / 2.5\).">取 \(N = 5\) 時距離是 \(2.5\lambda\)，\(\lambda = \Delta x / 2.5\)。</p>
+      <p data-en-html="<strong>Polarization.</strong> In an electromagnetic wave the electric field oscillates <strong>perpendicular</strong> to the direction of travel. The transmitter’s field is vertical (linearly polarized). A grid of parallel metal strips lets through only the component of \(\vec E\) perpendicular to the strips: the component along the strips drives currents in the metal and is reflected. The receiving antenna in turn responds only to the component along its own axis. With the first grid’s slits horizontal and the second turned by \(\theta\) (\(E_2\): the field after grid 2, \(E_R\): its component along the receiving antenna):"><strong>偏振</strong>：電磁波的電場振動方向與前進方向<strong>垂直</strong>。發射器的電場是鉛直的（線偏振）。平行金屬條組成的偏極柵只讓 \(\vec E\) 垂直於金屬條的分量通過；平行於金屬條的分量會在金屬中推動電流而被反射。接收天線也只感應沿著自己軸向的分量。第一片柵的隙縫水平、第二片轉了 \(\theta\) 時（\(E_2\)：通過柵 2 後的電場，\(E_R\)：沿接收天線的分量）：</p>
+      <div class="formula multi">
+        \[ E_2 = E_0\cos\theta \] \[ E_R = E_2\cos\theta = E_0\cos^{2}\theta \] \[ I \propto E_R^{2} \;\Rightarrow\; \frac{I}{I_0} = \cos^{4}\theta \]
+      </div>
+      <p data-en-html="If instead you turn only the receiver by \(\rho\) (no grids), the reading follows Malus’s law \(I/I_0 = \cos^{2}\rho\). Only a <strong>transverse</strong> wave can be blocked by turning a grid — a longitudinal wave (like sound) has no direction across the beam to choose.">如果改成不放偏極柵、只把接收器轉 \(\rho\)，讀數遵守馬呂斯定律 \(I/I_0 = \cos^{2}\rho\)。只有<strong>橫波</strong>會因為柵的方向而被擋住——縱波（例如聲波）沒有橫向的方向可以挑選。</p>
+
+      <h3 data-en="Procedure">步驟</h3>
+      <p><strong data-en="Part 1 — Reflection">實驗一　反射</strong></p>
+      <ol>
+        <li data-en="Put the transmitter on the fixed arm and the receiver on the movable arm. Without the plate, turn the arm to 180° so the horns face each other and check that the meter shows a reading.">發射器裝在固定臂、接收器裝在可動臂。先不裝金屬板，把可動臂轉到 180°，兩喇叭正對，確認電表有讀數。</li>
+        <li data-en="Mount the metal plate on the turntable at the centre and set the angle of incidence to 20°.">把金屬板裝在中央的轉台上，入射角調到 20°。</li>
+        <li data-en="Swing the receiver arm slowly and find where the reading is largest. Record ψ and work out θr = ψ − θi.">慢慢轉動接收臂，找出讀數最大的位置，記下 ψ，算出 θ<sub>r</sub> = ψ − θ<sub>i</sub>。</li>
+        <li data-en="Increase the angle of incidence 10° at a time up to 80° and repeat.">入射角每次增加 10°，做到 80°。</li>
+      </ol>
+      <p><strong data-en="Part 2 — Refraction">實驗二　折射</strong></p>
+      <ol>
+        <li data-en="Replace the plate by the prism on its turntable. Press the transmitter’s mouth against the face next to the prism’s smallest angle.">把金屬板換成放在轉動支撐座上的稜鏡，發射器開口緊貼稜鏡最小內角旁的一面。</li>
+        <li data-en="Swing the receiver round on the slanted side (without hitting the prism) and find the largest reading.">在斜面那一側轉動接收器（不要撞到稜鏡），找出讀數最大的位置。</li>
+        <li data-en="Convert the goniometer reading into the angle of refraction and use Snell’s law to find n. Repeat a few times.">把角度計的讀數換算成折射角，用司乃耳定律算出 n，重做幾次。</li>
+      </ol>
+      <p><strong data-en="Part 3 — Standing waves and wavelength">實驗三　駐波與波長</strong></p>
+      <ol>
+        <li data-en="Set the goniometer to 180°. Place the transmitter and the metal plate 60 cm apart, and the probe antenna (connected to the meter) half way between them.">角度計調成 180°，發射器與金屬板相距 60 cm，接上電表的探針天線放在兩者中間。</li>
+        <li data-en="Move the probe slowly towards the transmitter until the reading is smallest — a node. Note this scale reading as the start.">把探針慢慢往發射器移動，找到讀數最小的位置（波節），記下刻度作為起點。</li>
+        <li data-en="Keep moving, count the nodes, and note the position of the fifth node (not counting the start).">繼續移動、數波節，記下第 5 個波節（不含起點）的刻度。</li>
+        <li data-en="The distance is 2.5 wavelengths: divide it by 2.5. Repeat five times.">這段距離是 2.5 個波長，除以 2.5 就是波長。重做 5 次。</li>
+      </ol>
+      <p><strong data-en="Part 4 — Polarization">實驗四　偏振</strong></p>
+      <ol>
+        <li data-en="Face the transmitter and receiver along the straight goniometer (180°). Without the grids, adjust the distance between them to get a large reading.">角度計調成 180°，發射器與接收器相向放在兩端。不放偏極柵，調整兩者的距離，使讀數夠大。</li>
+        <li data-en="Put both grids in between with their slits horizontal (0°) and record the reading.">放上兩片偏極柵，隙縫都水平（0°），記錄讀數。</li>
+        <li data-en="Turn the grid next to the receiver to 30°, 45°, 60° and 90° and record the reading each time.">把靠近接收器的偏極柵轉到 30°、45°、60°、90°，分別記錄讀數。</li>
+      </ol>
+
+      <h3 data-en="Things to watch">注意事項</h3>
+      <ul>
+        <li data-en="Keep the horns lined up and level; check alignment first with the horns face to face.">喇叭要對準、保持水平；先讓兩喇叭正對檢查一次。</li>
+        <li data-en="Keep the needle on the scale: if it goes past full scale, lower the sensitivity. Do not change the sensitivity in the middle of a series of readings you want to compare.">指針不可超過滿刻度，超過就把靈敏度調低；要互相比較的一組讀數，中途不要改靈敏度。</li>
+        <li data-en="The meter needs a moment to settle. Near a node, move the probe 0.1–0.2 cm at a time and wait before reading.">電表的指針需要一點時間才會穩定。找波節時每移動 0.1～0.2 cm 停一下再讀。</li>
+        <li data-en="Your body and other metal objects reflect microwaves too: keep hands and bags out of the beam while you read the meter.">人體與其他金屬也會反射微波：讀數時手和書包不要擋在光束附近。</li>
+        <li data-en="The microwave power of a school kit is very small (milliwatts), but do not look into the horn at close range for a long time.">學校實驗用的微波功率很小（毫瓦等級），但仍不要長時間近距離對著喇叭口看。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol>
+        <li><span data-en="At 70° and 80° your angle of reflection is no longer equal to the angle of incidence. Why?">入射角 70°、80° 時，量到的反射角不再等於入射角，為什麼？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="Seen from the transmitter, a plate turned to 80° is only about 25 cm × cos 80° ≈ 4 cm wide — narrower than the beam. Much of the beam passes the plate’s edge and goes straight on, and the receiver, now almost in line with the transmitter, picks up this direct wave as well as the reflected one. The two add up and move the maximum.">從發射器看過去，轉到 80° 的金屬板只剩約 25 cm × cos 80° ≈ 4 cm 寬，比光束還窄。大部分的微波從板邊直接通過，而接收器這時幾乎正對著發射器，除了反射波也收到直接波，兩者疊加後最大值的位置就偏了。</p></details></li>
+        <li><span data-en="Why do the readings at the nodes not drop to zero, and why are the nodes deeper close to the plate?">為什麼波節的讀數不會降到零？為什麼越靠近金屬板，波節越明顯？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="The transmitter sends out spreading waves, so their amplitude falls with distance. The wave reaching the probe straight from the transmitter is stronger than the wave that has gone to the plate and back, so they cannot cancel completely. Close to the plate the two paths are nearly equally long and the amplitudes nearly equal, so the cancellation is almost perfect.">發射器發出的是向外擴散的波，振幅隨距離變小。直接到達探針的波比「到金屬板再回來」的波強，兩者無法完全抵消。越靠近金屬板，兩條路徑的長度越接近、振幅越接近，抵消得就越完全。</p></details></li>
+        <li><span data-en="Why measure across five nodes instead of just the distance between two neighbouring nodes?">為什麼要量 5 個波節的距離，而不是只量相鄰兩個波節的距離？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="Each node position has about the same reading error (a millimetre or so). Over five nodes the distance is five times longer, so the same error is five times smaller compared with the distance.">每個波節位置的讀數誤差差不多（約 1 mm）。量 5 個波節時距離長了 5 倍，同樣的誤差相對於距離就小了 5 倍。</p></details></li>
+        <li><span data-en="With the second grid at 45° the reading falls to about one quarter, not one half. Why?">柵 2 轉到 45° 時，讀數只剩約四分之一，而不是一半，為什麼？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Two factors of \(\cos\theta\) act on the field: one at the grid and one at the receiving antenna, which is still vertical. The detector reads \(E^{2}\), so the reading is \(\cos^{4}45^\circ = 1/4\). Turn the receiver together with the grid and you get Malus’s \(\cos^{2}\theta\) instead.">電場被乘了兩次 \(\cos\theta\)：一次在偏極柵、一次在仍然是鉛直的接收天線。檢波器讀的是 \(E^{2}\)，所以讀數是 \(\cos^{4}45^\circ = 1/4\)。如果接收器跟著柵一起轉，就變成馬呂斯定律的 \(\cos^{2}\theta\)。</p></details></li>
+        <li><span data-en="Turn the receiver through 90° so that it reads nothing. Now put one grid between the horns with its slits at 45°. What happens, and why?">把接收器轉 90°，讀數變成零。再在兩喇叭之間放一片隙縫 45° 的偏極柵，會怎樣？為什麼？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="The reading comes back, to a quarter of the original. The grid passes the component \(E_0\cos45^\circ\) along its own direction, and that tilted field has a component \(\cos45^\circ\) along the receiver’s horizontal antenna: \(E = E_0/2\), so \(I = I_0/4\). A grid does not only remove a part of the wave — it also turns the direction of the field.">讀數會回來，變成原來的四分之一。偏極柵讓 \(E_0\cos45^\circ\) 沿柵的通過方向通過，這個斜的電場在接收器水平天線方向上又有 \(\cos45^\circ\) 的分量：\(E = E_0/2\)，所以 \(I = I_0/4\)。偏極柵不只是擋掉一部分的波，它也改變了電場的方向。</p></details></li>
+        <li><span data-en="In Part 2 the largest reading is found about 1° closer to the straight-through direction than Snell’s law predicts for the centre of the beam. Why? How could you do better?">實驗二中，讀數最大的方向比司乃耳定律對光束中心的預測更靠近直進方向約 1°，為什麼？怎樣可以量得更準？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="The beam is only a few wavelengths wide, so it contains waves going in slightly different directions. Those that hit the slanted face at larger angles are bent much more (and are partly reflected), so the beam spreads out more on that side and its peak shifts slightly towards the smaller angle. Measure the two angles where the reading has fallen to half of the maximum and take the angle half way between them.">光束只有幾個波長寬，包含方向略有不同的波。打在斜面上角度較大的波被偏折得多很多（而且有一部分被反射），光束在那一側散得比較開，峰值就稍微偏向小角度。可以找出讀數降到最大值一半的兩個角度，取兩者的中間。</p></details></li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Watch the colours in front of the plate: where the incident and reflected waves overlap they form a pattern of stripes that do not move — a standing wave across the beam.">看金屬板前面的顏色：入射波與反射波重疊的地方，出現不會移動的條紋——光束中的駐波。</li>
+        <li data-en="Turn the receiver to stand straight behind the plate: the plate casts a shadow, but a little signal still arrives by diffraction round its edges.">把接收器轉到金屬板正後方：金屬板擋出影子，但仍有一點訊號從板邊繞射過來。</li>
+        <li data-en="Change the frequency to 9.4 GHz in Part 3: the nodes move closer together or further apart?">實驗三把頻率改成 9.4 GHz：波節變密還是變疏？</li>
+        <li data-en="In Part 4 slide the receiver back and forth without grids: the reading rises and falls a little every half wavelength because some of the wave bounces between the two horns.">實驗四不放偏極柵、前後移動接收器：讀數每半個波長就起伏一次，因為有一部分的波在兩個喇叭之間來回反射。</li>
+        <li data-en="Choose “With errors”: the transmitter is slightly misaligned and the needle jitters. Can you still get good results?">選「含誤差」：發射器沒有完全對準、指針會抖動，還能量得準嗎？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The transmitter horn is a source of spherical waves e^(ikr)/r from its phase centre (3 cm behind the mouth) with a directional pattern 18° wide at half power — the pattern of an 11 cm wide horn. Its electric field is vertical. The receiving horn has the same pattern (reciprocity); the probe antenna has none.">發射喇叭從相位中心（開口後方 3 cm）發出球面波 e^(ikr)/r，並有方向性：半功率寬度 18°（寬 11 cm 的喇叭開口）。電場是鉛直的。接收喇叭有相同的方向圖（互易性），探針天線則沒有方向性。</li>
+        <li data-en="The metal plate (25 cm wide, perfect conductor) is handled with physical optics: the Kirchhoff integral is calculated numerically across the plate’s width and analytically (stationary phase) along its height. For a wide plate this is exactly the wave from the transmitter’s mirror image (reflection coefficient −1); for a finite plate it also gives the diffraction at its edges and the shadow behind it (Babinet’s principle).">金屬板（寬 25 cm、理想導體）用物理光學處理：Kirchhoff 積分沿板寬數值計算、沿板高用駐相法解析計算。板很寬時，結果正好是發射器鏡像發出的波（反射係數 −1）；板寬有限時，也自動算出板緣的繞射與板後的影子（Babinet 原理）。</li>
+        <li data-en="Prism: the transmitter’s mouth (with the cosine field of its TE10 mode) lies against the first face; inside, the wave travels straight across. On the slanted face the field is multiplied by the Fresnel transmission coefficients (E perpendicular to the plane of incidence) and radiated out with the Kirchhoff integral; the receiver adds up the field over its own mouth. Snell’s law is not put in — it comes out of the phases.">稜鏡：發射器開口（TE10 模態的餘弦分布）貼在第一面上，微波在稜鏡內直直前進；斜面上的場乘上菲涅耳穿透係數（電場垂直入射面），再以 Kirchhoff 積分向外輻射，接收器把開口上的場加起來。司乃耳定律不是直接寫進去的，而是由相位自然得到。</li>
+        <li data-en="Grids are treated with Jones vectors: the component across the strips passes, the component along them is blocked (in “With errors” 4% leaks through). Some of the wave bounces between the two horns (mouth reflection 0.45), which makes the reading rise and fall slightly with distance.">偏極柵用瓊斯向量計算：垂直於金屬條的分量通過，平行的分量被擋下（「含誤差」時有 4% 漏過）。兩喇叭之間有一部分的波來回反射（開口反射係數 0.45），讓讀數隨距離稍有起伏。</li>
+        <li data-en="The meter reading is proportional to the square of the field along the receiving antenna, times the sensitivity. The needle follows the signal with a short delay. In “With errors” the reading has about 1.5% noise, and the transmitter is turned by a hidden 0.8°–2° — a systematic error that stays the same until you press “Clear all”.">電表讀數與沿接收天線方向的電場平方成正比，再乘上靈敏度；指針會稍慢一點才跟上。「含誤差」時讀數約有 1.5% 的雜訊，而且發射器偏了一個隱藏的 0.8°～2°——系統誤差，按「全部清除」前都不變。</li>
+        <li data-en="The pictures of the field use the same calculation. The waves are drawn slowed down by about ten billion times; the colours are compressed so that weak waves are still visible. The 3D view (three.js library, MIT licence, loaded only when you choose 3D) shows the same apparatus to scale with arrows for the electric field along the beam.">畫面中的電場也用同一套計算，只是放慢約一百億倍，顏色經過壓縮，讓較弱的波也看得到。3D 檢視（three.js 函式庫，MIT 授權，選 3D 時才下載）依實際尺寸畫出同樣的器材，並用箭頭表示光束上的電場。</li>
+        <li data-en="Accepted values: polystyrene n ≈ 1.59 and paraffin wax n ≈ 1.49 at about 10 GHz (from the dielectric constants 2.54 and 2.24; A. von Hippel, Dielectric Materials and Applications). c = 2.998 × 10^8 m/s.">公認值：約 10 GHz 時聚苯乙烯 n ≈ 1.59、石蠟 n ≈ 1.49（由介電常數 2.54 與 2.24 換算；A. von Hippel《Dielectric Materials and Applications》）。c = 2.998 × 10^8 m/s。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/microwave-core.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/microwave-3d.js?v=202611120013"></script>
+  <script src="js/microwave.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="microwave"></script>
+  <script src="js/missions/microwave.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="microwave"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

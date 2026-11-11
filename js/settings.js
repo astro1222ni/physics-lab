@@ -37,10 +37,30 @@
     return out;
   }
   function save() {
-    try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* 私密瀏覽等情況忽略 */ }
+    // 網址指定的語言（?lang=）只在這次瀏覽套用，不蓋掉使用者自己存的語言
+    const o = Object.assign({}, st, urlLang && st.lang === urlLang && hadStored ? { lang: savedLang } : {});
+    try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) { /* 私密瀏覽等情況忽略 */ }
   }
 
   const st = load();
+  // 可分享的語言網址：?lang=en、?lang=zh-Hans、?lang=zh-Hant（國外老師、搜尋引擎直接看到 English 版）
+  let hadStored = false;
+  try { hadStored = !!localStorage.getItem(KEY); } catch (e) { /* 忽略 */ }
+  const savedLang = st.lang;
+  const urlLang = (function () {
+    let v = null;
+    try { v = new URLSearchParams(location.search).get('lang'); } catch (e) { return null; }
+    if (!v) return null;
+    v = v.toLowerCase();
+    if (v === 'en' || v.indexOf('en-') === 0) return 'en';
+    if (v === 'zh-hans' || v === 'zh-cn' || v === 'zh-sg') return 'zh-Hans';
+    if (v === 'zh-hant' || v === 'zh-tw' || v === 'zh-hk' || v === 'zh') return 'zh-Hant';
+    return null;
+  })();
+  if (urlLang) {
+    st.lang = urlLang;
+    if (!hadStored) save(); // 第一次來的訪客：照網址的語言記住，換頁也維持
+  }
 
   // ---------- 立即套用（在畫面出現前） ----------
   function applyTheme() {
@@ -291,7 +311,12 @@
         panel.querySelectorAll('[data-set="' + name + '"]').forEach(function (x) {
           x.setAttribute('aria-pressed', String(x === b));
         });
-        if (name === 'lang') { location.reload(); return; } // 語言切換重新載入，確保每段文字都正確
+        if (name === 'lang') { // 語言切換重新載入，確保每段文字都正確；網址帶 ?lang= 時拿掉，改用剛選的語言
+          if (urlLang) {
+            try { const u = new URL(location.href); u.searchParams.delete('lang'); location.replace(u.href); return; } catch (e) { /* 舊瀏覽器 */ }
+          }
+          location.reload(); return;
+        }
         if (name === 'theme') applyTheme();
         if (name === 'fs') applyFont();
         notify(name, val);

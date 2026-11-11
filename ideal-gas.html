@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Ideal Gas Molecules | Astro Ni Physics Lab">理想氣體分子模擬｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：三維容器裡的硬球分子不停碰撞，由撞牆的動量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT、方均根速率與馬克士威速率分布；再用活塞做等溫、等容、等壓與絕熱過程。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="立體容器裡數百個原子不停碰撞，由撞牆的衝量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT 與馬克士威速率分布；再用活塞與恆溫槽做等溫、等容、等壓與絕熱過程。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="理想氣體分子模擬｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="立體容器裡數百個原子不停碰撞，由撞牆的衝量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT 與馬克士威速率分布；再用活塞與恆溫槽做等溫、等容、等壓與絕熱過程。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/ideal-gas.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/ideal-gas.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="理想氣體分子模擬的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"理想氣體分子模擬","alternateName":"Ideal Gas Molecules","description":"立體容器裡數百個原子不停碰撞，由撞牆的衝量量出壓力，驗證 PV = NkT、平均動能 (3/2)kT 與馬克士威速率分布；再用活塞與恆溫槽做等溫、等容、等壓與絕熱過程。","url":"https://astro1222ni.github.io/physics-lab/ideal-gas.html","image":"https://astro1222ni.github.io/physics-lab/img/og/ideal-gas.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["熱學（Heat）","熱學（Heat）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 理想氣體頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 容器畫布：左右拖曳活塞（觸控時上下滑動仍可捲動頁面）；圖表畫布沒有拖曳操作 */
@@ -68,6 +88,40 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .bar { width: 9px; height: 12px; border-radius: 2px; }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    /* 3D 檢視：畫布高度由程式設定（與 2D 相同）；背景是隨深淺色變化的極淡徑向暈影 */
+    #view3 { position: relative; }
+    #view3 canvas {
+      aspect-ratio: auto; height: 420px; touch-action: none; cursor: grab;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 48% 40%, var(--canvas-bg) 52%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .ig3-ov { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .ig3-tag, .ig3-hud { position: absolute; white-space: pre; font: 600 calc(12px * var(--fs, 1))/1.4 system-ui, -apple-system, "Segoe UI", sans-serif;
+      padding: 1px 8px; border-radius: 999px; color: var(--muted); font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); }
+    .ig3-tag { left: 0; top: 0; will-change: transform; }
+    .ig3-tag.strong, .ig3-hud.tl, .ig3-hud.tr { font-weight: 700; }
+    .ig3-hud.tl, .ig3-hud.tr { font-size: calc(13px * var(--fs, 1)); }
+    .ig3-tag.plain { background: none; padding: 0 2px; font-weight: 500; font-size: calc(11px * var(--fs, 1));
+      text-shadow: 0 0 3px var(--canvas-bg), 0 0 3px var(--canvas-bg), 0 0 2px var(--canvas-bg); }
+    .ig3-hud.tl { top: 10px; left: 10px; }
+    .ig3-hud.tr { top: 10px; right: 10px; }
+    .ig3-hud.tr2 { top: calc(14px + 18px * var(--fs, 1)); right: 10px; font-size: calc(11px * var(--fs, 1)); }
+    .ig3-hud.bl { bottom: 10px; left: 10px; }
+    .ig3-hud.br { bottom: 10px; right: 10px; }
+    .ig3-hud.tc { top: calc(44px + 4px * var(--fs, 1)); left: 50%; transform: translateX(-50%); }
+    .ig3-ring { position: absolute; left: 0; top: 0; border: 1.5px solid var(--text); border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--canvas-bg) 60%, transparent); }
   </style>
 </head>
 <body data-en-ready>
@@ -79,8 +133,17 @@
     </header>
 
     <div class="lab ig">
-      <div class="stage">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="理想氣體模擬畫布：立體玻璃容器中的氣體分子、右側可拖曳的活塞、壓力計與溫度計" data-en-aria-label="Ideal gas simulation: gas molecules in a 3D glass container, a draggable piston on the right, a pressure gauge and a thermometer"></canvas>
+        <div id="view3"></div>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
           <button id="reset" type="button" data-en="Clear all" title="清除速率分布、過程圖與能量收支的累積資料；滑桿設定與氣體不變" data-en-title="Clear the accumulated speed histogram, process graph and energy totals; the sliders and the gas are kept">全部清除</button>
@@ -98,8 +161,11 @@
           <span data-en-html="<i class=&quot;dot&quot; id=&quot;lgA&quot; style=&quot;background:var(--b-wave)&quot;></i>Gas molecules (colour = element)"><i class="dot" id="lgA" style="background:var(--b-wave)"></i>氣體分子（顏色代表元素）</span>
           <span id="lgBath" data-en-html="<i style=&quot;background:var(--b-thermo)&quot;></i>Heat-bath walls (glow = temperature)"><i style="background:var(--b-thermo)"></i>恆溫壁（光暈顏色代表溫度）</span>
           <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Impacts on the piston"><i style="background:var(--equi)"></i>撞擊活塞的位置</span>
+          <span class="l3" data-en-html="<i style=&quot;background:var(--muted)&quot;></i>Impacts on the fixed walls (1 in 8 shown)"><i style="background:var(--muted)"></i>撞擊固定器壁（每 8 次顯示約 1 次）</span>
+          <span class="l3" data-en-html="<i style=&quot;background:var(--text)&quot;></i>Path of the followed molecule"><i style="background:var(--text)"></i>追蹤分子的路徑</span>
         </div>
-        <p class="hint" data-en-html="Drag the piston handle left or right to change the volume (isothermal and adiabatic processes). Tap a molecule to follow its path. Time runs about 5 × 10<sup>10</sup> times slower than in reality: 1 second on screen is 20 ps. The molecules are drawn at their true size relative to the box.">左右拖曳活塞的把手可以改變體積（等溫與絕熱過程）；點一下分子可以追蹤它的路徑。時間放慢約 5 × 10<sup>10</sup> 倍：畫面上 1 秒＝ 20 ps。分子與容器依相同比例繪製。</p>
+        <p class="hint l2" data-en-html="Drag the piston handle left or right to change the volume (isothermal and adiabatic processes). Tap a molecule to follow its path. Time runs about 5 × 10<sup>10</sup> times slower than in reality: 1 second on screen is 20 ps. The molecules are drawn at their true size relative to the box.">左右拖曳活塞的把手可以改變體積（等溫與絕熱過程）；點一下分子可以追蹤它的路徑。時間放慢約 5 × 10<sup>10</sup> 倍：畫面上 1 秒＝ 20 ps。分子與容器依相同比例繪製。</p>
+        <p class="hint l3" data-en-html="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Drag the piston handle to change the volume (isothermal and adiabatic processes); tap a molecule to follow its path. 1 second on screen is 20 ps. Molecules, box and piston are all drawn to the same scale; the box is 20 nm × 20 nm in cross-section and the ruler is in nm.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移；拖曳活塞的把手可以改變體積（等溫與絕熱過程），點一下分子可以追蹤它的路徑。畫面上 1 秒＝ 20 ps。分子、容器與活塞都依相同比例繪製：容器截面 20 nm × 20 nm，刻度尺以 nm 標示。</p>
 
         <div class="charts">
           <figure class="chart">
@@ -267,6 +333,7 @@
         <li data-en-html="Real atoms are about 0.26–0.4 nm across; here they are 0.44–0.56 nm so that collisions are frequent enough to watch. Because the molecules take up a little room, the measured pressure is slightly higher than \(NkT/V\) — by the factor \(Z = 1 + \tfrac{2\pi}{3}\tfrac{N}{V}d^{3}\), at most about 3 % here. This is one reason real gases are not perfectly ideal.">真實原子的直徑約 0.26～0.4 nm；這裡取 0.44～0.56 nm，讓碰撞頻繁到看得見。分子本身佔一點空間，量到的壓力會比 \(NkT/V\) 略大，倍數為 \(Z = 1 + \tfrac{2\pi}{3}\tfrac{N}{V}d^{3}\)（本模擬最多約 3%），這正是真實氣體不完全理想的原因之一。</li>
         <li data-en-html="Heat bath: in the isothermal, isochoric and isobaric processes the five fixed walls are in contact with a heat bath. A molecule that hits them is re-emitted with a velocity drawn from the Maxwell distribution of the bath temperature, so energy flows in or out until the gas has the bath temperature. In the adiabatic process the walls are insulating: a molecule bounces off with the same speed in a random direction (the wall is rough on the molecular scale), so no energy is exchanged.">恆溫槽：等溫、等容、等壓過程中，五面固定的器壁與恆溫槽接觸。撞上這些牆的分子，會依恆溫槽溫度的馬克士威分布重新射出，能量就在牆與氣體之間流動，直到氣體與恆溫槽同溫。絕熱過程中器壁不導熱：分子撞牆後速率不變、方向隨機（器壁在分子尺度上是粗糙的），沒有能量交換。</li>
         <li data-en-html="There are only a few hundred molecules, so the instantaneous temperature and pressure fluctuate around their averages — by about \(\sqrt{2/3N}\), roughly 6 % for \(N = 200\). That is why the readings are averaged over time and given with a statistical uncertainty. When you switch to the adiabatic process the gas keeps exactly the energy it has at that instant.">分子只有數百個，瞬間的溫度與壓力會在平均值附近起伏，幅度約為 \(\sqrt{2/3N}\)（\(N = 200\) 時約 6%）。所以讀數都取一段時間的平均，並附上統計不確定度；切換到絕熱過程時，氣體保有那一瞬間的能量。</li>
+        <li data-en-html="The 3D view shows the same simulation, not a separate one: every frame each sphere is placed at the position computed for that molecule and drawn with its true radius, and the piston face is at the computed piston position. The glass is drawn one molecular radius outside the region that the molecule centres can reach (the volume \(V\)), so a molecule just touches the glass when it bounces. The flashes on the piston are the impacts recorded by the simulation; on the fixed walls, molecules whose velocity has just been reflected are marked, and only about 1 in 8 of these impacts is shown. Turning the view does not change the simulation. The 3D view uses the three.js library (MIT license), which is downloaded only when you switch to 3D.">3D 檢視顯示的是同一個模擬，不是另外算的：每一幀把每顆球放在該分子算出來的位置、用它真實的半徑來畫，活塞內面也在算出來的活塞位置。玻璃畫在「分子中心可到達的空間」（體積 \(V\)）外面一個分子半徑處，所以分子反彈時剛好碰到玻璃。活塞上的閃光是模擬記錄到的撞擊；固定器壁上則標出速度剛被器壁反彈的分子，只顯示約 8 次中的 1 次。旋轉視角不會改變模擬。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
         <li data-en-html="The piston moves slowly compared with the molecules (at most 1 % of their mean speed), so the processes are quasi-static; while it moves, the clock speeds up and the screen shows “Fast-forward”. In the isobaric process a controller moves the piston so that the pressure gauge stays at the set value, like a piston loaded with a fixed weight.">活塞相對分子移動得很慢（最多為分子平均速率的 1%），所以過程是準靜態的；活塞移動時時間會自動快轉，畫面上會標示「快轉」。等壓過程中，由控制器依壓力計讀數移動活塞，使壓力保持在設定值，相當於活塞上放了固定重量的砝碼。</li>
       </ul>
     </section>
@@ -276,15 +343,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/ideal-gas-core.js?v=202611111312"></script>
-  <script src="js/sound.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/ideal-gas.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="ideal-gas"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/ideal-gas-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/ideal-gas-3d.js?v=202611120013"></script>
+  <script src="js/ideal-gas.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="ideal-gas"></script>
   <script src="js/missions/ideal-gas.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="ideal-gas"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="ideal-gas"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

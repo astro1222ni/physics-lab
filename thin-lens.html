@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Thin Lens Imaging: The Optical Bench Lab | Astro Ni Physics Lab">薄透鏡的成像（光具座實驗）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="在光具座上用像屏法、視差法、插針法找出凸透鏡與凹透鏡的像，讀數到 1 mm，由 1/q 對 1/p 圖求焦距。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/thin-lens.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/thin-lens.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/thin-lens.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/thin-lens.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="薄透鏡的成像｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="在光具座上用像屏法、視差法、插針法找出凸透鏡與凹透鏡的像，讀數到 1 mm，由 1/q 對 1/p 圖求焦距。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/thin-lens.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/thin-lens.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="薄透鏡的成像的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"薄透鏡的成像","alternateName":"Thin Lens Imaging","description":"在光具座上用像屏法、視差法、插針法找出凸透鏡與凹透鏡的像，讀數到 1 mm，由 1/q 對 1/p 圖求焦距。","url":"https://astro1222ni.github.io/physics-lab/thin-lens.html","image":"https://astro1222ni.github.io/physics-lab/img/og/thin-lens.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 薄透鏡成像頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度與實驗部分決定 */
+    .tl canvas { aspect-ratio: auto; }
+    #cv { height: 320px; touch-action: none; cursor: grab; }
+    #cv:focus-visible, #vcv:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    #vcv { height: 280px; margin-top: 8px; touch-action: pan-y; cursor: default; }
+    #gcv { height: 360px; touch-action: auto; cursor: default; }
+    .tl + .tl { margin-top: 16px; }
+    .tl button { min-height: 44px; }
+    .tl [hidden] { display: none !important; }
+    .tl button:disabled { opacity: .45; cursor: not-allowed; }
+    .tl .modebar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 10px; }
+    .tl .modebar button { padding: 6px 6px; line-height: 1.3; font-size: calc(14px * var(--fs, 1)); }
+    .tl .modebar button b { display: block; font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .tl .modebar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .tl .modebar button[aria-pressed="true"] b { color: var(--accent); }
+    .tl .nudge { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 2px 0; }
+    .tl .nudge .sel { flex: 1 1 9em; font-size: calc(13px * var(--fs, 1)); color: var(--muted); line-height: 1.3; }
+    .tl .nudge .sel b { color: var(--text); }
+    .tl .nudge button { flex: 0 0 auto; min-width: 44px; padding: 6px 8px; font-variant-numeric: tabular-nums; font-size: calc(13px * var(--fs, 1)); }
+    .tl .nudge .ud { display: inline-flex; gap: 6px; }
+    @media (max-width: 600px) {
+      .tl .nudge .sel { flex: 1 1 100%; }
+      .tl .nudge > button { flex: 1 1 0; padding: 6px 2px; }
+      .tl .nudge .ud { flex: 1 1 100%; }
+      .tl .nudge .ud button { flex: 1 1 0; }
+    }
+    .tl .vtitle { font-size: calc(15px * var(--fs, 1)); margin: 14px 4px 0; }
+    .tl .vtitle small { font-weight: 500; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .tl .headbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 2px 0; font-size: calc(14px * var(--fs, 1)); }
+    .tl .headbar .slider { flex: 1 1 14em; margin: 0; }
+    .tl .headbar .checks label { min-height: 44px; }
+    .tl .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .tl .playbar > button { flex: 1 1 auto; }
+    .tl .playbar #rec { font-weight: 700; min-width: 7em; }
+    .tl .stage .status { margin: 8px 4px 0; }
+    .tl .slider input[type="range"] { height: 28px; margin: 0; }
+    .tl .slider label sub, dl.readout sub, .tl .hint sub, table.data sub { font-size: .75em; }
+    .tl .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .tl .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .tl .checks label { min-height: 44px; }
+    .tl .checks input { width: 17px; height: 17px; flex: none; }
+    .tl .checks.col { flex-direction: column; gap: 0; }
+    .tl .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tl .card .info { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; line-height: 1.45; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    /* 透鏡選擇：兩列（凸、凹）× 四個 */
+    .lensgrid { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; }
+    .lensgrid .rowh { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; padding-right: 2px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+    .lensgrid .rowh svg { width: 16px; height: 22px; flex: none; color: var(--neg); }
+    .lensgrid button { padding: 4px 2px; font-variant-numeric: tabular-nums; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .lensgrid button small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .lensgrid button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .lensgrid button[aria-pressed="true"] small { color: var(--accent); }
+    .tl #reveal { margin-top: 8px; width: 100%; }
+    .tl dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dd.note { color: var(--muted); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); line-height: 1.45; }
+    dl.readout dd.warn { color: var(--pos); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); line-height: 1.45; }
+    dl.readout dd.ok { color: var(--probe); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); line-height: 1.45; }
+    dl.readout dd.big { font-weight: 700; font-size: calc(15px * var(--fs, 1)); }
+    /* 步驟清單 */
+    ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; font-size: calc(14px * var(--fs, 1)); }
+    ol.steps li { counter-increment: st; position: relative; padding: 5px 4px 5px 34px; border-radius: 8px; color: var(--muted); line-height: 1.45; }
+    ol.steps li::before { content: counter(st); position: absolute; left: 6px; top: 5px; width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border); text-align: center; line-height: 18px; font-size: calc(12px * var(--fs, 1)); font-weight: 700; color: var(--muted); background: var(--surface); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; border-color: var(--probe); color: var(--probe); }
+    ol.steps li.now { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    ol.steps li.now::before { border-color: var(--accent); background: var(--accent); color: var(--surface); }
+    .tl .stepnote { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 數據表 */
+    .tablewrap { overflow-x: auto; margin: 8px 2px 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 7px; text-align: right; border: 1px solid var(--border); white-space: nowrap; line-height: 1.35; }
+    table.data thead th { color: var(--muted); font-weight: 600; background: var(--accent-soft); text-align: center; }
+    table.data thead th small { font-weight: 500; font-size: .85em; display: block; }
+    table.data tbody th { text-align: center; font-weight: 600; color: var(--text); }
+    table.data td.meth { text-align: center; color: var(--muted); }
+    table.data td.fcol { color: var(--accent); font-weight: 600; }
+    table.data tr.latest > * { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); border: none; padding: 12px; white-space: normal; }
+    table.data tfoot td { color: var(--muted); text-align: left; border: none; padding-top: 6px; white-space: normal; }
+    .tl .gtabs { margin: 12px 2px 8px; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 2px 0; }
+    .notes .q li { margin: 6px 0; }
+    .notes details { margin: 4px 0 8px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-size: calc(14px * var(--fs, 1)); min-height: 32px; }
+    .notes details p { margin: 4px 0 0; color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#optics&quot;>Optics</a> / <a href=&quot;index.html#ch-geometrical-optics&quot;>Geometrical optics</a>"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ <a href="index.html#ch-geometrical-optics">幾何光學</a></nav>
+      <h1 data-en="Thin Lens Imaging: The Optical Bench Lab">薄透鏡的成像（光具座實驗）</h1>
+      <p data-en="The textbook lab on an optical bench with a metre rule: catch the real image of a convex lens on a screen, then find the virtual image of a concave lens with the parallax method (swing your head until the reference rod and the image no longer move apart) and with the pin method on graph paper. Read the object and image distances to the nearest millimetre, fill in the table and let the 1/q–1/p graph give you the focal length.">課本的必做實驗：在附公制尺的光具座上，用像屏接住凸透鏡的實像；再用視差法（左右擺頭，直到參考物與像不再相對移動）與方格紙上的插針法，找出凹透鏡的虛像。讀出物距與像距（到 1 mm），填進數據表，由 1/q 對 1/p 圖求出焦距。</p>
+    </header>
+
+    <!-- 第一部分：實驗裝置與操作 -->
+    <div class="lab tl">
+      <div class="stage">
+        <div class="modebar" role="group" aria-label="三種找像的方法" data-en-aria-label="Three ways to locate the image">
+          <button type="button" data-method="screen" aria-pressed="true" data-en-html="<b>Method 1</b>Screen">  <b>①</b>像屏法</button>
+          <button type="button" data-method="parallax" aria-pressed="false" data-en-html="<b>Method 2</b>Parallax">  <b>②</b>視差法</button>
+          <button type="button" data-method="pin" aria-pressed="false" data-en-html="<b>Method 3</b>Pins">  <b>③</b>插針法</button>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="實驗裝置圖：光具座上的燈泡與光源屏、透鏡、像屏或參考物（插針法時為方格紙的俯視圖）；拖曳器材可移動，方向鍵每次移動 1 mm" data-en-aria-label="The apparatus: lamp and source screen, lens, image screen or reference rod on the optical bench (a top view of the graph paper in the pin method); drag a piece to move it, arrow keys move it 1 mm"></canvas>
+        <div class="nudge" id="nudge">
+          <span class="sel" id="selText"></span>
+          <button type="button" data-step="-1" aria-label="向左 1 cm" data-en-aria-label="Left 1 cm">« 1 cm</button>
+          <button type="button" data-step="-0.1" aria-label="向左 1 mm" data-en-aria-label="Left 1 mm">‹ 1 mm</button>
+          <button type="button" data-step="0.1" aria-label="向右 1 mm" data-en-aria-label="Right 1 mm">1 mm ›</button>
+          <button type="button" data-step="1" aria-label="向右 1 cm" data-en-aria-label="Right 1 cm">1 cm »</button>
+          <span class="ud" id="nudgeUD" hidden>
+            <button type="button" data-stepy="0.1" aria-label="向上 1 mm" data-en-aria-label="Up 1 mm">↑ 1 mm</button>
+            <button type="button" data-stepy="-0.1" aria-label="向下 1 mm" data-en-aria-label="Down 1 mm">↓ 1 mm</button>
+          </span>
+        </div>
+        <h2 class="vtitle" id="vTitle"></h2>
+        <canvas id="vcv" tabindex="0" aria-label="放大圖：像屏上的像，或眼睛看到的景象" data-en-aria-label="Close-up: the image on the screen, or what the eye sees"></canvas>
+        <div class="headbar" id="headBar" hidden>
+          <div class="slider"><label for="head" data-en="Head position">頭的位置</label><output id="headO"></output>
+            <input id="head" type="range" min="-1" max="1" step="0.02" value="0" data-decimals="2"></div>
+          <div class="checks"><label><input id="autoSwing" type="checkbox"><span data-en="Swing automatically">自動左右擺頭</span></label></div>
+        </div>
+        <div class="playbar">
+          <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
+          <button id="undo" type="button" data-en="Delete last row">刪除最後一筆</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除所有透鏡的數據表與圖；器材位置與設定不變" data-en-title="Clear the data tables and graphs of all lenses; positions and settings are kept">全部清除</button>
+          <button id="preset" type="button" data-en="Set up as in the textbook">照課本擺好</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="sceneHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Procedure">實驗步驟</h2>
+          <ol class="steps" id="steps"></ol>
+          <p class="stepnote" id="stepNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 id="lensTitle" data-en="Lens">透鏡</h2>
+          <div class="lensgrid" role="group" aria-labelledby="lensTitle">
+            <span class="rowh"><svg viewBox="0 0 16 22" aria-hidden="true"><path d="M8 1 Q13 11 8 21 Q3 11 8 1 Z" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-width="1.4"/></svg><span data-en="Convex">凸透鏡</span></span>
+            <button type="button" data-lens="cx10" aria-pressed="true">10<small>cm</small></button>
+            <button type="button" data-lens="cx15" aria-pressed="false">15<small>cm</small></button>
+            <button type="button" data-lens="cx20" aria-pressed="false">20<small>cm</small></button>
+            <button type="button" data-lens="cxM" aria-pressed="false" aria-label="神秘凸透鏡" data-en-aria-label="Mystery convex lens">?<small data-en="mystery">神秘</small></button>
+            <span class="rowh"><svg viewBox="0 0 16 22" aria-hidden="true"><path d="M3.5 1 H12.5 Q8.5 11 12.5 21 H3.5 Q7.5 11 3.5 1 Z" fill="currentColor" fill-opacity=".2" stroke="currentColor" stroke-width="1.4"/></svg><span data-en="Concave">凹透鏡</span></span>
+            <button type="button" data-lens="cc10" aria-pressed="false">10<small>cm</small></button>
+            <button type="button" data-lens="cc15" aria-pressed="false">15<small>cm</small></button>
+            <button type="button" data-lens="cc20" aria-pressed="false">20<small>cm</small></button>
+            <button type="button" data-lens="ccM" aria-pressed="false" aria-label="神秘凹透鏡" data-en-aria-label="Mystery concave lens">?<small data-en="mystery">神秘</small></button>
+          </div>
+          <p class="info" id="lensInfo"></p>
+          <button type="button" id="reveal" hidden data-en="Reveal the focal length">揭曉焦距</button>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Positions (bench readings)">位置（光凳讀數）</h2>
+          <div id="benchSliders">
+            <div class="slider"><label for="xO" data-en="Source screen (object)">光源屏（物）</label><output id="xOo"></output>
+              <input id="xO" type="range" min="5" max="95" step="0.1" value="5" data-decimals="1"></div>
+            <div class="slider"><label for="xL" data-en="Lens">透鏡</label><output id="xLo"></output>
+              <input id="xL" type="range" min="5" max="98.5" step="0.1" value="90" data-decimals="1"></div>
+            <div class="slider" id="boxS"><label for="xS" data-en="Image screen">像屏</label><output id="xSo"></output>
+              <input id="xS" type="range" min="5" max="98.5" step="0.1" value="95" data-decimals="1"></div>
+            <div class="slider" id="boxR" hidden><label for="xR" data-en="Reference rod">參考物</label><output id="xRo"></output>
+              <input id="xR" type="range" min="1.5" max="98.5" step="0.1" value="35" data-decimals="1"></div>
+          </div>
+          <div id="pinSliders" hidden>
+            <div class="slider"><label for="pp" data-en="Pin P: distance to the lens">針 P 到透鏡的距離</label><output id="ppo"></output>
+              <input id="pp" type="range" min="2" max="30" step="0.1" value="20" data-decimals="1"></div>
+            <p class="hint" data-en="Drag the eye and the pins A and B on the graph paper (or select one and use the 1 mm buttons).">在方格紙上拖曳眼睛與針 A、B（或選取後用 1 mm 按鈕微調）。</p>
+          </div>
+          <p class="hint" data-en="Tap a number to type a reading (to 0.1 cm).">點一下數字可直接輸入讀數（到 0.1 cm）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+
+        <section class="card">
+          <h2 id="errTitle" data-en="Errors">誤差</h2>
+          <div class="seg2" role="group" aria-labelledby="errTitle">
+            <button type="button" data-mode="ideal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" data-mode="error" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <p class="hint" id="errHint"></p>
+          <h2 style="margin-top:12px" data-en="Display">顯示</h2>
+          <div class="checks col">
+            <label><input id="showBeam" type="checkbox" checked><span data-en="Light beam">光路（光錐）</span></label>
+            <label><input id="showRays" type="checkbox"><span data-en="Ray diagram (three principal rays)">光線圖（三條主光線）</span></label>
+            <label id="guideBox"><input id="showGuide" type="checkbox" checked><span data-en="Alignment guide line">對齊輔助線</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：數據表與分析 -->
+    <div class="lab tl">
+      <div class="stage">
+        <h2 id="tblTitle" data-en="Data table">數據表</h2>
+        <p class="hint" id="tblHint" data-en="Each press of “Record” adds the present readings. The table and the graph show the selected lens only.">每按一次「記錄」，就把目前的讀數加進表格。表格與圖只顯示目前選的透鏡。</p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <div class="seg2 gtabs" role="group" aria-label="選擇圖" data-en-aria-label="Choose the graph">
+          <button type="button" data-graph="inv" aria-pressed="true" data-en="1/q against 1/p">1/q 對 1/p 圖</button>
+          <button type="button" data-graph="sum" aria-pressed="false" data-en="p + q against p">p + q 對 p 圖</button>
+        </div>
+        <canvas id="gcv" aria-label="數據圖：1/q 對 1/p（或 p + q 對 p）的數據點與最佳直線" data-en-aria-label="Graph of the data: 1/q against 1/p (or p + q against p) with the best-fit line"></canvas>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析結果</h2>
+          <dl class="readout" id="anaOut"></dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Conjugate (Bessel) method">共軛法（物屏距離固定）</h2>
+          <dl class="readout" id="besOut"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="About the experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en-html="Form real images with a convex lens on an optical bench and check the thin-lens equation \(\dfrac1p + \dfrac1q = \dfrac1f\).">在光具座上用凸透鏡成實像，驗證薄透鏡成像公式 \(\dfrac1p + \dfrac1q = \dfrac1f\)。</li>
+        <li data-en="Locate virtual images, which cannot be caught on a screen, by the parallax method and by the pin method, and use them to measure the focal length of a concave lens.">用視差法與插針法找出無法用屏接到的虛像，測量凹透鏡的焦距。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="An optical bench with a metre rule along its side and sliding holders (carriers) whose index marks are read on the rule; a lamp; a source screen — an opaque plate with a cut-out pattern that the lamp shines through, used as the object; a white image screen; a convex lens and a concave lens; a reference object (a thin rod: a bamboo skewer, a straw or a pencil) on its own holder. For the pin method: long pins, a polystyrene board, a sheet of graph paper and a ruler.">附公制尺的光具座，以及可以在上面滑動、用標線在尺上讀位置的臺座；燈泡；光源屏（不透光的板子，挖空一個圖案讓燈光透過，當作「物」）；白色像屏；凸透鏡與凹透鏡；參考物（細長的竹籤、吸管或鉛筆）與它的臺座。插針法另需長針數支、保麗龍板、方格紙與直尺。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="<strong>The thin-lens equation.</strong> For an object at distance \(p\) in front of a thin lens of focal length \(f\), the image forms at distance \(q\) given by the equation below, with lateral magnification \(m\). Signs follow the textbook (“real is positive”): \(f > 0\) for a convex lens and \(f < 0\) for a concave lens; \(p > 0\) for a real object; \(q > 0\) for a real image on the far side of the lens and \(q < 0\) for a virtual image on the object’s side; \(m < 0\) means inverted."><strong>薄透鏡成像公式。</strong>物體在焦距 \(f\) 的薄透鏡前方 \(p\) 處，像距 \(q\) 與放大率 \(m\) 滿足下式。正負號照課本的「實正虛負」：凸透鏡 \(f > 0\)、凹透鏡 \(f < 0\)；實物 \(p > 0\)；在透鏡另一側的實像 \(q > 0\)，與物同側的虛像 \(q < 0\)；\(m < 0\) 表示倒立。</p>
+      <div class="formula multi">\[ \frac{1}{p} + \frac{1}{q} = \frac{1}{f} \] \[ m = -\frac{q}{p} \] \[ f = \frac{pq}{p + q} \]</div>
+      <p data-en-html="<strong>Real images: the screen method.</strong> When \(p > f\) a convex lens makes the light from each point of the object converge to one point behind the lens. A screen placed exactly there shows a sharp, inverted picture of the pattern; in front of or behind that place the light from each point is spread into a disc, and the picture is blurred. The disc grows in proportion to the distance from the sharp position, so near focus the picture changes very little — judge the sharpest position from both sides."><strong>實像：像屏法。</strong>\(p > f\) 時，凸透鏡把物體每一點發出的光會聚到透鏡後方的一點。像屏放在那裡，就出現清楚、倒立的圖案；放在前面或後面，每一點的光散成一個小圓斑，圖案就模糊。小圓斑的大小與離開清楚位置的距離成正比，所以在焦點附近畫面變化很小——要從兩側逼近，找出最清楚的位置。</p>
+      <p data-en-html="<strong>Parallax.</strong> Two objects at different distances that are in line when seen from one place stop being in line when you move your head sideways: the nearer one appears to move against your head, the farther one with it (as in a train, near trees run backwards while distant hills seem to keep pace). Only when the two are <em>at the same distance</em> do they stay together however you move. The relative shift is proportional to the head’s movement and to the difference of the reciprocal distances:"><strong>視差。</strong>從某處看，遠近不同的兩個物體排在一直線上；頭往旁邊移動，它們就錯開了：近的那個看起來與頭反向移動，遠的與頭同向（坐在車上看，近處的樹往後跑，遠山卻像跟著你走）。只有兩者<em>距離眼睛一樣遠</em>時，頭怎麼動它們都不會錯開。頭移動 \(s\) 時，兩者的視角差與 \(s\) 成正比：</p>
+      <div class="formula">\[ \Delta\theta = s\left(\frac{1}{d_{\text{near}}} - \frac{1}{d_{\text{far}}}\right) \]</div>
+      <p data-en-html="<strong>Locating an image by parallax.</strong> The light that leaves a lens travels exactly as if it came from the image, so through the lens the image behaves like a real object standing at the image position. Put a reference rod where you think the image is, look through the lens with one eye and compare the image inside the lens with the part of the rod <em>outside</em> the lens. If the rod moves against your head it is nearer to you than the image — move it away from you; if it moves with your head it is farther — move it towards you. When there is no parallax left, the rod marks the image. This works for virtual images and for real images (look from beyond the real image) alike. For a real image the rod stands between the lens and your eye, so use a short rod whose top stays below the rim and line it up with the image from below (the simulation switches to a short rod automatically)."><strong>用視差找像。</strong>離開透鏡的光，行進方式就像從像發出來的一樣，所以從透鏡看過去，像就像一個站在像的位置上的物體。把參考物放在估計的位置，單眼透過透鏡觀看，比較鏡內的像與<em>鏡外</em>的參考物：參考物與頭反向移動，表示它比像更靠近眼睛，應移離眼睛；與頭同向移動，表示它比像遠，應移近眼睛。調到沒有視差時，參考物的位置就是像的位置。虛像、實像（從實像後方看）都可以用這個方法。看實像時參考物在透鏡與眼睛之間，要改用頂端低於鏡框的短桿，從鏡框下方與鏡中的像對齊（模擬中會自動換成短桿）。</p>
+      <p data-en-html="<strong>The pin method.</strong> On graph paper, a pin \(P\) on the principal axis is the object. Looking through the lens from a point off the axis, you see the image \(I\) of the pin. Two pins \(A\) and \(B\) set up so that \(I\), \(A\) and \(B\) cover one another lie on the same line of sight — a light ray that left the lens. A ray leaving a concave lens diverges, but its backward extension passes through the virtual image, so the line \(AB\) extended meets the axis at \(I\): \(q = -\overline{IO}\)."><strong>插針法。</strong>在方格紙的主軸上插一根針 \(P\) 當作物。從主軸外的一點透過透鏡看，可以看到 \(P\) 的像 \(I\)。插兩根針 \(A\)、\(B\)，使 \(I\)、\(A\)、\(B\) 彼此擋住，它們就在同一條視線上——也就是一條離開透鏡的光線。凹透鏡的折射光是發散的，但它的反向延長線通過虛像，所以直線 \(AB\) 延長後與主軸交於 \(I\)：\(q = -\overline{IO}\)。</p>
+      <p data-en-html="<strong>Analysing the data.</strong> Plot \(1/q\) against \(1/p\). The lens equation says the points lie on a straight line of slope \(-1\) that cuts <em>both</em> axes at \(1/f\) — a much better test than calculating \(f\) row by row. For a concave lens both intercepts are negative. For real images the object–screen distance \(D = p + q\) can never be smaller than \(4f\) (reached at \(p = q = 2f\), image the same size). If \(D > 4f\), there are two lens positions that give a sharp image, a distance \(d\) apart, with \(p\) and \(q\) exchanged (conjugate positions); then"><strong>數據分析。</strong>以 \(1/p\) 為橫軸、\(1/q\) 為縱軸作圖：成像公式說明數據點排成斜率 \(-1\) 的直線，而且與<em>兩個</em>軸都交在 \(1/f\)——比逐列算 \(f\) 更能檢驗公式。凹透鏡的兩個截距都是負的。實像時，物與像屏的距離 \(D = p + q\) 不可能小於 \(4f\)（\(p = q = 2f\)、等大像時最小）。\(D > 4f\) 時，透鏡有兩個成清楚像的位置，相距 \(d\)，兩者的 \(p\) 與 \(q\) 互換（共軛位置），於是</p>
+      <div class="formula multi">\[ \frac{1}{q} = -\frac{1}{p} + \frac{1}{f} \] \[ D = p + q \ge 4f \] \[ f = \frac{D^{2} - d^{2}}{4D} \]</div>
+      <p data-en-html="The last (Bessel’s) formula uses only \(D\) and \(d\), so it does not care where the optical centre of the lens sits in its holder.">最後一式（共軛法、貝索法）只用到 \(D\) 與 \(d\)，所以與透鏡光心在鏡座裡的確實位置無關。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <p data-en-html="<strong>① Convex lens, screen method.</strong> Mount the lamp, the source screen, the convex lens and the image screen on the bench in that order, with their centres at the same height on one line. Put the source screen and the image screen near the two ends of the bench and the lens close to the image screen. Slide the lens slowly towards the source until a sharp image appears on the screen; read \(p\) and \(q\) on the rule and record them. Then move the lens 5.0 cm closer to the source each time (four more times), re-adjust the screen until the image is sharp again and record. Work out \(f\) and plot \(1/q\) against \(1/p\)."><strong>① 凸透鏡：像屏法。</strong>把燈泡、光源屏、凸透鏡、像屏依序裝在光凳上，中心調到同一高度、同一直線。光源屏與像屏分別放在光凳兩端附近，凸透鏡緊靠像屏。把透鏡慢慢移向光源屏，直到像屏上出現清楚的像，由光凳的尺讀出 \(p\) 與 \(q\) 並記錄。之後每次把透鏡再移近光源屏 5.0 cm（再做四次），重新調整像屏到最清楚並記錄。計算 \(f\)，畫出 \(1/q\) 對 \(1/p\) 圖。</p>
+      <p data-en-html="<strong>② Concave lens, parallax method.</strong> Mount the lamp, the source screen and the concave lens with the source about 30 cm from the lens. Put the reference rod between them; its top must stick out above the lens. Look through the lens from behind it with one eye: the small upright image of the pattern and the rod above the lens should be in one vertical line. Swing your head left and right and move the rod by the parallax rule until the two no longer separate. Record \(p\) (source to lens) and \(q\) (rod to lens, negative for a virtual image). Move the lens 2–3 cm to change \(p\) and repeat; plot \(1/q\) against \(1/p\)."><strong>② 凹透鏡：視差法。</strong>把燈泡、光源屏、凹透鏡裝在光凳上，光源屏與透鏡相距約 30 cm。參考物裝在兩者之間，頂端要高出透鏡。從透鏡後方單眼看：鏡內正立縮小的像與鏡外參考物應在同一條鉛直線上。左右擺頭，依視差的規則移動參考物，直到兩者不再錯開。記錄 \(p\)（光源屏到透鏡）與 \(q\)（參考物到透鏡，虛像取負）。每次把透鏡移動 2–3 cm 改變 \(p\)，重做；畫出 \(1/q\) 對 \(1/p\) 圖。</p>
+      <p data-en-html="<strong>③ Concave lens, pin method.</strong> Draw two perpendicular lines on the graph paper, pin the paper on the board and stand the lens upright at the crossing point \(O\), with one line along its axis. Stick pin \(P\) upright on the axis in front of the lens (\(p = \overline{PO}\)). Choose a viewing point behind the lens, off the axis, look at the image \(I\) of \(P\) in the lens with one eye, and stick pins \(A\) and then \(B\) on that line of sight so that \(I\), \(A\) and \(B\) cover one another. Join \(A\) and \(B\) and extend the line to the axis: the crossing point is \(I\), and \(q = -\overline{IO}\). Move \(P\) by 2–3 cm and repeat."><strong>③ 凹透鏡：插針法。</strong>在方格紙上畫兩條互相垂直的直線，貼在保麗龍板上，把凹透鏡垂直立在交點 \(O\)，其中一條線沿著透鏡主軸。在鏡前的主軸上垂直插針 \(P\)（\(p = \overline{PO}\)）。在鏡後、主軸外選一個觀測點，單眼看鏡中 \(P\) 的像 \(I\)，在這條視線上先後插針 \(A\)、\(B\)，使 \(I\)、\(A\)、\(B\) 互相擋住。連接 \(A\)、\(B\) 並延長到主軸，交點就是 \(I\)，\(q = -\overline{IO}\)。把 \(P\) 移動 2–3 cm，重做。</p>
+
+      <h3 data-en="Precautions">注意事項</h3>
+      <ul>
+        <li data-en="Line up the centres of the lamp, the source pattern, the lens and the screen at the same height; otherwise the image drifts off the screen and the edges of the lens add blur.">燈泡、光源圖案、透鏡、像屏的中心要在同一高度、同一直線上，否則像會偏出像屏，透鏡邊緣也會讓像更模糊。</li>
+        <li data-en="Read every position at the index mark of the holder, looking straight at the rule, to the nearest millimetre. The index mark is not always exactly below the optical centre of the lens — a constant offset shifts every p and q.">位置一律讀臺座的標線，視線垂直尺面，讀到 1 mm。臺座標線不一定恰好在透鏡光心的正下方——固定的偏差會使每個 p、q 都偏掉。</li>
+        <li data-en="Near the sharp position the picture hardly changes. Approach it from both sides and take the middle.">清楚的位置附近，畫面幾乎不變；要從兩側逼近，取中間的位置。</li>
+        <li data-en="In the parallax method compare the image inside the lens with the rod outside the lens. The part of the rod seen through the lens is the rod’s own image and moves differently — do not use it.">視差法要比較「鏡內的像」與「鏡外的參考物」。透鏡裡看到的那一段參考物，是參考物自己的像，移動方式不同，不能拿來比。</li>
+        <li data-en="Keep the source screen still while you locate an image: moving it moves the image.">找像的過程中不要動光源屏——它一動，像的位置就跟著改變。</li>
+        <li data-en="In the pin method keep the pins vertical and A and B far apart. A viewing point far off the axis makes the crossing more precise but brings in the lens’s aberrations; a point too close to the axis makes the line almost parallel to the axis and the crossing very uncertain.">插針法的針要垂直，A、B 相距要遠。觀測點偏離主軸愈多，延長線的交點愈準，但透鏡邊緣的像差也愈明顯；太靠近主軸，直線幾乎與主軸平行，交點就很不準。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol class="q">
+        <li data-en-html="With the source screen and the image screen 90 cm apart, how many lens positions give a sharp image for \(f = 10\ \mathrm{cm}\)? For \(f = 25\ \mathrm{cm}\)? What is special about \(D = 4f\)?">光源屏與像屏相距 90 cm，\(f = 10\ \mathrm{cm}\) 的凸透鏡有幾個位置能在屏上成清楚的像？\(f = 25\ \mathrm{cm}\) 呢？\(D = 4f\) 有什麼特別？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(p + q = 90\) and \(1/p + 1/q = 1/10\) give \(pq = 900\), so \(p = 78.5\) cm or \(11.5\) cm — two positions. For \(f = 25\) cm we would need \(D \ge 100\) cm, so there is none. At \(D = 4f\) the two positions merge into one, \(p = q = 2f\), with an inverted image of the same size.">由 \(p + q = 90\)、\(1/p + 1/q = 1/10\) 得 \(pq = 900\)，\(p = 78.5\) cm 或 \(11.5\) cm，有兩個位置。\(f = 25\) cm 時需要 \(D \ge 100\) cm，所以一個也沒有。\(D = 4f\) 時兩個位置合而為一：\(p = q = 2f\)，成倒立等大的像。</p></details></li>
+        <li data-en-html="Seen from the lens side, how does the picture on the screen compare with the pattern on the source screen (also seen from the lens side) when \(p = q\)?">\(p = q\) 時，從透鏡這一側看像屏上的圖案，和從透鏡這一側看光源屏的圖案相比，有什麼不同？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="It is the same size (\(m = -1\)) and turned through 180° in its own plane. But you face the source and the screen from opposite directions, so to you the picture on the screen looks flipped upside down only — left and right appear unchanged. Compare the two pictures in the close-up.">大小相同（\(m = -1\)），在它所在的平面上轉了 180°。但你看光源屏和看像屏時面向相反的方向，所以在你看來，像屏上的圖案只是上下顛倒，左右看起來沒有變。可以在放大圖中比較兩個圖案。</p></details></li>
+        <li data-en-html="In the parallax method you swing your head to the right and the rod outside the lens moves to the left relative to the image. Which way should you move the rod? Why must the source screen stay where it is?">視差法中，頭向右擺時，鏡外的參考物相對於像向左移。參考物應該往哪裡移？為什麼不能移動光源屏？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Moving against the head means the rod is nearer to the eye than the image, so move it away from the eye (towards the source). The image position depends on \(p\); moving the source screen would move the very image you are trying to locate.">與頭反向，表示參考物比像更靠近眼睛，應把參考物移離眼睛（往光源屏方向）。像的位置由 \(p\) 決定，移動光源屏就會讓要找的像跟著移動。</p></details></li>
+        <li data-en-html="Why can a convex lens with \(p &lt; f\) not form an image on the screen? How would you find that image?">凸透鏡在 \(p &lt; f\) 時為什麼在像屏上找不到像？要怎麼找出這個像？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="The rays still diverge after the lens, so they never meet; their backward extensions meet at an upright, magnified virtual image on the object’s side, farther away than the object (\(|q| &gt; p\)). Look through the lens from behind and use the parallax method, with the reference rod behind the source screen.">光線離開透鏡後仍然發散，永遠不會會聚；它們的反向延長線交於物體同側、比物體更遠（\(|q| &gt; p\)）的正立放大虛像。從透鏡後方看，用視差法找它，參考物要放在光源屏的後面。</p></details></li>
+        <li data-en-html="The index mark of the lens holder sits 0.4 cm to the left of the optical centre. How does this change each measured \(p\), \(q\) and \(f\)? Which analysis is not affected?">透鏡臺座的標線在光心左方 0.4 cm。這會怎樣影響量到的 \(p\)、\(q\) 與 \(f\)？哪一種分析方法不受影響？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Every reading of the lens is 0.4 cm too small, so every \(p\) is 0.4 cm too small and every \(q\) 0.4 cm too large; \(f\) from one row comes out too large when \(p &gt; q\) and too small when \(p &lt; q\). The conjugate method uses only \(D\) (source to screen) and \(d\) (the shift of the lens), which an offset cannot change. Try it with “With errors” on.">透鏡的讀數每次都少了 0.4 cm，所以每個 \(p\) 少 0.4 cm、每個 \(q\) 多 0.4 cm；由單一列算出的 \(f\)，在 \(p &gt; q\) 時偏大、\(p &lt; q\) 時偏小。共軛法只用到 \(D\)（光源屏到像屏）與 \(d\)（透鏡移動的距離），偏差改變不了它們。打開「含誤差」試試看。</p></details></li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Near the focus nothing seems to change</strong>: watch the blur disc on the screen as you move it 1 mm at a time. Within a few millimetres of the sharp position the picture hardly changes — this “depth of focus” is the main error of the screen method."><strong>焦點附近看不出差別</strong>：每次移動像屏 1 mm，觀察放大圖上的模糊程度。離清楚位置幾毫米以內，畫面幾乎一樣——這段「焦深」就是像屏法最主要的誤差。</li>
+        <li data-en-html="<strong>Two sharp positions</strong>: keep the source and the screen fixed and slide the lens all the way: a small bright image appears, then (much closer to the source) a large dim one. Swap their \(p\) and \(q\) — they are conjugate."><strong>兩個清楚的位置</strong>：光源屏與像屏不動，把透鏡從一端滑到另一端：先出現小而亮的像，接近光源屏時又出現大而暗的像。比較兩次的 \(p\)、\(q\)——恰好互換。</li>
+        <li data-en-html="<strong>The image hides in the lens</strong>: with a concave lens, turn on “Swing automatically” and watch the rod above the lens and the small image inside it. Move the rod and see the relative motion change sides as it passes the image."><strong>躲在透鏡裡的像</strong>：用凹透鏡，打開「自動左右擺頭」，看鏡外的參考物與鏡內的小像。移動參考物，越過像的位置時，相對移動的方向會反過來。</li>
+        <li data-en-html="<strong>An image in mid-air</strong>: use the parallax method with a convex lens and \(p &gt; f\). The real image floats between the lens and your eye; put the rod there — no screen needed."><strong>懸在半空的像</strong>：凸透鏡、\(p &gt; f\) 時用視差法。實像飄在透鏡與眼睛之間，把參考物放到那裡——不需要像屏。</li>
+        <li data-en-html="<strong>The magnifying glass</strong>: convex lens with \(p &lt; f\). The screen shows only a patch of light; the parallax method finds an upright, magnified image behind the source screen."><strong>放大鏡</strong>：凸透鏡、\(p &lt; f\)。像屏上只有一團光；用視差法會在光源屏的後方找到正立放大的虛像。</li>
+        <li data-en-html="<strong>Mystery lenses</strong>: measure the focal length of the mystery lens first, then press “Reveal”."><strong>神秘透鏡</strong>：先量出神秘透鏡的焦距，再按「揭曉」對答案。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The lens is an ideal thin lens: a ray reaching it at height \(y\) with slope \(u\) leaves with slope \(u' = u - y/f\). This images every object point perfectly onto one image point, so the image found on the screen, by parallax or with pins agrees exactly with \(1/p + 1/q = 1/f\) (unit tests check this).">透鏡是理想薄透鏡：在高度 \(y\)、斜率 \(u\) 射到透鏡的光線，出射斜率為 \(u' = u - y/f\)。它把每個物點完美地成像到一個像點，所以像屏、視差、插針三種方法找到的像，都與 \(1/p + 1/q = 1/f\) 完全一致（單元測試驗證過）。</li>
+        <li data-en-html="The screen close-up is the sharp image convolved with the blur disc: diameter \(5.0\ \mathrm{cm} \times |q - L|/|q|\) for a screen at distance \(L\) from the lens (lens diameter 5.0 cm). The brightness of the picture falls as \(1/m^{2}\) (shown with a gentler, eye-like scale).">像屏的放大圖是清楚的像與模糊圓斑的疊合：像屏離透鏡 \(L\) 時，圓斑直徑為 \(5.0\ \mathrm{cm} \times |q - L|/|q|\)（透鏡直徑 5.0 cm）。像的亮度依 \(1/m^{2}\) 變暗（以接近眼睛感覺的方式顯示）。</li>
+        <li data-en-html="The eye views are calculated, not drawn by hand: for every point the program finds the ray from that point through the lens into the eye (a pinhole eye) and draws the point in the direction from which that ray arrives. Points whose ray misses the 5.0 cm lens are not visible through it. With the source, the lens and the reference rod fixed, the parallax therefore really vanishes only when the rod is at the image.">眼睛看到的畫面是算出來的，不是手畫的：對每一點，程式找出從它經過透鏡進入眼睛（針孔眼）的那條光線，把這一點畫在光線射來的方向上；光線沒有通過直徑 5.0 cm 透鏡的點，從鏡內就看不到。所以只有參考物恰好在像的位置時，視差才真的消失。</li>
+        <li data-en="The eye stands 15 cm behind the lens to look at a virtual image, and at least 25 cm beyond a real image. The head can swing by up to 2 cm, less if the image would leave the lens. The top of the reference rod behind the lens is 12 cm above the axis; between the lens and the eye it is a short rod whose top is 1.6 cm below the axis.">看虛像時，眼睛在透鏡後方 15 cm；看實像時，至少在實像後方 25 cm。頭最多擺動 2 cm，若像會跑出鏡框就擺小一點。參考物在透鏡後方時，頂端比主軸高 12 cm；在透鏡與眼睛之間時改用短桿，頂端比主軸低 1.6 cm。</li>
+        <li data-en="With errors on: the optical centre of each lens is 0.2–0.5 cm away from the index mark of its holder (a fixed, hidden offset); every reading has a random reading error of up to ±0.6 mm before it is rounded to 1 mm; in the pin method the lens has some spherical aberration (5 % more power at its rim); the helpful numbers (blur disc, parallax, pin offsets) are hidden and you must judge by eye. In the ideal setting the readings are exact to 1 mm.">含誤差時：每個透鏡的光心與臺座標線相差 0.2–0.5 cm（固定、不告訴你的偏差）；每個讀數先有最多 ±0.6 mm 的隨機讀數誤差，再讀到 1 mm；插針法的透鏡有球面像差（邊緣的屈光力比中央強 5 %）；模糊圓斑、視差、針的錯開等輔助數字都會隱藏，要靠眼睛判斷。理想時讀數準確到 1 mm。</li>
+        <li data-en="The bench is drawn to scale from the side (on narrow screens the vertical direction is stretched 2 times). The ray diagram is stretched 3 times vertically so that the rays can be seen; positions along the axis are exact. The lens shapes are schematic. When the image on the screen is very small, a round magnifier in the corner of the close-up shows it enlarged.">光凳的側視圖依比例繪製（窄螢幕時鉛直方向放大 2 倍）。光線圖在鉛直方向放大 3 倍以便看清楚，沿主軸的位置完全依比例。透鏡的形狀是示意的。像屏上的像很小時，放大圖角落的圓形放大鏡會把它放大顯示。</li>
+
+        <li data-en="The mystery lenses get a random focal length between 11.0 and 19.0 cm (convex) or −11.0 and −19.0 cm (concave) each time the page is loaded.">神秘透鏡的焦距每次開啟頁面時隨機選定：凸透鏡在 11.0 到 19.0 cm、凹透鏡在 −11.0 到 −19.0 cm 之間。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/thin-lens-core.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/thin-lens.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="thin-lens"></script>
+  <script src="js/missions/thin-lens.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="thin-lens"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

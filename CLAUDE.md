@@ -46,6 +46,11 @@
 | `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言），Playwright `addInitScript` 載入 |
 | `tools/mission-proofs/` | 各實驗「任務做得到」的證明腳本；改物理核心或任務條件後重跑 |
 | `docs/briefs/` | 製作新模組、任務、替舊模組補任務的說明（交給背景助手時使用） |
+| `js/drawkit.js` | 共用繪圖工具 `LabDraw`（立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動）；新畫面一律用它 |
+| `js/thumbs.js`、`js/home.js`、`img/thumbs/` | 首頁縮圖（`npm run thumbs -- <代號>` 產生）、章名按鈕的實驗數 |
+| `tools/seo.cjs`、`img/og/`、`sitemap.xml`、`robots.txt` | `npm run seo`：分享卡、每頁說明與 Open Graph、hreflang、結構化資料、網站地圖 |
+| `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查） |
+| `docs/WORLD-CLASS.md`、`docs/auto-optimize-log.md` | 世界一流標準、待改清單、自動優化規則與紀錄（每天 01:40 自動優化） |
 
 ## 新增或修改模組的慣例
 
@@ -58,7 +63,7 @@
 - 公式一律用 KaTeX（`\( … \)`、`\[ … \]`）。**不可使用** Unicode 組合字元（例如向量箭頭 U+20D7）或上標數字字元 ⁰⁴⁵⁶⁷⁸⁹⁻（部分 Android 字型缺字）；讀數上標用 `<sup>`。
 - 英文：靜態文字加 `data-en`／`data-en-html`／`data-en-placeholder`／`data-en-aria-label`；程式字串用 `LabSettings.t('中文', 'English')`；完成後 `<body data-en-ready>`。簡體自動轉換。
 - 深淺色切換：模組要監聽 `lab:themechange`，重新讀取顏色並重畫。
-- 首頁：在對應分支加卡片（`data-module`、`data-keywords` 同義詞、`data-en`），已上線的卡片用 `<a class="module live">`。
+- 首頁：卡片放進對應分支裡**選修物理講義的章**（`<section class="chapter" id="ch-…">`，章名不寫第幾章；細節見 HANDOFF.md 第十節），`data-module`、`data-keywords` 同義詞、`data-en`，已上線的卡片用 `<a class="module live">`；再跑 `npm run thumbs -- <代號>`、`npm run seo`。
 - 手機 390 px 不可出現左右捲動；控制項觸控目標至少 44 px。
 
 ## 任務、排行榜與成就（站長的設計決定）
@@ -78,7 +83,8 @@
 
 ## 發布前檢查
 
-1. `npm test`（或 `for t in tests/*.test.js; do node "$t"; done`）全部通過。
+0. 開始改網站時建立 `.editing`（每日自動優化看到就跳過），push 完刪掉。
+1. `npm run verify` 全過（含 `npm test`、任務證明、頁面檢查；提醒清單列進 `docs/WORLD-CLASS.md`）。
 2. `npm run check`（Playwright）實際開頁，並用 `npm run shots -- <代號>` 存截圖親自看：390 px 與 1280 px、淺色／深色、繁體／簡體／English、字體特大；沒有主控台錯誤、沒有 `.katex-error`、英文模式沒有殘留中文；親自看截圖。
 3. `python3 tools/stamp.py`，再 commit、push。背景同時有其他工作在改檔時，只 `git add` 自己要發布的檔案（不要用 `git add -u`／`-A`，以免把別人做到一半的檔案推上線）。
 

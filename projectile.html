@@ -2,19 +2,39 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111312"></script>
+  <script src="js/settings.js?v=202611120013"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Projectile Motion | Astro Ni Physics Lab">拋體運動｜Astro Ni 物理實驗室</title>
-  <meta name="description" content="互動模擬：調整初速、仰角、發射高度與重力加速度，觀察拋體軌跡、速度分量、射程與最大高度，並開啟空氣阻力和理想拋物線比較。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/projectile.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/projectile.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/projectile.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/projectile.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="拋體運動｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/projectile.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/projectile.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="拋體運動的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"拋體運動","alternateName":"Projectile Motion","description":"調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。","url":"https://astro1222ni.github.io/physics-lab/projectile.html","image":"https://astro1222ni.github.io/physics-lab/img/og/projectile.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","平面運動（Motion in a Plane）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111312">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
     .stage canvas { cursor: pointer; }
     .stage .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .stage .bar .status { margin: 0; flex: 1 1 200px; }
-    .lab button { min-height: 40px; }
+    .lab button { min-height: 44px; }
     .slider input[type="range"] { height: 28px; margin: 0; }
     .slider label sub, dl.readout sub { font-size: .75em; }
     .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: -2px; }
@@ -24,13 +44,13 @@
     .speed { display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); flex: 1 1 100%; }
     .speed input { flex: 1; min-width: 0; accent-color: var(--accent); }
     .speed output { min-width: 3.2em; text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .toggle { display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 600; cursor: pointer; min-height: 32px; }
+    .toggle { display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 600; cursor: pointer; min-height: 44px; }
     .toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
     .dim { opacity: .45; }
     .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .method { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
     dl.readout dd small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
-    .checks label { min-height: 32px; }
+    .checks label { min-height: 44px; }
     .checks input { width: 17px; height: 17px; }
     .ghosts { list-style: none; margin: 0 0 10px; padding: 0; font-size: calc(13px * var(--fs, 1)); display: grid; gap: 6px; }
     .ghosts li { display: grid; grid-template-columns: 22px 1fr; gap: 0 8px; align-items: start; }
@@ -204,15 +224,15 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611111312"></script>
-  <script src="js/projectile-core.js?v=202611111312"></script>
-  <script src="js/sound.js?v=202611111312"></script>
-  <script src="js/numinput.js?v=202611111312"></script>
-  <script src="js/projectile.js?v=202611111312"></script>
-  <script src="js/firebase-config.js?v=202611111312"></script>
-  <script src="js/missions.js?v=202611111312" data-module="projectile"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/projectile-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/projectile.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="projectile"></script>
   <script src="js/missions/projectile.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611111312" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611111312"></script>
+  <script src="js/stats.js?v=202611120013" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611120013"></script>
 </body>
 </html>

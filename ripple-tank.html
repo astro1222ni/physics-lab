@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120013"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Ripple Tank | Astro Ni Physics Lab">水波槽實驗｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="直線與圓形起波器搭配閃頻儀，把水波「定住」在白紙上量波長；觀察反射、凹面聚焦、淺水折射、狹縫繞射，以及兩波源干涉的節線。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="水波槽實驗｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="直線與圓形起波器搭配閃頻儀，把水波「定住」在白紙上量波長；觀察反射、凹面聚焦、淺水折射、狹縫繞射，以及兩波源干涉的節線。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/ripple-tank.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/ripple-tank.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="水波槽實驗的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"水波槽實驗","alternateName":"Ripple Tank","description":"直線與圓形起波器搭配閃頻儀，把水波「定住」在白紙上量波長；觀察反射、凹面聚焦、淺水折射、狹縫繞射，以及兩波源干涉的節線。","url":"https://astro1222ni.github.io/physics-lab/ripple-tank.html","image":"https://astro1222ni.github.io/physics-lab/img/og/ripple-tank.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","波動（Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <style>
+    /* 水波槽實驗頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .rt #cv { aspect-ratio: 40 / 31; cursor: crosshair; }
+    .rt button { min-height: 44px; }
+    .rt [hidden] { display: none !important; }
+    /* 2D／3D 檢視切換（與帶電粒子相同的樣式） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 4 / 3; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 38%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 播放列 */
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; }
+    .playbar button.on { color: var(--accent); border-color: var(--accent); font-weight: 600; background: var(--accent-soft); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .try { font-size: calc(13.5px * var(--fs, 1)); margin: 8px 4px 0; padding: 7px 12px; border-radius: 8px; background: var(--accent-soft); color: var(--text); display: flex; gap: 8px; align-items: flex-start; }
+    .try b { color: var(--accent); white-space: nowrap; }
+    .try button { margin-left: auto; min-height: 44px; min-width: 44px; padding: 4px 10px; flex: none; }
+    .rt .stage .status { margin: 6px 4px 0; }
+    /* 量測與記錄 */
+    .meas { margin-top: 12px; border-top: 1px solid var(--border); padding: 12px 4px 0; }
+    .meas h2 { font-size: calc(15px * var(--fs, 1)); margin: 0 0 6px; }
+    .meas h3 { font-size: calc(14px * var(--fs, 1)); margin: 14px 0 6px; color: var(--muted); }
+    .meas .hint, .rt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .readbox { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; font-size: calc(14px * var(--fs, 1)); }
+    .readbox .r { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--border); padding: 2px 0; }
+    .readbox .r span:first-child { color: var(--muted); }
+    .readbox .r b { font-variant-numeric: tabular-nums; font-weight: 650; }
+    .nrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .stepper { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .stepper button { border: none; border-radius: 0; min-width: 44px; padding: 4px 10px; font-size: calc(18px * var(--fs, 1)); line-height: 1; background: var(--bg); }
+    .stepper output { min-width: 36px; text-align: center; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .recs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .recs button { font-weight: 600; }
+    .recs button.rec { border-color: var(--accent); color: var(--accent); }
+    .tablewrap { overflow-x: auto; margin-top: 8px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; }
+    table.data th:first-child, table.data td:first-child { text-align: left; }
+    table.data td.empty { color: var(--muted); }
+    table.data tr.cur td { background: var(--accent-soft); }
+    .ana { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; margin-top: 10px; }
+    @media (max-width: 640px) { .ana { grid-template-columns: minmax(0, 1fr); } }
+    #graph { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 8px; background: var(--canvas-bg); border: 1px solid var(--border); }
+    .ana dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ana dl.readout dd { white-space: nowrap; }
+    .mrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .mrow input { width: 90px; min-height: 44px; font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    /* 控制面板 */
+    .partgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(84px * var(--fs, 1)), 1fr)); gap: 6px; }
+    .partgrid button { padding: 6px 4px; line-height: 1.25; }
+    .partgrid button[aria-pressed="true"], .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg2, .seg3 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: 1fr 1fr; }
+    .seg3 { grid-template-columns: 1fr 1fr 1fr; }
+    .seg2 button, .seg3 button { padding: 6px 4px; line-height: 1.25; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    ol.steps { margin: 10px 0 0; padding-left: 0; list-style: none; font-size: calc(13.5px * var(--fs, 1)); counter-reset: st; }
+    ol.steps li { counter-increment: st; position: relative; padding: 3px 0 3px 30px; color: var(--muted); }
+    ol.steps li::before { content: counter(st); position: absolute; left: 0; top: 3px; width: 21px; height: 21px; border-radius: 50%; border: 1.5px solid var(--border); text-align: center; font-size: calc(12px * var(--fs, 1)); line-height: 18px; font-weight: 700; }
+    ol.steps li.now { color: var(--text); font-weight: 600; }
+    ol.steps li.now::before { border-color: var(--accent); color: var(--accent); }
+    ol.steps li.done { color: var(--text); }
+    ol.steps li.done::before { content: "✓"; background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    .rt .slider input[type="range"] { height: 28px; margin: 0; }
+    .rt .checks label { min-height: 44px; }
+    .rt .checks input { width: 18px; height: 18px; }
+    .levelbox { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+    #levelCv { width: 84px; height: 84px; flex: none; }
+    .levelbox p { margin: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .levelbox p b { color: var(--text); }
+    dl.readout dd small { color: var(--muted); }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .notes table.kit { border-collapse: collapse; margin: 6px 0; font-size: calc(14px * var(--fs, 1)); }
+    .notes table.kit td { border-bottom: 1px solid var(--border); padding: 4px 10px 4px 0; vertical-align: top; }
+    .notes ol { padding-left: 1.4em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#wave&quot;>Waves &amp; Sound</a> / Waves"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#wave">波動與聲音</a> ／ 波動</nav>
+      <h1 data-en="Ripple Tank">水波槽實驗</h1>
+      <p data-en="The ripple-tank experiment from the textbook, done on screen. A lamp above the tank projects the ripples onto white paper: crests focus the light into bright bands, troughs leave dark bands. Freeze the pattern with the stroboscope, then study reflection from different barriers, refraction between deep and shallow water, diffraction past an obstacle or through a slit, and interference of two point sources — measuring with a ruler, recording a data table and analysing it like the real lab.">把課本的必做實驗「水波槽實驗」搬到螢幕上。水槽上方的燈把水波投影在下方的白紙上：波峰把光會聚成亮紋、波谷留下暗紋。用閃頻儀讓條紋靜止，再觀察水波遇到各種障礙物的反射、在深淺水交界的折射、經過障礙物與狹縫的繞射，以及兩點波源的干涉——像真的做實驗一樣用直尺測量、記錄數據表並作圖分析。</p>
+    </header>
+
+    <div class="lab rt">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D: paper image">2D 白紙投影</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="水波槽俯視圖：白紙上的亮暗紋投影。在畫面上拖曳可以拉出直尺；拖曳障礙物可以移動，拖曳圓形把手可以旋轉。鍵盤：方向鍵移動直尺的端點（Shift 加速），Enter 切換端點；干涉實驗時也可切換到探針 P。" data-en-aria-label="Top view of the ripple tank: the bright and dark bands projected onto the paper. Drag on the picture to lay down a ruler; drag a barrier to move it, or its round handle to turn it. Keyboard: arrow keys move a ruler end (Shift for bigger steps), Enter switches ends; in the interference experiment it also selects the probe P."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button type="button" id="gen" class="on" aria-pressed="true" data-en="Wave generator: on">起波器：開</button>
+          <button type="button" id="strobe" aria-pressed="false" data-en="Stroboscope: off">閃頻儀：關</button>
+          <button type="button" id="play" data-en="Pause">暫停</button>
+          <button type="button" id="reset" data-en="Clear all" title="清除數據表、直尺與水面上的波，滑桿設定不變" data-en-title="Clear the data tables, the ruler and the waves; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="try" id="tryBox"><b data-en="Try it:">試試看：</b><span id="tryText"></span><button type="button" id="tryClose" aria-label="關閉提示" data-en-aria-label="Close the tip">✕</button></p>
+        <div class="legend">
+          <span class="l2"><i style="background:var(--text);opacity:.25"></i><span data-en="Bright band = crest (focusing)">亮紋 = 波峰（會聚光）</span></span>
+          <span class="l2"><i style="background:var(--text);opacity:.8"></i><span data-en="Dark band = trough">暗紋 = 波谷</span></span>
+          <span style="color:var(--accent)"><i class="dash"></i><span data-en="Thin acrylic plate (shallow water)">薄壓克力板（淺水區）</span></span>
+          <span style="color:var(--b-wave)"><i style="background:var(--b-wave)"></i><span data-en="Ruler">直尺</span></span>
+          <span class="l3"><span data-en="3D: wave height exaggerated 30×; drag to rotate, pinch or scroll to zoom">3D：波高放大 30 倍；拖曳旋轉、雙指或滾輪縮放</span></span>
+        </div>
+
+        <section class="meas" aria-labelledby="measH">
+          <h2 id="measH" data-en="Measure and record">量測與記錄</h2>
+          <div class="readbox" id="readbox" aria-live="polite"></div>
+          <div class="nrow" id="nRow">
+            <span id="nLabel" data-en="Wavelengths spanned by the ruler N:">直尺跨過的波長數 N：</span>
+            <span class="stepper"><button type="button" id="nMinus" aria-label="N 減 1" data-en-aria-label="N minus 1">−</button><output id="nOut">5</output><button type="button" id="nPlus" aria-label="N 加 1" data-en-aria-label="N plus 1">+</button></span>
+          </div>
+          <div class="recs" id="recs"></div>
+          <p class="hint" id="recHint"></p>
+          <h3 id="tableH" data-en="Data table">數據表</h3>
+          <div class="tablewrap"><table class="data" id="dataTable"></table></div>
+          <div class="btns" style="margin-top:8px"><button type="button" id="undo" data-en="Delete last entry">刪除最後一筆</button></div>
+          <h3 data-en="Analysis">分析</h3>
+          <div class="ana">
+            <canvas id="graph" aria-label="分析圖：數據點與最佳直線" data-en-aria-label="Analysis graph: data points and best-fit line"></canvas>
+            <div>
+              <dl class="readout" id="anaOut"></dl>
+              <div class="mrow" id="mRow">
+                <label for="mInput" data-en="Magnification M you use:">換算用的放大率 M：</label>
+                <input id="mInput" type="number" inputmode="decimal" min="1" max="3" step="0.01" value="1.00">
+              </div>
+              <p class="hint" id="anaHint"></p>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗項目</h2>
+          <div class="partgrid" role="group" aria-label="實驗項目" data-en-aria-label="Experiment part">
+            <button type="button" id="part1" aria-pressed="true" data-en="1 Setup &amp; λ">1 架設與波長</button>
+            <button type="button" id="part2" aria-pressed="false" data-en="2 Reflection">2 反射</button>
+            <button type="button" id="part3" aria-pressed="false" data-en="3 Refraction">3 折射</button>
+            <button type="button" id="part4" aria-pressed="false" data-en="4 Diffraction">4 繞射</button>
+            <button type="button" id="part5" aria-pressed="false" data-en="5 Interference">5 干涉</button>
+          </div>
+          <ol class="steps" id="steps"></ol>
+          <p class="seg-label" id="modeLabel" data-en="Measurement conditions:">量測條件：</p>
+          <div class="seg2" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeIdeal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" id="modeReal" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <p class="hint" id="modeHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Wave generator &amp; stroboscope">起波器與閃頻儀</h2>
+          <p class="seg-label" id="srcLabel" data-en="Wave generator:">起波器：</p>
+          <div class="seg3" role="group" aria-labelledby="srcLabel">
+            <button type="button" id="srcBar" aria-pressed="true" data-en="Straight bar">直線</button>
+            <button type="button" id="srcPoint" aria-pressed="false" data-en="One dipper">單點</button>
+            <button type="button" id="srcPair" aria-pressed="false" data-en="Two dippers">雙點</button>
+          </div>
+          <div class="slider"><label for="f" id="fLabel" data-en="Frequency f">頻率 f</label><output id="fo"></output>
+            <input id="f" type="range" min="5" max="20" step="0.1" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="amp" data-en="Amplitude A">振幅 A</label><output id="ampo"></output>
+            <input id="amp" type="range" min="0.02" max="0.2" step="0.01" value="0.12" data-decimals="3"></div>
+          <div class="slider" id="boxD" hidden><label for="d" data-en="Source separation d">兩波源間距 d</label><output id="do"></output>
+            <input id="d" type="range" min="1" max="10" step="0.1" value="5" data-decimals="2"></div>
+          <div class="slider" id="boxFs"><label for="fs" data-en="Stroboscope frequency f_s">閃頻儀頻率 f<sub>s</sub></label><output id="fso"></output>
+            <input id="fs" type="range" min="2" max="25" step="0.01" value="8" data-decimals="2"></div>
+          <p class="seg-label" id="spdLabel" data-en="Playback speed:">播放速度：</p>
+          <div class="seg3" role="group" aria-labelledby="spdLabel">
+            <button type="button" id="spd1" aria-pressed="false" data-en="Real time">真實速度</button>
+            <button type="button" id="spd4" aria-pressed="true" data-en="1/4 slow">慢動作 1/4</button>
+            <button type="button" id="spd10" aria-pressed="false" data-en="1/10 slow">慢動作 1/10</button>
+          </div>
+          <p class="hint" data-en="Tap a number to type an exact value. Slow motion only exists in the simulation; with the stroboscope on, real time shows the strobe effect best.">點一下數字可直接輸入精確數值。慢動作是模擬才有的功能；打開閃頻儀時用真實速度最能看出閃頻效果。</p>
+        </section>
+
+        <section class="card" id="objCard">
+          <h2 id="objH" data-en="Barrier">障礙物</h2>
+          <div id="objRefl">
+            <div class="seg3" role="group" aria-label="障礙物形狀" data-en-aria-label="Barrier shape">
+              <button type="button" id="shStraight" aria-pressed="true" data-en="Straight block">直條</button>
+              <button type="button" id="shConcave" aria-pressed="false" data-en="Concave arc">凹弧</button>
+              <button type="button" id="shConvex" aria-pressed="false" data-en="Convex arc">凸弧</button>
+            </div>
+            <div class="slider" id="boxBeta"><label for="beta" data-en="Angle between barrier and wavefronts β">障礙物與波前的夾角 β</label><output id="betao"></output>
+              <input id="beta" type="range" min="0" max="70" step="1" value="30" data-decimals="1"></div>
+            <div class="slider" id="boxR" hidden><label for="R" data-en="Arc radius R">圓弧半徑 R</label><output id="Ro"></output>
+              <input id="R" type="range" min="10" max="24" step="0.5" value="14" data-decimals="1"></div>
+          </div>
+          <div id="objRefr" hidden>
+            <div class="slider"><label for="alpha" data-en="Angle between plate edge and wavefronts α">板邊與波前的夾角 α</label><output id="alphao"></output>
+              <input id="alpha" type="range" min="0" max="60" step="1" value="30" data-decimals="1"></div>
+            <div class="slider"><label for="h2" data-en-html="Water depth over the plate h<sub>2</sub>">板上方水深 h<sub>2</sub></label><output id="h2o"></output>
+              <input id="h2" type="range" min="1" max="4" step="0.1" value="2" data-decimals="2"></div>
+            <div class="slider"><label for="pw" data-en="Plate width w">壓克力板寬 w</label><output id="pwo"></output>
+              <input id="pw" type="range" min="8" max="16" step="0.5" value="12" data-decimals="1"></div>
+          </div>
+          <div id="objDiff" hidden>
+            <div class="seg2" role="group" aria-label="繞射的障礙物" data-en-aria-label="Diffraction setup">
+              <button type="button" id="dfObs" aria-pressed="false" data-en="Short barrier">短障礙物</button>
+              <button type="button" id="dfSlit" aria-pressed="true" data-en="Slit">狹縫</button>
+            </div>
+            <div class="slider" id="boxSlit"><label for="slit" data-en="Slit width a">狹縫寬 a</label><output id="slito"></output>
+              <input id="slit" type="range" min="1" max="8" step="0.1" value="3" data-decimals="2"></div>
+            <div class="slider" id="boxObs" hidden><label for="obsL" data-en="Barrier length">障礙物長度</label><output id="obsLo"></output>
+              <input id="obsL" type="range" min="1" max="10" step="0.1" value="4" data-decimals="2"></div>
+          </div>
+          <p class="hint" id="objHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Tank &amp; lamp">水槽與光源</h2>
+          <div class="slider"><label for="h" data-en="Water depth h">水深 h</label><output id="ho"></output>
+            <input id="h" type="range" min="4" max="12" step="0.1" value="8" data-decimals="2"></div>
+          <div class="checks"><label><input id="sponge" type="checkbox" checked><span data-en="Sponge strips along the walls">槽壁四周放海綿</span></label></div>
+          <div id="levelBox" hidden>
+            <p class="seg-label" data-en="Levelling screws (use the spirit level):">調水平螺絲（看水平儀）：</p>
+            <div class="slider"><label for="tx" data-en="Left–right screw">左右螺絲</label><output id="txo"></output>
+              <input id="tx" type="range" min="-1" max="1" step="0.01" value="0" data-decimals="3"></div>
+            <div class="slider"><label for="ty" data-en="Front–back screw">前後螺絲</label><output id="tyo"></output>
+              <input id="ty" type="range" min="-1" max="1" step="0.01" value="0" data-decimals="3"></div>
+            <div class="levelbox"><canvas id="levelCv" aria-hidden="true"></canvas><p id="levelText"></p></div>
+          </div>
+          <p class="seg-label" id="lightLabel" data-en="Lamp above the tank:">水槽上方的光源：</p>
+          <div class="seg2" role="group" aria-labelledby="lightLabel">
+            <button type="button" id="lightPar" aria-pressed="true" data-en="Parallel light">平行光</button>
+            <button type="button" id="lightPt" aria-pressed="false" data-en="Point lamp">點光源</button>
+          </div>
+          <div class="slider" id="boxLamp" hidden><label for="lamp" data-en="Lamp height above the water L">燈到水面的高度 L</label><output id="lampo"></output>
+            <input id="lamp" type="range" min="30" max="150" step="1" value="60" data-decimals="1"></div>
+          <dl class="readout" style="margin-top:8px">
+            <dt data-en="Tank (inside)">水槽內部</dt><dd>36.0 cm × 27.0 cm</dd>
+            <dt data-en="Water surface to paper d">水面到白紙 d</dt><dd>25.0 cm</dd>
+            <dt data-en="Simulation grid">模擬方格</dt><dd id="gridInfo">—</dd>
+            <dt data-en="Speed now">目前播放速度</dt><dd id="speedInfo">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="About the experiment">實驗說明</h2>
+
+      <h3 data-en="Purpose">實驗目的</h3>
+      <ol>
+        <li data-en="See how straight and circular wavefronts are reflected by straight, concave and convex barriers.">看直線波前與圓形波前遇到直條、凹弧、凸弧障礙物時怎麼反射。</li>
+        <li data-en="See how wavefronts bend (refract) when they cross from deep into shallow water, and relate it to the change of speed and wavelength.">看波前從深水進入淺水時怎麼偏折（折射），並和波速、波長的改變連起來。</li>
+        <li data-en="See waves spread out (diffract) behind a short barrier and through a slit, and how the spreading depends on wavelength and slit width.">看水波繞過短障礙物、穿過狹縫後向外散開（繞射），以及散開的程度和波長、縫寬的關係。</li>
+        <li data-en="See the interference pattern of two in-phase point sources, and find the path difference along nodal and antinodal lines.">看兩個同相點波源的干涉圖樣，找出節線與腹線上的波程差。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <table class="kit">
+        <tr><td data-en="Ripple tank with glass bottom, legs and levelling screws">玻璃底的水波槽（有腳架與調水平螺絲）</td><td data-en="White paper under the tank">水槽下方的白紙</td></tr>
+        <tr><td data-en="Straight-bar wave generator; two circular dippers">直線起波器；兩個圓形起波器（點波源）</td><td data-en="Power supply / variable resistor (sets the frequency)">電源供應器（可變電阻調頻率）</td></tr>
+        <tr><td data-en="Stroboscope with lamp (or a bright lamp)">閃頻儀與光源（或一般強光源）</td><td data-en="Sponge strips for the walls">貼在槽壁的海綿條</td></tr>
+        <tr><td data-en="Acrylic blocks (thick: barrier; thin: shallow region)">壓克力塊（厚的當障礙物、薄的造出淺水區）</td><td data-en="Arc-shaped and strip-shaped barriers; spirit level; ruler">圓弧形與長條形障礙物、水平儀、直尺</td></tr>
+      </table>
+
+      <h3 data-en="Principles">原理</h3>
+      <p data-en-html="<strong>Why there are bright and dark bands.</strong> The rippled surface acts like a sheet of tiny lenses. A crest bulges upward and focuses the light onto the paper (bright band); a trough spreads it out (dark band). For a ray bent by the surface slope and travelling a distance \(d\) down to the paper, conservation of light energy gives"><strong>為什麼有亮紋與暗紋？</strong>起伏的水面像一大片小透鏡：波峰向上凸，把光會聚到白紙上（亮紋）；波谷把光散開（暗紋）。光線被水面的斜率偏折後再走 \(d\) 到白紙，由光的能量守恆可得</p>
+      <div class="formula">\[ I \approx \frac{I_0}{1 + \kappa\,\nabla^{2}u}, \qquad \kappa = d\left(1 - \frac{1}{n}\right) \]</div>
+      <p data-en-html="Here \(u\) is the height of the surface and \(n = 1.33\) the refractive index of water; at a crest \(\nabla^2 u < 0\) so \(I > I_0\). With a small lamp a height \(L\) above the water, the picture on the paper is the water surface enlarged by">\(u\) 是水面高度、\(n = 1.33\) 是水的折射率；波峰處 \(\nabla^2 u < 0\)，所以 \(I > I_0\)。燈若是在水面上方高度 \(L\) 處的小燈泡（點光源），白紙上的影像是水面放大</p>
+      <div class="formula">\[ M = \frac{L + d}{L} \]</div>
+      <p data-en-html="times: every length (and so the spacing of the bright bands) is \(M\) times the real one, while angles are unchanged. Only parallel light gives \(M = 1\).">倍的相似形：所有長度（包括亮紋的間距）都是實際的 \(M\) 倍，角度則不變。只有平行光時 \(M = 1\)。</p>
+
+      <p data-en-html="<strong>Wave speed and depth.</strong> The generator fixes the frequency \(f\); the speed \(v = f\lambda\) depends on the water depth \(h\). For ripples both gravity and surface tension \(\sigma\) pull the surface back:"><strong>波速與水深。</strong>起波器決定頻率 \(f\)，波速 \(v = f\lambda\) 則由水深 \(h\) 決定。水波的回復力來自重力與表面張力 \(\sigma\)：</p>
+      <div class="formula">\[ \omega^{2} = \left(g k + \frac{\sigma k^{3}}{\rho}\right)\tanh(k h), \qquad \omega = 2\pi f,\quad k = \frac{2\pi}{\lambda} \]</div>
+      <p data-en-html="Shallower water means a smaller \(\tanh(kh)\), so for the same \(f\) the wave is slower and its wavelength shorter. For long waves in very shallow water this becomes \(v \approx \sqrt{g h}\).">水愈淺 \(\tanh(kh)\) 愈小，同樣的 \(f\) 之下波速愈慢、波長愈短；水很淺、波長很長時化簡為 \(v \approx \sqrt{g h}\)。</p>
+
+      <p data-en-html="<strong>Reflection.</strong> The angle of incidence \(\theta_i\) is the angle between the incident wavefront and the barrier (equal to the angle between the ray and the normal). The reflected wavefront makes the same angle: \(\theta_r = \theta_i\). A concave arc of radius \(R\) brings straight waves together near its focus \(F \approx R/2\); a convex arc makes them spread as if they came from a point behind it. A circular wave reflected by a straight barrier looks as if it came from an image source behind the barrier."><strong>反射。</strong>入射角 \(\theta_i\) 是入射波前與障礙物的夾角（等於射線與法線的夾角），反射波前與障礙物的夾角相同：\(\theta_r = \theta_i\)。半徑 \(R\) 的凹弧把直線波會聚在焦點 \(F \approx R/2\) 附近；凸弧使波散開，好像從障礙物後方的一點發出。圓形波遇到直條障礙物反射後，好像從障礙物後方的「像」波源發出。</p>
+
+      <p data-en-html="<strong>Refraction.</strong> The frequency stays the same when a wave crosses into shallow water, so the slower wave has a shorter wavelength, and the wavefronts bend toward the boundary’s normal:"><strong>折射。</strong>波進入淺水區時頻率不變，波速變慢、波長變短，波前因此偏折、射線偏向法線：</p>
+      <div class="formula">\[ \frac{\sin\theta_1}{\sin\theta_2} = \frac{v_1}{v_2} = \frac{\lambda_1}{\lambda_2} \]</div>
+
+      <p data-en-html="<strong>Diffraction.</strong> Behind a slit of width \(a\) the waves spread into the geometric shadow. The spreading is obvious when \(\lambda\) is comparable to or larger than \(a\); the first dark (nodal) directions on each side are near \(a\sin\theta = \lambda\). Behind a short barrier the waves close up again a little way downstream."><strong>繞射。</strong>水波通過寬 \(a\) 的狹縫後會散進幾何陰影區。\(\lambda\) 與 \(a\) 差不多或更大時繞射很明顯；兩側第一條暗線（節線）的方向約在 \(a\sin\theta = \lambda\)。短障礙物後方的波，走一段距離就又合攏起來。</p>
+
+      <p data-en-html="<strong>Interference.</strong> Two in-phase sources \(S_1\), \(S_2\) a distance \(d\) apart. At a point \(P\) the path difference \(\Delta = |PS_1 - PS_2|\) decides what happens:"><strong>干涉。</strong>兩個同相波源 \(S_1\)、\(S_2\) 相距 \(d\)。在 \(P\) 點，波程差 \(\Delta = |PS_1 - PS_2|\) 決定兩波相加的結果：</p>
+      <div class="formula">\[ \text{nodal line: } \Delta = \left(n - \tfrac12\right)\lambda, \qquad \text{antinodal line: } \Delta = n\lambda, \qquad N_{\text{nodal}} = 2\left\lfloor \frac{d}{\lambda} + \frac12 \right\rfloor \]</div>
+      <p data-en-html="Nodal lines are hyperbolas where the water stays almost still (grey on the paper); antinodal lines carry strong bright–dark bands.">節線（nodal line）是水面幾乎不動的雙曲線（白紙上灰灰的），腹線（antinodal line）上亮暗紋最明顯。</p>
+
+      <p data-en-html="<strong>The stroboscope.</strong> A lamp that flashes \(f_s\) times per second shows the surface only at those instants. If \(f_s = f\) (or \(f/2, f/3, \ldots\)) every flash finds the wave in the same place and the pattern looks frozen; a slightly different \(f_s\) makes it crawl slowly. Matching the strobe is also a precise way to measure \(f\)."><strong>閃頻儀。</strong>每秒閃 \(f_s\) 次的燈只讓我們在閃光的瞬間看到水面。\(f_s = f\)（或 \(f/2, f/3, \ldots\)）時每次閃光看到的波都在同一位置，條紋看起來靜止；\(f_s\) 稍微不同時，條紋會慢慢移動。調到靜止，也是精確量出 \(f\) 的方法。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en-html="<strong>Set up.</strong> Level the tank bottom with the spirit level before relying on the depth (choose “With errors” to practise this), put sponges along the walls, switch on the straight generator, and turn on the stroboscope. Adjust \(f_s\) until the bands stand still. Lay the ruler across several bright bands, record the paper length and the number of wavelengths, and work out \(\lambda\) and \(v = f\lambda\)."><strong>架設與波長：</strong>先用水平儀把槽底調水平（選「含誤差」可以練習），槽壁放海綿，開直線起波器，再開閃頻儀並調 \(f_s\) 讓條紋靜止。用直尺跨過好幾條亮紋，記錄紙上的長度與跨過的波長數，算出 \(\lambda\) 與 \(v = f\lambda\)。</li>
+        <li data-en-html="<strong>Reflection.</strong> Put the straight block at an angle to the wavefronts. Lay the ruler along an incident wavefront and record \(\theta_i\), then along a reflected wavefront and record \(\theta_r\). Repeat for at least three angles. Then try the concave and convex arcs, and a single dipper."><strong>反射：</strong>把直條障礙物斜放。直尺沿著入射波前擺放，記錄 \(\theta_i\)；再沿著反射波前擺放，記錄 \(\theta_r\)。換至少三個角度重做。再換凹弧、凸弧與單點起波器觀察。</li>
+        <li data-en-html="<strong>Refraction.</strong> Put the thin acrylic plate on the bottom, still covered by a thin layer of water. First keep its edge parallel to the generator and compare the wavelengths \(\lambda_1\) (deep) and \(\lambda_2\) (shallow); then turn it and record \(\theta_1\), \(\theta_2\) for several angles."><strong>折射：</strong>把薄壓克力板放在槽底，板上仍有薄薄一層水。先讓板邊和起波器平行，比較深水的 \(\lambda_1\) 與淺水的 \(\lambda_2\)；再把板轉斜，記錄好幾組 \(\theta_1\)、\(\theta_2\)。</li>
+        <li data-en-html="<strong>Diffraction.</strong> Look behind a short barrier, changing its length. Then make a slit; change its width \(a\) and the frequency, record \(a\), \(\lambda\) and the direction \(\theta\) of the first dark line beside the central beam."><strong>繞射：</strong>觀察短障礙物後方，改變障礙物長度。再做出狹縫，改變縫寬 \(a\) 與頻率，記錄 \(a\)、\(\lambda\) 與中央亮帶旁第一條暗線的方向 \(\theta\)。</li>
+        <li data-en-html="<strong>Interference.</strong> Change to the two dippers. Record \(\lambda\), then put the probe \(P\) on nodal and antinodal lines and record \(PS_1\), \(PS_2\). Change \(f\) and \(d\) and count the nodal lines again."><strong>干涉：</strong>換成兩個點波源。先記錄 \(\lambda\)，再把探針 \(P\) 放在節線、腹線上記錄 \(PS_1\)、\(PS_2\)。改變 \(f\) 與 \(d\)，重新數節線。</li>
+      </ol>
+
+      <h3 data-en="Things to watch">注意事項</h3>
+      <ul>
+        <li data-en="The bottom must be level so that the depth — and hence the speed — is the same everywhere; a tilted tank bends the wavefronts by itself.">槽底一定要水平，各處水深（也就是波速）才相同；傾斜的水槽本身就會讓波前彎曲。</li>
+        <li data-en="Barriers must stick out of the water, while the thin plate must stay just under the surface; otherwise the waves either wash over the barrier or break on the plate.">障礙物要高出水面；薄壓克力板則要剛好被水蓋住，否則波會漫過障礙物，或在板上破碎。</li>
+        <li data-en="Sponges soak up the waves at the walls; without them the reflections fill the tank with a confusing pattern.">海綿會吸收傳到槽壁的波；拿掉海綿，反射波會讓圖樣變得很亂。</li>
+        <li data-en="Measure across many wavelengths and divide, rather than measuring one; and remember the paper image is enlarged unless the light is parallel.">量波長要跨過很多個波長再除，不要只量一個；而且除非是平行光，白紙上的影像是放大的。</li>
+        <li data-en="The dial of the generator is only approximate; the frequency at which the strobe freezes the pattern is the reliable one.">起波器的旋鈕刻度只是大約；讓條紋靜止的閃頻頻率才可靠。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol>
+        <li data-en="Why does a crest appear bright on the paper and a trough dark? What would happen to the contrast if the paper were moved further down?">為什麼波峰在白紙上是亮的、波谷是暗的？把白紙放得更低，亮暗的對比會怎樣？</li>
+        <li data-en="With a small lamp 60 cm above the water, is the spacing of the bright bands on the paper equal to the wavelength? How would you correct it?">燈在水面上方 60 cm 時，白紙上相鄰亮紋的間距等於水波的波長嗎？要怎麼修正？</li>
+        <li data-en-html="In the refraction part, which changes at the edge of the plate — the frequency, the speed or the wavelength? Use your table to check whether \(\sin\theta_1/\sin\theta_2 = \lambda_1/\lambda_2\).">折射實驗中，板邊兩側哪些量改變了——頻率、波速、波長？用你的數據檢查 \(\sin\theta_1/\sin\theta_2\) 是否等於 \(\lambda_1/\lambda_2\)。</li>
+        <li data-en="The slit is a little too wide to show diffraction clearly, and you may not change the slit or the depth. What else can you change?">狹縫稍微太寬、繞射不明顯，而且不能改變縫寬與水深，還可以調整什麼？</li>
+        <li data-en="With two sources 5 cm apart, how many nodal lines do you expect at 8 Hz and at 15 Hz? Check by counting.">兩波源相距 5 cm，頻率 8 Hz 與 15 Hz 時各預期有幾條節線？數數看。</li>
+        <li data-en="Why does refraction look stronger at low frequency than at high frequency for the same plate?">同一塊壓克力板，為什麼低頻時折射比高頻時明顯？</li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="Turn the stroboscope on and slowly bring f<sub>s</sub> toward f: the bands crawl, slow down and stop. Try f/2 as well.">打開閃頻儀，慢慢把 f<sub>s</sub> 調向 f：條紋先慢慢爬、愈來愈慢，最後停住。再試試 f/2。</li>
+        <li data-en="Remove the sponges and watch the waves bounce around the tank.">拿掉海綿，看看波在水槽裡來回反射的樣子。</li>
+        <li data-en="With one dipper and the straight block, find the image source: the reflected circles are centred behind the barrier.">用單點起波器與直條障礙物找出「像」：反射的圓形波，圓心在障礙物後方。</li>
+        <li data-en="Put one dipper at the focus of the concave arc and look at the reflected waves.">把單點起波器放在凹弧的焦點，看看反射回來的波是什麼形狀。</li>
+        <li data-en="Make the slit narrower than the wavelength — the waves come out almost as semicircles.">把狹縫調得比波長還窄——穿過的波幾乎變成半圓形。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The water surface obeys the linear wave equation \(\partial_t^2 u + \sigma_d\,\partial_t u = \nabla\cdot(c^2\nabla u)\), solved on a square grid (finite differences, leapfrog time steps). The local speed \(c\) is the phase speed given by the dispersion relation above at the local depth and the generator frequency, so reflection, refraction, diffraction and interference all come out of the equation by themselves.">水面高度滿足線性波動方程式 \(\partial_t^2 u + \sigma_d\,\partial_t u = \nabla\cdot(c^2\nabla u)\)，在正方形方格上用有限差分與蛙跳法求解。每一格的波速 \(c\) 取該處水深、起波器頻率下由上面色散關係算出的相速度，所以反射、折射、繞射、干涉都是方程式自己算出來的。</li>
+        <li data-en="The grid spacing adapts to the shortest wavelength (about 12 cells per wavelength, fewer on slow devices), and the speed of each cell is corrected for the grid’s own numerical dispersion, so the simulated wavelength matches the formula to better than 1%. One period is an exact whole number of time steps.">方格大小隨最短波長自動調整（每個波長約 12 格，較慢的裝置會少一些），每一格的波速也扣除了方格本身的數值色散，模擬出的波長與公式相差不到 1%；一個週期剛好是整數個時間步長。</li>
+        <li data-en="Barriers are solid cells with no flow through their faces (total reflection). Sponges are a 3 cm “perfectly matched layer”: it soaks up the part of the motion heading into a wall (less than 1% comes back at 5–20 Hz) but leaves waves running along the wall untouched, so straight waves stay straight right up to the sponges. Damping includes the viscosity of water and friction at the bottom.">障礙物是固體格子，面上沒有水流通過（完全反射）。海綿是 3 cm 寬的「完美匹配層」：只吸收朝槽壁前進的那部分運動（5–20 Hz 反射不到 1%），沿著槽壁前進的波不受影響，所以直線波一直到海綿邊都是直的。阻尼包含水的黏滯與槽底摩擦。</li>
+        <li data-en="The paper image is computed from the curvature of the surface with the formula for I above; with a point lamp the whole picture is the same, scaled by M (the ruler reads paper lengths).">白紙上的影像由水面的曲率用上面的 I 公式算出；點光源時整張影像形狀相同、放大 M 倍（直尺量到的是紙上的長度）。</li>
+        <li data-en="3D view: the same grid drawn as a lit surface, with the wave height exaggerated 30 times (real ripples are about 0.1 mm high); the paper below shows the same projected image, enlarged by M.">3D 檢視：同一個方格畫成有光影的水面，波高放大 30 倍（真實的水波只有約 0.1 mm 高）；下方的白紙顯示同一張投影影像，並放大 M 倍。</li>
+        <li data-en="“With errors” adds what makes the real lab hard: a tank that is not level until you adjust it, a generator dial that is a few per cent off, readings to the nearest millimetre and degree, and (if you choose the point lamp) the enlargement of the paper image.">「含誤差」加入真實實驗的困難：沒調好就不水平的水槽、差了幾個百分比的起波器旋鈕刻度、只讀到 1 mm 與 1° 的讀數，以及（選點光源時）白紙影像的放大。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120013"></script>
+  <script src="js/ripple-tank-core.js?v=202611120013"></script>
+  <script src="js/sound.js?v=202611120013"></script>
+  <script src="js/numinput.js?v=202611120013"></script>
+  <script src="js/drawkit.js?v=202611120013"></script>
+  <script src="js/ripple-tank-3d.js?v=202611120013"></script>
+  <script src="js/ripple-tank.js?v=202611120013"></script>
+  <script src="js/firebase-config.js?v=202611120013"></script>
+  <script src="js/missions.js?v=202611120013" data-module="ripple-tank"></script>
+  <script src="js/missions/ripple-tank.js"></script>
+  <script src="js/stats.js?v=202611120013" data-module="ripple-tank"></script>
+  <script src="js/comments.js?v=202611120013"></script>
+</body>
+</html>

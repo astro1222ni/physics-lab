@@ -17,7 +17,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
+const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於標準優先權（減少 CPU 負擔）
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -50,11 +50,13 @@ const SUPS = /[⁰⁴-₟⃗]/;
 server.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + server.address().port + '/';
   if (SHOTS) fs.mkdirSync(path.join(ROOT, '.shots'), { recursive: true });
-  const browser = await chromium.launch();
+  const browser = await launch();
   let bad = 0;
   for (const slug of pages) {
     for (const c of COMBOS) {
       const ctx = await browser.newContext({ viewport: { width: c.w, height: 900 }, colorScheme: c.scheme });
+      // 本機連得到 Firebase：擋掉所有對外連線（統計、在線心跳、Firebase SDK），只留本機伺服器，避免寫進正式資料庫
+      await ctx.route(u => !u.href.startsWith(base), r => r.abort());
       await ctx.addInitScript(o => {
         localStorage.setItem('lab-settings', JSON.stringify({ lang: o.lang, theme: 'auto', fs: o.fs }));
         localStorage.setItem('lab-welcome-v1', 'skip');
@@ -72,6 +74,8 @@ server.listen(0, '127.0.0.1', async () => {
           const cjk = []; const sups = [];
           for (let n; (n = walker.nextNode());) {
             if (n.parentElement && n.parentElement.closest('script, style, .katex-mathml, .lab-set-panel, .lab-settings, .lab-gear')) continue;
+            // 刻意保留的中文（人名、頻道名、中文引用範例）要在元素上標 lang="zh-Hant"
+            if (lang === 'en' && n.parentElement && n.parentElement.closest('body [lang^="zh"]')) continue;
             const t = n.textContent;
             if (lang === 'en' && /[一-鿿]/.test(t) && cjk.length < 3) cjk.push(t.trim().slice(0, 40));
             if (/[⁰⁴-₟⃗]/.test(t) && sups.length < 3) sups.push(t.trim().slice(0, 40));
