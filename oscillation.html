@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111018"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Spring Oscillator and Pendulum | Astro Ni Physics Lab">彈簧振子與單擺｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：水平彈簧振子與單擺的簡諧運動。調整質量、力常數、振幅、擺長、重力加速度與釋放角，即時觀察 x–t、v–t、a–t 圖與動能、位能交換；比較大角度單擺的精確週期與小角度近似。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111018">
+  <style>
+    /* 彈簧振子與單擺頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .lab.osc { grid-template-areas: "scene panel" "graphs panel"; grid-template-rows: auto 1fr; }
+    .osc > .scene-stage { grid-area: scene; }
+    .osc > .graph-stage { grid-area: graphs; align-self: start; }
+    .osc > .panel { grid-area: panel; }
+    @media (max-width: 880px) { .lab.osc { grid-template-areas: "scene" "graphs" "panel"; grid-template-rows: none; } }
+    .osc [hidden] { display: none !important; }
+
+    #scene { aspect-ratio: 16 / 9; cursor: default; }
+    #scene.grab { cursor: grab; }
+    #scene.grabbing { cursor: grabbing; }
+    #graph { aspect-ratio: 2 / 1; touch-action: auto; cursor: default; }
+    #energy { aspect-ratio: 4 / 1; touch-action: auto; cursor: default; margin-top: 8px; }
+    @media (max-width: 560px) {
+      #scene { aspect-ratio: 5 / 4; }
+      #graph { aspect-ratio: 9 / 10; }
+      #energy { aspect-ratio: 3 / 2; }
+    }
+
+    /* 分頁：彈簧振子／單擺 */
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 10px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+    .tabs button { min-height: 44px; border: 1px solid transparent; border-radius: 9px; background: transparent; font-size: calc(15px * var(--fs, 1)); font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.25; transition: background-color .18s ease-out, color .18s ease-out; }
+    .tabs button svg { width: 22px; height: 22px; flex: none; }
+    .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent); border-color: var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+    .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .stage .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .stage .bar button { min-height: 44px; }
+    .stage .bar .primary { min-width: 88px; }
+    .speedseg { display: inline-flex; align-items: center; gap: 6px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); flex-wrap: wrap; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; min-height: 44px; min-width: 48px; padding: 4px 8px; background: var(--surface); font-variant-numeric: tabular-nums; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+    .stage .status { margin: 8px 4px 0; }
+
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+
+    .stage-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; margin: 2px 4px 8px; }
+    .stage-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .stage-head p { margin: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.ring { width: 12px; height: 12px; border-radius: 50%; background: none !important; border: 2px dashed currentColor; }
+
+    .slider input[type="range"] { height: 28px; margin: 0; }
+    .slider label sub, dl.readout sub { font-size: .75em; }
+    .slider input:disabled { opacity: .45; }
+    .presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: -2px; }
+    .presets.four { grid-template-columns: repeat(4, 1fr); }
+    .presets button { padding: 6px 4px; line-height: 1.25; min-height: 44px; }
+    .presets button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+    .toggle { display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 600; cursor: pointer; min-height: 44px; }
+    .toggle input { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+    .dim { opacity: .45; }
+    .checks label { min-height: 44px; }
+    .checks input { width: 17px; height: 17px; }
+    .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint:first-child { margin-top: 0; }
+    .osc dl.readout dd { white-space: nowrap; }
+    dl.readout dd small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.hi { font-weight: 700; color: var(--accent); }
+    dl.readout dt .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+    .regime { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Simple harmonic motion"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 簡諧運動</nav>
+      <h1 data-en="Spring Oscillator and Pendulum">彈簧振子與單擺</h1>
+      <p data-en="Pull the block or the pendulum bob aside and let go. Watch the x–t, v–t and a–t graphs and the exchange between kinetic and potential energy, and compare a large-angle pendulum with the small-angle approximation.">把木塊或擺錘拉開後放手，觀察 x–t、v–t、a–t 圖與動能、位能的交換；比較大角度單擺與小角度近似的差別。</p>
+    </header>
+
+    <div class="lab osc">
+      <div class="stage scene-stage">
+        <div class="tabs" role="tablist" aria-label="選擇實驗" data-en-aria-label="Choose an experiment">
+          <button type="button" role="tab" id="tabSpring" aria-selected="true" aria-controls="springPanel" data-mode="spring"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2 5v14M2 12h2l1.5-4 2 8 2-8 2 8 2-8 1.5 4h1"/><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"/></svg><span data-en="Spring oscillator">彈簧振子</span></button>
+          <button type="button" role="tab" id="tabPend" aria-selected="false" aria-controls="pendPanel" data-mode="pendulum" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 3h14M12 3l5 13"/><circle cx="17.6" cy="17.6" r="3.2" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2" d="M12 3v15"/></svg><span data-en="Simple pendulum">單擺</span></button>
+        </div>
+        <canvas id="scene" aria-label="簡諧運動模擬畫布：彈簧振子或單擺，可拖曳木塊或擺錘設定釋放位置" data-en-aria-label="Simple harmonic motion simulation: spring oscillator or pendulum; drag the block or the bob to set where it is released"></canvas>
+        <div class="bar">
+          <button id="play" type="button" class="primary" data-en="Pause">暫停</button>
+          <button id="reset" type="button" data-en="Release again">重新釋放</button>
+          <button id="clearAll" type="button" data-en="Clear all">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <span class="speedseg"><span data-en="Speed">播放速度</span>
+            <span class="seg" role="group" aria-label="播放速度" data-en-aria-label="Playback speed">
+              <button type="button" data-speed="0.25" aria-pressed="false">0.25×</button><button type="button" data-speed="0.5" aria-pressed="false">0.5×</button><button type="button" data-speed="1" aria-pressed="true">1×</button><button type="button" data-speed="2" aria-pressed="false">2×</button>
+            </span></span>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legSpring">
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Acceleration a"><i style="background:var(--equi)"></i>加速度 a</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Equilibrium x = 0 and ±A"><i class="dash"></i>平衡點 x = 0 與 ±A</span>
+        </div>
+        <div class="legend" id="legPend" hidden>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Tangential acceleration a<sub>t</sub>"><i style="background:var(--equi)"></i>切向加速度 a<sub>t</sub></span>
+          <span id="legGhost" style="color:var(--muted)" data-en-html="<i class=&quot;ring&quot;></i>Small-angle approximation (ghost)"><i class="ring"></i>小角度近似（虛影）</span>
+        </div>
+        <p class="hint" id="hintSpring" data-en="Drag the block left or right to choose where it is released; it starts oscillating as soon as you let go. Arrow lengths are proportional to v and a (full length = this run’s maximum).">左右拖曳木塊可設定釋放位置，放手後立刻開始振動。箭頭長度與 v、a 成正比（以本次最大值為滿格）。</p>
+        <p class="hint" id="hintPend" hidden data-en="Drag the bob to choose the release angle; it starts swinging as soon as you let go. The bob hangs on a light rigid rod (a string would go slack above 90°).">拖曳擺錘可設定釋放角，放手後立刻開始擺動。擺錘掛在質量可忽略的輕桿上（超過 90° 時繩子會鬆弛，只有硬桿能維持圓周運動）。</p>
+      </div>
+
+      <div class="stage graph-stage">
+        <div class="stage-head">
+          <h2 id="graphTitle">x–t、v–t、a–t 圖</h2>
+          <p data-en="Same time axis — compare where each curve peaks">共用時間軸，比較各曲線在何時達到最大</p>
+        </div>
+        <canvas id="graph" aria-label="位置、速度、加速度對時間的關係圖（上下排列、共用時間軸）" data-en-aria-label="Graphs of position, velocity and acceleration against time, stacked on a shared time axis"></canvas>
+        <canvas id="energy" aria-label="能量長條圖與能量對時間的關係圖：動能、位能、力學能" data-en-aria-label="Energy bars and energy–time graph: kinetic, potential and total mechanical energy"></canvas>
+      </div>
+
+      <aside class="panel">
+        <!-- ===================== 彈簧振子 ===================== -->
+        <div id="springPanel" role="tabpanel" aria-labelledby="tabSpring" class="panel">
+          <section class="card">
+            <h2 data-en="Oscillator">振子</h2>
+            <div class="slider"><label for="sm" data-en="Mass m">質量 m</label><output id="smo"></output>
+              <input id="sm" type="range" min="0.1" max="4" step="0.1" value="0.5" data-decimals="2"></div>
+            <div class="slider"><label for="sk" data-en="Spring constant k">力常數 k</label><output id="sko"></output>
+              <input id="sk" type="range" min="2" max="100" step="1" value="20" data-decimals="1"></div>
+            <div class="slider"><label for="sA" data-en="Amplitude A (release position)">振幅 A（釋放位置）</label><output id="sAo"></output>
+              <input id="sA" type="range" min="0.02" max="0.3" step="0.01" value="0.15" data-decimals="3"></div>
+            <p class="hint" data-en="The surface is frictionless; the block is released from rest at x = A.">水平面光滑無摩擦；木塊在 x = A 處由靜止釋放。</p>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Damping">阻尼</h2>
+            <label class="toggle"><input id="sDamp" type="checkbox"><span data-en="Add damping (force −bv)">加入阻尼（阻力 −bv）</span></label>
+            <div id="sDampBox" class="dim">
+              <div class="slider"><label for="sb" data-en="Damping coefficient b">阻尼係數 b</label><output id="sbo"></output>
+                <input id="sb" type="range" min="0.05" max="10" step="0.05" value="0.3" data-decimals="2" disabled></div>
+              <dl class="readout">
+                <dt data-en-html="Critical damping b<sub>c</sub> = 2√(mk)">臨界阻尼 b<sub>c</sub> = 2√(mk)</dt><dd id="sBc">—</dd>
+                <dt data-en="Type">類型</dt><dd id="sRegime">—</dd>
+              </dl>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Period">週期</h2>
+            <dl class="readout">
+              <dt data-en="T = 2π√(m/k)">T = 2π√(m/k)</dt><dd id="sT" class="hi">—</dd>
+              <dt data-en="Angular frequency ω = √(k/m)">角頻率 ω = √(k/m)</dt><dd id="sW">—</dd>
+              <dt data-en="Frequency f = 1/T">頻率 f = 1/T</dt><dd id="sF">—</dd>
+              <dt data-en="Measured period (simulation)">實測週期（模擬）</dt><dd id="sTm">—</dd>
+            </dl>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Live readings">即時讀數</h2>
+            <dl class="readout">
+              <dt data-en="Time t">時間 t</dt><dd id="sRt">—</dd>
+              <dt data-en="Position x">位置 x</dt><dd id="sRx">—</dd>
+              <dt data-en="Velocity v">速度 v</dt><dd id="sRv">—</dd>
+              <dt data-en="Acceleration a">加速度 a</dt><dd id="sRa">—</dd>
+              <dt data-en-html="Kinetic energy ½mv<sup>2</sup>">動能 ½mv<sup>2</sup></dt><dd id="sRK">—</dd>
+              <dt data-en-html="Elastic PE ½kx<sup>2</sup>">彈性位能 ½kx<sup>2</sup></dt><dd id="sRU">—</dd>
+              <dt data-en="Mechanical energy E">力學能 E</dt><dd id="sRE">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <!-- ===================== 單擺 ===================== -->
+        <div id="pendPanel" role="tabpanel" aria-labelledby="tabPend" class="panel" hidden>
+          <section class="card">
+            <h2 data-en="Pendulum">單擺</h2>
+            <div class="slider"><label for="pL" data-en="Length L">擺長 L</label><output id="pLo"></output>
+              <input id="pL" type="range" min="0.1" max="3" step="0.05" value="1" data-decimals="2"></div>
+            <div class="slider"><label for="pth" data-en-html="Release angle θ<sub>0</sub>">釋放角 θ<sub>0</sub></label><output id="ptho"></output>
+              <input id="pth" type="range" min="1" max="170" step="1" value="20" data-decimals="1"></div>
+            <div class="presets four" role="group" aria-label="釋放角預設值" data-en-aria-label="Release angle presets">
+              <button type="button" data-th="5">5°</button>
+              <button type="button" data-th="45">45°</button>
+              <button type="button" data-th="90">90°</button>
+              <button type="button" data-th="160">160°</button>
+            </div>
+            <div class="slider"><label for="pg" data-en="Gravitational acceleration g">重力加速度 g</label><output id="pgo"></output>
+              <input id="pg" type="range" min="1" max="25" step="0.01" value="9.8" data-decimals="2"></div>
+            <div class="presets" role="group" aria-label="重力加速度預設值" data-en-aria-label="Gravity presets">
+              <button type="button" data-g="9.8" data-en-html="Earth<small>9.8</small>">地球<small>9.8</small></button>
+              <button type="button" data-g="1.62" data-en-html="Moon<small>1.62</small>">月球<small>1.62</small></button>
+              <button type="button" data-g="3.71" data-en-html="Mars<small>3.71</small>">火星<small>3.71</small></button>
+            </div>
+            <div class="slider"><label for="pm" data-en="Bob mass m">擺錘質量 m</label><output id="pmo"></output>
+              <input id="pm" type="range" min="0.1" max="2" step="0.1" value="0.5" data-decimals="2"></div>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Damping">阻尼</h2>
+            <label class="toggle"><input id="pDamp" type="checkbox"><span data-en="Add damping (force −bv)">加入阻尼（阻力 −bv）</span></label>
+            <div id="pDampBox" class="dim">
+              <div class="slider"><label for="pb" data-en="Damping coefficient b">阻尼係數 b</label><output id="pbo"></output>
+                <input id="pb" type="range" min="0.005" max="0.5" step="0.005" value="0.05" data-decimals="3" disabled></div>
+              <p class="hint" data-en-html="Angular acceleration α = −(g/L) sin θ − (b/m) ω. A heavier bob is slowed down less by the same b.">角加速度 α = −(g/L) sin θ − (b/m) ω；同樣的 b，擺錘越重，減慢得越少。</p>
+            </div>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Period">週期</h2>
+            <dl class="readout">
+              <dt data-en-html="Small-angle T<sub>0</sub> = 2π√(L/g)">小角度 T<sub>0</sub> = 2π√(L/g)</dt><dd id="pT0">—</dd>
+              <dt data-en-html="Exact T = 4√(L/g)·K(sin(θ<sub>0</sub>/2))">精確 T = 4√(L/g)·K(sin(θ<sub>0</sub>/2))</dt><dd id="pT" class="hi">—</dd>
+              <dt data-en-html="Difference (T − T<sub>0</sub>)/T<sub>0</sub>">差異 (T − T<sub>0</sub>)/T<sub>0</sub></dt><dd id="pDiff">—</dd>
+              <dt data-en="Measured period (simulation)">實測週期（模擬）</dt><dd id="pTm">—</dd>
+            </dl>
+          </section>
+
+          <section class="card">
+            <h2 data-en="Live readings">即時讀數</h2>
+            <dl class="readout">
+              <dt data-en="Time t">時間 t</dt><dd id="pRt">—</dd>
+              <dt data-en="Angle θ">擺角 θ</dt><dd id="pRth">—</dd>
+              <dt data-en="Angular velocity ω">角速度 ω</dt><dd id="pRw">—</dd>
+              <dt data-en="Angular acceleration α">角加速度 α</dt><dd id="pRa">—</dd>
+              <dt data-en-html="Kinetic energy ½mv<sup>2</sup>">動能 ½mv<sup>2</sup></dt><dd id="pRK">—</dd>
+              <dt data-en="Gravitational PE mgL(1 − cos θ)">重力位能 mgL(1 − cos θ)</dt><dd id="pRU">—</dd>
+              <dt data-en="Mechanical energy E">力學能 E</dt><dd id="pRE">—</dd>
+            </dl>
+            <p class="hint" data-en="Potential energy is measured from the lowest point of the swing.">重力位能以最低點為零點。</p>
+          </section>
+        </div>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showArrows" type="checkbox" checked><span data-en="Velocity and acceleration arrows">速度與加速度箭頭</span></label>
+            <label id="ghostWrap" hidden><input id="showGhost" type="checkbox" checked><span data-en="Small-angle ghost">小角度近似虛影</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Spring oscillator">彈簧振子</h3>
+      <p data-en-html="On a frictionless surface the only horizontal force on the block is the spring force (Hooke’s law). Taking the equilibrium position as \(x = 0\), Newton’s second law gives">光滑水平面上，木塊在水平方向只受彈力（虎克定律）。以平衡位置為 \(x = 0\)，由牛頓第二定律：</p>
+      <div class="formula">
+        \[ F = -kx = ma \quad\Longrightarrow\quad a = -\frac{k}{m}\,x = -\omega^{2} x, \qquad \omega = \sqrt{\frac{k}{m}} \]
+      </div>
+      <p data-en-html="The acceleration is proportional to the displacement and points the opposite way — this is the definition of simple harmonic motion. Released from rest at \(x = A\):">加速度與位移成正比、方向相反——這正是簡諧運動的定義。由 \(x = A\) 靜止釋放時：</p>
+      <div class="formula">
+        \[ x = A\cos\omega t, \qquad v = -A\omega\sin\omega t = A\omega\cos\!\left(\omega t + \tfrac{\pi}{2}\right), \qquad a = -A\omega^{2}\cos\omega t \]
+        \[ T = \frac{2\pi}{\omega} = 2\pi\sqrt{\frac{m}{k}} \]
+      </div>
+      <p data-en-html="The period depends only on \(m\) and \(k\), not on the amplitude \(A\). Kinetic and elastic potential energy keep trading places while their sum stays constant:">週期只和 \(m\)、\(k\) 有關，與振幅 \(A\) 無關。動能與彈性位能不斷互相轉換，總和保持不變：</p>
+      <div class="formula">
+        \[ E = \tfrac12 m v^{2} + \tfrac12 k x^{2} = \tfrac12 k A^{2}, \qquad v_{\max} = A\omega, \qquad a_{\max} = A\omega^{2} \]
+      </div>
+
+      <h3 data-en="Simple pendulum">單擺</h3>
+      <p data-en-html="For a bob of mass \(m\) on a light rod of length \(L\), the tangential component of gravity, \(-mg\sin\theta\), pulls it back toward the lowest point:">質量 \(m\) 的擺錘掛在長 \(L\) 的輕桿上，重力的切向分量 \(-mg\sin\theta\) 把它拉回最低點：</p>
+      <div class="formula">
+        \[ mL\,\ddot\theta = -mg\sin\theta \quad\Longrightarrow\quad \ddot\theta = -\frac{g}{L}\sin\theta \]
+      </div>
+      <p data-en-html="This equation is <strong>not</strong> simple harmonic motion, because the restoring term is \(\sin\theta\) rather than \(\theta\). Only for small angles (\(\sin\theta \approx \theta\), with \(\theta\) in radians) does it become SHM:">這個方程式<strong>不是</strong>簡諧運動，因為回復項是 \(\sin\theta\) 而不是 \(\theta\)。只有在小角度時（\(\sin\theta \approx \theta\)，\(\theta\) 以弧度表示）才近似為簡諧運動：</p>
+      <div class="formula">
+        \[ \ddot\theta \approx -\frac{g}{L}\,\theta, \qquad T_0 = 2\pi\sqrt{\frac{L}{g}} \]
+      </div>
+      <p data-en-html="For any release angle \(\theta_0\) the exact period can be written with the complete elliptic integral of the first kind \(K\), which is computed quickly from the arithmetic–geometric mean (AGM):">任意釋放角 \(\theta_0\) 的精確週期可以寫成第一類完全橢圓積分 \(K\)，再用算術–幾何平均數（AGM）快速算出：</p>
+      <div class="formula">
+        \[ T = 4\sqrt{\frac{L}{g}}\;K\!\left(\sin\frac{\theta_0}{2}\right) = \frac{T_0}{\operatorname{AGM}\!\left(1,\ \cos\frac{\theta_0}{2}\right)} \approx T_0\left(1 + \frac{\theta_0^{2}}{16} + \frac{11\,\theta_0^{4}}{3072} + \cdots\right) \]
+      </div>
+      <p data-en-html="The AGM is found by repeating \(a \to \tfrac{a+b}{2}\), \(b \to \sqrt{ab}\) until the two numbers agree. At \(\theta_0 = 10^\circ\) the exact period is only 0.19% longer than \(T_0\); at \(90^\circ\) it is 18% longer, and close to \(180^\circ\) it grows without limit.">AGM 的算法是反覆把 \(a\)、\(b\) 換成 \(\tfrac{a+b}{2}\) 與 \(\sqrt{ab}\)，直到兩數相等。\(\theta_0 = 10^\circ\) 時精確週期只比 \(T_0\) 長 0.19%；\(90^\circ\) 時長 18%；接近 \(180^\circ\) 時趨近無限大。</p>
+
+      <h3 data-en="Damping">阻尼</h3>
+      <p data-en-html="With a resistive force \(-bv\) the motion slowly dies away. For the spring, with \(\gamma = b/2m\):">加入阻力 \(-bv\) 後，振動會逐漸停止。以彈簧為例，令 \(\gamma = b/2m\)：</p>
+      <div class="formula">
+        \[ m\ddot x = -kx - b\dot x, \qquad x = A e^{-\gamma t}\left(\cos\omega_d t + \frac{\gamma}{\omega_d}\sin\omega_d t\right), \qquad \omega_d = \sqrt{\omega^{2} - \gamma^{2}} \]
+      </div>
+      <p data-en-html="When \(b\) reaches the critical value \(b_c = 2\sqrt{mk}\) the block no longer overshoots (critical damping); above it, the return is even slower (overdamping). The lost mechanical energy becomes thermal energy, \(\mathrm{d}E/\mathrm{d}t = -bv^{2}\).">當 \(b\) 達到臨界值 \(b_c = 2\sqrt{mk}\) 時，木塊不再越過平衡點（臨界阻尼）；比它更大時回到平衡點反而更慢（過阻尼）。減少的力學能轉為熱能，\(\mathrm{d}E/\mathrm{d}t = -bv^{2}\)。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The period does not depend on the amplitude</strong>: turn on the sound — each turning point gives a soft tick (high on the right, low on the left). Change \(A\) from \(0.05\) to \(0.30\ \mathrm{m}\): the ticks keep exactly the same rhythm, and \(T = 2\pi\sqrt{m/k}\) does not change."><strong>週期與振幅無關</strong>：打開音效，每到轉折點會有一聲輕響（右邊高音、左邊低音）。把振幅 \(A\) 從 \(0.05\) 改到 \(0.30\ \mathrm{m}\)，節奏完全不變，\(T = 2\pi\sqrt{m/k}\) 也沒有變。</li>
+        <li data-en-html="<strong>What does change the period?</strong> Make \(m\) four times larger — the period doubles. Make \(k\) four times larger — the period halves."><strong>什麼會改變週期？</strong>把 \(m\) 變成 4 倍，週期變成 2 倍；把 \(k\) 變成 4 倍，週期變成一半。</li>
+        <li data-en-html="<strong>\(a \propto -x\)</strong>: in the stacked graphs, the \(a\)–\(t\) curve is the \(x\)–\(t\) curve flipped upside down. When the block is farthest from equilibrium its acceleration is largest and its speed is zero; as it passes \(x = 0\) the speed is largest and the acceleration is zero."><strong>\(a \propto -x\)</strong>：上下排列的圖中，\(a\)–\(t\) 圖正好是 \(x\)–\(t\) 圖上下顛倒。木塊離平衡點最遠時加速度最大、速度為零；通過 \(x = 0\) 時速度最大、加速度為零。</li>
+        <li data-en-html="<strong>Phase</strong>: the \(v\)–\(t\) curve reaches its peak a quarter period <em>before</em> the \(x\)–\(t\) curve — velocity leads position by \(90^\circ\)."><strong>相位</strong>：\(v\)–\(t\) 圖的波峰比 \(x\)–\(t\) 圖<em>早</em>四分之一週期出現，也就是速度領先位置 \(90^\circ\)。</li>
+        <li data-en-html="<strong>Energy exchange</strong>: the kinetic and potential energy bars rise and fall in turn, each twice per period, while the total stays at \(\tfrac12 kA^2\)."><strong>能量交換</strong>：動能與位能的長條輪流增減，每個週期各起伏兩次，總和始終是 \(\tfrac12 kA^2\)。</li>
+        <li data-en-html="<strong>Pendulum at small angles</strong>: with \(\theta_0 = 5^\circ\) the real pendulum and its small-angle ghost overlap almost perfectly, and the period is the same at \(5^\circ\) or \(10^\circ\) — Galileo’s isochronism. The bob mass does not affect the period either."><strong>小角度的單擺</strong>：\(\theta_0 = 5^\circ\) 時，真實單擺與小角度虛影幾乎完全重合；釋放角 \(5^\circ\) 或 \(10^\circ\) 的週期幾乎一樣（伽利略的等時性）。擺錘質量也不影響週期。</li>
+        <li data-en-html="<strong>Pendulum at large angles</strong>: try \(90^\circ\) and \(160^\circ\). The real pendulum falls behind its ghost a little more every swing, and the ticks slow down — at large angles the period is no longer independent of amplitude. The \(\theta\)–\(t\) curve also looks flatter at the top, not like a pure cosine."><strong>大角度的單擺</strong>：試試 \(90^\circ\) 與 \(160^\circ\)。真實單擺每擺一次就比虛影落後更多，聲音的節奏也變慢——大角度時週期不再與振幅無關。\(\theta\)–\(t\) 圖的頂端也變得較平，不再是單純的餘弦曲線。</li>
+        <li data-en-html="<strong>Another world</strong>: on the Moon (\(g = 1.62\ \mathrm{m/s^2}\)) the same pendulum swings \(\sqrt{9.8/1.62} \approx 2.5\) times more slowly. A spring oscillator would not change at all — why?"><strong>換一個星球</strong>：在月球上（\(g = 1.62\ \mathrm{m/s^2}\)），同一個單擺的週期約是地球的 \(\sqrt{9.8/1.62} \approx 2.5\) 倍。彈簧振子的週期卻完全不變——為什麼？</li>
+        <li data-en-html="<strong>Damping</strong>: turn on damping and watch the amplitude shrink while the ticks keep almost the same rhythm. Increase \(b\) past \(b_c\) — the block creeps back to equilibrium without ever crossing it, and the ticks stop. The gap between the energy bars and the starting energy is the energy turned into heat."><strong>阻尼</strong>：開啟阻尼，振幅逐漸變小，但聲音的節奏幾乎不變。把 \(b\) 調到超過 \(b_c\)，木塊慢慢回到平衡點而不再越過它，聲音也不再出現。能量長條少掉的部分就是轉換成的熱能。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The spring oscillator (with or without damping) is drawn from the exact analytical solution, so the motion, the graphs and the energy have no numerical error.">彈簧振子（含阻尼）直接使用解析解計算，運動、圖形與能量都沒有數值誤差。</li>
+        <li data-en-html="The real pendulum solves the full nonlinear equation \(\ddot\theta = -(g/L)\sin\theta\) numerically. Without damping it uses a fourth-order symplectic integrator (Yoshida / Forest–Ruth), whose energy does not drift even after thousands of swings; with damping it uses fourth-order Runge–Kutta. The step is \(1/800\) of the exact period.">真實單擺以數值方法求解完整的非線性方程式 \(\ddot\theta = -(g/L)\sin\theta\)：無阻尼時用四階辛積分法（Yoshida／Forest–Ruth），擺動上千次能量也不會漂移；有阻尼時用四階 Runge–Kutta 法。步長為精確週期的 \(1/800\)。</li>
+        <li data-en-html="The ghost pendulum is the exact solution of the linearised equation \(\ddot\theta = -(g/L)\theta\) with the same release angle.">虛影單擺是線性化方程式 \(\ddot\theta = -(g/L)\theta\) 在相同釋放角下的精確解。</li>
+        <li data-en="The measured period is the time between two successive turning points on the same side, read from the simulation itself; it matches the formula to better than 0.01%.">「實測週期」是模擬中同一側相鄰兩個轉折點之間的時間，與公式相差不到 0.01%。</li>
+        <li data-en="Each animation frame advances at most 1/30 s (times the playback speed), so the motion never jumps ahead when you switch tabs.">動畫每一格最多前進 1/30 s（再乘以播放速度），切換分頁回來時不會突然跳到後面。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111018"></script>
+  <script src="js/oscillation-core.js?v=202611111018"></script>
+  <script src="js/sound.js?v=202611111018"></script>
+  <script src="js/numinput.js?v=202611111018"></script>
+  <script src="js/oscillation.js?v=202611111018"></script>
+  <script src="js/firebase-config.js?v=202611111018"></script>
+  <script src="js/stats.js?v=202611111018" data-module="oscillation"></script>
+  <script src="js/comments.js?v=202611111018"></script>
+</body>
+</html>

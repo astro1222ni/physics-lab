@@ -2,12 +2,12 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611111014"></script>
+  <script src="js/settings.js?v=202611111018"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</title>
   <meta name="description" content="高中物理互動模擬：依力學、熱學、波動、光學、電磁學、近代物理分類，調整參數、觀察動畫，所有運算都在你的瀏覽器中完成。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611111014">
+  <link rel="stylesheet" href="lab.css?v=202611111018">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -58,11 +58,11 @@
           <h3 data-en="Uniform Circular Motion">等速圓周運動</h3>
           <p data-en="Change the radius and the period or speed to see the velocity and centripetal acceleration vectors, watch the x and y projections perform simple harmonic motion, and cut the string to see the object fly off along the tangent.">調整半徑、週期或速率，觀察速度與向心加速度向量、x 與 y 投影的簡諧運動，並剪斷繩子看物體沿切線飛出。</p>
         </a>
-        <div class="module soon" data-keywords="簡諧運動 SHM 虎克定律 彈力 彈性位能 擺長 週期 小角度近似 振幅 pendulum spring">
-          <div class="module-meta"><span class="topic" data-en="Simple harmonic motion">簡諧運動</span><span class="tag soon" data-en="Planned">規劃中</span></div>
+        <a class="module live" href="oscillation.html" data-module="oscillation" data-keywords="簡諧運動 SHM 簡諧振動 彈簧 彈簧振子 虎克定律 力常數 彈力 彈性位能 單擺 擺長 擺角 週期 頻率 角頻率 振幅 小角度近似 等時性 相位 阻尼 臨界阻尼 能量守恆 橢圓積分 pendulum simple pendulum spring mass-spring oscillator Hooke&#x27;s law spring constant period frequency amplitude isochronism small-angle approximation phase damping damped oscillation energy">
+          <div class="module-meta"><span class="topic" data-en="Simple harmonic motion">簡諧運動</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="Spring Oscillator and Pendulum">彈簧振子與單擺</h3>
-          <p data-en="Plot displacement, velocity, acceleration and energy against time side by side, and see where the small-angle approximation breaks down.">同步顯示位移、速度、加速度與能量隨時間的圖形，比較小角度近似的誤差。</p>
-        </div>
+          <p data-en="Release a mass on a spring or a pendulum and watch the x–t, v–t and a–t graphs and the exchange of kinetic and potential energy; compare a large-angle pendulum&#x27;s exact period with the small-angle approximation.">拉開彈簧振子或單擺後放手，觀察 x–t、v–t、a–t 圖與動能、位能交換；比較大角度單擺的精確週期與小角度近似。</p>
+        </a>
         <div class="module soon" data-keywords="萬有引力 重力 克卜勒 等面積定律 橢圓軌道 衛星 逃逸速度 行星 太陽 gravity kepler orbit">
           <div class="module-meta"><span class="topic" data-en="Gravitation">萬有引力</span><span class="tag soon" data-en="Planned">規劃中</span></div>
           <h3 data-en="Planetary Orbits and Kepler&#x27;s Laws">行星軌道與克卜勒定律</h3>
@@ -103,10 +103,10 @@
           <h3 data-en="Reflection of Waves on a String and Standing Waves">繩波的反射與駐波</h3>
           <p data-en="Switch between fixed and free ends to see the phase of the reflected wave and the nodes and antinodes of standing waves.">切換固定端與自由端，觀察反射波的相位，以及駐波的波節與波腹。</p>
         </div>
-        <div class="module soon" data-keywords="聲波 聲音 頻率 波源 觀察者 音調 doppler">
-          <div class="module-meta"><span class="topic" data-en="Sound waves">聲波</span><span class="tag soon" data-en="Planned">規劃中</span></div>
+        <a class="module live" href="refraction.html" data-module="refraction" data-keywords="折射 全反射 司乃耳定律 斯涅耳 折射率 臨界角 光密 光疏 法線 入射角 折射角 反射率 穿透率 菲涅耳 布魯斯特角 偏振 光纖 數值孔徑 鑽石 水 玻璃 波前 漸逝波 光速 幾何光學 refraction total internal reflection Snell critical angle refractive index Fresnel Brewster optical fibre fiber">
+          <div class="module-meta"><span class="topic" data-en="Sound waves">聲波</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="The Doppler Effect">都卜勒效應</h3>
-          <p data-en="Move the source and observer to see wavefronts squeeze together or spread out, and work out the observed frequency.">調整波源與觀察者的速度，看波前如何被壓縮或拉長，並計算觀察到的頻率。</p>
+          <p data-en="Pick two media and drag the laser to see Snell&#x27;s law, how much light is reflected and refracted, the critical angle and total internal reflection, and how an optical fibre guides light.">選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。</p>
         </div>
       </div>
     </section>
@@ -119,10 +119,10 @@
       </header>
       <div class="modules">
         <div class="module soon" data-keywords="光 折射 折射率 司乃耳定律 斯涅耳 全反射 臨界角 光纖 入射角 snell refraction">
-          <div class="module-meta"><span class="topic" data-en="Geometric optics">幾何光學</span><span class="tag soon" data-en="Planned">規劃中</span></div>
+          <div class="module-meta"><span class="topic" data-en="Geometric optics">幾何光學</span><span class="tag" data-en="Live">已上線</span></div>
           <h3 data-en="Refraction and Total Internal Reflection">折射與全反射</h3>
           <p data-en="Change the angle of incidence and the two refractive indices to check Snell&#x27;s law and find the critical angle.">調整入射角與兩介質的折射率，驗證司乃耳定律，找出臨界角。</p>
-        </div>
+        </a>
         <div class="module soon" data-keywords="凸透鏡 凹透鏡 凸面鏡 凹面鏡 焦距 焦點 實像 虛像 成像公式 放大率 lens mirror">
           <div class="module-meta"><span class="topic" data-en="Geometric optics">幾何光學</span><span class="tag soon" data-en="Planned">規劃中</span></div>
           <h3 data-en="Images in Lenses and Mirrors">透鏡與面鏡成像</h3>
@@ -201,10 +201,10 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/search.js?v=202611111014"></script>
-  <script src="js/math.js?v=202611111014"></script>
-  <script src="js/firebase-config.js?v=202611111014"></script>
-  <script src="js/stats.js?v=202611111014" data-summary></script>
-  <script src="js/comments.js?v=202611111014"></script>
+  <script src="js/search.js?v=202611111018"></script>
+  <script src="js/math.js?v=202611111018"></script>
+  <script src="js/firebase-config.js?v=202611111018"></script>
+  <script src="js/stats.js?v=202611111018" data-summary></script>
+  <script src="js/comments.js?v=202611111018"></script>
 </body>
 </html>

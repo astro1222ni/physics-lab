@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611111018"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Refraction and Total Internal Reflection | Astro Ni Physics Lab">折射與全反射｜Astro Ni 物理實驗室</title>
+  <meta name="description" content="互動模擬：選擇上下兩種介質並拖曳雷射改變入射角，觀察司乃耳定律、菲涅耳方程式決定的反射與折射光強、臨界角與全反射、波前在介質中變短，以及光纖中的全反射導光。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611111018">
+  <style>
+    /* 折射與全反射頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .stage canvas#cv { aspect-ratio: 3 / 2; }
+    .stage canvas#chart { aspect-ratio: 3 / 1; margin-top: 10px; touch-action: pan-y; cursor: pointer; }
+    .stage canvas#chart:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 560px) {
+      .stage canvas#cv { aspect-ratio: 1 / 1; }
+      .stage canvas#chart { aspect-ratio: 16 / 10; }
+    }
+    .stage-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; margin: 8px 4px 0; }
+    .stage-row .status { margin: 0; flex: 1 1 220px; }
+    .stage-row button { min-height: 44px; }
+    .lab button { min-height: 44px; }
+    .slider input[type="range"] { height: 28px; margin: 0; }
+    .slider label sub, dl.readout sub, .sub-h sub { font-size: .75em; }
+    .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .seg button { padding: 6px 2px; text-align: center; line-height: 1.25; font-size: calc(13px * var(--fs, 1)); hyphens: auto; }
+    html[lang="en"] .seg button { font-size: calc(12px * var(--fs, 1)); }
+    .seg button[aria-pressed="true"], .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+    .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 2px 0 0; }
+    .presets.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .presets button { padding: 4px 0; line-height: 1.2; font-size: calc(13px * var(--fs, 1)); hyphens: auto; }
+    html[lang="en"] .presets button { font-size: calc(11px * var(--fs, 1)); }
+    .presets button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .sub-h { font-size: calc(14px * var(--fs, 1)); font-weight: 650; margin: 12px 0 4px; display: flex; align-items: center; gap: 8px; }
+    .sub-h:first-of-type { margin-top: 2px; }
+    .sub-h .chip { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--border); flex: none; }
+    .quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .quick button { padding: 4px 2px; line-height: 1.2; font-size: calc(13px * var(--fs, 1)); hyphens: auto; }
+    .quick button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .quick button:disabled { opacity: .45; cursor: not-allowed; }
+    .swap { width: 100%; margin-top: 12px; }
+    .laser .sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; box-shadow: 0 0 6px currentColor; }
+    .laser button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    dl.readout dd.flag { color: var(--pos); font-weight: 650; }
+    dl.readout dd small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout [hidden], .card[hidden], [data-m][hidden] { display: none; }
+    .checks label { min-height: 36px; }
+    .checks input { width: 18px; height: 18px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .stage .legend + .hint { margin-top: 6px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#optics&quot;&gt;Optics&lt;/a&gt; / Geometric optics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 幾何光學</nav>
+      <h1 data-en="Refraction and Total Internal Reflection">折射與全反射</h1>
+      <p data-en="Choose two media and drag the laser to change the angle of incidence. Watch the reflected and refracted rays obey Snell’s law, see how bright each one is from the Fresnel equations, and find the critical angle where total internal reflection begins. Switch to the wavefront view or the optical-fibre demo.">選擇上下兩種介質，拖曳雷射改變入射角：觀察反射光與折射光如何遵守司乃耳定律、由菲涅耳方程式決定各自有多亮，並找出開始全反射的臨界角；也可以切換到波前圖與光纖示範。</p>
+    </header>
+
+    <div class="lab">
+      <div class="stage">
+        <canvas id="cv" aria-label="折射模擬畫布：上下兩種介質、法線、入射光、反射光與折射光，可拖曳雷射改變入射角" data-en-aria-label="Refraction simulation: two media, the normal, and the incident, reflected and refracted rays; drag the laser to change the angle of incidence"></canvas>
+        <div class="stage-row">
+          <p class="status" id="status" aria-live="polite"></p>
+          <button id="anim" type="button" hidden>暫停動畫</button>
+        </div>
+        <div class="legend" id="legend">
+          <span style="color:var(--beam)" data-en-html="&lt;i style=&quot;background:var(--beam)&quot;&gt;&lt;/i&gt;Light ray (brightness ∝ intensity)"><i style="background:var(--beam)"></i>光線（亮度隨光強）</span>
+          <span style="color:var(--muted)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Normal"><i class="dash"></i>法線</span>
+          <span style="color:var(--equi)" data-m="ray wave" data-en-html="&lt;i style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Angles of incidence and reflection"><i style="background:var(--equi)"></i>入射角、反射角</span>
+          <span style="color:var(--accent)" data-m="ray wave" data-en-html="&lt;i style=&quot;background:var(--accent)&quot;&gt;&lt;/i&gt;Angle of refraction"><i style="background:var(--accent)"></i>折射角</span>
+          <span style="color:var(--pos)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Critical angle θc"><i class="dash"></i>臨界角 θ<sub>c</sub></span>
+        </div>
+        <p class="hint" id="hintMain" data-m="ray" data-en="Drag anywhere above the interface (or the laser itself) to change the angle of incidence. Ray brightness and thickness follow the Fresnel equations (square-root scale, so weak rays stay visible). Angles are drawn to scale.">在界面上方任意處（或直接拖曳雷射）即可改變入射角。光線的亮度與粗細依菲涅耳方程式計算的光強（以平方根壓縮，弱光也看得到）；角度依實際比例繪製。</p>
+        <p class="hint" data-m="wave" hidden data-en="Schematic (wavelength enlarged): the bright lines are wave crests. The frequency stays the same, so in the denser medium the wave moves more slowly and its wavelength λ = λ0/n is shorter, which makes the wavefronts bend. The crest speeds on screen are in the true ratio c/n.">示意圖（波長已放大）：亮線是波峰。頻率不變，所以在光密介質中波速較慢、波長 λ = λ0/n 較短，波前因此轉彎；畫面上波峰移動的快慢依 v = c/n 的真實比例。</p>
+        <p class="hint" data-m="fibre" hidden data-en="Drag on the left of the fibre to change the launch angle. A planar (2D) fibre: the core is denser than the cladding, so a ray that meets the side beyond the critical angle is totally reflected again and again. The moving dot is a light pulse; it is slower in the core (v = c/n).">在光纖左側拖曳可改變射入角度。這是平面（二維）光纖：纖芯的折射率比包層大，光在側面的入射角超過臨界角時就一再全反射；移動的亮點是一個光脈衝，在纖芯中較慢（v = c/n）。</p>
+
+        <canvas id="chart" tabindex="0" aria-label="反射率與穿透率對入射角的關係圖；可點擊、拖曳或用左右方向鍵改變入射角" data-en-aria-label="Graph of reflectance and transmittance against angle of incidence; click, drag or use the left and right arrow keys to change the angle"></canvas>
+        <div class="legend">
+          <span style="color:var(--pos)" data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Reflectance R (unpolarised)"><i style="background:var(--pos)"></i>反射率 R（非偏振光）</span>
+          <span style="color:var(--neg)" data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Transmittance T = 1 − R"><i style="background:var(--neg)"></i>穿透率 T = 1 − R</span>
+          <span class="sp" style="color:var(--pos)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;R&lt;sub&gt;s&lt;/sub&gt; (s-polarised)"><i class="dash"></i>R<sub>s</sub>（s 偏振）</span>
+          <span class="sp" style="color:var(--pos)" data-en-html="&lt;i class=&quot;dot&quot;&gt;&lt;/i&gt;R&lt;sub&gt;p&lt;/sub&gt; (p-polarised)"><i class="dot"></i>R<sub>p</sub>（p 偏振）</span>
+          <span style="color:var(--probe)" data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Current angle"><i style="background:var(--probe)"></i>目前角度</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="View">顯示模式</h2>
+          <div class="seg" role="group" aria-label="顯示模式" data-en-aria-label="View">
+            <button type="button" data-mode="ray" aria-pressed="true" data-en="Rays">光線</button>
+            <button type="button" data-mode="wave" aria-pressed="false" data-en="Wavefronts">波前</button>
+            <button type="button" data-mode="fibre" aria-pressed="false" data-en="Optical fibre">光纖</button>
+          </div>
+        </section>
+
+        <section class="card" id="mediaCard">
+          <h2 data-en="Media">介質</h2>
+          <p class="sub-h"><span class="chip" id="chip1"></span><span data-en-html="Upper medium (incident light), n&lt;sub&gt;1&lt;/sub&gt;">上方介質（入射光所在），n<sub>1</sub></span></p>
+          <div class="presets" role="group" aria-label="上方介質" data-en-aria-label="Upper medium" id="pre1">
+            <button type="button" data-n="1.00" data-en-html="Air&lt;small&gt;1.00&lt;/small&gt;">空氣<small>1.00</small></button>
+            <button type="button" data-n="1.33" data-en-html="Water&lt;small&gt;1.33&lt;/small&gt;">水<small>1.33</small></button>
+            <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
+            <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
+          </div>
+          <div class="slider"><label for="n1" data-en-html="Refractive index n&lt;sub&gt;1&lt;/sub&gt;">折射率 n<sub>1</sub></label><output id="n1o"></output>
+            <input id="n1" type="range" min="1" max="2.5" step="0.01" value="1" data-decimals="3"></div>
+
+          <p class="sub-h"><span class="chip" id="chip2"></span><span data-en-html="Lower medium, n&lt;sub&gt;2&lt;/sub&gt;">下方介質，n<sub>2</sub></span></p>
+          <div class="presets" role="group" aria-label="下方介質" data-en-aria-label="Lower medium" id="pre2">
+            <button type="button" data-n="1.00" data-en-html="Air&lt;small&gt;1.00&lt;/small&gt;">空氣<small>1.00</small></button>
+            <button type="button" data-n="1.33" data-en-html="Water&lt;small&gt;1.33&lt;/small&gt;">水<small>1.33</small></button>
+            <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
+            <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
+          </div>
+          <div class="slider"><label for="n2" data-en-html="Refractive index n&lt;sub&gt;2&lt;/sub&gt;">折射率 n<sub>2</sub></label><output id="n2o"></output>
+            <input id="n2" type="range" min="1" max="2.5" step="0.01" value="1.5" data-decimals="3"></div>
+          <button type="button" class="swap" id="swap" data-en="⇅ Swap upper and lower media">⇅ 上下介質對調</button>
+        </section>
+
+        <section class="card" id="fibreCard" hidden>
+          <h2 data-en="Fibre materials">光纖材料</h2>
+          <div class="slider"><label for="nCore" data-en-html="Core refractive index n&lt;sub&gt;core&lt;/sub&gt;">纖芯折射率 n<sub>芯</sub></label><output id="nCoreo"></output>
+            <input id="nCore" type="range" min="1" max="2.5" step="0.01" value="1.5" data-decimals="3"></div>
+          <div class="presets three" role="group" aria-label="纖芯材料" data-en-aria-label="Core material" id="preCore">
+            <button type="button" data-n="1.48" data-en-html="Fibre core&lt;small&gt;1.48&lt;/small&gt;">光纖纖芯<small>1.48</small></button>
+            <button type="button" data-n="1.50" data-en-html="Glass&lt;small&gt;1.50&lt;/small&gt;">玻璃<small>1.50</small></button>
+            <button type="button" data-n="2.42" data-en-html="Diamond&lt;small&gt;2.42&lt;/small&gt;">鑽石<small>2.42</small></button>
+          </div>
+          <div class="slider"><label for="nClad" data-en-html="Cladding refractive index n&lt;sub&gt;clad&lt;/sub&gt;">包層折射率 n<sub>包</sub></label><output id="nClado"></output>
+            <input id="nClad" type="range" min="1" max="2.5" step="0.01" value="1.33" data-decimals="3"></div>
+          <div class="presets three" role="group" aria-label="包層材料" data-en-aria-label="Cladding material" id="preClad">
+            <button type="button" data-n="1.00" data-en-html="Air&lt;small&gt;1.00&lt;/small&gt;">空氣<small>1.00</small></button>
+            <button type="button" data-n="1.33" data-en-html="Water&lt;small&gt;1.33&lt;/small&gt;">水<small>1.33</small></button>
+            <button type="button" data-n="1.46" data-en-html="Cladding glass&lt;small&gt;1.46&lt;/small&gt;">包層玻璃<small>1.46</small></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Incident light">入射光</h2>
+          <div data-m="ray wave">
+            <div class="slider"><label for="th" data-en-html="Angle of incidence θ&lt;sub&gt;1&lt;/sub&gt;">入射角 θ<sub>1</sub></label><output id="tho"></output>
+              <input id="th" type="range" min="0" max="89.9" step="0.1" value="40" data-decimals="2"></div>
+            <div class="quick" role="group" aria-label="快速設定入射角" data-en-aria-label="Quick angle settings">
+              <button type="button" id="qNormal" data-en-html="Normal&lt;small&gt;0°&lt;/small&gt;">垂直入射<small>0°</small></button>
+              <button type="button" id="qCrit" data-en-html="Critical&lt;small id=&quot;qCritV&quot;&gt;—&lt;/small&gt;">臨界角<small id="qCritV">—</small></button>
+              <button type="button" id="qBrew" data-en-html="Brewster&lt;small id=&quot;qBrewV&quot;&gt;—&lt;/small&gt;">布魯斯特角<small id="qBrewV">—</small></button>
+            </div>
+          </div>
+          <div data-m="fibre" hidden>
+            <div class="slider"><label for="thIn" data-en-html="Launch angle θ&lt;sub&gt;in&lt;/sub&gt; (from the fibre axis)">射入角 θ<sub>入</sub>（與光纖軸的夾角）</label><output id="thIno"></output>
+              <input id="thIn" type="range" min="0" max="89.9" step="0.1" value="35" data-decimals="2"></div>
+            <div class="quick" role="group" aria-label="快速設定射入角" data-en-aria-label="Quick angle settings" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+              <button type="button" id="qAxis" data-en-html="Along the axis&lt;small&gt;0°&lt;/small&gt;">沿光纖軸<small>0°</small></button>
+              <button type="button" id="qAccept" data-en-html="Acceptance angle&lt;small id=&quot;qAccV&quot;&gt;—&lt;/small&gt;">最大接收角<small id="qAccV">—</small></button>
+            </div>
+          </div>
+          <p class="sub-h" data-en="Laser colour">雷射顏色</p>
+          <div class="seg laser" role="group" aria-label="雷射顏色" data-en-aria-label="Laser colour">
+            <button type="button" data-nm="650" aria-pressed="false" data-en-html="&lt;span class=&quot;sw&quot; style=&quot;color:#ff2a00;background:#ff2a00&quot;&gt;&lt;/span&gt;Red&lt;small&gt;650 nm&lt;/small&gt;"><span class="sw" style="color:#ff2a00;background:#ff2a00"></span>紅光<small>650 nm</small></button>
+            <button type="button" data-nm="532" aria-pressed="true" data-en-html="&lt;span class=&quot;sw&quot; style=&quot;color:#4dff00;background:#4dff00&quot;&gt;&lt;/span&gt;Green&lt;small&gt;532 nm&lt;/small&gt;"><span class="sw" style="color:#4dff00;background:#4dff00"></span>綠光<small>532 nm</small></button>
+            <button type="button" data-nm="405" aria-pressed="false" data-en-html="&lt;span class=&quot;sw&quot; style=&quot;color:#8200ff;background:#8200ff&quot;&gt;&lt;/span&gt;Violet&lt;small&gt;405 nm&lt;/small&gt;"><span class="sw" style="color:#8200ff;background:#8200ff"></span>藍紫光<small>405 nm</small></button>
+          </div>
+          <p class="hint" style="margin:6px 0 0" data-en="The refractive index is treated as the same for every colour (dispersion is ignored); the colour sets the wavelength λ0 in vacuum.">忽略色散：各色光的折射率視為相同；顏色決定真空中的波長 λ0。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" data-m="ray wave">
+            <dt data-en-html="Angle of incidence θ&lt;sub&gt;1&lt;/sub&gt;">入射角 θ<sub>1</sub></dt><dd id="r1">—</dd>
+            <dt data-en-html="Angle of reflection θ&lt;sub&gt;1&lt;/sub&gt;′">反射角 θ<sub>1</sub>′</dt><dd id="r1r">—</dd>
+            <dt data-en-html="Angle of refraction θ&lt;sub&gt;2&lt;/sub&gt;">折射角 θ<sub>2</sub></dt><dd id="r2">—</dd>
+            <dt data-en-html="Critical angle θ&lt;sub&gt;c&lt;/sub&gt;">臨界角 θ<sub>c</sub></dt><dd id="rc">—</dd>
+            <dt data-en-html="Brewster angle θ&lt;sub&gt;B&lt;/sub&gt;">布魯斯特角 θ<sub>B</sub></dt><dd id="rb">—</dd>
+            <dt data-en="Reflectance R">反射率 R</dt><dd id="rR">—</dd>
+            <dt data-en="Transmittance T">穿透率 T</dt><dd id="rT">—</dd>
+            <dt data-en-html="R&lt;sub&gt;s&lt;/sub&gt;, R&lt;sub&gt;p&lt;/sub&gt;">R<sub>s</sub>、R<sub>p</sub></dt><dd id="rSP">—</dd>
+            <dt data-en-html="Speed of light v&lt;sub&gt;1&lt;/sub&gt; = c/n&lt;sub&gt;1&lt;/sub&gt;">光速 v<sub>1</sub> = c/n<sub>1</sub></dt><dd id="rv1">—</dd>
+            <dt data-en-html="Speed of light v&lt;sub&gt;2&lt;/sub&gt; = c/n&lt;sub&gt;2&lt;/sub&gt;">光速 v<sub>2</sub> = c/n<sub>2</sub></dt><dd id="rv2">—</dd>
+            <dt data-en-html="Wavelength λ&lt;sub&gt;1&lt;/sub&gt; = λ&lt;sub&gt;0&lt;/sub&gt;/n&lt;sub&gt;1&lt;/sub&gt;">波長 λ<sub>1</sub> = λ<sub>0</sub>/n<sub>1</sub></dt><dd id="rl1">—</dd>
+            <dt data-en-html="Wavelength λ&lt;sub&gt;2&lt;/sub&gt; = λ&lt;sub&gt;0&lt;/sub&gt;/n&lt;sub&gt;2&lt;/sub&gt;">波長 λ<sub>2</sub> = λ<sub>0</sub>/n<sub>2</sub></dt><dd id="rl2">—</dd>
+          </dl>
+          <dl class="readout" data-m="fibre" hidden>
+            <dt data-en-html="Launch angle θ&lt;sub&gt;in&lt;/sub&gt;">射入角 θ<sub>入</sub></dt><dd id="f1">—</dd>
+            <dt data-en-html="Refraction angle in core θ&lt;sub&gt;r&lt;/sub&gt;">纖芯內折射角 θ<sub>r</sub></dt><dd id="fr">—</dd>
+            <dt data-en="Angle of incidence on the side φ">側面入射角 φ</dt><dd id="fphi">—</dd>
+            <dt data-en-html="Critical angle θ&lt;sub&gt;c&lt;/sub&gt;">臨界角 θ<sub>c</sub></dt><dd id="fc">—</dd>
+            <dt data-en-html="Acceptance angle θ&lt;sub&gt;a&lt;/sub&gt;">最大接收角 θ<sub>a</sub></dt><dd id="fa">—</dd>
+            <dt data-en="Numerical aperture NA">數值孔徑 NA</dt><dd id="fna">—</dd>
+            <dt data-en="Entry-face transmission">端面穿透率</dt><dd id="fent">—</dd>
+            <dt data-en="Reflections on the sides">側面反射次數</dt><dd id="fb">—</dd>
+            <dt data-en="Power reaching the far end">抵達末端的功率</dt><dd id="fout">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showArcs" type="checkbox" checked><span data-en="Angle labels">角度標示</span></label>
+            <label data-m="ray"><input id="showProt" type="checkbox" checked><span data-en="Protractor">量角器</span></label>
+            <label><input id="showMarks" type="checkbox" checked><span data-en="Critical and Brewster angles">臨界角與布魯斯特角</span></label>
+            <label><input id="showSP" type="checkbox"><span data-en="s and p curves on the graph">圖上的 s、p 偏振曲線</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Light travels more slowly in a medium than in vacuum. The refractive index \(n\) is the ratio of the speed of light in vacuum \(c\) to the speed in the medium \(v\). When light crosses into another medium its frequency \(f\) does not change, so its wavelength changes in the same proportion as its speed:">光在介質中比在真空中慢。折射率 \(n\) 定義為真空中光速 \(c\) 與介質中光速 \(v\) 的比值。光進入另一種介質時頻率 \(f\) 不變，所以波長與波速等比例改變：</p>
+      <div class="formula">
+        \[ n = \frac{c}{v}, \qquad \lambda_n = \frac{v}{f} = \frac{\lambda_0}{n} \]
+      </div>
+      <p data-en-html="At the interface the incident, reflected and refracted rays and the normal all lie in one plane. The angle of reflection equals the angle of incidence, and the angle of refraction obeys Snell’s law (all angles are measured from the normal):">在界面上，入射光、反射光、折射光與法線在同一平面上；反射角等於入射角，折射角遵守司乃耳定律（角度都由法線量起）：</p>
+      <div class="formula">
+        \[ \theta_1' = \theta_1, \qquad n_1 \sin\theta_1 = n_2 \sin\theta_2 \]
+      </div>
+      <p data-en-html="When light goes from a denser to a less dense medium (\(n_1 &gt; n_2\)), \(\theta_2\) reaches \(90^\circ\) at the critical angle \(\theta_c\). For larger angles of incidence there is no refracted ray and all of the light is reflected — total internal reflection:">光由光密介質射向光疏介質（\(n_1 &gt; n_2\)）時，入射角增大到臨界角 \(\theta_c\) 時折射角達到 \(90^\circ\)；入射角再大就沒有折射光，光全部反射，稱為全反射：</p>
+      <div class="formula">
+        \[ \sin\theta_c = \frac{n_2}{n_1} \quad (n_1 &gt; n_2) \]
+      </div>
+      <p data-en-html="How much light is reflected is given by the Fresnel equations. Light polarised perpendicular to the plane of incidence (s) and parallel to it (p) reflect differently; ordinary (unpolarised) light is the average of the two:">反射光有多少，由菲涅耳方程式決定。電場垂直入射面（s 偏振）與平行入射面（p 偏振）的光反射率不同，一般（非偏振）的光取兩者平均：</p>
+      <div class="formula">
+        \[ r_s = \frac{n_1\cos\theta_1 - n_2\cos\theta_2}{n_1\cos\theta_1 + n_2\cos\theta_2}, \qquad r_p = \frac{n_2\cos\theta_1 - n_1\cos\theta_2}{n_2\cos\theta_1 + n_1\cos\theta_2} \]
+        \[ R = \frac{r_s^{2} + r_p^{2}}{2}, \qquad T = 1 - R \]
+      </div>
+      <p data-en-html="At normal incidence the two polarisations behave the same, and at the Brewster angle the p-polarised light is not reflected at all (the reflected and refracted rays are then perpendicular):">垂直入射時兩種偏振相同；在布魯斯特角，p 偏振光完全不反射（此時反射光與折射光互相垂直）：</p>
+      <div class="formula">
+        \[ R_{(\theta_1 = 0)} = \left(\frac{n_1 - n_2}{n_1 + n_2}\right)^{2}, \qquad \tan\theta_B = \frac{n_2}{n_1} \]
+      </div>
+      <p data-en-html="An optical fibre guides light by total internal reflection. Light entering the end face from air is guided only if its launch angle is smaller than the acceptance angle \(\theta_a\); \(\sin\theta_a\) is called the numerical aperture NA:">光纖靠全反射導光。光從空氣射入端面時，射入角必須小於最大接收角 \(\theta_a\) 才會被導引；\(\sin\theta_a\) 稱為數值孔徑 NA：</p>
+      <div class="formula">
+        \[ \mathrm{NA} = \sin\theta_a = \sqrt{n_\text{core}^{2} - n_\text{clad}^{2}} \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Bending toward the normal</strong>: with air above and glass below, the refracted ray is always closer to the normal than the incident ray (\(\theta_2 &lt; \theta_1\)), because light is slower in glass. Swap the media and the ray bends away from the normal."><strong>進入光密介質偏向法線</strong>：上方空氣、下方玻璃時，折射光總是比入射光更靠近法線（\(\theta_2 &lt; \theta_1\)），因為光在玻璃中較慢；把上下介質對調，折射光就偏離法線。</li>
+        <li data-en-html="<strong>Total internal reflection happens only from dense to less dense</strong>: put glass above and air below, then increase \(\theta_1\). The refracted ray gets dimmer and approaches the interface, and at \(\theta_c \approx 41.8^\circ\) it disappears: \(R\) jumps to \(100\%\). With air above, no angle gives total internal reflection."><strong>全反射只發生在由光密到光疏</strong>：上方玻璃、下方空氣，逐漸加大 \(\theta_1\)：折射光越來越暗、越來越貼近界面，到 \(\theta_c \approx 41.8^\circ\) 時消失，\(R\) 變成 \(100\%\)。上方是空氣時，任何角度都不會全反射。</li>
+        <li data-en-html="<strong>Why diamonds sparkle</strong>: from diamond to air \(\theta_c\) is only about \(24.4^\circ\), so most light inside a cut diamond is totally reflected several times before it escapes through the top — it comes out bright and from many directions. Compare with water to air (\(\theta_c \approx 48.8^\circ\))."><strong>鑽石為什麼閃亮</strong>：鑽石到空氣的臨界角只有約 \(24.4^\circ\)，切割好的鑽石內部大部分的光會全反射好幾次才從頂面射出，所以特別亮、光芒四射。和水到空氣（\(\theta_c \approx 48.8^\circ\)）比較看看。</li>
+        <li data-en-html="<strong>A window reflects about 4%</strong>: at normal incidence on glass, \(R = (0.5/2.5)^2 = 4\%\). On the graph, \(R\) stays small up to about \(50^\circ\) and then rises steeply to \(100\%\) at grazing incidence — that is why a lake mirrors the far shore."><strong>玻璃窗反射約 4%</strong>：光垂直射到玻璃時 \(R = (0.5/2.5)^2 = 4\%\)。看下方的圖：入射角到 \(50^\circ\) 左右 \(R\) 都很小，接近掠射時迅速升到 \(100\%\)，所以湖面能清楚倒映遠處的景物。</li>
+        <li data-en-html="<strong>Brewster angle</strong>: press the “Brewster” button and turn on the s and p curves. \(R_p\) drops to zero, so the reflected light is completely s-polarised. Polarising sunglasses block exactly this glare."><strong>布魯斯特角</strong>：按「布魯斯特角」並打開 s、p 偏振曲線，\(R_p\) 降到 0，反射光完全是 s 偏振；偏光太陽眼鏡就是擋掉這種眩光。</li>
+        <li data-en-html="<strong>Light paths are reversible</strong>: note \(\theta_2\), swap the media, and set \(\theta_1\) to that value. The new refracted ray comes out at the old \(\theta_1\), and the reflectance is the same."><strong>光路可逆</strong>：記下 \(\theta_2\)，把上下介質對調，再把入射角設為剛才的 \(\theta_2\)，新的折射角就是原來的 \(\theta_1\)，反射率也相同。</li>
+        <li data-en-html="<strong>Wavefronts</strong>: in the wavefront view the crests are closer together in the denser medium (\(\lambda = \lambda_0/n\)) and move more slowly. The part of a crest that enters first slows down first, so the whole wavefront swings round — this is why light bends. Under total internal reflection a weak evanescent wave clings to the interface but carries no energy away."><strong>波前</strong>：切換到波前圖，光密介質中的波峰較密（\(\lambda = \lambda_0/n\)）、前進較慢；同一道波前先進入的部分先變慢，整個波前就轉了方向——這就是光會偏折的原因。全反射時，界面另一側只有一層很薄、不帶走能量的漸逝波。</li>
+        <li data-en-html="<strong>Optical fibres</strong>: in the fibre view, raise the launch angle past the acceptance angle. The angle on the side \(\varphi\) becomes smaller than \(\theta_c\), light leaks out at every reflection, and the power reaching the far end drops quickly. Real fibres use a glass cladding (\(n \approx 1.46\)) around a slightly denser core (\(n \approx 1.48\))."><strong>光纖</strong>：在光纖模式把射入角調到超過最大接收角，側面入射角 \(\varphi\) 會小於 \(\theta_c\)，每次反射都有光漏出，抵達末端的功率迅速下降。實際的光纖是在折射率稍大的纖芯（\(n \approx 1.48\)）外面包一層玻璃包層（\(n \approx 1.46\)）。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Angles come from Snell’s law and the light intensities from the Fresnel equations for non-magnetic media. \(T\) is calculated from the transmission coefficients (not as \(1 - R\)), and the tests check that \(R + T = 1\) at every angle.">角度由司乃耳定律計算，光強由非磁性介質的菲涅耳方程式計算；穿透率 \(T\) 由穿透係數獨立算出（不是用 \(1 - R\)），單元測試檢查每個角度都有 \(R + T = 1\)。</li>
+        <li data-en="Ray brightness and thickness grow with the square root of the intensity, so a 4% reflection is still visible; the percentages shown are the exact values. Angles, the normal and the critical-angle lines are drawn to scale.">光線亮度與粗細隨光強的平方根變化，讓 4% 的反射光也看得到；標示的百分比是精確值。角度、法線與臨界角的線都依實際比例繪製。</li>
+        <li data-en-html="The wavefront view is a schematic: the wavelength is enlarged tens of thousands of times, but the ratio of wavelengths and wave speeds in the two media is exact, and the crests are continuous across the interface. The evanescent wave fades with the correct depth \(\delta = \lambda_0 / \big(4\pi\sqrt{n_1^{2}\sin^{2}\theta_1 - n_2^{2}}\big)\) on the same enlarged scale.">波前圖是示意圖：波長放大了數萬倍，但兩種介質中波長與波速的比例正確，波峰在界面上連續。漸逝波依相同放大比例，以正確的穿透深度 \(\delta = \lambda_0 / \big(4\pi\sqrt{n_1^{2}\sin^{2}\theta_1 - n_2^{2}}\big)\) 衰減。</li>
+        <li data-en="The fibre is a planar (2D) slab waveguide treated with ray optics. The s- and p-polarised powers are followed separately and multiplied by Rs and Rp at every reflection; light that leaks out is drawn with brightness given by the leaked power. Absorption in the glass is ignored.">光纖以平面（二維）平板波導、幾何光學處理：s、p 偏振的功率分開追蹤，每次反射分別乘上 Rs、Rp；漏出的光依漏出的功率決定亮度。忽略玻璃本身的吸收。</li>
+        <li data-en="Dispersion (the dependence of n on wavelength) is ignored, and the media are assumed transparent and non-magnetic.">忽略色散（n 隨波長改變），介質視為透明、非磁性。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611111018"></script>
+  <script src="js/refraction-core.js?v=202611111018"></script>
+  <script src="js/numinput.js?v=202611111018"></script>
+  <script src="js/refraction.js?v=202611111018"></script>
+  <script src="js/firebase-config.js?v=202611111018"></script>
+  <script src="js/stats.js?v=202611111018" data-module="refraction"></script>
+  <script src="js/comments.js?v=202611111018"></script>
+</body>
+</html>
