@@ -8,6 +8,7 @@
  *   LabSound.tone({ freq: 660, dur: 0.12, type: 'sine', gain: 0.3 })
  *   LabSound.noise({ dur: 0.08, gain: 0.4, filter: 1800, q: 1.2 })   // 撞擊、摩擦等
  *   LabSound.sweep({ from: 300, to: 900, dur: 0.25 })                 // 咻
+ *   LabSound.voice({ freq, type, gain }) → 持續發聲，可 .set({freq, gain}, ramp) / .stop(release)
  *   LabSound.enabled()  → 目前是否開啟
  * 所有函式在音效關閉時什麼都不做，可放心呼叫。
  * gain 是 0–1 的相對音量；輸出端有壓縮器避免爆音。
@@ -135,7 +136,53 @@
     src.stop(t0 + (o.attack || 0.002) + (o.dur || 0.1) + 0.05);
   }
 
-  window.LabSound = { enabled: enabled, tone: tone, sweep: sweep, noise: noise };
+  // ---------- 持續發聲（音高、音量可即時改變），例如都卜勒效應、駐波 ----------
+  // const v = LabSound.voice({ freq: 440, type: 'sine', gain: 0.4 });
+  // v.set({ freq: 520, gain: 0.3 }, 0.05);  // 0.05 s 內平滑變化
+  // v.stop(0.2);                            // 0.2 s 淡出後停止
+  // 音效關閉時傳回「什麼都不做」的物件；音效被關掉或分頁切到背景時，所有聲音自動停止。
+  const voices = [];
+  const NOOP = { set: function () {}, stop: function () {}, playing: false };
+  function voice(o) {
+    const a = audio(); if (!a) return NOOP;
+    o = o || {};
+    const osc = a.createOscillator();
+    const g = a.createGain();
+    osc.type = o.type || 'sine';
+    osc.frequency.value = o.freq || 440;
+    g.gain.value = 0.0001;
+    osc.connect(g); g.connect(master);
+    osc.start();
+    const t0 = a.currentTime;
+    g.gain.setTargetAtTime(clamp01(o.gain == null ? 0.4 : o.gain), t0, 0.02);
+    const h = {
+      playing: true,
+      set: function (p, ramp) {
+        if (!h.playing) return;
+        const t = a.currentTime, tc = Math.max(0.005, (ramp == null ? 0.03 : ramp) / 3);
+        if (p.freq != null) osc.frequency.setTargetAtTime(Math.max(20, p.freq), t, tc);
+        if (p.gain != null) g.gain.setTargetAtTime(Math.max(0.0001, clamp01(p.gain)), t, tc);
+      },
+      stop: function (release) {
+        if (!h.playing) return;
+        h.playing = false;
+        const t = a.currentTime, r = release == null ? 0.15 : release;
+        g.gain.cancelScheduledValues(t);
+        g.gain.setTargetAtTime(0.0001, t, Math.max(0.005, r / 4));
+        osc.stop(t + r + 0.05);
+        const i = voices.indexOf(h); if (i >= 0) voices.splice(i, 1);
+      }
+    };
+    voices.push(h);
+    return h;
+  }
+  function stopAll() { voices.slice().forEach(function (v) { v.stop(0.1); }); }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') stopAll(); });
+  window.addEventListener('lab:settingschange', function (e) {
+    if (e.detail && e.detail.name === 'sound' && !e.detail.value) stopAll();
+  });
+
+  window.LabSound = { enabled: enabled, tone: tone, sweep: sweep, noise: noise, voice: voice, stopAll: stopAll };
 
   // 從設定打開音效時，播放一聲提示音
   window.addEventListener('lab:settingschange', function (e) {
