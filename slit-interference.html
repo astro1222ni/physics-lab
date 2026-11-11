@@ -2,14 +2,30 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611110810"></script>
+  <script src="js/settings.js?v=202611111017"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Double-Slit Interference and Single-Slit Diffraction | Astro Ni Physics Lab">雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室</title>
   <meta name="description" content="互動模擬：調整波長、縫寬、縫距與屏幕距離，觀察單狹縫繞射、雙狹縫干涉與光柵的明暗條紋、光強分布與缺級。">
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611110810">
+  <link rel="stylesheet" href="lab.css?v=202611111017">
   <style>
     /* 本頁專用樣式：只使用 lab.css 的顏色變數，深色模式自動跟著切換 */
+    /* 本頁專用色彩代號（--si-*）：俯視示意圖與屏幕是「暗室」，兩種模式都偏暗；--si-shadow 為強度圖上的投影 */
+    :root {
+      --si-room: #05080a; --si-ink: rgba(232, 238, 240, 0.92); --si-ink-dim: rgba(200, 212, 216, 0.74);
+      --si-plate: #76838a; --si-plate-hi: #b9c4c8; --si-plate-lo: #2e373b; --si-screen: #cfd6d9;
+      --si-pill: rgba(8, 12, 14, 0.74); --si-shadow: rgba(20, 32, 38, 0.22);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --si-room: #030506; --si-plate: #6c7980; --si-plate-hi: #aab6bb; --si-plate-lo: #262e32;
+        --si-pill: rgba(6, 9, 11, 0.78); --si-shadow: rgba(0, 0, 0, 0.55);
+      }
+    }
+    :root[data-theme="dark"] {
+      --si-room: #030506; --si-plate: #6c7980; --si-plate-hi: #aab6bb; --si-plate-lo: #262e32;
+      --si-pill: rgba(6, 9, 11, 0.78); --si-shadow: rgba(0, 0, 0, 0.55);
+    }
     .stage canvas#scene { aspect-ratio: 2 / 1; touch-action: pan-y; cursor: default; }
     .stage canvas#pattern { aspect-ratio: 2 / 1; margin-top: 10px; touch-action: pan-y; }
     .stage canvas#pattern:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -81,7 +97,7 @@
             <button type="button" data-mode="grating" aria-pressed="false" data-en-html="Multi-slit&lt;br&gt;(grating)">多狹縫<br>（光柵）</button>
           </div>
           <div class="slider" id="nRow" hidden><label for="N" data-en="Number of slits N">狹縫數 N</label><output id="No"></output>
-            <input id="N" type="range" min="2" max="10" step="1" value="5"></div>
+            <input id="N" type="range" min="2" max="10" step="1" value="5" data-decimals="0"></div>
         </section>
 
         <section class="card">
@@ -92,7 +108,7 @@
           </div>
           <div id="monoRows">
           <div class="slider"><label for="lam" data-en="Wavelength λ">波長 λ</label><output id="lamo"></output>
-            <input id="lam" type="range" min="380" max="750" step="1" value="550">
+            <input id="lam" type="range" min="380" max="750" step="1" value="550" data-decimals="0">
             <div class="spectrum" style="grid-column:1/-1"></div></div>
           <div class="btns">
             <button type="button" data-lam="650" data-en="Red laser 650 nm">紅光雷射 650 nm</button>
@@ -105,11 +121,11 @@
             <div class="spectrum"></div>
           </div>
           <div class="slider"><label for="a" data-en="Slit width a">縫寬 a</label><output id="ao"></output>
-            <input id="a" type="range" min="5" max="100" step="1" value="40"></div>
+            <input id="a" type="range" min="5" max="100" step="1" value="40" data-decimals="1"></div>
           <div class="slider" id="dRow"><label for="d" data-en="Slit separation d (centre to centre)">縫距 d（相鄰狹縫中心距離）</label><output id="do"></output>
-            <input id="d" type="range" min="10" max="400" step="1" value="120"></div>
+            <input id="d" type="range" min="10" max="400" step="1" value="120" data-decimals="1"></div>
           <div class="slider"><label for="L" data-en="Slit-to-screen distance L">狹縫到屏幕的距離 L</label><output id="Lo"></output>
-            <input id="L" type="range" min="0.3" max="3" step="0.05" value="1"></div>
+            <input id="L" type="range" min="0.3" max="3" step="0.05" value="1" data-decimals="2"></div>
           <p class="status" id="status"></p>
         </section>
 
@@ -215,11 +231,12 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611110810"></script>
-  <script src="js/slit-interference-core.js?v=202611110810"></script>
-  <script src="js/slit-interference.js?v=202611110810"></script>
-  <script src="js/firebase-config.js?v=202611110810"></script>
-  <script src="js/stats.js?v=202611110810" data-module="slit-interference"></script>
-  <script src="js/comments.js?v=202611110810"></script>
+  <script src="js/math.js?v=202611111017"></script>
+  <script src="js/slit-interference-core.js?v=202611111017"></script>
+  <script src="js/numinput.js?v=202611111017"></script>
+  <script src="js/slit-interference.js?v=202611111017"></script>
+  <script src="js/firebase-config.js?v=202611111017"></script>
+  <script src="js/stats.js?v=202611111017" data-module="slit-interference"></script>
+  <script src="js/comments.js?v=202611111017"></script>
 </body>
 </html>

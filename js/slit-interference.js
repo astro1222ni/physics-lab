@@ -18,7 +18,7 @@
     a: 40,           // μm
     d: 120,          // μm
     L: 1,            // m
-    zoom: 4,
+    zoom: 30,        // 屏幕顯示範圍 ±Y（mm）：滑桿為 ZOOMS 的索引，也可直接輸入任意值
     showEnv: true,
     showOrders: true,
     cursorY: null,   // m；null 表示尚未放置游標
@@ -36,7 +36,7 @@
   function withLam(p, nm) { return Object.assign({}, p, { lambda: nm * NM }); }
   /** 屏幕上 y 處的相對光強：單色光或白光總和 */
   function Itot(p, y) { return state.white ? SC.whiteAt(p, y, SPEC, wtmp)[0] : SC.intensity(p, y); }
-  function halfRange() { return ZOOMS[state.zoom] * MM; }
+  function halfRange() { return state.zoom * MM; }
 
   // ---------- 顏色 ----------
   let colors = {};
@@ -44,9 +44,14 @@
     const cs = getComputedStyle(document.documentElement);
     ['--canvas-bg', '--text', '--muted', '--field', '--equi', '--grid', '--probe', '--surface', '--border', '--accent']
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
+    Object.keys(DARK_TOKENS).forEach(function (k) { DARK[k] = cs.getPropertyValue(DARK_TOKENS[k][0]).trim() || DARK_TOKENS[k][1]; });
+    overlay = null;
   }
-  // 暗室（示意圖與屏幕）在淺色、深色模式下都是暗的，用固定顏色
-  const DARK = { bg: '#05080a', label: 'rgba(232, 238, 240, 0.9)', dim: 'rgba(200, 212, 216, 0.62)', barrier: '#7d8a8f', screen: '#cfd6d9' };
+  // 暗室（示意圖與屏幕）在淺色、深色模式下都是暗的：顏色來自本頁 <style> 的 --si-* 代號（兩種模式都有定義）
+  const DARK = {};
+  const DARK_TOKENS = { bg: ['--si-room', '#05080a'], label: ['--si-ink', 'rgba(232, 238, 240, 0.92)'], dim: ['--si-ink-dim', 'rgba(200, 212, 216, 0.74)'],
+    plate: ['--si-plate', '#76838a'], plateHi: ['--si-plate-hi', '#b9c4c8'], plateLo: ['--si-plate-lo', '#2e373b'],
+    screen: ['--si-screen', '#cfd6d9'], pill: ['--si-pill', 'rgba(8, 12, 14, 0.74)'], shadow: ['--si-shadow', 'rgba(20, 32, 38, 0.22)'] };
 
   function waveRGB() { return SC.wavelengthToRGB(state.lam); }
   /** lab.css 色彩代號（#rgb、#rrggbb 或 rgb()）→ [r, g, b] */
@@ -78,7 +83,9 @@
     if (a < 1) return num(m / MM) + ' mm';
     return num(m) + ' m';
   }
-  function fmtZoom(mm) { return mm >= 100 ? '±' + mm / 10 + ' cm' : '±' + mm + ' mm'; }
+  function fmtZoom(mm) { return mm >= 100 ? '±' + trimNum(mm / 10, 2) + ' cm' : '±' + trimNum(mm, 1) + ' mm'; }
+  /** 顯示到 dec 位小數，去掉多餘的 0（打字輸入的值可以比滑桿細） */
+  function trimNum(v, dec) { let t = v.toFixed(dec); if (dec > 0) t = t.replace(/\.?0+$/, ''); return t; }
 
   // ---------- 畫布 ----------
   function makeCanvas(id) { const cv = $(id); return { cv: cv, ctx: cv.getContext('2d'), w: 0, h: 0, dpr: 1 }; }
@@ -141,6 +148,7 @@
     const slits = [];
     for (let i = 0; i < g.N; i++) slits.push(g.cy + (i - (g.N - 1) / 2) * g.dPx);
     fieldImg.width = gw; fieldImg.height = gh;
+    fieldSerial++;
     field = { gw: gw, gh: gh, bxCell: Math.ceil(g.bx / CELL), comps: comps, g: g, slits: slits,
       img: fieldCtx.createImageData(gw, gh) };
   }
@@ -209,34 +217,41 @@
     const ctx = scene.ctx, g = field.g, W = scene.w, H = scene.h;
     ctx.setTransform(scene.dpr, 0, 0, scene.dpr, 0, 0);
 
-    // 波場影像
+    // 波場影像（每一幀只重算這一層；擋板、屏幕、標示等不變的部分在 sceneOverlay 預先畫好）
+    // 色調對應只改變亮度的呈現方式（單調函數），波峰位置與 Re(A e^(−iωt)) 完全相同：
+    //   亮度 = 0.2·|A|²（時間平均，看得出干涉的亮帶）＋ 柔和的波峰；單色光最亮的波峰中心略偏白，像發光的光帶
     const img = field.img, data = img.data, gw = field.gw, gh = field.gh;
-    const comps = field.comps, nc = comps.length;
+    const comps = field.comps, nc = comps.length, mono = nc === 1;
     const cols = [], cps = [], sps = [];
     for (let c = 0; c < nc; c++) {
       const col = comps[c].col || waveRGB();
       cols.push([col[0] * comps[c].scale, col[1] * comps[c].scale, col[2] * comps[c].scale]);
       cps.push(Math.cos(phases[c])); sps.push(Math.sin(phases[c]));
     }
+    const hot = mono ? [(255 - cols[0][0]) * 0.42, (255 - cols[0][1]) * 0.42, (255 - cols[0][2]) * 0.42] : null;
     for (let cy = 0; cy < gh; cy++) {
       for (let cx = 0; cx < gw; cx++) {
         const o = cy * gw + cx;
-        let R = 0, G = 0, B = 0;
+        let R = 0, G = 0, B = 0, core = 0;
         for (let c = 0; c < nc; c++) {
           const f = comps[c];
-          let b;
+          let b, cr;
           if (cx < field.bxCell) {
             // 入射的平面波：cos(k(x − x_b) − ωt)
             const v = Math.cos(f.k * ((cx + 0.5) * CELL - g.bx) - phases[c]);
+            cr = v > 0 ? v : 0;
             // 白光的入射光：三色以較柔和的波峰疊在明亮的白色光束上
-            b = nc > 1 ? 0.5 * Math.max(0, v) + 0.42 : 0.85 * Math.max(0, v) + 0.22;
+            b = mono ? 0.2 + 0.68 * cr * (1.5 - 0.5 * cr) : 0.5 * cr + 0.42;
           } else {
             const v = f.re[o] * cps[c] + f.im[o] * sps[c]; // Re(A e^(−iωt))
-            b = 0.85 * Math.max(0, v) + 0.22 * f.avg[o];
+            cr = v > 0 ? (v < 1 ? v : 1) : 0;
+            b = 0.2 * f.avg[o] + 0.8 * cr * (1.5 - 0.5 * cr);
           }
           if (b > 1) b = 1;
+          if (mono && cr > 0.72) core = (cr - 0.72) * 3.57;
           R += cols[c][0] * b; G += cols[c][1] * b; B += cols[c][2] * b;
         }
+        if (core > 0) { R += hot[0] * core; G += hot[1] * core; B += hot[2] * core; }
         const p = o * 4;
         data[p] = R; data[p + 1] = G; data[p + 2] = B; data[p + 3] = 255; // Uint8ClampedArray 自動截在 255
       }
@@ -246,96 +261,239 @@
     ctx.fillRect(0, 0, W, H);
     ctx.imageSmoothingEnabled = true;
     ctx.drawImage(fieldImg, 0, 0, gw * CELL, gh * CELL);
-    if (nc > 1) beamDepth(g, H);
-
-    // 擋板與狹縫
-    ctx.fillStyle = DARK.barrier;
-    const bw = 6, x0 = g.bx - bw / 2;
-    const gaps = field.slits.map(function (c) { return [c - g.aPx / 2, c + g.aPx / 2]; });
-    let top = 0;
-    gaps.forEach(function (gp) { if (gp[0] > top) ctx.fillRect(x0, top, bw, gp[0] - top); top = gp[1]; });
-    if (top < H) ctx.fillRect(x0, top, bw, H - top);
-
-    // 屏幕
-    ctx.fillStyle = DARK.screen;
-    ctx.fillRect(g.sx, 0, 5, H);
-
-    // 標示
-    ctx.font = '12px system-ui, sans-serif';
-    ctx.textBaseline = 'top';
-    ctx.textAlign = 'left';
-    label(state.white ? T('入射光：白光', 'Incident light: white') : T('入射光', 'Incident light') + '  λ = ' + state.lam + ' nm', 8, 8, DARK.label);
-    ctx.textAlign = 'right';
-    label(T('屏幕', 'Screen'), g.sx - 6, 8, DARK.label);
-    ctx.textAlign = 'center';
-    label(state.mode === 'single' ? T('單狹縫', 'Single slit') : state.mode === 'double' ? T('雙狹縫', 'Double slit') : T(slitCount() + ' 條狹縫', slitCount() + ' slits'), g.bx, H - 40, DARK.label);
-
-    // 尺寸：a 或 d
-    ctx.strokeStyle = DARK.label;
-    ctx.lineWidth = 1;
-    const bxL = g.bx - 12;
-    if (g.N === 1) {
-      bracket(bxL, g.cy - g.aPx / 2, g.cy + g.aPx / 2, 'a');
-    } else if (g.N === 2) {
-      bracket(bxL, field.slits[0], field.slits[1], 'd');
-    } else {
-      bracket(bxL, field.slits[0], field.slits[1], 'd');
-    }
-
-    // 屏幕距離 L
-    const ly = H - 16;
-    ctx.beginPath();
-    ctx.moveTo(g.bx + 4, ly); ctx.lineTo(g.sx - 2, ly);
-    ctx.stroke();
-    arrow(g.bx + 4, ly, -1); arrow(g.sx - 2, ly, 1);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const lt = 'L = ' + state.L.toFixed(2) + ' m';
-    const tw = ctx.measureText(lt).width + 10;
-    const lx = (g.bx + g.sx) / 2;
-    ctx.fillStyle = DARK.bg;
-    ctx.fillRect(lx - tw / 2, ly - 9, tw, 18);
-    ctx.fillStyle = DARK.label;
-    ctx.fillText(lt, lx, ly);
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.font = '11px system-ui, sans-serif';
-    label(T('示意圖（未依比例）', 'Schematic (not to scale)'), 8, 26, DARK.dim);
-
-    function label(t, x, y, c) {
-      ctx.lineWidth = 3;
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(5, 8, 10, 0.75)';
-      ctx.strokeText(t, x, y);
-      ctx.fillStyle = c;
-      ctx.fillText(t, x, y);
-    }
-    function arrow(x, y, dir) {
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x - dir * 6, y - 3.5);
-      ctx.lineTo(x - dir * 6, y + 3.5);
-      ctx.closePath();
-      ctx.fillStyle = DARK.label;
-      ctx.fill();
-    }
-    function bracket(x, y1, y2, t) {
-      ctx.strokeStyle = DARK.label;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x + 4, y1); ctx.lineTo(x, y1); ctx.lineTo(x, y2); ctx.lineTo(x + 4, y2);
-      ctx.stroke();
-      ctx.font = 'italic 13px "Times New Roman", serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'middle';
-      label(t, x - 4, (y1 + y2) / 2, DARK.label);
-      ctx.font = '12px system-ui, sans-serif';
-    }
+    ctx.drawImage(sceneOverlay(), 0, 0, W, H);
   }
 
-  // 白光入射光束的立體感：光束上下緣漸暗、靠近擋板處有極淡的光暈（只在入射區域，波峰位置不變）
-  function beamDepth(g, H) {
-    const ctx = scene.ctx;
+  // ---------- 示意圖中不變的圖層（擋板、屏幕、光暈、標示），參數或尺寸改變時才重畫 ----------
+  let overlay = null, fieldSerial = 0;
+  function sceneOverlay() {
+    const key = fieldSerial + '|' + state.L + '|' + scene.cv.width + 'x' + scene.cv.height;
+    if (overlay && overlay.key === key) return overlay.cv;
+    const cv = overlay ? overlay.cv : document.createElement('canvas');
+    cv.width = scene.cv.width; cv.height = scene.cv.height;
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(scene.dpr, 0, 0, scene.dpr, 0, 0);
+    ctx.clearRect(0, 0, scene.w, scene.h);
+    drawSceneDecor(ctx);
+    overlay = { key: key, cv: cv };
+    return cv;
+  }
+
+  /** 光的顏色（亮度拉到最大，只用來做光暈與邊緣反光） */
+  function lightTint() {
+    if (state.white) return [255, 255, 255];
+    const c = waveRGB(), m = Math.max(c[0], c[1], c[2]) || 1;
+    return c.map(function (v) { return Math.round(v * 255 / m); });
+  }
+
+  function drawSceneDecor(ctx) {
+    const g = field.g, W = g.W, H = g.H, s = H / 400;
+    const tint = lightTint();
+    beamDepth(ctx, g, H, tint);
+
+    // 暗室的暈影：四角略暗，畫面有景深
+    const vg = ctx.createRadialGradient(W * 0.55, H / 2, Math.min(W, H) * 0.3, W * 0.55, H / 2, Math.hypot(W, H) * 0.62);
+    vg.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vg.addColorStop(1, 'rgba(0, 0, 0, 0.42)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    // ---- 擋板與狹縫：有厚度的金屬板（狹縫開口的位置與寬度不變） ----
+    const bw = Math.max(6, Math.round(8 * s)), x0 = g.bx - bw / 2;
+    const segs = [];
+    let top = 0;
+    field.slits.forEach(function (c) {
+      const y0 = c - g.aPx / 2, y1 = c + g.aPx / 2;
+      if (y0 > top) segs.push([top, y0]);
+      top = y1;
+    });
+    if (top < H) segs.push([top, H]);
+    const body = ctx.createLinearGradient(x0, 0, x0 + bw, 0);
+    body.addColorStop(0, DARK.plateHi);
+    body.addColorStop(0.38, DARK.plate);
+    body.addColorStop(1, DARK.plateLo);
+    const cast = ctx.createLinearGradient(x0 + bw, 0, x0 + bw + 8, 0);
+    cast.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+    cast.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    segs.forEach(function (sg) {
+      const y0 = sg[0], y1 = sg[1], h = y1 - y0;
+      if (h < 0.3) return;
+      // 投影只往右（波的那一側）水平延伸，不會遮到狹縫開口
+      ctx.fillStyle = cast;
+      ctx.fillRect(x0 + bw, y0, 8, h);
+      ctx.fillStyle = body;
+      roundRect(ctx, x0, y0, bw, h, Math.min(2, h / 2));
+      ctx.fill();
+      // 迎光面（左緣）被入射光照亮；狹縫的上下切面閃著光
+      ctx.fillStyle = rgba(tint, 0.55);
+      ctx.fillRect(x0, y0 + 1, 1, Math.max(0, h - 2));
+      if (y0 > 0) { ctx.fillStyle = rgba(tint, 0.7); ctx.fillRect(x0 + 1, y0, bw - 2, 1); }
+      if (y1 < H) { ctx.fillStyle = rgba(tint, 0.45); ctx.fillRect(x0 + 1, y1 - 1, bw - 2, 1); }
+    });
+
+    // ---- 屏幕：被照亮的位置顯示波場的時間平均亮度 ----
+    const sx = g.sx, sw = 5;
+    ctx.fillStyle = DARK.bg;
+    ctx.fillRect(sx + sw, 0, W - sx - sw, H); // 屏幕後方沒有光
+    const sb = ctx.createLinearGradient(sx, 0, sx + sw, 0);
+    sb.addColorStop(0, DARK.screen);
+    sb.addColorStop(1, DARK.plateLo);
+    ctx.fillStyle = sb;
+    ctx.fillRect(sx, 0, sw, H);
+    const lit = screenLight(sx);
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 0.92;
+    ctx.drawImage(lit, sx, 0, 3, field.gh * CELL);
+    ctx.globalCompositeOperation = 'lighter';
+    [[3, 0.22], [6, 0.1], [10, 0.05]].forEach(function (q) {
+      ctx.globalAlpha = q[1];
+      ctx.drawImage(lit, sx - q[0], 0, q[0], field.gh * CELL);
+    });
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(sx, 0, 1, H);
+
+    // ---- 標示：一律放在半透明圓角底框上 ----
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.font = '12px system-ui, sans-serif';
+    const inc = state.white ? T('入射光：白光', 'Incident light: white') : T('入射光', 'Incident light') + '  λ = ' + state.lam + ' nm';
+    const r1 = pill(ctx, inc, 8, 8, 'left', { dot: state.white ? [244, 246, 248] : waveRGB() });
+    ctx.font = '11px system-ui, sans-serif';
+    pill(ctx, T('示意圖（未依比例）', 'Schematic (not to scale)'), 8, r1.y + r1.h + 4, 'left', { dim: true });
+    ctx.font = '12px system-ui, sans-serif';
+    pill(ctx, T('屏幕', 'Screen'), sx - 6, 8, 'right');
+
+    // 尺寸：單狹縫標 a；多狹縫標正中央一對狹縫的 d（中心到中心），遠離上方的標示
+    const bxL = x0 - 9;
+    if (g.N === 1) {
+      bracket(ctx, bxL, x0 - 1, g.cy - g.aPx / 2, g.cy + g.aPx / 2, 'a');
+    } else {
+      const i0 = Math.max(0, Math.floor((g.N - 2) / 2));
+      bracket(ctx, bxL, x0 - 1, field.slits[i0], field.slits[i0 + 1], 'd');
+    }
+
+    const name = state.mode === 'single' ? T('單狹縫', 'Single slit') : state.mode === 'double' ? T('雙狹縫', 'Double slit') : T(slitCount() + ' 條狹縫', slitCount() + ' slits');
+    const ly = H - 15;
+    const rn = measurePill(ctx, name);
+    pill(ctx, name, g.bx, ly - 12 - rn.h, 'center');
+
+    // 屏幕距離 L
+    const xa = x0 + bw + 3, xb = sx - 3;
+    ctx.beginPath();
+    ctx.moveTo(xa + 5, ly); ctx.lineTo(xb - 5, ly);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.strokeStyle = DARK.label;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    arrowHead(ctx, xa, ly, -1); arrowHead(ctx, xb, ly, 1);
+    pill(ctx, 'L = ' + state.L.toFixed(2) + ' m', (g.bx + sx) / 2, ly - rn.h / 2, 'center');
+  }
+
+  /** 屏幕上被照亮的亮度：取屏幕前一格的 |A|²（各成分顏色相加），1 × gh 的小圖 */
+  function screenLight(sx) {
+    const gh = field.gh, gw = field.gw, cx = Math.min(gw - 1, Math.max(0, Math.floor((sx - 1) / CELL)));
+    const cv = document.createElement('canvas');
+    cv.width = 1; cv.height = gh;
+    const c2 = cv.getContext('2d'), im = c2.createImageData(1, gh);
+    for (let cy = 0; cy < gh; cy++) {
+      let R = 0, G = 0, B = 0;
+      field.comps.forEach(function (f) {
+        const col = f.col || waveRGB(), a = Math.min(1, 1.25 * f.avg[cy * gw + cx]) * f.scale * (f.col ? 1.3 : 1);
+        R += col[0] * a; G += col[1] * a; B += col[2] * a;
+      });
+      im.data[cy * 4] = R; im.data[cy * 4 + 1] = G; im.data[cy * 4 + 2] = B; im.data[cy * 4 + 3] = 255;
+    }
+    c2.putImageData(im, 0, 0);
+    return cv;
+  }
+
+  // ---------- 共用的繪圖小工具 ----------
+  function roundRect(ctx, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function textBox(ctx, t) {
+    const m = ctx.measureText(t);
+    const asc = m.fontBoundingBoxAscent || m.actualBoundingBoxAscent || 9;
+    const desc = m.fontBoundingBoxDescent || m.actualBoundingBoxDescent || 3;
+    return { w: m.width, asc: asc, desc: desc };
+  }
+  function measurePill(ctx, t, dot) {
+    const b = textBox(ctx, t), h = Math.round(b.asc + b.desc + 6);
+    return { w: Math.round(b.w + 14 + (dot ? h - 4 : 0)), h: h, b: b };
+  }
+  /** 示意圖（暗室）上的標籤：半透明深色圓角底框＋細亮邊；y 為底框上緣 */
+  function pill(ctx, t, x, y, align, o) {
+    o = o || {};
+    const m = measurePill(ctx, t, o.dot), w = m.w, h = m.h;
+    const left = Math.round(align === 'right' ? x - w : align === 'center' ? x - w / 2 : x), top = Math.round(y);
+    roundRect(ctx, left + 0.5, top + 0.5, w - 1, h - 1, h / 2);
+    ctx.fillStyle = DARK.pill;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    let tx = left + 7;
+    if (o.dot) {
+      // 光的顏色小圓點（球形光澤）
+      const r = (h - 10) / 2, cx = tx + r, cy = top + h / 2;
+      const gr = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+      gr.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+      gr.addColorStop(0.35, rgba(o.dot, 1));
+      gr.addColorStop(1, rgba(o.dot.map(function (v) { return Math.round(v * 0.55); }), 1));
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = gr;
+      ctx.fill();
+      tx += h - 4;
+    }
+    ctx.fillStyle = o.dim ? DARK.dim : DARK.label;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(t, tx, top + 3 + m.b.asc);
+    return { x: left, y: top, w: w, h: h };
+  }
+  // 略帶弧度的三角形箭頭（箭頭長度約為線寬的 4–5 倍）
+  function arrowHead(ctx, x, y, dir) {
+    const len = 7, half = 3.6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x - dir * len * 0.55, y - half * 0.55, x - dir * len, y - half);
+    ctx.lineTo(x - dir * len * 0.78, y);
+    ctx.lineTo(x - dir * len, y + half);
+    ctx.quadraticCurveTo(x - dir * len * 0.55, y + half * 0.55, x, y);
+    ctx.closePath();
+    ctx.fillStyle = DARK.label;
+    ctx.fill();
+  }
+  /** 尺寸括號：x 為括號線，xe 為擋板迎光面（短線指向狹縫中心或邊緣） */
+  function bracket(ctx, x, xe, y1, y2, t) {
+    ctx.beginPath();
+    ctx.moveTo(xe, y1); ctx.lineTo(x, y1); ctx.lineTo(x, y2); ctx.lineTo(xe, y2);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.strokeStyle = DARK.label;
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.font = 'italic 14px "Times New Roman", serif';
+    const m = measurePill(ctx, t);
+    pill(ctx, t, x - 3, (y1 + y2) / 2 - m.h / 2, 'right');
+    ctx.font = '12px system-ui, sans-serif';
+  }
+
+  // 入射光束的立體感：光束上下緣漸暗、靠近擋板處有極淡的光暈（只在入射區域，波峰位置不變）
+  function beamDepth(ctx, g, H, tint) {
     const v = ctx.createLinearGradient(0, 0, 0, H);
     v.addColorStop(0, 'rgba(5, 8, 10, 0.55)');
     v.addColorStop(0.22, 'rgba(5, 8, 10, 0.08)');
@@ -345,8 +503,8 @@
     ctx.fillStyle = v;
     ctx.fillRect(0, 0, g.bx, H);
     const glow = ctx.createLinearGradient(g.bx - 26, 0, g.bx, 0);
-    glow.addColorStop(0, 'rgba(255, 255, 255, 0)');
-    glow.addColorStop(1, 'rgba(255, 255, 255, 0.14)');
+    glow.addColorStop(0, rgba(tint, 0));
+    glow.addColorStop(1, rgba(tint, 0.14));
     ctx.fillStyle = glow;
     ctx.fillRect(g.bx - 26, 0, 26, H);
   }
@@ -375,9 +533,14 @@
   // 屏幕條紋與強度圖
   // ====================================================================
   let layout = null;
+  function orderTitle(N) { return N === 1 ? T('暗紋 m', 'min m') : T('亮紋 m', 'max m'); }
   function patternLayout() {
     const W = pat.w, H = pat.h;
-    const PL = 42, PR = 14;
+    // 左邊界至少容納級數標題與刻度數字（字體放大或英文較長時自動加寬，只影響版面，不影響數值）
+    const ctx = pat.ctx;
+    ctx.font = '11px system-ui, sans-serif';
+    const need = Math.max(ctx.measureText(orderTitle(slitCount())).width + 7, ctx.measureText('0.5').width + 22);
+    const PL = Math.max(42, Math.ceil(need)), PR = 14;
     const ST = 22;
     const SH = Math.max(34, Math.min(64, Math.round(H * 0.17)));
     const GT = ST + SH + 26;
@@ -395,8 +558,15 @@
     const Y = halfRange();
     const col = waveRGB();
     const lin = col.map(SC.srgbToLinear);
+    const dark = darkCanvas();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = colors['canvas-bg'];
+    ctx.fillRect(0, 0, l.W, l.H);
+    // 極淡的暈影：中央略亮、四角略暗
+    const vg = ctx.createRadialGradient(l.W / 2, l.H * 0.45, Math.min(l.W, l.H) * 0.3, l.W / 2, l.H * 0.45, Math.hypot(l.W, l.H) * 0.62);
+    vg.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vg.addColorStop(1, dark ? 'rgba(0, 0, 0, 0.16)' : rgba(tokenRGB('text'), 0.045));
+    ctx.fillStyle = vg;
     ctx.fillRect(0, 0, l.W, l.H);
 
     // ---- 取樣（參數改變時才重算；移動游標只重畫） ----
@@ -426,32 +596,74 @@
       sctx.putImageData(simg, 0, 0);
       S.stripDone = true;
     }
+    const fx = l.PL - 4, fw = l.PW + 8;
+    if (dark) {
+      // 深色模式：亮紋的光微微溢出屏幕上下緣（同一張條紋圖拉高後淡出，水平位置完全相同）
+      ctx.globalAlpha = 0.5;
+      ctx.imageSmoothingEnabled = true;
+      ctx.drawImage(stripGlow(S), l.PL, l.ST - 7, l.PW, l.SH + 14);
+      ctx.globalAlpha = 1;
+    }
+    // 屏幕本體：圓角＋投影
+    ctx.save();
+    ctx.shadowColor = DARK.shadow;
+    ctx.shadowBlur = dark ? 12 : 10;
+    ctx.shadowOffsetY = 3;
     ctx.fillStyle = DARK.bg;
-    ctx.fillRect(l.PL - 4, l.ST, l.PW + 8, l.SH);
+    roundRect(ctx, fx, l.ST, fw, l.SH, 5);
+    ctx.fill();
+    ctx.restore();
+    ctx.save();
+    roundRect(ctx, fx, l.ST, fw, l.SH, 5);
+    ctx.clip();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(strip, l.PL, l.ST, l.PW, l.SH);
     ctx.imageSmoothingEnabled = true;
-    if (state.white) stripDepth(l);
+    stripDepth(l);
+    ctx.restore();
     ctx.strokeStyle = colors.border;
     ctx.lineWidth = 1;
-    ctx.strokeRect(l.PL - 4.5, l.ST - 0.5, l.PW + 9, l.SH + 1);
+    roundRect(ctx, fx - 0.5, l.ST - 0.5, fw + 1, l.SH + 1, 5.5);
+    ctx.stroke();
 
     // ---- 級數標示（條紋與強度圖之間） ----
     const rowY = l.ST + l.SH + 13;
     if (state.showOrders) drawOrderLabels(p, rowY);
 
-    // ---- 強度圖座標格 ----
+    // ---- 強度圖座標格（線寬 1 個裝置像素，對齊像素中心） ----
     const gh = l.GB - l.GT;
     const iy = function (v) { return l.GB - v * gh; };
-    ctx.strokeStyle = colors.grid;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    [0.25, 0.5, 0.75, 1].forEach(function (v) { ctx.moveTo(l.PL, Math.round(iy(v)) + 0.5); ctx.lineTo(l.PL + l.PW, Math.round(iy(v)) + 0.5); });
+    const snap = function (v) { return (Math.floor(v * dpr) + 0.5) / dpr; };
+    const gcol = tokenRGB('grid'), hair = 1 / dpr;
     const step = niceStep(2 * Y / MM, Math.max(3, Math.floor(l.PW / 64)));
-    for (let t = Math.ceil(-Y / MM / step) * step; t <= Y / MM + 1e-9; t += step) {
-      const x = Math.round(yToX(t * MM)) + 0.5;
-      ctx.moveTo(x, l.GT); ctx.lineTo(x, l.GB);
+    const lead = Math.round(step / Math.pow(10, Math.floor(Math.log10(step) + 1e-9)));
+    const minor = step / (lead === 2 ? 4 : 5);
+    const gridLines = function (alpha, xs, ys) {
+      ctx.beginPath();
+      xs.forEach(function (x) { const sx = snap(x); ctx.moveTo(sx, l.GT); ctx.lineTo(sx, l.GB); });
+      ys.forEach(function (y) { const sy = snap(y); ctx.moveTo(l.PL, sy); ctx.lineTo(l.PL + l.PW, sy); });
+      ctx.strokeStyle = rgba(gcol, alpha);
+      ctx.lineWidth = hair;
+      ctx.stroke();
+    };
+    const majX = [], minX = [];
+    for (let t = Math.ceil(-Y / MM / step) * step; t <= Y / MM + 1e-9; t += step) majX.push(yToX(t * MM));
+    if (minor / (2 * Y / MM) * l.PW >= 7) {
+      for (let t = Math.ceil(-Y / MM / minor) * minor; t <= Y / MM + 1e-9; t += minor) {
+        if (Math.abs(t / step - Math.round(t / step)) > 1e-6) minX.push(yToX(t * MM));
+      }
     }
+    const minY = [], majY = [iy(0.5), iy(1)];
+    for (let k = 1; k < 10; k++) if (k !== 5) minY.push(iy(k / 10));
+    gridLines(dark ? 0.06 : 0.07, minX, minY);
+    gridLines(dark ? 0.13 : 0.15, majX, majY);
+    // 座標軸與刻度
+    ctx.beginPath();
+    const bx0 = snap(l.GB);
+    ctx.moveTo(l.PL, bx0); ctx.lineTo(l.PL + l.PW, bx0);
+    majX.forEach(function (x) { const sx = snap(x); ctx.moveTo(sx, bx0); ctx.lineTo(sx, bx0 + 4); });
+    ctx.strokeStyle = colors.muted;
+    ctx.lineWidth = Math.max(1, Math.round(dpr)) / dpr;
     ctx.stroke();
     ctx.fillStyle = colors.muted;
     ctx.font = '11px system-ui, sans-serif';
@@ -459,30 +671,25 @@
     ctx.textBaseline = 'middle';
     [0, 0.5, 1].forEach(function (v) { ctx.fillText(String(v), l.PL - 6, iy(v)); });
     ctx.save();
-    ctx.translate(11, (l.GT + l.GB) / 2);
+    ctx.translate(11, iy(0.75));
     ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = 'center';
-    ctx.fillText('I / I0', 0, 0);
+    richText(ctx, [['I/I', 0], ['0', 1]], 0, 0, 'center');
     ctx.restore();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (let t = Math.ceil(-Y / MM / step) * step; t <= Y / MM + 1e-9; t += step) {
       const v = Math.abs(t) < 1e-9 ? 0 : t;
-      ctx.fillText(num(v, 4), yToX(v * MM), l.GB + 5);
+      ctx.fillText(num(v, 4), yToX(v * MM), l.GB + 6);
     }
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText(T('y（mm）', 'y (mm)'), l.PL + l.PW, l.H - 1);
-    ctx.strokeStyle = colors.muted;
-    ctx.beginPath();
-    ctx.moveTo(l.PL, l.GB + 0.5); ctx.lineTo(l.PL + l.PW, l.GB + 0.5);
-    ctx.stroke();
 
     // ---- 強度曲線 ----
     const xc = function (i) { return l.PL + (i + 0.5) / cols * l.PW; };
     ctx.save();
     ctx.beginPath();
-    ctx.rect(l.PL, l.GT - 4, l.PW, gh + 4);
+    ctx.rect(l.PL, l.GT - 6, l.PW, gh + 6);
     ctx.clip();
     if (resolved) {
       ctx.beginPath();
@@ -491,7 +698,7 @@
       ctx.lineTo(xc(cols - 1), l.GB);
       ctx.closePath();
       if (state.white) spectralFill(S, l);
-      else { ctx.fillStyle = rgba(col, 0.38); ctx.fill(); }
+      else monoFill(col, l);
       // 白光：淡淡畫出三個單色成分各自的 I/I0
       if (S.comp) S.comp.forEach(function (c) {
         ctx.beginPath();
@@ -504,13 +711,7 @@
       });
       ctx.beginPath();
       for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(mid[i])); else ctx.moveTo(xc(i), iy(mid[i])); }
-      if (state.white) tubeStroke(1.8);
-      else {
-        ctx.strokeStyle = colors.field;
-        ctx.lineWidth = 1.6;
-        ctx.lineJoin = 'round';
-        ctx.stroke();
-      }
+      tubeStroke(state.white ? 1.8 : 1.7);
     } else {
       // 條紋太密：每一欄畫出該欄內強度的最小值到最大值
       ctx.beginPath();
@@ -518,15 +719,10 @@
       for (let i = cols - 1; i >= 0; i--) ctx.lineTo(xc(i), iy(mn[i]));
       ctx.closePath();
       if (state.white) spectralFill(S, l);
-      else { ctx.fillStyle = rgba(col, 0.55); ctx.fill(); }
+      else monoFill(col, l);
       ctx.beginPath();
       for (let i = 0; i < cols; i++) { if (i) ctx.lineTo(xc(i), iy(mx[i])); else ctx.moveTo(xc(i), iy(mx[i])); }
-      if (state.white) tubeStroke(1.2);
-      else {
-        ctx.strokeStyle = colors.field;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      tubeStroke(1.2);
     }
     // 單狹縫包絡線（虛線）
     if (state.showEnv && p.N > 1) {
@@ -537,6 +733,8 @@
         if (i) ctx.lineTo(xc(i), iy(v)); else ctx.moveTo(xc(i), iy(v));
       }
       ctx.setLineDash([6, 4]);
+      ctx.lineCap = 'butt';
+      ctx.lineJoin = 'round';
       ctx.strokeStyle = colors.muted;
       ctx.lineWidth = 1.4;
       ctx.stroke();
@@ -548,7 +746,60 @@
     updateCursorReadout(p);
   }
 
-  // ---------- 白光圖形的質感（只是疊在上面的裝飾，不改變任何位置與比例） ----------
+  /** 文字中夾下標（例如 I/I0 的 0）：parts = [[文字, 是否下標], …]；回傳總寬度 */
+  function richText(ctx, parts, x, y, align, measureOnly) {
+    const base = ctx.font, size = parseFloat((String(base).match(/(\d+(?:\.\d+)?)px/) || [0, 12])[1]);
+    const subFont = String(base).replace(/(\d+(?:\.\d+)?)px/, (size * 0.74).toFixed(1) + 'px');
+    let w = 0;
+    const widths = parts.map(function (pt) { ctx.font = pt[1] ? subFont : base; const v = ctx.measureText(pt[0]).width; w += v; return v; });
+    ctx.font = base;
+    if (measureOnly) return w;
+    const ta = ctx.textAlign;
+    let cx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+    ctx.textAlign = 'left';
+    parts.forEach(function (pt, i) {
+      ctx.font = pt[1] ? subFont : base;
+      ctx.fillText(pt[0], cx, pt[1] ? y + size * 0.3 : y);
+      cx += widths[i];
+    });
+    ctx.font = base;
+    ctx.textAlign = ta;
+    return w;
+  }
+
+  /** 深色模式的條紋光暈圖：條紋圖拉高後上下淡出（每組參數只做一次） */
+  function stripGlow(S) {
+    if (S.glow) return S.glow;
+    const cv = document.createElement('canvas');
+    cv.width = S.cols; cv.height = 24;
+    const c2 = cv.getContext('2d');
+    c2.imageSmoothingEnabled = false;
+    c2.drawImage(S.strip, 0, 0, S.cols, 24);
+    c2.globalCompositeOperation = 'destination-in';
+    const g = c2.createLinearGradient(0, 0, 0, 24);
+    g.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    g.addColorStop(0.32, 'rgba(0, 0, 0, 1)');
+    g.addColorStop(0.68, 'rgba(0, 0, 0, 1)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    c2.fillStyle = g;
+    c2.fillRect(0, 0, S.cols, 24);
+    return (S.glow = cv);
+  }
+
+  /** 單色光的強度圖填色：用該波長的顏色（亮度拉到最大），由上往基線逐漸變淡；以目前路徑為範圍 */
+  function monoFill(col, l) {
+    const ctx = pat.ctx, dark = darkCanvas();
+    const m = Math.max(col[0], col[1], col[2]) || 1, f = dark ? 1 : 0.86;
+    const hue = col.map(function (v) { return Math.round(v * 255 / m * f); });
+    const g = ctx.createLinearGradient(0, l.GT, 0, l.GB);
+    g.addColorStop(0, rgba(hue, dark ? 0.66 : 0.6));
+    g.addColorStop(0.55, rgba(hue, dark ? 0.36 : 0.36));
+    g.addColorStop(1, rgba(hue, dark ? 0.1 : 0.12));
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  // ---------- 圖形的質感（只是疊在上面的裝飾，不改變任何位置與比例；單色光與白光共用） ----------
   // 屏幕條紋的立體感：上下緣略暗（像被照亮的屏幕表面）、頂邊 1 px 高光、底邊 1 px 暗線。
   // 每一列都乘上同一個係數，所以沿 y 方向的相對亮度不變。
   function stripDepth(l) {
@@ -676,10 +927,10 @@
     const ctx = pat.ctx, l = layout, Y = halfRange();
     let marks, title;
     if (p.N === 1) {
-      title = T('暗紋 m', 'min m');
+      title = orderTitle(1);
       marks = SC.singleSlitDarks(p).filter(function (o) { return Math.abs(o.y) <= Y; });
     } else {
-      title = T('亮紋 m', 'max m');
+      title = orderTitle(p.N);
       // 只取 |y| ≤ Y 的級數，避免數百個級數全都計算
       const sMax = SC.sinTheta(Y, p.L);
       const mMax = Math.floor(sMax * p.d / p.lambda);
@@ -725,53 +976,130 @@
   }
 
   function drawCursor(p) {
+    const ctx = pat.ctx, l = layout, dark = darkCanvas();
     if (state.cursorY === null) {
-      const ctx = pat.ctx, l = layout;
-      ctx.fillStyle = colors.muted;
+      // 操作提示：放在右上角的半透明圓角底框裡；太長時折成兩行
       ctx.font = '12px system-ui, sans-serif';
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillText(T('點擊或拖曳讀取數值', 'Click or drag to read values'), l.PL + l.PW - 4, l.GT + 2);
+      const t = T('點擊或拖曳讀取數值', 'Click or drag to read values');
+      const lines = wrap2(ctx, t, l.PW * 0.44);
+      const b = textBox(ctx, t), lh = Math.round(b.asc + b.desc + 2);
+      const w = Math.max.apply(null, lines.map(function (s) { return ctx.measureText(s).width; })) + 16;
+      const h = lh * lines.length + 8, x = l.PL + l.PW - 6 - w, y = l.GT + 4;
+      roundRect(ctx, x + 0.5, y + 0.5, w, h, Math.min(h / 2, 12));
+      ctx.fillStyle = rgba(tokenRGB('surface'), 0.86);
+      ctx.fill();
+      ctx.strokeStyle = colors.border;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = colors.muted;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'alphabetic';
+      lines.forEach(function (s, i) { ctx.fillText(s, x + 0.5 + w / 2, y + 5 + b.asc + i * lh); });
       return;
     }
     const y = state.cursorY;
     if (Math.abs(y) > halfRange()) return;
-    const ctx = pat.ctx, l = layout;
     const x = yToX(y);
     const I = Itot(p, y);
     const py = l.GB - I * (l.GB - l.GT);
+    const pc = tokenRGB('probe');
+    // 游標線：柔和光暈＋實線
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x, l.ST - 2); ctx.lineTo(x, l.ST + l.SH + 2);
+    ctx.moveTo(x, l.GT - 4); ctx.lineTo(x, l.GB);
+    ctx.strokeStyle = rgba(pc, dark ? 0.28 : 0.18);
+    ctx.lineWidth = 5;
+    ctx.stroke();
     ctx.strokeStyle = colors.probe;
     ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(x, l.ST - 3); ctx.lineTo(x, l.ST + l.SH + 3);
-    ctx.moveTo(x, l.GT - 4); ctx.lineTo(x, l.GB);
     ctx.stroke();
+    // 屏幕上下緣的小三角形指標
+    [[l.ST - 1, 1], [l.ST + l.SH + 1, -1]].forEach(function (q) {
+      ctx.beginPath();
+      ctx.moveTo(x, q[0] + q[1] * 4);
+      ctx.lineTo(x - 4.5, q[0] - q[1] * 3);
+      ctx.lineTo(x + 4.5, q[0] - q[1] * 3);
+      ctx.closePath();
+      ctx.fillStyle = colors.probe;
+      ctx.fill();
+      ctx.strokeStyle = colors['canvas-bg'];
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+    // 曲線上的讀數點：光暈＋球形光澤＋背景色外框
     ctx.beginPath();
-    ctx.arc(x, py, 4.5, 0, Math.PI * 2);
-    ctx.fillStyle = colors.probe;
+    ctx.arc(x, py, 9, 0, Math.PI * 2);
+    ctx.fillStyle = rgba(pc, dark ? 0.24 : 0.16);
+    ctx.fill();
+    const gr = ctx.createRadialGradient(x - 1.6, py - 1.6, 0.5, x, py, 5);
+    gr.addColorStop(0, rgba(pc.map(function (v) { return Math.round(v + (255 - v) * 0.65); }), 1));
+    gr.addColorStop(0.5, colors.probe);
+    gr.addColorStop(1, rgba(pc.map(function (v) { return Math.round(v * 0.7); }), 1));
+    ctx.beginPath();
+    ctx.arc(x, py, 5, 0, Math.PI * 2);
+    ctx.fillStyle = gr;
     ctx.fill();
     ctx.lineWidth = 2;
     ctx.strokeStyle = colors['canvas-bg'];
     ctx.stroke();
-    // 數值標籤
-    const t1 = 'y = ' + fmtLen(y), t2 = 'I/I0 = ' + I.toFixed(3);
+    // 數值卡片：圓角、投影、左側游標色條
     ctx.font = '12px system-ui, sans-serif';
-    const w = Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width) + 12;
-    let bx = x + 8;
-    if (bx + w > l.PL + l.PW) bx = x - 8 - w;
+    const t1 = 'y = ' + fmtLen(y), t2 = [['I/I', 0], ['0', 1], [' = ' + I.toFixed(3), 0]];
+    const b = textBox(ctx, t1), lh = Math.round(b.asc + b.desc + 3);
+    const w = Math.ceil(Math.max(ctx.measureText(t1).width, richText(ctx, t2, 0, 0, 'left', true))) + 22;
+    const h = lh * 2 + 10;
+    // 卡片放在游標右側或左側；優先選不會蓋住強度曲線的一側
+    const S = sCache, top = function (x0) {
+      if (!S) return 0;
+      const i0 = Math.max(0, Math.floor((x0 - l.PL) / l.PW * S.cols)), i1 = Math.min(S.cols - 1, Math.ceil((x0 + w - l.PL) / l.PW * S.cols));
+      let m = 0;
+      for (let i = i0; i <= i1; i++) m = Math.max(m, S.resolved ? S.mid[i] : S.mx[i]);
+      return m;
+    };
+    // 候選位置：游標右側、左側、圖的左上角、右上角（後兩者在窄螢幕上避免蓋住中央亮紋）
+    const clear = 1 - (h + 6) / (l.GB - l.GT); // 卡片下緣對應的 I/I0
+    const cands = [x + 10, x - 10 - w, l.PL + 4, l.PL + l.PW - 4 - w].filter(function (c) {
+      return c >= l.PL && c + w <= l.PL + l.PW && (c + w <= x - 8 || c >= x + 8);
+    });
+    let bx = cands.length ? cands[0] : x - 10 - w, best = Infinity;
+    for (let k = 0; k < cands.length; k++) {
+      const t = top(cands[k]);
+      if (t <= clear) { bx = cands[k]; break; }
+      if (t < best) { best = t; bx = cands[k]; }
+    }
+    bx = Math.round(bx);
     const by = l.GT + 2;
+    ctx.save();
+    ctx.shadowColor = DARK.shadow;
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 2;
+    roundRect(ctx, bx + 0.5, by + 0.5, w, h, 7);
     ctx.fillStyle = colors.surface;
+    ctx.fill();
+    ctx.restore();
     ctx.strokeStyle = colors.border;
     ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.rect(bx + 0.5, by + 0.5, w, 36);
-    ctx.fill();
     ctx.stroke();
+    roundRect(ctx, bx + 5, by + 6, 3, h - 11, 1.5);
+    ctx.fillStyle = colors.probe;
+    ctx.fill();
     ctx.fillStyle = colors.text;
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(t1, bx + 6, by + 3);
-    ctx.fillText(t2, bx + 6, by + 19);
+    ctx.textBaseline = 'alphabetic';
+    ctx.fillText(t1, bx + 14, by + 5 + b.asc);
+    richText(ctx, t2, bx + 14, by + 5 + b.asc + lh, 'left');
+  }
+
+  /** 文字太寬時折成兩行（英文在空白處、中文在中間附近） */
+  function wrap2(ctx, t, maxW) {
+    if (ctx.measureText(t).width <= maxW) return [t];
+    const sp = [];
+    for (let i = 1; i < t.length - 1; i++) if (t[i] === ' ') sp.push(i);
+    const mid = t.length / 2;
+    let k = Math.round(mid);
+    if (sp.length) k = sp.reduce(function (a, b) { return Math.abs(b - mid) < Math.abs(a - mid) ? b : a; });
+    return [t.slice(0, k).trim(), t.slice(k).trim()];
   }
 
   function updateCursorReadout(p) {
@@ -850,42 +1178,57 @@
   function invalidateScene() { field = null; requestDraw(); }
 
   // ---------- 控制項 ----------
+  // 滑桿數字可點擊輸入（js/numinput.js）：讀值一律用 LabNum.value，保留打字輸入的精確值
+  const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   function bindSlider(id, fmt, onInput, html) {
     const el = $(id), out = $(id + 'o');
-    const update = function () { if (html) out.innerHTML = fmt(+el.value); else out.textContent = fmt(+el.value); };
-    el.addEventListener('input', function () { onInput(+el.value); update(); });
+    const update = function () { if (html) out.innerHTML = fmt(val(el)); else out.textContent = fmt(val(el)); };
+    el.addEventListener('input', function () { onInput(val(el)); update(); });
     update();
-    return { el: el, set: function (v) { el.value = v; update(); } };
+    // 程式改變滑桿（預設按鈕、d > a 的限制）：LabNum.set 會觸發 input，由上面的處理更新狀態與顯示
+    return { el: el, set: function (v) {
+      if (window.LabNum) window.LabNum.set(el, v); else { el.value = v; el.dispatchEvent(new Event('input')); }
+    } };
   }
   function lamLabel(v) {
     return '<span class="swatch" style="background:rgb(' + SC.wavelengthToRGB(v).join(',') + ')"></span>' +
       v + ' nm <span class="sub">' + T('（' + SC.colorName(v) + '）', '(' + COLOR_EN[SC.colorName(v)] + ')') + '</span>';
   }
   const sLam = bindSlider('lam', lamLabel, function (v) { state.lam = v; invalidateScene(); }, true);
-  const sA = bindSlider('a', function (v) { return v + ' μm'; }, function (v) {
+  const sA = bindSlider('a', function (v) { return trimNum(v, 1) + ' μm'; }, function (v) {
     state.a = v;
     if (state.mode !== 'single' && state.d <= v) {
-      state.d = Math.min(400, v + 1); sD.set(state.d);
+      sD.set(Math.min(400, v + 1));
       setStatus(T('縫距 d 必須大於縫寬 a，已自動加大 d。', 'The slit separation d must be larger than the slit width a, so d has been increased.'));
     } else setStatus('');
     invalidateScene();
   });
-  const sD = bindSlider('d', function (v) { return v + ' μm'; }, function (v) {
+  const sD = bindSlider('d', function (v) { return trimNum(v, 1) + ' μm'; }, function (v) {
     state.d = v;
     if (state.a >= v) {
-      state.a = Math.max(5, v - 1); sA.set(state.a);
-      if (state.d <= state.a) { state.d = state.a + 1; sD.set(state.d); }
+      sA.set(Math.max(5, v - 1));
+      if (state.d <= state.a) sD.set(state.a + 1);
       setStatus(T('縫寬 a 必須小於縫距 d，已自動縮小 a。', 'The slit width a must be smaller than the slit separation d, so a has been reduced.'));
     } else setStatus('');
     invalidateScene();
   });
   bindSlider('L', function (v) { return v.toFixed(2) + ' m'; }, function (v) { state.L = v; requestDraw(); });
   bindSlider('N', function (v) { return T(v + ' 條', String(v)); }, function (v) { state.N = v; invalidateScene(); });
-  const sZoom = bindSlider('zoom', function (v) { return fmtZoom(ZOOMS[v]); }, function (v) { state.zoom = v; requestDraw(); });
+  // 顯示範圍是非線性滑桿（索引 → ZOOMS 的 mm 值）；打字可輸入 2–500 mm 之間的任意值
+  if (window.LabNum) window.LabNum.register($('zoom'), {
+    toValue: function (pos) { return ZOOMS[Math.round(pos)]; },
+    toPos: function (mm) {
+      let best = 0;
+      ZOOMS.forEach(function (z, i) { if (Math.abs(Math.log(z / mm)) < Math.abs(Math.log(ZOOMS[best] / mm))) best = i; });
+      return best;
+    },
+    min: ZOOMS[0], max: ZOOMS[ZOOMS.length - 1], decimals: 1
+  });
+  const sZoom = bindSlider('zoom', fmtZoom, function (v) { state.zoom = v; requestDraw(); });
   function setStatus(t) { $('status').textContent = t; }
 
   document.querySelectorAll('[data-lam]').forEach(function (btn) {
-    btn.addEventListener('click', function () { state.lam = +btn.dataset.lam; sLam.set(state.lam); invalidateScene(); });
+    btn.addEventListener('click', function () { sLam.set(+btn.dataset.lam); });
   });
 
   $('autoZoom').addEventListener('click', function () {
@@ -894,8 +1237,7 @@
     if (!isFinite(target)) target = Infinity;
     let i = 0;
     while (i < ZOOMS.length - 1 && ZOOMS[i] * MM < target) i++;
-    state.zoom = i; sZoom.set(i);
-    requestDraw();
+    sZoom.set(ZOOMS[i]);
   });
 
   function setMode(mode) {
@@ -908,7 +1250,7 @@
     $('showEnv').disabled = single;
     document.querySelectorAll('[data-m="multi"]').forEach(function (e) { e.hidden = single; });
     document.querySelectorAll('[data-m="single"]').forEach(function (e) { e.hidden = !single; });
-    if (!single && state.d <= state.a) { state.d = Math.min(400, state.a + 1); sD.set(state.d); }
+    if (!single && state.d <= state.a) sD.set(Math.min(400, state.a + 1));
     invalidateScene();
   }
   document.querySelectorAll('[data-mode]').forEach(function (b) {
