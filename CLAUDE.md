@@ -37,6 +37,7 @@
 | `tools/make_live.py` | 把首頁「規劃中」卡片改成已上線的連結卡片 |
 | `tools/run-tests.cjs`、`tools/check-pages.cjs` | `npm test`（全部單元測試）、`npm run check`／`npm run shots`（Playwright 版面與語言檢查，自帶伺服器） |
 | `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言），Playwright `addInitScript` 載入 |
+| `tools/mission-proofs/` | 各實驗「任務做得到」的證明腳本；改物理核心或任務條件後重跑 |
 | `docs/briefs/` | 製作新模組、任務、替舊模組補任務的說明（交給背景助手時使用） |
 
 ## 新增或修改模組的慣例

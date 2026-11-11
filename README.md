@@ -5,12 +5,15 @@
 由 GitHub Pages 免費託管，網址為
 `https://astro1222ni.github.io/physics-lab/`
 
+目前 24 個實驗全部上線（力學、熱學、波動與聲音、光學、電磁學、近代物理），每個都有任務模式「倪的星星」。
+開發規則見 `CLAUDE.md`，目前狀態、工具與待辦見 `HANDOFF.md`。
+
 ## 結構
 
 | 檔案 | 用途 |
 | --- | --- |
 | `index.html` | 實驗室首頁，依物理分支分類（力學、熱學、波動與聲音、光學、電磁學、近代物理） |
-| `<模組>.html` | 各模組頁面：`electric-field`、`projectile`、`collision`、`slit-interference`、`magnetic-particle` |
+| `<模組>.html` | 各模組頁面（完整清單見 `js/missions/index.js` 的 `LAB_LIVE_MODULES`） |
 | `js/<模組>-core.js` | 各模組的物理核心（純計算，與畫面無關；電場模組為 `field-core.js`） |
 | `js/<模組>.js` | 各模組的繪圖與互動 |
 | `js/firebase-config.js` | Firebase 設定（資料庫網址、登入用的網頁設定） |
@@ -23,10 +26,12 @@
 ## 測試
 
 ```sh
-for t in tests/*.test.js; do node "$t"; done
+npm install                       # 只裝開發工具（playwright、opencc-js），網站本身不需要
+npx playwright install chromium
+npm test                          # 所有物理核心單元測試（解析解、極限情況、守恆量）
+npm run check                     # Playwright 打開所有頁面，檢查版面、語言與錯誤
+node tools/mission-proofs/<模組>.js   # 證明該模組每個任務都做得到
 ```
-
-測試內容包括：點電荷公式、疊加原理、E = −∇V、電力線起訖、等位線形狀，以及試探電荷運動時力學能守恆。
 
 ## 新增模組的原則
 
@@ -34,7 +39,7 @@ for t in tests/*.test.js; do node "$t"; done
 2. 畫面程式只負責繪圖與互動。
 3. 不使用建置工具；直接用瀏覽器開啟或任何靜態網站託管即可運作。
 4. 公式一律用 KaTeX 書寫（`\( … \)` 行內、`\[ … \]` 獨立一行），不要用 Unicode 組合字元（例如向量箭頭 U+20D7），部分裝置字型缺字會顯示成方框。
-5. 新模組完成後，在 `index.html` 對應的物理分支中，把卡片從「規劃中」改為連結並標示「已上線」。
+5. 新模組完成後的整合步驟（首頁卡片、任務清單、版本號）見 `HANDOFF.md` 第四節。
 
 ## 統計（瀏覽人次、操作次數、累計操作時間）
 

@@ -1,0 +1,8 @@
+# 一律用 LF 換行（Windows 也一樣），避免工具改檔時整個檔案的換行都變動
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
