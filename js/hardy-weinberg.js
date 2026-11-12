@@ -463,7 +463,7 @@
     if (sig === 0 && to - n === 0 && H.hwDev(s1.start) > 0.01) msg = T('隨機交配一代，點就垂直地跳到紫色的哈溫拋物線上：p 沒變，基因型變成 p²、2pq、q²。再按一次看看會不會再動。', 'One generation of random mating and the point drops straight onto the purple Hardy–Weinberg parabola: p is unchanged and the genotypes become p², 2pq, q². Press again — does it move?');
     else if (sig === 0) msg = T('已經在哈溫平衡：沒有天擇、突變、遷移與漂變時，基因型比例不會再變。', 'Already in Hardy–Weinberg equilibrium: with no selection, mutation, migration or drift the genotype shares stay put.');
     else if (sig >= 0.999) msg = T('完全自花授粉：粉紅的異型合子每代減半，p 不變。', 'Complete selfing: the pink heterozygotes halve every generation while p stays the same.');
-    else msg = T('部分自花授粉：異型合子會停在比哈溫比例少 F = σ/(2 − σ) 的地方（點虛線）。', 'Partial selfing: heterozygotes settle below the Hardy–Weinberg share by F = σ/(2 − σ) (the dotted curve).');
+    else msg = T('部分自花授粉：異型合子會停在只有哈溫比例 1 − F 倍的地方，F = σ/(2 − σ)（點虛線）。', 'Partial selfing: heterozygotes settle at 1 − F times the Hardy–Weinberg share, F = σ/(2 − σ) (the dotted curve).');
     setStatus(msg);
     say(T('第 ', 'Generation ') + to + T(' 代：紅 ', ': red ') + pct(g[0], 0) + T('，粉紅 ', ', pink ') + pct(g[1], 0) + T('，白 ', ', white ') + pct(g[2], 0));
     updateReadouts1();

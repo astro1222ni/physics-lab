@@ -12,6 +12,7 @@
   if (!window.LabMission) return;
 
   const drift = function (ev) { return ev.type === 'drift'; };
+  const EPS = 1e-9;   // 學生照說明打剛好的邊界值（如 0.2、低 10%）時，浮點誤差不可讓判定失敗
   const pure = function (d) { return !(d.u > 0) && !(d.v > 0) && !(d.m > 0); };
 
   LabMission.register('hardy-weinberg', [
@@ -37,7 +38,7 @@
       id: 'hardy-weinberg-4', level: 3,
       title: { zh: '自花授粉', en: 'Self-pollination' },
       desc: { zh: '從粉紅花至少占 20% 的花圃出發，一直完全自花授粉（σ = 100%），讓粉紅花少到不超過起始的八分之一。', en: 'Start with at least 20% pink plants and keep the garden fully self-pollinating (σ = 100%) until the pink plants are at most an eighth of what they were.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'gen' && d.sigMin >= 1 && d.gen >= 3 && d.H0 >= 0.2 && d.H <= d.H0 / 8 + 1e-12; }
+      check: function (ev) { const d = ev.data; return ev.type === 'gen' && d.sigMin >= 1 && d.gen >= 3 && d.H0 >= 0.2 - EPS && d.H <= d.H0 / 8 + 1e-12; }
     },
     {
       id: 'hardy-weinberg-5', level: 4,
@@ -45,7 +46,7 @@
       desc: { zh: '讓一部分種子自花授粉（0 < σ < 100%，平衡的 F 至少 0.1），σ 從頭到尾不變，至少 10 代後近親交配係數 F 停在 σ/(2 − σ) 附近（相差小於 0.005），而且和起點的 F 不一樣。', en: 'Let part of the seeds self (0 < σ < 100%, equilibrium F at least 0.1), keep σ the same from the start, and after at least 10 generations have F settle within 0.005 of σ/(2 − σ), away from where it started.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'gen' && d.sigMin === d.sigMax && d.sigma > 0 && d.sigma < 1 && d.Feq >= 0.1 && d.gen >= 10 && Math.abs(d.F - d.Feq) < 0.005 && Math.abs(d.Fstart - d.Feq) >= 0.05;
+        return ev.type === 'gen' && d.sigMin === d.sigMax && d.sigma > 0 && d.sigma < 1 && d.Feq >= 0.1 - EPS && d.gen >= 10 && Math.abs(d.F - d.Feq) < 0.005 && Math.abs(d.Fstart - d.Feq) >= 0.05;
       }
     },
     {
@@ -60,7 +61,7 @@
       desc: { zh: '至少 20 個中性族群、每個不超過 25 個個體，起點的異型合子度至少 0.3，跑到理論上只剩 60% 以下的異型合子度；模擬的平均和漂變公式的理論值相差不到 15%。', en: 'Evolve at least 20 neutral populations of at most 25 individuals, starting with heterozygosity at least 0.3, until theory leaves less than 60% of it; the simulated mean must be within 15% of the drift formula.' },
       check: function (ev) {
         const d = ev.data;
-        return drift(ev) && d.neutral && d.pops >= 20 && d.N <= 25 && d.H0 >= 0.3 && d.Htheory <= 0.6 && d.Hratio != null && Math.abs(d.Hratio / d.Htheory - 1) <= 0.15;
+        return drift(ev) && d.neutral && d.pops >= 20 && d.N <= 25 && d.H0 >= 0.3 - EPS && d.Htheory <= 0.6 + EPS && d.Hratio != null && Math.abs(d.Hratio / d.Htheory - 1) <= 0.15;
       }
     },
     {
@@ -96,7 +97,7 @@
       check: function (ev) {
         const d = ev.data;
         if (!(drift(ev) && d.mutSelQ != null && !(d.v > 0) && !(d.m > 0) && d.pops >= 10 && d.N >= 2000 && d.p0 >= 0.99 && d.gens >= 300)) return false;
-        if (1 - d.w[2] / d.w[0] < 0.1) return false;
+        if (1 - d.w[2] / d.w[0] < 0.1 - EPS) return false;
         return Math.abs((1 - d.meanP) / d.mutSelQ - 1) <= 0.25;
       }
     },
@@ -117,19 +118,19 @@
       riddle: { zh: '一點點往來，就把大家拉在一起。', en: 'A little coming and going holds everyone together.' },
       check: function (ev) {
         const d = ev.data;
-        return drift(ev) && d.kind === 'neutral' && !(d.u > 0) && !(d.v > 0) && d.m > 0 && d.N <= 100 && d.N * d.m >= 1 && d.pops >= 10 && d.gens >= 200 &&
+        return drift(ev) && d.kind === 'neutral' && !(d.u > 0) && !(d.v > 0) && d.m > 0 && d.N <= 100 && d.N * d.m >= 1 - EPS && d.pops >= 10 && d.gens >= 200 &&
           Math.abs(d.p0 - d.pm) >= 0.2 && d.seg === d.pops && Math.abs(d.meanP - d.pm) <= 0.1;
       }
     },
     {
       id: 'hardy-weinberg-h2', level: 6, hidden: true,
       riddle: { zh: '最適合的，也不一定留得下來。', en: 'The fittest does not always stay.' },
-      check: function (ev) { const d = ev.data; return drift(ev) && d.kind === 'A' && d.w[0] >= 1.1 * d.w[2] && d.w[2] > 0 && d.N >= 20 && d.p0 >= 0.05 && pure(d) && d.lost >= 1; }
+      check: function (ev) { const d = ev.data; return drift(ev) && d.kind === 'A' && d.w[0] >= 1.1 * d.w[2] - EPS && d.w[2] > 0 && d.N >= 20 && d.p0 >= 0.05 && pure(d) && d.lost >= 1; }
     },
     {
       id: 'hardy-weinberg-h3', level: 4, hidden: true,
       riddle: { zh: '全班都是混血兒，下一代卻有一半是純種。', en: 'Every parent was a blend, yet half the children breed true.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'gen' && d.gen === 1 && d.sigMax === 0 && d.H0 >= 0.99; }
+      check: function (ev) { const d = ev.data; return ev.type === 'gen' && d.gen === 1 && d.sigMax === 0 && d.H0 >= 0.99 - EPS; }
     }
   ]);
 })();
