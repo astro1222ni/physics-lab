@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Seafloor Spreading and Magnetic Stripes | Astro Ni Science Lab">海底擴張與磁條帶｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 海底擴張頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --sf-n: #e0582b; --sf-r: #2f7fd6; --sf-old: #9aa3ad; --sf-sea1: #bfe0f2; --sf-sea2: #3f7fae;
+      --sf-crust: #6b5a4e; --sf-mantle: #8a4b36; --sf-magma: #ff8a3d; --sf-curve: #1f2937; --sf-cursor: #7c3aed;
+      --sf-depth: #0f766e; --sf-heat: #dc2626;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --sf-n: #f2794f; --sf-r: #5aa2ee; --sf-old: #6b7480; --sf-sea1: #1d4a6b; --sf-sea2: #0b2135;
+        --sf-crust: #4f433b; --sf-mantle: #6b3527; --sf-magma: #ff9a52; --sf-curve: #e5e7eb; --sf-cursor: #c4b5fd;
+        --sf-depth: #5eead4; --sf-heat: #f87171;
+      }
+    }
+    :root[data-theme="dark"] {
+      --sf-n: #f2794f; --sf-r: #5aa2ee; --sf-old: #6b7480; --sf-sea1: #1d4a6b; --sf-sea2: #0b2135;
+      --sf-crust: #4f433b; --sf-mantle: #6b3527; --sf-magma: #ff9a52; --sf-curve: #e5e7eb; --sf-cursor: #c4b5fd;
+      --sf-depth: #5eead4; --sf-heat: #f87171;
+    }
+    #cv { aspect-ratio: auto; height: 470px; touch-action: pan-y pinch-zoom; cursor: ew-resize; }
+    @media (max-width: 560px) { #cv { height: 440px; } }
+    #gr { display: block; width: 100%; height: 250px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 240px; } }
+    .sf button { min-height: 44px; }
+    .sf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .sf .playbar button { flex: 1 1 auto; }
+    .sf .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sf .slider input[type="range"] { height: 28px; margin: 0; }
+    .sf [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .pol { display: inline-block; padding: 1px 10px; border-radius: 999px; font-weight: 700; color: #fff; }
+    .pol.n { background: #c2410c; } .pol.r { background: #1d4ed8; } .pol.o { background: #64748b; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 2px 0; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .legend span { display: inline-flex; align-items: center; gap: 5px; }
+    .legend i { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .presets button { flex: 1 1 auto; padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); }
+    .check { display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; }
+    .check input { width: 20px; height: 20px; margin: 0; accent-color: var(--accent); }
+    .mystery { border: 1px dashed var(--accent); }
+    .guess-row { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+    .guess-row input { flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 6px 10px; font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+    .guess-row button { flex: none; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 470px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 35%, #1b2b44, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Seafloor spreading"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 海底擴張</nav>
+      <h1 data-en="Seafloor Spreading and Magnetic Stripes">海底擴張與磁條帶</h1>
+      <p data-en="New ocean floor is made at a mid-ocean ridge and carried away on both sides, recording the Earth’s magnetic field as it cools — a tape recorder of magnetic reversals. Tow a magnetometer across the ridge, read the stripes, and work out how fast the plates are moving. In 2D or as a 3D block.">新的海床在中洋脊誕生、往兩邊送走，冷卻時記下當時的地磁方向，像一卷錄著地磁反轉的錄音帶。拖著磁力計橫越中洋脊，讀出磁條帶，算出板塊移動得多快。2D 剖面或 3D 方塊圖都可以看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” to watch 8 million years of seafloor being made. Then drag across the picture to move the ship and read the stripes.">試試看：按「播放」，看 800 萬年的海床怎麼長出來。再左右拖曳畫面移動船，讀出磁條帶。</p>
+    <div class="lab sf" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D section">2D 剖面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D block">3D 方塊圖</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Oblique" title="從斜上方看方塊圖" data-en-title="Look down on the block at an angle">斜看</button>
+          <button type="button" id="camTop" data-en="Map view" title="從正上方看海床的磁條帶" data-en-title="Straight down onto the magnetic stripes">正上方</button>
+          <button type="button" id="camFront" data-en="Cross-section" title="從正面看剖面" data-en-title="Face on to the cross-section">剖面</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="海底擴張剖面：上方是磁異常曲線，下方是海水、海床與磁化的地殼" data-en-aria-label="Seafloor spreading section: the magnetic anomaly on top, the sea, seafloor and magnetised crust below"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">播放</button>
+          <button id="restart" type="button" data-en="Clear all" title="時間回到 800 萬年前、船回到中洋脊；擴張速率等設定不變" data-en-title="Go back 8 million years and return the ship to the ridge; the spreading rates and other settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
+          <button type="button" data-speed="0.1" aria-pressed="false" data-en="0.1 Myr per second">每秒 10 萬年</button>
+          <button type="button" data-speed="0.4" aria-pressed="true" data-en="0.4 Myr per second">每秒 40 萬年</button>
+          <button type="button" data-speed="1" aria-pressed="false" data-en="1 Myr per second">每秒 100 萬年</button>
+        </div>
+        <div class="slider"><label for="tau" data-en="Time (million years ago)">時間（百萬年前，Ma）</label><output></output>
+          <input id="tau" type="range" min="0" max="8" step="0.005" value="0" data-decimals="3"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" aria-label="圖例" data-en-aria-label="Legend">
+          <span data-en-html="<i style=&quot;background:var(--sf-n)&quot;></i>Normal (like today)"><i style="background:var(--sf-n)"></i>正向（和今天一樣）</span>
+          <span data-en-html="<i style=&quot;background:var(--sf-r)&quot;></i>Reversed"><i style="background:var(--sf-r)"></i>反向</span>
+          <span data-en-html="<i style=&quot;background:var(--sf-old)&quot;></i>Older than 8.1 Myr (not modelled)"><i style="background:var(--sf-old)"></i>8.1 Ma 以前（未模擬）</span>
+        </div>
+        <p class="hint l2" data-en="Drag left and right (or focus the picture and use the arrow keys; Shift for bigger steps) to move the ship. Its magnetometer is towed at the depth set on the right.">左右拖曳（或選取畫面後用方向鍵，Shift 走大步）移動船；磁力計拖在右邊設定的深度。</p>
+        <p class="hint l3" data-en="The seafloor is coloured by the magnetic polarity of the crust; the line above the sea is the anomaly measured along the ship’s track. Drag to rotate, scroll or pinch to zoom.">海床依地殼的磁極性上色；海面上方的曲線是沿著船的航線量到的磁異常。拖曳旋轉，滾輪或雙指縮放。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="圖表" data-en-aria-label="Chart" id="chartSeg">
+            <button type="button" data-chart="gpts" aria-pressed="true" data-en="Polarity timescale">地磁極性年表</button>
+            <button type="button" data-chart="depth" aria-pressed="false" data-en="Depth and age">深度與年齡</button>
+            <button type="button" data-chart="heat" aria-pressed="false" data-en="Heat flow and age">熱流與年齡</button>
+          </div>
+          <canvas id="gr" aria-label="地磁極性年表" data-en-aria-label="Geomagnetic polarity timescale"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="rateCard">
+          <h2 data-en="Spreading">擴張</h2>
+          <label class="check"><input type="checkbox" id="sym" checked><span data-en="Same rate on both sides (symmetric)">兩邊一樣快（對稱擴張）</span></label>
+          <div class="slider"><label for="uR" data-en="Half-rate, right side (cm/yr)">右邊的半擴張速率（cm/yr）</label><output></output>
+            <input id="uR" type="range" min="0.5" max="8" step="0.1" value="2.5" data-decimals="2"></div>
+          <div class="slider" id="uLWrap"><label for="uL" data-en="Half-rate, left side (cm/yr)">左邊的半擴張速率（cm/yr）</label><output></output>
+            <input id="uL" type="range" min="0.5" max="8" step="0.1" value="2.5" data-decimals="2"></div>
+          <div class="presets" role="group" aria-label="真實的中洋脊（約略值）" data-en-aria-label="Real ridges (approximate)">
+            <button type="button" data-u="1.2" data-en="Mid-Atlantic Ridge ≈1.2" title="慢速擴張：大西洋中洋脊，半速率約 1–1.5 cm/yr" data-en-title="Slow: Mid-Atlantic Ridge, half-rate about 1–1.5 cm/yr">大西洋中洋脊 ≈1.2</button>
+            <button type="button" data-u="3" data-en="Juan de Fuca ≈3" title="中速：胡安・德富卡海脊，半速率約 3 cm/yr" data-en-title="Intermediate: Juan de Fuca Ridge, half-rate about 3 cm/yr">胡安・德富卡 ≈3</button>
+            <button type="button" data-u="7" data-en="East Pacific Rise ≈7" title="快速擴張：東太平洋海隆（南緯 10°–30°），半速率約 7 cm/yr" data-en-title="Fast: East Pacific Rise (10°–30° S), half-rate about 7 cm/yr">東太平洋海隆 ≈7</button>
+          </div>
+          <p class="hint" id="rateHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="The magnetometer">磁力計</h2>
+          <div class="slider"><label for="zs" data-en="Towed depth below the sea surface (km)">拖曳深度（海面下，km）</label><output></output>
+            <input id="zs" type="range" min="0" max="2.5" step="0.05" value="0" data-decimals="2"></div>
+          <p class="hint" id="zsHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Under the ship">船下方</h2>
+          <dl class="readout">
+            <dt data-en="Distance from the ridge">離中洋脊</dt><dd id="rX">—</dd>
+            <dt data-en="Magnetic anomaly">磁異常</dt><dd id="rB" class="big">—</dd>
+            <dt data-en="Polarity of the crust">地殼的磁極性</dt><dd id="rPol">—</dd>
+            <dt data-en="Age of the crust">地殼年齡</dt><dd id="rAge">—</dd>
+            <dt data-en="Water depth">水深</dt><dd id="rDepth">—</dd>
+            <dt data-en="Heat flow">熱流</dt><dd id="rHeat">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="The whole profile">整條剖面</h2>
+          <dl class="readout">
+            <dt data-en="Brunhes–Matuyama boundary (0.781 Myr)">布容／松山邊界（0.781 Ma）</dt><dd id="rBM">—</dd>
+            <dt data-en="Full spreading rate">全擴張速率</dt><dd id="rFull">—</dd>
+            <dt data-en="Largest anomaly">最大磁異常</dt><dd id="rMax">—</dd>
+            <dt data-en="Jaramillo stripe (right)">加拉米佑條帶（右邊）</dt><dd id="rJa">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+        <section class="card mystery">
+          <h2 data-en="Mystery ridge">神秘海脊</h2>
+          <p class="hint" data-en="The rate is hidden (and so is everything that would give it away). Measure the profile and guess the half-rate.">擴張速率藏起來了（會洩露答案的讀數也藏起來）。量剖面，猜出半擴張速率。</p>
+          <div class="presets"><button type="button" id="mysteryBtn" data-en="New mystery ridge">出一題神秘海脊</button><button type="button" id="revealBtn" data-en="Reveal" disabled>揭曉</button></div>
+          <div class="guess-row">
+            <label class="sr-only" for="guess" data-en="Your guess (cm/yr)">你猜的半擴張速率（cm/yr）</label>
+            <input id="guess" type="number" inputmode="decimal" min="0.5" max="8" step="0.01" placeholder="半擴張速率 cm/yr" data-en-placeholder="Half-rate in cm/yr" disabled>
+            <button type="button" id="guessBtn" data-en="Check" disabled>送出</button>
+          </div>
+          <p class="hint" id="guessMsg" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="A tape recorder on the ocean floor">海床上的錄音帶</h3>
+      <p data-en-html="At a mid-ocean ridge hot mantle rises, melts and erupts as basalt. As the lava cools through about 580 °C (the Curie temperature of magnetite) it locks in the direction of the Earth’s magnetic field at that moment. Plate motion then carries the new crust away on both sides. Because the field has reversed many times, the seafloor ends up in stripes of <strong>normal</strong> and <strong>reversed</strong> magnetisation, mirrored about the ridge. Vine, Matthews and Morley explained these stripes in 1963; it became one of the key pieces of evidence for plate tectonics.">中洋脊下方的熱地函上升、熔融，噴發成玄武岩。熔岩冷卻到約 580 °C（磁鐵礦的居禮溫度）以下時，把當時的地磁方向「鎖」在岩石裡。板塊運動再把新的地殼往兩邊送走。地球磁場反轉過很多次，所以海床變成一條條<strong>正向</strong>與<strong>反向</strong>磁化的條帶，以中洋脊為中心左右對稱。1963 年 Vine、Matthews 與 Morley 用這個想法解釋了磁條帶，它成為板塊構造學說最關鍵的證據之一。</p>
+      <div class="formula">\[ x = u\,t \qquad 1\ \mathrm{cm/yr} = 10\ \mathrm{km/Ma} \]</div>
+      <p data-en-html="Here \(x\) is the distance from the ridge, \(u\) the half-rate and \(t\) the age of the crust. So if the Brunhes–Matuyama reversal (0.781 million years ago) is found 20 km from the ridge, the half-rate is 20 km ÷ 0.781 Myr ≈ 2.6 cm/yr. The full spreading rate is the sum of the two sides.">其中 \(x\) 是離中洋脊的距離，\(u\) 是半擴張速率，\(t\) 是地殼的年齡。所以如果布容／松山反轉（78.1 萬年前）出現在離中洋脊 20 km 的地方，半擴張速率就是 20 km ÷ 0.781 Ma ≈ 2.6 cm/yr。兩邊加起來是全擴張速率。</p>
+
+      <h3 data-en="Why the anomaly is smoother than the stripes">為什麼磁異常比條帶平滑</h3>
+      <p data-en-html="A magnetometer measures only the small extra field (the <strong>anomaly</strong>) made by the magnetised crust, a few hundred nanotesla on top of about 40 000 nT from the core. A wide, uniformly magnetised slab makes almost no field above it: the anomaly comes from the <em>edges</em> where the magnetisation changes. The farther the instrument is from the crust, the more the edges blur together, so narrow stripes such as the Jaramillo can vanish at the sea surface — which is why scientists sometimes tow magnetometers just above the seafloor.">磁力計量的是磁化地殼額外產生的一點點磁場（<strong>磁異常</strong>），只有幾百 nT，疊在地核產生的約 40000 nT 上。很寬、磁化均勻的一塊地殼，上方幾乎沒有磁場：磁異常來自磁化改變的<em>邊緣</em>。儀器離地殼越遠，邊緣的訊號糊在一起，像加拉米佑這麼窄的條帶在海面上就看不見了——所以科學家有時會把磁力計拖到貼近海床的地方。</p>
+      <div class="formula">\[ B_z(x) = \frac{\mu_0 M}{2\pi}\Big[F(b-x) - F(a-x)\Big], \qquad F(s) = \arctan\frac{s}{d_1} - \arctan\frac{s}{d_2} \]</div>
+      <p data-en-html="This is the exact field of one magnetised block from \(a\) to \(b\) whose top and bottom lie \(d_1\) and \(d_2\) below the instrument (vertical magnetisation, as at a magnetic pole). The simulation adds up all the blocks, with a sloping top because older seafloor is deeper.">這是一塊從 \(a\) 到 \(b\)、頂部與底部在儀器下方 \(d_1\)、\(d_2\) 的磁化地殼所產生的精確磁場（垂直磁化，就像在磁極）。模擬把所有地殼塊加起來，而且海床越老越深，所以頂面是斜的。</p>
+
+      <h3 data-en="Older, colder, deeper">越老、越冷、越深</h3>
+      <p data-en-html="Moving away from the ridge, the plate cools and contracts, so the seafloor sinks and less heat flows out of it. For young seafloor both follow the square root of the age (t) in millions of years:">離開中洋脊以後，板塊逐漸冷卻收縮，所以海床越來越深、流出來的熱越來越少。年輕的海床兩者都跟年齡 (t)（以百萬年 Ma 計）的平方根有關：</p>
+      <div class="formula">\[ d = 2600 + 365\sqrt{t}\ \ (\mathrm{m}), \qquad q = \frac{510}{\sqrt{t}}\ \ (\mathrm{mW/m^2}) \]</div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Mirror image</strong>: compare the two sides of the anomaly. Then untick “Same rate on both sides” and make one side faster."><strong>鏡像</strong>：比較磁異常的左右兩邊。再取消「兩邊一樣快」，讓一邊比較快。</li>
+        <li data-en-html="<strong>Slow and fast</strong>: try the Mid-Atlantic Ridge and the East Pacific Rise. Which one shows the narrow Jaramillo stripe at the sea surface?"><strong>慢與快</strong>：試試大西洋中洋脊和東太平洋海隆。哪一個在海面上看得到很窄的加拉米佑條帶？</li>
+        <li data-en-html="<strong>Go deep</strong>: lower the magnetometer toward the seafloor. What happens to the size and sharpness of the anomaly?"><strong>拖到深處</strong>：把磁力計放低、靠近海床。磁異常的大小與尖銳程度怎麼變？</li>
+        <li data-en-html="<strong>Mystery ridge</strong>: find the rate with only the profile. Which reversal is easiest to recognise?"><strong>神秘海脊</strong>：只靠剖面找出速率。哪一次反轉最容易認出來？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Geomagnetic polarity timescale 0–8.108 Myr from GTS2012 (ATNTS2012). The crust is a 0.5 km magnetised layer (layer 2A) with magnetisation ±10 A/m; magnetisation and the measured component are vertical (as at a magnetic pole, or data “reduced to the pole”). Away from the poles real anomalies are skewed.">地磁極性年表 0–8.108 Ma 取自 GTS2012（ATNTS2012）。地殼的磁性層（第 2A 層）厚 0.5 km、磁化強度 ±10 A/m；磁化與量測的分量都是垂直的（就像在磁極，或資料已「化極」）。不在磁極時，真實的磁異常形狀會歪斜。</li>
+        <li data-en-html="Spreading is steady, perpendicular to the ridge, with no transform faults, ridge jumps or changes in magnetisation with age. Seafloor older than 8.108 Myr is not modelled (grey).">擴張是穩定、垂直於中洋脊的，沒有轉形斷層、脊的跳躍，也不考慮磁化強度隨年齡減弱。早於 8.108 Ma 的海床不模擬（灰色）。</li>
+        <li data-en-html="Depth and heat flow: GDH1 (Stein and Stein 1992), valid for young seafloor. The section is drawn with a large vertical exaggeration.">深度與熱流：GDH1（Stein 與 Stein 1992），適用於年輕的海床。剖面的垂直方向放大很多倍。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Plate tectonics (seafloor spreading, palaeomagnetism)">課綱對應：高中地球科學・板塊構造（海底擴張、古地磁）</li>
+        <li data-en-html="F. J. Vine and D. H. Matthews (1963), “Magnetic anomalies over oceanic ridges”, <i>Nature</i> 199, 947–949.">F. J. Vine 與 D. H. Matthews（1963），〈Magnetic anomalies over oceanic ridges〉，<i>Nature</i> 199 卷 947–949 頁。</li>
+        <li data-en-html="F. J. Hilgen, L. J. Lourens and J. A. Van Dam (2012), “The Neogene Period”, in <i>The Geologic Time Scale 2012</i> (Gradstein et al., eds.), Elsevier.">F. J. Hilgen、L. J. Lourens 與 J. A. Van Dam（2012），〈The Neogene Period〉，收於 <i>The Geologic Time Scale 2012</i>（Gradstein 等編），Elsevier。</li>
+        <li data-en-html="C. A. Stein and S. Stein (1992), “A model for the global variation in oceanic depth and heat flow with lithospheric age”, <i>Nature</i> 359, 123–129.">C. A. Stein 與 S. Stein（1992），〈A model for the global variation in oceanic depth and heat flow with lithospheric age〉，<i>Nature</i> 359 卷 123–129 頁。</li>
+        <li data-en-html="R. J. Blakely (1995), <i>Potential Theory in Gravity and Magnetic Applications</i>, Cambridge University Press (fields of two-dimensional magnetised bodies).">R. J. Blakely（1995），<i>Potential Theory in Gravity and Magnetic Applications</i>，劍橋大學出版社（二維磁化體的磁場）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/seafloor-spreading-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/seafloor-spreading.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="seafloor-spreading"></script>
+  <script src="js/missions/seafloor-spreading.js"></script>
+  <script src="js/stats.js" data-module="seafloor-spreading"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
