@@ -15,6 +15,7 @@
     v0: 20, theta: 45, h0: 0, g: 9.8, k: 0.01, drag: false,
     speed: 1,
     show: { pred: true, v: true, comp: true, dots: true },
+    show3: { shadow: true, plane: true }, // 只在 3D 檢視使用：影子與影子的足跡、鉛直面格線
     fly: null,         // { s, trail, running, launched, landed }
     ghosts: [],        // 已落地的軌跡
     launches: 0,
@@ -48,6 +49,8 @@
 
   // ---------- 畫布 ----------
   const cv = $('cv');
+  const stage = $('stage') || cv.closest('.stage');
+  const is3d = function () { return stage.classList.contains('is3d'); };
   const main = cv.getContext('2d');
   let ctx = main; // 目前繪圖對象（畫靜態圖層時暫時換成離屏畫布）
   let dpr = 1, cw = 300, ch = 200;
@@ -77,6 +80,7 @@
   function reduceMotion() { return !!(reduceMotionMQ && reduceMotionMQ.matches); }
 
   function resize() {
+    if (!cv.clientWidth) return; // 3D 檢視時 2D 畫布隱藏（寬度 0），切回 2D 再重算
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = cv.clientWidth;
     ch = cv.clientHeight || Math.round(cw * 2 / 3);
@@ -471,8 +475,11 @@
       ctx.closePath(); ctx.fill();
       // 球剛落在旗標旁時，標籤往上移，不和球、速度箭頭擠在一起
       const f = state.fly, near = f && f.landed && Math.abs(toPx(f.s.x, 0)[0] - q[0]) < 14;
-      const right = q[0] > cw - 90;
-      rects.push(pill('R = ' + num(pr.R, 2) + ' m', q[0] + (right ? -7 : 7), q[1] - 5 - (near ? BALL_R + 4 : 0), colors.accent, right ? 'right' : 'left'));
+      // 標籤寬度依實際字寬（字體放大、英文）決定：放不下就改放到旗標左邊
+      const rText = 'R = ' + num(pr.R, 2) + ' m';
+      ctx.font = '600 12px ' + FONT;
+      const right = q[0] + 7 + ctx.measureText(rText).width + 12 > cw - 4;
+      rects.push(pill(rText, q[0] + (right ? -7 : 7), q[1] - 5 - (near ? BALL_R + 4 : 0), colors.accent, right ? 'right' : 'left'));
     }
     ctx.lineCap = 'butt';
     return rects;
@@ -760,6 +767,11 @@
   function draw() {
     if (!cache) compute();
     if (!state.fly) newFlight();
+    if (is3d()) { // 3D 檢視：同一組物理狀態交給 3D 場景畫，讀數照常更新
+      if (view3 && view3.active) view3.update();
+      updateReadout();
+      return;
+    }
     if (!view || !viewLocked) view = computeView();
     renderStatic();
     ctx = main;
@@ -1204,12 +1216,94 @@
     cv.addEventListener('pointerdown', function () { kbVisible = false; });
   }
 
+  // ---------- 3D 檢視（three.js 以 import() 延遲載入；場景在 js/projectile-3d.js） ----------
+  let view3 = null, threeLib = null, loadToken = 0;
+  const viewMsg = $('viewMsg');
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 交給 3D 場景的狀態：與 2D 完全相同的參數、預測、比較軌跡與飛行中的狀態 */
+  function state3() {
+    if (!cache) compute();
+    const p = cache.p;
+    let pf = null;
+    if (puff) { const u = (performance.now() - puff.t0) / PUFF_MS; if (u >= 0 && u < 1) pf = { x: puff.x, u: u }; }
+    return {
+      p: p, pred: cache.pred, ideal: state.drag ? cache.ideal : null, drag: state.drag, vref: cache.vref,
+      predKey: [p.v0, p.theta, p.h0, p.g, p.k].join(','),
+      show: state.show, show3: state.show3, fly: state.fly, ghosts: state.ghosts, ghostColors: GHOST_COLORS,
+      markerStep: markerStep(), puff: pf
+    };
+  }
+  function setPressed3(mode) { $('view2d').setAttribute('aria-pressed', String(mode === '2d')); $('view3d').setAttribute('aria-pressed', String(mode === '3d')); }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed3('3d');
+      if (!webglAvailable() || !window.ProjectileThree) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        stage.classList.add('is3d');
+        view3 = window.ProjectileThree.create(lib, {
+          host: $('view3'), T: T, state: state3,
+          lost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
+        });
+        viewMsg.textContent = '';
+        draw();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed3('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      view = null; viewLocked = false;
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed3('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('camSide').addEventListener('click', function () { if (view3) view3.viewFrom('side'); });
+  $('camTop').addEventListener('click', function () { if (view3) view3.viewFrom('top'); });
+  [['s3shadow', 'shadow'], ['s3plane', 'plane']].forEach(function (pair) {
+    $(pair[0]).addEventListener('change', function (ev) { state.show3[pair[1]] = ev.target.checked; requestDraw(); });
+  });
+
   // ---------- 啟動 ----------
   readColors();
   renderGhosts();
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { readColors(); requestDraw(); });
+  function onTheme() {
+    readColors();
+    if (view3 && view3.active) view3.onTheme();
+    requestDraw();
+  }
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
   // 齒輪設定切換深淺色時也重畫（settings.js）
-  window.addEventListener('lab:themechange', function () { readColors(); requestDraw(); });
+  window.addEventListener('lab:themechange', onTheme);
   if (window.ResizeObserver) new ResizeObserver(resize).observe(cv);
   else window.addEventListener('resize', resize);
   resize();

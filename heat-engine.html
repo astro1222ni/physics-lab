@@ -1,0 +1,412 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Heat Engines and the First Law of Thermodynamics | Astro Ni Science Lab">熱機循環與熱力學第一定律｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/heat-engine.js 與 js/heat-engine-3d.js 讀取 */
+    :root {
+      --he-isoT: #c2410c; --he-adia: #7c3aed; --he-isoV: #0e7490; --he-isoP: #15803d; --he-line: #475569;
+      --he-hot: #dc2626; --he-cold: #2563eb; --he-eng: #ea580c; --he-fri: #2563eb; --he-regen: #a16207;
+      --he-metal: #8b97a1; --he-flame: #f59e0b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --he-isoT: #fb923c; --he-adia: #b197fc; --he-isoV: #22d3ee; --he-isoP: #4ade80; --he-line: #cbd5e1;
+        --he-hot: #f87171; --he-cold: #60a5fa; --he-eng: #fb923c; --he-fri: #60a5fa; --he-regen: #facc15;
+        --he-metal: #74818b; --he-flame: #fbbf24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --he-isoT: #fb923c; --he-adia: #b197fc; --he-isoV: #22d3ee; --he-isoP: #4ade80; --he-line: #cbd5e1;
+      --he-hot: #f87171; --he-cold: #60a5fa; --he-eng: #fb923c; --he-fri: #60a5fa; --he-regen: #facc15;
+      --he-metal: #74818b; --he-flame: #fbbf24;
+    }
+    .he button { min-height: 44px; }
+    .he button:disabled { opacity: .45; cursor: not-allowed; }
+    .he [hidden] { display: none !important; }
+    .he #cv { aspect-ratio: auto; height: 520px; outline: none; cursor: default; }
+    .he #cv.grab { cursor: grab; }
+    .he #cv.grabbing { cursor: grabbing; }
+    .he #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+    .he .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+    .he .modes button { padding: 5px 6px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .he .modes button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .he .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .he .modes button[aria-pressed="true"] small { color: var(--surface); opacity: .88; }
+    .he .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 6px; }
+    .he .seg2 button { padding: 6px 6px; line-height: 1.25; }
+    .he .seg2 button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .he .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .he .slider { margin: 4px 0 6px; }
+    .he .slider input[type="range"] { height: 28px; margin: 0; }
+    .he .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .he .slider label sub, dl.readout sub, .he .hint sub, table.data sub, .he .seg2 sub, .legend sub { font-size: .75em; }
+    .he .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .he .checks label { min-height: 44px; }
+    .he .checks input { width: 18px; height: 18px; flex: none; }
+    .he .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+    .he .btnrow button { flex: 1 1 8em; }
+    .he .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .he .playbar button { flex: 1 1 auto; }
+    .he .playbar #record { font-weight: 700; flex: 2 1 10em; }
+    .he .playbar #play { min-width: 6.5em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .he .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); min-height: 1.4em; }
+    .he .warn { margin: 6px 4px 0; font-size: calc(13px * var(--fs, 1)); color: color-mix(in srgb, var(--pos) 72%, var(--text)); }
+    .he .warn:empty { display: none; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd.em { color: var(--accent); font-weight: 700; }
+    dl.readout dt.sep, dl.readout dd.sep { border-top: 1px solid var(--border); padding-top: 4px; margin-top: 2px; }
+    .legend .dash { background: none !important; border-top: 2.5px dashed currentColor; height: 0 !important; }
+    .legend .fill { height: 10px !important; width: 18px !important; border-radius: 3px; opacity: .55; }
+    /* 2D／3D 檢視切換（與電流的磁效應相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.08; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .opts3 { display: none; }
+    .stage.is3d .opts3 { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 8px 4px 0; }
+    /* 數據表：桌機放在畫面下方（左欄），手機在控制面板之後 */
+    .lab.he { grid-template-areas: "stage panel" "data panel"; grid-template-rows: auto 1fr; }
+    .lab.he > .stage { grid-area: stage; }
+    .lab.he > .panel { grid-area: panel; }
+    .lab.he > .he-data { grid-area: data; align-self: start; margin: 0; }
+    .lab.he > * { min-width: 0; }
+    @media (max-width: 880px) { .lab.he { grid-template-areas: "stage" "panel" "data"; grid-template-rows: auto; } }
+    .he-data h2 { font-size: calc(17px * var(--fs, 1)); }
+    .he-data h2 + .hint { margin-top: -4px; }
+    .he-data .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 2px 8px; }
+    .tablewrap { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 5px 7px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; background: var(--bg); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.proc, table.data th.proc { text-align: left; }
+    table.data td.proc i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    table.data td.proc i.dash { background: none !important; border-top: 2.5px dashed currentColor; height: 0; }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.sum td { font-weight: 700; border-top: 2px solid var(--border); }
+    table.data tr.empty td { text-align: center; color: var(--muted); white-space: normal; padding: 14px 8px; }
+    table.data td.pos { color: color-mix(in srgb, var(--pos) 72%, var(--text)); }
+    table.data td.neg { color: color-mix(in srgb, var(--neg) 72%, var(--text)); }
+    .he-data .wout { margin: 8px 2px 14px; font-size: calc(14px * var(--fs, 1)); }
+    .he-data .wout b { color: var(--accent); }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .formula.multi .flabel { display: block; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 6px; }
+    .notes .tablewrap { margin: 8px 0 12px; }
+    table.proc { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); }
+    table.proc th, table.proc td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; }
+    table.proc th { background: var(--bg); color: var(--muted); font-weight: 600; }
+    table.proc td:first-child, table.proc th:first-child { text-align: left; }
+    table.proc tr:last-child td { border-bottom: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#thermo&quot;>Heat</a> / Heat engines"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#thermo">熱學</a> ／ 熱機循環與熱力學第一定律</nav>
+      <h1 data-en="Heat Engines and the First Law of Thermodynamics">熱機循環與熱力學第一定律</h1>
+      <p data-en-html="A gas in a cylinder is heated, expands, pushes a piston, is cooled and compressed again — and comes back to where it started. Over one cycle its internal energy does not change, yet it has turned part of the heat it took in into work. Follow the cycle point by point on the P–V diagram, keep the books for every stage with the first law ΔU = Q + W, and compare the Carnot cycle with the idealized cycles behind petrol engines (Otto), diesels, Stirling engines and jet engines (Brayton). Run any cycle backwards to get a refrigerator or a heat pump, draw your own cycle by dragging its corners, and switch to 3D to see every cycle as a path on the surface T = PV/(nR).">汽缸裡的氣體被加熱、膨脹推動活塞，再被冷卻、壓縮，最後回到原來的狀態。轉完一圈，它的內能沒有改變，卻把吸進來的一部分熱變成了功。在 P–V 圖上逐點跟著循環走，用熱力學第一定律 ΔU = Q + W 記下每一段的能量帳，並比較卡諾循環和汽油引擎（奧圖）、柴油引擎（狄塞爾）、史特林引擎、噴射引擎（布雷頓）背後的理想化循環。把任何循環倒過來轉就成了冰箱或熱泵；也可以拖曳頂點畫出自己的循環，或切換到 3D，看每個循環都是狀態曲面 T = PV/(nR) 上的一條路徑。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: watch the Carnot cycle go round, then tick “Run in reverse” and see the shaded area, the heat flows and the arrows all turn around.">試試看：先看卡諾循環轉一圈，再勾選「逆向運轉」，看面積的顏色、熱流與箭頭怎麼全部反過來。</p>
+    <div class="lab he">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="opts3 checks" id="opts3">
+          <label><input id="s3surf" type="checkbox" checked><span data-en="State surface">狀態曲面</span></label>
+          <label><input id="s3iso" type="checkbox" checked><span data-en="Isotherms">等溫線</span></label>
+          <label><input id="s3proj" type="checkbox" checked><span data-en="P–V projection">P–V 投影</span></label>
+        </div>
+        <div class="playbar">
+          <button type="button" id="play">暫停</button>
+          <button type="button" id="step" data-en="Next stage" title="跑到這一段的終點後停下" data-en-title="Run to the end of this stage and stop">下一段</button>
+          <button type="button" id="record" class="primary" data-en="Record this cycle">記錄這個循環</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除比較表；設定不變" data-en-title="Clear the comparison table; the settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srState" role="status"></p>
+        <p class="warn" id="warn"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint l2" id="hint2"></p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Every equilibrium state of the gas lies on the surface T = PV/(nR); the cycle is the same one as in the 2D view, drawn on that surface, and the floor shows its P–V diagram.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。氣體的每一個平衡態都在曲面 T = PV/(nR) 上；立體路徑就是 2D 的同一個循環，畫在這個曲面上，底面則是它的 P–V 圖。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Cycle">循環</h2>
+          <div class="modes" role="group" aria-label="循環種類" data-en-aria-label="Kind of cycle">
+            <button type="button" id="tCarnot" data-type="carnot" aria-pressed="true" data-en-html="Carnot<small>ideal engine</small>">卡諾<small>理想熱機</small></button>
+            <button type="button" id="tOtto" data-type="otto" aria-pressed="false" data-en-html="Otto<small>petrol engine</small>">奧圖<small>汽油引擎</small></button>
+            <button type="button" id="tDiesel" data-type="diesel" aria-pressed="false" data-en-html="Diesel<small>diesel engine</small>">狄塞爾<small>柴油引擎</small></button>
+            <button type="button" id="tStirling" data-type="stirling" aria-pressed="false" data-en-html="Stirling<small>hot-air engine</small>">史特林<small>熱氣引擎</small></button>
+            <button type="button" id="tBrayton" data-type="brayton" aria-pressed="false" data-en-html="Brayton<small>jet engine</small>">布雷頓<small>噴射引擎</small></button>
+            <button type="button" id="tCustom" data-type="custom" aria-pressed="false" data-en-html="Custom<small>drag the corners</small>">自訂<small>拖曳頂點</small></button>
+          </div>
+          <div class="seg2" role="group" aria-label="氣體" data-en-aria-label="Gas">
+            <button type="button" id="gMono" aria-pressed="false" data-en-html="Monatomic<small>He, Ar · γ = 5/3</small>">單原子<small>He、Ar・γ = 5/3</small></button>
+            <button type="button" id="gDi" aria-pressed="true" data-en-html="Diatomic<small>N<sub>2</sub>, air · γ = 7/5</small>">雙原子<small>N<sub>2</sub>、空氣・γ = 7/5</small></button>
+          </div>
+          <div class="slider"><label for="n" data-en="Amount of gas n">莫耳數 n</label><output id="no"></output>
+            <input id="n" type="range" min="0.1" max="2" step="0.01" value="1" data-decimals="2"></div>
+        </section>
+
+        <section class="card">
+          <h2 id="parTitle">參數</h2>
+          <div id="pCarnot">
+            <div class="slider"><label for="cTh" data-en-html="Hot reservoir T<sub>h</sub>">高溫熱庫 T<sub>h</sub></label><output id="cTho"></output>
+              <input id="cTh" type="range" min="300" max="1200" step="1" value="500" data-decimals="0"></div>
+            <div class="slider"><label for="cTc" data-en-html="Cold reservoir T<sub>c</sub>">低溫熱庫 T<sub>c</sub></label><output id="cTco"></output>
+              <input id="cTc" type="range" min="200" max="1199" step="1" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="cVA" data-en-html="Starting volume V<sub>1</sub>">起點體積 V<sub>1</sub></label><output id="cVAo"></output>
+              <input id="cVA" type="range" min="0.5" max="10" step="0.1" value="4" data-decimals="2"></div>
+            <div class="slider"><label for="cRB" data-en-html="Isothermal expansion V<sub>2</sub>/V<sub>1</sub>">等溫膨脹比 V<sub>2</sub>/V<sub>1</sub></label><output id="cRBo"></output>
+              <input id="cRB" type="range" min="1.2" max="5" step="0.05" value="3" data-decimals="2"></div>
+          </div>
+          <div id="pOtto" hidden>
+            <div class="slider"><label for="oR" data-en-html="Compression ratio r = V<sub>1</sub>/V<sub>2</sub>">壓縮比 r = V<sub>1</sub>/V<sub>2</sub></label><output id="oRo"></output>
+              <input id="oR" type="range" min="2" max="14" step="0.1" value="8" data-decimals="2"></div>
+            <div class="slider"><label for="oT1" data-en-html="Intake temperature T<sub>1</sub>">進氣溫度 T<sub>1</sub></label><output id="oT1o"></output>
+              <input id="oT1" type="range" min="200" max="400" step="1" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="oT3" data-en-html="Peak temperature after burning T<sub>3</sub>">燃燒後最高溫 T<sub>3</sub></label><output id="oT3o"></output>
+              <input id="oT3" type="range" min="500" max="2500" step="10" value="1800" data-decimals="0"></div>
+            <div class="slider"><label for="oV1" data-en-html="Largest volume V<sub>1</sub>">最大體積 V<sub>1</sub></label><output id="oV1o"></output>
+              <input id="oV1" type="range" min="1" max="25" step="0.5" value="10" data-decimals="2"></div>
+          </div>
+          <div id="pDiesel" hidden>
+            <div class="slider"><label for="dR" data-en-html="Compression ratio r = V<sub>1</sub>/V<sub>2</sub>">壓縮比 r = V<sub>1</sub>/V<sub>2</sub></label><output id="dRo"></output>
+              <input id="dR" type="range" min="10" max="22" step="0.1" value="18" data-decimals="2"></div>
+            <div class="slider"><label for="dRc" data-en-html="Cut-off ratio r<sub>c</sub> = V<sub>3</sub>/V<sub>2</sub>">截止比 r<sub>c</sub> = V<sub>3</sub>/V<sub>2</sub></label><output id="dRco"></output>
+              <input id="dRc" type="range" min="1.2" max="4" step="0.01" value="2" data-decimals="3"></div>
+            <div class="slider"><label for="dT1" data-en-html="Intake temperature T<sub>1</sub>">進氣溫度 T<sub>1</sub></label><output id="dT1o"></output>
+              <input id="dT1" type="range" min="200" max="400" step="1" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="dV1" data-en-html="Largest volume V<sub>1</sub>">最大體積 V<sub>1</sub></label><output id="dV1o"></output>
+              <input id="dV1" type="range" min="1" max="25" step="0.5" value="10" data-decimals="2"></div>
+          </div>
+          <div id="pStirling" hidden>
+            <div class="slider"><label for="sTh" data-en-html="Hot side T<sub>h</sub>">高溫端 T<sub>h</sub></label><output id="sTho"></output>
+              <input id="sTh" type="range" min="300" max="1200" step="1" value="600" data-decimals="0"></div>
+            <div class="slider"><label for="sTc" data-en-html="Cold side T<sub>c</sub>">低溫端 T<sub>c</sub></label><output id="sTco"></output>
+              <input id="sTc" type="range" min="200" max="1199" step="1" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="sVmin" data-en-html="Smallest volume V<sub>min</sub>">最小體積 V<sub>min</sub></label><output id="sVmino"></output>
+              <input id="sVmin" type="range" min="0.5" max="10" step="0.1" value="2" data-decimals="2"></div>
+            <div class="slider"><label for="sR" data-en-html="Volume ratio V<sub>max</sub>/V<sub>min</sub>">體積比 V<sub>max</sub>/V<sub>min</sub></label><output id="sRo"></output>
+              <input id="sR" type="range" min="1.2" max="8" step="0.05" value="3" data-decimals="2"></div>
+            <div class="checks">
+              <label><input id="regen" type="checkbox" checked><span data-en="Regenerator">回熱器</span></label>
+            </div>
+            <p class="hint" data-en="The regenerator stores the heat given out on the way from hot to cold and gives it back on the way up.">回熱器把氣體由熱變冷時放出的熱存起來，由冷變熱時再還給氣體。</p>
+          </div>
+          <div id="pBrayton" hidden>
+            <div class="slider"><label for="bRp" data-en-html="Pressure ratio r<sub>p</sub> = P<sub>2</sub>/P<sub>1</sub>">壓力比 r<sub>p</sub> = P<sub>2</sub>/P<sub>1</sub></label><output id="bRpo"></output>
+              <input id="bRp" type="range" min="2" max="20" step="0.1" value="5" data-decimals="2"></div>
+            <div class="slider"><label for="bT1" data-en-html="Intake temperature T<sub>1</sub>">進氣溫度 T<sub>1</sub></label><output id="bT1o"></output>
+              <input id="bT1" type="range" min="200" max="400" step="1" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="bT3" data-en-html="Turbine inlet temperature T<sub>3</sub>">渦輪入口溫度 T<sub>3</sub></label><output id="bT3o"></output>
+              <input id="bT3" type="range" min="600" max="2500" step="10" value="1400" data-decimals="0"></div>
+            <div class="slider"><label for="bP1" data-en-html="Intake pressure P<sub>1</sub>">進氣壓力 P<sub>1</sub></label><output id="bP1o"></output>
+              <input id="bP1" type="range" min="50" max="500" step="10" value="100" data-decimals="0"></div>
+          </div>
+          <div id="pCustom" hidden>
+            <p class="hint" style="margin-top:0" data-en="Drag the numbered corners on the P–V diagram. Near a neighbour’s volume or pressure a corner snaps to it, giving a constant-volume or constant-pressure side.">在 P–V 圖上拖曳編號的頂點。靠近相鄰頂點的同一體積或同一壓力時會自動吸附，變成等容或等壓的邊。</p>
+            <div class="btnrow">
+              <button type="button" id="addV" data-en="Add a corner">加一個頂點</button>
+              <button type="button" id="delV" data-en="Remove a corner">刪一個頂點</button>
+            </div>
+            <div class="btnrow">
+              <button type="button" id="resetV" data-en="Reset the shape">回到預設形狀</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Running">運轉</h2>
+          <div class="checks">
+            <label><input id="reverse" type="checkbox"><span data-en="Run in reverse (refrigerator / heat pump)">逆向運轉（冰箱／熱泵）</span></label>
+          </div>
+          <div class="slider"><label for="speed" data-en="Animation speed">動畫速度</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" data-decimals="2"></div>
+          <p class="hint" data-en="The animation time is only for show: one cycle takes about 8 s at 1×. All the energies are per cycle.">動畫時間只是示意：1× 時一圈約 8 秒。所有能量都是「每一圈」的值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings (per cycle)">讀數（每一圈）</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showIso" type="checkbox" checked><span data-en="Isotherms">等溫線</span></label>
+            <label><input id="showFill" type="checkbox" checked><span data-en="Shade the enclosed area">圍成的面積</span></label>
+            <label><input id="showHeat" type="checkbox" checked><span data-en="Heat-flow arrows">熱流箭頭</span></label>
+          </div>
+        </section>
+      </aside>
+
+      <section class="card he-data" id="dataCard">
+        <h2 data-en="Energy account for each stage">能量帳（每一段）</h2>
+        <p class="hint" data-en-html="Q: heat absorbed by the gas (positive = in). W: work done <em>on</em> the gas by the outside (positive = compressed). ΔU = Q + W.">Q：氣體吸收的熱（吸熱為正）。W：外界<em>對氣體</em>作的功（壓縮為正）。ΔU = Q + W。</p>
+        <div class="tablewrap"><table class="data" id="acct" data-export></table></div>
+        <p class="wout" id="woutLine"></p>
+        <h2 data-en="Comparison table">比較表</h2>
+        <div class="tablewrap"><table class="data" id="rec"></table></div>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose">實驗目的</h2>
+      <ol>
+        <li data-en="Keep the energy account of every stage of a cycle with the first law of thermodynamics, ΔU = Q + W.">用熱力學第一定律 ΔU = Q + W，記下循環每一段的能量帳。</li>
+        <li data-en="Read the net work from a P–V diagram as the area enclosed by the cycle, and tell an engine from a refrigerator by the direction of travel.">從 P–V 圖讀出淨功（循環圍成的面積），並由繞行方向分辨熱機與冰箱。</li>
+        <li data-en="Compare the efficiencies of the idealized cycles behind real engines and check that none beats the Carnot efficiency (the second law).">比較各種真實引擎背後的理想化循環的效率，驗證沒有一個超過卡諾效率（第二定律）。</li>
+      </ol>
+
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. The first law and our sign convention">1. 熱力學第一定律與符號約定</h3>
+      <p data-en-html="The internal energy of an ideal gas depends only on its temperature: \(U = nC_VT\). It changes when heat \(Q\) flows in or when the outside does work \(W\) on the gas. As on the ideal-gas page, \(Q\) is the heat <em>absorbed</em> by the gas and \(W\) is the work done <em>on</em> the gas (positive when the gas is compressed):">理想氣體的內能只和溫度有關：\(U = nC_VT\)。熱量 \(Q\) 流進來，或外界對氣體作功 \(W\)，內能就會改變。與「理想氣體分子模擬」頁相同，\(Q\) 是氣體<em>吸收</em>的熱，\(W\) 是外界<em>對氣體</em>作的功（壓縮時為正）：</p>
+      <div class="formula">\[ \Delta U = Q + W, \qquad W = -\int P\,dV \]</div>
+      <p data-en-html="After a full cycle the gas is back where it started, so \(\Delta U_{\text{cycle}} = 0\). The work the engine delivers to the outside is therefore">轉完一圈，氣體回到原來的狀態，\(\Delta U_{\text{循環}} = 0\)。所以引擎對外輸出的淨功是</p>
+      <div class="formula">\[ W_{\text{out}} = -\sum W = \sum Q = Q_{\text{in}} - |Q_{\text{out}}| = \oint P\,dV \]</div>
+      <p data-en-html="where \(Q_{\text{in}}\) adds up all the heat taken in and \(|Q_{\text{out}}|\) all the heat given out. Note the two kinds of work: \(W\) in the table is done <em>on</em> the gas; \(W_{\text{out}}\) is done <em>by</em> the engine.">\(Q_{\text{in}}\) 是所有吸進來的熱，\(|Q_{\text{out}}|\) 是所有放出去的熱。注意兩種功的方向：表格中的 \(W\) 是外界<em>對氣體</em>作的功，\(W_{\text{out}}\) 是引擎<em>對外</em>作的功。</p>
+
+      <h3 data-en="2. Four basic processes">2. 四種基本過程</h3>
+      <p data-en-html="For \(n\) mol of ideal gas going from state 1 to state 2 (\(C_V = \tfrac32R\), \(\gamma = \tfrac53\) for a monatomic gas; \(C_V = \tfrac52R\), \(\gamma = \tfrac75\) for a diatomic gas; \(C_P = C_V + R\)):">\(n\) mol 理想氣體由狀態 1 到狀態 2（單原子 \(C_V = \tfrac32R\)、\(\gamma = \tfrac53\)；雙原子 \(C_V = \tfrac52R\)、\(\gamma = \tfrac75\)；\(C_P = C_V + R\)）：</p>
+      <div class="tablewrap"><table class="proc">
+        <thead><tr><th data-en="Process">過程</th><th>\(W\)</th><th>\(Q\)</th><th>\(\Delta U\)</th></tr></thead>
+        <tbody>
+          <tr><td data-en="Isothermal (T constant)">等溫（T 不變）</td><td>\(-nRT\ln\dfrac{V_2}{V_1}\)</td><td>\(-W\)</td><td>\(0\)</td></tr>
+          <tr><td data-en="Isochoric (V constant)">等容（V 不變）</td><td>\(0\)</td><td>\(nC_V\Delta T\)</td><td>\(nC_V\Delta T\)</td></tr>
+          <tr><td data-en="Isobaric (P constant)">等壓（P 不變）</td><td>\(-P\Delta V\)</td><td>\(nC_P\Delta T\)</td><td>\(nC_V\Delta T\)</td></tr>
+          <tr><td data-en-html="Adiabatic (\(PV^\gamma\) constant)">絕熱（\(PV^\gamma\) 不變）</td><td>\(nC_V\Delta T\)</td><td>\(0\)</td><td>\(nC_V\Delta T\)</td></tr>
+        </tbody>
+      </table></div>
+
+      <h3 data-en="3. The area is the net work">3. 圍成的面積就是淨功</h3>
+      <p data-en-html="On the way out (expansion) the gas does work equal to the area under the upper curve; on the way back (compression) the outside does work equal to the area under the lower curve. The difference is the area enclosed by the loop. Going round <strong>clockwise</strong> (expanding at high pressure, compressing at low pressure) the engine delivers work: a heat engine. Going round <strong>anticlockwise</strong> the outside must supply work: a refrigerator or heat pump.">膨脹時氣體對外作的功，是上方曲線底下的面積；壓縮時外界對氣體作的功，是下方曲線底下的面積。兩者的差就是循環圍成的面積。<strong>順時針</strong>繞（高壓時膨脹、低壓時壓縮），引擎對外作功，是熱機；<strong>逆時針</strong>繞，外界必須輸入功，是冰箱或熱泵。</p>
+
+      <h3 data-en="4. Efficiency and the second law">4. 效率與第二定律</h3>
+      <div class="formula">\[ \eta = \frac{W_{\text{out}}}{Q_{\text{in}}} \;\le\; \eta_C = 1 - \frac{T_{\min}}{T_{\max}} \]</div>
+      <p data-en-html="Every engine must throw some heat away. A reversible cycle that runs between a highest temperature \(T_{\max}\) and a lowest temperature \(T_{\min}\) absorbs its heat at temperatures no higher than \(T_{\max}\) and rejects heat at temperatures no lower than \(T_{\min}\); since \(\oint dQ/T = 0\) for a reversible cycle, its efficiency can never exceed the Carnot value. Only the Carnot cycle (all the heat in at \(T_{\max}\), all the heat out at \(T_{\min}\)) reaches it.">任何熱機都一定要排掉一部分熱。在最高溫 \(T_{\max}\) 與最低溫 \(T_{\min}\) 之間運轉的可逆循環，吸熱時的溫度都不高於 \(T_{\max}\)，放熱時都不低於 \(T_{\min}\)；可逆循環滿足 \(\oint dQ/T = 0\)，所以效率不可能超過卡諾效率。只有卡諾循環（全部在 \(T_{\max}\) 吸熱、全部在 \(T_{\min}\) 放熱）剛好達到。</p>
+
+      <h3 data-en="5. The cycles behind real engines">5. 真實引擎背後的理想化循環</h3>
+      <div class="formula multi">
+        <div><span class="flabel" data-en="Otto (petrol engine)">奧圖（汽油引擎）</span>\[ \eta = 1 - \frac{1}{r^{\gamma - 1}} \]</div>
+        <div><span class="flabel" data-en="Diesel">狄塞爾（柴油引擎）</span>\[ \eta = 1 - \frac{1}{r^{\gamma - 1}}\,\frac{r_c^{\gamma} - 1}{\gamma(r_c - 1)} \]</div>
+        <div><span class="flabel" data-en="Brayton (gas turbine, jet engine)">布雷頓（燃氣渦輪、噴射引擎）</span>\[ \eta = 1 - \frac{1}{r_p^{(\gamma - 1)/\gamma}} \]</div>
+      </div>
+      <ul>
+        <li data-en-html="<strong>Otto</strong>: adiabatic compression by the compression ratio \(r = V_1/V_2\), a spark burns the fuel so fast that the volume has no time to change (constant-volume heating), adiabatic power stroke, then the exhaust carries heat away at constant volume. The efficiency depends only on \(r\) and \(\gamma\): compressing the gas raises its temperature by the factor \(r^{\gamma-1}\) before any heat goes in."><strong>奧圖</strong>：以壓縮比 \(r = V_1/V_2\) 絕熱壓縮，火星塞點火、燃料燒得極快，體積來不及變（等容加熱），接著絕熱膨脹作功，最後排氣把熱帶走（等容放熱）。效率只由 \(r\) 和 \(\gamma\) 決定：在加熱之前，壓縮已經讓溫度升高到 \(r^{\gamma-1}\) 倍。</li>
+        <li data-en-html="<strong>Diesel</strong>: compression alone makes the air hot enough to ignite the injected fuel, which burns while the piston moves out (constant-pressure heating, cut-off ratio \(r_c = V_3/V_2\)). At the same \(r\) it is less efficient than Otto, but because it does not knock it can use a much larger \(r\)."><strong>狄塞爾</strong>：只靠壓縮就讓空氣熱到能點燃噴進來的燃料，燃料在活塞後退時燃燒（等壓加熱，截止比 \(r_c = V_3/V_2\)）。同樣的 \(r\) 效率比奧圖低，但不會爆震，所以可以用大得多的 \(r\)。</li>
+        <li data-en-html="<strong>Stirling</strong>: two isotherms and two constant-volume stages. With a perfect regenerator the heat given out on the way down is stored and handed back on the way up, so the only heat from outside comes in at \(T_h\) and leaves at \(T_c\): the efficiency equals the Carnot value."><strong>史特林</strong>：兩段等溫加兩段等容。有理想的回熱器時，降溫時放出的熱存起來、升溫時再還給氣體，與外界交換的熱只在 \(T_h\) 吸進、在 \(T_c\) 放出，效率剛好等於卡諾效率。</li>
+        <li data-en-html="<strong>Brayton</strong>: a compressor raises the pressure by the factor \(r_p\), fuel burns at constant pressure, the hot gas expands through a turbine, and the exhaust cools at constant pressure. With \(r_p = r^{\gamma}\) the temperature rise in the compressor is the same as in an Otto engine of compression ratio \(r\), and so is the efficiency."><strong>布雷頓</strong>：壓縮機把壓力提高到 \(r_p\) 倍，燃料在等壓下燃燒，熱氣通過渦輪膨脹，排氣在等壓下冷卻。當 \(r_p = r^{\gamma}\) 時，壓縮造成的升溫和壓縮比 \(r\) 的奧圖引擎一樣，效率也一樣。</li>
+      </ul>
+
+      <h3 data-en="6. Refrigerators and heat pumps">6. 冰箱與熱泵</h3>
+      <p data-en-html="Run a cycle backwards and every arrow turns round: the outside supplies the work \(W_{\text{in}} = |W_{\text{out}}|\), the gas takes heat \(Q_c\) from the cold side and delivers \(|Q_h| = Q_c + W_{\text{in}}\) to the warm side. A refrigerator is judged by how much heat it removes, a heat pump by how much it delivers:">把循環倒過來轉，所有箭頭都反向：外界輸入功 \(W_{\text{in}} = |W_{\text{out}}|\)，氣體從冷處吸熱 \(Q_c\)，把 \(|Q_h| = Q_c + W_{\text{in}}\) 送到熱處。冰箱看它搬走多少熱，熱泵看它送出多少熱：</p>
+      <div class="formula">\[ K_R = \frac{Q_c}{W_{\text{in}}} \le \frac{T_c}{T_h - T_c}, \qquad K_{HP} = \frac{|Q_h|}{W_{\text{in}}} = K_R + 1 \le \frac{T_h}{T_h - T_c} \]</div>
+      <p data-en-html="The smaller the temperature lift \(T_h - T_c\), the less work it takes to move the same heat.">冷熱兩邊的溫差 \(T_h - T_c\) 越小，搬同樣多的熱需要的功越少。</p>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en="Watch the energy table: in every row Q + W equals ΔU, and over a whole cycle ΔU adds up to zero while Q adds up to the net work.">看能量帳：每一列都是 Q + W = ΔU；整圈加起來，ΔU 的和是 0，Q 的和就是淨功。</li>
+        <li data-en="In the Carnot cycle the heat flows only during the two isotherms; during the adiabats the gas sits on the insulating pad and its temperature changes only because of work.">卡諾循環只在兩段等溫過程有熱流；絕熱過程中汽缸放在絕熱墊上，溫度的改變完全來自作功。</li>
+        <li data-en="Raise T3 in the Otto cycle: the loop grows and the net work rises, but the efficiency does not move. Raise the compression ratio instead and the efficiency goes up.">把奧圖循環的 T3 調高：圈變大、淨功變多，效率卻不變；改調壓縮比，效率才會上升。</li>
+        <li data-en="Switch from a diatomic to a monatomic gas: with the same compression ratio the Otto efficiency rises, because a larger γ heats the gas more during compression.">把雙原子氣體換成單原子：同樣的壓縮比，奧圖效率變高，因為 γ 較大，壓縮時升溫較多。</li>
+        <li data-en="Turn off the Stirling regenerator: the work per cycle stays the same, but the heat bill grows and the efficiency drops below the Carnot value.">關掉史特林的回熱器：每圈的功不變，吸的熱卻變多，效率掉到卡諾效率以下。</li>
+        <li data-en="Drag the corners of a custom cycle across each other to make a figure of eight: one lobe turns clockwise and the other anticlockwise, and their areas partly cancel.">把自訂循環的頂點拖過彼此，做成「8 字形」：一個小圈順時針、另一個逆時針，兩者的面積互相抵銷一部分。</li>
+        <li data-en="On a sloping straight side the gas can take in heat on one part and give it out on another; the table and the heat arrows show where it changes over.">斜的直線段上，氣體可能前半段吸熱、後半段放熱；能量帳與熱流箭頭會顯示在哪裡轉換。</li>
+        <li data-en="In 3D, follow an isotherm: it is a level contour of the surface. The adiabats climb or slide down the surface, and the P–V diagram is simply the view of the path from straight above.">在 3D 中沿著一條等溫線看：它是曲面上的等高線。絕熱過程沿著曲面爬升或滑下；P–V 圖就是從正上方往下看這條立體路徑。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li data-en="A Carnot engine works between 600 K and 300 K. What is its efficiency? If the hot side is raised to 900 K, how does the efficiency change?">卡諾熱機在 600 K 與 300 K 之間運轉，效率是多少？把高溫端提高到 900 K 呢？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(\eta = 1 - 300/600 = 50\%\). With 900 K: \(\eta = 1 - 300/900 \approx 66.7\%\). Lowering the cold side by the same 300 K is impossible here, which is why engines aim for hotter combustion.">\(\eta = 1 - 300/600 = 50\%\)。提高到 900 K：\(\eta = 1 - 300/900 \approx 66.7\%\)。冷的一端沒辦法再往下降 300 K，所以引擎都想辦法讓燃燒更熱。</p></details></li>
+        <li data-en="An Otto engine with air (γ = 1.4) has a compression ratio of 8. What is its ideal efficiency? Why does a real petrol engine reach only about 30 %?">使用空氣（γ = 1.4）的奧圖引擎壓縮比為 8，理想效率是多少？為什麼真實的汽油引擎只有約 30%？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(\eta = 1 - 8^{-0.4} \approx 56.5\%\). A real engine loses heat through the cylinder walls, burns its fuel in a finite time, has friction and pumping losses, and the hot gas has a smaller \(\gamma\) than cold air.">\(\eta = 1 - 8^{-0.4} \approx 56.5\%\)。真實引擎會從汽缸壁散熱、燃燒需要時間、有摩擦與進排氣的損失，而且高溫氣體的 \(\gamma\) 比常溫空氣小。</p></details></li>
+        <li data-en="In one cycle an engine takes in 2000 J and gives out 1200 J of heat. Find the net work, the efficiency and ΔU for the cycle.">某熱機每一圈吸熱 2000 J、放熱 1200 J。求淨功、效率與整圈的 ΔU。
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(W_{\text{out}} = 2000 - 1200 = 800\ \mathrm{J}\), \(\eta = 800/2000 = 40\%\), \(\Delta U = 0\) (the gas is back in its starting state).">\(W_{\text{out}} = 2000 - 1200 = 800\ \mathrm{J}\)，\(\eta = 800/2000 = 40\%\)，\(\Delta U = 0\)（氣體回到原來的狀態）。</p></details></li>
+        <li data-en="A heat pump keeps a room at 293 K while it is 273 K outside. What is the largest possible K_HP? Why do heat pumps work less well in very cold weather?">熱泵讓室內維持 293 K，室外 273 K。K<sub>HP</sub> 最大可以是多少？為什麼天氣很冷時熱泵效果變差？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(K_{HP} \le 293/(293 - 273) \approx 14.7\). The colder it is outside, the larger the temperature lift \(T_h - T_c\), and the more work each joule of heat costs.">\(K_{HP} \le 293/(293 - 273) \approx 14.7\)。室外越冷，冷熱溫差 \(T_h - T_c\) 越大，每搬一焦耳的熱要花的功越多。</p></details></li>
+      </ol>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="The gas is an ideal gas, \(PV = nRT\), and every process is quasi-static and reversible. Every Q, W, ΔU and ΔS is computed from the exact formulas above — nothing is integrated step by step. The tests check them against numerical integration, the shoelace area of the P–V loop, \(\Delta U_{\text{cycle}} = 0\) and \(\Delta S_{\text{cycle}} = 0\).">氣體是理想氣體 \(PV = nRT\)，所有過程都是準靜態、可逆的。每一段的 Q、W、ΔU、ΔS 都由上面的解析式精確算出，不是一步一步積分；單元測試再用數值積分、P–V 圖的鞋帶公式面積、\(\Delta U_{\text{循環}} = 0\) 與 \(\Delta S_{\text{循環}} = 0\) 檢查。</li>
+        <li data-en-html="A diatomic gas is given \(C_V = \tfrac52R\): near room temperature its molecules rotate but hardly vibrate. Above roughly 1000 K vibration starts to count, \(\gamma\) of real air falls towards 1.3 and real efficiencies are lower. The Otto, Diesel and Brayton cycles here are “air-standard” cycles: a fixed amount of gas is heated and cooled from outside, with no fuel, no intake and exhaust strokes and no friction.">雙原子氣體取 \(C_V = \tfrac52R\)：常溫附近分子會轉動、幾乎不振動。約 1000 K 以上振動開始有影響，真實空氣的 \(\gamma\) 降向 1.3，真實效率也比較低。這裡的奧圖、狄塞爾、布雷頓都是「空氣標準循環」：固定的一團氣體由外界加熱與冷卻，沒有燃料、沒有進氣與排氣衝程，也沒有摩擦。</li>
+        <li data-en-html="Custom cycles are made of straight lines \(P = a + bV\). Along such a line \(dQ = \big[(C_V/R + 1)a + (2C_V/R + 1)bV\big]dV\), which changes sign at \(V^* = -\dfrac{(C_V/R + 1)a}{(2C_V/R + 1)b}\). Each line is split there, so \(Q_{\text{in}}\) counts only the parts where heat really flows in (taking the sign of the whole side’s Q would give the wrong efficiency). The highest temperature on a sloping side can be in its middle, not at a corner.">自訂循環的邊是直線 \(P = a + bV\)。沿這種直線 \(dQ = \big[(C_V/R + 1)a + (2C_V/R + 1)bV\big]dV\)，在 \(V^* = -\dfrac{(C_V/R + 1)a}{(2C_V/R + 1)b}\) 變號。每條邊都在這裡拆開，\(Q_{\text{in}}\) 只算真正吸熱的部分（若只看整條邊 Q 的正負，效率會算錯）。斜邊上的最高溫也可能在邊的中間，而不在頂點。</li>
+        <li data-en-html="For a self-crossing custom cycle the net work is the signed area: the clockwise lobes count as positive and the anticlockwise ones as negative (shaded in different colours).">自己交叉的自訂循環，淨功是有正負的面積：順時針的小圈算正、逆時針的算負（用不同顏色塗）。</li>
+        <li data-en-html="With the regenerator on, the heat of the two constant-volume stages of the Stirling cycle is exchanged inside the engine and is left out of \(Q_{\text{in}}\) and \(Q_{\text{out}}\). For a refrigerator or heat pump the Carnot limit uses the reservoirs the cycle could actually work with: \(T_c\) is the highest temperature at which the gas takes in heat and \(T_h\) the lowest temperature at which it gives heat out (for the reversed Carnot and Stirling-with-regenerator cycles these are the two isotherms). If those ranges overlap, no pair of reservoirs fits and no limit is shown.">回熱器開著時，史特林循環兩段等容過程的熱在引擎內部交換，不算進 \(Q_{\text{in}}\)、\(Q_{\text{out}}\)。冰箱與熱泵的卡諾上限，用循環真正能搭配的冷、熱庫：\(T_c\) 取氣體吸熱時的最高溫，\(T_h\) 取放熱時的最低溫（逆向卡諾、開回熱器的逆向史特林就是兩條等溫線）。兩個溫度範圍重疊時，找不到能搭配的冷熱庫，就不顯示上限。</li>
+        <li data-en="Animation: the time is only for show (about 8 s per cycle at 1×; each stage gets a share that grows with its length on the diagram). The piston height is proportional to the volume; the gas colour follows the temperature on a scale whose brightness rises steadily from cold to hot; the moving dots are only a sketch of the molecules, with speeds proportional to √T. The heat-flow arrows are drawn with a width proportional to the rate at which heat flows on this time scale.">動畫：時間只是示意（1× 時一圈約 8 秒，每一段分到的時間隨它在圖上的長度增加）。活塞高度與體積成正比；氣體顏色依溫度，色階的亮度由冷到熱單調增加；跑動的小點只是分子的示意，速率與 √T 成正比。熱流箭頭的粗細與這個時間尺度下的熱流率成正比。</li>
+        <li data-en="The 3D view (three.js library, MIT licence, downloaded only when you switch to 3D) plots T = PV/(nR) above the same V and P ranges as the 2D diagram. The surface is cut off along the isotherm a little above the cycle’s highest temperature; each isotherm drawn on it is the curve PV = nRT at that height. The cycle path, the moving state and its shadow on the floor all come from the same core functions as the 2D view.">3D 檢視（使用 three.js 函式庫，MIT 授權，只有切換到 3D 時才下載）在與 2D 相同的 V、P 範圍上畫出 T = PV/(nR)。曲面在比循環最高溫稍高的等溫線處截斷；曲面上的每一條等溫線就是那個高度的 PV = nRT。循環路徑、移動的狀態點與它在底面的投影，都由與 2D 相同的物理核心函式算出。</li>
+        <li data-en="Sound (off by default): a short ignition click when the burning stage of the Otto or Diesel cycle begins, and a soft chime each time a cycle is completed.">音效（預設關閉）：奧圖與狄塞爾循環的燃燒加熱段開始時，有短促的點火聲；每轉完一圈，有一聲輕柔的提示音。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum: Elective Physics II · Heat (extension: the first law of thermodynamics and heat engines).">課綱對應：選修物理Ⅱ・熱學（延伸：熱力學第一定律與熱機）。</li>
+        <li data-en-html="Gas constant: since the 2019 SI the Boltzmann constant \(k = 1.380\,649\times10^{-23}\ \mathrm{J/K}\) and the Avogadro constant \(N_A = 6.022\,140\,76\times10^{23}\ \mathrm{mol^{-1}}\) are exact, so \(R = N_A k = 8.314\,462\,618\ldots\ \mathrm{J/(mol\,K)}\) is exact too (CODATA 2022, NIST: <a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?r&quot;>R</a>).">氣體常數：2019 年新 SI 起，波茲曼常數 \(k = 1.380\,649\times10^{-23}\ \mathrm{J/K}\) 與亞佛加厥常數 \(N_A = 6.022\,140\,76\times10^{23}\ \mathrm{mol^{-1}}\) 都是定義的精確值，所以 \(R = N_A k = 8.314\,462\,618\ldots\ \mathrm{J/(mol\,K)}\) 也是精確值（CODATA 2022，NIST：<a href="https://physics.nist.gov/cgi-bin/cuu/Value?r">R</a>）。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/3-3-first-law-of-thermodynamics&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 2, 3.3 First Law of Thermodynamics</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/4-5-the-carnot-cycle&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>4.5 The Carnot Cycle</a> (Carnot efficiency and the coefficients of performance of a Carnot refrigerator and heat pump). Note that OpenStax writes the first law as \(\Delta E_\text{int} = Q - W\) with \(W\) the work done <em>by</em> the gas; this page uses \(W\) for the work done <em>on</em> the gas, so the same law reads \(\Delta U = Q + W\).">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-2/pages/3-3-first-law-of-thermodynamics" target="_blank" rel="noopener">University Physics Volume 2，3.3 熱力學第一定律</a>》與〈<a href="https://openstax.org/books/university-physics-volume-2/pages/4-5-the-carnot-cycle" target="_blank" rel="noopener">4.5 卡諾循環</a>〉（卡諾效率、卡諾冰箱與熱泵的性能係數；英文）。注意 OpenStax 把第一定律寫成 \(\Delta E_\text{int} = Q - W\)，其中 \(W\) 是氣體<em>對外</em>作的功；本頁的 \(W\) 是外界<em>對氣體</em>作的功，所以同一個定律寫成 \(\Delta U = Q + W\)。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/heat-engine-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/heat-engine-3d.js"></script>
+  <script src="js/heat-engine.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="heat-engine"></script>
+  <script src="js/missions/heat-engine.js"></script>
+  <script src="js/stats.js" data-module="heat-engine"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

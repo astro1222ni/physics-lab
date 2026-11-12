@@ -160,4 +160,29 @@ test('射程與 g 成反比：月球射程約為地球的 6 倍', () => {
   close(PC.ideal(P({ g: 1.62 })).R / PC.ideal(P({ g: 9.8 })).R, 9.8 / 1.62, 1e-12);
 });
 
+// 11/12 新任務用到的兩個關係（只新增測試，核心函式不變）
+test('地面發射、無阻力：R / H = 4 cot θ，與初速、重力無關（R = H 時 tan θ = 4）', () => {
+  for (const [v0, th, g] of [[20, 76, 9.8], [35, 30, 3.71], [7, 60, 1.62]]) {
+    const r = PC.ideal(P({ v0, theta: th, g }));
+    close(r.R / r.H, 4 / Math.tan(rad(th)), 1e-12, `R/H(${v0}, ${th}°, ${g})`);
+  }
+  const th = Math.atan(4) / rad(1);
+  const r = PC.ideal(P({ theta: th }));
+  close(r.R, r.H, 1e-12, 'θ = arctan 4');
+});
+
+test('水平速度相同、飛行時間相同 → 落點相同（不同高度：鉛直初速差 Δh0 / T）', () => {
+  const a = PC.ideal(P({}));
+  const vx = 20 * Math.cos(rad(45)), vy = 20 * Math.sin(rad(45)) - 10 / a.T; // 第二發高 10 m
+  const b = PC.ideal(P({ v0: Math.hypot(vx, vy), theta: Math.atan2(vy, vx) / rad(1), h0: 10 }));
+  close(b.T, a.T, 1e-12, 'T');
+  close(b.R, a.R, 1e-12, 'R');
+  // 動畫用的 RK4 逐格推進也落在同一點、同一時刻
+  const p = P({ v0: Math.hypot(vx, vy), theta: Math.atan2(vy, vx) / rad(1), h0: 10 });
+  const s = PC.initialState(p);
+  while (!PC.advance(p, s, 1 / 60)) { /* 每格 1/60 s */ }
+  close(s.x, a.R, 1e-9, 'RK4 落點');
+  close(s.t, a.T, 1e-9, 'RK4 落地時刻');
+});
+
 console.log(`\n${passed} 項通過`);
