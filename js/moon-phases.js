@@ -2149,7 +2149,8 @@
       setStatus(T('換到' + nm + '：當地時間一樣是 ' + fmtWhen(state.t) + '，那是剛才的' + (dh > 0 ? '後 ' : '前 ') + num(Math.abs(dh), Math.abs(dh) % 1 ? 1 : 0) + ' 小時（時差），月球相對太陽' + (dh > 0 ? '多' : '少') + '走了 ' + num(Math.abs(dd), 1) + '°。',
         'Now at ' + nm + ': the local time is still ' + fmtWhen(state.t) + ', which is ' + num(Math.abs(dh), Math.abs(dh) % 1 ? 1 : 0) + ' h ' + (dh > 0 ? 'later' : 'earlier') + ' than before (time difference), so the Moon has moved ' + num(Math.abs(dd), 1) + '° ' + (dh > 0 ? 'further' : 'less') + ' relative to the Sun.'));
     } else setStatus(T('換到' + nm + '。', 'Now at ' + nm + '.'));
-    announce(T('觀測地點換到' + nm + '（' + latText(np.lat) + '、' + lonText(np.lon) + '）。', 'Location changed to ' + nm + ' (' + latText(np.lat) + ', ' + lonText(np.lon) + '). '));
+    // 換地點的那一句已經由狀態列（aria-live）念過；讀屏摘要不再加同一句，免得念兩次
+    announce();
     if (state.acted) emit('state', missionData());
   }
   elPlace.addEventListener('change', function () {
@@ -2179,7 +2180,7 @@
     else if (commit) {
       setStatus(T('自訂地點：' + latText(np.lat) + '、' + lonText(np.lon) + '，固定 ' + utcText(np.utc) + '（不計夏令時間），當地時間 ' + fmtWhen(state.t) + '。',
         'Custom location: ' + latText(np.lat) + ', ' + lonText(np.lon) + ', fixed ' + utcText(np.utc) + ' (no daylight saving); local time ' + fmtWhen(state.t) + '.'));
-      announce(T('觀測地點：' + latText(np.lat) + '、' + lonText(np.lon) + '，' + utcText(np.utc) + '。', 'Location: ' + latText(np.lat) + ', ' + lonText(np.lon) + ', ' + utcText(np.utc) + '. '));
+      announce();   // 狀態列已念出自訂地點，摘要不重複
       if (state.acted) emit('state', missionData());
     }
     if (commit) {
