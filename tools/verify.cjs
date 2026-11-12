@@ -3,15 +3,18 @@
  * verify.cjs — 一鍵總檢查（發布前、每日自動優化都用這一支）。
  *
  * 用法：
- *   node tools/verify.cjs            全部：單元測試 → 任務證明 → 靜態稽核 → 介面稽核 → 頁面檢查（約 6–10 分鐘）
+ *   node tools/verify.cjs            全部：單元測試 → 任務證明 → 靜態稽核 → 介面稽核 → 頁面檢查 → 試玩（約 6–10 分鐘，加上改過的實驗每個約 2 分鐘）
  *   node tools/verify.cjs --quick    只跑單元測試、任務證明、靜態稽核（約 1 分鐘）
  *   node tools/verify.cjs --audit    只跑靜態稽核與介面稽核（約 1 分鐘）
  *   node tools/verify.cjs --fresh    任務證明不用快取、全部重算
  *   省 CPU：任務證明有快取（沒改過就不重算）；瀏覽器用 Intel 內顯（tools/browser.cjs）；整支低於標準優先權。
- *   node tools/verify.cjs kepler     介面稽核與頁面檢查只看指定頁面
+ *   node tools/verify.cjs kepler     介面稽核、頁面檢查與試玩只看指定頁面
+ *   試玩（tools/playtest.cjs）：只重玩「有改過」的實驗（頁面、它自己的程式、任務檔或排除清單變了），沒改過的沿用上次結果，
+ *   和任務證明的快取一樣（紀錄在 .shots/playtest-cache.json）。第一次沒有紀錄時只記下目前版本、不試玩；
+ *   要建立或更新全站紀錄：npm run playtest（全部約 1.5–2 小時）。
  *
- * 會失敗（結束碼 1）：單元測試、任務證明、頁面檢查有任何一項沒過，或靜態稽核的「錯誤」級問題。
- * 只提醒（不擋發布，列進待改清單）：觸控目標小於 44 px、文字對比不足、缺說明文字、頁面太重等。
+ * 會失敗（結束碼 1）：單元測試、任務證明、頁面檢查有任何一項沒過，靜態稽核的「錯誤」級問題，或試玩「確定是問題」的項目（含沿用上次結果的）。
+ * 只提醒（不擋發布，列進待改清單）：觸控目標小於 44 px、文字對比不足、缺說明文字、頁面太重、試玩「待人工確認」的項目等。
  * 結果另存 .shots/verify-report.json，每日自動優化從這裡挑下一件要改的事。
  * 介面稽核會擋掉所有對外連線（本機連得到正式 Firebase，不可寫入）。
  */
@@ -131,6 +134,36 @@ if (!AUDIT) {
   console.log((nE ? '✗ ' : '✓ ') + '靜態稽核（錯誤 ' + nE + '、提醒 ' + report.warnings.length + '）');
 }
 
+// 試玩：tools/playtest.cjs --changed（像學生一樣從介面玩：任務說明對介面、亂按、預設不觸發任務、數值合理性）
+// 確定是問題的列為錯誤（擋發布），待人工確認的列進提醒；沒改過的實驗沿用上次結果
+function playtest() {
+  const pages = only.length ? only.filter(s => LIVE.includes(s)) : [];
+  if (only.length && !pages.length) return; // 指定的頁面都不是實驗（例如只查首頁）
+  const t = Date.now();
+  const r = spawnSync(process.execPath, [path.join(ROOT, 'tools/playtest.cjs'), '--changed', '--quiet'].concat(pages), { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 4 * 3600 * 1000 });
+  const sec = Math.round((Date.now() - t) / 1000);
+  let rep = null;
+  try { rep = JSON.parse(fs.readFileSync(path.join(ROOT, '.shots/playtest-report.json'), 'utf8')); } catch (e) { rep = null; }
+  if (r.status === 2 || r.error || !rep || Date.parse(rep.at) < t - 1000) {
+    const tail = (((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-3).join(' / ')).slice(0, 300);
+    report.steps['試玩'] = { ok: false, sec };
+    console.log('✗ 試玩（' + sec + ' 秒）：沒有跑完');
+    err('試玩', '試玩工具沒有跑完：' + (r.error && r.error.code === 'ETIMEDOUT' ? '超過 4 小時' : tail || '結束碼 ' + r.status));
+    return;
+  }
+  let nC = 0, nP = 0, ran = 0, cached = 0, none = 0;
+  for (const [slug, p] of Object.entries(rep.pages)) {
+    if (p.none) { none++; continue; }
+    if (p.cached) cached++; else ran++;
+    (p.confirmed || []).forEach(i => { nC++; err('試玩', slug + '：' + i.msg + (i.repro ? '（重現：' + i.repro + '）' : '') + (i.shot ? '（截圖 ' + i.shot + '）' : '')); });
+    (p.pending || []).forEach(i => { nP++; warn('試玩', slug, '待人工確認：' + i.msg); });
+  }
+  report.steps['試玩'] = { ok: !nC, sec, ran, cached, none };
+  const note = (r.stdout || '').split('\n').find(l => /^試玩：/.test(l));
+  console.log((nC ? '✗ ' : '✓ ') + '試玩（' + sec + ' 秒；重玩 ' + ran + ' 個、沿用上次結果 ' + cached + ' 個' + (none ? '、還沒有紀錄 ' + none + ' 個' : '') + '）：確定是問題 ' + nC + '、待人工確認 ' + nP +
+    (note && !ran ? '\n    ' + note : ''));
+}
+
 function finish() {
   fs.mkdirSync(path.join(ROOT, '.shots'), { recursive: true });
   fs.writeFileSync(path.join(ROOT, '.shots/verify-report.json'), JSON.stringify(report, null, 1));
@@ -236,6 +269,8 @@ else {
     console.log('✓ 介面稽核（' + report.steps['介面稽核'].sec + ' 秒，結果列在提醒）');
     // 5. 頁面檢查（四種組合：錯誤、左右捲動、KaTeX、英文殘留中文、上標字元）
     if (!AUDIT) run('頁面檢查', process.execPath, [path.join(ROOT, 'tools/check-pages.cjs')].concat(only));
+    // 6. 試玩（只重玩有改過的實驗；上一個瀏覽器關掉後才開，同一時間只有一個）
+    if (!AUDIT) playtest();
     finish();
   });
 }
