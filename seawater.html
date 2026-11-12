@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Temperature, Salinity and Density of Seawater: T–S Diagrams and Water Masses | Astro Ni Science Lab">海水的溫度、鹽度與密度：T–S 圖與水團｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 海水 T–S 圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --sw-a: #dc2626; --sw-b: #2563eb; --sw-m: #7c3aed; --sw-ice: #0891b2; --sw-iso: #64748b; --sw-tmd: #b45309;
+      --sw-sea1: #e0f2fe; --sw-sea2: #0c4a6e; --sw-prof: #0f766e; --sw-mass: #475569;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --sw-a: #f87171; --sw-b: #60a5fa; --sw-m: #c4b5fd; --sw-ice: #67e8f9; --sw-iso: #94a3b8; --sw-tmd: #fbbf24; --sw-sea1: #0c4a6e; --sw-sea2: #020617; --sw-prof: #5eead4; --sw-mass: #cbd5e1; }
+    }
+    :root[data-theme="dark"] { --sw-a: #f87171; --sw-b: #60a5fa; --sw-m: #c4b5fd; --sw-ice: #67e8f9; --sw-iso: #94a3b8; --sw-tmd: #fbbf24; --sw-sea1: #0c4a6e; --sw-sea2: #020617; --sw-prof: #5eead4; --sw-mass: #cbd5e1; }
+    #cv { aspect-ratio: auto; height: 500px; touch-action: none; cursor: crosshair; }
+    @media (max-width: 560px) { #cv { height: 440px; touch-action: pan-y pinch-zoom; } }
+    #gr { display: block; width: 100%; height: 300px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #gr { height: 300px; } }
+    .sw button, .sw select { min-height: 44px; }
+    .sw .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .sw .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sw .slider input[type="range"] { height: 28px; margin: 0; }
+    .sw [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .card h2 .dot { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 50%; margin-right: 6px; vertical-align: -0.05em; box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px currentColor; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    table.rt { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.rt th, table.rt td { padding: 4px 4px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.rt th:first-child, table.rt td:first-child { text-align: left; color: var(--muted); white-space: normal; }
+    table.rt thead th { font-weight: 700; }
+    .card { min-width: 0; } table.rt { table-layout: fixed; } table.rt th:first-child, table.rt td:first-child { width: 38%; }
+    table.rt .ca { color: var(--sw-a); } table.rt .cb { color: var(--sw-b); } table.rt .cm { color: var(--sw-m); }
+    .pick-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .pick-row select { flex: 1 1 12em; min-width: 0; padding: 6px 8px; font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+    .pick-row button { flex: 0 0 auto; padding: 6px 12px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 500px; border-radius: 8px; cursor: grab; touch-action: none; }
+    @media (max-width: 560px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ocean&quot;>Earth Science · Oceans</a> / Seawater: T–S diagrams"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ocean">地球科學・海洋</a> ／ 海水的 T–S 圖</nav>
+      <h1 data-en="Temperature, Salinity and Density of Seawater: T–S Diagrams and Water Masses">海水的溫度、鹽度與密度：T–S 圖與水團</h1>
+      <p data-en="How heavy seawater is depends on its temperature and its salt. Move two parcels of water around a temperature–salinity diagram, read their density off the curved lines, find where each would settle in a real ocean, and mix them — the mixture can end up heavier than either. In 2D or 3D.">海水有多重，要看它的溫度和含鹽量。在溫度－鹽度圖（T–S 圖）上移動兩團海水，從彎彎的等密度線讀出它們的密度，看它們放進真實的海洋會停在多深；再把兩團水混合——混合後竟然可能比兩團都重。2D、3D 都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag water parcels A (red) and B (blue) on the T–S diagram. Put them on the same curved line, then watch where the purple mixture lands.">試試看：在 T–S 圖上拖曳水團 A（紅）和 B（藍），把它們放到同一條彎曲的等密度線上，再看紫色的混合水落在哪裡。</p>
+    <div class="lab sw" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="鹽度範圍" data-en-aria-label="Salinity range" id="rangeSeg">
+            <button type="button" data-range="ocean" aria-pressed="true" data-en="Ocean 30–40">海洋 30–40</button>
+            <button type="button" data-range="full" aria-pressed="false" data-en="All 0–42">全部 0–42</button>
+          </div>
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D T–S">2D T–S 圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D density">3D 密度曲面</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Tilted" title="斜看整個密度曲面" data-en-title="Tilted view of the whole density surface">斜看</button>
+          <button type="button" id="camTop" data-en="From above" title="從上往下看，就是 T–S 圖" data-en-title="Looking straight down: the T–S diagram">正上方</button>
+          <button type="button" id="camSide" data-en="Side" title="從鹽度軸的方向看：密度對溫度" data-en-title="Along the salinity axis: density against temperature">側面</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="T–S 圖：橫軸是鹽度，縱軸是溫度；彎曲的線是等密度線，紅點是水團 A、藍點是水團 B、紫點是混合水" data-en-aria-label="T–S diagram: salinity across, temperature up; the curved lines are lines of equal density, the red dot is parcel A, the blue dot parcel B and the purple dot the mixture"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="pinBtn" type="button" data-en="Mark A" title="在 T–S 圖上留下水團 A 現在的位置" data-en-title="Mark where parcel A is now on the T–S diagram">留下 A 的記號</button>
+          <button id="clearBtn" type="button" data-en="Clear all" title="清除記號與比較的水團；A、B 與混合比例不變" data-en-title="Remove markers and the chosen water mass; A, B and the mixing ratio stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" data-en="Drag A or B (or focus the diagram: Enter switches between A and B, left/right = salinity, up/down = temperature, Shift for bigger steps). Tap a grey diamond to look up a water mass.">拖曳 A 或 B（或選取圖後：Enter 切換 A／B，左右＝鹽度、上下＝溫度，Shift 走大步）。點灰色菱形可以查水團。</p>
+        <p class="hint l3" data-en="Height = density σ (lower = heavier). The straight purple line joins A and B: the mixture would sit on it if density mixed linearly — the real mixture is on the surface below it. Drag to rotate, scroll or pinch to zoom.">高度＝密度 σ（越低越重）。紫色直線連接 A 和 B：如果密度也是線性混合，混合水會在這條線上——真正的混合水在它下方的曲面上。拖曳旋轉，滾輪或雙指縮放。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="海洋剖面" data-en-aria-label="Ocean profile" id="profSeg">
+            <button type="button" data-prof="wpac" aria-pressed="true" data-en="Tropical W Pacific">熱帶西太平洋</button>
+            <button type="button" data-prof="natl" aria-pressed="false" data-en="Subtropical N Atlantic">北大西洋副熱帶</button>
+            <button type="button" data-prof="npac" aria-pressed="false" data-en="Subpolar N Pacific">北太平洋亞寒帶</button>
+            <button type="button" data-prof="wedd" aria-pressed="false" data-en="Weddell Sea">南極威德爾海</button>
+          </div>
+          <canvas id="gr" aria-label="海洋剖面：縱軸是深度，曲線是位溫、鹽度與密度，橫線是水團停住的深度" data-en-aria-label="Ocean profile: depth down, curves for potential temperature, salinity and density, horizontal lines where the parcels settle"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 class="ca-h"><span class="dot" style="color:var(--sw-a);background:var(--sw-a)"></span><span data-en="Parcel A">水團 A</span></h2>
+          <div class="slider"><label for="tA" data-en="Temperature (°C)">溫度（°C）</label><output></output>
+            <input id="tA" type="range" min="-2.5" max="32" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="sA" data-en="Salinity">鹽度</label><output></output>
+            <input id="sA" type="range" min="0" max="42" step="0.05" value="34.5" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2><span class="dot" style="color:var(--sw-b);background:var(--sw-b)"></span><span data-en="Parcel B">水團 B</span></h2>
+          <div class="slider"><label for="tB" data-en="Temperature (°C)">溫度（°C）</label><output></output>
+            <input id="tB" type="range" min="-2.5" max="32" step="0.1" value="20" data-decimals="2"></div>
+          <div class="slider"><label for="sB" data-en="Salinity">鹽度</label><output></output>
+            <input id="sB" type="range" min="0" max="42" step="0.05" value="35.5" data-decimals="2"></div>
+          <div class="slider"><label for="mf" data-en="Mixture: share of B">混合：B 所佔的比例</label><output></output>
+            <input id="mf" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <table class="rt" id="rt">
+            <thead><tr><th></th><th class="ca">A</th><th class="cb">B</th><th class="cm" data-en="Mix">混合</th></tr></thead>
+            <tbody>
+              <tr><td data-en="Temperature (°C)">溫度（°C）</td><td id="rTA"></td><td id="rTB"></td><td id="rTM"></td></tr>
+              <tr><td data-en="Salinity">鹽度</td><td id="rSA"></td><td id="rSB"></td><td id="rSM"></td></tr>
+              <tr><td data-en-html="Density σ (kg/m&lt;sup&gt;3&lt;/sup&gt; − 1000)">密度 σ（kg/m<sup>3</sup> − 1000）</td><td id="rDA"></td><td id="rDB"></td><td id="rDM"></td></tr>
+              <tr><td data-en="Freezing point (°C)">冰點（°C）</td><td id="rFA"></td><td id="rFB"></td><td id="rFM"></td></tr>
+              <tr><td data-en="Settles at">放進海裡停在</td><td id="rZA"></td><td id="rZB"></td><td id="rZM"></td></tr>
+            </tbody>
+          </table>
+          <p class="hint" id="mixHint">—</p>
+          <p class="hint" id="aHint">—</p>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Water masses">水團</h2>
+          <div class="pick-row">
+            <label class="sr-only" for="massSel" data-en="Water mass">水團</label>
+            <select id="massSel"></select>
+            <button type="button" id="toA" data-en="Copy to A" title="把這個水團的溫度、鹽度設給水團 A" data-en-title="Give parcel A this water mass’s temperature and salinity">設給 A</button>
+          </div>
+          <p class="hint" id="massHint" data-en="Tap a grey diamond on the diagram or choose one from the list.">點 T–S 圖上的灰色菱形，或從清單選一個。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Two things make seawater heavy">讓海水變重的兩件事</h3>
+      <p data-en-html="Cold water is denser than warm water, and salty water is denser than fresh water. Oceanographers write the density as \(\sigma = \rho - 1000\) in kg/m³, so typical seawater has \(\sigma\) between about 20 and 28. The standard formula, the UNESCO equation of state EOS-80, gives \(\rho(S, T, p)\) for any salinity, temperature and pressure; near the surface, roughly">冷的水比暖的水重，鹹的水比淡的水重。海洋學家把密度寫成 \(\sigma = \rho - 1000\)（單位 kg/m³），一般的海水 \(\sigma\) 大約在 20 到 28 之間。標準的公式是 UNESCO 國際海水狀態方程式 EOS-80，可以算出任何鹽度、溫度、壓力下的 \(\rho(S, T, p)\)；在海面附近大約是</p>
+      <div class="formula">\[ \Delta\rho \approx \rho\,(-\alpha\,\Delta T + \beta\,\Delta S),\qquad \alpha \approx 0.5\text{–}3\times10^{-4}\ \mathrm{K^{-1}},\quad \beta \approx 7.5\times10^{-4} \]</div>
+      <p data-en-html="But \(\alpha\) is not a constant: warm water expands a lot when heated, cold water hardly at all. That is why the lines of equal density on a T–S diagram are curved.">但 \(\alpha\) 不是常數：暖水加熱時膨脹得多，冷水幾乎不膨脹。所以 T–S 圖上的等密度線是彎的。</p>
+
+      <h3 data-en="Freezing and the densest temperature">冰點與最重的溫度</h3>
+      <p data-en-html="Fresh water is heaviest at about 4 °C, so lakes freeze from the top while the bottom stays at 4 °C. Salt lowers both the freezing point and the temperature of maximum density; above a salinity of about 24.7 the water keeps getting heavier all the way down to its freezing point (about −1.9 °C for ordinary seawater). That is why polar seawater can sink when it cools.">淡水在約 4 °C 最重，所以湖從表面開始結冰，湖底維持 4 °C。鹽會把冰點和最大密度的溫度都往下拉；鹽度超過約 24.7 以後，海水一路冷到冰點（一般海水約 −1.9 °C）都是越冷越重。所以極區的海水冷卻時會往下沉。</p>
+
+      <h3 data-en="Water masses and mixing">水團與混合</h3>
+      <p data-en-html="Water sinks or rises until it is surrounded by water of the same density, keeping the temperature and salinity it got at the surface. Each such body — Antarctic Bottom Water, North Atlantic Deep Water and so on — sits at its own point on the T–S diagram. When two parcels mix, temperature and salinity mix in proportion, so the mixture lies on the straight line between them. Because the density lines are curved, that point is on a heavier line than both: this is <strong>cabbeling</strong>.">海水會沉或浮，直到周圍的水和它一樣重為止，並且保留它在海面時得到的溫度和鹽度。這樣的一大團水——南極底層水、北大西洋深層水……——各自佔在 T–S 圖上的一個點。兩團水混合時，溫度和鹽度按比例混合，所以混合水落在兩點之間的直線上。因為等密度線是彎的，這一點落在比兩者都重的線上：這叫<strong>混合增密</strong>（cabbeling）。</p>
+      <div class="formula">\[ T_{\text{mix}} = (1-f)\,T_A + f\,T_B,\qquad S_{\text{mix}} = (1-f)\,S_A + f\,S_B \]</div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Curved lines</strong>: how much must salinity change to balance a 1 °C change at 25 °C? And at 2 °C?"><strong>彎曲的等密度線</strong>：在 25 °C 時，溫度變 1 °C 要鹽度變多少才能抵銷？在 2 °C 時呢？</li>
+        <li data-en-html="<strong>Fresh water</strong>: switch to “All 0–42”, set S = 0 and find the temperature where the water is heaviest."><strong>淡水</strong>：切到「全部 0–42」，把鹽度設成 0，找出水最重的溫度。</li>
+        <li data-en-html="<strong>Settling</strong>: put the Mediterranean Water into the North Atlantic profile. Where does it stop?"><strong>停在哪裡</strong>：把地中海水放進北大西洋的剖面，它會停在多深？</li>
+        <li data-en-html="<strong>Subpolar North Pacific</strong>: the temperature barely changes with depth. What keeps the surface water from sinking in winter?"><strong>北太平洋亞寒帶</strong>：溫度幾乎不隨深度改變，冬天表層的水為什麼不會沉下去？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Density from EOS-80 (UNESCO 1981) — checked against all eight check values in UNESCO Technical Paper 44 to 10&lt;sup&gt;−5&lt;/sup&gt; kg/m³; freezing point UNESCO 1983; potential temperature by Fofonoff’s Runge–Kutta method with Bryden’s adiabatic lapse rate. Salinity is practical salinity (PSS-78, no unit). The newer TEOS-10 differs only slightly for these purposes.">密度用 EOS-80（UNESCO 1981），和 UNESCO 技術報告 44 的八組檢核值一致到 10<sup>−5</sup> kg/m³；冰點用 UNESCO 1983；位溫用 Fofonoff 的 Runge–Kutta 法與 Bryden 的絕熱遞減率。鹽度是實用鹽度（PSS-78，沒有單位）。較新的 TEOS-10 在這裡的差別很小。</li>
+        <li data-en-html="The parcels and the water masses are compared by potential density \(\sigma_\theta\) (brought to the surface without exchanging heat). Deep water is better compared at depth (for example \(\sigma_4\)): referred to the surface, North Atlantic Deep Water looks heavier than Antarctic Bottom Water, but at 4000 m the order is reversed.">水團之間用位密度 \(\sigma_\theta\)（不交換熱量地搬到海面時的密度）比較。深層的水最好在深處比較（例如 \(\sigma_4\)）：以海面為參考時，北大西洋深層水看起來比南極底層水重，但在 4000 m 深處比較，順序就反過來。</li>
+        <li data-en-html="Mixing: temperature and salinity mix linearly by mass (heat capacity treated as constant).">混合：溫度與鹽度依質量比例線性混合（比熱當成常數）。</li>
+        <li data-en-html="The four ocean profiles are smoothed typical shapes based on climatology (World Ocean Atlas), not a single measurement; the water-mass values are typical core values and vary from place to place. A parcel settles at the first depth where the surrounding water is as heavy as it is.">四個海洋剖面是依氣候值（World Ocean Atlas）整理的平滑典型形狀，不是某一次的實測；水團的數值是典型的核心值，各地會有差異。一團水停在第一個「周圍的水和它一樣重」的深度。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Properties of seawater, ocean circulation">課綱對應：高中地球科學・海水的性質、海水的運動</li>
+        <li data-en-html="UNESCO (1981), <i>Tenth report of the Joint Panel on Oceanographic Tables and Standards</i>, UNESCO Technical Papers in Marine Science 36 (EOS-80).">UNESCO（1981），<i>Tenth report of the Joint Panel on Oceanographic Tables and Standards</i>，UNESCO Technical Papers in Marine Science 36（EOS-80）。</li>
+        <li data-en-html="N. P. Fofonoff and R. C. Millard Jr. (1983), <i>Algorithms for computation of fundamental properties of seawater</i>, UNESCO Technical Papers in Marine Science 44.">N. P. Fofonoff 與 R. C. Millard Jr.（1983），<i>Algorithms for computation of fundamental properties of seawater</i>，UNESCO Technical Papers in Marine Science 44。</li>
+        <li data-en-html="H. L. Bryden (1973), “New polynomials for thermal expansion, adiabatic temperature gradient and potential temperature of sea water”, <i>Deep-Sea Research</i> 20, 401–408.">H. L. Bryden（1973），<i>Deep-Sea Research</i> 20 卷 401–408 頁（絕熱遞減率）。</li>
+        <li data-en-html="P. M. Saunders (1981), “Practical conversion of pressure to depth”, <i>Journal of Physical Oceanography</i> 11, 573–574.">P. M. Saunders（1981），<i>Journal of Physical Oceanography</i> 11 卷 573–574 頁（深度與壓力換算）。</li>
+        <li data-en-html="L. D. Talley, G. L. Pickard, W. J. Emery and J. H. Swift (2011), <i>Descriptive Physical Oceanography</i>, 6th ed., Academic Press (water masses).">L. D. Talley、G. L. Pickard、W. J. Emery 與 J. H. Swift（2011），<i>Descriptive Physical Oceanography</i> 第 6 版，Academic Press（水團）。</li>
+        <li data-en-html="NOAA National Centers for Environmental Information, <i>World Ocean Atlas</i> (temperature and salinity climatology).">美國國家海洋暨大氣總署（NOAA）國家環境資訊中心，<i>World Ocean Atlas</i>（溫度與鹽度的氣候值）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/seawater-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/seawater.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="seawater"></script>
+  <script src="js/missions/seawater.js"></script>
+  <script src="js/stats.js" data-module="seawater"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
