@@ -23,7 +23,7 @@
  "photoelectric": "969322aa69",
  "hydrogen-spectrum": "78c71393a9",
  "radioactive-decay": "713fd086f9",
- "index": "6f60d73037",
+ "index": "26bd21157c",
  "free-fall": "9d2605e21b",
  "ripple-tank": "93838f4dbf",
  "resonance-tube": "13db9bbcd1",
@@ -43,5 +43,6 @@
  "energy-coaster": "c5b0948beb",
  "current-magnetic-field": "f154ed1a4f",
  "seasons": "bef2fbed28",
- "mendelian-inheritance": "2be7bd0adf"
+ "mendelian-inheritance": "2be7bd0adf",
+ "acid-base-titration": "277f5da78b"
 }
