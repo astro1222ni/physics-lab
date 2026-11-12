@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Molecular Shapes (VSEPR) | Astro Ni Science Lab">分子的形狀（VSEPR）｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 分子的形狀頁面專用樣式。元素顏色（近似 CPK 慣用色）、孤對電子、偶極的色彩代號：淺色與兩個深色區塊同時定義 */
+    :root {
+      --el-H: #e9edf1; --el-Be: #84a92c; --el-B: #e0927a; --el-C: #424a55; --el-N: #2f5fd6; --el-O: #d4372f;
+      --el-F: #5fae3c; --el-P: #e07c12; --el-S: #d2a613; --el-Cl: #1c9a48; --el-Br: #93301f; --el-Xe: #2f93a9;
+      --ms-lp: #6a55d6; --ms-dip: #c2410c; --ms-bond: #8a96a3; --ms-poly: #5b6d72;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --el-H: #e6eaee; --el-Be: #a6cf45; --el-B: #f2a993; --el-C: #8794a3; --el-N: #6f97ff; --el-O: #ff6a5c;
+        --el-F: #86d65d; --el-P: #ff9d3d; --el-S: #f2cc45; --el-Cl: #44c770; --el-Br: #d0644c; --el-Xe: #5cc3d8;
+        --ms-lp: #a99cf5; --ms-dip: #fb923c; --ms-bond: #9fb0b8; --ms-poly: #98a9ab;
+      }
+    }
+    :root[data-theme="dark"] {
+      --el-H: #e6eaee; --el-Be: #a6cf45; --el-B: #f2a993; --el-C: #8794a3; --el-N: #6f97ff; --el-O: #ff6a5c;
+      --el-F: #86d65d; --el-P: #ff9d3d; --el-S: #f2cc45; --el-Cl: #44c770; --el-Br: #d0644c; --el-Xe: #5cc3d8;
+      --ms-lp: #a99cf5; --ms-dip: #fb923c; --ms-bond: #9fb0b8; --ms-poly: #98a9ab;
+    }
+    .ms [hidden] { display: none !important; }
+    .ms button { min-height: 44px; }
+    .ms sub, .ms sup, .notes sub, .notes sup, dl.readout sub { font-size: .75em; }
+    .ms .panel { grid-template-columns: minmax(0, 1fr); }
+    .ms .panel > .card { min-width: 0; }
+    .ms .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ms .card .info { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 2px; line-height: 1.5; }
+    .ms .card .info.warn { color: var(--pos); }
+    .ms .slider input[type="range"] { height: 28px; margin: 0; }
+    .ms .checks label { min-height: 44px; }
+    .ms .checks input { width: 17px; height: 17px; }
+    .seg-label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 4px; }
+    .seg-label:first-of-type { margin-top: 2px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    .ms #cv { aspect-ratio: 4 / 3; cursor: grab; }
+    .ms #cv.on-dom { cursor: pointer; }
+    .ms #cv.dragging { cursor: grabbing; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 38%, var(--canvas-bg) 52%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas, .ms #cv { aspect-ratio: 1 / 1.02; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 canvas.on-dom { cursor: pointer; }
+    .m3-wrap { position: relative; }
+    .m3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .m3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .m3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 60%; }
+    .m3-hud .tr { right: 8px; top: 8px; align-items: flex-end; max-width: 40%; text-align: right; }
+    .m3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .m3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .m3-hud span.m { color: var(--muted); font-weight: 500; }
+    .m3-hud span.ok { color: var(--probe); }
+    .m3-hud span.warn { color: var(--pos); }
+    .m3-hud span:empty { display: none; }
+    .m3-hud sub, .m3-hud sup { font-size: .75em; }
+    .ms .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ms .playbar button { flex: 1 1 auto; }
+    .ms .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ms .stage .status { margin: 8px 4px 0; }
+    /* 路易斯結構與能量圖：兩個小畫布並排（手機上下排） */
+    .subviews { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin: 12px 0 0; }
+    @media (max-width: 640px) { .subviews { grid-template-columns: minmax(0, 1fr); } }
+    .subviews figure { margin: 0; min-width: 0; }
+    .subviews figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; margin: 0 2px 4px; }
+    .subviews canvas { aspect-ratio: 4 / 3; cursor: default; touch-action: auto; }
+    .ms .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .ms .legend .lobe { width: 16px; height: 10px; border-radius: 50%; background: var(--ms-lp); opacity: .55; }
+    .ms .legend .wedge { width: 18px; height: 0; border-radius: 0; background: none; border-left: 18px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
+    .ms .legend .hash { width: 18px; height: 8px; border-radius: 0; background: repeating-linear-gradient(90deg, currentColor 0 2px, transparent 2px 4px); clip-path: polygon(0 50%, 100% 0, 100% 100%); }
+    /* 讀數 */
+    .ms dl.readout { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+    .ms dl.readout dd { overflow-wrap: anywhere; }
+    .ms dl.readout dd.big { font-size: calc(20px * var(--fs, 1)); font-weight: 700; }
+    .ms dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .ms dl.readout dd.warn { color: var(--pos); font-weight: 600; }
+    .ms dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    /* 常見分子、中心原子、鍵結原子按鈕 */
+    .quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .quick button { padding: 6px 2px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .quick button[aria-pressed="true"], .els button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .els { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+    .els button { padding: 6px 2px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px; white-space: nowrap; min-width: 0; }
+    .els button i, .chips button i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; flex: none;
+      box-shadow: inset -2px -2px 3px rgba(0,0,0,.28), inset 1px 1px 2px rgba(255,255,255,.5); border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); }
+    .els button:disabled { opacity: .45; cursor: not-allowed; }
+    .lp-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6px; margin: 8px 0 0; }
+    .lp-row button:disabled { opacity: .45; cursor: not-allowed; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 44px; align-items: center; }
+    .chips button { padding: 4px 10px; display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+    .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .chips .none { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    #ligChips button::after { content: "×"; color: var(--muted); font-weight: 700; margin-left: 2px; }
+    .angle-out { font-size: calc(22px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; margin: 8px 0 0; color: var(--accent); min-height: 1.4em; }
+    .angle-out small { display: block; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .ms .btns button { flex: 1 1 auto; }
+    /* 說明區的表格 */
+    .notes .tblnote { overflow-x: auto; }
+    .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 9px; text-align: center; white-space: nowrap; }
+    .notes table.spec th { color: var(--muted); font-weight: 600; }
+    .notes table.spec td.l { text-align: left; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#matter&quot;&gt;Chemistry · Matter and Structure&lt;/a&gt; / Molecular Shapes"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#matter">化學・物質與結構</a> ／ 分子的形狀</nav>
+      <h1 data-en="Molecular Shapes: Electron Pairs Push Apart (VSEPR)">分子的形狀：電子對互相推開（VSEPR）</h1>
+      <p data-en="The bonding pairs and lone pairs around a central atom repel one another and spread out until the energy is as low as it can be — and that sets the shape of the molecule. Build a molecule, drag an electron domain out of place and watch the domains push each other back into the lowest-energy arrangement. Measure bond angles, see why lone pairs squeeze the bonds together, and find out which molecules are polar.">中心原子周圍的鍵結電子對與孤對電子互相排斥、盡量散開，直到能量最低——分子的形狀就這樣決定了。組一個分子，把一個電子域拖離原位，看它們怎麼互相推開、慢慢穩定到能量最低的排列；量一量鍵角，看孤對電子怎麼把鍵擠在一起，再找出哪些分子有極性。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press CH4, NH3 and H2O in turn and measure a bond angle in each — the more lone pairs, the smaller the angle. Then drag one electron domain away and let go.">試試看：依序按 CH<sub>4</sub>、NH<sub>3</sub>、H<sub>2</sub>O，各量一個鍵角——孤對電子越多，鍵角越小。再拖動一個電子域，放手看它們重新排好。</p>
+    <div class="lab ms">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+          </div>
+          <button type="button" id="resetCam" data-en="Reset view">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="分子的 2D 投影：楔形實線表示朝向你的鍵、虛線楔形表示遠離你的鍵，半透明的瓣是孤對電子。拖曳原子或孤對電子可以移動電子域，拖曳空白處可以轉動分子；點兩個鍵結原子可以量鍵角。" data-en-aria-label="2D projection of the molecule: solid wedges are bonds pointing towards you, hashed wedges point away, and the translucent lobes are lone pairs. Drag an atom or a lone pair to move an electron domain, drag empty space to turn the molecule, and tap two bonded atoms to measure the bond angle."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="shake" type="button" class="primary" data-en="Shake (anneal)">搖一搖（退火）</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除量角與能量圖，分子的組成與設定不變" data-en-title="Clear the angle measurement and the energy graph; the molecule and the settings stay as they are">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="subviews">
+          <figure>
+            <figcaption data-en="Lewis structure">路易斯結構</figcaption>
+            <canvas id="lcv" role="img" aria-label="路易斯結構：中心原子、鍵結原子、鍵與所有的孤對電子" data-en-aria-label="Lewis structure: the central atom, the bonded atoms, the bonds and every lone pair"></canvas>
+          </figure>
+          <figure>
+            <figcaption data-en="Energy of the arrangement">排列的能量</figcaption>
+            <canvas id="ecv" role="img" aria-label="電子域排斥位能隨時間的變化；虛線是能量最低的排列" data-en-aria-label="Repulsion energy of the electron domains against time; the dashed line is the lowest-energy arrangement"></canvas>
+          </figure>
+        </div>
+        <div class="legend">
+          <span data-en-html="&lt;i class=&quot;lobe&quot;&gt;&lt;/i&gt;Lone pair"><i class="lobe"></i>孤對電子</span>
+          <span class="l2" data-en-html="&lt;i class=&quot;wedge&quot;&gt;&lt;/i&gt;Bond towards you"><i class="wedge"></i>朝向你的鍵</span>
+          <span class="l2" data-en-html="&lt;i class=&quot;hash&quot;&gt;&lt;/i&gt;Bond pointing away"><i class="hash"></i>遠離你的鍵</span>
+          <span style="color:var(--ms-dip)" data-en-html="&lt;i style=&quot;background:var(--ms-dip)&quot;&gt;&lt;/i&gt;Dipole (δ+ → δ−)"><i style="background:var(--ms-dip)"></i>偶極（δ+ → δ−）</span>
+          <span style="color:var(--accent)" data-en-html="&lt;i style=&quot;background:var(--accent)&quot;&gt;&lt;/i&gt;Measured angle"><i style="background:var(--accent)"></i>量到的鍵角</span>
+        </div>
+        <p class="hint l2" data-en="Drag an atom or a lone pair to move that electron domain; drag empty space to turn the molecule. Tap two bonded atoms to measure the angle between their bonds. With the keyboard: Enter picks an item, the arrow keys move it.">拖曳原子或孤對電子可以移動那個電子域；拖曳空白處可以轉動分子。點兩個鍵結原子，量出兩個鍵的夾角。鍵盤：Enter 選擇物件，方向鍵移動。</p>
+        <p class="hint l3" data-en="Drag empty space to rotate, scroll or pinch to zoom. Drag an atom or a lone pair to move that electron domain; tap two bonded atoms to measure their bond angle. Arrow keys rotate the view.">拖曳空白處旋轉，滾輪或雙指縮放；拖曳原子或孤對電子可以移動那個電子域，點兩個鍵結原子可以量鍵角。方向鍵轉動視角。</p>
+        <p class="hint" data-en="Atoms and bond lengths are drawn to scale from covalent radii (an estimate); the directions of the electron domains come from the energy calculation.">原子間距依共價半徑估計，畫成同一比例；電子域的方向由能量計算得到。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+
+        <section class="card">
+          <h2 id="presetLabel" data-en="Common molecules">常見分子</h2>
+          <div class="quick" id="presets" role="group" aria-labelledby="presetLabel" data-share-skip>
+            <button type="button" data-preset="BeCl2" aria-pressed="false">BeCl<sub>2</sub></button>
+            <button type="button" data-preset="CO2" aria-pressed="false">CO<sub>2</sub></button>
+            <button type="button" data-preset="BF3" aria-pressed="false">BF<sub>3</sub></button>
+            <button type="button" data-preset="SO2" aria-pressed="false">SO<sub>2</sub></button>
+            <button type="button" data-preset="CH4" aria-pressed="false">CH<sub>4</sub></button>
+            <button type="button" data-preset="NH3" aria-pressed="false">NH<sub>3</sub></button>
+            <button type="button" data-preset="H2O" aria-pressed="false">H<sub>2</sub>O</button>
+            <button type="button" data-preset="PCl5" aria-pressed="false">PCl<sub>5</sub></button>
+            <button type="button" data-preset="SF4" aria-pressed="false">SF<sub>4</sub></button>
+            <button type="button" data-preset="ClF3" aria-pressed="false">ClF<sub>3</sub></button>
+            <button type="button" data-preset="XeF2" aria-pressed="false">XeF<sub>2</sub></button>
+            <button type="button" data-preset="SF6" aria-pressed="false">SF<sub>6</sub></button>
+            <button type="button" data-preset="BrF5" aria-pressed="false">BrF<sub>5</sub></button>
+            <button type="button" data-preset="XeF4" aria-pressed="false">XeF<sub>4</sub></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Build your own">自己組合</h2>
+          <p class="seg-label" id="cLabel" data-en="Central atom">中心原子</p>
+          <div class="els" id="centers" role="group" aria-labelledby="cLabel" data-share-skip></div>
+          <p class="seg-label" id="aLabel" data-en="Add a bonded atom (O forms a double bond)">加上鍵結原子（O 以雙鍵相連）</p>
+          <div class="els" id="addLig" role="group" aria-labelledby="aLabel" data-share-skip></div>
+          <p class="seg-label" id="rLabel" data-en="Bonded atoms (tap one to remove it)">鍵結原子（點一下可以移除）</p>
+          <div class="chips" id="ligChips" role="group" aria-labelledby="rLabel" data-share-skip></div>
+          <div class="lp-row" data-share-skip>
+            <button type="button" id="lpAdd" data-en="+ lone pair">＋孤對電子</button>
+            <button type="button" id="lpDel" data-en="− lone pair">−孤對電子</button>
+          </div>
+          <p class="info" id="eInfo" aria-live="polite"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Measure a bond angle">量鍵角</h2>
+          <p class="hint" data-en="Pick two bonds here, or tap two bonded atoms in the picture.">在這裡選兩個鍵，或在畫面上點兩個鍵結原子。</p>
+          <div class="chips" id="bondChips" role="group" aria-label="選兩個鍵" data-en-aria-label="Pick two bonds" data-share-skip></div>
+          <p class="angle-out" id="angleOut" aria-live="polite"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Model and display">模型與顯示</h2>
+          <div class="slider"><label for="lam" data-en="Lone-pair repulsion strength">孤對電子的排斥強度</label><output id="lamo"></output>
+            <input id="lam" type="range" min="0.3" max="1.5" step="0.01" value="0.7" data-decimals="3"></div>
+          <p class="hint" data-en="Default 0.7: at the tetrahedral angle a lone pair then pushes about 1.5 times as hard as a bonding pair. Larger values squeeze the bonds closer.">預設 0.7：這時在四面體角上，孤對電子推鄰居的力約為鍵結電子對的 1.5 倍。數值越大，鍵被擠得越近。</p>
+          <div class="checks">
+            <label><input id="showLP" type="checkbox" checked><span data-en="Lone pairs">孤對電子</span></label>
+            <label><input id="showNet" type="checkbox" checked><span data-en="Net dipole">淨偶極</span></label>
+            <label><input id="showBD" type="checkbox"><span data-en="Bond dipoles">鍵的偶極</span></label>
+            <label><input id="showPoly" type="checkbox"><span data-en="Electron-pair geometry">電子對幾何</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose">實驗目的</h2>
+      <ol>
+        <li data-en="Use the repulsion between electron domains to predict the electron-pair geometry and the shape of a molecule.">用電子域之間的排斥，預測分子的電子對幾何與分子形狀。</li>
+        <li data-en="See why lone pairs make bond angles smaller, and why the lone pairs of a trigonal bipyramid sit on the equator.">了解孤對電子為什麼會讓鍵角變小，以及三角雙錐的孤對電子為什麼在赤道上。</li>
+        <li data-en="Decide whether a molecule is polar by adding up its bond dipoles.">把各鍵的偶極相加，判斷分子有沒有極性。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Electron domains">電子域</h3>
+      <p data-en-html="Around the central atom A there are bonding pairs (to the bonded atoms X) and lone pairs (E). Each bond counts as <strong>one electron domain</strong>, whether it is single, double or triple; each lone pair is also one domain. The domains repel each other and spread out as far as they can. The number of domains fixes the <strong>electron-pair geometry</strong>; the positions of the atoms alone give the <strong>shape of the molecule</strong>. A molecule with m bonded atoms and n lone pairs is written AX&lt;sub&gt;m&lt;/sub&gt;E&lt;sub&gt;n&lt;/sub&gt;.">中心原子 A 的周圍有鍵結電子對（連到鍵結原子 X）與孤對電子（E）。每一個鍵——不論單鍵、雙鍵或參鍵——都只算<strong>一個電子域</strong>，每一對孤對電子也是一個電子域。電子域互相排斥、盡量散開：電子域的數目決定<strong>電子對幾何</strong>，只看原子的位置則得到<strong>分子形狀</strong>。有 m 個鍵結原子、n 對孤對電子的分子記成 AX<sub>m</sub>E<sub>n</sub>。</p>
+      <div class="tblnote">
+        <table class="spec">
+          <tr><th data-en="Domains">電子域</th><th data-en="Electron-pair geometry">電子對幾何</th><th>AX<sub>m</sub>E<sub>n</sub></th><th data-en="Shape of the molecule">分子形狀</th><th data-en="Example">例子</th></tr>
+          <tr><td>2</td><td data-en="linear">直線形</td><td>AX<sub>2</sub></td><td data-en="linear">直線形</td><td class="l">BeCl<sub>2</sub>、CO<sub>2</sub></td></tr>
+          <tr><td rowspan="2">3</td><td rowspan="2" data-en="trigonal planar">平面三角形</td><td>AX<sub>3</sub></td><td data-en="trigonal planar">平面三角形</td><td class="l">BF<sub>3</sub></td></tr>
+          <tr><td>AX<sub>2</sub>E</td><td data-en="bent">角形</td><td class="l">SO<sub>2</sub></td></tr>
+          <tr><td rowspan="3">4</td><td rowspan="3" data-en="tetrahedral">四面體形</td><td>AX<sub>4</sub></td><td data-en="tetrahedral">四面體形</td><td class="l">CH<sub>4</sub></td></tr>
+          <tr><td>AX<sub>3</sub>E</td><td data-en="trigonal pyramidal">三角錐形</td><td class="l">NH<sub>3</sub></td></tr>
+          <tr><td>AX<sub>2</sub>E<sub>2</sub></td><td data-en="bent">角形</td><td class="l">H<sub>2</sub>O</td></tr>
+          <tr><td rowspan="4">5</td><td rowspan="4" data-en="trigonal bipyramidal">三角雙錐形</td><td>AX<sub>5</sub></td><td data-en="trigonal bipyramidal">三角雙錐形</td><td class="l">PCl<sub>5</sub></td></tr>
+          <tr><td>AX<sub>4</sub>E</td><td data-en="seesaw">蹺蹺板形</td><td class="l">SF<sub>4</sub></td></tr>
+          <tr><td>AX<sub>3</sub>E<sub>2</sub></td><td data-en="T-shaped">T 形</td><td class="l">ClF<sub>3</sub></td></tr>
+          <tr><td>AX<sub>2</sub>E<sub>3</sub></td><td data-en="linear">直線形</td><td class="l">XeF<sub>2</sub></td></tr>
+          <tr><td rowspan="3">6</td><td rowspan="3" data-en="octahedral">八面體形</td><td>AX<sub>6</sub></td><td data-en="octahedral">八面體形</td><td class="l">SF<sub>6</sub></td></tr>
+          <tr><td>AX<sub>5</sub>E</td><td data-en="square pyramidal">四方錐形</td><td class="l">BrF<sub>5</sub></td></tr>
+          <tr><td>AX<sub>4</sub>E<sub>2</sub></td><td data-en="square planar">平面四方形</td><td class="l">XeF<sub>4</sub></td></tr>
+        </table>
+      </div>
+      <p data-en="The bent shape is also called V-shaped. A diatomic species (only one bonded atom) is always linear.">角形也叫 V 形或彎曲形。只有一個鍵結原子的雙原子粒子，一定是直線形。</p>
+
+      <h3 data-en="Lone pairs push harder">孤對電子推得比較用力</h3>
+      <p data-en="A bonding pair is held between two nuclei, but a lone pair is held by the central atom only, so its electron cloud is fatter and closer to the central atom. The repulsions rank lone pair–lone pair &gt; lone pair–bonding pair &gt; bonding pair–bonding pair. That is why the angle drops from 109.5° in CH4 to about 107° in NH3 and about 104.5° in H2O, even though all three have four electron domains.">鍵結電子對被兩個原子核夾住，孤對電子卻只受中心原子吸引，電子雲比較胖、也比較靠近中心原子，所以排斥力的大小是：孤對–孤對 &gt; 孤對–鍵結 &gt; 鍵結–鍵結。這就是為什麼 CH<sub>4</sub>、NH<sub>3</sub>、H<sub>2</sub>O 都有四個電子域，鍵角卻從 109.5° 變成約 107°、約 104.5°。</p>
+      <p data-en="In a trigonal bipyramid the two kinds of position are not equal. An axial position has three neighbours at 90°; an equatorial position has only two at 90° and two at 120°. A lone pair therefore takes an equatorial position, where it is crowded least: SF4 is a seesaw, ClF3 is T-shaped and XeF2 is linear. In an octahedron the second lone pair goes opposite the first, so XeF4 is square planar.">三角雙錐的兩種位置並不一樣：軸向的位置有三個 90° 的鄰居，赤道的位置只有兩個 90°、兩個 120° 的鄰居。孤對電子會佔赤道的位置，因為那裡最不擁擠：SF<sub>4</sub> 是蹺蹺板形、ClF<sub>3</sub> 是 T 形、XeF<sub>2</sub> 是直線形。八面體的第二對孤對電子則在第一對的正對面，所以 XeF<sub>4</sub> 是平面四方形。</p>
+
+      <h3 data-en="Polar or non-polar?">極性分子與非極性分子</h3>
+      <p data-en-html="Each bond is polar if its two atoms have different electronegativities χ. Draw the bond dipole as an arrow from δ+ to δ− (towards the more electronegative atom), with length proportional to the difference in electronegativity, and add the arrows as vectors:">兩個原子的電負度 χ 不同，鍵就有極性。把每個鍵的偶極畫成由 δ+ 指向 δ− 的箭頭（指向電負度大的原子），長度和電負度差成正比，再把所有箭頭當成向量相加：</p>
+      <div class="formula multi">
+        \[ \boldsymbol{\mu}_i \propto (\chi_{\mathrm X} - \chi_{\mathrm A})\,\hat{\mathbf u}_i \] \[ \boldsymbol{\mu}_{\text{net}} = \sum_i \boldsymbol{\mu}_i \]
+      </div>
+      <p data-en="If the bond dipoles cancel (net dipole zero) the molecule is non-polar, as in CO2, BF3, CH4, PCl5, SF6, XeF2 and XeF4 — a molecule can have polar bonds and lone pairs and still be non-polar when the shape is symmetric. Otherwise it is polar, as in H2O, NH3, SO2, SF4, ClF3 and BrF5.">各鍵的偶極互相抵消（淨偶極為零）就是非極性分子，例如 CO<sub>2</sub>、BF<sub>3</sub>、CH<sub>4</sub>、PCl<sub>5</sub>、SF<sub>6</sub>、XeF<sub>2</sub>、XeF<sub>4</sub>——鍵有極性、中心原子有孤對電子，只要形狀對稱，分子仍然沒有極性。抵消不掉就是極性分子，例如 H<sub>2</sub>O、NH<sub>3</sub>、SO<sub>2</sub>、SF<sub>4</sub>、ClF<sub>3</sub>、BrF<sub>5</sub>。</p>
+
+      <h3 data-en="The model compared with experiment">模型與實驗值的比較</h3>
+      <p data-en="The model angles below are calculated in your browser by the same energy minimisation as the picture, with the lone-pair repulsion slider at its default. The experimental values are measured for the gas-phase molecules.">下表的模型鍵角，是在你的瀏覽器裡用和畫面相同的能量最低化算出來的（孤對電子的排斥強度為預設值）；實驗值是氣態分子的測量值。</p>
+      <div class="tblnote">
+        <table class="spec" id="cmpTable">
+          <tr><th data-en="Molecule">分子</th><th data-en="Shape">分子形狀</th><th data-en="Angle in this model">本模型的鍵角</th><th data-en="Experiment">實驗值</th></tr>
+        </table>
+      </div>
+      <p data-en="The model gets the main results right — CH4 &gt; NH3 &gt; H2O, lone pairs on the equator of a trigonal bipyramid, two lone pairs opposite each other in XeF4, the equatorial angle of SF4 squeezed below 120° — but not every number. The real SF4 closes that angle to 101.6°; the model only reaches about 109°. In ClF3 and BrF5 the real bonds bend away from the lone pairs to below 90°, while in the model they stay at about 90° (ClF3 even slightly above), because in the model a lone pair pushes a neighbour at 90° about as hard as a bonding pair does. A larger lone-pair repulsion brings these angles closer to experiment but makes NH3 and H2O too small: no single value fits every molecule, which is the limit of such a simple model.">這個模型的主要結果都對——CH<sub>4</sub> &gt; NH<sub>3</sub> &gt; H<sub>2</sub>O、三角雙錐的孤對電子在赤道、XeF<sub>4</sub> 的兩對孤對電子在正對面、SF<sub>4</sub> 赤道上的鍵角被擠到 120° 以下——但不是每個數字都準。真實的 SF<sub>4</sub> 把那個角擠到 101.6°，模型只到 109° 左右。ClF<sub>3</sub> 與 BrF<sub>5</sub> 真實的鍵會往遠離孤對電子的方向彎到 90° 以下，模型卻幾乎停在 90°（ClF<sub>3</sub> 甚至略大於 90°），因為在模型裡，相隔 90° 時孤對電子推鄰居的力和鍵結電子對差不多大。把排斥強度調大，這些角會往實驗值靠近，NH<sub>3</sub> 與 H<sub>2</sub>O 卻會變得太小：沒有一個數值能讓所有分子同時符合，這正是簡單模型的限制。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Four domains, three angles.</strong> Measure one angle in CH4, NH3 and H2O. Then make the lone-pair repulsion weaker: NH3 and H2O open up towards the tetrahedral 109.5°; make it stronger and they close further."><strong>四個電子域、三種鍵角</strong>：在 CH<sub>4</sub>、NH<sub>3</sub>、H<sub>2</sub>O 各量一個鍵角；再把孤對電子的排斥強度調小，NH<sub>3</sub> 與 H<sub>2</sub>O 都會張開、往四面體的 109.5° 靠近；調大則夾得更窄。</li>
+        <li data-en-html="<strong>Equator or axis?</strong> Choose SF4. The two F atoms that are almost opposite each other are on the axis. Drag the lone pair onto the place of one of them. When you let go it may stay there — a <em>local</em> minimum. Watch the energy graph, then press “Shake (anneal)”: the lone pair finds its way back to the equator, and the energy drops below where it was."><strong>赤道還是軸上？</strong>選 SF<sub>4</sub>，幾乎正對面的兩個 F 在軸上。把孤對電子拖到其中一個軸向 F 的位置，放手後它可能就停在那裡——這是「局部」最低點。看看能量圖，再按「搖一搖（退火）」：孤對電子會找路回到赤道，能量也降得比剛才更低。</li>
+        <li data-en-html="<strong>Polar or not.</strong> Turn on the bond dipoles. In CH4 the four arrows cancel; change one H into Cl and the net dipole appears."><strong>有沒有極性</strong>：打開「鍵的偶極」。CH<sub>4</sub> 的四個箭頭互相抵消；把一個 H 換成 Cl，淨偶極就出現了。</li>
+        <li data-en-html="<strong>One domain each.</strong> Build CO2 yourself: two double bonds are still only two domains, so it is linear like BeCl2."><strong>雙鍵也只算一個</strong>：自己組 CO<sub>2</sub>，兩個雙鍵仍然只是兩個電子域，所以它和 BeCl<sub>2</sub> 一樣是直線形。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Each electron domain is a point on a unit sphere around the central atom (a direction \(\hat{\mathbf u}_i\)), and every pair of domains repels with the energy below. Between two bonds \(n_{ij} = 6\) and \(w_{ij} = 1\) (a double bond counts 1.2 times as strong). Whenever a lone pair is involved \(n_{ij} = 3\): \(w_{ij} = \lambda\) for a lone pair and a single bond and \(2\lambda^2\) for two lone pairs, where \(\lambda\) is the lone-pair repulsion slider (default 0.7).">每個電子域是中心原子周圍單位球面上的一個點（方向 \(\hat{\mathbf u}_i\)），任兩個電子域之間的排斥位能如下式。兩個鍵之間 \(n_{ij} = 6\)、\(w_{ij} = 1\)（雙鍵的強度算 1.2 倍）；牽涉孤對電子時 \(n_{ij} = 3\)：孤對電子與單鍵 \(w_{ij} = \lambda\)、兩對孤對電子 \(w_{ij} = 2\lambda^2\)，\(\lambda\) 就是「孤對電子的排斥強度」滑桿（預設 0.7）。</li>
+        <li data-en-html="A smaller exponent means a repulsion that fades more slowly with distance: the fat cloud of a lone pair reaches further. At about 109° apart a lone pair pushes its neighbour about 1.5 times as hard as a bonding pair does, so the bonds are squeezed together; at 90° the two pushes are about equal.">指數小，代表排斥隨距離衰減得比較慢：孤對電子的電子雲比較胖，影響伸得比較遠。相隔約 109° 時，孤對電子推鄰居的力大約是鍵結電子對的 1.5 倍，於是把鍵擠在一起；相隔 90° 時兩者差不多大。</li>
+      </ul>
+      <div class="formula multi">
+        \[ E = \sum_{i<j} \frac{w_{ij}}{\left|\hat{\mathbf u}_i - \hat{\mathbf u}_j\right|^{n_{ij}}} \]
+      </div>
+      <ul>
+        <li data-en-html="The animation moves every domain down the slope of this energy along the sphere (an overdamped motion, as if in a thick liquid), so the energy only goes down; the graph shows it falling. “Shake (anneal)” adds random thermal kicks whose temperature falls away — simulated annealing with Langevin dynamics — which lets the domains climb out of a local minimum. From a local minimum it shakes hard, and if the domains land in a local minimum again it shakes again, up to five rounds; from the lowest arrangement it shakes gently. Annealing is a matter of chance, so now and then you may need to press it once more.">動畫讓每個電子域沿著球面、順著能量下降最快的方向移動（過阻尼運動，像在黏稠的液體裡），所以能量只會下降，能量圖就是它下降的過程。「搖一搖（退火）」加上溫度逐漸降低的隨機熱擾動（郎之萬動力學的模擬退火），讓電子域有機會越過能障、跳出局部最低點：停在局部最低點時搖得比較用力，搖完又落進局部最低點就再搖，最多連搖五輪；已經是能量最低的排列時只輕輕搖。退火是機率性的，偶爾要多按一次。</li>
+        <li data-en="When you choose a common molecule, the domains start slightly scattered (in a way that leads back to the lowest arrangement) and push each other into place; once settled, the whole molecule turns slowly to the orientation used in textbooks, for example with the lone pairs on top. That is only a rotation of the whole molecule: no angle changes.">選常見分子時，電子域先被稍微打散（打散的方式保證會回到能量最低的排列），再互相推回定位；穩定之後，整個分子會慢慢轉到課本常見的方向，例如孤對電子朝上。這只是整個分子一起轉動，任何夾角都不變。</li>
+        <li data-en="The lowest-energy arrangement is found by starting from every way of placing the domains on the ideal polyhedron, plus a few random starts, minimising each one and keeping the lowest. The page compares your arrangement with it and tells you whether you are at the lowest energy or stuck in a local minimum.">「能量最低的排列」的求法：從理想多面體上各種放法、再加幾個隨機的起點，各自求出最低點，取能量最低的一個。頁面會拿你目前的排列和它比較，告訴你是能量最低，還是停在局部最低點。</li>
+        <li data-en="Simplifications: only the repulsions between electron domains are counted — not the repulsion between the nuclei, the size of the bonded atoms, or the way electronegative atoms make their bonding pairs smaller (which is why NF3 has a smaller angle than NH3). Which element is bonded does not change the arrangement, only the polarity.">簡化：只算電子域之間的排斥，不算原子核之間的排斥、鍵結原子的大小，也不算電負度大的原子讓鍵結電子對變小的效應（所以 NF<sub>3</sub> 的鍵角比 NH<sub>3</sub> 小，本模型算不出來）。鍵結原子是哪一種元素不影響排列，只影響極性。</li>
+        <li data-en="Polarity uses only the bond dipoles, with Pauling electronegativities. Lone pairs also carry a dipole: for example NF3 is much less polar (0.23 D) than its bonds suggest, because its lone pair points the other way. Whether a molecule is polar at all is still decided correctly by symmetry.">極性只用鍵的偶極，電負度用鮑林的數值。其實孤對電子也有偶極：例如 NF<sub>3</sub> 的孤對電子朝反方向，所以它的極性（0.23 D）比只看鍵預測的小很多。不過「有沒有極性」由對稱性決定，判斷結果仍然正確。</li>
+        <li data-en="Electron count: the formal charge of the central atom is its valence electrons minus the lone-pair electrons minus the bonds; the bonded atoms all have complete octets and no formal charge, so that is also the charge of the whole species (for example N with four H and no lone pair is NH4+). Atoms of period 2 hold at most 8 electrons in their valence shell.">電子數：中心原子的形式電荷 = 價電子數 − 孤對電子的電子數 − 鍵數（雙鍵算 2）；鍵結原子都補滿八隅體、形式電荷為 0，所以它也就是整個粒子的電荷（例如 N 接四個 H、沒有孤對電子，就是 NH<sub>4</sub><sup>+</sup>）。第二週期的原子價殼層最多 8 個電子。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="Why does a double bond count as only one electron domain?">為什麼雙鍵只算一個電子域？</li>
+        <li data-en="XeF4 has two lone pairs on xenon but is non-polar. Why?">XeF<sub>4</sub> 的 Xe 有兩對孤對電子，為什麼分子沒有極性？</li>
+        <li data-en="Why do the lone pairs of ClF3 sit on the equator and not on the axis?">ClF<sub>3</sub> 的孤對電子為什麼在赤道、而不在軸上？</li>
+        <li data-en="CH2Cl2 is tetrahedral like CH4. Is it polar?">CH<sub>2</sub>Cl<sub>2</sub> 和 CH<sub>4</sub> 一樣是四面體形，它有極性嗎？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="All the electrons of a double bond lie between the same two atoms, in the same direction from the central atom, so they act as one region of negative charge. They do push a little harder than a single bond.">雙鍵的電子都在同樣兩個原子之間、從中心原子看是同一個方向，所以算一個帶負電的區域；只是它推得比單鍵稍微用力一點。</li>
+          <li data-en="The two lone pairs are opposite each other and the four Xe–F bonds lie in a square: each bond dipole is cancelled by the one opposite it.">兩對孤對電子在正對面，四個 Xe–F 鍵排成正方形，每個鍵的偶極都被對面的那一個抵消。</li>
+          <li data-en="On the equator a lone pair has only two neighbours at 90°; on the axis it would have three. Lone pairs repel most strongly, so the arrangement with the fewest 90° contacts for them has the lowest energy.">在赤道上，孤對電子只有兩個 90° 的鄰居；在軸上會有三個。孤對電子的排斥最強，讓它們的 90° 鄰居最少的排列，能量最低。</li>
+          <li data-en="Yes. The shape is still tetrahedral, but the C–Cl and C–H bond dipoles are different and do not cancel.">有。形狀仍是四面體形，但 C–Cl 與 C–H 的鍵偶極大小不同，抵消不掉。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: senior-high chemistry · Chemical bonds and molecular shapes (VSEPR, polarity of molecules).">課綱對應：高中化學・化學鍵與分子形狀（價殼層電子對互斥理論、分子的極性）。</li>
+        <li data-en-html="<a href=&quot;https://openstax.org/books/chemistry-2e/pages/7-6-molecular-structure-and-polarity&quot;>OpenStax Chemistry 2e — 7.6 Molecular Structure and Polarity</a> (VSEPR, electron-pair geometry, polarity).">延伸閱讀：<a href="https://openstax.org/books/chemistry-2e/pages/7-6-molecular-structure-and-polarity">OpenStax Chemistry 2e 7.6 分子結構與極性</a>（英文）。</li>
+        <li data-en-html="Experimental geometries of gas-phase molecules: <a href=&quot;https://cccbdb.nist.gov/&quot;>NIST Computational Chemistry Comparison and Benchmark Database (CCCBDB)</a>.">氣態分子的實驗結構：<a href="https://cccbdb.nist.gov/">美國國家標準與技術研究院 NIST 的 CCCBDB 資料庫</a>（英文）。</li>
+        <li data-en="Covalent radii: B. Cordero et al., Dalton Transactions (2008) 2832. Electronegativities: Pauling scale.">共價半徑：B. Cordero 等人，Dalton Transactions（2008）2832。電負度：鮑林電負度。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/molecular-shapes-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/molecular-shapes.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="molecular-shapes"></script>
+  <script src="js/missions/molecular-shapes.js"></script>
+  <script src="js/stats.js" data-module="molecular-shapes"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
