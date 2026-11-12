@@ -128,7 +128,11 @@
     {
       id: 'moon-phases-h3', level: 6, hidden: true,
       riddle: { zh: '每隔十八年多，它走到太陽從不去的北方。', en: 'Every eighteen-odd years it walks where the Sun never goes, far in the north.' },
-      check: function (ev) { return isState(ev) && ev.data.dec >= 28; }
+      // 月球赤緯接近最大（18.6 年一次的月球大停變期），而且從臺灣看，它正在比太陽最北的日出、日沒點（方位約 64°、296°）更北的地方升起或落下
+      check: function (ev) {
+        const d = ev.data;
+        return isState(ev) && d.dec >= 28.5 && isFinite(d.moonAlt) && d.moonAlt > -1 && d.moonAlt < 3 && (d.moonAz < 62 || d.moonAz > 298);
+      }
     }
   ]);
 })();

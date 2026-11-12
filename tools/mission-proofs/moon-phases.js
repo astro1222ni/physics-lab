@@ -133,7 +133,7 @@ const SOL = {
   'moon-phases-12': null,
   'moon-phases-h1': null,
   'moon-phases-h2': null,
-  'moon-phases-h3': ['升交點 0°，月球放到黃經 90°（月球位置 = 90° − 太陽黃經）', S => { S.node(0); S.elong(90 - S.sunLon()); }]
+  'moon-phases-h3': null
 };
 
 // 6：上弦月在東方升起——在打字精度 0.01 h 上找月亮高度 −1°～2.5° 的時刻
@@ -157,6 +157,33 @@ const SOL = {
     const run = S => { S.elong(170); S.node(S.moonLon() + 10.54 + off); S.next('full'); S.next('new'); };
     if (passes('moon-phases-11', run)) { SOL['moon-phases-11'] = ['月球位置 170°，升交點 = 月球黃經 + ' + (10.54 + off).toFixed(2) + '°，按「下一次滿月」、再按「下一次新月」', run]; return; }
   }
+})();
+// h3：升交點 0°（大停變期），月球在黃經 90° 附近，找它在臺灣東北方升起或西北方落下的時刻
+(function () {
+  for (let off = -6; off <= 6; off += 2) for (let h = 0; h <= 23.99; h += 0.05) {
+    const hh = Math.round(h * 100) / 100;
+    const run = S => { S.node(0); S.elong(90 + off - S.sunLon()); S.hr(hh); };
+    if (passes('moon-phases-h3', run)) { SOL['moon-phases-h3'] = ['升交點 0°，月球位置 = ' + (90 + off) + '° − 太陽黃經，時刻 ' + hh.toFixed(2) + ' 時（月亮在東北或西北的地平線上）', run]; return; }
+  }
+})();
+// h3 不觸發：同樣的月球但不在地平線附近；升交點 180°（小停變期）時任何時刻都不行
+(function () {
+  let badHigh = false, badMinor = false;
+  for (let h = 0; h <= 23.99; h += 0.25) {
+    const hh = Math.round(h * 100) / 100;
+    if (passes('moon-phases-h3', S => { S.node(180); S.elong(90 - S.sunLon()); S.hr(hh); })) badMinor = true;
+  }
+  const m = missions.find(x => x.id === 'moon-phases-h3');
+  let ev = null;
+  for (let h = 0; h <= 23.99 && !ev; h += 0.25) {
+    const S0 = session(); S0.node(0); S0.hr(Math.round(h * 100) / 100); S0.elong(90 - S0.sunLon());
+    const e = S0.events.filter(x => x.type === 'state').pop();
+    if (e && e.data.dec >= 28.5 && e.data.moonAlt > 30) ev = e;
+  }
+  if (!ev || m.check(ev, {})) badHigh = true;
+  console.log((badMinor ? '✗' : '✓') + ' moon-phases-h3 不觸發：升交點 180°（月球最大赤緯只有約 18°），一天 96 個時刻都不算');
+  console.log((badHigh ? '✗' : '✓') + ' moon-phases-h3 不觸發：赤緯 ' + (ev ? ev.data.dec.toFixed(2) : '?') + '°、但月亮高度 ' + (ev ? ev.data.moonAlt.toFixed(1) : '?') + '°（不在地平線附近）');
+  if (badMinor || badHigh) process.exitCode = 1;
 })();
 // 12：台灣白天的日全食——中午 12 時，讓月球正好在「台灣 → 太陽」的連線上（解出月球的黃經與黃緯，再換成升交點與月球位置）
 (function () {
@@ -231,7 +258,7 @@ missions.forEach(m => {
 })();
 // 選了臺灣以外的地點：綁臺灣天空的任務不判定，其餘任務照樣做得到
 (function () {
-  const TW_ONLY = ['moon-phases-4', 'moon-phases-6', 'moon-phases-12'];
+  const TW_ONLY = ['moon-phases-4', 'moon-phases-6', 'moon-phases-12', 'moon-phases-h3'];
   const bad = [];
   missions.forEach(m => {
     const sol = SOL[m.id];
@@ -240,7 +267,7 @@ missions.forEach(m => {
     if (ok === TW_ONLY.includes(m.id)) bad.push(m.id + (ok ? ' 不該通過' : ' 應該通過'));
   });
   if (bad.length) { fail++; console.log('✗ 別的觀測地點：' + bad.join('、')); }
-  else console.log('✓ 選了別的觀測地點：任務 4、6、12（臺灣的天空）不判定，其餘 ' + (missions.length - TW_ONLY.length) + ' 個照樣做得到');
+  else console.log('✓ 選了別的觀測地點：任務 4、6、12、h3（臺灣的天空）不判定，其餘 ' + (missions.length - TW_ONLY.length) + ' 個照樣做得到');
 })();
 console.log(fail ? '\n有 ' + fail + ' 項沒有通過' : '\n全部 ' + missions.length + ' 個任務都做得到');
 process.exitCode = fail ? 1 : 0;
