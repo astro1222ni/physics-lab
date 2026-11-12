@@ -90,8 +90,8 @@
     },
     {
       id: 'brownian-motion-9', level: 8,
-      title: { zh: '同一個 k_B', en: 'The same k_B' },
-      desc: { zh: '最近三筆紀錄換了液體或溫度（三筆的黏滯係數最大與最小相差至少 10 倍），三筆算出的 k_B = 6πηaD/T 都和三筆平均相差 5% 以內。', en: 'Make your last three records in different liquids or at different temperatures (the largest viscosity at least 10 times the smallest), with each k_B = 6πηaD/T within 5% of the mean of the three.' },
+      title: { zh: '同一個波茲曼常數', en: 'The same Boltzmann constant' },
+      desc: { zh: '最近三筆紀錄換了液體或溫度（三筆的黏滯係數最大與最小相差至少 10 倍），三筆算出的波茲曼常數（6πηaD/T）都和三筆平均相差 5% 以內。', en: 'Make your last three records in different liquids or at different temperatures (the largest viscosity at least 10 times the smallest), with each Boltzmann constant (6πηaD/T) within 5% of the mean of the three.' },
       check: function (ev) {
         const d = rec(ev);
         if (!d) return false;
