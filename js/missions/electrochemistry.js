@@ -97,20 +97,17 @@
     },
     {
       id: 'electrochemistry-h1', level: 3, hidden: true,
-      title: { zh: '倒著看的世界', en: 'Upside-down world' },
-      desc: { zh: '指針也有不服氣的時候。', en: 'Sometimes the needle just disagrees.' },
+      riddle: { zh: '指針也有不服氣的時候。', en: 'Sometimes the needle just disagrees.' },
       check: function (ev) { const c = cellT(ev); return !!c && c.bridge && c.load === 'V' && c.E <= -1.0; }
     },
     {
       id: 'electrochemistry-h2', level: 4, hidden: true,
-      title: { zh: '和解', en: 'Reconciled' },
-      desc: { zh: '兩個本來就一樣的人，終於不再爭了。', en: 'Two who were the same all along finally stop arguing.' },
+      riddle: { zh: '兩個本來就一樣的人，終於不再爭了。', en: 'Two who were the same all along finally stop arguing.' },
       check: function (ev) { const c = cellT(ev); return !!c && same(c) && Math.abs(c.E0) >= 0.05 && c.qAbs > 0 && Math.abs(c.emf) < 0.001; }
     },
     {
       id: 'electrochemistry-h3', level: 5, hidden: true,
-      title: { zh: '不請自來的氣泡', en: 'Uninvited bubbles' },
-      desc: { zh: '主角離場以後，配角冒了出來。', en: 'When the star leaves the stage, an extra rises up.' },
+      riddle: { zh: '主角離場以後，配角冒了出來。', en: 'When the star leaves the stage, an extra rises up.' },
       check: function (ev) { const e = elecT(ev); return !!e && e.elec === 'C' && e.H2 >= 1; }
     }
   ]);

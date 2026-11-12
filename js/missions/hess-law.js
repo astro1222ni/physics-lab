@@ -91,20 +91,17 @@
     },
     {
       id: 'hess-law-h1', level: 3, hidden: true,
-      title: { zh: '冰到骨子裡', en: 'Chilled to the bone' },
-      desc: { zh: '有人說：杯子摸起來比冰箱還冷。', en: 'Someone says the cup feels colder than the fridge.' },
+      riddle: { zh: '有人說：杯子摸起來比冰箱還冷。', en: 'Someone says the cup feels colder than the fridge.' },
       check: function (ev) { const d = tk(ev); return !!d && d.added && d.reading < 10; }
     },
     {
       id: 'hess-law-h2', level: 4, hidden: true,
-      title: { zh: '燙手的杯子', en: 'Too hot to hold' },
-      desc: { zh: '不加熱水，也能燙手。', en: 'Too hot to hold, without any hot water.' },
+      riddle: { zh: '不加熱水，也能燙手。', en: 'Too hot to hold, without any hot water.' },
       check: function (ev) { const d = tk(ev); return !!d && d.mode !== 'cal' && d.added && d.reading >= 50; }
     },
     {
       id: 'hess-law-h3', level: 5, hidden: true,
-      title: { zh: '塵歸塵', en: 'Dust to dust' },
-      desc: { zh: '走了好遠，又回到原點。', en: 'A long way out, and all the way back.' },
+      riddle: { zh: '走了好遠，又回到原點。', en: 'A long way out, and all the way back.' },
       check: function (ev) { const d = tk(ev); return !!d && d.added && d.peak >= 5 && Math.abs(d.reading - d.Troom) <= 0.3 && d.t - d.tAdd > 60; }
     }
   ]);
