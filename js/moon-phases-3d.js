@@ -398,34 +398,38 @@
       t.anisotropy = 4;
       return t;
     }
-    function moonTexture() {
-      const W = 384, H = 192;
-      const c = document.createElement('canvas');
-      c.width = W; c.height = H;
-      const g = c.getContext('2d');
-      const img = g.createImageData(W, H), px = img.data;
-      for (let j = 0; j < H; j++) {
-        const lat = Math.PI / 2 - (j + 0.5) / H * Math.PI, cl = Math.cos(lat), sl = Math.sin(lat);
-        for (let i = 0; i < W; i++) {
-          const lon = (i + 0.5) / W * TAU - Math.PI;   // 月面經度（東經為正）；經度 0 朝向地球
-          const a = B.albedoXYZ(cl * Math.sin(lon), sl, cl * Math.cos(lon));
-          const k = 4 * (j * W + i), v = 255 * Math.min(1, a * 1.05);
-          px[k] = v; px[k + 1] = v * 0.985; px[k + 2] = v * 0.95; px[k + 3] = 255;
-        }
-      }
-      g.putImageData(img, 0, 0);
-      const t = canvasTex(c);
-      t.anisotropy = 4;
+    /**
+     * 真實月面（NASA LRO／LROC 彩色月面圖，與 2D 同一張影像；等距長方投影，經度 0 在正中央）。
+     * 球的 u = 0.5 是經度 0（朝向地球的 +x）、u = 0.75 是東經 90°（+y）、上緣是北極（+z）。
+     */
+    function moonTexture(img) {
+      const t = new THREE.Texture(img);
+      t.colorSpace = THREE.SRGBColorSpace;
+      t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+      t.needsUpdate = true;
+      t.userData.shared = true;
       return t;
     }
-    let earthTex = null, moonTex = null;
+    let earthTex = null, moonTex = null, moonWait = false;
+    /** 影像還沒載入時先畫素色的球，載入後換上貼圖 */
+    function attachMoonTexture() {
+      if (moonTex || moonWait) return;
+      moonWait = true;
+      B.whenMoonImage(function (img) {
+        if (!api.active) return;
+        moonTex = moonTexture(img);
+        const Lb = layers.bodies;
+        if (Lb && Lb.ref.moon) { Lb.ref.moon.material.map = moonTex; Lb.ref.moon.material.needsUpdate = true; }
+        requestRender();
+      });
+    }
     function buildBodies(L) {
       const grp = new THREE.Group();
       const dark = isDark();
       const mag = B.mag();
       const rE = K.R_EARTH * S * mag, rM = K.R_MOON * S * mag;
       if (!earthTex) { earthTex = earthTexture(); earthTex.userData.shared = true; }
-      if (!moonTex) { moonTex = moonTexture(); moonTex.userData.shared = true; }
+      attachMoonTexture();
       const eg = new THREE.SphereGeometry(rE, 64, 40);
       eg.rotateX(Math.PI / 2); // 兩極在 ±z；經度 0 在 +x
       const earth = new THREE.Mesh(eg, new THREE.MeshStandardMaterial({ map: earthTex, roughness: 0.75, metalness: 0 }));
@@ -451,8 +455,8 @@
       grp.add(el2);
       L.ref.elab = el2;
       L.ref.rE = rE;
-      // 月球（潮汐鎖定：經度 0 的「正面」永遠朝向地球）
-      const mg = new THREE.SphereGeometry(rM, 48, 32);
+      // 月球（同步自轉：經度 0 的近側永遠朝向地球；每一幀由 update() 依月球位置轉好方向）
+      const mg = new THREE.SphereGeometry(rM, 64, 40);
       mg.rotateX(Math.PI / 2);
       const moon = new THREE.Mesh(mg, new THREE.MeshStandardMaterial({ map: moonTex, roughness: 0.95, metalness: 0, emissive: new THREE.Color(0x000000) }));
       grp.add(moon);
