@@ -192,10 +192,21 @@
         },
         // subj：省略是全科總排名；'phy' 等是該科排名
         top: function (n, subj) {
-          return D.get(D.query(r('scores'), D.orderByChild(subj ? 's/' + subj : 'stars'), D.limitToLast(n))).then(function (s) {
-            const list = [];
-            s.forEach(function (c) { list.push(Object.assign({ uid: c.key }, c.val())); });
-            return list;
+          const key = subj ? 's/' + subj : 'stars';
+          const rows = function (s) { const list = []; s.forEach(function (c) { list.push(Object.assign({ uid: c.key }, c.val())); }); return list; };
+          return D.get(D.query(r('scores'), D.orderByChild(key), D.limitToLast(n))).then(function (s) {
+            const list = rows(s);
+            // 資料庫只照分數截取前 n 筆：第 n 名剛好有人同分時，較早達到的同分者可能被擠掉（Codex 試玩 11/12 抓到）。
+            // 把邊界分數的人全部取回，由畫面照「同分先達到者在前」排序後再取前 n 名。
+            if (list.length < n) return list;
+            const edge = Math.min.apply(null, list.map(function (x) { return subj ? ((x.s && x.s[subj]) || 0) : (x.stars || 0); }));
+            if (!(edge > 0)) return list;
+            return D.get(D.query(r('scores'), D.orderByChild(key), D.equalTo(edge), D.limitToFirst(1000))).then(function (t) {
+              const seen = {};
+              list.forEach(function (x) { seen[x.uid] = 1; });
+              rows(t).forEach(function (x) { if (!seen[x.uid]) list.push(x); });
+              return list;
+            });
           });
         },
         countAbove: function (stars, subj) {
@@ -431,6 +442,17 @@
     b.setAttribute('aria-label', n + T(' 顆倪的星星', ' Ni stars'));
     return b;
   }
+  /** 「已得 / 共」的星星徽章（任務區標題用） */
+  function starTally(got, total) {
+    const b = el('span', 'ms-stars');
+    b.innerHTML = STAR;
+    b.appendChild(el('span', null, got + ' / ' + total));
+    b.setAttribute('aria-label', T('已得 ' + got + ' 顆，共 ' + total + ' 顆倪的星星', got + ' of ' + total + ' Ni stars'));
+    return b;
+  }
+  /** 介面偏好（展開／收合、只看未完成、右側欄）：記在本機、全站共用；讀不到就用預設值 */
+  function pref(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } }
+  function setPref(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* 忽略 */ } }
 
   // 慶祝畫面依序顯示：同時完成多個任務時，一個接一個出現，不會疊在一起
   let showUntil = 0;
@@ -496,6 +518,37 @@
     const anchor = document.querySelector('.stats-bar') || document.querySelector('header.top');
     if (anchor) anchor.insertAdjacentElement('afterend', wrap);
     else (document.querySelector('.wrap') || document.body).prepend(wrap);
+    panel.setAttribute('role', 'region');
+    panel.setAttribute('aria-label', T('任務', 'Missions'));
+
+    // 橫式寬螢幕：任務模式開啟時，任務面板變成貼在右側的一欄（跟著畫面、自己捲動），實驗往左讓出空間，
+    // 邊操作邊看得到任務；收起時只留右邊緣一個小標籤。直式與窄螢幕維持放在實驗上方。
+    const dockMq = window.matchMedia ? window.matchMedia('(min-width: 1240px) and (orientation: landscape)') : null;
+    const dockTab = el('button', 'ms-dock-tab');
+    dockTab.type = 'button';
+    dockTab.innerHTML = STAR;
+    const dockTabText = el('span');
+    dockTab.appendChild(dockTabText);
+    dockTab.setAttribute('aria-label', T('展開任務欄', 'Open the mission panel'));
+    dockTab.addEventListener('click', function () {
+      setPref('ms-dock', '1'); render();
+      const b = panel.querySelector('.ms-dock-close'); if (b) b.focus();
+    });
+    document.body.appendChild(dockTab);
+    let dockWas = '';
+    function applyDock() {
+      const root = document.documentElement;
+      const can = !!(dockMq && dockMq.matches) && state.on && !root.classList.contains('lab-projector') && !root.classList.contains('lab-embed');
+      const mode = !can ? '' : pref('ms-dock', '1') === '1' ? 'open' : 'closed';
+      root.classList.toggle('ms-docked', mode === 'open');
+      root.classList.toggle('ms-dock-closed', mode === 'closed');
+      if (mode !== dockWas) { dockWas = mode; window.dispatchEvent(new Event('resize')); } // 實驗畫布照新的寬度重畫
+      return mode;
+    }
+    if (dockMq) {
+      const onMq = function () { render(); };
+      if (dockMq.addEventListener) dockMq.addEventListener('change', onMq); else if (dockMq.addListener) dockMq.addListener(onMq);
+    }
 
     toggle.addEventListener('click', function () {
       state.on = !state.on;
@@ -516,9 +569,25 @@
       summary.textContent = state.user && state.ready
         ? T('已完成 ', 'Done ') + n + ' / ' + list.length + T('　星星 ', ' · stars ') + got + ' / ' + total
         : (EN ? list.length + ' missions' : '共 ' + list.length + ' 個任務');
-      panel.hidden = !state.on;
+      const dock = applyDock();
+      dockTabText.textContent = T('任務 ', 'Missions ') + n + '/' + list.length;
+      panel.hidden = !state.on || dock === 'closed';
       if (!state.on) return;
       panel.innerHTML = '';
+      if (dock === 'open') {
+        const dh = el('div', 'ms-dock-head');
+        const ttl = el('strong', 'ms-dock-title');
+        ttl.innerHTML = STAR;
+        ttl.appendChild(el('span', null, T('任務', 'Missions')));
+        dh.appendChild(ttl);
+        dh.appendChild(el('span', 'ms-summary', summary.textContent));
+        const x = el('button', 'ms-dock-close', T('收起 ›', 'Hide ›'));
+        x.type = 'button';
+        x.setAttribute('aria-label', T('收起任務欄', 'Hide the mission panel'));
+        x.addEventListener('click', function () { setPref('ms-dock', '0'); render(); dockTab.focus(); });
+        dh.appendChild(x);
+        panel.appendChild(dh);
+      }
 
       if (!enabled) { panel.appendChild(el('p', 'ms-note', T('任務系統尚未啟用。', 'Missions are not available yet.'))); return; }
       if (!state.user) {
@@ -566,28 +635,68 @@
       rules.appendChild(more);
       panel.appendChild(rules);
 
-      // 任務清單可收合，讓實驗畫面不會被推得太遠
-      const det = el('details', 'ms-details');
-      let open = true;
-      try { open = sessionStorage.getItem('ms-open:' + state.module) !== '0'; } catch (e) { /* 忽略 */ }
-      det.open = open;
-      det.appendChild(el('summary', null, T('任務清單（', 'Mission list (') + list.length + T('）', ')')));
-      det.addEventListener('toggle', function () {
-        try { sessionStorage.setItem('ms-open:' + state.module, det.open ? '1' : '0'); } catch (e) { /* 忽略 */ }
-      });
-      const ol = el('ol', 'ms-list');
-      list.slice().sort(function (a, b) { return (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || a.level - b.level; }).forEach(function (m) {
-        const li = el('li', 'ms-item' + (state.done[m.id] ? ' done' : '') + (m.hidden ? ' hidden-m' : ''));
+      // 一般任務與隱藏任務各一區，各有展開／收合按鈕（站長 11/12：隱藏任務增加到 10 個，清單變長）
+      const undone = pref('ms-undone', '0') === '1';
+      const tools = el('div', 'ms-tools');
+      const fBtn = el('button', 'ms-filter', T('只看未完成', 'Unfinished only'));
+      fBtn.type = 'button';
+      fBtn.setAttribute('aria-pressed', String(undone));
+      fBtn.addEventListener('click', function () { setPref('ms-undone', undone ? '0' : '1'); render(); });
+      tools.appendChild(fBtn);
+      panel.appendChild(tools);
+      const byLevel = function (a, b) { return a.level - b.level; };
+      // 一般任務：寬螢幕預設展開；手機預設收合成一行，實驗不會被推得太遠
+      section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
+      section('hid', T('隱藏任務', 'Hidden missions'), list.filter(function (m) { return m.hidden; }).sort(byLevel), false, undone);
+    }
+
+    /** 一區任務：標題按鈕（完成數、星星數、展開／收合）＋清單；開關狀態記在本機，全站共用 */
+    function section(key, name, items, defOpen, undone) {
+      if (!items.length) return;
+      const open = pref('ms-sec-' + key, defOpen ? '1' : '0') === '1';
+      const n = items.filter(function (m) { return state.done[m.id]; }).length;
+      const got = items.reduce(function (a, m) { return a + (state.done[m.id] ? state.done[m.id].stars || 0 : 0); }, 0);
+      const total = items.reduce(function (a, m) { return a + starsOf(m); }, 0);
+      const sec = el('section', 'ms-sec ms-sec-' + key + (open ? ' open' : ''));
+      const id = 'ms-' + key + '-' + state.module;
+      const btn = el('button', 'ms-sec-btn');
+      btn.type = 'button';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-controls', id);
+      btn.appendChild(el('span', 'ms-sec-name', name));
+      btn.appendChild(el('span', 'ms-sec-count', n + ' / ' + items.length));
+      btn.appendChild(starTally(got, total));
+      btn.appendChild(el('span', 'ms-sec-act', open ? T('收合', 'Hide') : T('展開', 'Show')));
+      btn.addEventListener('click', function () { setPref('ms-sec-' + key, open ? '0' : '1'); render(); });
+      sec.appendChild(btn);
+      const shown = undone ? items.filter(function (m) { return !state.done[m.id]; }) : items;
+      const box = el(key === 'hid' ? 'ul' : 'ol', key === 'hid' ? 'ms-hgrid' : 'ms-list');
+      box.id = id;
+      box.hidden = !open;
+      if (!shown.length) box.appendChild(el('li', 'ms-alldone', T('這一區全部完成了！', 'All done here!')));
+      shown.forEach(function (m) {
+        const done = !!state.done[m.id];
+        if (key === 'hid') {
+          const li = el('li', 'ms-hcard' + (done ? ' done' : ''));
+          const head = el('div', 'ms-head');
+          head.appendChild(starBadge(starsOf(m)));
+          if (done) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
+          li.appendChild(head);
+          li.appendChild(el('p', 'ms-desc', T('「', '“') + L(m.riddle) + T('」', '”')));
+          box.appendChild(li);
+          return;
+        }
+        const li = el('li', 'ms-item' + (done ? ' done' : ''));
         const head = el('div', 'ms-head');
         head.appendChild(starBadge(starsOf(m)));
-        head.appendChild(el('strong', 'ms-title', m.hidden ? T('隱藏任務', 'Hidden mission') : L(m.title)));
-        if (state.done[m.id]) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
+        head.appendChild(el('strong', 'ms-title', L(m.title)));
+        if (done) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
         li.appendChild(head);
-        li.appendChild(el('p', 'ms-desc', m.hidden ? T('「', '“') + L(m.riddle) + T('」', '”') : L(m.desc)));
-        ol.appendChild(li);
+        li.appendChild(el('p', 'ms-desc', L(m.desc)));
+        box.appendChild(li);
       });
-      det.appendChild(ol);
-      panel.appendChild(det);
+      sec.appendChild(box);
+      panel.appendChild(sec);
     }
     listeners.push(render);
     render();

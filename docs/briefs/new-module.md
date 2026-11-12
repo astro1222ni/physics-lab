@@ -21,7 +21,7 @@
 - No git commit/push; no tools/stamp.py. Scratch only in <系統暫存資料夾>（不要放在專案裡）
 
 ## Missions (required)
-Also follow docs/briefs/missions.md exactly (mission mode with 倪的星星: 8–12 missions over levels 1–10 plus 2–3 VERY cryptic hidden missions — the riddle must not state or obviously paraphrase the condition — all proven achievable with the core; default state must not trigger missions). Achievements load automatically via js/missions.js. Do NOT edit js/missions/index.js or index.html.
+Also follow docs/briefs/missions.md exactly (mission mode with 倪的星星: 8–12 missions over levels 1–10 plus 10 VERY cryptic hidden missions — the riddle must not state or obviously paraphrase the condition — all proven achievable with the core; default state must not trigger missions). Achievements load automatically via js/missions.js. Do NOT edit js/missions/index.js or index.html.
 
 ## Report (concise, in Traditional Chinese)
 Files, test results, controls, teaching points, sound events, data-decimals, verification, uncertainties, and for the home-page card: Chinese description, English description, data-keywords (Chinese + English synonyms).

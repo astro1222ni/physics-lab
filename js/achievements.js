@@ -48,17 +48,27 @@
   const live = function () { return window.LAB_LIVE_MODULES || []; };
   const branchOf = function (m) { return (window.LAB_MODULE_BRANCH || {})[m]; };
   const subjOf = function (m) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(m) : 'phy'; };
-  // 四個科目（與 missions/index.js 的 LAB_SUBJECTS 相同；這裡先寫好，成就定義不必等清單載入）
+  // 各科目（與 missions/index.js 的 LAB_SUBJECTS 相同；這裡先寫好，成就定義不必等清單載入）
   const SUBJ = [
     { id: 'phy', zh: '物理', en: 'Physics', short: '物理' },
     { id: 'chem', zh: '化學', en: 'Chemistry', short: '化學' },
     { id: 'bio', zh: '生物', en: 'Biology', short: '生物' },
     { id: 'earth', zh: '地球科學', en: 'Earth Science', short: '地科' },
-    { id: 'math', zh: '數學', en: 'Mathematics', short: '數學' }
+    { id: 'math', zh: '數學', en: 'Mathematics', short: '數學' },
+    { id: 'info', zh: '資訊科技', en: 'Information Technology', short: '資訊' },
+    { id: 'geog', zh: '地理', en: 'Geography', short: '地理' },
+    { id: 'music', zh: '音樂', en: 'Music', short: '音樂' }
   ];
+  // 跨科成就（cross-*）的五科：說明寫明「物理、化學、生物、地球科學、數學」，之後加的科目不改它的條件
+  const CROSS5 = ['phy', 'chem', 'bio', 'earth', 'math'];
+  // 分頁要不要顯示這一科：新科等第一個實驗上線（missions/index.js 的 LAB_SUBJECT_SHOWN）
+  const shownSubj = function (sid) { return !window.LAB_SUBJECT_SHOWN || window.LAB_SUBJECT_SHOWN(sid); };
   const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio',
     algebra: 'math', geometry: 'math', vectors: 'math', probability: 'math', calculus: 'math',
-    matter: 'chem', reaction: 'chem', equilibrium: 'chem', acidbase: 'chem', organic: 'chem' };
+    matter: 'chem', reaction: 'chem', equilibrium: 'chem', acidbase: 'chem', organic: 'chem',
+    data: 'info', algo: 'info', prog: 'info', system: 'info', network: 'info', ai: 'info',
+    mapping: 'geog', gis: 'geog', climate: 'geog', landform: 'geog', population: 'geog', economy: 'geog',
+    tone: 'music', tuning: 'music', harmony: 'music', instruments: 'music', rhythm: 'music', audio: 'music' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -137,6 +147,24 @@
       explore: { 1: nm('數學初心', 'A mathematician at heart'), 5: nm('圖形的旅人', 'Traveller among graphs'), 10: nm('函數的花園', 'Garden of functions'), 20: nm('證明的樂趣', 'The joy of proof'), 40: nm('無窮的旅程', 'Journey to infinity'), 60: nm('數學的星空', 'The starry sky of mathematics'), all: nm('數學全覽', 'All of mathematics') },
       full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('黃金比例', 'The golden ratio'), 10: nm('十進位的秩序', 'The order of base ten'), 20: nm('歐幾里得的公設', "Euclid's postulates"), 40: nm('高斯的天才', "Gauss's genius"), 60: nm('希爾伯特的問題', "Hilbert's problems"), all: nm('萬物皆數', 'All is number') },
       chapter: { 1: nm('讀通一章', 'One chapter of mathematics'), 5: nm('從數到函數', 'From numbers to functions'), 10: nm('幾何原本', 'The Elements'), all: nm('數學的全書', 'The whole book of mathematics') }
+    },
+    info: {
+      stars: { 10: nm('第一個位元', 'The first bit'), 100: nm('邏輯閘的火花', 'Spark of the logic gate'), 1e3: nm('演算法的節拍', 'The rhythm of algorithms'), 1e4: nm('封包的旅程', 'Journey of a packet'), 1e5: nm('圖靈的機器', "Turing's machine"), 1e6: nm('數位宇宙', 'The digital universe') },
+      explore: { 1: nm('開機', 'Booting up'), 5: nm('程式的旅人', 'Traveller through code'), 10: nm('資料的花園', 'Garden of data'), 20: nm('除錯的樂趣', 'The joy of debugging'), 40: nm('網路的漫遊者', 'Roamer of the network'), 60: nm('運算的星空', 'The starry sky of computation'), all: nm('資訊全覽', 'All of computing') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('二進位的秩序', 'The order of binary'), 10: nm('排序的藝術', 'The art of sorting'), 20: nm('布爾的代數', "Boole's algebra"), 40: nm('夏農的資訊', "Shannon's information"), 60: nm('范紐曼的架構', "Von Neumann's architecture"), all: nm('萬物皆位元', 'It from bit') },
+      chapter: { 1: nm('讀通一章', 'One chapter of computing'), 5: nm('從位元到網路', 'From bits to networks'), 10: nm('程式設計的藝術', 'The art of programming'), all: nm('資訊的全書', 'The whole book of computing') }
+    },
+    geog: {
+      stars: { 10: nm('打開地圖', 'Unfolding the map'), 100: nm('等高線的起伏', 'Rise and fall of contours'), 1e3: nm('經緯的網', 'The net of latitude and longitude'), 1e4: nm('季風與聚落', 'Monsoons and settlements'), 1e5: nm('洪堡的足跡', "Humboldt's footsteps"), 1e6: nm('世界的形狀', 'The shape of the world') },
+      explore: { 1: nm('出發的旅人', 'A traveller sets out'), 5: nm('地圖的讀者', 'Reader of maps'), 10: nm('河流的追尋', 'Following the river'), 20: nm('城市的觀察者', 'Watcher of cities'), 40: nm('大陸的行者', 'Walker of continents'), 60: nm('地球的旅人', 'Traveller of the Earth'), all: nm('地理全覽', 'All of geography') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('比例尺的精準', 'Precision of scale'), 10: nm('托勒密的世界', "Ptolemy's world"), 20: nm('麥哲倫的航線', "Magellan's route"), 40: nm('柯本的氣候', "Köppen's climates"), 60: nm('地球的全貌', 'The whole face of the Earth'), all: nm('天涯若比鄰', 'The world next door') },
+      chapter: { 1: nm('讀通一章', 'One chapter of geography'), 5: nm('從地圖到世界', 'From maps to the world'), 10: nm('地理大發現', 'The age of discovery'), all: nm('地理的全書', 'The whole book of geography') }
+    },
+    music: {
+      stars: { 10: nm('第一個音', 'The first note'), 100: nm('泛音的階梯', 'The ladder of overtones'), 1e3: nm('五度的循環', 'The circle of fifths'), 1e4: nm('和聲的殿堂', 'The hall of harmony'), 1e5: nm('巴哈的賦格', "Bach's fugue"), 1e6: nm('天體的音樂', 'Music of the spheres') },
+      explore: { 1: nm('聽見聲音', 'Hearing the sound'), 5: nm('音階的旅人', 'Traveller of scales'), 10: nm('樂器的花園', 'Garden of instruments'), 20: nm('節奏的舞者', 'Dancer of rhythm'), 40: nm('和聲的行者', 'Walker of harmony'), 60: nm('聲音的星空', 'The starry sky of sound'), all: nm('音樂全覽', 'All of music') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 5: nm('純律的和諧', 'Harmony of just intonation'), 10: nm('平均律的鍵盤', 'The well-tempered keyboard'), 20: nm('傅立葉的耳朵', "Fourier's ear"), 40: nm('交響的織體', 'Texture of the symphony'), 60: nm('畢達哥拉斯的天籟', "Pythagoras's music of the heavens"), all: nm('萬物皆有聲', 'Everything sings') },
+      chapter: { 1: nm('讀通一章', 'One chapter of music'), 5: nm('從一根弦到樂團', 'From one string to an orchestra'), 10: nm('音樂的物理', 'The physics of music'), all: nm('音樂的全書', 'The whole book of music') }
     }
   };
   SUBJ.forEach(function (sb) {
@@ -216,6 +244,24 @@
     { id: 'branch-reaction', tier: 5, cat: 'branch', name: nm('赫斯的熱量帳本', "Hess's ledger of heat"), desc: nm('完成化學反應與能量分支所有實驗的所有任務。', 'Complete every mission in Reactions and Energy.'), check: function (c) { return c.branchDone.reaction; } },
     { id: 'branch-organic', tier: 5, cat: 'branch', name: nm('凱庫勒的環之夢', "Kekulé's dream of the ring"), desc: nm('完成有機與生活化學分支所有實驗的所有任務。', 'Complete every mission in Organic and Everyday Chemistry.'), check: function (c) { return c.branchDone.organic; } },
     { id: 'branch-algebra', tier: 5, cat: 'branch', name: nm('納皮爾的對數表', "Napier's tables"), desc: nm('完成代數與函數分支所有實驗的所有任務。', 'Complete every mission in Algebra and Functions.'), check: function (c) { return c.branchDone.algebra; } },
+    { id: 'branch-data', tier: 5, cat: 'branch', name: nm('萊布尼茲的二進位', "Leibniz's binary"), desc: nm('完成資料表示分支所有實驗的所有任務。', 'Complete every mission in Data Representation.'), check: function (c) { return c.branchDone['data']; } },
+    { id: 'branch-algo', tier: 5, cat: 'branch', name: nm('花拉子米的算書', "Al-Khwarizmi's book of reckoning"), desc: nm('完成演算法分支所有實驗的所有任務。', 'Complete every mission in Algorithms.'), check: function (c) { return c.branchDone['algo']; } },
+    { id: 'branch-prog', tier: 5, cat: 'branch', name: nm('愛達的筆記', "Ada's notes"), desc: nm('完成程式設計分支所有實驗的所有任務。', 'Complete every mission in Programming.'), check: function (c) { return c.branchDone['prog']; } },
+    { id: 'branch-system', tier: 5, cat: 'branch', name: nm('范紐曼的藍圖', "Von Neumann's blueprint"), desc: nm('完成計算機系統分支所有實驗的所有任務。', 'Complete every mission in Computer Systems.'), check: function (c) { return c.branchDone['system']; } },
+    { id: 'branch-network', tier: 5, cat: 'branch', name: nm('凱撒的密碼', "Caesar's cipher"), desc: nm('完成網路與資訊安全分支所有實驗的所有任務。', 'Complete every mission in Networks and Security.'), check: function (c) { return c.branchDone['network']; } },
+    { id: 'branch-ai', tier: 5, cat: 'branch', name: nm('圖靈的模仿遊戲', "Turing's imitation game"), desc: nm('完成人工智慧分支所有實驗的所有任務。', 'Complete every mission in Artificial Intelligence.'), check: function (c) { return c.branchDone['ai']; } },
+    { id: 'branch-mapping', tier: 5, cat: 'branch', name: nm('麥卡托的航海圖', "Mercator's chart"), desc: nm('完成地圖與地理技能分支所有實驗的所有任務。', 'Complete every mission in Maps and Geographic Skills.'), check: function (c) { return c.branchDone['mapping']; } },
+    { id: 'branch-gis', tier: 5, cat: 'branch', name: nm('史諾的霍亂地圖', "Snow's cholera map"), desc: nm('完成空間資訊科技分支所有實驗的所有任務。', 'Complete every mission in Geospatial Technology.'), check: function (c) { return c.branchDone['gis']; } },
+    { id: 'branch-climate', tier: 5, cat: 'branch', name: nm('柯本的氣候圖', "Köppen's climate map"), desc: nm('完成氣候與自然景觀分支所有實驗的所有任務。', 'Complete every mission in Climate and Natural Landscapes.'), check: function (c) { return c.branchDone['climate']; } },
+    { id: 'branch-landform', tier: 5, cat: 'branch', name: nm('戴維斯的侵蝕輪迴', "Davis's cycle of erosion"), desc: nm('完成地形與水文分支所有實驗的所有任務。', 'Complete every mission in Landforms and Water.'), check: function (c) { return c.branchDone['landform']; } },
+    { id: 'branch-population', tier: 5, cat: 'branch', name: nm('馬爾薩斯的人口論', "Malthus's essay on population"), desc: nm('完成人口與都市分支所有實驗的所有任務。', 'Complete every mission in Population and Cities.'), check: function (c) { return c.branchDone['population']; } },
+    { id: 'branch-economy', tier: 5, cat: 'branch', name: nm('杜能的孤立國', "Von Thünen's isolated state"), desc: nm('完成產業、交通與全球化分支所有實驗的所有任務。', 'Complete every mission in Economy, Transport and Globalization.'), check: function (c) { return c.branchDone['economy']; } },
+    { id: 'branch-tone', tier: 5, cat: 'branch', name: nm('亥姆霍茲的共鳴器', "Helmholtz's resonators"), desc: nm('完成樂音與聽覺分支所有實驗的所有任務。', 'Complete every mission in Musical Sound and Hearing.'), check: function (c) { return c.branchDone['tone']; } },
+    { id: 'branch-tuning', tier: 5, cat: 'branch', name: nm('畢達哥拉斯的單弦琴', "Pythagoras's monochord"), desc: nm('完成音律與音階分支所有實驗的所有任務。', 'Complete every mission in Tuning and Scales.'), check: function (c) { return c.branchDone['tuning']; } },
+    { id: 'branch-harmony', tier: 5, cat: 'branch', name: nm('拉摩的和聲學', "Rameau's treatise on harmony"), desc: nm('完成和聲分支所有實驗的所有任務。', 'Complete every mission in Harmony.'), check: function (c) { return c.branchDone['harmony']; } },
+    { id: 'branch-instruments', tier: 5, cat: 'branch', name: nm('克拉尼的沙圖', "Chladni's sand figures"), desc: nm('完成樂器的科學分支所有實驗的所有任務。', 'Complete every mission in The Science of Instruments.'), check: function (c) { return c.branchDone['instruments']; } },
+    { id: 'branch-rhythm', tier: 5, cat: 'branch', name: nm('梅爾策爾的節拍器', "Maelzel's metronome"), desc: nm('完成節奏與曲式分支所有實驗的所有任務。', 'Complete every mission in Rhythm and Form.'), check: function (c) { return c.branchDone['rhythm']; } },
+    { id: 'branch-audio', tier: 5, cat: 'branch', name: nm('賽賓的音樂廳', "Sabine's concert hall"), desc: nm('完成空間、錄音與數位音樂分支所有實驗的所有任務。', 'Complete every mission in Rooms, Recording and Digital Music.'), check: function (c) { return c.branchDone['audio']; } },
     // ---------- 跨科：五個科目都要有 ----------
     { id: 'cross-visit', tier: 2, cat: 'cross', name: nm('博物學家的好奇心', "A naturalist's curiosity"), desc: nm('物理、化學、生物、地球科學、數學，五科都至少玩過一種實驗。', 'Try at least one experiment in each of the five subjects.'), check: function (c) { return c.subjVisited >= 5; } },
     { id: 'cross-mission', tier: 3, cat: 'cross', name: nm('文藝復興人', 'Renaissance mind'), desc: nm('五科都至少完成一個任務。', 'Complete at least one mission in each of the five subjects.'), check: function (c) { return c.subjMission >= 5; } },
@@ -373,11 +419,11 @@
       missions: ids.length, hiddenDone: hidden, hiddenTotal: hiddenTotal, fullModules: full, moduleTotal: moduleTotal,
       level10: l10, level10Total: l10Total, branchDone: branchDone, branchLive: branchLive, maxDayBranches: maxDayBranches, maxDaySubjects: maxDaySubjects,
       chapterTotal: chapterTotal, chapterFull: chapterFull, branchTotal: branchTotal, branchFull: branchFullN,
-      subjVisited: SUBJ.filter(function (sb) { return by[sb.id].visited > 0; }).length,
-      subjMission: SUBJ.filter(function (sb) { return by[sb.id].missions > 0; }).length,
-      subjFull: SUBJ.filter(function (sb) { return by[sb.id].full > 0; }).length,
-      subjChapter: SUBJ.filter(function (sb) { return by[sb.id].chapFull > 0; }).length,
-      subjBranch: SUBJ.filter(function (sb) { return by[sb.id].branchDone > 0; }).length,
+      subjVisited: CROSS5.filter(function (id) { return by[id] && by[id].visited > 0; }).length,
+      subjMission: CROSS5.filter(function (id) { return by[id] && by[id].missions > 0; }).length,
+      subjFull: CROSS5.filter(function (id) { return by[id] && by[id].full > 0; }).length,
+      subjChapter: CROSS5.filter(function (id) { return by[id] && by[id].chapFull > 0; }).length,
+      subjBranch: CROSS5.filter(function (id) { return by[id] && by[id].branchDone > 0; }).length,
       stars: ids.reduce(function (a, id) { return a + (done[id].stars || 0); }, 0),
       nickname: st.nickname, streak: streak(s.days || {}), totalDays: Object.keys(s.days || {}).length,
       longestGap: longestGap(s.days || {}), maxDayModules: maxDay, lastDone: lastDone, rank: rank, boardSize: boardSize,
@@ -547,11 +593,11 @@
       if (!uid) { box.appendChild(el('p', 'lb-note', T('登入 Google 帳號後才能收集成就。', 'Sign in with Google to collect achievements.'))); return; }
       if (!me.loaded) { box.appendChild(el('p', 'lb-note', T('載入中…', 'Loading…'))); return; }
       const c = context();
-      // 分頁：全科、物理、化學、生物、地球科學
+      // 分頁：全科、物理、化學、生物、地球科學、數學（新科等第一個實驗上線才出現）
       const tabs = el('div', 'sb-tabs');
       tabs.setAttribute('role', 'tablist');
       tabs.setAttribute('aria-label', T('成就分類', 'Achievement categories'));
-      [{ id: 'all', zh: '全科', en: 'All subjects' }].concat(SUBJ).forEach(function (sb) {
+      [{ id: 'all', zh: '全科', en: 'All subjects' }].concat(SUBJ.filter(function (sb) { return shownSubj(sb.id); })).forEach(function (sb) {
         const t2 = totals(c, sb.id);
         const b = el('button', 'sb-tab sb-' + sb.id);
         b.type = 'button';

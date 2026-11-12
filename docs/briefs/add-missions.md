@@ -6,7 +6,7 @@ The module is live and polished. Your job is to add missions WITHOUT changing it
 
 ## Read first
 - CLAUDE.md (project rules; mission-mode section).
-- docs/briefs/missions.md — follow it exactly (8–12 missions over levels 1–10 + 2–3 VERY cryptic hidden missions; prove every mission achievable with the physics core in Node; default state must not trigger anything; Playwright test with the mock backend).
+- docs/briefs/missions.md — follow it exactly (8–12 missions over levels 1–10 + 10 VERY cryptic hidden missions; prove every mission achievable with the physics core in Node; default state must not trigger anything; Playwright test with the mock backend).
 - A finished example of exactly this task (missions added to an existing module): `git show 39a6183 -- electric-field.html js/electric-field.js js/field-core.js js/missions/electric-field.js tests/field-core.test.js`. Other finished mission files: js/missions/collision.js, js/missions/magnetic-particle.js, js/missions/projectile.js.
 
 ## Files you may touch (ONLY these)

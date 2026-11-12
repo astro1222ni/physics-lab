@@ -29,7 +29,7 @@
     return v;
   }
   const get = (db, path) => path.split('/').reduce((o, k) => (o == null ? null : o[k]), db) ?? null;
-  const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math'];
+  const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math', 'info', 'geog', 'music'];
   const TW = 8 * 3600000, DAY = 86400000;
 
   // ---------- 規則：各科星星 ----------
@@ -145,7 +145,13 @@
       const db = load();
       const v = r => subj ? ((r.s && r.s[subj]) || null) : r.stars;
       // 和 Firebase 一樣：沒有這個欄位的排最前面（null 最小），取最後 n 筆
-      return Promise.resolve(Object.keys(db.scores).map(k => Object.assign({ uid: k }, db.scores[k])).sort((a, b) => (v(a) == null ? -1 : v(a)) - (v(b) == null ? -1 : v(b))).slice(-n));
+      const all = Object.keys(db.scores).map(k => Object.assign({ uid: k }, db.scores[k])).sort((a, b) => (v(a) == null ? -1 : v(a)) - (v(b) == null ? -1 : v(b)));
+      const list = all.slice(-n);
+      // 和正式版一樣：取滿 n 筆時，把邊界分數的同分者全部補進來（正式版用 equalTo 再查一次）
+      if (list.length < n) return Promise.resolve(list);
+      const edge = Math.min(...list.map(r => v(r) || 0));
+      if (!(edge > 0)) return Promise.resolve(list);
+      return Promise.resolve(list.concat(all.slice(0, -n).filter(r => v(r) === edge)));
     },
     countAbove(stars, subj) { const db = load(); return Promise.resolve(Object.values(db.scores).filter(s => (subj ? ((s.s && s.s[subj]) || -Infinity) : s.stars) >= stars + 1).length); },
     serverOffset() { return Promise.resolve(+localStorage.getItem('mockoffset') || 0); },

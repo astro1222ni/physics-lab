@@ -30,7 +30,7 @@
     if (e >= -2 && e < 3) return { m: num(x, Math.max(0, (sig || 3) - 1 - e)), e: null };
     let m = x / Math.pow(10, e);
     let mm = num(m, (sig || 3) - 1);
-    if (Math.abs(+m.toFixed((sig || 3) - 1)) >= 10) return sciParts(x * (1 + 1e-12), sig); // 進位到 10.0 的情形（極少見）
+    if (Math.abs(+m.toFixed((sig || 3) - 1)) >= 10) return sciParts(Math.sign(x) * Math.pow(10, e + 1), sig); // 尾數四捨五入成 10.0（例如 9999.6）：就是下一個次方。以前用 x × (1 + 1e-12) 重算，次方不變，會無限遞迴（11/13 總檢查抓到）
     return { m: mm, e: e };
   }
   function sciHTML(x, sig) {
@@ -941,8 +941,18 @@
     setMysUI();
     newRun(T('回到一般模式。', 'Back to normal mode.'));
   }
+  // 未知反應用的是固定條件（ΔH −30、沒有催化劑、不考慮方向、反應熱不留在氣體裡）：停用的控制項也要顯示這些值，離開時還原學生原本的設定
+  // （以前滑桿和勾選框停在學生原本的設定，和讀數、說明不一致；11/13 總檢查的試玩抓到）
+  let mysSaved = null;
   function setMysUI() {
     const on = !!mys;
+    if (on && !mysSaved) {
+      mysSaved = { dH: val(elDH), cat: elCat.checked, st: elSt.checked, heat: elHeat.checked };
+      setVal(elDH, -30); elCat.checked = false; elSt.checked = false; elHeat.checked = false;
+    } else if (!on && mysSaved) {
+      setVal(elDH, mysSaved.dH); elCat.checked = mysSaved.cat; elSt.checked = mysSaved.st; elHeat.checked = mysSaved.heat;
+      mysSaved = null;
+    }
     [elEa, elDH, elCat, elSt, elHeat].forEach(function (el) { el.disabled = on; });
     $('condHint').textContent = on ? T('未知反應：活化能看不到，ΔH 固定 −30 kJ/mol；可以改溫度與分子數。', 'Unknown reaction: the activation energy is hidden and ΔH is −30 kJ/mol; you can change the temperature and the numbers of molecules.')
       : T('改任何條件都會重新開始一次實驗。點一下數字可直接輸入。', 'Any change starts a new run. Tap a number to type an exact value.');

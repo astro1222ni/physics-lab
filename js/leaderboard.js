@@ -10,7 +10,8 @@
   const gotOf = function (x) { const d = st.done && st.done[x.id]; return d ? (+d.stars || 0) : 0; };
   const MODS = window.LAB_MISSION_MODULES || [];
   const SUBJ = window.LAB_SUBJECTS || [{ id: 'phy', zh: '物理', en: 'Physics' }];
-  const TABS = [{ id: 'all', zh: '全科總排名', en: 'All subjects' }].concat(SUBJ);
+  // 新科（資訊、地理、音樂）第一個實驗上線前不出現分頁（LAB_SUBJECT_SHOWN）
+  const TABS = [{ id: 'all', zh: '全科總排名', en: 'All subjects' }].concat(SUBJ.filter(function (sb) { return !window.LAB_SUBJECT_SHOWN || window.LAB_SUBJECT_SHOWN(sb.id); }));
   const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.2l-5.8 3.2 1.2-6.5L2.6 9.4l6.5-.8z"/></svg>';
   const subjOf = function (mod) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(mod) : 'phy'; };
   const liveIn = function (sid) { return (window.LAB_LIVE_MODULES || []).filter(function (m) { return subjOf(m) === sid; }).length; };
@@ -282,7 +283,7 @@
     const want = t !== 'all' && !liveIn(t) ? Promise.resolve([]) : api.top(100, t === 'all' ? undefined : t);
     want.then(function (list) {
       if (t !== tab) return;
-      top = rankList(list, t);
+      top = rankList(list, t).slice(0, 100); // 邊界同分者已一起取回：排序後才截前 100 名
       renderList();
       if (st.user) {
         return api.getScore(st.user.uid).then(function (sc) {

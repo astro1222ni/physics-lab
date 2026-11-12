@@ -42,7 +42,7 @@
     const e = Math.floor(Math.log10(Math.abs(x)));
     if (e >= -3 && e < 5) return { m: sigf(x, sig), e: null };
     const m = x / Math.pow(10, e);
-    if (Math.abs(+m.toFixed((sig || 3) - 1)) >= 10) return sciParts(x * (1 + 1e-12), sig);
+    if (Math.abs(+m.toFixed((sig || 3) - 1)) >= 10) return sciParts(Math.sign(x) * Math.pow(10, e + 1), sig); // 尾數四捨五入成 10.0（例如 9999.6）：就是下一個次方。以前用 x × (1 + 1e-12) 重算，次方不變，會無限遞迴（11/13 總檢查抓到）
     return { m: num(m, (sig || 3) - 1), e: e };
   }
   function sciHTML(x, sig) { const p = sciParts(x, sig); return p.e == null ? p.m : p.m + ' × 10<sup>' + num(p.e, 0) + '</sup>'; }

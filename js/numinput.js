@@ -108,7 +108,8 @@
   });
 
   function edit(range, out) {
-    if (out.dataset.editing) return;
+    // 滑桿停用時（例如反應速率的「未知反應」固定 ΔH）不能從數字改值，否則實際值和顯示的固定值會不一致（11/13 總檢查的試玩抓到）
+    if (out.dataset.editing || range.disabled) return;
     const inf = info(range);
     const start = value(range);
     out.dataset.editing = '1';

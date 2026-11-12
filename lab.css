@@ -592,6 +592,9 @@ html.lab-converting body { visibility: hidden; }
 /* 看不見的放大觸控範圍（約 44 px 高）：往上多、往下少，不搶下方滑桿的拖曳 */
 .lab-num::after { content: ""; position: absolute; left: 50%; width: max(calc(100% + 20px), 44px); transform: translateX(-50%); top: -17px; bottom: -8px; }
 .lab-num:hover, .lab-num:focus-visible { border-bottom-color: var(--accent); color: var(--accent); outline: none; background: var(--accent-soft); }
+/* 滑桿停用時數字不能點（js/numinput.js 也擋住），看起來就不像可以點 */
+.slider:has(input[type="range"]:disabled) .lab-num { cursor: default; border-bottom-color: transparent; }
+.slider:has(input[type="range"]:disabled) .lab-num:hover { color: inherit; background: none; }
 .lab-num-edit { display: inline-flex; align-items: center; gap: 4px; justify-self: end; }
 .lab-num-edit input {
   width: 6.5em;
@@ -748,11 +751,59 @@ html.lab-converting body { visibility: hidden; }
 }
 .lb-banner .lb-star { width: 28px; height: 28px; }
 .lb-banner small { display: block; font-weight: 400; color: var(--muted); }
-.ms-details > summary { cursor: pointer; font-weight: 700; min-height: 44px; display: flex; align-items: center; gap: 6px; list-style: none; }
-.ms-details > summary::-webkit-details-marker { display: none; }
-.ms-details > summary::before { content: "▸"; color: var(--star); transition: transform .2s; }
-.ms-details[open] > summary::before { transform: rotate(90deg); }
-.ms-details[open] > summary { margin-bottom: 8px; }
+/* 一般任務與隱藏任務：各一區，標題是展開／收合按鈕 */
+.ms-tools { display: flex; justify-content: flex-end; margin: 0 0 8px; }
+.ms-filter { min-height: 44px; padding: 4px 14px; border: 1px solid var(--border); border-radius: 22px; background: var(--surface); color: var(--text); font: inherit; font-size: calc(14px * var(--fs, 1)); }
+.ms-filter[aria-pressed="true"] { border-color: var(--star); background: var(--star-soft); font-weight: 700; }
+.ms-filter[aria-pressed="true"]::before { content: "✓ "; color: var(--star); }
+.ms-sec + .ms-sec { margin-top: 10px; }
+.ms-sec-btn {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; width: 100%; min-height: 48px; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text);
+  font: inherit; text-align: left; cursor: pointer;
+}
+.ms-sec-btn:hover { border-color: var(--star); }
+.ms-sec-name { font-weight: 800; font-size: calc(16px * var(--fs, 1)); }
+.ms-sec-count { font-variant-numeric: tabular-nums; color: var(--muted); font-size: calc(14px * var(--fs, 1)); }
+.ms-sec-act { margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; color: var(--muted); }
+.ms-sec-act::after { content: "▾"; color: var(--star); font-size: 1.1em; transition: transform .2s; }
+.ms-sec.open .ms-sec-act::after { transform: rotate(180deg); }
+.ms-sec-hid .ms-sec-btn { background: repeating-linear-gradient(135deg, var(--surface) 0 10px, var(--bg) 10px 20px); }
+.ms-sec .ms-list, .ms-hgrid { margin-top: 8px; }
+.ms-sec .ms-list[hidden], .ms-hgrid[hidden] { display: none; }
+.ms-item.done { padding-top: 6px; padding-bottom: 6px; }
+.ms-item.done .ms-desc { display: none; } /* 做完的只留標題，清單短一點 */
+.ms-hgrid { list-style: none; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); }
+.ms-hcard { padding: 8px 10px; border: 1px dashed var(--border); border-radius: 12px; background: repeating-linear-gradient(135deg, var(--surface) 0 10px, var(--bg) 10px 20px); }
+.ms-hcard.done { border: 1px solid var(--star); background: var(--star-soft); }
+.ms-hcard .ms-desc { font-style: italic; color: var(--text); }
+.ms-alldone { padding: 8px 12px; color: var(--muted); font-size: calc(14px * var(--fs, 1)); list-style: none; }
+
+/* 橫式寬螢幕：任務模式開啟時，面板變成貼在右側的一欄；實驗往左讓出空間 */
+:root { --ms-dock-w: clamp(320px, 27vw, 400px); }
+html.ms-docked body { padding-right: var(--ms-dock-w); }
+html.ms-docked .ms-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: var(--ms-dock-w); z-index: 30;
+  margin: 0; border: 0; border-left: 4px solid var(--star); border-radius: 0;
+  padding: max(12px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) 16px;
+  overflow-y: auto; overscroll-behavior: contain;
+  background: var(--surface); box-shadow: -8px 0 24px rgba(0,0,0,.12);
+}
+.ms-dock-head { position: sticky; top: calc(-1 * max(12px, env(safe-area-inset-top, 0px))); z-index: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: -12px -16px 12px; padding: 10px 16px; background: var(--star-soft); border-bottom: 1px solid var(--border); }
+.ms-dock-title { display: inline-flex; align-items: center; gap: 6px; font-size: calc(17px * var(--fs, 1)); }
+.ms-dock-title svg { width: 20px; height: 20px; fill: var(--star); }
+.ms-dock-close { margin-left: auto; min-height: 44px; padding: 4px 14px; border: 1px solid var(--star); border-radius: 22px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; }
+.ms-dock-tab { display: none; }
+html.ms-dock-closed .ms-dock-tab {
+  position: fixed; right: env(safe-area-inset-right, 0px); top: 50%; transform: translateY(-50%); z-index: 30;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; width: 46px; padding: 14px 0;
+  border: 2px solid var(--star); border-right: 0; border-radius: 14px 0 0 14px;
+  background: var(--surface); color: var(--text); font: inherit; font-weight: 800; cursor: pointer;
+  box-shadow: -4px 0 14px rgba(0,0,0,.14);
+}
+html.ms-dock-closed .ms-dock-tab span { writing-mode: vertical-rl; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+html.ms-dock-closed .ms-dock-tab svg { width: 22px; height: 22px; fill: var(--star); }
+@media print { .ms-dock-tab { display: none !important; } html.ms-docked body { padding-right: 0; } html.ms-docked .ms-panel { position: static; width: auto; box-shadow: none; } }
 
 /* ---------- 規則說明與成就（missions.js、achievements.js） ---------- */
 .ms-rules { margin: 0 0 10px; padding: 8px 12px; border: 1px dashed var(--star); border-radius: 10px; background: var(--surface); font-size: calc(14px * var(--fs, 1)); }
@@ -1255,6 +1306,35 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
   --b-algebra: #fca5a5; --b-geometry: #93c5fd; --b-vectors: #c4b5fd; --b-probability: #5eead4; --b-calculus: #fcd34d;
 }
 .sb-math { --sc: var(--d-math); }
+
+/* ---------- 資訊科技、地理、音樂（11/12 深夜站長要求加的三科）：科目色與各六個分支色；淺色與兩個深色區塊同時定義 ---------- */
+/* 資訊：data 資料表示、algo 演算法、prog 程式設計、system 計算機系統、network 網路與資訊安全、ai 人工智慧
+   地理：mapping 地圖與地理技能、gis 空間資訊科技、climate 氣候與自然景觀、landform 地形與水文、population 人口與都市、economy 產業交通與全球化
+   音樂：tone 樂音與聽覺、tuning 音律與音階、harmony 和聲、instruments 樂器的科學、rhythm 節奏與曲式、audio 空間錄音與數位音樂
+   淺色都是 Tailwind 700 級（對白底 ≥ 4.9），深色都是 300 級 */
+:root {
+  --d-info: #1d4ed8; --d-geog: #a16207; --d-music: #7e22ce;
+  --b-data: #0369a1; --b-algo: #b45309; --b-prog: #15803d; --b-system: #4338ca; --b-network: #be123c; --b-ai: #7e22ce;
+  --b-mapping: #1d4ed8; --b-gis: #6d28d9; --b-climate: #0e7490; --b-landform: #4d7c0f; --b-population: #be185d; --b-economy: #b45309;
+  --b-tone: #be123c; --b-tuning: #b45309; --b-harmony: #6d28d9; --b-instruments: #c2410c; --b-rhythm: #15803d; --b-audio: #0369a1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --d-info: #93c5fd; --d-geog: #fcd34d; --d-music: #d8b4fe;
+    --b-data: #7dd3fc; --b-algo: #fcd34d; --b-prog: #86efac; --b-system: #a5b4fc; --b-network: #fda4af; --b-ai: #d8b4fe;
+    --b-mapping: #93c5fd; --b-gis: #c4b5fd; --b-climate: #67e8f9; --b-landform: #bef264; --b-population: #f9a8d4; --b-economy: #fcd34d;
+    --b-tone: #fda4af; --b-tuning: #fcd34d; --b-harmony: #c4b5fd; --b-instruments: #fdba74; --b-rhythm: #86efac; --b-audio: #7dd3fc;
+  }
+}
+:root[data-theme="dark"] {
+  --d-info: #93c5fd; --d-geog: #fcd34d; --d-music: #d8b4fe;
+  --b-data: #7dd3fc; --b-algo: #fcd34d; --b-prog: #86efac; --b-system: #a5b4fc; --b-network: #fda4af; --b-ai: #d8b4fe;
+  --b-mapping: #93c5fd; --b-gis: #c4b5fd; --b-climate: #67e8f9; --b-landform: #bef264; --b-population: #f9a8d4; --b-economy: #fcd34d;
+  --b-tone: #fda4af; --b-tuning: #fcd34d; --b-harmony: #c4b5fd; --b-instruments: #fdba74; --b-rhythm: #86efac; --b-audio: #7dd3fc;
+}
+.sb-info { --sc: var(--d-info); }
+.sb-geog { --sc: var(--d-geog); }
+.sb-music { --sc: var(--d-music); }
 
 /* ---------- 實驗台版面平衡（js/lab-layout.js）：面板尾端的卡片搬到畫布下方，報紙式分欄 ---------- */
 .lab-spill > * { break-inside: avoid; margin: 0 0 12px; }

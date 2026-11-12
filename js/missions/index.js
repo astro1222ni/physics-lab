@@ -123,15 +123,27 @@ window.LAB_MODULE_BRANCH = {
   'derivative': 'calculus'
 };
 
-/* 四個科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */
+/* 各科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */
 window.LAB_SUBJECTS = [
   { id: 'phy', zh: '物理', en: 'Physics', branches: ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'] },
   { id: 'chem', zh: '化學', en: 'Chemistry', branches: ['matter', 'reaction', 'equilibrium', 'acidbase', 'organic'] },
   { id: 'bio', zh: '生物', en: 'Biology', branches: ['cell', 'genetics', 'physiology', 'ecology', 'evolution'] },
   { id: 'earth', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] },
-  { id: 'math', zh: '數學', en: 'Mathematics', branches: ['algebra', 'geometry', 'vectors', 'probability', 'calculus'] }
+  { id: 'math', zh: '數學', en: 'Mathematics', branches: ['algebra', 'geometry', 'vectors', 'probability', 'calculus'] },
+  // 11/12 深夜站長要求加入的三科：第一個實驗上線前，排行榜與成就都不顯示這一科（LAB_SUBJECT_SHOWN）
+  { id: 'info', zh: '資訊科技', en: 'Information Technology', branches: ['data', 'algo', 'prog', 'system', 'network', 'ai'], newSubject: true },
+  { id: 'geog', zh: '地理', en: 'Geography', branches: ['mapping', 'gis', 'climate', 'landform', 'population', 'economy'], newSubject: true },
+  { id: 'music', zh: '音樂', en: 'Music', branches: ['tone', 'tuning', 'harmony', 'instruments', 'rhythm', 'audio'], newSubject: true }
 ];
-/* 實驗代號 → 科目代號（phy、chem、bio、earth、math） */
+/* 這一科要不要出現在排行榜與成就的分頁：原本五科一直顯示（沒有實驗時寫「製作中」）；新科要等第一個實驗上線 */
+window.LAB_SUBJECT_SHOWN = function (sid) {
+  const S = window.LAB_SUBJECTS.filter(function (x) { return x.id === sid; })[0];
+  if (!S) return false;
+  if (!S.newSubject) return true;
+  const live = window.LAB_LIVE_MODULES || [], br = window.LAB_MODULE_BRANCH || {};
+  return live.some(function (m) { return S.branches.indexOf(br[m]) >= 0; });
+};
+/* 實驗代號 → 科目代號（phy、chem、bio、earth、math、info、geog、music） */
 window.LAB_SUBJECT_OF = function (moduleId) {
   const b = (window.LAB_MODULE_BRANCH || {})[moduleId];
   const S = window.LAB_SUBJECTS;

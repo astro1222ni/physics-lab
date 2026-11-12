@@ -361,7 +361,7 @@ function ptHook() {
 }
 
 function ptLib() {
-  const EXCL = 'header, footer, .notes, .ms-wrap, #comments, .lab-settings, .lab-gear, .lab-set-panel, .lab-tools, .lab-share, .lab-export, .related, .crumbs, .stats-bar, .module-stats, .try-hint, .lab-bigqr, .ms-celebrate, .lab-en-note, .lab-num-hint, .print-only, .lab-restored, .lab-account, .lab-account-menu';
+  const EXCL = 'header, footer, .notes, .ms-wrap, .ms-dock-tab, #comments, .lab-settings, .lab-gear, .lab-set-panel, .lab-tools, .lab-share, .lab-export, .related, .crumbs, .stats-bar, .module-stats, .try-hint, .lab-bigqr, .ms-celebrate, .lab-en-note, .lab-num-hint, .print-only, .lab-restored, .lab-account, .lab-account-menu';
   const BAD_BTN = /列印|下載|複製|分享|全螢幕|登入|登出|送出|留言|檢舉|嵌入|開啟完整版|\bprint\b|download|\bcopy\b|\bshare\b|full ?screen|sign ?in|sign ?out|log ?in|submit|\bpost\b|embed|open full/i;
   const L = window.__ptLib = { n: 0, skip: [] };
   const vis = el => {
@@ -605,7 +605,8 @@ async function newCtx(browser, base, slug, lang, mdb) {
         localStorage.setItem('mdb', JSON.stringify(o.mdb));
       }
       sessionStorage.setItem('ms-on:' + o.slug, '1');   // 任務模式開
-      sessionStorage.setItem('ms-open:' + o.slug, '0'); // 任務清單收起來，版面和學生剛打開時接近
+      // 任務清單兩區都收起來、寬螢幕的右側任務欄也收成小標籤，版面和學生剛打開時接近（任務欄另有自己的實測）
+      localStorage.setItem('ms-sec-pub', '0'); localStorage.setItem('ms-sec-hid', '0'); localStorage.setItem('ms-dock', '0');
     } catch (e) { /* 忽略 */ }
   }, { lang, slug, mdb });
   await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') }); // 假後端（必須在上面設好 localStorage 之後）
