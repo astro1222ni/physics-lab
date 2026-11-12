@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Linear Combinations and Dot Products of Plane Vectors | Astro Ni Science Lab">平面向量的線性組合與內積｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 平面向量頁面專用的顏色代號（淺色＋深色；由 js/plane-vectors.js 讀取） */
+    :root { --pv-a: #2563eb; --pv-b: #db2777; --pv-p: #7c3aed; --pv-grid: #0d9488; --pv-pos: #16a34a; --pv-neg: #dc2626; --pv-area: #d97706; --pv-t: #475569; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pv-a: #60a5fa; --pv-b: #f472b6; --pv-p: #c4b5fd; --pv-grid: #2dd4bf; --pv-pos: #4ade80; --pv-neg: #f87171; --pv-area: #fbbf24; --pv-t: #cbd5e1; }
+    }
+    :root[data-theme="dark"] { --pv-a: #60a5fa; --pv-b: #f472b6; --pv-p: #c4b5fd; --pv-grid: #2dd4bf; --pv-pos: #4ade80; --pv-neg: #f87171; --pv-area: #fbbf24; --pv-t: #cbd5e1; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .pv button { min-height: 44px; }
+    .pv [hidden] { display: none !important; }
+    .pv .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pv .playbar button { flex: 1 1 auto; }
+    .pv .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pv .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .pv .slider input[type="range"] { height: 28px; margin: 0; }
+    .pv .checks label { min-height: 44px; }
+    .pv .checks input { width: 17px; height: 17px; }
+    .pv .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pv .panel { grid-template-columns: minmax(0, 1fr); }
+    .pv .panel > .card { min-width: 0; }
+    .pv:not([data-mode="lin"]) .ml, .pv:not([data-mode="dot"]) .md { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .vecs { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 12px; }
+    .vecs .slider label { font-weight: 600; }
+    .seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; margin: 4px 0 8px; }
+    .seg button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--pv-grid); font-weight: 600; }
+    .chal-msg.bad { color: var(--pv-neg); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq:empty { display: none; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#vectors&quot;>Mathematics · Vectors and Space</a> / Vectors in the Plane"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#vectors">數學・向量與空間</a> ／ 平面向量</nav>
+      <h1 data-en="Linear Combinations and Dot Products of Plane Vectors">平面向量的線性組合與內積</h1>
+      <p data-en-html="Two vectors <strong>a</strong> and <strong>b</strong> lay a slanted grid over the plane: every point is x<strong>a</strong> + y<strong>b</strong> for exactly one pair (x, y) — unless the two vectors are parallel. Shade the points with x + y = 1 or x, y ≥ 0, then switch to the dot product: the shadow of <strong>b</strong> on <strong>a</strong>, the angle between them and the area they span.">兩個向量 <strong>a</strong>、<strong>b</strong> 在平面上鋪出一張斜的方格紙：每一個點都可以寫成 x<strong>a</strong> + y<strong>b</strong>，而且 (x, y) 只有一組——除非兩個向量平行。標出 x + y = 1、x, y ≥ 0 的範圍，再切到內積：<strong>b</strong> 在 <strong>a</strong> 上的影子、兩者的夾角、張出的面積。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: drag the tip of <strong>b</strong> until it lies on the line of <strong>a</strong>. The slanted grid collapses onto a single line — most points can no longer be reached.">試試看：把 <strong>b</strong> 的箭頭拖到 <strong>a</strong> 所在的直線上。斜坐標格子塌成一條線——大部分的點再也到不了。</p>
+    <div class="lab pv" id="lab" data-mode="lin">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="平面向量畫布：拖曳 a、b 的箭頭改變向量（落在整數格點）；線性組合模式可以拖曳點 P。" data-en-aria-label="Plane vector canvas: drag the tips of a and b to change the vectors (they snap to whole-number grid points); in linear-combination mode drag the point P."></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，P 回到 a + b；向量設定不變" data-en-title="Clear the challenge record and put P back at a + b; the vectors are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--pv-a)&quot;></i>Vector a"><i style="background:var(--pv-a)"></i>向量 a</span>
+          <span data-en-html="<i style=&quot;background:var(--pv-b)&quot;></i>Vector b"><i style="background:var(--pv-b)"></i>向量 b</span>
+          <span class="ml" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pv-p)&quot;></i>P = x a + y b"><i class="dot" style="background:var(--pv-p)"></i>P = x a + y b</span>
+          <span class="ml" data-en-html="<i style=&quot;background:var(--pv-grid)&quot;></i>Slanted grid / region"><i style="background:var(--pv-grid)"></i>斜坐標格子／範圍</span>
+          <span class="md" data-en-html="<i style=&quot;background:var(--pv-pos)&quot;></i>Projection (a · b &gt; 0)"><i style="background:var(--pv-pos)"></i>正射影（a · b &gt; 0）</span>
+          <span class="md" data-en-html="<i style=&quot;background:var(--pv-neg)&quot;></i>Projection (a · b &lt; 0)"><i style="background:var(--pv-neg)"></i>正射影（a · b &lt; 0）</span>
+          <span class="md" id="lgArea" data-en-html="<i style=&quot;background:var(--pv-area)&quot;></i>Parallelogram"><i style="background:var(--pv-area)"></i>平行四邊形</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="lin" aria-pressed="true" data-en-html="Linear combination<small>slanted grid, regions</small>">線性組合<small>斜坐標、範圍</small></button>
+            <button type="button" data-mode="dot" aria-pressed="false" data-en-html="Dot product<small>projection, angle, area</small>">內積<small>正射影、夾角、面積</small></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Vectors a and b">向量 a、b</h2>
+          <div class="vecs">
+            <div class="slider"><label for="ax" data-en-html="a<sub>1</sub>" style="color:var(--pv-a)">a<sub>1</sub></label><output id="axo"></output>
+              <input id="ax" type="range" min="-5" max="5" step="1" value="2" data-decimals="0"></div>
+            <div class="slider"><label for="ay" data-en-html="a<sub>2</sub>" style="color:var(--pv-a)">a<sub>2</sub></label><output id="ayo"></output>
+              <input id="ay" type="range" min="-5" max="5" step="1" value="1" data-decimals="0"></div>
+            <div class="slider"><label for="bx" data-en-html="b<sub>1</sub>" style="color:var(--pv-b)">b<sub>1</sub></label><output id="bxo"></output>
+              <input id="bx" type="range" min="-5" max="5" step="1" value="1" data-decimals="0"></div>
+            <div class="slider"><label for="by" data-en-html="b<sub>2</sub>" style="color:var(--pv-b)">b<sub>2</sub></label><output id="byo"></output>
+              <input id="by" type="range" min="-5" max="5" step="1" value="2" data-decimals="0"></div>
+          </div>
+          <p class="hint" data-en="Drag the arrow tips on the picture; they snap to whole-number grid points.">也可以在圖上拖曳箭頭，箭頭會落在整數格點上。</p>
+        </section>
+
+        <section class="card ml">
+          <h2 data-en-html="Coefficients of P = x a + y b">P = x a + y b 的係數</h2>
+          <div class="slider"><label for="cx" data-en="x">x</label><output id="cxo"></output>
+            <input id="cx" type="range" min="-4" max="4" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="cy" data-en="y">y</label><output id="cyo"></output>
+            <input id="cy" type="range" min="-4" max="4" step="0.05" value="1" data-decimals="3"></div>
+          <div class="seg" id="regPick" role="group" aria-label="標出範圍" data-en-aria-label="Shade a region">
+            <button type="button" data-reg="none" aria-pressed="true" data-en="No region">不標範圍</button>
+            <button type="button" data-reg="line" aria-pressed="false">x + y = 1</button>
+            <button type="button" data-reg="cone" aria-pressed="false">x, y ≥ 0</button>
+            <button type="button" data-reg="para" aria-pressed="false">0 ≤ x, y ≤ 1</button>
+            <button type="button" data-reg="tri" aria-pressed="false" data-en="x, y ≥ 0, x + y ≤ 1">x, y ≥ 0，x + y ≤ 1</button>
+          </div>
+          <div class="checks">
+            <label><input id="gridC" type="checkbox" checked><span data-en="Show the slanted grid">顯示斜坐標格子</span></label>
+          </div>
+          <p class="hint" data-en="Drag P on the picture: it snaps to grid points where x and y are multiples of 0.5. Type x or y to place it anywhere.">在圖上拖曳 P：靠近 x、y 都是 0.5 倍數的格點時會吸過去。打入 x、y 可以放在任何位置。</p>
+        </section>
+
+        <section class="card md">
+          <h2 data-en="Show">顯示</h2>
+          <div class="checks">
+            <label><input id="projC" type="checkbox" checked><span data-en="Projection of b on a">b 在 a 上的正射影</span></label>
+            <label><input id="areaC" type="checkbox"><span data-en="Parallelogram spanned by a and b">a、b 張出的平行四邊形</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout ml">
+            <dt data-en="x, y">x、y</dt><dd id="rXY">—</dd>
+            <dt data-en="P">P</dt><dd id="rP">—</dd>
+            <dt data-en="det(a, b)">det(a, b)</dt><dd id="rDet">—</dd>
+            <dt data-en="Is P in the region?">P 在範圍裡嗎</dt><dd id="rIn">—</dd>
+          </dl>
+          <dl class="readout md">
+            <dt data-en="|a|, |b|">|a|、|b|</dt><dd id="rLen">—</dd>
+            <dt data-en="a · b">a · b</dt><dd id="rDot">—</dd>
+            <dt data-en="Angle θ">夾角 θ</dt><dd id="rAng">—</dd>
+            <dt data-en="Projection of b on a">b 在 a 上的正射影</dt><dd id="rProj">—</dd>
+            <dt data-en="Parallelogram area">平行四邊形面積</dt><dd id="rArea">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card ml">
+          <h2 data-en="Challenge: reach the star">挑戰：走到星星</h2>
+          <p class="hint" data-en="New vectors a and b and a star appear. Using only the x and y sliders (P cannot be dragged), put P on the star and submit.">出新的 a、b 和一顆星星。只能用 x、y 的滑桿或打字（不能拖曳 P），把 P 放到星星上再送出。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="submitC" type="button" hidden data-en="Submit">送出</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Linear combinations">線性組合</h3>
+      <p data-en-html="If \(\vec a\) and \(\vec b\) are not parallel, every vector \(\vec p\) in the plane can be written in exactly one way as \(\vec p = x\vec a + y\vec b\). The numbers \(x, y\) are the coordinates of \(P\) on the slanted grid made by \(\vec a\) and \(\vec b\). Writing out the components gives two equations; Cramer’s rule solves them:">若 \(\vec a\)、\(\vec b\) 不平行，平面上每一個向量 \(\vec p\) 都能唯一寫成 \(\vec p = x\vec a + y\vec b\)。\(x, y\) 就是 \(P\) 在 \(\vec a\)、\(\vec b\) 鋪成的斜坐標格子上的坐標。把分量寫開是兩條方程式，用克拉瑪公式解：</p>
+      <div class="formula">\[ x = \frac{\det(\vec p, \vec b)}{\det(\vec a, \vec b)},\qquad y = \frac{\det(\vec a, \vec p)}{\det(\vec a, \vec b)},\qquad \det(\vec a, \vec b) = a_1b_2 - a_2b_1. \]</div>
+      <p data-en-html="When \(\det(\vec a, \vec b) = 0\) the vectors are parallel: all combinations lie on one line, so points off that line cannot be reached and points on it can be reached in infinitely many ways.">\(\det(\vec a, \vec b) = 0\) 時兩向量平行：所有組合都在同一條直線上，直線外的點到不了，直線上的點有無限多種寫法。</p>
+
+      <h3 data-en="Regions">範圍</h3>
+      <p data-en-html="With \(O\) the origin, \(A\) the tip of \(\vec a\) and \(B\) the tip of \(\vec b\): \(x + y = 1\) is the line \(AB\) (and \(P\) divides \(AB\) with \(AP : PB = y : x\)); \(x, y \ge 0\) is the angle \(AOB\); \(0 \le x, y \le 1\) is the parallelogram on \(OA\) and \(OB\); \(x, y \ge 0,\ x + y \le 1\) is the triangle \(OAB\), whose centroid is \(x = y = \frac13\).">設 \(O\) 是原點、\(A\)、\(B\) 是 \(\vec a\)、\(\vec b\) 的終點：\(x + y = 1\) 是直線 \(AB\)（此時 \(P\) 把 \(AB\) 分成 \(AP : PB = y : x\)）；\(x, y \ge 0\) 是角 \(AOB\) 的內部；\(0 \le x, y \le 1\) 是以 \(OA\)、\(OB\) 為邊的平行四邊形；\(x, y \ge 0,\ x + y \le 1\) 是三角形 \(OAB\)，重心在 \(x = y = \frac13\)。</p>
+
+      <h3 data-en="The dot product">內積</h3>
+      <div class="formula">\[ \vec a \cdot \vec b = a_1b_1 + a_2b_2 = |\vec a|\,|\vec b|\cos\theta,\qquad \text{proj}_{\vec a}\vec b = \frac{\vec a \cdot \vec b}{|\vec a|^2}\,\vec a. \]</div>
+      <p data-en-html="The dot product is positive for an acute angle, zero for a right angle and negative for an obtuse angle; the projection then points along \(\vec a\), vanishes, or points against \(\vec a\). Its length \(|\vec a \cdot \vec b|/|\vec a|\) is the shadow of \(\vec b\) on the line of \(\vec a\). The parallelogram spanned by the two vectors has area \(|\det(\vec a, \vec b)| = |\vec a|\,|\vec b|\sin\theta\), and">夾角是銳角時內積為正、直角時為 0、鈍角時為負；正射影因此和 \(\vec a\) 同向、消失、或反向。正射影的長度 \(|\vec a \cdot \vec b|/|\vec a|\) 就是 \(\vec b\) 落在 \(\vec a\) 所在直線上的影子。兩向量張出的平行四邊形面積是 \(|\det(\vec a, \vec b)| = |\vec a|\,|\vec b|\sin\theta\)，而且</p>
+      <div class="formula">\[ (\vec a \cdot \vec b)^2 + \det(\vec a, \vec b)^2 = |\vec a|^2\,|\vec b|^2 \;\Rightarrow\; |\vec a \cdot \vec b| \le |\vec a|\,|\vec b|. \]</div>
+      <p data-en-html="This is the Cauchy inequality; equality holds exactly when the two vectors are parallel.">這就是柯西不等式；兩向量平行時等號成立。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Change the grid, keep the coefficients</strong>: with \(x, y\) fixed, moving \(\vec a\) or \(\vec b\) carries \(P\) along — the same coordinates on a different grid."><strong>換格子、係數不變</strong>：固定 \(x, y\)，移動 \(\vec a\) 或 \(\vec b\)，\(P\) 跟著走——同樣的坐標、不同的格子。</li>
+        <li data-en-html="<strong>Perpendicular on whole numbers</strong>: \((3, 4)\) and \((-4, 3)\) are perpendicular and both have length 5."><strong>整數格點上的垂直</strong>：\((3, 4)\) 和 \((-4, 3)\) 互相垂直，長度都是 5。</li>
+        <li data-en-html="<strong>Sign of the shadow</strong>: drag \(\vec b\) across the line perpendicular to \(\vec a\) and watch the projection turn from green to red."><strong>影子的正負</strong>：把 \(\vec b\) 拖過和 \(\vec a\) 垂直的那條線，看正射影由綠變紅。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 11) · plane vectors, linear combinations, the dot product, projection, area and the Cauchy inequality.">課綱對應：高中數學（高二）・平面向量、線性組合、內積、正射影、面積與柯西不等式。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Linear_combination&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Linear combination (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Dot_product&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Dot product (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Linear_combination" target="_blank" rel="noopener">Linear combination（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Dot_product" target="_blank" rel="noopener">Dot product（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/plane-vectors-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/plane-vectors.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="plane-vectors"></script>
+  <script src="js/missions/plane-vectors.js"></script>
+  <script src="js/stats.js" data-module="plane-vectors"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
