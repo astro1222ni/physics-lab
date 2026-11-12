@@ -124,7 +124,9 @@ expect('h2', [stateEv('abs', 0.01, 0.3, null, { sym: true })], false, 'a = 0.01'
 
 // ---------- 總覽 ----------
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
-const stars = missions.reduce((s, m) => s + m.level, 0);
-console.log(`\n公開 ${pub.length} 個、隱藏 ${hid.length} 個，共 ${stars} 顆星（公開 ${pub.reduce((s, m) => s + m.level, 0)}、隱藏 ${hid.reduce((s, m) => s + m.level, 0)}）。`);
+const starsOf = m => (m.hidden ? 2 : 1) * m.level;   // 隱藏任務星星加倍（與 js/missions.js 的 LabMission.starsOf 相同）
+const stars = missions.reduce((s, m) => s + starsOf(m), 0);
+console.log(`\n公開 ${pub.length} 個、隱藏 ${hid.length} 個，共 ${stars} 顆星（公開 ${pub.reduce((s, m) => s + m.level, 0)}、隱藏 ${hid.reduce((s, m) => s + starsOf(m), 0)}，隱藏任務是等級 × 2）。`);
+if (hid.some(m => starsOf(m) > 20)) { fail++; console.log('隱藏任務超過 20 顆星（規則上限）。'); }
 if (fail) { console.log(`有 ${fail} 項不符合。`); process.exit(1); }
 console.log('全部任務都證明做得到，預設狀態不觸發。');
