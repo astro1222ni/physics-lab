@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Hardy–Weinberg, Genetic Drift and Natural Selection | Astro Ni Science Lab">哈溫平衡、遺傳漂變與天擇｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="在花圃裡種金魚草：隨機交配一代就到哈溫平衡，自花授粉讓異型合子越來越少，再抽樣做卡方檢定；接著讓幾十個族群一起演化，看遺傳漂變、天擇、突變與遷移怎麼改變對偶基因頻率，2D 曲線與 3D 分布曲面都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 哈溫平衡頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --hw-AA: #c0264f;       /* 紅花 AA */
+      --hw-Aa: #ef87ad;       /* 粉紅花 Aa */
+      --hw-aa: #fbfaf5;       /* 白花 aa */
+      --hw-edge: #a8968c;     /* 白花的輪廓 */
+      --hw-leaf: #3f8f4f;
+      --hw-bed: #efe6d2;      /* 花圃的土 */
+      --hw-eq: #7c3aed;       /* 哈溫拋物線、理論值 */
+      --hw-fix: #c0264f;      /* A 固定的族群 */
+      --hw-lost: #64748b;     /* A 消失的族群 */
+      --hw-seg: #0f766e;      /* 還在分離的族群 */
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --hw-AA: #f0517a; --hw-Aa: #f9a8c9; --hw-aa: #f5f5ef; --hw-edge: #8b7f78; --hw-leaf: #6fbf73; --hw-bed: #2a271f;
+        --hw-eq: #c4b5fd; --hw-fix: #fb7185; --hw-lost: #94a3b8; --hw-seg: #2dd4bf;
+      }
+    }
+    :root[data-theme="dark"] {
+      --hw-AA: #f0517a; --hw-Aa: #f9a8c9; --hw-aa: #f5f5ef; --hw-edge: #8b7f78; --hw-leaf: #6fbf73; --hw-bed: #2a271f;
+      --hw-eq: #c4b5fd; --hw-fix: #fb7185; --hw-lost: #94a3b8; --hw-seg: #2dd4bf;
+    }
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 480px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .hw button { min-height: 44px; }
+    .hw .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hw .playbar button { flex: 1 1 auto; }
+    .hw .playbar .primary { font-weight: 700; }
+    .hw .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .hw .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .hw .slider input[type="range"] { height: 28px; margin: 0; }
+    .hw .slider label sub, .hw .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .hw [hidden] { display: none !important; }
+    .hw .panel { grid-template-columns: minmax(0, 1fr); }
+    .hw .panel > .card { min-width: 0; }
+    .seg2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .seg2 button { padding: 6px 4px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .hw .card > button.wide { width: 100%; margin-top: 8px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--hw-edge); }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.yes { color: var(--hw-AA); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .hw3-wrap { position: relative; }
+    .hw3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .hw3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .hw3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .hw3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .hw3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .hw3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#evolution&quot;>Biology · Evolution and Diversity</a> / Hardy–Weinberg"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#evolution">生物・演化與多樣性</a> ／ 哈溫平衡</nav>
+      <h1 data-en="Hardy–Weinberg, Genetic Drift and Natural Selection">哈溫平衡、遺傳漂變與天擇</h1>
+      <p data-en="Evolution, in the language of genetics, is a change in how common each version of a gene is. This page starts with a bed of snapdragons whose flower colour shows their genotype at a glance — red, pink or white. Let them mate at random and the genotypes settle, in a single generation, into the Hardy–Weinberg proportions p², 2pq and q², which then never change; let them fertilise themselves and the pink heterozygotes melt away. Draw a sample and test it as a geneticist would. Then release dozens of small populations at once and watch the four forces that do change gene frequencies: genetic drift, natural selection, mutation and migration — as curves, as a spreading histogram, or as a 3D surface.">用遺傳學的語言來說，演化就是「每種對偶基因有多常見」的改變。本頁先種一片金魚草：花色直接看得出基因型——紅、粉紅、白。讓它們隨機交配，只要一代，基因型就會變成哈溫比例 p²、2pq、q²，之後不再改變；讓它們自花授粉，粉紅的異型合子就越來越少。再像遺傳學家一樣抽樣、做檢定。接著同時放出幾十個小族群，看真正會改變基因頻率的四種力量：遺傳漂變、天擇、突變與遷移——可以看曲線、看逐漸擴散的分布，也可以看 3D 曲面。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Next generation” once and watch the point jump onto the purple curve. Then set selfing to 100% and press it again.">試試看：按一次「下一代」，看點怎麼一步跳到紫色的曲線上；再把自花授粉調到 100%，多按幾次。</p>
+
+    <h2 class="lab-title" data-en-html="1 · A bed of snapdragons<small>Random mating, selfing and the Hardy–Weinberg test</small>">一・一片金魚草花圃<small>隨機交配、自花授粉與哈溫平衡的檢定</small></h2>
+    <div class="lab hw" id="lab1">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="金魚草花圃：紅花 AA、粉紅花 Aa、白花 aa；旁邊是基因型三角圖、配子方格與基因型比例。可拖曳三角圖中的起點，或點選畫布後用方向鍵移動" data-en-aria-label="A bed of snapdragons: red AA, pink Aa, white aa; with the genotype triangle, the gamete square and the genotype bars. Drag the starting point in the triangle, or focus the canvas and move it with the arrow keys"></canvas>
+        <div class="playbar">
+          <button id="next1" type="button" class="primary" data-en="Next generation">下一代</button>
+          <button id="next10" type="button" data-en="10 generations">跑 10 代</button>
+          <button id="back1" type="button" data-en="Back to start" title="回到第 0 代，設定不變" data-en-title="Back to generation 0; the settings stay">回到起點</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="回到第 0 代並清除檢定紀錄，設定不變" data-en-title="Back to generation 0 and clear the test record; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <div class="tablewrap"><table class="data runs" id="tests"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Starting population">起始的族群</h2>
+          <div class="slider"><label for="fAA" data-en="Red flowers AA (share)">紅花 AA 的比例</label><output id="fAAo"></output>
+            <input id="fAA" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="faa" data-en="White flowers aa (share)">白花 aa 的比例</label><output id="faao"></output>
+            <input id="faa" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+          <p class="hint" id="hintAa" data-en="The rest are pink Aa. You can also drag the white dot in the triangle.">其餘是粉紅花 Aa。也可以在三角圖上拖曳白色圓點。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="How they mate">交配方式</h2>
+          <div class="slider"><label for="sig" data-en="Self-pollination σ (share of seeds)">自花授粉的比例 σ</label><output id="sigo"></output>
+            <input id="sig" type="range" min="0" max="1" step="0.01" value="0" data-decimals="3"></div>
+          <p class="hint" data-en="The rest of the seeds come from random mating. Snapdragon flowers can be bagged and hand-pollinated, so both are possible in a garden.">其餘的種子來自隨機交配。金魚草的花可以套袋、人工授粉，所以在花圃裡兩種都做得到。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Sample and test">抽樣檢定</h2>
+          <div class="slider"><label for="nS" data-en="Plants in the sample n">抽樣的株數 n</label><output id="nSo"></output>
+            <input id="nS" type="range" min="20" max="2000" step="10" value="100" data-decimals="0"></div>
+          <button id="test1" type="button" class="wide" data-en="Draw a sample and test">抽樣並檢定</button>
+          <p class="hint" data-en="A χ² test with 1 degree of freedom at the 5% level: is the sample consistent with Hardy–Weinberg proportions?">自由度 1、顯著水準 5% 的卡方檢定：樣本和哈溫比例相符嗎？</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · Many populations evolving at once<small>Genetic drift, natural selection, mutation and migration (the Wright–Fisher model)</small>">二・許多族群一起演化<small>遺傳漂變、天擇、突變與遷移（Wright–Fisher 模型）</small></h2>
+    <div class="lab hw" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D graphs">2D 圖表</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D surface">3D 曲面</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="每個族群的 A 頻率隨世代的變化、某一代 A 頻率的分布，以及平均異型合子度。點一下或拖曳上方的圖可以選世代，也可以用方向鍵" data-en-aria-label="The frequency of A in every population against generation, the spread of frequencies at one generation, and the mean heterozygosity. Tap or drag the top graph to pick a generation, or use the arrow keys"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="run2" type="button" class="primary" data-en="Evolve">開始演化</button>
+          <button id="pause2" type="button" data-en="Pause">暫停</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清除紀錄表，設定不變" data-en-title="Clear the table; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Populations">族群</h2>
+          <div class="slider"><label for="N" data-en="Individuals per population N">每個族群的個體數 N</label><output id="No"></output>
+            <input id="N" type="range" min="2" max="5000" step="1" value="50" data-decimals="0"></div>
+          <div class="slider"><label for="pops" data-en="Number of populations">族群的數目</label><output id="popso"></output>
+            <input id="pops" type="range" min="1" max="200" step="1" value="30" data-decimals="0"></div>
+          <div class="slider"><label for="p0" data-en-html="Starting frequency of A, p<sub>0</sub>">起始的 A 頻率 p<sub>0</sub></label><output id="p0o"></output>
+            <input id="p0" type="range" min="0" max="1" step="0.005" value="0.5" data-decimals="4"></div>
+          <div class="slider"><label for="gens" data-en="Generations">世代數</label><output id="genso"></output>
+            <input id="gens" type="range" min="10" max="1000" step="1" value="100" data-decimals="0"></div>
+          <p class="hint" data-en="Each population has 2N copies of the gene, so the frequency moves in steps of 1/(2N). Tap a number to type an exact value.">每個族群有 2N 個基因，所以頻率一次變 1/(2N)。點一下數字可直接輸入精確數值。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Natural selection (relative fitness)">天擇（相對適應度）</h2>
+          <div class="seg2" role="group" aria-label="常見的天擇" data-en-aria-label="Common kinds of selection" id="selSeg">
+            <button type="button" data-sel="neutral" aria-pressed="true" data-en="Neutral">中性</button>
+            <button type="button" data-sel="A" aria-pressed="false" data-en="A favoured">A 有利</button>
+            <button type="button" data-sel="lethal" aria-pressed="false" data-en="aa lethal">aa 致死</button>
+            <button type="button" data-sel="het" aria-pressed="false" data-en="Aa best">Aa 最有利</button>
+          </div>
+          <div class="slider"><label for="wAA" data-en-html="Fitness of AA, w<sub>AA</sub>">AA 的適應度 w<sub>AA</sub></label><output id="wAAo"></output>
+            <input id="wAA" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="wAa" data-en-html="Fitness of Aa, w<sub>Aa</sub>">Aa 的適應度 w<sub>Aa</sub></label><output id="wAao"></output>
+            <input id="wAa" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="waa" data-en-html="Fitness of aa, w<sub>aa</sub>">aa 的適應度 w<sub>aa</sub></label><output id="waao"></output>
+            <input id="waa" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Mutation and migration">突變與遷移</h2>
+          <div class="slider"><label for="mu" data-en="Mutation A → a, u (per gene per generation)">突變 A → a 的機率 u（每個基因每代）</label><output id="muo"></output>
+            <input id="mu" type="range" min="0" max="0.01" step="0.0001" value="0" data-decimals="5"></div>
+          <div class="slider"><label for="nu" data-en="Mutation a → A, v">突變 a → A 的機率 v</label><output id="nuo"></output>
+            <input id="nu" type="range" min="0" max="0.01" step="0.0001" value="0" data-decimals="5"></div>
+          <div class="slider"><label for="mig" data-en="Migrants m (share of each generation)">移入者的比例 m（每代）</label><output id="migo"></output>
+            <input id="mig" type="range" min="0" max="0.2" step="0.001" value="0" data-decimals="4"></div>
+          <div class="slider"><label for="pm" data-en-html="Frequency of A in the migrants, p<sub>m</sub>">移入者的 A 頻率 p<sub>m</sub></label><output id="pmo"></output>
+            <input id="pm" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="A gene can come in different versions, called <strong>alleles</strong>. Every population carries a <strong>gene pool</strong>, and evolution, at its simplest, is a change in the share of each allele in that pool from one generation to the next. In 1908 the mathematician G. H. Hardy and the physician Wilhelm Weinberg, independently, showed what happens when nothing at all is pushing those shares around.">同一個基因可以有不同的版本，叫做<strong>對偶基因</strong>。每個族群都帶著一個<strong>基因庫</strong>；最簡單地說，演化就是基因庫裡每種對偶基因所占的比例，一代一代地改變。1908 年，數學家哈代（G. H. Hardy）和醫師溫伯格（Wilhelm Weinberg）各自證明了：如果完全沒有力量去推動這些比例，會發生什麼事。</p>
+
+      <h3 data-en="The Hardy–Weinberg law">哈溫定律</h3>
+      <p data-en-html="Let <em>p</em> be the frequency of allele A and <em>q</em> = 1 − <em>p</em> that of a. Under random mating, a seed gets an A from its mother with probability <em>p</em> and, independently, an A from its father with probability <em>p</em>. So the next generation has genotypes">設對偶基因 A 的頻率是 <em>p</em>，a 的頻率是 <em>q</em> = 1 − <em>p</em>。隨機交配時，一顆種子從母本得到 A 的機率是 <em>p</em>，從父本得到 A 的機率也是 <em>p</em>，兩者互相獨立。所以下一代的基因型是</p>
+      <div class="formula">\[ \text{AA} : \text{Aa} : \text{aa} \;=\; p^2 : 2pq : q^2 ,\qquad p^2 + 2pq + q^2 = (p+q)^2 = 1 \]</div>
+      <p data-en-html="— the same areas as in the gamete square on the canvas. Whatever the starting mix of genotypes, one round of random mating is enough, and with no other forces both the allele and the genotype frequencies then stay put for ever. That is the <strong>Hardy–Weinberg equilibrium</strong>. In the triangle diagram (a <em>de Finetti diagram</em>) every population is a point whose distances to the three sides are its genotype shares; the populations in equilibrium are exactly those on the purple parabola.">——就是畫面上配子方格裡四塊的面積。不管一開始各種基因型怎麼混，只要隨機交配一次就夠了；如果沒有其他力量，之後對偶基因頻率與基因型頻率都永遠不變。這就是<strong>哈溫平衡</strong>。在三角圖（德費內蒂圖，de Finetti diagram）中，每個族群是一個點，它到三個邊的距離就是三種基因型的比例；處於哈溫平衡的族群，剛好都在紫色的拋物線上。</p>
+      <p data-en-html="The law rests on assumptions: a very large population, random mating, no selection, no mutation and no migration. Break any of them and the gene pool can change — which is why the law is the yardstick that evolution is measured against.">這個定律有幾個前提：族群非常大、隨機交配、沒有天擇、沒有突變、沒有遷移。只要打破其中一個，基因庫就可能改變——所以哈溫定律是衡量「有沒有在演化」的基準。</p>
+
+      <h3 data-en="Self-pollination and inbreeding">自花授粉與近親交配</h3>
+      <p data-en-html="Selfing does not change <em>p</em>, but it changes the genotypes: an AA plant has only AA seeds, an aa plant only aa, and an Aa plant gives ¼ AA, ½ Aa and ¼ aa. With complete selfing, the heterozygotes halve every generation. If a share σ of seeds come from selfing, the population settles where heterozygotes are fewer than Hardy–Weinberg predicts by a factor 1 − <em>F</em>, with the <strong>inbreeding coefficient</strong>">自花授粉不會改變 <em>p</em>，卻會改變基因型：AA 的植株只結 AA 的種子、aa 只結 aa，Aa 則結出 ¼ AA、½ Aa、¼ aa。完全自花授粉時，異型合子每代減半。如果有 σ 的種子來自自花授粉，族群最後會停在異型合子比哈溫預測少 (1 − <em>F</em>) 倍的地方，<strong>近親交配係數</strong></p>
+      <div class="formula">\[ F = 1-\frac{H}{2pq} = \frac{\sigma}{2-\sigma} \]</div>
+      <p data-en-html="Many crop plants, such as rice, wheat and peas, are mostly self-pollinating; that is why Mendel’s pea lines bred true.">許多作物，例如稻、小麥和豌豆，大多是自花授粉；孟德爾的豌豆品系能夠「純種繁殖」，原因就在這裡。</p>
+
+      <h3 data-en="Testing a sample">檢定一個樣本</h3>
+      <p data-en-html="In the field we only see a sample. Count the three genotypes, estimate \(\hat p = (2n_{AA}+n_{Aa})/2n\), compute the numbers expected under Hardy–Weinberg, and add up">在野外，我們只看得到一個樣本。數出三種基因型的株數，估計 \(\hat p = (2n_{AA}+n_{Aa})/2n\)，算出哈溫比例下期望的株數，再加總</p>
+      <div class="formula">\[ \chi^2 = \sum \frac{(\text{observed}-\text{expected})^2}{\text{expected}} \]</div>
+      <p data-en-html="There are 3 classes, minus 1 because they add up to <em>n</em>, minus 1 more because <em>p</em> was estimated from the same data: 1 degree of freedom. If χ² is larger than 3.84, a sample this lopsided would turn up by chance less than 5% of the time, and we reject the equilibrium. Even a perfectly balanced population fails the test about one time in twenty — try it.">三個類別，減 1（總數固定是 <em>n</em>），再減 1（<em>p</em> 是從同一批資料估計的），所以自由度是 1。χ² 大於 3.84 時，純粹因為運氣而抽到這麼偏的樣本，機率不到 5%，我們就拒絕「處於平衡」。就算族群完全平衡，大約每 20 次也會有 1 次檢定不通過——自己試試看。</p>
+
+      <h3 data-en="Genetic drift">遺傳漂變</h3>
+      <p data-en-html="A real population is finite. Each generation, its 2<em>N</em> gene copies are a random draw from the parents’ gene pool, so <em>p</em> wanders up and down by chance. Sooner or later every allele is either <strong>fixed</strong> (<em>p</em> = 1) or <strong>lost</strong> (<em>p</em> = 0). Averaged over many populations, nothing changes: a neutral allele is fixed in a share <em>p</em><sub>0</sub> of them. But inside each population, variation drains away; the expected heterozygosity falls by a factor 1 − 1/(2<em>N</em>) each generation,">真實的族群是有限的。每一代的 2<em>N</em> 個基因，都是從親代基因庫中隨機抽出來的，所以 <em>p</em> 會因為運氣上下漂動。或早或晚，每個對偶基因不是<strong>固定</strong>（<em>p</em> = 1）就是<strong>消失</strong>（<em>p</em> = 0）。把很多族群平均起來，什麼都沒變：中性的對偶基因會在 <em>p</em><sub>0</sub> 比例的族群中固定。但在每個族群內部，變異一直流失：期望的異型合子度每代乘上 1 − 1/(2<em>N</em>)，</p>
+      <div class="formula">\[ H_t = H_0\left(1-\frac{1}{2N}\right)^{t} \]</div>
+      <p data-en-html="— fast in small populations, slow in large ones. A <strong>bottleneck</strong> or a small group of <strong>founders</strong> can change a population’s gene pool in a few generations, which is why some rare inherited diseases are common in small, isolated communities.">——小族群流失得快，大族群流失得慢。<strong>瓶頸效應</strong>或少數<strong>創始者</strong>可以在幾代之內改變一個族群的基因庫；這也是為什麼某些罕見的遺傳疾病，在與外界隔絕的小社群中特別常見。</p>
+
+      <h3 data-en="Natural selection">天擇</h3>
+      <p data-en-html="Give the three genotypes different chances to survive and reproduce, their <strong>relative fitnesses</strong> \(w_{AA}, w_{Aa}, w_{aa}\). The zygotes start in Hardy–Weinberg proportions; after selection">讓三種基因型存活與生殖的機會不同，也就是<strong>相對適應度</strong> \(w_{AA}, w_{Aa}, w_{aa}\)。合子一開始是哈溫比例，經過天擇之後</p>
+      <div class="formula">\[ p' = \frac{p^2w_{AA}+pq\,w_{Aa}}{\bar w},\qquad \bar w = p^2w_{AA}+2pq\,w_{Aa}+q^2w_{aa} \]</div>
+      <ul>
+        <li data-en-html="<strong>A favoured</strong>: A spreads, slowly at first and then fast — the shape of an S."><strong>A 有利</strong>：A 逐漸擴散，先慢後快，畫出一個 S 形。</li>
+        <li data-en-html="<strong>aa lethal</strong> (1, 1, 0): selection can only see a in aa plants, which become rare as a does. The frequency of a falls only as \(q_t = q_0/(1+tq_0)\): from 0.5 to 0.01 takes about 100 generations, and to 0.001 about 1000. Harmful recessive alleles hide in heterozygotes. (In small populations drift makes a fall a little faster than this.)"><strong>aa 致死</strong>（1, 1, 0）：天擇只「看得到」aa 植株裡的 a，而 a 越少，aa 就更少。a 的頻率只照 \(q_t = q_0/(1+tq_0)\) 慢慢下降：從 0.5 降到 0.01 要大約 100 代，降到 0.001 要大約 1000 代。有害的隱性基因藏在異型合子裡。（族群小的時候，漂變會讓 a 掉得比這個公式更快一些。）</li>
+        <li data-en-html="<strong>Aa best</strong> (heterozygote advantage): both alleles stay, at \(\hat p = (w_{Aa}-w_{aa})/(2w_{Aa}-w_{AA}-w_{aa})\). The preset (0.88, 1, 0.14) is illustrative, of the order estimated for the sickle-cell allele where malaria is common: carriers resist malaria, and two copies cause sickle-cell disease."><strong>Aa 最有利</strong>（異型合子優勢）：兩種對偶基因都保留下來，停在 \(\hat p = (w_{Aa}-w_{aa})/(2w_{Aa}-w_{AA}-w_{aa})\)。預設值 (0.88, 1, 0.14) 是示意，數量級接近瘧疾流行地區對鐮刀型貧血基因的估計：帶一個基因的人比較能抵抗瘧疾，帶兩個則得到鐮刀型貧血症。</li>
+      </ul>
+      <p data-en-html="In a small population chance still has a say. A brand-new mutation starts as a single copy, 1/(2<em>N</em>); if neutral, it is fixed with exactly that probability. Motoo Kimura worked out in 1962 that a mutation whose carriers have an advantage <em>s</em> is fixed with probability about">在小族群中，運氣仍然有發言權。一個新出現的突變一開始只有一份，也就是 1/(2<em>N</em>)；如果它是中性的，固定的機率剛好就是 1/(2<em>N</em>)。木村資生（Motoo Kimura）1962 年算出：帶這個突變的個體有 <em>s</em> 的優勢時，它被固定的機率大約是</p>
+      <div class="formula">\[ u = \frac{1-e^{-2s}}{1-e^{-4Ns}} \;\approx\; 2s \]</div>
+      <p data-en-html="— so even an allele with a 5% advantage is lost about nine times out of ten. The page computes this probability for any fitnesses from Kimura’s diffusion formula.">——即使有 5% 優勢的對偶基因，十次裡也有大約九次會消失。本頁用木村的擴散公式，替任何一組適應度算出這個機率。</p>
+
+      <h3 data-en="Mutation and migration">突變與遷移</h3>
+      <p data-en-html="Mutation keeps feeding new alleles in. A harmful recessive allele (\(w_{aa} = 1-s\)) settles where mutation and selection balance, at \(\hat q \approx \sqrt{u/s}\); because the square root of a tiny number is not so tiny, such alleles are more common than one might guess. Migration mixes populations: each generation a share <em>m</em> of the genes comes from outside, which pulls every population toward the migrants’ frequency and stops drift from fixing alleles — roughly one migrant per generation (<em>Nm</em> ≈ 1) is already enough to hold the populations together.">突變不斷帶進新的對偶基因。有害的隱性基因（\(w_{aa} = 1-s\)）會停在突變與天擇互相抵消的地方，\(\hat q \approx \sqrt{u/s}\)；因為很小的數開根號就沒那麼小了，這種基因比想像中常見。遷移則把族群混在一起：每代有 <em>m</em> 比例的基因來自外地，把每個族群拉向移入者的頻率，也讓漂變沒辦法把對偶基因固定——大約每代一個移入者（<em>Nm</em> ≈ 1）就足以讓各族群不會各走各的。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One generation</strong>: start with only red and white plants. How many pink ones appear in the next generation? What happens after that?"><strong>一代</strong>：一開始只有紅花和白花。下一代有多少粉紅花？再下一代呢？</li>
+        <li data-en-html="<strong>Selfing</strong>: start at Hardy–Weinberg and set σ to 100%. How many generations until the pink flowers are under 1%? Try σ = 50%: where does it stop?"><strong>自花授粉</strong>：從哈溫平衡出發，把 σ 調到 100%。要幾代粉紅花才會少於 1%？試試 σ = 50%：最後停在哪裡？</li>
+        <li data-en-html="<strong>False alarms</strong>: test a population in equilibrium twenty times. How often is it rejected?"><strong>誤判</strong>：對一個處於平衡的族群做 20 次檢定，被拒絕了幾次？</li>
+        <li data-en-html="<strong>Small and large</strong>: run 30 neutral populations with N = 10 and with N = 500. Compare the curves and the histograms."><strong>小與大</strong>：30 個中性族群，N = 10 與 N = 500 各跑一次，比較曲線和分布。</li>
+        <li data-en-html="<strong>Lucky and unlucky</strong>: start with one copy of an advantageous allele (p<sub>0</sub> = 1/(2N)) in 200 populations. In how many does it win?"><strong>幸運與不幸</strong>：在 200 個族群裡，都只放一份有利的對偶基因（p<sub>0</sub> = 1/(2N)）。它在幾個族群中勝出？</li>
+        <li data-en-html="<strong>Holding together</strong>: small populations drift apart; add a little migration and watch them stop."><strong>拉在一起</strong>：小族群各自漂散；加一點點遷移，看它們怎麼停下來。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Part 1 follows an infinitely large population exactly: the genotype shares are computed, not sampled. The 100 flowers are those shares rounded to whole plants; the sample for the χ² test is drawn at random from the shares.">第一部分是無限大族群的精確計算：基因型比例是算出來的，不是抽出來的。畫面上的 100 株花只是把比例四捨五入成整數株；卡方檢定的樣本則是從這些比例中隨機抽出。</li>
+        <li data-en="Part 2 uses the Wright–Fisher model: each generation, migration, then selection (zygotes in Hardy–Weinberg proportions), then mutation change the expected frequency, and the 2N gene copies of the next generation are drawn from it by an exact binomial draw. Generations do not overlap and the sexes are not distinguished.">第二部分用 Wright–Fisher 模型：每一代先遷移、再天擇（合子照哈溫比例形成）、再突變，算出期望的頻率；下一代的 2N 個基因再從這個頻率用精確的二項分布抽出。世代不重疊，也不分雌雄。</li>
+        <li data-en="The fixation probability is computed from Kimura’s diffusion formula for the chosen fitnesses (without mutation and migration). The dashed theory lines are the infinitely large population (for selection) and the drift formula above (for heterozygosity).">固定機率用木村的擴散公式，照你選的適應度算（不含突變與遷移）。理論虛線：天擇時是無限大族群的軌跡，異型合子度是上面的漂變公式。</li>
+        <li data-en="Fitness values, population sizes and the sickle-cell preset are illustrative. Real genes also sit next to other genes, and real populations change size.">適應度、族群大小與鐮刀型貧血的預設值都是示意。真實的基因旁邊還有其他基因，真實族群的大小也會改變。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · Evolution: natural selection and population genetics.">課綱對應：高中生物（108 課綱）・演化：天擇與族群遺傳。</li>
+        <li data-en-html="OpenStax, <cite>Biology 2e</cite>, 19.2 Population Genetics — <a href=&quot;https://openstax.org/books/biology-2e/pages/19-2-population-genetics&quot;>openstax.org</a>.">OpenStax《Biology 2e》19.2 Population Genetics——<a href="https://openstax.org/books/biology-2e/pages/19-2-population-genetics">openstax.org</a>（英文）。</li>
+        <li data-en-html="G. H. Hardy, “Mendelian proportions in a mixed population”, <cite>Science</cite> 28 (1908) 49–50 — <a href=&quot;https://doi.org/10.1126/science.28.706.49&quot;>doi:10.1126/science.28.706.49</a>.">G. H. Hardy，〈Mendelian proportions in a mixed population〉，<cite>Science</cite> 28 (1908) 49–50——<a href="https://doi.org/10.1126/science.28.706.49">doi:10.1126/science.28.706.49</a>（英文）。</li>
+        <li data-en="S. Wright, “Evolution in Mendelian populations”, Genetics 16 (1931) 97–159.">S. Wright，〈Evolution in Mendelian populations〉，Genetics 16 (1931) 97–159。</li>
+        <li data-en="M. Kimura, “On the probability of fixation of mutant genes in a population”, Genetics 47 (1962) 713–719.">M. Kimura，〈On the probability of fixation of mutant genes in a population〉，Genetics 47 (1962) 713–719。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/hardy-weinberg-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/hardy-weinberg.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="hardy-weinberg"></script>
+  <script src="js/missions/hardy-weinberg.js"></script>
+  <script src="js/stats.js" data-module="hardy-weinberg"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
