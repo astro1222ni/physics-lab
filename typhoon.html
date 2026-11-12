@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Typhoons: Pressure, Winds and the Dangerous Semicircle | Astro Ni Science Lab">颱風：氣壓、風場與危險半圓｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 颱風頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ty-sea1: #2c5f8a; --ty-sea2: #173e5f; --ty-iso: #f8fafc; --ty-track: #fde68a;
+      --ty-w0: #3b82c4; --ty-w1: #5ec2c9; --ty-w2: #a6d86a; --ty-w3: #f2d14b; --ty-w4: #f39a3c; --ty-w5: #e0453a; --ty-w6: #b5338a;
+      --ty-a: #f472b6; --ty-b: #38bdf8; --ty-p: #7c3aed; --ty-v: #dc2626; --ty-vg: #f97316; --ty-danger: #ef4444;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ty-sea1: #1d4466; --ty-sea2: #0c2238; --ty-iso: #e2e8f0; --ty-track: #fde68a;
+        --ty-a: #f9a8d4; --ty-b: #7dd3fc; --ty-p: #c4b5fd; --ty-v: #f87171; --ty-vg: #fb923c; --ty-danger: #f87171;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ty-sea1: #1d4466; --ty-sea2: #0c2238; --ty-iso: #e2e8f0; --ty-track: #fde68a;
+      --ty-a: #f9a8d4; --ty-b: #7dd3fc; --ty-p: #c4b5fd; --ty-v: #f87171; --ty-vg: #fb923c; --ty-danger: #f87171;
+    }
+    #cv { aspect-ratio: auto; height: 440px; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv.grab { cursor: grab; }
+    #cv.grabbing { cursor: grabbing; }
+    @media (max-width: 560px) { #cv { height: 420px; } }
+    #gr { display: block; width: 100%; height: 280px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 260px; } }
+    .ty button { min-height: 44px; }
+    .ty .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ty .playbar button { flex: 1 1 auto; }
+    .ty .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ty .slider input[type="range"] { height: 28px; margin: 0; }
+    .ty [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    dl.readout dt.sub { color: var(--muted); }
+    .cls { display: inline-block; padding: 1px 10px; border-radius: 999px; font-weight: 700; color: #fff; }
+    .cls.td { background: #64748b; } .cls.mild { background: #ca8a04; } .cls.moderate { background: #ea580c; } .cls.strong { background: #b91c1c; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .wlegend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 2px 0; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .wlegend span { display: inline-flex; align-items: center; gap: 5px; }
+    .wlegend i { width: 18px; height: 10px; border-radius: 3px; display: inline-block; }
+    .st-head { display: flex; align-items: center; gap: 8px; margin: 10px 0 4px; font-weight: 700; }
+    .st-head .dot { width: 22px; height: 22px; border-radius: 50%; color: #0f172a; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 440px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #16233a, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 400px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Typhoons"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 颱風</nav>
+      <h1 data-en="Typhoons: Pressure, Winds and the Dangerous Semicircle">颱風：氣壓、風場與危險半圓</h1>
+      <p data-en="Build a typhoon from its central pressure, size and shape, and watch it sweep past two weather stations. Read their barographs and wind vanes: which way does the wind turn, why is one side of the storm more dangerous, and what happens when the eye passes overhead? In 2D or as a 3D pressure funnel.">用中心氣壓、大小與形狀做出一個颱風，讓它掃過兩個測站。看氣壓計與風向計的紀錄：風向往哪邊轉？為什麼颱風的一邊特別危險？颱風眼經過頭頂時會發生什麼事？2D 或 3D 氣壓漏斗都可以看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” and compare the records of station A (right of the track) and station B (left). Then drag a station onto the track and slow the typhoon down.">試試看：按「播放」，比較測站 A（路徑右邊）和測站 B（路徑左邊）的紀錄。再把一個測站拖到路徑上，把颱風放慢。</p>
+    <div class="lab ty" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D map">2D 地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D pressure funnel">3D 氣壓漏斗</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Oblique" title="從斜上方看氣壓漏斗" data-en-title="Look down on the pressure funnel at an angle">斜看</button>
+          <button type="button" id="camTop" data-en="From above" title="從正上方看，和 2D 地圖一樣" data-en-title="Straight down, like the 2D map">正上方</button>
+          <button type="button" id="camSide" data-en="Side" title="從側面看漏斗的深度" data-en-title="From the side: the depth of the funnel">側面</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="颱風地圖：風速、等壓線、路徑與兩個測站" data-en-aria-label="Typhoon map: wind speed, isobars, the track and two stations"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">播放</button>
+          <button id="restart" type="button" data-en="Clear all" title="颱風回到起點，清除兩個測站的紀錄；設定不變" data-en-title="Send the typhoon back to the start and clear both stations’ records; settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
+          <button type="button" data-speed="1" aria-pressed="false" data-en="1 hour per second">每秒 1 小時</button>
+          <button type="button" data-speed="3" aria-pressed="true" data-en="3 hours per second">每秒 3 小時</button>
+          <button type="button" data-speed="8" aria-pressed="false" data-en="8 hours per second">每秒 8 小時</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="wlegend" aria-label="地面風速的顏色" data-en-aria-label="Colours of the surface wind speed">
+          <span data-en-html="<i style=&quot;background:var(--ty-w1)&quot;></i>Force 7 · 13.9 m/s"><i style="background:var(--ty-w1)"></i>7 級風・13.9 m/s</span>
+          <span data-en-html="<i style=&quot;background:var(--ty-w2)&quot;></i>Force 8 (typhoon) · 17.2"><i style="background:var(--ty-w2)"></i>8 級（颱風）・17.2</span>
+          <span data-en-html="<i style=&quot;background:var(--ty-w3)&quot;></i>Force 10 · 24.5"><i style="background:var(--ty-w3)"></i>10 級・24.5</span>
+          <span data-en-html="<i style=&quot;background:var(--ty-w4)&quot;></i>Force 12 · 32.7"><i style="background:var(--ty-w4)"></i>12 級・32.7</span>
+          <span data-en-html="<i style=&quot;background:var(--ty-w5)&quot;></i>Force 16 · 51.0"><i style="background:var(--ty-w5)"></i>16 級・51.0</span>
+          <span data-en-html="<i style=&quot;background:var(--ty-w6)&quot;></i>Above force 17 · 61.3"><i style="background:var(--ty-w6)"></i>17 級以上・61.3</span>
+        </div>
+        <p class="hint l2" data-en="White circles are isobars every 10 hPa; small arrows show where the surface wind blows. Drag the station markers A and B (or focus the map and use the arrow keys; Enter switches station).">白色圓圈是每 10 hPa 一條的等壓線；小箭頭是地面風吹去的方向。可以拖曳測站 A、B（或選取地圖後用方向鍵移動，Enter 切換測站）。</p>
+        <p class="hint l3" data-en="The surface is the sea-level pressure: the deeper the funnel, the lower the pressure. Colours show the surface wind speed. Drag to rotate, scroll or pinch to zoom.">曲面是海平面氣壓：漏斗越深，氣壓越低；顏色是地面風速。拖曳旋轉，滾輪或雙指縮放。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="圖表" data-en-aria-label="Chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true" data-en="Station A record">測站 A 紀錄</button>
+            <button type="button" data-chart="b" aria-pressed="false" data-en="Station B record">測站 B 紀錄</button>
+            <button type="button" data-chart="prof" aria-pressed="false" data-en="Wind profile">風速剖面</button>
+          </div>
+          <canvas id="gr" aria-label="測站 A 的氣壓、風速與風向紀錄" data-en-aria-label="Station A record: pressure, wind speed and direction"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The typhoon">颱風本身</h2>
+          <div class="slider"><label for="pc" data-en="Central pressure (hPa)">中心氣壓（hPa）</label><output></output>
+            <input id="pc" type="range" min="870" max="1005" step="0.5" value="950" data-decimals="1"></div>
+          <div class="slider"><label for="rm" data-en="Radius of maximum wind (km)">最大風速半徑（km）</label><output></output>
+            <input id="rm" type="range" min="10" max="150" step="1" value="40" data-decimals="1"></div>
+          <div class="slider"><label for="hb" data-en="Holland B (shape: larger = more peaked)">形狀參數 B（越大越尖、越集中）</label><output></output>
+            <input id="hb" type="range" min="1" max="2.5" step="0.05" value="1.5" data-decimals="2"></div>
+          <div class="slider"><label for="lat" data-en="Latitude (° N positive, S negative)">緯度（北緯為正、南緯為負，°）</label><output></output>
+            <input id="lat" type="range" min="-40" max="40" step="0.5" value="23" data-decimals="1"></div>
+          <p class="hint" id="latHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Its motion">移動</h2>
+          <div class="slider"><label for="spd" data-en="Speed of motion (m/s)">移動速度（m/s）</label><output></output>
+            <input id="spd" type="range" min="0" max="15" step="0.5" value="5" data-decimals="1"></div>
+          <div class="slider"><label for="hd" data-en="Heading (bearing it moves toward, °)">移動方向（往哪個方位，°）</label><output></output>
+            <input id="hd" type="range" min="0" max="359" step="1" value="300" data-decimals="0"></div>
+          <p class="hint" id="moveHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Strength and size">強度與大小</h2>
+          <dl class="readout">
+            <dt data-en="Class (Central Weather Administration)">強度（中央氣象署分級）</dt><dd id="rCls" class="big">—</dd>
+            <dt data-en="Max surface wind near the centre">近中心最大風速</dt><dd id="rVmax">—</dd>
+            <dt data-en="Strongest side">最強的風在</dt><dd id="rSide">—</dd>
+            <dt data-en="Radius of force-7 winds (gale radius)">七級風暴風半徑</dt><dd id="rR7">—</dd>
+            <dt data-en="Radius of force-10 winds">十級風暴風半徑</dt><dd id="rR10">—</dd>
+            <dt data-en="Pressure drop Δp">中心比環境低</dt><dd id="rDp">—</dd>
+            <dt data-en="Sea surface raised at the centre">中心海面被「吸」高</dt><dd id="rSurge">—</dd>
+            <dt data-en="Gradient wind (above the boundary layer)">邊界層上方的梯度風</dt><dd id="rVg">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Weather stations">測站</h2>
+          <div class="st-head"><span class="dot" style="background:var(--ty-a)">A</span><span id="aSide">—</span></div>
+          <dl class="readout">
+            <dt data-en="Now">現在</dt><dd id="aNow">—</dd>
+            <dt data-en="Strongest wind">最大風速</dt><dd id="aMax">—</dd>
+            <dt data-en="Lowest pressure">最低氣壓</dt><dd id="aMinP">—</dd>
+            <dt data-en="Wind direction turned">風向轉了</dt><dd id="aRot">—</dd>
+          </dl>
+          <div class="st-head"><span class="dot" style="background:var(--ty-b)">B</span><span id="bSide">—</span></div>
+          <dl class="readout">
+            <dt data-en="Now">現在</dt><dd id="bNow">—</dd>
+            <dt data-en="Strongest wind">最大風速</dt><dd id="bMax">—</dd>
+            <dt data-en="Lowest pressure">最低氣壓</dt><dd id="bMinP">—</dd>
+            <dt data-en="Wind direction turned">風向轉了</dt><dd id="bRot">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="A deep low with a ring of fierce wind">很深的低壓，圍著一圈狂風</h3>
+      <p data-en-html="A typhoon is a warm-cored low-pressure system that draws its energy from warm ocean water. Its sea-level pressure is well described by the Holland profile, where \(p_c\) is the central pressure, \(\Delta p\) how much lower it is than the surroundings, \(R_m\) the radius of maximum wind and \(B\) a shape parameter (1 to 2.5):">颱風是從溫暖海水取得能量的暖心低氣壓。它的海平面氣壓可以用 Holland 剖面很好地描述，其中 \(p_c\) 是中心氣壓，\(\Delta p\) 是比四周低多少，\(R_m\) 是最大風速半徑，\(B\) 是形狀參數（1 到 2.5）：</p>
+      <div class="formula">\[ p(r) = p_c + \Delta p\, \exp\!\left[-\left(\frac{R_m}{r}\right)^{B}\right] \]</div>
+      <p data-en-html="Above the friction layer the wind is in <strong>gradient-wind balance</strong>: the pressure-gradient force supplies both the centripetal acceleration of the circular motion and the Coriolis acceleration.">在摩擦層上方，風處於<strong>梯度風平衡</strong>：氣壓梯度力同時提供繞圈運動的向心加速度與科氏加速度。</p>
+      <div class="formula">\[ \frac{V^2}{r} + fV = \frac{1}{\rho}\frac{dp}{dr} \quad\Rightarrow\quad V = \sqrt{\frac{B\,\Delta p}{\rho}\left(\frac{R_m}{r}\right)^{B} e^{-(R_m/r)^B} + \left(\frac{rf}{2}\right)^2} - \frac{rf}{2} \]</div>
+      <p data-en-html="Near the centre the Coriolis term is small, so the strongest wind is close to \(\sqrt{B\,\Delta p/(\rho e)}\): a deeper low or a more peaked profile gives a stronger typhoon. At the sea surface friction slows the wind to about 80% and turns it about 20° inward, toward the low.">靠近中心時科氏項很小，最大風速接近 \(\sqrt{B\,\Delta p/(\rho e)}\)：低壓越深、剖面越尖，颱風越強。在海面上，摩擦讓風速降到約 80%，並往低壓中心內吹約 20°。</p>
+
+      <h3 data-en="Why one side is more dangerous">為什麼一邊特別危險</h3>
+      <p data-en-html="The whole storm is carried along by the steering winds. On the right of its track (in the northern hemisphere) the swirling wind blows the same way the storm moves, so the two add up; on the left they partly cancel. This is the <strong>dangerous semicircle</strong>. In the southern hemisphere the swirl is clockwise and the dangerous side is on the left. The simulation adds 55% of the speed of motion to the surface wind, an average found from observations.">整個颱風被大範圍的駛流帶著走。在北半球，路徑的右邊旋轉的風與颱風前進的方向相同，兩者相加；左邊則互相抵消一部分，這就是<strong>危險半圓</strong>。南半球的颱風順時針旋轉，危險的一邊在左邊。模擬把移動速度的 55% 加到地面風上，這是由觀測統計得到的平均值。</p>
+
+      <h3 data-en="Reading a station’s record">看懂測站的紀錄</h3>
+      <p data-en-html="As the typhoon goes by, a station’s barometer falls and rises again, lowest when the centre is closest. The wind direction turns with the bearing of the storm: on the <strong>right</strong> of the track it turns clockwise (<strong>veers</strong>), on the <strong>left</strong> anticlockwise (<strong>backs</strong>) — in both hemispheres. Forecasters use this to tell which side of a station a typhoon is passing. If the eye passes overhead, the gale suddenly drops almost to calm and then returns from the opposite direction.">颱風經過時，測站的氣壓先降後升，中心最靠近時最低。風向跟著颱風所在的方位轉：測站在路徑<strong>右邊</strong>時風向順時針轉（<strong>順轉</strong>），在<strong>左邊</strong>時逆時針轉（<strong>逆轉</strong>），南北半球都一樣。預報員可以用它判斷颱風從測站的哪一邊經過。如果颱風眼從頭頂經過，狂風會突然幾乎停止，再從相反的方向吹回來。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Stronger, not bigger</strong>: lower the central pressure and watch the force-10 circle; then change only B. Strength and size are different things."><strong>變強不等於變大</strong>：降低中心氣壓，看十級風暴風圈；再只改 B。強度和大小是兩回事。</li>
+        <li data-en-html="<strong>The dangerous semicircle</strong>: put A and B at the same distance on opposite sides of the track and raise the speed of motion."><strong>危險半圓</strong>：把 A、B 放在路徑兩側同樣距離的地方，再把移動速度加大。</li>
+        <li data-en-html="<strong>The eye</strong>: drag a station onto the track. Is the calm in the eye still calm when the typhoon moves fast?"><strong>颱風眼</strong>：把測站拖到路徑上。颱風走得很快時，颱風眼裡還是無風嗎？</li>
+        <li data-en-html="<strong>The southern hemisphere</strong>: set a negative latitude. Which side is dangerous now? Does the rule for veering change?"><strong>南半球</strong>：把緯度設成負的。現在哪一邊危險？順轉、逆轉的規則有沒有變？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Holland (1980) pressure profile and gradient wind with \(\rho = 1.15\ \mathrm{kg/m^3}\), environmental pressure 1010 hPa, \(f = 2\Omega\sin\varphi\). Surface (10 m) wind = 0.8 × gradient wind, turned 20° inward, plus 55% of the motion vector (Lin and Chavas 2012).">Holland（1980）氣壓剖面與梯度風，\(\rho = 1.15\ \mathrm{kg/m^3}\)，環境氣壓 1010 hPa，\(f = 2\Omega\sin\varphi\)。地面（10 m）風 ＝ 0.8 × 梯度風，往內偏 20°，再加上移動速度的 55%（Lin 與 Chavas 2012）。</li>
+        <li data-en-html="The typhoon moves in a straight line at constant speed and keeps its strength; land, terrain (such as Taiwan’s Central Mountain Range), rain bands and gusts are left out. Wind speeds are 10-minute averages, as used by the Central Weather Administration.">颱風以等速直線前進、強度不變；沒有陸地、地形（例如中央山脈）、雨帶與陣風。風速是 10 分鐘平均風，和中央氣象署相同。</li>
+        <li data-en-html="The gale radii use the average (symmetric) wind; the real radii published for a typhoon are usually larger on the dangerous side. Wind direction is accumulated only while the station is within 300 km of the centre.">暴風半徑用平均（對稱）的風速；實際公布的暴風半徑通常在危險半圓那一側比較大。風向的轉動只在測站離中心 300 km 以內時累計。</li>
+        <li data-en-html="The sea-surface rise is the inverse-barometer effect, \(\Delta h = \Delta p/(\rho_w g)\), about 1 cm per hPa. Real storm surges are often much higher because the wind piles water onto the coast.">海面升高是倒氣壓效應 \(\Delta h = \Delta p/(\rho_w g)\)，每 hPa 約 1 cm。真實的暴潮常常高得多，因為強風把海水推向岸邊。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Weather (typhoons, pressure systems, wind)">課綱對應：高中地球科學・天氣（颱風、氣壓系統、風）</li>
+        <li data-en-html="Central Weather Administration (Taiwan), typhoon intensity classes by the near-centre maximum 10-minute wind: tropical depression below 17.2 m/s, mild 17.2–32.6, moderate 32.7–50.9, severe 51.0 m/s and above; the gale radius is the distance of the force-7 lower limit (13.9 m/s).">中央氣象署：依近中心最大（10 分鐘平均）風速分級——熱帶性低氣壓未達 17.2 m/s、輕度颱風 17.2–32.6、中度颱風 32.7–50.9、強烈颱風 51.0 m/s 以上；暴風半徑是七級風下限（13.9 m/s）處到中心的距離。</li>
+        <li data-en-html="G. J. Holland (1980), “An analytic model of the wind and pressure profiles in hurricanes”, <i>Monthly Weather Review</i> 108, 1212–1218.">G. J. Holland（1980），〈An analytic model of the wind and pressure profiles in hurricanes〉，<i>Monthly Weather Review</i> 108 卷 1212–1218 頁。</li>
+        <li data-en-html="N. Lin and D. Chavas (2012), “On hurricane parametric wind and applications in storm surge modeling”, <i>Journal of Geophysical Research</i> 117, D09120.">N. Lin 與 D. Chavas（2012），〈On hurricane parametric wind and applications in storm surge modeling〉，<i>Journal of Geophysical Research</i> 117 卷 D09120。</li>
+        <li data-en-html="Lowest sea-level pressure on record, 870 hPa: Typhoon Tip, 12 October 1979 (World Meteorological Organization weather and climate extremes archive).">海平面氣壓的最低紀錄 870 hPa：1979 年 10 月 12 日的颱風泰培（Tip）（世界氣象組織極端天氣紀錄）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/typhoon-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/typhoon.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="typhoon"></script>
+  <script src="js/missions/typhoon.js"></script>
+  <script src="js/stats.js" data-module="typhoon"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
