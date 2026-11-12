@@ -106,14 +106,28 @@ const SOL = {
   'projectile-12': [{}, { h0: 10, v0: 17.72, theta: 37.1 }],
   'projectile-h1': [{ theta: 90 }],
   'projectile-h2': [{ g: 1.62, v0: 50 }],
-  'projectile-h3': [{ v0: 49, theta: 90 }]
+  'projectile-h3': [{ v0: 49, theta: 90 }],
+  'projectile-h4': [{ theta: 0, h0: 10, v0: 14 }],
+  'projectile-h5': [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 40, v0: 5 }],
+  'projectile-h6': [{ v0: 29.98 }, { v0: 29.98, drag: true, k: 0.0162 }],
+  'projectile-h7': [{ v0: 30, drag: true, k: 0.05, theta: 35.7 }],
+  'projectile-h8': [{ v0: 22.26, h0: 20, drag: true, k: 0.01 }],
+  'projectile-h9': [{ v0: 16 }, { v0: 6.5, g: 1.62 }],
+  'projectile-h10': [{ v0: 40, drag: true, k: 0.02, theta: 20 }, { v0: 40, drag: true, k: 0.02, theta: 55.7 }]
 };
 const NOTE = {
   'projectile-5': evs => '（最佳仰角 ' + f(evs[0].data.optTheta, 2) + '°）',
   'projectile-8': evs => '（相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 2) + '%）',
   'projectile-9': evs => '（相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 2) + '%）',
   'projectile-11': evs => '（H = ' + f(evs[0].data.H, 3) + ' m，R/H − 1 = ' + f((evs[0].data.R / evs[0].data.H - 1) * 100, 2) + '%）',
-  'projectile-12': evs => '（R 相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 3) + '%、T 相差 ' + f((evs[1].data.T / evs[0].data.T - 1) * 100, 3) + '%）'
+  'projectile-12': evs => '（R 相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 3) + '%、T 相差 ' + f((evs[1].data.T / evs[0].data.T - 1) * 100, 3) + '%）',
+  'projectile-h4': evs => '（2 h0 = ' + f(2 * evs[0].data.h0, 1) + ' m）',
+  'projectile-h5': evs => '（T 比 = ' + f(evs[1].data.T / evs[0].data.T, 5) + '）',
+  'projectile-h6': evs => '（R 比 = ' + f(evs[1].data.R / evs[0].data.R, 5) + '）',
+  'projectile-h7': evs => '（最佳仰角 ' + f(evs[0].data.optTheta, 3) + '°）',
+  'projectile-h8': evs => '（落地速率 ' + f(evs[0].data.vImpact, 4) + ' m/s，比出手 ' + f((evs[0].data.vImpact / evs[0].data.v0 - 1) * 100, 3) + '%）',
+  'projectile-h9': evs => '（R 相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 3) + '%、H 相差 ' + f((evs[1].data.H / evs[0].data.H - 1) * 100, 3) + '%、T 比 ' + f(evs[1].data.T / evs[0].data.T, 3) + '）',
+  'projectile-h10': evs => '（R 相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 3) + '%、兩角和 ' + f(evs[0].data.theta + evs[1].data.theta, 1) + '°、最佳仰角 ' + f(evs[0].data.optTheta, 2) + '°）'
 };
 for (const m of missions) {
   const runs = SOL[m.id];
@@ -159,6 +173,104 @@ only('projectile-12', [{}, { drag: true, k: 0.00501, h0: 10, v0: 17.72, theta: 3
     if (Math.abs(b.R - a.R) <= 0.003 * Math.max(a.R, b.R) && Math.abs(b.T - a.T) <= 0.003 * Math.max(a.T, b.T)) n12++;
   }
   console.log('  projectile-12 第一發用預設值時，第二發只用滑桿的解有 ' + n12 + ' 組（要打字微調初速與仰角，或兩發都重新設計）');
+}
+
+// ---------- 4. 隱藏任務 h4–h10（11/13 補到 10 個）：彼此不連帶、公開任務的示範解不會順便完成 ----------
+const HID = missions.filter(m => m.hidden).map(m => m.id);
+const hiddenOf = got => got.filter(id => HID.includes(id));
+console.log('  —— 隱藏任務 ' + HID.length + ' 個，總星數 ' + missions.filter(m => m.hidden).reduce((a, m) => a + 2 * m.level, 0) + '（星星 = 等級 × 2）；等級 ' + missions.filter(m => m.hidden).map(m => m.level).join('、'));
+{
+  const lv = missions.filter(m => m.hidden).map(m => m.level);
+  const pass = HID.length === 10 && lv.every(l => l >= 3 && l <= 10) && lv.filter(l => l >= 7).length >= 3;
+  ok = ok && pass;
+  console.log((pass ? '✓ ' : '✗ ') + '隱藏任務 10 個、等級都在 3–10、7 級以上 ' + lv.filter(l => l >= 7).length + ' 個');
+}
+// 每個隱藏任務的解只完成它自己（不連帶完成別的隱藏任務）。
+// 已上線的 h1（R ≈ 0、T > 3 s）與 h3（T = 10 s）判定不動：上面 h3 的解（θ = 90°）兩個都會完成，這裡改用不是 90° 的解
+const SOLO = { 'projectile-h3': [{ v0: 50, theta: 78.5 }] };
+for (const id of HID) {
+  reset();
+  const got = hiddenOf(feed((SOLO[id] || SOL[id]).map(launch)));
+  const pass = got.length === 1 && got[0] === id;
+  ok = ok && pass;
+  console.log((pass ? '✓ ' : '✗ ') + id.padEnd(14) + ' 的解只完成隱藏任務：' + (got.join('、') || '（無）') + (SOLO[id] ? '（' + SOLO[id].map(o => 'v0 = ' + o.v0 + '、θ = ' + o.theta + '°（打字）').join('；') + '）' : ''));
+}
+// 每個公開任務的示範解都不會順便完成隱藏任務（h1 原本就由 θ = 90° 觸發，公開示範解都不用 90°）
+{
+  let allPass = true;
+  for (const m of missions.filter(m => !m.hidden)) {
+    reset();
+    const got = hiddenOf(feed(SOL[m.id].map(launch)));
+    if (got.length) { allPass = false; console.log('✗ ' + m.id + ' 的示範解順便完成了 ' + got.join('、')); }
+  }
+  ok = ok && allPass;
+  if (allPass) console.log('✓ 12 個公開任務的示範解逐一做，都沒有順便完成任何隱藏任務');
+}
+// 全部公開示範解連續做完（共用判定記憶，像學生一路做下來）也不會完成任何隱藏任務
+{
+  reset();
+  const got = hiddenOf(feed(missions.filter(m => !m.hidden).flatMap(m => SOL[m.id].map(launch))));
+  const pass = !got.length;
+  ok = ok && pass;
+  console.log((pass ? '✓ ' : '✗ ') + '12 個公開示範解一路連續做完 → 完成的隱藏任務：' + (got.join('、') || '（無）'));
+}
+
+// ---------- 5. 新隱藏任務的反例（預設設定、一般任務常見設定都不會完成） ----------
+only('projectile-h4', [{ theta: 0, h0: 20, v0: 10 }], false, '任務 3 的設定：R = 20.2 m，不是 2 h0');
+only('projectile-h4', [{ theta: 0, h0: 10, v0: 14.5 }], false, '差 0.5 m/s：R = 20.7 m');
+only('projectile-h4', [{ theta: 5, h0: 10, v0: 14 }], false, '要水平拋出');
+only('projectile-h5', [{ theta: 0, h0: 20, v0: 10 }, { theta: 0, h0: 20, v0: 25 }], false, '任務 3 的解：同一高度，時間相同');
+only('projectile-h5', [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 20, v0: 5 }], false, '高度 2 倍只換來 √2 倍的時間');
+only('projectile-h5', [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 40, v0: 5, g: 1.62 }], false, '換了星球');
+only('projectile-h6', [{ drag: true, v0: 20 }, { v0: 17.5 }], false, '任務 8 的解：初速不同');
+only('projectile-h6', [{ v0: 30 }, { v0: 30, drag: true, k: 0.01 }], false, '阻力預設值 0.01：只少了 ' + f(100 - launch({ v0: 30, drag: true, k: 0.01 }).data.R / launch({ v0: 30 }).data.R * 100, 1) + '%');
+only('projectile-h6', [{ v0: 30 }, { v0: 30, drag: true, k: 0.0158 }], false, '滑桿上相鄰的 0.0158：R 比 ' + f(launch({ v0: 30, drag: true, k: 0.0158 }).data.R / launch({ v0: 30 }).data.R, 4));
+only('projectile-h7', [{ drag: true }], false, '預設 45° 加阻力：最佳仰角 ' + f(launch({ drag: true }).data.optTheta, 2) + '°');
+only('projectile-h7', [{ drag: true, k: 0.00501, v0: 45.5, theta: 34 }], false, '任務 10 的解');
+only('projectile-h7', [{ v0: 30, drag: true, k: 0.05, theta: 36 }], false, '滑桿整數 36°：差 0.34°');
+only('projectile-h7', [{ v0: 20, drag: true, k: 0.01, theta: 43 }], false, '最佳仰角 42.98° > 40°（阻力太小，看不出偏離 45°）');
+only('projectile-h8', [{ v0: 22.26, h0: 20 }], false, '沒有阻力：落地一定比較快');
+only('projectile-h8', [{ v0: 22, h0: 20, drag: true, k: 0.01 }], false, '滑桿 22 m/s：差 ' + f((launch({ v0: 22, h0: 20, drag: true, k: 0.01 }).data.vImpact / 22 - 1) * 100, 2) + '%');
+only('projectile-h8', [{ v0: 20, drag: true }], false, '地面發射加阻力：落地一定比較慢');
+only('projectile-h9', [{ g: 1.62, theta: 30, v0: 13.68 }, { theta: 30, v0: 13.68 }], false, '任務 7 的解再在地球打一次：初速沒換');
+only('projectile-h9', [{ v0: 16 }, { v0: 6.5, g: 1.62, theta: 46 }], false, '仰角不同');
+only('projectile-h9', [{ v0: 16 }, { v0: 13, g: 7 }], false, 'g 只差 1.4 倍');
+only('projectile-h10', [{ theta: 30 }, { theta: 60 }], false, '任務 4 的解（無阻力，兩角和 90°）');
+only('projectile-h10', [{ v0: 40, drag: true, k: 0.02, theta: 20 }, { v0: 40, drag: true, k: 0.02, theta: 56 }], false, '滑桿整數 56°：差 ' + f((launch({ v0: 40, drag: true, k: 0.02, theta: 56 }).data.R / launch({ v0: 40, drag: true, k: 0.02, theta: 20 }).data.R - 1) * 100, 2) + '%');
+only('projectile-h10', [{ v0: 40, drag: true, k: 0.005, theta: 30 }, { v0: 40, drag: true, k: 0.005, theta: 57.7 }], false, '阻力 0.005 < 0.01');
+
+// ---------- 6. 亂按模擬：像試玩一樣隨機改滑桿（常落在最小、最大值）、隨機開關阻力與換星球，連發 30 次 ----------
+{
+  const rnd = (function (s) { return function () { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })(20261113);
+  const pickIn = (r, edge) => { const u = rnd(); if (u < edge) return r.min; if (u < 2 * edge) return r.max; return Math.round((r.min + rnd() * (r.max - r.min)) / r.step) * r.step + 0; };
+  const NEW = HID.filter(id => +id.split('-h')[1] >= 4);
+  const hits = {};
+  let shots = 0;
+  const SEQ = 120, PER = 30;
+  for (let q = 0; q < SEQ; q++) {
+    reset();
+    let st = Object.assign({}, DEFAULT);
+    const evs = [];
+    for (let i = 0; i < PER; i++) {
+      const nCh = 1 + Math.floor(rnd() * 2);
+      for (let c = 0; c < nCh; c++) {
+        const w = rnd();
+        if (w < 0.22) st.v0 = Math.max(1, pickIn(RANGE.v0, 0.15));
+        else if (w < 0.44) st.theta = pickIn(RANGE.theta, 0.15);
+        else if (w < 0.6) st.h0 = pickIn(RANGE.h0, 0.15);
+        else if (w < 0.72) st.g = rnd() < 0.7 ? G_BUTTONS[Math.floor(rnd() * 3)] : Math.round(pickIn(RANGE.g, 0.15) * 100) / 100;
+        else if (w < 0.86) st.drag = !st.drag;
+        else st.k = K_SLIDER[rnd() < 0.3 ? (rnd() < 0.5 ? 0 : K_SLIDER.length - 1) : Math.floor(rnd() * K_SLIDER.length)];
+      }
+      st.v0 = Math.round(st.v0 * 2) / 2; st.h0 = Math.round(st.h0 * 2) / 2;
+      evs.push(launch(Object.assign({}, st)));
+      shots++;
+    }
+    feed(evs).filter(id => NEW.includes(id)).forEach(id => { hits[id] = (hits[id] || 0) + 1; });
+  }
+  const bad = Object.keys(hits);
+  ok = ok && !bad.length;
+  console.log((bad.length ? '✗ ' : '✓ ') + '亂按模擬 ' + SEQ + ' 輪、共 ' + shots + ' 發：新隱藏任務 h4–h10 被誤觸 ' + (bad.map(id => id + ' ×' + hits[id]).join('、') || '0 次'));
 }
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
