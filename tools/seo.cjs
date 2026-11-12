@@ -151,7 +151,8 @@ if (NO_OG) process.exit(0);
   const vers = fs.existsSync(verFile) ? JSON.parse(fs.readFileSync(verFile, 'utf8')) : {};
   const thumb = slug => path.join(ROOT, 'img/thumbs', slug + '-hant-light.webp');
   const dataUrl = f => 'data:image/webp;base64,' + fs.readFileSync(f).toString('base64');
-  const TOKENS = { mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e' };
+  const TOKENS = { mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e',
+    cell: '#7e22ce', genetics: '#4d7c0f', physiology: '#be123c', ecology: '#047857', evolution: '#a16207' }; // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
   const FONT = 'system-ui, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif';
   const CSS = `*{margin:0;box-sizing:border-box}body{width:1200px;height:630px;font-family:${FONT};background:#f3f6f5;color:#22323a;overflow:hidden}
     .card{position:absolute;inset:0;background:radial-gradient(1200px 600px at 100% 0%,color-mix(in srgb,var(--c) 16%,#f3f6f5),#f3f6f5 60%)}

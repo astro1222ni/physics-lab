@@ -1199,3 +1199,26 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 .lb-subj-head small { margin-left: auto; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .lb-myrank-subj { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .lb-myrank-subj .dl-chip { border-color: var(--sc); }
+
+/* ---------- 生物（11/12 加入）：五個分支色、豌豆與植株的顏色；淺色與兩個深色區塊同時定義 ---------- */
+/* 分支：cell 細胞與分子、genetics 遺傳、physiology 生理、ecology 生態、evolution 演化與多樣性（淺色在白底上的對比都 ≥ 4.5） */
+/* 豌豆：黃與綠的明暗差很大（色盲也分得出），白花在淺色底上另畫外框 */
+:root {
+  --b-cell: #7e22ce; --b-genetics: #4d7c0f; --b-physiology: #be123c; --b-ecology: #047857; --b-evolution: #a16207;
+  --pea-yellow: #e3bf2f; --pea-green: #5a8f2e; --pea-tan: #c4ab82; --pea-purple: #7b3fa6; --pea-white: #f7f5ec; --pea-stem: #4a8a32;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047;
+    --pea-yellow: #e8c547; --pea-green: #6fae45; --pea-tan: #b9a27c; --pea-purple: #b17ddc; --pea-white: #ecebe2; --pea-stem: #5fa548;
+  }
+}
+:root[data-theme="dark"] {
+  --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047;
+  --pea-yellow: #e8c547; --pea-green: #6fae45; --pea-tan: #b9a27c; --pea-purple: #b17ddc; --pea-white: #ecebe2; --pea-stem: #5fa548;
+}
+/* 生物有五個分支：寬螢幕一列五個 */
+@media (min-width: 880px) { html:not([lang="en"]) .branch-nav.five, html[lang="en"] .branch-nav.five { grid-template-columns: repeat(5, 1fr); } }
+/* 首頁科目卡片超過兩科：自動排列（物理、化學、生物、地球科學），QR code 自成一列（主工作串合併化學區時請一併確認） */
+.domain-nav { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
+.domain-nav .site-qr { grid-column: 1 / -1; justify-self: start; }

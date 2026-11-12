@@ -52,7 +52,7 @@
     { id: 'bio', zh: '生物', en: 'Biology', short: '生物' },
     { id: 'earth', zh: '地球科學', en: 'Earth Science', short: '地科' }
   ];
-  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth' };
+  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -173,6 +173,7 @@
     { id: 'branch-modern', tier: 5, cat: 'branch', name: nm('愛因斯坦的光子', "Einstein's photon"), desc: nm('完成近代物理分支所有實驗的所有任務。', 'Complete every mission in Modern Physics.'), check: function (c) { return c.branchDone.modern; } },
     { id: 'branch-astro', tier: 5, cat: 'branch', name: nm('伽利略的望遠鏡', "Galileo's telescope"), desc: nm('完成天文分支所有實驗的所有任務。', 'Complete every mission in Astronomy.'), check: function (c) { return c.branchDone.astro; } },
     { id: 'branch-geo', tier: 5, cat: 'branch', name: nm('魏格納的拼圖', "Wegener's jigsaw"), desc: nm('完成固體地球分支所有實驗的所有任務。', 'Complete every mission in Solid Earth.'), check: function (c) { return c.branchDone.geo; } },
+    { id: 'branch-genetics', tier: 5, cat: 'branch', name: nm('孟德爾的豌豆', "Mendel's peas"), desc: nm('完成遺傳分支所有實驗的所有任務。', 'Complete every mission in Genetics.'), check: function (c) { return c.branchDone.genetics; } },
     { id: 'rank-100', tier: 3, cat: 'rank', name: nm('榜上有名', 'On the board'), desc: nm('進入排行榜前 100 名（至少 1 k 顆星）。', 'Reach the top 100 (with at least 1 k stars).'), check: function (c) { return c.rank > 0 && c.rank <= 100 && c.stars >= 1e3; } },
     { id: 'rank-10', tier: 5, cat: 'rank', name: nm('十大科學名人', 'Top ten scientists'), desc: nm('進入排行榜前 10 名（至少 1 M 顆星，且排行榜上至少 100 人）。', 'Reach the top 10 (with at least 1 M stars, among 100 or more players).'), check: function (c) { return c.rank > 0 && c.rank <= 10 && c.stars >= 1e6 && c.boardSize >= 100; } },
     { id: 'rank-1', tier: 6, cat: 'rank', name: nm('站上巔峰', 'Top of the world'), desc: nm('登上排行榜第 1 名（至少 1 G 顆星，且排行榜上至少 1,000 人）。', 'Reach number 1 (with at least 1 G stars, among 1,000 or more players).'), check: function (c) { return c.rank === 1 && c.stars >= 1e9 && c.boardSize >= 1000; } },
@@ -260,7 +261,7 @@
     });
     // 分支制霸：該分支所有已上線實驗都有任務，且全部完成
     const branchDone = {};
-    ['mech', 'thermo', 'wave', 'optics', 'em', 'modern', 'astro', 'geo', 'atmo', 'ocean'].forEach(function (b) {
+    Object.keys(BRANCH_SUBJ).forEach(function (b) {
       const liveIn = live().filter(function (m) { return branchOf(m) === b; });
       branchDone[b] = liveIn.length > 0 && liveIn.every(function (m) { return all[m] && all[m].length; }) && branchFull[b] === liveIn.length;
     });

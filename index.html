@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121328"></script>
+  <script src="js/settings.js?v=202611121420"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
 
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611121328">
+  <link rel="stylesheet" href="lab.css?v=202611121420">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -56,6 +56,7 @@
 
     <nav class="domain-nav" aria-label="科目" data-en-aria-label="Subjects">
       <a class="domain-tab" href="#physics" style="--c:var(--d-phys)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4"><ellipse cx="24" cy="24" rx="20" ry="7.6"/><ellipse cx="24" cy="24" rx="20" ry="7.6" transform="rotate(60 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="7.6" transform="rotate(-60 24 24)"/></g><circle cx="24" cy="24" r="3.6" fill="currentColor"/></svg><span class="domain-name"><span data-en="Physics">物理</span><span class="domain-count" data-domain="physics"></span></span><span class="domain-sub" data-en="Mechanics · Heat · Waves · Optics · Electromagnetism · Modern">力學・熱學・波動・光學・電磁・近代</span></a>
+      <a class="domain-tab" href="#biology" style="--c:var(--d-bio)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z"/><path d="M11 37C19 28 26 20 34 14"/><path d="M18 30l-1-7M23 25l-.5-6.5M28 20l-.2-5M18 30l7.5.6M23 25l7 .4"/></g><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z" fill="currentColor" opacity=".18"/></svg><span class="domain-name"><span data-en="Biology">生物</span><span class="domain-count" data-domain="biology"></span></span><span class="domain-sub" data-en="Cells · Genetics · Physiology · Ecology · Evolution">細胞・遺傳・生理・生態・演化</span></a>
       <a class="domain-tab" href="#earth" style="--c:var(--d-earth)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="24" cy="24" r="19"/><ellipse cx="24" cy="24" rx="8.5" ry="19"/><path d="M5 24h38M8.2 14h31.6M8.2 34h31.6"/></g><path d="M14 18c3-2 6 0 8 2s1 5-2 6-4 4-6 3-3-8 0-11zM29 29c2-1 5 0 6 2s-1 5-3 5-4-1-4-3 0-3 1-4z" fill="currentColor" opacity=".35"/></svg><span class="domain-name"><span data-en="Earth Science">地球科學</span><span class="domain-count" data-domain="earth"></span></span><span class="domain-sub" data-en="Astronomy · Solid Earth · Atmosphere · Ocean">天文・固體地球・大氣・海洋</span></a>
       <a class="site-qr" href="https://lab.astroni.org/" data-url="https://lab.astroni.org/" aria-label="本站網址的 QR code，點一下放大投影" data-en-aria-label="QR code for this site — tap to enlarge for projection"><img src="img/qr-site.svg" width="76" height="76" alt=""><span class="site-qr-text"><strong data-en="Scan to open">手機掃描開啟</strong><span data-en="Tap to enlarge for the class">點一下放大，投影給全班</span></span></a>
     </nav>
@@ -469,6 +470,111 @@
 
     </section>
 
+    <!-- ========== 生物 ========== -->
+    <section class="domain" id="biology" aria-labelledby="h-biology" style="--c:var(--d-bio)">
+    <header class="domain-head"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z"/><path d="M11 37C19 28 26 20 34 14"/><path d="M18 30l-1-7M23 25l-.5-6.5M28 20l-.2-5M18 30l7.5.6M23 25l7 .4"/></g><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z" fill="currentColor" opacity=".18"/></svg><div><h2 id="h-biology" data-en="Biology">生物</h2><p data-en="From cells and genes to ecosystems and evolution — new experiments are on the way">從細胞、遺傳到生態與演化，實驗陸續加入中</p></div></header>
+
+    <nav class="branch-nav five" aria-label="生物分支" data-en-aria-label="Branches of biology">
+      <a href="#cell" style="--c:var(--b-cell)" data-en="Cells &amp; Molecules">細胞與分子</a>
+      <a href="#genetics" style="--c:var(--b-genetics)" data-en="Genetics">遺傳</a>
+      <a href="#physiology" style="--c:var(--b-physiology)" data-en="Physiology">生理</a>
+      <a href="#ecology" style="--c:var(--b-ecology)" data-en="Ecology">生態</a>
+      <a href="#evolution" style="--c:var(--b-evolution)" data-en="Evolution &amp; Diversity">演化與多樣性</a>
+    </nav>
+
+    <!-- ===== 細胞與分子 ===== -->
+    <section class="branch" id="cell" style="--c:var(--b-cell)">
+      <header class="branch-head">
+        <h2 data-en="Cells and Molecules">細胞與分子</h2>
+        <p data-en="Cell structure, membranes and transport, enzymes and metabolism, cell division">細胞的構造、細胞膜與物質運輸、酵素與代謝、細胞分裂</p>
+      </header>
+      <nav class="chapter-nav" aria-label="細胞與分子的各章" data-en-aria-label="Chapters in Cells and Molecules">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Cell Structure">細胞的構造</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Membranes and Transport">細胞膜與物質運輸</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Enzymes and Metabolism">酵素與代謝</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Cell Division">細胞分裂</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 遺傳 ===== -->
+    <section class="branch" id="genetics" style="--c:var(--b-genetics)">
+      <header class="branch-head">
+        <h2 data-en="Genetics">遺傳</h2>
+        <p data-en="Mendel&#x27;s laws, inheritance beyond Mendel, DNA and gene expression, biotechnology">孟德爾遺傳法則、遺傳法則的延伸、DNA 與基因表現、生物技術</p>
+      </header>
+      <nav class="chapter-nav" aria-label="遺傳的各章" data-en-aria-label="Chapters in Genetics">
+        <a href="#ch-mendel" data-en="Mendel&#x27;s Laws of Inheritance">孟德爾遺傳法則</a>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Beyond Mendel&#x27;s Laws">遺傳法則的延伸</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="DNA and Gene Expression">DNA 與基因表現</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Biotechnology">生物技術</span>
+      </nav>
+      <div class="chapters">
+        <section class="chapter" id="ch-mendel" aria-labelledby="h-ch-mendel" style="--n:1">
+          <h3 class="chapter-head" id="h-ch-mendel"><span data-en="Mendel&#x27;s Laws of Inheritance">孟德爾遺傳法則</span></h3>
+          <div class="modules">
+            <a class="module live" href="mendelian-inheritance.html" data-module="mendelian-inheritance" data-keywords="孟德爾 孟德爾遺傳 遺傳 遺傳學 遺傳法則 豌豆 雜交 分離律 分離定律 自由分配律 獨立分配律 自由組合定律 對偶基因 等位基因 基因 基因型 表現型 表型 顯性 隱性 完全顯性 同型合子 異型合子 純合子 雜合子 純種 親代 子一代 子二代 自交 試交 測交 回交 龐氏方格 棋盤方格 配子 卵 卵細胞 花粉 精細胞 受精 受精卵 減數分裂 單性狀 雙性狀 單基因雜交 雙基因雜交 三比一 九比三比三比一 卡方 卡方檢定 卡方檢驗 適合度檢定 擬合優度 p值 自由度 顯著水準 費雪 圓形 皺縮 皺粒 黃色 綠色 子葉 種皮 種子形狀 紫花 白花 高莖 矮莖 Mendel Mendelian inheritance genetics heredity pea cross law of segregation law of independent assortment allele gene genotype phenotype dominant recessive complete dominance homozygous heterozygous true-breeding pure line parental generation F1 F2 selfing self-fertilization test cross backcross Punnett square gamete egg pollen sperm fertilization zygote meiosis monohybrid dihybrid 3:1 9:3:3:1 chi-square chi-squared goodness of fit p-value degrees of freedom significance level Fisher round wrinkled yellow green cotyledon seed coat purple white tall dwarf">
+              <img class="module-thumb" data-thumb="mendelian-inheritance" alt="" width="720" height="405" loading="lazy" decoding="async">
+              <h4 data-en="Mendelian Inheritance: Pea Crosses and the Chi-Square Test">孟德爾遺傳：豌豆雜交與卡方檢定</h4>
+              <p data-en="Cross pea plants and watch gametes meet at random, fill in the Punnett square and see 3:1 and 9:3:3:1 emerge; unmask a mystery pea with a test cross, then use a chi-square test to compare your counts — and Mendel&#x27;s own — with the theory.">讓豌豆雜交，看配子隨機結合、龐氏方格與子代的 3:1、9:3:3:1；用試交揪出神秘豌豆的基因型，再用卡方檢定比較你的數據和孟德爾的原始數據。</p>
+            </a>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ===== 生理 ===== -->
+    <section class="branch" id="physiology" style="--c:var(--b-physiology)">
+      <header class="branch-head">
+        <h2 data-en="Physiology">生理</h2>
+        <p data-en="How plants work; digestion, circulation and breathing; nerves and hormones; immunity and homeostasis">植物的構造與生理、消化循環與呼吸、神經與內分泌、免疫與恆定</p>
+      </header>
+      <nav class="chapter-nav" aria-label="生理的各章" data-en-aria-label="Chapters in Physiology">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Plant Structure and Function">植物的構造與生理</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Digestion, Circulation and Breathing">消化、循環與呼吸</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Nerves and Hormones">神經與內分泌</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Immunity and Homeostasis">免疫與恆定</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 生態 ===== -->
+    <section class="branch" id="ecology" style="--c:var(--b-ecology)">
+      <header class="branch-head">
+        <h2 data-en="Ecology">生態</h2>
+        <p data-en="Populations and communities, energy flow and nutrient cycles in ecosystems, people and the environment">族群與群集、生態系的能量流動與物質循環、人類與環境</p>
+      </header>
+      <nav class="chapter-nav" aria-label="生態的各章" data-en-aria-label="Chapters in Ecology">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Populations and Communities">族群與群集</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Ecosystems">生態系</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="People and the Environment">人類與環境</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 演化與多樣性 ===== -->
+    <section class="branch" id="evolution" style="--c:var(--b-evolution)">
+      <header class="branch-head">
+        <h2 data-en="Evolution and Diversity">演化與多樣性</h2>
+        <p data-en="Evidence for evolution, natural selection and population genetics, biodiversity and classification">演化的證據、天擇與族群遺傳、生物多樣性與分類</p>
+      </header>
+      <nav class="chapter-nav" aria-label="演化與多樣性的各章" data-en-aria-label="Chapters in Evolution and Diversity">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Evidence for Evolution">演化的證據</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Natural Selection and Population Genetics">天擇與族群遺傳</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Biodiversity and Classification">生物多樣性與分類</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+    </section>
+
     <!-- ========== 地球科學 ========== -->
     <section class="domain" id="earth" aria-labelledby="h-earth" style="--c:var(--d-earth)">
     <header class="domain-head"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="24" cy="24" r="19"/><ellipse cx="24" cy="24" rx="8.5" ry="19"/><path d="M5 24h38M8.2 14h31.6M8.2 34h31.6"/></g><path d="M14 18c3-2 6 0 8 2s1 5-2 6-4 4-6 3-3-8 0-11zM29 29c2-1 5 0 6 2s-1 5-3 5-4-1-4-3 0-3 1-4z" fill="currentColor" opacity=".35"/></svg><div><h2 id="h-earth" data-en="Earth Science">地球科學</h2><p data-en="From moon phases and seasons to earthquakes, weather and ocean currents — new experiments are on the way">從月相、四季到地震、天氣與洋流，實驗陸續加入中</p></div></header>
@@ -576,12 +682,12 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/thumbs.js?v=202611121328"></script>
-  <script src="js/home.js?v=202611121328"></script>
-  <script src="js/search.js?v=202611121328"></script>
-  <script src="js/math.js?v=202611121328"></script>
-  <script src="js/firebase-config.js?v=202611121328"></script>
-  <script src="js/stats.js?v=202611121328" data-summary></script>
-  <script src="js/comments.js?v=202611121328"></script>
+  <script src="js/thumbs.js?v=202611121420"></script>
+  <script src="js/home.js?v=202611121420"></script>
+  <script src="js/search.js?v=202611121420"></script>
+  <script src="js/math.js?v=202611121420"></script>
+  <script src="js/firebase-config.js?v=202611121420"></script>
+  <script src="js/stats.js?v=202611121420" data-summary></script>
+  <script src="js/comments.js?v=202611121420"></script>
 </body>
 </html>
