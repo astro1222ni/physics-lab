@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Data Compression: Run-Length and Huffman Coding | Astro Ni Science Lab">資料壓縮：遊程編碼與霍夫曼編碼｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 資料壓縮頁面專用的顏色代號（淺色＋兩組深色；由 js/data-compression.js 讀取）
+       像素：白格 paper、黑格 ink；遊程輪流兩色 runA／runB；位元條：原始 raw、編碼後 enc；樹：葉 leaf、內部節點 node、邊上的 0／1 zero／one；強調 hl；變大 warn；正確 ok */
+    :root { --dc-paper: #f8fafc; --dc-ink: #1e293b; --dc-runA: #0891b2; --dc-runB: #ea580c; --dc-raw: #64748b; --dc-enc: #0f766e;
+      --dc-warn: #dc2626; --dc-leaf: #7c3aed; --dc-node: #2563eb; --dc-zero: #0e7490; --dc-one: #c2410c; --dc-hl: #d97706; --dc-ok: #15803d; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --dc-paper: #c9d3df; --dc-ink: #0a0f18; --dc-runA: #22d3ee; --dc-runB: #fb923c; --dc-raw: #94a3b8; --dc-enc: #2dd4bf;
+        --dc-warn: #f87171; --dc-leaf: #b9a0ff; --dc-node: #6ea8ff; --dc-zero: #22d3ee; --dc-one: #fb923c; --dc-hl: #fbbf24; --dc-ok: #4ade80; }
+    }
+    :root[data-theme="dark"] { --dc-paper: #c9d3df; --dc-ink: #0a0f18; --dc-runA: #22d3ee; --dc-runB: #fb923c; --dc-raw: #94a3b8; --dc-enc: #2dd4bf;
+      --dc-warn: #f87171; --dc-leaf: #b9a0ff; --dc-node: #6ea8ff; --dc-zero: #22d3ee; --dc-one: #fb923c; --dc-hl: #fbbf24; --dc-ok: #4ade80; }
+
+    /* 畫布高度由程式依寬度與內容決定；按在像素格上才攔下觸控（畫圖），其他地方手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 220px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    .dc [hidden] { display: none !important; }
+    .dc .panel { grid-template-columns: minmax(0, 1fr); }
+    .dc .panel > .card { min-width: 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); flex: 1 1 auto; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .card .seg { display: flex; width: 100%; margin: 4px 0 2px; }
+    .card .seg button { padding: 6px 6px; }
+    .seg-label { font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; }
+    .seg-label:first-of-type { margin-top: 0; }
+    .stepinfo { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; padding: 7px 10px; }
+    #playBtn { min-width: 6.5em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dc .stage .status { margin: 6px 4px 0; min-height: 2.9em; }
+    .dc .stage .slider { margin: 12px 4px 4px; }
+    .dc .slider input[type="range"] { height: 28px; margin: 0; }
+    .dc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+    .chips button { flex: 1 1 auto; padding: 6px 10px; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; margin-top: 4px; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dd.big { color: var(--dc-warn); font-weight: 700; }
+    dd.good { color: var(--dc-ok); font-weight: 700; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .sub-h { font-size: calc(13.5px * var(--fs, 1)); font-weight: 650; margin: 12px 0 4px; }
+    /* 遊程清單與位元串（可以很長：固定高度、裡面捲動） */
+    .codebox { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(13px * var(--fs, 1)); line-height: 1.6;
+      max-height: 8.6em; overflow-y: auto; overflow-x: hidden; overflow-wrap: anywhere; word-break: break-all; padding: 6px 8px;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--bg); }
+    .codebox .tk { display: inline-block; margin: 0 6px 0 0; white-space: nowrap; }
+    .codebox .tk i { display: inline-block; width: 0.8em; height: 0.8em; border-radius: 2px; vertical-align: -0.05em; margin-right: 2px; border: 1px solid var(--muted); font-style: normal; }
+    .codebox .tk i.b { background: var(--dc-ink); }
+    .codebox .tk i.w { background: var(--dc-paper); }
+    .codebox .tk.z { color: var(--muted); }
+    .codebox .cw { border-radius: 3px; padding: 0 1px; }
+    .codebox .cw.alt { background: var(--accent-soft); }
+    .codebox .cw.now { outline: 2px solid var(--dc-hl); outline-offset: 0; }
+    .codebox .bit.read { color: var(--muted); }
+    .codebox .bit.cur { background: var(--dc-hl); color: var(--surface); border-radius: 2px; }
+    .codebox .bit.flip { color: var(--dc-warn); font-weight: 700; text-decoration: underline; }
+    /* 文字輸入 */
+    .txtrow { display: flex; gap: 8px; margin: 6px 0 0; }
+    .txtrow input { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .txtrow input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .txtrow button { flex: 0 0 auto; }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 0; min-height: 1.2em; color: var(--muted); }
+    .msg.bad { color: var(--dc-warn); }
+    .msg.ok { color: var(--dc-ok); font-weight: 600; }
+    /* 頻率表 */
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 0; }
+    table.freq { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); }
+    table.freq th, table.freq td { padding: 3px 4px; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--border); }
+    table.freq th { color: var(--muted); font-weight: 600; font-size: calc(12.5px * var(--fs, 1)); }
+    table.freq td.sym { text-align: center; font-weight: 700; font-size: calc(15px * var(--fs, 1)); }
+    table.freq td.code { text-align: left; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--dc-leaf); font-weight: 600; }
+    table.freq tr.sel td { background: var(--accent-soft); }
+    .freq-wrap { max-height: 22em; overflow-y: auto; }
+    /* 解碼 */
+    .btnrow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
+    .btnrow button { padding: 6px 4px; }
+    .decout { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); min-height: 2.6em; font-size: calc(14px * var(--fs, 1)); overflow-wrap: anywhere; }
+    .decout b { font-size: calc(16px * var(--fs, 1)); }
+    .decout .bad { color: var(--dc-warn); text-decoration: underline; }
+    .decout .ok { color: var(--dc-ok); font-weight: 600; }
+    /* 解碼挑戰 */
+    .quiz-q { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: calc(15px * var(--fs, 1)); min-height: 1.4em; overflow-wrap: anywhere; }
+    .quiz-q code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.12em; letter-spacing: 0.06em; font-weight: 700; }
+    .quiz-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+    .quiz-row input { flex: 1 1 8em; min-width: 0; min-height: 44px; font: inherit; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .quiz-row button { flex: 1 1 auto; }
+    .quiz-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .quiz-stat b { color: var(--text); }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 8px; white-space: nowrap; text-align: right; }
+    #roundLog:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#data&quot;>Information Technology · Data Representation</a> / Data compression"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#data">資訊科技・資料表示</a> ／ 資料壓縮</nav>
+      <h1 data-en="Data Compression: Run-Length and Huffman Coding">資料壓縮：遊程編碼與霍夫曼編碼</h1>
+      <p data-en="A file gets smaller only if its data has a pattern. Paint a black-and-white picture and watch run-length encoding turn long stretches of one colour into a few numbers — and blow up when there is nothing to repeat. Then type any text, watch a Huffman tree grow by joining the two rarest pieces again and again, give common characters short codes, and compare the average code length with the entropy, the limit for any code that gives each character its own codeword.">資料要能變小，一定是因為它有規律。畫一張黑白圖，看遊程編碼怎麼把一長段同色的格子變成幾個數字——也看它在沒有重複的時候怎麼反而變大。再打一段文字，看霍夫曼樹怎麼一次又一次把最少見的兩個合併、長成一棵樹，讓常見的字拿到短碼；最後把平均碼長和「熵」比一比，那是「每個字各給一個碼」的方法都突破不了的下限。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” to watch the heart picture being scanned, then press “Clear” and paint your own picture.">試試看：按「播放」看愛心圖被一格一格掃描、編碼，再按「清空」自己畫一張。</p>
+    <div class="lab dc" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="壓縮方法" data-en-aria-label="Compression method">
+            <button type="button" id="modeRle" aria-pressed="true" data-en="Run-length coding">遊程編碼</button>
+            <button type="button" id="modeHuf" aria-pressed="false" data-en="Huffman coding">霍夫曼編碼</button>
+          </div>
+          <span class="stepinfo" id="stepInfo" aria-live="off"></span>
+        </div>
+        <canvas id="cv" aria-label="壓縮畫布：遊程編碼時是 16 × 16 的黑白像素格，在格子上點或拖曳可以畫圖；霍夫曼編碼時是霍夫曼樹。" data-en-aria-label="Compression canvas: in run-length mode a 16 by 16 grid of black and white pixels that you can paint by tapping or dragging; in Huffman mode the Huffman tree."></canvas>
+        <div class="playbar">
+          <button id="stepBtn" type="button" data-en="Next step" title="遊程編碼：輸出下一段；霍夫曼編碼：合併下一對" data-en-title="Run-length: output the next run; Huffman: merge the next pair">下一步</button>
+          <button id="playBtn" type="button" class="primary" data-en="Play">播放</button>
+          <button id="restartBtn" type="button" data-en="Restart" title="回到還沒開始的狀態，再一步一步看一次" data-en-title="Go back to the start and watch it again step by step">重來</button>
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉 H–L 圖上的點與解碼挑戰紀錄；圖、文字與設定不變" data-en-title="Clear the points on the H–L chart and the decoding challenge log; the picture, the text and the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="slider"><label for="speed" data-en="Playback speed">播放速度</label><output id="speedo"></output>
+          <input id="speed" type="range" min="1" max="10" step="1" value="5" data-decimals="0"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv2" aria-label="比較圖" data-en-aria-label="Comparison chart"></canvas>
+        <p class="chart-cap" id="cap2"></p>
+      </div>
+
+      <aside class="panel">
+        <!-- ======================= 遊程編碼 ======================= -->
+        <section class="card m-rle">
+          <h2 data-en="Black-and-white picture">黑白圖</h2>
+          <p class="hint" data-en="Tap or drag on the grid to paint: starting on a white square paints black, starting on a black square paints white. Each square is 1 bit (white 0, black 1), so the picture is 256 bits.">在格子上點或拖曳來畫：從白格開始拖會畫黑，從黑格開始拖會擦白。每一格 1 位元（白 0、黑 1），整張圖原始是 256 位元。</p>
+          <div class="chips" role="group" aria-label="圖案" data-en-aria-label="Pictures">
+            <button type="button" id="patBlank" data-en="Clear">清空</button>
+            <button type="button" id="patHeart" data-en="Heart">愛心</button>
+            <button type="button" id="patSmile" data-en="Smiley">笑臉</button>
+            <button type="button" id="patHouse" data-en="House">房子</button>
+            <button type="button" id="patNoise" data-en="Random noise">雜訊</button>
+          </div>
+        </section>
+
+        <section class="card m-rle">
+          <h2 data-en="How to encode">編碼方式</h2>
+          <p class="seg-label" data-en="Scan order">掃描順序</p>
+          <div class="seg" role="group" aria-label="掃描順序" data-en-aria-label="Scan order">
+            <button type="button" id="scanRow" aria-pressed="true" data-en="By rows">逐列</button>
+            <button type="button" id="scanCol" aria-pressed="false" data-en="By columns">逐行</button>
+            <button type="button" id="scanSnake" aria-pressed="false" data-en="Snake">蛇行</button>
+          </div>
+          <p class="seg-label" data-en="Format of each run">每一段的格式</p>
+          <div class="seg" role="group" aria-label="每一段的格式" data-en-aria-label="Format of each run">
+            <button type="button" id="fmtPair" aria-pressed="true" data-en="Colour + length">顏色＋長度</button>
+            <button type="button" id="fmtAlt" aria-pressed="false" data-en="Length only">只記長度</button>
+          </div>
+          <div class="slider"><label for="kbits" data-en="Length field k (bits)">長度欄位 k（位元）</label><output id="kbitso"></output>
+            <input id="kbits" type="range" min="2" max="8" step="1" value="8" data-decimals="0"></div>
+          <p class="hint" id="fmtHint"></p>
+        </section>
+
+        <section class="card m-rle">
+          <h2 data-en="Result">結果</h2>
+          <dl class="readout">
+            <dt data-en="Original picture">原始</dt><dd id="rRaw">—</dd>
+            <dt data-en="Black squares">黑格</dt><dd id="rBlack">—</dd>
+            <dt data-en="Runs (after splitting)">遊程（拆段後）</dt><dd id="rRuns">—</dd>
+            <dt data-en="Bits per run">每段</dt><dd id="rPer">—</dd>
+            <dt data-en="Encoded">編碼後</dt><dd id="rBits">—</dd>
+            <dt data-en="Compression ratio (original ÷ encoded)">壓縮比（原始 ÷ 編碼後）</dt><dd id="rRatio">—</dd>
+            <dt data-en="Size change">大小變化</dt><dd id="rChange">—</dd>
+          </dl>
+          <div class="eq" id="rleEq" aria-live="off"></div>
+          <p class="sub-h" data-en="The runs, in scan order">依掃描順序的遊程</p>
+          <div class="codebox" id="rleList" aria-live="off"></div>
+          <p class="sub-h" data-en="The encoded bits">編碼後的位元</p>
+          <div class="codebox" id="rleBits" aria-live="off"></div>
+        </section>
+
+        <!-- ======================= 霍夫曼編碼 ======================= -->
+        <section class="card m-huf" hidden>
+          <h2 data-en="Text to compress">要壓縮的文字</h2>
+          <label for="txt" class="seg-label" data-en="Type anything (up to 120 characters, at most 32 different ones)">隨便打一段文字（最多 120 個字、32 種不同的字）</label>
+          <div class="txtrow">
+            <input id="txt" type="text" maxlength="240" autocomplete="off" spellcheck="false" aria-describedby="txtMsg">
+            <button id="buildBtn" type="button" class="primary" data-en="Build the tree">建樹</button>
+          </div>
+          <p class="msg" id="txtMsg" aria-live="polite"></p>
+          <div class="chips" role="group" aria-label="範例" data-en-aria-label="Examples">
+            <button type="button" id="ex1" data-en="ABRACADABRA">ABRACADABRA</button>
+            <button type="button" id="ex2" data-en="Tongue twister">繞口令</button>
+            <button type="button" id="ex3" data-en="A famous line">一句詩</button>
+          </div>
+          <p class="seg-label" data-en="When two weights tie">權重相同時</p>
+          <div class="seg" role="group" aria-label="權重相同時" data-en-aria-label="When two weights tie">
+            <button type="button" id="tieOld" aria-pressed="true" data-en="Older first">舊的優先</button>
+            <button type="button" id="tieNew" aria-pressed="false" data-en="Newer first">新的優先</button>
+          </div>
+          <p class="hint" data-en="Numbering: the characters are numbered 0, 1, 2, … by (count, character code) from small to large, and every merged node gets the next number. “Older first” takes the smaller number first; “Newer first” takes the larger one first. The text stays in your browser; nothing is sent anywhere.">編號：先把每個字依（次數，字碼）由小到大編成 0、1、2…，之後每合併出一個新節點就給下一個號碼。「舊的優先」先取號碼小的，「新的優先」先取號碼大的。文字只在你的瀏覽器裡計算，不會傳到任何地方。</p>
+        </section>
+
+        <section class="card m-huf" hidden>
+          <h2 data-en="Counts and codes">次數與碼</h2>
+          <div class="tablewrap freq-wrap"><table class="freq" id="freqTab"></table></div>
+          <p class="hint" data-en-html="−log<sub>2</sub> p is the information in one occurrence of the character: the ideal code length. Huffman’s lengths are whole numbers close to it.">−log<sub>2</sub> p 是這個字出現一次帶來的資訊量，也就是理想的碼長；霍夫曼給的碼長是接近它的整數。</p>
+        </section>
+
+        <section class="card m-huf" hidden>
+          <h2 data-en="Average code length and entropy">平均碼長與熵</h2>
+          <dl class="readout">
+            <dt data-en="Characters N">字數 N</dt><dd id="hN">—</dd>
+            <dt data-en="Different characters k">字的種類 k</dt><dd id="hK">—</dd>
+            <dt data-en="Entropy H">熵 H</dt><dd id="hH">—</dd>
+            <dt data-en="Average code length L">平均碼長 L</dt><dd id="hL">—</dd>
+            <dt data-en-html="Fixed length ⌈log<sub>2</sub> k⌉">固定長度 ⌈log<sub>2</sub> k⌉</dt><dd id="hFix">—</dd>
+            <dt data-en="Original (UTF-8)">原始（UTF-8）</dt><dd id="hUtf">—</dd>
+            <dt data-en="Fixed-length code">固定長度編碼</dt><dd id="hFixBits">—</dd>
+            <dt data-en="Huffman code">霍夫曼編碼</dt><dd id="hBits">—</dd>
+            <dt data-en="Efficiency H ÷ L">效率 H ÷ L</dt><dd id="hEff">—</dd>
+          </dl>
+          <div class="eq" id="hufEq" aria-live="off"></div>
+          <p class="hint" data-en="These counts leave out the code table itself, which a real file must also store so that the receiver can rebuild the tree.">這裡沒有算碼表本身的大小；真正的檔案還要附上碼表，接收的人才能重建同一棵樹。</p>
+        </section>
+
+        <section class="card m-huf" hidden>
+          <h2 data-en="The encoded bits">編碼後的位元串</h2>
+          <div class="codebox" id="bitStr" aria-live="off"></div>
+          <p class="hint" data-en="Each shaded block is the code of one character. No code is the beginning of another one (a prefix code), so the receiver can cut the string apart without any separators.">每一塊是一個字的碼。沒有任何一個碼是另一個碼的開頭（前綴碼），所以接收的人不需要分隔符號就能把位元串切開。</p>
+        </section>
+
+        <section class="card m-huf" hidden>
+          <h2 data-en="Decoding">解碼</h2>
+          <p class="hint" data-en="Start at the root: 0 goes left, 1 goes right. On reaching a leaf, write down its character and jump back to the root.">從樹根出發：讀到 0 往左、1 往右；走到葉就寫下那個字，再跳回樹根。</p>
+          <div class="btnrow">
+            <button id="decStep" type="button" data-en="Next bit">下一位</button>
+            <button id="decPlay" type="button" data-en="Auto-decode">自動解碼</button>
+            <button id="decReset" type="button" data-en="Start over">從頭解碼</button>
+          </div>
+          <div class="slider"><label for="flip" data-en="Transmission error: flip bit no. (0 = none)">傳輸出錯：弄錯第幾個位元（0 = 不出錯）</label><output id="flipo"></output>
+            <input id="flip" type="range" min="0" max="23" step="1" value="0" data-decimals="0"></div>
+          <div class="decout" id="decOut" aria-live="polite"></div>
+        </section>
+
+        <section class="card m-huf" hidden>
+          <h2 data-en="Decoding challenge">解碼挑戰</h2>
+          <p class="hint" data-en="Uses the code table above (it needs at least 4 different visible characters). A string of bits appears with no gaps; type the characters it stands for. Five questions make a round.">用上面的碼表出題（至少要有 4 種看得見的字）：題目是一串沒有分隔的位元，請打出它代表的文字。五題一回合。</p>
+          <div class="quiz-row">
+            <button id="quizStart" type="button" class="primary" data-en="New question">出題</button>
+            <button id="quizStop" type="button" hidden data-en="Stop">結束挑戰</button>
+          </div>
+          <div class="quiz-q" id="quizQ" aria-live="polite" data-en="Press “New question”.">按「出題」。</div>
+          <div class="quiz-row">
+            <label for="quizIn" class="seg-label" data-en="Your answer">你的答案</label>
+            <input id="quizIn" type="text" autocomplete="off" spellcheck="false" maxlength="40">
+            <button id="quizOk" type="button" class="primary" disabled data-en="Check">確定</button>
+          </div>
+          <div class="quiz-stat" id="quizStat"></div>
+          <div class="tablewrap"><table class="data" id="roundLog"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Finished rounds are listed here.">完成的回合會列在這裡。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Lossless compression needs a pattern">無失真壓縮靠的是規律</h3>
+      <p data-en-html="<strong>Lossless</strong> compression means that decompressing gives back exactly the same bits. That is only possible when the data has some pattern — long stretches that repeat, or some symbols that turn up far more often than others. A counting argument shows why: there are \(2^{n}\) different files of \(n\) bits but fewer than \(2^{n}\) shorter files, so no method can shrink every file. Whatever a method saves on some inputs, it must lose on others.">無失真壓縮是指解壓縮後，每一個位元都和原來一模一樣。這只有在資料有規律時才做得到——例如同樣的東西一長串重複，或某些符號比別的常出現得多。用數數就看得出為什麼：\(n\) 位元的檔案有 \(2^{n}\) 種，比它短的檔案卻不到 \(2^{n}\) 種，所以沒有任何方法能把每一個檔案都變小；一種方法在某些資料上省下來的，在別的資料上一定會賠回去。</p>
+
+      <h3 data-en="Run-length encoding">遊程編碼（run-length encoding）</h3>
+      <p data-en-html="Read the 256 squares one after another in the chosen scan order. A stretch of squares of the same colour is a <strong>run</strong>; instead of the squares we store each run as a length. With a length field of \(k\) bits a run can be at most \(2^{k}-1\) long; a longer run is split into pieces. In the “Colour + length” format each piece costs \(k+1\) bits; in the “Length only” format the colours simply take turns, starting with white, so each piece costs \(k\) bits — a picture that starts with black begins with a white run of length 0, and a run that is too long is split as “\(2^{k}-1\), 0, the rest”, where the 0 is an empty run of the other colour that keeps the turns in order. If there are \(m\) pieces,">依照選定的掃描順序，把 256 格排成一長串。連續同色的一段叫一個<strong>遊程</strong>（run）；我們不記每一格，而是記每一段有多長。長度欄位有 \(k\) 位元時，一段最長只能記 \(2^{k}-1\)，更長的要拆成幾段。「顏色＋長度」格式每段要 \(k+1\) 位元；「只記長度」格式規定從白色開始、黑白輪流，所以每段只要 \(k\) 位元——圖從黑色開始時，先記一段長度 0 的白；一段太長時拆成「\(2^{k}-1\)、0、剩下的」，中間那個 0 是另一種顏色的空段，讓黑白輪流的規則不被打亂。若共有 \(m\) 段：</p>
+      <div class="formula">\[ B_{\text{RLE}} = m\,(k+1)\ \text{(colour + length)}, \qquad B_{\text{RLE}} = m\,k\ \text{(length only)}, \qquad B_{0} = 16 \times 16 = 256 \]</div>
+      <p data-en-html="So run-length coding wins only when the runs are long: with \(k = 8\) and colour + length, the average run must be longer than 9 squares. A picture where neighbours keep changing colour becomes several times <em>larger</em>. The scan order matters too: horizontal stripes are a few long runs when read row by row, but hundreds of short runs when read column by column. Fax machines (ITU-T T.4) use run lengths along each line and then give common run lengths shorter codes — the second idea on this page.">所以遊程編碼只在遊程夠長時才划算：\(k = 8\)、顏色＋長度時，平均一段要超過 9 格才會變小。鄰居一直換顏色的圖，編碼後反而會<em>大好幾倍</em>。掃描順序也很重要：橫條紋逐列讀是幾段長長的遊程，逐行讀卻變成幾百段短遊程。傳真機（ITU-T T.4）就是沿著每一條掃描線記遊程長度，再讓常見的長度用比較短的碼——也就是這一頁的第二個想法。</p>
+
+      <h3 data-en="Huffman coding">霍夫曼編碼（Huffman coding）</h3>
+      <p data-en-html="Give common characters short codes and rare ones long codes. To be decodable without separators, the code must be a <strong>prefix code</strong>: no codeword is the beginning of another. Every prefix code is a binary tree whose leaves are the characters; the code of a character is the path from the root (0 = left, 1 = right), and its length is the depth of the leaf. David Huffman (1952) found how to build the best tree, from the bottom up:">讓常見的字用短碼、少見的字用長碼。為了不用分隔符號就能解開，碼必須是<strong>前綴碼</strong>：沒有一個碼是另一個碼的開頭。每一種前綴碼都是一棵二元樹，葉就是字；一個字的碼就是從樹根走到它的路徑（0 往左、1 往右），碼長就是葉的深度。霍夫曼（David Huffman，1952）找到了由下往上建出最佳樹的方法：</p>
+      <ol>
+        <li data-en="Make every character a node whose weight is its count.">每個字是一個節點，權重是它出現的次數。</li>
+        <li data-en-html="Take out the two nodes with the smallest weights. The first one taken goes on the left (bit 0), the second on the right (bit 1); join them under a new node whose weight is their sum.">取出權重最小的兩個節點：先取出的放左邊（碼 0）、後取出的放右邊（碼 1），接到一個新節點下面，新節點的權重是兩者的和。</li>
+        <li data-en="Repeat until one node — the root — is left. Every time a node is joined, all characters under it gain one more bit, so a character’s code length is the number of merges it takes part in.">重複，直到只剩一個節點（樹根）。每合併一次，底下所有的字都多一位碼，所以一個字的碼長就是它參與合併的次數。</li>
+      </ol>
+      <p data-en-html="<strong>Ties.</strong> When weights are equal, a fixed rule decides which node is taken first: the characters are numbered by (count, character code) from small to large, and each new node gets the next number; “Older first” takes the smaller number, “Newer first” the larger. Both give an optimal code with the same average length, but the trees can differ in shape; “Older first” gives the shortest longest code among all optimal codes (Schwartz, 1964). With only one kind of character the tree is a single node and the code is empty: 0 bits, because there is nothing uncertain to send.">  <strong>平手規則。</strong>權重相同時，用固定的規則決定誰先被取出：先把每個字依（次數，字碼）由小到大編號，之後每個新節點拿下一個號碼；「舊的優先」先取號碼小的，「新的優先」先取號碼大的。兩種都是最佳碼、平均碼長一定相同，但樹的形狀可能不同；「舊的優先」得到的最長碼，是所有最佳碼裡最短的（Schwartz，1964）。只有一種字時，樹只有一個節點、碼是空的：0 位元——因為沒有任何不確定的事需要傳。</p>
+
+      <h3 data-en="Entropy: the limit for one code per character">熵：一字一碼的極限</h3>
+      <p data-en-html="If character \(i\) appears with probability \(p_i = n_i / N\), Shannon (1948) showed that on average each character carries \(H\) bits of information, the <strong>entropy</strong>. The average length \(L\) of the Huffman code is never below \(H\) and always less than one bit above it; \(L = H\) exactly when every \(p_i\) is a power of \(\tfrac12\). A fixed-length code uses \(\lceil \log_2 k \rceil\) bits for each of the \(k\) different characters.">若第 \(i\) 個字出現的機率是 \(p_i = n_i / N\)，夏農（Shannon，1948）證明平均每個字帶有 \(H\) 位元的資訊，叫做<strong>熵</strong>（entropy）。霍夫曼碼的平均碼長 \(L\) 不會低於 \(H\)，也一定比 \(H\) 多不到 1 位元；只有每個 \(p_i\) 都是 \(\tfrac12\) 的整數次方時，\(L\) 才剛好等於 \(H\)。固定長度編碼則讓 \(k\) 種字每個都用 \(\lceil \log_2 k \rceil\) 位元。</p>
+      <div class="formula">\[ H = -\sum_{i} p_i \log_2 p_i, \qquad L = \sum_{i} p_i\, l_i, \qquad H \le L < H + 1, \qquad \sum_{i} 2^{-l_i} \le 1 \]</div>
+      <p data-en-html="The last one is Kraft’s inequality: code lengths \(l_i\) can belong to a prefix code exactly when it holds. For a Huffman tree the sum is exactly 1, because every inner node has two children. Sizes on this page are counted in UTF-8 for the original text (1 byte for an English letter, 3 bytes for most Chinese characters), and the code table itself is not counted. This limit assumes each character is coded on its own, as if the characters were independent; methods that use the surrounding context (such as the LZ77 family inside ZIP and PNG) can go below this \(H\) on real text.">最後一條是 Kraft 不等式：一組碼長 \(l_i\) 排得出前綴碼，若且唯若它成立；霍夫曼樹的每個內部節點都有兩個子節點，所以和剛好等於 1。這一頁的原始大小用 UTF-8 計算（英文字母 1 位元組、大多數中文字 3 位元組），而且不計碼表本身的大小。這個下限假設每個字各自編碼、彼此獨立；會利用前後文的方法（例如 ZIP、PNG 裡的 LZ77 一族）在真實的文字上可以壓得比這裡的 \(H\) 更小。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>When does run-length coding lose?</strong> Press “Clear” and paint scattered dots. How many runs does it take before the encoded picture is larger than 256 bits? What changes if you make the length field shorter?"><strong>遊程編碼什麼時候會輸？</strong>按「清空」畫一些零散的點。要幾段遊程，編碼後就比 256 位元還大？把長度欄位調短，又會怎樣？</li>
+        <li data-en-html="<strong>Direction matters</strong>: draw a few horizontal lines and switch between “By rows” and “By columns”. Why does the same picture cost so differently?"><strong>方向很重要</strong>：畫幾條橫線，在「逐列」和「逐行」之間切換。同一張圖，為什麼代價差這麼多？</li>
+        <li data-en-html="<strong>Watch the codes grow</strong>: step through the Huffman tree with “Next step”. The codes under each leaf grow from right to left — one bit for every merge."><strong>看碼一位一位長出來</strong>：用「下一步」一步步建霍夫曼樹。每個葉下面的碼是由右往左長的——每合併一次多一位。</li>
+        <li data-en-html="<strong>Between H and H + 1</strong>: try several texts and watch where their points land on the H–L chart. Can you make a point land exactly on the line L = H? How close can you get to L = H + 1?"><strong>夾在 H 與 H + 1 之間</strong>：多試幾段文字，看它們在 H–L 圖上的點落在哪裡。能不能讓點剛好落在 L = H 的線上？最接近 L = H + 1 能到哪裡？</li>
+        <li data-en-html="<strong>One wrong bit</strong>: set a transmission error and decode. Usually the decoder gets back on track after a few characters — but not always."><strong>錯一個位元</strong>：設定一個傳輸錯誤再解碼。通常解碼器錯幾個字之後就會自己對回來——但不一定。</li>
+        <li data-en-html="<strong>Chinese text</strong>: UTF-8 spends 24 bits on most Chinese characters. How many bits per character does Huffman need for your sentence, and why so few?"><strong>中文字</strong>：UTF-8 讓大多數中文字用 24 位元。你的句子用霍夫曼編碼，每個字要幾位元？為什麼少這麼多？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Everything is exact integer counting: the runs, the pieces and the bits are counted directly, and the encoded bit string is built and decoded again. Huffman’s algorithm is run exactly as described above with the stated tie rule, so the same text always gives the same tree. Your text is processed only in your browser (at most 120 characters, at most 32 different ones), never sent anywhere and never run as code.">全部都是精確的整數計數：遊程、段數與位元數直接數出來，並真的組出編碼後的位元串、再解碼回去。霍夫曼演算法完全照上面的步驟與平手規則執行，所以同一段文字一定得到同一棵樹。你打的文字只在瀏覽器裡處理（最多 120 個字、32 種），不會傳到任何地方，也不會被當成程式執行。</li>
+        <li data-en-html="The unit tests check: every picture, scan order, format and \(k\) decodes back to the original; every Huffman code is a prefix code with Kraft sum 1; \(H \le L < H + 1\) for thousands of random texts; Huffman’s total length equals the best one found by trying every set of code lengths allowed by Kraft’s inequality; \(L = H\) when the probabilities are powers of \(\tfrac12\); both tie rules give the same average length, and “Older first” gives the shortest longest code (again checked by brute force); Table II of Huffman’s 1952 paper (13 probabilities, average length 3.42); and UTF-8 byte counts.">單元測試檢查：每一張圖、每種掃描順序、格式與 \(k\) 都能解碼還原；每一組霍夫曼碼都是前綴碼、Kraft 和等於 1；幾千段隨機文字都滿足 \(H \le L < H + 1\)；霍夫曼的總位元數，等於「枚舉所有滿足 Kraft 不等式的碼長」找到的最小值；機率都是 \(\tfrac12\) 的次方時 \(L = H\)；兩種平手規則的平均碼長相同，而且「舊的優先」的最長碼最短（同樣用暴力枚舉驗證）；Huffman 1952 年論文的表 II（13 個機率、平均碼長 3.42）；以及 UTF-8 的位元組數。</li>
+        <li data-en="The moving scan head, the growing tree and the sounds only show results that have already been computed; they do not change any number.">掃描頭的移動、樹長出來的動畫與聲音，只是把已經算好的結果呈現出來，不會改變任何數字。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): D-IV-3, concepts and methods of data processing (junior high; its notes include the concepts and basic principles of data compression); Huffman’s algorithm is a classic greedy algorithm, as in A-V-4, principles and applications of important algorithms (greedy algorithms), in the senior-high elective “Advanced Programming”.">課綱對應：資D-IV-3 資料處理概念與方法（國中；說明列有「資料壓縮的概念與基本原理」）；霍夫曼演算法是加深加廣選修「進階程式設計」資A-V-4 重要演算法之原理與應用裡「貪心演算法」的經典例子。</li>
+        <li data-en="David A. Huffman, “A Method for the Construction of Minimum-Redundancy Codes”, Proceedings of the I.R.E., vol. 40, no. 9, pp. 1098–1101, September 1952 (the 13-message example is its Table II).">David A. Huffman，“A Method for the Construction of Minimum-Redundancy Codes”，Proceedings of the I.R.E. 第 40 卷第 9 期，1098–1101 頁，1952 年 9 月（13 個訊息的例子是論文的表 II）。</li>
+        <li data-en="Claude E. Shannon, “A Mathematical Theory of Communication”, Bell System Technical Journal, vol. 27, pp. 379–423 and 623–656, 1948 (entropy).">Claude E. Shannon，“A Mathematical Theory of Communication”，Bell System Technical Journal 第 27 卷，379–423 與 623–656 頁，1948 年（熵）。</li>
+        <li data-en="Thomas M. Cover and Joy A. Thomas, Elements of Information Theory, 2nd ed., Wiley, 2006, Chapter 5 (Data Compression): Kraft inequality (5.2), the bounds H ≤ L < H + 1 (Theorem 5.4.1), Huffman codes and their optimality (5.6–5.8).">Thomas M. Cover、Joy A. Thomas，《Elements of Information Theory》第 2 版（Wiley，2006）第 5 章 Data Compression：Kraft 不等式（5.2 節）、界限 H ≤ L < H + 1（定理 5.4.1）、霍夫曼碼與它的最佳性（5.6–5.8 節）。</li>
+        <li data-en="Thomas H. Cormen, Charles E. Leiserson, Ronald L. Rivest and Clifford Stein, Introduction to Algorithms, 4th ed., MIT Press, 2022, Section 15.3 Huffman codes (Section 16.3 in the 3rd edition): the greedy construction with a min-priority queue, O(n log n) time.">Cormen、Leiserson、Rivest、Stein，《Introduction to Algorithms》第 4 版（MIT Press，2022）15.3 節 Huffman codes（第 3 版為 16.3 節）：用最小優先佇列的貪心建法，時間 O(n log n)。</li>
+        <li data-en="Eugene S. Schwartz, “An optimum encoding with minimum longest code and total number of digits”, Information and Control, vol. 7, pp. 37–44, 1964 (the tie rule that gives the shortest longest code).">Eugene S. Schwartz，“An optimum encoding with minimum longest code and total number of digits”，Information and Control 第 7 卷，37–44 頁，1964 年（讓最長碼最短的平手規則）。</li>
+        <li data-en="Run lengths in practice: ITU-T Recommendation T.4, standardization of Group 3 facsimile terminals (run lengths of each scan line coded with variable-length codes). Character sizes: RFC 3629, UTF-8, a transformation format of ISO 10646 (2003).">遊程的實際應用：ITU-T T.4 建議書（第 3 類傳真機的標準，每條掃描線的遊程長度再用變長碼編碼）。字的大小：RFC 3629〈UTF-8, a transformation format of ISO 10646〉（2003）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Huffman_coding&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Huffman coding (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Run-length_encoding&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Run-length encoding (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Entropy_(information_theory)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Entropy, information theory (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Huffman_coding" target="_blank" rel="noopener">Huffman coding（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Run-length_encoding" target="_blank" rel="noopener">Run-length encoding（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Entropy_(information_theory)" target="_blank" rel="noopener">Entropy (information theory)（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/data-compression-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/data-compression.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="data-compression"></script>
+  <script src="js/missions/data-compression.js"></script>
+  <script src="js/stats.js" data-module="data-compression"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
