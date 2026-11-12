@@ -1011,7 +1011,7 @@
       } else {
         const col = C.filmColor(L, th);
         h += row(T('看到的顏色', 'Colour seen'), '<span class="swatch" style="background:rgb(' + col.srgb.join(',') + ')"></span>' + T('亮度 ', 'brightness ') + fx(col.Y, 2));
-        h += row('<i>R</i><sub>s</sub> / <i>R</i><sub>p</sub>（550 nm）', fx(L.Rs(th, 550) * 100, 2) + ' % / ' + fx(L.Rp(th, 550) * 100, 2) + ' %');
+        h += row('<i>R</i><sub>s</sub> / <i>R</i><sub>p</sub>' + T('（550 nm）', ' (550 nm)'),fx(L.Rs(th, 550) * 100, 2) + ' % / ' + fx(L.Rp(th, 550) * 100, 2) + ' %');
       }
       h += row(T('最大反射率 <i>R</i><sub>max</sub>', 'Maximum reflectance <i>R</i><sub>max</sub>'), fx(L.Rmax * 100, 2) + ' %');
       h += row(T('排液時間', 'Draining time'), fx(s.t, 1) + ' s');

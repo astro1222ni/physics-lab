@@ -775,7 +775,7 @@
     setHTML('h_L', num(k.L, 4) + LU + '<small>' + T('相對漂移 ', 'relative drift ') + (Math.abs(k.L / st.L0 - 1) < 1e-12 ? '0' : sig(Math.abs(k.L / st.L0 - 1), 2)) + '</small>');
     setHTML('h_rp', num(k.rperp, 3) + ' m');
     setHTML('h_T', st.phase === 'free' ? '0 N<small>' + T('繩子沒有拉著小球', 'nothing pulls the ball') + '</small>' : num(k.T, 3) + ' N<small>mrω<sup>2</sup> = mv<sub>⊥</sub><sup>2</sup>/r = ' + num(st.m * k.vt * k.vt / k.r, 3) + ' N</small>');
-    setHTML('h_K', num(k.K, 4) + ' J<small>' + T('起始 ', 'start ') + num(st.K0, 4) + ' J，ΔK = ' + num(k.K - st.K0, 4) + ' J</small>');
+    setHTML('h_K', num(k.K, 4) + ' J<small>' + T('起始 ', 'start ') + num(st.K0, 4) + T(' J，ΔK = ', ' J, ΔK = ') + num(k.K - st.K0, 4) + ' J</small>');
     setHTML('h_W', num(k.W, 4) + ' J');
     setHTML('h_A', num(k.arealRate, 4) + ' m<sup>2</sup>/s<small>= L/(2m)</small>');
   }
