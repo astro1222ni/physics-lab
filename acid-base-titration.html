@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611121529"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Acid–Base Titration | Astro Ni Science Lab">酸鹼滴定｜Astro Ni 科學實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用滴定管把 NaOH 一滴一滴加進鹽酸或醋酸，看 pH 計與指示劑的顏色變化、即時畫出滴定曲線；找出當量點與半當量點、選對指示劑，再挑戰未知弱酸的濃度與 Ka。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/acid-base-titration.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/acid-base-titration.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/acid-base-titration.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/acid-base-titration.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="酸鹼滴定｜Astro Ni 科學實驗室">
+  <meta property="og:description" content="用滴定管把 NaOH 一滴一滴加進鹽酸或醋酸，看 pH 計與指示劑的顏色變化、即時畫出滴定曲線；找出當量點與半當量點、選對指示劑，再挑戰未知弱酸的濃度與 Ka。">
+  <meta property="og:url" content="https://lab.astroni.org/acid-base-titration.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/acid-base-titration.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="酸鹼滴定的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"酸鹼滴定","alternateName":"Acid–Base Titration","description":"用滴定管把 NaOH 一滴一滴加進鹽酸或醋酸，看 pH 計與指示劑的顏色變化、即時畫出滴定曲線；找出當量點與半當量點、選對指示劑，再挑戰未知弱酸的濃度與 Ka。","url":"https://lab.astroni.org/acid-base-titration.html","image":"https://lab.astroni.org/img/og/acid-base-titration.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["酸鹼與氧化還原（Acids, Bases and Redox）","酸鹼反應（Acid–Base Reactions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611121529">
+  <style>
+    /* 酸鹼滴定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    .ti canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    .ti #cv { height: 500px; }
+    .ti #gcv { height: 340px; cursor: crosshair; }
+    .ti + .ti { margin-top: 16px; }
+    .ti button { min-height: 44px; }
+    .ti [hidden] { display: none !important; }
+    .ti .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ti .playbar button { flex: 1 1 auto; }
+    .ti .playbar #drop { font-weight: 700; min-width: 7.5em; }
+    .ti .playbar #tap[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .ti .playbar button:disabled { opacity: .5; cursor: not-allowed; }
+    .ti .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ti .stage .rate { margin: 12px 4px 0; }
+    .ti .stage .status { margin: 6px 4px 0; }
+    .ti .stage .status.warn { color: var(--pos); font-weight: 600; }
+    .ti .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ti .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .ti .slider input[type="range"] { height: 28px; margin: 0; }
+    .ti sub, .ti sup, .notes sub, .notes sup { font-size: .75em; }
+    .ti .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ti .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg-label:first-of-type { margin-top: 2px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 5px 4px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .inds button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg2 button small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }
+    .seg2 button[aria-pressed="true"] small { color: var(--accent); }
+    /* 指示劑按鈕：色塊是酸型 → 鹼型的真實顏色（由程式依化學核心算出） */
+    .inds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(140px * var(--fs, 1))), 1fr)); gap: 6px; }
+    .inds button { display: flex; align-items: center; gap: 8px; padding: 5px 8px; text-align: left; line-height: 1.25; }
+    .inds .sw { flex: none; width: 26px; height: 16px; border-radius: 5px; border: 1px solid var(--border); background: var(--surface); }
+    .inds button span { min-width: 0; overflow-wrap: anywhere; }
+    .inds small { display: block; font-weight: 400; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ti .checks { margin-top: 8px; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .ti dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ti dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(18px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.warn { color: var(--pos); }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    dl.readout dd.wide { grid-column: 1 / -1; text-align: left; white-space: normal; font-size: calc(13px * var(--fs, 1)); }
+    .ti .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .ti .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .ti .legend .ln.old { opacity: .5; }
+    /* 未知弱酸的答案欄 */
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 9em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .ti .btns button { flex: 1 1 auto; }
+    #mysOut .ok { color: var(--probe); font-weight: 700; }
+    #mysOut .no { color: var(--pos); font-weight: 700; }
+    /* 數據表 */
+    .tablewrap { overflow: auto; margin: 8px 2px 0; max-height: 300px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.col { text-align: left; }
+    table.data td.col i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); vertical-align: -1px; margin-right: 5px; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.jump td.d { color: var(--pos); font-weight: 700; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .equip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 4px 18px; padding-left: 1.3em; }
+    .notes .tblnote { overflow-x: auto; }
+    .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: center; white-space: nowrap; }
+    .notes table.spec th { color: var(--muted); font-weight: 600; }
+    .notes table.spec td.l { text-align: left; white-space: normal; min-width: 10em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Acid–Base Titration"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 酸鹼滴定</nav>
+      <h1 data-en="Acid–Base Titration">酸鹼滴定</h1>
+      <p data-en-html="A burette of standard sodium hydroxide, a conical flask of acid on a magnetic stirrer, an indicator and a pH meter. Add the base drop by drop, watch the colour and the pH, and the titration curve draws itself as you go. Find the equivalence point and the half-equivalence point, choose the right indicator, then use what you have learnt to find the concentration and K&lt;sub&gt;a&lt;/sub&gt; of an unknown weak acid.">滴定管裝著濃度已知的氫氧化鈉，錐形瓶裡是待測的酸，放在磁石攪拌器上，再加指示劑、插上 pH 計。一滴一滴加入鹼，看顏色與 pH 怎麼變，滴定曲線也跟著畫出來。找出當量點與半當量點、選對指示劑，最後用學到的方法，求出未知弱酸的濃度與 K<sub>a</sub>。</p>
+    </header>
+
+    <!-- 第一部分：滴定裝置 -->
+    <p class="try-hint" data-en="Try it: press “Open stopcock”, let the NaOH run to about 24 mL and close it, then finish with “1 drop” and “½ drop” — which drop turns the phenolphthalein pink?">試試看：按「打開活栓」讓 NaOH 流到大約 24 mL 再關上，接著改用「一滴」「半滴」，看酚酞在哪一滴變成粉紅色。</p>
+    <div class="lab ti">
+      <div class="stage">
+        <canvas id="cv" role="img" aria-label="滴定裝置：鐵架上的滴定管、放在磁石攪拌器上的錐形瓶、pH 計，以及放大滴定管液面的放大鏡" data-en-aria-label="The titration set-up: a burette on a stand, a conical flask on a magnetic stirrer, a pH meter, and a magnifier showing the liquid level in the burette"></canvas>
+        <div class="playbar">
+          <button id="drop" class="primary" type="button" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
+          <button id="half" type="button" data-en="½ drop">半滴</button>
+          <button id="tap" type="button" aria-pressed="false" data-share-skip data-en="Open stopcock">打開活栓</button>
+          <button id="endBtn" type="button" data-en="Record end point">記錄終點</button>
+        </div>
+        <div class="playbar">
+          <button id="refill" type="button" data-en="Refill burette">補充滴定液</button>
+          <button id="newFlask" type="button" data-en="New flask">換一瓶</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除圖上所有曲線、數據表與終點紀錄，換一瓶新的溶液；濃度、體積、指示劑等設定不變" data-en-title="Clear every curve, the data table and the end point, and start a fresh flask; the concentrations, volumes and indicator stay as they are">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="slider rate"><label for="rate" data-en="Stopcock opening (flow rate)">活栓開度（流速）</label><output id="rateo"></output>
+          <input id="rate" type="range" min="0.1" max="2" step="0.05" value="0.5" data-decimals="2"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Not to scale. One drop from the burette is 0.05 mL; a half drop is 0.025 mL (in the lab: let half a drop hang on the tip, touch it off on the inside of the flask and rinse it down with a little distilled water). Read the burette at the bottom of the meniscus with your eye at the same level, to 0.01 mL — the magnifier shows it close up. Put white paper under the flask so the colour change is easy to see.">示意圖，未依比例。滴定管一滴約 0.05 mL、半滴 0.025 mL（實際操作：讓半滴懸在尖端，用錐形瓶內壁輕碰沾下，再用洗瓶的少量蒸餾水沖入）。讀數時視線與彎月面最低點同高，估讀到 0.01 mL，放大鏡裡是液面的特寫。錐形瓶下墊白紙，顏色變化比較容易看出來。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+
+        <section class="card">
+          <h2 id="sysLabel" data-en="What is titrated">滴定組合</h2>
+          <div class="seg2" id="sysSeg" role="group" aria-labelledby="sysLabel">
+            <button type="button" data-sys="sa" aria-pressed="true" data-en-html="HCl ← NaOH&lt;small&gt;strong acid + strong base&lt;/small&gt;">鹽酸 ← NaOH<small>強酸＋強鹼</small></button>
+            <button type="button" data-sys="wa" aria-pressed="false" data-en-html="CH&lt;sub&gt;3&lt;/sub&gt;COOH ← NaOH&lt;small&gt;weak acid + strong base&lt;/small&gt;">醋酸 ← NaOH<small>弱酸＋強鹼</small></button>
+            <button type="button" data-sys="wb" aria-pressed="false" data-en-html="NH&lt;sub&gt;3&lt;/sub&gt; ← HCl&lt;small&gt;weak base + strong acid&lt;/small&gt;">氨水 ← HCl<small>弱鹼＋強酸</small></button>
+            <button type="button" data-sys="mx" aria-pressed="false" data-en-html="Unknown HX ← NaOH&lt;small&gt;find c and K&lt;sub&gt;a&lt;/sub&gt;&lt;/small&gt;">未知弱酸 ← NaOH<small>求濃度與 K<sub>a</sub></small></button>
+          </div>
+          <p class="info" id="sysInfo">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Solutions">溶液</h2>
+          <div class="slider" id="caRow"><label for="ca" id="caLabel" data-en="Concentration of the sample">待測液的濃度</label><output id="cao"></output>
+            <input id="ca" type="range" min="0" max="300" step="1" value="200"></div>
+          <div class="slider"><label for="va" data-en="Volume of the sample (pipette)">待測液的體積（移液管）</label><output id="vao"></output>
+            <input id="va" type="range" min="5" max="50" step="0.5" value="25" data-decimals="2"></div>
+          <div class="slider"><label for="vw" data-en="Distilled water added to the flask">錐形瓶中另加的蒸餾水</label><output id="vwo"></output>
+            <input id="vw" type="range" min="0" max="100" step="1" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="cb" id="cbLabel" data-en="Concentration of the titrant (burette)">滴定液的濃度（滴定管）</label><output id="cbo"></output>
+            <input id="cb" type="range" min="0" max="300" step="1" value="200"></div>
+          <p class="hint" data-en="Changing any of these starts a fresh flask; the old curve stays on the graph for comparison (up to 5). Tap a number to type an exact value.">改這些設定會換一瓶新的溶液，舊的曲線留在圖上方便比較（最多 5 條）。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="indLabel" data-en="Indicator and pH meter">指示劑與 pH 計</h2>
+          <div class="inds" id="indSeg" role="group" aria-labelledby="indLabel">
+            <button type="button" data-ind="none" aria-pressed="false"><i class="sw"></i><span data-en-html="None&lt;small&gt;—&lt;/small&gt;">不加<small>—</small></span></button>
+            <button type="button" data-ind="php" aria-pressed="true"><i class="sw"></i><span data-en-html="Phenolphthalein&lt;small&gt;pH 8.2–10.0&lt;/small&gt;">酚酞<small>pH 8.2–10.0</small></span></button>
+            <button type="button" data-ind="mo" aria-pressed="false"><i class="sw"></i><span data-en-html="Methyl orange&lt;small&gt;pH 3.1–4.4&lt;/small&gt;">甲基橙<small>pH 3.1–4.4</small></span></button>
+            <button type="button" data-ind="mr" aria-pressed="false"><i class="sw"></i><span data-en-html="Methyl red&lt;small&gt;pH 4.4–6.2&lt;/small&gt;">甲基紅<small>pH 4.4–6.2</small></span></button>
+            <button type="button" data-ind="btb" aria-pressed="false"><i class="sw"></i><span data-en-html="Bromothymol blue&lt;small&gt;pH 6.0–7.6&lt;/small&gt;">溴瑞香草酚藍<small>pH 6.0–7.6</small></span></button>
+          </div>
+          <div class="checks">
+            <label><input id="meter" type="checkbox" checked><span data-en="pH meter electrode in the flask">pH 計的電極放在錐形瓶中</span></label>
+          </div>
+          <p class="hint" data-en="The colour swatches go from the acid form to the base form. Choose the indicator before you start: in a real flask an indicator cannot be taken out again.">色塊由左到右是指示劑的酸型到鹼型。開始滴定前就要選好指示劑：真實的錐形瓶裡，指示劑加了就拿不出來。</p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：滴定曲線、數據表與分析 -->
+    <div class="lab ti">
+      <div class="stage">
+        <h2 data-en="Titration curve and data table">滴定曲線與數據表</h2>
+        <p class="hint" data-en="pH (from the pH meter) against the volume of titrant added. Points are only recorded while the electrode is in the flask. The strip under the axis shows the colour of the flask at each volume.">縱軸是 pH 計的讀數、橫軸是加入的滴定液體積；電極放在瓶中時才有數據點。橫軸下方的色條是每個體積時錐形瓶的顏色。</p>
+        <canvas id="gcv" role="img" aria-label="滴定曲線：pH 對加入的滴定液體積，標出當量點、半當量點、緩衝區與指示劑的變色範圍" data-en-aria-label="Titration curve: pH against the volume of titrant added, with the equivalence point, half-equivalence point, buffer region and the indicator’s colour-change range"></canvas>
+        <div class="checks">
+          <label><input id="theory" type="checkbox"><span data-en="Theoretical curve">理論曲線</span></label>
+          <label><input id="deriv" type="checkbox"><span data-en="Slope ΔpH/ΔV">斜率 ΔpH/ΔV</span></label>
+        </div>
+        <div class="legend" id="curveLegend"></div>
+        <div class="tablewrap" id="tblWrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析</h2>
+          <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="mysCard" hidden data-share-skip>
+          <h2 data-en="Your answer for the unknown acid">未知弱酸的答案</h2>
+          <p class="hint" data-en-html="A monoprotic weak acid HX: its concentration and K&lt;sub&gt;a&lt;/sub&gt; are both unknown (K&lt;sub&gt;a&lt;/sub&gt; is between 1.0 × 10&lt;sup&gt;−6&lt;/sup&gt; and 9.9 × 10&lt;sup&gt;−5&lt;/sup&gt;). Titrate it with NaOH, find the equivalence and half-equivalence points, then enter your results.">單質子弱酸 HX：濃度與 K<sub>a</sub> 都不知道（K<sub>a</sub> 在 1.0 × 10<sup>−6</sup> 到 9.9 × 10<sup>−5</sup> 之間）。用 NaOH 滴定，找出當量點與半當量點，再填入你的結果。</p>
+          <div class="ans"><label for="ansC" data-en="Concentration c (M)">濃度 c（M）</label><input id="ansC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 0.0850" data-en-placeholder="e.g. 0.0850"></div>
+          <div class="ans"><label for="ansP" data-en-html="pK&lt;sub&gt;a&lt;/sub&gt; (or K&lt;sub&gt;a&lt;/sub&gt;)">pK<sub>a</sub>（也可以填 K<sub>a</sub>）</label><input id="ansP" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 5.30" data-en-placeholder="e.g. 5.30"></div>
+          <div class="btns">
+            <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+            <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+            <button id="newMys" type="button" data-en="Another unknown acid">換一個未知酸</button>
+          </div>
+          <p class="info" id="mysOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Titrate hydrochloric acid or acetic acid with a standard sodium hydroxide solution (one whose concentration is accurately known) and work out the concentration of the acid.">用標準氫氧化鈉溶液（濃度精確已知的溶液）滴定鹽酸或醋酸，求出待測酸的濃度。</li>
+        <li data-en="Measure and plot titration curves; compare a strong acid with a weak acid and recognise the equivalence point, the half-equivalence point and the buffer region.">測量並畫出滴定曲線，比較強酸與弱酸，認識當量點、半當量點與緩衝區。</li>
+        <li data-en="Choose a suitable indicator from the pH at the equivalence point, and understand the difference between the end point and the equivalence point.">依當量點的 pH 選擇合適的指示劑，了解滴定終點與當量點的不同。</li>
+        <li data-en-html="Find the acid dissociation constant \(K_\mathrm{a}\) of a weak acid from the pH at its half-equivalence point.">由弱酸半當量點的 pH 求出它的解離常數 \(K_\mathrm{a}\)。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <ul class="equip">
+        <li data-en="50 mL burette (smallest division 0.1 mL)">50 mL 滴定管（最小刻度 0.1 mL）</li>
+        <li data-en="Retort stand and burette clamp">鐵架與滴定管夾</li>
+        <li data-en="250 mL conical flask">250 mL 錐形瓶</li>
+        <li data-en="25 mL pipette and pipette filler">25 mL 移液管與安全吸球</li>
+        <li data-en="Magnetic stirrer and stirring bar">磁石攪拌器與攪拌子</li>
+        <li data-en="pH meter with a glass electrode">pH 計（玻璃電極）</li>
+        <li data-en="Wash bottle of distilled water, white paper">洗瓶（蒸餾水）、白紙</li>
+        <li data-en="0.100 M NaOH (standard), 0.100 M HCl (standard)">0.100 M NaOH 與 0.100 M HCl 標準溶液</li>
+        <li data-en="Samples: hydrochloric acid, acetic acid, ammonia solution">待測液：鹽酸、醋酸、氨水</li>
+        <li data-en="Indicators: phenolphthalein, methyl orange, methyl red, bromothymol blue">指示劑：酚酞、甲基橙、甲基紅、溴瑞香草酚藍</li>
+      </ul>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Neutralisation and the equivalence point">中和與當量點</h3>
+      <p data-en-html="In a titration, a solution of accurately known concentration (the titrant) is added from a burette until it has reacted exactly with the sample. For a monoprotic acid and NaOH the reaction is 1 : 1, so at the <strong>equivalence point</strong> the amount of OH<sup>−</sup> added equals the amount of acid that was in the flask:">滴定是把濃度精確已知的溶液（滴定液）由滴定管加入，直到它和待測物恰好完全反應。單質子酸與 NaOH 的反應莫耳數比是 1 : 1，所以在<strong>當量點</strong>，加入的 OH<sup>−</sup> 物質的量等於瓶中原有的酸：</p>
+      <div class="formula multi">
+        \[ c_\mathrm{b} V_{\mathrm{eq}} = c_\mathrm{a} V_\mathrm{a} \] \[ V_{\mathrm{eq}} = \frac{c_\mathrm{a} V_\mathrm{a}}{c_\mathrm{b}} \]
+      </div>
+      <p data-en-html="Adding distilled water to the flask does not change the amount of acid, so it does not change \(V_{\mathrm{eq}}\). In this simulation all volumes are in mL and concentrations in M (mol/L), so \(c \times V\) is in mmol.">在錐形瓶裡多加蒸餾水，酸的物質的量不變，\(V_{\mathrm{eq}}\) 也就不變。本模擬的體積用 mL、濃度用 M（mol/L），所以 \(c \times V\) 的單位是 mmol。</p>
+
+      <h3 data-en="Strong acid with strong base">強酸與強鹼</h3>
+      <p data-en-html="Before the equivalence point the pH is set by the HCl that is left over; after it, by the excess NaOH. At the equivalence point the flask holds only NaCl solution, which is neutral: pH = 7.00 at 25 °C. Close to that point a single drop changes the pH enormously. With 0.100 M solutions, 0.05 mL short of the equivalence point leaves 0.005 mmol of acid in 50 mL, so \([\mathrm{H^+}] = 1.0 \times 10^{-4}\) M and pH = 4.00; 0.05 mL past it leaves the same amount of OH<sup>−</sup> and pH = 10.00. One drop, six pH units.">當量點之前，pH 由剩下的 HCl 決定；之後由過量的 NaOH 決定。當量點時瓶中只有 NaCl 溶液，是中性的：25 °C 時 pH = 7.00。接近當量點時，一滴就讓 pH 大幅改變。以 0.100 M 的溶液為例：比當量點少 0.05 mL 時，50 mL 溶液中還剩 0.005 mmol 的酸，\([\mathrm{H^+}] = 1.0 \times 10^{-4}\) M、pH = 4.00；多 0.05 mL 時剩下同樣多的 OH<sup>−</sup>，pH = 10.00。一滴之差，pH 跳了 6。</p>
+
+      <h3 data-en="Weak acid with strong base: buffer and half-equivalence">弱酸與強鹼：緩衝區與半當量點</h3>
+      <p data-en-html="Acetic acid is only slightly ionised, so its solution starts at a higher pH (2.88 for 0.100 M). Each portion of NaOH turns some CH<sub>3</sub>COOH into CH<sub>3</sub>COO<sup>−</sup>, and the mixture of a weak acid with its conjugate base is a <strong>buffer</strong>: the pH rises only slowly. The pH follows the Henderson–Hasselbalch equation:">醋酸只有少部分解離，所以起始 pH 比較高（0.100 M 時為 2.88）。每加一些 NaOH，就把一部分 CH<sub>3</sub>COOH 變成 CH<sub>3</sub>COO<sup>−</sup>；弱酸和它的共軛鹼混在一起就是<strong>緩衝溶液</strong>，pH 上升得很慢。這一段的 pH 可以用亨德森–哈塞爾巴赫公式估計：</p>
+      <div class="formula multi">
+        \[ \mathrm{pH} = \mathrm{p}K_\mathrm{a} + \log\frac{[\mathrm{CH_3COO^-}]}{[\mathrm{CH_3COOH}]} \]
+      </div>
+      <p data-en-html="At the <strong>half-equivalence point</strong> (\(V = V_{\mathrm{eq}}/2\)) half of the acid has been neutralised, the two concentrations are equal and \(\mathrm{pH} = \mathrm{p}K_\mathrm{a}\) = 4.74. At the equivalence point the flask holds sodium acetate; the acetate ion is a weak base (\(\mathrm{CH_3COO^-} + \mathrm{H_2O} \rightleftharpoons \mathrm{CH_3COOH} + \mathrm{OH^-}\)), so the solution is basic: pH = 8.72.">在<strong>半當量點</strong>（\(V = V_{\mathrm{eq}}/2\)），一半的酸被中和，兩種濃度相等，\(\mathrm{pH} = \mathrm{p}K_\mathrm{a}\) = 4.74。到了當量點，瓶中是醋酸鈉溶液，醋酸根是弱鹼（\(\mathrm{CH_3COO^-} + \mathrm{H_2O} \rightleftharpoons \mathrm{CH_3COOH} + \mathrm{OH^-}\)），溶液偏鹼性：pH = 8.72。</p>
+      <p data-en-html="Ammonia titrated with hydrochloric acid is the mirror image: the curve falls, the half-equivalence point is at pH = p\(K_\mathrm{a}\) of NH<sub>4</sub><sup>+</sup> = 14.00 − p\(K_\mathrm{b}\) = 9.26, and the equivalence point (NH<sub>4</sub>Cl solution) is acidic: pH = 5.28.">用鹽酸滴定氨水剛好相反：曲線往下降，半當量點的 pH 等於 NH<sub>4</sub><sup>+</sup> 的 p\(K_\mathrm{a}\) = 14.00 − p\(K_\mathrm{b}\) = 9.26，當量點（NH<sub>4</sub>Cl 溶液）偏酸性：pH = 5.28。</p>
+
+      <h3 data-en="Indicators: end point and equivalence point">指示劑：終點與當量點</h3>
+      <p data-en-html="An indicator is itself a weak acid whose two forms have different colours: \(\mathrm{HIn} \rightleftharpoons \mathrm{H^+} + \mathrm{In^-}\). The eye sees the colour change over about \(\mathrm{p}K_{\mathrm{In}} \pm 1\). The volume at which the colour changes is the <strong>end point</strong>; a good indicator makes the end point fall on the steep part of the curve, so it is practically the same as the equivalence point.">指示劑本身是弱酸，兩種型的顏色不同：\(\mathrm{HIn} \rightleftharpoons \mathrm{H^+} + \mathrm{In^-}\)。肉眼大約在 \(\mathrm{p}K_{\mathrm{In}} \pm 1\) 的範圍內看到顏色改變。顏色改變時的體積叫做<strong>滴定終點</strong>；選得好的指示劑，終點落在曲線陡升的那一段，幾乎和當量點一樣。</p>
+      <div class="tblnote">
+        <table class="spec">
+          <tr><th data-en="Indicator">指示劑</th><th data-en="Range (pH)">變色範圍（pH）</th><th data-en="Acid form → base form">酸型 → 鹼型</th><th data-en-html="pK&lt;sub&gt;In&lt;/sub&gt; used here">本模擬的 pK<sub>In</sub></th><th data-en="Suitable for">適合</th></tr>
+          <tr><td data-en="Methyl orange">甲基橙</td><td>3.1–4.4</td><td data-en="red → orange-yellow">紅 → 橙黃</td><td>3.46</td><td class="l" data-en="strong acid + strong base (not too dilute)">強酸＋強鹼（濃度不太稀時）</td></tr>
+          <tr><td data-en="Methyl red">甲基紅</td><td>4.4–6.2</td><td data-en="red → yellow">紅 → 黃</td><td>5.1</td><td class="l" data-en="weak base titrated with strong acid; strong + strong">強酸滴定弱鹼；強酸＋強鹼</td></tr>
+          <tr><td data-en="Bromothymol blue">溴瑞香草酚藍</td><td>6.0–7.6</td><td data-en="yellow → blue (green between)">黃 → 藍（中間是綠）</td><td>7.1</td><td class="l" data-en="strong acid + strong base">強酸＋強鹼</td></tr>
+          <tr><td data-en="Phenolphthalein">酚酞</td><td>8.2–10.0</td><td data-en="colourless → pink">無色 → 粉紅</td><td>9.4</td><td class="l" data-en="weak acid titrated with strong base; strong + strong">強鹼滴定弱酸；強酸＋強鹼</td></tr>
+        </table>
+      </div>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en="Wash the burette with distilled water, then rinse it two or three times with a little of the NaOH solution. Fill it, run some liquid out to clear the air bubble from the tip, and record the initial reading near 0.00 mL.">滴定管先用蒸餾水洗淨，再用少量 NaOH 溶液潤洗 2～3 次。裝入 NaOH，放出少量溶液排除尖端的氣泡，在 0.00 mL 附近記下初讀數。</li>
+        <li data-en="Pipette 25.00 mL of the sample into the conical flask. The flask must not be rinsed with the sample, and distilled water left in it does no harm. Add two drops of indicator and stand the flask on white paper (on the stirrer).">用移液管取 25.00 mL 待測液放進錐形瓶。錐形瓶不可以用待測液潤洗，瓶內殘留蒸餾水則沒有關係。加 2 滴指示劑，放在墊了白紙的攪拌器上。</li>
+        <li data-en="Run the NaOH in fairly quickly while stirring. When the colour appears where the drops land but disappears on mixing, the end point is close: add one drop at a time, and finally half drops.">一邊攪拌，一邊讓 NaOH 較快地流下。看到滴落處出現顏色、攪勻後又消失，就表示快到終點了，改成一滴一滴加，最後用半滴。</li>
+        <li data-en="The end point is reached when the whole solution changes colour and the colour lasts for 30 s. Record the final reading; final − initial reading = volume of NaOH used.">整瓶溶液變色、且 30 秒內不褪色，就是終點。記下末讀數；末讀數 − 初讀數 = 用掉的 NaOH 體積。</li>
+        <li data-en="Repeat until two titrations agree within 0.10 mL and take their mean.">重複滴定，直到兩次的結果相差不超過 0.10 mL，取平均。</li>
+        <li data-en="To draw a titration curve, put the pH meter electrode in the flask and record the pH after each addition, adding smaller amounts near the equivalence point.">要畫滴定曲線時，把 pH 計的電極放進錐形瓶，每加一次記一次 pH；接近當量點時每次加少一點。</li>
+      </ol>
+
+      <h3 data-en="Things to watch out for">注意事項</h3>
+      <ul>
+        <li data-en="The burette scale reads downwards from 0 at the top. Read the bottom of the meniscus with your eye level with it, to 0.01 mL; looking from above or below gives a parallax error.">滴定管的刻度由上往下增加。讀數時看彎月面的最低點，視線要和它同高，估讀到 0.01 mL；從上方或下方看會有視差。</li>
+        <li data-en="The tip of the burette should be inside the neck of the flask but above the liquid, so that every drop goes in.">滴定管的尖端要伸進錐形瓶的瓶口、但不碰到液面，每一滴才都會進到瓶中。</li>
+        <li data-en="With a weak acid, the pink of phenolphthalein slowly fades as the solution absorbs carbon dioxide from the air; take the end point as the first pink that lasts 30 s.">滴定弱酸時，酚酞的粉紅色會因溶液吸收空氣中的二氧化碳而慢慢褪去，以第一次能維持 30 秒的粉紅色為終點。</li>
+        <li data-en="Sodium hydroxide solutions absorb carbon dioxide, so in the lab the NaOH is standardised first (for example against potassium hydrogen phthalate). The simulation assumes the concentrations are exact.">氫氧化鈉溶液會吸收二氧化碳，實驗室裡要先用鄰苯二甲酸氫鉀等標定它的濃度；本模擬假設濃度完全準確。</li>
+        <li data-en="Sodium hydroxide is corrosive: wear safety glasses, and rinse any splashes off your skin with plenty of water.">氫氧化鈉有腐蝕性：要戴護目鏡，沾到皮膚立刻用大量清水沖洗。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="In the titration of 0.100 M HCl, why does one drop near the equivalence point change the pH from about 4 to about 10, while one drop at the start hardly changes it?">滴定 0.100 M 鹽酸時，為什麼在當量點附近一滴就能讓 pH 從約 4 跳到約 10，一開始加一滴卻幾乎沒有變化？</li>
+        <li data-en="Why is the pH at the equivalence point of acetic acid greater than 7?">為什麼醋酸滴定到當量點時，pH 大於 7？</li>
+        <li data-en="Why can methyl orange not be used for titrating acetic acid with NaOH? Which indicator should you use?">用 NaOH 滴定醋酸時，為什麼不能用甲基橙？應該用哪一種指示劑？</li>
+        <li data-en="If 25 mL of distilled water is added to the acid first, does the equivalence volume change? Which parts of the curve change?">先在酸中加 25 mL 蒸餾水再滴定，當量點的體積會改變嗎？曲線的哪些部分會改變？</li>
+        <li data-en="Ammonia solution is titrated with hydrochloric acid. Which indicator is best?">用鹽酸滴定氨水，最適合用哪一種指示劑？</li>
+        <li data-en-html="Dilute all the solutions to 0.0010 M. Is the half-equivalence pH of acetic acid still equal to its pK&lt;sub&gt;a&lt;/sub&gt;?">把所有溶液稀釋成 0.0010 M，醋酸半當量點的 pH 還等於 pK<sub>a</sub> 嗎？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="pH is a logarithm. At the start there are 2.5 mmol of acid, and one drop (0.005 mmol of NaOH) removes only 0.2% of it. Near the equivalence point almost nothing is left, so the same drop changes \([\mathrm{H^+}]\) by a huge factor: from \(1.0 \times 10^{-4}\) M of H<sup>+</sup> (pH 4.00) to \(1.0 \times 10^{-4}\) M of OH<sup>−</sup> (pH 10.00).">因為 pH 是對數。一開始瓶中有 2.5 mmol 的酸，一滴（0.005 mmol NaOH）只中和了 0.2%；接近當量點時酸幾乎用完了，同樣一滴就讓 \([\mathrm{H^+}]\) 改變很多倍：由 \(1.0 \times 10^{-4}\) M 的 H<sup>+</sup>（pH 4.00）變成 \(1.0 \times 10^{-4}\) M 的 OH<sup>−</sup>（pH 10.00）。</li>
+          <li data-en-html="The flask then contains sodium acetate. Acetate is the conjugate base of a weak acid and reacts with water, \(K_\mathrm{b} = K_\mathrm{w}/K_\mathrm{a} = 5.6 \times 10^{-10}\). With \([\mathrm{CH_3COO^-}] = 0.050\) M, \([\mathrm{OH^-}] \approx \sqrt{K_\mathrm{b} c} = 5.3 \times 10^{-6}\) M, so pH ≈ 8.72.">這時瓶中是醋酸鈉。醋酸根是弱酸的共軛鹼，會和水反應，\(K_\mathrm{b} = K_\mathrm{w}/K_\mathrm{a} = 5.6 \times 10^{-10}\)。\([\mathrm{CH_3COO^-}] = 0.050\) M 時，\([\mathrm{OH^-}] \approx \sqrt{K_\mathrm{b} c} = 5.3 \times 10^{-6}\) M，pH ≈ 8.72。</li>
+          <li data-en="Methyl orange changes colour between pH 3.1 and 4.4. Acetic acid starts at pH 2.88, so methyl orange already turns orange after about half a millilitre — 24 mL too early. The equivalence point is at pH 8.72, inside the range of phenolphthalein (8.2–10.0).">甲基橙在 pH 3.1～4.4 變色，而醋酸一開始就是 pH 2.88，加大約半毫升甲基橙就變橙色了，比當量點早了 24 mL。當量點的 pH 是 8.72，落在酚酞的變色範圍（8.2～10.0）裡，所以要用酚酞。</li>
+          <li data-en="No: the amount of acid is the same, so the equivalence volume is the same. The curve starts higher (HCl: from 1.00 to 1.30), the jump at the equivalence point is a little smaller, and for acetic acid the equivalence pH becomes slightly lower (8.63). The half-equivalence pH of acetic acid stays at about 4.74.">不會：酸的物質的量沒變，所以當量點體積不變。曲線的起點變高（鹽酸由 1.00 變 1.30），當量點附近的跳躍稍微變小；醋酸當量點的 pH 稍微變低（8.63），半當量點的 pH 仍然約是 4.74。</li>
+          <li data-en-html="The equivalence point (NH&lt;sub&gt;4&lt;/sub&gt;Cl solution) is at pH 5.28, which lies in the range of methyl red (4.4–6.2). Phenolphthalein changes far too early, while the solution is still a buffer.">當量點（NH<sub>4</sub>Cl 溶液）的 pH 是 5.28，落在甲基紅的變色範圍（4.4～6.2）裡，所以用甲基紅。酚酞會在溶液還是緩衝溶液時就變色，太早了。</li>
+          <li data-en-html="Only approximately: it becomes 4.79 instead of 4.74. The Henderson–Hasselbalch equation assumes that the acid’s own ionisation can be neglected. Here \([\mathrm{HA}]\) and \([\mathrm{A^-}]\) are only about \(3 \times 10^{-4}\) M each, and the \([\mathrm{H^+}]\) of \(1.6 \times 10^{-5}\) M is 5% of that, so \([\mathrm{A^-}]\) ends up about 10% larger than \([\mathrm{HA}]\).">只是近似：會變成 4.79 而不是 4.74。亨德森公式假設弱酸本身的解離可以忽略；這時 \([\mathrm{HA}]\) 與 \([\mathrm{A^-}]\) 各只有約 \(3 \times 10^{-4}\) M，\(1.6 \times 10^{-5}\) M 的 \([\mathrm{H^+}]\) 已經是它的 5%，所以 \([\mathrm{A^-}]\) 比 \([\mathrm{HA}]\) 多了約 10%。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One drop, six pH units.</strong> With the defaults (0.100 M HCl and NaOH, phenolphthalein), run in about 24 mL, then go on with single drops and half drops. At 25.00 mL the pH meter reads 7.00; half a drop more and the flask turns pink at pH 9.70."><strong>一滴之差</strong>：用預設值（0.100 M 鹽酸與 NaOH、酚酞），先流到大約 24 mL，再一滴一滴、半滴半滴地加。25.00 mL 時 pH 計是 7.00；再多半滴，pH 9.70，整瓶變成粉紅色。</li>
+        <li data-en-html="<strong>Strong and weak.</strong> Titrate HCl and then acetic acid (same concentrations) well past the equivalence point and compare the two curves: different starts, a flat buffer region for the weak acid, and different pH at the equivalence point — but the same equivalence volume."><strong>強酸與弱酸</strong>：鹽酸和醋酸（濃度相同）各滴到超過當量點，比較兩條曲線：起點不同、弱酸有平緩的緩衝區、當量點的 pH 不同——但當量點的體積一樣。</li>
+        <li data-en-html="<strong>The wrong indicator.</strong> Titrate acetic acid with methyl orange: the colour changes almost at once. Then try bromothymol blue and phenolphthalein, and press “Record end point” the moment the colour changes."><strong>選錯指示劑</strong>：用甲基橙滴定醋酸，幾乎一開始就變色了。再換溴瑞香草酚藍與酚酞，在變色的那一刻按「記錄終點」比比看。</li>
+        <li data-en-html="<strong>Very dilute.</strong> Make both solutions 0.0010 M. The jump at the equivalence point shrinks to about pH 5–9, and methyl orange no longer works even for HCl."><strong>很稀的溶液</strong>：兩種溶液都改成 0.0010 M，當量點的跳躍縮小到大約 pH 5～9，連鹽酸也不能再用甲基橙了。</li>
+        <li data-en-html="<strong>Watch the drops.</strong> Near the end point the colour flashes where each drop lands and fades as the stirrer mixes it in — the sign to slow down."><strong>看滴落處</strong>：快到終點時，每一滴落下的地方都會閃現顏色，攪勻後又消失——這就是該放慢的訊號。</li>
+        <li data-en-html="<strong>The unknown acid.</strong> Choose “Unknown HX”, titrate it with the pH meter in the flask, find \(V_{\mathrm{eq}}\) from the steepest point and the pH at \(V_{\mathrm{eq}}/2\), then work out \(c = c_\mathrm{b} V_{\mathrm{eq}}/V_\mathrm{a}\) and \(\mathrm{p}K_\mathrm{a}\)."><strong>未知弱酸</strong>：選「未知弱酸」，插著 pH 計滴定，由最陡的地方找出 \(V_{\mathrm{eq}}\)、再看 \(V_{\mathrm{eq}}/2\) 時的 pH，算出 \(c = c_\mathrm{b} V_{\mathrm{eq}}/V_\mathrm{a}\) 與 \(\mathrm{p}K_\mathrm{a}\)。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="After every drop the pH is calculated exactly, not with the approximate formulas. The solution must be electrically neutral (charge balance), \([\mathrm{H^+}] + [\mathrm{Na^+}] + [\mathrm{NH_4^+}] = [\mathrm{OH^-}] + [\mathrm{Cl^-}] + [\mathrm{A^-}]\); substituting \(K_\mathrm{w} = [\mathrm{H^+}][\mathrm{OH^-}]\), \(K_\mathrm{a}\) and \(K_\mathrm{b}\) leaves one equation in \([\mathrm{H^+}]\), which is solved by bisection on \(\log[\mathrm{H^+}]\) to better than \(10^{-14}\). The approximate formulas in “Principle” are checked against this exact solution in the tests.">每加一滴都精確計算 pH，不用近似公式：溶液必須電中性（電荷平衡），\([\mathrm{H^+}] + [\mathrm{Na^+}] + [\mathrm{NH_4^+}] = [\mathrm{OH^-}] + [\mathrm{Cl^-}] + [\mathrm{A^-}]\)；代入 \(K_\mathrm{w} = [\mathrm{H^+}][\mathrm{OH^-}]\)、\(K_\mathrm{a}\) 與 \(K_\mathrm{b}\) 後只剩 \([\mathrm{H^+}]\) 一個未知數，用二分法對 \(\log[\mathrm{H^+}]\) 求解，誤差小於 \(10^{-14}\)。「原理」裡的近似公式，都在測試中和這個精確解對照過。</li>
+        <li data-en-html="Constants at 25 °C: \(K_\mathrm{w} = 1.0 \times 10^{-14}\), \(K_\mathrm{a}\)(acetic acid) = \(1.8 \times 10^{-5}\), \(K_\mathrm{b}\)(ammonia) = \(1.8 \times 10^{-5}\). Activity coefficients are taken as 1 (ideal dilute solutions), and the small rise in temperature from the heat of neutralisation (less than 1 °C) and carbon dioxide from the air are ignored.">25 °C 的常數：\(K_\mathrm{w} = 1.0 \times 10^{-14}\)、醋酸 \(K_\mathrm{a} = 1.8 \times 10^{-5}\)、氨 \(K_\mathrm{b} = 1.8 \times 10^{-5}\)。活性係數當成 1（理想的稀薄溶液），也忽略中和熱造成的升溫（不到 1 °C）與空氣中的二氧化碳。</li>
+        <li data-en="Volumes are counted exactly in half drops (0.025 mL), so the equivalence point can be reached exactly. The burette reading is the volume run out since it was last filled, shown to 0.01 mL.">體積以半滴（0.025 mL）為單位精確累計，所以可以剛好停在當量點。滴定管讀數是上次裝滿後流出的體積，顯示到 0.01 mL。</li>
+        <li data-en-html="Indicator colour: the fraction in the base form is \(1/(1 + 10^{\mathrm{p}K_{\mathrm{In}} - \mathrm{pH}})\). The absorbances of the two forms (in red, green and blue light, approximate teaching values) are added in that proportion and turned into the colour of the transmitted light (Beer’s law); the indicator gets paler as the volume grows. Two drops of indicator are assumed and their own effect on the pH is neglected. “Record end point” counts the colour as changed when the base fraction has moved by at least 15% from the start.">指示劑的顏色：鹼型所占的比例為 \(1/(1 + 10^{\mathrm{p}K_{\mathrm{In}} - \mathrm{pH}})\)。兩種型在紅、綠、藍光的吸光度（教學用的近似值）依比例相加，再換成穿透光的顏色（比爾定律）；溶液越多，顏色越淡。假設加 2 滴指示劑，忽略指示劑本身對 pH 的影響。按「記錄終點」時，鹼型比例和開始時相差 15% 以上，才算顏色已經改變。</li>
+        <li data-en="The colour that flashes where a drop lands is the drop mixed with about 1 mL of the solution; it is only a picture and does not change the pH of the flask.">滴落處閃現的顏色，是把那一滴和大約 1 mL 的溶液混合來算的，只是畫面效果，不影響瓶中的 pH。</li>
+        <li data-en-html="The unknown acid: concentration 0.050–0.150 M and \(K_\mathrm{a}\) between \(1.0 \times 10^{-6}\) and \(9.9 \times 10^{-5}\), chosen at random. Answers are checked by their relative error.">未知弱酸：濃度 0.050～0.150 M、\(K_\mathrm{a}\) 在 \(1.0 \times 10^{-6}\) 到 \(9.9 \times 10^{-5}\) 之間，隨機產生；答案以相對誤差判斷。</li>
+        <li data-en="The height of the liquid in the flask is calculated from the shape of a real 250 mL conical flask; the rest of the drawing is not to scale.">錐形瓶裡的液面高度依真實 250 mL 錐形瓶的形狀計算；其餘畫面未依比例。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high elective chemistry · Acid–base reactions (titration, buffer solutions, indicators).">課綱對應：高中選修化學・酸鹼反應（酸鹼滴定、緩衝溶液、指示劑）。</li>
+        <li data-en-html="Equilibrium constants: <a href=&quot;https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids&quot;>OpenStax Chemistry 2e, Appendix H</a> (acetic acid \(K_\mathrm{a} = 1.8 \times 10^{-5}\)) and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/i-ionization-constants-of-weak-bases&quot;>Appendix I</a> (ammonia \(K_\mathrm{b} = 1.8 \times 10^{-5}\)).">平衡常數：<a href="https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids">OpenStax Chemistry 2e 附錄 H</a>（醋酸 \(K_\mathrm{a} = 1.8 \times 10^{-5}\)）、<a href="https://openstax.org/books/chemistry-2e/pages/i-ionization-constants-of-weak-bases">附錄 I</a>（氨 \(K_\mathrm{b} = 1.8 \times 10^{-5}\)），英文。</li>
+        <li data-en-html="<a href=&quot;https://openstax.org/books/chemistry-2e/pages/14-7-acid-base-titrations&quot;>OpenStax Chemistry 2e — 14.7 Acid-Base Titrations</a> works through the same titrations of 25.00 mL of 0.100 M HCl and acetic acid: pH 7.00 and 8.72 at the equivalence point, 4.74 at half-equivalence. It gives 2.87 for the starting pH of acetic acid using the approximation \([\mathrm{H^+}] \approx \sqrt{K_\mathrm{a} c}\); the exact value is 2.88.">延伸閱讀：<a href="https://openstax.org/books/chemistry-2e/pages/14-7-acid-base-titrations">OpenStax Chemistry 2e 14.7 酸鹼滴定</a>（英文）算了同樣的例子：25.00 mL、0.100 M 的鹽酸與醋酸，當量點 pH 7.00 與 8.72、半當量點 4.74。它用近似式 \([\mathrm{H^+}] \approx \sqrt{K_\mathrm{a} c}\) 得到醋酸的起始 pH 2.87，精確解是 2.88。</li>
+        <li data-en-html="Colour-change ranges differ slightly between books (for example 8.2–10.0 or 8.3–10.0 for phenolphthalein); this simulation uses the values common in senior-high textbooks. The pK&lt;sub&gt;In&lt;/sub&gt; values are typical literature values.">各書列出的變色範圍略有不同（例如酚酞寫 8.2～10.0 或 8.3～10.0），本模擬採用高中課本常見的數值；pK<sub>In</sub> 取文獻常見值。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611121529"></script>
+  <script src="js/acid-base-titration-core.js?v=202611121529"></script>
+  <script src="js/sound.js?v=202611121529"></script>
+  <script src="js/numinput.js?v=202611121529"></script>
+  <script src="js/drawkit.js?v=202611121529"></script>
+  <script src="js/acid-base-titration.js?v=202611121529"></script>
+  <script src="js/firebase-config.js?v=202611121529"></script>
+  <script src="js/missions.js?v=202611121529" data-module="acid-base-titration"></script>
+  <script src="js/missions/acid-base-titration.js?v=202611121529"></script>
+  <script src="js/stats.js?v=202611121529" data-module="acid-base-titration"></script>
+  <script src="js/comments.js?v=202611121529"></script>
+</body>
+</html>

@@ -1219,9 +1219,22 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 }
 /* 生物有五個分支：寬螢幕一列五個 */
 @media (min-width: 880px) { html:not([lang="en"]) .branch-nav.five, html[lang="en"] .branch-nav.five { grid-template-columns: repeat(5, 1fr); } }
-/* 首頁科目卡片超過兩科：自動排列（物理、化學、生物、地球科學），QR code 自成一列（主工作串合併化學區時請一併確認） */
+/* 首頁科目卡片超過兩科：自動排列（物理、化學、生物、地球科學、數學），QR code 自成一列 */
 .domain-nav { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
 .domain-nav .site-qr { grid-column: 1 / -1; justify-self: start; }
+
+/* ---------- 化學（11/12 加入，第一個實驗：酸鹼滴定）：五個分支色 matter 物質與結構、reaction 化學反應與能量、equilibrium 反應速率與平衡、acidbase 酸鹼與氧化還原、organic 有機與生活化學 ---------- */
+:root {
+  --b-matter: #7e22ce; --b-reaction: #b45309; --b-equilibrium: #047857; --b-acidbase: #be185d; --b-organic: #4d7c0f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --b-matter: #d8b4fe; --b-reaction: #fcd34d; --b-equilibrium: #6ee7b7; --b-acidbase: #f9a8d4; --b-organic: #bef264;
+  }
+}
+:root[data-theme="dark"] {
+  --b-matter: #d8b4fe; --b-reaction: #fcd34d; --b-equilibrium: #6ee7b7; --b-acidbase: #f9a8d4; --b-organic: #bef264;
+}
 
 /* ---------- 數學（11/12 站長：「試着加入數學這個科目」）：科目色與五個分支色；淺色與兩個深色區塊同時定義 ---------- */
 /* 分支：algebra 代數與函數、geometry 三角與幾何、vectors 向量與空間、probability 機率與統計、calculus 微積分（淺色對白底都 ≥ 5.5） */

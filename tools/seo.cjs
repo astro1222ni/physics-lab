@@ -152,7 +152,11 @@ if (NO_OG) process.exit(0);
   const thumb = slug => path.join(ROOT, 'img/thumbs', slug + '-hant-light.webp');
   const dataUrl = f => 'data:image/webp;base64,' + fs.readFileSync(f).toString('base64');
   const TOKENS = { mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e',
-    cell: '#7e22ce', genetics: '#3f6212', physiology: '#be123c', ecology: '#047857', evolution: '#854d0e' }; // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
+    cell: '#7e22ce', genetics: '#3f6212', physiology: '#be123c', ecology: '#047857', evolution: '#854d0e', // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
+    // 化學（lab.css 化學段）
+    matter: '#7e22ce', reaction: '#b45309', equilibrium: '#047857', acidbase: '#be185d', organic: '#4d7c0f',
+    // 數學（lab.css 數學段）
+    algebra: '#b91c1c', geometry: '#1d4ed8', vectors: '#6d28d9', probability: '#0f766e', calculus: '#8a5a00' };
   /**
    * 分享卡中文標題的斷行：標題區寬 420 px、字級 54 px，一行約 7 個字。
    * 先在「：」後面、「（」前面分段；還太長的段落，在「與、和、及、、、，」後面找最平均的位置再分。

@@ -75,7 +75,9 @@ const PREP = {
   'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 },
   // 雙性狀 RrYy × RrYy：先種 100 顆（收成盤有黃綠、圓皺四類），2.4 秒後再種 10 顆，擷取時配子正在飛、受精；
   // 畫布在 1280 寬時約 2 : 1，把實驗區左欄限制在 700 px，畫布就接近 16 : 9，母本、父本兩張卡片都不會被裁掉
-  'mendelian-inheritance': { eval: "document.querySelector('.lab').style.gridTemplateColumns = 'minmax(0, 700px) 320px'; document.querySelector('#lSeg [data-l=\"2\"]').click(); document.getElementById('sow100').click(); setTimeout(function () { document.getElementById('sow10').click(); }, 2400);", wait: 2900 }
+  'mendelian-inheritance': { eval: "document.querySelector('.lab').style.gridTemplateColumns = 'minmax(0, 700px) 320px'; document.querySelector('#lSeg [data-l=\"2\"]').click(); document.getElementById('sow100').click(); setTimeout(function () { document.getElementById('sow10').click(); }, 2400);", wait: 2900 },
+  // 0.100 M 鹽酸 25.00 mL 加到 25.05 mL（超過當量點一滴）：酚酞剛變粉紅，放大鏡讀數 25.05 mL
+  'acid-base-titration': { eval: '__abt.jump(25.05);', wait: 1200, anchor: 0.55 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

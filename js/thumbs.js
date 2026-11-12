@@ -49,7 +49,8 @@
     "energy-coaster": "47981b92",
     "seasons": "d9138d00",
     "current-magnetic-field": "fb726177",
-    "mendelian-inheritance": "ca6f2c4f"
+    "mendelian-inheritance": "ca6f2c4f",
+    "acid-base-titration": "be286dd9"
   };
   /* VERSIONS-END */
 
