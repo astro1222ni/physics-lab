@@ -97,10 +97,27 @@
       raycaster.setFromCamera(ndc, camera);
       return raycaster.ray.intersectPlane(plane, new THREE.Vector3());
     }
+    // 點一下（按下到放開移動 < 6 px、不到 0.5 秒、只有一根手指）交給目前模式的 tap（模式二：在地圖上放震央標記）
+    let tapStart = null;
+    const downIds = new Set();
+    canvas.addEventListener('pointerdown', function (ev) {
+      downIds.add(ev.pointerId);
+      tapStart = downIds.size === 1 && !(ev.pointerType === 'mouse' && ev.button !== 0) ? { x: ev.clientX, y: ev.clientY, t: performance.now(), id: ev.pointerId } : null;
+    }, true);
+    canvas.addEventListener('pointerup', function (ev) {
+      downIds.delete(ev.pointerId);
+      const ts = tapStart;
+      tapStart = null;
+      if (!ts || ts.id !== ev.pointerId || dragging || !cur || !cur.tap) return;
+      if (Math.hypot(ev.clientX - ts.x, ev.clientY - ts.y) > 6 || performance.now() - ts.t > 500) return;
+      if (cur.tap(ev)) B.request();
+    }, true);
+    canvas.addEventListener('pointercancel', function (ev) { downIds.delete(ev.pointerId); tapStart = null; }, true);
     canvas.addEventListener('pointerdown', function (ev) {
       if (ev.pointerType === 'mouse' && ev.button !== 0) return;
       const h = pickHandle(ev);
       if (!h) return;
+      tapStart = null; // 抓到把手就是拖曳，不是點地圖
       ev.stopImmediatePropagation(); // 不讓 OrbitControls 開始旋轉
       ev.preventDefault();
       dragging = h;
@@ -864,8 +881,9 @@
       base.renderOrder = 1;
       G.add(base);
       G.add(boxEdges(M.x0, M.x1, M.y0, M.y1, -DEP, 0, C.text, C.dark ? 0.3 : 0.24));
+      // 由上往下看時這條邊很短，標籤會互相擋住：先保住「80 km」（有單位），再來 40，其餘有空間才顯示
       [20, 40, 60, 80].forEach(function (d) {
-        const l = label(d === 80 ? '80 km' : String(d), alpha(C.text, 0.7), { prio: 0, box: false, dir: [-1, 0], gap: 4, size: 10.5 });
+        const l = label(d === 80 ? '80 km' : String(d), alpha(C.text, 0.7), { prio: d === 80 ? 0.6 : d === 40 ? 0.3 : 0, box: false, dir: [-1, 0], gap: 4, size: 10.5 });
         l.position.set(M.x0, M.y0, -d);
         G.add(l);
       });
@@ -910,24 +928,57 @@
         g.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-s, 0, 0, -a, 0, 0, a, 0, 0, s, 0, 0, 0, -s, 0, 0, -a, 0, 0, a, 0, 0, s, 0]), 3));
         return g;
       })();
+      // 電腦的最小平方解：學生確認之後才出現，灰色（只當對照）
+      const greyC = mix(C.text, C['canvas-bg'], C.dark ? 0.3 : 0.35);
       const ests = [0, 1].map(function () {
         const grp = new THREE.Group();
-        const ringM = new THREE.Mesh(new THREE.RingGeometry(3.2, 4.4, 40), basicMat(C.accent, 1));
-        const cross = new THREE.LineSegments(crossGeo, new THREE.LineBasicMaterial({ color: col(C.accent), transparent: true, opacity: 1, toneMapped: false, depthWrite: false }));
-        cross.scale.setScalar(10);
+        const ringM = new THREE.Mesh(new THREE.RingGeometry(2.6, 3.4, 40), basicMat(greyC, 0.9));
+        const cross = new THREE.LineSegments(crossGeo, new THREE.LineBasicMaterial({ color: col(greyC), transparent: true, opacity: 0.9, toneMapped: false, depthWrite: false }));
+        cross.scale.setScalar(9);
         ringM.renderOrder = cross.renderOrder = 11;
         grp.add(ringM, cross);
-        const lb = label('', C.accent, { prio: 2, dir: [1, 1], gap: 10 });
+        const lb = label('', greyC, { prio: 1, dir: [-1, -1], gap: 10, size: 11 });
         G.add(grp, lb);
         return { grp: grp, ring: ringM, cross: cross, lb: lb };
       });
-      const estBall = new THREE.Mesh(new THREE.SphereGeometry(2.4, 24, 16), new THREE.MeshStandardMaterial({ color: col(C.accent), emissive: col(C.accent), emissiveIntensity: 0.5, roughness: 0.3, transparent: true }));
-      const estLine = dashLine(C.accent, 0.8, 2.5, 2);
-      const lbEstF = label('', C.accent, { prio: 2, dir: [-1, -0.4], gap: 10 });
+      const estBall = new THREE.Mesh(new THREE.SphereGeometry(2, 24, 16), new THREE.MeshStandardMaterial({ color: col(greyC), emissive: col(greyC), emissiveIntensity: 0.35, roughness: 0.4 }));
+      const estLine = dashLine(greyC, 0.7, 2.5, 2);
+      const lbEstF = label('', greyC, { prio: 1, dir: [-1, 0.3], gap: 10, size: 11 });
       G.add(estBall, estLine, lbEstF);
-      // 之前的定位紀錄（小叉）
+      // ---- 你的震央標記（點地圖放置、可拖曳）：地面的準星＋直立的大頭針 ----
+      const PIN = 10;
+      const pinHeadGeo = new THREE.SphereGeometry(2.7, 28, 18), pinStickGeo = new THREE.CylinderGeometry(0.42, 0.42, PIN, 10);
+      pinStickGeo.rotateX(Math.PI / 2); pinStickGeo.translate(0, 0, PIN / 2);
+      const PL_PIN = new THREE.Plane(V(0, 0, 1), -PIN); // z = PIN 的水平面
+      const marks3 = [0, 1].map(function () {
+        const grp = new THREE.Group();
+        const headMat = new THREE.MeshStandardMaterial({ color: col(C.accent), emissive: col(C.accent), emissiveIntensity: 0.35, roughness: 0.25, metalness: 0.1 });
+        const head = new THREE.Mesh(pinHeadGeo, headMat);
+        head.position.z = PIN;
+        head.castShadow = true;
+        const stick = new THREE.Mesh(pinStickGeo, new THREE.MeshStandardMaterial({ color: col(shade(C.accent, -0.2)), roughness: 0.5 }));
+        stick.castShadow = true;
+        const ring = new THREE.Mesh(new THREE.RingGeometry(3.4, 4.6, 40), basicMat(C.accent, 0.95));
+        ring.position.z = 0.7;
+        const cross = new THREE.LineSegments(crossGeo, new THREE.LineBasicMaterial({ color: col(C.accent), transparent: true, opacity: 0.95, toneMapped: false, depthWrite: false }));
+        cross.scale.setScalar(12); cross.position.z = 0.7;
+        ring.renderOrder = cross.renderOrder = 12;
+        const halo = glowSprite(C.accent, 26, 0.5);
+        halo.position.z = PIN;
+        grp.add(head, stick, ring, cross, halo);
+        const lb = label('', C.accent, { prio: 2, dir: [1, 0.6], gap: 12, weight: 700 });
+        G.add(grp, lb);
+        return { grp: grp, headMat: headMat, halo: halo, lb: lb };
+      });
+      // 由你的標記推算的震源：h = √(平均(d² − Δ²))
+      const myBall = new THREE.Mesh(new THREE.SphereGeometry(2.3, 24, 16), new THREE.MeshStandardMaterial({ color: col(C.accent), emissive: col(C.accent), emissiveIntensity: 0.5, roughness: 0.3 }));
+      const myGlow = glowSprite(C.accent, 14, C.dark ? 0.5 : 0.38);
+      const myLine = dashLine(C.accent, 0.85, 2.5, 2);
+      const lbMyF = label('', C.accent, { prio: 1.5, dir: [1, -0.5], gap: 10 }); // 碰到主要標籤（測站、真實震源、你的標記）就讓開
+      G.add(myBall, myGlow, myLine, lbMyF);
+      // 之前確認過的標記（小叉）
       const hist = new THREE.LineSegments(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: col(C.accent), transparent: true, opacity: 0.5, toneMapped: false, depthWrite: false }));
-      hist.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(30 * 12), 3));
+      hist.geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(60 * 12), 3));
       hist.frustumCulled = false;
       hist.renderOrder = 10;
       G.add(hist);
@@ -997,34 +1048,57 @@
           }
         }
         for (; k < chords.length; k++) chords[k].disc.visible = chords[k].arc.visible = chords[k].chord.visible = false;
-        // 估計
-        const e = w.est, cands = e ? e.candidates || [] : [];
+        // 電腦解（確認後才有，量測改過就藏起來）
+        const e = B.liveEst(), cands = e ? e.candidates || [] : [];
         ests.forEach(function (o, i) {
           const p = cands[i];
           o.grp.visible = o.lb.visible = !!p;
           if (!p) return;
-          const op = e.stale ? 0.5 : 1;
           o.grp.position.set(p.x, p.y, 0.9);
-          o.ring.material.opacity = op; o.cross.material.opacity = op;
           o.lb.position.set(p.x, p.y, 0.9);
-          setLabel(o.lb, cands.length > 1 ? T('可能 ', 'Option ') + (i + 1) : T('估計震央', 'Estimate'));
+          setLabel(o.lb, T('電腦解', 'Computer') + (cands.length > 1 ? ' ' + (i + 1) : ''));
         });
         const hasF = !!e && cands.length === 1 && e.n >= 3 && isFinite(e.h);
         estBall.visible = estLine.visible = lbEstF.visible = hasF;
         if (hasF) {
           estBall.position.set(e.x, e.y, -e.h);
-          estBall.material.opacity = e.stale ? 0.5 : 1;
           setLine(estLine, [V(e.x, e.y, 0), V(e.x, e.y, -e.h)]);
           lbEstF.position.set(e.x, e.y, -e.h);
-          setLabel(lbEstF, T('估計震源 ', 'Est. focus ') + B.num(e.h, 1) + ' km');
+          setLabel(lbEstF, T('電腦解 ', 'Computer ') + B.num(e.h, 1) + ' km');
+        }
+        // 你的震央標記與推算的震源
+        const mk = w.marks;
+        marks3.forEach(function (o, i) {
+          const m = mk[i];
+          o.grp.visible = o.lb.visible = !!m;
+          if (!m) return;
+          const hot = isHot('mk-' + i);
+          o.grp.position.set(m.x, m.y, 0);
+          o.headMat.emissiveIntensity = hot ? 0.8 : 0.35;
+          o.halo.visible = hot || (mk.length > 1 && w.mkActive === i);
+          o.lb.position.set(m.x, m.y, PIN + 2);
+          setLabel(o.lb, mk.length > 1 || w.nMarks > 1 ? T('標記 ', 'Marker ') + (i + 1) : T('我的震央', 'My epicenter'));
+        });
+        const dep = B.myDepth();
+        const hasMy = !!dep && mk.length === 1;
+        myBall.visible = myGlow.visible = myLine.visible = lbMyF.visible = hasMy;
+        if (hasMy) {
+          const m = mk[0], hz = Math.max(0.01, dep.h);
+          myBall.position.set(m.x, m.y, -hz); myGlow.position.set(m.x, m.y, -hz);
+          setLine(myLine, [V(m.x, m.y, 0), V(m.x, m.y, -hz)]);
+          lbMyF.position.set(m.x, m.y, -hz);
+          setLabel(lbMyF, T('你的震源 ', 'Your focus ') + B.num(dep.h, 1) + ' km');
         }
         const ha = hist.geometry.attributes.position.array;
         let nh = 0;
         w.history.forEach(function (hs, i) {
-          if (i === w.history.length - 1 && e && !e.stale) return;
-          const s = 3;
-          ha.set([hs.x - s, hs.y - s, 0.8, hs.x + s, hs.y + s, 0.8, hs.x + s, hs.y - s, 0.8, hs.x - s, hs.y + s, 0.8], nh * 12);
-          nh++;
+          if (i === w.history.length - 1 && e) return;
+          (hs.marks || [hs]).forEach(function (m) {
+            if (nh >= 60) return;
+            const s = 3;
+            ha.set([m.x - s, m.y - s, 0.8, m.x + s, m.y + s, 0.8, m.x + s, m.y - s, 0.8, m.x - s, m.y + s, 0.8], nh * 12);
+            nh++;
+          });
         });
         hist.geometry.setDrawRange(0, nh * 4);
         hist.geometry.attributes.position.needsUpdate = true;
@@ -1040,8 +1114,8 @@
           lbTrue.position.set(q.x, q.y, -q.h);
           setLabel(lbTrue, T('真實震源', 'True focus') + ' · ' + B.num(q.h, q.h % 1 ? 1 : 0) + ' km');
         }
-        errLine.visible = rv && !!e && !e.stale && cands.length === 1;
-        if (errLine.visible) setLine(errLine, [V(q.x, q.y, 1), V(e.x, e.y, 1)]);
+        errLine.visible = rv && mk.length === 1;
+        if (errLine.visible) setLine(errLine, [V(q.x, q.y, 1), V(mk[0].x, mk[0].y, 1)]);
         waves.forEach(function (o) {
           const R = o.v * w.rec.t, on = rv && !w.rec.done && R > q.h;
           o.sh.visible = rv && !w.rec.done && R > 0.5;
@@ -1057,22 +1131,36 @@
         setHud('t', 't = ' + B.num(tRec, 1) + ' s' + B.speed('locate'));
         setHud('t2', B.clock(q.T0 + tRec), 'm');
         setHud('r1', 'k = ' + B.num(B.kConv(), 3) + ' km/s');
-        setHud('r2', hasF ? T('估計深度 ', 'Estimated depth ') + B.num(e.h, 1) + ' km' : T('已量 ', 'Measured: ') + picked.length + T(' 站', picked.length === 1 ? ' station' : ' stations'), 'm');
-        setHud('note', T('依比例（km）：地圖與深度同一比例；半球半徑 = 量到的震源距離 d', 'To scale (km), depth not exaggerated; each half-sphere has radius d, the measured distance'));
+        setHud('r2', hasMy ? T('你的深度 ', 'Your depth ') + B.num(dep.h, 1) + ' km' : T('已量 ', 'Measured: ') + picked.length + T(' 站', picked.length === 1 ? ' station' : ' stations'), 'm');
+        setHud('note', narrow ? T('依比例（km）；半球半徑 = d', 'To scale (km); half-sphere radius = d')
+          : T('依比例（km）：地圖與深度同一比例；半球半徑 = 量到的震源距離 d', 'To scale (km); half-sphere radius = measured distance d'));
       }
       return {
         group: G, update: update,
-        aria: T('3D：臺灣地圖下的地殼；每個測站量到的震源距離是一個半球，兩兩交成直立的半圓，半圓交在震源。可拖曳旋轉、縮放，也可拖曳測站。',
-          '3D: the crust under the map of Taiwan; each measured distance is a half-sphere around its station, pairs meet in upright half-circles, and the half-circles meet at the focus. Drag to rotate, zoom, or drag the stations.'),
+        aria: T('3D：臺灣地圖下的地殼；每個測站量到的震源距離是一個半球，兩兩交成直立的半圓，半圓交在震源。可拖曳旋轉、縮放，也可拖曳測站；點地圖放你的震央標記。',
+          '3D: the crust under the map of Taiwan; each measured distance is a half-sphere around its station, pairs meet in upright half-circles, and the half-circles meet at the focus. Drag to rotate, zoom, or drag the stations; tap the map to place your epicenter marker.'),
         size: [1.12, 0.62, 600],
         fit: { box: [M.x0, M.x1, M.y0, M.y1, -DEP, 12], dir: V(-0.28, -1, 0.95), floorZ: null, sunDir: V(-0.5, -0.6, 1) },
         handles: function () {
-          return B.activeStations().map(function (s, i) {
+          // 標記排在前面：與測站重疊時先抓到標記（大頭針的頭在 z = PIN，拖曳平面也放在那個高度，頭才會跟著手指）
+          return S.w2.marks.map(function (m, i) {
+            return {
+              id: 'mk-' + i, p: V(m.x, m.y, PIN), plane: PL_PIN,
+              move: function (p) { B.drag('mark', i, { x: p.x, y: p.y }); }, end: function () { B.dragEnd('mark'); }
+            };
+          }).concat(B.activeStations().map(function (s, i) {
             return {
               id: 'st2-' + i, p: V(s.x, s.y, 5), plane: PL_Z0,
               move: function (p) { B.drag('station2', i, { x: p.x, y: p.y }); }, end: function () { B.dragEnd('station2'); }
             };
-          });
+          }));
+        },
+        // 點一下地圖（沒有拖曳）：放上或移過來你的震央標記
+        tap: function (ev) {
+          const p = planePoint(ev, PL_Z0);
+          if (!p || p.x < M.x0 || p.x > M.x1 || p.y < M.y0 || p.y > M.y1) return false;
+          B.placeMark(p.x, p.y);
+          return true;
         }
       };
     }
@@ -1543,6 +1631,8 @@
         if (!cur) return [];
         return cur.handles().map(function (h) { pv.copy(h.p).project(camera); return { id: h.id, x: (pv.x + 1) / 2 * cw, y: (1 - pv.y) / 2 * ch }; });
       },
+      /** 測試用：場景中一點 (x, y, z) 在畫布上的位置（CSS px） */
+      screen: function (x, y, z) { pv.set(x, y, z || 0).project(camera); return { x: (pv.x + 1) / 2 * cw, y: (1 - pv.y) / 2 * ch }; },
       dispose: function () {
         api.active = false;
         if (raf) cancelAnimationFrame(raf);

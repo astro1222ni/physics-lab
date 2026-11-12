@@ -896,6 +896,7 @@
       c.setLineDash([]);
     }
     const est = liveEst(), grey = alpha(C.text, C.dark ? 0.62 : 0.55);
+    const taken = []; // 已經放好的標籤 [x, y, w, h]（你的標記的標籤要避開它們）
     // 誤差三角形（含誤差時三個圓兩兩的交點；確認後與電腦解一起顯示）
     if (est && est.n >= 3 && !est.collinear) {
       const tri = Q.errorTriangle(picked.slice(0, 3).map(function (s) { return { x: s.x, y: s.y, R: stationR(s) }; }), est.x, est.y);
@@ -930,7 +931,10 @@
         c.strokeStyle = grey; c.lineWidth = 1.6; cross();
         c.restore();
         const lab = T('電腦解', 'Computer') + (cands.length > 1 ? ' ' + (i + 1) : '');
-        tag(c, lab, x - 14, y + 16, grey, 'right', fS);
+        // 標籤放在左下（兩個時放在彼此的外側），你的標記的標籤在上方，兩者不打架
+        const o = cands[1 - i], left = o ? p.x <= o.x : x - 90 > L.map.x, lw = textW(c, lab, fS) + 14;
+        tag(c, lab, left ? x - 14 : x + 14, y + 17, grey, left ? 'right' : 'left', fS);
+        taken.push([left ? x - 14 - lw : x + 14, y + 7, lw, 20]);
       });
     }
     // 真實震央（連到你的標記）
@@ -942,8 +946,8 @@
       }
       star(c, x, y, 9, C.pos);
       const tl = T('真實震央', 'True epicenter') + ' · ' + num(q.h, q.h % 1 ? 1 : 0) + ' km', tw = textW(c, tl, fS) + 14;
-      if (x - 12 - tw > L.map.x + 4) tag(c, tl, x - 12, y + 18, C.pos, 'right', fS);
-      else tag(c, tl, x + 12, y + 18, C.pos, 'left', fS);
+      if (x - 12 - tw > L.map.x + 4) { tag(c, tl, x - 12, y + 18, C.pos, 'right', fS); taken.push([x - 12 - tw, y + 8, tw, 20]); }
+      else { tag(c, tl, x + 12, y + 18, C.pos, 'left', fS); taken.push([x + 12, y + 8, tw, 20]); }
     }
     // 測站
     st.forEach(function (s, i) {
@@ -952,18 +956,28 @@
       S.fx.forEach(function (f) { if (f.where === 'st2-' + i) ringFx(c, f, x, y, now); });
       stationMark(c, x, y, L.narrow ? 7.5 : 8.5, col, hot);
       if (kbIs('station', i)) kbBox(c, x - 14, y - 14, 28, 28);
-      const nm = s.label + (s.city ? ' ' + cityName(s.city) : '');
-      tag(c, nm, x + 11, y - 9, col, x > L.map.x + L.map.w - 90 ? 'right' : 'left', fS);
+      const nm = s.label + (s.city ? ' ' + cityName(s.city) : ''), rt = x > L.map.x + L.map.w - 90, tw = textW(c, nm, fS) + 14;
+      tag(c, nm, x + 11, y - 9, col, rt ? 'right' : 'left', fS);
+      taken.push([rt ? x + 11 - tw : x + 11, y - 19, tw, 20], [x - 10, y - 10, 20, 20]);
     });
-    // 你的震央標記（點地圖放置、可拖曳）
+    // 你的震央標記（點地圖放置、可拖曳）；標籤依序試右上、左上、右下、左下，避開測站與真實震央的標籤（兩個標記時先試彼此的外側）
+    const fM = fnt(L.narrow ? 10.5 : 11.5, 700);
     w.marks.forEach(function (m, i) {
       const x = MX(m.x), y = MY(m.y);
       const hot = (w.drag && w.drag.kind === 'mark' && w.drag.i === i) || (S.hover2 && S.hover2.kind === 'mark' && S.hover2.i === i);
       drawMark(c, x, y, hot, w.marks.length > 1 && w.mkActive === i);
       if (kbIs('mark', i)) kbBox(c, x - 18, y - 18, 36, 36);
       const lab = w.marks.length > 1 || w.nMarks > 1 ? T('標記 ', 'Marker ') + (i + 1) : T('我的震央', 'My epicenter');
-      const rt = x > L.map.x + L.map.w - 100;
-      tag(c, lab, rt ? x - 15 : x + 15, y - 15, C.accent, rt ? 'right' : 'left', fnt(L.narrow ? 10.5 : 11.5, 700));
+      const tw = textW(c, lab, fM) + 14, o = w.marks[1 - i];
+      const outerLeft = o ? m.x < o.x : x > L.map.x + L.map.w - 100;
+      const cands = [[!outerLeft, -16], [outerLeft, -16], [!outerLeft, 19], [outerLeft, 19]].map(function (cd) {
+        const toRight = cd[0], bx = toRight ? x + 15 : x - 15 - tw;
+        return { toRight: toRight, dy: cd[1], r: [bx, y + cd[1] - 10, tw, 20] };
+      }).filter(function (cd) { return cd.r[0] >= L.map.x + 2 && cd.r[0] + tw <= L.map.x + L.map.w - 2; });
+      const hit = function (r) { return taken.some(function (t) { return r[0] < t[0] + t[2] && t[0] < r[0] + r[2] && r[1] < t[1] + t[3] && t[1] < r[1] + r[3]; }); };
+      const pick = cands.filter(function (cd) { return !hit(cd.r); })[0] || cands[0] || { toRight: true, dy: -16, r: [x + 15, y - 26, tw, 20] };
+      tag(c, lab, pick.toRight ? x + 15 : x - 15, y + pick.dy, C.accent, pick.toRight ? 'left' : 'right', fM);
+      taken.push(pick.r);
     });
     c.restore();
 
@@ -1151,7 +1165,7 @@
       setStatus(T('先在地圖上點出你認為的震央（點一下地圖放標記，可以拖曳或用方向鍵微調），再按「確認我的震央」。', 'First tap the map where you think the epicenter is (drag the marker or use the arrow buttons to adjust it), then press “Check my epicenter”.'));
       return;
     }
-    if (w.marks.length < w.nMarks) { setStatus(T('「我的標記」選了 2 個：還要再點一個。', '“My markers” is set to 2: place one more.')); return; }
+    if (w.marks.length < w.nMarks) { setStatus(T('「我標的震央」選了 2 個：還要再點一個。', '“My markers” is set to 2: place one more.')); return; }
     const data = circles2();
     const r = Q.locate(data, { collinearKm: 4 });
     if (!r.ok || !r.candidates.length) {
@@ -1178,11 +1192,11 @@
     if (r.candidates.length > 1) {
       msg = r.collinear ? T('測站排成一直線：直線兩側的鏡像位置都符合資料，分不出是哪一個。', 'The stations are in a straight line: the mirror-image points on both sides fit the data equally well.')
         : T('只用兩站：兩個圓交於兩點，兩個都有可能是震央。', 'Only two stations: the circles cross at two points and either could be the epicenter.');
-      if (marks.length === 1) msg += T('你只標了一個：把「我的標記」改成 2 個，兩個交點都點出來。', ' You marked only one: set “My markers” to 2 and mark both crossing points.');
+      if (marks.length === 1) msg += T('你只標了一個：把「我標的震央」改成 2 個，兩個交點都點出來。', ' You marked only one: set “My markers” to 2 and mark both crossing points.');
       else msg += pe <= 10 ? T('你兩個都找到了（灰色十字是電腦算的位置）。', ' You found both (the grey crosses are the computed points).')
         : T('灰色十字是電腦算的兩個位置，你的標記還差 ', ' The grey crosses are the computed points; your markers are off by ') + num(pe, 1) + ' km' + T('。', '.');
     } else if (marks.length === 2) {
-      msg = T('三個以上、不在一直線上的測站只有一個答案：把「我的標記」改回 1 個。', 'Three or more stations not in a line give one answer: set “My markers” back to 1.');
+      msg = T('三個以上、不在一直線上的測站只有一個答案：把「我標的震央」改回 1 個。', 'Three or more stations not in a line give one answer: set “My markers” back to 1.');
     } else {
       msg = T('你的震央：', 'Your epicenter: ') + lonlatText(marks[0].x, marks[0].y) + (dep ? T('，推算深度 ', ', depth ') + num(hEst, 1) + ' km' : '') +
         T('。灰色十字是電腦的最小平方解，和你的標記差 ', '. The grey cross is the computer’s least-squares solution, ') + num(Math.hypot(r.x - marks[0].x, r.y - marks[0].y), 1) + T(' km。', ' km from your marker.');
@@ -1684,10 +1698,10 @@
     $('quake').textContent = m === 'locate' ? T('隨機地震', 'Random earthquake') : T('發生地震', 'Make an earthquake');
     const lab = S.v3 ? { // 3D 檢視時 2D 畫布只有輔助面板
       waves: T('地震儀紀錄、地面運動軌跡，以及液體與固體中的 P、S 波（剖面在上方的 3D 檢視）', 'Seismogram, ground motion, and P and S waves in a liquid and a solid (the section is in the 3D view above)'),
-      locate: T('各測站的地震紀錄；在紀錄上拖曳 P、S 游標（地圖在上方的 3D 檢視）', 'Seismograms of each station; drag the P and S cursors on the records (the map is in the 3D view above)'),
+      locate: T('各測站的地震紀錄；在紀錄上拖曳 P、S 游標（地圖在上方的 3D 檢視，在那裡點地圖放你的震央標記）', 'Seismograms of each station; drag the P and S cursors on the records (the map is in the 3D view above; tap it there to place your epicenter marker)'),
       earth: T('走時曲線；拖曳可移動測站（地球剖面在上方的 3D 檢視）', 'Travel-time curves; drag to move the station (the Earth is in the 3D view above)') }[m]
       : { waves: T('地震波模擬：地殼剖面、地震儀紀錄、地面運動軌跡，以及液體與固體中的 P、S 波', 'Seismic wave simulation: crust section, seismogram, ground motion, and P and S waves in a liquid and a solid'),
-      locate: T('臺灣地圖與各測站的地震紀錄；拖曳測站移動，在紀錄上拖曳 P、S 游標', 'Map of Taiwan and the seismograms of each station; drag stations to move them and drag the P and S cursors on the records'),
+      locate: T('臺灣地圖與各測站的地震紀錄；拖曳測站移動，在紀錄上拖曳 P、S 游標，點地圖放你的震央標記', 'Map of Taiwan and the seismograms of each station; drag stations to move them, drag the P and S cursors on the records, and tap the map to place your epicenter marker'),
       earth: T('地球剖面、地震波射線與走時曲線；沿地表拖曳測站', 'Cross-section of the Earth with seismic rays and travel-time curves; drag the station around the surface') }[m];
     cv.setAttribute('aria-label', lab + T('。按 Enter 切換要移動的物件，方向鍵移動，Shift 加方向鍵移動得更多。', '. Press Enter to choose an object, arrow keys to move it, Shift + arrow for bigger steps.'));
   }
@@ -2041,8 +2055,19 @@
     if (S.mode === 'earth') { S.drag3 = false; emitStation3(); }
     requestDraw();
   }
-  cv.addEventListener('pointerup', endDrag);
-  cv.addEventListener('pointercancel', endDrag);
+  cv.addEventListener('pointerup', function (ev) {
+    // 地圖空白處點一下（沒有移動）：放上或移過來你的震央標記
+    if (tap && ev.pointerId === tap.id && S.mode === 'locate' && !S.v3) {
+      const p = pos(ev);
+      if (Math.hypot(p.x - tap.x, p.y - tap.y) <= 8) {
+        const q = invM(clamp(p.x, L.map.x, L.map.x + L.map.w), clamp(p.y, L.map.y, L.map.y + L.map.h));
+        placeMark(q.x, q.y);
+      }
+    }
+    tap = null;
+    endDrag();
+  });
+  cv.addEventListener('pointercancel', function () { tap = null; endDrag(); });
   cv.addEventListener('lostpointercapture', endDrag);
   function moveDrag(p) {
     if (S.mode === 'waves') {
@@ -2054,6 +2079,10 @@
       const w = S.w2, st = activeStations();
       if (drag.kind === 'station') {
         moveStation2(drag.i, invM(clamp(p.x, L.map.x + 4, L.map.x + L.map.w - 4), clamp(p.y, L.map.y + 4, L.map.y + L.map.h - 4)));
+      } else if (drag.kind === 'mark') {
+        // 保持按下時手指與標記中心的相對位置（標記不會跳到手指底下被遮住）
+        const q = invM(clamp(p.x + drag.dx, L.map.x, L.map.x + L.map.w), clamp(p.y + drag.dy, L.map.y, L.map.y + L.map.h));
+        moveMark(drag.i, q.x, q.y);
       } else {
         const s = st[drag.i];
         const t = clamp(xToT(p.x), w.ws, w.we);
@@ -2096,6 +2125,7 @@
     else if (kind === 'station1') setVal(elX, Math.round(clamp(a, 0, 100)));
     else if (kind === 'station2') moveStation2(a, { x: clamp(b.x, MAPX0 + 1, MAPX1 - 1), y: clamp(b.y, MAPY0 + 1, MAPY1 - 1) });
     else if (kind === 'rcv') setVal(elRc, Math.round(clamp(a, 0, 180) * 2) / 2);
+    else if (kind === 'mark') moveMark(a, b.x, b.y);
   }
   function dragEnd3(kind) {
     if (kind === 'focus' || kind === 'station1') emitParams1();
@@ -2170,6 +2200,26 @@
           });
         });
       });
+      // 你的震央標記：方向鍵每次 0.5 km、Shift 5 km；還沒標滿時多一項「放一個標記」（先放在地圖中央）
+      const w2 = S.w2, mkName = function (i) { return w2.nMarks > 1 ? T('標記 ', 'Marker ') + (i + 1) : T('我的震央', 'My epicenter'); };
+      for (let i = 0; i < Math.min(w2.nMarks, w2.marks.length + 1); i++) {
+        kbItems.push({
+          kind: 'mark', i: i, name: function () { return mkName(i); },
+          move: function (dx, dy, big) {
+            const st = big ? 5 : 0.5;
+            if (!w2.marks[i]) { placeMark((MAPX0 + MAPX1) / 2, (MAPY0 + MAPY1) / 2); return true; }
+            const m = w2.marks[i];
+            moveMark(i, m.x + dx * st, m.y + dy * st); // 上鍵 dy = +1 = 往北
+            return true;
+          },
+          describe: function () {
+            const m = w2.marks[i];
+            if (!m) return mkName(i) + T('：按方向鍵放一個標記', ': press an arrow key to place a marker');
+            const d = myDepth();
+            return mkName(i) + T('在 ', ' at ') + lonlatText(m.x, m.y) + (d && w2.marks.length === 1 ? T('，推算深度 ', ', depth ') + num(d.h, 1) + ' km' : '');
+          }
+        });
+      }
     } else {
       kbItems.push({
         kind: 'rcv', name: function () { return T('測站', 'Station'); },
@@ -2213,6 +2263,8 @@
     arrivals3: arrivals3, station3Text: station3Text,
     speed: function (m) { return S.running && S.mode === m ? '  (' + ({ waves: SPEED1, locate: SPEED2, earth: SPEED3 })[m] / (S.slow ? 4 : 1) + '×)' : ''; },
     drag: drag3, dragEnd: dragEnd3,
+    // 你的震央標記：3D 點地圖放置；推算的深度；確認後才看得到的電腦解
+    placeMark: placeMark, myDepth: myDepth, liveEst: liveEst,
     request: requestDraw,
     onContextLost: function () {
       setView('2d');
@@ -2367,5 +2419,11 @@
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));
   else { S.running = true; startLoop(); } // 自動播放一次（不算任務）
   // 測試與縮圖用
-  window.__eq = { S: S, Q: Q, E: E, setMode: setMode, locate: doLocate, draw: requestDraw, view3: function () { return view3; } };
+  window.__eq = {
+    S: S, Q: Q, E: E, setMode: setMode, locate: doLocate, draw: requestDraw, view3: function () { return view3; },
+    // 地圖座標（km）→ 畫布上的像素（測試時用來「點」地圖）；第 i 站紀錄上時刻 t 的像素、游標目前的時刻
+    mapPx: function (x, y) { return { x: MX(x), y: MY(y) }; },
+    trPx: function (i, t) { const R = trRow(i); return { x: tToX(t), y: R.y + R.h / 2 }; },
+    curT: function (i, which) { return cursorT(activeStations()[i], which); }
+  };
 })();

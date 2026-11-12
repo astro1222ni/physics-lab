@@ -8,14 +8,19 @@
   //           { h, x（震央距離 Δ）, R, vp, vs, ratio, tP, tS, sp（S−P）, tR, medium: 'liquid' | 'solid' }
   //   chain：模式一，使用者播放時長條裡的 S 波脈衝撞到界面、反射完畢 { medium, vp, vs, rP, tP, rS, tS }
   //   params1：模式一，放開滑桿、打完數字或切換長條右半段 { vp, vs, ratio, nu（帕松比）, h, x, medium, prev }
-  //   locate：模式二按「定位」{ n（用了幾站）, err（估計震央與真實震央的距離）, hEst, hTrue, depthErr, candidates（1 或 2）,
-  //           collinear, lineOff, manual（全部游標都是自己拖的、這個地震沒用過自動判讀）, auto, revealed（定位時真實震央已顯示）,
-  //           source: 'random' | 'manual' | 'preset', errMode, k, vpc, vsc, rms }
+  //   locate：模式二按「確認我的震央」（判定的是學生自己在地圖上點的標記）
+  //           { n（用了幾站）, marks（標了幾個點：1 或 2）, err（學生標記與真實震央的距離，兩個標記取較近者）,
+  //             hEst（由學生標記推算的深度：每站 h² = d² − Δ²，取平均；兩個標記時 NaN）, hTrue, depthErr,
+  //             candidates（量到的圓有幾個可能位置：1 或 2）, pairErr（兩個標記與兩個可能位置一對一配對後較大的距離；不是 2 對 2 時 Infinity）,
+  //             collinear, lineOff, manual（全部游標都是自己拖的、這個地震沒用過自動判讀或電腦解）,
+  //             auto（用過自動判讀、確認前叫出電腦解，或確認時電腦解已在畫面上）, peek（確認時這組量測的電腦解已在畫面上）,
+  //             revealed（確認時真實震央已顯示）, source: 'random' | 'manual' | 'preset', errMode, k, vpc, vsc, rms, solErr（電腦解的誤差，只供參考） }
   //   reveal：模式二按「顯示真實震央」{ source }
   //   ray3：模式三，放開「出射角」滑桿（目前顯示的每一種波各一個）{ wave: 'P' | 'S', takeoff, phase, turnR（最深處的半徑）, deepest, delta, blocked }
   //   station3：模式三，放開測站（拖曳或滑桿）{ deg, P（收得到 P 或 PKP）, S（收得到直接 S 波）, IK（收得到 PKIKP）, inner, wave, sMax, pMax, pkpMin }
   const R_CMB = 3480;
-  const own = function (d) { return d.manual && !d.auto && !d.revealed; }; // 自己量、還沒看答案
+  const own = function (d) { return d.manual && !d.auto && !d.revealed; }; // 自己量、自己標、還沒看答案
+  const one = function (d) { return d.marks === 1 && d.candidates === 1; }; // 一個答案、標了一個點
 
   LabMission.register('earthquake', [
     {
@@ -39,43 +44,43 @@
     {
       id: 'earthquake-4', level: 3,
       title: { zh: '兩站不夠', en: 'Two stations are not enough' },
-      desc: { zh: '測站數選 2，量好兩站的 S−P 後按「定位」，看兩個圓交出兩個可能的震央。', en: 'Choose 2 stations, measure both S−P times and press “Locate”: the two circles give two possible epicenters.' },
-      check: function (ev) { return ev.type === 'locate' && ev.data.n === 2 && ev.data.candidates === 2; }
+      desc: { zh: '測站數選 2，量好兩站的 S−P；「我標的震央」選 2 個，在地圖上點出兩個圓的兩個交點（兩個可能的震央），再按「確認我的震央」（兩點都在 10 km 內）。', en: 'Choose 2 stations and measure both S−P times. Set “My markers” to 2, tap the map at both points where the two circles cross (the two possible epicenters), then press “Check my epicenter” (both within 10 km).' },
+      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n === 2 && d.candidates === 2 && d.marks === 2 && d.pairErr <= 10 && !d.peek; }
     },
     {
       id: 'earthquake-5', level: 5,
       title: { zh: '三站定震央', en: 'Three stations, one epicenter' },
-      desc: { zh: '隨機地震、還沒顯示真實震央時，自己拖曳游標量 3 個測站的 S−P 並定位，震央誤差在 10 km 以內（不可用自動判讀）。', en: 'For a random earthquake whose epicenter is still hidden, place the cursors yourself at 3 stations and locate it to within 10 km (no auto-pick).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n === 3 && d.candidates === 1 && own(d) && d.err <= 10; }
+      desc: { zh: '隨機地震、還沒顯示真實震央時，自己拖曳游標量 3 個測站的 S−P，在地圖上點出震央，再按「確認我的震央」：你點的位置離真實震央 10 km 以內（不可用自動判讀或先看電腦解）。', en: 'For a random earthquake whose epicenter is still hidden, place the cursors yourself at 3 stations, tap the epicenter on the map, then press “Check my epicenter”: your point must be within 10 km of the true epicenter (no auto-pick, no peeking at the computer solution).' },
+      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n === 3 && one(d) && own(d) && d.err <= 10; }
     },
     {
       id: 'earthquake-6', level: 6,
       title: { zh: '鏡子裡的震央', en: 'The epicenter in the mirror' },
-      desc: { zh: '把 3 個以上的測站拖成一直線再定位，得到以那條直線為鏡子、左右對稱的兩個答案。', en: 'Drag 3 or more stations into a straight line and locate: you get two answers, mirror images across that line.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n >= 3 && d.collinear && d.candidates === 2; }
+      desc: { zh: '把 3 個以上的測站拖成一直線，量好 S−P；「我標的震央」選 2 個，在地圖上點出以那條直線為鏡子、左右對稱的兩個交點，再按「確認我的震央」（兩點都在 10 km 內）。', en: 'Drag 3 or more stations into a straight line and measure the S−P times. Set “My markers” to 2, tap the map at the two crossing points, mirror images across that line, then press “Check my epicenter” (both within 10 km).' },
+      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n >= 3 && d.collinear && d.candidates === 2 && d.marks === 2 && d.pairErr <= 10 && !d.peek; }
     },
     {
       id: 'earthquake-7', level: 7,
       title: { zh: '有雜訊的真實世界', en: 'The noisy real world' },
-      desc: { zh: '打開「含誤差」，隨機地震、還沒顯示真實震央時，自己量 3 站以上並定位，震央誤差在 20 km 以內。', en: 'With “Include errors” on, for a random earthquake whose epicenter is still hidden, measure 3 or more stations yourself and locate it to within 20 km.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.errMode && d.n >= 3 && d.candidates === 1 && own(d) && d.err <= 20; }
+      desc: { zh: '打開「含誤差」，隨機地震、還沒顯示真實震央時，自己量 3 站以上，在地圖上點出震央，再按「確認我的震央」：離真實震央 20 km 以內。', en: 'With “Include errors” on, for a random earthquake whose epicenter is still hidden, measure 3 or more stations yourself, tap the epicenter on the map, then press “Check my epicenter”: within 20 km of the true epicenter.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.errMode && d.n >= 3 && one(d) && own(d) && d.err <= 20; }
     },
     {
       id: 'earthquake-8', level: 8,
       title: { zh: '連深度一起定', en: 'Depth as well' },
-      desc: { zh: '震源深度至少 15 km 的隨機地震（還沒顯示真實震央），自己量 3 站以上定位：震央誤差 10 km 以內、深度誤差 4 km 以內。', en: 'For a random earthquake at least 15 km deep (epicenter still hidden), measure 3 or more stations yourself: epicenter within 10 km and depth within 4 km.' },
+      desc: { zh: '震源深度至少 15 km 的隨機地震（還沒顯示真實震央），自己量 3 站以上，在地圖上點出震央，再按「確認我的震央」：震央 10 km 以內，由你的標記推算的深度 h = √(d² − Δ²) 也在 4 km 以內。提示：把測站移到震央附近再量一次。', en: 'For a random earthquake at least 15 km deep (epicenter still hidden), measure 3 or more stations yourself, tap the epicenter on the map, then press “Check my epicenter”: within 10 km, and the depth worked out from your marker, h = √(d² − Δ²), within 4 km. Hint: move the stations near the epicenter and measure again.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'locate' && d.n >= 3 && d.candidates === 1 && own(d) && d.hTrue >= 15 && d.err <= 10 && d.depthErr <= 4;
+        return ev.type === 'locate' && d.n >= 3 && one(d) && own(d) && d.hTrue >= 15 && d.err <= 10 && d.depthErr <= 4;
       }
     },
     {
       id: 'earthquake-9', level: 10,
       title: { zh: '步步逼近', en: 'Closing in' },
-      desc: { zh: '打開「含誤差」，隨機地震、還沒顯示真實震央時，自己量 4 站以上定位，震央與深度的誤差都在 3 km 以內。提示：先粗定位，再把測站移近。', en: 'With “Include errors” on, for a random earthquake whose epicenter is still hidden, measure 4 or more stations yourself and get both the epicenter and the depth to within 3 km. Hint: locate roughly first, then move the stations closer.' },
+      desc: { zh: '打開「含誤差」，隨機地震、還沒顯示真實震央時，自己量 4 站以上，在地圖上點出震央，再按「確認我的震央」：你點的震央與推算的深度，誤差都在 3 km 以內。提示：先粗定位，再把測站移近。', en: 'With “Include errors” on, for a random earthquake whose epicenter is still hidden, measure 4 or more stations yourself, tap the epicenter on the map, then press “Check my epicenter”: both your epicenter and your depth within 3 km. Hint: locate roughly first, then move the stations closer.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'locate' && d.errMode && d.n >= 4 && d.candidates === 1 && own(d) && d.err <= 3 && d.depthErr <= 3;
+        return ev.type === 'locate' && d.errMode && d.n >= 4 && one(d) && own(d) && d.err <= 3 && d.depthErr <= 3;
       }
     },
     {
