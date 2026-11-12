@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Graphs of Polynomial Functions | Astro Ni Science Lab">多項式函數的圖形｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 多項式頁面專用的顏色代號（淺色＋深色；由 js/polynomial.js 讀取） */
+    :root { --pf-pos: #2563eb; --pf-neg: #ea580c; --pf-root: #7c3aed; --pf-sol: #0d9488; --pf-target: #475569; --pf-int: #db2777; --pf-base: #94a3b8; --pf-ctr: #b45309; --pf-bad: #dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pf-pos: #60a5fa; --pf-neg: #fb923c; --pf-root: #c4b5fd; --pf-sol: #2dd4bf; --pf-target: #cbd5e1; --pf-int: #f472b6; --pf-base: #64748b; --pf-ctr: #fbbf24; --pf-bad: #f87171; }
+    }
+    :root[data-theme="dark"] { --pf-pos: #60a5fa; --pf-neg: #fb923c; --pf-root: #c4b5fd; --pf-sol: #2dd4bf; --pf-target: #cbd5e1; --pf-int: #f472b6; --pf-base: #64748b; --pf-ctr: #fbbf24; --pf-bad: #f87171; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .pf button { min-height: 44px; }
+    .pf [hidden] { display: none !important; }
+    .pf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pf .playbar button { flex: 1 1 auto; }
+    .pf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pf .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .pf .slider input[type="range"] { height: 28px; margin: 0; }
+    .pf .checks label { min-height: 44px; }
+    .pf .checks input { width: 17px; height: 17px; }
+    .pf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pf .panel { grid-template-columns: minmax(0, 1fr); }
+    .pf .panel > .card { min-width: 0; }
+    .pf:not([data-mode="roots"]) .mr, .pf:not([data-mode="ivt"]) .mi, .pf:not([data-mode="trans"]) .mt { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .pick button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .pick button { padding: 4px 6px; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pick button:disabled, .seg button:disabled { opacity: .45; }
+    .roots { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .roots button { flex: 0 1 auto; padding: 4px 10px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .roots button[aria-pressed="true"] { background: var(--pf-root); color: var(--surface); border-color: var(--pf-root); font-weight: 600; }
+    .seg { display: flex; gap: 6px; margin: 4px 0 8px; align-items: center; flex-wrap: wrap; }
+    .seg > span { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin-right: 2px; }
+    .seg button { flex: 1 1 0; min-width: 44px; padding: 4px 6px; }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+    .btnrow button { flex: 1 1 auto; padding: 6px 10px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--pf-sol); font-weight: 600; }
+    .chal-msg.bad { color: var(--pf-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq:empty { display: none; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log, #bt { width: 100%; }
+    #log td, #log th, #bt td, #bt th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child, #bt th:first-child, #bt td:first-child { text-align: center; }
+    #log:empty, #bt:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Polynomial Functions"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 多項式函數</nav>
+      <h1 data-en="Graphs of Polynomial Functions">多項式函數的圖形</h1>
+      <p data-en="Drag the roots along the x-axis and watch the graph follow: a single root crosses, a double root touches and turns back, a triple root flattens as it crosses. Read off where f(x) is positive, trap a root between two points of opposite sign and halve the interval, and shift and stretch y = x³ to find the centre every cubic is symmetric about.">在 x 軸上拖曳根，圖形跟著走：單根穿過、二重根碰一下就回頭、三重根壓平了再穿過。看出 f(x) 什麼時候大於 0；用兩個異號的點把根夾住、再一半一半地縮小；把 y = x³ 平移伸縮，找出每個三次函數都有的對稱中心。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag one root onto another. The two crossings merge into a single touch — the graph bounces off the axis instead of crossing it.">試試看：把一個根拖到另一個根上。兩個交點合成一個切點——圖形碰到 x 軸就彈回去，不再穿過。</p>
+    <div class="lab pf" id="lab" data-mode="roots">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="多項式畫布：根與圖形模式可以左右拖曳 x 軸上的根；勘根模式可以拖曳區間的兩端；平移伸縮模式可以拖曳對稱中心。" data-en-aria-label="Polynomial canvas: in roots mode drag the roots along the x-axis; in root-trapping mode drag the two ends of the interval; in transformation mode drag the centre of symmetry."></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除二分法的步驟與挑戰紀錄；滑桿設定不變" data-en-title="Clear the bisection steps and the challenge record; the sliders are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="mr mt" data-en-html="<i style=&quot;background:var(--pf-pos)&quot;></i>f(x) &gt; 0"><i style="background:var(--pf-pos)"></i>f(x) &gt; 0</span>
+          <span class="mr mt" data-en-html="<i style=&quot;background:var(--pf-neg)&quot;></i>f(x) &lt; 0"><i style="background:var(--pf-neg)"></i>f(x) &lt; 0</span>
+          <span class="mr" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pf-root)&quot;></i>Real root"><i class="dot" style="background:var(--pf-root)"></i>實根</span>
+          <span class="mr" data-en-html="<i style=&quot;background:var(--pf-sol)&quot;></i>Solution of the inequality"><i style="background:var(--pf-sol)"></i>不等式的解</span>
+          <span class="mr" id="lgTarget" hidden data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--pf-target)&quot;></i>Target graph"><i class="dash" style="color:var(--pf-target)"></i>題目的圖形</span>
+          <span class="mi" data-en-html="<i style=&quot;background:var(--pf-int)&quot;></i>Interval [l, r]"><i style="background:var(--pf-int)"></i>區間 [l, r]</span>
+          <span class="mi" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pf-pos)&quot;></i>f &gt; 0"><i class="dot" style="background:var(--pf-pos)"></i>f &gt; 0</span>
+          <span class="mi" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pf-neg)&quot;></i>f &lt; 0"><i class="dot" style="background:var(--pf-neg)"></i>f &lt; 0</span>
+          <span class="mt" data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--pf-base)&quot;></i>Original graph"><i class="dash" style="color:var(--pf-base)"></i>原來的圖形</span>
+          <span class="mt" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pf-ctr)&quot;></i>Centre / axis of symmetry"><i class="dot" style="background:var(--pf-ctr)"></i>對稱中心／對稱軸</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="roots" aria-pressed="true" data-en-html="Roots and graph<small>multiplicity, inequalities</small>">根與圖形<small>重根、不等式</small></button>
+            <button type="button" data-mode="ivt" aria-pressed="false" data-en-html="Trapping a root<small>sign change, bisection</small>">勘根定理<small>異號、二分法</small></button>
+            <button type="button" data-mode="trans" aria-pressed="false" data-en-html="Shift and stretch<small>y = a f(b(x − h)) + k</small>">平移與伸縮<small>y = a f(b(x − h)) + k</small></button>
+          </div>
+        </section>
+
+        <section class="card mr">
+          <h2 data-en="Roots">根</h2>
+          <div class="roots" id="rootPick" role="group" aria-label="選一個根" data-en-aria-label="Choose a root"></div>
+          <div class="slider"><label for="rx" data-en="Selected root">選取的根</label><output id="rxo"></output>
+            <input id="rx" type="range" min="-5" max="5" step="0.1" value="-1" data-decimals="2"></div>
+          <div class="seg" id="mulPick" role="group" aria-label="重數" data-en-aria-label="Multiplicity">
+            <span data-en="Multiplicity">重數</span>
+            <button type="button" data-m="1" aria-pressed="true">1</button>
+            <button type="button" data-m="2" aria-pressed="false">2</button>
+            <button type="button" data-m="3" aria-pressed="false">3</button>
+          </div>
+          <div class="btnrow" style="margin-top:0">
+            <button id="addRoot" type="button" data-en="Add a root">加一個根</button>
+            <button id="delRoot" type="button" data-en="Remove this root">刪掉這個根</button>
+          </div>
+          <div class="slider"><label for="ra" data-en="Leading coefficient a">首項係數 a</label><output id="rao"></output>
+            <input id="ra" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="quadC" type="checkbox"><span data-en-html="Multiply by (x − p)<sup>2</sup> + q<sup>2</sup> (no real roots)">乘上 (x − p)<sup>2</sup> + q<sup>2</sup>（沒有實根）</span></label>
+          </div>
+          <div class="slider quad-only"><label for="qp" data-en="p">p</label><output id="qpo"></output>
+            <input id="qp" type="range" min="-5" max="5" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider quad-only"><label for="qq" data-en="q">q</label><output id="qqo"></output>
+            <input id="qq" type="range" min="0.1" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="seg" id="opPick" role="group" aria-label="解不等式" data-en-aria-label="Solve the inequality">
+            <span data-en="Solve f(x)">解 f(x)</span>
+            <button type="button" data-op="&gt;" aria-pressed="true">&gt; 0</button>
+            <button type="button" data-op="&gt;=" aria-pressed="false">≥ 0</button>
+            <button type="button" data-op="&lt;" aria-pressed="false">&lt; 0</button>
+            <button type="button" data-op="&lt;=" aria-pressed="false">≤ 0</button>
+          </div>
+          <p class="hint" data-en="Drag a root on the picture, or pick it above and type its value. Roots dragged onto the same place merge and their multiplicities add up. The degree can be at most 6.">在圖上拖曳根，或在上面選一個根再打入它的值。拖到同一個位置的根會合併、重數相加。次數最多 6。</p>
+        </section>
+
+        <section class="card mi">
+          <h2 data-en="Function f(x)">函數 f(x)</h2>
+          <div class="pick" id="fnPick" role="group" aria-label="選函數" data-en-aria-label="Choose a function">
+            <button type="button" data-fn="w" aria-pressed="true">x³ − 2x − 5</button>
+            <button type="button" data-fn="p" aria-pressed="false">x³ − x − 1</button>
+            <button type="button" data-fn="r" aria-pressed="false">2x³ − 3x² − 2x + 3</button>
+            <button type="button" data-fn="q" aria-pressed="false">x<sup>4</sup> − 4x² + x + 1</button>
+            <button type="button" data-fn="k" aria-pressed="false">x<sup>5</sup> − 3x + 1</button>
+          </div>
+          <div class="slider"><label for="il" data-en="Left end l">左端 l</label><output id="ilo"></output>
+            <input id="il" type="range" min="-3" max="3" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="ir" data-en="Right end r">右端 r</label><output id="iro"></output>
+            <input id="ir" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="izC" type="checkbox"><span data-en="Zoom in on the interval">放大到區間</span></label>
+          </div>
+          <div class="btnrow">
+            <button id="bisBtn" type="button" data-en="Halve once">二分一次</button>
+            <button id="bisUndo" type="button" data-en="Back to the start">回到一開始的區間</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="bt"></table></div>
+          <p class="hint" data-en="Bisection keeps the half whose two ends still have opposite signs. Each step halves the width, so ten steps shrink it about a thousand times.">二分法保留兩端仍然異號的那一半。每一步寬度減半，十步大約縮小一千倍。</p>
+        </section>
+
+        <section class="card mt">
+          <h2 data-en="Original graph y = f(x)">原來的圖形 y = f(x)</h2>
+          <div class="pick" id="basePick" role="group" aria-label="選原來的函數" data-en-aria-label="Choose the original function">
+            <button type="button" data-base="cube" aria-pressed="true">x³</button>
+            <button type="button" data-base="cubic" aria-pressed="false">x³ − 3x</button>
+            <button type="button" data-base="quart" aria-pressed="false">x<sup>4</sup> − 2x²</button>
+          </div>
+          <div class="slider"><label for="ta" data-en="a (stretch up–down)">a（上下伸縮）</label><output id="tao"></output>
+            <input id="ta" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="tb" data-en="b (stretch left–right)">b（左右伸縮）</label><output id="tbo"></output>
+            <input id="tb" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="th" data-en="h (shift right)">h（往右平移）</label><output id="tho"></output>
+            <input id="th" type="range" min="-5" max="5" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="tk" data-en="k (shift up)">k（往上平移）</label><output id="tko"></output>
+            <input id="tk" type="range" min="-5" max="5" step="0.1" value="0" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="tgC" type="checkbox" checked><span data-en="Show the original graph">顯示原來的圖形</span></label>
+          </div>
+          <p class="hint" data-en="a and b cannot be 0. Drag the orange point on the picture to move the centre (h, k).">a、b 不能是 0。在圖上拖曳橘色的點可以移動中心 (h, k)。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout mr">
+            <dt data-en="Degree">次數</dt><dd id="rDeg">—</dd>
+            <dt data-en="Real roots">實根</dt><dd id="rRoots">—</dd>
+            <dt data-en="The two ends">兩端</dt><dd id="rEnd">—</dd>
+          </dl>
+          <dl class="readout mi">
+            <dt>f(l)</dt><dd id="iFl">—</dd>
+            <dt>f(r)</dt><dd id="iFr">—</dd>
+            <dt data-en="Width r − l">寬度 r − l</dt><dd id="iW">—</dd>
+            <dt data-en="Conclusion">結論</dt><dd id="iCon">—</dd>
+          </dl>
+          <dl class="readout mt">
+            <dt data-en="Centre / axis">對稱中心／對稱軸</dt><dd id="tC">—</dd>
+            <dt data-en="Real roots">實根</dt><dd id="tR">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="View">畫面</h2>
+          <div class="slider"><label for="yv" data-en="y-axis from −Y to Y">縱軸範圍 ±Y</label><output id="yvo"></output>
+            <input id="yv" type="range" min="0" max="3" step="0.01" value="1"></div>
+          <div class="btnrow" style="margin-top:4px">
+            <button id="autoY" type="button" data-en="Fit the y-axis">縱軸自動調整</button>
+          </div>
+        </section>
+
+        <section class="card mr">
+          <h2 data-en="Challenge: read the polynomial off its graph">挑戰：看圖寫多項式</h2>
+          <p class="hint" data-en="A dashed graph appears with one marked point. Place roots, multiplicities and a so that your graph lies exactly on it, then submit.">出現一條虛線圖形和一個標出來的點。放好根、重數和 a，讓你的圖形和它完全重合，再送出。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="submitC" type="button" hidden data-en="Submit">送出</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Roots and the shape of the graph">根與圖形</h3>
+      <p data-en-html="If \(f(x) = a(x - r_1)^{m_1}(x - r_2)^{m_2}\cdots\), each \(r_i\) is a root of multiplicity \(m_i\). Near \(r_i\) the graph looks like \(c\,(x - r_i)^{m_i}\): with \(m_i\) odd the sign changes and the graph crosses the axis; with \(m_i\) even the sign stays and the graph only touches it. The higher the multiplicity, the flatter the graph near the root.">若 \(f(x) = a(x - r_1)^{m_1}(x - r_2)^{m_2}\cdots\)，\(r_i\) 是 \(m_i\) 重根。在 \(r_i\) 附近圖形像 \(c\,(x - r_i)^{m_i}\)：\(m_i\) 是奇數時正負號改變，圖形穿過 x 軸；\(m_i\) 是偶數時正負號不變，圖形只碰到 x 軸。重數越高，根附近越平。</p>
+      <p data-en-html="A factor \((x - p)^2 + q^2\) with \(q \ne 0\) is always positive: it raises the degree by 2 but adds no crossing. Its roots \(p \pm qi\) are not real. For large \(|x|\) the leading term \(ax^n\) wins, so the two ends point the same way when \(n\) is even and opposite ways when \(n\) is odd.">因式 \((x - p)^2 + q^2\)（\(q \ne 0\)）永遠是正的：次數多 2，卻不增加交點，它的根 \(p \pm qi\) 不是實數。\(|x|\) 很大時首項 \(ax^n\) 最重要，所以 \(n\) 是偶數時兩端同方向，奇數時兩端反方向。</p>
+
+      <h3 data-en="Polynomial inequalities">多項式不等式</h3>
+      <p data-en-html="The real roots cut the number line into pieces; on each piece \(f(x)\) keeps one sign. Start from the far right, where the sign is that of \(a\), and move left: the sign flips at a root of odd multiplicity and stays at a root of even multiplicity. For example \((x + 2)(x - 3)(x - 5)^2 < 0\) holds exactly for \(-2 < x < 3\).">實根把數線切成幾段，每一段上 \(f(x)\) 的正負號不變。從最右邊開始（正負號和 \(a\) 相同）往左走：經過奇數重根就變號，經過偶數重根不變號。例如 \((x + 2)(x - 3)(x - 5)^2 < 0\) 的解剛好是 \(-2 < x < 3\)。</p>
+
+      <h3 data-en="Trapping a root">勘根定理與二分法</h3>
+      <div class="formula">\[ f(l)\,f(r) < 0 \;\Rightarrow\; \exists\, c \in (l, r),\ f(c) = 0. \]</div>
+      <p data-en-html="A polynomial’s graph is unbroken, so going from below the axis to above it must cross the axis somewhere in between. The converse is false: \(x^4 - 4x^2 + x + 1\) is positive at both 0 and 2 yet has two roots between them. Bisection evaluates the midpoint \(m\) and keeps the half on which the sign still changes; after \(n\) steps the width is \((r - l)/2^n\).">多項式的圖形是連續不斷的，從 x 軸下方走到上方，中間一定穿過 x 軸。反過來不成立：\(x^4 - 4x^2 + x + 1\) 在 0 和 2 都是正的，中間卻有兩個根。二分法算中點 \(m\) 的值，保留仍然變號的那一半；\(n\) 步以後寬度是 \((r - l)/2^n\)。</p>
+
+      <h3 data-en="Shifting and stretching">平移與伸縮</h3>
+      <p data-en-html="\(y = a\,f(b(x - h)) + k\): \(b\) squeezes the graph sideways by a factor \(|b|\) (and flips it left–right when \(b < 0\)), \(h\) shifts it right, \(a\) stretches it vertically (and flips it when \(a < 0\)), \(k\) shifts it up. Since \(x^3\) and \(x^3 - 3x\) are symmetric about the origin, the new graph is symmetric about the point \((h, k)\).">\(y = a\,f(b(x - h)) + k\)：\(b\) 讓圖形左右壓縮 \(|b|\) 倍（\(b < 0\) 時左右翻轉），\(h\) 往右平移，\(a\) 上下伸縮（\(a < 0\) 時上下翻轉），\(k\) 往上平移。\(x^3\) 和 \(x^3 - 3x\) 對原點對稱，所以新的圖形對點 \((h, k)\) 對稱。</p>
+      <div class="formula">\[ y = Ax^3 + Bx^2 + Cx + D = A(x - h)^3 + p(x - h) + k,\qquad h = -\frac{B}{3A},\ k = f(h). \]</div>
+      <p data-en-html="Every cubic can be rewritten this way, so every cubic graph is a shifted copy of \(y = Ax^3 + px\) and is symmetric about \((h, f(h))\).">每個三次函數都能這樣改寫，所以每個三次函數的圖形都是 \(y = Ax^3 + px\) 平移過去的，而且對點 \((h, f(h))\) 對稱。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Merging roots</strong>: drag two single roots together and the two crossings become one touch; add a third and the touch becomes a flat crossing."><strong>根的合併</strong>：把兩個單根拖在一起，兩個交點變成一個切點；再加一個，切點變成壓平的穿過。</li>
+        <li data-en-html="<strong>Same sign, still roots</strong>: \(f(l)f(r) > 0\) says nothing — there may be no root or an even number of them."><strong>同號也可能有根</strong>：\(f(l)f(r) > 0\) 時勘根定理不能下結論——可能沒有根，也可能有偶數個。</li>
+        <li data-en-html="<strong>A mirror trick</strong>: for \(y = x^3\), the flip \(b = -1\) gives the same graph as \(a = -1\), because \((-x)^3 = -x^3\)."><strong>翻轉的巧合</strong>：\(y = x^3\) 用 \(b = -1\) 左右翻轉，和 \(a = -1\) 上下翻轉得到同一個圖形，因為 \((-x)^3 = -x^3\)。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The graph in roots mode is evaluated straight from the factored form; the standard form is obtained by multiplying the factors out. The sign chart and the solution set come from the multiplicities alone, so they are exact; the unit tests check them against the sign of \(f\) at hundreds of points. Bisection uses the exact values of the five polynomials, and the real roots shown are found by sampling the interval finely and bisecting each sign change.">根與圖形模式的曲線直接用因式求值；標準式由因式乘開得到。符號圖和解集合只用重數決定，所以是精確的；單元測試用幾百個點的 \(f\) 值核對。二分法用五個多項式的精確值；顯示的實根是把區間細分取樣、在每個變號處二分求得。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 10) · polynomial functions, graphs of cubic functions, polynomial inequalities, the intermediate value theorem for polynomials.">課綱對應：高中數學（高一）・多項式函數、三次函數的圖形、多項式不等式、勘根定理。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Polynomial&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Polynomial (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Bisection_method&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Bisection method (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Polynomial" target="_blank" rel="noopener">Polynomial（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Bisection_method" target="_blank" rel="noopener">Bisection method（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/polynomial-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/polynomial.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="polynomial"></script>
+  <script src="js/missions/polynomial.js"></script>
+  <script src="js/stats.js" data-module="polynomial"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
