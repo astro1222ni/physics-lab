@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Quadratic Functions: Vertex, Discriminant and Completing the Square | Astro Ni Science Lab">二次函數：頂點、判別式與配方｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 二次函數頁面專用的顏色代號（淺色＋深色；由 js/quadratic-function.js 讀取） */
+    :root { --qf-curve: #2563eb; --qf-vtx: #7c3aed; --qf-root: #db2777; --qf-axis: #0d9488; --qf-line: #ea580c; --qf-max: #dc2626; --qf-min: #0284c7; --qf-sq: #2563eb; --qf-rect: #ea580c; --qf-corner: #16a34a; --qf-target: #475569; --qf-bad: #dc2626; --qf-ok: #0d9488; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --qf-curve: #60a5fa; --qf-vtx: #c4b5fd; --qf-root: #f472b6; --qf-axis: #2dd4bf; --qf-line: #fb923c; --qf-max: #f87171; --qf-min: #38bdf8; --qf-sq: #60a5fa; --qf-rect: #fb923c; --qf-corner: #4ade80; --qf-target: #cbd5e1; --qf-bad: #f87171; --qf-ok: #2dd4bf; }
+    }
+    :root[data-theme="dark"] { --qf-curve: #60a5fa; --qf-vtx: #c4b5fd; --qf-root: #f472b6; --qf-axis: #2dd4bf; --qf-line: #fb923c; --qf-max: #f87171; --qf-min: #38bdf8; --qf-sq: #60a5fa; --qf-rect: #fb923c; --qf-corner: #4ade80; --qf-target: #cbd5e1; --qf-bad: #f87171; --qf-ok: #2dd4bf; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .qf button { min-height: 44px; }
+    .qf [hidden] { display: none !important; }
+    .qf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .qf .playbar button { flex: 1 1 auto; }
+    .qf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .qf .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .qf .slider input[type="range"] { height: 28px; margin: 0; }
+    .qf .checks label { min-height: 44px; }
+    .qf .checks input { width: 17px; height: 17px; }
+    .qf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .qf .panel { grid-template-columns: minmax(0, 1fr); }
+    .qf .panel > .card { min-width: 0; }
+    .qf:not([data-mode="graph"]) .mg, .qf:not([data-mode="square"]) .ms, .qf:not([data-mode="line"]) .ml { display: none !important; }
+    .qf[data-mode="square"] .mgl { display: none !important; }
+    .qf[data-form="std"] .vtx, .qf[data-form="vtx"] .std { display: none !important; }
+    .qf:not([data-dom="1"]) .dom { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .seg { display: flex; gap: 6px; margin: 4px 0 8px; align-items: center; flex-wrap: wrap; }
+    .seg > span { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin-right: 2px; }
+    .seg button { flex: 1 1 0; min-width: 44px; padding: 4px 6px; }
+    .seg button:disabled { opacity: .45; }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+    .btnrow button { flex: 1 1 auto; padding: 6px 10px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--qf-ok); font-weight: 600; }
+    .chal-msg.bad { color: var(--qf-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq:empty { display: none; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Quadratic Functions"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 二次函數</nav>
+      <h1 data-en="Quadratic Functions: Vertex, Discriminant and Completing the Square">二次函數：頂點、判別式與配方</h1>
+      <p data-en-html="Drag the vertex of a parabola and watch y = ax<sup>2</sup> + bx + c and y = a(x − h)<sup>2</sup> + k change together. The discriminant tells how many times the graph meets the x-axis — or a straight line. Then build x<sup>2</sup> + px out of a square and two rectangles, and fill in the missing corner: that corner is what “completing the square” completes.">拖曳拋物線的頂點，看 y = ax<sup>2</sup> + bx + c 和 y = a(x − h)<sup>2</sup> + k 一起改變。判別式告訴你圖形和 x 軸——或一條直線——碰到幾次。再用一個正方形和兩個長方形拼出 x<sup>2</sup> + px，把缺的那一角補上：「配方」配的就是這一角。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the purple vertex straight down until it touches the x-axis. The two roots slide together and merge, and the discriminant becomes exactly 0.">試試看：把紫色的頂點往下拖到剛好碰到 x 軸。兩個根滑到一起合成一個，判別式剛好變成 0。</p>
+    <div class="lab qf" id="lab" data-mode="graph" data-form="std" data-dom="0">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="二次函數畫布：圖形模式可以拖曳拋物線的頂點；直線模式另外可以上下拖曳直線和 y 軸的交點；配方模式可以拖曳正方形的角改變 x。" data-en-aria-label="Quadratic canvas: in graph mode drag the vertex of the parabola; in line mode you can also drag where the line crosses the y-axis up and down; in completing-the-square mode drag the corner of the square to change x."></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄、配方回到第 1 步；函數的設定不變" data-en-title="Clear the challenge record and go back to step 1 of completing the square; the function is kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="mgl" data-en-html="<i style=&quot;background:var(--qf-curve)&quot;></i>y = f(x)"><i style="background:var(--qf-curve)"></i>y = f(x)</span>
+          <span class="mgl" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--qf-vtx)&quot;></i>Vertex"><i class="dot" style="background:var(--qf-vtx)"></i>頂點</span>
+          <span class="mg" data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--qf-axis)&quot;></i>Axis of symmetry"><i class="dash" style="color:var(--qf-axis)"></i>對稱軸</span>
+          <span class="mg" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--qf-root)&quot;></i>Real root"><i class="dot" style="background:var(--qf-root)"></i>實根</span>
+          <span class="mg dom" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--qf-max)&quot;></i>Maximum on [p, q]"><i class="dot" style="background:var(--qf-max)"></i>區間上的最大值</span>
+          <span class="mg dom" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--qf-min)&quot;></i>Minimum on [p, q]"><i class="dot" style="background:var(--qf-min)"></i>區間上的最小值</span>
+          <span class="mg" id="lgTarget" hidden data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--qf-target)&quot;></i>Target graph"><i class="dash" style="color:var(--qf-target)"></i>題目的圖形</span>
+          <span class="ml" data-en-html="<i style=&quot;background:var(--qf-line)&quot;></i>y = mx + n"><i style="background:var(--qf-line)"></i>y = mx + n</span>
+          <span class="ml" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--qf-root)&quot;></i>Intersection"><i class="dot" style="background:var(--qf-root)"></i>交點</span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--qf-sq)&quot;></i>x<sup>2</sup>"><i style="background:var(--qf-sq)"></i>x<sup>2</sup></span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--qf-rect)&quot;></i>px (two halves)"><i style="background:var(--qf-rect)"></i>px（切成兩半）</span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--qf-corner)&quot;></i>The missing corner (p/2)<sup>2</sup>"><i style="background:var(--qf-corner)"></i>缺的一角 (p/2)<sup>2</sup></span>
+          <span class="ms" data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--qf-target)&quot;></i>Square of area q + (p/2)<sup>2</sup>"><i class="dash" style="color:var(--qf-target)"></i>面積 q + (p/2)<sup>2</sup> 的正方形</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="graph" aria-pressed="true" data-en-html="The graph<small>vertex, roots, max and min</small>">圖形<small>頂點、根、最大最小</small></button>
+            <button type="button" data-mode="line" aria-pressed="false" data-en-html="Parabola and line<small>intersections, tangents</small>">拋物線與直線<small>交點、切線</small></button>
+            <button type="button" data-mode="square" aria-pressed="false" data-en-html="Completing the square<small>x² + px = q</small>">配方<small>x² + px = q</small></button>
+          </div>
+        </section>
+
+        <section class="card mgl">
+          <h2 data-en="The function f(x)">函數 f(x)</h2>
+          <div class="seg" id="formPick" role="group" aria-label="用哪一種式子調整" data-en-aria-label="Adjust with which form">
+            <span data-en="Adjust">調整</span>
+            <button type="button" data-form="std" aria-pressed="true" data-en="a, b, c">a、b、c</button>
+            <button type="button" data-form="vtx" aria-pressed="false" data-en="a, h, k">a、h、k</button>
+          </div>
+          <div class="slider"><label for="qa" data-en="a">a</label><output id="qao"></output>
+            <input id="qa" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider std"><label for="qb" data-en="b">b</label><output id="qbo"></output>
+            <input id="qb" type="range" min="-20" max="20" step="0.1" value="-2" data-decimals="2"></div>
+          <div class="slider std"><label for="qc" data-en="c">c</label><output id="qco"></output>
+            <input id="qc" type="range" min="-20" max="20" step="0.1" value="-3" data-decimals="2"></div>
+          <div class="slider vtx"><label for="qh" data-en="h (vertex x)">h（頂點的 x）</label><output id="qho"></output>
+            <input id="qh" type="range" min="-10" max="10" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider vtx"><label for="qk" data-en="k (vertex y)">k（頂點的 y）</label><output id="qko"></output>
+            <input id="qk" type="range" min="-20" max="20" step="0.1" value="-4" data-decimals="2"></div>
+          <p class="hint" data-en-html="Drag the purple vertex on the picture (it snaps to multiples of 0.5). a cannot be 0: typing 0 turns it into ±0.1. When one form makes the other go beyond its slider, that slider widens to fit.">在圖上拖曳紫色的頂點（靠近 0.5 的倍數會吸過去）。a 不能是 0：打 0 會變成 ±0.1。一種式子換算出來的值超出另一種的滑桿時，那個滑桿的範圍會自動放寬。</p>
+        </section>
+
+        <section class="card mg">
+          <h2 data-en="Domain">定義域</h2>
+          <div class="checks">
+            <label><input id="domC" type="checkbox"><span data-en="Only look at p ≤ x ≤ q">只看 p ≤ x ≤ q 的部分</span></label>
+          </div>
+          <div class="slider dom"><label for="dp" data-en="p (left end)">p（左端）</label><output id="dpo"></output>
+            <input id="dp" type="range" min="-7" max="7" step="0.1" value="-1" data-decimals="2"></div>
+          <div class="slider dom"><label for="dq" data-en="q (right end)">q（右端）</label><output id="dqo"></output>
+            <input id="dq" type="range" min="-7" max="7" step="0.1" value="2" data-decimals="2"></div>
+          <p class="hint dom" data-en="The largest and smallest values on a closed interval are found among the two ends and the vertex — but the vertex only counts when it lies inside.">閉區間上的最大值和最小值，只可能出現在兩端或頂點——而頂點要在區間裡面才算。</p>
+        </section>
+
+        <section class="card ml">
+          <h2 data-en="The line y = mx + n">直線 y = mx + n</h2>
+          <div class="slider"><label for="lm" data-en="Slope m">斜率 m</label><output id="lmo"></output>
+            <input id="lm" type="range" min="-6" max="6" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="ln" data-en="y-intercept n">y 截距 n</label><output id="lno"></output>
+            <input id="ln" type="range" min="-10" max="10" step="0.1" value="1" data-decimals="2"></div>
+          <p class="hint" data-en="Drag the orange point where the line meets the y-axis up and down. Setting the two equal gives a quadratic equation; its discriminant counts the intersections.">在圖上上下拖曳直線和 y 軸交點的橘色點。讓兩個式子相等會得到一個一元二次方程式，它的判別式就是交點的個數。</p>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en-html="Completing the square: x<sup>2</sup> + px = q">配方：x<sup>2</sup> + px = q</h2>
+          <div class="slider"><label for="sp" data-en="p">p</label><output id="spo"></output>
+            <input id="sp" type="range" min="0.5" max="10" step="0.5" value="4" data-decimals="2"></div>
+          <div class="slider"><label for="sq" data-en="q">q</label><output id="sqo"></output>
+            <input id="sq" type="range" min="0" max="80" step="0.5" value="12" data-decimals="2"></div>
+          <div class="slider"><label for="sx" data-en="x (side of the square)">x（正方形的邊）</label><output id="sxo"></output>
+            <input id="sx" type="range" min="0" max="10" step="0.01" value="1" data-decimals="3"></div>
+          <div class="seg" id="stepPick" role="group" aria-label="步驟" data-en-aria-label="Step">
+            <span data-en="Step">步驟</span>
+            <button type="button" data-step="1" aria-pressed="true">1</button>
+            <button type="button" data-step="2" aria-pressed="false">2</button>
+            <button type="button" data-step="3" aria-pressed="false">3</button>
+            <button type="button" data-step="4" aria-pressed="false">4</button>
+          </div>
+          <div class="btnrow" style="margin-top:0">
+            <button id="nextStep" type="button" data-en="Next step">下一步</button>
+          </div>
+          <p class="hint" data-en="1: a square x by x and a rectangle p by x. 2: cut the rectangle in half. 3: move one half under the square. 4: fill the missing corner. Drag the corner of the blue square to change x.">1：x × x 的正方形和 p × x 的長方形。2：長方形切成兩半。3：一半搬到正方形下面。4：補上缺的角。拖曳藍色正方形的角可以改變 x。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout mg">
+            <dt data-en="Vertex">頂點</dt><dd id="rV">—</dd>
+            <dt data-en="Axis of symmetry">對稱軸</dt><dd id="rAx">—</dd>
+            <dt data-en="Opens">開口</dt><dd id="rExt">—</dd>
+            <dt data-en="Discriminant D">判別式 D</dt><dd id="rD">—</dd>
+            <dt data-en="Real roots">實根</dt><dd id="rRoots">—</dd>
+            <dt data-en="y-intercept">y 截距</dt><dd id="rY">—</dd>
+            <dt class="dom" data-en="Maximum on [p, q]">區間上的最大值</dt><dd class="dom" id="rMax">—</dd>
+            <dt class="dom" data-en="Minimum on [p, q]">區間上的最小值</dt><dd class="dom" id="rMin">—</dd>
+          </dl>
+          <dl class="readout ml">
+            <dt data-en="Discriminant of the equation">聯立後的判別式</dt><dd id="rLD">—</dd>
+            <dt data-en="Intersections">交點</dt><dd id="rLX">—</dd>
+          </dl>
+          <dl class="readout ms">
+            <dt>x<sup>2</sup></dt><dd id="rS1">—</dd>
+            <dt data-en="px (two halves)">px（兩半）</dt><dd id="rS2">—</dd>
+            <dt data-en-html="x<sup>2</sup> + px (want q)">x<sup>2</sup> + px（要等於 q）</dt><dd id="rS3">—</dd>
+            <dt data-en-html="Corner (p/2)<sup>2</sup>">角落 (p/2)<sup>2</sup></dt><dd id="rS4">—</dd>
+            <dt data-en="Positive root">正根</dt><dd id="rS5">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card mg">
+          <h2 data-en="Challenge: read the function off its graph">挑戰：看圖寫二次函數</h2>
+          <p class="hint" data-en="A dashed parabola appears with its vertex and one more point marked, and your function starts again from y = x². Make your graph lie exactly on the dashed one, then submit.">出現一條虛線拋物線，標出頂點和另一個點，你的函數從 y = x² 重新開始。讓你的圖形和虛線完全重合，再送出。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="submitC" type="button" hidden data-en="Submit">送出</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Two ways to write the same function">同一個函數的兩種寫法</h3>
+      <div class="formula">\[ f(x) = ax^2 + bx + c = a\left(x + \frac{b}{2a}\right)^2 + c - \frac{b^2}{4a} = a(x - h)^2 + k. \]</div>
+      <p data-en-html="The vertex is \((h, k) = \left(-\frac{b}{2a},\ c - \frac{b^2}{4a}\right)\) and the graph is symmetric about the line \(x = h\). When \(a > 0\) the parabola opens upward and \(k\) is the smallest value; when \(a < 0\) it opens downward and \(k\) is the largest. Points at the same height, such as \((0, c)\) and \((2h, c)\), sit at equal distances on either side of the axis.">頂點是 \((h, k) = \left(-\frac{b}{2a},\ c - \frac{b^2}{4a}\right)\)，圖形對直線 \(x = h\) 對稱。\(a > 0\) 時開口向上，\(k\) 是最小值；\(a < 0\) 時開口向下，\(k\) 是最大值。一樣高的兩點，例如 \((0, c)\) 和 \((2h, c)\)，在對稱軸左右等距的地方。</p>
+
+      <h3 data-en="The discriminant">判別式</h3>
+      <div class="formula">\[ D = b^2 - 4ac,\qquad x = \frac{-b \pm \sqrt{D}}{2a}. \]</div>
+      <p data-en-html="Since \(k = -\frac{D}{4a}\), the sign of \(D\) says on which side of the x-axis the vertex lies compared with the opening: \(D > 0\) gives two crossings, \(D = 0\) puts the vertex on the axis (a double root), \(D < 0\) keeps the whole graph on one side. If \(a > 0\) and \(D < 0\), then \(f(x) > 0\) for every \(x\).">因為 \(k = -\frac{D}{4a}\)，\(D\) 的正負告訴你頂點和開口方向是不是在 x 軸的兩側：\(D > 0\) 穿過兩次，\(D = 0\) 頂點剛好在 x 軸上（二重根），\(D < 0\) 整條圖形都在同一側。\(a > 0\) 且 \(D < 0\) 時，\(f(x)\) 對每個 \(x\) 都大於 0。</p>
+
+      <h3 data-en="A parabola and a line">拋物線與直線</h3>
+      <p data-en-html="Setting \(ax^2 + bx + c = mx + n\) gives \(ax^2 + (b - m)x + (c - n) = 0\). Its discriminant \((b - m)^2 - 4a(c - n)\) counts the intersections: two, one or none. When it is 0 the line touches the parabola at exactly one point — it is a tangent line, and its slope equals \(2ax + b\) there. A vertical line always meets a parabola once, but it is not a tangent.">令 \(ax^2 + bx + c = mx + n\)，得到 \(ax^2 + (b - m)x + (c - n) = 0\)。它的判別式 \((b - m)^2 - 4a(c - n)\) 決定交點有兩個、一個或沒有。等於 0 時直線只碰到拋物線一點——這就是切線，切點的斜率剛好是 \(2ax + b\)。鉛直線和拋物線也只交一點，但它不是切線。</p>
+
+      <h3 data-en="Completing the square, literally">把正方形補完整</h3>
+      <div class="formula">\[ x^2 + px + \left(\frac{p}{2}\right)^2 = \left(x + \frac{p}{2}\right)^2 \quad\Rightarrow\quad x^2 + px = q \iff \left(x + \frac{p}{2}\right)^2 = q + \left(\frac{p}{2}\right)^2. \]</div>
+      <p data-en-html="Cut the \(p \times x\) rectangle into two strips of width \(\frac p2\) and put one beside the square and one below it. The L-shape still has area \(x^2 + px = q\); it only lacks a corner of area \(\left(\frac p2\right)^2\). Adding that corner to both sides turns the L into a square of side \(x + \frac p2\). This is how al-Khwarizmi solved \(x^2 + 10x = 39\) around 820 AD: the corner is 25, the big square is \(39 + 25 = 64\), its side is 8, so \(x = 8 - 5 = 3\). The picture only shows the positive root; the algebra also gives \(x = -\frac p2 - \sqrt{q + \left(\frac p2\right)^2}\).">把 \(p \times x\) 的長方形切成兩條寬 \(\frac p2\) 的長條，一條放在正方形旁邊、一條放在下面。這個 L 形的面積還是 \(x^2 + px = q\)，只缺了一角，面積 \(\left(\frac p2\right)^2\)。兩邊都加上這一角，L 形就成了邊長 \(x + \frac p2\) 的正方形。大約西元 820 年，花拉子米就是這樣解 \(x^2 + 10x = 39\)：角落是 25，大正方形是 \(39 + 25 = 64\)，邊長 8，所以 \(x = 8 - 5 = 3\)。圖只畫得出正根；用代數還有另一個根 \(x = -\frac p2 - \sqrt{q + \left(\frac p2\right)^2}\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Distance between the roots</strong>: dragging the vertex straight down (with \(a > 0\)) spreads the two roots symmetrically about \(x = h\); their distance is \(\frac{\sqrt D}{|a|}\)."><strong>根的距離</strong>：\(a > 0\) 時把頂點直直往下拖，兩個根對稱地往兩邊分開，距離是 \(\frac{\sqrt D}{|a|}\)。</li>
+        <li data-en-html="<strong>The vertex need not be the answer</strong>: on an interval that does not contain \(h\), both the maximum and the minimum sit at the ends."><strong>最小值不一定在頂點</strong>：區間不包含 \(h\) 時，最大值和最小值都在兩端。</li>
+        <li data-en-html="<strong>Tangent lines</strong>: keep the slope fixed and slide the line up or down; it goes from two intersections to one to none, and the moment of one is the tangent."><strong>切線</strong>：固定斜率，把直線上下移動，交點從兩個變一個再變沒有，只有一個的那一刻就是切線。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="All values come from the formulas above. The roots use \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\) and \(x_2 = \frac{c}{a x_1}\) so that nothing is lost by subtracting nearly equal numbers. Because the sliders give finite decimals, a discriminant within \(10^{-9}\) of 0 is treated as exactly 0. The unit tests compare the vertex, roots, extreme values on intervals and intersections with direct evaluation at thousands of points.">所有數值都用上面的公式計算。求根用 \(x_1 = \frac{-b - \operatorname{sgn}(b)\sqrt D}{2a}\)、\(x_2 = \frac{c}{a x_1}\)，避免兩個很接近的數相減失準。滑桿的值都是有限小數，所以判別式和 0 相差 \(10^{-9}\) 以內就當成 0。單元測試用幾千個點的直接計算，核對頂點、根、區間上的最大最小值和交點。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 10) · quadratic functions, vertex form, the discriminant, maxima and minima on an interval, intersections of a parabola and a line.">課綱對應：高中數學（高一）・二次函數、配方法與頂點、判別式、區間上的最大最小值、拋物線與直線的交點。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Completing_the_square&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Completing the square (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Quadratic_function&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Quadratic function (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Completing_the_square" target="_blank" rel="noopener">Completing the square（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Quadratic_function" target="_blank" rel="noopener">Quadratic function（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/quadratic-function-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/quadratic-function.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="quadratic-function"></script>
+  <script src="js/missions/quadratic-function.js"></script>
+  <script src="js/stats.js" data-module="quadratic-function"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
