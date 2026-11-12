@@ -15,5 +15,6 @@ for f in files:
     s = f.read_text(encoding='utf-8')
     t = pat.sub(lambda m: f'{m.group(1)}?v={ver}"', s)
     if t != s:
-        f.write_text(t, encoding='utf-8')
+        # 用 bytes 寫：Windows 的文字模式會把 \n 變成 \r\n，整個檔案的換行都會變動（11/12 出過一次）
+        f.write_bytes(t.encode('utf-8'))
         print('stamped', f.name, ver)
