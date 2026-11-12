@@ -154,11 +154,14 @@ expect(10, [stateEv({ dist: 0.5 })], false, '只把距離減半（8 倍）');
   expect(11, [stateEv({ dec: 0, psi: 90, dist: 1.3 })], true, 'δ = 0、ψ = 90°、距離 1.30 倍：赤道潮差 ' + cm(K.equatorRange({ dec: 0, dist: 1.3, sun: true }, 90)) + '（理論 d = (H☾/H☉)^(1/3) = ' + dSol.toFixed(4) + '）');
   expect(11, [stateEv({ dec: 0, psi: 270, dist: 1.296 })], true, 'δ = 0、ψ = 270°、1.296 倍：' + cm(K.equatorRange({ dec: 0, dist: 1.296, sun: true }, 270)));
   const d2 = dSol * Math.pow(Math.cos(15 * DEG), 2 / 3);
-  expect(11, [stateEv({ dec: 15, psi: 90, dist: Math.round(d2 * 1000) / 1000 })], true, 'δ = 15° 時距離改成 ' + d2.toFixed(3) + ' 倍也行：' + cm(K.equatorRange({ dec: 15, dist: Math.round(d2 * 1000) / 1000, sun: true }, 90)));
+  expect(11, [stateEv({ dec: 15, psi: 90, dist: Math.round(d2 * 1000) / 1000 })], false, 'δ = 15° 時距離改成 ' + d2.toFixed(3) + ' 倍也會抵消，但月球不在天赤道上，不算：' + cm(K.equatorRange({ dec: 15, dist: Math.round(d2 * 1000) / 1000, sun: true }, 90)));
   let w = 0; while (K.equatorRange({ dec: 0, dist: 1.296, sun: true }, 90 + w + 0.01) < 0.01) w += 0.01;
   console.log('      容許範圍：ψ 在 90° ± ' + w.toFixed(2) + '° 之內（1.296 倍）；滑桿每格 1°');
   expect(11, [stateEv({ dec: 0, psi: 90, dist: 1 })], false, '真實距離的小潮：' + cm(K.equatorRange({ dec: 0, dist: 1, sun: true }, 90)));
   expect(11, [stateEv({ dec: 0, psi: 90, dist: 1.3, sun: false })], false, '關掉太陽');
+  const d3 = Math.round(dSol * Math.pow(Math.cos(28.6 * DEG), 2 / 3) * 100) / 100;
+  expect(11, [stateEv({ dec: -28.6, psi: 270, dist: d3 })], false, '舊版的誤觸：赤緯拉到最小 −28.6°、小潮、距離 ' + d3 + ' 倍：' + cm(K.equatorRange({ dec: -28.6, dist: d3, sun: true }, 270)));
+  expect(11, [stateEv({ dec: 0.3, psi: 90, dist: 1.3 })], true, '赤緯 0.3° 還算：' + cm(K.equatorRange({ dec: 0.3, dist: 1.3, sun: true }, 90)));
 }
 // h1 永遠不來的潮
 {
@@ -177,11 +180,16 @@ expect(10, [stateEv({ dist: 0.5 })], false, '只把距離減半（8 倍）');
 }
 // h3 月亮在地平線下時的高潮比較高
 {
-  const hs = highEvs({ sun: false, lat: 30, dec: -25 }, 2);
-  expect('h3', hs, true, '關掉太陽，緯度 30°、赤緯 −25°：' + hs.map(e => cm(e.data.h) + '（月高 ' + e.data.moonAlt.toFixed(0) + '°）').join('、'));
+  const hs = highEvs({ sun: false, lat: 45, dec: -25 }, 2);
+  expect('h3', hs, true, '關掉太陽，緯度 45°、赤緯 −25°：' + hs.map(e => cm(e.data.h) + '（月高 ' + e.data.moonAlt.toFixed(0) + '°）').join('、'));
   const hs2 = highEvs({ lat: 23.5, dec: -20 }, 2);
-  expect('h3', hs2, true, '有太陽，緯度 23.5°、赤緯 −20°：' + hs2.map(e => cm(e.data.h) + '（月高 ' + e.data.moonAlt.toFixed(0) + '°）').join('、'));
+  expect('h3', hs2, false, '有太陽不算（舊版會觸發），緯度 23.5°、赤緯 −20°：' + hs2.map(e => cm(e.data.h) + '（月高 ' + e.data.moonAlt.toFixed(0) + '°）').join('、'));
   expect('h3', highEvs({ sun: false, lat: 30, dec: 25 }, 2), false, '緯度與赤緯同號：月在地平線上時那次比較高');
+  const hs3 = highEvs({ sun: false, lat: 30, dec: -15 }, 2);
+  expect('h3', hs3, false, '關掉太陽，緯度 30°、赤緯 −15°：差不到 40 cm：' + hs3.map(e => cm(e.data.h)).join('、'));
+  expect('h3', highEvs({ sun: false, lat: 45, dec: -25, dist: 0.8 }, 2), false, '月地距離不是真實值（0.8 倍）不算');
+  const hs4 = highEvs({ sun: false, lat: 23.5, dec: -28.6 }, 2);
+  expect('h3', hs4, false, '舊版的誤觸：關掉太陽、預設緯度 23.5°、赤緯拉到最小：' + hs4.map(e => cm(e.data.h)).join('、'));
 }
 
 let stars = 0, hidden = 0;

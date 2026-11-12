@@ -779,7 +779,7 @@
       (Math.abs(state.dist - 1) > 1e-9 ? T('；真實值的 ', '; ') + num(rel, 3) + T(' 倍', ' × the real value') : '') + '</small>');
     setHTML('rAs', sci(as, 2) + ' m/s²' + (state.sun ? '' : '<small>' + T('（目前沒有加入）', '(not included now)') + '</small>'));
     setHTML('rRatio', num(as / am, 3) + (Math.abs(state.dist - 1) > 1e-9 ? '<small>' + T('真實距離時 ', 'at the real distance ') + num(K.sunMoonRatio(), 3) + '</small>' : ''));
-    setHTML('rHeq', T('月 ', 'Moon ') + num(K.moonH(p) * 100, 1) + ' cm' + T('、日 ', ', Sun ') + num(K.H_SUN * 100, 1) + ' cm');
+    setHTML('rHeq', T('月 ', 'Moon ') + num(K.moonH(p) * 100, 1) + ' cm' + T('、日 ', ', Sun ') + num(K.sunH(p) * 100, 1) + ' cm' + (state.sun ? '' : '<small>' + T('（目前沒有加入）', '(not included now)') + '</small>'));
     setHTML('rTime', when(t));
     setHTML('rAge', num(K.moonAge(psi), 1) + T(' 天（', ' d (') + phaseName(psi) + T('）', ')'));
     const h = heightNow(), dh = K.dHeightDt(p, state.lat, state.psi0, t);

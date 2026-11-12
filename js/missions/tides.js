@@ -82,8 +82,8 @@
     {
       id: 'tides-11', level: 10,
       title: { zh: '隆起消失', en: 'The bulges vanish' },
-      desc: { zh: '加入太陽，調整月球的位置、赤緯與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: 'With the Sun included, adjust the Moon’s position, declination and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
-      check: function (ev) { return isState(ev) && ev.data.sun && ev.data.eqRange < 0.01; }
+      desc: { zh: '加入太陽，讓月球留在天赤道上（赤緯 0°，誤差 0.3° 以內），只調整月球的位置與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: 'With the Sun included and the Moon kept on the celestial equator (declination 0°, within 0.3°), adjust only the Moon’s position and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
+      check: function (ev) { return isState(ev) && ev.data.sun && Math.abs(ev.data.dec) <= 0.3 && ev.data.eqRange < 0.01; }
     },
     {
       id: 'tides-h1', level: 5, hidden: true,
@@ -100,7 +100,8 @@
       riddle: { zh: '看不見的那位，給的反而更多。', en: 'The one you cannot see gives you more.' },
       check: function (ev) {
         const d = ev.data;
-        return paired(ev) && d.gap < 20 && d.moonAlt < 0 && d.prevMoonAlt != null && d.prevMoonAlt > 0 && d.dh >= 0.05;
+        // 只有月球（關掉太陽）、真實的月地距離，月亮在地平線下的那次高潮比上一次（月亮在天上）高 40 cm 以上
+        return paired(ev) && !d.sun && Math.abs(d.dist - 1) < 0.005 && d.gap < 20 && d.moonAlt < 0 && d.prevMoonAlt != null && d.prevMoonAlt > 0 && d.dh >= 0.4;
       }
     }
   ]);
