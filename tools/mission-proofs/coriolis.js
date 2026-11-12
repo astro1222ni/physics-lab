@@ -64,7 +64,7 @@ function expect(id, events, want, note) {
 const f1 = v => v == null ? '—' : v.toFixed(1);
 const f2 = v => v == null ? '—' : v.toFixed(2);
 
-console.log('科氏力任務證明（' + missions.length + ' 個任務，總星數 ' + missions.filter(m => !m.hidden).reduce((a, m) => a + m.level, 0) + '＋隱藏 ' + missions.filter(m => m.hidden).reduce((a, m) => a + m.level, 0) + '）');
+console.log('科氏力任務證明（' + missions.length + ' 個任務，總星數 ' + missions.filter(m => !m.hidden).reduce((a, m) => a + m.level, 0) + '＋隱藏 ' + missions.filter(m => m.hidden).reduce((a, m) => a + 2 * m.level, 0) + '（隱藏任務星星＝等級 × 2））');
 
 // ---------- 預設：放出一團空氣（低氣壓、北緯 25°、摩擦 1、靜止）只該完成「逆時針的低氣壓」 ----------
 {

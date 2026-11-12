@@ -199,7 +199,7 @@ console.log('雲的形成任務證明（' + missions.length + ' 個任務）');
 }
 
 let stars = 0, hidden = 0;
-missions.forEach(m => { if (m.hidden) hidden += m.level; else stars += m.level; });
+missions.forEach(m => { if (m.hidden) hidden += 2 * m.level; else stars += m.level; });   // 隱藏任務星星＝等級 × 2（LabMission.starsOf）
 console.log('\n任務 ' + missions.filter(m => !m.hidden).length + ' 個（' + stars + ' 顆星）＋ 隱藏 ' + missions.filter(m => m.hidden).length + ' 個（' + hidden + ' 顆星）');
 console.log(fail ? '有 ' + fail + ' 項失敗' : '全部通過');
 process.exitCode = fail ? 1 : 0;
