@@ -160,6 +160,7 @@ claim(!check('h5', p.stage(p.at('G1', 0.5))), 'h5 對照：真正的 G1 不算')
   const s7 = Batches(10, 1, [1000, 1000, 1000], 9);
   const d = s7[2].data;
   claim(anyOf(s7, 'h7'), `h7 10 cM 做 3000 次：r = ${pct(d.r, 2)}、上限 ${pct(d.hi, 2)} < d = 10%，Haldane ${pct(d.haldane, 2)} 在區間內`);
+  claim(rate(30, s => Batches(10, 1, [1000], 400 + s), 'h7') === 0, 'h7 對照：只做 1000 次不算（要 3000 次以上，避免隨手一按就中）');
   claim(rate(30, s => Batches(12, 1, [1000, 1000, 1000], 400 + s), 'h7') > 0.6, `h7 12 cM 做到 3000 次之內成功 ${pct(rate(30, s => Batches(12, 1, [1000, 1000, 1000], 400 + s), 'h7'))}`);
 }
 {

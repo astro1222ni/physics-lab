@@ -127,7 +127,7 @@
     {
       id: 'cell-division-h7', level: 8, hidden: true,
       riddle: { zh: '近看是一條直線；再看仔細一點，它其實在彎。', en: 'Up close it looks straight; look more carefully and it bends.' },
-      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 6 && d.d <= 15 && d.hi < d.d / 100 && holds(d); }
+      check: function (ev) { const d = ev.data; return batch(ev) && d.d >= 6 && d.d <= 15 && d.meioses >= 3000 && d.hi < d.d / 100 && holds(d); }
     },
     {
       id: 'cell-division-h8', level: 7, hidden: true,

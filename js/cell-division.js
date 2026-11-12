@@ -285,7 +285,7 @@
     let t = K.stageStart(st1.mode, ni) + 0.001;
     if (s.i === st.length - 1) t = K.total(st1.mode);
     // 每一期跳到「最容易看」的那一刻：開頭往後一點
-    if (ni !== s.i) t = K.stageStart(st1.mode, ni) + st[ni].d * (st[ni].k === 'S' ? 0.5 : 0.75);
+    if (ni !== s.i) t = K.stageStart(st1.mode, ni) + st[ni].d * (st[ni].k === 'S' ? 0.3 : 0.75);   // S 期停在 30%：看得到正在複製
     seek(t);
     sndClick(660);
   }
