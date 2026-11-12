@@ -9,7 +9,8 @@
  *   隱藏任務：{ id, level, hidden: true, riddle: {zh, en}, check }（只顯示隱晦提示，完成時也不說明原因）
  *   check(ev, mem)：ev = { type, data }；mem 為該任務在本頁的暫存物件（可記錄先前的事件）。
  * 規則：必須登入 Google 帳號、開啟任務模式才會判定；每個任務只能領一次星星（資料庫規則把關）。
- * 星星數 = 任務等級（1–10 顆「倪的星星」）。
+ * 星星數 = 任務等級（1–10 顆「倪的星星」）；隱藏任務要自己猜，星星是等級的 2 倍（11/12 站長：「隱藏任務的星星給的數量要再更大方一點」）。
+ * 補發：bonus/<uid>/<任務> 記錄完成後補上的星星（例如隱藏任務改成加倍以前完成的人）；完成紀錄的星星 + 補發 = 目前的星星數。
  * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth、math）與各科最後得星時間 sa/<科目>。
  * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；每天十個、每個一天只能完成一次。以前完成過的任務也能做，不再加星，但有機率掉寶。
  */
@@ -40,6 +41,10 @@
     return v.replace(/-(h?\d+)$/, '') === pageModule ? v : null;
   }
   let api = null;
+
+  /** 任務的星星數：一般任務 = 等級；隱藏任務 = 等級 × 2（要瞎猜，給得大方一點） */
+  const HIDDEN_X = 2;
+  function starsOf(m) { return m ? (m.hidden ? HIDDEN_X : 1) * m.level : 0; }
 
   // ======================= 公開介面 =======================
   const LabMission = {
@@ -76,6 +81,9 @@
     loadAll: function () { return loadAll(); },
     /** 依完成紀錄（任務代號 → { stars }）算出各科星星 */
     subjectStars: function (done) { return subjectStars(done); },
+    /** 任務的星星數（隱藏任務是等級的 2 倍）；排行榜、成就、每日任務都用這個算 */
+    starsOf: starsOf,
+    HIDDEN_X: HIDDEN_X,
     on: function (name, fn) { if (hooks[name]) hooks[name].push(fn); },
     module: pageModule,
     mask: mask,
@@ -156,6 +164,16 @@
         setPub: function (uid, pub) { return D.set(r('profiles/' + uid + '/pub'), pub); },
         getDone: function (uid) { return D.get(r('completions/' + uid)).then(function (s) { return s.val() || {}; }); },
         getScore: function (uid) { return D.get(r('scores/' + uid)).then(function (s) { return s.val(); }); },
+        getBonus: function (uid) { return D.get(r('bonus/' + uid)).then(function (s) { return s.val() || {}; }); },
+        // 補發：bonus 與總分、各科星星一起寫（資料庫規則要求兩者同時改、總分剛好加上差額）
+        topUp: function (uid, mid, bonus, rec) {
+          const u = {};
+          u['bonus/' + uid + '/' + mid] = bonus;
+          const o = Object.assign({}, rec, { at: D.serverTimestamp() });
+          if (rec.sa) { o.sa = {}; Object.keys(rec.sa).forEach(function (k) { o.sa[k] = rec.sa[k] === true ? D.serverTimestamp() : rec.sa[k]; }); }
+          u['scores/' + uid] = o;
+          return D.update(D.ref(db), u);
+        },
         // sub：{ s: { 科目: 星星 }, sa: { 科目: 時間，或 true = 伺服器現在時間 } }
         complete: function (uid, mid, stars, name, pub, prev, sub) {
           const u = {};
@@ -229,15 +247,17 @@
           adminUid = user.uid;
           afterLoad(autoSync);
         });
-        Promise.all([api.getProfile(user.uid).catch(function () { return {}; }), api.getDone(user.uid).catch(function () { return {}; })]).then(function (r) {
+        Promise.all([api.getProfile(user.uid).catch(function () { return {}; }), api.getDone(user.uid).catch(function () { return {}; }),
+          api.getBonus ? api.getBonus(user.uid).catch(function () { return {}; }) : Promise.resolve({})]).then(function (r) {
           if (!state.user || state.user.uid !== user.uid) return;
           state.nickname = r[0].nickname || null;
           state.pub = r[0].pub !== false;
-          state.done = r[1] || {};
+          state.done = mergeBonus(r[1] || {}, r[2] || {});
           state.ready = true;
           changed();
           fire('ready', state);
           syncSubjects(user.uid);
+          syncBonus(user.uid);
         });
       });
       return api;
@@ -258,7 +278,7 @@
       cur = cur || {};
       const defs = {};
       Object.keys(registry).forEach(function (k) {
-        registry[k].forEach(function (m) { if (!cur[m.id] || cur[m.id].stars !== m.level) defs[m.id] = m.level; });
+        registry[k].forEach(function (m) { if (!cur[m.id] || cur[m.id].stars !== starsOf(m)) defs[m.id] = starsOf(m); });
       });
       const n = Object.keys(defs).length;
       if (!n) return 0;
@@ -290,6 +310,62 @@
     }).catch(function () { /* 下次登入再補 */ });
   }
 
+  // ======================= 補發星星 =======================
+  // done[id].stars 是「目前領到的星星」（完成紀錄 + 補發），base 是完成當時記的星星
+  function mergeBonus(done, bonus) {
+    Object.keys(done).forEach(function (id) {
+      const b = +bonus[id] || 0;
+      done[id] = Object.assign({}, done[id], { base: +done[id].stars || 0, bonus: b, stars: (+done[id].stars || 0) + b });
+    });
+    return done;
+  }
+  // 已完成、但領到的星星比現在的星星數少（例如隱藏任務改成加倍以前完成的）：補發差額。
+  // 只看本頁已註冊的任務（實驗頁是本實驗，排行榜與每日任務頁是全站），以資料庫 missionDefs 的星星數為準。
+  let bonusBusy = false;
+  function syncBonus(uid) {
+    if (!api || !api.topUp || !api.get || bonusBusy || !state.ready) return Promise.resolve(0);
+    const need = [];
+    Object.keys(registry).forEach(function (k) {
+      registry[k].forEach(function (m) { const d = state.done[m.id]; if (d && d.stars < starsOf(m)) need.push(m); });
+    });
+    if (!need.length) return Promise.resolve(0);
+    bonusBusy = true;
+    let added = 0;
+    let chain = loadIndex();
+    need.forEach(function (m) {
+      chain = chain.then(function () {
+        if (!state.user || state.user.uid !== uid) return;
+        return guard(function () { return api.get('missionDefs/' + m.id + '/stars'); }).then(function (def) {
+          const d = state.done[m.id];
+          if (!d || !(def > d.stars)) return; // 任務清單還沒同步成新的星星數：下次再補
+          const delta = def - d.stars, bonus = def - d.base;
+          return guard(function () { return api.getScore(uid); }).then(function (sc) {
+            if (!sc) return;
+            const subj = LabMission.subjectOf(m.id.replace(/-(h?\d+)$/, ''));
+            const rec = { stars: sc.stars + delta, last: m.id, name: sc.name, pub: sc.pub };
+            if (sc.s) {
+              rec.s = Object.assign({}, sc.s); rec.s[subj] = (rec.s[subj] || 0) + delta;
+              rec.sa = Object.assign({}, sc.sa || {}); rec.sa[subj] = true;
+            }
+            return guard(function () { return api.topUp(uid, m.id, bonus, rec); }).then(function () {
+              d.bonus = bonus; d.stars = def; added += delta;
+            });
+          });
+        }).catch(function () { /* 下次再補 */ });
+      });
+    });
+    return chain.then(function () {
+      bonusBusy = false;
+      if (added) {
+        state.msg = T('已補發 ' + added + ' 顆星：隱藏任務的星星改成等級的 2 倍，以前完成的也補上了。',
+          'You received ' + added + ' bonus stars: hidden missions now pay twice their level, including ones you finished before.');
+        changed();
+        fire('complete', null);
+      }
+      return added;
+    }, function () { bonusBusy = false; return added; });
+  }
+
   // ======================= 完成任務 =======================
   // 同時完成多個任務時依序寫入（每次都以最新的總分為基準，資料庫規則才會通過）
   let queue = Promise.resolve();
@@ -299,8 +375,14 @@
     queue = queue.then(function () { return completeNow(m); }, function () { return completeNow(m); });
   }
   function completeNow(m) {
-    const uid = state.user.uid, stars = m.level;
-    return loadIndex().then(function () { return guard(function () { return api.getScore(uid); }); }).then(function (sc) {
+    const uid = state.user.uid;
+    let stars = starsOf(m);
+    // 以資料庫 missionDefs 的星星數為準（星星數剛改、管理員還沒同步時照舊值記錄，同步後由 syncBonus 補發差額）
+    const defP = api.get ? guard(function () { return api.get('missionDefs/' + m.id + '/stars'); }).catch(function () { return null; }) : Promise.resolve(null);
+    return loadIndex().then(function () { return defP; }).then(function (def) {
+      if (def >= 1) stars = def;
+      return guard(function () { return api.getScore(uid); });
+    }).then(function (sc) {
       // 各科星星：沿用資料庫裡的數字（舊紀錄沒有時，依完成紀錄補算），再加上這個任務所屬科目的星星
       const subj = LabMission.subjectOf(state.module);
       const s = Object.assign({}, (sc && sc.s) || subjectStars(state.done));
@@ -316,7 +398,8 @@
         return guard(function () { return api.complete(uid, m.id, stars, displayName(), state.pub, prevStars); });
       });
     }).then(function () {
-      state.done[m.id] = { stars: stars, at: Date.now() };
+      state.done[m.id] = { stars: stars, base: stars, bonus: 0, at: Date.now() };
+      m.gained = stars;
       m.pending = false;
       celebrate(m);
       changed();
@@ -372,7 +455,7 @@
     if (!m.hidden) box.appendChild(el('div', 'ms-celebrate-name', L(m.title)));
     const gain = el('div', 'ms-celebrate-gain');
     gain.innerHTML = STAR;
-    gain.appendChild(el('span', null, '+' + m.level + T(' 顆倪的星星', ' Ni stars')));
+    gain.appendChild(el('span', null, '+' + (m.gained || starsOf(m)) + T(' 顆倪的星星', ' Ni stars')));
     box.appendChild(gain);
     ov.appendChild(box);
     document.body.appendChild(ov);
@@ -424,8 +507,8 @@
     if (state.daily) state.on = true; // 每日任務模式：一進來就開任務模式
 
     function render() {
-      const total = list.reduce(function (a, m) { return a + m.level; }, 0);
-      const got = list.reduce(function (a, m) { return a + (state.done[m.id] ? m.level : 0); }, 0);
+      const total = list.reduce(function (a, m) { return a + starsOf(m); }, 0);
+      const got = list.reduce(function (a, m) { return a + (state.done[m.id] ? state.done[m.id].stars || 0 : 0); }, 0);
       const n = list.filter(function (m) { return state.done[m.id]; }).length;
       toggle.classList.toggle('on', state.on);
       toggle.setAttribute('aria-expanded', String(state.on));
@@ -472,6 +555,7 @@
       const ul = el('ul');
       [T('必須登入 Google 帳號並打開任務模式，才會判定與記錄。', 'Sign in with Google and turn on Mission mode — only then are missions checked and recorded.'),
         T('任務難度分 1～10 級，完成後獲得與等級相同數量的「倪的星星」。', 'Missions have levels 1–10; completing one earns that many Ni stars.'),
+        T('隱藏任務要自己猜，星星是等級的 2 倍。', 'Hidden missions take guesswork, so they pay twice their level in stars.'),
         T('每個任務只能領一次星星，重複完成不會再得星。', 'Each mission pays out once; repeating it earns nothing more.'),
         T('隱藏任務只有一句隱晦的提示，完成時不會說明原因，需要自己反覆嘗試。', 'Hidden missions only give a cryptic hint and are never explained — keep experimenting.'),
         T('成就是收藏用的徽章，不加星星；排行榜只看星星。', 'Achievements are collectible badges and add no stars; the leaderboard counts stars only.')
@@ -495,7 +579,7 @@
       list.slice().sort(function (a, b) { return (a.hidden ? 1 : 0) - (b.hidden ? 1 : 0) || a.level - b.level; }).forEach(function (m) {
         const li = el('li', 'ms-item' + (state.done[m.id] ? ' done' : '') + (m.hidden ? ' hidden-m' : ''));
         const head = el('div', 'ms-head');
-        head.appendChild(starBadge(m.level));
+        head.appendChild(starBadge(starsOf(m)));
         head.appendChild(el('strong', 'ms-title', m.hidden ? T('隱藏任務', 'Hidden mission') : L(m.title)));
         if (state.done[m.id]) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
         li.appendChild(head);

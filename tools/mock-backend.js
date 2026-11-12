@@ -8,7 +8,8 @@
  *   // 假的伺服器時間：localStorage 'mockoffset' = 毫秒（伺服器時間 = 本機時間 + 這個值；測試換日用）
  *   // 模擬「正式站還是舊規則」：localStorage 'mockoldrules' = '1'（拒絕各科星星 s/sa、每日任務 daily/、寶物 bag/）
  * 資料存在 localStorage 'mdb'，並模擬資料庫規則（firebase/database.rules.json）：
- *   任務只能領一次、星星數必須等於 missionDefs、總分遞增正確、各科星星只增不減且加總不超過總星數；
+ *   任務只能領一次、星星數必須等於 missionDefs（1–20）、總分遞增正確、各科星星只增不減且加總不超過總星數；
+ *   補發 bonus/<uid>/<任務>：只增不減、完成紀錄 + 補發 = missionDefs、總分剛好加上差額、必須和總分一起寫；
  *   每日任務的換日、兩次掉寶至少隔 10 秒、每天最多 45 次；寶物每次增加的上限、必須和每日任務一起寫入。
  * 任務完成前要先同步任務清單：以管理員登入並打開任何實驗頁或排行榜頁（missions.js 會自動同步），
  * 或直接在 'mdb'.missionDefs 預先放入 { 任務代號: { stars: 等級 } }。
@@ -99,6 +100,27 @@
     setPub(uid, p) { const db = load(); (db.profiles[uid] = db.profiles[uid] || {}).pub = p; save(db); return Promise.resolve(); },
     getDone(uid) { return Promise.resolve(load().completions[uid] || {}); },
     getScore(uid) { return Promise.resolve(load().scores[uid] || null); },
+    getBonus(uid) { return Promise.resolve((load().bonus || {})[uid] || {}); },
+    topUp(uid, mid, bonus, rec0) {
+      const db = load(); db.bonus = db.bonus || {};
+      if (!user || user.uid !== uid) return deny('bonus: 不是本人');
+      const comp = (db.completions[uid] || {})[mid];
+      const old = (db.bonus[uid] || {})[mid] || 0;
+      if (!comp) return deny('bonus: 沒有完成紀錄');
+      if (typeof bonus !== 'number' || !(bonus > old)) return deny('bonus: 只能增加');
+      if (!db.missionDefs[mid] || comp.stars + bonus !== db.missionDefs[mid].stars) return deny('bonus: 完成紀錄 + 補發必須等於任務清單的星星數');
+      const oldS = db.scores[uid] || null;
+      if (!oldS) return deny('bonus: 沒有總分紀錄');
+      const t = clock();
+      const rec = Object.assign({}, rec0, { at: t });
+      if (rec0.sa) { rec.sa = {}; Object.keys(rec0.sa).forEach(k => { rec.sa[k] = rec0.sa[k] === true ? t : rec0.sa[k]; }); }
+      if (rec.last !== mid) return deny('bonus: 總分的 last 必須是這個任務');
+      if (rec.stars !== oldS.stars + bonus - old) return deny('bonus: 總分必須剛好加上補發的差額');
+      const why = checkScore(oldS, rec, t);
+      if (why) return deny(why);
+      (db.bonus[uid] = db.bonus[uid] || {})[mid] = bonus;
+      db.scores[uid] = rec; save(db); return Promise.resolve();
+    },
     complete(uid, mid, stars, name, pub, prev, sub) {
       const db = load(); const done = db.completions[uid] = db.completions[uid] || {};
       if (done[mid]) return deny('complete: 已完成');
@@ -127,7 +149,7 @@
     },
     countAbove(stars, subj) { const db = load(); return Promise.resolve(Object.values(db.scores).filter(s => (subj ? ((s.s && s.s[subj]) || -Infinity) : s.stars) >= stars + 1).length); },
     serverOffset() { return Promise.resolve(+localStorage.getItem('mockoffset') || 0); },
-    syncDefs(defs) { if (!user || !load().admins[user.uid]) return deny('syncDefs'); const db = load(); Object.keys(defs).forEach(k => db.missionDefs[k] = { stars: defs[k] }); save(db); return Promise.resolve(); },
+    syncDefs(defs) { if (!user || !load().admins[user.uid]) return deny('syncDefs'); if (Object.values(defs).some(v => !(v >= 1 && v <= 20))) return deny('syncDefs: 星星數必須是 1–20'); const db = load(); Object.keys(defs).forEach(k => db.missionDefs[k] = { stars: defs[k] }); save(db); return Promise.resolve(); },
     isAdmin(uid) { return Promise.resolve(!!load().admins[uid]); },
     get(path) { return Promise.resolve(get(load(), path)); },
     update(map) {

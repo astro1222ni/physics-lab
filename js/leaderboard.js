@@ -5,6 +5,9 @@
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const $ = function (id) { return document.getElementById(id); };
   const st = LM ? LM._state : {};
+  /** 任務的星星數（隱藏任務是等級的 2 倍）、我在這個任務領到的星星（含補發） */
+  const starsOf = function (x) { return LM && LM.starsOf ? LM.starsOf(x) : x.level; };
+  const gotOf = function (x) { const d = st.done && st.done[x.id]; return d ? (+d.stars || 0) : 0; };
   const MODS = window.LAB_MISSION_MODULES || [];
   const SUBJ = window.LAB_SUBJECTS || [{ id: 'phy', zh: '物理', en: 'Physics' }];
   const TABS = [{ id: 'all', zh: '全科總排名', en: 'All subjects' }].concat(SUBJ);
@@ -179,8 +182,8 @@
   function progressRow(m, all) {
     const list = all[m.id] || [];
     const done = list.filter(function (x) { return st.done[x.id]; });
-    const got = done.reduce(function (a, x) { return a + x.level; }, 0);
-    const total = list.reduce(function (a, x) { return a + x.level; }, 0);
+    const got = done.reduce(function (a, x) { return a + gotOf(x); }, 0);
+    const total = list.reduce(function (a, x) { return a + starsOf(x); }, 0);
     const row = el('a', 'lb-prog');
     row.href = m.id + '.html';
     row.appendChild(el('span', 'lb-prog-name', T(m.zh, m.en)));
@@ -204,8 +207,8 @@
     let gotAll = 0, totalAll = 0, doneAll = 0, countAll = 0;
     MODS.forEach(function (m) {
       (all[m.id] || []).forEach(function (x) {
-        countAll++; totalAll += x.level;
-        if (st.done[x.id]) { doneAll++; gotAll += x.level; }
+        countAll++; totalAll += starsOf(x);
+        if (st.done[x.id]) { doneAll++; gotAll += gotOf(x); }
       });
     });
     if (countAll) {
@@ -237,7 +240,7 @@
       const mods = MODS.filter(function (m) { return subjOf(m.id) === sb.id && (all[m.id] || []).length; });
       if (!mods.length) return;
       let got = 0, total = 0;
-      mods.forEach(function (m) { (all[m.id] || []).forEach(function (x) { total += x.level; if (st.done[x.id]) got += x.level; }); });
+      mods.forEach(function (m) { (all[m.id] || []).forEach(function (x) { total += starsOf(x); got += gotOf(x); }); });
       const h = el('h3', 'lb-subj-head sb-' + sb.id);
       h.appendChild(el('span', null, T(sb.zh, sb.en)));
       h.appendChild(el('small', null, got + ' / ' + total + ' ★'));
@@ -308,7 +311,7 @@
     loaded.then(function () {
       const defs = {};
       const all = LM.all();
-      Object.keys(all).forEach(function (k) { all[k].forEach(function (m) { defs[m.id] = m.level; }); });
+      Object.keys(all).forEach(function (k) { all[k].forEach(function (m) { defs[m.id] = starsOf(m); }); });
       $('syncMsg').textContent = T('同步中…', 'Syncing…');
       return api.syncDefs(defs).then(function () {
         $('syncMsg').textContent = T('已同步 ', 'Synced ') + Object.keys(defs).length + T(' 個任務。', ' missions.');

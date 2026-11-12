@@ -141,6 +141,8 @@ test('星星加成 ＝ 玩家星星 ÷ 全站總星數：0 是 0、拿滿是 1�
 test('全站總星數：所有實驗的所有任務等級加總', () => {
   assert.strictEqual(C.siteStars({ a: [{ level: 3 }, { level: 10 }], b: [{ level: 1 }], c: [] }), 14);
   assert.strictEqual(C.siteStars(null), 0);
+  // 隱藏任務的星星是等級的 2 倍
+  assert.strictEqual(C.siteStars({ a: [{ level: 3 }, { level: 4, hidden: true }] }), 11);
 });
 
 test('每次完成的掉寶機率介於 27.5% 與 60% 之間，隨等級與星星遞增', () => {

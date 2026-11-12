@@ -107,10 +107,10 @@
     const S = Math.max(0, +stars || 0), T = +total || 0;
     return T > 0 ? Math.min(1, S / T) : 0;
   }
-  /** 全站目前可以拿到的總星數：每個任務的星數（＝等級）加總。lists 是 { 模組: [任務…] } */
+  /** 全站目前可以拿到的總星數：每個任務的星數加總（一般任務＝等級，隱藏任務＝等級 × 2，和 missions.js 的 starsOf 一致）。lists 是 { 模組: [任務…] } */
   function siteStars(lists) {
     let t = 0;
-    Object.keys(lists || {}).forEach(function (k) { (lists[k] || []).forEach(function (m) { t += Math.max(0, +m.level || 0); }); });
+    Object.keys(lists || {}).forEach(function (k) { (lists[k] || []).forEach(function (m) { t += Math.max(0, +m.level || 0) * (m.hidden ? 2 : 1); }); });
     return t;
   }
   function clampLevel(level) { return Math.max(1, Math.min(10, Math.round(+level) || 1)); }

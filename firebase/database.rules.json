@@ -142,7 +142,7 @@
       ".read": true,
       "$mid": {
         ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
-        ".validate": "$mid.matches(/^[a-z0-9-]{1,60}$/) && newData.hasChildren(['stars']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 10"
+        ".validate": "$mid.matches(/^[a-z0-9-]{1,60}$/) && newData.hasChildren(['stars']) && newData.child('stars').isNumber() && newData.child('stars').val() >= 1 && newData.child('stars').val() <= 20"
       }
     },
     "completions": {
@@ -159,6 +159,15 @@
         }
       }
     },
+    "bonus": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$mid": {
+          ".write": "auth != null && auth.uid === $uid && newData.exists()",
+          ".validate": "newData.isNumber() && newData.val() > (data.exists() ? data.val() : 0) && root.child('completions').child($uid).child($mid).exists() && root.child('completions').child($uid).child($mid).child('stars').val() + newData.val() === root.child('missionDefs').child($mid).child('stars').val() && newData.parent().parent().parent().child('scores').child($uid).child('last').val() === $mid"
+        }
+      }
+    },
     "scores": {
       ".read": true,
       ".indexOn": [
@@ -171,7 +180,7 @@
       ],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
-        ".validate": "newData.hasChildren(['stars', 'name', 'last', 'pub']) && newData.child('stars').isNumber() && ((data.exists() && newData.child('stars').val() === data.child('stars').val() && newData.child('last').val() === data.child('last').val()) || (!root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('completions').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === (data.exists() ? data.child('stars').val() : 0) + root.child('missionDefs').child(newData.child('last').val()).child('stars').val())) && (!data.child('s').exists() || newData.child('s').exists())",
+        ".validate": "newData.hasChildren(['stars', 'name', 'last', 'pub']) && newData.child('stars').isNumber() && ((data.exists() && newData.child('stars').val() === data.child('stars').val() && newData.child('last').val() === data.child('last').val()) || (!root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('completions').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === (data.exists() ? data.child('stars').val() : 0) + root.child('missionDefs').child(newData.child('last').val()).child('stars').val()) || (data.exists() && root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('bonus').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === data.child('stars').val() + newData.parent().parent().child('bonus').child($uid).child(newData.child('last').val()).val() - (root.child('bonus').child($uid).child(newData.child('last').val()).exists() ? root.child('bonus').child($uid).child(newData.child('last').val()).val() : 0))) && (!data.child('s').exists() || newData.child('s').exists())",
         "stars": {},
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"

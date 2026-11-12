@@ -297,7 +297,7 @@
       if (!list.length || !b) return;
       b.moduleTotal++;
       if (list.every(function (m) { return done[m.id]; })) b.full++;
-      list.forEach(function (m) { b.totalStars += m.level; });
+      list.forEach(function (m) { b.totalStars += LM.starsOf ? LM.starsOf(m) : m.level; });
     });
     ids.forEach(function (id) { const b = by[subjOf(id.replace(/-(h?\d+)$/, ''))]; if (b) { b.stars += done[id].stars || 0; b.missions++; } });
     live().forEach(function (m) { const b = by[subjOf(m)]; if (b) { b.live++; if (mods[m]) b.visited++; } });
