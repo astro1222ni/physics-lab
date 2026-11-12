@@ -1,4 +1,4 @@
-/* leaderboard.js — 倪的星星排行榜：全科總排名與各科排名（前 100 名）、自己的名次、公開設定、各科任務進度、管理員同步任務清單 */
+/* leaderboard.js — 倪的星星排行榜：全科總排名與各科排名（前 100 名）、自己的名次、公開設定、我的寶物、各科任務進度、管理員同步任務清單 */
 (function () {
   'use strict';
   const LM = window.LabMission;
@@ -146,6 +146,36 @@
     }
   }
 
+  // ---------- 我的寶物（每日任務掉的寶物：左＝累計獲得、右＝現在剩下；格子在 js/daily-core.js） ----------
+  let bag = null, bagUid = null, bagErr = false;
+  function renderBag() {
+    const sec = $('treasures');
+    const C = window.LabDailyCore;
+    if (!sec) return;
+    if (!C || !api || !st.user) { sec.hidden = true; return; }
+    sec.hidden = false;
+    const box = $('bagBox');
+    box.innerHTML = '';
+    if (!bag) { box.appendChild(el('p', 'lb-note', bagErr ? T('寶物暫時無法載入，請稍後重新整理。', 'Treasures could not be loaded — please refresh later.') : T('載入中…', 'Loading…'))); return; }
+    box.appendChild(C.bagGrid(document, bag, T));
+    const p = el('p', 'lb-note', T('累計完成每日任務 ' + (bag.dm || 0) + ' 個。每格左邊是累計獲得（總共拿過多少），右邊是現在剩下；寶物的用途之後公布，用掉時只有「現在剩下」會減少。',
+      'Daily missions completed: ' + (bag.dm || 0) + '. In each box, left is all-time (everything you have won) and right is what you have left now; what treasures are for will be announced later, and spending them lowers only “left now”.'));
+    p.appendChild(document.createTextNode(' '));
+    const a = el('a', null, T('今天的每日任務 →', 'Today’s daily missions →'));
+    a.href = 'daily.html';
+    p.appendChild(a);
+    box.appendChild(p);
+  }
+  function loadBag() {
+    if (!api || !st.user) { bag = null; bagUid = null; renderBag(); return; }
+    const uid = st.user.uid;
+    if (bagUid !== uid) { bag = null; bagErr = false; bagUid = uid; renderBag(); }
+    api.get('bag/' + uid).then(function (b) {
+      if (bagUid !== uid) return;
+      bag = b || {}; bagErr = false; renderBag();
+    }).catch(function () { if (bagUid === uid) { bagErr = !bag; renderBag(); } });
+  }
+
   function progressRow(m, all) {
     const list = all[m.id] || [];
     const done = list.filter(function (x) { return st.done[x.id]; });
@@ -265,10 +295,11 @@
           }).then(function () { return myRanks(sc); });
         });
       }
-    }).then(function () { renderMe(); renderProgress(); }).catch(function () {
+    }).then(function () { renderMe(); renderProgress(); loadBag(); }).catch(function () {
       $('list').innerHTML = '';
       $('list').appendChild(el('li', 'lb-empty', T('排行榜暫時無法載入，請稍後再試。', 'The leaderboard could not be loaded — please try again later.')));
       renderMe();
+      loadBag();
     });
   }
 

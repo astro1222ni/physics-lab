@@ -11,7 +11,7 @@
  * 規則：必須登入 Google 帳號、開啟任務模式才會判定；每個任務只能領一次星星（資料庫規則把關）。
  * 星星數 = 任務等級（1–10 顆「倪的星星」）。
  * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth）與各科最後得星時間 sa/<科目>。
- * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；以前完成過的任務也能重做，不再加星，但有機率掉寶。
+ * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；每天十個、每個一天只能完成一次。以前完成過的任務也能做，不再加星，但有機率掉寶。
  */
 (function () {
   'use strict';
@@ -57,7 +57,7 @@
       const list = registry[state.module] || [];
       const LD = window.LabDaily;
       list.forEach(function (m) {
-        // 今天的每日任務：以前完成過也照樣判定（重做不加星，但有機率掉寶）
+        // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，但有機率掉寶）；今天完成後就不再判定
         const daily = state.daily === m.id && LD && LD.active(m.id);
         if ((state.done[m.id] && !daily) || m.pending) return;
         let ok = false;

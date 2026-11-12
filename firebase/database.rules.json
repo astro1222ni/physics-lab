@@ -251,13 +251,13 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
-        ".validate": "newData.hasChildren(['d', 'picks', 'n', 'at']) && newData.child('at').val() === now && newData.child('d').isNumber() && newData.child('d').val() * 86400000 <= now + 28800000 && now + 28800000 < (newData.child('d').val() + 1) * 86400000 && newData.child('n').isNumber() && newData.child('n').val() >= 0 && newData.child('n').val() <= 45 && ((data.exists() && data.child('d').val() === newData.child('d').val()) ? (newData.child('n').val() === data.child('n').val() || (newData.child('n').val() === data.child('n').val() + 1 && now - data.child('at').val() >= 10000)) : newData.child('n').val() <= 1)",
+        ".validate": "newData.hasChildren(['d', 'picks', 'n', 'at']) && newData.child('at').val() === now && newData.child('d').isNumber() && newData.child('d').val() * 86400000 <= now + 28800000 && now + 28800000 < (newData.child('d').val() + 1) * 86400000 && newData.child('n').isNumber() && newData.child('n').val() >= 0 && newData.child('n').val() <= 10 && ((data.exists() && data.child('d').val() === newData.child('d').val()) ? (newData.child('n').val() === data.child('n').val() || (newData.child('n').val() === data.child('n').val() + 1 && now - data.child('at').val() >= 10000)) : newData.child('n').val() <= 1)",
         "d": {},
         "n": {},
         "at": {},
         "picks": {
           "$k": {
-            ".validate": "$k.matches(/^(easy|mid|hard)$/) && newData.isString() && newData.val().matches(/^[a-z0-9-]{1,60}$/) && (!data.exists() || data.val() === newData.val() || data.parent().parent().child('d').val() !== newData.parent().parent().child('d').val())"
+            ".validate": "$k.matches(/^([0-9]|easy|mid|hard)$/) && newData.isString() && newData.val().matches(/^[a-z0-9-]{1,60}$/) && (!data.exists() || data.val() === newData.val() || data.parent().parent().child('d').val() !== newData.parent().parent().child('d').val())"
           }
         },
         "done": {
@@ -274,6 +274,7 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists() && newData.parent().parent().child('daily').child($uid).child('at').val() === now && newData.parent().parent().child('daily').child($uid).child('n').val() >= 1 && (newData.parent().parent().child('daily').child($uid).child('d').val() !== root.child('daily').child($uid).child('d').val() || newData.parent().parent().child('daily').child($uid).child('n').val() === root.child('daily').child($uid).child('n').val() + 1)",
+        ".validate": "(newData.child('cu').val() !== data.child('cu').val() ? 1 : 0) + (newData.child('ag').val() !== data.child('ag').val() ? 1 : 0) + (newData.child('au').val() !== data.child('au').val() ? 1 : 0) + (newData.child('dia').val() !== data.child('dia').val() ? 1 : 0) + (newData.child('key').val() !== data.child('key').val() ? 1 : 0) <= 1",
         "cu": {
           ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 5"
         },

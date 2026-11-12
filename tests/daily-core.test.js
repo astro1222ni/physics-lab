@@ -40,15 +40,17 @@ test('倒數到下一次換日', () => {
 const pool = [];
 for (let k = 0; k < 12; k++) for (let lv = 1; lv <= 10; lv++) pool.push({ id: 'mod' + k + '-' + lv, module: 'mod' + k, level: lv });
 
-test('每天三個任務：簡單、中等、困難各一，來自三個不同實驗', () => {
+test('每天十個任務：簡單 4、中等 3、困難 3，依難度排列，來自十個不同實驗、任務不重複', () => {
+  assert.strictEqual(C.PER_DAY, 10);
   for (let day = 20000; day < 20400; day++) {
     const p = C.pick(pool, 'uid' + (day % 7), day);
-    assert.strictEqual(p.length, 3);
+    assert.strictEqual(p.length, 10);
     const ms = p.map(id => pool.find(m => m.id === id));
-    assert.ok(ms[0].level >= 1 && ms[0].level <= 3, '簡單');
-    assert.ok(ms[1].level >= 4 && ms[1].level <= 6, '中等');
-    assert.ok(ms[2].level >= 7 && ms[2].level <= 10, '困難');
-    assert.strictEqual(new Set(ms.map(m => m.module)).size, 3, '不同實驗');
+    ms.slice(0, 4).forEach(m => assert.ok(m.level >= 1 && m.level <= 3, '簡單'));
+    ms.slice(4, 7).forEach(m => assert.ok(m.level >= 4 && m.level <= 6, '中等'));
+    ms.slice(7).forEach(m => assert.ok(m.level >= 7 && m.level <= 10, '困難'));
+    assert.strictEqual(new Set(ms.map(m => m.module)).size, 10, '不同實驗');
+    assert.strictEqual(new Set(p).size, 10, '任務不重複');
   }
 });
 
@@ -64,11 +66,28 @@ test('同一人同一天結果固定、與任務池順序無關；換一天或�
   assert.ok(diffDay >= 28 && diffUser >= 28, `換日不同 ${diffDay}/30、換人不同 ${diffUser}/30`);
 });
 
-test('任務池只有一個實驗時仍能抽出三個；某個難度沒有任務時就少一個', () => {
+test('實驗不夠十個時，同一個實驗可以出現兩次但任務不重複；某個難度任務不夠就少抽', () => {
   const one = pool.filter(m => m.module === 'mod0');
-  assert.strictEqual(C.pick(one, 'x', 1).length, 3);
+  const p1 = C.pick(one, 'x', 1);
+  assert.strictEqual(p1.length, 9, '一個實驗只有 3 個簡單任務：3 + 3 + 3');
+  assert.strictEqual(new Set(p1).size, 9);
   const noHard = pool.filter(m => m.level <= 6);
-  assert.strictEqual(C.pick(noHard, 'x', 1).length, 2);
+  assert.strictEqual(C.pick(noHard, 'x', 1).length, 7, '沒有困難任務：4 + 3');
+  const few = pool.filter(m => m.module === 'mod0' && m.level <= 4);
+  assert.strictEqual(C.pick(few, 'x', 1).length, 4, '簡單只有 3 個、中等 1 個');
+});
+
+test('換版保留今天已抽到的任務，再補滿到十個', () => {
+  const keep = ['mod3-2', 'mod5-5', 'mod7-9'];
+  for (let day = 21000; day < 21050; day++) {
+    const p = C.pick(pool, 'k', day, keep);
+    assert.strictEqual(p.length, 10);
+    keep.forEach(id => assert.ok(p.includes(id), '保留 ' + id));
+    const ms = p.map(id => pool.find(m => m.id === id));
+    assert.strictEqual(ms.filter(m => m.level <= 3).length, 4);
+    assert.strictEqual(ms.filter(m => m.level >= 7).length, 3);
+    assert.strictEqual(new Set(p).size, 10);
+  }
 });
 
 test('長期來看每個任務都抽得到（均勻）', () => {
@@ -115,13 +134,13 @@ test('星星加成：0 顆是 0、2000 顆以上是 1、遞增', () => {
   for (let s = 0; s < 2000; s += 37) assert.ok(C.starBoost(s + 37) > C.starBoost(s));
 });
 
-test('重做掉寶機率介於 27.5% 與 60% 之間，隨等級與星星遞增', () => {
+test('每次完成的掉寶機率介於 27.5% 與 60% 之間，隨等級與星星遞增', () => {
   near(C.repeatChance(1, 0), 0.275, 1e-12);
   near(C.repeatChance(10, 2000), 0.6, 1e-12);
   for (let lv = 1; lv < 10; lv++) assert.ok(C.repeatChance(lv + 1, 100) > C.repeatChance(lv, 100));
 });
 
-test('第一次完成一定掉寶，數量在範圍內', () => {
+test('sure = true 時一定掉寶，數量在範圍內', () => {
   const r = C.rng(42);
   for (let i = 0; i < 5000; i++) {
     const d = C.roll(1 + (i % 10), i, true, r);
@@ -137,7 +156,7 @@ test('抽樣分布符合機率表（蒙地卡羅，20 萬次）', () => {
     const N = 200000, cnt = [0, 0, 0, 0, 0];
     let drops = 0;
     for (let i = 0; i < N; i++) { const d = C.roll(lv, s, false, r); if (d) { drops++; cnt[C.ITEMS.findIndex(x => x.id === d.item)]++; } }
-    near(drops / N, C.repeatChance(lv, s), 0.005, '重做掉寶率');
+    near(drops / N, C.repeatChance(lv, s), 0.005, '掉寶率');
     const p = C.table(lv, s);
     cnt.forEach((c, i) => near(c / drops, p[i], Math.max(0.004, p[i] * 0.08), C.ITEMS[i].id));
   }
@@ -149,6 +168,21 @@ test('數量平均：銅幣 1–5 平均 3、銀幣 1–3 平均 2', () => {
   for (let i = 0; i < 100000; i++) { const d = C.roll(1, 0, true, r); if (sum[d.item] != null) { sum[d.item] += d.qty; n[d.item]++; } }
   near(sum.cu / n.cu, 3, 0.05, '銅幣');
   near(sum.ag / n.ag, 2, 0.05, '銀幣');
+});
+
+test('持有數：現在剩下 = 累計獲得 − 已使用，不會小於 0', () => {
+  const h = C.holdings({ cu: 12, ag: 3, au: 1, dia: 0, dm: 7, used: { cu: 5, ag: 9 } });
+  assert.deepStrictEqual(h.map(x => x.id), ['cu', 'ag', 'au', 'dia', 'key']);
+  assert.deepStrictEqual(h.map(x => [x.total, x.used, x.left]), [[12, 5, 7], [3, 3, 0], [1, 0, 1], [0, 0, 0], [0, 0, 0]]);
+  assert.deepStrictEqual(C.holdings(null).map(x => x.left), [0, 0, 0, 0, 0]);
+  assert.deepStrictEqual(C.holdings({ cu: -3, ag: 'x', au: 2.7 }).map(x => x.total), [0, 0, 2, 0, 0]);
+});
+
+test('寶物圖示五種都有，漸層代號不重複', () => {
+  const svgs = C.ITEMS.map(it => C.icon(it.id));
+  svgs.forEach((x, i) => assert.ok(/^<svg[\s\S]*<\/svg>$/.test(x), C.ITEMS[i].id));
+  const ids = svgs.join('').match(/id="[^"]+"/g);
+  assert.strictEqual(new Set(ids).size, ids.length);
 });
 
 test('難度分段', () => {

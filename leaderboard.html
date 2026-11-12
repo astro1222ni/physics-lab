@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121021"></script>
+  <script src="js/settings.js?v=202611121258"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Ni Stars Leaderboard | Astro Ni Science Lab">倪的星星排行榜｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <!-- SEO-END -->
+  <!-- SEO-END -->
 
 
-  <link rel="stylesheet" href="lab.css?v=202611121021">
+  <link rel="stylesheet" href="lab.css?v=202611121258">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -39,6 +39,11 @@
     </header>
 
     <section class="lb-me" id="me" aria-live="polite"></section>
+
+    <section class="lb-bag" id="treasures" hidden>
+      <h2 data-en="My treasures">我的寶物</h2>
+      <div id="bagBox" aria-live="polite"></div>
+    </section>
 
     <section class="lb-board">
       <h2 id="boardTitle" data-en="Top 100">前 100 名</h2>
@@ -82,7 +87,7 @@
       </ul>
       <h3 data-en="Daily missions">每日任務</h3>
       <ul>
-        <li data-en="Every day at 00:00 Taiwan time you get three daily missions. Clearing them drops copper, silver and gold coins, diamonds and rare keys; you can replay them all day, but a mission that has already paid its stars earns no more. Details are on the daily missions page.">每天臺灣時間 00:00 換新三個每日任務，完成可以掉落銅幣、銀幣、金幣、鑽石與稀有鑰匙；當天可以一直重做，但已經領過星星的任務不會再加星。詳細規則在每日任務頁。</li>
+        <li data-en="Every day at 00:00 Taiwan time you get ten daily missions, each counting once a day. Each one you clear may drop copper, silver or gold coins, a diamond or a rare key; a mission that has already paid its stars earns no more. Details are on the daily missions page.">每天臺灣時間 00:00 換新十個每日任務，每個一天只能完成一次；每完成一個都有機會掉落銅幣、銀幣、金幣、鑽石或稀有鑰匙，但已經領過星星的任務不會再加星。詳細規則在每日任務頁。</li>
       </ul>
       <h3 data-en="Fair play">公平競賽</h3>
       <ul>
@@ -100,12 +105,13 @@
     <footer class="site"><a href="index.html" data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611121021"></script>
-  <script src="js/firebase-config.js?v=202611121021"></script>
-  <script src="js/missions.js?v=202611121021"></script>
-  <script src="js/missions/index.js?v=202611121021"></script>
-  <script src="js/achievements.js?v=202611121021"></script>
-  <script src="js/leaderboard.js?v=202611121021"></script>
-  <script src="js/comments.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121258"></script>
+  <script src="js/firebase-config.js?v=202611121258"></script>
+  <script src="js/missions.js?v=202611121258"></script>
+  <script src="js/missions/index.js?v=202611121258"></script>
+  <script src="js/achievements.js?v=202611121258"></script>
+  <script src="js/daily-core.js?v=202611121258"></script>
+  <script src="js/leaderboard.js?v=202611121258"></script>
+  <script src="js/comments.js?v=202611121258"></script>
 </body>
 </html>

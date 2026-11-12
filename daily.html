@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121021"></script>
+  <script src="js/settings.js?v=202611121258"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Daily Missions | Astro Ni Science Lab">每日任務｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="每天從實驗任務中抽出簡單、中等、困難三個每日任務：完成就能收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
+  <meta name="description" content="每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/daily.html">
   <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/daily.html?lang=zh-Hans">
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/daily.html?lang=en">
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Astro Ni 科學實驗室">
   <meta property="og:title" content="每日任務｜Astro Ni 科學實驗室">
-  <meta property="og:description" content="每天從實驗任務中抽出簡單、中等、困難三個每日任務：完成就能收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
+  <meta property="og:description" content="每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
   <meta property="og:url" content="https://lab.astroni.org/daily.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/daily.jpg">
   <meta property="og:image:width" content="1200">
@@ -24,16 +24,16 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <!-- SEO-END -->
+  <!-- SEO-END -->
 
-  <link rel="stylesheet" href="lab.css?v=202611121021">
+  <link rel="stylesheet" href="lab.css?v=202611121258">
 </head>
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 class="dl-h1"><span class="dl-h1-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="16.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15.2" r="2.7" fill="currentColor"/></svg></span><span data-en="Daily Missions">每日任務</span></h1>
-      <p data-en="Three missions a day, drawn from the experiments’ missions. Clear them to collect copper, silver and gold coins, diamonds and rare keys. You can replay today’s missions as often as you like — a mission you have done before earns no extra stars, but treasure can still drop.">每天從實驗的任務中抽出三個。完成就能收集銅幣、銀幣、金幣、鑽石與稀有鑰匙；今天的任務可以一直重做，以前完成過的任務不會再加星，但仍有機會掉寶。</p>
+      <p data-en="Ten missions a day, drawn at random from the experiments’ missions. Clear them to collect copper, silver and gold coins, diamonds and rare keys. Each one counts once a day — when all ten are done, that’s it until tomorrow. A mission you have done before earns no extra stars, but treasure can still drop.">每天從實驗的任務中隨機抽出十個。完成就有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙；每個每日任務一天只能完成一次，十個做完，這一天就結束。以前完成過的任務不會再加星，但一樣有機會掉寶。</p>
     </header>
 
     <div id="dailyApp" class="dl-app" aria-live="polite"><p class="lb-note" data-en="Loading…">載入中…</p></div>
@@ -41,12 +41,13 @@
     <section class="lb-rules dl-rules" id="rules">
       <h2 data-en="Rules">規則說明</h2>
       <ul>
-        <li data-en="Daily missions need a Google sign-in. Every day at 00:00 Taiwan time you get three new missions: easy (levels 1–3), medium (4–6) and hard (7–10). Hidden missions are never chosen.">每日任務需要登入 Google 帳號。每天臺灣時間 00:00 換新三個任務：簡單（1～3 級）、中等（4～6 級）、困難（7～10 級），不會抽到隱藏任務。</li>
-        <li data-en="Press “Start the mission” to open the experiment in daily mode, then reach the goal as usual. The first time you clear each daily mission today, one treasure always drops.">按「前往挑戰」會用每日任務模式打開實驗，照平常的方式達成目標。今天第一次完成每個每日任務，一定會掉一件寶物。</li>
-        <li data-en="You can replay today’s missions until the day ends. Each repeat has a chance to drop another treasure; repeats must be at least 12 seconds apart, and up to 40 repeat drops count per day.">當天可以一直重做；每次完成都有機率再掉一件寶物。兩次重做至少要隔 12 秒，每天最多 40 次重做掉寶。</li>
-        <li data-en="If you have never cleared the mission before, you also earn its stars as usual. A mission that has already paid its stars earns no more, however often you replay it.">以前沒完成過的任務，第一次完成照樣獲得星星；已經領過星星的任務，重做幾次都不會再加星。</li>
-        <li data-en="The harder the mission and the more stars you have collected, the likelier rare treasures become. The exact chances are listed above.">任務越難、累積的星星越多，越容易掉出稀有寶物；確切的機率列在上方的表格。</li>
-        <li data-en="Treasures can only be earned by doing experiments. What they are for will be announced later. Please play fair: results obtained by technical tricks may be removed.">寶物只能靠做實驗取得，用途之後公布。請公平遊戲：以技術手段取得的寶物，管理員可以移除。</li>
+        <li data-en="Daily missions need a Google sign-in. Every day at 00:00 Taiwan time you get ten new missions: four easy (levels 1–3), three medium (4–6) and three hard (7–10). Hidden missions are never chosen.">每日任務需要登入 Google 帳號。每天臺灣時間 00:00 換新十個任務：簡單（1～3 級）4 個、中等（4～6 級）3 個、困難（7～10 級）3 個，不會抽到隱藏任務。</li>
+        <li data-en="Press “Start the mission” to open the experiment in daily mode, then reach the goal as usual. Each daily mission counts once a day; when all ten are done, there are no more until tomorrow.">按「前往挑戰」會用每日任務模式打開實驗，照平常的方式達成目標。每個每日任務一天只能完成一次，十個都做完，這一天就不能再做了。</li>
+        <li data-en="Every daily mission you clear has a chance to drop one treasure — the same chance whether the mission is new to you or not.">每完成一個每日任務，都有機會掉一件寶物；新任務和以前做過的任務，掉寶機率一樣。</li>
+        <li data-en="A mission you have never cleared also earns its stars as usual (shown as “+N stars”). A mission whose stars you have already claimed (“N stars claimed”) earns no more.">以前沒完成過的任務，完成時照樣獲得星星（卡片上標「+N 顆星」）；已經領過星星的任務（標「N 顆星已領過」）不會再加星。</li>
+        <li data-en="The harder the mission and the more stars you have collected, the likelier a drop and the rarer the treasure. The exact chances are listed above.">任務越難、累積的星星越多，越容易掉寶，也越容易掉出稀有寶物；確切的機率列在上方的表格。</li>
+        <li data-en="“My treasures” shows two numbers: all-time (everything you have ever won) and left now. What treasures are for will be announced later; spending them will lower “left now” but never “all-time”.">「我的寶物」有兩個數字：累計獲得（總共拿過多少）和現在剩下。寶物的用途之後公布；之後用掉寶物時，現在剩下會減少，累計獲得不變。</li>
+        <li data-en="Treasures can only be earned by doing experiments. Please play fair: results obtained by technical tricks may be removed.">寶物只能靠做實驗取得。請公平遊戲：以技術手段取得的寶物，管理員可以移除。</li>
       </ul>
       <p class="dl-links"><a href="leaderboard.html" data-en="Ni Stars leaderboard →">倪的星星排行榜 →</a></p>
     </section>
@@ -54,12 +55,12 @@
     <footer class="site"><a href="index.html" data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611121021"></script>
-  <script src="js/firebase-config.js?v=202611121021"></script>
-  <script src="js/missions.js?v=202611121021"></script>
-  <script src="js/missions/index.js?v=202611121021"></script>
-  <script src="js/daily-core.js?v=202611121021"></script>
-  <script src="js/daily.js?v=202611121021"></script>
-  <script src="js/comments.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121258"></script>
+  <script src="js/firebase-config.js?v=202611121258"></script>
+  <script src="js/missions.js?v=202611121258"></script>
+  <script src="js/missions/index.js?v=202611121258"></script>
+  <script src="js/daily-core.js?v=202611121258"></script>
+  <script src="js/daily.js?v=202611121258"></script>
+  <script src="js/comments.js?v=202611121258"></script>
 </body>
 </html>

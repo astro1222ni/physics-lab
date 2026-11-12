@@ -60,13 +60,13 @@
     if (n.d == null || !n.picks || n.n == null || n.at == null) return 'daily: 缺欄位';
     if (n.at !== t) return 'daily: at 必須是現在時間';
     if (!(n.d * DAY <= t + TW && t + TW < (n.d + 1) * DAY)) return 'daily: 日序和伺服器時間不符';
-    if (typeof n.n !== 'number' || n.n < 0 || n.n > 45) return 'daily: n 超出範圍';
+    if (typeof n.n !== 'number' || n.n < 0 || n.n > 10) return 'daily: n 超出範圍（一天最多完成 10 個）';
     const same = o && o.d === n.d;
     if (same) {
       if (!(n.n === o.n || (n.n === o.n + 1 && t - o.at >= 10000))) return 'daily: n 只能加一，且兩次至少隔 10 秒';
       for (const k of Object.keys(n.picks)) if (o.picks && o.picks[k] != null && o.picks[k] !== n.picks[k]) return 'daily: 同一天不能換任務';
     } else if (n.n > 1) return 'daily: 換日後 n 最多 1';
-    for (const k of Object.keys(n.picks)) if (!/^(easy|mid|hard)$/.test(k)) return 'daily: picks 鍵不合法';
+    for (const k of Object.keys(n.picks)) if (!/^([0-9]|easy|mid|hard)$/.test(k)) return 'daily: picks 鍵不合法';
     for (const k of Object.keys(n.done || {})) {
       const had = same && o.done && o.done[k];
       if (!had && n.n !== (same ? o.n + 1 : 1)) return 'daily: 新完成的任務必須伴隨掉寶';
@@ -81,7 +81,9 @@
     if (!n) return 'bag: 不能刪除';
     if (!newDaily || newDaily.at !== t || !(newDaily.n >= 1)) return 'bag: 必須同時寫入每日任務';
     if (oldDaily && oldDaily.d === newDaily.d && newDaily.n !== oldDaily.n + 1) return 'bag: 每日任務次數必須加一';
+    if (['cu', 'ag', 'au', 'dia', 'key'].filter(k => ((o && o[k]) ?? null) !== (n[k] ?? null)).length > 1) return 'bag: 一次最多一種寶物';
     for (const k of Object.keys(n)) {
+      if (JSON.stringify(n[k]) === JSON.stringify(o && o[k])) continue; // 和正式規則一樣：只檢查有變動的欄位
       if (MAX[k] == null) return 'bag: 多餘欄位 ' + k;
       const prev = (o && o[k]) || 0;
       if (typeof n[k] !== 'number' || n[k] < prev || n[k] > prev + MAX[k]) return 'bag: ' + k + ' 增加超過上限';

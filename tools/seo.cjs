@@ -53,7 +53,7 @@ const SITE_ZH = 'Astro Ni 科學實驗室', SITE_EN = 'Astro Ni Science Lab';
 const pages = [
   { slug: 'index', url: SITE, title: SITE_ZH + '｜高中物理・化學・生物・地球科學互動模擬', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '高中物理・化學・生物・地球科學互動模擬實驗室。', kind: 'home' },
   { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 Astro Ni 科學實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。', kind: 'page' },
-  { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天從實驗任務中抽出簡單、中等、困難三個每日任務：完成就能收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。', kind: 'page' },
+  { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。', kind: 'page' },
   { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: 'Astro Ni 科學實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
 ].concat(labs.map(l => ({ slug: l.slug, url: SITE + l.slug + '.html', title: l.zh + '｜' + SITE_ZH, desc: l.dzh, kind: 'lab', lab: l })));
 
