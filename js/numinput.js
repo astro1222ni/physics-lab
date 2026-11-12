@@ -101,6 +101,11 @@
     clearTimeout(hintTimer);
     hintTimer = setTimeout(function () { h.hidden = true; }, 2200);
   }
+  // 視窗改大小（轉向、投影）時收起提示：它是照舊的版面定位的，留著會跑到畫面外、把頁面撐寬
+  window.addEventListener('resize', function () {
+    const h = document.getElementById('lab-num-hint');
+    if (h && !h.hidden) { clearTimeout(hintTimer); h.hidden = true; }
+  });
 
   function edit(range, out) {
     if (out.dataset.editing) return;

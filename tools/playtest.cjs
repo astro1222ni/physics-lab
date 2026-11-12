@@ -459,6 +459,21 @@ function ptLib() {
   L.check = function () {
     const rs = roots();
     const out = { sw: document.documentElement.scrollWidth, vw: window.innerWidth, bad: [], sliders: [], readings: [], canvas: null, viewMsg: '', path: location.pathname };
+    // 頁面被撐寬時，找出最外層超出視窗、又不在可捲動容器裡的元素（報告寫出元凶，才知道要改哪裡）
+    if (out.sw > out.vw + 1) {
+      const scrollsX = function (e) { for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { const ox = getComputedStyle(p).overflowX; if (ox === 'auto' || ox === 'scroll' || ox === 'hidden' || ox === 'clip') return true; } return false; };
+      let worst = null;
+      document.querySelectorAll('body *').forEach(function (e) {
+        const b = e.getBoundingClientRect();
+        if (b.width <= 0 || b.right <= out.vw + 1 || scrollsX(e)) return;
+        if (worst && worst.contains(e)) return;
+        if (!worst || b.right > worst.getBoundingClientRect().right + 0.5) worst = e;
+      });
+      if (worst) {
+        const b = worst.getBoundingClientRect();
+        out.wide = worst.tagName.toLowerCase() + (worst.id ? '#' + worst.id : '') + (typeof worst.className === 'string' && worst.className.trim() ? '.' + worst.className.trim().split(/\s+/).join('.') : '') + '（寬 ' + Math.round(b.width) + ' px，右緣 ' + Math.round(b.right) + ' px' + (worst.getAttribute('style') ? '，style="' + worst.getAttribute('style').slice(0, 60) + '"' : '') + '）';
+      }
+    }
     // 1. 畫面文字不可出現 NaN、Infinity、undefined、null、[object
     const BADRX = /NaN|Infinity|undefined|\bnull\b|\[object/;
     const wk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -635,7 +650,7 @@ async function navGuard(page, rec, url) {
 async function check(page, rec, st, N) {
   const r = await ev(page, () => window.__ptLib.check());
   const ex = rec.ex;
-  if (r.sw > r.vw + 1 && rec.add('confirmed', 'hscroll', '出現左右捲動：頁面寬 ' + r.sw + ' px，視窗只有 ' + r.vw + ' px', { key: 'hscroll' + r.vw })) rec.needShot = true;
+  if (r.sw > r.vw + 1 && rec.add('confirmed', 'hscroll', '出現左右捲動：頁面寬 ' + r.sw + ' px，視窗只有 ' + r.vw + ' px' + (r.wide ? '；撐寬的是 ' + r.wide : ''), { key: 'hscroll' + r.vw })) rec.needShot = true;
   r.bad.forEach(b => { if (rec.add(b.notes ? 'pending' : 'confirmed', 'badtext', '畫面文字出現「' + b.m + '」：「' + b.ctx + '」（' + b.where + '）', { key: b.m + b.where })) rec.needShot = true; });
   // 滑桿：第一次看到時記下顯示和實際值的倍率（例如顯示 cm、滑桿是 m）；之後不一致才報
   for (const sl of r.sliders) {
@@ -908,6 +923,7 @@ async function playPage(browser, base, slug, opts) {
         const f = path.join(SHOT_DIR, slug + '-until-' + opts.until + '.png');
         await page.screenshot({ path: f });
         console.log('截圖：' + rel(f));
+        rec.items.filter(i => i.level === 'confirmed').forEach(i => console.log('✗ 第 ' + i.step + ' 步：' + i.msg));
       }
     } catch (e) { hang(e, '亂按第 ' + rec.step + ' 步'); }
     await ctx.close().catch(() => {});
