@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Blood Sugar Control | Astro Ni Science Lab">血糖調節｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="用 Hovorka 的葡萄糖–胰島素模型過一整天：三餐、宵夜、運動時血糖怎麼起落，胰臟、肝臟、肌肉與腎臟怎麼用負回饋把它拉回來。換成第一型或第二型糖尿病，自己打長效與速效胰島素，看範圍內時間、低血糖與估計糖化血色素。再做一次口服葡萄糖耐受試驗，在 β 細胞功能 × 胰島素敏感度的地圖與 3D 曲面上找出正常、前期與糖尿病。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 血糖調節頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --gl-glu: #c2255c; --gl-ins: #1c7ed6; --gl-in: #2b8a3e; --gl-lo: #e03131; --gl-hi: #e67700;
+      --gl-meal: #d9480f; --gl-bolus: #7048e8; --gl-basal: #9775fa; --gl-ex: #0c8599; --gl-renal: #868e96;
+      --gl-liver: #a0522d; --gl-ok: #2b8a3e; --gl-pre: #e8a400; --gl-dm: #e03131;
+      --gl-k1: #1098ad; --gl-k2: #f76707; --gl-k3: #5f3dc4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --gl-glu: #f06595; --gl-ins: #4dabf7; --gl-in: #51cf66; --gl-lo: #ff6b6b; --gl-hi: #ffa94d;
+        --gl-meal: #ff8f5a; --gl-bolus: #9775fa; --gl-basal: #b197fc; --gl-ex: #3bc9db; --gl-renal: #adb5bd;
+        --gl-liver: #e0a370; --gl-ok: #69db7c; --gl-pre: #ffd43b; --gl-dm: #ff6b6b;
+        --gl-k1: #66d9e8; --gl-k2: #ffa94d; --gl-k3: #b197fc;
+      }
+    }
+    :root[data-theme="dark"] {
+      --gl-glu: #f06595; --gl-ins: #4dabf7; --gl-in: #51cf66; --gl-lo: #ff6b6b; --gl-hi: #ffa94d;
+      --gl-meal: #ff8f5a; --gl-bolus: #9775fa; --gl-basal: #b197fc; --gl-ex: #3bc9db; --gl-renal: #adb5bd;
+      --gl-liver: #e0a370; --gl-ok: #69db7c; --gl-pre: #ffd43b; --gl-dm: #ff6b6b;
+      --gl-k1: #66d9e8; --gl-k2: #ffa94d; --gl-k3: #b197fc;
+    }
+    #cv, #cv2 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; cursor: crosshair; }
+    #cv { height: 470px; }
+    #cv2 { height: 440px; }
+    .gl button { min-height: 44px; }
+    .gl .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gl .playbar button { flex: 1 1 auto; }
+    .gl .playbar .primary { font-weight: 700; }
+    .gl .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .gl .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .gl .slider input[type="range"] { height: 28px; margin: 0; }
+    .gl .slider label sub, .gl .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .gl [hidden] { display: none !important; }
+    .gl .panel { grid-template-columns: minmax(0, 1fr); }
+    .gl .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.good { color: var(--gl-ok); }
+    dl.readout dd.warn { color: var(--gl-hi); }
+    dl.readout dd.bad { color: var(--gl-dm); }
+    .tirbar { display: flex; height: 14px; border-radius: 7px; overflow: hidden; margin: 4px 0 2px; border: 1px solid var(--border); }
+    .tirbar i { display: block; height: 100%; }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend i.ln { width: 18px; height: 0; border-top: 3px solid; display: inline-block; vertical-align: middle; }
+    .legend i.ln.dash { border-top-style: dashed; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.ok { color: var(--gl-ok); font-weight: 600; }
+    table.runs td.pre { color: var(--gl-hi); font-weight: 600; }
+    table.runs td.dm { color: var(--gl-dm); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .gl3-wrap { position: relative; }
+    .gl3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .gl3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .gl3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .gl3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .gl3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .gl3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#physiology&quot;>Biology · Physiology</a> / Blood sugar control"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#physiology">生物・生理</a> ／ 血糖調節</nav>
+      <h1 data-en="Blood Sugar Control">血糖調節</h1>
+      <p data-en="Your blood holds only about 4–5 grams of glucose — one teaspoon of sugar — yet a single bowl of rice adds ten times that. Within two hours the level is back to normal: the pancreas releases insulin, muscles and fat take the sugar in, the liver stops making more, and when the level falls too far glucagon sends it back up. Live a whole day with breakfast, lunch, dinner, a late snack and exercise; then switch off the β cells or blunt the insulin and try to do their job yourself with injections. Finally, run the two-hour glucose tolerance test that doctors use to diagnose diabetes.">全身血液裡的葡萄糖只有大約 4–5 公克——一小匙糖——但一碗飯就帶來十倍以上。兩小時之內，血糖又回到原來的水準：胰臟放出胰島素，肌肉和脂肪把糖收進去，肝臟停止產糖；血糖掉太低時，升糖素再把它拉回來。在這裡過完一整天：早餐、午餐、晚餐、宵夜、運動。接著關掉 β 細胞，或讓胰島素失靈，試著自己用打針替它們工作。最後做一次醫生診斷糖尿病用的「兩小時口服葡萄糖耐受試驗」。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “Type 1”, then raise the long-acting insulin until the night-time line sits between 80 and 130.">試試看：按「第一型」，再把長效胰島素慢慢加上去，直到半夜的血糖停在 80–130 之間。</p>
+
+    <h2 class="lab-title" data-en-html="1 · A day of blood sugar<small>Meals, exercise, insulin and the feedback loop that keeps glucose in range</small>">一・一天的血糖<small>三餐、運動、胰島素，以及把血糖拉回範圍的負回饋</small></h2>
+    <div class="lab gl" id="lab1">
+      <div class="stage" id="stage1">
+        <canvas id="cv" tabindex="0" aria-label="上圖是一天 24 小時的血糖，綠色帶是目標範圍 70–180 mg/dL，紅色是低血糖，灰色虛線是腎閾；中間是血漿胰島素；另一格是游標那一刻葡萄糖在腸道、肝臟、血液、肌肉與腎臟之間流動的速率。點或拖曳圖移動時間游標；點選畫布後，左右鍵移動游標" data-en-aria-label="Top: blood glucose over 24 hours; the green band is the target range 70–180 mg/dL, red is low and the grey dashed line is the kidney threshold. Middle: plasma insulin. The other panel shows how fast glucose flows between gut, liver, blood, muscle and kidney at the cursor time. Tap or drag the graph to move the time cursor; with the canvas focused, move it with the left and right keys"></canvas>
+        <div class="playbar">
+          <button id="playBtn" type="button" class="primary" data-en="Play the day">播放這一天</button>
+          <button id="keepBtn" type="button" data-en="Keep this curve" title="把目前的曲線留下來和之後比較（最多 3 條）" data-en-title="Keep the current curve for comparison (up to 3)">留下這條曲線</button>
+          <button id="clear1" type="button" data-en="Clear all" title="清除留下的曲線與紀錄表；設定不變" data-en-title="Clear the kept curves and the table; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Person">這個人</h2>
+          <div class="chips" id="types" role="group" aria-label="這個人" data-en-aria-label="Person"></div>
+          <div class="slider"><label for="beta" data-en="β-cell function (× normal)">β 細胞功能（× 正常）</label><output id="betao"></output>
+            <input id="beta" type="range" min="0" max="3" step="0.05" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="si" data-en="Insulin sensitivity (× normal)">胰島素敏感度（× 正常）</label><output id="sio"></output>
+            <input id="si" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="2"></div>
+          <p class="hint" data-en="A 60 kg adult. β cells make insulin; sensitivity is how strongly the body answers each unit of it.">體重 60 kg 的成人。β 細胞負責製造胰島素；敏感度是身體對同樣的胰島素反應有多強。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Food (grams of carbohydrate)">飲食（醣類公克數）</h2>
+          <div class="slider"><label for="m1" data-en="Breakfast 07:00 (g)">早餐 07:00（g）</label><output id="m1o"></output>
+            <input id="m1" type="range" min="0" max="200" step="5" value="60" data-decimals="0"></div>
+          <div class="slider"><label for="m2" data-en="Lunch 12:00 (g)">午餐 12:00（g）</label><output id="m2o"></output>
+            <input id="m2" type="range" min="0" max="200" step="5" value="80" data-decimals="0"></div>
+          <div class="slider"><label for="m3" data-en="Dinner 18:00 (g)">晚餐 18:00（g）</label><output id="m3o"></output>
+            <input id="m3" type="range" min="0" max="200" step="5" value="80" data-decimals="0"></div>
+          <div class="slider"><label for="m4" data-en="Late snack 22:00 (g)">宵夜 22:00（g）</label><output id="m4o"></output>
+            <input id="m4" type="range" min="0" max="200" step="5" value="0" data-decimals="0"></div>
+          <p class="hint" data-en="A bowl of rice is about 55 g, a bubble tea 50–70 g, a slice of toast 15 g.">一碗白飯約 55 g、一杯珍珠奶茶 50–70 g、一片吐司約 15 g。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Insulin injections">注射胰島素</h2>
+          <div class="slider"><label for="basal" data-en="Long-acting (basal), units per day">長效（基礎）：一天幾單位</label><output id="basalo"></output>
+            <input id="basal" type="range" min="0" max="40" step="0.5" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="ratio" data-en="Rapid-acting at each meal: units per 10 g of carbohydrate">速效（每餐）：每 10 g 醣打幾單位</label><output id="ratioo"></output>
+            <input id="ratio" type="range" min="0" max="3" step="0.05" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="lead" data-en="Inject how many minutes before eating (negative = after)">飯前幾分鐘打（負的是飯後才打）</label><output id="leado"></output>
+            <input id="lead" type="range" min="-30" max="60" step="5" value="0" data-decimals="0"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Exercise">運動</h2>
+          <div class="slider"><label for="exT" data-en="Start (hour of the day)">開始時間（幾點）</label><output id="exTo"></output>
+            <input id="exT" type="range" min="0" max="23.5" step="0.5" value="17" data-decimals="1"></div>
+          <div class="slider"><label for="exD" data-en="Duration (min)">時間長（分鐘）</label><output id="exDo"></output>
+            <input id="exD" type="range" min="0" max="120" step="5" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="exE" data-en="Intensity (0.3 walk · 0.6 jog · 0.9 match)">強度（0.3 散步・0.6 慢跑・0.9 球賽）</label><output id="exEo"></output>
+            <input id="exE" type="range" min="0" max="1" step="0.05" value="0.6" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · The glucose tolerance test<small>Drink 75 g, take blood at 0, 30, 60, 90 and 120 minutes, and read the diagnosis</small>">二・口服葡萄糖耐受試驗<small>喝下 75 g，在 0、30、60、90、120 分鐘抽血，判讀結果</small></h2>
+    <div class="lab gl" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D test and map">2D 試驗與地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D landscape">3D 地形</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="一邊是試驗的血糖與胰島素曲線和抽血點，虛線是診斷門檻；另一邊是 β 細胞功能 × 胰島素敏感度的地圖，綠色正常、黃色前期、紅色糖尿病，曲線是處置指數相同的雙曲線。點地圖選病人；點選畫布後，方向鍵移動病人、Enter 開始試驗" data-en-aria-label="On one side, the glucose and insulin curves of the test with the blood samples and the diagnostic thresholds; on the other, a map of β-cell function against insulin sensitivity — green normal, yellow prediabetes, red diabetes — with hyperbolas of equal disposition index. Tap the map to choose a patient; with the canvas focused, the arrow keys move the patient and Enter starts the test"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="testBtn" type="button" class="primary" data-en="Drink 75 g and test">喝下 75 g、開始試驗</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清掉做過的試驗紀錄；設定不變" data-en-title="Clear the tests done; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Patient">病人</h2>
+          <div class="chips" id="pats" role="group" aria-label="病人" data-en-aria-label="Patient"></div>
+          <div class="slider"><label for="b2" data-en="β-cell function (× normal)">β 細胞功能（× 正常）</label><output id="b2o"></output>
+            <input id="b2" type="range" min="0" max="3" step="0.05" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="s2" data-en="Insulin sensitivity (× normal)">胰島素敏感度（× 正常）</label><output id="s2o"></output>
+            <input id="s2" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="A loop with two hormones">兩種激素組成的回饋</h3>
+      <p data-en-html="When blood glucose rises after a meal, the β cells in the islets of the pancreas sense it and release insulin within minutes. Insulin makes muscle and fat cells move glucose transporters (GLUT4) to their surface and tells the liver to store glycogen and stop releasing glucose — so the level falls back. When glucose falls too low, the α cells release glucagon and the liver releases glucose again. The response always opposes the change: negative feedback.">飯後血糖上升，胰臟胰島裡的 β 細胞幾分鐘內就感測到，放出胰島素。胰島素讓肌肉與脂肪細胞把葡萄糖運輸蛋白（GLUT4）送到細胞表面，也讓肝臟把糖存成肝醣、停止放糖——血糖就降回來。血糖太低時，α 細胞放出升糖素，肝臟再把糖放回血液。反應的方向永遠和變化相反：這就是負回饋。</p>
+
+      <h3 data-en="The model">模型</h3>
+      <p data-en-html="This page uses the glucose–insulin model of Hovorka and colleagues (2004), the one used to test artificial pancreas systems. Glucose sits in an accessible pool Q<sub>1</sub> (blood) and a non-accessible pool Q<sub>2</sub> (tissues); insulin I acts through three delayed effects — moving glucose into tissues (x<sub>1</sub>), using it (x<sub>2</sub>) and suppressing the liver (x<sub>3</sub>):">這一頁用的是 Hovorka 等人（2004）的葡萄糖–胰島素模型，也是測試「人工胰臟」用的模型。葡萄糖分在可以量到的 Q<sub>1</sub>（血液）和量不到的 Q<sub>2</sub>（組織）兩個池子；胰島素 I 透過三種有延遲的作用發揮效果——把糖送進組織（x<sub>1</sub>）、把糖用掉（x<sub>2</sub>）、抑制肝臟產糖（x<sub>3</sub>）：</p>
+      <div class="formula">\[ \frac{dQ_1}{dt}=-\Big[\frac{F_{01}^c}{V_G G}+x_1\Big]Q_1+k_{12}Q_2-F_R+U_G+EGP_0\,(1-x_3) \]</div>
+      <div class="formula">\[ \frac{dQ_2}{dt}=x_1Q_1-(k_{12}+x_2)\,Q_2 ,\qquad \frac{dx_i}{dt}=-k_{ai}\,x_i+k_{ai}\,S_{I,i}\,I \]</div>
+      <p data-en-html="F<sub>01</sub><sup>c</sup> is the glucose the brain uses without insulin, U<sub>G</sub> the glucose absorbed from the gut (two compartments, about an hour), F<sub>R</sub> the glucose lost in urine once G exceeds the kidney threshold of 9 mmol/L (162 mg/dL). Injected insulin passes through two compartments under the skin before it reaches the blood, which is why rapid-acting insulin is best taken 15–20 minutes before a meal.">F<sub>01</sub><sup>c</sup> 是大腦等不靠胰島素用掉的糖；U<sub>G</sub> 是從腸道吸收的糖（兩個隔室，大約一小時）；F<sub>R</sub> 是血糖超過腎閾 9 mmol/L（162 mg/dL）後隨尿流失的糖。打進皮下的胰島素要先經過兩個隔室才到血液，所以速效胰島素最好在飯前 15–20 分鐘打。</p>
+
+      <h3 data-en="Type 1 and type 2 diabetes">第一型與第二型糖尿病</h3>
+      <p data-en-html="In type 1 diabetes the immune system has destroyed the β cells: there is no insulin at all, and without injections glucose climbs day after day. In type 2 diabetes the body first becomes resistant to insulin; the β cells work harder to make up for it, and the disease appears when they can no longer keep up. Kahn (1993) showed that β-cell function and insulin sensitivity trade off along a hyperbola — their product, the disposition index, is what decides whether glucose stays normal.">第一型糖尿病是免疫系統破壞了 β 細胞：完全沒有胰島素，不打針的話血糖一天比一天高。第二型糖尿病是身體先對胰島素產生阻抗；β 細胞加班補償，直到補不過來才發病。Kahn（1993）發現 β 細胞功能和胰島素敏感度沿著一條雙曲線互相抵換——兩者的乘積「處置指數」才決定血糖能不能維持正常。</p>
+      <div class="formula">\[ DI=\beta\times S_I \]</div>
+
+      <h3 data-en="Diagnosis">診斷標準</h3>
+      <p data-en-html="Fasting glucose 126 mg/dL or more, or 200 or more two hours after drinking 75 g of glucose, means diabetes; 100–125 fasting or 140–199 at two hours means prediabetes (American Diabetes Association; Taiwan uses the same values). Over months, glucose sticks to haemoglobin: the A1C. An average glucose of 154 mg/dL corresponds to an A1C of about 7% (ADAG study):">空腹血糖 126 mg/dL 以上，或喝 75 g 葡萄糖兩小時後 200 以上，就是糖尿病；空腹 100–125 或兩小時 140–199 是糖尿病前期（美國糖尿病學會；臺灣採用相同數值）。幾個月下來，葡萄糖會黏在血紅素上，就是糖化血色素 A1C。平均血糖 154 mg/dL 大約對應 A1C 7%（ADAG 研究）：</p>
+      <div class="formula">\[ \bar G\ (\mathrm{mg/dL}) = 28.7\times \mathrm{A1C}\,(\%) - 46.7 \]</div>
+      <p data-en-html="People who measure glucose continuously aim for more than 70% of the day between 70 and 180 mg/dL and less than 4% below 70 (international consensus, 2019).">用連續血糖機的人，目標是一天有 70% 以上的時間在 70–180 mg/dL，低於 70 的時間少於 4%（國際共識，2019）。</p>
+
+      <h3 data-en="Things to try">可以試試</h3>
+      <ul>
+        <li data-en-html="<strong>A big dinner</strong>: give the healthy person 150 g at dinner. How high does glucose go, and how fast does it come back?">「<strong>大餐</strong>」：讓健康的人晚餐吃 150 g。血糖最高到哪裡？多快回來？</li>
+        <li data-en-html="<strong>Too late</strong>: for type 1, inject the meal insulin 30 minutes before eating, then 30 minutes after. Compare the peaks.">「<strong>太晚打</strong>」：第一型，速效胰島素先在飯前 30 分鐘打，再改成飯後 30 分鐘打，比較高峰。</li>
+        <li data-en-html="<strong>Exercise needs a plan</strong>: with good type-1 control, add an hour of jogging after lunch. What should change?">「<strong>運動要先計畫</strong>」：第一型控制得不錯時，午餐後加一小時慢跑。哪裡要跟著調整？</li>
+        <li data-en-html="<strong>Walking the hyperbola</strong>: in part 2, halve the sensitivity and see how much β-cell function it takes to stay normal.">「<strong>沿著雙曲線走</strong>」：在第二部分把敏感度減半，看 β 細胞要多努力才能維持正常。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Glucose and insulin kinetics: Hovorka et al. (2004) with the typical parameters of Wilinska et al. (2010): EGP<sub>0</sub> = 0.0161, F<sub>01</sub> = 0.0097 mmol/kg/min, V<sub>G</sub> = 0.16 L/kg, k<sub>e</sub> = 0.138 /min, insulin absorption t<sub>max,I</sub> = 55 min, 80% of the carbohydrate absorbed with t<sub>max,G</sub> = 60 min. Solved with the fourth-order Runge–Kutta method in 1-minute steps; each day is repeated until it starts the same way.">葡萄糖與胰島素動力學：Hovorka 等（2004），參數用 Wilinska 等（2010）的典型值：EGP<sub>0</sub> = 0.0161、F<sub>01</sub> = 0.0097 mmol/kg/min、V<sub>G</sub> = 0.16 L/kg、k<sub>e</sub> = 0.138 /min、胰島素吸收 t<sub>max,I</sub> = 55 分鐘、醣類吸收 80%、t<sub>max,G</sub> = 60 分鐘。用四階 Runge–Kutta 法、每步 1 分鐘求解；同一天重複幾次，讓起點穩定。</li>
+        <li data-en-html="Illustrative parts (not from the model papers): insulin secretion by the β cells follows a steep curve of glucose, half-maximal at 9 mmol/L, with a 5-minute delay, tuned so a healthy person fasts at about 90 mg/dL and peaks near 150 after 75 g; glucagon raises liver output below 72 mg/dL (weaker in type 1); exercise raises insulin-independent use, insulin sensitivity and liver output, and lowers insulin secretion. Glucose transfer to the tissues is drawn as the sum of insulin-independent and insulin-dependent use.">示意的部分（不在模型論文裡）：β 細胞的胰島素分泌是血糖的陡峭曲線，9 mmol/L 時半滿、延遲 5 分鐘，調整到健康的人空腹約 90 mg/dL、喝 75 g 後高峰約 150；血糖低於 72 mg/dL 時升糖素讓肝臟多產糖（第一型較弱）；運動讓不靠胰島素的用糖、胰島素敏感度與肝臟產糖增加，並減少胰島素分泌。畫面上「組織用掉的糖」是不靠胰島素與靠胰島素兩部分的和。</li>
+        <li data-en-html="The type-2 preset (β = 0.35, sensitivity 0.3) and the type-1 preset (no β cells, sensitivity 0.6, weak glucagon response) are illustrative, chosen so the doses that work are close to real practice (about 0.4–0.6 units per kg per day in type 1).">第二型預設（β = 0.35、敏感度 0.3）與第一型預設（沒有 β 細胞、敏感度 0.6、升糖素反應弱）是示意的，讓有效的劑量接近臨床（第一型一天約每公斤 0.4–0.6 單位）。</li>
+      </ul>
+      <p data-en="This is a learning model, not medical advice. Real doses must be set with a doctor.">這是學習用的模型，不是醫療建議。真正的劑量要和醫師一起決定。</p>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · homeostasis, the endocrine system: insulin and glucagon.">課綱對應：高中生物（108 課綱）・恆定性、內分泌系統：胰島素與升糖素。</li>
+        <li data-en="R. Hovorka et al., “Nonlinear model predictive control of glucose concentration in subjects with type 1 diabetes”, Physiological Measurement 25 (2004) 905–920.">R. Hovorka 等，〈Nonlinear model predictive control of glucose concentration in subjects with type 1 diabetes〉，Physiological Measurement 25 (2004) 905–920。</li>
+        <li data-en="M. E. Wilinska et al., “Simulation environment to evaluate closed-loop insulin delivery systems in type 1 diabetes”, Journal of Diabetes Science and Technology 4 (2010) 132–144.">M. E. Wilinska 等，〈Simulation environment to evaluate closed-loop insulin delivery systems in type 1 diabetes〉，Journal of Diabetes Science and Technology 4 (2010) 132–144。</li>
+        <li data-en="R. N. Bergman et al., “Quantitative estimation of insulin sensitivity”, American Journal of Physiology 236 (1979) E667–E677.">R. N. Bergman 等，〈Quantitative estimation of insulin sensitivity〉，American Journal of Physiology 236 (1979) E667–E677。</li>
+        <li data-en="S. E. Kahn et al., “Quantification of the relationship between insulin sensitivity and β-cell function in human subjects: evidence for a hyperbolic function”, Diabetes 42 (1993) 1663–1672.">S. E. Kahn 等，〈Quantification of the relationship between insulin sensitivity and β-cell function in human subjects: evidence for a hyperbolic function〉，Diabetes 42 (1993) 1663–1672。</li>
+        <li data-en="D. M. Nathan et al., “Translating the A1C assay into estimated average glucose values”, Diabetes Care 31 (2008) 1473–1478.">D. M. Nathan 等，〈Translating the A1C assay into estimated average glucose values〉，Diabetes Care 31 (2008) 1473–1478。</li>
+        <li data-en="T. Battelino et al., “Clinical targets for continuous glucose monitoring data interpretation: recommendations from the international consensus on time in range”, Diabetes Care 42 (2019) 1593–1603.">T. Battelino 等，〈Clinical targets for continuous glucose monitoring data interpretation: recommendations from the international consensus on time in range〉，Diabetes Care 42 (2019) 1593–1603。</li>
+        <li data-en="American Diabetes Association, “Classification and diagnosis of diabetes: Standards of Care in Diabetes”, Diabetes Care (published every year).">American Diabetes Association，〈Classification and diagnosis of diabetes: Standards of Care in Diabetes〉，Diabetes Care（每年更新）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/blood-glucose-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/blood-glucose.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="blood-glucose"></script>
+  <script src="js/missions/blood-glucose.js"></script>
+  <script src="js/stats.js" data-module="blood-glucose"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
