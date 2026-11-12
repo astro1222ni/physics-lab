@@ -103,7 +103,7 @@
     <header class="top">
       <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#genetics&quot;>Biology · Genetics</a> / Mendelian inheritance"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#genetics">生物・遺傳</a> ／ 孟德爾遺傳</nav>
       <h1 data-en="Mendelian Inheritance: Pea Crosses and the Chi-Square Test">孟德爾遺傳：豌豆雜交與卡方檢定</h1>
-      <p data-en="Every pea plant carries two copies of each gene, and every egg or pollen grain carries just one, picked at random. Choose the parents, watch their gametes meet, and let hundreds of offspring pile up: the 3 : 1 and 9 : 3 : 3 : 1 ratios appear by themselves. Then unmask a mystery pea with a test cross, and use the chi-square test to judge whether your counts — and Mendel’s own — really fit the theory.">每株豌豆的每個基因都有兩份，而每個卵或花粉只帶其中一份，而且是隨機的。選好親本，看配子怎麼結合，讓成百上千個子代累積起來：3 : 1 與 9 : 3 : 3 : 1 會自己浮現。接著用試交揪出神秘豌豆的基因型，再用卡方檢定判斷你的數據——還有孟德爾當年的數據——到底符不符合理論。</p>
+      <p data-en="Every pea plant carries two copies of each gene, and every egg cell or sperm cell carries just one, picked at random. Choose the parents, watch their gametes meet, and let hundreds of offspring pile up: the 3 : 1 and 9 : 3 : 3 : 1 ratios appear by themselves. Then unmask a mystery pea with a test cross, and use the chi-square test to judge whether your counts — and Mendel’s own — really fit the theory.">每株豌豆的每個基因都有兩份，而每個卵細胞或精細胞只帶其中一份，而且是隨機的。選好親本，看配子怎麼結合，讓成百上千個子代累積起來：3 : 1 與 9 : 3 : 3 : 1 會自己浮現。接著用試交揪出神秘豌豆的基因型，再用卡方檢定判斷你的數據——還有孟德爾當年的數據——到底符不符合理論。</p>
     </header>
 
     <p class="try-hint" data-en="Try it: press +10 a few times and watch how far the ratio wanders from 3 : 1, then press +1000.">試試看：先按幾次 +10，看比例離 3 : 1 有多遠，再按 +1000。</p>
@@ -226,21 +226,21 @@
       </ul>
 
       <h3 data-en="The law of segregation">分離律</h3>
-      <p data-en-html="When a pea makes eggs or pollen, its two alleles of a gene separate, and each gamete receives just one of them, each with probability 1/2. Fertilisation brings one allele from each parent together again, at random. For two heterozygotes this gives">豌豆產生卵或花粉時，同一個基因的兩個對偶基因彼此分離，每個配子只得到其中一個，機率各為 1/2。受精時，來自雙親的配子隨機結合，又湊成一對。兩個異型合子雜交時：</p>
+      <p data-en-html="When a pea makes egg cells or sperm cells (carried by its pollen), its two alleles of a gene separate, and each gamete receives just one of them, each with probability 1/2. Fertilisation brings one allele from each parent together again, at random. For two heterozygotes this gives">豌豆產生卵細胞或精細胞（由花粉帶到雌蕊）時，同一個基因的兩個對偶基因彼此分離，每個配子只得到其中一個，機率各為 1/2。受精時，來自雙親的配子隨機結合，又湊成一對。兩個異型合子雜交時：</p>
       <div class="formula">
         \[ \left(\tfrac12 R + \tfrac12 r\right)\times\left(\tfrac12 R + \tfrac12 r\right) = \tfrac14\,RR + \tfrac12\,Rr + \tfrac14\,rr \]
       </div>
       <p data-en-html="RR and Rr both look round, so the F<sub>2</sub> phenotypes come in the ratio round : wrinkled = 3 : 1, while the genotypes come as 1 : 2 : 1. The Punnett square is just this multiplication drawn as a table: each of its four cells has probability 1/4.">RR 與 Rr 看起來都是圓形，所以子二代的表現型比為圓形 : 皺縮 = 3 : 1，基因型比則為 1 : 2 : 1。龐氏方格（棋盤方格）就是把這個乘法畫成表格：四格的機率各為 1/4。</p>
 
-      <h3 data-en="The law of independent assortment">自由分配律</h3>
+      <h3 data-en="The law of independent assortment">獨立分配律</h3>
       <p data-en-html="Two genes that lie on different chromosomes (or far apart on the same one) are sorted into the gametes independently. A double heterozygote RrYy therefore makes four kinds of gametes, RY, Ry, rY and ry, each with probability 1/2 × 1/2 = 1/4, and the F<sub>2</sub> of two such plants shows">兩對位在不同染色體上（或在同一條染色體上相距很遠）的基因，分配到配子時互不影響。雙異型合子 RrYy 因此產生 RY、Ry、rY、ry 四種配子，機率各為 1/2 × 1/2 = 1/4；兩株雙異型合子雜交，子二代的表現型為</p>
       <div class="formula">
         \[ (3 : 1)\times(3 : 1) = 9 : 3 : 3 : 1 \]
       </div>
-      <p data-en-html="The genotypes come as (1 : 2 : 1) × (1 : 2 : 1), nine kinds in all. This simulation assumes independent assortment for every pair of traits. Genes that sit close together on one chromosome are <em>linked</em> and break this rule — that is the subject of a later chapter.">基因型則是 (1 : 2 : 1) × (1 : 2 : 1)，共 9 種。本模擬假設任兩個性狀都自由分配。若兩個基因在同一條染色體上而且很靠近（<em>連鎖</em>），子代比例就會偏離 9 : 3 : 3 : 1，那是之後章節的主題。</p>
+      <p data-en-html="The genotypes come as (1 : 2 : 1) × (1 : 2 : 1), nine kinds in all. This simulation assumes independent assortment for every pair of traits. Genes that sit close together on one chromosome are <em>linked</em> and break this rule — that is the subject of a later chapter.">基因型則是 (1 : 2 : 1) × (1 : 2 : 1)，共 9 種。本模擬假設任兩個性狀都獨立分配。若兩個基因在同一條染色體上而且很靠近（<em>連鎖</em>），子代比例就會偏離 9 : 3 : 3 : 1，那是之後章節的主題。</p>
 
       <h3 data-en="The test cross">試交</h3>
-      <p data-en-html="A plant with the dominant phenotype can be RR or Rr. Cross it with a recessive homozygote rr: every pollen grain then carries r, so each offspring simply shows which allele the tested plant passed on. RR gives only dominant offspring; Rr gives dominant and recessive in the ratio 1 : 1 (and RrYy × rryy gives 1 : 1 : 1 : 1). One recessive offspring proves the plant is heterozygous. Proving it is homozygous is never certain: a heterozygote gives \(n\) dominant offspring in a row with probability \((1/2)^n\) — for 8 offspring only about 0.4%.">顯性表現型的植株可能是 RR，也可能是 Rr。讓它和隱性同型合子 rr 雜交：rr 的配子一定帶 r，所以每個子代的表現型直接說出受測植株給了哪個對偶基因。RR 只會產生顯性子代；Rr 則產生顯性與隱性各半（1 : 1；RrYy × rryy 為 1 : 1 : 1 : 1）。只要出現一個隱性子代，就證明它是異型合子；要證明它是同型合子卻永遠無法百分之百確定——異型合子連續產生 \(n\) 個顯性子代的機率是 \((1/2)^n\)，8 個時只有約 0.4%。</p>
+      <p data-en-html="A plant with the dominant phenotype can be RR or Rr. Cross it with a recessive homozygote rr: every gamete of rr then carries r, so each offspring simply shows which allele the tested plant passed on. RR gives only dominant offspring; Rr gives dominant and recessive in the ratio 1 : 1 (and RrYy × rryy gives 1 : 1 : 1 : 1). One recessive offspring proves the plant is heterozygous. Proving it is homozygous is never certain: a heterozygote gives \(n\) dominant offspring in a row with probability \((1/2)^n\) — for 8 offspring only about 0.4%.">顯性表現型的植株可能是 RR，也可能是 Rr。讓它和隱性同型合子 rr 雜交：rr 的配子一定帶 r，所以每個子代的表現型直接說出受測植株給了哪個對偶基因。RR 只會產生顯性子代；Rr 則產生顯性與隱性各半（1 : 1；RrYy × rryy 為 1 : 1 : 1 : 1）。只要出現一個隱性子代，就證明它是異型合子；要證明它是同型合子卻永遠無法百分之百確定——異型合子連續產生 \(n\) 個顯性子代的機率是 \((1/2)^n\)，8 個時只有約 0.4%。</p>
 
       <h3 data-en="The chi-square goodness-of-fit test">卡方適合度檢定</h3>
       <p data-en-html="Random sampling never gives exactly 3 : 1. Is a departure just chance, or a sign that the hypothesis is wrong? Compare each observed count \(O_i\) with the count expected from the hypothesis, \(E_i = N p_i\):">隨機抽樣幾乎不會剛好得到 3 : 1。觀察值與期望值的差距，只是運氣，還是假說錯了？把每一類的觀察次數 \(O_i\) 與假說預測的期望次數 \(E_i = N p_i\) 比較：</p>
@@ -297,10 +297,10 @@
 
       <h3 data-en="How the simulation works">模擬方法</h3>
       <ul>
-        <li data-en="Each parent’s gametes are the cells of the classic Punnett square: 2 for one trait, 4 for two (a homozygous gene simply repeats its allele). Every offspring picks one egg cell and one pollen cell uniformly at random, which is exactly the same as letting each gene segregate independently with probability 1/2.">每個親本的配子就是傳統龐氏方格的格子：單性狀 2 格、雙性狀 4 格（同型合子的基因，兩格寫的對偶基因相同）。每個子代從卵與花粉各隨機抽一格，這和「每個基因各自以 1/2 的機率分離」完全等價。</li>
+        <li data-en="Each parent’s gametes are the cells of the classic Punnett square: 2 for one trait, 4 for two (a homozygous gene simply repeats its allele). Every offspring picks one egg cell and one sperm cell uniformly at random, which is exactly the same as letting each gene segregate independently with probability 1/2.">每個親本的配子就是傳統龐氏方格的格子：單性狀 2 格、雙性狀 4 格（同型合子的基因，兩格寫的對偶基因相同）。每個子代從卵細胞與精細胞各隨機抽一格，這和「每個基因各自以 1/2 的機率分離」完全等價。</li>
         <li data-en="The expected ratios are computed as exact fractions, so 9/16, 3/16 and 1/16 are not rounded. The p-value uses the regularised incomplete gamma function (series and continued fraction), checked against the critical values in the table above.">期望比例用精確的分數計算，9/16、3/16、1/16 都沒有四捨五入。p 值用正則化不完全伽瑪函數（級數與連分數）計算，並以上表的臨界值核對過。</li>
         <li data-en="Random numbers come from a seedable generator, so the core can be tested with reproducible results; in the page a new seed is used every time.">亂數由可設定種子的產生器產生，核心程式因此能用可重現的結果測試；頁面上每次都用新的種子。</li>
-        <li data-en="Assumptions: complete dominance, independent assortment, no mutation, and every fertilised egg develops equally well. Real crosses can depart from all of these.">假設：完全顯性、自由分配、沒有突變、每個受精卵都同樣能發育。真實的雜交可能偏離以上任何一點。</li>
+        <li data-en="Assumptions: complete dominance, independent assortment, no mutation, and every fertilised egg develops equally well. Real crosses can depart from all of these.">假設：完全顯性、獨立分配、沒有突變、每個受精卵都同樣能發育。真實的雜交可能偏離以上任何一點。</li>
         <li data-en="With up to 20 offspring at a time every fertilisation is animated; larger batches pour into the tray and the counts rise as they land. With reduced motion turned on, the counts are added at once.">一次 20 個以內的子代，每一次受精都有動畫；更多時改成一次倒進收成盤，計數隨落下而增加。開啟「減少動態效果」時，計數直接加上。</li>
       </ul>
 

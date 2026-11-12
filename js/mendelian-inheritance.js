@@ -280,7 +280,7 @@
     g.drawImage(s.cv, x - s.ax, y + size * 0.44 - s.base, s.w, s.h);
   }
 
-  // ---------- 配子：卵（平滑、有外膜）與花粉（表面有小突起） ----------
+  // ---------- 配子：卵細胞（平滑、有外膜）與精細胞（畫在表面有小突起的花粉粒裡） ----------
   function paintGamete(g, x, y, r, egg) {
     const base = egg ? LD.c.accent : LD.c.equi;
     const body = LD.mix(base, LD.c['canvas-bg'], LD.dark ? 0.55 : 0.66);
@@ -528,7 +528,7 @@
   }
   function drawGametes(r, who) {
     const g = ctx, slots = who === 1 ? cr.slots1 : cr.slots2;
-    txt(g, who === 1 ? T('雌配子（卵）', 'Eggs') : T('雄配子（花粉）', 'Pollen'), r.x + 4, r.y + r.labH - 2, { size: 11, weight: 600, color: LD.c.muted, maxW: r.w - 8 });
+    txt(g, who === 1 ? T('雌配子（卵）', 'Eggs') : T('雄配子（精細胞）', 'Sperm cells'), r.x + 4, r.y + r.labH - 2, { size: 11, weight: 600, color: LD.c.muted, maxW: r.w - 8 });
     for (let k2 = 0; k2 < slots.length; k2++) {
       const p = slotPos(who, k2);
       const label = who === 1 && hidden() ? '?' : MC.gameteStr(slots[k2], syms());
@@ -1117,7 +1117,7 @@
           : kd === 'test' ? T('一方是隱性同型合子，子代的表現型直接反映另一方產生的配子：期望 ' + ratio + '。', 'One parent is homozygous recessive, so the offspring show the gametes of the other parent directly: expect ' + ratio + '.')
             : T('期望的表現型比為 ' + ratio + '。', 'Expected phenotype ratio ' + ratio + '.');
       s = '<strong>' + kindLabel(kd) + '</strong>：' + desc;
-      if (L === 2) s += T('兩對基因自由分配。', ' The two genes assort independently.');
+      if (L === 2) s += T('兩對基因獨立分配。', ' The two genes assort independently.');
     }
     $('crossInfo').innerHTML = s;
   }

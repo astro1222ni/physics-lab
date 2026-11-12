@@ -107,7 +107,7 @@ claim(check('1', mono(1, 1)().sow(1)), 'M1 第一顆豌豆：按「+1」就完�
   const r = rate(4000, di([1, 1], [0, 0]), [100, 100, 100, 100], '8');
   const acc = rate(2000, di([1, 1], [0, 0]), new Array(20).fill(100), '8');
   const flip = rate(2000, di([0, 0], [1, 1]), [100, 100, 100, 100], '8');
-  claim(r > 0.3 && acc > 0.9, `M8 自由分配：RrYy × rryy 恰好 400 個時四類都在 22%–28% 的機率 ${pct(r)}，累積到 2000 個之內 ${pct(acc)}（rryy × RrYy 也可以：${pct(flip)}）`);
+  claim(r > 0.3 && acc > 0.9, `M8 獨立分配：RrYy × rryy 恰好 400 個時四類都在 22%–28% 的機率 ${pct(r)}，累積到 2000 個之內 ${pct(acc)}（rryy × RrYy 也可以：${pct(flip)}）`);
   claim(!check('8', di([2, 1], [0, 0])().sow(1000)), '    RRYy × rryy 只有兩類，不會成立（必須是 AaBb）');
 }
 // 9、10、12. 偵探：照「每次產生 1 個，直到每個基因座看到隱性、或已經有 8 個都沒有隱性」的策略
@@ -168,11 +168,24 @@ function detective(L, budget) {
   const sim = rate(40000, di([1, 1], [1, 1]), [16], 'h1');
   claim(Math.abs(sim - theory) < 0.004, `H1 一字不差：16 個子二代恰好 9:3:3:1 的機率 ${pct(theory)}（模擬 ${pct(sim)}），平均約 ${Math.round(1 / theory)} 次「全部清除＋自訂數量 16」`);
 }
-// h2. 型一錯誤：真的假說卻 p < 0.05
+// h2. 型一錯誤：真的假說（單性狀）先被拒絕（N ≥ 200、p < 0.05），不清除、繼續種到兩倍以上，p 回到 0.5 以上
 {
-  const once = rate(8000, mono(1, 1), [200], 'h2');
-  const acc = rate(2000, di([1, 1], [1, 1]), new Array(30).fill(100), 'h2');
-  claim(Math.abs(once - 0.05) < 0.012 && acc > 0.15, `H2 型一錯誤：200 個子二代時 p < 0.05 的機率 ${pct(once)}（理論約 5%）；雙性狀一路按「+100」到 3000 個之內出現過 ${pct(acc)}`);
+  const fresh = () => { byId['h2'].mem = {}; };
+  const rateM = (trials, make, batches) => { let ok = 0; for (let i = 0; i < trials; i++) { fresh(); const lab = make(); for (const b of batches) if (check('h2', lab.sow(b))) { ok++; break; } } fresh(); return ok / trials; };
+  // 刻意的做法：單性狀子二代（或試交）一直按「+100」到 4000 個
+  const go = rateM(3000, mono(1, 1), new Array(40).fill(100));
+  const goT = rateM(3000, mono(1, 0), new Array(40).fill(100));
+  claim(go > 0.08 && goT > 0.08, `H2 說實話沒人信：單性狀子二代一路按「+100」到 4000 個之內成立 ${pct(go)}、試交 ${pct(goT)}（每次「全部清除」重來就是新的一輪）`);
+  fresh(); claim(!check('h2', mono(1, 1)().sow(5000)), '    只產生一批（沒有先被拒絕）不會成立');
+  // 誤觸檢查：做一般任務的典型路線
+  const t11 = rateM(2000, di([1, 1], [1, 1]), [556].concat(new Array(30).fill(100)));
+  const t11b = rateM(2000, di([1, 1], [1, 1]), new Array(30).fill(100));
+  claim(t11 === 0 && t11b === 0, `    做「比孟德爾更準」（雙性狀子二代 556 個再一路 +100）不會順手完成：${pct(t11)}、${pct(t11b)}`);
+  const t4 = rateM(3000, mono(1, 1), [100, 100, 100, 100]);
+  const t5 = rateM(3000, mono(1, 0), [100, 100, 100]);
+  claim(t4 < 0.01 && t5 < 0.01, `    做「三比一」（+100 到 400 個）${pct(t4)}、「試交的一比一」（+100 到 300 個）${pct(t5)}，都低於 1%`);
+  const t6 = rateM(3000, mono(1, 1), [8, 1, 1, 1, 1, 1]);
+  claim(t6 === 0, '    做「小樣本會騙人」（8 個左右）不會成立');
 }
 // h3. 孟德爾數過的 7324 粒（或 8023 粒）
 {

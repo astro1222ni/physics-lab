@@ -12,7 +12,7 @@
     {
       id: 'mendelian-inheritance-1', level: 1,
       title: { zh: '第一顆豌豆', en: 'The first pea' },
-      desc: { zh: '讓兩株豌豆雜交，產生第一個子代。看看卵與花粉的配子怎麼結合。', en: 'Cross two pea plants and produce your first offspring. Watch how an egg and a pollen gamete join.' },
+      desc: { zh: '讓兩株豌豆雜交，產生第一個子代。看看卵細胞與精細胞這兩種配子怎麼結合。', en: 'Cross two pea plants and produce your first offspring. Watch how the two gametes, an egg cell and a sperm cell, join.' },
       check: function (ev) { return ev.type === 'sow' && ev.data.N >= 1; }
     },
     {
@@ -58,7 +58,7 @@
     },
     {
       id: 'mendelian-inheritance-8', level: 6,
-      title: { zh: '自由分配', en: 'Independent assortment' },
+      title: { zh: '獨立分配', en: 'Independent assortment' },
       desc: { zh: '雙性狀試交（AaBb × aabb）累積至少 400 個子代，四種表現型每一種都佔 22% 到 28%。這說明雙異型合子產生了哪幾種配子？', en: 'In a two-trait test cross (AaBb × aabb), grow at least 400 offspring with each of the four phenotypes between 22% and 28%. What gametes did the double heterozygote make?' },
       check: function (ev) {
         const d = ev.data;
@@ -112,8 +112,20 @@
     },
     {
       id: 'mendelian-inheritance-h2', level: 6, hidden: true,
-      riddle: { zh: '明明說的是實話，卻沒有人相信。', en: 'You told the truth, and no one believed you.' },
-      check: function (ev) { const d = ev.data; return isSow(ev) && !d.impossible && d.df >= 1 && d.N >= 200 && d.p < 0.05; }
+      riddle: { zh: '明明說的是實話，卻沒有人相信；你沒有改口，只是繼續說下去。', en: 'You told the truth and no one believed you; you did not change your story, you just kept on telling it.' },
+      // 型一錯誤：單性狀、假說為真（子二代或試交），同一輪先在 N ≥ 200 被卡方檢定拒絕（p < 0.05），
+      // 不清除、繼續產生子代到被拒絕時的兩倍以上，p 回到 0.5 以上。只限單性狀，做雙性狀任務（例如「比孟德爾更準」）時不會順手完成。
+      check: function (ev, mem) {
+        if (ev.type === 'reset') { mem.rej = 0; mem.key = ''; mem.lastN = 0; return false; }
+        if (!isSow(ev)) return false;
+        const d = ev.data;
+        const key = d.L + '|' + d.kind + '|' + d.g1.join('') + '|' + d.g2.join('') + '|' + d.traits.join(',');
+        if (key !== mem.key || d.N < (mem.lastN || 0)) { mem.key = key; mem.rej = 0; }
+        mem.lastN = d.N;
+        if (d.L !== 1 || (d.kind !== 'F2' && d.kind !== 'test') || d.impossible || !(d.df >= 1)) return false;
+        if (!mem.rej) { if (d.N >= 200 && d.p < 0.05) mem.rej = d.N; return false; }
+        return d.N >= 2 * mem.rej && d.p > 0.5;
+      }
     },
     {
       id: 'mendelian-inheritance-h3', level: 7, hidden: true,
