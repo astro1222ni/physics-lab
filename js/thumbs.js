@@ -50,7 +50,8 @@
     "seasons": "d9138d00",
     "current-magnetic-field": "fb726177",
     "mendelian-inheritance": "ca6f2c4f",
-    "acid-base-titration": "be286dd9"
+    "acid-base-titration": "be286dd9",
+    "tides": "effa63c4"
   };
   /* VERSIONS-END */
 

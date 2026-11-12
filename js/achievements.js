@@ -181,6 +181,7 @@
     { id: 'branch-modern', tier: 5, cat: 'branch', name: nm('愛因斯坦的光子', "Einstein's photon"), desc: nm('完成近代物理分支所有實驗的所有任務。', 'Complete every mission in Modern Physics.'), check: function (c) { return c.branchDone.modern; } },
     { id: 'branch-astro', tier: 5, cat: 'branch', name: nm('伽利略的望遠鏡', "Galileo's telescope"), desc: nm('完成天文分支所有實驗的所有任務。', 'Complete every mission in Astronomy.'), check: function (c) { return c.branchDone.astro; } },
     { id: 'branch-geo', tier: 5, cat: 'branch', name: nm('魏格納的拼圖', "Wegener's jigsaw"), desc: nm('完成固體地球分支所有實驗的所有任務。', 'Complete every mission in Solid Earth.'), check: function (c) { return c.branchDone.geo; } },
+    { id: 'branch-ocean', tier: 5, cat: 'branch', name: nm('牛頓的潮汐', "Newton's tides"), desc: nm('完成海洋分支所有實驗的所有任務。', 'Complete every mission in Ocean.'), check: function (c) { return c.branchDone.ocean; } },
     { id: 'branch-genetics', tier: 5, cat: 'branch', name: nm('孟德爾的豌豆', "Mendel's peas"), desc: nm('完成遺傳分支所有實驗的所有任務。', 'Complete every mission in Genetics.'), check: function (c) { return c.branchDone.genetics; } },
     { id: 'branch-acidbase', tier: 5, cat: 'branch', name: nm('阿瑞尼斯的離子', "Arrhenius's ions"), desc: nm('完成酸鹼與氧化還原分支所有實驗的所有任務。', 'Complete every mission in Acids, Bases and Redox.'), check: function (c) { return c.branchDone.acidbase; } },
     { id: 'rank-100', tier: 3, cat: 'rank', name: nm('榜上有名', 'On the board'), desc: nm('進入排行榜前 100 名（至少 1 k 顆星）。', 'Reach the top 100 (with at least 1 k stars).'), check: function (c) { return c.rank > 0 && c.rank <= 100 && c.stars >= 1e3; } },
