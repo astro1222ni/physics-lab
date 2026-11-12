@@ -461,7 +461,7 @@
     setHTML('rY', num(K.y, 2) + ' m');
     if (K.onTrack) {
       const N = state.m * K.N;
-      setHTML('rN', num(N / 1000, 2) + ' kN<small>' + num(K.N / P.g, 2) + ' mg' + (P.mode === 'rail' && K.N < 0 ? T('（軌道往內拉）', ' (rail pulls inward)') : '') + '</small>');
+      setHTML('rN', num(N / 1000, 2) + ' kN<small>' + num(K.N / P.g, 2) + ' mg' + (P.mode === 'rail' && K.N < 0 ? T('（軌道把車拉向軌道）', ' (the rail pulls the car toward it)') : '') + '</small>');
     } else setHTML('rN', '0<small>' + T('在空中', 'in the air') + '</small>');
     setHTML('rK', fmtE(E.K));
     setHTML('rU', fmtE(E.U));
@@ -1388,8 +1388,8 @@
     $('modeRail').setAttribute('aria-pressed', String(state.mode === 'rail'));
     $('modeFree').setAttribute('aria-pressed', String(state.mode === 'free'));
     $('modeHint').textContent = state.mode === 'free'
-      ? T('自由小車只靠軌道往外推（N ≥ 0）；N 降到 0 就離開軌道，變成拋體。', 'The free car is only pushed by the track (N ≥ 0); when N drops to zero it leaves the track and becomes a projectile.')
-      : T('軌道車的輪子夾住軌道上下兩側，軌道也能往內拉，不會掉下來。', 'The rail car’s wheels grip the rail from both sides, so the rail can also pull it in — it never falls off.');
+      ? T('自由小車只能被軌道推離軌道面（N ≥ 0）；N 降到 0 就離開軌道，變成拋體。', 'The free car can only be pushed away from the track surface (N ≥ 0); when N drops to zero it leaves the track and becomes a projectile.')
+      : T('軌道車的輪子夾住軌道上下兩側，軌道也能把車拉向軌道（N < 0），不會掉下來。', 'The rail car’s wheels grip the rail from both sides, so the rail can also pull the car toward the rail (N < 0) — it never falls off.');
   }
   function updateGButtons() {
     document.querySelectorAll('#gBox button').forEach(function (b) { b.setAttribute('aria-pressed', String(Math.abs(+b.dataset.g - state.g) < 1e-9)); });
