@@ -72,7 +72,10 @@ const PREP = {
   'seasons':           { eval: "__seasons.setClock(10.5); document.getElementById('clock').dispatchEvent(new Event('input'));", wait: 1500, region: [0.522, 0.008, 0.478] }, // 只取右半「觀察者的天空」
   'current-magnetic-field': { eval: "LabNum.set(document.getElementById('I'), 3); __cmf.needle.phi = __cmf.ofield().thetaEq * Math.PI / 180;", wait: 1500 },
   'energy-coaster':    { click: ['#presetBox button[data-preset="loop"]'], wait: 2500, anchorX: 1 },
-  'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 }
+  'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 },
+  // 雙性狀 RrYy × RrYy：先種 100 顆（收成盤有黃綠、圓皺四類），2.4 秒後再種 10 顆，擷取時配子正在飛、受精；
+  // 畫布在 1280 寬時約 2 : 1，把實驗區左欄限制在 700 px，畫布就接近 16 : 9，母本、父本兩張卡片都不會被裁掉
+  'mendelian-inheritance': { eval: "document.querySelector('.lab').style.gridTemplateColumns = 'minmax(0, 700px) 320px'; document.querySelector('#lSeg [data-l=\"2\"]').click(); document.getElementById('sow100').click(); setTimeout(function () { document.getElementById('sow10').click(); }, 2400);", wait: 2900 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611121420"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Mendelian Inheritance: Pea Crosses and the Chi-Square Test | Astro Ni Science Lab">孟德爾遺傳：豌豆雜交與卡方檢定｜Astro Ni 科學實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="讓豌豆雜交，看配子隨機結合、龐氏方格與子代的 3:1、9:3:3:1；用試交揪出神秘豌豆的基因型，再用卡方檢定比較你的數據和孟德爾的原始數據。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/mendelian-inheritance.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/mendelian-inheritance.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/mendelian-inheritance.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/mendelian-inheritance.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="孟德爾遺傳：豌豆雜交與卡方檢定｜Astro Ni 科學實驗室">
+  <meta property="og:description" content="讓豌豆雜交，看配子隨機結合、龐氏方格與子代的 3:1、9:3:3:1；用試交揪出神秘豌豆的基因型，再用卡方檢定比較你的數據和孟德爾的原始數據。">
+  <meta property="og:url" content="https://lab.astroni.org/mendelian-inheritance.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/mendelian-inheritance.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="孟德爾遺傳：豌豆雜交與卡方檢定的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"孟德爾遺傳：豌豆雜交與卡方檢定","alternateName":"Mendelian Inheritance: Pea Crosses and the Chi-Square Test","description":"讓豌豆雜交，看配子隨機結合、龐氏方格與子代的 3:1、9:3:3:1；用試交揪出神秘豌豆的基因型，再用卡方檢定比較你的數據和孟德爾的原始數據。","url":"https://lab.astroni.org/mendelian-inheritance.html","image":"https://lab.astroni.org/img/og/mendelian-inheritance.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["遺傳（Genetics）","孟德爾遺傳法則（Mendel's Laws of Inheritance）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611121420">
+  <style>
+    /* 孟德爾遺傳頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 兩個畫布的高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv, #cv2 { aspect-ratio: auto; height: 400px; touch-action: auto; cursor: default; }
+    #cv2 { margin-top: 12px; height: 340px; }
+    .mi button { min-height: 44px; }
+    .mi .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .mi .playbar button { flex: 1 1 auto; font-variant-numeric: tabular-nums; }
+    .mi .playbar .pb-label { flex: 0 0 auto; color: var(--muted); font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+    .mi .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .mi .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .mi .slider input[type="range"] { height: 28px; margin: 0; }
+    .mi [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 10px 0 6px; }
+    .seg2, .seg3 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg2 button, .seg3 button { padding: 6px 4px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .mi .geno-row { display: grid; grid-template-columns: 6.4em minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 6px; }
+    .mi .geno-row .gl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); line-height: 1.3; }
+    .mi .geno-row button { font-family: "Times New Roman", "Noto Serif TC", serif; font-style: italic; font-size: calc(17px * var(--fs, 1)); letter-spacing: .02em; }
+    .mi .trait-row { display: grid; grid-template-columns: minmax(4.6em, auto) minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 8px; }
+    .mi .trait-row label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .mi .trait-row select {
+      font: inherit; font-size: calc(14px * var(--fs, 1)); width: 100%; min-height: 44px; min-width: 0; padding: 6px 8px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    /* 英文的選項字很長：面板欄寬固定，卡片不可被選單撐寬 */
+    .mi .panel { grid-template-columns: minmax(0, 1fr); }
+    .mi .panel > .card { min-width: 0; }
+    .mi .checks label { min-height: 44px; }
+    .mi .checks input { width: 17px; height: 17px; }
+    .mi .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .mi .info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); line-height: 1.55; }
+    .mi .info strong { color: var(--text); }
+    .mi .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .mi .row2 button { flex: 1 1 auto; }
+    .mi .quick button { flex: 1 1 30%; padding: 6px 6px; line-height: 1.25; }
+    .mi .verdict { margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); min-height: 1.4em; line-height: 1.55; }
+    .mi .verdict.good { color: var(--probe); font-weight: 700; }
+    .mi .verdict.bad { color: var(--pos); }
+    .mi .sow-row { display: flex; gap: 8px; align-items: flex-end; }
+    .mi .sow-row .slider { flex: 1 1 auto; min-width: 0; }
+    .mi .sow-row button { flex: none; }
+    #ro { grid-template-columns: minmax(0, 1fr) fit-content(62%); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout sub, .mi sub { font-size: .75em; }
+    .gt { font-family: "Times New Roman", "Noto Serif TC", serif; font-style: italic; letter-spacing: .02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .mi .tablewrap { margin: 10px 0 0; }
+    #tbl td, #tbl th { font-variant-numeric: tabular-nums; }
+    #tbl td.ph { white-space: nowrap; }
+    #tbl td.ph::before { content: attr(data-mk); color: var(--mk); margin-right: .35em; font-weight: 700; }
+    #tbl tfoot td { white-space: nowrap; }
+    #tbl .mk { font-style: normal; }
+    .legend .mk { display: inline-block; width: 1.1em; text-align: center; font-weight: 700; }
+    .legend i.dash { background: none !important; border: 2px dashed currentColor; width: 12px; height: 10px; border-radius: 2px; }
+    .legend i.rng { background: none !important; border-left: 2px solid currentColor; height: 12px; width: 0; }
+    /* 圖例的星號：淺色時用畫布星星的深金色外框色，白底上對比才夠（--star 原色只有 2.3） */
+    .legend .star { color: #8f6800; font-style: normal; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .legend .star { color: var(--star); } }
+    :root[data-theme="dark"] .legend .star { color: var(--star); }
+    .notes table.mendel td, .notes table.mendel th { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#genetics&quot;>Biology · Genetics</a> / Mendelian inheritance"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#genetics">生物・遺傳</a> ／ 孟德爾遺傳</nav>
+      <h1 data-en="Mendelian Inheritance: Pea Crosses and the Chi-Square Test">孟德爾遺傳：豌豆雜交與卡方檢定</h1>
+      <p data-en="Every pea plant carries two copies of each gene, and every egg or pollen grain carries just one, picked at random. Choose the parents, watch their gametes meet, and let hundreds of offspring pile up: the 3 : 1 and 9 : 3 : 3 : 1 ratios appear by themselves. Then unmask a mystery pea with a test cross, and use the chi-square test to judge whether your counts — and Mendel’s own — really fit the theory.">每株豌豆的每個基因都有兩份，而每個卵或花粉只帶其中一份，而且是隨機的。選好親本，看配子怎麼結合，讓成百上千個子代累積起來：3 : 1 與 9 : 3 : 3 : 1 會自己浮現。接著用試交揪出神秘豌豆的基因型，再用卡方檢定判斷你的數據——還有孟德爾當年的數據——到底符不符合理論。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press +10 a few times and watch how far the ratio wanders from 3 : 1, then press +1000.">試試看：先按幾次 +10，看比例離 3 : 1 有多遠，再按 +1000。</p>
+    <div class="lab mi">
+      <div class="stage">
+        <canvas id="cv" role="img" aria-label="豌豆雜交畫布：上方是母本與父本和它們的配子，中間是受精，下方是收成的子代" data-en-aria-label="Pea cross: the two parents and their gametes at the top, fertilisation in the middle, the harvested offspring below"></canvas>
+        <div class="playbar">
+          <span class="pb-label" data-en="Offspring">產生子代</span>
+          <button id="sow1" type="button" class="primary" aria-label="產生 1 個子代" data-en-aria-label="Produce 1 offspring">+1</button>
+          <button id="sow10" type="button" aria-label="產生 10 個子代" data-en-aria-label="Produce 10 offspring">+10</button>
+          <button id="sow100" type="button" aria-label="產生 100 個子代" data-en-aria-label="Produce 100 offspring">+100</button>
+          <button id="sow1000" type="button" aria-label="產生 1000 個子代" data-en-aria-label="Produce 1000 offspring">+1000</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除所有子代與計數，雜交設定不變" data-en-title="Clear every offspring and count; the cross settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <canvas id="cv2" role="img" aria-label="龐氏方格與子代比例長條圖" data-en-aria-label="Punnett square and bar chart of the offspring ratios"></canvas>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="stageHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardCross" data-share-skip>
+          <h2 data-en="The cross">雜交設定</h2>
+          <div class="seg2" role="group" aria-label="追蹤幾個性狀" data-en-aria-label="How many traits to follow" id="lSeg">
+            <button type="button" data-l="1" aria-pressed="true" data-en="One trait">單性狀</button>
+            <button type="button" data-l="2" aria-pressed="false" data-en="Two traits">雙性狀</button>
+          </div>
+          <div class="trait-row"><label for="tr1" data-en="Trait 1">性狀一</label>
+            <select id="tr1">
+              <option value="shape" data-en="Seed: round R / wrinkled r">種子形狀（圓 R／皺 r）</option>
+              <option value="color" data-en="Cotyledon: yellow Y / green y">子葉顏色（黃 Y／綠 y）</option>
+              <option value="flower" data-en="Flower: purple P / white p">花色（紫 P／白 p）</option>
+              <option value="height" data-en="Stem: tall T / dwarf t">莖的高度（高 T／矮 t）</option>
+            </select></div>
+          <div class="trait-row" id="rowTr2" hidden><label for="tr2" data-en="Trait 2">性狀二</label>
+            <select id="tr2">
+              <option value="shape" data-en="Seed: round R / wrinkled r">種子形狀（圓 R／皺 r）</option>
+              <option value="color" selected data-en="Cotyledon: yellow Y / green y">子葉顏色（黃 Y／綠 y）</option>
+              <option value="flower" data-en="Flower: purple P / white p">花色（紫 P／白 p）</option>
+              <option value="height" data-en="Stem: tall T / dwarf t">莖的高度（高 T／矮 t）</option>
+            </select></div>
+
+          <p class="seg-label" id="g1Label" data-en="Genotype of the mother ♀ (seed parent)">母本 ♀（結種子的一方）的基因型</p>
+          <div id="g1Box">
+            <div class="geno-row" data-p="1" data-l="0"><span class="gl"></span><div class="seg3" role="group"><button type="button" data-g="2"></button><button type="button" data-g="1"></button><button type="button" data-g="0"></button></div></div>
+            <div class="geno-row" data-p="1" data-l="1"><span class="gl"></span><div class="seg3" role="group"><button type="button" data-g="2"></button><button type="button" data-g="1"></button><button type="button" data-g="0"></button></div></div>
+          </div>
+          <p class="hint" id="myLocked" hidden data-en="The mother is the mystery pea: its genotype is hidden.">母本是神秘豌豆：基因型被隱藏了。</p>
+          <p class="seg-label" id="g2Label" data-en="Genotype of the father ♂ (pollen parent)">父本 ♂（提供花粉的一方）的基因型</p>
+          <div id="g2Box">
+            <div class="geno-row" data-p="2" data-l="0"><span class="gl"></span><div class="seg3" role="group"><button type="button" data-g="2"></button><button type="button" data-g="1"></button><button type="button" data-g="0"></button></div></div>
+            <div class="geno-row" data-p="2" data-l="1"><span class="gl"></span><div class="seg3" role="group"><button type="button" data-g="2"></button><button type="button" data-g="1"></button><button type="button" data-g="0"></button></div></div>
+          </div>
+          <div class="row2 quick" role="group" aria-label="常用的雜交" data-en-aria-label="Common crosses">
+            <button type="button" id="qP" data-en-html="True-breeding (P)">純種雜交（P）</button>
+            <button type="button" id="qF2" data-en-html="Self the F<sub>1</sub>">F<sub>1</sub> 自交</button>
+            <button type="button" id="qTest" data-en="Test cross">試交</button>
+          </div>
+          <p class="info" id="crossInfo"></p>
+        </section>
+
+        <section class="card" id="cardMystery" data-share-skip>
+          <h2 data-en="Mystery pea">神秘豌豆</h2>
+          <p class="hint" style="margin-top:0" data-en="The mystery mother shows the dominant phenotype for every trait you follow, but is she homozygous or heterozygous? Cross her, look at the offspring, set your hypothesis and submit. Only your first answer for each pea counts.">神秘母本在你追蹤的每個性狀都是顯性表現型，但她是同型合子還是異型合子？讓她雜交、觀察子代，設定你的假說後提交。每顆神秘豌豆只算第一次的答案。</p>
+          <div class="row2">
+            <button type="button" id="myStart" data-en="Use a mystery mother">換上神秘母本</button>
+            <button type="button" id="myNew" hidden data-en="Another mystery pea">換一顆神秘豌豆</button>
+            <button type="button" id="myExit" hidden data-en="Leave mystery mode">結束神秘模式</button>
+          </div>
+          <div id="myBox" hidden>
+            <p class="seg-label" data-en="Your hypothesis for the mother:">你對母本基因型的假說：</p>
+            <div id="hypBox">
+              <div class="geno-row" data-l="0"><span class="gl"></span><div class="seg2" role="group"><button type="button" data-h="2"></button><button type="button" data-h="1"></button></div></div>
+              <div class="geno-row" data-l="1"><span class="gl"></span><div class="seg2" role="group"><button type="button" data-h="2"></button><button type="button" data-h="1"></button></div></div>
+            </div>
+            <div class="row2"><button type="button" id="mySubmit" class="primary" data-en="Submit answer">提交答案</button></div>
+            <p class="verdict" id="verdict" aria-live="polite"></p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Speed and display">速度與顯示</h2>
+          <div class="slider"><label for="spd" data-en="Animation speed">動畫速度</label><output id="spdo"></output>
+            <input id="spd" type="range" min="-0.602" max="0.602" step="0.01" value="0"></div>
+          <div class="sow-row">
+            <div class="slider"><label for="nCustom" data-en="Custom number">自訂數量</label><output id="nCustomo"></output>
+              <input id="nCustom" type="range" min="0" max="3" step="0.001" value="1.69897"></div>
+            <button type="button" id="sowN" data-en="Produce">產生</button>
+          </div>
+          <div class="checks">
+            <label><input id="merge" type="checkbox"><span data-en="Merge identical gametes in the square">方格中合併相同的配子</span></label>
+            <label><input id="genoChart" type="checkbox"><span data-en="Bar chart by genotype">長條圖改看基因型</span></label>
+            <label><input id="showRange" type="checkbox" checked><span data-en="Show the 95% range">顯示約 95% 範圍</span></label>
+            <label><input id="showMendel" type="checkbox" checked><span data-en="Compare with Mendel’s data">與孟德爾的數據比較</span></label>
+          </div>
+          <p class="hint" data-en="Tap a number to type an exact value. At most 20 000 offspring can be kept.">點一下數字可直接輸入精確數值。子代最多累積 20 000 個。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+          <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="Gregor Mendel (1822–1884) was a friar at the Augustinian abbey of St Thomas in Brno. From 1856 to 1863 he crossed garden peas in the abbey garden, and in 1865 he reported the results to the Natural History Society of Brno (printed in 1866). Peas suited him well: there were true-breeding varieties, the flowers normally pollinate themselves but can be crossed by hand, and several traits come in two clearly different forms. His work was largely overlooked until 1900, when three botanists independently arrived at the same rules.">孟德爾（Gregor Mendel，1822–1884）是布爾諾（Brno）聖湯瑪斯修道院的修士。他從 1856 到 1863 年在修道院的花園裡讓豌豆雜交，1865 年在布爾諾自然科學學會報告結果（1866 年刊出）。豌豆很適合做這件事：有能穩定遺傳的純種品系；花平常自花授粉，也能用人工方式異花授粉；而且好幾種性狀都只有兩種截然不同的樣子。他的研究一直沒受到重視，直到 1900 年才被三位植物學家各自重新發現。</p>
+
+      <h3 data-en="Words used on this page">本頁用到的名詞</h3>
+      <ul>
+        <li data-en-html="<strong>Gene and alleles</strong>: a gene controls a trait; its different versions are <strong>alleles</strong> (on this page R and r). A pea is diploid, so it carries two alleles of each gene, one from each parent."><strong>基因與對偶基因</strong>：基因控制性狀，同一個基因的不同版本稱為<strong>對偶基因</strong>（本頁的 R 與 r）。豌豆是二倍體，每個基因都有兩個對偶基因，一個來自母本、一個來自父本。</li>
+        <li data-en-html="<strong>Genotype and phenotype</strong>: the genotype is the pair of alleles (RR, Rr or rr); the phenotype is what you can see (round or wrinkled)."><strong>基因型與表現型</strong>：基因型是這一對對偶基因（RR、Rr 或 rr）；表現型是看得到的性狀（圓形或皺縮）。</li>
+        <li data-en-html="<strong>Homozygous and heterozygous</strong>: two identical alleles (RR or rr) make a homozygote; two different ones (Rr) make a heterozygote."><strong>同型合子與異型合子</strong>：兩個對偶基因相同（RR 或 rr）是同型合子；不同（Rr）是異型合子。</li>
+        <li data-en-html="<strong>Dominant and recessive</strong>: in a heterozygote only the dominant allele (capital letter) shows; the recessive phenotype appears only in the homozygote rr. All the traits on this page show complete dominance."><strong>顯性與隱性</strong>：異型合子只表現顯性對偶基因（大寫字母）的性狀；隱性性狀只有在隱性同型合子 rr 才看得到。本頁的性狀都是完全顯性。</li>
+        <li data-en-html="<strong>P, F<sub>1</sub>, F<sub>2</sub></strong>: the true-breeding parents, their offspring (the first filial generation) and the offspring of the F<sub>1</sub> crossed among themselves or selfed."><strong>P、F<sub>1</sub>、F<sub>2</sub></strong>：親代（純種）、子一代，以及子一代自交或彼此雜交得到的子二代。</li>
+      </ul>
+
+      <h3 data-en="The law of segregation">分離律</h3>
+      <p data-en-html="When a pea makes eggs or pollen, its two alleles of a gene separate, and each gamete receives just one of them, each with probability 1/2. Fertilisation brings one allele from each parent together again, at random. For two heterozygotes this gives">豌豆產生卵或花粉時，同一個基因的兩個對偶基因彼此分離，每個配子只得到其中一個，機率各為 1/2。受精時，來自雙親的配子隨機結合，又湊成一對。兩個異型合子雜交時：</p>
+      <div class="formula">
+        \[ \left(\tfrac12 R + \tfrac12 r\right)\times\left(\tfrac12 R + \tfrac12 r\right) = \tfrac14\,RR + \tfrac12\,Rr + \tfrac14\,rr \]
+      </div>
+      <p data-en-html="RR and Rr both look round, so the F<sub>2</sub> phenotypes come in the ratio round : wrinkled = 3 : 1, while the genotypes come as 1 : 2 : 1. The Punnett square is just this multiplication drawn as a table: each of its four cells has probability 1/4.">RR 與 Rr 看起來都是圓形，所以子二代的表現型比為圓形 : 皺縮 = 3 : 1，基因型比則為 1 : 2 : 1。龐氏方格（棋盤方格）就是把這個乘法畫成表格：四格的機率各為 1/4。</p>
+
+      <h3 data-en="The law of independent assortment">自由分配律</h3>
+      <p data-en-html="Two genes that lie on different chromosomes (or far apart on the same one) are sorted into the gametes independently. A double heterozygote RrYy therefore makes four kinds of gametes, RY, Ry, rY and ry, each with probability 1/2 × 1/2 = 1/4, and the F<sub>2</sub> of two such plants shows">兩對位在不同染色體上（或在同一條染色體上相距很遠）的基因，分配到配子時互不影響。雙異型合子 RrYy 因此產生 RY、Ry、rY、ry 四種配子，機率各為 1/2 × 1/2 = 1/4；兩株雙異型合子雜交，子二代的表現型為</p>
+      <div class="formula">
+        \[ (3 : 1)\times(3 : 1) = 9 : 3 : 3 : 1 \]
+      </div>
+      <p data-en-html="The genotypes come as (1 : 2 : 1) × (1 : 2 : 1), nine kinds in all. This simulation assumes independent assortment for every pair of traits. Genes that sit close together on one chromosome are <em>linked</em> and break this rule — that is the subject of a later chapter.">基因型則是 (1 : 2 : 1) × (1 : 2 : 1)，共 9 種。本模擬假設任兩個性狀都自由分配。若兩個基因在同一條染色體上而且很靠近（<em>連鎖</em>），子代比例就會偏離 9 : 3 : 3 : 1，那是之後章節的主題。</p>
+
+      <h3 data-en="The test cross">試交</h3>
+      <p data-en-html="A plant with the dominant phenotype can be RR or Rr. Cross it with a recessive homozygote rr: every pollen grain then carries r, so each offspring simply shows which allele the tested plant passed on. RR gives only dominant offspring; Rr gives dominant and recessive in the ratio 1 : 1 (and RrYy × rryy gives 1 : 1 : 1 : 1). One recessive offspring proves the plant is heterozygous. Proving it is homozygous is never certain: a heterozygote gives \(n\) dominant offspring in a row with probability \((1/2)^n\) — for 8 offspring only about 0.4%.">顯性表現型的植株可能是 RR，也可能是 Rr。讓它和隱性同型合子 rr 雜交：rr 的配子一定帶 r，所以每個子代的表現型直接說出受測植株給了哪個對偶基因。RR 只會產生顯性子代；Rr 則產生顯性與隱性各半（1 : 1；RrYy × rryy 為 1 : 1 : 1 : 1）。只要出現一個隱性子代，就證明它是異型合子；要證明它是同型合子卻永遠無法百分之百確定——異型合子連續產生 \(n\) 個顯性子代的機率是 \((1/2)^n\)，8 個時只有約 0.4%。</p>
+
+      <h3 data-en="The chi-square goodness-of-fit test">卡方適合度檢定</h3>
+      <p data-en-html="Random sampling never gives exactly 3 : 1. Is a departure just chance, or a sign that the hypothesis is wrong? Compare each observed count \(O_i\) with the count expected from the hypothesis, \(E_i = N p_i\):">隨機抽樣幾乎不會剛好得到 3 : 1。觀察值與期望值的差距，只是運氣，還是假說錯了？把每一類的觀察次數 \(O_i\) 與假說預測的期望次數 \(E_i = N p_i\) 比較：</p>
+      <div class="formula">
+        \[ \chi^2 = \sum_{i=1}^{k} \frac{(O_i - E_i)^2}{E_i}, \qquad df = k - 1 \]
+      </div>
+      <p data-en-html="If the hypothesis is true, \(\chi^2\) follows the chi-square distribution with \(df\) degrees of freedom (\(k\) is the number of phenotype classes the hypothesis allows). The <strong>p-value</strong> is the probability of getting a \(\chi^2\) at least this large by chance alone:">如果假說正確，\(\chi^2\) 會服從自由度 \(df\) 的卡方分布（\(k\) 是假說允許出現的表現型類別數）。<strong>p 值</strong>是「單靠運氣，就得到至少這麼大的 \(\chi^2\)」的機率：</p>
+      <div class="formula">
+        \[ p = P\!\left(\chi^2_{df} \ge \chi^2\right) = Q\!\left(\tfrac{df}{2}, \tfrac{\chi^2}{2}\right) \]
+      </div>
+      <p data-en-html="Here \(Q\) is the regularised upper incomplete gamma function. If \(p < 0.05\) the departure is called significant at the 5% level and the hypothesis is rejected; that happens when \(\chi^2\) exceeds the critical value:">其中 \(Q\) 是正則化的上不完全伽瑪函數。若 \(p < 0.05\)，就說差異在 5% 顯著水準下「顯著」，拒絕假說；也就是 \(\chi^2\) 超過下表的臨界值：</p>
+      <div class="tablewrap"><table class="data" data-export="no">
+        <thead><tr><th data-en="Degrees of freedom df">自由度 df</th><th>1</th><th>2</th><th>3</th></tr></thead>
+        <tbody><tr><td data-en-html="Critical value at p = 0.05">p = 0.05 的臨界值</td><td>3.841</td><td>5.991</td><td>7.815</td></tr></tbody>
+      </table></div>
+      <ul>
+        <li data-en-html="<strong>p &gt; 0.05 does not prove the hypothesis</strong>: it only says the data do not contradict it. With few offspring almost any hypothesis survives."><strong>p &gt; 0.05 不等於證明了假說</strong>：只代表數據和假說沒有明顯矛盾。子代很少的時候，幾乎什麼假說都推翻不了。</li>
+        <li data-en-html="<strong>Even a true hypothesis is rejected 5% of the time</strong>: that is exactly what “p &lt; 0.05” means. Run many experiments and some will look suspicious by pure chance."><strong>即使假說正確，也有 5% 的機會被拒絕</strong>：這正是「p &lt; 0.05」的意思。做很多次實驗，總有幾次會純粹因為運氣而看起來可疑。</li>
+        <li data-en-html="<strong>Expected counts should be at least 5</strong>: for smaller expected counts the chi-square distribution is a poor approximation, and the page warns you."><strong>每一類的期望次數最好至少 5</strong>：期望次數太小時，卡方分布不是好的近似，頁面會提醒你。</li>
+        <li data-en-html="<strong>A class the hypothesis forbids</strong> (for example a wrinkled pea from RR × rr) rejects it outright: \(\chi^2 = \infty\), \(p = 0\)."><strong>出現假說認為不可能的類別</strong>（例如 RR × rr 竟然出現皺縮的種子），假說直接被推翻：\(\chi^2 = \infty\)，\(p = 0\)。</li>
+      </ul>
+
+      <h3 data-en="Why big samples settle down">為什麼樣本越大越穩定</h3>
+      <p data-en-html="Each offspring falls into a class with probability \(p\), so the observed fraction has standard deviation \(\sqrt{p(1-p)/N}\). For 3 : 1 that is 4.3% with 100 offspring but only 1.4% with 1000. The thin bars on the chart mark \(p \pm 1.96\sqrt{p(1-p)/N}\): about 95% of experiments land inside.">每個子代以機率 \(p\) 落在某一類，所以觀察到的比例，標準差是 \(\sqrt{p(1-p)/N}\)。以 3 : 1 為例，100 個子代時約 4.3%，1000 個時只剩約 1.4%。長條圖上的細線標出 \(p \pm 1.96\sqrt{p(1-p)/N}\)：大約 95% 的實驗會落在這個範圍內。</p>
+
+      <h3 data-en="Mendel’s own counts">孟德爾的原始數據</h3>
+      <p data-en-html="Mendel’s F<sub>2</sub> counts, with the chi-square test against 3 : 1 (or 9 : 3 : 3 : 1, 1 : 1 : 1 : 1) worked out by this page’s core:">孟德爾記錄的子二代數目，以及本頁核心程式對 3 : 1（或 9 : 3 : 3 : 1、1 : 1 : 1 : 1）做的卡方檢定：</p>
+      <div class="tablewrap"><table class="data mendel" data-export="no">
+        <thead><tr><th data-en="Experiment">實驗</th><th data-en="Counts">數目</th><th data-en="Ratio">比例</th><th>χ²</th><th>p</th></tr></thead>
+        <tbody>
+          <tr><td data-en="Seed shape: round / wrinkled">種子形狀：圓 / 皺</td><td>5474 / 1850</td><td>2.96 : 1</td><td>0.263</td><td>0.608</td></tr>
+          <tr><td data-en="Cotyledon colour: yellow / green">子葉顏色：黃 / 綠</td><td>6022 / 2001</td><td>3.01 : 1</td><td>0.015</td><td>0.903</td></tr>
+          <tr><td data-en="Seed-coat colour (purple / white flowers)">種皮顏色（紫花 / 白花）</td><td>705 / 224</td><td>3.15 : 1</td><td>0.391</td><td>0.532</td></tr>
+          <tr><td data-en="Stem: tall / dwarf">莖：高 / 矮</td><td>787 / 277</td><td>2.84 : 1</td><td>0.607</td><td>0.436</td></tr>
+          <tr><td data-en-html="Two traits (shape × colour), F<sub>2</sub>">雙性狀（形狀 × 顏色）子二代</td><td>315 / 108 / 101 / 32</td><td>9 : 3 : 3 : 1</td><td>0.470</td><td>0.925</td></tr>
+          <tr><td data-en="Test cross RrYy ♀ × rryy ♂">試交 RrYy ♀ × rryy ♂</td><td>31 / 26 / 27 / 26</td><td>1 : 1 : 1 : 1</td><td>0.618</td><td>0.892</td></tr>
+          <tr><td data-en="Test cross rryy ♀ × RrYy ♂">試交 rryy ♀ × RrYy ♂</td><td>24 / 25 / 22 / 27</td><td>1 : 1 : 1 : 1</td><td>0.531</td><td>0.912</td></tr>
+        </tbody>
+      </table></div>
+      <p data-en-html="In the flower-colour experiment Mendel actually counted the colour of the seed coat (grey-brown or white); the same gene makes the flowers purple or white. In 1936 the statistician R. A. Fisher pointed out that, taken together, Mendel’s results fit the theory even better than chance would usually allow. The debate has never quite ended; most later studies find no evidence of deliberate falsification and suggest other explanations, such as how plants were chosen and counted. Try it yourself: for 556 two-trait offspring, the chance of a \(\chi^2\) smaller than Mendel’s 0.470 is only about 7.5%.">花色那一組，孟德爾實際數的是種皮顏色（灰褐色或白色），由同一個基因決定花是紫色或白色。1936 年，統計學家費雪（R. A. Fisher）指出：整體來看，孟德爾的結果和理論吻合得比運氣通常允許的還要好。這個爭議一直延續；後來多數研究認為沒有證據顯示孟德爾刻意造假，並提出其他可能的解釋，例如植株怎麼挑選、怎麼計數。你也可以試試：雙性狀 556 個子代，卡方值比孟德爾的 0.470 還小的機率只有約 7.5%。</p>
+
+      <h3 data-en="What a wrinkled pea really is">皺縮的豌豆是怎麼回事</h3>
+      <p data-en-html="The r allele is a broken copy of the gene for starch-branching enzyme I (SBEI): a stretch of extra DNA, similar to a transposon, has been inserted into it. Seeds without the working enzyme make less branched starch and keep more sugar, so they take up more water as they grow and then shrink and wrinkle as they dry. One working copy (Rr) makes enough enzyme, which is why R is dominant.">r 對偶基因是「澱粉分支酶Ⅰ（SBEI）」基因的壞掉版本：基因中間插進了一段類似轉位子的 DNA。沒有這種酶的種子，製造的分支澱粉較少、留下較多的糖，發育時吸進較多水分，乾燥時就皺縮了。只要有一個正常的對偶基因（Rr），酶就夠用，所以 R 是顯性。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>F<sub>1</sub> uniformity</strong>: press “True-breeding (P)”. Every offspring is Rr and looks round: the recessive trait seems to vanish."><strong>子一代都一樣</strong>：按「純種雜交（P）」。所有子代都是 Rr、都是圓形，隱性性狀好像消失了。</li>
+        <li data-en-html="<strong>The recessive returns</strong>: press “Self the F<sub>1</sub>”. Wrinkled peas reappear, about one in four."><strong>隱性回來了</strong>：按「F<sub>1</sub> 自交」。皺縮的豌豆又出現了，大約四個裡有一個。</li>
+        <li data-en-html="<strong>Small and large samples</strong>: with 10 offspring the ratio can be far from 3 : 1; with 1000 it hugs it. Watch the observed bars move into the 95% range."><strong>樣本大小</strong>：10 個子代時比例可能離 3 : 1 很遠；1000 個時就很接近。看觀察值的長條怎麼落進 95% 範圍。</li>
+        <li data-en-html="<strong>Punnett square</strong>: every cell is hit about equally often — that is what “each cell has probability 1/4” means. Turn on “Merge identical gametes” for a homozygous parent and see the square shrink."><strong>龐氏方格</strong>：每一格被命中的次數差不多——這就是「每格機率 1/4」的意思。親本有同型合子時，打開「合併相同的配子」，看方格怎麼變小。</li>
+        <li data-en-html="<strong>Two traits</strong>: in the F<sub>2</sub> of RrYy × RrYy count how many round-green and wrinkled-yellow peas appear. They are new combinations that neither grandparent had."><strong>雙性狀</strong>：在 RrYy × RrYy 的子二代裡，數數看圓形綠色與皺縮黃色的豌豆——這些是祖父母都沒有的新組合。</li>
+        <li data-en-html="<strong>Mystery pea</strong>: test-cross the mystery mother with rr (or rryy). How many offspring do you need before you dare to answer?"><strong>神秘豌豆</strong>：讓神秘母本和 rr（或 rryy）試交。要看多少個子代，你才敢回答？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Each parent’s gametes are the cells of the classic Punnett square: 2 for one trait, 4 for two (a homozygous gene simply repeats its allele). Every offspring picks one egg cell and one pollen cell uniformly at random, which is exactly the same as letting each gene segregate independently with probability 1/2.">每個親本的配子就是傳統龐氏方格的格子：單性狀 2 格、雙性狀 4 格（同型合子的基因，兩格寫的對偶基因相同）。每個子代從卵與花粉各隨機抽一格，這和「每個基因各自以 1/2 的機率分離」完全等價。</li>
+        <li data-en="The expected ratios are computed as exact fractions, so 9/16, 3/16 and 1/16 are not rounded. The p-value uses the regularised incomplete gamma function (series and continued fraction), checked against the critical values in the table above.">期望比例用精確的分數計算，9/16、3/16、1/16 都沒有四捨五入。p 值用正則化不完全伽瑪函數（級數與連分數）計算，並以上表的臨界值核對過。</li>
+        <li data-en="Random numbers come from a seedable generator, so the core can be tested with reproducible results; in the page a new seed is used every time.">亂數由可設定種子的產生器產生，核心程式因此能用可重現的結果測試；頁面上每次都用新的種子。</li>
+        <li data-en="Assumptions: complete dominance, independent assortment, no mutation, and every fertilised egg develops equally well. Real crosses can depart from all of these.">假設：完全顯性、自由分配、沒有突變、每個受精卵都同樣能發育。真實的雜交可能偏離以上任何一點。</li>
+        <li data-en="With up to 20 offspring at a time every fertilisation is animated; larger batches pour into the tray and the counts rise as they land. With reduced motion turned on, the counts are added at once.">一次 20 個以內的子代，每一次受精都有動畫；更多時改成一次倒進收成盤，計數隨落下而增加。開啟「減少動態效果」時，計數直接加上。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · Genetics.">課綱對應：高中生物（108 課綱）・遺傳。</li>
+        <li data-en-html="Mendel’s paper in English with commentary and the original counts: S. Abbott and D. J. Fairbanks, “Experiments on Plant Hybrids by Gregor Mendel”, <cite>Genetics</cite> 204 (2016) 407–422 — <a href=&quot;https://pmc.ncbi.nlm.nih.gov/articles/PMC5068836/&quot;>PMC5068836</a>.">孟德爾論文的英譯、評注與原始數據：S. Abbott、D. J. Fairbanks，〈Experiments on Plant Hybrids by Gregor Mendel〉，<cite>Genetics</cite> 204 (2016) 407–422——<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5068836/">PMC5068836</a>（英文）。</li>
+        <li data-en-html="The wrinkled-seed gene: M. K. Bhattacharyya, A. M. Smith, T. H. N. Ellis, C. Hedley and C. Martin, “The wrinkled-seed character of pea described by Mendel is caused by a transposon-like insertion in a gene encoding starch-branching enzyme”, <cite>Cell</cite> 60 (1990) 115–122.">皺縮種子的基因：M. K. Bhattacharyya、A. M. Smith、T. H. N. Ellis、C. Hedley、C. Martin，〈The wrinkled-seed character of pea described by Mendel is caused by a transposon-like insertion in a gene encoding starch-branching enzyme〉，<cite>Cell</cite> 60 (1990) 115–122（英文）。</li>
+        <li data-en-html="Further reading: OpenStax, <cite>Biology 2e</cite>, chapter 12 Mendel’s Experiments and Heredity — <a href=&quot;https://openstax.org/books/biology-2e/pages/12-introduction&quot;>openstax.org</a>.">延伸閱讀：OpenStax《Biology 2e》第 12 章 Mendel’s Experiments and Heredity（英文）——<a href="https://openstax.org/books/biology-2e/pages/12-introduction">openstax.org</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611121420"></script>
+  <script src="js/mendelian-inheritance-core.js?v=202611121420"></script>
+  <script src="js/sound.js?v=202611121420"></script>
+  <script src="js/numinput.js?v=202611121420"></script>
+  <script src="js/drawkit.js?v=202611121420"></script>
+  <script src="js/mendelian-inheritance.js?v=202611121420"></script>
+  <script src="js/firebase-config.js?v=202611121420"></script>
+  <script src="js/missions.js?v=202611121420" data-module="mendelian-inheritance"></script>
+  <script src="js/missions/mendelian-inheritance.js?v=202611121420"></script>
+  <script src="js/stats.js?v=202611121420" data-module="mendelian-inheritance"></script>
+  <script src="js/comments.js?v=202611121420"></script>
+</body>
+</html>
