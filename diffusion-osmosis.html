@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Diffusion and Osmosis: Brownian Motion, Membranes and Cells | Astro Ni Science Lab">擴散與滲透：布朗運動、半透膜與細胞的漲縮｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 擴散與滲透頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --do-solute: #d97a1e; --do-water: #2c7fd0; --do-rbc: #c7343e; --do-plant: #3d8b31; --do-wall: #8a6a36;
+      --do-mem: #7a5ab0; --do-glass: #6f8f9c; --do-track: #b0328f;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --do-solute: #f3a249; --do-water: #5aa8f2; --do-rbc: #ff6a6f; --do-plant: #73c460; --do-wall: #c9a46a;
+        --do-mem: #b49ce0; --do-glass: #9fbac4; --do-track: #f17bd0;
+      }
+    }
+    :root[data-theme="dark"] {
+      --do-solute: #f3a249; --do-water: #5aa8f2; --do-rbc: #ff6a6f; --do-plant: #73c460; --do-wall: #c9a46a;
+      --do-mem: #b49ce0; --do-glass: #9fbac4; --do-track: #f17bd0;
+    }
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .dos button { min-height: 44px; }
+    .dos [hidden] { display: none !important; }
+    .dos .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .dos .modes button { padding: 6px 6px; line-height: 1.25; font-weight: 600; }
+    .dos .nw { white-space: nowrap; }
+    @media (max-width: 420px) { .dos .modes button { padding: 6px 2px; font-size: calc(13px * var(--fs, 1)); letter-spacing: 0; } }
+    .dos .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    .dos .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .dos .playbar button { flex: 1 1 auto; }
+    .dos .playbar #play { font-weight: 700; }
+    .dos .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dos .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .dos .slider input[type="range"] { height: 28px; margin: 0; }
+    .dos .slider label sub, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .dos .panel { grid-template-columns: minmax(0, 1fr); }
+    .dos .panel > .card { min-width: 0; }
+    /* 依實驗模式顯示：data-for 列出適用的模式 */
+    .dos[data-mode="diff"] [data-for]:not([data-for~="diff"]),
+    .dos[data-mode="osmo"] [data-for]:not([data-for~="osmo"]),
+    .dos[data-mode="cell"] [data-for]:not([data-for~="cell"]) { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .dos .sol-row { display: grid; grid-template-columns: minmax(4.2em, auto) minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 8px; }
+    .dos .sol-row label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .dos select {
+      font: inherit; font-size: calc(14px * var(--fs, 1)); width: 100%; min-height: 44px; min-width: 0; padding: 6px 8px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .dos .side-h { font-size: calc(14px * var(--fs, 1)); font-weight: 700; margin: 12px 0 0; display: flex; align-items: center; gap: 8px; }
+    .dos .side-h:first-of-type { margin-top: 2px; }
+    .dos .side-h i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; }
+    .dos .quick { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .dos .quick button { flex: 1 1 30%; padding: 6px 6px; line-height: 1.25; font-size: calc(13px * var(--fs, 1)); }
+    .dos .info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); line-height: 1.55; }
+    .dos .info b { color: var(--text); font-variant-numeric: tabular-nums; }
+    /* 數值欄依內容寬度、名稱欄自動換行：英文的長名稱不會把數字擠成好幾行 */
+    .dos dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: normal; max-width: 11em; margin-left: auto; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    dl.readout dt.sub { font-weight: 700; color: var(--text); grid-column: 1 / -1; margin-top: 6px; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend span { color: var(--muted); }
+    /* 下方的時間曲線 */
+    .plotfig { margin: 12px 0 0; }
+    .plotfig canvas { aspect-ratio: auto; height: 220px; cursor: default; touch-action: pan-y pinch-zoom; }
+    .plotfig figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .plotfig figcaption b { color: var(--text); }
+    /* 2D／3D 檢視切換（與「潮汐」相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .t3-wrap { position: relative; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .t3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .t3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes table.cmp { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); }
+    .notes table.cmp th, .notes table.cmp td { border: 1px solid var(--border); padding: 6px 8px; text-align: left; vertical-align: top; }
+    .notes table.cmp th { background: var(--accent-soft); }
+    .notes .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#cell&quot;>Biology · Cells and Molecules</a> / Diffusion and osmosis"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#cell">生物・細胞與分子</a> ／ 擴散與滲透</nav>
+      <h1 data-en="Diffusion and Osmosis: Brownian Motion, Membranes and Cells That Swell or Shrink">擴散與滲透：布朗運動、半透膜與細胞的漲縮</h1>
+      <p data-en="Molecules in water never stop jostling, so every dissolved particle staggers about at random. One particle has no preferred direction, yet a crowd of them drifts from where it is crowded to where it is sparse — that is diffusion. Put a membrane in the way that lets water through but stops the solute, and it is the water that moves instead, toward the side with more solute — that is osmosis. Watch the particles spread and check that their mean square displacement grows in step with time, measure osmotic pressure with a U-tube, then drop a red blood cell and a plant cell into solutions of different strength and watch them swell, burst or pull away from their walls.">水裡的分子一刻也不停地互相碰撞，所以每個溶解的粒子都東倒西歪地亂走。單一個粒子沒有偏好的方向，一大群粒子卻會從擠的地方往空的地方散開——這就是擴散。如果在中間放一層只讓水通過、擋住溶質的膜，移動的就換成水：水往溶質多的那一邊跑——這就是滲透。看粒子怎麼散開，驗證均方位移與時間成正比；用 U 形管量滲透壓；再把紅血球和植物細胞放進不同濃度的溶液，看它們膨脹、破裂或與細胞壁分開。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Remove the partition” and watch the particles spread, then set the temperature to 0 °C, put the partition back and do it again — compare the slopes of the mean-square-displacement lines.">試試看：按「移除隔板」看粒子散開；再把溫度調到 0 °C、放回隔板重做一次，比較兩條均方位移直線的斜率。</p>
+    <div class="lab dos" id="lab" data-mode="diff">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+          <button type="button" id="mDiff" data-mode="diff" aria-pressed="true" data-en="Diffusion">擴散</button>
+          <button type="button" id="mOsmo" data-mode="osmo" aria-pressed="false" data-en-html="Osmosis <span class=&quot;nw&quot;>(U-tube)</span>">滲透<span class="nw">（U 形管）</span></button>
+          <button type="button" id="mCell" data-mode="cell" aria-pressed="false" data-en="Cells in solutions">細胞與溶液</button>
+        </div>
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="擴散與滲透的模擬畫面" data-en-aria-label="Diffusion and osmosis simulation"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">暫停</button>
+          <button id="partBtn" type="button" data-for="diff">移除隔板</button>
+          <button id="osmoReset" type="button" data-for="osmo" data-en="Level the liquids" title="倒掉重裝：兩管液面回到一樣高，換上目前設定的溶液" data-en-title="Refill: both levels back to the same height, with the solutions now set">液面歸零</button>
+          <button id="cellReset" type="button" data-for="cell" data-en="Fresh cells" title="換上新的紅血球與植物細胞（外液不變）" data-en-title="Put in a fresh red blood cell and plant cell (the solution is kept)">換新細胞</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除下方曲線圖的所有紀錄（含比較用的舊紀錄），滑桿設定不變" data-en-title="Clear every record in the graph below (including the old ones kept for comparison); slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" data-for="diff">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-solute)&quot;></i>Solute particle (size not to scale)"><i class="dot" style="background:var(--do-solute)"></i>溶質粒子（大小未依比例）</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-track)&quot;></i>Tracked particle and its path"><i class="dot" style="background:var(--do-track)"></i>追蹤的粒子與路徑</span>
+          <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Expected count (diffusion equation)"><i style="background:var(--accent)"></i>理論的粒子數（擴散方程式）</span>
+        </div>
+        <div class="legend" data-for="osmo">
+          <span data-en-html="<i style=&quot;background:var(--do-water)&quot;></i>Water"><i style="background:var(--do-water)"></i>水</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-solute)&quot;></i>Solute (more = deeper tint)"><i class="dot" style="background:var(--do-solute)"></i>溶質（越濃顏色越深）</span>
+          <span data-en-html="<i style=&quot;background:var(--do-mem)&quot;></i>Semipermeable membrane"><i style="background:var(--do-mem)"></i>半透膜</span>
+        </div>
+        <div class="legend" data-for="cell">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-rbc)&quot;></i>Red blood cell"><i class="dot" style="background:var(--do-rbc)"></i>紅血球</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--do-plant)&quot;></i>Plant protoplast"><i class="dot" style="background:var(--do-plant)"></i>植物的原生質體</span>
+          <span data-en-html="<i style=&quot;background:var(--do-wall)&quot;></i>Cell wall"><i style="background:var(--do-wall)"></i>細胞壁</span>
+          <span data-en-html="<i style=&quot;background:var(--do-water)&quot;></i>Water flow"><i style="background:var(--do-water)"></i>水的流向</span>
+        </div>
+        <p class="hint l2" data-for="diff" data-en-html="Tap a particle to follow its path (up to three). The box is <b>200 μm</b> long; the particles are drawn far larger than they are. Particles nearer to you look a little bigger and brighter.">點一下粒子可以追蹤它的路徑（最多三顆）。盒子長 <b>200 μm</b>；粒子畫得比實際大很多。離你比較近的粒子看起來稍大、稍亮。</p>
+        <p class="hint l2" data-for="osmo" data-en-html="Drag the grey <b>piston</b> down to push on the right-hand liquid (or use the slider). The inset shows what happens at the membrane, much enlarged.">把灰色的<b>活塞</b>往下拖，可以對右管的液體加壓（也可以用滑桿）。圓形放大圖是半透膜附近發生的事（放大示意）。</p>
+        <p class="hint l2" data-for="cell" data-en-html="Both cells sit in the same solution. The red blood cell is shown face-on, with its cross-section beside it; the plant cell from above. Shapes are drawn from the computed volumes.">兩個細胞泡在同一杯溶液裡。紅血球畫的是正面，旁邊是它的剖面；植物細胞是從上往下看。形狀依計算出的體積畫出。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. Everything in 3D comes from the same calculation as the 2D picture; change it with the controls.">拖曳旋轉，滾輪或雙指縮放。3D 畫面與 2D 是同一份計算；用控制項改變它。</p>
+
+        <figure class="plotfig">
+          <canvas id="plot" role="img" aria-label="隨時間變化的曲線" data-en-aria-label="Graph against time"></canvas>
+          <figcaption id="plotCap"></figcaption>
+        </figure>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Temperature and speed">溫度與播放速度</h2>
+          <div class="slider"><label for="temp" data-en="Temperature T (°C)">溫度 T（°C）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="0" max="40" step="0.5" value="25" data-decimals="1"></div>
+          <div class="slider"><label for="speed" data-en="Playback speed">播放速度</label><output id="speedo"></output>
+            <input id="speed" type="range" min="-1" max="1.477" step="0.01" value="0"></div>
+          <p class="hint" id="speedHint"></p>
+        </section>
+
+        <section class="card" data-for="diff">
+          <h2 data-en="Diffusing particles">擴散的粒子</h2>
+          <div class="slider"><label for="rad" data-en="Particle radius r (nm)">粒子半徑 r（nm）</label><output id="rado"></output>
+            <input id="rad" type="range" min="-0.699" max="0.699" step="0.001" value="-0.301"></div>
+          <div class="quick" role="group" aria-label="常見分子的大小" data-en-aria-label="Sizes of common molecules">
+            <button type="button" data-r="0.38" data-en="Glucose 0.38 nm">葡萄糖 0.38 nm</button>
+            <button type="button" data-r="0.47" data-en="Sucrose 0.47 nm">蔗糖 0.47 nm</button>
+            <button type="button" data-r="3.1" data-en="Haemoglobin 3.1 nm">血紅素 3.1 nm</button>
+          </div>
+          <button type="button" id="trackNext" style="width:100%;margin-top:8px" data-en="Follow another particle">換一顆追蹤的粒子</button>
+          <p class="hint" data-en-html="The radius is the molecule’s effective (Stokes) radius in water. Changing the temperature or the radius during a run is allowed: the theory line then uses \(\int D\,dt\), but that run no longer counts for comparing \(D\).">半徑是分子在水中的等效（斯托克斯）半徑。擴散途中也可以改溫度或半徑：理論線會改用 \(\int D\,dt\)，但這一次就不能拿來比較 \(D\)。</p>
+        </section>
+
+        <section class="card" data-for="osmo">
+          <h2 data-en="The two sides of the membrane">半透膜兩側的溶液</h2>
+          <p class="side-h" data-en-html="<i style=&quot;background:var(--do-water)&quot;></i>Left arm"><i style="background:var(--do-water)"></i>左管</p>
+          <div class="sol-row"><label for="solL" data-en="Solute">溶質</label>
+            <select id="solL">
+              <option value="glucose" data-en="Glucose (i = 1)">葡萄糖（i = 1）</option>
+              <option value="sucrose" data-en="Sucrose (i = 1)">蔗糖（i = 1）</option>
+              <option value="nacl" data-en="Salt, NaCl (i = 2)">食鹽 NaCl（i = 2）</option>
+              <option value="cacl2" data-en="Calcium chloride (i = 3)">氯化鈣（i = 3）</option>
+            </select></div>
+          <div class="slider"><label for="cL" data-en="Concentration (mmol/L; 0 = pure water)">濃度（mmol/L；0 是純水）</label><output id="cLo"></output>
+            <input id="cL" type="range" min="0" max="2" step="0.01" value="0" data-decimals="3"></div>
+          <p class="side-h" data-en-html="<i style=&quot;background:var(--do-solute)&quot;></i>Right arm"><i style="background:var(--do-solute)"></i>右管</p>
+          <div class="sol-row"><label for="solR" data-en="Solute">溶質</label>
+            <select id="solR">
+              <option value="glucose" data-en="Glucose (i = 1)">葡萄糖（i = 1）</option>
+              <option value="sucrose" selected data-en="Sucrose (i = 1)">蔗糖（i = 1）</option>
+              <option value="nacl" data-en="Salt, NaCl (i = 2)">食鹽 NaCl（i = 2）</option>
+              <option value="cacl2" data-en="Calcium chloride (i = 3)">氯化鈣（i = 3）</option>
+            </select></div>
+          <div class="slider"><label for="cR" data-en="Concentration (mmol/L; 0 = pure water)">濃度（mmol/L；0 是純水）</label><output id="cRo"></output>
+            <input id="cR" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="pist" data-en="Piston pressure on the right P (kPa)">右管活塞的壓力 P（kPa）</label><output id="pisto"></output>
+            <input id="pist" type="range" min="0" max="6" step="0.01" value="0" data-decimals="3"></div>
+          <p class="hint" data-en-html="Changing a solute or a concentration refills the tube (both levels start equal). Temperature and the piston can be changed while it runs. The solutions are very dilute (a few thousandths of a mole per litre): stronger ones would push the column tens of metres high.">換溶質或濃度會把管子倒掉重裝（兩邊液面從一樣高開始）；溫度與活塞可以在進行中改。這裡的溶液非常稀（每公升千分之幾莫耳）：濃一點的溶液會把液柱推到幾十公尺高。</p>
+        </section>
+
+        <section class="card" data-for="cell">
+          <h2 data-en="The solution around the cells">細胞外的溶液</h2>
+          <div class="sol-row"><label for="solC" data-en="Solute">溶質</label>
+            <select id="solC">
+              <option value="glucose" data-en="Glucose (i = 1)">葡萄糖（i = 1）</option>
+              <option value="sucrose" data-en="Sucrose (i = 1)">蔗糖（i = 1）</option>
+              <option value="nacl" selected data-en="Salt, NaCl (i = 2)">食鹽 NaCl（i = 2）</option>
+              <option value="cacl2" data-en="Calcium chloride (i = 3)">氯化鈣（i = 3）</option>
+            </select></div>
+          <div class="slider"><label for="cC" data-en="Concentration (mmol/L; 0 = pure water)">濃度（mmol/L；0 是純水）</label><output id="cCo"></output>
+            <input id="cC" type="range" min="0" max="600" step="1" value="100" data-decimals="1"></div>
+          <div class="quick" role="group" aria-label="常見的溶液" data-en-aria-label="Common solutions">
+            <button type="button" id="qSaline" data-en="0.9% saline">0.9% 生理食鹽水</button>
+            <button type="button" id="qSea" data-en="3.5% salt (like seawater)">3.5% 食鹽水（約海水）</button>
+          </div>
+          <p class="info" id="cellInfo"></p>
+          <p class="hint" data-en="Changing the solution is like gently replacing the liquid around the cells: they respond from where they are. A burst red blood cell stays burst — press “Fresh cells”.">改變溶液就像慢慢換掉細胞周圍的液體：細胞從目前的狀態開始反應。破掉的紅血球不會復原——請按「換新細胞」。</p>
+        </section>
+
+        <section class="card" data-for="diff">
+          <h2 data-en="Measurements">測量</h2>
+          <dl class="readout">
+            <dt data-en="Diffusion coefficient D">擴散係數 D</dt><dd id="rD">—</dd>
+            <dt data-en="Viscosity of water η">水的黏度 η</dt><dd id="rEta">—</dd>
+            <dt data-en="Time since removing the partition">移除隔板後經過</dt><dd id="rT">—</dd>
+            <dt data-en-html="Measured ⟨Δx<sup>2</sup>⟩">測得的 ⟨Δx<sup>2</sup>⟩</dt><dd id="rMsd" class="big">—</dd>
+            <dt data-en="Theory 2Dt">理論 2Dt</dt><dd id="rMsdT">—</dd>
+            <dt data-en="D from the slope">由斜率得到的 D</dt><dd id="rDfit">—</dd>
+            <dt data-en="Particles in the right half">右半邊的粒子</dt><dd id="rRight">—</dd>
+            <dt data-en="Have visited the right half">到過右半邊的粒子</dt><dd id="rSeen">—</dd>
+            <dt data-en="Mixing time L²/(π²D)">混合時間 L²/(π²D)</dt><dd id="rTau">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" data-for="osmo">
+          <h2 data-en="Measurements">測量</h2>
+          <dl class="readout">
+            <dt data-en="Time (sped up)">時間（已加速）</dt><dd id="oT">—</dd>
+            <dt data-en="Left, now">左管現在</dt><dd id="oCL">—</dd>
+            <dt data-en="Right, now">右管現在</dt><dd id="oCR">—</dd>
+            <dt data-en="Osmotic pressure difference Δπ">滲透壓差 Δπ</dt><dd id="oDpi">—</dd>
+            <dt data-en="Column pressure ρgh">液柱壓力 ρgh</dt><dd id="oRgh">—</dd>
+            <dt data-en="Piston P">活塞 P</dt><dd id="oP">—</dd>
+            <dt data-en="Level difference h (right − left)">液面差 h（右 − 左）</dt><dd id="oH" class="big">—</dd>
+            <dt data-en="Level changing at">液面變化速率</dt><dd id="oRate">—</dd>
+            <dt data-en="Equilibrium h (predicted)">預測的平衡液面差</dt><dd id="oHeq">—</dd>
+            <dt class="wide" data-en-html="If the right side were not diluted: π<sub>0</sub> ÷ ρg">若右管溶液沒有被稀釋：π<sub>0</sub> ÷ ρg</dt><dd id="oH0" class="wide">—</dd>
+          </dl>
+        </section>
+
+        <section class="card" data-for="cell">
+          <h2 data-en="The two cells">兩個細胞</h2>
+          <dl class="readout">
+            <dt data-en="Time (slowed down)">時間（已放慢）</dt><dd id="cT">—</dd>
+            <dt class="sub" data-en="Red blood cell (no wall)">紅血球（沒有細胞壁）</dt>
+            <dt data-en="Volume">體積</dt><dd id="cRV" class="big">—</dd>
+            <dt data-en="State">狀態</dt><dd id="cRS">—</dd>
+            <dt data-en="For this cell the solution is">對它來說外液是</dt><dd id="cRTon">—</dd>
+            <dt data-en="Equilibrium volume">平衡體積</dt><dd id="cREq">—</dd>
+            <dt class="sub" data-en="Plant cell (with a wall)">植物細胞（有細胞壁）</dt>
+            <dt data-en="Protoplast ÷ wall volume">原生質體 ÷ 細胞壁內容積</dt><dd id="cPV" class="big">—</dd>
+            <dt data-en="Turgor pressure">膨壓</dt><dd id="cPP">—</dd>
+            <dt data-en="State">狀態</dt><dd id="cPS">—</dd>
+            <dt data-en="For this cell the solution is">對它來說外液是</dt><dd id="cPTon">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology and physics behind it">背後的生物與物理</h2>
+
+      <h3 data-en="Diffusion is many random walks">擴散：一大群隨機漫步</h3>
+      <p data-en-html="Each solute particle is hit from all sides by water molecules many trillions of times a second. The kicks do not cancel exactly, so the particle wanders: Brownian motion. Its next step does not depend on where it came from, and left and right are equally likely. Why, then, do particles spread from crowded to empty places? Because there are simply more particles on the crowded side to step across the line; on the empty side there is almost nobody to step back. Net movement is a matter of numbers, not of any force pushing the particles.">每個溶質粒子每秒被四面八方的水分子撞上好幾兆次。撞擊不會剛好抵消，所以粒子亂走：這就是布朗運動。它下一步往哪裡走，和它從哪裡來沒有關係，往左、往右的機會一樣。那為什麼粒子會從擠的地方散到空的地方？因為擠的那一邊粒子多，跨過界線的粒子就多；空的那一邊幾乎沒有粒子能走回來。淨移動是「數量」造成的，不是有什麼力在推粒子。</p>
+      <p data-en-html="A random walker gets nowhere on average, \(\langle\Delta x\rangle = 0\), but the square of its displacement grows steadily. In one direction">隨機漫步的粒子平均位移是零：\(\langle\Delta x\rangle = 0\)；但位移的平方會穩定地變大。在一個方向上</p>
+      <div class="formula">\[ \langle \Delta x^{2} \rangle = 2Dt, \qquad \langle \Delta r^{2} \rangle = \langle \Delta x^{2}+\Delta y^{2}+\Delta z^{2} \rangle = 6Dt \]</div>
+      <p data-en-html="so the typical distance covered grows only as \(\sqrt{t}\): to go twice as far takes four times as long. That is why diffusion is quick across a cell (about 10 μm, a fraction of a second for small molecules) but hopeless across a room, and why large organisms need blood vessels.">所以一般走得到的距離只和 \(\sqrt{t}\) 成正比：要走兩倍遠，得花四倍的時間。這就是為什麼小分子擴散穿過一個細胞（約 10 μm）不到一秒，要擴散穿過一個房間卻幾乎不可能——也是大型生物需要血管的原因。</p>
+      <p data-en-html="How big is \(D\)? A sphere of radius \(r\) dragged through a liquid of viscosity \(\eta\) feels Stokes drag; balancing that against the thermal kicks gives the Stokes–Einstein relation">\(D\) 有多大？半徑 \(r\) 的小球在黏度 \(\eta\) 的液體裡移動會受到斯托克斯阻力；把它和熱運動的撞擊平衡，得到斯托克斯–愛因斯坦關係</p>
+      <div class="formula">\[ D = \frac{k_{\mathrm B}T}{6\pi\eta r} \]</div>
+      <p data-en-html="Warmer means harder kicks (\(T\) up) and runnier water (\(\eta\) down, roughly halving from 0 °C to 30 °C), so diffusion speeds up about three times from 0 °C to 40 °C. Bigger particles diffuse more slowly: haemoglobin (3.1 nm) is about eight times slower than glucose (0.38 nm).">溫度高，撞擊比較猛（\(T\) 變大），水也比較稀（\(\eta\) 變小，從 0 °C 到 30 °C 大約減半），所以從 0 °C 到 40 °C 擴散快了約三倍。粒子越大擴散越慢：血紅素（3.1 nm）比葡萄糖（0.38 nm）慢約八倍。</p>
+
+      <h3 data-en="Osmosis and osmotic pressure">滲透與滲透壓</h3>
+      <p data-en-html="A semipermeable membrane lets water molecules through its tiny pores but stops the solute. Water then moves, by diffusion through the membrane, from the side where it is less “diluted” by solute (more water, higher water potential) to the side with more solute (lower water potential). In a U-tube the liquid on the solution side rises. The rising column presses back with \(\rho g h\), and the flow stops when that pressure balances the osmotic pressure. For dilute solutions van ’t Hoff found that the osmotic pressure behaves like a gas pressure:">半透膜的小孔讓水分子通過，卻擋住溶質。於是水透過膜擴散：從溶質少（水多、水勢高）的一側，移到溶質多（水勢低）的一側。在 U 形管裡，溶液那一側的液面上升；升高的液柱以 \(\rho g h\) 往回壓，等到這個壓力和滲透壓平衡，水就不再淨流動。凡特荷夫發現，稀薄溶液的滲透壓就像氣體的壓力：</p>
+      <div class="formula" data-en-html="\[ \pi = iCRT, \qquad \rho g h = \pi \ \ (\text{at equilibrium}) \]">\[ \pi = iCRT, \qquad \rho g h = \pi \ \ (\text{平衡}) \]</div>
+      <p data-en-html="Here \(C\) is the molar concentration, \(T\) the absolute temperature, \(R = 8.314\ \mathrm{J/(mol\cdot K)}\), and \(i\) counts how many particles each formula unit becomes in water: 1 for glucose and sucrose, 2 for NaCl (Na<sup>+</sup> and Cl<sup>−</sup>), 3 for CaCl<sub>2</sub>. Osmosis counts particles, not their kind: 1 mmol/L of NaCl and 2 mmol/L of glucose pull on water equally hard. The product \(iC\) is the osmolar concentration (mOsm/L).">\(C\) 是體積莫耳濃度，\(T\) 是絕對溫度，\(R = 8.314\ \mathrm{J/(mol\cdot K)}\)，\(i\) 是每個單位溶在水中變成幾個粒子：葡萄糖、蔗糖是 1，食鹽 NaCl 是 2（Na<sup>+</sup> 與 Cl<sup>−</sup>），CaCl<sub>2</sub> 是 3。滲透只算粒子的「數目」，不管種類：1 mmol/L 的食鹽與 2 mmol/L 的葡萄糖拉水的力量一樣大。乘積 \(iC\) 稱為滲透濃度（mOsm/L）。</p>
+      <ul>
+        <li data-en-html="<strong>The numbers are big.</strong> Body fluids are about 300 mOsm/L, which at 37 °C means \(\pi \approx 7.7\ \mathrm{atm}\) — the pressure under 80 m of water. That is why the U-tube here uses solutions a hundred times weaker: 1 mmol/L of sugar already lifts water about 25 cm."><strong>數字很大。</strong>體液大約 300 mOsm/L，在 37 °C 時 \(\pi \approx 7.7\ \mathrm{atm}\)，相當於 80 公尺深的水壓。所以這裡的 U 形管用的溶液稀了上百倍：1 mmol/L 的糖就能把水撐高約 25 cm。</li>
+        <li data-en-html="<strong>The water dilutes the solution.</strong> The water that crosses the membrane dilutes the solution it joins, so its osmotic pressure falls as the level rises. At equilibrium \(\rho g h\) equals the osmotic pressure of the solution <em>as it is then</em>, and \(h\) ends up smaller than \(\pi_0/(\rho g)\) worked out from the starting concentration."><strong>水會稀釋溶液。</strong>流過膜的水會把它加入的那一側溶液稀釋，所以液面越升高，滲透壓越小。平衡時 \(\rho g h\) 等於「當時」溶液的滲透壓，最後的 \(h\) 比用起始濃度算的 \(\pi_0/(\rho g)\) 小。</li>
+        <li data-en-html="<strong>Osmotic pressure, defined.</strong> The osmotic pressure is the extra pressure you must apply to the solution to stop water from flowing in. Push harder than that and water is squeezed out of the solution through the membrane: <strong>reverse osmosis</strong>, the way many water purifiers and desalination plants make fresh water."><strong>滲透壓的定義。</strong>滲透壓就是要對溶液額外施加、剛好讓水不再流進去的壓力。壓得比它更大，水反而被擠出溶液、穿過半透膜：這就是<strong>逆滲透</strong>，很多淨水器與海水淡化廠就是這樣製造淡水。</li>
+      </ul>
+
+      <h3 data-en="Cells in solutions: tonicity">細胞與溶液：張力</h3>
+      <p data-en-html="A cell membrane is (nearly) semipermeable, so a cell is a tiny osmometer. Compared with the inside of a cell, a solution is <strong>hypotonic</strong> if water moves in, <strong>isotonic</strong> if there is no net movement, and <strong>hypertonic</strong> if water moves out. With a fixed amount \(n\) of solute that cannot leave, and a part \(V_b\) of the cell that takes no part (proteins, membranes), the cell settles where its inside matches the outside:">細胞膜（幾乎）是半透膜，所以細胞就是一個小小的滲透計。和細胞內部比較，讓水流進細胞的溶液叫<strong>低張溶液</strong>，水不會淨流動的叫<strong>等張溶液</strong>，讓水流出細胞的叫<strong>高張溶液</strong>。細胞裡出不去的溶質量 \(n\) 固定，又有一部分體積 \(V_b\)（蛋白質、膜等）不參與滲透，所以細胞會停在內外濃度相等的地方：</p>
+      <div class="formula" data-en-html="\[ \frac{dV}{dt} = k\,(\pi_{\text{in}}-\pi_{\text{out}}-P), \qquad \pi_{\text{in}} = \frac{nRT}{V-V_b}, \qquad V_{\text{eq}} = V_b+\frac{n}{C_{\text{out}}}\ \ (P=0) \]">\[ \frac{dV}{dt} = k\,(\pi_{\text{內}}-\pi_{\text{外}}-P), \qquad \pi_{\text{內}} = \frac{nRT}{V-V_b}, \qquad V_{\text{平衡}} = V_b+\frac{n}{C_{\text{外}}}\ \ (P=0) \]</div>
+      <ul>
+        <li data-en-html="<strong>Red blood cells</strong> have no wall. Normally a flat dimpled disc of about 90 fL, in a hypotonic solution one swells toward a sphere. Its membrane can hardly stretch, so once the cell is a sphere with the same surface area (about 149 fL) the next bit of water bursts it: <strong>haemolysis</strong>, which in real blood starts at roughly 0.42–0.45% saline (0.42% in this model). In a hypertonic solution it shrinks and puckers into a spiky shape (crenation). That is why a drip uses 0.9% saline or 5% glucose, both close to isotonic."><strong>紅血球</strong>沒有細胞壁。正常時是約 90 fL、中間凹陷的扁圓盤；在低張溶液中會膨脹得越來越接近球形。它的膜幾乎不能拉長，所以一旦變成表面積相同的球（約 149 fL），再多一點水就會破裂：這就是<strong>溶血</strong>，真實的血液大約從 0.42%–0.45% 食鹽水開始（這個模型是 0.42%）。在高張溶液中它會失水，皺縮成帶刺的樣子。所以點滴用的是 0.9% 食鹽水或 5% 葡萄糖，兩者都接近等張。</li>
+        <li data-en-html="<strong>Plant cells</strong> have a stiff wall outside the membrane. In a hypotonic solution the protoplast swells against the wall, which pushes back with the <strong>turgor pressure</strong> \(P\); water stops entering when \(\pi_{\text{in}} - \pi_{\text{out}} = P\), long before anything bursts. Turgor is what keeps leaves and young stems firm. In a hypertonic solution the protoplast loses water and shrinks away from the wall: <strong>plasmolysis</strong>. The solution in which it just begins (incipient plasmolysis, \(P = 0\) with the protoplast still touching the wall) is isotonic with the cell sap — a classic way to measure the sap’s osmotic pressure."><strong>植物細胞</strong>在細胞膜外有堅韌的細胞壁。在低張溶液中原生質體膨脹、頂住細胞壁，細胞壁以<strong>膨壓</strong> \(P\) 往回壓；等到 \(\pi_{\text{內}} - \pi_{\text{外}} = P\)，水就不再流入，遠在破裂之前。葉子與嫩莖靠膨壓保持挺立。在高張溶液中原生質體失水、縮小，與細胞壁分開：這就是<strong>質壁分離</strong>。剛好開始質壁分離的溶液（初始質壁分離：膨壓為 0、原生質體還貼著細胞壁）和細胞液等張——這是測量細胞液滲透壓的經典方法。</li>
+      </ul>
+
+      <h3 data-en="Other ways across the membrane">穿過細胞膜的其他方式</h3>
+      <p data-en="This page shows simple diffusion and osmosis. Cells also move substances in two other ways; the table compares them.">本頁模擬的是簡單擴散與滲透。細胞還有另外兩種運送物質的方式，比較如下。</p>
+      <div class="tablewrap">
+        <table class="cmp">
+          <thead><tr><th data-en="Way">方式</th><th data-en="Direction">方向</th><th data-en="Needs a protein?">需要蛋白質嗎</th><th data-en="Energy">能量</th><th data-en="Rate as the difference grows">濃度差變大時的速率</th></tr></thead>
+          <tbody>
+            <tr><td data-en="Simple diffusion (oxygen, carbon dioxide, small fat-soluble molecules)">簡單擴散（氧、二氧化碳、小的脂溶性分子）</td><td data-en="Down the gradient">由高濃度往低濃度</td><td data-en="No">不需要</td><td data-en="None from the cell">不消耗細胞的能量</td><td data-en="Keeps rising in proportion">成正比一直增加</td></tr>
+            <tr><td data-en="Osmosis (water; quickly through aquaporin channels)">滲透（水；經水通道蛋白更快）</td><td data-en="Toward the side with more solute">往溶質多的一側</td><td data-en="Not required, but channels speed it up">不一定，有水通道會快很多</td><td data-en="None from the cell">不消耗細胞的能量</td><td data-en="Proportional to the osmotic pressure difference">與滲透壓差成正比</td></tr>
+            <tr><td data-en="Facilitated diffusion (glucose, ions through channels or carriers)">促進性擴散（葡萄糖、離子經通道或載體蛋白）</td><td data-en="Down the gradient">由高濃度往低濃度</td><td data-en="Yes">需要</td><td data-en="None from the cell">不消耗細胞的能量</td><td data-en="Levels off when all carriers are busy (saturation)">載體都忙不過來時趨於定值（飽和）</td></tr>
+            <tr><td data-en="Active transport (e.g. the sodium–potassium pump)">主動運輸（例如鈉鉀幫浦）</td><td data-en="Can go against the gradient">可以逆著濃度差</td><td data-en="Yes (a pump)">需要（幫浦）</td><td data-en="Uses ATP">消耗 ATP</td><td data-en="Set by the pumps, saturates">由幫浦決定，會飽和</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Spreading out</strong>: remove the partition and watch the bars under the box flatten toward the dashed line, following the theory curve. Track one particle: it never “aims” for the right."><strong>散開</strong>：移除隔板，看盒子下方的長條圖沿著理論曲線逐漸攤平、接近虛線。追蹤一顆粒子：它從來不會「朝著」右邊走。</li>
+        <li data-en-html="<strong>A straight line</strong>: the graph of \(\langle\Delta x^2\rangle\) against \(t\) is a straight line of slope \(2D\). Repeat at 0 °C and at 40 °C, or with glucose and haemoglobin: the old lines stay on the graph for comparison."><strong>一條直線</strong>：\(\langle\Delta x^2\rangle\) 對 \(t\) 的圖是斜率 \(2D\) 的直線。在 0 °C 與 40 °C、或用葡萄糖與血紅素各做一次：舊的直線會留在圖上方便比較。</li>
+        <li data-en-html="<strong>Water goes to the solute</strong>: in the U-tube, put the solute on the left instead and the left level rises. Use salt instead of sugar at the same concentration: the rise is almost twice as high."><strong>水往溶質多的地方跑</strong>：在 U 形管裡把溶質改放左邊，換成左管上升。濃度相同時把糖換成食鹽，液面差幾乎變成兩倍。</li>
+        <li data-en-html="<strong>Stopping the water</strong>: with the levels equal, press the piston with exactly \(iCRT\): nothing moves. Press harder and the right level falls below the left (reverse osmosis)."><strong>擋住水</strong>：液面一樣高時，讓活塞的壓力正好等於 \(iCRT\)：水不再流動。壓得更大，右管液面反而降到左管之下（逆滲透）。</li>
+        <li data-en-html="<strong>Same glass, different fates</strong>: in pure water the red blood cell bursts while the plant cell only becomes firm. In strong salt water the red cell crenates and the plant cell plasmolyses."><strong>同一杯水，不同的命運</strong>：在清水中紅血球破裂，植物細胞只是變得飽脹。在很濃的鹽水中，紅血球皺縮、植物細胞質壁分離。</li>
+        <li data-en-html="<strong>In 3D</strong>: in the diffusion box the particles also spread up–down and front–back; in the cell view, turn the red blood cell edge-on to see its dimple fill out as it swells."><strong>3D 立體</strong>：在擴散盒子裡，粒子也往上下、前後散開；在細胞畫面把紅血球轉到側面，可以看到它膨脹時中間的凹陷被撐平。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="<strong>Diffusion</strong>: 600 particles start spread evenly over the left half of a 200 × 80 × 40 μm box. Each frame every coordinate gets a random normal step of standard deviation \(\sqrt{2D\,\Delta t}\), with \(D\) from the Stokes–Einstein relation and the viscosity of water from the Vogel equation. Walls reflect the particles; the program keeps each particle’s unreflected path too, so the mean square displacement is measured exactly as it would be without walls. The random numbers come from a seeded generator, so the unit tests can be repeated. The theory curve under the box is the solution of the diffusion equation for this box (a cosine series), using \(\int D\,dt\) so that it stays correct when you change \(D\) during a run."><strong>擴散</strong>：600 個粒子一開始均勻分布在 200 × 80 × 40 μm 盒子的左半邊。每一幀，每個座標加上標準差 \(\sqrt{2D\,\Delta t}\) 的常態分布亂數；\(D\) 由斯托克斯–愛因斯坦關係算出，水的黏度用 Vogel 式。器壁會反彈粒子；程式另外記住每個粒子「沒有被反彈」的路徑，所以均方位移與沒有器壁時量到的完全一樣。亂數用可設定種子的產生器，單元測試可以重現。盒子下方的理論曲線是這個盒子的擴散方程式解（餘弦級數），用 \(\int D\,dt\) 計算，所以途中改變 \(D\) 也正確。</li>
+        <li data-en-html="<strong>U-tube</strong>: the water flow through the membrane is proportional to the pressure that drives it, \(\Delta\pi - \rho g h - P\), and is integrated step by step (Runge–Kutta). The solute amount on each side stays fixed while the water that crosses dilutes or concentrates it. Each liquid is treated as water (density at the chosen temperature); the membrane’s water permeability is chosen so that the levels settle in tens of minutes, and the time is sped up. The osmotic pressures use the ideal van ’t Hoff factor (real NaCl solutions behave as if \(i \approx 1.85\))."><strong>U 形管</strong>：通過半透膜的水流量正比於推動它的壓力 \(\Delta\pi - \rho g h - P\)，用龍格–庫塔法逐步計算。兩側的溶質量固定，流過去的水會稀釋或濃縮溶液。液體都當成水（密度依所選的溫度）；半透膜的透水能力設定成液面在幾十分鐘內趨於平衡，時間已經加速。滲透壓用理想的凡特荷夫因子（真實的食鹽水大約相當於 \(i \approx 1.85\)）。</li>
+        <li data-en-html="<strong>Cells</strong>: both cells use the same equation for \(dV/dt\) above. Red blood cell: 90 fL, 300 mOsm/L inside, 40% of its volume osmotically inactive, surface area 136 μm² (it bursts when it would have to grow beyond the sphere of that area). Plant cell: cell sap 400 mOsm/L when the protoplast just fills the wall, 10% inactive volume, and a wall that pushes back in proportion to how far it is stretched (volumetric elastic modulus 6 MPa). Changes are slowed down so you can watch them: a real red blood cell settles in well under a second. The red blood cell’s outline is the Evans–Fung biconcave disc, blended toward a sphere so that the drawn volume equals the computed one; the spikes of a crenated cell are only sketched."><strong>細胞</strong>：兩個細胞都用上面同一條 \(dV/dt\) 的式子。紅血球：90 fL、細胞內 300 mOsm/L、40% 的體積不參與滲透、表面積 136 μm²（要長得比這個面積的球還大時就破裂）。植物細胞：原生質體剛好填滿細胞壁時細胞液是 400 mOsm/L、10% 的體積不參與滲透，細胞壁被撐開越多、往回壓得越大（體積彈性模數 6 MPa）。變化速度放慢了，方便觀察：真實的紅血球不到一秒就達平衡。紅血球的輪廓是 Evans–Fung 的雙凹圓盤，再往球形內插，使畫出的體積等於計算出的體積；皺縮時的小刺只是示意。</li>
+        <li data-en-html="<strong>3D view</strong>: the same particles, tube levels and cell volumes, drawn with the three.js library (MIT license), which is downloaded only when you switch to 3D."><strong>3D 檢視</strong>：同一群粒子、同樣的液面與細胞體積，用 three.js 函式庫（MIT 授權）畫出，只有切換到 3D 時才會下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Biology · Cells (membrane structure and transport across the membrane)">課綱對應：高中生物・細胞（細胞膜的構造與物質的運輸）</li>
+        <li data-en-html="Constants: \(R\), \(k_{\mathrm B}\) and \(g_n\) are exact SI values. Viscosity of water: the Vogel equation \(\eta = 2.414\times10^{-5}\times10^{247.8/(T-140)}\ \mathrm{Pa\,s}\) (within about 2% from 0 to 100 °C). Density of water: M. Tanaka et al., <i>Metrologia</i> 38, 301 (2001).">常數：\(R\)、\(k_{\mathrm B}\)、\(g_n\) 是 SI 的定義值。水的黏度：Vogel 式 \(\eta = 2.414\times10^{-5}\times10^{247.8/(T-140)}\ \mathrm{Pa\,s}\)（0–100 °C 誤差約 2%）。水的密度：M. Tanaka 等人，<i>Metrologia</i> 38, 301（2001）。</li>
+        <li data-en-html="Red blood cell shape: E. Evans and Y.-C. Fung, “Improved measurements of the erythrocyte geometry”, <i>Microvascular Research</i> 4, 335 (1972). Diffusion: A. Einstein, <i>Annalen der Physik</i> 17, 549 (1905). Osmotic pressure: J. H. van ’t Hoff, <i>Zeitschrift für physikalische Chemie</i> 1, 481 (1887).">紅血球的形狀：E. Evans、Y.-C. Fung，〈Improved measurements of the erythrocyte geometry〉，<i>Microvascular Research</i> 4, 335（1972）。擴散：A. Einstein，<i>Annalen der Physik</i> 17, 549（1905）。滲透壓：J. H. van ’t Hoff，<i>Zeitschrift für physikalische Chemie</i> 1, 481（1887）。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/biology-2e/pages/5-2-passive-transport&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;><i>Biology 2e</i>, 5.2 Passive Transport</a>.">延伸閱讀：OpenStax〈<a href="https://openstax.org/books/biology-2e/pages/5-2-passive-transport" target="_blank" rel="noopener">Biology 2e, 5.2 Passive Transport</a>〉（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/diffusion-osmosis-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/diffusion-osmosis.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="diffusion-osmosis"></script>
+  <script src="js/missions/diffusion-osmosis.js"></script>
+  <script src="js/stats.js" data-module="diffusion-osmosis"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
