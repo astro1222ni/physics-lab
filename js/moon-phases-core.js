@@ -482,6 +482,15 @@
     const np = toH(v3(0, 0, 1)); // 黃道北極（月球自轉軸只偏 1.5°）
     return { limb: proj(sd), north: proj(np) };
   }
+  /**
+   * 太陽在月面座標中的方向（單位向量 [x, y, z]：x 月面東、y 月面北、z 朝向觀者；月面北以黃道北極代表）。
+   * phaseAngle：相角；limb、north：skyOrientation 的亮邊方向與月球北極方向。只用到 limb − north，
+   * 所以和畫面怎麼擺無關：月面方向固定的畫面（近側固定、月球北極朝上）用它決定明暗界線落在月面上的位置。
+   */
+  function sunInMoonFrame(phaseAngle, limb, north) {
+    const a = limb - north + Math.PI / 2, si = Math.sin(phaseAngle);
+    return [si * Math.cos(a), si * Math.sin(a), Math.cos(phaseAngle)];
+  }
 
   // ---------- 日曆 ----------
   function calendar(t) {
@@ -618,7 +627,7 @@
     cone: cone, lunarEclipse: lunarEclipse, solarEclipse: solarEclipse, greatestPoint: greatestPoint, overlapArea: overlapArea,
     sunVisibleFrom: sunVisibleFrom, localSolar: localSolar, eclipsesAt: eclipsesAt, greatestEclipse: greatestEclipse,
     eclToEq: eclToEq, eqToEcl: eqToEcl, lst: lst, observer: observer, horizonBasis: horizonBasis, horizontal: horizontal,
-    declination: declination, moonAlt: moonAlt, sunAlt: sunAlt, riseSet: riseSet, transit: transit, skyOrientation: skyOrientation,
+    declination: declination, moonAlt: moonAlt, sunAlt: sunAlt, riseSet: riseSet, transit: transit, skyOrientation: skyOrientation, sunInMoonFrame: sunInMoonFrame,
     calendar: calendar, timeOf: timeOf, doyOf: doyOf,
     PLACES: PLACES, REF_YEAR: REF_YEAR, UTC_MIN: UTC_MIN, UTC_MAX: UTC_MAX, placeById: placeById, defaultUtc: defaultUtc, manualPlace: manualPlace,
     zoneOffset: zoneOffset, utcMs: utcMs, utcOffset: utcOffset, standardOffset: standardOffset, localT: localT, fromLocal: fromLocal, localDay: localDay

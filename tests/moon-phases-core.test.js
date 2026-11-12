@@ -583,4 +583,45 @@ test('高緯度：月亮上中天的高度 = 90° − |緯度 − 赤緯|（扣�
   assert.ok(tw.rise != null && tw.set != null, '臺灣照常升落');
 });
 
+test('月面座標中的太陽方向：近側固定的月面上，明暗界線的位置只由日月地的位置決定，不隨觀測時刻轉動；與 3D 同步自轉的月球一致', () => {
+  // 只用到亮邊相對月球北極的角度：整個畫面一起轉，結果不變
+  for (const d of [0.3, 1.7, -2.4, Math.PI]) {
+    const a = K.sunInMoonFrame(1.1, 0.4, 2.0), b = K.sunInMoonFrame(1.1, 0.4 + d, 2.0 + d);
+    for (let k = 0; k < 3; k++) close(b[k], a[k], 1e-12, '轉 ' + d);
+  }
+  // 臺灣 6 小時內：以天頂為上時月球北極的方向轉了很多（這是天頂朝上的畫面造成的轉動），亮邊相對月球北極的角度幾乎不變
+  const t0 = K.timeOf(0, K.doyOf(9, 23), 18.5);
+  let el = K.makeElements({});
+  el = K.withNode(el, t0, 100 * D); el = K.withPerigee(el, t0, 30 * D); el = K.placeElongation(el, t0, 120 * D);
+  const o0 = K.skyOrientation(el, t0), o1 = K.skyOrientation(el, t0 + 0.25);
+  assert.ok(Math.abs(K.wrapPi(o1.north - o0.north)) > 60 * D, '天頂朝上時月球北極轉了 ' + (K.wrapPi(o1.north - o0.north) / D).toFixed(1) + '°');
+  close(K.wrapPi((o1.limb - o1.north) - (o0.limb - o0.north)), 0, 0.5 * D, '亮邊相對月球北極的角度');
+  // 與 3D 的月球本體座標（x 指向地心＝經度 0、z 朝黃道北極、y 為東）比較：只差觀測者不在地心的視差（< 1.2°）
+  const body = function (e2, t) {
+    const m = K.moonAt(e2, t), s = K.sunAt(t);
+    const X = K.unit(K.mul(m, -1)), Z = K.unit(K.sub(K.v3(0, 0, 1), K.mul(X, X.z))), Y = K.cross(Z, X), sd = K.unit(K.sub(s, m));
+    return [K.dot(sd, Y), K.dot(sd, Z), K.dot(sd, X)];
+  };
+  let worst = 0;
+  const e0 = K.makeElements({ N0: 1.2, W0: 0.4 });
+  K.PLACES.forEach(p => {
+    [20, 90, 135, 180, 225, 270, 330].forEach(dl => {
+      [0, 5, 11, 17, 22].forEach(hr => {
+        const t = K.timeOf(0, K.doyOf(5, 10), hr), e2 = K.placeElongation(e0, t, dl * D);
+        const o = K.skyOrientation(e2, t, p.lat * D, p.lon * D);
+        const L = K.sunInMoonFrame(K.phaseAt(e2, t).phaseAngle, o.limb, o.north), B = body(e2, t);
+        worst = Math.max(worst, Math.acos(Math.min(1, L[0] * B[0] + L[1] * B[1] + L[2] * B[2])));
+      });
+    });
+  });
+  assert.ok(worst < 1.2 * D, '與 3D 最大相差 ' + (worst / D).toFixed(2) + '°');
+  // 上弦：明暗界線通過月面中央（經度 0），東半邊亮；下弦：西半邊亮；望（在交點上）：整個近側亮
+  const L = function (e2) { const o = K.skyOrientation(e2, t0); return K.sunInMoonFrame(K.phaseAt(e2, t0).phaseAngle, o.limb, o.north); };
+  const fq = L(K.placeElongation(el, t0, 90 * D)), lq = L(K.placeElongation(el, t0, 270 * D));
+  assert.ok(Math.abs(fq[2]) < 0.01 && fq[0] > 0.99, '上弦 ' + fq.map(v => v.toFixed(3)));
+  assert.ok(Math.abs(lq[2]) < 0.01 && lq[0] < -0.99, '下弦 ' + lq.map(v => v.toFixed(3)));
+  const full = L(K.placeElongation(K.withNode(el, t0, K.sunLon(t0)), t0, 180 * D));
+  assert.ok(full[2] > 0.9999, '望 ' + full.map(v => v.toFixed(4)));
+});
+
 console.log(`moon-phases-core：${passed} 項通過`);
