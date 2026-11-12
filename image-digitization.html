@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Digitizing Images: Sampling, Resolution and Color Depth | Astro Ni Science Lab">圖片數位化：取樣、解析度與色深｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 圖片數位化頁面專用的顏色代號（淺色＋兩組深色；由 js/image-digitization.js 與 js/image-digitization-3d.js 讀取） */
+    :root { --id-sel: #e11d48; --id-nyq: #7c3aed; --id-band: #0891b2; --id-r: #dc2626; --id-g: #16a34a; --id-b: #2563eb; --id-frame: #dfe6ee; --id-ok: #15803d; --id-warn: #c2410c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --id-sel: #fb7185; --id-nyq: #b9a0ff; --id-band: #22d3ee; --id-r: #f87171; --id-g: #4ade80; --id-b: #60a5fa; --id-frame: #1a2430; --id-ok: #4ade80; --id-warn: #fb923c; }
+    }
+    :root[data-theme="dark"] { --id-sel: #fb7185; --id-nyq: #b9a0ff; --id-band: #22d3ee; --id-r: #f87171; --id-g: #4ade80; --id-b: #60a5fa; --id-frame: #1a2430; --id-ok: #4ade80; --id-warn: #fb923c; }
+
+    /* 畫布高度由程式依寬度決定（4:3 的圖加邊框）；左右拖曳分界線或點像素時才攔下觸控，上下滑動照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: crosshair; }
+    #cv2 { aspect-ratio: auto; height: 200px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    .idg button { min-height: 44px; }
+    .idg [hidden] { display: none !important; }
+    .idg .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .idg .slider input[type="range"] { height: 28px; margin: 0; }
+    .idg .checks label { min-height: 44px; }
+    .idg .checks input { width: 17px; height: 17px; }
+    .idg .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .idg .panel { grid-template-columns: minmax(0, 1fr); }
+    .idg .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    /* 2D／3D 切換列 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+    .view-bar .grow { flex: 1 1 auto; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; padding: 6px 6px; }
+    .stage.is3d #cv, .stage.is3d .split-row { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-wrap { position: relative; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 75%; }
+    .c3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .c3-hud span.m { color: var(--muted); font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .split-row { margin: 6px 2px 0; }
+    .split-row .slider { margin: 4px 0 0; }
+    /* 原圖的選擇 */
+    .scenes { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; }
+    .scenes button { padding: 6px 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; line-height: 1.25; }
+    .scenes button .sw { width: 48px; height: 36px; border-radius: 5px; box-shadow: 0 1px 3px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.12); display: block; }
+    .scenes button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; font-weight: 600; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout .sep { grid-column: 1 / -1; border-top: 1px dashed var(--border); margin: 4px 0; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .units-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    /* 放大鏡 */
+    .px-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 0; }
+    .px-sw { width: 46px; height: 46px; border-radius: 8px; flex: none; box-shadow: 0 2px 6px rgba(0,0,0,.25), inset 0 0 0 1px rgba(0,0,0,.15); background: var(--canvas-bg); }
+    .px-pos { font-size: calc(14px * var(--fs, 1)); }
+    .px-pos small { display: block; color: var(--muted); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.data { font-size: calc(14px * var(--fs, 1)); width: 100%; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 5px; white-space: nowrap; }
+    /* 表頭與「原圖」欄可以換行：英文或字體特大時，整張表仍放得進卡片，不必左右捲動 */
+    table.data th { white-space: normal; line-height: 1.25; vertical-align: bottom; }
+    #recTab td:first-child { white-space: normal; }
+    #pxTab td { text-align: right; }
+    #pxTab td.bin { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 0.04em; color: var(--accent); font-weight: 600; }
+    #pxTab th.ch { text-align: center; white-space: nowrap; }
+    #pxTab:empty { display: none; }
+    .px-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    /* 記錄 */
+    .rec-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .rec-row button { flex: 1 1 auto; }
+    #recTab td, #recTab th { text-align: right; }
+    #recTab td:first-child, #recTab th:first-child { text-align: left; }
+    #recTab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#data&quot;>Information Technology · Data Representation</a> / Digitizing images"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#data">資訊科技・資料表示</a> ／ 圖片數位化</nav>
+      <h1 data-en="Digitizing Images: Sampling, Resolution and Color Depth">圖片數位化：取樣、解析度與色深</h1>
+      <p data-en="A computer cannot store a picture the way your eye sees it. It cuts the picture into a grid of pixels (sampling) and stores each color as a few bits (quantization). Change the resolution and the number of bits, compare the result with the original side by side, read any pixel in binary, see how big the file becomes — and watch the colors snap onto a lattice inside the RGB color cube.">電腦沒辦法照眼睛看到的樣子存一張圖：它先把畫面切成一格一格的像素（取樣），再把每一格的顏色用幾個位元記下來（量化）。調整解析度和位元數，左右對照原圖和數位化的結果，用放大鏡讀出像素的二進位，看檔案會有多大，再到 RGB 色立方裡看顏色怎麼被「吸」到格點上。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “Grayscale”, drag “Bits b” down to 2 and look at the sky — then make the image wider and see what happens to the file size.">試試看：選「灰階」，把「位元數 b」拉到 2，看看天空變成什麼樣子；再把圖變寬，看檔案大小怎麼變。</p>
+    <div class="lab idg" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D image">2D 圖片</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D color cube">3D 色立方</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          <button type="button" id="replaySnap" hidden data-en="Replay the snap">重播吸附</button>
+          <span class="grow"></span>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="split-row">
+          <div class="slider"><label for="split" data-en="Original ◀ divider ▶ digitized (%)">原圖 ◀ 分界 ▶ 數位化（%）</label><output id="splito"></output>
+            <input id="split" type="range" min="0" max="100" step="1" value="50" data-decimals="0"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv2" aria-label="量化的階梯圖：橫軸是原圖的值（0 到 255），縱軸是存下來的值。斜虛線是完全不失真，階梯是目前位元數能存的值；選取的像素標成圓點，圓點和斜線的距離就是量化誤差。" data-en-aria-label="Quantization staircase: the original value from 0 to 255 across, the stored value up. The dashed diagonal means no loss; the staircase shows the values the current number of bits can store. The selected pixel is shown as dots, and the gap between a dot and the diagonal is the quantization error."></canvas>
+        <p class="chart-cap" data-en-html="Quantization: with b bits a channel has only 2<sup>b</sup> steps, so every value is rounded to the nearest step. Fewer bits → bigger steps → bigger errors.">量化：每個色版 b 位元只有 2<sup>b</sup> 階，每個值都被四捨五入到最近的一階。位元越少 → 階越大 → 誤差越大。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Each dot is one pixel, placed at its color (R, G, B).">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。每個點是一個像素，放在它的顏色（R, G, B）的位置。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Original picture">原圖</h2>
+          <div class="scenes" role="group" aria-label="選擇原圖" data-en-aria-label="Choose the original picture">
+            <button type="button" data-scene="sunset" aria-pressed="true"><span class="sw" data-thumb="sunset"></span><span data-en="Mountain sunset">山景日落</span></button>
+            <button type="button" data-scene="checker" aria-pressed="false"><span class="sw" data-thumb="checker"></span><span data-en="Checkerboard">棋盤</span></button>
+            <button type="button" data-scene="rings" aria-pressed="false"><span class="sw" data-thumb="rings"></span><span data-en="Rings">同心圓</span></button>
+            <button type="button" data-scene="eyechart" aria-pressed="false"><span class="sw" data-thumb="eyechart"></span><span data-en="Eye chart">視力表</span></button>
+            <button type="button" data-scene="wheel" aria-pressed="false"><span class="sw" data-thumb="wheel"></span><span data-en="Color wheel">色相環</span></button>
+          </div>
+          <p class="hint" data-en="All five pictures are drawn from mathematical formulas, so the “original” is perfectly smooth at any zoom.">五張圖都是用數學式畫出來的，所以「原圖」放到多大都是平滑的。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Sampling (resolution)">取樣（解析度）</h2>
+          <div class="slider"><label for="ww" data-en="Width w (pixels)">寬 w（像素）</label><output id="wwo"></output>
+            <input id="ww" type="range" min="1" max="320" step="1" value="64" data-decimals="0"></div>
+          <div class="slider"><label for="hh" data-en="Height h (pixels)">高 h（像素）</label><output id="hho"></output>
+            <input id="hh" type="range" min="1" max="240" step="1" value="48" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="lock" type="checkbox" checked><span data-en="Keep 4:3">固定 4:3</span></label>
+          </div>
+          <div class="seg full" role="group" aria-label="取樣方式" data-en-aria-label="How each pixel is sampled">
+            <button type="button" id="mCenter" aria-pressed="true" data-en="Center of each pixel">取每格中心點</button>
+            <button type="button" id="mArea" aria-pressed="false" data-en="Average over each pixel">整格平均</button>
+          </div>
+          <div class="checks">
+            <label><input id="showGrid" type="checkbox"><span data-en="Pixel grid">格線</span></label>
+            <label><input id="showDots" type="checkbox"><span data-en="Sample points">取樣點</span></label>
+            <label id="nyqWrap" hidden><input id="showNyq" type="checkbox" checked><span data-en="Nyquist limit">奈奎斯特範圍</span></label>
+          </div>
+          <p class="hint" data-en="“Center of each pixel” keeps only the color at one point; “Average over each pixel” averages everything inside the square, like the light falling on one cell of a camera sensor. Tap a number to type it.">「取每格中心點」只留下一個點的顏色；「整格平均」把整格裡的顏色平均，像相機感光元件的一格收集整格的光。點一下數字可以直接輸入。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Quantization (color depth)">量化（色深）</h2>
+          <div class="seg full" role="group" aria-label="色彩模式" data-en-aria-label="Color mode">
+            <button type="button" id="modeGray" aria-pressed="false" data-en="Grayscale">灰階</button>
+            <button type="button" id="modeColor" aria-pressed="true" data-en="Color">彩色</button>
+          </div>
+          <div class="slider"><label for="bits" data-en="Bits b">位元數 b</label><output id="bitso"></output>
+            <input id="bits" type="range" min="1" max="8" step="1" value="8" data-decimals="0"></div>
+          <p class="hint" id="bitsHint"></p>
+          <dl class="readout">
+            <dt data-en="Bits per pixel">每像素位元數</dt><dd id="rBpp">—</dd>
+            <dt data-en="Colors it can store">可表示的顏色數</dt><dd id="rLevels">—</dd>
+            <dt data-en="Colors actually used">實際用到的顏色數</dt><dd id="rUsed">—</dd>
+            <dt data-en="Average quantization error">平均量化誤差</dt><dd id="rErr">—</dd>
+            <dt data-en="Longest band in the sky" id="rBandDt">天空最長的色帶</dt><dd id="rBand">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="File size (uncompressed)">檔案大小（未壓縮）</h2>
+          <div class="eq" id="sizeEq" aria-live="off"></div>
+          <dl class="readout">
+            <dt data-en="Pixels">像素數</dt><dd id="rPx">—</dd>
+            <dt data-en="Bits">位元數</dt><dd id="rBits">—</dd>
+            <dt data-en="Bytes">位元組</dt><dd id="rBytes">—</dd>
+            <dt>KB</dt><dd id="rKB">—</dd>
+            <dt>KiB</dt><dd id="rKiB">—</dd>
+            <dd class="sep"></dd>
+            <dt data-en="1920 × 1080, full color (24 bits)">1920 × 1080 全彩（24 位元）</dt><dd id="rHD">—</dd>
+            <dt data-en="This image is">這張圖是它的</dt><dd id="rRatio">—</dd>
+          </dl>
+          <p class="units-note" data-en="1 byte = 8 bits; 1 KB = 1000 bytes and 1 MB = 1000 KB (SI prefixes); 1 KiB = 1024 bytes and 1 MiB = 1024 KiB (binary prefixes, IEC 80000-13). Real files also have a header, and are usually compressed.">1 位元組（byte）= 8 位元；1 KB = 1000 位元組、1 MB = 1000 KB（國際單位制的字首）；1 KiB = 1024 位元組、1 MiB = 1024 KiB（二進位字首，IEC 80000-13）。真正的圖檔還有檔頭，而且通常會壓縮。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Magnifier">放大鏡</h2>
+          <div class="px-head">
+            <div class="px-sw" id="pxSw" aria-hidden="true"></div>
+            <div class="px-pos" id="pxPos" aria-live="polite"></div>
+          </div>
+          <div class="tablewrap"><table class="data" id="pxTab"></table></div>
+          <p class="px-empty" id="pxEmpty" data-en="Tap a pixel in the image (or focus the image and use the arrow keys) to read its values.">點一下圖上的像素（或選取畫布後用方向鍵），讀出它的數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Notebook">記錄</h2>
+          <div class="rec-row">
+            <button id="recBtn" type="button" class="primary" data-en="Record this setting">記下這一組</button>
+            <button id="wipeBtn" type="button" data-en="Clear all" title="清掉記錄表與選取的像素；解析度、色深等設定不變" data-en-title="Clear the notebook and the selected pixel; the resolution, color depth and other settings stay">全部清除</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="recTab"></table></div>
+          <p class="log-empty" id="recEmpty" data-en="Record a few settings to compare their file sizes.">記下幾組設定，比較它們的檔案大小。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Sampling: cutting the picture into pixels">取樣：把畫面切成像素</h3>
+      <p data-en-html="A scene in front of a camera has a color at every point — infinitely many points. A digital image keeps only a grid of \(w \times h\) <strong>pixels</strong> (picture elements), one color each; \(w \times h\) is the <strong>resolution</strong>. Each pixel can take the color at its center (point sampling, the textbook definition) or the average color over its square (what a camera sensor cell does, since it collects all the light falling on it).">相機前的景物，每一個點都有顏色——有無限多個點。數位圖片只留下 \(w \times h\) 個格子，叫做<strong>像素</strong>（pixel，picture element），每格一個顏色；\(w \times h\) 就是<strong>解析度</strong>。每一格可以取它中心點的顏色（點取樣，課本上的定義），也可以取整格的平均（相機感光元件的一格會收集落在整格上的光）。</p>
+
+      <h3 data-en="Quantization: a few bits per color">量化：每個顏色只用幾個位元</h3>
+      <p data-en-html="A screen mixes red, green and blue light (the RGB model). Each of the three <strong>channels</strong> is stored as a whole number from \(0\) to \(2^{b}-1\), where \(b\) is the number of bits per channel. The value \(x\) (from 0 to 255) is rounded to the nearest of the \(2^{b}\) levels, so the error is at most half a step. A grayscale image keeps only one channel, the brightness \(Y\); this page uses the weights of the ITU-R BT.601 standard, because our eyes are most sensitive to green and least to blue.">螢幕用紅、綠、藍三種光混出顏色（RGB 加色混合）。三個<strong>色版</strong>各存一個 \(0\) 到 \(2^{b}-1\) 的整數，\(b\) 是每個色版的位元數。原本的值 \(x\)（0 到 255）四捨五入到 \(2^{b}\) 階裡最近的一階，所以誤差最多半階。灰階圖只留一個色版：亮度 \(Y\)；這一頁用 ITU-R BT.601 標準的權重——人眼對綠光最敏感、對藍光最不敏感。</p>
+      <div class="formula">\[ q = \operatorname{round}\!\left(\frac{x}{255}\,(2^{b}-1)\right), \qquad x' = \frac{255\,q}{2^{b}-1}, \qquad Y = 0.299\,R + 0.587\,G + 0.114\,B \]</div>
+      <p data-en-html="With \(b = 8\) bits per channel a color pixel has \(3 \times 8 = 24\) bits and can be one of \(2^{24} = 16{,}777{,}216\) colors — “24-bit true color”, the usual depth of the sRGB color space used on the web (IEC 61966-2-1). With too few levels a smooth gradient breaks into visible stripes called <strong>banding</strong> (false contours).">每個色版 \(b = 8\) 位元時，一個彩色像素有 \(3 \times 8 = 24\) 位元，可以是 \(2^{24} = 16{,}777{,}216\) 種顏色之一——這就是「24 位元全彩」，網頁上 sRGB 色彩空間（IEC 61966-2-1）最常用的色深。階數太少時，平滑的漸層會斷成一條一條的<strong>色帶</strong>（banding，又叫偽輪廓）。</p>
+
+      <h3 data-en="How big is the file?">檔案有多大？</h3>
+      <p data-en-html="Without compression and without a file header, every pixel needs the same number of bits, so">不壓縮、也不算檔頭時，每個像素都用一樣多的位元，所以</p>
+      <div class="formula">\[ N_{\text{bit}} = w \times h \times \text{bpp}, \qquad N_{\text{byte}} = \left\lceil \frac{N_{\text{bit}}}{8} \right\rceil \]</div>
+      <p data-en-html="Here bpp is the number of bits per pixel: \(b\) for grayscale and \(3b\) for color. The brackets \(\lceil\ \rceil\) mean rounding up, because a file is made of whole bytes.">其中 bpp 是每個像素的位元數：灰階是 \(b\)，彩色是 \(3b\)。\(\lceil\ \rceil\) 是無條件進位，因為檔案是由一個一個完整的位元組組成的。</p>
+      <p data-en-html="For example a 1920 × 1080 full-color picture needs \(1920 \times 1080 \times 24 \div 8 = 6{,}220{,}800\) bytes \(\approx 6.22\) MB \(\approx 5.93\) MiB. Doubling both the width and the height makes the file four times bigger; doubling the bits per pixel only makes it twice as big.">例如 1920 × 1080 的全彩圖要 \(1920 \times 1080 \times 24 \div 8 = 6{,}220{,}800\) 位元組 \(\approx 6.22\) MB \(\approx 5.93\) MiB。寬和高都加倍，檔案變成 4 倍；每像素的位元數加倍，檔案只變成 2 倍。</p>
+
+      <h3 data-en="Sampling theorem and aliasing">取樣定理與混疊</h3>
+      <p data-en-html="A pattern that repeats every \(P\) pixels can only be recorded faithfully if there are more than two samples per repeat: the sampling frequency must be more than twice the highest frequency in the picture (the Nyquist–Shannon sampling theorem). Finer detail does not just disappear — it comes back disguised as a coarser pattern that was never there, called <strong>aliasing</strong> (moiré). In the “Rings” picture the stripes get finer towards the edges; outside the dashed “Nyquist limit” box they are finer than half the sampling frequency and fake rings appear. Averaging over each pixel blurs away detail that is too fine before it can alias, which is why it looks calmer.">每隔 \(P\) 個像素重複一次的圖樣，要每一次重複取到兩個以上的樣本才能忠實記下來：取樣頻率必須大於圖中最高頻率的兩倍（奈奎斯特－夏農取樣定理）。太細的細節不會乖乖消失，而是假扮成原本沒有的、比較粗的圖樣跑回來，這叫<strong>混疊</strong>（aliasing，疊紋）。「同心圓」的條紋越外圈越細；在「奈奎斯特範圍」虛線框外面，條紋比取樣頻率的一半還細，就冒出假的圓圈。整格平均會先把太細的細節模糊掉，所以看起來比較平靜。</p>
+      <div class="formula">\[ f_{\text{sample}} > 2\,f_{\max} \]</div>
+
+      <h3 data-en="The RGB color cube">RGB 色立方</h3>
+      <p data-en-html="Every color is a point \((R, G, B)\) inside a cube: black and white at opposite corners, the gray colors on the diagonal between them, red, green, blue, cyan, magenta and yellow at the other six corners. With \(b\) bits per channel only \((2^{b})^{3}\) lattice points can be stored, and quantization moves every pixel to its nearest lattice point. Grayscale squeezes the whole cube onto the diagonal.">每一種顏色都是立方體裡的一點 \((R, G, B)\)：黑和白在相對的兩個角，所有的灰在它們之間的對角線上，紅、綠、藍、青、洋紅、黃在另外六個角。每個色版 \(b\) 位元時，只存得下 \((2^{b})^{3}\) 個格點，量化就是把每個像素搬到最近的格點上；灰階則把整個立方體壓到對角線上。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Banding</strong>: in “Mountain sunset”, lower “Bits b” one step at a time. Where do the bands appear first? Why does a taller image need more bits before the bands disappear?"><strong>色帶</strong>：在「山景日落」把「位元數 b」一格一格調低。色帶最先出現在哪裡？為什麼圖越高，要更多位元色帶才會消失？</li>
+        <li data-en-html="<strong>Fake rings</strong>: in “Rings” with “Center of each pixel”, make the image narrower. Where do rings appear that are not in the original? What does “Average over each pixel” do to them?"><strong>假的圓圈</strong>：在「同心圓」用「取每格中心點」，把圖變窄。哪裡冒出原圖沒有的圓圈？改成「整格平均」之後呢？</li>
+        <li data-en-html="<strong>Reading the letters</strong>: in “Eye chart”, which rows can you still read as you lower the width? How many pixels does one stroke of an E need?"><strong>看得清的字</strong>：在「視力表」把寬度調小，哪一列的 E 還認得出方向？E 的一筆至少要幾個像素寬？</li>
+        <li data-en-html="<strong>The corners of the cube</strong>: in “Color wheel” with 1 bit per channel, count the colors. Then open the 3D color cube and see where they are."><strong>立方體的角</strong>：在「色相環」每個色版 1 位元，數一數剩幾種顏色，再打開 3D 色立方看它們在哪裡。</li>
+        <li data-en-html="<strong>Pixels or bits?</strong> For the same file size, would you rather have more pixels or more bits per pixel? Does the answer depend on the picture?"><strong>像素還是位元？</strong>同樣的檔案大小，你要多一點像素，還是每個像素多一點位元？答案和圖的內容有關嗎？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The five originals are mathematical functions of the position (sky gradient, mountain ridges, \(\tfrac12 + \tfrac12\cos(\pi K r^{2})\) rings with \(K = 256\), squares, the tumbling E on a 5 × 5 stroke grid, and the HSV hexcone for the color wheel), so they have no pixels of their own. “Center of each pixel” evaluates the function at the center of each pixel; for the checkerboard and the eye chart the test is done with whole numbers so that a point exactly on an edge is always decided the same way. “Average over each pixel” uses the exact covered area for the checkerboard and the eye chart, and an \(s \times s\) grid of sub-samples (about 260,000 points in all, \(2 \le s \le 16\)) for the others; the average is taken on the sRGB code values.">五張原圖都是位置的數學函數（天空的漸層、山的稜線、\(K = 256\) 的同心圓 \(\tfrac12 + \tfrac12\cos(\pi K r^{2})\)、方格、5 × 5 筆畫格的翻滾 E、色相環用 HSV 六角錐模型），本身沒有像素。「取每格中心點」直接算像素中心那一點；棋盤和視力表用整數判斷，點剛好落在邊上時永遠用同一個規則。「整格平均」在棋盤和視力表用精確的覆蓋面積，其他圖用每格 \(s \times s\) 個子取樣點（總共約 26 萬點，\(2 \le s \le 16\)）平均；平均直接對 sRGB 的代碼值做。</li>
+        <li data-en-html="The unit tests check the file-size formula and the 1920 × 1080 example, that \(b\) bits give exactly \(2^{b}\) levels with an error of at most half a step, the BT.601 weights, the HSV conversion, that 1 bit per channel on the color wheel leaves exactly the 8 corners of the cube, the exact area averages of the checkerboard against numerical integration, the Nyquist limit and the aliased rings, and the banding in the sky at different heights and depths.">單元測試檢查檔案大小的公式與 1920 × 1080 的例子、\(b\) 位元剛好 \(2^{b}\) 階而且誤差不超過半階、BT.601 的權重、HSV 換算、色相環每色版 1 位元剛好剩下立方體的 8 個角、棋盤的精確面積平均與數值積分一致、奈奎斯特範圍與混疊出來的圓圈，以及不同高度與色深時天空的色帶。</li>
+        <li data-en-html="The 3D view uses the same pixels: each dot is a pixel (at most about 3000 of them), first at its sampled color and then moved to its quantized color. Nothing in the 3D view is computed differently from the 2D image.">3D 檢視用的是同一批像素：每個點是一個像素（最多約 3000 個），先放在取樣到的顏色，再移到量化後的顏色；3D 裡沒有任何數值和 2D 圖片不同。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): D-IV-1, principles and methods of digitizing data; D-IV-2, ways to represent digital data (junior high, the basis of the senior-high data representation units).">課綱對應：資D-IV-1 資料數位化之原理與方法；資D-IV-2 數位資料的表示方法（國中，高中資料表示各單元的基礎）。</li>
+        <li data-en="Sampling, quantization, false contouring and aliasing in images: Rafael C. Gonzalez and Richard E. Woods, Digital Image Processing, 4th ed. (Pearson, 2018), Chapter 2 (Section 2.4, Image Sampling and Quantization) and Chapter 4 (aliasing and moiré patterns in images).">取樣、量化、偽輪廓與影像的混疊：Rafael C. Gonzalez、Richard E. Woods，《Digital Image Processing》第 4 版（Pearson，2018），第 2 章（2.4 節 Image Sampling and Quantization）與第 4 章（影像的混疊與疊紋）。</li>
+        <li data-en="Sampling theorem: C. E. Shannon, “Communication in the Presence of Noise”, Proceedings of the IRE 37(1), 10–21 (1949); H. Nyquist, “Certain Topics in Telegraph Transmission Theory”, Transactions of the AIEE 47(2), 617–644 (1928).">取樣定理：C. E. Shannon，〈Communication in the Presence of Noise〉，Proceedings of the IRE 37(1)，10–21 頁（1949）；H. Nyquist，〈Certain Topics in Telegraph Transmission Theory〉，Transactions of the AIEE 47(2)，617–644 頁（1928）。</li>
+        <li data-en="sRGB color space: IEC 61966-2-1:1999, Multimedia systems and equipment — Colour measurement and management — Part 2-1: Default RGB colour space — sRGB.">sRGB 色彩空間：國際標準 IEC 61966-2-1:1999〈Multimedia systems and equipment — Colour measurement and management — Part 2-1: Default RGB colour space — sRGB〉。</li>
+        <li data-en="Grayscale weights 0.299, 0.587, 0.114: Recommendation ITU-R BT.601-7 (2011), Studio encoding parameters of digital television for standard 4:3 and wide-screen 16:9 aspect ratios.">灰階的權重 0.299、0.587、0.114：國際電信聯盟建議書 ITU-R BT.601-7（2011）〈Studio encoding parameters of digital television for standard 4:3 and wide-screen 16:9 aspect ratios〉。</li>
+        <li data-en="Units: kilo = 1000 is the SI prefix (BIPM, The International System of Units, 9th ed., 2019); kibi = 1024 is the binary prefix of IEC 80000-13:2008, Quantities and units — Part 13: Information science and technology.">單位：kilo = 1000 是國際單位制的字首（BIPM《The International System of Units》第 9 版，2019）；kibi = 1024 是國際標準 IEC 80000-13:2008〈Quantities and units — Part 13: Information science and technology〉的二進位字首。</li>
+        <li data-en="Color wheel: the HSV hexcone model of Alvy Ray Smith, “Color Gamut Transform Pairs”, Computer Graphics 12(3), 12–19 (SIGGRAPH ’78). Eye chart: the tumbling E drawn on a 5 × 5 grid, after the optotypes of H. Snellen, Probebuchstaben zur Bestimmung der Sehschärfe (Utrecht, 1862).">色相環：Alvy Ray Smith 的 HSV 六角錐模型，〈Color Gamut Transform Pairs〉，Computer Graphics 12(3)，12–19 頁（SIGGRAPH ’78）。視力表：畫在 5 × 5 格上的翻滾 E，源自 H. Snellen《Probebuchstaben zur Bestimmung der Sehschärfe》（烏特勒支，1862）的視標。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Image_resolution&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Image resolution</a>, <a href=&quot;https://en.wikipedia.org/wiki/Color_depth&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Color depth</a>, <a href=&quot;https://en.wikipedia.org/wiki/Colour_banding&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Colour banding</a>, <a href=&quot;https://en.wikipedia.org/wiki/Aliasing&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Aliasing</a>, <a href=&quot;https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Nyquist–Shannon sampling theorem</a>, <a href=&quot;https://en.wikipedia.org/wiki/Zone_plate&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Zone plate</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Image_resolution" target="_blank" rel="noopener">Image resolution</a>、<a href="https://en.wikipedia.org/wiki/Color_depth" target="_blank" rel="noopener">Color depth</a>、<a href="https://en.wikipedia.org/wiki/Colour_banding" target="_blank" rel="noopener">Colour banding</a>、<a href="https://en.wikipedia.org/wiki/Aliasing" target="_blank" rel="noopener">Aliasing</a>、<a href="https://en.wikipedia.org/wiki/Nyquist%E2%80%93Shannon_sampling_theorem" target="_blank" rel="noopener">Nyquist–Shannon sampling theorem</a>、<a href="https://en.wikipedia.org/wiki/Zone_plate" target="_blank" rel="noopener">Zone plate</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/image-digitization-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/image-digitization.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="image-digitization"></script>
+  <script src="js/missions/image-digitization.js"></script>
+  <script src="js/stats.js" data-module="image-digitization"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
