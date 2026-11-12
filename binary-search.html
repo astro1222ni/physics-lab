@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Linear Search and Binary Search | Astro Ni Science Lab">線性搜尋與二分搜尋｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 二分搜尋頁面專用的顏色代號（淺色＋兩組深色；由 js/binary-search.js 讀取） */
+    :root { --bs-lin: #c2410c; --bs-bin: #4338ca; --bs-hit: #15803d; --bs-miss: #b91c1c; --bs-target: #be185d; --bs-card: #fffdf7; --bs-track: #eef2f4; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bs-lin: #fb923c; --bs-bin: #8f9dff; --bs-hit: #4ade80; --bs-miss: #f87171; --bs-target: #f472b6; --bs-card: #26333b; --bs-track: #19242a; }
+    }
+    :root[data-theme="dark"] { --bs-lin: #fb923c; --bs-bin: #8f9dff; --bs-hit: #4ade80; --bs-miss: #f87171; --bs-target: #f472b6; --bs-card: #26333b; --bs-track: #19242a; }
+
+    /* 畫布高度由程式決定；點卡片或樹上的節點只是選目標，手機照常可以上下捲動 */
+    .bs canvas { aspect-ratio: auto; touch-action: pan-y; cursor: pointer; }
+    #cv { height: 280px; }
+    #tree { height: 240px; margin-top: 10px; }
+    #chart { height: 210px; margin-top: 10px; cursor: default; }
+    #gcv { height: 76px; aspect-ratio: auto; display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: pan-y; margin: 10px 0 0; }
+    .bs [hidden] { display: none !important; }
+    .bs button { min-height: 44px; }
+    .bs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bs .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .bs .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .bs .slider input[type="range"] { height: 28px; margin: 0; }
+    .bs .checks label { min-height: 44px; }
+    .bs .checks input { width: 17px; height: 17px; }
+    .bs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bs .panel { grid-template-columns: minmax(0, 1fr); }
+    .bs .panel > .card { min-width: 0; }
+    .sub-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; margin: 16px 4px 0; }
+    .sub-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .sub-head .checks { gap: 0 12px; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .sq { width: 9px; height: 9px; border-radius: 2px; }
+    /* 資料形態：分段按鈕 */
+    .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 4px; background: var(--bg); font-size: calc(14px * var(--fs, 1)); line-height: 1.25; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
+    .row2 button { padding: 6px 8px; line-height: 1.25; }
+    .field { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 4px 0 0; }
+    .field label { font-size: calc(14px * var(--fs, 1)); }
+    .field input { width: 6.5em; min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .field button { flex: 1 1 auto; }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); min-height: 1.4em; }
+    .msg.ok { color: var(--bs-hit); font-weight: 600; }
+    .msg.lo { color: var(--bs-bin); font-weight: 600; }
+    .msg.hi { color: var(--bs-lin); font-weight: 600; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout + dl.readout { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+    .k-lin { color: var(--bs-lin); font-weight: 600; }
+    .k-bin { color: var(--bs-bin); font-weight: 600; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #glog { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); }
+    #glog td, #glog th { font-variant-numeric: tabular-nums; padding: 4px 6px; white-space: nowrap; text-align: right; border-bottom: 1px solid var(--border); }
+    #glog th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    #glog th:first-child, #glog td:first-child { text-align: center; }
+    #glog td.best { color: var(--bs-hit); font-weight: 700; }
+    #glog:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Binary search"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 二分搜尋</nav>
+      <h1 data-en="Linear Search and Binary Search">線性搜尋與二分搜尋</h1>
+      <p data-en-html="Find one number in a row of cards. Linear search checks the cards one by one from the left; binary search needs the cards in order, looks at the middle one and throws away half of the rest every time. Run both at once and count their comparisons, see from the decision tree why binary search never needs more than \(\lfloor \log_2 n \rfloor + 1\) of them, and play a guessing game against a computer that cheats.">在一排數字卡裡找一個數。線性搜尋從左邊一張一張看；二分搜尋要先把卡片排好，每次看正中間那一張，再丟掉一半。讓兩種方法同時跑，數一數各比了幾次；從決策樹看出二分搜尋為什麼最多只要比 \(\lfloor \log_2 n \rfloor + 1\) 次，再和一台會耍賴的電腦玩猜數字。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start search” and see which method finds the target first; then drag n up to 1023 and race them again.">試試看：按「開始搜尋」，看哪一種方法先找到；再把 n 拉到 1023 比一次。</p>
+    <div class="lab bs" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="搜尋畫布：上面一排是線性搜尋，下面一排是二分搜尋，用的是同一排卡片。點一張卡片就把它的數設成目標。" data-en-aria-label="Search canvas: the upper row is linear search and the lower row is binary search, on the same row of cards. Tap a card to make its number the target."></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Start search">開始搜尋</button>
+          <button id="stepBtn" type="button" data-en="Step">單步</button>
+          <button id="skip" type="button" data-en="Jump to result">直接看結果</button>
+          <button id="restart" type="button" data-en="Restart" title="回到這次搜尋的第一步，目標和資料不變" data-en-title="Go back to the first step of this search; the target and the cards stay the same">重來</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉圖上所有的實驗點、平均的讀數與猜數字的紀錄；n、資料、目標等設定不變" data-en-title="Remove every point on the chart, the averages and the guessing-game log; n, the cards, the target and the other settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;sq&quot; style=&quot;background:var(--bs-lin)&quot;></i>Linear search: card being checked"><i class="sq" style="background:var(--bs-lin)"></i>線性搜尋：正在看的卡</span>
+          <span data-en-html="<i class=&quot;sq&quot; style=&quot;background:var(--bs-bin)&quot;></i>Binary search: mid and the range still left"><i class="sq" style="background:var(--bs-bin)"></i>二分搜尋：mid 與剩下的範圍</span>
+          <span data-en-html="<i class=&quot;sq&quot; style=&quot;background:var(--bs-hit)&quot;></i>Found"><i class="sq" style="background:var(--bs-hit)"></i>找到了</span>
+          <span style="color:var(--bs-target)" data-en-html="<i class=&quot;dash&quot;></i>Target (bar view)"><i class="dash"></i>目標（長條圖時）</span>
+        </div>
+
+        <div class="sub-head">
+          <h2 data-en="The decision tree of binary search">二分搜尋的決策樹</h2>
+        </div>
+        <canvas id="tree" aria-label="二分搜尋的決策樹：最上面是第一次比較的卡（正中間那張），往下一層是第二次比較，左邊是比較小的一半、右邊是比較大的一半。樹有幾層，最多就比幾次。點一個節點就把它的數設成目標。" data-en-aria-label="Decision tree of binary search: the top node is the card compared first (the middle one), the next level is the second comparison, smaller half to the left and larger half to the right. The number of levels is the largest possible number of comparisons. Tap a node to make its number the target."></canvas>
+        <p class="chart-cap" data-en="Level d of the tree is the d-th comparison; the lit path is the current search. Small squares are the gaps between cards, where an unsuccessful search ends (shown up to 63 cards).">第 d 層就是第 d 次比較；亮起來的路徑是目前這次搜尋。小方塊是卡片之間的空隙，找不到的搜尋停在那裡（63 張以內才畫）。</p>
+
+        <div class="sub-head">
+          <h2 data-en="Average comparisons against n">平均比較次數對 n</h2>
+          <div class="checks"><label><input id="logScale" type="checkbox"><span data-en="Log scales">對數刻度</span></label></div>
+        </div>
+        <canvas id="chart" aria-label="平均比較次數對卡片數 n 的圖：線性搜尋的理論線 (n + 1)/2 一路往上，二分搜尋的理論曲線幾乎是平的；圓點是按「每個目標都找一次」得到的實驗平均，小點是單次搜尋。" data-en-aria-label="Average number of comparisons against the number of cards n: the linear-search line (n + 1)/2 keeps rising while the binary-search curve stays almost flat; large dots are averages from “Search for every number”, small dots are single searches."></canvas>
+        <p class="chart-cap" data-en-html="Lines: theory for successful searches — linear \((n+1)/2\), binary search average (solid) and worst case \(\lfloor \log_2 n \rfloor + 1\) (dashed steps).">線：找得到時的理論值——線性搜尋 \((n+1)/2\)、二分搜尋的平均（實線）與最壞情況 \(\lfloor \log_2 n \rfloor + 1\)（虛線階梯）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The cards">卡片</h2>
+          <div class="slider"><label for="nn" data-en="Number of cards n">卡片張數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="0" max="1000" step="1" value="290" data-decimals="0"></div>
+          <div class="seg" role="group" aria-label="資料的樣子" data-en-aria-label="Kind of data">
+            <button type="button" id="kSorted" aria-pressed="true" data-en="Sorted">排好的</button>
+            <button type="button" id="kDups" aria-pressed="false" data-en="With repeats">有重複的值</button>
+            <button type="button" id="kUnsorted" aria-pressed="false" data-en="Not sorted">沒排序</button>
+          </div>
+          <div class="checks"><label><input id="firstMode" type="checkbox"><span data-en="Find the first occurrence">找第一個出現的位置</span></label></div>
+          <div class="row2" style="grid-template-columns: minmax(0, 1fr)">
+            <button id="reseed" type="button" data-en="New set of cards">換一組資料</button>
+          </div>
+          <p class="hint" data-en="“Not sorted” is the same set of numbers shuffled; switch back to “Sorted” to see them in order. Tap the number to type n exactly.">「沒排序」是同一批數字打亂順序，切回「排好的」就是它們排好的樣子。點一下 n 的數字可以直接輸入。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Target">目標</h2>
+          <div class="field">
+            <label for="target" data-en="Target value">目標值</label>
+            <input id="target" type="number" inputmode="numeric" step="1" min="-999" max="9999">
+            <button id="setTarget" type="button" data-en="Set">設定</button>
+          </div>
+          <div class="row2">
+            <button id="rndIn" type="button" data-en="Random: in the cards">隨機挑一個有的</button>
+            <button id="rndOut" type="button" data-en="Random: not in the cards">隨機挑一個沒有的</button>
+          </div>
+          <p class="hint" data-en="Or tap a card or a node of the tree. On the search canvas, the left and right arrow keys move to the neighbouring card and the up and down keys change the target by 1.">也可以點一張卡片或樹上的節點。在搜尋畫布上，左右方向鍵換到隔壁的卡片，上下方向鍵把目標加減 1。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <div class="slider"><label for="speed" data-en="Speed: steps per second">速度：每秒幾步</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="60" step="1" value="2" data-decimals="0"></div>
+          <dl class="readout">
+            <dt><span class="k-lin" data-en="Linear search">線性搜尋</span><span data-en=": comparisons">：比較次數</span></dt><dd id="rLin">—</dd>
+            <dt><span class="k-bin" data-en="Binary search">二分搜尋</span><span data-en=": comparisons">：比較次數</span></dt><dd id="rBin">—</dd>
+            <dt data-en="Range left for binary search">二分搜尋剩下的範圍</dt><dd id="rRange">—</dd>
+            <dt data-en="Linear search result">線性搜尋的結果</dt><dd id="rLinRes">—</dd>
+            <dt data-en="Binary search result">二分搜尋的結果</dt><dd id="rBinRes">—</dd>
+            <dt id="rPlainT" data-en="Ordinary version would stop at">一般版會停在</dt><dd id="rPlain">—</dd>
+          </dl>
+          <div class="eq" id="rEqMid" aria-live="off"></div>
+          <div class="eq" id="rEqWorst" aria-live="off"></div>
+          <p class="eq-note" data-en="Top: how binary search picks the card to look at. Bottom: the most comparisons it can ever need. Card positions count from 0: a[0] is the leftmost card.">上面：二分搜尋怎麼決定要看哪一張；下面：它最多可能比幾次。卡片位置從 0 數起，a[0] 是最左邊那張。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Average comparisons">平均比較次數</h2>
+          <div class="row2" style="grid-template-columns: minmax(0, 1fr)">
+            <button id="sweep" type="button" class="primary" data-en="Search for every number">每個目標都找一次</button>
+          </div>
+          <p class="hint" data-en="Searches once for every number on the cards (and, for sorted cards without repeats, once in every gap), then puts the averages on the chart.">把卡片上的每個數都找一次（排好又不重複時，每個空隙也各找一次），平均畫在圖上。</p>
+          <dl class="readout" id="sweepBox">
+            <dt><span class="k-lin" data-en="Linear search">線性搜尋</span><span data-en=": average">：平均</span></dt><dd id="sLin">—</dd>
+            <dt><span class="k-bin" data-en="Binary search">二分搜尋</span><span data-en=": average">：平均</span></dt><dd id="sBin">—</dd>
+            <dt data-en="Linear ÷ binary">線性 ÷ 二分</dt><dd id="sRatio">—</dd>
+            <dt data-en="Binary search: most">二分搜尋：最多</dt><dd id="sMax">—</dd>
+            <dt data-en="Binary search when not found">找不到時的二分搜尋</dt><dd id="sFail">—</dd>
+            <dt data-en="Found by binary search">二分搜尋找到的</dt><dd id="sFound">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Guess my number">猜數字</h2>
+          <div class="slider"><label for="gN" data-en="Numbers from 1 to N">範圍 1 到 N</label><output id="gNo"></output>
+            <input id="gN" type="range" min="10" max="1000" step="10" value="100" data-decimals="0"></div>
+          <div class="checks"><label><input id="cheat" type="checkbox"><span data-en="Cheating computer">耍賴的電腦</span></label></div>
+          <p class="hint" data-en="The cheating computer never decides on a number: after every guess it answers so that as many numbers as possible are still possible.">耍賴的電腦不先想好答案：每猜一次，它都挑讓「還可能的數」最多的那個回答。</p>
+          <canvas id="gcv" aria-label="數線：亮起來的一段是還可能的數，三角形是猜過的數。" data-en-aria-label="Number line: the bright stretch holds the numbers that are still possible, triangles mark the guesses."></canvas>
+          <div class="field">
+            <label for="gIn" data-en="Your guess">你猜</label>
+            <input id="gIn" type="number" inputmode="numeric" step="1" min="1" max="1000">
+            <button id="gGo" type="button" class="primary" data-en="Guess">猜</button>
+          </div>
+          <p class="msg" id="gMsg" aria-live="polite"></p>
+          <div class="row2" style="grid-template-columns: minmax(0, 1fr)">
+            <button id="gNew" type="button" data-en="New game">開始新的一局</button>
+          </div>
+          <div class="tablewrap"><table id="glog"></table></div>
+          <p class="log-empty" id="glogEmpty" data-en="Finished games will be listed here.">猜中的回合會列在這裡。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Linear search: one card at a time">線性搜尋：一張一張看</h3>
+      <p data-en-html="Start with the leftmost card and compare each card with the target until they are equal. Finding the card in position \(i\) (counting from \(0\)) takes \(i + 1\) comparisons, and a number that is not there takes all \(n\). If every card is equally likely to be the one we want, the average is">從最左邊那張開始，一張一張和目標比，相等就停。要找的數在第 \(i\) 張（從 \(0\) 數起）就要比 \(i + 1\) 次；陣列裡沒有的數要比完全部 \(n\) 張。如果每張卡被找的機會一樣，平均是</p>
+      <div class="formula">\[ \frac{1 + 2 + \dots + n}{n} = \frac{n + 1}{2} . \]</div>
+      <p data-en-html="Linear search works on any data, sorted or not, and doubling the number of cards doubles the work.">線性搜尋不管資料有沒有排序都能用；卡片變成兩倍，工作量也變成兩倍。</p>
+
+      <h3 data-en="Binary search: throw away half every time">二分搜尋：每次丟掉一半</h3>
+      <p data-en-html="If the cards are sorted, one comparison tells us much more. Keep the part that may still hold the target as positions \(lo\) to \(hi\) (at first \(0\) to \(n-1\)) and look at the middle card">如果卡片已經由小到大排好，一次比較就能知道更多。把「目標還可能在的範圍」記成第 \(lo\) 張到第 \(hi\) 張（一開始是 \(0\) 到 \(n-1\)），看正中間那一張</p>
+      <div class="formula">\[ mid = \left\lfloor \frac{lo + hi}{2} \right\rfloor . \]</div>
+      <p data-en-html="If \(a[mid]\) is smaller than the target, the target can only be to its right, so \(lo = mid + 1\); if it is larger, \(hi = mid - 1\); if they are equal we are done. When \(lo &gt; hi\) the range is empty and the target is not there. Every comparison leaves at most half of the range, so after \(k\) comparisons at most \(\lfloor n / 2^{k} \rfloor\) cards remain. With \(2^{k} \le n &lt; 2^{k+1}\), that is \(k = \lfloor \log_2 n \rfloor\), one more comparison always finishes the job:">如果 \(a[mid]\) 比目標小，目標只可能在它右邊，令 \(lo = mid + 1\)；比目標大就令 \(hi = mid - 1\)；相等就找到了。等到 \(lo &gt; hi\)，範圍變空，表示沒有這個數。每比一次，剩下的範圍最多只有原來的一半，所以比 \(k\) 次之後最多剩 \(\lfloor n / 2^{k} \rfloor\) 張。設 \(2^{k} \le n &lt; 2^{k+1}\)，也就是 \(k = \lfloor \log_2 n \rfloor\)，再多比一次一定結束：</p>
+      <div class="formula">\[ C_{\max}(n) = \lfloor \log_2 n \rfloor + 1 . \]</div>
+      <p data-en-html="Here one comparison means comparing the target with one card and learning “smaller”, “equal” or “larger”; the page counts linear search the same way (one card looked at, one comparison). For \(n = 1023\) linear search may need 1023 comparisons, binary search never more than 10.">這裡的「一次比較」是把目標和一張卡比，得到「小於、等於、大於」其中一個結果；線性搜尋也用同樣的算法（看一張卡算一次）。\(n = 1023\) 時，線性搜尋可能要比 1023 次，二分搜尋最多 10 次。</p>
+
+      <h3 data-en="The decision tree">決策樹</h3>
+      <p data-en-html="Draw every comparison binary search could make as a node: the first card it looks at is the root, the card it looks at after “smaller” is the left child, after “larger” the right child, and so on. Level \(d\) of this <strong>decision tree</strong> is the \(d\)-th comparison, so the height of the tree is the worst case. Reading the nodes from left to right gives the cards in order: the tree is a binary search tree. When \(n = 2^{k} - 1\) (7, 15, 31, …) every level is full and the tree is <strong>perfect</strong>. An unsuccessful search always ends in one of the \(n + 1\) gaps between cards (the small squares), after \(\lfloor \log_2 n \rfloor\) or \(\lfloor \log_2 n \rfloor + 1\) comparisons.">把二分搜尋可能做的每一次比較畫成一個節點：第一次看的卡是樹根，「比較小」之後會看的卡是左邊的孩子，「比較大」之後是右邊的孩子，依此類推。這棵<strong>決策樹</strong>的第 \(d\) 層就是第 \(d\) 次比較，所以樹高就是最壞情況。由左到右讀節點，正好是卡片由小到大的順序——它是一棵二元搜尋樹。\(n = 2^{k} - 1\)（7、15、31、…）時每一層都排滿，叫做<strong>完美二元樹</strong>。找不到的搜尋一定停在 \(n + 1\) 個空隙之一（小方塊），比了 \(\lfloor \log_2 n \rfloor\) 或 \(\lfloor \log_2 n \rfloor + 1\) 次。</p>
+      <p data-en-html="If every card is equally likely, the average number of comparisons is one more than the average depth: with \(I\) the sum of the depths of all \(n\) nodes (the root has depth 0),">如果每張卡被找的機會一樣，平均比較次數是「平均深度加一」：設 \(I\) 是 \(n\) 個節點的深度總和（樹根深度是 0），</p>
+      <div class="formula">\[ \bar{C}_{\text{binary}} = 1 + \frac{I}{n} \approx \log_2 n - 1 \quad (n \text{ large}) . \]</div>
+
+      <h3 data-en="Why the cards must be sorted">為什麼一定要先排序</h3>
+      <p data-en-html="Throwing away the left half after “\(a[mid]\) is smaller than the target” is only safe because every card to the left of \(mid\) is even smaller. In shuffled data that is not true, so binary search can throw away the half that holds the target and report “not found”. Only the middle card, the first one it looks at, is always found. Sorting costs work too, so binary search pays off when the same data is searched many times.">看到「\(a[mid]\) 比目標小」就丟掉左半邊，前提是 \(mid\) 左邊每一張都更小。打亂的資料不保證這一點，所以二分搜尋可能把藏著目標的那一半丟掉，回報「找不到」；只有它第一次看的正中間那一張保證找得到。排序本身也要花工夫，所以同一份資料要搜尋很多次時，先排序再二分搜尋才划算。</p>
+
+      <h3 data-en="Repeated values: the first occurrence">有重複的值：找第一個出現的位置</h3>
+      <p data-en-html="With repeated values the ordinary version stops at whichever copy it meets first, which need not be the leftmost one. The variant “Find the first occurrence” does not stop when \(a[mid]\) equals the target: it remembers \(mid\) and keeps looking to the left (\(hi = mid - 1\)) until the range is empty. It therefore never finishes early — every search takes \(\lfloor \log_2 n \rfloor\) or \(\lfloor \log_2 n \rfloor + 1\) comparisons — and when the target is missing, \(lo\) ends at the position where it would have to be inserted.">有重複的值時，一般版遇到哪一個相同的值就停在哪裡，不一定是最左邊那個。「找第一個出現的位置」這個版本在 \(a[mid]\) 等於目標時不停下來：先記住 \(mid\)，再往左邊找（\(hi = mid - 1\)），一直到範圍變空。所以它從不提早結束——每次都比 \(\lfloor \log_2 n \rfloor\) 或 \(\lfloor \log_2 n \rfloor + 1\) 次；目標不在的時候，最後的 \(lo\) 就是它應該插入的位置。</p>
+
+      <h3 data-en="Guess my number, and a computer that cheats">猜數字與耍賴的電腦</h3>
+      <p data-en-html="The computer thinks of a number from 1 to \(N\) and answers each guess with “too big”, “too small” or “correct”. Guessing the middle of the numbers still possible is binary search again. After one guess at most \(2^{1}-1\) cases are settled for sure, after \(k\) guesses at most \(1 + 2 + \dots + 2^{k-1} = 2^{k} - 1\), so to be certain for every possible number we need">電腦想一個 1 到 \(N\) 的數，你猜一次，它回答「太大」「太小」或「猜中」。每次猜「還可能的數」的正中間，就是二分搜尋。猜 \(k\) 次能保證分辨的數最多只有 \(1 + 2 + \dots + 2^{k-1} = 2^{k} - 1\) 個，所以要保證猜中 \(N\) 個數裡的任何一個，至少要</p>
+      <div class="formula">\[ k_{\min} = \lceil \log_2 (N + 1) \rceil \]</div>
+      <p data-en-html="guesses: 7 for \(N = 100\), 10 for \(N = 1000\). An honest computer sometimes lets you get lucky. The cheating computer does not choose a number at all; after every guess it gives the answer that keeps more numbers possible. It never contradicts itself, yet it forces every strategy to use at least \(k_{\min}\) guesses — an <em>adversary argument</em>, the usual way to prove that no comparison-based method can do better.">次：\(N = 100\) 要 7 次，\(N = 1000\) 要 10 次。誠實的電腦有時候會讓你猜得比較快；耍賴的電腦根本不先決定答案，每次都挑讓「還可能的數」比較多的那個回答。它的回答前後一致、從不說謊，卻能逼任何猜法至少用 \(k_{\min}\) 次——這叫<em>對手論證</em>，是證明「只靠比較的方法不可能更快」的標準手法。</p>
+
+      <h3 data-en="A little history">一點歷史</h3>
+      <p data-en="The idea is simple but the details are famously easy to get wrong. John Mauchly mentioned binary search in the Moore School Lectures of 1946, yet the published versions worked only when the number of items was one less than a power of two until D. H. Lehmer published one for every length in 1960. Jon Bentley reported that about nine out of ten professional programmers in his courses could not write a correct one, and in 2006 Joshua Bloch showed that the line mid = (lo + hi) / 2 had overflowed for years in widely used libraries, including Java’s, once lo + hi exceeded the largest 32-bit integer.">想法很簡單，細節卻出了名地容易寫錯。Mauchly 在 1946 年的摩爾學院講座中就提到二分搜尋，但之後發表的版本都只適用於「資料筆數比 2 的次方少 1」的情況，直到 1960 年 Lehmer 才發表任何長度都能用的版本。Bentley 說他課堂上的專業程式設計師大約十個裡有九個寫不出正確的版本；2006 年 Bloch 指出 mid = (lo + hi) / 2 這一行在包括 Java 在內的常用函式庫裡藏了好幾年：lo + hi 超過 32 位元整數的上限就會溢位。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Who wins?</strong> Search for the leftmost card, then for the rightmost one. Is binary search always faster? Which method is better on average?"><strong>誰贏？</strong>找最左邊那張，再找最右邊那張。二分搜尋每次都比較快嗎？平均起來哪一種比較好？</li>
+        <li data-en-html="<strong>Doubling</strong>: press “Search for every number” at \(n = 100\), \(200\), \(400\), \(800\). How much does each average grow every time \(n\) doubles?"><strong>變兩倍</strong>：在 \(n = 100\)、\(200\)、\(400\)、\(800\) 各按一次「每個目標都找一次」。\(n\) 每變兩倍，兩種平均各多了多少？</li>
+        <li data-en-html="<strong>The staircase</strong>: watch the height of the tree while you change \(n\). At which values of \(n\) does a new level appear?"><strong>階梯</strong>：一邊改 \(n\)、一邊看決策樹的層數。\(n\) 在哪些值會多出一層？</li>
+        <li data-en-html="<strong>Shuffled</strong>: on “Not sorted” cards, which numbers can binary search still find? Use the tree to check the path."><strong>打亂了</strong>：在「沒排序」的卡片裡，二分搜尋還找得到哪些數？用決策樹檢查它走的路。</li>
+        <li data-en-html="<strong>Guessing</strong>: with \(N = 100\), why are 7 guesses always enough, and why can the cheating computer always force you to use 7?"><strong>猜數字</strong>：\(N = 100\) 時，為什麼 7 次一定夠？耍賴的電腦又為什麼總能逼你用滿 7 次？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Both searches really run on the cards shown, one comparison per step, exactly as described above; nothing is taken from a formula. The cards are random but reproducible: sorted cards differ by 1 to 3, cards with repeats differ by 0 to 2, and “Not sorted” is the sorted set shuffled (never left in order).">兩種搜尋真的在畫面上的卡片上執行，每一步各比一次，和上面的描述完全一樣，沒有直接套公式。卡片是有種子的亂數：排好的相鄰相差 1 到 3、有重複的相差 0 到 2，「沒排序」是同一批數字打亂（保證不是排好的）。</li>
+        <li data-en-html="The unit tests check, for every \(n\) from 1 to 1023, that the worst case found by trying every number and every gap equals \(\lfloor \log_2 n \rfloor + 1\); that unsuccessful searches take \(\lfloor \log_2 n \rfloor\) or \(\lfloor \log_2 n \rfloor + 1\) comparisons (always \(k\) when \(n = 2^{k} - 1\)); that the tree read from left to right is in order and its path lengths satisfy \(E = I + 2n\); that the averages match Knuth’s closed formula; that the first-occurrence version returns the lower bound; and that \(\lceil \log_2 (N+1) \rceil\) equals the minimax number of guesses found by brute force.">單元測試對 \(n = 1\) 到 1023 每一個值檢查：把每個數和每個空隙都找一遍得到的最壞情況等於 \(\lfloor \log_2 n \rfloor + 1\)；找不到時比 \(\lfloor \log_2 n \rfloor\) 或 \(\lfloor \log_2 n \rfloor + 1\) 次（\(n = 2^{k} - 1\) 時一律 \(k\) 次）；決策樹由左到右讀是排好的順序，外部與內部路徑長滿足 \(E = I + 2n\)；平均值和 Knuth 書中的封閉式相同；「找第一個」的版本回傳下界；猜數字的 \(\lceil \log_2 (N+1) \rceil\) 等於用極小化極大暴力算出的次數。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): required A-V-3 analysis of algorithm efficiency and P-V-3 programming important algorithms; advanced elective A-V-6 (comparing sequential and binary search).">課綱對應：資訊科技必修 資A-V-3 演算法效能分析、資P-V-3 重要演算法的程式設計實作；加深加廣選修 資A-V-6（循序搜尋與二元搜尋的效能比較）。</li>
+        <li data-en="Donald E. Knuth, The Art of Computer Programming, Vol. 3: Sorting and Searching, 2nd ed. (1998), §6.1 Sequential searching and §6.2.1 Searching an ordered table (binary search, the comparison tree, its average and worst case, and the history); Vol. 1, §2.3.4.5 Path length (E = I + 2n).">Knuth《The Art of Computer Programming》第 3 卷《Sorting and Searching》第 2 版（1998）：6.1 節 循序搜尋、6.2.1 節 有序表的搜尋（二分搜尋、比較樹、平均與最壞情況、歷史）；第 1 卷 2.3.4.5 節 路徑長（E = I + 2n）。</li>
+        <li data-en="Cormen, Leiserson, Rivest and Stein, Introduction to Algorithms, 3rd ed. (2009), Exercises 2.1-3 (linear search) and 2.3-5 (binary search runs in Θ(lg n) time in the worst case).">Cormen、Leiserson、Rivest、Stein《Introduction to Algorithms》第 3 版（2009）：習題 2.1-3（線性搜尋）、2.3-5（二分搜尋最壞情況是 Θ(lg n)）。</li>
+        <li data-en="Jon Bentley, Programming Pearls, 2nd ed. (2000), Column 4 “Writing Correct Programs”; Joshua Bloch, “Extra, Extra – Read All About It: Nearly All Binary Searches and Mergesorts are Broken”, Google Research Blog (2006).">Bentley《Programming Pearls》第 2 版（2000）第 4 章〈Writing Correct Programs〉；Bloch〈Extra, Extra – Read All About It: Nearly All Binary Searches and Mergesorts are Broken〉，Google Research Blog（2006）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Binary_search&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Binary search (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Linear_search&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Linear search (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Binary_search" target="_blank" rel="noopener">Binary search（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Linear_search" target="_blank" rel="noopener">Linear search（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/binary-search-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/binary-search.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="binary-search"></script>
+  <script src="js/missions/binary-search.js"></script>
+  <script src="js/stats.js" data-module="binary-search"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
