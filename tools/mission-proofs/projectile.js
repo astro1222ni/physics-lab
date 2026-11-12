@@ -1,5 +1,6 @@
 /* 任務可達成的證明腳本（拋體運動）。用法：node tools/mission-proofs/projectile.js
- * 修改物理核心或任務條件後重跑，確認每個任務仍然做得到、預設狀態不會觸發任務。
+ * 修改物理核心或任務條件後重跑，確認每個任務（公開 12 個、隱藏 3 個）仍然做得到、預設狀態不會觸發任務，
+ * 並檢查新任務 11、12 不該通過的情況、在滑桿精度下有幾組解。
  * 做法：只用物理核心 js/projectile-core.js，照頁面 js/projectile.js 的方式模擬一次發射
  * （每格 1/60 s 呼叫 PC.advance、落地時 land() 回報 'landed'），組出完全相同的事件資料，
  * 丟進 js/missions/projectile.js 的檢查函式。所有輸入都在 projectile.html 的滑桿範圍內，
@@ -101,6 +102,8 @@ const SOL = {
   'projectile-8': [{ drag: true, v0: 20 }, { v0: 17.5 }],
   'projectile-9': [{ h0: 20, theta: 18 }, { h0: 20, theta: 51 }],
   'projectile-10': [{ drag: true, k: 0.00501, v0: 45.5, theta: 34 }],
+  'projectile-11': [{ theta: 76 }],
+  'projectile-12': [{}, { h0: 10, v0: 17.72, theta: 37.1 }],
   'projectile-h1': [{ theta: 90 }],
   'projectile-h2': [{ g: 1.62, v0: 50 }],
   'projectile-h3': [{ v0: 49, theta: 90 }]
@@ -108,7 +111,9 @@ const SOL = {
 const NOTE = {
   'projectile-5': evs => '（最佳仰角 ' + f(evs[0].data.optTheta, 2) + '°）',
   'projectile-8': evs => '（相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 2) + '%）',
-  'projectile-9': evs => '（相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 2) + '%）'
+  'projectile-9': evs => '（相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 2) + '%）',
+  'projectile-11': evs => '（H = ' + f(evs[0].data.H, 3) + ' m，R/H − 1 = ' + f((evs[0].data.R / evs[0].data.H - 1) * 100, 2) + '%）',
+  'projectile-12': evs => '（R 相差 ' + f((evs[1].data.R / evs[0].data.R - 1) * 100, 3) + '%、T 相差 ' + f((evs[1].data.T / evs[0].data.T - 1) * 100, 3) + '%）'
 };
 for (const m of missions) {
   const runs = SOL[m.id];
@@ -121,6 +126,39 @@ for (const m of missions) {
   ok = ok && pass;
   console.log((pass ? '✓ ' : '✗ ') + m.id.padEnd(14) + ' ' + String(m.level).padStart(2) + '★' + (m.hidden ? '（隱藏）' : '') + '  ' +
     evs.map(describe).join('；') + (NOTE[m.id] ? NOTE[m.id](evs) : '') + (bad.length ? '  ' + bad.join('；') : ''));
+}
+
+// ---------- 2. 另一組解（只用滑桿，不必打字）與不該通過的情況 ----------
+function only(id, runs, want, note) {
+  reset();
+  const evs = runs.map(launch);
+  const got = feed(evs).includes(id);
+  const pass = got === want;
+  ok = ok && pass;
+  console.log((pass ? '✓ ' : '✗ ') + id.padEnd(14) + (want ? ' 也可以：' : ' 不該通過：') + evs.map(describe).join('；') + (note ? '（' + note + '）' : ''));
+}
+only('projectile-12', [{ v0: 5, theta: 60, h0: 32 }, { v0: 2.5, theta: 0, h0: 45 }], true, '只用滑桿');
+only('projectile-11', [{ theta: 76, v0: 35, g: 3.71 }], true, '換初速、換火星，角度一樣是 76°');
+only('projectile-11', [{ theta: 75 }], false, 'R/H = 4 cot 75° ≈ 1.072');
+only('projectile-11', [{ theta: 76, h0: 5 }], false, '要從地面發射');
+only('projectile-12', [{}, { h0: 10, v0: 20, theta: 45 }], false, '只換高度：時間、落點都不同');
+only('projectile-12', [{ h0: 10, v0: 17.72, theta: 37.1 }, { h0: 10, v0: 17.72, theta: 37.1 }], false, '同一個高度發兩次一模一樣的');
+only('projectile-12', [{ h0: 2, v0: 20, theta: 45 }, { h0: 10, v0: 18.22, theta: 39.1 }], false, '落點與時間都相同，但高度只差 8 m');
+only('projectile-12', [{}, { drag: true, k: 0.00501, h0: 10, v0: 17.72, theta: 37.1 }], false, '有空氣阻力');
+
+// ---------- 3. 新任務在滑桿精度下的解有多少（不打字；判斷鬆緊用） ----------
+{
+  let n11 = [];
+  for (let th = 0; th <= 90; th++) { const r = PC.ideal({ v0: 20, theta: th, h0: 0, g: 9.8 }); if (r.R >= 1 && Math.abs(r.R - r.H) <= 0.005 * Math.max(r.R, r.H)) n11.push(th); }
+  console.log('  projectile-11 滑桿上的整數仰角只有 ' + n11.join('、') + '°（與初速、重力無關；打字到 0.1° 時 75.9° 也行）');
+  // projectile-12：g = 9.8，第一發用預設值（20 m/s、45°、地面），第二發高度 10–50 m 只用滑桿
+  const a = PC.ideal({ v0: 20, theta: 45, h0: 0, g: 9.8 });
+  let n12 = 0;
+  for (let h = 10; h <= 50; h += 0.5) for (let v = 1; v <= 50; v += 0.5) for (let th = 0; th <= 90; th++) {
+    const b = PC.ideal({ v0: v, theta: th, h0: h, g: 9.8 });
+    if (Math.abs(b.R - a.R) <= 0.003 * Math.max(a.R, b.R) && Math.abs(b.T - a.T) <= 0.003 * Math.max(a.T, b.T)) n12++;
+  }
+  console.log('  projectile-12 第一發用預設值時，第二發只用滑桿的解有 ' + n12 + ' 組（要打字微調初速與仰角，或兩發都重新設計）');
 }
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');

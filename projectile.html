@@ -67,6 +67,35 @@
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    /* 2D／3D 檢視切換（與熱機循環、電流的磁效應相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam3 { display: none; flex-wrap: wrap; gap: 6px; }
+    .stage.is3d .cam3 { display: flex; }
+    .cam3 button { min-height: 44px; padding: 6px 12px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 3 / 2; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 35%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 88%, var(--text)) 100%);
+    }
+    @media (max-width: 560px) { #view3 canvas { aspect-ratio: 4 / 3; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 .clock3 {
+      position: absolute; top: 8px; right: 8px; padding: 4px 10px; border-radius: 8px; white-space: pre; text-align: right;
+      background: color-mix(in srgb, var(--surface) 86%, transparent); border: 1px solid var(--border);
+      font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; line-height: 1.35;
+    }
+    #view3 .clock3::first-line { color: var(--text); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .opts3 { display: none; }
+    .stage.is3d .opts3 { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 8px 4px 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -79,8 +108,25 @@
 
     <p class="try-hint" data-en="Try it: set the launch angle to 30° and press “Launch”; after it lands, change it to 60°, launch again and compare where they land.">試試看：把仰角拉到 30° 按「發射」，落地後改成 60° 再發射，比比看落點。</p>
     <div class="lab">
-      <div class="stage">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="cam3" role="group" aria-label="3D 視角" data-en-aria-label="3D camera">
+            <button type="button" id="camSide" data-en="Side view">從側面看</button>
+            <button type="button" id="camTop" data-en="Top view">從正上方看</button>
+            <button type="button" id="resetCam" data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="拋體運動模擬畫布：顯示軌跡、速度向量與座標軸" data-en-aria-label="Projectile motion simulation: trajectory, velocity vectors and axes"></canvas>
+        <div id="view3"></div>
+        <div class="opts3 checks" id="opts3">
+          <label><input id="s3shadow" type="checkbox" checked><span data-en="Shadow and its track">影子與影子的足跡</span></label>
+          <label><input id="s3plane" type="checkbox" checked><span data-en="Vertical-plane grid">鉛直面格線</span></label>
+        </div>
         <div class="bar">
           <button id="run" class="primary" data-en="Launch">發射</button>
           <button id="reset" data-en="Reset">重設</button>
@@ -100,8 +146,10 @@
           <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
           <span><i style="background:var(--neg)"></i>v<sub>x</sub></span>
           <span><i style="background:var(--equi)"></i>v<sub>y</sub></span>
+          <span class="l3" style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--text);opacity:.45&quot;></i>Shadow (straight below the ball)"><i style="background:var(--text);opacity:.45"></i>影子（在球的正下方）</span>
         </div>
-        <p class="hint" data-en="Drag on the canvas to set the launch angle (keyboard: Tab to the canvas, then use the arrow keys). Every landed trajectory is kept (up to 5) for comparison.">在畫布上拖曳可直接調整仰角（鍵盤：Tab 選到畫布，再按方向鍵）；每次落地的軌跡會保留下來（最多 5 條）方便比較。</p>
+        <p class="hint l2" data-en="Drag on the canvas to set the launch angle (keyboard: Tab to the canvas, then use the arrow keys). Every landed trajectory is kept (up to 5) for comparison.">在畫布上拖曳可直接調整仰角（鍵盤：Tab 選到畫布，再按方向鍵）；每次落地的軌跡會保留下來（最多 5 條）方便比較。</p>
+        <p class="hint l3" data-en="3D view: drag to rotate, scroll or pinch to zoom. The sun is straight overhead, so the shadow is always directly below the ball — without air resistance it slides along the ground at a steady speed while the ball rises and falls. “Side view” shows exactly the 2D picture; “Top view” turns the whole path into a straight line.">3D 檢視：拖曳旋轉、滾輪或兩指縮放。太陽在頭頂正上方，影子永遠在球的正下方——沒有空氣阻力時，它在地面上等速前進，球卻一上一下。「從側面看」就是 2D 那張圖；「從正上方看」整條軌跡變成一直線。</p>
       </div>
 
       <aside class="panel">
@@ -207,6 +255,7 @@
         <li data-en-html="<strong>Complementary angles give equal ranges</strong>: with \(h_0 = 0\) and no drag, launch at \(30^\circ\) and then at \(60^\circ\) — both land at the same spot, because \(\sin 2\theta = \sin(180^\circ - 2\theta)\). Compare the maximum heights and flight times in the saved trajectories: which is larger?"><strong>互補角射程相等</strong>：\(h_0 = 0\)、無阻力時，先用 \(30^\circ\) 發射，再改成 \(60^\circ\) 發射，兩次落點相同，因為 \(\sin 2\theta = \sin(180^\circ - 2\theta)\)。比較紀錄中的最大高度與飛行時間，哪一個比較大？</li>
         <li data-en-html="<strong>45° gives the maximum range</strong>: for \(h_0 = 0\), \(\sin 2\theta\) is largest at \(\theta = 45^\circ\). Raise \(h_0\) and watch how the “angle for maximum range” changes. (It drops below \(45^\circ\).)"><strong>45° 射程最大</strong>：\(h_0 = 0\) 時 \(\sin 2\theta\) 在 \(\theta = 45^\circ\) 最大。把 \(h_0\) 調高，看看「射程最大的仰角」怎麼變？（會小於 \(45^\circ\)）</li>
         <li data-en-html="<strong>Horizontal and vertical motions are independent</strong>: turn on the equal-time markers. Neighbouring markers are equally spaced horizontally (\(v_x\) is constant), while their vertical spacing keeps changing. The \(v_x\) arrow never changes length."><strong>水平與鉛直運動互相獨立</strong>：打開等時距標記，相鄰標記的水平間距都相等（\(v_x\) 不變），鉛直間距則逐漸改變。速度分量 \(v_x\) 的箭頭長度始終不變。</li>
+        <li data-en-html="<strong>Watch the shadow in 3D</strong>: switch to “3D view” and launch. The shadow on the ground moves like a car on cruise control — its equal-time marks are evenly spaced, because the horizontal motion has no force acting on it. The height of the ball above its shadow is the vertical motion, which goes up, slows, stops and comes back down. Rotate to the side and you get the 2D graph back; look straight down and the whole flight collapses onto one straight line, because the motion stays in a single vertical plane."><strong>在 3D 裡看影子</strong>：切到「3D 立體」再發射。地面上的影子像定速巡航的車子，等時距的記號間隔都一樣——水平方向不受力。球在影子上方的高度就是鉛直運動：上升、變慢、停住、再落下。轉到側面就回到 2D 的圖；從正上方往下看，整段飛行縮成一條直線，因為運動始終在同一個鉛直面上。</li>
         <li data-en-html="<strong>Horizontal launch</strong>: set the launch angle to \(0^\circ\) and \(h_0 = 20\ \mathrm{m}\), then launch a few times at different speeds. The time to land is always \(\sqrt{2h_0/g}\); only the range changes."><strong>水平拋射</strong>：把仰角調成 \(0^\circ\)、\(h_0 = 20\ \mathrm{m}\)，改變初速多發射幾次——落地時間都是 \(\sqrt{2h_0/g}\)，只有射程不同。</li>
         <li data-en-html="<strong>Try another world</strong>: with the same launch speed and angle, the range and maximum height on the Moon are about \(9.8/1.62 \approx 6\) times those on Earth, because, for a launch from the ground with no air resistance, \(R\), \(H\) and \(T\) are all inversely proportional to \(g\)."><strong>換一個星球</strong>：同樣的初速與仰角，在月球上射程與最大高度約是地球的 \(9.8/1.62 \approx 6\) 倍，因為從地面發射、忽略空氣阻力時，\(R\)、\(H\)、\(T\) 都與 \(g\) 成反比。</li>
         <li data-en-html="<strong>Conservation of mechanical energy</strong>: without drag, \(\tfrac12 v^2 + g y\) stays constant throughout the flight; with drag it keeps decreasing, and the lost energy is converted into thermal energy."><strong>力學能守恆</strong>：無阻力時，\(\tfrac12 v^2 + g y\) 在整個飛行過程中保持不變；有阻力時則持續減少，減少的部分轉換為熱能。</li>
@@ -219,6 +268,7 @@
         <li data-en-html="With drag, the equations of motion are integrated with the fourth-order Runge–Kutta method (RK4), using a time step of one thousandth of the ideal flight time (between 0.1 ms and 10 ms). On the last step, bisection finds the exact landing time at which \(y = 0\); the highest point is the moment when \(v_y = 0\).">有阻力時，以四階 Runge–Kutta 法（RK4）積分運動方程式，時間步長取理想飛行時間的千分之一（介於 0.1 ms 到 10 ms）；最後一步再用二分法找出 \(y = 0\) 的精確落地時刻，最高點則找 \(v_y = 0\) 的時刻。</li>
         <li data-en-html="With drag, the angle for maximum range is found by a golden-section search between \(0^\circ\) and \(90^\circ\).">有阻力時，射程最大的仰角以黃金分割搜尋在 \(0^\circ\)～\(90^\circ\) 之間找出。</li>
         <li data-en="The animation is stepped frame by frame with the same RK4 integrator. Under constant acceleration RK4 has no truncation error, so without drag the animation lands exactly where the analytical solution predicts and the mechanical energy stays constant.">動畫使用同一套 RK4 積分器逐格推進；在等加速度的情況下 RK4 沒有截斷誤差，所以無阻力的動畫會準確落在解析解預測的位置，力學能也保持不變。</li>
+        <li data-en-html="The 3D view (three.js library, MIT licence, downloaded only when you switch to 3D) uses exactly the same numbers as the 2D view: the predicted path, the saved trajectories and the moving ball all come from the same core functions and the same time steps. The horizontal position \(x\) and the height \(y\) are drawn in one vertical plane with one common scale, so the shape is identical to the 2D graph. The sun is placed straight overhead, so the shadow is the point \((x, 0)\) directly below the ball; its equal-time marks are the same instants as the beads on the path. The size of the ball, the launcher, the arrows and the labels is chosen for visibility and is not to scale; arrow length is proportional to speed.">3D 檢視（使用 three.js 函式庫，MIT 授權，只有切換到 3D 時才下載）和 2D 用完全相同的數字：預測軌跡、比較軌跡與飛行中的球，都由同一個物理核心、同樣的時間步長算出。水平位置 \(x\) 與高度 \(y\) 畫在同一個鉛直面上、用同一個比例尺，所以形狀和 2D 的圖一樣。太陽放在頭頂正上方，影子就是球正下方的點 \((x, 0)\)；地面上的記號和軌跡上的小珠是同樣的時刻。球、發射器、箭頭與標籤的大小是為了看得清楚，不依比例；箭頭長度與速度成正比。</li>
         <li data-en-html="The object is treated as a point particle: spin (the Magnus effect) and wind are ignored, and \(g\) is taken to be constant.">物體視為質點，不考慮旋轉（馬格努斯效應）與風；\(g\) 視為定值。</li>
       </ul>
 
@@ -226,11 +276,7 @@
       <ul>
         <li data-en="Curriculum: Elective Physics I · Motion in a Plane">課綱對應：選修物理Ⅰ・平面運動</li>
         <li data-en-html="Gravitational acceleration: Earth \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (&lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CODATA 2022, NIST&lt;/a&gt;). Moon \(1.62\ \mathrm{m/s^2}\) (&lt;a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Moon Fact Sheet&lt;/a&gt;). Mars \(3.71\ \mathrm{m/s^2}\), the commonly quoted value (the &lt;a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Mars Fact Sheet&lt;/a&gt; gives a mean surface gravity of 3.73 and 3.69 at the equator).">重力加速度：地球 \(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)，精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）；月球 \(1.62\ \mathrm{m/s^2}\)（<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">NASA 月球資料表</a>）；火星 \(3.71\ \mathrm{m/s^2}\)（常用值；<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noopener">NASA 火星資料表</a>列平均表面重力 3.73、赤道 3.69）。</li>
-        <li data-en-html="Air resistance: \(k = 	frac12 
-ho C_D A\) comes from the drag equation \(D = 	frac12 C_D 
-ho v^2 A\) (&lt;a href=&quot;https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Glenn Research Center, Drag Equation&lt;/a&gt;). The typical \(k/m\) values for balls are rough estimates from an air density of about \(1.2\ \mathrm{kg/m^3}\) and typical masses, diameters and drag coefficients; the shuttlecock value comes from its terminal speed of about \(6\ \mathrm{m/s}\) through \(k/m = g/v_t^2\).">空氣阻力：\(k = 	frac12 
-ho C_D A\) 出自阻力公式 \(D = 	frac12 C_D 
-ho v^2 A\)（<a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" target="_blank" rel="noopener">NASA Glenn 研究中心〈Drag Equation〉</a>）。各種球的 \(k/m\) 參考值是用空氣密度約 \(1.2\ \mathrm{kg/m^3}\) 與典型的質量、直徑、阻力係數估算的近似值；羽毛球由終端速率約 \(6\ \mathrm{m/s}\) 以 \(k/m = g/v_t^2\) 換算。</li>
+        <li data-en-html="Air resistance: \(k = \tfrac12 \rho C_D A\) comes from the drag equation \(D = \tfrac12 C_D \rho v^2 A\) (&lt;a href=&quot;https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Glenn Research Center, Drag Equation&lt;/a&gt;). The typical \(k/m\) values for balls are rough estimates from an air density of about \(1.2\ \mathrm{kg/m^3}\) and typical masses, diameters and drag coefficients; the shuttlecock value comes from its terminal speed of about \(6\ \mathrm{m/s}\) through \(k/m = g/v_t^2\).">空氣阻力：\(k = \tfrac12 \rho C_D A\) 出自阻力公式 \(D = \tfrac12 C_D \rho v^2 A\)（<a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" target="_blank" rel="noopener">NASA Glenn 研究中心〈Drag Equation〉</a>）。各種球的 \(k/m\) 參考值是用空氣密度約 \(1.2\ \mathrm{kg/m^3}\) 與典型的質量、直徑、阻力係數估算的近似值；羽毛球由終端速率約 \(6\ \mathrm{m/s}\) 以 \(k/m = g/v_t^2\) 換算。</li>
         <li data-en-html="Further reading: OpenStax, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;University Physics Volume 1, 4.3 Projectile Motion&lt;/a&gt;; HyperPhysics, &lt;a href=&quot;https://hyperphysics.gsu.edu/hbase/traj.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Trajectories&lt;/a&gt;">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion" target="_blank" rel="noopener">University Physics Volume 1，4.3 拋體運動</a>》、HyperPhysics〈<a href="https://hyperphysics.gsu.edu/hbase/traj.html" target="_blank" rel="noopener">Trajectories</a>〉（英文）</li>
       </ul>
     </section>
@@ -246,6 +292,7 @@ ho v^2 A\)（<a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/d
   <script src="js/numinput.js?v=202611122035"></script>
   <script src="js/drawkit.js?v=202611122035"></script>
   <script src="js/keys.js?v=202611122035"></script>
+  <script src="js/projectile-3d.js"></script>
   <script src="js/projectile.js?v=202611122035"></script>
   <script src="js/firebase-config.js?v=202611122035"></script>
   <script src="js/missions.js?v=202611122035" data-module="projectile"></script>
