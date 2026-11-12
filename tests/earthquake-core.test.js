@@ -207,6 +207,36 @@ test('測站排成一直線：鏡像兩點都符合資料（無法分辨）', ()
   assert.ok(d < 1e-6, '其中一個是真正的震央 ' + d);
 });
 
+test('學生作圖：共同弦交點就是震央；由震央與各站 d 推算深度 h² = d² − Δ²', () => {
+  let n = 0;
+  for (let k = 0; k < 120; k++) {
+    const c = randomCase(3 + (k % 3));
+    if (collinearish(c.st)) continue;
+    const p = Q.chordCenter(c.st);
+    near(Math.hypot(p.x - c.e.x, p.y - c.e.y), 0, 1e-6, '共同弦交點');
+    const D = Q.depthAt(c.st, c.e.x, c.e.y);
+    near(D.h, c.h, 1e-6, '震央正確時深度');
+    D.each.forEach(v => near(v, c.h * c.h, 1e-6, '每一站的 h²'));
+    n++;
+  }
+  assert.ok(n > 80);
+  // 三站時共同弦交點與定位的一次解相同（高斯－牛頓修正前）：精確資料下兩者都等於震央
+  assert.strictEqual(Q.chordCenter([{ x: 0, y: 0, R: 5 }, { x: 10, y: 0, R: 5 }]), null, '兩站沒有共同弦交點');
+  assert.strictEqual(Q.chordCenter([{ x: -50, y: 0, R: 60 }, { x: 0, y: 0, R: 40 }, { x: 50, y: 0, R: 60 }]), null, '一直線');
+  // 標記偏了：Δ 變大的站 h² 變小；深度的平均為負時取 0
+  const st = [{ x: 0, y: 0, R: 10 }, { x: 30, y: 0, R: 10 }];
+  near(Q.depthAt(st, 15, 0).h, 0, 1e-12, '平均為負 → 0');
+  near(Q.depthAt([{ x: 0, y: 0, R: 13 }], 5, 0).h, 12, 1e-12, '5-12-13');
+});
+
+test('兩個標記與兩個可能位置的配對（取較好的配法）', () => {
+  const c = [{ x: 0, y: 10 }, { x: 0, y: -10 }];
+  near(Q.pairErr([{ x: 1, y: -10 }, { x: 0, y: 12 }], c), 2, 1e-12, '交叉配對');
+  // 兩個標記都點在上方交點附近：(0,10)→下方 20、(0,11)→上方 1，取較好的配法仍要 20 km
+  near(Q.pairErr([{ x: 0, y: 10 }, { x: 0, y: 11 }], c), 20, 1e-12, '兩個標記都點在同一個交點附近');
+  assert.strictEqual(Q.pairErr([{ x: 0, y: 10 }], c), Infinity);
+});
+
 test('含誤差：距離有 ±3% 誤差時，三圓圍成誤差三角形；四站以上殘差 > 0', () => {
   const r = Q.rng(7);
   let tri = 0;

@@ -334,15 +334,7 @@
       const c = circleIntersections(st[0].x, st[0].y, st[0].R, st[1].x, st[1].y, st[1].R);
       return { ok: c.length > 0, n: 2, candidates: c, x: c.length ? c[0].x : NaN, y: c.length ? c[0].y : NaN, h: 0, method: 'two-circles', collinear: false };
     }
-    // 共同弦：2(x_j − x0)x + 2(y_j − y0)y = R0² − R_j² + (x_j² + y_j²) − (x0² + y0²)，所有測站對
-    let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
-    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-      const ax = 2 * (st[j].x - st[i].x), ay = 2 * (st[j].y - st[i].y);
-      const rhs = st[i].R * st[i].R - st[j].R * st[j].R + st[j].x * st[j].x + st[j].y * st[j].y - st[i].x * st[i].x - st[i].y * st[i].y;
-      a11 += ax * ax; a12 += ax * ay; a22 += ay * ay; b1 += ax * rhs; b2 += ay * rhs;
-    }
-    const det = a11 * a22 - a12 * a12;
-    const scale = (a11 + a22) * (a11 + a22);
+    const cs = chordSystem(st), det = cs.det, scale = cs.scale;
     // 共線判斷：測站到最佳直線的最大距離
     let mx = 0, my = 0;
     st.forEach(function (s) { mx += s.x / n; my += s.y / n; });
@@ -354,8 +346,7 @@
     const collinear = off < (opts.collinearKm == null ? 2 : opts.collinearKm) || det <= 1e-10 * scale;
     let x, y;
     if (!collinear) {
-      x = (b1 * a22 - b2 * a12) / det;
-      y = (a11 * b2 - a12 * b1) / det;
+      x = cs.x; y = cs.y;
     } else {
       // 共線：沿直線方向的位置由一次方程式決定，離直線的距離只知道大小（左右兩側鏡像）
       let s1 = 0, s2 = 0;
@@ -397,6 +388,40 @@
     const res = st.map(function (s) { return Math.sqrt((x - s.x) ** 2 + (y - s.y) ** 2 + h * h) - s.R; });
     const rms = Math.sqrt(res.reduce(function (a, r) { return a + r * r; }, 0) / n);
     return { ok: true, n: n, x: x, y: y, h: h, candidates: [{ x: x, y: y }], collinear: false, rms: rms, residuals: res, method: 'least-squares' };
+  }
+  /** 共同弦的一次方程式：2(x_j − x_i)x + 2(y_j − y_i)y = R_i² − R_j² + (x_j² + y_j²) − (x_i² + y_i²)，所有測站對的最小平方解 */
+  function chordSystem(st) {
+    const n = st.length;
+    let a11 = 0, a12 = 0, a22 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const ax = 2 * (st[j].x - st[i].x), ay = 2 * (st[j].y - st[i].y);
+      const rhs = st[i].R * st[i].R - st[j].R * st[j].R + st[j].x * st[j].x + st[j].y * st[j].y - st[i].x * st[i].x - st[i].y * st[i].y;
+      a11 += ax * ax; a12 += ax * ay; a22 += ay * ay; b1 += ax * rhs; b2 += ay * rhs;
+    }
+    const det = a11 * a22 - a12 * a12;
+    return { det: det, scale: (a11 + a22) * (a11 + a22), x: (b1 * a22 - b2 * a12) / det, y: (a11 * b2 - a12 * b1) / det };
+  }
+  /**
+   * 課本的作圖：n ≥ 3 個圓（以測站為圓心、震源距離 R 為半徑）兩兩的共同弦，交於震央。
+   * 三個圓時三條共同弦恰好交於一點（根心）；更多圓時取最接近全部共同弦的一點。測站排成一直線時傳回 null。
+   */
+  function chordCenter(st) {
+    if (st.length < 3) return null;
+    const cs = chordSystem(st);
+    if (!(Math.abs(cs.det) > 1e-10 * cs.scale)) return null;
+    return { x: cs.x, y: cs.y };
+  }
+  /** 由震央 (x, y) 推算震源深度：每站 h² = R² − Δ²（Δ 是測站到震央的距離），取平均再開根號（平均為負時 h = 0） */
+  function depthAt(st, x, y) {
+    const each = st.map(function (s) { return s.R * s.R - (s.x - x) * (s.x - x) - (s.y - y) * (s.y - y); });
+    const h2 = each.reduce(function (a, v) { return a + v; }, 0) / Math.max(1, st.length);
+    return { h: Math.sqrt(Math.max(0, h2)), h2: h2, each: each };
+  }
+  /** 兩個標記與兩個可能的位置一對一配對（取較好的配法），傳回配對後較大的那個距離；數量不是 2 與 2 時傳回 Infinity */
+  function pairErr(marks, cands) {
+    if (!marks || !cands || marks.length !== 2 || cands.length !== 2) return Infinity;
+    const d = function (a, b) { return Math.hypot(a.x - b.x, a.y - b.y); };
+    return Math.min(Math.max(d(marks[0], cands[0]), d(marks[1], cands[1])), Math.max(d(marks[0], cands[1]), d(marks[1], cands[0])));
   }
   function solve3(A, b) {
     const M = A.map(function (r, i) { return r.concat([b[i]]); });
@@ -693,6 +718,7 @@
     LON0: LON0, LAT0: LAT0, KX: KX, KY: KY, toXY: toXY, toLonLat: toLonLat, greatCircle: greatCircle,
     TAIWAN: TAIWAN, PENGHU: PENGHU, ISLETS: ISLETS, CITIES: CITIES, MAP: MAP, inPoly: inPoly, onLand: onLand,
     randomQuake: randomQuake, circleIntersections: circleIntersections, locate: locate, errorTriangle: errorTriangle, commonChord: commonChord,
+    chordCenter: chordCenter, depthAt: depthAt, pairErr: pairErr,
     RE: RE, R_CMB: R_CMB, R_ICB: R_ICB, PREM: PREM, prem: prem, buildShells: buildShells, uniformShells: uniformShells,
     traceRay: traceRay, pFromTakeoff: pFromTakeoff, fullPath: fullPath, positionAt: positionAt, annotate: annotate,
     branches: branches, shadowZones: shadowZones, shadowZonesExact: shadowZonesExact, criticalP: criticalP, arrivalsAt: arrivalsAt

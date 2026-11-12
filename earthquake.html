@@ -79,10 +79,42 @@
     .picks th { color: var(--muted); font-weight: 600; }
     .picks .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
     .picks td.na { color: var(--muted); }
+    .picks td.over { color: var(--pos); font-weight: 650; }
+    .nudge { display: grid; grid-template-columns: repeat(4, minmax(44px, 1fr)) minmax(0, 1.6fr); gap: 6px; margin-top: 8px; }
+    .nudge button { min-height: 44px; padding: 4px 6px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .nudge button[data-nudge] { font-size: calc(17px * var(--fs, 1)); font-weight: 650; }
     .history { margin: 6px 0 0; padding-left: 1.2em; font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
     .history:empty { display: none; }
     details.spec summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; font-size: calc(14px * var(--fs, 1)); }
     .warn { color: var(--pos); font-size: calc(13px * var(--fs, 1)); margin: 4px 0 0; }
+    /* 2D／3D 檢視切換（與「月相與日月食」相同的做法）；3D 時 2D 畫布只留紀錄與走時圖 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .vseg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .vseg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .vseg button + button { border-left: 1px solid var(--border); }
+    .vseg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    .eq3-wrap { position: relative; margin: 0 0 8px; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 88%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .eq3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .eq3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 58%; }
+    .eq3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .eq3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .eq3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .eq3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    .eq3-hud span.m { color: var(--muted); font-weight: 500; }
+    .eq3-hud span.p { color: var(--neg); }
+    .eq3-hud span.s { color: var(--pos); }
+    .eq3-hud span:empty { display: none; }
+    @media (max-width: 560px) { .eq3-hud > div { max-width: 66%; } .eq3-hud .br span { font-size: calc(11px * var(--fs, 1)); } }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -90,12 +122,21 @@
     <header class="top">
       <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Seismic waves and locating an epicenter"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 地震波與震央定位</nav>
       <h1 data-en="Seismic Waves and Locating an Epicenter">地震波與震央定位</h1>
-      <p data-en="Watch P, S and surface waves spread through the crust and see how the ground moves; read the S−P time on seismograms from three stations in Taiwan, draw circles and find the epicenter yourself; then follow rays through the Earth’s layers to find the shadow zones that prove the outer core is liquid.">看 P 波、S 波與表面波在地殼中傳開，地面怎麼振動；在臺灣三個測站的地震紀錄上量 S−P 時間差、畫圓，自己定出震央；再追蹤射線穿過地球的分層，找出證明外核是液體的「陰影區」。</p>
+      <p data-en="Watch P, S and surface waves spread through the crust and see how the ground moves; read the S−P time on seismograms from three stations in Taiwan, draw circles and find the epicenter yourself; then follow rays through the Earth’s layers to find the shadow zones that prove the outer core is liquid. Switch to 3D to see the spherical wavefronts grow and three spheres meet at the focus.">看 P 波、S 波與表面波在地殼中傳開，地面怎麼振動；在臺灣三個測站的地震紀錄上量 S−P 時間差、畫圓，自己定出震央；再追蹤射線穿過地球的分層，找出證明外核是液體的「陰影區」。切換到 3D 立體，看球面波前怎麼擴張、三個球面怎麼交在震源。</p>
     </header>
 
     <p class="try-hint" data-en="Try it: press “Make an earthquake” and watch the seismogram — which arrives first, P, S or the surface wave, and which shakes hardest?">試試看：按「發生地震」，看地震儀紀錄上 P 波、S 波、表面波誰先到、誰晃得最大。</p>
     <div class="lab eq">
-      <div class="stage">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="vseg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div id="view3"></div>
         <canvas id="cv" tabindex="0" aria-label="地震波模擬畫布" data-en-aria-label="Seismic wave simulation"></canvas>
         <div class="playbar">
           <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
@@ -112,15 +153,18 @@
           <span data-en-html="<i class=&quot;dash&quot;></i>Ray from focus to station"><i class="dash"></i>震源到測站的射線</span>
         </div>
         <p class="hint" data-m="waves" data-en="Cross-section of a uniform crust, drawn to scale (km). Drag the focus ✶ up or down and the seismometer along the surface. Dots are rock particles; their displacements are greatly magnified (schematic). Arrival times are exact; amplitudes only follow the trends (body waves ∝ 1/R, surface waves spread more slowly and are weaker for deeper quakes). The animation runs at 4× real time.">均勻地殼的剖面，依比例（km）繪製。上下拖曳震源 ✶、沿地表拖曳地震儀。小點是岩石的質點，位移已大幅放大（示意）。到達時間是精確計算；振幅只表示趨勢（體波 ∝ 1/R、表面波衰減較慢，震源越深越弱）。動畫為實際時間的 4 倍速。</p>
+        <p class="hint l3" data-m="waves" data-en="3D: a block of uniform crust drawn to scale (km). The front half is cut away so you see the particles on the section and the spherical P (blue) and S (red) wavefronts growing from the focus. Where a sphere meets the ground it draws a ring; the moment the ring passes the seismometer is the arrival time. Drag to rotate, scroll or pinch to zoom; you can also drag the focus up and down and the seismometer along the ground. The ground’s rise and fall and the particle motions are magnified (schematic).">3D：依比例（km）的一塊均勻地殼。前半塊切開，看得到剖面上的質點，以及由震源向外擴張的 P 波（藍）、S 波（紅）球面波前；球面碰到地表時畫出一圈，這一圈經過地震儀的瞬間就是到達時間。拖曳旋轉，滾輪或雙指縮放；也可以直接拖曳震源（上下）與地震儀（沿地表）。地表起伏與質點位移已放大（示意）。</p>
 
         <div class="legend" data-m="locate" hidden>
           <span data-en-html="<i class=&quot;tri&quot;></i>Seismic station (drag to move)"><i class="tri"></i>測站（可拖曳）</span>
           <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>P cursor"><i style="background:var(--neg)"></i>P 游標</span>
           <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>S cursor"><i style="background:var(--pos)"></i>S 游標</span>
-          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Your estimate"><i style="background:var(--accent)"></i>你的估計</span>
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Your epicenter (tap the map)"><i class="dot" style="background:var(--accent)"></i>你的震央（點地圖）</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Computer solution (after checking)"><i class="dash"></i>電腦解（確認後）</span>
           <span data-en-html="<i class=&quot;dash&quot;></i>Common chord"><i class="dash"></i>共同弦</span>
         </div>
-        <p class="hint" data-m="locate" hidden data-en="Drag on each seismogram to place the P and S cursors at the first arrivals (the nearer cursor follows your finger; a magnifier appears while dragging). The S−P time gives the hypocentral distance d = kΔt, drawn as a circle around the station. Equirectangular map of Taiwan; distances on it are accurate to about 1.5%.">在每條地震紀錄上拖曳，把 P、S 游標放到兩種波「開始」的地方（靠近手指的游標會跟著走，拖曳時會出現放大鏡）。S−P 時間差換算成震源距離 d = kΔt，以測站為圓心畫圓。臺灣地圖為等距圓柱投影，圖上距離誤差約 1.5% 以內。</p>
+        <p class="hint" data-m="locate" hidden data-en="Drag on each seismogram to place the P and S cursors at the first arrivals (the nearer cursor follows your finger; a magnifier appears while dragging). The S−P time gives the hypocentral distance d = kΔt, drawn as a circle around the station. Then tap the map where you think the epicenter is (drag the marker or nudge it with the arrow buttons) and press “Check my epicenter”; only then does the computer’s least-squares solution (grey cross) appear for comparison. Equirectangular map of Taiwan; distances on it are accurate to about 1.5%.">在每條地震紀錄上拖曳，把 P、S 游標放到兩種波「開始」的地方（靠近手指的游標會跟著走，拖曳時會出現放大鏡）。S−P 時間差換算成震源距離 d = kΔt，以測站為圓心畫圓。量好後，在地圖上點出你認為的震央（標記可以拖曳，或用方向鍵微調），再按「確認我的震央」；確認後才會顯示電腦的最小平方解（灰色十字）當對照。臺灣地圖為等距圓柱投影，圖上距離誤差約 1.5% 以內。</p>
+        <p class="hint l3" data-m="locate" hidden data-en="3D: under the map is the crust, drawn to scale (depth is not exaggerated). The distance d measured at each station is a half-sphere around the station. Two half-spheres meet in an upright half-circle (its chord on the ground is the common chord of the 2D view); the half-circles of all pairs pass through one point — the focus. Tap the map to place your epicenter marker (you can drag it); with one marker, the small ball below it is the focus worked out from it, h = √(d² − Δ²). Drag to rotate, scroll or pinch to zoom; you can also drag the stations.">3D：地圖下方是依比例的地殼（深度沒有放大）。每個測站量到的震源距離 d，是以測站為球心的半球；兩個半球交成一個直立的半圓（它在地表的弦就是 2D 的共同弦），每一對測站的半圓都通過同一點——震源。在地圖上點一下可以放你的震央標記（可拖曳）；只標一個時，標記正下方的小球是由它推算的震源，h = √(d² − Δ²)。拖曳旋轉，滾輪或雙指縮放；也可以直接拖曳測站。</p>
 
         <div class="legend" data-m="earth" hidden>
           <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>P rays"><i style="background:var(--neg)"></i>P 波射線</span>
@@ -129,6 +173,7 @@
           <span style="color:var(--pos)" data-en-html="<i class=&quot;dash&quot;></i>S shadow zone"><i class="dash"></i>S 波陰影區</span>
         </div>
         <p class="hint" data-m="earth" hidden data-en="Cross-section of the Earth to scale, with the earthquake at the top. Wave speeds are PREM values in 5 km thick shells; within each shell a ray is straight and at every boundary it obeys Snell’s law, so the rays curve. Drag the station ▼ around the surface. The animation runs at 60× real time.">地球剖面依比例繪製，地震發生在最上方。波速取 PREM 模型的值、切成 5 km 厚的殼層；殼層內射線是直線，每個界面都遵守司乃耳定律，所以射線是彎的。沿地表拖曳測站 ▼。動畫為實際時間的 60 倍速。</p>
+        <p class="hint l3" data-m="earth" hidden data-en="3D: half of the Earth, to scale; the cut face is the 2D cross-section with the same rays. The coloured bands on the outside are the shadow zones: they circle the globe around the epicenter. The Earth is spherically symmetric, so every place at the same angular distance Δ (the pale ring through the station) receives the same waves. Drag to rotate, scroll or pinch to zoom; you can also drag the station along the edge of the cut.">3D：切開一半的地球（依比例），切面就是 2D 的剖面與同樣的射線。外表的色帶是陰影區：它們以震央為中心，在地球表面圍成一圈。地球是球對稱的，和測站同一個角距 Δ 的地方（經過測站的淡色圈）收到的波都一樣。拖曳旋轉，滾輪或雙指縮放；也可以沿切面的邊緣拖曳測站。</p>
       </div>
 
       <aside class="panel">
@@ -235,18 +280,36 @@
         <section class="card" data-m="locate" hidden>
           <h2 data-en="Measure and locate">量測與定位</h2>
           <table class="picks" id="picks"></table>
-          <div class="btnrow">
-            <button type="button" id="locateBtn" class="primary" data-en="Locate">定位</button>
-            <button type="button" id="autoPick" data-en="Auto-pick (answer)">自動判讀（看答案）</button>
-          </div>
           <div class="checks" style="margin-top:6px">
             <label><input id="showChords" type="checkbox" checked><span data-en="Common chords">共同弦</span></label>
           </div>
+          <p class="seg-label" id="mkLabel" data-en="My markers:">我標的震央：</p>
+          <div class="seg2" role="group" aria-labelledby="mkLabel">
+            <button type="button" data-mk="1" aria-pressed="true" data-en="1 point">1 個</button>
+            <button type="button" data-mk="2" aria-pressed="false" data-en="2 points (two possible)">2 個（兩個可能）</button>
+          </div>
+          <div class="nudge" role="group" aria-label="微調標記，每次 0.5 km" data-en-aria-label="Nudge the marker, 0.5 km per press">
+            <button type="button" data-nudge="-1,0" aria-label="標記往西" data-en-aria-label="Marker west">←</button>
+            <button type="button" data-nudge="0,1" aria-label="標記往北" data-en-aria-label="Marker north">↑</button>
+            <button type="button" data-nudge="0,-1" aria-label="標記往南" data-en-aria-label="Marker south">↓</button>
+            <button type="button" data-nudge="1,0" aria-label="標記往東" data-en-aria-label="Marker east">→</button>
+            <button type="button" id="clearMarks" data-en="Clear markers">清除標記</button>
+          </div>
+          <p class="hint" data-en="Tap the map to place your marker; drag it, or nudge it 0.5 km at a time with the arrows. The table’s Δ is the distance from each station to your marker.">在地圖上點一下放標記；可以拖曳，或用方向鍵每次移動 0.5 km。表格的 Δ 是各測站到你的標記的距離。</p>
+          <div class="btnrow">
+            <button type="button" id="locateBtn" class="primary" data-en="Check my epicenter">確認我的震央</button>
+            <button type="button" id="solveBtn" data-en="Computer solution (answer)">電腦解（看答案）</button>
+          </div>
+          <div class="btnrow one">
+            <button type="button" id="autoPick" data-en="Auto-pick (answer)">自動判讀（看答案）</button>
+          </div>
           <dl class="readout" style="margin-top:6px">
-            <dt data-en="Estimated epicenter">估計的震央</dt><dd id="estPos">—</dd>
-            <dt data-en="Estimated depth">估計的深度</dt><dd id="estH">—</dd>
+            <dt data-en="Your epicenter">你的震央</dt><dd id="myPos">—</dd>
+            <dt data-en="Your depth">推算的深度</dt><dd id="myH">—</dd>
+            <dt data-en="Computer (least squares)">電腦解（最小平方）</dt><dd id="estPos">—</dd>
+            <dt data-en="Computer’s depth">電腦解的深度</dt><dd id="estH">—</dd>
             <dt data-en="True epicenter">真實的震央</dt><dd id="truePos">—</dd>
-            <dt data-en="Error of your epicenter">震央的誤差</dt><dd id="estErr">—</dd>
+            <dt data-en="Error of your epicenter">你的震央誤差</dt><dd id="estErr">—</dd>
           </dl>
           <ol class="history" id="history"></ol>
         </section>
@@ -311,7 +374,7 @@
       <div class="formula">\[ (x - x_i)^2 + (y - y_i)^2 + h^2 = R_i^2 \]</div>
       <p data-en-html="Two stations give two circles that cross at <strong>two</strong> points — not enough. A third station decides. Subtracting the equations of two stations removes \(x^2\), \(y^2\) and \(h^2\) and leaves a straight line, the <strong>common chord</strong> of the two circles:">兩個測站的圓交於<strong>兩點</strong>，還無法決定；第三個測站才能確定。把兩站的方程式相減，\(x^2\)、\(y^2\)、\(h^2\) 都消去了，剩下一條直線，就是兩圓的<strong>共同弦</strong>：</p>
       <div class="formula">\[ 2(x_j - x_i)\,x + 2(y_j - y_i)\,y = R_i^2 - R_j^2 + (x_j^2 + y_j^2) - (x_i^2 + y_i^2) \]</div>
-      <p data-en-html="When the focus is deep the three circles overlap instead of meeting at a point, but the three common chords still cross exactly at the epicenter; then \(h = \sqrt{R^2 - \Delta^2}\). Real readings have errors, so the circles enclose a small “error triangle”. The simulation finds the best point by <strong>least squares</strong>: it solves the chord equations for \((x, y)\), estimates \(h\), and refines \((x, y, h)\) to minimise \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\). With more stations, the errors partly cancel.">震源較深時三個圓會重疊而不交於一點，但三條共同弦仍恰好交於震央，再由 \(h = \sqrt{R^2 - \Delta^2}\) 求深度。實際的讀數有誤差，三個圓會圍出一個小小的「誤差三角形」。模擬用<strong>最小平方法</strong>找最佳的點：先由共同弦的方程式解出 \((x, y)\)、估計 \(h\)，再修正 \((x, y, h)\) 使 \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\) 最小。測站越多，誤差越能互相抵消。</p>
+      <p data-en-html="When the focus is deep the three circles overlap instead of meeting at a point, but the three common chords still cross exactly at the epicenter; then \(h = \sqrt{R^2 - \Delta^2}\). Real readings have errors, so the circles enclose a small “error triangle”. The simulation finds the best point by <strong>least squares</strong>: it solves the chord equations for \((x, y)\), estimates \(h\), and refines \((x, y, h)\) to minimise \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\). With more stations, the errors partly cancel. In mode 2 you locate the epicenter yourself: tap the map, press “Check my epicenter”, and only then is the computer’s least-squares point shown (grey cross) for comparison; your depth comes from your marker, \(h^2 = d_i^2 - \Delta_i^2\) averaged over the stations.">震源較深時三個圓會重疊而不交於一點，但三條共同弦仍恰好交於震央，再由 \(h = \sqrt{R^2 - \Delta^2}\) 求深度。實際的讀數有誤差，三個圓會圍出一個小小的「誤差三角形」。模擬用<strong>最小平方法</strong>找最佳的點：先由共同弦的方程式解出 \((x, y)\)、估計 \(h\)，再修正 \((x, y, h)\) 使 \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\) 最小。測站越多，誤差越能互相抵消。在模式二，震央要你自己定：在地圖上點出來、按「確認我的震央」，之後才顯示電腦用最小平方法算出的點（灰色十字）當對照；你的深度由你的標記推算：每站 \(h^2 = d_i^2 - \Delta_i^2\)，再取平均。</p>
 
       <h3 data-en="Inside the Earth: the shadow zones">地球內部與陰影區</h3>
       <p data-en-html="Deep inside the Earth the wave speeds change with depth, so rays bend. In a spherically layered Earth Snell’s law takes the form">地球內部的波速隨深度改變，射線因此彎曲。在球對稱分層的地球中，司乃耳定律寫成</p>
@@ -323,7 +386,7 @@
         <li data-en-html="<strong>Who moves which way</strong>: pause just as the blue P front passes a particle — it moves along the ray. When the red S front passes, it moves across the ray. Watch the station’s ground-motion plot: a straight back-and-forth line for P, a line at right angles for S, then an ellipse for the surface wave."><strong>質點怎麼動</strong>：在藍色 P 波前剛經過時暫停，質點沿射線方向前後動；紅色 S 波前經過時，質點垂直射線振動。看測站的「地面運動軌跡」：P 波是一條前後的線段、S 波是與它垂直的線段，表面波則是橢圓。</li>
         <li data-en-html="<strong>S waves stop at the liquid</strong>: in the strip below the section the P pulse crosses into the water (more slowly) while the S pulse is completely reflected — no shear, no S wave. Switch the right half to solid rock and both pulses pass straight through."><strong>S 波遇到液體就停</strong>：剖面下方的長條裡，P 波脈衝穿過界面進入水中（變慢），S 波脈衝卻全部反射回來——液體不能剪切，就沒有 S 波。把右半段換成同樣的岩石，兩個脈衝都直接穿過。</li>
         <li data-en-html="<strong>S−P grows with distance</strong>: move the station from 20 km to 40 km to 80 km; the S−P time doubles each time (once \(\Delta \gg h\)). Put the station right above the focus and the S−P time is shortest."><strong>S−P 隨距離增加</strong>：把測站從 20 km 移到 40 km、80 km，S−P 時間差每次約加倍（當 \(\Delta\) 遠大於 \(h\) 時）；把測站放在震源正上方，S−P 最短。</li>
-        <li data-en-html="<strong>Two stations are not enough</strong>: locate with 2 stations — two possible epicenters. Add a third and the ambiguity disappears; line three stations up and it comes back as a mirror image."><strong>兩站不夠</strong>：只用 2 個測站定位，會得到兩個可能的震央；加入第三站就能決定。把三個測站排成一直線，又會出現鏡像的兩個答案。</li>
+        <li data-en-html="<strong>Two stations are not enough</strong>: with 2 stations the circles cross at two points and either could be the epicenter (set “My markers” to 2 and mark both). Add a third and the ambiguity disappears; line three stations up and it comes back as a mirror image."><strong>兩站不夠</strong>：只用 2 個測站，兩個圓交於兩點，兩個都可能是震央（「我標的震央」選 2 個，把兩點都點出來）；加入第三站就能決定。把三個測站排成一直線，又會出現鏡像的兩個答案。</li>
         <li data-en-html="<strong>Depth</strong>: for a deep earthquake the circles overlap; turn on the common chords and see them meet at the epicenter. Stations close to the epicenter pin down the depth best."><strong>深度</strong>：較深的地震，三個圓會重疊；打開共同弦，看它們交在震央。離震央近的測站最能定出深度。</li>
         <li data-en-html="<strong>Errors</strong>: turn on “Include errors”, or convert with the wrong speeds, and the circles no longer meet at a point. With 4 or 5 stations the least-squares estimate improves."><strong>誤差</strong>：打開「含誤差」或用錯的波速換算，三個圓就不再交於一點；用 4、5 個測站，最小平方的估計更好。</li>
         <li data-en-html="<strong>Shadow zones</strong>: drag the station around the Earth. Beyond about 103° the S waves never arrive; between about 103° and 143° the P waves are missing too. Find the ray that just grazes the core."><strong>陰影區</strong>：沿地表拖曳測站：約 103° 以外收不到 S 波；約 103° 到 143° 之間連 P 波也收不到。試著找出恰好擦過地核的那一條射線。</li>
@@ -336,6 +399,7 @@
         <li data-en-html="<strong>The strip</strong> is an exact one-dimensional solution: a pulse meets the boundary head-on and splits into reflected and transmitted pulses with displacement coefficients \(r = (Z_1 - Z_2)/(Z_1 + Z_2)\) and \(\tau = 2Z_1/(Z_1 + Z_2)\), where \(Z = \rho V\) is the wave impedance; energy is conserved: \(r^2 + (Z_2/Z_1)\tau^2 = 1\). Rock: \(\rho = 2.7\ \mathrm{g/cm^3}\); water: \(\rho = 1.0\ \mathrm{g/cm^3}\), \(V_P = 1.5\ \mathrm{km/s}\), \(V_S = 0\)."><strong>長條</strong>是一維的精確解：脈衝正面撞上界面，分成反射與透射脈衝，位移的反射係數 \(r = (Z_1 - Z_2)/(Z_1 + Z_2)\)、透射係數 \(\tau = 2Z_1/(Z_1 + Z_2)\)，\(Z = \rho V\) 為波阻抗；能量守恆：\(r^2 + (Z_2/Z_1)\tau^2 = 1\)。岩石 \(\rho = 2.7\ \mathrm{g/cm^3}\)；水 \(\rho = 1.0\ \mathrm{g/cm^3}\)、\(V_P = 1.5\ \mathrm{km/s}\)、\(V_S = 0\)。</li>
         <li data-en-html="<strong>Seismograms in mode 2</strong> are schematic single-component records: the arrival times are exact, the wave shapes and amplitudes are not. “Include errors” adds background noise and gives each path a random speed error of up to ±3% (an uneven crust). The coastline of Taiwan is a simplified polygon drawn from latitudes and longitudes."><strong>模式二的地震紀錄</strong>是示意的單一分量紀錄：到達時間精確，波形與振幅只是示意。「含誤差」會加上背景雜訊，並讓每條路徑的波速有最多 ±3% 的隨機誤差（不均勻的地殼）。臺灣的海岸線是依經緯度簡化描繪的多邊形。</li>
         <li data-en-html="<strong>Earth model (mode 3)</strong>: PREM (Dziewonski &amp; Anderson, 1981, <em>Physics of the Earth and Planetary Interiors</em> 25, 297–356), cut into shells at most 5 km thick with the PREM speed at the middle of each shell (the top 3 km of ocean replaced by crust). Within a shell a ray is a straight chord, so its angle and travel time are computed exactly; at each boundary Snell’s law holds. Thinner shells change the results by less than about 1°. The earthquake is at the surface; diffracted and reflected waves are ignored."><strong>地球模型（模式三）</strong>：PREM（Dziewonski &amp; Anderson, 1981, <em>Physics of the Earth and Planetary Interiors</em> 25, 297–356），切成厚度不超過 5 km 的殼層，每層的波速取該層中點的 PREM 值（頂部 3 km 的海水改成地殼）。殼層內射線是直線，角距與走時都精確計算；每個界面都遵守司乃耳定律。殼層再切薄，結果的變化約在 1° 以內。地震發生在地表；繞射波與反射波不計。</li>
+        <li data-en-html="<strong>3D view</strong>: every position, radius and time comes from the same code (earthquake-core.js), with the same settings and the same moment as the 2D view. In mode 1 the wavefronts are spheres of radius \(V_P t\) and \(V_S t\) around the focus; where one meets the ground it is a ring of radius \(\sqrt{(Vt)^2 - h^2}\) around the epicenter. The ground’s rise and fall uses the same displacement formula as the 2D surface line, with the horizontal distance from the epicenter (the same in every direction). In mode 2 each half-sphere has radius \(d = k\Delta t\); two of them meet in an upright half-circle. The ball under your marker is at \(h = \sqrt{\overline{d^2 - \Delta^2}}\); after you check, the computer’s least-squares focus is shown in grey. In mode 3 the cut face carries the same traced rays as the 2D section; the shadow zones on the surface come from the same critical rays. The 3D view uses the three.js library (MIT license), downloaded only when you switch to 3D."><strong>3D 立體檢視</strong>：位置、半徑與時間都由同一份程式（earthquake-core.js）計算，和 2D 用同一組設定、同一個時刻。模式一的波前是以震源為球心、半徑 \(V_P t\) 與 \(V_S t\) 的球面，它與地表的交線是以震央為圓心、半徑 \(\sqrt{(Vt)^2 - h^2}\) 的圓；地表起伏把每一點到震央的水平距離代入與 2D 地表線相同的位移公式（各方向都一樣）。模式二每個半球的半徑就是 \(d = k\Delta t\)，兩個半球交成直立的半圓，你的標記正下方的小球深度是 \(h = \sqrt{\overline{d^2 - \Delta^2}}\)；確認後，電腦用最小平方法求得的震源以灰色顯示。模式三的切面放的是與 2D 剖面相同的射線追蹤結果，地表的陰影區由同一組臨界射線算出。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

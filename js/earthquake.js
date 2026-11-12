@@ -11,6 +11,11 @@
   const setVal = function (el, v) { if (window.LabNum) window.LabNum.set(el, v); else { el.value = v; el.dispatchEvent(new Event('input')); } };
   const reducedMotion = D.reducedMotion();
   const alpha = D.alpha, shade = D.shade, mix = D.mix;
+  // 本檔的版本號（?v=）：切換到 3D 時動態載入的 js/earthquake-3d.js 沿用同一個版本號
+  const SCRIPT_V = (function () {
+    const s = document.currentScript, m = s && /[?&]v=(\w+)/.exec(s.src);
+    return m ? m[1] : '';
+  })();
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   const clamp = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
 
@@ -128,6 +133,28 @@
     c.stroke();
     c.restore();
   }
+  /** 你的震央標記：十字準星＋立體圓點（中心小白點就是標的位置）；hot = 拖曳中／游標在上面；sel = 兩個標記時微調鍵目前移動的那一個 */
+  function drawMark(c, x, y, hot, sel) {
+    c.save();
+    if (hot) {
+      const g = c.createRadialGradient(x, y, 4, x, y, 22);
+      g.addColorStop(0, alpha(C.accent, 0.32)); g.addColorStop(1, alpha(C.accent, 0));
+      c.fillStyle = g; c.beginPath(); c.arc(x, y, 22, 0, Math.PI * 2); c.fill();
+    }
+    if (sel) { c.setLineDash([3, 3]); c.strokeStyle = alpha(C.accent, 0.8); c.lineWidth = 1.3; c.beginPath(); c.arc(x, y, 13, 0, Math.PI * 2); c.stroke(); c.setLineDash([]); }
+    c.lineCap = 'round';
+    const ticks = function () { c.beginPath(); [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) { c.moveTo(x + d[0] * 9, y + d[1] * 9); c.lineTo(x + d[0] * 17, y + d[1] * 17); }); c.stroke(); };
+    c.strokeStyle = alpha(C['canvas-bg'], 0.9); c.lineWidth = 4.2; ticks();
+    c.strokeStyle = C.accent; c.lineWidth = 2; ticks();
+    const g = c.createRadialGradient(x - 2.2, y - 2.2, 0.5, x, y, 7);
+    g.addColorStop(0, shade(C.accent, 0.45)); g.addColorStop(0.7, C.accent); g.addColorStop(1, shade(C.accent, -0.25));
+    c.shadowColor = C.dark ? 'rgba(0,0,0,.55)' : alpha(C.text, 0.3); c.shadowBlur = 5; c.shadowOffsetY = 1.5;
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, 6.5, 0, Math.PI * 2); c.fill();
+    c.shadowColor = 'transparent';
+    c.strokeStyle = alpha(C.surface, 0.95); c.lineWidth = 1.8; c.stroke();
+    c.fillStyle = C.surface; c.beginPath(); c.arc(x, y, 1.6, 0, Math.PI * 2); c.fill();
+    c.restore();
+  }
   function ringFx(c, fx, x, y, now) {
     const u = (now - fx.t0) / fx.dur;
     if (u >= 0 && u <= 1) D.ripple(c, x, y, fx.r || 10, u, fx.color);
@@ -138,6 +165,7 @@
   // =====================================================================
   const S = {
     mode: 'waves',
+    v3: false, // 3D 檢視開著：2D 畫布只畫紀錄、走時圖等輔助面板（主畫面由 3D 取代）
     slow: false,
     running: false,
     fx: [],
@@ -145,10 +173,14 @@
       h: 15, x: 60, vp: 6, vs: 3.5, medium: 'liquid', t: 0, tEnd: 60, user: false, done: false,
       show: { dots: true, fronts: true, ray: true }, arr: null, rec: null, chainSent: false
     },
-    w2: { n: 3, quake: null, stations: [], rec: { t: 0, done: false }, est: null, history: [], vpc: 6, vsc: 3.5, chords: true, drag: null, active: null, seed: 1, ws: 0, we: 60 },
+    // marks：學生在地圖上點的震央標記（km）；nMarks：要標幾個（1 或 2，兩個可能位置時標 2 個）；mkActive：微調鍵移動的是哪一個
+    // est：電腦的最小平方解（學生按「確認我的震央」之後才顯示；stale = 量測改過了，先藏起來）
+    w2: { n: 3, quake: null, stations: [], rec: { t: 0, done: false }, est: null, history: [], vpc: 6, vsc: 3.5, chords: true, drag: null, active: null, seed: 1, ws: 0, we: 60,
+      marks: [], nMarks: 1, mkActive: 0 },
     w3: { ready: false, wave: 'PS', takeoff: 20, deg: 60, fan: true, shadow: true, inner: true, t: 0, tEnd: 1320, user: false, done: false, logged: {} }
   };
   const SPEED1 = 4, SPEED2 = 8, SPEED3 = 60; // 畫面倍速（慢動作時再除以 4）
+  let view3 = null; // 3D 檢視（js/earthquake-3d.js 建立；切回 2D 時釋放）
 
   // =====================================================================
   // 模式一：P 波、S 波與表面波
@@ -208,12 +240,13 @@
     X1.x0 = narrow ? -8 : -15; X1.x1 = narrow ? 102 : 105;
     const k = W / (X1.x1 - X1.x0);
     const sky = narrow ? 34 : 40;
-    const secH = Math.round(sky + X1.depth * k);
+    // 3D 檢視時剖面由 3D 畫，2D 畫布只留地震儀紀錄、地面運動軌跡與液體長條
+    const secH = S.v3 ? 0 : Math.round(sky + X1.depth * k);
     const gap = narrow ? 6 : 8;
     const trH = narrow ? 132 : 150;
     const hs = narrow ? Math.min(trH, Math.round(W * 0.34)) : trH;
     const chainH = narrow ? 118 : 128;
-    const y2 = secH + gap, y3 = y2 + trH + gap;
+    const y2 = S.v3 ? 0 : secH + gap, y3 = y2 + trH + gap;
     return {
       narrow: narrow, k: k, sky: sky, gap: gap,
       sec: { x: 0, y: 0, w: W, h: secH },
@@ -236,6 +269,7 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     D.backdrop(c, cw, ch);
+    if (S.v3) return; // 3D 檢視：剖面在 3D 裡
     // 天空
     const sky = c.createLinearGradient(0, 0, 0, L.sky);
     sky.addColorStop(0, alpha(C['b-wave'], C.dark ? 0.1 : 0.08));
@@ -259,7 +293,16 @@
     for (let d = 10; d < X1.depth; d += 10) { const y = snap(Y1px(d)); c.moveTo(0, y); c.lineTo(cw, y); }
     c.stroke();
     const f = fnt(L.narrow ? 10.5 : 11.5);
-    for (let d = 10; d < X1.depth; d += 10) D.haloText(c, d + ' km', 4, Y1px(d) - 1, alpha(C.text, 0.62), 'left', 'bottom', f);
+    // 深度刻度：手機版震源就在左緣，刻度改放右緣，免得和「震源」標籤疊在一起
+    for (let d = 10; d < X1.depth; d += 10) {
+      if (L.narrow) D.haloText(c, d + ' km', cw - 4, Y1px(d) - 1, alpha(C.text, 0.62), 'right', 'bottom', f);
+      else D.haloText(c, d + ' km', 4, Y1px(d) - 1, alpha(C.text, 0.62), 'left', 'bottom', f);
+    }
+    // 地表下的薄土層（靜態的淡色帶，讓地表有厚度）
+    const soil = c.createLinearGradient(0, L.sky, 0, L.sky + 7);
+    soil.addColorStop(0, alpha(shade(C.rock, C.dark ? -0.1 : -0.25), C.dark ? 0.32 : 0.26));
+    soil.addColorStop(1, alpha(C.rock, 0));
+    c.fillStyle = soil; c.fillRect(0, L.sky, cw, 7);
     // 距離刻度（沿地表，自震央量起）
     for (let x = 0; x <= X1.x1; x += 20) {
       const px = snap(X1px(x));
@@ -280,25 +323,34 @@
   }
   function draw1(now) {
     const w = S.w1, c = ctx, t = w.t, o = w1Params();
-    const key = [cw, ch, dpr, colorsVer, D.ver, 'w1'].join('|');
+    const key = [cw, ch, dpr, colorsVer, D.ver, 'w1', S.v3].join('|');
     if (key !== bgKey) { buildBg1(); bgKey = key; }
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(bg, 0, 0);
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (S.v3) { drawTraces1(c); drawHodo1(c); drawChain(c, now); return; }
     const fx = X1px(0), fy = Y1px(w.h), sx = X1px(w.x), surf = L.sky;
     const sp = 8 * L.k; // 質點格距 px
 
-    // 波前（只畫在地殼裡）
+    // 波前（只畫在地殼裡）：波前後方一條漸淡的光帶（剛被波經過的岩石），波前本身是一條清楚的細線
     c.save();
     c.beginPath(); c.rect(0, surf, cw, L.sec.h - surf); c.clip();
     if (w.show.fronts) {
+      const band = L.narrow ? 9 : 13;
       [[w.vp, C.P, 'P'], [w.vs, C.S, 'S']].forEach(function (q) {
         const r = q[0] * t * L.k;
         if (r <= 1) return;
-        c.strokeStyle = alpha(q[1], C.dark ? 0.18 : 0.14);
-        c.lineWidth = 7;
+        const r0 = Math.max(0, r - band);
+        const g = c.createRadialGradient(fx, fy, r0, fx, fy, r);
+        g.addColorStop(0, alpha(q[1], 0));
+        g.addColorStop(0.7, alpha(q[1], C.dark ? 0.12 : 0.09));
+        g.addColorStop(1, alpha(q[1], C.dark ? 0.3 : 0.24));
+        c.fillStyle = g;
+        c.beginPath(); c.arc(fx, fy, r, 0, Math.PI * 2); if (r0 > 0) c.arc(fx, fy, r0, 0, Math.PI * 2, true); c.fill();
+        c.strokeStyle = alpha(q[1], C.dark ? 0.22 : 0.16);
+        c.lineWidth = 4;
         c.beginPath(); c.arc(fx, fy, r, 0, Math.PI * 2); c.stroke();
-        c.strokeStyle = alpha(q[1], 0.9);
+        c.strokeStyle = alpha(q[1], 0.92);
         c.lineWidth = 1.6;
         c.beginPath(); c.arc(fx, fy, r, 0, Math.PI * 2); c.stroke();
       });
@@ -331,16 +383,36 @@
     }
     c.restore();
 
-    // 地表（隨垂直位移起伏）＋表面波波前
-    c.save();
-    c.beginPath();
-    for (let px = 0; px <= cw; px += 3) {
+    // 地表（隨垂直位移起伏）＋表面波波前：地面隆起處補上岩石色、下陷處補回天空色，地表線畫成有厚度的管狀
+    const ground = [];
+    for (let px = 0; px <= cw + 2; px += 3) {
       const x = X1.x0 + px / L.k, u = Q.sectionDisp(x, 0, t, o), v = vis(u);
-      const y = surf + v[1] * sp * 0.8;
-      if (px) c.lineTo(px, y); else c.moveTo(px, y);
+      ground.push([px, surf + v[1] * sp * 0.8]);
     }
-    c.strokeStyle = shade(C.rock, C.dark ? 0.2 : -0.25);
-    c.lineWidth = 2;
+    const groundPath = function () {
+      c.beginPath();
+      ground.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); });
+    };
+    c.save();
+    c.beginPath(); c.rect(0, 0, cw, surf); c.clip();
+    groundPath(); c.lineTo(cw + 2, surf); c.lineTo(0, surf); c.closePath();
+    c.fillStyle = rockColor(0); c.fill();
+    c.restore();
+    c.save();
+    c.beginPath(); c.rect(0, surf, cw, 30); c.clip();
+    groundPath(); c.lineTo(cw + 2, surf); c.lineTo(0, surf); c.closePath();
+    c.fillStyle = C['canvas-bg']; c.fill();
+    c.restore();
+    c.save();
+    c.lineJoin = 'round'; c.lineCap = 'round';
+    groundPath();
+    c.strokeStyle = shade(C.rock, C.dark ? -0.1 : -0.35);
+    c.lineWidth = 3.2;
+    c.stroke();
+    c.translate(0, -0.7);
+    groundPath();
+    c.strokeStyle = shade(C.rock, C.dark ? 0.35 : 0.05);
+    c.lineWidth = 1.2;
     c.stroke();
     c.restore();
     if (w.show.fronts && t > w.h / w.vs) {
@@ -379,6 +451,9 @@
     c.beginPath(); c.moveTo(fx, surf); c.lineTo(fx, fy); c.stroke(); c.setLineDash([]);
     tag(c, T('震央', 'Epicenter'), fx, surf - 12, C.text, 'center', fS);
     if (S.drag1 === 'focus' || S.hover1 === 'focus') { c.fillStyle = alpha(C.pos, 0.15); c.beginPath(); c.arc(fx, fy, 15, 0, Math.PI * 2); c.fill(); }
+    const glow = c.createRadialGradient(fx, fy, 0, fx, fy, L.narrow ? 16 : 20);
+    glow.addColorStop(0, alpha(C.pos, C.dark ? 0.4 : 0.28)); glow.addColorStop(1, alpha(C.pos, 0));
+    c.fillStyle = glow; c.beginPath(); c.arc(fx, fy, L.narrow ? 16 : 20, 0, Math.PI * 2); c.fill();
     star(c, fx, fy, L.narrow ? 8 : 9.5, C.pos);
     if (kbIs('focus')) kbBox(c, fx - 15, fy - 15, 30, 30);
     D.haloText(c, T('震源', 'Focus') + ' ' + num(w.h, w.h % 1 ? 1 : 0) + ' km', fx + 13, fy, C.text, 'left', 'middle', fS);
@@ -423,10 +498,12 @@
     c.strokeStyle = alpha(C.text, 0.3); c.lineWidth = 1;
     c.beginPath(); c.moveTo(x0, snap(yAx)); c.lineTo(x1, snap(yAx)); c.stroke();
     const step = w.tEnd > 60 ? 20 : 10;
-    for (let s = 0; s <= w.tEnd + 1e-9; s += step) {
+    // 刻度每 step 一根；數字的間距至少約 46 px（手機上不擠在一起）
+    const every = Math.max(1, Math.ceil(46 / ((x1 - x0) * step / w.tEnd)));
+    for (let s = 0, i = 0; s <= w.tEnd + 1e-9; s += step, i++) {
       const px = snap(tx(s));
       c.beginPath(); c.moveTo(px, yAx); c.lineTo(px, yAx + 4); c.stroke();
-      D.haloText(c, s + ' s', px, yAx + 5, alpha(C.text, 0.6), s === 0 ? 'left' : 'center', 'top', fA);
+      if (i % every === 0) D.haloText(c, s + ' s', px, yAx + 5, alpha(C.text, 0.6), s === 0 ? 'left' : 'center', 'top', fA);
     }
     // 到達時刻
     const a = w.arr;
@@ -543,7 +620,8 @@
       const txt = rw.v2 > 0
         ? T('反射 r = ', 'r = ') + num(rw.co.r, 2) + T('　透射 τ = ', '   τ = ') + num(rw.co.t, 2)
         : T('全反射：液體不能剪切，S 波進不去', 'Totally reflected: a liquid cannot be sheared');
-      if (!L.narrow || rw.v2 === 0) D.haloText(c, txt, x1 - 4, yc + rowH / 2 - 7, rw.v2 > 0 ? alpha(C.text, 0.6) : rw.col, 'right', 'middle', fA);
+      if (rw.v2 === 0) tag(c, txt, x1 - 4, yc + rowH / 2 - 7, rw.col, 'right', fA); // 全反射的說明放在底框裡，不和質點混在一起
+      else if (!L.narrow) D.haloText(c, txt, x1 - 4, yc + rowH / 2 - 7, alpha(C.text, 0.6), 'right', 'middle', fA);
     });
     S.fx.forEach(function (fx) { if (fx.where === 'chain') ringFx(c, fx, xi, R.y + 20 + rowH * 1.5 - 2, now); });
   }
@@ -609,9 +687,11 @@
       T0: q.T0 != null ? q.T0 : Math.floor(Math.random() * 86400), seed: w.seed
     };
     w.est = null;
+    w.marks = []; w.mkActive = 0;
     w.stations.forEach(function (s) { resetPicks(s); });
     updateQuakeData();
     startRecording();
+    buildKbItems();
   }
   function resetPicks(s) { s.picks = { p: null, s: null, mp: false, ms: false, auto: false }; }
   /** 每個測站的到達時間與紀錄（含誤差時：每條路徑的波速有 ±3% 的隨機誤差） */
@@ -657,6 +737,11 @@
     const spanX = MAPX1 - MAPX0, spanY = MAPY1 - MAPY0;
     let mw, mh, tr;
     const n = S.w2.n;
+    if (S.v3) { // 3D 檢視：地圖在 3D 裡，2D 畫布只畫各站的地震紀錄（游標照樣拖曳）
+      const rowH = narrow ? 74 : 84, axis = narrow ? 24 : 26;
+      tr = { x: 0, y: 0, w: W, h: n * rowH + axis + 8 };
+      return { narrow: narrow, map: { x: 0, y: 0, w: 0, h: 0 }, tr: tr, H: tr.h, s: 1, rowH: rowH, axis: axis };
+    }
     if (narrow) {
       mw = W; mh = Math.round(W * spanY / spanX);
       const rowH = 74, axis = 24;
@@ -678,6 +763,7 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     D.backdrop(c, cw, ch);
+    if (S.v3) return;
     c.save();
     clipR(c, M);
     // 海
@@ -763,11 +849,12 @@
 
   function draw2(now) {
     const w = S.w2, c = ctx;
-    const key = [cw, ch, dpr, colorsVer, D.ver, 'w2', L.map.w].join('|');
+    const key = [cw, ch, dpr, colorsVer, D.ver, 'w2', L.map.w, S.v3].join('|');
     if (key !== bgKey) { buildBg2(); bgKey = key; }
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(bg, 0, 0);
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (S.v3) { drawTraces2(c, now); return; }
     const q = w.quake, st = activeStations(), picked = pickedStations();
     const fS = fnt(L.narrow ? 10.5 : 11.5, 600);
     c.save();
@@ -783,11 +870,18 @@
       });
     }
     // 圓
+    // 圓的內部：中心透明、往圓周漸濃（像由測站往外傳的距離圈），圓周是一條清楚的線
     picked.forEach(function (s) {
       const i = w.stations.indexOf(s), col = C.st[i], r = stationR(s) * L.s;
-      c.fillStyle = alpha(col, C.dark ? 0.07 : 0.05);
-      c.beginPath(); c.arc(MX(s.x), MY(s.y), r, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = alpha(col, 0.9); c.lineWidth = 1.8;
+      const x = MX(s.x), y = MY(s.y);
+      const g = c.createRadialGradient(x, y, r * 0.55, x, y, r);
+      g.addColorStop(0, alpha(col, 0));
+      g.addColorStop(1, alpha(col, C.dark ? 0.13 : 0.1));
+      c.fillStyle = g;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = alpha(col, C.dark ? 0.22 : 0.16); c.lineWidth = 4.5;
+      c.stroke();
+      c.strokeStyle = alpha(col, 0.92); c.lineWidth = 1.8;
       c.stroke();
     });
     // 共同弦
@@ -801,48 +895,59 @@
       }
       c.setLineDash([]);
     }
-    // 誤差三角形
-    if (w.est && !w.est.stale && w.est.n >= 3 && !w.est.collinear) {
-      const tri = Q.errorTriangle(picked.slice(0, 3).map(function (s) { return { x: s.x, y: s.y, R: stationR(s) }; }), w.est.x, w.est.y);
+    const est = liveEst(), grey = alpha(C.text, C.dark ? 0.62 : 0.55);
+    const taken = []; // 已經放好的標籤 [x, y, w, h]（你的標記的標籤要避開它們）
+    // 誤差三角形（含誤差時三個圓兩兩的交點；確認後與電腦解一起顯示）
+    if (est && est.n >= 3 && !est.collinear) {
+      const tri = Q.errorTriangle(picked.slice(0, 3).map(function (s) { return { x: s.x, y: s.y, R: stationR(s) }; }), est.x, est.y);
       if (tri.length === 3) {
         c.beginPath(); tri.forEach(function (p, i) { if (i) c.lineTo(MX(p.x), MY(p.y)); else c.moveTo(MX(p.x), MY(p.y)); }); c.closePath();
-        c.fillStyle = alpha(C.accent, 0.22); c.fill();
-        c.strokeStyle = alpha(C.accent, 0.7); c.lineWidth = 1; c.stroke();
+        c.fillStyle = alpha(C.text, C.dark ? 0.12 : 0.1); c.fill();
+        c.strokeStyle = alpha(C.text, 0.45); c.lineWidth = 1; c.stroke();
       }
     }
-    // 定位紀錄
+    // 之前確認過的標記（小叉）
     w.history.forEach(function (hst, i) {
-      if (i === w.history.length - 1 && w.est && !w.est.stale) return;
-      const x = MX(hst.x), y = MY(hst.y);
-      c.strokeStyle = alpha(C.accent, 0.45); c.lineWidth = 1.5;
-      c.beginPath(); c.moveTo(x - 4, y - 4); c.lineTo(x + 4, y + 4); c.moveTo(x + 4, y - 4); c.lineTo(x - 4, y + 4); c.stroke();
+      if (i === w.history.length - 1 && est) return;
+      (hst.marks || [hst]).forEach(function (m) {
+        const x = MX(m.x), y = MY(m.y);
+        c.strokeStyle = alpha(C.accent, 0.45); c.lineWidth = 1.5;
+        c.beginPath(); c.moveTo(x - 4, y - 4); c.lineTo(x + 4, y + 4); c.moveTo(x + 4, y - 4); c.lineTo(x - 4, y + 4); c.stroke();
+      });
     });
-    // 估計的震央
-    if (w.est) {
-      const cands = w.est.candidates || [];
+    // 電腦的最小平方解（確認之後才顯示）：灰色虛線十字
+    if (est) {
+      const cands = est.candidates || [];
       cands.forEach(function (p, i) {
-        const x = MX(p.x), y = MY(p.y), stale = w.est.stale;
+        const x = MX(p.x), y = MY(p.y);
         c.save();
-        if (stale) c.setLineDash([3, 3]);
-        c.strokeStyle = C.accent; c.lineWidth = 2.2; c.lineCap = 'round';
-        c.beginPath(); c.arc(x, y, 7, 0, Math.PI * 2); c.stroke();
-        c.beginPath(); c.moveTo(x - 12, y); c.lineTo(x - 4, y); c.moveTo(x + 4, y); c.lineTo(x + 12, y); c.moveTo(x, y - 12); c.lineTo(x, y - 4); c.moveTo(x, y + 4); c.lineTo(x, y + 12); c.stroke();
+        c.lineCap = 'round';
+        const cross = function () {
+          c.beginPath(); c.arc(x, y, 6, 0, Math.PI * 2); c.stroke();
+          c.beginPath(); c.moveTo(x - 13, y); c.lineTo(x - 3, y); c.moveTo(x + 3, y); c.lineTo(x + 13, y); c.moveTo(x, y - 13); c.lineTo(x, y - 3); c.moveTo(x, y + 3); c.lineTo(x, y + 13); c.stroke();
+        };
+        c.strokeStyle = alpha(C['canvas-bg'], 0.85); c.lineWidth = 3.8; cross(); // 底下一圈背景色的描邊，在任何底色上都看得清楚
+        c.setLineDash([3, 2.5]);
+        c.strokeStyle = grey; c.lineWidth = 1.6; cross();
         c.restore();
-        const lab = cands.length > 1 ? T('可能 ', 'Option ') + (i + 1) : T('估計', 'Estimate');
-        tag(c, lab, x + 14, y - 12, C.accent, 'left', fS);
+        const lab = T('電腦解', 'Computer') + (cands.length > 1 ? ' ' + (i + 1) : '');
+        // 標籤放在左下（兩個時放在彼此的外側），你的標記的標籤在上方，兩者不打架
+        const o = cands[1 - i], left = o ? p.x <= o.x : x - 90 > L.map.x, lw = textW(c, lab, fS) + 14;
+        tag(c, lab, left ? x - 14 : x + 14, y + 17, grey, left ? 'right' : 'left', fS);
+        taken.push([left ? x - 14 - lw : x + 14, y + 7, lw, 20]);
       });
     }
-    // 真實震央
+    // 真實震央（連到你的標記）
     if (q.revealed) {
       const x = MX(q.x), y = MY(q.y);
-      if (w.est && !w.est.stale && w.est.candidates.length === 1) {
+      if (w.marks.length === 1) {
         c.strokeStyle = alpha(C.text, 0.6); c.setLineDash([2, 3]); c.lineWidth = 1.2;
-        c.beginPath(); c.moveTo(x, y); c.lineTo(MX(w.est.x), MY(w.est.y)); c.stroke(); c.setLineDash([]);
+        c.beginPath(); c.moveTo(x, y); c.lineTo(MX(w.marks[0].x), MY(w.marks[0].y)); c.stroke(); c.setLineDash([]);
       }
       star(c, x, y, 9, C.pos);
       const tl = T('真實震央', 'True epicenter') + ' · ' + num(q.h, q.h % 1 ? 1 : 0) + ' km', tw = textW(c, tl, fS) + 14;
-      if (x - 12 - tw > L.map.x + 4) tag(c, tl, x - 12, y + 18, C.pos, 'right', fS);
-      else tag(c, tl, x + 12, y + 18, C.pos, 'left', fS);
+      if (x - 12 - tw > L.map.x + 4) { tag(c, tl, x - 12, y + 18, C.pos, 'right', fS); taken.push([x - 12 - tw, y + 8, tw, 20]); }
+      else { tag(c, tl, x + 12, y + 18, C.pos, 'left', fS); taken.push([x + 12, y + 8, tw, 20]); }
     }
     // 測站
     st.forEach(function (s, i) {
@@ -851,8 +956,28 @@
       S.fx.forEach(function (f) { if (f.where === 'st2-' + i) ringFx(c, f, x, y, now); });
       stationMark(c, x, y, L.narrow ? 7.5 : 8.5, col, hot);
       if (kbIs('station', i)) kbBox(c, x - 14, y - 14, 28, 28);
-      const nm = s.label + (s.city ? ' ' + cityName(s.city) : '');
-      tag(c, nm, x + 11, y - 9, col, x > L.map.x + L.map.w - 90 ? 'right' : 'left', fS);
+      const nm = s.label + (s.city ? ' ' + cityName(s.city) : ''), rt = x > L.map.x + L.map.w - 90, tw = textW(c, nm, fS) + 14;
+      tag(c, nm, x + 11, y - 9, col, rt ? 'right' : 'left', fS);
+      taken.push([rt ? x + 11 - tw : x + 11, y - 19, tw, 20], [x - 10, y - 10, 20, 20]);
+    });
+    // 你的震央標記（點地圖放置、可拖曳）；標籤依序試右上、左上、右下、左下，避開測站與真實震央的標籤（兩個標記時先試彼此的外側）
+    const fM = fnt(L.narrow ? 10.5 : 11.5, 700);
+    w.marks.forEach(function (m, i) {
+      const x = MX(m.x), y = MY(m.y);
+      const hot = (w.drag && w.drag.kind === 'mark' && w.drag.i === i) || (S.hover2 && S.hover2.kind === 'mark' && S.hover2.i === i);
+      drawMark(c, x, y, hot, w.marks.length > 1 && w.mkActive === i);
+      if (kbIs('mark', i)) kbBox(c, x - 18, y - 18, 36, 36);
+      const lab = w.marks.length > 1 || w.nMarks > 1 ? T('標記 ', 'Marker ') + (i + 1) : T('我的震央', 'My epicenter');
+      const tw = textW(c, lab, fM) + 14, o = w.marks[1 - i];
+      const outerLeft = o ? m.x < o.x : x > L.map.x + L.map.w - 100;
+      const cands = [[!outerLeft, -16], [outerLeft, -16], [!outerLeft, 19], [outerLeft, 19]].map(function (cd) {
+        const toRight = cd[0], bx = toRight ? x + 15 : x - 15 - tw;
+        return { toRight: toRight, dy: cd[1], r: [bx, y + cd[1] - 10, tw, 20] };
+      }).filter(function (cd) { return cd.r[0] >= L.map.x + 2 && cd.r[0] + tw <= L.map.x + L.map.w - 2; });
+      const hit = function (r) { return taken.some(function (t) { return r[0] < t[0] + t[2] && t[0] < r[0] + r[2] && r[1] < t[1] + t[3] && t[1] < r[1] + r[3]; }); };
+      const pick = cands.filter(function (cd) { return !hit(cd.r); })[0] || cands[0] || { toRight: true, dy: -16, r: [x + 15, y - 26, tw, 20] };
+      tag(c, lab, pick.toRight ? x + 15 : x - 15, y + pick.dy, C.accent, pick.toRight ? 'left' : 'right', fM);
+      taken.push(pick.r);
     });
     c.restore();
 
@@ -964,74 +1089,159 @@
   }
 
   function refreshPicks() {
-    const w = S.w2, st = activeStations();
-    let html = '<tr><th>' + T('測站', 'Station') + '</th><th>S−P (s)</th><th>d (km)</th></tr>';
+    const w = S.w2, st = activeStations(), m1 = w.marks.length === 1 ? w.marks[0] : null;
+    // Δ：測站到「你的震央」標記的地圖距離（只標一個時）；Δ 比 d 大就不可能（震央一定在每個圓裡面）
+    let html = '<tr><th>' + T('測站', 'Station') + '</th><th>S−P (s)</th><th>d (km)</th><th title="' + T('測站到你的震央標記的距離', 'Distance from the station to your marker') + '">Δ (km)</th></tr>';
     st.forEach(function (s, i) {
       const both = s.picks.p != null && s.picks.s != null && s.picks.s > s.picks.p;
       const nm = s.label + (s.city ? ' ' + cityName(s.city) : '');
+      const dl = m1 ? Math.hypot(s.x - m1.x, s.y - m1.y) : null;
       html += '<tr><td><span class="sw" style="background:' + C.st[i] + '"></span>' + nm + '</td>' +
-        (both ? '<td>' + num(s.picks.s - s.picks.p, 2) + '</td><td>' + num(stationR(s), 1) + '</td>' : '<td class="na">—</td><td class="na">—</td>') + '</tr>';
+        (both ? '<td>' + num(s.picks.s - s.picks.p, 2) + '</td><td>' + num(stationR(s), 1) + '</td>' : '<td class="na">—</td><td class="na">—</td>') +
+        (dl == null ? '<td class="na">—</td>' : '<td' + (both && dl > stationR(s) ? ' class="over"' : '') + '>' + num(dl, 1) + '</td>') + '</tr>';
     });
     $('picks').innerHTML = html;
     $('kc').textContent = num(kConv(), 3) + ' km/s';
     showEst();
   }
   function lonlatText(x, y) { const ll = Q.toLonLat(x, y); return num(ll.lat, 2) + '°N, ' + num(ll.lon, 2) + '°E'; }
+  function circles2() { return pickedStations().map(function (s) { return { x: s.x, y: s.y, R: stationR(s) }; }); }
+  /** 由「你的震央」標記推算深度：每站 h² = d² − Δ²，取平均（只標一個、量好兩站以上時） */
+  function myDepth() {
+    const w = S.w2, data = circles2();
+    if (w.marks.length !== 1 || data.length < 2) return null;
+    const r = Q.depthAt(data, w.marks[0].x, w.marks[0].y);
+    r.n = data.length;
+    r.outside = r.each.some(function (v) { return v < 0; });
+    return r;
+  }
+  /** 目前看得到的電腦解（量測改過就藏起來，等再次確認） */
+  function liveEst() { const e = S.w2.est; return e && !e.stale ? e : null; }
   function showEst() {
-    const w = S.w2, q = w.quake, e = w.est;
-    if (!e) { $('estPos').textContent = '—'; $('estH').textContent = '—'; }
-    else if (e.candidates.length > 1) {
+    const w = S.w2, q = w.quake, e = liveEst(), mk = w.marks, dep = myDepth();
+    // 你的震央與推算的深度（即時）
+    if (!mk.length) $('myPos').innerHTML = '—<small>' + T('在地圖上點一下，放上你的震央標記', 'Tap the map to place your epicenter marker') + '</small>';
+    else $('myPos').innerHTML = mk.map(function (p) { return lonlatText(p.x, p.y); }).join('<br>') +
+      (mk.length < w.nMarks ? '<small>' + T('還要再點一個標記', 'Place one more marker') + '</small>' : '');
+    if (!dep) $('myH').innerHTML = '—' + (mk.length === 1 ? '<small>' + T('至少量好兩站', 'Measure two stations first') + '</small>' : '');
+    else $('myH').innerHTML = num(dep.h, 1) + ' km<small>' + T('h = √(d² − Δ²)，' + dep.n + ' 站平均', 'h = √(d² − Δ²), mean of ' + dep.n + ' stations') +
+      (dep.outside ? T('；標記在某個圓外面（Δ > d），不可能', '; the marker is outside a circle (Δ > d), which is impossible') : '') + '</small>';
+    // 電腦的最小平方解：確認之後才顯示，當作對照
+    if (!e) {
+      $('estPos').innerHTML = '—<small>' + (w.est && w.est.stale ? T('量測改過了，按「確認我的震央」後再顯示', 'Measurements changed; it shows again after “Check my epicenter”')
+        : T('按「確認我的震央」後顯示', 'Shown after “Check my epicenter”')) + '</small>';
+      $('estH').textContent = '—';
+    } else if (e.candidates.length > 1) {
       $('estPos').innerHTML = T('兩個可能：', 'Two possibilities:') + '<small>' + e.candidates.map(function (p) { return lonlatText(p.x, p.y); }).join('<br>') + '</small>';
       $('estH').textContent = '—';
     } else {
-      $('estPos').innerHTML = lonlatText(e.x, e.y) + (e.stale ? '<small>' + T('游標改過了，請再按「定位」', 'Cursors changed — press “Locate” again') + '</small>' : '');
+      $('estPos').innerHTML = lonlatText(e.x, e.y) + (mk.length === 1 ? '<small>' + T('和你的標記差 ', 'off your marker by ') + num(Math.hypot(e.x - mk[0].x, e.y - mk[0].y), 1) + ' km</small>' : '');
       $('estH').textContent = e.n >= 3 ? num(e.h, 1) + ' km' : '—';
     }
+    const el = $('estErr');
+    el.className = '';
     if (q.revealed) {
       $('truePos').innerHTML = lonlatText(q.x, q.y) + '<small>' + T('深度 ', 'depth ') + num(q.h, 1) + ' km</small>';
-      if (e && e.candidates.length === 1) {
-        $('estErr').innerHTML = num(e.err, 1) + ' km' + (e.n >= 3 ? '<small>' + T('深度差 ', 'depth off by ') + num(Math.abs(e.h - q.h), 1) + ' km</small>' : '');
-        $('estErr').className = e.err <= 10 ? 'good' : e.err > 30 ? 'bad' : '';
-      } else if (e) { $('estErr').textContent = num(Math.min.apply(null, e.candidates.map(function (p) { return Math.hypot(p.x - q.x, p.y - q.y); })), 1) + ' km'; $('estErr').className = ''; }
-      else { $('estErr').textContent = '—'; $('estErr').className = ''; }
+      if (mk.length) {
+        const err = Math.min.apply(null, mk.map(function (p) { return Math.hypot(p.x - q.x, p.y - q.y); }));
+        el.innerHTML = num(err, 1) + ' km' + (dep ? '<small>' + T('深度差 ', 'depth off by ') + num(Math.abs(dep.h - q.h), 1) + ' km</small>' : '');
+        if (mk.length === 1) el.className = err <= 10 ? 'good' : err > 30 ? 'bad' : '';
+      } else el.textContent = '—';
     } else {
       $('truePos').textContent = T('（還沒顯示）', '(hidden)');
-      $('estErr').textContent = '—'; $('estErr').className = '';
+      el.textContent = '—';
     }
     const hl = $('history');
     hl.innerHTML = w.history.map(function (hst) {
-      return '<li>' + hst.n + T(' 站', ' stations') + (q.revealed && hst.qid === q.seed ? T('，誤差 ', ', error ') + num(hst.err, 1) + ' km' : '') + (hst.auto ? T('（自動判讀）', ' (auto-picked)') : '') + '</li>';
+      return '<li>' + hst.n + T(' 站', ' stations') + (hst.nm === 2 ? T('、標 2 點', ', 2 markers') : '') +
+        (q.revealed && hst.qid === q.seed ? T('，誤差 ', ', error ') + num(hst.err, 1) + ' km' : '') + (hst.auto ? T('（看過答案）', ' (answer seen)') : '') + '</li>';
     }).join('');
   }
+  /** 「確認我的震央」：判定的是學生在地圖上標的位置；確認後才顯示電腦的最小平方解當對照 */
   function doLocate() {
     const w = S.w2, q = w.quake, picked = pickedStations();
     if (picked.length < 2) { setStatus(T('至少要在兩個測站量好 S−P（P、S 游標都要放）。', 'Measure S−P at two stations at least (place both the P and the S cursor).')); return; }
-    const data = picked.map(function (s) { return { x: s.x, y: s.y, R: stationR(s) }; });
+    if (!w.marks.length) {
+      setStatus(T('先在地圖上點出你認為的震央（點一下地圖放標記，可以拖曳或用方向鍵微調），再按「確認我的震央」。', 'First tap the map where you think the epicenter is (drag the marker or use the arrow buttons to adjust it), then press “Check my epicenter”.'));
+      return;
+    }
+    if (w.marks.length < w.nMarks) { setStatus(T('「我標的震央」選了 2 個：還要再點一個。', '“My markers” is set to 2: place one more.')); return; }
+    const data = circles2();
     const r = Q.locate(data, { collinearKm: 4 });
     if (!r.ok || !r.candidates.length) {
       w.est = null; refreshPicks(); requestDraw();
       setStatus(T('兩個圓沒有交點：再檢查一下游標，或換算用的波速。', 'The two circles do not meet: check your cursors or the conversion speeds.'));
       return;
     }
-    const errOf = function (p) { return Math.hypot(p.x - q.x, p.y - q.y); };
-    const err = r.candidates.length === 1 ? errOf(r) : Math.min.apply(null, r.candidates.map(errOf));
-    // 測站離最佳直線的最大距離（判斷是否排成一直線）
-    const off = lineOffset(picked);
-    w.est = { x: r.x, y: r.y, h: r.h, n: picked.length, candidates: r.candidates, collinear: !!r.collinear, err: err, stale: false };
+    const peek = !!liveEst(); // 確認之前就看得到這組量測的電腦解
+    const marks = w.marks.map(function (p) { return { x: p.x, y: p.y }; });
+    const dq = function (p) { return Math.hypot(p.x - q.x, p.y - q.y); };
+    const err = Math.min.apply(null, marks.map(dq));
+    const dep = myDepth();
+    const hEst = dep ? dep.h : NaN;
+    const pe = Q.pairErr(marks, r.candidates);
+    const solErr = r.candidates.length === 1 ? dq(r) : Math.min.apply(null, r.candidates.map(dq));
+    const off = lineOffset(picked); // 測站離最佳直線的最大距離（判斷是否排成一直線）
+    w.est = { x: r.x, y: r.y, h: r.h, n: picked.length, candidates: r.candidates, collinear: !!r.collinear, err: solErr, stale: false };
     const manual = !q.autoUsed && picked.every(function (s) { return s.picks.mp && s.picks.ms && !s.picks.auto; });
-    const auto = !!q.autoUsed || picked.some(function (s) { return s.picks.auto; });
-    w.history.push({ x: r.x, y: r.y, n: picked.length, err: err, auto: auto, qid: q.seed });
+    const auto = !!q.autoUsed || peek || picked.some(function (s) { return s.picks.auto; });
+    w.history.push({ x: marks[0].x, y: marks[0].y, marks: marks, nm: marks.length, n: picked.length, err: err, auto: auto, qid: q.seed });
     if (w.history.length > 30) w.history.shift();
     refreshPicks(); requestDraw(); ding();
+    let msg;
     if (r.candidates.length > 1) {
-      setStatus(r.collinear ? T('測站排成一直線：直線兩側的鏡像位置都符合資料，分不出是哪一個。', 'The stations are in a straight line: the mirror-image points on both sides fit the data equally well.')
-        : T('只用兩站：兩個圓交於兩點，兩個都有可能是震央。再加一個測站吧。', 'Only two stations: the circles cross at two points and either could be the epicenter. Add another station.'));
-    } else setStatus(T('定位完成：', 'Located: ') + lonlatText(r.x, r.y) + (picked.length >= 3 ? T('，深度約 ', ', depth about ') + num(r.h, 1) + ' km' : '') + '.');
+      msg = r.collinear ? T('測站排成一直線：直線兩側的鏡像位置都符合資料，分不出是哪一個。', 'The stations are in a straight line: the mirror-image points on both sides fit the data equally well.')
+        : T('只用兩站：兩個圓交於兩點，兩個都有可能是震央。', 'Only two stations: the circles cross at two points and either could be the epicenter.');
+      if (marks.length === 1) msg += T('你只標了一個：把「我標的震央」改成 2 個，兩個交點都點出來。', ' You marked only one: set “My markers” to 2 and mark both crossing points.');
+      else msg += pe <= 10 ? T('你兩個都找到了（灰色十字是電腦算的位置）。', ' You found both (the grey crosses are the computed points).')
+        : T('灰色十字是電腦算的兩個位置，你的標記還差 ', ' The grey crosses are the computed points; your markers are off by ') + num(pe, 1) + ' km' + T('。', '.');
+    } else if (marks.length === 2) {
+      msg = T('三個以上、不在一直線上的測站只有一個答案：把「我標的震央」改回 1 個。', 'Three or more stations not in a line give one answer: set “My markers” back to 1.');
+    } else {
+      msg = T('你的震央：', 'Your epicenter: ') + lonlatText(marks[0].x, marks[0].y) + (dep ? T('，推算深度 ', ', depth ') + num(hEst, 1) + ' km' : '') +
+        T('。灰色十字是電腦的最小平方解，和你的標記差 ', '. The grey cross is the computer’s least-squares solution, ') + num(Math.hypot(r.x - marks[0].x, r.y - marks[0].y), 1) + T(' km。', ' km from your marker.');
+    }
+    if (peek) msg += T('（確認前就看得到電腦解，這次不算自己定位）', ' (The computer’s solution was already showing, so this does not count as your own.)');
+    setStatus(msg);
     emit('locate', {
-      n: picked.length, err: err, hEst: r.h, hTrue: q.h, depthErr: Math.abs(r.h - q.h), candidates: r.candidates.length, collinear: !!r.collinear,
-      lineOff: off, manual: manual, auto: auto, revealed: q.revealed, source: q.source, errMode: !!$('errMode').checked,
-      k: kConv(), vpc: w.vpc, vsc: w.vsc, rms: r.rms || 0
+      n: picked.length, marks: marks.length, err: err, hEst: hEst, hTrue: q.h, depthErr: Math.abs(hEst - q.h), candidates: r.candidates.length, pairErr: pe,
+      collinear: !!r.collinear, lineOff: off, manual: manual, auto: auto, peek: peek, revealed: q.revealed, source: q.source, errMode: !!$('errMode').checked,
+      k: kConv(), vpc: w.vpc, vsc: w.vsc, rms: r.rms || 0, solErr: solErr
     });
+  }
+  /** 「電腦解（看答案）」：確認之前按就算看過答案，這個地震之後的定位都不算自己定位（和自動判讀一樣） */
+  function showSolution() {
+    const w = S.w2, q = w.quake;
+    if (pickedStations().length < 2) { setStatus(T('至少要在兩個測站量好 S−P，電腦才能算。', 'Measure S−P at two stations at least so the computer can solve it.')); return; }
+    if (liveEst()) { setStatus(T('灰色十字就是電腦的最小平方解。', 'The grey cross is the computer’s least-squares solution.')); return; }
+    const r = Q.locate(circles2(), { collinearKm: 4 });
+    if (!r.ok || !r.candidates.length) { setStatus(T('兩個圓沒有交點：再檢查一下游標，或換算用的波速。', 'The two circles do not meet: check your cursors or the conversion speeds.')); return; }
+    q.autoUsed = true;
+    const dq = function (p) { return Math.hypot(p.x - q.x, p.y - q.y); };
+    w.est = { x: r.x, y: r.y, h: r.h, n: r.n, candidates: r.candidates, collinear: !!r.collinear, err: r.candidates.length === 1 ? dq(r) : Math.min.apply(null, r.candidates.map(dq)), stale: false };
+    refreshPicks(); requestDraw();
+    setStatus(T('這是電腦用最小平方法算出的震央（灰色十字）。確認前看了答案，這個地震的定位不算自己定位；換一個地震再自己試試。', 'This is the computer’s least-squares epicenter (grey cross). Since you looked before checking, locating this earthquake no longer counts as your own; try another one.'));
+  }
+  /** 標記改了：表格的 Δ、推算深度、畫面都更新 */
+  function marksChanged() { refreshPicks(); requestDraw(); }
+  const clampMapX = function (x) { return clamp(x, MAPX0 + 1, MAPX1 - 1); }, clampMapY = function (y) { return clamp(y, MAPY0 + 1, MAPY1 - 1); };
+  /** 在地圖上點一下：還沒標滿就新增一個，標滿了就把最近的那個移過來（2D 與 3D 共用） */
+  function placeMark(x, y) {
+    const w = S.w2, p = { x: clampMapX(x), y: clampMapY(y) };
+    if (w.marks.length < w.nMarks) { w.marks.push(p); w.mkActive = w.marks.length - 1; buildKbItems(); }
+    else {
+      let bi = 0;
+      w.marks.forEach(function (m, i) { if (Math.hypot(m.x - p.x, m.y - p.y) < Math.hypot(w.marks[bi].x - p.x, w.marks[bi].y - p.y)) bi = i; });
+      w.marks[bi] = p; w.mkActive = bi;
+    }
+    marksChanged();
+  }
+  function moveMark(i, x, y) {
+    const w = S.w2;
+    if (!w.marks[i]) return;
+    w.marks[i] = { x: clampMapX(x), y: clampMapY(y) };
+    w.mkActive = i;
+    marksChanged();
   }
   function lineOffset(st) {
     const n = st.length; if (n < 3) return Infinity;
@@ -1132,6 +1342,10 @@
 
   function layout3() {
     const W = cw, narrow = W < 640;
+    if (S.v3) { // 3D 檢視：地球剖面在 3D 裡，2D 畫布只畫走時曲線
+      const chH = narrow ? Math.round(W * 0.72) : Math.round(Math.min(340, W * 0.4));
+      return { narrow: narrow, disc: { x: 0, y: 0, w: 0, h: 0 }, chart: { x: 0, y: 0, w: W, h: chH }, H: chH };
+    }
     if (narrow) {
       const Sd = W, chH = Math.round(W * 0.7);
       return { narrow: true, disc: { x: 0, y: 0, w: Sd, h: Sd }, chart: { x: 0, y: Sd + 8, w: W, h: chH }, H: Sd + 8 + chH };
@@ -1152,6 +1366,11 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     D.backdrop(c, cw, ch);
+    if (S.v3) { drawChart3(c); return; }
+    // 大氣般的淡淡光暈（純裝飾，畫在地表外側，不改變地球的大小）
+    const halo = c.createRadialGradient(g.cx, g.cy, g.rp, g.cx, g.cy, g.rp + 14);
+    halo.addColorStop(0, alpha(C['b-wave'], C.dark ? 0.2 : 0.12)); halo.addColorStop(1, alpha(C['b-wave'], 0));
+    c.fillStyle = halo; c.beginPath(); c.arc(g.cx, g.cy, g.rp + 14, 0, Math.PI * 2); c.fill();
     // 分層
     const mantle = mix(C['canvas-bg'], C.rock, C.dark ? 0.12 : 0.2), mantleDeep = mix(C['canvas-bg'], C.rock, C.dark ? 0.2 : 0.3);
     const outer = mix(C['canvas-bg'], C.dark ? C['b-thermo'] : C['b-mech'], C.dark ? 0.2 : 0.26), inner = mix(C['canvas-bg'], C.equi, C.dark ? 0.34 : 0.42);
@@ -1291,11 +1510,28 @@
   }
   function draw3(now) {
     const c = ctx, w = S.w3, g = geo3();
-    const key = [cw, ch, dpr, colorsVer, D.ver, w.wave, w.fan, w.shadow, w.inner].join('|');
+    const key = [cw, ch, dpr, colorsVer, D.ver, w.wave, w.fan, w.shadow, w.inner, S.v3].join('|');
     if (key !== bg3Key) { buildBg3(); bg3Key = key; }
     c.setTransform(1, 0, 0, 1, 0, 0);
     c.drawImage(bg3, 0, 0);
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const arr = arrivals3();
+    if (!S.v3) drawDisc3(c, now, g, arr);
+    // 走時圖上的測站
+    const R = L.chart, padL = 38, padB = 26, padT = 24, padR = 10;
+    const x0 = R.x + padL, x1 = R.x + R.w - padR, y0 = R.y + R.h - padB, y1 = R.y + padT;
+    const X = function (d) { return x0 + d / 180 * (x1 - x0); }, Y = function (tm) { return y0 - tm / 30 * (y0 - y1); };
+    c.strokeStyle = alpha(C.accent, 0.85); c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(snap(X(w.deg)), y1); c.lineTo(snap(X(w.deg)), y0); c.stroke();
+    arr.forEach(function (a) {
+      if ((a.phase === 'S' && w.wave === 'P') || (a.phase !== 'S' && w.wave === 'S') || (a.phase === 'PKIKP' && !w.inner)) return;
+      D.ball(c, X(w.deg), Y(a.T / 60), 3.6, a.phase === 'S' ? C.S : C.P, { shadow: false });
+    });
+    if (w.t > 0) { const yt = Y(w.t / 60); if (yt > y1) { c.strokeStyle = alpha(C.text, 0.35); c.setLineDash([4, 3]); c.beginPath(); c.moveTo(x0, yt); c.lineTo(x1, yt); c.stroke(); c.setLineDash([]); } }
+  }
+  /** 模式三的地球剖面（2D）：標示的射線、震源、測站、波前動畫 */
+  function drawDisc3(c, now, g, arr) {
+    const w = S.w3;
     // 標示的射線
     const his = [];
     if (w.wave !== 'S') his.push([E.hiP, C.P]);
@@ -1336,7 +1572,6 @@
     stationMark(c, 0, 0, L.narrow ? 7.5 : 8.5, C.accent, hot);
     if (kbIs('rcv')) kbBox(c, -15, -15, 30, 30);
     c.restore();
-    const arr = arrivals3();
     const hasP = arr.some(function (a) { return a.phase === 'P' || a.phase === 'PKP'; }), hasS = arr.some(function (a) { return a.phase === 'S'; });
     const lab = num(w.deg, 1) + '°  ' + (w.wave !== 'S' ? 'P ' + (hasP ? '✓' : '✗') : '') + (w.wave === 'PS' ? '  ' : '') + (w.wave !== 'P' ? 'S ' + (hasS ? '✓' : '✗') : '');
     const lp = polar(g, Q.RE * 1.2, th);
@@ -1358,17 +1593,6 @@
       if (w.wave !== 'S') E.fanP.forEach(function (r) { dots(r, C.P); });
       tag(c, 't = ' + minsec(w.t) + (S.running && S.mode === 'earth' ? '  (' + (S.slow ? SPEED3 / 4 : SPEED3) + '×)' : ''), 8, 14, C.text, 'left', fnt(L.narrow ? 11 : 12, 600));
     }
-    // 走時圖上的測站
-    const R = L.chart, padL = 38, padB = 26, padT = 24, padR = 10;
-    const x0 = R.x + padL, x1 = R.x + R.w - padR, y0 = R.y + R.h - padB, y1 = R.y + padT;
-    const X = function (d) { return x0 + d / 180 * (x1 - x0); }, Y = function (tm) { return y0 - tm / 30 * (y0 - y1); };
-    c.strokeStyle = alpha(C.accent, 0.85); c.lineWidth = 1.5;
-    c.beginPath(); c.moveTo(snap(X(w.deg)), y1); c.lineTo(snap(X(w.deg)), y0); c.stroke();
-    arr.forEach(function (a) {
-      if ((a.phase === 'S' && w.wave === 'P') || (a.phase !== 'S' && w.wave === 'S') || (a.phase === 'PKIKP' && !w.inner)) return;
-      D.ball(c, X(w.deg), Y(a.T / 60), 3.6, a.phase === 'S' ? C.S : C.P, { shadow: false });
-    });
-    if (w.t > 0) { const yt = Y(w.t / 60); if (yt > y1) { c.strokeStyle = alpha(C.text, 0.35); c.setLineDash([4, 3]); c.beginPath(); c.moveTo(x0, yt); c.lineTo(x1, yt); c.stroke(); c.setLineDash([]); } }
   }
   function events3(t0, t1) {
     const w = S.w3;
@@ -1415,6 +1639,7 @@
     if (S.mode === 'waves') draw1(now);
     else if (S.mode === 'locate') draw2(now);
     else draw3(now);
+    if (view3 && view3.active) view3.frame(now);
   }
 
   let lastT = 0, loopOn = false;
@@ -1441,7 +1666,7 @@
       }
     }
     draw();
-    if (S.running || S.fx.length) requestAnimationFrame(tick); else loopOn = false;
+    if (S.running || S.fx.length || (view3 && view3.active && view3.busy())) requestAnimationFrame(tick); else loopOn = false;
   }
   function startLoop() {
     if (loopOn) return;
@@ -1471,8 +1696,12 @@
     else fresh = S.w3.t === 0 || S.w3.done;
     $('play').textContent = playing ? T('暫停', 'Pause') : fresh ? T('播放', 'Play') : T('繼續', 'Resume');
     $('quake').textContent = m === 'locate' ? T('隨機地震', 'Random earthquake') : T('發生地震', 'Make an earthquake');
-    const lab = { waves: T('地震波模擬：地殼剖面、地震儀紀錄、地面運動軌跡，以及液體與固體中的 P、S 波', 'Seismic wave simulation: crust section, seismogram, ground motion, and P and S waves in a liquid and a solid'),
-      locate: T('臺灣地圖與各測站的地震紀錄；拖曳測站移動，在紀錄上拖曳 P、S 游標', 'Map of Taiwan and the seismograms of each station; drag stations to move them and drag the P and S cursors on the records'),
+    const lab = S.v3 ? { // 3D 檢視時 2D 畫布只有輔助面板
+      waves: T('地震儀紀錄、地面運動軌跡，以及液體與固體中的 P、S 波（剖面在上方的 3D 檢視）', 'Seismogram, ground motion, and P and S waves in a liquid and a solid (the section is in the 3D view above)'),
+      locate: T('各測站的地震紀錄；在紀錄上拖曳 P、S 游標（地圖在上方的 3D 檢視，在那裡點地圖放你的震央標記）', 'Seismograms of each station; drag the P and S cursors on the records (the map is in the 3D view above; tap it there to place your epicenter marker)'),
+      earth: T('走時曲線；拖曳可移動測站（地球剖面在上方的 3D 檢視）', 'Travel-time curves; drag to move the station (the Earth is in the 3D view above)') }[m]
+      : { waves: T('地震波模擬：地殼剖面、地震儀紀錄、地面運動軌跡，以及液體與固體中的 P、S 波', 'Seismic wave simulation: crust section, seismogram, ground motion, and P and S waves in a liquid and a solid'),
+      locate: T('臺灣地圖與各測站的地震紀錄；拖曳測站移動，在紀錄上拖曳 P、S 游標，點地圖放你的震央標記', 'Map of Taiwan and the seismograms of each station; drag stations to move them, drag the P and S cursors on the records, and tap the map to place your epicenter marker'),
       earth: T('地球剖面、地震波射線與走時曲線；沿地表拖曳測站', 'Cross-section of the Earth with seismic rays and travel-time curves; drag the station around the surface') }[m];
     cv.setAttribute('aria-label', lab + T('。按 Enter 切換要移動的物件，方向鍵移動，Shift 加方向鍵移動得更多。', '. Press Enter to choose an object, arrow keys to move it, Shift + arrow for bigger steps.'));
   }
@@ -1537,8 +1766,9 @@
     else if (S.mode === 'locate') {
       const w = S.w2;
       w.stations.forEach(resetPicks);
-      w.est = null; w.history = [];
+      w.est = null; w.history = []; w.marks = []; w.mkActive = 0;
       refreshPicks();
+      buildKbItems();
     } else { S.w3.t = 0; S.w3.done = false; }
     setStatus(T('已全部清除，滑桿設定不變。', 'Everything is cleared; the slider settings are kept.'));
     updateButtons();
@@ -1662,6 +1892,36 @@
     setStatus(T('集集一帶的地震（1999 年 921 地震的震央附近）。', 'An earthquake near Chi-Chi (around the epicenter of the 1999 quake).'));
   });
   $('locateBtn').addEventListener('click', doLocate);
+  $('solveBtn').addEventListener('click', showSolution);
+  // 我的標記：1 個（一般）或 2 個（兩站、測站排成一直線時有兩個可能的位置）
+  document.querySelectorAll('[data-mk]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const n = +b.dataset.mk, w = S.w2;
+      if (n === w.nMarks) return;
+      w.nMarks = n;
+      if (w.marks.length > n) w.marks.length = n;
+      w.mkActive = Math.min(w.mkActive, Math.max(0, w.marks.length - 1));
+      document.querySelectorAll('[data-mk]').forEach(function (x) { x.setAttribute('aria-pressed', String(+x.dataset.mk === n)); });
+      buildKbItems();
+      marksChanged();
+      setStatus(n === 2 ? T('在地圖上點出兩個可能的位置（兩個圓的兩個交點）。', 'Tap the two possible places on the map (where the two circles cross).') : '');
+    });
+  });
+  // 微調鍵：每按一次移動 0.5 km
+  document.querySelectorAll('[data-nudge]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const w = S.w2, m = w.marks[w.mkActive];
+      if (!m) { setStatus(T('先在地圖上點一下，放上你的震央標記。', 'Tap the map first to place your epicenter marker.')); return; }
+      const d = b.dataset.nudge.split(',');
+      moveMark(w.mkActive, m.x + 0.5 * d[0], m.y + 0.5 * d[1]);
+    });
+  });
+  $('clearMarks').addEventListener('click', function () {
+    const w = S.w2;
+    w.marks = []; w.mkActive = 0;
+    buildKbItems();
+    marksChanged();
+  });
   $('autoPick').addEventListener('click', function () {
     S.w2.quake.autoUsed = true; // 這個地震看過答案了：之後的定位不算「自己量」
     activeStations().forEach(function (s) { s.picks = { p: s.arr.tP, s: s.arr.tS, mp: false, ms: false, auto: true }; });
@@ -1711,14 +1971,21 @@
   function hitTest(p) {
     if (!L) return null;
     if (S.mode === 'waves') {
+      if (S.v3) return null; // 3D 檢視：震源與地震儀在 3D 裡拖曳
       const fx = X1px(0), fy = Y1px(S.w1.h), sx = X1px(S.w1.x), s = L.narrow ? 7 : 8.5;
       if (Math.hypot(p.x - fx, p.y - fy) < 22) return { kind: 'focus' };
       if (Math.abs(p.x - sx) < 22 && p.y > L.sky - 2 * s - 24 && p.y < L.sky + 14) return { kind: 'station' };
       return null;
     }
     if (S.mode === 'locate') {
-      const st = activeStations();
-      for (let i = st.length - 1; i >= 0; i--) if (Math.hypot(p.x - MX(st[i].x), p.y - MY(st[i].y)) < 22) return { kind: 'station', i: i };
+      const st = activeStations(), mk = S.w2.marks;
+      if (!S.v3) {
+        // 標記比測站優先（標記常常要放在測站附近微調）；觸控時範圍大一點
+        let bi = -1, bd = touchLike ? 26 : 20;
+        mk.forEach(function (m, i) { const d = Math.hypot(p.x - MX(m.x), p.y - MY(m.y)); if (d < bd) { bd = d; bi = i; } });
+        if (bi >= 0) return { kind: 'mark', i: bi, dx: MX(mk[bi].x) - p.x, dy: MY(mk[bi].y) - p.y };
+        for (let i = st.length - 1; i >= 0; i--) if (Math.hypot(p.x - MX(st[i].x), p.y - MY(st[i].y)) < 22) return { kind: 'station', i: i };
+      }
       for (let i = 0; i < st.length; i++) {
         const R = trRow(i);
         if (p.x >= L.tr.x && p.x <= L.tr.x + L.tr.w && p.y >= R.y - 2 && p.y <= R.y + R.h + 2) {
@@ -1726,40 +1993,49 @@
           return { kind: 'cursor', i: i, which: Math.abs(p.x - xp) <= Math.abs(p.x - xs) ? 'p' : 's' };
         }
       }
+      // 地圖空白處：點一下放標記（不拖曳、不阻止捲動）
+      if (!S.v3 && p.x >= L.map.x && p.x <= L.map.x + L.map.w && p.y >= L.map.y && p.y <= L.map.y + L.map.h) return { kind: 'map' };
       return null;
     }
     if (S.mode === 'earth' && S.w3.ready) {
       const g = geo3(), d = Math.hypot(p.x - g.cx, p.y - g.cy);
-      if (Math.abs(d - g.rp) < 26) return { kind: 'rcv' };
+      if (!S.v3 && Math.abs(d - g.rp) < 26) return { kind: 'rcv' };
       const R = L.chart;
       if (p.x >= R.x + 30 && p.x <= R.x + R.w && p.y >= R.y && p.y <= R.y + R.h) return { kind: 'chart' };
     }
     return null;
   }
-  let drag = null;
+  let drag = null, tap = null, touchLike = false;
   cv.addEventListener('touchstart', function (ev) {
     const t = ev.touches[0]; if (!t) return;
-    if (hitTest(pos(t))) ev.preventDefault(); // 按在可拖曳的東西上才阻止捲動
+    touchLike = true;
+    const h = hitTest(pos(t));
+    if (h && h.kind !== 'map') ev.preventDefault(); // 按在可拖曳的東西上才阻止捲動（地圖空白處只是點一下，照常可以捲動）
   }, { passive: false });
   cv.addEventListener('pointerdown', function (ev) {
+    touchLike = ev.pointerType !== 'mouse';
+    if (ev.pointerType === 'mouse' && ev.button !== 0) return;
     const p = pos(ev), h = hitTest(p);
+    tap = null;
     if (!h) return;
+    if (h.kind === 'map') { tap = { x: p.x, y: p.y, id: ev.pointerId }; return; } // 放開時才放標記；移動超過 8 px 就當成捲動或拖曳，不放
     drag = h;
     try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
     if (S.mode === 'waves') S.drag1 = h.kind;
-    if (S.mode === 'locate') { S.w2.drag = h; if (h.kind === 'cursor') S.w2.active = { i: h.i, which: h.which }; }
+    if (S.mode === 'locate') { S.w2.drag = h; if (h.kind === 'cursor') S.w2.active = { i: h.i, which: h.which }; if (h.kind === 'mark') { S.w2.mkActive = h.i; requestDraw(); } }
     if (S.mode === 'earth') S.drag3 = true;
-    moveDrag(p);
+    if (h.kind !== 'mark') moveDrag(p); // 標記按下去不跳動，移動時才跟著走
     ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
     const p = pos(ev);
+    if (tap && (ev.pointerId !== tap.id || Math.hypot(p.x - tap.x, p.y - tap.y) > 8)) tap = null;
     if (!drag) {
       const h = hitTest(p);
-      cv.style.cursor = h ? (h.kind === 'cursor' || h.kind === 'chart' ? 'ew-resize' : 'grab') : 'default';
+      cv.style.cursor = h ? (h.kind === 'cursor' || h.kind === 'chart' ? 'ew-resize' : h.kind === 'map' ? 'crosshair' : 'grab') : 'default';
       const prev = JSON.stringify([S.hover1, S.hover2, S.hover3]);
       S.hover1 = S.mode === 'waves' && h ? h.kind : null;
-      S.hover2 = S.mode === 'locate' && h && h.kind === 'station' ? h : null;
+      S.hover2 = S.mode === 'locate' && h && (h.kind === 'station' || h.kind === 'mark') ? { kind: h.kind, i: h.i } : null;
       S.hover3 = S.mode === 'earth' && h && h.kind === 'rcv';
       if (prev !== JSON.stringify([S.hover1, S.hover2, S.hover3])) requestDraw();
       return;
@@ -1779,8 +2055,19 @@
     if (S.mode === 'earth') { S.drag3 = false; emitStation3(); }
     requestDraw();
   }
-  cv.addEventListener('pointerup', endDrag);
-  cv.addEventListener('pointercancel', endDrag);
+  cv.addEventListener('pointerup', function (ev) {
+    // 地圖空白處點一下（沒有移動）：放上或移過來你的震央標記
+    if (tap && ev.pointerId === tap.id && S.mode === 'locate' && !S.v3) {
+      const p = pos(ev);
+      if (Math.hypot(p.x - tap.x, p.y - tap.y) <= 8) {
+        const q = invM(clamp(p.x, L.map.x, L.map.x + L.map.w), clamp(p.y, L.map.y, L.map.y + L.map.h));
+        placeMark(q.x, q.y);
+      }
+    }
+    tap = null;
+    endDrag();
+  });
+  cv.addEventListener('pointercancel', function () { tap = null; endDrag(); });
   cv.addEventListener('lostpointercapture', endDrag);
   function moveDrag(p) {
     if (S.mode === 'waves') {
@@ -1791,16 +2078,11 @@
     if (S.mode === 'locate') {
       const w = S.w2, st = activeStations();
       if (drag.kind === 'station') {
-        const s = st[drag.i];
-        let q = invM(clamp(p.x, L.map.x + 4, L.map.x + L.map.w - 4), clamp(p.y, L.map.y + 4, L.map.y + L.map.h - 4));
-        let cid = null;
-        Q.CITIES.forEach(function (c) { const cp = Q.toXY(c.lon, c.lat); if (Math.hypot(cp.x - q.x, cp.y - q.y) < 7) { q = { x: cp.x, y: cp.y }; cid = c.id; } });
-        if (q.x === s.x && q.y === s.y) return;
-        s.x = q.x; s.y = q.y; s.city = cid;
-        resetPicks(s);
-        stationData(s, drag.i);
-        if (w.est) w.est.stale = true;
-        requestDraw();
+        moveStation2(drag.i, invM(clamp(p.x, L.map.x + 4, L.map.x + L.map.w - 4), clamp(p.y, L.map.y + 4, L.map.y + L.map.h - 4)));
+      } else if (drag.kind === 'mark') {
+        // 保持按下時手指與標記中心的相對位置（標記不會跳到手指底下被遮住）
+        const q = invM(clamp(p.x + drag.dx, L.map.x, L.map.x + L.map.w), clamp(p.y + drag.dy, L.map.y, L.map.y + L.map.h));
+        moveMark(drag.i, q.x, q.y);
       } else {
         const s = st[drag.i];
         const t = clamp(xToT(p.x), w.ws, w.we);
@@ -1824,6 +2106,34 @@
       setVal(elRc, Math.round(deg * 2) / 2);
     }
   }
+  /** 模式二：把測站 i 移到 q = {x, y}（km）；靠近城市 7 km 內吸附過去（2D 與 3D 的拖曳共用） */
+  function moveStation2(i, q) {
+    const w = S.w2, s = activeStations()[i];
+    if (!s) return;
+    let cid = null;
+    Q.CITIES.forEach(function (c) { const cp = Q.toXY(c.lon, c.lat); if (Math.hypot(cp.x - q.x, cp.y - q.y) < 7) { q = { x: cp.x, y: cp.y }; cid = c.id; } });
+    if (q.x === s.x && q.y === s.y) return;
+    s.x = q.x; s.y = q.y; s.city = cid;
+    resetPicks(s);
+    stationData(s, i);
+    if (w.est) w.est.stale = true;
+    requestDraw();
+  }
+  /** 3D 檢視的拖曳（由 earthquake-3d.js 呼叫）：與 2D 拖曳走同一條路（滑桿、測站資料、任務事件） */
+  function drag3(kind, a, b) {
+    if (kind === 'focus') setVal(elH, Math.round(clamp(a, 2, 40)));
+    else if (kind === 'station1') setVal(elX, Math.round(clamp(a, 0, 100)));
+    else if (kind === 'station2') moveStation2(a, { x: clamp(b.x, MAPX0 + 1, MAPX1 - 1), y: clamp(b.y, MAPY0 + 1, MAPY1 - 1) });
+    else if (kind === 'rcv') setVal(elRc, Math.round(clamp(a, 0, 180) * 2) / 2);
+    else if (kind === 'mark') moveMark(a, b.x, b.y);
+  }
+  function dragEnd3(kind) {
+    if (kind === 'focus' || kind === 'station1') emitParams1();
+    else if (kind === 'station2') { updateWindow(); refreshPicks(); }
+    else if (kind === 'rcv') emitStation3();
+    requestDraw();
+  }
+
   // ---------- 鍵盤操作（js/keys.js）：Enter 切換物件、方向鍵移動、Shift 大步；限制與拖曳相同 ----------
   const kbItems = [];
   let kb = null;
@@ -1890,6 +2200,26 @@
           });
         });
       });
+      // 你的震央標記：方向鍵每次 0.5 km、Shift 5 km；還沒標滿時多一項「放一個標記」（先放在地圖中央）
+      const w2 = S.w2, mkName = function (i) { return w2.nMarks > 1 ? T('標記 ', 'Marker ') + (i + 1) : T('我的震央', 'My epicenter'); };
+      for (let i = 0; i < Math.min(w2.nMarks, w2.marks.length + 1); i++) {
+        kbItems.push({
+          kind: 'mark', i: i, name: function () { return mkName(i); },
+          move: function (dx, dy, big) {
+            const st = big ? 5 : 0.5;
+            if (!w2.marks[i]) { placeMark((MAPX0 + MAPX1) / 2, (MAPY0 + MAPY1) / 2); return true; }
+            const m = w2.marks[i];
+            moveMark(i, m.x + dx * st, m.y + dy * st); // 上鍵 dy = +1 = 往北
+            return true;
+          },
+          describe: function () {
+            const m = w2.marks[i];
+            if (!m) return mkName(i) + T('：按方向鍵放一個標記', ': press an arrow key to place a marker');
+            const d = myDepth();
+            return mkName(i) + T('在 ', ' at ') + lonlatText(m.x, m.y) + (d && w2.marks.length === 1 ? T('，推算深度 ', ', depth ') + num(d.h, 1) + ' km' : '');
+          }
+        });
+      }
     } else {
       kbItems.push({
         kind: 'rcv', name: function () { return T('測站', 'Station'); },
@@ -1914,6 +2244,112 @@
   }
 
   // =====================================================================
+  // 3D 檢視：切換到 3D 時才載入 js/earthquake-3d.js 與 three.js（以 import() 動態載入）；切回 2D 時整個釋放。
+  // 3D 畫的是同一份物理：bridge 把狀態 S 與核心 Q 交給它，幾何與時間全部由 earthquake-core.js 算。
+  // =====================================================================
+  let threeLib = null, loadToken = 0;
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  const bridge = {
+    Q: Q, T: T, D: D, S: S, E: E, EN: EN,
+    colors: function () { return C; },
+    reducedMotion: reducedMotion,
+    num: num, minsec: minsec, clock: clock, cityName: cityName, lonlatText: lonlatText, phaseName: phaseName,
+    // 模式一：與 2D 剖面同一組參數與同一個位移放大（vis）
+    w1Params: w1Params, vis: vis, vr1: function () { return vr1; }, grid1: { x0: -15, x1: 105, depth: X1.depth },
+    // 模式二：測站、量到的距離、地圖範圍、真實波速
+    activeStations: activeStations, pickedStations: pickedStations, stationR: stationR, kConv: kConv,
+    map: { x0: MAPX0, x1: MAPX1, y0: MAPY0, y1: MAPY1 }, VP: VP_TRUE, VS: VS_TRUE,
+    // 模式三：測站收到的波
+    arrivals3: arrivals3, station3Text: station3Text,
+    speed: function (m) { return S.running && S.mode === m ? '  (' + ({ waves: SPEED1, locate: SPEED2, earth: SPEED3 })[m] / (S.slow ? 4 : 1) + '×)' : ''; },
+    drag: drag3, dragEnd: dragEnd3,
+    // 你的震央標記：3D 點地圖放置；推算的深度；確認後才看得到的電腦解
+    placeMark: placeMark, myDepth: myDepth, liveEst: liveEst,
+    request: requestDraw,
+    onContextLost: function () {
+      setView('2d');
+      viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+    }
+  };
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch (e) { return false; }
+  }
+  function loadScript(src) {
+    return new Promise(function (resolve, reject) {
+      if (window.Quake3D) { resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = function () { resolve(); };
+      s.onerror = function () { s.remove(); reject(new Error('Failed to load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function loadThree() {
+    if (threeLib && window.Quake3D) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    const own = new URL('js/earthquake-3d.js' + (SCRIPT_V ? '?v=' + SCRIPT_V : ''), document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js'), loadScript(own)]).then(function (mods) {
+      if (!window.Quake3D) throw new Error('earthquake-3d.js did not load');
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function updateViewNotes() { $('resetCam').hidden = !(view3 && view3.active); }
+  /** 3D 開關：2D 畫布改成只畫輔助面板（紀錄、走時圖），版面高度跟著變 */
+  function setV3(on) {
+    if (S.v3 === on) return;
+    S.v3 = on;
+    stage.classList.toggle('is3d', on);
+    bgKey = ''; bg3Key = '';
+    resize();
+    updateButtons();
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable()) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        view3 = window.Quake3D.create(lib, host3, bridge);
+        viewMsg.textContent = '';
+        setV3(true);
+        updateViewNotes();
+        requestAnimationFrame(function () { if (view3) { view3.onShow(); requestDraw(); } });
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      setV3(false);
+      updateViewNotes();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    setPressed('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    setV3(false);
+    updateViewNotes();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+
+  // =====================================================================
   // 啟動
   // =====================================================================
   readColors();
@@ -1925,7 +2361,7 @@
   initStations();
   newQuake(Q.randomQuake(Math.random), 'random');
   S.running = false;
-  function themeChanged() { readColors(); bgKey = ''; bg3Key = ''; if (S.mode === 'locate') refreshPicks(); requestDraw(); }
+  function themeChanged() { readColors(); bgKey = ''; bg3Key = ''; if (S.mode === 'locate') refreshPicks(); if (view3 && view3.active) view3.onTheme(); requestDraw(); }
   window.addEventListener('lab:themechange', themeChanged);
   if (window.matchMedia) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1983,5 +2419,11 @@
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));
   else { S.running = true; startLoop(); } // 自動播放一次（不算任務）
   // 測試與縮圖用
-  window.__eq = { S: S, Q: Q, E: E, setMode: setMode, locate: doLocate, draw: requestDraw };
+  window.__eq = {
+    S: S, Q: Q, E: E, setMode: setMode, locate: doLocate, draw: requestDraw, view3: function () { return view3; },
+    // 地圖座標（km）→ 畫布上的像素（測試時用來「點」地圖）；第 i 站紀錄上時刻 t 的像素、游標目前的時刻
+    mapPx: function (x, y) { return { x: MX(x), y: MY(y) }; },
+    trPx: function (i, t) { const R = trRow(i); return { x: tToX(t), y: R.y + R.h / 2 }; },
+    curT: function (i, which) { return cursorT(activeStations()[i], which); }
+  };
 })();
