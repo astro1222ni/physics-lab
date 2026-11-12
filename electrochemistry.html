@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Electrochemical Cells and Electrolysis | Astro Ni Science Lab">化學電池與電解｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 化學電池與電解頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ec canvas { aspect-ratio: auto; touch-action: auto; }
+    .ec #cv { height: 420px; }
+    .ec #gcv { height: 320px; }
+    .ec button { min-height: 44px; }
+    .ec [hidden] { display: none !important; }
+    .ec .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ec .playbar > button { flex: 1 1 auto; }
+    .ec .playbar #play { font-weight: 700; min-width: 6.5em; }
+    .ec .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .ec .speedbox .seg4 { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    .seg2 button, .seg3 button, .seg4 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ec .mode-seg { margin: 0 0 10px; }
+    .ec .mode-seg button { font-size: calc(15px * var(--fs, 1)); }
+    .ec .metals { margin: 4px 0 8px; }
+    .ec .metals button { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .ec .metals button small { display: block; font-weight: 400; font-size: calc(11px * var(--fs, 1)); color: var(--muted); }
+    .ec .metals button[aria-pressed="true"] small { color: inherit; }
+    .ec .stage .status { margin: 6px 4px 0; }
+    .ec .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ec .slider input[type="range"] { height: 28px; margin: 0; }
+    .ec sub, .ec sup, .notes sub, .notes sup { font-size: .75em; }
+    .ec .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ec .checks label { min-height: 44px; }
+    .ec .legend .sp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .ec .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .ec .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .ec dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ec dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .ec .tabs { margin: 0 2px 8px; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    #unkOut .ok { color: var(--probe); font-weight: 700; }
+    #unkOut .no { color: var(--pos); font-weight: 700; }
+    .ec .btns button { flex: 1 1 auto; }
+    .ec .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Electrochemical Cells and Electrolysis"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 化學電池與電解</nav>
+      <h1 data-en="Electrochemical Cells and Electrolysis">化學電池與電解</h1>
+      <p data-en-html="Build a galvanic cell from two half-cells and a salt bridge, read the voltage, and watch electrons flow through the wire while ions move through the solutions. Change the concentrations to test the Nernst equation. Then switch to electrolysis: pass a current through copper(II) sulfate solution and check Faraday's law by weighing the cathode. Standard potentials from OpenStax &lt;i&gt;Chemistry 2e&lt;/i&gt;, Appendix L.">用兩個半電池和鹽橋組成化學電池，讀出電壓，看電子在導線中流動、離子在溶液中移動；改變濃度驗證能斯特方程式。再切換到電解：讓電流通過硫酸銅溶液，秤陰極的質量驗證法拉第定律。標準還原電位取自 OpenStax《Chemistry 2e》附錄 L。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: the zinc and copper half-cells are ready but the voltmeter reads 0. Tick “Salt bridge” — then swap the two metals and see what happens to the reading.">試試看：鋅和銅的半電池都準備好了，伏特計卻是 0。勾選「鹽橋」，再把兩邊的金屬對調，看讀數怎麼變。</p>
+    <div class="lab ec">
+      <div class="stage" id="stage">
+        <canvas id="cv" role="img" aria-label="化學電池" data-en-aria-label="Electrochemical cell"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+          <button id="restart" type="button" data-en="Restart" title="換上新的溶液與電極，從頭開始（滑桿設定不變）" data-en-title="Fresh solutions and electrodes, start again (settings kept)">重新開始</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除圖表與紀錄表" data-en-title="Clear the graphs and the table">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+            <div class="seg4" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="true">×1</button>
+              <button type="button" id="sp1" aria-pressed="false">×100</button>
+              <button type="button" id="sp2" aria-pressed="false">×10<sup>4</sup></button>
+              <button type="button" id="sp3" aria-pressed="false">×10<sup>6</sup></button>
+            </div>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Small balls in the beakers are ions (number shown in proportion to concentration); yellow dots on the wire are electrons. Their motion is only illustrative — the voltage, current and amounts come from the calculation.">燒杯裡的小球是離子（數目依濃度的比例畫出），導線上的黃點是電子。它們的運動只是示意，電壓、電流與物質的量都來自計算。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" data-mode="cell" aria-pressed="true" data-en="Galvanic cell">化學電池</button>
+            <button type="button" data-mode="elec" aria-pressed="false" data-en="Electrolysis">電解</button>
+          </div>
+          <div id="cellCtl">
+            <h2 data-en="Left half-cell">左半電池</h2>
+            <div class="seg4 metals" id="metL" role="group" aria-label="左邊的金屬" data-en-aria-label="Left metal"></div>
+            <div class="slider"><label for="cL" data-en-html="Concentration of M&lt;sup&gt;z+&lt;/sup&gt;">M<sup>z+</sup> 的濃度</label><output id="cLo"></output>
+              <input id="cL" type="range" min="0" max="1000" step="1" value="909" data-decimals="4"></div>
+            <h2 data-en="Right half-cell">右半電池</h2>
+            <div class="seg4 metals" id="metR" role="group" aria-label="右邊的金屬" data-en-aria-label="Right metal"></div>
+            <div class="slider"><label for="cR" data-en-html="Concentration of M&lt;sup&gt;z+&lt;/sup&gt;">M<sup>z+</sup> 的濃度</label><output id="cRo"></output>
+              <input id="cR" type="range" min="0" max="1000" step="1" value="909" data-decimals="4"></div>
+            <div class="slider"><label for="vol" data-en="Volume of each solution">每杯溶液的體積</label><output id="volo"></output>
+              <input id="vol" type="range" min="50" max="250" step="10" value="100" data-decimals="0"></div>
+          </div>
+          <div id="elecCtl" hidden>
+            <h2 data-en="Solution and electrodes">溶液與電極</h2>
+            <div class="seg2" id="elecSeg" role="group" aria-label="電極" data-en-aria-label="Electrodes">
+              <button type="button" data-elec="C" aria-pressed="true" data-en="Graphite electrodes">石墨電極</button>
+              <button type="button" data-elec="Cu" aria-pressed="false" data-en="Copper electrodes">銅電極</button>
+            </div>
+            <div class="slider"><label for="cE" data-en-html="Concentration of CuSO&lt;sub&gt;4&lt;/sub&gt;">CuSO<sub>4</sub> 的濃度</label><output id="cEo"></output>
+              <input id="cE" type="range" min="0.05" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+            <div class="slider"><label for="volE" data-en="Volume of solution">溶液的體積</label><output id="volEo"></output>
+              <input id="volE" type="range" min="100" max="500" step="10" value="200" data-decimals="0"></div>
+            <div class="slider"><label for="amp" data-en="Current I (constant)">電流 I（定電流）</label><output id="ampo"></output>
+              <input id="amp" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
+            <div class="slider"><label for="timer" data-en="Switch off after (0 = never)">通電多久後自動關閉（0 = 不關）</label><output id="timero"></output>
+              <input id="timer" type="range" min="0" max="20000" step="10" value="0" data-decimals="0"></div>
+          </div>
+        </section>
+
+        <section class="card" id="circuitCard">
+          <h2 data-en="Outer circuit">外電路</h2>
+          <div class="checks"><label><input id="bridge" type="checkbox"><span data-en-html="Salt bridge (KNO&lt;sub&gt;3&lt;/sub&gt;)">鹽橋（KNO<sub>3</sub>）</span></label></div>
+          <div class="seg2" id="loadSeg" role="group" aria-label="外電路接什麼" data-en-aria-label="What is connected">
+            <button type="button" data-load="V" aria-pressed="true" data-en="Voltmeter">伏特計</button>
+            <button type="button" data-load="R" aria-pressed="false" data-en="Light bulb">小燈泡</button>
+          </div>
+          <div class="slider" id="rRow" hidden><label for="rload" data-en="Resistance of the bulb">燈泡的電阻</label><output id="rloado"></output>
+            <input id="rload" type="range" min="0" max="1000" step="1" value="333" data-decimals="1"></div>
+          <p class="hint" data-en="The voltmeter draws no current, so it reads the cell potential. With the bulb, current flows (internal resistance of the salt bridge 5 Ω) and the cell slowly runs down.">伏特計不取電流，讀到的就是電池電位；換成燈泡就有電流（鹽橋的內電阻取 5 Ω），電池會慢慢放電。</p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab ec">
+      <div class="stage">
+        <h2 data-en="Graphs and table">圖表與紀錄</h2>
+        <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="time" aria-pressed="true" data-en="Against time">時間圖</button>
+          <button type="button" data-tab="nernst" aria-pressed="false" data-en="Nernst plot">能斯特圖</button>
+          <button type="button" data-tab="faraday" aria-pressed="false" data-en="Faraday plot">法拉第圖</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="btns"><button type="button" id="record" class="primary" data-en="Record this reading">記錄這一筆</button></div>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="unkCard" data-share-skip>
+          <h2 id="unkTitle" data-en="Unknown metal">未知金屬</h2>
+          <p class="hint" id="unkHint"></p>
+          <div class="btns"><button type="button" id="unkOn" data-en="Start">開始</button></div>
+          <div id="unkBox" hidden>
+            <div class="ans"><label for="ansU" id="ansLabel">E°（V）</label><input id="ansU" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"></div>
+            <div class="btns">
+              <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+              <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+              <button id="unkNew" type="button" data-en="Another one">換一個</button>
+              <button id="unkOff" type="button" data-en="Stop">結束</button>
+            </div>
+          </div>
+          <p class="info" id="unkOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Build galvanic cells from two half-cells and a salt bridge; identify the anode, the cathode and the direction of electron and ion flow.">用兩個半電池與鹽橋組成化學電池，判斷陽極、陰極，以及電子與離子流動的方向。</li>
+        <li data-en="Calculate cell potentials from standard reduction potentials, and check how concentration changes them (Nernst equation).">由標準還原電位計算電池電位，並驗證濃度對電位的影響（能斯特方程式）。</li>
+        <li data-en="Electrolyse copper(II) sulfate solution and check Faraday's law: the mass deposited is proportional to the charge passed.">電解硫酸銅溶液，驗證法拉第定律：析出的質量與通過的電量成正比。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Galvanic cells">化學電池</h3>
+      <p data-en-html="Each half-cell is a metal M dipped in a solution of its ions M&lt;sup&gt;z+&lt;/sup&gt;. The half-cell with the lower reduction potential gives up electrons (oxidation, the &lt;strong&gt;anode&lt;/strong&gt;, negative); the other takes them (reduction, the &lt;strong&gt;cathode&lt;/strong&gt;, positive). Electrons travel through the wire from the anode to the cathode; inside the salt bridge, K&lt;sup&gt;+&lt;/sup&gt; ions move towards the cathode and NO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; ions towards the anode, keeping both solutions neutral. Without the salt bridge the circuit is broken and no voltage can be measured.">每個半電池是金屬 M 浸在它的離子 M<sup>z+</sup> 溶液中。還原電位較低的一邊放出電子（氧化，<strong>陽極</strong>，負極）；另一邊接受電子（還原，<strong>陰極</strong>，正極）。電子經導線由陽極流向陰極；鹽橋中 K<sup>+</sup> 移向陰極、NO<sub>3</sub><sup>−</sup> 移向陽極，使兩杯溶液保持電中性。沒有鹽橋，電路不通，量不到電壓。</p>
+      <div class="formula multi">
+        \[ E^\circ_\text{cell} = E^\circ_\text{cathode} - E^\circ_\text{anode} \]
+        \[ E = E^\circ + \frac{0.05916\ \mathrm{V}}{z}\log[\mathrm{M}^{z+}] \]
+      </div>
+      <p data-en-html="The second equation is the Nernst equation for one electrode at 25 °C. For the whole cell it becomes \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\), where \(n\) is the number of electrons transferred and \(Q\) is the reaction quotient. The voltmeter here reads \(E_\text{right} - E_\text{left}\): a negative reading means the right-hand electrode is the anode.">第二式是單一電極在 25 °C 的能斯特方程式。對整個電池則為 \(E_\text{cell} = E^\circ_\text{cell} - \frac{0.05916}{n}\log Q\)，\(n\) 是轉移的電子數、\(Q\) 是反應商。本模擬的伏特計讀 \(E_\text{右} - E_\text{左}\)：讀數是負的，表示右邊才是陽極。</p>
+      <h3 data-en="Concentration cells">濃差電池</h3>
+      <p data-en-html="If both half-cells use the same metal, \(E^\circ_\text{cell} = 0\), but a difference in concentration still gives a voltage:">兩邊用同一種金屬時 \(E^\circ_\text{cell} = 0\)，但濃度不同仍有電壓：</p>
+      <div class="formula multi">
+        \[ E_\text{cell} = \frac{0.05916\ \mathrm{V}}{z}\log\frac{c_\text{cathode}}{c_\text{anode}} \]
+      </div>
+      <p data-en="The dilute side is the anode. As the cell runs, the dilute solution becomes more concentrated and the concentrated one more dilute, until both are equal and the voltage is zero.">稀的一邊是陽極。放電時稀的變濃、濃的變稀，直到兩邊一樣，電壓變成零。</p>
+      <h3 data-en="Electrolysis and Faraday's law">電解與法拉第定律</h3>
+      <div class="formula multi">
+        \[ Q = I\,t \]
+        \[ m = \frac{Q}{zF}\,M \]
+        \[ F = 96485\ \mathrm{C/mol} \]
+      </div>
+      <p data-en-html="In electrolysis an external power supply forces the reaction. At the cathode (connected to −) Cu&lt;sup&gt;2+&lt;/sup&gt; + 2e&lt;sup&gt;−&lt;/sup&gt; → Cu. At a graphite anode water is oxidised: 2H&lt;sub&gt;2&lt;/sub&gt;O → O&lt;sub&gt;2&lt;/sub&gt; + 4H&lt;sup&gt;+&lt;/sup&gt; + 4e&lt;sup&gt;−&lt;/sup&gt;, so the blue colour fades and the solution becomes acidic. At a copper anode the copper itself dissolves, Cu → Cu&lt;sup&gt;2+&lt;/sup&gt; + 2e&lt;sup&gt;−&lt;/sup&gt;: copper simply moves from the anode to the cathode (the principle of copper refining). When Cu&lt;sup&gt;2+&lt;/sup&gt; runs out, hydrogen is given off at the cathode instead.">電解時由外加電源推動反應。陰極（接 −）：Cu<sup>2+</sup> + 2e<sup>−</sup> → Cu。石墨陽極是水被氧化：2H<sub>2</sub>O → O<sub>2</sub> + 4H<sup>+</sup> + 4e<sup>−</sup>，藍色漸漸變淡、溶液變酸。銅陽極則是銅本身溶解：Cu → Cu<sup>2+</sup> + 2e<sup>−</sup>，銅只是由陽極搬到陰極（銅的電解精煉）。Cu<sup>2+</sup> 用完後，陰極改為產生氫氣。</p>
+
+      <h3 data-en="Standard reduction potentials used here (25 °C)">本實驗使用的標準還原電位（25 °C）</h3>
+      <div class="tablewrap"><table class="data" id="eTable"></table></div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Zinc and copper, both 1 M: the Daniell cell, 1.10 V. Swap the two sides: the reading changes sign.">鋅和銅、都是 1 M：丹尼爾電池 1.10 V。左右對調，讀數變號。</li>
+        <li data-en="Make the copper solution 1000 times more dilute: the voltage falls by 3 × 0.0296 = 0.089 V.">把銅溶液稀釋 1000 倍：電壓下降 3 × 0.0296 = 0.089 V。</li>
+        <li data-en-html="Connect the bulb and use ×10&lt;sup&gt;4&lt;/sup&gt; or ×10&lt;sup&gt;6&lt;/sup&gt;: the zinc plate gets thinner, copper builds up, the blue colour fades and the voltage slowly drops.">接上燈泡、用 ×10<sup>4</sup> 或 ×10<sup>6</sup>：鋅片變薄、銅變厚，藍色變淡，電壓慢慢下降。</li>
+        <li data-en="Electrolysis: 1.00 A for 3036 s deposits 1.000 g of copper.">電解：1.00 A 通電 3036 秒，析出 1.000 g 的銅。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="Why does the voltmeter read zero when the salt bridge is removed, even though the two metals are different?">拿掉鹽橋時，兩種金屬明明不同，為什麼伏特計是 0？</li>
+        <li data-en-html="Why is KNO&lt;sub&gt;3&lt;/sub&gt;, not KCl, used in the salt bridge when one of the half-cells contains Ag&lt;sup&gt;+&lt;/sup&gt;?">半電池中有 Ag<sup>+</sup> 時，為什麼鹽橋用 KNO<sub>3</sub> 而不用 KCl？</li>
+        <li data-en="In the copper–zinc cell, what happens to the voltage as the cell runs? Explain with the Nernst equation.">銅鋅電池放電時電壓怎麼變？用能斯特方程式解釋。</li>
+        <li data-en-html="How long must a current of 0.50 A flow through CuSO&lt;sub&gt;4&lt;/sub&gt; solution to deposit 0.635 g of copper?">0.50 A 的電流要通過硫酸銅溶液多久，才能析出 0.635 g 的銅？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="Without the salt bridge the circuit is open: ions cannot move between the solutions, so no charge can flow and the meter cannot register a potential difference across the cell.">沒有鹽橋，電路是斷的：離子無法在兩杯之間移動，電荷無法流通，伏特計量不到電池的電位差。</li>
+          <li data-en-html="Cl&lt;sup&gt;−&lt;/sup&gt; would precipitate AgCl where the bridge meets the solution. Nitrates are all soluble.">Cl<sup>−</sup> 會和 Ag<sup>+</sup> 生成 AgCl 沉澱。硝酸鹽都可溶。</li>
+          <li data-en-html="Zn&lt;sup&gt;2+&lt;/sup&gt; increases and Cu&lt;sup&gt;2+&lt;/sup&gt; decreases, so Q = [Zn&lt;sup&gt;2+&lt;/sup&gt;]/[Cu&lt;sup&gt;2+&lt;/sup&gt;] grows and E = 1.10 − 0.0296 log Q falls, slowly at first and quickly when Cu&lt;sup&gt;2+&lt;/sup&gt; is nearly used up.">Zn<sup>2+</sup> 增加、Cu<sup>2+</sup> 減少，Q = [Zn<sup>2+</sup>]/[Cu<sup>2+</sup>] 變大，E = 1.10 − 0.0296 log Q 下降：一開始很慢，Cu<sup>2+</sup> 快用完時下降得很快。</li>
+          <li data-en="0.635 g ÷ 63.55 g/mol = 0.0100 mol Cu, needing 0.0200 mol of electrons = 1930 C; t = 1930 C ÷ 0.50 A = 3860 s (about 64 minutes).">0.635 g ÷ 63.55 g/mol = 0.0100 mol 銅，需要 0.0200 mol 電子 = 1930 C；t = 1930 C ÷ 0.50 A = 3860 s（約 64 分鐘）。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Temperature 25 °C. Concentrations are used instead of activities (accurate for dilute solutions; at 1 M real activities are noticeably smaller, so real cells differ by a few hundredths of a volt).">溫度 25 °C。以濃度代替活性（稀溶液時準確；1 M 時真實的活性明顯較小，真實電池會差幾十毫伏）。</li>
+        <li data-en="Electrode potentials follow the Nernst equation exactly. With the bulb, the current is I = E/(R + r) with an internal resistance r = 5 Ω; each coulomb that flows changes the amounts by Faraday's law. Polarisation and overpotential are not modelled.">電極電位完全依能斯特方程式。接燈泡時電流 I = E/(R + r)，內電阻 r = 5 Ω；每流過一庫侖，物質的量依法拉第定律改變。不考慮極化與過電位。</li>
+        <li data-en="Magnesium actually reacts slowly with water, and tin and lead salts need a little acid to stay in solution; these side reactions are ignored.">鎂其實會和水慢慢反應，錫、鉛的鹽需要加一點酸才不會水解；這些副反應都不考慮。</li>
+        <li data-en-html="Electrolysis uses a constant current with 100% current efficiency. When Cu&lt;sup&gt;2+&lt;/sup&gt; is nearly used up, part of the current (and then all of it) produces hydrogen at the cathode; this switch-over is illustrative. Gas volumes are at 25 °C and 1 atm (24.47 L/mol).">電解是定電流、電流效率 100%。Cu<sup>2+</sup> 快用完時，陰極有一部分（最後全部）電流改為產生氫氣，這個轉換是示意的。氣體體積以 25 °C、1 atm（24.47 L/mol）計。</li>
+        <li data-en="The ions and electrons on the screen show directions only; their number follows the concentration but their speed is not to scale.">畫面上的離子與電子只表示方向：數目依濃度，速度不依比例。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Redox reactions and electrochemistry (galvanic cells, electrolysis).">課綱對應：高中化學・氧化還原與電化學（化學電池、電解）。</li>
+        <li data-en-html="Standard reduction potentials: OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix L: Standard Electrode (Half-Cell) Potentials&lt;/a&gt;.">標準還原電位：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials" target="_blank" rel="noopener">附錄 L：標準電極（半電池）電位</a>（英文）。</li>
+        <li data-en-html="Faraday constant F = N&lt;sub&gt;A&lt;/sub&gt;e = 96485.33212 C/mol (exact in the 2019 SI, CODATA); atomic weights: IUPAC standard atomic weights.">法拉第常數 F = N<sub>A</sub>e = 96485.33212 C/mol（2019 年國際單位制的定義值，CODATA）；原子量：IUPAC 標準原子量。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/electrochemistry-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/electrochemistry.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="electrochemistry"></script>
+  <script src="js/missions/electrochemistry.js"></script>
+  <script src="js/stats.js" data-module="electrochemistry"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
