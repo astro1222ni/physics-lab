@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Time Zones, Local Time and the Date Line | Astro Ni Science Lab">經緯度、時區與換日線｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 時區頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --tz-ocean: #cfe3f1; --tz-ocean2: #a9cbe4; --tz-land: #e9e1c8; --tz-land2: #d6cba5; --tz-coast: #8a7d55; --tz-grid: #7a93a8;
+      --tz-night: #0d1b3a; --tz-dateA: #3b82f6; --tz-dateB: #f59e0b; --tz-dateline: #d6336c; --tz-midnight: #7048e8;
+      --tz-sun: #f59f00; --tz-probe: #0b5fb8; --tz-flight: #c2255c; --tz-city: #343a40;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --tz-ocean: #17344d; --tz-ocean2: #0d2236; --tz-land: #56604a; --tz-land2: #48513f; --tz-coast: #a7a083; --tz-grid: #6d8193;
+        --tz-night: #000610; --tz-dateA: #6ea8fe; --tz-dateB: #ffc54d; --tz-dateline: #ff6b9a; --tz-midnight: #a78bfa;
+        --tz-sun: #ffd43b; --tz-probe: #7cc0ff; --tz-flight: #ff6fa5; --tz-city: #e9ecef;
+      }
+    }
+    :root[data-theme="dark"] {
+      --tz-ocean: #17344d; --tz-ocean2: #0d2236; --tz-land: #56604a; --tz-land2: #48513f; --tz-coast: #a7a083; --tz-grid: #6d8193;
+      --tz-night: #000610; --tz-dateA: #6ea8fe; --tz-dateB: #ffc54d; --tz-dateline: #ff6b9a; --tz-midnight: #a78bfa;
+      --tz-sun: #ffd43b; --tz-probe: #7cc0ff; --tz-flight: #ff6fa5; --tz-city: #e9ecef;
+    }
+    #cv { aspect-ratio: 2 / 1; height: auto; touch-action: none; cursor: crosshair; }
+    #cv.dragging { cursor: grabbing; }
+    @media (min-width: 881px) and (min-height: 900px) { .tz .stage { position: sticky; top: 12px; } }
+    .tz button { min-height: 44px; }
+    .tz [hidden] { display: none !important; }
+    .tz .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .toggles button { flex: 1 1 110px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+    .row2 > * { flex: 1 1 130px; }
+    .row2 label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); display: block; margin-bottom: 2px; }
+    .row2 select, .tz select.full { width: 100%; min-height: 44px; font-size: calc(14px * var(--fs, 1)); }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 480px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #13203a, #03060c); }
+    @media (max-width: 560px) { #view3 canvas { height: 380px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 時鐘列 */
+    .clockbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 10px 2px 0; }
+    .clockbar .now { flex: 1 1 220px; font-variant-numeric: tabular-nums; line-height: 1.3; }
+    .clockbar .now b { font-size: calc(19px * var(--fs, 1)); }
+    .clockbar .now small { display: block; color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+    .clockbar .btns { display: flex; gap: 6px; flex: 1 1 260px; }
+    .clockbar .btns button { flex: 1 1 auto; padding: 4px 10px; }
+    .speed { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; flex: 1 1 100%; }
+    .speed button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 40px; padding: 2px 8px; background: var(--bg); font-size: calc(12.5px * var(--fs, 1)); }
+    .speed button + button { border-left: 1px solid var(--border); }
+    .speed button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .twin-sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    @media (max-width: 560px) { .twin-sliders { grid-template-columns: 1fr; } }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .legend .sw { display: inline-block; width: 14px; height: 10px; border-radius: 3px; vertical-align: middle; margin-right: 6px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mapping&quot;>Geography · Maps and Geographic Skills</a> / Time zones"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mapping">地理・地圖與地理技能</a> ／ 時區</nav>
+      <h1 data-en="Time Zones, Local Time and the Date Line">經緯度、時區與換日線</h1>
+      <p data-en="The Earth turns 15° every hour, so every longitude has its own sun time. Run the clock and watch day and night sweep around the world, see where the date changes, compare local sun time with the clock on the wall, and fly between cities across the date line.">地球每小時轉 15°，所以每一條經線都有自己的太陽時間。讓時間走起來，看晝夜掃過整個世界、日期在哪裡換；比較太陽的時間和牆上的時鐘；再搭飛機跨過換日線，看看落地時是幾月幾日。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press Play and watch where the new day begins; then change the destination to Los Angeles and compare the dates on take-off and landing.">試試看：按「播放」看新的一天從哪裡開始；再把目的地換成洛杉磯，比較起飛和落地的日期。</p>
+    <div class="lab tz" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="World map">世界地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D globe">3D 地球儀</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSun" data-en="From the Sun" title="從太陽的方向看：亮的一面就是白天" data-en-title="Look from the Sun: the lit half is daytime">從太陽看</button>
+          <button type="button" id="camNorth" data-en="Above the North Pole" title="從北極正上方往下看：時區像時鐘的刻度" data-en-title="Look down on the North Pole: the time zones are like the marks on a clock">北極上空</button>
+          <button type="button" id="camSouth" data-en="Above the South Pole">南極上空</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="世界地圖：點一下放量測點（靠近城市會對準城市），拖曳量測點可以移動" data-en-aria-label="World map: tap to drop the measuring point (it snaps to a nearby city); drag the point to move it"></canvas>
+        <div id="view3"></div>
+
+        <div class="clockbar">
+          <div class="now" id="nowBox"><b id="nowUtc">—</b><small id="nowSub">—</small></div>
+          <div class="btns">
+            <button type="button" id="play" aria-pressed="false" data-en="▶ Play">▶ 播放</button>
+            <button type="button" id="clear" data-en="Clear all" title="清除地圖上的飛行航跡；時間與設定不變" data-en-title="Remove the flight tracks from the map; the time and settings stay">全部清除</button>
+          </div>
+          <div class="speed" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
+            <button type="button" data-speed="min" aria-pressed="false" data-en="10 min / s">每秒 10 分鐘</button>
+            <button type="button" data-speed="hour" aria-pressed="true" data-en="1 hour / s">每秒 1 小時</button>
+            <button type="button" data-speed="day" aria-pressed="false" data-en="10 days / s (same hour)">每秒 10 天（時刻不變）</button>
+          </div>
+        </div>
+        <div class="twin-sliders">
+          <div class="slider"><label for="day" data-en="Date (UTC)">日期（UTC）</label><output></output>
+            <input id="day" type="range" min="1" max="365" step="1" value="317" data-decimals="0"></div>
+          <div class="slider"><label for="utc" data-en="Time (UTC, hours)">時刻（UTC，小時）</label><output></output>
+            <input id="utc" type="range" min="0" max="23.9833" step="0.016667" value="0" data-decimals="2"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend">
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--tz-night);opacity:.55&quot;></i>Night (shaded: twilight)"><i class="sw" style="background:var(--tz-night);opacity:.55"></i>黑夜（漸層是曙暮光）</span>
+          <span style="color:var(--tz-dateline)" data-en-html="<i style=&quot;background:var(--tz-dateline)&quot;></i>Date line (ideal, along 180°)"><i style="background:var(--tz-dateline)"></i>換日線（理想位置，沿 180°）</span>
+          <span style="color:var(--tz-midnight)" data-en-html="<i style=&quot;background:var(--tz-midnight)&quot;></i>Midnight: the date changes here"><i style="background:var(--tz-midnight)"></i>午夜：日期在這裡換</span>
+          <span style="color:var(--tz-sun)" data-en-html="<i style=&quot;background:var(--tz-sun)&quot;></i>Subsolar point"><i style="background:var(--tz-sun)"></i>太陽直射點</span>
+          <span style="color:var(--tz-flight)" data-en-html="<i style=&quot;background:var(--tz-flight)&quot;></i>Flight (great circle)"><i style="background:var(--tz-flight)"></i>飛行航線（大圓）</span>
+        </div>
+        <p class="hint l2" data-en="Tap the map to drop the measuring point; near a city it snaps to the city and uses its official time. Drag the point to move it; with the map focused, the arrow keys move it by 1° (Shift: 10°).">點一下地圖放量測點；靠近城市時會對準城市，改用那裡的官方時間。拖曳量測點可以移動；選取地圖後方向鍵每次移 1°（加 Shift 移 10°）。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The Sun shines from one side; the coloured slices are the 24 time zones and the two bright seams are where the date changes.">拖曳旋轉，滾輪或雙指縮放。太陽從一側照過來；一瓣一瓣的顏色是 24 個時區，兩條亮線是日期改變的地方。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The world right now">此刻的地球</h2>
+          <dl class="readout">
+            <dt data-en="Subsolar point">太陽直射點</dt><dd id="rSub" class="big">—</dd>
+            <dt data-en="Sun’s declination">太陽赤緯</dt><dd id="rDec">—</dd>
+            <dt data-en="Equation of time" title="日晷（視太陽時）比平均的太陽時快幾分鐘" data-en-title="How far a sundial runs ahead of mean sun time">均時差</dt><dd id="rEot">—</dd>
+            <dt class="wide" data-en="Dates on Earth right now (ideal time zones)">此刻地球上的日期（理想時區）</dt><dd class="wide" id="rDates">—</dd>
+          </dl>
+          <div class="toggles" role="group" aria-label="圖層" data-en-aria-label="Layers">
+            <button type="button" id="tZones" aria-pressed="true" data-en="Time zones">時區帶</button>
+            <button type="button" id="tNight" aria-pressed="true" data-en="Day and night">晝夜</button>
+            <button type="button" id="tDates" aria-pressed="true" data-en="Dates">日期</button>
+            <button type="button" id="tCities" aria-pressed="true" data-en="Cities">城市</button>
+          </div>
+          <p class="hint" style="margin-top:8px" data-en="Centre of the map">地圖中央的經線</p>
+          <div class="segw" role="group" aria-label="地圖中央的經線" data-en-aria-label="Centre of the map" id="centerSeg">
+            <button type="button" data-center="0" aria-pressed="true" data-en="0° (Atlantic in the middle)">0°（大西洋在中間）</button>
+            <button type="button" data-center="150" aria-pressed="false" data-en="150° E (Pacific in the middle)">150°E（太平洋在中間）</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Measuring point">量測點</h2>
+          <label class="hint" for="selCity" style="display:block;margin:0 0 4px" data-en="Jump to a city">跳到城市</label>
+          <select id="selCity" class="full"></select>
+          <dl class="readout" style="margin-top:8px">
+            <dt data-en="Place">地點</dt><dd id="rPlace">—</dd>
+            <dt data-en="Clock time">當地時間</dt><dd id="rClock" class="big">—</dd>
+            <dt data-en="Time zone">時區</dt><dd id="rZone">—</dd>
+            <dt data-en="Local mean time" title="只看經度：UTC + 經度 ÷ 15°" data-en-title="From the longitude alone: UTC + longitude ÷ 15°">地方平時</dt><dd id="rLmt">—</dd>
+            <dt data-en="Sundial time" title="地方平時加上均時差，也就是日晷上的時間" data-en-title="Local mean time plus the equation of time: what a sundial shows">視太陽時（日晷）</dt><dd id="rAst">—</dd>
+            <dt class="wide" data-en="Clock compared with the sun">時鐘和太陽比</dt><dd class="wide" id="rGap">—</dd>
+            <dt data-en="Sun">太陽</dt><dd id="rSun">—</dd>
+            <dt data-en="Sunrise / sunset">日出／日落</dt><dd id="rRise">—</dd>
+            <dt data-en="Length of day">晝長</dt><dd id="rLen">—</dd>
+            <dt data-en="Compared with Taipei">和臺北的時差</dt><dd id="rVsTp">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Flight">飛行</h2>
+          <div class="row2">
+            <div><label for="selDep" data-en="From">出發</label><select id="selDep"></select></div>
+            <div><label for="selArr" data-en="To">抵達</label><select id="selArr"></select></div>
+          </div>
+          <div class="slider"><label for="dur" data-en="Flight time (hours)">飛行時間（小時）</label><output></output>
+            <input id="dur" type="range" min="0.5" max="20" step="0.25" value="15.25" data-decimals="2"></div>
+          <dl class="readout">
+            <dt data-en="Great-circle distance">大圓距離</dt><dd id="rDist">—</dd>
+            <dt data-en="Take-off (local)">起飛（出發地時間）</dt><dd id="rDepT" class="big">—</dd>
+            <dt data-en="Landing (local)">落地（抵達地時間）</dt><dd id="rArrT" class="big">—</dd>
+            <dt class="wide" data-en="The clocks say">兩地的時鐘看起來</dt><dd class="wide" id="rFlightNote">—</dd>
+          </dl>
+          <div class="row2">
+            <button type="button" id="suggest" data-en="Typical flight time" title="大圓距離 ÷ 850 km/h，再加起降的 0.5 小時" data-en-title="Great-circle distance ÷ 850 km/h, plus 0.5 h for take-off and landing">一般飛行時間</button>
+            <button type="button" id="fly" data-en="✈ Take off now">✈ 現在起飛</button>
+          </div>
+          <p class="hint" data-en="The plane leaves at the time on the clock above and flies along the great circle; the clock runs while it flies.">飛機在上方時鐘的時刻起飛，沿大圓航線飛行；飛行時時鐘會一起走。</p>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="15° every hour">每小時 15°</h3>
+      <p data-en-html="The Earth turns once (360°) in 24 hours, so the Sun seems to move west by 15° each hour. Places on the same meridian see the Sun at its highest at the same moment; a place 15° further east sees it one hour earlier. The <strong>local mean time</strong> at longitude \(\lambda\) (east positive) is">地球 24 小時自轉一圈（360°），太陽看起來每小時往西移 15°。同一條經線上的地方，太陽同時升到最高；往東 15° 的地方早一小時。經度 \(\lambda\)（東經為正）的<strong>地方平時</strong>是</p>
+      <div class="formula">\[ \text{LMT} = \text{UTC} + \frac{\lambda}{15^\circ}\ \text{h} \]</div>
+      <p data-en-html="A sundial shows the <strong>apparent solar time</strong> \(T_\odot\), which runs up to about 16 minutes ahead of or 14 minutes behind the mean time during the year — the <strong>equation of time</strong> \(E\). It comes from the tilt of the Earth’s axis and its elliptical orbit.">日晷顯示的是<strong>視太陽時</strong> \(T_\odot\)。一年之中，它比平均的太陽時最多快約 16 分鐘、慢約 14 分鐘，這個差叫<strong>均時差</strong> \(E\)，來自地軸傾斜與橢圓軌道。</p>
+      <div class="formula">\[ T_\odot = \text{LMT} + E \]</div>
+
+      <h3 data-en="Time zones">時區</h3>
+      <p data-en-html="If every town kept its own sun time, clocks 1° apart would differ by 4 minutes. Railways and telegraphs made that impossible, so the world agreed on <strong>standard time</strong>: in the ideal scheme each zone is 15° wide and keeps the time of its central meridian (a multiple of 15°), so the clock is never more than 30 minutes from the sun. Taiwan uses UTC+8, the time of 120° E.">如果每個城鎮都用自己的太陽時，相隔 1° 的時鐘就差 4 分鐘。鐵路與電報出現後這樣行不通，於是世界改用<strong>標準時間</strong>：理想的劃法是每 15° 一個時區，整區都用中央經線（15° 的倍數）的時間，時鐘和太陽最多只差 30 分鐘。臺灣用 UTC+8，也就是東經 120° 的時間。</p>
+      <p data-en-html="Real zones follow borders and choices made by each government: some use half-hour or 45-minute offsets (New Delhi UTC+5:30, Kathmandu UTC+5:45), some are far from their sun time (Madrid UTC+1 although it lies west of Greenwich), and many places add an hour of <strong>daylight saving time</strong> in summer. The cities in this lab use their official <em>standard</em> time; daylight saving time is not included.">實際的時區會配合國界與各國政府的決定：有些用半小時或 45 分鐘的偏移（新德里 UTC+5:30、加德滿都 UTC+5:45），有些和太陽時差很多（馬德里在格林威治西邊，卻用 UTC+1），不少地方夏天還會撥快一小時，叫<strong>夏令時間（日光節約時間）</strong>。本實驗的城市都用官方的<em>標準時間</em>，不含夏令時間。</p>
+
+      <h3 data-en="Where does the date change?">日期在哪裡換？</h3>
+      <p data-en-html="At any moment the date changes in two places: on the meridian where it is just midnight (it moves west 15° an hour), and on the <strong>International Date Line</strong>. Crossing the date line eastward you go back one day; westward you skip ahead one day. The ideal date line follows 180°, but the real one bends around island countries: Kiritimati (Kiribati) uses UTC+14 and Apia (Samoa) UTC+13, while nearby Pago Pago uses UTC−11 — neighbours whose calendars are a day apart.">任何時刻，日期都在兩個地方改變：剛好是午夜的那條經線（每小時往西移 15°），以及<strong>國際換日線</strong>。往東越過換日線，日期要減一天；往西越過，要加一天。理想的換日線沿著 180° 經線，實際的換日線會繞過島國而彎曲：吉里巴斯的聖誕島用 UTC+14、薩摩亞的阿庇亞用 UTC+13，附近的帕果帕果卻用 UTC−11，兩個鄰居的日曆差了一天。</p>
+      <p data-en-html="Only at 12:00 UTC is the midnight meridian on the date line itself; then, in the ideal zones, almost the whole Earth shares one date.">只有在 UTC 12:00，午夜那條經線剛好和換日線重合；這時在理想時區裡，幾乎整個地球都是同一天。</p>
+
+      <h3 data-en="Day and night">晝夜</h3>
+      <p data-en-html="The Sun is directly overhead at the <strong>subsolar point</strong>, at latitude \(\delta\) (the Sun’s declination, between −23.44° and +23.44°). The circle 90° away from it is the <strong>terminator</strong> between day and night. The Sun’s height above the horizon at latitude \(\varphi\) is">太陽直射的地方叫<strong>太陽直射點</strong>，緯度等於太陽赤緯 \(\delta\)（在 −23.44° 到 +23.44° 之間）。離它 90° 的大圓就是晝夜的分界，叫<strong>晨昏線</strong>。緯度 \(\varphi\) 的地方，太陽仰角 \(h\) 滿足</p>
+      <div class="formula">\[ \sin h = \sin\varphi\,\sin\delta + \cos\varphi\,\cos\delta\,\cos H \]</div>
+      <p data-en-html="where \(H\) is the hour angle (15° for each hour from the Sun’s highest point). Sunrise and sunset are when the top of the Sun touches the horizon, \(h = -0.833^\circ\) (refraction and the Sun’s radius). Twilight lasts until the Sun is 6° (civil), 12° (nautical) and 18° (astronomical) below the horizon.">\(H\) 是時角（離太陽最高的時刻每小時 15°）。日出日落是太陽上緣碰到地平線的時刻，\(h = -0.833^\circ\)（大氣折射與太陽半徑）。太陽落到地平線下 6°、12°、18° 以前，天空還有微光，分別叫民用、航海、天文曙暮光。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Watch the new day arrive.</strong> Play at 1 hour per second and follow the purple midnight line: where does each new date first appear?"><strong>看新的一天從哪裡來。</strong>用每秒 1 小時播放，跟著紫色的午夜線：每一個新的日期最先出現在哪裡？</li>
+        <li data-en-html="<strong>Seasons from space.</strong> Choose “10 days per second” and watch the shape of the night: when does the North Pole stay in sunlight all day?"><strong>從太空看季節。</strong>選「每秒 10 天」，看黑夜的形狀怎麼變：北極什麼時候整天都在陽光下？</li>
+        <li data-en-html="<strong>When is noon in Taipei?</strong> Find the moment the Sun is highest over Taipei. Why is it not 12:00 on the clock, and why does the answer change during the year?"><strong>臺北的正午是幾點？</strong>找出太陽在臺北最高的時刻。為什麼不是時鐘上的 12:00？為什麼一年之中會改變？</li>
+        <li data-en-html="<strong>Fly across the date line</strong> both ways, Taipei → Los Angeles and Los Angeles → Taipei, with the same flight time. Compare the dates on the two tickets."><strong>雙向飛越換日線</strong>：臺北 → 洛杉磯、洛杉磯 → 臺北，飛行時間一樣，比較兩張機票上的日期。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The Sun’s declination and the equation of time use the NOAA Global Monitoring Laboratory approximation (a Fourier series in the day of the year), accurate to about a minute; the year has 365 days, and the phase is shifted 1.1 days so the equinoxes and solstices fall on their 2026 dates.">太陽赤緯與均時差用 NOAA 全球監測實驗室公開的近似公式（以一年中的第幾天寫成的傅立葉級數），誤差約 1 分鐘；一年以 365 天計，年角提前 1.1 天，讓春分、夏至、秋分、冬至落在 2026 年的實際日期。</li>
+        <li data-en="The ideal time zones are 15° wide around multiples of 15°; UTC+12 and UTC−12 are half zones on either side of 180°. Cities use their official standard time from the IANA time zone database, without daylight saving time.">理想時區以 15° 的倍數為中央經線、寬 15°；UTC+12 與 UTC−12 是 180° 經線兩側的半區。城市用 IANA 時區資料庫的官方標準時間，不含夏令時間。</li>
+        <li data-en="Flights follow the great circle at constant speed; the Sun below the plane is checked every 2 minutes to count sunrises and sunsets.">飛機沿大圓等速飛行；每 2 分鐘檢查一次飛機正下方的太陽仰角，算經過幾次日出、日落。</li>
+        <li data-en="Coastlines: Natural Earth (public domain). No borders are drawn; this lab does not use or ask for your location.">海岸線：Natural Earth（公有領域）。地圖不畫國界；本實驗不使用也不詢問你的位置。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Geographic skills: maps (Ac-Ⅴ-1 the nature and elements of maps: coordinates and time).">課綱對應：高中地理・地理技能：地圖（地 Ac-Ⅴ-1 地圖本質與要素：經緯度與時間）。</li>
+        <li data-en="NOAA Global Monitoring Laboratory, “General Solar Position Calculations” (public domain).">NOAA Global Monitoring Laboratory，〈General Solar Position Calculations〉（公有領域）。</li>
+        <li data-en="IANA Time Zone Database (tz), public domain.">IANA 時區資料庫（tz），公有領域。</li>
+        <li data-en="Natural Earth 1:110m Land, public domain.">Natural Earth 1:110m 陸地，公有領域。</li>
+        <li data-en="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/geog-world.js"></script>
+  <script src="js/time-zones-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/time-zones.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="time-zones"></script>
+  <script src="js/missions/time-zones.js"></script>
+  <script src="js/stats.js" data-module="time-zones"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
