@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Map Projections and Distortion: Why Mercator Makes Greenland Huge | Astro Ni Science Lab">地圖投影與變形：麥卡托讓格陵蘭變大｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 地圖投影頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --mp-sea: #cfe2ef; --mp-sea2: #a9c8de; --mp-land: #d9cfae; --mp-land2: #b9ab7f; --mp-coast: #5b6b5a;
+      --mp-grid: #3b5266; --mp-tissot: #d1453b; --mp-shape: #7c3aed; --mp-gc: #0f766e; --mp-rh: #c2410c; --mp-probe: #0d7f57;
+      --mp-frame: #2d3d44; --mp-heat-lo: #2f6fd0; --mp-heat-hi: #d1453b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --mp-sea: #13283a; --mp-sea2: #0c1d2b; --mp-land: #4b5a3c; --mp-land2: #36432a; --mp-coast: #b9c7a8;
+        --mp-grid: #9fb4c6; --mp-tissot: #ff7a6b; --mp-shape: #c4b5fd; --mp-gc: #5eead4; --mp-rh: #fdba74; --mp-probe: #3fd69a;
+        --mp-frame: #c9d6d8; --mp-heat-lo: #6aa2ff; --mp-heat-hi: #ff6f61;
+      }
+    }
+    :root[data-theme="dark"] {
+      --mp-sea: #13283a; --mp-sea2: #0c1d2b; --mp-land: #4b5a3c; --mp-land2: #36432a; --mp-coast: #b9c7a8;
+      --mp-grid: #9fb4c6; --mp-tissot: #ff7a6b; --mp-shape: #c4b5fd; --mp-gc: #5eead4; --mp-rh: #fdba74; --mp-probe: #3fd69a;
+      --mp-frame: #c9d6d8; --mp-heat-lo: #6aa2ff; --mp-heat-hi: #ff6f61;
+    }
+    #cv { aspect-ratio: auto; height: 460px; touch-action: none; cursor: grab; }
+    #cv.dragging { cursor: grabbing; }
+    @media (max-width: 560px) { #cv { height: 300px; } }
+    /* 寬螢幕：右邊的控制欄很長，地圖跟著捲動留在畫面上 */
+    @media (min-width: 881px) and (min-height: 760px) { .mp .stage { position: sticky; top: 12px; } }
+    .mp button { min-height: 44px; }
+    .mp .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .mp .playbar button { flex: 1 1 auto; }
+    .mp [hidden] { display: none !important; }
+    .mp .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .projlist { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+    .projlist button { padding: 4px 8px; font-size: calc(13px * var(--fs, 1)); text-align: left; line-height: 1.25; }
+    .projlist button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .projlist button small { display: block; font-weight: 400; color: var(--muted); font-size: calc(11.5px * var(--fs, 1)); }
+    .prop-line { font-size: calc(13px * var(--fs, 1)); margin: 2px 0 4px; }
+    .prop-line b { color: var(--accent); }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .toggles button { flex: 1 1 130px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .shapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 8px; }
+    .shapes button { padding: 4px 6px; font-size: calc(13px * var(--fs, 1)); }
+    .shapes button[aria-pressed="true"] { border-color: var(--mp-shape); color: var(--mp-shape); font-weight: 700; background: color-mix(in srgb, var(--mp-shape) 12%, var(--surface)); }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 4px; }
+    .row2 > * { flex: 1 1 120px; }
+    .row2 label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); display: block; margin-bottom: 2px; }
+    .row2 select { width: 100%; min-height: 44px; font-size: calc(14px * var(--fs, 1)); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 460px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #16233a, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 380px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .unroll { margin: 8px 2px 0; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .heat-key { display: flex; align-items: center; gap: 8px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .heat-key i { flex: 1 1 auto; max-width: 220px; height: 8px; border-radius: 4px; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mapping&quot;>Geography · Maps and Geographic Skills</a> / Map projections"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mapping">地理・地圖與地理技能</a> ／ 地圖投影</nav>
+      <h1 data-en="Map Projections and Distortion: Why Mercator Makes Greenland Huge">地圖投影與變形：麥卡托讓格陵蘭變大</h1>
+      <p data-en="A sphere cannot be flattened without stretching it. Switch between fourteen projections, sprinkle identical circles over the globe and watch how each map stretches them, drag Greenland or Taiwan to another latitude to see its true size, and compare the shortest air route with a route that keeps one compass bearing. In 3D, see the cylinder, cone or plane that each family of maps is drawn on.">球面不拉扯就攤不平。切換十四種地圖投影，在地球上撒一樣大的圓，看每張地圖怎麼把它們拉長、放大；把格陵蘭、臺灣拖到別的緯度，看它們真正有多大；再比較最短的大圓航線和「方向不變」的等角航線。切到 3D，看每一類地圖是畫在圓柱、圓錐還是平面上。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: pick “Greenland” in “True size” and drag it toward the equator on the Mercator map — then switch to “Equal Earth”.">試試看：在「真實大小」選「格陵蘭」，在麥卡托地圖上把它拖到赤道附近；再切換到「等地球」投影。</p>
+    <div class="lab mp" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D map">2D 地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D globe and surface">3D 地球與投影面</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSide" data-en="Side view">側面</button>
+          <button type="button" id="camTop" data-en="From above" title="從投影面的正上方看" data-en-title="Look straight down on the projection surface">正上方</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="世界地圖：拖曳旋轉地圖、拖曳陸塊或航線端點，點一下量變形" data-en-aria-label="World map: drag to turn the map, drag a landmass or a route end, tap to measure the distortion"></canvas>
+        <div id="view3"></div>
+        <div class="slider unroll l3"><label for="unroll" data-en="Unroll the surface (0 = wrapped round the globe, 1 = flat map)">攤開投影面（0 = 包住地球，1 = 攤平成地圖）</label><output></output>
+          <input id="unroll" type="range" min="0" max="1" step="0.01" value="0" data-decimals="2"></div>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除量測點、航線與移動過的陸塊；投影與設定不變" data-en-title="Remove the measuring points, the route and the moved landmass; the projection and settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend l2">
+          <span style="color:var(--mp-tissot)" data-en-html="<i style=&quot;background:var(--mp-tissot)&quot;></i>Tissot circles (same size on the globe)"><i style="background:var(--mp-tissot)"></i>底索指標圓（在地球上一樣大）</span>
+          <span style="color:var(--mp-shape)" data-en-html="<i style=&quot;background:var(--mp-shape)&quot;></i>Moved landmass"><i style="background:var(--mp-shape)"></i>搬家的陸塊</span>
+          <span style="color:var(--mp-gc)" data-en-html="<i style=&quot;background:var(--mp-gc)&quot;></i>Great circle (shortest)"><i style="background:var(--mp-gc)"></i>大圓（最短）</span>
+          <span style="color:var(--mp-rh)" data-en-html="<i style=&quot;background:var(--mp-rh)&quot;></i>Rhumb line (fixed bearing)"><i style="background:var(--mp-rh)"></i>等角航線（方向不變）</span>
+        </div>
+        <div class="heat-key l2" id="heatKey" hidden><span id="heatLo">—</span><i id="heatBar"></i><span id="heatHi">—</span></div>
+        <p class="hint l2" data-en="Drag the map to turn it. Tap to drop a measuring point (up to six). Every red circle is a circle of the same size on the Earth; how the map stretches it is the distortion at that place.">拖曳地圖可以轉動；點一下放量測點（最多六個）。每個紅圈在地球上都是同樣大的圓，地圖把它拉成什麼樣子，就是那裡的變形。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The map is printed on the surface; slide “Unroll” to flatten it into the 2D map.">拖曳旋轉，滾輪或雙指縮放。地圖印在投影面上；拉「攤開投影面」就把它攤平成 2D 地圖。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Projection">投影</h2>
+          <div class="segw" role="group" aria-label="投影的家族" data-en-aria-label="Family of projections" id="famSeg">
+            <button type="button" data-fam="cyl" aria-pressed="true" data-en="Cylindrical">圓柱</button>
+            <button type="button" data-fam="pseudo" aria-pressed="false" data-en="Pseudo-cylindrical">偽圓柱</button>
+            <button type="button" data-fam="conic" aria-pressed="false" data-en="Conic">圓錐</button>
+            <button type="button" data-fam="azi" aria-pressed="false" data-en="Azimuthal">方位</button>
+          </div>
+          <div class="projlist" id="projList" role="group" aria-label="投影" data-en-aria-label="Projection"></div>
+          <p class="prop-line" id="propLine">—</p>
+          <div class="slider"><label for="lam0" data-en-html="Central meridian λ<sub>0</sub> (°, east +)">中央經線 λ<sub>0</sub>（°，東經為正）</label><output></output>
+            <input id="lam0" type="range" min="-180" max="180" step="1" value="0" data-decimals="2"></div>
+          <div id="pS" hidden>
+            <div class="slider"><label for="phiS" data-en-html="Standard parallel φ<sub>s</sub> (°)">標準緯線 φ<sub>s</sub>（°）</label><output></output>
+              <input id="phiS" type="range" min="0" max="70" step="1" value="0" data-decimals="2"></div>
+          </div>
+          <div id="pC" hidden>
+            <div class="slider"><label for="phi1" data-en-html="Standard parallel φ<sub>1</sub> (°)">標準緯線 φ<sub>1</sub>（°）</label><output></output>
+              <input id="phi1" type="range" min="-80" max="80" step="0.5" value="20" data-decimals="2"></div>
+            <div class="slider"><label for="phi2" data-en-html="Standard parallel φ<sub>2</sub> (°)">標準緯線 φ<sub>2</sub>（°）</label><output></output>
+              <input id="phi2" type="range" min="-80" max="80" step="0.5" value="50" data-decimals="2"></div>
+            <p class="hint" id="twHint">—</p>
+          </div>
+          <div id="pA" hidden>
+            <div class="slider"><label for="phi0" data-en-html="Centre latitude φ<sub>0</sub> (°, north +)">中心緯度 φ<sub>0</sub>（°，北緯為正）</label><output></output>
+              <input id="phi0" type="range" min="-90" max="90" step="1" value="90" data-decimals="2"></div>
+            <p class="hint" data-en-html="The centre longitude is the central meridian λ<sub>0</sub> above.">中心經度就是上面的中央經線 λ<sub>0</sub>。</p>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Layers">圖層</h2>
+          <div class="toggles" role="group" aria-label="圖層" data-en-aria-label="Layers">
+            <button type="button" id="tImg" aria-pressed="true" data-en="Satellite image" title="NASA Blue Marble 衛星合成影像；關掉時陸地與海洋用平面色" data-en-title="NASA Blue Marble satellite mosaic; when off, land and sea are flat colours">衛星影像</button>
+            <button type="button" id="tGrid" aria-pressed="true" data-en="Graticule (15°)">經緯網（15°）</button>
+            <button type="button" id="tTissot" aria-pressed="true" data-en="Tissot circles">底索指標圓</button>
+          </div>
+          <div class="segw" role="group" aria-label="變形著色" data-en-aria-label="Distortion colouring" id="heatSeg" style="margin-top:8px">
+            <button type="button" data-heat="none" aria-pressed="true" data-en="No colouring">不著色</button>
+            <button type="button" data-heat="area" aria-pressed="false" data-en="Area scale">面積倍率</button>
+            <button type="button" data-heat="angle" aria-pressed="false" data-en="Angle distortion">角度變形</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="True size">真實大小</h2>
+          <div class="shapes" id="shapeBtns" role="group" aria-label="要比較的陸塊" data-en-aria-label="Landmass to compare">
+            <button type="button" data-shape="greenland" aria-pressed="false" data-en="Greenland">格陵蘭</button>
+            <button type="button" data-shape="africa" aria-pressed="false" data-en="Africa">非洲</button>
+            <button type="button" data-shape="south-america" aria-pressed="false" data-en="South America">南美洲</button>
+            <button type="button" data-shape="australia" aria-pressed="false" data-en="Australia">澳洲</button>
+            <button type="button" data-shape="britain" aria-pressed="false" data-en="Great Britain">大不列顛島</button>
+            <button type="button" data-shape="taiwan" aria-pressed="false" data-en="Taiwan">臺灣</button>
+          </div>
+          <div class="presets"><button type="button" id="shapeHome" data-en="Back to its real place">放回原位</button><button type="button" id="shapeOff" data-en="Hide">不顯示</button></div>
+          <dl class="readout">
+            <dt data-en="Centre">中心</dt><dd id="rShC">—</dd>
+            <dt data-en="Real area">真實面積</dt><dd id="rShT">—</dd>
+            <dt data-en="Area it seems to have on this map">在這張地圖上看起來</dt><dd id="rShM">—</dd>
+            <dt data-en="Enlarged by">放大倍率</dt><dd id="rShR" class="big">—</dd>
+            <dt class="wide" data-en="Compared with Africa (in place) on this map">和非洲（原位）在這張地圖上比</dt><dd class="wide" id="rShA">—</dd>
+          </dl>
+          <p class="hint" data-en="Drag the purple landmass on the map. Moving it keeps its real shape and area; only the map changes how big it looks.">在地圖上拖曳紫色的陸塊。搬家時真實的形狀與面積都不變，改變的只是地圖讓它看起來多大。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Measuring point">量測點</h2>
+          <dl class="readout">
+            <dt data-en="Position">位置</dt><dd id="rPos">—</dd>
+            <dt data-en="Scale along the meridian h">沿經線的比例 h</dt><dd id="rH">—</dd>
+            <dt data-en="Scale along the parallel k">沿緯線的比例 k</dt><dd id="rK">—</dd>
+            <dt data-en="Area scale s">面積倍率 s</dt><dd id="rS" class="big">—</dd>
+            <dt data-en="Largest angle distortion ω">最大角度變形 ω</dt><dd id="rW">—</dd>
+            <dt class="wide" id="rDistT" data-en="Distance and bearing from the centre">離中心的距離與方位</dt><dd class="wide" id="rDist">—</dd>
+          </dl>
+          <p class="hint" data-en="Tap the map to drop a point; the newest point is shown here. Use the arrow keys after focusing the map to nudge it.">點地圖放一個點，這裡顯示最新的那一個。選取地圖後可以用方向鍵微調。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Air route">航線</h2>
+          <div class="toggles"><button type="button" id="tRoute" aria-pressed="false" data-en="Show the route">顯示航線</button></div>
+          <div class="row2">
+            <div><label for="selA" data-en="From A">起點 A</label><select id="selA"></select></div>
+            <div><label for="selB" data-en="To B">終點 B</label><select id="selB"></select></div>
+          </div>
+          <dl class="readout">
+            <dt data-en="Great-circle distance">大圓距離</dt><dd id="rGc" class="big">—</dd>
+            <dt data-en="Rhumb-line distance">等角航線距離</dt><dd id="rRh">—</dd>
+            <dt data-en="Initial bearing (great circle)">出發方位（大圓）</dt><dd id="rGcB">—</dd>
+            <dt data-en="Bearing (rhumb line, constant)">方位（等角航線，固定）</dt><dd id="rRhB">—</dd>
+            <dt class="wide" data-en="Which one is straight on this map">在這張地圖上哪一條是直線</dt><dd class="wide" id="rStr">—</dd>
+          </dl>
+          <p class="hint" data-en="You can also drag A and B on the map.">也可以在地圖上拖曳 A、B。</p>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Why every flat map is wrong somewhere">為什麼每張平面地圖都有地方不對</h3>
+      <p data-en-html="A sphere has curvature and a sheet of paper does not, so no map can keep every distance true (Gauss showed this in 1827). A projection is a rule \((\lambda, \varphi) \mapsto (x, y)\) from longitude and latitude to the plane. Each one chooses what to keep: <strong>conformal</strong> maps keep angles and small shapes, <strong>equal-area</strong> maps keep areas, <strong>equidistant</strong> maps keep distances along some lines, and <strong>compromise</strong> maps keep nothing exactly but spread the errors out. No map is both conformal and equal-area.">球面有曲率、紙沒有，所以沒有一張地圖能讓所有距離都正確（高斯 1827 年證明）。投影就是一條把經緯度 \((\lambda, \varphi)\) 對應到平面 \((x, y)\) 的規則。每一種投影都要選擇保留什麼：<strong>等角</strong>投影保留角度與小區域的形狀，<strong>等積</strong>投影保留面積，<strong>等距</strong>投影保留某些線上的距離，<strong>折衷</strong>投影什麼都不完全保留，但把誤差分散。沒有一張地圖能同時等角又等積。</p>
+
+      <h3 data-en="Mercator: true angles, false areas">麥卡托：角度對了，面積錯了</h3>
+      <p data-en-html="Gerardus Mercator drew his map for sailors in 1569. To keep angles, the north–south stretch must match the east–west stretch, which grows as \(\sec\varphi\) because the parallels shrink toward the poles:">麥卡托在 1569 年為航海家畫了這張地圖。緯線越往兩極越短，畫成一樣長就等於東西方向放大了 \(\sec\varphi\) 倍；要讓角度正確，南北方向也得放大同樣的倍數：</p>
+      <div class="formula">\[ x = R\lambda, \qquad y = R\ln\tan\!\left(\frac{\pi}{4}+\frac{\varphi}{2}\right), \qquad h = k = \sec\varphi, \qquad s = \sec^2\varphi \]</div>
+      <p data-en-html="At 60° every area is drawn 4 times too large, at 75° about 15 times. A compass course — a <strong>rhumb line</strong>, crossing every meridian at the same angle — is a straight line on this map, which is why navigators loved it. But the shortest route between two places is a <strong>great circle</strong>, which looks curved on a Mercator map and straight on a <strong>gnomonic</strong> map (a light at the Earth’s centre casting shadows on a plane).">在 60° 面積被放大 4 倍，75° 約 15 倍。固定羅盤方向航行的路線——<strong>等角航線</strong>，和每條經線的交角都一樣——在這張地圖上是直線，所以航海家最愛它。但兩地之間最短的路是<strong>大圓</strong>，在麥卡托地圖上是彎的，在<strong>心射投影</strong>（光源放在地球中心、把影子投到平面上）上才是直線。</p>
+
+      <h3 data-en="Tissot’s indicatrix">底索指標圓</h3>
+      <p data-en-html="In 1859 Nicolas Tissot showed that a tiny circle on the globe always becomes an ellipse on the map. Its semi-axes \(a \ge b\) are the largest and smallest scales at that point. The area scale is \(s = ab\) and the largest change of an angle is">1859 年底索證明：地球上的一個小圓，畫到地圖上一定變成一個橢圓。橢圓的半長軸 \(a\) 與半短軸 \(b\) 就是那一點的最大與最小比例。面積倍率是 \(s = ab\)，角度最多被改變</p>
+      <div class="formula">\[ \omega = 2\arcsin\frac{a-b}{a+b} \]</div>
+      <p data-en-html="Conformal maps have \(a = b\) (circles stay circles, \(\omega = 0\)) but \(s\) changes; equal-area maps have \(ab = 1\) but the ellipses are squashed. Here \(h\) and \(k\) are the scales along the meridian and the parallel, worked out from the derivatives of the projection formulas.">等角投影的 \(a = b\)（圓還是圓，\(\omega = 0\)），但 \(s\) 會變；等積投影的 \(ab = 1\)，但橢圓被壓扁。\(h\)、\(k\) 是沿經線、沿緯線的比例，由投影公式的偏微分算出。</p>
+
+      <h3 data-en="Cylinders, cones and planes">圓柱、圓錐與平面</h3>
+      <p data-en-html="Many projections can be pictured as wrapping a surface that unrolls flat. A <strong>cylinder</strong> touches the globe along the equator (or a standard parallel \(\varphi_s\)); a <strong>cone</strong> cuts it along two standard parallels \(\varphi_1, \varphi_2\), and on those lines the scale is exactly 1 — ideal for a country that stretches east–west in mid-latitudes; a <strong>plane</strong> touches it at one centre point. With the cone constant \(n\),">很多投影可以想成用一個「攤得平」的面包住地球。<strong>圓柱</strong>和地球相切於赤道（或標準緯線 \(\varphi_s\)）；<strong>圓錐</strong>和地球相割於兩條標準緯線 \(\varphi_1, \varphi_2\)，在這兩條線上比例剛好是 1，最適合東西長、位在中緯度的國家；<strong>平面</strong>只和地球相切於一個中心點。圓錐常數 \(n\) 是</p>
+      <div class="formula">\[ n_{\text{Lambert}} = \frac{\ln(\cos\varphi_1/\cos\varphi_2)}{\ln\big(\tan(\tfrac{\pi}{4}+\tfrac{\varphi_2}{2})/\tan(\tfrac{\pi}{4}+\tfrac{\varphi_1}{2})\big)}, \qquad n_{\text{Albers}} = \frac{\sin\varphi_1+\sin\varphi_2}{2} \]</div>
+      <p data-en-html="When the two standard parallels are mirror images across the equator, \(n = 0\) and the cone opens into a cylinder. For azimuthal maps the distance from the centre on the map is a function of the angular distance \(c\): \(\sin c\) (orthographic), \(2\tan\frac{c}{2}\) (stereographic), \(\tan c\) (gnomonic), \(c\) (equidistant), \(2\sin\frac{c}{2}\) (equal-area).">兩條標準緯線對稱於赤道時 \(n = 0\)，圓錐張開成圓柱。方位投影上，點到中心的距離只看它和中心的角距離 \(c\)：正射 \(\sin c\)、平射 \(2\tan\frac{c}{2}\)、心射 \(\tan c\)、等距 \(c\)、等積 \(2\sin\frac{c}{2}\)。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>How big is Greenland?</strong> On Mercator, Greenland looks about as big as Africa. Drag it to the equator, then switch to an equal-area map: Africa is really about 14 times larger."><strong>格陵蘭有多大？</strong>麥卡托上的格陵蘭看起來和非洲差不多大。把它拖到赤道，再換成等積投影：非洲其實大約是它的 14 倍。</li>
+        <li data-en-html="<strong>Equal area, wrong shape</strong>: on Gall–Peters (φs = 45°) the Tissot circles all have the same area, but near the equator they are tall ellipses."><strong>面積對、形狀錯</strong>：在高爾－彼得斯（φs = 45°）上，底索指標圓的面積都一樣，但赤道附近變成直立的橢圓。</li>
+        <li data-en-html="<strong>A map for Taiwan</strong>: choose a conic projection and put both standard parallels inside 21.9°–25.3° N. How small can you make the error over the island?"><strong>臺灣專用的地圖</strong>：選圓錐投影，把兩條標準緯線都放在北緯 21.9°–25.3° 之間，臺灣範圍內的誤差可以壓到多小？</li>
+        <li data-en-html="<strong>Taipei to New York</strong>: show the route on Mercator, then on a gnomonic map centred near Alaska. Which one is straight there?"><strong>臺北到紐約</strong>：在麥卡托上顯示航線，再換到中心放在阿拉斯加附近的心射投影，哪一條變成直線？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The Earth is treated as a sphere of radius 6371.007 km (the radius of a sphere with the same area as the WGS 84 ellipsoid); the flattening of the real Earth (1/298) is left out, so real survey maps differ in the fourth significant figure.">地球當成半徑 6371.007 km 的球（和 WGS 84 橢球面積相同的球）；真實地球的扁率（1/298）沒有算進去，所以和實際測量用的地圖會在第四位有效數字上有差異。</li>
+        <li data-en-html="Every projection has an exact forward and inverse formula (J. P. Snyder’s equations; Robinson’s table interpolated with a natural cubic spline). The image is drawn pixel by pixel with the inverse formula; \(h\), \(k\), \(s\) and \(\omega\) come from central differences of the forward formula.">每個投影都有精確的正算與反算公式（Snyder 的公式；羅賓森投影的表用自然三次樣條內插）。影像用反算公式逐像素畫出；\(h\)、\(k\)、\(s\)、\(\omega\) 由正算公式的中央差分算出。</li>
+        <li data-en-html="Real areas are spherical-polygon areas of the simplified Natural Earth outlines (Greenland 2.19 million km², Africa 29.4 million km²), slightly different from official figures because small islands and fine coastline are left out. A moved landmass is rotated on the globe so that north still points north at its centre.">真實面積是 Natural Earth 簡化輪廓的球面多邊形面積（格陵蘭 219 萬 km²、非洲 2,939 萬 km²），因為省略了小島與細碎的海岸線，和官方數字略有差異。搬家的陸塊是在地球上旋轉過去的，中心處的北方仍然朝北。</li>
+        <li data-en-html="3D: the current map is printed on a cylinder, cone or plane placed where that projection touches or cuts the globe, and unrolled with the slider. Only the gnomonic, stereographic and orthographic projections are true perspective projections; the others are mathematical rules, so the 3D surface shows where the map is true to scale, not a beam of light.">3D：把目前的地圖印在投影面上（圓柱、圓錐或平面，放在投影和地球相切或相割的位置），用滑桿攤開。只有心射、平射、正射是真正的「透視」投影；其他投影是數學規則，所以 3D 的投影面表示地圖比例正確的位置，不代表真的有光照過去。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Geographic skills: maps (Ac-Ⅴ-1 the nature and elements of maps, Ac-Ⅴ-2 kinds of maps and their uses)">課綱對應：高中地理・地理技能：地圖（地 Ac-Ⅴ-1 地圖本質與要素、地 Ac-Ⅴ-2 地圖種類及其用途）</li>
+        <li data-en-html="J. P. Snyder (1987), <i>Map Projections — A Working Manual</i>, U.S. Geological Survey Professional Paper 1395 (public domain): formulas for all projections and for Tissot’s indicatrix.">J. P. Snyder（1987），《Map Projections — A Working Manual》，美國地質調查所專業報告 1395（公有領域）：各投影與底索指標的公式。</li>
+        <li data-en-html="A. H. Robinson (1974), “A new map projection: its development and characteristics”, <i>International Yearbook of Cartography</i> 14; table values as published by J. P. Snyder (1990), <i>The American Cartographer</i> 17.">A. H. Robinson（1974），〈A new map projection: its development and characteristics〉，《International Yearbook of Cartography》第 14 卷；表的數值依 J. P. Snyder（1990）在《The American Cartographer》第 17 卷公布的版本。</li>
+        <li data-en-html="B. Šavrič, T. Patterson and B. Jenny (2018), “The Equal Earth map projection”, <i>International Journal of Geographical Information Science</i> 33(3).">B. Šavrič、T. Patterson、B. Jenny（2018），〈The Equal Earth map projection〉，《International Journal of Geographical Information Science》33 卷 3 期。</li>
+        <li data-en-html="N. A. Tissot (1881), <i>Mémoire sur la représentation des surfaces et les projections des cartes géographiques</i>, Paris.">N. A. Tissot（1881），《Mémoire sur la représentation des surfaces et les projections des cartes géographiques》，巴黎。</li>
+        <li data-en-html="Coastlines and landmasses: <a href=&quot;https://www.naturalearthdata.com/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Natural Earth</a> 1:110m Land (Taiwan from 1:50m), public domain. Coastlines only — no political borders are drawn.">海岸線與陸塊：<a href="https://www.naturalearthdata.com/" target="_blank" rel="noopener">Natural Earth</a> 1:110m Land（臺灣用 1:50m），公有領域。只有海岸線，沒有畫國界。</li>
+        <li data-en-html="Earth image: Reto Stöckli, NASA Goddard Space Flight Center, “Blue Marble: Land Surface, Shallow Water, and Shaded Topography”, via <a href=&quot;https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikimedia Commons</a>; made by NASA, public domain. The three.js library (MIT license) is downloaded only when you switch to 3D.">地球影像：Reto Stöckli（NASA 戈達德太空飛行中心）〈Blue Marble: Land Surface, Shallow Water, and Shaded Topography〉，取自 <a href="https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>；NASA 製作，公有領域。three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/geog-world.js"></script>
+  <script src="js/map-projection-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/map-projection.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="map-projection"></script>
+  <script src="js/missions/map-projection.js"></script>
+  <script src="js/stats.js" data-module="map-projection"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
