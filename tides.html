@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Tides: The Moon, the Sun and the Two Tidal Bulges | Astro Ni Science Lab">潮汐：月球、太陽與兩個潮汐隆起｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 潮汐頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --td-water: #2a78c2; --td-deep: #12406f; --td-sun: #e8970c; --td-sun-text: #8f5600; --td-moon: #8d897f;
+      --td-spring: #b7791f; --td-neap: #6b7c86; --td-space: #e9f0f3;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --td-water: #3f95e6; --td-deep: #0b2a4a; --td-sun: #ffc24a; --td-sun-text: #ffc24a; --td-moon: #cfcac0;
+        --td-spring: #f0b44c; --td-neap: #9fb0b8; --td-space: #0b1216;
+      }
+    }
+    :root[data-theme="dark"] {
+      --td-water: #3f95e6; --td-deep: #0b2a4a; --td-sun: #ffc24a; --td-sun-text: #ffc24a; --td-moon: #cfcac0;
+      --td-spring: #f0b44c; --td-neap: #9fb0b8; --td-space: #0b1216;
+    }
+    #cv { aspect-ratio: auto; height: 500px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .td button { min-height: 44px; }
+    .td .playbar, .td .stepbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .td .playbar button { flex: 1 1 auto; }
+    .td .stepbar button { flex: 1 1 calc(33% - 8px); padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); line-height: 1.25; }
+    .td .playbar #play { font-weight: 700; }
+    .td .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .td .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .td .slider input[type="range"] { height: 28px; margin: 0; }
+    .td .slider label sub, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .td [hidden] { display: none !important; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .segw button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .td .checks label { min-height: 44px; }
+    .td .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.band { width: 14px; height: 10px; border-radius: 2px; opacity: .55; }
+    /* 下方兩個小畫面：日潮不等的截面、潮位曲線 */
+    .views { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: 10px; margin-top: 12px; }
+    @media (max-width: 720px) { .views { grid-template-columns: minmax(0, 1fr); } }
+    .view { margin: 0; }
+    .view canvas { aspect-ratio: auto; height: 290px; cursor: default; touch-action: pan-y pinch-zoom; }
+    #tideCv { cursor: ew-resize; }
+    .view figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .view figcaption b { color: var(--text); }
+    .curvebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin: 0 0 6px; }
+    .curvebar .lbl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .segw { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .segw button { border: none; border-radius: 0; min-height: 44px; padding: 4px 12px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    /* 2D／3D 檢視切換（與「月相與日月食」相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .t3-wrap { position: relative; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .t3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .t3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ocean&quot;>Earth Science · Oceans</a> / Tides"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ocean">地球科學・海洋</a> ／ 潮汐</nav>
+      <h1 data-en="Tides: The Moon, the Sun and the Two Tidal Bulges">潮汐：月球、太陽與兩個潮汐隆起</h1>
+      <p data-en="The Moon pulls the near side of the Earth a little harder than the centre, and the centre a little harder than the far side. Relative to the centre, the oceans are stretched both ways: two bulges, one under the Moon and one on the opposite side. As the Earth turns, a coast passes through both bulges about every 24 hours 50 minutes. Drag the Moon to make spring and neap tides, tilt it north or south to make the two daily tides unequal, and watch the tide at your observing site day after day — in 2D or in 3D.">月球拉地球靠近它的一側，比拉地心多一點；拉地心又比拉另一側多一點。相對於地心，海水被往兩邊拉開，形成兩個隆起：一個在月球正下方，一個在地球的另一面。地球自轉時，海岸每隔約 24 小時 50 分鐘就經過兩個隆起各一次。拖曳月球做出大潮與小潮，把月球往北或往南移讓一天的兩次高潮不一樣高，再看觀測點一天一天的潮位曲線——2D 平面或 3D 立體都可以。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: turn off the Sun, press “Next high tide” twice and read the time between them. Then turn the Sun back on and drag the Moon to new moon and to first quarter.">試試看：先關掉太陽，按兩次「下一次高潮」，看兩次相隔多久；再打開太陽，把月球拖到新月與上弦比一比。</p>
+    <div class="lab td">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSide" data-en="Bulges side-on" title="從赤道面的側邊、與月球方向垂直地看：赤緯不為 0 時看得出隆起偏離赤道" data-en-title="Look edge-on to the equator, at right angles to the Moon: with a non-zero declination the bulges are tilted off the equator">側看隆起</button>
+          <button type="button" id="camTop" data-en="From above the North Pole" title="從北極上空往下看（與 2D 畫面相同）" data-en-title="Look down from above the North Pole (same as the 2D view)">北極上空俯視</button>
+          <button type="button" id="camMoon" data-en="From the Moon" title="從月球的方向看地球：月下點的隆起正對著你" data-en-title="Look at the Earth from the Moon: the sub-lunar bulge faces you">從月球看地球</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="從北極上空看的地球、海水隆起、月球與太陽方向：可拖曳月球或觀測點" data-en-aria-label="The Earth seen from above the North Pole with the ocean bulges, the Moon and the direction of the Sun: drag the Moon or the observing site"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除潮位曲線的紀錄與高潮標記，滑桿設定不變" data-en-title="Clear the recorded tide curve and the high-tide marks; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="stepbar" role="group" aria-label="跳到" data-en-aria-label="Jump">
+          <button type="button" id="stepH" data-en="+1 hour">+1 小時</button>
+          <button type="button" id="nextHigh" data-en="Next high tide">下一次高潮</button>
+          <button type="button" id="stepLD" data-en="+1 lunar day" title="前進 24 小時 50 分：月球回到同一個子午線" data-en-title="Go forward 24 h 50 min: the Moon returns to the same meridian">+1 太陰日</button>
+          <button type="button" id="stepD" data-en="+1 day">+1 天</button>
+          <button type="button" id="nextSpring" data-en="Next spring tide" title="跳到下一次新月或滿月（月球、太陽與地球排成一直線）" data-en-title="Jump to the next new or full moon (Sun, Earth and Moon in a line)">下一次大潮</button>
+          <button type="button" id="nextNeap" data-en="Next neap tide" title="跳到下一次上弦或下弦（月球與太陽相隔 90°）" data-en-title="Jump to the next first or last quarter (Moon and Sun 90° apart)">下一次小潮</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--td-water)" data-en-html="<i style=&quot;background:var(--td-water)&quot;></i>Ocean (bulges exaggerated)"><i style="background:var(--td-water)"></i>海水（隆起誇大）</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Tidal force"><i style="background:var(--pos)"></i>引潮力</span>
+          <span style="color:var(--probe)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Observing site"><i class="dot" style="background:var(--probe)"></i>觀測點</span>
+          <span style="color:var(--td-sun-text)" data-en-html="<i class=&quot;dash&quot;></i>Sun’s bulge axis"><i class="dash"></i>太陽隆起的方向</span>
+        </div>
+        <p class="hint l2" data-en-html="Drag the <b>Moon</b> around the Earth to change its phase, or drag the green <b>observing site</b> to turn the Earth (change the time of day). The bulges are exaggerated about 2.5 million times and the distances are not to scale; the corner of the picture says by how much.">拖曳<b>月球</b>繞地球改變月相，或拖曳綠色的<b>觀測點</b>轉動地球（改變一天中的時刻）。海水隆起誇大約 250 萬倍，距離也沒有依比例；畫面角落寫著誇大的倍數。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The water shell, the force arrows and the site come from the same calculation as the 2D view; change them with the sliders.">拖曳旋轉，滾輪或雙指縮放。水殼、引潮力箭頭與觀測點都和 2D 畫面是同一份計算；用滑桿調整。</p>
+
+        <div class="views">
+          <figure class="view">
+            <canvas id="sideCv" role="img" aria-label="包含地軸與月球的截面：隆起偏離赤道時，觀測點一天兩次經過的海面高度不同" data-en-aria-label="Cross-section through the Earth’s axis and the Moon: when the bulges are tilted, the site passes two different sea levels each day"></canvas>
+            <figcaption data-en-html="<b>Why the two daily tides differ</b> — cut through the axis and the Moon"><b>為什麼一天兩次高潮不一樣高</b>——沿地軸與月球的截面</figcaption>
+          </figure>
+          <figure class="view">
+            <div class="curvebar">
+              <span class="lbl" data-en="Tide at the site — show">觀測點的潮位——顯示</span>
+              <div class="segw" role="group" aria-label="曲線的時間長度" data-en-aria-label="Length of the curve">
+                <button type="button" data-win="1" aria-pressed="false" data-en="1 day">1 天</button>
+                <button type="button" data-win="3" aria-pressed="true" data-en="3 days">3 天</button>
+                <button type="button" data-win="15" aria-pressed="false" data-en="15 days">15 天</button>
+                <button type="button" data-win="30" aria-pressed="false" data-en="30 days">30 天</button>
+              </div>
+            </div>
+            <canvas id="tideCv" role="img" aria-label="觀測點的潮位曲線：虛線是預報、實線是播放時記下的紀錄，標出大潮與小潮；點一下或拖曳可以跳到那個時刻" data-en-aria-label="Tide curve at the site: dashed is the forecast, solid is what was recorded while playing, with spring and neap tides marked; tap or drag to jump to that time"></canvas>
+            <figcaption data-en-html="<b>Tide curve</b> — dashed: forecast; solid: recorded while time runs. Tap or drag on it to jump in time."><b>潮位曲線</b>——虛線是預報，實線是時間前進時記下的紀錄；在曲線上點一下或拖曳可以跳到那個時刻。</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The Moon">月球</h2>
+          <div class="slider"><label for="psi" data-en="Angle from the Sun ψ (°): 0 new, 90 first quarter, 180 full">與太陽的夾角 ψ（°）：0 新月、90 上弦、180 滿月</label><output id="psio"></output>
+            <input id="psi" type="range" min="0" max="360" step="1" value="40" data-decimals="1"></div>
+          <div class="slider"><label for="dec" data-en="Declination δ (°, north +)">月球赤緯 δ（°，北為正）</label><output id="deco"></output>
+            <input id="dec" type="range" min="-28.6" max="28.6" step="0.1" value="10" data-decimals="1"></div>
+          <div class="slider"><label for="dist" data-en="Earth–Moon distance (× the mean 384 400 km)">月地距離（平均距離 384 400 km 的幾倍）</label><output id="disto"></output>
+            <input id="dist" type="range" min="0.5" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <p class="hint" data-en-html="The real Moon stays between <b>0.945</b> (perigee) and <b>1.055</b> (apogee) times the mean distance, and its declination swings between about <b>±18°</b> and <b>±28.6°</b> every month (the limits change over 18.6 years). Here the declination and distance stay fixed while time runs, so you can compare.">真實的月球距離在平均距離的 <b>0.945</b>（近地點）到 <b>1.055</b> 倍（遠地點）之間；赤緯每個月在南北之間來回，最大約 <b>±18°</b> 到 <b>±28.6°</b>（18.6 年一個循環）。這裡播放時赤緯與距離固定不變，方便比較。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The Sun and the site">太陽與觀測點</h2>
+          <div class="checks">
+            <label><input id="sunOn" type="checkbox" checked><span data-en="Add the Sun’s tidal force">加入太陽的引潮力</span></label>
+          </div>
+          <div class="slider"><label for="lat" data-en="Site latitude (°, south −)">觀測點緯度（°，南緯為負）</label><output id="lato"></output>
+            <input id="lat" type="range" min="-90" max="90" step="0.5" value="23.5" data-decimals="1"></div>
+          <p class="hint" data-en="The site sits at 121° E, Taiwan’s longitude; 23.5° N is near the Tropic of Cancer in central Taiwan. The Sun is kept on the celestial equator (around an equinox).">觀測點在東經 121°（臺灣的經度）；北緯 23.5° 約在臺灣中部的北回歸線附近。太陽固定在天赤道上（相當於春分或秋分前後）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Time">時間</h2>
+          <div class="slider"><label for="hr" data-en="Local time at the site (h)">觀測點的地方時（時）</label><output id="hro"></output>
+            <input id="hr" type="range" min="0" max="23.99" step="0.25" value="6" data-decimals="2"></div>
+          <div class="slider"><label for="rate" data-en="Playback speed (hours per second)">播放速度（每秒經過幾小時）</label><output id="rateo"></output>
+            <input id="rate" type="range" min="0" max="24" step="0.25" value="2" data-decimals="2"></div>
+          <p class="hint" data-en="Time turns the Earth (once in 24 h relative to the Sun) and moves the Moon (once in 29.53 days relative to the Sun). Tap a number to type an exact value.">時間會轉動地球（相對太陽 24 小時一圈），也會推動月球（相對太陽 29.53 天一圈）。點一下數字可以直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showForce" type="checkbox" checked><span data-en="Tidal-force arrows">引潮力箭頭</span></label>
+            <label><input id="showParts" type="checkbox" checked><span data-en="Moon and Sun bulge axes">月球與太陽各自的隆起方向</span></label>
+          </div>
+          <div class="seg2" role="group" aria-label="箭頭畫出" data-en-aria-label="Arrows show">
+            <button type="button" id="fFull" aria-pressed="true" data-en="Whole tidal force">完整的引潮力</button>
+            <button type="button" id="fHoriz" aria-pressed="false" data-en="Horizontal part only">只畫水平分量</button>
+          </div>
+          <p class="hint" data-en="The horizontal part is what pushes the water sideways toward the bulges; the vertical part only changes the weight of the water by about one part in ten million.">水平分量才是把海水推向隆起的力；垂直分量只讓海水的重量改變約千萬分之一。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Tidal force">引潮力</h2>
+          <dl class="readout">
+            <dt data-en="Moon (under the Moon)">月球（月下點）</dt><dd id="rAm">—</dd>
+            <dt data-en="Sun (under the Sun)">太陽（日下點）</dt><dd id="rAs">—</dd>
+            <dt data-en="Sun ÷ Moon">太陽 ÷ 月球</dt><dd id="rRatio">—</dd>
+            <dt data-en="Equilibrium bulge height">平衡潮的隆起高度</dt><dd id="rHeq">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="At the site">觀測點</h2>
+          <dl class="readout">
+            <dt data-en="Time">時間</dt><dd id="rTime">—</dd>
+            <dt data-en="Moon’s age">月齡</dt><dd id="rAge">—</dd>
+            <dt data-en="Sea level now">此刻的潮位</dt><dd id="rH" class="big">—</dd>
+            <dt data-en="Next high tide">下一次高潮</dt><dd id="rNextHigh">—</dd>
+            <dt data-en="Next low tide">下一次低潮</dt><dd id="rNextLow">—</dd>
+            <dt data-en="Range today (one lunar day)">今日潮差（一個太陰日）</dt><dd id="rRange">—</dd>
+            <dt data-en="Moon crosses the meridian">月球上中天</dt><dd id="rTransit">—</dd>
+            <dt class="wide" data-en="Two neighbouring high tides">相鄰兩次高潮</dt><dd id="rIneq" class="wide">—</dd>
+            <dt class="wide" data-en="Highest minus lowest sea level around the equator, now">此刻沿赤道一圈海面的最高減最低</dt><dd id="rEq" class="wide">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Tidal force: a difference of pulls">引潮力：拉力的「差」</h3>
+      <p data-en-html="The Earth as a whole is accelerated toward the Moon by the pull on its centre (the two bodies circle their common centre of mass). Water on the side facing the Moon is a little closer, so it is pulled a little harder than the centre; water on the far side is a little farther, so it is pulled a little less. What moves the water relative to the solid Earth is the <strong>difference</strong> between the pull on it and the pull on the centre — the tidal force:">地球整體受月球對地心的拉力而加速（地球與月球繞著共同的質心轉）。朝向月球那一側的海水離月球近一點，被拉得比地心多一點；背向月球那一側的海水遠一點，被拉得比地心少一點。讓海水相對於固體地球移動的，是「它受的拉力」與「地心受的拉力」之<strong>差</strong>，稱為引潮力：</p>
+      <div class="formula">\[ \vec a_{\text{tide}} = \frac{GM(\vec d-\vec r)}{|\vec d-\vec r|^{3}}-\frac{GM\,\vec d}{d^{3}} \;\approx\; \frac{GM}{d^{3}}\Big[\,3(\vec r\cdot\hat d)\,\hat d-\vec r\,\Big] \]</div>
+      <p data-en-html="Here \(\vec d\) points from the Earth’s centre to the Moon and \(\vec r\) from the centre to the place on the surface. Under the Moon and on the opposite side the tidal force points <strong>outward</strong> with size \(2GMR/d^{3}\); along the circle halfway between them it points inward with half that size. So there are two bulges, not one. Because the pull goes as \(1/d^{2}\) and the tidal force is its change across the Earth, the tidal force goes as \(1/d^{3}\).">其中 \(\vec d\) 由地心指向月球，\(\vec r\) 由地心指向地表上的點。在月下點與對蹠點，引潮力都<strong>向外</strong>，大小是 \(2GMR/d^{3}\)；在兩者之間那一圈則向內，大小只有一半。所以隆起有兩個，不是一個。引力與 \(1/d^{2}\) 成正比，引潮力是引力在地球兩端的「變化量」，所以與 \(1/d^{3}\) 成正比。</p>
+      <div class="formula" data-en-html="\[ \frac{a_{\text{Sun}}}{a_{\text{Moon}}} = \frac{M_{\text{Sun}}}{M_{\text{Moon}}}\left(\frac{d_{\text{Moon}}}{d_{\text{Sun}}}\right)^{3} = 2.71\times10^{7}\times\left(\frac{384\,400\ \text{km}}{1.496\times10^{8}\ \text{km}}\right)^{3} \approx 0.46 \]">\[ \frac{a_{\text{日}}}{a_{\text{月}}} = \frac{M_{\text{日}}}{M_{\text{月}}}\left(\frac{d_{\text{月}}}{d_{\text{日}}}\right)^{3} = 2.71\times10^{7}\times\left(\frac{384\,400\ \text{km}}{1.496\times10^{8}\ \text{km}}\right)^{3} \approx 0.46 \]</div>
+      <p data-en-html="The Sun pulls the Earth about 178 times harder than the Moon does, but it is 389 times farther away, and the cube of that wins: its tidal force is only about 0.46 of the Moon’s.">太陽拉地球的力大約是月球的 178 倍，但距離遠了 389 倍，立方一乘就輸了：太陽的引潮力只有月球的 0.46 倍左右。</p>
+
+      <h3 data-en="Equilibrium tide">平衡潮</h3>
+      <p data-en-html="Newton imagined an Earth covered by deep water that always has time to settle, so that the sea surface stays level with respect to gravity plus the tidal force. The height of the sea above its mean level is then">牛頓想像整個地球覆蓋著深水，而且海水隨時都來得及調整，使海面在「重力加上引潮力」之下保持水平。這時海面比平均海面高出</p>
+      <div class="formula" data-en-html="\[ \eta = H\,\frac{3\cos^{2}\theta-1}{2},\qquad H=\frac{M}{M_{\text{Earth}}}\left(\frac{R}{d}\right)^{3}R,\qquad \cos\theta=\sin\varphi\sin\delta+\cos\varphi\cos\delta\cos h \]">\[ \eta = H\,\frac{3\cos^{2}\theta-1}{2},\qquad H=\frac{M}{M_{\text{地}}}\left(\frac{R}{d}\right)^{3}R,\qquad \cos\theta=\sin\varphi\sin\delta+\cos\varphi\cos\delta\cos h \]</div>
+      <p data-en-html="where \(\theta\) is the angle between the place and the point under the Moon, \(\varphi\) the latitude, \(\delta\) the Moon’s declination and \(h\) its hour angle. For the Moon \(H = 0.357\ \mathrm{m}\), for the Sun \(0.164\ \mathrm{m}\); the two add. The sea is \(H\) high under the Moon and on the far side and \(H/2\) low on the circle between: the water is only moved around, and the global average stays zero.">其中 \(\theta\) 是該處與月下點的角距離，\(\varphi\) 是緯度、\(\delta\) 是月球赤緯、\(h\) 是月球的時角。月球的 \(H = 0.357\ \mathrm{m}\)，太陽 \(0.164\ \mathrm{m}\)，兩者相加。月下點與對蹠點高出 \(H\)，兩者之間那一圈低了 \(H/2\)：海水只是搬了家，全球平均仍然是零。</p>
+      <ul>
+        <li data-en-html="<strong>Twice a day, 50 minutes later each day</strong>: the Moon moves east about \(12.2^\circ\) a day, so a place returns under it every lunar day \(T = 24\ \mathrm{h}/(1-1/29.53) = 24\ \mathrm{h}\,50.5\ \mathrm{min}\). With two bulges, high tides come every \(T/2 = 12\ \mathrm{h}\,25\ \mathrm{min}\)."><strong>一天兩次、每天晚約 50 分鐘</strong>：月球每天向東移動約 \(12.2^\circ\)，所以同一地點要經過一個太陰日 \(T = 24\ \mathrm{h}/(1-1/29.53) = 24\ \mathrm{h}\,50.5\ \mathrm{min}\) 才回到月球底下；隆起有兩個，所以高潮每 \(T/2 = 12\ \mathrm{h}\,25\ \mathrm{min}\) 一次。</li>
+        <li data-en-html="<strong>Spring and neap tides</strong>: at new and full moon the Sun’s bulges line up with the Moon’s and the range is about \(1.5(H_{\text{Moon}}+H_{\text{Sun}}) \approx 0.78\ \mathrm{m}\) at the equator; at the quarters they are crossed and the range is about \(1.5(H_{\text{Moon}}-H_{\text{Sun}}) \approx 0.29\ \mathrm{m}\), about 2.7 times smaller. (“Spring” has nothing to do with the season: the tide springs up.)"><strong>大潮與小潮</strong>：新月與滿月時，太陽的隆起和月球的疊在一起，赤道上的潮差約 \(1.5(H_{\text{月}}+H_{\text{日}}) \approx 0.78\ \mathrm{m}\)；上弦與下弦時兩者交叉，潮差約 \(1.5(H_{\text{月}}-H_{\text{日}}) \approx 0.29\ \mathrm{m}\)，小了約 2.7 倍。</li>
+        <li data-en-html="<strong>Diurnal inequality</strong>: when the Moon is north or south of the equator, the bulges are tilted. A place off the equator passes through the near bulge on one side and the far bulge on the other, at different heights, so the two high tides of the day differ. On the equator they are always equal. When \(|\varphi|+|\delta| \ge 90^\circ\) the place misses one bulge altogether and gets only one high tide a day (a diurnal tide)."><strong>日潮不等</strong>：月球在赤道以北或以南時，隆起是傾斜的。不在赤道上的地點，一天中先後經過兩個隆起的不同高度，所以兩次高潮不一樣高；赤道上則永遠一樣高。當 \(|\varphi|+|\delta| \ge 90^\circ\) 時，這個地點完全錯過其中一個隆起，一天只剩一次高潮（全日潮）。</li>
+      </ul>
+
+      <h3 data-en="The real ocean is different">真實的海洋不一樣</h3>
+      <p data-en-html="The equilibrium tide is only the skeleton of the real tides. Its rhythm — about 12 h 25 min, the spring–neap cycle, the diurnal inequality — is right, and tide tables are built from exactly these rhythms. Its <strong>heights and times are not</strong>:">平衡潮只是真實潮汐的骨架。它的節奏——約 12 小時 25 分、大潮小潮的循環、日潮不等——是對的，潮汐預報就是由這些節奏組合出來的；但它給的<strong>高度與時刻並不正確</strong>：</p>
+      <ul>
+        <li data-en-html="<strong>The water cannot keep up.</strong> To stay under the Moon the bulge would have to sweep around the equator at about \(450\ \mathrm{m/s}\), while a tide wave in a \(4000\ \mathrm{m}\) deep ocean travels at \(\sqrt{gh} \approx 200\ \mathrm{m/s}\), and the continents are in the way. The real tide is a set of long waves sloshing and turning in each ocean basin."><strong>海水跟不上。</strong>隆起要一直待在月球底下，就得以大約 \(450\ \mathrm{m/s}\) 繞赤道跑；但在 \(4000\ \mathrm{m}\) 深的大洋裡，潮波的速度只有 \(\sqrt{gh} \approx 200\ \mathrm{m/s}\)，而且還有大陸擋路。真實的潮汐是在各個大洋盆裡來回晃動、旋轉的長波。</li>
+        <li data-en-html="<strong>Amphidromic points.</strong> In each basin the tide wave turns around points where the range is nearly zero, like the water in a swirled bowl; far from them the range grows. Shallow shelves, narrowing straits and bays whose natural sloshing period is close to 12.4 hours (resonance) can make it much larger."><strong>無潮點。</strong>在各個海盆裡，潮波繞著幾個潮差幾乎為零的點旋轉，就像在碗裡轉動的水；離這些點越遠，潮差越大。淺的大陸棚、變窄的海峽，以及本身晃動週期接近 12.4 小時的海灣（共振），都會讓潮差大很多。</li>
+        <li data-en-html="<strong>Taiwan</strong>: according to the Navy’s <i>Sailing Directions</i> (R.O.C. Navy Command, Ministry of National Defense), the spring range is largest near Taichung Harbor, about \(4.4\ \mathrm{m}\), and decreases northward and southward along the west coast; on the east coast it is about \(1.2\ \mathrm{m}\), and near Keelung Harbor only about \(0.4\ \mathrm{m}\). The mean lunitidal interval (Moon on the meridian to high water) is about 10 h 29 min near Taichung and 5 h 49 min at Heping Harbor on the east coast — in the equilibrium tide it would be zero. Both the heights and the delays are set by the Taiwan Strait and the shelf, not by this simple picture. For real tide times use the forecasts of the Central Weather Administration, which are computed by harmonic analysis of long records at tide gauges."><strong>臺灣</strong>：依國防部海軍司令部《航行指南》，西岸的大潮差以臺中港附近最大，約 \(4.4\ \mathrm{m}\)，沿海岸往北、往南逐漸變小；東岸約 \(1.2\ \mathrm{m}\)，基隆港附近只有約 \(0.4\ \mathrm{m}\)。從月球上中天到高潮的平均時間（高潮間隙），臺中附近約 10 小時 29 分、東岸和平港約 5 小時 49 分——平衡潮裡這個時間是零。高度與延遲都由臺灣海峽與大陸棚決定，不是這個簡單模型算得出來的。真實的潮汐時刻請查中央氣象署的潮汐預報，它是用各地潮位站的長期紀錄做調和分析算出來的。</li>
+        <li data-en-html="<strong>Other differences</strong>: spring tides usually come a little after new and full moon; the solid Earth is also stretched by the tide (the Love numbers \(k_2 \approx 0.30\) and \(h_2 \approx 0.61\)), so the sea rises relative to the sea floor by only about \(1+k_2-h_2 \approx 0.69\) of the values here; and the Moon’s declination and distance change during the month, which this page keeps fixed so you can compare."><strong>其他差別</strong>：真實的大潮常常比朔望晚一些；固體地球本身也會被拉長（洛夫數 \(k_2 \approx 0.30\)、\(h_2 \approx 0.61\)），所以海面相對海床的漲落只有本頁數值的約 \(1+k_2-h_2 \approx 0.69\) 倍；月球的赤緯與距離每個月都在變，本頁為了方便比較把它們固定。</li>
+      </ul>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Two bulges</strong>: turn off the Sun. One bulge sits under the Moon and one on the far side; the arrows on the surface point outward there and inward halfway between. Switch the arrows to “Horizontal part only”: they push the water toward the two bulges."><strong>兩個隆起</strong>：關掉太陽。一個隆起在月球正下方，另一個在地球背面；地表的箭頭在這兩處向外、在兩者之間向內。把箭頭換成「只畫水平分量」：它們把海水推向兩個隆起。</li>
+        <li data-en-html="<strong>50 minutes late</strong>: with the Sun off, press “Next high tide” a few times. The readout “Two neighbouring high tides” shows 12 h 25 min; the Moon crosses the meridian about 50 minutes later each day."><strong>每天晚 50 分鐘</strong>：關掉太陽，連按幾次「下一次高潮」，讀數「相鄰兩次高潮」是 12 小時 25 分；月球上中天的時刻每天晚約 50 分鐘。</li>
+        <li data-en-html="<strong>Spring and neap</strong>: choose the 15-day curve and play fast. The envelope of the curve swells at new and full moon and shrinks at the quarters. With the Sun on, the time between high tides is shorter near spring tide and longer near neap tide."><strong>大潮與小潮</strong>：選 15 天的曲線、加快播放。曲線的外包線在新月、滿月時鼓起，在上下弦時縮小。開著太陽時，高潮的間隔在大潮附近比較短、小潮附近比較長。</li>
+        <li data-en-html="<strong>Unequal tides</strong>: set the declination to 20° and watch the cross-section and the curve: one high tide is high, the next one low. Move the site to the equator and they become equal. Try latitude 65° with declination 28°: only one high tide a day."><strong>一高一低</strong>：把赤緯調到 20°，看截面圖與曲線：一次高潮高、下一次低。把觀測點移到赤道，兩次又一樣高。再試試緯度 65°、赤緯 28°：一天只有一次高潮。</li>
+        <li data-en-html="<strong>One over d cubed</strong>: double the Earth–Moon distance. The Moon’s tidal force drops to 1/8 (not 1/4), and the Sun now dominates the tides."><strong>距離的立方</strong>：把月地距離加倍，月球的引潮力變成 1/8（不是 1/4），潮汐反而由太陽主導。</li>
+        <li data-en-html="<strong>In 3D</strong>: give the Moon a declination of 20° and press “Bulges side-on”: the water shell is tilted, and the site’s latitude circle cuts the two bulges at different heights."><strong>3D 立體</strong>：把赤緯調到 20°，按「側看隆起」：水殼是斜的，觀測點的緯度圈切過兩個隆起的不同高度。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="<strong>Frame</strong>: the Sun is fixed in the \(+x\) direction (to the right in the top view) and on the celestial equator. The Earth turns once in 24 hours relative to the Sun; the Moon’s angle from the Sun \(\psi\) grows by \(360^\circ\) every synodic month (29.530 589 days). The site is at 121° E, so the clock shows its local solar time (the Sun is due south at 12:00). The Moon’s declination and distance stay as set."><strong>座標</strong>：太陽固定在 \(+x\) 方向（俯視圖的右方），而且在天赤道上。地球相對太陽每 24 小時自轉一圈；月球與太陽的夾角 \(\psi\) 每個朔望月（29.530 589 日）增加 \(360^\circ\)。觀測點在東經 121°，時鐘是它的地方太陽時（太陽在 12:00 正中天）。月球的赤緯與距離維持設定值。</li>
+        <li data-en-html="<strong>Heights</strong>: the sea level at the site is the equilibrium tide above, for the Moon and (if on) the Sun, computed exactly at every frame — no step-by-step integration, so nothing drifts. High and low tides are found where the exact time derivative \(d\eta/dt\) changes sign, by bisection to better than a millisecond; the same routine finds the high tides you pass while playing or jumping, so the sound and the marks fall exactly on them."><strong>潮高</strong>：觀測點的海面高度就是上面平衡潮的公式（月球加上太陽，若有勾選），每一幀精確計算，沒有逐步的數值積分，不會累積誤差。高潮與低潮是解析的時間導數 \(d\eta/dt\) 變號的地方，用二分法求到千分之一秒以內；播放或跳躍經過的高潮也用同一套方法找出，所以音效與標記都正好落在高潮上。</li>
+        <li data-en-html="<strong>Forces</strong>: the arrows are the tidal force at the surface; the readouts use \(2GMR/d^{3}\). The core also has the exact difference of pulls; under the Moon the two differ by about 2.5%. The horizontal part of the force equals \(g\) times the slope of the equilibrium sea surface (checked in the unit tests)."><strong>引潮力</strong>：箭頭是地表的引潮力；讀數用 \(2GMR/d^{3}\)。物理核心也有精確的「拉力之差」，兩者在月下點相差約 2.5%。引潮力的水平分量等於 \(g\) 乘以平衡潮海面的坡度（單元測試有驗證）。</li>
+        <li data-en-html="<strong>Pictures</strong>: in the top view the ocean is drawn along the equator; its bulges are exaggerated (about 2.5 million times; less if you bring the Moon closer, as the corner says) and drawn on a water layer that is itself far too thick. The Moon is drawn to scale with the Earth but much too close, and the Sun only as a direction. The cross-section uses the same heights through the plane of the axis and the Moon. The 3D view uses the same core and the same exaggeration, with the three.js library (MIT license), downloaded only when you switch to 3D."><strong>畫面</strong>：俯視圖沿赤道畫出海面；隆起是誇大的（約 250 萬倍；把月球拉近時倍數會變小，畫面角落有寫），畫在一層本身也太厚的海水上。月球與地球的大小比例正確，但距離近得多；太陽只畫出方向。截面圖用同樣的潮高，畫在包含地軸與月球的平面上。3D 檢視用同一個物理核心與同樣的誇大倍數，使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · The ocean (tides)">課綱對應：高中地球科學・海洋（潮汐）</li>
+        <li data-en-html="Constants: masses of the Earth (\(5.9722\times10^{24}\ \mathrm{kg}\)), the Moon (\(7.346\times10^{22}\ \mathrm{kg}\)) and the Sun (\(1.9884\times10^{30}\ \mathrm{kg}\)), the Earth’s mean radius \(6371\ \mathrm{km}\) and surface gravity \(9.820\ \mathrm{m/s^2}\), the Moon’s mean distance \(384\,400\ \mathrm{km}\), perigee and apogee and the range of its declination, from the NASA NSSDCA <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Earth</a>, <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Moon</a> and <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Sun</a> fact sheets; \(G = 6.6743\times10^{-11}\ \mathrm{N\,m^2/kg^2}\) (CODATA 2018); 1 AU \(= 149\,597\,870.7\ \mathrm{km}\) (IAU 2012 Resolution B2); synodic month 29.530 589 d (J. Meeus, <i>Astronomical Algorithms</i>); Love numbers from the IERS Conventions (2010).">常數：地球（\(5.9722\times10^{24}\ \mathrm{kg}\)）、月球（\(7.346\times10^{22}\ \mathrm{kg}\)）、太陽（\(1.9884\times10^{30}\ \mathrm{kg}\)）的質量，地球平均半徑 \(6371\ \mathrm{km}\) 與表面重力 \(9.820\ \mathrm{m/s^2}\)，月地平均距離 \(384\,400\ \mathrm{km}\)、近地點、遠地點與赤緯範圍，出自 NASA NSSDCA 的<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" target="_blank" rel="noopener">地球</a>、<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">月球</a>、<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html" target="_blank" rel="noopener">太陽</a>資料表；\(G = 6.6743\times10^{-11}\ \mathrm{N\,m^2/kg^2}\)（CODATA 2018）；1 AU \(= 149\,597\,870.7\ \mathrm{km}\)（IAU 2012 年 B2 決議）；朔望月 29.530 589 日（J. Meeus《Astronomical Algorithms》）；洛夫數出自 IERS Conventions（2010）。</li>
+        <li data-en-html="Tides around Taiwan: R.O.C. Navy Command, Ministry of National Defense, <a href=&quot;https://navy.mnd.gov.tw/Files/Others/04_%E8%88%AA%E8%A1%8C%E6%8C%87%E5%8D%97_%E7%AC%AC1-17%E9%A0%81.pdf&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;><i>Sailing Directions</i>, Chapter 1 “Physical geography”</a> (in Chinese), section on tides; daily tide forecasts: <a href=&quot;https://www.cwa.gov.tw/V8/C/M/tide.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Central Weather Administration, tide forecasts</a> (computed by harmonic analysis of tide-gauge records).">臺灣的潮汐：國防部海軍司令部〈<a href="https://navy.mnd.gov.tw/Files/Others/04_%E8%88%AA%E8%A1%8C%E6%8C%87%E5%8D%97_%E7%AC%AC1-17%E9%A0%81.pdf" target="_blank" rel="noopener">航行指南 第一章 自然地理</a>〉的潮汐一節；每天的潮汐預報：<a href="https://www.cwa.gov.tw/V8/C/M/tide.html" target="_blank" rel="noopener">中央氣象署 潮汐預報</a>（以潮位站紀錄做調和分析）。</li>
+        <li data-en-html="Image of the Earth: NASA Visible Earth, <i>Blue Marble: Land Surface, Shallow Water, and Shaded Topography</i> (Reto Stöckli, NASA Goddard Space Flight Center), via <a href=&quot;https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikimedia Commons</a>; produced by NASA, public domain. Image of the Moon (3D view): NASA Scientific Visualization Studio, <a href=&quot;https://svs.gsfc.nasa.gov/4720/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CGI Moon Kit</a>, public domain.">地球影像：NASA Visible Earth〈Blue Marble: Land Surface, Shallow Water, and Shaded Topography〉（Reto Stöckli，NASA 戈達德太空飛行中心），取自 <a href="https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>；NASA 製作，公有領域。月面影像（3D 檢視）：NASA 科學視覺化工作室〈<a href="https://svs.gsfc.nasa.gov/4720/" target="_blank" rel="noopener">CGI Moon Kit</a>〉，公有領域。</li>
+        <li data-en-html="Further reading: NOAA National Ocean Service, <a href=&quot;https://oceanservice.noaa.gov/education/tutorial_tides/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Tides and Water Levels</a>.">延伸閱讀：美國國家海洋暨大氣總署（NOAA）〈<a href="https://oceanservice.noaa.gov/education/tutorial_tides/" target="_blank" rel="noopener">Tides and Water Levels</a>〉（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/tides-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/tides.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="tides"></script>
+  <script src="js/missions/tides.js"></script>
+  <script src="js/stats.js" data-module="tides"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
