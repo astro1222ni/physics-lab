@@ -509,10 +509,10 @@
     rows.push(['<dt>' + T('類型', 'Type') + '</dt>', '<dd>' + axeHTML(info.m, info.n) + '</dd>']);
     rows.push(['<dt>' + T('電子域', 'Electron domains') + '</dt>', '<dd>' + info.N + '<small>' + T('鍵結 ', 'bonds ') + info.m + T('、孤對 ', ', lone pairs ') + info.n + '</small></dd>']);
     rows.push(['<dt>' + T('電子對幾何', 'Electron-pair geometry') + '</dt>', '<dd>' + shapeName(info.egeom) + '</dd>']);
-    rows.push(['<dt>' + T('分子形狀', 'Shape') + '</dt>', '<dd>' + shapeName(info.shape) + (info.isGlobal ? '' : '<small>' + T('（目前不是能量最低的排列）', '(not the lowest-energy arrangement yet)') + '</small>') + '</dd>']);
+    rows.push(['<dt>' + T('分子形狀', 'Shape') + '</dt>', '<dd>' + shapeName(info.shape) + (info.isGlobal || !state.settled ? '' : '<small>' + T('（目前不是能量最低的排列）', '(not the lowest-energy arrangement yet)') + '</small>') + '</dd>']);
     rows.push(['<dt>' + T('鍵角', 'Bond angles') + '</dt>', '<dd id="angCell">' + anglesHTML(info.groups) + '</dd>']);
     const pol = info.polar ? T('極性分子', 'polar') : T('非極性分子', 'non-polar');
-    rows.push(['<dt>' + T('極性', 'Polarity') + '</dt>', '<dd>' + pol + '<small>' + T('淨偶極 ', 'net dipole ') + num(info.dipole.mag < 5e-4 ? 0 : info.dipole.mag, 2) + T('（電負度差）', ' (in Δχ)') + '</small></dd>']);
+    rows.push(['<dt>' + T('極性', 'Polarity') + '</dt>', !state.settled ? '<dd>' + T('調整中…', 'moving…') + '</dd>' : '<dd>' + pol + '<small>' + T('淨偶極 ', 'net dipole ') + num(info.dipole.mag < 5e-4 ? 0 : info.dipole.mag, 2) + T('（電負度差）', ' (in Δχ)') + '</small></dd>']);
     rows.push(['<dt>' + T('能量', 'Energy') + '</dt>', '<dd id="eCell">' + num(info.E, 3) + '<small>' + T('最低 ', 'lowest ') + num(info.Eg, 3) + T('（相對單位）', ' (relative units)') + '</small></dd>']);
     rows.push(['<dt>' + T('狀態', 'State') + '</dt>', '<dd id="stCell" class="' + (state.settled ? (info.isGlobal ? 'good' : 'warn') : '') + '">' + stateText(info) + '</dd>']);
     setHTML($('readout'), rows.map(function (r) { return r.join(''); }).join(''));
@@ -524,6 +524,8 @@
   }
   /** 動畫中只更新會變的格子 */
   function updateLive() {
+    // 試玩 P10：組合一改就先換分子式、類型、電子域與形狀（只看組合，不必等穩定）；鍵角、能量跟著動畫更新，極性等穩定再寫
+    if (!state.info || state.info.key !== VC.specKey(state.spec)) { state.info = analyze(); updateReadouts(); }
     const a = $('angCell'), e = $('eCell'), s = $('stCell');
     if (!a || !e || !s) return;
     const ang = VC.groupAngles(VC.bondAngles(state.doms, U()));
@@ -1419,6 +1421,65 @@
   });
 
   // 說明區的「模型與實驗值」表：用和畫面相同的計算
+  // 比較表：每一列是「哪一個角」（試玩 B-L2：同一種角的模型值與實驗值放同一列）
+  const POS_TAG = { ax: ['軸', 'ax'], eq: ['赤', 'eq'], ap: ['頂', 'ap'], bas: ['底', 'bas'] };
+  const POS_ORDER = ['ax', 'eq', 'ap', 'bas'];
+  /** 各電子域的位置：5 個電子域分軸向／赤道；6 個電子域只有 1 對孤對電子時，分頂端（和孤對電子相對）／底面 */
+  function posTags(doms, Ug) {
+    const tags = doms.map(function () { return null; });
+    if (doms.length === 5) {
+      const ax = VC.axialFlags(Ug);
+      doms.forEach(function (d, i) { tags[i] = ax[i] ? 'ax' : 'eq'; });
+    } else if (doms.length === 6) {
+      const lps = [];
+      doms.forEach(function (d, i) { if (d.k === 'L') lps.push(i); });
+      if (lps.length === 1) {
+        let ap = -1, best = -1;
+        doms.forEach(function (d, i) { if (d.k === 'B') { const a = VC.angleDeg(Ug[i], Ug[lps[0]]); if (a > best) { best = a; ap = i; } } });
+        doms.forEach(function (d, i) { if (d.k === 'B') tags[i] = i === ap ? 'ap' : 'bas'; });
+      }
+    }
+    return tags;
+  }
+  function angLabel(p, cls, a, N) {
+    const L = p.ligs[0], C0 = p.center;
+    if (cls) {
+      const t = cls.split('-');
+      return L + '<sub>' + T(POS_TAG[t[0]][0], POS_TAG[t[0]][1]) + '</sub>–' + C0 + '–' + L + '<sub>' + T(POS_TAG[t[1]][0], POS_TAG[t[1]][1]) + '</sub>' + (cls === 'bas-bas' ? cisTrans(N, a) : '');
+    }
+    return L + '–' + C0 + '–' + L + cisTrans(N, a);
+  }
+  /** 八面體上兩根鍵：相鄰（約 90°）或相對（約 180°） */
+  function cisTrans(N, a) { return N === 6 ? (a < 135 ? T('（相鄰）', ' (cis)') : T('（相對）', ' (trans)')) : ''; }
+  /** 一個分子的比較列：[{ cls, a, exp }]，依模型角度由小到大 */
+  function compareRows(p, doms, Ug) {
+    const tags = posTags(doms, Ug);
+    const byCls = {};
+    VC.bondAngles(doms, Ug).forEach(function (b) {
+      let cls = '';
+      if (tags[b.i] && tags[b.j]) {
+        const t = [tags[b.i], tags[b.j]].sort(function (x, y) { return POS_ORDER.indexOf(x) - POS_ORDER.indexOf(y); });
+        cls = t.join('-');
+      }
+      (byCls[cls] = byCls[cls] || []).push(b.a);
+    });
+    const rows = [];
+    Object.keys(byCls).forEach(function (cls) {
+      VC.groupAngles(byCls[cls].sort(function (x, y) { return x - y; })).forEach(function (g) { rows.push({ cls: cls, a: g.a, exp: null }); });
+    });
+    p.exp.forEach(function (e) {
+      let best = null, bd = 20;
+      rows.forEach(function (r) {
+        // 實驗值有標明哪一種角（w）就只對同一種；沒標明的（例如 XeF2 的 180°）就對最接近的模型角
+        if ((e.w && e.w !== r.cls) || r.exp != null) return;
+        const dd = Math.abs(r.a - e.a);
+        if (e.w ? (best == null || dd < bd) : dd <= bd) { best = r; bd = dd; }
+      });
+      if (best) best.exp = e.a;
+    });
+    rows.sort(function (x, y) { return x.a - y.a; });
+    return rows;
+  }
   function fillCompare() {
     const tb = $('cmpTable');
     if (!tb) return;
@@ -1426,14 +1487,16 @@
     const rows = VC.PRESETS.map(function (p) {
       const doms = VC.domainsOf(p);
       const g = VC.globalMin(doms, P0);
-      const groups = VC.groupAngles(VC.bondAngles(doms, g.U));
       const f = VC.formula(p);
       const shape = VC.shapeOf(p.ligs.length, p.lp);
-      const model = groups.map(function (x) { return deg(x.a); }).join(T('、', ', '));
-      const exp = p.exp.map(function (e) { return deg(e.a); }).join(T('、', ', '));
-      return '<tr><td>' + formulaHTML(f) + '</td><td>' + shapeName(shape) + '</td><td>' + model + '</td><td>' + exp + '</td></tr>';
+      const list = compareRows(p, doms, g.U);
+      const span = list.length > 1 ? ' rowspan="' + list.length + '"' : '';
+      return list.map(function (r, k) {
+        return '<tr>' + (k === 0 ? '<td' + span + '>' + formulaHTML(f) + '</td><td' + span + '>' + shapeName(shape) + '</td>' : '') +
+          '<td>' + angLabel(p, r.cls, r.a, doms.length) + '</td><td>' + deg(r.a) + '</td><td>' + (r.exp == null ? '—' : deg(r.exp)) + '</td></tr>';
+      }).join('');
     });
-    tb.innerHTML = '<tr><th>' + T('分子', 'Molecule') + '</th><th>' + T('分子形狀', 'Shape') + '</th><th>' + T('本模型的鍵角', 'Angles in this model') + '</th><th>' + T('實驗值', 'Experiment') + '</th></tr>' + rows.join('');
+    tb.innerHTML = '<tr><th>' + T('分子', 'Molecule') + '</th><th>' + T('分子形狀', 'Shape') + '</th><th>' + T('哪一個角', 'Which angle') + '</th><th>' + T('本模型的鍵角', 'Angle in this model') + '</th><th>' + T('實驗值', 'Experiment') + '</th></tr>' + rows.join('');
   }
 
   // 給縮圖與測試用的介面（不回報任務事件）

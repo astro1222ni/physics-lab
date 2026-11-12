@@ -282,7 +282,7 @@
     const Cin = $('inC').value.trim() === '' ? 0 : parseNum($('inC').value);
     const n = parseNum($('inN').value);
     if (!isFinite(Cin) || Cin < 0) { out.innerHTML = T('卡計的熱容量 C 要填 0 或正數（J/K）。', 'The heat capacity C must be zero or a positive number (J/K).'); return; }
-    if (!isFinite(n) || n <= 0) { out.innerHTML = T('請填反應的物質的量 n（mol），例如 0.0500。', 'Enter the amount that reacted, n (mol), for example 0.0500.'); return; }
+    if (!isFinite(n) || n <= 0) { out.innerHTML = T('請填反應的莫耳數 n（mol），例如 0.0500。', 'Enter the amount that reacted, n (mol), for example 0.0500.'); return; }
     const dH = H.dHfrom(A.m, Cin, A.dT, n);
     const q = (H.C_W * A.m + Cin) * A.dT;
     const ref = H.reference(run);
@@ -994,7 +994,7 @@
     $('anaInputs').hidden = run.mode === 'cal';
     $('calc').textContent = run.mode === 'cal' ? T('計算卡計的熱容量', 'Find the heat capacity') : T('計算 ΔH', 'Calculate ΔH');
     $('inNLabel').innerHTML = run.mode === 'mix' ? T('生成的水 n（mol）', 'Water formed, n (mol)') :
-      run.mode === 'solid' ? (run.solid.kind === 'X' ? 'X' : fH(run.solid.kind)) + T(' 的物質的量 n（mol）', ': amount n (mol)') : 'n（mol）';
+      run.mode === 'solid' ? (run.solid.kind === 'X' ? 'X' : fH(run.solid.kind)) + T(' 的莫耳數 n（mol）', ': amount n (mol)') : 'n（mol）';
   }
   function renderTable() {
     const t = $('tbl');

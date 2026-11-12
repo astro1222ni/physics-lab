@@ -154,11 +154,11 @@
     {
       id: 'molecular-shapes-h2', level: 2, hidden: true,
       riddle: { zh: '站在它的延長線上，最長的也看不見。', en: 'Stand on its extension, and even the longest one vanishes.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'view' && d && d.settled && d.m >= 2 && d.along <= 2; }
+      check: function (ev) { const d = ev.data; return ev.type === 'view' && d && d.settled && d.m >= 2 && d.along <= 5; }  // 試玩：2° 用滑鼠太難、鍵盤一步 5°，放寬到 5°（和三角函數 h3 相近）
     },
     {
       id: 'molecular-shapes-h3', level: 4, hidden: true,
-      riddle: { zh: '多一點或少一點，它照樣站得端正。', en: 'A little more or a little less, and it still stands up straight.' },
+      riddle: { zh: '得一個或失一個，它照樣站得端正。', en: 'Gain one or lose one, and it still stands up straight.' },
       // 帶電的離子、中心原子有孤對電子，形狀仍然對稱（非極性），例如 ClF2−、BrF4−
       check: function (ev) { const d = ev.data; return isS(ev) && d.custom && ok(d) && d.charge !== 0 && d.n >= 1 && d.m >= 2 && !d.polar; }
     }

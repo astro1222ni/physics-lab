@@ -186,7 +186,7 @@
   /** NO₂（或 I₂）的顏色深淺：吸光度 ∝ 濃度 × 光程（比爾定律），傳回透過率 10^(−A) */
   function transmittance(c, eps, path) { return Math.pow(10, -eps * c * path); }
 
-  /** 范特荷夫：由 (T, K) 數據求 ΔH°（kJ/mol）＝ −斜率 × R，ln K 對 1/T 的直線 */
+  /** 凡特荷夫：由 (T, K) 數據求 ΔH°（kJ/mol）＝ −斜率 × R，ln K 對 1/T 的直線 */
   function vantHoff(rows) {
     const pts = rows.filter(function (r) { return r.K > 0 && r.T > 0; });
     if (pts.length < 2) return null;

@@ -149,9 +149,8 @@ freshMissions();
 P = newPage('n2o4'); run(P);
 setT(P, 273); run(P); setV(P, 20); run(P);
 report('n2o4 273 K、20 mL：x(N2O4) = ' + P.rows[P.rows.length - 1].x.N2O4.toFixed(3), P, ['chemical-equilibrium-3']);
-for (let k = 0; k < 8; k++) amount(P, 'N2O4', 1);
 setV(P, 10); run(P);
-report('n2o4 273 K、10 mL、N2O4 加到 6 mmol：x(NO2) = ' + P.rows[P.rows.length - 1].x.NO2.toFixed(3), P, ['chemical-equilibrium-h1']);
+report('n2o4 273 K、10 mL（預設用量，又冷又擠）：x(NO2) = ' + P.rows[P.rows.length - 1].x.NO2.toFixed(3), P, ['chemical-equilibrium-h1']);
 // ---------- 4. HI 壓縮不動 ----------
 freshMissions();
 P = newPage('hi'); const w4a = run(P);

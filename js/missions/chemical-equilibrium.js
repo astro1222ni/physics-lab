@@ -47,7 +47,7 @@
     {
       id: 'chemical-equilibrium-4', level: 3,
       title: { zh: '壓了也不動', en: 'Squeezed but unmoved' },
-      desc: { zh: 'H2 + I2 ⇌ 2HI：在同一溫度把體積變成 2 倍以上（或一半以下），再次平衡後 HI 的物質的量變化不到 0.5%。', en: 'H2 + I2 ⇌ 2HI: at the same temperature, double the volume or more (or halve it or less); at the new equilibrium the amount of HI has changed by less than 0.5%.' },
+      desc: { zh: 'H2 + I2 ⇌ 2HI：在同一溫度把體積變成 2 倍以上（或一半以下），再次平衡後 HI 的莫耳數變化不到 0.5%。', en: 'H2 + I2 ⇌ 2HI: at the same temperature, double the volume or more (or halve it or less); at the new equilibrium the amount of HI has changed by less than 0.5%.' },
       check: function (ev) {
         if (!isS(ev, 'hi')) return false;
         const d = ev.data;
@@ -73,7 +73,7 @@
     {
       id: 'chemical-equilibrium-6', level: 5,
       title: { zh: '定壓的稀釋', en: 'Diluted at constant pressure' },
-      desc: { zh: 'N2O4 ⇌ 2NO2：切換到定壓，在同一溫度與壓力下加入氬氣，讓平衡時 NO2 的物質的量增加 10% 以上。', en: 'N2O4 ⇌ 2NO2: switch to constant pressure and, at the same temperature and pressure, add argon so that the amount of NO2 at equilibrium rises by 10% or more.' },
+      desc: { zh: 'N2O4 ⇌ 2NO2：切換到定壓，在同一溫度與壓力下加入氬氣，讓平衡時 NO2 的莫耳數增加 10% 以上。', en: 'N2O4 ⇌ 2NO2: switch to constant pressure and, at the same temperature and pressure, add argon so that the amount of NO2 at equilibrium rises by 10% or more.' },
       check: function (ev) {
         if (!isS(ev, 'n2o4') || ev.data.mode !== 'P' || ev.data.stop) return false;
         const d = ev.data;
@@ -112,14 +112,15 @@
     },
     {
       id: 'chemical-equilibrium-12', level: 9,
-      title: { zh: '范特荷夫的直線', en: 'Van ’t Hoff’s straight line' },
+      title: { zh: '凡特荷夫的直線', en: 'Van ’t Hoff’s straight line' },
       desc: { zh: '在至少 3 個溫度（最高與最低相差 60 K 以上）量到未知反應的平衡，求出 ΔH°，誤差在 2% 以內。', en: 'Measure equilibria of the unknown reaction at three or more temperatures, spanning at least 60 K, and find ΔH° within 2%.' },
       check: function (ev) { return isA(ev) && ev.data.nT >= 3 && ev.data.span >= 60 && ev.data.err <= 0.02; }
     },
     {
       id: 'chemical-equilibrium-h1', level: 3, hidden: true,
-      riddle: { zh: '冷到連顏色都睡著了。', en: 'So cold that even the colour fell asleep.' },
-      check: function (ev) { return isS(ev, 'n2o4') && ev.data.Ar === 0 && ev.data.x.NO2 <= 0.05; }
+      riddle: { zh: '又冷又擠，連顏色都睡著了。', en: 'So cold and so crowded that even the colour fell asleep.' },
+      // 試玩 T13：273 K 是溫度下限，只靠冷 x(NO2) 還有 0.126；提示加「擠」，門檻放寬到最低溫、最小體積（預設用量 0.060）做得到
+      check: function (ev) { return isS(ev, 'n2o4') && ev.data.Ar === 0 && ev.data.x.NO2 <= 0.065; }
     },
     {
       id: 'chemical-equilibrium-h2', level: 5, hidden: true,
@@ -132,7 +133,7 @@
     },
     {
       id: 'chemical-equilibrium-h3', level: 4, hidden: true,
-      riddle: { zh: '拆得比建的快。', en: 'Torn down faster than it was built.' },
+      riddle: { zh: '工廠裡，拆得比建的快。', en: 'In the factory, it is torn down faster than it was built.' },
       check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.origin === 'P' && d.T >= 850 && d.x.NH3 <= 0.03; }
     }
   ]);
