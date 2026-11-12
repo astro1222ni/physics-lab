@@ -52,7 +52,9 @@
     "mendelian-inheritance": "ca6f2c4f",
     "acid-base-titration": "be286dd9",
     "tides": "effa63c4",
-    "conic-sections": "03619a7f"
+    "conic-sections": "03619a7f",
+    "molecular-shapes": "201a9eb6",
+    "diffusion-osmosis": "b612797e"
   };
   /* VERSIONS-END */
 

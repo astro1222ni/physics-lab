@@ -66,6 +66,8 @@ const PREP = {
   'resonance-tube':    { click: ['#strike', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1'], wait: 1500, anchor: 0.3 },
   'thin-film':         { click: ['#drain'], wait: 2500, anchor: 0.5 },
   'earthquake':        { click: ['[data-mode="earth"]', '#play'], wait: 4500, anchor: 0.5 },
+  'molecular-shapes':  { canvas: '#view3 canvas', wait: 3500 },
+  'diffusion-osmosis': { click: ['#mCell', '#qSea'], wait: 6000, anchor: 0 },
   'moon-phases':       { wait: 1500 },
   'measurement':       { click: ['#closeBtn'], wait: 1500, anchor: 0 },
   'angular-momentum':  { click: ['#pull'], wait: 3200, anchor: 0.15 },

@@ -252,3 +252,12 @@ node tools/mission-proofs/<代號>.js # 證明該實驗的每個任務都做得�
 - **站長三個問題已回答（16:2x）**：學校 Google 帳號登不進去 → 學校 Workspace 對未滿 18 歲帳號預設封鎖第三方登入，請資訊組在管理控制台 API 控制項把用戶端 ID `608190591554-1vhhbgc73vlsrd0rqdsf3rtkjstchnr6.apps.googleusercontent.com` 設為受信任（可提議在登入失敗時加說明，站長還沒回）；4070 留給影片、維持內顯；試玩系統如上。
 - **之後**：續派新實驗（同時最多約 3 個助手）、清掉化學工作樹的空殼資料夾、最後一次 push 後刪 `.editing`、更新看板 `G:\Claude\tools\helper\dash\lab\lab_status.json`。
 - **重開後進度（11/12 17:xx）**：潮汐 16:5x 上線（e5242a7），14 個任務已登記（missionDefs 共 675）。地震波補 3D＋學生標震央已合併（f06faba）：學生在 2D／3D 地圖點「我的震央」、按「確認我的震央」判定標記位置、深度 h² = d² − Δ² 取平均、確認前看電腦解算 auto；任務 4、6 要標兩個交點（pairErr ≤ 10 km）、5、7、8、9 只標一點；證明腳本任務 7 三站門檻 270→255、另加四站一行。已知：測站很遠又含誤差時推算深度常是 0 km（d² 誤差大，物理正確）；分享連結不帶標記。新派：生物「擴散與滲透」`diffusion-osmosis`（cell 分支、建議章 ch-membrane）。
+
+## 十五、11/12 晚上：版面平衡、五科子工作串、全面試玩
+
+- **版面平衡 `js/lab-layout.js`**（站長：「中間有很大的空空洞的地方是沒有使用到的」）：寬螢幕（≥ 881 px）把控制面板尾端的卡片搬到畫布下方的 `div.panel.lab-spill`（報紙式分欄），試每一種切法取最低；焦點所在的卡片不動；窄螢幕全部還原。測試介面 `window.__labLayout`。f9c21ca 上線。
+- **每日任務冷卻補記**：兩次完成不到 10 秒時，達成結果存在 localStorage `dl-pending-v1`，倒數完自動寫入；離開頁面也會在回每日頁時補記（Codex 第三部分回報的中度問題）。
+- **五科子工作串**（站長：「各開5個子工作串，各自設計及擴充：物理、化學、生物、地球科學以及數學」「也包含要處理擴充它的 2D 以及 3D。還有各個實驗室的任務模式」）：lab-phy、lab-chem、lab-bio、lab-earth、lab-math。各自在 `G:\physics-lab-wt\<科目>` 工作樹 commit、不 push，交件單寫到 `G:\physics-lab-wt\交件\`，由主工作串審查、合併、上線。共用檔（首頁、任務清單、成就、簡體、規則）只有主工作串改。
+- **全面試玩**：Claude 試玩工作串 lab-playtest（副本 `G:\physics-lab-playtest-claude\site`，報告在 `...\報告\`，02:40 停、02:50 前交總結）；Codex 測 `G:\physics-lab-playtest-b`，回覆在共用交談區。科學內容審查（06 號報告，高 1、中 6、低 26）已按科目轉給五科子工作串；酸鹼滴定效能問題（緊急 U1）轉化學串。
+- **19:xx 推送**：Codex 第一部分修正（地震波揭曉文字與測站點擊門檻、numinput 先清編輯旗標再送事件、圓錐曲線快速切法提示）＋化學「分子的形狀」molecular-shapes（matter 分支、ch-bonds 章、成就 branch-matter「門得列夫的週期表」）＋生物「擴散與滲透」diffusion-osmosis（cell 分支、ch-membrane 章、成就 branch-cell「虎克的軟木塞」）。上線後要請站長用管理員帳號開排行榜頁登記任務。
+- **待辦**：數學「三角函數」trig-functions（lab-math 交件 74a6546）與物理科學審查修正（lab-phy 4fd4fda）待合併；隱藏任務星星要更大方（站長 11/12 晚上提出，方案待站長選）。
