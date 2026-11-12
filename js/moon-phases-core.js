@@ -8,6 +8,9 @@
  * 月球：克卜勒橢圓（半長軸 384 400 km、離心率 0.0549），平均黃經以恆星月 27.321 661 日等速增加，
  *   軌道面對黃道傾斜 5.145°；升交點每 18.6 年退行一圈、近地點每 8.85 年前進一圈（都可關掉）。
  *   位置由克卜勒方程式 M = E − e sin E 解出（牛頓法到機器精度），不做逐步積分，所以沒有能量漂移。
+ * 月球的自轉：等速（本初子午線平均朝向地球），自轉軸對黃道北極傾斜 1.54°，照卡西尼定律跟著交點退行（moonBody）。
+ *   天平動（libration）：從地心看是光學天平動（經度 ±6.5°、週期近點月；緯度 ±6.685°、週期交點月），
+ *   從地面看再加上周日天平動（約 ±1°）。近照、天空全景、3D 都用同一份自轉（viewFrame／moonView）。
  * 影子：太陽、地球、月球都是球；本影是同時外切太陽與遮擋天體的圓錐，半影是內切的圓錐（精確幾何）。
  *   沒有計入地球大氣使地影變大約 2% 的效應。
  * 觀測地點：預設臺灣（北緯 23.5°、東經 121°），也可選 18 個世界城市或自訂經緯度（PLACES）；
@@ -465,7 +468,8 @@
   }
   /**
    * 從台灣看月球時的方向：螢幕座標（x 向右、y 向上＝天頂方向）中，
-   * limb：月面亮邊的方向（指向太陽），north：月球北極（黃道北極方向）的方向。皆為 atan2(y, x) 的角度。
+   * limb：月面亮邊的方向（指向太陽），north：黃道北極的方向。皆為 atan2(y, x) 的角度。
+   * （月球自轉軸真正的方向、天平動與畫月面用的完整視圖見 moonView。）
    */
   function skyOrientation(el, t, lat, lon) {
     const m = moonAt(el, t), s = sunAt(t), P = observer(t, lat, lon);
@@ -482,14 +486,81 @@
     const np = toH(v3(0, 0, 1)); // 黃道北極（月球自轉軸只偏 1.5°）
     return { limb: proj(sd), north: proj(np) };
   }
+  // ---------- 月球的自轉與天平動 ----------
+  const I_MOON = 1.54 * DEG;        // 月球自轉軸對黃道北極的傾角
+  function clamp1(x) { return x > 1 ? 1 : x < -1 ? -1 : x; }
   /**
-   * 太陽在月面座標中的方向（單位向量 [x, y, z]：x 月面東、y 月面北、z 朝向觀者；月面北以黃道北極代表）。
-   * phaseAngle：相角；limb、north：skyOrientation 的亮邊方向與月球北極方向。只用到 limb − north，
-   * 所以和畫面怎麼擺無關：月面方向固定的畫面（近側固定、月球北極朝上）用它決定明暗界線落在月面上的位置。
+   * 月球本體座標軸（黃道座標中的單位向量）：X 指向月面經度 0°、緯度 0°（近側的中央），Y 指向東經 90°（危海那一側），
+   * Z 指向月球北極。經度向東為正（從月球北極往下看是逆時針，和地球的經度一樣）。
+   * 均勻自轉：本初子午線在月球赤道上、由「月球赤道與黃道的交點」量起的角度 φ = F + 180°，F = 平黃經 − Ω。
+   *   平黃經隨恆星月等速增加，所以本初子午線「平均」朝向地球，自轉是等速的；月球在橢圓軌道上忽快忽慢，
+   *   地球的方向就在本初子午線兩側來回擺動，這就是經度天平動（約 ±2e 弧度）。
+   * 自轉軸：對黃道北極傾斜 I = 1.54°，倒向與軌道北極相反的一側。卡西尼定律：自轉軸、黃道北極、軌道北極在同一個平面上，
+   *   黃道北極在中間；月球赤道與黃道的交點就是軌道與黃道的交點（交點退行時自轉軸跟著進動，18.6 年一圈）。
    */
-  function sunInMoonFrame(phaseAngle, limb, north) {
-    const a = limb - north + Math.PI / 2, si = Math.sin(phaseAngle);
-    return [si * Math.cos(a), si * Math.sin(a), Math.cos(phaseAngle)];
+  function moonBody(el, t) {
+    const Om = nodeLon(el, t), ph = meanLon(el, t) - Om + Math.PI;
+    const cO = Math.cos(Om), sO = Math.sin(Om), cI = Math.cos(I_MOON), sI = Math.sin(I_MOON);
+    const cp = Math.cos(ph), sp = Math.sin(ph);
+    // 交點座標（x 軸沿黃經 Ω）中：月球赤道的基底 xe = (1, 0, 0)、ye = (0, cos I, −sin I)、自轉軸 ze = (0, sin I, cos I)；再繞 z 轉 Ω
+    const rz = function (x, y, z) { return v3(x * cO - y * sO, x * sO + y * cO, z); };
+    return {
+      X: rz(cp, sp * cI, -sp * sI),
+      Y: rz(-sp, cp * cI, -cp * sI),
+      Z: rz(0, sI, cI)
+    };
+  }
+  /**
+   * 天平動：從 P（觀測者的地心位置，km；省略時從地心看）看月球時，畫面正中央那一點（次觀測點）的月面經緯度（弧度）。
+   * l > 0：次觀測點在東經，多看到東緣（危海那一側）；l < 0：多看到西緣（風暴洋那一側）。
+   * b > 0：次觀測點在北緯，多看到北極區；b < 0：多看到南極區。
+   * 從地心看是光學天平動（經度：等速自轉與克卜勒運動的差；緯度：自轉軸對軌道面傾斜 1.54° + 5.145°）；
+   * 從地面看，再加上地球半徑造成的視差，就是周日天平動（約 ±1°）。
+   */
+  function libration(el, t, P) {
+    const m = moonAt(el, t), B = moonBody(el, t);
+    const d = unit(sub(P || v3(0, 0, 0), m));      // 由月心指向觀測者
+    return { l: Math.atan2(dot(d, B.Y), dot(d, B.X)), b: Math.asin(clamp1(dot(d, B.Z))) };
+  }
+  /**
+   * 畫月面用的視圖。視線 f 由觀測者指向月心（黃道座標），upRef 是畫面上方的參考方向（投影到垂直視線的平面上當作「上」）。
+   * 畫面座標：x 向右、y 向上、z 朝向觀測者。傳回
+   *   ex、ey、ez：畫面座標軸（黃道座標中的單位向量）；
+   *   R：畫面座標 → 月球本體座標（X 經度 0°、Y 東經 90°、Z 北極）的 3×3 矩陣（逐列排成 9 個數）；
+   *   sun：太陽方向（由月心看）的畫面座標；limb：亮邊（指向太陽）在畫面上的方向角；pole：月球北極在畫面上的方向角（atan2(y, x)）；
+   *   l、b：畫面正中央的月面經緯度（次觀測點，也就是天平動）。
+   */
+  function viewFrame(el, t, f, upRef) {
+    const m = moonAt(el, t), s = sunAt(t), B = moonBody(el, t);
+    f = unit(f);
+    let ey = sub(upRef, mul(f, dot(upRef, f)));
+    if (len(ey) < 1e-9) { const alt = Math.abs(f.z) < 0.9 ? v3(0, 0, 1) : v3(1, 0, 0); ey = sub(alt, mul(f, dot(alt, f))); }
+    ey = unit(ey);
+    const ez = mul(f, -1), ex = cross(ey, ez);
+    const R = [dot(ex, B.X), dot(ey, B.X), dot(ez, B.X), dot(ex, B.Y), dot(ey, B.Y), dot(ez, B.Y), dot(ex, B.Z), dot(ey, B.Z), dot(ez, B.Z)];
+    const sd = unit(sub(s, m));
+    const sun = [dot(sd, ex), dot(sd, ey), dot(sd, ez)];
+    return {
+      ex: ex, ey: ey, ez: ez, R: R, sun: sun,
+      limb: Math.atan2(sun[1], sun[0]), pole: Math.atan2(R[7], R[6]),
+      l: Math.atan2(R[5], R[2]), b: Math.asin(clamp1(R[8])), body: B
+    };
+  }
+  /**
+   * 從觀測地點看月球的視圖（含周日天平動）。mode：
+   *   'sky'：以天頂為上（天空中真實的方向；月球自轉軸的位置角照實計算）；月亮在天頂時以天北極為上。
+   *   'face'：月球北極朝上（南半球 flip = true 時南極朝上）。月面方向固定，只有天平動造成的小晃動。
+   */
+  function moonView(el, t, lat, lon, mode, flip) {
+    const P = observer(t, lat, lon), m = moonAt(el, t), f = sub(m, P);
+    let up;
+    if (mode === 'face') { up = moonBody(el, t).Z; if (flip) up = mul(up, -1); }
+    else {
+      up = unit(P);                                   // 天頂（球形地球）
+      const fu = unit(f);
+      if (len(sub(up, mul(fu, dot(up, fu)))) < 1e-6) up = eqToEcl(v3(0, 0, 1));
+    }
+    return viewFrame(el, t, f, up);
   }
 
   // ---------- 日曆 ----------
@@ -627,7 +698,8 @@
     cone: cone, lunarEclipse: lunarEclipse, solarEclipse: solarEclipse, greatestPoint: greatestPoint, overlapArea: overlapArea,
     sunVisibleFrom: sunVisibleFrom, localSolar: localSolar, eclipsesAt: eclipsesAt, greatestEclipse: greatestEclipse,
     eclToEq: eclToEq, eqToEcl: eqToEcl, lst: lst, observer: observer, horizonBasis: horizonBasis, horizontal: horizontal,
-    declination: declination, moonAlt: moonAlt, sunAlt: sunAlt, riseSet: riseSet, transit: transit, skyOrientation: skyOrientation, sunInMoonFrame: sunInMoonFrame,
+    declination: declination, moonAlt: moonAlt, sunAlt: sunAlt, riseSet: riseSet, transit: transit, skyOrientation: skyOrientation,
+    I_MOON: I_MOON, moonBody: moonBody, libration: libration, viewFrame: viewFrame, moonView: moonView,
     calendar: calendar, timeOf: timeOf, doyOf: doyOf,
     PLACES: PLACES, REF_YEAR: REF_YEAR, UTC_MIN: UTC_MIN, UTC_MAX: UTC_MAX, placeById: placeById, defaultUtc: defaultUtc, manualPlace: manualPlace,
     zoneOffset: zoneOffset, utcMs: utcMs, utcOffset: utcOffset, standardOffset: standardOffset, localT: localT, fromLocal: fromLocal, localDay: localDay
