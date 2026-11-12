@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Pascal’s Triangle and the Binomial Theorem | Astro Ni Science Lab">巴斯卡三角形與二項式定理｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 巴斯卡三角形頁面專用的顏色代號（淺色＋深色；由 js/pascal-triangle.js 讀取） */
+    :root { --pt-lo: #c7d2fe; --pt-hi: #4338ca; --pt-sel: #db2777; --pt-par: #0f766e; --pt-path: #ea580c; --pt-block: #dc2626; --pt-pos: #2563eb; --pt-neg: #e11d48; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pt-lo: #312e81; --pt-hi: #a5b4fc; --pt-sel: #f472b6; --pt-par: #5eead4; --pt-path: #fb923c; --pt-block: #f87171; --pt-pos: #60a5fa; --pt-neg: #fb7185; }
+    }
+    :root[data-theme="dark"] { --pt-lo: #312e81; --pt-hi: #a5b4fc; --pt-sel: #f472b6; --pt-par: #5eead4; --pt-path: #fb923c; --pt-block: #f87171; --pt-pos: #60a5fa; --pt-neg: #fb7185; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .pt button { min-height: 44px; }
+    .pt [hidden] { display: none !important; }
+    .pt .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pt .playbar button { flex: 1 1 auto; }
+    .pt .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pt .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pt .slider input[type="range"] { height: 28px; margin: 0; }
+    .pt .checks label { min-height: 44px; }
+    .pt .checks input { width: 17px; height: 17px; }
+    .pt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pt .panel { grid-template-columns: minmax(0, 1fr); }
+    .pt .panel > .card { min-width: 0; }
+    .pt:not([data-mode="tri"]) .mt, .pt:not([data-mode="grid"]) .mg, .pt:not([data-mode="binom"]) .mb { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .modes button, .tools button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .tools button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .tools button { align-items: center; text-align: center; }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+    .btnrow button { flex: 1 1 auto; padding: 6px 10px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .opts button { font-size: calc(17px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .opts button.right { background: var(--pt-par); color: var(--surface); border-color: var(--pt-par); }
+    .opts button.wrong { border-color: var(--pt-neg); color: var(--pt-neg); }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--pt-par); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#probability&quot;>Mathematics · Probability and Statistics</a> / Pascal’s triangle"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#probability">數學・機率與統計</a> ／ 巴斯卡三角形</nav>
+      <h1 data-en="Pascal’s Triangle and the Binomial Theorem">巴斯卡三角形與二項式定理</h1>
+      <p data-en-html="Every number is the sum of the two above it — and that one rule counts routes through a grid, gives the coefficients of (a x + b)<sup>n</sup>, and paints a fractal when you colour the odd numbers.">每個數都是上面兩個數的和——就這一條規則，數得出格子裡有幾條路、給得出 (a x + b)<sup>n</sup> 的係數，把奇數塗上顏色還會畫出碎形。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: colour by the remainder on division by 2 and drag the number of rows up to 64 — the odd numbers draw triangles inside triangles.">試試看：依「除以 2 的餘數」上色，把列數拉到 64，看奇數排出一層套一層的三角形。</p>
+    <div class="lab pt" id="lab" data-mode="tri">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="巴斯卡三角形畫布：三角形模式可以點一格看它由哪兩格相加；走格子模式從 A 點到 B、放路障；二項式模式畫出每一項的係數。" data-en-aria-label="Pascal’s triangle canvas: in triangle mode tap a cell to see the two cells that add up to it; in grid mode tap a route from A to B and place blocks; in binomial mode the coefficient of every term is drawn as a bar."></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除選取、路徑、路障、代入結果與挑戰紀錄；滑桿設定不變" data-en-title="Clear the selection, the route, the blocks, the substitution and the challenge record; the sliders are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="mt" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pt-sel)&quot;></i>Selected cell"><i class="dot" style="background:var(--pt-sel)"></i>選取的格</span>
+          <span class="mt" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pt-par)&quot;></i>The two cells above it"><i class="dot" style="background:var(--pt-par)"></i>上面相加的兩格</span>
+          <span class="mg" data-en-html="<i style=&quot;background:var(--pt-path)&quot;></i>Your route"><i style="background:var(--pt-path)"></i>你的路徑</span>
+          <span class="mg" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pt-block)&quot;></i>Block"><i class="dot" style="background:var(--pt-block)"></i>路障</span>
+          <span class="mb" data-en-html="<i style=&quot;background:var(--pt-pos)&quot;></i>Positive coefficient"><i style="background:var(--pt-pos)"></i>正的係數</span>
+          <span class="mb" data-en-html="<i style=&quot;background:var(--pt-neg)&quot;></i>Negative coefficient"><i style="background:var(--pt-neg)"></i>負的係數</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="tri" aria-pressed="true" data-en-html="Triangle<small>add the two above</small>">三角形<small>上面兩數相加</small></button>
+            <button type="button" data-mode="grid" aria-pressed="false" data-en-html="Grid paths<small>count the routes</small>">走格子<small>數有幾條路</small></button>
+            <button type="button" data-mode="binom" aria-pressed="false" data-en-html="Binomial expansion<small>(a x + b)<sup>n</sup></small>">二項式展開<small>(a x + b)<sup>n</sup></small></button>
+          </div>
+        </section>
+
+        <section class="card mt">
+          <h2 data-en="Triangle">三角形</h2>
+          <div class="slider"><label for="tn" data-en="Number of rows">列數</label><output id="tno"></output>
+            <input id="tn" type="range" min="1" max="64" step="1" value="12" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="colorC" type="checkbox"><span data-en="Colour by the remainder on division by m">依「除以 m 的餘數」上色</span></label>
+          </div>
+          <div class="slider"><label for="tm" data-en="m">m</label><output id="tmo"></output>
+            <input id="tm" type="range" min="2" max="10" step="1" value="2" data-decimals="0"></div>
+          <p class="hint" data-en="Tap a cell (or use the arrow keys on the picture) to see how it is made. The numbers are written in when the cells are big enough; the readings always show the exact value.">點一格（或在圖上用方向鍵）看它怎麼來的。格子夠大時會寫出數字；讀數一律顯示精確的值。</p>
+        </section>
+
+        <section class="card mg">
+          <h2 data-en="Grid">格子</h2>
+          <div class="slider"><label for="gm" data-en="Steps to the right">向右幾步</label><output id="gmo"></output>
+            <input id="gm" type="range" min="1" max="8" step="1" value="4" data-decimals="0"></div>
+          <div class="slider"><label for="gn" data-en="Steps up">向上幾步</label><output id="gno"></output>
+            <input id="gn" type="range" min="1" max="8" step="1" value="3" data-decimals="0"></div>
+          <div class="tools" role="group" aria-label="點格子做什麼" data-en-aria-label="What a tap on the grid does">
+            <button type="button" data-tool="path" aria-pressed="true" data-en="Draw a route">畫路徑</button>
+            <button type="button" data-tool="block" aria-pressed="false" data-en="Place blocks">放路障</button>
+          </div>
+          <div class="checks">
+            <label><input id="waysC" type="checkbox" checked><span data-en="Show the number of ways to reach each point">顯示到每個點的走法數</span></label>
+          </div>
+          <div class="btnrow">
+            <button id="randPath" type="button" data-en="A random route">隨機一條路</button>
+            <button id="clearPath" type="button" data-en="Clear the route">清除路徑</button>
+            <button id="clearBlocks" type="button" data-en="Remove the blocks">拿掉路障</button>
+          </div>
+          <p class="hint" data-en="Each step goes one square right or up. Tap the next point to extend the route; tap a point already on it to go back there.">每一步向右或向上走一格。點下一個點延長路徑；點路徑上的點可以退回那裡。</p>
+        </section>
+
+        <section class="card mb">
+          <h2 data-en-html="(a x + b)<sup>n</sup>">(a x + b)<sup>n</sup></h2>
+          <div class="slider"><label for="ba" data-en="a">a</label><output id="bao"></output>
+            <input id="ba" type="range" min="-3" max="3" step="1" value="1" data-decimals="0"></div>
+          <div class="slider"><label for="bb" data-en="b">b</label><output id="bbo"></output>
+            <input id="bb" type="range" min="-3" max="3" step="1" value="1" data-decimals="0"></div>
+          <div class="slider"><label for="bn" data-en="n">n</label><output id="bno"></output>
+            <input id="bn" type="range" min="0" max="10" step="1" value="4" data-decimals="0"></div>
+          <div class="btnrow">
+            <button id="sub1" type="button" data-en="Put in x = 1">代入 x = 1</button>
+            <button id="subm1" type="button" data-en="Put in x = −1">代入 x = −1</button>
+          </div>
+          <p class="hint" data-en="Tap a bar to see how its coefficient is built from the triangle.">點一根長條，看它的係數怎麼由三角形算出來。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout mt">
+            <dt data-en="Selected cell">選取的格</dt><dd id="rCell">—</dd>
+            <dt data-en="Value">數值</dt><dd id="rVal">—</dd>
+            <dt data-en="Sum of that row">那一列的和</dt><dd id="rRow">—</dd>
+            <dt data-en="Remainder on division by m">除以 m 的餘數</dt><dd id="rMod">—</dd>
+          </dl>
+          <dl class="readout mg">
+            <dt data-en="Routes from A to B">從 A 到 B 的路徑數</dt><dd id="rCount">—</dd>
+            <dt data-en="Without blocks">沒有路障時</dt><dd id="rTotal">—</dd>
+            <dt data-en="Blocks">路障</dt><dd id="rBlocks">—</dd>
+            <dt data-en="Your route so far">你的路徑</dt><dd id="rPath">—</dd>
+          </dl>
+          <dl class="readout mb">
+            <dt data-en="Selected term">選取的項</dt><dd id="rTerm">—</dd>
+            <dt data-en="Sum of the coefficients">係數和</dt><dd id="rSum">—</dd>
+            <dt data-en="Alternating sum">交錯和</dt><dd id="rAlt">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card mg">
+          <h2 data-en="Challenge: how many routes?">挑戰：幾條路？</h2>
+          <p class="hint" data-en="A grid with some blocks appears, with the numbers hidden. Pick how many shortest routes go from A to B — add up the ways point by point in your head.">出一個有路障的格子，數字藏起來。選出從 A 到 B 有幾條最短路徑——在心裡逐點把走法數加起來。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <div class="opts" id="opts" hidden></div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="One rule">只有一條規則</h3>
+      <p data-en-html="Write 1 at the top and along both edges; every other number is the sum of the two just above it. The number in row \(n\), position \(k\) (both counted from 0) is the <strong>binomial coefficient</strong>">最上面和兩條斜邊都寫 1，其他每個數都是正上方兩個數的和。第 \(n\) 列第 \(k\) 個數（都從 0 開始數）就是<strong>組合數</strong></p>
+      <div class="formula">\[ \binom{n}{k} = C^n_k = \frac{n!}{k!\,(n-k)!}, \qquad \binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}. \]</div>
+      <p data-en-html="Why the rule? To choose \(k\) things from \(n\), look at one particular thing: either you take it (and choose \(k - 1\) from the other \(n - 1\)) or you leave it (and choose all \(k\) from the other \(n - 1\))."><strong>為什麼</strong>？從 \(n\) 個東西選 \(k\) 個，先看其中一個：選了它，就從其他 \(n - 1\) 個再選 \(k - 1\) 個；不選它，就從其他 \(n - 1\) 個選 \(k\) 個。</p>
+
+      <h3 data-en="Routes through a grid">走格子</h3>
+      <p data-en-html="A shortest route from \(A\) to \(B\) on an \(m \times n\) grid is a string of \(m\) “right” steps and \(n\) “up” steps, in some order. Choosing which \(m\) of the \(m + n\) steps go right fixes the route, so there are \(\binom{m+n}{m}\) routes. Point by point, the number of ways to reach a point is the number for the point to its left plus the one below — the same addition as in the triangle, turned 45°. A block simply has 0 ways, and the additions carry on around it.">在 \(m \times n\) 的格子從 \(A\) 走到 \(B\) 的最短路徑，就是 \(m\) 個「右」和 \(n\) 個「上」排成一列。決定 \(m + n\) 步裡哪 \(m\) 步向右，路徑就確定了，所以共有 \(\binom{m+n}{m}\) 條。逐點來看，走到某一點的方法數 = 左邊那點 + 下面那點——和三角形一樣的加法，只是轉了 45°。路障的走法數是 0，加法照樣繞過它進行。</p>
+
+      <h3 data-en="The binomial theorem">二項式定理</h3>
+      <div class="formula">\[ (a x + b)^n = \sum_{k=0}^{n} \binom{n}{k} a^k b^{\,n-k} x^k. \]</div>
+      <p data-en-html="Multiplying out \(n\) brackets, each term picks \(a x\) from \(k\) brackets and \(b\) from the rest — \(\binom{n}{k}\) ways. Putting \(x = 1\) gives the sum of the coefficients, \((a + b)^n\); for \((x + 1)^n\) that is \(2^n\), the row sum. Putting \(x = -1\) gives the alternating sum \((b - a)^n\), which is 0 for \((x + 1)^n\).">把 \(n\) 個括號乘開，每一項是從其中 \(k\) 個括號拿 \(a x\)、其餘拿 \(b\)——有 \(\binom{n}{k}\) 種拿法。代入 \(x = 1\) 得係數和 \((a + b)^n\)；對 \((x + 1)^n\) 就是 \(2^n\)，也就是那一列的和。代入 \(x = -1\) 得交錯和 \((b - a)^n\)，對 \((x + 1)^n\) 是 0。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Odd numbers</strong>: coloured by the remainder on division by 2, the triangle shows triangles inside triangles (the Sierpiński triangle). Rows 1, 3, 7, 15, 31, 63 — one less than a power of 2 — are entirely odd."><strong>奇數</strong>：依除以 2 的餘數上色，會出現三角形裡套三角形（謝爾賓斯基三角形）。第 1、3、7、15、31、63 列（比 2 的次方少 1）全部都是奇數。</li>
+        <li data-en-html="<strong>Symmetry</strong>: \(\binom{n}{k} = \binom{n}{n-k}\) — choosing what to take is the same as choosing what to leave."><strong>對稱</strong>：\(\binom{n}{k} = \binom{n}{n-k}\)——選要拿的，等於選不拿的。</li>
+        <li data-en-html="<strong>Half the routes</strong>: on a square grid, by symmetry exactly half the routes start with a step to the right."><strong>一半的路</strong>：正方形格子裡，由對稱性，剛好一半的路徑第一步向右。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Values are exact integers (JavaScript BigInt): row 63 already exceeds \(2^{53}\), where ordinary floating-point numbers stop being exact. Remainders are computed with the addition rule directly on remainders. The unit tests compare every value up to row 70 with the factorial formula, check the row sums, the hockey-stick identity, that the shallow diagonals add up to Fibonacci numbers, the blocked-grid counts against inclusion–exclusion, and that a random route picks every route equally often.">數值用 JavaScript 的 BigInt 精確計算：第 63 列已經超過 \(2^{53}\)，一般的浮點數到這裡就不精確了。餘數直接用加法規則在餘數上算。單元測試把第 70 列以內的每一個數和階乘公式比對，並檢查列和、曲棍球棒恆等式、淺對角線的和是費氏數、有路障時的路徑數和排容原理一致、隨機路徑每一條出現的機會相同。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 10) · counting: combinations, Pascal’s triangle, the binomial theorem.">課綱對應：高中數學（高一）・排列組合：組合、巴斯卡三角形、二項式定理。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Pascal%27s_triangle&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Pascal’s triangle (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Lattice_path&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Lattice path (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Pascal%27s_triangle" target="_blank" rel="noopener">Pascal’s triangle（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Lattice_path" target="_blank" rel="noopener">Lattice path（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/pascal-triangle-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/pascal-triangle.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="pascal-triangle"></script>
+  <script src="js/missions/pascal-triangle.js"></script>
+  <script src="js/stats.js" data-module="pascal-triangle"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
