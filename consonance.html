@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Consonance and Dissonance | Astro Ni Science Lab">協和與不協和｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 協和與不協和頁面專用的顏色代號（淺色＋兩組深色；由 js/consonance.js 與 js/consonance-3d.js 讀取）
+       lo 下方音、hi 上方音、curve 不協和曲線、rough 粗糙（最刺耳的一對、山頂）、calm 谷底、coin 重合的泛音、pin 留下的舊曲線、r2 第三個音 */
+    :root { --cs-lo: #1d4ed8; --cs-hi: #c2410c; --cs-curve: #0f766e; --cs-rough: #be123c; --cs-calm: #15803d; --cs-coin: #b45309; --cs-pin: #64748b; --cs-r2: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cs-lo: #7aa7ff; --cs-hi: #fb923c; --cs-curve: #5eead4; --cs-rough: #fb7185; --cs-calm: #4ade80; --cs-coin: #fbbf24; --cs-pin: #94a3b8; --cs-r2: #b9a0ff; }
+    }
+    :root[data-theme="dark"] { --cs-lo: #7aa7ff; --cs-hi: #fb923c; --cs-curve: #5eead4; --cs-rough: #fb7185; --cs-calm: #4ade80; --cs-coin: #fbbf24; --cs-pin: #94a3b8; --cs-r2: #b9a0ff; }
+
+    /* 主畫布：上面是不協和曲線（可以拖曳游標），下面是頻譜對照與波形／拍；高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: default; }
+    #cv.dragging { cursor: ew-resize; }
+    .cs [hidden] { display: none !important; }
+    .cs button { min-height: 44px; }
+    .cs .playbar, .cs .pinbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cs .playbar button, .cs .pinbar button { flex: 1 1 auto; }
+    .cs .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cs #stop:disabled, .cs #clear:disabled { opacity: .5; cursor: default; }
+    .cs #sweep[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .cs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .cs .panel { grid-template-columns: minmax(0, 1fr); }
+    .cs .panel > .card { min-width: 0; }
+    .cs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .cs .card .hint.tight { margin-top: -4px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+    .seg.full button { padding: 6px 6px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-wrap { position: relative; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .c3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .c3-hud span.m { color: var(--muted); font-weight: 500; }
+    .c3-hud span.ok { color: var(--cs-calm); }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .ivs { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(76px * var(--fs, 1)), 1fr)); gap: 6px; margin: 8px 0 0; }
+    .ivs button { padding: 4px 4px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.15; }
+    .ivs button.here { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .jumprow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 4px 0 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); }
+    .jumprow .seg { flex: 1 1 auto; }
+    .jumprow .seg button { flex: 1 1 0; padding: 6px 10px; }
+    .chk { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); margin: 2px 0 6px; cursor: pointer; }
+    .chk input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; margin: 0; }
+    .slider.off { opacity: .5; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .ok-txt { color: var(--cs-calm); font-weight: 700; }
+    .bad-txt { color: var(--cs-rough); font-weight: 700; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#harmony&quot;>Music · Harmony</a> / Consonance and Dissonance"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#harmony">音樂・和聲</a> ／ 協和與不協和</nav>
+      <h1 data-en="Consonance and Dissonance">協和與不協和</h1>
+      <p data-en="Why do an octave, a fifth, a fourth and a major third sound “smooth”, while a minor second, a major seventh and a tritone sound “harsh”? Two pure tones that are close in pitch beat and sound rough; once they are a critical band apart they no longer disturb each other. A real note carries a whole row of overtones, and every pair of overtones adds its own roughness. Slide the frequency ratio and watch the dissonance curve: its valleys fall exactly where the overtones of the two notes line up — at simple whole-number ratios. Change the timbre and the valleys move with it.">為什麼八度、五度、四度、大三度聽起來「和」，小二度、大七度、三全音卻很「刺」？兩個頻率很接近的純音會拍、會粗糙；離得超過一個臨界頻帶，就互不干擾了。真實的樂音帶著一整排泛音，每一對泛音都貢獻一點粗糙感。拖曳頻率比，看不協和曲線：谷底剛好落在兩個音的泛音彼此重合的地方——簡單的整數比。換一種音色，谷底也跟著搬家。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Sweep one octave”, follow the cursor, and listen for the ratios where the roughness suddenly drops away.">試試看：按「掃過一個八度」，眼睛跟著游標，聽粗糙感在哪幾個比值突然消失。</p>
+    <div class="lab cs" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D curve">2D 曲線</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D chord surface">3D 和弦曲面</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="sweep" type="button" aria-pressed="false" data-en="Sweep one octave" title="頻率比從 1 慢慢滑到 2，聲音和曲線上的游標同步" data-en-title="The frequency ratio glides from 1 to 2; the sound and the cursor on the curve move together">掃過一個八度</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="pinbar l2">
+          <button id="pin" type="button" data-en="Keep this curve" title="把目前的曲線留在圖上（虛線），換了音色或下方音之後可以比較；最多 4 條" data-en-title="Keep the current curve on the chart (dashed) to compare after changing the timbre or the lower note; up to 4">留下這條曲線</button>
+          <button id="clear" type="button" disabled data-en="Clear all" title="清掉留下的舊曲線；滑桿與音色設定不變" data-en-title="Remove the kept curves; the sliders and timbre stay as they are">全部清除</button>
+        </div>
+        <div class="legend l2">
+          <span data-en-html="<i style=&quot;background:var(--cs-curve)&quot;></i>Dissonance curve D(r)"><i style="background:var(--cs-curve)"></i>不協和曲線 D(r)</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cs-calm)&quot;></i>Valley"><i class="dot" style="background:var(--cs-calm)"></i>谷底</span>
+          <span data-en-html="<i style=&quot;background:var(--cs-lo)&quot;></i>Lower note"><i style="background:var(--cs-lo)"></i>下方音</span>
+          <span data-en-html="<i style=&quot;background:var(--cs-hi)&quot;></i>Upper note"><i style="background:var(--cs-hi)"></i>上方音</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cs-coin)&quot;></i>Overtones that coincide"><i class="dot" style="background:var(--cs-coin)"></i>重合的泛音</span>
+          <span data-en-html="<i style=&quot;background:var(--cs-rough)&quot;></i>Pair that beats (roughness)"><i style="background:var(--cs-rough)"></i>會拍的泛音對（粗糙）</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--cs-pin)&quot;></i>Kept curves"><i class="dash" style="color:var(--cs-pin)"></i>留下的曲線</span>
+        </div>
+        <p class="hint l2" data-en="Drag on the curve (or focus it and use the arrow keys) to move the ratio. The model is Plomp &amp; Levelt’s roughness curve with Sethares’ parameters; the timbres are synthesized approximations.">在曲線上拖曳（或聚焦畫布後按方向鍵）就能改頻率比。模型是 Plomp 與 Levelt 的粗糙度曲線（Sethares 的參數），音色是合成的近似。</p>
+        <p class="hint l3" data-en-html="3D: across = the middle note’s ratio r, depth = the top note’s ratio r<sub>2</sub> (both 1 to 2), height = √D<sub>3</sub> of all three notes. Drag to rotate, scroll or pinch to zoom.">3D：橫軸是中音的頻率比 r，縱深是最高音的頻率比 r<sub>2</sub>（都是 1 到 2），高度是三個音一起的 √D<sub>3</sub>。拖曳旋轉，滾輪或雙指縮放。</p>
+        <p class="hint" data-en="Pure tones and stretched overtones are made of pure sine waves, so they play for at most 4 seconds (hearing protection). If you wear earphones, turn the volume down first.">純音與拉伸泛音都是純正弦波，最多響 4 秒（保護聽力）。戴耳機的同學先把音量調小。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Two notes">兩個音</h2>
+          <div class="slider"><label for="f1" data-en-html="Lower note f<sub>1</sub> (Hz)">下方音 f<sub>1</sub>（Hz）</label><output id="f1o"></output>
+            <input id="f1" type="range" min="0" max="3600" step="1" value="1500" data-decimals="2"></div>
+          <p class="hint tight" id="f1Note"></p>
+          <div class="slider"><label for="rr" data-en-html="Frequency ratio r = f<sub>2</sub> / f<sub>1</sub>">頻率比 r = f<sub>2</sub> / f<sub>1</sub></label><output id="rro"></output>
+            <input id="rr" type="range" min="0" max="1442" step="1" value="100" data-decimals="4"></div>
+          <div class="jumprow">
+            <span data-en="Interval buttons jump to:">音程按鈕跳到：</span>
+            <div class="seg" role="group" aria-label="音程按鈕跳到的比值" data-en-aria-label="Ratio used by the interval buttons">
+              <button type="button" data-jump="just" aria-pressed="true" data-en="Just">純律</button>
+              <button type="button" data-jump="equal" aria-pressed="false" data-en="Equal temperament">平均律</button>
+            </div>
+          </div>
+          <div class="ivs" id="ivs" role="group" aria-label="音程" data-en-aria-label="Intervals">
+            <button type="button" data-iv="0" data-en="Unison">同度</button>
+            <button type="button" data-iv="1" data-en="Minor 2nd">小二度</button>
+            <button type="button" data-iv="2" data-en="Major 2nd">大二度</button>
+            <button type="button" data-iv="3" data-en="Minor 3rd">小三度</button>
+            <button type="button" data-iv="4" data-en="Major 3rd">大三度</button>
+            <button type="button" data-iv="5" data-en="Perfect 4th">完全四度</button>
+            <button type="button" data-iv="6" data-en="Tritone">三全音</button>
+            <button type="button" data-iv="7" data-en="Perfect 5th">完全五度</button>
+            <button type="button" data-iv="8" data-en="Minor 6th">小六度</button>
+            <button type="button" data-iv="9" data-en="Major 6th">大六度</button>
+            <button type="button" data-iv="10" data-en="Minor 7th">小七度</button>
+            <button type="button" data-iv="11" data-en="Major 7th">大七度</button>
+            <button type="button" data-iv="12" data-en="Octave">八度</button>
+          </div>
+          <p class="hint" id="jumpHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Timbre (both notes)">音色（兩個音一樣）</h2>
+          <div class="seg full" role="group" aria-label="音色" data-en-aria-label="Timbre">
+            <button type="button" data-mode="pure" aria-pressed="false" data-en="Pure tone">純音</button>
+            <button type="button" data-mode="harmonic" aria-pressed="true" data-en="Harmonics">泛音</button>
+            <button type="button" data-mode="stretched" aria-pressed="false" data-en="Stretched">拉伸泛音</button>
+          </div>
+          <div class="slider" id="nnBox"><label for="nn" data-en="Number of partials n">泛音數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="1" max="10" step="1" value="6" data-decimals="0"></div>
+          <div class="slider" id="ppBox"><label for="pp" data-en-html="Roll-off exponent p (strength 1/k<sup>p</sup>)">衰減指數 p（強度 1/k<sup>p</sup>）</label><output id="ppo"></output>
+            <input id="pp" type="range" min="0" max="2" step="0.05" value="1" data-decimals="2"></div>
+          <label class="chk" id="oddBox"><input type="checkbox" id="odd"><span data-en="Odd partials only (like a clarinet)">只留奇次泛音（像單簧管）</span></label>
+          <div class="slider" id="ssBox"><label for="ss" data-en-html="Stretch exponent s (partial k at k<sup>s</sup> × f)">拉伸係數 s（第 k 個在 k<sup>s</sup> 倍）</label><output id="sso"></output>
+            <input id="ss" type="range" min="0.8" max="1.2" step="0.001" value="1.1" data-decimals="3"></div>
+          <p class="hint" id="timbreHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="rd">
+            <dt data-en="Ratio r">頻率比 r</dt><dd id="rdR">—</dd>
+            <dt data-en="Nearest interval">最接近的音程</dt><dd id="rdIv">—</dd>
+            <dt data-en="Off from equal / just">和平均律／純律差</dt><dd id="rdDev">—</dd>
+            <dt data-en="The two notes">兩個音</dt><dd id="rdF">—</dd>
+            <dt data-en="Difference Δf">頻率差 Δf</dt><dd id="rdDf">—</dd>
+            <dt data-en="Critical band">臨界頻帶</dt><dd id="rdCb">—</dd>
+            <dt data-en="Dissonance D">不協和度 D</dt><dd id="rdD">—</dd>
+            <dt data-en="Roughest overtone pair">最刺耳的一對泛音</dt><dd id="rdPair">—</dd>
+            <dt data-en="Nearest valley">最近的谷底</dt><dd id="rdValley">—</dd>
+            <dt data-en="Valleys from 1 to 2">1 到 2 之間的谷</dt><dd id="rdCount">—</dd>
+            <dt data-en="Pure tones: roughest Δf">純音最刺耳的 Δf</dt><dd id="rdPeak">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Three-note chord (3D surface)">三音和弦（3D 曲面）</h2>
+          <div class="slider"><label for="r2" data-en-html="Top note’s frequency ratio r<sub>2</sub>">最高音的頻率比 r<sub>2</sub></label><output id="r2o"></output>
+            <input id="r2" type="range" min="0" max="1200" step="1" value="900" data-decimals="4"></div>
+          <button id="playChord" type="button" style="width:100%" data-en="▶ Play chord">▶ 播放和弦</button>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Three notes (Hz)">三個音（Hz）</dt><dd id="chF">—</dd>
+            <dt data-en-html="Dissonance D<sub>3</sub>">不協和度 D<sub>3</sub></dt><dd id="chD">—</dd>
+            <dt data-en="Basin?">盆地底？</dt><dd id="chB">—</dd>
+          </dl>
+          <p class="hint" data-en-html="The chord is the lower note f<sub>1</sub>, the middle note r·f<sub>1</sub> (the “Frequency ratio r” slider above) and the top note r<sub>2</sub>·f<sub>1</sub>. Switch to “3D chord surface” to see every chord at once.">和弦是下方音 f<sub>1</sub>、中音 r·f<sub>1</sub>（上面的「頻率比 r」）和最高音 r<sub>2</sub>·f<sub>1</sub>。切到「3D 和弦曲面」可以一次看到所有的和弦。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Beats, roughness and the critical band">拍、粗糙感與臨界頻帶</h3>
+      <p data-en-html="Play two pure tones with frequencies \(f_1\) and \(f_2\) together. When they are only a few hertz apart you hear one tone whose loudness swells and fades \(|f_2 - f_1|\) times a second — <strong>beats</strong>. Move them further apart and the beats become too fast to count: the sound turns <strong>rough</strong>. Further still, the ear hears two separate, smooth tones. Inside the cochlea each tone excites a stretch of the basilar membrane about one <strong>critical band</strong> wide; two tones disturb each other only when their stretches overlap. Plomp and Levelt (1965) asked listeners to rate pairs of pure tones and found that the roughness is greatest at about a quarter of a critical band and almost gone at one critical band — no matter what the frequency ratio is.">兩個頻率 \(f_1\)、\(f_2\) 的純音一起響。只差幾赫茲時，聽到的是一個響度一下大一下小的音，每秒起伏 \(|f_2 - f_1|\) 次——這就是<strong>拍</strong>。再拉開一點，拍快到數不清，聲音變得<strong>粗糙</strong>；再拉開，耳朵就聽成兩個分開、平滑的音。耳蝸裡，每個音讓基底膜上大約一個<strong>臨界頻帶</strong>寬的區域振動，兩個區域重疊時才會互相干擾。Plomp 與 Levelt（1965）請受試者評分兩個純音的「不協和」，發現粗糙感在相距大約四分之一個臨界頻帶時最強，到一個臨界頻帶時就幾乎消失——和頻率比是不是整數比無關。</p>
+      <p data-en-html="The width of a critical band depends on its centre frequency \(F\) in kHz (Zwicker and Terhardt 1980):">臨界頻帶的寬度隨中心頻率 \(F\)（單位 kHz）改變（Zwicker 與 Terhardt 1980）：</p>
+      <div class="formula">\[ \begin{gathered} \mathrm{CB} = 25 + 75\,X^{0.69}\ \text{Hz} \\ X = 1 + 1.4F^2 \end{gathered} \]</div>
+      <p data-en-html="Sethares (2005) fitted Plomp and Levelt’s curve with two exponentials. For two components of strengths \(a_1, a_2\), the lower one at \(f_\text{min}\), a distance \(\Delta f\) apart:">Sethares（2005）用兩個指數函數描出 Plomp–Levelt 曲線。兩個強度 \(a_1\)、\(a_2\) 的成分，較低的在 \(f_\text{min}\)，相差 \(\Delta f\)：</p>
+      <div class="formula">\[ \begin{aligned} d &= \min(a_1, a_2)\,\bigl[\,5e^{-3.51\,s\,\Delta f} \\ &\qquad\quad - 5e^{-5.75\,s\,\Delta f}\,\bigr] \\ s &= \frac{0.24}{0.0207\,f_\text{min} + 18.96} \end{aligned} \]</div>
+      <p data-en-html="\(d\) is 0 when the two coincide (\(\Delta f = 0\)), largest at \(\Delta f^* = \ln(5.75/3.51)\,/\,(2.24\,s)\) (about 22 Hz around middle C, roughly a fifth to a quarter of a critical band) and dies away beyond. For pure tones that is the whole story: the curve has <strong>one hill and no valleys</strong> — a pure-tone octave is no smoother than a pure-tone tritone once both are well beyond a critical band.">兩個成分重合（\(\Delta f = 0\)）時 \(d = 0\)；在 \(\Delta f^* = \ln(5.75/3.51)\,/\,(2.24\,s)\) 最大（中央 C 附近約 22 Hz，大約是臨界頻帶的五分之一到四分之一）；再遠就逐漸消失。對純音來說這就是全部：曲線<strong>只有一座山、沒有谷</strong>——兩個純音只要相距遠超過一個臨界頻帶，八度並不比三全音更「和」。</p>
+
+      <h3 data-en="Notes with overtones: why simple ratios">帶泛音的音：為什麼是簡單整數比</h3>
+      <p data-en-html="A note played on an instrument has overtones at \(f, 2f, 3f, \dots\). Put two such notes together and every overtone of one meets every overtone of the other. The page adds up \(d\) over <em>all</em> pairs of components (of both notes together):">樂器演奏的音帶有泛音 \(f, 2f, 3f, \dots\)。兩個這樣的音放在一起，一個音的每個泛音都會碰上另一個音的每個泛音。這個實驗把兩個音所有成分的<em>每一對</em>的 \(d\) 加起來：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} D(r) = \sum_{\text{pairs } (j,k)} d\bigl(f_j, f_k\bigr) \\ \text{lower note: } k f_1 \\ \text{upper note: } k\,r f_1 \end{gathered} \]">\[ \begin{gathered} D(r) = \sum_{\text{每一對成分 } (j,k)} d\bigl(f_j, f_k\bigr) \\ \text{下方音：} k f_1,\ \ \text{上方音：} k\,r f_1 \end{gathered} \]</div>
+      <p data-en-html="When \(r = q/p\) is a simple ratio, overtone \(q\) of the lower note and overtone \(p\) of the upper note land on exactly the same frequency: \(q f_1 = p\,(q/p) f_1\). That pair stops beating, and moving \(r\) either way makes it beat again, so the curve has a sharp <strong>valley</strong> there. With six overtones the valleys are 6/5, 5/4, 4/3, 3/2, 5/3 and 2/1 — the minor third, major third, fourth, fifth, major sixth and octave that music theory calls consonant. The simpler the ratio, the more overtones coincide and the deeper the valley. More overtones make more (and shallower) valleys.">當 \(r = q/p\) 是簡單整數比，下方音的第 \(q\) 泛音和上方音的第 \(p\) 泛音剛好落在同一個頻率：\(q f_1 = p\,(q/p) f_1\)。這一對不再拍，\(r\) 往哪邊偏都會再拍起來，所以曲線在那裡有一個尖尖的<strong>谷底</strong>。六個泛音時，谷底在 6/5、5/4、4/3、3/2、5/3、2/1——正是樂理說的協和音程：小三度、大三度、四度、五度、大六度、八度。比值越簡單，重合的泛音越多，谷就越深。泛音越多，谷越多（也越淺）。</p>
+      <h3 data-en="Change the timbre, move the valleys">換音色，谷底就搬家</h3>
+      <p data-en-html="The valleys are not a law of nature about ratios; they come from the timbre. If the partials are stretched to \(k^s f\) (a sketch of bells, gongs and metal bars, whose overtones are not whole-number multiples), the coincidences — and all the valleys — move from \(q/p\) to \((q/p)^s\): the “octave” valley sits at \(2^s\), and a pure 2:1 octave becomes rough. Keep only the odd partials, as a clarinet does in its low register, and the fifth 3/2 loses its valley (the coincidence would need an even partial). This is Sethares’ point: a scale and a timbre belong together. He argues that the scales of Javanese and Balinese gamelan may have grown up to suit the inharmonic overtones of their own metallophones.">谷底不是「比值」本身的自然定律，而是音色造成的。把泛音拉伸成 \(k^s f\)（示意鐘、鑼、金屬片這類泛音不是整數倍的樂器），重合的位置——也就是所有谷底——就從 \(q/p\) 搬到 \((q/p)^s\)：「八度」的谷在 \(2^s\)，純正的 2:1 八度反而變粗糙。只留奇次泛音（像單簧管的低音區），五度 3/2 的谷就消失了（重合需要偶次泛音）。這是 Sethares 的重點：音階和音色是一起的。Sethares 認為，印尼爪哇、峇里島甘美朗樂團的音階，可能就是配合他們金屬樂器自己的非整數倍泛音發展出來的。</p>
+      <h3 data-en="Three notes: a landscape of basins">三個音：盆地的地形</h3>
+      <p data-en-html="For a chord of three notes \(f_1,\ r f_1,\ r_2 f_1\), add up \(d\) over every pair of components of all three notes: \(D_3(r, r_2)\). Plotted over the square \(1 \le r, r_2 \le 2\) it is a landscape whose low points are <strong>basins</strong>: the major triad \(4:5:6\) at \((5/4,\ 3/2)\), the minor triad \(10:12:15\) at \((6/5,\ 3/2)\), and others. The landscape is symmetric about the diagonal, because swapping the two upper notes gives the same chord.">三個音 \(f_1,\ r f_1,\ r_2 f_1\) 的和弦，把三個音所有成分的每一對 \(d\) 加起來，得到 \(D_3(r, r_2)\)。畫在 \(1 \le r, r_2 \le 2\) 的正方形上，就是一片地形，低處是<strong>盆地</strong>：大三和弦 \(4:5:6\) 在 \((5/4,\ 3/2)\)、小三和弦 \(10:12:15\) 在 \((6/5,\ 3/2)\)，還有其他的。地形對對角線對稱，因為兩個上方音對調還是同一個和弦。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Tension and release">張力與解決</h3>
+      <p data-en-html="Music is not trying to stay at the bottom of the valleys. Composers use dissonance on purpose — a suspension, a dominant seventh, a cluster — to build tension, and then <em>resolve</em> it by moving to a consonance, the way a story builds up and settles. What counts as acceptably dissonant has changed through history: medieval music treated the third as unstable, while jazz happily ends on chords with sevenths and ninths. The curve explains why the roughness is there; how much of it to use is a matter of style.">音樂並不是要一直待在谷底。作曲家刻意用不協和——掛留音、屬七和弦、音群——製造張力，再<em>解決</em>到協和音程，就像故事先起衝突、再收尾。能接受多少不協和，隨時代改變：中世紀把三度當成不穩定的音程，爵士樂卻常常停在帶七度、九度的和弦上。曲線解釋粗糙感從哪裡來；要用多少，是風格的選擇。</p>
+      <h3 data-en="Low notes need wider spacing">低音要放寬一點</h3>
+      <p data-en-html="A critical band is about 100 Hz wide at the bottom of the range, which is a huge fraction of a low note’s frequency. So a close third deep in the bass sounds muddy even though the same third sounds sweet in the treble. Arrangers and orchestration books therefore keep low notes in open intervals (octaves and fifths) and close up the harmony higher up — a “low interval limit”. Lower \(f_1\) with a mellow timbre and watch the third valleys fade away.">在低音區，一個臨界頻帶約 100 Hz 寬，佔了低音頻率很大的一部分。所以同樣的三度，在高音區很甜，放到低音區就變得混濁。編曲與配器的書因此建議：低音用開放的音程（八度、五度），和聲越往上才排得越密——這叫「低音音程的界限」。把 \(f_1\) 調低、音色調暗一點，看三度的谷慢慢消失。</p>
+      <h3 data-en="Equal temperament and the valleys">平均律與谷底</h3>
+      <p data-en-html="The piano’s equal-tempered fifth (700 cents) is only 2 cents from the 3/2 valley, so it sounds almost perfectly smooth; its major third (400 cents) sits 14 cents up the side of the 5/4 valley and beats noticeably. Choirs and string quartets often slide their thirds down into the valley. (See also the “Temperament” experiment.)">鋼琴平均律的五度（700 音分）離 3/2 的谷只有 2 音分，聽起來幾乎完全平滑；大三度（400 音分）卻在 5/4 谷旁邊的山坡上 14 音分處，拍得很明顯。合唱團和弦樂四重奏常把三度唱（拉）低一點，滑進谷底。（也可以看「五度相生、純律與十二平均律」實驗。）</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One hill</strong>: with “Pure tone”, where is the roughest distance, and what happens to the curve beyond one critical band?"><strong>只有一座山</strong>：選「純音」，最刺耳的距離在哪裡？超過一個臨界頻帶以後，曲線怎麼了？</li>
+        <li data-en-html="<strong>Valleys at simple ratios</strong>: with six harmonics, read off the ratio at each valley. Which valley is deepest?"><strong>谷在簡單整數比</strong>：六個泛音時，讀出每個谷底的比值。哪一個最深？</li>
+        <li data-en-html="<strong>The spectrum explains it</strong>: at a valley, which overtones glow (coincide)? Just off a valley, which pair starts to beat, and how fast?"><strong>頻譜說明一切</strong>：在谷底時，哪些泛音發亮（重合）？稍微離開谷底，哪一對開始拍？每秒幾次？</li>
+        <li data-en-html="<strong>More overtones, more valleys</strong>: drag the number of partials from 1 to 10. Keep a curve with “Keep this curve” to compare."><strong>泛音越多，谷越多</strong>：把泛音數從 1 拉到 10。用「留下這條曲線」比較前後。</li>
+        <li data-en-html="<strong>Bells</strong>: choose “Stretched” and change s. Where does the octave valley go?"><strong>鐘聲</strong>：選「拉伸泛音」改 s，八度的谷搬到哪裡去？</li>
+        <li data-en-html="<strong>Down in the bass</strong>: make the timbre darker (larger p) and lower f<sub>1</sub>. Which valleys disappear first?"><strong>沉到低音</strong>：把音色調暗（p 加大），再把 f<sub>1</sub> 調低。哪些谷先消失？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every value on the curve is the full sum of \(d\) over every pair of components of the two notes (the shared music-theory library, Sethares’ parameters), computed every cent from \(r = 1\) to \(2.3\). Valleys are the local minima of that curve, located to better than 0.01 cent by golden-section search; their labels give the simplest ratio within 3 cents (denominator up to 16); with stretched partials a valley is labelled \((p{:}q)^s\), the ratio it moved from.">曲線上每一點都是兩個音所有成分「每一對」的 \(d\) 的總和（全站共用的音樂數學程式，Sethares 的參數），從 \(r = 1\) 到 \(2.3\) 每 1 音分算一次。谷底是曲線的局部最小值，用黃金分割搜尋定位到 0.01 音分以內；標籤寫的是 3 音分以內最簡單的整數比（分母最多 16）；拉伸泛音時標成 \((p{:}q)^s\)，表示是哪一個整數比的谷搬過來的。</li>
+        <li data-en-html="Timbres: “Pure tone” is one sine wave; “Harmonics” has \(n\) partials at \(k f\) with strengths \(1/k^p\) (odd \(k\) only if ticked); “Stretched” puts partial \(k\) at \(k^s f\) — a sketch of bell-like sounds, not a model of any real instrument.">音色：「純音」是一個正弦波；「泛音」有 \(n\) 個成分，在 \(k f\)、強度 \(1/k^p\)（勾選時只留奇數 \(k\)）；「拉伸泛音」把第 \(k\) 個成分放在 \(k^s f\)——是鐘聲一類聲音的示意，不是任何真實樂器的模型。</li>
+        <li data-en-html="The spectrum panel uses a logarithmic frequency axis. The waveform is the exact sum of all components over four periods of the lower note; the beat panel shows, over one second, the loudness envelope \(A(t)\) of the pair with the largest \(d\) (the fine wave inside is only a sketch of the carrier):<div class=&quot;formula&quot;>\[ \begin{aligned} A(t)^2 &= a_1^2 + a_2^2 \\ &\quad + 2a_1a_2\cos\theta \\ \theta &= 2\pi f_\text{beat}\, t \end{aligned} \]</div>">頻譜圖的頻率軸是對數刻度。波形是所有成分在下方音四個週期內的精確總和；拍的圖是 \(d\) 最大的那一對泛音在 1 秒內的響度包絡 \(A(t)\)（裡面細密的波只是示意載波）：<div class="formula">\[ \begin{aligned} A(t)^2 &= a_1^2 + a_2^2 \\ &\quad + 2a_1a_2\cos\theta \\ \theta &= 2\pi f_\text{拍}\, t \end{aligned} \]</div></li>
+        <li data-en-html="The 3D surface computes \(D_3\) on a 121 × 121 grid from the same functions; height is \(\sqrt{D_3}\) measured from its lowest value (a compressed scale so that the basins are visible next to the high ridge along the diagonal). A chord counts as sitting in a basin when stepping 1 cent in any of the eight directions only raises \(D_3\). It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 曲面用同樣的函式在 121 × 121 的格點上算 \(D_3\)；高度是從最低處量起的 \(\sqrt{D_3}\)（壓縮刻度，讓盆地在對角線那道高脊旁邊也看得清楚）。和弦往八個方向各走 1 音分，\(D_3\) 都只會變大，就算在盆地底。3D 使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): the two (or three) notes with the timbre you chose, at a gentle volume with fade-in and fade-out. Harmonic tones stop by themselves after 12 seconds, pure and stretched tones after 4; stretched partials above 4 kHz are left out of the sound. “■ Stop”, Esc or switching tabs stops everything.">聲音在瀏覽器裡即時合成（沒有錄音檔）：用你選的音色彈兩個（或三個）音，音量溫和、有淡入淡出。泛音音色 12 秒後自動停止，純音與拉伸泛音 4 秒；拉伸泛音 4 kHz 以上的成分不放進聲音。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (harmony); Senior-high Music · Appreciation · Principles of musical beauty. Across subjects: Elective Physics III · Sound waves (superposition and beats).">課綱對應：高中音樂・表現・音樂元素（和聲）；高中音樂・鑑賞・音樂美感原則。跨科：選修物理Ⅲ・聲波（波的疊加與拍）。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="R. Plomp and W. J. M. Levelt, “Tonal consonance and critical bandwidth”, Journal of the Acoustical Society of America 38, 548–560 (1965).">R. Plomp、W. J. M. Levelt，〈Tonal consonance and critical bandwidth〉，Journal of the Acoustical Society of America 38，548–560（1965）。</li>
+        <li data-en="William A. Sethares, Tuning, Timbre, Spectrum, Scale, 2nd ed. (Springer, 2005) — the parameters of the dissonance curve and the idea of matching scales to timbres.">William A. Sethares，《Tuning, Timbre, Spectrum, Scale》第 2 版，Springer，2005（不協和曲線的參數，以及音階與音色相配的想法）。</li>
+        <li data-en="E. Zwicker and E. Terhardt, “Analytical expressions for critical-band rate and critical bandwidth as a function of frequency”, Journal of the Acoustical Society of America 68, 1523–1525 (1980).">E. Zwicker、E. Terhardt，〈Analytical expressions for critical-band rate and critical bandwidth as a function of frequency〉，Journal of the Acoustical Society of America 68，1523–1525（1980）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/consonance-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/consonance.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="consonance"></script>
+  <script src="js/missions/consonance.js"></script>
+  <script src="js/stats.js" data-module="consonance"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
