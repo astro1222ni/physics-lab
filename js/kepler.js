@@ -1591,7 +1591,10 @@
       const range = $(id), box = range && range.closest('.slider');
       const out = box && box.querySelector('output'), lab = box && box.querySelector('label[for="' + id + '"]');
       if (!out || !lab) return;
-      const name = lab.textContent.replace(/\s+/g, ' ').trim();
+      // 英文模式直接用標籤的 data-en／data-en-html（頁面剛載入時標籤可能還沒翻成英文）
+      const en = lab.getAttribute('data-en') || (lab.getAttribute('data-en-html') || '').replace(/<[^>]*>/g, '');
+      const zh = lab.textContent.replace(/\s+/g, ' ').trim();
+      const name = en ? T(zh, en) : zh;
       out.setAttribute('title', T('點擊輸入數值：', 'Click to type a value: ') + name);
       out.setAttribute('aria-label', name + T('：', ': ') + out.textContent.trim() + T('（點擊輸入數值）', ' (click to type a value)'));
     });

@@ -56,9 +56,9 @@ for (const [T1, T2, N0, rate, name] of [[65.94, 6.01, 10000, 65.94 / 4 * 0.25, '
 // h1: last of 100 survives beyond 10 T½
 { let ok = 0, n = 3000; for (let k = 0; k < n; k++) { const s = DC.createSim({ N0: 100, halfLife: 3, seed: seed() }); const dt = 3 * 8 / 60 / 4; while (s.nP > 0) DC.step(s, dt); if (s.t / 3 > 10) ok++; }
   out.push(`H1 最後一個原子核撐過 10 個半衰期（N0=100，8× 速度）：每輪機率 ${pct(ok, n)}（理論 1−(1−2^−10)^100 = ${(100 * (1 - Math.pow(1 - 1 / 1024, 100))).toFixed(1)}%）`); }
-// h2: dice roll with ≥12 dice and no six
-{ let ok = 0, n = 2000; for (let k = 0; k < n; k++) { const s = DC.createDice({ N0: 100, seed: seed() }); let hit = false; while (s.nP > 0) { const b = s.nP, d = DC.roll(s); if (b >= 12 && d === 0) hit = true; } if (hit) ok++; }
-  out.push(`H2 至少 12 顆骰子卻沒有任何 6 點（N0=100）：每輪出現的機率 ${pct(ok, n)}`); }
+// h2: dice roll with ≥20 dice and no six（11/12 由 12 收緊）
+{ let ok = 0, n = 2000; for (let k = 0; k < n; k++) { const s = DC.createDice({ N0: 100, seed: seed() }); let hit = false; while (s.nP > 0) { const b = s.nP, d = DC.roll(s); if (b >= 20 && d === 0) hit = true; } if (hit) ok++; }
+  out.push(`H2 至少 20 顆骰子卻沒有任何 6 點（N0=100）：每輪出現的機率 ${pct(ok, n)}`); }
 // h3: equal half-lives, pause at tmax = τ ±3%
 { const tm = DC.daughterPeakTime(3, 3); out.push(`H3 母子同壽：自訂 T½ = T½′ = 3 s → t_max = τ = ${tm.toFixed(3)} s，±3% 窗口 ${(0.06 * tm).toFixed(3)} s（1× 下 ${Math.floor(0.06 * tm * 60)} 幀）`); }
 console.log(out.join('\n'));
