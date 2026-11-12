@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Oxygen and Haemoglobin | Astro Ni Science Lab">氧氣與血紅素｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="用 Severinghaus 的氧解離曲線看血紅素怎麼在肺裡裝氧、在組織卸氧：調 CO2、酸鹼、體溫、2,3-BPG 看波耳效應，比較胎兒血紅素與肌紅素，上高山、跑馬拉松、一氧化碳中毒時血液還能送多少氧。再用 MWC 模型看四個亞基怎麼協同結合，自己設計一個超級血紅素。3D 看得到血紅素在 T、R 兩種狀態之間轉動。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 氧氣與血紅素頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --oh-art: #d6336c; --oh-ven: #3b5bdb; --oh-hba: #c2255c; --oh-hbf: #e8590c; --oh-mb: #7048e8; --oh-co: #495057;
+      --oh-std: #868e96; --oh-good: #0f766e; --oh-bad: #c2410c; --oh-r: #e03131; --oh-t: #1c7ed6; --oh-o2: #f03e3e;
+      --oh-dis: #74c0fc;
+      --oh-k1: #2b8a3e; --oh-k2: #e67700; --oh-k3: #0b7285; --oh-k4: #862e9c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --oh-art: #f06595; --oh-ven: #748ffc; --oh-hba: #f06595; --oh-hbf: #ff922b; --oh-mb: #9775fa; --oh-co: #ced4da;
+        --oh-std: #adb5bd; --oh-good: #2dd4bf; --oh-bad: #fb923c; --oh-r: #ff6b6b; --oh-t: #4dabf7; --oh-o2: #ff8787;
+        --oh-dis: #a5d8ff;
+        --oh-k1: #69db7c; --oh-k2: #ffa94d; --oh-k3: #3bc9db; --oh-k4: #da77f2;
+      }
+    }
+    :root[data-theme="dark"] {
+      --oh-art: #f06595; --oh-ven: #748ffc; --oh-hba: #f06595; --oh-hbf: #ff922b; --oh-mb: #9775fa; --oh-co: #ced4da;
+      --oh-std: #adb5bd; --oh-good: #2dd4bf; --oh-bad: #fb923c; --oh-r: #ff6b6b; --oh-t: #4dabf7; --oh-o2: #ff8787;
+      --oh-dis: #a5d8ff;
+        --oh-k1: #69db7c; --oh-k2: #ffa94d; --oh-k3: #3bc9db; --oh-k4: #da77f2;
+    }
+    #cv, #cv2 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv { height: 460px; cursor: crosshair; }
+    #cv2 { height: 460px; }
+    .oh button { min-height: 44px; }
+    .oh .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .oh .playbar button { flex: 1 1 auto; }
+    .oh .playbar .primary { font-weight: 700; }
+    .oh .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .oh .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .oh .slider input[type="range"] { height: 28px; margin: 0; }
+    .oh .slider label sub, .oh .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .oh [hidden] { display: none !important; }
+    .oh .panel { grid-template-columns: minmax(0, 1fr); }
+    .oh .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.good { color: var(--oh-good); }
+    dl.readout dd.bad { color: var(--oh-bad); }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend i.ln { width: 18px; height: 0; border-top: 3px solid; display: inline-block; vertical-align: middle; }
+    .legend i.ln.dash { border-top-style: dashed; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    .chips.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .oh3-wrap { position: relative; }
+    .oh3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .oh3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .oh3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .oh3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .oh3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .oh3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#physiology&quot;>Biology · Physiology</a> / Oxygen and haemoglobin"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#physiology">生物・生理</a> ／ 氧氣與血紅素</nav>
+      <h1 data-en="Oxygen and Haemoglobin">氧氣與血紅素</h1>
+      <p data-en="Every red blood cell carries about 270 million haemoglobin molecules. In the lungs they load up with oxygen; in a working muscle they must let most of it go. The S-shaped oxygen dissociation curve makes both possible — and acid, carbon dioxide, heat and 2,3-BPG slide it sideways exactly when the tissues need more. Climb a mountain, run a marathon or breathe carbon monoxide and see how much oxygen your blood can still deliver; then look inside the molecule to see where the S shape comes from.">每個紅血球裡大約有 2.7 億個血紅素分子。在肺裡，它們要裝滿氧；在用力的肌肉裡，又要把大部分的氧放掉。S 形的氧解離曲線讓兩件事都做得到——而且酸、二氧化碳、體溫和 2,3-BPG 會在組織最需要的時候把曲線往右推。爬高山、跑馬拉松、吸到一氧化碳時，血液還能送多少氧？再走進分子裡，看看 S 形是從哪裡來的。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “Marathon”, then raise the temperature or the carbon dioxide and watch the venous point.">試試看：按「馬拉松」，再把體溫或二氧化碳調高，看靜脈那一點怎麼移動。</p>
+
+    <h2 class="lab-title" data-en-html="1 · The oxygen dissociation curve<small>Lungs, tissues, the Bohr effect, altitude and carbon monoxide</small>">一・氧解離曲線<small>肺、組織、波耳效應、高山與一氧化碳</small></h2>
+    <div class="lab oh" id="lab1">
+      <div class="stage" id="stage1">
+        <canvas id="cv" tabindex="0" aria-label="氧解離曲線：橫軸是氧分壓、縱軸是血紅素的氧飽和度；灰色虛線是標準曲線，A 是動脈、V 是靜脈；右邊是每 100 mL 血的含氧量。點或拖曳圖上任何地方移動探針；點選畫布後，左右鍵移動探針" data-en-aria-label="Oxygen dissociation curve: oxygen partial pressure across, haemoglobin oxygen saturation up; the grey dashed line is the standard curve, A is arterial and V venous blood; on the right, the oxygen content of 100 mL of blood. Tap or drag anywhere on the graph to move the probe; with the canvas focused, move it with the left and right keys"></canvas>
+        <div class="playbar">
+          <button id="stdBtn" type="button" class="primary" data-en="Back to normal">回到標準狀態</button>
+          <button id="clear1" type="button" data-en="Clear all" title="清除比較用的舊曲線與紀錄表；設定不變" data-en-title="Clear the saved curves and the table; the settings stay">全部清除</button>
+          <button id="keepBtn" type="button" data-en="Keep this curve" title="把目前的曲線留下來和之後比較（最多 4 條）" data-en-title="Keep the current curve for comparison (up to 4)">留下這條曲線</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Scenario">情境</h2>
+          <div class="chips" id="scens" role="group" aria-label="情境" data-en-aria-label="Scenario"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Oxygen carrier">攜氧蛋白</h2>
+          <div class="chips" id="prots" role="group" aria-label="攜氧蛋白" data-en-aria-label="Oxygen carrier"></div>
+          <div class="slider"><label for="probe" data-en-html="Probe P<sub>O<sub>2</sub></sub> (mmHg)">探針 P<sub>O<sub>2</sub></sub>（mmHg）</label><output id="probeo"></output>
+            <input id="probe" type="range" min="0" max="150" step="0.5" value="40" data-decimals="1"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Lungs and air">肺與空氣</h2>
+          <div class="slider"><label for="alt" data-en="Altitude (m)">海拔（m）</label><output id="alto"></output>
+            <input id="alt" type="range" min="0" max="8848" step="1" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="pco2" data-en-html="Arterial P<sub>CO<sub>2</sub></sub> (mmHg) — lower when you breathe harder">動脈 P<sub>CO<sub>2</sub></sub>（mmHg）——呼吸越用力越低</label><output id="pco2o"></output>
+            <input id="pco2" type="range" min="7" max="80" step="0.5" value="40" data-decimals="1"></div>
+          <div class="slider"><label for="ppm" data-en="Carbon monoxide in the air (ppm)">空氣中的一氧化碳（ppm）</label><output id="ppmo"></output>
+            <input id="ppm" type="range" min="0" max="1000" step="5" value="0" data-decimals="0"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Blood">血液</h2>
+          <div class="slider"><label for="hco3" data-en-html="Bicarbonate [HCO<sub>3</sub><sup>−</sup>] (mM)">碳酸氫根 [HCO<sub>3</sub><sup>−</sup>]（mM）</label><output id="hco3o"></output>
+            <input id="hco3" type="range" min="8" max="40" step="0.5" value="24" data-decimals="1"></div>
+          <div class="slider"><label for="temp" data-en="Temperature (°C)">體溫（°C）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="30" max="42" step="0.1" value="37" data-decimals="1"></div>
+          <div class="slider"><label for="bpg" data-en="2,3-BPG (mM)">2,3-BPG（mM）</label><output id="bpgo"></output>
+            <input id="bpg" type="range" min="0" max="10" step="0.1" value="5" data-decimals="1"></div>
+          <div class="slider"><label for="hb" data-en="Haemoglobin (g/dL)">血紅素濃度（g/dL）</label><output id="hbo"></output>
+            <input id="hb" type="range" min="5" max="22" step="0.1" value="15" data-decimals="1"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Tissues">組織</h2>
+          <div class="slider"><label for="dem" data-en="Oxygen handed over by each 100 mL of blood (mL)">每 100 mL 血要交出的氧（mL）</label><output id="demo"></output>
+            <input id="dem" type="range" min="1" max="18" step="0.1" value="5" data-decimals="1"></div>
+          <p class="hint" data-en="Oxygen use ÷ blood flow (Fick’s principle): about 5 at rest (250 mL/min ÷ 5 L/min), about 15 in hard exercise.">耗氧量 ÷ 血流量（Fick 原理）：安靜時約 5（每分鐘 250 mL ÷ 5 L），劇烈運動約 15。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · Four subunits working together<small>The MWC model of cooperative binding</small>">二・四個亞基一起合作<small>協同結合的 MWC 模型</small></h2>
+    <div class="lab oh" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D population">2D 族群</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D molecule">3D 分子</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="左邊是 48 個血紅素分子，方形是 T 狀態、圓形是 R 狀態，紅色的格子結合了氧；右邊上圖是飽和度曲線與量到的點，下圖是 Hill 圖。點選畫布後，左右鍵改氧分壓、Enter 量一次" data-en-aria-label="On the left, 48 haemoglobin molecules: squares are in the T state, circles in the R state, red subunits carry oxygen. On the right, the saturation curve with your measurements and, below, the Hill plot. Focus the canvas, change the oxygen pressure with the left and right keys and press Enter to measure"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="measBtn" type="button" class="primary" data-en="Measure (2 s average)">量一次（平均 2 秒）</button>
+          <button id="hbBtn" type="button" data-en="Haemoglobin values">回到血紅素的值</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清掉量過的點；設定不變" data-en-title="Clear the measured points; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Oxygen">氧氣</h2>
+          <div class="slider"><label for="p2" data-en-html="P<sub>O<sub>2</sub></sub> (mmHg)">P<sub>O<sub>2</sub></sub>（mmHg）</label><output id="p2o"></output>
+            <input id="p2" type="range" min="0" max="400" step="1" value="243" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Two shapes">兩種形狀</h2>
+          <div class="slider"><label for="lL" data-en-html="L = [T<sub>0</sub>]/[R<sub>0</sub>]: how much the empty molecule prefers T">L = [T<sub>0</sub>]/[R<sub>0</sub>]：空分子有多偏愛 T</label><output id="lLo"></output>
+            <input id="lL" type="range" min="0" max="800" step="1" value="395" data-decimals="0"></div>
+          <div class="slider"><label for="lc" data-en-html="c = K<sub>R</sub>/K<sub>T</sub>: how much weaker T holds oxygen">c = K<sub>R</sub>/K<sub>T</sub>：T 抓氧比 R 弱多少</label><output id="lco"></output>
+            <input id="lc" type="range" min="0" max="400" step="1" value="185" data-decimals="4"></div>
+          <p class="hint" data-en-html="K<sub>R</sub>, the oxygen pressure at which an R subunit is half full, stays fixed. c = 1 means T and R hold oxygen equally well.">K<sub>R</sub>（R 狀態的亞基半滿時的氧分壓）固定不變。c = 1 表示 T 和 R 抓氧一樣緊。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="Why an S shape?">為什麼是 S 形？</h3>
+      <p data-en-html="In the lungs P<sub>O<sub>2</sub></sub> is about 100 mmHg; in resting tissue about 40 and in working muscle 20 or less. An S-shaped curve is flat at the top, so the blood is almost full even if the lungs are not perfect, and steep in the middle, so a small fall in P<sub>O<sub>2</sub></sub> releases a lot of oxygen. Severinghaus (1979) summarised the measured human curve as">肺裡的 P<sub>O<sub>2</sub></sub> 約 100 mmHg；安靜的組織約 40，用力的肌肉 20 以下。S 形曲線上面平，所以就算肺不完美，血液也幾乎裝滿；中間陡，所以 P<sub>O<sub>2</sub></sub> 稍微降一點就放出很多氧。Severinghaus（1979）把量到的人類曲線整理成</p>
+      <div class="formula">\[ S=\left(\frac{23400}{P^3+150\,P}+1\right)^{-1} ,\qquad P_{50}\approx 26.9\ \text{mmHg} \]</div>
+      <p data-en-html="The steepness is measured by the Hill coefficient n — the slope of log(S/(1−S)) against log P. For haemoglobin n ≈ 2.7; for myoglobin, a single chain, n = 1.">陡的程度用 Hill 係數 n 表示，也就是 log(S/(1−S)) 對 log P 的斜率。血紅素 n ≈ 2.7；肌紅素只有一條鏈，n = 1。</p>
+
+      <h3 data-en="The Bohr effect and 2,3-BPG">波耳效應與 2,3-BPG</h3>
+      <p data-en-html="Acid (H<sup>+</sup>), carbon dioxide, heat and 2,3-bisphosphoglycerate all bind more strongly to the deoxygenated form, so they push the curve to the right: at the same P<sub>O<sub>2</sub></sub> the blood lets go of more oxygen. Working muscle is warm, acidic and full of CO<sub>2</sub> — exactly where the oxygen is needed. Severinghaus corrected for these with a “virtual” P<sub>O<sub>2</sub></sub>:">酸（H<sup>+</sup>）、二氧化碳、熱和 2,3-雙磷酸甘油酸都比較容易和脫氧的形式結合，所以會把曲線往右推：同樣的 P<sub>O<sub>2</sub></sub> 下放出更多氧。用力的肌肉又熱、又酸、CO<sub>2</sub> 又多——剛好是最需要氧的地方。Severinghaus 用一個「虛擬」P<sub>O<sub>2</sub></sub> 修正這些條件：</p>
+      <div class="formula">\[ P_\text{virtual}=P\cdot 10^{\,0.024(37-T)+0.40(\mathrm{pH}-7.40)+0.06\log_{10}(40/P_{\mathrm{CO_2}})} \]</div>
+      <p data-en-html="Here pH follows from the Henderson–Hasselbalch equation, pH = 6.1 + log<sub>10</sub>([HCO<sub>3</sub><sup>−</sup>] / 0.03 P<sub>CO<sub>2</sub></sub>): breathing harder lowers P<sub>CO<sub>2</sub></sub> and makes the blood more alkaline; the kidneys answer over days by lowering the bicarbonate.">這裡的 pH 由 Henderson–Hasselbalch 方程式算出：pH = 6.1 + log<sub>10</sub>([HCO<sub>3</sub><sup>−</sup>] / 0.03 P<sub>CO<sub>2</sub></sub>)。呼吸越用力，P<sub>CO<sub>2</sub></sub> 越低，血液越偏鹼；腎臟要花幾天降低碳酸氫根來補償。</p>
+
+      <h3 data-en="Mother and baby, muscle and blood">母親與胎兒、肌肉與血液</h3>
+      <p data-en-html="Fetal haemoglobin binds 2,3-BPG weakly, so its curve sits to the left (P<sub>50</sub> about 19 mmHg): in the placenta, at the same P<sub>O<sub>2</sub></sub>, the baby’s blood takes oxygen from the mother’s. Myoglobin in muscle (P<sub>50</sub> about 2.8 mmHg) holds on even more tightly and only gives up its store when the muscle P<sub>O<sub>2</sub></sub> falls very low.">胎兒血紅素和 2,3-BPG 結合得很弱，所以曲線偏左（P<sub>50</sub> 約 19 mmHg）：在胎盤裡，同樣的 P<sub>O<sub>2</sub></sub> 下，胎兒的血會把母親血裡的氧拿過來。肌肉裡的肌紅素（P<sub>50</sub> 約 2.8 mmHg）抓得更緊，只有在肌肉的 P<sub>O<sub>2</sub></sub> 降得很低時，才放出存著的氧。</p>
+
+      <h3 data-en="Carbon monoxide">一氧化碳</h3>
+      <p data-en-html="Haemoglobin binds carbon monoxide about 210 times more strongly than oxygen (Haldane): [HbCO]/[HbO<sub>2</sub>] = M·P<sub>CO</sub>/P<sub>O<sub>2</sub></sub>. CO takes up sites, and the sites it leaves hold their oxygen more tightly, so the curve becomes both lower and shifted left. The arterial P<sub>O<sub>2</sub></sub> stays normal — which is why a pulse of normal P<sub>O<sub>2</sub></sub> can hide a dangerous lack of oxygen.">血紅素和一氧化碳的結合力大約是氧的 210 倍（Haldane）：[HbCO]/[HbO<sub>2</sub>] = M·P<sub>CO</sub>/P<sub>O<sub>2</sub></sub>。CO 佔掉位置，剩下的位置又抓氧抓得更緊，所以曲線變低、又往左移。動脈的 P<sub>O<sub>2</sub></sub> 卻是正常的——這就是一氧化碳中毒容易被忽略的原因。</p>
+      <div class="formula">\[ C_{a\mathrm{O_2}} = 1.34\,[\mathrm{Hb}]\,S + 0.0031\,P_{\mathrm{O_2}} \quad (\text{mL/dL}) \]</div>
+
+      <h3 data-en="High altitude">高山</h3>
+      <p data-en-html="Air is always 20.95% oxygen, but the pressure falls with height: about 253 mmHg on the summit of Everest. The alveolar gas equation, P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8, shows why climbers must breathe hard: lowering the CO<sub>2</sub> makes room for oxygen. On the summit in 1981, the arterial P<sub>CO<sub>2</sub></sub> of a climber was only about 7.5 mmHg (West and colleagues, 1983).">空氣裡的氧一直是 20.95%，但氣壓隨高度降低：聖母峰頂約 253 mmHg。肺泡氣體方程式 P<sub>AO<sub>2</sub></sub> = 0.2095 (P<sub>B</sub> − 47) − P<sub>aCO<sub>2</sub></sub>/0.8 說明登山者為什麼要拚命呼吸：把 CO<sub>2</sub> 降下來，才有位置留給氧。1981 年在峰頂量到的登山者動脈 P<sub>CO<sub>2</sub></sub> 只有約 7.5 mmHg（West 等，1983）。</p>
+
+      <h3 data-en="Where the S comes from: the MWC model">S 形從哪裡來：MWC 模型</h3>
+      <p data-en-html="Monod, Wyman and Changeux (1965) proposed that the four subunits switch shape together, between a tense T state that holds oxygen weakly and a relaxed R state that holds it strongly. Empty molecules prefer T (L = [T<sub>0</sub>]/[R<sub>0</sub>] is large), but every oxygen that binds tips the balance towards R, which makes the next oxygen bind more easily. With α = P/K<sub>R</sub>:">Monod、Wyman 和 Changeux（1965）提出：四個亞基一起換形狀，在抓氧弱的緊張 T 狀態和抓氧強的鬆弛 R 狀態之間切換。空的分子偏愛 T（L = [T<sub>0</sub>]/[R<sub>0</sub>] 很大），但每結合一個氧，就把天平往 R 推一點，下一個氧就更容易結合。令 α = P/K<sub>R</sub>：</p>
+      <div class="formula">\[ Y=\frac{\alpha(1+\alpha)^3+L\,c\,\alpha(1+c\,\alpha)^3}{(1+\alpha)^4+L(1+c\,\alpha)^4} \]</div>
+
+      <h3 data-en="Things to try">可以試試</h3>
+      <ul>
+        <li data-en-html="<strong>Breathe for the summit</strong>: go to 8848 m and lower the arterial CO<sub>2</sub> until there is oxygen in the lungs again.">「<strong>為峰頂呼吸</strong>」：到 8848 m，把動脈 CO<sub>2</sub> 降低，直到肺裡重新有氧。</li>
+        <li data-en-html="<strong>A quiet killer</strong>: add 200 ppm of carbon monoxide. Look at P<sub>aO<sub>2</sub></sub>, then at the oxygen content.">「<strong>沉默的殺手</strong>」：加 200 ppm 一氧化碳。先看 P<sub>aO<sub>2</sub></sub>，再看含氧量。</li>
+        <li data-en-html="<strong>No teamwork</strong>: in part 2 set c = 1. What happens to the S shape and the Hill slope?">「<strong>不合作</strong>」：在第二部分把 c 調成 1，S 形和 Hill 斜率怎麼了？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Curves: Severinghaus (1979) with his virtual-P<sub>O<sub>2</sub></sub> correction. The 2,3-BPG term (log<sub>10</sub> P<sub>50</sub> changes by 0.04 per mM, so P<sub>50</sub> ≈ 17 mmHg with no BPG as in old stored blood), fetal haemoglobin (P<sub>50</sub> 19 mmHg, half the BPG effect) and myoglobin (hyperbola with P<sub>50</sub> 2.8 mmHg, no Bohr effect) are illustrative fits.">曲線：Severinghaus（1979）及他的虛擬 P<sub>O<sub>2</sub></sub> 修正。2,3-BPG 項（每 mM 讓 log<sub>10</sub> P<sub>50</sub> 改變 0.04，所以沒有 BPG 的庫存血 P<sub>50</sub> ≈ 17 mmHg）、胎兒血紅素（P<sub>50</sub> 19 mmHg、BPG 效應減半）、肌紅素（P<sub>50</sub> 2.8 mmHg 的雙曲線，不受波耳效應影響）是示意的擬合。</li>
+        <li data-en-html="Barometric pressure: West’s model atmosphere (1996). Arterial P<sub>O<sub>2</sub></sub> is taken as 95% of alveolar (an illustrative alveolar–arterial gap). Venous blood carries 6 mmHg more CO<sub>2</sub>. Venous P<sub>O<sub>2</sub></sub> is found from Fick’s principle: the arterial content minus the oxygen handed over.">大氣壓：West（1996）的模型大氣。動脈 P<sub>O<sub>2</sub></sub> 取肺泡的 95%（示意的肺泡—動脈差）。靜脈血的 CO<sub>2</sub> 多 6 mmHg。靜脈 P<sub>O<sub>2</sub></sub> 由 Fick 原理算出：動脈含氧量減去交出的氧。</li>
+        <li data-en-html="Carbon monoxide is in steady state with the air (after hours of exposure); M = 210 for haemoglobin and 25 for myoglobin.">一氧化碳假設已和空氣達到穩定（吸了好幾個小時）；血紅素 M = 210、肌紅素 M = 25。</li>
+        <li data-en-html="MWC: L = 9000 and c = 0.014 are the textbook values for haemoglobin; K<sub>R</sub> ≈ 2.7 mmHg is chosen so that P<sub>50</sub> = 26.9 mmHg. Each of the 48 molecules redraws its state from the equilibrium distribution about three times a second, so a 2-second measurement averages a few hundred molecules.">MWC：L = 9000、c = 0.014 是血紅素的教科書常用值；K<sub>R</sub> ≈ 2.7 mmHg 讓 P<sub>50</sub> = 26.9 mmHg。48 個分子每個每秒約重抽三次平衡狀態，所以量 2 秒大約平均了幾百個分子。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · circulation and respiration, gas exchange and transport.">課綱對應：高中生物（108 課綱）・循環與呼吸、氣體的交換與運輸。</li>
+        <li data-en="J. W. Severinghaus, “Simple, accurate equations for human blood O2 dissociation computations”, Journal of Applied Physiology 46 (1979) 599–602.">J. W. Severinghaus，〈Simple, accurate equations for human blood O2 dissociation computations〉，Journal of Applied Physiology 46 (1979) 599–602。</li>
+        <li data-en="J. Monod, J. Wyman and J.-P. Changeux, “On the nature of allosteric transitions: a plausible model”, Journal of Molecular Biology 12 (1965) 88–118.">J. Monod、J. Wyman、J.-P. Changeux，〈On the nature of allosteric transitions: a plausible model〉，Journal of Molecular Biology 12 (1965) 88–118。</li>
+        <li data-en="J. B. West, “Prediction of barometric pressures at high altitudes with the use of model atmospheres”, Journal of Applied Physiology 81 (1996) 1850–1854.">J. B. West，〈Prediction of barometric pressures at high altitudes with the use of model atmospheres〉，Journal of Applied Physiology 81 (1996) 1850–1854。</li>
+        <li data-en="J. B. West et al., “Pulmonary gas exchange on the summit of Mount Everest”, Journal of Applied Physiology 55 (1983) 678–687.">J. B. West 等，〈Pulmonary gas exchange on the summit of Mount Everest〉，Journal of Applied Physiology 55 (1983) 678–687。</li>
+        <li data-en="C. G. Douglas, J. S. Haldane and J. B. S. Haldane, “The laws of combination of haemoglobin with carbon monoxide and oxygen”, Journal of Physiology 44 (1912) 275–304.">C. G. Douglas、J. S. Haldane、J. B. S. Haldane，〈The laws of combination of haemoglobin with carbon monoxide and oxygen〉，Journal of Physiology 44 (1912) 275–304。</li>
+        <li data-en="M. F. Perutz, “Stereochemistry of cooperative effects in haemoglobin”, Nature 228 (1970) 726–739.">M. F. Perutz，〈Stereochemistry of cooperative effects in haemoglobin〉，Nature 228 (1970) 726–739。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/oxygen-hemoglobin-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/oxygen-hemoglobin.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="oxygen-hemoglobin"></script>
+  <script src="js/missions/oxygen-hemoglobin.js"></script>
+  <script src="js/stats.js" data-module="oxygen-hemoglobin"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
