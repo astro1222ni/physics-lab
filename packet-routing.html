@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Packets and Routing | Astro Ni Science Lab">網路封包與路由｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 封包與路由頁面專用的顏色代號（淺色＋兩組深色；由 js/packet-routing.js 讀取） */
+    :root { --pr-wire: #8a9bb0; --pr-path: #0d9488; --pr-cut: #dc2626; --pr-router: #3d6595; --pr-host: #52606f; --pr-data: #e08a00; --pr-ack: #15803d; --pr-probe: #7c3aed; --pr-icmp: #db2777; --pr-loop: #ea580c; --pr-panel: #e8eef5; --pr-ok: #15803d; --pr-warn: #c2410c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
+    }
+    :root[data-theme="dark"] { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
+
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    #cv3 { aspect-ratio: auto; height: 200px; touch-action: pan-y; margin-top: 10px; }
+    .pr button { min-height: 44px; }
+    .pr [hidden] { display: none !important; }
+    .pr .playbar { display: grid; grid-template-columns: 1.5fr 1.2fr 1fr 1fr; gap: 8px; margin: 10px 2px 0; }
+    .pr .playbar button { padding: 6px 4px; }
+    .pr .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .pr .playbar2 button { flex: 1 1 auto; }
+    .pr .stage .slider { margin: 10px 4px 4px; }
+    #pauseBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pr .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pr .slider input[type="range"] { height: 28px; margin: 0; }
+    .pr .checks label { min-height: 44px; }
+    .pr .checks input { width: 17px; height: 17px; flex: none; }
+    .pr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pr .panel { grid-template-columns: minmax(0, 1fr); }
+    .pr .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend .sw { display: inline-block; width: 18px; height: 8px; border-radius: 4px; vertical-align: middle; margin-right: 6px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .pr select, .pr input.txt {
+      font: inherit; font-size: calc(15px * var(--fs, 1)); width: 100%; min-height: 44px; padding: 6px 10px; box-sizing: border-box;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .pr input.txt { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; letter-spacing: 0.02em; }
+    .pr input.txt:focus, .pr select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .pr .field-label { display: block; font-size: calc(14px * var(--fs, 1)); margin: 8px 0 4px; }
+    .pr .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 6px; }
+    .pr .seg button { border: none; border-radius: 0; min-height: 48px; padding: 6px 4px; background: var(--bg); font-size: calc(14px * var(--fs, 1)); line-height: 1.25; }
+    .pr .seg button + button { border-left: 1px solid var(--border); }
+    .pr .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .pr .btns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
+    .pr .btns button { padding: 6px 4px; }
+    #cutBtn.isCut { border-color: var(--pr-cut); color: var(--pr-cut); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 8px; white-space: nowrap; }
+    #rtab td:nth-child(3), #rtab th:nth-child(3), #ttab td:nth-child(3), #ttab th:nth-child(3) { text-align: right; }
+    #rtab tr.sv td { font-weight: 700; }
+    #rtab td.chg { background: var(--accent-soft); }
+    #rtab td.inf { color: var(--pr-warn); }
+    #ttab td.star { color: var(--muted); }
+    #ttab td.loop { color: var(--pr-warn); font-weight: 700; }
+    #ttab:empty, #rtab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .dv-info { font-size: calc(13.5px * var(--fs, 1)); margin: 6px 0 0; min-height: 1.3em; font-variant-numeric: tabular-nums; }
+    .hdr { margin: 6px 4px 0; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); display: flex; flex-wrap: wrap; gap: 4px 14px; font-variant-numeric: tabular-nums; min-height: 1.4em; }
+    .hdr b { font-weight: 700; }
+    .hdr code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#network&quot;>Information Technology · Networks and Security</a> / Packets and routing"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#network">資訊科技・網路與資訊安全</a> ／ 封包與路由</nav>
+      <h1 data-en="Packets and Routing">網路封包與路由</h1>
+      <p data-en="A message on the Internet is cut into packets, and each packet finds its own way from router to router. Send a message across a small network and watch the packets queue, hop and arrive; cut links, change delays, compare link-state routing (like OSPF) with distance-vector routing (like RIP), and use TTL and traceroute to see the route hop by hop.">網路上的一封訊息，會被切成一個個封包，每個封包在路由器之間各自找路。在一個小網路上傳送訊息，看封包排隊、一站一站轉送、抵達；切斷連線、改變延遲，比較連結狀態路由（像 OSPF）和距離向量路由（像 RIP），再用 TTL 與追蹤路由把整條路一站一站問出來。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Send message” and watch the packets hop to the server; then tap a glowing link to cut it and send again.">試試看：按「傳送訊息」，看封包一站一站跑到伺服器；再點一條發亮的線把它切斷，重新傳送一次。</p>
+    <div class="lab pr" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="網路圖：左邊是你的電腦，右邊是伺服器，中間是路由器和連線，線上的數字是延遲（毫秒）。點一下連線可以切斷或接回，點一下路由器可以看它的路由表。用左右方向鍵選連線，Enter 或空白鍵切斷或接回。" data-en-aria-label="Network map: your computer on the left, the server on the right, routers and links in between; the number on each link is its delay in milliseconds. Tap a link to cut or reconnect it, tap a router to see its routing table. Use the left and right arrow keys to choose a link and Enter or Space to cut or reconnect it."></canvas>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-data)&quot;></i>Data packet"><i class="sw" style="background:var(--pr-data)"></i>資料封包</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-ack)&quot;></i>Acknowledgement (ACK)"><i class="sw" style="background:var(--pr-ack)"></i>確認（ACK）</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-probe)&quot;></i>Probe"><i class="sw" style="background:var(--pr-probe)"></i>探測封包</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-icmp)&quot;></i>ICMP reply"><i class="sw" style="background:var(--pr-icmp)"></i>ICMP 回報</span>
+          <span style="color:var(--pr-path)" data-en-html="<i style=&quot;background:var(--pr-path)&quot;></i>Current route"><i style="background:var(--pr-path)"></i>目前的路</span>
+          <span style="color:var(--pr-cut)" data-en-html="<i class=&quot;dash&quot;></i>Cut link"><i class="dash"></i>斷線</span>
+        </div>
+        <div class="playbar">
+          <button id="sendBtn" type="button" class="primary" data-en="Send message">傳送訊息</button>
+          <button id="traceBtn" type="button" data-en="Traceroute">追蹤路由</button>
+          <button id="pauseBtn" type="button" aria-pressed="false" data-en="Pause">暫停</button>
+          <button id="stepBtn" type="button" title="暫停，並跳到下一個事件（封包抵達、遺失、逾時……）" data-en-title="Pause and jump to the next event (a packet arriving, being lost, a timeout…)" data-en="Step">單步</button>
+        </div>
+        <div class="slider"><label for="speed" data-en="Playback speed (1 = 8 ms of network time per second)">播放速度（1 倍 = 每秒 8 毫秒）</label><output id="speedo"></output>
+          <input id="speed" type="range" min="0.25" max="4" step="0.25" value="1" data-decimals="2"></div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="停止目前的傳送，清掉封包列、時間圖、追蹤路由的回報與結果；網路、連線和滑桿都不變" data-en-title="Stop the current transfer and clear the packet strip, the timing chart, the traceroute replies and the results; the network, the links and the sliders stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv2" aria-label="封包列：上面一排是電腦送出的封包（綠色打勾是已收到確認），下面一排是伺服器收到的封包（角落的數字是第幾個到達），最下面是依序號重組出來的訊息。點一下封包可以看它的表頭。" data-en-aria-label="Packet strip: the top row is the packets the computer sends (a green tick means its acknowledgement came back), the bottom row is the packets the server has received (the small number is the order of arrival), and below is the message put back together by sequence number. Tap a packet to see its header."></canvas>
+        <div class="hdr" id="hdr" aria-live="polite"></div>
+        <canvas id="cv3" aria-label="時間圖：橫軸是每包字數，縱軸是整封訊息送達的時間（毫秒）。在同一條路、沒有遺失時，每傳送一次就記一個點。" data-en-aria-label="Timing chart: characters per packet across, and the time for the whole message to arrive (ms) up. With the same route and no losses, every transfer adds one point."></canvas>
+        <p class="chart-cap" id="chartCap" data-en="Characters per packet against the time for the whole message to arrive. A point is added each time the message arrives on the same route with no losses; change the route, the routing or the message and a new chart begins.">每包字數與整封訊息送達的時間：同一條路、沒有遺失時，每送達一次就記一個點；換了路、路由方法或訊息，就重新開始一張圖。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Message and packets">訊息與封包</h2>
+          <label class="field-label" for="msg" data-en="Message (English letters, digits and symbols, up to 48)">訊息（英文字母、數字、符號，最多 48 個）</label>
+          <input id="msg" class="txt" type="text" maxlength="48" value="Hello from Astro Ni Lab" autocomplete="off" spellcheck="false" aria-describedby="msgHint">
+          <div class="slider"><label for="k" data-en="Characters per packet">每包字數</label><output id="ko"></output>
+            <input id="k" type="range" min="1" max="16" step="1" value="5" data-decimals="0"></div>
+          <div class="slider"><label for="ttl" data-en="TTL (routers a packet may pass)">TTL（最多能經過幾台路由器）</label><output id="ttlo"></output>
+            <input id="ttl" type="range" min="1" max="32" step="1" value="16" data-decimals="0"></div>
+          <div class="slider"><label for="loss" data-en="Loss rate (% of packets lost on the way)">遺失率（每個封包在路上遺失的機率，%）</label><output id="losso"></output>
+            <input id="loss" type="range" min="0" max="30" step="1" value="0" data-decimals="0"></div>
+          <dl class="readout">
+            <dt data-en="Characters M">字數 M</dt><dd id="rM">—</dd>
+            <dt data-en="Packets P">封包數 P</dt><dd id="rP">—</dd>
+            <dt data-en="Packet size (4-byte header + data)">每包大小（表頭 4 + 資料）</dt><dd id="rL">—</dd>
+            <dt data-en="Share taken by headers">表頭占總量</dt><dd id="rH">—</dd>
+          </dl>
+          <p class="hint" id="msgHint" data-en="Each packet = a 4-byte header (source, destination, sequence number, TTL) + up to k characters of data. Only plain ASCII characters are sent; other characters are left out.">每個封包 = 4 位元組的表頭（來源、目的、序號、TTL）+ 最多 k 個字元的資料。只傳送一般的 ASCII 字元，其他字元會被略過。</p>
+          <dl class="readout">
+            <dt data-en="Whole message arrived after">整封訊息送達</dt><dd id="rT">—</dd>
+            <dt data-en="Formula (same route, no losses)">公式計算（同一條路、沒有遺失）</dt><dd id="rTh">—</dd>
+            <dt data-en="Resent">重送</dt><dd id="rR">—</dd>
+            <dt data-en="Data packets lost">遺失的資料封包</dt><dd id="rLost">—</dd>
+            <dt data-en="Arrived out of order">不照順序到達</dt><dd id="rO">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Routing">路由</h2>
+          <div class="seg" role="group" aria-label="路由方法" data-en-aria-label="Routing method">
+            <button id="algoLs" type="button" aria-pressed="true" data-en="Link state (OSPF)">連結狀態（OSPF）</button>
+            <button id="algoDv" type="button" aria-pressed="false" data-en="Distance vector (RIP)">距離向量（RIP）</button>
+          </div>
+          <div class="checks">
+            <label><input id="auto" type="checkbox" checked><span data-en="Auto exchange">自動交換</span></label>
+            <label><input id="split" type="checkbox" checked><span data-en="Split horizon">水平分割</span></label>
+          </div>
+          <div class="btns" style="grid-template-columns: minmax(0, 1fr);">
+            <button id="xchgBtn" type="button" disabled data-en="Exchange once">交換一輪</button>
+          </div>
+          <p class="dv-info" id="dvInfo" aria-live="polite"></p>
+          <label class="field-label" for="net" data-en="Network">網路</label>
+          <select id="net">
+            <option value="city" data-en="City network (8 routers)">城市網路（8 台路由器）</option>
+            <option value="ring" data-en="Ring (6 routers)">環狀網路（6 台路由器）</option>
+            <option value="grid" data-en="Grid (9 routers)">方格網路（9 台路由器）</option>
+          </select>
+          <label class="field-label" for="router" data-en="Routing table of router">看哪一台路由器的路由表</label>
+          <select id="router"></select>
+          <div class="tablewrap"><table class="data" id="rtab"></table></div>
+          <p class="hint" data-en="Link state: every router has the whole map and uses Dijkstra’s algorithm; cost = delay (ms). Distance vector: routers only swap tables with their neighbours; cost = number of hops, and 16 means “infinity” (unreachable). The small number beside each router on the map is its cost to the server.">連結狀態：每台路由器都有整張地圖，用 Dijkstra 演算法計算，成本 = 延遲（毫秒）。距離向量：路由器只和鄰居交換路由表，成本 = 跳數，16 代表「無限大」（到不了）。網路圖上路由器旁的小數字，是它到伺服器的成本。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Links">連線</h2>
+          <label class="field-label" for="link" data-en="Link">連線</label>
+          <select id="link"></select>
+          <div class="slider"><label for="cost" data-en="Delay of this link (ms)">這條線的延遲（毫秒）</label><output id="costo"></output>
+            <input id="cost" type="range" min="1" max="20" step="1" value="2" data-decimals="0"></div>
+          <div class="btns">
+            <button id="cutBtn" type="button" data-en="Cut">切斷</button>
+            <button id="restoreBtn" type="button" data-en="Reconnect all">全部接回</button>
+          </div>
+          <p class="hint" data-en="You can also tap a link on the map to cut or reconnect it. Packets already on a link keep the delay they started with.">也可以直接點網路圖上的線來切斷或接回。已經在線上的封包，維持出發時的延遲。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Traceroute replies">追蹤路由的回報</h2>
+          <p class="hint" data-en="The computer sends probes with TTL = 1, 2, 3, … The router where the TTL runs out answers “time exceeded” (ICMP), so the route is revealed one hop at a time. * means no answer came back; !N means a router had no route.">電腦依序送出 TTL = 1、2、3…… 的探測封包；TTL 在哪一台路由器用完，那台就回報「時間超過」（ICMP），於是一站一站問出整條路。* 表示等不到回應；!N 表示那台路由器沒有路可走。</p>
+          <div class="tablewrap"><table class="data" id="ttab"></table></div>
+          <p class="log-empty" id="traceEmpty" data-en="Press “Traceroute” to start.">按「追蹤路由」開始。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Packet switching: envelope and letter">封包交換：信封與信紙</h3>
+      <p data-en-html="A network does not push a whole message through in one piece; it cuts it into <strong>packets</strong>. Each packet starts with a <strong>header</strong> — source, destination, sequence number and TTL, like the envelope — followed by the data, like the letter. Here the header is a simplified 4 bytes; a real IPv4 header is at least 20 bytes, and a TCP header at least 20 more. Routers <strong>store and forward</strong>: a router first receives the whole packet, looks up its routing table, and then sends it out on the right link. Packets waiting for the same link queue up, first come, first served.">網路不會把一整封訊息一口氣送過去，而是切成一個個<strong>封包</strong>（packet）。每個封包前面有一段<strong>表頭</strong>（header），寫著來源、目的地、序號和 TTL，像信封；後面接著資料，像信紙。這裡的表頭簡化成 4 位元組；真正的 IPv4 表頭至少 20 位元組，TCP 表頭還要再加至少 20 位元組。路由器採用<strong>儲存轉送</strong>（store-and-forward）：先把整個封包收完，查路由表，再從對的那條線送出去；要走同一條線的封包排隊，先到先送。</p>
+      <p data-en-html="Sending \(L\) bytes onto a link at rate \(R\) takes \(L/R\); then the bits need the propagation delay \(d\) to reach the other end. For one packet crossing \(N\) links, and for \(P\) packets of the same size sent back to back:">把 \(L\) 位元組送上一條速率 \(R\) 的線要花 \(L/R\)，位元還要再花傳播延遲 \(d\) 才到另一端。一個封包經過 \(N\) 條線，以及 \(P\) 個一樣大的封包接連送出時：</p>
+      <div class="formula">\[ t_1 = N\,\frac{L}{R} + \sum_{i=1}^{N} d_i, \qquad t_P = (N + P - 1)\,\frac{L}{R} + \sum_{i=1}^{N} d_i \]</div>
+      <p data-en-html="Smaller packets get going sooner — while one link carries packet 2, the next link already carries packet 1, like a relay — but every packet carries its own header, so the total grows. Somewhere in between is the best packet size. On this page \(R = 4\) bytes per millisecond and \(d\) is the number of milliseconds written on each link.">封包切得越小，越早上路——第 2 包還在這條線上時，第 1 包已經在下一條線上，像接力一樣同時進行；但每一包都要背一個表頭，總量變大。兩者之間有一個最好的封包大小。這一頁的 \(R = 4\) 位元組／毫秒，\(d\) 就是每條線上標的毫秒數。</p>
+
+      <h3 data-en="TTL: a packet’s lifetime">TTL：封包的壽命</h3>
+      <p data-en-html="Every router a packet passes subtracts 1 from its <strong>TTL</strong> (time to live). When the TTL reaches 0 the router discards the packet. So even if the routing goes wrong and packets go round in circles, they cannot wander the network forever. <strong>Traceroute</strong> turns this into a tool: it sends probes with TTL = 1, 2, 3, …; the probe with TTL = \(k\) dies at the \(k\)-th router, which reports back with an ICMP “time exceeded” message, so the route is revealed hop by hop. (On this page only probes trigger ICMP reports, to keep the picture clear.)">封包每經過一台路由器，<strong>TTL</strong>（time to live，存活時間）就減 1；減到 0，路由器就把它丟掉。這樣即使路由出錯、封包繞圈，也不會在網路裡永遠打轉。<strong>追蹤路由</strong>（traceroute）把這件事變成工具：依序送出 TTL = 1、2、3…… 的探測封包，TTL = \(k\) 的那一包會在第 \(k\) 台路由器用完，那台路由器用 ICMP 回報「時間超過」，整條路就一站一站現形。（這一頁只有探測封包會觸發 ICMP 回報，畫面比較清楚。）</p>
+
+      <h3 data-en="Two ways to know the way">兩種找路的方法</h3>
+      <p data-en-html="A routing table tells a router, for every destination, which neighbour to hand the packet to next. In <strong>link-state</strong> routing (for example OSPF) every router learns the whole map and runs <strong>Dijkstra’s algorithm</strong> to find the route of least total cost — here the cost is the delay. In <strong>distance-vector</strong> routing (for example RIP) a router only hears its neighbours’ tables and picks the neighbour that gives the smallest distance; news spreads one exchange at a time. RIP counts hops, and 16 means infinity (unreachable).">路由表告訴路由器：要去每一個目的地，下一站交給哪個鄰居。<strong>連結狀態</strong>路由（例如 OSPF）：每台路由器都知道整張地圖，用 <strong>Dijkstra 演算法</strong>算出總成本最小的路——這裡的成本是延遲。<strong>距離向量</strong>路由（例如 RIP）：路由器只聽得到鄰居的路由表，選出讓距離最小的鄰居；消息要一輪一輪交換才傳得開。RIP 的成本是跳數，16 代表無限大（到不了）。</p>
+      <div class="formula">\[ D_x(y) = \min_{v \in \text{neighbours}(x)} \bigl\{\, c(x, v) + D_v(y) \,\bigr\} \]</div>
+      <p data-en-html="This is the Bellman–Ford equation: \(D_x(y)\) is router \(x\)’s distance to \(y\) and \(c(x, v)\) is the cost of the link to neighbour \(v\) (1 hop for RIP). Good news (a new, shorter route) spreads one hop per exchange. Bad news travels slowly: when a link breaks, two routers may each believe the other still has a way, hand packets back and forth in a <strong>routing loop</strong>, and raise their distances a little every round until they reach 16 — <strong>counting to infinity</strong>. <strong>Split horizon with poisoned reverse</strong> (never advertise a route back to the neighbour you learned it from, or advertise it as infinity) stops loops between two routers, but not loops through three or more.">這是 Bellman–Ford 方程式：\(D_x(y)\) 是路由器 \(x\) 到 \(y\) 的距離，\(c(x, v)\) 是到鄰居 \(v\) 那條線的成本（RIP 一律是 1 跳）。好消息（出現更短的路）每交換一輪傳一站；壞消息卻走得慢：一條線斷了，兩台路由器可能都以為「對方還有路」，把封包丟來丟去形成<strong>路由迴圈</strong>，距離每一輪加一點，直到 16 才放棄——這叫<strong>數到無限大</strong>（count to infinity）。<strong>水平分割加毒性逆轉</strong>（split horizon with poisoned reverse）：從哪個鄰居學來的路，就不告訴那個鄰居（或告訴它「無限大」），可以擋住兩台路由器之間的迴圈，但擋不住三台以上的迴圈。</p>
+
+      <h3 data-en="Lost packets and resending">遺失與重送</h3>
+      <p data-en-html="Packets can be lost — noise on a line, a full queue, a cut cable. This page uses a simplified TCP: the server returns an <strong>acknowledgement</strong> (ACK) for every packet it receives, and the computer resends a packet whose ACK has not come back within the <strong>retransmission timeout</strong> (RTO). The timeout follows the measured round-trip time RTT; packets that had to be resent are not used for measuring (Karn’s algorithm). The receiver puts packets back in order by their <strong>sequence numbers</strong>, so the message is rebuilt correctly even when packets arrive out of order.">封包可能遺失——線路雜訊、佇列滿了、線被剪斷。這一頁用簡化的 TCP：伺服器每收到一包就回一個<strong>確認</strong>（ACK）；電腦送出後開始計時，超過<strong>逾時</strong>（RTO）還沒收到確認就重送。逾時跟著量到的往返時間 RTT 調整；重送過的封包不拿來量（Karn 演算法）。接收端依<strong>序號</strong>把封包排回原來的順序，所以封包亂序到達也能還原訊息。</p>
+      <div class="formula">\[ \text{SRTT} \leftarrow 0.875\,\text{SRTT} + 0.125\,\text{RTT}, \qquad \text{RTO} = 2\,\text{SRTT} \]</div>
+      <p data-en-html="This is the original rule of the 1981 TCP specification (RFC 793, with \(\alpha = 0.875\), \(\beta = 2\)); today’s TCP (RFC 6298) also adds four times the variation of the RTT. Before the first measurement the RTO is 100 ms; a packet is resent at most 4 times before the computer gives up.">這是 1981 年 TCP 規格（RFC 793）原本的規則（取 \(\alpha = 0.875\)、\(\beta = 2\)）；現在的 TCP（RFC 6298）還會再加上 4 倍的 RTT 變動量。量到第一個 RTT 之前，逾時是 100 毫秒；同一包最多重送 4 次，再不行電腦就放棄。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Detours</strong>: cut a link on the glowing route. Link-state routing reroutes at once; how many exchanges does distance-vector routing need?"><strong>繞道</strong>：切斷發亮那條路上的一條線。連結狀態立刻改道；距離向量要交換幾輪才改過來？</li>
+        <li data-en-html="<strong>Two answers to one question</strong>: on the same network, do link state and distance vector choose the same route? Which one counts milliseconds and which one counts hops?"><strong>同一題兩種答案</strong>：同一張網路，連結狀態和距離向量選的路一樣嗎？哪一個在算毫秒、哪一個在算站數？</li>
+        <li data-en-html="<strong>The best packet size</strong>: keep the route and change “Characters per packet”. What does a very small packet cost? A very large one? Compare with the formula."><strong>最好的封包大小</strong>：路不變，改「每包字數」。封包太小要付出什麼代價？太大呢？和公式比一比。</li>
+        <li data-en-html="<strong>Enough TTL?</strong> How many routers are on the route? What is the smallest TTL that still gets through?"><strong>TTL 夠不夠</strong>：路上有幾台路由器？TTL 最少要多少才過得去？</li>
+        <li data-en-html="<strong>Bad news travels slowly</strong>: with distance vector, cut a link and watch the small numbers beside the routers change round by round."><strong>壞消息走得慢</strong>：用距離向量時切斷一條線，看路由器旁的小數字一輪一輪怎麼變。</li>
+        <li data-en-html="<strong>Putting the message back together</strong>: when packets take different routes, in what order do they arrive, and how does the server still read the right message?"><strong>把訊息拼回來</strong>：封包走了不同的路，到達的順序是什麼？伺服器怎麼還是讀到正確的訊息？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="A discrete-event simulation: every arrival, loss, timeout and routing exchange is an event with an exact time, handled strictly in time order (events at the same moment in the order they were created), so the same actions always give the same result. Sending a packet takes its size divided by 4 bytes per millisecond, then the link’s delay; each direction of a link is a first-in, first-out queue.">離散事件模擬：每一次抵達、遺失、逾時、路由交換都是一個有精確時間的事件，嚴格依時間先後處理（同一時刻依建立的先後），所以同樣的操作永遠得到同樣的結果。送出一個封包要花「大小 ÷ 每毫秒 4 位元組」，再加上線的延遲；每條線的每個方向都是先進先出的佇列。</li>
+        <li data-en="Random loss uses a seeded random-number generator (a new seed for every transfer): each packet is lost with probability equal to the loss rate, somewhere along its way. Changing a link’s delay affects only packets sent afterwards; cutting a link loses every packet on it or waiting for it.">隨機遺失用固定種子的亂數（每次傳送換一個種子）：每個封包有「遺失率」的機率在路上某條線遺失。改一條線的延遲，只影響之後才送上去的封包；切斷一條線，線上和排隊等這條線的封包全部遺失。</li>
+        <li data-en="Link state recomputes every table the moment a link changes (as if the new map reached everyone instantly). Distance vector exchanges tables once every 6 ms of network time, all routers at the same time (real RIP waits 30 seconds), or once each time you press “Exchange once”.">連結狀態在連線一改變就立刻重算所有路由表（假設新地圖瞬間傳遍）。距離向量每 6 毫秒（網路時間）所有路由器同時交換一輪（真正的 RIP 是 30 秒一次），或每按一次「交換一輪」交換一輪。</li>
+        <li data-en="Time runs in slow motion: at speed 1, one real second is 8 ms of network time; when no packet is on the way and the computer is only waiting for a timeout, time runs 8 times faster. The lengths of the lines on the map are only a sketch; the delay is the number written on each link.">時間是慢動作：1 倍速時，真實 1 秒 = 網路時間 8 毫秒；網路上沒有封包、只在等逾時的時候，時間快轉 8 倍。網路圖上線的長短只是示意，延遲以線上標的數字為準。</li>
+        <li data-en="The unit tests compare Dijkstra’s routes with a brute-force search of every path, check that distance vector settles on the fewest hops and counts to 16 after a cut, that split horizon stops two-router loops, that the simulated arrival time equals the store-and-forward formula, that TTL drops by one per router, that every packet either arrives or is dropped, and that resending and reassembly give back the exact message.">單元測試：Dijkstra 的路與暴力列舉所有路徑比對；距離向量收斂到最少跳數、斷線後數到 16；水平分割擋住兩台路由器之間的迴圈；模擬的送達時間等於儲存轉送公式；TTL 每台路由器減 1；每個封包最後不是抵達就是被丟掉；重送與重組後的訊息和原文完全相同。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): S-V-1 working principles of computing platforms (senior high; hierarchical routing such as RIP and OSPF); S-IV-3 concepts of network technology (junior high).">課綱對應：資S-V-1 系統平臺之運作原理（高中；網路階層式路由，如 RIP、OSPF）；資S-IV-3 網路技術的概念與介紹（國中）。</li>
+        <li data-en="IPv4 and TTL: RFC 791, Internet Protocol (1981), Section 3.1 Internet Header Format; RFC 1812, Requirements for IP Version 4 Routers (1995), Section 5.3.1 Time to Live; RFC 792, Internet Control Message Protocol (1981), Time Exceeded and Destination Unreachable messages.">IPv4 與 TTL：RFC 791〈Internet Protocol〉（1981）第 3.1 節表頭格式；RFC 1812〈Requirements for IP Version 4 Routers〉（1995）第 5.3.1 節 Time to Live；RFC 792〈Internet Control Message Protocol〉（1981）的 Time Exceeded 與 Destination Unreachable 訊息。</li>
+        <li data-en="TCP: RFC 9293, Transmission Control Protocol (2022) — sequence numbers, acknowledgements and retransmission; RFC 793 (1981), Section 3.7, Retransmission Timeout (SRTT and RTO = β·SRTT); RFC 6298, Computing TCP’s Retransmission Timer (2011), including Karn’s algorithm.">TCP：RFC 9293〈Transmission Control Protocol〉（2022）——序號、確認與重送；RFC 793（1981）第 3.7 節 Retransmission Timeout（SRTT 與 RTO = β·SRTT）；RFC 6298〈Computing TCP’s Retransmission Timer〉（2011），含 Karn 演算法。</li>
+        <li data-en="RIP: RFC 2453, RIP Version 2 (1998), Section 3.4.2 Preventing instability (counting to infinity, 16 as infinity), Section 3.4.3 Split horizon (with poisoned reverse), Section 3.8 Timers. OSPF: RFC 2328, OSPF Version 2 (1998), Section 16.1 Calculating the shortest-path tree for an area.">RIP：RFC 2453〈RIP Version 2〉（1998）第 3.4.2 節 Preventing instability（數到無限大、以 16 為無限大）、第 3.4.3 節 Split horizon（含毒性逆轉）、第 3.8 節 Timers。OSPF：RFC 2328〈OSPF Version 2〉（1998）第 16.1 節 Calculating the shortest-path tree for an area。</li>
+        <li data-en="Algorithms: E. W. Dijkstra (1959), “A note on two problems in connexion with graphs”, Numerische Mathematik 1, 269–271; R. Bellman (1958), “On a routing problem”, Quarterly of Applied Mathematics 16, 87–90.">演算法：E. W. Dijkstra（1959）“A note on two problems in connexion with graphs”，Numerische Mathematik 1，269–271；R. Bellman（1958）“On a routing problem”，Quarterly of Applied Mathematics 16，87–90。</li>
+        <li data-en="Textbooks: J. F. Kurose and K. W. Ross, Computer Networking: A Top-Down Approach, 8th ed. (Pearson, 2021), Sections 1.3–1.4 (packet switching, store-and-forward, delays, traceroute), 3.5 (TCP timeout), 4.3 (IPv4) and 5.2–5.3 (link-state and distance-vector routing, OSPF); A. S. Tanenbaum and D. J. Wetherall, Computer Networks, 5th ed. (Pearson, 2011), Chapter 5, Section 5.2 Routing Algorithms.">教科書：J. F. Kurose、K. W. Ross《Computer Networking: A Top-Down Approach》第 8 版（Pearson，2021）第 1.3–1.4 節（封包交換、儲存轉送、延遲、traceroute）、第 3.5 節（TCP 逾時）、第 4.3 節（IPv4）、第 5.2–5.3 節（連結狀態與距離向量路由、OSPF）；A. S. Tanenbaum、D. J. Wetherall《Computer Networks》第 5 版（Pearson，2011）第 5 章 5.2 節 Routing Algorithms。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Routing_Information_Protocol&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Routing Information Protocol (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Open_Shortest_Path_First&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Open Shortest Path First (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Traceroute&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Traceroute (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Routing_Information_Protocol" target="_blank" rel="noopener">Routing Information Protocol（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Open_Shortest_Path_First" target="_blank" rel="noopener">Open Shortest Path First（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Traceroute" target="_blank" rel="noopener">Traceroute（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/packet-routing-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/packet-routing.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="packet-routing"></script>
+  <script src="js/missions/packet-routing.js"></script>
+  <script src="js/stats.js" data-module="packet-routing"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
