@@ -353,6 +353,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/radioactive-decay.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/mendelian-inheritance.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/mendelian-inheritance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/mendelian-inheritance.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/mendelian-inheritance.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/mendelian-inheritance.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/moon-phases.html</loc>
     <lastmod>2026-11-12</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/moon-phases.html"/>

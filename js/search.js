@@ -50,16 +50,17 @@
     const chapter = card.closest('.chapter');
     const topicEl = (chapter && chapter.querySelector('.chapter-head [data-en]')) || card.querySelector('.topic');
     const title = (h3 || {}).textContent || '';
-    // 地球科學區的分支前面加上科目名，物理維持原樣（例如「地球科學・天文」）
+    // 物理以外的科目，分支前面加上科目名，物理維持原樣（例如「地球科學・天文」「生物・遺傳」）
     const domainEl = card.closest('.domain');
-    const domainPre = domainEl && domainEl.id === 'earth' ? (domainEl.querySelector('.domain-head h2') || {}).textContent || '' : '';
+    const domainH = domainEl && domainEl.id !== 'physics' ? domainEl.querySelector('.domain-head h2') : null;
+    const domainPre = domainH ? domainH.textContent || '' : '';
     const branch = (domainPre ? domainPre + '・' : '') + (section ? (section.querySelector('.branch-head h2') || {}).textContent || '' : '');
     const topic = (topicEl || {}).textContent || '';
     const descEl = card.querySelector('h4 + p, h3 + p') || card.querySelector('p');
     const desc = (descEl || {}).textContent || '';
     const branchEl = section && section.querySelector('.branch-head h2');
     const enBranch = en(branchEl);
-    const enText = { title: en(h3), topic: en(topicEl), branch: domainPre && enBranch ? 'Earth Science · ' + enBranch : enBranch, desc: enDesc(descEl) };
+    const enText = { title: en(h3), topic: en(topicEl), branch: domainPre && enBranch ? (en(domainH) || domainPre) + ' · ' + enBranch : enBranch, desc: enDesc(descEl) };
     // 英文標題、主題也拿來比對，所以中英文關鍵字都搜得到
     const keywords = (card.getAttribute('data-keywords') || '').split(/\s+/).filter(Boolean)
       .concat([enText.title, enText.topic, enText.branch].filter(Boolean));

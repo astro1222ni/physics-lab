@@ -152,7 +152,28 @@ if (NO_OG) process.exit(0);
   const thumb = slug => path.join(ROOT, 'img/thumbs', slug + '-hant-light.webp');
   const dataUrl = f => 'data:image/webp;base64,' + fs.readFileSync(f).toString('base64');
   const TOKENS = { mech: '#c2410c', thermo: '#b91c1c', wave: '#0e7490', optics: '#7c3aed', em: '#1d4ed8', modern: '#0f766e',
-    cell: '#7e22ce', genetics: '#4d7c0f', physiology: '#be123c', ecology: '#047857', evolution: '#a16207' }; // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
+    cell: '#7e22ce', genetics: '#3f6212', physiology: '#be123c', ecology: '#047857', evolution: '#854d0e' }; // 生物五個分支（與 lab.css 的 --b-* 淺色值相同）
+  /**
+   * 分享卡中文標題的斷行：標題區寬 420 px、字級 54 px，一行約 7 個字。
+   * 先在「：」後面、「（」前面分段；還太長的段落，在「與、和、及、、、，」後面找最平均的位置再分。
+   * 這樣不會把一個詞拆到兩行（例如「豌｜豆」）。9 個字以內不分。
+   */
+  const OG_LINE = 7;
+  function ogSplit(p) {
+    if (p.length <= OG_LINE) return [p];
+    let best = -1, worst = Infinity;
+    for (let i = 1; i < p.length; i++) {
+      if (!/[與和及、，]/.test(p[i - 1])) continue;
+      const m = Math.max(i, p.length - i);
+      if (m < worst) { worst = m; best = i; }
+    }
+    return best < 0 ? [p] : ogSplit(p.slice(0, best)).concat(ogSplit(p.slice(best)));
+  }
+  function ogTitle(t) {
+    if (t.length <= 9) return esc(t);
+    const parts = t.replace(/：/g, '：|').replace(/（/g, '|（').split('|').filter(Boolean);
+    return parts.map(ogSplit).reduce((a, b) => a.concat(b), []).map(esc).join('<br>');
+  }
   const FONT = 'system-ui, "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif';
   const CSS = `*{margin:0;box-sizing:border-box}body{width:1200px;height:630px;font-family:${FONT};background:#f3f6f5;color:#22323a;overflow:hidden}
     .card{position:absolute;inset:0;background:radial-gradient(1200px 600px at 100% 0%,color-mix(in srgb,var(--c) 16%,#f3f6f5),#f3f6f5 60%)}
@@ -173,9 +194,10 @@ if (NO_OG) process.exit(0);
   for (const l of labs) {
     const f = thumb(l.slug);
     if (!fs.existsSync(f)) { console.log('沒有縮圖，略過分享卡：' + l.slug + '（先跑 npm run thumbs -- ' + l.slug + '）'); continue; }
-    const v = crypto.createHash('sha1').update(fs.readFileSync(f)).update(l.zh + l.en + l.chapter.zh).digest('hex').slice(0, 10);
+    // 長標題的斷行規則改過（11/12），版本字串只加在長標題上，短標題的卡片不必重做
+    const v = crypto.createHash('sha1').update(fs.readFileSync(f)).update(l.zh + l.en + l.chapter.zh + (l.zh.length > 9 ? '|br2' : '')).digest('hex').slice(0, 10);
     if (!FORCE && vers[l.slug] === v && fs.existsSync(path.join(outDir, l.slug + '.jpg'))) continue;
-    const zhTitle = l.zh.length > 9 ? l.zh.replace(/(與|和|及)/, '$1<br>') : l.zh;
+    const zhTitle = ogTitle(l.zh);
     const html = `<style>${CSS}</style><div class="card" style="--c:${TOKENS[l.branch.id] || '#196558'}">
       <div class="brand">ASTRO NI SCIENCE LAB</div>
       <div class="text"><span class="tag">${esc(l.branch.zh)}・${esc(l.chapter.zh)}</span><h1>${zhTitle}</h1><h2>${esc(l.en)}</h2></div>

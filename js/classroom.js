@@ -16,6 +16,8 @@
  */
 (function () {
   'use strict';
+  // 目錄 catalog.js 的科目代號（首頁科目區塊的 id）→ 相關實驗標籤前面的科目名；物理不加
+  const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'] };
   const S = window.LabSettings;
   const T = function (zh, en) { return S ? S.t(zh, en) : zh; };
   const ver = (((document.currentScript || {}).src || '').match(/\?v=\d+/) || [''])[0];
@@ -493,7 +495,8 @@
       img.alt = ''; img.width = 720; img.height = 405; img.loading = 'lazy'; img.decoding = 'async';
       const tag = document.createElement('span');
       tag.className = 'related-tag';
-      tag.textContent = (x.d === 'earth' ? T('地球科學・', 'Earth Science · ') : '') + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
+      const dn = DOMAIN_NAMES[x.d];
+      tag.textContent = (dn ? T(dn[0] + '・', dn[1] + ' · ') : '') + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
       const t = document.createElement('h3');
       t.textContent = T(x.zh, x.en || x.zh);
       const p = document.createElement('p');
