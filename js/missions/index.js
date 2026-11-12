@@ -48,11 +48,12 @@ window.LAB_MISSION_MODULES = [
   { id: 'current-magnetic-field', zh: '電流的磁效應：直導線、線圈與螺線管的磁場', en: 'Magnetic Effects of Currents: Wires, Coils and Solenoids' },
   { id: 'mendelian-inheritance', zh: '孟德爾遺傳：豌豆雜交與卡方檢定', en: 'Mendelian Inheritance: Pea Crosses and the Chi-Square Test' },
   { id: 'acid-base-titration', zh: '酸鹼滴定', en: 'Acid–Base Titration' },
-  { id: 'tides', zh: '潮汐：月球、太陽與兩個潮汐隆起', en: 'Tides: The Moon, the Sun and the Two Tidal Bulges' }
+  { id: 'tides', zh: '潮汐：月球、太陽與兩個潮汐隆起', en: 'Tides: The Moon, the Sun and the Two Tidal Bulges' },
+  { id: 'conic-sections', zh: '圓錐曲線：用平面切圓錐', en: 'Conic Sections: Slicing a Cone' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -84,7 +85,8 @@ window.LAB_MODULE_BRANCH = {
   'mendelian-inheritance': 'genetics',
   // 化學
   'acid-base-titration': 'acidbase',
-  'tides': 'ocean'
+  'tides': 'ocean',
+  'conic-sections': 'geometry'
 };
 
 /* 四個科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */

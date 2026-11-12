@@ -51,7 +51,8 @@
     "current-magnetic-field": "fb726177",
     "mendelian-inheritance": "ca6f2c4f",
     "acid-base-titration": "be286dd9",
-    "tides": "effa63c4"
+    "tides": "effa63c4",
+    "conic-sections": "03619a7f"
   };
   /* VERSIONS-END */
 

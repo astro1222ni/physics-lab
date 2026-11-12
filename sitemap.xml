@@ -400,4 +400,12 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/tides.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/tides.html"/>
   </url>
+  <url>
+    <loc>https://lab.astroni.org/conic-sections.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/conic-sections.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/conic-sections.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/conic-sections.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/conic-sections.html"/>
+  </url>
 </urlset>
