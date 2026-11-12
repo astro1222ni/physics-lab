@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Greenhouse Effect and Earth’s Energy Balance: from 255 K to 288 K | Astro Ni Science Lab">溫室效應與地球的能量平衡：從 255 K 到 288 K｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 溫室效應頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --gh-sky1: #cfe3f6; --gh-sky2: #eef5fb; --gh-space: #1c2a44; --gh-atm: #7aa7d8; --gh-sea: #2f6f9f; --gh-land: #6f9a57; --gh-ice: #f4f8fc;
+      --gh-sun: #f59e0b; --gh-ir: #dc2626; --gh-ir2: #f97316; --gh-refl: #eab308; --gh-asr: #d97706; --gh-olr: #dc2626; --gh-eq: #0f766e;
+      --gh-warm: #dc2626; --gh-cold: #2563eb; --gh-trace: #7c3aed;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --gh-sky1: #1b2c44; --gh-sky2: #13202f; --gh-space: #070b14; --gh-atm: #4f7fb5; --gh-sea: #1f5378; --gh-land: #4f7a3d; --gh-ice: #dbe6f0;
+        --gh-sun: #fbbf24; --gh-ir: #f87171; --gh-ir2: #fb923c; --gh-refl: #facc15; --gh-asr: #fbbf24; --gh-olr: #f87171; --gh-eq: #5eead4;
+        --gh-warm: #f87171; --gh-cold: #60a5fa; --gh-trace: #c4b5fd;
+      }
+    }
+    :root[data-theme="dark"] {
+      --gh-sky1: #1b2c44; --gh-sky2: #13202f; --gh-space: #070b14; --gh-atm: #4f7fb5; --gh-sea: #1f5378; --gh-land: #4f7a3d; --gh-ice: #dbe6f0;
+      --gh-sun: #fbbf24; --gh-ir: #f87171; --gh-ir2: #fb923c; --gh-refl: #facc15; --gh-asr: #fbbf24; --gh-olr: #f87171; --gh-eq: #5eead4;
+      --gh-warm: #f87171; --gh-cold: #60a5fa; --gh-trace: #c4b5fd;
+    }
+    #cv { aspect-ratio: auto; height: 400px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 400px; } }
+    #gr { display: block; width: 100%; height: 290px; touch-action: pan-y pinch-zoom; border-radius: 8px; cursor: crosshair; }
+    @media (max-width: 560px) { #gr { height: 260px; } }
+    .gh button { min-height: 44px; }
+    .gh .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gh .playbar button { flex: 1 1 auto; }
+    .gh .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .gh .slider input[type="range"] { height: 28px; margin: 0; }
+    .gh [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .toggles button { flex: 1 1 140px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 420px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #16233a, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 380px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Greenhouse effect"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 溫室效應</nav>
+      <h1 data-en="The Greenhouse Effect and Earth’s Energy Balance: from 255 K to 288 K">溫室效應與地球的能量平衡：從 255 K 到 288 K</h1>
+      <p data-en="Without an atmosphere the Earth would be −18 °C; with one it is a comfortable 15 °C. Follow every watt of sunlight and infrared, add carbon dioxide, switch on the water-vapour and ice-albedo feedbacks, and watch the planet warm up — or freeze into a snowball Earth that the present Sun cannot thaw. In 2D or on a 3D globe.">沒有大氣，地球是 −18 °C；有了大氣，是舒適的 15 °C。追蹤每一瓦陽光與紅外線，加入二氧化碳，打開水氣回饋與冰反照率回饋，看地球慢慢變暖——或是結成一顆連今天的太陽都融不掉的雪球。2D 或 3D 地球都可以看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Today” (423 ppm) and then “Play”: the Earth takes years to catch up with the extra greenhouse gas. Then switch on both feedbacks and dim the Sun to 95%.">試試看：按「今天」（423 ppm）再按「播放」：地球要好幾年才追上多出來的溫室氣體。再打開兩種回饋，把太陽調暗到 95%。</p>
+    <div class="lab gh" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D energy flow">2D 能量流</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D globe">3D 地球</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSun" data-en="Sunlit side" title="從太陽的方向看：白天的半球" data-en-title="Look from the Sun: the daytime hemisphere">向陽面</button>
+          <button type="button" id="camSide" data-en="Side view" title="從側面看：晝夜交界與大氣層" data-en-title="From the side: the day–night line and the atmosphere">側面</button>
+          <button type="button" id="camPole" data-en="Above the pole" title="從北極上空看冰帽" data-en-title="Look down on the polar ice cap">北極上空</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="能量流：陽光、反射、地表與大氣的紅外線" data-en-aria-label="Energy flow: sunlight, reflection, and infrared from the surface and the atmosphere"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">播放</button>
+          <button id="jump" type="button" data-en="Jump to equilibrium" title="直接跳到這組設定最後會停下來的溫度" data-en-title="Go straight to the temperature these settings finally settle at">跳到平衡</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除溫度紀錄與遲滯圖的軌跡，時間歸零；溫度與設定不變" data-en-title="Clear the temperature record and the hysteresis trace and reset the clock; temperature and settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
+          <button type="button" data-speed="1" aria-pressed="false" data-en="1 year per second">每秒 1 年</button>
+          <button type="button" data-speed="5" aria-pressed="true" data-en="5 years per second">每秒 5 年</button>
+          <button type="button" data-speed="25" aria-pressed="false" data-en="25 years per second">每秒 25 年</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend l2">
+          <span style="color:var(--gh-sun)" data-en-html="<i style=&quot;background:var(--gh-sun)&quot;></i>Sunlight"><i style="background:var(--gh-sun)"></i>陽光</span>
+          <span style="color:var(--gh-refl)" data-en-html="<i style=&quot;background:var(--gh-refl)&quot;></i>Reflected"><i style="background:var(--gh-refl)"></i>反射</span>
+          <span style="color:var(--gh-ir)" data-en-html="<i style=&quot;background:var(--gh-ir)&quot;></i>Infrared from the ground"><i style="background:var(--gh-ir)"></i>地面放出的紅外線</span>
+          <span style="color:var(--gh-ir2)" data-en-html="<i style=&quot;background:var(--gh-ir2)&quot;></i>Infrared from the atmosphere"><i style="background:var(--gh-ir2)"></i>大氣放出的紅外線</span>
+        </div>
+        <p class="hint l2" data-en-html="Every number is a global average in W/m². The width of each arrow is proportional to the energy it carries. The atmosphere is drawn more opaque when it absorbs more infrared.">所有數字都是全球平均，單位 W/m²；箭頭的粗細與它帶的能量成正比。大氣吸收的紅外線越多，畫得越不透明。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The white caps grow toward the equator as the planet cools; the blue haze thickens when the atmosphere absorbs more infrared.">拖曳旋轉，滾輪或雙指縮放。地球變冷時白色的冰帽往赤道擴張；大氣吸收紅外線越多，藍色的大氣層越厚。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="圖表" data-en-aria-label="Chart" id="chartSeg">
+            <button type="button" data-chart="time" aria-pressed="true" data-en="Temperature vs time">溫度與時間</button>
+            <button type="button" data-chart="balance" aria-pressed="false" data-en="Energy-balance plot">能量平衡圖</button>
+            <button type="button" data-chart="hyst" aria-pressed="false" data-en="Snowball (hysteresis)">雪球與遲滯</button>
+          </div>
+          <canvas id="gr" aria-label="溫度隨時間的變化" data-en-aria-label="Temperature against time"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Sun and surface">太陽與地表</h2>
+          <div class="slider"><label for="sun" data-en="Brightness of the Sun (% of today)">太陽亮度（今天＝100%）</label><output></output>
+            <input id="sun" type="range" min="70" max="140" step="0.5" value="100" data-decimals="2"></div>
+          <p class="hint" id="sunHint">—</p>
+          <div class="slider" id="albWrap"><label for="alb" data-en="Albedo α (fraction of sunlight reflected)">反照率 α（反射掉的陽光比例）</label><output></output>
+            <input id="alb" type="range" min="0" max="0.9" step="0.01" value="0.3" data-decimals="3"></div>
+          <p class="hint" id="albHint" hidden>—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Greenhouse gases">溫室氣體</h2>
+          <div class="slider"><label for="co2" data-en-html="Carbon dioxide CO<sub>2</sub> (ppm)">二氧化碳 CO<sub>2</sub>（ppm）</label><output></output>
+            <input id="co2" type="range" min="100" max="2000" step="5" value="280" data-decimals="1"></div>
+          <div class="presets" role="group" aria-label="二氧化碳的參考值" data-en-aria-label="Carbon dioxide reference values">
+            <button type="button" data-co2="190" data-en="Ice age 190" title="上一次冰期最盛期約 190 ppm" data-en-title="Last Glacial Maximum, about 190 ppm">冰期 190</button>
+            <button type="button" data-co2="280" data-en="1750: 280" title="工業革命前約 280 ppm" data-en-title="Before the Industrial Revolution, about 280 ppm">1750 年 280</button>
+            <button type="button" data-co2="423" data-en="Today 423" title="2024 年全球平均約 423 ppm（NOAA）" data-en-title="Global mean in 2024, about 423 ppm (NOAA)">今天 423</button>
+            <button type="button" data-co2="560" data-en="Doubled 560" title="工業革命前的兩倍" data-en-title="Twice the pre-industrial value">加倍 560</button>
+          </div>
+          <div class="slider"><label for="eps" data-en-html="Infrared absorbed by the rest of the atmosphere, ε<sub>0</sub>">其他溫室氣體吸收的紅外線比例 ε<sub>0</sub></label><output></output>
+            <input id="eps" type="range" min="0" max="1" step="0.001" value="0.779" data-decimals="3"></div>
+          <p class="hint" data-en-html="ε<sub>0</sub> is what the atmosphere (mainly water vapour) absorbs with 280 ppm of CO<sub>2</sub>. <b>0</b> means no atmosphere at all.">ε<sub>0</sub> 是 CO<sub>2</sub> 為 280 ppm 時大氣（主要是水氣）吸收的比例；<b>0</b> 等於沒有大氣。</p>
+          <div class="toggles" role="group" aria-label="回饋" data-en-aria-label="Feedbacks">
+            <button type="button" id="fbWv" aria-pressed="false" data-en="Water-vapour feedback" title="暖空氣含更多水氣，水氣也是溫室氣體" data-en-title="Warmer air holds more water vapour, which is itself a greenhouse gas">水氣回饋</button>
+            <button type="button" id="fbIce" aria-pressed="false" data-en="Ice-albedo feedback" title="變冷時冰雪擴張、反射更多陽光" data-en-title="When it cools, ice spreads and reflects more sunlight">冰反照率回饋</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="The Earth now">現在的地球</h2>
+          <dl class="readout">
+            <dt data-en="Surface temperature">地表溫度</dt><dd id="rT" class="big">—</dd>
+            <dt data-en="Warmer than 1750 equilibrium by">比 1750 年的平衡暖</dt><dd id="rDT">—</dd>
+            <dt data-en="Energy imbalance N">能量不平衡 N</dt><dd id="rN">—</dd>
+            <dt data-en="Will settle at">最後會停在</dt><dd id="rEq">—</dd>
+            <dt data-en="Without greenhouse effect">沒有溫室效應時</dt><dd id="rTe">—</dd>
+            <dt data-en="Albedo α / infrared absorbed ε">反照率 α／紅外線吸收 ε</dt><dd id="rAE">—</dd>
+            <dt data-en-html="CO<sub>2</sub> forcing">CO<sub>2</sub> 的輻射強迫</dt><dd id="rF">—</dd>
+            <dt data-en="Ice edge">冰緣緯度</dt><dd id="rIce">—</dd>
+            <dt data-en="Time">經過時間</dt><dd id="rTime">—</dd>
+          </dl>
+          <p class="hint" id="sensHint">—</p>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="A planet in balance">收支平衡的行星</h3>
+      <p data-en-html="Sunlight arriving at the Earth carries the <strong>solar constant</strong> \(S = 1361\ \mathrm{W/m^2}\). The Earth intercepts it with its disc \(\pi R^2\) but spreads it over its whole surface \(4\pi R^2\), so each square metre receives \(S/4 \approx 340\ \mathrm{W/m^2}\) on average. A fraction \(\alpha \approx 0.30\) (the <strong>albedo</strong>) is reflected by clouds, ice and the ground. A warm body radiates \(\sigma T^4\) (Stefan–Boltzmann law). Without an atmosphere, balance gives">太陽光到達地球時的能量通量是<strong>太陽常數</strong> \(S = 1361\ \mathrm{W/m^2}\)。地球用圓盤 \(\pi R^2\) 接收陽光，卻把它分攤到整個球面 \(4\pi R^2\)，所以平均每平方公尺收到 \(S/4 \approx 340\ \mathrm{W/m^2}\)。其中比例 \(\alpha \approx 0.30\)（<strong>反照率</strong>）被雲、冰與地面反射掉。溫度 \(T\) 的物體放出 \(\sigma T^4\)（史蒂芬－波茲曼定律）。沒有大氣時，收支平衡得到</p>
+      <div class="formula">\[ \frac{S}{4}(1-\alpha) = \sigma T_e^4 \quad\Rightarrow\quad T_e = \left(\frac{S(1-\alpha)}{4\sigma}\right)^{1/4} \approx 255\ \mathrm{K}\ (-18\ ^\circ\mathrm{C}) \]</div>
+
+      <h3 data-en="A blanket that lets light in">讓光進來的毯子</h3>
+      <p data-en-html="Air is almost transparent to sunlight but absorbs much of the infrared emitted by the ground (mainly water vapour and carbon dioxide). In the simplest model a single layer absorbs a fraction \(\varepsilon\) of the surface’s infrared and, being warm itself, radiates half up to space and half back down. The extra energy from the back-radiation warms the surface until balance is restored:">空氣幾乎讓陽光直接穿過，卻吸收地面放出的大部分紅外線（主要是水氣與二氧化碳）。最簡單的模型把大氣當成一層：它吸收地面紅外線的比例 \(\varepsilon\)，自己也因為有溫度而發光，一半往上射向太空、一半往下射回地面。地面多收到這份「回輻射」，就要變暖到重新平衡：</p>
+      <div class="formula">\[ \sigma T_s^4\left(1-\frac{\varepsilon}{2}\right) = \frac{S}{4}(1-\alpha) \quad\Rightarrow\quad T_s = T_e\left(\frac{2}{2-\varepsilon}\right)^{1/4} \]</div>
+      <p data-en-html="With \(\varepsilon \approx 0.78\) the surface is 288 K (15 °C): the greenhouse effect adds about 33 K. Even a perfectly absorbing single layer (\(\varepsilon = 1\)) only gives \(2^{1/4}T_e\), so a hothouse like Venus needs a much thicker atmosphere than one layer.">取 \(\varepsilon \approx 0.78\)，地表是 288 K（15 °C）：溫室效應讓地球暖了約 33 K。就算這一層完全吸收（\(\varepsilon = 1\)），也只到 \(2^{1/4}T_e\)；像金星那樣的高溫，需要比一層厚得多的大氣。</p>
+
+      <h3 data-en="Carbon dioxide, forcing and feedbacks">二氧化碳、輻射強迫與回饋</h3>
+      <p data-en-html="Adding CO<sub>2</sub> makes the atmosphere absorb a little more, which reduces the infrared leaving the planet. The immediate drop is the <strong>radiative forcing</strong>, close to \(\Delta F = 5.35\ln(C/C_0)\ \mathrm{W/m^2}\): about 3.7 W/m² for doubling. The Earth is then out of balance by \(N\) and warms until the extra outgoing \(\sigma T^4\) cancels it. The time it takes is set by the heat capacity of the ocean’s mixed layer, \(C\,\dfrac{dT_s}{dt} = N\).">增加 CO<sub>2</sub>，大氣就多吸收一點，離開地球的紅外線變少。這個立即的減少叫<strong>輻射強迫</strong>，大約是 \(\Delta F = 5.35\ln(C/C_0)\ \mathrm{W/m^2}\)：加倍約 3.7 W/m²。於是地球收支不平衡 \(N\)，慢慢變暖，直到多放出的 \(\sigma T^4\) 把它抵消。要多久，由海洋混合層的熱容量決定：\(C\,\dfrac{dT_s}{dt} = N\)。</p>
+      <div class="formula">\[ \Delta T_{\text{eq}} \approx \frac{\Delta F}{\lambda}, \qquad \lambda = \lambda_{\text{Planck}} - \lambda_{\text{water vapour}} - \lambda_{\text{ice}} \ \ (\mathrm{W\,m^{-2}\,K^{-1}}) \]</div>
+      <p data-en-html="Warming alone (the Planck response, \(\approx 3.3\ \mathrm{W\,m^{-2}\,K^{-1}}\)) would give only about 1.1 K for doubled CO<sub>2</sub>. But warmer air holds more water vapour, another greenhouse gas (<strong>water-vapour feedback</strong>), and melting ice exposes darker sea and land (<strong>ice-albedo feedback</strong>). Together they roughly triple the warming, close to the IPCC AR6 best estimate of 3 K.">只靠溫度上升多放出熱（普朗克回應，約 \(3.3\ \mathrm{W\,m^{-2}\,K^{-1}}\)），CO<sub>2</sub> 加倍只會暖約 1.1 K。可是暖空氣含更多水氣——水氣也是溫室氣體（<strong>水氣回饋</strong>）；冰雪融化露出比較暗的海與陸地（<strong>冰反照率回饋</strong>）。兩者加起來讓增溫變成約三倍，接近 IPCC 第六次評估報告的最佳估計 3 K。</p>
+
+      <h3 data-en="Snowball Earth and hysteresis">雪球地球與遲滯</h3>
+      <p data-en-html="Because ice reflects so much sunlight, the curves of absorbed and emitted energy can cross three times: a warm Earth, a frozen <strong>snowball Earth</strong>, and an unstable state between them. Dim the Sun a little and the warm state disappears; the planet freezes. Brighten it back and nothing happens — the white planet keeps reflecting the extra sunlight. Geological evidence suggests the Earth really was almost completely frozen at least twice, around 700 and 650 million years ago.">冰雪反射大量陽光，所以「吸收的能量」與「放出的能量」兩條曲線可以有三個交點：溫暖的地球、冰封的<strong>雪球地球</strong>，以及兩者之間一個不穩定的狀態。太陽稍微變暗，溫暖的平衡就消失，地球整個結冰；再把太陽調回來，卻什麼也沒發生——白色的地球照樣把多出來的陽光反射掉。地質證據顯示，地球在大約 7 億年與 6.5 億年前真的曾經幾乎完全冰封。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Where does 33 K come from?</strong> Set ε<sub>0</sub> to 0 and compare with the default: same Sun, same albedo.">  <strong>33 K 從哪裡來？</strong>把 ε<sub>0</sub> 設成 0，和預設比較：同樣的太陽、同樣的反照率。</li>
+        <li data-en-html="<strong>Committed warming</strong>: press “Today” without playing. The temperature has not changed yet, but N is already positive — the warming is on its way."><strong>已經注定的暖化</strong>：按「今天」但不要播放。溫度還沒變，N 已經是正的——暖化正在路上。</li>
+        <li data-en-html="<strong>Hysteresis</strong>: in the snowball chart, dim the Sun slowly while playing, then brighten it again. The path down and the path up are different."><strong>遲滯</strong>：在「雪球與遲滯」圖，播放時慢慢調暗太陽，再慢慢調亮。下去的路與回來的路不一樣。</li>
+        <li data-en-html="<strong>Click the energy-balance plot</strong> to put the planet at any temperature and watch which equilibrium it falls into."><strong>點能量平衡圖</strong>，把地球放到任何溫度，看它掉進哪一個平衡。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="A zero-dimensional (global-mean) energy-balance model with one atmospheric layer in radiative equilibrium (\(T_a = T_s/2^{1/4}\)); the atmosphere absorbs no sunlight. \(\varepsilon = \varepsilon_0 + 2\Delta F/(\sigma T_0^4)\), so that CO<sub>2</sub> produces exactly the forcing \(\Delta F\) at 288 K.">零維（全球平均）能量平衡模型，大氣是一層處於輻射平衡的氣層（\(T_a = T_s/2^{1/4}\)），不吸收陽光。\(\varepsilon = \varepsilon_0 + 2\Delta F/(\sigma T_0^4)\)，讓 CO<sub>2</sub> 在 288 K 時剛好產生輻射強迫 \(\Delta F\)。</li>
+        <li data-en-html="Water-vapour feedback: \(\varepsilon\) grows with temperature so that it adds 1.8 W/m² per kelvin. Ice-albedo feedback: \(\alpha(T)\) changes smoothly from 0.30 (288 K) to 0.62 (fully frozen); the ice edge is the latitude whose polar caps cover that ice fraction.">水氣回饋：\(\varepsilon\) 隨溫度增加，每升高 1 K 多留住 1.8 W/m²。冰反照率回饋：\(\alpha(T)\) 從 0.30（288 K）平滑變到 0.62（全部結冰）；冰緣緯度是兩極冰帽面積剛好等於結冰比例的緯度。</li>
+        <li data-en-html="Heat capacity: a 50 m ocean mixed layer, \(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\), integrated by fourth-order Runge–Kutta. The deep ocean, clouds and the uneven distribution of heat over the globe are left out, so real warming is slower and its details differ.">熱容量：50 m 深的海洋混合層，\(C = 2.0\times10^8\ \mathrm{J\,m^{-2}\,K^{-1}}\)，用四階 Runge–Kutta 積分。沒有深海、雲與熱量在地球上的不均勻分布，所以真實的暖化比較慢，細節也不同。</li>
+        <li data-en-html="3D globe: Earth image NASA Blue Marble (public domain); the three.js library (MIT license) is downloaded only when you switch to 3D.">3D 地球：地球影像為 NASA Blue Marble（公有領域）；three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Climate change (energy balance, greenhouse effect, feedbacks)">課綱對應：高中地球科學・氣候變遷（能量收支、溫室效應、回饋機制）</li>
+        <li data-en-html="Solar constant 1361 W/m²: G. Kopp and J. L. Lean (2011), “A new, lower value of total solar irradiance”, <i>Geophysical Research Letters</i> 38, L01706.">太陽常數 1361 W/m²：G. Kopp 與 J. L. Lean（2011），〈A new, lower value of total solar irradiance〉，<i>Geophysical Research Letters</i> 38 卷 L01706。</li>
+        <li data-en-html="CO<sub>2</sub> forcing 5.35 ln(C/C<sub>0</sub>): G. Myhre et al. (1998), <i>Geophysical Research Letters</i> 25, 2715–2718.">CO<sub>2</sub> 強迫 5.35 ln(C/C<sub>0</sub>)：G. Myhre 等（1998），<i>Geophysical Research Letters</i> 25 卷 2715–2718 頁。</li>
+        <li data-en-html="Feedbacks and climate sensitivity: IPCC (2021), <i>Climate Change 2021: The Physical Science Basis</i>, Working Group I, Chapter 7 (Planck, water-vapour and surface-albedo feedbacks; equilibrium climate sensitivity 3 K).">回饋與氣候敏感度：IPCC（2021），《Climate Change 2021: The Physical Science Basis》第一工作組第 7 章（普朗克、水氣、地表反照率回饋；平衡氣候敏感度 3 K）。</li>
+        <li data-en-html="CO<sub>2</sub> concentrations: NOAA Global Monitoring Laboratory, global annual mean (about 423 ppm in 2024); ice cores for 280 ppm (1750) and about 190 ppm (Last Glacial Maximum).">CO<sub>2</sub> 濃度：NOAA 全球監測實驗室的全球年平均（2024 年約 423 ppm）；冰芯紀錄的 280 ppm（1750 年）與約 190 ppm（上一次冰期最盛期）。</li>
+        <li data-en-html="Snowball Earth: P. F. Hoffman et al. (1998), “A Neoproterozoic snowball Earth”, <i>Science</i> 281, 1342–1346; M. I. Budyko (1969) and W. D. Sellers (1969) for the ice-albedo energy-balance model.">雪球地球：P. F. Hoffman 等（1998），〈A Neoproterozoic snowball Earth〉，<i>Science</i> 281 卷 1342–1346 頁；冰反照率能量平衡模型：M. I. Budyko（1969）與 W. D. Sellers（1969）。</li>
+        <li data-en-html="Earth image (3D): Reto Stöckli, NASA Goddard Space Flight Center, “Blue Marble: Land Surface, Shallow Water, and Shaded Topography”, via <a href=&quot;https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikimedia Commons</a>; made by NASA, public domain.">地球影像（3D）：Reto Stöckli（NASA 戈達德太空飛行中心）〈Blue Marble: Land Surface, Shallow Water, and Shaded Topography〉，取自 <a href="https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>；NASA 製作，公有領域。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/greenhouse-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/greenhouse.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="greenhouse"></script>
+  <script src="js/missions/greenhouse.js"></script>
+  <script src="js/stats.js" data-module="greenhouse"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
