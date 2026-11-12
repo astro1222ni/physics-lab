@@ -14,7 +14,7 @@
   //     newton：{ R（m）, n, e（透鏡與平板的間隙，nm）, view: 'R' | 'T', mys, dust,
   //             r5（第 5 暗環半徑，mm；e > 0 時 NaN）, r（游標半徑，mm）, ord（2nt/λ，游標處）, centre（2ne/λ）,
   //             nRec, slope（r² 對 m 的斜率，mm²）, fitR（斜率·n/λ，m）, fitLam（斜率·n/R，nm） }
-  //   answer：神秘細線或神秘透鏡按「核對」時 { kind: 'wire' | 'lens', truth, guess, err（相對誤差）, dust, e, revealed }
+  //   answer：神秘細線或神秘透鏡按「核對」時 { kind: 'wire' | 'lens', truth, guess, err（相對誤差）, dust, e, revealed, n（介質折射率） }
   const EPS = 1e-9;
   const near = function (a, b, tol) { return isFinite(a) && Math.abs(a - b) <= tol + EPS; };
   const state = function (ev) { return ev.type === 'state'; };
@@ -139,6 +139,82 @@
       id: 'thin-film-h3', level: 5, hidden: true,
       riddle: { zh: '隔著四分之一的距離，正中央便不再守著黑夜。', en: 'Keep a quarter of the distance between them, and the centre no longer keeps the night.' },
       check: function (ev) { const d = ev.data; return mono(ev, 'newton') && !d.mys && d.e >= 50 && near(d.centre % 1, 0.5, 0.03); }
+    },
+    // ---- 11/12 深夜站長：「每一個實驗的隱藏任務增加到十個。」以下 h4–h10 ----
+    {
+      // 肥皂膜、單色光、正入射：游標放在最薄的亮紋上，2nh = λ/2（四分之一波長膜，最強的反射）
+      id: 'thin-film-h4', level: 3, hidden: true,
+      riddle: { zh: '黑夜之後第一次亮起，只要最短的一趟來回。', en: 'The first time it lights up after the night, it takes only the shortest round trip.' },
+      check: function (ev) { const d = ev.data; return mono(ev, 'soap') && d.ang <= 2 && near(d.ord, 0.5, 0.02); }
+    },
+    {
+      // 肥皂膜、正入射、同一點：先對某波長是暗紋，只換波長（差 ≥ 30 nm），同一點變成亮紋（ord ≥ 1.5）
+      id: 'thin-film-h5', level: 7, hidden: true,
+      riddle: { zh: '同一處薄紗，對一種顏色沉默，卻為另一種顏色歌唱。', en: 'In the same spot the veil keeps silent for one colour and sings for another.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!mono(ev, 'soap') || d.ang > 2) return false;
+        if (Math.round(d.ord) >= 1 && offInt(d.ord) <= 0.02) { mem.k = { h: d.h, n: d.n, ang: d.ang, lam: d.lam }; return false; }
+        const k = mem.k;
+        return !!k && near(d.h, k.h, 1) && near(d.n, k.n, 1e-6) && d.ang === k.ang && Math.abs(d.lam - k.lam) >= 30 && d.ord >= 1.5 && near(d.ord % 1, 0.5, 0.02);
+      }
+    },
+    {
+      // 空氣劈：細線處的間隙恰為半波長的整數倍（2nD = mλ），最後一條暗紋正好落在細線上；十字線放在細線位置（x = L）驗證
+      id: 'thin-film-h6', level: 6, hidden: true,
+      riddle: { zh: '讓最後一道夜色，恰好枕在那根髮絲上。', en: 'Let the last strip of night rest exactly on the hair.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (!mono(ev, 'wedge') || d.mys || !isFinite(d.cx)) return false;
+        const ord = 2 * d.n * d.D * 1000 / d.lam;   // 細線處的 2nD/λ（D：μm，λ：nm）
+        return Math.round(ord) >= 1 && offInt(ord) <= 0.02 && Math.abs(d.cx - 10 * d.L) <= 0.15 * d.dx;
+      }
+    },
+    {
+      // 牛頓環（牛頓《光學》的充水觀察）：空氣中十字線放在第 m 個暗環（m ≥ 3），R、λ 不變、間隙充水（n = 1.33），十字線放到同一序數的暗環上
+      id: 'thin-film-h7', level: 8, hidden: true,
+      riddle: { zh: '同一個名字的圓，泡過水就消瘦了；牛頓量過它瘦了多少。', en: 'The ring that bears the same number grows thinner after a bath; Newton measured how much.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!mono(ev, 'newton') || d.mys || d.view !== 'R' || d.e !== 0 || !isFinite(d.r)) return false;
+        const m = Math.round(d.ord), dark = m >= 3 && offInt(d.ord) <= 0.06;
+        if (d.n <= 1.001) { mem.a = dark ? { m: m, R: d.R, lam: d.lam, r: d.r } : null; return false; }
+        const a = mem.a;
+        return !!a && dark && near(d.n, 1.33, 0.005) && m === a.m && d.R === a.R && d.lam === a.lam && d.r < a.r;
+      }
+    },
+    {
+      // 神秘細線泡在液體裡（1.2 ≤ n ≤ 1.5）：D = λL/(2nΔx) 要記得除以 n
+      id: 'thin-film-h8', level: 8, hidden: true,
+      riddle: { zh: '沉進水裡的祕密，要用縮短的步伐去丈量。', en: 'A secret sunk in water must be measured with a shortened stride.' },
+      check: function (ev) { return answer(ev, 'wire') && isFinite(ev.data.n) && ev.data.n >= 1.2 && ev.data.n <= 1.5; }
+    },
+    {
+      // 牛頓環：密接時量 ≥ 5 個暗環得 r² 對 m 的斜率；R、n、λ 不變，抬高 e ≥ 100 nm（中心不是 h3 的亮點）後再量 ≥ 5 個，斜率相同（1% 內）
+      id: 'thin-film-h9', level: 9, hidden: true,
+      riddle: { zh: '塵埃抬起了一切，卻改不了它攀升的步伐。', en: 'The dust lifts everything, yet cannot change the pace of its climb.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!mono(ev, 'newton') || d.mys || !(d.nRec >= 5) || !isFinite(d.slope) || d.slope <= 0) return false;
+        if (d.e === 0) { mem.s = { slope: d.slope, R: d.R, n: d.n, lam: d.lam }; return false; }
+        const a = mem.s;
+        // 中心恰為亮點（2ne/λ ≈ 半整數）是 h3 的條件；這裡避開，兩個任務不會同一刻一起完成
+        return !!a && d.e >= 100 && Math.abs(d.centre % 1 - 0.5) > 0.06 && d.R === a.R && near(d.n, a.n, 1e-6) && d.lam === a.lam && Math.abs(d.slope / a.slope - 1) <= 0.01;
+      }
+    },
+    {
+      // 同一個定律、兩種模式：空氣劈與牛頓環各量 ≥ 4 條暗紋，相鄰暗紋的厚度差（空氣劈 Δx·D/L、牛頓環 斜率/2R）相同（1.5% 內），λ、n 相同
+      id: 'thin-film-h10', level: 10, hidden: true,
+      riddle: { zh: '一條直，一圈圓；量到最後，兩者每一步都踩在同樣的高度。', en: 'One straight, one round; measured to the end, each of their steps climbs the same height.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!state(ev) || d.white || d.mys || !(d.nRec >= 4)) return false;
+        if (d.mode === 'wedge' && isFinite(d.fitDx)) mem.w = { step: Math.abs(d.fitDx) * 1e-3 * d.D * 1e-6 / (d.L * 1e-2), lam: d.lam, n: d.n };
+        else if (d.mode === 'newton' && isFinite(d.slope) && d.slope > 0) mem.n = { step: d.slope * 1e-6 / (2 * d.R), lam: d.lam, n: d.n };
+        else return false;
+        const w = mem.w, k = mem.n;
+        return !!w && !!k && w.lam === k.lam && near(w.n, k.n, 1e-6) && Math.abs(k.step / w.step - 1) <= 0.015;
+      }
     }
   ]);
 })();
