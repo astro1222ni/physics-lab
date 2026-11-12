@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Limits of Sequences and Functions | Astro Ni Science Lab">數列與函數的極限｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 極限頁面專用的顏色代號（淺色＋深色；由 js/limits.js 讀取） */
+    :root { --lm-band: #0d9488; --lm-in: #2563eb; --lm-out: #ea580c; --lm-bad: #dc2626; --lm-n: #7c3aed; --lm-curve: #4338ca; --lm-sq: #b45309; --lm-sum: #db2777; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lm-band: #2dd4bf; --lm-in: #60a5fa; --lm-out: #fb923c; --lm-bad: #f87171; --lm-n: #c4b5fd; --lm-curve: #a5b4fc; --lm-sq: #fbbf24; --lm-sum: #f472b6; }
+    }
+    :root[data-theme="dark"] { --lm-band: #2dd4bf; --lm-in: #60a5fa; --lm-out: #fb923c; --lm-bad: #f87171; --lm-n: #c4b5fd; --lm-curve: #a5b4fc; --lm-sq: #fbbf24; --lm-sum: #f472b6; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .lm button { min-height: 44px; }
+    .lm [hidden] { display: none !important; }
+    .lm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .lm .playbar button { flex: 1 1 auto; }
+    .lm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .lm .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .lm .slider input[type="range"] { height: 28px; margin: 0; }
+    .lm .checks label { min-height: 44px; }
+    .lm .checks input { width: 17px; height: 17px; }
+    .lm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .lm .panel { grid-template-columns: minmax(0, 1fr); }
+    .lm .panel > .card { min-width: 0; }
+    .lm:not([data-mode="seq"]) .ms, .lm:not([data-mode="func"]) .mf, .lm:not([data-mode="series"]) .mz { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+    .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .pick button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .pick { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .pick button { padding: 4px 6px; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pick button:disabled { opacity: .45; }
+    .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+    .btnrow button { flex: 1 1 auto; padding: 6px 10px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--lm-band); font-weight: 600; }
+    .chal-msg.bad { color: var(--lm-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq:empty { display: none; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log, #apt { width: 100%; }
+    #log td, #log th, #apt td, #apt th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty, #apt:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#calculus&quot;>Mathematics · Calculus</a> / Limits"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#calculus">數學・微積分</a> ／ 極限</nav>
+      <h1 data-en="Limits of Sequences and Functions">數列與函數的極限</h1>
+      <p data-en="“Gets as close as you like” made precise: draw a band of half-width ε around the limit and find the term N after which nothing ever leaves — or the δ that keeps f(x) inside. Then add up infinitely many terms of a geometric series.">「要多近就有多近」說清楚：在極限周圍畫一條半寬 ε 的帶子，找出從第幾項 N 開始再也沒有誰跑出去——或是能讓 f(x) 留在帶子裡的 δ。再把無窮多項的等比級數加起來。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: set ε to 0.01 for 1/n and slide N until the status says every term from N on stays in the band — then check whether N − 1 would also work.">試試看：數列 1/n 把 ε 調成 0.01，移動 N 直到狀態列說「第 N 項以後都在帶子裡」，再看看 N − 1 行不行。</p>
+    <div class="lab lm" id="lab" data-mode="seq">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="極限畫布：數列模式可以上下拖曳帶子的邊改 ε、左右拖曳 N；函數模式可以拖曳 δ 與 ε 的邊；級數模式畫出部分和怎麼一步步靠近總和。" data-en-aria-label="Limits canvas: in sequence mode drag the band edge up or down to change ε and drag N left or right; in function mode drag the δ and ε edges; in series mode the partial sums step towards the total."></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除逼近的紀錄、挑戰紀錄，N 回到 1；滑桿設定不變" data-en-title="Clear the approach table and the challenge record and put N back to 1; the sliders are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="ms" data-en-html="<i style=&quot;background:var(--lm-band)&quot;></i>ε band"><i style="background:var(--lm-band)"></i>ε 帶子</span>
+          <span class="mf" data-en-html="<i style=&quot;background:var(--lm-band)&quot;></i>ε band"><i style="background:var(--lm-band)"></i>ε 帶子</span>
+          <span class="ms" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lm-in)&quot;></i>Inside the band"><i class="dot" style="background:var(--lm-in)"></i>在帶子裡</span>
+          <span class="ms" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lm-out)&quot;></i>Outside"><i class="dot" style="background:var(--lm-out)"></i>在帶子外</span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--lm-n)&quot;></i>From term N on"><i style="background:var(--lm-n)"></i>第 N 項以後</span>
+          <span class="mf" data-en-html="<i style=&quot;background:var(--lm-n)&quot;></i>δ strip"><i style="background:var(--lm-n)"></i>δ 範圍</span>
+          <span class="mf" id="lgSq" hidden data-en-html="<i style=&quot;background:var(--lm-sq)&quot;></i>Squeezing lines"><i style="background:var(--lm-sq)"></i>夾擠的兩條線</span>
+          <span class="mz" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lm-sum)&quot;></i>Partial sum"><i class="dot" style="background:var(--lm-sum)"></i>部分和</span>
+          <span class="mz" data-en-html="<i style=&quot;background:var(--lm-in)&quot;></i>Each term"><i style="background:var(--lm-in)"></i>每一項</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="seq" aria-pressed="true" data-en-html="Sequences<small>ε and N</small>">數列<small>ε 與 N</small></button>
+            <button type="button" data-mode="func" aria-pressed="false" data-en-html="Functions<small>ε and δ</small>">函數<small>ε 與 δ</small></button>
+            <button type="button" data-mode="series" aria-pressed="false" data-en-html="Geometric series<small>adding forever</small>">無窮等比級數<small>一直加下去</small></button>
+          </div>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en-html="Sequence a<sub>n</sub>">數列 a<sub>n</sub></h2>
+          <div class="pick" id="seqPick" role="group" aria-label="選數列" data-en-aria-label="Choose a sequence">
+            <button type="button" data-seq="recip" aria-pressed="true">1 / n</button>
+            <button type="button" data-seq="rat" aria-pressed="false">(2n + 1) / (n + 3)</button>
+            <button type="button" data-seq="alt" aria-pressed="false">(−1)<sup>n</sup> / n</button>
+            <button type="button" data-seq="sinn" aria-pressed="false">sin n / n</button>
+            <button type="button" data-seq="geo" aria-pressed="false">r<sup>n</sup></button>
+            <button type="button" data-seq="e" aria-pressed="false">(1 + 1/n)<sup>n</sup></button>
+            <button type="button" data-seq="root" aria-pressed="false">√(n² + n) − n</button>
+            <button type="button" data-seq="osc" aria-pressed="false">(−1)<sup>n</sup></button>
+          </div>
+          <div class="slider geo-only"><label for="r" data-en="Ratio r">公比 r</label><output id="ro"></output>
+            <input id="r" type="range" min="-1.2" max="1.2" step="0.05" value="0.8" data-decimals="2"></div>
+          <div class="slider"><label for="eps" data-en="Band half-width ε">帶子半寬 ε</label><output id="epso"></output>
+            <input id="eps" type="range" min="-3" max="0" step="0.005" value="-0.7"></div>
+          <div class="slider"><label for="nn" data-en="N (from this term on)">N（從第幾項起）</label><output id="nno"></output>
+            <input id="nn" type="range" min="0" max="3.302" step="0.002" value="0"></div>
+          <div class="slider"><label for="show" data-en="Terms shown">畫到第幾項</label><output id="showo"></output>
+            <input id="show" type="range" min="10" max="200" step="1" value="40" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="yzC" type="checkbox"><span data-en="Zoom the y-axis to the band">縱軸放大到帶子附近</span></label>
+          </div>
+          <p class="hint" data-en="ε and N use a logarithmic slider; tap the number to type an exact value. Drag the band edge or the N line on the picture.">ε 和 N 的滑桿是對數刻度；點數字可以直接打入精確的值。也可以在圖上拖曳帶子的邊或 N 的直線。</p>
+        </section>
+
+        <section class="card mf">
+          <h2 data-en="Function f(x)">函數 f(x)</h2>
+          <div class="pick" id="fnPick" role="group" aria-label="選函數" data-en-aria-label="Choose a function">
+            <button type="button" data-fn="hole" aria-pressed="true">(x² − 1) / (x − 1)</button>
+            <button type="button" data-fn="sinc" aria-pressed="false">sin x / x</button>
+            <button type="button" data-fn="xsin" aria-pressed="false">x sin(1/x)</button>
+            <button type="button" data-fn="sign" aria-pressed="false">|x| / x</button>
+            <button type="button" data-fn="inv2" aria-pressed="false">1 / x²</button>
+            <button type="button" data-fn="epow" aria-pressed="false">(1 + x)<sup>1/x</sup></button>
+          </div>
+          <div class="slider"><label for="fe" data-en="Band half-width ε">帶子半寬 ε</label><output id="feo"></output>
+            <input id="fe" type="range" min="-3" max="0" step="0.005" value="-0.7"></div>
+          <div class="slider"><label for="fd" data-en="δ">δ</label><output id="fdo"></output>
+            <input id="fd" type="range" min="-3" max="0.301" step="0.005" value="-0.3"></div>
+          <div class="slider"><label for="fz" data-en="Zoom">放大倍率</label><output id="fzo"></output>
+            <input id="fz" type="range" min="0" max="3" step="0.01" value="0"></div>
+          <div class="checks">
+            <label><input id="sqC" type="checkbox"><span data-en="Show squeezing lines">顯示夾擠的兩條線</span></label>
+          </div>
+          <div class="btnrow">
+            <button id="apL" type="button" data-en="Approach from the left">從左邊逼近</button>
+            <button id="apR" type="button" data-en="Approach from the right">從右邊逼近</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="apt"></table></div>
+          <p class="hint" data-en="The hollow circle marks a point where f is not defined: the limit only cares about x near a, never x = a itself.">空心圓是 f 沒有定義的點：極限只看 x 靠近 a 時，不看 x = a 本身。</p>
+        </section>
+
+        <section class="card mz">
+          <h2 data-en-html="a + a r + a r<sup>2</sup> + …">a + a r + a r<sup>2</sup> + …</h2>
+          <div class="slider"><label for="sa" data-en="First term a">首項 a</label><output id="sao"></output>
+            <input id="sa" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="sr" data-en="Ratio r">公比 r</label><output id="sro"></output>
+            <input id="sr" type="range" min="-1.2" max="1.2" step="0.05" value="0.5" data-decimals="2"></div>
+          <div class="slider"><label for="sn" data-en="Number of terms n">加幾項 n</label><output id="sno"></output>
+            <input id="sn" type="range" min="1" max="60" step="1" value="6" data-decimals="0"></div>
+          <p class="hint" data-en="Each hop on the number line is one more term; when |r| &lt; 1 the hops shrink and the partial sums close in on a / (1 − r).">數線上每跳一下就是多加一項；|r| &lt; 1 時跳得越來越短，部分和逼近 a / (1 − r)。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout ms">
+            <dt data-en="Limit L">極限 L</dt><dd id="rL">—</dd>
+            <dt data-en-html="Term a<sub>N</sub>">第 N 項 a<sub>N</sub></dt><dd id="rAN">—</dd>
+            <dt data-en-html="|a<sub>N</sub> − L|">|a<sub>N</sub> − L|</dt><dd id="rEN">—</dd>
+            <dt data-en-html="|a<sub>N−1</sub> − L|">|a<sub>N−1</sub> − L|</dt><dd id="rEN1">—</dd>
+          </dl>
+          <dl class="readout mf">
+            <dt data-en="Limit">極限</dt><dd id="fL">—</dd>
+            <dt data-en="f(a − δ)">f(a − δ)</dt><dd id="fM">—</dd>
+            <dt data-en="f(a + δ)">f(a + δ)</dt><dd id="fP">—</dd>
+            <dt data-en="Does this δ work?">這個 δ 可以用嗎</dt><dd id="fOK">—</dd>
+          </dl>
+          <dl class="readout mz">
+            <dt data-en-html="Partial sum S<sub>n</sub>">部分和 S<sub>n</sub></dt><dd id="zS">—</dd>
+            <dt data-en="Sum to infinity">無窮多項的和</dt><dd id="zI">—</dd>
+            <dt data-en="Still missing">還差多少</dt><dd id="zD">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en="Challenge: find N">挑戰：找 N</h2>
+          <p class="hint" data-en="A sequence and an ε appear. Move N to the smallest term from which every term stays inside the band, then submit.">出一個數列和 ε。把 N 移到最小的那一項，使得從它開始每一項都在帶子裡，再送出。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="submitN" type="button" hidden data-en="Submit N">送出 N</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="The limit of a sequence">數列的極限</h3>
+      <p data-en-html="“\(a_n\) approaches \(L\)” means: however narrow a band \((L - \varepsilon,\, L + \varepsilon)\) you draw, from some term on, every term is inside it.">「\(a_n\) 趨近 \(L\)」的意思是：不論帶子 \((L - \varepsilon,\, L + \varepsilon)\) 畫得多窄，從某一項開始，後面每一項都在帶子裡。</p>
+      <div class="formula">\[ \lim_{n\to\infty} a_n = L \iff \forall \varepsilon > 0,\ \exists N,\ n \ge N \Rightarrow |a_n - L| < \varepsilon. \]</div>
+      <p data-en-html="For \(a_n = \frac1n\) and \(\varepsilon = 0.01\): \(\frac1n < 0.01 \iff n > 100\), so the smallest \(N\) is 101. A smaller \(\varepsilon\) needs a larger \(N\), but some \(N\) always exists. For \((-1)^n\) no band narrower than 1 can hold both \(1\) and \(-1\): the sequence has no limit.">例如 \(a_n = \frac1n\)、\(\varepsilon = 0.01\)：\(\frac1n < 0.01 \iff n > 100\)，最小的 \(N\) 是 101。\(\varepsilon\) 越小，\(N\) 就要越大，但總找得到。\((-1)^n\) 在 \(1\) 和 \(-1\) 之間跳，寬度不到 1 的帶子放在哪裡都關不住兩個值，所以沒有極限。</p>
+
+      <h3 data-en="The limit of a function">函數的極限</h3>
+      <div class="formula">\[ \lim_{x\to a} f(x) = L \iff \forall \varepsilon > 0,\ \exists \delta > 0,\ 0 < |x - a| < \delta \Rightarrow |f(x) - L| < \varepsilon. \]</div>
+      <p data-en-html="The condition \(0 < |x - a|\) leaves out \(x = a\): \(\frac{x^2-1}{x-1}\) is undefined at 1, yet its limit is 2. For \(\frac{|x|}{x}\) the left-hand limit is \(-1\) and the right-hand limit is \(1\); since they differ, the limit at 0 does not exist. \(\frac{1}{x^2}\) grows without bound, so it has no (finite) limit either.">條件 \(0 < |x - a|\) 把 \(x = a\) 排除在外：\(\frac{x^2-1}{x-1}\) 在 1 沒有定義，極限卻是 2。\(\frac{|x|}{x}\) 的左極限是 \(-1\)、右極限是 \(1\)，兩邊不同，所以在 0 的極限不存在。\(\frac{1}{x^2}\) 越來越大，也沒有（有限的）極限。</p>
+
+      <h3 data-en="The squeeze theorem">夾擠定理</h3>
+      <p data-en-html="If \(g(x) \le f(x) \le h(x)\) near \(a\) and both \(g\) and \(h\) tend to \(L\), then so does \(f\). Because \(|\sin t| \le 1\): \(-|x| \le x\sin\frac1x \le |x|\), so \(x\sin\frac1x \to 0\), and \(-\frac1n \le \frac{\sin n}{n} \le \frac1n\). For \(0 < |x| < \frac{\pi}{2}\): \(\cos x \le \frac{\sin x}{x} \le 1\), so \(\frac{\sin x}{x} \to 1\).">若在 \(a\) 附近 \(g(x) \le f(x) \le h(x)\)，而 \(g\)、\(h\) 都趨近 \(L\)，則 \(f\) 也趨近 \(L\)。因為 \(|\sin t| \le 1\)：\(-|x| \le x\sin\frac1x \le |x|\)，所以 \(x\sin\frac1x \to 0\)；同理 \(-\frac1n \le \frac{\sin n}{n} \le \frac1n\)。當 \(0 < |x| < \frac{\pi}{2}\)：\(\cos x \le \frac{\sin x}{x} \le 1\)，所以 \(\frac{\sin x}{x} \to 1\)。</p>
+
+      <h3 data-en="Infinite geometric series">無窮等比級數</h3>
+      <div class="formula">\[ S_n = a + ar + \cdots + ar^{n-1} = \frac{a(1 - r^n)}{1 - r}, \qquad |r| < 1 \;\Rightarrow\; \sum_{k=1}^{\infty} ar^{k-1} = \lim_{n\to\infty} S_n = \frac{a}{1-r}. \]</div>
+      <p data-en-html="The sum of infinitely many terms is defined as the limit of the partial sums. When \(|r| < 1\), \(r^n \to 0\); when \(|r| \ge 1\) (and \(a \ne 0\)) the partial sums have no limit. For example \(0.9 + 0.09 + 0.009 + \cdots = \frac{0.9}{1 - 0.1} = 1\).">無窮多項的和，定義成部分和的極限。\(|r| < 1\) 時 \(r^n \to 0\)；\(|r| \ge 1\)（且 \(a \ne 0\)）時部分和沒有極限。例如 \(0.9 + 0.09 + 0.009 + \cdots = \frac{0.9}{1 - 0.1} = 1\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Not monotone</strong>: \(\frac{\sin n}{n}\) jumps in and out of the band for a while; \(N\) is fixed by the <em>last</em> term outside, not the first one inside."><strong>不單調</strong>：\(\frac{\sin n}{n}\) 會在帶子邊緣進進出出；\(N\) 由<em>最後一個</em>跑出去的項決定，不是第一個進來的項。</li>
+        <li data-en-html="<strong>Slow</strong>: \((1 + \frac1n)^n\) approaches \(e\) about as fast as \(\frac{e}{2n}\), so \(\varepsilon = 0.001\) needs well over a thousand terms."><strong>很慢</strong>：\((1 + \frac1n)^n\) 和 \(e\) 的差大約是 \(\frac{e}{2n}\)，\(\varepsilon = 0.001\) 要一千多項。</li>
+        <li data-en-html="<strong>Zoom</strong>: magnify \(\frac{x^2-1}{x-1}\) around \((1, 2)\) and it keeps looking like a straight line with a hole; \(x\sin\frac1x\) keeps wiggling but the wiggles are pinched between \(\pm|x|\)."><strong>放大</strong>：把 \(\frac{x^2-1}{x-1}\) 在 \((1, 2)\) 附近放大，永遠是一條有洞的直線；\(x\sin\frac1x\) 一直振盪，但振幅被 \(\pm|x|\) 夾住。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The smallest \(N\) is found exactly: a decreasing upper bound of \(|a_n - L|\) gives a term after which everything is inside, then every earlier term is checked one by one (a term exactly at distance \(\varepsilon\) counts as outside). The largest \(\delta\) comes from the error formula or from bisection on each side; for \(x\sin\frac1x\) the search steps outwards in steps smaller than one wiggle. The unit tests check every answer against the definition, scanning twenty thousand terms after \(N\) and four thousand points inside \(\delta\).">最小的 \(N\) 是精確找出來的：先用 \(|a_n - L|\) 的遞減上界找到一個之後全部都在帶子裡的項，再把前面每一項逐一檢查（剛好距離 \(\varepsilon\) 的項算在帶子外）。最大的 \(\delta\) 由誤差公式或左右各自二分法求得；\(x\sin\frac1x\) 用比一次振盪更小的步伐往外找。單元測試用定義逐一核對：\(N\) 以後掃兩萬項、\(\delta\) 以內掃四千個點。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 12, elective) · limits of sequences, infinite geometric series, limits of functions.">課綱對應：高中數學（高三選修數學甲、乙）・數列的極限、無窮等比級數、函數的極限。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Limit_of_a_sequence&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Limit of a sequence (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Squeeze_theorem&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Squeeze theorem (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Limit_of_a_sequence" target="_blank" rel="noopener">Limit of a sequence（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Squeeze_theorem" target="_blank" rel="noopener">Squeeze theorem（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/limits-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/limits.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="limits"></script>
+  <script src="js/missions/limits.js"></script>
+  <script src="js/stats.js" data-module="limits"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
