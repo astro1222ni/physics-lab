@@ -329,41 +329,82 @@
     for (let i = 1; i <= 4; i++) { out.push(pref + i * Math.PI / 4); if (i < 4) out.push(pref - i * Math.PI / 4); }
     return out;
   }
-  /** 錨點周圍兩圈（近、遠）的候選位置 */
+  /** 錨點周圍三圈（由近到遠）的候選位置 */
   function around(ax, ay, pref, gap) {
-    return function (w, h) { return ring(ax, ay, w, h, gap, fan(pref)).concat(ring(ax, ay, w, h, gap + 12, fan(pref))); };
+    return function (w, h) { return ring(ax, ay, w, h, gap, fan(pref)).concat(ring(ax, ay, w, h, gap + 12, fan(pref)), ring(ax, ay, w, h, gap + 26, fan(pref))); };
+  }
+  /** 角度記號（圓心 (cx, cy)、半徑 r、從 a0 到 a1 的弧）旁的候選位置：弧的中段優先，再往兩端、往外 */
+  function arcCands(cx, cy, r, a0, a1) {
+    return function () {
+      const out = [];
+      [10, 22, 34].forEach(function (g) {
+        [0.5, 0.3, 0.7, 0.15, 0.85].forEach(function (f) { const t = a0 + (a1 - a0) * f; out.push({ x: cx + Math.cos(t) * (r + g), y: cy + Math.sin(t) * (r + g) }); });
+      });
+      return out;
+    };
   }
   function overlapArea(a, b) {
     const w = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), h = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
     return w > 0 && h > 0 ? w * h : 0;
   }
+  /** 線段 (x0, y0)→(x1, y1) 在矩形 R（內縮 inset）裡看得到的參數範圍 [t0, t1]（0–1）；看不到傳回 null */
+  function visRange(x0, y0, x1, y1, R, inset) {
+    const cl = clipLine(x0, y0, x1 - x0, y1 - y0, R.x + inset, R.x + R.w - inset, R.y + inset, R.y + R.h - inset);
+    if (!cl) return null;
+    const t0 = Math.max(0, cl[0]), t1 = Math.min(1, cl[1]);
+    return t1 > t0 ? [t0, t1] : null;
+  }
+  /** 標籤要避開的粗線段（含外框，先用外框快速排除，每格畫面要檢查上萬次） */
+  function softSeg(x0, y0, x1, y1, hw, cost) {
+    return { x0: x0, y0: y0, x1: x1, y1: y1, hw: hw, cost: cost,
+      bx0: Math.min(x0, x1) - hw, bx1: Math.max(x0, x1) + hw, by0: Math.min(y0, y1) - hw, by1: Math.max(y0, y1) + hw };
+  }
+  /** 線段（加粗 hw）是否碰到矩形 b（Liang–Barsky 裁切） */
   function segHitsBox(s, b) {
-    const cl = clipLine(s.x0, s.y0, s.x1 - s.x0, s.y1 - s.y0, b.x - s.hw, b.x + b.w + s.hw, b.y - s.hw, b.y + b.h + s.hw);
-    return !!cl && cl[1] >= 0 && cl[0] <= 1;
+    if (b.x > s.bx1 || b.x + b.w < s.bx0 || b.y > s.by1 || b.y + b.h < s.by0) return false;
+    const dx = s.x1 - s.x0, dy = s.y1 - s.y0;
+    let lo = 0, hi = 1, t0, t1, t;
+    if (Math.abs(dx) < 1e-9) { if (s.x0 < b.x - s.hw || s.x0 > b.x + b.w + s.hw) return false; }
+    else {
+      t0 = (b.x - s.hw - s.x0) / dx; t1 = (b.x + b.w + s.hw - s.x0) / dx;
+      if (t0 > t1) { t = t0; t0 = t1; t1 = t; }
+      if (t0 > lo) lo = t0;
+      if (t1 < hi) hi = t1;
+      if (lo > hi) return false;
+    }
+    if (Math.abs(dy) < 1e-9) return s.y0 >= b.y - s.hw && s.y0 <= b.y + b.h + s.hw;
+    t0 = (b.y - s.hw - s.y0) / dy; t1 = (b.y + b.h + s.hw - s.y0) / dy;
+    if (t0 > t1) { t = t0; t0 = t1; t1 = t; }
+    if (t0 > lo) lo = t0;
+    if (t1 < hi) hi = t1;
+    return lo <= hi;
   }
   /**
    * 放標籤：labels 依 pri 由小到大，各自在候選位置中挑代價最小的：
    * 出界 ≫ 壓到其他標籤 ≫ 壓到記號（焦點、K、⊙、P、把手…）＞ 壓到粗線（切平面、母線）＞ 候選順序。
-   * fixed：不能壓到的固定框（標題、格線說明）。
+   * fixed：不能壓到的固定框（標題、格線說明）。optional 的標籤（角度、d、2a、準線、切平面名稱、
+   * 線段長度…）找不到不出界、不壓字、不壓記號的位置時就不畫（滑桿、圖例與讀數上都看得到）。
    */
   function placeLabels(R, labels, marks, softs, fixed) {
     const placed = fixed.slice(), M = 3;
     labels.slice().sort(function (a, b) { return a.pri - b.pri; }).forEach(function (o) {
       const tw = rich(ctx, o.text, 0, 0, o.color, o.px, o.weight, false);
       const w = o.pill ? tw + 14 : tw + 4, h = o.pill ? o.px * 1.45 + 4 : o.px * 1.25 + 2;
-      let best = null, bestCost = Infinity;
+      let best = null, bestCost = Infinity, bestHard = 0;
       o.cands(w, h).forEach(function (c, i) {
         const b = { x: c.x - w / 2, y: c.y - h / 2, w: w, h: h };
-        let cost = i * 0.4;
+        let hard = 0;
         const ox = Math.max(0, R.x + M - b.x) + Math.max(0, b.x + w - (R.x + R.w - M));
         const oy = Math.max(0, R.y + M - b.y) + Math.max(0, b.y + h - (R.y + R.h - M));
-        if (ox || oy) cost += 1000 + (ox + oy) * 10;
-        placed.forEach(function (p) { cost += 60 * overlapArea(b, p); });
-        marks.forEach(function (p) { cost += 25 * overlapArea(b, p); });
+        if (ox || oy) hard += 1000 + (ox + oy) * 10;
+        placed.forEach(function (p) { hard += 60 * overlapArea(b, p); });
+        let cost = hard + i * 0.4;
+        let onMark = 0;
+        marks.forEach(function (p) { const a = overlapArea(b, p); onMark += a; cost += 25 * a; });
         softs.forEach(function (s) { if (segHitsBox(s, b)) cost += s.cost; });
-        if (cost < bestCost) { bestCost = cost; best = b; }
+        if (cost < bestCost) { bestCost = cost; best = b; bestHard = hard + (onMark > 3 ? onMark : 0); }
       });
-      if (!best) return;
+      if (!best || (o.optional && bestHard > 0)) return;
       o.box = best;
       placed.push({ x: best.x - 2, y: best.y - 2, w: best.w + 4, h: best.h + 4 });
     });
@@ -408,9 +449,9 @@
     // 標籤先收集、最後一起放（彼此避開，也避開記號與粗線）
     const LB = [], marks = [], softs = [];
     const mark = function (x, y, r) { marks.push({ x: x - r - 1.5, y: y - r - 1.5, w: 2 * r + 3, h: 2 * r + 3 }); };
-    const soft = function (x0, y0, x1, y1, hw, cost) { softs.push({ x0: x0, y0: y0, x1: x1, y1: y1, hw: hw, cost: cost }); };
-    const inPanel = function (x, y) { return x > R.x + 2 && x < R.x + R.w - 2 && y > R.y + 2 && y < R.y + R.h - 2; };
-    const lab = function (pri, text, color, px, weight, cands, pill) { LB.push({ pri: pri, text: text, color: color, px: px, weight: weight, cands: cands, pill: !!pill }); };
+    const soft = function (x0, y0, x1, y1, hw, cost) { softs.push(softSeg(x0, y0, x1, y1, hw, cost)); };
+    const inPanel = function (x, y) { return x > R.x + 6 && x < R.x + R.w - 6 && y > R.y + 6 && y < R.y + R.h - 6; };
+    const lab = function (pri, text, color, px, weight, cands, pill, optional) { LB.push({ pri: pri, text: text, color: color, px: px, weight: weight, cands: cands, pill: !!pill, optional: !!optional }); };
     // ---- 圓錐（角度漸層：左上受光、右側較暗；上下兩個錐） ----
     [[-Math.PI / 2, 1], [Math.PI / 2, -1]].forEach(function (o) {
       const mid = o[0], sgn = o[1];
@@ -474,7 +515,7 @@
         dot(X, Y, 1.9, C['cs-dir']);
         mark(X, Y, 5.5);
         // 標籤優先放在 ⊙ 離軸較遠的那一側（不和焦點、球擠在一起）
-        if (inPanel(X, Y)) lab(40 + i, T('準線 ', 'directrix ') + (i + 1), C['cs-dir'], 11.5, 600, around(X, Y, px >= 0 ? 0 : Math.PI, 6));
+        if (inPanel(X, Y)) lab(40 + i, T('準線 ', 'directrix ') + (i + 1), C['cs-dir'], 11.5, 600, around(X, Y, px >= 0 ? 0 : Math.PI, 6), false, true);
       });
     }
 
@@ -505,15 +546,18 @@
       const nl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
       let nx = -(b[1] - a[1]) / nl, ny = (b[0] - a[0]) / nl;
       if ((mx - vx) * nx + (my - vy) * ny < 0) { nx = -nx; ny = -ny; } // 放在弦遠離頂點的那一側
-      if (nl > 60) {
+      // 只在弦看得到的那一段上找位置（弦的一端常在畫面外）
+      const vr = visRange(a[0], a[1], b[0], b[1], R, 10);
+      if (vr && nl * (vr[1] - vr[0]) > 60) {
         lab(70, sec.family === 'circle' ? '2r' : '2a', C['cs-curve'], 12, 700, function (w, h) {
           const out = [];
-          [tq, (tq + 0.5) / 2, 0.5, 1 - tq].forEach(function (t) {
+          [tq, (tq + 0.5) / 2, 0.5, 1 - tq].forEach(function (f) {
+            const t = vr[0] + (vr[1] - vr[0]) * f;
             const qx = a[0] + (b[0] - a[0]) * t, qy = a[1] + (b[1] - a[1]) * t;
             [1, -1].forEach(function (sg) { out.push(ring(qx, qy, w, h, 5, [Math.atan2(ny * sg, nx * sg)])[0]); });
           });
           return out;
-        });
+        }, false, true);
       }
     }
     // 曲線與剖面的交點（曲線的頂點）
@@ -539,37 +583,31 @@
         // 優先放在垂線離軸較遠的那一側
         const mx0 = (vx + ftX) / 2;
         const sg = Math.abs(mx0 + sec.u[0] * 10 - vx) >= Math.abs(mx0 - sec.u[0] * 10 - vx) ? 1 : -1;
-        lab(90, 'd', C.text, 13, 700, function (w, h) {
+        lab(60, 'd', C.text, 13, 700, function (w, h) {
           const out = [];
           [0.5, 0.35, 0.65, 0.22, 0.78].forEach(function (t) {
             const qx = vx + (ftX - vx) * t, qy = vy + (ftY - vy) * t;
             [sg, -sg].forEach(function (s) { out.push(ring(qx, qy, w, h, 4, [Math.atan2(-s * sec.u[2], s * sec.u[0])])[0]); });
           });
           return out;
-        });
+        }, false, true);
       }
     }
     // α：畫在下錐（軸往下到右下母線；對頂角相等），上錐留給球與焦點
     const ra = 30;
     ctx.save(); ctx.strokeStyle = alpha(C.text, 0.7); ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.arc(vx, vy, ra, Math.PI / 2 - al, Math.PI / 2); ctx.stroke(); ctx.restore();
-    lab(95, 'α', C.text, 13, 700, function () {
-      const out = [];
-      [10, 22].forEach(function (g) { [0.5, 0.3, 0.7].forEach(function (f) { const t = Math.PI / 2 - al * (1 - f); out.push({ x: vx + Math.cos(t) * (ra + g), y: vy + Math.sin(t) * (ra + g) }); }); });
-      return out;
-    });
+    lab(46, 'α', C.text, 13, 700, arcCands(vx, vy, ra, Math.PI / 2 - al, Math.PI / 2), false, true);
     // β：切平面與軸的交點處（平面與軸平行時不畫）
     if (sec.axisHit != null && sec.betaDeg > 0.5 && sec.d > 1e-9) {
       const hx = SX(0), hy = SY(sec.axisHit);
       if (hy > R.y + 10 && hy < R.y + R.h - 10) {
-        const rb = 26, a0 = -Math.PI / 2, a1 = Math.atan2(-uz, ux);
+        // 平常畫在交點上方（軸往上到切平面）；太靠近畫面頂端時改畫下方的對頂角（一樣是 β），標籤才放得下
+        const flip = hy - 62 < R.y + 28;
+        const rb = 26, a0 = flip ? Math.PI / 2 : -Math.PI / 2, a1 = Math.atan2(-uz, ux) + (flip ? Math.PI : 0);
         ctx.save(); ctx.strokeStyle = alpha(C['cs-plane'], 0.95); ctx.lineWidth = 1.4;
         ctx.beginPath(); ctx.arc(hx, hy, rb, a0, a1); ctx.stroke(); ctx.restore();
-        lab(80, 'β', shade(C['cs-plane'], C.dark ? 0.1 : -0.25), 13, 700, function () {
-          const out = [];
-          [10, 22].forEach(function (g) { [0.5, 0.3, 0.7].forEach(function (f) { const t = a0 + (a1 - a0) * f; out.push({ x: hx + Math.cos(t) * (rb + g), y: hy + Math.sin(t) * (rb + g) }); }); });
-          return out;
-        });
+        lab(45, 'β', shade(C['cs-plane'], C.dark ? 0.1 : -0.25), 13, 700, arcCands(hx, hy, rb, a0, a1), false, true);
       }
     }
 
@@ -616,7 +654,7 @@
     // ---- 頂點 V ----
     D.ball(ctx, vx, vy, 4, C.text, { shadow: false });
     mark(vx, vy, 4);
-    lab(20, 'V', C.text, 13, 700, around(vx, vy, Math.PI, 4));
+    if (inPanel(vx, vy)) lab(20, 'V', C.text, 13, 700, around(vx, vy, Math.PI, 4));
 
     // ---- 旋轉把手 ----
     const kn = knobPos();
@@ -632,7 +670,7 @@
       mark(kn.x, kn.y, 10);
       // 切平面的名稱放在把手旁（優先往畫面內側）
       const inX = kn.x > R.x + R.w / 2 ? -1 : 1;
-      lab(50, T('切平面', 'plane'), shade(C['cs-plane'], C.dark ? 0.1 : -0.3), 11.5, 600, around(kn.x, kn.y, Math.atan2(kn.y < R.y + 40 ? 1 : -1, inX), 5), true);
+      lab(50, T('切平面', 'plane'), shade(C['cs-plane'], C.dark ? 0.1 : -0.3), 11.5, 600, around(kn.x, kn.y, Math.atan2(kn.y < R.y + 40 ? 1 : -1, inX), 5), true, true);
     }
     // 拖曳把手時：切平面始終與以 V 為圓心、半徑 d 的圓相切
     if (state.drag && state.drag.kind === 'knob' && sec.d > 1e-9) {
@@ -672,44 +710,88 @@
     const k = view.shape.k, step = gridStep(k);
     D.grid(ctx, R.x, R.y, R.x + R.w, R.y + R.h, step * k, step * k >= 60 ? step * k / 5 : 0, HX(0), HY(0));
     const ox = HX(0), oy = HY(0);
+    // 標籤先收集、最後一起放（和側視圖一樣彼此避開）
+    const LB = [], marks = [], softs = [];
+    const mark = function (x, y, r) { marks.push({ x: x - r - 1.5, y: y - r - 1.5, w: 2 * r + 3, h: 2 * r + 3 }); };
+    const soft = function (x0, y0, x1, y1, hw, cost) { softs.push(softSeg(x0, y0, x1, y1, hw, cost)); };
+    const lab = function (pri, text, color, px, weight, cands, pill, optional) { LB.push({ pri: pri, text: text, color: color, px: px, weight: weight, cands: cands, pill: !!pill, optional: !!optional }); };
+    const top = R.y + PAD.shape.t;
+    const inPanel = function (x, y) { return x > R.x + 6 && x < R.x + R.w - 6 && y > R.y + 6 && y < R.y + R.h - 6; };
     // 座標軸 x′、y′
     ctx.save();
     ctx.strokeStyle = alpha(C.text, 0.45); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(R.x, snapPx(oy)); ctx.lineTo(R.x + R.w, snapPx(oy)); ctx.moveTo(snapPx(ox), R.y); ctx.lineTo(snapPx(ox), R.y + R.h); ctx.stroke();
     ctx.restore();
-    if (ox > R.x && ox < R.x + R.w - 10) D.haloText(ctx, 'y′', ox + 6, R.y + PAD.shape.t + 2, C.muted, 'left', 'top', fnt(12, 600, true));
-    if (oy > R.y + 20 && oy < R.y + R.h - 10) D.haloText(ctx, 'x′', R.x + R.w - 8, oy - 6, C.muted, 'right', 'bottom', fnt(12, 600, true));
+    if (ox > R.x && ox < R.x + R.w - 10) {
+      lab(50, 'y′', C.muted, 12, 'italic 600', function (w, h) {
+        const out = [];
+        [0, 20, 40].forEach(function (dy) { [1, -1].forEach(function (s) { out.push({ x: ox + s * (6 + w / 2), y: top + 2 + h / 2 + dy }); }); });
+        return out;
+      }, false, true);
+    }
+    if (oy > R.y + 20 && oy < R.y + R.h - 10) {
+      lab(51, 'x′', C.muted, 12, 'italic 600', function (w, h) {
+        const out = [];
+        [0, 24, 48].forEach(function (dx) { [-1, 1].forEach(function (s) { out.push({ x: R.x + R.w - 8 - w / 2 - dx, y: oy + s * (6 + h / 2) }); }); });
+        return out;
+      }, false, true);
+    }
 
     const Wd = (Math.hypot(R.w, R.h) / k) + Math.hypot(view.shape.cx, view.shape.cy) + 1;
     // 漸近線
     if (sec.type === 'hyperbola' && state.show.asym) {
       [1, -1].forEach(function (sg) {
         line(HX(-Wd), HY(-sg * sec.slope * Wd), HX(Wd), HY(sg * sec.slope * Wd), alpha(C.muted, 0.8), 1.2, [7, 5]);
+        soft(HX(-Wd), HY(-sg * sec.slope * Wd), HX(Wd), HY(sg * sec.slope * Wd), 1, 2);
       });
+      // 標在漸近線旁（線的上方或下方），先試右上那條、離中心 1.25c 處
       const ax = Math.min(sec.c * 1.25, (R.w / 2 - 30) / k + view.shape.cx);
-      D.haloText(ctx, T('漸近線', 'asymptote'), HX(ax), HY(sec.slope * ax) - 8, C.muted, 'right', 'bottom', fnt(11, 500));
+      lab(45, T('漸近線', 'asymptote'), C.muted, 11, 500, function (w, h) {
+        const out = [];
+        [1, 0.8, 1.2, 0.6].forEach(function (f) {
+          [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (q) {
+            const X = HX(q[0] * ax * f), Y = HY(q[1] * sec.slope * ax * f);
+            out.push(ring(X, Y, w, h, 5, [-Math.PI / 2])[0], ring(X, Y, w, h, 5, [Math.PI / 2])[0]);
+          });
+        });
+        return out;
+      }, false, true);
     }
     // 準線
     if (state.show.dir && !sec.degenerate) {
       sec.spheres.forEach(function (S, i) {
         if (S.dx == null) return;
-        const X = HX(S.dx);
+        const X = HX(S.dx), y0 = top + 16 + i * 22;
+        // 由上往下幾個高度，先放在線的內側（靠曲線那一側）
+        const levels = function (h) { const a = []; for (let j = 0; j < 6; j++) a.push(y0 + j * 24); return a.filter(function (y) { return y + h / 2 < R.y + R.h - 60; }); };
         if (X < R.x - 2 || X > R.x + R.w + 2) {
           // 在畫面外：邊上標示方向
           const right = X > R.x + R.w;
-          D.pill(ctx, (right ? '' : '← ') + T('準線 ', 'directrix ') + (i + 1) + (right ? ' →' : ''), right ? R.x + R.w - 8 : R.x + 8, R.y + PAD.shape.t + 26 + i * 22, C['cs-dir'], right ? 'right' : 'left', fnt(11, 600));
+          lab(12 + i, (right ? '' : '← ') + T('準線 ', 'directrix ') + (i + 1) + (right ? ' →' : ''), C['cs-dir'], 11, 600, function (w, h) {
+            return levels(h).map(function (y) { return { x: right ? R.x + R.w - 8 - w / 2 : R.x + 8 + w / 2, y: y }; });
+          }, true);
           return;
         }
         line(snapPx(X), R.y, snapPx(X), R.y + R.h, alpha(C['cs-dir'], 0.85), 1.5, [7, 5]);
-        D.pill(ctx, T('準線 ', 'directrix ') + (i + 1), X + (S.dx >= 0 ? -5 : 5), R.y + PAD.shape.t + 26 + i * 22, C['cs-dir'], S.dx >= 0 ? 'right' : 'left', fnt(11, 600));
+        const inner = S.dx >= 0 ? -1 : 1;
+        lab(12 + i, T('準線 ', 'directrix ') + (i + 1), C['cs-dir'], 11, 600, function (w, h) {
+          const out = [];
+          [inner, -inner].forEach(function (s) { levels(h).forEach(function (y) { out.push({ x: X + s * (5 + w / 2), y: y }); }); });
+          return out;
+        }, true);
       });
     }
     // 正焦弦
     if (state.show.latus && !sec.degenerate && sec.family !== 'circle') {
-      const fxp = sec.foci[0].x, hl = sec.latus / 2;
-      line(HX(fxp), HY(hl), HX(fxp), HY(-hl), alpha(C['cs-curve'], 0.8), 1.6, [2, 4]);
-      [hl, -hl].forEach(function (y) { dot(HX(fxp), HY(y), 3, C['cs-curve']); });
-      D.haloText(ctx, T('正焦弦', 'latus rectum'), HX(fxp) + 6, HY(-hl * 0.55), C['cs-curve'], 'left', 'middle', fnt(11, 600));
+      const fxp = sec.foci[0].x, hl = sec.latus / 2, LX = HX(fxp);
+      line(LX, HY(hl), LX, HY(-hl), alpha(C['cs-curve'], 0.8), 1.6, [2, 4]);
+      [hl, -hl].forEach(function (y) { dot(LX, HY(y), 3, C['cs-curve']); mark(LX, HY(y), 3); });
+      soft(LX, HY(hl), LX, HY(-hl), 1, 2);
+      lab(30, T('正焦弦', 'latus rectum'), C['cs-curve'], 11, 600, function (w, h) {
+        const out = [];
+        [-0.55, -0.3, -0.8, 0.55, 0.3, 0.8].forEach(function (f) { out.push.apply(out, ring(LX, HY(f * hl), w, h, 6, [0, Math.PI])); });
+        return out;
+      }, false, true);
     }
 
     // 曲線
@@ -719,63 +801,89 @@
       const lines = CC.polylines(sec, Wd, null, 720);
       lines.forEach(function (pl) {
         strokeCurve(function (c) { pl.forEach(function (p, i) { const X = HX(p[0]), Y = HY(p[1]); if (i) c.lineTo(X, Y); else c.moveTo(X, Y); }); if (sec.type === 'ellipse' || sec.type === 'circle') c.closePath(); }, C['cs-curve'], 3.6);
+        // 曲線是粗管，標籤盡量不要壓在上面（取約 120 段就夠準）
+        const st = Math.max(1, Math.floor(pl.length / 120));
+        for (let i = st; i < pl.length; i += st) soft(HX(pl[i - st][0]), HY(pl[i - st][1]), HX(pl[i][0]), HY(pl[i][1]), 3, 4);
       });
     }
     // 中心（或拋物線的頂點）
     if (!sec.degenerate) {
       ctx.save(); ctx.strokeStyle = alpha(C.text, 0.7); ctx.lineWidth = 1.3;
       ctx.beginPath(); ctx.moveTo(ox - 4, oy - 4); ctx.lineTo(ox + 4, oy + 4); ctx.moveTo(ox - 4, oy + 4); ctx.lineTo(ox + 4, oy - 4); ctx.stroke(); ctx.restore();
-      D.haloText(ctx, 'O', ox - 6, oy + 6, C.muted, 'right', 'top', fnt(11.5, 600, true));
+      mark(ox, oy, 4.5);
+      if (inPanel(ox, oy)) lab(40, 'O', C.muted, 11.5, 'italic 600', around(ox, oy, 3 * Math.PI / 4, 3), false, true);
     }
     // 記下的點
     state.log.forEach(function (row, i) {
       const X = HX(row.x), Y = HY(row.y);
       ctx.save(); ctx.beginPath(); ctx.arc(X, Y, 3.2, 0, Math.PI * 2); ctx.fillStyle = alpha(C.probe, 0.85); ctx.fill(); ctx.restore();
-      D.haloText(ctx, String(i + 1), X + 5, Y - 5, C.probe, 'left', 'bottom', fnt(10.5, 700));
+      mark(X, Y, 3.2);
+      lab(70 + i, String(i + 1), C.probe, 10.5, 700, around(X, Y, -Math.PI / 4, 2));
     });
 
     // P 與距離
     const M = measureP();
     if (M) {
       const px = HX(M.x), py = HY(M.y);
-      const segLabel = function (x0, y0, x1, y1, text, color, side) {
-        const mx = (x0 + x1) / 2, my = (y0 + y1) / 2, L2 = Math.hypot(x1 - x0, y1 - y0);
-        if (L2 < 34) return;
+      /** 線段長度的數字：沿線段找位置（中點優先，指定的一側優先） */
+      const segLabel = function (pri, x0, y0, x1, y1, text, color, side) {
+        const L2 = Math.hypot(x1 - x0, y1 - y0);
+        // 只在線段看得到的那一段上找位置（焦點可能在畫面外）
+        const vr = visRange(x0, y0, x1, y1, R, 8);
+        if (L2 < 34 || !vr || L2 * (vr[1] - vr[0]) < 34) return;
         const nx = -(y1 - y0) / L2 * side, ny = (x1 - x0) / L2 * side;
-        D.pill(ctx, text, mx + nx * 12, my + ny * 12 + 7, color, 'center', fnt(11, 700));
+        lab(pri, text, color, 11, 700, function (w, h) {
+          const out = [];
+          [0.5, 0.35, 0.65, 0.22, 0.78].map(function (f) { return vr[0] + (vr[1] - vr[0]) * f; }).forEach(function (t) {
+            const qx = x0 + (x1 - x0) * t, qy = y0 + (y1 - y0) * t;
+            [1, -1].forEach(function (s) { out.push(ring(qx, qy, w, h, 5, [Math.atan2(ny * s, nx * s)])[0]); });
+          });
+          return out;
+        }, true, true);
       };
       // 到準線 1 的垂線段
       const S1 = sec.spheres[0];
       if (state.show.dir && S1 && S1.dx != null) {
         const dX = HX(S1.dx);
         line(px, py, dX, py, alpha(C['cs-dir'], 0.95), 1.8, [5, 4]);
+        soft(px, py, dX, py, 1.5, 3);
         const sg = dX > px ? -1 : 1;
         ctx.save(); ctx.strokeStyle = alpha(C['cs-dir'], 0.9); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(dX + sg * 6, py); ctx.lineTo(dX + sg * 6, py - 6); ctx.lineTo(dX, py - 6); ctx.stroke(); ctx.restore();
-        segLabel(px, py, dX, py, len(M.PD[0]), C['cs-dir'], py > HY(0) ? -1 : 1);
+        segLabel(24, px, py, dX, py, len(M.PD[0]), C['cs-dir'], py > HY(0) ? -1 : 1);
       }
       sec.spheres.forEach(function (S, i) {
         if (sec.family === 'circle' && i > 0) return;
         const fx = HX(S.fx), fy = HY(0), col = i ? C.neg : C.pos;
         line(px, py, fx, fy, alpha(col, 0.95), 2.2);
-        segLabel(px, py, fx, fy, len(M.PF[i]), col, i ? 1 : -1);
+        soft(px, py, fx, fy, 2, 3);
+        segLabel(22 + i, px, py, fx, fy, len(M.PF[i]), col, i ? 1 : -1);
       });
-      // 焦點
+      // 焦點：標籤優先放在正下方
       sec.spheres.forEach(function (S, i) {
         const col = i ? C.neg : C.pos, X = HX(S.fx), Y = HY(0);
         D.ball(ctx, X, Y, 5.2, col, { glow: C.dark ? 0.4 : 0.15 });
-        if (sec.family === 'circle') { if (!i) rich(ctx, 'F_1 = F_2', X + 8, Y + 12, col, 12, 700); }
-        else rich(ctx, 'F_' + (i + 1), X, Y + 15, col, 12.5, 700, true, 'center');
+        mark(X, Y, 5.2);
+        if (!inPanel(X, Y)) return; // 焦點在畫面外就不標
+        if (sec.family === 'circle') { if (!i) lab(10, 'F_1 = F_2', col, 12, 700, around(X, Y, Math.PI / 4, 4)); }
+        else lab(10 + i, 'F_' + (i + 1), col, 12.5, 700, around(X, Y, Math.PI / 2, 5));
       });
       // P
       const hot = state.hover === 'P' || (state.drag && state.drag.kind === 'P');
       if (hot) { ctx.beginPath(); ctx.arc(px, py, 16, 0, Math.PI * 2); ctx.fillStyle = alpha(C.probe, 0.2); ctx.fill(); }
       D.ball(ctx, px, py, hot ? 9 : 8, C.probe, { glow: C.dark ? 0.4 : 0.1 });
-      rich(ctx, 'P', px + 11, py - 11, C.probe, 13.5, 800);
+      mark(px, py, hot ? 9 : 8);
+      lab(20, 'P', C.probe, 13.5, 800, around(px, py, -Math.PI / 4, 3));
     }
+    // 標題與下方的不變量、格線說明位置固定，標籤不可壓到
+    const ttl = T('正對切平面：切口的形狀', 'Face-on: the shape of the cut');
+    placeLabels(R, LB, marks, softs, [
+      { x: R.x + 8, y: R.y + 4, w: rich(ctx, ttl, 0, 0, C.text, 12.5, 600, false) + 18, h: 26 },
+      { x: R.x + 8, y: R.y + R.h - 56, w: R.w - 16, h: 52 }
+    ]);
     ctx.restore(); // panelClip
 
-    title(R, T('正對切平面：切口的形狀', 'Face-on: the shape of the cut'));
+    title(R, ttl);
     // 下方：保持不變的量
     drawInvariants(R, M);
     gridLegend(R, step, 8);
