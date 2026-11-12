@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Encryption: From Caesar to Public Keys | Astro Ni Science Lab">加密：從凱撒密碼到公鑰｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 加密頁面專用的顏色代號（淺色＋兩組深色；由 js/cryptography.js 讀取） */
+    :root { --cr-plain: #2563eb; --cr-cipher: #c2410c; --cr-key: #b45309; --cr-ref: #64748b; --cr-pub: #0f766e; --cr-priv: #7c3aed; --cr-eve: #be123c;
+      --cr-ok: #15803d; --cr-warn: #dc2626; --cr-disc: #dfe6ee; --cr-disc2: #f3ead8; --cr-wood: #b9895a;
+      --cr-c1: #2563eb; --cr-c2: #c2410c; --cr-c3: #15803d; --cr-c4: #7c3aed; --cr-c5: #b45309; --cr-c6: #0e7490; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cr-plain: #7aa7ff; --cr-cipher: #ff8a5c; --cr-key: #fbbf24; --cr-ref: #9fb0c3; --cr-pub: #4fd1c5; --cr-priv: #b9a0ff; --cr-eve: #fb7185;
+        --cr-ok: #4ade80; --cr-warn: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
+        --cr-c1: #7aa7ff; --cr-c2: #ff8a5c; --cr-c3: #4ade80; --cr-c4: #b9a0ff; --cr-c5: #fbbf24; --cr-c6: #5eead4; }
+    }
+    :root[data-theme="dark"] { --cr-plain: #7aa7ff; --cr-cipher: #ff8a5c; --cr-key: #fbbf24; --cr-ref: #9fb0c3; --cr-pub: #4fd1c5; --cr-priv: #b9a0ff; --cr-eve: #fb7185;
+      --cr-ok: #4ade80; --cr-warn: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
+      --cr-c1: #7aa7ff; --cr-c2: #ff8a5c; --cr-c3: #4ade80; --cr-c4: #b9a0ff; --cr-c5: #fbbf24; --cr-c6: #5eead4; }
+
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    .cr [hidden] { display: none !important; }
+    .cr .panel { grid-template-columns: minmax(0, 1fr); }
+    .cr .panel > .card { min-width: 0; }
+    .cr .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+    .cr .tabs button { min-height: 44px; border: 1px solid transparent; border-radius: 9px; background: transparent; font-size: calc(15px * var(--fs, 1)); font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 7px; line-height: 1.25; padding: 6px 6px; transition: background-color .18s ease-out, color .18s ease-out; }
+    .cr .tabs button svg { width: 20px; height: 20px; flex: none; }
+    .cr .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent); border-color: var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+    .cr .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    @media (max-width: 620px) { .cr .tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (prefers-reduced-motion: reduce) { .cr .tabs button { transition: none; } }
+    .cr .bar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .cr .bar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cr .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    /* 文字輸入與輸出 */
+    .texts { margin: 8px 2px 0; display: grid; gap: 4px; }
+    .texts .lab-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .texts .lab-row span.cnt { color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .texts label, .texts .olab { font-weight: 600; }
+    .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace; }
+    #inText { width: 100%; min-height: 92px; resize: vertical; box-sizing: border-box; font-size: calc(15px * var(--fs, 1)); line-height: 1.5; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text); }
+    #inText:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .outbox { min-height: 3.2em; max-height: 9.5em; overflow-y: auto; padding: 8px 10px; border-radius: 10px; border: 1px dashed var(--border); background: var(--bg); font-size: calc(15px * var(--fs, 1)); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .outbox.cipher { color: var(--cr-cipher); }
+    .outbox.plain { color: var(--cr-plain); }
+    .safe { margin: 10px 2px 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--cr-warn); background: color-mix(in srgb, var(--cr-warn) 8%, var(--surface)); font-size: calc(13px * var(--fs, 1)); line-height: 1.55; }
+    .safe strong { color: var(--cr-warn); }
+    /* 控制面板 */
+    .cr .slider input[type="range"] { height: 28px; margin: 0; }
+    .cr .checks label { min-height: 44px; }
+    .cr .checks input { width: 17px; height: 17px; }
+    .cr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 2px 0 6px; }
+    .seg2 button { min-height: 44px; padding: 6px 4px; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .btn-col { display: grid; gap: 8px; margin: 10px 0 0; }
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; }
+    .btn-row button, .btn-col button { padding: 6px 6px; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; margin-top: 8px; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd.wrap { white-space: normal; text-align: right; overflow-wrap: anywhere; }
+    .keyrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 4px 0 8px; }
+    .keyrow label { font-weight: 600; font-size: calc(14px * var(--fs, 1)); }
+    #key { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; font-size: calc(17px * var(--fs, 1)); letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--cr-key); font-weight: 700; }
+    #key:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .selrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 2px 0 6px; }
+    .selrow label { display: grid; gap: 2px; font-size: calc(14px * var(--fs, 1)); }
+    .selrow select { min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.2em; color: var(--muted); }
+    .msg.bad { color: var(--cr-warn); }
+    .msg.ok { color: var(--cr-ok); font-weight: 600; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 7px; white-space: nowrap; }
+    table.data:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    details.how { margin: 10px 0 0; font-size: calc(13.5px * var(--fs, 1)); }
+    details.how summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--accent); font-weight: 600; }
+    details.how p { margin: 4px 0; color: var(--muted); }
+    #egcdTab td { text-align: right; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; vertical-align: -1px; margin-right: 5px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#network&quot;>Information Technology · Networks and Security</a> / Encryption"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#network">資訊科技・網路與資訊安全</a> ／ 加密</nav>
+      <h1 data-en="Encryption: From Caesar to Public Keys">加密：從凱撒密碼到公鑰</h1>
+      <p data-en="Turn a cipher wheel the way Julius Caesar did, then break such ciphers yourself by counting letters. Hide the letter pattern with a Vigenère key, find the key length with the index of coincidence, and finally see how a public key lets anyone lock a box that only one person can open.">像凱撒一樣轉動密碼盤，再親手用「數字母」破解這種密碼；用維吉尼亞金鑰把字母的規律藏起來，再用重合指數找出金鑰有多長；最後看看公鑰怎麼讓任何人都能鎖上、卻只有一個人打得開的箱子。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: set “Shift k” to 3 and watch the message change, then press “Caesar mystery” and try to break it.">試試看：把「位移 k」調成 3，看訊息怎麼變；再按「來一段凱撒密文」，試著破解它。</p>
+    <div class="lab cr" id="lab">
+      <div class="stage" id="stage">
+        <div class="tabs" role="tablist" aria-label="選擇密碼" data-en-aria-label="Choose a cipher">
+          <button type="button" role="tab" id="tabCaesar" aria-selected="true" aria-controls="cv" data-tab="caesar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 2.5v3.2M21.5 12h-3.2M12 21.5v-3.2M2.5 12h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span data-en="Caesar cipher">凱撒密碼</span></button>
+          <button type="button" role="tab" id="tabFreq" aria-selected="false" aria-controls="cv" data-tab="freq" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="4" y="7" width="3.2" height="12" rx="1" fill="currentColor"/><rect x="9" y="12" width="3.2" height="7" rx="1" fill="currentColor" opacity=".7"/><rect x="14" y="4" width="3.2" height="15" rx="1" fill="currentColor"/><rect x="19" y="14" width="2" height="5" rx=".8" fill="currentColor" opacity=".7"/></svg><span data-en="Frequency analysis">頻率分析</span></button>
+          <button type="button" role="tab" id="tabVig" aria-selected="false" aria-controls="cv" data-tab="vig" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="4" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9.5" y="4" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="16.5" y="4" width="5" height="5" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="2.5" y="15" width="5" height="5" rx="1.2" fill="currentColor"/><rect x="9.5" y="15" width="5" height="5" rx="1.2" fill="currentColor" opacity=".6"/><rect x="16.5" y="15" width="5" height="5" rx="1.2" fill="currentColor"/><path d="M5 10.5v3M12 10.5v3M19 10.5v3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><span data-en="Vigenère cipher">維吉尼亞密碼</span></button>
+          <button type="button" role="tab" id="tabRsa" aria-selected="false" aria-controls="cv" data-tab="rsa" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10.5" width="16" height="11" rx="2.5" fill="currentColor"/><path d="M7.5 10.5V7.5a4.5 4.5 0 0 1 9 0v3" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="15.5" r="1.6" fill="var(--surface)"/></svg><span data-en="Public keys">公鑰的概念</span></button>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="加密實驗畫布" data-en-aria-label="Encryption canvas"></canvas>
+        <div class="bar">
+          <button id="sampleBtn" type="button" data-tabs="caesar freq vig" data-en="Another sample">換一段範例</button>
+          <button id="swapBtn" type="button" data-tabs="caesar vig" data-en="Use the output as input" title="把輸出框的文字搬到輸入框，可以再加密一次" data-en-title="Move the output into the input box so you can encrypt it again">把輸出放回輸入</button>
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉破解紀錄、加密紀錄與畫面上的標記；設定和文字不變" data-en-title="Clear the crack log, the encryption log and the marks on the canvas; settings and text stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="texts" id="texts" data-tabs="caesar freq vig">
+          <div class="lab-row"><label for="inText" data-en="Input text">輸入文字</label><span class="cnt" id="inCount"></span></div>
+          <textarea id="inText" maxlength="1500" rows="4" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <div class="lab-row"><span class="olab" id="outLabel">輸出</span><span class="cnt" id="outCount"></span></div>
+          <div class="outbox mono" id="outText" aria-live="off"></div>
+        </div>
+        <p class="safe" data-en-html="<strong>⚠ None of these ciphers is safe.</strong> Caesar and Vigenère were broken centuries ago, and the RSA here uses primes below 100, which trial division factors in a blink. Real systems use standardised algorithms such as AES (keys of 128, 192 or 256 bits) and RSA with keys of at least 2048 bits, plus random padding. Never use this page to protect real data. Your text is processed only inside your browser and is never sent or stored — still, do not type real passwords or personal details."><strong>⚠ 這一頁的密碼全都不安全。</strong>凱撒與維吉尼亞早在幾百年前就被破解，這裡的 RSA 只用 100 以內的質數，用試除法一下子就分解了。真實世界用標準化的演算法，例如 AES（金鑰 128、192 或 256 位元）與至少 2048 位元的 RSA，還要加上隨機的填充。不要用這一頁的方法保護真的資料。你輸入的文字只在你的瀏覽器裡計算，不會送出或儲存——但也不要輸入真正的密碼或個人資料。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" data-tabs="caesar">
+          <h2 data-en="Caesar cipher">凱撒密碼</h2>
+          <div class="seg2" role="group" aria-label="方向" data-en-aria-label="Direction" id="dirC">
+            <button type="button" data-dir="enc" aria-pressed="true" data-en="Encrypt">加密</button>
+            <button type="button" data-dir="dec" aria-pressed="false" data-en="Decrypt">解密</button>
+          </div>
+          <div class="slider"><label for="k" data-en="Shift k">位移 k</label><output id="ko"></output>
+            <input id="k" type="range" min="0" max="25" step="1" value="1" data-decimals="0"></div>
+          <dl class="readout">
+            <dt data-en="Mapping">對照</dt><dd id="rMapC">—</dd>
+            <dt data-en="Possible keys">可能的金鑰</dt><dd id="rKeysC" data-en="26 (25 useful)">26 種（有用的 25 種）</dd>
+          </dl>
+          <p class="hint" data-en="Drag the inner ring of the wheel, or use the arrow keys on the canvas. Encrypting reads the outer ring and writes the inner ring; decrypting goes the other way.">拖曳密碼盤的內圈，或在畫布上按方向鍵轉動。加密是「外圈 → 內圈」，解密反過來。</p>
+        </section>
+
+        <section class="card" data-tabs="freq" hidden>
+          <h2 data-en="Frequency analysis">頻率分析</h2>
+          <div class="slider"><label for="g" data-en="Guessed shift g">猜測位移 g</label><output id="go"></output>
+            <input id="g" type="range" min="0" max="25" step="1" value="0" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="overlay" type="checkbox" checked><span data-en="English letter frequencies">英文字母頻率</span></label>
+            <label><input id="chiAll" type="checkbox"><span data-en="χ² for every shift">所有位移的 χ²</span></label>
+          </div>
+          <dl class="readout">
+            <dt data-en="Letters counted N">字母數 N</dt><dd id="rN">—</dd>
+            <dt data-en="χ² at this shift">這個位移的 χ²</dt><dd id="rChi">—</dd>
+            <dt data-en="Most common letter">最常見的字母</dt><dd id="rTop">—</dd>
+            <dt data-en="Index of coincidence IC">重合指數 IC</dt><dd id="rIc">—</dd>
+          </dl>
+          <p class="hint" data-en="The bars are the letters of the input text. The grey outlines are English, slid along by g. Tap a bar to guess that this letter stands for E. The smaller χ², the better the two shapes match.">實心長條是輸入文字的字母；灰色外框是英文的字母頻率，往右移了 g 格。點一根長條，等於猜「這個字母代表 E」。χ² 越小，兩組形狀越吻合。</p>
+        </section>
+
+        <section class="card" data-tabs="vig" hidden>
+          <h2 data-en="Vigenère cipher">維吉尼亞密碼</h2>
+          <div class="keyrow"><label for="key" data-en="Key">金鑰</label><input id="key" type="text" maxlength="80" autocomplete="off" spellcheck="false" autocapitalize="characters" value="KEY"></div>
+          <div class="seg2" role="group" aria-label="方向" data-en-aria-label="Direction" id="dirV">
+            <button type="button" data-dir="enc" aria-pressed="true" data-en="Encrypt">加密</button>
+            <button type="button" data-dir="dec" aria-pressed="false" data-en="Decrypt">解密</button>
+          </div>
+          <dl class="readout">
+            <dt data-en="Key length">金鑰長度</dt><dd id="rKeyLen">—</dd>
+            <dt data-en="Shift of each key letter">每個字母的位移</dt><dd id="rShifts" class="mono">—</dd>
+            <dt data-en="IC of the ciphertext">密文的重合指數</dt><dd id="rIcV">—</dd>
+          </dl>
+          <p class="hint" data-en="Only letters use up the key; spaces and punctuation are skipped. The key may have up to 60 letters.">只有字母會用掉金鑰，空白和標點跳過。金鑰最多 60 個字母。</p>
+        </section>
+
+        <section class="card" data-tabs="vig" hidden>
+          <h2 data-en="Finding the key">找出金鑰</h2>
+          <div class="slider"><label for="L" data-en="Guessed key length L">猜金鑰長度 L</label><output id="Lo"></output>
+            <input id="L" type="range" min="1" max="12" step="1" value="1" data-decimals="0"></div>
+          <div class="slider"><label for="col" data-en="Column c">第幾欄 c</label><output id="colo"></output>
+            <input id="col" type="range" min="1" max="1" step="1" value="1" data-decimals="0"></div>
+          <div class="slider"><label for="cs" data-en="Shift of this column">這一欄的位移</label><output id="cso"></output>
+            <input id="cs" type="range" min="0" max="25" step="1" value="0" data-decimals="0"></div>
+          <dl class="readout">
+            <dt data-en="Average IC at this L">這個 L 的平均重合指數</dt><dd id="rIocL">—</dd>
+            <dt data-en="χ² of this column">這一欄的 χ²</dt><dd id="rChiCol">—</dd>
+            <dt data-en="Guessed key">猜的金鑰</dt><dd id="rGuess" class="mono">—</dd>
+          </dl>
+          <div class="btn-row">
+            <button id="autoKeyBtn" type="button" data-en="Find the key automatically">自動找金鑰</button>
+            <button id="useGuessBtn" type="button" class="primary" data-en="Decrypt with the guessed key">用猜的金鑰解密</button>
+          </div>
+          <p class="hint" data-en="If the guessed length is right, every column is a plain Caesar cipher, so its bars look like English slid along. Tap a bar in the lower chart to guess that it is E.">長度猜對時，每一欄都只是一個凱撒密碼，長條會像英文一樣、只是平移了。點下方小圖的長條，等於猜「它是 E」。</p>
+        </section>
+
+        <section class="card" data-tabs="caesar freq vig">
+          <h2 data-en="Code-breaking challenge">破解挑戰</h2>
+          <p class="hint" data-en="Load a secret message, work out the key with any of the three tabs, then press “This is the plaintext” when the output reads as English.">載入一段祕密訊息，用前三個分頁的任何方法找出金鑰；輸出變成看得懂的英文時，按「這就是原文」。</p>
+          <div class="btn-row">
+            <button id="mystC" type="button" data-en="Caesar mystery">來一段凱撒密文</button>
+            <button id="mystV" type="button" data-en="Vigenère mystery">來一段維吉尼亞密文</button>
+          </div>
+          <div class="btn-col">
+            <button id="crackBtn" type="button" class="primary" disabled data-en="This is the plaintext">這就是原文</button>
+          </div>
+          <p class="msg" id="mystMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="crackLog"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Cracked messages are listed here.">破解成功的訊息會列在這裡。</p>
+        </section>
+
+        <section class="card" data-tabs="rsa" hidden>
+          <h2 data-en="Keys">金鑰</h2>
+          <div class="selrow">
+            <label><span data-en="Prime p">質數 p</span><select id="p"></select></label>
+            <label><span data-en="Prime q">質數 q</span><select id="q"></select></label>
+          </div>
+          <div class="slider"><label for="e" data-en="Public exponent e">公開指數 e</label><output id="eo"></output>
+            <input id="e" type="range" min="3" max="2435" step="1" value="5" data-decimals="0"></div>
+          <button id="nextE" type="button" data-en="Next usable e">下一個可用的 e</button>
+          <dl class="readout">
+            <dt>n = p × q</dt><dd id="rn">—</dd>
+            <dt>φ(n) = (p − 1)(q − 1)</dt><dd id="rphi">—</dd>
+            <dt data-en="Public key (n, e)">公鑰 (n, e)</dt><dd id="rPub">—</dd>
+            <dt data-en="Private key d">私鑰 d</dt><dd id="rPriv">—</dd>
+          </dl>
+          <p class="msg" id="keyMsg" aria-live="polite"></p>
+          <details class="how">
+            <summary data-en="How is d found?">d 是怎麼算出來的？</summary>
+            <p data-en="The extended Euclidean algorithm divides again and again until the remainder is 1, then runs backwards to find d with e × d = 1 + (a multiple of φ(n)).">擴展歐幾里得演算法：一直做除法直到餘數為 1，再倒推回去，找出 d 讓 e × d = 1 + φ(n) 的倍數。</p>
+            <div class="tablewrap"><table class="data" id="egcdTab"></table></div>
+            <p id="egcdRes" class="mono"></p>
+          </details>
+        </section>
+
+        <section class="card" data-tabs="rsa" hidden>
+          <h2 data-en="Message">訊息</h2>
+          <div class="slider"><label for="M" data-en="Message M">訊息 M</label><output id="Mo"></output>
+            <input id="M" type="range" min="0" max="2536" step="1" value="2026" data-decimals="0"></div>
+          <p class="hint" id="rPaper"></p>
+          <div class="btn-col">
+            <button id="encBtn" type="button" class="primary" data-en="Encrypt with the public key">用公鑰加密</button>
+            <button id="decBtn" type="button" data-en="Decrypt with the private key">用私鑰解密</button>
+            <button id="decPubBtn" type="button" data-en="Decrypt with the public key (try it)">用公鑰解密（試試看）</button>
+          </div>
+          <dl class="readout">
+            <dt data-en="Ciphertext C">密文 C</dt><dd id="rC">—</dd>
+            <dt data-en="Recovered">解出的數</dt><dd id="rR">—</dd>
+            <dt data-en="Work done">計算量</dt><dd id="rSteps">—</dd>
+          </dl>
+          <div class="tablewrap"><table class="data" id="rsaLog"></table></div>
+        </section>
+
+        <section class="card" data-tabs="rsa" hidden>
+          <h2 data-en="The eavesdropper">竊聽者</h2>
+          <p class="hint" data-en="The eavesdropper sees the public key (n, e) and the ciphertext C on the wire, but not d. If she can split n into p × q, she can work out d exactly as the owner did.">竊聽者看得到公鑰 (n, e) 和線路上的密文 C，看不到 d。只要她能把 n 拆成 p × q，就能和主人一樣算出 d。</p>
+          <div class="btn-col"><button id="eveBtn" type="button" data-en="Factor n">分解 n</button></div>
+          <dl class="readout">
+            <dt data-en="Trial divisions">試除次數</dt><dd id="rEveSteps">—</dd>
+            <dt data-en="Factors found">找到的因數</dt><dd id="rEvePQ">—</dd>
+            <dt data-en="Stolen private key">算出的私鑰</dt><dd id="rEveD">—</dd>
+            <dt data-en="Message she reads">她讀到的訊息</dt><dd id="rEveR">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="The Caesar (shift) cipher">凱撒密碼（位移密碼）</h3>
+      <p data-en-html="Number the letters A = 0, B = 1, …, Z = 25. A shift cipher moves every letter \(k\) places along the alphabet and wraps round after Z. According to the Roman historian Suetonius, Julius Caesar wrote D for A, that is \(k = 3\). Decrypting moves the letters back again, which is the same as moving them forward by \(26 - k\). With \(k = 13\) (ROT13) encrypting and decrypting are the very same operation.">把字母編號 A = 0、B = 1、…、Z = 25。位移密碼把每個字母往後移 \(k\) 格，超過 Z 就繞回 A。根據羅馬史家蘇埃托尼烏斯的記載，凱撒把 A 寫成 D，也就是 \(k = 3\)。解密是往回移 \(k\) 格，等於往前移 \(26 - k\) 格；\(k = 13\)（ROT13）時，加密和解密是同一個動作。</p>
+      <div class="formula">\[ E_k(x) = (x + k) \bmod 26, \qquad D_k(y) = (y - k) \bmod 26 \]</div>
+      <p data-en-html="There are only 26 shifts, and one of them changes nothing, so anyone can simply try them all. A cipher whose key can be found by trying every possibility (<em>brute force</em>) is not safe.">只有 26 種位移，其中一種根本沒改變，所以任何人都可以全部試一遍。能用「全部試一遍」（暴力搜尋）找到金鑰的密碼，就不安全。</p>
+
+      <h3 data-en="Frequency analysis">頻率分析</h3>
+      <p data-en-html="In ordinary English, E makes up about 12.7% of all letters, T about 9.1%, while Q and Z are rare. A shift moves every letter by the same amount, so the bar chart of the ciphertext has the same shape as English, only slid along. The Arab scholar al-Kindi described this kind of letter counting in the ninth century. The page measures how well the two shapes match with the chi-squared statistic, where \(O_i\) is how many times letter \(i\) appears among the \(N\) letters, and \(p\) are the English frequencies:">一般英文裡，E 約占全部字母的 12.7%、T 約 9.1%，Q、Z 則很少。位移密碼把每個字母都移一樣的格數，所以密文的長條圖和英文的形狀一樣，只是平移了。九世紀的阿拉伯學者肯迪（al-Kindi）就描述過這種數字母的方法。這一頁用卡方值 χ² 衡量兩個形狀有多吻合；\(O_i\) 是 \(N\) 個字母中第 \(i\) 個字母出現的次數，\(p\) 是英文的字母頻率：</p>
+      <div class="formula">\[ \chi^2(g) = \sum_{i=0}^{25} \frac{(O_i - E_i)^2}{E_i}, \qquad E_i = N\, p_{(i - g) \bmod 26} \]</div>
+      <p data-en-html="The shift \(g\) that gives the smallest \(\chi^2\) is the best guess. Using the whole shape is far more reliable than only asking “which letter is E?”: it still works on a text that never uses the letter E.">讓 \(\chi^2\) 最小的 \(g\) 就是最好的猜測。看整個形狀比只問「哪個字母是 E」可靠得多：就算文章完全沒用到字母 E，它照樣找得到。</p>
+
+      <h3 data-en="The Vigenère cipher and the index of coincidence">維吉尼亞密碼與重合指數</h3>
+      <p data-en-html="A Vigenère cipher uses a keyword: the first letter of the message is shifted by the first key letter, the second by the second, and the key repeats. One plaintext letter can now become many different ciphertext letters, so the bar chart flattens out. Described by Giovan Battista Bellaso in 1553 and later named after Blaise de Vigenère, it was called “the indecipherable cipher” for about three centuries, until Charles Babbage and Friedrich Kasiski (who published in 1863) found how to break it.">維吉尼亞密碼用一個關鍵字當金鑰：第 1 個字母用金鑰第 1 個字母的位移、第 2 個用第 2 個……金鑰用完就重複。同一個明文字母會變成好幾種密文字母，長條圖就被「壓平」了。它在 1553 年由貝拉索（Bellaso）提出、後來掛上維吉尼亞（Vigenère）的名字，被稱為「無法破解的密碼」將近三百年，直到巴貝奇（Babbage）與卡西斯基（Kasiski，1863 年發表）找到破解的方法。</p>
+      <div class="formula">\[ c_j = (m_j + k_{\,j \bmod L}) \bmod 26 \]</div>
+      <p data-en-html="The trick is to find the key length \(L\) first. The <strong>index of coincidence</strong>, introduced by William Friedman (1922), is the chance that two letters picked from the text are the same. For English it is about \(\kappa_p = \sum p_i^2 \approx 0.066\); for letters chosen completely at random it is \(\kappa_r = 1/26 \approx 0.038\). Split the ciphertext into \(L\) columns (every \(L\)-th letter): if \(L\) is right, each column is an ordinary Caesar cipher and its index jumps back up to about 0.066. Then frequency analysis on each column gives each letter of the key.">破解的關鍵是先找出金鑰長度 \(L\)。弗里德曼（Friedman，1922）提出的<strong>重合指數</strong>，是從文章裡隨便抽兩個字母剛好相同的機率。英文約為 \(\kappa_p = \sum p_i^2 \approx 0.066\)，完全隨機的字母是 \(\kappa_r = 1/26 \approx 0.038\)。把密文每隔 \(L\) 個字母分成一欄：\(L\) 猜對時，每一欄都只是普通的凱撒密碼，重合指數會跳回 0.066 左右；再對每一欄做頻率分析，就得到金鑰的每一個字母。</p>
+      <div class="formula">\[ \mathrm{IC} = \frac{\sum_{i} n_i (n_i - 1)}{N (N - 1)} \]</div>
+      <p data-en-html="If the key is as long as the message, completely random and never used again, there are no columns to split: every possible plaintext is equally likely. Claude Shannon proved in 1949 that this <strong>one-time pad</strong> cannot be broken — but such keys are very hard to share.">如果金鑰和訊息一樣長、完全隨機、而且只用一次，就沒有「欄」可以分了：每一種明文的可能性都一樣。夏農（Shannon）在 1949 年證明這種<strong>一次性密碼本</strong>無法破解——只是這麼長的金鑰很難交給對方。</p>
+
+      <h3 data-en="Public keys and RSA">公鑰與 RSA</h3>
+      <p data-en-html="All the ciphers above use the same key to lock and to unlock, so the two sides must first meet in secret to share it. In 1976 Whitfield Diffie and Martin Hellman proposed <em>public-key</em> cryptography: one key, published for everyone, locks; a different, private key unlocks. In 1978 Ron Rivest, Adi Shamir and Leonard Adleman gave the first practical method, RSA:">前面的密碼加密和解密用同一把鑰匙，兩邊得先祕密見面交換金鑰。1976 年，迪菲（Diffie）與赫爾曼（Hellman）提出<strong>公鑰</strong>的想法：公開給所有人的鑰匙負責「鎖」，另一把只有自己有的私鑰負責「開」。1978 年，里維斯特、沙米爾、阿德曼（Rivest、Shamir、Adleman）提出第一個實用的方法 RSA：</p>
+      <div class="formula">\[ n = pq, \quad \varphi(n) = (p-1)(q-1), \quad \gcd(e, \varphi(n)) = 1, \quad e\,d \equiv 1 \pmod{\varphi(n)} \]</div>
+      <div class="formula">\[ C = M^{e} \bmod n, \qquad M = C^{d} \bmod n \]</div>
+      <p data-en-html="Anyone may know \(n\) and \(e\). Working out \(d\) requires \(\varphi(n)\), which requires the two primes \(p\) and \(q\) — and nobody knows how to split a large \(n\) into its primes quickly. Euler’s theorem (with the Chinese remainder theorem) guarantees that decrypting gives back every message \(0 \le M < n\).">任何人都可以知道 \(n\) 與 \(e\)。要算出 \(d\) 得先知道 \(\varphi(n)\)，也就得知道兩個質數 \(p\)、\(q\)——而目前沒有人知道怎麼快速把很大的 \(n\) 分解成質數。歐拉定理（加上中國剩餘定理）保證每一個 \(0 \le M < n\) 解密後都會還原。</p>
+
+      <h3 data-en="What real systems do">真實世界怎麼做</h3>
+      <ul>
+        <li data-en-html="RSA keys must be at least 2048 bits long: \(n\) then has about 617 decimal digits. NIST rates a 2048-bit key as about 112 bits of security and allows it for new encryption only until 2030; from 2031 it asks for at least 128 bits of security, such as RSA with 3072 bits.">RSA 的金鑰至少要 2048 位元，\(n\) 大約有 617 位十進位數字。美國國家標準與技術研究院（NIST）把 2048 位元評為約 112 位元的安全強度，只同意用到 2030 年；2031 年起要 128 位元以上的安全強度，例如 3072 位元的 RSA。</li>
+        <li data-en-html="The message itself is encrypted with a fast shared-key cipher, usually AES with a 128-, 192- or 256-bit key; public-key methods are used only to agree on that key, which is what a website does when the address starts with https.">真正的資料用速度快的對稱式密碼加密，通常是 AES（金鑰 128、192 或 256 位元）；公鑰只拿來商量這把金鑰——網址以 https 開頭的網站就是這樣做的。</li>
+        <li data-en-html="Textbook RSA as shown here is deterministic: the same \(M\) always gives the same \(C\), and a small \(M\) with a small \(e\) may never wrap round \(n\) at all. Real RSA first adds random padding (for example OAEP) to every message.">這一頁的「課本版 RSA」是固定的：同一個 \(M\) 永遠得到同一個 \(C\)，小的 \(M\) 配上小的 \(e\) 甚至可能根本沒繞過 \(n\)。真實的 RSA 會先在每則訊息加上隨機的填充（例如 OAEP）。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Only 26 keys</strong>: how many turns of the wheel does it take to try every Caesar key? Why does that make the cipher useless?"><strong>只有 26 把鑰匙</strong>：試完所有凱撒金鑰要轉幾格？為什麼這樣就不安全？</li>
+        <li data-en-html="<strong>Same shape, slid along</strong>: encrypt a long text with a shift and look at the bars. What changed, and what did not? Does the index of coincidence change?"><strong>形狀不變、只是平移</strong>：用位移加密一段長文字，再看長條圖。什麼變了、什麼沒變？重合指數會變嗎？</li>
+        <li data-en-html="<strong>Flattening the bars</strong>: encrypt the same text with a longer and longer Vigenère key. What happens to the bars and to the index of coincidence?"><strong>把長條壓平</strong>：用越來越長的維吉尼亞金鑰加密同一段文字，長條圖和重合指數會怎樣？</li>
+        <li data-en-html="<strong>Echoes of the key length</strong>: in a Vigenère mystery, the index of coincidence is high at the true key length — and also at twice that length. Why?"><strong>金鑰長度的回音</strong>：維吉尼亞的神祕密文，重合指數在真正的金鑰長度很高，在它的兩倍也很高。為什麼？</li>
+        <li data-en-html="<strong>A lock everyone owns</strong>: the public key opens nothing, yet the eavesdropper can still read the message after pressing “Factor n”. How many trial divisions did she need? How many would a 617-digit \(n\) need?"><strong>人人都有的鎖</strong>：公鑰打不開箱子，但竊聽者按「分解 n」之後還是讀到了訊息。她試除了幾次？如果 \(n\) 有 617 位數呢？</li>
+        <li data-en-html="<strong>The same answer every time</strong>: encrypt the same \(M\) twice. Why could an eavesdropper take advantage of that?"><strong>每次都一樣</strong>：同一個 \(M\) 加密兩次會得到什麼？竊聽者可以怎麼利用這一點？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Only the 26 English letters are changed (capitals stay capitals); spaces, punctuation and other characters are copied unchanged. The text is limited to 1500 characters and is handled by plain functions in your browser: nothing is sent over the network and no code is ever run from your text.">只有 26 個英文字母會被改變（大寫維持大寫），空白、標點與其他字元原樣保留。文字最多 1500 個字元，全部由瀏覽器裡的純函式處理：不連網、也不會把你的文字當成程式執行。</li>
+        <li data-en-html="The English frequencies are Lewand’s table (below). χ² and the index of coincidence are computed exactly as in the formulas above; “Find the key automatically” picks, for each column, the shift with the smallest χ². The unit tests check that frequency analysis finds the right shift for every sample text at all 26 shifts, that the index of coincidence picks out the right length and the columns give back every mystery key, that a one-letter Vigenère key is a Caesar shift, and that encryption followed by decryption always returns the original text.">英文字母頻率用 Lewand 的表（見參考資料）。χ² 與重合指數完全照上面的公式計算；「自動找金鑰」對每一欄取 χ² 最小的位移。單元測試檢查：每段範例在 26 種位移下頻率分析都找到正確答案、重合指數能挑出正確的金鑰長度且每一欄都能找回神祕密文的金鑰、一個字母的維吉尼亞金鑰就是凱撒位移、加密後解密一定回到原文。</li>
+        <li data-en-html="The RSA numbers stay below \(97 \times 89 = 8633 < 2^{14}\), so every product is below \(2^{28}\) and ordinary JavaScript integers are exact (larger moduli would switch to BigInt). Powers are computed by repeated squaring, \(d\) by the extended Euclidean algorithm. The tests run every pair of primes with several exponents and check \((M^{e})^{d} \equiv M \pmod n\) for <em>every</em> \(M\) from 0 to \(n - 1\) — over three million cases — as well as the worked example of the 1978 paper and the number of messages that encrypt to themselves.">RSA 的數都小於 \(97 \times 89 = 8633 < 2^{14}\)，任何乘積都小於 \(2^{28}\)，一般的 JavaScript 整數完全精確（模數更大時會改用 BigInt）。次方用「平方再乘」計算，\(d\) 用擴展歐幾里得演算法。測試把每一對質數配上好幾個 \(e\)，檢查 0 到 \(n - 1\) 的<strong>每一個</strong> \(M\) 都有 \((M^{e})^{d} \equiv M \pmod n\)（超過三百萬組），也核對 1978 年論文裡的例子，以及加密後不變的訊息個數。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): H-IV-3 information security (protecting data and communications); H-V-2 protecting personal data (ways to protect privacy).">課綱對應：資H-IV-3 資訊安全（資料安全防護、通訊安全防護）；資H-V-2 個人資料的保護（保護隱私的方法）。</li>
+        <li data-en="History of the Caesar cipher, frequency analysis, the Vigenère cipher and public keys: Simon Singh, The Code Book (1999), Chapters 1, 2 and 6. Caesar’s shift of three is recorded by Suetonius, The Lives of the Caesars, “Julius”, section 56.">歷史（凱撒密碼、頻率分析、維吉尼亞密碼、公鑰）：Simon Singh，《The Code Book》（1999），第 1、2、6 章。凱撒用位移 3 的記載：蘇埃托尼烏斯《羅馬十二帝王傳》〈凱撒傳〉第 56 節。</li>
+        <li data-en="Shift and Vigenère ciphers, the index of coincidence, the one-time pad and RSA: Douglas R. Stinson and Maura B. Paterson, Cryptography: Theory and Practice, 4th ed. (CRC Press), Chapters 2, 3 and 6.">位移密碼、維吉尼亞密碼、重合指數、一次性密碼本與 RSA：Douglas R. Stinson、Maura B. Paterson，《Cryptography: Theory and Practice》第 4 版（CRC Press），第 2、3、6 章。</li>
+        <li data-en="English letter frequencies: Robert E. Lewand, Cryptological Mathematics (Mathematical Association of America, 2000), pp. 36–37.">英文字母頻率表：Robert E. Lewand，《Cryptological Mathematics》（美國數學協會 MAA，2000），第 36–37 頁。</li>
+        <li data-en="Index of coincidence: William F. Friedman, The Index of Coincidence and Its Applications in Cryptography, Riverbank Publication No. 22 (1922).">重合指數：William F. Friedman，〈The Index of Coincidence and Its Applications in Cryptography〉，Riverbank Publication No. 22（1922）。</li>
+        <li data-en="One-time pad: Claude E. Shannon, “Communication Theory of Secrecy Systems”, Bell System Technical Journal 28(4), 656–715 (1949).">一次性密碼本：Claude E. Shannon，〈Communication Theory of Secrecy Systems〉，Bell System Technical Journal 28(4)，656–715（1949）。</li>
+        <li data-en="Public-key idea: Whitfield Diffie and Martin E. Hellman, “New Directions in Cryptography”, IEEE Transactions on Information Theory 22(6), 644–654 (1976).">公鑰的想法：Whitfield Diffie、Martin E. Hellman，〈New Directions in Cryptography〉，IEEE Transactions on Information Theory 22(6)，644–654（1976）。</li>
+        <li data-en-html="RSA: R. L. Rivest, A. Shamir and L. Adleman, “A Method for Obtaining Digital Signatures and Public-Key Cryptosystems”, Communications of the ACM 21(2), 120–126 (1978) — <a href=&quot;https://people.csail.mit.edu/rivest/Rsapaper.pdf&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>author’s copy (PDF)</a>.">RSA：R. L. Rivest、A. Shamir、L. Adleman，〈A Method for Obtaining Digital Signatures and Public-Key Cryptosystems〉，Communications of the ACM 21(2)，120–126（1978）——<a href="https://people.csail.mit.edu/rivest/Rsapaper.pdf" target="_blank" rel="noopener">作者提供的全文（PDF，英文）</a>。</li>
+        <li data-en="Key lengths: NIST Special Publication 800-57 Part 1 Revision 5, Recommendation for Key Management (2020), Table 2 (RSA 2048 bits ≈ 112-bit security, 3072 bits ≈ 128-bit) and Table 4 (112-bit security acceptable for protecting new data only through 2030).">金鑰長度：NIST SP 800-57 Part 1 Rev. 5〈Recommendation for Key Management〉（2020），表 2（RSA 2048 位元約等於 112 位元安全強度、3072 位元約 128 位元）與表 4（112 位元安全強度只到 2030 年可以用來保護新資料）。</li>
+        <li data-en="AES: NIST FIPS 197, Advanced Encryption Standard (2001; updated 2023) — 128-bit blocks with keys of 128, 192 or 256 bits.">AES：NIST FIPS 197〈Advanced Encryption Standard〉（2001 年發布、2023 年更新）——每塊 128 位元，金鑰 128、192 或 256 位元。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Caesar_cipher&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Caesar cipher</a>, <a href=&quot;https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Vigenère cipher</a>, <a href=&quot;https://en.wikipedia.org/wiki/Index_of_coincidence&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Index of coincidence</a>, <a href=&quot;https://en.wikipedia.org/wiki/RSA_(cryptosystem)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>RSA (cryptosystem)</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Caesar_cipher" target="_blank" rel="noopener">Caesar cipher</a>、<a href="https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher" target="_blank" rel="noopener">Vigenère cipher</a>、<a href="https://en.wikipedia.org/wiki/Index_of_coincidence" target="_blank" rel="noopener">Index of coincidence</a>、<a href="https://en.wikipedia.org/wiki/RSA_(cryptosystem)" target="_blank" rel="noopener">RSA (cryptosystem)</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/cryptography-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/cryptography.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="cryptography"></script>
+  <script src="js/missions/cryptography.js"></script>
+  <script src="js/stats.js" data-module="cryptography"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
