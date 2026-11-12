@@ -27,6 +27,8 @@
   function now() { return Date.now() + D.offset; }
   function today() { return C.dayNumber(now()); }
   function stars() { return Object.keys(st.done || {}).reduce(function (a, id) { return a + (+st.done[id].stars || 0); }, 0); }
+  /** 全站目前可以拿到的總星數（所有實驗的所有任務，和排行榜「全部任務」的總數一樣） */
+  function siteTotal() { return C.siteStars(LM.all()); }
   function modOf(id) { return String(id).replace(/-(h?\d+)$/, ''); }
   function findMission(id) {
     const list = LM.all()[modOf(id)] || [];
@@ -87,7 +89,7 @@
     const chips = el('div', 'dl-chips');
     if (st.done[m.id]) chips.appendChild(el('span', 'dl-chip got', T('星星已領過：不再加星', 'Stars already claimed: none to add')));
     else chips.appendChild(el('span', 'dl-chip new', T('新任務：完成得 ' + m.level + ' 顆星', 'New: clear it for ' + m.level + ' stars')));
-    chips.appendChild(el('span', 'dl-chip gold', T('掉寶機率 ', 'Treasure chance ') + pct(C.repeatChance(m.level, stars()))));
+    chips.appendChild(el('span', 'dl-chip gold', T('掉寶機率 ', 'Treasure chance ') + pct(C.repeatChance(m.level, stars(), siteTotal()))));
     return chips;
   }
   function bandChip(level) {
@@ -151,7 +153,7 @@
   function reward(m, newStars) {
     if (!isPick(m.id)) { D.msg = T('每日任務已經換新了，請回每日任務頁看看今天的任務。', 'The daily missions have been refreshed — check today’s list.'); render(); return; }
     if (doneToday(m.id)) { toast(T('今天已經完成這個每日任務了，明天 00:00 會換新。', 'You have already cleared this daily mission today — new ones arrive at 00:00.')); return; }
-    const drop = C.roll(m.level, stars(), false);
+    const drop = C.roll(m.level, stars(), siteTotal(), false);
     // 資料庫規則：兩次完成的伺服器時間至少隔 10 秒
     const wait = Math.max(0, ((D.rec && D.rec.at) || 0) + C.GAP - now());
     return delay(wait).then(function () {
@@ -171,7 +173,7 @@
         D.msg = '';
         const left = picks().length - doneCount();
         if (drop) setTimeout(function () { showDrop(drop); }, newStars ? 2500 : 0); // 有星星時，等星星的慶祝畫面結束
-        else toast(T('這次沒有掉寶（掉寶機率 ' + pct(C.repeatChance(m.level, stars())) + '）。', 'No treasure this time (drop chance ' + pct(C.repeatChance(m.level, stars())) + ').') +
+        else toast(T('這次沒有掉寶（掉寶機率 ' + pct(C.repeatChance(m.level, stars(), siteTotal())) + '）。', 'No treasure this time (drop chance ' + pct(C.repeatChance(m.level, stars(), siteTotal())) + ').') +
           (left ? T('今天還有 ' + left + ' 個每日任務。', ' ' + left + ' daily missions left today.') : T('今天的每日任務全部完成了！', ' All of today’s daily missions are done!')));
         try { window.dispatchEvent(new CustomEvent('lab:loot', { detail: { item: drop ? drop.item : null, qty: drop ? drop.qty : 0, first: newStars, bag: Object.assign({}, D.bag) } })); } catch (e) { /* 忽略 */ }
         render();
@@ -404,8 +406,9 @@
     const sec = el('section', 'dl-odds');
     const S = stars();
     sec.appendChild(el('h2', null, T('掉寶機率', 'Drop chances')));
-    sec.appendChild(el('p', 'lb-note', T('依你目前的 ' + S.toLocaleString() + ' 顆星計算。任務越難、累積的星星越多，越容易掉寶，也越容易掉出稀有寶物（星星加成到 ' + C.STAR_CAP.toLocaleString() + ' 顆星達到上限，目前 ' + Math.round(100 * C.starBoost(S)) + '%）。',
-      'Based on your ' + S.toLocaleString() + ' stars. Harder missions and more stars make drops — and rare treasures — likelier (the star bonus caps at ' + C.STAR_CAP.toLocaleString() + ' stars; yours is ' + Math.round(100 * C.starBoost(S)) + '%).')));
+    const TT = siteTotal(), pctS = TT ? Math.round(100 * C.starBoost(S, TT)) : 0;
+    sec.appendChild(el('p', 'lb-note', T('依你目前的 ' + S.toLocaleString() + ' 顆星計算：全站目前一共有 ' + TT.toLocaleString() + ' 顆星可以拿，你拿到 ' + pctS + '%。任務越難、你拿到的比例越高，越容易掉寶，也越容易掉出稀有寶物。網站新增任務後總星數會變多，比例沒跟上的話，掉寶機率就會下降。',
+      'Based on your ' + S.toLocaleString() + ' stars: the whole site currently has ' + TT.toLocaleString() + ' stars to earn, and you hold ' + pctS + '% of them. Harder missions and a bigger share make drops — and rare treasures — likelier. When new missions are added the total grows, so your chances drop unless your share keeps up.')));
     const wrap = el('div', 'dl-table-wrap');
     const tb = el('table', 'dl-table');
     const thead = el('thead');
@@ -429,17 +432,47 @@
       const tr = el('tr');
       const th = el('th', null, (levels.length ? T(C.bandOf(lv).zh, C.bandOf(lv).en) + ' ' : '') + '★' + lv);
       // 窄螢幕把「掉寶機率」改寫在任務名稱下面，表格才不會超出畫面
-      th.appendChild(el('span', 'dl-rep-inline', T('掉寶 ', 'Drop ') + pct(C.repeatChance(lv, S))));
+      th.appendChild(el('span', 'dl-rep-inline', T('掉寶 ', 'Drop ') + pct(C.repeatChance(lv, S, TT))));
       tr.appendChild(th);
-      tr.appendChild(el('td', 'dl-rep-col', pct(C.repeatChance(lv, S))));
-      C.table(lv, S).forEach(function (p) { tr.appendChild(el('td', null, pct(p))); });
+      tr.appendChild(el('td', 'dl-rep-col', pct(C.repeatChance(lv, S, TT))));
+      C.table(lv, S, TT).forEach(function (p) { tr.appendChild(el('td', null, pct(p))); });
       body.appendChild(tr);
     });
     tb.appendChild(body);
     wrap.appendChild(tb);
     sec.appendChild(wrap);
-    sec.appendChild(el('p', 'lb-note', T('每完成一個每日任務，先依「掉寶機率」決定有沒有掉寶（新任務和做過的任務一樣）；掉寶時，是哪一種寶物看銅幣到鑰匙各欄的機率。數量：銅幣 1–5 枚、銀幣 1–3 枚、金幣 1–2 枚、鑽石 1 顆、稀有鑰匙 1 把。',
-      'Each daily mission you clear first rolls the “Drop chance” (the same for new missions and ones you have done); if something drops, the copper-to-key columns give which treasure it is. Amounts: copper 1–5, silver 1–3, gold 1–2, one diamond, one rare key.')));
+    sec.appendChild(el('p', 'lb-note', T('每完成一個每日任務，先依「掉寶機率」決定有沒有掉寶（新任務和做過的任務一樣）；掉寶時只掉一種，是哪一種看銅幣到鑰匙各欄的機率。',
+      'Each daily mission you clear first rolls the “Drop chance” (the same for new missions and ones you have done); a drop is always one kind of treasure, and the copper-to-key columns give which.')));
+
+    // 掉到時的數量：和掉寶機率同一組條件（任務難度＋星星比例），越好越偏多；鑽石與鑰匙最多 1 個（11/12 站長）
+    sec.appendChild(el('h3', 'dl-odds-sub', T('掉到時的平均數量', 'Average amount when it drops')));
+    const wrap2 = el('div', 'dl-table-wrap');
+    const tb2 = el('table', 'dl-table dl-qty');
+    const head2 = el('thead'), hr2 = el('tr');
+    hr2.appendChild(el('th', null, T('任務', 'Mission')));
+    C.ITEMS.forEach(function (it) {
+      const th = el('th', 'r-' + it.id);
+      const ic = el('span', 'dl-ico sm'); ic.innerHTML = icon(it.id);
+      th.appendChild(ic);
+      th.appendChild(el('span', null, T(it.zh, it.en)));
+      hr2.appendChild(th);
+    });
+    head2.appendChild(hr2);
+    tb2.appendChild(head2);
+    const body2 = el('tbody');
+    (levels.length ? levels : [1, 5, 10]).forEach(function (lv) {
+      const tr = el('tr');
+      tr.appendChild(el('th', null, (levels.length ? T(C.bandOf(lv).zh, C.bandOf(lv).en) + ' ' : '') + '★' + lv));
+      C.ITEMS.forEach(function (it) {
+        tr.appendChild(el('td', null, it.max > it.min ? C.qtyMean(it.id, lv, S, TT).toFixed(1) : String(it.min)));
+      });
+      body2.appendChild(tr);
+    });
+    tb2.appendChild(body2);
+    wrap2.appendChild(tb2);
+    sec.appendChild(wrap2);
+    sec.appendChild(el('p', 'lb-note', T('數量的範圍：銅幣 1–5 枚、銀幣 1–3 枚、金幣 1–2 枚；任務越難、你的星星比例越高，越容易一次掉好幾枚。鑽石與稀有鑰匙每次最多 1 個。',
+      'Amounts: copper 1–5, silver 1–3, gold 1–2 — harder missions and a bigger star share make bigger handfuls likelier. A diamond or rare key is always just one.')));
     return sec;
   }
 

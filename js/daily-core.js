@@ -5,7 +5,8 @@
  *   - 每天十個每日任務：簡單（1–3 級）4 個、中等（4–6 級）3 個、困難（7–10 級）3 個，從現有的一般任務抽出（不含隱藏任務），
  *     同一個人同一天結果固定，盡量來自不同實驗。每個今天只能完成一次，十個做完這一天就結束。
  *   - 掉寶：銅幣、銀幣、金幣、鑽石、稀有鑰匙，每次完成最多一件。每完成一個每日任務都依 repeatChance 的機率掉寶（27.5%–60%），
- *     以前沒領過星星的任務照樣得星，但掉寶機率和做過的任務一樣（11/12 站長）。任務等級越高、累積的星星越多，掉寶與稀有寶物的機率越高。
+ *     以前沒領過星星的任務照樣得星，但掉寶機率和做過的任務一樣（11/12 站長）。任務等級越高、玩家的星星占全站總星數的比例越高，掉寶與稀有寶物的機率越高，
+ *     掉到的數量也越偏多（銅幣 1–5、銀幣 1–3、金幣 1–2；鑽石與稀有鑰匙最多 1 個）。
  *   - 持有數：累計獲得（只增不減）與現在剩下（累計獲得 − 已使用）；另有寶物圖示與「我的寶物」格子（瀏覽器用）。
  */
 (function (root, factory) {
@@ -94,40 +95,74 @@
     { id: 'dia', zh: '鑽石', en: 'Diamond', sym: 'C', min: 1, max: 1 },
     { id: 'key', zh: '稀有鑰匙', en: 'Rare key', sym: '', min: 1, max: 1 }
   ];
-  // 權重：運氣 0（1 級任務、0 顆星）→ 運氣 1（10 級任務、2000 顆星以上），兩端之間在對數上內插
+  // 權重：運氣 0（1 級任務、星星比例 0）→ 運氣 1（10 級任務、拿到全站所有星星），兩端之間在對數上內插
   const W0 = [70, 22, 6.5, 1.3, 0.2];
   const W1 = [30, 32, 22, 11, 5];
-  const STAR_CAP = 2000;
-  /** 星星加成 0–1：越多越高、遞減增加，2000 顆星達到上限 */
-  function starBoost(stars) {
-    const S = Math.max(0, +stars || 0);
-    return Math.min(1, Math.log(1 + S / 20) / Math.log(1 + STAR_CAP / 20));
+  /**
+   * 星星加成 0–1 ＝ 玩家目前的星星 ÷ 全站目前可以拿到的總星數（11/12 站長）。
+   * 全站新增任務、總星數變多時，玩家的星星沒跟上，比例就下降，掉寶機率也跟著下降。
+   * total 不明（任務清單還沒載入）時當作 0，不會高估。
+   */
+  function starBoost(stars, total) {
+    const S = Math.max(0, +stars || 0), T = +total || 0;
+    return T > 0 ? Math.min(1, S / T) : 0;
+  }
+  /** 全站目前可以拿到的總星數：每個任務的星數（＝等級）加總。lists 是 { 模組: [任務…] } */
+  function siteStars(lists) {
+    let t = 0;
+    Object.keys(lists || {}).forEach(function (k) { (lists[k] || []).forEach(function (m) { t += Math.max(0, +m.level || 0); }); });
+    return t;
   }
   function clampLevel(level) { return Math.max(1, Math.min(10, Math.round(+level) || 1)); }
-  /** 運氣 0–1：任務等級占 60%、累積星星占 40% */
-  function luck(level, stars) { return 0.6 * (clampLevel(level) - 1) / 9 + 0.4 * starBoost(stars); }
+  /** 運氣 0–1：任務等級占 60%、星星比例占 40% */
+  function luck(level, stars, total) { return 0.6 * (clampLevel(level) - 1) / 9 + 0.4 * starBoost(stars, total); }
   /** 掉落各寶物的機率（加總為 1），順序同 ITEMS */
-  function table(level, stars) {
-    const r = luck(level, stars);
+  function table(level, stars, total) {
+    const r = luck(level, stars, total);
     const w = W0.map(function (b, i) { return Math.pow(b, 1 - r) * Math.pow(W1[i], r); });
     const sum = w.reduce(function (a, b) { return a + b; }, 0);
     return w.map(function (x) { return x / sum; });
   }
   /** 完成一個每日任務時掉寶的機率（新任務與做過的任務一樣；11/12 站長） */
-  function repeatChance(level, stars) { return 0.25 + 0.025 * clampLevel(level) + 0.10 * starBoost(stars); }
+  function repeatChance(level, stars, total) { return 0.25 + 0.025 * clampLevel(level) + 0.10 * starBoost(stars, total); }
+  /**
+   * 掉到某種寶物時，各數量的機率（由少到多，加總為 1）。跟掉寶機率用同一個運氣（任務難度＋星星比例；11/12 站長「掉寶數量也隨之連動」）：
+   * 運氣 0 時越少越容易（銅幣 1–5 枚的權重 5:4:3:2:1），運氣 1 時倒過來（1:2:3:4:5），中間線性內插。
+   * 鑽石與稀有鑰匙最多 1 個（站長），所以固定 [1]。
+   */
+  function qtyTable(itemId, level, stars, total) {
+    const it = ITEMS.filter(function (x) { return x.id === itemId; })[0];
+    if (!it) return [1];
+    const n = it.max - it.min + 1;
+    if (n <= 1) return [1];
+    const r = luck(level, stars, total);
+    const w = [];
+    for (let j = 0; j < n; j++) w.push((1 - r) * (n - j) + r * (j + 1));
+    const sum = w.reduce(function (a, b) { return a + b; }, 0);
+    return w.map(function (x) { return x / sum; });
+  }
+  /** 掉到某種寶物時的平均數量 */
+  function qtyMean(itemId, level, stars, total) {
+    const it = ITEMS.filter(function (x) { return x.id === itemId; })[0];
+    if (!it) return 1;
+    return qtyTable(itemId, level, stars, total).reduce(function (a, p, j) { return a + p * (it.min + j); }, 0);
+  }
   /**
    * 擲一次：依 repeatChance 決定有沒有掉；sure = true 時一定掉（目前每日任務不用，保留給之後的活動）。
+   * 掉的話只掉一種寶物；數量照 qtyTable（銅幣 1–5、銀幣 1–3、金幣 1–2，運氣越好越偏多；鑽石與鑰匙 1）。
    * 回傳 { item, qty } 或 null（沒掉）。rand 預設 Math.random，測試時可傳入可重現的亂數。
    */
-  function roll(level, stars, sure, rand) {
+  function roll(level, stars, total, sure, rand) {
     rand = rand || Math.random;
-    if (!sure && rand() >= repeatChance(level, stars)) return null;
-    const p = table(level, stars);
+    if (!sure && rand() >= repeatChance(level, stars, total)) return null;
+    const p = table(level, stars, total);
     let u = rand(), i = 0;
     while (i < p.length - 1 && u >= p[i]) { u -= p[i]; i++; }
     const it = ITEMS[i];
-    const qty = Math.min(it.max, it.min + Math.floor(rand() * (it.max - it.min + 1)));
-    return { item: it.id, qty: qty };
+    const q = qtyTable(it.id, level, stars, total);
+    let v = rand(), j = 0;
+    while (j < q.length - 1 && v >= q[j]) { v -= q[j]; j++; }
+    return { item: it.id, qty: Math.min(it.max, it.min + j) };
   }
 
   // 每個每日任務今天只能完成一次；兩次完成至少隔 GAP 毫秒（資料庫規則：10 秒）。
@@ -232,8 +267,8 @@
   return {
     DAY: DAY, TW: TW, dayNumber: dayNumber, dayStart: dayStart, msToReset: msToReset, dateOf: dateOf,
     hash: hash, rng: rng, BANDS: BANDS, PER_DAY: PER_DAY, bandOf: bandOf, pick: pick,
-    ITEMS: ITEMS, W0: W0, W1: W1, STAR_CAP: STAR_CAP, starBoost: starBoost, luck: luck, table: table,
-    repeatChance: repeatChance, roll: roll, GAP: GAP,
+    ITEMS: ITEMS, W0: W0, W1: W1, starBoost: starBoost, siteStars: siteStars, luck: luck, table: table,
+    repeatChance: repeatChance, qtyTable: qtyTable, qtyMean: qtyMean, roll: roll, GAP: GAP,
     holdings: holdings, icon: icon, bagGrid: bagGrid
   };
 });

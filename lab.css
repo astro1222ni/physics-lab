@@ -1102,6 +1102,7 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 .dl-table td { text-align: right; }
 .dl-table tbody th { font-weight: 700; }
 .dl-rep-inline { display: none; }
+.dl-odds-sub { font-size: calc(15px * var(--fs, 1)); margin: 18px 0 6px; }
 @media (max-width: 560px) {
   .dl-table .dl-rep-col { display: none; }
   .dl-rep-inline { display: block; margin-top: 2px; font-weight: 600; font-size: calc(12px * var(--fs, 1)); color: var(--daily); }
