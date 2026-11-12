@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Shortest Paths: Dijkstra’s Algorithm | Astro Ni Science Lab">最短路徑：Dijkstra 演算法｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 最短路徑頁面專用的顏色代號（淺色＋兩組深色；由 js/shortest-path.js 讀取） */
+    :root { --sp-land: #eef3e6; --sp-sea: #e4eef7; --sp-coast: #93ab95; --sp-road: #8b97a9; --sp-node: #9aa6b6; --sp-front: #d97706; --sp-done: #0f766e; --sp-cur: #7c3aed; --sp-path: #e11d48; --sp-check: #0891b2; --sp-bad: #dc2626; --sp-ok: #15803d; --sp-alt: #2563eb; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
+    }
+    :root[data-theme="dark"] { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
+
+    /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: default; }
+    .sp button { min-height: 44px; }
+    .sp [hidden] { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
+    .modes button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    .modes button + button { border-left: 1px solid var(--border); }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    @media (max-width: 520px) {
+      .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .modes button:nth-child(3) { border-left: none; }
+      .modes button:nth-child(n+3) { border-top: 1px solid var(--border); }
+    }
+    .sp .playbar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .sp .playbar button { padding: 6px 4px; line-height: 1.2; }
+    @media (max-width: 640px) { .sp .playbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .sp .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .sp .playbar2 button { flex: 1 1 auto; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sp .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .sp .slider input[type="range"] { height: 28px; margin: 0; }
+    .sp .checks label { min-height: 44px; }
+    .sp .checks input { width: 17px; height: 17px; }
+    .sp .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .sp .panel { grid-template-columns: minmax(0, 1fr); }
+    .sp .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    /* 優先佇列 */
+    .pq { margin: 8px 2px 0; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); min-height: 48px; }
+    .pq-h { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+    .pq-list { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 30px; }
+    .pq-list .chip { display: inline-flex; align-items: baseline; gap: 5px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .pq-list .chip b { font-weight: 600; }
+    .pq-list .chip span { color: var(--muted); }
+    .pq-list .chip.next { border-color: var(--sp-front); box-shadow: 0 0 0 2px color-mix(in srgb, var(--sp-front) 30%, transparent); }
+    .pq-list .chip.next::before { content: "▶"; color: var(--sp-front); font-size: 0.8em; }
+    .pq-list .empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    /* 面板 */
+    .pick { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 0 8px; }
+    .pick label { font-size: calc(14px * var(--fs, 1)); }
+    .sp select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .sp .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 8px 0 0; }
+    .sp .seg2 button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    .sp .seg2 button + button { border-left: 1px solid var(--border); }
+    .sp .seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg-cap { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { flex: 1 1 auto; padding: 6px 10px; }
+    .chips button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .sp .btns { margin: 8px 0 0; }
+    .sp .btns button { flex: 1 1 auto; }
+    .edge-row { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 0 0 4px; }
+    .edge-row label { font-size: calc(14px * var(--fs, 1)); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .route { margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: calc(14px * var(--fs, 1)); min-height: 1.4em; overflow-wrap: anywhere; }
+    .route.bad { background: color-mix(in srgb, var(--sp-bad) 14%, transparent); }
+    .theory { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .tablewrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    #distWrap { max-height: 360px; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 7px; white-space: nowrap; }
+    #distTab { width: 100%; }
+    #distTab td:nth-child(2), #distTab th:nth-child(2) { text-align: right; }
+    #distTab tr.done td:first-child { color: var(--sp-done); font-weight: 700; }
+    #distTab tr.queue td:first-child { color: var(--sp-front); font-weight: 700; }
+    #distTab tr.cur td { background: var(--accent-soft); }
+    #distTab td.bad { color: var(--sp-bad); font-weight: 700; }
+    #logTab { width: 100%; }
+    #logTab td, #logTab th { text-align: right; }
+    #logTab td:nth-child(2), #logTab th:nth-child(2), #logTab td:nth-child(3), #logTab th:nth-child(3) { text-align: left; }
+    #logTab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Shortest paths"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 最短路徑</nav>
+      <h1 data-en="Shortest Paths: Dijkstra’s Algorithm">最短路徑：Dijkstra 演算法</h1>
+      <p data-en="How does a navigation app find the shortest route? Dijkstra’s algorithm grows outwards from the start, fixing the nearest place first, then the next nearest, and so on. Step through it on a map of Taiwan, on random graphs and on grids: watch the priority queue, the distance labels and the arrows of the shortest-path tree, count how many edges it checks, compare it with breadth-first search, and see why a single negative weight can make it give a wrong answer.">導航怎麼找出最短的路？Dijkstra 演算法從起點往外長：先確定最近的地方，再確定次近的，一個接一個。在臺灣地圖、隨機圖和方格上一步一步看它怎麼做：優先佇列、距離標籤、最短路徑樹的箭頭，數一數它檢查了幾條邊；再和只數邊數的 BFS 比一比，看看為什麼一條負的權重就能讓它算錯。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Step” a few times and watch which city gets fixed next — it is always the nearest one still waiting in the queue.">試試看：連按幾次「單步」，看下一個被確定的是哪個城市——永遠是佇列裡最近的那一個。</p>
+    <div class="lab sp" id="lab">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="圖" data-en-aria-label="Graph">
+          <button type="button" data-mode="taiwan" aria-pressed="true" data-en="Taiwan map">臺灣地圖</button>
+          <button type="button" data-mode="random" aria-pressed="false" data-en="Random graph">隨機圖</button>
+          <button type="button" data-mode="grid" aria-pressed="false" data-en="Grid">方格</button>
+          <button type="button" data-mode="neg" aria-pressed="false" data-en="Negative weights">負權重</button>
+        </div>
+        <canvas id="cv" aria-label="圖的畫布：圓點是地點，連線是路，線上的數字是權重。點一下地點設成起點或終點，點一下路可以改它的權重。灰色是還沒找到的點，橘色是在佇列裡等待的點，綠色是已經確定最短距離的點，紅色粗線是最短路線。" data-en-aria-label="Graph canvas: dots are places, lines are roads and the numbers on the lines are weights. Tap a place to make it the start or the goal; tap a road to change its weight. Grey places have not been reached, orange ones are waiting in the queue, green ones have their shortest distance fixed, and the thick red line is the shortest route."></canvas>
+        <div class="pq" id="pqBox">
+          <p class="pq-h" id="pqHead">優先佇列</p>
+          <div class="pq-list" id="pq" aria-live="off"></div>
+        </div>
+        <div class="playbar">
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
+          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="nextBtn" type="button" data-en="Next node">下一個點</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="resetBtn" type="button" data-en="Restart">重來</button>
+        </div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉紀錄表與畫面上的對照路線，回到第 0 步；地圖、權重、起點與終點不變" data-en-title="Clear the log and the comparison route and go back to step 0; the map, the weights, the start and the goal stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-node)&quot;></span>Not reached (∞)"><span class="dot" style="background:var(--sp-node)"></span>還沒找到（∞）</span>
+          <span id="legQ" data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-front)&quot;></span>In the queue"><span class="dot" style="background:var(--sp-front)"></span>在佇列裡</span>
+          <span id="legQbf" style="display:none" data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-front)&quot;></span>Has a distance so far"><span class="dot" style="background:var(--sp-front)"></span>有暫定距離</span>
+          <span data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-done)&quot;></span>Fixed (shortest distance known)"><span class="dot" style="background:var(--sp-done)"></span>已確定</span>
+          <span style="color:var(--sp-cur)" data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-cur)&quot;></span>Being processed"><span class="dot" style="background:var(--sp-cur)"></span>正在處理</span>
+          <span style="color:var(--sp-check)" data-en-html="<i style=&quot;background:var(--sp-check)&quot;></i>Edge being checked"><i style="background:var(--sp-check)"></i>正在檢查的邊</span>
+          <span style="color:var(--sp-path)" data-en-html="<i style=&quot;background:var(--sp-path);height:5px&quot;></i>Shortest route"><i style="background:var(--sp-path);height:5px"></i>最短路線</span>
+          <span style="color:var(--sp-alt)" data-en-html="<i class=&quot;dash&quot;></i>The other algorithm’s route"><i class="dash"></i>另一種演算法的路線</span>
+        </div>
+        <p class="chart-cap" id="mapNote"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Start and goal">起點與終點</h2>
+          <div class="pick"><label for="selS" data-en="Start">起點</label><select id="selS"></select></div>
+          <div class="pick"><label for="selT" data-en="Goal">終點</label><select id="selT"></select></div>
+          <div class="btns"><button id="swapBtn" type="button" data-en="Swap start and goal">起點終點對調</button></div>
+          <p class="seg-cap" data-en="Tapping a place on the canvas sets the:">點畫布上的地點時，把它設為：</p>
+          <div class="seg2" role="group" aria-label="點畫布上的地點時" data-en-aria-label="Tapping a place sets the">
+            <button type="button" data-pick="s" aria-pressed="false" data-en="Start">起點</button>
+            <button type="button" data-pick="t" aria-pressed="true" data-en="Goal">終點</button>
+          </div>
+          <div class="checks">
+            <label><input id="early" type="checkbox"><span data-en="Stop at the goal">找到終點就停</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Algorithm">演算法</h2>
+          <div class="chips" id="algoChips" role="group" aria-label="演算法" data-en-aria-label="Algorithm">
+            <button type="button" data-algo="dijkstra" aria-pressed="true">Dijkstra</button>
+            <button type="button" data-algo="bfs" aria-pressed="false" data-en="BFS (fewest edges)">BFS（邊數最少）</button>
+            <button type="button" data-algo="bf" aria-pressed="false">Bellman–Ford</button>
+          </div>
+          <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="30" step="1" value="3" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="showTree" type="checkbox" checked><span data-en="Arrows to the previous stop">前一站箭頭</span></label>
+            <label><input id="showW" type="checkbox" checked><span data-en="Show weights">顯示權重</span></label>
+          </div>
+          <p class="hint" id="algoHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Step">步數</dt><dd id="rStep">—</dd>
+            <dt data-en="Places fixed">已確定的點</dt><dd id="rSet">—</dd>
+            <dt id="rQl" data-en="In the queue">佇列中的點</dt><dd id="rQ">—</dd>
+            <dt data-en="Edges checked">檢查的邊</dt><dd id="rChk">—</dd>
+            <dt data-en="Relaxations (updates)">鬆弛（更新）次數</dt><dd id="rRel">—</dd>
+            <dt id="rCmpL" data-en="Comparisons to find the minimum">找最小值的比較</dt><dd id="rCmp">—</dd>
+            <dt id="rRndL" data-en="Bellman–Ford rounds">Bellman–Ford 輪數</dt><dd id="rRnd">—</dd>
+            <dt data-en="Distance to the goal">終點的距離</dt><dd id="rDist">—</dd>
+            <dt data-en="Edges on the route">路線的邊數</dt><dd id="rHops">—</dd>
+            <dt data-en="Number of shortest routes">最短路有幾條</dt><dd id="rCount">—</dd>
+          </dl>
+          <p class="route" id="route" aria-live="polite"></p>
+          <p class="theory" id="theory"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Edge weights">邊的權重</h2>
+          <div class="edge-row"><label for="edgeSel" data-en="Edge to change">要改的邊</label><select id="edgeSel"></select></div>
+          <div class="slider"><label for="wt" id="wtLabel" data-en="Weight w">權重 w</label><output id="wto"></output>
+            <input id="wt" type="range" min="0" max="500" step="1" value="24" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="closeEdge" type="checkbox"><span data-en="Close this road">封閉這條路</span></label>
+          </div>
+          <div class="btns">
+            <button id="restoreBtn" type="button" data-en="Restore all weights">恢復原來的權重</button>
+            <button id="oneBtn" type="button" data-en="Set every weight to 1">全部設為 1</button>
+          </div>
+          <p class="hint" id="wHint"></p>
+        </section>
+
+        <section class="card" id="graphCard" hidden>
+          <h2 data-en="Graph settings">圖的設定</h2>
+          <div id="randBox">
+            <div class="slider"><label for="rn" data-en="Number of places n">點數 n</label><output id="rno"></output>
+              <input id="rn" type="range" min="6" max="16" step="1" value="10" data-decimals="0"></div>
+            <div class="btns"><button id="newRand" type="button" data-en="New graph">換一張</button></div>
+            <p class="hint" id="randInfo"></p>
+          </div>
+          <div id="gridBox">
+            <div class="slider"><label for="gr" data-en="Rows">列數</label><output id="gro"></output>
+              <input id="gr" type="range" min="3" max="6" step="1" value="4" data-decimals="0"></div>
+            <div class="slider"><label for="gc" data-en="Columns">行數</label><output id="gco"></output>
+              <input id="gc" type="range" min="3" max="8" step="1" value="6" data-decimals="0"></div>
+            <div class="btns"><button id="newGrid" type="button" data-en="New weights">換一組權重</button></div>
+            <p class="hint" data-en="Places are numbered row by row from the top-left corner; on a tie the smaller number goes first.">點的編號從左上角開始一列一列往右數；平手時編號小的先。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Distance table">距離表</h2>
+          <div class="tablewrap" id="distWrap"><table class="data" id="distTab"></table></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Log">紀錄</h2>
+          <div class="tablewrap"><table class="data" id="logTab"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every run that reaches the end is listed here.">每跑完一次都會記在這裡。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Graphs and shortest paths">圖與最短路徑</h3>
+      <p data-en-html="A <strong>graph</strong> is a set of places (vertices) joined by roads (edges). Each edge has a <strong>weight</strong> \(w\): a distance, a time or a cost. The length of a path is the sum of the weights along it, and the <strong>shortest distance</strong> \(\delta(s, v)\) from the start \(s\) to a place \(v\) is the smallest length of all paths from \(s\) to \(v\). With \(V\) places and \(E\) edges, there can be a huge number of paths, so trying them all is hopeless; a good algorithm needs a cleverer order.">一張<strong>圖</strong>由地點（點，vertex）和道路（邊，edge）組成，每條邊有一個<strong>權重</strong> \(w\)：可以是距離、時間或費用。一條路徑的長度是沿路權重的總和；從起點 \(s\) 到 \(v\) 的<strong>最短距離</strong> \(\delta(s, v)\) 是所有 \(s\) 到 \(v\) 的路徑中最短的那一條的長度。\(V\) 個點、\(E\) 條邊的圖，路徑的數目可能多得驚人，一條一條試是不可能的，好的演算法要有聰明的順序。</p>
+      <div class="formula">\[ \operatorname{len}(v_0 v_1 \cdots v_k) = \sum_{i=1}^{k} w(v_{i-1}, v_i), \qquad \delta(s, v) = \min_{P:\ s \leadsto v} \operatorname{len}(P) \]</div>
+
+      <h3 data-en="Dijkstra’s idea: nearest first">Dijkstra 的想法：由近到遠</h3>
+      <p data-en-html="Every place carries a label \(d[v]\): the shortest distance found so far (\(d[s] = 0\), all others \(\infty\)). The places are split into those already <strong>fixed</strong> and the <strong>candidates</strong> waiting in a priority queue. Each step takes out the candidate with the smallest \(d\), fixes it, and then <strong>relaxes</strong> every edge from it to a place that is not fixed yet:">每個點帶著一個標籤 \(d[v]\)：目前找到的最短距離（\(d[s] = 0\)，其他都是 \(\infty\)）。點分成兩群：<strong>已確定</strong>的，和在優先佇列裡等待的<strong>候選</strong>。每一步取出候選中 \(d\) 最小的點 \(u\)，確定它，再把 \(u\) 通往還沒確定的點的每一條邊<strong>鬆弛</strong>一次：</p>
+      <div class="formula">\[ d[u] + w(u, v) < d[v] \;\Longrightarrow\; d[v] \leftarrow d[u] + w(u, v), \quad \pi[v] \leftarrow u \]</div>
+      <p data-en-html="Why is the place taken out really finished? If all weights are \(\ge 0\), any other route to \(u\) has to leave the fixed region through some candidate, which is already at least \(d[u]\) away — and the rest of that route can only add length. So \(d[u] = \delta(s, u)\) the moment it is taken out, and the places are fixed in order of distance. When every place is fixed, the arrows \(\pi\) (previous stop) form the <strong>shortest-path tree</strong>.">為什麼取出來的點就確定了？權重都 \(\ge 0\) 時，任何其他通往 \(u\) 的路，都要先經過某個候選點才能離開已確定的區域，而那個候選點已經至少 \(d[u]\) 遠，後面的路只會讓長度增加。所以 \(u\) 一被取出，\(d[u] = \delta(s, u)\)；點是照距離由近到遠被確定的。全部確定以後，前一站的箭頭 \(\pi\) 連成一棵<strong>最短路徑樹</strong>。</p>
+      <p data-en-html="<strong>Tie rules on this page</strong> (so that every run is reproducible): when two candidates have the same \(d\), the one with the smaller number goes first (Taiwan: the order of the distance table, roughly north to south; random graphs: A, B, C, …; grids: row by row from the top left); a label is updated only when the new distance is <em>strictly</em> smaller, so the first predecessor found is kept; neighbours are looked at in order of their numbers.">本頁的<strong>平手規則</strong>（讓每次執行都能重現）：兩個候選點的 \(d\) 一樣時，編號小的先取出（臺灣地圖照距離表的順序，大致由北往南；隨機圖 A、B、C……；方格從左上角一列一列數）；只有新的距離<em>嚴格變小</em>才更新，所以會保留先找到的前一站；鄰居照編號由小到大看。</p>
+
+      <h3 data-en="BFS: counting edges only">BFS：只數邊數</h3>
+      <p data-en-html="Breadth-first search uses a first-in, first-out queue and spreads out layer by layer. It finds the route with the <strong>fewest edges</strong> and ignores the weights completely. When every weight is the same, fewest edges also means shortest, and Dijkstra’s distances are exactly the BFS edge counts times that weight.">廣度優先搜尋（BFS）用先進先出的佇列，一層一層往外擴，找到的是<strong>邊數最少</strong>的路線，完全不看權重。所有權重都一樣時，邊數最少就是最短，Dijkstra 的距離會剛好等於 BFS 的邊數乘以那個權重。</p>
+
+      <h3 data-en="Negative weights: why Dijkstra can fail">負權重：Dijkstra 為什麼會錯</h3>
+      <p data-en-html="Dijkstra relies on routes never getting shorter as they go on. With a negative weight, a place that is already fixed can later be reached by a short cut — but Dijkstra never goes back to change it (the page marks that missed short cut in red). On an undirected road a negative weight is useless anyway: going back and forth along it keeps lowering the length, a <em>negative cycle</em>, and “shortest” no longer means anything. So the “Negative weights” graph uses one-way roads with no cycles. <strong>Bellman–Ford</strong> does not care about order: in each round it relaxes every edge once. A shortest route has at most \(V - 1\) edges, so after \(V - 1\) rounds every label is right — at the price of many more checks.">Dijkstra 靠的是「路只會越走越長」。有負權重時，一個已經確定的點，之後可能被一條負的邊「抄近路」，但 Dijkstra 不會回頭修改（畫面上用紅色標出它錯過的那一步）。在雙向的路上，負權重根本沒有意義：來回走一趟長度就變小，一直走一直變小，這叫<em>負環</em>，「最短」也就不存在了；所以「負權重」那張圖用的是單行道，而且沒有環。<strong>Bellman–Ford</strong> 不管順序，每一輪把每一條邊都鬆弛一次；最短路線最多只有 \(V - 1\) 條邊，所以 \(V - 1\) 輪以後每個標籤一定正確——代價是多出很多檢查。</p>
+      <ul>
+        <li data-en-html="BFS: \(O(V + E)\) — every place and every edge once.">BFS：\(O(V + E)\)——每個點、每條邊各看一次。</li>
+        <li data-en-html="Dijkstra with a plain array (as on this page and in Dijkstra’s paper): \(O(V^2)\); with a binary heap \(O((V + E)\log V)\); with a Fibonacci heap \(O(E + V \log V)\).">Dijkstra 用陣列找最小值（本頁和 Dijkstra 原文的做法）：\(O(V^2)\)；用二元堆積 \(O((V + E)\log V)\)；用費氏堆積 \(O(E + V \log V)\)。</li>
+        <li data-en-html="Bellman–Ford: \(O(VE)\); it also works with negative weights as long as there is no negative cycle.">Bellman–Ford：\(O(VE)\)；只要沒有負環，負權重也沒問題。</li>
+      </ul>
+
+      <h3 data-en="Distances on the map">地圖上的距離</h3>
+      <p data-en-html="On the Taiwan map each weight is the great-circle distance between the two cities, from the haversine formula (\(\varphi\) latitude, \(\lambda\) longitude), rounded to the nearest kilometre. Each city is placed near its railway station or town centre, with latitude and longitude to two decimal places (about 1 km).">臺灣地圖上每條邊的權重，是兩個城市之間的大圓距離，用半正矢（haversine）公式算（\(\varphi\) 是緯度、\(\lambda\) 是經度），再四捨五入到公里。每個城市的位置取火車站或市中心附近，經緯度取到小數第二位（約 1 公里）。</p>
+      <div class="formula">\[ d = 2R \arcsin \sqrt{\sin^2 \frac{\Delta\varphi}{2} + \cos\varphi_1 \cos\varphi_2 \sin^2 \frac{\Delta\lambda}{2}}, \qquad R = 6371\ \mathrm{km} \]</div>
+      <p data-en-html="These are straight-line distances, <strong>not road distances</strong>. A real road has to wind round the Central Mountain Range and along the coast, so the map’s answer (for example that from Keelung to Pingtung the east side is shorter) need not hold for driving. Change a weight to a real road distance and see whether the answer changes.">這是直線距離，<strong>不是公路里程</strong>。真正的公路要繞過中央山脈、沿著海岸彎彎曲曲，所以地圖給的答案（例如基隆到屏東走東部比較近）開車時不一定成立。把一條邊改成真正的公路里程，看看答案會不會變。</p>
+
+      <h3 data-en="A little history">一點歷史</h3>
+      <p data-en-html="Edsger W. Dijkstra worked out the method in 1956 at the Mathematical Centre in Amsterdam, as a demonstration problem for the new ARMAC computer: what is the shortest way to travel from Rotterdam to Groningen? In a 2001 interview he recalled designing it in about twenty minutes while sitting with his fiancée on a café terrace in Amsterdam. He published it in 1959 in a three-page note, “A note on two problems in connexion with graphs”, which also solves a second problem: connecting all the places with the smallest total length of road (a minimum spanning tree).">Edsger W. Dijkstra 在 1956 年於阿姆斯特丹的數學中心想出這個方法，用來替新電腦 ARMAC 做示範：從鹿特丹到格羅寧根，最短要怎麼走？他在 2001 年的訪談裡回憶，那是和未婚妻坐在阿姆斯特丹一家咖啡館的露臺上，大約二十分鐘想出來的。1959 年他把它寫成只有三頁的短文〈A note on two problems in connexion with graphs〉發表；同一篇還解了另一個問題：用總長最短的道路把所有地點連起來（最小生成樹）。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Nearest first</strong>: step through Dijkstra and write down the distances in the order the places are fixed. Do they ever go down?"><strong>由近到遠</strong>：用「單步」跑 Dijkstra，把每個點被確定時的距離依序記下來。這串數字會不會變小？</li>
+        <li data-en-html="<strong>Fewest edges ≠ shortest</strong>: for the same start and goal, does BFS take the same route as Dijkstra? Find a pair where it does not."><strong>邊數最少 ≠ 最短</strong>：同一組起點與終點，BFS 和 Dijkstra 走的路一樣嗎？找一組不一樣的。</li>
+        <li data-en-html="<strong>Counting the work</strong>: compare “Edges checked” with the number of edges \(E\), and “Places fixed” with \(V\). Why can Dijkstra never check an edge twice? How many more checks does Bellman–Ford need?"><strong>數一數工作量</strong>：把「檢查的邊」和邊數 \(E\) 比、「已確定的點」和點數 \(V\) 比。為什麼 Dijkstra 不會把同一條邊檢查兩次？Bellman–Ford 多做了幾倍的檢查？</li>
+        <li data-en-html="<strong>Stop at the goal</strong>: switch it on and pick a goal close to the start. How much work is saved?"><strong>找到終點就停</strong>：打開它，選一個離起點很近的終點。省下了多少工作？</li>
+        <li data-en-html="<strong>A negative short cut</strong>: in “Negative weights”, make one edge negative. At which step does Dijkstra go wrong, and why does Bellman–Ford not?"><strong>負的捷徑</strong>：在「負權重」把一條邊改成負的。Dijkstra 在哪一步出錯？Bellman–Ford 為什麼不會？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="Each algorithm is first run to the end and every basic step is recorded; the canvas then plays the recorded steps, and “Step back” replays from the beginning. All weights are whole numbers, so every distance is exact.">每種演算法都先完整跑一遍，把每個基本步驟記下來，畫面再照著播放；「上一步」是從頭重播。權重都是整數，所有距離都完全精確。</li>
+        <li data-en-html="One step is one basic operation: taking a place out of the queue, or checking one edge. The priority queue is a plain list that is scanned for the smallest label, so taking a place out of a queue of \(q\) places costs \(q - 1\) comparisons, and never more than \(V(V-1)/2\) in total. Dijkstra only checks edges to places that are not fixed yet, so it checks each edge at most once; Bellman–Ford checks every edge (both directions of an undirected road) in every round, in the order of the edge numbers.">一步是一個基本動作：從佇列取出一個點，或檢查一條邊。優先佇列是一張普通的清單，每次掃一遍找最小的標籤，所以從 \(q\) 個點的佇列取出一個點要比較 \(q - 1\) 次，總共不超過 \(V(V-1)/2\) 次。Dijkstra 只檢查通往還沒確定的點的邊，所以每條邊最多檢查一次；Bellman–Ford 每一輪照邊的編號把每一條邊（雙向的路兩個方向各一次）都檢查一遍。</li>
+        <li data-en-html="“Number of shortest routes” adds up, from near to far, the routes arriving along every edge with \(d[u] + w = d[v]\); it is not shown when a reachable edge has weight 0.">「最短路有幾條」：最短距離確定以後，沿著每一條剛好 \(d[u] + w = d[v]\) 的邊，由近到遠把條數加起來；可以走到的邊有權重 0 時不計算。</li>
+        <li data-en="The unit tests compare Dijkstra, BFS and Bellman–Ford with the Floyd–Warshall algorithm from every city of the Taiwan map, on 2000 random graphs and 600 grids (with zero weights and closed roads), and with a brute-force search through every simple path on small graphs (distances and numbers of shortest routes). They check that Dijkstra never misses a short cut when no weight is negative, that on 20000 random negative-weight graphs Bellman–Ford is always right and Dijkstra is wrong exactly when it misses a short cut, the tie rules, the limits on the counts, the minimum spanning tree against Prim’s algorithm (and whether it is unique against a list of every spanning tree), and the haversine formula against the spherical law of cosines.">單元測試：從臺灣地圖的每一個城市出發、2000 張隨機圖、600 個方格（含權重 0 與封閉的路），Dijkstra、BFS、Bellman–Ford 的結果都和 Floyd–Warshall 演算法比對；小圖再和「暴力列舉所有簡單路徑」比對（距離與最短路條數）。另外檢查：沒有負權重時 Dijkstra 從不錯過捷徑；20000 張隨機的負權重圖上 Bellman–Ford 永遠正確，而 Dijkstra 恰好在錯過捷徑時算錯；平手規則；各種次數的上下限；最小生成樹和 Prim 演算法一致（是不是唯一，和列舉所有生成樹比對）；半正矢公式與球面餘弦定理一致。</li>
+        <li data-en="The glow, the moving pulses and the sounds are only for the eye and the ear; the labels change at once, exactly as recorded.">光暈、移動的光點和聲音只是為了好看好聽；標籤是照著記錄立刻改變的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): A-V-1, important data structures and their uses (graphs and how to represent them); A-V-3, analysing the efficiency of algorithms (counting the operations executed); Dijkstra’s algorithm is a classic greedy algorithm, listed under A-V-4, principles and applications of important algorithms, in the advanced elective “Advanced Programming”.">課綱對應：資A-V-1 重要資料結構的概念與應用（圖與圖的表示法）；資A-V-3 演算法效能分析（指令執行次數）；Dijkstra 演算法是加深加廣選修「進階程式設計」資A-V-4 重要演算法之原理與應用裡「貪心演算法」的經典例子。</li>
+        <li data-en="E. W. Dijkstra (1959), “A note on two problems in connexion with graphs”, Numerische Mathematik 1, 269–271.">E. W. Dijkstra（1959）〈A note on two problems in connexion with graphs〉，Numerische Mathematik 第 1 卷，269–271 頁。</li>
+        <li data-en="T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms: 3rd ed., Sections 22.2 (breadth-first search), 24.1 (Bellman–Ford) and 24.3 (Dijkstra); 4th ed. (2022), Sections 20.2, 22.1 and 22.3.">T. H. Cormen、C. E. Leiserson、R. L. Rivest、C. Stein《Introduction to Algorithms》：第 3 版 22.2 節（廣度優先搜尋）、24.1 節（Bellman–Ford）、24.3 節（Dijkstra）；第 4 版（2022）20.2、22.1、22.3 節。</li>
+        <li data-en="R. Bellman (1958), “On a routing problem”, Quarterly of Applied Mathematics 16(1), 87–90; L. R. Ford Jr. (1956), Network Flow Theory, RAND Corporation paper P-923.">R. Bellman（1958）〈On a routing problem〉，Quarterly of Applied Mathematics 16(1)，87–90 頁；L. R. Ford Jr.（1956）《Network Flow Theory》，RAND 公司報告 P-923。</li>
+        <li data-en="E. F. Moore (1959), “The shortest path through a maze”, Proceedings of an International Symposium on the Theory of Switching, Harvard University Press (breadth-first search); R. W. Floyd (1962), “Algorithm 97: Shortest path”, Communications of the ACM 5(6), 345.">E. F. Moore（1959）〈The shortest path through a maze〉，國際交換理論研討會論文集，哈佛大學出版社（廣度優先搜尋）；R. W. Floyd（1962）〈Algorithm 97: Shortest path〉，Communications of the ACM 5(6)，345 頁。</li>
+        <li data-en="M. L. Fredman and R. E. Tarjan (1987), “Fibonacci heaps and their uses in improved network optimization algorithms”, Journal of the ACM 34(3), 596–615.">M. L. Fredman、R. E. Tarjan（1987）〈Fibonacci heaps and their uses in improved network optimization algorithms〉，Journal of the ACM 34(3)，596–615 頁。</li>
+        <li data-en="History: P. L. Frana’s 2001 interview, published as T. J. Misa (ed.), “An interview with Edsger W. Dijkstra”, Communications of the ACM 53(8), 41–47 (2010).">歷史：P. L. Frana 在 2001 年的訪談，刊於 T. J. Misa 編〈An interview with Edsger W. Dijkstra〉，Communications of the ACM 53(8)，41–47 頁（2010）。</li>
+        <li data-en="Earth’s mean radius 6371 km: H. Moritz (2000), “Geodetic Reference System 1980”, Journal of Geodesy 74(1), 128–133 (mean radius R1 = 6371.0088 km).">地球平均半徑取 6371 km：H. Moritz（2000）〈Geodetic Reference System 1980〉，Journal of Geodesy 74(1)，128–133 頁（平均半徑 R1 = 6371.0088 km）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Dijkstra’s algorithm (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Bellman–Ford algorithm (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Breadth-first_search&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Breadth-first search (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Haversine_formula&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Haversine formula (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Dijkstra%27s_algorithm" target="_blank" rel="noopener">Dijkstra’s algorithm（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Bellman%E2%80%93Ford_algorithm" target="_blank" rel="noopener">Bellman–Ford algorithm（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Breadth-first_search" target="_blank" rel="noopener">Breadth-first search（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Haversine_formula" target="_blank" rel="noopener">Haversine formula（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/shortest-path-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/shortest-path.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="shortest-path"></script>
+  <script src="js/missions/shortest-path.js"></script>
+  <script src="js/stats.js" data-module="shortest-path"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
