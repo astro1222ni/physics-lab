@@ -21,6 +21,8 @@
   const isRec = function (ev) { return ev.type === 'record' && ev.data.a && ev.data.sameVer && ev.data.rate != null; };
   const sat = function (r) { return r.RH >= 99.9; };
   const near = function (a, b, tol) { return a != null && Math.abs(a - b) <= tol; };
+  // 真實的大氣：山腳沒有起霧（溼度低於 100%）、環境遞減率低於乾絕熱 9.8 °C/km（不是絕對不穩定）
+  const real = function (d) { return d.RH < 100 && d.gamma < 9.8; };
 
   LabMission.register('cloud-formation', [
     {
@@ -79,23 +81,26 @@
     {
       id: 'cloud-formation-8', level: 6,
       title: { zh: '背風坡的雲牆', en: 'The foehn wall' },
-      desc: { zh: '讓背風坡也有雲（雲在下山途中才消散），而且背風坡的雲底比迎風坡的雲底高 1000 m 以上。', en: 'Keep some cloud on the lee slope (it evaporates on the way down) with its base at least 1000 m higher than the windward cloud base.' },
+      desc: { zh: '讓背風坡留下一道貼著山脊的雲牆（背風雲底在山高的 80% 以上），而且它比迎風坡的雲底剛好高 1000 m（誤差 25 m 以內）。山腳不能起霧（溼度低於 100%），環境遞減率也要低於 9.8 °C/km。', en: 'Leave a cloud wall hugging the ridge on the lee side (lee cloud base at least 80% of the mountain height), exactly 1000 m above the windward cloud base (within 25 m). No fog at the foot (humidity below 100%), and an environmental lapse rate below 9.8 °C/km.' },
       check: function (ev) {
         const d = ev.data;
-        return isState(ev) && d.leeCloud && d.zEvap - d.lcl >= 1000;
+        return isState(ev) && real(d) && d.leeCloud && near(d.zEvap - d.lcl, 1000, 25) && d.zEvap >= 0.8 * d.H;
       }
     },
     {
       id: 'cloud-formation-9', level: 7,
       title: { zh: '地形雷雨', en: 'Mountain thunderstorm' },
-      desc: { zh: '讓山把空氣抬過自由對流高度，長成雲頂 12 km 以上的積雨雲。', en: 'Let the mountain lift the air past its level of free convection so it grows into a cumulonimbus topped at 12 km or more.' },
-      check: function (ev) { return isState(ev) && ev.data.triggered && ev.data.el >= 12000; }
+      desc: { zh: '山腳不起霧、環境遞減率低於 9.8 °C/km。讓自由對流高度比雲底高 500 m 以上，山頂又只比它高 200 m 以內：山剛好把空氣推過去，長成雲頂 12–14 km 的積雨雲。', en: 'No fog at the foot and a lapse rate below 9.8 °C/km. Put the level of free convection at least 500 m above the cloud base, with the summit no more than 200 m above it: the mountain just barely pushes the air through, and it grows into a cumulonimbus topped at 12–14 km.' },
+      check: function (ev) {
+        const d = ev.data;
+        return isState(ev) && real(d) && d.triggered && d.el >= 12000 && d.el <= 14000 && d.lfc - d.lcl >= 500 && d.H - d.lfc <= 200;
+      }
     },
     {
       id: 'cloud-formation-10', level: 8,
       title: { zh: '小山大雷雨', en: 'Small hill, big storm' },
-      desc: { zh: '山高不超過 800 m，卻觸發雲頂 15 km 以上的積雨雲。', en: 'With a hill no higher than 800 m, set off a cumulonimbus topped at 15 km or more.' },
-      check: function (ev) { return isState(ev) && ev.data.triggered && ev.data.H <= 800 && ev.data.el >= 15000; }
+      desc: { zh: '山高不超過 800 m、山腳的空氣還沒飽和（雲底在 200 m 以上）、環境遞減率低於 9.8 °C/km，卻觸發雲頂 15 km 以上的積雨雲。', en: 'With a hill no higher than 800 m, unsaturated air at its foot (cloud base at 200 m or higher) and a lapse rate below 9.8 °C/km, set off a cumulonimbus topped at 15 km or more.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && real(d) && d.triggered && d.H <= 800 && d.lcl >= 200 && d.el >= 15000; }
     },
     {
       id: 'cloud-formation-11', level: 9,
@@ -123,7 +128,7 @@
     {
       id: 'cloud-formation-h2', level: 6, hidden: true,
       riddle: { zh: '翻過山的風，連一滴汗都不肯留。', en: 'The wind that crossed the mountain would not keep a single drop of sweat.' },
-      check: function (ev) { return isState(ev) && ev.data.H > 0 && ev.data.RH >= 60 && ev.data.leeRH <= 12; }
+      check: function (ev) { const d = ev.data; return isState(ev) && real(d) && d.H > 0 && d.RH >= 90 && d.leeRH <= 8; }
     },
     {
       id: 'cloud-formation-h3', level: 5, hidden: true,

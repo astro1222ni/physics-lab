@@ -67,8 +67,8 @@
     {
       id: 'greenhouse-8', level: 6,
       title: { zh: '雪球地球', en: 'Snowball Earth' },
-      desc: { zh: '打開冰反照率回饋，從溫暖的地球（280 K 以上）出發，只靠時間（播放或跳到平衡）讓冰一路擴張到赤道附近，冰覆蓋至少 95%。', en: 'With the ice-albedo feedback on, start from a warm Earth (above 280 K) and, letting time run (Play or Jump to equilibrium), make the ice spread almost to the equator: at least 95% ice cover.' },
-      check: function (ev) { const d = S(ev); return !!d && d.ice && d.snow && d.pathMax >= 280; }
+      desc: { zh: '打開兩種回饋，CO2 維持 1750 年的 280 ppm（± 5）、預設 ε0，從溫暖的地球（280 K 以上）出發，只把太陽調暗一點點（不低於 95%），再靠時間（播放或跳到平衡）讓冰一路擴張到赤道附近，冰覆蓋至少 95%。這就是臨界點：只差幾個百分比，整個地球就結冰。', en: 'With both feedbacks on, CO2 kept at the 1750 level of 280 ppm (± 5) and the default ε0, start from a warm Earth (above 280 K), dim the Sun only a little (not below 95%), then let time run (Play or Jump to equilibrium) until the ice spreads almost to the equator: at least 95% ice cover. This is a tipping point: a few percent, and the whole planet freezes.' },
+      check: function (ev) { const d = S(ev); return !!d && d.ice && d.wv && near(d.co2, 280, 5) && near(d.eps0, 0.779, 0.0015) && d.S >= 95 && d.snow && d.pathMax >= 280; }
     },
     {
       id: 'greenhouse-9', level: 7,

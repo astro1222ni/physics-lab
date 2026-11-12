@@ -129,25 +129,44 @@ console.log('雲的形成任務證明（' + missions.length + ' 個任務）');
 }
 // 8 背風坡的雲牆
 {
-  const o = { H: 4000, eff: 40 };
-  const d = data(o);
-  expect(8, [stateEv(o)], true, '山高 4000 m、降水 40%：迎風雲底 ' + m0(d.lcl) + '、背風雲底 ' + m0(d.zEvap));
-  const d2 = data({ H: 4000, eff: 100 });
-  expect(8, [stateEv({ H: 4000, eff: 100 })], false, '降水 100%：背風坡沒有雲（zEvap ' + m0(d2.zEvap) + '）');
+  // 28 °C、70%、山高 2000 m：用降水效率把背風雲底調到迎風雲底 + 1000 m
+  const eff = solve(x => { const e = data({ H: 2000, eff: x }); return e.zEvap - e.lcl - 1000; }, 50, 100, 1);
+  const d = data({ H: 2000, eff: eff });
+  expect(8, [stateEv({ H: 2000, eff: eff })], true, '山高 2000 m、降水 ' + eff + '%：迎風雲底 ' + f1(d.lcl) + ' m、背風雲底 ' + f1(d.zEvap) + ' m（差 ' + f1(d.zEvap - d.lcl) + ' m）');
+  const d2 = data({ H: 2000, eff: 80 });
+  expect(8, [stateEv({ H: 2000, eff: 80 })], true, '只拖滑桿：山高 2000 m、降水 80%：差 ' + f1(d2.zEvap - d2.lcl) + ' m、背風雲底 ' + m0(d2.zEvap));
+  const d3 = data({ H: 4000, eff: 40 });
+  expect(8, [stateEv({ H: 4000, eff: 40 })], false, '山高 4000 m、降水 40%：差 ' + m0(d3.zEvap - d3.lcl) + '（不是 1000 m）');
+  expect(8, [stateEv({ H: 2000, eff: 100 })], false, '降水 100%：背風坡沒有雲');
+  expect(8, [stateEv({ H: 2000, eff: eff, RH: 100 })], false, '山腳起霧（溼度 100%）');
+  // 雲牆要貼著山脊：差 1000 m 但背風雲底低於山高 80%
+  let low = null;
+  for (let H = 2500; H <= 4000 && !low; H += 50) for (let e = 30; e <= 100 && !low; e += 5) { const q = data({ H: H, eff: e }); if (q.leeCloud && Math.abs(q.zEvap - q.lcl - 1000) <= 25 && q.zEvap < 0.8 * H) low = { H: H, eff: e, z: q.zEvap }; }
+  expect(8, low ? [stateEv({ H: low.H, eff: low.eff })] : [], false, '差 1000 m 但雲牆沒有貼著山脊：' + (low ? '山高 ' + low.H + ' m、背風雲底 ' + m0(low.z) : '（找不到這種情形，也算不觸發）'));
 }
 // 9 地形雷雨
 {
-  const o = { H: 3000, gamma: 6.5 };
+  const o = { RH: 85, H: 1000, gamma: 6 };
   const d = data(o);
-  expect(9, [stateEv(o)], true, '山高 3000 m、6.5 °C/km：自由對流 ' + m0(d.lfc) + '、雲頂 ' + m0(d.el) + '、CAPE ' + Math.round(d.cape) + ' J/kg');
+  expect(9, [stateEv(o)], true, '85%、山高 1000 m、6 °C/km：雲底 ' + m0(d.lcl) + '、自由對流 ' + m0(d.lfc) + '、雲頂 ' + m0(d.el));
+  const d2 = data({ RH: 85, H: 3000, gamma: 6 });
+  expect(9, [stateEv({ RH: 85, H: 3000, gamma: 6 })], false, '山高 3000 m：山頂比自由對流高 ' + m0(d2.H - d2.lfc) + '（不是「剛好推過去」）');
+  expect(9, [stateEv({ H: 3000, gamma: 6.5 })], false, '70%、山高 3000 m、6.5 °C/km：雲頂 ' + m0(data({ H: 3000, gamma: 6.5 }).el));
   expect(9, [stateEv({ H: 3000 })], false, '5.5 °C/km：自由對流 ' + m0(data({ H: 3000 }).lfc) + '，觸發 ' + data({ H: 3000 }).triggered);
+  expect(9, [stateEv({ RH: 85, H: 1000, gamma: 10.5 })], false, '絕對不穩定（10.5 °C/km）不算');
+  const d3 = data({ RH: 100, H: 1000, gamma: 6 });
+  expect(9, [stateEv({ RH: 100, H: 1000, gamma: 6 })], false, '山腳起霧（100%）：雲頂 ' + m0(d3.el));
 }
 // 10 小山大雷雨
 {
-  const o = { T0: 30, RH: 95, H: 800, gamma: 6.5 };
+  const o = { RH: 85, H: 800, gamma: 7 };
   const d = data(o);
-  expect(10, [stateEv(o)], true, '30 °C、95%、山高 800 m、6.5 °C/km：自由對流 ' + m0(d.lfc) + '、雲頂 ' + m0(d.el));
-  expect(10, [stateEv({ T0: 30, RH: 95, H: 850, gamma: 6.5 })], false, '山高 850 m');
+  expect(10, [stateEv(o)], true, '85%、山高 800 m、7 °C/km：雲底 ' + m0(d.lcl) + '、自由對流 ' + m0(d.lfc) + '、雲頂 ' + m0(d.el));
+  expect(10, [stateEv({ RH: 85, H: 850, gamma: 7 })], false, '山高 850 m');
+  const d2 = data({ T0: 30, RH: 95, H: 800, gamma: 6.5 });
+  expect(10, [stateEv({ T0: 30, RH: 95, H: 800, gamma: 6.5 })], false, '30 °C、95%：雲底只有 ' + m0(d2.lcl) + '（山腳幾乎飽和）');
+  expect(10, [stateEv({ RH: 85, H: 800, gamma: 10 })], false, '10 °C/km（絕對不穩定）不算');
+  expect(10, [stateEv({ T0: 40, RH: 100, H: 0, gamma: 11 })], false, '滑桿全部拉到最大（40 °C、100%、11 °C/km）、山高 0');
 }
 // 11 三十五度的焚風
 {
@@ -182,12 +201,14 @@ console.log('雲的形成任務證明（' + missions.length + ' 個任務）');
 }
 // h2 沙漠之風
 {
-  const o = { T0: 10, RH: 90, H: 4000, gamma: 5 };
+  const o = { T0: 5, RH: 90, H: 4000, gamma: 9 };
   const d = data(o);
-  expect('h2', [stateEv(o)], true, '10 °C、90%、山高 4000 m：背風溼度 ' + f1(d.leeRH) + '%');
+  expect('h2', [stateEv(o)], true, '5 °C、90%、山高 4000 m、9 °C/km：背風溼度 ' + f1(d.leeRH) + '%');
   expect('h2', [stateEv({ RH: 5, H: 0 })], false, '沒有山、溼度 5%（本來就乾的空氣不算）');
   expect('h2', [stateEv({ RH: 50, H: 4000 })], false, '迎風溼度 50%：背風 ' + f1(data({ RH: 50, H: 4000 }).leeRH) + '%');
-  expect('h2', [stateEv({ RH: 80, H: 4000, gamma: 6 })], false, '28 °C、80%、4000 m：' + f1(data({ RH: 80, H: 4000, gamma: 6 }).leeRH) + '%');
+  expect('h2', [stateEv({ T0: 10, RH: 70, H: 4000, gamma: 9.6 })], false, '舊版會觸發的 10 °C、70%、4000 m：迎風溼度不到 90%');
+  expect('h2', [stateEv({ T0: -10, RH: 100, H: 4000, gamma: 11 })], false, '滑桿拉到極端（−10 °C、100%、4000 m、11 °C/km）：背風 ' + f1(data({ T0: -10, RH: 100, H: 4000, gamma: 11 }).leeRH) + '%，但山腳起霧、絕對不穩定');
+  expect('h2', [stateEv({ T0: 10, RH: 90, H: 4000, gamma: 5 })], false, '10 °C、90%、4000 m、5 °C/km：背風 ' + f1(data({ T0: 10, RH: 90, H: 4000, gamma: 5 }).leeRH) + '%');
 }
 // h3 沒有山也長雲
 {
