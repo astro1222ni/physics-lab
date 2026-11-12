@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Galton Board and the Binomial Distribution | Astro Ni Science Lab">高爾頓板與二項分布｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 高爾頓板頁面專用的顏色代號（淺色＋兩組深色；由 js/galton-board.js 與 js/galton-board-3d.js 讀取） */
+    :root { --gb-ball: #d97706; --gb-peg: #64748b; --gb-theory: #1d4ed8; --gb-normal: #be185d; --gb-mean: #0f766e; --gb-sel: #7c3aed; --gb-wood: #b08354; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --gb-ball: #fbbf24; --gb-peg: #94a3b8; --gb-theory: #7aa7ff; --gb-normal: #ff74b0; --gb-mean: #5eead4; --gb-sel: #b9a0ff; --gb-wood: #8a6a48; }
+    }
+    :root[data-theme="dark"] { --gb-ball: #fbbf24; --gb-peg: #94a3b8; --gb-theory: #7aa7ff; --gb-normal: #ff74b0; --gb-mean: #5eead4; --gb-sel: #b9a0ff; --gb-wood: #8a6a48; }
+
+    /* 畫布高度由程式依寬度與層數決定；按在格子上才攔下觸控（選取格子），其他時候手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 170px; touch-action: pan-y; margin-top: 10px; }
+    .gb button { min-height: 44px; }
+    .gb [hidden] { display: none !important; }
+    .gb .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gb .playbar button { flex: 1 1 auto; }
+    .gb .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .gb .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .gb .slider input[type="range"] { height: 28px; margin: 0; }
+    .gb .checks label { min-height: 44px; }
+    .gb .checks input { width: 17px; height: 17px; }
+    .gb .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .gb .panel { grid-template-columns: minmax(0, 1fr); }
+    .gb .panel > .card { min-width: 0; }
+    .drops { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0 0 10px; }
+    .drops button { padding: 6px 8px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+    .chal button { flex: 1 1 auto; }
+    .guess { display: flex; gap: 8px; align-items: center; margin: 10px 0 0; flex-wrap: wrap; }
+    .guess label { font-size: calc(14px * var(--fs, 1)); }
+    .guess input { width: 6.5em; min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .guess button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--gb-mean); font-weight: 600; }
+    /* 2D／3D 檢視切換（與其他數學模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 3 / 4; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .g3-wrap { position: relative; }
+    .g3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .g3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .g3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 70%; }
+    .g3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .g3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .g3-hud span.m { color: var(--muted); font-weight: 500; }
+    .g3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .eq-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#probability&quot;>Mathematics · Probability and Statistics</a> / Galton board"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#probability">數學・機率與統計</a> ／ 高爾頓板</nav>
+      <h1 data-en="Galton Board and the Binomial Distribution">高爾頓板與二項分布</h1>
+      <p data-en="Drop balls through rows of pegs: at every peg a ball goes right with probability p. One ball is unpredictable, but thousands of them pile up into the binomial distribution — and, with enough rows, into the bell-shaped normal curve. Watch the gap between experiment and theory shrink, count the paths with Pascal’s triangle, and try to work out a hidden p from the balls alone.">讓球穿過一排排釘子：每碰到一根釘子，球以機率 p 往右。一顆球往哪裡掉沒辦法預測，但成千上萬顆球會堆出二項分布；層數夠多時，還會變成鐘形的常態曲線。看實驗和理論的差距怎麼一路縮小、用巴斯卡三角形數路徑，再挑戰只靠落球猜出神祕的 p。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Drop 100”, watch the balls pile up, then switch on “Normal curve” and compare.">試試看：按「放 100 顆」，看球一顆顆堆起來，再打開「常態曲線」比一比。</p>
+    <div class="lab gb" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D board">3D 釘板</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="高爾頓板畫布：上面是一排排釘子，下面是收集球的格子與長條圖。點一下格子可以選取它，看它的機率與路徑數。" data-en-aria-label="Galton board canvas: rows of pegs above and the bins with their bar chart below. Tap a bin to select it and see its probability and number of paths."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Keep dropping">連續落球</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉所有落下的球與差距圖；層數、p 等設定不變" data-en-title="Remove all the balls and the gap chart; the number of rows, p and the other settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--gb-ball)&quot;></i>Experiment (relative frequency)"><i style="background:var(--gb-ball)"></i>實驗（相對次數）</span>
+          <span style="color:var(--gb-theory)" data-en-html="<i class=&quot;dash&quot;></i>Binomial P(X = k)"><i class="dash"></i>二項分布 P(X = k)</span>
+          <span data-en-html="<i style=&quot;background:var(--gb-normal)&quot;></i>Normal curve"><i style="background:var(--gb-normal)"></i>常態曲線</span>
+          <span data-en-html="<i style=&quot;background:var(--gb-mean)&quot;></i>Mean"><i style="background:var(--gb-mean)"></i>平均</span>
+          <span data-en-html="<i style=&quot;background:var(--gb-sel)&quot;></i>Selected bin and its paths"><i style="background:var(--gb-sel)"></i>選取的格子與路徑</span>
+        </div>
+        <canvas id="cv2" aria-label="差距圖：橫軸是球數（對數刻度），縱軸是實驗頻率和理論機率的總差距（對數刻度），虛線是理論上的典型差距，和球數的平方根成反比。" data-en-aria-label="Gap chart: number of balls on a log scale across, and the total gap between the experimental frequencies and the theoretical probabilities on a log scale up; the dashed line is the typical gap, which falls like one over the square root of the number of balls."></canvas>
+        <p class="chart-cap" data-en="Gap between experiment and theory, ½ Σ |f − P|, against the number of balls (both on log scales). The dashed line falls like 1/√N.">實驗和理論的總差距 ½ Σ |f − P| 對球數作圖（兩軸都是對數刻度）。虛線隨 1/√N 下降。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. The balls keep falling in 3D.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。3D 裡球照樣落下。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The board">釘板</h2>
+          <div class="slider"><label for="nn" data-en="Rows of pegs n">釘子的層數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="1" max="16" step="1" value="10" data-decimals="0"></div>
+          <div class="slider"><label for="pp" data-en="Probability of going right p">往右的機率 p</label><output id="ppo"></output>
+            <input id="pp" type="range" min="0" max="1" step="0.05" value="0.5" data-decimals="2"></div>
+          <p class="hint" data-en="At every peg a ball goes right with probability p and left with probability 1 − p. Changing n or p starts a new count. Tap the number to type p to 0.01.">每碰到一根釘子，球往右的機率是 p、往左是 1 − p。改 n 或 p 會重新開始統計。點一下數字可以把 p 打到 0.01。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Drop balls">落球</h2>
+          <div class="drops">
+            <button id="drop1" type="button" data-en="Drop 1">放 1 顆</button>
+            <button id="drop10" type="button" data-en="Drop 10">放 10 顆</button>
+            <button id="drop100" type="button" data-en="Drop 100">放 100 顆</button>
+            <button id="drop1000" type="button" data-en="1000 at once">瞬間 1000 顆</button>
+          </div>
+          <div class="slider"><label for="rate" data-en="“Keep dropping”: balls per second">連續落球：每秒幾顆</label><output id="rateo"></output>
+            <input id="rate" type="range" min="1" max="60" step="1" value="12" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="showTheory" type="checkbox" checked><span data-en="Binomial probabilities">二項分布的機率</span></label>
+            <label><input id="showNormal" type="checkbox"><span data-en="Normal curve">常態曲線</span></label>
+            <label><input id="showStats" type="checkbox" checked><span data-en="Mean and standard deviation">平均與標準差</span></label>
+            <label><input id="showPascal" type="checkbox"><span data-en="Number of paths (Pascal’s triangle)">路徑數（巴斯卡三角形）</span></label>
+            <label><input id="showPath" type="checkbox" checked><span data-en="Path of the latest ball">最新一顆球的路徑</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: the mystery p">挑戰：神祕的 p</h2>
+          <p class="hint" data-en="The board gets a secret p. Drop as many balls as you like, then guess p to 0.01. One guess per round.">釘板換上一個祕密的 p。想放幾顆球都可以，再猜 p（到 0.01）。每一回只能猜一次。</p>
+          <div class="chal">
+            <button id="newHidden" type="button" data-en="New mystery p">換一個神祕的 p</button>
+          </div>
+          <div class="guess" id="guessRow" hidden>
+            <label for="guess" data-en="Your guess p =">你猜 p =</label>
+            <input id="guess" type="number" inputmode="decimal" min="0" max="1" step="0.01" placeholder="0.00">
+            <button id="guessBtn" type="button" class="primary" data-en="Guess">猜</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Your guesses will be listed here.">猜過的回合會列在這裡。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Balls N">球數 N</dt><dd id="rN">—</dd>
+            <dt data-en="Mean x̄ (theory np)">平均 x̄（理論 np）</dt><dd id="rMean">—</dd>
+            <dt data-en="Variance (theory np(1 − p))">變異數（理論 np(1 − p)）</dt><dd id="rVar">—</dd>
+            <dt data-en="Standard deviation (theory σ)">標準差（理論 σ）</dt><dd id="rSd">—</dd>
+            <dt data-en="Estimate of p: x̄ / n">估計的 p：x̄ ／ n</dt><dd id="rEst">—</dd>
+            <dt data-en="Gap ½ Σ |f − P|">總差距 ½ Σ |f − P|</dt><dd id="rTv">—</dd>
+          </dl>
+          <dl class="readout" id="selBox">
+            <dt data-en="Selected bin k">選取的格子 k</dt><dd id="rK">—</dd>
+            <dt data-en="Paths C(n, k)">路徑數 C(n, k)</dt><dd id="rPaths">—</dd>
+            <dt data-en="Probability P(X = k)">機率 P(X = k)</dt><dd id="rP">—</dd>
+            <dt data-en="Relative frequency">實驗的相對次數</dt><dd id="rF">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note" data-en="Tap a bin (or use the arrow keys on the board) to select it.">點一下格子（或在釘板上按方向鍵）選取它。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="From left-or-right to the binomial distribution">從「往左或往右」到二項分布</h3>
+      <p data-en-html="A ball meets \(n\) pegs on its way down. At each one it goes right with probability \(p\) and left with probability \(1 - p\), independently of what happened before. It ends up in bin \(k\) (counting from \(0\) on the left) exactly when it went right \(k\) times out of \(n\). Each particular path with \(k\) rights has probability \(p^{k}(1-p)^{n-k}\), and there are \(\binom{n}{k}\) such paths, so the bin number \(X\) follows the <strong>binomial distribution</strong> \(B(n, p)\):">一顆球往下掉，一路會碰到 \(n\) 根釘子。每一根都以機率 \(p\) 往右、\(1 - p\) 往左，而且和之前怎麼走無關。球落在第 \(k\) 格（從左邊的第 \(0\) 格數起），恰好就是 \(n\) 次裡往右了 \(k\) 次。每一條「往右 \(k\) 次」的路徑機率都是 \(p^{k}(1-p)^{n-k}\)，這樣的路徑共有 \(\binom{n}{k}\) 條，所以格子編號 \(X\) 服從<strong>二項分布</strong> \(B(n, p)\)：</p>
+      <div class="formula">\[ P(X = k) = \binom{n}{k} p^{k} (1-p)^{n-k}, \qquad k = 0, 1, \dots, n \]</div>
+
+      <h3 data-en="Counting paths: Pascal’s triangle">數路徑：巴斯卡三角形</h3>
+      <p data-en-html="Write on every peg the number of different paths that reach it. A peg can be reached only from the two pegs above it, so its number is the sum of their numbers — exactly the rule of <strong>Pascal’s triangle</strong>, \(\binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}\). The numbers in the row of bins add up to \(2^{n}\), the total number of left–right paths. Switch on “Number of paths” to see the triangle on the pegs; select a bin to light up every peg that a ball on its way to that bin can touch.">在每一根釘子上寫下「有幾條不同的路徑會經過它」。一根釘子只能從它上方的兩根釘子過來，所以它的數字是上方兩個數字的和——這正是<strong>巴斯卡三角形</strong>的規則 \(\binom{n}{k} = \binom{n-1}{k-1} + \binom{n-1}{k}\)。最底下一排格子的數字加起來是 \(2^{n}\)，也就是所有左右路徑的總數。打開「路徑數」就能在釘子上看到這個三角形；選取一個格子，會亮出所有「去那一格的球可能碰到」的釘子。</p>
+
+      <h3 data-en="Expected value and variance">期望值與變異數</h3>
+      <p data-en-html="Let \(X_i = 1\) if the ball goes right at the \(i\)-th row and \(0\) otherwise. Then \(X = X_1 + X_2 + \dots + X_n\). Each \(X_i\) has mean \(p\) and variance \(p(1-p)\), and because the rows are independent both add up:">令第 \(i\) 層往右時 \(X_i = 1\)、往左時 \(X_i = 0\)，那麼 \(X = X_1 + X_2 + \dots + X_n\)。每個 \(X_i\) 的期望值是 \(p\)、變異數是 \(p(1-p)\)，而且各層互相獨立，所以兩者都可以直接相加：</p>
+      <div class="formula">\[ E(X) = np, \qquad \operatorname{Var}(X) = np(1-p), \qquad \sigma = \sqrt{np(1-p)} \]</div>
+      <p data-en-html="The readings compare these with the experiment: the mean \(\bar{x}\) of the bin numbers and their variance \(\frac{1}{N}\sum (x_i - \bar{x})^{2}\) over the \(N\) balls dropped so far.">讀數把它們和實驗比較：目前 \(N\) 顆球的格子編號的平均 \(\bar{x}\)，以及變異數 \(\frac{1}{N}\sum (x_i - \bar{x})^{2}\)。</p>
+
+      <h3 data-en="The law of large numbers">大數法則</h3>
+      <p data-en-html="With only a few balls the bars jump around; with many balls the relative frequency \(f_k\) of every bin settles down to \(P(X = k)\). The page measures the total gap \(\frac12\sum_k |f_k - P(X = k)|\) (0 means a perfect match, 1 means no overlap at all). Its typical size shrinks like \(\dfrac{1}{\sqrt{N}}\): a hundred times as many balls make the gap about ten times smaller, which is the straight dashed line on the log–log chart.">球少的時候長條跳來跳去；球多了，每一格的相對次數 \(f_k\) 會穩定地靠近 \(P(X = k)\)。頁面量的是總差距 \(\frac12\sum_k |f_k - P(X = k)|\)（0 表示完全吻合，1 表示完全不重疊）。它的典型大小隨 \(\dfrac{1}{\sqrt{N}}\) 縮小：球數變成 100 倍，差距大約只剩十分之一，在兩軸都取對數的圖上就是那條虛線直線。</p>
+
+      <h3 data-en="The bell curve appears">鐘形曲線出現了</h3>
+      <p data-en-html="When \(n\) is large the binomial distribution is close to a <strong>normal distribution</strong> with the same mean \(\mu = np\) and standard deviation \(\sigma = \sqrt{np(1-p)}\). Each bin is one unit wide, so its probability is approximated by the area under the normal curve from \(k - \frac12\) to \(k + \frac12\) (the <em>continuity correction</em>):">\(n\) 很大時，二項分布很接近平均 \(\mu = np\)、標準差 \(\sigma = \sqrt{np(1-p)}\) 的<strong>常態分布</strong>。每一格寬度是 1，所以一格的機率可以用常態曲線底下從 \(k - \frac12\) 到 \(k + \frac12\) 的面積來近似（<em>連續性修正</em>）：</p>
+      <div class="formula">\[ P(X = k) \approx \Phi\!\left(\frac{k + \frac12 - \mu}{\sigma}\right) - \Phi\!\left(\frac{k - \frac12 - \mu}{\sigma}\right) \]</div>
+      <p data-en-html="The approximation is best when \(n\) is large and \(p\) is near \(\frac12\); for \(p\) near 0 or 1 the distribution is lopsided and the symmetric bell fits poorly. This is the simplest case of the <strong>central limit theorem</strong>: a sum of many small independent random steps is approximately normal.">\(n\) 越大、\(p\) 越接近 \(\frac12\)，近似越好；\(p\) 接近 0 或 1 時分布歪向一邊，對稱的鐘形就對不太上。這是<strong>中央極限定理</strong>最簡單的例子：很多個獨立的小隨機步伐加起來，會近似常態分布。</p>
+
+      <h3 data-en="Working backwards: estimating p">倒過來想：從結果估計 p</h3>
+      <p data-en-html="Since \(E(X) = np\), the natural estimate of an unknown \(p\) is \(\hat{p} = \bar{x}/n\). All \(nN\) peg bounces count as independent trials, so the estimate wobbles by about \(\sqrt{p(1-p)/(nN)}\): more balls <em>and</em> more rows both make it sharper.">因為 \(E(X) = np\)，不知道 \(p\) 時最自然的估計是 \(\hat{p} = \bar{x}/n\)。所有 \(nN\) 次碰釘子都是獨立的試驗，所以估計值大約會晃動 \(\sqrt{p(1-p)/(nN)}\)：球越多、層數越多，都會估得越準。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One ball versus many</strong>: drop a single ball several times. Can you predict where it lands? Then drop a thousand at once."><strong>一顆和一千顆</strong>：一次放一顆，連放幾次，猜得到它掉在哪一格嗎？再一次放一千顆。</li>
+        <li data-en-html="<strong>Leaning boards</strong>: set \(p = 0.2\). Where is the tallest bar? Compare it with \(\lfloor (n+1)p \rfloor\)."><strong>傾斜的板子</strong>：把 \(p\) 設成 0.2。最高的長條在哪一格？和 \(\lfloor (n+1)p \rfloor\) 比一比。</li>
+        <li data-en-html="<strong>Two equal winners</strong>: with \(n = 9\) and \(p = 0.3\), two bins are exactly equally likely. Why?"><strong>兩格一樣高</strong>：\(n = 9\)、\(p = 0.3\) 時，有兩格的機率完全相同。為什麼？</li>
+        <li data-en-html="<strong>Shrinking gap</strong>: keep dropping and watch the gap chart. Does the gap ever stop shrinking?"><strong>越來越小的差距</strong>：一直放球，看差距圖。差距會停止縮小嗎？</li>
+        <li data-en-html="<strong>Where the bell fails</strong>: turn on the normal curve and compare \(n = 16, p = 0.5\) with \(n = 4, p = 0.1\)."><strong>鐘形什麼時候不準</strong>：打開常態曲線，比較 \(n = 16, p = 0.5\) 和 \(n = 4, p = 0.1\)。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every peg is a separate random choice made with a pseudo-random number generator, exactly as described above — the binomial formula is never used to place the balls, so the agreement you see is real. The unit tests check \(\sum_k P(X = k) = 1\), the mean and variance computed directly from the distribution, Pascal’s rule, the path count by listing all \(2^{n}\) paths, the normal function \(\Phi\) against known values, and simulations of 200 000 balls.">每一根釘子都用亂數獨立決定往左或往右，和上面描述的完全一樣——放球時從來沒有用到二項分布的公式，所以你看到的吻合是真的。單元測試檢查 \(\sum_k P(X = k) = 1\)、由分布直接算出的期望值與變異數、巴斯卡的遞迴規則、列出全部 \(2^{n}\) 條路徑來數路徑數、常態分布函數 \(\Phi\) 的已知值，以及 20 萬顆球的模擬。</li>
+        <li data-en="The balls hop from peg to peg along parabolas (steady sideways speed, steady downward acceleration), which is only for the look: the left–right choice at each peg is what matters. The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D.">球在釘子之間沿拋物線跳（水平等速、垂直等加速度），這只是為了好看；真正重要的是每根釘子的左右選擇。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics · counting, probability, the binomial distribution, expected value and variance, and an informal look at the normal distribution.">課綱對應：高中數學・排列組合、機率、二項分布、期望值與變異數，以及常態分布的初步認識。</li>
+        <li data-en="History: Francis Galton built this kind of board (the “quincunx”) in the 1870s and described it in his book Natural Inheritance (1889) to show how many small random influences add up to the bell curve.">歷史：高爾頓（Francis Galton）在 1870 年代做了這種釘板（quincunx），並在 1889 年的《自然遺傳》（Natural Inheritance）書中介紹，用來說明許多微小的隨機影響加起來會形成鐘形曲線。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Galton_board&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Galton board (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Binomial_distribution&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Binomial distribution (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Central_limit_theorem&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Central limit theorem (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Galton_board" target="_blank" rel="noopener">Galton board（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Binomial_distribution" target="_blank" rel="noopener">Binomial distribution（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Central_limit_theorem" target="_blank" rel="noopener">Central limit theorem（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/galton-board-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/galton-board.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="galton-board"></script>
+  <script src="js/missions/galton-board.js"></script>
+  <script src="js/stats.js" data-module="galton-board"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

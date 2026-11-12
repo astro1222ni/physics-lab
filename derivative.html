@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Derivatives and Tangent Lines | Astro Ni Science Lab">導數與切線｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 導數頁面專用的顏色代號（淺色＋兩組深色；由 js/derivative.js 讀取） */
+    :root { --dv-curve: #1d4ed8; --dv-secant: #c2410c; --dv-tangent: #be185d; --dv-deriv: #7c3aed; --dv-sym: #a16207; --dv-target: #0f766e; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --dv-curve: #7aa7ff; --dv-secant: #fb923c; --dv-tangent: #ff74b0; --dv-deriv: #b9a0ff; --dv-sym: #fbbf24; --dv-target: #5eead4; }
+    }
+    :root[data-theme="dark"] { --dv-curve: #7aa7ff; --dv-secant: #fb923c; --dv-tangent: #ff74b0; --dv-deriv: #b9a0ff; --dv-sym: #fbbf24; --dv-target: #5eead4; }
+
+    /* 畫布高度由程式依寬度決定（上：y = f(x)，下：導函數 y = f′(x)，兩格共用 x 軸）。
+       只有按在點上或在圖形上左右拖曳才攔下觸控，其他時候手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y; cursor: crosshair; }
+    #cv2 { aspect-ratio: auto; height: 170px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; }
+    .dv button { min-height: 44px; }
+    .dv [hidden] { display: none !important; }
+    .dv .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .dv .playbar button { flex: 1 1 auto; }
+    .dv .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dv .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .dv .slider input[type="range"] { height: 28px; margin: 0; }
+    .dv .checks label { min-height: 44px; }
+    .dv .checks input { width: 17px; height: 17px; }
+    .dv .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .dv .panel { grid-template-columns: minmax(0, 1fr); }
+    .dv .panel > .card { min-width: 0; }
+    .dv:not([data-fn="cubic"]) .mc { display: none !important; }
+    .dv:not([data-sym="1"]) .ms { display: none !important; }
+    .fns { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+    .fns button { padding: 6px 8px; font-variant-numeric: tabular-nums; }
+    .fns button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .fns button:disabled { opacity: .55; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
+    .hrow .seg { flex: 1 1 auto; }
+    .hrow .seg button { flex: 1 1 0; }
+    .hrow > button { flex: 1 1 auto; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--dv-target); font-weight: 600; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .eq + .eq { margin-top: 6px; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log td.f { text-align: left; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#calculus&quot;>Mathematics · Calculus</a> / Derivatives"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#calculus">數學・微積分</a> ／ 導數</nav>
+      <h1 data-en="Derivatives and Tangent Lines">導數與切線</h1>
+      <p data-en="Pick a point on a curve and a second point a distance h away. The line through them is a secant; shrink h and watch it turn into the tangent line, whose slope is the derivative. Walk the point along the curve to trace out the derivative function, see why |x| has no tangent at its corner, compare how fast two different difference quotients home in, and take on the challenge of finding the point where the tangent has a given slope.">在曲線上選一個點，再取距離 h 的另一個點，通過兩點的直線叫割線；把 h 縮小，看割線轉成切線，切線的斜率就是導數。讓點沿著曲線走，把導函數一路描出來；看 |x| 為什麼在尖角沒有切線；比較兩種差商逼近的速度；再挑戰找出切線斜率剛好是某個值的點。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Let h → 0” and watch the orange secant turn into the pink tangent. Then press “Walk along the curve” to trace f′(x) underneath.">試試看：按「讓 h → 0」，看橘色的割線慢慢轉成粉紅色的切線；再按「沿著曲線走」，在下方描出 f′(x)。</p>
+    <div class="lab dv" id="lab" data-fn="cubic">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="導數畫布：上面是函數 y = f(x)、切點 A、另一點 B 與割線、切線；下面是導函數 y = f′(x)，兩格共用 x 軸。在圖上左右拖曳移動切點 A，拖曳點 B 改變 h。" data-en-aria-label="Derivative canvas: on top the function y = f(x) with the point of tangency A, a second point B, the secant and the tangent; underneath the derivative y = f′(x), sharing the x-axis. Drag left and right on the graphs to move A, and drag B to change h."></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Walk along the curve">沿著曲線走</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除描出來的導函數與挑戰紀錄；滑桿設定不變" data-en-title="Clear the traced derivative and the challenge record; the slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--dv-curve)&quot;></i>y = f(x)"><i style="background:var(--dv-curve)"></i>y = f(x)</span>
+          <span data-en-html="<i style=&quot;background:var(--dv-secant)&quot;></i>Secant through A and B"><i style="background:var(--dv-secant)"></i>通過 A、B 的割線</span>
+          <span data-en-html="<i style=&quot;background:var(--dv-tangent)&quot;></i>Tangent at A"><i style="background:var(--dv-tangent)"></i>A 點的切線</span>
+          <span class="ms" style="color:var(--dv-sym)" data-en-html="<i class=&quot;dash&quot;></i>Symmetric secant"><i class="dash"></i>對稱割線</span>
+          <span data-en-html="<i style=&quot;background:var(--dv-deriv)&quot;></i>y = f′(x)"><i style="background:var(--dv-deriv)"></i>y = f′(x)</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Point A"><i class="dot" style="background:var(--probe)"></i>切點 A</span>
+        </div>
+        <canvas id="cv2" aria-label="誤差圖：差商和 f′(a) 的差距對 h 作圖，兩軸都是對數刻度。" data-en-aria-label="Error chart: the gap between the difference quotient and f′(a), plotted against h on logarithmic scales."></canvas>
+        <p class="chart-note" data-en-html="How far the difference quotient is from \(f'(a)\), against \(h\) (both on log scales). The one-sided quotient's error shrinks like \(h\) (slope 1); the symmetric one like \(h^2\) (slope 2).">差商和 \(f'(a)\) 相差多少，對 \(h\) 作圖（兩軸都是對數刻度）。單邊差商的誤差跟著 \(h\) 變小（斜率 1），對稱差商跟著 \(h^2\) 變小（斜率 2）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Function">函數</h2>
+          <div class="fns" role="group" aria-label="函數" data-en-aria-label="Function">
+            <button type="button" data-fn="cubic" aria-pressed="true" data-en="Cubic">三次函數</button>
+            <button type="button" data-fn="sin" aria-pressed="false">sin x</button>
+            <button type="button" data-fn="exp" aria-pressed="false">e<sup>x</sup></button>
+            <button type="button" data-fn="ln" aria-pressed="false">ln x</button>
+            <button type="button" data-fn="abs" aria-pressed="false">|x|</button>
+          </div>
+          <div class="mc">
+            <p class="hint" data-en="f(x) = ax³ + bx² + cx + d">f(x) = ax³ + bx² + cx + d</p>
+            <div class="slider"><label for="ca">a</label><output id="cao"></output>
+              <input id="ca" type="range" min="-3" max="3" step="0.1" value="0.3" data-decimals="2"></div>
+            <div class="slider"><label for="cb">b</label><output id="cbo"></output>
+              <input id="cb" type="range" min="-3" max="3" step="0.1" value="-0.6" data-decimals="2"></div>
+            <div class="slider"><label for="cc">c</label><output id="cco"></output>
+              <input id="cc" type="range" min="-3" max="3" step="0.1" value="-0.9" data-decimals="2"></div>
+            <div class="slider"><label for="cd">d</label><output id="cdo"></output>
+              <input id="cd" type="range" min="-3" max="3" step="0.1" value="1.2" data-decimals="2"></div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Point and secant">切點與割線</h2>
+          <div class="slider"><label for="xa" data-en="Point of tangency a">切點 a</label><output id="xao"></output>
+            <input id="xa" type="range" min="-4" max="4" step="0.01" value="2.2" data-decimals="3"></div>
+          <div class="slider"><label for="hh" data-en="Gap h (smaller to the right)">間隔 h（往右越小）</label><output id="hho"></output>
+            <input id="hh" type="range" min="0" max="100" step="0.5" value="9.1"></div>
+          <div class="hrow">
+            <div class="seg" role="group" aria-label="點 B 在 A 的哪一邊" data-en-aria-label="Which side of A the point B is on">
+              <button type="button" id="hPos" aria-pressed="true" data-en="h &gt; 0 (right)">h &gt; 0（右邊）</button>
+              <button type="button" id="hNeg" aria-pressed="false" data-en="h &lt; 0 (left)">h &lt; 0（左邊）</button>
+            </div>
+            <button type="button" id="shrink" data-en="Let h → 0">讓 h → 0</button>
+          </div>
+          <div class="checks">
+            <label><input id="showTan" type="checkbox" checked><span data-en="Show the tangent">顯示切線</span></label>
+            <label><input id="showSym" type="checkbox"><span data-en-html="Symmetric quotient [f(a + h) − f(a − h)] / 2h">對稱差商 [f(a + h) − f(a − h)] ／ 2h</span></label>
+            <label><input id="showDeriv" type="checkbox"><span data-en="Show the whole f′(x)">顯示完整的 f′(x)</span></label>
+            <label><input id="physics" type="checkbox"><span data-en="Read it as position against time">當成位置－時間圖來看</span></label>
+          </div>
+          <p class="hint" data-en="Drag on the graph to move A; drag B to change h. Tap a number to type it — h goes down to 0.001.">在圖上拖曳移動 A；拖曳 B 改變 h。點一下數字可以直接輸入，h 最小到 0.001。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt id="lFa">f(a)</dt><dd id="rFa">—</dd>
+            <dt id="lFb">f(a + h)</dt><dd id="rFb">—</dd>
+            <dt id="lDq" data-en="Secant slope [f(a + h) − f(a)] / h">割線斜率 [f(a + h) − f(a)] ／ h</dt><dd id="rDq">—</dd>
+            <dt class="ms" id="lSq" data-en="Symmetric quotient">對稱差商</dt><dd class="ms" id="rSq">—</dd>
+            <dt id="lD1" data-en="Tangent slope f′(a)">切線斜率 f′(a)</dt><dd id="rD1">—</dd>
+            <dt data-en="Gap from f′(a)">和 f′(a) 相差</dt><dd id="rErr">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: find the slope">挑戰：找出這個斜率</h2>
+          <p class="hint" data-en="A dashed line of the target slope rides along with A. Move A until that line just touches the curve. The numbers are hidden.">一條目標斜率的虛線跟著 A 走。移動 A，直到這條線剛好貼住曲線。讀數會藏起來。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="From a secant to a tangent">從割線到切線</h3>
+      <p data-en-html="Take the point \(A = (a, f(a))\) and a second point \(B = (a + h, f(a + h))\) on the curve. The line through them is a <strong>secant</strong>, and its slope is the <strong>difference quotient</strong>">在曲線上取點 \(A = (a, f(a))\) 和另一點 \(B = (a + h, f(a + h))\)。通過這兩點的直線叫<strong>割線</strong>，它的斜率叫<strong>差商</strong>：</p>
+      <div class="formula">\[ \frac{\Delta y}{\Delta x} = \frac{f(a + h) - f(a)}{h} \]</div>
+      <p data-en-html="Now let \(B\) slide towards \(A\). If the secant settles on one line, whichever side \(B\) comes from, that line is the <strong>tangent</strong> at \(A\), and its slope is the <strong>derivative</strong> of \(f\) at \(a\):">讓 \(B\) 沿著曲線往 \(A\) 靠近。如果不論 \(B\) 從哪一邊靠近，割線都趨近同一條直線，這條直線就是 \(A\) 點的<strong>切線</strong>，它的斜率就是 \(f\) 在 \(a\) 的<strong>導數</strong>：</p>
+      <div class="formula">\[ f'(a) = \lim_{h \to 0} \frac{f(a + h) - f(a)}{h} \]</div>
+      <p data-en-html="The tangent line is then \(y = f'(a)(x - a) + f(a)\). Note that \(h\) is never set to zero — the quotient would be \(\tfrac00\). The limit asks what value the quotient gets as close to as we like when \(h\) is small enough. Close up, a smooth curve looks more and more like a straight line, and the tangent is that line.">切線方程式是 \(y = f'(a)(x - a) + f(a)\)。注意 \(h\) 從來沒有真的等於 0（那樣會變成 \(\tfrac00\)）。極限問的是：\(h\) 夠小的時候，差商可以多接近哪一個值。把光滑的曲線放大來看，它越來越像一條直線，切線就是那條直線。</p>
+
+      <h3 data-en="The derivative is itself a function">導數本身也是一個函數</h3>
+      <p data-en-html="Every point \(a\) has its own tangent slope, so \(x \mapsto f'(x)\) is a new function, the <strong>derivative function</strong>. Where \(f\) rises, \(f' > 0\); where it falls, \(f' < 0\); at a peak or a valley the tangent is horizontal and \(f' = 0\). The lower graph draws \(f'\) point by point as \(A\) walks along the curve. The five functions here have these derivatives:">每一個點 \(a\) 都有自己的切線斜率，所以 \(x \mapsto f'(x)\) 是一個新的函數，叫<strong>導函數</strong>。\(f\) 上升的地方 \(f' > 0\)，下降的地方 \(f' < 0\)，山頂和谷底的切線是水平的，\(f' = 0\)。下方的圖會在 \(A\) 沿著曲線走的時候，一點一點描出 \(f'\)。這裡五種函數的導函數是：</p>
+      <div class="formula">\[ (ax^3 + bx^2 + cx + d)' = 3ax^2 + 2bx + c, \quad (\sin x)' = \cos x, \quad (e^x)' = e^x, \quad (\ln x)' = \frac1x, \quad |x|' = \begin{cases} 1 & x > 0 \\ -1 & x < 0 \end{cases} \]</div>
+      <p data-en-html="For example, for \(f(x) = x^3\): \(\dfrac{(a + h)^3 - a^3}{h} = 3a^2 + 3ah + h^2\), which tends to \(3a^2\) as \(h \to 0\). The function \(e^x\) is the one whose slope at every point equals its own height.">例如 \(f(x) = x^3\)：\(\dfrac{(a + h)^3 - a^3}{h} = 3a^2 + 3ah + h^2\)，\(h \to 0\) 時趨近 \(3a^2\)。而 \(e^x\) 是每一點的斜率都等於自己高度的函數。</p>
+
+      <h3 data-en="A corner has no tangent">尖角沒有切線</h3>
+      <p data-en-html="At \(x = 0\) the graph of \(|x|\) has a corner. From the right the secant slope is always \(1\), from the left always \(-1\): the two one-sided limits differ, so the limit does not exist and \(|x|\) is <strong>not differentiable</strong> at 0, even though it is continuous there. A function that is differentiable at a point must be continuous there, but not the other way round.">\(|x|\) 的圖形在 \(x = 0\) 有一個尖角。從右邊靠近，割線斜率永遠是 \(1\)；從左邊靠近，永遠是 \(-1\)。左右極限不相等，極限不存在，所以 \(|x|\) 在 0 <strong>不可微</strong>——雖然它在 0 是連續的。可微一定連續，連續卻不一定可微。</p>
+
+      <h3 data-en="How good is the difference quotient?">差商有多準？</h3>
+      <p data-en-html="Near \(a\) a smooth function is \(f(a + h) = f(a) + f'(a)h + \tfrac12 f''(a)h^2 + \tfrac16 f'''(a)h^3 + \cdots\) (Taylor's expansion). Dividing,">在 \(a\) 附近，光滑的函數可以寫成 \(f(a + h) = f(a) + f'(a)h + \tfrac12 f''(a)h^2 + \tfrac16 f'''(a)h^3 + \cdots\)（泰勒展開），所以</p>
+      <div class="formula">\[ \frac{f(a + h) - f(a)}{h} = f'(a) + \tfrac12 f''(a)\,h + \cdots, \qquad \frac{f(a + h) - f(a - h)}{2h} = f'(a) + \tfrac16 f'''(a)\,h^2 + \cdots \]</div>
+      <p data-en-html="The one-sided quotient is off by about \(\tfrac12 f''(a)h\): halve \(h\) and the error halves. The <strong>symmetric</strong> quotient, using one point on each side, cancels the \(h\) term and is off by about \(\tfrac16 f'''(a)h^2\): halve \(h\) and the error drops to a quarter. On the log–log error chart these are lines of slope 1 and 2. Calculators and computers use the symmetric version for this reason — but at the corner of \(|x|\) it gives \(0\), a 'slope' that does not exist.">單邊差商大約差 \(\tfrac12 f''(a)h\)：\(h\) 減半，誤差也減半。<strong>對稱差商</strong>左右各取一點，把 \(h\) 的項消掉，大約只差 \(\tfrac16 f'''(a)h^2\)：\(h\) 減半，誤差剩四分之一。在兩軸都是對數刻度的誤差圖上，它們分別是斜率 1 和斜率 2 的直線。計算機和電腦算數值微分常用對稱差商，就是這個原因——但在 \(|x|\) 的尖角，它會算出 \(0\)，一個根本不存在的「斜率」。</p>
+
+      <h3 data-en="Slope is speed">斜率就是速度</h3>
+      <p data-en-html="If \(f(t)\) is the position of a car at time \(t\), the secant slope \(\dfrac{f(t + h) - f(t)}{h}\) is its <strong>average velocity</strong> over the time \(h\), and the derivative \(f'(t)\) is its <strong>instantaneous velocity</strong> — the reading on the speedometer. Tick “Read it as position against time” to relabel the graphs this way: the lower graph is then the velocity–time graph. The derivative of velocity, in turn, is acceleration.">如果 \(f(t)\) 是車子在時刻 \(t\) 的位置，割線斜率 \(\dfrac{f(t + h) - f(t)}{h}\) 就是這段時間 \(h\) 的<strong>平均速度</strong>，導數 \(f'(t)\) 就是<strong>瞬時速度</strong>，也就是速率表上的讀數。勾選「當成位置－時間圖來看」，圖上的名稱會換成物理的說法，下方的圖就是速度－時間圖。速度再對時間微分，就是加速度。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Both sides</strong>: shrink \(h\) with \(B\) on the right, then on the left. Do the two secants settle on the same line? Try it at the corner of \(|x|\)."><strong>左右兩邊</strong>：把 \(B\) 放在右邊縮小 \(h\)，再放到左邊縮小。兩條割線最後是不是同一條？到 \(|x|\) 的尖角再試一次。</li>
+        <li data-en-html="<strong>Peaks and valleys</strong>: where is \(f'(x) = 0\) on the lower graph? What does the upper graph look like there?"><strong>山頂與谷底</strong>：下方的 \(f'(x)\) 在哪裡等於 0？那裡上方的曲線長什麼樣子？</li>
+        <li data-en-html="<strong>A familiar shape</strong>: walk along \(\sin x\). Which function does the trace underneath look like? And for \(e^x\)?"><strong>似曾相識</strong>：沿著 \(\sin x\) 走一遍，下面描出來的像哪一個函數？\(e^x\) 呢？</li>
+        <li data-en-html="<strong>Error halves or quarters</strong>: watch the readings as \(h\) goes from 0.1 to 0.01. How many times smaller does the gap get, with and without the symmetric quotient?"><strong>減半還是剩四分之一</strong>：\(h\) 從 0.1 變到 0.01 時，差距變成幾分之一？勾選對稱差商再看一次。</li>
+        <li data-en-html="<strong>Through the origin</strong>: at which point does the tangent to \(e^x\) pass through \((0, 0)\)? And for \(\ln x\)?"><strong>通過原點</strong>：\(e^x\) 在哪一點的切線會通過 \((0, 0)\)？\(\ln x\) 呢？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every derivative on the page comes from the exact formulas above, never from a numerical approximation; the difference quotients are computed separately so that the two can be compared. The unit tests check the formulas against a high-accuracy numerical derivative at thousands of random points, the error terms \(\tfrac12 f''h\) and \(\tfrac16 f'''h^2\), the corner of \(|x|\), the domain of \(\ln x\), and that every challenge has an answer.">頁面上所有的導數都用上面的公式直接算，不用數值近似；差商另外計算，用來和導數比較。單元測試在上千個隨機點，用高精度的數值微分檢查公式，也檢查誤差項 \(\tfrac12 f''h\)、\(\tfrac16 f'''h^2\)、\(|x|\) 的尖角、\(\ln x\) 的定義域，以及每一道挑戰題都有解。</li>
+        <li data-en-html="The challenge counts as solved when \(A\) is within 0.02 of a point where \(f'(x)\) equals the target slope. The smallest \(h\) is 0.001, still far from where rounding errors in the computer would matter.">挑戰時，\(A\) 和「\(f'(x)\) 等於目標斜率」的點相差不超過 0.02 就算對準。\(h\) 最小是 0.001，離電腦的捨入誤差會造成影響的範圍還很遠。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 12, Mathematics A) · limits, derivatives, tangent lines, and the derivative as a rate of change.">課綱對應：高中數學（高三數學甲）・極限、導數、切線、導數與變化率。</li>
+        <li data-en="History: Fermat found tangents and maxima in the 1630s by a method close to letting h shrink; Newton (fluxions) and Leibniz (the notation dy/dx) turned it into calculus in the 1660s–1680s; the precise definition with limits came with Cauchy and Weierstrass in the 19th century.">歷史：費馬在 1630 年代用接近「讓 h 縮小」的方法求切線與極值；牛頓（流數）和萊布尼茲（dy/dx 的記號）在 1660–1680 年代把它發展成微積分；用極限給出嚴格定義，則要到 19 世紀的柯西和魏爾施特拉斯。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Derivative&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Derivative (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Finite_difference&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Finite difference (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Derivative" target="_blank" rel="noopener">Derivative（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Finite_difference" target="_blank" rel="noopener">Finite difference（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/derivative-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/derivative.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="derivative"></script>
+  <script src="js/missions/derivative.js"></script>
+  <script src="js/stats.js" data-module="derivative"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
