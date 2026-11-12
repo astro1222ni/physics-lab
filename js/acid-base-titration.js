@@ -1355,6 +1355,8 @@
     $('mysCard').hidden = sys !== 'mx';
     const th = $('theory');
     th.disabled = mysteryHidden();
+    // 停用時理論曲線並沒有畫：勾選框要顯示實際狀態（不打勾），恢復時再顯示學生原本的選擇
+    th.checked = !th.disabled && state.theory;
     th.parentElement.style.opacity = th.disabled ? '0.5' : '';
     th.parentElement.title = th.disabled ? T('未知弱酸揭曉答案後才能看理論曲線', 'Available after the unknown acid is revealed') : '';
   }
