@@ -54,7 +54,9 @@
     "tides": "effa63c4",
     "conic-sections": "03619a7f",
     "molecular-shapes": "201a9eb6",
-    "diffusion-osmosis": "b612797e"
+    "diffusion-osmosis": "b612797e",
+    "trig-functions": "0757862f",
+    "reaction-rate": "5c97d2b6"
   };
   /* VERSIONS-END */
 

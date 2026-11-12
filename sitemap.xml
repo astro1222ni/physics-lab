@@ -361,6 +361,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/molecular-shapes.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/reaction-rate.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/reaction-rate.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/reaction-rate.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/reaction-rate.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/reaction-rate.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/acid-base-titration.html</loc>
     <lastmod>2026-11-12</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/acid-base-titration.html"/>
@@ -415,6 +423,14 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/tides.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/tides.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/tides.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/trig-functions.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/trig-functions.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/trig-functions.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/trig-functions.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/trig-functions.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/conic-sections.html</loc>

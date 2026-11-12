@@ -23,7 +23,7 @@
  "photoelectric": "969322aa69",
  "hydrogen-spectrum": "78c71393a9",
  "radioactive-decay": "713fd086f9",
- "index": "c72d325b7c",
+ "index": "0e4749c1e3",
  "free-fall": "9d2605e21b",
  "ripple-tank": "93838f4dbf",
  "resonance-tube": "13db9bbcd1",
@@ -48,5 +48,7 @@
  "tides": "061cb31b7f",
  "conic-sections": "fc8b38c360",
  "diffusion-osmosis": "74b64d155e",
- "molecular-shapes": "6f8b4f20a1"
+ "molecular-shapes": "6f8b4f20a1",
+ "reaction-rate": "78fd61de3b",
+ "trig-functions": "92ec3549a3"
 }

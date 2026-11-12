@@ -79,7 +79,11 @@ const PREP = {
   // 畫布在 1280 寬時約 2 : 1，把實驗區左欄限制在 700 px，畫布就接近 16 : 9，母本、父本兩張卡片都不會被裁掉
   'mendelian-inheritance': { eval: "document.querySelector('.lab').style.gridTemplateColumns = 'minmax(0, 700px) 320px'; document.querySelector('#lSeg [data-l=\"2\"]').click(); document.getElementById('sow100').click(); setTimeout(function () { document.getElementById('sow10').click(); }, 2400);", wait: 2900 },
   // 0.100 M 鹽酸 25.00 mL 加到 25.05 mL（超過當量點一滴）：酚酞剛變粉紅，放大鏡讀數 25.05 mL
-  'acid-base-titration': { eval: '__abt.jump(25.05);', wait: 1200, anchor: 0.55 }
+  'acid-base-titration': { eval: '__abt.jump(25.05);', wait: 1200, anchor: 0.55 },
+  // 單位圓在畫布左側：靠左裁，圓才不會被切掉
+  'trig-functions':    { wait: 1500, anchorX: 0 },
+  // 3D 容器：往下裁一點，避開上緣的時間與溫度標籤
+  'reaction-rate':     { wait: 3000, anchor: 0.7 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

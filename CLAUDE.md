@@ -59,7 +59,7 @@
 - 頁面結構照現有模組：`.crumbs` 導覽（首頁／分支／主題）、`.lab`（畫布＋控制面板）、`.notes`（KaTeX 公式與觀察重點）、頁尾。
 - 頁尾前依序載入：KaTeX、`js/math.js`、物理核心、（有音效時）`js/sound.js`、`js/numinput.js`、頁面程式、`js/firebase-config.js`、`js/stats.js data-module="<模組>"`、`js/comments.js`。
 - **滑桿數字可直接輸入**（站長要求）：每個滑桿的數字放在同一個 `.slider` 的 `<output>`，由 `js/numinput.js` 自動變成可點擊輸入；讀值一律用 `LabNum.value(el)`，依實驗需要設定 `data-decimals`（打字精度可比滑桿細），`<output>` 顯示到該精度；非線性滑桿用 `LabNum.register`，程式改滑桿用 `LabNum.set` 或先 `LabNum.clear`。
-- **任務模式與倪的星星**（站長要求）：每個實驗設計約 8–12 個任務，難度 1–10 級（星星數 = 等級），另加 2–3 個**隱藏任務**（只給隱晦的提示句，完成時只說「隱藏任務完成」不說原因）。任務必須靠操作實驗達成特定標準（例如兩發射程相等），並先用物理核心確認每個任務都做得到。寫在 `js/missions/<模組>.js`（`LabMission.register`），模組程式在關鍵時刻 `LabMission.emit('事件', {物理量})`；頁面載入 `js/missions.js data-module="<模組>"` 與任務檔（在 firebase-config.js 之後）；把模組加入 `js/missions/index.js`。新增任務後不必請站長手動同步：站長用管理員帳號登入並打開排行榜頁或該實驗頁時，`missions.js` 會自動比對 `missionDefs` 並補上新任務（排行榜頁的「同步任務清單」按鈕保留作手動備用）。
+- **任務模式與倪的星星**（站長要求）：每個實驗設計約 8–12 個任務，難度 1–10 級（一般任務星星數 = 等級；隱藏任務 = 等級 × 2，算法統一用 `LabMission.starsOf`），另加 2–3 個**隱藏任務**（只給隱晦的提示句，完成時只說「隱藏任務完成」不說原因）。任務必須靠操作實驗達成特定標準（例如兩發射程相等），並先用物理核心確認每個任務都做得到。寫在 `js/missions/<模組>.js`（`LabMission.register`），模組程式在關鍵時刻 `LabMission.emit('事件', {物理量})`；頁面載入 `js/missions.js data-module="<模組>"` 與任務檔（在 firebase-config.js 之後）；把模組加入 `js/missions/index.js`。新增任務後不必請站長手動同步：站長用管理員帳號登入並打開排行榜頁或該實驗頁時，`missions.js` 會自動比對 `missionDefs` 並補上新任務（排行榜頁的「同步任務清單」按鈕保留作手動備用）。
 - **全部清除**（站長要求）：會累積歷史紀錄的實驗（多條軌跡、比較用的舊軌跡、隨時間累積的圖表、統計直方圖等），在主要按鈕旁放「全部清除／Clear all」按鈕，清掉所有累積內容、回到可以重新開始的狀態，但保留目前的滑桿設定。
 - **音效**（站長要求「適合的都做」）：有教學意義的事件才加聲音（光學等非聲學現象不加）；頁面放 `#soundBtn` 音效開關（參考 collision），預設關閉；主要頻率 ≥ 250 Hz；持續變化的聲音用 `LabSound.voice`。
 - 公式一律用 KaTeX（`\( … \)`、`\[ … \]`）。**不可使用** Unicode 組合字元（例如向量箭頭 U+20D7）或上標數字字元 ⁰⁴⁵⁶⁷⁸⁹⁻（部分 Android 字型缺字）；讀數上標用 `<sup>`。
@@ -72,6 +72,7 @@
 
 - 任務、星星、成就都**必須登入 Google 帳號**才記錄。操作實驗本身永遠不需要登入。
 - 每個任務只能領一次星星，星星數 = 難度等級（1–10）。隱藏任務的提示句要**非常非常隱晦**，完成時只恭喜、不說原因。
+- **隱藏任務星星加倍**（11/12 晚上站長：「隱藏任務的星星給的數量要再更大方一點，因爲畢竟要瞎猜」，選「加倍並補發」）：隱藏任務 = 等級 × 2（最多 20 顆，規則上限 20）。`missionDefs` 存的是星星數，管理員開排行榜頁或實驗頁時自動同步成新數字；加倍以前就完成的人，登入後由 `missions.js` 的 `syncBonus` 自動補發差額，寫在 `bonus/<uid>/<任務>`（只增不減、完成紀錄 + 補發 = missionDefs、必須和 `scores` 一起寫且 `last` = 該任務、總分剛好加上差額）。`state.done[任務].stars` 是含補發的實得星數。以後若再改星數，照同一套：改 `starsOf`、改規則上限、請站長貼規則、再開排行榜頁同步。
 - 排行榜公開前 100 名，登入後一定看得到自己的名次。同分同名次，先達到的人排前面。
 - 暱稱公開顯示，使用者要為自己的暱稱負責。選擇不公開時，只顯示第一個與最後一個字（`LabMission.mask`）。
 - 成就分公開與隱藏兩種，不加星星。站長說「以後實驗會非常非常多」，所以成就要做長遠：系列等級的門檻用數量級（k、M、G、T），級數很多，稱號要有意境。
@@ -96,7 +97,7 @@
 
 ## Firebase（專案 astro-ni-physics-lab）
 
-- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`scores/`（含各科 `s/`、`sa/`）、`userStats/`、`achievements/`、`daily/`（每日任務：日序 `d`、`picks`、掉寶次數 `n`、時間 `at`、`done`）、`bag/`（寶物）。
+- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`bonus/`（隱藏任務加倍的補發）、`scores/`（含各科 `s/`、`sa/`）、`userStats/`、`achievements/`、`daily/`（每日任務：日序 `d`、`picks`、掉寶次數 `n`、時間 `at`、`done`）、`bag/`（寶物）。
 - 免費方案（Spark）限制：同時連線 100、儲存 1 GB、每月下載 10 GB。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
 - 雲端工作環境連不到 Firebase 與 gstatic；本機可以連，但測試一律用 `tools/mock-backend.js`，不要寫入正式資料庫。正式驗證請站長在網站上操作。
