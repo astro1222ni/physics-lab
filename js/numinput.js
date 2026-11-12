@@ -142,21 +142,24 @@
     function finish(commit) {
       if (done) return;
       done = true;
+      // 先收起輸入框、清掉編輯旗標，再送出 input 事件：
+      // 模組（例如潮汐、月相）在編輯中不改 <output>，暫停時沒有下一格動畫可以補上，所以旗標要先清
+      const text = inp.value;
+      wrap.remove();
+      out.hidden = false;
+      delete out.dataset.editing;
       if (commit) {
-        const v = parse(inp.value);
+        const v = parse(text);
         if (!isNaN(v)) {
           const set = setValue(range, v);
           const p = Math.pow(10, inf.decimals);
           if (Math.round(v * p) / p !== set) {
             hint(out, T('範圍 ', 'Range ') + show(inf.min, inf.decimals) + T(' ～ ', ' to ') + show(inf.max, inf.decimals));
           }
-        } else if (inp.value.trim() !== '') {
+        } else if (text.trim() !== '') {
           hint(out, T('請輸入數字', 'Please enter a number'));
         }
       }
-      wrap.remove();
-      out.hidden = false;
-      delete out.dataset.editing;
     }
     inp.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); finish(true); out.focus(); }

@@ -44,7 +44,7 @@
     {
       id: 'earthquake-4', level: 3,
       title: { zh: '兩站不夠', en: 'Two stations are not enough' },
-      desc: { zh: '測站數選 2，量好兩站的 S−P；「我標的震央」選 2 個，在地圖上點出兩個圓的兩個交點（兩個可能的震央），再按「確認我的震央」（兩點都在 10 km 內）。', en: 'Choose 2 stations and measure both S−P times. Set “My markers” to 2, tap the map at both points where the two circles cross (the two possible epicenters), then press “Check my epicenter” (both within 10 km).' },
+      desc: { zh: '測站數選 2，量好兩站的 S−P；「我標的震央」選 2 個，在地圖上點出兩個圓的兩個交點（兩個可能的震央），再按「確認我的震央」（兩點都在 10 km 內）。這一題以 d 當半徑畫圓，等於把震源深度近似為零。', en: 'Choose 2 stations and measure both S−P times. Set “My markers” to 2, tap the map at both points where the two circles cross (the two possible epicenters), then press “Check my epicenter” (both within 10 km). Using d as the radius treats the focus depth as roughly zero.' },
       check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n === 2 && d.candidates === 2 && d.marks === 2 && d.pairErr <= 10 && !d.peek; }
     },
     {
@@ -56,7 +56,7 @@
     {
       id: 'earthquake-6', level: 6,
       title: { zh: '鏡子裡的震央', en: 'The epicenter in the mirror' },
-      desc: { zh: '把 3 個以上的測站拖成一直線，量好 S−P；「我標的震央」選 2 個，在地圖上點出以那條直線為鏡子、左右對稱的兩個交點，再按「確認我的震央」（兩點都在 10 km 內）。', en: 'Drag 3 or more stations into a straight line and measure the S−P times. Set “My markers” to 2, tap the map at the two crossing points, mirror images across that line, then press “Check my epicenter” (both within 10 km).' },
+      desc: { zh: '把 3 個以上的測站拖成一直線，量好 S−P；「我標的震央」選 2 個，在地圖上點出以那條直線為鏡子、左右對稱的兩個交點，再按「確認我的震央」（兩點都在 10 km 內）。這一題以 d 當半徑畫圓，等於把震源深度近似為零。', en: 'Drag 3 or more stations into a straight line and measure the S−P times. Set “My markers” to 2, tap the map at the two crossing points, mirror images across that line, then press “Check my epicenter” (both within 10 km). Using d as the radius treats the focus depth as roughly zero.' },
       check: function (ev) { const d = ev.data; return ev.type === 'locate' && d.n >= 3 && d.collinear && d.candidates === 2 && d.marks === 2 && d.pairErr <= 10 && !d.peek; }
     },
     {

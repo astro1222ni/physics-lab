@@ -1170,8 +1170,11 @@
     setSlider(elD, d);
     emitParams('preset');
     const bs = fmtSlider(val(elB), elB) + '°', ds = fmtSlider(val(elD), elD);
+    // 任務一律要自己調出來（見 missions/conic-sections.js），在這裡先講清楚，免得學生以為任務壞了
+    const note = window.LabMission ? T('。快速切法不算任務，解任務請自己拖滑桿、打數字或拖切平面。',
+      '. Quick cuts do not count for missions: drag the sliders, type values or drag the plane yourself.') : '';
     setStatus(T('快速切法：' + typeName(state.sec.type) + '（β = ' + bs + '、d = ' + ds + '）',
-      'Quick cut: ' + typeName(state.sec.type) + ' (β = ' + bs + ', d = ' + ds + ')'));
+      'Quick cut: ' + typeName(state.sec.type) + ' (β = ' + bs + ', d = ' + ds + ')') + note);
   }
   document.querySelectorAll('#presets button').forEach(function (b) {
     b.addEventListener('click', function () { applyPreset(b.getAttribute('data-preset')); });

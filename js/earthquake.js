@@ -1881,9 +1881,12 @@
     if (!q.revealed) { q.revealed = true; emit('reveal', { source: q.source }); }
     refreshPicks();
     requestDraw();
-    const e = S.w2.est;
-    setStatus(T('真實震央：', 'True epicenter: ') + lonlatText(q.x, q.y) + T('，深度 ', ', depth ') + num(q.h, 1) + ' km' +
-      (e && e.candidates.length === 1 ? T('。你的估計差了 ', '. Your estimate is off by ') + num(e.err, 1) + ' km' : '') + T('。', '.'));
+    // 「你的」誤差一律指學生標的震央（和面板「你的震央誤差」同一個數）；電腦解的誤差另外寫明（Codex 試玩回報：兩個數字混在一起）
+    const e = S.w2.est, mk = S.w2.marks;
+    let tail = '';
+    if (mk.length) tail += T('。你的標記差了 ', '. Your marker is off by ') + num(Math.min.apply(null, mk.map(function (m) { return Math.hypot(m.x - q.x, m.y - q.y); })), 1) + ' km';
+    if (e && e.candidates.length === 1) tail += T('；電腦的最小平方解差了 ', '; the computer’s least-squares solution is off by ') + num(e.err, 1) + ' km';
+    setStatus(T('真實震央：', 'True epicenter: ') + lonlatText(q.x, q.y) + T('，深度 ', ', depth ') + num(q.h, 1) + ' km' + tail + T('。', '.'));
   });
   const elLon = $('qlon'), elLat = $('qlat'), elQh = $('qh');
   [[elLon, '°E'], [elLat, '°N'], [elQh, 'km']].forEach(function (pr) { pr[0].addEventListener('input', function () { showOut(pr[0], pr[1]); }); });
@@ -2029,7 +2032,10 @@
     if (S.mode === 'waves') S.drag1 = h.kind;
     if (S.mode === 'locate') { S.w2.drag = h; if (h.kind === 'cursor') S.w2.active = { i: h.i, which: h.which }; if (h.kind === 'mark') { S.w2.mkActive = h.i; requestDraw(); } }
     if (S.mode === 'earth') S.drag3 = true;
-    if (h.kind !== 'mark') moveDrag(p); // 標記按下去不跳動，移動時才跟著走
+    // 三站定位的測站：按下去先不搬，移動超過 8 px 才開始拖；沒移動就放開＝在這裡放震央標記
+    // （Codex 試玩回報：在測站附近點震央，測站被搬過來、量測被清掉）
+    if (S.mode === 'locate' && h.kind === 'station') h.pend = { x: p.x, y: p.y };
+    else if (h.kind !== 'mark') moveDrag(p); // 標記按下去不跳動，移動時才跟著走
     ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
@@ -2045,6 +2051,10 @@
       if (prev !== JSON.stringify([S.hover1, S.hover2, S.hover3])) requestDraw();
       return;
     }
+    if (drag.pend) {
+      if (Math.hypot(p.x - drag.pend.x, p.y - drag.pend.y) <= 8) return;
+      drag.pend = null;
+    }
     moveDrag(p);
   });
   function endDrag() {
@@ -2055,7 +2065,7 @@
     if (S.mode === 'locate') {
       S.w2.drag = null;
       if (h.kind === 'cursor') picksChanged();
-      if (h.kind === 'station') { updateWindow(); refreshPicks(); }
+      if (h.kind === 'station' && !h.pend) { updateWindow(); refreshPicks(); }
     }
     if (S.mode === 'earth') { S.drag3 = false; emitStation3(); }
     requestDraw();
@@ -2068,6 +2078,12 @@
         const q = invM(clamp(p.x, L.map.x, L.map.x + L.map.w), clamp(p.y, L.map.y, L.map.y + L.map.h));
         placeMark(q.x, q.y);
       }
+    }
+    // 按在測站上但沒有移動：當成點地圖，放上或移過來你的震央標記
+    if (drag && drag.pend && S.mode === 'locate' && !S.v3) {
+      const p = pos(ev);
+      const q = invM(clamp(p.x, L.map.x, L.map.x + L.map.w), clamp(p.y, L.map.y, L.map.y + L.map.h));
+      placeMark(q.x, q.y);
     }
     tap = null;
     endDrag();

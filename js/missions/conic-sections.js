@@ -20,7 +20,7 @@
     {
       id: 'conic-sections-1', level: 1,
       title: { zh: '切出一個圓', en: 'Cut a circle' },
-      desc: { zh: '轉動切平面，讓切口變成一個正圓。切平面要怎麼擺？', en: 'Tilt the cutting plane until the cut becomes a perfect circle. How must the plane sit?' },
+      desc: { zh: '轉動切平面，讓切口變成一個正圓。切平面要怎麼擺？（要自己調 β，「快速切法」按鈕不算）', en: 'Tilt the cutting plane until the cut becomes a perfect circle. How must the plane sit? (Adjust β yourself; the quick-cut buttons do not count.)' },
       check: function (ev) { return becomes(ev, 'circle'); }
     },
     {

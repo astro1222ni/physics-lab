@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121848"></script>
+  <script src="js/settings.js?v=202611121857"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Seismic Waves and Locating an Epicenter | Astro Ni Science Lab">地震波與震央定位｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -27,7 +27,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"地震波與震央定位","alternateName":"Seismic Waves and Locating an Epicenter","description":"看 P 波、S 波與表面波怎麼讓地面振動；在臺灣地圖上量 S−P 時間差、畫圓定出震央，再找出證明外核是液體的陰影區。","url":"https://lab.astroni.org/earthquake.html","image":"https://lab.astroni.org/img/og/earthquake.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["固體地球（Solid Earth）","地震與地球內部（Earthquakes and the Earth's Interior）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611121848">
+  <link rel="stylesheet" href="lab.css?v=202611121857">
   <style>
     /* 地震波與震央定位頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依模式與寬度決定；在可拖曳的東西上按住時才阻止捲動，其他地方手機可在畫布上捲動頁面 */
@@ -376,7 +376,7 @@
       <h3 data-en="Locating the epicenter with three stations">三站定位震央</h3>
       <p data-en-html="Each station only tells us <em>how far</em> the focus is, not in which direction, so the focus lies on a sphere of radius \(R_i\) around station \(i\):">每個測站只知道震源「多遠」，不知道「在哪個方向」，所以震源在以測站 \(i\) 為球心、半徑 \(R_i\) 的球面上：</p>
       <div class="formula">\[ (x - x_i)^2 + (y - y_i)^2 + h^2 = R_i^2 \]</div>
-      <p data-en-html="Two stations give two circles that cross at <strong>two</strong> points — not enough. A third station decides. Subtracting the equations of two stations removes \(x^2\), \(y^2\) and \(h^2\) and leaves a straight line, the <strong>common chord</strong> of the two circles:">兩個測站的圓交於<strong>兩點</strong>，還無法決定；第三個測站才能確定。把兩站的方程式相減，\(x^2\)、\(y^2\)、\(h^2\) 都消去了，剩下一條直線，就是兩圓的<strong>共同弦</strong>：</p>
+      <p data-en-html="Two stations give two circles that cross at <strong>two</strong> points — not enough (taking those two points as the possible epicenters treats the focus depth as zero; when the depth matters, the epicenter lies on the common chord between them). A third station decides. Subtracting the equations of two stations removes \(x^2\), \(y^2\) and \(h^2\) and leaves a straight line, the <strong>common chord</strong> of the two circles:">兩個測站的圓交於<strong>兩點</strong>，還無法決定（把這兩點當成可能的震央，是把震源深度近似為零；深度不能忽略時，震央在兩點之間的共同弦上）；第三個測站才能確定。把兩站的方程式相減，\(x^2\)、\(y^2\)、\(h^2\) 都消去了，剩下一條直線，就是兩圓的<strong>共同弦</strong>：</p>
       <div class="formula">\[ 2(x_j - x_i)\,x + 2(y_j - y_i)\,y = R_i^2 - R_j^2 + (x_j^2 + y_j^2) - (x_i^2 + y_i^2) \]</div>
       <p data-en-html="When the focus is deep the three circles overlap instead of meeting at a point, but the three common chords still cross exactly at the epicenter; then \(h = \sqrt{R^2 - \Delta^2}\). Real readings have errors, so the circles enclose a small “error triangle”. The simulation finds the best point by <strong>least squares</strong>: it solves the chord equations for \((x, y)\), estimates \(h\), and refines \((x, y, h)\) to minimise \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\). With more stations, the errors partly cancel. In mode 2 you locate the epicenter yourself: tap the map, press “Check my epicenter”, and only then is the computer’s least-squares point shown (grey cross) for comparison; your depth comes from your marker, \(h^2 = d_i^2 - \Delta_i^2\) averaged over the stations.">震源較深時三個圓會重疊而不交於一點，但三條共同弦仍恰好交於震央，再由 \(h = \sqrt{R^2 - \Delta^2}\) 求深度。實際的讀數有誤差，三個圓會圍出一個小小的「誤差三角形」。模擬用<strong>最小平方法</strong>找最佳的點：先由共同弦的方程式解出 \((x, y)\)、估計 \(h\)，再修正 \((x, y, h)\) 使 \(\sum_i \big(\sqrt{\Delta_i^2 + h^2} - R_i\big)^2\) 最小。測站越多，誤差越能互相抵消。在模式二，震央要你自己定：在地圖上點出來、按「確認我的震央」，之後才顯示電腦用最小平方法算出的點（灰色十字）當對照；你的深度由你的標記推算：每站 \(h^2 = d_i^2 - \Delta_i^2\)，再取平均。</p>
 
@@ -421,17 +421,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611121848"></script>
-  <script src="js/earthquake-core.js?v=202611121848"></script>
-  <script src="js/sound.js?v=202611121848"></script>
-  <script src="js/numinput.js?v=202611121848"></script>
-  <script src="js/drawkit.js?v=202611121848"></script>
-  <script src="js/keys.js?v=202611121848"></script>
-  <script src="js/earthquake.js?v=202611121848"></script>
-  <script src="js/firebase-config.js?v=202611121848"></script>
-  <script src="js/missions.js?v=202611121848" data-module="earthquake"></script>
-  <script src="js/missions/earthquake.js?v=202611121848"></script>
-  <script src="js/stats.js?v=202611121848" data-module="earthquake"></script>
-  <script src="js/comments.js?v=202611121848"></script>
+  <script src="js/math.js?v=202611121857"></script>
+  <script src="js/earthquake-core.js?v=202611121857"></script>
+  <script src="js/sound.js?v=202611121857"></script>
+  <script src="js/numinput.js?v=202611121857"></script>
+  <script src="js/drawkit.js?v=202611121857"></script>
+  <script src="js/keys.js?v=202611121857"></script>
+  <script src="js/earthquake.js?v=202611121857"></script>
+  <script src="js/firebase-config.js?v=202611121857"></script>
+  <script src="js/missions.js?v=202611121857" data-module="earthquake"></script>
+  <script src="js/missions/earthquake.js?v=202611121857"></script>
+  <script src="js/stats.js?v=202611121857" data-module="earthquake"></script>
+  <script src="js/comments.js?v=202611121857"></script>
 </body>
 </html>
