@@ -785,7 +785,8 @@
     drawNGraph(xm);
     drawAGraph(xm);
     updateReadout();
-    updateCanvasLabel(false);
+    // 播放中每秒最多更新一次；沒在播放（暫停、結束、手動擲骰）時每次重畫都同步，免得摘要停在暫停前一秒的數字、和讀數區不同
+    updateCanvasLabel(!state.running);
     srNowTick();
   }
 

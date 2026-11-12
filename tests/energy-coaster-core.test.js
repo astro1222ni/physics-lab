@@ -357,8 +357,25 @@ test('自由小車在坡頂附近擦過離軌點（N 剛好降到 0）：短暫�
     assert.ok(r.events.length < 200, 'x0 = ' + x0 + ' 事件數 ' + r.events.length);
     assert.ok(r.sim.t >= 12 - 1e-6 || !['track', 'air'].includes(r.sim.phase), 'x0 = ' + x0 + ' 時間有前進');
     const s = C.specificEnergy(tr, { g: G }, r.sim), e0 = G * tr.heightAt(x0);
-    if (r.sim.phase !== 'out') close(s.e, e0, 1e-6, 'x0 = ' + x0 + ' 總能守恆（' + r.sim.phase + '）');
+    close(s.e, e0, 1e-6, 'x0 = ' + x0 + ' 總能守恆（' + r.sim.phase + '）');
   }
+});
+
+test('飛出畫面時小車仍在飛：保留離開那一刻的速度，總能守恆（Codex 試玩：總能從 55.4 跳到 45.7 kJ）', () => {
+  const tr = C.buildTrack(P.valley);
+  let found = 0;
+  for (const v0 of [-2, -4, -6, -8]) {
+    const Pp = { g: G, mu: 0, mode: 'rail', x0: 2, v0: v0 };
+    const r = C.run(tr, Pp, 8);
+    if (r.sim.phase !== 'out') continue;
+    found++;
+    const ev = first(r, 'out'), K = C.kinematics(tr, Pp, r.sim);
+    close(K.speed, ev.v, 1e-9, 'v0 = ' + v0 + ' 飛出時的速率');
+    const s = C.specificEnergy(tr, Pp, r.sim), e0 = 0.5 * v0 * v0 + G * tr.heightAt(2);
+    close(s.e, e0, 1e-6, 'v0 = ' + v0 + ' 總能');
+    assert.strictEqual(s.qi, 0, '沒有撞擊熱');
+  }
+  assert.ok(found >= 1, '至少有一種初速會飛出畫面');
 });
 
 console.log(`\n${passed} 項通過`);

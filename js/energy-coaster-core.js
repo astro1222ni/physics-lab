@@ -384,7 +384,8 @@
     if (sim.phase === 'air' || ((sim.phase === 'landed' || sim.phase === 'crashed' || sim.phase === 'out') && sim.air)) {
       const a = sim.air, tau = a.tau;
       const vy = a.vy - P.g * tau;
-      const moving = sim.phase === 'air';
+      // 飛出畫面（out）時小車仍在空中飛，只是看不到：保留離開畫面那一刻的速度，動能不歸零（落地、撞軌才把動能算成撞擊熱）
+      const moving = sim.phase === 'air' || sim.phase === 'out';
       return {
         x: a.x0 + a.vx * tau, y: Math.max(sim.phase === 'landed' ? 0 : -Infinity, a.y0 + a.vy * tau - 0.5 * P.g * tau * tau),
         vx: moving ? a.vx : 0, vy: moving ? vy : 0, speed: moving ? Math.hypot(a.vx, vy) : 0,

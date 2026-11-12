@@ -662,14 +662,16 @@
 
   // ---------- 數字格式 ----------
   // 科學記號用 HTML <sup> 排版，不依賴特殊上標字元（部分裝置字型缺字）
-  function sci(v, unit) {
+  // dig：有效位數（預設 3）；漂移速率要 4 位，否則 299.6 km/s 會顯示成 3.00 × 10^5，看不出沒到 300 km/s
+  function sci(v, unit, dig) {
+    dig = dig || 3;
     if (!isFinite(v)) return '—';
     const a = Math.abs(v);
     if (a === 0) return '0 ' + unit;
-    if (a >= 0.01 && a < 1e4) return Number(v.toPrecision(3)).toLocaleString('en-US').replace('-', '−') + ' ' + unit;
+    if (a >= 0.01 && a < 1e4) return Number(v.toPrecision(dig)).toLocaleString('en-US').replace('-', '−') + ' ' + unit;
     const ex = Math.floor(Math.log10(a));
     const m = v / Math.pow(10, ex);
-    return m.toFixed(2).replace('-', '−') + ' × 10<sup>' + String(ex).replace('-', '−') + '</sup> ' + unit;
+    return m.toFixed(dig - 1).replace('-', '−') + ' × 10<sup>' + String(ex).replace('-', '−') + '</sup> ' + unit;
   }
   function fmtLen(m) {
     const cm = m / CM;
@@ -709,7 +711,7 @@
     showRows('eRow', par.E !== 0);
     if (par.E !== 0) {
       $('rFe').innerHTML = sci(Math.sqrt(F.ex * F.ex + F.ey * F.ey + F.ez * F.ez), 'N');
-      $('rVd').innerHTML = par.B === 0 ? '—（B = 0）' : sci(Math.abs(par.E * 1e3 / B), 'm/s');
+      $('rVd').innerHTML = par.B === 0 ? '—（B = 0）' : sci(Math.abs(par.E * 1e3 / B), 'm/s', 4);
     }
     $('rv').innerHTML = sci(MC.speed(p), 'm/s');
     $('rK').textContent = fmtEV(MC.kinetic(p));

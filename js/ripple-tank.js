@@ -907,16 +907,17 @@
     analysis = { part: p };
     if (p === 1) {
       const rows = tbl.filter(function (r) { return r.lp > 0; });
-      const pts = rows.map(function (r) { return [r.f, r.f * r.lp / state.Muser * 100]; });
+      // r.lp 是紙上量到的 λ′（cm），λ = λ′/M（cm），v = fλ（cm/s）
+      const pts = rows.map(function (r) { return [r.f, r.f * r.lp / state.Muser]; });
       const th = theory();
       const vt = function (f) { return RC.phaseSpeed(f, state.h) * 100; };
       const ys = pts.map(function (q) { return q[1]; });
       const ymax = Math.max(40, ys.length ? Math.max.apply(null, ys) * 1.15 : 0);
       plot({ x0: 4, x1: 21, y0: 0, y1: ymax, xl: T('頻率 f (Hz)', 'Frequency f (Hz)'), yl: T('波速 v (cm/s)', 'Speed v (cm/s)'), pts: pts, ref: vt, legend: [[T('理論 v(f)（目前水深）', 'Theory v(f) at this depth'), colors.muted, true]] });
       if (rows.length) {
-        const last = rows[rows.length - 1], vMeas = last.f * last.lp / state.Muser;
+        const last = rows[rows.length - 1], vMeas = last.f * last.lp / state.Muser / 100;   // m/s
         const vTrue = RC.phaseSpeed(trueF(), state.h);
-        dt(T('最後一筆的 λ', 'Last λ'), nf(last.lp / state.Muser * 100, 3) + ' cm');
+        dt(T('最後一筆的 λ', 'Last λ'), nf(last.lp / state.Muser, 3) + ' cm');
         dt(T('最後一筆的 v = fλ', 'Last v = fλ'), nf(vMeas * 100, 1) + ' cm/s');
         dt(T('理論波速（目前頻率與水深）', 'Accepted speed (this f and depth)'), nf(vTrue * 100, 1) + ' cm/s');
         dt(T('百分誤差', 'Percent error'), pctText(Math.abs(vMeas / vTrue - 1)));

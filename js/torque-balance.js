@@ -22,6 +22,11 @@
     if (/^-0(\.0+)?$/.test(s)) s = s.slice(1);
     return s.replace('-', '−');
   }
+  // 兩個數四捨五入後一樣、其實不相等時（例如臨界時需要 729.62 N、上限 729.58 N），自動多給位數（最多多 3 位），免得看起來相同卻判定會滑
+  function pairDec(a, b, d) {
+    for (let k = d; k <= d + 3; k++) if (num(a, k) !== num(b, k)) return k;
+    return d;
+  }
   function sgn(v, d) { const s = num(v, d); return v > 0 && s !== num(0, d) ? '+' + s : s; }
   function fmtSlider(v, el) {
     const dec = window.LabNum ? window.LabNum.decimals(el) : 2;
@@ -1075,7 +1080,7 @@
       if (cause === 'release' || !cause) {
         const s = SND();
         if (s) { s.tone({ freq: 784, dur: 0.4, gain: 0.1 }); s.tone({ freq: 1175, dur: 0.35, gain: 0.05, delay: 0.08 }); }
-        setStatus(T('梯子站得住：地面需要 ', 'The ladder holds: the floor must supply ') + num(r.fg, 1) + ' N' + T('，最多可以提供 ', ' of friction and can supply up to ') + num(r.fgMax, 1) + ' N' + T('。', '.'));
+        setStatus(T('梯子站得住：地面需要 ', 'The ladder holds: the floor must supply ') + num(r.fg, pairDec(r.fg, r.fgMax, 1)) + ' N' + T('，最多可以提供 ', ' of friction and can supply up to ') + num(r.fgMax, pairDec(r.fg, r.fgMax, 1)) + ' N' + T('。', '.'));
       }
       emit('ladderStand', ldSnap({ cause: cause || 'release' }));
     }
@@ -1091,7 +1096,7 @@
     ld.slide = TC.ladderSlideInit(o);
     const s = SND();
     if (s) { s.noise({ dur: 0.55, filter: 1700, q: 0.7, gain: 0.24, attack: 0.04 }); s.sweep({ from: 620, to: 300, dur: 0.5, gain: 0.05, type: 'triangle' }); }
-    setStatus(T('滑倒了！地面需要 ', 'It slips! The floor would need ') + num(r.fg, 1) + ' N' + T(' 的摩擦力，但最多只有 μsN = ', ' of friction but can give only μsN = ') + num(r.fgMax, 1) + ' N' + T('。', '.'));
+    setStatus(T('滑倒了！地面需要 ', 'It slips! The floor would need ') + num(r.fg, pairDec(r.fg, r.fgMax, 1)) + ' N' + T(' 的摩擦力，但最多只有 μsN = ', ' of friction but can give only μsN = ') + num(r.fgMax, pairDec(r.fg, r.fgMax, 1)) + ' N' + T('。', '.'));
     $('climb').textContent = T('往上爬', 'Climb up');
     $('climb').classList.remove('on');
   }
@@ -1423,7 +1428,7 @@
     const title = [[T('地面摩擦力 ', 'Floor friction '), 0], ['f', 0], [tG, 1]];
     const ok = !r.slips;
     const tag = ok ? T('站得住', 'holds') : T('不夠 → 會滑', 'too little → slips');
-    const maxLine = [[T('最多 ', 'max '), 0], ['μ', 0], ['s', 1], ['N', 0], [tG, 1], [' = ' + num(r.fgMax, 1) + ' N', 0]];
+    const maxLine = [[T('最多 ', 'max '), 0], ['μ', 0], ['s', 1], ['N', 0], [tG, 1], [' = ' + num(r.fgMax, pairDec(r.fg, r.fgMax, 1)) + ' N', 0]];
     const tw = richWidth(c, title, f1), gw = richWidth(c, tag, f1), mw = richWidth(c, maxLine, f2);
     const wMax = Math.max(140, cw - 16);
     let w = Math.min(wMax, Math.max(156, Math.min(230, cw * 0.32), mw + 20));
@@ -1452,7 +1457,7 @@
     // 需要
     c.fillStyle = alpha(C.pos, 0.14); D.roundRect(c, x0 + 10, yA, bw, bh, 3); c.fill();
     c.fillStyle = C.pos; D.roundRect(c, x0 + 10, yA, Math.max(2, bw * Math.min(1, r.fg / top)), bh, 3); c.fill();
-    richText(c, [[T('需要 ', 'needed ') + num(r.fg, 1) + ' N', 0]], x0 + 10, yA + bh + lh / 2 + 2, C.pos, f2, true);
+    richText(c, [[T('需要 ', 'needed ') + num(r.fg, pairDec(r.fg, r.fgMax, 1)) + ' N', 0]], x0 + 10, yA + bh + lh / 2 + 2, C.pos, f2, true);
     // 最多
     c.strokeStyle = C.accent; c.lineWidth = 1.5;
     D.roundRect(c, x0 + 10.5, yB + 0.5, Math.max(2, bw * Math.min(1, r.fgMax / top)) - 1, bh - 1, 3); c.stroke();
@@ -1470,9 +1475,9 @@
     $('lState').innerHTML = st;
     $('lW').innerHTML = num(r.W, 1) + ' N<small>' + num(r.Wl, 1) + ' + ' + num(r.Wp, 1) + '</small>';
     $('lNg').textContent = num(r.Ng, 2) + ' N';
-    $('lfg').textContent = num(r.fg, 2) + ' N';
+    $('lfg').textContent = num(r.fg, pairDec(r.fg, r.fgMax, 2)) + ' N';
     $('lfg').className = r.slips ? 'bad' : '';
-    $('lfmax').textContent = num(r.fgMax, 2) + ' N';
+    $('lfmax').textContent = num(r.fgMax, pairDec(r.fg, r.fgMax, 2)) + ' N';
     $('lfmax').className = r.slips ? 'bad' : 'ok';
     $('lNw').textContent = num(r.Nw, 2) + ' N';
     $('lfw').innerHTML = o.muw > 0 ? num(r.fw, 2) + ' N<small>' + T('最多 μwN = ', 'max μwN = ') + num(r.fwMax, 2) + ' N</small>' : T('0（光滑）', '0 (smooth)');
@@ -1858,7 +1863,7 @@
   function ladderText() {
     const r = TC.ladderStatics(ldParams());
     return (r.slips ? T('放手會滑：', 'It would slip: ') : T('放手站得住：', 'It would hold: ')) +
-      T('地面需要摩擦力 ', 'the floor must supply ') + num(r.fg, 1) + ' N' + T('，最多 ', ' of friction, at most ') + num(r.fgMax, 1) + ' N' +
+      T('地面需要摩擦力 ', 'the floor must supply ') + num(r.fg, pairDec(r.fg, r.fgMax, 1)) + ' N' + T('，最多 ', ' of friction, at most ') + num(r.fgMax, pairDec(r.fg, r.fgMax, 1)) + ' N' +
       T('；臨界角 θc = ', '; critical angle θc = ') + (r.thetaC > 0 ? num(r.thetaC / D2R, 2) + '°' : T('無（任何角度都不滑）', 'none (never slips)')) + T('。', '.');
   }
   function stackOffset(it) {
