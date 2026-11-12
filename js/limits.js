@@ -482,6 +482,7 @@
       const q = QS(), N = state.N;
       if (state.chal) return T('找出最小的 N：第 N 項以後都要在帶子裡，而且第 N − 1 項不在。', 'Find the smallest N: every term from N on must be inside the band, and term N − 1 must not be.');
       if (!q.lim.conv) return q.out != null ? T('第 ' + q.out + ' 項跑出帶子了：帶子放在哪裡（上下拖曳帶子）都關不住後面的每一項——沒有極限。', 'Term ' + q.out + ' is outside: wherever you put the band (drag it up or down) the later terms escape — there is no limit.') : T('帶子夠寬時暫時關得住；把 ε 調到 1 以下再試試。', 'A wide band holds it for now; try ε below 1.');
+      if (!q.allIn && q.Nmin > 2000) return T('最小的 N 是 ' + q.Nmin + '，超過這裡 N 的上限 2000：ε 這麼小，要走得非常遠才會全部進帶子。把 ε 調大一點再找。', 'The smallest N is ' + q.Nmin + ', beyond the limit of 2000 here: with ε this small the terms take a very long time to settle. Make ε a little larger and try again.');
       if (!q.allIn) return T('第 ' + q.out + ' 項還在帶子外面（紅圈）：N 要再往後移。', 'Term ' + q.out + ' is still outside (red ring): move N further on.');
       if (N > 1 && !(M.err(q.sp, N - 1) < q.eps)) return T('第 ' + N + ' 項以後都在帶子裡，而且第 ' + (N - 1) + ' 項不在——這就是最小的 N。', 'Every term from ' + N + ' on is inside, and term ' + (N - 1) + ' is not — this is the smallest N.');
       if (N === 1) return T('第 1 項以後全部都在帶子裡。', 'Every term from the first on is inside the band.');
