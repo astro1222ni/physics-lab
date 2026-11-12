@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="String Instruments: Length, Tension and Frets | Astro Ni Science Lab">弦樂器：弦長、張力與品格｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 弦樂器頁面專用的顏色代號（淺色＋兩組深色；由 js/string-instrument.js 讀取） */
+    :root {
+      --si-wave: #1d4ed8; --si-pick: #c2410c; --si-touch: #0f766e; --si-r18: #be185d;
+      --si-good: #15803d; --si-warn: #b45309; --si-spec: #7c3aed; --si-finger: #c98a64;
+      --si-rose: #5a3622; --si-ebony: #262220; --si-top: #e7c995; --si-varnish: #b5652a; --si-rod: #3b2418; --si-fret: #b9bec4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --si-wave: #7aa7ff; --si-pick: #fb923c; --si-touch: #5eead4; --si-r18: #ff74b0;
+        --si-good: #4ade80; --si-warn: #fbbf24; --si-spec: #b9a0ff; --si-finger: #d79c78;
+        --si-rose: #4a2c1c; --si-ebony: #1b1816; --si-top: #c8a874; --si-varnish: #9a5222; --si-rod: #33200f; --si-fret: #a9aeb4;
+      }
+    }
+    :root[data-theme="dark"] {
+      --si-wave: #7aa7ff; --si-pick: #fb923c; --si-touch: #5eead4; --si-r18: #ff74b0;
+      --si-good: #4ade80; --si-warn: #fbbf24; --si-spec: #b9a0ff; --si-finger: #d79c78;
+      --si-rose: #4a2c1c; --si-ebony: #1b1816; --si-top: #c8a874; --si-varnish: #9a5222; --si-rod: #33200f; --si-fret: #a9aeb4;
+    }
+
+    /* 畫布高度由程式依寬度決定。只有按在弦或指板上才攔下觸控，其他時候手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 400px; touch-action: pan-y; cursor: pointer; }
+    #cv2 { aspect-ratio: auto; height: 170px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; background: var(--canvas-bg); }
+    .si button { min-height: 44px; }
+    .si [hidden] { display: none !important; }
+    .si .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .si .playbar button { flex: 1 1 auto; }
+    .si .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .si #bow[aria-pressed="true"] { background: var(--si-warn); border-color: var(--si-warn); color: var(--surface); font-weight: 600; }
+    .si #stop:disabled { opacity: .5; }
+    .si .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .si .stage .hint { margin: 2px 4px 0; }
+    .si .slider input[type="range"] { height: 28px; margin: 0; }
+    .si .checks label { min-height: 44px; }
+    .si .checks input { width: 17px; height: 17px; }
+    .si .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .si .panel { grid-template-columns: minmax(0, 1fr); }
+    .si .panel > .card { min-width: 0; }
+    /* 依樂器、左手方式顯示不同的控制項 */
+    .si:not([data-frets="1"]) .fret-only { display: none !important; }
+    .si[data-frets="1"] .fretless-only { display: none !important; }
+    .si:not([data-hand="press"]) .press-only { display: none !important; }
+    .si:not([data-hand="touch"]) .touch-only { display: none !important; }
+    .si:not([data-mumode="mu"]) .mu-only { display: none !important; }
+    .si:not([data-mumode="mat"]) .mat-only { display: none !important; }
+    .si[data-frets="1"] .bow-only { display: none !important; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; min-width: 0; }
+    .strings { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 6px; margin: 10px 0 0; }
+    .strings button { padding: 4px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .strings button b { font-size: calc(14px * var(--fs, 1)); }
+    .strings button small { font-size: calc(11.5px * var(--fs, 1)); color: var(--si-warn); font-weight: 600; }
+    .strings button small.ok { color: var(--si-good); }
+    .strings button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+    .fine { display: flex; align-items: center; gap: 8px; margin: -4px 0 6px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .fine span { flex: 1 1 auto; font-variant-numeric: tabular-nums; }
+    .fine button { min-width: 64px; padding: 4px 10px; font-variant-numeric: tabular-nums; }
+    .touches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
+    .touches button { padding: 4px 4px; }
+    .touches button[aria-pressed="true"] { background: var(--si-touch); border-color: var(--si-touch); color: var(--surface); font-weight: 600; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+    .row > .seg { flex: 1 1 auto; }
+    .reset { width: 100%; margin: 10px 0 0; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.big { font-weight: 700; color: var(--si-wave); }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.si-t { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.si-t th, table.si-t td { padding: 4px 5px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; }
+    table.si-t th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.si-t th:first-child, table.si-t td:first-child { text-align: left; }
+    table.si-t tr.sel td { background: var(--accent-soft); }
+    table.si-t td.ok { color: var(--si-good); font-weight: 600; }
+    table.si-t td.off { color: var(--si-warn); font-weight: 600; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .ring { width: 9px; height: 9px; border-radius: 50%; background: none !important; border: 2px solid currentColor; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    /* 2D／3D 檢視切換（與帶電粒子、共鳴管模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .stage.is3d .cvwrap { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .si3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .si3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
+    .si3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#instruments&quot;>Music · The Science of Instruments</a> / String instruments"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#instruments">音樂・樂器的科學</a> ／ 弦樂器</nav>
+      <h1 data-en="String Instruments: Length, Tension and Frets">弦樂器：弦長、張力與品格</h1>
+      <p data-en="A guitar, a violin and an erhu all make their notes the same way: a string fixed at both ends, whose pitch is set by its length, its tension and how heavy it is. Tune the strings like a player does, press a fret, touch a natural harmonic, pluck near the bridge or near the fingerboard — and see why frets get closer together towards the body, why bass strings are wound with metal wire, and why some harmonics go missing.">吉他、小提琴、二胡發聲的道理都一樣：兩端固定的弦，音高由弦長、張力和弦有多重決定。像演奏者一樣調弦、按品、輕觸自然泛音、靠近琴橋或指板撥弦，看看品格為什麼越往琴身越密、低音弦為什麼要纏金屬線，以及某些泛音為什麼會消失。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Pluck”, then set “Pluck position” to 0.33 and pluck again — which bar of the spectrum is gone?">試試看：按「撥一下」，再把「撥弦位置」移到 0.33 再撥，看頻譜少了哪一根。</p>
+    <div class="lab si" id="lab" data-frets="1" data-hand="press" data-mumode="mu">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" tabindex="0" aria-label="弦樂器畫布：上面是調音表與指板（品格、弦、手指、撥弦點），下面是選中的那條弦的振動。在指板上點一下選弦、按品或移動手指；在下面的弦上拖曳把弦拉起來，放開就撥。" data-en-aria-label="String instrument canvas: a tuner and the fingerboard (frets, strings, finger, plucking point) on top, and the vibration of the selected string underneath. Tap the fingerboard to pick a string, press a fret or move the finger; drag the string underneath to pull it, and let go to pluck."></canvas>
+        </div>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="pluck" type="button" class="primary" data-en="▶ Pluck">▶ 撥一下</button>
+          <button id="bow" type="button" class="bow-only" aria-pressed="false" data-en="Bow (sustained)">拉弓（持續音）</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除撥弦紀錄並讓弦停下；樂器、弦與滑桿的設定不變" data-en-title="Clear the plucking record and stop the string; the instrument, strings and slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="earHint" data-en="Wearing headphones? Turn the volume down first: short strings and touched harmonics can be high and piercing. The timbres are approximations made from harmonics.">戴耳機的同學先把音量調小：短弦與輕觸泛音可能很高、很尖。音色是用泛音合成的近似。</p>
+        <p class="hint" id="lowHint" hidden></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--si-wave)&quot;></i>Vibrating string"><i style="background:var(--si-wave)"></i>弦的振動</span>
+          <span style="color:var(--si-pick)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--si-pick)&quot;></i>Plucking point"><i class="dot" style="background:var(--si-pick)"></i>撥弦點</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--si-finger)&quot;></i>Finger"><i class="dot" style="background:var(--si-finger)"></i>手指</span>
+          <span style="color:var(--si-touch)" data-en-html="<i class=&quot;ring&quot;></i>Light touch / nodes"><i class="ring"></i>輕觸點與節點</span>
+          <span style="color:var(--si-r18)" data-en-html="<i class=&quot;dash&quot;></i>Rule-of-18 frets"><i class="dash"></i>18 法則的品格</span>
+        </div>
+        <canvas id="cv2" role="img" aria-label="頻譜：各泛音的相對振幅。" data-en-aria-label="Spectrum: the relative strength of each harmonic."></canvas>
+        <p class="chart-note" data-en-html="Bars: how strongly each harmonic pushes on the bridge (\(\propto n\,a_n\)), which is what you hear. The outline is the moment of plucking; the filled part fades as the note dies away — the high harmonics fade first. A dashed empty box is a harmonic that is missing.">長條：各泛音推動琴橋的強弱（\(\propto n\,a_n\)），也就是耳朵聽到的成分。外框是撥下去的瞬間，實心部分隨聲音衰減——高次泛音先消失。虛線空框是缺少的泛音。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Instrument and string">樂器與弦</h2>
+          <div class="seg full" id="insts" role="group" aria-label="樂器" data-en-aria-label="Instrument">
+            <button type="button" data-inst="guitar" aria-pressed="true" data-en="Guitar">古典吉他</button>
+            <button type="button" data-inst="violin" aria-pressed="false" data-en="Violin">小提琴</button>
+            <button type="button" data-inst="erhu" aria-pressed="false" data-en="Erhu">二胡</button>
+          </div>
+          <div class="strings" id="strings" role="group" aria-label="選一條弦（下面的數字是離目標音差幾音分）" data-en-aria-label="Pick a string (the number underneath is how many cents it is off its target note)"></div>
+          <p class="hint" id="instNote"></p>
+          <button type="button" class="reset" id="resetInst" data-en="Restore this instrument (untuned)">恢復這把琴的預設（未調音）</button>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The string">弦的參數</h2>
+          <div class="slider"><label for="len" data-en="String length L (m)">弦長 L（m）</label><output id="leno"></output>
+            <input id="len" type="range" min="0.2" max="1.4" step="0.001" value="0.65" data-decimals="3"></div>
+          <div class="slider"><label for="ten" data-en="Tension T (N)">張力 T（N）</label><output id="teno"></output>
+            <input id="ten" type="range" min="10" max="200" step="0.1" value="71.3" data-decimals="2"></div>
+          <div class="fine">
+            <span id="kgw"></span>
+            <button type="button" id="tenDn" aria-label="張力減少 0.1 N（轉鬆弦鈕）" data-en-aria-label="Loosen: tension minus 0.1 N">−0.1</button>
+            <button type="button" id="tenUp" aria-label="張力增加 0.1 N（轉緊弦鈕）" data-en-aria-label="Tighten: tension plus 0.1 N">+0.1</button>
+          </div>
+          <div class="seg full" id="mumodes" role="group" aria-label="線密度怎麼決定" data-en-aria-label="How the mass per length is set">
+            <button type="button" id="muDirect" aria-pressed="true" data-en="Set μ directly">直接設定 μ</button>
+            <button type="button" id="muMat" aria-pressed="false" data-en="Material and diameter">材料與直徑</button>
+          </div>
+          <div class="mu-only">
+            <div class="slider"><label for="mu" data-en="Mass per length μ (g/m)">線密度 μ（g/m）</label><output id="muo"></output>
+              <input id="mu" type="range" min="0" max="1000" step="1" value="500"></div>
+          </div>
+          <div class="mat-only">
+            <div class="row">
+              <div class="seg full" id="mats" role="group" aria-label="材料" data-en-aria-label="Material">
+                <button type="button" data-mat="nylon" aria-pressed="true" data-en="Nylon">尼龍</button>
+                <button type="button" data-mat="steel" aria-pressed="false" data-en="Steel">鋼</button>
+              </div>
+            </div>
+            <div class="slider"><label for="dia" data-en="Diameter d (mm)">直徑 d（mm）</label><output id="diao"></output>
+              <input id="dia" type="range" min="0.6" max="3" step="0.01" value="1" data-decimals="3"></div>
+          </div>
+          <p class="hint" id="muNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Left hand">左手</h2>
+          <div class="seg full" id="hands" role="group" aria-label="左手怎麼碰弦" data-en-aria-label="How the left hand touches the string">
+            <button type="button" id="handPress" aria-pressed="true" data-en="Press">按弦</button>
+            <button type="button" id="handTouch" aria-pressed="false" data-en="Touch a harmonic">輕觸泛音</button>
+          </div>
+          <div class="press-only fret-only">
+            <div class="slider"><label for="fret" data-en="Fret pressed (0 = open string)">按第幾品（0 = 空弦）</label><output id="freto"></output>
+              <input id="fret" type="range" min="0" max="19" step="1" value="0" data-decimals="0"></div>
+            <div class="seg full" id="rules" role="group" aria-label="品格的位置怎麼算" data-en-aria-label="How the frets are placed">
+              <button type="button" id="ruleEt" aria-pressed="true" data-en-html="2<sup>1/12</sup> (modern)">2<sup>1/12</sup>（現代）</button>
+              <button type="button" id="rule18" aria-pressed="false" data-en="Rule of 18 (old)">18 法則（傳統）</button>
+            </div>
+          </div>
+          <div class="press-only fretless-only">
+            <div class="slider"><label for="finger" data-en="Finger position (semitones above the open string)">手指位置（比空弦高幾個半音）</label><output id="fingero"></output>
+              <input id="finger" type="range" min="0" max="19" step="0.01" value="0" data-decimals="3"></div>
+            <p class="hint" id="fretlessNote"></p>
+          </div>
+          <div class="touch-only">
+            <div class="touches" id="touches" role="group" aria-label="輕觸的位置" data-en-aria-label="Where to touch">
+              <button type="button" data-tf="12" aria-pressed="true" title="弦長的 1/2" data-en-title="half the string" data-en="Fret 12">第 12 品</button>
+              <button type="button" data-tf="7" aria-pressed="false" title="弦長的 1/3 附近" data-en-title="about a third of the string" data-en="Fret 7">第 7 品</button>
+              <button type="button" data-tf="5" aria-pressed="false" title="弦長的 1/4 附近" data-en-title="about a quarter of the string" data-en="Fret 5">第 5 品</button>
+              <button type="button" data-tf="4" aria-pressed="false" title="弦長的 1/5 附近" data-en-title="about a fifth of the string" data-en="Fret 4">第 4 品</button>
+            </div>
+            <div class="slider"><label for="touch" data-en="Touch point (distance from the nut ÷ length)">輕觸位置（離琴枕的距離 ÷ 弦長）</label><output id="toucho"></output>
+              <input id="touch" type="range" min="0.05" max="0.95" step="0.001" value="0.5" data-decimals="4"></div>
+          </div>
+          <div class="checks fret-only">
+            <label><input id="show18" type="checkbox"><span data-en="Compare with the rule of 18">對照 18 法則的品格</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Right hand">右手</h2>
+          <div class="slider"><label for="beta" data-en="Pluck position β (from the bridge ÷ vibrating length)">撥弦位置 β（離琴橋 ÷ 振動部分的長度）</label><output id="betao"></output>
+            <input id="beta" type="range" min="0.05" max="0.5" step="0.01" value="0.2" data-decimals="3"></div>
+          <p class="hint" data-en="Near the bridge (small β) the sound is bright; towards the middle it is soft. You can also drag the string under the fingerboard and let go.">靠近琴橋（β 小）聲音較亮；越靠中間越柔。也可以在指板下方的弦上拖曳，放開就撥。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="What you hear">聽到的音</dt><dd class="big" id="rHear">—</dd>
+            <dt data-en="Note (A4 = 440 Hz)">音名（A4 = 440 Hz）</dt><dd id="rNote">—</dd>
+            <dt data-en-html="Fundamental f<sub>1</sub> of the vibrating part">振動部分的基頻 f<sub>1</sub></dt><dd id="rF1">—</dd>
+            <dt data-en="Open string">空弦</dt><dd id="rOpen">—</dd>
+            <dt data-en="Wave speed v">波速 v</dt><dd id="rV">—</dd>
+            <dt data-en="Tension T">張力 T</dt><dd id="rT">—</dd>
+            <dt data-en="Mass per length μ">線密度 μ</dt><dd id="rMu">—</dd>
+            <dt data-en="Vibrating length">有效弦長</dt><dd id="rLeff">—</dd>
+            <dt class="fret-only" data-en-html="Rule of 18 vs 2<sup>1/12</sup>">18 法則與 2<sup>1/12</sup></dt><dd class="fret-only" id="r18">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Tuning table">調弦表</h2>
+          <div class="tablewrap"><table class="si-t" id="tuneTable"></table></div>
+          <p class="hint" data-en="Green: within ±3 cents of the target note. The last column is the interval to the next string up.">綠色：離目標音 ±3 音分以內。最後一欄是和上一條較高的弦相差的音程。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Plucking record">撥弦紀錄</h2>
+          <div class="tablewrap"><table class="si-t" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Nothing plucked yet.">還沒有撥弦。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Mersenne's laws">梅森定律</h3>
+      <p data-en-html="A wave on a string under tension \(T\) with mass per unit length \(\mu\) travels at \(v = \sqrt{T/\mu}\). A string held at both ends (the nut and the bridge, or a finger and the bridge) can only keep the standing waves that fit an exact number of half-wavelengths into its length \(L\): \(\lambda_n = 2L/n\). Their frequencies are">張力 \(T\)、每公尺質量（線密度）\(\mu\) 的弦，波速是 \(v = \sqrt{T/\mu}\)。兩端固定（琴枕與琴橋，或手指與琴橋）的弦，只留得住剛好放進整數個「半波長」的駐波：\(\lambda_n = 2L/n\)。它們的頻率是</p>
+      <div class="formula">\[ f_n = \frac{n v}{2L} = \frac{n}{2L}\sqrt{\frac{T}{\mu}}, \qquad f_1 = \frac{1}{2L}\sqrt{\frac{T}{\mu}}, \qquad f_n = n f_1 \]</div>
+      <p data-en-html="This is <strong>Mersenne's law</strong> (Marin Mersenne, <em>Harmonie universelle</em>, 1636): halve the length and the pitch rises an octave; four times the tension, also an octave; four times the mass per length, an octave lower. Doubling the tension only multiplies the frequency by \(\sqrt2\), which is 600 cents — a tritone, not an octave. The reflection of waves at the fixed ends and how the standing waves form are in the physics experiment “Reflection of Waves on a String and Standing Waves”; here we look at how instrument makers and players use them.">這就是<strong>梅森定律</strong>（梅森 Marin Mersenne，《Harmonie universelle》，1636）：弦長減半，升高八度；張力變 4 倍，也是八度；線密度變 4 倍，低八度。張力只加倍，頻率乘上 \(\sqrt2\)，是 600 音分——三全音，不是八度。波在固定端的反射與駐波怎麼形成，在物理的「繩波的反射與駐波」實驗；這裡看的是製琴師與演奏者怎麼利用它。</p>
+
+      <h3 data-en="Where the frets go">品格放在哪裡</h3>
+      <p data-en-html="In twelve-tone equal temperament every semitone is the same frequency ratio \(2^{1/12}\). Pressing fret \(n\) leaves a vibrating length \(L\cdot 2^{-n/12}\), so fret \(n\) sits at">十二平均律每個半音的頻率比都是 \(2^{1/12}\)。按住第 \(n\) 品，振動部分剩下 \(L\cdot 2^{-n/12}\)，所以第 \(n\) 品離琴枕</p>
+      <div class="formula">\[ x_n = L\left(1 - 2^{-n/12}\right), \qquad x_{12} = \frac{L}{2}, \qquad \frac{x_{n+1} - x_n}{x_n - x_{n-1}} = 2^{-1/12} \approx 0.944 \]</div>
+      <p data-en-html="Each gap is about 5.6 % shorter than the one before, so the frets crowd together towards the body, and the 12th fret is exactly halfway. Before calculators, lute and guitar makers used the <strong>rule of 18</strong>: each fret takes away 1/18 of the length that is left, \(x_n = L\left[1 - (17/18)^n\right]\). Vincenzo Galilei, the father of Galileo, described this ratio in 1581. The exact number is \(1/(1 - 2^{-1/12}) = 17.817\), so with 18 every semitone is \(1200\log_2(18/17) = 98.95\) cents — about 1 cent flat — and the 12th fret is 12.5 cents flat. The position error \(L[(17/18)^n - 2^{-n/12}]\) is largest at the 17th fret (2.51 mm on a 650 mm guitar).">每一格都比前一格短約 5.6%，所以品格越往琴身越密，第 12 品剛好在正中間。沒有計算機的年代，魯特琴與吉他的製琴師用<strong>18 法則</strong>：每一品拿掉剩下長度的 1/18，\(x_n = L\left[1 - (17/18)^n\right]\)。伽利略的父親溫琴佐・伽利萊（Vincenzo Galilei）在 1581 年就寫過這個比例。精確的數字是 \(1/(1 - 2^{-1/12}) = 17.817\)，用 18 的話每個半音只有 \(1200\log_2(18/17) = 98.95\) 音分，每品低約 1 音分，第 12 品低 12.5 音分。位置誤差 \(L[(17/18)^n - 2^{-n/12}]\) 在第 17 品最大（650 mm 的吉他約 2.51 mm）。</p>
+
+      <h3 data-en="Where you pluck sets the tone">撥哪裡決定音色</h3>
+      <p data-en-html="Pulling the string aside at a fraction \(\beta\) of its length from the bridge makes a triangle of height \(h\). Writing that triangle as a sum of the string's modes \(\sin(n\pi u)\) (a Fourier sine series) gives">在離琴橋 \(\beta\)（佔振動長度的比例）的地方把弦拉起 \(h\)，弦變成一個三角形。把這個三角形寫成弦的各個模態 \(\sin(n\pi u)\) 的和（傅立葉正弦級數），係數是</p>
+      <div class="formula">\[ y(u, 0) = \sum_{n} a_n \sin(n\pi u), \qquad a_n = \frac{2h\,\sin(n\pi\beta)}{n^2\pi^2\,\beta(1-\beta)} \]</div>
+      <p data-en-html="Whenever \(n\beta\) is a whole number, \(\sin(n\pi\beta) = 0\): pluck at 1/3 and the 3rd, 6th, 9th … harmonics are missing; pluck in the middle and all the even harmonics vanish. Each mode then swings at its own frequency, \(y(u,t) = \sum a_n \sin(n\pi u)\cos(2\pi n f_1 t)\). What you hear is how hard the string pushes on the bridge, which goes as \(n\,a_n \propto \sin(n\pi\beta)/n\): plucking near the bridge (small \(\beta\)) keeps many strong high harmonics — a bright, metallic sound — while plucking near the middle leaves mostly the fundamental — round and soft. Guitarists call these <em>ponticello</em> and <em>tasto</em>.">當 \(n\beta\) 是整數，\(\sin(n\pi\beta) = 0\)：撥在 1/3，第 3、6、9……泛音消失；撥在正中間，所有偶次泛音都消失。之後每個模態以自己的頻率擺動，\(y(u,t) = \sum a_n \sin(n\pi u)\cos(2\pi n f_1 t)\)。耳朵聽到的是弦推動琴橋的力，大小 \(\propto n\,a_n \propto \sin(n\pi\beta)/n\)：靠近琴橋撥（\(\beta\) 小），高次泛音多又強，聲音明亮、帶金屬感；靠近中間撥，幾乎只剩基音，圓潤柔和。吉他手把這兩種叫做 ponticello（近琴橋）與 tasto（近指板）。</p>
+
+      <h3 data-en="Natural harmonics">自然泛音</h3>
+      <p data-en-html="Touch the string lightly — without pressing it down — at a fraction \(\xi\) of its length. The finger damps every mode that moves there, and only the modes with a <strong>node</strong> at the finger, \(\sin(n\pi\xi) = 0\), keep ringing. At the 12th fret (\(\xi = 1/2\)) the even harmonics survive and you hear the octave; at the 7th fret (\(\xi \approx 1/3\)) or the 19th (\(\xi \approx 2/3\)), the 3rd harmonic, an octave and a fifth up; at the 5th fret (\(1/4\)), the 4th harmonic, two octaves up; at the 4th fret (about \(1/5\)), the 5th harmonic. The 19th fret is at 1900 cents, the 3rd harmonic at \(1200\log_2 3 = 1902\) cents: the frets and the harmonics almost, but not quite, agree.">用手指輕輕碰弦（不壓到底）在 \(\xi\) 的位置。手指把在那裡會動的模態都擋掉，只有在手指處剛好是<strong>節點</strong>的模態，\(\sin(n\pi\xi) = 0\)，才繼續響。在第 12 品（\(\xi = 1/2\)）留下偶次泛音，聽到高八度；在第 7 品（\(\xi \approx 1/3\)）或第 19 品（\(\xi \approx 2/3\)），聽到第 3 泛音，高八度再加五度；在第 5 品（\(1/4\)），第 4 泛音，高兩個八度；在第 4 品（約 \(1/5\)），第 5 泛音。第 19 品是 1900 音分，第 3 泛音是 \(1200\log_2 3 = 1902\) 音分：品格和泛音幾乎一致，卻又不完全一樣。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <h3 data-en="Tuning">調弦</h3>
+      <p data-en-html="A guitar's standard tuning is E2 A2 D3 G3 B3 E4 (82.41, 110, 146.83, 196.00, 246.94, 329.63 Hz with A4 = 440 Hz): fourths, one major third between G and B, and fourths again. Turning a tuning peg changes only the tension: since \(f \propto \sqrt T\), raising the pitch by 1 % needs 2 % more tension. Violinists tune G3 D4 A4 E5 by ear in <strong>pure fifths</strong> (3 : 2, 702 cents) rather than equal-tempered ones (700 cents). Guitarists often tune with harmonics: the 5th-fret harmonic of one string (4 times its frequency) against the 7th-fret harmonic of the next (3 times). That gives pure fourths, 498 cents — and tuning all five steps of the guitar this way leaves the two E strings 21.5 cents apart.">吉他的標準調弦是 E2 A2 D3 G3 B3 E4（A4 = 440 Hz 時為 82.41、110、146.83、196.00、246.94、329.63 Hz）：四度、G 與 B 之間一個大三度、再四度。轉弦鈕只改變張力：因為 \(f \propto \sqrt T\)，音高升 1% 要多 2% 的張力。小提琴手用耳朵把 G3 D4 A4 E5 調成<strong>純五度</strong>（3 : 2，702 音分），而不是平均律的 700 音分。吉他手常用泛音調弦：一條弦第 5 品的泛音（4 倍頻）對下一條弦第 7 品的泛音（3 倍頻）。這樣調出來的是純四度 498 音分——整把吉他都這樣一路調上去，兩條 E 弦會差 21.5 音分。</p>
+      <h3 data-en="Why bass strings are wound">低音弦為什麼要纏繞</h3>
+      <p data-en-html="A low note needs a heavy string. Making a plain nylon string heavy enough for E2 at a comfortable 70 N on a 650 mm guitar would need it to be about 2.6 mm thick (\(\mu = \rho\pi d^2/4\)): stiff, dull-sounding and impossible to press. Instead a thin nylon core is wrapped with fine metal wire. The winding adds mass but almost no stiffness: the 6th string here is 1.09 mm across yet weighs 5.92 g/m, like a solid rod of density about 6300 kg/m<sup>3</sup>. Violin strings are wound for the same reason; the violin's E and both erhu strings are thin plain steel.">低音需要重的弦。650 mm 的吉他要在舒服的 70 N 張力下用實心尼龍弦發出 E2，弦得粗到約 2.6 mm（\(\mu = \rho\pi d^2/4\)）：又硬、聲音又悶，也按不下去。所以低音弦用細的尼龍芯，外面纏上細金屬線。纏線增加質量，卻幾乎不增加硬度：這裡的第 6 弦直徑 1.09 mm，每公尺卻有 5.92 公克，相當於密度約 6300 kg/m<sup>3</sup> 的實心棒。小提琴的弦也因為同樣的原因做成纏繞弦；小提琴的 E 弦與二胡的兩條弦則是細的實心鋼弦。</p>
+      <h3 data-en="Guitar, violin, erhu">吉他、小提琴、二胡</h3>
+      <p data-en-html="The guitar's metal frets fix the vibrating length, so the notes are equal-tempered whoever plays them. The violin has a smooth fingerboard and no frets: the player can place each note anywhere, play pure intervals and slide. The erhu has no fingerboard at all: two steel strings run from the <em>qianjin</em> (a loop that acts as the nut) to a small bridge on a snakeskin drum, and the fingers press the strings in mid-air. Sliding (<em>huayin</em>) and vibrato made by varying the finger pressure are at the heart of its style — pressing harder also stretches the string, which this simulation ignores.">吉他的金屬品格把振動長度固定住，不論誰彈都是平均律。小提琴的指板光滑、沒有品：演奏者可以把每個音放在任何位置，拉出純律的音程，也可以滑音。二胡連指板都沒有：兩條鋼弦從千斤（相當於琴枕的繩圈）拉到蟒皮琴筒上的小琴碼，手指在空中按弦。滑音與靠按弦輕重變化的揉弦是二胡風格的核心——按得重也會把弦拉緊，這個模擬沒有計入。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Halfway</strong>: press the 12th fret, then touch it lightly instead. Same pitch — but which harmonics are in each?"><strong>正中間</strong>：按住第 12 品撥一下，再改成輕觸第 12 品。音高一樣，兩者的頻譜有什麼不同？</li>
+        <li data-en-html="<strong>Missing bars</strong>: set the pluck position to 0.25, 0.33 and 0.5. Which harmonics disappear each time?"><strong>消失的長條</strong>：撥弦位置設成 0.25、0.33、0.5，各少了哪些泛音？</li>
+        <li data-en-html="<strong>Crowding frets</strong>: compare the gap between frets 1 and 2 with the gap between 18 and 19. What is their ratio?"><strong>越來越密</strong>：比較第 1、2 品的間距和第 18、19 品的間距，比值是多少？</li>
+        <li data-en-html="<strong>Half a period</strong>: in the slow-motion view, what shape does the string have half a period after the pluck? Where is the corner now?"><strong>半個週期</strong>：慢動作中，撥下去半個週期後弦是什麼形狀？尖角跑到哪裡了？</li>
+        <li data-en-html="<strong>Heavier or tighter</strong>: switch the 6th string to “Material and diameter”, nylon. What happens to the pitch, and how thick must it be to get E2 back?"><strong>重一點還是緊一點</strong>：把第 6 弦換成「材料與直徑」的尼龍弦，音高變成怎樣？要多粗才回得到 E2？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every frequency comes from \(f_1 = \frac{1}{2L}\sqrt{T/\mu}\) with an ideal, perfectly flexible string: no stiffness, so the harmonics are exact multiples \(n f_1\). The fret positions, the pluck coefficients \(a_n\) and the string shape are computed exactly from the formulas above with 24 modes. Unit tests check Mersenne's law, the 12th fret at \(L/2\), the missing even harmonics, that 2000 modes add up to the triangle at \(t = 0\), that half a period later the shape is upside down and mirrored (just upside down when plucked in the middle), that touching at 1/3 leaves only multiples of 3, and the rule-of-18 errors.">所有頻率都用 \(f_1 = \frac{1}{2L}\sqrt{T/\mu}\)，弦是理想、完全柔軟的弦：沒有剛性，所以泛音剛好是 \(n f_1\)。品格位置、撥弦係數 \(a_n\) 與弦形都用上面的公式直接算，取 24 個模態。單元測試檢查梅森定律、第 12 品在 \(L/2\)、撥在正中間偶次泛音消失、2000 個模態在 \(t = 0\) 疊回三角形、半個週期後弦形上下翻轉並左右對調（撥在正中間時就是單純上下翻轉）、輕觸 1/3 只留下 3 的倍數，以及 18 法則的誤差。</li>
+        <li data-en-html="Light touch: a mode survives in proportion to \(\exp[-(\sin(n\pi\xi)/0.1)^2]\) — modes with a node within a few millimetres of the finger stay, the rest are treated as damped away at once. If the strongest surviving harmonic is below 3 % of the untouched one, the string is counted as silent.">輕觸：模態留下的比例是 \(\exp[-(\sin(n\pi\xi)/0.1)^2]\)——節點離手指幾毫米以內的模態留下，其他的當作立刻被擋掉。留下最強的泛音不到原本的 3%，就算幾乎無聲。</li>
+        <li data-en-html="Picture: the string is drawn in slow motion (the slow-down factor is shown) and its height is exaggerated; the shape follows the modal sum exactly, while the fading follows real time, in step with the sound. The 3D view uses the same core: the frets are placed by the same formula, and the selected string is bent into the same modal sum, with glowing dots at the nodes when you touch a harmonic.">畫面：弦以慢動作畫出（標示放慢倍數），振幅放大示意；弦形完全依照模態疊加，衰減則跟著真實時間，和聲音同步。3D 檢視用同一個核心：品格用同一條公式排列，選中的弦彎成同一個模態疊加的形狀，輕觸泛音時在節點上點亮小光點。</li>
+        <li data-en-html="Sound (an approximation): “Pluck” plays each harmonic \(n f_1\) with strength \(\propto n\,a_n\) and its own decay time, shorter for higher harmonics. “Bow” uses ideal Helmholtz motion of a bowed string (a sawtooth force on the bridge, harmonics \(\propto 1/n\)) as a sustained tone, so you can slide the finger while it sounds. Real instruments add the resonances of their bodies, which are left out.">聲音（近似）：「撥一下」把每個泛音 \(n f_1\) 以 \(\propto n\,a_n\) 的強度、各自的衰減時間合成，高次泛音衰減得快。「拉弓」用擦弦的理想亥姆霍茲運動（琴橋受到鋸齒波的力，泛音 \(\propto 1/n\)）合成持續音，聲音響著時可以滑動手指。真實樂器還有琴身的共鳴，這裡沒有計入。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · instrument construction and playing technique; Elective Physics III · Waves.">課綱對應：高中音樂・表現・樂器構造與演奏技巧；選修物理Ⅲ・波動。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed., Springer, 1998: chapter 2 (strings), chapter 9 (guitars and lutes), chapter 10 (bowed string instruments).">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998：第 2 章（弦）、第 9 章（吉他與魯特琴）、第 10 章（擦弦樂器）。</li>
+        <li data-en="M. Mersenne, Harmonie universelle, Paris, 1636 (the laws of vibrating strings).">梅森（M. Mersenne），《Harmonie universelle》，巴黎，1636（弦振動的定律）。</li>
+        <li data-en="Rule of 18 for fretting: V. Galilei, Dialogo della musica antica et della moderna, Florence, 1581.">18 法則：溫琴佐・伽利萊（V. Galilei），《Dialogo della musica antica et della moderna》，佛羅倫斯，1581。</li>
+        <li data-en="Typical values: string lengths, tensions and masses per length of the classical guitar, violin and erhu are typical values estimated from common string sets (they differ between makers); densities of nylon 6,6 (about 1140 kg/m³) and carbon steel (about 7850 kg/m³) are typical handbook values.">典型值：古典吉他、小提琴、二胡的弦長、張力、線密度，是依常見弦組估算的典型值（各廠牌不同）；尼龍 6,6（約 1140 kg/m³）與碳鋼（約 7850 kg/m³）的密度是材料手冊的典型值。</li>
+        <li data-en="Related: the physics experiment “Reflection of Waves on a String and Standing Waves” on this site.">相關實驗：本站物理科「繩波的反射與駐波」。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/string-instrument-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/string-instrument.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="string-instrument"></script>
+  <script src="js/missions/string-instrument.js"></script>
+  <script src="js/stats.js" data-module="string-instrument"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
