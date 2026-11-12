@@ -18,6 +18,7 @@
     running: !reduced(),   // 減少動態效果時，物理動畫預設暫停
     speed: 1,
     show: { arrows: true, ghost: true },
+    show3: { phase: true },  // 3D 檢視：相空間螺旋
     spring: { m: 0.5, k: 20, A: 0.15, sign: 1, damp: false, b: 0.3 },
     pend: { L: 1, g: 9.8, th0: 20, sign: 1, m: 0.5, damp: false, b: 0.05 },
     drag: null,     // { kind, offset }
@@ -615,8 +616,9 @@
       const la = ss.amax > 0 ? clamp(st.a / ss.amax, -1.2, 1.2) * maxLen : 0;
       arrow(ctx, bx, yv, bx + lv, yv, colors.pos, lw);
       arrow(ctx, bx, ya, bx + la, ya, colors.equi, lw);
-      D.vecLabel(ctx, 'v', '', bx + lv + (lv >= 0 ? 10 : -10), yv, colors.pos);
-      D.vecLabel(ctx, 'a', '', bx + la + (la >= 0 ? 10 : -10), ya, colors.equi);
+      // 量值很小（箭頭比標籤還短）時不標字，免得字壓在作用點上（與單擺相同）
+      if (Math.abs(lv) > 6) D.vecLabel(ctx, 'v', '', bx + lv + (lv >= 0 ? 10 : -10), yv, colors.pos);
+      if (Math.abs(la) > 6) D.vecLabel(ctx, 'a', '', bx + la + (la >= 0 ? 10 : -10), ya, colors.equi);
       [yv, ya].forEach(function (yy) {
         ctx.fillStyle = alpha(colors['canvas-bg'], 0.9);
         ctx.beginPath(); ctx.arc(bx, yy, 3.4, 0, Math.PI * 2); ctx.fill();
@@ -1257,6 +1259,22 @@
     });
     ctx.restore();
     halo(ctx, T('能量 (J)', 'Energy (J)'), cx0 + 8, cy0 + 4, colors.text, font(narrow ? 11 : 12, 700), 'left', 'top');
+    // 圖例（右上角）：三條曲線的顏色與左邊長條相同
+    ctx.save();
+    ctx.font = font(narrow ? 10 : 11, 600);
+    let lx = cx0 + cw - 8;
+    const ly = cy0 + 4 + (narrow ? 6 : 7);
+    [['E', colors.field], ['U', colors.neg], ['KE', colors.pos]].forEach(function (it) {
+      const tw = ctx.measureText(it[0]).width;
+      halo(ctx, it[0], lx, ly, colors.text, font(narrow ? 10 : 11, 600), 'right', 'middle');
+      lx -= tw + 5;
+      ctx.strokeStyle = it[1];
+      ctx.lineWidth = 2.4;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(lx - 12, ly); ctx.lineTo(lx, ly); ctx.stroke();
+      lx -= 12 + 10;
+    });
+    ctx.restore();
     // 時間軸數字
     const step = niceStep(S.W / (narrow ? 3 : 5));
     const sd = stepDecimals(step);
@@ -1399,14 +1417,21 @@
   // =====================================================================
   // 主繪圖與動畫
   // =====================================================================
+  let lastS = null;  // 這一格的取樣（3D 檢視直接用同一組點，不另外算）
   function draw() {
     if (!ss || !ps) return;
-    const w = size.scene.w, h = size.scene.h;
-    if (w && h) {
-      sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (state.mode === 'spring') drawSpringScene(sctx); else drawPendScene(sctx);
-    }
     const S = samples();
+    lastS = S;
+    if (is3d()) {
+      // 3D 檢視：同一組物理狀態交給 3D 場景畫，圖表與讀數照常更新
+      if (view3 && view3.active) view3.update();
+    } else {
+      const w = size.scene.w, h = size.scene.h;
+      if (w && h) {
+        sctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (state.mode === 'spring') drawSpringScene(sctx); else drawPendScene(sctx);
+      }
+    }
     drawGraph(S);
     drawEnergy(S);
     updateReadouts(S);
@@ -1588,6 +1613,7 @@
     $('hintSpring').hidden = !sp;
     $('hintPend').hidden = sp;
     $('ghostWrap').hidden = sp;
+    legend3();
     $('graphTitle').textContent = sp ? T('x–t、v–t、a–t 圖', 'x–t, v–t and a–t graphs') : T('θ–t、ω–t、α–t 圖', 'θ–t, ω–t and α–t graphs');
     bgKey = '';
     state.fx = [];
@@ -1779,11 +1805,112 @@
     });
   });
 
+  // ---------- 3D 檢視（three.js 以 import() 延遲載入；場景在 js/oscillation-3d.js） ----------
+  const labEl = document.querySelector('.lab.osc');
+  function is3d() { return labEl.classList.contains('is3d'); }
+  let view3 = null, threeLib = null, loadToken = 0;
+  const viewMsg = $('viewMsg');
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 交給 3D 場景的狀態：與 2D 同一個時刻、同一組取樣點與參數（3D 不另外計算運動） */
+  function state3() {
+    const S = lastS || samples();
+    const base = { mode: state.mode, S: S, show: state.show, show3: state.show3, speed: state.speed };
+    if (state.mode === 'spring') {
+      const st = ss.sol.state(ss.t), sol = ss.sol;
+      base.Wd = 0.9 * ss.W;
+      base.sp = {
+        m: ss.p.m, k: ss.p.k, b: ss.p.b, x0: ss.p.x0, A: Math.abs(ss.p.x0), w0: sol.omega0, regime: sol.regime,
+        T0: sol.T0, Tshow: sol.regime === 'under' ? sol.Td : sol.T0, vmax: ss.vmax, amax: ss.amax,
+        bw: clamp(0.1 * Math.cbrt(ss.p.m / 0.5), 0.06, 0.15), // 木塊寬（m），與 2D 的 springGeom 相同
+        x: st.x, v: st.v, a: st.a
+      };
+    } else {
+      const p = ps.p, s = ps.s, g = ps.ghost.at(s.t);
+      base.Wd = 0.9 * ps.W;
+      base.pe = {
+        L: p.L, g: p.g, m: p.m, b: p.b, th0: p.theta0, w0: Math.sqrt(p.g / p.L), Tex: ps.Tex, T0: ps.T0,
+        wmax: ps.wmax, amax: ps.amax, Lv: VIEW_L.find(function (v) { return v >= p.L - 1e-9; }) || 3,
+        th: s.th, om: s.om, al: OC.pendulumAccel(p, s.th, s.om), gth: g.th, gom: g.om
+      };
+    }
+    return base;
+  }
+  function setPressed3(mode) { $('view2d').setAttribute('aria-pressed', String(mode === '2d')); $('view3d').setAttribute('aria-pressed', String(mode === '3d')); }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed3('3d');
+      if (!webglAvailable() || !window.OscillationThree) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        labEl.classList.add('is3d');
+        state.hover = false;
+        view3 = window.OscillationThree.create(lib, {
+          host: $('view3'), T: T, state: state3,
+          lost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
+        });
+        viewMsg.textContent = '';
+        draw();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed3('2d');
+      // 先停止（active = false），再釋放：dispose 裡的 forceContextLoss 不會被當成意外中斷
+      if (view3) { view3.active = false; view3.dispose(); view3 = null; }
+      labEl.classList.remove('is3d');
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      bgKey = '';
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.active = false; view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    labEl.classList.remove('is3d');
+    setPressed3('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('camReal').addEventListener('click', function () { if (view3) view3.viewFrom('real'); });
+  $('camSide').addEventListener('click', function () { if (view3) view3.viewFrom('top'); });
+  $('camFront').addEventListener('click', function () { if (view3) view3.viewFrom('front'); });
+  $('s3phase').addEventListener('change', function (e) { state.show3.phase = e.target.checked; requestDraw(); });
+  state.show3.phase = $('s3phase').checked;
+  /** 3D 圖例：螺旋與兩個投影（顏色與 2D 圖表相同：位置藍、速度紅） */
+  function legend3() {
+    const sp = state.mode === 'spring';
+    const sw = function (c) { return '<i style="background:var(' + c + ')"></i>'; };
+    $('leg3').innerHTML =
+      '<span>' + sw('--accent') + (sp ? T('相空間螺旋（x, v/ω<sub>0</sub>, t）', 'Phase-space helix (x, v/ω<sub>0</sub>, t)') : T('相空間螺旋（θ, ω/ω<sub>0</sub>, t）', 'Phase-space helix (θ, ω/ω<sub>0</sub>, t)')) + '</span>' +
+      '<span>' + sw('--neg') + (sp ? T('底面：x–t 投影', 'Floor: x–t projection') : T('底面：θ–t 投影', 'Floor: θ–t projection')) + '</span>' +
+      '<span>' + sw('--pos') + (sp ? T('左牆：v–t 投影', 'Left wall: v–t projection') : T('左牆：ω–t 投影', 'Left wall: ω–t projection')) + '</span>';
+  }
+
   // ---------- 啟動 ----------
   readColors();
   resetSpring();
   resetPend();
-  const themeChanged = function () { readColors(); bgKey = ''; requestDraw(); };
+  const themeChanged = function () { readColors(); bgKey = ''; if (view3 && view3.active) view3.onTheme(); requestDraw(); };
   window.addEventListener('lab:themechange', themeChanged);
   if (window.matchMedia) window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   if (window.ResizeObserver) {

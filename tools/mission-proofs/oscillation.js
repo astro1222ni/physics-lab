@@ -204,5 +204,42 @@ expect('h2', springRun({ m: 4, k: 3, A: 0.15 }).evs, false, 'm = 4、k = 3 → T
   const r2 = springRun({ m: 0.5, k: 20, A: 0.15, b: 10 });
   expect('h3', r2.evs, false, '預設 m、k 加 b = 10（ζ = 1.58）：' + (r2.evs.find(e => e.type === 'settle').data.t / r2.sol.T0).toFixed(2) + ' T');
 }
+// ---------- 11/12 檢討：只用滑桿有幾組解、任務文字 ----------
+{
+  // 2：只用滑桿（m 每 0.1、k 每 1）就有的解
+  const ok = [];
+  for (let mi = 1; mi <= 40; mi++) for (let k = 2; k <= 100; k++) { const m = mi / 10; if (Math.abs(OC.springPeriod(m, k) - 1) <= 0.002) ok.push(m + '/' + k); }
+  console.log((ok.length ? '  ✓ ' : '  ✗ ') + '2   只用滑桿的 (m, k) 解 ' + ok.length + ' 組：' + ok.join(' '));
+  if (!ok.length) fail++;
+  // h2：只用滑桿的解
+  const okh2 = [];
+  for (let mi = 1; mi <= 40; mi++) for (let k = 2; k <= 100; k++) { const m = mi / 10; if (OC.springPeriod(m, k) >= 8.5) okh2.push(m + '/' + k); }
+  console.log((okh2.length ? '  ✓ ' : '  ✗ ') + 'h2  只用滑桿的 (m, k) 解：' + okh2.join(' '));
+  if (!okh2.length) fail++;
+  expect('h2', springRun({ m: 3.7, k: 2, A: 0.15 }).evs, true, 'm = 3.7、k = 2 → T = ' + OC.springPeriod(3.7, 2).toFixed(3) + ' s');
+  // h3：抽樣（m 每 0.1、k 每 7、b 每 0.25）
+  let nh3 = 0;
+  for (let mi = 1; mi <= 40; mi++) for (let k = 2; k <= 100; k += 7) for (let bi = 1; bi <= 200; bi += 5) {
+    const m = mi / 10, b = bi * 0.05, sol = OC.spring({ m, k, b, x0: 0.15, A: 0.15 });
+    if (sol.regime === 'over' && OC.springSettleTime({ m, k, b, x0: 0.15, A: 0.15 }, 1e-4) >= 10 * OC.springPeriod(m, k)) nh3++;
+  }
+  console.log((nh3 ? '  ✓ ' : '  ✗ ') + 'h3  抽樣（k 每 7、b 每 0.25）就有 ' + nh3 + ' 組可行');
+  if (!nh3) fail++;
+  // 任務文字：任務面板用 textContent 顯示，不可有 HTML 標籤；英文不可有中文；不可有上下標字元或組合箭頭
+  const bad = [];
+  missions.forEach(m => {
+    [m.title, m.desc, m.riddle].filter(Boolean).forEach(t => {
+      if (/<[a-z/]/i.test((t.zh || '') + (t.en || ''))) bad.push(m.id + ' 有 HTML 標籤');
+      if (/[\u3400-\u9fff\u3000-\u303f]/.test(t.en || '')) bad.push(m.id + ' 英文有中文字元');
+      if (/[\u2070\u2074-\u207f\u2080-\u208f\u20d7]/.test((t.zh || '') + (t.en || ''))) bad.push(m.id + ' 有上下標字元或組合箭頭');
+    });
+  });
+  // h2、h3 的提示句不可直接說出條件
+  const h2 = byId('h2').riddle.zh, h3 = byId('h3').riddle.zh;
+  if (/[重軟慢]|週期|彈簧/.test(h2)) bad.push('h2 提示句出現禁用字');
+  if (/回|越過|不擺/.test(h3)) bad.push('h3 提示句出現禁用字');
+  if (bad.length) { fail++; console.log('  ✗ 任務文字：' + bad.join('；')); }
+  else console.log('  ✓ 任務文字：沒有 HTML、英文沒有中文、沒有上下標字元；h2、h3 提示句沒有禁用字');
+}
 console.log(fail ? '\n有 ' + fail + ' 項失敗' : '\n全部通過');
 process.exitCode = fail ? 1 : 0;
