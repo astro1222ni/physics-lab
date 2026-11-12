@@ -60,8 +60,13 @@
     {
       id: 'galton-board-8', level: 6,
       title: { zh: '兩格一樣高', en: 'A tie at the top' },
-      desc: { zh: '找一個 p ≠ 0.5 的釘板，讓機率最大的格子有兩格、而且機率完全相同。', en: 'Find a board with p ≠ 0.5 on which two bins tie exactly for the highest probability.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'board' && d.modes.length === 2 && Math.abs(d.p - 0.5) > 1e-9; }
+      desc: { zh: '在兩個層數不同的釘板上（p 都不是 0.5），各找到一次：機率最大的格子有兩格，而且兩格的機率完全相同。', en: 'On two boards with different numbers of rows (p ≠ 0.5 on both), find a case where two bins tie exactly for the highest probability.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'board' || d.modes.length !== 2 || Math.abs(d.p - 0.5) < 1e-9) return false;
+        mem.ns = mem.ns || {}; mem.ns[d.n] = true;
+        return Object.keys(mem.ns).length >= 2;
+      }
     },
     {
       id: 'galton-board-9', level: 6,
@@ -72,8 +77,8 @@
     {
       id: 'galton-board-10', level: 7,
       title: { zh: '大數法則', en: 'The law of large numbers' },
-      desc: { zh: '在至少 8 層的釘板上一直放球，直到實驗和理論的總差距 ½ Σ |f − P| 不超過 0.02。', en: 'On a board with at least 8 rows, keep dropping balls until the total gap ½ Σ |f − P| between experiment and theory is at most 0.02.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'drop' && !d.hidden && d.n >= 8 && d.tv <= 0.02; }
+      desc: { zh: '在至少 8 層、p 在 0.25 到 0.75 之間的釘板上一直放球，直到實驗和理論的總差距 ½ Σ |f − P| 不超過 0.01。', en: 'On a board with at least 8 rows and p between 0.25 and 0.75, keep dropping balls until the total gap ½ Σ |f − P| between experiment and theory is at most 0.01.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'drop' && !d.hidden && d.n >= 8 && d.p >= 0.25 - 1e-9 && d.p <= 0.75 + 1e-9 && d.tv <= 0.01; }
     },
     {
       id: 'galton-board-11', level: 8,

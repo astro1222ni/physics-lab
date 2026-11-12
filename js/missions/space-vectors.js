@@ -14,6 +14,8 @@
   const near = function (v, want, tol) { return v != null && isFinite(v) && Math.abs(v - want) <= tol; };
   const norm = function (v) { return Math.hypot(v[0], v[1], v[2]); };
   const nz = function (v) { return (Math.abs(v[0]) > EPS) + (Math.abs(v[1]) > EPS) + (Math.abs(v[2]) > EPS); };
+  /** 長度開根號開不盡（分量最多打到小數第 2 位，所以 10000|v|² 是整數） */
+  const irr = function (v) { const q = Math.round((v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 1e4), r = Math.round(Math.sqrt(q)); return r * r !== q; };
   const dot = function (a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; };
   const cross = function (a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; };
   const par = function (a, b) { return norm(cross(a, b)) <= 1e-9 * Math.max(1, norm(a) * norm(b)); };
@@ -93,9 +95,16 @@
     },
     {
       id: 'space-vectors-9', level: 6,
-      title: { zh: '離平面 3 步', en: 'Three steps from the plane' },
-      desc: { zh: '在「平面與距離」模式讓 Q 到平面的距離是 3（誤差 0.01 以內），法向量 n 至少有兩個分量不是 0。', en: 'In “Planes” mode make the distance from Q to the plane 3 (within 0.01), with at least two nonzero components in the normal n.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'vec' && d.mode === 'plane' && !d.chal && nz(d.n) >= 2 && near(d.dist, 3, 0.01); }
+      title: { zh: '平面兩側各 3 步', en: 'Three steps on either side' },
+      desc: { zh: '在「平面與距離」模式，同一個平面（n、d 不變）兩側各放一次 Q，距離都是 3（誤差 0.01 以內）；法向量 n 的三個分量都不是 0，而且長度 |n| 開根號開不盡（例如 (1, 1, 1) 的長度是 √3）。點數字可以打到小數第 2 位。', en: 'In “Planes” mode, keep one plane (same n and d) and put Q at distance 3 (within 0.01) once on each side of it; all three components of the normal n must be nonzero and |n| an irrational square root (e.g. (1, 1, 1) has length √3). Tap a number to type it to 2 decimal places.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'plane' || d.chal || nz(d.n) !== 3 || !irr(d.n) || !near(d.dist, 3, 0.01)) return false;
+        const key = d.n.join(',') + '|' + d.d, side = d.sdist > 0 ? 'p' : 'm';
+        if (mem.key !== key) { mem.key = key; mem.side = {}; }
+        mem.side[side] = true;
+        return !!(mem.side.p && mem.side.m);
+      }
     },
     {
       id: 'space-vectors-10', level: 5,
@@ -108,7 +117,7 @@
       }
     },
     {
-      id: 'space-vectors-11', level: 6,
+      id: 'space-vectors-11', level: 4,
       title: { zh: '挑戰一題', en: 'One challenge' },
       desc: { zh: '按「出一題」，在任何一個模式答對一題挑戰。', en: 'Press “New challenge” and solve one challenge in any mode.' },
       check: function (ev) { return ev.type === 'challenge'; }

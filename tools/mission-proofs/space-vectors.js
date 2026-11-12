@@ -70,7 +70,17 @@ expect(6, [vecEv('cross', { a: [4, 0, 0], b: [0, 2.5, 0] })], false, '垂直的�
 reach(7, 'volume', { a: [1, 1, 0], b: [0, 1, 1], c: [3, 0, 3] }, 'a = (1, 1, 0)、b = (0, 1, 1)、c = (3, 0, 3)，三重積 6');
 reach(8, 'volume', { a: [3, 1, 1], b: [1, 2.5, 1], c: [4, 3.5, 2] }, 'c = a + b，三重積 0');
 expect(8, [vecEv('volume', { c: [-1, 5, 4] })], false, 'c 和 a 平行（不算）');
-reach(9, 'plane', { n: [1, 2, 2], d: 0, q: [1, 2, 2] }, 'n = (1, 2, 2)、d = 0、Q = (1, 2, 2)，距離 9 / 3 = 3');
+expect(9, [vecEv('plane', { n: [1, 1, 1], d: -1.2 }), vecEv('plane', { n: [1, 1, 1], d: -1.2, q: [-2, -2, -2.4] })], true, 'n = (1, 1, 1)、d 打成 −1.2：預設 Q = (2, −1, 3) 距離 5.2 / √3 = ' + (5.2 / Math.sqrt(3)).toFixed(4) + '；Q = (−2, −2, −2.4) 在另一側，距離 5.2 / √3');
+expect(9, [vecEv('plane', { n: [1, 1, 1], d: -1.2 })], false, '只有一側不夠');
+expect(9, [vecEv('plane', { n: [1, 1, 1], d: -1.2 }), vecEv('plane', { n: [1, 1, 1], d: 9.2, q: [2, -1, 3] })], false, '換了平面：d = 9.2 時同一個 Q 在另一側、距離也是 3，但 d 不同不算');
+expect(9, [vecEv('plane', { n: [1, 2, 2], d: 0, q: [1, 2, 2] })], false, 'n = (1, 2, 2) 的長度是 3（開得盡）');
+expect(9, [vecEv('plane', { n: [1, 1, 0], d: 0, q: [3, 1.24, 0] })], false, 'n 有一個分量是 0');
+{ // 只用滑桿格點（間隔 0.5）亂按，能不能剛好碰到？
+  let hits = 0, tot = 0; const g = []; for (let x = -4; x <= 4; x += 0.5) g.push(x);
+  const m9 = byId(9); const qs = [[2, -1, 3], [1, 1, 1], [0.5, -2, 1.5]];
+  g.forEach(x => g.forEach(y => g.forEach(z => { if (!x || !y || !z) return; qs.forEach(q => { for (let d = -10; d <= 10; d += 0.5) { tot++; m9.mem = {}; m9.check(vecEv('plane', { n: [x, y, z], q: q, d: d }), m9.mem); if (m9.mem.side && (m9.mem.side.p || m9.mem.side.m)) hits++; } }); })));
+  console.log('  ・ 只用 0.5 格點：' + tot + ' 種組合中 ' + hits + ' 種剛好有一側達成（還要另一側）（' + (100 * hits / tot).toFixed(3) + '%）');
+}
 reach(10, 'plane', { n: [1, 1, 1], d: 3, q: [2, 0.5, 0.5] }, 'n = (1, 1, 1)、d = 3、Q = (2, 0.5, 0.5)');
 expect(10, [vecEv('plane', { n: [1, 1, 1], d: 3, q: [1, 1, 1] })], false, 'Q = (1, 1, 1) 和 n 平行（就是垂足，太簡單）');
 expect(11, [{ type: 'challenge', data: { kind: 'angle', mode: 'inner', target: 47, time: 20, streak: 1, last3: null } }], true, '答對一題');
