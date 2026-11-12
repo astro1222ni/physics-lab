@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Conic Sections: Slicing a Cone | Astro Ni Science Lab">圓錐曲線：用平面切圓錐｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 圓錐曲線頁面專用的顏色代號（淺色＋兩組深色；由 js/conic-sections.js 與 js/conic-sections-3d.js 讀取） */
+    :root { --cs-cone: #56699a; --cs-plane: #b5770f; --cs-curve: #c0246a; --cs-sphere: #15806f; --cs-dir: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cs-cone: #93a8dc; --cs-plane: #f2bd52; --cs-curve: #ff74b0; --cs-sphere: #5cc9ae; --cs-dir: #b9a0ff; }
+    }
+    :root[data-theme="dark"] { --cs-cone: #93a8dc; --cs-plane: #f2bd52; --cs-curve: #ff74b0; --cs-sphere: #5cc9ae; --cs-dir: #b9a0ff; }
+
+    /* 畫布高度由程式依寬度決定（左：過軸的側視剖面；右：切口的形狀；手機上下排）。
+       只有按在點 P、切平面或旋轉把手上才拖曳，其他地方手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    .cs button { min-height: 44px; }
+    .cs [hidden] { display: none !important; }
+    .cs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cs .playbar button { flex: 1 1 auto; }
+    .cs .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cs .stage .status { margin: 6px 4px 0; }
+    .cs .slider input[type="range"] { height: 28px; margin: 0; }
+    .cs .checks label { min-height: 44px; }
+    .cs .checks input { width: 17px; height: 17px; }
+    .cs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cs .panel { grid-template-columns: minmax(0, 1fr); }
+    .cs .panel > .card { min-width: 0; }
+    .quick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 4px 0 2px; }
+    .quick button { padding: 6px 4px; line-height: 1.25; }
+    .quick-label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 4px; }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.05; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 canvas.on-p { cursor: pointer; }
+    .c3-wrap { position: relative; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 55%; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; max-width: 42%; text-align: right; }
+    .c3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .c3-hud span.m { color: var(--muted); font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .c3-hud sub { font-size: .75em; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout sub, .cs sub { font-size: .75em; }
+    .type-badge { display: inline-block; padding: 1px 10px; border-radius: 99px; font-weight: 700; color: var(--surface); background: var(--cs-curve); }
+    .type-badge.deg { background: var(--muted); }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.08em; }
+    .eq-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; text-align: right; padding: 3px 6px; white-space: nowrap; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .ring { width: 11px; height: 11px; border-radius: 50%; background: none !important; border: 2px solid var(--cs-sphere); vertical-align: -1px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geometry&quot;>Mathematics · Trigonometry and Geometry</a> / Conic sections"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geometry">數學・三角與幾何</a> ／ 圓錐曲線</nav>
+      <h1 data-en="Conic Sections: Slicing a Cone">圓錐曲線：用平面切圓錐</h1>
+      <p data-en="Slice a double cone with a flat plane and the cut is a circle, an ellipse, a parabola or a hyperbola — which one depends only on how steeply the plane is tilted compared with the cone. Tilt and slide the plane, then drag the point P around the curve and watch the sum, the difference and the ratio of its distances stay fixed. Two Dandelin spheres show where the foci and the directrices come from; switch to 3D to see them in space.">用一個平面去切雙圓錐，切口會是圓、橢圓、拋物線或雙曲線——是哪一種，只看平面和圓錐比起來傾斜得多陡。轉動、移動切平面，再拖曳曲線上的點 P，看它到兩個焦點的距離「和」、「差」以及到準線的距離「比」怎麼保持不變。兩顆丹德林球告訴你焦點和準線是從哪裡來的；切換到 3D 可以在空間中看清楚。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: slowly turn the plane angle β from 90° down to 0° and watch the cut change from a circle to an ellipse, a parabola and finally a hyperbola.">試試看：把切平面的角度 β 從 90° 慢慢轉到 0°，看切口怎麼從圓變成橢圓、拋物線，最後變成雙曲線。</p>
+    <div class="lab cs">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="圓錐曲線畫布：左邊是過軸的側視剖面（雙圓錐的兩條母線、切平面、兩顆丹德林球），右邊是切口的實際形狀（焦點、準線、點 P）。拖曳點 P 沿曲線移動；拖曳切平面可平移，拖曳圓形把手可轉動。" data-en-aria-label="Conic sections canvas: on the left the side view through the axis (the two generators of the double cone, the cutting plane and the two Dandelin spheres); on the right the true shape of the cut (foci, directrices and the point P). Drag P along the curve; drag the plane to slide it and its round handle to tilt it."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="mark" type="button" class="primary" data-en="Record P">記下這一點</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除記下的點，切法與 P 的位置不變" data-en-title="Clear the recorded points; the cut and the position of P are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--cs-cone)&quot;></i>Cone (generators)"><i style="background:var(--cs-cone)"></i>圓錐（母線）</span>
+          <span data-en-html="<i style=&quot;background:var(--cs-plane)&quot;></i>Cutting plane"><i style="background:var(--cs-plane)"></i>切平面</span>
+          <span data-en-html="<i style=&quot;background:var(--cs-curve)&quot;></i>The cut (conic)"><i style="background:var(--cs-curve)"></i>切口（圓錐曲線）</span>
+          <span data-en-html="<i class=&quot;ring&quot;></i>Dandelin spheres"><i class="ring"></i>丹德林球</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Focus F<sub>1</sub>"><i class="dot" style="background:var(--pos)"></i>焦點 F<sub>1</sub></span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Focus F<sub>2</sub>"><i class="dot" style="background:var(--neg)"></i>焦點 F<sub>2</sub></span>
+          <span style="color:var(--cs-dir)" data-en-html="<i class=&quot;dash&quot;></i>Directrices"><i class="dash"></i>準線</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Point P"><i class="dot" style="background:var(--probe)"></i>點 P</span>
+        </div>
+        <p class="hint l2" data-en="Left: the exact cross-section through the cone’s axis (P and the generator through P are projected onto it). Right: the cut seen face-on, with x′ along its main axis. Lengths are in units; each panel shows its grid spacing.">左邊是過圓錐軸的剖面（點 P 與過 P 的母線是投影上去的）；右邊是正對切平面看到的切口，x′ 軸沿著主軸。長度以「單位長」計，格線間距標在各圖角落。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Drag the green point P to move it along the curve.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移；拖曳綠色的點 P 可以沿曲線移動。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Cone and cutting plane">圓錐與切平面</h2>
+          <div class="slider"><label for="alpha" data-en="Half-angle of the cone α">圓錐的半頂角 α</label><output id="alphao"></output>
+            <input id="alpha" type="range" min="10" max="70" step="1" value="30" data-decimals="1"></div>
+          <div class="slider"><label for="beta" data-en="Angle β between the plane and the axis">切平面與軸的夾角 β</label><output id="betao"></output>
+            <input id="beta" type="range" min="0" max="90" step="1" value="55" data-decimals="1"></div>
+          <div class="slider"><label for="dist" data-en="Distance d from the vertex to the plane">頂點到切平面的距離 d</label><output id="disto"></output>
+            <input id="dist" type="range" min="0" max="3" step="0.05" value="2.5" data-decimals="2"></div>
+          <p class="quick-label" id="quickLabel" data-en="Quick cuts (same cone):">快速切法（圓錐不變）：</p>
+          <div class="quick" id="presets" role="group" aria-labelledby="quickLabel">
+            <button type="button" data-preset="circle" data-en="Circle">圓</button>
+            <button type="button" data-preset="ellipse" data-en="Ellipse">橢圓</button>
+            <button type="button" data-preset="parabola" data-en="Parabola">拋物線</button>
+            <button type="button" data-preset="hyperbola" data-en="Hyperbola">雙曲線</button>
+          </div>
+          <p class="hint" data-en="Tap a number to type an exact value. On the canvas, drag the plane to slide it and its round handle to tilt it.">點一下數字可直接輸入精確數值。在畫布上拖曳切平面可平移，拖曳圓形把手可轉動。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Show">顯示</h2>
+          <div class="checks">
+            <label><input id="showSpheres" type="checkbox" checked><span data-en="Dandelin spheres">丹德林球</span></label>
+            <label><input id="showDir" type="checkbox" checked><span data-en="Directrices">準線</span></label>
+            <label><input id="showGen" type="checkbox"><span data-en="Generator through P, points K">過 P 的母線與切點 K</span></label>
+            <label><input id="showLatus" type="checkbox"><span data-en="Latus rectum">正焦弦</span></label>
+            <label><input id="showAsym" type="checkbox" checked><span data-en="Asymptotes">漸近線</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The curve (lengths in units)">曲線（長度單位：單位長）</h2>
+          <dl class="readout">
+            <dt data-en="Type">類型</dt><dd id="rType">—</dd>
+            <dt data-en="Eccentricity e = cos β / cos α">離心率 e = cos β ／ cos α</dt><dd id="rE">—</dd>
+            <dt id="rAL" data-en="Semi-major axis a">半長軸 a</dt><dd id="rA">—</dd>
+            <dt id="rBL" data-en="Semi-minor axis b">半短軸 b</dt><dd id="rB">—</dd>
+            <dt id="rCL" data-en="Focal distance c">半焦距 c</dt><dd id="rC">—</dd>
+            <dt data-en="Latus rectum">正焦弦長</dt><dd id="rLatus">—</dd>
+            <dt id="rXL" data-en="Asymptotes">漸近線</dt><dd id="rX">—</dd>
+            <dt data-en="Dandelin sphere radii">丹德林球半徑</dt><dd id="rR">—</dd>
+            <dt data-en="Plane meets the axis at">切平面與軸的交點離頂點</dt><dd id="rH">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note" id="eqNote" data-en="Standard form: origin at the centre (the vertex for a parabola), x′ along the main axis.">標準式：原點在中心（拋物線取頂點），x′ 軸沿主軸。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Distances from P">點 P 的距離</h2>
+          <dl class="readout" id="pro">
+            <dt data-en="P (x′, y′)">P (x′, y′)</dt><dd id="pXY">—</dd>
+            <dt data-en-html="PF<sub>1</sub>">PF<sub>1</sub></dt><dd id="pF1">—</dd>
+            <dt data-en-html="PF<sub>2</sub>">PF<sub>2</sub></dt><dd id="pF2">—</dd>
+            <dt id="pSL">—</dt><dd id="pS">—</dd>
+            <dt data-en-html="Distance to directrix 1, PD<sub>1</sub>">到準線 1 的距離 PD<sub>1</sub></dt><dd id="pD1">—</dd>
+            <dt data-en-html="Ratio PF<sub>1</sub> / PD<sub>1</sub>">比值 PF<sub>1</sub> ／ PD<sub>1</sub></dt><dd id="pR">—</dd>
+          </dl>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Record P” at several places on the curve to compare the readings.">在曲線上不同的地方按「記下這一點」，比較每一點的讀數。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <p data-en-html="Extend every generator of a cone through its tip and you get a <strong>double cone</strong>: two cones meeting point to point. The angle α between a generator and the axis is the <strong>half-angle</strong>. Slice it with a plane that misses the vertex and the cut can only be one of four curves — a circle, an ellipse, a parabola or a hyperbola — which is why they are called <strong>conic sections</strong>. Which one you get depends on nothing but how the angle β between the plane and the axis compares with α:">把圓錐的每一條母線都越過頂點延長，就得到上下兩個尖端相接的<strong>雙圓錐</strong>；母線與軸的夾角 α 稱為<strong>半頂角</strong>。用一個不通過頂點的平面去切它，切口只可能是四種曲線之一：圓、橢圓、拋物線、雙曲線，所以它們合稱<strong>圓錐曲線</strong>。會切出哪一種，只取決於切平面與軸的夾角 β 和 α 誰大誰小：</p>
+      <ul>
+        <li data-en-html="\(\beta = 90^\circ\) (the plane is perpendicular to the axis): a <strong>circle</strong>;">\(\beta = 90^\circ\)（平面垂直於軸）：<strong>圓</strong>；</li>
+        <li data-en-html="\(\alpha &amp;lt; \beta &amp;lt; 90^\circ\): an <strong>ellipse</strong> — the plane crosses one cone completely;">\(\alpha &lt; \beta &lt; 90^\circ\)：<strong>橢圓</strong>——平面整個橫切過一個錐；</li>
+        <li data-en-html="\(\beta = \alpha\) (the plane is parallel to a generator): a <strong>parabola</strong>;">\(\beta = \alpha\)（平面與一條母線平行）：<strong>拋物線</strong>；</li>
+        <li data-en-html="\(0^\circ \le \beta &amp;lt; \alpha\): a <strong>hyperbola</strong> — the plane cuts both cones, so the curve has two branches.">\(0^\circ \le \beta &lt; \alpha\)：<strong>雙曲線</strong>——平面同時切到上下兩個錐，所以曲線有兩支。</li>
+      </ul>
+      <p data-en-html="The distance \(d\) from the vertex to the plane only changes the size: the whole figure is scaled by \(d\), so the shape (the eccentricity) stays the same.">頂點到切平面的距離 \(d\) 只改變大小：整個圖形依 \(d\) 等比例縮放，形狀（離心率）不變。</p>
+
+      <h3 data-en="Dandelin spheres: where the foci come from">丹德林球：焦點從哪裡來</h3>
+      <p data-en-html="Drop a ball into the cone so that it touches the cone all the way round a circle and also just touches the cutting plane at one point. At most two such balls fit (one on each side of the plane); they are called <strong>Dandelin spheres</strong>, after the Belgian mathematician G. P. Dandelin, who used them in 1822. The point where a sphere touches the plane is a <strong>focus</strong>. The proof rests on one fact: all tangent segments drawn from an outside point to the same sphere have the same length.">在圓錐裡放一顆球，讓它沿著一整圈圓貼住錐面，同時剛好碰到切平面上的一點。這樣的球最多兩顆（切平面兩側各一顆），稱為<strong>丹德林球</strong>，因比利時數學家丹德林（G. P. Dandelin）在 1822 年用它們證明而得名。球碰到切平面的那一點就是<strong>焦點</strong>。整個證明只靠一件事：從球外一點畫到同一顆球的切線段，長度全都相等。</p>
+      <p data-en-html="Take any point \(P\) on the curve and follow the generator through \(P\); it meets the two circles of contact at \(K_1\) and \(K_2\). Both \(PF_1\) and \(PK_1\) are tangent segments from \(P\) to sphere 1, so \(PF_1 = PK_1\); likewise \(PF_2 = PK_2\). For an ellipse the two spheres sit in the same cone, \(P\) lies between the circles, and">在曲線上任取一點 \(P\)，沿著過 \(P\) 的母線走，會碰到兩個相切圓於 \(K_1\)、\(K_2\)。\(PF_1\) 與 \(PK_1\) 都是從 \(P\) 到球 1 的切線段，所以 \(PF_1 = PK_1\)；同理 \(PF_2 = PK_2\)。橢圓的兩顆球在同一個錐裡，\(P\) 夾在兩個圓之間，因此</p>
+      <div class="formula">\[ PF_1 + PF_2 = PK_1 + PK_2 = K_1K_2 = 2a \]</div>
+      <p data-en-html="\(K_1K_2\) is the distance between the two circles measured along a generator, and it is the same for every generator — so the sum never changes. For a hyperbola the spheres are in opposite cones, \(K_1K_2\) passes through the vertex, and it is the <em>difference</em> that stays fixed:">\(K_1K_2\) 是兩個相切圓之間沿母線量的距離，每一條母線都一樣長，所以這個和永遠不變。雙曲線的兩顆球分在上下兩個錐，\(K_1K_2\) 穿過頂點，於是不變的是「差」：</p>
+      <div class="formula">\[ \left| PF_1 - PF_2 \right| = \left| PK_1 - PK_2 \right| = K_1K_2 = 2a \]</div>
+
+      <h3 data-en="Directrices, and why e = cos β / cos α">準線，以及為什麼 e = cos β ／ cos α</h3>
+      <p data-en-html="Each circle of contact lies in a horizontal plane, and that plane meets the cutting plane in a straight line: the <strong>directrix</strong> belonging to that focus. Let \(h\) be the height of \(P\) above (or below) this horizontal plane. Walking down the generator to \(K\) covers \(PK = h/\cos\alpha\), because the generator makes the angle \(\alpha\) with the vertical axis. Walking inside the cutting plane straight to the directrix covers \(PD = h/\cos\beta\), because the steepest direction in the plane makes the angle \(\beta\) with the axis. Therefore">每一個相切圓都躺在一個水平面上，這個水平面和切平面交於一條直線，就是這個焦點的<strong>準線</strong>。設 \(P\) 到這個水平面的高度差為 \(h\)。沿母線走到 \(K\)，因為母線和鉛直的軸夾 \(\alpha\) 角，走了 \(PK = h/\cos\alpha\)；在切平面內筆直走到準線，因為平面上最陡的方向和軸夾 \(\beta\) 角，走了 \(PD = h/\cos\beta\)。所以</p>
+      <div class="formula">\[ \frac{PF}{PD} = \frac{PK}{PD} = \frac{h/\cos\alpha}{h/\cos\beta} = \frac{\cos\beta}{\cos\alpha} = e \]</div>
+      <p data-en-html="The ratio is the same for every point of the curve: this constant is the <strong>eccentricity</strong> \(e\). It is less than 1 exactly when \(\beta &amp;gt; \alpha\) (ellipse), equal to 1 when \(\beta = \alpha\) (parabola) and greater than 1 when \(\beta &amp;lt; \alpha\) (hyperbola). For a circle (\(\beta = 90^\circ\)) the horizontal planes are parallel to the cutting plane, there is no directrix at a finite distance, and \(e = 0\).">曲線上每一點的這個比值都一樣，這個常數就是<strong>離心率</strong> \(e\)。\(\beta &gt; \alpha\) 時 \(e &lt; 1\)（橢圓），\(\beta = \alpha\) 時 \(e = 1\)（拋物線），\(\beta &lt; \alpha\) 時 \(e &gt; 1\)（雙曲線）。圓（\(\beta = 90^\circ\)）的水平面和切平面平行，交不出準線（準線在無窮遠處），\(e = 0\)。</p>
+
+      <h3 data-en="Standard form and a, b, c">標準式與 a、b、c</h3>
+      <p data-en-html="Lay the cutting plane flat and put the \(x'\)-axis along the main axis of the curve, with the origin at the centre (at the vertex for a parabola):">把切平面攤平，以曲線的主軸為 \(x'\) 軸、中心（拋物線用頂點）為原點：</p>
+      <ul>
+        <li data-en-html="Ellipse: \(\dfrac{x'^{2}}{a^{2}} + \dfrac{y'^{2}}{b^{2}} = 1\), with \(c^{2} = a^{2} - b^{2}\);">橢圓：\(\dfrac{x'^{2}}{a^{2}} + \dfrac{y'^{2}}{b^{2}} = 1\)，\(c^{2} = a^{2} - b^{2}\)；</li>
+        <li data-en-html="Hyperbola: \(\dfrac{x'^{2}}{a^{2}} - \dfrac{y'^{2}}{b^{2}} = 1\), with \(c^{2} = a^{2} + b^{2}\) and asymptotes \(y' = \pm\dfrac{b}{a}\,x'\);">雙曲線：\(\dfrac{x'^{2}}{a^{2}} - \dfrac{y'^{2}}{b^{2}} = 1\)，\(c^{2} = a^{2} + b^{2}\)，漸近線 \(y' = \pm\dfrac{b}{a}\,x'\)；</li>
+        <li data-en-html="Parabola: \(y'^{2} = 4p\,x'\).">拋物線：\(y'^{2} = 4p\,x'\)。</li>
+      </ul>
+      <p data-en-html="The foci are at \((\pm c, 0)\) and the directrices are \(x' = \pm a/e\), with \(e = c/a\); a parabola has its focus at \((p, 0)\) and its directrix at \(x' = -p\). The <strong>latus rectum</strong> — the chord through a focus perpendicular to the main axis — has length \(2b^{2}/a\) (or \(4p\) for a parabola). Putting the plane \(\vec m\cdot\vec X = d\) into the equation of the cone and completing the square gives every length directly from \(\alpha\), \(\beta\) and \(d\):">焦點在 \((\pm c, 0)\)，準線是 \(x' = \pm a/e\)，而 \(e = c/a\)；拋物線的焦點在 \((p, 0)\)、準線是 \(x' = -p\)。過焦點而且垂直主軸的弦稱為<strong>正焦弦</strong>，長度是 \(2b^{2}/a\)（拋物線是 \(4p\)）。把切平面 \(\vec m\cdot\vec X = d\) 代入圓錐的方程式再配方，所有長度都能直接由 \(\alpha\)、\(\beta\)、\(d\) 算出：</p>
+      <div class="formula">
+        \[ a = \frac{d\sin\alpha\cos\alpha}{\left|\cos^{2}\alpha - \cos^{2}\beta\right|},\qquad b = \frac{d\sin\alpha}{\sqrt{\left|\cos^{2}\alpha - \cos^{2}\beta\right|}},\qquad p = \frac{d\tan\alpha}{2} \]
+      </div>
+      <p data-en-html="The two Dandelin spheres have their centres on the axis at distances \(\dfrac{d}{\sin\beta + \sin\alpha}\) and \(\dfrac{d}{\left|\sin\beta - \sin\alpha\right|}\) from the vertex, and each radius is that distance times \(\sin\alpha\). When \(\beta = \alpha\) the second distance is infinite: a parabola has only one Dandelin sphere and one focus.">兩顆丹德林球的球心在軸上，離頂點 \(\dfrac{d}{\sin\beta + \sin\alpha}\) 與 \(\dfrac{d}{\left|\sin\beta - \sin\alpha\right|}\)，半徑是這個距離乘以 \(\sin\alpha\)。\(\beta = \alpha\) 時第二個距離變成無限大：拋物線只有一顆丹德林球、一個焦點。</p>
+
+      <h3 data-en="Degenerate cuts">退化的切口</h3>
+      <p data-en-html="If the plane goes through the vertex (\(d = 0\)) the cut is no longer a proper curve. With \(\beta &amp;gt; \alpha\) only the vertex itself is left; with \(\beta = \alpha\) the plane rests against the cone along one generator, a single line; with \(\beta &amp;lt; \alpha\) it cuts the cone in two lines crossing at the vertex. These are the limits of the ordinary curves as \(d \to 0\): the ellipse shrinks to a point, and the hyperbola shrinks onto its own asymptotes, whose half-angle \(\varphi\) satisfies \(\cos\varphi = 1/e\).">切平面通過頂點（\(d = 0\)）時，切口就不再是真正的曲線：\(\beta &gt; \alpha\) 只剩頂點一點；\(\beta = \alpha\) 時平面貼著錐面的一條母線，切口是一條直線；\(\beta &lt; \alpha\) 時切出兩條在頂點相交的直線。它們都是 \(d \to 0\) 的極限：橢圓縮成一點，雙曲線縮到貼著自己的漸近線，漸近線與主軸的夾角 \(\varphi\) 滿足 \(\cos\varphi = 1/e\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>From circle to hyperbola</strong>: keep \(\alpha\) fixed and turn \(\beta\) slowly from \(90^\circ\) to \(0^\circ\). Watch \(e\) grow past 1 exactly when \(\beta\) passes \(\alpha\). Where does the second Dandelin sphere go just as the curve becomes a parabola?"><strong>從圓到雙曲線</strong>：固定 \(\alpha\)，把 \(\beta\) 從 \(90^\circ\) 慢慢轉到 \(0^\circ\)。\(e\) 恰好在 \(\beta\) 越過 \(\alpha\) 時超過 1。切口快變成拋物線時，第二顆丹德林球跑到哪裡去了？</li>
+        <li data-en-html="<strong>The sum stays put</strong>: drag \(P\) around an ellipse and press “Record P” at several places. \(PF_1\) and \(PF_2\) both change, but their sum is always \(2a\)."><strong>和不變</strong>：拖曳 \(P\) 繞橢圓一圈，在幾個地方按「記下這一點」。\(PF_1\)、\(PF_2\) 各自改變，和卻永遠是 \(2a\)。</li>
+        <li data-en-html="<strong>The other branch</strong>: on a hyperbola, drag \(P\) onto the other branch. Which focus is closer now? Is the difference still \(2a\)?"><strong>另一支</strong>：在雙曲線上把 \(P\) 拖到另一支。現在哪個焦點比較近？差還是 \(2a\) 嗎？</li>
+        <li data-en-html="<strong>The ratio</strong>: with the directrices on, check that \(PF_1/PD_1\) equals \(e\) wherever \(P\) is."><strong>比值</strong>：打開準線，看 \(P\) 走到哪裡，\(PF_1/PD_1\) 都等於 \(e\)。</li>
+        <li data-en-html="<strong>Only the size</strong>: change only \(d\). The curve grows or shrinks, but \(e\), the asymptote directions and the shape of the Dandelin picture do not change. Why?"><strong>只變大小</strong>：只改 \(d\)。曲線放大或縮小，\(e\)、漸近線的方向與丹德林球的配置形狀卻不變。為什麼？</li>
+        <li data-en-html="<strong>The proof in 3D</strong>: switch to the 3D view and turn on “Generator through P, points K”. Turn the scene until you can see why \(PF_1\) and \(PK_1\) are equally long."><strong>立體的證明</strong>：切換到 3D，打開「過 P 的母線與切點 K」，轉動視角，看出 \(PF_1\) 和 \(PK_1\) 為什麼一樣長。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Everything is computed exactly from the formulas above (no numerical approximation). The vertex is at the origin and the axis is the \(z\)-axis; the cutting plane is perpendicular to the \(xz\)-plane, which is why the left panel can show the true cross-section through the axis.">全部由上面的公式精確計算（沒有數值近似）。頂點在原點、軸是 \(z\) 軸；切平面垂直於 \(xz\) 平面，所以左圖畫的正是過軸的真實剖面。</li>
+        <li data-en-html="The Dandelin spheres come from the two tangency conditions (distance from the centre to a generator and to the plane both equal the radius); the foci are their points of contact, and the directrices are where the planes of the contact circles meet the cutting plane. The unit tests check, at random points of thousands of curves, that \(PF_1 + PF_2 = 2a\), \(\left|PF_1 - PF_2\right| = 2a\), \(PF = e\cdot PD\), \(PF = PK\) and the standard forms all hold to about \(10^{-9}\).">丹德林球由兩個相切條件求出（球心到母線、到切平面的距離都等於半徑）；焦點是切點，準線是相切圓所在平面與切平面的交線。單元測試在上千條曲線的隨機點上檢查 \(PF_1 + PF_2 = 2a\)、\(\left|PF_1 - PF_2\right| = 2a\)、\(PF = e\cdot PD\)、\(PF = PK\) 與標準式，誤差都在 \(10^{-9}\) 左右。</li>
+        <li data-en="When you drag P, the page finds the point of the curve nearest to your finger (a coarse scan followed by a golden-section search).">拖曳 P 時，程式找出曲線上離手指最近的點（先粗略掃描，再用黃金分割法細找）。</li>
+        <li data-en="The zoom of each panel depends only on α and β (it is chosen as if d were 3), so changing d really makes the picture grow or shrink. When the zoom has to change, the view glides to it.">每一張圖的縮放只依 α 和 β 決定（以 d = 3 的大小來安排），所以改變 d 時圖形真的會變大變小；需要換縮放比例時，畫面會平順地移過去。</li>
+        <li data-en="The 3D view draws the cone, the plane, the curve and the spheres from the same numbers as the 2D view, using the three.js library (MIT licence), which is downloaded only when you switch to 3D. The cone is drawn to a finite length; the mathematical cone goes on for ever.">3D 檢視的圓錐、切平面、曲線與球，和 2D 用的是同一組計算結果，以 three.js 函式庫（MIT 授權）繪製，只有切換到 3D 時才會下載。圓錐只畫到有限的長度，數學上的圓錐是無限延伸的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics · Conic sections (parabola, ellipse, hyperbola).">課綱對應：高中數學・二次曲線（拋物線、橢圓、雙曲線）。</li>
+        <li data-en="History: Apollonius of Perga (about 200 BC) studied the curves as sections of a cone and gave them the names ellipse, parabola and hyperbola; G. P. Dandelin published the sphere argument in 1822.">歷史：阿波羅尼斯（Apollonius of Perga，約西元前 200 年）把這些曲線當成圓錐的截面研究，並取了橢圓、拋物線、雙曲線的名字；丹德林在 1822 年發表了用球證明的方法。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Dandelin_spheres&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Dandelin spheres (Wikipedia)</a>, <a href=&quot;https://mathworld.wolfram.com/DandelinSpheres.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Dandelin Spheres (MathWorld)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Conic_section&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Conic section (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Dandelin_spheres" target="_blank" rel="noopener">Dandelin spheres（維基百科）</a>、<a href="https://mathworld.wolfram.com/DandelinSpheres.html" target="_blank" rel="noopener">Dandelin Spheres（MathWorld）</a>、<a href="https://en.wikipedia.org/wiki/Conic_section" target="_blank" rel="noopener">Conic section（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/conic-sections-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/conic-sections.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="conic-sections"></script>
+  <script src="js/missions/conic-sections.js"></script>
+  <script src="js/stats.js" data-module="conic-sections"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
