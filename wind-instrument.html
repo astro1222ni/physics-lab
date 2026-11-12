@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Wind Instruments: Recorder, Flute and Clarinet | Astro Ni Science Lab">管樂器：直笛、長笛與單簧管｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 管樂器頁面專用的顏色代號（淺色＋兩組深色；由 js/wind-instrument.js 與 js/wind-instrument-3d.js 讀取） */
+    :root {
+      --wi-pos: #dc2626; --wi-neg: #2563eb; --wi-air: #334155; --wi-p: #be123c; --wi-xi: #0f766e;
+      --wi-good: #15803d; --wi-warn: #b45309; --wi-spec: #7c3aed; --wi-glass: #7fa9bb; --wi-metal: #b8bfc6;
+      --wi-wood: #e3c48d; --wi-wood2: #8a5a2b; --wi-reed: #c9a24a; --wi-finger: #c98a64; --wi-end: #9333ea;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --wi-pos: #f87171; --wi-neg: #60a5fa; --wi-air: #e2e8f0; --wi-p: #fb7185; --wi-xi: #5eead4;
+        --wi-good: #4ade80; --wi-warn: #fbbf24; --wi-spec: #b9a0ff; --wi-glass: #6d97a8; --wi-metal: #9aa3ab;
+        --wi-wood: #c9a46b; --wi-wood2: #6e4521; --wi-reed: #b08a38; --wi-finger: #d79c78; --wi-end: #c084fc;
+      }
+    }
+    :root[data-theme="dark"] {
+      --wi-pos: #f87171; --wi-neg: #60a5fa; --wi-air: #e2e8f0; --wi-p: #fb7185; --wi-xi: #5eead4;
+      --wi-good: #4ade80; --wi-warn: #fbbf24; --wi-spec: #b9a0ff; --wi-glass: #6d97a8; --wi-metal: #9aa3ab;
+      --wi-wood: #c9a46b; --wi-wood2: #6e4521; --wi-reed: #b08a38; --wi-finger: #d79c78; --wi-end: #c084fc;
+    }
+
+    /* 畫布高度由程式依寬度決定。只有按在管口或按孔上才攔下觸控，其他時候手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; }
+    #cv2 { aspect-ratio: auto; height: 170px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; background: var(--canvas-bg); }
+    .wi button { min-height: 44px; }
+    .wi [hidden] { display: none !important; }
+    .wi .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .wi .playbar button { flex: 1 1 auto; }
+    .wi .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .wi #blow[aria-pressed="true"] { background: var(--wi-good); border-color: var(--wi-good); color: var(--surface); font-weight: 600; }
+    .wi #stop:disabled { opacity: .5; }
+    .wi .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .wi .stage .hint { margin: 2px 4px 0; }
+    .wi .stage .hf-warn { margin: 2px 4px 0; color: var(--wi-warn); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+    .wi .slider input[type="range"] { height: 28px; margin: 0; }
+    .wi .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .wi .panel { grid-template-columns: minmax(0, 1fr); }
+    .wi .panel > .card { min-width: 0; }
+    .wi .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; color: var(--muted); font-weight: 600; }
+    /* 依樂器顯示不同的控制項 */
+    .wi:not([data-inst="recorder"]) .rec-only { display: none !important; }
+    .wi[data-inst="recorder"] .tube-only { display: none !important; }
+    .wi .slider input:disabled { opacity: .55; }
+    .wi .slider.locked output { color: var(--muted); }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 10px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg button:disabled { cursor: default; }
+    .seg button:disabled:not([aria-pressed="true"]) { opacity: .5; }
+    .seg button:disabled[aria-pressed="true"] { opacity: .75; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; min-width: 0; }
+    .row { margin: 10px 0 0; }
+    .row > .lbl { display: block; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 4px; }
+    .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
+    .presets button { padding: 4px 4px; line-height: 1.2; }
+    .presets button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    /* 按孔：上排左手（拇指、1、2、3），下排右手（4–7） */
+    .holes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 8px 0 0; }
+    .holes button { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 4px 6px; font-variant-numeric: tabular-nums; }
+    .holes button .dot { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--text); flex: none; background: var(--bg); }
+    .holes button[aria-pressed="true"] .dot { background: var(--text); }
+    .holes button[aria-pressed="mixed"] .dot { background: linear-gradient(90deg, var(--text) 50%, var(--bg) 50%); }
+    .holes button.thumb .dot { border-style: dashed; }
+    .holes button small { font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .fings { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 0 0; }
+    .fings button { padding: 4px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .fings button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent); background: var(--accent-soft); }
+    .handlbl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.big { font-weight: 700; color: var(--wi-p); }
+    dl.readout dd.wrap { white-space: normal; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.wi-t { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.wi-t th, table.wi-t td { padding: 4px 5px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; }
+    table.wi-t th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.wi-t th:first-child, table.wi-t td:first-child { text-align: left; }
+    table.wi-t tr.sel td { background: var(--accent-soft); }
+    table.wi-t td.ok { color: var(--wi-good); font-weight: 600; }
+    table.wi-t td.off { color: var(--wi-warn); font-weight: 600; }
+    .fgd { display: inline-flex; align-items: center; gap: 2px; vertical-align: middle; }
+    .fgd i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+    .fgd i.c { background: currentColor; }
+    .fgd i.h { background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+    .fgd i.sep { width: 3px; border: none; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    /* 2D／3D 檢視切換（與帶電粒子、弦樂器模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .stage.is3d .cvwrap { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 9; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .wi3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .wi3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
+    .wi3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#instruments&quot;>Music · The Science of Instruments</a> / Wind instruments"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#instruments">音樂・樂器的科學</a> ／ 管樂器</nav>
+      <h1 data-en="Wind Instruments: Recorder, Flute and Clarinet">管樂器：直笛、長笛與單簧管</h1>
+      <p data-en="Everyone in junior high has played the recorder: lift the fingers one by one and the note climbs; half-open the thumb hole and it jumps an octave. A flute does the same when you blow harder, but a clarinet jumps a twelfth instead — because one end of its tube is closed. Here the air inside the tube is made visible: the pressure standing wave as a band of colour and the air itself as moving dots. Change the tube, the temperature and the mode, finger a simplified recorder, and see why opening a hole is like cutting the tube short, and why instrument makers must allow for the air that keeps vibrating just outside the open end.">國中每個人都吹過直笛：手指一個一個放開，音就一路升高；拇指孔半開，就跳到高八度。長笛用力吹也會跳八度，單簧管卻跳了十二度——因為它的管子有一端是閉的。這裡把管子裡的空氣畫出來：壓力的駐波是一條色帶，空氣本身是左右擺動的小點。改變管子、溫度與振動模式，按一按簡化的直笛，看看為什麼打開一個孔就像把管子截短，以及製作樂器時，為什麼要算進管口外面那一小段還在振動的空氣。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Blow”, switch from “Open pipe” to “Closed pipe”, then try “Mode 2” on each — octave or twelfth?">試試看：按「吹氣」，把「開管」換成「閉管」，再各試「第 2 模式」：跳八度還是十二度？</p>
+    <div class="lab wi" id="lab" data-inst="tube">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" tabindex="0" aria-label="管樂器畫布：上面是調音表，中間是管子的剖面（色帶是壓力的駐波，小點是空氣），下面是沿著管子的壓力與空氣位移。拖曳管子右端可以改變管長；直笛模式點孔可以按住或放開。" data-en-aria-label="Wind instrument canvas: a tuner on top, the tube in section in the middle (the colour band is the pressure standing wave, the dots are the air), and the pressure and air displacement along the tube underneath. Drag the right end of the tube to change its length; on the recorder, tap a hole to cover or uncover it."></canvas>
+        </div>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="blow" type="button" class="primary" aria-pressed="false" data-en="▶ Blow">▶ 吹氣</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除吹奏紀錄並停止吹氣；管子、直笛與滑桿的設定不變" data-en-title="Clear the playing record and stop blowing; the tube, recorder and slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="earHint" data-en="Wearing headphones? Turn the volume down first: a short tube overblown can go above 4000 Hz and sound piercing. The timbres are approximations made from harmonics; one breath lasts at most 12 seconds.">戴耳機的同學先把音量調小：短管超吹的音可能超過 4000 Hz，很尖。音色是用泛音合成的近似；一口氣最多吹 12 秒。</p>
+        <p class="hf-warn" id="hfWarn" hidden data-en="This note is above 4 kHz: if you are wearing headphones, turn the volume down first.">這個音超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <p class="hint" id="lowHint" hidden></p>
+        <div class="legend">
+          <span style="color:var(--wi-pos)" data-en-html="<i style=&quot;background:var(--wi-pos)&quot;></i>Compressed (pressure up)"><i style="background:var(--wi-pos)"></i>壓縮（壓力高）</span>
+          <span style="color:var(--wi-neg)" data-en-html="<i style=&quot;background:var(--wi-neg)&quot;></i>Rarefied (pressure down)"><i style="background:var(--wi-neg)"></i>稀疏（壓力低）</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--wi-air)&quot;></i>Air"><i class="dot" style="background:var(--wi-air)"></i>空氣</span>
+          <span style="color:var(--wi-p)" data-en-html="<i style=&quot;background:var(--wi-p)&quot;></i>Pressure p"><i style="background:var(--wi-p)"></i>壓力變化 p</span>
+          <span style="color:var(--wi-xi)" data-en-html="<i class=&quot;dash&quot;></i>Air displacement ξ"><i class="dash"></i>空氣位移 ξ</span>
+          <span style="color:var(--wi-end)" data-en-html="<i class=&quot;dash&quot;></i>Effective open end"><i class="dash"></i>有效開口</span>
+        </div>
+        <canvas id="cv2" role="img" aria-label="頻譜：管子的共振頻率與聽到的泛音。" data-en-aria-label="Spectrum: the resonances of the tube and the harmonics you hear."></canvas>
+        <p class="chart-note" data-en-html="Horizontal axis: multiples of the tube's lowest resonance \(f_1\). Triangles: the frequencies the tube can resonate at — every whole multiple for an open pipe, only the odd ones for a closed pipe. Bars: the harmonics of the note you hear (an approximate timbre). A dashed empty box is a harmonic that is missing.">橫軸：管子最低共振頻率 \(f_1\) 的倍數。三角形：管子能共振的頻率——開管是所有整數倍，閉管只有奇數倍。長條：聽到的這個音的泛音（近似音色）。虛線空框是缺少的泛音。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Instrument">樂器</h2>
+          <div class="seg full" id="insts" role="group" aria-label="樂器" data-en-aria-label="Instrument">
+            <button type="button" id="instTube" data-inst="tube" aria-pressed="true" data-en="A tube">一根管子</button>
+            <button type="button" id="instRec" data-inst="recorder" aria-pressed="false" data-en="Recorder">直笛</button>
+          </div>
+          <div class="presets tube-only" id="presets" role="group" aria-label="樂器的近似尺寸" data-en-aria-label="Approximate instrument sizes">
+            <button type="button" data-preset="flute" data-en-html="Flute<small>≈ C4</small>">長笛<small>≈ C4</small></button>
+            <button type="button" data-preset="clarinet" data-en-html="Clarinet<small>≈ D3</small>">單簧管<small>≈ D3</small></button>
+            <button type="button" data-preset="pan" data-en-html="Pan pipe<small>A4</small>">排笛的一根管<small>A4</small></button>
+          </div>
+          <p class="hint" id="instNote"></p>
+        </section>
+
+        <section class="card rec-only">
+          <h2 data-en="Recorder fingering">直笛的指法</h2>
+          <div class="handlbl" aria-hidden="true"><span data-en="Thumb (back)">拇指（背面）</span><span data-en="Left 1">左手 1</span><span data-en="Left 2">左手 2</span><span data-en="Left 3">左手 3</span></div>
+          <div class="holes" id="holes" role="group" aria-label="按孔：點一下按住或放開；拇指孔依序是按住、半開、放開" data-en-aria-label="Holes: tap to cover or uncover; the thumb hole goes covered, half-open, open"></div>
+          <div class="handlbl" aria-hidden="true"><span data-en="Right 4">右手 4</span><span data-en="Right 5">右手 5</span><span data-en="Right 6">右手 6</span><span data-en="Right 7">右手 7</span></div>
+          <h3 class="sub" data-en="Common fingerings (baroque)">常用指法（巴洛克式）</h3>
+          <div class="fings" id="fings" role="group" aria-label="常用指法" data-en-aria-label="Common fingerings">
+            <button type="button" data-f="C5">C5</button><button type="button" data-f="D5">D5</button><button type="button" data-f="E5">E5</button><button type="button" data-f="F5">F5</button>
+            <button type="button" data-f="G5">G5</button><button type="button" data-f="A5">A5</button><button type="button" data-f="B5">B5</button><button type="button" data-f="C6">C6</button>
+          </div>
+          <div class="slider"><label for="pull" data-en="Head joint pulled out (mm)">頭管拉出（mm）</label><output id="pullo"></output>
+            <input id="pull" type="range" min="0" max="10" step="0.1" value="0" data-decimals="2"></div>
+          <p class="hint" data-en="Players pull the head joint out a little to bring a recorder that is too high back down.">演奏者把頭管拉出一點點，讓偏高的直笛降回來。</p>
+          <div class="tablewrap"><table class="wi-t" id="fingTable"></table></div>
+          <p class="hint" id="fingNote" data-en-html="<span class=&quot;fgd&quot;><i class=&quot;c&quot;></i></span> covered, <span class=&quot;fgd&quot;><i class=&quot;o&quot;></i></span> open, <span class=&quot;fgd&quot;><i class=&quot;h&quot;></i></span> half-open; the first dot is the thumb hole. The hole positions were worked out with this simplified model at 20 °C, so the fingerings come out in tune there; a real recorder (conical bore, double holes) differs a little. Green: within ±5 cents."><span class="fgd"><i class="c"></i></span> 按住、<span class="fgd"><i class="o"></i></span> 放開、<span class="fgd"><i class="h"></i></span> 半開；第一個圓點是拇指孔。孔的位置是用這個簡化模型在 20 °C 反推出來的，所以在 20 °C 每個指法都準；真的直笛（錐形管、雙孔）會有一點差別。綠色：±5 音分以內。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The tube">管子</h2>
+          <div class="row">
+            <span class="lbl" data-en="Kind of tube">管型</span>
+            <div class="seg full" id="types" role="group" aria-label="管型" data-en-aria-label="Kind of tube">
+              <button type="button" id="typeOpen" data-type="open" aria-pressed="true" data-en="Open pipe">開管</button>
+              <button type="button" id="typeClosed" data-type="closed" aria-pressed="false" data-en="Closed pipe">閉管</button>
+            </div>
+          </div>
+          <p class="hint" data-en="Open pipe: open at both ends (flute, recorder). Closed pipe: closed at the mouthpiece end (clarinet, one pipe of a pan flute).">開管：兩端都開（長笛、直笛）。閉管：吹嘴那一端閉（單簧管、排笛的一根管）。</p>
+          <div class="slider" id="lenBox"><label for="len" data-en="Tube length L (m)">管長 L（m）</label><output id="leno"></output>
+            <input id="len" type="range" min="0.1" max="1.5" step="0.001" value="0.645" data-decimals="4"></div>
+          <div class="slider" id="diaBox"><label for="dia" data-en="Inner diameter d (mm)">內徑 d（mm）</label><output id="diao"></output>
+            <input id="dia" type="range" min="8" max="30" step="0.1" value="19" data-decimals="2"></div>
+          <div class="row">
+            <span class="lbl" data-en="Mode of vibration (overblowing)">振動模式（超吹）</span>
+            <div class="seg full" id="modes" role="group" aria-label="振動模式" data-en-aria-label="Mode of vibration">
+              <button type="button" data-m="1" aria-pressed="true" data-en="Mode 1">第 1 模式</button>
+              <button type="button" data-m="2" aria-pressed="false" data-en="Mode 2">第 2 模式</button>
+              <button type="button" data-m="3" aria-pressed="false" data-en="Mode 3">第 3 模式</button>
+            </div>
+          </div>
+          <div class="row">
+            <span class="lbl" data-en="End correction">管口修正</span>
+            <div class="seg full" id="corrs" role="group" aria-label="管口修正" data-en-aria-label="End correction">
+              <button type="button" data-corr="none" aria-pressed="false" data-en="Ignore">不計</button>
+              <button type="button" data-corr="unflanged" aria-pressed="true" data-en-html="0.61 r">0.61 r</button>
+              <button type="button" data-corr="flanged" aria-pressed="false" data-en-html="0.82 r (flange)">0.82 r（凸緣）</button>
+            </div>
+          </div>
+          <p class="hint" id="tubeNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The air">空氣</h2>
+          <div class="slider"><label for="temp" data-en="Air temperature T (°C)">氣溫 T（°C）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="0" max="40" step="0.1" value="20" data-decimals="2"></div>
+          <p class="hint" id="airNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="What you hear">聽到的音</dt><dd class="big" id="rF">—</dd>
+            <dt data-en="Note (A4 = 440 Hz)">音名（A4 = 440 Hz）</dt><dd id="rNote">—</dd>
+            <dt data-en="Mode of vibration">振動模式</dt><dd id="rMode">—</dd>
+            <dt data-en="Speed of sound v">聲速 v</dt><dd id="rV">—</dd>
+            <dt data-en-html="Length L → effective length L′">管長 L → 有效長度 L′</dt><dd id="rLp">—</dd>
+            <dt data-en="End correction δ (each open end)">管口修正 δ（每個開口）</dt><dd id="rDelta">—</dd>
+            <dt class="rec-only" data-en="First open hole">最上面打開的孔</dt><dd class="rec-only" id="rHole">—</dd>
+            <dt data-en="Wavelength λ">波長 λ</dt><dd id="rLam">—</dd>
+            <dt data-en="Resonances of this tube">這根管子的共振</dt><dd class="wrap" id="rRes">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Playing record">吹奏紀錄</h2>
+          <div class="tablewrap"><table class="wi-t" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Nothing played yet. Every note you blow is listed here, with the change in cents from the one before.">還沒有吹。每吹出一個音都會記在這裡，並列出和上一個音差幾音分。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Open and closed pipes">開管與閉管</h3>
+      <p data-en-html="Blowing across an edge (flute, recorder) or through a reed (clarinet) feeds a standing wave in the air column. At an <strong>open end</strong> the air is free to move but the pressure stays at the outside value: a pressure <em>node</em> (and a displacement antinode). At a <strong>closed end</strong> the air cannot move but the pressure swings most: a pressure <em>antinode</em>. A pipe open at both ends fits whole numbers of half-wavelengths; a pipe closed at one end fits odd numbers of quarter-wavelengths:">對著邊緣吹氣（長笛、直笛）或吹動簧片（單簧管），會在管內的空氣柱激起駐波。在<strong>開口端</strong>，空氣可以自由進出，壓力卻維持外面的大氣壓：是壓力的<em>節點</em>（空氣位移的腹點）。在<strong>閉口端</strong>，空氣動不了，壓力的起伏卻最大：是壓力的<em>腹點</em>。兩端都開的管子，裝得下整數個半波長；一端閉的管子，只裝得下奇數個四分之一波長：</p>
+      <div class="formula" data-en-html="\[ \text{open pipe: } f_m = \frac{m\,v}{2L'} \quad (m = 1, 2, 3, \dots), \qquad \text{closed pipe: } f_m = \frac{(2m-1)\,v}{4L'} \]">\[ \text{開管：} f_m = \frac{m\,v}{2L'} \quad (m = 1, 2, 3, \dots), \qquad \text{閉管：} f_m = \frac{(2m-1)\,v}{4L'} \]</div>
+      <p data-en-html="So an open pipe resonates at every whole multiple of its lowest frequency (1 : 2 : 3 : 4 …), and a closed pipe only at the odd multiples (1 : 3 : 5 : 7 …). With the same length, the closed pipe's lowest note is about an octave lower, because a quarter-wavelength rather than a half-wavelength fits in it. How the standing wave forms and how the resonances are used to measure the speed of sound is in the physics experiment “Resonance in an Air Column”; here we look at how instrument makers and players use them.">所以開管在最低頻率的每個整數倍都會共振（1 : 2 : 3 : 4 …），閉管只在奇數倍共振（1 : 3 : 5 : 7 …）。同樣長的管子，閉管的最低音大約低一個八度，因為裡面只裝得下四分之一個波長，而不是半個。駐波怎麼形成、怎麼用共鳴測聲速，在物理科的<a href="resonance-tube.html">「氣柱的共鳴」</a>實驗；這裡看的是製作樂器與演奏的人怎麼利用它。</p>
+
+      <h3 data-en="End correction">管口修正</h3>
+      <p data-en-html="The air just outside an open end still moves with the wave, so the pressure node sits a little beyond the end: the tube behaves as if it were longer by \(\delta\). For a thin-walled round tube \(\delta = 0.6133\,r\) (Levine and Schwinger, 1948); with a wide flange around the opening, \(\delta \approx 0.82\,r\). The effective length is">開口外面那一小段空氣還跟著振動，所以壓力節點落在管口外一點點：管子表現得像長了 \(\delta\)。管壁很薄的圓管 \(\delta = 0.6133\,r\)（Levine 與 Schwinger，1948）；管口外有一大片凸緣時 \(\delta \approx 0.82\,r\)。有效長度是</p>
+      <div class="formula" data-en-html="\[ \text{open pipe: } L' = L + 2\delta, \qquad \text{closed pipe: } L' = L + \delta \]">\[ \text{開管：} L' = L + 2\delta, \qquad \text{閉管：} L' = L + \delta \]</div>
+      <p data-en-html="This is why a tube cut to the textbook length \(L = v/2f\) always sounds a little flat, and more so for a short, fat tube. Because the two kinds of pipe have different corrections, a closed pipe of the same length is a little <em>less</em> than an octave below the open one.">所以照課本公式 \(L = v/2f\) 切出來的管子，量到的音總是比算的低一點，管子越短越粗，低得越多。也因為兩種管子的修正不一樣，同樣長的閉管比開管低的，比一個八度<em>少</em>一點。</p>
+
+      <h3 data-en="Temperature">溫度</h3>
+      <p data-en-html="The speed of sound grows with temperature, \(v \approx 331.3 + 0.606\,T\) m/s (\(T\) in °C), while the tube hardly changes length. Every note of a wind instrument therefore rises together: about 3 cents per °C, a whole semitone between a 0 °C winter morning and a 32 °C summer afternoon. That is why wind players warm up their instruments with their breath before tuning, and why an orchestra tunes again after the hall warms up.">聲速隨溫度增加，\(v \approx 331.3 + 0.606\,T\) m/s（\(T\) 是攝氏溫度），管子的長度卻幾乎不變。所以管樂器的每個音會一起升高：每 1 °C 大約 3 音分，0 °C 的冬天早上和 32 °C 的夏天下午整整差了一個半音。這就是管樂手調音前要先用呼吸把樂器吹暖，以及音樂廳變暖以後樂團要再調一次音的原因。</p>
+
+      <h3 data-en="Holes cut the tube short">按孔把管子截短</h3>
+      <p data-en-html="An open finger hole lets the pressure escape, so the standing wave ends near the first open hole: opening holes from the bottom up shortens the tube step by step and raises the note. But a hole is smaller than the bore, so the cut is not clean. In this page's simplified model the hole is a short side branch: the air in it (length \(t_e = t + 1.5b\), hole radius \(b\), wall thickness \(t\)) acts like a piece of bore \(h = (a/b)^2 t_e\) long (\(a\) is the bore radius), and the sound can go out through the hole or on down the tube (effective length \(\ell\)). The two paths are in parallel:">打開的按孔讓壓力洩出去，所以駐波在最上面打開的孔附近結束：從下面一個一個打開，管子就一段一段變短，音一路升高。不過孔比管子細，截得不乾淨。這頁用簡化的模型：孔是一條很短的旁路，孔裡的空氣（長 \(t_e = t + 1.5b\)，\(b\) 是孔的半徑、\(t\) 是管壁厚）相當於一段長 \(h = (a/b)^2 t_e\) 的主管（\(a\) 是主管半徑），聲音可以從孔出去，也可以繼續往下走（等效長度 \(\ell\)），兩條路並聯：</p>
+      <div class="formula">\[ E = \frac{h\,\ell}{h + \ell} \]</div>
+      <p data-en-html="A big hole (small \(h\)) cuts the tube almost at the hole; a tiny hole hardly cuts it at all. Closing holes <em>below</em> the first open one makes \(\ell\) longer and pulls the note down a little — the <strong>cross fingerings</strong> (fork fingerings) that recorder players use for F and the high C. This lumped model is a simplification (the real effect depends on frequency, and a real recorder has a conical bore and double holes); the hole positions here were worked out from it.">孔大（\(h\) 小）就幾乎在孔的地方截斷；孔很小就幾乎截不到。把第一個打開的孔<em>下面</em>的孔蓋住，\(\ell\) 變長，音就被拉低一點——這就是直笛吹 F 與高音 C 用的<strong>叉指</strong>。這是簡化的集總模型（真實的效果和頻率有關，而且真的直笛是錐形管、還有雙孔）；這頁直笛的孔位就是用它反推的。</p>
+
+      <h3 data-en="Overblowing">超吹</h3>
+      <p data-en-html="Blow harder (or open a small vent) and the instrument jumps to its next resonance. An open pipe goes from 1 to 2 times the frequency: an <strong>octave</strong>, so a flute or a recorder uses almost the same fingers in its second octave. A closed pipe goes from 1 to 3 times: an octave and a fifth, a <strong>twelfth</strong> (1902 cents).">吹得更用力（或打開一個小通氣孔），樂器就跳到下一個共振。開管從 1 倍跳到 2 倍：<strong>八度</strong>，所以長笛和直笛第二個八度的指法幾乎和第一個八度一樣。閉管從 1 倍跳到 3 倍：八度再加五度，<strong>十二度</strong>（1902 音分）。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <h3 data-en="The recorder">直笛</h3>
+      <p data-en-html="The soprano recorder's lowest note is C5 with every hole covered. Lifting the fingers from the bottom gives D, E, F, G, A, B and C; F and the high C are played with cross fingerings, because a simply opened hole would make them sharp (the “German” F with holes 5, 6 and 7 open is almost a semitone too high in this model). For the second octave the thumb hole is half-opened with the thumbnail: it becomes a small vent that upsets the lowest mode, and the tube jumps up an octave with nearly the same fingers. On a cold day a recorder plays flat and has to be warmed up; on a hot day it plays sharp and the head joint is pulled out a little — which lowers the high notes more than the low ones.">高音直笛全部按住是最低的 C5。從下面一個一個放開手指，得到 D、E、F、G、A、B、C；F 和高音 C 用叉指，因為單純放開會偏高（這個模型裡，放開 5、6、7 孔的「德式」F 高了將近半音）。第二個八度要用拇指指甲把拇指孔半開：它變成一個小通氣孔，破壞最低的模式，管子就用幾乎一樣的指法跳上一個八度。冷天直笛會偏低，要先吹暖；熱天會偏高，就把頭管拉出一點——而這會讓高音降得比低音多。</p>
+      <h3 data-en="Flute and clarinet">長笛與單簧管</h3>
+      <p data-en-html="A flute (about 0.65 m, open at both ends) and a B♭ clarinet (about 0.6 m of tube, closed by the reed) are almost the same length, yet the clarinet reaches about an octave lower, down to D3. Its low register (the <em>chalumeau</em>) has strong odd harmonics and weak even ones, the hollow, woody sound of the clarinet. And because it overblows a twelfth, its fingerings do not repeat every octave: it needs extra keys to fill the gap between the two registers, and the notes around the “break” are notoriously awkward.">長笛（約 0.65 m，兩端開）和降 B 調單簧管（管子約 0.6 m，簧片把一端閉住）差不多長，單簧管卻低了大約一個八度，可以低到 D3。它的低音區（chalumeau）奇次泛音強、偶次泛音弱，就是單簧管空洞、帶木頭味的聲音。而且它超吹是十二度，所以指法不會每個八度重複：需要多出來的按鍵補兩個音區之間的空隙，換音區附近的音也出了名的難吹。</p>
+      <h3 data-en="Pan pipes">排笛</h3>
+      <p data-en-html="Each pipe of a pan flute is a closed pipe with one note; the Chinese <em>paixiao</em> and the Andean <em>siku</em> are rows of such pipes, and the length of each pipe is about a quarter of the wavelength of its note.">排笛的每一根管子都是只有一個音的閉管；中國的排簫、安地斯山的 siku 都是一排這樣的管子，每根管子的長度大約是它那個音的四分之一波長。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Where the dots stand still</strong>: in mode 1 of a closed pipe, where do the dots hardly move, and where does the colour change most? Are they the same places?"><strong>小點不動的地方</strong>：閉管的第 1 模式，小點幾乎不動的是哪裡？顏色變化最大的又是哪裡？是同一個地方嗎？</li>
+        <li data-en-html="<strong>Beyond the end</strong>: switch the end correction between “Ignore” and 0.61 r on a short, fat tube. Where does the dashed purple line go, and what happens to the pitch?"><strong>管口外面</strong>：短而粗的管子，把管口修正在「不計」和 0.61 r 之間切換。紫色虛線跑到哪裡？音高怎麼變？</li>
+        <li data-en-html="<strong>Missing bars</strong>: compare the spectrum of an open and a closed pipe. Which bars are missing, and which triangles?"><strong>缺了哪幾根</strong>：比較開管和閉管的頻譜。少了哪些長條？哪些三角形？</li>
+        <li data-en-html="<strong>A hole is a cut</strong>: on the recorder, open holes from the bottom one by one. Where does the wave end each time — exactly at the hole, or a little below it?"><strong>開孔就是截短</strong>：直笛從下面一個一個打開孔。每次駐波在哪裡結束——剛好在孔上，還是在孔下面一點？</li>
+        <li data-en-html="<strong>Summer and winter</strong>: play the same fingering at 5 °C and at 35 °C. How many cents apart are they? Does the answer depend on the fingering?"><strong>夏天與冬天</strong>：同一個指法在 5 °C 和 35 °C 各吹一次，差幾音分？換一個指法，答案會變嗎？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every frequency comes from the formulas above for a cylindrical tube with the end corrections of Levine and Schwinger, and \(v = 331.3 + 0.606\,T\) (within 0.3 % of \(331.3\sqrt{1 + T/273.15}\) between 0 and 40 °C). The standing wave is drawn from the exact mode shapes: displacement \(\xi \propto \cos(n\pi u)\) and pressure \(p \propto \sin(n\pi u)\) for an open pipe, \(\xi \propto \sin(n\pi u/2)\) and \(p \propto -\cos(n\pi u/2)\) for a closed pipe, where \(u\) runs along the effective length. Unit tests check the octave and the twelfth, the odd-only resonances, the end correction, 30 cents for 10 °C, the nodes at the open ends and \(p = -\tfrac{1}{k}\,d\xi/dx\).">所有頻率都用上面的公式（圓柱管、Levine 與 Schwinger 的管口修正）與 \(v = 331.3 + 0.606\,T\)（0–40 °C 內和 \(331.3\sqrt{1 + T/273.15}\) 相差不到 0.3%）。駐波照精確的模態形狀畫：開管位移 \(\xi \propto \cos(n\pi u)\)、壓力 \(p \propto \sin(n\pi u)\)；閉管 \(\xi \propto \sin(n\pi u/2)\)、\(p \propto -\cos(n\pi u/2)\)，\(u\) 是沿有效長度的位置。單元測試檢查八度與十二度、閉管只有奇數倍、管口修正、10 °C 約 30 音分、開口端是壓力節點，以及 \(p = -\tfrac{1}{k}\,d\xi/dx\)。</li>
+        <li data-en-html="Recorder (illustration): a 12.5 mm cylinder 320.5 mm from the labium to the foot, with 8 holes 4.6–6.9 mm across in a 4 mm wall. The effective length is built up from the foot with the parallel-path formula above. The half-open thumb hole only selects mode 2 and does not change the length (a simplification). The hole positions were solved at 20 °C so that the eight baroque fingerings, and the open-thumb D6, come out in equal temperament.">直笛（示意）：內徑 12.5 mm、唇口到管尾 320.5 mm 的圓柱管，8 個孔徑 4.6–6.9 mm 的孔開在 4 mm 厚的管壁上。等效長度從管尾往上，用上面的並聯公式一個孔一個孔算。拇指孔半開只決定第 2 模式、不改變長度（簡化）。孔的位置是在 20 °C 反推的，讓 8 個巴洛克式指法與拇指全開的 D6 都落在十二平均律上。</li>
+        <li data-en-html="Picture: the tube's length is drawn to the scale shown by the scale bar (the scale changes a little with the length so that short tubes stay visible); the bore is widened for clarity. The dots move in slow motion (the slow-down factor is shown) and their swing is exaggerated, but where they bunch up is exactly where the pressure is high. The 3D view uses the same core: slices of air move along the tube by the same \(\xi\) and are coloured by the same \(p\).">畫面：管子的長度依比例尺畫（比例尺會隨管長稍微改變，讓短管也看得清楚），內徑放大示意。小點以慢動作擺動（標示放慢倍數）、擺幅放大，但小點擠在一起的地方，剛好就是壓力高的地方。3D 檢視用同一個核心：一片一片的空氣沿著管子照同樣的 \(\xi\) 移動，顏色照同樣的 \(p\)。</li>
+        <li data-en-html="Sound (an approximation): a sustained tone at the frequency you hear, with harmonics \(\propto 1/j\) (odd \(j\) only) for a closed pipe, \(\propto j^{-1.6}\) for an open pipe and \(\propto j^{-2.2}\) for the recorder, plus a short puff of filtered noise at the start. Real instruments have richer, frequency-dependent spectra.">聲音（近似）：在聽到的頻率發出持續音，閉管的泛音 \(\propto 1/j\)（只有奇數 \(j\)），開管 \(\propto j^{-1.6}\)，直笛 \(\propto j^{-2.2}\)，開頭再加一小段濾波雜訊當作氣音。真的樂器頻譜更豐富，也隨頻率改變。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · instrument construction; Elective Physics III · Sound waves.">課綱對應：高中音樂・表現・樂器構造；選修物理Ⅲ・聲波。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed., Springer, 1998: chapter 8 (pipes), chapter 15 (woodwind reed instruments: tone holes, clarinet), chapter 16 (flutes and flue organ pipes).">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998：第 8 章（管）、第 15 章（簧片木管樂器：音孔、單簧管）、第 16 章（長笛與唇管風琴管）。</li>
+        <li data-en="A. H. Benade, Fundamentals of Musical Acoustics, Oxford University Press, 1976 (tone holes, cross fingerings, register holes).">A. H. Benade，《Fundamentals of Musical Acoustics》，Oxford University Press，1976（音孔、叉指、換音區通氣孔）。</li>
+        <li data-en="End correction 0.6133 r: H. Levine and J. Schwinger, “On the radiation of sound from an unflanged circular pipe”, Physical Review 73, 383 (1948). With an infinite flange 0.8216 r: A. N. Norris and I. C. Sheng, Journal of Sound and Vibration 135, 85 (1989); Rayleigh’s classic estimate is about 0.82–0.85 r.">管口修正 0.6133 r：H. Levine、J. Schwinger，〈On the radiation of sound from an unflanged circular pipe〉，Physical Review 73, 383（1948）。有無限大凸緣時 0.8216 r：A. N. Norris、I. C. Sheng，Journal of Sound and Vibration 135, 85（1989）；Rayleigh 的經典估計約 0.82–0.85 r。</li>
+        <li data-en="Speed of sound in air: v ≈ 331.3 + 0.606 T m/s is the usual linear approximation of the ideal-gas result for dry air.">空氣中的聲速：v ≈ 331.3 + 0.606 T m/s 是乾燥空氣理想氣體結果的常用線性近似。</li>
+        <li data-en="Typical values: the flute, clarinet and recorder sizes and hole diameters are rounded typical values (they differ between makers); the recorder fingerings are the usual baroque (English) fingerings for a soprano recorder in C.">典型值：長笛、單簧管、直笛的尺寸與孔徑是取整數的典型值（各廠牌不同）；直笛指法是 C 調高音直笛常用的巴洛克式（英式）指法。</li>
+        <li data-en-html="Related: the physics experiment <a href=&quot;resonance-tube.html&quot;>“Resonance in an Air Column”</a> on this site.">相關實驗：本站物理科<a href="resonance-tube.html">「氣柱的共鳴」</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/wind-instrument-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/wind-instrument.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="wind-instrument"></script>
+  <script src="js/missions/wind-instrument.js"></script>
+  <script src="js/stats.js" data-module="wind-instrument"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

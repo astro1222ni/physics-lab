@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Chords and Frequency Ratios | Astro Ni Science Lab">和弦的頻率比｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 和弦頁面專用的顏色代號（淺色＋兩組深色；由 js/chords.js 與 js/chords-3d.js 讀取）
+       ch-r／ch-3／ch-5／ch-7：根音、三音（掛四是四音）、五音、七音；ch-wave 合成波形；ch-per 週期 T 與虛擬基頻（T = 1 ÷ 虛擬基頻，同一個顏色）；
+       ch-off 平均律偏離純律；ch-key／ch-keyb 鍵盤的白鍵與黑鍵 */
+    :root { --ch-r: #c2410c; --ch-3: #1d4ed8; --ch-5: #0f766e; --ch-7: #7c3aed; --ch-wave: #334155; --ch-per: #b45309; --ch-off: #b91c1c; --ch-key: #fbfaf7; --ch-keyb: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ch-r: #fb923c; --ch-3: #7aa7ff; --ch-5: #5eead4; --ch-7: #c4a8ff; --ch-wave: #cbd5e1; --ch-per: #fbbf24; --ch-off: #f87171; --ch-key: #d9dce2; --ch-keyb: #0d0f13; }
+    }
+    :root[data-theme="dark"] { --ch-r: #fb923c; --ch-3: #7aa7ff; --ch-5: #5eead4; --ch-7: #c4a8ff; --ch-wave: #cbd5e1; --ch-per: #fbbf24; --ch-off: #f87171; --ch-key: #d9dce2; --ch-keyb: #0d0f13; }
+
+    /* 主畫布：上面是合成波形，下面是泛音列階梯；鍵盤另一張畫布（只顯示，不能按）。高度由程式依寬度與字體決定 */
+    #cv { aspect-ratio: auto; height: 400px; touch-action: auto; cursor: default; }
+    #kb { aspect-ratio: auto; height: 120px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
+    .ch [hidden] { display: none !important; }
+    .ch button { min-height: 44px; }
+    .ch .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ch .playbar button { flex: 1 1 auto; }
+    .ch .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ch #stop:disabled { opacity: .5; cursor: default; }
+    .ch .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ch .stage .slider { margin: 12px 4px 4px; }
+    .ch .panel { grid-template-columns: minmax(0, 1fr); }
+    .ch .panel > .card { min-width: 0; }
+    .ch .card .hint, .ch .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .ch .stage .hint { margin: 6px 4px 0; }
+    .ch .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 14px 0 6px; color: var(--text); }
+
+    /* 2D／3D 檢視切換（與泛音列頁面相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-bar .faces { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 300px; }
+    .view-bar .faces button { flex: 1 1 auto; padding: 6px 10px; }
+    .view-bar #grow { font-weight: 600; border-color: var(--ch-per); }
+    .view-bar #grow[data-run="1"] { background: var(--ch-per); color: var(--surface); }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg button:disabled { opacity: .45; cursor: default; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; min-width: 0; padding: 6px 6px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.p { color: var(--ch-per); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .types { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(84px * var(--fs, 1)), 1fr)); gap: 6px; }
+    .types button { padding: 6px 4px; line-height: 1.2; }
+    .types button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .rootrow { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .rootrow label { flex: none; }
+    .rootrow select { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .rootrow button { flex: none; min-width: 44px; padding: 4px 10px; }
+    .tones { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(70px * var(--fs, 1)), 1fr)); gap: 6px; }
+    .tones button { padding: 4px 6px; line-height: 1.2; border-width: 2px; border-left-width: 6px; }
+    .tones button small { display: block; font-size: calc(12px * var(--fs, 1)); font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .tones button[aria-pressed="false"] { opacity: .55; text-decoration: line-through; }
+    .tones button[aria-pressed="false"] small { text-decoration: none; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .chordline { margin: 0 0 8px; font-size: calc(15.5px * var(--fs, 1)); font-weight: 700; }
+    .chordline small { display: block; margin-top: 1px; font-size: calc(12.5px * var(--fs, 1)); font-weight: 400; color: var(--muted); }
+    .bigratio { margin: 4px 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); text-align: center; font-size: calc(22px * var(--fs, 1)); font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+    .bigratio small { display: block; font-size: calc(12.5px * var(--fs, 1)); font-weight: 500; color: var(--muted); letter-spacing: 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nt { width: 100%; border-collapse: collapse; margin: 10px 0 0; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .nt th, .nt td { padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .nt th { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .nt th:first-child, .nt td:first-child { text-align: left; }
+    .nt td i.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
+    .nt td small.rl { margin-left: 4px; color: var(--muted); font-size: .85em; }
+    .nt tr.off td { color: var(--muted); }
+    .ok-txt { color: var(--ch-5); font-weight: 700; }
+    .bad-txt { color: var(--ch-off); font-weight: 700; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rowbtns { display: flex; gap: 8px; margin: 10px 0 0; }
+    .rowbtns button { flex: 1 1 auto; }
+    /* 和弦進行 */
+    .prog-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+    .prog-list button { width: 100%; text-align: left; padding: 6px 10px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; align-items: center; }
+    .prog-list .rn { grid-row: 1 / 3; font-size: calc(18px * var(--fs, 1)); font-weight: 700; min-width: 2.2em; text-align: center; font-family: Georgia, "Times New Roman", serif; }
+    .prog-list .l1 { font-weight: 600; }
+    .prog-list .l2 { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .prog-list button[aria-current="true"] { border-color: var(--ch-per); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ch-per) 45%, transparent); }
+    .prog-drift { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13.5px * var(--fs, 1)); }
+    .prog-drift:empty { display: none; }
+    .legend i.band { height: 10px; border-radius: 3px; opacity: .55; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#harmony&quot;>Music · Harmony</a> / Chords"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#harmony">音樂・和聲</a> ／ 和弦</nav>
+      <h1 data-en="Chords and Frequency Ratios">和弦的頻率比</h1>
+      <p data-en="Why does C–E–G sound so settled, and C–E♭–G so much more wistful? In just intonation a major triad is exactly 4 : 5 : 6 — rungs 4, 5 and 6 of one harmonic series — so the three waves line up again after a very short time; a minor triad is 10 : 12 : 15 and takes 2.5 times as long. Build chords, turn notes on and off, invert them, watch the combined wave repeat (or, in equal temperament, never quite repeat), see the hidden “virtual bass”, follow a progression that sinks as a choir sings it, and turn three notes into a closed knot in 3D.">為什麼 C–E–G 聽起來那麼安穩，C–E♭–G 就多了一點惆悵？在純律裡，大三和弦剛好是 4 : 5 : 6——同一個泛音列的第 4、5、6 根——三個波很快就重新對齊；小三和弦是 10 : 12 : 15，要等 2.5 倍久。在這裡組和弦、開關單音、轉位，看合成波形怎麼重複（或在十二平均律裡永遠差一點），找出隱形的「虛擬基頻」，跟著合唱團唱一段會往下沉的和弦進行，再把三個音變成 3D 的閉合結。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: switch to “Just intonation”, press “▶ Play chord”, then switch to “Minor” and see the period stretch.">試試看：切到「純律」按「▶ 播放和弦」，再換「小三」，看週期拉長多少。</p>
+    <div class="lab ch" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D waveform">2D 波形</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D curve">3D 曲線</button>
+          </div>
+          <div class="faces l3" role="group" aria-label="3D 視角" data-en-aria-label="3D viewpoint">
+            <button type="button" id="faceXY" data-en="Top (x–y)">上面（x–y）</button>
+            <button type="button" id="faceXZ" data-en="Front (x–z)">正面（x–z）</button>
+            <button type="button" id="faceYZ" data-en="Side (y–z)">側面（y–z）</button>
+            <button type="button" id="faceIso" data-en="Angled">斜看</button>
+            <button type="button" id="grow" data-run="0" data-en="Grow the curve">讓曲線長出來</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="上面是和弦的合成波形，純律時色帶標出每一個重複的週期 T；下面是泛音列階梯，和弦的每個音放在虛擬基頻的第幾根泛音上。" data-en-aria-label="Top: the combined waveform of the chord; in just intonation the bands mark each repeat of the period T. Bottom: the harmonic ladder, with each chord note on its rung of the virtual fundamental’s harmonic series."></canvas>
+        <div id="view3"></div>
+        <canvas id="kb" role="img" aria-label="鍵盤：和弦音用顏色標出" data-en-aria-label="Keyboard with the chord notes coloured"></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play chord">▶ 播放和弦</button>
+          <button id="arp" type="button" data-en="Arpeggio" title="由低到高一個一個彈，最後一起響" data-en-title="Play the notes one at a time from low to high, then let them ring together">分解和弦</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Phone speakers hardly play anything below about 200 Hz: low roots (C3–G3) sound faint on a phone, and the virtual fundamental is never actually played — your ear fills it in. Headphones or a proper speaker work best.">手機喇叭幾乎放不出 200 Hz 以下的聲音：低的根音（C3–G3）在手機上會很小聲；虛擬基頻本來就沒有發出聲音，是耳朵自己「補」出來的。戴耳機或接喇叭聽得最清楚。</p>
+        <div class="slider" id="spanBox"><label for="span" data-en="Time shown (ms)">顯示的時間（ms）</label><output id="spano"></output>
+          <input id="span" type="range" min="0" max="1000" step="1" value="482" data-decimals="1"></div>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-r)&quot;></i>Root"><i class="dot" style="background:var(--ch-r)"></i>根音</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-3)&quot;></i>Third (fourth in sus4)"><i class="dot" style="background:var(--ch-3)"></i>三音（掛四是四音）</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-5)&quot;></i>Fifth"><i class="dot" style="background:var(--ch-5)"></i>五音</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-7)&quot;></i>Seventh"><i class="dot" style="background:var(--ch-7)"></i>七音</span>
+          <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--ch-per)&quot;></i>Period T and virtual fundamental 1/T"><i class="band" style="background:var(--ch-per)"></i>週期 T 與虛擬基頻 1/T</span>
+          <span class="l2" data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--ch-per)&quot;></i>Equal temperament: the first just period copied forward"><i class="dash" style="color:var(--ch-per)"></i>平均律：第一個純律週期往後複製的對照</span>
+        </div>
+        <p class="hint l3" data-en="3D: the three lowest notes drive x, y and z, each as sin(2πft); a fourth note colours the curve. Just chords close into a knot after one period T; equal-tempered ones never close. Seen from the top, the front or the side, the curve becomes the flat Lissajous figure of two notes. Drag to rotate, scroll or pinch to zoom.">3D：最低的三個音分別推動 x、y、z（都是 sin(2πft)），第四個音用顏色表示。純律的和弦走完一個週期 T 就閉合成一個結；平均律的永遠閉不起來。從上面、正面或側面看，就是兩個音的平面李薩如圖形。拖曳旋轉，滾輪或雙指縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="chordCard">
+          <h2 data-en="Chord">和弦</h2>
+          <div class="types" id="types" role="group" aria-label="和弦種類" data-en-aria-label="Kind of chord"></div>
+          <div class="rootrow">
+            <label for="root" data-en="Root">根音</label>
+            <button type="button" id="rootDown" aria-label="根音降低半音" data-en-aria-label="Root down a semitone">◀</button>
+            <select id="root"></select>
+            <button type="button" id="rootUp" aria-label="根音升高半音" data-en-aria-label="Root up a semitone">▶</button>
+          </div>
+          <h3 class="sub" data-en="Tuning">音律</h3>
+          <div class="seg full" id="tuning" role="group" aria-label="音律" data-en-aria-label="Tuning">
+            <button type="button" data-tuning="just" aria-pressed="false" data-en="Just intonation">純律</button>
+            <button type="button" data-tuning="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+          </div>
+          <h3 class="sub" data-en="Inversion">轉位</h3>
+          <div class="seg full" id="invs" role="group" aria-label="轉位" data-en-aria-label="Inversion">
+            <button type="button" data-inv="0" aria-pressed="true" data-en="Root position">原位</button>
+            <button type="button" data-inv="1" aria-pressed="false" data-en="1st inversion">第一轉位</button>
+            <button type="button" data-inv="2" aria-pressed="false" data-en="2nd inversion">第二轉位</button>
+            <button type="button" data-inv="3" aria-pressed="false" data-en="3rd inversion">第三轉位</button>
+          </div>
+          <h3 class="sub" data-en="Notes on or off">和弦音（點一下開關）</h3>
+          <div class="tones" id="tones" role="group" aria-label="和弦音的開關" data-en-aria-label="Switch chord notes on or off"></div>
+          <h3 class="sub" data-en="Tone colour">音色</h3>
+          <div class="seg full" id="timbre" role="group" aria-label="音色" data-en-aria-label="Tone colour">
+            <button type="button" data-timbre="organ" aria-pressed="true" data-en="Organ (approx.)">風琴（近似）</button>
+            <button type="button" data-timbre="pure" aria-pressed="false" data-en="Pure tone">純音</button>
+          </div>
+          <p class="hint" id="chordHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <div class="bigratio" id="bigRatio"></div>
+          <p class="chordline" id="chordLine"></p>
+          <dl class="readout" id="readout"></dl>
+          <div class="tablewrap"><table class="nt" id="noteTable"></table></div>
+          <p class="hint" id="tableHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Chords you have played">聽過的和弦</h2>
+          <div class="tablewrap"><table class="nt" id="logTable"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Each time you press “▶ Play chord” or “Arpeggio” the chord is added here, so you can compare periods.">每按一次「▶ 播放和弦」或「分解和弦」，就把那個和弦記在這裡，方便比較週期。</p>
+          <div class="rowbtns"><button type="button" id="clearLog" data-en="Clear all" title="清掉比較表；和弦的設定不變" data-en-title="Empty the comparison table; the chord settings are kept">全部清除</button></div>
+        </section>
+
+        <section class="card" id="progCard">
+          <h2 data-en="Chord progression">和弦進行</h2>
+          <div class="seg full" id="progs" role="group" aria-label="和弦進行" data-en-aria-label="Progression">
+            <button type="button" data-prog="I-IV-V-I" aria-pressed="true">I–IV–V–I</button>
+            <button type="button" data-prog="I-vi-IV-V" aria-pressed="false">I–vi–IV–V</button>
+            <button type="button" data-prog="I-vi-ii-V-I" aria-pressed="false">I–vi–ii–V–I</button>
+          </div>
+          <h3 class="sub" data-en="Tuning of the progression">進行用的音律</h3>
+          <div class="seg full" id="pmodes" role="group" aria-label="和弦進行的音律" data-en-aria-label="Tuning of the progression">
+            <button type="button" data-pmode="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+            <button type="button" data-pmode="just" aria-pressed="false" data-en="Just (fixed scale)">純律（固定音階）</button>
+            <button type="button" data-pmode="adaptive" aria-pressed="false" data-en="Just (common notes held)">純律（共同音不動）</button>
+          </div>
+          <div class="rowbtns"><button type="button" id="progPlay" class="primary" data-en="▶ Play progression">▶ 播放和弦進行</button></div>
+          <ol class="prog-list" id="progList"></ol>
+          <p class="prog-drift" id="progDrift"></p>
+          <p class="hint" data-en="The key is the root chosen above. Tap a chord in the list to hear it on its own. The voices are generated by the page (bass on the root, the three upper voices take the shortest path); this is not any particular song.">調性就是上面選的根音。點清單裡的和弦可以單獨聽。聲部由程式自己產生（低音彈根音，上方三個聲部走最近的路），不是任何一首歌。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics and science behind it">背後的數學與科學</h2>
+      <h3 data-en="A chord is a set of frequency ratios">和弦就是一組頻率比</h3>
+      <p data-en-html="Sound several notes at once and you have a chord. In just intonation every note of the chord is a small whole-number ratio of the root. A major triad C–E–G is \(1 : \tfrac54 : \tfrac32\); over a common denominator that is \(4 : 5 : 6\) — exactly the 4th, 5th and 6th harmonics of one low note. A minor triad \(1 : \tfrac65 : \tfrac32\) becomes \(10 : 12 : 15\).">同時發出幾個音就是和弦。在純律裡，和弦的每個音和根音都成小整數比。大三和弦 C–E–G 是 \(1 : \tfrac54 : \tfrac32\)，通分以後是 \(4 : 5 : 6\)——剛好是同一個低音的第 4、5、6 個泛音。小三和弦 \(1 : \tfrac65 : \tfrac32\) 通分後是 \(10 : 12 : 15\)。</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} 1 : \tfrac54 : \tfrac32 = 4 : 5 : 6 \\ 1 : \tfrac65 : \tfrac32 = 10 : 12 : 15 \end{gathered} \]">\[ \begin{gathered} 1 : \tfrac54 : \tfrac32 = 4 : 5 : 6 \\ 1 : \tfrac65 : \tfrac32 = 10 : 12 : 15 \end{gathered} \]</div>
+
+      <h3 data-en="The period of the combined wave and the virtual fundamental">合成波形的週期與虛擬基頻</h3>
+      <p data-en-html="If the frequencies are \(f_i = n_i f_v\) with whole numbers \(n_i\) that share no common factor, then in a time \(T = 1/f_v\) every note completes a whole number of vibrations, \(n_i\), and the combined wave starts over. \(T\) is the shortest such time, and \(f_v\) — the largest frequency that all the notes are whole multiples of — is called the <strong>virtual fundamental</strong>:">如果各音的頻率是 \(f_i = n_i f_v\)，\(n_i\) 是沒有公因數的整數，那麼在 \(T = 1/f_v\) 這段時間裡，每個音都剛好振動整數次（\(n_i\) 次），合成波形就從頭再來一次。\(T\) 是最短的這種時間；\(f_v\)——所有和弦音共同的「公約頻率」——叫做<strong>虛擬基頻</strong>：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} f_1 : f_2 : f_3 = n_1 : n_2 : n_3 \\ \gcd(n_1, n_2, n_3) = 1 \\ f_v = \frac{f_1}{n_1}, \qquad T = \frac{1}{f_v} = \frac{n_1}{f_1} \end{gathered} \]">\[ \begin{gathered} f_1 : f_2 : f_3 = n_1 : n_2 : n_3 \\ \gcd(n_1, n_2, n_3) = 1 \\ f_v = \frac{f_1}{n_1}, \qquad T = \frac{1}{f_v} = \frac{n_1}{f_1} \end{gathered} \]</div>
+      <p data-en-html="For a major triad on C4 (261.63 Hz), \(f_v = 261.63/4 = 65.41\) Hz (C2) and \(T = 15.29\) ms; for the minor triad \(f_v = 26.16\) Hz and \(T = 38.22\) ms, 2.5 times longer. No note at \(f_v\) is actually played, yet the ear often senses a low “phantom bass” there (the <em>missing fundamental</em>, or virtual pitch) — one reason we can still follow the bass line on a tiny phone speaker that cannot play it.">以 C4（261.63 Hz）為根音的大三和弦：\(f_v = 261.63/4 = 65.41\) Hz（C2），\(T = 15.29\) ms；小三和弦 \(f_v = 26.16\) Hz，\(T = 38.22\) ms，是大三的 2.5 倍。虛擬基頻並沒有真的被彈出來，耳朵卻常常在那裡聽到一個隱形的低音（「缺基頻」現象，也叫虛擬音高）——這也是手機小喇叭放不出低音，我們卻還跟得上低音旋律的原因之一。</p>
+
+      <h3 data-en="Equal-tempered chords never repeat exactly">平均律的和弦永遠不會完全重複</h3>
+      <p data-en-html="An equal-tempered major third is \(2^{4/12} = 2^{1/3}\), an irrational number, so an equal-tempered triad has no period at all. After the time in which the just chord would have repeated (4 periods of the root), the equal-tempered fifth and third are slightly out of step; the page shows the largest slip in degrees of phase:">十二平均律的大三度是 \(2^{4/12} = 2^{1/3}\)，是無理數，所以平均律的三和弦根本沒有週期。在純律和弦「應該」重複的那一刻（根音的 4 個週期），平均律的三音、五音已經錯開一點；本頁用相位的角度表示錯開最多的那一個：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} 4 \times 2^{4/12} = 5.0397 \\ \Delta\phi = 360^\circ \times |5.0397 - 5| \approx 14.3^\circ \end{gathered} \]">\[ \begin{gathered} 4 \times 2^{4/12} = 5.0397 \\ \Delta\phi = 360^\circ \times |5.0397 - 5| \approx 14.3^\circ \end{gathered} \]</div>
+      <p data-en-html="The slip keeps growing period after period, which is why the 3D curve of an equal-tempered chord never closes. The page also searches the first 100 periods of the lowest note for the moment when the wave comes <em>closest</em> to repeating. Some chords slip much less than others; one triad slips by under 4° — find it.">錯開會一個週期接一個週期地累積，所以平均律和弦的 3D 曲線永遠閉不起來。本頁也會在最低音的前 100 個週期裡，找出波形「最接近重複」的那一刻。有些和弦錯開得比別的少很多；有一個三和弦只錯開不到 4°，找找看是哪一個。</p>
+
+      <h3 data-en="The harmonic seventh: 31 cents below the piano">自然七度：比鋼琴低 31 音分</h3>
+      <div class="formula" data-en-html="\[ \begin{gathered} 1200 \log_2 \tfrac74 = 968.826\ \text{cents} \\ 1000 - 968.826 = 31.174\ \text{cents} \end{gathered} \]">\[ \begin{gathered} 1200 \log_2 \tfrac74 = 968.826\ \text{音分} \\ 1000 - 968.826 = 31.174\ \text{音分} \end{gathered} \]</div>
+      <p data-en-html="The 7th harmonic of a low note sits \(\tfrac74\) above the 4th harmonic: 968.8 cents, while the piano’s minor seventh is 1000 cents. So the chord \(4:5:6:7\) — a major triad with the 7th harmonic on top — has a seventh 31 cents lower than the piano’s. On this page “Dominant 7th” uses the 5-limit seventh \(\tfrac95\) (1017.6 cents, \(20:25:30:36\)), and “Harmonic 7th” uses \(\tfrac74\).">低音的第 7 個泛音比第 4 個高 \(\tfrac74\)，是 968.8 音分；鋼琴上的小七度卻是 1000 音分。所以 \(4:5:6:7\)——大三和弦上面再加第 7 泛音——的七音比鋼琴低 31 音分。本頁的「屬七」用 5 限純律的七度 \(\tfrac95\)（1017.6 音分，\(20:25:30:36\)），「自然七度」用 \(\tfrac74\)。</p>
+
+      <h3 data-en="Inversions">轉位</h3>
+      <p data-en-html="Moving the lowest note up an octave gives an inversion. The note names (pitch classes) stay the same, but the whole-number ratio changes: the major triad in first inversion E–G–C is \(5:6:8\), in second inversion G–C–E it is \(3:4:5\). Measured in periods of the root, the second inversion repeats twice as often as root position.">把最低的音升高八度就是轉位。音名（音類）不變，整數比卻會變：大三和弦的第一轉位 E–G–C 是 \(5:6:8\)，第二轉位 G–C–E 是 \(3:4:5\)。以根音的週期為單位，第二轉位重複得比原位快一倍。</p>
+
+      <h3 data-en="Progressions and the sinking choir">和弦進行與往下沉的合唱團</h3>
+      <p data-en-html="On a just scale with C as tonic, D–A is \(\tfrac{40}{27}\), a syntonic comma narrower than a pure fifth, so the ii chord D–F–A is \(27:32:40\) rather than a pure \(10:12:15\). A choir avoids this by tuning each chord purely as it goes. If the notes shared by two neighbouring chords stay exactly where they are, I–vi–ii–V–I walks like this:">以 C 為主音的純律音階裡，D–A 是 \(\tfrac{40}{27}\)，比純五度窄了一個同音差，所以 ii 和弦 D–F–A 是 \(27:32:40\)，不是純的 \(10:12:15\)。合唱團會隨著和聲把每個和弦都唱純。如果相鄰兩個和弦的共同音保持不動，I–vi–ii–V–I 會這樣走：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} C = 1 \;\to\; A = \tfrac53 \;\to\; D = \tfrac{10}{9} \\ \to\; G = \tfrac{40}{27} \;\to\; C = \tfrac{80}{81} \\ 1200 \log_2 \tfrac{80}{81} = -21.51\ \text{cents} \end{gathered} \]">\[ \begin{gathered} C = 1 \;\to\; A = \tfrac53 \;\to\; D = \tfrac{10}{9} \\ \to\; G = \tfrac{40}{27} \;\to\; C = \tfrac{80}{81} \\ 1200 \log_2 \tfrac{80}{81} = -21.51\ \text{音分} \end{gathered} \]</div>
+      <p data-en-html="Every chord is pure, but the final C is a comma (81/80) lower than the first. This is one of the reasons an unaccompanied choir can drift flat (there are many others, such as tiredness and breathing).">每一個和弦都是純的，最後的 C 卻比開頭低了一個同音差（81/80）。這是無伴奏合唱團的音高會慢慢往下掉的原因之一（還有很多別的原因，例如疲勞與換氣）。</p>
+
+      <h3 data-en="3D: a three-dimensional Lissajous curve">3D：三維李薩如曲線</h3>
+      <p data-en-html="Let the three lowest notes drive the three axes: \(x = \sin 2\pi f_1 t\), \(y = \sin 2\pi f_2 t\), \(z = \sin 2\pi f_3 t\). If the frequencies are in the ratio \(n_1:n_2:n_3\), the point returns to where it started after \(T\) and the curve closes into a knot; the simpler the ratio, the simpler the knot. An equal-tempered chord never returns, so its curve slowly smears into a tangle. Looked at from the top, the front or the side, the knot flattens into the classic two-note Lissajous figure of one interval.">讓最低的三個音分別推動三個座標：\(x = \sin 2\pi f_1 t\)、\(y = \sin 2\pi f_2 t\)、\(z = \sin 2\pi f_3 t\)。頻率比是 \(n_1:n_2:n_3\) 時，過了 \(T\) 之後點回到起點，曲線閉合成一個結；比值越簡單，結越單純。平均律的和弦永遠回不到起點，曲線慢慢糊成一團。從上面、正面或側面看，結就壓扁成兩個音（一個音程）的平面李薩如圖形。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Bright, gentle, tense">明亮、柔和與緊張</h3>
+      <p data-en-html="Many listeners hear a major triad as bright and stable, a minor triad as gentle or a little sad, a diminished triad as tense and an augmented triad as unresolved. Part of this is acoustic: the major triad is the simple \(4:5:6\) of the harmonic series and fuses easily, while \(10:12:15\) is much more complex. A large part is cultural and learned: the music we grow up with teaches us how these chords are used, and listeners in other traditions, or other individuals, may feel differently. “Major is happy, minor is sad” is a common tendency, not a law of physics.">很多人聽起來，大三和弦明亮、穩定，小三和弦柔和或帶點憂傷，減三和弦緊張，增三和弦懸而未決。這有一部分來自聲學：大三和弦是泛音列裡簡單的 \(4:5:6\)，很容易融合成一體；\(10:12:15\) 就複雜得多。但也有很大一部分是文化和學習：從小聽的音樂怎麼使用這些和弦，會影響我們的感受；不同音樂傳統、不同的人，感受也不一定一樣。「大調快樂、小調悲傷」是常見的傾向，不是物理定律。</p>
+      <h3 data-en="The dominant seventh wants to go home">想回家的屬七和弦</h3>
+      <p data-en-html="In C major the dominant seventh G–B–D–F contains two notes that want to move: B leans up to C and F leans down to E. Together B and F form a tritone, which sounds restless, so the chord usually resolves to the tonic chord, like coming home. I–IV–V–I is the basic skeleton of Western tonal harmony: leave home (IV), build tension (V or V7), return (I).">在 C 大調裡，屬七和弦 G–B–D–F 有兩個「想移動」的音：B 想往上到 C，F 想往下到 E。B 和 F 之間是三全音，聽起來不安定，所以這個和弦通常接到主和弦，像是回到家。I–IV–V–I 是西方調性音樂和聲最基本的骨架：離開家（IV）、累積張力（V 或 V7）、回家（I）。</p>
+      <h3 data-en="Barbershop quartets and the harmonic seventh">理髮店四重唱與自然七度</h3>
+      <p data-en-html="Barbershop singers like to tune a dominant seventh as \(4:5:6:7\), with the seventh about 31 cents lower than on a piano. The overtones of the four voices then line up so well that the chord seems to “ring”, as if an extra voice were singing. Voices and string instruments can make such small adjustments; a piano cannot.">美國的理髮店四重唱（barbershop quartet）喜歡把屬七和弦唱成 \(4:5:6:7\)，七音比鋼琴低約 31 音分。四個聲部的泛音互相對齊，和弦好像會「發亮」（歌手說的 ring），像是多出一個人在唱。人聲和弦樂器可以做這種細微的調整，鋼琴做不到。</p>
+      <h3 data-en="Common notes">共同音</h3>
+      <p data-en-html="Notes shared by two neighbouring chords are called common notes. Good part-writing usually keeps them in the same voice and moves the other voices by the shortest path, which is why progressions whose chords share notes sound smooth. The list in the panel shows how many notes each chord shares with the one before it.">相鄰兩個和弦都有的音叫共同音。寫和聲時，通常讓共同音留在同一個聲部，其他聲部走最近的路，所以共同音多的和弦進行聽起來特別順。右邊（手機在下面）的清單會標出每個和弦和前一個和弦有幾個共同音。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Major against minor</strong>: in just intonation, how many times longer is the minor triad’s period?"><strong>大三對小三</strong>：純律時，小三和弦的週期是大三和弦的幾倍？</li>
+        <li data-en-html="<strong>Take the root away</strong>: switch the root of a major triad off. Does the period change? What about a minor triad?"><strong>拿掉根音</strong>：把大三和弦的根音關掉，週期變了嗎？小三和弦呢？</li>
+        <li data-en-html="<strong>Inversions</strong>: the note names stay, but which inversion repeats fastest compared with its root?"><strong>轉位</strong>：音名沒變，哪一種轉位相對根音重複得最快？</li>
+        <li data-en-html="<strong>Equal temperament</strong>: compare the slip in degrees for different chords. Which chords come closest to repeating?"><strong>平均律</strong>：比較各種和弦錯開的角度，哪些最接近重複？</li>
+        <li data-en-html="<strong>The low note nobody plays</strong>: watch where the virtual fundamental sits on the ladder; is it above or below what a phone speaker can play (about 200 Hz) — or even below hearing (20 Hz)?"><strong>沒有人彈的低音</strong>：看虛擬基頻在階梯上的位置：比手機喇叭放得出的 200 Hz 高還是低？會不會低到聽不見（20 Hz 以下）？</li>
+        <li data-en-html="<strong>3D</strong>: grow the curve of a just chord and of the same chord in equal temperament, and look at each from the top, the front and the side."><strong>3D</strong>：讓純律和平均律的同一個和弦各長一次曲線，再從上面、正面、側面看。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The root always has its equal-tempered frequency (A4 = 440 Hz). In equal temperament every other note is the root times \(2^{k/12}\); in just intonation it is the root times the fraction in this table: major \(4:5:6\), minor \(10:12:15\), diminished \(25:30:36\) (two pure minor thirds \(\tfrac65\)), augmented \(16:20:25\) (two pure major thirds \(\tfrac54\)), sus4 \(6:8:9\), dominant 7th \(20:25:30:36\), major 7th \(8:10:12:15\), minor 7th \(10:12:15:18\), diminished 7th \(125:150:180:216\) (three pure minor thirds), harmonic 7th \(4:5:6:7\). There is more than one way to tune some of these chords in just intonation (a diminished seventh is sometimes taken as \(10:12:14:17\), for example); this page stacks pure thirds.">根音一律用十二平均律的頻率（A4 = 440 Hz）。十二平均律的其他音 = 根音 × \(2^{k/12}\)；純律的其他音 = 根音 × 下面的分數：大三 \(4:5:6\)、小三 \(10:12:15\)、減三 \(25:30:36\)（兩個純小三度 \(\tfrac65\)）、增三 \(16:20:25\)（兩個純大三度 \(\tfrac54\)）、掛四 \(6:8:9\)、屬七 \(20:25:30:36\)、大七 \(8:10:12:15\)、小七 \(10:12:15:18\)、減七 \(125:150:180:216\)（三個純小三度）、自然七度 \(4:5:6:7\)。有些和弦的純律版本不只一種（例如減七也有人用 \(10:12:14:17\)），本頁用的是把純三度一個一個疊上去的版本。</li>
+        <li data-en-html="Period: the fractions of the notes that are switched on are brought to a common denominator and divided by their greatest common divisor, giving whole numbers \(n_i\) with no common factor; then \(T = n_1/f_1\) and \(f_v = 1/T\). In equal temperament the page compares with the same chord in just intonation: after \(n_1\) periods of the lowest note it measures how far each note is from a whole number of vibrations and reports the largest gap × 360°.">週期：把開著的音相對根音的分數通分，再除以最大公因數，得到沒有公因數的整數 \(n_i\)；\(T = n_1/f_1\)，\(f_v = 1/T\)。十二平均律時拿同一個和弦的純律版本對照：在最低音的第 \(n_1\) 個週期，量每個音離整數次振動差多少，報告最大的那一個 × 360°。</li>
+        <li data-en-html="Waveform: every note uses the same tone colour — “Organ (approx.)” is the first six harmonics with strengths 1, 0.55, 0.34, 0.22, 0.14, 0.09; “Pure tone” is a single sine — and all start in phase. When the time shown is long, each pixel column shows the highest and lowest value in that slice of time.">合成波形：每個音用相同的音色——「風琴（近似）」是前 6 個泛音，強度 1、0.55、0.34、0.22、0.14、0.09；「純音」只有一個正弦波——而且起始相位都是 0。顯示的時間很長時，每一個像素欄畫出那一小段時間裡的最高與最低值。</li>
+        <li data-en-html="Progressions: the bass plays the root of each chord and the three upper voices move to the nearest arrangement. “Equal temperament” uses \(2^{k/12}\); “Just (fixed scale)” uses the 5-limit just scale on the chosen key (\(1, \tfrac98, \tfrac54, \tfrac43, \tfrac32, \tfrac53, \tfrac{15}8\)); “Just (common notes held)” keeps the notes shared with the previous chord where they are and tunes the rest of the chord purely.">和弦進行：低音彈每個和弦的根音，上方三個聲部移到最近的排法。「十二平均律」用 \(2^{k/12}\)；「純律（固定音階）」用選定調性的 5 限純律音階（\(1, \tfrac98, \tfrac54, \tfrac43, \tfrac32, \tfrac53, \tfrac{15}8\)）；「純律（共同音不動）」讓和前一個和弦共有的音留在原處，其餘的音把和弦唱純。</li>
+        <li data-en-html="3D: the curve is sampled about 28 times per vibration of the highest of the three notes, over the same time shown as the 2D waveform; it uses the three.js library (MIT licence), downloaded only when you switch to 3D. Unit tests check the ratios, the 31.174-cent harmonic seventh, that inversions keep the pitch classes, the period formula, that just waves repeat exactly and equal-tempered ones do not, and the comma drift of the progression.">3D：曲線在和 2D 波形相同的顯示時間裡取樣，三個音中最高的那個每振動一次取約 28 點；使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。單元測試檢查各和弦的比值、自然七度的 31.174 音分、轉位不改變音類、週期公式、純律波形確實每隔 T 重複而平均律不會，以及和弦進行的同音差漂移。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings), gently, with fade-in and fade-out. A chord keeps sounding for at most 8 seconds (pure tones 4 seconds); press “■ Stop”, press Esc or switch tabs to stop it sooner. While a chord is sounding, changing the chord changes the sound too.">聲音在瀏覽器裡即時合成（沒有錄音檔），音量溫和，有淡入淡出。和弦最長持續 8 秒（純音 4 秒）；按「■ 停止」、按 Esc 或切換分頁會提早停止。和弦正在響的時候改設定，聲音也會跟著改。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (harmony); Senior-high Music · Performance · Creating (chord progressions). Across subjects: Elective Physics III · Waves (superposition).">課綱對應：高中音樂・表現・音樂元素（和聲）；高中音樂・表現・創作（和弦進行）。跨科：選修物理Ⅲ・波動（波的疊加）。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="H. von Helmholtz, Die Lehre von den Tonempfindungen (1863); English translation by A. J. Ellis, On the Sensations of Tone — consonance of chords and coinciding harmonics.">H. von Helmholtz，《Die Lehre von den Tonempfindungen》（1863）；A. J. Ellis 英譯《On the Sensations of Tone》——和弦的協和與重合的泛音。</li>
+        <li data-en="William A. Sethares, Tuning, Timbre, Spectrum, Scale, 2nd ed. (Springer, 2005).">William A. Sethares，《Tuning, Timbre, Spectrum, Scale》第 2 版，Springer，2005。</li>
+        <li data-en="J. A. Lissajous, “Mémoire sur l’étude optique des mouvements vibratoires”, Annales de chimie et de physique, 3e série, 51 (1857) — the figures traced by two vibrations at right angles.">J. A. Lissajous，〈Mémoire sur l’étude optique des mouvements vibratoires〉，Annales de chimie et de physique 第 3 輯第 51 卷（1857）——兩個互相垂直的振動畫出的圖形。</li>
+        <li data-en="F. Stolzenburg, “Harmony perception by periodicity detection”, Journal of Mathematics and Music 9(3), 215–238 (2015) — relating how consonant a chord sounds to the length of its combined period.">F. Stolzenburg，〈Harmony perception by periodicity detection〉，Journal of Mathematics and Music 9(3)，215–238（2015）——把和弦聽起來多協和，和合成波形的週期長短連起來。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/chords-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/chords.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="chords"></script>
+  <script src="js/missions/chords.js"></script>
+  <script src="js/stats.js" data-module="chords"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
