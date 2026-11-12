@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Energy Flow in Ecosystems: Trophic Levels, Pyramids and Biomagnification | Astro Ni Science Lab">生態系的能量流動：營養階層、能量金字塔與生物放大｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 能量流動頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ef-l1: #2f8f3a;   /* 生產者 */
+      --ef-l2: #8aa61c;   /* 初級消費者 */
+      --ef-l3: #c9961a;   /* 次級 */
+      --ef-l4: #d06a1e;   /* 三級 */
+      --ef-l5: #c2412d;   /* 四級 */
+      --ef-l6: #9d2b5b;   /* 五級 */
+      --ef-sun: #e3a008;  /* 日照 */
+      --ef-heat: #e0522d; /* 呼吸散失的熱 */
+      --ef-det: #8a5a35;  /* 碎屑、分解者 */
+      --ef-store: #4b3b2f;/* 累積（泥炭、土壤有機質） */
+      --ef-poll: #7c3aed; /* 污染物 */
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ef-l1: #5cc46a; --ef-l2: #b8d44a; --ef-l3: #f0c04a; --ef-l4: #f59a52; --ef-l5: #f27a62; --ef-l6: #e46d9e;
+        --ef-sun: #fcd34d; --ef-heat: #ff7b55; --ef-det: #c99367; --ef-store: #a8917c; --ef-poll: #b79bff;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ef-l1: #5cc46a; --ef-l2: #b8d44a; --ef-l3: #f0c04a; --ef-l4: #f59a52; --ef-l5: #f27a62; --ef-l6: #e46d9e;
+      --ef-sun: #fcd34d; --ef-heat: #ff7b55; --ef-det: #c99367; --ef-store: #a8917c; --ef-poll: #b79bff;
+    }
+    #cv { aspect-ratio: auto; height: 540px; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 380px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .ef button { min-height: 44px; }
+    .ef .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ef .playbar button { flex: 1 1 auto; }
+    .ef .playbar .primary { font-weight: 700; }
+    .ef .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ef .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ef .slider input[type="range"] { height: 28px; margin: 0; }
+    .ef .slider label sub, .ef .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .ef [hidden] { display: none !important; }
+    .ef .panel { grid-template-columns: minmax(0, 1fr); }
+    .ef .panel > .card { min-width: 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { flex: 1 1 0; min-width: 0; padding: 6px 6px; line-height: 1.25; }
+    .chips button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .chips.lv button { flex: 1 1 calc(33% - 6px); }
+    .chips.lv button i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.lvt td, table.lvt th { font-variant-numeric: tabular-nums; white-space: nowrap; padding: 4px 10px; text-align: right; }
+    table.lvt th:first-child, table.lvt td:first-child { text-align: left; }
+    table.lvt th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.lvt td i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    table.lvt tr.sel td { background: var(--accent-soft); }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    /* 金字塔：種類、2D／3D 切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 14px 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .pyr-kinds { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; width: 100%; }
+    .pyr-kinds button { padding: 6px 4px; line-height: 1.25; }
+    .pyr-kinds button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    @media (max-width: 520px) { .pyr-kinds { grid-template-columns: repeat(2, 1fr); } }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .pyr.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .ef3-wrap { position: relative; }
+    .ef3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .ef3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .ef3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .ef3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ef3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .ef3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ecology&quot;>Biology · Ecology</a> / Energy flow"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ecology">生物・生態</a> ／ 能量流動</nav>
+      <h1 data-en="Energy Flow in Ecosystems: Trophic Levels, Pyramids and Biomagnification">生態系的能量流動：營養階層、能量金字塔與生物放大</h1>
+      <p data-en="Sunlight falls on a meadow; the grass stores about one percent of it, the grasshoppers get a slice of the grass, the frogs a slice of the grasshoppers… and at every step most of the energy leaves as heat. Follow the energy through a food chain, step by step: how much is eaten, how much is digested, how much becomes new body, and how much is breathed away. Build the energy pyramid — which can never stand on its head — and the pyramids of biomass and of numbers, which sometimes do. Then add a persistent poison like DDT and watch it do the opposite of energy: grow more concentrated at every step up.">陽光灑在草原上，草只存下其中大約百分之一；蚱蜢吃掉一部分草，青蛙吃掉一部分蚱蜢……每往上一步，大部分的能量都變成熱散掉了。本頁讓你一步一步追蹤能量在食物鏈中的去向：被吃掉多少、消化吸收多少、長成新的身體多少、呼吸用掉多少。再畫出能量金字塔——它永遠不會倒過來——以及生物量與個體數金字塔，它們有時候卻是倒立的。最後加入像 DDT 這種難分解的毒物，看它和能量相反：每往上一步就更濃一些。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: change “Trophic levels” from 4 to 5, then pick the level 2 grasshoppers and drag “Eaten” to see how the whole chain above them changes.">試試看：把「營養階層數」從 4 改成 5，再選第 2 階的蚱蜢、拖動「被吃掉的比例」，看上面整條食物鏈怎麼跟著改變。</p>
+
+    <div class="lab ef" id="lab1">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="能量流動圖：太陽的能量進入生產者，一階一階往上傳；每一階都有往右的熱（呼吸作用）與往下的碎屑（流向分解者），箭頭粗細代表能量多少" data-en-aria-label="Energy flow diagram: the sun’s energy enters the producers and passes up level by level; every level loses heat to the right (respiration) and detritus downwards (to the decomposers); arrow widths show the amount of energy"></canvas>
+        <div class="playbar">
+          <button id="traceBtn" type="button" class="primary" data-en="Follow 1,000 kJ">追蹤 1,000 kJ</button>
+          <button id="resetBtn" type="button" data-en="Reset this ecosystem" title="把目前的生態系恢復成預設組的數值" data-en-title="Put the current ecosystem back to its preset values">恢復預設值</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+
+        <div class="pyr" id="pyr">
+          <div class="view-bar">
+            <div class="pyr-kinds" role="group" aria-label="金字塔的種類" data-en-aria-label="Kind of pyramid" id="kinds">
+              <button type="button" data-k="energy" aria-pressed="true" data-en="Energy">能量</button>
+              <button type="button" data-k="biomass" aria-pressed="false" data-en="Biomass">生物量</button>
+              <button type="button" data-k="numbers" aria-pressed="false" data-en="Numbers">個體數</button>
+              <button type="button" data-k="poll" aria-pressed="false" data-en="Pollutant">污染物濃度</button>
+            </div>
+            <div class="seg" role="group" aria-label="寬度刻度" data-en-aria-label="Width scale">
+              <button type="button" id="scLog" aria-pressed="true" data-en="Log width">對數寬度</button>
+              <button type="button" id="scLin" aria-pressed="false" data-en="True width">真實比例</button>
+            </div>
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D pyramid">3D 金字塔</button>
+            </div>
+            <button type="button" id="resetCam" hidden data-en="Reset view">重設視角</button>
+          </div>
+          <p class="view-msg" id="viewMsg" aria-live="polite"></p>
+          <canvas id="cv2" aria-label="營養階層金字塔：每一階一條橫條，生產者在最下面" data-en-aria-label="Trophic pyramid: one bar per level, producers at the bottom"></canvas>
+          <div id="view3"></div>
+        </div>
+
+        <dl class="readout" id="ro"></dl>
+        <div class="tablewrap"><table class="data lvt" id="lvt"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Ecosystem">生態系</h2>
+          <div class="chips" role="group" aria-label="預設的生態系" data-en-aria-label="Preset ecosystems" id="presets"></div>
+          <div class="slider"><label for="nLv" data-en="Trophic levels">營養階層數</label><output id="nLvo"></output>
+            <input id="nLv" type="range" min="1" max="6" step="1" value="4" data-decimals="0"></div>
+          <p class="hint" data-en="Tap a number to type an exact value. The numbers in the presets are illustrative.">點一下數字可直接輸入精確數值。預設組的數字是示意，不是某一個地方的實測。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Producers">生產者</h2>
+          <div class="slider"><label for="sun" data-en="Sunlight I (kJ/m² per year)">日照 I（kJ/m²・年）</label><output id="suno"></output>
+            <input id="sun" type="range" min="5" max="7" step="0.01" value="6.69897"></div>
+          <div class="slider"><label for="eps" data-en="Photosynthetic efficiency ε (GPP ÷ sunlight)">光合效率 ε（GPP ÷ 日照）</label><output id="epso"></output>
+            <input id="eps" type="range" min="0.05" max="5" step="0.01" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="rp" data-en="Used by the plants’ own respiration">植物自己呼吸用掉</label><output id="rpo"></output>
+            <input id="rp" type="range" min="10" max="90" step="1" value="50" data-decimals="1"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Each trophic level">各營養階層</h2>
+          <div class="chips lv" role="group" aria-label="選擇營養階層" data-en-aria-label="Choose a trophic level" id="lvChips"></div>
+          <div id="consumerSliders">
+            <div class="slider"><label for="ce" data-en="Eaten (consumption efficiency CE)">被吃掉的比例（消費效率 CE）</label><output id="ceo"></output>
+              <input id="ce" type="range" min="1" max="100" step="1" value="20" data-decimals="1"></div>
+            <div class="slider"><label for="ae" data-en="Digested and absorbed (assimilation efficiency AE)">消化吸收的比例（同化效率 AE）</label><output id="aeo"></output>
+              <input id="ae" type="range" min="5" max="95" step="1" value="40" data-decimals="1"></div>
+            <div class="slider"><label for="pe" data-en="Turned into new body (production efficiency PE)">長成新身體的比例（生產效率 PE）</label><output id="peo"></output>
+              <input id="pe" type="range" min="1" max="80" step="1" value="40" data-decimals="1"></div>
+            <p class="hint" id="ceHint" data-en-html="“Eaten” is the share of the level below’s <b>net production</b>. Warm-blooded birds and mammals burn most of what they absorb to keep warm: their PE is only 1–3%; cold-blooded animals 10–40%.">「被吃掉」是下一階<b>淨生產量</b>中被這一階吃掉的比例。溫血的鳥和哺乳類把大部分吸收的能量拿去維持體溫，生產效率只有 1–3%；冷血動物約 10–40%。</p>
+          </div>
+          <h3 class="sub" data-en="Biomass and numbers">生物量與個體數</h3>
+          <div class="slider"><label for="pb" data-en="Turnover P/B (per year)">周轉率 P/B（每年）</label><output id="pbo"></output>
+            <input id="pb" type="range" min="-2" max="3" step="0.01" value="0.39794"></div>
+          <div class="slider"><label for="ms" data-en="Mass of one individual (mg)">一個個體的質量（mg）</label><output id="mso"></output>
+            <input id="ms" type="range" min="-6" max="9" step="0.01" value="3"></div>
+          <p class="hint" data-en="Turnover = how many times over a level replaces its standing biomass in a year. Algae: hundreds; trees: about 0.1.">周轉率 = 一年長出的量是現存量的幾倍。藻類可達數百，樹木約 0.1。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Decomposers">分解者</h2>
+          <div class="slider"><label for="dec" data-en="Share of detritus respired by decomposers">碎屑被分解者呼吸掉的比例</label><output id="deco"></output>
+            <input id="dec" type="range" min="10" max="100" step="1" value="95" data-decimals="1"></div>
+          <p class="hint" data-en="The rest builds up as soil organic matter or peat.">其餘的累積成土壤有機質或泥炭。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Persistent pollutant">難分解的污染物</h2>
+          <div class="slider"><label for="bcf" data-en="Producers ÷ water (bioconcentration factor)">生產者比水濃幾倍（生物濃縮係數）</label><output id="bcfo"></output>
+            <input id="bcf" type="range" min="0" max="5" step="0.01" value="2.4771"></div>
+          <div class="slider"><label for="alpha" data-en="Absorbed from food α">從食物吸收的比例 α</label><output id="alphao"></output>
+            <input id="alpha" type="range" min="1" max="100" step="1" value="60" data-decimals="1"></div>
+          <div class="slider"><label for="elim" data-en="Excreted or broken down e">排出或分解掉的比例 e</label><output id="elimo"></output>
+            <input id="elim" type="range" min="0" max="99" step="1" value="50" data-decimals="1"></div>
+          <p class="hint" data-en="Fat-soluble, persistent chemicals such as DDT or methylmercury: large α, small e.">脂溶性、難分解的物質（如 DDT、甲基汞）：α 大、e 小。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="Almost all life on Earth runs on sunlight. Plants, algae and some bacteria — the <strong>producers</strong> — capture a small part of it by photosynthesis; everything else eats them, or eats something that ate them. Each feeding step is a <strong>trophic level</strong>: producers (level 1), herbivores or primary consumers (level 2), carnivores that eat herbivores (level 3), and so on. In 1942 Raymond Lindeman, studying a small frozen-over bog lake in Minnesota, first followed energy through these levels as one ledger; he died the same year, aged 27.">地球上幾乎所有的生命都靠陽光運轉。植物、藻類和一些細菌是<strong>生產者</strong>，用光合作用捕捉一小部分陽光；其他生物都吃它們，或吃吃了它們的生物。每一步「吃」就是一個<strong>營養階層</strong>：生產者（第 1 階）、草食動物或初級消費者（第 2 階）、吃草食動物的肉食動物（第 3 階）……。1942 年，林德曼（Raymond Lindeman）研究明尼蘇達州一座冬天會結冰的小沼澤湖，第一次把能量在各階層之間的流動當成一本帳來算；他在同一年過世，只有 27 歲。</p>
+
+      <h3 data-en="Producers: gross and net production">生產者：總生產量與淨生產量</h3>
+      <p data-en-html="Of the sunlight reaching the ground, a field or forest typically fixes only about 1% (the photosynthetic efficiency ε). That is the <strong>gross primary production</strong> (GPP). The plants burn part of it in their own respiration; what is left, the <strong>net primary production</strong> (NPP), is new leaves, wood and roots — the food available to everything else:">到達地面的陽光，草原或森林通常只固定下大約 1%（光合效率 ε），這是<strong>總生產量</strong>（GPP）。植物自己呼吸用掉其中一部分，剩下的<strong>淨生產量</strong>（NPP）就是新長的葉、木材和根，也就是其他所有生物能吃的食物：</p>
+      <div class="formula">\[ \mathrm{GPP} = \varepsilon I,\qquad \mathrm{NPP} = \mathrm{GPP} - R_1 = (1-r_p)\,\mathrm{GPP} \]</div>
+
+      <h3 data-en="Consumers: three efficiencies">消費者：三個效率</h3>
+      <p data-en-html="What happens to the net production of one level? Only part of it is eaten by the next level (the rest dies uneaten and goes to the decomposers); of what is eaten, only part is digested and absorbed (the rest is passed as faeces); and of what is absorbed, most is burned in respiration and only a little becomes new body:">某一階的淨生產量到哪裡去了？只有一部分被下一階吃掉（其他沒被吃就死掉，交給分解者）；吃進去的只有一部分被消化吸收（其餘成為糞便）；吸收的大部分又在呼吸作用中燒掉，只有一小部分長成新的身體：</p>
+      <div class="formula">\[ I_n = \mathrm{CE}_n\,P_{n-1},\qquad A_n = \mathrm{AE}_n\,I_n,\qquad P_n = \mathrm{PE}_n\,A_n,\qquad R_n = A_n - P_n \]</div>
+      <p data-en-html="The share of energy that gets from one level to the next is the <strong>transfer efficiency</strong>; this page uses Lindeman’s definition, the ratio of the energy assimilated by two successive levels:">從一階傳到下一階的能量比例，叫做<strong>傳遞效率</strong>；本頁用林德曼的定義，也就是相鄰兩階同化量的比值：</p>
+      <div class="formula">\[ E_n = \frac{A_n}{A_{n-1}} = \mathrm{CE}_n \cdot \mathrm{AE}_n \cdot \mathrm{PE}_{n-1} \]</div>
+      <p data-en-html="Measured values range from under 1% to over 20%, but they cluster around 10% — the “ten per cent rule”. Lindeman’s own bog lake gave 0.10% for the producers (of the sunlight), 13.3% for the herbivores and 22.3% for the carnivores. Warm-blooded animals spend most of their food on keeping warm, so chains that end in birds and mammals lose energy faster.">實測的傳遞效率從不到 1% 到 20% 以上都有，但大多在 10% 左右，這就是「十分之一法則」。林德曼自己的沼澤湖：生產者（占日照）0.10%、草食動物 13.3%、肉食動物 22.3%。溫血動物把大部分食物用來維持體溫，所以以鳥類、哺乳類結尾的食物鏈，能量掉得更快。</p>
+
+      <h3 data-en="Every kilojoule is accounted for">每一千焦都有去處</h3>
+      <p data-en-html="Energy is not lost, only passed on or turned into heat (the first law of thermodynamics), and it cannot be used twice (the second law). Everything not eaten, and all the faeces, become <strong>detritus</strong>; the decomposers (bacteria, fungi, earthworms) breathe most of it away, and the rest builds up as soil organic matter, peat — and over millions of years, coal. So the sun’s energy taken in as GPP always ends up as heat or as stored organic matter:">能量不會憑空消失，只會傳下去或變成熱（熱力學第一定律）；而且不能重複使用（第二定律）。所有沒被吃掉的與糞便都成為<strong>碎屑</strong>；分解者（細菌、真菌、蚯蚓）把大部分呼吸掉，剩下的累積成土壤有機質、泥炭，經過幾百萬年可能變成煤。所以進入生態系的 GPP，最後不是變成熱，就是存成有機物：</p>
+      <div class="formula">\[ \mathrm{GPP} = \sum_n R_n + R_{\text{dec}} + S \]</div>
+      <p data-en-html="Energy flows through an ecosystem once, in one direction, and leaves as heat; matter (carbon, nitrogen) is recycled. In a forest most of the NPP is never eaten alive: the biggest food chain starts with fallen leaves.">能量在生態系中只走一次、單向流動，最後以熱離開；物質（碳、氮）才會循環。在森林裡，大部分的淨生產量根本沒有被活著吃掉：最大的一條食物鏈，是從落葉開始的。</p>
+
+      <h3 data-en="Three kinds of pyramid">三種金字塔</h3>
+      <ul>
+        <li data-en-html="<strong>Energy</strong> (the energy assimilated per year): always narrower at the top, because no level can pass on more than it receives."><strong>能量金字塔</strong>（每年同化的能量）：一定是上窄下寬，因為沒有一階能傳出比它得到的更多。</li>
+        <li data-en-html="<strong>Biomass</strong> (the living weight standing there now) = production ÷ turnover. Phytoplankton divide every day or two, so a thin standing crop can feed a heavier stock of slower-living zooplankton: in the open sea the pyramid of biomass is often upside down."><strong>生物量金字塔</strong>（現在活著的重量）= 生產量 ÷ 周轉率。浮游植物一兩天就分裂一次，薄薄一層就能養活比它重、但活得比較久的浮游動物：在海洋中，生物量金字塔常常是倒立的。</li>
+        <li data-en-html="<strong>Numbers</strong> (individuals per square metre) = biomass ÷ the mass of one individual. One oak tree can carry thousands of caterpillars: in a forest the pyramid of numbers can be upside down at the bottom."><strong>個體數金字塔</strong>（每平方公尺的個體數）= 生物量 ÷ 一個個體的質量。一棵樹上可以住幾千隻毛毛蟲：在森林裡，個體數金字塔的底部可能是倒立的。</li>
+      </ul>
+      <p data-en-html="Because each level has so little energy, the animals at the top are few and need a lot of space: one top predator may need a whole mountain to itself. That is also why food chains rarely have more than four or five levels.">因為每一階的能量都那麼少，頂端的動物數量很少、每一隻需要很大的地盤；一隻頂級掠食者可能需要一整座山。這也是食物鏈很少超過四、五個營養階層的原因。</p>
+
+      <h3 data-en="Biomagnification">生物放大作用</h3>
+      <p data-en-html="A chemical that is absorbed from food but hardly excreted or broken down — DDT, PCBs, methylmercury — stays in the body. Each animal eats many times its own body-weight of food over its life, so it keeps the poison from all of it. In a steady state (this page’s simplified model) the concentration rises at every step by">從食物吸收、卻很少被排出或分解的物質——DDT、多氯聯苯、甲基汞——會留在體內。每隻動物一輩子吃下的食物是自己體重的好多倍，所以把其中的毒物都留了下來。在穩定狀態下（本頁的簡化模型），每往上一階，濃度變成</p>
+      <div class="formula">\[ \frac{c_n}{c_{n-1}} = \frac{\alpha\,(1-e)}{\mathrm{AE}_n\cdot\mathrm{PE}_n} \]</div>
+      <p data-en-html="where α is the share absorbed from food and e the share then excreted or broken down. The smaller the share of food that becomes body (AE × PE), the stronger the magnification — so warm-blooded top predators such as fish-eating birds collect the most. In the 1960s DDT in a Long Island salt marsh was about a million times more concentrated in fish-eating birds than in the water (Woodwell, Wurster &amp; Isaacson 1967); their eggshells grew thin and broke, as Rachel Carson had warned in <em>Silent Spring</em> (1962). Water-soluble substances that are quickly excreted (α(1 − e) &lt; AE × PE) do the opposite and become more dilute up the chain.">其中 α 是從食物吸收的比例，e 是吸收後排出或分解掉的比例。食物長成身體的比例（AE × PE）越小，放大得越厲害——所以溫血的頂級掠食者（例如吃魚的鳥）累積得最多。1960 年代，美國長島鹽沼中吃魚的鳥體內的 DDT 濃度，大約是水中的一百萬倍（Woodwell、Wurster 與 Isaacson 1967）；牠們的蛋殼變薄、一孵就破，正如瑞秋・卡森在《寂靜的春天》（1962）所警告的。容易排出的水溶性物質（α(1 − e) 小於 AE × PE）則相反，越往上越稀。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Press “Follow 1,000 kJ”: how much of a thousand kilojoules of sunlight is left at each level?">按「追蹤 1,000 kJ」：一千千焦的陽光，到了每一階還剩下多少？</li>
+        <li data-en="Make the top predator warm-blooded (PE about 2%) and then cold-blooded (PE about 20%). Which chain can support another level?">把頂端的動物設成溫血（生產效率約 2%），再改成冷血（約 20%）。哪一條食物鏈養得起再多一階？</li>
+        <li data-en="Pick “Open ocean” and look at the pyramid of biomass; pick “Forest” and look at the pyramid of numbers. Then look at the energy pyramid of each.">選「海洋」看生物量金字塔、選「森林」看個體數金字塔，再分別看它們的能量金字塔。</li>
+        <li data-en="Switch to “True width”: the top of a real energy pyramid is so thin it disappears.">切換成「真實比例」：真正的能量金字塔，頂端細到看不見。</li>
+        <li data-en="Lower the decomposers’ share. Where does the energy go now?">把分解者呼吸掉的比例調低，能量現在去了哪裡？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Steady state, one year, per square metre: every number is an annual flow (kJ m<sup>−2</sup> yr<sup>−1</sup>) computed exactly from the formulas above; nothing is random. The energy account (heat + storage = GPP) is checked by the unit tests to 10<sup>−9</sup>.">穩定狀態、以一年、每平方公尺計：每個數字都是用上面的公式直接算出的年流量（kJ/m²・年），沒有隨機。能量帳（熱 + 累積 = GPP）由單元測試檢查到 10<sup>−9</sup> 的精度。</li>
+        <li data-en-html="Standing biomass = production ÷ turnover (P/B), converted to fresh weight with 5 kJ g<sup>−1</sup> for plants and 7 kJ g<sup>−1</sup> for animals (rough averages). Numbers = fresh weight ÷ the mass of one individual.">現存生物量 = 生產量 ÷ 周轉率（P/B），換成鮮重時植物用 5 kJ/g、動物用 7 kJ/g（粗略的平均值）；個體數 = 鮮重 ÷ 一個個體的質量。</li>
+        <li data-en="The flow diagram draws arrow widths in proportion to the cube root of the energy, so that flows a million times smaller are still visible; the numbers on it are exact. The pyramids have a log-width and a true-width view.">能量流動圖的箭頭寬度與能量的立方根成正比（示意，讓小一百萬倍的流量也看得見），圖上的數字是精確值。金字塔可以切換「對數寬度」與「真實比例」。</li>
+        <li data-en-html="The 3D pyramid stacks one slab per level; each slab’s footprint is a square whose side is the bar length of the 2D pyramid (log width) or whose area is proportional to the quantity (true width).">3D 金字塔每一階一塊板子；板子的底面是正方形，邊長和 2D 金字塔的長條一樣（對數寬度），或面積和數量成正比（真實比例）。</li>
+        <li data-en="Biomagnification uses the steady-state mass balance above with one concentration per level; real animals differ by age, fat content and diet.">生物放大用上面的穩定狀態質量平衡，每一階只算一個濃度；真實的動物會因年齡、脂肪多寡和食性不同而不一樣。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li>R. L. Lindeman (1942). The trophic-dynamic aspect of ecology. <em>Ecology</em> 23: 399–418.</li>
+        <li>H. T. Odum (1957). Trophic structure and productivity of Silver Springs, Florida. <em>Ecological Monographs</em> 27: 55–112.</li>
+        <li>G. M. Woodwell, C. F. Wurster, P. A. Isaacson (1967). DDT residues in an East Coast estuary. <em>Science</em> 156: 821–824.</li>
+        <li>D. G. Kozlovsky (1968). A critical evaluation of the trophic level concept. I. Ecological efficiencies. <em>Ecology</em> 49: 48–60.</li>
+        <li>M. Begon, C. R. Townsend, J. L. Harper. <em>Ecology: From Individuals to Ecosystems</em>, 4th ed., ch. 17 (Blackwell, 2006).</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/energy-flow-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/energy-flow.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="energy-flow"></script>
+  <script src="js/missions/energy-flow.js"></script>
+  <script src="js/stats.js" data-module="energy-flow"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
