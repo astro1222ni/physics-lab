@@ -107,7 +107,7 @@
     {
       id: 'molecular-shapes-9', level: 7,
       title: { zh: '赤道上的孤對電子', en: 'Lone pairs on the equator' },
-      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF4），把孤對電子拖到軸向位置、放手讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF4), drag a lone pair onto an axial position and let go so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
+      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF4），把孤對電子拖到一個軸向原子的位置上放手（兩個會交換位置），讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF4), drag a lone pair onto the place of an axial atom and let go (the two swap places) so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.cause === 'shake' && d.N === 5 && d.n >= 1 && d.fromLocal && d.isGlobal; }
     },
     {
@@ -122,7 +122,7 @@
     {
       id: 'molecular-shapes-11', level: 9,
       title: { zh: '不同的原子，照樣抵消', en: 'Different atoms, still cancelled' },
-      desc: { zh: '用「自己組合」做出一個有兩種不同鍵結原子、卻是非極性的分子（電中性、穩定在能量最低的排列）。提示：讓相同的原子站在對稱的位置。', en: 'Use “Build your own” to make a molecule with two different kinds of bonded atom that is still non-polar (no charge, settled in its lowest-energy arrangement). Hint: put identical atoms in symmetric positions.' },
+      desc: { zh: '用「自己組合」做出一個有兩種不同鍵結原子、卻是非極性的分子（電中性、穩定在能量最低的排列）。提示：讓相同的原子站在對稱的位置；把一個原子拖到另一個原子的位置上放手，兩個會交換位置。', en: 'Use “Build your own” to make a molecule with two different kinds of bonded atom that is still non-polar (no charge, settled in its lowest-energy arrangement). Hint: put identical atoms in symmetric positions; drop one atom on another atom’s place and the two swap places.' },
       check: function (ev) {
         const d = ev.data;
         if (!isS(ev) || !d.custom || !ok(d) || d.charge !== 0 || d.polar) return false;

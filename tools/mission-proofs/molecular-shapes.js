@@ -104,9 +104,15 @@ function removeLP(pg, label) { pg.spec.lp--; pg.doms.pop(); pg.U.pop(); return b
 /** 拖動第 i 個電子域到方向 u（拖動中其他電子域被推開），放手後穩定（放手不自動搖） */
 function drag(pg, i, u, label) {
   const start = pg.U[i].slice();
-  pg.U[i] = VC.unit(u);
-  pg.U = VC.relax(pg.doms, pg.U, pg.P, { pin: i, tol: 1e-9 }).U;
-  const ang = VC.angleDeg(start, pg.U[i]);
+  // 和頁面一樣：放在另一個電子域原本的位置 20° 以內就換位（VC.dropSwap）；否則抓著它、其他電子域被推開
+  const sw = VC.dropSwap(pg.U, i, VC.unit(u), 20);
+  let ang;
+  if (sw) { ang = VC.angleDeg(start, u); pg.U = sw.U; }
+  else {
+    pg.U[i] = VC.unit(u);
+    pg.U = VC.relax(pg.doms, pg.U, pg.P, { pin: i, tol: 1e-9 }).U;
+    ang = VC.angleDeg(start, pg.U[i]);
+  }
   settle(pg);
   return settleEv(pg, 'drag', label + '（拖動 ' + ang.toFixed(1) + '°，' + (pg.info.isGlobal ? '能量最低' : '局部最低') + '）', { dragAngle: ang });
 }

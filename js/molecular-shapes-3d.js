@@ -535,6 +535,22 @@
       const hit = ray.intersectObjects(list, false)[0];
       return hit ? hit.object.userData.domId : null;
     }
+    /** 放手時，射線穿過哪一個電子域「開始拖之前的位置」（球的半徑內，取最近的）；沒有就傳回 null */
+    function dropTarget(ev, dragId) {
+      const from = B.dragFrom && B.dragFrom();
+      if (!from) return null;
+      setRay(ev);
+      const o = ray.ray.origin, v = ray.ray.direction;
+      let best = null, bd = Infinity;
+      from.forEach(function (f) {
+        if (f.id === dragId) return;
+        const R = handleR(f.d), p = new THREE.Vector3(f.u[0] * R, f.u[1] * R, f.u[2] * R).sub(o);
+        const t = p.dot(v), dist = Math.sqrt(Math.max(0, p.lengthSq() - t * t));
+        const lim = (f.d.k === 'L' ? 0.32 : B.ballR(f.d.lig)) * 1.25 + 0.05;
+        if (t > 0 && dist <= lim && dist < bd) { bd = dist; best = f.id; }
+      });
+      return best;
+    }
     function handleR(d) { return d.k === 'L' ? LP_LEN * 0.8 : B.bondLen(d); }
     /** 射線和半徑 R 的球面的兩個交點（近、遠）；沒有交點時傳回射線上最接近球心的點 */
     function sphereHits(R) {
@@ -591,7 +607,7 @@
       if (!drag || ev.pointerId !== drag.pid) return;
       const p = drag;
       drag = null;
-      if (p.moved) B.dragEnd(); else B.pick(p.id);
+      if (p.moved) B.dragEnd(dropTarget(ev, p.id)); else B.pick(p.id);
       if (ev.pointerType !== 'mouse') setHover(null);
       ev.stopImmediatePropagation();
     }
@@ -772,6 +788,14 @@
       resetCamera: function () { resetCamera(true); },
       viewDir: viewDir,
       viewMatrix: viewMatrix,
+      /** 第 id 個電子域握把在畫布上的位置（CSS px，相對於畫布左上角），給端到端測試做真的拖曳 */
+      handleXY: function (id) {
+        const d = domOf(id);
+        if (!d) return null;
+        const R = handleR(d), v = new THREE.Vector3(d.u[0] * R, d.u[1] * R, d.u[2] * R).project(camera);
+        const r = canvas.getBoundingClientRect();
+        return { x: (v.x + 1) / 2 * r.width, y: (1 - v.y) / 2 * r.height };
+      },
       dispose: function () {
         api.active = false;
         clearTimeout(viewTimer);
