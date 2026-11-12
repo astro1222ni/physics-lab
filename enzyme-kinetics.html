@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Enzyme Kinetics: Temperature, pH and Inhibitors | Astro Ni Science Lab">酵素動力學：溫度、pH 與抑制劑｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="在五支試管裡放唾液澱粉酶、胃蛋白酶或胰蛋白酶，各自設定溫度和 pH，看碘液的藍色或蛋白液的混濁多快消失；掃描溫度找出最適溫度，發現測量時間越長、最適溫度越低。再量神秘酵素的初速度，用 Lineweaver–Burk 雙倒數圖求出 Km、Vmax，認出神秘抑制劑是競爭型、非競爭型還是反競爭型。2D 與 3D 活性曲面都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 酵素動力學頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ek-starch: #22306e;     /* 澱粉＋碘液：藍黑 */
+      --ek-iodine: #c98a2b;     /* 碘液本身：琥珀 */
+      --ek-protein: #ece9dc;    /* 蛋白液：乳白混濁 */
+      --ek-clear: #d6ecf3;      /* 清澈的溶液 */
+      --ek-glass: #9fb3c2;
+      --ek-cold: #2563eb;
+      --ek-hot: #dc2626;
+      --ek-good: #0f766e;
+      --ek-bad: #c2410c;
+      --ek-s0: #0f766e; --ek-s1: #7c3aed; --ek-s2: #c2410c; --ek-s3: #2563eb; --ek-s4: #b45309;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ek-starch: #3a4aa0; --ek-iodine: #e0a447; --ek-protein: #cfcbbb; --ek-clear: #2a4654; --ek-glass: #6f8696;
+        --ek-cold: #60a5fa; --ek-hot: #f87171; --ek-good: #2dd4bf; --ek-bad: #fb923c;
+        --ek-s0: #2dd4bf; --ek-s1: #a78bfa; --ek-s2: #fb923c; --ek-s3: #60a5fa; --ek-s4: #fbbf24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ek-starch: #3a4aa0; --ek-iodine: #e0a447; --ek-protein: #cfcbbb; --ek-clear: #2a4654; --ek-glass: #6f8696;
+      --ek-cold: #60a5fa; --ek-hot: #f87171; --ek-good: #2dd4bf; --ek-bad: #fb923c;
+      --ek-s0: #2dd4bf; --ek-s1: #a78bfa; --ek-s2: #fb923c; --ek-s3: #60a5fa; --ek-s4: #fbbf24;
+    }
+    #cv, #cv2 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv { height: 470px; cursor: pointer; }
+    #cv2 { height: 420px; }
+    .ek button { min-height: 44px; }
+    .ek .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ek .playbar button { flex: 1 1 auto; }
+    .ek .playbar .primary { font-weight: 700; }
+    .ek .playbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .ek .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ek .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ek .slider input[type="range"] { height: 28px; margin: 0; }
+    .ek .slider label sub, .ek .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .ek [hidden] { display: none !important; }
+    .ek .panel { grid-template-columns: minmax(0, 1fr); }
+    .ek .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd.good { color: var(--ek-good); }
+    dl.readout dd.bad { color: var(--ek-bad); }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.yes { color: var(--ek-good); font-weight: 600; }
+    table.runs td.no { color: var(--ek-bad); }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    .chips.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chips.five { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chips.five button:last-child { grid-column: 1 / -1; }
+    .guess { margin: 10px 2px 0; padding: 10px 12px; border: 1px dashed var(--accent); border-radius: 12px; }
+    .guess p { margin: 0 0 8px; }
+    .guess .chips button { min-height: 44px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .ek3-wrap { position: relative; }
+    .ek3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .ek3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .ek3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .ek3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ek3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .ek3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#cell&quot;>Biology · Cells and Molecules</a> / Enzyme kinetics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#cell">生物・細胞與分子</a> ／ 酵素動力學</nav>
+      <h1 data-en="Enzyme Kinetics: Temperature, pH and Inhibitors">酵素動力學：溫度、pH 與抑制劑</h1>
+      <p data-en="Enzymes are proteins that speed up reactions without being used up. Each one works best in its own conditions: amylase in your saliva near neutral pH, pepsin in the acid of your stomach, trypsin in the slightly alkaline small intestine. Warm them and they speed up — until their folded shape starts to come apart. Run five test tubes side by side to find these conditions for yourself, then measure the initial rate of a mystery enzyme at different substrate concentrations, find its Km and Vmax, and work out what kind of inhibitor is slowing it down.">酵素是能加快反應、自己卻不會被用掉的蛋白質。每種酵素都有自己最喜歡的環境：口水裡的唾液澱粉酶喜歡接近中性，胃蛋白酶喜歡胃酸，胰蛋白酶喜歡偏鹼的小腸。加溫會讓酵素變快——直到它摺好的形狀開始散開。先用五支試管並排實驗，自己找出這些條件；再量神秘酵素在不同受質濃度下的初速度，求出 Km 和 Vmax，判斷是哪一種抑制劑在拖慢它。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start” to warm the five tubes, then tap a tube and change its temperature or pH.">試試看：按「開始反應」，再點一支試管，改它的溫度或 pH，看哪一支最快變色。</p>
+
+    <h2 class="lab-title" data-en-html="1 · Five test tubes<small>Temperature, pH and time (the iodine test for starch, the egg-white test for protein)</small>">一・五支試管<small>溫度、pH 與時間（碘液檢驗澱粉、蛋白液檢驗蛋白質）</small></h2>
+    <div class="lab ek" id="lab1">
+      <div class="stage" id="stage1">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D tubes">2D 試管</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D activity surface">3D 活性曲面</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="五支試管放在各自的水浴裡，旁邊是受質剩下多少隨時間變化的圖，以及溫度掃描圖；點一支試管就能改它的溫度與 pH，或點選畫布後用左右鍵換試管、上下鍵改溫度" data-en-aria-label="Five test tubes, each in its own water bath, with a graph of how much substrate is left over time and a temperature scan; tap a tube to change its temperature and pH, or focus the canvas, choose a tube with the left and right keys and change its temperature with up and down"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="runBtn" type="button" class="primary" data-en="Start">開始反應</button>
+          <button id="skipBtn" type="button" data-en="Skip to the end" title="直接跳到 20 分鐘" data-en-title="Jump straight to 20 minutes">直接看結果</button>
+          <button id="scanBtn" type="button" data-en="Temperature scan" title="在選取試管的 pH 下，從 0 到 80 °C 每個溫度各量一次" data-en-title="At the selected tube’s pH, measure once at every temperature from 0 to 80 °C">溫度掃描</button>
+          <button id="clear1" type="button" data-en="Clear all" title="清除反應、溫度掃描與紀錄表；試管的設定不變" data-en-title="Clear the reaction, the temperature scans and the table; the tube settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Enzyme">酵素</h2>
+          <div class="chips" id="enzs" role="group" aria-label="酵素" data-en-aria-label="Enzyme"></div>
+          <p class="hint" id="enzHint"></p>
+        </section>
+        <section class="card">
+          <h2 id="tubeTitle">第 1 支試管</h2>
+          <div class="slider"><label for="tT" data-en="Temperature (°C)">溫度（°C）</label><output id="tTo"></output>
+            <input id="tT" type="range" min="0" max="90" step="1" value="37" data-decimals="1"></div>
+          <div class="slider"><label for="tpH" data-en="pH">pH</label><output id="tpHo"></output>
+            <input id="tpH" type="range" min="1" max="12" step="0.1" value="6.8" data-decimals="1"></div>
+          <p class="hint" data-en="Tap a tube in the picture to choose it. Changing a tube during a run starts the run again.">點畫面上的試管選擇要改哪一支。反應進行中改設定，會從頭開始。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Temperature scan">溫度掃描</h2>
+          <div class="slider"><label for="ta" data-en="Measuring time for each point (min)">每一點的測量時間（分鐘）</label><output id="tao"></output>
+            <input id="ta" type="range" min="1" max="60" step="1" value="10" data-decimals="1"></div>
+          <p class="hint" data-en="Each point of the scan is the average rate over this time, as in a real lab. Try a short and a long time.">掃描的每一點，都是這段時間裡的平均速率，和真正的實驗一樣。試試短的和長的測量時間。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · The mystery enzyme<small>Initial rates, the Michaelis–Menten curve and the Lineweaver–Burk plot</small>">二・神秘酵素<small>初速度、Michaelis–Menten 曲線與 Lineweaver–Burk 雙倒數圖</small></h2>
+    <div class="lab ek" id="lab2">
+      <div class="stage">
+        <canvas id="cv2" tabindex="0" aria-label="左邊是初速度對受質濃度的圖，右邊是雙倒數圖；每量一次就多一個點，同一種抑制劑條件的點會擬合成一條直線。點選畫布後，左右鍵改受質濃度、Enter 量一次" data-en-aria-label="On the left, initial rate against substrate concentration; on the right, the double-reciprocal plot. Each measurement adds a point, and the points for each inhibitor condition are fitted with a straight line. Focus the canvas, change the substrate concentration with the left and right keys and press Enter to measure"></canvas>
+        <div class="playbar">
+          <button id="measBtn" type="button" class="primary" data-en="Measure the initial rate">量一次初速度</button>
+          <button id="newEnz" type="button" data-en="New mystery enzyme" title="換一個 Km、Vmax 不知道的酵素，清掉所有的點" data-en-title="Switch to another enzyme with unknown Km and Vmax and clear all points">換一個酵素</button>
+          <button id="revealBtn" type="button" aria-pressed="false" data-en="Show the answer">揭曉答案</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清掉所有量過的點與紀錄表；酵素與設定不變" data-en-title="Clear every measured point and the table; the enzyme and settings stay">全部清除</button>
+        </div>
+        <div class="guess" id="guessBox" hidden>
+          <p id="guessText"></p>
+          <div class="chips" id="guessChips" role="group" aria-label="猜猜看是哪一種抑制劑" data-en-aria-label="Guess the kind of inhibitor"></div>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Inhibitor">抑制劑</h2>
+          <div class="chips five" id="inhs" role="group" aria-label="抑制劑" data-en-aria-label="Inhibitor"></div>
+          <div class="slider"><label for="cI" data-en-html="Inhibitor concentration [I] (mM)">抑制劑濃度 [I]（mM）</label><output id="cIo"></output>
+            <input id="cI" type="range" min="0" max="5" step="0.1" value="0" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Measurement">測量</h2>
+          <div class="slider"><label for="cS" data-en-html="Substrate concentration [S] (mM)">受質濃度 [S]（mM）</label><output id="cSo"></output>
+            <input id="cS" type="range" min="0" max="600" step="1" value="300" data-decimals="3"></div>
+          <div class="slider"><label for="noise" data-en="Measurement error (%)">測量誤差（%）</label><output id="noiseo"></output>
+            <input id="noise" type="range" min="0" max="10" step="0.5" value="3" data-decimals="1"></div>
+          <p class="hint" data-en="The enzyme concentration is the same in every measurement. Each measurement is the rate at the very start, before much substrate is used.">每次測量的酵素濃度都一樣。初速度是剛開始、受質還沒用掉多少時的速率。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="The iodine test and the egg-white test">碘液與蛋白液</h3>
+      <p data-en="Starch turns iodine solution blue-black. As amylase cuts starch into maltose, the blue fades to the amber colour of iodine itself. Proteases are tested with a cloudy suspension of cooked egg white: as pepsin or trypsin cuts the protein into soluble pieces, the liquid clears. Here a tube counts as finished when 90% of the substrate is gone.">澱粉遇碘液變藍黑色。唾液澱粉酶把澱粉切成麥芽糖，藍色就漸漸退成碘液本身的琥珀色。蛋白酶用煮熟蛋白的混濁液檢驗：胃蛋白酶或胰蛋白酶把蛋白質切成能溶解的小片段，液體就變清。這裡當受質用掉 90% 時，就算這支試管完成反應。</p>
+
+      <h3 data-en="Temperature: faster, then broken">溫度：先變快，再壞掉</h3>
+      <p data-en-html="Like other chemical reactions, the catalysed step speeds up with temperature (Arrhenius). With an activation energy of 50 kJ/mol the rate roughly doubles for every 10 °C — the Q<sub>10</sub> of about 2 quoted in textbooks. But an enzyme only works while it is folded. In the equilibrium model of Daniel and Danson, the active form E<sub>act</sub> is in rapid balance with an inactive form E<sub>inact</sub>, which in turn slowly and permanently denatures:">和其他化學反應一樣，催化的那一步溫度越高越快（Arrhenius）。活化能 50 kJ/mol 時，大約每升高 10 °C 速率加倍——就是課本說的 Q<sub>10</sub> 約為 2。但酵素要摺好才有作用。在 Daniel 與 Danson 的平衡模型裡，活性型 E<sub>act</sub> 和失活型 E<sub>inact</sub> 很快達到平衡，失活型再慢慢永久變性：</p>
+      <div class="formula">\[ E_\text{act} \;\rightleftharpoons\; E_\text{inact} \;\longrightarrow\; X ,\qquad K_\text{eq}=\exp\!\Big[\frac{\Delta H_\text{eq}}{R}\Big(\frac{1}{T_\text{eq}}-\frac{1}{T}\Big)\Big] \]</div>
+      <p data-en="Because the permanent damage keeps adding up, the “optimum temperature” you measure depends on how long you measure: in a long assay the enzyme at high temperature dies part way, so the best temperature looks lower. The optimum is not a fixed property of the enzyme.">因為永久的損壞會一直累積，量到的「最適溫度」會跟測量時間有關：測得久，高溫下的酵素中途就壞掉了，最適溫度看起來就比較低。所以最適溫度不是酵素固定不變的性質。</p>
+
+      <h3 data-en="pH: a bell">pH：一個鐘形</h3>
+      <p data-en-html="Catalysis needs certain groups in the active site to carry the right charge. With one group that must have lost its proton (pK<sub>1</sub>) and one that must keep it (pK<sub>2</sub>), the active fraction is">催化需要活性部位上幾個基團帶著正確的電荷。若一個基團要失去質子（pK<sub>1</sub>）、另一個要保留質子（pK<sub>2</sub>），有作用的比例是</p>
+      <div class="formula">\[ v \propto\frac{1}{1+10^{\,\mathrm{p}K_1-\mathrm{pH}}+10^{\,\mathrm{pH}-\mathrm{p}K_2}} \]</div>
+      <p data-en="with its peak at the average of the two pK values. Far from the peak the activity drops about ten times for every pH unit.">最高點在兩個 pK 的平均。離最高點遠的地方，每差一個 pH 單位活性大約掉成十分之一。</p>
+
+      <h3 data-en="Michaelis–Menten">Michaelis–Menten</h3>
+      <p data-en-html="With much more substrate than enzyme, the initial rate rises and then levels off at V<sub>max</sub>, when every enzyme molecule is busy. K<sub>m</sub> is the substrate concentration at which the rate is half of V<sub>max</sub>:">受質遠多於酵素時，初速度先上升，再趨近 V<sub>max</sub>，那時每個酵素分子都在忙。K<sub>m</sub> 是速率剛好等於 V<sub>max</sub> 一半時的受質濃度：</p>
+      <div class="formula">\[ v=\frac{V_\text{max}[S]}{K_m+[S]} ,\qquad \frac{1}{v}=\frac{K_m}{V_\text{max}}\cdot\frac{1}{[S]}+\frac{1}{V_\text{max}} \]</div>
+      <p data-en-html="Plotting 1/v against 1/[S] (Lineweaver and Burk, 1934) turns the curve into a straight line: it crosses the vertical axis at 1/V<sub>max</sub> and the horizontal axis at −1/K<sub>m</sub>. The catch: points at low [S] have small rates, and taking 1/v magnifies their errors.">把 1/v 對 1/[S] 作圖（Lineweaver 與 Burk，1934），曲線就變成直線：和縱軸交在 1/V<sub>max</sub>、和橫軸交在 −1/K<sub>m</sub>。缺點是：[S] 很小的點速率小，取倒數會把它們的誤差放大。</p>
+
+      <h3 data-en="Three kinds of inhibitor">三種抑制劑</h3>
+      <ul>
+        <li data-en-html="<strong>Competitive</strong>: competes with the substrate for the active site. Enough substrate pushes it out, so V<sub>max</sub> is unchanged but K<sub>m</sub> becomes K<sub>m</sub>(1 + [I]/K<sub>i</sub>). The lines meet on the vertical axis."><strong>競爭型</strong>：和受質搶同一個活性部位。受質夠多就能把它擠掉，所以 V<sub>max</sub> 不變，K<sub>m</sub> 變成 K<sub>m</sub>(1 + [I]/K<sub>i</sub>)。直線交在縱軸上。</li>
+        <li data-en-html="<strong>Non-competitive</strong> (pure): binds elsewhere and switches off the enzyme whether or not substrate is bound. More substrate does not help: V<sub>max</sub> is divided by (1 + [I]/K<sub>i</sub>) and K<sub>m</sub> is unchanged. The lines meet on the horizontal axis."><strong>非競爭型</strong>（純）：結合在別的地方，不管有沒有受質都讓酵素停工。受質再多也沒用：V<sub>max</sub> 除以 (1 + [I]/K<sub>i</sub>)，K<sub>m</sub> 不變。直線交在橫軸上。</li>
+        <li data-en-html="<strong>Uncompetitive</strong>: binds only to the enzyme–substrate complex. V<sub>max</sub> and K<sub>m</sub> are both divided by the same factor, so the lines are parallel."><strong>反競爭型</strong>：只和已經抓著受質的酵素結合。V<sub>max</sub> 和 K<sub>m</sub> 除以同一個數，所以直線互相平行。</li>
+      </ul>
+
+      <h3 data-en="Things to try">可以試試</h3>
+      <ul>
+        <li data-en-html="<strong>Find the best pH</strong>: give the five tubes five different pH values at the same temperature."><strong>找最適 pH</strong>：五支試管同樣溫度、五個不同 pH。</li>
+        <li data-en-html="<strong>Boil it</strong>: put one tube at 80 °C. Does it ever finish?"><strong>煮過的酵素</strong>：把一支試管放到 80 °C，它會完成反應嗎？</li>
+        <li data-en-html="<strong>Time matters</strong>: scan the temperature with 1 minute and with 60 minutes per point. Where is the peak each time?"><strong>時間的影響</strong>：用每點 1 分鐘、再用每點 60 分鐘各掃描一次溫度，最高點在哪裡？</li>
+        <li data-en-html="<strong>Unmask the inhibitor</strong>: measure the mystery enzyme with and without the mystery inhibitor and compare the two lines."><strong>揭穿抑制劑</strong>：神秘酵素加與不加神秘抑制劑各量幾點，比較兩條直線。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="In the test tubes there is far less substrate than K<sub>m</sub>, so the substrate disappears at a rate proportional to the amount left and to the current activity of the enzyme, which is integrated exactly. Time runs 60 times faster than real time.">試管裡的受質遠少於 K<sub>m</sub>，所以受質消失的速率和剩下的量、以及酵素當下的活性成正比，用解析式準確計算。時間比真實快 60 倍。</li>
+        <li data-en-html="The optimum pH values (pepsin about 2, salivary amylase about 6.8, trypsin about 8) are the usual textbook values. The pK values, T<sub>eq</sub>, ΔH<sub>eq</sub>, the inactivation barrier and the time for the reaction to finish are illustrative, chosen with the typical sizes of the equilibrium model.">最適 pH（胃蛋白酶約 2、唾液澱粉酶約 6.8、胰蛋白酶約 8）是課本常見值。pK、T<sub>eq</sub>、ΔH<sub>eq</sub>、永久變性的能障與完成反應的時間是示意值，照平衡模型的典型大小選的。</li>
+        <li data-en-html="The mystery enzyme has a K<sub>m</sub> between 0.5 and 5 mM and a V<sub>max</sub> between 20 and 100 µM/min, chosen at random. Each measurement is the true rate multiplied by (1 + error × a normal random number).">神秘酵素的 K<sub>m</sub> 在 0.5–5 mM、V<sub>max</sub> 在 20–100 µM/min 之間隨機選。每次測量是真正的速率乘上（1 + 誤差 × 常態亂數）。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · enzymes and metabolism; the lab on factors that affect enzyme activity.">課綱對應：高中生物（108 課綱）・酵素與代謝；探討影響酵素活性因素的實驗。</li>
+        <li data-en="L. Michaelis and M. L. Menten, “Die Kinetik der Invertinwirkung”, Biochemische Zeitschrift 49 (1913) 333–369; English translation by K. A. Johnson and R. S. Goody, Biochemistry 50 (2011) 8264–8269.">L. Michaelis、M. L. Menten，〈Die Kinetik der Invertinwirkung〉，Biochemische Zeitschrift 49 (1913) 333–369；英譯：K. A. Johnson、R. S. Goody，Biochemistry 50 (2011) 8264–8269。</li>
+        <li data-en="H. Lineweaver and D. Burk, “The determination of enzyme dissociation constants”, Journal of the American Chemical Society 56 (1934) 658–666.">H. Lineweaver、D. Burk，〈The determination of enzyme dissociation constants〉，Journal of the American Chemical Society 56 (1934) 658–666。</li>
+        <li data-en="R. M. Daniel and M. J. Danson, “A new understanding of how temperature affects the catalytic activity of enzymes”, Trends in Biochemical Sciences 35 (2010) 584–591.">R. M. Daniel、M. J. Danson，〈A new understanding of how temperature affects the catalytic activity of enzymes〉，Trends in Biochemical Sciences 35 (2010) 584–591。</li>
+        <li data-en="M. E. Peterson, R. M. Daniel, M. J. Danson and R. Eisenthal, “The dependence of enzyme activity on temperature: determination and validation of parameters”, Biochemical Journal 402 (2007) 331–337.">M. E. Peterson、R. M. Daniel、M. J. Danson、R. Eisenthal，〈The dependence of enzyme activity on temperature: determination and validation of parameters〉，Biochemical Journal 402 (2007) 331–337。</li>
+        <li data-en="A. Cornish-Bowden, Fundamentals of Enzyme Kinetics, 4th ed. (Wiley-Blackwell, 2012) — inhibition and the pH dependence of enzyme activity.">A. Cornish-Bowden，《Fundamentals of Enzyme Kinetics》第 4 版（Wiley-Blackwell，2012）——抑制作用與 pH 對酵素活性的影響。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/enzyme-kinetics-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/enzyme-kinetics.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="enzyme-kinetics"></script>
+  <script src="js/missions/enzyme-kinetics.js"></script>
+  <script src="js/stats.js" data-module="enzyme-kinetics"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
