@@ -881,7 +881,7 @@
     label: T('山脈剖面。方向鍵沿著山坡移動氣塊，Shift 加方向鍵移動得更多。', 'Mountain cross-section. Arrow keys move the air parcel along the slope; Shift with an arrow moves it further.'),
     items: [
       { name: function () { return T('氣塊', 'Air parcel'); },
-        move: function (dx, dy, big) { const d = dx || -dy; if (!d) return false; acted(); pause(); setU(state.u + d * (big ? 0.025 : 0.004), true); return true; },
+        move: function (dx, dy, big) { const d = dx || dy; if (!d) return false; acted(); pause(); setU(state.u + d * (big ? 0.025 : 0.004), true); return true; },
         describe: function () { const p = parcelNow(); return whereName(p) + T('，高度 ', ', height ') + meters(p.z) + T('，溫度 ', ', temperature ') + degC(p.T) + T('，相對溼度 ', ', humidity ') + pct(p.RH); } }
     ],
     onChange: function () { updateNow(true); requestDraw(); }
