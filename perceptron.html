@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Perceptron: One Line, Two Classes | Astro Ni Science Lab">感知器：一條線分兩類｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 感知器頁面專用的顏色代號（淺色＋兩組深色；由 js/perceptron.js 與 js/perceptron-3d.js 讀取） */
+    :root { --pc-pos: #e8590c; --pc-neg: #1d63d6; --pc-line: #6d28d9; --pc-w: #0f8a5f; --pc-wrong: #dc2626; --pc-cur: #d97706; --pc-ok: #15803d; --pc-panel: #e9eef5; --pc-band: #0e7490; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pc-pos: #ff8a3d; --pc-neg: #5b9bff; --pc-line: #c4b5fd; --pc-w: #34d399; --pc-wrong: #f87171; --pc-cur: #fbbf24; --pc-ok: #4ade80; --pc-panel: #131b27; --pc-band: #67e8f9; }
+    }
+    :root[data-theme="dark"] { --pc-pos: #ff8a3d; --pc-neg: #5b9bff; --pc-line: #c4b5fd; --pc-w: #34d399; --pc-wrong: #f87171; --pc-cur: #fbbf24; --pc-ok: #4ade80; --pc-panel: #131b27; --pc-band: #67e8f9; }
+
+    /* 畫布高度由程式依寬度決定；按在點上才攔下觸控（拖曳點），其他時候手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: crosshair; }
+    #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    .pc button { min-height: 44px; }
+    .pc [hidden] { display: none !important; }
+    .pc .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .pc .playbar button { padding: 6px 4px; line-height: 1.25; }
+    .pc .playbar .wide { grid-column: span 2; }
+    @media (max-width: 520px) { .pc .playbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .pc .playbar .wide { grid-column: span 2; } }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .pc .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .pc .slider input[type="range"] { height: 28px; margin: 0; }
+    .pc .checks label { min-height: 44px; }
+    .pc .checks input { width: 17px; height: 17px; }
+    .pc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pc .panel > .card { min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+    .presets button { padding: 6px 4px; font-weight: 600; letter-spacing: 0.02em; }
+    .presets .wide { grid-column: span 2; font-weight: 500; letter-spacing: 0; }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .row2 .wide { grid-column: span 2; }
+    .lbl { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; }
+    .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg2 button { border: none; border-radius: 0; min-height: 44px; padding: 6px 8px; background: var(--bg); line-height: 1.25; }
+    .seg2 button + button { border-left: 1px solid var(--border); }
+    .seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cls-pos[aria-pressed="true"] { background: var(--pc-pos) !important; color: #fff !important; }
+    .cls-neg[aria-pressed="true"] { background: var(--pc-neg) !important; color: #fff !important; }
+    /* 2D／3D 檢視切換（與其他有 3D 的模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .p3-wrap { position: relative; }
+    .p3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .p3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .p3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .p3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .p3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .p3-hud span.m { color: var(--muted); font-weight: 500; }
+    .p3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd.ok { color: var(--pc-ok); font-weight: 700; }
+    dl.readout dd.bad { color: var(--pc-wrong); font-weight: 700; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .stepbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; border: 1px dashed var(--border); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.6; min-height: 4.8em; overflow-x: auto; }
+    .stepbox .katex { font-size: 1em; }
+    .stepbox .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-weight: 700; font-size: 0.92em; }
+    .stepbox .tag.ok { background: color-mix(in srgb, var(--pc-ok) 16%, transparent); color: var(--pc-ok); }
+    .stepbox .tag.bad { background: color-mix(in srgb, var(--pc-wrong) 16%, transparent); color: var(--pc-wrong); }
+    .stepbox .muted { color: var(--muted); }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend .sw { width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 5px; }
+    .legend .sw.round { border-radius: 50%; }
+    .legend .sw.sq { border-radius: 2px; }
+    .legend .sw.ring { border-radius: 50%; border: 2px dashed var(--pc-wrong); background: transparent; width: 9px; height: 9px; }
+    .legend i.ln { height: 4px; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #hist { width: 100%; }
+    #hist td, #hist th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #hist th:first-child, #hist td:first-child { text-align: left; }
+    #hist td.ok { color: var(--pc-ok); font-weight: 700; }
+    #hist td.bad { color: var(--pc-wrong); font-weight: 700; }
+    #hist:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ai&quot;>Information Technology · Artificial Intelligence</a> / Perceptron"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ai">資訊科技・人工智慧</a> ／ 感知器</nav>
+      <h1 data-en="The Perceptron: One Line, Two Classes">感知器：一條線分兩類</h1>
+      <p data-en="The perceptron is one of the oldest learning machines: it adds up its inputs with weights, and the sign of the sum decides between two classes. Every time it gets a point wrong, it nudges its weights toward the right answer. Watch the dividing line turn one correction at a time, see why AND and OR can be learned but XOR never can, and look at the weighted sum as a tilted plane in 3D.">感知器是最早的「會學習的機器」之一：把輸入乘上權重加起來，看總和是正還是負，決定是哪一類。每遇到一個分錯的點，就把權重往正確答案的方向推一點。看分界線怎麼一次修正一點地轉到對的位置，為什麼 AND、OR 學得會，XOR 卻永遠學不會，再到 3D 裡看看「加權和」其實是一片斜面。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Step” a few times and watch each misclassified point push the line; then press “XOR” and “Learn until done” and see what happens.">試試看：按幾次「單步」，看分錯的點怎麼把線推開；再按「XOR」和「學到收斂」，看看會發生什麼事。</p>
+    <div class="lab pc" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D weighted sum">3D 加權和</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="特徵平面畫布：兩類資料點、目前的分界線與權重方向；右邊（窄螢幕在下方）是權重空間。點空白處放一個點，點一下已有的點把它移除，拖曳可以移動點。鍵盤：方向鍵移動游標，Enter 在游標處放點或移除，加號放 +1 類、減號放 −1 類。" data-en-aria-label="Feature-plane canvas: the two classes of points, the current dividing line and the direction of the weights; the weight space is on the right (below on narrow screens). Tap an empty spot to place a point, tap a point to remove it, drag to move it. Keyboard: arrow keys move a cursor, Enter places or removes a point there, plus places class +1 and minus places class −1."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="stepBtn" type="button" class="primary" title="看下一個點：分錯就修正一次" data-en-title="Look at the next point and correct the weights if it is wrong" data-en="Step">單步</button>
+          <button id="epochBtn" type="button" title="把這一輪剩下的點都看完" data-en-title="Go through the rest of this round" data-en="One round">一輪</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Keep learning">連續學習</button>
+          <button id="learnBtn" type="button" title="一直學到收斂，或學滿 1000 輪" data-en-title="Keep going until it converges or reaches 1000 rounds" data-en="Learn until done">學到收斂</button>
+          <button id="restartBtn" type="button" title="權重回到起點重新學；資料與設定不變" data-en-title="Put the weights back to the start and learn again; data and settings stay" data-en="Restart">重來</button>
+          <button id="wipeBtn" type="button" title="清掉學習紀錄、權重軌跡與每輪錯誤數圖，從頭學起；資料與設定不變" data-en-title="Clear the learning log, the weight trail and the mistakes chart and start again; data and settings stay" data-en="Clear all">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" aria-hidden="true">
+          <span><span class="sw round" style="background:var(--pc-pos)"></span><span data-en="class +1 (circle)">+1 類（圓）</span></span>
+          <span><span class="sw sq" style="background:var(--pc-neg)"></span><span data-en="class −1 (square)">−1 類（方塊）</span></span>
+          <span><span class="sw ring"></span><span data-en="misclassified now">目前分錯</span></span>
+          <span><i class="ln" style="background:var(--pc-line)"></i><span data-en="dividing line z = 0">分界線 z = 0</span></span>
+          <span><i style="background:var(--pc-w)"></i><span data-en="weights w">權重 w</span></span>
+        </div>
+        <canvas id="cv2" aria-label="每輪錯誤數圖：橫軸是第幾輪，長條高度是那一輪分錯（因此修正）幾次；一整輪都沒錯就是收斂，畫成綠色。" data-en-aria-label="Mistakes per round: the horizontal axis is the round number and each bar is how many points were wrong (and so corrected) in that round; a round with no mistakes means it has converged and is drawn in green."></canvas>
+        <p class="chart-cap" data-en="Mistakes per round. A round with no mistakes means the perceptron has converged. The convergence theorem promises at most (R/γ)² corrections in total when it starts from zero.">每輪錯誤數。一整輪都沒有分錯，就是收斂了。從零出發時，收斂定理保證總共最多修正 (R/γ)² 次。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Data">資料</h2>
+          <div class="presets" role="group" aria-label="預設資料" data-en-aria-label="Preset data">
+            <button type="button" data-set="and" aria-pressed="true">AND</button>
+            <button type="button" data-set="or" aria-pressed="false">OR</button>
+            <button type="button" data-set="nand" aria-pressed="false">NAND</button>
+            <button type="button" data-set="xor" aria-pressed="false">XOR</button>
+            <button type="button" data-set="sep" class="wide" aria-pressed="false" data-en="Random separable">隨機可分</button>
+            <button type="button" data-set="noisy" class="wide" aria-pressed="false" data-en="Noisy">有雜訊</button>
+          </div>
+          <p class="lbl" id="clsLbl" data-en="Class of the next point you place">放點的類別</p>
+          <div class="seg2" role="group" aria-labelledby="clsLbl">
+            <button type="button" id="clsPos" class="cls-pos" aria-pressed="true" data-en="Place +1">放 +1 類</button>
+            <button type="button" id="clsNeg" class="cls-neg" aria-pressed="false" data-en="Place −1">放 −1 類</button>
+          </div>
+          <div class="row2">
+            <button type="button" id="clearPts" class="wide" title="拿掉所有的點，自己放" data-en-title="Remove every point and place your own" data-en="Clear points">清空資料</button>
+          </div>
+          <p class="hint" data-en="Tap an empty spot to add a point, tap a point to remove it, drag to move it. Points snap to a 0.05 grid; at most 60 points. The logic gates put input 0 at −0.6 and input 1 at +0.6.">點空白處放點、點一下點把它移除、拖曳可以移動。座標吸附在 0.05 的格點上，最多 60 個點。邏輯閘的資料把輸入 0 放在 −0.6、輸入 1 放在 +0.6。</p>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Points n (+1 / −1)">點數 n（+1／−1）</dt><dd id="rN">—</dd>
+            <dt data-en="Can one line separate them?">能用一條線分開嗎</dt><dd id="rSep">—</dd>
+            <dt data-en-html="Largest margin <i>γ</i>">最大間隔 <i>γ</i></dt><dd id="rGamma">—</dd>
+            <dt data-en-html="Largest size <i>R</i>">最大長度 <i>R</i></dt><dd id="rR">—</dd>
+            <dt data-en-html="Bound (<i>R</i>/<i>γ</i>)<sup>2</sup>">收斂上界 (<i>R</i>/<i>γ</i>)<sup>2</sup></dt><dd id="rBound">—</dd>
+          </dl>
+          <div class="checks" style="margin-top:6px">
+            <label><input id="showBand" type="checkbox"><span data-en="Widest corridor">最寬的走廊</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Learning settings">學習設定</h2>
+          <div class="slider"><label for="eta" data-en="Learning rate η">學習率 η</label><output id="etao"></output>
+            <input id="eta" type="range" min="0" max="300" step="1" value="200" data-decimals="3"></div>
+          <p class="lbl" id="initLbl" data-en="Starting weights">初始權重</p>
+          <div class="seg2" role="group" aria-labelledby="initLbl">
+            <button type="button" id="initZero" aria-pressed="true" data-en="Zero">零</button>
+            <button type="button" id="initRand" aria-pressed="false" data-en="Random">隨機</button>
+          </div>
+          <p class="lbl" id="orderLbl" data-en="Order of the points">看點的順序</p>
+          <div class="seg2" role="group" aria-labelledby="orderLbl">
+            <button type="button" id="orderFixed" aria-pressed="true" data-en="Fixed order">固定順序</button>
+            <button type="button" id="orderShuffle" aria-pressed="false" data-en="Shuffle each round">每輪打亂</button>
+          </div>
+          <div class="slider"><label for="seed" data-en="Random seed">亂數種子</label><output id="seedo"></output>
+            <input id="seed" type="range" min="1" max="999" step="1" value="1" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="useBias" type="checkbox" checked><span data-en="Use the bias b (threshold)">使用偏差 b（門檻）</span></label>
+          </div>
+          <div class="slider"><label for="rate" data-en="Speed of “Keep learning” (steps per second)">連續學習的速度（每秒幾步）</label><output id="rateo"></output>
+            <input id="rate" type="range" min="1" max="60" step="1" value="6" data-decimals="0"></div>
+          <p class="hint" data-en="Changing any setting starts the learning again. The seed decides the random starting weights and the shuffled order, so a run can be repeated exactly. Fixed order means the order in which the points were placed.">改任何一個設定都會從頭學起。亂數種子決定隨機的初始權重與打亂的順序，同一個種子可以完全重現。固定順序就是放點的先後順序。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Weights and this step">權重與這一步</h2>
+          <dl class="readout">
+            <dt data-en-html="Weights <i>w</i><sub>1</sub>, <i>w</i><sub>2</sub>">權重 <i>w</i><sub>1</sub>、<i>w</i><sub>2</sub></dt><dd id="rW">—</dd>
+            <dt data-en-html="Bias <i>b</i>">偏差 <i>b</i></dt><dd id="rB">—</dd>
+            <dt data-en="Round">第幾輪</dt><dd id="rEpoch">—</dd>
+            <dt data-en="Mistakes so far this round">這一輪已分錯</dt><dd id="rErr">—</dd>
+            <dt data-en-html="Corrections <i>k</i>">總修正次數 <i>k</i></dt><dd id="rK">—</dd>
+            <dt data-en="Points wrong right now">目前分錯的點</dt><dd id="rWrong">—</dd>
+          </dl>
+          <div class="eq" id="lineEq" aria-live="off"></div>
+          <div class="stepbox" id="stepBox" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Learning log">學習紀錄</h2>
+          <p class="hint" data-en="One row each time the perceptron converges or reaches 1000 rounds. “Clear all” empties it.">每次收斂或學滿 1000 輪記一列；按「全部清除」清空。</p>
+          <div class="tablewrap"><table class="data" id="hist"></table></div>
+          <p class="log-empty" id="histEmpty" data-en="Nothing yet.">還沒有紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="A weighted sum and its sign">加權和與它的正負</h3>
+      <p data-en-html="A perceptron receives two numbers \(x_1, x_2\) (the position of a point). It multiplies each by a <strong>weight</strong>, adds a <strong>bias</strong> \(b\), and looks only at the sign of the result:">感知器收到兩個數 \(x_1, x_2\)（點的位置），各乘上一個<strong>權重</strong>，再加上<strong>偏差</strong> \(b\)，最後只看結果的正負：</p>
+      <div class="formula">\[ z = w_1 x_1 + w_2 x_2 + b, \qquad \hat{y} = \begin{cases} +1 & z > 0 \\ -1 & z < 0 \end{cases} \]</div>
+      <p data-en-html="The points where \(z = 0\) form a straight line — the <strong>dividing line</strong> (decision boundary). The vector \(\mathbf{w} = (w_1, w_2)\) is perpendicular to it and points into the \(+1\) side. The bias is a threshold in disguise: “fire when \(w_1x_1 + w_2x_2 \ge \theta\)” is the same as \(b = -\theta\). Without a bias the line has to pass through the origin.">讓 \(z = 0\) 的點排成一條直線，就是<strong>分界線</strong>（決策邊界）。向量 \(\mathbf{w} = (w_1, w_2)\) 和分界線垂直，指向 \(+1\) 那一側。偏差其實就是門檻：「\(w_1x_1 + w_2x_2 \ge \theta\) 時輸出 1」等於 \(b = -\theta\)。沒有偏差時，線一定要經過原點。</p>
+
+      <h3 data-en="The learning rule">學習規則</h3>
+      <p data-en-html="Show the points one at a time. If a point with label \(y = \pm 1\) is classified correctly (\(y\,z > 0\)), nothing happens. If it is wrong — or lies exactly on the line (\(y\,z \le 0\)) — the weights are corrected:">把點一個一個拿給感知器看。類別是 \(y = \pm 1\) 的點如果分對了（\(y\,z > 0\)），什麼都不改；分錯了、或剛好落在線上（\(y\,z \le 0\)），就修正權重：</p>
+      <div class="formula">\[ \mathbf{w} \leftarrow \mathbf{w} + \eta\, y\, \mathbf{x}, \qquad b \leftarrow b + \eta\, y \]</div>
+      <p data-en-html="\(\eta > 0\) is the <strong>learning rate</strong>. Many books write the same rule as \(\mathbf{w} \leftarrow \mathbf{w} + \eta\,(t - \hat{y})\,\mathbf{x}\) with labels \(t \in \{0, 1\}\) and outputs \(\hat{y} \in \{0, 1\}\): when the answer is wrong, \(t - \hat{y}\) is \(+1\) or \(-1\) — exactly our \(y\). Why does it help? After a correction, the same point has">\(\eta > 0\) 是<strong>學習率</strong>。很多書把同一條規則寫成 \(\mathbf{w} \leftarrow \mathbf{w} + \eta\,(t - \hat{y})\,\mathbf{x}\)，標籤 \(t \in \{0, 1\}\)、輸出 \(\hat{y} \in \{0, 1\}\)：答錯時 \(t - \hat{y}\) 是 \(+1\) 或 \(-1\)，正好就是這裡的 \(y\)。為什麼這樣改有用？修正之後，同一個點的</p>
+      <div class="formula">\[ y\,z_{\text{new}} = y\,z_{\text{old}} + \eta\,\bigl(x_1^2 + x_2^2 + 1\bigr) \]</div>
+      <p data-en-html="so it is always pushed toward its own side. One pass through all the points is a <strong>round</strong> (epoch); a round with no mistakes means the perceptron has <strong>converged</strong> and will never change again.">所以它一定被往自己那一側推。所有點看過一次叫做<strong>一輪</strong>；一整輪都沒有分錯，就是<strong>收斂</strong>了，之後再也不會改變。</p>
+
+      <h3 data-en="The convergence theorem">收斂定理</h3>
+      <p data-en-html="Treat the bias as a third weight: \(\tilde{\mathbf{x}} = (x_1, x_2, 1)\) and \(\tilde{\mathbf{w}} = (w_1, w_2, b)\), so \(z = \tilde{\mathbf{w}}\cdot\tilde{\mathbf{x}}\). Let \(R\) be the largest length \(\lVert\tilde{\mathbf{x}}\rVert\) among the points, and \(\gamma\) the largest <strong>margin</strong>: the biggest number for which some unit vector \(\mathbf{u}\) gives every point \(y\,(\mathbf{u}\cdot\tilde{\mathbf{x}}) \ge \gamma\). If \(\gamma > 0\) (the data can be separated by a line), then starting from \(\tilde{\mathbf{w}} = \mathbf{0}\), in any order and with any learning rate, the number of corrections \(k\) satisfies (Novikoff, 1962)">把偏差當成第三個權重：\(\tilde{\mathbf{x}} = (x_1, x_2, 1)\)、\(\tilde{\mathbf{w}} = (w_1, w_2, b)\)，於是 \(z = \tilde{\mathbf{w}}\cdot\tilde{\mathbf{x}}\)。令 \(R\) 是所有點裡最大的長度 \(\lVert\tilde{\mathbf{x}}\rVert\)，\(\gamma\) 是最大的<strong>間隔</strong>：存在某個單位向量 \(\mathbf{u}\)，讓每個點都有 \(y\,(\mathbf{u}\cdot\tilde{\mathbf{x}}) \ge \gamma\) 的最大的 \(\gamma\)。只要 \(\gamma > 0\)（資料能用一條直線分開），從 \(\tilde{\mathbf{w}} = \mathbf{0}\) 出發，不論順序、不論學習率，修正次數 \(k\) 一定滿足（Novikoff，1962）</p>
+      <div class="formula">\[ k \le \left(\frac{R}{\gamma}\right)^{2} \]</div>
+      <p data-en-html="The idea of the proof: every correction raises \(\tilde{\mathbf{w}}\cdot\mathbf{u}\) by at least \(\eta\gamma\), while \(\lVert\tilde{\mathbf{w}}\rVert^2\) grows by at most \(\eta^2R^2\); so after \(k\) corrections \(k\,\eta\gamma \le \tilde{\mathbf{w}}\cdot\mathbf{u} \le \lVert\tilde{\mathbf{w}}\rVert \le \sqrt{k}\,\eta R\). Note that \(\eta\) cancels: starting from zero, the learning rate only scales all the weights together and never changes the line.">證明的想法：每修正一次，\(\tilde{\mathbf{w}}\cdot\mathbf{u}\) 至少增加 \(\eta\gamma\)，而 \(\lVert\tilde{\mathbf{w}}\rVert^2\) 最多增加 \(\eta^2R^2\)；所以修正 \(k\) 次之後 \(k\,\eta\gamma \le \tilde{\mathbf{w}}\cdot\mathbf{u} \le \lVert\tilde{\mathbf{w}}\rVert \le \sqrt{k}\,\eta R\)。注意 \(\eta\) 被約掉了：從零出發時，學習率只是把所有權重一起放大縮小，線永遠不變。</p>
+
+      <h3 data-en="What one line cannot do: XOR">一條線做不到的事：XOR</h3>
+      <p data-en-html="XOR is +1 when exactly one input is 1. With inputs placed at \(\pm 0.6\), the two −1 points need \(-0.6w_1 - 0.6w_2 + b < 0\) and \(0.6w_1 + 0.6w_2 + b < 0\); adding them gives \(2b < 0\). The two +1 points need \(-0.6w_1 + 0.6w_2 + b > 0\) and \(0.6w_1 - 0.6w_2 + b > 0\), which add up to \(2b > 0\). Both cannot hold, so no line separates XOR and the perceptron never converges. Minsky and Papert (1969) proved far-reaching limits of this kind for single-layer perceptrons; the cure is to stack layers — a neural network with a hidden layer learns XOR easily.">XOR 是「剛好一個輸入是 1」時輸出 +1。把輸入放在 \(\pm 0.6\)，兩個 −1 的點要 \(-0.6w_1 - 0.6w_2 + b < 0\) 和 \(0.6w_1 + 0.6w_2 + b < 0\)，相加得 \(2b < 0\)；兩個 +1 的點要 \(-0.6w_1 + 0.6w_2 + b > 0\) 和 \(0.6w_1 - 0.6w_2 + b > 0\)，相加得 \(2b > 0\)。兩者不可能同時成立，所以沒有任何一條線能分開 XOR，感知器永遠不會收斂。Minsky 與 Papert（1969）證明了單層感知器一系列這類的限制；解法是把感知器疊成好幾層——有隱藏層的神經網路就能輕鬆學會 XOR。</p>
+
+      <h3 data-en="The weighted sum is a plane (3D view)">加權和是一片斜面（3D 檢視）</h3>
+      <p data-en-html="Draw the height \(z = w_1x_1 + w_2x_2 + b\) above every point of the plane and you get a flat, tilted sheet. The dividing line is simply where this sheet cuts the ground \(z = 0\) — which is why it is always a straight line. In the 3D view each data point carries a post up to the sheet: a correct \(+1\) point’s post goes up, a correct \(-1\) point’s post goes down. Every correction tilts and lifts the sheet.">在平面上每一點的上方畫出高度 \(z = w_1x_1 + w_2x_2 + b\)，會得到一片平平的斜面。分界線就是這片斜面切過地面 \(z = 0\) 的地方——所以它一定是直線。在 3D 檢視中，每個資料點都有一根柱子連到斜面：分對的 \(+1\) 點柱子朝上、分對的 \(-1\) 點柱子朝下。每次修正，斜面就跟著傾斜、抬高或壓低一點。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Pulled or pushed</strong>: a misclassified +1 point adds itself to \(\mathbf{w}\); a misclassified −1 point subtracts itself. Watch the weight-space panel: every correction is one arrow added to \(\mathbf{w}\)."><strong>拉過來或推開</strong>：分錯的 +1 點把自己加到 \(\mathbf{w}\) 上，分錯的 −1 點把自己減掉。看右邊的權重空間：每次修正都是在 \(\mathbf{w}\) 後面接上一支箭頭。</li>
+        <li data-en-html="<strong>XOR goes round in circles</strong>: with zero start and fixed order, all four XOR points are wrong in every round, and the weights come back to exactly zero at the end of each round. Why do the four corrections cancel?"><strong>XOR 原地打轉</strong>：零初始、固定順序時，XOR 的四個點每一輪都全錯，而且每一輪結束時權重剛好回到 0。為什麼四次修正會互相抵消？</li>
+        <li data-en-html="<strong>Posts in 3D</strong>: which way must the post of a +1 point stand? What happens to the sheet when you press “Step” on a wrong point?"><strong>3D 的柱子</strong>：+1 點的柱子應該朝哪邊？在分錯的點按「單步」時，斜面怎麼動？</li>
+        <li data-en-html="<strong>The learning rate</strong>: with “Zero” starting weights, change η and learn again. Does the line change? Does the number of corrections? And with “Random” starting weights?"><strong>學習率</strong>：初始權重選「零」，改學習率再學一次。線會變嗎？修正次數呢？換成「隨機」初始權重又如何？</li>
+        <li data-en-html="<strong>Bound versus reality</strong>: the bound \((R/\gamma)^2\) is usually far above the actual number of corrections. What kind of data makes \(\gamma\) tiny? Turn on “Widest corridor” to see \(\gamma\)."><strong>上界與實際</strong>：上界 \((R/\gamma)^2\) 通常比實際的修正次數大很多。什麼樣的資料會讓 \(\gamma\) 變得很小？打開「最寬的走廊」看看 \(\gamma\)。</li>
+        <li data-en-html="<strong>Without a bias</strong>: untick “Use the bias b”. The line now has to pass through the origin. Which of AND, OR, NAND can still be learned?"><strong>拿掉偏差</strong>：取消「使用偏差 b」，線必須經過原點。AND、OR、NAND 還有哪個學得會？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Points snap to a 0.05 grid and are stored as whole numbers \(g = 20x\). The weights are kept as \(\tilde{\mathbf{w}} = \tilde{\mathbf{w}}_0 + \tfrac{\eta}{20}\,\mathbf{S}\), where \(\mathbf{S}\) is a sum of whole-number vectors \(y\,(g_1, g_2, 20)\). With zero starting weights the sign of \(z\) is decided by a whole number, so “exactly on the line”, “\(b\) is exactly 0” and “the weights came back to the same value” are judged without any rounding error.">點的座標吸附在 0.05 的格點上，存成整數 \(g = 20x\)。權重寫成 \(\tilde{\mathbf{w}} = \tilde{\mathbf{w}}_0 + \tfrac{\eta}{20}\,\mathbf{S}\)，\(\mathbf{S}\) 是整數向量 \(y\,(g_1, g_2, 20)\) 的總和。初始權重是零時，\(z\) 的正負由一個整數決定，所以「剛好在線上」「\(b\) 剛好是 0」「權重回到同一個值」都沒有捨入誤差。</li>
+        <li data-en-html="The largest margin \(\gamma\) equals the distance from the origin to the convex hull of the vectors \(y\,\tilde{\mathbf{x}}\) (zero distance means the data cannot be separated). The page finds the nearest point exactly by trying every vertex, edge and triangle of the hull. The unit tests prove each answer both ways — a direction \(\mathbf{u}\) that achieves \(\gamma\), and a convex combination of length \(\gamma\) showing nothing can do better — and compare it with two independent iterative methods.">最大間隔 \(\gamma\) 等於原點到向量 \(y\,\tilde{\mathbf{x}}\) 的凸包的距離（距離是 0 表示不能用一條線分開）。頁面把凸包的每個頂點、每條邊、每個三角形都試過，精確找出最近點。單元測試把每個答案從兩個方向證明——一個方向 \(\mathbf{u}\) 做得到 \(\gamma\)，一個長度為 \(\gamma\) 的凸組合說明不可能更好——並和兩種獨立的迭代算法比對。</li>
+        <li data-en="The unit tests also check: the rule matches the (t − ŷ) form step by step; separable data always converge and the number of corrections never exceeds (R/γ)²; XOR and other inseparable data never converge; from zero, changing η scales the weights but not the line; without a bias, AND, OR and NAND become inseparable; random data and shuffles repeat exactly for the same seed.">單元測試也檢查：學習規則和 (t − ŷ) 的寫法逐步相同；可分的資料一定收斂，而且修正次數從不超過 (R/γ)²；XOR 和其他不可分的資料永遠不收斂；從零出發時改學習率只會放大權重、不改變線；拿掉偏差後 AND、OR、NAND 都變成不可分；同一個種子的隨機資料與打亂順序完全重現。</li>
+        <li data-en-html="The 3D sheet is the same \(z\) drawn as height. Because \(z\) can grow large, all heights share one vertical scale chosen so that the highest corner of the sheet is a fixed height; that scale is written on the 3D view. The posts use the same scale, so their lengths are exactly proportional to \(z\).">3D 的斜面就是同一個 \(z\) 畫成高度。因為 \(z\) 可能變得很大，所有高度共用一個縮放比例，讓斜面最高的角維持固定高度；比例寫在 3D 畫面上。柱子用同一個比例，所以柱子長度和 \(z\) 精確成正比。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum (Taiwan, Information Technology, senior high): D-V-2, basic concepts of data mining and machine learning — data classification, machine learning, pattern recognition.">課綱對應：資訊科技・資料表示、處理及分析——資D-V-2 資料探勘與機器學習的基本概念（資料分類、機器學習、模式識別）。</li>
+        <li data-en="The original perceptron: F. Rosenblatt (1958), “The perceptron: A probabilistic model for information storage and organization in the brain”, Psychological Review 65(6), 386–408.">感知器的原始論文：F. Rosenblatt（1958）〈The perceptron: A probabilistic model for information storage and organization in the brain〉，Psychological Review 65(6)，386–408。</li>
+        <li data-en="The convergence theorem: A. B. J. Novikoff (1962), “On convergence proofs on perceptrons”, Proceedings of the Symposium on the Mathematical Theory of Automata, Vol. 12, 615–622, Polytechnic Institute of Brooklyn.">收斂定理：A. B. J. Novikoff（1962）〈On convergence proofs on perceptrons〉，Symposium on the Mathematical Theory of Automata 論文集第 12 卷，615–622，Polytechnic Institute of Brooklyn。</li>
+        <li data-en="Limits of single-layer perceptrons: M. Minsky and S. Papert (1969), Perceptrons: An Introduction to Computational Geometry, MIT Press.">單層感知器的限制：M. Minsky 與 S. Papert（1969），《Perceptrons: An Introduction to Computational Geometry》，MIT Press。</li>
+        <li data-en="XOR and the hidden layer: I. Goodfellow, Y. Bengio and A. Courville (2016), Deep Learning, MIT Press, Section 6.1 “Example: Learning XOR”.">XOR 與隱藏層：I. Goodfellow、Y. Bengio、A. Courville（2016），《Deep Learning》，MIT Press，6.1 節 Example: Learning XOR。</li>
+        <li data-en-html="Further reading: &lt;a href=&quot;https://en.wikipedia.org/wiki/Perceptron&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Perceptron (Wikipedia)&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/Linear_separability&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Linear separability (Wikipedia)&lt;/a&gt;">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Perceptron" target="_blank" rel="noopener">Perceptron（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Linear_separability" target="_blank" rel="noopener">Linear separability（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/perceptron-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/perceptron.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="perceptron"></script>
+  <script src="js/missions/perceptron.js"></script>
+  <script src="js/stats.js" data-module="perceptron"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
