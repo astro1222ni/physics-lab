@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Sorting Algorithms Compared | Astro Ni Science Lab">排序演算法比較｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 排序頁面專用的顏色代號（淺色＋兩組深色；由 js/sorting.js 讀取）
+       狀態：一般長條、比較中、交換中、已就位、樞紐、寫回（合併）、暫存區；演算法：泡沫、選擇、插入、合併、快速 */
+    :root { --so-bar: #5b7d93; --so-cmp: #d97706; --so-swap: #dc2626; --so-done: #15803d; --so-pivot: #7c3aed; --so-write: #0e7490; --so-aux: #94a3b8;
+      --so-bub: #2563eb; --so-sel: #c2410c; --so-ins: #0f766e; --so-mer: #a21caf; --so-qui: #be123c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --so-bar: #7fa2b8; --so-cmp: #fbbf24; --so-swap: #ff6b6b; --so-done: #4ade80; --so-pivot: #b99bff; --so-write: #22d3ee; --so-aux: #64748b;
+        --so-bub: #6ea8ff; --so-sel: #fb923c; --so-ins: #2dd4bf; --so-mer: #e879f9; --so-qui: #fb7185; }
+    }
+    :root[data-theme="dark"] { --so-bar: #7fa2b8; --so-cmp: #fbbf24; --so-swap: #ff6b6b; --so-done: #4ade80; --so-pivot: #b99bff; --so-write: #22d3ee; --so-aux: #64748b;
+      --so-bub: #6ea8ff; --so-sel: #fb923c; --so-ins: #2dd4bf; --so-mer: #e879f9; --so-qui: #fb7185; }
+
+    /* 畫布高度由程式依寬度、模式決定；手機上可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 220px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    .so [hidden] { display: none !important; }
+    .so .panel { grid-template-columns: minmax(0, 1fr); }
+    .so .panel > .card { min-width: 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stepinfo { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; padding: 7px 10px; }
+    .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .so .stage .status { margin: 6px 4px 0; min-height: 2.9em; }
+    .so .slider input[type="range"] { height: 28px; margin: 0; }
+    .so .checks label { min-height: 44px; }
+    .so .checks input { width: 17px; height: 17px; }
+    .so .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips button { flex: 1 1 auto; padding: 6px 10px; }
+    .chips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+    .chips button .mk { display: inline-block; width: 1.1em; text-align: center; margin-right: 3px; }
+    .chips button[aria-pressed="true"] .mk { color: var(--surface) !important; }
+    .rowline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+    .rowline button { flex: 0 0 auto; }
+    .rowline .seedinfo { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .custom { margin: 10px 0 0; }
+    .custom label { display: block; font-size: calc(13.5px * var(--fs, 1)); margin: 0 0 4px; }
+    .custom .inrow { display: flex; gap: 8px; }
+    .custom input { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .custom input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .custom .msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .custom .msg.bad { color: var(--so-swap); }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.ok { color: var(--so-done); font-weight: 600; }
+    dl.readout dd.bad { color: var(--so-swap); font-weight: 600; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq-note { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 4px 0 0; }
+    #raceTable { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); }
+    #raceTable th, #raceTable td { padding: 4px 5px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    #raceTable th { color: var(--muted); font-weight: 600; white-space: normal; vertical-align: bottom; line-height: 1.25; }
+    #raceTable .pl { display: inline-block; min-width: 1.3em; color: var(--muted); font-weight: 700; }
+    #raceTable .pl.win { color: var(--so-done); }
+    #raceTable th:first-child, #raceTable td:first-child { text-align: left; }
+    #raceTable .mk { display: inline-block; width: 1.1em; text-align: center; }
+    .legend .sym { display: inline-block; min-width: 1.1em; text-align: center; font-weight: 700; margin-right: 4px; }
+    .legend i.solid { background: var(--muted); }
+    .legend i.dash { background: none !important; border-top: 2px dashed var(--so-mer); height: 0; }
+    .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 14px 4px 0; }
+    .chart-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .chart-head span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Sorting"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 排序</nav>
+      <h1 data-en="Sorting Algorithms Compared">排序演算法比較</h1>
+      <p data-en="Five ways to put the same list in order: bubble, selection, insertion, merge and quick sort. Step through each one, watch the bars move, and count how many comparisons and swaps it makes — then check the counts against the textbook formulas. Race all five on the same data to see how the shape of the data decides who wins, and which of them shuffle equal values out of their original order.">同一份資料，五種排序各有各的做法：泡沫、選擇、插入、合併、快速。一步一步看長條怎麼移動，數一數每種演算法比較了幾次、交換了幾次，再對照課本的公式；讓五種一起賽跑，看資料的樣子怎麼決定誰快誰慢，以及誰會打亂相同值的原本順序。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” and watch bubble sort put the bars in order; then switch to “Sorted” data and compare bubble sort with quicksort.">試試看：按「播放」看泡沫排序一步步把長條排好；再換成「已排好」的資料，比一比泡沫排序和快速排序。</p>
+    <div class="lab so" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" id="modeSingle" aria-pressed="true" data-en="One algorithm">單一演算法</button>
+            <button type="button" id="modeRace" aria-pressed="false" data-en="All five at once">五種一起比</button>
+          </div>
+          <span class="stepinfo" id="stepInfo" aria-live="off"></span>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="排序畫布：每根長條是一個資料值，長條越高值越大。比較中、交換中、已就位的長條有不同的顏色與記號。左右方向鍵可以一步一步前進或後退。" data-en-aria-label="Sorting canvas: every bar is one value, and taller bars are larger values. Bars being compared, being swapped and already in place have different colours and marks. Use the left and right arrow keys to step backwards and forwards."></canvas>
+        <div class="playbar">
+          <button id="back" type="button" data-en="Step back">上一步</button>
+          <button id="step" type="button" data-en="Step">單步</button>
+          <button id="play" type="button" class="primary" data-en="Play">播放</button>
+          <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="reset" type="button" data-en="Restart">重來</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉圖上所有的點與比賽紀錄，回到第 0 步；資料與演算法的設定不變" data-en-title="Remove every point from the chart and the race record, and go back to step 0; the data and algorithm settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--so-cmp)" data-en-html="<span class=&quot;sym&quot;>▼</span>Comparing"><span class="sym">▼</span>比較中</span>
+          <span style="color:var(--so-swap)" data-en-html="<span class=&quot;sym&quot;>⇄</span>Swapping"><span class="sym">⇄</span>交換中</span>
+          <span style="color:var(--so-done)" data-en-html="<span class=&quot;sym&quot;>●</span>In its final place"><span class="sym">●</span>已就位</span>
+          <span style="color:var(--so-pivot)" data-en-html="<span class=&quot;sym&quot;>◆</span>Pivot / current minimum"><span class="sym">◆</span>樞紐／目前最小值</span>
+          <span style="color:var(--so-write)" data-en-html="<span class=&quot;sym&quot;>↓</span>Written back (merge sort)"><span class="sym">↓</span>寫回（合併排序）</span>
+        </div>
+
+        <div class="chart-head">
+          <h2 data-en="Comparisons against n">比較次數對 n</h2>
+          <span id="chartCount"></span>
+        </div>
+        <canvas id="cv2" aria-label="比較次數對 n 圖：橫軸是資料長度 n，縱軸是比較次數。每跑完一次排序就加一個點；三條參考線是 n(n − 1)/2、合併排序的最壞次數與 n − 1。" data-en-aria-label="Comparisons against n chart: data length n across and the number of comparisons up. Every finished sort adds a point; the three guide lines are n(n − 1)/2, the worst case of merge sort and n − 1."></canvas>
+        <div class="legend">
+          <span style="color:var(--so-bub)" data-en-html="<span class=&quot;sym&quot;>●</span>Bubble"><span class="sym">●</span>泡沫</span>
+          <span style="color:var(--so-sel)" data-en-html="<span class=&quot;sym&quot;>■</span>Selection"><span class="sym">■</span>選擇</span>
+          <span style="color:var(--so-ins)" data-en-html="<span class=&quot;sym&quot;>▲</span>Insertion"><span class="sym">▲</span>插入</span>
+          <span style="color:var(--so-mer)" data-en-html="<span class=&quot;sym&quot;>◆</span>Merge"><span class="sym">◆</span>合併</span>
+          <span style="color:var(--so-qui)" data-en-html="<span class=&quot;sym&quot;>✕</span>Quick"><span class="sym">✕</span>快速</span>
+        </div>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;solid&quot;></i>n(n − 1)/2"><i class="solid"></i>n(n − 1)/2</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Merge sort, worst case"><i class="dash"></i>合併排序最壞</span>
+          <span data-en-html="<i class=&quot;dot&quot;></i>n − 1"><i class="dot"></i>n − 1</span>
+        </div>
+        <p class="chart-cap" data-en="Every sort that runs to the end adds a point (a race adds five). The points stay when you change the data; “Clear all” removes them.">每跑完一次排序就加一個點（五種一起比一次加五個）。換資料時點會留著，按「全部清除」才清掉。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Data">資料</h2>
+          <div class="slider"><label for="nn" data-en="Number of values n">資料個數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="5" max="64" step="1" value="24" data-decimals="0"></div>
+          <div class="chips" id="shapeChips" role="group" aria-label="資料的樣子" data-en-aria-label="Shape of the data">
+            <button type="button" data-shape="random" aria-pressed="true" data-en="Random">亂序</button>
+            <button type="button" data-shape="nearly" aria-pressed="false" data-en="Nearly sorted">幾乎排好</button>
+            <button type="button" data-shape="reversed" aria-pressed="false" data-en="Reversed">反序</button>
+            <button type="button" data-shape="few" aria-pressed="false" data-en="Many duplicates">很多重複</button>
+            <button type="button" data-shape="sorted" aria-pressed="false" data-en="Sorted">已排好</button>
+            <button type="button" data-shape="custom" aria-pressed="false" data-en="Custom">自訂</button>
+          </div>
+          <div class="rowline" id="shuffleRow">
+            <button id="shuffle" type="button" data-en="Shuffle">洗牌</button>
+            <span class="seedinfo" id="seedInfo"></span>
+          </div>
+          <div class="custom" id="customBox" hidden>
+            <label for="custom" data-en="Your own data: 2–64 whole numbers from 1 to 99, separated by spaces or commas">自訂資料：2–64 個 1 到 99 的整數，用空格或逗號分開</label>
+            <div class="inrow">
+              <input id="custom" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="400" value="5 2 8 2 9 1 7 3" aria-describedby="customMsg">
+              <button id="apply" type="button" class="primary" data-en="Apply">套用</button>
+            </div>
+            <p class="msg" id="customMsg" aria-live="polite"></p>
+          </div>
+          <div class="checks">
+            <label><input id="ties" type="checkbox" checked><span data-en="Mark the original order of equal values">標出相同值的原本順序</span></label>
+          </div>
+          <p class="hint" data-en="Random, nearly sorted and many-duplicates data come from a seeded random generator: “Shuffle” gives the next one. Changing the data starts again from step 0.">亂序、幾乎排好、很多重複是用有種子的亂數產生的，按「洗牌」換下一份。換資料會回到第 0 步。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Algorithm">演算法</h2>
+          <div class="chips" id="algoChips" role="group" aria-label="排序演算法" data-en-aria-label="Sorting algorithm">
+            <button type="button" data-algo="bubble" aria-pressed="true" data-en-html="<span class=&quot;mk&quot; style=&quot;color:var(--so-bub)&quot;>●</span>Bubble sort"><span class="mk" style="color:var(--so-bub)">●</span>泡沫排序</button>
+            <button type="button" data-algo="selection" aria-pressed="false" data-en-html="<span class=&quot;mk&quot; style=&quot;color:var(--so-sel)&quot;>■</span>Selection sort"><span class="mk" style="color:var(--so-sel)">■</span>選擇排序</button>
+            <button type="button" data-algo="insertion" aria-pressed="false" data-en-html="<span class=&quot;mk&quot; style=&quot;color:var(--so-ins)&quot;>▲</span>Insertion sort"><span class="mk" style="color:var(--so-ins)">▲</span>插入排序</button>
+            <button type="button" data-algo="merge" aria-pressed="false" data-en-html="<span class=&quot;mk&quot; style=&quot;color:var(--so-mer)&quot;>◆</span>Merge sort"><span class="mk" style="color:var(--so-mer)">◆</span>合併排序</button>
+            <button type="button" data-algo="quick" aria-pressed="false" data-en-html="<span class=&quot;mk&quot; style=&quot;color:var(--so-qui)&quot;>✕</span>Quicksort"><span class="mk" style="color:var(--so-qui)">✕</span>快速排序</button>
+          </div>
+          <p class="hint" id="raceHint" hidden data-en="“All five at once” runs every algorithm on the same data; in each step every algorithm does one basic operation.">「五種一起比」讓五種演算法排同一份資料；每一步，每種演算法各做一個基本操作。</p>
+          <div class="checks">
+            <label><input id="med3" type="checkbox"><span data-en="Median of three (quicksort pivot)">三數取中（快速排序的樞紐）</span></label>
+          </div>
+          <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0" max="100" step="1" value="34" data-decimals="0"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readSingle">
+            <dt data-en="Comparisons C">比較次數 C</dt><dd id="rC">—</dd>
+            <dt data-en="Swaps S">交換次數 S</dt><dd id="rS">—</dd>
+            <dt data-en="Writes W">寫入次數 W</dt><dd id="rW">—</dd>
+            <dt data-en="Step">步數</dt><dd id="rStep">—</dd>
+            <dt data-en="Inversions in the data">資料的逆序數</dt><dd id="rInv">—</dd>
+            <dt data-en="Stable?">穩定嗎</dt><dd id="rStable">—</dd>
+            <dt data-en="Recursion depth">遞迴深度</dt><dd id="rDepth">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note" id="eqNote"></p>
+          <div id="raceBox" hidden>
+            <div class="tablewrap"><table id="raceTable"></table></div>
+            <p class="eq-note" id="raceNote"></p>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Sorting, and counting the work">排序，以及怎麼數「做了多少事」</h3>
+      <p data-en-html="Sorting means putting a list into increasing order. To compare two algorithms, timing them in seconds is not very fair — it depends on the computer and the language. Instead we count the <strong>basic operations</strong>: how many times two values are compared (comparisons \(C\)), how many times two positions are swapped (swaps \(S\)), and, for merge sort, how many times a value is written back into the list (writes \(W\)). These are the “number of executed instructions” that the curriculum asks about. What matters most is how the count grows with the length \(n\): like \(n^{2}\), or like \(n\log_2 n\).">排序就是把一串資料由小到大排好。要比較兩個演算法誰快，用秒數量不太公平——會受電腦和程式語言影響。我們改數<strong>基本操作</strong>做了幾次：兩個資料值比較了幾次（比較次數 \(C\)）、兩個位置交換了幾次（交換次數 \(S\)），以及合併排序把值寫回陣列幾次（寫入次數 \(W\)）。這就是課綱說的「指令執行次數」。最重要的是次數隨資料長度 \(n\) 怎麼成長：像 \(n^{2}\)，還是像 \(n\log_2 n\)。</p>
+
+      <h3 data-en="Five ways to sort">五種排序</h3>
+      <ul>
+        <li data-en-html="<strong>Bubble sort</strong>: walk from left to right comparing neighbours, and swap them when the left one is larger. After one pass the largest value has “bubbled up” to the right end. This version stops early as soon as a whole pass makes no swap."><strong>泡沫排序</strong>：從左到右比較相鄰的兩個，左邊比較大就交換；一輪下來，最大的值會「浮」到最右邊。這個版本只要有一整輪都沒有交換，就提早結束。</li>
+        <li data-en-html="<strong>Selection sort</strong>: in every pass, look through the unsorted part for the smallest value and swap it into the first unsorted position (no swap if it is already there)."><strong>選擇排序</strong>：每一輪從還沒排好的部分找出最小值，和那一輪的第一格交換（最小值本來就在那裡就不換）。</li>
+        <li data-en-html="<strong>Insertion sort</strong>: like sorting a hand of cards. The left part is already in order; the next value is swapped one place to the left at a time until the value on its left is not larger."><strong>插入排序</strong>：像整理手上的撲克牌：左邊是已經排好的部分，把下一張一格一格往左交換，直到左邊那張不比它大。</li>
+        <li data-en-html="<strong>Merge sort</strong> (top-down): split the list into two halves (\(\lceil n/2 \rceil\) values on the left, \(\lfloor n/2 \rfloor\) on the right), sort each half, then merge the two piles — compare the front values of the two piles and write the smaller one back. Merging needs a copy of the values in a <em>buffer</em>, so merge sort uses extra memory."><strong>合併排序</strong>（由上而下）：把資料切成兩半（左半 \(\lceil n/2 \rceil\) 個、右半 \(\lfloor n/2 \rfloor\) 個），各自排好，再把兩疊合併：比較兩疊最前面的值，把小的寫回陣列。合併時要先把資料複製到<em>暫存區</em>，所以需要額外的記憶空間。</li>
+        <li data-en-html="<strong>Quicksort</strong> (Lomuto partition): take the last value of the section as the <em>pivot</em>, move every value that is not larger than the pivot to the front, then swap the pivot right after them — it is now in its final place. Then sort the two sides the same way. With <strong>median of three</strong>, the first, middle and last values are compared first and their median becomes the pivot."><strong>快速排序</strong>（Lomuto 分割）：取區段最後一個值當<em>樞紐</em>，把不比樞紐大的值依序換到前面，再把樞紐換到它們後面——樞紐就在最後的位置上了；接著用同樣的方法排左右兩段。<strong>三數取中</strong>則先比較第一個、中間、最後一個，取三者的中位數當樞紐。</li>
+      </ul>
+
+      <h3 data-en="How many comparisons?">要比較幾次？</h3>
+      <p data-en-html="Bubble sort, insertion sort and quicksort (last value as pivot) need at most \(\frac{n(n-1)}{2}\) comparisons, and selection sort needs exactly that many whatever the data looks like:">泡沫、插入與快速排序（取最後一個當樞紐）最多要比較 \(\frac{n(n-1)}{2}\) 次；選擇排序則不管資料長怎樣，都剛好比這麼多次：</p>
+      <div class="formula">\[ (n-1) + (n-2) + \cdots + 2 + 1 = \frac{n(n-1)}{2} \]</div>
+      <p data-en-html="On data that is already sorted, bubble sort and insertion sort need only \(n - 1\) comparisons — but quicksort with the last value as pivot hits its worst case \(\frac{n(n-1)}{2}\), because every pivot is the largest value of its section and each partition removes only one value.">對已經排好的資料，泡沫排序與插入排序都只要 \(n - 1\) 次；快速排序（取最後一個當樞紐）卻剛好碰上最壞的 \(\frac{n(n-1)}{2}\) 次，因為每次樞紐都是區段裡最大的值，分割一次只少掉一個。</p>
+      <p data-en-html="Merging two piles of \(m\) values in total takes at most \(m - 1\) comparisons, so the worst case \(W(n)\) of merge sort obeys \(W(n) = W(\lceil n/2\rceil) + W(\lfloor n/2\rfloor) + n - 1\) with \(W(1) = 0\). Its solution is">把總共 \(m\) 個值的兩疊合併，最多比較 \(m - 1\) 次，所以合併排序最壞的比較次數 \(W(n)\) 滿足 \(W(n) = W(\lceil n/2\rceil) + W(\lfloor n/2\rfloor) + n - 1\)、\(W(1) = 0\)，解出來是</p>
+      <div class="formula">\[ W(n) = n\lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1 \]</div>
+      <p data-en-html="For \(n = 64\) that is 321 comparisons, far fewer than \(\frac{n(n-1)}{2} = 2016\). The number of writes does not depend on the data at all: every level of merging writes every value back once, which is exactly \(n\log_2 n\) when \(n\) is a power of 2.">例如 \(n = 64\) 時是 321 次，遠少於 \(\frac{n(n-1)}{2} = 2016\) 次。寫入次數則和資料無關：每一層合併都把所有值寫回一次，\(n\) 是 2 的冪時剛好 \(n\log_2 n\) 次。</p>
+
+      <h3 data-en="Inversions">逆序數</h3>
+      <p data-en-html="A pair of positions \(i &lt; j\) with \(a_i &gt; a_j\) is called an <strong>inversion</strong>. Bubble sort and insertion sort only ever swap two neighbours, and only when the left one is larger, so every swap removes exactly one inversion: both make exactly as many swaps as the data has inversions. Averaged over all orders of \(n\) different values there are \(\frac{n(n-1)}{4}\) inversions — half of the maximum.">位置 \(i &lt; j\) 而 \(a_i &gt; a_j\) 的一對，叫做一個<strong>逆序</strong>。泡沫排序和插入排序都只交換相鄰的兩個，而且只在左邊比較大時才交換，每換一次剛好消掉一個逆序，所以兩者的交換次數都等於資料的逆序數。把 \(n\) 個不同的值所有可能的排列平均起來，逆序數是 \(\frac{n(n-1)}{4}\)——最大值的一半。</p>
+
+      <h3 data-en="Stability">穩定性</h3>
+      <p data-en-html="A sort is <strong>stable</strong> if equal values keep their original order. Switch on “Mark the original order of equal values”: equal values are labelled A, B, C, … and shaded from light to dark. Bubble, insertion and merge sort only let a later value jump over an earlier one when it is strictly smaller, so they are stable. Selection sort and quicksort make long-distance swaps that can carry a value past an equal one, so they are not stable. “Not stable” does not mean “always scrambles” — it means there is no guarantee.">如果相同的值排完之後仍保持原本的先後順序，這個排序就是<strong>穩定</strong>的。打開「標出相同值的原本順序」，相同的值會標上 A、B、C……並由淺到深上色。泡沫、插入、合併排序只在後面的值嚴格比較小時，才讓它越過前面的值，所以穩定；選擇排序與快速排序會做長距離的交換，可能把一個值帶著跳過和它相同的值，所以不穩定。「不穩定」不是「一定會打亂」，而是「不保證不打亂」。</p>
+
+      <h3 data-en="The limit for comparison sorts">比較排序的極限</h3>
+      <p data-en-html="Any method that sorts only by comparing two values at a time needs at least \(\lceil \log_2 n! \rceil\) comparisons in its worst case: \(n\) different values can come in \(n!\) orders, each comparison has only two outcomes, and \(k\) comparisons can tell apart at most \(2^{k}\) cases. For \(n = 64\) this lower bound is 296 comparisons — merge sort’s 321 is already close.">任何只靠「一次比較兩個值」來排序的方法，最壞情況至少要比較 \(\lceil \log_2 n! \rceil\) 次：\(n\) 個不同的值有 \(n!\) 種排列，每次比較只有兩種結果，\(k\) 次比較最多只能分辨 \(2^{k}\) 種情況。\(n = 64\) 時這個下限是 296 次——合併排序的 321 次已經很接近了。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Already sorted</strong>: bubble sort and insertion sort finish almost at once, while quicksort (without median of three) is at its slowest. Why?"><strong>已經排好</strong>：泡沫和插入排序幾乎一下就結束，快速排序（不用三數取中）卻最慢。為什麼？</li>
+        <li data-en-html="<strong>Selection sort does not care</strong>: its comparisons are the same for every kind of data. What about its swaps? How many does it make on reversed data?"><strong>選擇排序不看資料</strong>：它在各種資料上的比較次數都一樣。交換次數呢？反序的資料它換了幾次？</li>
+        <li data-en-html="<strong>Nearly sorted</strong>: race all five. Who finishes first, and by how much?"><strong>幾乎排好</strong>：讓五種一起比。誰最先跑完？領先多少？</li>
+        <li data-en-html="<strong>Many duplicates</strong>: which algorithms scramble the A, B, C order of equal values? Does quicksort get faster or slower with median of three here?"><strong>很多重複</strong>：哪幾種把相同值的 A、B、C 順序打亂了？這時三數取中讓快速排序變快還是變慢？</li>
+        <li data-en-html="<strong>The chart</strong>: run bubble sort on reversed data for several values of \(n\). What shape do the points make? And merge sort?"><strong>看圖</strong>：用反序的資料、不同的 \(n\) 跑幾次泡沫排序，點排成什麼形狀？合併排序呢？</li>
+        <li data-en-html="<strong>A small theorem</strong>: can insertion sort ever make more comparisons than bubble sort on the same data? (It cannot — try to see why.)"><strong>一個小定理</strong>：同一份資料，插入排序的比較次數會不會比泡沫排序多？（不會——試著想想為什麼。）</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="Before anything moves, the page really runs the chosen sort in JavaScript and records every comparison, swap and write as a list of steps; the picture then replays that list one step at a time (“Step back” replays from the start up to the previous step). All counts are counted, never taken from a formula.">開始播放之前，頁面已經用 JavaScript 把選好的排序實際跑一遍，把每一次比較、交換、寫入記成步驟清單；畫面再照著清單一步一步播放（「上一步」是從頭重播到前一步）。所有計數都是實際數出來的，不是用公式算的。</li>
+        <li data-en="Definitions: a comparison is a comparison between two data values (loop counters do not count); a swap is counted only when two different positions really exchange values; a write is merge sort putting a value back into the list (copying into the buffer is not counted). Recursion depth is the number of nested calls that are still working on a section of at least 2 values. In a race, every step lets each algorithm do one basic operation (a comparison, a swap or a write), so the first to finish is the one with the fewest basic operations.">計數的定義：比較只算兩個資料值之間的比較（迴圈變數的比較不算）；交換只算真的交換了兩個不同位置；寫入是合併排序把值寫回陣列（複製到暫存區不算）。遞迴深度是同時進行中、而且區段至少還有 2 個值的呼叫層數。「五種一起比」每一步讓每種演算法各做一個基本操作（一次比較、交換或寫入），所以先跑完的，就是基本操作總數最少的。</li>
+        <li data-en="Random, nearly sorted and many-duplicates data come from a seeded pseudo-random generator (mulberry32). Nearly sorted data is sorted data with about n/8 random swaps of neighbours; many-duplicates data uses only the four values 1–4. Custom data is read only in your browser and is limited to 64 values.">亂序、幾乎排好、很多重複用有種子的虛擬亂數（mulberry32）產生。幾乎排好是把排好的資料做大約 n/8 次隨機的相鄰交換；很多重複只用 1–4 四種值。自訂資料只在你的瀏覽器裡處理，最多 64 個。</li>
+        <li data-en="The unit tests check that all five sorts give the right answer on every order of up to 7 values and on small lists with repeats; that bubble and insertion sort swap exactly once per inversion; that selection sort always makes n(n − 1)/2 comparisons and n minus the number of cycles of swaps; by trying every order of up to 8 values, that the worst case of merge sort matches the formula above and the best case of quicksort matches C(n) = n − 1 + C(⌊(n − 1)/2⌋) + C(⌈(n − 1)/2⌉); which sorts are stable; and that replaying the steps gives the same result as running the sort directly.">單元測試檢查：五種排序在 7 個以內所有排列、以及有重複值的小資料上都排對；泡沫與插入排序每個逆序剛好交換一次；選擇排序的比較次數固定是 n(n − 1)/2、交換次數是 n 減去排列的循環數；把 8 個以內的所有排列都試過，確認合併排序的最壞次數等於上面的公式、快速排序的最少次數等於 C(n) = n − 1 + C(⌊(n − 1)/2⌋) + C(⌈(n − 1)/2⌉)；哪些排序穩定；以及一步步重播和直接排序的結果相同。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, 108 guidelines, Information Technology): A-V-3 analysis of algorithm efficiency; P-V-3 programming important algorithms; A-V-2 concepts and applications of important algorithms (divide and conquer: merge sort and quicksort); and the sorting and efficiency items A-V-4 to A-V-6 of the advanced elective “Advanced Programming”.">課綱對應：資A-V-3 演算法效能分析；資P-V-3 重要演算法的程式設計實作；資A-V-2 重要演算法的概念與應用（分而治之：合併排序、快速排序）；以及加深加廣選修「進階程式設計」裡排序與效能比較的條目（資A-V-4～6）。</li>
+        <li data-en="D. E. Knuth, The Art of Computer Programming, Vol. 3: Sorting and Searching (2nd ed., 1998): §5.1.1 inversions, §5.2.1 insertion sort, §5.2.2 sorting by exchanging (bubble sort and quicksort), §5.2.3 selection sort, §5.2.4 merging, §5.3.1 minimum-comparison sorting.">Knuth, D. E.《The Art of Computer Programming》第 3 卷 Sorting and Searching（第 2 版，1998）：5.1.1 節逆序、5.2.1 節插入排序、5.2.2 節交換排序（泡沫排序、快速排序）、5.2.3 節選擇排序、5.2.4 節合併排序、5.3.1 節比較次數最少的排序。</li>
+        <li data-en="T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms (3rd ed., 2009): chapter 2 (insertion sort, merge sort; problems 2-2 on bubble sort and 2-4 on inversions), chapter 7 (quicksort with the Lomuto partition), section 8.1 (lower bounds for sorting).">Cormen、Leiserson、Rivest、Stein《Introduction to Algorithms》（第 3 版，2009）：第 2 章（插入排序、合併排序；習題 2-2 泡沫排序、2-4 逆序）、第 7 章（快速排序與 Lomuto 分割）、8.1 節（排序的下限）。</li>
+        <li data-en="C. A. R. Hoare (1962), “Quicksort”, The Computer Journal 5(1): 10–16. Median of three: R. Sedgewick (1978), “Implementing Quicksort programs”, Communications of the ACM 21(10): 847–857.">Hoare, C. A. R. (1962) “Quicksort”, The Computer Journal 5(1): 10–16。三數取中：Sedgewick, R. (1978) “Implementing Quicksort programs”, Communications of the ACM 21(10): 847–857。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Sorting_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Sorting algorithm</a>, <a href=&quot;https://en.wikipedia.org/wiki/Merge_sort&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Merge sort</a>, <a href=&quot;https://en.wikipedia.org/wiki/Quicksort&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Quicksort</a>, <a href=&quot;https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Inversion</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Sorting_algorithm" target="_blank" rel="noopener">Sorting algorithm</a>、<a href="https://en.wikipedia.org/wiki/Merge_sort" target="_blank" rel="noopener">Merge sort</a>、<a href="https://en.wikipedia.org/wiki/Quicksort" target="_blank" rel="noopener">Quicksort</a>、<a href="https://en.wikipedia.org/wiki/Inversion_(discrete_mathematics)" target="_blank" rel="noopener">Inversion</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/sorting-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/sorting.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="sorting"></script>
+  <script src="js/missions/sorting.js"></script>
+  <script src="js/stats.js" data-module="sorting"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
