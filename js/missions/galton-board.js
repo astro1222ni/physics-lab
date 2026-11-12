@@ -10,6 +10,13 @@
   'use strict';
   if (!window.LabMission) return;
   const near = function (v, want, tol) { return isFinite(v) && Math.abs(v - want) <= tol; };
+  /** 記住最近 20 次選取的格子（每個任務各自一份），傳回清單，最後一個是這一次 */
+  const pushSel = function (mem, d) {
+    const list = mem.sels || (mem.sels = []);
+    list.push({ n: d.n, p: d.p, k: d.k, prob: d.prob, paths: d.paths });
+    if (list.length > 20) list.shift();
+    return list;
+  };
 
   LabMission.register('galton-board', [
     {
@@ -55,7 +62,8 @@
       id: 'galton-board-7', level: 5,
       title: { zh: '鐘形的影子', en: 'In the shadow of the bell' },
       desc: { zh: '調出一個釘板，讓常態近似（含連續性修正）每一格的誤差都小於 0.0016。', en: 'Set up a board on which the normal approximation (with continuity correction) is off by less than 0.0016 in every bin.' },
-      check: function (ev) { return ev.type === 'board' && ev.data.normErr < 0.0016; }
+      // 11/13 修 B-M2：p = 0 或 1 時分布退化成一格、常態近似沒有意義（誤差算成 0），要 0 < p < 1 才算
+      check: function (ev) { const d = ev.data; return ev.type === 'board' && d.p > 0 && d.p < 1 && d.normErr < 0.0016; }
     },
     {
       id: 'galton-board-8', level: 6,
@@ -112,10 +120,109 @@
     },
     {
       id: 'galton-board-h3', level: 5, hidden: true,
-      riddle: { zh: '眾人的腳步加起來，不多不少，正好落在預言的那一點。', en: 'Add up everyone’s steps: not one more, not one less, they land exactly where it was foretold.' },
+      // 11/13 修 T11：提示要帶出「上百人」的份量（判定 N ≥ 100 不改）
+      riddle: { zh: '上百個人各走各的路，腳步加起來，不多不少，正好落在預言的那一點。', en: 'A hundred travellers or more, each on a road of their own: add up all their steps, not one more, not one less, and they land exactly where it was foretold.' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'drop' && !d.hidden && d.N >= 100 && d.p > 0 && d.p < 1 && Math.abs(d.mean - d.n * d.p) < 1e-9;
+      }
+    },
+    // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------
+    {
+      // 鏡像對稱：P(X = k | n, p) = P(X = n − k | n, 1 − p)。在至少 8 層、p 偏一邊（|p − 0.5| ≥ 0.25）的釘板選一格（離中間至少 2 格），把 p 換成 1 − p，再選鏡像的那一格
+      id: 'galton-board-h4', level: 4, hidden: true,
+      riddle: { zh: '把世界左右翻過來，那條路的機會一點也沒變。', en: 'Flip the world from left to right, and that road’s chance does not change at all.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'select') return false;
+        const s = pushSel(mem, ev.data), a = s[s.length - 2], c = s[s.length - 1];
+        if (!a || a.n !== c.n || a.n < 8 || !(a.p > 0 && a.p < 1) || Math.abs(a.p - 0.5) < 0.25 - 1e-9 || Math.abs(2 * a.k - a.n) < 4) return false;
+        return Math.abs(a.p + c.p - 1) < 1e-9 && c.k === c.n - a.k && a.k !== c.k && Math.abs(a.prob - c.prob) < 1e-12;
+      }
+    },
+    {
+      // 期望值 np 都是 3 的四個釘板（例如 4 × 0.75、5 × 0.6、10 × 0.3、12 × 0.25）：中心一樣，變異數 3(1 − p) 不一樣
+      id: 'galton-board-h5', level: 5, hidden: true,
+      riddle: { zh: '四支隊伍走向同一個中心，有的散得開，有的收得緊。', en: 'Four parties march to the same centre; some spread out wide, some keep close.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'board' || !(d.p > 0 && d.p < 1) || !near(d.mean, 3, 1e-9)) return false;
+        mem.ns = mem.ns || {}; mem.ns[d.n] = true;
+        return Object.keys(mem.ns).length >= 4;
+      }
+    },
+    {
+      // 巴斯卡法則 C(n + 1, k) = C(n, k − 1) + C(n, k)：在至少 6 層的釘板選相鄰兩格（離兩邊都至少 2 格），再到多一層的釘板選它們下方的那一格
+      id: 'galton-board-h6', level: 6, hidden: true,
+      riddle: { zh: '兩條相鄰的小路，在下一層匯成一條。', en: 'Two neighbouring lanes merge into one on the next row.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'select') return false;
+        const s = pushSel(mem, ev.data), n = s.length;
+        if (n < 3) return false;
+        const a = s[n - 3], b = s[n - 2], c = s[n - 1], lo = Math.min(a.k, b.k), hi = Math.max(a.k, b.k);
+        return a.n === b.n && a.n >= 6 && c.n === a.n + 1 && hi - lo === 1 && lo >= 2 && hi <= a.n - 2 && c.k === hi && c.paths === a.paths + b.paths;
+      }
+    },
+    {
+      // 卜瓦松極限：層數多、p 很小時，一次都不往右（第 0 格）的機率 (1 − p)^n ≈ e^(−np)；np 接近 1 時接近 1/e ≈ 0.3679
+      id: 'galton-board-h7', level: 7, hidden: true,
+      riddle: { zh: '機會很多，每一次都很渺茫；一次也沒碰上的可能，是一個有名常數的倒數。', en: 'Many chances, each one slim; the chance of never once succeeding is the reciprocal of a famous constant.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'select' || d.n < 12) return false;
+        const edge = (d.k === 0 && d.p > 0 && d.p <= 0.1 + 1e-9) || (d.k === d.n && d.p < 1 && d.p >= 0.9 - 1e-9);
+        return edge && Math.abs(d.prob - 1 / Math.E) < 0.005;
+      }
+    },
+    {
+      // 辛馬斯特的 3003：C(14, 6) = C(15, 5) = 3003，路徑數相同、出現在兩個不同層數的釘板（120 = C(10, 3) = C(16, 2) 太小不算）
+      id: 'galton-board-h8', level: 8, hidden: true,
+      riddle: { zh: '同一個數，在兩座高度不同的山上各被走到一次，而且它比一千還大。', en: 'The same number is reached on two mountains of different heights, and it is greater than a thousand.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'select') return false;
+        const s = pushSel(mem, ev.data), a = s[s.length - 2], c = s[s.length - 1];
+        const inner = function (x) { return x.k >= 2 && x.k <= x.n - 2; };
+        return !!a && a.n !== c.n && inner(a) && inner(c) && a.paths === c.paths && c.paths >= 1000;
+      }
+    },
+    {
+      // 曲棍球棒恆等式：C(r, r) + C(r + 1, r) + … + C(m, r) = C(m + 1, r + 1)。從第 r 層起，每層選第 r 格（或從右邊數），最後在下一層選轉角那一格
+      id: 'galton-board-h9', level: 9, hidden: true,
+      riddle: { zh: '沿著斜坡一路撿起來，總數就藏在轉角的下一格。', en: 'Pick up everything along the slope; the total hides one step past the bend.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'select') return false;
+        const s = pushSel(mem, ev.data), c = s[s.length - 1];
+        function stick(key) {
+          const r = key(c) - 1;
+          if (r < 1) return false;
+          let sum = 0;
+          for (let j = 1; j < s.length; j++) {
+            const x = s[s.length - 1 - j];
+            if (x.n !== c.n - j || key(x) !== r) return false;
+            sum += x.paths;
+            if (x.n === r) return j >= 3 && sum === c.paths;
+          }
+          return false;
+        }
+        return stick(function (x) { return x.k; }) || stick(function (x) { return x.n - x.k; });
+      }
+    },
+    {
+      // 巴斯卡三角形的緩坡對角線加起來是費氏數：C(m, 0) + C(m − 1, 1) + C(m − 2, 2) + … = F(m + 1)（m ≥ 6，整條都要選到，順序可以倒過來，也可以從右邊數）
+      id: 'galton-board-h10', level: 10, hidden: true,
+      riddle: { zh: '在三角形裡走一條緩坡，把路上的數全部加起來，兔子就跑出來了。', en: 'Walk a gentle slope through the triangle and add up every number on the way: out come the rabbits.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'select') return false;
+        const s = pushSel(mem, ev.data), c = s[s.length - 1];
+        function diag(m, mirror) {
+          const L = Math.floor(m / 2) + 1;
+          if (m < 6 || s.length < L) return false;
+          const tail = s.slice(s.length - L);
+          const want = [];
+          for (let i = 0; i < L; i++) want.push({ n: m - i, k: mirror ? m - 2 * i : i });
+          const same = function (list) { return list.every(function (w, i) { return tail[i].n === w.n && tail[i].k === w.k; }); };
+          return same(want) || same(want.slice().reverse());
+        }
+        return diag(c.n + c.k, false) || diag(2 * c.n - c.k, true);
       }
     }
   ]);

@@ -958,7 +958,8 @@
   window.__gb = {
     state: state,
     setHidden: function (p) { startHidden(); state.hidden.p = p; state.P = G.pmf(state.n, p); dirty = true; requestDraw(); },
-    seed: function (s) { rand = G.rng(s); }
+    seed: function (s) { rand = G.rng(s); },
+    binPt: function (k) { return L ? [L.left + (k + 0.5) * L.bw, L.binsTop + L.binsH / 2] : null; }
   };
 
   // =====================================================================
