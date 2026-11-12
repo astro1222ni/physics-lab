@@ -43,11 +43,13 @@ window.LAB_MISSION_MODULES = [
   { id: 'moon-phases', zh: '月相與日月食', en: 'Moon Phases and Eclipses' },
   { id: 'earthquake', zh: '地震波與震央定位', en: 'Seismic Waves and Locating an Epicenter' },
   { id: 'torque-balance', zh: '力矩與靜力平衡', en: 'Torque and Static Equilibrium' },
-  { id: 'energy-coaster', zh: '雲霄飛車與力學能守恆', en: 'Roller Coaster and Conservation of Mechanical Energy' }
+  { id: 'energy-coaster', zh: '雲霄飛車與力學能守恆', en: 'Roller Coaster and Conservation of Mechanical Energy' },
+  { id: 'seasons', zh: '四季與太陽軌跡', en: 'Seasons and the Sun\'s Path' },
+  { id: 'current-magnetic-field', zh: '電流的磁效應：直導線、線圈與螺線管的磁場', en: 'Magnetic Effects of Currents: Wires, Coils and Solenoids' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -73,5 +75,22 @@ window.LAB_MODULE_BRANCH = {
   'moon-phases': 'astro',
   'earthquake': 'geo',
   'torque-balance': 'mech',
-  'energy-coaster': 'mech'
+  'energy-coaster': 'mech',
+  'seasons': 'astro',
+  'current-magnetic-field': 'em'
+};
+
+/* 四個科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */
+window.LAB_SUBJECTS = [
+  { id: 'phy', zh: '物理', en: 'Physics', branches: ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'] },
+  { id: 'chem', zh: '化學', en: 'Chemistry', branches: [] },
+  { id: 'bio', zh: '生物', en: 'Biology', branches: [] },
+  { id: 'earth', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] }
+];
+/* 實驗代號 → 科目代號（phy、chem、bio、earth） */
+window.LAB_SUBJECT_OF = function (moduleId) {
+  const b = (window.LAB_MODULE_BRANCH || {})[moduleId];
+  const S = window.LAB_SUBJECTS;
+  for (let i = 0; i < S.length; i++) if (S[i].branches.indexOf(b) >= 0) return S[i].id;
+  return 'phy';
 };

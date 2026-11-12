@@ -1,355 +1,379 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/</loc>
+    <loc>https://lab.astroni.org/</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/leaderboard.html</loc>
+    <loc>https://lab.astroni.org/leaderboard.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/leaderboard.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/leaderboard.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/leaderboard.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/leaderboard.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/leaderboard.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/leaderboard.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/leaderboard.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/leaderboard.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/about.html</loc>
+    <loc>https://lab.astroni.org/daily.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/about.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/about.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/about.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/about.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/daily.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/daily.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/daily.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/daily.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/measurement.html</loc>
+    <loc>https://lab.astroni.org/about.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/measurement.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/measurement.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/measurement.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/measurement.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/about.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/about.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/about.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/about.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/free-fall.html</loc>
+    <loc>https://lab.astroni.org/measurement.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/free-fall.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/free-fall.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/free-fall.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/free-fall.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/measurement.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/measurement.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/measurement.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/measurement.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/projectile.html</loc>
+    <loc>https://lab.astroni.org/free-fall.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/projectile.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/projectile.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/projectile.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/projectile.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/free-fall.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/free-fall.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/free-fall.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/free-fall.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/newton-second.html</loc>
+    <loc>https://lab.astroni.org/projectile.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/newton-second.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/newton-second.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/newton-second.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/newton-second.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/projectile.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/projectile.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/projectile.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/projectile.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/incline-friction.html</loc>
+    <loc>https://lab.astroni.org/newton-second.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/incline-friction.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/incline-friction.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/incline-friction.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/incline-friction.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/newton-second.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/newton-second.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/newton-second.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/newton-second.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/atwood.html</loc>
+    <loc>https://lab.astroni.org/incline-friction.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/atwood.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/atwood.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/atwood.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/atwood.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/incline-friction.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/incline-friction.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/incline-friction.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/incline-friction.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/elevator.html</loc>
+    <loc>https://lab.astroni.org/atwood.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/elevator.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/elevator.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/elevator.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/elevator.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/atwood.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/atwood.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/atwood.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/atwood.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/circular-motion.html</loc>
+    <loc>https://lab.astroni.org/elevator.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/circular-motion.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/circular-motion.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/circular-motion.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/circular-motion.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/elevator.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/elevator.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/elevator.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/elevator.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/oscillation.html</loc>
+    <loc>https://lab.astroni.org/circular-motion.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/oscillation.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/oscillation.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/oscillation.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/oscillation.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/circular-motion.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/circular-motion.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/circular-motion.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/circular-motion.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/kepler.html</loc>
+    <loc>https://lab.astroni.org/oscillation.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/kepler.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/kepler.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/kepler.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/kepler.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/oscillation.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/oscillation.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/oscillation.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/oscillation.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/torque-balance.html</loc>
+    <loc>https://lab.astroni.org/kepler.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/torque-balance.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/torque-balance.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/torque-balance.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/torque-balance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/kepler.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/kepler.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/kepler.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/kepler.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/angular-momentum.html</loc>
+    <loc>https://lab.astroni.org/torque-balance.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/torque-balance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/torque-balance.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/torque-balance.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/torque-balance.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/energy-coaster.html</loc>
+    <loc>https://lab.astroni.org/angular-momentum.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/angular-momentum.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/angular-momentum.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/angular-momentum.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/angular-momentum.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/collision.html</loc>
+    <loc>https://lab.astroni.org/energy-coaster.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/collision.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/collision.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/collision.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/collision.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/energy-coaster.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/energy-coaster.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/energy-coaster.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/energy-coaster.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/ideal-gas.html</loc>
+    <loc>https://lab.astroni.org/collision.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ideal-gas.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/collision.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/collision.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/collision.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/collision.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/specific-heat.html</loc>
+    <loc>https://lab.astroni.org/ideal-gas.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/specific-heat.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/specific-heat.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/specific-heat.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/specific-heat.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ideal-gas.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ideal-gas.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ideal-gas.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ideal-gas.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/standing-waves.html</loc>
+    <loc>https://lab.astroni.org/specific-heat.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/standing-waves.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/standing-waves.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/standing-waves.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/standing-waves.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/specific-heat.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/specific-heat.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/specific-heat.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/specific-heat.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/ripple-tank.html</loc>
+    <loc>https://lab.astroni.org/standing-waves.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ripple-tank.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/standing-waves.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/standing-waves.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/standing-waves.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/standing-waves.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/doppler.html</loc>
+    <loc>https://lab.astroni.org/ripple-tank.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/doppler.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/doppler.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/doppler.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/doppler.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ripple-tank.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ripple-tank.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ripple-tank.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ripple-tank.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/resonance-tube.html</loc>
+    <loc>https://lab.astroni.org/doppler.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/resonance-tube.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/doppler.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/doppler.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/doppler.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/doppler.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/refraction.html</loc>
+    <loc>https://lab.astroni.org/resonance-tube.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/refraction.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/refraction.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/refraction.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/refraction.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/resonance-tube.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/resonance-tube.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/resonance-tube.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/resonance-tube.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/lens-mirror.html</loc>
+    <loc>https://lab.astroni.org/refraction.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/lens-mirror.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/lens-mirror.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/lens-mirror.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/lens-mirror.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/refraction.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/refraction.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/refraction.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/refraction.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/refractive-index.html</loc>
+    <loc>https://lab.astroni.org/lens-mirror.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/refractive-index.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/refractive-index.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/refractive-index.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/refractive-index.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/lens-mirror.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/lens-mirror.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/lens-mirror.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/lens-mirror.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/thin-lens.html</loc>
+    <loc>https://lab.astroni.org/refractive-index.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/thin-lens.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/thin-lens.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/thin-lens.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/thin-lens.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/refractive-index.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/refractive-index.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/refractive-index.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/refractive-index.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/slit-interference.html</loc>
+    <loc>https://lab.astroni.org/thin-lens.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/slit-interference.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/slit-interference.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/slit-interference.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/slit-interference.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/thin-lens.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/thin-lens.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/thin-lens.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/thin-lens.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/thin-film.html</loc>
+    <loc>https://lab.astroni.org/slit-interference.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/thin-film.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/thin-film.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/thin-film.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/thin-film.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/slit-interference.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/slit-interference.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/slit-interference.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/slit-interference.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/electric-field.html</loc>
+    <loc>https://lab.astroni.org/thin-film.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/electric-field.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/electric-field.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/electric-field.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/electric-field.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/thin-film.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/thin-film.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/thin-film.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/thin-film.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/capacitor.html</loc>
+    <loc>https://lab.astroni.org/electric-field.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/capacitor.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/capacitor.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/capacitor.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/capacitor.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/electric-field.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/electric-field.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/electric-field.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/electric-field.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/equipotential.html</loc>
+    <loc>https://lab.astroni.org/capacitor.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/equipotential.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/equipotential.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/equipotential.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/equipotential.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/capacitor.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/capacitor.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/capacitor.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/capacitor.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/magnetic-particle.html</loc>
+    <loc>https://lab.astroni.org/equipotential.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/magnetic-particle.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/magnetic-particle.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/magnetic-particle.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/magnetic-particle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/equipotential.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/equipotential.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/equipotential.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/equipotential.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/current-balance.html</loc>
+    <loc>https://lab.astroni.org/current-magnetic-field.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/current-balance.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/current-balance.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/current-balance.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/current-balance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/current-magnetic-field.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/current-magnetic-field.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/current-magnetic-field.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/current-magnetic-field.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/faraday.html</loc>
+    <loc>https://lab.astroni.org/magnetic-particle.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/faraday.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/faraday.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/faraday.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/faraday.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/magnetic-particle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/magnetic-particle.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/magnetic-particle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/magnetic-particle.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/microwave.html</loc>
+    <loc>https://lab.astroni.org/current-balance.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/microwave.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/microwave.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/microwave.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/microwave.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/current-balance.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/current-balance.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/current-balance.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/current-balance.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/dc-circuit.html</loc>
+    <loc>https://lab.astroni.org/faraday.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/faraday.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/faraday.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/faraday.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/faraday.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/ohms-law.html</loc>
+    <loc>https://lab.astroni.org/microwave.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/ohms-law.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/ohms-law.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/ohms-law.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/ohms-law.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/microwave.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/microwave.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/microwave.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/microwave.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/photoelectric.html</loc>
+    <loc>https://lab.astroni.org/dc-circuit.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/photoelectric.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/photoelectric.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/photoelectric.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/photoelectric.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/dc-circuit.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/dc-circuit.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/dc-circuit.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/dc-circuit.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/e-over-m.html</loc>
+    <loc>https://lab.astroni.org/ohms-law.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/e-over-m.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/e-over-m.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/e-over-m.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/e-over-m.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ohms-law.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ohms-law.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ohms-law.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ohms-law.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/hydrogen-spectrum.html</loc>
+    <loc>https://lab.astroni.org/photoelectric.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/hydrogen-spectrum.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/hydrogen-spectrum.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/hydrogen-spectrum.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/hydrogen-spectrum.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/photoelectric.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/photoelectric.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/photoelectric.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/photoelectric.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/radioactive-decay.html</loc>
+    <loc>https://lab.astroni.org/e-over-m.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/radioactive-decay.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/radioactive-decay.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/radioactive-decay.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/radioactive-decay.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/e-over-m.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/e-over-m.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/e-over-m.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/e-over-m.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/moon-phases.html</loc>
+    <loc>https://lab.astroni.org/hydrogen-spectrum.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/moon-phases.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/moon-phases.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/moon-phases.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/moon-phases.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hydrogen-spectrum.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/hydrogen-spectrum.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/hydrogen-spectrum.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hydrogen-spectrum.html"/>
   </url>
   <url>
-    <loc>https://astro1222ni.github.io/physics-lab/earthquake.html</loc>
+    <loc>https://lab.astroni.org/radioactive-decay.html</loc>
     <lastmod>2026-11-12</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/earthquake.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/earthquake.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/earthquake.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/earthquake.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/radioactive-decay.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/radioactive-decay.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/radioactive-decay.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/radioactive-decay.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/moon-phases.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/moon-phases.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/moon-phases.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/moon-phases.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/moon-phases.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/seasons.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/seasons.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/seasons.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/seasons.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/seasons.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/earthquake.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/earthquake.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/earthquake.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/earthquake.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/earthquake.html"/>
   </url>
 </urlset>

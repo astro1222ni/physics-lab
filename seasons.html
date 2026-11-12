@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611121021"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Seasons and the Sun's Path | Astro Ni Science Lab">四季與太陽軌跡｜Astro Ni 科學實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="選地點與日期，看太陽在天空走的路徑、日出日落的方位與時刻、正午高度與竿影長短；再用 3D 轉動地球，發現四季來自地軸傾斜，而不是日地距離。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/seasons.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/seasons.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/seasons.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/seasons.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="四季與太陽軌跡｜Astro Ni 科學實驗室">
+  <meta property="og:description" content="選地點與日期，看太陽在天空走的路徑、日出日落的方位與時刻、正午高度與竿影長短；再用 3D 轉動地球，發現四季來自地軸傾斜，而不是日地距離。">
+  <meta property="og:url" content="https://lab.astroni.org/seasons.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/seasons.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="四季與太陽軌跡的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"四季與太陽軌跡","alternateName":"Seasons and the Sun's Path","description":"選地點與日期，看太陽在天空走的路徑、日出日落的方位與時刻、正午高度與竿影長短；再用 3D 轉動地球，發現四季來自地軸傾斜，而不是日地距離。","url":"https://lab.astroni.org/seasons.html","image":"https://lab.astroni.org/img/og/seasons.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","從地球看星空（The Sky as Seen from Earth）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611121021">
+  <style>
+    /* 四季與太陽軌跡頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ss-sun: #e8970c; --ss-sun-text: #9a5c00; --ss-ocean: #2f6fb4; --ss-land: #6f9a4c; --ss-ice: #eef3f5; --ss-night: #0e1c33;
+      --ss-sky: #d6eaf8; --ss-dusk: #f2b27c; --ss-ground: #dfe7cf; --ss-soil: #b7a27c; --ss-pole: #7a5a3a;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ss-sun: #ffc24a; --ss-sun-text: #ffc24a; --ss-ocean: #2d6cb8; --ss-land: #5e8c43; --ss-ice: #dfe8ec; --ss-night: #060d1a;
+        --ss-sky: #1b3550; --ss-dusk: #7d4636; --ss-ground: #263325; --ss-soil: #5b4e38; --ss-pole: #c9a27a;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ss-sun: #ffc24a; --ss-sun-text: #ffc24a; --ss-ocean: #2d6cb8; --ss-land: #5e8c43; --ss-ice: #dfe8ec; --ss-night: #060d1a;
+      --ss-sky: #1b3550; --ss-dusk: #7d4636; --ss-ground: #263325; --ss-soil: #5b4e38; --ss-pole: #c9a27a;
+    }
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .ss button { min-height: 44px; }
+    .ss [hidden] { display: none !important; }
+    .ss .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ss .playbar > button { flex: 1 1 auto; }
+    .ss .playbar #play { font-weight: 700; min-width: 7.5em; }
+    .ss .playbar .seg { flex: 1 1 auto; }
+    .ss .playbar .seg button { flex: 1 1 0; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ss .stage .status { margin: 6px 4px 0; }
+    .ss .slider input[type="range"] { height: 28px; margin: 0; }
+    .ss .seg4 + .slider, .ss .datepick + .slider { margin-top: 18px; } /* 同 lab.css 的規則：按鈕列下方多留空間，數字的觸控範圍才有 44 px */
+    .ss .slider label sub, dl.readout sub, .ss .hint sub { font-size: .75em; }
+    .ss .checks label { min-height: 44px; }
+    .ss .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt .f { white-space: nowrap; }
+    .ss dl.readout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.em { font-weight: 700; color: var(--accent); }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    /* 地點與日期按鈕 */
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 2px 0 4px; }
+    html[lang="en"] .chips { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .chips button { padding: 4px 4px; line-height: 1.2; font-size: calc(13.5px * var(--fs, 1)); overflow-wrap: anywhere; }
+    .chips button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .seg4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 2px 0 4px; }
+    .seg4 button { padding: 4px 2px; line-height: 1.2; font-size: calc(13.5px * var(--fs, 1)); }
+    .seg4.jump button { font-size: calc(13px * var(--fs, 1)); }
+    .datepick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 2px 0 6px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .datepick input[type="date"] { font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; min-height: 44px; padding: 4px 8px; flex: 1 1 9em; min-width: 0; }
+    .locinfo { font-variant-numeric: tabular-nums; }
+    /* 下方的兩個小畫面：竿影俯視、同一束陽光 */
+    .subviews { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 12px; }
+    @media (max-width: 640px) { .subviews { grid-template-columns: minmax(0, 1fr); } }
+    .subviews figure { margin: 0; }
+    .subviews canvas { display: block; width: 100%; height: 300px; aspect-ratio: auto; border-radius: 8px; background: var(--canvas-bg); touch-action: pan-y pinch-zoom; cursor: default; }
+    .subviews figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .subviews figcaption b { color: var(--text); }
+    /* 全年變化 */
+    .yearcard { margin-top: 16px; }
+    .yearcard h2 { font-size: calc(16px * var(--fs, 1)); }
+    .yearcard .seg4 { max-width: 640px; }
+    #chart { display: block; width: 100%; height: 300px; margin-top: 8px; border-radius: 8px; background: var(--canvas-bg); touch-action: pan-y pinch-zoom; }
+    /* 2D／3D 檢視切換（與其他有 3D 的實驗相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .cam-bar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .k3-wrap { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; height: 460px; aspect-ratio: auto; border-radius: 8px; cursor: grab; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .k3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .k3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .k3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .k3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .k3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    .k3-hud span.m { color: var(--muted); font-weight: 500; }
+    .k3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Seasons and the Sun's Path"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 四季與太陽軌跡</nav>
+      <h1 data-en="Seasons and the Sun's Path">四季與太陽軌跡</h1>
+      <p data-en="As the Earth goes round the Sun, its spin axis stays tilted and keeps pointing toward Polaris. Pick a place and a date to see the Sun's path across the sky, where and when it rises and sets, how high it climbs at noon, how a pole's shadow moves, and how much sunlight falls on each square metre of ground. You will find that the seasons come from the tilted axis, not from the distance to the Sun — during the northern winter the Earth is actually closer to the Sun. Switch to 3D to turn the Earth and the sky dome yourself.">地球繞太陽公轉時，自轉軸一直斜斜地指向北極星。選一個地點與日期，看太陽在天空走的路徑、日出日落的方位與時刻、正午太陽有多高、竿子的影子怎麼移動，以及地面每平方公尺接收多少陽光。你會發現：四季是地軸傾斜造成的，不是因為離太陽遠近——北半球的冬天，地球反而離太陽比較近。切換到 3D 立體可以自己轉動地球與天球。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: pick Taipei, press “Dec solstice” and then “Noon”, and look at the shadow’s length; then try “Jun solstice”.">試試看：選「臺北」，按「冬至」再按「正午」看竿影多長，再換「夏至」比比看。</p>
+    <div class="lab ss">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D diagram">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 場景" data-en-aria-label="3D scene" hidden>
+          <button type="button" id="sceneOrbit" aria-pressed="true" data-en="Earth around the Sun" title="地球繞太陽公轉：地軸傾斜、晝夜分界線、直射點" data-en-title="The Earth orbiting the Sun: tilted axis, day–night line, subsolar point">地球繞日</button>
+          <button type="button" id="sceneSky" aria-pressed="false" data-en="Observer's sky" title="觀察者的天球：地平面、太陽軌跡、竿影" data-en-title="The observer's sky dome: horizon, the Sun's path, the pole's shadow">觀察者的天空</button>
+          <button type="button" id="camEarth" aria-pressed="false" data-en="Close-up of the Earth" title="把相機移到地球旁邊，跟著地球走" data-en-title="Move the camera next to the Earth and follow it">近看地球</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="四季與太陽軌跡模擬畫布：左邊是地球繞太陽的軌道與四季的位置，右邊是觀察者看到的天空與太陽軌跡"></canvas>
+        <div id="view3" class="k3-wrap"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">播放</button>
+          <div class="seg" role="group" aria-label="播放方式" data-en-aria-label="Play mode">
+            <button type="button" id="modeDay" aria-pressed="true" data-en="One day" title="時間前進，日期不變" data-en-title="Time runs, the date stays the same">一天</button>
+            <button type="button" id="modeYear" aria-pressed="false" data-en="One year" title="日期前進，每天都在同一個時刻" data-en-title="The date runs, always at the same clock time">一年</button>
+          </div>
+          <button id="clear" type="button" data-en="Clear all" title="清除所有記錄的竿影軌跡，滑桿設定不變" data-en-title="Clear all recorded shadow tracks; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--ss-sun-text)" data-en-html="<i style=&quot;background:var(--ss-sun)&quot;></i>The Sun's path today"><i style="background:var(--ss-sun)"></i>今天的太陽軌跡</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Solstice and equinox paths"><i class="dash"></i>夏至、春秋分、冬至的軌跡</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Celestial pole axis"><i style="background:var(--accent)"></i>天極軸</span>
+          <span style="color:var(--pos)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Observer"><i class="dot" style="background:var(--pos)"></i>觀察者</span>
+          <span style="color:var(--ss-sun-text)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ss-sun)&quot;></i>Subsolar point (Sun overhead)"><i class="dot" style="background:var(--ss-sun)"></i>直射點（太陽在天頂）</span>
+        </div>
+        <p class="hint l2" data-en-html="Left: the Earth's orbit seen slightly from above (sizes not to scale). The axis keeps the same direction all year, so the northern hemisphere leans toward the Sun in June and away from it in December. Right: the sky above the observer — the dome is the sky, the flat ellipse is the horizon, and the yellow arc is today's path of the Sun. Press <b>Play</b> to run the day, or choose <b>One year</b> to watch the seasons go by.">左邊：從斜上方看地球的公轉軌道（尺寸未按比例）。地軸的方向一整年都不變，所以 6 月北半球傾向太陽、12 月背向太陽。右邊：觀察者頭頂的天空——半球是天空、扁圓是地平面，黃色弧線是今天太陽走的路徑。按<b>播放</b>讓一天動起來，或選<b>一年</b>看四季輪替。</p>
+        <p class="hint l3" data-en-html="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Everything is computed by the same code as the 2D view. In the orbit scene the sizes of the Sun and the Earth are not to scale.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。所有位置都由與 2D 畫面相同的程式計算；地球繞日的場景中，太陽與地球的大小未按比例。</p>
+        <div class="subviews">
+          <figure>
+            <canvas id="shCv" role="img" aria-label="竿影俯視圖：竿子、影子的方向與長度、影子尖端的軌跡"></canvas>
+            <figcaption data-en-html="<b>The pole's shadow</b> (seen from above, north up). The tip of the shadow is recorded while time runs.">  <b>竿影</b>（由上往下看，北方朝上）。時間前進時會記錄影子尖端的軌跡。</figcaption>
+          </figure>
+          <figure>
+            <canvas id="bmCv" role="img" aria-label="同一束陽光以不同高度角照在地面上：高度角越低，照到的面積越大，每平方公尺的功率越小"></canvas>
+            <figcaption data-en-html="<b>The same beam of sunlight</b> (1 m<sup>2</sup> across) spreads over a larger area when the Sun is low.">  <b>同一束陽光</b>（截面積 1 m<sup>2</sup>）：太陽越低，照到的地面越大。</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Place">地點</h2>
+          <div class="chips" id="locs" role="group" aria-label="地點" data-en-aria-label="Place"></div>
+          <div class="slider"><label for="lat" data-en="Latitude φ (north +, south −)">緯度 φ（北緯為正、南緯為負）</label><output id="lato"></output>
+            <input id="lat" type="range" min="-90" max="90" step="0.01" value="25.03" data-decimals="2"></div>
+          <p class="hint locinfo" id="locInfo"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Date and time">日期與時刻</h2>
+          <div class="seg4" id="seasonBtns" role="group" aria-label="二分二至" data-en-aria-label="Equinoxes and solstices">
+            <button type="button" data-season="mar" aria-pressed="false" data-en="Mar equinox">春分</button>
+            <button type="button" data-season="jun" aria-pressed="false" data-en="Jun solstice">夏至</button>
+            <button type="button" data-season="sep" aria-pressed="false" data-en="Sep equinox">秋分</button>
+            <button type="button" data-season="dec" aria-pressed="false" data-en="Dec solstice">冬至</button>
+          </div>
+          <div class="slider"><label for="day" data-en="Date (2026)">日期（2026 年）</label><output id="dayo"></output>
+            <input id="day" type="range" min="1" max="365" step="1" value="172" data-decimals="0"></div>
+          <div class="datepick"><label for="datePick" data-en="Pick a date:">直接選日期：</label><input type="date" id="datePick" min="2026-01-01" max="2026-12-31" value="2026-06-21"><button type="button" id="today" data-en="Today">今天</button></div>
+          <div class="slider"><label for="clock" data-en="Local clock time (hours)">當地鐘錶時間（小時）</label><output id="clocko"></output>
+            <input id="clock" type="range" min="0" max="24" step="0.05" value="9.5" data-decimals="3"></div>
+          <div class="seg4 jump" role="group" aria-label="跳到" data-en-aria-label="Jump to">
+            <button type="button" id="jRise" data-en="Sunrise">日出</button>
+            <button type="button" id="jNoon" data-en="Noon">正午</button>
+            <button type="button" id="jSet" data-en="Sunset">日落</button>
+            <button type="button" id="jNow" data-en="Now">現在</button>
+          </div>
+          <p class="hint" data-en="Noon here means the moment the Sun crosses the meridian (due south or due north), which is usually not exactly 12:00. Tap a number to type an exact value (e.g. 13.25 = 13:15).">「正午」是太陽通過子午線（正南或正北）的時刻，通常不是剛好 12:00。點一下數字可直接輸入（例如 13.25 = 13:15）。</p>
+          <div class="slider"><label for="speed" data-en="Playback speed">播放速度</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="10" step="1" value="5" data-decimals="0"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The Earth">地球</h2>
+          <div class="slider"><label for="eps" data-en="Axial tilt ε">自轉軸傾角 ε</label><output id="epso"></output>
+            <input id="eps" type="range" min="0" max="90" step="0.01" value="23.44" data-decimals="2"></div>
+          <div class="seg4" style="grid-template-columns:1fr 1fr" role="group" aria-label="傾角" data-en-aria-label="Tilt">
+            <button type="button" id="epsReal" data-en="Real Earth 23.44°">真實地球 23.44°</button>
+            <button type="button" id="epsZero" data-en="No tilt 0°">不傾斜 0°</button>
+          </div>
+          <p class="hint" data-en="Try a tilt of 0°: the seasons disappear, and only the small change in distance to the Sun (about ±3%) remains.">試試傾角 0°：四季消失，只剩日地距離造成約 ±3% 的微小變化。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en-html="Solar declination δ">太陽赤緯 δ</dt><dd id="rDec">—</dd>
+            <dt data-en="Earth–Sun distance R">日地距離 R</dt><dd id="rR">—</dd>
+            <dt data-en="Hour angle H">時角 H</dt><dd id="rH">—</dd>
+            <dt data-en="Altitude h">高度角 h</dt><dd id="rAlt" class="em">—</dd>
+            <dt data-en="Azimuth A (from north)">方位角 A（由北向東）</dt><dd id="rAz">—</dd>
+            <dt data-en="Noon (Sun on the meridian)">正午（過子午線）</dt><dd id="rNoon">—</dd>
+            <dt data-en="Sunrise">日出</dt><dd id="rRise">—</dd>
+            <dt data-en="Sunset">日落</dt><dd id="rSet">—</dd>
+            <dt data-en="Length of day">晝長</dt><dd id="rLen">—</dd>
+            <dt data-en="Shadow ÷ pole">影長 ÷ 竿長</dt><dd id="rShadow">—</dd>
+            <dt data-en-html="Power on 1 m<sup>2</sup> of ground">地面每平方公尺的功率</dt><dd id="rI">—</dd>
+            <dt data-en-html="Energy on 1 m<sup>2</sup> today">今天每平方公尺的日照量</dt><dd id="rQ">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Options">選項</h2>
+          <div class="checks">
+            <label><input id="optRefract" type="checkbox" checked><span data-en="Refraction in sunrise/sunset (−0.833°)">日出日落計入大氣折射（−0.833°）</span></label>
+            <label><input id="optAtmos" type="checkbox"><span data-en="Absorption by the air (clear sky)">計入大氣吸收與散射（晴天）</span></label>
+            <label><input id="optRecord" type="checkbox" checked><span data-en="Record the shadow tip">記錄竿影尖端</span></label>
+            <label><input id="optRef" type="checkbox" checked><span data-en="Solstice and equinox paths">分至日的太陽軌跡</span></label>
+            <label><input id="optLabels" type="checkbox" checked><span data-en="Labels">文字標示</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card yearcard">
+      <h2 data-en="Through the year">一整年的變化</h2>
+      <div class="seg4" id="chartBtns" role="group" aria-label="圖表內容" data-en-aria-label="Graph">
+        <button type="button" data-chart="Q" aria-pressed="true" data-en="Daily sunlight">每日日照量</button>
+        <button type="button" data-chart="len" aria-pressed="false" data-en="Day length">晝長</button>
+        <button type="button" data-chart="noon" aria-pressed="false" data-en="Noon altitude">正午高度角</button>
+        <button type="button" data-chart="R" aria-pressed="false" data-en="Distance">日地距離</button>
+      </div>
+      <canvas id="chart" aria-label="一整年的變化圖：橫軸是日期，實線是目前的緯度，虛線是南北對稱的另一個緯度"></canvas>
+      <p class="hint" id="chartNote"></p>
+    </section>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Why are there seasons?">四季是怎麼來的？</h3>
+      <p data-en-html="The Earth's spin axis is tilted by \(\varepsilon \approx 23.44^\circ\) from the perpendicular to its orbit, and it keeps pointing in the same direction in space (close to Polaris) all year. Around the June solstice the northern hemisphere leans toward the Sun: the Sun stands higher at noon and stays longer in the sky, so it is summer in the north and winter in the south. Half a year later it is the other way round. The point where the Sun is straight overhead (the <strong>subsolar point</strong>) moves between the Tropic of Cancer (\(23.44^\circ\) N) and the Tropic of Capricorn (\(23.44^\circ\) S).">地球的自轉軸與公轉軌道面的垂直方向夾 \(\varepsilon \approx 23.44^\circ\)，而且一整年都指向太空中同一個方向（北極星附近）。6 月夏至前後，北半球傾向太陽：正午太陽比較高、白天比較長，北半球是夏天、南半球是冬天；半年後剛好相反。太陽在頭頂正上方的地點（<strong>直射點</strong>）在北回歸線（北緯 \(23.44^\circ\)）與南回歸線（南緯 \(23.44^\circ\)）之間來回移動。</p>
+      <p data-en-html="It is <strong>not</strong> the distance to the Sun. The orbit is an ellipse with eccentricity \(e = 0.0167\): the Earth is closest (perihelion, \(0.983\ \mathrm{AU}\)) around 3 January — in the northern winter — and farthest (aphelion, \(1.017\ \mathrm{AU}\)) in early July. The diagram shows the local date of the chosen place: the 2026 perihelion falls on the evening of 3 January in Universal Time, which is already the early hours of 4 January in Taiwan, so it is labelled Jan 4. The sunlight changes with distance only by \((1.0167/0.9833)^{2} \approx 1.07\), about \(\pm 3.4\%\), while in Taipei the daily energy received in summer is about 1.8 times that in winter.">四季<strong>不是</strong>日地距離造成的。地球軌道是離心率 \(e = 0.0167\) 的橢圓：1 月 3 日前後最近（近日點 \(0.983\ \mathrm{AU}\)），正是北半球的冬天；7 月初最遠（遠日點 \(1.017\ \mathrm{AU}\)）。圖上標的是所選地點的當地日期：2026 年的近日點在世界時 1 月 3 日傍晚，臺灣已是 1 月 4 日凌晨，所以標 1/4。距離造成的日照差別只有 \((1.0167/0.9833)^{2} \approx 1.07\)，約 \(\pm 3.4\%\)；而臺北夏天一天接收的太陽能約是冬天的 1.8 倍。</p>
+
+      <h3 data-en="The Sun's declination">太陽赤緯</h3>
+      <p data-en-html="Seen from the Earth, the Sun moves along the ecliptic. Its ecliptic longitude \(\lambda\) is \(0^\circ\) at the March equinox, \(90^\circ\) at the June solstice, \(180^\circ\) and \(270^\circ\) at the September equinox and December solstice. The declination (the Sun's angle north or south of the celestial equator) is">從地球看，太陽沿著黃道移動。太陽的黃經 \(\lambda\) 在春分為 \(0^\circ\)、夏至 \(90^\circ\)、秋分 \(180^\circ\)、冬至 \(270^\circ\)。太陽在天赤道以北或以南的角度（赤緯）為</p>
+      <div class="formula">\[ \sin\delta = \sin\varepsilon\,\sin\lambda \]</div>
+      <p data-en-html="Because the orbit is an ellipse, \(\lambda\) does not grow evenly: the program solves Kepler's equation \(E - e\sin E = M\) for the mean anomaly \(M\) (which grows evenly with time), then gets the true anomaly \(\nu\) and \(\lambda = \nu + \varpi\) (\(\varpi\): direction of perihelion). Compared with the astronomical almanac the error is about \(0.01^\circ\) (the equinoxes and solstices of 2026 come out within 10 minutes). The common textbook shortcut \(\delta \approx -23.44^\circ \cos\!\big(360^\circ (N+10)/365\big)\) (\(N\): day of the year) is off by up to \(0.9^\circ\).">因為軌道是橢圓，\(\lambda\) 不是均勻增加：程式先由隨時間均勻增加的平近點角 \(M\) 解克卜勒方程式 \(E - e\sin E = M\)，再求真近點角 \(\nu\) 與 \(\lambda = \nu + \varpi\)（\(\varpi\)：近日點的方向）。與天文年曆相比誤差約 \(0.01^\circ\)（2026 年的二分二至時刻相差 10 分鐘以內）。課本常見的近似式 \(\delta \approx -23.44^\circ \cos\!\big(360^\circ (N+10)/365\big)\)（\(N\)：一年的第幾天）誤差最大約 \(0.9^\circ\)。</p>
+
+      <h3 data-en="Hour angle, altitude and azimuth">時角、高度角與方位角</h3>
+      <p data-en-html="The hour angle \(H\) measures how far the Sun has turned past the meridian: \(H = 15^\circ \times (\text{apparent solar time} - 12\ \mathrm{h})\). Apparent solar time = clock time \(+\ 4\ \text{min} \times (\text{longitude} - 15^\circ \times \text{time zone})\ +\ E\), where \(E\) is the equation of time (between about \(-14\) and \(+16\) minutes). With the latitude \(\varphi\), spherical trigonometry gives the altitude \(h\) and the azimuth \(A\) (measured from north through east):">時角 \(H\) 表示太陽已經轉過子午線多少：\(H = 15^\circ \times (\text{真太陽時} - 12\ \mathrm{h})\)。真太陽時 = 鐘錶時間 \(+\ 4\ \text{分} \times (\text{經度} - 15^\circ \times \text{時區})\ +\ E\)，\(E\) 為均時差（約 \(-14\) 到 \(+16\) 分鐘）。再由緯度 \(\varphi\) 用球面三角求高度角 \(h\) 與方位角 \(A\)（由正北向東量）：</p>
+      <div class="formula">\[ \sin h = \sin\varphi\sin\delta + \cos\varphi\cos\delta\cos H, \qquad \tan A = \frac{-\cos\delta\sin H}{\sin\delta\cos\varphi - \cos\delta\sin\varphi\cos H} \]</div>
+      <p data-en-html="At noon (\(H = 0\)) this becomes the noon altitude:">正午（\(H = 0\)）時得到正午太陽高度角：</p>
+      <div class="formula">\[ h_{\text{noon}} = 90^\circ - |\varphi - \delta| \]</div>
+      <p data-en-html="On the June solstice \(\delta = +23.44^\circ\), so on the Tropic of Cancer (Chiayi and Hualien in Taiwan) the noon Sun is exactly overhead and a vertical pole casts no shadow.">夏至 \(\delta = +23.44^\circ\)，所以在北回歸線上（臺灣的嘉義、花蓮）正午太陽正好在天頂，直立的竿子沒有影子。</p>
+
+      <h3 data-en="Sunrise, sunset and the length of the day">日出、日落與晝長</h3>
+      <p data-en-html="Sunrise and sunset happen when the centre of the Sun is at altitude \(h_0\). The air bends sunlight near the horizon by about \(34'\) and the Sun's radius is about \(16'\), so the usual value is \(h_0 = -0.833^\circ\) (untick the option to use \(h_0 = 0\), the geometric horizon):">日出、日落是太陽中心的高度角等於 \(h_0\) 的時刻。地平線附近的大氣折射讓陽光偏折約 \(34'\)，太陽的視半徑約 \(16'\)，所以一般取 \(h_0 = -0.833^\circ\)（取消勾選則用幾何地平線 \(h_0 = 0\)）：</p>
+      <div class="formula" data-en-html="\[ \cos H_0 = \frac{\sin h_0 - \sin\varphi\sin\delta}{\cos\varphi\cos\delta}, \qquad \text{day length} = \frac{2H_0}{15^\circ}\ \mathrm{h} \]">\[ \cos H_0 = \frac{\sin h_0 - \sin\varphi\sin\delta}{\cos\varphi\cos\delta}, \qquad \text{晝長} = \frac{2H_0}{15^\circ}\ \mathrm{h} \]</div>
+      <p data-en-html="If the right-hand side is less than \(-1\) the Sun never sets (midnight sun, polar day); if it is greater than \(1\) the Sun never rises (polar night). Because of refraction, even at the equinoxes the day is about 7–12 minutes longer than 12 hours; the day when day and night are really equal comes a few days before the March equinox and after the September equinox.">若右邊小於 \(-1\)，太陽整天不落下（永晝）；大於 \(1\) 則整天不升起（永夜）。因為大氣折射，連春分、秋分的白天也比 12 小時長約 7–12 分鐘；真正晝夜等長的日子在春分之前、秋分之後幾天。</p>
+      <div class="formula" data-en-html="\[ \text{shadow length} = \frac{\text{pole length}}{\tan h} \]">\[ \text{影長} = \frac{\text{竿長}}{\tan h} \]</div>
+
+      <h3 data-en="Sunlight on the ground">地面接收的日照</h3>
+      <p data-en-html="A beam of sunlight with cross-section \(1\ \mathrm{m^2}\) carries \(S = S_0/R^{2}\), where the solar constant \(S_0 = 1361\ \mathrm{W/m^2}\) is the value at \(R = 1\ \mathrm{AU}\). When the Sun is at altitude \(h\) (zenith angle \(z = 90^\circ - h\)), the same beam covers \(1/\sin h\) square metres of level ground, so each square metre receives">截面積 \(1\ \mathrm{m^2}\) 的陽光帶有功率 \(S = S_0/R^{2}\)，其中太陽常數 \(S_0 = 1361\ \mathrm{W/m^2}\) 是 \(R = 1\ \mathrm{AU}\) 時的值。太陽高度角為 \(h\)（天頂角 \(z = 90^\circ - h\)）時，同一束光照在水平地面上的面積是 \(1/\sin h\) 平方公尺，所以每平方公尺接收</p>
+      <div class="formula">\[ I = \frac{S_0}{R^{2}}\cos z = \frac{S_0}{R^{2}}\sin h \]</div>
+      <p data-en-html="Adding this up over the whole day (with \(\delta\) and \(R\) taken at local noon, \(H_0\) in radians, geometric horizon) gives the daily energy per square metre:">把一整天加起來（\(\delta\)、\(R\) 取當地正午的值，\(H_0\) 用弧度、幾何地平線），得到每平方公尺一天的日照量：</p>
+      <div class="formula">\[ Q = \frac{S_0}{R^{2}}\,\frac{86\,400\ \mathrm{s}}{\pi}\,\big(H_0\sin\varphi\sin\delta + \cos\varphi\cos\delta\sin H_0\big) \]</div>
+      <p data-en-html="This is the sunlight before it enters the air. With the option “absorption by the air” the direct sunlight on a clear day is reduced to \(I \times 0.7^{\,AM^{0.678}}\) (Meinel and Meinel, 1976), where the air mass \(AM\) — how many atmospheres thick the path of the light is — comes from the Kasten–Young formula (1989); \(AM = 1\) when the Sun is overhead and about 38 at the horizon. Scattered skylight (roughly another 10%) and clouds are not included.">這是進入大氣之前的陽光。勾選「計入大氣吸收與散射」時，晴天的直射光減為 \(I \times 0.7^{\,AM^{0.678}}\)（Meinel & Meinel，1976），大氣質量 \(AM\)（光走過幾倍大氣層厚度）用 Kasten–Young 公式（1989）：太陽在天頂時 \(AM = 1\)，在地平線約 38。天空的散射光（約再多 10%）與雲不計。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Noon altitude</strong>: in Taipei compare the four presets. At the June solstice the noon Sun is \(88.4^\circ\) high, at the December solstice only \(41.5^\circ\): the noon shadow in winter is the longest of the year. Check every time that \(h_\text{noon} = 90^\circ - |\varphi - \delta|\)."><strong>正午高度角</strong>：在臺北比較四個節氣：夏至正午太陽高 \(88.4^\circ\)，冬至只有 \(41.5^\circ\)，冬至正午的竿影是一年中最長的。每次都驗證 \(h_\text{noon} = 90^\circ - |\varphi - \delta|\)。</li>
+        <li data-en-html="<strong>The Sun overhead</strong>: choose Chiayi or Hualien (on the Tropic of Cancer) at the June solstice and press Noon: the shadow disappears. Tainan, a little farther south, has the Sun overhead twice a year (early June and early July)."><strong>太陽直射</strong>：選嘉義或花蓮（北回歸線上），夏至按「正午」：竿影消失。再往南一點的臺南，一年有兩天太陽直射（6 月初與 7 月初）。</li>
+        <li data-en-html="<strong>Where the Sun rises</strong>: only at the equinoxes does the Sun rise due east and set due west. In summer it rises north of east and sets north of west; in winter south of east and south of west."><strong>日出的方向</strong>：只有春分、秋分太陽從正東升起、正西落下；夏天從東偏北升起、西偏北落下，冬天從東偏南升起、西偏南落下。</li>
+        <li data-en-html="<strong>Midnight sun</strong>: go to Tromsø or the North Pole around the June solstice and play a day: the Sun circles the sky without setting. At the equator the day is always about 12 hours long."><strong>永晝</strong>：在夏至前後選特羅姆瑟或北極點，播放一天：太陽繞著天空轉圈不落下。赤道則全年晝長都約 12 小時。</li>
+        <li data-en-html="<strong>The southern hemisphere</strong>: in Sydney the noon Sun is in the north, the shadow points south, and the seasons are reversed. Look at the dashed curve in the graph below: the southern summer is a little more intense (perihelion) but shorter, and over a whole year both hemispheres receive the same energy."><strong>南半球</strong>：在雪梨，正午太陽在北方、影子朝南，季節也相反。看下方圖表的虛線：南半球的夏天日照稍強（靠近近日點）但比較短，一整年加起來南北半球收到的能量一樣多。</li>
+        <li data-en-html="<strong>Remove the tilt</strong>: set \(\varepsilon = 0^\circ\) and play a year. The noon altitude and the day length no longer change; only the distance changes the sunlight, by about \(\pm 3.4\%\). Now try a large tilt such as \(60^\circ\)."><strong>拿掉傾角</strong>：把 \(\varepsilon\) 設為 \(0^\circ\)，播放一年：正午高度角與晝長都不再變化，只剩距離讓日照變化約 \(\pm 3.4\%\)。再試試很大的傾角，例如 \(60^\circ\)。</li>
+        <li data-en-html="<strong>The beam spreads out</strong>: the lower the Sun, the more ground the same beam has to cover. At \(h = 30^\circ\) each square metre gets only half as much as with the Sun overhead — the main reason winter is cold, together with the shorter day."><strong>光束被攤開</strong>：太陽越低，同一束光要照的地面越大。\(h = 30^\circ\) 時每平方公尺只有太陽在天頂時的一半——這和白天變短，正是冬天冷的主要原因。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法與數值來源</h3>
+      <ul>
+        <li data-en-html="Dates are for 2026 (not a leap year); in other years the equinoxes and solstices shift by less than a day. Times are local standard time of each place (no daylight saving). The Earth's position comes from the low-precision solar coordinates of J. Meeus, <i>Astronomical Algorithms</i> (2nd ed., ch. 25), with Kepler's equation solved exactly instead of a series; nutation and the pull of the planets are ignored (they move the Sun by about \(0.005^\circ\)). The Kepler ellipse describes the centre of mass of the Earth and the Moon; the Earth's centre is 4671 km from it, which changes the distance by up to \(0.00003\ \mathrm{AU}\) and moves perihelion and aphelion by about a day, so this term is included. The 2026 perihelion (3 January 17:47 UT) and aphelion (6 July 18:29 UT) come out within an hour of the U.S. Naval Observatory values.">日期以 2026 年（平年）計算，其他年份的二分二至相差不到 1 天；時刻是各地的標準時間（不含日光節約時間）。地球位置用 J. Meeus《Astronomical Algorithms》第 2 版第 25 章的低精度太陽座標，但中心差改成直接解克卜勒方程式；忽略章動與行星的攝動（使太陽位置偏差約 \(0.005^\circ\)）。克卜勒橢圓描述的是地球與月球的質心，地球中心離質心 4671 km，使日地距離最多差 \(0.00003\ \mathrm{AU}\)、近日點與遠日點的日期移動約 1 天，所以這一項有計入：2026 年近日點 1 月 3 日 17:47、遠日點 7 月 6 日 18:29（世界時），與美國海軍天文臺的數值相差 1 小時以內。</li>
+        <li data-en-html="Constants: axial tilt \(23.44^\circ\) (IAU 2006 gives \(23.4393^\circ\) at J2000, decreasing by about \(0.013^\circ\) per century); eccentricity \(0.0167\); solar constant \(S_0 = 1361\ \mathrm{W/m^2}\) (IAU 2015 Resolution B3; measured \(1360.8 \pm 0.5\ \mathrm{W/m^2}\), Kopp and Lean 2011).">常數：自轉軸傾角 \(23.44^\circ\)（IAU 2006：J2000 為 \(23.4393^\circ\)，每世紀約減少 \(0.013^\circ\)）；離心率 \(0.0167\)；太陽常數 \(S_0 = 1361\ \mathrm{W/m^2}\)（IAU 2015 決議 B3；實測 \(1360.8 \pm 0.5\ \mathrm{W/m^2}\)，Kopp & Lean 2011）。</li>
+        <li data-en-html="The altitude shown is the geometric altitude of the centre of the Sun; refraction (which lifts the Sun by about \(0.57^\circ\) at the horizon and much less higher up) is used only for sunrise and sunset. The Earth is a sphere, and the shadow is the shadow of the tip of a thin pole (no penumbra). For Taipei the sunrise and sunset times agree with those published by the Central Weather Administration to within about a minute.">顯示的高度角是太陽中心的幾何高度角；大氣折射（在地平線把太陽抬高約 \(0.57^\circ\)，高處小得多）只用在日出日落。地球視為球體，竿影是細竿頂點的影子（不計半影）。臺北的日出日落時刻與中央氣象署公布值相差約 1 分鐘以內。</li>
+        <li data-en-html="The daily energy uses \(\delta\) and \(R\) at local noon; letting them change during the day alters the result by less than 0.3%. With absorption by the air the day is integrated numerically (Simpson's rule).">每日日照量用當地正午的 \(\delta\) 與 \(R\)；讓它們在一天內變化，結果相差不到 0.3%。計入大氣時用辛普森法數值積分。</li>
+        <li data-en-html="Pictures: in the orbit view the Sun and the Earth are drawn far larger than to scale, but the directions (the axis, the sunlight, the day–night line, the subsolar point and the observer) are exact; the coastlines are simplified. In the sky view the dome stands for the whole sky; the pole and its shadow use the same angles as the calculation. The 3D view shows the same quantities, computed by the same code, using the three.js library (MIT license), which is downloaded only when you switch to 3D.">畫面：繞日軌道圖中太陽與地球都畫得比實際大很多（尺寸未按比例），但方向（地軸、陽光、晨昏線、直射點、觀察者）都是精確的；海岸線是簡化的輪廓。天空圖中的半球代表整個天空，竿子與影子使用與計算相同的角度。3D 檢視顯示同樣的量、由同一套程式計算，使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High-school Earth Science · The Earth’s motions and the seasons">課綱對應：高中地球科學・地球的運動與四季</li>
+        <li data-en-html="Astronomical data: the 2026 equinoxes, solstices, perihelion and aphelion are compared with the U.S. Naval Observatory, <a href=&quot;https://aa.usno.navy.mil/data/Earth_Seasons&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Earth’s Seasons — Equinoxes, Solstices, Perihelion, and Aphelion</a> (equinoxes and solstices within 8 minutes). Axial tilt \(\varepsilon_0 = 84\,381.406'' = 23.4393^\circ\) at J2000: IAU 2006 precession (Capitaine, Wallace and Chapront 2003). Solar constant \(1361\ \mathrm{W/m^2}\): IAU 2015 Resolution B3 (nominal total solar irradiance); measured \(1360.8 \pm 0.5\ \mathrm{W/m^2}\), G. Kopp and J. Lean, <i>Geophysical Research Letters</i> 38, L01706 (2011).">天文數據：2026 年的二分二至、近日點與遠日點時刻和美國海軍天文臺 <a href="https://aa.usno.navy.mil/data/Earth_Seasons" target="_blank" rel="noopener">Earth’s Seasons — Equinoxes, Solstices, Perihelion, and Aphelion</a> 比對（二分二至相差 8 分鐘以內）。自轉軸傾角 J2000 為 \(\varepsilon_0 = 84\,381.406'' = 23.4393^\circ\)：IAU 2006 歲差模型（Capitaine、Wallace、Chapront 2003）。太陽常數 \(1361\ \mathrm{W/m^2}\)：IAU 2015 決議 B3（太陽總輻照度的名目值）；實測 \(1360.8 \pm 0.5\ \mathrm{W/m^2}\)，G. Kopp & J. Lean，<i>Geophysical Research Letters</i> 38, L01706（2011）。</li>
+        <li data-en-html="Methods: J. Meeus, <i>Astronomical Algorithms</i>, 2nd ed. (Willmann-Bell, 1998), ch. 25 (solar coordinates) and ch. 15 (rising and setting, \(h_0 = -0.8333^\circ\)); F. Kasten and A. T. Young, <i>Applied Optics</i> 28, 4735 (1989) (air mass); A. B. Meinel and M. P. Meinel, <i>Applied Solar Energy</i> (Addison-Wesley, 1976) (clear-sky direct sunlight). Taipei sunrise and sunset times: Central Weather Administration, daily astronomical phenomena.">計算方法：J. Meeus《Astronomical Algorithms》第 2 版（Willmann-Bell，1998）第 25 章（太陽座標）、第 15 章（出沒時刻，\(h_0 = -0.8333^\circ\)）；F. Kasten & A. T. Young，<i>Applied Optics</i> 28, 4735（1989）（大氣質量）；A. B. Meinel & M. P. Meinel《Applied Solar Energy》（Addison-Wesley，1976）（晴天直射光）。臺北日出日落時刻：中央氣象署「每日天文現象」。</li>
+        <li data-en-html="Further reading: NASA Space Place, <a href=&quot;https://spaceplace.nasa.gov/seasons/en/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>What Causes the Seasons?</a>">延伸閱讀：NASA Space Place〈<a href="https://spaceplace.nasa.gov/seasons/en/" target="_blank" rel="noopener">What Causes the Seasons?</a>〉（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611121021"></script>
+  <script src="js/seasons-core.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121021"></script>
+  <script src="js/numinput.js?v=202611121021"></script>
+  <script src="js/drawkit.js?v=202611121021"></script>
+  <script src="js/keys.js?v=202611121021"></script>
+  <script src="js/seasons-3d.js?v=202611121021"></script>
+  <script src="js/seasons.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021" data-module="seasons"></script>
+  <script src="js/missions/seasons.js?v=202611121021"></script>
+  <script src="js/stats.js?v=202611121021" data-module="seasons"></script>
+  <script src="js/comments.js?v=202611121021"></script>
+</body>
+</html>

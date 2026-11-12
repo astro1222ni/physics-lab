@@ -5,7 +5,10 @@
  *   月球位置 elong（0–360°，打字 3 位）：placeElongation；升交點 node（0–360°，打字 2 位）：withNode；近地點 peri（同上）：withPerigee；
  *   跳躍按鈕：+1 恆星月 findMoonLon、+1 朔望月 findPhase(t + 20, 目前的黃經差)、下一次新月／滿月 findPhase(t, 0 或 π)；
  *   時間前進時照頁面的 detectEvents／addLogEvent 找出朔、上弦、望、下弦與 greatestEclipse，產生 'event'。
- * 頁面在使用者操作之前不回報任何事件（自動播放不算），所以預設狀態只需確認 'state' 不會通過任何任務。 */
+ * 頁面在使用者操作之前不回報任何事件（自動播放不算），所以預設狀態只需確認 'state' 不會通過任何任務。
+ * 觀測地點：任務都以臺灣為準。頁面選了別的地點時，missionData() 把 moonAlt、moonAz、sunAlt、sunAz、localMag 設成 NaN、
+ *   rising = false、local = 'none'（session({ away: true }) 照做），所以綁臺灣天空的任務（4、6、12）只在選臺灣時判定，
+ *   其餘以地心幾何判斷的任務在任何地點都做得到。 */
 'use strict';
 const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 const K = require(__ROOT + 'js/moon-phases-core.js');
@@ -24,8 +27,8 @@ function ui(name, v) {
 }
 
 // ---------- 模擬頁面的一個工作階段 ----------
-function session() {
-  const S = {};
+function session(opts) {
+  const S = {}, away = !!(opts && opts.away);
   let el = K.makeElements({});
   let t = K.timeOf(0, K.doyOf(9, 23), 18.5);
   el = K.withNode(el, t, 100 * DEG);
@@ -42,7 +45,7 @@ function session() {
     const hm = K.horizontal(m, t), hs = K.horizontal(s, t), cal = K.calendar(t);
     const lunar = K.lunarEclipse(m, s), solar = K.solarEclipse(m, s), loc = K.localSolar(m, s, P);
     const node = K.nodeLon(el, t);
-    return {
+    const d = {
       dLam: ph.dLam / DEG, illum: ph.illum, phase: K.phaseKey(ph.dLam), age: K.moonAge(el, t),
       hour: cal.hour, month: cal.month, day: cal.day, doy: cal.doy, year: cal.year,
       moonAlt: hm.alt / DEG, moonAz: hm.az / DEG, sunAlt: hs.alt / DEG, sunAz: hs.az / DEG,
@@ -54,6 +57,8 @@ function session() {
       sunNode: Math.min(Math.abs(K.wrapPi(s.lon - node)), Math.abs(K.wrapPi(s.lon - node - Math.PI))) / DEG,
       dec: K.declination(m) / DEG, trueScale: false, frame: 'sun', regress: el.regress, precess: el.precess
     };
+    if (away) Object.assign(d, { moonAlt: NaN, moonAz: NaN, sunAlt: NaN, sunAz: NaN, rising: false, local: 'none', localMag: NaN });
+    return d;
   }
   S.data = data;
   const state = () => emit('state', data());
@@ -104,10 +109,10 @@ function session() {
 }
 
 /** 把一個工作階段的事件依序丟進任務檢查（每次重新開始，mem 清空） */
-function passes(id, run) {
+function passes(id, run, opts) {
   const m = missions.find(x => x.id === id);
   m.mem = {};
-  const S = session();
+  const S = session(opts);
   run(S);
   return S.events.some(ev => { try { return m.check(ev, m.mem); } catch (e) { return false; } });
 }
@@ -223,6 +228,19 @@ missions.forEach(m => {
   const m7 = missions.find(x => x.id === 'moon-phases-7');
   if (m7.check({ type: 'state', data: d }, {})) { fail++; console.log('✗ 預設交點下的滿月不應該是月全食'); }
   else console.log('✓ 預設交點（Ω = 100°）下的滿月沒有月食：月球黃緯 ' + d.lat.toFixed(2) + '°');
+})();
+// 選了臺灣以外的地點：綁臺灣天空的任務不判定，其餘任務照樣做得到
+(function () {
+  const TW_ONLY = ['moon-phases-4', 'moon-phases-6', 'moon-phases-12'];
+  const bad = [];
+  missions.forEach(m => {
+    const sol = SOL[m.id];
+    if (!sol) return;
+    const ok = passes(m.id, sol[1], { away: true });
+    if (ok === TW_ONLY.includes(m.id)) bad.push(m.id + (ok ? ' 不該通過' : ' 應該通過'));
+  });
+  if (bad.length) { fail++; console.log('✗ 別的觀測地點：' + bad.join('、')); }
+  else console.log('✓ 選了別的觀測地點：任務 4、6、12（臺灣的天空）不判定，其餘 ' + (missions.length - TW_ONLY.length) + ' 個照樣做得到');
 })();
 console.log(fail ? '\n有 ' + fail + ' 項沒有通過' : '\n全部 ' + missions.length + ' 個任務都做得到');
 process.exitCode = fail ? 1 : 0;

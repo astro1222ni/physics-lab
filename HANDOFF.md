@@ -1,10 +1,10 @@
-# 交接說明（雲端工作串 → 本機工作串「Astro Ni 物理實驗室」）
+# 交接說明（雲端工作串 → 本機工作串「Astro Ni 科學實驗室」）
 
 交接日期：2026-11-11。接手的工作串請先讀完 **CLAUDE.md**（規則與慣例），再讀這份（目前狀態、工具、待辦）。
 
 ## 一、網站目前的狀態
 
-- 網址：https://astro1222ni.github.io/physics-lab/ ，推送到 `main` 後由 GitHub Pages 自動部署，約 1–2 分鐘生效。
+- 網址：https://lab.astroni.org/ ，推送到 `main` 後由 GitHub Pages 自動部署，約 1–2 分鐘生效。
 - **24 個實驗全部上線，每一個都有任務**：共 350 個任務，其中 72 個是隱藏任務，總計 1857 顆星。首頁已經沒有「規劃中」的卡片。
 
 | 分支 | 實驗（代號） |
@@ -183,7 +183,7 @@ node tools/mission-proofs/<代號>.js # 證明該實驗的每個任務都做得�
 - **分享卡與搜尋引擎**：`npm run seo`（`tools/seo.cjs`）從首頁卡片與縮圖產生 1200×630 分享卡 `img/og/`、每頁 `<!-- SEO-BEGIN -->` 區塊（說明、Open Graph、hreflang、schema.org 結構化資料）、`sitemap.xml`、`robots.txt`。`js/settings.js` 支援 `?lang=en`／`?lang=zh-Hans` 網址（只當次套用，不蓋掉使用者存的語言；第一次來的訪客會記住）。
 - **共用繪圖工具** `js/drawkit.js`（`window.LabDraw`）：立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動切換。2D 優化照 `docs/briefs/visual-polish.md`，3D 照 `docs/briefs/add-3d.md`，課本實驗照 `docs/briefs/textbook-experiment.md`。
 - **一鍵總檢查**：`npm run verify`（`tools/verify.cjs`）＝單元測試＋全部任務證明＋靜態稽核＋介面稽核（觸控目標、對比、名稱、頁面重量）＋頁面檢查；`-- --quick` 只跑前三項。結果存 `.shots/verify-report.json`。發布前要全過。
-- **自動優化**：藍圖與待改清單在 `docs/WORLD-CLASS.md`，紀錄在 `docs/auto-optimize-log.md`。排程「每天 01:40｜Astro Ni 物理實驗室自動優化」照清單做 1–3 件、總檢查全過才推。**主工作串開始改網站時建立 `.editing`（已列入 .gitignore），push 完刪掉**；排程看到 8 小時內的 `.editing` 就跳過。
+- **自動優化**：藍圖與待改清單在 `docs/WORLD-CLASS.md`，紀錄在 `docs/auto-optimize-log.md`。排程「每天 01:40｜Astro Ni 科學實驗室自動優化」照清單做 1–3 件、總檢查全過才推。**主工作串開始改網站時建立 `.editing`（已列入 .gitignore），push 完刪掉**；排程看到 8 小時內的 `.editing` 就跳過。
 - **選修物理講義的必做實驗**（講義在 `D:\物理講義電子檔\選修物理Ⅰ–Ⅴ`，文字要用 CID→Big5 解碼才讀得到，方法在 `docs/briefs/textbook-experiment.md`）：自由落體與斜面運動（free-fall）、牛頓第二運動定律（newton-second，已有）、水波槽（ripple-tank）、氣柱的共鳴（resonance-tube）、折射率的測定（refractive-index）、薄透鏡成像（thin-lens）、干涉與繞射（slit-interference，已有）、等位線與電場（equipotential）、電流天平（current-balance）、認識電磁波（microwave）、歐姆定律與電路（ohms-law）、電子的荷質比（e-over-m）。選修物理Ⅱ沒有正式實驗。11/11 十二個全部上線（新做的 10 個放在首頁對應的章；荷質比、水波槽、等位線、電流天平、微波另有 3D）。縮圖取景設定在 `tools/make-thumbs.cjs` 的 PREP（可用 `eval` 先執行頁面測試介面，例如折射率用 `window.__ri.place` 插針）。
 
 - **物理實驗室核可室**：要站長決定的事一律開卡 https://claude.ai/artifact/XEAkzxm5585i8fzHEiHMfQ （資料 `items/<id>`：ep、topic、title、body、links、media、order、status、created、result；站長的回覆在 `answers/<id>`：choice ok／change、note）。每次回到工作串先查 answers、照做、把卡改 closed 並寫 result。11/11 已決定：自動優化全自動、鉑功函數維持 5.6 eV 並註明 6.35 eV、「關於本站」頁與 CC BY-NC 4.0 授權。
@@ -226,3 +226,13 @@ node tools/mission-proofs/<代號>.js # 證明該實驗的每個任務都做得�
   5. GitHub Pages 每月約 100 GB 流量 → 自己的網域（卡 lab-domain-1112），之後可搬 Cloudflare Pages，網址不變。換網域時 localStorage 會歸零、要重新登入。
   6. 灌分、留言審核、App Check、學校 Google 帳號（未滿 18 歲）可能不能登入第三方網站、學校網路過濾、個資保存與刪除、回報問題按鈕、只有站長一人有帳號。
 - **四科並行**（站長：「我還要放化學跟生物，總共四個科目要同時並行」）：建議同一網站、首頁四大區、共用引擎；每科找審稿老師；化學、生物各先做 3 個試點（卡 lab-four-subjects-1112、lab-brand-name-1112）。
+
+## 十三、11/12 下午：每日任務、各科排名、品牌與網域
+
+- **每日任務與寶物**（站長原話：「登入之後的每日任務……完成它可以得到隨機的銅幣、銀幣、金幣、鑽石以及稀有鑰匙」「這些物品有些什麼用途？我們以後再規劃」）：`daily.html`、`js/daily.js`、`js/daily-core.js`（單元測試 `tests/daily-core.test.js`）。首頁、排行榜頁、每個實驗的任務列都有入口；實驗頁網址帶 `?daily=<任務代號>` 進入每日任務模式（任務模式自動打開，做過的任務也會重新判定）。設計細節見 CLAUDE.md「任務、排行榜與成就」。
+- **各科排名與成就分類**（站長：「每個科目要有各自的排名以及全科總排名。每個科目都有各自的成就以及整體的成就」）：排行榜與成就都有「全科／物理／化學／生物／地球科學」分頁；化學、生物還沒有實驗，顯示「製作中」。各科名次的成就門檻跟著該科總星數走（10%／40%／70%），榜上至少 50／100 人才開放。
+- **資料庫規則**：`firebase/database.rules.json` 新增 `daily/`、`bag/`，`scores` 加 `s/`、`sa/` 與索引。**要請站長貼到 Firebase 主控台發布**，沒發布前正式站的每日任務、各科排名寫不進去（網站會顯示「沒有記錄成功」，不會壞掉）。
+- **實測腳本**：每日任務、掉寶、規則拒絕、換日、各科排行榜、成就分頁的 Playwright 實測（只用假資料庫、外連全擋）在工作串暫存區；要再測可以照 CLAUDE.md 的 mock-backend 說明重寫，`mockoffset` 可以假造伺服器時間。
+- **品牌與網域**：品牌改成「Astro Ni 科學實驗室／Astro Ni Science Lab」，首頁標題「高中物理・化學・生物・地球科學｜互動模擬實驗室」（站長在核可室選甲）。網址改成 https://lab.astroni.org/（`tools/seo.cjs` 的 `SITE`、robots.txt、引用格式、QR code 都換了；舊網址 GitHub 會 301 轉過來）。換網域後 localStorage 歸零，使用者要重新登入；Firebase Authentication 的「授權網域」已加入 lab.astroni.org（11/12 核對過）。
+- **月相觀測地點**：月相實驗加了 20 個地點的選單（手動經緯度、臺灣〔預設，數值不變〕、18 個世界城市），月出月落和美國海軍天文台的時刻比對誤差 ≤ 0.51 分鐘；任務 4、6、12 只在選臺灣時判定（說明已註明）。
+- **CODATA 2022**：庫侖常數改用 8.9875517862e9 N·m²/C²（`field-core.js`），原子質量單位 1.66053906892e-27 kg（`ideal-gas-core.js`、`magnetic-particle-core.js`）。

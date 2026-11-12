@@ -1,9 +1,18 @@
 ---
 name: physics-visual-design
-description: Visual design standard for every simulation canvas in Astro Ni 物理實驗室 (2D canvas and 3D). Use whenever you create a new module, change how a simulation is drawn, or polish an existing one — physics must stay exact, and the picture must also look refined, have depth, and be a pleasure to watch.
+description: Visual design standard for every simulation canvas in Astro Ni 科學實驗室 (2D canvas and 3D). Use whenever you create a new module, change how a simulation is drawn, or polish an existing one — physics must stay exact, and the picture must also look refined, have depth, and be a pleasure to watch.
 ---
 
 # 物理模擬的視覺設計規範
+
+## 語言：每一則回覆都用繁體中文（最優先的規則）
+
+站長讀中文，英文的回報等於沒回報。2026-11-12 本專案工作串在對話摘要接手後，工具呼叫之間的進度短句整串寫成英文，站長說（原話）：「不要用英文跟我交談，寫入 skills，備忘錄。」
+
+- 適用範圍：最後的回覆、工具呼叫之間的每一句進度、回系統「說一下你在做什麼」的那一句、收到背景工作或別串訊息後的回覆、wrap_up 的 recap／ask／按鈕、Bash／PowerShell 旁的說明，全部用繁體中文。
+- 英文只留在指令、檔名、程式碼、網址裡。
+- 對話被摘要、接手繼續做的第一則最容易滑成英文：寫任何一句之前先確認第一個字是中文字；進度句用「正在…」「已經…」「接下來…」開頭。
+- 同一天下午又犯第二次（站長原話：「你還是用英文啊，你還是沒有學對。」）：開頭幾句是中文，做到中段（看截圖、修版面、跑檢查）進度句又整串變英文。原因是心裡用英文想事情、只檢查了開頭。**連思考也用中文**；長工作做到中段、看完截圖或測試結果之後的那一句最危險，每一句都要看第一個字。
 
 > 站長的要求（2026-11-11）：「就算是 2D 的畫面，圖形的呈現也要更加細緻、有立體感，更加美觀、有設計感。除了兼顧正確的物理，也要兼顧美感以及視覺上的享受。」
 

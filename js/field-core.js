@@ -12,7 +12,7 @@
 (function (root) {
   'use strict';
 
-  const K = 8.9875517923e9; // 庫侖常數 N·m²/C²
+  const K = 8.9875517862e9; // 庫侖常數 N·m²/C²
   const NC = 1e-9;          // nC → C
   const CM = 1e-2;          // cm → m
 

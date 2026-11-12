@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://astro1222ni.github.io/physics-lab/sitemap.xml
+Sitemap: https://lab.astroni.org/sitemap.xml

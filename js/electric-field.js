@@ -4,9 +4,12 @@
 (function () {
   'use strict';
   const FC = window.FieldCore;
+  const LD = window.LabDraw; // 共用繪圖工具（js/drawkit.js）：立體球、箭頭、標籤底框、格線
+  const FONT = LD.FONT;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   let view3 = null;      // 目前的 3D 檢視（切回 2D 時釋放）
+  let kb = null;         // 鍵盤操作（js/keys.js）：0 = 電荷 A、1 = 電荷 B、2 = 試探電荷
 
   // ---------- 世界座標（cm，y 向上） ----------
   const W = 12, H = 8;
@@ -42,6 +45,7 @@
   const sctx = staticCanvas.getContext('2d');
   let staticDirty = true;
   let arrowPts = [];   // 電力線箭頭的位置（px），等位標籤避開
+  let levelBoxes = []; // 電位標籤佔的範圍（px，外接矩形），受力標籤 F 避開
 
   // 減少動態效果：關掉純裝飾的動畫（撞擊波紋）
   const motionQuery = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
@@ -312,29 +316,13 @@
     c.fillRect(0, 0, wpx, hpx);
 
     if (state.show.grid) {
-      // 對齊裝置像素的 1 px 細線：主格線 1 cm，次格線 0.2 cm（格子夠大時才畫）
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.lineWidth = 1;
-      const g = rgb.grid, sp = scale * dpr;
-      const line = function (step, alpha, skipMajor) {
-        c.strokeStyle = rgba(g, alpha);
-        c.beginPath();
-        for (let k = 1; k * step < W - 1e-9; k++) {
-          if (skipMajor && k % 5 === 0) continue;
-          const X = Math.round(k * step * sp) + 0.5; c.moveTo(X, 0); c.lineTo(X, cv.height);
-        }
-        for (let k = 1; k * step < H - 1e-9; k++) {
-          if (skipMajor && k % 5 === 0) continue;
-          const Y = Math.round(k * step * sp) + 0.5; c.moveTo(0, Y); c.lineTo(cv.width, Y);
-        }
-        c.stroke();
-      };
-      if (scale * 0.2 >= 10) line(0.2, g[3] * 0.45, true);
-      line(1, g[3] * 1.35, false);
-      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // 兩級格線（drawkit）：主格線 1 cm，次格線 0.2 cm（格子夠大時才畫）；對齊裝置像素的 1 px 細線
+      // 範圍內縮半個像素：畫面邊緣（x = 0、12 cm；y = 0、8 cm）不畫線
+      LD.grid(c, 0.5, 0.5, wpx - 0.5, hpx - 0.5, scale, scale * 0.2 >= 10 ? scale * 0.2 : 0, 0, 0);
     }
 
     arrowPts = [];
+    levelBoxes = [];
     if (state.show.equi) drawEquipotentials(c);
     if (state.show.lines) drawFieldLines(c);
     // 標籤最後畫，底框蓋在線上才清楚；拖曳電荷時先不標（放開後再排），畫面較安定也較快
@@ -346,6 +334,20 @@
 
   function drawEquipotentials(c) {
     const eq = rgb.equi;
+    const trace = function (ct) {
+      c.beginPath();
+      ct.polys.forEach(function (poly) {
+        for (let i = 0; i < poly.length; i++) {
+          const x = poly[i][0] * scale, y = (H - poly[i][1]) * scale;
+          if (i) c.lineTo(x, y); else c.moveTo(x, y);
+        }
+      });
+    };
+    // 0) 極淡的實線底（虛線的空隙也看得出整條等位線，像描在紙上的鉛筆線）
+    c.setLineDash([]);
+    c.lineWidth = 3;
+    c.strokeStyle = rgba(eq, colors.dark ? 0.1 : 0.08);
+    cache.contours.forEach(function (ct) { trace(ct); c.stroke(); });
     // 1) 線：連續虛線；V = 0 用較長的虛線並稍粗
     cache.contours.forEach(function (ct) {
       c.setLineDash(ct.level === 0 ? [10, 5] : [6, 4.5]);
@@ -392,7 +394,7 @@
    */
   function drawLevelLabels(c) {
     const eq = rgb.equi;
-    c.font = '600 10.5px system-ui, sans-serif';
+    c.font = '600 11px ' + FONT;
     const th = textH(c), ph = th + 3;
     const placed = [];
     const chargesPx = state.charges.map(function (q) { return toPx(q.x, q.y); });
@@ -457,6 +459,9 @@
       if (best) placed.push(best);
     });
     placed.forEach(function (L) {
+      const ca = Math.abs(Math.cos(L[3])), sa = Math.abs(Math.sin(L[3]));
+      const hx = ca * L[5] / 2 + sa * ph / 2, hy = sa * L[5] / 2 + ca * ph / 2;
+      levelBoxes.push({ x: L[0] - hx, y: L[1] - hy, w: 2 * hx, h: 2 * hy });
       c.save();
       c.translate(L[0], L[1]);
       c.rotate(L[3]);
@@ -512,227 +517,216 @@
   // ---------- 動態圖層 ----------
   let hover = -1;          // 游標下的場源電荷
   const ripples = [];      // 撞擊時的短暫波紋（裝飾，不影響物理）
+  const CHARGE_R = 13;     // 電荷小球的半徑（px，示意大小）
+  const PROBE_R = 7;       // 試探電荷小球的半徑（px）
+  let chargeBoxes = [];    // 這一幀電荷小球與標籤佔的位置（受力標籤 F 要避開）
 
-  function drawCharge(c, ch, i) {
-    const p = toPx(ch.x, ch.y);
-    const active = hover === i || (drag && drag.type === 'charge' && drag.i === i);
-    const r = 13 * (active ? 1.08 : 1);
-    const base = ch.q > 0 ? rgb.pos : ch.q < 0 ? rgb.neg : rgb.muted;
-    const mag = Math.min(1, Math.abs(ch.q) / 5);
-    const dark = colors.dark;
-
-    // 光暈：大小與亮度隨 |q| 增加
-    if (ch.q !== 0) {
-      const gr = r * (1.7 + 1.5 * mag);
-      const g = c.createRadialGradient(p[0], p[1], r * 0.7, p[0], p[1], gr);
-      const a = colors.glow * (0.45 + 0.55 * mag) * (active ? 1.25 : 1);
-      g.addColorStop(0, rgba(base, a));
-      g.addColorStop(0.45, rgba(base, a * 0.35));
-      g.addColorStop(1, rgba(base, 0));
-      c.fillStyle = g;
-      c.beginPath(); c.arc(p[0], p[1], gr, 0, Math.PI * 2); c.fill();
-    }
-    // 柔和投影（球浮在平面上方）
-    const sh = rgb['ef-shadow'];
-    const sg = c.createRadialGradient(p[0] + 1.5, p[1] + 4, r * 0.3, p[0] + 1.5, p[1] + 4, r * 1.25);
-    sg.addColorStop(0, rgba(sh, sh[3]));
-    sg.addColorStop(1, rgba(sh, 0));
-    c.fillStyle = sg;
-    c.beginPath(); c.arc(p[0] + 1.5, p[1] + 4, r * 1.25, 0, Math.PI * 2); c.fill();
-
-    if (ch.q !== 0) {
-      // 球體：亮點偏左上，邊緣加深
-      const g = c.createRadialGradient(p[0] - r * 0.34, p[1] - r * 0.38, r * 0.08, p[0], p[1], r * 1.05);
-      g.addColorStop(0, rgba(shade(base, 0.62), 1));
-      g.addColorStop(0.32, rgba(shade(base, 0.16), 1));
-      g.addColorStop(0.78, rgba(base, 1));
-      g.addColorStop(1, rgba(shade(base, -0.38), 1));
-      c.fillStyle = g;
-      c.beginPath(); c.arc(p[0], p[1], r, 0, Math.PI * 2); c.fill();
-      // 右下的細亮邊（rim light）
-      c.lineWidth = 1.3;
-      c.strokeStyle = rgba(shade(base, 0.55), dark ? 0.75 : 0.6);
-      c.beginPath(); c.arc(p[0], p[1], r - 1.1, -0.1 * Math.PI, 0.72 * Math.PI); c.stroke();
-      // 外緣細暗線
-      c.lineWidth = 1;
-      c.strokeStyle = rgba(shade(base, -0.5), 0.55);
-      c.beginPath(); c.arc(p[0], p[1], r - 0.5, 0, Math.PI * 2); c.stroke();
-      // 高光
-      const hg = c.createRadialGradient(p[0] - r * 0.36, p[1] - r * 0.42, 0, p[0] - r * 0.36, p[1] - r * 0.42, r * 0.42);
-      hg.addColorStop(0, 'rgba(255,255,255,0.85)');
-      hg.addColorStop(1, 'rgba(255,255,255,0)');
-      c.fillStyle = hg;
-      c.beginPath(); c.arc(p[0], p[1], r, 0, Math.PI * 2); c.fill();
-      // 正負號（線條畫，不依賴字型）
-      const L = r * 0.46;
-      c.lineCap = 'round';
-      c.lineWidth = 2.6;
-      c.strokeStyle = rgba(shade(base, -0.55), 0.35);
-      c.beginPath();
-      c.moveTo(p[0] - L, p[1] + 0.8); c.lineTo(p[0] + L, p[1] + 0.8);
-      if (ch.q > 0) { c.moveTo(p[0], p[1] - L + 0.8); c.lineTo(p[0], p[1] + L + 0.8); }
-      c.stroke();
-      c.strokeStyle = '#fff';
-      c.beginPath();
-      c.moveTo(p[0] - L, p[1]); c.lineTo(p[0] + L, p[1]);
-      if (ch.q > 0) { c.moveTo(p[0], p[1] - L); c.lineTo(p[0], p[1] + L); }
-      c.stroke();
-    } else {
-      // 不帶電：半透明的玻璃球與「0」
-      const g = c.createRadialGradient(p[0] - r * 0.34, p[1] - r * 0.38, r * 0.08, p[0], p[1], r * 1.05);
-      g.addColorStop(0, rgba(rgb.surface, 0.95));
-      g.addColorStop(1, rgba(mixRgb(rgb.surface, base, 0.35), 0.9));
-      c.fillStyle = g;
-      c.beginPath(); c.arc(p[0], p[1], r, 0, Math.PI * 2); c.fill();
-      c.lineWidth = 1.6;
-      c.strokeStyle = rgba(base, 0.9);
-      c.stroke();
-      c.fillStyle = colors.muted;
-      c.font = '700 13px system-ui, sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      c.fillText('0', p[0], p[1] + 0.5);
-    }
-    // 滑過或拖曳中：外框光暈
-    if (active) {
-      c.lineWidth = 2;
-      c.strokeStyle = rgba(ch.q === 0 ? rgb.text : shade(base, dark ? 0.3 : 0), 0.55);
-      c.beginPath(); c.arc(p[0], p[1], r + 4.5, 0, Math.PI * 2); c.stroke();
-    }
-
-    // 標籤（pill）：「A  +3.0 nC」
-    c.font = '700 12.5px system-ui, sans-serif';
-    const tA = ch.label, wA = c.measureText(tA).width;
-    c.font = '600 12.5px system-ui, sans-serif';
-    const tQ = fmtQ(ch.q), wQ = c.measureText(tQ).width;
-    const th = textH(c), ph = th + 6, gap = 6, pw = 10 + wA + gap + wQ + 10;
-    const wpx = W * scale, hpx = H * scale;
-    let ly = p[1] - r - 8 - ph / 2;
-    if (ly - ph / 2 < 3) ly = p[1] + r + 8 + ph / 2; // 太靠上就改放下方
-    let lx = Math.max(pw / 2 + 3, Math.min(wpx - pw / 2 - 3, p[0]));
-    if (ly + ph / 2 > hpx - 3) ly = hpx - 3 - ph / 2;
-    roundRect(c, lx - pw / 2, ly - ph / 2, pw, ph, ph / 2);
-    c.fillStyle = colors['ef-pill'];
-    c.fill();
-    c.lineWidth = 1;
-    c.strokeStyle = rgba(base, 0.6);
-    c.stroke();
-    c.textAlign = 'left';
-    c.textBaseline = 'middle';
-    c.font = '700 12.5px system-ui, sans-serif';
-    c.fillStyle = ch.q === 0 ? colors.muted : rgba(shade(base, dark ? 0.1 : -0.08), 1);
-    c.fillText(tA, lx - pw / 2 + 10, ly + 0.5);
-    c.font = '600 12.5px system-ui, sans-serif';
-    c.fillStyle = colors.text;
-    c.fillText(tQ, lx - pw / 2 + 10 + wA + gap, ly + 0.5);
+  /** 矩形 rc 與圓 (x, y, r) 是否重疊 */
+  function rectHitsCircle(rc, x, y, r) {
+    const cx = Math.max(rc.x, Math.min(x, rc.x + rc.w)), cy = Math.max(rc.y, Math.min(y, rc.y + rc.h));
+    return Math.hypot(cx - x, cy - y) < r;
+  }
+  function rectsHit(a, b, pad) {
+    pad = pad || 0;
+    return a.x < b.x + b.w + pad && b.x < a.x + a.w + pad && a.y < b.y + b.h + pad && b.y < a.y + a.h + pad;
   }
 
-  /** 軌跡：越舊越淡、越細（分段畫） */
+  /** 場源電荷：電量光暈 → 立體球（drawkit，正負各自的色調）→ 正負號；標籤最後統一排（避開另一個電荷與標籤） */
+  function drawCharges(c) {
+    const geo = state.charges.map(function (ch, i) {
+      const p = toPx(ch.x, ch.y);
+      const active = hover === i || (drag && drag.type === 'charge' && drag.i === i);
+      return { ch: ch, i: i, x: p[0], y: p[1], r: CHARGE_R * (active ? 1.08 : 1), active: active,
+        col: ch.q > 0 ? colors.pos : ch.q < 0 ? colors.neg : colors.muted };
+    });
+    // 光暈：大小與亮度隨 |q| 增加（深色模式較強）
+    geo.forEach(function (g) {
+      if (g.ch.q === 0) return;
+      const mag = Math.min(1, Math.abs(g.ch.q) / 5), gr = g.r * (1.7 + 1.5 * mag);
+      const a = colors.glow * (0.45 + 0.55 * mag) * (g.active ? 1.25 : 1);
+      const gg = c.createRadialGradient(g.x, g.y, g.r * 0.7, g.x, g.y, gr);
+      gg.addColorStop(0, LD.alpha(g.col, a));
+      gg.addColorStop(0.45, LD.alpha(g.col, a * 0.35));
+      gg.addColorStop(1, LD.alpha(g.col, 0));
+      c.fillStyle = gg;
+      c.beginPath(); c.arc(g.x, g.y, gr, 0, Math.PI * 2); c.fill();
+    });
+    geo.forEach(function (g) {
+      const x = g.x, y = g.y, r = g.r;
+      if (g.ch.q !== 0) {
+        LD.ball(c, x, y, r, g.col, { glow: 0 });
+        // 正負號（線條畫，不依賴字型）：先畫一道淡淡的暗影，再畫白色
+        const L = r * 0.46;
+        const sign = function (oy) {
+          c.beginPath();
+          c.moveTo(x - L, y + oy); c.lineTo(x + L, y + oy);
+          if (g.ch.q > 0) { c.moveTo(x, y - L + oy); c.lineTo(x, y + L + oy); }
+        };
+        c.lineCap = 'round';
+        c.lineWidth = 2.6;
+        c.strokeStyle = LD.alpha(LD.shade(g.col, -0.55), 0.38);
+        sign(0.9); c.stroke();
+        c.strokeStyle = '#ffffff';
+        sign(0); c.stroke();
+      } else {
+        // 不帶電：半透明的玻璃球與「0」
+        LD.contactShadow(c, x, y + r * 0.9, r * 0.8, 0.3);
+        const gg = c.createRadialGradient(x - r * 0.34, y - r * 0.38, r * 0.08, x, y, r * 1.05);
+        gg.addColorStop(0, LD.alpha(colors.surface, 0.95));
+        gg.addColorStop(1, LD.alpha(LD.mix(colors.surface, colors.muted, 0.35), 0.9));
+        c.fillStyle = gg;
+        c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+        c.lineWidth = 1.6;
+        c.strokeStyle = LD.alpha(colors.muted, 0.9);
+        c.stroke();
+        c.fillStyle = colors.muted;
+        c.font = '700 13px ' + FONT;
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillText('0', x, y + 0.5);
+      }
+      // 滑過或拖曳中：外框光暈
+      if (g.active) {
+        c.lineWidth = 2;
+        c.strokeStyle = LD.alpha(g.ch.q === 0 ? colors.text : LD.shade(g.col, colors.dark ? 0.3 : 0), 0.55);
+        c.beginPath(); c.arc(x, y, r + 4.5, 0, Math.PI * 2); c.stroke();
+      }
+    });
+    // 標籤（pill）：「A  +3.0 nC」；上方優先，放不下（出界、壓到另一個電荷、標籤、試探電荷或它的受力箭頭）就改放下方、右方、左方
+    const wpx = W * scale, hpx = H * scale;
+    const fg = forceGeom(), avoid = [[fg.x, fg.y, PROBE_R + 3]];
+    if (fg.tip) for (let a = 0; a <= 50; a += 6) avoid.push([fg.x + fg.ux * a, fg.y + fg.uy * a, 4]);
+    chargeBoxes = geo.map(function (g) { return { x: g.x - g.r - 3, y: g.y - g.r - 3, w: 2 * g.r + 6, h: 2 * g.r + 6 }; });
+    geo.forEach(function (g) {
+      const fA = '700 12.5px ' + FONT, fQ = '600 12.5px ' + FONT;
+      c.font = fA;
+      const tA = g.ch.label, wA = c.measureText(tA).width;
+      c.font = fQ;
+      const tQ = fmtQ(g.ch.q), mQ = c.measureText(tQ), wQ = mQ.width;
+      const ph = LD.textHeight(mQ, 15) + 6, gap = 6, pw = 10 + wA + gap + wQ + 10;
+      const cands = [[g.x, g.y - g.r - 8 - ph / 2], [g.x, g.y + g.r + 8 + ph / 2],
+        [g.x + g.r + 8 + pw / 2, g.y], [g.x - g.r - 8 - pw / 2, g.y]];
+      let best = null;
+      for (let k = 0; k < cands.length; k++) {
+        const cx = Math.max(pw / 2 + 3, Math.min(wpx - pw / 2 - 3, cands[k][0]));
+        const cy = Math.max(ph / 2 + 3, Math.min(hpx - ph / 2 - 3, cands[k][1]));
+        const rc = { x: cx - pw / 2, y: cy - ph / 2, w: pw, h: ph, cx: cx, cy: cy };
+        if (!best) best = rc;
+        const bad = rectHitsCircle(rc, g.x, g.y, g.r + 3) ||
+          geo.some(function (o) { return o !== g && rectHitsCircle(rc, o.x, o.y, o.r + 4); }) ||
+          chargeBoxes.some(function (b, j) { return j >= geo.length && rectsHit(rc, b, 3); }) ||
+          avoid.some(function (a) { return rectHitsCircle(rc, a[0], a[1], a[2]); });
+        if (!bad) { best = rc; break; }
+      }
+      chargeBoxes.push(best);
+      LD.roundRect(c, best.x, best.y, pw, ph, ph / 2);
+      c.fillStyle = colors['ef-pill'];
+      c.fill();
+      c.lineWidth = 1;
+      c.strokeStyle = LD.alpha(g.col, 0.6);
+      c.stroke();
+      c.textAlign = 'left';
+      c.textBaseline = 'middle';
+      c.font = fA;
+      c.fillStyle = g.ch.q === 0 ? colors.muted : LD.shade(g.col, colors.dark ? 0.1 : -0.08);
+      c.fillText(tA, best.x + 10, best.cy + 0.5);
+      c.font = fQ;
+      c.fillStyle = colors.text;
+      c.fillText(tQ, best.x + 10 + wA + gap, best.cy + 0.5);
+    });
+  }
+
+  /** 軌跡：底下一層柔和光暈（最新一段較亮），上面越舊越淡、越細（分段畫） */
   function drawTrail(c, tr) {
     const n = tr.length;
     if (n < 2) return;
-    const pc = rgb.probe, bands = Math.min(48, n - 1);
-    c.lineCap = 'round';
-    c.lineJoin = 'round';
-    for (let b = 0; b < bands; b++) {
-      const i0 = Math.floor(b * (n - 1) / bands), i1 = Math.floor((b + 1) * (n - 1) / bands);
-      if (i1 <= i0) continue;
-      const f = (b + 1) / bands;
-      c.lineWidth = 1.1 + 1.6 * f;
-      c.strokeStyle = rgba(pc, 0.18 + 0.67 * f * f);
+    const pc = colors.probe, bands = Math.min(48, n - 1);
+    const path = function (i0, i1) {
       c.beginPath();
       for (let i = i0; i <= i1; i++) {
         const x = tr[i][0] * scale, y = (H - tr[i][1]) * scale;
         if (i === i0) c.moveTo(x, y); else c.lineTo(x, y);
       }
-      c.stroke();
+    };
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    c.strokeStyle = LD.alpha(pc, colors.dark ? 0.13 : 0.07);
+    c.lineWidth = 6;
+    path(0, n - 1); c.stroke();
+    c.strokeStyle = LD.alpha(pc, colors.dark ? 0.2 : 0.1);
+    c.lineWidth = 9;
+    path(Math.max(0, n - 70), n - 1); c.stroke();
+    for (let b = 0; b < bands; b++) {
+      const i0 = Math.floor(b * (n - 1) / bands), i1 = Math.floor((b + 1) * (n - 1) / bands);
+      if (i1 <= i0) continue;
+      const f = (b + 1) / bands;
+      c.lineWidth = 1.1 + 1.6 * f;
+      c.strokeStyle = LD.alpha(pc, 0.18 + 0.67 * f * f);
+      path(i0, i1); c.stroke();
     }
   }
 
+  /** 試探電荷的位置（px）與受力方向的單位向量（畫面座標，y 向下）；受力為零時 tip = false */
+  function forceGeom() {
+    const pr = state.probe, pp = toPx(pr.x, pr.y), e = FC.fieldAt(state.charges, pr.x, pr.y);
+    const fx = pr.q * e.ex, fy = pr.q * e.ey, fm = Math.hypot(fx, fy);
+    const ok = fm > 0 && isFinite(fm);
+    return { x: pp[0], y: pp[1], ux: ok ? fx / fm : 0, uy: ok ? -fy / fm : 0, tip: ok };
+  }
   function drawProbe(c, pr, e) {
-    const pp = toPx(pr.x, pr.y), pc = rgb.probe, dark = colors.dark;
+    const pp = toPx(pr.x, pr.y), pc = colors.probe;
+    const wpx = W * scale, hpx = H * scale;
     // 起點標記（已移動時）
     if (pr.trail.length > 1 && Math.hypot(pr.x - pr.home.x, pr.y - pr.home.y) > 0.15) {
       const h = toPx(pr.home.x, pr.home.y);
       c.setLineDash([2.5, 2.5]);
       c.lineWidth = 1.3;
-      c.strokeStyle = rgba(pc, 0.8);
+      c.strokeStyle = LD.alpha(pc, 0.8);
       c.beginPath(); c.arc(h[0], h[1], 5.5, 0, Math.PI * 2); c.stroke();
       c.setLineDash([]);
     }
-    // 受力方向箭頭（固定長度，只表示方向）
+    // 受力方向箭頭（drawkit；固定長度 50 px，只表示方向）
     const fx = pr.q * e.ex, fy = pr.q * e.ey, fm = Math.hypot(fx, fy);
     if (fm > 0 && isFinite(fm)) {
-      const L = 44, ux = fx / fm, uy = -fy / fm, shaft = 2.6, hl = shaft * 4, hw = hl * 0.46;
-      const tipX = pp[0] + ux * (L + 6), tipY = pp[1] + uy * (L + 6);
-      c.lineCap = 'round';
-      // 底下一圈背景色的描邊，壓在任何底色上都清楚
-      c.strokeStyle = rgba(rgb['canvas-bg'], 0.75);
-      c.lineWidth = shaft + 3;
-      c.beginPath(); c.moveTo(pp[0], pp[1]); c.lineTo(tipX - ux * hl * 0.6, tipY - uy * hl * 0.6); c.stroke();
-      c.fillStyle = rgba(rgb['canvas-bg'], 0.75);
-      arrowHead(c, tipX + ux * 1.4, tipY + uy * 1.4, ux, uy, hl + 3, hw + 1.6);
-      c.strokeStyle = colors.probe;
-      c.lineWidth = shaft;
-      c.beginPath(); c.moveTo(pp[0], pp[1]); c.lineTo(tipX - ux * hl * 0.6, tipY - uy * hl * 0.6); c.stroke();
-      c.fillStyle = colors.probe;
-      arrowHead(c, tipX, tipY, ux, uy, hl, hw);
-      // 「F」標籤
-      c.font = 'italic 700 13px system-ui, sans-serif';
-      c.textAlign = 'center';
-      c.textBaseline = 'middle';
-      // 預設放在箭頭尖端前方；超出畫面時改放在箭身旁
-      const wpx = W * scale, hpx = H * scale;
-      let lx = tipX + ux * 9, ly = tipY + uy * 9;
-      if (lx < 8 || lx > wpx - 8 || ly < 8 || ly > hpx - 8) {
-        const side = (pp[0] - uy * 12 > 8 && pp[0] - uy * 12 < wpx - 8) ? -1 : 1;
-        lx = pp[0] + ux * (L * 0.55) + side * uy * 12;
-        ly = pp[1] + uy * (L * 0.55) - side * ux * 12;
+      const L = 50, ux = fx / fm, uy = -fy / fm;
+      const tipX = pp[0] + ux * L, tipY = pp[1] + uy * L;
+      // 「F」標籤：尖端前方優先；出界或壓到電荷（及其標籤）時改放箭身兩側或試探電荷後方
+      const nx = -uy, ny = ux, lw = 16, lh = 18;
+      const cands = [[ux * 11, uy * 11], [nx * 13 - ux * 18, ny * 13 - uy * 18], [-nx * 13 - ux * 18, -ny * 13 - uy * 18],
+        [nx * 13 - ux * 38, ny * 13 - uy * 38], [-nx * 13 - ux * 38, -ny * 13 - uy * 38], [-ux * (L + 15), -uy * (L + 15)]];
+      let off = cands[0];
+      for (let k = 0; k < cands.length; k++) {
+        const x = tipX + cands[k][0], y = tipY + cands[k][1];
+        const rc = { x: x - lw / 2, y: y - lh / 2, w: lw, h: lh };
+        if (x < 9 || x > wpx - 9 || y < 9 || y > hpx - 9) continue;
+        if (chargeBoxes.some(function (b) { return rectsHit(rc, b, 1); })) continue;
+        if (levelBoxes.some(function (b) { return rectsHit(rc, b, 0); })) continue;
+        off = cands[k]; break;
       }
-      c.lineJoin = 'round';
-      c.lineWidth = 4;
-      c.strokeStyle = rgba(rgb['canvas-bg'], 0.9);
-      c.strokeText('F', lx, ly);
-      c.fillStyle = colors.probe;
-      c.fillText('F', lx, ly);
+      LD.arrow(c, pp[0], pp[1], tipX, tipY, pc, 2.6, { label: 'F', lx: off[0], ly: off[1] });
     }
-    // 試探電荷：小光暈 + 光滑小球
-    const r = 7;
-    const gg = c.createRadialGradient(pp[0], pp[1], r * 0.6, pp[0], pp[1], r * 2.6);
-    gg.addColorStop(0, rgba(pc, colors.glow * (state.running ? 1.1 : 0.8)));
-    gg.addColorStop(1, rgba(pc, 0));
-    c.fillStyle = gg;
-    c.beginPath(); c.arc(pp[0], pp[1], r * 2.6, 0, Math.PI * 2); c.fill();
-    const sh = rgb['ef-shadow'];
-    const sg = c.createRadialGradient(pp[0] + 1, pp[1] + 2.5, r * 0.3, pp[0] + 1, pp[1] + 2.5, r * 1.25);
-    sg.addColorStop(0, rgba(sh, sh[3] * 0.9));
-    sg.addColorStop(1, rgba(sh, 0));
-    c.fillStyle = sg;
-    c.beginPath(); c.arc(pp[0] + 1, pp[1] + 2.5, r * 1.25, 0, Math.PI * 2); c.fill();
-    const g = c.createRadialGradient(pp[0] - r * 0.35, pp[1] - r * 0.4, r * 0.05, pp[0], pp[1], r * 1.05);
-    g.addColorStop(0, rgba(shade(pc, 0.7), 1));
-    g.addColorStop(0.35, rgba(shade(pc, 0.15), 1));
-    g.addColorStop(0.8, rgba(pc, 1));
-    g.addColorStop(1, rgba(shade(pc, -0.4), 1));
-    c.fillStyle = g;
-    c.beginPath(); c.arc(pp[0], pp[1], r, 0, Math.PI * 2); c.fill();
-    c.lineWidth = 1.2;
-    c.strokeStyle = rgba(dark ? shade(pc, -0.6) : rgb.surface, 0.9);
-    c.beginPath(); c.arc(pp[0], pp[1], r + 0.6, 0, Math.PI * 2); c.stroke();
+    // 試探電荷：立體小球（drawkit）＋光暈（運動中稍亮）
+    LD.ball(c, pp[0], pp[1], PROBE_R, pc, { glow: colors.dark ? (state.running ? 0.55 : 0.4) : (state.running ? 0.3 : 0.2) });
   }
 
-  /** 比例尺：半透明 pill 底框，橫條長度正好 1 cm */
+  /** 比例尺：半透明圓角底框，橫條長度正好 1 cm */
   function drawScaleBar(c) {
     const hpx = H * scale;
-    c.font = '600 12px system-ui, sans-serif';
-    const label = '1 cm', tw = c.measureText(label).width, th = textH(c);
+    c.font = '600 12px ' + FONT;
+    const label = '1 cm', m = c.measureText(label), tw = m.width, th = LD.textHeight(m, 15);
     const ph = Math.max(22, th + 8), pw = 12 + scale + 8 + tw + 12;
     const x0 = 10, y0 = hpx - 10 - ph;
-    roundRect(c, x0, y0, pw, ph, ph / 2);
+    c.save();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.45)' : LD.alpha(colors.text, 0.16);
+    c.shadowBlur = 6;
+    c.shadowOffsetY = 1;
+    LD.roundRect(c, x0, y0, pw, ph, ph / 2);
     c.fillStyle = colors['ef-pill'];
     c.fill();
+    c.restore();
     c.lineWidth = 1;
-    c.strokeStyle = rgba(rgb.text, 0.15);
+    c.strokeStyle = LD.alpha(colors.text, 0.15);
+    LD.roundRect(c, x0, y0, pw, ph, ph / 2);
     c.stroke();
     const by = Math.round(y0 + ph / 2) + 0.5, bx = x0 + 12;
     c.strokeStyle = colors.text;
@@ -747,18 +741,32 @@
     c.fillStyle = colors.text;
     c.textAlign = 'left';
     c.textBaseline = 'middle';
-    c.fillText(T('1 cm', '1 cm'), bx + scale + 8, by + 0.5);
+    c.fillText(label, bx + scale + 8, by + 0.5);
   }
 
   function drawRipples(c, now) {
     for (let i = ripples.length - 1; i >= 0; i--) {
       const rp = ripples[i], f = (now - rp.t0) / 380;
       if (f >= 1 || f < 0) { ripples.splice(i, 1); continue; }
-      const p = toPx(rp.x, rp.y), e = 1 - Math.pow(1 - f, 3);
-      c.lineWidth = 2.5 * (1 - f) + 0.5;
-      c.strokeStyle = rgba(rgb.probe, 0.8 * (1 - f));
-      c.beginPath(); c.arc(p[0], p[1], 14 + 22 * e, 0, Math.PI * 2); c.stroke();
+      const p = toPx(rp.x, rp.y);
+      LD.ripple(c, p[0], p[1], CHARGE_R + 1, 1 - Math.pow(1 - f, 3), colors.probe);
     }
+  }
+
+  /** 鍵盤選取的物件周圍畫焦點框（--accent 虛線圓角框） */
+  function drawKeyFocus(c) {
+    if (!kb || !kb.focused()) return;
+    const i = kb.index();
+    let x, y, r;
+    if (i < 2) { const ch = state.charges[i], p = toPx(ch.x, ch.y); x = p[0]; y = p[1]; r = CHARGE_R + 7; }
+    else { const p = toPx(state.probe.x, state.probe.y); x = p[0]; y = p[1]; r = PROBE_R + 8; }
+    c.save();
+    c.strokeStyle = LD.c.accent;
+    c.lineWidth = 2;
+    c.setLineDash([5, 4]);
+    LD.roundRect(c, x - r, y - r, 2 * r, 2 * r, 8);
+    c.stroke();
+    c.restore();
   }
 
   function draw() {
@@ -776,8 +784,8 @@
     const pr = state.probe;
     drawTrail(ctx, pr.trail);
 
-    // 場源電荷
-    state.charges.forEach(function (c, i) { drawCharge(ctx, c, i); });
+    // 場源電荷（含標籤）
+    drawCharges(ctx);
 
     // 試探電荷與受力方向
     const e = FC.fieldAt(state.charges, pr.x, pr.y);
@@ -785,8 +793,9 @@
 
     if (ripples.length) drawRipples(ctx, performance.now());
 
-    // 比例尺
+    // 比例尺、鍵盤焦點框
     drawScaleBar(ctx);
+    drawKeyFocus(ctx);
 
     updateReadout(e);
   }
@@ -840,7 +849,48 @@
     $('rK').textContent = fmtJ(en.K);
     $('rU').textContent = fmtJ(en.U);
     $('rT').textContent = fmtJ(en.total);
-    $('status').textContent = state.status;
+    // 狀態列有 aria-live：只在文字真的改變時才寫（每一幀重寫會讓螢幕閱讀器重複念）
+    if ($('status').textContent !== state.status) $('status').textContent = state.status;
+    // 運動中的速率與總能量：寫進另一個 .sr-only 狀態列，至少間隔 1 秒才更新
+    if (state.running) {
+      const t = performance.now();
+      if (t - srNowAt >= 1000) {
+        srNowAt = t;
+        const el = $('srNow');
+        if (el) el.textContent = T('速率 ', 'Speed ') + plain(Math.hypot(pr.vx, pr.vy) * 100) + ' cm/s' +
+          T('，總能量 ', ', total energy ') + fmtJ(en.total);
+      }
+    }
+  }
+  let srNowAt = -1e9;
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 撞上電荷或離開畫面寫進可見的 #status（aria-live）；放好試探電荷、移動場源或改電量後（停止調整約 0.9 s），
+  // 把試探電荷所在處的 E、V 寫進 .sr-only 的 #srSay
+  /** 給螢幕閱讀器的數字：三位有效數字、千分位，不用上標 */
+  function plain(v) {
+    if (!isFinite(v)) return '—';
+    return Number(v.toPrecision(3)).toLocaleString('en-US', { maximumFractionDigits: 6 }).replace('-', '−');
+  }
+  function fieldText() {
+    const pr = state.probe, info = FC.probeInfo(state.charges, pr.x, pr.y);
+    const dir = info.E > 0 && isFinite(info.E) ? ((Math.atan2(info.ey, info.ex) * 180 / Math.PI + 360) % 360).toFixed(0) : null;
+    return T('試探電荷在 (' + pr.x.toFixed(1) + ', ' + pr.y.toFixed(1) + ') cm：電場 ' + plain(info.E) + ' N/C' +
+      (dir !== null ? '，方向 ' + dir + '°' : '') + '，電位 ' + plain(info.V) + ' V。',
+    'Test charge at (' + pr.x.toFixed(1) + ', ' + pr.y.toFixed(1) + ') cm: field ' + plain(info.E) + ' N/C' +
+      (dir !== null ? ', direction ' + dir + '°' : '') + ', potential ' + plain(info.V) + ' V.');
+  }
+  let sayTimer = 0, sayLaterTimer = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function sayField() {
+    clearTimeout(sayLaterTimer);
+    sayLaterTimer = setTimeout(function () { if (!state.running) say(fieldText()); }, 900);
   }
 
   // ---------- 音效（sound.js；音效關閉或沒有載入時完全不呼叫） ----------
@@ -998,7 +1048,7 @@
   bindSlider('mp', function (v) { return fmtNum(v) + ' g'; }, function (v) { state.probe.m = v; requestDraw(); });
   // 放開滑桿（或打字輸入完成）時回報新的場源配置
   [['qA', 'qA'], ['qB', 'qB'], ['sep', 'sep']].forEach(function (pair) {
-    $(pair[0]).addEventListener('change', function () { emitProbe(pair[1]); });
+    $(pair[0]).addEventListener('change', function () { emitProbe(pair[1]); sayField(); });
   });
 
   function placeSymmetric(d) {
@@ -1028,6 +1078,7 @@
       else { state.charges[0].x = W / 2; state.charges[0].y = H / 2; state.charges[1].x = W - 1.5; state.charges[1].y = 1.5; syncSeparation(); }
       resetProbe(W / 2 + (p.d ? 0 : 2), p.d ? H / 2 + 2 : H / 2);
       invalidate();
+      sayField();
     });
   });
 
@@ -1098,9 +1149,11 @@
     if (best >= 0) {
       drag = { type: 'charge', i: best };
       setHover(best);
+      if (kb) kb.select(best); // 鍵盤接著操作剛拖曳的物件
       requestDraw();
     } else {
       drag = { type: 'probe' };
+      if (kb) kb.select(2);
       resetProbe(w[0], w[1]);
     }
     cv.setPointerCapture(ev.pointerId);
@@ -1123,7 +1176,7 @@
     const wasCharge = drag && drag.type === 'charge';
     const wasProbe = drag && drag.type === 'probe';
     drag = null;
-    if (wasCharge || wasProbe) emitProbe(wasCharge ? 'drag' : 'probe');
+    if (wasCharge || wasProbe) { emitProbe(wasCharge ? 'drag' : 'probe'); sayField(); }
     if (wasCharge) staticDirty = true; // 補畫電位標籤
     if (ev && ev.pointerType === 'mouse') setHover(chargeAt(eventWorld(ev)));
     else setHover(-1);
@@ -1132,6 +1185,85 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag) setHover(-1); });
+
+  // ---------- 鍵盤操作（js/keys.js）：Enter 切換電荷 A、電荷 B、試探電荷，方向鍵移動 ----------
+  // 限制與拖曳完全相同（畫面範圍 0–12 cm × 0–8 cm），觸發相同的任務事件（放開拖曳時的 probe 事件）與重畫
+  const STEP = 0.1, STEP_BIG = 1; // cm
+  const clampX = function (x) { return Math.min(W, Math.max(0, x)); };
+  const clampY = function (y) { return Math.min(H, Math.max(0, y)); };
+  const r6 = function (v) { return Math.round(v * 1e6) / 1e6; }; // 去掉浮點誤差（1e-6 cm）
+  function chargeName(i) { return T('電荷 ', 'Charge ') + state.charges[i].label; }
+  function chargeDesc(i) {
+    const c = state.charges[i];
+    return chargeName(i) + T('：位置 (', ': position (') + c.x.toFixed(1) + ', ' + c.y.toFixed(1) + ') cm' +
+      T('，電量 ', ', charge ') + fmtQ(c.q) + T('。', '.');
+  }
+  function keyMoveCharge(i, dx, dy, big) {
+    const c = state.charges[i], s = big ? STEP_BIG : STEP;
+    const x = clampX(r6(c.x + dx * s)), y = clampY(r6(c.y + dy * s));
+    if (x === c.x && y === c.y) return false;
+    c.x = x; c.y = y;
+    taint();
+    syncSeparation();
+    invalidate();
+    emitProbe('drag');
+    sayField();
+    return true;
+  }
+  function keyMoveProbe(dx, dy, big) {
+    const pr = state.probe, s = big ? STEP_BIG : STEP;
+    // 從畫面上看到的位置出發（運動中或停下來的地方），和用滑鼠在那裡按下去一樣：重新放置、回到靜止
+    const x = clampX(r6(clampX(pr.x) + dx * s)), y = clampY(r6(clampY(pr.y) + dy * s));
+    if (x === pr.x && y === pr.y && x === pr.home.x && y === pr.home.y && !state.running) return false;
+    resetProbe(x, y);
+    emitProbe('probe');
+    sayField();
+    return true;
+  }
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('電場模擬畫布：電荷 A、B 的電力線、等位線與電位色階，以及試探電荷與它的受力方向。拖曳電荷改變位置，點擊空白處放置試探電荷；鍵盤操作：Enter 切換電荷 A、電荷 B、試探電荷，方向鍵移動 0.1 cm，Shift 加方向鍵移動 1 cm。',
+        'Electric field canvas: the field lines, equipotentials and potential shading of charges A and B, and the test charge with the direction of the force on it. Drag a charge to move it, click an empty spot to place the test charge. Keyboard: Enter picks charge A, charge B or the test charge, the arrow keys move it 0.1 cm, Shift with an arrow key 1 cm.'),
+      items: [0, 1].map(function (i) {
+        return {
+          name: function () { return chargeName(i); },
+          move: function (dx, dy, big) { return keyMoveCharge(i, dx, dy, big); },
+          describe: function () { return chargeDesc(i); }
+        };
+      }).concat([{
+        name: function () { return T('試探電荷', 'Test charge'); },
+        move: keyMoveProbe,
+        describe: fieldText
+      }]),
+      onChange: requestDraw
+    });
+  }
+
+  // ---------- 分享連結（classroom.js）：畫布上拖曳出來的狀態 ----------
+  // 電量、間距、顯示選項由滑桿與勾選框自動記錄；這裡補上兩個電荷的實際位置與試探電荷的起點
+  // 頁面程式執行時 classroom.js 還沒載入：用佇列寫法，classroom.js 載入時會補登記（分享連結在 load 之後才還原）
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () {
+      return { c: state.charges.map(function (c) { return [r6(c.x), r6(c.y)]; }), p: [r6(state.probe.home.x), r6(state.probe.home.y)] };
+    },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      const pt = function (a) {
+        return Array.isArray(a) && a.length >= 2 && typeof a[0] === 'number' && typeof a[1] === 'number' && isFinite(a[0]) && isFinite(a[1])
+          ? [clampX(a[0]), clampY(a[1])] : null;
+      };
+      if (Array.isArray(o.c)) {
+        o.c.slice(0, state.charges.length).forEach(function (a, i) {
+          const q = pt(a);
+          if (q) { state.charges[i].x = q[0]; state.charges[i].y = q[1]; }
+        });
+        syncSeparation();
+      }
+      const p = pt(o.p);
+      if (p) resetProbe(p[0], p[1]); else resetProbe();
+      invalidate();
+    }
+  });
 
   // =====================================================================
   // 3D 檢視（three.js，切換到 3D 時才以 import() 動態載入 vendor/three/；場景在 js/electric-field-3d.js）

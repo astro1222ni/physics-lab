@@ -1,9 +1,9 @@
-# Astro Ni 物理實驗室
+# Astro Ni 科學實驗室
 
 純前端的高中物理互動模擬。所有運算都在觀眾的瀏覽器中進行，不需伺服器、不呼叫任何 AI API。
 
 由 GitHub Pages 免費託管，網址為
-`https://astro1222ni.github.io/physics-lab/`
+`https://lab.astroni.org/`
 
 目前 24 個實驗全部上線（力學、熱學、波動與聲音、光學、電磁學、近代物理），每個都有任務模式「倪的星星」。
 開發規則見 `CLAUDE.md`，目前狀態、工具與待辦見 `HANDOFF.md`。

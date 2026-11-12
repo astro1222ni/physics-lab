@@ -29,9 +29,11 @@
     log: [],
     acted: false,                // 使用者操作過後才回報任務事件（預設狀態與自動播放不算）
     tween: null, demo: null, drag: null, hover: null,
-    eclKey: '', fx: []
+    eclKey: '', fx: [],
+    place: K.placeById('tw'),    // 觀測地點（預設臺灣：北緯 23.5°、東經 121°、UTC+8，與加入選單前完全相同）
+    stdOff: 8                    // 這個地點的標準時間偏移（判斷是不是夏令時間）
   };
-  let elVer = 0;
+  let elVer = 0, placeVer = 0;
   function setEl(el) { state.el = el; elVer++; snapCache = null; }
   (function initEl() {
     let el = K.makeElements({});
@@ -68,7 +70,29 @@
     if (m >= 1440) m -= 1440;
     return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
   }
-  function fmtWhen(t) { const c = K.calendar(t); return fmtDate(c) + ' ' + fmtClock(c.hour); }
+  // ---------- 觀測地點與當地時間（模型時間 state.t 一律是 UTC+8；畫面上的日期、時刻都是所選地點的當地時間） ----------
+  function plat() { return state.place.lat * DEG; }
+  function plon() { return state.place.lon * DEG; }
+  function isTW() { return state.place.id === 'tw'; }
+  function placeName() { return T(state.place.zh, state.place.en); }
+  function localT(t) { return K.localT(state.place, t); }
+  function lcal(t) { return K.calendar(localT(t)); }
+  function fmtLocalClock(t) { return fmtClock(lcal(t).hour); }
+  /** UTC 偏移的寫法：UTC+8、UTC+5:30、UTC−4、UTC+0 */
+  function utcText(o) {
+    const a = Math.abs(o), h = Math.floor(a + 1e-9), m = Math.round((a - h) * 60);
+    return 'UTC' + (o < 0 ? '−' : '+') + h + (m ? ':' + String(m).padStart(2, '0') : '');
+  }
+  function isDST(t) { return !!state.place.tz && K.utcOffset(state.place, t) > state.stdOff + 1e-9; }
+  /** 目前的時區：「UTC−4，夏令時間」（short：「UTC−4 夏令」，畫布用） */
+  function zoneText(t, short) {
+    const s = utcText(K.utcOffset(state.place, t));
+    if (!isDST(t)) return s;
+    return s + (short ? T(' 夏令', ' DST') : T('，夏令時間', ', daylight saving time'));
+  }
+  function latText(v) { return v >= 0 ? T('北緯 ', '') + num(v, 2) + T('°', '° N') : T('南緯 ', '') + num(-v, 2) + T('°', '° S'); }
+  function lonText(v) { return v >= 0 ? T('東經 ', '') + num(v, 2) + T('°', '° E') : T('西經 ', '') + num(-v, 2) + T('°', '° W'); }
+  function fmtWhen(t) { const c = lcal(t); return fmtDate(c) + ' ' + fmtClock(c.hour); }
   function deg(v, d) { return num(v / DEG, d == null ? 1 : d) + '°'; }
   const DIR8 = function () { return [T('北', 'N'), T('東北', 'NE'), T('東', 'E'), T('東南', 'SE'), T('南', 'S'), T('西南', 'SW'), T('西', 'W'), T('西北', 'NW')]; };
   function azName(az) { return DIR8()[Math.round(K.norm(az) / (TAU / 8)) % 8]; }
@@ -92,39 +116,50 @@
   // ---------- 由核心算出目前的一切（同一時刻只算一次） ----------
   let snapCache = null;
   function snap() {
-    if (snapCache && snapCache.t === state.t && snapCache.v === elVer) return snapCache;
-    const t = state.t, el = state.el;
+    if (snapCache && snapCache.t === state.t && snapCache.v === elVer && snapCache.pv === placeVer) return snapCache;
+    const t = state.t, el = state.el, la = plat(), lo = plon();
     const ph = K.phaseAt(el, t), m = ph.moon, s = ph.sun;
-    const P = K.observer(t);
-    const hm = K.horizontal(m, t), hs = K.horizontal(s, t);
+    const P = K.observer(t, la, lo);
+    const hm = K.horizontal(m, t, la, lo), hs = K.horizontal(s, t, la, lo);
     const node = K.nodeLon(el, t), peri = K.periLon(el, t);
     const o = {
-      t: t, v: elVer, ph: ph, m: m, s: s, P: P, hm: hm, hs: hs, node: node, peri: peri,
+      t: t, v: elVer, pv: placeVer, ph: ph, m: m, s: s, P: P, hm: hm, hs: hs, node: node, peri: peri,
       lunar: K.lunarEclipse(m, s), solar: K.solarEclipse(m, s), loc: K.localSolar(m, s, P),
-      ori: K.skyOrientation(el, t), cal: K.calendar(t), key: K.phaseKey(ph.dLam),
+      ori: K.skyOrientation(el, t, la, lo), cal: lcal(t), key: K.phaseKey(ph.dLam),
       nodeDist: Math.min(Math.abs(K.wrapPi(m.u)), Math.abs(K.wrapPi(m.u - Math.PI))),
       sunNode: Math.min(Math.abs(K.wrapPi(s.lon - node)), Math.abs(K.wrapPi(s.lon - node - Math.PI))),
       dec: K.declination(m)
     };
-    o.rising = K.horizontal(K.moonAt(el, t + 0.002), t + 0.002).alt > hm.alt;
+    o.rising = K.horizontal(K.moonAt(el, t + 0.002), t + 0.002, la, lo).alt > hm.alt;
     snapCache = o;
     return o;
   }
-  // 今天（台灣時間 00:00–24:00）的升落與路徑：每天、每次改軌道才重算
+  // 今天（當地時間 00:00–24:00；夏令時間切換那天是 23 或 25 小時）的升落與路徑：每天、每次改軌道或地點才重算
   let dayCache = null;
   function today() {
-    const sn = snap(), d0 = sn.cal.dayIndex;
-    if (dayCache && dayCache.d0 === d0 && dayCache.v === elVer) return dayCache;
-    const el = state.el;
-    const mr = K.riseSet(el, d0, 'moon'), sr = K.riseSet(el, d0, 'sun');
+    const b = K.localDay(state.place, state.t), d0 = b.t0, span = b.t1 - b.t0;
+    if (dayCache && dayCache.d0 === d0 && dayCache.v === elVer && dayCache.pv === placeVer) return dayCache;
+    const el = state.el, la = plat(), lo = plon();
+    const mr = K.riseSet(el, d0, 'moon', la, lo, span), sr = K.riseSet(el, d0, 'sun', la, lo, span);
     const mp = [], sp = [];
     for (let i = 0; i <= 96; i++) {
-      const t = d0 + i / 96;
-      const a = K.horizontal(K.moonAt(el, t), t), b = K.horizontal(K.sunAt(t), t);
-      mp.push([a.az, a.alt]); sp.push([b.az, b.alt]);
+      const t = d0 + i / 96 * span;
+      const a = K.horizontal(K.moonAt(el, t), t, la, lo), c = K.horizontal(K.sunAt(t), t, la, lo);
+      mp.push([a.az, a.alt]); sp.push([c.az, c.alt]);
     }
-    dayCache = { d0: d0, v: elVer, moon: mr, sun: sr, mp: mp, sp: sp };
+    dayCache = { d0: d0, d1: b.t1, span: span, v: elVer, pv: placeVer, moon: mr, sun: sr, mp: mp, sp: sp };
     return dayCache;
+  }
+  /** 今天的升起、落下時刻（當地時間）；都沒有時說整天在地平線上或下 */
+  function rsText(r, x, body) {
+    if (x != null) return fmtLocalClock(x);
+    if (r.rise == null && r.set == null) return r.upAll ? T('整天在地平線上', 'up all day') : T('整天在地平線下', 'down all day');
+    return T('不發生', 'none');
+  }
+  function dayNote(day) {
+    if (Math.abs(day.span * 24 - 24) < 0.01) return '';
+    const h = Math.round(day.span * 24);
+    return T('；這天因夏令時間調整，一天有 ' + h + ' 小時', '; this day has ' + h + ' hours (daylight saving change)');
   }
   let ageCache = { t: NaN, v: -1, age: 0 };
   function moonAge() {
@@ -455,14 +490,21 @@
     c.strokeStyle = D.alpha(C.surface, C.dark ? 0.35 : 0.8);
     c.lineWidth = 1;
     c.beginPath(); c.arc(x, y, r, 0, TAU); c.stroke();
-    // 台灣
-    const tw = proj(K.LAT_TW, K.LON_TW);
+    // 觀測地點（預設臺灣）
+    const tw = proj(plat(), plon());
     L.tw = tw;
     if (tw[2] > -0.02) {
       c.fillStyle = C.pos;
       c.strokeStyle = '#ffffff';
       c.lineWidth = 1.2;
       c.beginPath(); c.arc(tw[0], tw[1], 3.2, 0, TAU); c.fill(); c.stroke();
+    } else {
+      // 在地球背面（從黃道北極看不到）：只畫空心圈
+      c.strokeStyle = D.alpha(C.pos, 0.85);
+      c.lineWidth = 1.4;
+      c.setLineDash([2, 2]);
+      c.beginPath(); c.arc(tw[0], tw[1], 3.2, 0, TAU); c.stroke();
+      c.setLineDash([]);
     }
   }
 
@@ -525,10 +567,11 @@
       inward(H.peri, T('近地點', 'Perigee'), C.equi);
       inward(H.apo, T('遠地點', 'Apogee'), C.muted);
     }
-    // 地球、台灣
+    // 地球、觀測地點（南半球的地點在俯視圖中位於地球背面：空心圈、文字變淡）
     if (L.rE >= 5 && L.tw) {
       const v = [L.tw[0] - L.cx, L.tw[1] - L.cy], d = Math.hypot(v[0], v[1]) || 1;
-      D.haloText(c, T('台灣', 'Taiwan'), L.tw[0] + v[0] / d * 10, L.tw[1] + v[1] / d * 10 + 4, C.pos, v[0] >= 0 ? 'left' : 'right', 'alphabetic', '600 ' + f3);
+      const back = L.tw[2] <= -0.02;
+      D.haloText(c, back ? placeName() + T('（在背面）', ' (far side)') : placeName(), L.tw[0] + v[0] / d * 10, L.tw[1] + v[1] / d * 10 + 4, back ? D.alpha(C.pos, 0.75) : C.pos, v[0] >= 0 ? 'left' : 'right', 'alphabetic', '600 ' + f3);
     } else {
       D.pill(c, T('地球', 'Earth'), L.cx, L.cy - Math.max(L.rE, 3) - 6, C.neg, 'center', f2);
     }
@@ -930,7 +973,7 @@
     D.pill(c, name + T('・照亮 ', ' · lit ') + num(sn.ph.illum * 100, 1) + '%', 10, 26, C.text, 'left', f2);
     let note = '';
     if (sn.lunar.type !== 'none') note = eclName('lunar', sn.lunar.type, true) + (sn.lunar.type === 'total' ? T('：月球在地球本影中，呈紅銅色', ': copper red in the Earth’s umbra') : '');
-    else if (!up) note = T('月亮現在在台灣的地平線下（高度 ', 'The Moon is below Taiwan’s horizon now (altitude ') + num(sn.hm.alt / DEG, 1) + '°）'.replace('）', T('）', ')'));
+    else if (!up) note = T('月亮現在在' + placeName() + '的地平線下（高度 ', 'The Moon is below the horizon at ' + placeName() + ' now (altitude ') + num(sn.hm.alt / DEG, 1) + '°）'.replace('）', T('）', ')'));
     if (note) D.pill(c, note, 10, mh - 10, sn.lunar.type !== 'none' ? C.pos : C.muted, 'left', f3);
     // 天頂方向
     arrowUp(c, mw - 22, 44, T('天頂', 'Zenith'));
@@ -1187,12 +1230,12 @@
     c.strokeStyle = se.type === 'annular' ? C.equi : C.text;
     c.lineWidth = 1.6;
     c.beginPath(); c.arc(sp[0], sp[1], Math.max(2.5, ru * k), 0, TAU); c.fill(); c.stroke();
-    // 月影中心的路徑（前後 3 小時）與台灣
+    // 月影中心的路徑（前後 3 小時）與觀測地點
     const path = [], twp = [];
     for (let h = -3; h <= 3; h += 0.25) {
       const t = state.t + h / 24, m = K.moonAt(state.el, t), s = K.sunAt(t), S2 = K.solarEclipse(m, s), Bb = sectionBasis(S2.axis);
       path.push([-K.dot(S2.off, Bb.right), -K.dot(S2.off, Bb.up), h]);
-      const P = K.observer(t);
+      const P = K.observer(t, plat(), plon());
       twp.push([K.dot(P, Bb.right), K.dot(P, Bb.up), -K.dot(P, S2.axis) > 0]);
     }
     c.save();
@@ -1201,7 +1244,7 @@
     c.setLineDash([]);
     const pe = pt(path[path.length - 1][0], path[path.length - 1][1]), pq = pt(path[path.length - 3][0], path[path.length - 3][1]);
     D.arrow(c, pq[0], pq[1], pe[0], pe[1], D.alpha(C.text, 0.7), 1.5);
-    // 台灣的路徑（地球自轉）
+    // 觀測地點的路徑（地球自轉）
     c.strokeStyle = D.alpha(C.pos, 0.55); c.lineWidth = 1.2; c.setLineDash([2, 3]);
     c.beginPath(); let pen = false;
     twp.forEach(function (p) { const q = pt(p[0], p[1]); if (p[2]) { if (pen) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); pen = true; } else pen = false; });
@@ -1211,9 +1254,9 @@
     if (-K.dot(P, a) > 0) {
       c.fillStyle = C.pos; c.strokeStyle = '#fff'; c.lineWidth = 1.2;
       c.beginPath(); c.arc(tw[0], tw[1], 3.5, 0, TAU); c.fill(); c.stroke();
-      D.haloText(c, T('台灣', 'Taiwan'), tw[0] + 6, tw[1] - 5, C.pos, 'left', 'alphabetic', '600 ' + f3);
+      D.haloText(c, placeName(), tw[0] + 6, tw[1] - 5, C.pos, 'left', 'alphabetic', '600 ' + f3);
     } else {
-      D.haloText(c, T('台灣在夜晚的半球（看不到太陽）', 'Taiwan is on the night side'), cx, cy + rE + 16, C.pos, 'center', 'alphabetic', f3);
+      D.haloText(c, T(placeName() + '在夜晚的半球（看不到太陽）', placeName() + ' is on the night side'), cx, cy + rE + 16, C.pos, 'center', 'alphabetic', f3);
     }
     if (Math.hypot(shX, shY) * k > Math.min(sw, sh) / 2) {
       edgeArrow(c, shX, shY, k, cx, cy, T('月影從地球', 'Moon’s shadow passes ') + (shY > 0 ? T('上方', 'above') : T('下方', 'below')) + T('經過', ' the Earth'), f3);
@@ -1226,7 +1269,7 @@
   }
 
   // =====================================================================
-  // 從台灣看的天空（360° 全景，面向南方）
+  // 從觀測地點看的天空（360° 全景；北半球面向南方、南半球面向北方，月亮通常在畫面中間）
   // =====================================================================
   const kcv = $('skyCv'), kctx = kcv.getContext('2d');
   let kw = 600, kh = 260, kdpr = 1;
@@ -1247,9 +1290,11 @@
     requestDraw();
   }
   let skyLast = 0, skyKey = '';
+  /** 南半球面向北方看（月亮、太陽通常在北方的天空）；北半球與赤道上（含赤道）面向南方 */
+  function skyFacesNorth() { return state.place.lat < 0; }
   function drawSky(force) {
     const c = kctx, sn = snap(), day = today();
-    const key = [sn.t, elVer, kw, kh, C.dark, LabSettingsKey()].join('|');
+    const key = [sn.t, elVer, placeVer, kw, kh, C.dark, LabSettingsKey()].join('|');
     const now = performance.now();
     if (!force && key === skyKey) return;
     if (!force && (state.running || state.tween) && now - skyLast < 40) return;
@@ -1258,7 +1303,9 @@
     const narrow = kw < 560;
     const yH = Math.round(kh * (narrow ? 0.76 : 0.8)), top = 14;
     const ppd = (yH - top) / 90;
-    const X = function (az) { return (K.norm(az) / TAU) * kw; };
+    // 面向南方：左東右西（方位 0° 在左緣）；面向北方：左西右東（方位 0° 在中間）
+    const faceN = skyFacesNorth();
+    const X = function (az) { return (K.norm(faceN ? az + Math.PI : az) / TAU) * kw; };
     const Y = function (alt) { return yH - alt / DEG * ppd; };
     const cols = skyColors(sn.hs.alt);
     // 天空
@@ -1281,7 +1328,7 @@
     }
     // 星星（天黑後；隨恆星時轉動）
     if (sh < -4) {
-      const vis = Math.min(1, (-4 - sh) / 10), th = sn.P.th, lat = K.LAT_TW;
+      const vis = Math.min(1, (-4 - sh) / 10), th = sn.P.th, lat = plat();
       const sl = Math.sin(lat), cl = Math.cos(lat);
       SKYSTARS.forEach(function (st) {
         const H = th - st.ra;
@@ -1326,20 +1373,20 @@
     c.strokeStyle = 'rgba(255,255,255,0.18)';
     c.beginPath(); c.moveTo(0, yH + 0.5); c.lineTo(kw, yH + 0.5); c.stroke();
     // 方位
-    const dirs = [[0, T('北', 'N'), 'left'], [90, T('東', 'E'), 'center'], [180, T('南', 'S'), 'center'], [270, T('西', 'W'), 'center'], [360, T('北', 'N'), 'right']];
-    dirs.forEach(function (d) {
-      const x = d[0] === 0 ? 6 : d[0] === 360 ? kw - 6 : kw * d[0] / 360;
-      nightText(c, d[1], x, yH + 16, '#ffffff', d[2], 'alphabetic', '700 ' + (narrow ? 12 : 13) + 'px ' + FONT);
+    const NSEW = [T('北', 'N'), T('東', 'E'), T('南', 'S'), T('西', 'W')];
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+      const q = Math.round((faceN ? f * 4 + 2 : f * 4)) % 4, x = f === 0 ? 6 : f === 1 ? kw - 6 : kw * f;
+      nightText(c, NSEW[q], x, yH + 16, '#ffffff', f === 0 ? 'left' : f === 1 ? 'right' : 'center', 'alphabetic', '700 ' + (narrow ? 12 : 13) + 'px ' + FONT);
     });
-    // 升落時刻標記
+    // 升落時刻標記（當地時間）
     const rsMark = function (tt, col, txt) {
       if (tt == null) return;
-      const h = K.horizontal(txt === 'm' ? K.moonAt(state.el, tt) : K.sunAt(tt), tt);
+      const h = K.horizontal(txt === 'm' ? K.moonAt(state.el, tt) : K.sunAt(tt), tt, plat(), plon());
       const x = X(h.az);
       c.fillStyle = col; c.beginPath(); c.arc(x, yH, 2.5, 0, TAU); c.fill();
       c.font = f3; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
       c.fillStyle = col;
-      c.fillText(fmtClock((tt - sn.cal.dayIndex) * 24), x, yH + (txt === 'm' ? 30 : 42) - (narrow ? 4 : 0));
+      c.fillText(fmtLocalClock(tt), Math.max(16, Math.min(kw - 16, x)), yH + (txt === 'm' ? 30 : 42) - (narrow ? 4 : 0));
     };
     rsMark(day.moon.rise, 'rgba(235,240,255,0.95)', 'm');
     rsMark(day.moon.set, 'rgba(235,240,255,0.95)', 'm');
@@ -1355,7 +1402,7 @@
       gs.addColorStop(0, 'rgba(255,240,190,0.75)'); gs.addColorStop(1, 'rgba(255,240,190,0)');
       c.fillStyle = gs; c.beginPath(); c.arc(x, y, SR * 3.2, 0, TAU); c.fill();
       c.fillStyle = '#fff6d8'; c.beginPath(); c.arc(x, y, SR, 0, TAU); c.fill();
-      // 台灣看到的日食：月球的剪影（與日月同樣放大）
+      // 觀測地點看到的日食：月球的剪影（與日月同樣放大）
       if (sn.loc.type !== 'none') {
         const f = K.unit(K.sub(sn.s, sn.P));
         const B = K.horizonBasis(sn.P.th, sn.P.lat);
@@ -1391,7 +1438,7 @@
       nightText(c, '▾ ' + T('月亮在地平線下 ', 'Moon below horizon ') + num(sn.hm.alt / DEG, 0) + '°', Math.max(70, Math.min(kw - 70, x)), kh - 8, 'rgba(235,240,255,0.85)', 'center', 'alphabetic', f3);
     }
     // 時間與說明
-    D.pill(c, fmtDate(sn.cal) + ' ' + fmtClock(sn.cal.hour) + T('（台灣時間）', ' (Taiwan time)'), 8, top + 18, C.text, 'left', f2);
+    D.pill(c, fmtDate(sn.cal) + ' ' + fmtClock(sn.cal.hour) + T('（當地時間 ', ' (local time, ') + zoneText(sn.t, true) + T('）', ')'), 8, top + 18, C.text, 'left', f2);
     if (!narrow) D.pill(c, T('太陽與月亮的大小放大約 20 倍', 'Sun and Moon drawn about 20× larger'), kw - 8, top + 18, C.muted, 'right', f3);
   }
 
@@ -1438,17 +1485,26 @@
     setHTML('rLocal', ltxt);
     $('rLocal').className = lo.type !== 'none' && sn.hs.alt >= -0.83 * DEG ? 'ecl' : '';
     setHTML('rMoonAlt', num(sn.hm.alt / DEG, 1) + '°，' .replace('，', T('，', ', ')) + T('方位 ', 'azimuth ') + num(sn.hm.az / DEG, 0) + '°（' .replace('（', T('（', ' (')) + azName(sn.hm.az) + T('）', ')') + (sn.hm.alt > 0 ? '' : '<small>' + T('在地平線下', 'below the horizon') + '</small>'));
-    const tclock = function (x) { return x == null ? T('不發生', 'none') : fmtClock((x - day.d0) * 24); };
-    setHTML('rMoonRS', tclock(day.moon.rise) + ' ／ ' + tclock(day.moon.set) + '<small>' + T('今天 00:00–24:00；上緣碰到地平線，含大氣折射', 'today 00:00–24:00; upper limb on the horizon, with refraction') + '</small>');
+    const both = function (r) {
+      if (r.rise == null && r.set == null) return rsText(r, null);
+      return rsText(r, r.rise) + ' ／ ' + rsText(r, r.set);
+    };
+    setHTML('rMoonRS', both(day.moon) + '<small>' + T('今天 00:00–24:00（當地時間 ' + zoneText(day.d0 + day.span / 2) + '）；上緣碰到地平線，含大氣折射', 'today 00:00–24:00 local time (' + zoneText(day.d0 + day.span / 2) + '); upper limb on the horizon, with refraction') + dayNote(day) + '</small>');
     setHTML('rSunAlt', num(sn.hs.alt / DEG, 1) + '°');
-    setHTML('rSunRS', tclock(day.sun.rise) + ' ／ ' + tclock(day.sun.set));
-    setHTML('rLimb', limbWords(sn.ori.limb) + (sn.hm.alt > 0 ? '' : '<small>' + T('（月亮在地平線下）', '(the Moon is below the horizon)') + '</small>'));
+    setHTML('rSunRS', both(day.sun));
+    setHTML('rLimb', limbWords(sn.ori.limb, sn.hm.az) + (sn.hm.alt > 0 ? '' : '<small>' + T('（月亮在地平線下）', '(the Moon is below the horizon)') + '</small>'));
     // 軌道說明
     setHTML('orbitInfo', T('太陽黃經目前 <b>', 'The Sun’s longitude is now <b>') + num(sn.s.lon / DEG, 1) + '°</b>' + T('；交點線指向太陽時（Ω ≈ 太陽黃經或 ±180°），朔望才有日月食。', '; eclipses need the line of nodes pointing at the Sun (Ω ≈ the Sun’s longitude or ±180°) at new or full moon.'));
   }
-  function limbWords(a) {
-    const names = [T('右（向西）', 'right'), T('右上', 'upper right'), T('上', 'up'), T('左上', 'upper left'), T('左', 'left'), T('左下', 'lower left'), T('下', 'down'), T('右下', 'lower right')];
-    return names[Math.round(K.norm(a) / (TAU / 8)) % 8] + T('（指向太陽，畫面以天頂為上）', ' (toward the Sun, zenith up)');
+  /** 亮面方向（畫面以天頂為上）。看著月亮時，畫面的右方是月亮方位 + 90°（面向南方時右邊是西、面向北方時右邊是東） */
+  function limbWords(a, az) {
+    const names = [T('右', 'right'), T('右上', 'upper right'), T('上', 'up'), T('左上', 'upper left'), T('左', 'left'), T('左下', 'lower left'), T('下', 'down'), T('右下', 'lower right')];
+    const k = Math.round(K.norm(a) / (TAU / 8)) % 8;
+    if (az != null && (k === 0 || k === 4)) {
+      const d = azName(az + (k === 0 ? 1 : -1) * Math.PI / 2);
+      return names[k] + T('（朝' + d + '方，指向太陽；畫面以天頂為上）', ', toward ' + d + ' (toward the Sun, zenith up)');
+    }
+    return names[k] + T('（指向太陽，畫面以天頂為上）', ' (toward the Sun, zenith up)');
   }
 
   // =====================================================================
@@ -1489,7 +1545,7 @@
     const kinds = ['new', 'fq', 'full', 'lq'];
     const kind = kinds[kindIdx];
     const el = state.el;
-    const e = { t: tc, kind: kind, cal: K.calendar(tc) };
+    const e = { t: tc, kind: kind, cal: lcal(tc) };   // 當地的日期（同一個月兩次滿月等，依所選地點的日曆）
     const prev = state.log.find(function (x) { return x.kind === kind; });
     if (prev && tc > prev.t) e.gap = tc - prev.t;
     const m = K.moonAt(el, tc);
@@ -1501,12 +1557,13 @@
         e.eclKind = ek;
         e.ecl = { type: g.res.type, central: !!g.res.central, magU: g.res.magU, gamma: g.res.gamma, t: g.t };
         const mg = K.moonAt(el, g.t), sg = K.sunAt(g.t);
+        const nm = placeName(), la = plat(), lon = plon();
         if (ek === 'lunar') {
-          const h = K.horizontal(mg, g.t);
-          e.twNote = h.alt > 0 ? T('台灣看得到（月亮高度 ', 'visible from Taiwan (Moon at ') + num(h.alt / DEG, 0) + '°）'.replace('）', T('）', ')')) : T('台灣看不到（月亮在地平線下）', 'not visible from Taiwan');
+          const h = K.horizontal(mg, g.t, la, lon);
+          e.twNote = h.alt > 0 ? T(nm + '看得到（月亮高度 ', 'visible from ' + nm + ' (Moon at ') + num(h.alt / DEG, 0) + '°）'.replace('）', T('）', ')')) : T(nm + '看不到（月亮在地平線下）', 'not visible from ' + nm);
         } else {
-          const P = K.observer(g.t), lo = K.localSolar(mg, sg, P), hs = K.horizontal(sg, g.t);
-          e.twNote = lo.type !== 'none' && hs.alt > 0 ? T('台灣看到', 'Taiwan sees a ') + eclName('solar', lo.type) : T('台灣看不到', 'not seen from Taiwan');
+          const P = K.observer(g.t, la, lon), lo = K.localSolar(mg, sg, P), hs = K.horizontal(sg, g.t, la, lon);
+          e.twNote = lo.type !== 'none' && hs.alt > 0 ? T(nm + '看到', nm + ' sees a ') + eclName('solar', lo.type) : T(nm + '看不到', 'not seen from ' + nm);
         }
       }
     }
@@ -1635,6 +1692,8 @@
     const sn = snap();
     setOut('doyo', fmtDate(sn.cal) + T('（第 ' + (sn.cal.doy + 1) + ' 天）', ' (day ' + (sn.cal.doy + 1) + ')'));
     setOut('hro', fmtClock(sn.cal.hour));
+    const hl = $('hrLbl'), hs = T('當地時間（' + zoneText(sn.t) + '，時）', 'Local time (' + zoneText(sn.t) + ', hours)');
+    if (hl && hl.textContent !== hs) hl.textContent = hs;
     setOut('rateo', rateText(state.rate));
     setOut('elongo', num(sn.ph.dLam / DEG, 1) + '°');
     setOut('nodeo', num(sn.node / DEG, 1) + '°');
@@ -1646,15 +1705,16 @@
     el.addEventListener('pointerdown', function () { sliderHeld = el; });
     el.addEventListener('pointerup', function () { sliderHeld = null; });
   });
+  // 日期與時刻滑桿都是當地時間：先在當地日曆上改，再換回模型時間（臺灣兩者相同）
   elDoy.addEventListener('input', function () {
-    const c = K.calendar(state.t);
-    state.t = K.timeOf(c.year, Math.round(val(elDoy)) - 1, c.hour);
+    const c = lcal(state.t);
+    state.t = K.fromLocal(state.place, K.timeOf(c.year, Math.round(val(elDoy)) - 1, c.hour));
     snapCache = null; clearDemo(); acted();
     syncSliders(); requestDraw();
   });
   elHr.addEventListener('input', function () {
-    const c = K.calendar(state.t);
-    state.t = c.dayIndex + Math.min(23.9999, val(elHr)) / 24;
+    const c = lcal(state.t);
+    state.t = K.fromLocal(state.place, c.dayIndex + Math.min(23.9999, val(elHr)) / 24);
     snapCache = null; clearDemo(); acted();
     syncSliders(); requestDraw();
   });
@@ -1719,12 +1779,13 @@
   $('dayBack').addEventListener('click', function () {
     acted(); clearDemo();
     if (state.tween) return;
-    state.t -= 1; snapCache = null; syncSliders(); requestDraw(); emitState();
+    // 前後一天：當地的時刻不變（夏令時間切換的那天，實際經過 23 或 25 小時）
+    state.t = K.fromLocal(state.place, localT(state.t) - 1); snapCache = null; syncSliders(); requestDraw(); emitState();
   });
   $('dayFwd').addEventListener('click', function () {
     acted(); clearDemo();
     if (state.tween) return;
-    startTween(state.t + 1, function () { setStatus(T('前進 1 天：月球相對太陽向東移了約 12°，月出晚了約 50 分鐘。', 'One day later: the Moon has moved about 12° east of the Sun, and rises about 50 minutes later.')); }, 600);
+    startTween(K.fromLocal(state.place, localT(state.t) + 1), function () { setStatus(T('前進 1 天：月球相對太陽向東移了約 12°，月出晚了約 50 分鐘。', 'One day later: the Moon has moved about 12° east of the Sun, and rises about 50 minutes later.')); }, 600);
   });
   $('sidMonth').addEventListener('click', function () {
     acted();
@@ -1850,15 +1911,21 @@
   // 任務（missions.js）：回報物理量
   // =====================================================================
   function emit(type, data) { if (state.acted && window.LabMission) window.LabMission.emit(type, data); }
+  /**
+   * 'state' 的資料。日期、時刻是所選地點的當地時間（臺灣與原本相同）。
+   * 任務 4（黃昏的眉月）、6（上弦月幾點升起）、12（臺灣的日全食）的條件寫的是「臺灣」的天空：
+   * 選了別的地點時，地平座標與當地日食一律回報「無」（NaN／'none'），這三個任務只在選臺灣時判定，不會被別的城市的天空誤判。
+   */
   function missionData() {
-    const sn = snap();
+    const sn = snap(), tw = isTW();
     return {
       dLam: sn.ph.dLam / DEG, illum: sn.ph.illum, phase: sn.key, age: moonAge(),
       hour: sn.cal.hour, month: sn.cal.month, day: sn.cal.day, doy: sn.cal.doy, year: sn.cal.year,
-      moonAlt: sn.hm.alt / DEG, moonAz: sn.hm.az / DEG, sunAlt: sn.hs.alt / DEG, sunAz: sn.hs.az / DEG, rising: sn.rising,
+      place: state.place.id, placeLat: state.place.lat, placeLon: state.place.lon,
+      moonAlt: tw ? sn.hm.alt / DEG : NaN, moonAz: tw ? sn.hm.az / DEG : NaN, sunAlt: tw ? sn.hs.alt / DEG : NaN, sunAz: tw ? sn.hs.az / DEG : NaN, rising: tw ? sn.rising : false,
       lunar: sn.lunar.type, magU: sn.lunar.magU, magP: sn.lunar.magP,
       solar: sn.solar.type, central: sn.solar.central, gamma: sn.solar.gamma, ruSurface: sn.solar.ruSurface,
-      local: sn.loc.type, localMag: sn.loc.mag, dist: sn.m.r, moonDiam: 2 * Math.asin(K.R_MOON / sn.m.r) * RAD2MIN,
+      local: tw ? sn.loc.type : 'none', localMag: tw ? sn.loc.mag : NaN, dist: sn.m.r, moonDiam: 2 * Math.asin(K.R_MOON / sn.m.r) * RAD2MIN,
       lat: sn.m.lat / DEG, nodeDist: sn.nodeDist / DEG, sunNode: sn.sunNode / DEG, dec: sn.dec / DEG,
       trueScale: state.trueScale, frame: state.frame, regress: state.el.regress, precess: state.el.precess
     };
@@ -1872,19 +1939,24 @@
   let announceTimer = 0, announceAt = 0;
   function summary() {
     const sn = snap(), day = today();
-    const tc = function (x) { return x == null ? T('不發生', 'none') : fmtClock((x - day.d0) * 24); };
+    const tc = function (x) { return rsText(day.moon, x); };
     let e = T('沒有日月食', 'no eclipse');
     if (sn.lunar.type !== 'none') e = eclName('lunar', sn.lunar.type);
     else if (sn.solar.type !== 'none') e = eclName('solar', sn.solar.type);
-    return fmtWhen(state.t) + T('：', ': ') + phaseName(sn.key) + T('，照亮 ', ', ') + num(sn.ph.illum * 100, 1) + T('%；月出 ', '% lit; moonrise ') + tc(day.moon.rise) +
+    const nm = placeName();
+    return nm.charAt(0).toUpperCase() + nm.slice(1) + T(' ', ', ') + fmtWhen(state.t) + T('（當地時間）：', ' (local time): ') + phaseName(sn.key) + T('，照亮 ', ', ') + num(sn.ph.illum * 100, 1) + T('%；月出 ', '% lit; moonrise ') + tc(day.moon.rise) +
       T('、月落 ', ', moonset ') + tc(day.moon.set) + T('；月亮高度 ', '; Moon altitude ') + num(sn.hm.alt / DEG, 0) + T('°；', '°; ') + e + T('。', '.');
   }
-  function announce() {
+  /** prefix：放在摘要前面的一句話（例如換了地點） */
+  let announcePrefix = '';
+  function announce(prefix) {
     clearTimeout(announceTimer);
+    if (prefix) announcePrefix = prefix;   // 1 秒內又有新的播報時，換地點的那一句不要被蓋掉
     const wait = Math.max(0, 1000 - (performance.now() - announceAt));
     announceTimer = setTimeout(function () {
       announceAt = performance.now();
-      const s = summary(), el = $('srLive');
+      const s = announcePrefix + summary(), el = $('srLive');
+      announcePrefix = '';
       if (el && el.textContent !== s) el.textContent = s;
       describeCanvases();
     }, wait);
@@ -1898,7 +1970,7 @@
     scv.setAttribute('aria-label', side
       ? T('影子截面：地球的本影與半影在月球距離處，月食：', 'Shadow cross-section: the Earth’s umbra and penumbra at the Moon’s distance; lunar eclipse: ') + eclName('lunar', sn.lunar.type)
       : T('影子截面：月球的影子落在地球上，日食：', 'Shadow cross-section: the Moon’s shadow on the Earth; solar eclipse: ') + eclName('solar', sn.solar.type));
-    kcv.setAttribute('aria-label', T('從台灣看的天空：月亮高度 ', 'The sky seen from Taiwan: Moon altitude ') + num(sn.hm.alt / DEG, 0) + T('°、方位 ', '°, direction ') + azName(sn.hm.az) +
+    kcv.setAttribute('aria-label', T('從' + placeName() + '看的天空（面向' + (skyFacesNorth() ? '北' : '南') + '方的全景）：月亮高度 ', 'The sky seen from ' + placeName() + ' (panorama facing ' + (skyFacesNorth() ? 'north' : 'south') + '): Moon altitude ') + num(sn.hm.alt / DEG, 0) + T('°、方位 ', '°, direction ') + azName(sn.hm.az) +
       T('；太陽高度 ', '; Sun altitude ') + num(sn.hs.alt / DEG, 0) + '°');
   }
 
@@ -1946,35 +2018,152 @@
     c.restore();
   }
 
-  // 分享連結：時間與月球軌道要精確還原（滑桿的間隔是 1°，做日月食需要更細）。
-  // classroom.js 在 DOMContentLoaded 之後才動態載入，所以等 load 再登記（還原在 load 之後才進行）
-  function shareReady(fn) {
-    if (window.LabShare) fn(window.LabShare);
-    else window.addEventListener('load', function () { if (window.LabShare) fn(window.LabShare); });
-  }
-  shareReady(function (LS) {
-    LS.register({
-      get: function () {
-        const e = state.el;
-        return { t: +state.t.toFixed(6), L0: +e.L0.toFixed(8), N0: +e.N0.toFixed(8), W0: +e.W0.toFixed(8), rg: e.regress ? 1 : 0, pr: e.precess ? 1 : 0 };
-      },
-      set: function (o) {
-        if (!o || typeof o !== 'object') return;
-        const ok = function (v, lo, hi) { return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; };
-        if (ok(o.t, -1e6, 1e6)) state.t = o.t;
-        const e = Object.assign({}, state.el);
-        if (o.rg === 0 || o.rg === 1) e.regress = !!o.rg;
-        if (o.pr === 0 || o.pr === 1) e.precess = !!o.pr;
-        if (ok(o.L0, -1e7, 1e7)) e.L0 = o.L0;
-        if (ok(o.N0, -1e7, 1e7)) e.N0 = o.N0;
-        if (ok(o.W0, -1e7, 1e7)) e.W0 = o.W0;
-        $('regress').checked = e.regress; $('precess').checked = e.precess;
-        setEl(e);
-        state.running = false; state.tween = null; state.demo = null;
-        updateButtons(); syncSliders(); requestDraw(); announce();
+  // 分享連結：時間與月球軌道要精確還原（滑桿的間隔是 1°，做日月食需要更細），再加上觀測地點
+  // （p：城市代號；手動輸入時 p = 'man' 並帶 la、lo、uo＝緯度、經度、UTC 偏移）。舊的連結沒有 p，就維持預設的臺灣。
+  // classroom.js 在 DOMContentLoaded 之後才動態載入，所以用佇列登記（還原在 load 之後才進行）；
+  // 地點選單與輸入框加了 data-share-skip，只由這裡記錄，避免還原時先觸發「保持當地時間」而改到時間。
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () {
+      const e = state.el, p = state.place;
+      const o = { t: +state.t.toFixed(6), L0: +e.L0.toFixed(8), N0: +e.N0.toFixed(8), W0: +e.W0.toFixed(8), rg: e.regress ? 1 : 0, pr: e.precess ? 1 : 0, p: p.id };
+      if (p.id === 'man') { o.la = p.lat; o.lo = p.lon; o.uo = p.utc; }
+      return o;
+    },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      const ok = function (v, lo, hi) { return typeof v === 'number' && isFinite(v) && v >= lo && v <= hi; };
+      // 地點：未知的代號忽略；手動輸入的數字缺少或超出範圍時，用 manualPlace 夾到合理範圍（缺經度用 0、缺 UTC 偏移就由經度估）
+      if (typeof o.p === 'string') {
+        let np = null;
+        if (o.p === 'man') np = K.manualPlace(ok(o.la, -1e3, 1e3) ? o.la : 0, ok(o.lo, -1e3, 1e3) ? o.lo : 0, ok(o.uo, -1e3, 1e3) ? o.uo : null);
+        else np = K.placeById(o.p);
+        if (np) applyPlace(np, { keepInstant: true, quiet: true });
       }
-    });
+      if (ok(o.t, -1e6, 1e6)) state.t = o.t;
+      const e = Object.assign({}, state.el);
+      if (o.rg === 0 || o.rg === 1) e.regress = !!o.rg;
+      if (o.pr === 0 || o.pr === 1) e.precess = !!o.pr;
+      if (ok(o.L0, -1e7, 1e7)) e.L0 = o.L0;
+      if (ok(o.N0, -1e7, 1e7)) e.N0 = o.N0;
+      if (ok(o.W0, -1e7, 1e7)) e.W0 = o.W0;
+      $('regress').checked = e.regress; $('precess').checked = e.precess;
+      setEl(e);
+      state.running = false; state.tween = null; state.demo = null;
+      updateButtons(); syncSliders(); requestDraw(); announce();
+    }
   });
+
+  // =====================================================================
+  // 觀測地點：選單（第 1 項手動輸入經緯度、第 2 項臺灣＝預設、其餘 18 個城市）
+  // =====================================================================
+  const elPlace = $('place'), manBox = $('manBox'), elLat = $('mLat'), elLon = $('mLon'), elUtc = $('mUtc');
+  let utcAuto = true;   // 手動輸入時，UTC 偏移跟著經度估算，直到使用者自己改過
+  (function buildPlaceOptions() {
+    const opt = function (v, txt) { const o = document.createElement('option'); o.value = v; o.textContent = txt; return o; };
+    elPlace.appendChild(opt('man', T('手動輸入經緯度', 'Enter latitude and longitude')));
+    K.PLACES.forEach(function (p) { elPlace.appendChild(opt(p.id, T(p.zh, p.en))); });
+    elPlace.value = state.place.id;
+  })();
+  function fmtIn(v) { return String(Math.round(v * 10000) / 10000); }
+  /** 選單、手動輸入框、說明文字，以及頁面上寫著地點名稱的地方 */
+  function updatePlaceUI() {
+    const p = state.place, man = p.id === 'man', nm = placeName();
+    if (elPlace.value !== p.id) elPlace.value = p.id;
+    manBox.hidden = !man;
+    if (man) {
+      if (document.activeElement !== elLat) elLat.value = fmtIn(p.lat);
+      if (document.activeElement !== elLon) elLon.value = fmtIn(p.lon);
+      if (document.activeElement !== elUtc) elUtc.value = fmtIn(p.utc);
+    }
+    const off = K.utcOffset(p, state.t);
+    let zone;
+    if (man) zone = T('固定 ' + utcText(p.utc) + '（手動輸入不計夏令時間）', 'fixed ' + utcText(p.utc) + ' (no daylight saving for a typed location)');
+    else if (!p.tz) zone = utcText(off) + T('（沒有夏令時間）', ' (no daylight saving)');
+    else {
+      const std = state.stdOff, alt = K.utcOffset(p, K.timeOf(0, K.doyOf(p.lat >= 0 ? 7 : 1, 15), 12));
+      zone = T('標準時間 ', 'standard time ') + utcText(std) + (alt !== std ? T('，夏令時間 ', ', daylight saving ') + utcText(alt) : T('，沒有夏令時間', ', no daylight saving')) +
+        T('；現在 ', '; now ') + utcText(off);
+    }
+    $('placeInfo').innerHTML = '<b>' + latText(p.lat) + T('、', ', ') + lonText(p.lon) + '</b>' + T('・', ' · ') + zone;
+    document.querySelectorAll('.plc').forEach(function (s) { if (s.textContent !== nm) s.textContent = nm; });
+    $('hSky').textContent = T('從' + nm + '看', 'Seen from ' + nm);
+    $('dtLocal').textContent = T(nm + '看到的日食', 'Solar eclipse seen from ' + nm);
+    $('moonCap').innerHTML = T('<b>從地球看到的月亮</b>——從' + nm + '看，天頂朝上', '<b>The Moon seen from the Earth</b> — as seen from ' + nm + ' with the zenith up');
+    $('skyCap').innerHTML = T('<b>從' + nm + '看的天空</b>（' + latText(p.lat) + '、' + lonText(p.lon) + '）——面向' + (skyFacesNorth() ? '北' : '南') + '方的 360° 全景，虛線是今天的路徑，時刻是當地時間',
+      '<b>The sky from ' + nm + '</b> (' + latText(p.lat) + ', ' + lonText(p.lon) + ') — a 360° panorama facing ' + (skyFacesNorth() ? 'north' : 'south') + '; dashed lines are today’s paths, times are local');
+  }
+  /**
+   * 換觀測地點。預設保持「當地的日期與時刻」（例如都看當地 18:30 的天空），所以真實的瞬間會差幾個小時；
+   * keepInstant：保持同一瞬間（還原分享連結時）。quiet：不播報、不寫狀態列。
+   */
+  function applyPlace(np, opt) {
+    opt = opt || {};
+    const t0 = state.t, lt0 = localT(t0), dl0 = snap().ph.dLam;
+    state.place = np; placeVer++;
+    state.stdOff = K.standardOffset(np);
+    if (!opt.keepInstant) state.t = K.fromLocal(np, lt0);
+    snapCache = null; dayCache = null; logDirty = true; moonKey = ''; skyKey = '';
+    for (const id in lastText) delete lastText[id];
+    updatePlaceUI(); syncSliders(); requestDraw();
+    if (opt.quiet) return;
+    const nm = placeName(), dh = (state.t - t0) * 24;
+    if (Math.abs(dh) > 1e-6) {
+      const dd = K.wrapPi(snap().ph.dLam - dl0) / DEG;
+      setStatus(T('換到' + nm + '：當地時間一樣是 ' + fmtWhen(state.t) + '，那是剛才的' + (dh > 0 ? '後 ' : '前 ') + num(Math.abs(dh), Math.abs(dh) % 1 ? 1 : 0) + ' 小時（時差），月球相對太陽' + (dh > 0 ? '多' : '少') + '走了 ' + num(Math.abs(dd), 1) + '°。',
+        'Now at ' + nm + ': the local time is still ' + fmtWhen(state.t) + ', which is ' + num(Math.abs(dh), Math.abs(dh) % 1 ? 1 : 0) + ' h ' + (dh > 0 ? 'later' : 'earlier') + ' than before (time difference), so the Moon has moved ' + num(Math.abs(dd), 1) + '° ' + (dh > 0 ? 'further' : 'less') + ' relative to the Sun.'));
+    } else setStatus(T('換到' + nm + '。', 'Now at ' + nm + '.'));
+    announce(T('觀測地點換到' + nm + '（' + latText(np.lat) + '、' + lonText(np.lon) + '）。', 'Location changed to ' + nm + ' (' + latText(np.lat) + ', ' + lonText(np.lon) + '). '));
+    if (state.acted) emit('state', missionData());
+  }
+  elPlace.addEventListener('change', function () {
+    acted(); clearDemo();
+    if (state.tween) { state.tween = null; updateButtons(); }
+    const id = elPlace.value;
+    if (id === 'man') {
+      // 從目前的地點開始改（經緯度與 UTC 偏移先帶入目前的值）
+      const p = state.place;
+      utcAuto = true;
+      applyPlace(K.manualPlace(p.lat, p.lon, p.id === 'man' ? p.utc : K.utcOffset(p, state.t)));
+    } else {
+      const np = K.placeById(id);
+      if (np) applyPlace(np);
+    }
+  });
+  /** 手動輸入框：打字時（數字合理就）立刻套用；離開或按 Enter 時把超出範圍的值夾回、寫回輸入框 */
+  function manualFromInputs(commit) {
+    const la = parseFloat(elLat.value), lo = parseFloat(elLon.value), u = parseFloat(elUtc.value);
+    const okLa = isFinite(la) && la >= -90 && la <= 90, okLo = isFinite(lo) && lo >= -180 && lo <= 180;
+    const okU = isFinite(u) && u >= K.UTC_MIN && u <= K.UTC_MAX;
+    if (!commit && !(okLa && okLo && okU)) return;     // 打到一半（例如只打了「−」）先不動
+    // 空白或不是數字：緯度、經度維持原值；UTC 偏移空白就由經度估算（manualPlace 的預設）
+    const np = K.manualPlace(isFinite(la) ? la : state.place.lat, isFinite(lo) ? lo : state.place.lon, isFinite(u) ? u : null);
+    const same = np.lat === state.place.lat && np.lon === state.place.lon && np.utc === state.place.utc;
+    if (!same) applyPlace(np, { quiet: !commit });
+    else if (commit) {
+      setStatus(T('自訂地點：' + latText(np.lat) + '、' + lonText(np.lon) + '，固定 ' + utcText(np.utc) + '（不計夏令時間），當地時間 ' + fmtWhen(state.t) + '。',
+        'Custom location: ' + latText(np.lat) + ', ' + lonText(np.lon) + ', fixed ' + utcText(np.utc) + ' (no daylight saving); local time ' + fmtWhen(state.t) + '.'));
+      announce(T('觀測地點：' + latText(np.lat) + '、' + lonText(np.lon) + '，' + utcText(np.utc) + '。', 'Location: ' + latText(np.lat) + ', ' + lonText(np.lon) + ', ' + utcText(np.utc) + '. '));
+      if (state.acted) emit('state', missionData());
+    }
+    if (commit) {
+      elLat.value = fmtIn(np.lat); elLon.value = fmtIn(np.lon); elUtc.value = fmtIn(np.utc);
+      if ((isFinite(la) && la !== np.lat) || (isFinite(lo) && lo !== np.lon) || (isFinite(u) && u !== np.utc)) {
+        setStatus(T('緯度要在 −90°～90°、經度在 −180°～180°、UTC 偏移在 −12～+14 小時（取到 0.25 小時），已調整到範圍內。',
+          'Latitude must be −90° to 90°, longitude −180° to 180° and the UTC offset −12 to +14 hours (in steps of 0.25 h); the value was brought into range.'));
+      }
+    }
+  }
+  /** 改經度時，UTC 偏移跟著估算 round(經度/15)（使用者自己改過 UTC 偏移之後就不再自動） */
+  function autoUtc() {
+    const lo = parseFloat(elLon.value);
+    if (utcAuto && isFinite(lo)) elUtc.value = fmtIn(K.defaultUtc(Math.max(-180, Math.min(180, lo))));
+  }
+  elLat.addEventListener('input', function () { acted(); manualFromInputs(false); });
+  elLat.addEventListener('change', function () { acted(); manualFromInputs(true); });
+  elLon.addEventListener('input', function () { acted(); autoUtc(); manualFromInputs(false); });
+  elLon.addEventListener('change', function () { acted(); autoUtc(); manualFromInputs(true); });
+  elUtc.addEventListener('input', function () { utcAuto = false; acted(); manualFromInputs(false); });
+  elUtc.addEventListener('change', function () { utcAuto = false; acted(); manualFromInputs(true); });
 
   // =====================================================================
   // 繪圖迴圈
@@ -2024,6 +2213,7 @@
     mag: function () { return state.trueScale ? 1 : 8; },
     frameRot: function () { return frameRot(); },
     lang: function () { return LabSettingsKey(); },
+    placeName: function () { return placeName(); },
     fbm: fbm, albedoXYZ: albedoXYZ,
     request: function () { schedule(); },
     onCam: function (kind) { emit('cam', { preset: kind }); },
@@ -2120,7 +2310,10 @@
   if (window.LabNum) window.LabNum.set(elRate, DEF.rate); else elRate.value = 259;
   state.rate = val(elRate);
   state.acted = false; // LabNum.set 觸發的事件不算使用者操作
+  state.stdOff = K.standardOffset(state.place);
   syncSliders();
+  updatePlaceUI();
+  describeCanvases();
   updateButtons();
   updateSoundButton();
   function themeChanged() {
@@ -2143,5 +2336,9 @@
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」讓時間前進。', 'Reduced motion is on: press “Play” to move time forward.'));
   requestDraw();
   // 測試用（Playwright）：讀取狀態
-  window.__moon = { state: state, snap: snap, K: K, setEl: function (el) { setEl(el); syncSliders(); requestDraw(); } };
+  window.__moon = {
+    state: state, snap: snap, K: K, today: today, missionData: missionData,
+    setEl: function (el) { setEl(el); syncSliders(); requestDraw(); },
+    setPlace: function (id, la, lo, uo) { applyPlace(id === 'man' ? K.manualPlace(la, lo, uo) : K.placeById(id)); }
+  };
 })();

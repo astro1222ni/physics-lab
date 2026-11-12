@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const HC = window.HydrogenCore;
+  const LD = window.LabDraw;  // 共用繪圖工具（drawkit.js）：標籤、箭頭、立體球、管狀線、背景
   const $ = function (id) { return document.getElementById(id); };
   // 介面文字：英文模式用第二個字串（settings.js）
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -222,50 +223,58 @@
   }
   function font(w, px) { return (w ? w + ' ' : '') + px + 'px system-ui, -apple-system, "Segoe UI", sans-serif'; }
 
-  /** 有半透明圓角底框的標籤；c.textAlign 決定水平對齊，垂直置中於 y */
-  function pill(c, text, x, y, color, f, bgA, bgColor) {
-    c.font = f || font(600, 12);
-    c.textBaseline = 'middle';
-    const m = c.measureText(text), tw = m.width;
-    const fh = m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : 15;
-    const ph = fh + 3, pw = tw + 10;
-    const al = c.textAlign;
-    const bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - tw - 5 : x - 5;
-    c.fillStyle = alpha(bgColor || colors['canvas-bg'], bgA == null ? 0.86 : bgA);
-    roundRect(c, bx, y - ph / 2, pw, ph, ph / 2);
-    c.fill();
-    c.fillStyle = color;
-    c.fillText(text, x, y + 0.5);
-    return { x: bx, y: y - ph / 2, w: pw, h: ph };
-  }
-  /** 立體小球：亮點偏左上，邊緣加深，外加細亮邊 */
-  function sphere(c, x, y, R, base, glow) {
-    if (glow) {
-      const gl = c.createRadialGradient(x, y, R * 0.6, x, y, R * 3);
-      gl.addColorStop(0, alpha(base, colors.dark ? 0.35 : 0.22));
-      gl.addColorStop(1, alpha(base, 0));
-      c.fillStyle = gl;
-      c.beginPath(); c.arc(x, y, R * 3, 0, Math.PI * 2); c.fill();
+  /**
+   * 標籤（drawkit 的圓角底框 pill）；c.textAlign 決定水平對齊，垂直置中於 y。
+   * bgA = 0：不要底框，改用背景色描邊的文字（halo）。呼叫後 textAlign、textBaseline 不變，字型為 f。
+   */
+  function pill(c, text, x, y, color, f, bgA) {
+    f = f || font(600, 12);
+    const al = c.textAlign, bl = c.textBaseline;
+    let box;
+    c.font = f;
+    if (bgA === 0) {
+      LD.haloText(c, text, x, y, color, al, 'middle', f);
+      const w = c.measureText(text).width;
+      box = { x: al === 'center' ? x - w / 2 : al === 'right' ? x - w : x, y: y - 8, w: w, h: 16 };
+    } else {
+      const ph = LD.textHeight(c.measureText(text), 15) + 3;
+      // drawkit 的 pill 以底框為準；換算成「文字起點／終點在 x」的舊用法
+      const a = al === 'center' ? 'center' : al === 'right' || al === 'end' ? 'right' : 'left';
+      box = LD.pill(c, text, a === 'right' ? x + 6 : a === 'left' ? x - 6 : x, y + ph / 2, color, a, f);
     }
-    const g = c.createRadialGradient(x - R * 0.33, y - R * 0.35, R * 0.08, x, y, R);
-    g.addColorStop(0, shade(base, 0.62));
-    g.addColorStop(0.45, base);
-    g.addColorStop(1, shade(base, -0.42));
-    c.fillStyle = g;
-    c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = alpha(shade(base, 0.7), colors.dark ? 0.55 : 0.4);
-    c.lineWidth = 1;
-    c.beginPath(); c.arc(x, y, Math.max(0.5, R - 0.5), Math.PI * 1.05, Math.PI * 1.65); c.stroke();
+    c.textAlign = al; c.textBaseline = bl; c.font = f;
+    return box;
   }
-  /** 能階線：兩層線條的管狀（底層粗而暗，上層細而亮、略偏上） */
+  /** 面板標題：粗體、背景色描邊（不加框，畫面比較清爽） */
+  function title(c, text, x, y, align, px) {
+    const al = c.textAlign;
+    LD.haloText(c, text, x, y, colors.text, align || 'left', 'middle', font(700, px || 13));
+    c.textAlign = al;
+  }
+  /** 立體小球（drawkit：亮點、邊緣加深、細外框、投影；glow 為光暈） */
+  function sphere(c, x, y, R, base, glow) {
+    LD.ball(c, x, y, R, base, { glow: glow ? (colors.dark ? 0.5 : 0.28) : 0 });
+  }
+  /** 能階線：drawkit 的管狀線條（底層粗而暗，上層細而亮、略偏上） */
   function levelLine(c, x0, x1, y, base, w) {
-    c.lineCap = 'round';
-    c.strokeStyle = base;
-    c.lineWidth = w;
-    c.beginPath(); c.moveTo(x0, y); c.lineTo(x1, y); c.stroke();
-    c.strokeStyle = alpha(shade(base, 0.6), colors.dark ? 0.5 : 0.65);
-    c.lineWidth = Math.max(0.8, w * 0.36);
-    c.beginPath(); c.moveTo(x0 + 1, y - w * 0.22); c.lineTo(x1 - 1, y - w * 0.22); c.stroke();
+    LD.tube(c, function (g) { g.moveTo(x0, y); g.lineTo(x1, y); }, base, w * 1.2);
+  }
+  /** 金屬零件（電極、管座、燈座、光學軌道）：上亮、中間暗、下緣反光的漸層與細框；顏色由色彩代號調出 */
+  function metal(c, x, y, w, h, r) {
+    const base = mix(colors.muted, colors.surface, colors.dark ? 0.1 : 0.4);
+    const g = c.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, shade(base, 0.6));
+    g.addColorStop(0.3, shade(base, 0.22));
+    g.addColorStop(0.62, shade(base, -0.12));
+    g.addColorStop(0.86, shade(base, -0.3));
+    g.addColorStop(1, shade(base, 0.08));
+    c.fillStyle = g;
+    roundRect(c, x, y, w, h, r);
+    c.fill();
+    c.strokeStyle = alpha(shade(base, -0.55), colors.dark ? 0.7 : 0.55);
+    c.lineWidth = 1;
+    roundRect(c, x + 0.5, y + 0.5, w - 1, h - 1, Math.max(0, r - 0.5));
+    c.stroke();
   }
   /** 垂直箭頭（能階圖的躍遷）：從 y0 到 y1，箭頭在 y1；dashed 為吸收 */
   function vArrow(c, x, y0, y1, color, lw, dashed, a) {
@@ -293,26 +302,32 @@
   }
 
   // ---------- 不變的圖層（版面、主題、模式改變時重畫） ----------
+  /** 面板底：drawkit 的暈影背景（中心亮、四角暗）＋上緣極淡的光澤與細框，像一塊嵌入的面板 */
   function panelBg(c, R, radial) {
+    c.save();
+    roundRect(c, R.x, R.y, R.w, R.h, 8);
+    c.clip();
+    c.translate(R.x, R.y);
+    LD.backdrop(c, R.w, R.h);
     const base = colors['canvas-bg'];
-    const edge = shade(base, colors.dark ? -0.35 : -0.045);
-    let g;
+    const g = c.createLinearGradient(0, 0, 0, R.h);
     if (radial) {
-      g = c.createRadialGradient(R.x + R.w / 2, R.y + R.h / 2, Math.min(R.w, R.h) * 0.1, R.x + R.w / 2, R.y + R.h / 2, Math.max(R.w, R.h) * 0.75);
-      g.addColorStop(0, colors.dark ? shade(base, 0.03) : base);
-      g.addColorStop(1, edge);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, alpha(shade(base, -0.5), colors.dark ? 0.1 : 0.03));
     } else {
-      g = c.createLinearGradient(0, R.y, 0, R.y + R.h);
-      g.addColorStop(0, base);
-      g.addColorStop(1, edge);
+      g.addColorStop(0, alpha(shade(base, 0.6), colors.dark ? 0.035 : 0.5));
+      g.addColorStop(0.25, 'rgba(0,0,0,0)');
+      g.addColorStop(1, alpha(shade(base, -0.5), colors.dark ? 0.12 : 0.04));
     }
     c.fillStyle = g;
-    roundRect(c, R.x, R.y, R.w, R.h, 8);
-    c.fill();
-    c.strokeStyle = alpha(colors.text, 0.08);
+    c.fillRect(0, 0, R.w, R.h);
+    c.restore();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.12 : 0.1);
     c.lineWidth = 1;
     roundRect(c, R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1, 8);
     c.stroke();
+    c.strokeStyle = alpha('#ffffff', colors.dark ? 0.05 : 0.7);
+    c.beginPath(); c.moveTo(R.x + 9, R.y + 1.5); c.lineTo(R.x + R.w - 9, R.y + 1.5); c.stroke();
   }
 
   function buildBackground() {
@@ -343,7 +358,8 @@
     const items = [];
     for (let n = 1; n <= N_TOP; n++) items.push({ n: n, y: Ey(HC.energy(n)) });
     items.push({ n: Infinity, y: Ey(0) });
-    return spread(items, L.narrow ? 12.5 : 14, L.diag.y + 22);
+    // 最上面的標籤不可壓到右上角的標題「能階圖」
+    return spread(items, L.narrow ? 12.5 : 14, L.diag.y + 31);
   }
 
   function buildDiagram(c) {
@@ -355,7 +371,7 @@
     // 連續能量區（E > 0：電子已掙脫）
     const y0 = Ey(0), yT = Ey(E_MAX);
     const cg = c.createLinearGradient(0, yT, 0, y0);
-    cg.addColorStop(0, alpha(colors['b-modern'], colors.dark ? 0.2 : 0.14));
+    cg.addColorStop(0, alpha(colors['b-modern'], colors.dark ? 0.22 : 0.15));
     cg.addColorStop(1, alpha(colors['b-modern'], 0.03));
     c.fillStyle = cg;
     c.fillRect(G.left, yT, G.right - G.left, y0 - yT);
@@ -371,7 +387,21 @@
     pill(c, nr ? T('E > 0：游離', 'E > 0: ionised') : T('E > 0：游離（自由電子）', 'E > 0: ionised (free electron)'), G.left + 5, yT + (y0 - yT) * 0.42,
       shade(colors['b-modern'], colors.dark ? 0.2 : -0.2), font(600, nr ? 10 : 11), 0.6);
 
-    // 能量軸
+    // 線系的欄：同一線系（落到同一個能階 n_f）的躍遷畫在同一欄；淡淡的底色由 E = 0 一直延伸到該能階，看得出「終點」在哪
+    const u = slotUnit();
+    for (let nf = 1; nf <= 6; nf++) {
+      const xa = G.slotL + u * groupStart(nf) - u * 0.2, w = u * (8 - nf) + u * 0.4;
+      const yb = Ey(HC.energy(nf));
+      if (yb - y0 < 4) continue;
+      const g = c.createLinearGradient(0, y0, 0, yb);
+      g.addColorStop(0, alpha(colors.field, 0));
+      g.addColorStop(1, alpha(colors.field, colors.dark ? 0.1 : 0.065));
+      c.fillStyle = g;
+      roundRect(c, xa, y0, w, yb - y0, Math.min(3, w / 2));
+      c.fill();
+    }
+
+    // 能量軸（主刻度每 2 eV、次刻度每 1 eV）
     c.strokeStyle = alpha(colors.muted, 0.7);
     c.lineWidth = 1;
     const ax = G.left - (nr ? 5 : 8);
@@ -386,12 +416,8 @@
       c.fillText(num(E, 0), ax - 4, y);
     }
     for (let E = -1; E >= -14; E -= 2) { const y = Ey(E); c.beginPath(); c.moveTo(ax - 2, px(y)); c.lineTo(ax, px(y)); c.stroke(); }
-    c.textAlign = 'left';
-    c.font = font(600, nr ? 11 : 12);
-    c.fillStyle = colors.muted;
-    c.fillText('E (eV)', D.x + 6, D.y + 13);
-    c.textAlign = 'right';
-    pill(c, T('能階圖', 'Energy levels'), D.x + D.w - 8, D.y + 13, colors.text, font(700, nr ? 12 : 13), 0.7);
+    LD.haloText(c, 'E (eV)', D.x + 6, D.y + 13, colors.muted, 'left', 'middle', font(600, nr ? 11 : 12));
+    title(c, T('能階圖', 'Energy levels'), D.x + D.w - 8, D.y + 13, 'right', nr ? 12 : 13);
 
     // n ≥ 8 的能階：越往上越密
     c.strokeStyle = alpha(colors.muted, colors.dark ? 0.3 : 0.25);
@@ -404,46 +430,41 @@
     c.strokeStyle = alpha(colors.text, 0.55);
     c.beginPath(); c.moveTo(G.left, px(y0)); c.lineTo(G.right, px(y0)); c.stroke();
     c.setLineDash([]);
-    // n = 1…7
-    const lineBase = shade(colors.field, colors.dark ? -0.15 : 0.05);
+    // n = 1…7：管狀的能階線，兩端圓頭
+    const lineBase = shade(colors.field, colors.dark ? -0.1 : 0.05);
     for (let n = 1; n <= N_TOP; n++) levelLine(c, G.left, G.right, Ey(HC.energy(n)), lineBase, nr ? 2 : 2.4);
 
     // 右側標籤（擠在一起的往上錯開，以細線連回能階）
     const labs = levelLabels();
     const lx = G.right + (nr ? 7 : 9);
-    c.strokeStyle = alpha(colors.muted, 0.6);
+    c.strokeStyle = alpha(colors.muted, 0.55);
     c.lineWidth = 1;
     labs.forEach(function (it) {
       if (Math.abs(it.ly - it.y) > 1) {
-        c.beginPath(); c.moveTo(G.right + 2, it.y); c.lineTo(lx - 3, it.ly); c.stroke();
+        c.beginPath(); c.moveTo(G.right + 2, it.y); c.bezierCurveTo(G.right + 5, it.y, lx - 7, it.ly, lx - 3, it.ly); c.stroke();
       }
     });
     labs.forEach(function (it) {
-      c.textAlign = 'left';
-      c.textBaseline = 'middle';
       const nm = it.n === Infinity ? (nr ? '∞' : 'n = ∞') : (nr ? 'n=' + it.n : 'n = ' + it.n);
-      c.font = font(700, nr ? 11 : 12);
-      c.fillStyle = it.n === Infinity ? colors.muted : colors.text;
-      c.fillText(nm, lx, it.ly);
+      const fN = font(700, nr ? 11 : 12);
+      LD.haloText(c, nm, lx, it.ly, it.n === Infinity ? colors.muted : colors.text, 'left', 'middle', fN);
       if (!nr) {
+        c.font = fN;
         const w = c.measureText(nm).width;
-        c.font = font('', 11);
-        c.fillStyle = colors.muted;
-        c.fillText(it.n === Infinity ? '0 eV' : num(HC.energy(it.n), it.n < 4 ? 2 : 3), lx + w + 6, it.ly);
+        LD.haloText(c, it.n === Infinity ? '0 eV' : num(HC.energy(it.n), it.n < 4 ? 2 : 3), lx + w + 6, it.ly, colors.muted, 'left', 'middle', font('', 11));
       }
     });
 
-    // 線系名稱（在該線系終點能階的下方）
-    const u = slotUnit();
-    const names = [1, 2, 3];
-    names.forEach(function (nf) {
+    // 線系名稱（在該線系終點能階的下方）；記下位置，讓躍遷的標籤避開
+    G.serBoxes = [];
+    [1, 2, 3].forEach(function (nf) {
       const s = HC.series(nf);
       const xs = G.slotL + u * (groupStart(nf) + (8 - nf) / 2);
-      const y = Ey(HC.energy(nf)) + (nr ? 9 : 10);
+      const y = Ey(HC.energy(nf)) + (nr ? 10 : 11);
       if (y > G.bot + 10) return;
       c.textAlign = 'center';
-      const short = { 1: T('來曼', 'Lyman'), 2: T('巴耳末', 'Balmer'), 3: T('帕申', 'Paschen'), 4: T('布拉克', 'Brackett'), 5: T('蒲芬', 'Pfund') }[nf];
-      pill(c, nr ? short : T(s.zh, s.en.replace(' series', '')), xs, y, colors.muted, font(600, nr ? 10 : 11), 0.55);
+      const short = { 1: T('來曼', 'Lyman'), 2: T('巴耳末', 'Balmer'), 3: T('帕申', 'Paschen') }[nf];
+      G.serBoxes.push(pill(c, nr ? short : T(s.zh, s.en.replace(' series', '')), xs, y, colors.muted, font(600, nr ? 10 : 11), 0.55));
     });
     c.restore();
   }
@@ -455,7 +476,7 @@
     c.clip();
     c.textBaseline = 'middle';
     c.textAlign = 'left';
-    pill(c, T('光譜（波長為真空中的值）', 'Spectrum (vacuum wavelengths)'), R.x + 8, S.title, colors.text, font(700, nr ? 12 : 13), 0.7);
+    title(c, T('光譜（波長為真空中的值）', 'Spectrum (vacuum wavelengths)'), R.x + 8, S.title, 'left', nr ? 12 : 13);
     // 波段
     const xu = xLog(HC.VIS_MIN), xv = xLog(HC.VIS_MAX);
     c.lineWidth = 3;
@@ -571,11 +592,18 @@
     roundRect(c, x0, row.y, x1 - x0, row.h, 3);
     c.clip();
     if (kind === 'em') {
+      // 像光譜照片的暗底：中間最暗，上下緣略亮，內側有一圈很淡的陰影（嵌入感）
       const g = c.createLinearGradient(0, row.y, 0, row.y + row.h);
-      g.addColorStop(0, shade(colors.night, 0.06));
-      g.addColorStop(0.5, colors.night);
-      g.addColorStop(1, shade(colors.night, 0.04));
+      g.addColorStop(0, shade(colors.night, 0.09));
+      g.addColorStop(0.35, colors.night);
+      g.addColorStop(0.7, colors.night);
+      g.addColorStop(1, shade(colors.night, 0.06));
       c.fillStyle = g;
+      c.fillRect(x0, row.y, x1 - x0, row.h);
+      const sh = c.createLinearGradient(0, row.y, 0, row.y + row.h);
+      sh.addColorStop(0, 'rgba(0,0,0,0.35)');
+      sh.addColorStop(0.22, 'rgba(0,0,0,0)');
+      c.fillStyle = sh;
       c.fillRect(x0, row.y, x1 - x0, row.h);
     } else {
       const l0 = isLog ? Math.log(LOG_MIN) : Z_MIN, l1 = isLog ? Math.log(LOG_MAX) : Z_MAX;
@@ -640,6 +668,14 @@
     c.clip();
     const lw = nr ? 1.5 : 2;
     if (state.mode === 'atom') {
+      // 電子目前所在的能階：淡淡的光帶
+      if (state.n !== Infinity && state.n <= N_TOP) {
+        const y = Ey(HC.energy(state.n));
+        c.strokeStyle = alpha(colors.accent, colors.dark ? 0.3 : 0.2);
+        c.lineWidth = L.narrow ? 6 : 7;
+        c.lineCap = 'round';
+        c.beginPath(); c.moveTo(G.left, y); c.lineTo(G.right, y); c.stroke();
+      }
       // 已記錄的躍遷：放在各線系的位置（發射實線往下、吸收虛線往上）
       Object.keys(state.ab).forEach(function (k) {
         const p = k.split('-').map(Number), lo = p[0], up = p[1];
@@ -699,18 +735,33 @@
       if (a > 0) {
         const y0 = Ey(j.E0), y1 = Ey(j.E1);
         const col = rgba(j.rgb, 1);
-        // 光暈
+        // 光暈（光子的顏色），再畫 drawkit 的箭頭（吸收為虛線）
         c.save();
-        c.globalAlpha = a * 0.35;
-        c.strokeStyle = col;
-        c.lineWidth = nr ? 7 : 9;
-        c.lineCap = 'round';
-        c.beginPath(); c.moveTo(x, y0); c.lineTo(x, y1); c.stroke();
+        c.globalAlpha = a;
+        const glow = c.createLinearGradient(x - 8, 0, x + 8, 0);
+        glow.addColorStop(0, rgba(j.rgb, 0));
+        glow.addColorStop(0.5, rgba(j.rgb, colors.dark ? 0.42 : 0.3));
+        glow.addColorStop(1, rgba(j.rgb, 0));
+        c.fillStyle = glow;
+        c.fillRect(x - 8, Math.min(y0, y1), 16, Math.abs(y1 - y0));
+        LD.arrow(c, x, y0, x, y1, col, nr ? 2.4 : 3, j.emission ? null : { dash: [5, 4] });
         c.restore();
-        vArrow(c, x, y0, y1, col, nr ? 2.2 : 2.8, !j.emission, a);
         if (j.label) {
           c.textAlign = 'right';
-          const ly = Math.max(G.top + 10, Math.min(G.bot - 10, (y0 + y1) / 2));
+          // 標籤放在箭頭中段的左側；若壓到線系名稱就上下錯開
+          const f = font(600, nr ? 10 : 11);
+          c.font = f;
+          const xr = x - (nr ? 7 : 10) + 6, w = c.measureText(j.label).width + 12;
+          const hit = function (yy) {
+            return (G.serBoxes || []).some(function (b) { return xr - w < b.x + b.w && xr > b.x && Math.abs(yy - (b.y + b.h / 2)) < b.h + 2; });
+          };
+          const mid = Math.max(G.top + 10, Math.min(G.bot - 10, (y0 + y1) / 2));
+          let ly = mid;
+          [0, 20, -20, 40, -40, 60].some(function (d) {
+            const yy = mid + d;
+            if (yy < G.top + 10 || yy > G.bot - 10 || hit(yy)) return false;
+            ly = yy; return true;
+          });
           c.save();
           c.globalAlpha = a;
           pill(c, j.label, x - (nr ? 7 : 10), ly, colors.text, font(600, nr ? 10 : 11), 0.85);
@@ -863,7 +914,7 @@
 
     // 標題與比例尺
     c.textAlign = 'left';
-    pill(c, T('波耳模型（依比例）', 'Bohr model (to scale)'), O.x + 8, O.y + 13, colors.text, font(700, nr ? 11 : 13), 0.75);
+    title(c, T('波耳模型（依比例）', 'Bohr model (to scale)'), O.x + 8, O.y + 13, 'left', nr ? 11 : 13);
     drawScaleBar(og);
     c.restore();
   }
@@ -1043,26 +1094,36 @@
     const glow = tb.glow, on = tb.running || tb.ph > 0;
     const I = glow && on ? Math.max(0.4, Math.min(1, glow.Y / refY)) : 0;
     const flick = reducedMotion ? 1 : 0.94 + 0.06 * Math.sin(tNow / 37) * Math.sin(tNow / 91);
-    // 局部座標：沿管子為 x
+    // 局部座標：沿管子為 x（直式版面時旋轉 90°）
     c.save();
     c.translate(tg.cx, tg.cy);
     if (tg.vert) c.rotate(Math.PI / 2);
-    // 導線與電極
-    c.strokeStyle = alpha(colors.muted, 0.8);
-    c.lineWidth = 2;
-    c.beginPath();
-    c.moveTo(-half - 14, 0); c.lineTo(-half - 30, 0);
-    c.moveTo(half + 14, 0); c.lineTo(half + 30, 0);
-    c.stroke();
+    const capL = 14, capH = Math.min(r * 1.25, r + 8);
+    // 導線（＋紅、−深灰）：由兩端的金屬座接到畫面邊緣的電源
+    const edge = (tg.vert ? O.h : O.w) / 2 + 4;
     [-1, 1].forEach(function (s) {
-      const ex = s * (half + 6);
-      const g = c.createLinearGradient(0, -r * 0.45, 0, r * 0.45);
-      g.addColorStop(0, shade(colors.field, colors.dark ? 0.2 : 0.55));
-      g.addColorStop(1, shade(colors.field, colors.dark ? -0.3 : -0.05));
-      c.fillStyle = g;
-      roundRect(c, ex - 8, -r * 0.45, 16, r * 0.9, 4);
-      c.fill();
+      const x0 = s * (half + capL), wire = s > 0 ? shade(colors.pos, colors.dark ? -0.05 : -0.1) : mix(colors.text, colors.muted, colors.dark ? 0.7 : 0.25);
+      LD.tube(c, function (g) {
+        g.moveTo(x0, 0);
+        if (tg.vert) {
+          // 直式：往畫面右側（局部座標的 −y）彎出去
+          const side = -(O.w / 2 + 6);
+          g.bezierCurveTo(x0 + s * 16, 0, x0 + s * 16, side * 0.55, x0 + s * 12, side);
+        } else g.lineTo(s * edge, 0);
+      }, wire, 3.2);
     });
+    // 點亮時，管外的光暈照亮周圍
+    if (I > 0) {
+      c.save();
+      const k = (r * 3.2) / (half * 1.15);
+      c.scale(1, k);
+      const halo = c.createRadialGradient(0, 0, half * 0.2, 0, 0, half * 1.15);
+      halo.addColorStop(0, rgba(glow.rgb, (colors.dark ? 0.32 : 0.2) * I * flick));
+      halo.addColorStop(1, rgba(glow.rgb, 0));
+      c.fillStyle = halo;
+      c.beginPath(); c.arc(0, 0, half * 1.15, 0, Math.PI * 2); c.fill();
+      c.restore();
+    }
     // 管內的光（陰極附近較暗：法拉第暗區）
     c.save();
     roundRect(c, -half, -r, tg.len, tg.dia, r);
@@ -1093,28 +1154,60 @@
       for (let k = -2; k <= 2; k++) { c.beginPath(); c.moveTo(-half * 0.8, k * r * 0.3); c.lineTo(half * 0.9, k * r * 0.3); c.stroke(); }
       c.setLineDash([]);
     }
+    // 管內的電極（金屬圓筒），在原子活動範圍之外
+    [-1, 1].forEach(function (s) {
+      const ew = tg.len * 0.045, eh = r * 0.62;
+      metal(c, s < 0 ? -half + 2 : half - 2 - ew, -eh / 2, ew, eh, 2);
+    });
+    // 玻璃：上亮下暗的反光、管壁厚度
+    const gg = c.createLinearGradient(0, -r, 0, r);
+    gg.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.16 : 0.42) + ')');
+    gg.addColorStop(0.22, 'rgba(255,255,255,0)');
+    gg.addColorStop(0.78, 'rgba(255,255,255,0)');
+    gg.addColorStop(1, alpha(colors.dark ? '#000000' : colors.text, colors.dark ? 0.3 : 0.1));
+    c.fillStyle = gg;
+    c.fillRect(-half, -r, tg.len, tg.dia);
     c.restore();
-    // 玻璃：外框與高光
-    c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.35);
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.5 : 0.38);
     c.lineWidth = 1.5;
     roundRect(c, -half, -r, tg.len, tg.dia, r);
     c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.28 : 0.6) + ')';
-    c.lineWidth = 2;
-    c.beginPath(); c.moveTo(-half + r, -r + 3.5); c.lineTo(half - r, -r + 3.5); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.12 : 0.45) + ')';
+    c.lineWidth = 1;
+    roundRect(c, -half + 2, -r + 2, tg.len - 4, tg.dia - 4, r - 2);
+    c.stroke();
+    // 高光（細長的亮條，兩端漸淡）
+    const hl = c.createLinearGradient(-half + r, 0, half - r, 0);
+    const hA = colors.dark ? 0.32 : 0.75;
+    hl.addColorStop(0, 'rgba(255,255,255,0)');
+    hl.addColorStop(0.15, 'rgba(255,255,255,' + hA + ')');
+    hl.addColorStop(0.85, 'rgba(255,255,255,' + hA + ')');
+    hl.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = hl;
+    roundRect(c, -half + r * 0.8, -r + r * 0.22, tg.len - r * 1.6, Math.max(2, r * 0.13), 2);
+    c.fill();
+    // 兩端的金屬座（有環紋）
+    [-1, 1].forEach(function (s) {
+      const x = s < 0 ? -half - capL + 3 : half - 3;
+      metal(c, x, -capH / 2, capL, capH, 3);
+      c.strokeStyle = alpha('#000000', colors.dark ? 0.35 : 0.18);
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let k = 1; k <= 3; k++) { const xx = Math.round(x + capL * k / 4) + 0.5; c.moveTo(xx, -capH / 2 + 2); c.lineTo(xx, capH / 2 - 2); }
+      c.stroke();
+    });
     c.restore();
 
     // 原子、電子與閃光
+    const atomCol = mix(colors.text, colors.muted, 0.5);
     tb.atoms.forEach(function (a) {
       const p = tubePt(tg, a.u, a.v);
-      c.fillStyle = alpha(colors.text, colors.dark ? 0.35 : 0.3);
-      c.beginPath(); c.arc(p[0], p[1], 1.6, 0, Math.PI * 2); c.fill();
+      LD.ball(c, p[0], p[1], 1.9, atomCol, { shadow: false, glow: 0 });
     });
     if (on && tb.running && !reducedMotion) {
       tb.elec.forEach(function (e) {
         const p = tubePt(tg, e.u, e.v + 0.05 * Math.sin(e.ph + tNow / 160));
-        c.fillStyle = alpha(colors.neg, 0.85);
-        c.beginPath(); c.arc(p[0], p[1], 1.8, 0, Math.PI * 2); c.fill();
+        LD.ball(c, p[0], p[1], 2, colors.neg, { shadow: false, glow: colors.dark ? 0.5 : 0.25 });
       });
     }
     tb.flashes = tb.flashes.filter(function (f) { return tNow - f.t0 < 600; });
@@ -1150,7 +1243,7 @@
 
     // 標題與說明
     c.textAlign = 'left';
-    pill(c, T('氫氣放電管', 'Hydrogen discharge tube'), O.x + 8, O.y + 13, colors.text, font(700, nr ? 11 : 13), 0.75);
+    title(c, T('氫氣放電管', 'Hydrogen discharge tube'), O.x + 8, O.y + 13, 'left', nr ? 11 : 13);
     const yInfo = tg.vert ? O.y + O.h - 44 : tg.cy + r + 34;
     const sw = nr ? 22 : 30;
     let txt;
@@ -1281,6 +1374,30 @@
     roundRect(c, O.x, O.y, O.w, O.h, 8);
     c.clip();
     const P = function (u, v) { return absPt(g, u, v); };
+    // 局部座標：光束沿 +x，光學軌道在 +y 那一側（直式版面時旋轉 90°）
+    const local = function (u, fn) {
+      const p = P(u, 0);
+      c.save();
+      c.translate(p[0], p[1]);
+      if (g.vert) c.rotate(Math.PI / 2);
+      fn();
+      c.restore();
+    };
+    const railY = g.dia * 0.74;
+    // 光學軌道（金屬長條）與滑座、支柱
+    const ua = ABS_U.lamp - 0.07, ub = ABS_U.grating + 0.05;
+    local(0, function () {
+      const xa = (ua) * g.len, xb = (ub) * g.len;
+      metal(c, xa, railY, xb - xa, 7, 2);
+      c.fillStyle = alpha('#000000', colors.dark ? 0.35 : 0.15);
+      c.fillRect(xa + 3, railY + 3, xb - xa - 6, 1);
+    });
+    const post = function (u, y0) {
+      local(u, function () {
+        metal(c, -2.5, y0, 5, railY - y0, 1.5);
+        metal(c, -9, railY - 4, 18, 6, 2);
+      });
+    };
     // 光束
     const b0 = P(ABS_U.lamp, 0), b1 = P(ABS_U.grating, 0);
     const bw = g.dia * 0.32;
@@ -1293,72 +1410,166 @@
     c.lineWidth = bw;
     c.beginPath(); c.moveTo(b0[0], b0[1]); c.lineTo(b1[0], b1[1]); c.stroke();
     c.restore();
-    // 燈泡
-    const lp = P(ABS_U.lamp, 0), lr = g.dia * 0.38;
-    const gl = c.createRadialGradient(lp[0], lp[1], 0, lp[0], lp[1], lr * 2.6);
+
+    // 白光光源：白熾燈泡（玻璃泡、發亮的燈絲、螺紋燈座），裝在支柱上
+    const lr = g.dia * 0.36;
+    post(ABS_U.lamp, lr * 1.75);
+    const lp = P(ABS_U.lamp, 0);
+    const gl = c.createRadialGradient(lp[0], lp[1], 0, lp[0], lp[1], lr * 2.7);
     gl.addColorStop(0, 'rgba(255,250,235,0.9)');
-    gl.addColorStop(0.35, alpha(colors.equi, 0.35));
+    gl.addColorStop(0.35, alpha(colors.equi, colors.dark ? 0.4 : 0.32));
     gl.addColorStop(1, alpha(colors.equi, 0));
     c.fillStyle = gl;
-    c.beginPath(); c.arc(lp[0], lp[1], lr * 2.6, 0, Math.PI * 2); c.fill();
-    sphere(c, lp[0], lp[1], lr, mix('#fff7e0', colors.equi, 0.25), false);
-    // 氣體容器（玻璃管）
+    c.beginPath(); c.arc(lp[0], lp[1], lr * 2.7, 0, Math.PI * 2); c.fill();
+    local(ABS_U.lamp, function () {
+      // 燈座（螺紋）
+      const bwid = lr * 0.78, by0 = lr * 0.92, bh = lr * 0.8;
+      metal(c, -bwid / 2, by0, bwid, bh, 2);
+      c.strokeStyle = alpha('#000000', colors.dark ? 0.4 : 0.22);
+      c.lineWidth = 1;
+      c.beginPath();
+      for (let k = 1; k <= 3; k++) { const yy = by0 + bh * k / 4; c.moveTo(-bwid / 2 + 1, yy - 1.5); c.lineTo(bwid / 2 - 1, yy + 1.5); }
+      c.stroke();
+      c.fillStyle = mix(colors.text, colors.muted, 0.3);
+      roundRect(c, -bwid * 0.25, by0 + bh - 1, bwid * 0.5, 4, 2);
+      c.fill();
+      // 玻璃泡（暖白、半透明），頸部收窄接到燈座
+      c.beginPath();
+      c.arc(0, 0, lr, Math.PI * 0.62, Math.PI * 0.38 + Math.PI * 2, false);
+      c.lineTo(bwid / 2, by0 + 1);
+      c.lineTo(-bwid / 2, by0 + 1);
+      c.closePath();
+      const bulb = c.createRadialGradient(-lr * 0.3, -lr * 0.35, lr * 0.1, 0, 0, lr * 1.1);
+      bulb.addColorStop(0, 'rgba(255,253,245,0.98)');
+      bulb.addColorStop(0.55, 'rgba(255,246,220,0.88)');
+      bulb.addColorStop(1, alpha(mix('#fff2cc', colors.equi, 0.35), 0.85));
+      c.fillStyle = bulb;
+      c.fill();
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.35 : 0.28);
+      c.lineWidth = 1.2;
+      c.stroke();
+      // 燈絲：兩根支架與一段發亮的螺旋
+      c.strokeStyle = alpha(colors.text, 0.45);
+      c.lineWidth = 0.9;
+      c.beginPath();
+      c.moveTo(-lr * 0.22, by0); c.lineTo(-lr * 0.3, -lr * 0.05);
+      c.moveTo(lr * 0.22, by0); c.lineTo(lr * 0.3, -lr * 0.05);
+      c.stroke();
+      c.strokeStyle = 'rgba(255,190,60,0.95)';
+      c.lineWidth = 1.3;
+      c.beginPath();
+      for (let k = 0; k <= 12; k++) {
+        const x = -lr * 0.3 + lr * 0.6 * k / 12, y = -lr * 0.05 + (k % 2 ? -1 : 1) * lr * 0.08;
+        if (k) c.lineTo(x, y); else c.moveTo(x, y);
+      }
+      c.stroke();
+      // 玻璃的高光
+      c.strokeStyle = 'rgba(255,255,255,0.85)';
+      c.lineWidth = Math.max(1.5, lr * 0.09);
+      c.lineCap = 'round';
+      c.beginPath(); c.arc(0, 0, lr * 0.74, Math.PI * 1.08, Math.PI * 1.38); c.stroke();
+    });
+
+    // 氣體吸收管：玻璃圓筒、兩端的光學窗、上方的充氣支管與活栓
     const ca = P(ABS_U.cell0, 0), cb = P(ABS_U.cell1, 0);
     const clen = Math.hypot(cb[0] - ca[0], cb[1] - ca[1]), cr = g.dia / 2;
-    c.save();
-    c.translate((ca[0] + cb[0]) / 2, (ca[1] + cb[1]) / 2);
-    if (g.vert) c.rotate(Math.PI / 2);
-    const fillG = c.createLinearGradient(0, -cr, 0, cr);
-    fillG.addColorStop(0, alpha(colors['b-modern'], 0.06));
-    fillG.addColorStop(0.5, alpha(colors['b-modern'], state.abs.hot ? 0.2 : 0.12));
-    fillG.addColorStop(1, alpha(colors['b-modern'], 0.06));
-    c.fillStyle = fillG;
-    roundRect(c, -clen / 2, -cr, clen, cr * 2, 7);
-    c.fill();
-    c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.35);
-    c.lineWidth = 1.5;
-    roundRect(c, -clen / 2, -cr, clen, cr * 2, 7);
-    c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.25 : 0.65) + ')';
-    c.lineWidth = 2;
-    c.beginPath(); c.moveTo(-clen / 2 + 7, -cr + 3.5); c.lineTo(clen / 2 - 7, -cr + 3.5); c.stroke();
-    c.restore();
+    const ucm = (ABS_U.cell0 + ABS_U.cell1) / 2;
+    post(ucm, cr);
+    local(ucm, function () {
+      // 支管
+      metal(c, -3, -cr - 13, 6, 6, 1.5);
+      c.fillStyle = alpha(colors['b-modern'], 0.12);
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.32);
+      c.lineWidth = 1.2;
+      roundRect(c, -4, -cr - 8, 8, 10, 2);
+      c.fill(); c.stroke();
+      // 管身
+      const fillG = c.createLinearGradient(0, -cr, 0, cr);
+      fillG.addColorStop(0, alpha(colors['b-modern'], 0.07));
+      fillG.addColorStop(0.5, alpha(colors['b-modern'], state.abs.hot ? 0.22 : 0.13));
+      fillG.addColorStop(1, alpha(colors['b-modern'], 0.07));
+      c.fillStyle = fillG;
+      c.fillRect(-clen / 2, -cr, clen, cr * 2);
+      const glass = c.createLinearGradient(0, -cr, 0, cr);
+      glass.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.2 : 0.55) + ')');
+      glass.addColorStop(0.2, 'rgba(255,255,255,0)');
+      glass.addColorStop(0.8, 'rgba(255,255,255,0)');
+      glass.addColorStop(1, alpha(colors.dark ? '#000000' : colors.text, colors.dark ? 0.3 : 0.1));
+      c.fillStyle = glass;
+      c.fillRect(-clen / 2, -cr, clen, cr * 2);
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.35);
+      c.lineWidth = 1.4;
+      c.beginPath();
+      c.moveTo(-clen / 2, -cr); c.lineTo(clen / 2, -cr);
+      c.moveTo(-clen / 2, cr); c.lineTo(clen / 2, cr);
+      c.stroke();
+      // 兩端的光學窗（側看是橢圓）
+      [-1, 1].forEach(function (s) {
+        c.save();
+        c.translate(s * clen / 2, 0);
+        c.scale(0.24, 1);
+        const wg = c.createLinearGradient(-cr, 0, cr, 0);
+        wg.addColorStop(0, alpha(colors.text, colors.dark ? 0.12 : 0.08));
+        wg.addColorStop(0.5, 'rgba(255,255,255,' + (colors.dark ? 0.18 : 0.6) + ')');
+        wg.addColorStop(1, alpha(colors.text, colors.dark ? 0.12 : 0.08));
+        c.fillStyle = wg;
+        c.beginPath(); c.arc(0, 0, cr, 0, Math.PI * 2); c.fill();
+        c.restore();
+        c.save();
+        c.translate(s * clen / 2, 0);
+        c.scale(0.24, 1);
+        c.beginPath(); c.arc(0, 0, cr, 0, Math.PI * 2);
+        c.restore();
+        c.strokeStyle = alpha(colors.text, colors.dark ? 0.55 : 0.42);
+        c.lineWidth = 1.6;
+        c.stroke();
+      });
+      // 高光
+      c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.3 : 0.8) + ')';
+      c.lineWidth = 2;
+      c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-clen / 2 + 9, -cr + 4); c.lineTo(clen / 2 - 9, -cr + 4); c.stroke();
+    });
     absAtoms().forEach(function (a) {
       const p = P(a.u, a.v);
       const excited = state.abs.hot && a.hot;
-      c.fillStyle = excited ? alpha(colors.equi, 0.95) : alpha(colors.text, colors.dark ? 0.45 : 0.35);
-      c.beginPath(); c.arc(p[0], p[1], excited ? 2.4 : 1.8, 0, Math.PI * 2); c.fill();
+      LD.ball(c, p[0], p[1], excited ? 2.6 : 2, excited ? colors.equi : mix(colors.text, colors.muted, 0.5), { shadow: false, glow: excited ? 0.45 : 0 });
     });
-    // 光柵與分光後的扇形
+
+    // 光柵：裝在金屬框裡的玻璃片（刻線處有彩虹般的反光），後面是分光後的扇形與接收屏
     const gp = P(ABS_U.grating, 0);
+    post(ABS_U.grating, g.dia * 0.58);
     drawFan(c, g, gp);
-    c.save();
-    c.translate(gp[0], gp[1]);
-    if (g.vert) c.rotate(Math.PI / 2);
-    c.fillStyle = shade(colors.field, colors.dark ? -0.1 : 0.3);
-    roundRect(c, -3, -g.dia * 0.5, 6, g.dia, 2);
-    c.fill();
-    c.strokeStyle = alpha(colors['canvas-bg'], 0.7);
-    c.lineWidth = 1;
-    c.beginPath();
-    for (let k = -g.dia * 0.45; k < g.dia * 0.45; k += 3) { c.moveTo(-3, k); c.lineTo(3, k); }
-    c.stroke();
-    c.restore();
-    // 標籤
+    local(ABS_U.grating, function () {
+      const fh = g.dia * 1.16, fw = 9;
+      metal(c, -fw / 2, -fh / 2, fw, fh, 2);
+      const sh = fh - 8;
+      const ir = c.createLinearGradient(0, -sh / 2, 0, sh / 2);
+      [[0, '#8a7fff'], [0.25, '#5fc8ff'], [0.5, '#7dff9a'], [0.75, '#ffe066'], [1, '#ff7a7a']].forEach(function (st) { ir.addColorStop(st[0], alpha(st[1], colors.dark ? 0.35 : 0.5)); });
+      c.fillStyle = ir;
+      c.fillRect(-2, -sh / 2, 4, sh);
+      c.strokeStyle = alpha(colors['canvas-bg'], 0.6);
+      c.lineWidth = 0.6;
+      c.beginPath();
+      for (let k = -sh / 2 + 1; k < sh / 2; k += 2) { c.moveTo(-2, k); c.lineTo(2, k); }
+      c.stroke();
+    });
+    // 標籤（光學軌道的外側）
     const f = font(600, nr ? 10 : 11);
     c.textAlign = 'center';
     const lab = function (text, u, v) { const p = P(u, v); pill(c, text, p[0], p[1], colors.muted, f, 0.75); };
     if (g.vert) {
-      lab(T('白光', 'White light'), ABS_U.lamp, -0.9);
-      lab(T('氫氣', 'Hydrogen'), (ABS_U.cell0 + ABS_U.cell1) / 2, -0.95);
-      lab(T('光柵', 'Grating'), ABS_U.grating, 0.95);
+      lab(T('白光', 'White light'), ABS_U.lamp, -1.0);
+      lab(T('氫氣', 'Hydrogen'), ABS_U.cell0 + 0.045, -1.02);
+      lab(T('光柵', 'Grating'), ABS_U.grating, -0.98);
     } else {
-      lab(T('白光', 'White light'), ABS_U.lamp, 0.95);
-      lab(T('氫氣', 'Hydrogen gas'), (ABS_U.cell0 + ABS_U.cell1) / 2, 0.85);
-      lab(T('光柵', 'Grating'), ABS_U.grating, 0.85);
+      lab(T('白光', 'White light'), ABS_U.lamp, 1.08);
+      lab(T('氫氣', 'Hydrogen gas'), (ABS_U.cell0 + ABS_U.cell1) / 2, 1.08);
+      lab(T('光柵', 'Grating'), ABS_U.grating, 1.08);
+      lab(T('屏幕', 'Screen'), ABS_U.grating + 0.31, 1.08);
     }
+    title(c, nr ? T('白光吸收', 'White-light absorption') : T('白光穿過氫氣', 'White light through hydrogen'), O.x + 8, O.y + 13, 'left', nr ? 11 : 13);
     c.textAlign = 'left';
-    pill(c, T('白光穿過氫氣', 'White light through hydrogen'), O.x + 8, O.y + 13, colors.text, font(700, nr ? 11 : 13), 0.75);
     const yInfo = O.y + O.h - (nr ? 14 : 22);
     if (!g.vert) {
       // 說明分光後看到什麼
@@ -1380,36 +1591,55 @@
     drawAbsPhotons(tNow, absGeom());
     c.restore();
   }
-  /** 光柵後的可見光扇形：被吸收的可見光波長變成暗縫 */
+  /** 光柵後的可見光扇形：被吸收的可見光波長變成暗縫；扇形末端落在弧形的接收屏上 */
   function drawFan(c, g, gp) {
     const len = g.len * (g.vert ? 0.3 : 0.36);
     const span = 0.42; // 半張角（rad）
     const dir = g.vert ? Math.PI / 2 : 0;
     const dark = [];
     absLows().forEach(function (lo) { for (let up = lo + 1; up <= 12; up++) { const l = HC.wavelength(up, lo); if (l >= HC.VIS_MIN && l <= HC.VIS_MAX) dark.push(l); } });
+    const ang = function (l) { return dir + (-span + 2 * span * (l - HC.VIS_MIN) / (HC.VIS_MAX - HC.VIS_MIN)) * (g.vert ? -1 : 1); };
+    const scr = 7; // 接收屏的厚度（px）
     c.save();
+    // 接收屏（弧形的白色屏幕，邊緣稍暗）
+    const a0 = Math.min(ang(HC.VIS_MIN), ang(HC.VIS_MAX)) - 0.06, a1 = Math.max(ang(HC.VIS_MIN), ang(HC.VIS_MAX)) + 0.06;
+    c.lineCap = 'butt';
+    c.strokeStyle = shade(colors.surface, colors.dark ? 0.12 : -0.04);
+    c.lineWidth = scr + 4;
+    c.beginPath(); c.arc(gp[0], gp[1], len + scr / 2, a0, a1); c.stroke();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.4 : 0.3);
+    c.lineWidth = 1;
+    c.beginPath(); c.arc(gp[0], gp[1], len + scr + 2, a0, a1); c.stroke();
+    c.beginPath(); c.arc(gp[0], gp[1], len - 2, a0, a1); c.stroke();
     for (let l = HC.VIS_MIN; l < HC.VIS_MAX; l += 2) {
-      const a0 = dir + (-span + 2 * span * (l - HC.VIS_MIN) / (HC.VIS_MAX - HC.VIS_MIN)) * (g.vert ? -1 : 1);
-      const a1 = dir + (-span + 2 * span * (l + 2 - HC.VIS_MIN) / (HC.VIS_MAX - HC.VIS_MIN)) * (g.vert ? -1 : 1);
+      const b0 = ang(l), b1 = ang(l + 2);
       const rgb = HC.wavelengthToRGB(l + 1);
       const gr = c.createRadialGradient(gp[0], gp[1], 4, gp[0], gp[1], len);
       gr.addColorStop(0, rgba(rgb, 0.0));
-      gr.addColorStop(0.25, rgba(rgb, 0.55));
+      gr.addColorStop(0.25, rgba(rgb, 0.5));
       gr.addColorStop(1, rgba(rgb, 0.85));
       c.fillStyle = gr;
       c.beginPath(); c.moveTo(gp[0], gp[1]);
-      c.arc(gp[0], gp[1], len, Math.min(a0, a1), Math.max(a0, a1) + 0.002);
+      c.arc(gp[0], gp[1], len, Math.min(b0, b1), Math.max(b0, b1) + 0.002);
       c.closePath(); c.fill();
+      // 落在屏上的亮帶
+      c.strokeStyle = rgba(rgb, 1);
+      c.lineWidth = scr;
+      c.beginPath(); c.arc(gp[0], gp[1], len + scr / 2, Math.min(b0, b1), Math.max(b0, b1) + 0.003); c.stroke();
     }
     c.strokeStyle = alpha(colors.night, 0.92);
     c.lineWidth = 1.6;
     dark.forEach(function (l) {
-      const a = dir + (-span + 2 * span * (l - HC.VIS_MIN) / (HC.VIS_MAX - HC.VIS_MIN)) * (g.vert ? -1 : 1);
+      const a = ang(l);
       c.beginPath();
       c.moveTo(gp[0] + Math.cos(a) * len * 0.18, gp[1] + Math.sin(a) * len * 0.18);
-      c.lineTo(gp[0] + Math.cos(a) * len, gp[1] + Math.sin(a) * len);
+      c.lineTo(gp[0] + Math.cos(a) * (len + scr), gp[1] + Math.sin(a) * (len + scr));
       c.stroke();
     });
+    // 屏面的光澤
+    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.12 : 0.3) + ')';
+    c.lineWidth = 1.5;
+    c.beginPath(); c.arc(gp[0], gp[1], len + 1.2, a0 + 0.03, a1 - 0.03); c.stroke();
     c.restore();
   }
   function absStep(dt, tNow) {
@@ -1502,18 +1732,34 @@
     w = w || (L.narrow ? 1.6 : 2);
     if (kind === 'em') {
       const a = Math.pow(Math.min(1, I), 1 / 2.2); // 線性光強 → sRGB 亮度
-      c.fillStyle = rgba(rgb, 0.3 * a);
-      c.fillRect(x - w * 1.6, row.y + 1, w * 3.2, row.h - 2);
+      // 發光感：兩側柔和的光暈（越亮越寬），中央是實心的譜線，夠亮時再加一條近白色的「熱芯」
+      const gw = w * (vis ? 3 + 3 * a : 2.6);
+      const gl = c.createLinearGradient(x - gw, 0, x + gw, 0);
+      gl.addColorStop(0, rgba(rgb, 0));
+      gl.addColorStop(0.5, rgba(rgb, (vis ? 0.5 : 0.32) * a));
+      gl.addColorStop(1, rgba(rgb, 0));
+      c.fillStyle = gl;
+      c.fillRect(x - gw, row.y + 1, gw * 2, row.h - 2);
       if (vis) {
         c.fillStyle = rgba(rgb, a);
         c.fillRect(x - w / 2, row.y + 1, w, row.h - 2);
+        if (a > 0.3) {
+          c.fillStyle = alpha(shade(rgb, 0.6), 0.85 * (a - 0.3) / 0.7);
+          c.fillRect(x - w * 0.22, row.y + 2, w * 0.44, row.h - 4);
+        }
       } else {
         c.fillStyle = alpha(shade(rgb, 0.35), a);
         for (let y = row.y + 1; y < row.y + row.h - 1; y += 4) c.fillRect(x - w / 2, y, w, Math.min(2.4, row.y + row.h - 1 - y));
       }
     } else {
-      c.fillStyle = 'rgba(0,0,0,' + (0.35 * I) + ')';
-      c.fillRect(x - w * 1.3, row.y, w * 2.6, row.h);
+      // 吸收的暗線：邊緣柔和，中央最暗
+      const gw = w * 1.6;
+      const gd = c.createLinearGradient(x - gw, 0, x + gw, 0);
+      gd.addColorStop(0, 'rgba(0,0,0,0)');
+      gd.addColorStop(0.5, 'rgba(0,0,0,' + (0.45 * I) + ')');
+      gd.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = gd;
+      c.fillRect(x - gw, row.y, gw * 2, row.h);
       c.fillStyle = 'rgba(0,0,0,' + (0.88 * I) + ')';
       c.fillRect(x - w / 2, row.y, w, row.h);
     }
@@ -1792,8 +2038,32 @@
   function afterChange() {
     updateChips();
     updateReadouts();
+    describeCanvas();
     startLoop();
     requestDraw();
+  }
+
+  // ---------- 給螢幕報讀器的畫面說明（畫布 role="img"；只在狀態改變時更新，不放 aria-live） ----------
+  let lastDesc = '';
+  function describeCanvas() {
+    let s;
+    if (state.mode === 'atom') {
+      const lines = Object.keys(state.em).length + Object.keys(state.ab).length;
+      s = T('氫原子模擬畫布（單一原子）：左邊是能階圖，右邊是依比例的波耳軌道，下方是光譜。', 'Hydrogen atom simulation (one atom): the energy-level diagram on the left, the Bohr orbits to scale on the right and the spectrum below. ') +
+        (state.n === Infinity ? T('原子已游離，自由電子的動能 ' + num(state.K, 3) + ' eV。', 'The atom is ionised; the free electron has ' + num(state.K, 3) + ' eV of kinetic energy. ')
+          : T('電子在 n = ' + state.n + '，能量 ' + num(HC.energy(state.n), 3) + ' eV。', 'The electron is in n = ' + state.n + ', energy ' + num(HC.energy(state.n), 3) + ' eV. ')) +
+        (lines ? T('光譜上已記錄 ' + lines + ' 條譜線。', lines + ' spectral line' + (lines > 1 ? 's' : '') + ' recorded in the spectrum.') : T('光譜上還沒有譜線。', 'No lines in the spectrum yet.'));
+    } else if (state.mode === 'tube') {
+      const top = tubeTop();
+      s = T('氫氣放電管：撞擊電子的動能 K = ' + num(state.tube.K, 2) + ' eV，', 'Hydrogen discharge tube: the colliding electrons have K = ' + num(state.tube.K, 2) + ' eV, ') +
+        (top ? T('原子最高可激發到 n = ' + top + '；', 'so atoms can be excited up to n = ' + top + '; ') : T('不足以激發原子；', 'too little to excite any atom; ')) +
+        T('能階圖畫出所有可能的向下躍遷，光譜顯示各譜線的亮度。', 'the diagram shows every possible downward transition and the spectrum shows how bright each line is.');
+    } else {
+      s = T('白光穿過' + (state.abs.hot ? '熱' : '冷') + '氫氣，再經光柵分光：', 'White light passes through ' + (state.abs.hot ? 'hot' : 'cool') + ' hydrogen and then a grating: ') +
+        (state.abs.hot ? T('可見光區出現巴耳末系的暗線（Hα、Hβ、Hγ、Hδ），位置與放電管的明線相同。', 'dark Balmer lines (Hα, Hβ, Hγ, Hδ) appear in the visible part, where the bright lines of the discharge tube are.')
+          : T('只有紫外線的來曼系被吸收，可見光沒有暗線。', 'only the ultraviolet Lyman lines are absorbed; the visible part has no dark lines.'));
+    }
+    if (s !== lastDesc) { lastDesc = s; cv.setAttribute('aria-label', s); }
   }
 
   // ---------- 讀數 ----------
@@ -2005,8 +2275,16 @@
     refreshK();
     tubeRecompute();
     tubeReset();
+    describeCanvas();
     startLoop();
     requestDraw();
+  });
+  // 放開滑桿（或打字輸入）後，把結果寫進 aria-live 的狀態列
+  elK.addEventListener('change', function () {
+    const top = tubeTop();
+    setStatus(top ? T('K = ' + num(state.tube.K, 2) + ' eV：原子最高可激發到 n = ' + top + (top >= 3 ? '，看得到巴耳末系的可見光。' : '，只放出來曼 α 紫外線，肉眼看不見。'),
+      'K = ' + num(state.tube.K, 2) + ' eV: atoms can be excited up to n = ' + top + (top >= 3 ? ', so visible Balmer light is emitted.' : ', so only ultraviolet Lyman α is emitted — invisible to the eye.'))
+      : T('K = ' + num(state.tube.K, 2) + ' eV：不足 10.2 eV，原子無法被激發，不發光。', 'K = ' + num(state.tube.K, 2) + ' eV: less than 10.2 eV, so no atom is excited and there is no light.'));
   });
 
   // ---------- 模式 ----------
@@ -2039,6 +2317,7 @@
     state.hover = null;
     G = diagGeom();
     buildBackground();
+    describeCanvas();
     if (m === 'tube') {
       tubeRecompute();
       updatePlay();
@@ -2062,7 +2341,8 @@
   $('play').addEventListener('click', function () {
     state.tube.running = !state.tube.running;
     updatePlay();
-    setStatus('');
+    const tb = state.tube;
+    setStatus(tb.running ? '' : T('放電暫停：撞擊 ' + tb.imp + ' 次，放出 ' + tb.ph + ' 個光子。', 'Discharge paused: ' + tb.imp + ' collisions, ' + tb.ph + ' photons emitted.'));
     startLoop();
     requestDraw();
   });
@@ -2081,6 +2361,7 @@
     $('gasHot').setAttribute('aria-pressed', String(hot));
     updateAbsHint();
     buildBackground();
+    describeCanvas();
     requestDraw();
     emit('absorption', { hot: hot });
   }
@@ -2098,6 +2379,7 @@
     setStatus(T('已全部清除：光譜紀錄與統計歸零，電子回到基態；滑桿設定不變。', 'Everything is cleared: the spectrum records and counts are reset and the electron is back in the ground state; slider settings are kept.'));
     updateChips();
     updateReadouts();
+    describeCanvas();
     requestDraw();
     emit('reset', {});
   });
@@ -2147,6 +2429,22 @@
   $('showWave').addEventListener('change', function (ev) { state.show.wave = ev.target.checked; requestDraw(); });
   $('showZoom').addEventListener('change', function (ev) { state.show.zoom = ev.target.checked; setView(performance.now()); startLoop(); requestDraw(); });
 
+  // ---------- 分享連結：電子所在的能階（模式、滑桿、按鈕由 classroom.js 自動記錄） ----------
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { n: state.n === Infinity ? 'inf' : state.n, K: state.n === Infinity ? +state.K.toFixed(4) : 0 }; },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      const n = o.n === 'inf' ? Infinity : Math.round(+o.n);
+      if (n !== Infinity && !(n >= 1 && n <= 60)) return;
+      state.n = n;
+      state.K = n === Infinity ? Math.max(0, Math.min(E_MAX - 0.2, +o.K || 0)) : 0;
+      state.lastN = 1;
+      state.free = null; state.jump = null; state.busy = false; state.photons = []; state.fx = [];
+      state.view = { from: viewTarget(), to: viewTarget(), t0: 0 };
+      afterChange();
+    }
+  });
+
   // ---------- 啟動 ----------
   readColors();
   if (window.LabNum) {
@@ -2160,6 +2458,7 @@
   updateChips();
   updateReadouts();
   updatePlay();
+  describeCanvas();
   state.view = { from: viewTarget(), to: viewTarget(), t0: 0 };
   function themeChanged() { readColors(); if (L) buildBackground(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);

@@ -2,21 +2,21 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611121021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Reflection of Waves on a String and Standing Waves | Astro Ni Physics Lab">繩波的反射與駐波｜Astro Ni 物理實驗室</title>
+  <title data-en="Reflection of Waves on a String and Standing Waves | Astro Ni Science Lab">繩波的反射與駐波｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。">
-  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/standing-waves.html">
-  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/standing-waves.html?lang=zh-Hans">
-  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/standing-waves.html?lang=en">
-  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/standing-waves.html">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/standing-waves.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/standing-waves.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/standing-waves.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/standing-waves.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 物理實驗室">
-  <meta property="og:title" content="繩波的反射與駐波｜Astro Ni 物理實驗室">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="繩波的反射與駐波｜Astro Ni 科學實驗室">
   <meta property="og:description" content="切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。">
-  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/standing-waves.html">
-  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/standing-waves.jpg">
+  <meta property="og:url" content="https://lab.astroni.org/standing-waves.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/standing-waves.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="繩波的反射與駐波的模擬畫面">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"繩波的反射與駐波","alternateName":"Reflection of Waves on a String and Standing Waves","description":"切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。","url":"https://astro1222ni.github.io/physics-lab/standing-waves.html","image":"https://astro1222ni.github.io/physics-lab/img/og/standing-waves.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","波動（Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"繩波的反射與駐波","alternateName":"Reflection of Waves on a String and Standing Waves","description":"切換固定端與自由端，觀察反射脈波倒立或正立；再讓振盪器連續送波，找出共振頻率，看駐波的波節與波腹。","url":"https://lab.astroni.org/standing-waves.html","image":"https://lab.astroni.org/img/og/standing-waves.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","波動（Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611121021">
   <style>
     /* 繩波的反射與駐波頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；下方共振曲線可水平拖曳選頻率，垂直方向仍可捲動頁面 */
@@ -81,9 +81,10 @@
       <p data-en="Send a pulse along a string and see how it reflects from a fixed end (upside down) or a free end (the right way up). Then drive the string continuously: the waves going out and coming back add up to a standing wave, and at the resonant frequencies a large, clean pattern of nodes and antinodes builds up.">沿著繩子送出一個脈波，看它在固定端（倒立）與自由端（正立）如何反射；再讓振盪器連續送出正弦波，去與回的波疊加成駐波——頻率剛好是共振頻率時，會長出振幅很大、波節與波腹分明的駐波。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Send a pulse” and watch it come back upside down from the fixed end; then press “Free end” and compare.">試試看：按「送出脈波」，看脈波在固定端反射後倒立；再按「自由端」比比看。</p>
     <div class="lab sw">
       <div class="stage">
-        <canvas id="cv" aria-label="繩波模擬畫布：繩子的形狀、入射波與反射波，駐波模式下方為共振曲線" data-en-aria-label="String wave simulation: the shape of the string with the incident and reflected waves; in standing-wave mode a resonance curve is shown below"></canvas>
+        <canvas id="cv" role="img" aria-label="繩波模擬畫布：繩子的形狀、入射波與反射波，駐波模式下方為共振曲線"></canvas>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
           <button id="send" type="button" data-en="Send a pulse">送出脈波</button>
@@ -93,6 +94,8 @@
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="legend">
           <span style="color:var(--field)" data-en-html="<i class=&quot;thick&quot; style=&quot;background:var(--field)&quot;></i>String (sum)"><i class="thick" style="background:var(--field)"></i>繩子（合成波）</span>
           <span style="color:var(--pos)" data-en-html="<i class=&quot;dash&quot;></i>Incident wave (→)"><i class="dash"></i>入射波（→）</span>
@@ -258,22 +261,31 @@
         <li data-en="The pulse height is 3 cm. Changing a setting restarts the wave from rest. The animation runs in real time, or at 0.25× in slow motion.">脈波高度 3 cm。改變任何設定時，繩子從靜止重新開始。動畫以真實時間播放（慢動作為 0.25 倍）。</li>
         <li data-en="The string is ideal: uniform, perfectly flexible, with small displacements and no friction along its length.">繩子視為理想繩：均勻、完全柔軟、位移很小，傳播途中沒有摩擦損耗。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Waves">課綱對應：選修物理Ⅲ・波動</li>
+        <li data-en-html="Constants and data: no physical constants are needed. The string length, wave speed, pulse height (3 cm), driver amplitude (1 cm) and the fraction of each returning wave reflected at the driver (\(\rho = 0.7\)) are settings of the simulation. The sound maps \(f_1\) to 262 Hz, close to middle C (C4 = 261.63 Hz in equal temperament with the standard pitch A4 = 440 Hz of ISO 16).">常數與數據：本頁不需要物理常數。繩長、波速、脈波高度 3 cm、振盪器振幅 1 cm、振盪器端反射回來的比例 \(\rho = 0.7\) 都是模擬的設定值。音效把 \(f_1\) 對應到 262 Hz，接近中央 C（以 ISO 16 的標準音高 A4 = 440 Hz、十二平均律計算，C4 = 261.63 Hz）。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/16-5-interference-of-waves&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 16.5 Interference of Waves</a> (reflection at a fixed end and a free end) and <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/16-6-standing-waves-and-resonance&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>16.6 Standing Waves and Resonance</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/16-5-interference-of-waves" target="_blank" rel="noopener">University Physics Volume 1，16.5 波的干涉</a>》（固定端與自由端的反射）、《<a href="https://openstax.org/books/university-physics-volume-1/pages/16-6-standing-waves-and-resonance" target="_blank" rel="noopener">16.6 駐波與共振</a>》（皆為英文）</li>
+      </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/standing-waves-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/standing-waves.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="standing-waves"></script>
-  <script src="js/missions/standing-waves.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="standing-waves"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/math.js?v=202611121021"></script>
+  <script src="js/standing-waves-core.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121021"></script>
+  <script src="js/numinput.js?v=202611121021"></script>
+  <script src="js/drawkit.js?v=202611121021"></script>
+  <script src="js/keys.js?v=202611121021"></script>
+  <script src="js/standing-waves.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021" data-module="standing-waves"></script>
+  <script src="js/missions/standing-waves.js?v=202611121021"></script>
+  <script src="js/stats.js?v=202611121021" data-module="standing-waves"></script>
+  <script src="js/comments.js?v=202611121021"></script>
 </body>
 </html>

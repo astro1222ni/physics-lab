@@ -2,21 +2,21 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611121021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Double-Slit Interference and Single-Slit Diffraction | Astro Ni Physics Lab">雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室</title>
+  <title data-en="Double-Slit Interference and Single-Slit Diffraction | Astro Ni Science Lab">雙狹縫干涉與單狹縫繞射｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。">
-  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/slit-interference.html">
-  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/slit-interference.html?lang=zh-Hans">
-  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/slit-interference.html?lang=en">
-  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/slit-interference.html">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/slit-interference.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/slit-interference.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/slit-interference.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/slit-interference.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 物理實驗室">
-  <meta property="og:title" content="雙狹縫干涉與單狹縫繞射｜Astro Ni 物理實驗室">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="雙狹縫干涉與單狹縫繞射｜Astro Ni 科學實驗室">
   <meta property="og:description" content="調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。">
-  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/slit-interference.html">
-  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/slit-interference.jpg">
+  <meta property="og:url" content="https://lab.astroni.org/slit-interference.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/slit-interference.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="雙狹縫干涉與單狹縫繞射的模擬畫面">
@@ -24,11 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"雙狹縫干涉與單狹縫繞射","alternateName":"Double-Slit Interference and Single-Slit Diffraction","description":"調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。","url":"https://astro1222ni.github.io/physics-lab/slit-interference.html","image":"https://astro1222ni.github.io/physics-lab/img/og/slit-interference.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"雙狹縫干涉與單狹縫繞射","alternateName":"Double-Slit Interference and Single-Slit Diffraction","description":"調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。","url":"https://lab.astroni.org/slit-interference.html","image":"https://lab.astroni.org/img/og/slit-interference.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611121021">
   <style>
     /* 本頁專用樣式：只使用 lab.css 的顏色變數，深色模式自動跟著切換 */
     /* 本頁專用色彩代號（--si-*）：俯視示意圖與屏幕是「暗室」，兩種模式都偏暗；--si-shadow 為強度圖上的投影 */
@@ -92,14 +92,15 @@
       <p data-en="Change the wavelength, slit width, slit separation and screen distance, and watch the colour, spacing and intensity of the bright and dark fringes on the screen. Click or drag on the intensity graph below to read off the values at any point.">調整波長、縫寬、縫距與屏幕距離，觀察屏幕上明暗條紋的顏色、間距與光強分布；在下方的強度圖上點擊或拖曳可讀出各點數值。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Red laser 650 nm”, then “Violet 405 nm”, and compare how far apart the bright fringes are.">試試看：先按「紅光雷射 650 nm」再按「藍紫光 405 nm」，比比看亮紋間距。</p>
     <div class="lab">
       <div class="stage">
-        <canvas id="scene" data-en-aria-label="Top view: light waves spread out from the slits and interfere with each other" aria-label="俯視示意圖：光波通過狹縫後向外擴散並互相干涉"></canvas>
+        <canvas id="scene" role="img" aria-label="俯視示意圖：光波通過狹縫後向外擴散並互相干涉"></canvas>
         <div class="stage-row">
           <p class="hint" data-en="The top view is a schematic (not to scale): bright bands are wave crests, showing the wavefronts spreading from the slits and overlapping.">上圖為俯視示意圖（未依比例）：亮色為波峰，可看到從狹縫散開的波前互相疊加。</p>
           <button id="anim" type="button">暫停動畫</button>
         </div>
-        <canvas id="pattern" tabindex="0" data-en-aria-label="Fringes on the screen and graph of relative intensity I/I0 against position y; click, drag or use the left and right arrow keys to move the cursor" aria-label="屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖；可點擊、拖曳或用左右方向鍵移動游標"></canvas>
+        <canvas id="pattern" tabindex="0" aria-label="屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖；可點擊、拖曳或用左右方向鍵移動游標"></canvas>
         <div class="legend">
           <span data-en-html="&lt;i id=&quot;lgCurve&quot; style=&quot;background:var(--field)&quot;&gt;&lt;/i&gt;Relative intensity I/I&lt;sub&gt;0&lt;/sub&gt;"><i id="lgCurve" style="background:var(--field)"></i>相對光強 I/I<sub>0</sub></span>
           <span id="lgEnv" data-en-html="&lt;i style=&quot;background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)&quot;&gt;&lt;/i&gt;Single-slit envelope"><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 8px)"></i>單狹縫包絡線</span>
@@ -107,6 +108,8 @@
           <span data-en-html="&lt;i style=&quot;background:var(--probe)&quot;&gt;&lt;/i&gt;Cursor"><i style="background:var(--probe)"></i>游標</span>
         </div>
         <p class="hint" id="densityHint" hidden data-en="The fringes are too dense for the screen to show each bright fringe: reduce the display range.">條紋太密，畫面像素不足以分辨每一條亮紋：請縮小顯示範圍。</p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
       </div>
 
       <aside class="panel">
@@ -245,21 +248,30 @@
         <li data-en-html="The top view splits each slit into several Huygens wavelet sources and adds up their amplitudes \(\cos(kr - \omega t)/\sqrt{r}\) to draw the wave crests. To make the wavelength visible, the wavelength, slit width and slit separation are all magnified in the drawing: only \(d/a\) and the trends are kept, not the true scale.">俯視示意圖把每條狹縫分成數個惠更斯子波源，疊加各子波的振幅 \(\cos(kr - \omega t)/\sqrt{r}\) 畫出波峰；為了看得見波長，圖中的波長、縫寬與縫距都經過放大，只保留 \(d/a\) 與趨勢，並非實際比例。</li>
         <li data-en-html="In white-light mode 75 wavelengths are taken between 380 and 750 nm (equally spaced in wavenumber 1/λ), and the \(I_{\lambda}\) are added with weights from a 6500 K blackbody spectrum. The colour is converted to sRGB using the CIE 1931 colour-matching functions (an analytic approximation) and balanced so that the central fringe is white. The top view represents white light with just three wavelengths — blue, green and red — added together.">白光模式在 380–750 nm 之間取 75 個波長（波數 1/λ 等間隔），以 6500 K 黑體光譜加權後把各波長的 \(I_{\lambda}\) 相加；顏色用 CIE 1931 配色函數（解析近似）換算成 sRGB，並校正成中央亮紋為白色。俯視示意圖則只用藍、綠、紅三個波長的波疊加來表示白光。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Physical Optics">課綱對應：選修物理Ⅲ・物理光學</li>
+        <li data-en-html="Constants and data: the 650, 532 and 405 nm buttons are typical nominal wavelengths of red, green and violet laser pointers (settings of the simulation). The white light is weighted by Planck’s law for a 6500 K blackbody, which uses the second radiation constant \(c_2 = hc/k = 1.438\,776\,877\ldots\times10^{-2}\ \mathrm{m\,K}\) (exact; &lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?c22ndrc&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CODATA 2022, NIST&lt;/a&gt;). Colours: CIE 1931 colour-matching functions from the analytic fit of C. Wyman, P.-P. Sloan and P. Shirley, &lt;a href=&quot;https://jcgt.org/published/0002/02/01/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;“Simple Analytic Approximations to the CIE XYZ Color Matching Functions”, JCGT 2(2), 2013&lt;/a&gt;, converted to sRGB (D65, IEC 61966-2-1); the single-wavelength colours use Dan Bruton’s piecewise approximation.">常數與數據：650、532、405 nm 三個按鈕是常見紅光、綠光、藍紫光雷射筆的標稱波長（模擬設定值）。白光以 6500 K 黑體的普朗克定律加權，用到第二輻射常數 \(c_2 = hc/k = 1.438\,776\,877\ldots\times10^{-2}\ \mathrm{m\,K}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?c22ndrc" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。顏色：CIE 1931 配色函數採用 C. Wyman、P.-P. Sloan 與 P. Shirley 的解析近似〈<a href="https://jcgt.org/published/0002/02/01/" target="_blank" rel="noopener">Simple Analytic Approximations to the CIE XYZ Color Matching Functions</a>〉（JCGT 2(2)，2013），再換算成 sRGB（D65，IEC 61966-2-1）；單一波長的顏色用 Dan Bruton 的分段近似。</li>
+        <li data-en-html="Further reading: OpenStax, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/3-2-mathematics-of-interference&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;University Physics Volume 3, 3.2 Mathematics of Interference&lt;/a&gt;; HyperPhysics, &lt;a href=&quot;https://hyperphysics.gsu.edu/hbase/phyopt/mulslid.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Multiple Slit Diffraction&lt;/a&gt; (the single-slit envelope)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-3/pages/3-2-mathematics-of-interference" target="_blank" rel="noopener">University Physics Volume 3，3.2 干涉的數學</a>》；HyperPhysics〈<a href="https://hyperphysics.gsu.edu/hbase/phyopt/mulslid.html" target="_blank" rel="noopener">Multiple Slit Diffraction</a>〉（單狹縫包絡線）（皆為英文）</li>
+      </ul>
     </section>
 
-    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Science Lab&lt;/a&gt; · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/slit-interference-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/slit-interference.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="slit-interference"></script>
-  <script src="js/missions/slit-interference.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="slit-interference"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/math.js?v=202611121021"></script>
+  <script src="js/slit-interference-core.js?v=202611121021"></script>
+  <script src="js/numinput.js?v=202611121021"></script>
+  <script src="js/drawkit.js?v=202611121021"></script>
+  <script src="js/keys.js?v=202611121021"></script>
+  <script src="js/slit-interference.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021" data-module="slit-interference"></script>
+  <script src="js/missions/slit-interference.js?v=202611121021"></script>
+  <script src="js/stats.js?v=202611121021" data-module="slit-interference"></script>
+  <script src="js/comments.js?v=202611121021"></script>
 </body>
 </html>

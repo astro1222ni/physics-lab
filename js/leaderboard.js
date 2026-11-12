@@ -1,4 +1,4 @@
-/* leaderboard.js — 倪的星星排行榜：前 100 名、自己的名次、公開設定、任務進度、管理員同步任務清單 */
+/* leaderboard.js — 倪的星星排行榜：全科總排名與各科排名（前 100 名）、自己的名次、公開設定、各科任務進度、管理員同步任務清單 */
 (function () {
   'use strict';
   const LM = window.LabMission;
@@ -6,7 +6,11 @@
   const $ = function (id) { return document.getElementById(id); };
   const st = LM ? LM._state : {};
   const MODS = window.LAB_MISSION_MODULES || [];
+  const SUBJ = window.LAB_SUBJECTS || [{ id: 'phy', zh: '物理', en: 'Physics' }];
+  const TABS = [{ id: 'all', zh: '全科總排名', en: 'All subjects' }].concat(SUBJ);
   const STAR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.2l-5.8 3.2 1.2-6.5L2.6 9.4l6.5-.8z"/></svg>';
+  const subjOf = function (mod) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(mod) : 'phy'; };
+  const liveIn = function (sid) { return (window.LAB_LIVE_MODULES || []).filter(function (m) { return subjOf(m) === sid; }).length; };
 
   function el(tag, cls, text) {
     const e = document.createElement(tag);
@@ -22,36 +26,70 @@
   }
 
   // ---------- 載入所有模組的任務檔（只註冊任務，不會在這頁判定） ----------
-  const loaded = Promise.all(MODS.map(function (m) {
-    return new Promise(function (resolve) {
-      const s = document.createElement('script');
-      const v = ((document.currentScript || document.querySelector('script[src*="leaderboard.js"]') || {}).src || '').match(/\?v=\d+/);
-      s.src = 'js/missions/' + m.id + '.js' + (v ? v[0] : '');
-      s.onload = s.onerror = resolve;
-      document.body.appendChild(s);
-    });
-  }));
+  const loaded = LM && LM.loadAll ? LM.loadAll() : Promise.resolve();
 
-  let api = null, top = [], myScore = null, myRank = null, admin = false;
+  let api = null, top = [], myScore = null, admin = false;
+  let tab = 'all';
+  try { tab = sessionStorage.getItem('lb-tab') || 'all'; } catch (e) { /* 忽略 */ }
+  if (!TABS.some(function (t) { return t.id === tab; })) tab = 'all';
+  const myRank = {}; // 'all'、'phy'… → 名次（沒有星星時不列）
+  let ranksAt = 0;
 
-  function rankList(list) {
-    // 同分同名次（1, 2, 2, 4…）；同分時先達到者在前
-    list.sort(function (a, b) { return (b.stars - a.stars) || ((a.at || 0) - (b.at || 0)); });
+  function valOf(r, t) { return t === 'all' ? (r.stars || 0) : ((r.s && r.s[t]) || 0); }
+  function timeOf(r, t) { return t === 'all' ? (r.at || 0) : ((r.sa && r.sa[t]) || r.at || 0); }
+  function rankList(list, t) {
+    // 同分同名次（1, 2, 2, 4…）；同分時先達到者在前；該科沒有星星的人不列入
+    list = list.filter(function (r) { return valOf(r, t) > 0; });
+    list.sort(function (a, b) { return (valOf(b, t) - valOf(a, t)) || (timeOf(a, t) - timeOf(b, t)); });
     let rank = 0, prev = null;
-    list.forEach(function (r, i) { if (r.stars !== prev) { rank = i + 1; prev = r.stars; } r.rank = rank; });
+    list.forEach(function (r, i) { const v = valOf(r, t); if (v !== prev) { rank = i + 1; prev = v; } r.rank = rank; });
     return list;
+  }
+  function tabName(t) { const x = TABS.filter(function (y) { return y.id === t; })[0]; return x ? T(x.zh, x.en) : t; }
+
+  // ---------- 排行榜分頁 ----------
+  function renderTabs() {
+    const box = $('boardTabs');
+    box.innerHTML = '';
+    TABS.forEach(function (t) {
+      const b = el('button', 'sb-tab sb-' + t.id);
+      b.type = 'button';
+      b.setAttribute('role', 'tab');
+      b.setAttribute('aria-selected', String(tab === t.id));
+      b.setAttribute('aria-controls', 'list');
+      b.appendChild(el('span', null, T(t.zh, t.en)));
+      if (t.id !== 'all' && !liveIn(t.id)) b.appendChild(el('span', 'sb-n', T('製作中', 'soon')));
+      b.addEventListener('click', function () {
+        if (tab === t.id) return;
+        tab = t.id;
+        try { sessionStorage.setItem('lb-tab', tab); } catch (e) { /* 忽略 */ }
+        renderTabs();
+        const again = box.querySelector('.sb-' + t.id);
+        if (again) again.focus();
+        top = [];
+        $('list').innerHTML = '';
+        $('list').appendChild(el('li', 'lb-empty', T('載入中…', 'Loading…')));
+        refresh();
+      });
+      box.appendChild(b);
+    });
+    $('boardTitle').textContent = tab === 'all' ? T('全科總排名・前 100 名', 'All subjects · top 100') : tabName(tab) + T('排名・前 100 名', ' · top 100');
   }
 
   function renderList() {
     const ol = $('list');
     ol.innerHTML = '';
+    if (tab !== 'all' && !liveIn(tab)) {
+      ol.appendChild(el('li', 'lb-empty sb-soon', T(tabName(tab) + '的實驗製作中，上線後就會有' + tabName(tab) + '排名，敬請期待！', tabName(tab) + ' experiments are on the way — the ranking opens when they go live.')));
+      return;
+    }
     if (!top.length) { ol.appendChild(el('li', 'lb-empty', T('還沒有人獲得星星，來當第一個吧！', 'Nobody has earned stars yet — be the first!'))); return; }
     const me = st.user && st.user.uid;
     top.forEach(function (r) {
       const li = el('li', 'lb-row' + (r.uid === me ? ' me' : '') + (r.rank <= 3 ? ' podium p' + r.rank : ''));
       li.appendChild(el('span', 'lb-rank', String(r.rank)));
       li.appendChild(el('span', 'lb-name', String(r.name || '?')));
-      li.appendChild(stars(r.stars));
+      li.appendChild(stars(valOf(r, tab)));
       ol.appendChild(li);
     });
   }
@@ -76,10 +114,21 @@
     const info = el('div', 'lb-info');
     info.appendChild(el('div', 'lb-myname', st.nickname ? (st.pub ? st.nickname : LM.mask(st.nickname)) : T('（尚未設定暱稱）', '(no nickname yet)')));
     info.appendChild(el('div', 'lb-myrank', myScore
-      ? T('目前第 ', 'Rank ') + myRank + T(' 名', '')
+      ? T('全科總排名第 ', 'Overall rank ') + (myRank.all || '…') + T(' 名', '')
       : T('還沒有星星：到任何實驗打開「任務模式」開始吧！', 'No stars yet — open “Mission mode” on any experiment to begin!')));
     card.appendChild(info);
     box.appendChild(card);
+    // 各科星星與名次
+    if (myScore) {
+      const row = el('div', 'lb-myrank-subj');
+      SUBJ.forEach(function (sb) {
+        if (!liveIn(sb.id)) return;
+        const v = (myScore.s && myScore.s[sb.id]) || 0;
+        const chip = el('span', 'dl-chip sb-' + sb.id, T(sb.zh, sb.en) + ' ★' + v + (v > 0 && myRank[sb.id] ? T('・第 ' + myRank[sb.id] + ' 名', ' · rank ' + myRank[sb.id]) : ''));
+        row.appendChild(chip);
+      });
+      box.appendChild(row);
+    }
 
     if (st.nickname) {
       const f = el('fieldset', 'lb-pub');
@@ -95,6 +144,23 @@
       f.appendChild(el('p', 'lb-note', T('暱稱會公開顯示，請為自己的暱稱負責。', 'Your nickname is public — you are responsible for it.')));
       box.appendChild(f);
     }
+  }
+
+  function progressRow(m, all) {
+    const list = all[m.id] || [];
+    const done = list.filter(function (x) { return st.done[x.id]; });
+    const got = done.reduce(function (a, x) { return a + x.level; }, 0);
+    const total = list.reduce(function (a, x) { return a + x.level; }, 0);
+    const row = el('a', 'lb-prog');
+    row.href = m.id + '.html';
+    row.appendChild(el('span', 'lb-prog-name', T(m.zh, m.en)));
+    const bar = el('span', 'lb-prog-bar');
+    const fill = el('span', 'lb-prog-fill');
+    fill.style.width = (total ? 100 * got / total : 0) + '%';
+    bar.appendChild(fill);
+    row.appendChild(bar);
+    row.appendChild(el('span', 'lb-prog-num', done.length + ' / ' + list.length + T(' 任務　', ' missions · ') + got + ' / ' + total + ' ★'));
+    return row;
   }
 
   function renderProgress() {
@@ -136,22 +202,17 @@
         (pct >= 99.95 || pct === 0 ? pct.toFixed(0) : pct.toFixed(1)) + T('%', '% of the stars')));
       wrap.appendChild(tot);
     }
-    MODS.forEach(function (m) {
-      const list = all[m.id] || [];
-      if (!list.length) return;
-      const done = list.filter(function (x) { return st.done[x.id]; });
-      const got = done.reduce(function (a, x) { return a + x.level; }, 0);
-      const total = list.reduce(function (a, x) { return a + x.level; }, 0);
-      const row = el('a', 'lb-prog');
-      row.href = m.id + '.html';
-      row.appendChild(el('span', 'lb-prog-name', T(m.zh, m.en)));
-      const bar = el('span', 'lb-prog-bar');
-      const fill = el('span', 'lb-prog-fill');
-      fill.style.width = (total ? 100 * got / total : 0) + '%';
-      bar.appendChild(fill);
-      row.appendChild(bar);
-      row.appendChild(el('span', 'lb-prog-num', done.length + ' / ' + list.length + T(' 任務　', ' missions · ') + got + ' / ' + total + ' ★'));
-      wrap.appendChild(row);
+    // 依科目分組
+    SUBJ.forEach(function (sb) {
+      const mods = MODS.filter(function (m) { return subjOf(m.id) === sb.id && (all[m.id] || []).length; });
+      if (!mods.length) return;
+      let got = 0, total = 0;
+      mods.forEach(function (m) { (all[m.id] || []).forEach(function (x) { total += x.level; if (st.done[x.id]) got += x.level; }); });
+      const h = el('h3', 'lb-subj-head sb-' + sb.id);
+      h.appendChild(el('span', null, T(sb.zh, sb.en)));
+      h.appendChild(el('small', null, got + ' / ' + total + ' ★'));
+      wrap.appendChild(h);
+      mods.forEach(function (m) { wrap.appendChild(progressRow(m, all)); });
     });
   }
 
@@ -163,19 +224,45 @@
     }).then(refresh).catch(function () { refresh(); });
   }
 
+  /** 自己在各科的名次：每次載入頁面算一次，之後每 5 分鐘更新（每科一次查詢） */
+  function myRanks(sc) {
+    if (!sc) return Promise.resolve();
+    if (Date.now() - ranksAt < 300000 && Object.keys(myRank).length) return Promise.resolve();
+    ranksAt = Date.now();
+    return Promise.all(SUBJ.map(function (sb) {
+      const v = (sc.s && sc.s[sb.id]) || 0;
+      if (!v || !liveIn(sb.id)) { delete myRank[sb.id]; return null; }
+      return api.countAbove(v, sb.id).then(function (n) {
+        myRank[sb.id] = n + 1;
+        if (window.LabAchievements) {
+          // 進入前 10 名時才另外數該科排行榜的人數（成就門檻用）
+          const size = n < 10 ? api.countAbove(0, sb.id) : Promise.resolve(0);
+          return size.then(function (s) { window.LabAchievements.setRank(n + 1, s, sb.id); });
+        }
+      }).catch(function () { /* 忽略 */ });
+    }));
+  }
+
   function refresh() {
     if (!api) return;
-    api.top(100).then(function (list) {
-      top = rankList(list);
+    const t = tab;
+    const want = t !== 'all' && !liveIn(t) ? Promise.resolve([]) : api.top(100, t === 'all' ? undefined : t);
+    want.then(function (list) {
+      if (t !== tab) return;
+      top = rankList(list, t);
       renderList();
       if (st.user) {
         return api.getScore(st.user.uid).then(function (sc) {
           myScore = sc;
-          if (!sc) { myRank = null; return; }
+          if (!sc) { delete myRank.all; return; }
           return api.countAbove(sc.stars).then(function (n) {
-            myRank = n + 1;
-            if (window.LabAchievements) window.LabAchievements.setRank(myRank, top.length); // 排行榜成就
-          });
+            myRank.all = n + 1;
+            if (window.LabAchievements) {
+              // 排行榜成就：進入前 10 名時才數排行榜總人數（門檻要求至少 100、1,000 人）
+              const size = n < 10 ? api.countAbove(0) : Promise.resolve(t === 'all' ? top.length : 0);
+              return size.then(function (s) { window.LabAchievements.setRank(n + 1, s); });
+            }
+          }).then(function () { return myRanks(sc); });
         });
       }
     }).then(function () { renderMe(); renderProgress(); }).catch(function () {
@@ -198,6 +285,7 @@
     }).catch(function () { $('syncMsg').textContent = T('同步失敗：請確認你是管理員，且資料庫規則已更新。', 'Sync failed: check you are an administrator and the database rules are up to date.'); });
   });
 
+  renderTabs();
   let autoSynced = 0; // 本頁載入時 missions.js 已自動同步的任務數
   if (LM) LM.on('synced', function (n) { autoSynced += n; });
   if (window.LabAchievements) window.LabAchievements.renderInto($('achBox'));
@@ -208,6 +296,7 @@
     let lastUid = null;
     api.onAuth(function (user) {
       const uid = user && user.uid;
+      if (uid !== lastUid) { ranksAt = 0; Object.keys(myRank).forEach(function (k) { delete myRank[k]; }); }
       if (uid && uid !== lastUid) api.isAdmin(uid).then(function (a) {
         admin = a; $('admin').hidden = !a;
         if (!a) return;

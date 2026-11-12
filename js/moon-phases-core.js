@@ -10,7 +10,10 @@
  *   位置由克卜勒方程式 M = E − e sin E 解出（牛頓法到機器精度），不做逐步積分，所以沒有能量漂移。
  * 影子：太陽、地球、月球都是球；本影是同時外切太陽與遮擋天體的圓錐，半影是內切的圓錐（精確幾何）。
  *   沒有計入地球大氣使地影變大約 2% 的效應。
- * 台灣：北緯 23.5°、東經 121°，地球視為半徑 6371 km 的球；恆星時由「平太陽」定義（日中天約在 12:00）。
+ * 觀測地點：預設臺灣（北緯 23.5°、東經 121°），也可選 18 個世界城市或自訂經緯度（PLACES）；
+ *   地球視為半徑 6371 km 的球；恆星時由「平太陽」定義（日中天約在 12:00）。
+ * 當地時間：t 一律是 UTC+8 的模型時間；城市用 IANA 時區（Intl API 換算，夏令時間依 REF_YEAR 年的規則，
+ *   模型的日曆沒有年份），自訂地點用固定的 UTC 偏移（不計夏令時間）。localT／fromLocal／localDay 互換。
  */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -410,18 +413,20 @@
   function sunAlt(t, lat, lon) { return horizontal(sunAt(t), t, lat, lon); }
   const REFR = 34 / 60 * DEG; // 地平線附近的大氣折射
   /**
-   * 一天（t0 起 24 小時）內的升起與落下時刻（日），找不到為 null。
-   * 太陽：上緣碰到地平線（中心高度 −0.833°）；月球：上緣碰到地平線（中心高度 −(34′ + 視半徑)）。
+   * 一天（t0 起 span 日，預設 1 日＝24 小時；夏令時間調整的那天可能是 23 或 25 小時）內的升起與落下時刻（日），找不到為 null。
+   * 太陽：上緣碰到地平線（中心高度 −0.833°）；月球：上緣碰到地平線（中心高度 −(34′ + 視半徑)，視半徑由地表的距離算，含視差）。
+   * upAll：整段時間都在地平線上（高緯度的月亮可能整天不落）。
    */
-  function riseSet(el, t0, body, lat, lon) {
+  function riseSet(el, t0, body, lat, lon, span) {
     const f = function (t) {
       if (body === 'sun') return sunAlt(t, lat, lon).alt + (REFR + 16 / 60 * DEG);
       const h = moonAlt(el, t, lat, lon);
       return h.alt + REFR + Math.asin(R_MOON / h.dist);
     };
-    const step = 1 / 144;
+    const len = span > 0 ? span : 1;
+    const N = Math.max(1, Math.round(144 * len)), step = len / N;
     let rise = null, set = null, ta = t0, fa = f(ta);
-    for (let k = 1; k <= 144; k++) {
+    for (let k = 1; k <= N; k++) {
       const tb = t0 + k * step, fb = f(tb);
       if ((fa < 0) !== (fb < 0)) {
         let lo = ta, hi = tb, flo = fa;
@@ -493,6 +498,113 @@
   function timeOf(year, doy, hour) { return Math.ceil(year * Y_SID + doy - 0.5) + hour / 24; }
   function doyOf(month, day) { let n = 0; for (let i = 0; i < month - 1; i++) n += MONTH_DAYS[i]; return n + day - 1; }
 
+  // ---------- 觀測地點與當地時間 ----------
+  /**
+   * 地點清單（選單的第 2～20 項；第 1 項「手動輸入經緯度」由 manualPlace 產生）。lat、lon 為度（北緯、東經為正），
+   * tz 為 IANA 時區（夏令時間由 Intl 換算），utc 為固定的 UTC 偏移（時）。
+   * 座標出處：英文維基百科各城市條目的主座標（MediaWiki API，取到 0.01°）；香港用香港天文台總部（天文台的月出表就是算這一點），
+   * 洛杉磯用市政廳。臺灣沿用本模擬原本的北緯 23.5°、東經 121°（北回歸線附近），UTC+8（1979 年後不實施夏令時間）。
+   */
+  const PLACES = [
+    { id: 'tw', zh: '臺灣', en: 'Taiwan', lat: 23.5, lon: 121, utc: 8 },
+    { id: 'tokyo', zh: '東京', en: 'Tokyo', lat: 35.69, lon: 139.69, tz: 'Asia/Tokyo' },
+    { id: 'seoul', zh: '首爾', en: 'Seoul', lat: 37.56, lon: 126.99, tz: 'Asia/Seoul' },
+    { id: 'beijing', zh: '北京', en: 'Beijing', lat: 39.91, lon: 116.40, tz: 'Asia/Shanghai' },
+    { id: 'hongkong', zh: '香港', en: 'Hong Kong', lat: 22.30, lon: 114.17, tz: 'Asia/Hong_Kong' },
+    { id: 'singapore', zh: '新加坡', en: 'Singapore', lat: 1.28, lon: 103.83, tz: 'Asia/Singapore' },
+    { id: 'delhi', zh: '新德里', en: 'New Delhi', lat: 28.61, lon: 77.21, tz: 'Asia/Kolkata' },
+    { id: 'dubai', zh: '杜拜', en: 'Dubai', lat: 25.20, lon: 55.27, tz: 'Asia/Dubai' },
+    { id: 'cairo', zh: '開羅', en: 'Cairo', lat: 30.04, lon: 31.24, tz: 'Africa/Cairo' },
+    { id: 'nairobi', zh: '奈洛比', en: 'Nairobi', lat: -1.29, lon: 36.82, tz: 'Africa/Nairobi' },
+    { id: 'capetown', zh: '開普敦', en: 'Cape Town', lat: -33.93, lon: 18.42, tz: 'Africa/Johannesburg' },
+    { id: 'moscow', zh: '莫斯科', en: 'Moscow', lat: 55.76, lon: 37.62, tz: 'Europe/Moscow' },
+    { id: 'paris', zh: '巴黎', en: 'Paris', lat: 48.86, lon: 2.35, tz: 'Europe/Paris' },
+    { id: 'london', zh: '倫敦', en: 'London', lat: 51.51, lon: -0.13, tz: 'Europe/London' },
+    { id: 'reykjavik', zh: '雷克雅維克', en: 'Reykjavík', lat: 64.15, lon: -21.94, tz: 'Atlantic/Reykjavik' },
+    { id: 'newyork', zh: '紐約', en: 'New York', lat: 40.71, lon: -74.01, tz: 'America/New_York' },
+    { id: 'losangeles', zh: '洛杉磯', en: 'Los Angeles', lat: 34.05, lon: -118.24, tz: 'America/Los_Angeles' },
+    { id: 'buenosaires', zh: '布宜諾斯艾利斯', en: 'Buenos Aires', lat: -34.60, lon: -58.38, tz: 'America/Argentina/Buenos_Aires' },
+    { id: 'sydney', zh: '雪梨', en: 'Sydney', lat: -33.87, lon: 151.21, tz: 'Australia/Sydney' }
+  ];
+  const REF_YEAR = 2026;          // 夏令時間用這一年的規則（2026 年不是閏年，和模型日曆的 2 月 28 天一致）
+  const UTC_MIN = -12, UTC_MAX = 14;
+  function placeById(id) { for (let i = 0; i < PLACES.length; i++) if (PLACES[i].id === id) return PLACES[i]; return null; }
+  function clampNum(v, lo, hi, def) { v = +v; return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def; }
+  /** 由經度估計時區：round(經度 / 15)，限制在 UTC−12～UTC+14 */
+  function defaultUtc(lonDeg) { return clampNum(Math.round(lonDeg / 15), UTC_MIN, UTC_MAX, 0) + 0; } // + 0：不要出現 −0
+  /** 手動輸入的地點（緯度 −90～90、經度 −180～180、UTC 偏移 −12～+14，取到 0.25 時；超出範圍就夾到邊界） */
+  function manualPlace(latDeg, lonDeg, utc) {
+    const lat = clampNum(latDeg, -90, 90, 0) + 0, lon = clampNum(lonDeg, -180, 180, 0) + 0;
+    const u = utc == null || utc === '' || !isFinite(+utc) ? defaultUtc(lon) : Math.round(clampNum(utc, UTC_MIN, UTC_MAX, 0) * 4) / 4 + 0;
+    return { id: 'man', zh: '自訂地點', en: 'your location', lat: lat, lon: lon, utc: u };
+  }
+
+  // IANA 時區在某一瞬間的 UTC 偏移（時）：用 Intl 把該瞬間格式化成當地的年月日時分秒，再與 UTC 相減
+  const tzFmt = {}, tzCache = new Map();
+  function zoneOffset(tz, ms) {
+    if (!(typeof Intl === 'object' && Intl.DateTimeFormat) || !isFinite(ms)) return null;
+    let f = tzFmt[tz];
+    if (f === undefined) {
+      try { f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric' }); }
+      catch (e) { f = null; }
+      tzFmt[tz] = f;
+    }
+    if (!f) return null;
+    const sec = Math.floor(ms / 1000) * 1000;
+    const key = tz + '|' + sec;
+    if (tzCache.has(key)) return tzCache.get(key);
+    const p = {};
+    f.formatToParts(new Date(sec)).forEach(function (x) { p[x.type] = x.value; });
+    const asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour) % 24, +p.minute, +p.second);
+    const off = Math.round((asUtc - sec) / 60000) / 60;
+    if (tzCache.size > 4000) tzCache.clear();
+    tzCache.set(key, off);
+    return off;
+  }
+  /** 模型時間 t（UTC+8）→ 真實的 UTC 毫秒：模型日曆的月日放進 REF_YEAR 年 */
+  function utcMs(t) {
+    const c = calendar(t);
+    return Date.UTC(REF_YEAR, 0, 1) + (c.doy + (c.hour - 8) / 24) * 86400000;
+  }
+  /** 地點在模型時間 t 的 UTC 偏移（時）。時區名稱無效或瀏覽器沒有 Intl 時，退回 round(經度/15) */
+  function utcOffset(p, t) {
+    if (!p) return 8;
+    if (!p.tz) return isFinite(p.utc) ? p.utc : defaultUtc(p.lon);
+    // 夏令時間的切換都在整點或半點：以 1 分鐘為單位快取
+    const ms = Math.floor(utcMs(t) / 60000) * 60000;
+    const o = zoneOffset(p.tz, ms);
+    return o == null ? defaultUtc(p.lon) : o;
+  }
+  /** 標準時間的偏移（一月與七月取小的；沒有夏令時間的地點兩者相同） */
+  function standardOffset(p) {
+    if (!p || !p.tz) return utcOffset(p, 0);
+    return Math.min(utcOffset(p, timeOf(0, doyOf(1, 15), 12)), utcOffset(p, timeOf(0, doyOf(7, 15), 12)));
+  }
+  /** 當地時間（以模型的日數表示，整數就是當地的 0 時；calendar(localT) 就是當地的日期與時刻） */
+  function localT(p, t) { return t + (utcOffset(p, t) - 8) / 24; }
+  /**
+   * 當地時間 tl → 模型時間 t。夏令時間開始時跳過的時刻（不存在）往後算；結束時重複的時刻取較早的那一次。
+   */
+  function fromLocal(p, tl) {
+    if (!p || !p.tz) return tl - (utcOffset(p, 0) - 8) / 24;
+    const oa = utcOffset(p, tl - 1), ob = utcOffset(p, tl + 1);
+    const ta = tl - (oa - 8) / 24;
+    if (oa === ob) {
+      const o = utcOffset(p, ta);
+      return o === oa ? ta : tl - (o - 8) / 24;
+    }
+    const tb = tl - (ob - 8) / 24;
+    const va = utcOffset(p, ta) === oa, vb = utcOffset(p, tb) === ob;
+    if (va && vb) return Math.min(ta, tb);
+    if (vb) return tb;
+    return ta;
+  }
+  /** t 所在的當地日（00:00–24:00）：開始與結束的模型時間（夏令時間切換的那天長 23 或 25 小時） */
+  function localDay(p, t) {
+    const d = Math.floor(localT(p, t));
+    return { day: d, t0: fromLocal(p, d), t1: fromLocal(p, d + 1) };
+  }
+
   return {
     DEG: DEG, TAU: TAU, EPS: EPS, INC: INC, P_SID: P_SID, Y_SID: Y_SID, P_SYN: P_SYN, P_SYN_REF: P_SYN_REF,
     P_DRA_REF: P_DRA_REF, P_ANO_REF: P_ANO_REF, P_NODE: P_NODE, P_APS: P_APS, A_MOON: A_MOON, E_MOON: E_MOON,
@@ -507,6 +619,8 @@
     sunVisibleFrom: sunVisibleFrom, localSolar: localSolar, eclipsesAt: eclipsesAt, greatestEclipse: greatestEclipse,
     eclToEq: eclToEq, eqToEcl: eqToEcl, lst: lst, observer: observer, horizonBasis: horizonBasis, horizontal: horizontal,
     declination: declination, moonAlt: moonAlt, sunAlt: sunAlt, riseSet: riseSet, transit: transit, skyOrientation: skyOrientation,
-    calendar: calendar, timeOf: timeOf, doyOf: doyOf
+    calendar: calendar, timeOf: timeOf, doyOf: doyOf,
+    PLACES: PLACES, REF_YEAR: REF_YEAR, UTC_MIN: UTC_MIN, UTC_MAX: UTC_MAX, placeById: placeById, defaultUtc: defaultUtc, manualPlace: manualPlace,
+    zoneOffset: zoneOffset, utcMs: utcMs, utcOffset: utcOffset, standardOffset: standardOffset, localT: localT, fromLocal: fromLocal, localDay: localDay
   };
 });

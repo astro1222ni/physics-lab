@@ -363,7 +363,7 @@
       return grp;
     }
 
-    // ---- 地球、台灣、月球、太陽 ----
+    // ---- 地球、觀測地點、月球、太陽 ----
     function earthTexture() {
       const W = 512, H = 256;
       const c = document.createElement('canvas');
@@ -440,11 +440,11 @@
       // 自轉軸
       const ax = line([new THREE.Vector3(0, 0, -1.45 * rE), new THREE.Vector3(0, 0, 1.45 * rE)], col('text'), 0.6);
       earth.add(ax);
-      // 台灣
+      // 觀測地點（位置由 sn.P 決定，跟著地點選單）
       const tw = new THREE.Mesh(new THREE.SphereGeometry(Math.max(0.05, rE * 0.07), 14, 10), new THREE.MeshBasicMaterial({ color: col('pos') }));
       grp.add(tw);
       L.ref.tw = tw;
-      const twl = label(T('台灣', 'Taiwan'), C.pos, { box: false, prio: 1, dir: [1, 0.3], gap: 5 });
+      const twl = label(B.placeName ? B.placeName() : T('臺灣', 'Taiwan'), C.pos, { box: false, prio: 1, dir: [1, 0.3], gap: 5 }); // 觀測地點（預設臺灣）
       tw.add(twl);
       L.ref.twl = twl;
       const el2 = label(T('地球', 'Earth'), C.text, { prio: 2, dir: [-0.6, 1] });
@@ -627,7 +627,7 @@
       const okey = [Math.round(om / K.DEG * 4), el.e, el.inc, colorVer, TH, B.lang()].join('|');
       layer('orbit', okey, buildOrbit, orbitGroup);
       orbitGroup.rotation.set(el.inc, 0, sn.node, 'ZXY');
-      const LB = layer('bodies', [mag, colorVer, TH, B.lang()].join('|'), buildBodies);
+      const LB = layer('bodies', [mag, colorVer, TH, B.lang(), B.placeName ? B.placeName() : ''].join('|'), buildBodies);
       const R = LB.ref;
       // 地球自轉：本地 x 軸 = 格林威治子午線方向（赤道座標中轉過恆星時），z 軸 = 北天極
       const th = K.lst(state.t, K.LON_TW) - K.LON_TW;

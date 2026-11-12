@@ -1,7 +1,8 @@
-/* dc-circuit.js — 「直流電路」模組的畫面與互動（物理計算在 dc-circuit-core.js） */
+/* dc-circuit.js — 「直流電路」模組的畫面與互動（物理計算在 dc-circuit-core.js；繪圖用 js/drawkit.js 的 LabDraw） */
 (function () {
   'use strict';
   const K = window.DCCircuitCore;
+  const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
@@ -26,36 +27,19 @@
     hum: false,
     offs: [],                // 每個元件上電荷的位移（px）
     lever: {},               // 開關撥桿的動畫角度（純介面過場）
+    corners: {}              // 畫成圓角的導線轉角（純畫法）
   };
 
-  // ---------- 色彩 ----------
+  // ---------- 色彩（lab.css 代號；drawkit 先載入，主題切換時已先更新） ----------
   let colors = {};
+  const alpha = D.alpha, shade = D.shade, mix = D.mix, rgbOf = D.rgb, roundRect = D.roundRect, FONT = D.FONT;
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
     ['--canvas-bg', '--text', '--muted', '--border', '--accent', '--accent-soft', '--surface',
       '--pos', '--neg', '--field', '--equi', '--probe', '--b-em']
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
-    colors.dark = isDark();
+    colors.dark = D.dark;
     sprites = {};
-  }
-  function rgbOf(c) {
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(c).trim());
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    const n = String(c).match(/[\d.]+/g);
-    return n && n.length >= 3 ? [+n[0], +n[1], +n[2]] : [128, 128, 128];
-  }
-  function alpha(c, a) { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; }
-  function shade(c, f) {
-    const r = rgbOf(c), t = f > 0 ? 255 : 0, k = Math.abs(f);
-    return 'rgb(' + r.map(function (x) { return Math.round(x + (t - x) * k); }).join(',') + ')';
-  }
-  function mix(c1, c2, f) {
-    const a = rgbOf(c1), b = rgbOf(c2);
-    return 'rgb(' + a.map(function (x, i) { return Math.round(x + (b[i] - x) * f); }).join(',') + ')';
-  }
-  function isDark() {
-    const r = rgbOf(getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg'));
-    return (r[0] + r[1] + r[2]) / 3 < 100;
   }
   /** 導線的顏色：電位低 → 偏藍、高 → 偏紅（淡淡的，主體仍是金屬色） */
   function potColor(V, floating) {
@@ -65,6 +49,11 @@
     const t = Math.max(0, Math.min(1, V / vmax));
     return t < 0.5 ? mix(metal, colors.neg, (0.5 - t) * 2 * 0.62) : mix(metal, colors.pos, (t - 0.5) * 2 * 0.62);
   }
+  /** 亮面金屬（接線柱、刀片、插孔）：深淺色都看得出金屬光澤 */
+  function chrome() { return colors.dark ? shade(colors.field, -0.12) : shade(colors.field, 0.5); }
+  /** 黃銅（燈座與檢流計的接線螺絲） */
+  function brass() { return colors.dark ? shade(colors.equi, -0.1) : shade(colors.equi, 0.3); }
+  function shadowCol(a) { return colors.dark ? 'rgba(0,0,0,' + Math.min(1, a * 2) + ')' : alpha(colors.text, a); }
 
   // ---------- 數字格式 ----------
   function num(v, d) {
@@ -142,11 +131,13 @@
   // ======================= 畫布與版面 =======================
   const cv = $('cv'), ctx = cv.getContext('2d');
   const pr = $('pr'), pctx = pr.getContext('2d');
+  pr.setAttribute('aria-label', T('輸出功率對負載電阻的關係圖', 'Graph of output power against load resistance')); // 圖畫出來時再換成含數值的說明
   let dpr = 1, cw = 300, ch = 300, L = null;
   const bg = document.createElement('canvas'), bgc = bg.getContext('2d');
-  const under = document.createElement('canvas'), uc = under.getContext('2d');  // 導線
+  const under = document.createElement('canvas'), uc = under.getContext('2d');  // 導線、探針線
   const over = document.createElement('canvas'), oc = over.getContext('2d');    // 元件、標示、探針、電表
   let sprites = {};
+  let kb = null; // 鍵盤操作（LabKeys）
 
   function layout() {
     const narrow = cw < 560;
@@ -179,9 +170,9 @@
     resizeGraph();
   }
 
-  function roundRect(c, x, y, w, h, r) {
-    r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
-    c.beginPath();
+  /** 加一個圓角矩形到目前的路徑（不 beginPath，可把好幾塊合成一個外形） */
+  function rrPath(c, x, y, w, h, r) {
+    r = Math.max(0, Math.min(r, w / 2, h / 2));
     c.moveTo(x + r, y);
     c.arcTo(x + w, y, x + w, y + h, r);
     c.arcTo(x + w, y + h, x, y + h, r);
@@ -190,39 +181,46 @@
     c.closePath();
   }
 
-  /** 背景：中心亮、四角暗的電路板，極淡的點陣格，下方電表區 */
+  /** 背景：中心亮、四角暗的電路板，像麵包板的點陣格；下方是放電表的桌面 */
   function buildBackground() {
     const c = bgc;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     const base = colors['canvas-bg'];
-    const edge = shade(base, colors.dark ? -0.35 : -0.05);
-    const rg = c.createRadialGradient(cw / 2, L.schH * 0.45, L.schH * 0.1, cw / 2, L.schH * 0.45, Math.max(cw, L.schH) * 0.7);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.035) : base);
-    rg.addColorStop(1, edge);
-    c.fillStyle = rg;
-    roundRect(c, 0, 0, cw, L.schH, 8);
-    c.fill();
-    // 點陣格：每 0.5 格一點，整數格稍明顯
+    c.save();
+    roundRect(c, 0, 0, cw, L.schH, 10); c.clip();
+    D.backdrop(c, cw, L.schH);
+    // 點陣格：每 0.5 格一點，整數格稍明顯（像麵包板的插孔）
     const u = L.u;
     for (let i = -2; i <= 14; i++) for (let j = -2; j <= 10; j++) {
       const x = L.ox + i * u / 2, y = L.oy + j * u / 2;
       if (x < 6 || x > cw - 6 || y < 6 || y > L.schH - 6) continue;
       const major = i % 2 === 0 && j % 2 === 0;
-      c.fillStyle = alpha(colors.text, major ? (colors.dark ? 0.12 : 0.13) : (colors.dark ? 0.05 : 0.06));
-      c.beginPath(); c.arc(Math.round(x) + 0.5, Math.round(y) + 0.5, major ? 1.3 : 0.9, 0, Math.PI * 2); c.fill();
+      const sx = Math.round(x * dpr) / dpr + 0.5 / dpr, sy = Math.round(y * dpr) / dpr + 0.5 / dpr;
+      if (major) { // 插孔：暗點＋右下的一點亮邊（凹下去的感覺）
+        c.fillStyle = alpha(colors.dark ? '#ffffff' : colors.text, colors.dark ? 0.05 : 0.06);
+        c.beginPath(); c.arc(sx + 0.6, sy + 0.6, 1.9, 0, Math.PI * 2); c.fill();
+        c.fillStyle = alpha(colors.dark ? '#000000' : colors.text, colors.dark ? 0.55 : 0.17);
+        c.beginPath(); c.arc(sx, sy, 1.4, 0, Math.PI * 2); c.fill();
+      } else {
+        c.fillStyle = alpha(colors.text, colors.dark ? 0.06 : 0.07);
+        c.beginPath(); c.arc(sx, sy, 0.85, 0, Math.PI * 2); c.fill();
+      }
     }
-    // 電表區
+    c.restore();
+    // 電表區：桌面（上亮下暗）
+    c.save();
+    roundRect(c, 0, L.schH + 6, cw, L.stripH - 6, 10); c.clip();
     const g = c.createLinearGradient(0, L.schH + 6, 0, ch);
-    g.addColorStop(0, base);
-    g.addColorStop(1, edge);
+    g.addColorStop(0, shade(base, colors.dark ? 0.03 : -0.01));
+    g.addColorStop(1, shade(base, colors.dark ? -0.32 : -0.06));
     c.fillStyle = g;
-    roundRect(c, 0, L.schH + 6, cw, L.stripH - 6, 8);
-    c.fill();
-    c.strokeStyle = alpha(colors.text, 0.08);
+    c.fillRect(0, L.schH + 6, cw, L.stripH - 6);
+    c.restore();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.1 : 0.08);
     c.lineWidth = 1;
-    roundRect(c, 0.5, 0.5, cw - 1, L.schH - 1, 8); c.stroke();
-    roundRect(c, 0.5, L.schH + 6.5, cw - 1, L.stripH - 7, 8); c.stroke();
+    roundRect(c, 0.5, 0.5, cw - 1, L.schH - 1, 10); c.stroke();
+    roundRect(c, 0.5, L.schH + 6.5, cw - 1, L.stripH - 7, 10); c.stroke();
   }
 
   // ---------- 元件幾何 ----------
@@ -246,24 +244,43 @@
   }
   function along(g, s) { return [g.C[0] + g.ux * s, g.C[1] + g.uy * s]; }
   function wireW() { return Math.max(3, Math.min(0.075 * L.u, 7)); }
+  function switchR0() { return Math.max(3.5, Math.min(0.075 * L.u, 6)); }
 
-  /** 管狀導線：投影＋暗色底＋偏左上的亮線 */
-  function tube(c, A, B, col, w) {
-    c.lineCap = 'round';
-    c.strokeStyle = 'rgba(0,0,0,' + (colors.dark ? 0.35 : 0.13) + ')';
-    c.lineWidth = w + 1.5;
-    c.beginPath(); c.moveTo(A[0] + 0.8, A[1] + 1.8); c.lineTo(B[0] + 0.8, B[1] + 1.8); c.stroke();
-    c.strokeStyle = shade(col, -0.18);
-    c.lineWidth = w;
-    c.beginPath(); c.moveTo(A[0], A[1]); c.lineTo(B[0], B[1]); c.stroke();
-    const horiz = Math.abs(B[1] - A[1]) < Math.abs(B[0] - A[0]);
-    const o = w * 0.22;
-    c.strokeStyle = alpha(shade(col, 0.55), colors.dark ? 0.75 : 0.85);
-    c.lineWidth = Math.max(0.9, w * 0.32);
-    c.beginPath();
-    c.moveTo(A[0] - (horiz ? 0 : o), A[1] - (horiz ? o : 0));
-    c.lineTo(B[0] - (horiz ? 0 : o), B[1] - (horiz ? o : 0));
-    c.stroke();
+  // ---------- 導線轉角（純畫法：只有兩段導體垂直相接的接點畫成圓角；連接關係、電位、電流都不變） ----------
+  /** 由接點到元件本體之間「裸露的導線」長度 */
+  function freeLen(e, g) {
+    if (e.type === 'wire') return g.len;
+    const pad = e.type === 'switch' ? switchR0() + 6 : 2;
+    return g.len / 2 - g.hb - pad;
+  }
+  function computeCorners() {
+    const inc = [];
+    for (let n = 0; n < state.c.n; n++) inc.push([]);
+    state.c.elements.forEach(function (e) {
+      const g = geom(e), f = freeLen(e, g);
+      inc[e.a].push({ d: [g.ux, g.uy], free: f });
+      inc[e.b].push({ d: [-g.ux, -g.uy], free: f });
+    });
+    const out = {};
+    inc.forEach(function (list, n) {
+      if (list.length !== 2) return;
+      const a = list[0], b = list[1];
+      if (Math.abs(a.d[0] * b.d[0] + a.d[1] * b.d[1]) > 0.05) return; // 一直線穿過，不是轉角
+      const rho = Math.min(0.2 * L.u, 16, 0.45 * a.free, 0.45 * b.free);
+      if (!(rho >= 4)) return;
+      const p = P(n), k = rho * (1 - Math.SQRT1_2);
+      out[n] = { N: p, a: a.d, b: b.d, rho: rho, vis: [p[0] + (a.d[0] + b.d[0]) * k, p[1] + (a.d[1] + b.d[1]) * k] };
+    });
+    state.corners = out;
+  }
+  /** 接點畫在畫面上的位置：轉角處在圓弧的中點，其餘就是格點 */
+  function vis(n) { const k = state.corners[n]; return k ? k.vis : P(n); }
+  /** 轉角附近的點移到圓弧上：沿方向 d 離接點 s（s < rho） */
+  function onBend(k, d, s) {
+    const o = (Math.abs(k.a[0] - d[0]) + Math.abs(k.a[1] - d[1]) < 1e-6) ? k.b : k.a;
+    const phi = (k.rho - s) / (2 * k.rho) * Math.PI / 2;
+    const cx = k.N[0] + k.rho * (k.a[0] + k.b[0]), cy = k.N[1] + k.rho * (k.a[1] + k.b[1]);
+    return [cx - k.rho * (o[0] * Math.cos(phi) + d[0] * Math.sin(phi)), cy - k.rho * (o[1] * Math.cos(phi) + d[1] * Math.sin(phi))];
   }
 
   // ======================= 圖層：導線 =======================
@@ -271,30 +288,53 @@
     const c = uc, s = state.sol, w = wireW();
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
+    computeCorners();
     drawCables(c);
+    // 同一個電位（同一種顏色）的導線合成一條路徑，一次描邊：交接處不會重疊變色
+    const paths = {};
+    const pathOf = function (col) { return paths[col] || (paths[col] = new Path2D()); };
+    const seg = function (col, nA, A, B, nB) {
+      const dx = B[0] - A[0], dy = B[1] - A[1], len = Math.hypot(dx, dy);
+      if (len < 0.5) return;
+      const ux = dx / len, uy = dy / len;
+      let a = A, b = B;
+      if (nA != null && state.corners[nA]) { const r = state.corners[nA].rho; a = [A[0] + ux * r, A[1] + uy * r]; }
+      if (nB != null && state.corners[nB]) { const r = state.corners[nB].rho; b = [B[0] - ux * r, B[1] - uy * r]; }
+      const p = pathOf(col);
+      p.moveTo(a[0], a[1]); p.lineTo(b[0], b[1]);
+    };
     state.c.elements.forEach(function (e) {
       const g = geom(e);
-      const Va = s.ok ? s.V[e.a] : NaN, Vb = s.ok ? s.V[e.b] : NaN;
-      const ca = potColor(Va, s.floating[e.a]), cb = potColor(Vb, s.floating[e.b]);
-      if (e.type === 'wire') { tube(c, g.A, g.B, ca, w); return; }
-      tube(c, g.A, along(g, -g.hb), ca, w);
-      tube(c, along(g, g.hb), g.B, cb, w);
+      const ca = potColor(s.ok ? s.V[e.a] : NaN, s.floating[e.a]), cb = potColor(s.ok ? s.V[e.b] : NaN, s.floating[e.b]);
+      if (e.type === 'wire') { seg(ca, e.a, g.A, g.B, e.b); return; }
+      seg(ca, e.a, g.A, along(g, -g.hb), null);
+      seg(cb, null, along(g, g.hb), g.B, e.b);
     });
+    Object.keys(state.corners).forEach(function (n) {
+      const k = state.corners[n], p = pathOf(potColor(s.ok ? s.V[n] : NaN, s.floating[n]));
+      p.moveTo(k.N[0] + k.a[0] * k.rho, k.N[1] + k.a[1] * k.rho);
+      p.arcTo(k.N[0], k.N[1], k.N[0] + k.b[0] * k.rho, k.N[1] + k.b[1] * k.rho, k.rho);
+    });
+    const cols = Object.keys(paths);
+    c.lineCap = 'round'; c.lineJoin = 'round';
+    // 1. 落在電路板上的影子
+    c.save(); c.translate(0.8, 1.8);
+    c.strokeStyle = shadowCol(colors.dark ? 0.2 : 0.13); c.lineWidth = w + 1.6;
+    cols.forEach(function (col) { c.stroke(paths[col]); });
+    c.restore();
+    // 2. 外緣（較暗）→ 3. 本體 → 4. 左上方的亮線：看起來是圓柱形的導線
+    cols.forEach(function (col) { c.strokeStyle = shade(col, -0.34); c.lineWidth = w; c.stroke(paths[col]); });
+    cols.forEach(function (col) { c.strokeStyle = shade(col, -0.06); c.lineWidth = w * 0.68; c.stroke(paths[col]); });
+    c.save(); c.translate(-w * 0.15, -w * 0.15);
+    cols.forEach(function (col) { c.strokeStyle = alpha(shade(col, 0.62), colors.dark ? 0.6 : 0.85); c.lineWidth = Math.max(0.9, w * 0.24); c.stroke(paths[col]); });
+    c.restore();
   }
 
   // ======================= 圖層：元件、標示 =======================
-  function sphere(c, x, y, R, base) {
-    const g = c.createRadialGradient(x - R * 0.33, y - R * 0.35, R * 0.1, x, y, R);
-    g.addColorStop(0, shade(base, 0.6));
-    g.addColorStop(0.5, base);
-    g.addColorStop(1, shade(base, -0.45));
-    c.fillStyle = g;
-    c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
-  }
-  function softShadow(c, fn) {
+  function softShadow(c, fn, blur, dy) {
     c.save();
-    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.22) + ')';
-    c.shadowBlur = 8; c.shadowOffsetY = 3;
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.55)' : alpha(colors.text, 0.26);
+    c.shadowBlur = blur == null ? 8 : blur; c.shadowOffsetY = (dy == null ? 3 : dy) * dpr;
     fn();
     c.restore();
   }
@@ -306,61 +346,101 @@
     fn();
     c.restore();
   }
-  function selGlow(c, g, round) {
+  /** 同上，但讓局部的「上方」（−y）一律朝畫面的上方或左方：光從左上方來，明暗方向一致（只用在上下對稱的元件） */
+  function localLit(c, g, fn) {
+    c.save();
+    c.translate(g.C[0], g.C[1]);
+    c.rotate(g.ang);
+    if (g.uy - g.ux > 0) c.scale(1, -1);
+    fn();
+    c.restore();
+  }
+  function selGlow(c, g, round, strong) {
     local(c, g, function () {
-      c.strokeStyle = alpha(colors.accent, 0.45);
-      c.lineWidth = 5;
-      if (round) { c.beginPath(); c.arc(0, 0, g.hw + 6, 0, Math.PI * 2); c.stroke(); }
-      else { roundRect(c, -g.hb - 6, -g.hw - 6, 2 * g.hb + 12, 2 * g.hw + 12, g.hw + 6); c.stroke(); }
+      const pad = strong ? 7 : 6;
+      c.save();
+      c.shadowColor = alpha(colors.accent, strong ? 0.55 : 0.3);
+      c.shadowBlur = strong ? 10 : 6;
+      c.strokeStyle = alpha(colors.accent, strong ? 0.8 : 0.35);
+      c.lineWidth = strong ? 2.4 : 2;
+      c.beginPath();
+      if (round) c.arc(0, 0, g.hw + pad, 0, Math.PI * 2);
+      else rrPath(c, -g.hb - pad, -g.hw - pad, 2 * g.hb + 2 * pad, 2 * g.hw + 2 * pad, g.hw + pad);
+      c.stroke();
+      c.restore();
     });
   }
 
-  function drawResistor(c, e, g) {
-    const body = mix(colors.surface, colors.equi, colors.dark ? 0.4 : 0.32);
-    softShadow(c, function () {
-      local(c, g, function () {
-        c.fillStyle = body;
-        roundRect(c, -g.hb, -g.hw, 2 * g.hb, 2 * g.hw, g.hw * 0.9); c.fill();
-      });
-    });
-    local(c, g, function () {
-      const lg = c.createLinearGradient(0, -g.hw, 0, g.hw);
-      lg.addColorStop(0, shade(body, 0.5));
-      lg.addColorStop(0.35, body);
-      lg.addColorStop(1, shade(body, -0.32));
-      c.fillStyle = lg;
-      roundRect(c, -g.hb, -g.hw, 2 * g.hb, 2 * g.hw, g.hw * 0.9); c.fill();
-      // 印在本體上的鋸齒（電阻符號）
-      c.strokeStyle = alpha(colors.text, colors.dark ? 0.55 : 0.6);
-      c.lineWidth = 1.4; c.lineJoin = 'round'; c.lineCap = 'round';
-      c.beginPath();
-      const n = 6, x0 = -g.hb * 0.72, x1 = g.hb * 0.72, a = g.hw * 0.52;
-      c.moveTo(x0 - g.hb * 0.12, 0); c.lineTo(x0, 0);
-      for (let i = 0; i < n; i++) c.lineTo(x0 + (i + 0.5) * (x1 - x0) / n, (i % 2 ? 1 : -1) * a);
-      c.lineTo(x1, 0); c.lineTo(x1 + g.hb * 0.12, 0);
-      c.stroke();
-      // 兩端金屬帽
-      [-1, 1].forEach(function (sgn) {
-        c.fillStyle = alpha(colors.text, 0.18);
-        c.fillRect(sgn > 0 ? g.hb - 4 : -g.hb + 1, -g.hw + 1.5, 3, 2 * g.hw - 3);
-      });
-      // 可變電阻：斜箭頭
-      if (e.kind === 'load') {
-        c.strokeStyle = colors.accent; c.fillStyle = colors.accent; c.lineWidth = 1.8;
-        const L0 = [-g.hb * 0.75, g.hw + 7], L1 = [g.hb * 0.6, -g.hw - 8];
-        c.beginPath(); c.moveTo(L0[0], L0[1]); c.lineTo(L1[0], L1[1]); c.stroke();
-        const ang = Math.atan2(L1[1] - L0[1], L1[0] - L0[0]);
-        c.beginPath();
-        c.moveTo(L1[0] + 2 * Math.cos(ang), L1[1] + 2 * Math.sin(ang));
-        c.lineTo(L1[0] - 7 * Math.cos(ang - 0.45), L1[1] - 7 * Math.sin(ang - 0.45));
-        c.lineTo(L1[0] - 7 * Math.cos(ang + 0.45), L1[1] - 7 * Math.sin(ang + 0.45));
-        c.closePath(); c.fill();
+  // ---------- 電阻：米色碳膜電阻，色碼依電阻值（IEC 60062） ----------
+  // 色碼的顏色是元件上的標準標示（不是介面配色），所以照標準色寫在這裡
+  const BAND = ['#1e1e1e', '#7a4a26', '#c8302c', '#ec6c12', '#f2cf2e', '#2f8c3f', '#2361c4', '#7c44ad', '#8f9295', '#f3f3f1'];
+  const BAND_GOLD = '#c9a13b', BAND_SILVER = '#b9bfc5';
+  /** 色環：2 位有效數字（四環，金色 ±5%）或 3 位（五環，棕色 ±1%）；放不下（例如 12.34 Ω）就不畫色環 */
+  function resistorBands(R) {
+    for (let nd = 2; nd <= 3; nd++) {
+      for (let m = -2; m <= 2; m++) {
+        const x = R / Math.pow(10, m), xr = Math.round(x);
+        if (Math.abs(x - xr) > 1e-6 * Math.max(1, x)) continue;
+        if (xr < Math.pow(10, nd - 1) || xr >= Math.pow(10, nd)) continue;
+        const out = String(xr).split('').map(function (d) { return BAND[+d]; });
+        out.push(m === -2 ? BAND_SILVER : m === -1 ? BAND_GOLD : BAND[m]);
+        out.push(nd === 2 ? BAND_GOLD : BAND[1]);
+        return out;
       }
-      // 高光
-      c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.18 : 0.5) + ')';
-      c.lineWidth = 1;
-      c.beginPath(); c.moveTo(-g.hb + g.hw * 0.8, -g.hw + 1.5); c.lineTo(g.hb - g.hw * 0.8, -g.hw + 1.5); c.stroke();
+    }
+    return null;
+  }
+  function drawResistor(c, e, g) {
+    const hb = g.hb, hw = g.hw;
+    const body = mix(colors.surface, colors.equi, colors.dark ? 0.36 : 0.3);
+    const capL = Math.min(hb * 0.3, hw * 1.7), neck = hw * 0.8;
+    const outline = function () {
+      c.beginPath();
+      rrPath(c, -hb, -hw, capL, 2 * hw, hw * 0.78);
+      rrPath(c, hb - capL, -hw, capL, 2 * hw, hw * 0.78);
+      rrPath(c, -hb + capL * 0.6, -neck, 2 * hb - capL * 1.2, 2 * neck, neck * 0.5);
+    };
+    localLit(c, g, function () {
+      softShadow(c, function () { outline(); c.fillStyle = body; c.fill(); }, 7, 2.5);
+      // 外緣暗線（先描粗線，填色後只剩外圍一圈）
+      outline();
+      c.strokeStyle = alpha(shade(body, -0.55), colors.dark ? 0.9 : 0.6); c.lineWidth = 2; c.stroke();
+      const lg = c.createLinearGradient(0, -hw, 0, hw);
+      lg.addColorStop(0, shade(body, 0.55)); lg.addColorStop(0.28, shade(body, 0.18));
+      lg.addColorStop(0.62, body); lg.addColorStop(1, shade(body, -0.38));
+      c.fillStyle = lg; c.fill();
+      // 色環
+      const bands = resistorBands(e.R);
+      if (bands) {
+        c.save(); outline(); c.clip();
+        const bw = Math.max(2.2, Math.min(hb * 0.085, 6)), sp = bw * 1.85;
+        const xs = -hb + capL * 0.42;
+        bands.forEach(function (col, i) {
+          const x = i < bands.length - 1 ? xs + i * sp : hb - capL * 0.42 - bw;
+          c.fillStyle = col; c.fillRect(x, -hw - 1, bw, 2 * hw + 2);
+        });
+        // 色環也要有圓柱的明暗
+        const sh = c.createLinearGradient(0, -hw, 0, hw);
+        sh.addColorStop(0, 'rgba(255,255,255,0.42)'); sh.addColorStop(0.3, 'rgba(255,255,255,0.08)');
+        sh.addColorStop(0.62, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,0.38)');
+        c.fillStyle = sh;
+        bands.forEach(function (col, i) {
+          const x = i < bands.length - 1 ? xs + i * sp : hb - capL * 0.42 - bw;
+          c.fillRect(x, -hw - 1, bw, 2 * hw + 2);
+        });
+        c.restore();
+      }
+      // 頂端的細高光
+      c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.22 : 0.6) + ')';
+      c.lineWidth = 1; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-hb + capL * 0.35, -hw * 0.62); c.lineTo(-hb + capL * 0.8, -hw * 0.62);
+      c.moveTo(-hb + capL * 1.1, -neck * 0.6); c.lineTo(hb - capL * 1.1, -neck * 0.6);
+      c.moveTo(hb - capL * 0.8, -hw * 0.62); c.lineTo(hb - capL * 0.35, -hw * 0.62); c.stroke();
     });
+    // 可變電阻：斜箭頭（電路符號）
+    if (e.kind === 'load') {
+      local(c, g, function () { D.arrow(c, -hb * 0.72, hw + 8, hb * 0.66, -hw - 10, colors.accent, 1.9); });
+    }
   }
 
   /** 燈泡的暖色光：把 --equi（琥珀色）調到最亮、保持色相 */
@@ -368,8 +448,9 @@
     const c = rgbOf(colors.equi), k = 255 / Math.max(1, c[0], c[1], c[2]);
     return 'rgb(' + c.map(function (x) { return Math.round(Math.min(255, x * k)); }).join(',') + ')';
   }
+  /** 小燈泡（由上往下看）：圓形燈座、兩顆接線螺絲、玻璃燈泡與燈絲；亮度 ∝ 消耗功率 */
   function drawBulb(c, e, g, k) {
-    const s = state.sol, R = g.hw;
+    const s = state.sol, R = g.hw, x = g.C[0], y = g.C[1];
     const Pw = s.ok ? s.P[k] : 0;
     const b = Math.max(0, Math.min(1, Pw / P_FULL));
     const W = warm(), hot = mix(W, '#ffffff', 0.55);
@@ -378,82 +459,104 @@
       c.save();
       c.globalCompositeOperation = colors.dark ? 'lighter' : 'source-over';
       const Rh = R * (1.6 + 2.4 * b);
-      const hg = c.createRadialGradient(g.C[0], g.C[1], R * 0.2, g.C[0], g.C[1], Rh);
+      const hg = c.createRadialGradient(x, y, R * 0.2, x, y, Rh);
       hg.addColorStop(0, alpha(hot, (colors.dark ? 0.75 : 0.6) * b));
       hg.addColorStop(0.45, alpha(W, (colors.dark ? 0.35 : 0.3) * b));
       hg.addColorStop(1, alpha(W, 0));
       c.fillStyle = hg;
-      c.beginPath(); c.arc(g.C[0], g.C[1], Rh, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(x, y, Rh, 0, Math.PI * 2); c.fill();
       c.restore();
     }
-    // 玻璃
-    softShadow(c, function () {
-      c.fillStyle = colors['canvas-bg'];
-      c.beginPath(); c.arc(g.C[0], g.C[1], R, 0, Math.PI * 2); c.fill();
-    });
-    const gl = c.createRadialGradient(g.C[0] - R * 0.35, g.C[1] - R * 0.4, R * 0.1, g.C[0], g.C[1], R);
+    // 燈座（塑膠圓座）
+    const sock = colors.dark ? shade(colors.surface, 0.16) : mix(colors.surface, colors.muted, 0.22);
+    softShadow(c, function () { c.fillStyle = sock; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill(); });
+    const sg = c.createLinearGradient(x - R, y - R, x + R, y + R);
+    sg.addColorStop(0, shade(sock, colors.dark ? 0.2 : 0.55)); sg.addColorStop(0.55, sock); sg.addColorStop(1, shade(sock, -0.3));
+    c.fillStyle = sg; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = alpha(shade(sock, -0.5), 0.6); c.lineWidth = 1;
+    c.beginPath(); c.arc(x, y, R - 0.5, 0, Math.PI * 2); c.stroke();
+    // 接線螺絲（導線從兩邊接進來）
+    [-1, 1].forEach(function (sg2) { const p = along(g, sg2 * R * 0.86); D.ball(c, p[0], p[1], Math.max(2.4, R * 0.12), brass(), { shadow: false, glow: 0 }); });
+    // 玻璃燈泡
+    const Rg = R * 0.74;
+    c.save();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.5)' : alpha(colors.text, 0.25); c.shadowBlur = 4; c.shadowOffsetY = 1.5 * dpr;
+    c.fillStyle = colors['canvas-bg'];
+    c.beginPath(); c.arc(x, y, Rg, 0, Math.PI * 2); c.fill();
+    c.restore();
+    const gl = c.createRadialGradient(x - Rg * 0.35, y - Rg * 0.4, Rg * 0.1, x, y, Rg);
     gl.addColorStop(0, alpha(mix(colors.surface, hot, b), 0.95));
-    gl.addColorStop(0.7, alpha(mix(colors.surface, W, 0.15 + 0.6 * b), colors.dark ? 0.35 : 0.6));
-    gl.addColorStop(1, alpha(mix(colors.muted, W, b), colors.dark ? 0.45 : 0.4));
+    gl.addColorStop(0.7, alpha(mix(colors.surface, W, 0.15 + 0.6 * b), colors.dark ? 0.4 : 0.62));
+    gl.addColorStop(1, alpha(mix(colors.muted, W, b), colors.dark ? 0.5 : 0.42));
     c.fillStyle = gl;
-    c.beginPath(); c.arc(g.C[0], g.C[1], R, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.arc(x, y, Rg, 0, Math.PI * 2); c.fill();
     // 燈絲：兩根支架＋中間的線圈
-    local(c, g, function () {
-      const metal = alpha(colors.text, 0.55);
-      c.strokeStyle = metal; c.lineWidth = 1.2; c.lineCap = 'round';
+    localLit(c, g, function () {
+      const r = Rg;
+      c.strokeStyle = alpha(colors.text, 0.5); c.lineWidth = 1.1; c.lineCap = 'round';
       c.beginPath();
-      c.moveTo(-R, 0); c.lineTo(-R * 0.45, R * 0.15); c.lineTo(-R * 0.4, -R * 0.15);
-      c.moveTo(R, 0); c.lineTo(R * 0.45, R * 0.15); c.lineTo(R * 0.4, -R * 0.15);
+      c.moveTo(-r * 0.95, 0.15 * r); c.lineTo(-r * 0.5, r * 0.2); c.lineTo(-r * 0.42, -r * 0.12);
+      c.moveTo(r * 0.95, 0.15 * r); c.lineTo(r * 0.5, r * 0.2); c.lineTo(r * 0.42, -r * 0.12);
       c.stroke();
-      const fil = b > 0.002 ? mix(colors.muted, hot, Math.min(1, 0.35 + b)) : alpha(colors.text, 0.6);
+      const fil = b > 0.002 ? mix(colors.muted, hot, Math.min(1, 0.35 + b)) : alpha(colors.text, 0.62);
       if (b > 0.02) {
-        const cg = c.createRadialGradient(0, -R * 0.15, 0, 0, -R * 0.15, R * 0.6);
-        cg.addColorStop(0, alpha(hot, 0.85 * b)); cg.addColorStop(1, alpha(hot, 0));
+        const cg = c.createRadialGradient(0, -r * 0.15, 0, 0, -r * 0.15, r * 0.65);
+        cg.addColorStop(0, alpha(hot, 0.9 * b)); cg.addColorStop(1, alpha(hot, 0));
         c.fillStyle = cg;
-        c.beginPath(); c.arc(0, -R * 0.15, R * 0.6, 0, Math.PI * 2); c.fill();
+        c.beginPath(); c.arc(0, -r * 0.15, r * 0.65, 0, Math.PI * 2); c.fill();
       }
-      c.strokeStyle = fil; c.lineWidth = 1.3 + 0.6 * b;
+      c.strokeStyle = fil; c.lineWidth = 1.2 + 0.6 * b;
       c.beginPath();
-      const n = 5, x0 = -R * 0.4, x1 = R * 0.4;
-      c.moveTo(x0, -R * 0.15);
+      const n = 5, x0 = -r * 0.42, x1 = r * 0.42;
+      c.moveTo(x0, -r * 0.12);
       for (let i = 0; i < n; i++) {
         const xa = x0 + (i + 0.5) * (x1 - x0) / n;
-        c.quadraticCurveTo(xa, -R * 0.45, x0 + (i + 1) * (x1 - x0) / n, -R * 0.15);
+        c.quadraticCurveTo(xa, -r * 0.46, x0 + (i + 1) * (x1 - x0) / n, -r * 0.12);
       }
       c.stroke();
     });
-    // 外框與亮邊
-    c.strokeStyle = alpha(colors.text, colors.dark ? 0.45 : 0.4);
-    c.lineWidth = 1.3;
-    c.beginPath(); c.arc(g.C[0], g.C[1], R, 0, Math.PI * 2); c.stroke();
-    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.35 : 0.8) + ')';
-    c.lineWidth = 1.5;
-    c.beginPath(); c.arc(g.C[0], g.C[1], R - 2.5, Math.PI * 1.08, Math.PI * 1.45); c.stroke();
+    // 玻璃的外框、反光
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.4 : 0.32);
+    c.lineWidth = 1.1;
+    c.beginPath(); c.arc(x, y, Rg, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.4 : 0.85) + ')';
+    c.lineWidth = Math.max(1.2, Rg * 0.09); c.lineCap = 'round';
+    c.beginPath(); c.arc(x, y, Rg * 0.8, Math.PI * 1.1, Math.PI * 1.42); c.stroke();
+    c.fillStyle = 'rgba(255,255,255,' + (colors.dark ? 0.35 : 0.75) + ')';
+    c.beginPath(); c.arc(x + Rg * 0.42, y + Rg * 0.38, Math.max(0.8, Rg * 0.06), 0, Math.PI * 2); c.fill();
   }
 
+  /** 檢流計：金屬外框、零點在中央的刻度、指針（a→b 方向的電流使指針往右偏） */
   function drawGalv(c, e, g, k) {
-    const s = state.sol, R = g.hw;
+    const s = state.sol, R = g.hw, x = g.C[0], y = g.C[1];
     const Ig = s.ok ? s.I[k] : 0;
-    const face = colors.dark ? shade(colors.surface, 0.1) : colors.surface;
-    softShadow(c, function () {
-      c.fillStyle = face;
-      c.beginPath(); c.arc(g.C[0], g.C[1], R, 0, Math.PI * 2); c.fill();
-    });
-    const fg = c.createRadialGradient(g.C[0] - R * 0.3, g.C[1] - R * 0.35, R * 0.1, g.C[0], g.C[1], R);
-    fg.addColorStop(0, shade(face, 0.4)); fg.addColorStop(1, shade(face, -0.12));
-    c.fillStyle = fg;
-    c.beginPath(); c.arc(g.C[0], g.C[1], R, 0, Math.PI * 2); c.fill();
-    // 金屬外圈
-    const rim = c.createLinearGradient(g.C[0], g.C[1] - R, g.C[0], g.C[1] + R);
-    rim.addColorStop(0, shade(colors.field, colors.dark ? 0.1 : 0.55));
-    rim.addColorStop(1, shade(colors.field, colors.dark ? -0.4 : 0));
-    c.strokeStyle = rim; c.lineWidth = 2.6;
-    c.beginPath(); c.arc(g.C[0], g.C[1], R - 1.3, 0, Math.PI * 2); c.stroke();
-    // 刻度（零在中央）與指針；a→b 方向的電流使指針往右偏
-    const px = g.C[0], py = g.C[1] + R * 0.34, rr = R * 0.86;
-    c.strokeStyle = alpha(colors.text, 0.6); c.lineWidth = 1;
+    // 接線柱
+    [-1, 1].forEach(function (sg) { const p = along(g, sg * R * 0.98); D.ball(c, p[0], p[1], Math.max(2.8, R * 0.13), brass(), { glow: 0 }); });
+    // 外框（金屬環）
+    const met = chrome();
+    softShadow(c, function () { c.fillStyle = met; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill(); }, 9, 3);
+    const rim = c.createLinearGradient(x - R, y - R, x + R, y + R);
+    rim.addColorStop(0, shade(met, 0.6)); rim.addColorStop(0.5, met); rim.addColorStop(1, shade(met, -0.4));
+    c.fillStyle = rim; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
+    // 錶面（凹進去：上緣有內陰影）
+    const Rf = R * 0.84;
+    const face = colors.dark ? shade(colors.surface, 0.14) : mix(colors.surface, colors.equi, 0.04);
+    const fg = c.createRadialGradient(x - Rf * 0.3, y - Rf * 0.35, Rf * 0.1, x, y, Rf);
+    fg.addColorStop(0, shade(face, 0.35)); fg.addColorStop(1, shade(face, -0.1));
+    c.fillStyle = fg; c.beginPath(); c.arc(x, y, Rf, 0, Math.PI * 2); c.fill();
+    const ins = c.createLinearGradient(0, y - Rf, 0, y - Rf * 0.6);
+    ins.addColorStop(0, shadowCol(colors.dark ? 0.25 : 0.14)); ins.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = ins; c.beginPath(); c.arc(x, y, Rf, 0, Math.PI * 2); c.fill();
+    // 刻度：零在中央
+    const px = x, py = y + R * 0.34, rr = R * 0.82;
+    c.save();
+    c.lineCap = 'round';
+    c.strokeStyle = alpha(colors.accent, 0.4); c.lineWidth = 2.2;
+    c.beginPath(); c.arc(px, py, rr * 0.97, -Math.PI / 2 - 50 * Math.PI / 180, -Math.PI / 2 + 50 * Math.PI / 180); c.stroke();
+    c.strokeStyle = alpha(colors.text, 0.7); c.lineWidth = 1;
     for (let i = -4; i <= 4; i++) {
-      const a = -Math.PI / 2 + i * (50 / 4) * Math.PI / 180, l = i === 0 ? 0.22 : 0.12;
+      const a = -Math.PI / 2 + i * (50 / 4) * Math.PI / 180, l = i === 0 ? 0.24 : 0.13;
+      c.lineWidth = i === 0 ? 1.5 : 1;
       c.beginPath();
       c.moveTo(px + rr * Math.cos(a), py + rr * Math.sin(a));
       c.lineTo(px + rr * (1 - l) * Math.cos(a), py + rr * (1 - l) * Math.sin(a));
@@ -461,14 +564,25 @@
     }
     const dir = g.ux >= 0 ? 1 : -1;
     const defl = Math.max(-1, Math.min(1, dir * Ig / G_FULL)) * 50 * Math.PI / 180;
-    const na = -Math.PI / 2 + defl;
-    c.strokeStyle = colors.pos; c.lineWidth = 1.8; c.lineCap = 'round';
-    c.beginPath(); c.moveTo(px, py); c.lineTo(px + rr * 0.95 * Math.cos(na), py + rr * 0.95 * Math.sin(na)); c.stroke();
-    sphere(c, px, py, 2.6, colors.field);
-    c.font = '700 ' + Math.round(R * 0.36) + 'px system-ui, sans-serif';
+    const na = -Math.PI / 2 + defl, nl = rr * 0.95;
+    c.strokeStyle = shadowCol(0.18); c.lineWidth = 2;
+    c.beginPath(); c.moveTo(px + 1, py + 1.5); c.lineTo(px + 1 + nl * Math.cos(na), py + 1.5 + nl * Math.sin(na)); c.stroke();
+    c.strokeStyle = colors.pos; c.lineWidth = 1.8;
+    c.beginPath(); c.moveTo(px, py); c.lineTo(px + nl * Math.cos(na), py + nl * Math.sin(na)); c.stroke();
+    c.restore();
+    D.ball(c, px, py, Math.max(2.2, R * 0.09), chrome(), { shadow: false, glow: 0 });
+    c.font = '700 ' + Math.round(R * 0.36) + 'px ' + FONT;
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillStyle = alpha(colors.text, 0.5);
-    c.fillText('G', px, g.C[1] + R * 0.7);
+    c.fillText('G', px, y + R * 0.66);
+    // 玻璃反光
+    c.save();
+    c.beginPath(); c.arc(x, y, Rf, 0, Math.PI * 2); c.clip();
+    const gr = c.createLinearGradient(x - Rf, y - Rf, x, y);
+    gr.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.16 : 0.5) + ')'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+    c.fillStyle = gr;
+    c.beginPath(); c.ellipse(x - Rf * 0.25, y - Rf * 0.45, Rf * 0.9, Rf * 0.42, -0.5, 0, Math.PI * 2); c.fill();
+    c.restore();
   }
 
   function leverAngle(e) {
@@ -476,161 +590,165 @@
     const a = state.lever[e.id];
     return a == null ? target : a;
   }
+  /** 閘刀開關：絕緣底座、鉸鏈、金屬刀片、夾片與絕緣握把（接通綠、斷開紅） */
   function drawSwitch(c, e, g) {
-    const metal = colors.dark ? shade(colors.field, -0.1) : shade(colors.field, 0.2);
-    const a = leverAngle(e);
-    const r0 = Math.max(3.5, Math.min(0.075 * L.u, 6));
-    // 底座：略為浮起的絕緣板
-    const base = mix(colors.surface, colors['b-em'], colors.dark ? 0.18 : 0.1);
-    softShadow(c, function () {
-      local(c, g, function () { c.fillStyle = base; roundRect(c, -g.hb - r0 - 4, -r0 - 4, 2 * g.hb + 2 * r0 + 8, 2 * r0 + 8, r0 + 4); c.fill(); });
-    });
+    const a = leverAngle(e), r0 = switchR0(), hb = g.hb;
+    const base = mix(colors.surface, colors['b-em'], colors.dark ? 0.22 : 0.12);
+    const met = chrome();
     local(c, g, function () {
-      const lg = c.createLinearGradient(0, -r0 - 4, 0, r0 + 4);
-      lg.addColorStop(0, shade(base, 0.45)); lg.addColorStop(1, shade(base, -0.15));
-      c.fillStyle = lg; roundRect(c, -g.hb - r0 - 4, -r0 - 4, 2 * g.hb + 2 * r0 + 8, 2 * r0 + 8, r0 + 4); c.fill();
-      c.strokeStyle = alpha(colors.text, 0.12); c.lineWidth = 1;
-      roundRect(c, -g.hb - r0 - 3.5, -r0 - 3.5, 2 * g.hb + 2 * r0 + 7, 2 * r0 + 7, r0 + 3.5); c.stroke();
-    });
-    local(c, g, function () {
-      // 撥桿：從 a 端的支點轉動
-      const lx = 2 * g.hb, ex = -g.hb + lx * Math.cos(a), ey = lx * Math.sin(a);
-      const w = wireW() * 0.95;
-      c.lineCap = 'round';
-      c.strokeStyle = 'rgba(0,0,0,' + (colors.dark ? 0.35 : 0.14) + ')';
-      c.lineWidth = w + 1.5;
-      c.beginPath(); c.moveTo(-g.hb + 1, 2); c.lineTo(ex + 1, ey + 2); c.stroke();
-      c.strokeStyle = shade(metal, -0.15); c.lineWidth = w;
-      c.beginPath(); c.moveTo(-g.hb, 0); c.lineTo(ex, ey); c.stroke();
-      c.strokeStyle = alpha(shade(metal, 0.6), 0.85); c.lineWidth = Math.max(0.9, w * 0.32);
-      c.beginPath(); c.moveTo(-g.hb, -w * 0.22); c.lineTo(ex, ey - w * 0.22); c.stroke();
+      D.block(c, -hb - r0 - 4, -r0 - 4, 2 * hb + 2 * r0 + 8, 2 * r0 + 8, base, { r: r0 + 4 });
+      // 底座上的兩顆固定螺絲
+      [-1, 1].forEach(function (sg) {
+        const sx = sg * hb * 0.42;
+        c.fillStyle = alpha(shade(base, -0.45), 0.55);
+        c.beginPath(); c.arc(sx, 0, Math.max(1.6, r0 * 0.34), 0, Math.PI * 2); c.fill();
+        c.fillStyle = 'rgba(255,255,255,' + (colors.dark ? 0.12 : 0.6) + ')';
+        c.beginPath(); c.arc(sx - 0.4, -0.4, Math.max(0.8, r0 * 0.15), 0, Math.PI * 2); c.fill();
+      });
+      // b 端的夾片（刀片接通時插進去）
+      const jw = wireW() * 0.5 + 1.6;
+      c.fillStyle = shade(met, -0.15);
+      roundRect(c, hb - 5, -jw - 1.6, 9, 2.2, 1); c.fill();
+      roundRect(c, hb - 5, jw - 0.6, 9, 2.2, 1); c.fill();
     });
     // 兩個接線柱
-    [-g.hb, g.hb].forEach(function (sx) { const p = along(g, sx); sphere(c, p[0], p[1], r0, metal); });
-    // 撥桿的握把
+    [-hb, hb].forEach(function (sx) { const p = along(g, sx); D.ball(c, p[0], p[1], r0, met, { glow: 0 }); });
     local(c, g, function () {
-      const lx = 2 * g.hb * 0.62;
-      const hx = -g.hb + lx * Math.cos(a), hy = lx * Math.sin(a);
+      // 刀片：從 a 端的鉸鏈轉動
+      const lx = 2 * hb, ex = -hb + lx * Math.cos(a), ey = lx * Math.sin(a);
+      const w = wireW() * 0.95;
+      c.save();
+      c.strokeStyle = shadowCol(colors.dark ? 0.2 : 0.12); c.lineWidth = w + 1.5; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(-hb + 1, 2.2); c.lineTo(ex + 1.5, ey + 2.8 - a * 6); c.stroke();
+      c.restore();
+      D.tube(c, function (cc) { cc.moveTo(-hb, 0); cc.lineTo(ex, ey); }, shade(met, colors.dark ? -0.05 : 0.05), w);
+      // 握把
+      const hx = -hb + lx * 0.66 * Math.cos(a), hy = lx * 0.66 * Math.sin(a);
       c.save(); c.translate(hx, hy); c.rotate(a);
-      const hgr = c.createLinearGradient(0, -4, 0, 4);
-      const col = e.closed ? colors.probe : colors.pos;
-      hgr.addColorStop(0, shade(col, 0.4)); hgr.addColorStop(1, shade(col, -0.25));
-      c.fillStyle = hgr;
-      roundRect(c, -7, -3.5, 14, 7, 3.5); c.fill();
+      D.block(c, -8, -4.2, 16, 8.4, e.closed ? colors.probe : colors.pos, { r: 4.2 });
       c.restore();
     });
+    // 鉸鏈軸
+    const h = along(g, -hb); D.ball(c, h[0], h[1], r0 * 0.55, shade(met, 0.2), { shadow: false, glow: 0 });
   }
 
+  /** 一節乾電池（局部座標，−x 為負極、+x 為正極）：外皮有圓柱明暗、正極端有銅色環與凸頭 */
+  function cell(c, x0, x1, hc) {
+    const jacket = colors['b-em'], cap = colors.equi, met = chrome();
+    const nubL = Math.max(2.5, hc * 0.22), nubH = hc * 0.42, xb = x1 - nubL;
+    const shadeY = function (col) {
+      const g = c.createLinearGradient(0, -hc, 0, hc);
+      g.addColorStop(0, shade(col, 0.45)); g.addColorStop(0.22, shade(col, 0.14));
+      g.addColorStop(0.6, col); g.addColorStop(1, shade(col, -0.45));
+      return g;
+    };
+    // 正極凸頭
+    c.fillStyle = shadeY(met);
+    roundRect(c, xb - 1, -nubH, nubL + 1, 2 * nubH, Math.min(2, nubL / 2)); c.fill();
+    // 外皮
+    c.fillStyle = shadeY(jacket);
+    roundRect(c, x0, -hc, xb - x0, 2 * hc, Math.min(4, hc * 0.25)); c.fill();
+    // 正極端的銅色環
+    const bandL = (xb - x0) * 0.3;
+    c.save();
+    roundRect(c, x0, -hc, xb - x0, 2 * hc, Math.min(4, hc * 0.25)); c.clip();
+    c.fillStyle = shadeY(cap); c.fillRect(xb - bandL, -hc, bandL, 2 * hc);
+    // 負極端的金屬底
+    c.fillStyle = shadeY(met); c.fillRect(x0, -hc, 2, 2 * hc);
+    c.restore();
+    c.strokeStyle = alpha(shade(jacket, -0.6), 0.5); c.lineWidth = 0.8;
+    roundRect(c, x0 + 0.4, -hc + 0.4, xb - x0 - 0.8, 2 * hc - 0.8, Math.min(4, hc * 0.25)); c.stroke();
+    // 印在外皮上的「＋」（線條，不用字型）
+    const px = xb - bandL * 0.5, ps = Math.min(hc * 0.32, bandL * 0.3);
+    c.strokeStyle = alpha(shade(cap, -0.65), 0.85); c.lineWidth = Math.max(1, ps * 0.32); c.lineCap = 'round';
+    c.beginPath(); c.moveTo(px - ps, 0); c.lineTo(px + ps, 0); c.moveTo(px, -ps); c.lineTo(px, ps); c.stroke();
+  }
+  /** 電池盒：兩節乾電池串聯，盒子的標籤窗印著內電阻 r；虛線外框的意思是「整顆電池」 */
   function drawBattery(c, e, g) {
     const hb = g.hb, hw = g.hw;
-    local(c, g, function () {
-      // 虛線外框：代表「整顆電池」，裡面是理想電池與內電阻 r
-      c.fillStyle = alpha(colors['b-em'], colors.dark ? 0.1 : 0.06);
-      roundRect(c, -hb, -hw, 2 * hb, 2 * hw, 8); c.fill();
-      c.strokeStyle = alpha(colors['b-em'], 0.55);
-      c.setLineDash([5, 4]); c.lineWidth = 1.3;
-      roundRect(c, -hb, -hw, 2 * hb, 2 * hw, 8); c.stroke();
-      c.setLineDash([]);
-      // 內部導線
-      const w = Math.max(2, wireW() * 0.6);
-      const xr0 = -hb * 0.85, xr1 = -hb * 0.15, xc0 = hb * 0.05, xc1 = hb * 0.8;
-      c.strokeStyle = colors.dark ? shade(colors.field, -0.2) : shade(colors.field, 0.15);
-      c.lineWidth = w; c.lineCap = 'round'; c.lineJoin = 'round';
+    const xr0 = -hb + 6, xr1 = -hb * 0.36, xc0 = -hb * 0.3, xc1 = hb - 5;
+    localLit(c, g, function () {
+      const hold = colors.dark ? shade(colors.surface, 0.1) : mix(colors.text, colors.surface, 0.18);
+      D.block(c, -hb, -hw, 2 * hb, 2 * hw, hold, { r: Math.min(9, hw * 0.4) });
+      // 內槽
+      c.fillStyle = shadowCol(colors.dark ? 0.22 : 0.2);
+      roundRect(c, -hb + 3, -hw + 3, 2 * hb - 6, 2 * hw - 6, Math.min(7, hw * 0.33)); c.fill();
+      // 盒內的金屬接片
+      const met = chrome(), w = Math.max(2, wireW() * 0.55);
+      c.strokeStyle = met; c.lineWidth = w; c.lineCap = 'round';
       c.beginPath();
       c.moveTo(-hb, 0); c.lineTo(xr0, 0);
       c.moveTo(xr1, 0); c.lineTo(xc0, 0);
       c.moveTo(xc1, 0); c.lineTo(hb, 0);
       c.stroke();
-      // 內電阻 r（鋸齒）；r = 0 時畫成直線
+      // 內電阻 r 的標籤窗（r = 0 時畫成直線）
+      const lab = colors.dark ? shade(colors.surface, 0.28) : mix(colors.surface, colors.equi, 0.06);
+      const wy = Math.min(hw * 0.5, 13);
+      D.block(c, xr0, -wy, xr1 - xr0, 2 * wy, lab, { r: 3, shadow: false });
+      c.strokeStyle = alpha(colors.text, 0.8); c.lineWidth = 1.5; c.lineJoin = 'round';
       c.beginPath();
+      const z0 = xr0 + 3, z1 = xr1 - 3;
       if (e.r > 0) {
-        const n = 6, a = hw * 0.32;
-        c.moveTo(xr0, 0);
-        for (let i = 0; i < n; i++) c.lineTo(xr0 + (i + 0.5) * (xr1 - xr0) / n, (i % 2 ? 1 : -1) * a);
-        c.lineTo(xr1, 0);
-        c.lineWidth = 1.6;
-        c.strokeStyle = alpha(colors.text, 0.75);
-      } else { c.moveTo(xr0, 0); c.lineTo(xr1, 0); }
+        const n = 6, amp = wy * 0.55;
+        c.moveTo(z0, 0);
+        for (let i = 0; i < n; i++) c.lineTo(z0 + (i + 0.5) * (z1 - z0) / n, (i % 2 ? 1 : -1) * amp);
+        c.lineTo(z1, 0);
+      } else { c.moveTo(z0, 0); c.lineTo(z1, 0); }
       c.stroke();
-      // 兩節電池：長而細的是正極、短而粗的是負極（由 − 往 + 排列）
-      const plates = [];
-      const step = (xc1 - xc0) / 4;
-      for (let i = 0; i < 2; i++) {
-        plates.push({ x: xc0 + step * (2 * i + 0.75), len: hw * 0.5, th: 4.5, pos: false });
-        plates.push({ x: xc0 + step * (2 * i + 1.45), len: hw * 0.95, th: 2, pos: true });
-      }
-      // 兩節之間的連線
-      c.strokeStyle = colors.dark ? shade(colors.field, -0.2) : shade(colors.field, 0.15);
-      c.lineWidth = w;
-      c.beginPath();
-      c.moveTo(xc0, 0); c.lineTo(plates[0].x, 0);
-      c.moveTo(plates[1].x, 0); c.lineTo(plates[2].x, 0);
-      c.moveTo(plates[3].x, 0); c.lineTo(xc1, 0);
-      c.stroke();
-      plates.forEach(function (p) {
-        const col = p.pos ? colors.pos : colors.neg;
-        const lg = c.createLinearGradient(p.x - p.th, 0, p.x + p.th, 0);
-        lg.addColorStop(0, shade(col, 0.35)); lg.addColorStop(1, shade(col, -0.3));
-        c.fillStyle = lg;
-        roundRect(c, p.x - p.th / 2, -p.len, p.th, 2 * p.len, Math.min(1.5, p.th / 2)); c.fill();
-      });
+      // 兩節乾電池（由 − 往 + 排列）
+      const hc = Math.min(hw * 0.64, hw - 5), gap = 2, Lc = (xc1 - xc0 - gap) / 2;
+      cell(c, xc0, xc0 + Lc, hc);
+      cell(c, xc0 + Lc + gap, xc1, hc);
+    });
+    // 虛線外框：電動勢 ε 與內電阻 r 合起來就是「整顆電池」
+    local(c, g, function () {
+      c.strokeStyle = alpha(colors['b-em'], colors.dark ? 0.6 : 0.5);
+      c.setLineDash([5, 4]); c.lineWidth = 1.2;
+      c.beginPath(); rrPath(c, -hb - 4, -hw - 4, 2 * hb + 8, 2 * hw + 8, 11); c.stroke();
+      c.setLineDash([]);
     });
     // 標示（不旋轉）：+、−、ε、r
-    c.font = '700 ' + (L.fs + 1) + 'px system-ui, sans-serif';
-    c.textAlign = 'center'; c.textBaseline = 'middle';
     const nx = -g.uy, ny = g.ux; // 垂直方向
-    const side = nx * 1 + ny * 0 >= 0 ? -1 : 1; // 標在右側（電路內部）
+    const side = nx >= 0 ? -1 : 1; // 標在右側（電路內部）
     const sx = function (s, off) { const p = along(g, s); return [p[0] - nx * off * side, p[1] - ny * off * side]; };
-    const xc = (g.hb * 0.05 + g.hb * 0.8) / 2, xr = -g.hb * 0.5;
-    let q = sx(g.hb * 0.92, hw + 9); haloText(c, '+', q[0], q[1], colors.pos);
-    q = sx(-g.hb * 0.92, hw + 9); haloText(c, '−', q[0], q[1], colors.neg);
-    c.font = 'italic 600 ' + (L.fs + 1) + 'px system-ui, serif';
-    q = sx(xc, hw + 9); haloText(c, 'ε', q[0], q[1], colors.text);
-    q = sx(xr, hw + 9); haloText(c, 'r', q[0], q[1], colors.text);
-  }
-  function haloText(c, text, x, y, col) {
-    c.lineJoin = 'round';
-    c.strokeStyle = alpha(colors['canvas-bg'], 0.9);
-    c.lineWidth = 3.5;
-    c.strokeText(text, x, y);
-    c.fillStyle = col;
-    c.fillText(text, x, y);
+    const fB = '700 ' + (L.fs + 2) + 'px ' + FONT, fI = 'italic 600 ' + (L.fs + 1.5) + 'px ' + FONT;
+    let q = sx(hb * 0.92, hw + 12); D.haloText(c, '+', q[0], q[1], colors.pos, 'center', 'middle', fB);
+    q = sx(-hb * 0.92, hw + 12); D.haloText(c, '−', q[0], q[1], colors.neg, 'center', 'middle', fB);
+    q = sx((xc0 + xc1) / 2, hw + 12); D.haloText(c, 'ε', q[0], q[1], colors.text, 'center', 'middle', fI);
+    q = sx((xr0 + xr1) / 2, hw + 12); D.haloText(c, 'r', q[0], q[1], colors.text, 'center', 'middle', fI);
   }
 
   /** 兩行的標籤：上行名稱與電阻（淡色），下行電流（粗體） */
   function pill2(c, l1, l2, x, y, align, col2) {
-    const f1 = L.fs + 'px system-ui, sans-serif', f2 = '700 ' + (L.fs + 0.5) + 'px system-ui, sans-serif';
+    const f1 = L.fs + 'px ' + FONT, f2 = '700 ' + (L.fs + 0.5) + 'px ' + FONT;
     c.font = f1; const w1 = c.measureText(l1).width;
     c.font = f2; const m2 = c.measureText(l2 || l1), w2 = l2 ? m2.width : 0;
-    const lh = (m2.fontBoundingBoxAscent > 0 ? m2.fontBoundingBoxAscent + m2.fontBoundingBoxDescent : L.fs * 1.3) * 1.02, tw = Math.max(w1, w2), pw = tw + 10, ph = (l2 ? 2 : 1) * lh + 5;
+    const lh = (m2.fontBoundingBoxAscent > 0 ? m2.fontBoundingBoxAscent + m2.fontBoundingBoxDescent : L.fs * 1.3) * 1.02, tw = Math.max(w1, w2), pw = tw + 12, ph = (l2 ? 2 : 1) * lh + 6;
     let bx = align === 'center' ? x - pw / 2 : align === 'right' ? x - pw : x;
     bx = Math.max(3, Math.min(cw - pw - 3, bx)); // 不超出畫布
     const by = y - ph / 2;
-    c.fillStyle = alpha(colors['canvas-bg'], 0.88);
-    roundRect(c, bx, by, pw, ph, 6); c.fill();
-    c.strokeStyle = alpha(colors.text, 0.08); c.lineWidth = 1;
-    roundRect(c, bx + 0.5, by + 0.5, pw - 1, ph - 1, 6); c.stroke();
+    c.save();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.4)' : alpha(colors.text, 0.12); c.shadowBlur = 6; c.shadowOffsetY = 1.5 * dpr;
+    c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.88 : 0.92);
+    roundRect(c, bx, by, pw, ph, 7); c.fill();
+    c.restore();
+    c.strokeStyle = alpha(col2 && col2 !== colors.text ? col2 : colors.muted, colors.dark ? 0.4 : 0.3); c.lineWidth = 1;
+    roundRect(c, bx + 0.5, by + 0.5, pw - 1, ph - 1, 6.5); c.stroke();
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.font = f1; c.fillStyle = colors.muted;
-    c.fillText(l1, bx + pw / 2, by + 2.5 + lh / 2);
-    if (l2) { c.font = f2; c.fillStyle = col2 || colors.text; c.fillText(l2, bx + pw / 2, by + 2.5 + lh * 1.5); }
+    c.fillText(l1, bx + pw / 2, by + 3 + lh / 2);
+    if (l2) { c.font = f2; c.fillStyle = col2 || colors.text; c.fillText(l2, bx + pw / 2, by + 3 + lh * 1.5); }
     return { x: bx, y: by, w: pw, h: ph };
   }
 
-  /** 元件旁的電流方向箭頭（傳統電流） */
+  /** 元件旁的電流方向箭頭（傳統電流；與全站的向量箭頭同一種樣式） */
   function chevron(c, g, I) {
     if (Math.abs(I) < 5e-7) return;
     const sgn = I > 0 ? 1 : -1;
     const d = g.hb + Math.max(9, 0.17 * L.u);
-    const p = along(g, sgn * d);
-    const ux = g.ux * sgn, uy = g.uy * sgn, nx = -uy, ny = ux, s = Math.max(4, Math.min(0.08 * L.u, 6.5));
-    c.fillStyle = colors.dark ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.95)';
-    c.strokeStyle = alpha(colors.text, 0.75); c.lineWidth = 1.2; c.lineJoin = 'round';
-    c.beginPath();
-    c.moveTo(p[0] + ux * s, p[1] + uy * s);
-    c.lineTo(p[0] - ux * s * 0.8 + nx * s * 0.85, p[1] - uy * s * 0.8 + ny * s * 0.85);
-    c.lineTo(p[0] - ux * s * 0.8 - nx * s * 0.85, p[1] - uy * s * 0.8 - ny * s * 0.85);
-    c.closePath(); c.fill(); c.stroke();
+    const s = Math.max(4, Math.min(0.08 * L.u, 6.5));
+    const p0 = along(g, sgn * (d - s * 1.5)), p1 = along(g, sgn * (d + s * 1.5));
+    D.arrow(c, p0[0], p0[1], p1[0], p1[1], colors.pos, Math.max(2, Math.min(2.6, s * 0.42)));
   }
 
   function labelFor(c, e, g, k) {
@@ -643,12 +761,11 @@
     else if (side === 't') y -= off + L.fs * 1.4;
     else y += off + L.fs * 1.4;
     if (e.type === 'switch') {
-      c.font = '600 ' + L.fs + 'px system-ui, sans-serif';
-      c.textAlign = align === 'center' ? 'center' : align; c.textBaseline = 'middle';
+      const f = '600 ' + L.fs + 'px ' + FONT;
       const yy = side === 'b' ? g.C[1] + g.hw + L.fs : side === 't' ? g.C[1] - g.hw - L.fs : g.C[1];
-      const plate = Math.max(3.5, Math.min(0.075 * L.u, 6)) + 9;
+      const plate = switchR0() + 9;
       const xx = side === 'l' ? g.C[0] - plate : side === 'r' ? g.C[0] + plate : g.C[0];
-      haloText(c, e.id, xx, yy, e.closed ? colors.muted : colors.pos);
+      D.haloText(c, e.id, xx, yy, e.closed ? colors.muted : colors.pos, align === 'center' ? 'center' : align, 'middle', f);
       return;
     }
     const I = s.ok ? s.I[k] : 0;
@@ -668,34 +785,32 @@
   }
 
   function buildOver() {
+    if (!L || !state.c) return;
     const c = oc, s = state.sol;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     const els = state.c.elements;
-    // 節點（接點）：分支點較大，其他為小接線點
+    // 節點（接點）：分支點是較大的焊點，其他是小接線點
     const deg = new Array(state.c.n).fill(0);
     els.forEach(function (e) { deg[e.a]++; deg[e.b]++; });
-    const metal = colors.dark ? shade(colors.field, -0.1) : shade(colors.field, 0.15);
+    const met = colors.dark ? shade(colors.field, -0.1) : shade(colors.field, 0.15);
     for (let n = 0; n < state.c.n; n++) {
-      const p = P(n), big = deg[n] >= 3;
+      const p = vis(n), big = deg[n] >= 3;
       const col = potColor(s.ok ? s.V[n] : NaN, s.floating[n]);
       const r = big ? Math.max(4.5, Math.min(0.085 * L.u, 7.5)) : Math.max(3, Math.min(0.05 * L.u, 4.5));
-      if (state.hover === -2 - n) { c.fillStyle = alpha(colors.probe, 0.25); c.beginPath(); c.arc(p[0], p[1], r + 7, 0, Math.PI * 2); c.fill(); }
-      sphere(c, p[0], p[1], r, big ? shade(col, -0.1) : metal);
+      if (state.hover === -2 - n) {
+        c.fillStyle = alpha(colors.probe, 0.22); c.beginPath(); c.arc(p[0], p[1], r + 8, 0, Math.PI * 2); c.fill();
+        c.strokeStyle = alpha(colors.probe, 0.6); c.lineWidth = 1.5; c.beginPath(); c.arc(p[0], p[1], r + 8, 0, Math.PI * 2); c.stroke();
+      }
+      D.ball(c, p[0], p[1], r, big ? shade(col, -0.1) : met, { shadow: big, glow: 0 });
     }
     // 元件
     els.forEach(function (e, k) {
       if (e.type === 'wire') return;
       const g = geom(e);
       const round = e.kind === 'bulb' || e.kind === 'galv';
-      if (k === state.sel) selGlow(c, g, round);
-      else if (k === state.hover) {
-        local(c, g, function () {
-          c.strokeStyle = alpha(colors.accent, 0.22); c.lineWidth = 4;
-          if (round) { c.beginPath(); c.arc(0, 0, g.hw + 5, 0, Math.PI * 2); c.stroke(); }
-          else { roundRect(c, -g.hb - 5, -g.hw - 5, 2 * g.hb + 10, 2 * g.hw + 10, g.hw + 5); c.stroke(); }
-        });
-      }
+      if (k === state.sel) selGlow(c, g, round, true);
+      else if (k === state.hover) selGlow(c, g, round, false);
       if (e.type === 'battery') drawBattery(c, e, g);
       else if (e.type === 'switch') drawSwitch(c, e, g);
       else if (e.kind === 'bulb') drawBulb(c, e, g, k);
@@ -713,15 +828,10 @@
     if (state.show.labels && s.ok) chevron(c, geom(els[0]), s.I[0]);
     // 負極：0 V 參考點
     const g0 = P(els[0].a);
-    c.textAlign = 'center';
-    c.font = '600 ' + L.fs + 'px system-ui, sans-serif';
-    c.textAlign = 'left';
-    haloText(c, '0 V', g0[0] + 13, g0[1] + Math.max(15, 0.26 * L.u), colors.muted);
-    if (!s.ok && s.short) {
-      c.font = '700 ' + (L.fs + 2) + 'px system-ui, sans-serif';
-      haloText(c, T('短路！', 'Short circuit!'), cw / 2, L.oy + 2 * L.u, colors.pos);
-    }
+    D.haloText(c, '0 V', g0[0] + 13, g0[1] + Math.max(15, 0.26 * L.u), colors.muted, 'left', 'middle', '600 ' + L.fs + 'px ' + FONT);
+    if (!s.ok && s.short) D.pill(c, T('短路！', 'Short circuit!'), cw / 2, L.oy + 2 * L.u + 10, colors.pos, 'center', '700 ' + (L.fs + 2) + 'px ' + FONT);
     drawMeter(c);
+    drawFocus(c);
   }
 
   // ---------- 三用電表（電壓檔）與探針 ----------
@@ -735,25 +845,47 @@
     return [[jx, M.y + M.h * 0.32], [jx, M.y + M.h * 0.72]];
   }
   function probeColor(i) { return i === 0 ? colors.pos : (colors.dark ? colors.muted : shade(colors.field, -0.1)); }
-  /** 探針線：從電表插孔垂下、繞到接點（畫在電路「下面」，像放在桌上的電線） */
+  // 探針筆的方向（純畫法）：紅筆往右下、黑筆往左下，筆尖在接點上
+  const PEN = [[0.5, 0.866], [-0.5, 0.866]], PEN_LEN = 26;
+  function penEnd(i) { const p = vis(state.probes[i]), d = PEN[i]; return [p[0] + d[0] * PEN_LEN, p[1] + d[1] * PEN_LEN]; }
+  /** 探針線：從電表插孔接到探針筆的尾端（畫在電路「下面」，像放在桌上的電線） */
   function drawCables(c) {
     const jacks = jackPos();
     state.probes.forEach(function (n, i) {
       if (n == null) return;
-      const p = P(n), j = jacks[i], col = probeColor(i);
+      const p = penEnd(i), j = jacks[i], col = probeColor(i), d = PEN[i];
       const sag = Math.max(30, Math.abs(p[1] - j[1]) * 0.35);
-      const path = function () {
-        c.beginPath();
-        c.moveTo(j[0], j[1]);
-        c.bezierCurveTo(j[0] + 26 + i * 10, j[1] + sag * 0.2, p[0] + (i ? 14 : -14), p[1] + sag, p[0], p[1] + 9);
+      const path = function (cc) {
+        cc.moveTo(j[0], j[1]);
+        cc.bezierCurveTo(j[0] + 26 + i * 10, j[1] + sag * 0.2, p[0] + d[0] * 18, p[1] + d[1] * 18 + sag * 0.4, p[0], p[1]);
       };
+      c.save();
       c.lineCap = 'round';
-      c.strokeStyle = 'rgba(0,0,0,' + (colors.dark ? 0.3 : 0.1) + ')'; c.lineWidth = 4;
-      c.save(); c.translate(1, 2); path(); c.stroke(); c.restore();
-      c.strokeStyle = alpha(shade(col, -0.1), 0.8); c.lineWidth = 3; path(); c.stroke();
-      c.strokeStyle = alpha(shade(col, 0.5), 0.6); c.lineWidth = 1;
-      c.save(); c.translate(-0.6, -0.8); path(); c.stroke(); c.restore();
+      c.strokeStyle = shadowCol(colors.dark ? 0.18 : 0.1); c.lineWidth = 4.5;
+      c.translate(1, 2); c.beginPath(); path(c); c.stroke();
+      c.restore();
+      D.tube(c, path, col, 3.6);
     });
+  }
+  /** 探針筆：金屬針尖、護指環、有顏色的握柄；接點周圍一圈光環表示量測點 */
+  function drawPen(c, i) {
+    const p = vis(state.probes[i]), d = PEN[i], col = probeColor(i);
+    c.fillStyle = alpha(col, 0.2); c.beginPath(); c.arc(p[0], p[1], 11, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = col; c.lineWidth = 2;
+    c.beginPath(); c.arc(p[0], p[1], 8.5, 0, Math.PI * 2); c.stroke();
+    c.save();
+    c.translate(p[0], p[1]);
+    c.rotate(Math.atan2(d[1], d[0]));
+    // 針尖
+    const met = chrome();
+    const tg = c.createLinearGradient(0, -1.5, 0, 1.5);
+    tg.addColorStop(0, shade(met, 0.5)); tg.addColorStop(1, shade(met, -0.35));
+    c.fillStyle = tg;
+    c.beginPath(); c.moveTo(1.5, 0); c.lineTo(9, -1.4); c.lineTo(9, 1.4); c.closePath(); c.fill();
+    // 握柄與護指環
+    D.block(c, 11, -3, PEN_LEN - 11, 6, col, { r: 3 });
+    D.block(c, 9, -4.6, 3, 9.2, shade(col, -0.25), { r: 1.2, shadow: false });
+    c.restore();
   }
   /** 依寬度縮小字級，讓文字放得下 */
   function fitFont(c, text, weight, size, family, maxW) {
@@ -762,26 +894,30 @@
     while (f > 7 && c.measureText(text).width > maxW) { f -= 0.5; c.font = weight + f + 'px ' + family; }
   }
   function drawMeter(c) {
-    const M = meterBox(), s = state.sol;
-    const body = colors.dark ? shade(colors.surface, 0.1) : shade(colors.field, 0.08);
-    softShadow(c, function () { c.fillStyle = body; roundRect(c, M.x, M.y, M.w, M.h, 10); c.fill(); });
-    const bgd = c.createLinearGradient(0, M.y, 0, M.y + M.h);
-    bgd.addColorStop(0, shade(body, 0.18)); bgd.addColorStop(1, shade(body, -0.2));
-    c.fillStyle = bgd; roundRect(c, M.x, M.y, M.w, M.h, 10); c.fill();
+    const M = meterBox();
+    // 外殼：琥珀色的防撞護套＋深色面板（像手持三用電表）
+    const hol = colors.dark ? shade(colors.equi, -0.3) : shade(colors.equi, 0.32);
+    D.block(c, M.x, M.y, M.w, M.h, hol, { r: 12 });
+    const face = colors.dark ? shade(colors.surface, 0.12) : mix(colors.field, colors.text, 0.35);
+    D.block(c, M.x + 4, M.y + 3.5, M.w - 8, M.h - 7, face, { r: 9, shadow: false });
     // 液晶顯示
     const jackW = 64;
-    const lx = M.x + 8, ly = M.y + 7, lw = M.w - 16 - jackW, lh = M.h - 14;
-    const lcdBg = colors.dark ? mix(colors['canvas-bg'], colors.probe, 0.12) : mix('#ffffff', colors.probe, 0.12);
-    c.fillStyle = lcdBg; roundRect(c, lx, ly, lw, lh, 6); c.fill();
-    c.strokeStyle = 'rgba(0,0,0,0.25)'; c.lineWidth = 1; roundRect(c, lx + 0.5, ly + 0.5, lw - 1, lh - 1, 6); c.stroke();
+    const lx = M.x + 10, ly = M.y + 8, lw = M.w - 20 - jackW, lh = M.h - 16;
+    const lcdBg = colors.dark ? mix(colors['canvas-bg'], colors.probe, 0.12) : mix(colors.surface, colors.probe, 0.14);
+    const lg = c.createLinearGradient(0, ly, 0, ly + lh);
+    lg.addColorStop(0, shade(lcdBg, colors.dark ? -0.15 : -0.06)); lg.addColorStop(0.25, lcdBg); lg.addColorStop(1, shade(lcdBg, colors.dark ? 0.04 : 0.06));
+    c.fillStyle = lg; roundRect(c, lx, ly, lw, lh, 5); c.fill();
+    c.strokeStyle = 'rgba(0,0,0,0.35)'; c.lineWidth = 1; roundRect(c, lx + 0.5, ly + 0.5, lw - 1, lh - 1, 5); c.stroke();
     const dV = probeDV();
-    const lcdText = colors.dark ? shade(colors.probe, 0.3) : shade(colors.probe, -0.45);
+    const lcdText = colors.dark ? shade(colors.probe, 0.3) : shade(colors.probe, -0.5);
     c.textAlign = 'left'; c.textBaseline = 'middle';
     const t1 = T('電壓表（紅 − 黑）', 'Voltmeter (red − black)');
-    fitFont(c, t1, '', L.fs - 0.5, 'system-ui, sans-serif', lw - 16);
+    fitFont(c, t1, '', L.fs - 0.5, FONT, lw - 16);
     c.fillStyle = alpha(lcdText, 0.8);
     c.fillText(t1, lx + 8, ly + lh * 0.27);
     const both = state.probes[0] != null && state.probes[1] != null;
+    c.save();
+    if (colors.dark) { c.shadowColor = alpha(colors.probe, 0.55); c.shadowBlur = 6; }
     if (both) {
       const t3 = isFinite(dV) ? fmtV(dV) : T('— 沒有定義', '— undefined');
       fitFont(c, t3, '700 ', L.narrow ? 17 : 20, 'ui-monospace, "SF Mono", Menlo, Consolas, monospace', lw - 16);
@@ -789,49 +925,62 @@
       c.fillText(t3, lx + 8, ly + lh * 0.68);
     } else {
       const t2 = state.probes[0] == null ? T('點一個接點放紅探針', 'Tap a junction (red)') : T('再點一個接點放黑探針', 'Tap another (black)');
-      fitFont(c, t2, '', L.fs, 'system-ui, sans-serif', lw - 16);
+      fitFont(c, t2, '', L.fs, FONT, lw - 16);
       c.fillStyle = alpha(lcdText, 0.85);
       c.fillText(t2, lx + 8, ly + lh * 0.68);
     }
-    // 插孔
+    c.restore();
+    // 插孔（凹進去的插座）
     const jp = jackPos(), jx = jp[0][0];
-    const jacks = [[jx, jp[0][1], colors.pos], [jx, jp[1][1], colors.dark ? colors.muted : shade(colors.field, -0.2)]];
-    jacks.forEach(function (j) {
-      c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.arc(j[0], j[1], 7, 0, Math.PI * 2); c.fill();
-      sphere(c, j[0], j[1], 5, j[2]);
+    const jcol = [colors.pos, colors.dark ? colors.muted : shade(colors.field, -0.2)];
+    jp.forEach(function (j, i) {
+      c.fillStyle = 'rgba(0,0,0,0.45)'; c.beginPath(); c.arc(j[0], j[1] + 0.6, 7.5, 0, Math.PI * 2); c.fill();
+      const rg = c.createLinearGradient(0, j[1] - 6.5, 0, j[1] + 6.5);
+      rg.addColorStop(0, shade(jcol[i], -0.35)); rg.addColorStop(1, shade(jcol[i], 0.3));
+      c.fillStyle = rg; c.beginPath(); c.arc(j[0], j[1], 6.5, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#000000'; c.beginPath(); c.arc(j[0], j[1], 2.6, 0, Math.PI * 2); c.fill();
     });
-    c.font = '600 ' + (L.fs - 2) + 'px system-ui, sans-serif';
-    c.textAlign = 'right'; c.fillStyle = alpha(colors.dark ? colors.text : '#ffffff', 0.75);
-    c.fillText('+', jx - 10, jacks[0][1]); c.fillText('COM', jx - 10, jacks[1][1]);
-    // 探針線在電表面板上的一段（其餘畫在電路下面）
-    c.save(); roundRect(c, M.x, M.y, M.w, M.h, 10); c.clip(); drawCables(c); c.restore();
-    jacks.forEach(function (j) { sphere(c, j[0], j[1], 5, j[2]); });
-    // 探針頭
-    state.probes.forEach(function (n, i) {
-      if (n == null) return;
-      const p = P(n), col = probeColor(i);
-      c.fillStyle = alpha(col, 0.25); c.beginPath(); c.arc(p[0], p[1], 11, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = col; c.lineWidth = 2.2;
-      c.beginPath(); c.arc(p[0], p[1], 8.5, 0, Math.PI * 2); c.stroke();
-      sphere(c, p[0], p[1] + 9, 3.5, col);
-    });
+    c.font = '600 ' + (L.fs - 2) + 'px ' + FONT;
+    c.textAlign = 'right'; c.textBaseline = 'middle'; c.fillStyle = alpha(colors.dark ? colors.text : '#ffffff', 0.78);
+    c.fillText('+', jx - 11, jp[0][1]); c.fillText('COM', jx - 11, jp[1][1]);
+    // 探針線在電表面板上的一段（其餘畫在電路下面）、插頭
+    // 只在插孔那一欄畫出來（液晶上的字不被電線蓋住），其餘部分在電表「下面」
+    c.save(); c.beginPath(); c.rect(lx + lw + 1, M.y, M.x + M.w - lx - lw - 1, M.h); c.clip(); drawCables(c); c.restore();
+    jp.forEach(function (j, i) { if (state.probes[i] != null) D.ball(c, j[0], j[1], 4.6, jcol[i], { glow: 0 }); });
+    // 探針筆
+    state.probes.forEach(function (n, i) { if (n != null) drawPen(c, i); });
     // 電位色條
     if (state.show.pot) {
       const bx0 = M.x + M.w + 14, bx1 = cw - 14;
       if (bx1 - bx0 > 70) {
-        const by = M.y + M.h * 0.62, bh = 8;
+        const by = M.y + M.h * 0.6, bh = 8;
         const metal = colors.dark ? shade(colors.field, -0.25) : shade(colors.field, 0.12);
-        const lg = c.createLinearGradient(bx0, 0, bx1, 0);
-        lg.addColorStop(0, mix(metal, colors.neg, 0.62)); lg.addColorStop(0.5, metal); lg.addColorStop(1, mix(metal, colors.pos, 0.62));
-        c.fillStyle = lg; roundRect(c, bx0, by - bh / 2, bx1 - bx0, bh, bh / 2); c.fill();
-        c.font = (L.fs - 0.5) + 'px system-ui, sans-serif';
-        c.fillStyle = colors.muted; c.textBaseline = 'middle';
-        c.textAlign = 'left'; c.fillText(T('電位', 'Potential'), bx0, M.y + M.h * 0.22);
-        c.textBaseline = 'top';
-        c.fillText('0 V', bx0, by + bh / 2 + 3);
-        c.textAlign = 'right'; c.fillText(fmtV(emf()), bx1, by + bh / 2 + 3);
+        const g = c.createLinearGradient(bx0, 0, bx1, 0);
+        g.addColorStop(0, mix(metal, colors.neg, 0.62)); g.addColorStop(0.5, metal); g.addColorStop(1, mix(metal, colors.pos, 0.62));
+        softShadow(c, function () { c.fillStyle = g; roundRect(c, bx0, by - bh / 2, bx1 - bx0, bh, bh / 2); c.fill(); }, 4, 1);
+        c.fillStyle = 'rgba(255,255,255,' + (colors.dark ? 0.15 : 0.4) + ')';
+        roundRect(c, bx0 + 3, by - bh / 2 + 1, bx1 - bx0 - 6, 2, 1); c.fill();
+        c.strokeStyle = alpha(colors.text, 0.35); c.lineWidth = 1;
+        c.beginPath();
+        for (let i = 0; i <= 4; i++) { const x = Math.round(bx0 + (bx1 - bx0) * i / 4) + 0.5; c.moveTo(x, by + bh / 2 + 1); c.lineTo(x, by + bh / 2 + (i % 2 ? 3 : 5)); }
+        c.stroke();
+        const f = (L.fs - 0.5) + 'px ' + FONT;
+        D.haloText(c, T('電位', 'Potential'), bx0, M.y + M.h * 0.2, colors.muted, 'left', 'middle', '600 ' + f);
+        D.haloText(c, '0 V', bx0, by + bh / 2 + 6, colors.muted, 'left', 'top', f);
+        D.haloText(c, fmtV(emf()), bx1, by + bh / 2 + 6, colors.muted, 'right', 'top', f);
       }
     }
+  }
+  /** 鍵盤操作時，被選取的探針周圍畫焦點框（還沒放上時框住電表插孔） */
+  function drawFocus(c) {
+    if (!kb || !kb.focused()) return;
+    const i = kb.index(), n = state.probes[i];
+    const p = n != null ? vis(n) : jackPos()[i];
+    const r = n != null ? 15 : 11;
+    c.save();
+    c.strokeStyle = colors.accent; c.lineWidth = 2; c.setLineDash([4, 3]);
+    roundRect(c, p[0] - r, p[1] - r, 2 * r, 2 * r, 6); c.stroke();
+    c.restore();
   }
 
   // ======================= 電荷（每幀） =======================
@@ -847,7 +996,7 @@
     // 一圈底色的描邊，讓電荷在任何顏色的導線上都看得清楚
     c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.85 : 0.95);
     c.beginPath(); c.arc(m, m, r + 1.3, 0, Math.PI * 2); c.fill();
-    sphere(c, m, m, r, colors.dark ? shade(col, 0.15) : col);
+    D.ball(c, m, m, r, colors.dark ? shade(col, 0.15) : col, { shadow: false, glow: 0 });
     sprites[key] = { cvs: cvs, half: m };
     return sprites[key];
   }
@@ -863,6 +1012,7 @@
     state.c.elements.forEach(function (e, k) {
       const g = geom(e);
       const moving = s.ok && Math.abs(s.I[k]) > 5e-7;
+      const ka = state.corners[e.a], kb2 = state.corners[e.b];
       ctx.globalAlpha = moving ? 0.95 : 0.35;
       const off = ((state.offs[k] % sp) + sp) % sp;
       carrierSegments(e, g).forEach(function (seg) {
@@ -872,7 +1022,10 @@
           const x = off + j * sp;
           if (x > seg[1]) break;
           if (x < seg[0]) continue;
-          const p = along(g, x);
+          let p = along(g, x);
+          const sa = x + g.len / 2, sb = g.len / 2 - x;
+          if (ka && sa < ka.rho) p = onBend(ka, [g.ux, g.uy], sa);        // 轉角：沿圓弧走
+          else if (kb2 && sb < kb2.rho) p = onBend(kb2, [-g.ux, -g.uy], sb);
           ctx.drawImage(spr.cvs, p[0] - spr.half, p[1] - spr.half, spr.half * 2, spr.half * 2);
         }
       });
@@ -922,10 +1075,11 @@
     const c = pctx, E = state.c.elements[0], k = elId('R'), R = state.c.elements[k].R;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, gw, gh);
-    const base = colors['canvas-bg'];
-    const gg = c.createLinearGradient(0, 0, 0, gh);
-    gg.addColorStop(0, base); gg.addColorStop(1, shade(base, colors.dark ? -0.35 : -0.05));
-    c.fillStyle = gg; roundRect(c, 0, 0, gw, gh, 8); c.fill();
+    c.save(); roundRect(c, 0, 0, gw, gh, 10); c.clip();
+    D.backdrop(c, gw, gh);
+    c.restore();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.1 : 0.08); c.lineWidth = 1;
+    roundRect(c, 0.5, 0.5, gw - 1, gh - 1, 10); c.stroke();
     const narrow = gw < 420;
     const m = { l: narrow ? 44 : 52, r: narrow ? 40 : 48, t: 28, b: 34 };
     const W = gw - m.l - m.r, H = gh - m.t - m.b;
@@ -934,36 +1088,43 @@
     for (let i = 0; i <= 200; i++) pmax = Math.max(pmax, K.loadPower(E.emf, E.r, R_MIN * Math.pow(R_MAX / R_MIN, i / 200)));
     const top = niceTop(pmax * 1.08);
     const ly = function (Pv) { return m.t + H * (1 - Pv / top); };
-    // 格線
-    c.lineWidth = 1;
-    c.font = (L.fs - 0.5) + 'px system-ui, sans-serif';
+    const px = function (v) { return Math.round(v * dpr) / dpr + 0.5 / dpr; };
+    // 格線（主格線＋對數刻度的次格線）
+    c.lineWidth = 1 / dpr;
+    c.font = (L.fs - 0.5) + 'px ' + FONT;
     c.fillStyle = colors.muted;
+    [0.6, 0.7, 0.8, 0.9, 3, 4, 6, 7, 8, 9, 30, 40, 60, 70, 80, 90].forEach(function (v) {
+      const x = px(lx(v));
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.05 : 0.04);
+      c.beginPath(); c.moveTo(x, m.t); c.lineTo(x, m.t + H); c.stroke();
+    });
     [0.5, 1, 2, 5, 10, 20, 50, 100].forEach(function (v) {
-      const x = Math.round(lx(v)) + 0.5;
-      c.strokeStyle = alpha(colors.text, 0.08);
+      const x = px(lx(v));
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.11 : 0.1);
       c.beginPath(); c.moveTo(x, m.t); c.lineTo(x, m.t + H); c.stroke();
       c.textAlign = 'center'; c.textBaseline = 'top';
       c.fillText(String(v), x, m.t + H + 4);
     });
     for (let i = 0; i <= 4; i++) {
-      const Pv = top * i / 4, y = Math.round(ly(Pv)) + 0.5;
-      c.strokeStyle = alpha(colors.text, i === 0 ? 0.25 : 0.08);
+      const Pv = top * i / 4, y = px(ly(Pv));
+      c.strokeStyle = alpha(colors.text, i === 0 ? 0.3 : (colors.dark ? 0.11 : 0.1));
       c.beginPath(); c.moveTo(m.l, y); c.lineTo(m.l + W, y); c.stroke();
       c.textAlign = 'right'; c.textBaseline = 'middle';
       c.fillText(trim(num(Pv, top < 4 ? 2 : 1)), m.l - 5, y);
       c.textAlign = 'left';
       c.fillText((25 * i) + '%', m.l + W + 5, y);
     }
+    c.lineWidth = 1;
     c.textBaseline = 'alphabetic';
-    c.textAlign = 'left'; c.fillStyle = colors.text; c.font = '600 ' + (L.fs) + 'px system-ui, sans-serif';
+    c.textAlign = 'left'; c.fillStyle = colors.text; c.font = '600 ' + (L.fs) + 'px ' + FONT;
     c.fillText(T('輸出功率 P (W)', 'Output power P (W)'), 8, 17);
     c.textAlign = 'right'; c.fillStyle = colors.accent;
     c.fillText(T('效率 η', 'Efficiency η'), gw - 8, 17);
-    c.fillStyle = colors.muted; c.font = (L.fs - 0.5) + 'px system-ui, sans-serif';
+    c.fillStyle = colors.muted; c.font = (L.fs - 0.5) + 'px ' + FONT;
     c.fillText(T('負載電阻 R (Ω，對數刻度)', 'Load R (Ω, log scale)'), m.l + W, gh - 4);
     // 效率曲線 η = R/(R + r)
     c.save(); c.beginPath(); c.rect(m.l, m.t - 2, W, H + 4); c.clip();
-    c.strokeStyle = alpha(colors.accent, 0.8); c.lineWidth = 1.6; c.setLineDash([5, 4]);
+    c.strokeStyle = alpha(colors.accent, 0.8); c.lineWidth = 1.6; c.setLineDash([5, 4]); c.lineCap = 'round';
     c.beginPath();
     for (let i = 0; i <= 200; i++) {
       const Rv = R_MIN * Math.pow(R_MAX / R_MIN, i / 200), eta = Rv / (Rv + E.r);
@@ -984,20 +1145,14 @@
       pts.push([lx(Rv), ly(K.loadPower(E.emf, E.r, Rv))]);
     }
     const fill = c.createLinearGradient(0, m.t, 0, m.t + H);
-    fill.addColorStop(0, alpha(colors['b-em'], 0.22)); fill.addColorStop(1, alpha(colors['b-em'], 0));
+    fill.addColorStop(0, alpha(colors['b-em'], colors.dark ? 0.28 : 0.22)); fill.addColorStop(1, alpha(colors['b-em'], 0));
     c.fillStyle = fill;
     c.beginPath(); c.moveTo(pts[0][0], m.t + H);
     pts.forEach(function (p) { c.lineTo(p[0], p[1]); });
     c.lineTo(pts[pts.length - 1][0], m.t + H); c.closePath(); c.fill();
-    c.lineJoin = 'round'; c.lineCap = 'round';
-    c.strokeStyle = colors['b-em']; c.lineWidth = 2.6;
-    c.beginPath(); pts.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
+    D.tube(c, function (cc) { pts.forEach(function (p, i) { if (i) cc.lineTo(p[0], p[1]); else cc.moveTo(p[0], p[1]); }); }, colors['b-em'], 3.4);
     c.restore();
-    if (E.r >= R_MIN) {
-      c.font = (L.fs - 0.5) + 'px system-ui, sans-serif'; c.fillStyle = colors.muted; c.textAlign = 'center';
-      c.textBaseline = 'top';
-      haloText(c, 'R = r', lx(E.r), m.t + 2, colors.muted);
-    }
+    if (E.r >= R_MIN) D.haloText(c, 'R = r', lx(E.r), m.t + 2, colors.muted, 'center', 'top', (L.fs - 0.5) + 'px ' + FONT);
     // 目前的負載
     const on = state.c.elements.every(function (e) { return e.type !== 'switch' || e.closed; });
     const Pnow = K.loadPower(E.emf, E.r, R), x0 = lx(R), y0 = ly(Pnow);
@@ -1005,11 +1160,14 @@
     const halo = c.createRadialGradient(x0, y0, 0, x0, y0, 14);
     halo.addColorStop(0, alpha(colors.pos, 0.35)); halo.addColorStop(1, alpha(colors.pos, 0));
     c.fillStyle = halo; c.beginPath(); c.arc(x0, y0, 14, 0, Math.PI * 2); c.fill();
-    sphere(c, x0, y0, 5.5, colors.pos);
-    c.font = '600 ' + L.fs + 'px system-ui, sans-serif';
-    c.textAlign = x0 > m.l + W * 0.6 ? 'right' : 'left'; c.textBaseline = 'middle';
-    haloText(c, 'P = ' + fmtP(Pnow) + (on ? '' : T('（開關斷開）', ' (switch open)')), x0 + (c.textAlign === 'right' ? -10 : 10), Math.max(m.t + 8, y0 - 12), colors.text);
+    D.ball(c, x0, y0, 5.5, colors.pos, { glow: 0 });
+    const right = x0 > m.l + W * 0.6;
+    D.haloText(c, 'P = ' + fmtP(Pnow) + (on ? '' : T('（開關斷開）', ' (switch open)')), x0 + (right ? -10 : 10), Math.max(m.t + 8, y0 - 12), colors.text, right ? 'right' : 'left', 'middle', '600 ' + L.fs + 'px ' + FONT);
     c.globalAlpha = 1;
+    // 給螢幕閱讀器的圖說（參數改變時更新）
+    const lab = T('輸出功率對負載電阻的關係圖：目前 R = ', 'Graph of output power against load resistance: now R = ') + fmtR(R) + T('，P = ', ', P = ') + fmtP(Pnow) +
+      (E.r >= R_MIN ? T('；R = r = ', '; the peak is at R = r = ') + fmtR(E.r) + T(' 時輸出功率最大。', '.') : T('。', '.'));
+    if (pr.getAttribute('aria-label') !== lab) pr.setAttribute('aria-label', lab);
   }
   function niceTop(v) {
     if (!(v > 0) || !isFinite(v)) return 1;
@@ -1028,7 +1186,7 @@
     } else {
       setHTML('dReq', isFinite(b.Req) ? fmtR(b.Req) : T('∞（斷路）', '∞ (open circuit)'));
       setHTML('dI', fmtI(b.I));
-      setHTML('dV', fmtV(b.Vt) + '<small>ε = ' + fmtV(E.emf) + '，Ir = ' + fmtV(b.I * E.r) + '</small>');
+      setHTML('dV', fmtV(b.Vt) + '<small>ε = ' + fmtV(E.emf) + T('，', ', ') + 'Ir = ' + fmtV(b.I * E.r) + '</small>');
       setHTML('dPe', fmtP(b.Pemf));
       setHTML('dPi', fmtP(b.Pint));
       setHTML('dPo', fmtP(b.Pout) + '<small>= ΣI<sup>2</sup>R</small>');
@@ -1037,7 +1195,7 @@
     const p = state.probes, dV = probeDV();
     if (p[0] == null || p[1] == null) setHTML('dProbe', T('—（點兩個接點）', '— (tap two junctions)'));
     else if (!isFinite(dV)) setHTML('dProbe', T('—（有一端與電池斷開）', '— (a probe is cut off from the battery)'));
-    else setHTML('dProbe', fmtV(dV) + '<small>V<sub>' + T('紅', 'red') + '</sub> = ' + fmtV(s.V[p[0]]) + '，V<sub>' + T('黑', 'black') + '</sub> = ' + fmtV(s.V[p[1]]) + '</small>');
+    else setHTML('dProbe', fmtV(dV) + '<small>V<sub>' + T('紅', 'red') + '</sub> = ' + fmtV(s.V[p[0]]) + T('，', ', ') + 'V<sub>' + T('黑', 'black') + '</sub> = ' + fmtV(s.V[p[1]]) + '</small>');
     // 各元件表
     let rows = '', sum = 0;
     state.c.elements.forEach(function (e, k) {
@@ -1054,6 +1212,28 @@
       rows += '<tr class="total"><td colspan="4">' + T('電池供給 εI', 'Battery supplies εI') + '</td><td>' + num(b.Pemf, 3) + '</td></tr>';
     }
     setHTML('partsBody', rows);
+  }
+
+  // ---------- 讀數播報（離散事件後，寫進 aria-live 的 #srLive；連續拖曳滑桿時不念） ----------
+  let announceTimer = 0;
+  function announce() {
+    clearTimeout(announceTimer);
+    announceTimer = setTimeout(function () {
+      const el = $('srLive'); if (!el || !state.sol) return;
+      const s = state.sol, b = state.rep;
+      let t;
+      if (!s.ok) t = T('短路：電流無限大。', 'Short circuit: the current is unlimited.');
+      else {
+        t = T('總電流 I = ', 'Total current I = ') + fmtI(b.I) + T('，端電壓 V = ', ', terminal voltage V = ') + fmtV(b.Vt) +
+          T('，輸出功率 ', ', output power ') + fmtP(b.Pout);
+        const gk = elId('G');
+        if (gk >= 0) t += T('，檢流計 ', ', galvanometer ') + fmtI(Math.abs(s.I[gk]));
+        const dV = probeDV();
+        if (state.probes[0] != null && state.probes[1] != null) t += T('，電壓表 ', ', voltmeter ') + (isFinite(dV) ? fmtV(dV) : T('沒有定義', 'undefined'));
+        t += T('。', '.');
+      }
+      el.textContent = t;
+    }, 350);
   }
 
   // ======================= 介面 =======================
@@ -1126,7 +1306,7 @@
     solve();
     rebuild();
     updateHum();
-    if (action) emitMission(action, prevI);
+    if (action) { emitMission(action, prevI); announce(); }
   }
   function currentI() { return state.rep ? state.rep.I : NaN; }
 
@@ -1188,6 +1368,7 @@
     b.addEventListener('click', function () {
       setPreset(b.dataset.preset, state.count);
       emitMission('preset', NaN);
+      announce();
     });
   });
   [2, 3].forEach(function (n) {
@@ -1195,6 +1376,7 @@
       if (state.count === n) return;
       setPreset(state.preset, n);
       emitMission('count', NaN);
+      announce();
     });
   });
 
@@ -1256,7 +1438,7 @@
     const rN = Math.max(13, 0.2 * L.u);
     let best = null, bd = rN;
     for (let n = 0; n < state.c.n; n++) {
-      const p = P(n), d = Math.hypot(p[0] - x, p[1] - y);
+      const p = vis(n), d = Math.hypot(p[0] - x, p[1] - y);
       if (d < bd) { bd = d; best = { node: n }; }
     }
     if (best) return best;
@@ -1296,18 +1478,130 @@
 
   function placeProbe(n) {
     const p = state.probes;
-    if (p[0] == null || (p[0] != null && p[1] != null)) { state.probes = [n, null]; }
+    if (p[0] == null && p[1] != null) { if (n === p[1]) return; state.probes = [n, p[1]]; } // 只有黑探針（鍵盤先放的）：補上紅探針
+    else if (p[0] == null || (p[0] != null && p[1] != null)) { state.probes = [n, null]; }
     else if (n === p[0]) return;
     else state.probes = [p[0], n];
     probeSound(state.probes[1] == null ? 0 : 1);
     rebuild();
-    if (state.probes[1] == null) setStatus(T('紅色探針（＋）已放好，再點一個接點放黑色探針（COM）。', 'Red probe (+) placed. Tap another junction for the black probe (COM).'));
-    else {
-      const dV = probeDV();
-      setStatus(isFinite(dV) ? T('電壓表讀數 ', 'Voltmeter reads ') + fmtV(dV) + T('（紅 − 黑）。', ' (red − black).') : T('有一支探針接在與電池斷開的部分，電位差沒有定義。', 'One probe is on a part cut off from the battery, so the potential difference is undefined.'));
-      emitMission('probe', currentI());
-    }
+    afterProbe();
   }
+  function afterProbe() {
+    if (state.probes[0] == null || state.probes[1] == null) {
+      setStatus(state.probes[0] == null
+        ? T('黑色探針（COM）已放好，再放紅色探針（＋）。', 'Black probe (COM) placed. Now place the red probe (+).')
+        : T('紅色探針（＋）已放好，再點一個接點放黑色探針（COM）。', 'Red probe (+) placed. Tap another junction for the black probe (COM).'));
+      return;
+    }
+    const dV = probeDV();
+    setStatus(isFinite(dV) ? T('電壓表讀數 ', 'Voltmeter reads ') + fmtV(dV) + T('（紅 − 黑）。', ' (red − black).') : T('有一支探針接在與電池斷開的部分，電位差沒有定義。', 'One probe is on a part cut off from the battery, so the potential difference is undefined.'));
+    emitMission('probe', currentI());
+  }
+
+  // ---------- 鍵盤操作（LabKeys）：Enter 切換紅、黑探針，方向鍵移到該方向最近的接點 ----------
+  /** 從接點 from 往畫面方向 (dx, dy)（y 向下為正）找最近的接點；夾角超過 60° 的不算，skip 是另一支探針所在的接點 */
+  function nodeStep(from, dx, dy, skip) {
+    const p = P(from);
+    let best = -1, bs = Infinity;
+    for (let n = 0; n < state.c.n; n++) {
+      if (n === from || n === skip) continue;
+      const q = P(n), vx = q[0] - p[0], vy = q[1] - p[1], dist = Math.hypot(vx, vy);
+      if (dist < 1) continue;
+      const cos = (vx * dx + vy * dy) / dist;
+      if (cos < 0.5) continue;
+      const score = dist * (1 + 2.5 * (1 - cos));
+      if (score < bs) { bs = score; best = n; }
+    }
+    return best;
+  }
+  function keyMove(i, dx, dy, big) {
+    if (!state.c) return false;
+    const p = state.probes;
+    let n = p[i];
+    if (n == null) {
+      const E = state.c.elements[0];
+      n = i === 0 ? E.b : E.a;              // 紅探針先放在電池正極、黑探針放在負極
+      if (n === p[1 - i]) n = i === 0 ? E.a : E.b;
+    } else {
+      let steps = big ? 2 : 1, moved = false;
+      while (steps--) { const m = nodeStep(n, dx, -dy, p[1 - i]); if (m < 0) break; n = m; moved = true; }
+      if (!moved) return false;
+    }
+    const np = p.slice(); np[i] = n;
+    state.probes = np;
+    probeSound(i);
+    rebuild();
+    afterProbe();
+    return true;
+  }
+  /** 接點的文字描述：電位相同（以導線相連）的部分接著哪些元件 */
+  function nodeDesc(n) {
+    const s = state.sol, cl = s.cluster[n], names = [];
+    state.c.elements.forEach(function (e) {
+      if (e.type === 'wire') return;
+      const ia = s.cluster[e.a] === cl, ib = s.cluster[e.b] === cl;
+      if (!ia && !ib) return;
+      if (e.type === 'battery') names.push(ib ? T('電池正極', 'battery +') : T('電池負極', 'battery −'));
+      else if (names.indexOf(e.id) < 0) names.push(e.id);
+    });
+    const V = s.ok && !s.floating[n] ? fmtV(s.V[n]) : T('沒有定義', 'undefined');
+    return T('接在 ', 'on the junction of ') + names.join(T('、', ', ')) + T('（電位 ', ' (potential ') + V + T('）', ')');
+  }
+  function probeDescribe(i) {
+    const n = state.probes[i];
+    let t = (i === 0 ? T('紅探針', 'Red probe') : T('黑探針', 'Black probe')) + T('：', ': ') +
+      (n == null ? T('還沒放上，按方向鍵放到電池', 'not placed yet; press an arrow key to put it on the battery') : nodeDesc(n));
+    const dV = probeDV();
+    if (state.probes[0] != null && state.probes[1] != null) t += T('；電壓表 ', '; voltmeter ') + (isFinite(dV) ? fmtV(dV) : T('沒有定義', 'undefined'));
+    return t + T('。', '.');
+  }
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('直流電路畫布：按 Enter 切換紅、黑探針，方向鍵把探針移到那個方向最近的接點，Shift 加方向鍵一次移兩個接點。電阻、燈泡與開關請用「元件」區的按鈕。',
+        'DC circuit canvas: press Enter to switch between the red and black probes; the arrow keys move the probe to the nearest junction in that direction, Shift + arrow moves two junctions. Use the Components buttons for resistors, bulbs and switches.'),
+      items: [
+        { name: function () { return T('紅探針（＋）', 'Red probe (+)'); }, move: function (dx, dy, big) { return keyMove(0, dx, dy, big); }, describe: function () { return probeDescribe(0); } },
+        { name: function () { return T('黑探針（COM）', 'Black probe (COM)'); }, move: function (dx, dy, big) { return keyMove(1, dx, dy, big); }, describe: function () { return probeDescribe(1); } }
+      ],
+      onChange: function () { if (L && state.c) { buildOver(); requestDraw(); } }
+    });
+  }
+
+  // ---------- 分享目前設定：各元件的電阻、開關、探針位置、選取的元件（滑桿與電路按鈕由 classroom.js 記錄） ----------
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () {
+      const R = {}, sw = {};
+      state.c.elements.forEach(function (e) {
+        if (e.type === 'R') R[e.id] = e.R;
+        else if (e.type === 'switch') sw[e.id] = e.closed ? 1 : 0;
+      });
+      const sel = selected();
+      return { p: state.preset, n: state.count, R: R, sw: sw, pr: state.probes.slice(), sel: sel ? sel.id : null };
+    },
+    set: function (o) {
+      if (!o || typeof o !== 'object' || !state.c) return;
+      if (typeof o.p === 'string' && o.p !== state.preset) return; // 電路沒有還原成同一個，就不套用
+      if ((o.n === 2 || o.n === 3) && o.n !== state.count && (state.preset === 'series' || state.preset === 'parallel')) return;
+      const els = state.c.elements;
+      if (o.R && typeof o.R === 'object') els.forEach(function (e) {
+        const v = +o.R[e.id];
+        if (e.type === 'R' && isFinite(v)) e.R = Math.round(Math.min(R_MAX, Math.max(R_MIN, v)) * 100) / 100;
+      });
+      if (o.sw && typeof o.sw === 'object') els.forEach(function (e) { if (e.type === 'switch' && o.sw[e.id] != null) e.closed = !!o.sw[e.id]; });
+      if (Array.isArray(o.pr)) {
+        state.probes = [0, 1].map(function (i) { const n = o.pr[i]; return Number.isInteger(n) && n >= 0 && n < state.c.n ? n : null; });
+        if (state.probes[0] != null && state.probes[0] === state.probes[1]) state.probes[1] = null;
+      }
+      if (o.sel != null) { const k = elId(String(o.sel)); if (k >= 0 && els[k].type === 'R') state.sel = k; }
+      state.lever = {};
+      solve();
+      renderChips();
+      refreshSelUI();
+      rebuild();
+      updateHum();
+      announce();
+    }
+  });
 
   // ======================= 音效 =======================
   function sound() { const S = window.LabSound; return S && S.enabled() ? S : null; }

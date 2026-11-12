@@ -40,7 +40,7 @@
     {
       id: 'moon-phases-4', level: 3,
       title: { zh: '黃昏的眉月', en: 'Evening crescent' },
-      desc: { zh: '讓台灣在日落後的黃昏（太陽高度 −12°～−1°）看到西方天空的眉月（月亮高度 5° 以上、方位在西南到西北之間）。', en: 'Let Taiwan see a waxing crescent in the western sky at dusk: Sun 1° to 12° below the horizon, Moon at least 5° high between southwest and northwest.' },
+      desc: { zh: '觀測地點選「臺灣」，讓台灣在日落後的黃昏（太陽高度 −12°～−1°）看到西方天空的眉月（月亮高度 5° 以上、方位在西南到西北之間）。', en: 'With the observing site set to Taiwan, let Taiwan see a waxing crescent in the western sky at dusk: Sun 1° to 12° below the horizon, Moon at least 5° high between southwest and northwest.' },
       check: function (ev) {
         const d = ev.data;
         return isState(ev) && d.phase === 'waxC' && d.sunAlt <= -1 && d.sunAlt >= -12 && d.moonAlt >= 5 && d.moonAz >= 225 && d.moonAz <= 315;
@@ -60,7 +60,7 @@
     {
       id: 'moon-phases-6', level: 4,
       title: { zh: '上弦月幾點升起', en: 'When does first quarter rise?' },
-      desc: { zh: '讓上弦月（黃經差 85°～95°）正從台灣的東方地平線升起（月亮高度 −1°～2.5°、方位在東北到東南之間）。那時是幾點？', en: 'Catch a first-quarter moon (85° to 95° from the Sun) rising over Taiwan’s eastern horizon (altitude −1° to 2.5°, between northeast and southeast). What time is it?' },
+      desc: { zh: '觀測地點選「臺灣」，讓上弦月（黃經差 85°～95°）正從台灣的東方地平線升起（月亮高度 −1°～2.5°、方位在東北到東南之間）。那時是幾點？', en: 'With the observing site set to Taiwan, catch a first-quarter moon (85° to 95° from the Sun) rising over Taiwan’s eastern horizon (altitude −1° to 2.5°, between northeast and southeast). What time is it?' },
       check: function (ev) {
         const d = ev.data;
         return isState(ev) && d.dLam >= 85 && d.dLam <= 95 && d.rising && d.moonAlt >= -1 && d.moonAlt <= 2.5 && d.moonAz >= 45 && d.moonAz <= 135;
@@ -105,7 +105,7 @@
     {
       id: 'moon-phases-12', level: 10,
       title: { zh: '台灣的日全食', en: 'Totality over Taiwan' },
-      desc: { zh: '讓台灣在白天（太陽高度 5° 以上）看到日全食：月球的本影正好落在台灣。', en: 'Let Taiwan see a total solar eclipse in daytime (Sun at least 5° high): the Moon’s umbra falls right on Taiwan.' },
+      desc: { zh: '觀測地點選「臺灣」，讓台灣在白天（太陽高度 5° 以上）看到日全食：月球的本影正好落在台灣。', en: 'With the observing site set to Taiwan, let Taiwan see a total solar eclipse in daytime (Sun at least 5° high): the Moon’s umbra falls right on Taiwan.' },
       check: function (ev) { return isState(ev) && ev.data.local === 'total' && ev.data.sunAlt >= 5; }
     },
     {

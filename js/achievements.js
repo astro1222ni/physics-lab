@@ -7,7 +7,10 @@
  *   - 載入全站任務定義，依累計資料、完成的任務、星星與名次判定成就；解鎖時跳出提示並寫入資料庫（每個成就只解鎖一次）。
  * 成就是收藏用的徽章，不加星星（星星只能靠任務取得）。
  * 等級：1 銅、2 銀、3 金、4 紫晶、5 傳說。隱藏成就只顯示謎語；解鎖後顯示名稱，但不說明條件。
- * 資料：userStats/<uid>/{ops, seconds, comments, modules/<模組>, days/<YYYYMMDD>/<模組>, flags/<旗標>}、achievements/<uid>/<成就>
+ * 資料：userStats/<uid>/{ops, seconds, comments, modules/<模組>, days/<YYYYMMDD>/<模組>, flags/<旗標>}、achievements/<uid>/<成就>、
+ *       bag/<uid>（每日任務的寶物，js/daily.js）
+ * 分類（11/12 站長要求）：「全科」成就＋物理、化學、生物、地球科學各科的成就（各科星星、探索、全制霸、分支制霸、各科排行榜）。
+ *   各科成就代號以科目開頭（phy-stars-3、earth-rank-100…）；已上線的成就代號一律不改。
  */
 (function () {
   'use strict';
@@ -31,6 +34,7 @@
   // 只有登入後才需要全站任務定義（判定成就）；沒登入的訪客不下載這幾十個檔案，實驗頁開得更快
   let listP = null;
   function listReady() {
+    if (!listP && LM.loadAll) listP = LM.loadAll();
     if (!listP) listP = (window.LAB_LIVE_MODULES ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver)).then(function () {
       const all = LM.all();
       return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !all[m.id]; })
@@ -40,6 +44,15 @@
   }
   const live = function () { return window.LAB_LIVE_MODULES || []; };
   const branchOf = function (m) { return (window.LAB_MODULE_BRANCH || {})[m]; };
+  const subjOf = function (m) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(m) : 'phy'; };
+  // 四個科目（與 missions/index.js 的 LAB_SUBJECTS 相同；這裡先寫好，成就定義不必等清單載入）
+  const SUBJ = [
+    { id: 'phy', zh: '物理', en: 'Physics', short: '物理' },
+    { id: 'chem', zh: '化學', en: 'Chemistry', short: '化學' },
+    { id: 'bio', zh: '生物', en: 'Biology', short: '生物' },
+    { id: 'earth', zh: '地球科學', en: 'Earth Science', short: '地科' }
+  ];
+  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -48,6 +61,7 @@
   const CATS = [
     ['series', { zh: '等級成就', en: 'Levelled achievements' }],
     ['start', { zh: '起步', en: 'Getting started' }], ['branch', { zh: '分支制霸', en: 'Branch mastery' }],
+    ['daily', { zh: '每日任務與寶物', en: 'Daily missions & treasures' }],
     ['rank', { zh: '排行榜', en: 'Leaderboard' }], ['secret', { zh: '隱藏成就', en: 'Hidden achievements' }]
   ];
   const nm = function (zh, en) { return { zh: zh, en: en }; };
@@ -55,9 +69,9 @@
     { key: 'ops', name: nm('動手實驗', 'Hands-on'), unit: nm('次操作', 'interactions'), mag: [2, 9], val: function (c) { return c.ops; },
       titlesAt: { 100: nm('動手的開始', 'Hands on'), 1e3: nm('熟能生巧', 'Practice makes perfect'), 1e4: nm('萬次求真', 'Ten thousand trials for truth'), 1e5: nm('百折不撓的實驗家', 'Unbending experimenter'), 1e6: nm('千錘百鍊', 'Forged by a thousand blows'), 1e7: nm('實驗的化身', 'Experiment incarnate'), 1e8: nm('永動之手', 'Perpetual-motion hands'), 1e9: nm('宇宙的實驗室', 'Laboratory of the cosmos') } },
     { key: 'time', name: nm('專注時光', 'Focused time'), unit: nm('', ''), time: true, levels: 70, base: 600, val: function (c) { return c.seconds; },
-      titles: { 1: nm('專注的十分鐘', 'Ten focused minutes'), 10: nm('沉浸於物理', 'Immersed in physics'), 20: nm('一晝夜的追尋', 'A day and a night of searching'), 30: nm('百小時的修行', 'A hundred hours of practice'), 40: nm('時間的主人', 'Master of time'), 50: nm('光陰的雕刻者', 'Sculptor of time'), 60: nm('永恆的觀測者', 'Eternal observer'), 70: nm('宇宙的時鐘', 'Clock of the cosmos') } },
+      titles: { 1: nm('專注的十分鐘', 'Ten focused minutes'), 10: nm('沉浸於科學', 'Immersed in science'), 20: nm('一晝夜的追尋', 'A day and a night of searching'), 30: nm('百小時的修行', 'A hundred hours of practice'), 40: nm('時間的主人', 'Master of time'), 50: nm('光陰的雕刻者', 'Sculptor of time'), 60: nm('永恆的觀測者', 'Eternal observer'), 70: nm('宇宙的時鐘', 'Clock of the cosmos') } },
     { key: 'mission', name: nm('任務', 'Missions'), unit: nm('個任務', 'missions'), mag: [0, 6], val: function (c) { return c.missions; },
-      titlesAt: { 1: nm('初試啼聲', 'First mission'), 10: nm('任務達人', 'Mission expert'), 100: nm('百題斬', 'A hundred conquered'), 1e3: nm('千題之境', 'Realm of a thousand problems'), 1e4: nm('智慧的燈塔', 'Lighthouse of wisdom'), 1e5: nm('物理的守護者', 'Guardian of physics'), 1e6: nm('全知者', 'The all-knowing') } },
+      titlesAt: { 1: nm('初試啼聲', 'First mission'), 10: nm('任務達人', 'Mission expert'), 100: nm('百題斬', 'A hundred conquered'), 1e3: nm('千題之境', 'Realm of a thousand problems'), 1e4: nm('智慧的燈塔', 'Lighthouse of wisdom'), 1e5: nm('科學的守護者', 'Guardian of science'), 1e6: nm('全知者', 'The all-knowing') } },
     { key: 'stars', name: nm('倪的星星', 'Ni stars'), unit: nm('顆星', 'stars'), mag: [1, 12], val: function (c) { return c.stars; },
       titlesAt: { 10: nm('第一把星光', 'A handful of starlight'), 100: nm('星光點點', 'Twinkling'), 1e3: nm('星座的繪製者', 'Drawer of constellations'), 1e4: nm('銀河漫步', 'Walking the Milky Way'), 1e5: nm('星河奔流', 'A river of stars'), 1e6: nm('超新星', 'Supernova'), 1e7: nm('星系的誕生', 'Birth of a galaxy'), 1e8: nm('星系團', 'Galaxy cluster'), 1e9: nm('宇宙大爆炸', 'The Big Bang'), 1e10: nm('暗物質的秘密', 'Secret of dark matter'), 1e11: nm('可觀測宇宙', 'The observable universe'), 1e12: nm('多重宇宙', 'The multiverse') } },
     { key: 'hidden', name: nm('解謎', 'Riddles'), unit: nm('個隱藏任務', 'hidden missions'), mag: [0, 5], val: function (c) { return c.hiddenDone; },
@@ -71,10 +85,43 @@
     { key: 'comment', name: nm('交流', 'Discussion'), unit: nm('則留言', 'comments'), levels: 20, base: 1, val: function (c) { return c.comments; },
       titles: { 1: nm('發問是科學的開始', 'Science begins with a question'), 10: nm('討論的熱情', 'A passion for discussion'), 20: nm('學術的沙龍', 'An academic salon') } },
     { key: 'explore', name: nm('探索', 'Exploration'), unit: nm('種實驗', 'experiments'), linear: true, levelsFn: function (c) { return c.liveCount; }, val: function (c) { return c.modules; },
-      titles: { 3: nm('好奇的眼睛', 'Curious eyes'), 6: nm('實驗室漫遊者', 'Lab wanderer'), 10: nm('跨界探險家', 'Explorer across fields'), 15: nm('物理版圖拓荒者', 'Pioneer of the physics map'), all: nm('萬物之理', 'Theory of everything') } },
+      titles: { 3: nm('好奇的眼睛', 'Curious eyes'), 6: nm('實驗室漫遊者', 'Lab wanderer'), 10: nm('跨界探險家', 'Explorer across fields'), 15: nm('科學版圖拓荒者', 'Pioneer of the map of science'), all: nm('萬物之理', 'Theory of everything') } },
     { key: 'full', name: nm('全制霸', 'Clean sweep'), unit: nm('個實驗全部完成', 'experiments fully completed'), linear: true, levelsFn: function (c) { return c.moduleTotal; }, val: function (c) { return c.fullModules; },
-      titles: { 1: nm('一門通', 'One subject mastered'), 3: nm('三門精通', 'Three subjects mastered'), 5: nm('五項全能', 'Pentathlon'), 10: nm('十項全能', 'Decathlon'), all: nm('物理大統一', 'Grand unification') } }
+      titles: { 1: nm('一門通', 'One subject mastered'), 3: nm('三門精通', 'Three subjects mastered'), 5: nm('五項全能', 'Pentathlon'), 10: nm('十項全能', 'Decathlon'), all: nm('萬物歸一', 'All things as one') } },
+    { key: 'daily', name: nm('每日任務', 'Daily missions'), unit: nm('個每日任務', 'daily missions'), mag: [0, 5], val: function (c) { return c.bag.dm || 0; },
+      titlesAt: { 1: nm('日日新', 'New every day'), 10: nm('每日的習慣', 'A daily habit'), 100: nm('百日之功', 'A hundred days of work'), 1e3: nm('千日修行', 'A thousand days of practice'), 1e4: nm('時間的朋友', 'Friend of time'), 1e5: nm('永恆的日常', 'The eternal everyday') } }
   ];
+  // 各科的等級系列：各科星星（數量級）、探索（玩過幾種該科實驗）、全制霸（該科幾個實驗全部完成）
+  const SUBJ_TITLES = {
+    phy: {
+      stars: { 10: nm('蘋果落下的瞬間', 'The moment the apple fell'), 100: nm('站在巨人的肩膀上', 'On the shoulders of giants'), 1e3: nm('力與光的交響', 'A symphony of force and light'), 1e4: nm('場的低語', 'Whispers of the field'), 1e5: nm('量子躍遷', 'Quantum leap'), 1e6: nm('大統一之夢', 'The dream of unification') },
+      explore: { 1: nm('物理初心', 'A physicist at heart'), 5: nm('實驗室常客', 'Lab regular'), 15: nm('物理版圖拓荒者', 'Pioneer of the physics map'), 30: nm('物理博物學家', 'Naturalist of physics'), all: nm('物理全覽', 'All of physics') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), 10: nm('十項全能', 'Decathlon'), 20: nm('二十項全能', 'Icosathlon'), all: nm('物理大統一', 'Grand unification') }
+    },
+    chem: {
+      stars: { 10: nm('第一滴試劑', 'The first drop of reagent'), 100: nm('週期表的旅人', 'Traveller of the periodic table'), 1e3: nm('鍵結的藝術', 'The art of the bond'), 1e4: nm('催化之手', "The catalyst's touch"), 1e5: nm('分子建築師', 'Molecular architect'), 1e6: nm('煉金術的真相', 'The truth behind alchemy') },
+      explore: { 1: nm('化學初心', 'A chemist at heart'), 5: nm('實驗桌的常客', 'Regular at the bench'), all: nm('化學全覽', 'All of chemistry') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), all: nm('物質的主宰', 'Master of matter') }
+    },
+    bio: {
+      stars: { 10: nm('第一個細胞', 'The first cell'), 100: nm('顯微鏡下的世界', 'The world under the microscope'), 1e3: nm('演化之樹', 'The tree of evolution'), 1e4: nm('基因的密碼', 'The genetic code'), 1e5: nm('生態的平衡', 'Balance of the ecosystem'), 1e6: nm('生命的奧祕', 'The mystery of life') },
+      explore: { 1: nm('生物初心', 'A biologist at heart'), 5: nm('田野調查員', 'Field researcher'), all: nm('生物全覽', 'All of biology') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), all: nm('生命的全貌', 'The whole of life') }
+    },
+    earth: {
+      stars: { 10: nm('仰望星空', 'Looking up at the stars'), 100: nm('讀懂岩層', 'Reading the rock layers'), 1e3: nm('季風的旋律', 'The melody of the monsoon'), 1e4: nm('板塊的脈動', 'Pulse of the plates'), 1e5: nm('蒼穹之眼', 'Eye of the heavens'), 1e6: nm('蓋婭的知音', "Gaia's confidant") },
+      explore: { 1: nm('地科初心', 'An earth scientist at heart'), 3: nm('天地行者', 'Walker of heaven and earth'), all: nm('行遍天地', 'Across heaven and earth') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), all: nm('通曉天地', 'Knower of heaven and earth') }
+    }
+  };
+  SUBJ.forEach(function (sb) {
+    const id = sb.id, tt = SUBJ_TITLES[id];
+    SERIES.push(
+      { key: id + '-stars', subj: id, name: nm(sb.short + '之星', sb.en + ' stars'), unit: nm('顆星', 'stars'), mag: [1, 6], val: function (c) { return c.by[id].stars; }, titlesAt: tt.stars },
+      { key: id + '-explore', subj: id, name: nm(sb.short + '探索', 'Exploring ' + sb.en), unit: nm('種實驗', 'experiments'), linear: true, levelsFn: function (c) { return c.by[id].live; }, val: function (c) { return c.by[id].visited; }, titles: tt.explore },
+      { key: id + '-full', subj: id, name: nm(sb.short + '全制霸', sb.en + ' clean sweep'), unit: nm('個實驗全部完成', 'experiments fully completed'), linear: true, levelsFn: function (c) { return c.by[id].moduleTotal; }, val: function (c) { return c.by[id].full; }, titles: tt.full }
+    );
+  });
   // 數量級系列（mag: [起始指數, 最終指數]）：門檻依序為 1×10^a, 2×10^a, …, 9×10^a, 1×10^(a+1), …，最後一級 1×10^b。
   SERIES.forEach(function (s) {
     if (!s.mag) return;
@@ -86,7 +133,10 @@
     Object.keys(s.titlesAt).forEach(function (v) { const i = s.th.indexOf(+v); if (i >= 0) s.titles[i + 1] = s.titlesAt[v]; });
     s.si = true;
   });
-  function levelsOf(s, c) { return s.linear ? Math.max(0, s.levelsFn(c) || 0) : s.levels; }
+  function levelsOf(s, c) {
+    if (s.subj && !(c.by[s.subj] && c.by[s.subj].live)) return 0; // 這一科還沒有實驗
+    return s.linear ? Math.max(0, s.levelsFn(c) || 0) : s.levels;
+  }
   function threshold(s, k) { return s.th ? s.th[k - 1] : s.linear ? k : s.base * k * (k + 1) / 2; }
   function levelOf(s, c) {
     const N = levelsOf(s, c), v = s.val(c) || 0;
@@ -124,8 +174,13 @@
     { id: 'branch-astro', tier: 5, cat: 'branch', name: nm('伽利略的望遠鏡', "Galileo's telescope"), desc: nm('完成天文分支所有實驗的所有任務。', 'Complete every mission in Astronomy.'), check: function (c) { return c.branchDone.astro; } },
     { id: 'branch-geo', tier: 5, cat: 'branch', name: nm('魏格納的拼圖', "Wegener's jigsaw"), desc: nm('完成固體地球分支所有實驗的所有任務。', 'Complete every mission in Solid Earth.'), check: function (c) { return c.branchDone.geo; } },
     { id: 'rank-100', tier: 3, cat: 'rank', name: nm('榜上有名', 'On the board'), desc: nm('進入排行榜前 100 名（至少 1 k 顆星）。', 'Reach the top 100 (with at least 1 k stars).'), check: function (c) { return c.rank > 0 && c.rank <= 100 && c.stars >= 1e3; } },
-    { id: 'rank-10', tier: 5, cat: 'rank', name: nm('十大物理名人', 'Top ten physicists'), desc: nm('進入排行榜前 10 名（至少 1 M 顆星，且排行榜上至少 100 人）。', 'Reach the top 10 (with at least 1 M stars, among 100 or more players).'), check: function (c) { return c.rank > 0 && c.rank <= 10 && c.stars >= 1e6 && c.boardSize >= 100; } },
+    { id: 'rank-10', tier: 5, cat: 'rank', name: nm('十大科學名人', 'Top ten scientists'), desc: nm('進入排行榜前 10 名（至少 1 M 顆星，且排行榜上至少 100 人）。', 'Reach the top 10 (with at least 1 M stars, among 100 or more players).'), check: function (c) { return c.rank > 0 && c.rank <= 10 && c.stars >= 1e6 && c.boardSize >= 100; } },
     { id: 'rank-1', tier: 6, cat: 'rank', name: nm('站上巔峰', 'Top of the world'), desc: nm('登上排行榜第 1 名（至少 1 G 顆星，且排行榜上至少 1,000 人）。', 'Reach number 1 (with at least 1 G stars, among 1,000 or more players).'), check: function (c) { return c.rank === 1 && c.stars >= 1e9 && c.boardSize >= 1000; } },
+    // ---------- 每日任務與寶物 ----------
+    { id: 'loot-first', tier: 1, cat: 'daily', name: nm('第一份寶物', 'First treasure'), desc: nm('第一次在每日任務中獲得寶物。', 'Win your first treasure from a daily mission.'), check: function (c) { return c.bagTotal > 0; } },
+    { id: 'loot-diamond', tier: 4, cat: 'daily', name: nm('碳的極致', 'Carbon perfected'), desc: nm('獲得第一顆鑽石。', 'Find your first diamond.'), check: function (c) { return (c.bag.dia || 0) > 0; } },
+    { id: 'loot-key', tier: 5, cat: 'daily', name: nm('祕境之鑰', 'Key to the hidden realm'), desc: nm('獲得第一把稀有鑰匙。', 'Find your first rare key.'), check: function (c) { return (c.bag.key || 0) > 0; } },
+    { id: 'loot-all', tier: 5, cat: 'daily', name: nm('五寶齊聚', 'All five treasures'), desc: nm('銅幣、銀幣、金幣、鑽石、稀有鑰匙都至少擁有一個。', 'Own at least one copper, silver and gold coin, diamond and rare key.'), check: function (c) { return ['cu', 'ag', 'au', 'dia', 'key'].every(function (k) { return (c.bag[k] || 0) > 0; }); } },
     // ---------- 隱藏成就：只有謎語 ----------
     { id: 'secret-a', tier: 3, cat: 'secret', hidden: true, name: nm('守夜人', 'Night watch'), riddle: nm('月亮也還沒睡。', 'Even the Moon is still awake.'), check: function (c) { return !!c.flags.night; } },
     { id: 'secret-b', tier: 3, cat: 'secret', hidden: true, name: nm('晨曦', 'Daybreak'), riddle: nm('比太陽更早醒來。', 'Awake before the Sun.'), check: function (c) { return !!c.flags.dawn; } },
@@ -139,11 +194,29 @@
     { id: 'secret-j', tier: 5, cat: 'secret', hidden: true, name: nm('無盡的圓', 'The endless circle'), riddle: nm('永不結束、永不循環的那個數。', 'The number that never ends and never repeats.'), check: function (c) { return c.ops >= 314159; } },
     { id: 'secret-k', tier: 6, cat: 'secret', hidden: true, name: nm('三力交會', 'Where three forces meet'), riddle: nm('三種不同的語言，在同一天被你說出。', 'Three different languages, all spoken by you in a single day.'), check: function (c) { return c.maxDayBranches >= 3; } }
   ];
+  // 分支制霸歸到各科；各科排行榜成就（門檻依該科目前全部任務的星星總數，實驗越多門檻越高）
+  LIST.forEach(function (a) { if (a.cat === 'branch') a.subj = BRANCH_SUBJ[a.id.replace(/^branch-/, '')]; });
+  SUBJ.forEach(function (sb) {
+    const id = sb.id;
+    const need = function (c, f) { const b = c.by[id]; return b.totalStars > 0 && b.stars >= Math.ceil(f * b.totalStars); };
+    LIST.push(
+      { id: id + '-rank-100', tier: 3, cat: 'rank', subj: id, name: nm(sb.short + '榜上有名', 'On the ' + sb.en + ' board'),
+        desc: nm('進入' + sb.zh + '排行榜前 100 名（至少拿到' + sb.zh + '全部星星的 10%）。', 'Reach the ' + sb.en + ' top 100 (with at least 10% of all ' + sb.en + ' stars).'),
+        check: function (c) { const b = c.by[id]; return b.rank > 0 && b.rank <= 100 && need(c, 0.1); } },
+      { id: id + '-rank-10', tier: 5, cat: 'rank', subj: id, name: nm(sb.short + '十傑', 'Top ten in ' + sb.en),
+        desc: nm('進入' + sb.zh + '排行榜前 10 名（至少拿到' + sb.zh + '全部星星的 40%，且該科排行榜上至少 50 人）。', 'Reach the ' + sb.en + ' top 10 (with at least 40% of all ' + sb.en + ' stars, among 50 or more players).'),
+        check: function (c) { const b = c.by[id]; return b.rank > 0 && b.rank <= 10 && need(c, 0.4) && b.board >= 50; } },
+      { id: id + '-rank-1', tier: 6, cat: 'rank', subj: id, name: nm(sb.short + '之巔', 'Summit of ' + sb.en),
+        desc: nm('登上' + sb.zh + '排行榜第 1 名（至少拿到' + sb.zh + '全部星星的 70%，且該科排行榜上至少 100 人）。', 'Reach number 1 in ' + sb.en + ' (with at least 70% of all ' + sb.en + ' stars, among 100 or more players).'),
+        check: function (c) { const b = c.by[id]; return b.rank === 1 && need(c, 0.7) && b.board >= 100; } }
+    );
+  });
   function isPrime(x) { if (x < 2 || x % 2 === 0) return x === 2; for (let i = 3; i * i <= x; i += 2) if (x % i === 0) return false; return true; }
 
   // ---------- 狀態 ----------
   let api = null, uid = null, rank = 0, boardSize = 0;
-  const me = { stats: { ops: 0, seconds: 0, comments: 0, modules: {}, days: {}, flags: {} }, got: {}, loaded: false };
+  const rankBy = {}, boardBy = {};
+  const me = { stats: { ops: 0, seconds: 0, comments: 0, modules: {}, days: {}, flags: {} }, got: {}, bag: {}, loaded: false };
   let lastDone = null;
   const renderers = [];
 
@@ -202,6 +275,19 @@
     let maxDayBranches = 0;
     Object.keys(dayBranches).forEach(function (k) { maxDayBranches = Math.max(maxDayBranches, Object.keys(dayBranches[k]).length); });
     const mods = s.modules || {};
+    // 各科：星星、任務數、可得星星總數、已上線與玩過的實驗、全部完成的實驗、名次
+    const by = {};
+    SUBJ.forEach(function (sb) { by[sb.id] = { stars: 0, missions: 0, totalStars: 0, live: 0, visited: 0, moduleTotal: 0, full: 0, rank: rankBy[sb.id] || 0, board: boardBy[sb.id] || 0 }; });
+    Object.keys(all).forEach(function (k) {
+      const list = all[k], b = by[subjOf(k)];
+      if (!list.length || !b) return;
+      b.moduleTotal++;
+      if (list.every(function (m) { return done[m.id]; })) b.full++;
+      list.forEach(function (m) { b.totalStars += m.level; });
+    });
+    ids.forEach(function (id) { const b = by[subjOf(id.replace(/-(h?\d+)$/, ''))]; if (b) { b.stars += done[id].stars || 0; b.missions++; } });
+    live().forEach(function (m) { const b = by[subjOf(m)]; if (b) { b.live++; if (mods[m]) b.visited++; } });
+    const bag = me.bag || {};
     let maxDay = 0;
     Object.keys(s.days || {}).forEach(function (k) { maxDay = Math.max(maxDay, Object.keys(s.days[k] || {}).length); });
     return {
@@ -211,7 +297,8 @@
       level10: l10, level10Total: l10Total, branchDone: branchDone, maxDayBranches: maxDayBranches,
       stars: ids.reduce(function (a, id) { return a + (done[id].stars || 0); }, 0),
       nickname: st.nickname, streak: streak(s.days || {}), totalDays: Object.keys(s.days || {}).length,
-      longestGap: longestGap(s.days || {}), maxDayModules: maxDay, lastDone: lastDone, rank: rank, boardSize: boardSize
+      longestGap: longestGap(s.days || {}), maxDayModules: maxDay, lastDone: lastDone, rank: rank, boardSize: boardSize,
+      by: by, bag: bag, bagTotal: ['cu', 'ag', 'au', 'dia', 'key'].reduce(function (a, k) { return a + (bag[k] || 0); }, 0)
     };
   }
   function unlocked(a, c) { try { return !!a.check(c); } catch (e) { return false; } }
@@ -280,6 +367,7 @@
     if (uid) record({ ops: Math.min(300, d.ops || 0), seconds: Math.min(180, d.seconds || 0) });
   });
   window.addEventListener('lab:commented', function () { if (uid) record({ comments: 1 }); });
+  window.addEventListener('lab:loot', function (e) { if (uid && e.detail && e.detail.bag) { me.bag = e.detail.bag; evaluate(); } });
   LM.on('complete', function () {
     const d = new Date();
     lastDone = { minute: d.getMinutes(), hour: d.getHours() };
@@ -288,10 +376,12 @@
 
   function load() {
     if (!api || !uid) return;
-    Promise.all([api.get('userStats/' + uid).catch(function () { return null; }), api.get('achievements/' + uid).catch(function () { return null; })]).then(function (r) {
+    Promise.all([api.get('userStats/' + uid).catch(function () { return null; }), api.get('achievements/' + uid).catch(function () { return null; }),
+      api.get('bag/' + uid).catch(function () { return null; })]).then(function (r) {
       const s = r[0] || {};
       me.stats = { ops: s.ops || 0, seconds: s.seconds || 0, comments: s.comments || 0, modules: s.modules || {}, days: s.days || {}, flags: s.flags || {} };
       me.got = r[1] || {};
+      me.bag = r[2] || {};
       me.loaded = true;
       record();
       renderers.forEach(function (f) { f(); });
@@ -340,20 +430,51 @@
     return (sr && sr.si ? si(x) : Math.floor(x).toLocaleString()) + (sr ? ' ' + L(sr.unit) : '');
   }
   function quote(t) { return T('「', '“') + t + T('」', '”'); }
-  function totals(c) {
+  // 分頁：'all' = 全科成就（沒有科目的），其他 = 該科的成就；該科還沒有實驗時不列入
+  function inTab(x, tab) { return tab === 'all' ? !x.subj : x.subj === tab; }
+  function avail(x, c) { return !x.subj || !!(c.by[x.subj] && c.by[x.subj].live); }
+  function totals(c, tab) {
     let got = 0, all = 0;
-    SERIES.forEach(function (sr) { all += levelsOf(sr, c); got += Math.min(levelOf(sr, c), levelsOf(sr, c)); });
-    all += LIST.length;
-    got += LIST.filter(function (a) { return me.got[a.id]; }).length;
+    SERIES.forEach(function (sr) { if (!inTab(sr, tab)) return; all += levelsOf(sr, c); got += Math.min(levelOf(sr, c), levelsOf(sr, c)); });
+    LIST.forEach(function (a) { if (!inTab(a, tab) || !avail(a, c)) return; all++; if (me.got[a.id]) got++; });
     return { got: got, all: all };
   }
+  let acTab = 'all';
+  try { acTab = sessionStorage.getItem('ac-tab') || 'all'; } catch (e) { /* 忽略 */ }
   function renderInto(box) {
     const draw = function () {
       box.innerHTML = '';
       if (!uid) { box.appendChild(el('p', 'lb-note', T('登入 Google 帳號後才能收集成就。', 'Sign in with Google to collect achievements.'))); return; }
       if (!me.loaded) { box.appendChild(el('p', 'lb-note', T('載入中…', 'Loading…'))); return; }
       const c = context();
-      const tt = totals(c);
+      // 分頁：全科、物理、化學、生物、地球科學
+      const tabs = el('div', 'sb-tabs');
+      tabs.setAttribute('role', 'tablist');
+      tabs.setAttribute('aria-label', T('成就分類', 'Achievement categories'));
+      [{ id: 'all', zh: '全科', en: 'All subjects' }].concat(SUBJ).forEach(function (sb) {
+        const t2 = totals(c, sb.id);
+        const b = el('button', 'sb-tab sb-' + sb.id);
+        b.type = 'button';
+        b.setAttribute('role', 'tab');
+        b.setAttribute('aria-selected', String(acTab === sb.id));
+        b.appendChild(el('span', null, T(sb.zh, sb.en)));
+        b.appendChild(el('span', 'sb-n', t2.all ? t2.got.toLocaleString() + '/' + t2.all.toLocaleString() : T('製作中', 'soon')));
+        b.addEventListener('click', function () {
+          acTab = sb.id;
+          try { sessionStorage.setItem('ac-tab', acTab); } catch (e) { /* 忽略 */ }
+          draw();
+          const again = box.querySelector('.sb-tab.sb-' + sb.id);
+          if (again) again.focus();
+        });
+        tabs.appendChild(b);
+      });
+      box.appendChild(tabs);
+      if (acTab !== 'all' && !(c.by[acTab] && c.by[acTab].live)) {
+        const sb = SUBJ.filter(function (x) { return x.id === acTab; })[0] || SUBJ[0];
+        box.appendChild(el('p', 'sb-soon', T(sb.zh + '的實驗製作中，上線後就能收集' + sb.zh + '的成就。', sb.en + ' experiments are on the way — their achievements unlock once they go live.')));
+        return;
+      }
+      const tt = totals(c, acTab);
       box.appendChild(el('p', 'lb-note', T('已解鎖 ', 'Unlocked ') + tt.got.toLocaleString() + ' / ' + tt.all.toLocaleString() +
         T('　星星、操作、任務、解謎、大師任務以數量級遞增（1、2…9、10、20…，直到 k、M、G、T）；時間與天數類為級數遞增（第 k 級 = 基數 × (1 + 2 + … + k)）。色彩：銅、銀、金、紫晶、鑽石、傳說。',
           ' · Stars, interactions, missions, riddles and master missions climb by orders of magnitude (1, 2 … 9, 10, 20 … up to k, M, G, T); time and day series grow as a series (level k = base × (1 + 2 + … + k)). Colours: bronze, silver, gold, amethyst, diamond, legend.')));
@@ -363,6 +484,7 @@
         if (cat[0] === 'series') {
           sec.appendChild(el('h3', null, L(cat[1])));
           SERIES.forEach(function (sr) {
+            if (!inTab(sr, acTab)) return;
             const N = levelsOf(sr, c);
             if (!N) return;
             const k = levelOf(sr, c), v = sr.val(c) || 0;
@@ -403,7 +525,7 @@
             grid.appendChild(card);
           });
         } else {
-          const items = LIST.filter(function (a) { return a.cat === cat[0]; });
+          const items = LIST.filter(function (a) { return a.cat === cat[0] && inTab(a, acTab) && avail(a, c); });
           if (!items.length) return;
           const n1 = items.filter(function (a) { return me.got[a.id]; }).length;
           sec.appendChild(el('h3', null, L(cat[1]) + '　' + n1 + ' / ' + items.length));
@@ -422,7 +544,7 @@
         sec.appendChild(grid);
         box.appendChild(sec);
       });
-      box.appendChild(el('p', 'lb-note ac-stats', T('我的累計：操作 ', 'My totals: ') + c.ops.toLocaleString() + T(' 次・操作時間 ', ' interactions · ') +
+      if (acTab === 'all') box.appendChild(el('p', 'lb-note ac-stats', T('我的累計：操作 ', 'My totals: ') + c.ops.toLocaleString() + T(' 次・操作時間 ', ' interactions · ') +
         fmtVal({ time: true }, c.seconds) + T('・玩過 ', ' · ') + c.modules + T(' 種實驗・連續 ', ' experiments · streak ') + c.streak + T(' 天・累計 ', ' days · ') + c.totalDays + T(' 天', ' days in total')));
     };
     renderers.push(draw);
@@ -432,7 +554,12 @@
 
   window.LabAchievements = {
     list: LIST, series: SERIES, renderInto: renderInto, si: si, _me: me,
-    setRank: function (r, size) { rank = r || 0; boardSize = size || 0; evaluate(); }
+    // subj 省略：全科名次；否則是該科名次
+    setRank: function (r, size, subj) {
+      if (subj) { rankBy[subj] = r || 0; boardBy[subj] = size || 0; } else { rank = r || 0; boardSize = size || 0; }
+      evaluate();
+    },
+    subjects: SUBJ
   };
 
   // ---------- 啟動 ----------

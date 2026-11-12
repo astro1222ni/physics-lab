@@ -2,21 +2,21 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611121021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="DC Circuits | Astro Ni Physics Lab">直流電路｜Astro Ni 物理實驗室</title>
+  <title data-en="DC Circuits | Astro Ni Science Lab">直流電路｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋：調整電阻、按開關、用探針量電位差，看電流、端電壓、功率與燈泡亮度。">
-  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html">
-  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html?lang=zh-Hans">
-  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html?lang=en">
-  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/dc-circuit.html">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/dc-circuit.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/dc-circuit.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/dc-circuit.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/dc-circuit.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 物理實驗室">
-  <meta property="og:title" content="直流電路｜Astro Ni 物理實驗室">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="直流電路｜Astro Ni 科學實驗室">
   <meta property="og:description" content="串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋：調整電阻、按開關、用探針量電位差，看電流、端電壓、功率與燈泡亮度。">
-  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/dc-circuit.html">
-  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/dc-circuit.jpg">
+  <meta property="og:url" content="https://lab.astroni.org/dc-circuit.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/dc-circuit.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="直流電路的模擬畫面">
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"直流電路","alternateName":"DC Circuits","description":"串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋：調整電阻、按開關、用探針量電位差，看電流、端電壓、功率與燈泡亮度。","url":"https://astro1222ni.github.io/physics-lab/dc-circuit.html","image":"https://astro1222ni.github.io/physics-lab/img/og/dc-circuit.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電路學（Electric Circuits）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"直流電路","alternateName":"DC Circuits","description":"串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋：調整電阻、按開關、用探針量電位差，看電流、端電壓、功率與燈泡亮度。","url":"https://lab.astroni.org/dc-circuit.html","image":"https://lab.astroni.org/img/og/dc-circuit.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電路學（Electric Circuits）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
 
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611121021">
   <style>
     /* 直流電路頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；點元件、節點（觸控也可），沒有拖曳，手機可在畫布上捲動頁面 */
@@ -82,22 +83,24 @@
       <p data-en="Build intuition for series and parallel circuits, a battery’s internal resistance and the Wheatstone bridge. Tap a resistor or bulb to change its resistance, tap a switch to open or close it, and tap two points to measure the potential difference between them. Every current is found with Kirchhoff’s laws.">串聯、並聯、串並聯混合、電池內電阻與惠斯登電橋。點一下電阻或燈泡調整電阻值、點開關切換開與關，再點兩個接點量它們之間的電位差。每個支路的電流都由克希何夫定律解出來。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Parallel”, tap switch S2 to open it, and watch whether the other bulbs change brightness.">試試看：按「並聯」，點開關 S2 把它斷開，看其他燈泡的亮度有沒有變。</p>
     <div class="lab dc">
       <div class="stage">
-        <canvas id="cv" aria-label="直流電路模擬畫布：電路圖、沿導線移動的電荷、燈泡亮度、電流標示與三用電表探針" data-en-aria-label="DC circuit simulation: circuit diagram with moving charges, glowing bulbs, current labels and multimeter probes"></canvas>
+        <canvas id="cv" aria-label="直流電路模擬畫布：電路圖、沿導線移動的電荷、燈泡亮度、電流標示與三用電表探針"></canvas>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="Pause">暫停</button>
           <button id="clearProbe" type="button" data-en="Remove probes" title="移除兩支探針" data-en-title="Remove both probes">移除探針</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p id="srLive" class="sr-only" aria-live="polite"></p>
         <div class="legend">
           <span id="lgCarrier" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--pos)"></i>移動的電荷（傳統電流方向）</span>
           <span data-en-html="<i class=&quot;grad&quot;></i>Potential: low → high"><i class="grad"></i>電位：低 → 高</span>
           <span data-en-html="<i style=&quot;background:var(--probe)&quot;></i>Voltmeter probes"><i style="background:var(--probe)"></i>電壓表探針</span>
         </div>
         <p class="hint" data-en-html="Tap a <strong>resistor or bulb</strong> to select it, a <strong>switch</strong> to open or close it, and two <strong>junction dots</strong> to place the red (+) and black (COM) probes. Potentials are measured from the battery’s negative terminal (0 V). The charges move at a speed proportional to the current (about 0.7 grid squares per second for 1 A; very large currents are capped), and a bulb’s glow is proportional to its power (full glow at 6 W).">點<strong>電阻或燈泡</strong>可選取、點<strong>開關</strong>可切換、點兩個<strong>接點</strong>放上紅（＋）、黑（COM）探針。電位以電池負極為 0 V。電荷移動的速率與電流成正比（1 A 約每秒 0.7 格，電流很大時有上限），燈泡的亮度與消耗功率成正比（6 W 最亮）。</p>
-        <canvas id="pr" hidden aria-label="輸出功率與負載電阻的關係圖" data-en-aria-label="Graph of output power against load resistance"></canvas>
+        <canvas id="pr" hidden role="img" aria-label="輸出功率與負載電阻的關係圖"></canvas>
       </div>
 
       <aside class="panel">
@@ -228,22 +231,31 @@
         <li data-en="The bulbs are treated as fixed resistors (in a real bulb the filament’s resistance rises as it heats up). The meters are ideal: the voltmeter draws no current.">燈泡視為電阻固定的元件（真實燈泡的燈絲變熱後電阻會變大）。電表都是理想電表：電壓表不取電流。</li>
         <li data-en="The moving dots only show the direction and the relative size of the current; real electrons drift far more slowly (about a millimetre per second or less).">移動的點只表示電流的方向與相對大小；真實電子的漂移速率慢得多（大約每秒 1 毫米或更慢）。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics V · Electric Circuits">課綱對應：選修物理Ⅴ・電路學</li>
+        <li data-en-html="Constants and data: this page uses no physical constants — the EMF \(\varepsilon\), the internal resistance \(r\) and every resistance are adjustable teaching values, and the bulbs are fixed resistors. The drift-speed estimate comes from OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/9-2-model-of-conduction-in-metals&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 2, 9.2 Model of Conduction in Metals</a> (Example 9.3: a 2.053 mm copper wire carrying 20.0 A has a drift speed of about \(4.54\times10^{-4}\ \mathrm{m/s}\)). The colour bands on the resistors follow the standard resistor colour code (IEC 60062); values that cannot be written with two or three significant figures are drawn without bands.">常數與數據：本頁沒有用到物理常數；電動勢 \(\varepsilon\)、內電阻 \(r\) 與各電阻都是可調的教學數值，燈泡視為固定電阻。電子漂移速率的估計出自 OpenStax《<a href="https://openstax.org/books/university-physics-volume-2/pages/9-2-model-of-conduction-in-metals" target="_blank" rel="noopener">University Physics Volume 2，9.2 金屬導電模型</a>》例題 9.3（直徑 2.053 mm 的銅線通 20.0 A，漂移速率約 \(4.54\times10^{-4}\ \mathrm{m/s}\)）。電阻上的色環照通用的電阻色碼（IEC 60062）畫出電阻值；無法用兩、三位有效數字表示的電阻值不畫色環。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/10-1-electromotive-force&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 2, 10.1 Electromotive Force</a> (terminal voltage \(V = \varepsilon - Ir\)) and <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>10.3 Kirchhoff’s Rules</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-2/pages/10-1-electromotive-force" target="_blank" rel="noopener">University Physics Volume 2，10.1 電動勢</a>》（端電壓 \(V = \varepsilon - Ir\)）、《<a href="https://openstax.org/books/university-physics-volume-2/pages/10-3-kirchhoffs-rules" target="_blank" rel="noopener">10.3 克希何夫定律</a>》（英文）</li>
+      </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/dc-circuit-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/dc-circuit.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="dc-circuit"></script>
-  <script src="js/missions/dc-circuit.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="dc-circuit"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/math.js?v=202611121021"></script>
+  <script src="js/dc-circuit-core.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121021"></script>
+  <script src="js/numinput.js?v=202611121021"></script>
+  <script src="js/keys.js?v=202611121021"></script>
+  <script src="js/drawkit.js?v=202611121021"></script>
+  <script src="js/dc-circuit.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021" data-module="dc-circuit"></script>
+  <script src="js/missions/dc-circuit.js?v=202611121021"></script>
+  <script src="js/stats.js?v=202611121021" data-module="dc-circuit"></script>
+  <script src="js/comments.js?v=202611121021"></script>
 </body>
 </html>

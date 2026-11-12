@@ -2,45 +2,48 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120801"></script>
+  <script src="js/settings.js?v=202611121021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Ni Stars Leaderboard | Astro Ni Physics Lab">倪的星星排行榜｜Astro Ni 物理實驗室</title>
+  <title data-en="Ni Stars Leaderboard | Astro Ni Science Lab">倪的星星排行榜｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="在 Astro Ni 物理實驗室完成任務、收集倪的星星：排行榜、任務進度與成就。">
-  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/leaderboard.html">
-  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/leaderboard.html?lang=zh-Hans">
-  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/leaderboard.html?lang=en">
-  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/leaderboard.html">
+  <meta name="description" content="在 Astro Ni 科學實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/leaderboard.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/leaderboard.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/leaderboard.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/leaderboard.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 物理實驗室">
-  <meta property="og:title" content="倪的星星排行榜｜Astro Ni 物理實驗室">
-  <meta property="og:description" content="在 Astro Ni 物理實驗室完成任務、收集倪的星星：排行榜、任務進度與成就。">
-  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/leaderboard.html">
-  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/leaderboard.jpg">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="倪的星星排行榜｜Astro Ni 科學實驗室">
+  <meta property="og:description" content="在 Astro Ni 科學實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。">
+  <meta property="og:url" content="https://lab.astroni.org/leaderboard.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/leaderboard.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Astro Ni 物理實驗室的實驗縮圖">
+  <meta property="og:image:alt" content="Astro Ni 科學實驗室的實驗縮圖">
   <meta property="og:locale" content="zh_TW">
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <!-- SEO-END -->
+  <!-- SEO-END -->
 
-  <link rel="stylesheet" href="lab.css?v=202611120801">
+
+  <link rel="stylesheet" href="lab.css?v=202611121021">
 </head>
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 class="lb-title"><span class="lb-star" aria-hidden="true"></span><span data-en="Ni Stars Leaderboard">倪的星星排行榜</span></h1>
-      <p data-en="Open “Mission mode” on any experiment and reach the goals by working the simulation. Each mission earns its stars once — harder missions earn more, from 1 to 10 stars. Hidden missions only give a cryptic hint.">在每個實驗打開「任務模式」，透過操作實驗達成指定的目標，就能獲得「倪的星星」。每個任務只能領一次，越難的任務星星越多（1～10 顆）；隱藏任務只會給你隱晦的提示。</p>
+      <p data-en="Open “Mission mode” on any experiment and reach the goals by working the simulation. Each mission earns its stars once — harder missions earn more, from 1 to 10 stars. Hidden missions only give a cryptic hint. Every subject has its own ranking, and there is an overall ranking across all subjects.">在每個實驗打開「任務模式」，透過操作實驗達成指定的目標，就能獲得「倪的星星」。每個任務只能領一次，越難的任務星星越多（1～10 顆）；隱藏任務只會給你隱晦的提示。每個科目都有自己的排名，另有全科總排名。</p>
+      <p class="lb-daily-link"><a href="daily.html" data-en="Today’s daily missions →">今天的每日任務 →</a></p>
     </header>
 
     <section class="lb-me" id="me" aria-live="polite"></section>
 
     <section class="lb-board">
-      <h2 data-en="Top 100">前 100 名</h2>
-      <ol class="lb-list" id="list"><li class="lb-empty" data-en="Loading…">載入中…</li></ol>
+      <h2 id="boardTitle" data-en="Top 100">前 100 名</h2>
+      <div class="sb-tabs" id="boardTabs" role="tablist" aria-label="排行榜科目" data-en-aria-label="Ranking by subject"></div>
+      <ol class="lb-list" id="list" role="tabpanel" aria-labelledby="boardTitle"><li class="lb-empty" data-en="Loading…">載入中…</li></ol>
     </section>
 
     <section class="lb-ach" id="achievements">
@@ -61,11 +64,12 @@
         <li data-en="Missions have 10 levels. A level-n mission earns n Ni stars (1 to 10).">任務難度分 10 級，完成第 n 級的任務獲得 n 顆倪的星星（1～10 顆）。</li>
         <li data-en="You reach a mission by working the experiment to a specific standard — for example, two shots with equal range. It completes automatically the moment you succeed.">任務要靠操作實驗達到指定的標準才算完成（例如兩發射程相等），達成的瞬間會自動完成。</li>
         <li data-en="Each mission pays out once. Repeating it earns no more stars.">每個任務只能領一次星星，重複完成不會再得星。</li>
+        <li data-en="Each experiment belongs to one subject (Physics, Chemistry, Biology or Earth Science); its stars count towards that subject as well as towards your overall total.">每個實驗屬於一個科目（物理、化學、生物、地球科學）；完成任務的星星同時計入該科與全科總分。</li>
         <li data-en="Hidden missions show only a cryptic hint. When you complete one you are congratulated, but never told why — keep experimenting to find them.">隱藏任務只會給你一句隱晦的提示；完成時會恭喜你，但不會告訴你是怎麼完成的，要靠自己反覆嘗試。</li>
       </ul>
       <h3 data-en="The leaderboard">排行榜</h3>
       <ul>
-        <li data-en="The top 100 are shown publicly; signed-in users always see their own rank.">公開顯示前 100 名；登入後一定看得到自己的名次。</li>
+        <li data-en="There is an overall ranking and one for each subject. Each shows its top 100 publicly; signed-in users always see their own rank in every subject they have stars in.">有全科總排名，也有各科排名，各自公開顯示前 100 名；登入後一定看得到自己在全科與各科的名次。</li>
         <li data-en="Equal stars share a rank; among equals, whoever got there first is listed first.">星星數相同的名次相同，先達到的人排在前面。</li>
         <li data-en="Your nickname is public and you are responsible for it. If you choose not to show it, only its first and last characters appear.">暱稱會公開顯示，請為自己的暱稱負責；選擇不公開時，只顯示暱稱的第一個與最後一個字。</li>
       </ul>
@@ -74,6 +78,11 @@
         <li data-en="Achievements are collectible badges for things like how many experiments you have tried, how much you have experimented and how many missions you have completed. They need a Google sign-in.">成就是收藏用的徽章，例如玩過幾種實驗、累計操作多少次與多久、完成幾個任務等，必須登入 Google 帳號才會記錄。</li>
         <li data-en="Some achievements are hidden: you only see a riddle until you unlock them.">部分成就是隱藏的，解鎖前只看得到一句謎語。</li>
         <li data-en="Achievements add no stars — the leaderboard counts stars from missions only.">成就不加星星，排行榜只計算任務獲得的星星。</li>
+        <li data-en="Achievements are sorted into “All subjects” and one tab per subject: each subject has its own stars, exploration, clean-sweep, branch-mastery and ranking achievements.">成就分成「全科」與各科：各科有自己的星星、探索、全制霸、分支制霸與排行榜成就。</li>
+      </ul>
+      <h3 data-en="Daily missions">每日任務</h3>
+      <ul>
+        <li data-en="Every day at 00:00 Taiwan time you get three daily missions. Clearing them drops copper, silver and gold coins, diamonds and rare keys; you can replay them all day, but a mission that has already paid its stars earns no more. Details are on the daily missions page.">每天臺灣時間 00:00 換新三個每日任務，完成可以掉落銅幣、銀幣、金幣、鑽石與稀有鑰匙；當天可以一直重做，但已經領過星星的任務不會再加星。詳細規則在每日任務頁。</li>
       </ul>
       <h3 data-en="Fair play">公平競賽</h3>
       <ul>
@@ -88,15 +97,15 @@
       <p class="lb-admin-msg" id="syncMsg"></p>
     </section>
 
-    <footer class="site"><a href="index.html" data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
+    <footer class="site"><a href="index.html" data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611120801"></script>
-  <script src="js/firebase-config.js?v=202611120801"></script>
-  <script src="js/missions.js?v=202611120801"></script>
-  <script src="js/missions/index.js?v=202611111259"></script>
-  <script src="js/achievements.js?v=202611120801"></script>
-  <script src="js/leaderboard.js?v=202611120801"></script>
-  <script src="js/comments.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021"></script>
+  <script src="js/missions/index.js?v=202611121021"></script>
+  <script src="js/achievements.js?v=202611121021"></script>
+  <script src="js/leaderboard.js?v=202611121021"></script>
+  <script src="js/comments.js?v=202611121021"></script>
 </body>
 </html>

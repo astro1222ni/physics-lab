@@ -1,7 +1,7 @@
 {
   "name": "physics-lab",
   "private": true,
-  "description": "Astro Ni 物理實驗室：開發與測試工具（網站本身是純靜態網頁，不需要建置）",
+  "description": "Astro Ni 科學實驗室：開發與測試工具（網站本身是純靜態網頁，不需要建置）",
   "scripts": {
     "test": "node tools/run-tests.cjs",
     "check": "node tools/check-pages.cjs",

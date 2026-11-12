@@ -69,6 +69,8 @@ const PREP = {
   'moon-phases':       { wait: 1500 },
   'measurement':       { click: ['#closeBtn'], wait: 1500, anchor: 0 },
   'angular-momentum':  { click: ['#pull'], wait: 3200, anchor: 0.15 },
+  'seasons':           { eval: "__seasons.setClock(10.5); document.getElementById('clock').dispatchEvent(new Event('input'));", wait: 1500, region: [0.522, 0.008, 0.478] }, // 只取右半「觀察者的天空」
+  'current-magnetic-field': { eval: "LabNum.set(document.getElementById('I'), 3); __cmf.needle.phi = __cmf.ofield().thetaEq * Math.PI / 180;", wait: 1500 },
   'energy-coaster':    { click: ['#presetBox button[data-preset="loop"]'], wait: 2500, anchorX: 1 },
   'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 }
 };

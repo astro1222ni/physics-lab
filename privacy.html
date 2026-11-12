@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120801"></script>
+  <script src="js/settings.js?v=202611121021"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Privacy | Astro Ni Physics Lab">隱私說明｜Astro Ni 物理實驗室</title>
-  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <title data-en="Privacy | Astro Ni Science Lab">隱私說明｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="lab.css?v=202611121021">
   <style>
     .doc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px clamp(16px, 3vw, 28px); }
     .doc h2 { font-size: calc(18px * var(--fs, 1)); margin: 22px 0 6px; }
@@ -19,7 +19,7 @@
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 data-en="Privacy">隱私說明</h1>
-      <p data-en="Last updated: 11 November 2026">更新日期：2026 年 11 月 11 日（新增任務與排行榜）</p>
+      <p data-en="Last updated: 12 November 2026">更新日期：2026 年 11 月 12 日（新增每日任務、寶物、各科排名與成就）</p>
     </header>
 
     <div class="doc">
@@ -35,7 +35,7 @@
 
       <h2 data-en="Signing in and comments">登入與留言</h2>
       <ul>
-        <li data-en="Signing in with a Google account is optional and only needed to post comments. Sign-in is handled by Google's Firebase Authentication; the site receives a random user ID from it.">用 Google 帳號登入是選擇性的，只有留言時才需要。登入由 Google 的 Firebase Authentication 處理，網站會從中取得一組隨機的使用者代號。</li>
+        <li data-en="Signing in with a Google account is optional and only needed for comments, missions, daily missions and achievements. Sign-in is handled by Google's Firebase Authentication; the site receives a random user ID from it.">用 Google 帳號登入是選擇性的，只有留言、任務、每日任務與成就才需要。登入由 Google 的 Firebase Authentication 處理，網站會從中取得一組隨機的使用者代號。</li>
         <li data-en="Firebase Authentication keeps the account's email address and name so that you can sign in again. The site never displays them.">Firebase Authentication 會保存帳號的電子郵件與姓名，讓你下次能再登入；網站不會顯示這些資料。</li>
         <li data-en="Comments are shown publicly with the nickname you choose, the text and the time posted — never your Google name, photo or email.">留言會公開顯示你自訂的暱稱、留言內容與時間，不會顯示 Google 姓名、大頭照或電子郵件。</li>
         <li data-en="You can delete your own comments at any time. The site administrator may delete comments that are inappropriate; a comment reported by several people is hidden automatically until it is reviewed.">你可以隨時刪除自己的留言。網站管理者可以刪除不當留言；被多人檢舉的留言會自動隱藏，等待管理者確認。</li>
@@ -44,18 +44,20 @@
 
       <h2 data-en="Missions and the Ni Stars leaderboard">任務與倪的星星排行榜</h2>
       <ul>
-        <li data-en="Mission mode needs a Google sign-in. Which missions you have completed and your total stars are stored with your random user ID.">任務模式需要登入 Google 帳號。你完成了哪些任務、累計多少顆星星，會和你的隨機使用者代號一起保存。</li>
-        <li data-en="The leaderboard publicly shows your nickname and your total stars. If you choose not to show your name, only the first and last characters of your nickname are displayed.">排行榜會公開顯示你的暱稱與星星總數；若選擇不公開，只會顯示暱稱的第一個與最後一個字。</li>
+        <li data-en="Mission mode needs a Google sign-in. Which missions you have completed, your total stars and your stars in each subject are stored with your random user ID.">任務模式需要登入 Google 帳號。你完成了哪些任務、累計多少顆星星（包括各科的星星數），會和你的隨機使用者代號一起保存。</li>
+        <li data-en="The leaderboards publicly show your nickname, your total stars and your stars in each subject. If you choose not to show your name, only the first and last characters of your nickname are displayed.">全科與各科排行榜會公開顯示你的暱稱、星星總數與各科星星數；若選擇不公開，只會顯示暱稱的第一個與最後一個字。</li>
+        <li data-en="Daily missions store today's three missions, how many times you won a treasure today and which daily missions you finished, plus the treasures you have collected (copper, silver and gold coins, diamonds and rare keys). Only you can see them.">每日任務會保存今天抽到的三個任務、今天掉寶的次數與完成了哪些每日任務，以及你收集到的寶物（銅幣、銀幣、金幣、鑽石與稀有鑰匙）。這些只有你自己看得到。</li>
+        <li data-en="Achievements store which achievements you have unlocked, plus the counts used to judge them: which experiments you have opened, the days you used the site, your number of interactions and time spent. Only you can see them.">成就系統會保存你解鎖了哪些成就，以及判斷成就用的紀錄：打開過哪些實驗、在哪幾天使用、操作次數與累計操作時間。這些只有你自己看得到。</li>
         <li data-en="You are responsible for the nickname you choose. Please do not use your real name or anything offensive.">請為自己選擇的暱稱負責，不要使用真實姓名或不當用語。</li>
       </ul>
 
       <h2 data-en="Removing your data">刪除資料</h2>
-      <p data-en="To remove your sign-in record and nickname, contact the administrator through the Astro Ni YouTube channel.">如果你希望刪除登入紀錄與暱稱，請透過 Astro Ni YouTube 頻道與網站管理者聯繫。</p>
+      <p data-en="To remove your sign-in record, nickname, stars, treasures and achievements, contact the administrator through the Astro Ni YouTube channel.">如果你希望刪除登入紀錄、暱稱、星星、寶物與成就，請透過 Astro Ni YouTube 頻道與網站管理者聯繫。</p>
     </div>
 
-    <footer class="site"><a href="index.html" data-en="Astro Ni Physics Lab">Astro Ni 物理實驗室</a>　<a href="about.html" data-en="About">關於本站</a></footer>
+    <footer class="site"><a href="index.html" data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</a>　<a href="about.html" data-en="About">關於本站</a></footer>
   </div>
-  <script src="js/firebase-config.js?v=202611120801"></script>
-  <script src="js/comments.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/comments.js?v=202611121021"></script>
 </body>
 </html>

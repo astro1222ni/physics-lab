@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const HC = window.HeatCore;
+  const LD = window.LabDraw;   // 共用繪圖工具（drawkit.js）
   const $ = function (id) { return document.getElementById(id); };
   // 介面文字：英文模式用第二個字串（settings.js）
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -193,35 +194,120 @@
     c.closePath();
   }
 
-  /** 不變的圖層：三個區域的底色與細邊框 */
+  /** 不變的圖層：三個區域的底色（drawkit 的暈影背景＋上緣微光）與細邊框 */
   function buildBackground() {
     bg.width = cv.width;
     bg.height = cv.height;
     const c = bgctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
-    const base = colors['canvas-bg'];
-    const edge = shade(base, colors.dark ? -0.35 : -0.05);
-    const S = L.scene;
-    const rg = c.createRadialGradient(S.x + S.w * 0.5, S.y + S.h * 0.42, Math.min(S.w, S.h) * 0.1, S.x + S.w * 0.5, S.y + S.h * 0.5, Math.max(S.w, S.h) * 0.75);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.04) : base);
-    rg.addColorStop(1, edge);
-    c.fillStyle = rg;
-    roundRect(c, S.x, S.y, S.w, S.h, 8);
-    c.fill();
-    [L.graph, L.info].forEach(function (R) {
-      const g = c.createLinearGradient(0, R.y, 0, R.y + R.h);
-      g.addColorStop(0, base);
-      g.addColorStop(1, edge);
-      c.fillStyle = g;
-      roundRect(c, R.x, R.y, R.w, R.h, 8);
-      c.fill();
-    });
-    c.strokeStyle = alpha(colors.text, 0.08);
-    c.lineWidth = 1;
-    [S, L.graph, L.info].forEach(function (R) { roundRect(c, R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1, 8); c.stroke(); });
+    [L.scene, L.graph, L.info].forEach(function (R, i) { panelBg(c, R, i === 0); });
   }
-
+  function panelBg(c, R, scene) {
+    const base = colors['canvas-bg'];
+    c.save();
+    roundRect(c, R.x, R.y, R.w, R.h, 8);
+    c.clip();
+    c.translate(R.x, R.y);
+    LD.backdrop(c, R.w, R.h);
+    const g = c.createLinearGradient(0, 0, 0, R.h);
+    if (scene) {
+      // 實驗室的牆：上方略亮
+      g.addColorStop(0, alpha(shade(base, 0.6), colors.dark ? 0.05 : 0.55));
+      g.addColorStop(0.45, 'rgba(0,0,0,0)');
+      g.addColorStop(1, alpha(shade(base, -0.5), colors.dark ? 0.1 : 0.03));
+    } else {
+      g.addColorStop(0, alpha(shade(base, 0.6), colors.dark ? 0.035 : 0.5));
+      g.addColorStop(0.25, 'rgba(0,0,0,0)');
+      g.addColorStop(1, alpha(shade(base, -0.5), colors.dark ? 0.12 : 0.04));
+    }
+    c.fillStyle = g;
+    c.fillRect(0, 0, R.w, R.h);
+    c.restore();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.12 : 0.1);
+    c.lineWidth = 1;
+    roundRect(c, R.x + 0.5, R.y + 0.5, R.w - 1, R.h - 1, 8);
+    c.stroke();
+    c.strokeStyle = alpha('#ffffff', colors.dark ? 0.05 : 0.7);
+    c.beginPath(); c.moveTo(R.x + 9, R.y + 1.5); c.lineTo(R.x + R.w - 9, R.y + 1.5); c.stroke();
+  }
+  /** 實驗桌桌面：後緣在 y，往下延伸到區域底部（物體的底放在桌面上） */
+  function bench(S, y) {
+    const yb = S.y + S.h;
+    if (y >= yb - 2) return;
+    const top = mix(colors['canvas-bg'], colors.muted, colors.dark ? 0.2 : 0.17);
+    const g = ctx.createLinearGradient(0, y, 0, yb);
+    g.addColorStop(0, shade(top, colors.dark ? -0.15 : -0.04));
+    g.addColorStop(0.5, top);
+    g.addColorStop(1, shade(top, colors.dark ? 0.06 : 0.35));
+    ctx.fillStyle = g;
+    ctx.fillRect(S.x, y, S.w, yb - y);
+    // 桌面的反光（窗戶的倒影，很淡）
+    const sh = ctx.createLinearGradient(S.x, 0, S.x + S.w, 0);
+    sh.addColorStop(0.15, 'rgba(255,255,255,0)');
+    sh.addColorStop(0.35, 'rgba(255,255,255,' + (colors.dark ? 0.035 : 0.22) + ')');
+    sh.addColorStop(0.55, 'rgba(255,255,255,0)');
+    ctx.fillStyle = sh;
+    ctx.fillRect(S.x, y + 1, S.w, yb - y - 1);
+    // 後緣：牆與桌面交界的暗線＋桌緣高光
+    ctx.fillStyle = alpha(colors.dark ? '#000000' : colors.text, colors.dark ? 0.35 : 0.1);
+    ctx.fillRect(S.x, y - 1, S.w, 1);
+    ctx.fillStyle = alpha('#ffffff', colors.dark ? 0.06 : 0.55);
+    ctx.fillRect(S.x, y, S.w, 1);
+  }
+  /** 金屬零件（電源外殼、加熱板）：上亮下暗、帶一條反光的圓角方塊 */
+  function metalBox(x, y, w, h, r, base) {
+    base = base || mix(colors.muted, colors.surface, colors.dark ? 0.1 : 0.4);
+    const g = ctx.createLinearGradient(0, y, 0, y + h);
+    g.addColorStop(0, shade(base, 0.55));
+    g.addColorStop(0.25, shade(base, 0.2));
+    g.addColorStop(0.6, shade(base, -0.08));
+    g.addColorStop(0.9, shade(base, -0.28));
+    g.addColorStop(1, shade(base, 0.05));
+    ctx.fillStyle = g;
+    roundRect(ctx, x, y, w, h, r);
+    ctx.fill();
+    ctx.strokeStyle = alpha(shade(base, -0.55), colors.dark ? 0.7 : 0.5);
+    ctx.lineWidth = 1;
+    roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, Math.max(0, r - 0.5));
+    ctx.stroke();
+  }
+  /** 拉絲金屬的細直紋（在已畫好的矩形上疊加） */
+  function brushed(x, y, w, h, a) {
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    ctx.lineWidth = 1;
+    for (let i = 0; i < w; i += 2.5) {
+      const u = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const v = Math.abs(u);
+      ctx.strokeStyle = v > 0.5 ? 'rgba(255,255,255,' + (a * (v - 0.5) * 2).toFixed(3) + ')' : 'rgba(0,0,0,' + (a * 0.6 * (0.5 - v) * 2).toFixed(3) + ')';
+      ctx.beginPath(); ctx.moveTo(x + i + 0.5, y); ctx.lineTo(x + i + 0.5, y + h); ctx.stroke();
+    }
+    ctx.restore();
+  }
+  /** 保麗龍（隔熱材料）的顆粒質感：矩形範圍內的小圓泡（一次畫完，省效能） */
+  function foamTexture(x, y, w, h, base) {
+    if (w < 2 || h < 2) return;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    const n = Math.min(160, Math.round(w * h / 30));
+    const seed = Math.round(x * 7 + y * 13);
+    const lo = new Path2D(), hi = new Path2D();
+    const rnd = function (q) { const t = Math.sin(q * 12.9898 + seed * 78.233) * 43758.5453; return t - Math.floor(t); };
+    for (let i = 0; i < n; i++) {
+      const u = rnd(i * 3 + 1), v = rnd(i * 3 + 2);
+      const r = 1.4 + rnd(i * 3 + 3) * 1.8;
+      const cx = x + u * w, cy = y + v * h;
+      lo.moveTo(cx + r * Math.cos(0.2), cy + r * Math.sin(0.2)); lo.arc(cx, cy, r, 0.2, Math.PI * 1.2);
+      hi.moveTo(cx + r * Math.cos(Math.PI * 1.2), cy + r * Math.sin(Math.PI * 1.2)); hi.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 2.2);
+    }
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = alpha(shade(base, -0.5), colors.dark ? 0.22 : 0.14);
+    ctx.stroke(lo);
+    ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.07 : 0.6);
+    ctx.stroke(hi);
+    ctx.restore();
+  }
   // ---------- 繪圖工具 ----------
   function font(w, px) { return (w ? w + ' ' : '') + px + 'px system-ui, sans-serif'; }
   /** 有半透明圓角底框的標籤；ctx.textAlign 決定水平對齊，垂直置中於 y */
@@ -257,6 +343,13 @@
     ctx.textAlign = al;
     return w;
   }
+  /** 標籤底框的細邊（與 drawkit 的 pill 一致）；底框很淡的標籤不加 */
+  function pillEdge(color, bgAlpha) {
+    if (bgAlpha != null && bgAlpha < 0.7) return;
+    ctx.strokeStyle = alpha(color, colors.dark ? 0.4 : 0.3);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
   function pill(text, x, y, color, f, bgAlpha) {
     f = f || font(600, 12);
     if (text.indexOf('_{') >= 0) {
@@ -270,6 +363,7 @@
       ctx.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.86 : bgAlpha);
       roundRect(ctx, bx0, y - ph0 / 2, pw0, ph0, ph0 / 2);
       ctx.fill();
+      pillEdge(color, bgAlpha);
       ctx.fillStyle = color;
       richText(text, x, y + 0.5, f);
       return { x: bx0, y: y - ph0 / 2, w: pw0, h: ph0 };
@@ -284,6 +378,7 @@
     ctx.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.86 : bgAlpha);
     roundRect(ctx, bx, y - ph / 2, pw, ph, ph / 2);
     ctx.fill();
+    pillEdge(color, bgAlpha);
     ctx.fillStyle = color;
     ctx.fillText(text, x, y + 0.5);
     return { x: bx, y: y - ph / 2, w: pw, h: ph };
@@ -334,14 +429,7 @@
   }
   function sphereSmall(x, y, col, r) {
     r = r || (L.wide ? 5.5 : 4.5);
-    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-    g.addColorStop(0, shade(col, 0.6));
-    g.addColorStop(1, shade(col, -0.3));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = colors['canvas-bg'];
-    ctx.lineWidth = 1.2;
-    ctx.stroke();
+    LD.ball(ctx, x, y, r, col, { glow: colors.dark ? 0.35 : 0.15, ring: colors['canvas-bg'] });
   }
   function diamond(x, y, r, color) {
     ctx.fillStyle = color;
@@ -373,34 +461,68 @@
     const x0 = x - s / 2, y0 = yb - s;
     const translucent = kind === 'ice' || kind === 'glass';
     const a = translucent ? (kind === 'ice' ? 0.78 : 0.55) : 1;
-    // 頂面
+    const dk = colors.dark;
+    // 頂面：光從左上方來，後方較亮
     ctx.beginPath();
     ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx, y0 - dy); ctx.lineTo(x0 + s + dx, y0 - dy); ctx.lineTo(x0 + s, y0); ctx.closePath();
-    ctx.fillStyle = alpha(shade(base, 0.38), a);
+    const tg = ctx.createLinearGradient(x0 + dx, y0 - dy, x0 + s, y0);
+    tg.addColorStop(0, alpha(shade(base, 0.52), a));
+    tg.addColorStop(1, alpha(shade(base, 0.26), a));
+    ctx.fillStyle = tg;
     ctx.fill();
-    // 右側面
+    // 右側面：上亮下暗
     ctx.beginPath();
     ctx.moveTo(x0 + s, y0); ctx.lineTo(x0 + s + dx, y0 - dy); ctx.lineTo(x0 + s + dx, yb - dy); ctx.lineTo(x0 + s, yb); ctx.closePath();
-    ctx.fillStyle = alpha(shade(base, -0.3), a);
+    const rg = ctx.createLinearGradient(0, y0 - dy, 0, yb);
+    rg.addColorStop(0, alpha(shade(base, -0.18), a));
+    rg.addColorStop(1, alpha(shade(base, -0.42), a));
+    ctx.fillStyle = rg;
     ctx.fill();
     // 正面：上亮下暗
     const g = ctx.createLinearGradient(0, y0, 0, yb);
-    g.addColorStop(0, alpha(shade(base, 0.16), a));
-    g.addColorStop(1, alpha(shade(base, -0.14), a));
+    g.addColorStop(0, alpha(shade(base, 0.2), a));
+    g.addColorStop(0.55, alpha(base, a));
+    g.addColorStop(1, alpha(shade(base, -0.2), a));
     ctx.fillStyle = g;
     ctx.fillRect(x0, y0, s, s);
-    // 金屬的細緻感：斜向的柔和反光
     if (!translucent && s > 10) {
+      // 金屬：拉絲紋＋斜向的柔和反光
+      brushed(x0, y0, s, s, dk ? 0.07 : 0.12);
       const sh = ctx.createLinearGradient(x0, y0, x0 + s, yb);
-      sh.addColorStop(0.15, 'rgba(255,255,255,0)');
-      sh.addColorStop(0.35, 'rgba(255,255,255,' + (colors.dark ? 0.12 : 0.22) + ')');
-      sh.addColorStop(0.5, 'rgba(255,255,255,0)');
+      sh.addColorStop(0.12, 'rgba(255,255,255,0)');
+      sh.addColorStop(0.32, 'rgba(255,255,255,' + (dk ? 0.14 : 0.26) + ')');
+      sh.addColorStop(0.48, 'rgba(255,255,255,0)');
+      sh.addColorStop(0.7, 'rgba(255,255,255,0)');
+      sh.addColorStop(0.8, 'rgba(255,255,255,' + (dk ? 0.06 : 0.1) + ')');
+      sh.addColorStop(0.9, 'rgba(255,255,255,0)');
       ctx.fillStyle = sh;
       ctx.fillRect(x0, y0, s, s);
     }
+    if (kind === 'glass' && s > 10) {
+      // 玻璃：兩道斜的亮帶，邊緣較厚（顏色較深）
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x0, y0, s, s); ctx.clip();
+      ctx.fillStyle = 'rgba(255,255,255,' + (dk ? 0.16 : 0.32) + ')';
+      ctx.beginPath(); ctx.moveTo(x0 + s * 0.15, yb); ctx.lineTo(x0 + s * 0.42, y0); ctx.lineTo(x0 + s * 0.55, y0); ctx.lineTo(x0 + s * 0.28, yb); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,' + (dk ? 0.08 : 0.16) + ')';
+      ctx.beginPath(); ctx.moveTo(x0 + s * 0.6, yb); ctx.lineTo(x0 + s * 0.84, y0); ctx.lineTo(x0 + s * 0.9, y0); ctx.lineTo(x0 + s * 0.66, yb); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = alpha(shade(base, -0.25), 0.55);
+      ctx.lineWidth = Math.max(1.5, s * 0.06);
+      ctx.strokeRect(x0 + ctx.lineWidth / 2, y0 + ctx.lineWidth / 2, s - ctx.lineWidth, s - ctx.lineWidth);
+    }
     if (kind === 'ice' && s > 8) {
-      // 冰的內部裂紋與高光
-      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      // 冰：中心霧白、內部的小氣泡、裂紋與高光
+      const fg = ctx.createRadialGradient(x0 + s * 0.45, y0 + s * 0.5, s * 0.05, x0 + s * 0.45, y0 + s * 0.5, s * 0.6);
+      fg.addColorStop(0, 'rgba(255,255,255,' + (dk ? 0.3 : 0.5) + ')');
+      fg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = fg;
+      ctx.fillRect(x0, y0, s, s);
+      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      [[0.3, 0.25, 0.04], [0.62, 0.7, 0.03], [0.72, 0.3, 0.025], [0.25, 0.68, 0.03]].forEach(function (q) {
+        ctx.beginPath(); ctx.arc(x0 + s * q[0], y0 + s * q[1], Math.max(0.8, s * q[2]), 0, Math.PI * 2); ctx.fill();
+      });
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(x0 + s * 0.2, y0 + s * 0.3); ctx.lineTo(x0 + s * 0.45, y0 + s * 0.52); ctx.lineTo(x0 + s * 0.4, y0 + s * 0.8);
@@ -414,13 +536,15 @@
       ctx.fillStyle = alpha(shade(base, -0.45), 0.85);
       ctx.fillText('?', x, y0 + s * 0.54);
     }
-    // 邊線：頂邊高光、底邊暗線
+    // 邊線：頂邊與前右稜的高光、底邊暗線
     ctx.lineWidth = 1;
-    ctx.strokeStyle = alpha(shade(base, 0.7), translucent ? 0.8 : 0.6);
+    ctx.strokeStyle = alpha(shade(base, 0.75), translucent ? 0.85 : 0.7);
     ctx.beginPath(); ctx.moveTo(x0 + 0.5, y0 + 0.5); ctx.lineTo(x0 + s - 0.5, y0 + 0.5); ctx.lineTo(x0 + s + dx - 0.5, y0 - dy + 0.5); ctx.stroke();
-    ctx.strokeStyle = alpha(shade(base, -0.5), translucent ? 0.5 : 0.7);
+    ctx.strokeStyle = alpha(shade(base, 0.6), translucent ? 0.5 : 0.35);
+    ctx.beginPath(); ctx.moveTo(x0 + s - 0.5, y0 + 1); ctx.lineTo(x0 + s - 0.5, yb - 1); ctx.stroke();
+    ctx.strokeStyle = alpha(shade(base, -0.55), translucent ? 0.5 : 0.75);
     ctx.beginPath(); ctx.moveTo(x0, yb - 0.5); ctx.lineTo(x0 + s, yb - 0.5); ctx.lineTo(x0 + s + dx, yb - dy - 0.5); ctx.stroke();
-    if (translucent) {
+    if (kind === 'ice') {
       ctx.strokeStyle = alpha(shade(base, -0.25), 0.7);
       ctx.strokeRect(x0 + 0.5, y0 + 0.5, s - 1, s - 1);
     }
@@ -443,29 +567,64 @@
     const r = w * 0.9;
     const yLo = yBulb - r - 4, yHi = yTop + w; // 刻度範圍：−30 → yLo、110 → yHi
     const yOf = function (t) { return yLo + (yHi - yLo) * (t + 30) / 140; };
-    // 玻璃管
-    const g = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
-    g.addColorStop(0, alpha(colors.surface, 0.55));
-    g.addColorStop(0.35, alpha('#ffffff', colors.dark ? 0.25 : 0.75));
-    g.addColorStop(1, alpha(colors.muted, 0.35));
-    ctx.fillStyle = g;
-    roundRect(ctx, x - w / 2, yTop, w, yBulb - yTop, w / 2);
+    const dk = colors.dark, lc = colors.pos;
+    const hw = w / 2, yJ = yBulb - Math.sqrt(r * r - hw * hw), aJ = Math.atan2(yJ - yBulb, hw);
+    // 外形：圓頭的玻璃管＋底部的球
+    const shape = function () {
+      ctx.beginPath();
+      ctx.moveTo(x - hw, yJ);
+      ctx.lineTo(x - hw, yTop + hw);
+      ctx.arc(x, yTop + hw, hw, Math.PI, 2 * Math.PI);
+      ctx.lineTo(x + hw, yJ);
+      ctx.arc(x, yBulb, r, aJ, Math.PI - aJ, false);
+      ctx.closePath();
+    };
+    // 玻璃本體（帶柔和投影，讓它從背景浮出來）
+    ctx.save();
+    ctx.shadowColor = dk ? 'rgba(0,0,0,0.45)' : alpha(colors.text, 0.16);
+    ctx.shadowBlur = 5; ctx.shadowOffsetX = 1.5; ctx.shadowOffsetY = 1;
+    ctx.fillStyle = alpha(colors.surface, dk ? 0.2 : 0.4);
+    shape(); ctx.fill();
+    ctx.restore();
+    // 刻度背板（乳白色的條）
+    const sw = w * 0.6;
+    ctx.fillStyle = dk ? alpha(shade(colors.muted, 0.3), 0.22) : alpha('#ffffff', 0.85);
+    roundRect(ctx, x - sw / 2, yTop + hw, sw, yJ - yTop - hw, sw / 2);
     ctx.fill();
-    ctx.strokeStyle = alpha(colors.muted, 0.6);
-    ctx.lineWidth = 1;
-    roundRect(ctx, x - w / 2 + 0.5, yTop + 0.5, w - 1, yBulb - yTop - 1, w / 2);
-    ctx.stroke();
-    // 液柱與球
+    // 毛細管與液柱（紅色酒精）
+    const bw = Math.max(2, w * 0.34);
+    ctx.fillStyle = alpha(colors.text, dk ? 0.16 : 0.1);
+    ctx.fillRect(x - bw / 2, yHi - 3, bw, yBulb - yHi + 3);
     const tc = Math.max(-30, Math.min(112, Tc));
-    const lc = colors.pos;
-    ctx.fillStyle = shade(lc, colors.dark ? 0 : -0.05);
     const yc = yOf(tc);
-    ctx.fillRect(x - w * 0.18, yc, w * 0.36, yBulb - yc);
-    const bg2 = ctx.createRadialGradient(x - r * 0.35, yBulb - r * 0.35, r * 0.1, x, yBulb, r);
+    const lg = ctx.createLinearGradient(x - bw / 2, 0, x + bw / 2, 0);
+    lg.addColorStop(0, shade(lc, 0.3)); lg.addColorStop(0.45, lc); lg.addColorStop(1, shade(lc, -0.3));
+    ctx.fillStyle = lg;
+    ctx.fillRect(x - bw / 2, yc, bw, yBulb - yc);
+    // 球裡的液體
+    const bg2 = ctx.createRadialGradient(x - r * 0.3, yBulb - r * 0.35, r * 0.05, x, yBulb, r * 0.85);
     bg2.addColorStop(0, shade(lc, 0.55));
-    bg2.addColorStop(1, shade(lc, -0.25));
+    bg2.addColorStop(0.55, lc);
+    bg2.addColorStop(1, shade(lc, -0.3));
     ctx.fillStyle = bg2;
-    ctx.beginPath(); ctx.arc(x, yBulb, r, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x, yBulb, r * 0.8, 0, Math.PI * 2); ctx.fill();
+    // 玻璃的反光：左側亮條、右側暗邊、外框、球上的亮點
+    ctx.save();
+    shape(); ctx.clip();
+    const gx = ctx.createLinearGradient(x - hw, 0, x + hw, 0);
+    gx.addColorStop(0, 'rgba(255,255,255,' + (dk ? 0.1 : 0.3) + ')');
+    gx.addColorStop(0.2, 'rgba(255,255,255,' + (dk ? 0.3 : 0.85) + ')');
+    gx.addColorStop(0.34, 'rgba(255,255,255,0)');
+    gx.addColorStop(0.78, 'rgba(0,0,0,0)');
+    gx.addColorStop(1, alpha(dk ? '#000000' : colors.text, dk ? 0.3 : 0.14));
+    ctx.fillStyle = gx;
+    ctx.fillRect(x - hw, yTop, w, yJ - yTop);
+    ctx.restore();
+    ctx.strokeStyle = alpha(colors.muted, dk ? 0.8 : 0.65);
+    ctx.lineWidth = 1;
+    shape(); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,' + (dk ? 0.5 : 0.8) + ')';
+    ctx.beginPath(); ctx.ellipse(x - r * 0.38, yBulb - r * 0.38, r * 0.22, r * 0.14, -0.7, 0, Math.PI * 2); ctx.fill();
     // 刻度（每 10 °C，0 與 100 較長）
     ctx.strokeStyle = alpha(colors.text, 0.55);
     ctx.lineWidth = 1;
@@ -480,7 +639,7 @@
       ctx.fillStyle = alpha(colors.muted, 0.95);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'middle';
-      [0, 50, 100].forEach(function (t) { ctx.fillText(String(t), x + w / 2 + 8, yOf(t)); });
+      [0, 50, 100].forEach(function (t) { LD.haloText(ctx, String(t), x + w / 2 + 8, yOf(t), alpha(colors.muted, 1), 'left', 'middle', font(0, 10)); });
     }
     if (label) {
       if (side) { ctx.textAlign = 'left'; return pill(label, x + w / 2 + 8, yTop - 4, colors.text, font(700, L.wide ? 12 : 11), 0.88); }
@@ -491,7 +650,70 @@
   }
 
   // ---------- 狀態文字 ----------
-  function setStatus(msg) { $('status').textContent = msg || ''; }
+  function setStatus(msg) { $('status').textContent = msg || ''; describeCanvas(); }
+
+  // ---------- 畫布的文字說明（螢幕報讀器；只在離散事件時更新） ----------
+  function describeCanvas() {
+    if (!cv) return;
+    const m = state.mode;
+    let d;
+    if (m === 'cal') {
+      const C = state.cal, p = C.phase === 'ready' ? calParams() : C.p;
+      const nm = p.mys ? T('神秘金屬', 'a mystery metal') : matName(p.mat);
+      const g1 = num(p.m1 * 1000, p.m1 < 0.1 ? 1 : 0), g2 = num(p.m2 * 1000, 0);
+      d = T('量熱器的剖面圖：' + nm + ' ' + g1 + ' g、' + num(p.T1, 1) + ' °C，放進 ' + g2 + ' g、' + num(p.T2, 1) + ' °C 的水中' + (p.stir ? '，有攪拌' : '，不攪拌') + (p.loss ? '，杯子會散熱' : '') + '。',
+        'Cut-away view of a calorimeter: ' + nm + ', ' + g1 + ' g at ' + num(p.T1, 1) + ' °C, into ' + g2 + ' g of water at ' + num(p.T2, 1) + ' °C' + (p.stir ? ', stirred' : ', not stirred') + (p.loss ? ', the cup loses heat' : '') + '. ');
+      const s = C.sim ? HC.mixState(C.sim) : null;
+      if (C.phase === 'ready' || C.phase === 'drop' || !s) d += p.mys ? T('樣品還沒放入；神秘金屬的預測值不顯示。', 'The sample is not in yet; no prediction is shown for the mystery metal.')
+        : T('樣品還沒放入，預測平衡溫度 ' + num(C.pred.Tf, 2) + ' °C。', 'The sample is not in yet; predicted equilibrium temperature ' + num(C.pred.Tf, 2) + ' °C.');
+      else if (C.eqDone) d += T('已達熱平衡：樣品 ' + num(s.TA, 2) + ' °C、水 ' + num(s.TB, 2) + ' °C，經過 ' + num(C.eqT, 1) + ' 秒。', 'Thermal equilibrium reached: sample ' + num(s.TA, 2) + ' °C, water ' + num(s.TB, 2) + ' °C after ' + num(C.eqT, 1) + ' s.');
+      else d += T('實驗進行中：t = ' + num(C.sim.t, 1) + ' 秒，樣品 ' + num(s.TA, 2) + ' °C、水 ' + num(s.TB, 2) + ' °C。', 'Running: t = ' + num(C.sim.t, 1) + ' s, sample ' + num(s.TA, 2) + ' °C, water ' + num(s.TB, 2) + ' °C.');
+      d += T('右邊是兩者的溫度–時間圖與熱量長條圖。', ' On the right: the temperature–time graph and the heat bar chart.');
+    } else if (m === 'heat') {
+      const Hh = state.heat, p = Hh.phase === 'ready' ? heatParams() : Hh.p;
+      const nm = p.mys ? T('神秘金屬', 'a mystery metal') : p.h2o ? T('水（冰）', 'water (ice)') : matName(p.mat);
+      const st = HC.stateOf(Hh.body || Hh.pred.su.b, Hh.body ? Hh.H : Hh.pred.su.H0);
+      d = T('加熱曲線實驗：' + nm + ' ' + num(p.m, 2) + ' kg，起始溫度 ' + num(p.T0, 1) + ' °C，加熱器功率 ' + num(p.P, 0) + ' W' + (p.loss ? '，容器會散熱' : '，隔熱良好') + '。',
+        'Heating-curve experiment: ' + nm + ', ' + num(p.m, 2) + ' kg, starting at ' + num(p.T0, 1) + ' °C, heater power ' + num(p.P, 0) + ' W' + (p.loss ? ', the container loses heat' : ', well insulated') + '. ');
+      d += Hh.t > 0 ? T('t = ' + num(Hh.t, 1) + ' 秒時 ' + num(st.T, 2) + ' °C，' + phaseText(st, p) + '。', 'At t = ' + num(Hh.t, 1) + ' s it is ' + num(st.T, 2) + ' °C: ' + phaseText(st, p) + '.')
+        : T('還沒開始加熱。', 'Heating has not started.');
+      if (Hh.points.length) d += T('已記錄 ' + Hh.points.length + ' 個點。', ' ' + Hh.points.length + ' point(s) recorded.');
+      d += T('右邊是加熱曲線與熱量長條圖。', ' On the right: the heating curve and the heat bar chart.');
+    } else {
+      const Cm = state.cmp, p = Cm.phase === 'ready' ? cmpParams() : Cm.p;
+      if (!Cm.items.length) d = T('比熱比較：還沒選擇材料。', 'Specific heat comparison: no material is chosen.');
+      else {
+        const list = Cm.items.map(function (it) { return matName(it.key) + ' ' + num(HC.temperature(it.b, it.H), 1) + ' °C'; }).join(T('、', ', '));
+        d = T('比熱比較：每個物體 ' + num(p.m, 1) + ' kg，從 ' + num(p.T0, 0) + ' °C 起用相同功率 ' + num(p.P, 0) + ' W 加熱。t = ' + num(Cm.t, 1) + ' 秒：' + list + '。右邊是溫度–時間圖與溫度變化長條圖。',
+          'Specific heat comparison: each object is ' + num(p.m, 1) + ' kg, heated from ' + num(p.T0, 0) + ' °C with the same power ' + num(p.P, 0) + ' W. At t = ' + num(Cm.t, 1) + ' s: ' + list + '. On the right: the temperature–time graph and the temperature-change bars.');
+      }
+    }
+    if (cv.getAttribute('aria-label') !== d) cv.setAttribute('aria-label', d);
+  }
+  /** 改參數後（放開滑桿、換材料）：把最重要的預測寫進 aria-live 的狀態列 */
+  function announcePrediction() {
+    const m = state.mode;
+    if (m === 'cal') {
+      const C = state.cal, p = calParams();
+      if (C.phase !== 'ready') return;
+      setStatus(p.mys ? T('神秘金屬：先做實驗，再算出它的比熱。', 'Mystery metal: do the experiment first, then work out its specific heat.')
+        : T('預測平衡溫度 T', 'Predicted equilibrium temperature T') + 'f = ' + num(C.pred.Tf, 2) + ' °C' + T('。', '.'));
+    } else if (m === 'heat') {
+      const Hh = state.heat, p = heatParams();
+      if (Hh.phase !== 'ready') return;
+      if (p.mys) { setStatus(T('神秘金屬：記錄兩個點，由斜率算出比熱。', 'Mystery metal: record two points and find c from the slope.')); return; }
+      if (p.h2o) {
+        const pl = Hh.pred.plats.map(function (q) { return (q.i === 0 ? T('熔化平台約 ', 'melting plateau about ') : T('沸騰平台約 ', 'boiling plateau about ')) + num(q.t1 - q.t0, 0) + T(' 秒', ' s'); });
+        setStatus(pl.length ? T('預測：', 'Prediction: ') + pl.join(T('、', ', ')) + T('。', '.') : '');
+      } else setStatus(T('預測升溫斜率 P/(mc) = ', 'Predicted slope P/(mc) = ') + num(p.P / (p.m * cOf(p.mat)), 4) + ' °C/s' + (p.loss ? T('（不計散熱）', ' (without heat loss)') : '') + T('。', '.'));
+    } else {
+      const keys = cmpKeys();
+      if (keys.length < 2) return;
+      const by = keys.slice().sort(function (a, b) { return cOf(a) - cOf(b); });
+      setStatus(T('同樣的熱量下，升溫最快的是' + matName(by[0]) + '，最慢的是' + matName(by[by.length - 1]) + '（ΔT = Q/(mc)）。',
+        'With the same heat, ' + matName(by[0]) + ' warms fastest and ' + matName(by[by.length - 1]) + ' slowest (ΔT = Q/(mc)).'));
+    }
+  }
 
   // =====================================================================
   //                               量 熱 器
@@ -567,6 +789,7 @@
     refreshOutputs();
     updateButtons();
     requestDraw();
+    describeCanvas();
   }
 
   function calStart() {
@@ -730,6 +953,7 @@
     refreshOutputs();
     updateButtons();
     requestDraw();
+    describeCanvas();
   }
   function heatStart() {
     const Hh = state.heat;
@@ -823,13 +1047,17 @@
     renderPoints();
     requestDraw();
     const p = Hh.p;
+    let say = T('記錄第 ' + pt.n + ' 點：t = ' + num(pt.t, 1) + ' 秒，T = ' + num(pt.T, 2) + ' °C。', 'Point ' + pt.n + ' recorded: t = ' + num(pt.t, 1) + ' s, T = ' + num(pt.T, 2) + ' °C.');
     if (Hh.points.length >= 2) {
       const a = Hh.points[Hh.points.length - 2], b = Hh.points[Hh.points.length - 1];
       const dtt = b.t - a.t, dT = b.T - a.T;
       const c = Math.abs(dT) > 1e-9 ? p.P * dtt / (p.m * dT) : null;
+      if (dtt > 0) say += c != null && Math.abs(dT) > 1e-6 ? T('由最後兩點算出 c = ' + num(c, 0) + ' J/(kg·K)。', ' From the last two points c = ' + num(c, 0) + ' J/(kg·K).')
+        : T('溫度沒變（相變中）：PΔt/m = ' + num(p.P * dtt / p.m / 1000, 1) + ' kJ/kg。', ' The temperature did not change (phase change): PΔt/m = ' + num(p.P * dtt / p.m / 1000, 1) + ' kJ/kg.');
       if (p.mys && a.kind === 'sens' && b.kind === 'sens' && dtt > 0) state.mysMeasured = true;
       emit('record', { mat: p.mat, sub: p.sub, mys: p.mys, m: p.m, P: p.P, T0: p.T0, loss: p.loss, n: Hh.points.length, p1: a, p2: b, dt: dtt, dT: dT, c: c, L: p.P * dtt / p.m });
     }
+    setStatus(say);
   }
   function renderPoints() {
     const Hh = state.heat;
@@ -882,6 +1110,7 @@
     refreshOutputs();
     updateButtons();
     if (!L || L.wide === false) resize(); else requestDraw();
+    describeCanvas();
   }
   function cmpStart() {
     const Cm = state.cmp;
@@ -987,45 +1216,84 @@
     const inCup = C.phase === 'run' || C.phase === 'pause' || C.phase === 'done';
     const wl = waterLevel(g, liquid * 1000, inCup ? side : 0, p.ice, solidMass);
 
-    // 杯子：外層隔熱套（剖面）、內層金屬杯
+    // 杯子：外層隔熱套（剖面：薄金屬外殼＋保麗龍＋頂端的塑膠環）、內層金屬杯
     const Ro = g.R + g.wall + g.jack, top = g.H + 0.3;
     const jx0 = X(-Ro), jx1 = X(Ro), jy0 = Y(top), jy1 = Y(-g.base - 0.4);
-    // 接觸地面的陰影
-    const sh = ctx.createRadialGradient(g.cx, jy1, 2, g.cx, jy1, (jx1 - jx0) * 0.62);
-    sh.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.22) + ')');
-    sh.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = sh;
-    ctx.beginPath(); ctx.ellipse(g.cx, jy1 + 2, (jx1 - jx0) * 0.62, 9, 0, 0, Math.PI * 2); ctx.fill();
-    // 隔熱套
-    const foam = colors.dark ? mix(colors.surface, colors.muted, 0.22) : mix(colors.surface, colors.muted, 0.2);
-    const fg = ctx.createLinearGradient(jx0, 0, jx1, 0);
-    fg.addColorStop(0, shade(foam, -0.08)); fg.addColorStop(0.5, shade(foam, 0.08)); fg.addColorStop(1, shade(foam, -0.14));
-    ctx.fillStyle = fg;
-    roundRect(ctx, jx0, jy0, jx1 - jx0, jy1 - jy0, 8 * k / 14 + 3);
+    const ry = g.R * 0.16 * k, ryo = Ro * 0.16 * k, rw = (g.R + g.wall) * k;
+    const dk = colors.dark;
+    // 實驗桌與接觸陰影
+    bench(S, jy1 - Math.max(10, 0.9 * k));
+    LD.contactShadow(ctx, g.cx, jy1, (jx1 - jx0) / 2, 0);
+    // 隔熱套的頂面（後半圈，看得到的環形）
+    const collar = dk ? mix(colors.muted, colors['canvas-bg'], 0.45) : shade(colors.muted, -0.42);
+    ctx.fillStyle = shade(collar, dk ? 0.08 : 0.12);
+    ctx.beginPath(); ctx.ellipse(g.cx, jy0, Ro * k, ryo, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.fillStyle = shade(collar, dk ? -0.35 : -0.3);
+    ctx.beginPath(); ctx.ellipse(g.cx, jy0, rw, rw * 0.16, 0, Math.PI, 2 * Math.PI); ctx.fill();
+    ctx.strokeStyle = alpha('#ffffff', dk ? 0.12 : 0.35); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(g.cx, jy0, Ro * k - 0.5, ryo - 0.5, 0, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
+    // 外殼（剖面的外緣看得到）：左亮右暗，像圓柱
+    const shellT = Math.max(2.5, 0.2 * k), rad = 8 * k / 14 + 3;
+    const shellC = dk ? mix(colors.muted, colors['canvas-bg'], 0.3) : mix(colors.muted, colors.surface, 0.45);
+    const shg = ctx.createLinearGradient(jx0, 0, jx1, 0);
+    shg.addColorStop(0, shade(shellC, 0.1)); shg.addColorStop(0.18, shade(shellC, dk ? 0.3 : 0.55)); shg.addColorStop(0.5, shellC); shg.addColorStop(0.85, shade(shellC, -0.2)); shg.addColorStop(1, shade(shellC, -0.32));
+    ctx.fillStyle = shg;
+    roundRect(ctx, jx0, jy0, jx1 - jx0, jy1 - jy0, rad);
     ctx.fill();
-    // 隔熱材料的質感（點狀）
-    ctx.fillStyle = alpha(colors.text, colors.dark ? 0.12 : 0.08);
-    for (let i = 0; i < 60; i++) {
-      const u = (i * 0.618) % 1, v = (i * 0.377) % 1;
-      const side2 = i % 2 ? 1 : -1;
-      const xx = g.cx + side2 * (g.R + g.wall + u * g.jack) * k, yy = Y(-g.base + v * (top + g.base));
-      ctx.fillRect(xx, yy, 1.5, 1.5);
-    }
-    // 內杯（金屬）：背面牆壁
+    // 保麗龍（剖面）
+    const foam = dk ? mix(colors['canvas-bg'], colors.muted, 0.32) : mix(colors.surface, '#ffffff', 0.55);
+    const colH = Math.max(3, 0.55 * k);
+    const fx0 = jx0 + shellT, fx1 = jx1 - shellT, fy0 = jy0 + colH, fy1 = jy1 - shellT;
+    const fgr = ctx.createLinearGradient(0, fy0, 0, fy1);
+    fgr.addColorStop(0, shade(foam, dk ? 0.04 : 0)); fgr.addColorStop(1, shade(foam, dk ? -0.12 : -0.06));
+    ctx.fillStyle = fgr;
+    roundRect(ctx, fx0, fy0, fx1 - fx0, fy1 - fy0, Math.max(2, rad - shellT));
+    ctx.fill();
+    const cwx0 = X(-g.R - g.wall), cwx1 = X(g.R + g.wall), cwy1 = Y(-g.wall);
+    foamTexture(fx0, fy0, cwx0 - fx0, fy1 - fy0, foam);
+    foamTexture(cwx1, fy0, fx1 - cwx1, fy1 - fy0, foam);
+    foamTexture(cwx0, cwy1, cwx1 - cwx0, fy1 - cwy1, foam);
+    // 剖面的切口線
+    ctx.strokeStyle = alpha(shade(shellC, -0.5), dk ? 0.6 : 0.35); ctx.lineWidth = 1;
+    roundRect(ctx, fx0 + 0.5, fy0 + 0.5, fx1 - fx0 - 1, fy1 - fy0 - 1, Math.max(2, rad - shellT));
+    ctx.stroke();
+    // 頂端的塑膠環（剖面）
+    [[jx0 + 1, cwx0 + 1], [cwx1 - 1, jx1 - 1]].forEach(function (q) {
+      const cgc = ctx.createLinearGradient(0, jy0, 0, jy0 + colH);
+      cgc.addColorStop(0, shade(collar, dk ? 0.2 : 0.35)); cgc.addColorStop(0.4, collar); cgc.addColorStop(1, shade(collar, -0.25));
+      ctx.fillStyle = cgc;
+      roundRect(ctx, q[0], jy0, q[1] - q[0], colH, Math.min(3, colH / 2));
+      ctx.fill();
+    });
+    // 內杯（金屬）：背面牆壁（含杯口後半圈的弧）
     const ix0 = X(-g.R), ix1 = X(g.R), iy0 = Y(g.H), iy1 = Y(0);
     const back = ctx.createLinearGradient(ix0, 0, ix1, 0);
-    const can = shade(colors.muted, colors.dark ? -0.38 : 0.6);
-    back.addColorStop(0, shade(can, -0.22)); back.addColorStop(0.28, shade(can, 0.22)); back.addColorStop(0.42, shade(can, 0.08)); back.addColorStop(0.75, can); back.addColorStop(1, shade(can, -0.28));
+    const can = shade(colors.muted, dk ? -0.38 : 0.6);
+    back.addColorStop(0, shade(can, -0.3)); back.addColorStop(0.22, shade(can, 0.18)); back.addColorStop(0.3, shade(can, 0.32)); back.addColorStop(0.42, shade(can, 0.06)); back.addColorStop(0.75, can); back.addColorStop(1, shade(can, -0.32));
     ctx.fillStyle = back;
-    ctx.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
-    // 內杯的牆（剖面）
-    ctx.fillStyle = shade(can, -0.2);
-    ctx.fillRect(X(-g.R - g.wall), iy0, g.wall * k, iy1 - iy0 + g.wall * k);
+    ctx.beginPath();
+    ctx.moveTo(ix0, iy1); ctx.lineTo(ix0, iy0);
+    ctx.ellipse(g.cx, iy0, g.R * k, ry, 0, Math.PI, 2 * Math.PI);
+    ctx.lineTo(ix1, iy1); ctx.closePath();
+    ctx.fill();
+    brushed(ix0, iy0 - ry, ix1 - ix0, iy1 - iy0 + ry, dk ? 0.05 : 0.09);
+    // 杯底的陰影（杯內的角落較暗）
+    const cb = ctx.createLinearGradient(0, iy1 - 2.2 * k, 0, iy1);
+    cb.addColorStop(0, 'rgba(0,0,0,0)'); cb.addColorStop(1, alpha('#000000', dk ? 0.3 : 0.12));
+    ctx.fillStyle = cb; ctx.fillRect(ix0, iy1 - 2.2 * k, ix1 - ix0, 2.2 * k);
+    // 內杯的牆（剖面）：亮的金屬切面
+    const wallC = shade(can, dk ? 0.25 : -0.12);
+    const wgr = ctx.createLinearGradient(0, iy0, 0, iy1);
+    wgr.addColorStop(0, shade(wallC, 0.25)); wgr.addColorStop(1, shade(wallC, -0.12));
+    ctx.fillStyle = wgr;
+    ctx.fillRect(cwx0, iy0, g.wall * k, iy1 - iy0 + g.wall * k);
     ctx.fillRect(ix1, iy0, g.wall * k, iy1 - iy0 + g.wall * k);
-    ctx.fillRect(X(-g.R - g.wall), iy1, (2 * g.R + 2 * g.wall) * k, g.wall * k);
-    // 杯口的背面邊緣
-    const ry = g.R * 0.16 * k;
-    ctx.strokeStyle = alpha(shade(can, 0.5), 0.9);
+    ctx.fillRect(cwx0, iy1, (2 * g.R + 2 * g.wall) * k, g.wall * k);
+    // 杯口捲邊（小圓珠）與杯口後半圈的邊
+    const lipR = Math.max(1.2, g.wall * k * 0.6);
+    LD.ball(ctx, X(-g.R - g.wall / 2), iy0, lipR, wallC, { shadow: false, glow: 0, ring: alpha(shade(wallC, -0.4), 0.6) });
+    LD.ball(ctx, X(g.R + g.wall / 2), iy0, lipR, shade(wallC, -0.08), { shadow: false, glow: 0, ring: alpha(shade(wallC, -0.4), 0.6) });
+    ctx.strokeStyle = alpha(shade(can, 0.55), 0.9);
     ctx.lineWidth = Math.max(1.5, g.wall * k * 0.8);
     ctx.beginPath(); ctx.ellipse(g.cx, iy0, (g.R + g.wall / 2) * k, ry, 0, Math.PI, 2 * Math.PI); ctx.stroke();
 
@@ -1034,10 +1302,25 @@
     const wc = waterColor(TB);
     if (wl.h > 0.01) {
       const wg = ctx.createLinearGradient(0, yw, 0, iy1);
-      wg.addColorStop(0, alpha(shade(wc, 0.15), colors.dark ? 0.55 : 0.6));
-      wg.addColorStop(1, alpha(shade(wc, -0.15), colors.dark ? 0.75 : 0.78));
+      wg.addColorStop(0, alpha(shade(wc, 0.2), dk ? 0.55 : 0.6));
+      wg.addColorStop(0.35, alpha(wc, dk ? 0.62 : 0.66));
+      wg.addColorStop(1, alpha(shade(wc, -0.22), dk ? 0.78 : 0.8));
       ctx.fillStyle = wg;
       ctx.fillRect(ix0, yw, ix1 - ix0, iy1 - yw);
+      // 水中的光紋（很淡，攪拌時會動）
+      const ph0 = (C.phase === 'run' && p.stir && !reducedMotion) ? now / 700 : 0;
+      ctx.strokeStyle = alpha('#ffffff', dk ? 0.07 : 0.2);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let j = 0; j < 3; j++) {
+        const yy = yw + (0.6 + j * 0.9) * k;
+        if (yy > iy1 - 4) break;
+        for (let xx = ix0 + 3; xx <= ix1 - 3; xx += 4) {
+          const y2 = yy + Math.sin(xx * 0.09 + j * 2 + ph0) * 1.6;
+          if (xx === ix0 + 3) ctx.moveTo(xx, y2); else ctx.lineTo(xx, y2);
+        }
+      }
+      ctx.stroke();
     }
 
     // 攪拌棒（環形，後半圈在樣品後面）
@@ -1046,8 +1329,7 @@
     const ringRx = (g.R - 0.45) * k, ringRy = ringRx * 0.16;
     const metal = shade(colors.muted, colors.dark ? 0.2 : -0.05);
     if (p.stir) {
-      ctx.strokeStyle = metal; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(g.cx, Y(yr), ringRx, ringRy, 0, Math.PI, 2 * Math.PI); ctx.stroke();
+      LD.tube(ctx, function (c) { c.ellipse(g.cx, Y(yr), ringRx, ringRy, 0, Math.PI, 2 * Math.PI); }, shade(metal, -0.15), 2.4);
     }
 
     // 樣品
@@ -1062,9 +1344,12 @@
         yb = hang + (rest - hang) * u * u;
       }
       sb = Y(yb); sTop = sb - sPx;
-      // 細線
+      // 細線與小掛勾
+      const hx = sx + sPx * 0.1, hy = sTop - sPx * 0.09;
       ctx.strokeStyle = alpha(colors.text, 0.5); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(sx + sPx * 0.1, S.y); ctx.lineTo(sx + sPx * 0.1, sTop - sPx * 0.09); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(hx, S.y); ctx.lineTo(hx, hy - 4.5); ctx.stroke();
+      ctx.strokeStyle = shade(colors.muted, colors.dark ? 0.25 : -0.15); ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.arc(hx, hy - 2.5, 2, 0, Math.PI * 2); ctx.stroke();
       glow(sx + sPx * 0.1, sb - sPx / 2, sPx * 0.95 + 10, TA, 1);
       cube(sx, sb, sPx, matColor(p.mat), p.ice ? 'ice' : p.mat === 'glass' ? 'glass' : p.mat === 'mys' ? 'mys' : 'metal');
       // 熱或冷的氣流（靜態示意）
@@ -1124,19 +1409,30 @@
     }
     // 攪拌棒（前半圈與握把）
     if (p.stir) {
-      ctx.strokeStyle = metal; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(g.cx, Y(yr), ringRx, ringRy, 0, 0, Math.PI); ctx.stroke();
-      tube([[X(-g.R + 0.6), Y(yr)], [X(-g.R + 0.6), Y(g.H + 4 + yr)]], 3, shade(metal, -0.2), alpha(shade(metal, 0.6), 0.8));
-      sphereSmall(X(-g.R + 0.6), Y(g.H + 4 + yr), colors.muted, 4);
+      LD.tube(ctx, function (c) { c.ellipse(g.cx, Y(yr), ringRx, ringRy, 0, 0, Math.PI); }, metal, 2.6);
+      const rx = X(-g.R + 0.6), rTop = Y(g.H + 4 + yr);
+      LD.tube(ctx, function (c) { c.moveTo(rx, Y(yr)); c.lineTo(rx, rTop); }, metal, 3.2);
+      // 塑膠握把（有防滑紋）
+      const hw = Math.max(6, 0.55 * k), hh = Math.max(12, 1.4 * k);
+      const hc = colors.dark ? mix(colors.muted, colors['canvas-bg'], 0.25) : shade(colors.muted, -0.35);
+      const hg = ctx.createLinearGradient(rx - hw / 2, 0, rx + hw / 2, 0);
+      hg.addColorStop(0, shade(hc, 0.1)); hg.addColorStop(0.3, shade(hc, colors.dark ? 0.35 : 0.45)); hg.addColorStop(1, shade(hc, -0.3));
+      ctx.fillStyle = hg;
+      roundRect(ctx, rx - hw / 2, rTop - hh * 0.75, hw, hh, Math.min(3, hw / 2));
+      ctx.fill();
+      ctx.strokeStyle = alpha('#000000', colors.dark ? 0.35 : 0.2); ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let j = 1; j <= 3; j++) { const yy = Math.round(rTop - hh * 0.75 + hh * j / 4) + 0.5; ctx.moveTo(rx - hw / 2 + 1, yy); ctx.lineTo(rx + hw / 2 - 1, yy); }
+      ctx.stroke();
     }
     // 溫度計（在水中）
     const tx = X(g.R - 0.85);
     const lab = 'T_{2} = ' + num(TB, 2) + ' °C';
     thermometer(tx, Y(1.0), Y(g.H + 3.2), Math.max(5, 0.45 * k), TB, lab, true);
-    // 杯子前緣（隔熱套頂面）
-    ctx.fillStyle = shade(foam, 0.12);
-    ctx.fillRect(jx0, jy0 - 1, X(-g.R - g.wall) - jx0, 3);
-    ctx.fillRect(X(g.R + g.wall), jy0 - 1, jx1 - X(g.R + g.wall), 3);
+    // 隔熱套頂環的前緣高光
+    ctx.fillStyle = alpha('#ffffff', colors.dark ? 0.12 : 0.45);
+    ctx.fillRect(jx0 + 3, jy0, cwx0 - jx0 - 4, 1);
+    ctx.fillRect(cwx1 + 1, jy0, jx1 - cwx1 - 4, 1);
 
     // 樣品溫度標籤
     const lx = L.wide ? S.x + 10 : S.x + 6;
@@ -1572,49 +1868,71 @@
     const hot = mix(colors['b-thermo'], colors.equi, 0.35);
     const metal = shade(colors.muted, colors.dark ? 0.1 : -0.05);
     const loss = p.loss;
-    // 電源供應器
+    const dk = colors.dark;
+    // 實驗桌（物體的底放在桌面上）與接觸陰影
+    const objBottom = p.h2o ? Y(0) + (loss ? 0 : 1.4 * k) : Y(0) + (loss ? 0 : 1.3 * k * 0.6);
+    bench(S, objBottom - Math.max(10, 0.9 * k));
+    // 電源供應器（放在牆上的小層架上）
     const bx = S.x + (L.wide ? 12 : 8), by = S.y + (L.wide ? 12 : 8), bw = Math.max(86, 9 * k), bh2 = Math.max(40, 4.4 * k);
-    const pg = ctx.createLinearGradient(0, by, 0, by + bh2);
-    pg.addColorStop(0, shade(colors.muted, colors.dark ? -0.35 : 0.6)); pg.addColorStop(1, shade(colors.muted, colors.dark ? -0.5 : 0.35));
+    const shelfC = dk ? mix(colors.muted, colors['canvas-bg'], 0.45) : mix(colors.muted, colors.surface, 0.55);
+    LD.block(ctx, S.x - 8, by + bh2, bx - S.x + bw + 20, 5, shelfC, { r: 2 });
     ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.18) + ')'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
-    ctx.fillStyle = pg; roundRect(ctx, bx, by, bw, bh2, 7); ctx.fill();
+    ctx.shadowColor = 'rgba(0,0,0,' + (dk ? 0.5 : 0.18) + ')'; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+    metalBox(bx, by, bw, bh2, 7, dk ? shade(colors.muted, -0.42) : shade(colors.muted, 0.55));
     ctx.restore();
-    ctx.fillStyle = colors.dark ? '#0b1214' : shade(colors.field, -0.1);
-    roundRect(ctx, bx + 7, by + 7, bw - 26, bh2 - 14, 4); ctx.fill();
+    // 顯示幕（深色液晶，帶玻璃反光）
+    const dxL = bx + 7, dyL = by + 7, dwL = bw - 26, dhL = bh2 - 14;
+    const lcd = ctx.createLinearGradient(0, dyL, 0, dyL + dhL);
+    lcd.addColorStop(0, '#0e1b19'); lcd.addColorStop(1, '#08110f');
+    ctx.fillStyle = lcd;
+    roundRect(ctx, dxL, dyL, dwL, dhL, 4); ctx.fill();
+    ctx.strokeStyle = alpha('#000000', dk ? 0.6 : 0.35); ctx.lineWidth = 1;
+    roundRect(ctx, dxL + 0.5, dyL + 0.5, dwL - 1, dhL - 1, 4); ctx.stroke();
     ctx.font = font(700, L.wide ? 13 : 12);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = on ? colors.probe : alpha(colors.probe, 0.45);
-    ctx.fillText(num(p.P, p.P < 100 ? 1 : 0) + ' W', bx + 7 + (bw - 26) / 2, by + bh2 / 2 + 0.5);
-    ctx.fillStyle = on ? colors.pos : alpha(colors.muted, 0.5);
-    ctx.beginPath(); ctx.arc(bx + bw - 10, by + bh2 / 2, 4, 0, Math.PI * 2); ctx.fill();
-    const leadStart = [bx + bw, by + bh2 * 0.7];
+    const digit = shade(colors.probe, dk ? 0.15 : 0.35);
+    if (on) { ctx.save(); ctx.shadowColor = alpha(digit, 0.8); ctx.shadowBlur = 6; }
+    ctx.fillStyle = on ? digit : alpha(digit, 0.4);
+    ctx.fillText(num(p.P, p.P < 100 ? 1 : 0) + ' W', dxL + dwL / 2, dyL + dhL / 2 + 0.5);
+    if (on) ctx.restore();
+    ctx.save();
+    roundRect(ctx, dxL, dyL, dwL, dhL, 4); ctx.clip();
+    ctx.fillStyle = 'rgba(255,255,255,0.07)';
+    ctx.beginPath(); ctx.moveTo(dxL, dyL); ctx.lineTo(dxL + dwL * 0.55, dyL); ctx.lineTo(dxL + dwL * 0.3, dyL + dhL); ctx.lineTo(dxL, dyL + dhL); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // 指示燈與紅色接線柱（電線由這裡接出）
+    const ledX = bx + bw - 10;
+    LD.ball(ctx, ledX, by + bh2 * 0.3, 3, on ? colors.pos : shade(colors.muted, dk ? -0.2 : 0.1), { shadow: false, glow: on ? 0.6 : 0 });
+    LD.ball(ctx, ledX, by + bh2 * 0.72, 4, mix(colors.pos, '#000000', 0.15), { glow: 0 });
+    const leadStart = [ledX, by + bh2 * 0.72];
 
     let thX, thBulbY;
     if (p.h2o) {
-      // 燒杯（玻璃）＋（無散熱時）隔熱套
+      // 燒杯（玻璃）＋（無散熱時）隔熱套（剖面）
       const ix0 = X(-g.R), ix1 = X(g.R), iy0 = Y(g.H), iy1 = Y(0);
       const ry = g.R * 0.16 * k;
       if (!loss) {
         const j = 1.4 * k;
-        const foam = colors.dark ? shade(colors.muted, -0.45) : shade(colors.muted, 0.72);
-        ctx.fillStyle = foam;
-        roundRect(ctx, ix0 - j, iy0 + 4, ix1 - ix0 + 2 * j, iy1 - iy0 + j - 4, 6); ctx.fill();
-        ctx.fillStyle = alpha(colors.text, colors.dark ? 0.12 : 0.08);
-        for (let i = 0; i < 50; i++) {
-          const u = (i * 0.618) % 1, v = (i * 0.377) % 1;
-          ctx.fillRect((i % 2 ? ix1 + u * j * 0.8 : ix0 - j + u * j * 0.8), iy0 + 6 + v * (iy1 - iy0 + j - 10), 1.5, 1.5);
-        }
+        const foam = dk ? mix(colors['canvas-bg'], colors.muted, 0.32) : mix(colors.surface, '#ffffff', 0.55);
+        const fx = ix0 - j, fy = iy0 + 4, fw = ix1 - ix0 + 2 * j, fh = iy1 - iy0 + j - 4;
+        LD.contactShadow(ctx, g.cx, fy + fh, fw / 2, 0);
+        const fgr = ctx.createLinearGradient(fx, 0, fx + fw, 0);
+        fgr.addColorStop(0, shade(foam, dk ? 0.04 : 0.02)); fgr.addColorStop(0.5, shade(foam, dk ? -0.06 : -0.04)); fgr.addColorStop(1, shade(foam, dk ? -0.14 : -0.1));
+        ctx.fillStyle = fgr;
+        roundRect(ctx, fx, fy, fw, fh, 6); ctx.fill();
+        foamTexture(fx, fy, fw, fh, foam);
+        // 前方的切口（左右兩條剖面）
+        ctx.strokeStyle = alpha(shade(foam, -0.5), dk ? 0.5 : 0.3); ctx.lineWidth = 1;
+        roundRect(ctx, fx + 0.5, fy + 0.5, fw - 1, fh - 1, 6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ix0 - 0.5, fy); ctx.lineTo(ix0 - 0.5, iy1 + 0.5); ctx.lineTo(ix1 + 0.5, iy1 + 0.5); ctx.lineTo(ix1 + 0.5, fy); ctx.stroke();
       } else {
-        const sh = ctx.createRadialGradient(g.cx, iy1, 2, g.cx, iy1, (ix1 - ix0) * 0.65);
-        sh.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.45 : 0.2) + ')'); sh.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(g.cx, iy1 + 3, (ix1 - ix0) * 0.65, 8, 0, 0, Math.PI * 2); ctx.fill();
+        LD.contactShadow(ctx, g.cx, iy1, (ix1 - ix0) / 2, 0);
       }
-      // 玻璃後壁
+      // 玻璃後壁（略帶藍綠色）與杯口後半圈
       const gl = ctx.createLinearGradient(ix0, 0, ix1, 0);
-      gl.addColorStop(0, alpha(colors['b-wave'], 0.12)); gl.addColorStop(0.5, alpha(colors['b-wave'], 0.03)); gl.addColorStop(1, alpha(colors['b-wave'], 0.14));
+      gl.addColorStop(0, alpha(colors['b-wave'], 0.16)); gl.addColorStop(0.25, alpha(colors['b-wave'], 0.05)); gl.addColorStop(0.6, alpha(colors['b-wave'], 0.03)); gl.addColorStop(1, alpha(colors['b-wave'], 0.18));
       ctx.fillStyle = gl; ctx.fillRect(ix0, iy0, ix1 - ix0, iy1 - iy0);
-      ctx.strokeStyle = alpha(colors['b-wave'], 0.4); ctx.lineWidth = 1;
+      ctx.strokeStyle = alpha(colors['b-wave'], 0.45); ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.ellipse(g.cx, iy0, g.R * k, ry, 0, Math.PI, 2 * Math.PI); ctx.stroke();
       // 冰、水
       const pm = st.frac.map(function (f) { return f * p.m; });
@@ -1626,12 +1944,21 @@
       const wc = waterColor(Tn);
       if (hl > 0.02) {
         const wg = ctx.createLinearGradient(0, yw, 0, iy1);
-        wg.addColorStop(0, alpha(shade(wc, 0.15), 0.6)); wg.addColorStop(1, alpha(shade(wc, -0.15), 0.8));
+        wg.addColorStop(0, alpha(shade(wc, 0.2), 0.6)); wg.addColorStop(0.35, alpha(wc, 0.66)); wg.addColorStop(1, alpha(shade(wc, -0.2), 0.8));
         ctx.fillStyle = wg; ctx.fillRect(ix0, yw, ix1 - ix0, iy1 - yw);
       }
+      // 刻度（每 100 mL；底面積 πR² ≈ 78.5 cm²，所以 100 mL 約高 1.27 cm）
+      const Abk = Math.PI * g.R * g.R;
+      ctx.strokeStyle = alpha(dk ? '#ffffff' : colors.text, dk ? 0.4 : 0.38); ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let mL = 100; mL / Abk <= g.H - 1.2; mL += 100) {
+        const yy = Math.round(Y(mL / Abk)) + 0.5, major = mL % 200 === 0;
+        ctx.moveTo(ix0 + 4, yy); ctx.lineTo(ix0 + (major ? 13 : 9), yy);
+      }
+      ctx.stroke();
       // 浸入式加熱器：線圈＋金屬管
       coil(X(-3.3), X(2.5), Y(1.3), k, on, glowK, hot, metal);
-      tube([[X(-3.3), Y(1.3)], [X(-3.3), Y(g.H + 2.2)]], Math.max(3, 0.32 * k), shade(metal, -0.25), alpha(shade(metal, 0.6), 0.85));
+      LD.tube(ctx, function (c) { c.moveTo(X(-3.3), Y(1.3)); c.lineTo(X(-3.3), Y(g.H + 2.2)); }, metal, Math.max(3.2, 0.36 * k));
       // 沸騰的氣泡
       if (st.seg.kind === 'lat' && st.seg.i === 1 && running && !reducedMotion && hl > 0.3) bubbles(ix0 + 10, ix1 - 10, yw + 4, Y(1.6), now, 16);
       else if (running && !reducedMotion && hl > 0.3 && Tn > 60) bubbles(X(-4), X(4), Math.max(yw + 6, Y(4)), Y(1.6), now, 4);
@@ -1659,12 +1986,23 @@
         ctx.fillStyle = sg; ctx.beginPath(); ctx.ellipse(g.cx, yw, g.R * k, ry, 0, 0, Math.PI * 2); ctx.fill();
       }
       if (st.seg.kind === 'lat' && st.seg.i === 1 && running && !reducedMotion) steam(g.cx, Math.min(yw, iy0) - 4, g.R * k, now);
-      // 玻璃前緣與高光
-      ctx.strokeStyle = alpha(colors['b-wave'], 0.55); ctx.lineWidth = 1.5;
+      // 玻璃前緣：有厚度的杯壁、杯底、捲邊的杯口、兩道反光
+      ctx.strokeStyle = alpha(colors['b-wave'], dk ? 0.6 : 0.55); ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(ix0, iy0); ctx.lineTo(ix0, iy1 - 4); ctx.quadraticCurveTo(ix0, iy1, ix0 + 4, iy1); ctx.lineTo(ix1 - 4, iy1); ctx.quadraticCurveTo(ix1, iy1, ix1, iy1 - 4); ctx.lineTo(ix1, iy0); ctx.stroke();
+      ctx.strokeStyle = alpha(colors['b-wave'], dk ? 0.22 : 0.2); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(ix0 + 2, iy0 + 2); ctx.lineTo(ix0 + 2, iy1 - 3); ctx.moveTo(ix1 - 2, iy0 + 2); ctx.lineTo(ix1 - 2, iy1 - 3); ctx.stroke();
+      ctx.fillStyle = alpha(colors['b-wave'], dk ? 0.25 : 0.2);
+      ctx.fillRect(ix0 + 2, iy1 - 3, ix1 - ix0 - 4, 3);
+      ctx.strokeStyle = alpha(shade(colors['b-wave'], dk ? 0.3 : 0.1), 0.7); ctx.lineWidth = 2.4;
       ctx.beginPath(); ctx.ellipse(g.cx, iy0, g.R * k, ry, 0, 0, Math.PI); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.18 : 0.6) + ')'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(ix0 + 6, iy0 + 10); ctx.lineTo(ix0 + 6, iy1 - 14); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,' + (dk ? 0.35 : 0.75) + ')'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(g.cx, iy0 - 0.8, g.R * k - 1, ry, 0, Math.PI * 0.15, Math.PI * 0.6); ctx.stroke();
+      const hlg = ctx.createLinearGradient(0, iy0, 0, iy1);
+      hlg.addColorStop(0, 'rgba(255,255,255,0)'); hlg.addColorStop(0.15, 'rgba(255,255,255,' + (dk ? 0.22 : 0.65) + ')'); hlg.addColorStop(0.85, 'rgba(255,255,255,' + (dk ? 0.12 : 0.4) + ')'); hlg.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = hlg; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(ix0 + 7, iy0 + 8); ctx.lineTo(ix0 + 7, iy1 - 10); ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(ix1 - 6, iy0 + 14); ctx.lineTo(ix1 - 6, iy1 - 18); ctx.stroke();
       // 加熱器的握把與電線
       handle(X(-3.3), Y(g.H + 2.2), k, leadStart);
       thX = X(g.R - 0.9); thBulbY = Y(1.6);
@@ -1679,31 +2017,47 @@
       const base = matColor(p.mat);
       if (!loss) {
         const j = 1.3 * k;
-        const foam = colors.dark ? shade(colors.muted, -0.45) : shade(colors.muted, 0.72);
-        ctx.fillStyle = foam;
-        roundRect(ctx, x0 - j, y0 - ry, x1 - x0 + 2 * j, y1 - y0 + ry + j * 0.6, 6); ctx.fill();
+        const foam = dk ? mix(colors['canvas-bg'], colors.muted, 0.32) : mix(colors.surface, '#ffffff', 0.55);
+        const fx = x0 - j, fy = y0 - ry, fw = x1 - x0 + 2 * j, fh = y1 - y0 + ry + j * 0.6;
+        LD.contactShadow(ctx, g.cx, fy + fh, fw / 2, 0);
+        const fgr = ctx.createLinearGradient(fx, 0, fx + fw, 0);
+        fgr.addColorStop(0, shade(foam, dk ? 0.04 : 0.02)); fgr.addColorStop(0.5, shade(foam, dk ? -0.06 : -0.04)); fgr.addColorStop(1, shade(foam, dk ? -0.14 : -0.1));
+        ctx.fillStyle = fgr;
+        roundRect(ctx, fx, fy, fw, fh, 6); ctx.fill();
+        foamTexture(fx, fy, fw, fh, foam);
       } else {
-        const sh = ctx.createRadialGradient(g.cx, y1, 2, g.cx, y1, (x1 - x0) * 0.8);
-        sh.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.45 : 0.22) + ')'); sh.addColorStop(1, 'rgba(0,0,0,0)');
-        ctx.fillStyle = sh; ctx.beginPath(); ctx.ellipse(g.cx, y1 + 2, (x1 - x0) * 0.8, 7, 0, 0, Math.PI * 2); ctx.fill();
+        LD.contactShadow(ctx, g.cx, y1, (x1 - x0) / 2, 0);
       }
       glow(g.cx, (y0 + y1) / 2, (x1 - x0) * 0.75 + 12, Tn, 0.9);
+      // 圓柱側面：窄而亮的反光帶（拋光金屬）
       const cg = ctx.createLinearGradient(x0, 0, x1, 0);
-      cg.addColorStop(0, shade(base, -0.25)); cg.addColorStop(0.32, shade(base, 0.3)); cg.addColorStop(0.6, base); cg.addColorStop(1, shade(base, -0.35));
+      cg.addColorStop(0, shade(base, -0.3)); cg.addColorStop(0.18, shade(base, 0.05)); cg.addColorStop(0.32, shade(base, 0.38)); cg.addColorStop(0.42, shade(base, 0.12)); cg.addColorStop(0.7, base); cg.addColorStop(0.88, shade(base, 0.08)); cg.addColorStop(1, shade(base, -0.38));
       ctx.fillStyle = cg;
       ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
       ctx.beginPath(); ctx.ellipse(g.cx, y1, r * k, ry, 0, 0, Math.PI); ctx.fill();
-      ctx.fillStyle = shade(base, 0.35);
+      // 頂面：車床加工的同心圓紋＋亮邊
+      const tgr = ctx.createLinearGradient(x0, y0 - ry, x1, y0 + ry);
+      tgr.addColorStop(0, shade(base, 0.5)); tgr.addColorStop(1, shade(base, 0.18));
+      ctx.fillStyle = tgr;
       ctx.beginPath(); ctx.ellipse(g.cx, y0, r * k, ry, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = alpha(shade(base, -0.3), 0.18); ctx.lineWidth = 1;
+      for (let q = 0.3; q < 1; q += 0.23) { ctx.beginPath(); ctx.ellipse(g.cx, y0, r * k * q, ry * q, 0, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.strokeStyle = alpha(shade(base, 0.8), 0.7);
+      ctx.beginPath(); ctx.ellipse(g.cx, y0, r * k - 0.5, ry - 0.5, 0, Math.PI * 0.05, Math.PI * 0.95); ctx.stroke();
       if (p.mys && d * k > 26) {
         ctx.font = font(800, Math.round(d * k * 0.4)); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillStyle = alpha(shade(base, -0.45), 0.8); ctx.fillText('?', g.cx, (y0 + y1) / 2 + 4);
       }
-      // 兩個孔
+      // 兩個孔（有深度：內壁上暗下亮）
       const hr = Math.max(2.5, r * 0.18 * k);
-      ctx.fillStyle = shade(base, -0.55);
-      ctx.beginPath(); ctx.ellipse(g.cx - r * 0.45 * k, y0, hr, hr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(g.cx + r * 0.45 * k, y0, hr, hr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+      [g.cx - r * 0.45 * k, g.cx + r * 0.45 * k].forEach(function (hx0) {
+        const hg = ctx.createLinearGradient(0, y0 - hr * 0.45, 0, y0 + hr * 0.45);
+        hg.addColorStop(0, shade(base, -0.75)); hg.addColorStop(1, shade(base, -0.35));
+        ctx.fillStyle = hg;
+        ctx.beginPath(); ctx.ellipse(hx0, y0, hr, hr * 0.45, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = alpha(shade(base, 0.7), 0.6); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(hx0, y0, hr, hr * 0.45, 0, 0.1, Math.PI - 0.1); ctx.stroke();
+      });
       // 加熱棒
       const hx = g.cx - r * 0.45 * k;
       const rg = ctx.createLinearGradient(hx - hr, 0, hx + hr, 0);
@@ -1714,8 +2068,9 @@
       thX = g.cx + r * 0.45 * k; thBulbY = y0 + Math.max(4, d * k * 0.35);
       if (!loss) {
         // 隔熱材料的前緣（剖面線）
-        ctx.strokeStyle = alpha(colors.text, 0.15); ctx.lineWidth = 1;
-        ctx.strokeRect(x0 - 1.3 * k + 0.5, y0 - ry + 0.5, x1 - x0 + 2.6 * k - 1, y1 - y0 + ry + 1.3 * k * 0.6 - 1);
+        ctx.strokeStyle = alpha(colors.text, dk ? 0.22 : 0.15); ctx.lineWidth = 1;
+        roundRect(ctx, x0 - 1.3 * k + 0.5, y0 - ry + 0.5, x1 - x0 + 2.6 * k - 1, y1 - y0 + ry + 1.3 * k * 0.6 - 1, 6);
+        ctx.stroke();
       }
     }
     // 溫度計
@@ -1742,38 +2097,50 @@
       gg.addColorStop(0, alpha(hot, 0.35 * glowK)); gg.addColorStop(1, alpha(hot, 0));
       ctx.fillStyle = gg; ctx.beginPath(); ctx.ellipse((x0 + x1) / 2, y, (x1 - x0) * 0.6, (x1 - x0) * 0.25, 0, 0, Math.PI * 2); ctx.fill();
     }
-    ctx.lineWidth = 2.6; ctx.lineCap = 'round';
-    for (let i = 0; i < n; i++) {
-      const cx = x0 + rx + i * 2 * rx;
-      ctx.strokeStyle = shade(col, -0.25);
-      ctx.beginPath(); ctx.ellipse(cx, y, rx * 1.05, ryy, 0, Math.PI, 2 * Math.PI); ctx.stroke();
-    }
-    for (let i = 0; i < n; i++) {
-      const cx = x0 + rx + i * 2 * rx;
-      ctx.strokeStyle = col;
-      ctx.beginPath(); ctx.ellipse(cx, y, rx * 1.05, ryy, 0, 0, Math.PI); ctx.stroke();
-      ctx.strokeStyle = alpha(shade(col, 0.6), 0.7); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(cx, y - 0.6, rx * 0.9, ryy * 0.8, 0, 0.3, Math.PI * 0.7); ctx.stroke();
-      ctx.lineWidth = 2.6;
-    }
+    const lw = Math.max(2.6, 0.3 * k);
+    ctx.lineCap = 'round';
+    // 後半圈（較暗）
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = shade(col, -0.35);
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const cx = x0 + rx + i * 2 * rx; ctx.moveTo(cx + rx * 1.05, y); ctx.ellipse(cx, y, rx * 1.05, ryy, 0, 0, Math.PI, true); }
+    ctx.stroke();
+    // 前半圈：暗的外緣＋本色＋上緣細亮線（圓柱感）
+    ctx.strokeStyle = shade(col, -0.2);
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const cx = x0 + rx + i * 2 * rx; ctx.moveTo(cx + rx * 1.05, y); ctx.ellipse(cx, y, rx * 1.05, ryy, 0, 0, Math.PI); }
+    ctx.stroke();
+    ctx.lineWidth = lw * 0.6;
+    ctx.strokeStyle = col;
+    ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = alpha(shade(col, 0.7), on ? 0.85 : 0.65);
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) { const cx = x0 + rx + i * 2 * rx; ctx.moveTo(cx + rx * 0.9 * Math.cos(0.3), y - 0.8 + ryy * 0.8 * Math.sin(0.3)); ctx.ellipse(cx, y - 0.8, rx * 0.9, ryy * 0.8, 0, 0.3, Math.PI * 0.7); }
+    ctx.stroke();
   }
   /** 加熱器的塑膠握把（下緣在 (x, y)）與連到電源的電線 */
   function handle(x, y, k, from) {
     const hw = Math.max(8, 0.9 * k), hh = Math.max(16, 2.2 * k);
     const top = y - hh;
-    // 電線：由握把頂端彎向電源
-    ctx.strokeStyle = shade(colors.field, colors.dark ? -0.45 : 0.1);
-    ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(x, top);
-    ctx.bezierCurveTo(x, top - 30, from[0] + 40, from[1], from[0], from[1]);
-    ctx.stroke();
+    // 電線（橡膠皮）：由握把頂端彎向電源
+    const cable = colors.dark ? shade(colors.field, -0.35) : shade(colors.field, -0.05);
+    LD.tube(ctx, function (c) { c.moveTo(x, top + 2); c.bezierCurveTo(x, top - 30, from[0] + 40, from[1], from[0], from[1]); }, cable, 3);
+    // 握把：塑膠，有防滑紋；下端的金屬套環
     const base = shade(colors.field, colors.dark ? -0.55 : 0.05);
     const hg = ctx.createLinearGradient(x - hw / 2, 0, x + hw / 2, 0);
-    hg.addColorStop(0, shade(base, 0.25)); hg.addColorStop(0.4, shade(base, 0.45)); hg.addColorStop(1, shade(base, -0.2));
+    hg.addColorStop(0, shade(base, 0.2)); hg.addColorStop(0.3, shade(base, 0.5)); hg.addColorStop(0.55, shade(base, 0.15)); hg.addColorStop(1, shade(base, -0.3));
+    ctx.save();
+    ctx.shadowColor = colors.dark ? 'rgba(0,0,0,0.45)' : alpha(colors.text, 0.18); ctx.shadowBlur = 4; ctx.shadowOffsetY = 1.5;
     ctx.fillStyle = hg;
-    roundRect(ctx, x - hw / 2, top, hw, hh, 3);
+    roundRect(ctx, x - hw / 2, top, hw, hh, Math.min(4, hw / 2));
     ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = alpha('#000000', colors.dark ? 0.35 : 0.18); ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let j = 1; j <= 4; j++) { const yy = Math.round(top + hh * 0.12 + (hh * 0.6) * j / 5) + 0.5; ctx.moveTo(x - hw / 2 + 1.5, yy); ctx.lineTo(x + hw / 2 - 1.5, yy); }
+    ctx.stroke();
+    metalBox(x - hw * 0.42, y - Math.max(3, 0.3 * k), hw * 0.84, Math.max(3, 0.3 * k), 1.5);
   }
   function phaseText(st, p) {
     const g = st.seg;
@@ -1934,7 +2301,7 @@
       ctx.textAlign = 'left';
       flowText(Array.isArray(txt) ? txt : [txt], R.x + 10, top + 2 * rh + 12, R.w - 20, colors.text, fl, Math.floor(free / 18), 1);
     }
-    const eq = 'Q = Pt = ' + num(p.P, p.P < 100 ? 1 : 0) + ' W × ' + num(Hh.t, 1) + ' s = ' + fmtQ(Hh.Qin) + (Hh.Qloss > 0 ? T('（散失 ', ' (lost ') + fmtQ(Hh.Qloss) + T('）', ')') : '');
+    const eq = 'Q = Pt = ' + num(p.P, p.P < 100 ? 1 : 0) + ' W × ' + num(Hh.t, 1) + ' s = ' + fmtQ(Hh.Qin) + (Hh.Qloss >= 0.5 ? T('（散失 ', ' (lost ') + fmtQ(Hh.Qloss) + T('）', ')') : '');
     pill(eq, R.x + 10, R.y + R.h - 12, colors.text, font(600, L.wide ? 11 : 10), 0.85);
     ctx.restore();
   }
@@ -1968,25 +2335,49 @@
       const baseY = top0 + rowH * (r + 1) - (L.wide ? 34 : 28);
       const cellTop = top0 + rowH * r;
       const Tn = HC.temperature(it.b, it.H);
-      // 加熱板
+      // 加熱板：金屬盤＋底座（有指示燈）
       const pw = Math.min(colW * 0.86, Math.max(sideMax * k * 1.05, 30)), ph = 7;
+      const bh3 = L.wide ? 6 : 4;
+      LD.contactShadow(ctx, cx, baseY + ph + bh3, pw / 2 - 2, 0);
+      metalBox(cx - pw / 2 + 3, baseY + ph - 1, pw - 6, bh3 + 1, 2, colors.dark ? shade(colors.muted, -0.5) : shade(colors.muted, -0.15));
+      LD.ball(ctx, cx + pw / 2 - 8, baseY + ph + bh3 / 2, 1.6, running ? colors.pos : shade(colors.muted, colors.dark ? -0.1 : 0.3), { shadow: false, glow: running ? 0.6 : 0 });
       const pg = ctx.createLinearGradient(0, baseY, 0, baseY + ph);
       const plate = running ? mix(shade(colors.muted, colors.dark ? -0.3 : 0.3), hot, 0.55) : shade(colors.muted, colors.dark ? -0.3 : 0.3);
-      pg.addColorStop(0, shade(plate, 0.25)); pg.addColorStop(1, shade(plate, -0.2));
+      pg.addColorStop(0, shade(plate, 0.4)); pg.addColorStop(0.35, shade(plate, 0.1)); pg.addColorStop(1, shade(plate, -0.25));
       ctx.fillStyle = pg; roundRect(ctx, cx - pw / 2, baseY, pw, ph, 3); ctx.fill();
-      if (running) { ctx.fillStyle = alpha(hot, 0.25); ctx.fillRect(cx - pw / 2 + 3, baseY - 2, pw - 6, 2); }
-      ctx.fillStyle = alpha(colors.text, 0.25); ctx.fillRect(cx - pw / 2 + 4, baseY + ph, pw - 8, 3);
+      ctx.fillStyle = alpha('#ffffff', colors.dark ? 0.15 : 0.5); ctx.fillRect(cx - pw / 2 + 3, baseY + 0.5, pw - 6, 1);
+      if (running) {
+        // 加熱中：盤面發紅、上方一層熱的微光
+        const hg = ctx.createLinearGradient(0, baseY - 8, 0, baseY + 1);
+        hg.addColorStop(0, alpha(hot, 0)); hg.addColorStop(1, alpha(hot, colors.dark ? 0.4 : 0.3));
+        ctx.fillStyle = hg; ctx.fillRect(cx - pw / 2 + 2, baseY - 8, pw - 4, 9);
+      }
       // 物體（依比例：同質量時密度小的體積大）
       if (it.key === 'h2o') {
         const V = it.b.m * 1000 * HC.stateOf(it.b, it.H).frac[1];
         const r = Math.cbrt(vMax / (2 * Math.PI)), hgt = V / (Math.PI * r * r), hMax = vMax / (Math.PI * r * r);
         const bw = 2 * r * k, x0 = cx - bw / 2, yT = baseY - hMax * 1.1 * k, yW = baseY - hgt * k;
         const wc = waterColor(Tn);
+        const dk = colors.dark, ery = bw * 0.08;
         glow(cx, baseY - hgt * k / 2, bw * 0.7 + 8, Tn, 0.8);
-        ctx.fillStyle = alpha(shade(wc, 0.1), 0.7); ctx.fillRect(x0, yW, bw, baseY - yW);
-        ctx.fillStyle = alpha(shade(wc, 0.45), 0.8); ctx.beginPath(); ctx.ellipse(cx, yW, bw / 2, bw * 0.08, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = alpha(colors['b-wave'], 0.55); ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(x0, yT); ctx.lineTo(x0, baseY); ctx.lineTo(x0 + bw, baseY); ctx.lineTo(x0 + bw, yT); ctx.stroke();
+        // 燒杯的後壁與杯口後半圈
+        const gb = ctx.createLinearGradient(x0, 0, x0 + bw, 0);
+        gb.addColorStop(0, alpha(colors['b-wave'], 0.16)); gb.addColorStop(0.3, alpha(colors['b-wave'], 0.04)); gb.addColorStop(1, alpha(colors['b-wave'], 0.18));
+        ctx.fillStyle = gb; ctx.fillRect(x0, yT, bw, baseY - yT);
+        ctx.strokeStyle = alpha(colors['b-wave'], 0.4); ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(cx, yT, bw / 2, ery, 0, Math.PI, 2 * Math.PI); ctx.stroke();
+        // 水
+        const wg = ctx.createLinearGradient(0, yW, 0, baseY);
+        wg.addColorStop(0, alpha(shade(wc, 0.2), 0.68)); wg.addColorStop(1, alpha(shade(wc, -0.15), 0.8));
+        ctx.fillStyle = wg; ctx.fillRect(x0, yW, bw, baseY - yW);
+        ctx.fillStyle = alpha(shade(wc, 0.45), 0.8); ctx.beginPath(); ctx.ellipse(cx, yW, bw / 2, ery, 0, 0, Math.PI * 2); ctx.fill();
+        // 玻璃前緣、捲邊的杯口、反光
+        ctx.strokeStyle = alpha(colors['b-wave'], dk ? 0.65 : 0.6); ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.moveTo(x0, yT); ctx.lineTo(x0, baseY - 2); ctx.quadraticCurveTo(x0, baseY, x0 + 2, baseY); ctx.lineTo(x0 + bw - 2, baseY); ctx.quadraticCurveTo(x0 + bw, baseY, x0 + bw, baseY - 2); ctx.lineTo(x0 + bw, yT); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(cx, yT, bw / 2, ery, 0, 0, Math.PI); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,' + (dk ? 0.25 : 0.7) + ')'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(x0 + 4, yT + 6); ctx.lineTo(x0 + 4, baseY - 6); ctx.stroke();
         if (Tn >= 100 && running && !reducedMotion) bubbles(x0 + 3, x0 + bw - 3, yW + 3, baseY - 3, now, 5);
         it.topY = yT;
       } else {
@@ -1996,16 +2387,25 @@
         cube(cx - s * 0.1, baseY, s, matColor(it.key), it.key === 'glass' ? 'glass' : 'metal');
         it.topY = baseY - s * 1.2;
       }
-      // 迷你溫度計（柱高 ∝ 溫度）
+      // 迷你溫度計（柱高 ∝ 溫度）：玻璃管＋底部的球
       const tTop = cellTop + tPad, tBot = tTop + tLen;
       const frac = Math.max(0, Math.min(1, (Tn - (p.T0 - 5)) / (pr.Tmax + 5 - (p.T0 - 5))));
       const tw = L.wide ? 7 : 5;
-      ctx.fillStyle = alpha(colors.text, 0.08); roundRect(ctx, cx - tw / 2, tTop, tw, tBot - tTop, tw / 2); ctx.fill();
       const lc = lineColor(it.key);
       const yc = tBot - frac * (tBot - tTop);
+      const gw = tw + 4, br = gw * 0.62;
+      ctx.fillStyle = alpha(colors.surface, colors.dark ? 0.18 : 0.55);
+      roundRect(ctx, cx - gw / 2, tTop - 2, gw, tBot - tTop + 4, gw / 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx, tBot + br * 0.1, br, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = alpha(colors.text, 0.08); roundRect(ctx, cx - tw / 2, tTop, tw, tBot - tTop, tw / 2); ctx.fill();
       const lg = ctx.createLinearGradient(cx - tw / 2, 0, cx + tw / 2, 0);
       lg.addColorStop(0, shade(lc, 0.3)); lg.addColorStop(1, shade(lc, -0.15));
-      ctx.fillStyle = lg; roundRect(ctx, cx - tw / 2, yc, tw, tBot - yc, tw / 2); ctx.fill();
+      ctx.fillStyle = lg; roundRect(ctx, cx - tw / 2, yc, tw, tBot - yc + 2, tw / 2); ctx.fill();
+      LD.ball(ctx, cx, tBot + br * 0.1, br * 0.78, lc, { shadow: false, glow: 0 });
+      ctx.strokeStyle = alpha(colors.muted, colors.dark ? 0.6 : 0.5); ctx.lineWidth = 1;
+      roundRect(ctx, cx - gw / 2 + 0.5, tTop - 1.5, gw - 1, tBot - tTop + 3, gw / 2); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.25 : 0.75) + ')'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(cx - gw / 2 + 1.8, tTop + 2); ctx.lineTo(cx - gw / 2 + 1.8, tBot - 2); ctx.stroke();
       ctx.textAlign = 'center';
       pill(num(Tn, Tn < 100 ? 1 : 0) + '°', cx, tTop - 11, lc, font(700, L.wide ? 12 : 10), 0.85);
       ctx.font = font(700, L.wide ? 12 : 10); ctx.fillStyle = lc; ctx.textBaseline = 'middle';
@@ -2328,13 +2728,13 @@
     if (m === 'cal') {
       const C = state.cal;
       if (C.phase === 'ready') calStart();
-      else if (C.phase === 'run') { C.phase = 'pause'; stopVoices(); }
+      else if (C.phase === 'run') { C.phase = 'pause'; stopVoices(); describeCanvas(); }
       else if (C.phase === 'pause') { C.phase = 'run'; startLoop(); }
       else if (C.phase === 'done') { calArchive(); calReset(); calStart(); }
     } else if (m === 'heat') {
       const Hh = state.heat;
       if (Hh.phase === 'ready') heatStart();
-      else if (Hh.phase === 'run') { Hh.phase = 'pause'; stopVoices(); }
+      else if (Hh.phase === 'run') { Hh.phase = 'pause'; stopVoices(); describeCanvas(); }
       else if (Hh.phase === 'pause') { Hh.phase = 'run'; startLoop(); }
       else { heatArchive(); heatReset(); heatStart(); }
     } else {
@@ -2342,6 +2742,7 @@
       if (Cm.phase === 'ready') cmpStart();
       else if (Cm.phase === 'run') {
         Cm.phase = 'pause';
+        describeCanvas();
         emit('pause', { mode: 'cmp', t: Cm.t, Q: Cm.p.P * Cm.t, n: Cm.items.length, m: Cm.p.m, P: Cm.p.P, T0: Cm.p.T0, keys: Cm.items.map(function (it) { return it.key; }) });
       } else if (Cm.phase === 'pause') { Cm.phase = 'run'; startLoop(); }
       else { cmpReset(); cmpStart(); }
@@ -2521,6 +2922,34 @@
   [el.hm, el.hT, el.hP].forEach(function (e) { e.addEventListener('input', heatChanged); });
   el.lossH.addEventListener('change', heatChanged);
   [el.cm, el.cP, el.cT].forEach(function (e) { e.addEventListener('input', cmpChanged); });
+  // 放開滑桿（或打字輸入完成）時才播報預測，拖曳途中不播報
+  [el.m1, el.T1, el.m2, el.T2, el.cc, el.stir, el.lossC, el.hm, el.hT, el.hP, el.lossH, el.cm, el.cP, el.cT].forEach(function (e) { e.addEventListener('change', announcePrediction); });
+  ['calMats', 'heatMats', 'cmpMats'].forEach(function (id) { $(id).addEventListener('click', function (e) { if (e.target.closest('button[data-key]')) announcePrediction(); }); });
+
+  // ---------- 分享連結：比較的材料（可複選的切換鈕）與神秘金屬 ----------
+  // 分享只會「按下」按鈕、不會放開，所以比較材料的組合自己記；神秘金屬記成清單中的序號（全班拿到同一塊）
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { cmp: CMP_LIST.filter(function (k) { return !!state.cmp.on[k]; }), mys: HC.MYSTERY_IDS.indexOf(state.mysId) }; },
+    set: function (v) {
+      if (!v || typeof v !== 'object') return;
+      if (Array.isArray(v.cmp)) {
+        CMP_LIST.forEach(function (k) { state.cmp.on[k] = v.cmp.indexOf(k) >= 0; });
+        renderChips();
+        if (state.mode === 'cmp') buildReadout();
+        cmpChanged();
+        resize();
+      }
+      const i = Math.round(Number(v.mys));
+      if (isFinite(i) && i >= 0 && i < HC.MYSTERY_IDS.length && HC.MYSTERY_IDS[i] !== state.mysId) {
+        state.mysId = HC.MYSTERY_IDS[i];
+        state.mysMeasured = false;
+        $('verdict').textContent = ''; $('guessC').value = '';
+        if (state.cal.mat === 'mys') calChanged();
+        if (state.heat.mat === 'mys') heatChanged();
+      }
+      describeCanvas();
+    }
+  });
 
   // ---------- 啟動 ----------
   readColors();
@@ -2535,7 +2964,7 @@
   updateButtons();
   updateSpeedButtons();
   updateSoundButton();
-  function themeChanged() { readColors(); renderChips(); if (L) buildBackground(); requestDraw(); }
+  function themeChanged() { if (LD) LD.refresh(); readColors(); renderChips(); if (L) buildBackground(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
@@ -2544,4 +2973,5 @@
   } else window.addEventListener('resize', resize);
   window.addEventListener('resize', function () { resize(); });
   resize();
+  describeCanvas();
 })();

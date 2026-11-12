@@ -10,6 +10,8 @@
  *   check(ev, mem)：ev = { type, data }；mem 為該任務在本頁的暫存物件（可記錄先前的事件）。
  * 規則：必須登入 Google 帳號、開啟任務模式才會判定；每個任務只能領一次星星（資料庫規則把關）。
  * 星星數 = 任務等級（1–10 顆「倪的星星」）。
+ * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth）與各科最後得星時間 sa/<科目>。
+ * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；以前完成過的任務也能重做，不再加星，但有機率掉寶。
  */
 (function () {
   'use strict';
@@ -27,8 +29,16 @@
   const listeners = [];
   const state = {
     module: pageModule, user: null, nickname: null, pub: true,
-    done: {}, on: false, ready: false, busy: false, msg: ''
+    done: {}, on: false, ready: false, busy: false, msg: '',
+    daily: dailyParam()
   };
+  /** 每日任務模式：網址的 ?daily=<任務代號>，而且這個任務屬於本頁的實驗 */
+  function dailyParam() {
+    let v = null;
+    try { v = new URLSearchParams(location.search).get('daily'); } catch (e) { return null; }
+    if (!pageModule || !v || !/^[a-z0-9-]{1,60}$/.test(v)) return null;
+    return v.replace(/-(h?\d+)$/, '') === pageModule ? v : null;
+  }
   let api = null;
 
   // ======================= 公開介面 =======================
@@ -45,14 +55,27 @@
       if (!state.on || !state.user || !state.nickname) return;
       if (window.LabShare && window.LabShare.restoring) return; // 打開分享連結還原設定時不算完成任務
       const list = registry[state.module] || [];
+      const LD = window.LabDaily;
       list.forEach(function (m) {
-        if (state.done[m.id] || m.pending) return;
+        // 今天的每日任務：以前完成過也照樣判定（重做不加星，但有機率掉寶）
+        const daily = state.daily === m.id && LD && LD.active(m.id);
+        if ((state.done[m.id] && !daily) || m.pending) return;
         let ok = false;
         try { ok = !!m.check({ type: type, data: data || {} }, m.mem); } catch (e) { ok = false; }
-        if (ok) complete(m);
+        if (!ok) return;
+        if (daily) { m.mem = {}; LD.completed(m, !state.done[m.id]); } // 判定記憶歸零：再領一次要重新做一遍
+        if (!state.done[m.id]) complete(m);
       });
     },
     all: function () { return registry; },
+    /** 實驗代號 → 科目（phy、chem、bio、earth）；需要 missions/index.js（loadIndex） */
+    subjectOf: function (mod) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(mod) : 'phy'; },
+    /** 載入 missions/index.js（實驗清單、分支、科目） */
+    loadIndex: function () { return loadIndex(); },
+    /** 載入全站所有任務檔（只註冊，不在本頁判定）；多處呼叫只下載一次 */
+    loadAll: function () { return loadAll(); },
+    /** 依完成紀錄（任務代號 → { stars }）算出各科星星 */
+    subjectStars: function (done) { return subjectStars(done); },
     on: function (name, fn) { if (hooks[name]) hooks[name].push(fn); },
     module: pageModule,
     mask: mask,
@@ -62,6 +85,37 @@
     _autoSync: function () { return autoSync(); }
   };
   window.LabMission = LabMission;
+
+  // ======================= 載入全站清單與任務檔 =======================
+  const base = script ? script.getAttribute('src').replace(/missions\.js.*$/, '') : 'js/';
+  const ver = script ? ((script.getAttribute('src') || '').match(/\?v=\d+/) || [''])[0] : '';
+  function loadScript(src) {
+    return new Promise(function (resolve) {
+      const s = document.createElement('script');
+      s.src = src; s.onload = s.onerror = resolve;
+      document.body.appendChild(s);
+    });
+  }
+  let indexP = null, allP = null;
+  function loadIndex() {
+    if (!indexP) indexP = window.LAB_SUBJECT_OF ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver);
+    return indexP;
+  }
+  function loadAll() {
+    if (!allP) allP = loadIndex().then(function () {
+      return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !registry[m.id]; })
+        .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js' + ver); }));
+    });
+    return allP;
+  }
+  function subjectStars(done) {
+    const s = {};
+    Object.keys(done || {}).forEach(function (id) {
+      const k = LabMission.subjectOf(id.replace(/-(h?\d+)$/, ''));
+      s[k] = (s[k] || 0) + (+done[id].stars || 0);
+    });
+    return s;
+  }
 
   /** 不公開排名時：保留第一個與最後一個字，中間遮掉 */
   function mask(name) {
@@ -102,24 +156,39 @@
         setPub: function (uid, pub) { return D.set(r('profiles/' + uid + '/pub'), pub); },
         getDone: function (uid) { return D.get(r('completions/' + uid)).then(function (s) { return s.val() || {}; }); },
         getScore: function (uid) { return D.get(r('scores/' + uid)).then(function (s) { return s.val(); }); },
-        complete: function (uid, mid, stars, name, pub, prev) {
+        // sub：{ s: { 科目: 星星 }, sa: { 科目: 時間，或 true = 伺服器現在時間 } }
+        complete: function (uid, mid, stars, name, pub, prev, sub) {
           const u = {};
           u['completions/' + uid + '/' + mid] = { stars: stars, at: D.serverTimestamp() };
-          u['scores/' + uid] = { stars: (prev || 0) + stars, last: mid, name: name, pub: pub, at: D.serverTimestamp() };
+          const rec = { stars: (prev || 0) + stars, last: mid, name: name, pub: pub, at: D.serverTimestamp() };
+          if (sub) {
+            rec.s = sub.s;
+            rec.sa = {};
+            Object.keys(sub.sa).forEach(function (k) { rec.sa[k] = sub.sa[k] === true ? D.serverTimestamp() : sub.sa[k]; });
+          }
+          u['scores/' + uid] = rec;
           return D.update(D.ref(db), u);
         },
         rename: function (uid, score, name, pub) {
           return D.update(r('scores/' + uid), { name: name, pub: pub, stars: score.stars, last: score.last, at: score.at || 0 });
         },
-        top: function (n) {
-          return D.get(D.query(r('scores'), D.orderByChild('stars'), D.limitToLast(n))).then(function (s) {
+        // subj：省略是全科總排名；'phy' 等是該科排名
+        top: function (n, subj) {
+          return D.get(D.query(r('scores'), D.orderByChild(subj ? 's/' + subj : 'stars'), D.limitToLast(n))).then(function (s) {
             const list = [];
             s.forEach(function (c) { list.push(Object.assign({ uid: c.key }, c.val())); });
             return list;
           });
         },
-        countAbove: function (stars) {
-          return D.get(D.query(r('scores'), D.orderByChild('stars'), D.startAt(stars + 1))).then(function (s) { return s.size; });
+        countAbove: function (stars, subj) {
+          return D.get(D.query(r('scores'), D.orderByChild(subj ? 's/' + subj : 'stars'), D.startAt(stars + 1))).then(function (s) { return s.size; });
+        },
+        /** 伺服器時間 − 本機時間（毫秒）：每日任務換日以伺服器時間為準 */
+        serverOffset: function () {
+          return new Promise(function (resolve) {
+            const t = setTimeout(function () { resolve(0); }, 8000);
+            D.onValue(r('.info/serverTimeOffset'), function (s) { clearTimeout(t); resolve(+s.val() || 0); }, { onlyOnce: true });
+          });
         },
         syncDefs: function (defs) {
           const u = {};
@@ -168,6 +237,7 @@
           state.ready = true;
           changed();
           fire('ready', state);
+          syncSubjects(user.uid);
         });
       });
       return api;
@@ -201,6 +271,25 @@
     }).catch(function () { return -1; });
   }
 
+  // ======================= 各科星星：補齊舊紀錄 =======================
+  // 各科排名上線前就有星星的人，scores 裡沒有各科數字：依完成紀錄補上（只增不減；資料庫規則限制各科加總不超過總星數）
+  function syncSubjects(uid) {
+    if (!api || !api.get || !api.update) return;
+    loadIndex().then(function () { return api.get('scores/' + uid); }).then(function (sc) {
+      if (!sc || !state.user || state.user.uid !== uid) return;
+      const target = subjectStars(state.done), cur = sc.s || {};
+      const map = {};
+      let sum = 0;
+      Object.keys(Object.assign({}, cur, target)).forEach(function (k) {
+        const v = Math.max(cur[k] || 0, target[k] || 0);
+        sum += v;
+        if (cur[k] !== v) { map['scores/' + uid + '/s/' + k] = v; map['scores/' + uid + '/sa/' + k] = api.now(); }
+      });
+      if (!Object.keys(map).length || sum > (sc.stars || 0)) return;
+      return api.update(map);
+    }).catch(function () { /* 下次登入再補 */ });
+  }
+
   // ======================= 完成任務 =======================
   // 同時完成多個任務時依序寫入（每次都以最新的總分為基準，資料庫規則才會通過）
   let queue = Promise.resolve();
@@ -211,8 +300,21 @@
   }
   function completeNow(m) {
     const uid = state.user.uid, stars = m.level;
-    return guard(function () { return api.getScore(uid); }).then(function (sc) {
-      return guard(function () { return api.complete(uid, m.id, stars, displayName(), state.pub, sc ? sc.stars : 0); });
+    return loadIndex().then(function () { return guard(function () { return api.getScore(uid); }); }).then(function (sc) {
+      // 各科星星：沿用資料庫裡的數字（舊紀錄沒有時，依完成紀錄補算），再加上這個任務所屬科目的星星
+      const subj = LabMission.subjectOf(state.module);
+      const s = Object.assign({}, (sc && sc.s) || subjectStars(state.done));
+      const sa = Object.assign({}, (sc && sc.sa) || {});
+      s[subj] = (s[subj] || 0) + stars;
+      Object.keys(s).forEach(function (k) { if (sa[k] == null || k === subj) sa[k] = true; });
+      const prevStars = sc ? sc.stars : 0;
+      return guard(function () { return api.complete(uid, m.id, stars, displayName(), state.pub, prevStars, { s: s, sa: sa }); }).catch(function (e) {
+        // 資料庫規則還是舊版（不認得各科星星）時，改用舊格式再寫一次：總星數照樣記錄，各科星星等規則更新後由 syncSubjects 補算。
+        // 已經有各科紀錄的人代表新規則已生效，就不退回。
+        const c = (e && (e.code || e.message)) || '';
+        if ((sc && sc.s) || !/PERMISSION_DENIED|permission/i.test(c)) throw e;
+        return guard(function () { return api.complete(uid, m.id, stars, displayName(), state.pub, prevStars); });
+      });
     }).then(function () {
       state.done[m.id] = { stars: stars, at: Date.now() };
       m.pending = false;
@@ -297,8 +399,11 @@
     const summary = el('span', 'ms-summary');
     const board = el('a', 'ms-board-link', T('倪的星星排行榜', 'Ni Stars leaderboard'));
     board.href = 'leaderboard.html';
+    const dlink = el('a', 'ms-board-link ms-daily-link', T('每日任務', 'Daily missions'));
+    dlink.href = 'daily.html';
     bar.appendChild(toggle);
     bar.appendChild(summary);
+    bar.appendChild(dlink);
     bar.appendChild(board);
     const panel = el('div', 'ms-panel');
     panel.hidden = true;
@@ -316,6 +421,7 @@
       changed();
     });
     try { state.on = !!sessionStorage.getItem('ms-on:' + state.module); } catch (e) { /* 忽略 */ }
+    if (state.daily) state.on = true; // 每日任務模式：一進來就開任務模式
 
     function render() {
       const total = list.reduce(function (a, m) { return a + m.level; }, 0);
@@ -410,6 +516,12 @@
       const a = document.createElement('script');
       a.src = script.getAttribute('src').replace(/missions\.js/, 'achievements.js');
       document.body.appendChild(a);
+    }
+    // 每日任務模式：載入每日任務的計算與介面
+    if (enabled && state.daily && !window.LabDaily) {
+      (window.LabDailyCore ? Promise.resolve() : loadScript(base + 'daily-core.js' + ver)).then(function () {
+        if (!window.LabDaily) return loadScript(base + 'daily.js' + ver);
+      });
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);

@@ -2,7 +2,8 @@
 (function () {
   'use strict';
   const SC = window.SlitCore;
-  const $ = function (id) { return document.getElementById(id); };
+  const LD = window.LabDraw; // js/drawkit.js：共用的立體球、方塊、標籤、背景
+  const $ =function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   // 波長顏色名稱的英文（core 只回傳中文）
   const COLOR_EN = { '紫光': 'violet', '藍光': 'blue', '青光': 'cyan', '綠光': 'green', '黃光': 'yellow', '橙光': 'orange', '紅光': 'red' };
@@ -298,8 +299,8 @@
     ctx.fillStyle = vg;
     ctx.fillRect(0, 0, W, H);
 
-    // ---- 擋板與狹縫：有厚度的金屬板（狹縫開口的位置與寬度不變） ----
-    const bw = Math.max(6, Math.round(8 * s)), x0 = g.bx - bw / 2;
+    // ---- 擋板與狹縫：有厚度的拉絲金屬板（狹縫開口的位置與寬度不變，只畫在開口以外） ----
+    const bw = Math.max(7, Math.round(10 * s)), x0 = g.bx - bw / 2;
     const segs = [];
     let top = 0;
     field.slits.forEach(function (c) {
@@ -308,38 +309,73 @@
       top = y1;
     });
     if (top < H) segs.push([top, H]);
+    // 板的上表面：迎光的左緣最亮，往背光的右緣漸暗（圓角倒邊的金屬感）
     const body = ctx.createLinearGradient(x0, 0, x0 + bw, 0);
     body.addColorStop(0, DARK.plateHi);
-    body.addColorStop(0.38, DARK.plate);
+    body.addColorStop(0.16, LD.mix(DARK.plateHi, DARK.plate, 0.45));
+    body.addColorStop(0.5, DARK.plate);
+    body.addColorStop(0.82, LD.mix(DARK.plate, DARK.plateLo, 0.65));
     body.addColorStop(1, DARK.plateLo);
-    const cast = ctx.createLinearGradient(x0 + bw, 0, x0 + bw + 8, 0);
-    cast.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+    const cast = ctx.createLinearGradient(x0 + bw, 0, x0 + bw + 9, 0);
+    cast.addColorStop(0, 'rgba(0, 0, 0, 0.55)');
     cast.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    segs.forEach(function (sg) {
+    // 拉絲紋：沿板長方向的細紋，亮暗交錯（固定的擬亂數，每次重畫都一樣）
+    const brush = [];
+    for (let k = 1.2; k < bw - 1; k += 1.1) {
+      const r = Math.abs(Math.sin(k * 12.9898 + bw * 4.1) * 43758.5453) % 1;
+      brush.push([k, r < 0.5 ? 'rgba(255, 255, 255,' + (0.04 + 0.1 * r).toFixed(3) + ')' : 'rgba(0, 0, 0,' + (0.04 + 0.12 * (r - 0.5)).toFixed(3) + ')']);
+    }
+    segs.forEach(function (sg, si) {
       const y0 = sg[0], y1 = sg[1], h = y1 - y0;
       if (h < 0.3) return;
       // 投影只往右（波的那一側）水平延伸，不會遮到狹縫開口
       ctx.fillStyle = cast;
-      ctx.fillRect(x0 + bw, y0, 8, h);
-      ctx.fillStyle = body;
+      ctx.fillRect(x0 + bw, y0, 9, h);
+      ctx.save();
       roundRect(ctx, x0, y0, bw, h, Math.min(2, h / 2));
+      ctx.fillStyle = body;
       ctx.fill();
-      // 迎光面（左緣）被入射光照亮；狹縫的上下切面閃著光
-      ctx.fillStyle = rgba(tint, 0.55);
-      ctx.fillRect(x0, y0 + 1, 1, Math.max(0, h - 2));
-      if (y0 > 0) { ctx.fillStyle = rgba(tint, 0.7); ctx.fillRect(x0 + 1, y0, bw - 2, 1); }
-      if (y1 < H) { ctx.fillStyle = rgba(tint, 0.45); ctx.fillRect(x0 + 1, y1 - 1, bw - 2, 1); }
+      ctx.clip();
+      brush.forEach(function (b) { ctx.fillStyle = b[1]; ctx.fillRect(x0 + b[0], y0, 0.6, h); });
+      ctx.restore();
+      // 外緣細暗線讓板子輪廓清楚
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+      ctx.lineWidth = 1;
+      roundRect(ctx, x0 + 0.5, y0 + 0.5, bw - 1, Math.max(0, h - 1), Math.min(1.5, h / 2));
+      ctx.stroke();
+      // 迎光面（左緣）被入射光照亮；狹縫的上下切面（刀口）閃著光、帶一道倒角高光
+      ctx.fillStyle = rgba(tint, 0.6);
+      ctx.fillRect(x0, y0 + 1, 1.2, Math.max(0, h - 2));
+      if (y0 > 0) {
+        ctx.fillStyle = rgba(tint, 0.75); ctx.fillRect(x0 + 1, y0, bw - 2, 1);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.16)'; ctx.fillRect(x0 + 1, y0 + 1, bw - 3, 1);
+      }
+      if (y1 < H) {
+        ctx.fillStyle = rgba(tint, 0.5); ctx.fillRect(x0 + 1, y1 - 1, bw - 2, 1);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)'; ctx.fillRect(x0 + 1, y1 - 2, bw - 3, 1);
+      }
+      // 最上與最下兩段有固定螺絲（只是裝飾）
+      if ((si === 0 || si === segs.length - 1) && h > 26 && bw >= 7) {
+        const e = h > 40 * s ? 12 * s : h / 2;
+        const cy = si === 0 ? y0 + e : y1 - e;
+        screw(ctx, g.bx, cy, Math.max(2, bw * 0.3));
+      }
     });
 
-    // ---- 屏幕：被照亮的位置顯示波場的時間平均亮度 ----
-    const sx = g.sx, sw = 5;
+    // ---- 屏幕：有厚度的霧面白板；被照亮的位置顯示波場的時間平均亮度 ----
+    const sx = g.sx, sw = Math.max(6, Math.round(9 * s));
     ctx.fillStyle = DARK.bg;
-    ctx.fillRect(sx + sw, 0, W - sx - sw, H); // 屏幕後方沒有光
+    ctx.fillRect(sx + 3, 0, W - sx - 3, H); // 屏幕後方沒有光
     const sb = ctx.createLinearGradient(sx, 0, sx + sw, 0);
     sb.addColorStop(0, DARK.screen);
+    sb.addColorStop(0.3, LD.mix(DARK.screen, DARK.plateLo, 0.35));
     sb.addColorStop(1, DARK.plateLo);
     ctx.fillStyle = sb;
     ctx.fillRect(sx, 0, sw, H);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(sx + sw - 1, 0, 1, H); // 背面的邊
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.fillRect(sx + 3, 0, 1, H);      // 白板側面的稜線
     const lit = screenLight(sx);
     ctx.imageSmoothingEnabled = true;
     ctx.globalAlpha = 0.92;
@@ -492,6 +528,27 @@
     ctx.font = '12px system-ui, sans-serif';
   }
 
+  /** 一字螺絲頭（金屬圓頭＋刻槽），只是裝飾 */
+  function screw(ctx, x, y, r) {
+    const gr = ctx.createRadialGradient(x - r * 0.35, y - r * 0.4, r * 0.1, x, y, r);
+    gr.addColorStop(0, DARK.plateHi);
+    gr.addColorStop(0.55, DARK.plate);
+    gr.addColorStop(1, DARK.plateLo);
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = gr;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x - r * 0.62, y + r * 0.3); ctx.lineTo(x + r * 0.62, y - r * 0.3);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.lineWidth = Math.max(0.7, r * 0.32);
+    ctx.lineCap = 'round';
+    ctx.stroke();
+  }
+
   // 入射光束的立體感：光束上下緣漸暗、靠近擋板處有極淡的光暈（只在入射區域，波峰位置不變）
   function beamDepth(ctx, g, H, tint) {
     const v = ctx.createLinearGradient(0, 0, 0, H);
@@ -541,11 +598,11 @@
     ctx.font = '11px system-ui, sans-serif';
     const need = Math.max(ctx.measureText(orderTitle(slitCount())).width + 7, ctx.measureText('0.5').width + 22);
     const PL = Math.max(42, Math.ceil(need)), PR = 14;
-    const ST = 22;
+    const ST = 27; // 屏幕外框（BZ）與標題的空間
     const SH = Math.max(34, Math.min(64, Math.round(H * 0.17)));
-    const GT = ST + SH + 26;
+    const GT = ST + SH + 30;
     const GB = H - 34;
-    return { W: W, H: H, PL: PL, PR: PR, PW: W - PL - PR, ST: ST, SH: SH, GT: GT, GB: GB };
+    return { W: W, H: H, PL: PL, PR: PR, PW: W - PL - PR, ST: ST, SH: SH, GT: GT, GB: GB, BZ: 4 };
   }
   function xToY(px) { const l = layout; return ((px - l.PL) / l.PW * 2 - 1) * halfRange(); }
   function yToX(y) { const l = layout; return l.PL + (y / halfRange() + 1) / 2 * l.PW; }
@@ -560,14 +617,7 @@
     const lin = col.map(SC.srgbToLinear);
     const dark = darkCanvas();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = colors['canvas-bg'];
-    ctx.fillRect(0, 0, l.W, l.H);
-    // 極淡的暈影：中央略亮、四角略暗
-    const vg = ctx.createRadialGradient(l.W / 2, l.H * 0.45, Math.min(l.W, l.H) * 0.3, l.W / 2, l.H * 0.45, Math.hypot(l.W, l.H) * 0.62);
-    vg.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    vg.addColorStop(1, dark ? 'rgba(0, 0, 0, 0.16)' : rgba(tokenRGB('text'), 0.045));
-    ctx.fillStyle = vg;
-    ctx.fillRect(0, 0, l.W, l.H);
+    LD.backdrop(ctx, l.W, l.H); // 底色＋極淡的暈影（中央略亮、四角略暗）
 
     // ---- 取樣（參數改變時才重算；移動游標只重畫） ----
     const S = sampleCache(p, l, dpr, Y);
@@ -581,7 +631,7 @@
     ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(T('屏幕上看到的條紋', 'Fringes seen on the screen'), l.PL, l.ST - 11);
+    ctx.fillText(T('屏幕上看到的條紋', 'Fringes seen on the screen'), l.PL, l.ST - l.BZ - 9);
     const strip = S.strip;
     if (!S.stripDone) {
       const sctx = strip.getContext('2d');
@@ -598,36 +648,27 @@
     }
     const fx = l.PL - 4, fw = l.PW + 8;
     if (dark) {
-      // 深色模式：亮紋的光微微溢出屏幕上下緣（同一張條紋圖拉高後淡出，水平位置完全相同）
+      // 深色模式：亮紋的光微微溢出屏幕外框（同一張條紋圖拉高後淡出，水平位置完全相同）
       ctx.globalAlpha = 0.5;
       ctx.imageSmoothingEnabled = true;
-      ctx.drawImage(stripGlow(S), l.PL, l.ST - 7, l.PW, l.SH + 14);
+      ctx.drawImage(stripGlow(S), l.PL, l.ST - l.BZ - 9, l.PW, l.SH + 2 * l.BZ + 18);
       ctx.globalAlpha = 1;
     }
-    // 屏幕本體：圓角＋投影
+    screenFrame(l, fx, fw, dark);
+    // 屏幕表面（霧面、略凹進外框）：條紋圖原封不動貼上，亮度正比於 I
     ctx.save();
-    ctx.shadowColor = DARK.shadow;
-    ctx.shadowBlur = dark ? 12 : 10;
-    ctx.shadowOffsetY = 3;
+    roundRect(ctx, fx, l.ST, fw, l.SH, 3);
     ctx.fillStyle = DARK.bg;
-    roundRect(ctx, fx, l.ST, fw, l.SH, 5);
     ctx.fill();
-    ctx.restore();
-    ctx.save();
-    roundRect(ctx, fx, l.ST, fw, l.SH, 5);
     ctx.clip();
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(strip, l.PL, l.ST, l.PW, l.SH);
     ctx.imageSmoothingEnabled = true;
     stripDepth(l);
     ctx.restore();
-    ctx.strokeStyle = colors.border;
-    ctx.lineWidth = 1;
-    roundRect(ctx, fx - 0.5, l.ST - 0.5, fw + 1, l.SH + 1, 5.5);
-    ctx.stroke();
 
     // ---- 級數標示（條紋與強度圖之間） ----
-    const rowY = l.ST + l.SH + 13;
+    const rowY = l.ST + l.SH + l.BZ + 13;
     if (state.showOrders) drawOrderLabels(p, rowY);
 
     // ---- 強度圖座標格（線寬 1 個裝置像素，對齊像素中心） ----
@@ -743,7 +784,29 @@
     ctx.restore();
 
     drawCursor(p);
+    drawKeyFocus();
     updateCursorReadout(p);
+  }
+
+  // 焦點框只在用鍵盤操作時顯示（滑鼠點擊畫布也會讓它取得焦點，那時不畫）
+  let keyMode = false;
+  document.addEventListener('keydown', function () { keyMode = true; }, true);
+  document.addEventListener('pointerdown', function () { keyMode = false; }, true);
+  function keyFocusVisible() { return keyMode; }
+  /** 鍵盤焦點框：用鍵盤操作游標時，在游標（尚未放置時為整個圖）周圍畫 --accent 色虛線圓角框 */
+  function drawKeyFocus() {
+    if (!kb || !kb.focused() || kb.index() !== 0 || !keyFocusVisible(pat.cv)) return;
+    const ctx = pat.ctx, l = layout;
+    let x, w, y = l.ST - l.BZ - 6, h = l.GB - y + 4;
+    if (state.cursorY === null || Math.abs(state.cursorY) > halfRange()) { x = l.PL - l.BZ - 6; w = l.PW + 2 * l.BZ + 12; }
+    else { const cx = yToX(state.cursorY); x = cx - 11; w = 22; }
+    ctx.save();
+    ctx.setLineDash([5, 4]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = colors.accent;
+    roundRect(ctx, x, y, w, h, 7);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** 文字中夾下標（例如 I/I0 的 0）：parts = [[文字, 是否下標], …]；回傳總寬度 */
@@ -800,21 +863,56 @@
   }
 
   // ---------- 圖形的質感（只是疊在上面的裝飾，不改變任何位置與比例；單色光與白光共用） ----------
-  // 屏幕條紋的立體感：上下緣略暗（像被照亮的屏幕表面）、頂邊 1 px 高光、底邊 1 px 暗線。
-  // 每一列都乘上同一個係數，所以沿 y 方向的相對亮度不變。
+  // 屏幕條紋的立體感：上下緣略暗（像被照亮的屏幕表面）、上緣是外框投下的內陰影、下緣一道細亮邊。
+  // 每一列都乘上同一個係數，所以沿 y 方向（屏幕位置）的相對亮度不變。
   function stripDepth(l) {
     const ctx = pat.ctx, x = l.PL - 4, w = l.PW + 8, y = l.ST, h = l.SH;
     const g = ctx.createLinearGradient(0, y, 0, y + h);
-    g.addColorStop(0, 'rgba(0, 0, 0, 0.30)');
+    g.addColorStop(0, 'rgba(0, 0, 0, 0.34)');
     g.addColorStop(0.3, 'rgba(0, 0, 0, 0)');
     g.addColorStop(0.62, 'rgba(0, 0, 0, 0)');
-    g.addColorStop(1, 'rgba(0, 0, 0, 0.38)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0.36)');
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    ctx.fillRect(x, y, w, 1);
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(x, y, w, 1.5);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+    ctx.fillRect(x, y + 1.5, w, 1.5);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.14)';
     ctx.fillRect(x, y + h - 1, w, 1);
+  }
+  /** 屏幕的金屬外框：上亮下暗、下緣看得到框的厚度（側面較暗）、柔和投影；只畫在條紋區域的外面 */
+  function screenFrame(l, fx, fw, dark) {
+    const ctx = pat.ctx, bz = l.BZ, x = fx - bz, y = l.ST - bz, w = fw + 2 * bz, h = l.SH + 2 * bz;
+    const side = ctx.createLinearGradient(0, y + h - 6, 0, y + h + 3);
+    side.addColorStop(0, LD.shade(DARK.plate, -0.3));
+    side.addColorStop(1, LD.shade(DARK.plate, -0.6));
+    ctx.save();
+    ctx.shadowColor = DARK.shadow;
+    ctx.shadowBlur = dark ? 14 : 10;
+    ctx.shadowOffsetY = 4;
+    roundRect(ctx, x + 1, y + 4, w - 2, h - 1, 6);
+    ctx.fillStyle = side;
+    ctx.fill();
+    ctx.restore();
+    LD.block(ctx, x, y, w, h, DARK.plate, { r: 6, shadow: false, stroke: 'rgba(0, 0, 0, 0.45)' });
+    // 外框正面的細拉絲紋（水平）
+    ctx.save();
+    roundRect(ctx, x, y, w, h, 6);
+    ctx.clip();
+    for (let k = 1.5; k < h - 1; k += 1.25) {
+      const r = Math.abs(Math.sin(k * 7.13 + 1.7) * 43758.5453) % 1;
+      ctx.fillStyle = r < 0.5 ? 'rgba(255, 255, 255,' + (0.03 + 0.08 * r).toFixed(3) + ')' : 'rgba(0, 0, 0,' + (0.03 + 0.08 * (r - 0.5)).toFixed(3) + ')';
+      ctx.fillRect(x, y + k, w, 0.6);
+    }
+    ctx.restore();
+    // 開口的倒角：上緣背光較暗、下緣迎光較亮
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.55)';
+    roundRect(ctx, fx - 0.5, l.ST - 0.5, fw + 1, l.SH + 1, 3.5);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.fillRect(fx + 3, l.ST + l.SH + 1, fw - 6, 1);
   }
 
   // 強度曲線下方以該處的實際顏色（色度，亮度拉到最大）填色，往基線逐漸淡出，呈現光譜的層次。
@@ -1006,7 +1104,7 @@
     // 游標線：柔和光暈＋實線
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(x, l.ST - 2); ctx.lineTo(x, l.ST + l.SH + 2);
+    ctx.moveTo(x, l.ST); ctx.lineTo(x, l.ST + l.SH);
     ctx.moveTo(x, l.GT - 4); ctx.lineTo(x, l.GB);
     ctx.strokeStyle = rgba(pc, dark ? 0.28 : 0.18);
     ctx.lineWidth = 5;
@@ -1014,8 +1112,8 @@
     ctx.strokeStyle = colors.probe;
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    // 屏幕上下緣的小三角形指標
-    [[l.ST - 1, 1], [l.ST + l.SH + 1, -1]].forEach(function (q) {
+    // 屏幕外框上下緣的小三角形指標
+    [[l.ST - l.BZ, 1], [l.ST + l.SH + l.BZ + 3, -1]].forEach(function (q) {
       ctx.beginPath();
       ctx.moveTo(x, q[0] + q[1] * 4);
       ctx.lineTo(x - 4.5, q[0] - q[1] * 3);
@@ -1032,17 +1130,11 @@
     ctx.arc(x, py, 9, 0, Math.PI * 2);
     ctx.fillStyle = rgba(pc, dark ? 0.24 : 0.16);
     ctx.fill();
-    const gr = ctx.createRadialGradient(x - 1.6, py - 1.6, 0.5, x, py, 5);
-    gr.addColorStop(0, rgba(pc.map(function (v) { return Math.round(v + (255 - v) * 0.65); }), 1));
-    gr.addColorStop(0.5, colors.probe);
-    gr.addColorStop(1, rgba(pc.map(function (v) { return Math.round(v * 0.7); }), 1));
     ctx.beginPath();
-    ctx.arc(x, py, 5, 0, Math.PI * 2);
-    ctx.fillStyle = gr;
+    ctx.arc(x, py, 6.4, 0, Math.PI * 2);
+    ctx.fillStyle = colors['canvas-bg'];
     ctx.fill();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = colors['canvas-bg'];
-    ctx.stroke();
+    LD.ball(ctx, x, py, 5, colors.probe, { shadow: false });
     // 數值卡片：圓角、投影、左側游標色條
     ctx.font = '12px system-ui, sans-serif';
     const t1 = 'y = ' + fmtLen(y), t2 = [['I/I', 0], ['0', 1], [' = ' + I.toFixed(3), 0]];
@@ -1163,6 +1255,50 @@
     }
   }
 
+  // ---------- 無障礙：示意圖的文字描述、讀數播報 ----------
+  function modeName() {
+    return state.mode === 'single' ? T('單狹縫', 'Single slit') : state.mode === 'double' ? T('雙狹縫', 'Double slit') : T(slitCount() + ' 條狹縫（光柵）', slitCount() + ' slits (grating)');
+  }
+  /** 俯視示意圖（沒有可拖曳的物件）：role="img"，參數改變時更新描述 */
+  function updateSceneLabel() {
+    const src = state.white ? T('白光', 'white light') : T('波長 ' + state.lam + ' nm 的' + SC.colorName(state.lam), 'light of wavelength ' + state.lam + ' nm (' + COLOR_EN[SC.colorName(state.lam)] + ')');
+    const geo = T('縫寬 a = ' + trimNum(state.a, 1) + ' μm', 'slit width a = ' + trimNum(state.a, 1) + ' μm') +
+      (state.mode === 'single' ? '' : T('，縫距 d = ' + trimNum(state.d, 1) + ' μm', ', slit separation d = ' + trimNum(state.d, 1) + ' μm')) +
+      T('，屏幕距離 L = ', ', screen distance L = ') + state.L.toFixed(2) + ' m';
+    const t = T('俯視示意圖（未依比例）：' + src + '射向' + modeName() + '，' + geo + '。光波通過狹縫後向外擴散，在屏幕前互相干涉。',
+      'Top view (schematic, not to scale): ' + src + ' falls on ' + (state.mode === 'single' ? 'a single slit' : state.mode === 'double' ? 'a double slit' : slitCount() + ' slits (a grating)') + ', ' + geo + '. The waves spread out from the slits and interfere before reaching the screen.');
+    if (scene.cv.getAttribute('aria-label') !== t) scene.cv.setAttribute('aria-label', t);
+  }
+  /** 改參數後播報最重要的結果（aria-live="polite"；停止變動 0.8 秒後才念，內容沒變就不念） */
+  let sayTimer = 0, lastSaid = '';
+  function resultText() {
+    const g = function (id) { return $(id).textContent; };
+    const head = (state.white ? T('白光、', 'White light, ') : state.lam + ' nm' + T('、', ', ')) + modeName() + T('：', ': ');
+    if (state.mode === 'single') {
+      return head + T('中央亮帶寬度 ≈ ', 'central maximum width ≈ ') + g('rW') + T('，兩側亮帶寬度 ≈ ', ', side maxima width ≈ ') + g('rWs') + T('。', '.');
+    }
+    return head + T('亮紋間距 Δy ≈ ', 'fringe spacing Δy ≈ ') + g('rDy') + T('，中央亮帶寬度 ≈ ', ', central maximum width ≈ ') + g('rW') +
+      T('，中央亮帶內有 ', ', bright fringes in the central maximum: ') + g('rCount') + T('，缺級：', '; missing orders: ') + g('rMissing') + T('。', '.');
+  }
+  function scheduleSay() {
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(function () {
+      const t = resultText();
+      if (t === lastSaid) return;
+      const first = !lastSaid;
+      lastSaid = t;
+      if (!first && userActed) $('srSay').textContent = t; // 載入頁面時不念
+    }, 800);
+  }
+  // 拖曳游標時的讀數：另一個 .sr-only 狀態列，至少間隔 1 秒才更新；放開時再更新一次
+  let srLast = 0, srTimer = 0;
+  function sayCursor(now) {
+    clearTimeout(srTimer);
+    const t = performance.now();
+    if (now || t - srLast >= 1000) { srLast = t; $('srNow').textContent = cursorDesc(); }
+    else srTimer = setTimeout(function () { sayCursor(true); }, 1000 - (t - srLast));
+  }
+
   // ---------- 重畫排程 ----------
   let pending = false;
   function requestDraw() {
@@ -1171,6 +1307,8 @@
     requestAnimationFrame(function () {
       pending = false;
       updateReadout();
+      updateSceneLabel();
+      scheduleSay();
       drawPattern();
       if (!state.anim || !sceneVisible) drawScene();
       scheduleMission();
@@ -1288,6 +1426,7 @@
     const x = Math.min(layout.PL + layout.PW, Math.max(layout.PL, ev.clientX - r.left));
     state.cursorY = xToY(x);
     requestDraw();
+    sayCursor();
   }
   pat.cv.addEventListener('pointerdown', function (ev) {
     dragging = true;
@@ -1297,20 +1436,55 @@
   pat.cv.addEventListener('pointermove', function (ev) {
     if (dragging || ev.pointerType === 'mouse') setCursorFromEvent(ev);
   });
-  const endDrag = function () { dragging = false; scheduleMission(); };
+  const endDrag = function () { if (dragging) sayCursor(true); dragging = false; scheduleMission(); };
   pat.cv.addEventListener('pointerup', endDrag);
   pat.cv.addEventListener('pointercancel', endDrag);
-  pat.cv.addEventListener('keydown', function (ev) {
-    if (!layout) return;
-    const stepY = 2 * halfRange() / layout.PW * (ev.shiftKey ? 10 : 1);
-    let y = state.cursorY === null ? 0 : state.cursorY;
-    if (ev.key === 'ArrowLeft') y -= stepY;
-    else if (ev.key === 'ArrowRight') y += stepY;
-    else if (ev.key === 'Home') y = 0;
-    else return;
-    ev.preventDefault();
+
+  // 鍵盤（js/keys.js）：左右方向鍵移動游標，每次 1 個圖寬像素（與滑鼠拖曳的解析度相同），Shift 為 10 倍；
+  // 限制與拖曳相同（不超出屏幕顯示範圍）；Home 回到中央 y = 0
+  function cursorDesc() {
+    if (state.cursorY === null) return T('游標尚未放置，按左右方向鍵放在屏幕中央附近。', 'The cursor is not placed yet; press the left or right arrow key to put it near the centre.');
+    const p = params(), y = state.cursorY, I = Itot(p, y), s = SC.sinTheta(y, p.L);
+    let t = 'y = ' + fmtLen(y) + T('，相對光強 I/I0 = ', ', relative intensity I/I0 = ') + I.toFixed(3);
+    if (!state.white && p.N > 1) t += T('，程差 d sinθ = ', ', path difference d sinθ = ') + (p.d * s / p.lambda).toFixed(2).replace('-', '−') + ' λ';
+    return t;
+  }
+  function moveCursorBy(dx, big) {
+    if (!dx || !layout) return false;
+    const stepY = 2 * halfRange() / layout.PW * (big ? 10 : 1);
+    const y = (state.cursorY === null ? 0 : state.cursorY) + dx * stepY;
     state.cursorY = Math.max(-halfRange(), Math.min(halfRange(), y));
     requestDraw();
+    return true;
+  }
+  let kb = null;
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(pat.cv, {
+      label: T('屏幕上的條紋與相對光強 I/I0 對位置 y 的關係圖。可點擊或拖曳放置游標；鍵盤：左右方向鍵移動游標（Shift 移動 10 倍），Home 回到中央，會念出位置與相對光強。',
+        'Fringes on the screen and graph of relative intensity I/I0 against position y. Click or drag to place the cursor; keyboard: the left and right arrow keys move the cursor (Shift: 10 times as far), Home returns it to the centre, and the position and relative intensity are read out.'),
+      items: [{ name: function () { return T('游標', 'Cursor'); }, move: function (dx, dy, big) { return moveCursorBy(dx, big); }, describe: cursorDesc }],
+      onChange: requestDraw
+    });
+  }
+  pat.cv.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Home' || !layout) return;
+    ev.preventDefault();
+    state.cursorY = 0;
+    requestDraw();
+    if (kb) kb.say(cursorDesc());
+  });
+
+  // 分享連結（classroom.js 的 LabShare）：還原游標位置（mm；null = 尚未放置），超出顯示範圍時限制在邊緣，與拖曳相同。
+  // classroom.js 在 DOMContentLoaded 之後才載入，所以用佇列登記（載入時會補登記）
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { y: state.cursorY === null ? null : +(state.cursorY / MM).toFixed(4) }; },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      if (o.y === null) state.cursorY = null;
+      else if (isFinite(+o.y) && o.y !== '' && typeof o.y !== 'boolean') state.cursorY = Math.max(-halfRange(), Math.min(halfRange(), +o.y * MM));
+      else return;
+      requestDraw();
+    }
   });
 
   // ---------- 任務模式（missions.js）：設定與游標穩定下來後回報一次 ----------
@@ -1364,6 +1538,7 @@
     sizeCanvas(pat);
     field = null;
     updateReadout();
+    updateSceneLabel();
     drawPattern();
     drawScene();
   }

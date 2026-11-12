@@ -385,4 +385,202 @@ test('日曆：t 與日期互換、每年自動補 1/4 日；春分時太陽黃�
   close(K.wrapPi(K.sunLon(K.T_EQ + K.Y_SID / 4) - Math.PI / 2), 0, 1e-12, '夏至');
 });
 
+// ---------------------------------------------------------------------------
+// 觀測地點：城市清單、時區與夏令時間、當地的一天、月出月落與真實資料比對、各地看到的月亮
+// ---------------------------------------------------------------------------
+test('地點清單：臺灣＋18 個城市（選單共 20 項含手動輸入）；南半球至少 3 個、赤道附近至少 2 個；時區有效', () => {
+  assert.strictEqual(K.PLACES.length, 19, '臺灣＋18 個城市');
+  assert.strictEqual(K.PLACES[0].id, 'tw', '第一個是臺灣（選單第 2 項，預設）');
+  const tw = K.placeById('tw');
+  assert.ok(tw.lat === 23.5 && tw.lon === 121 && tw.utc === 8 && !tw.tz, '臺灣維持原本的北緯 23.5°、東經 121°、UTC+8');
+  close(tw.lat * D, K.LAT_TW, 0, '與 LAT_TW 相同'); close(tw.lon * D, K.LON_TW, 0, '與 LON_TW 相同');
+  const ids = new Set();
+  K.PLACES.forEach(p => {
+    assert.ok(!ids.has(p.id), '代號重複 ' + p.id); ids.add(p.id);
+    assert.ok(Math.abs(p.lat) <= 90 && Math.abs(p.lon) <= 180, p.id + ' 經緯度範圍');
+    assert.ok(Math.abs(p.lat * 100 - Math.round(p.lat * 100)) < 1e-9 && Math.abs(p.lon * 100 - Math.round(p.lon * 100)) < 1e-9, p.id + ' 取到 0.01°');
+    assert.ok(p.zh && p.en && !/[㐀-鿿]/.test(p.en), p.id + ' 中英文名稱');
+    if (p.tz) {
+      const o = K.zoneOffset(p.tz, Date.UTC(2026, 0, 15));
+      assert.ok(o != null && o >= -12 && o <= 14, p.id + ' 的 IANA 時區 ' + p.tz + ' 要能用 Intl 換算');
+      // 標準時間與經度推估的時區差不到 3.5 小時（防止把經度的正負號寫反）
+      assert.ok(Math.abs(K.standardOffset(p) - p.lon / 15) < 3.5, p.id + ' 時區與經度相符');
+    }
+  });
+  assert.ok(K.PLACES.filter(p => p.lat < 0).length >= 3, '南半球至少 3 個');
+  assert.ok(K.PLACES.filter(p => Math.abs(p.lat) < 5).length >= 2, '赤道附近至少 2 個');
+  assert.ok(K.PLACES.some(p => p.lat > 60), '高緯度（60° 以上）');
+  assert.ok(K.PLACES.some(p => p.lon < -60) && K.PLACES.some(p => p.lon > 120) && K.PLACES.some(p => Math.abs(p.lon) < 30), '東西各經度帶');
+});
+
+test('手動輸入的地點：超出範圍夾到邊界、UTC 偏移預設 round(經度/15)、取到 0.25 時', () => {
+  let m = K.manualPlace(-33.9, 18.4);
+  assert.deepStrictEqual([m.id, m.lat, m.lon, m.utc], ['man', -33.9, 18.4, 1], '預設 round(18.4/15) = 1');
+  m = K.manualPlace(-33.9, 18.4, 2);
+  assert.strictEqual(m.utc, 2, '可以改成 UTC+2');
+  m = K.manualPlace(123, -400, 99);
+  assert.deepStrictEqual([m.lat, m.lon, m.utc], [90, -180, 14], '夾到邊界');
+  m = K.manualPlace('abc', NaN, 'x');
+  assert.deepStrictEqual([m.lat, m.lon, m.utc], [0, 0, 0], '不是數字就用 0');
+  assert.strictEqual(K.manualPlace(10, 80, 5.6).utc, 5.5, '取到 0.25 時');
+  assert.strictEqual(K.defaultUtc(-179.9), -12); assert.strictEqual(K.defaultUtc(172.6), 12); assert.strictEqual(K.defaultUtc(-7.4), 0);
+  // 固定偏移：不計夏令時間
+  const t = K.timeOf(0, K.doyOf(7, 1), 12);
+  close(K.localT(K.manualPlace(51.5, 0, 0), t) - t, -8 / 24, 1e-12, '七月也是 UTC+0');
+});
+
+test('時區與夏令時間（2026 年的規則）：切換前後一分鐘的偏移、23 與 25 小時的一天、新德里 UTC+5:30', () => {
+  const tOf = iso => (Date.parse(iso) - Date.UTC(2026, 0, 1)) / 86400000 + 8 / 24;   // 真實 UTC 瞬間 → 模型時間
+  const off = (id, iso) => K.utcOffset(K.placeById(id), tOf(iso));
+  // 模型時間 ↔ UTC：模型的 1 月 1 日 0 時（UTC+8）＝ 2025-12-31 16:00 UTC
+  close(K.utcMs(0), Date.UTC(2025, 11, 31, 16), 1e-3, 'utcMs(0)');
+  close(K.utcMs(tOf('2026-07-15T10:52:00Z')), Date.parse('2026-07-15T10:52:00Z'), 1e-3, 'utcMs 往返');
+  const cases = [
+    ['newyork', '2026-03-08T06:59Z', -5], ['newyork', '2026-03-08T07:01Z', -4],   // 3 月第 2 個週日 2:00 → 3:00
+    ['newyork', '2026-11-01T05:59Z', -4], ['newyork', '2026-11-01T06:01Z', -5],   // 11 月第 1 個週日 2:00 → 1:00
+    ['london', '2026-03-29T00:59Z', 0], ['london', '2026-03-29T01:01Z', 1],       // 3 月最後一個週日 01:00 UTC
+    ['london', '2026-10-25T00:59Z', 1], ['london', '2026-10-25T01:01Z', 0],
+    ['sydney', '2026-04-04T15:59Z', 11], ['sydney', '2026-04-04T16:01Z', 10],     // 南半球：4 月第 1 個週日結束
+    ['sydney', '2026-10-03T15:59Z', 10], ['sydney', '2026-10-03T16:01Z', 11],     // 10 月第 1 個週日開始
+    ['delhi', '2026-07-15T00:00Z', 5.5], ['tokyo', '2026-07-15T00:00Z', 9], ['singapore', '2026-01-15T00:00Z', 8],
+    ['reykjavik', '2026-07-15T00:00Z', 0], ['buenosaires', '2026-01-15T00:00Z', -3], ['tw', '2026-07-15T00:00Z', 8]
+  ];
+  cases.forEach(c => assert.strictEqual(off(c[0], c[1]), c[2], c[0] + ' ' + c[1]));
+  assert.strictEqual(K.standardOffset(K.placeById('newyork')), -5, '紐約標準時間');
+  assert.strictEqual(K.standardOffset(K.placeById('sydney')), 10, '雪梨標準時間');
+  // 當地的一天：切換那天長 23 或 25 小時，其他天 24 小時；開始時刻都是當地 0 時
+  const dayLen = (id, m, d) => {
+    const p = K.placeById(id), b = K.localDay(p, K.fromLocal(p, K.timeOf(0, K.doyOf(m, d), 12)));
+    close(K.calendar(K.localT(p, b.t0)).hour, 0, 1e-9, id + ' 一天從 0 時開始');
+    return (b.t1 - b.t0) * 24;
+  };
+  close(dayLen('newyork', 3, 8), 23, 1e-9, '紐約 3/8'); close(dayLen('newyork', 11, 1), 25, 1e-9, '紐約 11/1');
+  close(dayLen('sydney', 10, 4), 23, 1e-9, '雪梨 10/4'); close(dayLen('sydney', 4, 5), 25, 1e-9, '雪梨 4/5');
+  close(dayLen('newyork', 7, 15), 24, 1e-9, '平常的一天');
+  // 當地時間 ↔ 模型時間 往返；跳過的時刻往後算、重複的時刻取較早那一次
+  const ny = K.placeById('newyork');
+  for (const tl of [10.25, 66.6, 200.9, 330.01]) close(K.localT(ny, K.fromLocal(ny, tl)), tl, 1e-9, '往返 ' + tl);
+  const gap = K.timeOf(0, K.doyOf(3, 8), 2.5);            // 3/8 02:30 不存在
+  close(K.calendar(K.localT(ny, K.fromLocal(ny, gap))).hour, 3.5, 1e-9, '跳過的 02:30 → 03:30（夏令時間）');
+  const dup = K.timeOf(0, K.doyOf(11, 1), 1.5);           // 11/1 01:30 出現兩次
+  close(K.utcMs(K.fromLocal(ny, dup)), Date.parse('2026-11-01T05:30:00Z'), 1e-3, '重複的 01:30 取夏令時間那一次');
+});
+
+test('預設的臺灣：當地時間就是模型時間（UTC+8），升落與原本的計算完全相同', () => {
+  const tw = K.placeById('tw');
+  let el = K.makeElements({ N0: 1, W0: 2 });
+  for (const t of [0.3, 265.77, 400.123, -3.4]) {
+    assert.strictEqual(K.localT(tw, t), t, 'localT');
+    assert.strictEqual(K.fromLocal(tw, t), t, 'fromLocal');
+    const b = K.localDay(tw, t);
+    assert.deepStrictEqual([b.t0, b.t1], [Math.floor(t), Math.floor(t) + 1], '一天就是 [floor(t), floor(t) + 1)');
+    el = K.placeElongation(el, t, 2);
+    assert.deepStrictEqual(K.riseSet(el, b.t0, 'moon', tw.lat * D, tw.lon * D, b.t1 - b.t0), K.riseSet(el, Math.floor(t), 'moon'), '月出月落');
+    assert.deepStrictEqual(K.riseSet(el, b.t0, 'sun', tw.lat * D, tw.lon * D, 1), K.riseSet(el, Math.floor(t), 'sun'), '日出日落');
+    assert.deepStrictEqual(K.skyOrientation(el, t, tw.lat * D, tw.lon * D), K.skyOrientation(el, t), '亮面方向');
+  }
+});
+
+/*
+ * 與真實資料比對：美國海軍天文台 USNO 的月出月落（https://aa.usno.navy.mil/api/rstt/oneday ，2026-11-12 取得，當地時間，
+ * 四捨五入到分；查詢用的經緯度與 PLACES 相同），以及 JPL Horizons 在 USNO 那一刻的月球地心視赤經、赤緯與距離
+ * （https://ssd.jpl.nasa.gov/api/horizons.api ，COMMAND=301、CENTER=500@399、QUANTITIES=2,20，同日取得）。
+ *
+ * 本模擬的月球軌道是簡化的克卜勒橢圓、太陽是等速的平太陽，不會剛好和真實的月球重合；所以每一筆都把模型的月球放到
+ * 真實月球在那一刻的位置（圓軌道、半徑 = 真實距離），再算「這個地點、這個當地日」的月出或月落。
+ * 模型的恆星時由平太陽定義（春分固定在 3 月 20 日 18:00），比真實的格林威治恆星時（Meeus 式 12.4）多一個固定角 δ ≈ 2.04°；
+ * 赤經同樣加上 δ，時角就與真實相同。這樣比對的正是跟地點有關的全部計算：觀測者位置、地平座標、視差、月面視半徑、
+ * 34′ 大氣折射、IANA 時區（含夏令時間）、當地的一天、二分法找時刻。
+ * 誤差標準：1 分鐘（USNO 四捨五入到分，±0.5 分；其餘差異來自球形地球與 USNO 的細節，實測最多約 0.5 分）。
+ */
+const USNO = [
+  // [地點, USNO 日期（當地）, 事件, USNO 時刻（當地）, 那一刻的 UTC, Horizons 赤經°, 赤緯°, 距離 km]
+  ['tokyo', '2026-03-25', 'set', '00:10', '2026-03-24T15:10Z', 76.996960006, 28.075796882, 368909.55921],
+  ['tokyo', '2026-03-25', 'rise', '09:34', '2026-03-25T00:34Z', 83.310348214, 28.345727661, 369630.32850],
+  ['newyork', '2026-07-15', 'rise', '06:52', '2026-07-15T10:52Z', 130.533690767, 20.306083796, 363102.49401],   // 夏令時間 UTC−4
+  ['newyork', '2026-07-15', 'set', '21:38', '2026-07-16T01:38Z', 139.420326740, 17.034182523, 365620.55651],
+  ['sydney', '2026-12-10', 'rise', '06:01', '2026-12-09T19:01Z', 265.468996418, -27.590652149, 405637.00260],    // 南半球夏令時間 UTC+11
+  ['sydney', '2026-12-10', 'set', '21:14', '2026-12-10T10:14Z', 273.931909311, -27.206952608, 406162.01725],
+  ['reykjavik', '2026-01-20', 'rise', '11:32', '2026-01-20T11:32Z', 322.630778767, -16.585837777, 389960.06946], // 北緯 64°：月亮只出來 7 小時半
+  ['reykjavik', '2026-01-20', 'set', '18:57', '2026-01-20T18:57Z', 326.414071182, -14.978205401, 388927.02232],
+  ['singapore', '2026-06-05', 'set', '10:46', '2026-06-05T02:46Z', 309.512438895, -20.815786029, 400475.02112],  // 赤道附近
+  ['singapore', '2026-06-05', 'rise', '23:14', '2026-06-05T15:14Z', 315.803549123, -18.629613468, 398729.67746],
+  ['capetown', '2026-05-12', 'rise', '02:25', '2026-05-12T00:25Z', 347.369628441, -4.383725851, 381036.11177],
+  ['capetown', '2026-05-12', 'set', '15:02', '2026-05-12T13:02Z', 353.626506934, -1.064468723, 377762.92570],
+  ['tw', '2026-09-23', 'set', '02:18', '2026-09-22T18:18Z', 315.658023605, -18.440140176, 396455.40858],
+  ['tw', '2026-09-23', 'rise', '15:46', '2026-09-23T07:46Z', 322.406514144, -15.762339969, 394179.60798]
+];
+function gmstReal(ms) { // Meeus《Astronomical Algorithms》式 12.4（弧度）
+  const d = ms / 86400000 + 2440587.5 - 2451545, T = d / 36525;
+  return (280.46061837 + 360.98564736629 * d + 0.000387933 * T * T - T * T * T / 38710000) * D;
+}
+test('月出月落與 USNO 比對（7 個地點、14 筆，含南半球、赤道、北緯 64°、夏令時間）：誤差 ≤ 1 分鐘', () => {
+  const rows = [];
+  USNO.forEach(r => {
+    const [id, date, kind, hm, iso, ra, dec, dist] = r;
+    const ms = Date.parse(iso), t = (ms - Date.UTC(2026, 0, 1)) / 86400000 + 8 / 24, p = K.placeById(id);
+    const delta = K.lst(t, 0) - gmstReal(ms);
+    const a = ra * D + delta, de = dec * D;
+    const q = K.eqToEcl(K.v3(Math.cos(de) * Math.cos(a), Math.cos(de) * Math.sin(a), Math.sin(de)));
+    const lam = Math.atan2(q.y, q.x), beta = Math.asin(q.z), inc = 6 * D;   // 傾角取 6°（> |β|），只是為了把月球放到那一點
+    const u = Math.asin(Math.sin(beta) / Math.sin(inc));
+    let el = K.makeElements({ e: 0, a: dist, inc: inc, N0: lam - Math.atan2(Math.cos(inc) * Math.sin(u), Math.cos(u)), regress: false, precess: false });
+    el = K.placeMoonLon(el, t, lam);
+    assert.ok(K.len(K.sub(K.moonAt(el, t), K.mul(q, dist))) < 1e-3, id + '：月球放到真實位置');
+    close(K.wrapPi(delta) / D, 2.04, 0.02, '模型與真實恆星時的固定差');
+    const b = K.localDay(p, t);
+    const rs = K.riseSet(el, b.t0, 'moon', p.lat * D, p.lon * D, b.t1 - b.t0);
+    assert.ok(rs[kind] != null, id + ' ' + date + ' 應有' + (kind === 'rise' ? '月出' : '月落'));
+    const c = K.calendar(K.localT(p, rs[kind]));
+    assert.strictEqual(c.month + '/' + c.day, +date.slice(5, 7) + '/' + +date.slice(8), id + ' 當地日期');
+    const diff = c.hour * 60 - (+hm.slice(0, 2) * 60 + +hm.slice(3));
+    rows.push(id + ' ' + date + ' ' + (kind === 'rise' ? '月出' : '月落') + ' USNO ' + hm + '，模型差 ' + (diff >= 0 ? '+' : '') + diff.toFixed(2) + ' 分');
+    assert.ok(Math.abs(diff) <= 1, id + ' ' + date + ' ' + kind + '：USNO ' + hm + '，模型差 ' + diff.toFixed(2) + ' 分');
+  });
+  rows.forEach(s => console.log('      ' + s));
+});
+
+test('各地看到的月亮：上弦月的亮面北半球在右、南半球在左；赤道的黃昏眉月亮面朝下（像微笑）', () => {
+  const view = (id, dl, hour) => {
+    const p = K.placeById(id), t = K.fromLocal(p, K.timeOf(0, K.doyOf(3, 21), hour));
+    const el = K.placeElongation(K.makeElements({ N0: 2, W0: 1 }), t, dl * D);
+    return { h: K.moonAlt(el, t, p.lat * D, p.lon * D), o: K.skyOrientation(el, t, p.lat * D, p.lon * D) };
+  };
+  // 春分時的上弦月，當地 19:00：月亮在南方（北半球）或北方（南半球）的天空中
+  ['london', 'paris', 'newyork', 'beijing', 'reykjavik'].forEach(id => {
+    const v = view(id, 90, 19);
+    assert.ok(v.h.alt > 20 * D && Math.cos(v.o.limb) > 0.8, id + '：亮面在右（limb ' + (v.o.limb / D).toFixed(0) + '°）');
+  });
+  ['sydney', 'buenosaires', 'capetown'].forEach(id => {
+    const v = view(id, 90, 19);
+    assert.ok(v.h.alt > 20 * D && Math.cos(v.o.limb) < -0.8, id + '：亮面在左（limb ' + (v.o.limb / D).toFixed(0) + '°）');
+    assert.ok(Math.abs(K.wrapPi(v.h.az)) < 20 * D, id + '：月亮在北方');
+  });
+  // 黃昏西方的眉月（黃經差 30°）：赤道附近亮面幾乎朝正下方；北半球朝右下、南半球朝左下
+  ['singapore', 'nairobi'].forEach(id => { const v = view(id, 30, 19); assert.ok(v.h.alt > 10 * D && Math.sin(v.o.limb) < -0.9, id + '：亮面朝下'); });
+  assert.ok(Math.cos(view('london', 30, 19).o.limb) > 0.3 && Math.cos(view('sydney', 30, 19).o.limb) < -0.3, '北半球右下、南半球左下');
+});
+
+test('高緯度：月亮上中天的高度 = 90° − |緯度 − 赤緯|（扣掉視差）；北緯 64° 的月亮在大月停時可以整天不落或整天不升', () => {
+  const p = K.placeById('reykjavik'), lat = p.lat * D, lon = p.lon * D;
+  let el = K.makeElements({ e: 0, regress: false, precess: false, N0: 0 });
+  const t0 = K.timeOf(0, K.doyOf(1, 10), 0);
+  for (const lonM of [90, 0, 270]) {
+    const e2 = K.placeMoonLon(el, t0 + 0.5, lonM * D);
+    const tr = K.transit(e2, t0, 'moon', lat, lon);
+    const dec = K.declination(K.moonAt(e2, tr)), h = K.moonAlt(e2, tr, lat, lon);
+    const hGeo = 90 * D - Math.abs(lat - dec);
+    const par = Math.asin(K.R_EARTH / h.dist * Math.cos(hGeo));   // 地平視差 × cos(高度)
+    close(h.alt, hGeo - par, 0.05 * D, '月球黃經 ' + lonM + '° 的上中天高度');
+  }
+  // 赤緯 +28.6°（> 90° − 64.15°）：整天在地平線上；−28.6°：整天在地平線下；臺灣同一天照常升落
+  const up = K.placeMoonLon(el, t0 + 0.5, 90 * D), dn = K.placeMoonLon(el, t0 + 0.5, 270 * D);
+  const b = K.localDay(p, t0 + 0.5);
+  const rUp = K.riseSet(up, b.t0, 'moon', lat, lon, b.t1 - b.t0), rDn = K.riseSet(dn, b.t0, 'moon', lat, lon, b.t1 - b.t0);
+  assert.ok(rUp.rise == null && rUp.set == null && rUp.upAll, '整天不落');
+  assert.ok(rDn.rise == null && rDn.set == null && !rDn.upAll, '整天不升');
+  const tw = K.riseSet(up, Math.floor(t0 + 0.5), 'moon');
+  assert.ok(tw.rise != null && tw.set != null, '臺灣照常升落');
+});
+
 console.log(`moon-phases-core：${passed} 項通過`);

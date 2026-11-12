@@ -46,7 +46,9 @@
     "moon-phases": "845630f1",
     "earthquake": "d5e6194a",
     "torque-balance": "857c6b3d",
-    "energy-coaster": "47981b92"
+    "energy-coaster": "47981b92",
+    "seasons": "d9138d00",
+    "current-magnetic-field": "fb726177"
   };
   /* VERSIONS-END */
 

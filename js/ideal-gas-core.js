@@ -30,7 +30,7 @@
 
   // ---------- 物理常數與單位換算 ----------
   const KB_SI = 1.380649e-23;        // J/K
-  const U_KG = 1.66053906660e-27;    // kg
+  const U_KG = 1.66053906892e-27;    // kg
   const NA = 6.02214076e23;          // 1/mol
   const R_SI = KB_SI * NA;           // J/(mol·K)
   const E_UNIT = U_KG * 1e6;         // J：1 u·nm²/ps²

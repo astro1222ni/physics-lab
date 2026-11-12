@@ -28,7 +28,7 @@
   'use strict';
 
   const E_CHARGE = 1.602176634e-19; // 基本電荷 C
-  const AMU = 1.66053906660e-27;    // 原子質量單位 kg
+  const AMU = 1.66053906892e-27;    // 原子質量單位 kg
 
   /** 粒子所在位置是否有場 */
   function inField(f, x) {

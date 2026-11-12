@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611121021"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Magnetic Effects of Currents: Fields of a Wire, a Coil and a Solenoid | Astro Ni Science Lab">電流的磁效應：直導線、線圈與螺線管的磁場｜Astro Ni 科學實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="重做厄斯特實驗，用磁針偏角的正切法量出你所在地的地磁水平分量；再用探測點量直導線、圓線圈與螺線管的磁場，並切換 3D 看立體磁力線。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/current-magnetic-field.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/current-magnetic-field.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/current-magnetic-field.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/current-magnetic-field.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 科學實驗室">
+  <meta property="og:title" content="電流的磁效應：直導線、線圈與螺線管的磁場｜Astro Ni 科學實驗室">
+  <meta property="og:description" content="重做厄斯特實驗，用磁針偏角的正切法量出你所在地的地磁水平分量；再用探測點量直導線、圓線圈與螺線管的磁場，並切換 3D 看立體磁力線。">
+  <meta property="og:url" content="https://lab.astroni.org/current-magnetic-field.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/current-magnetic-field.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="電流的磁效應：直導線、線圈與螺線管的磁場的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"電流的磁效應：直導線、線圈與螺線管的磁場","alternateName":"Magnetic Effects of Currents: Wires, Coils and Solenoids","description":"重做厄斯特實驗，用磁針偏角的正切法量出你所在地的地磁水平分量；再用探測點量直導線、圓線圈與螺線管的磁場，並切換 3D 看立體磁力線。","url":"https://lab.astroni.org/current-magnetic-field.html","image":"https://lab.astroni.org/img/og/current-magnetic-field.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611121021">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/current-magnetic-field.js 與 js/current-magnetic-field-3d.js 讀取 */
+    :root {
+      --cm-copper: #b8743d; --cm-brass: #b7924a; --cm-dial: #fbf8f0; --cm-ink: #2b3439; --cm-needle-n: #c8372d;
+      --cm-needle-s: #7f8b92; --cm-table: #e3dccf; --cm-glass: #ffffff; --cm-earth: #0d7f57;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cm-copper: #cf9056; --cm-brass: #c9a55a; --cm-dial: #e9e4d6; --cm-ink: #20282c; --cm-needle-n: #e2483c;
+        --cm-needle-s: #8d999f; --cm-table: #2a2f31; --cm-glass: #bfd6df; --cm-earth: #3fd69a;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cm-copper: #cf9056; --cm-brass: #c9a55a; --cm-dial: #e9e4d6; --cm-ink: #20282c; --cm-needle-n: #e2483c;
+      --cm-needle-s: #8d999f; --cm-table: #2a2f31; --cm-glass: #bfd6df; --cm-earth: #3fd69a;
+    }
+    .cm button { min-height: 44px; }
+    .cm button:disabled { opacity: .45; cursor: not-allowed; }
+    .cm [hidden] { display: none !important; }
+    .cm #cv { aspect-ratio: auto; height: 520px; outline: none; cursor: default; }
+    .cm #cv.grab { cursor: grab; }
+    .cm #cv.grabbing { cursor: grabbing; }
+    .cm #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+    .cm .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 0; }
+    .cm .modes button { padding: 5px 6px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .cm .modes button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .cm .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .cm .modes button[aria-pressed="true"] small { color: var(--surface); opacity: .88; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
+    .cm .slider { margin: 4px 0 6px; }
+    .cm .slider input[type="range"] { height: 28px; margin: 0; }
+    .cm .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .cm .slider label sub, dl.readout sub, .cm .hint sub, table.data sub, .cm .seg2 sub { font-size: .75em; }
+    .cm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cm .checks label { min-height: 44px; }
+    .cm .checks input { width: 18px; height: 18px; flex: none; }
+    .cm select {
+      font: inherit; font-size: calc(15px * var(--fs, 1)); width: 100%; min-height: 44px; padding: 6px 10px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .cm .field-label { display: block; font-size: calc(14px * var(--fs, 1)); margin: 8px 0 4px; }
+    .cm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cm .playbar button { flex: 1 1 auto; }
+    .cm .playbar #record { font-weight: 700; flex: 2 1 9em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cm .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd.em { color: var(--accent); font-weight: 700; }
+    /* 2D／3D 檢視切換（與帶電粒子、電流天平相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.05; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .opts3 { display: none; }
+    .stage.is3d .opts3 { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 8px 4px 0; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .legend .grad { background: linear-gradient(90deg, color-mix(in srgb, var(--neg) 6%, var(--canvas-bg)), var(--neg)) !important; height: 8px !important; width: 34px !important; }
+    /* 數據表與分析：桌機放在畫面下方（左欄），手機在控制面板之後 */
+    .lab.cm { grid-template-areas: "stage panel" "data panel"; grid-template-rows: auto 1fr; }
+    .lab.cm > .stage { grid-area: stage; }
+    .lab.cm > .panel { grid-area: panel; }
+    .lab.cm > .cm-data { grid-area: data; align-self: start; margin: 0; }
+    @media (max-width: 880px) { .lab.cm { grid-template-areas: "stage" "panel" "data"; grid-template-rows: auto; } }
+    .cm-data h2 { font-size: calc(17px * var(--fs, 1)); }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 5px 7px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; background: var(--bg); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.empty td { text-align: center; color: var(--muted); white-space: normal; padding: 14px 8px; }
+    table.data td.em { font-weight: 700; }
+    #gcv { display: block; width: 100%; height: 300px; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; cursor: default; margin-top: 10px; }
+    .cm-data .seg2 { margin: 12px 0 0; }
+    .cm-data .result { margin-top: 10px; }
+    .cm-data .result dd { font-weight: 600; }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .formula.multi .flabel { display: block; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 6px; }
+    @media (max-width: 560px) { #gcv { height: 260px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / <a href=&quot;index.html#ch-magnetism&quot;>Magnetic effects of currents</a>"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ <a href="index.html#ch-magnetism">電流的磁效應</a></nav>
+      <h1 data-en="Magnetic Effects of Currents: Wires, Coils and Solenoids">電流的磁效應：直導線、線圈與螺線管的磁場</h1>
+      <p data-en-html="In 1820 Ørsted saw a compass needle swing when a current flowed in a wire above it. Repeat his experiment: lay a wire north–south over (or under) a compass, change the size and direction of the current and the position of the wire, and predict the swing with the right-hand rule. Record the deflection θ and use tan θ = B<sub>I</sub>/B<sub>H</sub> (B<sub>I</sub> is the wire’s field) to measure the horizontal component of the Earth’s field where you live. Then probe the field of a long straight wire, a circular coil and a solenoid point by point, and switch to 3D to see the field lines in space.">1820 年，厄斯特發現導線通電時，下方的磁針會偏轉。在這裡重做他的實驗：把導線南北向放在磁針上方或下方，改變電流的大小、方向與導線位置，先用安培右手定則預測磁針往哪邊偏。記下偏角 θ，用 tan θ = B<sub>I</sub>/B<sub>H</sub>（B<sub>I</sub> 是導線的磁場）量出你所在地的地磁水平分量。接著用探測點逐點量長直導線、圓線圈與螺線管的磁場，切換到 3D 看立體的磁力線。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: slowly raise the current I to 3 A and watch which way the needle swings; then press “Reverse” and “Below the needle” and compare.">試試看：把電流 I 慢慢調到 3 A，看磁針往哪邊偏；再按「反向」和「磁針下方」比比看。</p>
+    <div class="lab cm">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="opts3 checks" id="opts3">
+          <label><input id="s3lines" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
+          <label><input id="s3needles" type="checkbox"><span data-en="Compass needles">小磁針</span></label>
+          <label><input id="s3filings" type="checkbox"><span data-en="Iron filings">鐵粉</span></label>
+        </div>
+        <div class="playbar">
+          <button type="button" id="record" class="primary" data-en="Record">記錄</button>
+          <button type="button" id="undo" data-en="Delete last row">刪除上一筆</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除數據表與分析圖；設定不變" data-en-title="Clear the data table and the graph; the settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srState" role="status"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint l2" id="hint2"></p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Lengths are to scale in centimetres; the field lines, needles and filings are computed from the same Biot–Savart field as the 2D view.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。長度依實際尺寸（公分）繪製；磁力線、小磁針與鐵粉都由與 2D 相同的畢歐–沙伐磁場計算而來。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">選擇實驗</h2>
+          <div class="modes" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
+            <button type="button" id="mOer" data-mode="oersted" aria-pressed="true" data-en-html="Ørsted’s experiment<small>tangent method</small>">厄斯特實驗<small>正切法</small></button>
+            <button type="button" id="mWire" data-mode="wire" aria-pressed="false" data-en-html="Long straight wire<small>B = μ<sub>0</sub>I/2πr</small>">長直導線<small>B = μ<sub>0</sub>I/2πr</small></button>
+            <button type="button" id="mCoil" data-mode="coil" aria-pressed="false" data-en-html="Circular coil<small>B = μ<sub>0</sub>NI/2R</small>">圓線圈<small>B = μ<sub>0</sub>NI/2R</small></button>
+            <button type="button" id="mSol" data-mode="solenoid" aria-pressed="false" data-en-html="Solenoid<small>B = μ<sub>0</sub>nI</small>">螺線管<small>B = μ<sub>0</sub>nI</small></button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Current">電流</h2>
+          <div class="slider"><label for="I" data-en="Current I">電流 I</label><output id="Io"></output>
+            <input id="I" type="range" min="0" max="5" step="0.01" value="0" data-decimals="2"></div>
+          <div class="seg2" role="group" aria-label="電流方向" data-en-aria-label="Direction of the current">
+            <button type="button" id="dirF" aria-pressed="true" data-en="Forward">正向</button>
+            <button type="button" id="dirR" aria-pressed="false" data-en="Reverse">反向</button>
+          </div>
+          <p class="hint" id="dirHint"></p>
+        </section>
+
+        <section class="card" id="cardOer">
+          <h2 data-en="Wire and compass">導線與磁針</h2>
+          <div class="seg2" role="group" aria-label="導線位置" data-en-aria-label="Position of the wire">
+            <button type="button" id="posAbove" aria-pressed="true" data-en="Above the needle">磁針上方</button>
+            <button type="button" id="posBelow" aria-pressed="false" data-en="Below the needle">磁針下方</button>
+          </div>
+          <div class="slider"><label for="h" data-en="Vertical distance r from wire to needle">導線到磁針的鉛直距離 r</label><output id="ho"></output>
+            <input id="h" type="range" min="1" max="10" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="alpha" data-en="Direction of the wire (from magnetic north towards east)">導線方位（由磁北往東量）</label><output id="alphao"></output>
+            <input id="alpha" type="range" min="-90" max="90" step="1" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="d" data-en="Needle moved sideways d">磁針側移 d</label><output id="do"></output>
+            <input id="d" type="range" min="-8" max="8" step="0.1" value="0" data-decimals="2"></div>
+          <label class="field-label" for="loc" data-en="Where you are (Earth’s field from WMM2025)">所在地（地磁取自 WMM2025）</label>
+          <select id="loc">
+            <option value="taipei" data-en="Taipei">臺北</option>
+            <option value="taichung" data-en="Taichung">臺中</option>
+            <option value="yuanlin" data-en="Yuanlin, Changhua">彰化員林</option>
+            <option value="kaohsiung" data-en="Kaohsiung">高雄</option>
+            <option value="hualien" data-en="Hualien">花蓮</option>
+          </select>
+          <div class="checks">
+            <label><input id="noEarth" type="checkbox"><span data-en="Ignore the Earth’s field (thought experiment)">忽略地磁（假想實驗）</span></label>
+          </div>
+          <p class="hint" data-en="You can also drag the compass sideways or the wire up and down in the side view.">也可以在畫面上左右拖曳羅盤，或在側視圖上下拖曳導線。</p>
+        </section>
+
+        <section class="card" id="cardInst">
+          <h2 data-en="Instruments">儀器</h2>
+          <div class="seg2" role="group" aria-label="儀器" data-en-aria-label="Instruments">
+            <button type="button" id="instIdeal" aria-pressed="true" data-en="Ideal">理想</button>
+            <button type="button" id="instReal" aria-pressed="false" data-en="With errors">含誤差</button>
+          </div>
+          <div class="slider"><label for="dial" data-en="Turn the compass dial (zeroing)">轉動刻度盤（歸零）</label><output id="dialo"></output>
+            <input id="dial" type="range" min="-5" max="5" step="0.1" value="0" data-decimals="1"></div>
+          <p class="hint" id="instHint"></p>
+        </section>
+
+        <section class="card" id="cardShape" hidden>
+          <h2 id="shapeTitle" data-en="The conductor">導體</h2>
+          <div id="coilBox">
+            <div class="slider"><label for="N" data-en="Number of turns N">匝數 N</label><output id="No"></output>
+              <input id="N" type="range" min="1" max="200" step="1" value="50" data-decimals="0"></div>
+            <div class="slider"><label for="R" data-en="Radius R">半徑 R</label><output id="Ro"></output>
+              <input id="R" type="range" min="2" max="8" step="0.1" value="5" data-decimals="2"></div>
+          </div>
+          <div id="solBox">
+            <div class="slider"><label for="Ns" data-en="Total number of turns N">總匝數 N</label><output id="Nso"></output>
+              <input id="Ns" type="range" min="20" max="1000" step="10" value="300" data-decimals="0"></div>
+            <div class="slider"><label for="Ls" data-en="Length L">長度 L</label><output id="Lso"></output>
+              <input id="Ls" type="range" min="5" max="30" step="0.5" value="20" data-decimals="2"></div>
+            <div class="slider"><label for="Rs" data-en="Radius R">半徑 R</label><output id="Rso"></output>
+              <input id="Rs" type="range" min="1" max="6" step="0.1" value="3" data-decimals="2"></div>
+          </div>
+          <h2 style="margin-top:10px" data-en="Probe">探測點</h2>
+          <div class="slider"><label for="px" id="pxLabel">x</label><output id="pxo"></output>
+            <input id="px" type="range" min="-8" max="8" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="py" id="pyLabel">y</label><output id="pyo"></output>
+            <input id="py" type="range" min="-8" max="8" step="0.1" value="0" data-decimals="2"></div>
+          <p class="hint" data-en="Drag the probe on the picture, or tap a number to type an exact position.">在畫面上拖曳探測點，或點一下數字輸入精確位置。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+
+        <section class="card" id="cardDisp">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showLabels" type="checkbox" checked><span data-en="Labels">名稱標示</span></label>
+            <label id="lbVec"><input id="showVec" type="checkbox" checked><span data-en="Field vectors">磁場向量</span></label>
+            <label id="lbLines"><input id="showLines" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
+            <label id="lbMap"><input id="showMap" type="checkbox" checked><span data-en="Field strength (colour)">強度色階</span></label>
+            <label id="lbNeedles"><input id="showNeedles" type="checkbox"><span data-en="Compass needles">小磁針陣列</span></label>
+          </div>
+        </section>
+      </aside>
+
+      <section class="card cm-data" id="dataCard">
+        <h2 data-en="Data table and analysis">數據表與分析</h2>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <dl class="readout result" id="ana"></dl>
+        <div class="seg2" id="gSel" role="group" aria-label="分析圖" data-en-aria-label="Graph">
+          <button type="button" id="gPos" aria-pressed="true" data-en="B against position">B 對位置</button>
+          <button type="button" id="gI" aria-pressed="false" data-en="B against current I">B 對電流 I</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="分析圖"></canvas>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose">實驗目的</h2>
+      <ol>
+        <li data-en="See that a current produces a magnetic field (Ørsted, 1820) and find its direction with the right-hand rule.">觀察電流會產生磁場（厄斯特，1820 年），並用安培右手定則判斷磁場方向。</li>
+        <li data-en="Measure the horizontal component of the Earth’s magnetic field with a compass and a straight wire (the tangent method).">用磁針與長直導線量出地磁的水平分量（正切法）。</li>
+        <li data-en="Find how the field of a long straight wire, a circular coil and a solenoid depends on the current and on position.">找出長直導線、圓線圈與螺線管的磁場如何隨電流與位置改變。</li>
+      </ol>
+
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. Ørsted’s discovery and the right-hand rule">1. 厄斯特的發現與安培右手定則</h3>
+      <p data-en-html="A current-carrying wire is surrounded by a magnetic field whose lines are circles around the wire. Grip the wire with the right hand, thumb along the current: the curled fingers give the direction of \(\vec B\). A compass needle (its north pole) points along the total horizontal field at its position. Directly <em>under</em> a wire carrying current northward, the wire’s field points west; directly <em>over</em> it, east.">載流導線周圍有磁場，磁力線是以導線為中心的同心圓。用右手握住導線、拇指指向電流，四指彎曲的方向就是 \(\vec B\) 的方向。磁針的 N 極指向它所在處的「水平合磁場」。電流向北時，導線<em>正下方</em>的磁場向西，<em>正上方</em>的磁場向東。</p>
+      <h3 data-en="2. The Biot–Savart law">2. 畢歐–沙伐定律</h3>
+      <p data-en-html="Each short piece of current \(I\,\Delta\vec\ell\) contributes">每一小段電流 \(I\,\Delta\vec\ell\) 在距離 \(r\) 處產生的磁場是</p>
+      <div class="formula">\[ \Delta B = \frac{\mu_0}{4\pi}\,\frac{I\,\Delta\ell\,\sin\theta}{r^2} \]</div>
+      <p data-en-html="where \(\theta\) is the angle between \(\Delta\vec\ell\) and \(\vec r\). Adding up all the pieces gives the three results below.">\(\theta\) 是 \(\Delta\vec\ell\) 與 \(\vec r\) 的夾角。把所有小段加起來，得到下面三個結果。</p>
+      <h3 data-en="3. Long straight wire, circular coil, solenoid">3. 長直導線、圓線圈、螺線管</h3>
+      <div class="formula multi">
+        <div><span class="flabel" data-en="Long straight wire">長直導線</span>\[ B = \frac{\mu_0 I}{2\pi r} \]</div>
+        <div><span class="flabel" data-en="Centre of a circular coil">圓線圈中心</span>\[ B = \frac{\mu_0 N I}{2R} \]</div>
+        <div><span class="flabel" data-en="Inside a long solenoid">長螺線管內部</span>\[ B = \mu_0 n I \]</div>
+      </div>
+      <p data-en-html="On the axis of a coil, a distance \(x\) from its centre, \(B = \dfrac{\mu_0 N I R^2}{2(R^2+x^2)^{3/2}}\). For a solenoid of length \(L\) with \(n = N/L\) turns per metre, the field on the axis is \(B = \tfrac12\mu_0 n I(\cos\alpha_1 - \cos\alpha_2)\), where \(\alpha_1, \alpha_2\) are the angles at which the two ends are seen; deep inside a long solenoid this is \(\mu_0 n I\), and at either mouth about half of it.">圓線圈軸上、距中心 \(x\) 處：\(B = \dfrac{\mu_0 N I R^2}{2(R^2+x^2)^{3/2}}\)。長 \(L\)、每公尺 \(n = N/L\) 匝的螺線管，軸上 \(B = \tfrac12\mu_0 n I(\cos\alpha_1 - \cos\alpha_2)\)，\(\alpha_1, \alpha_2\) 是從該點看兩端的角度；細長螺線管的內部接近 \(\mu_0 n I\)，管口大約只剩一半。</p>
+      <h3 data-en="4. The tangent method">4. 正切法</h3>
+      <p data-en-html="Lay the wire north–south, directly over (or under) the needle, a distance \(r\) away. The wire’s field \(B_I = \mu_0 I/(2\pi r)\) at the needle is horizontal and points east or west, at right angles to the Earth’s horizontal component \(B_H\). The needle lines up with the sum, so it turns through \(\theta\) with">導線南北向、放在磁針正上方（或正下方），距離 \(r\)。導線在磁針處的磁場 \(B_I = \mu_0 I/(2\pi r)\) 是水平的、指向東或西，正好與地磁水平分量 \(B_H\) 垂直。磁針沿兩者的合磁場，偏轉角 \(\theta\) 滿足</p>
+      <div class="formula multi">\[ \tan\theta = \frac{B_I}{B_H} \] \[ \Longrightarrow\quad B_I = B_H\tan\theta \]</div>
+      <p data-en-html="Plot \(B_I\) (worked out from \(I\) and \(r\)) against \(\tan\theta\): the points lie on a straight line through the origin whose slope is \(B_H\). At \(\theta = 45^\circ\) the wire’s field equals \(B_H\).">以 \(B_I\)（由 \(I\)、\(r\) 算出）對 \(\tan\theta\) 作圖，應是一條通過原點的直線，斜率就是 \(B_H\)。偏角 45° 時，導線的磁場剛好等於 \(B_H\)。</p>
+
+      <h2 data-en="Procedure (tangent method)">步驟（正切法）</h2>
+      <ol>
+        <li data-en="With no current, let the needle settle. Turn the dial until the needle reads 0°; then lay the wire along the needle (north–south) directly over it.">不通電，等磁針靜止。轉動刻度盤讓指針對準 0°，再把導線沿著磁針（南北向）放在它的正上方。</li>
+        <li data-en="Measure the vertical distance r from the wire to the needle.">量出導線到磁針的鉛直距離 r。</li>
+        <li data-en="Switch on and set a current I. When the needle is still, read θ and press “Record”. Reverse the current, read the deflection on the other side and record again.">通電並調好電流 I，等磁針停穩後讀出偏角 θ，按「記錄」。把電流反向，讀另一邊的偏角，再記錄一次。</li>
+        <li data-en="Repeat for several currents (aim for θ between about 30° and 60°) and two or three distances r.">換幾個不同的電流（偏角最好在 30°～60° 之間），以及兩、三個不同的 r，重複上面的步驟。</li>
+        <li data-en-html="Plot \(B_I\) against \(\tan\theta\) and find \(B_H\) from the slope.">以 \(B_I\) 對 \(\tan\theta\) 作圖，由斜率求出 \(B_H\)。</li>
+      </ol>
+
+      <h2 data-en="Precautions">注意事項</h2>
+      <ul>
+        <li data-en-html="The wire must lie along the needle’s rest direction (magnetic north, not true north) and directly over or under the pivot; otherwise tan θ = B<sub>I</sub>/B<sub>H</sub> no longer holds.">導線一定要沿著磁針靜止時的方向（磁北，不是地理北），而且在轉軸的正上方或正下方，否則 tan θ = B<sub>I</sub>/B<sub>H</sub> 不成立。</li>
+        <li data-en="Keep iron, magnets, phones and the power supply’s leads away from the compass; bring the two leads to and from the wire together so that their fields cancel.">鐵器、磁鐵、手機與電源的導線都要遠離羅盤；通往導線的兩條引線要並在一起，讓它們的磁場互相抵消。</li>
+        <li data-en="Read θ when the needle is still, looking straight down to avoid parallax.">磁針停穩後再讀偏角，視線垂直刻度盤以免視差。</li>
+        <li data-en-html="Small angles are hard to read accurately, and near 90° tan θ changes very fast: angles around 45° give the most reliable B<sub>H</sub>.">偏角太小不容易讀準，接近 90° 時 tan θ 變化太快：45° 附近求出的 B<sub>H</sub> 最可靠。</li>
+        <li data-en="Do not leave a large current on for long: the wire heats up.">大電流不要開太久，導線會發熱。</li>
+      </ul>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en="Move the wire from above the needle to below it: the needle swings the other way. Reverse the current: it swings the other way again.">把導線從磁針上方移到下方，磁針改往另一邊偏；電流反向，又再反過來。</li>
+        <li data-en="Turn the wire east–west: with the needle directly under it the wire’s field is along the Earth’s field, and the needle does not turn at all — unless a large current reverses the total field.">把導線轉成東西向：磁針在正下方時，導線的磁場與地磁同一直線，磁針完全不偏——除非電流大到讓合磁場反向。</li>
+        <li data-en="Slide the compass sideways: part of the wire’s field becomes vertical, which a compass cannot feel, so the deflection becomes smaller.">把羅盤往旁邊移：導線磁場有一部分變成鉛直方向，水平放的磁針感覺不到，偏角變小。</li>
+        <li data-en="A stronger total field makes the needle swing faster (the period is proportional to 1/√B).">合磁場越強，磁針擺得越快（週期與 1/√B 成正比）。</li>
+        <li data-en-html="For the straight wire, double the distance: \(B\) halves. For the coil, move along the axis to \(x = R\): \(B\) falls to \(1/(2\sqrt2)\) of the centre value. For the solenoid, compare the centre, the mouth and the outside.">直導線：距離加倍，\(B\) 減半。圓線圈：沿軸移到 \(x = R\)，\(B\) 只剩中心的 \(1/(2\sqrt2)\)。螺線管：比較中央、管口與管外。</li>
+        <li data-en-html="Make the solenoid long and thin: its inside approaches the ideal uniform field μ<sub>0</sub>nI and the field outside almost vanishes.">把螺線管做得又細又長：管內越來越接近均勻的 μ<sub>0</sub>nI，管外的磁場幾乎消失。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li data-en="Why must the wire be laid north–south rather than east–west in Ørsted’s experiment?">厄斯特實驗中，導線為什麼要南北向放置，而不是東西向？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="The wire’s field at the needle is perpendicular to the wire. A north–south wire gives an east–west field, at right angles to the Earth’s field, so the needle turns. An east–west wire gives a field along the needle; it only strengthens (or weakens) the Earth’s field and the needle stays put.">導線在磁針處的磁場與導線垂直。南北向的導線產生東西向的磁場，與地磁垂直，所以磁針偏轉；東西向的導線產生的磁場沿著磁針，只是加強（或減弱）地磁，磁針不會轉。</p></details></li>
+        <li data-en-html="With \(r = 2.0\ \mathrm{cm}\) a current of 3.6 A turns the needle through 45°. Estimate \(B_H\).">\(r = 2.0\ \mathrm{cm}\) 時，3.6 A 的電流使磁針偏 45°。估計 \(B_H\)。
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(B_H = B_I/\tan 45^\circ = \mu_0 I/(2\pi r) = (2.0\times10^{-7})(3.6)/0.020 \approx 3.6\times10^{-5}\ \mathrm{T}\), about 36 μT.">\(B_H = B_I/\tan 45^\circ = \mu_0 I/(2\pi r) = (2.0\times10^{-7})(3.6)/0.020 \approx 3.6\times10^{-5}\ \mathrm{T}\)，約 36 μT。</p></details></li>
+        <li data-en="Why is it better to reverse the current and average the two deflections?">為什麼要把電流反向、取兩邊偏角的平均？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="If the dial’s zero is a little off, every reading on one side is too large by the same amount and every reading on the other side too small. Averaging the two cancels this zero error (and a slight misalignment of the wire).">如果刻度盤的零點有一點偏，一邊的讀數都多了同樣的角度，另一邊都少了同樣的角度。兩邊平均就把零點誤差（以及導線些微沒對準）消掉了。</p></details></li>
+        <li data-en="A coil of 50 turns and radius 5.0 cm carries 2.0 A. Find the field at its centre and on its axis 5.0 cm from the centre.">50 匝、半徑 5.0 cm 的圓線圈通 2.0 A，求中心與軸上距中心 5.0 cm 處的磁場。
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Centre: \(\mu_0 NI/(2R) = (1.2566\times10^{-6})(50)(2.0)/0.10 \approx 1.26\ \mathrm{mT}\). At \(x = R\) it is \(1/(2\sqrt2) \approx 0.354\) of that, about 0.44 mT.">中心：\(\mu_0 NI/(2R) = (1.2566\times10^{-6})(50)(2.0)/0.10 \approx 1.26\ \mathrm{mT}\)。在 \(x = R\) 處為中心的 \(1/(2\sqrt2) \approx 0.354\) 倍，約 0.44 mT。</p></details></li>
+        <li data-en="Why is the field at the mouth of a long solenoid about half the field at its centre?">為什麼長螺線管管口的磁場大約只有中央的一半？
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Put two equal long solenoids end to end: at the joint the field is the full \(\mu_0 nI\), and by symmetry each half supplies the same share. One solenoid alone gives half. (From the formula: at the mouth \(\cos\alpha_1 \approx 1\), \(\cos\alpha_2 = 0\).)">把兩個一樣的長螺線管頭尾相接：接口處是完整的 \(\mu_0 nI\)，由對稱性兩邊各貢獻一半，只有一個時就是一半。（由公式：管口處 \(\cos\alpha_1 \approx 1\)、\(\cos\alpha_2 = 0\)。）</p></details></li>
+      </ol>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="Constant: \(\mu_0 = 1.256\,637\,061\,27\times10^{-6}\ \mathrm{N/A^2}\) (CODATA 2022). Since the 2019 SI revision \(\mu_0\) is a measured quantity, about 1.3 parts in \(10^{10}\) below \(4\pi\times10^{-7}\) — far too small to see here, so \(\mu_0/2\pi \approx 2.0\times10^{-7}\ \mathrm{T\,m/A}\) is fine for hand calculations.">常數：\(\mu_0 = 1.256\,637\,061\,27\times10^{-6}\ \mathrm{N/A^2}\)（CODATA 2022）。2019 年國際單位制改版後，\(\mu_0\) 變成量測值，比 \(4\pi\times10^{-7}\) 小約 \(10^{10}\) 分之 1.3，在這裡完全看不出差別，所以手算時用 \(\mu_0/2\pi \approx 2.0\times10^{-7}\ \mathrm{T\,m/A}\) 就可以。</li>
+        <li data-en-html="Earth’s field: the World Magnetic Model WMM2025 (NOAA NCEI and the British Geological Survey) evaluated for November 2026 at sea level. Horizontal components: Taipei 36.18 μT, Taichung 36.60 μT, Yuanlin 36.68 μT, Kaohsiung 37.20 μT, Hualien 36.59 μT; declination about 4.4°–5.1° west of true north. Local disturbances (steel in buildings, cables) can change the real value by a few per cent.">地磁：World Magnetic Model WMM2025（美國 NOAA NCEI 與英國地質調查所）算出的 2026 年 11 月海平面數值。水平分量：臺北 36.18 μT、臺中 36.60 μT、員林 36.68 μT、高雄 37.20 μT、花蓮 36.59 μT；磁偏角約偏西 4.4°～5.1°。實際教室裡的鋼筋、電纜可能讓數值相差百分之幾。</li>
+        <li data-en-html="Ørsted / tangent method: the wire is an infinitely long straight wire, \(\vec B = \mu_0 I/(2\pi\rho^2)\,\hat u\times\vec\rho\). The needle feels only the horizontal part of the field. It turns according to \(\ddot\varphi = (m/J)(B_x\cos\varphi - B_y\sin\varphi) - (c/J)\dot\varphi\), integrated with fourth-order Runge–Kutta in steps of at most 1/600 s (without damping the energy drifts by less than one part in \(10^9\) per minute). With the Taipei field the needle swings with a period of 1.6 s.">厄斯特實驗與正切法：導線視為無限長直導線，\(\vec B = \mu_0 I/(2\pi\rho^2)\,\hat u\times\vec\rho\)；磁針只感受水平分量。磁針的轉動 \(\ddot\varphi = (m/J)(B_x\cos\varphi - B_y\sin\varphi) - (c/J)\dot\varphi\)，用四階 Runge–Kutta 法、步長不超過 1/600 s 積分（不加阻尼時，每分鐘能量漂移不到 \(10^9\) 分之 1）。在臺北的地磁下，磁針擺動週期 1.6 s。</li>
+        <li data-en="“Ideal” instruments: exact ammeter, dial zeroed, frictionless pivot. “With errors”: the ammeter has a calibration error of up to ±0.4 %, the dial’s zero is off by 1°–2° (turn the dial to fix it), and pivot friction lets the needle stop up to ±0.15° from the true direction in the Earth’s field alone (less in a stronger field). The errors are different every time the page is loaded.">「理想」儀器：電流表準確、刻度盤已歸零、轉軸沒有摩擦。「含誤差」：電流表最多 ±0.4% 校正誤差；刻度盤零點偏 1°～2°（轉動刻度盤可以修正）；轉軸有摩擦，只有地磁時磁針可能停在離真正方向 ±0.15° 內（磁場越強越小）。每次打開頁面誤差都不同。</li>
+        <li data-en-html="Coil: each turn is an exact circular current (complete elliptic integrals \(K\) and \(E\)), checked against a 20 000-sided polygon summed with the Biot–Savart law. Solenoid: the winding is a current sheet; its field is the closed-form result of Derby and Olbert (Am. J. Phys. 78, 229, 2010) using Bulirsch’s generalized complete elliptic integral, checked against adding up thousands of circular loops and against Ampère’s law.">圓線圈：每一匝是精確的圓電流（完全橢圓積分 \(K\)、\(E\)），並與 20000 邊的多邊形用畢歐–沙伐定律相加的結果比對。螺線管：繞線視為面電流，磁場用 Derby 與 Olbert（Am. J. Phys. 78, 229, 2010）的閉合解（Bulirsch 廣義完全橢圓積分），並與數千個圓線圈相加及安培定律比對。</li>
+        <li data-en="Field lines are traced along the field direction with fourth-order Runge–Kutta. In the 2D cross-section the starting points on the central plane are spaced so that equal amounts of ∫B dy lie between neighbouring lines, so the spacing there shows the field strength (away from that plane it is only approximate; the colour map shows |B| exactly on a logarithmic scale). Around the straight wire the circles are spaced so that their density is proportional to 1/r. The number of lines is proportional to the current.">磁力線沿磁場方向用四階 Runge–Kutta 法描出。2D 剖面中，起點排在中央平面上，相鄰兩線之間的 ∫B dy 相等，所以那裡的疏密代表磁場強弱（離開中央平面後只是近似；強度色階以對數刻度精確表示 |B|）。直導線周圍的同心圓間距使疏密與 1/r 成正比。磁力線的條數與電流成正比。</li>
+        <li data-en="The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D. For the coil and the solenoid each 3D field line starts on the central disc and carries the same magnetic flux (sunflower arrangement), so the density of lines in space is proportional to B. Compass needles point along the local field; iron filings lie along it and are placed more densely where the field is stronger (an illustration, not a simulation of how filings clump).">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。圓線圈與螺線管的每條立體磁力線都從中央圓盤出發、帶著相同的磁通量（向日葵排列），所以空間中的疏密與 B 成正比。小磁針沿當地磁場方向；鐵粉沿磁場排列，磁場越強放得越密（示意，不是模擬鐵粉互相吸引聚集的過程）。</li>
+        <li data-en="Sound (off by default): a click when you record and a soft chime when the needle comes to rest.">音效（預設關閉）：記錄時「喀」一聲，磁針停穩時有輕柔的提示音。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics IV · Magnetic Effects of Currents (Ørsted’s experiment is also a demonstration in the required course, “Unification of Electricity and Magnetism”).">課綱對應：選修物理Ⅳ・電流的磁效應（厄斯特實驗也是必修物理「電與磁的統一」的示範實驗）。</li>
+        <li data-en-html="Vacuum magnetic permeability μ<sub>0</sub> = 1.256 637 061 27(20) × 10<sup>−6</sup> N/A<sup>2</sup>, CODATA 2022 (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?mu0&quot;>NIST</a>).">真空磁導率 μ<sub>0</sub> = 1.256 637 061 27(20) × 10<sup>−6</sup> N/A<sup>2</sup>，CODATA 2022（<a href="https://physics.nist.gov/cgi-bin/cuu/Value?mu0">NIST</a>）。</li>
+        <li data-en-html="Earth’s magnetic field: <a href=&quot;https://www.ncei.noaa.gov/products/world-magnetic-model&quot;>World Magnetic Model WMM2025</a> (NOAA NCEI and BGS, valid 2025–2029); values computed from the official <a href=&quot;https://www.ncei.noaa.gov/products/world-magnetic-model/wmm-coefficients&quot;>WMM2025 coefficient file</a> for 2026.87 (November 2026), checked against the model’s published test values.">地磁：<a href="https://www.ncei.noaa.gov/products/world-magnetic-model">World Magnetic Model WMM2025</a>（美國 NOAA NCEI 與英國地質調查所，適用 2025–2029 年）；以官方 <a href="https://www.ncei.noaa.gov/products/world-magnetic-model/wmm-coefficients">WMM2025 係數檔</a>計算 2026.87（2026 年 11 月）的數值，並與模型公布的測試值核對。</li>
+        <li data-en="Solenoid field: N. Derby and S. Olbert, “Cylindrical magnets and ideal solenoids”, American Journal of Physics 78, 229–235 (2010).">螺線管磁場：N. Derby、S. Olbert，〈Cylindrical magnets and ideal solenoids〉，American Journal of Physics 78, 229–235（2010）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/12-2-magnetic-field-due-to-a-thin-straight-wire&quot;>OpenStax University Physics Vol. 2 — 12.2 Magnetic Field Due to a Thin Straight Wire</a>; HyperPhysics: <a href=&quot;https://hyperphysics.gsu.edu/hbase/magnetic/curloo.html&quot;>Magnetic Field of a Current Loop</a>, <a href=&quot;https://hyperphysics.gsu.edu/hbase/magnetic/solenoid.html&quot;>Solenoids as Magnetic Field Sources</a>.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-2/pages/12-2-magnetic-field-due-to-a-thin-straight-wire">OpenStax University Physics 第二冊 12.2 細長直導線的磁場</a>；HyperPhysics：<a href="https://hyperphysics.gsu.edu/hbase/magnetic/curloo.html">圓電流的磁場</a>、<a href="https://hyperphysics.gsu.edu/hbase/magnetic/solenoid.html">螺線管的磁場</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611121021"></script>
+  <script src="js/current-magnetic-field-core.js?v=202611121021"></script>
+  <script src="js/sound.js?v=202611121021"></script>
+  <script src="js/numinput.js?v=202611121021"></script>
+  <script src="js/drawkit.js?v=202611121021"></script>
+  <script src="js/keys.js?v=202611121021"></script>
+  <script src="js/current-magnetic-field-3d.js?v=202611121021"></script>
+  <script src="js/current-magnetic-field.js?v=202611121021"></script>
+  <script src="js/firebase-config.js?v=202611121021"></script>
+  <script src="js/missions.js?v=202611121021" data-module="current-magnetic-field"></script>
+  <script src="js/missions/current-magnetic-field.js?v=202611121021"></script>
+  <script src="js/stats.js?v=202611121021" data-module="current-magnetic-field"></script>
+  <script src="js/comments.js?v=202611121021"></script>
+</body>
+</html>

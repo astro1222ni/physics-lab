@@ -66,21 +66,17 @@
       '--pos', '--neg', '--equi', '--field', '--probe', '--b-mech', '--b-optics', '--b-wave', '--b-em']
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
     colors.dark = isDark();
+    colorVer++;
   }
-  function rgbOf(c) {
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(c).trim());
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    const n = String(c).match(/[\d.]+/g);
-    return n && n.length >= 3 ? [+n[0], +n[1], +n[2]] : [128, 128, 128];
-  }
-  function alpha(c, a) { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; }
-  /** f > 0 往白色混合、f < 0 往黑色混合 */
-  function shade(c, f) {
-    const r = rgbOf(c), t = f > 0 ? 255 : 0, k = Math.abs(f);
-    return 'rgb(' + r.map(function (x) { return Math.round(x + (t - x) * k); }).join(',') + ')';
-  }
+  let colorVer = 0;
+  let kb = null;    // 畫布鍵盤操作（keys.js）：0 = 發射點、1 = 速度箭頭
+  function kbOn(i) { return !!(kb && kb.focused() && kb.index() === i); }
+  // 共用繪圖工具 LabDraw（js/drawkit.js）：顏色換算、立體球、箭頭、標籤底框、格線
+  const D = window.LabDraw;
+  /** 半透明；shade：f > 0 往白色混合、f < 0 往黑色混合（3D 檢視也透過 bridge 使用） */
+  const alpha = D.alpha, shade = D.shade;
   function isDark() {
-    const r = rgbOf(getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg'));
+    const r = D.rgb(getComputedStyle(document.documentElement).getPropertyValue('--canvas-bg'));
     return (r[0] + r[1] + r[2]) / 3 < 100;
   }
   function col(key) { return colors[key] || colors.accent; }
@@ -190,16 +186,7 @@
   }
   function rDraw() { return 0.75 * Math.hypot(cw, ch) / k; } // 畫軌道時取到的最遠距離（m）
 
-  function roundRect(c, x, y, w, h, r) {
-    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
-    c.beginPath();
-    c.moveTo(x + r, y);
-    c.arcTo(x + w, y, x + w, y + h, r);
-    c.arcTo(x + w, y + h, x, y + h, r);
-    c.arcTo(x, y + h, x, y, r);
-    c.arcTo(x, y, x + w, y, r);
-    c.closePath();
-  }
+  const roundRect = D.roundRect;
   function niceStep(raw) {
     const e = Math.pow(10, Math.floor(Math.log10(raw)));
     const f = raw / e;
@@ -230,169 +217,240 @@
     return !!rg && rg[1] >= Math.PI;
   }
 
-  /** 不變的圖層：背景暈影、星點、距離圈、之前的軌道（參數、主題或軌道清單改變時才重畫） */
+  /** 不變的圖層：背景暈影、星點、距離圈（兩級）、之前的軌道（參數、主題或軌道清單改變時才重畫） */
   function buildBackground() {
     bgDirty = false;
     bg.width = cv.width;
     bg.height = cv.height;
-    const c = bgctx;
+    const c = bgctx, dk = colors.dark;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
     const base = colors['canvas-bg'];
+    // 底色：以中心天體為中心的徑向暈影（中心略亮、四角暗）
     const rg = c.createRadialGradient(cx, cy, Math.min(cw, ch) * 0.05, cx, cy, Math.hypot(cw, ch) * 0.6);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.05) : base);
-    rg.addColorStop(1, shade(base, colors.dark ? -0.4 : -0.05));
+    rg.addColorStop(0, dk ? shade(base, 0.06) : shade(base, 0.6));
+    rg.addColorStop(0.55, base);
+    rg.addColorStop(1, shade(base, dk ? -0.45 : -0.06));
     c.fillStyle = rg;
     c.fillRect(0, 0, cw, ch);
-    // 深色模式：極淡的星點（固定亂數，不閃爍）
-    if (colors.dark) {
+    // 深色模式：星空（固定亂數，不閃爍）：多數是淡淡的小點，少數較亮、帶一點冷暖色調與細小的十字光芒
+    if (dk) {
       let seed = 7;
       const rnd = function () { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-      const n = Math.round(cw * ch / 2600);
+      // 極淡的星雲（銀河帶）：只是背景氣氛
+      c.save();
+      c.translate(cw * 0.5, ch * 0.5);
+      c.rotate(-0.5);
+      c.scale(1, 0.22);
+      const neb = c.createRadialGradient(0, 0, 0, 0, 0, Math.hypot(cw, ch) * 0.55);
+      neb.addColorStop(0, alpha(colors['b-wave'], 0.07));
+      neb.addColorStop(0.6, alpha(colors['b-optics'], 0.03));
+      neb.addColorStop(1, alpha(colors['b-optics'], 0));
+      c.fillStyle = neb;
+      c.beginPath(); c.arc(0, 0, Math.hypot(cw, ch) * 0.55, 0, TAU); c.fill();
+      c.restore();
+      const tints = [colors.text, colors.text, colors.text, colors['b-wave'], colors.equi];
+      const n = Math.round(cw * ch / 2200);
       for (let i = 0; i < n; i++) {
-        const x = rnd() * cw, y = rnd() * ch, r = 0.4 + rnd() * 0.9, a = 0.12 + rnd() * 0.35;
-        c.fillStyle = alpha(colors.text, a);
+        const x = rnd() * cw, y = rnd() * ch, big = rnd() < 0.06;
+        const r = big ? 1 + rnd() * 0.7 : 0.35 + rnd() * 0.75, a = big ? 0.55 + rnd() * 0.35 : 0.1 + rnd() * 0.35;
+        const col = tints[Math.floor(rnd() * tints.length)];
+        if (big) {
+          const g = c.createRadialGradient(x, y, 0, x, y, r * 4);
+          g.addColorStop(0, alpha(col, a * 0.5));
+          g.addColorStop(1, alpha(col, 0));
+          c.fillStyle = g;
+          c.beginPath(); c.arc(x, y, r * 4, 0, TAU); c.fill();
+          c.strokeStyle = alpha(col, a * 0.35);
+          c.lineWidth = 0.6;
+          c.beginPath(); c.moveTo(x - r * 3.5, y); c.lineTo(x + r * 3.5, y); c.moveTo(x, y - r * 3.5); c.lineTo(x, y + r * 3.5); c.stroke();
+        }
+        c.fillStyle = alpha(col, a);
         c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
       }
     }
-    // 距離圈（以中心天體為圓心）
+    // 距離圈（以中心天體為圓心）：兩級——主圈（標距離）與其間的次圈；再加每 30° 一條極淡的徑向線
     const stepM = niceStep(state.view / P().Lu / 2.6) * P().Lu;
     const maxR = Math.hypot(cw, ch) / 2 / k;
-    c.lineWidth = 1;
-    c.font = '11px system-ui, sans-serif';
-    c.textAlign = 'left';
-    c.textBaseline = 'bottom';
-    for (let r = stepM, i = 1; r < maxR; r += stepM, i++) {
-      c.strokeStyle = alpha(colors.text, i % 2 ? 0.06 : 0.1);
-      c.setLineDash([2, 5]);
-      c.beginPath(); c.arc(cx, cy, r * k, 0, TAU); c.stroke();
-      c.setLineDash([]);
+    const snapR = function (r) { return Math.round(r * k * dpr) / dpr; };
+    c.lineWidth = 1 / dpr;
+    if (stepM / 2 * k > 14) {
+      c.strokeStyle = alpha(colors.text, dk ? 0.045 : 0.04);
+      c.beginPath();
+      for (let r = stepM / 2; r < maxR; r += stepM) { c.moveTo(cx + snapR(r), cy); c.arc(cx, cy, snapR(r), 0, TAU); }
+      c.stroke();
+    }
+    c.strokeStyle = alpha(colors.text, dk ? 0.035 : 0.03);
+    c.beginPath();
+    const r0 = Math.max(bodyRadiusPx() * 2.2, 18);
+    for (let i = 0; i < 12; i++) {
+      const a = i * TAU / 12;
+      c.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+      c.lineTo(cx + Math.cos(a) * maxR * k, cy + Math.sin(a) * maxR * k);
+    }
+    c.stroke();
+    c.strokeStyle = alpha(colors.text, dk ? 0.11 : 0.1);
+    c.beginPath();
+    for (let r = stepM; r < maxR; r += stepM) { c.moveTo(cx + snapR(r), cy); c.arc(cx, cy, snapR(r), 0, TAU); }
+    c.stroke();
+    const lf = '11px ' + D.FONT;
+    c.font = lf;
+    for (let r = stepM; r < maxR; r += stepM) {
       const lx = cx + r * k * Math.cos(-2.35), ly = cy + r * k * Math.sin(-2.35); // 左上方（發射點預設在右側）
       const txt = isSun() ? sig(r / K.AU) + ' AU' : group(r / 1000) + ' km';
-      if (lx - c.measureText(txt).width > 8 && ly > 56) {
-        c.fillStyle = alpha(colors.muted, 0.85);
-        c.textAlign = 'right';
-        c.fillText(txt, lx - 3, ly - 1);
-      }
+      if (lx - c.measureText(txt).width > 8 && ly > 56) D.haloText(c, txt, lx - 3, ly - 1, alpha(colors.muted, 0.95), 'right', 'bottom', lf);
     }
-    // 之前的軌道（殘影）
+    // 之前的軌道（殘影）：細線＋發射點的小球
     if (state.show.ghost) {
       c.save();
       c.lineCap = 'round'; c.lineJoin = 'round';
       state.ghosts.forEach(function (g) {
         const pts = conicPts(g.el, rDraw(), 300);
-        c.strokeStyle = alpha(col(g.color), colors.dark ? 0.42 : 0.38);
+        c.strokeStyle = alpha(col(g.color), dk ? 0.42 : 0.38);
         c.lineWidth = 1.3;
         strokePts(c, pts, isClosed(g.el));
-        // 發射點
-        const s = K.stateAt(g.el, 0);
-        c.fillStyle = alpha(col(g.color), 0.6);
-        c.beginPath(); c.arc(X(s.x), Y(s.y), 2.6, 0, TAU); c.fill();
+        const s0 = K.stateAt(g.el, 0);
+        D.ball(c, X(s0.x), Y(s0.y), 2.8, alpha(col(g.color), 1), { glow: 0, shadow: false });
       });
       c.restore();
     }
   }
 
-  // ---------- 繪圖工具 ----------
+  // ---------- 繪圖工具（外觀交給 LabDraw，全站一致） ----------
+  let placed = [];     // 這一幀已經畫好的標籤底框（等時間扇形的面積標籤最後畫，避開它們）
+  let secLabels = [];  // 等時間扇形的面積標籤（drawSectors 先排好候選位置，drawSectorLabels 最後才畫）
   /**
-   * 有半透明圓角底框的標籤，可含下標：parts = [[文字, 是否下標], …] 或單一字串。
-   * ctx.textAlign 決定水平對齊（left/center/right），垂直置中於 y。
+   * 有半透明圓角底框與細邊框的標籤（與 LabDraw.pill 同樣式），可含下標：parts = [[文字, 是否下標], …] 或單一字串。
+   * ctx.textAlign 決定水平對齊（left/center/right），垂直置中於 y；回傳底框 {x, y, w, h}。
    */
   function pill(parts, x, y, color, font, bgAlpha) {
     if (typeof parts === 'string') parts = [[parts, false]];
-    font = font || '600 12px system-ui, sans-serif';
+    font = font || '600 12px ' + D.FONT;
     const size = parseFloat(/(\d+(?:\.\d+)?)px/.exec(font)[1]);
     const subFont = font.replace(/(\d+(?:\.\d+)?)px/, Math.round(size * 0.74) + 'px');
     ctx.textBaseline = 'middle';
     const ws = parts.map(function (p) { ctx.font = p[1] ? subFont : font; return ctx.measureText(p[0]).width; });
     const tw = ws.reduce(function (a, b) { return a + b; }, 0);
     ctx.font = font;
-    const m = ctx.measureText('Hg');
-    const fh = m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : size * 1.25;
-    const ph = fh + 3, pw = tw + 10;
+    const fh = D.textHeight(ctx.measureText('Hg'), size * 1.25);
+    const ph = fh + 4, pw = tw + 12;
     const al = ctx.textAlign;
-    let bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - pw : x - 5;
+    let bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - pw : x - 6;
     bx = Math.max(2, Math.min(cw - pw - 2, bx)); // 不要被畫布邊緣切掉
-    ctx.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.86 : bgAlpha);
     roundRect(ctx, bx, y - ph / 2, pw, ph, ph / 2);
+    ctx.fillStyle = alpha(colors['canvas-bg'], Math.min(0.93, (bgAlpha == null ? 0.86 : bgAlpha) + (colors.dark ? 0.02 : 0.08)));
     ctx.fill();
+    ctx.strokeStyle = alpha(color, colors.dark ? 0.42 : 0.32);
+    ctx.lineWidth = 1;
+    ctx.stroke();
     ctx.fillStyle = color;
     ctx.textAlign = 'left';
-    let xx = bx + 5;
+    let xx = bx + 6;
     parts.forEach(function (p, i) {
       ctx.font = p[1] ? subFont : font;
       ctx.fillText(p[0], xx, y + 0.5 + (p[1] ? size * 0.28 : 0));
       xx += ws[i];
     });
     ctx.textAlign = al;
-    return { x: bx, y: y - ph / 2, w: pw, h: ph };
+    const box = { x: bx, y: y - ph / 2, w: pw, h: ph };
+    placed.push(box);
+    return box;
   }
 
-  /** 向量箭頭：箭身寬 lw，箭頭長約 4 倍箭身寬、兩側略帶弧度（與其他模組相同的幾何） */
+  /** 向量箭頭（LabDraw.arrow：略帶弧度的箭頭、背景色描邊、箭身高光；全站幾何一致）。尖端位置與長度不變 */
   function arrow(x0, y0, ux, uy, len, lw, color) {
     if (len < 1) return;
-    const head = Math.min(4 * lw, len), hw = 1.7 * lw;
-    const xt = x0 + ux * len, yt = y0 + uy * len;
-    const xh = xt - ux * head, yh = yt - uy * head;
-    const nx = -uy, ny = ux;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineCap = 'round';
-    if (len > head + 1) {
-      ctx.lineWidth = lw;
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xh + ux * head * 0.3, yh + uy * head * 0.3); ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(xt, yt);
-    ctx.quadraticCurveTo(xt - ux * head * 0.45 + nx * hw * 0.35, yt - uy * head * 0.45 + ny * hw * 0.35, xh + nx * hw, yh + ny * hw);
-    ctx.lineTo(xh + ux * head * 0.2, yh + uy * head * 0.2);
-    ctx.lineTo(xh - nx * hw, yh - ny * hw);
-    ctx.quadraticCurveTo(xt - ux * head * 0.45 - nx * hw * 0.35, yt - uy * head * 0.45 - ny * hw * 0.35, xt, yt);
-    ctx.closePath();
-    ctx.fill();
+    D.arrow(ctx, x0, y0, x0 + ux * len, y0 + uy * len, color, lw);
   }
 
-  /** 球體：亮點偏左上，邊緣加深，外加細亮邊與柔和投影 */
-  function sphere(x, y, R, base, glow) {
-    if (glow) {
-      const g0 = ctx.createRadialGradient(x, y, R * 0.6, x, y, R * 2.6);
-      g0.addColorStop(0, alpha(base, colors.dark ? 0.35 : 0.2));
-      g0.addColorStop(1, alpha(base, 0));
-      ctx.fillStyle = g0;
-      ctx.beginPath(); ctx.arc(x, y, R * 2.6, 0, TAU); ctx.fill();
-    }
-    const sh = ctx.createRadialGradient(x + R * 0.2, y + R * 0.35, R * 0.3, x + R * 0.2, y + R * 0.35, R * 1.45);
-    sh.addColorStop(0, 'rgba(0,0,0,' + (colors.dark ? 0.4 : 0.2) + ')');
-    sh.addColorStop(1, 'rgba(0,0,0,0)');
+  /**
+   * 行星（飛行中的物體）：由中心天體照亮——亮點偏向光源 (sx, sy)，背面是夜面，
+   * 向光側有細亮邊，外加同色的柔和光暈（深色模式稍強）。
+   */
+  function planet(x, y, R, base, sx, sy) {
+    const dx = sx - x, dy = sy - y, d = Math.hypot(dx, dy) || 1, lx = dx / d, ly = dy / d;
+    const dk = colors.dark;
+    const g0 = ctx.createRadialGradient(x, y, R * 0.7, x, y, R * 3.2);
+    g0.addColorStop(0, alpha(base, dk ? 0.42 : 0.22));
+    g0.addColorStop(1, alpha(base, 0));
+    ctx.fillStyle = g0;
+    ctx.beginPath(); ctx.arc(x, y, R * 3.2, 0, TAU); ctx.fill();
+    // 投影（很淡，往光源的反方向）
+    const sh = ctx.createRadialGradient(x - lx * R * 0.35, y - ly * R * 0.35, R * 0.4, x - lx * R * 0.35, y - ly * R * 0.35, R * 1.5);
+    sh.addColorStop(0, D.shadowInk(dk ? 0.4 : 0.18));
+    sh.addColorStop(1, D.shadowInk(0));
     ctx.fillStyle = sh;
-    ctx.beginPath(); ctx.arc(x + R * 0.2, y + R * 0.35, R * 1.45, 0, TAU); ctx.fill();
-    const g = ctx.createRadialGradient(x - R * 0.33, y - R * 0.35, R * 0.08, x, y, R);
-    g.addColorStop(0, shade(base, 0.62));
-    g.addColorStop(0.45, base);
-    g.addColorStop(1, shade(base, -0.42));
+    ctx.beginPath(); ctx.arc(x - lx * R * 0.35, y - ly * R * 0.35, R * 1.5, 0, TAU); ctx.fill();
+    const g = ctx.createRadialGradient(x + lx * R * 0.42, y + ly * R * 0.42, R * 0.06, x + lx * R * 0.12, y + ly * R * 0.12, R * 1.1);
+    g.addColorStop(0, shade(base, 0.72));
+    g.addColorStop(0.35, shade(base, 0.2));
+    g.addColorStop(0.78, base);
+    g.addColorStop(1, shade(base, -0.4));
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fill();
-    ctx.strokeStyle = alpha(shade(base, 0.7), colors.dark ? 0.55 : 0.4);
+    // 夜面：背向光源的一半加暗（柔和的明暗交界線）
+    const n = ctx.createLinearGradient(x + lx * R, y + ly * R, x - lx * R, y - ly * R);
+    n.addColorStop(0, 'rgba(0,0,0,0)');
+    n.addColorStop(0.45, 'rgba(0,0,0,0)');
+    n.addColorStop(1, 'rgba(0,0,0,' + (dk ? 0.5 : 0.3) + ')');
+    ctx.fillStyle = n;
+    ctx.beginPath(); ctx.arc(x, y, R, 0, TAU); ctx.fill();
+    // 細外框（與軌道線分開）與向光側的亮邊
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, R - 0.5), Math.PI * 1.05, Math.PI * 1.65); ctx.stroke();
+    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.75);
+    ctx.beginPath(); ctx.arc(x, y, R + 0.6, 0, TAU); ctx.stroke();
+    const a0 = Math.atan2(ly, lx);
+    ctx.strokeStyle = alpha(shade(base, 0.8), dk ? 0.75 : 0.65);
+    ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.arc(x, y, Math.max(0.5, R - 0.7), a0 - 0.95, a0 + 0.95); ctx.stroke();
   }
 
+  /** 近日點、遠日點的菱形記號：微微的立體漸層、柔和投影、背景色描邊 */
   function diamond(x, y, r, color) {
-    ctx.fillStyle = color;
-    ctx.strokeStyle = colors['canvas-bg'];
+    const path = function () {
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y);
+      ctx.closePath();
+    };
+    ctx.save();
+    ctx.shadowColor = D.shadowInk(colors.dark ? 0.5 : 0.25);
+    ctx.shadowBlur = 3;
+    ctx.shadowOffsetY = 1;
+    const g = ctx.createLinearGradient(x - r, y - r, x + r, y + r);
+    g.addColorStop(0, shade(color, 0.4));
+    g.addColorStop(0.5, color);
+    g.addColorStop(1, shade(color, -0.25));
+    ctx.fillStyle = g;
+    path(); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.95);
     ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y);
-    ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    path(); ctx.stroke();
   }
+  /** 另一個焦點：× 記號（先畫一圈背景色，任何線條上都看得清楚） */
   function cross(x, y, r, color) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r);
-    ctx.moveTo(x - r, y + r); ctx.lineTo(x + r, y - r);
+    ctx.lineCap = 'round';
+    [[alpha(colors['canvas-bg'], 0.85), 4], [color, 1.6]].forEach(function (s) {
+      ctx.strokeStyle = s[0];
+      ctx.lineWidth = s[1];
+      ctx.beginPath();
+      ctx.moveTo(x - r, y - r); ctx.lineTo(x + r, y + r);
+      ctx.moveTo(x - r, y + r); ctx.lineTo(x + r, y - r);
+      ctx.stroke();
+    });
+  }
+  /** 鍵盤焦點框（keys.js 選到的把手）：--accent 色虛線圓角框，外圈一層背景色讓它在任何背景上都清楚 */
+  function focusBox(x, y, w, h, r) {
+    ctx.save();
+    roundRect(ctx, x, y, w, h, r);
+    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.9);
+    ctx.lineWidth = 4;
     ctx.stroke();
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = colors.accent;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
   }
 
   // ---------- 主繪圖 ----------
@@ -427,6 +485,8 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     const main = mainOrbit();
+    placed = [];
+    secLabels = [];
     if (state.show.sec) drawSectors(main);
     drawOrbits();
     drawBody();
@@ -434,31 +494,39 @@
     drawFlight();
     drawLauncher();
     drawEffects();
+    drawSectorLabels();
     drawHud(main);
     updateReadout();
   }
 
-  /** 飛行中的軌道（實線管狀）與預測軌道（虛線） */
+  /** 飛行中的軌道（柔和光暈＋管狀線條＋細亮線）與預測軌道（虛線，底下襯一層背景色） */
   function drawOrbits() {
-    const f = state.flight;
+    const f = state.flight, dk = colors.dark;
     if (f) {
       const pts = conicPts(f.el, rDraw());
-      const c = col(f.color);
-      ctx.strokeStyle = alpha(shade(c, colors.dark ? -0.2 : -0.1), 0.45);
-      ctx.lineWidth = 3.4;
-      strokePts(ctx, pts, isClosed(f.el));
-      ctx.strokeStyle = alpha(shade(c, 0.45), colors.dark ? 0.55 : 0.75);
+      const c = col(f.color), closed = isClosed(f.el);
+      ctx.save();
+      ctx.strokeStyle = alpha(c, dk ? 0.13 : 0.08);
+      ctx.lineWidth = 9;
+      strokePts(ctx, pts, closed);
+      ctx.strokeStyle = alpha(shade(c, dk ? -0.15 : -0.08), dk ? 0.62 : 0.55);
+      ctx.lineWidth = 3.2;
+      strokePts(ctx, pts, closed);
+      ctx.translate(0, -0.6);
+      ctx.strokeStyle = alpha(shade(c, 0.5), dk ? 0.6 : 0.85);
       ctx.lineWidth = 1.1;
-      ctx.save(); ctx.translate(0, -0.7);
-      strokePts(ctx, pts, isClosed(f.el));
+      strokePts(ctx, pts, closed);
       ctx.restore();
     }
     if (previewDiffers()) {
-      const pv = preview();
-      ctx.strokeStyle = alpha(colors.text, colors.dark ? 0.6 : 0.55);
+      const pv = preview(), pts = conicPts(pv.el, rDraw()), closed = isClosed(pv.el);
+      ctx.strokeStyle = alpha(colors['canvas-bg'], 0.7);
+      ctx.lineWidth = 3.6;
+      strokePts(ctx, pts, closed);
+      ctx.strokeStyle = alpha(colors.text, dk ? 0.62 : 0.58);
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 6]);
-      strokePts(ctx, conicPts(pv.el, rDraw()), isClosed(pv.el));
+      strokePts(ctx, pts, closed);
       ctx.setLineDash([]);
     }
   }
@@ -470,7 +538,7 @@
   /** 近日點、遠日點、半長軸 a、橢圓中心與另一個焦點；雙曲線畫漸近線 */
   function drawAxes(el) {
     if (el.type === 'circle' || el.e < 1e-4) return;
-    const font = (narrow ? 11 : 12) + 'px system-ui, sans-serif';
+    const font = (narrow ? 11 : 12) + 'px ' + D.FONT;
     const fontB = '600 ' + font;
     const names = apsisNames();
     const rot = function (xp, yp) {
@@ -500,10 +568,10 @@
       const off = 12 / k;
       const side = el.dir; // 標籤放在短軸的另一側
       ctx.textAlign = 'center';
-      if (a * k > 30) pill([['a', false]], X(mid[0] - nx * off * side), Y(mid[1] - ny * off * side), colors.text, 'italic 700 ' + (narrow ? 12 : 13) + 'px system-ui, sans-serif', 0.75);
+      if (a * k > 30) pill([['a', false]], X(mid[0] - nx * off * side), Y(mid[1] - ny * off * side), colors.text, 'italic 700 ' + (narrow ? 12 : 13) + 'px ' + D.FONT, 0.75);
       if (el.b * k > 26) {
         const mb = [(ctr[0] + cb[0]) / 2, (ctr[1] + cb[1]) / 2];
-        pill([['b', false]], X(mb[0]) + 10 * ux, Y(mb[1]) - 10 * uy, colors.muted, 'italic 600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif', 0.7);
+        pill([['b', false]], X(mb[0]) + 10 * ux, Y(mb[1]) - 10 * uy, colors.muted, 'italic 600 ' + (narrow ? 11 : 12) + 'px ' + D.FONT, 0.7);
       }
       // 中心與另一個焦點
       ctx.fillStyle = alpha(colors.text, 0.5);
@@ -539,7 +607,7 @@
         ctx.beginPath(); ctx.moveTo(X(ctr[0]), Y(ctr[1])); ctx.lineTo(X(peri[0]), Y(peri[1])); ctx.stroke();
         if (A * k > 24) {
           ctx.textAlign = 'center';
-          pill([['|a|', false]], X((ctr[0] + peri[0]) / 2) - uy * 12, Y((ctr[1] + peri[1]) / 2) - ux * 12, colors.text, 'italic 700 ' + (narrow ? 12 : 13) + 'px system-ui, sans-serif', 0.75);
+          pill([['|a|', false]], X((ctr[0] + peri[0]) / 2) - uy * 12, Y((ctr[1] + peri[1]) / 2) - ux * 12, colors.text, 'italic 700 ' + (narrow ? 12 : 13) + 'px ' + D.FONT, 0.75);
         }
       }
     }
@@ -596,54 +664,131 @@
     const real = P().R * k;
     return isSun() ? Math.max(real, narrow ? 8 : 10) : Math.max(real, 3);
   }
+  // 中心天體預先畫成小圖（日冕光暈、大氣層都用漸層，每一幀重畫很耗效能）；大小、主題或天體改變才重畫
+  let bodySprite = { key: '', cv: null, S: 0 };
   function drawBody() {
     const R = bodyRadiusPx();
-    if (isSun()) {
-      const glow = ctx.createRadialGradient(cx, cy, R * 0.5, cx, cy, R * 4.2);
-      glow.addColorStop(0, alpha(colors.equi, colors.dark ? 0.55 : 0.4));
-      glow.addColorStop(0.4, alpha(colors['b-mech'], colors.dark ? 0.16 : 0.1));
-      glow.addColorStop(1, alpha(colors['b-mech'], 0));
-      ctx.fillStyle = glow;
-      ctx.beginPath(); ctx.arc(cx, cy, R * 4.2, 0, TAU); ctx.fill();
-      const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.3, R * 0.1, cx, cy, R);
-      g.addColorStop(0, shade(colors.equi, 0.75));
-      g.addColorStop(0.55, shade(colors.equi, colors.dark ? 0.15 : 0.25));
-      g.addColorStop(1, colors['b-mech']);
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
-    } else {
-      // 大氣光暈
-      const at = ctx.createRadialGradient(cx, cy, R * 0.95, cx, cy, R * 1.18 + 3);
-      at.addColorStop(0, alpha(colors['b-wave'], colors.dark ? 0.45 : 0.3));
-      at.addColorStop(1, alpha(colors['b-wave'], 0));
-      ctx.fillStyle = at;
-      ctx.beginPath(); ctx.arc(cx, cy, R * 1.18 + 3, 0, TAU); ctx.fill();
-      const g = ctx.createRadialGradient(cx - R * 0.35, cy - R * 0.38, R * 0.08, cx, cy, R);
-      g.addColorStop(0, shade(colors['b-em'], 0.6));
-      g.addColorStop(0.5, colors['b-em']);
-      g.addColorStop(1, shade(colors['b-em'], -0.5));
-      ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.fill();
-      // 陸地的淡色斑塊（只是裝飾，固定形狀）
-      if (R > 10) {
-        ctx.save();
-        ctx.beginPath(); ctx.arc(cx, cy, R, 0, TAU); ctx.clip();
-        ctx.fillStyle = alpha(colors.probe, colors.dark ? 0.4 : 0.45);
-        [[-0.3, -0.2, 0.38, 0.22, 0.5], [0.25, 0.25, 0.3, 0.42, -0.3], [0.35, -0.45, 0.2, 0.12, 0.2]].forEach(function (b) {
-          ctx.beginPath(); ctx.ellipse(cx + b[0] * R, cy + b[1] * R, b[2] * R, b[3] * R, b[4], 0, TAU); ctx.fill();
-        });
-        // 夜面：右下暗
-        const sh = ctx.createLinearGradient(cx - R * 0.3, cy - R * 0.3, cx + R, cy + R);
-        sh.addColorStop(0, 'rgba(0,0,0,0)');
-        sh.addColorStop(1, 'rgba(0,0,0,' + (colors.dark ? 0.45 : 0.3) + ')');
-        ctx.fillStyle = sh;
-        ctx.fillRect(cx - R, cy - R, 2 * R, 2 * R);
-        ctx.restore();
-      }
-      ctx.strokeStyle = alpha(shade(colors['b-em'], 0.7), 0.45);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(cx, cy, Math.max(0.5, R - 0.5), Math.PI * 1.05, Math.PI * 1.65); ctx.stroke();
+    const key = [state.preset, R.toFixed(2), dpr, colorVer].join('|');
+    if (bodySprite.key !== key) {
+      const pad = isSun() ? R * 4.6 : R * 0.22 + 7, S = 2 * (R + pad);
+      const cvs = document.createElement('canvas');
+      cvs.width = Math.ceil(S * dpr); cvs.height = Math.ceil(S * dpr);
+      const g = cvs.getContext('2d');
+      g.scale(dpr, dpr);
+      if (isSun()) paintSun(g, S / 2, S / 2, R, R + pad); else paintEarth(g, S / 2, S / 2, R);
+      bodySprite = { key: key, cv: cvs, S: S };
     }
+    const sp = bodySprite;
+    ctx.drawImage(sp.cv, cx - sp.S / 2, cy - sp.S / 2, sp.S, sp.S);
+  }
+  /**
+   * 保持代號顏色的色相與飽和度、只改 HSL 亮度 L（0–1）。往白色混合（shade）會變灰，
+   * 太陽要「亮而鮮豔」的金黃色，所以改用這個方法把深色代號調亮。
+   */
+  function lightTo(c, L) {
+    const r = D.rgb(c).map(function (v) { return v / 255; });
+    const mx = Math.max(r[0], r[1], r[2]), mn = Math.min(r[0], r[1], r[2]), d = mx - mn, l = (mx + mn) / 2;
+    let h = 0, sat = 0;
+    if (d > 1e-9) {
+      sat = d / (1 - Math.abs(2 * l - 1));
+      h = mx === r[0] ? ((r[1] - r[2]) / d) % 6 : mx === r[1] ? (r[2] - r[0]) / d + 2 : (r[0] - r[1]) / d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const C = (1 - Math.abs(2 * L - 1)) * Math.min(1, sat), Xc = C * (1 - Math.abs((h / 60) % 2 - 1)), m = L - C / 2;
+    const seg = [[C, Xc, 0], [Xc, C, 0], [0, C, Xc], [0, Xc, C], [Xc, 0, C], [C, 0, Xc]][Math.floor(h / 60) % 6];
+    return 'rgb(' + seg.map(function (v) { return Math.round((v + m) * 255); }).join(',') + ')';
+  }
+  /** 太陽：兩層日冕光暈、極淡的光芒、臨邊昏暗（中心亮白、往外金黃、邊緣偏橘） */
+  function paintSun(g, x, y, R, Rg) {
+    const dk = colors.dark, hot = lightTo(colors.equi, 0.6), warm = lightTo(colors['b-mech'], 0.52);
+    const gl = g.createRadialGradient(x, y, R * 0.6, x, y, Rg);
+    gl.addColorStop(0, alpha(hot, dk ? 0.55 : 0.5));
+    gl.addColorStop(0.22, alpha(warm, dk ? 0.2 : 0.16));
+    gl.addColorStop(0.55, alpha(warm, dk ? 0.06 : 0.045));
+    gl.addColorStop(1, alpha(warm, 0));
+    g.fillStyle = gl;
+    g.beginPath(); g.arc(x, y, Rg, 0, TAU); g.fill();
+    // 光芒：12 條長短交錯、由內向外淡出的細楔形
+    for (let i = 0; i < 12; i++) {
+      const a = i * TAU / 12 + 0.13, L = R * (i % 2 ? 2.2 : 3.1), w = R * 0.16;
+      const ux = Math.cos(a), uy = Math.sin(a);
+      const lg = g.createLinearGradient(x + ux * R * 0.8, y + uy * R * 0.8, x + ux * L, y + uy * L);
+      lg.addColorStop(0, alpha(lightTo(colors.equi, 0.75), dk ? 0.32 : 0.4));
+      lg.addColorStop(1, alpha(warm, 0));
+      g.fillStyle = lg;
+      g.beginPath();
+      g.moveTo(x - uy * w + ux * R * 0.8, y + ux * w + uy * R * 0.8);
+      g.lineTo(x + ux * L, y + uy * L);
+      g.lineTo(x + uy * w + ux * R * 0.8, y - ux * w + uy * R * 0.8);
+      g.closePath();
+      g.fill();
+    }
+    // 日面：臨邊昏暗
+    const d = g.createRadialGradient(x - R * 0.2, y - R * 0.22, R * 0.04, x, y, R);
+    d.addColorStop(0, lightTo(colors.equi, 0.96));
+    d.addColorStop(0.4, lightTo(colors.equi, 0.8));
+    d.addColorStop(0.78, hot);
+    d.addColorStop(1, D.mix(hot, warm, 0.75));
+    g.fillStyle = d;
+    g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+    g.strokeStyle = alpha(lightTo(colors.equi, 0.92), dk ? 0.6 : 0.75);
+    g.lineWidth = 0.8;
+    g.beginPath(); g.arc(x, y, R - 0.4, Math.PI * 1.02, Math.PI * 1.7); g.stroke();
+  }
+  /** 地球：薄薄一層藍色大氣、海洋、大陸與雲（固定形狀，只是裝飾）、右下夜面、左上亮邊 */
+  function paintEarth(g, x, y, R) {
+    const dk = colors.dark, sea = colors['b-em'], land = colors.probe, air = colors['b-wave'];
+    const at = g.createRadialGradient(x, y, R * 0.96, x, y, R * 1.12 + 5);
+    at.addColorStop(0, alpha(air, dk ? 0.55 : 0.4));
+    at.addColorStop(0.45, alpha(air, dk ? 0.18 : 0.12));
+    at.addColorStop(1, alpha(air, 0));
+    g.fillStyle = at;
+    g.beginPath(); g.arc(x, y, R * 1.12 + 5, 0, TAU); g.fill();
+    const o = g.createRadialGradient(x - R * 0.35, y - R * 0.38, R * 0.05, x, y, R);
+    o.addColorStop(0, shade(sea, dk ? 0.3 : 0.5));
+    o.addColorStop(0.5, dk ? shade(sea, -0.25) : sea);
+    o.addColorStop(1, shade(sea, dk ? -0.6 : -0.45));
+    g.fillStyle = o;
+    g.beginPath(); g.arc(x, y, R, 0, TAU); g.fill();
+    if (R > 8) {
+      g.save();
+      g.beginPath(); g.arc(x, y, R, 0, TAU); g.clip();
+      // 大陸：幾塊不規則的形狀（多個橢圓組成，邊緣自然）
+      const lg = g.createLinearGradient(x - R, y - R, x + R, y + R);
+      lg.addColorStop(0, shade(land, dk ? 0.15 : 0.3));
+      lg.addColorStop(1, shade(land, -0.25));
+      g.fillStyle = lg;
+      g.globalAlpha = dk ? 0.78 : 0.85;
+      [[-0.34, -0.3, 0.3, 0.17, 0.55], [-0.18, -0.1, 0.22, 0.14, -0.2], [-0.42, 0.02, 0.12, 0.2, 0.1],
+        [0.28, 0.18, 0.2, 0.34, -0.35], [0.4, 0.42, 0.14, 0.1, 0.6], [0.36, -0.5, 0.22, 0.09, 0.15],
+        [-0.05, 0.62, 0.18, 0.08, -0.1]].forEach(function (b, i) {
+        if (!i) g.beginPath();
+        g.moveTo(x + b[0] * R + b[2] * R * Math.cos(b[4]), y + b[1] * R + b[2] * R * Math.sin(b[4]));
+        g.ellipse(x + b[0] * R, y + b[1] * R, b[2] * R, b[3] * R, b[4], 0, TAU);
+      });
+      g.fill(); // 一次填滿：重疊的地方不會變深
+      g.globalAlpha = 1;
+      // 雲：淡淡的細長白帶
+      g.strokeStyle = alpha(shade(air, 0.9), dk ? 0.22 : 0.32);
+      g.lineCap = 'round';
+      [[-0.55, -0.55, 0.5, 0.06], [-0.1, 0.32, 0.55, 0.05], [0.15, -0.18, 0.35, 0.045], [-0.6, 0.5, 0.35, 0.05]].forEach(function (c) {
+        g.lineWidth = Math.max(1, c[3] * R * 1.15);
+        g.beginPath(); g.moveTo(x + c[0] * R, y + c[1] * R);
+        g.quadraticCurveTo(x + (c[0] + c[2] / 2) * R, y + (c[1] - 0.08) * R, x + (c[0] + c[2]) * R, y + (c[1] + 0.02) * R);
+        g.stroke();
+      });
+      // 夜面：右下暗（光從左上來）
+      const sh = g.createLinearGradient(x - R * 0.25, y - R * 0.25, x + R, y + R);
+      sh.addColorStop(0, 'rgba(0,0,0,0)');
+      sh.addColorStop(1, 'rgba(0,0,0,' + (dk ? 0.5 : 0.32) + ')');
+      g.fillStyle = sh;
+      g.fillRect(x - R, y - R, 2 * R, 2 * R);
+      g.restore();
+    }
+    g.strokeStyle = alpha(shade(air, 0.7), dk ? 0.6 : 0.5);
+    g.lineWidth = 1.2;
+    g.beginPath(); g.arc(x, y, Math.max(0.5, R - 0.6), Math.PI * 1.02, Math.PI * 1.68); g.stroke();
   }
 
   /** 等時間扇形（克卜勒第二定律） */
@@ -700,18 +845,43 @@
     // 兩塊代表性的面積標在畫面上：近心點旁與遠心點旁（封閉軌道）
     const closed = el.e < 1 && el.type !== 'parabola';
     const pick = closed ? [1, NSEC / 2 + 1] : [NSEC / 2 + 2]; // 避開近日點標籤
-    const font = '600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif';
+    const font = '600 ' + (narrow ? 11 : 12) + 'px ' + D.FONT;
     if (narrow) return; // 手機畫面太小：面積只列在下方的表格
     pick.forEach(function (i) {
       const s = list[i];
       const q = K.stateAt(el, (s.t1 + s.t2) / 2);
       const ux = q.x / q.r, uy = q.y / q.r;
-      const lx = X(q.x * 0.6), ly = Y(q.y * 0.6);
       const far = q.r * k > 70;
-      const x = far ? lx : X(q.x) + ux * 26, y = far ? ly : Y(q.y) - uy * 26;
-      if (x < 10 || x > cw - 10 || y < 10 || y > ch - 10) return;
+      // 候選位置：沿半徑 0.6、0.48、0.72、0.38 倍處（近的扇形放在外側）；最後由 drawSectorLabels 挑不壓到其他標籤的位置
+      const cands = far ? [0.6, 0.48, 0.72, 0.38].map(function (f) { return [X(q.x * f), Y(q.y * f)]; }) : [[X(q.x) + ux * 26, Y(q.y) - uy * 26]];
+      secLabels.push({ parts: [['A', false], [String(i + 1), true], [' = ' + fmtArea(s.area), false]], text: 'A' + (i + 1) + ' = ' + fmtArea(s.area),
+        cands: cands, color: shade(i % 2 ? cB : cA, colors.dark ? 0.2 : -0.2), font: font });
+    });
+  }
+  /** 等時間扇形的面積標籤：最後才畫，選第一個不壓到其他標籤（軸長 a、b、近遠日點、發射速率…）的候選位置；都不行就水平挪開一點，再不行就不畫（下方表格仍列出） */
+  function drawSectorLabels() {
+    const hit = function (x0, y0, x1, y1) {
+      return placed.some(function (b) { return x1 > b.x - 3 && x0 < b.x + b.w + 3 && y1 > b.y - 3 && y0 < b.y + b.h + 3; });
+    };
+    secLabels.forEach(function (L) {
+      ctx.font = L.font;
+      const w = ctx.measureText(L.text).width + 14, h = D.textHeight(ctx.measureText('Hg'), 15) + 4;
+      const inside = function (x, y) { return x - w / 2 > 4 && x + w / 2 < cw - 4 && y > 10 && y < ch - 10; };
+      let spot = null;
+      L.cands.forEach(function (c) {
+        if (!spot && inside(c[0], c[1]) && !hit(c[0] - w / 2, c[1] - h / 2, c[0] + w / 2, c[1] + h / 2)) spot = c;
+      });
+      for (let j = 0; j < L.cands.length && !spot; j++) {
+        const c = L.cands[j];
+        for (let dx = 8; dx <= 48 && !spot; dx += 8) {
+          [-dx, dx].forEach(function (d) {
+            if (!spot && inside(c[0] + d, c[1]) && !hit(c[0] + d - w / 2, c[1] - h / 2, c[0] + d + w / 2, c[1] + h / 2)) spot = [c[0] + d, c[1]];
+          });
+        }
+      }
+      if (!spot) return;
       ctx.textAlign = 'center';
-      pill([['A', false], [String(i + 1), true], [' = ' + fmtArea(s.area), false]], x, y, shade(i % 2 ? cB : cA, colors.dark ? 0.2 : -0.2), font, 0.82);
+      pill(L.parts, spot[0], spot[1], L.color, L.font, 0.82);
     });
   }
   function areaUnit() { return isSun() ? K.AU * K.AU : 1e12; }
@@ -751,10 +921,10 @@
         arrow(bx, by, s.vx / s.v, -s.vy / s.v, len, narrow ? 2.2 : 2.6, alpha(colors.pos, 0.92));
         if (len > 18) {
           ctx.textAlign = 'center';
-          pill('v', bx + s.vx / s.v * (len + 11), by - s.vy / s.v * (len + 11), colors.pos, 'italic 700 ' + (narrow ? 12 : 13) + 'px system-ui, sans-serif', 0.75);
+          pill('v', bx + s.vx / s.v * (len + 11), by - s.vy / s.v * (len + 11), colors.pos, 'italic 700 ' + (narrow ? 12 : 13) + 'px ' + D.FONT, 0.75);
         }
       }
-      sphere(bx, by, narrow ? 5.5 : 6.5, c, true);
+      planet(bx, by, narrow ? 5.5 : 6.5, c, cx, cy);
     } else if (inside) {
       // 撞擊點：小小的焦痕
       ctx.fillStyle = alpha(colors.text, 0.55);
@@ -770,7 +940,7 @@
     const x = cx + dx * sc, y = cy + dy * sc, d = Math.hypot(dx, dy);
     arrow(x - dx / d * 12, y - dy / d * 12, dx / d, dy / d, 14, 2.4, c);
     ctx.textAlign = x > cx ? 'right' : 'left';
-    pill(fmtDist(s.r), x - dx / d * 18 + (x > cx ? -2 : 2), y - dy / d * 18 + (y > cy ? -8 : 8), c, '600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif', 0.8);
+    pill(fmtDist(s.r), x - dx / d * 18 + (x > cx ? -2 : 2), y - dy / d * 18 + (y > cy ? -8 : 8), c, '600 ' + (narrow ? 11 : 12) + 'px ' + D.FONT, 0.8);
   }
 
   /** 發射點、速度箭頭，以及圓周速率／脫離速率的圈 */
@@ -785,11 +955,15 @@
     const g = launcherGeom();
     const kv = pxPerV();
     const rc = vCirc0() * kv, re = vEsc0() * kv;
-    const active = hover || drag;
-    // 兩個速率圈（虛線）
-    [[rc, colors.accent, [T('v', 'v'), T('圓', 'circ')]], [re, colors['b-mech'], [T('v', 'v'), T('脫', 'esc')]]].forEach(function (r) {
-      ctx.strokeStyle = alpha(r[1], active ? 0.85 : 0.55);
-      ctx.lineWidth = active ? 1.5 : 1.2;
+    const kbStart = kbOn(0), kbTip = kbOn(1);
+    const active = hover || drag || kbTip;
+    // 兩個速率圈（虛線，底下襯一層背景色）
+    [[rc, colors.accent], [re, colors['b-mech']]].forEach(function (r) {
+      ctx.strokeStyle = alpha(colors['canvas-bg'], 0.6);
+      ctx.lineWidth = 3.4;
+      ctx.beginPath(); ctx.arc(g.x0, g.y0, r[0], 0, TAU); ctx.stroke();
+      ctx.strokeStyle = alpha(r[1], active ? 0.88 : 0.6);
+      ctx.lineWidth = active ? 1.5 : 1.25;
       ctx.setLineDash([4, 4]);
       ctx.beginPath(); ctx.arc(g.x0, g.y0, r[0], 0, TAU); ctx.stroke();
       ctx.setLineDash([]);
@@ -798,44 +972,68 @@
     const lab = function (r, color, sub, ang) {
       const x = g.x0 + Math.cos(ang) * r, y = g.y0 + Math.sin(ang) * r;
       ctx.textAlign = 'center';
-      pill([['v', false], [sub, true]], x, y, color, '700 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif', 0.8);
+      pill([['v', false], [sub, true]], x, y, color, '700 ' + (narrow ? 11 : 12) + 'px ' + D.FONT, 0.8);
     };
     const base = Math.atan2(g.uy, g.ux) + Math.PI;
-    // 手機畫面小：圈的標籤只在拖曳時顯示（圖例已說明兩個圈的意義）
-    if (!narrow || drag) {
+    // 手機畫面小：圈的標籤只在拖曳（或用鍵盤調速度）時顯示（圖例已說明兩個圈的意義）
+    if (!narrow || drag || kbTip) {
       lab(rc, colors.accent, T('圓', 'circ'), base + 0.5);
       lab(re, colors['b-mech'], T('脫', 'esc'), base - 0.5);
     }
-    // 速度箭頭
-    const lw = narrow ? 2.8 : 3.2;
-    arrow(g.x0, g.y0, g.ux, g.uy, g.len, lw, colors.pos);
-    // 起點把手
-    const hs = hover === 'start' || (drag && drag.type === 'start');
-    ctx.fillStyle = colors['canvas-bg'];
-    ctx.strokeStyle = colors.text;
-    ctx.lineWidth = 2;
-    if (hs) { ctx.fillStyle = alpha(colors.pos, 0.18); ctx.beginPath(); ctx.arc(g.x0, g.y0, 14, 0, TAU); ctx.fill(); ctx.fillStyle = colors['canvas-bg']; }
-    ctx.beginPath(); ctx.arc(g.x0, g.y0, hs ? 7.5 : 6, 0, TAU); ctx.fill(); ctx.stroke();
-    // 箭頭尖端把手
-    const ht = hover === 'tip' || (drag && drag.type === 'tip');
-    ctx.fillStyle = alpha(colors.pos, ht ? 0.28 : 0.14);
-    ctx.beginPath(); ctx.arc(g.tx, g.ty, ht ? 15 : 11, 0, TAU); ctx.fill();
+    // 箭頭尖端把手（先畫，讓箭頭蓋在上面）：柔和的圓盤＋細框
+    const ht = hover === 'tip' || (drag && drag.type === 'tip') || kbTip;
+    const rt = ht ? 15 : 11;
+    const tg = ctx.createRadialGradient(g.tx, g.ty, rt * 0.2, g.tx, g.ty, rt);
+    tg.addColorStop(0, alpha(colors.pos, ht ? 0.34 : 0.2));
+    tg.addColorStop(1, alpha(colors.pos, ht ? 0.16 : 0.08));
+    ctx.fillStyle = tg;
+    ctx.beginPath(); ctx.arc(g.tx, g.ty, rt, 0, TAU); ctx.fill();
     ctx.strokeStyle = alpha(colors.pos, 0.9);
     ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(g.tx, g.ty, ht ? 15 : 11, 0, TAU); ctx.stroke();
+    ctx.beginPath(); ctx.arc(g.tx, g.ty, rt, 0, TAU); ctx.stroke();
+    // 速度箭頭
+    arrow(g.x0, g.y0, g.ux, g.uy, g.len, narrow ? 2.8 : 3.2, colors.pos);
+    // 起點把手：有投影的白色小圓鈕，中間一個速度色的點
+    const hs = hover === 'start' || (drag && drag.type === 'start') || kbStart;
+    const rs = hs ? 7.5 : 6;
+    if (hs) {
+      const hg = ctx.createRadialGradient(g.x0, g.y0, rs, g.x0, g.y0, 16);
+      hg.addColorStop(0, alpha(colors.pos, 0.25));
+      hg.addColorStop(1, alpha(colors.pos, 0));
+      ctx.fillStyle = hg;
+      ctx.beginPath(); ctx.arc(g.x0, g.y0, 16, 0, TAU); ctx.fill();
+    }
+    ctx.save();
+    ctx.shadowColor = D.shadowInk(colors.dark ? 0.6 : 0.3);
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 1;
+    const kg = ctx.createRadialGradient(g.x0 - rs * 0.35, g.y0 - rs * 0.4, rs * 0.1, g.x0, g.y0, rs);
+    kg.addColorStop(0, colors.surface);
+    kg.addColorStop(1, shade(colors.surface, colors.dark ? 0.12 : -0.1));
+    ctx.fillStyle = kg;
+    ctx.beginPath(); ctx.arc(g.x0, g.y0, rs, 0, TAU); ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = colors.text;
+    ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(g.x0, g.y0, rs, 0, TAU); ctx.stroke();
+    ctx.fillStyle = colors.pos;
+    ctx.beginPath(); ctx.arc(g.x0, g.y0, 2.2, 0, TAU); ctx.fill();
+    // 鍵盤焦點框
+    if (kbStart) focusBox(g.x0 - 16, g.y0 - 16, 32, 32, 16);
+    if (kbTip) focusBox(g.tx - 19, g.ty - 19, 38, 38, 19);
     // 速率標籤（等於 v圓 或 v脫 時特別標出）
     const parts = [['v', false], ['0', true], [' = ' + num(state.v0 / 1000, 2) + ' km/s', false]];
     const rel = state.v0 / vCirc0();
     let tag = null;
     if (state.vSnap === 'circ' || Math.abs(rel - 1) < 1e-9) tag = [colors.accent, T('圓', 'circ')];
     else if (state.vSnap === 'esc' || Math.abs(rel - Math.SQRT2) < 1e-9) tag = [colors['b-mech'], T('脫', 'esc')];
-    const font = '700 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif';
+    const font = '700 ' + (narrow ? 11 : 12) + 'px ' + D.FONT;
     const lx = g.tx + g.ux * 22, ly = g.ty + g.uy * 22;
     ctx.textAlign = g.ux > 0.3 ? 'left' : g.ux < -0.3 ? 'right' : 'center';
     const b = pill(parts, Math.max(8, Math.min(cw - 8, lx)), Math.max(12, Math.min(ch - 30, ly)), colors.pos, font, 0.85);
     if (tag) {
       ctx.textAlign = 'left';
-      pill([[' = v', false], [tag[1], true]], b.x, b.y + b.h + 10, tag[0], font, 0.85);
+      pill([[' = v', false], [tag[1], true]], b.x + 6, b.y + b.h + 10, tag[0], font, 0.85);
     }
   }
 
@@ -846,10 +1044,13 @@
       const u = (tNow - e.t0) / e.dur;
       const x = X(e.x), y = Y(e.y);
       if (e.type === 'ring') {
-        ctx.strokeStyle = alpha(e.color, 0.6 * (1 - u));
-        ctx.lineWidth = 2 * (1 - u) + 0.5;
-        ctx.beginPath(); ctx.arc(x, y, 8 + 18 * u, 0, TAU); ctx.stroke();
+        D.ripple(ctx, x, y, 8, u, e.color);
       } else if (e.type === 'burst') {
+        const gl = ctx.createRadialGradient(x, y, 0, x, y, 10 + 22 * u);
+        gl.addColorStop(0, alpha(colors.equi, 0.5 * (1 - u)));
+        gl.addColorStop(1, alpha(colors.equi, 0));
+        ctx.fillStyle = gl;
+        ctx.beginPath(); ctx.arc(x, y, 10 + 22 * u, 0, TAU); ctx.fill();
         ctx.strokeStyle = alpha(colors.equi, 0.85 * (1 - u));
         ctx.lineWidth = 1.6;
         ctx.beginPath();
@@ -865,8 +1066,8 @@
 
   /** 角落文字：時間、時間倍率、軌道類型、比例尺 */
   function drawHud(o) {
-    const f1 = '600 ' + (narrow ? 12 : 13) + 'px system-ui, sans-serif';
-    const f2 = (narrow ? 11 : 12) + 'px system-ui, sans-serif';
+    const f1 = '600 ' + (narrow ? 12 : 13) + 'px ' + D.FONT;
+    const f2 = (narrow ? 11 : 12) + 'px ' + D.FONT;
     ctx.textAlign = 'left';
     const fl = state.flight;
     pill('t = ' + (fl ? fmtTime(fl.t) : '0'), 10, 14, colors.text, f1, 0.8);
@@ -881,17 +1082,28 @@
     const step = niceStep(target / k / P().Lu) * P().Lu;
     const L = step * k;
     const x0 = 12, y0 = ch - 14;
-    ctx.fillStyle = alpha(colors['canvas-bg'], 0.75);
-    roundRect(ctx, x0 - 6, y0 - 22, L + 12, 30, 6);
+    ctx.font = f2;
+    const lh = D.textHeight(ctx.measureText('Hg'), 15);
+    roundRect(ctx, x0 - 6, y0 - lh - 8, L + 12, lh + 16, 7);
+    ctx.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.82 : 0.88);
     ctx.fill();
+    ctx.strokeStyle = alpha(colors.muted, colors.dark ? 0.4 : 0.3);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // 比例尺：兩端與中點有刻度，前半段塗實（像地圖的比例尺）
     ctx.strokeStyle = colors.muted;
     ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(x0, y0 - 4); ctx.lineTo(x0, y0); ctx.lineTo(x0 + L, y0); ctx.lineTo(x0 + L, y0 - 4); ctx.stroke();
-    ctx.font = f2;
+    ctx.lineCap = 'butt';
+    ctx.beginPath(); ctx.moveTo(x0, y0 - 5); ctx.lineTo(x0, y0 + 1); ctx.moveTo(x0 + L, y0 - 5); ctx.lineTo(x0 + L, y0 + 1);
+    ctx.moveTo(x0 + L / 2, y0 - 3); ctx.lineTo(x0 + L / 2, y0 + 1); ctx.stroke();
+    ctx.strokeRect(x0, y0 - 1.5, L, 3);
+    ctx.fillStyle = alpha(colors.muted, 0.85);
+    ctx.fillRect(x0, y0 - 1.5, L / 2, 3);
+    ctx.lineCap = 'round';
     ctx.fillStyle = colors.muted;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(isSun() ? sig(step / K.AU) + ' AU' : group(step / 1000) + ' km', x0 + L / 2, y0 - 4);
+    ctx.fillText(isSun() ? sig(step / K.AU) + ' AU' : group(step / 1000) + ' km', x0 + L / 2, y0 - 5);
     if (isSun() && P().R * k < bodyRadiusPx()) {
       ctx.textAlign = 'right';
       pill(T('太陽大小未依比例', 'Sun not to scale'), cw - 10, ch - 14, colors.muted, f2, 0.7);
@@ -1055,10 +1267,7 @@
     const c = cctx;
     c.setTransform(d, 0, 0, d, 0, 0);
     c.clearRect(0, 0, w, h);
-    const base = colors['canvas-bg'];
-    const gr = c.createLinearGradient(0, 0, 0, h);
-    gr.addColorStop(0, base); gr.addColorStop(1, shade(base, colors.dark ? -0.3 : -0.04));
-    c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    D.backdrop(c, w, h);
     const U = k3Units();
     const pts = state.history.map(function (r) { return { x: U.x(r.a), y: U.y(r.T), color: col(r.color), M: r.M }; });
     // 各個中心質量的直線（斜率 = 4π²/GM，換成圖上的單位）
@@ -1077,25 +1286,40 @@
     const padL = 44, padR = 12, padT = 14, padB = 34;
     const PX = function (x) { return padL + x / xmax * (w - padL - padR); };
     const PY = function (y) { return h - padB - y / ymax * (h - padT - padB); };
+    // 繪圖區：半透明面板＋細框（有一點浮起來的感覺）
+    c.save();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.35)' : alpha(colors.text, 0.08);
+    c.shadowBlur = 6;
+    c.shadowOffsetY = 1;
+    c.fillStyle = alpha(colors.surface, colors.dark ? 0.4 : 0.75);
+    roundRect(c, padL, padT, w - padL - padR, h - padT - padB, 4);
+    c.fill();
+    c.restore();
     // 格線與刻度
-    const fs = '11px system-ui, sans-serif';
+    const fs = '11px ' + D.FONT;
     c.font = fs;
     c.lineWidth = 1;
     const sx = niceStep(xmax / (w < 400 ? 3 : 5)), sy = niceStep(ymax / 4);
+    // 次格線（主刻度的一半）
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.045 : 0.035);
+    c.beginPath();
+    for (let x = sx / 2; x <= xmax + 1e-9; x += sx) { c.moveTo(Math.round(PX(x)) + 0.5, padT); c.lineTo(Math.round(PX(x)) + 0.5, h - padB); }
+    for (let y = sy / 2; y <= ymax + 1e-9; y += sy) { c.moveTo(padL, Math.round(PY(y)) + 0.5); c.lineTo(w - padR, Math.round(PY(y)) + 0.5); }
+    c.stroke();
     c.fillStyle = alpha(colors.muted, 0.95);
     c.textAlign = 'center'; c.textBaseline = 'top';
     for (let x = 0; x <= xmax + 1e-9; x += sx) {
-      c.strokeStyle = alpha(colors.text, x ? 0.07 : 0.4);
+      c.strokeStyle = alpha(colors.text, x ? (colors.dark ? 0.1 : 0.09) : 0.4);
       c.beginPath(); c.moveTo(Math.round(PX(x)) + 0.5, padT); c.lineTo(Math.round(PX(x)) + 0.5, h - padB); c.stroke();
       c.fillText(axisTick(x, sx), PX(x), h - padB + 4);
     }
     c.textAlign = 'right'; c.textBaseline = 'middle';
     for (let y = 0; y <= ymax + 1e-9; y += sy) {
-      c.strokeStyle = alpha(colors.text, y ? 0.07 : 0.4);
+      c.strokeStyle = alpha(colors.text, y ? (colors.dark ? 0.1 : 0.09) : 0.4);
       c.beginPath(); c.moveTo(padL, Math.round(PY(y)) + 0.5); c.lineTo(w - padR, Math.round(PY(y)) + 0.5); c.stroke();
       c.fillText(axisTick(y, sy), padL - 5, PY(y));
     }
-    c.font = '600 12px system-ui, sans-serif';
+    c.font = '600 12px ' + D.FONT;
     c.fillStyle = colors.muted;
     c.textAlign = 'right'; c.textBaseline = 'bottom';
     fillSup(c, U.xl, w - padR, h - 2, 'right');
@@ -1109,33 +1333,25 @@
     lines.forEach(function (M) {
       const s = slope(M);
       const cur = M === state.M;
-      c.strokeStyle = alpha(colors.text, cur ? 0.5 : 0.3);
-      c.lineWidth = 1.4;
+      const lc = cur ? colors.accent : colors.muted;
+      c.strokeStyle = alpha(lc, colors.dark ? 0.16 : 0.12);
+      c.lineWidth = 5;
+      c.beginPath(); c.moveTo(PX(0), PY(0)); c.lineTo(PX(xmax), PY(s * xmax)); c.stroke();
+      c.strokeStyle = alpha(lc, cur ? 0.85 : 0.6);
+      c.lineWidth = 1.5;
       c.setLineDash(Ms.indexOf(M) < 0 ? [5, 5] : []);
       c.beginPath(); c.moveTo(PX(0), PY(0)); c.lineTo(PX(xmax), PY(s * xmax)); c.stroke();
       c.setLineDash([]);
-      // 標籤：M 值
+      // 標籤：M 值（底框標籤，放在直線左上方）
       const xe = Math.min(xmax * 0.92, ymax * 0.9 / s);
-      c.font = '600 11px system-ui, sans-serif';
-      c.fillStyle = alpha(colors.text, 0.75);
-      c.textAlign = 'right'; c.textBaseline = 'bottom';
-      c.fillText('M = ' + num(M, 2), PX(xe) - 4, PY(s * xe) - 3);
+      D.pill(c, 'M = ' + num(M, 2), PX(xe) - 6, PY(s * xe) - 4, lc, 'right', '600 11px ' + D.FONT);
     });
     c.restore();
     // 資料點
-    pts.forEach(function (p) {
-      const x = PX(p.x), y = PY(p.y), r = 5;
-      const g = c.createRadialGradient(x - r * 0.35, y - r * 0.35, r * 0.1, x, y, r);
-      g.addColorStop(0, shade(p.color, 0.6)); g.addColorStop(1, shade(p.color, -0.3));
-      c.fillStyle = g;
-      c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
-      c.strokeStyle = base; c.lineWidth = 1.2; c.stroke();
-    });
+    pts.forEach(function (p) { D.ball(c, PX(p.x), PY(p.y), 5, p.color, { glow: colors.dark ? 0.35 : 0 }); });
     if (!pts.length) {
-      c.font = '12px system-ui, sans-serif';
-      c.fillStyle = colors.muted;
-      c.textAlign = 'center'; c.textBaseline = 'middle';
-      c.fillText(T('發射封閉軌道後，資料點會落在這條線上', 'Points from closed orbits will fall on this line'), (padL + w - padR) / 2, padT + (h - padT - padB) * 0.3);
+      D.haloText(c, T('發射封閉軌道後，資料點會落在這條線上', 'Points from closed orbits will fall on this line'), (padL + w - padR) / 2, padT + (h - padT - padB) * 0.3,
+        colors.muted, 'center', 'middle', '12px ' + D.FONT);
     }
   }
   function axisTick(v, step) {
@@ -1305,6 +1521,7 @@
     state.running = !state.running;
     updateButtons();
     if (state.running) startLoop();
+    else sayPause();
     requestDraw();
   });
   // 全部清除：清掉飛行中的軌道、殘影與第三定律紀錄（滑桿設定不變）
@@ -1402,22 +1619,26 @@
     }
     launchChanged();
     drawChart();
+    sayParams();
   });
   elR.addEventListener('input', function () {
     if (quiet) return;
     state.r0 = val(elR) * P().Lu;
     launchChanged();
+    sayParams();
   });
   elV.addEventListener('input', function () {
     if (quiet) return;
     state.vSnap = null;
     state.v0 = val(elV) * 1000;
     launchChanged();
+    sayParams();
   });
   elA.addEventListener('input', function () {
     if (quiet) return;
     state.alpha = val(elA) * DEG;
     launchChanged();
+    sayParams();
   });
   elTs.addEventListener('input', function () {
     if (quiet) return;
@@ -1437,6 +1658,7 @@
   function snapSpeed(kind) {
     state.vSnap = kind;
     launchChanged();
+    sayParams();
   }
   $('setC').addEventListener('click', function () {
     if (state.alpha !== 0) { state.alpha = 0; setSlider(elA, 0); }
@@ -1559,6 +1781,127 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag) setHover(null); });
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 只在離散事件（改完發射條件、暫停）寫入 aria-live 的 #srSay；發射、撞擊、脫離由 #status 播報；
+  // 每格都在變的即時讀數（時間、距離、速率）不播報
+  let sayTimer = 0, sayParamTimer = 0, sayReady = false;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg || !sayReady || (window.LabShare && window.LabShare.restoring)) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  /** 預測軌道的重點：類型、離心率、週期 */
+  function orbitBrief() {
+    const pv = preview(), el = pv.el;
+    let s = T('預測軌道：', 'Predicted orbit: ') + kindText(el, pv.crashT) + T('，e = ', ', e = ') + fmtE(el.e);
+    if (isFinite(el.T) && pv.crashT == null) s += T('，週期 ', ', period ') + fmtTime(el.T);
+    return s + T('。', '.');
+  }
+  function sayParams() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { say(orbitBrief()); }, 600);
+  }
+  function sayPause() {
+    const f = state.flight;
+    if (!f) return;
+    const s = flightState();
+    say(T('已暫停：t = ', 'Paused: t = ') + fmtTime(f.t) + T('，距離 r = ', ', distance r = ') + fmtDist(s.r) +
+      T('，速率 v = ', ', speed v = ') + fmtSpeed(s.v) + T('。', '.'));
+  }
+
+  // ---------- 鍵盤操作（keys.js）：與拖曳相同的限制；和拖曳一樣只改發射條件（預測虛線），按「發射」才發射 ----------
+  /** 發射點：方向鍵像拖曳一樣在畫面上移動（太陽每次 0.02 AU、地球每次 200 km；Shift 5 倍），距離限制在 r0 滑桿的範圍內 */
+  function keyStart(dx, dy, big) {
+    const step = (isSun() ? 0.02 * K.AU : 200e3) * (big ? 5 : 1);
+    const s = launchVec(), r0 = state.r0, phi0 = state.phi0;
+    dragStart([X(s.x + dx * step), Y(s.y + dy * step)]);
+    return state.r0 !== r0 || state.phi0 !== phi0;
+  }
+  /**
+   * 速度箭頭：↑↓ 改變速率 v0（太陽每次 0.1 km/s、地球每次 0.01 km/s；Shift 10 倍），限制在 v0 滑桿的範圍內；
+   * 經過 v圓 或 v脫 時先停在剛好等於的地方（和拖曳的吸附一樣），再按一次才離開。
+   * ←→ 改變發射角 α（每次 1°，Shift 5°；和拖曳一樣是整數度、限制 ±85°）。
+   */
+  function keyTip(dx, dy, big) {
+    const pr = P();
+    if (dx) {
+      const a = Math.max(-85, Math.min(85, Math.round(state.alpha / DEG) + dx * (big ? 5 : 1)));
+      if (a * DEG === state.alpha) return false;
+      setSlider(elA, a);
+      state.alpha = a * DEG;
+      launchChanged();
+      return true;
+    }
+    const v0 = state.v0;
+    const v = Math.max(pr.v0.min * 1000, Math.min(pr.v0.max * 1000, v0 + dy * (isSun() ? 100 : 10) * (big ? 10 : 1)));
+    let snap = null, best = Infinity;
+    [['circ', vCirc0()], ['esc', vEsc0()]].forEach(function (m) {
+      if (state.vSnap === m[0]) return;
+      const passed = (m[1] - v0) * dy > 1e-9 && (v - m[1]) * dy >= -1e-9;
+      if (passed && Math.abs(m[1] - v0) < best) { best = Math.abs(m[1] - v0); snap = m[0]; }
+    });
+    if (snap) { state.vSnap = snap; launchChanged(); return true; }
+    if (Math.abs(v - v0) < 1e-6) return false;
+    state.vSnap = null;
+    setSlider(elV, v / 1000);
+    state.v0 = val(elV) * 1000;
+    launchChanged();
+    return true;
+  }
+  function keyStartDescribe() {
+    return T('發射點：距離 r0 = ', 'Launch point: r0 = ') + fmtDist(state.r0) + T('，方位角 ', ', direction ') +
+      num(((state.phi0 / DEG) % 360 + 360) % 360, 0) + '°' + T('。', '. ') + orbitBrief();
+  }
+  function keyTipDescribe() {
+    let eq = '';
+    if (state.vSnap === 'circ') eq = T('（剛好等於圓周速率）', ' (exactly the circular speed)');
+    else if (state.vSnap === 'esc') eq = T('（剛好等於脫離速率）', ' (exactly the escape speed)');
+    return T('速度箭頭：v0 = ', 'Velocity arrow: v0 = ') + fmtSpeed(state.v0) + eq + T('，是圓周速率的 ', ', ') + num(state.v0 / vCirc0(), 3) +
+      T(' 倍', ' times the circular speed') + T('，發射角 α = ', ', launch angle α = ') + num(state.alpha / DEG, 0) + '°' + T('。', '. ') + orbitBrief();
+  }
+  if (window.LabKeys) {
+    cv.removeAttribute('data-en-aria-label'); // 說明文字改由程式依語言提供（含按鍵說明）
+    kb = window.LabKeys.attach(cv, {
+      label: T('行星軌道模擬畫布：中心天體、發射點與速度箭頭、軌道曲線。按 Enter 切換發射點或速度箭頭。發射點：方向鍵在畫面上移動它（太陽每次 0.02 AU、地球每次 200 km）。速度箭頭：上下鍵改變速率 v0，經過圓周速率或脫離速率時會先停在那裡；左右鍵改變發射角 α，每次 1°。Shift 加方向鍵移動較多。改好後按「發射」。',
+        'Planetary orbit canvas: central body, launch point and velocity arrow, orbit curve. Press Enter to switch between the launch point and the velocity arrow. Launch point: the arrow keys move it on the screen (0.02 AU per press around the Sun, 200 km around the Earth). Velocity arrow: up and down change the speed v0 and stop exactly at the circular or escape speed on the way; left and right change the launch angle α by 1°. Hold Shift for bigger steps. Then press “Launch”.'),
+      items: [
+        { name: function () { return T('發射點', 'launch point'); }, move: keyStart, describe: keyStartDescribe },
+        { name: function () { return T('速度箭頭', 'velocity arrow'); }, move: keyTip, describe: keyTipDescribe }
+      ],
+      onChange: requestDraw
+    });
+  }
+
+  // ---------- 分享連結：拖曳出來的發射方位 φ0、精確的發射角 α 與速率鎖定（滑桿、天體按鈕、勾選框由 classroom.js 自動記錄） ----------
+  // classroom.js 在 DOMContentLoaded 之後才由 settings.js 載入：還沒有 LabShare 時等 load 再登記（還原在 load 之後才進行）
+  function shareReady(fn) {
+    if (window.LabShare) fn(window.LabShare);
+    else window.addEventListener('load', function () { if (window.LabShare) fn(window.LabShare); });
+  }
+  shareReady(function (LS) {
+    LS.register({
+      get: function () {
+        return { phi: +state.phi0.toFixed(6), al: +(state.alpha / DEG).toFixed(4), snap: state.vSnap, v: +(state.v0 / 1000).toFixed(6) };
+      },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        const pr = P();
+        const phi = +o.phi, al = +o.al, v = +o.v;
+        if (isFinite(phi)) state.phi0 = Math.atan2(Math.sin(phi), Math.cos(phi));
+        // 「設為 v圓」按鈕在還原時會把 α 歸零，這裡再設回分享時的角度
+        if (isFinite(al)) { setSlider(elA, Math.max(+elA.min, Math.min(+elA.max, al))); state.alpha = val(elA) * DEG; }
+        state.vSnap = o.snap === 'circ' || o.snap === 'esc' ? o.snap : null;
+        if (!state.vSnap && isFinite(v)) { setSlider(elV, Math.max(pr.v0.min, Math.min(pr.v0.max, v))); state.v0 = val(elV) * 1000; }
+        // 從頭開始：清掉載入時的自動示範，用還原的條件自動發射一次（不算學生的發射，不回報任務）
+        clearAll();
+        launchChanged();
+        launch(true);
+      }
+    });
+  });
 
   // =====================================================================
   // 3D 檢視：切換到 3D 時才載入 js/kepler-3d.js 與 three.js（vendor/three/，以 import() 動態載入）；
@@ -1693,6 +2036,7 @@
   } else window.addEventListener('resize', function () { resize(); drawChart(); });
   resize();
   launch(true);
+  sayReady = true;
   if (reducedMotion) {
     state.running = false;
     updateButtons();

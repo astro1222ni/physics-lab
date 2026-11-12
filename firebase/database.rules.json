@@ -23,6 +23,35 @@
         }
       }
     },
+    "clock": {
+      ".read": true,
+      ".write": true,
+      ".validate": "newData.isNumber() && newData.val() === now"
+    },
+    "online": {
+      ".read": true,
+      ".indexOn": [
+        "k"
+      ],
+      "$min": {
+        ".write": "newData.exists() || !data.exists() || data.child('k').val() * 60000 < now - 600000",
+        ".validate": "$min.matches(/^[0-9]{8}$/) && newData.hasChildren(['k', 'n'])",
+        "k": {
+          ".validate": "newData.isNumber() && (data.exists() ? newData.val() === data.val() : (newData.val() * 60000 <= now + 60000 && newData.val() * 60000 >= now - 180000))"
+        },
+        "n": {
+          ".validate": "newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+        },
+        "m": {
+          "$mod": {
+            ".validate": "$mod.matches(/^[a-z0-9-]{1,40}$/) && newData.isNumber() && newData.val() === (data.exists() ? data.val() : 0) + 1"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "presence": {
       ".read": true,
       ".indexOn": [
@@ -133,11 +162,15 @@
     "scores": {
       ".read": true,
       ".indexOn": [
-        "stars"
+        "stars",
+        "s/phy",
+        "s/chem",
+        "s/bio",
+        "s/earth"
       ],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
-        ".validate": "newData.hasChildren(['stars', 'name', 'last', 'pub']) && newData.child('stars').isNumber() && ((data.exists() && newData.child('stars').val() === data.child('stars').val() && newData.child('last').val() === data.child('last').val()) || (!root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('completions').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === (data.exists() ? data.child('stars').val() : 0) + root.child('missionDefs').child(newData.child('last').val()).child('stars').val()))",
+        ".validate": "newData.hasChildren(['stars', 'name', 'last', 'pub']) && newData.child('stars').isNumber() && ((data.exists() && newData.child('stars').val() === data.child('stars').val() && newData.child('last').val() === data.child('last').val()) || (!root.child('completions').child($uid).child(newData.child('last').val()).exists() && newData.parent().parent().child('completions').child($uid).child(newData.child('last').val()).exists() && newData.child('stars').val() === (data.exists() ? data.child('stars').val() : 0) + root.child('missionDefs').child(newData.child('last').val()).child('stars').val())) && (!data.child('s').exists() || newData.child('s').exists())",
         "stars": {},
         "name": {
           ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
@@ -149,6 +182,17 @@
           ".validate": "newData.isBoolean()"
         },
         "at": {},
+        "s": {
+          ".validate": "newData.hasChildren() && (newData.child('phy').exists() ? newData.child('phy').val() : 0) + (newData.child('chem').exists() ? newData.child('chem').val() : 0) + (newData.child('bio').exists() ? newData.child('bio').val() : 0) + (newData.child('earth').exists() ? newData.child('earth').val() : 0) <= newData.parent().child('stars').val()",
+          "$subj": {
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth)$/) && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0)"
+          }
+        },
+        "sa": {
+          "$subj": {
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth)$/) && newData.isNumber() && (newData.val() === now || (data.exists() && newData.val() === data.val()))"
+          }
+        },
         "$other": {
           ".validate": false
         }
@@ -200,6 +244,56 @@
           "$other": {
             ".validate": false
           }
+        }
+      }
+    },
+    "daily": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        ".validate": "newData.hasChildren(['d', 'picks', 'n', 'at']) && newData.child('at').val() === now && newData.child('d').isNumber() && newData.child('d').val() * 86400000 <= now + 28800000 && now + 28800000 < (newData.child('d').val() + 1) * 86400000 && newData.child('n').isNumber() && newData.child('n').val() >= 0 && newData.child('n').val() <= 45 && ((data.exists() && data.child('d').val() === newData.child('d').val()) ? (newData.child('n').val() === data.child('n').val() || (newData.child('n').val() === data.child('n').val() + 1 && now - data.child('at').val() >= 10000)) : newData.child('n').val() <= 1)",
+        "d": {},
+        "n": {},
+        "at": {},
+        "picks": {
+          "$k": {
+            ".validate": "$k.matches(/^(easy|mid|hard)$/) && newData.isString() && newData.val().matches(/^[a-z0-9-]{1,60}$/) && (!data.exists() || data.val() === newData.val() || data.parent().parent().child('d').val() !== newData.parent().parent().child('d').val())"
+          }
+        },
+        "done": {
+          "$mid": {
+            ".validate": "$mid.matches(/^[a-z0-9-]{1,60}$/) && newData.val() === true && (data.exists() || newData.parent().parent().child('n').val() === (data.parent().parent().child('d').val() === newData.parent().parent().child('d').val() ? data.parent().parent().child('n').val() + 1 : 1))"
+          }
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "bag": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid && newData.exists() && newData.parent().parent().child('daily').child($uid).child('at').val() === now && newData.parent().parent().child('daily').child($uid).child('n').val() >= 1 && (newData.parent().parent().child('daily').child($uid).child('d').val() !== root.child('daily').child($uid).child('d').val() || newData.parent().parent().child('daily').child($uid).child('n').val() === root.child('daily').child($uid).child('n').val() + 1)",
+        "cu": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 5"
+        },
+        "ag": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 3"
+        },
+        "au": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 2"
+        },
+        "dia": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
+        },
+        "key": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
+        },
+        "dm": {
+          ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
+        },
+        "$other": {
+          ".validate": false
         }
       }
     }

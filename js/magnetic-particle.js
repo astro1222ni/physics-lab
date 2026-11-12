@@ -3,6 +3,8 @@
 (function () {
   'use strict';
   const MC = window.MagneticParticleCore;
+  const LD = window.LabDraw; // 共用繪圖工具（js/drawkit.js）：立體球、箭頭、標籤底框、格線、背景
+  const FONT = LD.FONT;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
 
@@ -77,11 +79,12 @@
   const ctx = cv.getContext('2d');
   let scale = 1, dpr = 1;
   let dragging = false, hoverStart = false; // 拖曳出發點／游標停在出發點上（只影響畫面回饋）
+  let kb = null; // 鍵盤操作（js/keys.js）：移動出發點
   const colors = {};
   function readColors() {
     const cs = getComputedStyle(document.documentElement);
     ['--canvas-bg', '--pos', '--neg', '--field', '--equi', '--grid', '--probe', '--text', '--muted', '--surface', '--accent', '--accent-soft', '--border',
-      '--mp-shadow', '--mp-vignette', '--mp-highlight'] // 最後三個是本頁 <style> 的光影代號
+      '--mp-highlight'] // 最後一個是本頁 <style> 的光影代號（磁場符號的內側亮邊）
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
   }
   function toPx(x, y) { return [x * scale, (H - y) * scale]; }        // cm → px
@@ -133,19 +136,8 @@
     return 'rgba(' + Math.round(p[0] + (q[0] - p[0]) * t) + ',' + Math.round(p[1] + (q[1] - p[1]) * t) + ',' +
       Math.round(p[2] + (q[2] - p[2]) * t) + ',' + (a == null ? 1 : a) + ')';
   }
-  function darkTheme() { const c = parseColor(colors['canvas-bg']); return c[0] + c[1] + c[2] < 0.6 * 255; }
   const reduceMQ = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   function reducedMotion() { return !!(reduceMQ && reduceMQ.matches); }
-  function roundRect(g, x, y, w, h, r) {
-    r = Math.min(r, w / 2, h / 2);
-    g.beginPath();
-    g.moveTo(x + r, y);
-    g.arcTo(x + w, y, x + w, y + h, r);
-    g.arcTo(x + w, y + h, x, y + h, r);
-    g.arcTo(x, y + h, x, y, r);
-    g.arcTo(x, y, x + w, y, r);
-    g.closePath();
-  }
 
   /** 略帶弧度的三角形箭頭（尖端在 (tx, ty)，後緣微微內凹）；全頁箭頭共用同一個形狀 */
   function headPath(g, tx, ty, ux, uy, len, half) {
@@ -170,17 +162,17 @@
   const bgCtx = bgCv.getContext('2d');
   let bgKey = '';
   function buildStatic() {
-    const key = [cv.width, cv.height, scale, par.B, par.region, par.E, par.ang, colors['canvas-bg'], colors.text, colors.muted,
-      colors.accent, colors['accent-soft'], colors.field, colors.grid, colors['mp-shadow'], colors['mp-vignette'], colors['mp-highlight']].join('|');
+    const key = [cv.width, cv.height, scale, dpr, par.B, par.region, par.E, par.ang, LD.ver, colors['canvas-bg'], colors.text, colors.muted,
+      colors.accent, colors['accent-soft'], colors.field, colors['mp-highlight']].join('|');
     if (key === bgKey) return;
     bgKey = key;
     if (bgCv.width !== cv.width || bgCv.height !== cv.height) { bgCv.width = cv.width; bgCv.height = cv.height; }
-    const g = bgCtx, dark = darkTheme();
+    const g = bgCtx, dark = LD.dark;
     const wpx = W * scale, hpx = H * scale;
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.globalAlpha = 1;
-    g.fillStyle = colors['canvas-bg'];
-    g.fillRect(0, 0, wpx, hpx);
+    // 背景：--canvas-bg 加極淡的徑向暈影（drawkit）
+    LD.backdrop(g, wpx, hpx);
 
     // 場區：淡淡的底色＋磁場強度色調（|B| 越大越明顯）＋邊界內側的光帶
     const fr = fieldRect();
@@ -205,25 +197,8 @@
       g.fillRect(fr[0], 0, 1.6 * scale, hpx);
     }
 
-    // 徑向暈影：中心亮、四角略暗
-    const vg = g.createRadialGradient(wpx / 2, hpx * 0.46, Math.min(wpx, hpx) * 0.3, wpx / 2, hpx * 0.46, Math.hypot(wpx, hpx) * 0.6);
-    vg.addColorStop(0, rgba(colors['mp-vignette'], 0));
-    vg.addColorStop(1, colors['mp-vignette']);
-    g.fillStyle = vg;
-    g.fillRect(0, 0, wpx, hpx);
-
-    // 1 cm 方格（次格線）與 2 cm 主格線：1 個物理像素寬、對齊像素
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    const sd = scale * dpr, Wd = bgCv.width, Hd = bgCv.height;
-    [[false, rgba(colors.text, 0.06)], [true, rgba(colors.text, 0.12)]].forEach(function (lv) {
-      g.strokeStyle = lv[1];
-      g.lineWidth = Math.max(1, Math.round(dpr * 0.75));
-      g.beginPath();
-      for (let x = 1; x < W; x++) if ((x % 2 === 0) === lv[0]) { const X = Math.round(x * sd) + 0.5; g.moveTo(X, 0); g.lineTo(X, Hd); }
-      for (let y = 1; y < H; y++) if (((H - y) % 2 === 0) === lv[0]) { const Y = Math.round(y * sd) + 0.5; g.moveTo(0, Y); g.lineTo(Wd, Y); }
-      g.stroke();
-    });
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // 兩級格線（drawkit）：主格線 2 cm、次格線 1 cm；畫面邊緣不畫
+    LD.grid(g, 0.5, 0.5, wpx - 0.5, hpx - 0.5, 2 * scale, scale, 0, 0);
 
     if (par.region) {
       // 場區邊界：雙層虛線（底層寬而淡）
@@ -242,60 +217,63 @@
     drawBSymbols(g);
   }
 
-  // 磁場符號：射出紙面 = 圓圈中一點（箭頭尖端朝向你），射入紙面 = 叉叉（箭尾）；先畫成小圖再重複貼上
+  // 磁場符號：射出紙面 ⊙ = 圓圈中一點（箭頭尖端朝向你），射入紙面 ⊗ = 圓圈中一個叉（箭尾的羽毛）。
+  // 兩者用同一個微凸的小圓盤（左上亮、右下暗、細亮邊、柔和投影），大小一致、排在 2 cm 格子的正中央；先畫成小圖再重複貼上
   function bSymbolSprite(out, s) {
-    const R = Math.ceil(s * 2), size = 2 * R;
+    const R = Math.ceil(s * 1.7 + 2), size = 2 * R;
     const c = document.createElement('canvas');
     c.width = c.height = Math.ceil(size * dpr);
     const g = c.getContext('2d');
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.translate(R, R);
-    const mu = colors.muted, dark = darkTheme();
+    const mu = colors.muted, bg = colors['canvas-bg'], dark = LD.dark;
     g.lineCap = 'round';
+    // 柔和投影（右下）
+    const sh = g.createRadialGradient(0.5, s * 0.32, s * 0.5, 0.5, s * 0.32, s * 1.5);
+    sh.addColorStop(0, LD.shadowInk(dark ? 0.55 : 0.2));
+    sh.addColorStop(1, LD.shadowInk(0));
+    g.fillStyle = sh;
+    g.beginPath(); g.arc(0.5, s * 0.32, s * 1.5, 0, Math.PI * 2); g.fill();
+    // 微凸的圓盤
+    const dg = g.createRadialGradient(-s * 0.4, -s * 0.45, s * 0.1, 0, 0, s * 1.05);
+    dg.addColorStop(0, LD.mix(bg, '#ffffff', dark ? 0.12 : 0.95));
+    dg.addColorStop(1, LD.mix(bg, mu, dark ? 0.3 : 0.2));
+    g.fillStyle = dg;
+    g.beginPath(); g.arc(0, 0, s, 0, Math.PI * 2); g.fill();
+    // 圓框（左上略亮、右下略暗）
+    const rg = g.createLinearGradient(-s, -s, s, s);
+    rg.addColorStop(0, LD.shade(mu, dark ? 0.18 : 0.1));
+    rg.addColorStop(1, LD.shade(mu, dark ? -0.1 : -0.25));
+    g.strokeStyle = rg;
+    g.lineWidth = Math.max(1.1, s * 0.18);
+    g.beginPath(); g.arc(0, 0, s - g.lineWidth / 2, 0, Math.PI * 2); g.stroke();
+    // 內側的細亮邊
+    g.strokeStyle = colors['mp-highlight'];
+    g.lineWidth = Math.max(0.6, s * 0.09);
+    g.beginPath(); g.arc(0, 0, s - Math.max(1.1, s * 0.18) - g.lineWidth, Math.PI * 1.05, Math.PI * 1.5); g.stroke();
     if (out) {
-      // 柔和陰影 → 微凸的圓盤（左上亮、右下暗）→ 圓框 → 中心的小亮球
-      const sh = g.createRadialGradient(0.4, s * 0.3, s * 0.55, 0.4, s * 0.3, s * 1.45);
-      sh.addColorStop(0, colors['mp-shadow']);
-      sh.addColorStop(1, rgba(colors['mp-shadow'], 0));
-      g.fillStyle = sh;
-      g.beginPath(); g.arc(0.4, s * 0.3, s * 1.45, 0, Math.PI * 2); g.fill();
-      const dg = g.createRadialGradient(-s * 0.4, -s * 0.45, s * 0.1, 0, 0, s * 1.05);
-      dg.addColorStop(0, mix(colors['canvas-bg'], '#ffffff', dark ? 0.1 : 0.9));
-      dg.addColorStop(1, mix(colors['canvas-bg'], mu, dark ? 0.28 : 0.18));
-      g.fillStyle = dg;
-      g.beginPath(); g.arc(0, 0, s, 0, Math.PI * 2); g.fill();
-      g.lineWidth = Math.max(1.1, s * 0.2);
-      g.strokeStyle = mu;
-      g.stroke();
-      g.strokeStyle = colors['mp-highlight'];
-      g.lineWidth = Math.max(0.6, s * 0.1);
-      g.beginPath(); g.arc(0, 0, s - g.lineWidth * 1.6, Math.PI * 1.05, Math.PI * 1.5); g.stroke();
-      const r = s * 0.36;
+      // 中心的小亮球（箭頭的尖端）
+      const r = s * 0.34;
       const cg = g.createRadialGradient(-r * 0.35, -r * 0.4, r * 0.08, 0, 0, r);
-      cg.addColorStop(0, mix(mu, '#ffffff', 0.6));
+      cg.addColorStop(0, LD.mix(mu, '#ffffff', 0.6));
       cg.addColorStop(0.55, mu);
-      cg.addColorStop(1, mix(mu, '#000000', 0.3));
+      cg.addColorStop(1, LD.mix(mu, '#000000', 0.3));
       g.fillStyle = cg;
       g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fill();
     } else {
-      // 淡淡的底暈＋浮雕感的叉叉（暗線略偏下，主線由左上亮到右下暗）
-      const sp = g.createRadialGradient(0, 0, 0, 0, 0, s * 1.3);
-      sp.addColorStop(0, rgba(mu, dark ? 0.16 : 0.1));
-      sp.addColorStop(1, rgba(mu, 0));
-      g.fillStyle = sp;
-      g.beginPath(); g.arc(0, 0, s * 1.3, 0, Math.PI * 2); g.fill();
-      const d = s * 0.78, lw = Math.max(1.3, s * 0.27);
+      // 浮雕感的叉叉（暗線略偏下，主線由左上亮到右下暗），留在圓框內
+      const d = s * 0.42, lw = Math.max(1.2, s * 0.2);
       const cross = function (ox, oy) {
         g.beginPath();
         g.moveTo(ox - d, oy - d); g.lineTo(ox + d, oy + d);
         g.moveTo(ox + d, oy - d); g.lineTo(ox - d, oy + d);
       };
       g.lineWidth = lw;
-      g.strokeStyle = colors['mp-shadow'];
-      cross(0.3, 0.9); g.stroke();
+      g.strokeStyle = LD.shadowInk(dark ? 0.5 : 0.18);
+      cross(0.2, 0.7); g.stroke();
       const lg = g.createLinearGradient(-d, -d, d, d);
-      lg.addColorStop(0, mix(mu, '#ffffff', dark ? 0.2 : 0.15));
-      lg.addColorStop(1, mix(mu, '#000000', dark ? 0.1 : 0.2));
+      lg.addColorStop(0, LD.mix(mu, '#ffffff', dark ? 0.22 : 0.12));
+      lg.addColorStop(1, LD.mix(mu, '#000000', dark ? 0.08 : 0.22));
       g.strokeStyle = lg;
       cross(0, 0); g.stroke();
     }
@@ -303,7 +281,7 @@
   }
   function drawBSymbols(g) {
     if (par.B === 0) return;
-    const s = Math.max(3.5, Math.min(7, scale * 0.24));
+    const s = Math.max(4.6, Math.min(7.5, scale * 0.24));
     const sp = bSymbolSprite(par.B > 0, s);
     g.save();
     g.globalAlpha = 0.6 + 0.35 * Math.min(1, Math.abs(par.B) / 200); // 符號的濃淡也隨 |B| 變化
@@ -324,25 +302,26 @@
     const th = par.ang * Math.PI / 180, sg = Math.sign(par.E);
     const ex = -Math.sin(th) * sg, ey = Math.cos(th) * sg; // E 的單位向量（世界座標）
     const tx = Math.cos(th), ty = Math.sin(th);             // 與電力線垂直的方向
-    const r = fieldRect();
-    const a = 0.3 + 0.25 * Math.min(1, Math.abs(par.E) / 100);
+    const r = fieldRect(), dark = LD.dark;
+    // 深色模式的 --field 是很亮的淺灰：降低濃度，免得蓋過磁場符號與軌跡
+    const a = (dark ? 0.22 : 0.3) + (dark ? 0.2 : 0.25) * Math.min(1, Math.abs(par.E) / 100);
     g.save();
     g.beginPath(); g.rect(r[0], r[1], r[2], r[3]); g.clip();
     g.lineCap = 'round';
     // 電力線錯開磁場符號與方格線（中心偏移半個間距）
     const gap = 3, cx = (par.region ? W * 3 / 4 : W / 2) + 1.5 * tx, cy = H / 2 + 1.5 * ty, R = Math.hypot(W, H);
+    const hs = Math.max(7, Math.min(10, scale * 0.45));
     for (let k = -8; k <= 8; k++) {
       const ox = cx + k * gap * tx, oy = cy + k * gap * ty;
       const p0 = toPx(ox - ex * R, oy - ey * R), p1 = toPx(ox + ex * R, oy + ey * R);
       g.beginPath(); g.moveTo(p0[0], p0[1]); g.lineTo(p1[0], p1[1]);
-      g.strokeStyle = rgba(colors.field, a * 0.22);
+      g.strokeStyle = rgba(colors.field, a * 0.2);
       g.lineWidth = 4.5;
       g.stroke();
       g.strokeStyle = rgba(colors.field, a);
       g.lineWidth = 1.25;
       g.stroke();
-      g.fillStyle = rgba(colors.field, Math.min(1, a + 0.12));
-      const hs = Math.max(7, Math.min(10, scale * 0.45));
+      g.fillStyle = rgba(colors.field, Math.min(1, a + 0.15));
       for (let d = -R; d <= R; d += 4) {
         const q = toPx(ox + ex * (d + 2), oy + ey * (d + 2));
         g.beginPath();
@@ -353,126 +332,69 @@
     g.restore();
   }
 
-  // ---------- 粒子：光亮的小球（依電荷正負上色）＋光暈＋輕微投影；先畫成小圖 ----------
-  const PR = 8; // 粒子半徑（px）
-  let partSprite = null, partKey = '';
-  function particleSprite(pc) {
-    const sign = par.q > 0 ? 1 : par.q < 0 ? -1 : 0, dark = darkTheme();
-    const key = [pc, sign, dpr, dark, colors.surface, colors['mp-shadow'], colors['mp-highlight']].join('|');
-    if (key === partKey) return partSprite;
-    partKey = key;
-    const R = Math.ceil(PR * 3), c = document.createElement('canvas');
-    c.width = c.height = Math.ceil(2 * R * dpr);
-    const g = c.getContext('2d');
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
-    g.translate(R, R);
-    // 光暈（深色模式稍強）
-    const gl = g.createRadialGradient(0, 0, PR * 0.7, 0, 0, PR * 2.6);
-    gl.addColorStop(0, rgba(pc, dark ? 0.42 : 0.2));
-    gl.addColorStop(1, rgba(pc, 0));
-    g.fillStyle = gl;
-    g.beginPath(); g.arc(0, 0, PR * 2.6, 0, Math.PI * 2); g.fill();
-    // 投影（右下方，柔和）
-    const sh = g.createRadialGradient(1.2, 3, PR * 0.4, 1.2, 3, PR * 1.35);
-    sh.addColorStop(0, colors['mp-shadow']);
-    sh.addColorStop(1, rgba(colors['mp-shadow'], 0));
-    g.fillStyle = sh;
-    g.beginPath(); g.arc(1.2, 3, PR * 1.35, 0, Math.PI * 2); g.fill();
-    // 細的表面色外框：與軌跡分開
-    g.fillStyle = rgba(colors.surface, dark ? 0.55 : 0.95);
-    g.beginPath(); g.arc(0, 0, PR + 1, 0, Math.PI * 2); g.fill();
-    // 球體：亮點偏左上，邊緣加深
-    const sg = g.createRadialGradient(-PR * 0.34, -PR * 0.38, PR * 0.05, 0, 0, PR);
-    sg.addColorStop(0, mix(pc, '#ffffff', 0.62));
-    sg.addColorStop(0.5, pc);
-    sg.addColorStop(1, mix(pc, '#000000', 0.32));
-    g.fillStyle = sg;
-    g.beginPath(); g.arc(0, 0, PR, 0, Math.PI * 2); g.fill();
-    // 右下的亮邊（rim light）
-    g.strokeStyle = rgba(colors['mp-highlight'], 0.55);
-    g.lineWidth = 1;
-    g.beginPath(); g.arc(0, 0, PR - 0.8, -0.05 * Math.PI, 0.6 * Math.PI); g.stroke();
+  // ---------- 粒子：立體小球（drawkit；依電荷正負上色、深色模式光暈較強）＋白色正負號 ----------
+  const PR = 8; // 粒子半徑（px，示意大小）
+  function drawParticle(x, y, pc) {
+    const sign = par.q > 0 ? 1 : par.q < 0 ? -1 : 0, dark = LD.dark;
+    LD.ball(ctx, x, y, PR, pc, { glow: dark ? (state.running ? 0.5 : 0.4) : (state.running ? 0.26 : 0.18) });
     // 電荷符號：畫線條（不依賴字型）
-    g.lineCap = 'round';
+    ctx.lineCap = 'round';
     const arm = 3.3;
     const signPath = function (oy) {
-      g.beginPath();
-      if (sign !== 0) { g.moveTo(-arm, oy); g.lineTo(arm, oy); }
-      if (sign > 0) { g.moveTo(0, oy - arm); g.lineTo(0, oy + arm); }
-      if (sign === 0) g.arc(0, oy, 2.6, 0, Math.PI * 2);
+      ctx.beginPath();
+      if (sign !== 0) { ctx.moveTo(x - arm, y + oy); ctx.lineTo(x + arm, y + oy); }
+      if (sign > 0) { ctx.moveTo(x, y - arm + oy); ctx.lineTo(x, y + arm + oy); }
+      if (sign === 0) ctx.arc(x, y + oy, 2.6, 0, Math.PI * 2);
     };
-    g.lineWidth = 2;
-    g.strokeStyle = 'rgba(0,0,0,0.25)';
-    signPath(0.7); g.stroke();
-    g.strokeStyle = '#ffffff';
-    signPath(0); g.stroke();
-    partSprite = { c: c, R: R };
-    return partSprite;
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = LD.alpha(LD.shade(pc, -0.6), 0.35);
+    signPath(0.7); ctx.stroke();
+    ctx.strokeStyle = '#ffffff';
+    signPath(0); ctx.stroke();
   }
 
-  // ---------- 向量：漸細的箭身＋略帶弧度的箭頭，外圍一圈背景色描邊；全頁幾何一致 ----------
-  const VEC = { w0: 3.4, w1: 2.2, head: 11, half: 4.8 };
+  // ---------- 向量（drawkit 箭頭：全站幾何一致）；標籤另外排，避開彼此、粒子、圓心與其他箭頭 ----------
   /** 從 (x, y) px 畫一支向量（dx, dy 為 px，y 向下）；尖端恰好在 (x + dx, y + dy) */
   function vector(x, y, dx, dy, color, label, dashed, labels) {
     const L = Math.hypot(dx, dy);
     if (L < 1) return;
-    const ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
-    const hl = Math.min(VEC.head, L * 0.5), hw = VEC.half * hl / VEC.head + 0.6;
-    const neck = L - hl * 0.8;
-    const tx = x + ux * L, ty = y + uy * L;
-    const quad = function (a, b) {
-      const wa = (VEC.w0 + (VEC.w1 - VEC.w0) * a / L) / 2, wb = (VEC.w0 + (VEC.w1 - VEC.w0) * b / L) / 2;
-      ctx.moveTo(x + ux * a + nx * wa, y + uy * a + ny * wa);
-      ctx.lineTo(x + ux * b + nx * wb, y + uy * b + ny * wb);
-      ctx.lineTo(x + ux * b - nx * wb, y + uy * b - ny * wb);
-      ctx.lineTo(x + ux * a - nx * wa, y + uy * a - ny * wa);
-      ctx.closePath();
-    };
-    ctx.beginPath();
-    if (neck > 0) {
-      if (dashed) { for (let a = 0; a < neck; a += 8.5) quad(a, Math.min(neck, a + 5)); }
-      else quad(0, neck);
-    }
-    headPath(ctx, tx, ty, ux, uy, hl, hw);
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = rgba(colors['canvas-bg'], 0.8);
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.fill();
-    ctx.strokeStyle = mix(color, '#000000', 0.18, 0.6);
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-    if (label) labels.push({ text: label, color: color, tx: tx, ty: ty, ux: ux, uy: uy });
+    const ux = dx / L, uy = dy / L;
+    const tx = x + dx, ty = y + dy;
+    LD.arrow(ctx, x, y, tx, ty, color, 2.6, dashed ? { dash: [5, 3.5] } : null);
+    if (label) labels.push({ text: label[0], sub: label[1], color: color, tx: tx, ty: ty, ux: ux, uy: uy });
     // 箭頭本身也是標籤要避開的區域
     for (let a = 0; a <= L; a += 6) labels.obst.push({ x: x + ux * a - 3, y: y + uy * a - 3, w: 6, h: 6 });
   }
 
-  // ---------- 標籤：半透明圓角底框（pill），不壓在其他標籤或粒子上 ----------
-  function pillSize(text) {
-    ctx.font = '600 12px system-ui, sans-serif';
-    const m = ctx.measureText(text);
-    const fh = (m.fontBoundingBoxAscent || 10) + (m.fontBoundingBoxDescent || 3);
-    return { w: m.width + 12, h: Math.round(fh + 5) };
+  // ---------- 標籤：半透明圓角底框（pill）＋斜體向量名稱與下標，不壓在其他標籤或粒子上 ----------
+  const F_MAIN = 'italic 600 13px ' + FONT, F_SUB = '600 9.5px ' + FONT;
+  function vecPillSize(text, sub) {
+    ctx.font = F_MAIN;
+    const m = ctx.measureText(text), w1 = m.width;
+    let w2 = 0;
+    if (sub) { ctx.font = F_SUB; w2 = ctx.measureText(sub).width + 1; }
+    return { w: Math.ceil(w1 + w2 + 13), h: Math.round(LD.textHeight(m, 16) + 3), w1: w1 };
   }
-  function drawPill(text, cx, cy, color, sz) {
+  function drawVecPill(text, sub, cx, cy, color, sz) {
     const x = cx - sz.w / 2, y = cy - sz.h / 2;
     ctx.save();
-    roundRect(ctx, x, y, sz.w, sz.h, sz.h / 2);
-    ctx.shadowColor = colors['mp-shadow'];
+    LD.roundRect(ctx, x, y, sz.w, sz.h, sz.h / 2);
+    ctx.shadowColor = LD.dark ? 'rgba(0,0,0,0.45)' : LD.alpha(colors.text, 0.14);
     ctx.shadowBlur = 5;
     ctx.shadowOffsetY = 1;
-    ctx.fillStyle = rgba(colors.surface, 0.9);
+    ctx.fillStyle = LD.alpha(colors['canvas-bg'], LD.dark ? 0.86 : 0.92);
     ctx.fill();
     ctx.shadowColor = 'transparent';
-    ctx.strokeStyle = rgba(color, 0.45);
+    ctx.strokeStyle = LD.alpha(color, LD.dark ? 0.55 : 0.45);
     ctx.lineWidth = 1;
     ctx.stroke();
-    ctx.font = '600 12px system-ui, sans-serif';
     ctx.fillStyle = color;
-    ctx.textAlign = 'center';
+    ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, cx, cy + 0.5);
+    const x0 = x + 6.5;
+    ctx.font = F_MAIN;
+    ctx.fillText(text, x0, cy + 0.5);
+    if (sub) { ctx.font = F_SUB; ctx.fillText(sub, x0 + sz.w1 + 1, cy + 4.5); }
     ctx.restore();
   }
   function drawLabels(list, pp) {
@@ -483,7 +405,7 @@
     };
     list.forEach(function (lb) {
       if (lb.tx < -2 || lb.tx > wpx + 2 || lb.ty < -2 || lb.ty > hpx + 2) return; // 箭頭尖端在畫面外：不標（原本也看不到）
-      const sz = pillSize(lb.text);
+      const sz = vecPillSize(lb.text, lb.sub);
       // 候選位置：箭頭尖端外側，依序轉開角度、拉遠距離，取第一個不重疊的位置
       const cands = [];
       [0, 1, 2].forEach(function (k) {
@@ -504,7 +426,7 @@
         if (!hit(r)) { best = r; break; }
       }
       placed.push(best);
-      drawPill(lb.text, best.cx, best.cy, lb.color, sz);
+      drawVecPill(lb.text, lb.sub, best.cx, best.cy, lb.color, sz);
     });
   }
 
@@ -520,28 +442,30 @@
     for (let i = ripples.length - 1; i >= 0; i--) {
       const r = ripples[i], u = (now - r.t0) / 380;
       if (u >= 1 || u < 0) { ripples.splice(i, 1); continue; }
-      const q = siPx(r.x, r.y), e = 1 - (1 - u) * (1 - u);
-      ctx.strokeStyle = rgba(r.color, 0.6 * (1 - u));
-      ctx.lineWidth = 2.2 * (1 - u) + 0.6;
-      ctx.beginPath(); ctx.arc(q[0], q[1], PR + 3 + 18 * e, 0, Math.PI * 2); ctx.stroke();
+      const q = siPx(r.x, r.y);
+      LD.ripple(ctx, q[0], q[1], PR + 3, 1 - (1 - u) * (1 - u), r.color);
     }
     if (ripples.length && !state.running) requestDraw(); // 動畫停止後讓波紋淡出完畢
   }
 
-  // ---------- 軌跡：越舊越淡、越細（分段畫，每段透明度遞減）；最新一段有柔和光暈 ----------
+  // ---------- 軌跡：底下一層柔和光暈（最新一段較亮）；上面越舊越淡、越細（分段畫，每段透明度遞減） ----------
   function drawTrail(pc) {
     const tr = state.trail, n = tr.length;
     if (!state.show.trail || n < 2) return;
-    const dark = darkTheme();
+    const dark = LD.dark;
+    const path = function (i0, i1) {
+      ctx.beginPath();
+      for (let i = i0; i <= i1; i++) { const q = siPx(tr[i][0], tr[i][1]); if (i === i0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]); }
+    };
     ctx.lineJoin = 'round';
-    // 最新一段（約 70 px）下方的柔和光暈
-    const g0 = Math.max(0, n - 48);
-    ctx.strokeStyle = rgba(pc, dark ? 0.2 : 0.1);
-    ctx.lineWidth = 7;
     ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let i = g0; i < n; i++) { const q = siPx(tr[i][0], tr[i][1]); if (i === g0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]); }
-    ctx.stroke();
+    ctx.strokeStyle = rgba(pc, dark ? 0.12 : 0.06);
+    ctx.lineWidth = 6;
+    path(0, n - 1); ctx.stroke();
+    // 最新一段（約 90 px）下方較亮的光暈
+    ctx.strokeStyle = rgba(pc, dark ? 0.22 : 0.11);
+    ctx.lineWidth = 9;
+    path(Math.max(0, n - 60), n - 1); ctx.stroke();
     const bands = Math.min(28, n - 1);
     for (let k = 0; k < bands; k++) {
       const i0 = Math.floor(k * (n - 1) / bands), i1 = Math.floor((k + 1) * (n - 1) / bands);
@@ -549,9 +473,7 @@
       ctx.strokeStyle = rgba(pc, 0.4 + 0.55 * e);
       ctx.lineWidth = 1.2 + 1.5 * e;
       ctx.lineCap = k === bands - 1 ? 'round' : 'butt';
-      ctx.beginPath();
-      for (let i = i0; i <= i1; i++) { const q = siPx(tr[i][0], tr[i][1]); if (i === i0) ctx.moveTo(q[0], q[1]); else ctx.lineTo(q[0], q[1]); }
-      ctx.stroke();
+      path(i0, i1); ctx.stroke();
     }
   }
 
@@ -575,10 +497,14 @@
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
+    const labels = [];
+    labels.obst = [];
     if (par.region) {
-      const a = pillSize(T('場區', 'Field region')), b = pillSize(T('無場區', 'No field'));
-      drawPill(T('場區', 'Field region'), wpx / 2 + 8 + a.w / 2, 6 + a.h / 2, colors.accent, a);
-      drawPill(T('無場區', 'No field'), wpx / 2 - 8 - b.w / 2, 6 + b.h / 2, colors.muted, b);
+      // 場區／無場區（drawkit 圓角底框標籤），貼在邊界兩側
+      ctx.font = '600 12px ' + FONT;
+      const yb = 6 + Math.round(LD.textHeight(ctx.measureText('場'), 15) + 3);
+      labels.obst.push(LD.pill(ctx, T('場區', 'Field region'), wpx / 2 + 8, yb, colors.accent, 'left'));
+      labels.obst.push(LD.pill(ctx, T('無場區', 'No field'), wpx / 2 - 8, yb, colors.muted, 'right'));
     }
 
     // 圓軌道（螺旋線的投影；有電場時為導引中心的迴旋圓）與圓心
@@ -588,7 +514,7 @@
       const o = siPx(c.x, c.y), rp = c.r / CM * scale;
       if (rp < 20000) {
         ctx.beginPath(); ctx.arc(o[0], o[1], rp, 0, Math.PI * 2);
-        ctx.strokeStyle = rgba(colors.muted, 0.12);
+        ctx.strokeStyle = rgba(colors.muted, LD.dark ? 0.14 : 0.1);
         ctx.lineWidth = 4;
         ctx.stroke();
         ctx.setLineDash([6, 6]);
@@ -627,46 +553,46 @@
       }
     }
 
-    // 出發點（可拖曳：滑過或拖曳時放大並加上光暈）
+    // 出發點（發射台）：凹陷的小圓座＋中心點；可拖曳，滑過或拖曳時放大並改成強調色
     const sp = toPx(state.start.x, state.start.y);
     const hot = dragging || hoverStart;
-    const sr = hot ? 5.5 : 5, scol = hot ? colors.accent : colors.muted;
-    ctx.fillStyle = rgba(colors['canvas-bg'], 0.75);
+    const sr = hot ? 5.8 : 5.3, scol = hot ? colors.accent : colors.muted;
+    const sg = ctx.createRadialGradient(sp[0] + sr * 0.3, sp[1] + sr * 0.35, sr * 0.1, sp[0], sp[1], sr);
+    sg.addColorStop(0, rgba(colors['canvas-bg'], 0.95));
+    sg.addColorStop(1, LD.mix(colors['canvas-bg'], scol, LD.dark ? 0.32 : 0.2));
+    ctx.fillStyle = sg;
     ctx.beginPath(); ctx.arc(sp[0], sp[1], sr, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = scol;
     ctx.lineWidth = 1.6;
     ctx.stroke();
     ctx.fillStyle = scol;
-    ctx.beginPath(); ctx.arc(sp[0], sp[1], 1.3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sp[0], sp[1], 1.4, 0, Math.PI * 2); ctx.fill();
 
     const pc = chargeColor();
     drawTrail(pc);
 
     // 速度與力的向量（紙面內的分量）；箭頭長度的比例與之前完全相同
     const pp = siPx(p.x, p.y);
-    const labels = [];
-    labels.obst = [];
     if (cMark) labels.obst.push({ x: cMark[0] - 9, y: cMark[1] - 9, w: 18, h: 18 });
     if (state.show.vec) {
       const v = Math.hypot(p.vx, p.vy);
-      if (v > 0) { const L = 14 + 56 * v / 5e5; vector(pp[0], pp[1], p.vx / v * L, -p.vy / v * L, colors.probe, p.vz ? 'v⊥' : 'v', false, labels); }
+      if (v > 0) { const L = 14 + 56 * v / 5e5; vector(pp[0], pp[1], p.vx / v * L, -p.vy / v * L, colors.probe, ['v', p.vz ? '⊥' : ''], false, labels); }
       const fl = function (fx, fy) {
         const m = Math.hypot(fx, fy);
         const L = Math.min(110, 50 * m / F_REF);
         return m > 0 ? [fx / m * L, -fy / m * L] : [0, 0];
       };
       const fe = fl(F.ex, F.ey), fb = fl(F.bx, F.by);
-      vector(pp[0], pp[1], fe[0], fe[1], colors.field, 'qE', true, labels);
-      vector(pp[0], pp[1], fb[0], fb[1], colors.equi, 'F', false, labels);
+      vector(pp[0], pp[1], fe[0], fe[1], colors.field, ['qE', ''], true, labels);
+      vector(pp[0], pp[1], fb[0], fb[1], colors.equi, ['F', ''], false, labels);
     }
 
     // 粒子
-    const ps = particleSprite(pc);
-    ctx.drawImage(ps.c, pp[0] - ps.R, pp[1] - ps.R, 2 * ps.R, 2 * ps.R);
+    drawParticle(pp[0], pp[1], pc);
     if (hot) {
       // 拖曳回饋：畫在粒子上層（未發射時粒子正好蓋住出發點）
       const hg = ctx.createRadialGradient(sp[0], sp[1], 8, sp[0], sp[1], 20);
-      hg.addColorStop(0, rgba(colors.accent, darkTheme() ? 0.4 : 0.28));
+      hg.addColorStop(0, rgba(colors.accent, LD.dark ? 0.4 : 0.28));
       hg.addColorStop(1, rgba(colors.accent, 0));
       ctx.fillStyle = hg;
       ctx.beginPath(); ctx.arc(sp[0], sp[1], 20, 0, Math.PI * 2); ctx.arc(sp[0], sp[1], PR + 4.5, 0, Math.PI * 2); ctx.fill('evenodd');
@@ -675,38 +601,61 @@
       ctx.beginPath(); ctx.arc(sp[0], sp[1], PR + 4.5, 0, Math.PI * 2); ctx.stroke();
     }
     drawRipples();
+    // 比例尺的位置也要避開
+    const sb = scaleBarBox(hpx);
+    labels.obst.push(sb);
     drawLabels(labels, pp);
+    drawScaleBar(sb);
 
-    // 比例尺（半透明圓角底框）
-    ctx.font = '600 12px system-ui, sans-serif';
+    // 鍵盤選取出發點時：虛線圓角焦點框（--accent）
+    if (kb && kb.focused()) {
+      const r = PR + 9;
+      ctx.save();
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      LD.roundRect(ctx, sp[0] - r, sp[1] - r, 2 * r, 2 * r, 8);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /** 比例尺（2 cm）的底框位置 */
+  function scaleBarBox(hpx) {
+    ctx.font = '600 12px ' + FONT;
     const m = ctx.measureText('2 cm');
-    const fh = (m.fontBoundingBoxAscent || 10) + (m.fontBoundingBoxDescent || 3);
-    const L2 = 2 * scale, bh = Math.round(fh + 10), bw = 10 + L2 + 8 + m.width + 10;
-    const bx = 8, by = hpx - 8 - bh, my = by + bh / 2;
+    const bh = Math.round(LD.textHeight(m, 15) + 10), bw = 10 + 2 * scale + 8 + m.width + 10;
+    return { x: 8, y: hpx - 8 - bh, w: bw, h: bh, tw: m.width };
+  }
+  /** 比例尺：半透明圓角底框（輕微投影），橫條長度正好 2 cm */
+  function drawScaleBar(b) {
+    const L2 = 2 * scale, my = b.y + b.h / 2;
     ctx.save();
-    roundRect(ctx, bx, by, bw, bh, bh / 2);
-    ctx.shadowColor = colors['mp-shadow'];
+    LD.roundRect(ctx, b.x, b.y, b.w, b.h, b.h / 2);
+    ctx.shadowColor = LD.dark ? 'rgba(0,0,0,0.45)' : LD.alpha(colors.text, 0.16);
     ctx.shadowBlur = 6;
     ctx.shadowOffsetY = 1;
-    ctx.fillStyle = rgba(colors.surface, 0.88);
+    ctx.fillStyle = LD.alpha(colors['canvas-bg'], LD.dark ? 0.86 : 0.9);
     ctx.fill();
     ctx.restore();
     ctx.strokeStyle = rgba(colors.text, 0.14);
     ctx.lineWidth = 1;
-    roundRect(ctx, bx, by, bw, bh, bh / 2);
+    LD.roundRect(ctx, b.x, b.y, b.w, b.h, b.h / 2);
     ctx.stroke();
     ctx.strokeStyle = colors.text;
     ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
+    ctx.lineCap = 'butt';
     ctx.beginPath();
-    ctx.moveTo(bx + 10, my); ctx.lineTo(bx + 10 + L2, my);
-    ctx.moveTo(bx + 10, my - 4); ctx.lineTo(bx + 10, my + 4);
-    ctx.moveTo(bx + 10 + L2, my - 4); ctx.lineTo(bx + 10 + L2, my + 4);
+    ctx.moveTo(b.x + 10, my); ctx.lineTo(b.x + 10 + L2, my);
+    ctx.moveTo(b.x + 10, my - 4); ctx.lineTo(b.x + 10, my + 4);
+    ctx.moveTo(b.x + 10 + L2, my - 4); ctx.lineTo(b.x + 10 + L2, my + 4);
     ctx.stroke();
+    ctx.lineCap = 'round';
+    ctx.font = '600 12px ' + FONT;
     ctx.fillStyle = colors.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText('2 cm', bx + 10 + L2 + 8, my + 0.5);
+    ctx.fillText('2 cm', b.x + 10 + L2 + 8, my + 0.5);
   }
 
   function chargeColor() { return par.q > 0 ? colors.pos : par.q < 0 ? colors.neg : colors.muted; }
@@ -773,7 +722,49 @@
       turns < 0 ? T('順時針 ' + n + ' 圈', n + ' turns clockwise') : T('逆時針 ' + n + ' 圈', n + ' turns counterclockwise');
     showRows('regRow', par.region);
     if (par.region) $('rTf').textContent = (p.tField * 1e6).toFixed(3) + ' μs';
-    $('status').textContent = state.status;
+    // 狀態列有 aria-live：只在文字真的改變時才寫（每一幀重寫會讓螢幕閱讀器重複念）
+    if ($('status').textContent !== state.status) $('status').textContent = state.status;
+    // 動畫中的經過時間與轉過的圈數：寫進另一個 .sr-only 狀態列，至少間隔 1 秒才更新
+    if (state.running) {
+      const now = performance.now();
+      if (now - srNowAt >= 1000) {
+        srNowAt = now;
+        const el = $('srNow');
+        if (el) el.textContent = 't = ' + (p.t * 1e6).toFixed(2) + ' μs' + T('，轉過 ', ', ') + Math.abs(turns).toFixed(2) + T(' 圈', ' turns') +
+          T('，速率 ', ', speed ') + plain(MC.speed(p)) + ' m/s';
+      }
+    }
+  }
+  let srNowAt = -1e9;
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 粒子離開畫面、暫停、換情境寫進可見的 #status（aria-live）；改滑桿後（停止調整約 0.9 s）把半徑、週期（與螺距）寫進 .sr-only 的 #srSay
+  /** 給螢幕閱讀器的數字：三位有效數字、千分位，不用上標 */
+  function plain(v) {
+    if (!isFinite(v)) return '—';
+    return Number(v.toPrecision(3)).toLocaleString('en-US', { maximumFractionDigits: 6 }).replace('-', '−');
+  }
+  function orbitText() {
+    const q = par.q * MC.E_CHARGE, m = par.m * MC.AMU, B = par.B * 1e-3;
+    if (par.q === 0 || par.B === 0) return par.q === 0 ? T('q = 0：不受磁力，粒子直線前進。', 'q = 0: no magnetic force, the particle moves in a straight line.') :
+      T('B = 0：沒有磁場，半徑無限大。', 'B = 0: no magnetic field, the radius is infinite.');
+    const h = MC.helix(m, q, par.v * 1e5, B, par.theta);
+    let t = T('半徑 r = ' + plain(h.r / CM) + ' cm，週期 T = ' + plain(h.T * 1e6) + ' μs',
+      'Radius r = ' + plain(h.r / CM) + ' cm, period T = ' + plain(h.T * 1e6) + ' μs');
+    if (par.theta !== 90) t += T('，螺距 ' + plain(Math.abs(h.pitch) / CM) + ' cm', ', pitch ' + plain(Math.abs(h.pitch) / CM) + ' cm');
+    return t + T('。', '.');
+  }
+  let sayTimer = 0, sayLaterTimer = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function sayOrbit() {
+    clearTimeout(sayLaterTimer);
+    sayLaterTimer = setTimeout(function () { say(orbitText()); }, 900);
   }
 
   function updateSelectorHint() {
@@ -1005,7 +996,7 @@
       par[key] = val(el);
       update();
       updateSelectorHint();
-      if (key !== 'speed') resetParticle();
+      if (key !== 'speed') { resetParticle(); sayOrbit(); }
     });
     update();
     // 程式（預設情境）改變滑桿：先清除打字輸入的精確值
@@ -1064,6 +1055,7 @@
       if (wasRunning) launchSound(); // 動畫進行中換情境：粒子重新發射
       setRunning(true);
       state.status = STATUS[btn.dataset.preset]();
+      sayOrbit();
     });
   });
 
@@ -1099,6 +1091,51 @@
   cv.addEventListener('pointerleave', function () { if (hoverStart && !dragging) { hoverStart = false; cv.style.cursor = ''; requestDraw(); } });
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
+
+  // ---------- 鍵盤操作（js/keys.js）：方向鍵移動出發點 ----------
+  // 限制與拖曳完全相同（離畫面邊緣至少 0.2 cm）；和拖曳一樣讓粒子回到新的出發點（拖曳沒有任務事件，這裡也沒有）
+  const STEP = 0.1, STEP_BIG = 1; // cm
+  const clampSX = function (x) { return Math.min(W - 0.2, Math.max(0.2, x)); };
+  const clampSY = function (y) { return Math.min(H - 0.2, Math.max(0.2, y)); };
+  const r6 = function (v) { return Math.round(v * 1e6) / 1e6; }; // 去掉浮點誤差（1e-6 cm）
+  function startDesc() {
+    return T('出發點：(' + state.start.x.toFixed(1) + ', ' + state.start.y.toFixed(1) + ') cm。',
+      'Starting point: (' + state.start.x.toFixed(1) + ', ' + state.start.y.toFixed(1) + ') cm.');
+  }
+  function keyMoveStart(dx, dy, big) {
+    const s = big ? STEP_BIG : STEP;
+    const x = clampSX(r6(state.start.x + dx * s)), y = clampSY(r6(state.start.y + dy * s));
+    if (x === state.start.x && y === state.start.y) return false;
+    state.start = { x: x, y: y };
+    resetParticle();
+    return true;
+  }
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('帶電粒子在磁場中運動的模擬畫布：紙面上的磁場符號、粒子的軌跡、速度與力的向量、圓軌道與圓心。點擊或拖曳畫布改變出發點；鍵盤操作：方向鍵移動出發點 0.1 cm，Shift 加方向鍵移動 1 cm。',
+        'Simulation canvas: the magnetic field symbols on the page, the particle’s trail, its velocity and force vectors, and the orbit circle with its center. Click or drag on the canvas to move the starting point. Keyboard: the arrow keys move the starting point 0.1 cm, Shift with an arrow key 1 cm.'),
+      items: [{
+        name: function () { return T('出發點', 'Starting point'); },
+        move: keyMoveStart,
+        describe: startDesc
+      }],
+      onChange: requestDraw
+    });
+  }
+
+  // ---------- 分享連結（classroom.js）：畫布上拖曳出來的出發點 ----------
+  // 滑桿、場區勾選框、顯示選項由 classroom.js 自動記錄；頁面程式執行時它還沒載入，用佇列寫法登記
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { s: [r6(state.start.x), r6(state.start.y)] }; },
+    set: function (o) {
+      if (!o || !Array.isArray(o.s) || o.s.length < 2) return;
+      const x = o.s[0], y = o.s[1];
+      if (typeof x !== 'number' || typeof y !== 'number' || !isFinite(x) || !isFinite(y)) return;
+      setRunning(false);
+      state.start = { x: clampSX(x), y: clampSY(y) };
+      resetParticle();
+    }
+  });
 
   // =====================================================================
   // 3D 檢視（three.js，切換到 3D 時才以 import() 動態載入 vendor/three/）

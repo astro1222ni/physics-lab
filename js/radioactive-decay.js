@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const DC = window.DecayCore;
+  const LD = window.LabDraw; // 共用繪圖工具（js/drawkit.js）：標籤、立體球、管狀線條
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
@@ -202,6 +203,16 @@
     rg.addColorStop(1, edge);
     c.fillStyle = rg;
     roundRect(c, G.x, G.y, G.w, G.h, 8); c.fill();
+    // 樣本盤：邊緣向內的柔和陰影（看起來凹進去）
+    c.save();
+    roundRect(c, G.x, G.y, G.w, G.h, 8); c.clip();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.65)' : alpha(colors.text, 0.2);
+    c.shadowBlur = 12;
+    c.shadowOffsetY = 3;
+    c.lineWidth = 10;
+    c.strokeStyle = colors.dark ? 'rgba(0,0,0,0.55)' : alpha(colors.text, 0.12);
+    roundRect(c, G.x - 5, G.y - 5, G.w + 10, G.h + 10, 13); c.stroke();
+    c.restore();
     [L.NG, L.AG].forEach(function (R) {
       const g = c.createLinearGradient(0, R.y, 0, R.y + R.h);
       g.addColorStop(0, base); g.addColorStop(1, edge);
@@ -238,6 +249,20 @@
       c.lineWidth = Math.max(0.6, R * 0.08);
       c.beginPath(); c.arc(x, y, R * 0.92, Math.PI * 1.05, Math.PI * 1.65); c.stroke();
     }
+    if (R > 1.8) {
+      // 鏡面亮點（左上）
+      const hx = x - R * 0.36, hy = y - R * 0.42, hr = R * 0.45;
+      const hg = c.createRadialGradient(hx, hy, 0, hx, hy, hr);
+      hg.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.55 : 0.75) + ')');
+      hg.addColorStop(1, 'rgba(255,255,255,0)');
+      c.fillStyle = hg;
+      c.beginPath(); c.arc(hx, hy, hr, 0, Math.PI * 2); c.fill();
+    }
+    if (R > 2.5 && !colors.dark) {
+      c.strokeStyle = alpha(shade(base, -0.55), 0.35);
+      c.lineWidth = 0.6;
+      c.beginPath(); c.arc(x, y, R - 0.3, 0, Math.PI * 2); c.stroke();
+    }
     c.globalAlpha = 1;
   }
   /** 原子核：格子大時畫成質子、中子聚在一起的團，小時是一顆小球 */
@@ -267,29 +292,42 @@
     6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]]
   };
   function die(c, size, face, dead) {
-    const s = size * 0.84, o = (size - s) / 2, r = Math.max(1, s * 0.2);
-    const body = dead ? mix(colors['canvas-bg'], colors.muted, 0.22) : mix('#ffffff', colors.P, colors.dark ? 0.32 : 0.1);
-    if (dead) c.globalAlpha = 0.6;
-    if (!dead && size >= 9) {
-      c.fillStyle = 'rgba(0,0,0,' + (colors.dark ? 0.45 : 0.18) + ')';
-      roundRect(c, o + s * 0.06, o + s * 0.1, s, s, r); c.fill();
+    const s = size * 0.84, o = (size - s) / 2, r = Math.max(1, s * 0.22);
+    if (dead) {
+      // 已離開桌面：只留下淡淡的空位
+      c.fillStyle = alpha(colors.muted, colors.dark ? 0.08 : 0.05);
+      roundRect(c, o, o, s, s, r); c.fill();
+      if (size >= 6) {
+        c.strokeStyle = alpha(colors.muted, colors.dark ? 0.24 : 0.2);
+        c.lineWidth = Math.max(0.5, s * 0.045);
+        roundRect(c, o + 0.5, o + 0.5, s - 1, s - 1, r); c.stroke();
+      }
+      return;
     }
+    const body = mix('#ffffff', colors.P, colors.dark ? 0.12 : 0.05);
+    // 投影
+    c.fillStyle = 'rgba(0,0,0,' + (colors.dark ? 0.55 : 0.3) + ')';
+    roundRect(c, o + s * 0.07, o + s * 0.14, s, s, r); c.fill();
+    // 本體：上亮下暗
     const g = c.createLinearGradient(0, o, 0, o + s);
-    g.addColorStop(0, shade(body, dead ? 0.05 : 0.25));
-    g.addColorStop(1, shade(body, -0.12));
+    g.addColorStop(0, body);
+    g.addColorStop(0.6, shade(body, -0.06));
+    g.addColorStop(1, shade(body, -0.2));
     c.fillStyle = g;
     roundRect(c, o, o, s, s, r); c.fill();
     if (size >= 7) {
-      c.strokeStyle = dead ? alpha(colors.muted, 0.35) : alpha(shade(colors.P, -0.3), 0.55);
+      // 上緣的亮線與外框
+      c.fillStyle = 'rgba(255,255,255,0.8)';
+      c.fillRect(o + r, o + 0.6, s - 2 * r, Math.max(0.6, s * 0.05));
+      c.strokeStyle = alpha(shade(colors.P, -0.35), colors.dark ? 0.75 : 0.8);
       c.lineWidth = Math.max(0.6, s * 0.05);
       roundRect(c, o + 0.5, o + 0.5, s - 1, s - 1, r); c.stroke();
     }
     if (size >= 13) {
       const pr = s * 0.085, d = s * 0.27;
-      c.fillStyle = dead ? alpha(colors.muted, 0.55) : (face === 6 ? shade(colors.pos, -0.1) : '#26323a');
+      c.fillStyle = face === 6 ? shade(colors.pos, -0.1) : '#26323a';
       PIPS[face].forEach(function (p) { c.beginPath(); c.arc(size / 2 + p[0] * d, size / 2 + p[1] * d, pr, 0, Math.PI * 2); c.fill(); });
     }
-    c.globalAlpha = 1;
   }
   function buildSprites() {
     sprites = {};
@@ -303,14 +341,20 @@
       sprites.D = makeSprite(c, function (x, s) { nucleus(x, s, colors.D, 1, 1); });
       sprites.S = makeSprite(c, function (x, s) { nucleus(x, s, mix(colors.S, colors['canvas-bg'], 0.3), 0.5, colors.dark ? 0.42 : 0.34); });
     }
-    // 衰變閃光：金色光暈（預先畫好重複使用）
+    // 衰變閃光：深色模式的金色光暈、中心亮點（預先畫好重複使用）
     sprites.glow = makeSprite(64, function (x) {
       const g = x.createRadialGradient(32, 32, 0, 32, 32, 32);
-      const f = colors.dark ? colors.flash : shade(colors.flash, 0.35);
-      g.addColorStop(0, alpha(shade(f, 0.7), 1));
-      g.addColorStop(0.3, alpha(f, 0.7));
-      g.addColorStop(1, alpha(f, 0));
+      g.addColorStop(0, alpha(shade(colors.flash, 0.7), 0.9));
+      g.addColorStop(0.3, alpha(colors.flash, 0.5));
+      g.addColorStop(1, alpha(colors.flash, 0));
       x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    });
+    sprites.core = makeSprite(32, function (x) {
+      const g = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+      g.addColorStop(0, colors.dark ? 'rgba(255,255,255,1)' : alpha(shade(colors.flash, 0.6), 1));
+      g.addColorStop(0.4, alpha(colors.dark ? shade(colors.flash, 0.35) : shade(colors.flash, 0.1), 0.95));
+      g.addColorStop(1, alpha(colors.flash, 0));
+      x.fillStyle = g; x.fillRect(0, 0, 32, 32);
     });
   }
   function rebuildGrid() {
@@ -379,6 +423,7 @@
     clickKeep = 1; lastKeepMsg = '';
     paintAll();
     arcKey = '';
+    if (byUser) sayNewRun();
     if (byUser && keepOld !== false && window.LabMission) emit('archive', { runs: state.archive.map(function (r) { return { N0: r.N0, span: r.span, kind: r.kind, preset: r.preset }; }) });
     updateReadoutLayout();
     updateButtons();
@@ -457,7 +502,7 @@
 
   function afterChange() {
     const r = state.run, s = r.sim;
-    if (r.tHalfMeas == null && s.nP * 2 <= r.N0) r.tHalfMeas = s.t;
+    if (r.tHalfMeas == null && s.nP * 2 <= r.N0) { r.tHalfMeas = s.t; sayHalf(); }
     if (s.nP === 0 && s.nD === 0 && !r.ended) {
       r.ended = true;
       record(true);
@@ -498,7 +543,7 @@
     const cap = state.N0 >= 10000 ? 140 : state.N0 >= 1600 ? 300 : MAX_FX;
     if (state.fx.length > cap) state.fx.splice(0, state.fx.length - cap);
   }
-  const FX_DUR = 520;
+  const FX_DUR = 450;   // 衰變閃光的長度（ms，純裝飾）
 
   // ---------- 音效 ----------
   function sound() { const S = window.LabSound; return S && S.enabled() ? S : null; }
@@ -552,17 +597,26 @@
     const f = raw / e;
     return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e;
   }
+  /**
+   * 標籤（drawkit）：(x, y) 為文字的垂直中心，水平對齊沿用 c.textAlign。
+   * bgA = 0：不要底框，只畫帶背景色描邊的文字；其他：圓角底框。傳回 {x, w}（底框的左緣與寬度）
+   */
   function pill(c, text, x, y, color, font, bgA) {
-    c.font = font || '600 12px system-ui, sans-serif';
-    c.textBaseline = 'middle';
-    const tw = c.measureText(text).width, ph = 18, pw = tw + 10;
-    const al = c.textAlign;
-    const bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - tw - 5 : x - 5;
-    c.fillStyle = alpha(colors['canvas-bg'], bgA == null ? 0.86 : bgA);
-    roundRect(c, bx, y - ph / 2, pw, ph, ph / 2); c.fill();
-    c.fillStyle = color;
-    c.fillText(text, x, y + 0.5);
-    return { x: bx, w: pw };
+    font = font || '600 12px ' + LD.FONT;
+    c.font = font;
+    const al = c.textAlign === 'right' || c.textAlign === 'end' ? 'right' : c.textAlign === 'center' ? 'center' : 'left';
+    const m = c.measureText(text), tw = m.width;
+    let box;
+    if (bgA === 0) {
+      LD.haloText(c, text, x, y + 0.5, color, al, 'middle', font);
+      box = { x: al === 'center' ? x - tw / 2 - 6 : al === 'right' ? x - tw - 6 : x - 6, w: tw + 12 };
+    } else {
+      const ph = LD.textHeight(m, 15) + 3;
+      const b = LD.pill(c, text, al === 'right' ? x + 6 : al === 'left' ? x - 6 : x, y + ph / 2, color, al, font);
+      box = { x: b.x, w: b.w };
+    }
+    c.textAlign = al;
+    return box;
   }
   /** 帶下標的文字（例如 N0），避免使用 Unicode 下標字元 */
   function subText(c, base, sub, x, y, after) {
@@ -587,8 +641,10 @@
     for (let i = 0; i < list.length; i++) if (list[i] >= need) return list[i];
     return Math.ceil(need / list[list.length - 1]) * list[list.length - 1];
   }
+  /** 圖表左邊界：對數座標的刻度（例如 1/1024）比較寬；兩張圖一起改，橫軸才會上下對齊 */
+  function marginL() { return state.log ? (L.narrow ? 47 : 50) : (L.narrow ? 40 : 44); }
   function frameOf(R) {
-    const ml = L.narrow ? 40 : 44;
+    const ml = marginL();
     return { x0: R.x + ml, x1: R.x + R.w - 12, y0: R.y + 24, y1: R.y + R.h - 26 };
   }
   // N 圖：縱軸是 N/N0
@@ -607,19 +663,29 @@
 
   function xAxis(c, F, xm, title) {
     const r = state.run;
-    c.font = '11px system-ui, sans-serif';
+    c.font = '11px ' + LD.FONT;
     c.fillStyle = alpha(colors.muted, 0.95);
     c.textAlign = 'center'; c.textBaseline = 'top';
     const minPx = 26;
     let step = r.kind === 'half' ? 1 : niceStep(xm / 8);
     while ((F.x1 - F.x0) * step / xm < minPx) step *= 2;
-    c.strokeStyle = alpha(colors.text, 0.06);
     c.lineWidth = 1;
+    const minor = step / (r.kind === 'half' && step === 1 ? 4 : 2);
+    if ((F.x1 - F.x0) * minor / xm >= 7) {
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.05 : 0.04);
+      c.beginPath();
+      for (let x = minor; x < xm + 1e-9; x += minor) {
+        if (Math.abs(x / step - Math.round(x / step)) < 1e-6) continue;
+        const px = Math.round(xPix(F, x, xm)) + 0.5; c.moveTo(px, F.y0); c.lineTo(px, F.y1);
+      }
+      c.stroke();
+    }
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.11 : 0.1);
     c.beginPath();
     for (let x = step; x < xm + 1e-9; x += step) { const px = Math.round(xPix(F, x, xm)) + 0.5; c.moveTo(px, F.y0); c.lineTo(px, F.y1); }
     c.stroke();
     let tw = 0;
-    if (title) { c.font = '600 11px system-ui, sans-serif'; tw = c.measureText(title).width; c.font = '11px system-ui, sans-serif'; }
+    if (title) { c.font = '600 11px ' + LD.FONT; tw = c.measureText(title).width; c.font = '11px ' + LD.FONT; }
     for (let x = 0; x <= xm + 1e-9; x += step) {
       const X = xPix(F, x, xm), lw = c.measureText(num(x, 0)).width;
       if (title && X + lw / 2 > F.x1 - tw - 8) continue;
@@ -630,7 +696,7 @@
     c.beginPath(); c.moveTo(F.x0, Math.round(F.y1) + 0.5); c.lineTo(F.x1, Math.round(F.y1) + 0.5);
     c.moveTo(Math.round(F.x0) + 0.5, F.y0 - 4); c.lineTo(Math.round(F.x0) + 0.5, F.y1); c.stroke();
     if (title) {
-      c.font = '600 11px system-ui, sans-serif';
+      c.font = '600 11px ' + LD.FONT;
       c.textAlign = 'right'; c.textBaseline = 'top';
       c.fillStyle = colors.muted;
       c.fillText(title, F.x1, F.y1 + 4);
@@ -642,7 +708,7 @@
   }
   /** 縱軸刻度：線性時 1、1/2、1/4、1/8、0；對數時每減半一格 */
   function yAxisN(c, F) {
-    c.font = '11px system-ui, sans-serif';
+    c.font = '11px ' + LD.FONT;
     c.textAlign = 'right'; c.textBaseline = 'middle';
     const ticks = [];
     if (state.log) { for (let k = 0; Math.pow(2, -k) >= fMin(); k++) ticks.push(k); }
@@ -650,7 +716,7 @@
     let lastY = -1e9;
     ticks.forEach(function (k) {
       const f = k === 'zero' ? 0 : Math.pow(2, -k), y = Math.round(yN(F, f)) + 0.5;
-      c.strokeStyle = alpha(colors.text, k === 0 || k === 'zero' ? 0.1 : 0.06);
+      c.strokeStyle = alpha(colors.text, colors.dark ? 0.11 : 0.1);
       c.lineWidth = 1;
       c.beginPath(); c.moveTo(F.x0, y); c.lineTo(F.x1, y); c.stroke();
       if (Math.abs(y - lastY) < 16 && k !== 'zero') return;
@@ -658,7 +724,7 @@
       c.fillStyle = alpha(colors.muted, 0.95);
       c.fillText(k === 'zero' ? '0' : k === 0 ? '1' : '1/' + Math.pow(2, k), F.x0 - 5, y);
     });
-    c.font = '600 12px system-ui, sans-serif';
+    c.font = '600 12px ' + LD.FONT;
     c.textAlign = 'left'; c.textBaseline = 'middle';
     c.fillStyle = colors.muted;
     subText(c, 'N/N', '0', F.x0 - (L.narrow ? 34 : 38), F.y0 - 13);
@@ -719,6 +785,8 @@
     drawNGraph(xm);
     drawAGraph(xm);
     updateReadout();
+    updateCanvasLabel(false);
+    srNowTick();
   }
 
   function drawGrid() {
@@ -726,35 +794,47 @@
     ctx.save();
     roundRect(ctx, G.x, G.y, G.w, G.h, 8); ctx.clip();
     ctx.drawImage(gridLayer, 0, 0, cw, ch);
-    // 衰變閃光：光暈＋擴張的環＋向外飛出的小粒子
+    // 衰變閃光（純裝飾）：中心亮點很快變小、一圈清楚的細環向外擴張、射出一顆粒子（α 或 β，只是示意）
     const now = performance.now(), c = GG.c;
     const dark = colors.dark;
     const keep = [];
     if (state.fx.length) {
-      ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over';
+      const ringCol = dark ? shade(colors.flash, 0.2) : shade(colors.flash, -0.1);
+      const headCol = dark ? shade(colors.flash, 0.55) : shade(colors.flash, -0.2);
+      ctx.lineCap = 'round';
       state.fx.forEach(function (f) {
         const u = (now - f.t0) / FX_DUR;
         if (u >= 1) return;
         keep.push(f);
         if (u < 0) return;
         const p = cellXY(f.i), cx = p[0] + c / 2, cy = p[1] + c / 2;
-        const R = Math.min(c * (0.6 + 0.8 * u) + 2, c * (0.42 + 0.45 * u) + 6);
-        ctx.globalAlpha = (1 - u) * (dark ? 0.9 : 0.8);
-        ctx.drawImage(sprites.glow, cx - R, cy - R, 2 * R, 2 * R);
-        if (c >= 6) {
-          ctx.globalAlpha = (1 - u) * 0.8;
-          ctx.strokeStyle = colors.flash;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath(); ctx.arc(cx, cy, Math.min(c * (0.42 + 0.75 * u), c * 0.3 + 8 + 10 * u), 0, Math.PI * 2); ctx.stroke();
-          // 射出的粒子（α 或 β，只是示意）
-          const reach = Math.min(1.8 * c, 26), d0 = c * 0.4 + reach * u, d1 = c * 0.4 + reach * Math.max(0, u - 0.2);
-          ctx.strokeStyle = shade(colors.flash, 0.4);
-          ctx.lineWidth = Math.max(1, c * 0.07);
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(f.a) * d1, cy + Math.sin(f.a) * d1);
-          ctx.lineTo(cx + Math.cos(f.a) * d0, cy + Math.sin(f.a) * d0);
-          ctx.stroke();
+        const e = 1 - u, ease = 1 - e * e;
+        if (dark) {
+          const R = Math.min(c * (0.6 + 0.8 * u) + 2, c * (0.42 + 0.45 * u) + 6);
+          ctx.globalCompositeOperation = 'lighter';
+          ctx.globalAlpha = e * 0.8;
+          ctx.drawImage(sprites.glow, cx - R, cy - R, 2 * R, 2 * R);
+          ctx.globalCompositeOperation = 'source-over';
+        }
+        const coreR = Math.max(2.4, c * 0.6) * (1 - 0.55 * ease);
+        ctx.globalAlpha = e * e;
+        ctx.drawImage(sprites.core, cx - coreR, cy - coreR, 2 * coreR, 2 * coreR);
+        const isDie = f.kind === 2 && GG && state.run && state.run.sim.kind === 'dice';
+        const ringR = Math.max(c * 0.42, 2.2) + (isDie ? Math.min(5, c * 0.4 + 1) : Math.min(14, c * 0.8 + 5)) * ease;
+        ctx.globalAlpha = e * (dark ? 0.85 : 0.9);
+        ctx.strokeStyle = ringCol;
+        ctx.lineWidth = Math.max(0.7, 1.7 * e);
+        ctx.beginPath(); ctx.arc(cx, cy, ringR, 0, Math.PI * 2); ctx.stroke();
+        if (c >= 5 && !isDie) {
+          const reach = Math.min(1.8 * c, 26) + 4, d0 = c * 0.35 + reach * ease, d1 = c * 0.35 + reach * Math.max(0, ease - 0.4);
+          const ux = Math.cos(f.a), uy = Math.sin(f.a);
+          ctx.globalAlpha = e * 0.55;
+          ctx.strokeStyle = ringCol;
+          ctx.lineWidth = Math.max(0.8, c * 0.06);
+          ctx.beginPath(); ctx.moveTo(cx + ux * d1, cy + uy * d1); ctx.lineTo(cx + ux * d0, cy + uy * d0); ctx.stroke();
+          ctx.globalAlpha = e;
+          ctx.fillStyle = headCol;
+          ctx.beginPath(); ctx.arc(cx + ux * d0, cy + uy * d0, Math.max(1, c * 0.07), 0, Math.PI * 2); ctx.fill();
         }
       });
       ctx.globalAlpha = 1;
@@ -770,11 +850,11 @@
     if (s.kind === 'dice') label = T('桌上的骰子 ', 'Dice left ') + s.nP + ' / ' + r.N0;
     else if (r.half2 != null) label = T('母核 ', 'Parent ') + s.nP + T('　子核 ', '  Daughter ') + s.nD;
     else label = T('未衰變 ', 'Undecayed ') + s.nP + ' / ' + r.N0;
-    pill(ctx, label, G.x + 10, G.y + L.band / 2 + 1, colors.text, '600 ' + fs + 'px system-ui, sans-serif', 0);
+    pill(ctx, label, G.x + 10, G.y + L.band / 2 + 1, colors.text, '600 ' + fs + 'px ' + LD.FONT, 0);
     ctx.textAlign = 'right';
     const tl = s.kind === 'dice' ? T('第 ' + s.t + ' 擲', 'Roll ' + s.t)
       : 't = ' + timeStr(s.t, r.unit) + (r.kind === 'half' ? '  (' + num(s.t / r.half, 2) + ' T½)' : '');
-    pill(ctx, tl, G.x + G.w - 10, G.y + L.band / 2 + 1, colors.muted, '600 ' + fs + 'px system-ui, sans-serif', 0);
+    pill(ctx, tl, G.x + G.w - 10, G.y + L.band / 2 + 1, colors.muted, '600 ' + fs + 'px ' + LD.FONT, 0);
   }
 
   function drawNGraph(xm) {
@@ -785,7 +865,7 @@
     // 標題
     ctx.textAlign = 'right';
     const ttl = r.kind === 'roll' ? T('剩下的骰子', 'Dice left') : T('剩下的比例', 'Fraction left');
-    const ttlBox = pill(ctx, ttl, F.x1, L.NG.y + 12, colors.muted, '600 11.5px system-ui, sans-serif', 0);
+    const ttlBox = pill(ctx, ttl, F.x1, L.NG.y + 12, colors.muted, '600 11.5px ' + LD.FONT, 0);
 
     buildArchive(F, xm);
     ctx.drawImage(arcLayer, 0, 0, cw, ch);
@@ -844,29 +924,33 @@
       fnCurve(ctx, F, xm, function (x) { return Math.pow(2, -x / g); });
       ctx.setLineDash([]);
       ctx.textAlign = 'right';
-      pill(ctx, T('猜測 T½ = ', 'Guess T½ = ') + num(g, 2) + ' s', F.x1 - 4, F.y0 + 10, colors.accent, '600 11.5px system-ui, sans-serif');
+      pill(ctx, T('猜測 T½ = ', 'Guess T½ = ') + num(g, 2) + ' s', F.x1 - 4, F.y0 + 10, colors.accent, '600 11.5px ' + LD.FONT);
     }
 
     // 這一輪的實測曲線（管狀雙層線）
     const H = r.hist, n = H.t.length;
     const tube = function (arr, col, w, norm) {
-      ctx.strokeStyle = shade(col, colors.dark ? -0.15 : -0.12);
-      ctx.lineWidth = w;
-      polyline(ctx, H.t, arr, n, map, function (v) { return yN(F, v / norm); });
-      ctx.strokeStyle = alpha(shade(col, 0.45), 0.85);
-      ctx.lineWidth = Math.max(0.8, w * 0.36);
-      polyline(ctx, H.t, arr, n, map, function (v) { return yN(F, v / norm) - w * 0.2; });
+      LD.tube(ctx, function (cc) { for (let i = 0; i < n; i++) { const X = map(H.t[i]), Y = yN(F, arr[i] / norm); if (i) cc.lineTo(X, Y); else cc.moveTo(X, Y); } }, col, w + 0.6);
     };
+    if (r.half2 == null && n > 1) {
+      // 曲線下方的淡色面積（剩下的比例）
+      const ag = ctx.createLinearGradient(0, F.y0, 0, F.y1);
+      ag.addColorStop(0, alpha(colors.P, colors.dark ? 0.2 : 0.14));
+      ag.addColorStop(1, alpha(colors.P, 0.02));
+      ctx.fillStyle = ag;
+      ctx.beginPath();
+      ctx.moveTo(map(H.t[0]), F.y1);
+      for (let i = 0; i < n; i++) ctx.lineTo(map(H.t[i]), yN(F, H.P[i] / r.N0));
+      ctx.lineTo(map(H.t[n - 1]), F.y1);
+      ctx.closePath();
+      ctx.fill();
+    }
     if (r.half2 != null) { tube(H.S, colors.S, 2, r.N0); tube(H.D, colors.D, 2.6, r.N0); }
     tube(H.P, colors.P, 2.8, r.N0);
     // 目前位置：發光的點
     const cx = map(s.t);
     [[s.nP, colors.P]].concat(r.half2 != null ? [[s.nD, colors.D]] : []).forEach(function (q) {
-      const Y = yN(F, q[0] / r.N0);
-      const g = ctx.createRadialGradient(cx, Y, 0, cx, Y, 9);
-      g.addColorStop(0, alpha(q[1], 0.55)); g.addColorStop(1, alpha(q[1], 0));
-      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, Y, 9, 0, Math.PI * 2); ctx.fill();
-      ball(ctx, cx, Y, 3.6, q[1]);
+      LD.ball(ctx, cx, yN(F, q[0] / r.N0), L.narrow ? 4.2 : 4.6, q[1], { glow: colors.dark ? 0.55 : 0.3 });
     });
     ctx.restore();
 
@@ -880,20 +964,20 @@
         const X = xPix(F, k * stepX, xm);
         if (X - lastX < (L.narrow ? 34 : 38) || X + 18 > ttlBox.x - 4) continue;
         lastX = X;
-        pill(ctx, (k === 1 ? '' : k) + 'T½', X, L.NG.y + 12, colors.accent, '600 10.5px system-ui, sans-serif', 0.7);
+        pill(ctx, (k === 1 ? '' : k) + 'T½', X, L.NG.y + 12, colors.accent, '600 11px ' + LD.FONT, 0.7);
       }
     }
     // 真實核種：說明一個半衰期是多久
     if (isPreset() || r.kind === 'roll') {
       ctx.textAlign = 'left';
       const txt = r.kind === 'roll' ? 'T½ ≈ 3.80 ' + T('次', 'rolls') : 'T½ = ' + timeStr(r.half, r.unit).trim();
-      pill(ctx, txt, F.x0 + 6, F.y1 - 12, colors.muted, '600 11px system-ui, sans-serif', 0.8);
+      pill(ctx, txt, F.x0 + 6, F.y1 - 12, colors.muted, '600 11px ' + LD.FONT, 0.8);
     }
   }
 
   function drawAGraph(xm) {
     const r = state.run, s = r.sim, R = L.AG;
-    const F = { x0: R.x + (L.narrow ? 40 : 44), x1: R.x + R.w - 12, y0: R.y + 22, y1: R.y + R.h - 24 };
+    const F = { x0: R.x + marginL(), x1: R.x + R.w - 12, y0: R.y + 22, y1: R.y + R.h - 24 };
     // 理論活度（每單位時間，或骰子每擲的衰變數）
     const theoryA = function (x) {
       if (r.kind === 'roll') return r.N0 * Math.pow(5 / 6, x - 0.5) / 6;
@@ -914,20 +998,20 @@
       const top = Math.pow(10, Math.ceil(Math.log10(Amax))), bot = top / 1e4;
       yA = function (a) { const v = a > 0 ? Math.log10(a) : Math.log10(bot) - 1; return F.y1 - (Math.max(Math.log10(bot) - 0.1, v) - Math.log10(bot)) / 4 * (F.y1 - F.y0); };
       // 刻度：每 10 倍一格
-      ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.font = '11px ' + LD.FONT; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       for (let e = 0; e <= 4; e++) {
         const a = bot * Math.pow(10, e), y = Math.round(yA(a)) + 0.5;
-        ctx.strokeStyle = alpha(colors.text, 0.06); ctx.lineWidth = 1;
+        ctx.strokeStyle = alpha(colors.text, colors.dark ? 0.11 : 0.1); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(F.x0, y); ctx.lineTo(F.x1, y); ctx.stroke();
         if (e % (F.y1 - F.y0 < 90 ? 2 : 1) === 0) { ctx.fillStyle = alpha(colors.muted, 0.95); ctx.fillText(sciPlain(a), F.x0 - 5, y); }
       }
     } else {
       yA = function (a) { return F.y1 - a / Amax * (F.y1 - F.y0); };
       let st = niceStep(Amax / 3);
-      ctx.font = '11px system-ui, sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.font = '11px ' + LD.FONT; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       for (let a = 0; a <= Amax; a += st) {
         const y = Math.round(yA(a)) + 0.5;
-        ctx.strokeStyle = alpha(colors.text, 0.06); ctx.lineWidth = 1;
+        ctx.strokeStyle = alpha(colors.text, colors.dark ? 0.11 : 0.1); ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(F.x0, y); ctx.lineTo(F.x1, y); ctx.stroke();
         ctx.fillStyle = alpha(colors.muted, 0.95); ctx.fillText(sciPlain(a), F.x0 - 5, y);
       }
@@ -935,7 +1019,7 @@
     xAxis(ctx, F, xm, null);
     ctx.textAlign = 'right';
     const ttl = r.kind === 'roll' ? T('每擲衰變數', 'Decays per roll') : T('活度 A（次', 'Activity A (decays') + uPer(r.unit) + T('）', ')');
-    pill(ctx, ttl, F.x1, R.y + 11, colors.muted, '600 11.5px system-ui, sans-serif', 0);
+    pill(ctx, ttl, F.x1, R.y + 11, colors.muted, '600 11.5px ' + LD.FONT, 0);
 
     ctx.save();
     ctx.beginPath(); ctx.rect(F.x0, F.y0 - 6, F.x1 - F.x0 + 4, F.y1 - F.y0 + 6); ctx.clip();
@@ -959,6 +1043,8 @@
       if (!partial && X1 - X0 > 3) {
         ctx.fillStyle = alpha(shade(colors.flash, 0.6), 0.9);
         ctx.fillRect(X0 + 0.5, Y, Math.max(0.5, X1 - X0 - 1), 1);
+        ctx.fillStyle = alpha(shade(colors.flash, 0.5), colors.dark ? 0.35 : 0.45);
+        ctx.fillRect(X0 + 1, Y + 1.5, Math.min(2, (X1 - X0) * 0.2), F.y1 - Y - 1.5);
       }
     }
     if (showTheory) {
@@ -1133,6 +1219,7 @@
       state.running = false;
       updateButtons();
       emit('pause', snapshot());
+      srSay(T('已暫停：', 'Paused: ') + timeText() + T('，', ', ') + countText() + T('。', '.'));
       requestDraw();
       return;
     }
@@ -1146,6 +1233,8 @@
     acted();
     if (state.run.ended) newRun(true);
     doRoll();
+    const rr = state.run;
+    if (rr.lastRoll != null) srSay(T('第 ' + rr.sim.t + ' 擲：擲出 6 點的有 ' + rr.lastRoll + ' 顆，桌上還剩 ' + rr.sim.nP + ' 顆。', 'Roll ' + rr.sim.t + ': ' + rr.lastRoll + ' sixes, ' + rr.sim.nP + ' dice left.'));
     if (!state.running) startLoop();
   });
   $('again').addEventListener('click', function () {
@@ -1297,6 +1386,72 @@
     requestDraw();
   });
 
+  // ---------- 無障礙：畫布說明與讀數播報 ----------
+  // 畫布沒有可拖曳的物件：role="img"，aria-label 描述目前的畫面（最多每秒更新一次）。
+  // 一輪結束寫在看得見的 #status（aria-live）；剩下一半、暫停、手動擲骰、改設定後的新一輪寫進 .sr-only 的 #srSay；
+  // 播放中的讀數每 1.5 s 寫進 #srNow。神秘核種不播報任何會洩漏半衰期的數字。
+  let sayTimer = 0, sayParamTimer = 0, srNowAt = -1e9, labelAt = -1e9;
+  function srSay(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function countText() {
+    const r = state.run, s = r.sim;
+    if (s.kind === 'dice') return T('桌上還剩 ' + s.nP + ' / ' + r.N0 + ' 顆骰子', s.nP + ' of ' + r.N0 + ' dice left on the table');
+    if (r.half2 != null) return T('母核 ' + s.nP + '、子核 ' + s.nD + '、穩定核 ' + s.nS, 'parent ' + s.nP + ', daughter ' + s.nD + ', stable ' + s.nS);
+    return T('未衰變 ' + s.nP + ' / ' + r.N0, s.nP + ' of ' + r.N0 + ' undecayed');
+  }
+  function timeText() {
+    const r = state.run, s = r.sim;
+    if (s.kind === 'dice') return T('第 ' + s.t + ' 擲', 'roll ' + s.t);
+    return 't = ' + timeStr(s.t, r.unit).replace(/\s+/g, ' ') + (r.kind === 'half' ? T('（' + num(s.t / r.half, 2) + ' 個半衰期）', ' (' + num(s.t / r.half, 2) + ' half-lives)') : '');
+  }
+  function setupText() {
+    const r = state.run;
+    if (r.sim.kind === 'dice') return T('骰子比喻，' + r.N0 + ' 顆骰子，擲出 6 點就離開', 'dice analogy, ' + r.N0 + ' dice, a die that rolls a six leaves');
+    if (r.kind === 'sec') return T('神秘核種（半衰期未知），N0 = ' + r.N0, 'mystery nuclide (unknown half-life), N0 = ' + r.N0);
+    const p = PRESETS[r.preset];
+    const nm = p && p.name ? T(p.name[0], p.name[1]) : T('自訂核種', 'custom nuclide');
+    return nm + T('，N0 = ', ', N0 = ') + r.N0 + T('，半衰期 ', ', half-life ') + timeStr(r.half, r.unit).trim() +
+      (r.half2 != null ? T('，子核半衰期 ', ', daughter half-life ') + timeStr(r.half2, r.unit).trim() : '');
+  }
+  function canvasLabel() {
+    const r = state.run;
+    const what = r.sim.kind === 'dice' ? T('骰子', 'dice') : T('原子核', 'nuclei');
+    return T('放射性衰變模擬畫布（' + setupText() + '）：左邊是' + what + '的方陣，' + countText() + '，' + timeText() + '；右邊是剩下比例 N/N0 對時間的圖與活度長條圖。',
+      'Radioactive decay simulation (' + setupText() + '): a grid of ' + what + ', ' + countText() + ', ' + timeText() + '; a graph of the fraction left, N/N0, against time and a bar chart of the activity.');
+  }
+  function updateCanvasLabel(force) {
+    const now = performance.now();
+    if (!force && now - labelAt < 1000) return;
+    labelAt = now;
+    const lab = canvasLabel();
+    if (cv.getAttribute('aria-label') !== lab) cv.setAttribute('aria-label', lab);
+  }
+  function srNowTick() {
+    if (!state.running || !state.run || state.run.ended) return;
+    const now = performance.now();
+    if (now - srNowAt < 1500) return;
+    srNowAt = now;
+    const el = $('srNow');
+    if (el) el.textContent = timeText() + T('，', ', ') + countText();
+  }
+  function sayHalf() {
+    const r = state.run;
+    if (r.kind === 'sec') return;
+    srSay(r.sim.kind === 'dice'
+      ? T('剩下一半了：第 ' + r.tHalfMeas + ' 擲（理論平均約 3.80 擲）。', 'Half are gone: roll ' + r.tHalfMeas + ' (theory: about 3.80 rolls on average).')
+      : T('剩下一半了：t = ' + timeStr(r.tHalfMeas, r.unit).trim() + '，半衰期 ' + timeStr(r.half, r.unit).trim() + '。', 'Half are left: t = ' + timeStr(r.tHalfMeas, r.unit).trim() + '; the half-life is ' + timeStr(r.half, r.unit).trim() + '.'));
+  }
+  function sayNewRun() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { srSay(T('新的一輪：', 'New run: ') + setupText() + T('。', '.')); updateCanvasLabel(true); }, 900);
+  }
+  cv.setAttribute('role', 'img');
+
   // ---------- 啟動 ----------
   readColors();
   state.th = val(elTh); state.th2 = val(elTh2); state.speed = val(elSpd);
@@ -1304,7 +1459,7 @@
   updatePanels();
   updateSoundButton();
   newRun(false, false);
-  function themeChanged() { readColors(); if (L) { buildBackground(); rebuildGrid(); } arcKey = ''; requestDraw(); }
+  function themeChanged() { readColors(); if (L) { buildBackground(); rebuildGrid(); } arcKey = ''; if (state.run) updateCanvasLabel(true); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {

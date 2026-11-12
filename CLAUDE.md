@@ -1,12 +1,12 @@
-# Astro Ni 物理實驗室 — 專案備忘錄
+# Astro Ni 科學實驗室 — 專案備忘錄
 
-高中物理互動模擬網站。網址：https://astro1222ni.github.io/physics-lab/
+高中物理・化學・生物・地球科學互動模擬網站（11/12 起品牌名「Astro Ni 科學實驗室／Astro Ni Science Lab」；一個網站、四個科目、共用引擎）。網址：https://lab.astroni.org/（GitHub Pages 自訂網域，舊網址 astro1222ni.github.io/physics-lab/ 會自動轉過來）
 推送到 `main` 後由 GitHub Pages 自動部署（約 1–2 分鐘）。
 **接手或開新工作串時，先讀 `HANDOFF.md`**（目前狀態、開發工具、整合流程、待辦事項）。
 
 ## 與站長合作的方式
 
-- **一律用繁體中文（臺灣用語）溝通**，不要用英文跟站長說話；系統的英文訊息要翻成中文說明。
+- **一律用繁體中文（臺灣用語）溝通**，不要用英文跟站長說話；系統的英文訊息要翻成中文說明。**連工具呼叫之間的一句進度、對話摘要接手後的第一則、指令旁的說明也一樣**（11/12 站長原話：「不要用英文跟我交談，寫入 skills，備忘錄。」）。寫任何一句前先看第一個字是不是中文字。同一天下午又犯（站長：「你還是用英文啊，你還是沒有學對。」）：做到中段就滑回英文，所以**連思考也用中文**，長工作的每一句都要檢查，不是只檢查開頭。
 - 站長偏好「**一步一步來**」：需要站長在 GitHub、Firebase 等網站操作時，一次只給一個步驟，附上**可以直接點的完整網址**，等站長回覆或拍照確認後再給下一步。
 - 站長常用平板拍螢幕照片回報；看照片時要確認細節（例如值有沒有引號）。
 - 站長是高中物理老師（Astro Ni YouTube 頻道），網站給學生使用，學生多為未成年人：留言、隱私要保守設計。
@@ -32,9 +32,10 @@
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
 | `js/stats.js` | 瀏覽人次、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝每分頁一個隨機代號的心跳，150 秒內有心跳算在線） |
 | `js/missions.js` | 任務模式「倪的星星」：`LabMission.register/emit`、任務面板、慶祝畫面、寫入完成紀錄；管理員登入時自動同步 `missionDefs` |
-| `js/missions/<模組>.js`、`js/missions/index.js` | 各實驗的任務定義；`index.js` 有三份清單：`LAB_MISSION_MODULES`（有任務的實驗）、`LAB_LIVE_MODULES`（已上線的實驗）、`LAB_MODULE_BRANCH`（實驗所屬分支） |
-| `js/achievements.js` | 成就系統（等級系列＋單項成就＋隱藏成就），由 `missions.js` 自動載入 |
-| `leaderboard.html`、`js/leaderboard.js` | 排行榜（前 100 名、自己的名次、公開設定、任務進度與總進度條、我的成就、規則說明、管理員區） |
+| `js/missions/<模組>.js`、`js/missions/index.js` | 各實驗的任務定義；`index.js` 有三份清單：`LAB_MISSION_MODULES`（有任務的實驗）、`LAB_LIVE_MODULES`（已上線的實驗）、`LAB_MODULE_BRANCH`（實驗所屬分支），另有 `LAB_SUBJECTS`（四科）與 `LAB_SUBJECT_OF(模組)`（實驗屬於哪一科，由分支推得） |
+| `js/achievements.js` | 成就系統（等級系列＋單項成就＋隱藏成就），分頁：全科、物理、化學、生物、地球科學；由 `missions.js` 自動載入 |
+| `daily.html`、`js/daily.js`、`js/daily-core.js`、`tests/daily-core.test.js` | 每日任務與寶物：臺灣時間 00:00 換新，簡單／中等／困難各一個；`daily-core.js` 是抽題與掉寶機率（純函式、有單元測試），`daily.js` 是每日任務頁、實驗頁橫幅（網址帶 `?daily=<任務代號>`）、掉寶動畫與寫入 |
+| `leaderboard.html`、`js/leaderboard.js` | 排行榜（全科總排名＋各科排名分頁、前 100 名、自己的全科與各科名次、公開設定、依科目分組的任務進度、我的成就、規則說明、管理員區） |
 | `js/search.js`、`js/math.js` | 首頁搜尋；KaTeX 公式排版 |
 | `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次；實驗頁要先操作 3 次或在前景停留 40 秒才出現，首頁照舊）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |
@@ -43,7 +44,8 @@
 | `tools/stamp.py` | 在 HTML 的 CSS/JS 連結加版本號防快取；**修改 CSS/JS 後、commit 前執行** |
 | `tools/make_live.py` | 把首頁「規劃中」卡片改成已上線的連結卡片 |
 | `tools/run-tests.cjs`、`tools/check-pages.cjs` | `npm test`（全部單元測試）、`npm run check`／`npm run shots`（Playwright 版面與語言檢查，自帶伺服器） |
-| `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言），Playwright `addInitScript` 載入 |
+| `tools/mock-backend.js` | 測試用假 Firebase（任務、成就、留言、每日任務與寶物、各科排名，並模擬資料庫規則），Playwright `addInitScript` 載入；`localStorage.mockoffset` 可假造伺服器時間測換日 |
+| `tools/make-qr.cjs` | 首頁 QR code（`img/qr-site.svg`），網址改了才重做 |
 | `tools/mission-proofs/` | 各實驗「任務做得到」的證明腳本；改物理核心或任務條件後重跑 |
 | `docs/briefs/` | 製作新模組、任務、替舊模組補任務的說明（交給背景助手時使用） |
 | `js/drawkit.js` | 共用繪圖工具 `LabDraw`（立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動）；新畫面一律用它 |
@@ -74,6 +76,9 @@
 - 暱稱公開顯示，使用者要為自己的暱稱負責。選擇不公開時，只顯示第一個與最後一個字（`LabMission.mask`）。
 - 成就分公開與隱藏兩種，不加星星。站長說「以後實驗會非常非常多」，所以成就要做長遠：系列等級的門檻用數量級（k、M、G、T），級數很多，稱號要有意境。
 - 規則說明寫在排行榜頁，學生看得到。改了規則或判定方式，要同步更新說明。
+- **各科排名**（11/12 站長要求）：全科總排名＋物理、化學、生物、地球科學各自的排名；`scores/<uid>/s/<科目>` 存各科星星（只增不減、加總不超過總星數），`sa/<科目>` 是該科最後得星時間（同分時先達到的排前面）。舊紀錄由 `missions.js` 的 `syncSubjects` 自動補算。
+- **成就分類**：全科成就（總星數、探索、全制霸、排行榜、每日任務、勤學等）與各科成就（`<科目>-stars`、`<科目>-explore`、`<科目>-full` 系列、分支制霸、`<科目>-rank-100/10/1`）。還沒有實驗的科目顯示「製作中」。
+- **每日任務**（11/12 站長設計）：每天從已上線、非隱藏的任務抽三個（簡單 1–3 級、中等 4–6 級、困難 7–10 級，盡量不同實驗；同一人同一天抽到的固定）。今天第一次完成一定掉一件寶物；以前做過的任務在每日任務模式下可以重做，不再加星，但每次有機率掉寶（27.5%–60%，任務越難、星星越多越高；兩次至少隔 12 秒、每天最多 40 次）。寶物：銅幣 1–5、銀幣 1–3、金幣 1–2、鑽石 1、稀有鑰匙 1；稀有寶物的機率隨難度與累積星星（上限 2000 顆）提高。**寶物的用途站長說「以後再規劃」**；目前是前端擲骰、規則只能限制速度與數量，寶物有實際用途前要改成 Cloud Functions（需 Blaze 方案）在伺服器擲骰。
 
 ## 上線後不可隨意更動的約定
 
@@ -90,7 +95,7 @@
 
 ## Firebase（專案 astro-ni-physics-lab）
 
-- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`scores/`、`userStats/`、`achievements/`。
+- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`scores/`（含各科 `s/`、`sa/`）、`userStats/`、`achievements/`、`daily/`（每日任務：日序 `d`、`picks`、掉寶次數 `n`、時間 `at`、`done`）、`bag/`（寶物）。
 - 免費方案（Spark）限制：同時連線 100、儲存 1 GB、每月下載 10 GB。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
 - 雲端工作環境連不到 Firebase 與 gstatic；本機可以連，但測試一律用 `tools/mock-backend.js`，不要寫入正式資料庫。正式驗證請站長在網站上操作。

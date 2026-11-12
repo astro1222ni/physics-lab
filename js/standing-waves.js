@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const SW = window.StandingCore;
+  const LD = window.LabDraw; // js/drawkit.js：共用的立體球、方塊、標籤、箭頭
   const $ = function (id) { return document.getElementById(id); };
   // 介面文字：英文模式用第二個字串（settings.js）
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -113,7 +114,7 @@
       S: { x: 0, y: Hm + gap, w: cw, h: Hs },
       x0: x0, x1: x1, kx: (x1 - x0) / state.L,
       cy: top + plotH / 2, ky: plotH / 2 / Y_VIEW,
-      lw: narrow ? 3.4 : 4.2,
+      lw: narrow ? 4.2 : 5.4,   // 繩子的粗細（純裝飾，不影響位置）
       bead: narrow ? 3.2 : 4
     };
   }
@@ -278,17 +279,23 @@
     if (state.mode === 'B') buildStrip(c);
   }
 
-  /** 固定端：有斜紋的牆，立體的金屬感 */
+  // ---------- 器材（純裝飾：繩端的位置永遠在 x = L，器材只畫在它周圍） ----------
+  /** 金屬（鋼）的基本色：由 --muted 調亮或調暗 */
+  function steel() { return colors.dark ? shade(colors.muted, -0.12) : shade(colors.muted, 0.3); }
+  /** 固定擺放的擬亂數（0–1），讓紋理每次重畫都一樣 */
+  function hash(k) { return Math.abs(Math.sin(k * 12.9898 + 78.233) * 43758.5453) % 1; }
+
+  /** 固定端：水泥牆（有厚度的立體牆面、粗糙的顆粒、固定端慣用的斜線），夾具另外畫在繩子上面 */
   function drawWall(c, yTop, yBot) {
     const x = X(state.L) + 2, w = L.padR - 8, y = yTop - 6, h = yBot - yTop + 12;
-    const base = colors.dark ? shade(colors.muted, -0.35) : shade(colors.muted, 0.45);
+    const base = colors.dark ? shade(colors.muted, -0.42) : shade(colors.muted, 0.5);
     const g = c.createLinearGradient(x, 0, x + w, 0);
-    g.addColorStop(0, shade(base, colors.dark ? 0.18 : 0.25));
-    g.addColorStop(0.35, base);
-    g.addColorStop(1, shade(base, -0.25));
+    g.addColorStop(0, shade(base, colors.dark ? 0.12 : 0.2));
+    g.addColorStop(0.3, base);
+    g.addColorStop(1, shade(base, -0.28));
     c.save();
-    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.18) + ')';
-    c.shadowBlur = 8; c.shadowOffsetX = 2; c.shadowOffsetY = 2;
+    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.55 : 0.2) + ')';
+    c.shadowBlur = 10; c.shadowOffsetX = -1; c.shadowOffsetY = 3;
     c.fillStyle = g;
     roundRect(c, x, y, w, h, 4);
     c.fill();
@@ -296,36 +303,71 @@
     c.save();
     roundRect(c, x, y, w, h, 4);
     c.clip();
-    c.strokeStyle = alpha(colors.text, colors.dark ? 0.16 : 0.13);
+    // 水泥的顆粒
+    for (let i = 0; i < Math.round(w * h / 18); i++) {
+      const px = x + hash(i * 3.1) * w, py = y + hash(i * 7.7 + 1) * h, r = 0.5 + hash(i * 1.3 + 2) * 0.9;
+      c.fillStyle = hash(i * 5.3 + 3) < 0.5 ? alpha('#ffffff', colors.dark ? 0.07 : 0.28) : alpha('#000000', colors.dark ? 0.22 : 0.09);
+      c.fillRect(px, py, r, r);
+    }
+    // 固定端慣用的斜線
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.13 : 0.1);
     c.lineWidth = 1;
     c.beginPath();
-    for (let k = -w; k < h + w; k += 7) { c.moveTo(x, y + k); c.lineTo(x + w, y + k - w); }
+    for (let k = -w; k < h + w; k += 8) { c.moveTo(x, y + k); c.lineTo(x + w, y + k - w); }
     c.stroke();
+    // 牆面的厚度：迎向繩子的左側面比正面亮，交界一條暗線
+    const fw = Math.min(5, w * 0.18);
+    const gf = c.createLinearGradient(x, 0, x + fw, 0);
+    gf.addColorStop(0, alpha('#ffffff', colors.dark ? 0.16 : 0.55));
+    gf.addColorStop(1, alpha('#ffffff', 0));
+    c.fillStyle = gf;
+    c.fillRect(x, y, fw, h);
+    c.fillStyle = alpha('#000000', colors.dark ? 0.35 : 0.12);
+    c.fillRect(x + fw, y, 1, h);
+    // 頂面
+    c.fillStyle = alpha('#ffffff', colors.dark ? 0.1 : 0.45);
+    c.fillRect(x, y, w, 2);
     c.restore();
-    c.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.18 : 0.6) + ')';
-    c.beginPath(); c.moveTo(x + 1.5, y + 3); c.lineTo(x + 1.5, y + h - 3); c.stroke();
+    c.strokeStyle = alpha(shade(base, -0.5), colors.dark ? 0.8 : 0.45);
+    c.lineWidth = 1;
+    roundRect(c, x + 0.5, y + 0.5, w - 1, h - 1, 4);
+    c.stroke();
   }
 
-  /** 自由端：光滑直桿（兩層線條的圓柱感），上下有固定座 */
+  /** 光滑直桿的鍍鉻漸層（左暗、偏左一道亮的反光、右側淡淡的環境反光） */
+  function rodFill(c, x, r) {
+    const base = steel(), g = c.createLinearGradient(x - r, 0, x + r, 0);
+    g.addColorStop(0, shade(base, -0.45));
+    g.addColorStop(0.28, shade(base, 0.75));
+    g.addColorStop(0.42, shade(base, 0.3));
+    g.addColorStop(0.75, shade(base, -0.2));
+    g.addColorStop(0.88, shade(base, 0.12));
+    g.addColorStop(1, shade(base, -0.5));
+    return g;
+  }
+  function rodRadius() { return L.narrow ? 3 : 3.5; }
+  /** 自由端：鍍鉻的光滑直桿，上下兩支托架鎖在右邊的背板上 */
   function drawRod(c, yTop, yBot) {
-    const x = X(state.L), y0 = yTop - 8, y1 = yBot + 2;
-    const base = colors.dark ? shade(colors.muted, -0.1) : shade(colors.muted, 0.25);
-    const g = c.createLinearGradient(x - 3, 0, x + 3, 0);
-    g.addColorStop(0, shade(base, -0.3));
-    g.addColorStop(0.35, shade(base, 0.55));
-    g.addColorStop(1, shade(base, -0.4));
-    c.fillStyle = g;
-    roundRect(c, x - 3, y0, 6, y1 - y0, 3);
-    c.fill();
-    // 固定座
-    [y0 - 2, y1 - 8].forEach(function (yy) {
-      const gb = c.createLinearGradient(0, yy, 0, yy + 8);
-      gb.addColorStop(0, shade(base, 0.2));
-      gb.addColorStop(1, shade(base, -0.35));
-      c.fillStyle = gb;
-      roundRect(c, x - 7, yy, cw - x + 3, 8, 3);
-      c.fill();
+    const x = X(state.L), y0 = yTop - 8, y1 = yBot + 2, r = rodRadius();
+    const met = steel();
+    // 背板（右緣）
+    const px = Math.min(cw - 9, x + 12), pw = cw - 3 - px;
+    if (pw > 3) {
+      LD.block(c, px, y0 - 6, pw, y1 - y0 + 12, shade(met, colors.dark ? -0.25 : -0.05), { r: 3 });
+      [y0 + 4, y1 - 4].forEach(function (yy) { LD.ball(c, px + pw / 2, yy, 2, shade(met, -0.15), { shadow: false, glow: 0 }); });
+    }
+    // 托架
+    [y0 - 3, y1 - 6].forEach(function (yy) {
+      LD.block(c, x - r - 3, yy, px - x + r + 5, 9, met, { r: 3 });
     });
+    // 直桿
+    c.save();
+    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.22) + ')';
+    c.shadowBlur = 6; c.shadowOffsetX = 2; c.shadowOffsetY = 1;
+    c.fillStyle = rodFill(c, x, r);
+    roundRect(c, x - r, y0, 2 * r, y1 - y0, r);
+    c.fill();
+    c.restore();
   }
 
   /** 振盪器外殼（左邊界外），右側有一道導槽 */
@@ -333,23 +375,24 @@
     const bw = L.narrow ? 24 : 38, bh = L.narrow ? 64 : 84;
     const bx = L.narrow ? 6 : 12, by = L.cy - bh / 2;
     const base = colors.dark ? shade(colors.accent, -0.45) : shade(colors.accent, -0.05);
-    const g = c.createLinearGradient(0, by, 0, by + bh);
-    g.addColorStop(0, shade(base, 0.22));
-    g.addColorStop(1, shade(base, -0.25));
-    c.save();
-    c.shadowColor = 'rgba(0,0,0,' + (colors.dark ? 0.5 : 0.22) + ')';
-    c.shadowBlur = 8; c.shadowOffsetY = 3;
-    c.fillStyle = g;
-    roundRect(c, bx, by, bw, bh, 6);
-    c.fill();
-    c.restore();
-    c.strokeStyle = 'rgba(255,255,255,0.35)';
-    c.lineWidth = 1;
-    c.beginPath(); c.moveTo(bx + 5, by + 1.5); c.lineTo(bx + bw - 5, by + 1.5); c.stroke();
-    // 導槽
-    c.fillStyle = 'rgba(0,0,0,0.35)';
+    // 底座（放在桌面上的厚底板）與接觸陰影
+    LD.contactShadow(c, bx + bw / 2, by + bh + 6, bw * 0.7, 0);
+    LD.block(c, bx - 3, by + bh - 2, bw + 6, 7, shade(steel(), -0.1), { r: 2 });
+    // 外殼：上亮下暗、頂邊高光、圓角、投影
+    LD.block(c, bx, by, bw, bh, base, { r: 6 });
+    // 散熱孔（橫向細槽）
+    c.fillStyle = 'rgba(0,0,0,0.28)';
+    for (let k = 0; k < 4; k++) { roundRect(c, bx + 4, by + 6 + k * 4, bw - 14, 1.6, 0.8); c.fill(); }
+    // 下方兩顆螺絲
+    [[bx + 3.5, by + bh - 6], [bx + bw - 10, by + bh - 6]].forEach(function (q) {
+      LD.ball(c, q[0], q[1], 1.5, shade(steel(), 0.1), { shadow: false, glow: 0 });
+    });
+    // 導槽（推桿穿出的地方）
+    c.fillStyle = 'rgba(0,0,0,0.4)';
     roundRect(c, bx + bw - 7, by + 8, 4, bh - 16, 2);
     c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.18)';
+    c.fillRect(bx + bw - 3, by + 9, 1, bh - 18);
     // 波形小圖示
     c.strokeStyle = 'rgba(255,255,255,0.75)';
     c.lineWidth = 1.4;
@@ -364,7 +407,7 @@
     c.fillStyle = colors.muted;
     c.textAlign = 'left';
     c.textBaseline = 'top';
-    c.fillText(T('振盪器', 'Driver'), 3, by + bh + 5);
+    c.fillText(T('振盪器', 'Driver'), 3, by + bh + 9);
     L.driver = { bx: bx, by: by, bw: bw, bh: bh };
   }
 
@@ -452,64 +495,80 @@
   }
 
   // ---------- 繪圖工具 ----------
-  function pill(text, x, y, color, font, bgAlpha) {
-    ctx.font = font || '600 12px system-ui, sans-serif';
-    ctx.textBaseline = 'middle';
-    const m = ctx.measureText(text), tw = m.width;
-    const fh = m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : 15;
-    const ph = fh + 3, pw = tw + 10;
+  /**
+   * 圓角底框標籤（LabDraw.pill：半透明底、與文字同色的細邊）。(x, y) 為文字的參考點（垂直置中），
+   * 水平對齊沿用 ctx.textAlign（left：x 為文字起點；right：x 為文字終點；center：置中）。
+   */
+  function pill(text, x, y, color, font) {
+    font = font || '600 12px system-ui, sans-serif';
+    ctx.font = font;
     const al = ctx.textAlign;
-    const bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - tw - 5 : x - 5;
-    ctx.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.86 : bgAlpha);
-    roundRect(ctx, bx, y - ph / 2, pw, ph, ph / 2);
-    ctx.fill();
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y + 0.5);
-    return { x: bx, y: y - ph / 2, w: pw, h: ph };
+    const ph = LD.textHeight(ctx.measureText(text), 15) + 3;
+    const r = LD.pill(ctx, text, al === 'center' ? x : al === 'right' ? x + 6 : x - 6, y + ph / 2, color,
+      al === 'center' ? 'center' : al === 'right' ? 'right' : 'left', font);
+    ctx.textAlign = al;
+    return r;
   }
-  function pillWidth(text, font) { ctx.font = font || '600 12px system-ui, sans-serif'; return ctx.measureText(text).width + 10; }
+  function pillWidth(text, font) { ctx.font = font || '600 12px system-ui, sans-serif'; return ctx.measureText(text).width + 12; }
 
   function strokePath(pts) {
     ctx.beginPath();
     pts.forEach(function (p, i) { if (i) ctx.lineTo(p[0], p[1]); else ctx.moveTo(p[0], p[1]); });
     ctx.stroke();
   }
-  /** 兩層線條的「繩子」：底層粗而暗，上層細而亮、略偏上 */
-  function tube(pts, w, base, light) {
+  /**
+   * 有粗細與光影的繩子（中心線就是物理位置 pts，所有效果都只加在線條的寬度內）：
+   * 投在背板上的柔和陰影 → 暗色外緣 → 本體（略偏上）→ 絞股的斜紋 → 偏上的細亮光。
+   * edge、body、light、strand 可以是顏色或漸層（模式 A 左邊向畫面外漸淡）。
+   */
+  function rope(pts, w, st) {
+    if (pts.length < 2) return;
+    ctx.save();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = base;
-    ctx.lineWidth = w;
-    strokePath(pts);
-    if (!light) return;
-    ctx.strokeStyle = light;
-    ctx.lineWidth = Math.max(0.8, w * 0.34);
-    strokePath(pts.map(function (p) { return [p[0], p[1] - w * 0.22]; }));
+    if (st.shadow) {
+      ctx.translate(1.5, w * 0.8);
+      ctx.strokeStyle = st.shadow; ctx.lineWidth = w + 3; strokePath(pts);
+      ctx.lineWidth = w * 0.7; strokePath(pts);
+      ctx.translate(-1.5, -w * 0.8);
+    }
+    ctx.strokeStyle = st.edge; ctx.lineWidth = w; strokePath(pts);
+    ctx.translate(0, -w * 0.1);
+    ctx.strokeStyle = st.body; ctx.lineWidth = w * 0.66; strokePath(pts);
+    ctx.translate(0, w * 0.1);
+    // 絞股：沿繩長每隔約 1.1 倍繩粗畫一道與切線成 55° 的斜紋（只在繩子的寬度內）
+    if (st.strand && w >= 3) {
+      const gap = w * 1.1, ca = Math.cos(0.96), sa = Math.sin(0.96), half = w * 0.42 / sa;
+      let acc = gap * 0.5;
+      ctx.beginPath();
+      for (let i = 1; i < pts.length; i++) {
+        const dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1], seg = Math.hypot(dx, dy);
+        if (seg < 1e-6) continue;
+        acc += seg;
+        while (acc >= gap) {
+          acc -= gap;
+          const u = 1 - acc / seg, x = pts[i - 1][0] + dx * u, y = pts[i - 1][1] + dy * u;
+          const tx = dx / seg, ty = dy / seg, ux = ca * tx - sa * ty, uy = ca * ty + sa * tx;
+          ctx.moveTo(x - ux * half, y - uy * half);
+          ctx.lineTo(x + ux * half, y + uy * half);
+        }
+      }
+      ctx.strokeStyle = st.strand;
+      ctx.lineWidth = Math.max(0.7, w * 0.16);
+      ctx.lineCap = 'butt';
+      ctx.stroke();
+      ctx.lineCap = 'round';
+    }
+    if (st.light) {
+      ctx.translate(0, -w * 0.24);
+      ctx.strokeStyle = st.light; ctx.lineWidth = Math.max(0.8, w * 0.2); strokePath(pts);
+    }
+    ctx.restore();
   }
-  function sphere(x, y, R, base) {
-    const g = ctx.createRadialGradient(x - R * 0.33, y - R * 0.35, R * 0.08, x, y, R);
-    g.addColorStop(0, shade(base, 0.65));
-    g.addColorStop(0.45, base);
-    g.addColorStop(1, shade(base, -0.42));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = alpha(shade(base, 0.7), colors.dark ? 0.5 : 0.35);
-    ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(x, y, R - 0.5, Math.PI * 1.05, Math.PI * 1.65); ctx.stroke();
-  }
-  /** 小箭頭（脈波前進方向） */
+  /** 小箭頭（脈波前進方向）：全站一致的 LabDraw 箭頭 */
   function dirArrow(x, y, dir, color) {
-    const len = L.narrow ? 22 : 28, lw = 2.2, head = 4 * lw * 0.9;
-    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineCap = 'round'; ctx.lineWidth = lw;
-    const xs = x - dir * len / 2, xe = x + dir * len / 2;
-    ctx.beginPath(); ctx.moveTo(xs, y); ctx.lineTo(xe - dir * head * 0.7, y); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(xe, y);
-    ctx.quadraticCurveTo(xe - dir * head * 0.45, y + lw * 0.6, xe - dir * head, y + 1.7 * lw);
-    ctx.lineTo(xe - dir * head * 0.75, y);
-    ctx.lineTo(xe - dir * head, y - 1.7 * lw);
-    ctx.quadraticCurveTo(xe - dir * head * 0.45, y - lw * 0.6, xe, y);
-    ctx.fill();
+    const len = L.narrow ? 22 : 28;
+    LD.arrow(ctx, x - dir * len / 2, y, x + dir * len / 2, y, color, 2.2);
   }
 
   let drawPending = false;
@@ -573,19 +632,20 @@
     }
     ctx.setLineDash([]);
 
-    // 小珠
+    // 小珠（LabDraw 立體球，預先畫成小圖，每一幀都不耗效能）
     if (state.show.beads && state.show.sum) {
+      const beadC = colors.dark ? shade(colors.field, -0.1) : shade(colors.field, 0.25);
       for (let j = 0; j <= BEADS; j++) {
         const x = state.L * j / BEADS;
-        if (j === BEADS && state.end === 'free') continue; // 自由端畫環
+        if (j === BEADS) continue; // 端點由夾具或環表示
         const y = yAt(x, t).sum;
-        sphere(X(x), Y(y), j === 7 ? L.bead * 1.35 : L.bead, j === 7 ? colors.probe : (colors.dark ? shade(colors.field, -0.1) : shade(colors.field, 0.25)));
+        LD.ball(ctx, X(x), Y(y), j === 7 ? L.bead * 1.35 : L.bead, j === 7 ? colors.probe : beadC, { glow: j === 7 && colors.dark ? 0.35 : 0 });
       }
     }
 
-    // 端點：固定端的夾頭、自由端的環
+    // 端點：固定端的夾具、自由端套在直桿上的輕環
     const yL = yAt(state.L, t).sum;
-    if (state.end === 'fixed') sphere(X(state.L), Y(0), L.narrow ? 4.5 : 5.5, colors.dark ? shade(colors.muted, 0.1) : shade(colors.muted, -0.1));
+    if (state.end === 'fixed') drawClamp();
     else drawRing(X(state.L), Y(yL));
     // 振盪器的推桿（模式 B）
     if (!A) drawPlunger(yAt(0, t).sum);
@@ -603,58 +663,70 @@
   }
 
   function drawString(sum, A) {
-    const col = colors.field;
-    const baseC = colors.dark ? shade(col, -0.25) : shade(col, 0.05);
-    const light = colors.dark ? 'rgba(255,255,255,0.75)' : 'rgba(255,255,255,0.55)';
-    // 柔和的陰影
-    ctx.save();
-    ctx.strokeStyle = 'rgba(0,0,0,' + (colors.dark ? 0.35 : 0.12) + ')';
-    ctx.lineWidth = L.lw + 2;
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-    strokePath(sum.filter(function (p) { return p[2] >= 0; }).map(function (p) { return [p[0] + 1, p[1] + 3]; }));
-    ctx.restore();
+    const col = colors.field, w = L.lw;
+    const body = colors.dark ? shade(col, -0.12) : shade(col, 0.08);
+    const edge = colors.dark ? shade(col, -0.55) : shade(col, -0.35);
+    const light = colors.dark ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.5)';
+    const strand = alpha(colors.dark ? shade(col, -0.6) : shade(col, -0.5), colors.dark ? 0.55 : 0.5);
+    const shadowC = 'rgba(0,0,0,' + (colors.dark ? 0.28 : 0.1) + ')';
     if (A) {
       // x < 0 的部分：向左漸淡（繩子很長，延伸到畫面外）
       const left = sum.filter(function (p) { return p[2] <= 0; });
-      const gB = ctx.createLinearGradient(0, 0, L.x0, 0);
-      gB.addColorStop(0, alpha(baseC, 0));
-      gB.addColorStop(1, alpha(baseC, 1));
-      const gl = ctx.createLinearGradient(0, 0, L.x0, 0);
-      gl.addColorStop(0, 'rgba(255,255,255,0)');
-      gl.addColorStop(1, light);
-      tube(left, L.lw, gB, gl);
+      const fade = function (c, a1) {
+        const g = ctx.createLinearGradient(0, 0, L.x0, 0);
+        g.addColorStop(0, alpha(c, 0));
+        g.addColorStop(1, alpha(c, a1));
+        return g;
+      };
+      rope(left, w, { edge: fade(edge, 1), body: fade(body, 1), light: fade('#ffffff', colors.dark ? 0.7 : 0.5),
+        strand: fade(colors.dark ? shade(col, -0.6) : shade(col, -0.5), colors.dark ? 0.55 : 0.5), shadow: fade('#000000', colors.dark ? 0.28 : 0.1) });
     }
-    tube(sum.filter(function (p) { return p[2] >= 0; }), L.lw, baseC, light);
+    rope(sum.filter(function (p) { return p[2] >= 0; }), w, { edge: edge, body: body, light: light, strand: strand, shadow: shadowC });
   }
 
+  /** 固定端的夾具：鎖在牆上的鋼製底座＋上下兩片夾爪夾住繩端（繩端在 x = L、y = 0 不動） */
+  function drawClamp() {
+    const x = X(state.L), y = Y(0), k = L.narrow ? 0.82 : 1, met = steel();
+    const gap = L.lw * 0.3;
+    LD.block(ctx, x + 1, y - 15 * k, 6 * k, 30 * k, shade(met, -0.12), { r: 2 });
+    LD.block(ctx, x - 7 * k, y - gap - 6.5 * k, 10 * k, 6.5 * k, met, { r: 2 });
+    LD.block(ctx, x - 7 * k, y + gap, 10 * k, 6.5 * k, met, { r: 2 });
+    [y - 11 * k, y + 11 * k].forEach(function (yy) { LD.ball(ctx, x + 1 + 3 * k, yy, 1.6 * k, shade(met, 0.15), { shadow: false, glow: 0 }); });
+  }
+
+  /** 自由端：套在直桿上的輕環（金屬環從斜上方看是扁橢圓；後半圈在桿子後面、前半圈在前面） */
   function drawRing(x, y) {
-    const rx = L.narrow ? 4.5 : 5.5, ry = L.narrow ? 9 : 11;
+    const rx = L.narrow ? 7 : 9, ry = L.narrow ? 2.8 : 3.4, r = rodRadius();
     const base = colors.dark ? shade(colors.equi, -0.1) : shade(colors.equi, 0.05);
-    ctx.lineWidth = 3.2;
-    ctx.strokeStyle = shade(base, -0.35);
-    ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-    ctx.lineWidth = 1.4;
-    ctx.strokeStyle = shade(base, 0.45);
-    ctx.beginPath(); ctx.ellipse(x - 0.6, y - 0.8, rx - 0.6, ry - 0.8, 0, Math.PI * 0.95, Math.PI * 1.75); ctx.stroke();
+    const arc = function (a0, a1, front) {
+      ctx.lineCap = 'round';
+      ctx.lineWidth = 3.4;
+      ctx.strokeStyle = shade(base, front ? -0.3 : -0.5);
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, a0, a1); ctx.stroke();
+      ctx.lineWidth = 1.3;
+      ctx.strokeStyle = shade(base, front ? 0.55 : 0.15);
+      ctx.beginPath(); ctx.ellipse(x, y - 0.9, rx, ry, 0, a0 + 0.15, a1 - 0.15); ctx.stroke();
+    };
+    arc(Math.PI, 2 * Math.PI, false);                 // 後半圈
+    ctx.fillStyle = rodFill(ctx, x, r);                // 桿子從環中間穿過
+    ctx.fillRect(x - r, y - ry - 4, 2 * r, 2 * ry + 8);
+    arc(0, Math.PI, true);                            // 前半圈
   }
 
+  /** 振盪器的推桿（鍍鉻圓棒）與夾住繩端的夾頭；夾頭中心就是繩子的 x = 0 端點 */
   function drawPlunger(y0) {
     const d = L.driver; if (!d) return;
-    const yy = Y(y0), xs = d.bx + d.bw - 5, xe = X(0);
-    const base = colors.dark ? shade(colors.muted, 0.05) : shade(colors.muted, -0.05);
-    const g = ctx.createLinearGradient(0, yy - 3, 0, yy + 3);
-    g.addColorStop(0, shade(base, 0.45));
-    g.addColorStop(1, shade(base, -0.35));
+    const yy = Y(y0), xs = d.bx + d.bw - 5, xe = X(0), met = steel();
+    const g = ctx.createLinearGradient(0, yy - 2.6, 0, yy + 2.6);
+    g.addColorStop(0, shade(met, -0.25));
+    g.addColorStop(0.3, shade(met, 0.75));
+    g.addColorStop(0.6, shade(met, 0.05));
+    g.addColorStop(1, shade(met, -0.5));
     ctx.fillStyle = g;
-    roundRect(ctx, xs, yy - 2.5, xe - xs, 5, 2.5);
+    roundRect(ctx, xs, yy - 2.6, xe - xs, 5.2, 2.6);
     ctx.fill();
-    // 夾頭
-    const gb = ctx.createLinearGradient(0, yy - 7, 0, yy + 7);
-    gb.addColorStop(0, shade(colors.accent, 0.3));
-    gb.addColorStop(1, shade(colors.accent, -0.35));
-    ctx.fillStyle = gb;
-    roundRect(ctx, xe - 4, yy - 7, 8, 14, 3);
-    ctx.fill();
+    LD.block(ctx, xe - 4, yy - 7, 8, 14, colors.accent, { r: 3 });
+    LD.ball(ctx, xe, yy - 4, 1.4, shade(met, 0.2), { shadow: false, glow: 0 });
   }
 
   function drawEnvelope(p, A) {
@@ -699,8 +771,7 @@
       const xx = X(x), yy = Y(2 * A);
       ctx.fillStyle = alpha(colors.equi, 0.25);
       ctx.beginPath(); ctx.arc(xx, yy, 6.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = colors.equi;
-      ctx.beginPath(); ctx.arc(xx, yy, 3.6, 0, Math.PI * 2); ctx.fill();
+      LD.ball(ctx, xx, yy, 3.8, colors.equi, { shadow: false });
       const lx = Math.min(Math.max(xx, L.x0 + aw / 2), L.x1 - aw / 2);
       if (lx - aw / 2 > lastR + 4 && !hitsInfo(lx - aw / 2, yy - 22, aw, 18)) {
         ctx.textAlign = 'center';
@@ -718,8 +789,16 @@
       ctx.rotate(Math.PI / 4);
       ctx.fillStyle = alpha(colors['canvas-bg'], 0.9);
       ctx.fillRect(-6, -6, 12, 12);
-      ctx.fillStyle = colors.accent;
+      // 寶石般的小菱形：左上亮、右下暗
+      const gd = ctx.createLinearGradient(-4, -4, 4, 4);
+      gd.addColorStop(0, shade(colors.accent, 0.45));
+      gd.addColorStop(0.5, colors.accent);
+      gd.addColorStop(1, shade(colors.accent, -0.35));
+      ctx.fillStyle = gd;
       ctx.fillRect(-4, -4, 8, 8);
+      ctx.strokeStyle = alpha(shade(colors.accent, -0.45), 0.8);
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(-4, -4, 8, 8);
       ctx.restore();
       const lx = Math.min(Math.max(xx, L.x0 + nw / 2), L.x1 - nw / 2);
       if (lx - nw / 2 > lastR + 4) {
@@ -765,7 +844,7 @@
     infoRects = [];
     const draw1 = function (text, xx, yy, color) {
       const w = pillWidth(text, font), h = 18;
-      const r = { x: xx - 5, y: yy - h / 2, w: w, h: h };
+      const r = { x: xx - 6, y: yy - h / 2, w: w, h: h };
       infoRects.push(r);
       if (!measureOnly) pill(text, xx, yy, color, font, 0.8);
       return r;
@@ -798,10 +877,21 @@
     const xx = out ? B.x + B.w : FX(state.f, B);
     const gg = Math.min(SW.gain(state.end, state.f, state.v, state.L, RHO), gainMax());
     const col = near.resonant ? colors.accent : colors.pos;
+    if (keyFocusShown()) {
+      // 鍵盤焦點框：--accent 色虛線圓角框圍住頻率標記
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = colors.accent;
+      const top = GY(1 / (1 - RHO), B) - 8; // 從共振峰的 f 標籤下方開始，不壓到標籤
+      roundRect(ctx, xx - 11, top, 22, B.y + B.h + 4 - top, 7);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.strokeStyle = alpha(col, 0.8);
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(Math.round(xx) + 0.5, B.y - 2); ctx.lineTo(Math.round(xx) + 0.5, B.y + B.h); ctx.stroke();
-    if (!out) sphere(xx, GY(gg, B), 5, col);
+    if (!out) LD.ball(ctx, xx, GY(gg, B), 5, col);
     const txt = 'f = ' + sig(state.f) + ' Hz' + (out ? ' →' : '');
     const fnt = '600 11px system-ui, sans-serif', pw = pillWidth(txt, fnt);
     // 優先放在標題列右側；放不下時才放在標記旁
@@ -870,6 +960,7 @@
         b.setAttribute('aria-label', T('設定為共振頻率 f', 'Set to resonant frequency f') + h.m + ' = ' + sig(h.f) + ' Hz');
       });
     }
+    syncCanvasRole();
   }
   function updateLive() {
     const t = state.t;
@@ -887,6 +978,7 @@
       setHTML('rBy0', cm(yAt(0, t).sum));
       setHTML('rByL', cm(yAt(state.L, t).sum));
     }
+    updateSrNow();
   }
 
   // ---------- 音效（sound.js；音效關閉時完全不呼叫） ----------
@@ -961,7 +1053,11 @@
       const tm = SW.pulseTimes(pA());
       if (t0 < tm.tHit && state.t >= tm.tHit) {
         clickSound();
-        if (!state.auto) emit('pulseReflected', pulseData());
+        if (!state.auto) {
+          emit('pulseReflected', pulseData());
+          say(state.end === 'fixed' ? T('脈波在固定端反射：端點不動，反射脈波倒立回來。', 'The pulse reflects at the fixed end: the end stays still and the pulse comes back upside down.')
+            : T('脈波在自由端反射：端點的環被推到脈波高度的 2 倍，反射脈波正立回來。', 'The pulse reflects at the free end: the ring rises to twice the pulse height and the pulse comes back the right way up.'));
+        }
         if (!reducedMotion) state.fx.push({ t0: tNow, dur: 420, y: state.end === 'free' ? 2 * PULSE_A : 0, color: state.end === 'fixed' ? colors.neg : colors.equi });
       }
       if (state.t >= tm.tGone) {
@@ -1087,6 +1183,7 @@
     setStatus('');
     resize();
     restart(!reducedMotion);
+    scheduleSay();
   }
   $('modeA').addEventListener('click', function () { setMode('A'); });
   $('modeB').addEventListener('click', function () { setMode('B'); });
@@ -1138,6 +1235,7 @@
     const play = state.running || (state.mode === 'A' && state.done && !reducedMotion);
     if (state.done) setStatus('');
     restart(play);
+    scheduleSay();
   }
   [elL, elV, elW, elF].forEach(function (el) {
     el.addEventListener('input', paramsChanged);
@@ -1188,6 +1286,130 @@
   });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (t) {
     cv.addEventListener(t, function () { dragging = false; });
+  });
+
+  // ---------- 鍵盤操作（js/keys.js）與畫布說明 ----------
+  // 駐波模式：共振曲線上的頻率標記可以拖曳，所以鍵盤也能調：左右方向鍵每次移動橫軸的 1/200（Shift 為 1/20），
+  // 範圍限制與拖曳相同（0 到橫軸最大值，且在頻率滑桿的範圍內），跨過共振頻率時停在共振上（拖曳時接近共振也會自動對準）。
+  // 脈波模式沒有可拖曳的物件：畫布改成 role="img"，說明隨參數更新。
+  const kbItems = [];
+  const freqItem = {
+    name: function () { return T('共振曲線上的頻率標記', 'Frequency marker on the resonance curve'); },
+    move: function (dx, dy, big) { return keyFreq(dx, big); },
+    describe: function () { return freqDesc(); }
+  };
+  function kbLabel() {
+    return T('駐波模擬畫布：上方是繩子的振動，下方是共振曲線。可在共振曲線上左右拖曳選頻率；鍵盤：按 Enter 選取頻率標記，左右方向鍵調整頻率（每次為橫軸的 1/200，Shift 為 1/20），跨過共振頻率時會停在共振上。',
+      'Standing-wave canvas: the vibrating string above and the resonance curve below. Drag sideways on the resonance curve to choose a frequency; keyboard: press Enter to pick the frequency marker, then the left and right arrow keys change the frequency (1/200 of the axis per press, Shift: 1/20) and stop on a resonance when you pass one.');
+  }
+  function pulseLabel() {
+    const fixed = state.end === 'fixed', tm = SW.pulseTimes(pA());
+    const shapeZh = { sine: '半正弦', gauss: '鐘形', tri: '不對稱' }[state.shape], shapeEn = { sine: 'half-sine', gauss: 'bell-shaped', tri: 'lopsided' }[state.shape];
+    return T('繩波模擬畫布（脈波反射）：繩長 L = ' + num(state.L, 2) + ' m，波速 v = ' + num(state.v, 2) + ' m/s。一個寬 ' + num(state.w, 2) + ' m、高 3 cm 的' + shapeZh + '脈波向右傳到' + (fixed ? '固定端（綁在牆上）' : '自由端（套在光滑直桿上的輕環）') +
+        '，脈波中心在 t = ' + num(tm.tHit, 2) + ' s 抵達端點，反射脈波' + (fixed ? '倒立' : '正立') + '回來。',
+      'String wave canvas (pulse reflection): string length L = ' + num(state.L, 2) + ' m, wave speed v = ' + num(state.v, 2) + ' m/s. A ' + shapeEn + ' pulse ' + num(state.w, 2) + ' m wide and 3 cm high travels right to a ' +
+        (fixed ? 'fixed end (tied to a wall)' : 'free end (a light ring on a smooth rod)') + '; its centre reaches the end at t = ' + num(tm.tHit, 2) + ' s and the reflected pulse comes back ' + (fixed ? 'upside down.' : 'the right way up.'));
+  }
+  const kb = window.LabKeys ? window.LabKeys.attach(cv, { label: kbLabel(), items: kbItems, onChange: requestDraw }) : null;
+  function syncCanvasRole() {
+    if (state.mode === 'B') {
+      if (!kbItems.length) kbItems.push(freqItem);
+      cv.setAttribute('role', 'application');
+      cv.setAttribute('aria-roledescription', T('互動實驗畫布', 'interactive simulation canvas'));
+      cv.tabIndex = 0;
+      if (cv.getAttribute('aria-label') !== kbLabel()) cv.setAttribute('aria-label', kbLabel());
+    } else {
+      kbItems.length = 0;
+      cv.setAttribute('role', 'img');
+      cv.removeAttribute('aria-roledescription');
+      cv.removeAttribute('tabindex');
+      const t = pulseLabel();
+      if (cv.getAttribute('aria-label') !== t) cv.setAttribute('aria-label', t);
+    }
+  }
+  function freqDesc() {
+    const p = pB(), near = SW.nearestHarmonic(p);
+    if (near.resonant) {
+      const c = SW.modeCounts(state.end, near.n);
+      return 'f = ' + sig(state.f) + ' Hz' + T('：共振，第 ' + near.m + ' 諧音，' + c.nodes + ' 個波節、' + c.antinodes + ' 個波腹', ': resonance, ' + ord(near.m) + ' harmonic, ' + c.nodes + ' nodes and ' + c.antinodes + ' antinodes');
+    }
+    return 'f = ' + sig(state.f) + ' Hz' + T('：不在共振頻率，最接近的共振 f', ': not at a resonance; nearest resonance f') + near.m + ' = ' + sig(near.f) + ' Hz';
+  }
+  function keyFreq(dx, big) {
+    if (state.mode !== 'B' || !dx || !L) return false;
+    const fmax = fAxisMax(), step = fmax / (big ? 20 : 200);
+    const lo = Math.max(0, +elF.min), hi = Math.min(+elF.max, fmax), f0 = state.f;
+    let f = Math.max(lo, Math.min(hi, f0 + dx * step));
+    if ((f - f0) * dx <= 1e-12) return false;
+    let snap = null;
+    SW.harmonics(state.end, state.v, state.L, NH).forEach(function (h) {
+      if (h.f > hi + 1e-12 || h.f < lo - 1e-12) return;
+      const ahead = (h.f - f0) * dx; // 共振頻率在移動方向上的距離
+      if (ahead > 1e-9 && ahead <= Math.abs(f - f0) + step * 0.5 && (snap === null || Math.abs(h.f - f0) < Math.abs(snap - f0))) snap = h.f;
+    });
+    if (snap !== null) f = snap;
+    state.presetF = snap;
+    if (window.LabNum) window.LabNum.set(elF, f); // 會觸發 input 事件 → paramsChanged（與拖曳相同）
+    else { elF.value = f; elF.dispatchEvent(new Event('input')); }
+    if (!state.running && !reducedMotion) { state.running = true; startLoop(); updateButtons(); }
+    return true;
+  }
+  // 焦點框只在用鍵盤操作時顯示（滑鼠點擊畫布也會讓它取得焦點，那時不畫）
+  let keyMode = false;
+  document.addEventListener('keydown', function () { keyMode = true; }, true);
+  document.addEventListener('pointerdown', function () { keyMode = false; }, true);
+  function keyFocusShown() { return !!(kb && kb.focused() && kb.index() === 0 && keyMode && state.mode === 'B'); }
+
+  // ---------- 讀數播報 ----------
+  // 離散事件（改參數後、脈波反射時）寫進 #srSay（aria-live="polite"）；
+  // 動畫中一直在變的讀數另放 #srNow（.sr-only 狀態列），至少間隔 1.5 秒、內容有變才更新
+  let sayTimer = 0;
+  function say(text) { const el = $('srSay'); el.textContent = ''; setTimeout(function () { el.textContent = text; }, 30); }
+  function summaryText() {
+    if (state.mode === 'A') {
+      const tm = SW.pulseTimes(pA());
+      return (state.end === 'fixed' ? T('固定端', 'Fixed end') : T('自由端', 'Free end')) + T('：脈波中心在 t = ', ': the pulse centre reaches the end at t = ') + num(tm.tHit, 2) +
+        T(' s 抵達端點，反射脈波', ' s and the reflected pulse comes back ') + (state.end === 'fixed' ? T('倒立。', 'upside down.') : T('正立。', 'the right way up.'));
+    }
+    const As = SW.steadyAmplitude(pB());
+    return freqDesc() + T('；穩定振幅 ', '; steady amplitude ') + cm(As) + T('（最大位移 ', ' (largest displacement ') + cm(2 * As) + T('）。', ').');
+  }
+  function scheduleSay() {
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(function () { say(summaryText()); }, 800);
+  }
+  let nowText = '', nowT = 0, nowTimer = 0;
+  function updateSrNow() {
+    if (state.auto) return; // 載入頁面時自動播放的第一個脈波不播報
+    let t;
+    if (state.mode === 'A') {
+      t = T('端點位移 y(L) = ', 'Displacement at the end y(L) = ') + $('rAyL').textContent + T('，繩上最大位移 ', ', largest displacement on the string ') + $('rAmax').textContent;
+    } else {
+      const p = pB();
+      t = T('行進波目前振幅 ', 'Travelling-wave amplitude now ') + num(SW.drivenAmplitudeAt(p, state.t), 1) + ' cm' + T('，穩定值 ', ', steady value ') + cm(SW.steadyAmplitude(p));
+    }
+    if (t === nowText) return;
+    const now = performance.now(), wait = 1500 - (now - nowT);
+    // 太快就晚一點再寫（寫的是那時的讀數），暫停之後狀態列也會是最後的數值
+    if (wait > 0) { if (!nowTimer) nowTimer = setTimeout(function () { nowTimer = 0; updateSrNow(); }, wait); return; }
+    nowText = t; nowT = now;
+    $('srNow').textContent = t;
+  }
+
+  // ---------- 分享連結（classroom.js 的 LabShare） ----------
+  // 共振按鈕與共振曲線拖曳會給出精確的共振頻率，但滑桿只記到 0.001 Hz：另外記下精確值，還原時頻率仍在共振上。
+  // classroom.js 在 DOMContentLoaded 之後才載入，所以用佇列登記（載入時會補登記）
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { pf: state.presetF }; },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      const pf = +o.pf;
+      if (o.pf === null || o.pf === undefined || !isFinite(pf) || pf <= 0) return;
+      // 只有在滑桿值正好是這個精確頻率四捨五入到 0.001 Hz 時才採用（與 readF 的規則相同），超出範圍或不相符就忽略
+      if (Math.abs(val(elF) - Math.round(pf * 1000) / 1000) > 1e-9) return;
+      state.presetF = pf;
+      paramsChanged();
+    }
   });
 
   // ---------- 啟動 ----------

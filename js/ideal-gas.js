@@ -8,6 +8,8 @@
   // 滑桿讀值：打字輸入的精確值（numinput.js）優先
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const reducedMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const LD = window.LabDraw;               // 共用繪圖工具（js/drawkit.js）
+  let kb = null;                           // 畫布鍵盤操作（js/keys.js）
 
   // ---------- 固定參數 ----------
   const LY = 20, LZ = 20, AREA = LY * LZ;   // nm：容器截面
@@ -381,6 +383,17 @@
     x.strokeStyle = alpha(shade(base, 0.6), colors.dark ? 0.55 : 0.4);
     x.lineWidth = SPR * 0.05;
     x.beginPath(); x.arc(SPR / 2, SPR / 2, R - SPR * 0.04, Math.PI * 0.15, Math.PI * 0.75); x.stroke();
+    // 鏡面亮點：縮到幾個像素時仍看得出是球
+    const hx = SPR * 0.35, hy = SPR * 0.31, hr = SPR * 0.17;
+    const hs = x.createRadialGradient(hx, hy, 0, hx, hy, hr);
+    hs.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.75 : 0.9) + ')');
+    hs.addColorStop(1, 'rgba(255,255,255,0)');
+    x.fillStyle = hs;
+    x.beginPath(); x.arc(hx, hy, hr, 0, Math.PI * 2); x.fill();
+    // 暗外緣：在淺色背景上與鄰近的分子分得開
+    x.strokeStyle = alpha(shade(base, -0.55), colors.dark ? 0.35 : 0.5);
+    x.lineWidth = SPR * 0.04;
+    x.beginPath(); x.arc(SPR / 2, SPR / 2, R - SPR * 0.02, 0, Math.PI * 2); x.stroke();
     return c;
   }
   const SPEED_LEVELS = 9;
@@ -426,6 +439,18 @@
     c.fillStyle = rg;
     roundRect(c, 0, 0, cw, ch, 8);
     c.fill();
+
+    // 底座落在桌面上的柔和陰影：多邊形本身會被底座蓋住，只露出模糊的外緣
+    c.save();
+    c.shadowColor = colors.dark ? 'rgba(0,0,0,0.6)' : alpha(colors.text, 0.28);
+    c.shadowBlur = (narrow ? 10 : 16) * dpr;
+    c.shadowOffsetY = (narrow ? 3 : 5) * dpr;
+    c.fillStyle = colors.dark ? 'rgba(0,0,0,0.6)' : alpha(colors.text, 0.28);
+    poly(c, [P2(-1.0, -2.2, LZ - 5), P2(XH + 1.0, -2.2, LZ - 5), P2(XH + 1.0, -2.2, LZ + 1.2), P2(-1.0, -2.2, LZ + 1.2)]);
+    c.fill();
+    poly(c, [P2(-1.2, -2.2, -1.0), P2(-1.2, -2.2, LZ + 1.2), P2(-1.2, -0.6, LZ + 1.2), P2(-1.2, -0.6, -1.0)]);
+    c.fill();
+    c.restore();
 
     // 背牆（z = 0）：由上而下的淡漸層
     const bw = [P2(0, 0, 0), P2(XH, 0, 0), P2(XH, LY, 0), P2(0, LY, 0)];
@@ -567,6 +592,7 @@
 
     // 前方與上方的玻璃
     drawGlass(Lx);
+    drawFocusRing();
 
     // 標籤、壓力計、溫度計、刻度尺（刻度數字避開底座上的標籤）
     drawGauges();
@@ -607,10 +633,31 @@
     const lf = [P2(x0, y1, z0), P2(x0, y1, z1), P2(x0, y0, z1), P2(x0, y0, z0)];
     ctx.fillStyle = shade(metal, colors.dark ? -0.45 : -0.05);
     poly(ctx, lf); ctx.fill();
-    // 頂邊高光
+    // 正面的金屬髮絲紋（細的橫向亮暗線）
+    ctx.save();
+    poly(ctx, fr); ctx.clip();
+    ctx.lineWidth = 1;
+    for (let k = 1; k < 9; k++) {
+      const yy = y1 + (y0 - y1) * k / 9;
+      ctx.strokeStyle = k % 2 ? alpha('#ffffff', colors.dark ? 0.03 : 0.09) : alpha('#000000', colors.dark ? 0.08 : 0.03);
+      ctx.beginPath(); line3(ctx, [x0, yy, z1], [x1, yy, z1]); ctx.stroke();
+    }
+    ctx.restore();
+    // 頂邊高光、左前稜線、底邊暗線
     ctx.strokeStyle = alpha(shade(metal, 0.7), colors.dark ? 0.45 : 0.8);
     ctx.lineWidth = 1;
-    ctx.beginPath(); line3(ctx, [x0, y1, z1], [x1, y1, z1]); ctx.stroke();
+    ctx.beginPath(); line3(ctx, [x0, y1, z1], [x1, y1, z1]); line3(ctx, [x0, y1, z0], [x0, y1, z1]); ctx.stroke();
+    ctx.strokeStyle = alpha(shade(metal, 0.5), colors.dark ? 0.25 : 0.5);
+    ctx.beginPath(); line3(ctx, [x0, y1, z1], [x0, y0, z1]); ctx.stroke();
+    ctx.strokeStyle = alpha('#000000', colors.dark ? 0.45 : 0.22);
+    ctx.beginPath(); line3(ctx, [x0, y0, z1], [x1, y0, z1]); line3(ctx, [x0, y0, z0], [x0, y0, z1]); ctx.stroke();
+    // 恆溫槽的指示燈（顏色＝恆溫槽溫度）
+    if (bath && LD) {
+      const led = P2(x1 - 1.2, (y0 + y1) / 2, z1);
+      const lr = Math.max(2, proj(x1 - 1.2, (y0 + y1) / 2, z1).s * 0.38);
+      const Tb = Math.round(gas.bath.T / 20) * 20, ledCol = mix(colors.accent, Tb > 300 ? colors.pos : colors.neg, Math.min(1, Math.abs(Tb - 300) / 300));
+      LD.ball(ctx, led[0], led[1], lr, ledCol, { shadow: false, glow: 0.55 });
+    }
     // 絕熱：正面畫斜線（隔熱材）
     if (!bath) {
       ctx.save();
@@ -631,35 +678,42 @@
     const canDrag = state.mode === 'isothermal' || state.mode === 'adiabatic';
     const hl = (hoverPiston || dragging) && canDrag;
     const steel = colors.field;
-    // 拉桿
+    // 汽缸右端的導套（拉桿穿過的金屬環）：先畫，拉桿從中間穿過
+    const ec = proj(XH, LY / 2, LZ / 2, {});
+    const er = 1.5 * ec.s;
+    const eg = ctx.createRadialGradient(ec.x - er * 0.3, ec.y - er * 0.35, er * 0.1, ec.x, ec.y, er);
+    eg.addColorStop(0, shade(steel, colors.dark ? 0.1 : 0.75));
+    eg.addColorStop(0.7, shade(steel, colors.dark ? -0.3 : 0.25));
+    eg.addColorStop(1, shade(steel, colors.dark ? -0.6 : -0.2));
+    ctx.fillStyle = eg;
+    ctx.beginPath(); ctx.ellipse(ec.x, ec.y, er, er * 0.95, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = alpha(colors.text, colors.dark ? 0.4 : 0.3);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // 拉桿：拋光的金屬圓桿
     const a = proj(Lx + PT, LY / 2, LZ / 2, {}), b = proj(ROD_END, LY / 2, LZ / 2, {});
     const rw = 0.9 * (a.s + b.s);
-    ctx.lineCap = 'butt';
-    ctx.strokeStyle = shade(steel, colors.dark ? -0.35 : -0.05);
-    ctx.lineWidth = rw;
-    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
-    ctx.strokeStyle = alpha(shade(steel, 0.7), colors.dark ? 0.55 : 0.75);
-    ctx.lineWidth = Math.max(1, rw * 0.3);
-    ctx.beginPath(); ctx.moveTo(a.x, a.y - rw * 0.22); ctx.lineTo(b.x, b.y - rw * 0.22); ctx.stroke();
+    const rodCol = shade(steel, colors.dark ? -0.2 : 0.2);
+    if (LD) LD.tube(ctx, function (c) { c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); }, rodCol, rw);
+    else {
+      ctx.strokeStyle = rodCol; ctx.lineWidth = rw;
+      ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    }
     ctx.lineCap = 'round';
-    // 汽缸右端的端蓋（環）
-    const ec = proj(XH, LY / 2, LZ / 2, {});
-    ctx.strokeStyle = alpha(colors.text, 0.35);
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.ellipse(ec.x, ec.y, 1.5 * ec.s, 1.5 * ec.s * 0.95, 0, 0, Math.PI * 2); ctx.stroke();
-    // 把手：金屬球
+    // 把手：金屬球（可拖曳時亮起 --accent 色光暈）
     const kR = 2.2 * b.s;
     const kc = hl ? colors.accent : (state.mode === 'isobaric' ? colors.equi : colors.b_mech || colors['b-mech']);
     if (hl) {
       ctx.fillStyle = alpha(colors.accent, 0.22);
       ctx.beginPath(); ctx.arc(b.x, b.y, kR * 1.6, 0, Math.PI * 2); ctx.fill();
     }
-    const kg = ctx.createRadialGradient(b.x - kR * 0.35, b.y - kR * 0.38, kR * 0.08, b.x, b.y, kR);
-    kg.addColorStop(0, shade(kc, 0.65));
-    kg.addColorStop(0.5, kc);
-    kg.addColorStop(1, shade(kc, -0.45));
-    ctx.fillStyle = kg;
-    ctx.beginPath(); ctx.arc(b.x, b.y, kR, 0, Math.PI * 2); ctx.fill();
+    if (LD) LD.ball(ctx, b.x, b.y, kR, kc, { glow: colors.dark ? 0.3 : 0 });
+    else {
+      const kg = ctx.createRadialGradient(b.x - kR * 0.35, b.y - kR * 0.38, kR * 0.08, b.x, b.y, kR);
+      kg.addColorStop(0, shade(kc, 0.65)); kg.addColorStop(0.5, kc); kg.addColorStop(1, shade(kc, -0.45));
+      ctx.fillStyle = kg;
+      ctx.beginPath(); ctx.arc(b.x, b.y, kR, 0, Math.PI * 2); ctx.fill();
+    }
     // 等容：把手旁的固定插銷
     if (state.mode === 'isochoric') {
       const pin = proj(XH + 1.6, LY / 2, LZ / 2, {});
@@ -686,7 +740,39 @@
     gfr.addColorStop(1, shade(steel, colors.dark ? -0.55 : 0.05));
     ctx.fillStyle = gfr;
     poly(ctx, front); ctx.fill();
-    // 邊線與密封圈
+    // 內面的車削紋（沿 y 方向的細亮暗線）與斜向的反光帶
+    ctx.save();
+    poly(ctx, inner); ctx.clip();
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let z = z0 + 0.4; z < z1; z += 0.8) line3(ctx, [x0, y0, z], [x0, y1, z]);
+    ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.03 : 0.11);
+    ctx.stroke();
+    ctx.beginPath();
+    for (let z = z0 + 0.8; z < z1; z += 0.8) line3(ctx, [x0, y0, z], [x0, y1, z]);
+    ctx.strokeStyle = alpha('#000000', colors.dark ? 0.07 : 0.025);
+    ctx.stroke();
+    const sh = ctx.createLinearGradient(inner[1][0], inner[1][1], inner[3][0], inner[3][1]);
+    sh.addColorStop(0.25, alpha('#ffffff', 0));
+    sh.addColorStop(0.38, alpha('#ffffff', colors.dark ? 0.08 : 0.3));
+    sh.addColorStop(0.5, alpha('#ffffff', 0));
+    ctx.fillStyle = sh;
+    poly(ctx, inner); ctx.fill();
+    ctx.restore();
+    // 側面的兩道橡膠密封圈（上面與正面看得到）
+    const ringW = Math.max(1.2, 0.16 * proj(x0, y1, z1, {}).s);
+    ctx.strokeStyle = colors.dark ? 'rgba(0,0,0,0.65)' : alpha(shade(colors.text, 0.15), 0.55);
+    ctx.lineWidth = ringW;
+    ctx.lineCap = 'butt';
+    ctx.beginPath();
+    [0.3, 0.7].forEach(function (f) {
+      const xr = x0 + PT * f;
+      line3(ctx, [xr, y1, z0], [xr, y1, z1]);
+      line3(ctx, [xr, y1, z1], [xr, y0, z1]);
+    });
+    ctx.stroke();
+    ctx.lineCap = 'round';
+    // 邊線
     ctx.strokeStyle = hl ? colors.accent : alpha(colors.text, colors.dark ? 0.35 : 0.3);
     ctx.lineWidth = hl ? 2 : 1;
     poly(ctx, inner); ctx.stroke();
@@ -694,7 +780,27 @@
     ctx.lineWidth = 1;
     poly(ctx, topF); ctx.stroke();
     poly(ctx, front); ctx.stroke();
-    pistonHit = { face: inner, knob: [b.x, b.y, kR], rodA: [a.x, a.y], rodB: [b.x, b.y] };
+    // 活塞內面與正面交界的稜線高光
+    ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.3 : 0.85);
+    ctx.beginPath(); line3(ctx, [x0, y1, z1], [x0, y0 + 0.4, z1]); ctx.stroke();
+    // 鍵盤焦點框的範圍（活塞面＋拉桿＋把手）
+    let bx0 = b.x - kR, bx1 = b.x + kR, by0 = b.y - kR, by1 = b.y + kR;
+    inner.concat(front, topF).forEach(function (p) {
+      bx0 = Math.min(bx0, p[0]); bx1 = Math.max(bx1, p[0]); by0 = Math.min(by0, p[1]); by1 = Math.max(by1, p[1]);
+    });
+    pistonHit = { face: inner, knob: [b.x, b.y, kR], rodA: [a.x, a.y], rodB: [b.x, b.y], box: [bx0, by0, bx1, by1] };
+  }
+  /** 鍵盤選取活塞時的焦點框（--accent 色虛線圓角框） */
+  function drawFocusRing() {
+    if (!kb || !kb.focused() || kb.index() !== 0 || !pistonHit) return;
+    const bb = pistonHit.box, pad = 6;
+    ctx.save();
+    ctx.strokeStyle = colors.accent;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    roundRect(ctx, bb[0] - pad, bb[1] - pad, bb[2] - bb[0] + 2 * pad, bb[3] - bb[1] + 2 * pad, 10);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawImpacts(Lx) {
@@ -778,22 +884,44 @@
     g.addColorStop(0.7, alpha('#ffffff', 0));
     ctx.fillStyle = g;
     poly(ctx, fr); ctx.fill();
-    // 恆溫：玻璃邊框帶溫度色
+    // 玻璃頂蓋與右端玻璃：極淡的色調，看得出是一片玻璃
+    const top = [P2(0, LY, 0), P2(XH, LY, 0), P2(XH, LY, LZ), P2(0, LY, LZ)];
+    const gt = ctx.createLinearGradient(top[0][0], top[0][1], top[2][0], top[2][1]);
+    gt.addColorStop(0, alpha(colors['b-wave'], colors.dark ? 0.03 : 0.04));
+    gt.addColorStop(0.55, alpha('#ffffff', colors.dark ? 0.05 : 0.16));
+    gt.addColorStop(1, alpha(colors['b-wave'], colors.dark ? 0.02 : 0.03));
+    ctx.fillStyle = gt;
+    poly(ctx, top); ctx.fill();
+    ctx.fillStyle = alpha(colors['b-wave'], colors.dark ? 0.025 : 0.035);
+    poly(ctx, [P2(XH, 0, 0), P2(XH, LY, 0), P2(XH, LY, LZ), P2(XH, 0, LZ)]); ctx.fill();
+    // 恆溫：玻璃邊框帶溫度色。玻璃有厚度：先畫一道寬而淡的邊，再畫細的稜線
     const edge = bathOn() ? mix(colors.text, tempColor(gas.bath.T), 0.55) : colors.text;
+    const edges = function () {
+      ctx.beginPath();
+      line3(ctx, [0, 0, LZ], [XH, 0, LZ]);
+      line3(ctx, [0, LY, LZ], [XH, LY, LZ]);
+      line3(ctx, [0, 0, LZ], [0, LY, LZ]);
+      line3(ctx, [XH, 0, LZ], [XH, LY, LZ]);
+      line3(ctx, [0, LY, 0], [0, LY, LZ]);
+      line3(ctx, [XH, LY, 0], [XH, LY, LZ]);
+    };
+    ctx.strokeStyle = alpha(mix(edge, colors['b-wave'], 0.3), colors.dark ? 0.16 : 0.13);
+    ctx.lineWidth = narrow ? 3.5 : 5;
+    edges(); ctx.stroke();
     ctx.strokeStyle = alpha(edge, colors.dark ? 0.5 : 0.42);
     ctx.lineWidth = 1.3;
-    ctx.beginPath();
-    line3(ctx, [0, 0, LZ], [XH, 0, LZ]);
-    line3(ctx, [0, LY, LZ], [XH, LY, LZ]);
-    line3(ctx, [0, 0, LZ], [0, LY, LZ]);
-    line3(ctx, [XH, 0, LZ], [XH, LY, LZ]);
-    line3(ctx, [0, LY, 0], [0, LY, LZ]);
-    line3(ctx, [XH, LY, 0], [XH, LY, LZ]);
-    ctx.stroke();
-    // 頂邊高光
+    edges(); ctx.stroke();
+    // 頂邊與左邊的高光
     ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.18 : 0.6);
     ctx.lineWidth = 1;
-    ctx.beginPath(); line3(ctx, [0.3, LY - 0.25, LZ], [XH - 0.3, LY - 0.25, LZ]); ctx.stroke();
+    ctx.beginPath(); line3(ctx, [0.3, LY - 0.25, LZ], [XH - 0.3, LY - 0.25, LZ]); line3(ctx, [0.25, 0.3, LZ], [0.25, LY - 0.3, LZ]); ctx.stroke();
+    // 前方四角與上方兩角的金屬護角
+    const cap = colors.dark ? shade(colors.field, -0.15) : shade(colors.field, 0.45), Lc = 1.3;
+    const cw2 = narrow ? 2.4 : 3.2;
+    [[0, 0, LZ, 1, 1, -1], [XH, 0, LZ, -1, 1, -1], [0, LY, LZ, 1, -1, -1], [XH, LY, LZ, -1, -1, -1], [0, LY, 0, 1, -1, 1], [XH, LY, 0, -1, -1, 1]].forEach(function (k) {
+      const o = P2(k[0], k[1], k[2]), px = P2(k[0] + k[3] * Lc, k[1], k[2]), py = P2(k[0], k[1] + k[4] * Lc, k[2]), pz = P2(k[0], k[1], k[2] + k[5] * Lc);
+      if (LD) LD.tube(ctx, function (c) { c.moveTo(px[0], px[1]); c.lineTo(o[0], o[1]); c.lineTo(py[0], py[1]); c.moveTo(o[0], o[1]); c.lineTo(pz[0], pz[1]); }, cap, cw2);
+    });
   }
 
   /** 正面底邊的刻度尺：活塞位置（nm） */
@@ -846,7 +974,19 @@
     ctx.beginPath(); ctx.arc(gx + 1.5, gy + 2.5, R + 1, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = rim;
     ctx.beginPath(); ctx.arc(gx, gy, R, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = colors.dark ? shade(colors['canvas-bg'], 0.06) : '#fdfdfb';
+    // 錶殼的斜面：左上亮、右下暗
+    ctx.lineWidth = 1.2;
+    ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.25 : 0.8);
+    ctx.beginPath(); ctx.arc(gx, gy, R - 0.8, Math.PI * 0.95, Math.PI * 1.75); ctx.stroke();
+    ctx.strokeStyle = alpha('#000000', colors.dark ? 0.4 : 0.18);
+    ctx.beginPath(); ctx.arc(gx, gy, R - 0.8, Math.PI * 1.95, Math.PI * 2.75); ctx.stroke();
+    // 錶面：中間略亮，內緣一圈淡陰影（錶面凹在錶殼裡）
+    const face = colors.dark ? shade(colors['canvas-bg'], 0.06) : '#fdfdfb';
+    const fg = ctx.createRadialGradient(gx - R * 0.2, gy - R * 0.25, R * 0.1, gx, gy, R - 3.5);
+    fg.addColorStop(0, colors.dark ? shade(face, 0.05) : '#ffffff');
+    fg.addColorStop(0.8, face);
+    fg.addColorStop(1, colors.dark ? shade(face, -0.35) : shade(face, -0.08));
+    ctx.fillStyle = fg;
     ctx.beginPath(); ctx.arc(gx, gy, R - 3.5, 0, Math.PI * 2); ctx.fill();
     // 刻度（-225° 到 45°）
     const A0 = Math.PI * 0.75, A1 = Math.PI * 2.25;
@@ -859,7 +999,7 @@
       ctx.moveTo(gx + r0 * Math.cos(a), gy + r0 * Math.sin(a)); ctx.lineTo(gx + r1 * Math.cos(a), gy + r1 * Math.sin(a));
     }
     ctx.stroke();
-    ctx.font = (narrow ? 8 : 9) + 'px system-ui, sans-serif';
+    ctx.font = (narrow ? 9 : 10) + 'px system-ui, sans-serif';
     ctx.fillStyle = colors.muted;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     [0, 0.5, 1].forEach(function (f) {
@@ -871,18 +1011,36 @@
     ctx.strokeStyle = colors.accent;
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(gx, gy, R - 5.5, at - 0.06, at + 0.06); ctx.stroke();
-    // 指針（量到的壓力）
-    if (pGauge != null) {
-      const a = ang(pGauge);
-      ctx.strokeStyle = colors.pos;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(gx - 5 * Math.cos(a), gy - 5 * Math.sin(a)); ctx.lineTo(gx + (R - 8) * Math.cos(a), gy + (R - 8) * Math.sin(a)); ctx.stroke();
-    }
-    ctx.fillStyle = shade(colors.field, colors.dark ? 0.2 : -0.1);
-    ctx.beginPath(); ctx.arc(gx, gy, 3, 0, Math.PI * 2); ctx.fill();
     ctx.font = '600 ' + (narrow ? 8 : 9) + 'px system-ui, sans-serif';
     ctx.fillStyle = colors.muted;
     ctx.fillText('kPa', gx, gy + R * 0.64);
+    // 指針（量到的壓力）：尖細的指針＋淡淡的影子
+    if (pGauge != null) {
+      const a = ang(pGauge), ca = Math.cos(a), sa = Math.sin(a), L = R - 8, tw = 2.2;
+      const needle = function (ox, oy) {
+        ctx.beginPath();
+        ctx.moveTo(gx + ox + L * ca, gy + oy + L * sa);
+        ctx.lineTo(gx + ox - tw * sa, gy + oy + tw * ca);
+        ctx.lineTo(gx + ox - 6 * ca, gy + oy - 6 * sa);
+        ctx.lineTo(gx + ox + tw * sa, gy + oy - tw * ca);
+        ctx.closePath();
+      };
+      ctx.fillStyle = 'rgba(0,0,0,' + (colors.dark ? 0.4 : 0.18) + ')';
+      needle(1, 1.5); ctx.fill();
+      ctx.fillStyle = colors.pos;
+      needle(0, 0); ctx.fill();
+    }
+    if (LD) LD.ball(ctx, gx, gy, 3.4, shade(colors.field, colors.dark ? 0.1 : -0.1), { shadow: false, glow: 0 });
+    else {
+      ctx.fillStyle = shade(colors.field, colors.dark ? 0.2 : -0.1);
+      ctx.beginPath(); ctx.arc(gx, gy, 3, 0, Math.PI * 2); ctx.fill();
+    }
+    // 錶面玻璃的反光
+    const gl = ctx.createLinearGradient(gx - R, gy - R, gx, gy);
+    gl.addColorStop(0, alpha('#ffffff', colors.dark ? 0.12 : 0.55));
+    gl.addColorStop(1, alpha('#ffffff', 0));
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(gx, gy, R - 4, Math.PI * 0.95, Math.PI * 1.6); ctx.quadraticCurveTo(gx - R * 0.1, gy - R * 0.35, gx - (R - 4) * 0.95, gy + (R - 4) * 0.16); ctx.fill();
     ctx.textAlign = 'right';
     pill(ctx, 'P = ' + (pGauge != null ? num(pGauge, pGauge < 10 ? 2 : 1) : '…') + ' kPa', gx - R - 6, gy - (narrow ? 4 : 8), colors.pos, '700 ' + (narrow ? 11 : 13) + 'px system-ui, sans-serif', 0.82);
     if (!narrow) pill(ctx, T('理論 NkT/V = ', 'Theory NkT/V = ') + num(Pth, Pth < 10 ? 2 : 1), gx - R - 6, gy + 14, colors.accent, '600 11px system-ui, sans-serif', 0.75);
@@ -890,6 +1048,10 @@
     // ---- 溫度計：左上角（橫放） ----
     const tx0 = narrow ? 10 : 16, ty = narrow ? 22 : 26, tlen = narrow ? 96 : 140, bulb = narrow ? 6 : 7;
     const Tmax = 1000;
+    // 玻璃管（含底部的球）：淡淡的玻璃底色、細外框
+    ctx.fillStyle = alpha(colors.surface, colors.dark ? 0.16 : 0.6);
+    roundRect(ctx, tx0 + bulb, ty - 5, tlen + 3, 10, 5); ctx.fill();
+    ctx.beginPath(); ctx.arc(tx0 + bulb, ty, bulb + 1.8, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = alpha(colors.text, 0.08);
     roundRect(ctx, tx0 + bulb, ty - 3.5, tlen, 7, 3.5); ctx.fill();
     const tcol = tempColor(Tm);
@@ -898,10 +1060,19 @@
     lg.addColorStop(0, shade(tcol, 0.35)); lg.addColorStop(1, shade(tcol, -0.2));
     ctx.fillStyle = lg;
     roundRect(ctx, tx0 + bulb - 1, ty - 2.2, fillLen + 2, 4.4, 2.2); ctx.fill();
-    const bg2 = ctx.createRadialGradient(tx0 + bulb * 0.7, ty - bulb * 0.35, 0.5, tx0 + bulb, ty, bulb);
-    bg2.addColorStop(0, shade(tcol, 0.55)); bg2.addColorStop(1, shade(tcol, -0.3));
-    ctx.fillStyle = bg2;
-    ctx.beginPath(); ctx.arc(tx0 + bulb, ty, bulb, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = alpha(colors.muted, colors.dark ? 0.55 : 0.45);
+    ctx.lineWidth = 1;
+    roundRect(ctx, tx0 + bulb + 0.5, ty - 4.5, tlen + 2, 9, 4.5); ctx.stroke();
+    ctx.strokeStyle = alpha('#ffffff', colors.dark ? 0.2 : 0.8);
+    ctx.beginPath(); ctx.moveTo(tx0 + bulb + 4, ty - 3.2); ctx.lineTo(tx0 + bulb + tlen - 2, ty - 3.2); ctx.stroke();
+    // 球的顏色取 20 K 一階（LD.ball 依顏色快取小圖，避免每幀產生新圖）
+    if (LD) LD.ball(ctx, tx0 + bulb, ty, bulb, tempColor(Math.round(Tm / 20) * 20), { shadow: false, glow: 0, ring: alpha(colors.muted, 0.6) });
+    else {
+      const bg2 = ctx.createRadialGradient(tx0 + bulb * 0.7, ty - bulb * 0.35, 0.5, tx0 + bulb, ty, bulb);
+      bg2.addColorStop(0, shade(tcol, 0.55)); bg2.addColorStop(1, shade(tcol, -0.3));
+      ctx.fillStyle = bg2;
+      ctx.beginPath(); ctx.arc(tx0 + bulb, ty, bulb, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.strokeStyle = alpha(colors.text, 0.35);
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -994,6 +1165,10 @@
     c.fillStyle = g;
     roundRect(c, 0, 0, w, h, 8);
     c.fill();
+    c.strokeStyle = alpha(colors.text, colors.dark ? 0.08 : 0.06);
+    c.lineWidth = 1;
+    roundRect(c, 0.5, 0.5, w - 1, h - 1, 8);
+    c.stroke();
   }
 
   let histYmax = 0, histVax = 0;
@@ -1042,6 +1217,18 @@
     for (let v = step; v < histVax + 1e-6; v += step) { const x = Math.round(xOf(v / 1000)) + 0.5; c.moveTo(x, Y1 - 6); c.lineTo(x, Y0); }
     for (let k = 1; k <= 3; k++) { const y = Math.round(Y0 - (Y0 - Y1) * k / 4) + 0.5; c.moveTo(X0, y); c.lineTo(X1, y); }
     c.stroke();
+    // 馬克士威曲線下的淡色面積（畫在長條後面，長條沒填滿的地方看得到）
+    for (let k = 0; k < nsp; k++) {
+      if (!isFinite(Ts[k])) continue;
+      const m = speciesOf(k).m, col = spColor(k);
+      const ag = c.createLinearGradient(0, Y1, 0, Y0);
+      ag.addColorStop(0, alpha(col, colors.dark ? 0.16 : 0.12));
+      ag.addColorStop(1, alpha(col, 0.02));
+      c.fillStyle = ag;
+      c.beginPath(); c.moveTo(X0, Y0);
+      for (let q = 0; q <= 120; q++) { const v = vax * q / 120; c.lineTo(xOf(v), yOf(G.maxwell(v, Ts[k], m))); }
+      c.lineTo(X1, Y0); c.closePath(); c.fill();
+    }
     // 長條
     for (let k = nsp - 1; k >= 0; k--) {
       const col = spColor(k), d = dens[k];
@@ -1057,6 +1244,10 @@
         c.fill();
         c.fillStyle = alpha(shade(col, colors.dark ? 0.45 : -0.15), 0.9);
         c.fillRect(xa, y, xb - xa, 1);
+        if (xb - xa > 4 && Y0 - y > 3) {
+          c.fillStyle = alpha('#ffffff', colors.dark ? 0.1 : 0.35);
+          c.fillRect(xa, y + 1, 1, Y0 - y - 1);
+        }
       }
     }
     // 馬克士威曲線（兩層線條）
@@ -1065,6 +1256,9 @@
       const m = speciesOf(k).m, col = spColor(k), list = [];
       for (let q = 0; q <= 120; q++) { const v = vax * q / 120; list.push([xOf(v), yOf(G.maxwell(v, Ts[k], m))]); }
       c.lineCap = 'round'; c.lineJoin = 'round';
+      c.strokeStyle = alpha(col, colors.dark ? 0.22 : 0.16);
+      c.lineWidth = 7;
+      c.beginPath(); list.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
       c.strokeStyle = shade(col, colors.dark ? 0.3 : -0.35);
       c.lineWidth = 2.6;
       c.beginPath(); list.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.stroke();
@@ -1123,12 +1317,12 @@
       c.beginPath(); c.moveTo(x, Y0 + 3); c.lineTo(x, Y0 + 9); c.stroke();
     }
     const axTitle = T('速率 v (m/s)', 'speed v (m/s)');
-    c.font = '600 ' + (small ? 10 : 11) + 'px system-ui, sans-serif';
+    c.font = '600 11px system-ui, sans-serif';
     const titleW = c.measureText(axTitle).width;
     c.fillStyle = colors.muted;
     c.textAlign = 'right'; c.textBaseline = 'top';
     c.fillText(axTitle, X1, Y0 + 12);
-    c.font = (small ? 10 : 11) + 'px system-ui, sans-serif';
+    c.font = '11px system-ui, sans-serif';
     c.textAlign = 'center';
     for (let v = 0; v < histVax + 1e-6; v += step) {
       const x = Math.max(X0 + 6, xOf(v / 1000)), lw = c.measureText(num(v, 0)).width;
@@ -1142,8 +1336,8 @@
       const sp = speciesOf(k);
       const txt = T(sp.zh, sp.id) + ' ' + (isFinite(Ts[k]) ? num(Ts[k], 0) + ' K' : '');
       const r = pill(c, txt, rx, 13, shade(spColor(k), colors.dark ? 0.3 : -0.3), '700 ' + (small ? 11 : 12) + 'px system-ui, sans-serif', 0.85);
-      c.fillStyle = spColor(k);
-      c.beginPath(); c.arc(r.x - 4, 13, 4, 0, Math.PI * 2); c.fill();
+      if (LD) LD.ball(c, r.x - 4, 13, 4.2, spColor(k), { shadow: false, glow: 0 });
+      else { c.fillStyle = spColor(k); c.beginPath(); c.arc(r.x - 4, 13, 4, 0, Math.PI * 2); c.fill(); }
       rx = r.x - 16;
     }
   }
@@ -1215,7 +1409,7 @@
     c.beginPath();
     c.moveTo(X0 + 0.5, Y1 - 4); c.lineTo(X0 + 0.5, Math.round(Y0) + 0.5); c.lineTo(X1 + 4, Math.round(Y0) + 0.5);
     c.stroke();
-    c.font = (small ? 10 : 11) + 'px system-ui, sans-serif';
+    c.font = '11px system-ui, sans-serif';
     c.fillStyle = colors.muted;
     c.textAlign = 'center'; c.textBaseline = 'top';
     const dx = Math.abs(sx % 1) > 1e-9 ? 1 : 0, dy = sy < 0.1 ? 2 : Math.abs(sy % 1) > 1e-9 ? 1 : 0;
@@ -1225,11 +1419,11 @@
     // 軸名
     const xName = g === 'PV' ? 'V (10³ nm³)' : 'T (K)';
     const yName = g === 'VT' ? 'V (10³ nm³)' : 'P (kPa)';
-    c.font = '600 ' + (small ? 10 : 11) + 'px system-ui, sans-serif';
+    c.font = '600 11px system-ui, sans-serif';
     c.textAlign = 'right'; c.textBaseline = 'top';
     c.fillText(xName, X1, Y0 + 18);
     c.textAlign = 'left'; c.textBaseline = 'middle';
-    pill(c, yName, X0 + 6, Y1 + 8, colors.muted, '600 ' + (small ? 10 : 11) + 'px system-ui, sans-serif', 0.8);
+    pill(c, yName, X0 + 6, Y1 + 8, colors.muted, '600 11px system-ui, sans-serif', 0.8);
 
     // 理論曲線
     const Nn = gas.n;
@@ -1285,22 +1479,25 @@
     const cx = xOf(xv(cur)), cy = yOf(yv(cur));
     if (cx >= X0 - 4 && cx <= X1 + 4 && cy >= Y1 - 4 && cy <= Y0 + 4) {
       const col = colors[MODE_COLOR[state.mode]];
-      c.fillStyle = alpha(col, 0.22);
-      c.beginPath(); c.arc(cx, cy, 8, 0, Math.PI * 2); c.fill();
-      const gg = c.createRadialGradient(cx - 1.6, cy - 1.6, 0.4, cx, cy, 5);
-      gg.addColorStop(0, shade(col, 0.6)); gg.addColorStop(1, shade(col, -0.3));
-      c.fillStyle = gg;
-      c.beginPath(); c.arc(cx, cy, 5, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = colors['canvas-bg'];
-      c.lineWidth = 1.2;
-      c.stroke();
+      c.fillStyle = alpha(col, 0.18);
+      c.beginPath(); c.arc(cx, cy, 9, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = alpha(col, 0.5);
+      c.lineWidth = 1;
+      c.beginPath(); c.arc(cx, cy, 9, 0, Math.PI * 2); c.stroke();
+      if (LD) LD.ball(c, cx, cy, 5, col, { glow: 0, ring: colors['canvas-bg'] });
+      else {
+        const gg = c.createRadialGradient(cx - 1.6, cy - 1.6, 0.4, cx, cy, 5);
+        gg.addColorStop(0, shade(col, 0.6)); gg.addColorStop(1, shade(col, -0.3));
+        c.fillStyle = gg;
+        c.beginPath(); c.arc(cx, cy, 5, 0, Math.PI * 2); c.fill();
+      }
     }
     // 曲線名稱
     c.textAlign = 'right';
-    const lf = '600 ' + (small ? 10 : 11) + 'px system-ui, sans-serif';
+    const lf = '600 11px system-ui, sans-serif';
     if (g === 'PV') {
       if (bathOn()) pill(c, T('等溫線 ', 'Isotherm ') + num(state.Tset, 0) + ' K', X1 - 2, Y1 + 8, colors.accent, lf, 0.8);
-      else if (state.adStart) pillSup(c, [T('絕熱線 PV', 'Adiabat PV'), '5/3', T(' ＝ 常數', ' = const')], X1 - 2, Y1 + 8, colors['b-thermo'], small ? 10 : 11, 0.8);
+      else if (state.adStart) pillSup(c, [T('絕熱線 PV', 'Adiabat PV'), '5/3', T(' ＝ 常數', ' = const')], X1 - 2, Y1 + 8, colors['b-thermo'], 11, 0.8);
     } else if (g === 'PT') pill(c, 'P = NkT/V', X1 - 2, Y1 + 8, colors['b-optics'], lf, 0.8);
     else pill(c, 'V = NkT/P', X1 - 2, Y1 + 8, colors.equi, lf, 0.8);
   }
@@ -1446,6 +1643,7 @@
     }
     lastShort = meterShort.stats(40);
     if (meterLong.blocks.length) lastLong = meterLong.stats(1500);
+    if (wantReport && !state.moving && lastLong && lastLong.t >= 80) { wantReport = false; reportMeasure(); }
     // 活塞撞擊：音效與閃光
     const hits = gas.pistonHits;
     if (hits.length) {
@@ -1527,6 +1725,62 @@
 
   // ======================= 介面 =======================
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：畫布與圖表的文字描述、量測結果播報 ----------
+  const MODE_NAME = { isothermal: ['等溫', 'isothermal'], isochoric: ['等容', 'isochoric'], isobaric: ['等壓', 'isobaric'], adiabatic: ['絕熱', 'adiabatic'] };
+  function modeName() { return T(MODE_NAME[state.mode][0], MODE_NAME[state.mode][1]); }
+  function gasName() {
+    const a = speciesOf(0), b = speciesOf(1);
+    if (!state.mix) return T(a.zh, a.en.toLowerCase());
+    return T(a.zh + '與' + b.zh + '混合', a.en.toLowerCase() + ' and ' + b.en.toLowerCase());
+  }
+  function canDragPiston() { return state.mode === 'isothermal' || state.mode === 'adiabatic'; }
+  /** 畫布的 aria-label（只在離散事件時更新：換過程、換氣體、量測完成、換語言） */
+  function describeCanvas() {
+    if (!gas) return;
+    const s = lastLong && lastLong.t >= 40 ? lastLong : null;
+    const hint = canDragPiston()
+      ? T('按 Tab 選到畫布後，用左右方向鍵移動活塞改變體積，Shift 加方向鍵移動較多。', 'Focus the canvas and use the left and right arrow keys to move the piston and change the volume; hold Shift for bigger steps.')
+      : state.mode === 'isochoric' ? T('等容過程：活塞固定。', 'Isochoric process: the piston is locked.') : T('等壓過程：活塞自動移動、維持壓力。', 'Isobaric process: the piston moves by itself to hold the pressure.');
+    cv.setAttribute('aria-label', T('理想氣體模擬畫布（', 'Ideal gas simulation canvas (') + modeName() + T('過程）：', ' process): ')
+      + gas.n + T(' 個原子（' + gasName() + '）在立體玻璃容器中，右側是活塞；', ' atoms (' + gasName() + ') in a 3D glass container with a piston on the right; ')
+      + T('體積 ', 'volume ') + num(Vnow(), 0) + T(' 立方奈米、溫度 ', ' cubic nanometres, temperature ') + num(s ? s.T : Tref(), 0) + ' K'
+      + (s ? T('、量到的壓力 ', ', measured pressure ') + num(kPa(s.P), kPa(s.P) < 10 ? 2 : 1) + ' kPa' : '') + T('。', '. ') + hint);
+  }
+  /** 兩張圖表的 aria-label（role="img"） */
+  function describeCharts() {
+    if (!gas) return;
+    const nsp = state.mix ? 2 : 1;
+    let h = T('分子速率分布直方圖與馬克士威曲線', 'Histogram of molecular speeds with the Maxwell curve');
+    const parts = [];
+    for (let k = 0; k < nsp; k++) {
+      const Tk = histT(k), sp = speciesOf(k);
+      if (!isFinite(Tk)) continue;
+      parts.push(T(sp.zh, sp.en) + ' ' + num(Tk, 0) + ' K' + T('：最可能速率 ', ': most probable speed ') + num(G.toSI.speed(G.vprob(Tk, sp.m)), 0)
+        + T(' m/s、方均根速率 ', ' m/s, rms speed ') + num(G.toSI.speed(G.vrms(Tk, sp.m)), 0) + ' m/s');
+    }
+    if (parts.length) h += T('。', '. ') + parts.join(T('；', '; ')) + T('。', '.');
+    hc.setAttribute('aria-label', h);
+    const gname = { PV: 'P–V', PT: 'P–T', VT: 'V–T' }[state.graph];
+    const s = lastShort && lastShort.t > 8 ? lastShort : null;
+    let pv = T('過程圖（', 'Process graph (') + gname + T('）：已記錄 ', '): ') + pts.length + T(' 個量測點', ' measured points');
+    if (s) pv += T('；目前 V = ', '; now V = ') + num(s.V, 0) + T(' 立方奈米、P = ', ' cubic nanometres, P = ') + num(kPa(s.P), kPa(s.P) < 10 ? 2 : 1) + ' kPa' + T('、T = ', ', T = ') + num(s.T, 0) + ' K';
+    pv += T('。虛線是理論曲線', '. The dashed line is the theory curve') + (state.graph === 'PV' ? (bathOn() ? T('（等溫線 ', ' (isotherm at ') + num(state.Tset, 0) + ' K' + T('）', ')') : state.adStart ? T('（絕熱線）', ' (adiabat)') : '') : state.graph === 'PT' ? ' (P = NkT/V)' : ' (V = NkT/P)') + T('。', '.');
+    pc.setAttribute('aria-label', pv);
+  }
+  /** 使用者改了設定之後，等氣體穩定、長時間平均夠久，就把量測結果寫進 #status（aria-live）一次 */
+  let wantReport = false;
+  function reportLater() { wantReport = true; }
+  function reportMeasure() {
+    const s = lastLong;
+    const P = kPa(s.P), Pe = kPa(s.Perr), Pth = kPa(G.idealP(s.N, s.T, s.V));
+    const d = P < 10 ? 3 : 1;
+    setStatus(T('量測結果（', 'Measured (') + modeName() + T('）：V = ', '): V = ') + num(s.V, 0) + T(' 立方奈米、T = ', ' cubic nanometres, T = ') + num(s.T, 1)
+      + T(' K，壓力 P = ', ' K, pressure P = ') + num(P, d) + (isFinite(Pe) ? ' ± ' + num(Pe, Pe < 0.1 ? 3 : Pe < 1 ? 2 : 1) : '') + ' kPa'
+      + T('；理想氣體 NkT/V = ', '; ideal gas NkT/V = ') + num(Pth, d) + T(' kPa，相差 ', ' kPa, a difference of ') + num((P - Pth) / Pth * 100, 1) + T('%。', '%.'));
+    describeCanvas();
+    describeCharts();
+  }
   function updateButtons() {
     $('play').textContent = state.running ? T('暫停', 'Pause') : T('播放', 'Play');
     MODES.forEach(function (m) { $(MODE_BTN[m]).setAttribute('aria-pressed', String(m === state.mode)); });
@@ -1618,6 +1872,10 @@
     else state.adStart = null;
     markChange();
     updateModeUI();
+    setStatus(T('已切換到' + MODE_NAME[m][0] + '過程。', 'Switched to the ' + MODE_NAME[m][1] + ' process.'));
+    reportLater();
+    describeCanvas();
+    describeCharts();
     requestDraw();
   }
   /** 進入絕熱過程時的狀態：沒有熱交換時總動能守恆，所以用此刻的動能求 T（精確） */
@@ -1664,6 +1922,9 @@
     newGas(bathOn() ? state.Tset : Tgas(), 'maxwell');
     if (state.mode === 'adiabatic') recordAdStart();
     setStatus(T('已在目前的溫度下重新放入氣體。', 'The gas has been refilled at the current temperature.'));
+    reportLater();
+    describeCanvas();
+    describeCharts();
     requestDraw();
   }
 
@@ -1693,6 +1954,7 @@
     state.tChanges++;
     if (state.mode !== 'isobaric') gas.bath.T = state.Tset;
     markChange();
+    reportLater();
     requestDraw();
   });
   elV.addEventListener('input', function (ev) {
@@ -1701,6 +1963,7 @@
     if (state.mode === 'isochoric' || state.mode === 'isobaric') return;
     interacted(ev);
     gas.piston.target = val(elV) / AREA;
+    reportLater();
     if (!state.running) setStatus(T('按「播放」讓活塞移動。', 'Press Play to move the piston.'));
   });
   elP.addEventListener('input', function (ev) {
@@ -1710,6 +1973,7 @@
     state.Pset = pVal();
     gas.piston.Pset = fromKPa(state.Pset);
     markChange();
+    reportLater();
   });
   elN.addEventListener('input', function (ev) {
     refreshOutputs();
@@ -1724,6 +1988,8 @@
     meterShort.reset(); lastShort = null;
     markChange();
     if (state.mode === 'adiabatic') recordAdStart();
+    reportLater();
+    describeCanvas();
     requestDraw();
   });
   elF.addEventListener('input', function (ev) {
@@ -1759,6 +2025,7 @@
       ? T('所有分子現在速率相同。恆溫壁會很快把它們變回馬克士威分布；選「絕熱」可以看只靠分子碰撞的過程。', 'All molecules now have the same speed. The heat-bath walls will soon restore the Maxwell distribution; choose “Adiabatic” to see collisions alone do it.')
       : T('所有分子現在速率相同（總能量不變）。觀察碰撞如何讓速率分布變成馬克士威分布。', 'All molecules now have the same speed (same total energy). Watch collisions spread the speeds into the Maxwell distribution.'));
     if (!state.running) { state.running = true; updateButtons(); startLoop(); }
+    describeCharts();
     requestDraw();
   });
 
@@ -1770,7 +2037,7 @@
     $('sp' + k).addEventListener('click', function () { state.speed = k; updateButtons(); requestDraw(); });
   });
   ['PV', 'PT', 'VT'].forEach(function (k) {
-    $('g' + k).addEventListener('click', function () { state.graph = k; updateButtons(); requestDraw(); });
+    $('g' + k).addEventListener('click', function () { state.graph = k; updateButtons(); describeCharts(); requestDraw(); });
   });
   $('play').addEventListener('click', function () {
     state.running = !state.running;
@@ -1790,6 +2057,7 @@
     if (gas.track >= 0) gas.trackPts.length = 0;
     if (state.mode === 'adiabatic') recordAdStart();
     setStatus(T('已全部清除；氣體與滑桿設定不變。', 'Everything is cleared; the gas and the slider settings are kept.'));
+    describeCharts();
     requestDraw();
   });
   $('showImp').addEventListener('change', function (ev) { state.show.impacts = ev.target.checked; impacts = []; requestDraw(); });
@@ -1879,6 +2147,7 @@
     syncing = false;
     refreshOutputs();
     gas.piston.target = val(elV) / AREA;
+    reportLater();
   }
   let grabOff = 0;
   cv.addEventListener('pointerdown', function (ev) {
@@ -2026,8 +2295,70 @@
   gas.piston.target = val(elV) / AREA;
   gas.Lx = gas.piston.target;
   updateModeUI();
+
+  // ---------- 鍵盤操作：方向鍵移動活塞（與拖曳把手相同：同樣的範圍、同樣以有限速率移過去、同樣的任務事件） ----------
+  const KEY_STEP = 200, KEY_BIG = 1000;   // 立方奈米：一般 0.5 nm、Shift 2.5 nm 的活塞位移
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('理想氣體模擬畫布', 'Ideal gas simulation canvas'),
+      items: [{
+        name: function () { return T('活塞', 'Piston'); },
+        move: function (dx, dy, big) {
+          const dir = dx || dy;
+          if (!dir) return false;
+          if (pistonLocked()) return false;     // 等容、等壓：在狀態列說明原因
+          beginPistonDrag();
+          dragPistonTo((val(elV) + dir * (big ? KEY_BIG : KEY_STEP)) / AREA);
+          requestDraw();
+          return true;
+        },
+        describe: function () {
+          const V = val(elV);
+          const edge = V <= 4000 ? T('（已到最小體積）', ' (smallest volume)') : V >= 12000 ? T('（已到最大體積）', ' (largest volume)') : '';
+          return T('活塞：目標體積 ', 'Piston: target volume ') + num(V, 0) + T(' 立方奈米', ' cubic nanometres') + edge
+            + T('，活塞位置 ', ', piston position ') + num(V / AREA, 1) + ' nm' + T('。壓力穩定後會在狀態列報告。', '. The pressure is reported once it settles.');
+        }
+      }],
+      onChange: requestDraw
+    });
+  }
+
+  // ---------- 分享連結：活塞位置與絕熱時的氣體溫度 ----------
+  // classroom.js 已記錄滑桿與按鈕；但等容、等壓時「體積」滑桿不能用，絕熱時「溫度」滑桿不能用，
+  // 所以另外記下體積與溫度，還原時直接在那個體積與溫度重新放入氣體。
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () {
+      return { V: Math.round(canDragPiston() ? val(elV) : Vnow()), T: Math.round(Tgas() * 10) / 10 };
+    },
+    set: function (o) {
+      if (!o || typeof o !== 'object' || !gas) return;
+      const V = +o.V, Tk = +o.T;
+      const Vt = isFinite(V) ? Math.max(4000, Math.min(12000, V)) : null;
+      const Tt = state.mode === 'adiabatic' && isFinite(Tk) ? Math.max(50, Math.min(1000, Tk)) : null;
+      if (Vt == null && Tt == null) return;
+      if (Vt != null) { gas.Lx = Vt / AREA; gas.piston.target = gas.Lx; }
+      newGas(Tt != null ? Tt : (bathOn() ? state.Tset : Tgas()), 'maxwell');
+      gas.piston.target = gas.Lx;
+      if (Tt != null) {
+        // 絕熱沒有恆溫槽：把抽樣出來的速度等比例縮放，讓總動能恰好對應分享時的溫度
+        const f = Math.sqrt(Tt / Math.max(1e-9, G.temperature(gas)));
+        for (let i = 0; i < gas.n; i++) { gas.vx[i] *= f; gas.vy[i] *= f; gas.vz[i] *= f; }
+        resetEnergy();
+      }
+      if (Vt != null) setSlider(elV, Vt);
+      if (state.mode === 'adiabatic') { recordAdStart(); setSlider(elT, Math.round(G.temperature(gas) * 10) / 10); }
+      pts = []; histYmax = 0;
+      describeCanvas(); describeCharts();
+      requestDraw();
+    }
+  });
+  describeCanvas();
+  describeCharts();
+
   function themeChanged() {
+    if (LD) LD.refresh();
     readColors(); buildSprites(); if (BOX) buildBackground();
+    describeCanvas(); describeCharts();
     if (view3 && view3.active) view3.onTheme();
     requestDraw();
   }
