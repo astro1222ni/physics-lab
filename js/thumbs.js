@@ -48,7 +48,8 @@
     "torque-balance": "857c6b3d",
     "energy-coaster": "47981b92",
     "seasons": "d9138d00",
-    "current-magnetic-field": "fb726177"
+    "current-magnetic-field": "fb726177",
+    "acid-base-titration": "be286dd9"
   };
   /* VERSIONS-END */
 

@@ -2,7 +2,7 @@
 /*
  * build-catalog.cjs — 從首頁 index.html 產生全站實驗目錄 js/catalog.js（npm run seo 會一起跑）
  *
- * 每個已上線的實驗：代號、中英標題、中英說明、科目（physics／earth）、分支、章、最後更新日期 u（git）。
+ * 每個已上線的實驗：代號、中英標題、中英說明、科目（首頁 domain 區塊的 id：physics／chemistry／earth…）、分支、章、最後更新日期 u（git）。
  * js/classroom.js 用它在每個實驗頁底部列出「相關實驗」（同章 → 同分支 → 首頁上前後相鄰的實驗）。
  */
 'use strict';
@@ -13,7 +13,9 @@ const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
 const unesc = s => s.replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 const strip = s => unesc(s.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
-const earthAt = html.indexOf('<section class="domain" id="earth"');
+// 科目區塊（物理、化學、地球科學…）的位置：卡片屬於它前面最近的一個區塊
+const domains = [...html.matchAll(/<section class="domain" id="([^"]+)"/g)].map(m => ({ at: m.index, id: m[1] }));
+const domainAt = at => { let d = 'physics'; domains.forEach(x => { if (x.at < at) d = x.id; }); return d; };
 
 // 依序找出分支、章、卡片的位置
 const marks = [];
@@ -41,7 +43,7 @@ for (const k of marks) {
   else if (!list.some(x => x.s === k.slug)) {
     list.push({
       s: k.slug, zh: k.zh, en: k.en, dzh: k.dzh, den: k.den,
-      d: earthAt > 0 && k.at > earthAt ? 'earth' : 'physics',
+      d: domainAt(k.at),
       b: branch ? branch.id : '', bzh: branch ? branch.zh : '', ben: branch ? branch.en : '',
       c: chapter ? chapter.id : '', czh: chapter ? chapter.zh : '', cen: chapter ? chapter.en : ''
     });

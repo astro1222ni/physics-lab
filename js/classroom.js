@@ -493,7 +493,7 @@
       img.alt = ''; img.width = 720; img.height = 405; img.loading = 'lazy'; img.decoding = 'async';
       const tag = document.createElement('span');
       tag.className = 'related-tag';
-      tag.textContent = (x.d === 'earth' ? T('地球科學・', 'Earth Science · ') : '') + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
+      tag.textContent = (x.d === 'earth' ? T('地球科學・', 'Earth Science · ') : x.d === 'chemistry' ? T('化學・', 'Chemistry · ') : '') + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
       const t = document.createElement('h3');
       t.textContent = T(x.zh, x.en || x.zh);
       const p = document.createElement('p');

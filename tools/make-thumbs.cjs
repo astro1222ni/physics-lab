@@ -72,7 +72,9 @@ const PREP = {
   'seasons':           { eval: "__seasons.setClock(10.5); document.getElementById('clock').dispatchEvent(new Event('input'));", wait: 1500, region: [0.522, 0.008, 0.478] }, // 只取右半「觀察者的天空」
   'current-magnetic-field': { eval: "LabNum.set(document.getElementById('I'), 3); __cmf.needle.phi = __cmf.ofield().thetaEq * Math.PI / 180;", wait: 1500 },
   'energy-coaster':    { click: ['#presetBox button[data-preset="loop"]'], wait: 2500, anchorX: 1 },
-  'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 }
+  'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 },
+  // 0.100 M 鹽酸 25.00 mL 加到 25.05 mL（超過當量點一滴）：酚酞剛變粉紅，放大鏡讀數 25.05 mL
+  'acid-base-titration': { eval: '__abt.jump(25.05);', wait: 1200, anchor: 0.55 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

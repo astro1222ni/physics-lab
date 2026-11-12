@@ -1174,3 +1174,20 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 .lb-subj-head small { margin-left: auto; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .lb-myrank-subj { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .lb-myrank-subj .dl-chip { border-color: var(--sc); }
+
+/* ---------- 化學：五個分支的顏色與首頁版面（11/12 加入化學科，第一個實驗：酸鹼滴定） ---------- */
+:root {
+  --b-matter: #7e22ce; --b-reaction: #b45309; --b-equilibrium: #047857; --b-acidbase: #be185d; --b-organic: #4d7c0f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --b-matter: #d8b4fe; --b-reaction: #fcd34d; --b-equilibrium: #6ee7b7; --b-acidbase: #f9a8d4; --b-organic: #bef264;
+  }
+}
+:root[data-theme="dark"] {
+  --b-matter: #d8b4fe; --b-reaction: #fcd34d; --b-equilibrium: #6ee7b7; --b-acidbase: #f9a8d4; --b-organic: #bef264;
+}
+@media (min-width: 880px) { html:not([lang="en"]) .branch-nav.five, html[lang="en"] .branch-nav.five { grid-template-columns: repeat(5, 1fr); } }
+/* 首頁三個科目卡片：平板兩欄（QR code 跟地球科學同一列），桌機三欄＋QR code */
+@media (min-width: 561px) and (max-width: 899px) { .domain-nav .site-qr { grid-column: auto; } }
+@media (min-width: 900px) { .domain-nav { grid-template-columns: 1fr 1fr 1fr auto; } }
