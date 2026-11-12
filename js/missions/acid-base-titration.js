@@ -40,7 +40,7 @@
     {
       id: 'acid-base-titration-4', level: 4,
       title: { zh: '停在半當量點', en: 'Stop at half-equivalence' },
-      desc: { zh: '醋酸＋NaOH：剛好加入當量點一半的體積（±0.05 mL），看 pH 計：這時 pH 等於醋酸的 pKa。', en: 'Acetic acid + NaOH: add exactly half of the equivalence volume (±0.05 mL) and look at the pH meter — now pH equals the pKa of acetic acid.' },
+      desc: { zh: '醋酸＋NaOH：剛好加入當量點一半的體積（±0.05 mL），看 pH 計：這時 pH 約等於醋酸的 pKa。', en: 'Acetic acid + NaOH: add exactly half of the equivalence volume (±0.05 mL) and look at the pH meter — now the pH is close to the pKa of acetic acid.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'wa' && d.meter && Math.abs(d.V - d.Veq / 2) <= 0.05 + E; }
     },
     {
@@ -52,7 +52,7 @@
     {
       id: 'acid-base-titration-6', level: 5,
       title: { zh: '強酸與弱酸的兩條曲線', en: 'Strong and weak, side by side' },
-      desc: { zh: '濃度、體積都相同的鹽酸和醋酸各滴定一次，都加到當量點體積的 1.5 倍以上，讓兩條滴定曲線同時留在圖上比較。', en: 'Titrate hydrochloric acid and acetic acid of the same concentration and volume, each to at least 1.5 times the equivalence volume, so both curves stay on the graph together.' },
+      desc: { zh: '鹽酸和醋酸各滴定一次（待測液的濃度與體積、另加的水、NaOH 的濃度都相同），都加到當量點體積的 1.5 倍以上，讓兩條滴定曲線同時留在圖上比較。', en: 'Titrate hydrochloric acid and acetic acid once each (same sample concentration and volume, same added water, same NaOH concentration), each to at least 1.5 times the equivalence volume, so both curves stay on the graph together.' },
       check: function (ev) {
         const d = ev.data;
         if (!isS(ev) || !d.curves) return false;

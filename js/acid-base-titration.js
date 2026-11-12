@@ -68,13 +68,15 @@
   function colourName(ind, fb) {
     const I = K.INDICATORS[ind];
     if (!I) return T('無色', 'colourless');
+    // 顏色名稱的分界跟著課本的變色範圍 lo–hi 走（換算成鹼型比例）
+    const fLo = K.indicatorFraction(ind, I.lo), fHi = K.indicatorFraction(ind, I.hi);
     if (ind === 'php') {
-      if (fb < 0.05) return T('無色', 'colourless');
+      if (fb < fLo) return T('無色', 'colourless');
       if (fb < 0.5) return T('淡粉紅', 'pale pink');
       return T('粉紅', 'pink');
     }
-    if (fb < 0.1) return T(I.acidName[0], I.acidName[1]);
-    if (fb > 0.9) return T(I.baseName[0], I.baseName[1]);
+    if (fb < fLo) return T(I.acidName[0], I.acidName[1]);
+    if (fb > fHi) return T(I.baseName[0], I.baseName[1]);
     const mid = { mo: ['橙', 'orange'], mr: ['橙', 'orange'], btb: ['綠', 'green'] }[ind];
     return T(mid[0], mid[1]);
   }
@@ -817,24 +819,29 @@
   }
 
   // ======================= 動畫與液滴 =======================
-  let raf = 0, lastT = 0, lastGraph = 0, onScreen = true, skip = false;
+  let raf = 0, lastT = 0, lastGraph = 0, onScreen = true, skip = false, inFrame = false;
   function busy() {
     return state.tap || state.pendingSettle || state.drops.length > 0 || state.plumes.length > 0 || state.ripples.length > 0 ||
       state.flash > 0 || (state.tag && state.tag.t > 0) || Math.abs(state.cock - (state.tap ? 1 : 0)) > 1e-3;
   }
   function frame(now) {
     raf = 0;
-    const dt = Math.min(1 / 30, Math.max(0, (now - lastT) / 1000));
+    // 畫面動畫的 dt 有上限（切回分頁時不會一次跳太多）；活栓的流量用真實經過的時間（最多 0.25 s），標示的 mL/s 才名實相符
+    const raw = Math.max(0, (now - lastT) / 1000);
     lastT = now;
-    step(dt);
+    inFrame = true;
+    try { step(Math.min(1 / 30, raw), Math.min(0.25, raw)); } finally { inFrame = false; }
     const b = busy();
     // 只有攪拌子在轉時，約 30 fps 就夠了；畫布捲出畫面時不畫，但活栓開著、液滴還在空中就照樣流（曲線與讀數繼續更新）
     if (onScreen && (b || !skip || reduced)) drawBench();
     skip = !skip;
     if (graphDirty && now - lastGraph > 120) { lastGraph = now; drawGraph(); renderReadouts(); }
-    if (!document.hidden && (onScreen ? (b || !reduced) : b)) raf = requestAnimationFrame(frame);
+    if (!raf && !document.hidden && (onScreen ? (b || !reduced) : b)) raf = requestAnimationFrame(frame);
   }
   function kick() {
+    // frame() 執行中（例如活栓放出一滴）不另開一條動畫迴圈：frame 結束時自己會排下一幀。
+    // 以前這裡會在 raf 剛歸零時再排一次，每放一滴就多一條迴圈，滴越多越卡（11/12 修正）。
+    if (inFrame) return;
     if (raf || document.hidden) { if (!raf) drawBench(); return; }
     if (!onScreen && !busy()) { drawBench(); return; }
     lastT = performance.now();
@@ -845,13 +852,14 @@
     new IntersectionObserver(function (es) { onScreen = es[es.length - 1].isIntersecting; if (onScreen) kick(); }).observe(cv);
   }
 
-  function step(dt) {
+  function step(dt, flowDt) {
+    if (flowDt == null) flowDt = dt;
     if (!reduced) state.stir = (state.stir + STIR_W * dt) % (Math.PI * 200);
     const target = state.tap ? 1 : 0;
     state.cock += Math.sign(target - state.cock) * Math.min(Math.abs(target - state.cock), dt / 0.15);
     // 活栓開著：依流速累積，每 2 單位（0.05 mL）成一滴
     if (state.tap) {
-      state.acc += state.rate * U * dt;
+      state.acc += state.rate * U * flowDt;
       while (state.acc >= DROP && state.tap) {
         state.acc -= DROP;
         release(DROP, false);
@@ -923,7 +931,7 @@
         if (state.plumes.length > 8) state.plumes.shift();
       }
       // 滴落處出現顏色、攪勻後又消失：快到終點了
-      if (!r.hinted && r.changedAt == null && Math.abs(fbLoc - K.indicatorFraction(state.ind, r.pH0)) > 0.35 && Math.abs(fbBulk - K.indicatorFraction(state.ind, r.pH0)) < K.CHANGE) {
+      if (!r.hinted && r.changedAt == null && Math.abs(fbLoc - K.indicatorFraction(state.ind, r.pH0)) > 0.35 && !K.changed(state.ind, r.pH0, r.pH)) {
         r.hinted = true;
         setStatus(T('滴落的地方出現了顏色，攪勻後又消失：快到終點了，改成一滴一滴加。', 'Colour appears where the drop lands and fades as it mixes in: the end point is close — go drop by drop.'));
       }
@@ -1117,7 +1125,8 @@
         g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
         g.beginPath(); g.moveTo(x0, py); g.lineTo(px, py); g.lineTo(px, y1); g.stroke(); g.restore();
         LD.ball(g, px, py, 4, C.sys[p.sys], { shadow: false });
-        const lab = p.sys === 'wb' ? T('半當量點 pH ' + f2(ph) + '（= 14 − pKb）', 'half-equivalence pH ' + f2(ph) + ' (= 14 − pKb)') : T('半當量點 pH = pKa = ' + f2(ph), 'half-equivalence: pH = pKa = ' + f2(ph));
+        const pk = halfRef(p);
+        const lab = p.sys === 'wb' ? T('半當量點 pH ' + f2(ph) + '（≈ 14 − pKb = ' + f2(pk) + '）', 'half-equivalence pH ' + f2(ph) + ' (≈ 14 − pKb = ' + f2(pk) + ')') : T('半當量點 pH ' + f2(ph) + '（≈ pKa ' + f2(pk) + '）', 'half-equivalence pH ' + f2(ph) + ' (≈ pKa ' + f2(pk) + ')');
         const up = p.sys === 'wb' ? py + 24 : py - 8;
         pillGraph(g, lab, px - 6, up, C.text, 'right', x0, x1);
       }
@@ -1262,12 +1271,17 @@
     }
     $('readout').innerHTML = dl(rows);
   }
+  /** 半當量點要對照的值：弱酸的 pKa；弱鹼的 14 − pKb（= NH4+ 的 pKa） */
+  function halfRef(p) { return K.pKaOf(p); }
   function renderAnalysis() {
     const r = state.run, p = r.p, hid = mysteryHidden(), rows = [];
     const weak = K.SYSTEMS[p.sys].kind !== 'strong-acid';
     rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>V<sub>eq</sub> = c<sub>a</sub>V<sub>a</sub> / c<sub>b</sub></small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
     rows.push([T('當量點的 pH（理論）', 'pH at equivalence (theory)'), hid ? '？' : f2(r.pHeq)]);
-    if (weak) rows.push([p.sys === 'wb' ? T('半當量點的 pH（= 14 − pK<sub>b</sub>）', 'pH at half-equivalence (= 14 − pK<sub>b</sub>)') : T('半當量點的 pH（= pK<sub>a</sub>）', 'pH at half-equivalence (= pK<sub>a</sub>)'), hid ? '？' : f2(K.pH(p, r.Veq / 2))]);
+    if (weak) {
+      rows.push([p.sys === 'wb' ? T('半當量點的 pH（≈ 14 − pK<sub>b</sub>）', 'pH at half-equivalence (≈ 14 − pK<sub>b</sub>)') : T('半當量點的 pH（≈ pK<sub>a</sub>）', 'pH at half-equivalence (≈ pK<sub>a</sub>)'), hid ? '？' : f2(K.pH(p, r.Veq / 2))]);
+      rows.push([p.sys === 'wb' ? '14 − pK<sub>b</sub>' : 'pK<sub>a</sub>', hid ? '？' : f2(halfRef(p))]);
+    }
     if (r.endpoint != null) {
       rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
       if (!hid) {
