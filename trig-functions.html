@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Trigonometric Functions: The Unit Circle and Sine Waves | Astro Ni Science Lab">三角函數：單位圓與正弦波｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 三角函數頁面專用的顏色代號（淺色＋兩組深色；由 js/trig-functions.js 與 js/trig-functions-3d.js 讀取） */
+    :root { --tf-circle: #56699a; --tf-sin: #c2410c; --tf-cos: #1d4ed8; --tf-tan: #7c3aed; --tf-sum: #be185d; --tf-target: #0f766e; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --tf-circle: #93a8dc; --tf-sin: #fb923c; --tf-cos: #7aa7ff; --tf-tan: #b9a0ff; --tf-sum: #ff74b0; --tf-target: #5eead4; }
+    }
+    :root[data-theme="dark"] { --tf-circle: #93a8dc; --tf-sin: #fb923c; --tf-cos: #7aa7ff; --tf-tan: #b9a0ff; --tf-sum: #ff74b0; --tf-target: #5eead4; }
+
+    /* 畫布高度由程式依寬度決定（左：單位圓／參考圓；右：函數圖形，兩格的縱軸同一個比例，P 的高度可以水平對過去）。
+       只有按在點 P、圖形上的點或畫布空白處左右拖曳才會攔下觸控，其他時候手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 300px; touch-action: pan-y; cursor: default; }
+    .tf button { min-height: 44px; }
+    .tf [hidden] { display: none !important; }
+    .tf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .tf .playbar button { flex: 1 1 auto; }
+    .tf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .tf .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .tf .slider input[type="range"] { height: 28px; margin: 0; }
+    .tf .checks label { min-height: 44px; }
+    .tf .checks input { width: 17px; height: 17px; }
+    .tf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tf .panel { grid-template-columns: minmax(0, 1fr); }
+    .tf .panel > .card { min-width: 0; }
+    /* 三種模式：依 .tf 的 data-mode 顯示對應的控制項、讀數與圖例 */
+    .tf[data-mode="unit"] .mw, .tf[data-mode="unit"] .ms,
+    .tf[data-mode="wave"] .mu, .tf[data-mode="wave"] .ms,
+    .tf[data-mode="sum"] .mu, .tf[data-mode="sum"] .mw { display: none !important; }
+    .modes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+    .modes button { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; white-space: nowrap; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--tf-target); font-weight: 600; }
+    /* 2D／3D 檢視切換（與圓錐曲線模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 60%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.05em; }
+    .eq-note { font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log td.f { text-align: left; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geometry&quot;>Mathematics · Trigonometry and Geometry</a> / Trigonometric functions"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geometry">數學・三角與幾何</a> ／ 三角函數</nav>
+      <h1 data-en="Trigonometric Functions: The Unit Circle and Sine Waves">三角函數：單位圓與正弦波</h1>
+      <p data-en="Turn a point around the unit circle and its height, laid out to the right, draws the sine curve. Then stretch, squeeze and slide the wave with y = A sin(ωx + φ) + k, add a sine and a cosine into a single wave, and take on the challenge of matching a mystery curve. Switch to 3D to see that every sine wave is the shadow of a spiral.">讓一個點繞著單位圓轉，把它的高度一路往右畫，就畫出正弦曲線。接著用 y = A sin(ωx + φ) + k 把波拉高、壓扁、平移，把一個正弦和一個餘弦疊合成一個波，再挑戰對準一條神祕的目標曲線。切換到 3D，會看到每一條正弦波其實都是一條螺旋線的影子。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press Play and watch the point P go round the circle while its height draws the sine curve on the right. Then drag P yourself.">試試看：按「播放」，看點 P 繞著圓轉、它的高度在右邊畫出正弦曲線；再自己拖曳 P 轉轉看。</p>
+    <div class="lab tf" id="lab" data-mode="unit">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D spiral">3D 螺旋</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="三角函數畫布：左邊是單位圓（或參考圓）與點 P，右邊是函數圖形；兩邊的縱軸比例相同，P 的高度水平連到圖形上。拖曳點 P 沿圓轉動，或在右邊的圖形上左右拖曳。" data-en-aria-label="Trigonometric functions canvas: on the left the unit circle (or reference circle) with the point P, on the right the graph; both share the same vertical scale, and the height of P is joined across to the graph. Drag P around the circle, or drag left and right on the graph."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Play">播放</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄與目標曲線、把點 P 放回起點；滑桿設定不變" data-en-title="Clear the challenge record and the target curve and put P back at the start; the slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--tf-circle)&quot;></i>Circle"><i style="background:var(--tf-circle)"></i>圓</span>
+          <span class="mu" data-en-html="<i style=&quot;background:var(--tf-sin)&quot;></i>sin θ (height)"><i style="background:var(--tf-sin)"></i>sin θ（高度）</span>
+          <span class="mu" data-en-html="<i style=&quot;background:var(--tf-cos)&quot;></i>cos θ (sideways)"><i style="background:var(--tf-cos)"></i>cos θ（左右）</span>
+          <span class="mu" data-en-html="<i style=&quot;background:var(--tf-tan)&quot;></i>tan θ"><i style="background:var(--tf-tan)"></i>tan θ</span>
+          <span class="mw" data-en-html="<i style=&quot;background:var(--tf-sin)&quot;></i>y = A sin(ωx + φ) + k"><i style="background:var(--tf-sin)"></i>y = A sin(ωx + φ) + k</span>
+          <span class="mw" style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>y = sin x for comparison"><i class="dash"></i>對照 y = sin x</span>
+          <span class="mw" style="color:var(--tf-target)" data-en-html="<i class=&quot;dash&quot;></i>Target curve"><i class="dash"></i>目標曲線</span>
+          <span class="ms" style="color:var(--tf-sin)" data-en-html="<i class=&quot;dash&quot;></i>a sin x"><i class="dash"></i>a sin x</span>
+          <span class="ms" style="color:var(--tf-cos)" data-en-html="<i class=&quot;dash&quot;></i>b cos x"><i class="dash"></i>b cos x</span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--tf-sum)&quot;></i>Sum r sin(x + φ)"><i style="background:var(--tf-sum)"></i>相加 r sin(x + φ)</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Point P"><i class="dot" style="background:var(--probe)"></i>點 P</span>
+        </div>
+        <p class="hint l2" data-en="The two panels share one vertical scale, so the height of P carries straight across to the graph. The x-axis of the graph is in radians: walking a distance x along it is the same as walking an arc of length x around the unit circle.">兩格的縱軸用同一個比例，所以 P 的高度可以水平對到右邊的圖形上。圖形的 x 軸單位是弧度：沿 x 軸走多遠，就等於在單位圓上走了多長的弧。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Look from the side, from below and from the front.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。從側面、從下面、從正面各看一次。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="unit" aria-pressed="true" data-en-html="Unit circle<small>sin, cos, tan</small>">單位圓<small>sin、cos、tan</small></button>
+            <button type="button" data-mode="wave" aria-pressed="false" data-en-html="Waves<small>A sin(ωx + φ) + k</small>">波形<small>A sin(ωx + φ) + k</small></button>
+            <button type="button" data-mode="sum" aria-pressed="false" data-en-html="Adding<small>a sin x + b cos x</small>">疊合<small>a sin x + b cos x</small></button>
+          </div>
+        </section>
+
+        <section class="card mu">
+          <h2 data-en="Angle">角度</h2>
+          <div class="slider"><label for="theta" data-en="Angle θ (degrees)">角 θ（度）</label><output id="thetao"></output>
+            <input id="theta" type="range" min="0" max="720" step="1" value="30" data-decimals="1"></div>
+          <div class="checks">
+            <label><input id="showCos" type="checkbox" checked><span data-en="Show cos">顯示 cos</span></label>
+            <label><input id="showTan" type="checkbox"><span data-en="Show tan">顯示 tan</span></label>
+            <label><input id="snap" type="checkbox" checked><span data-en="Snap to special angles when dragging">拖曳時吸附特殊角</span></label>
+          </div>
+          <p class="hint" data-en="Special angles are multiples of 15°. Tap the number to type any angle, such as 57.3.">特殊角是 15° 的倍數。點一下數字可以輸入任何角度，例如 57.3。</p>
+        </section>
+
+        <section class="card mw">
+          <h2 data-en="y = A sin(ωx + φ) + k">y = A sin(ωx + φ) + k</h2>
+          <div class="slider"><label for="amp" data-en="A (stretches up and down; negative flips it)">A（上下伸縮；負號上下翻轉）</label><output id="ampo"></output>
+            <input id="amp" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="omega" data-en="ω (period T = 2π / ω)">ω（週期 T = 2π ／ ω）</label><output id="omegao"></output>
+            <input id="omega" type="range" min="0.25" max="4" step="0.05" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="phi" data-en="φ (phase, degrees)">φ（相位，度）</label><output id="phio"></output>
+            <input id="phi" type="range" min="-180" max="180" step="5" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="kk" data-en="k (moves the midline)">k（中線上下移動）</label><output id="kko"></output>
+            <input id="kk" type="range" min="-2" max="2" step="0.1" value="0" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="showBase" type="checkbox" checked><span data-en="Compare with y = sin x">對照 y = sin x</span></label>
+            <label><input id="showGuides" type="checkbox" checked><span data-en="Max, min, midline and period">最大值、最小值、中線與週期</span></label>
+          </div>
+          <div class="chal">
+            <button id="newTarget" type="button" data-en="Challenge: match a curve">挑戰：對準目標曲線</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en="a sin x + b cos x">a sin x + b cos x</h2>
+          <div class="slider"><label for="aa" data-en="a (amount of sin x)">a（sin x 的倍數）</label><output id="aao"></output>
+            <input id="aa" type="range" min="-4" max="4" step="0.1" value="1.5" data-decimals="3"></div>
+          <div class="slider"><label for="bb" data-en="b (amount of cos x)">b（cos x 的倍數）</label><output id="bbo"></output>
+            <input id="bb" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="3"></div>
+          <div class="checks">
+            <label><input id="showParts" type="checkbox" checked><span data-en="Show a sin x and b cos x">顯示 a sin x 與 b cos x</span></label>
+          </div>
+          <p class="hint" data-en="On the left, the arrow a turns with x and the arrow b is always a quarter turn ahead; their sum is a single arrow of length r.">左邊的箭頭 a 跟著 x 轉，箭頭 b 永遠超前四分之一圈；兩個加起來是一支長度 r 的箭頭。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout mu">
+            <dt data-en="Angle θ">角 θ</dt><dd id="uDeg">—</dd>
+            <dt data-en="In radians">弧度</dt><dd id="uRad">—</dd>
+            <dt data-en="Quadrant">象限</dt><dd id="uQuad">—</dd>
+            <dt data-en="Reference angle">參考角</dt><dd id="uRef">—</dd>
+            <dt>sin θ</dt><dd id="uSin">—</dd>
+            <dt>cos θ</dt><dd id="uCos">—</dd>
+            <dt>tan θ</dt><dd id="uTan">—</dd>
+          </dl>
+          <dl class="readout mw">
+            <dt data-en="Amplitude |A|">振幅 |A|</dt><dd id="wAmp">—</dd>
+            <dt data-en="Period T = 2π / ω">週期 T = 2π ／ ω</dt><dd id="wPer">—</dd>
+            <dt data-en="Maximum, minimum">最大值、最小值</dt><dd id="wMax">—</dd>
+            <dt data-en="Midline">中線</dt><dd id="wMid">—</dd>
+            <dt data-en="Shift compared with sin(ωx)">與 sin(ωx) 相比的平移</dt><dd id="wShift">—</dd>
+            <dt data-en="First maximum at x =">第一個最高點 x =</dt><dd id="wFirst">—</dd>
+          </dl>
+          <dl class="readout ms">
+            <dt data-en="r = √(a² + b²)">r = √(a² + b²)</dt><dd id="sR">—</dd>
+            <dt data-en="Phase φ">相位 φ</dt><dd id="sPhi">—</dd>
+            <dt data-en="Maximum r at x =">最大值 r 出現在 x =</dt><dd id="sMax">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note mu" data-en="Exact values appear when θ is a multiple of 15°.">θ 是 15° 的倍數時，會顯示精確值。</p>
+        </section>
+
+        <section class="card mw">
+          <h2 data-en="Challenge record">挑戰紀錄</h2>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Challenge: match a curve”, then use A, ω, φ and k to lay your curve exactly on the dashed target.">按「挑戰：對準目標曲線」，再調 A、ω、φ、k，讓你的曲線和虛線完全重合。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="The unit circle defines sin, cos and tan for every angle">單位圓：任何角度都有 sin、cos、tan</h3>
+      <p data-en-html="Draw a circle of radius 1 centred at the origin. Start on the positive \(x\)-axis and turn anticlockwise through an angle \(\theta\); the terminal side meets the circle at a point \(P\). Its coordinates <em>are</em> the cosine and the sine:">以原點為圓心，畫一個半徑 1 的圓。從正 \(x\) 軸出發，逆時針轉 \(\theta\) 角，終邊和圓交於點 \(P\)。\(P\) 的坐標<strong>就是</strong>餘弦和正弦：</p>
+      <div class="formula">\[ P = (\cos\theta,\ \sin\theta), \qquad \tan\theta = \frac{\sin\theta}{\cos\theta}, \qquad \sin^{2}\theta + \cos^{2}\theta = 1 \]</div>
+      <p data-en-html="For an acute angle this agrees with the ratios of a right triangle (the hypotenuse is the radius, 1), but the circle works for every angle: obtuse, negative, or more than a full turn. The signs follow the quadrant of \(P\), and \(\tan\theta\) is the slope of the terminal side — the height where it meets the vertical line \(x = 1\). It is undefined when \(\cos\theta = 0\). Turning one more full turn brings \(P\) back to the same place, so \(\theta\) and \(\theta + 360^\circ\) (<strong>coterminal angles</strong>) have the same values.">銳角時，這和直角三角形的三角比一致（斜邊就是半徑 1）；但單位圓對任何角都適用：鈍角、負角、轉超過一圈都可以。正負號由 \(P\) 落在哪個象限決定；\(\tan\theta\) 是終邊的斜率，也就是終邊和鉛直線 \(x = 1\) 交點的高度，在 \(\cos\theta = 0\) 時沒有定義。多轉一整圈，\(P\) 回到原處，所以 \(\theta\) 和 \(\theta + 360^\circ\)（<strong>同界角</strong>）的三角函數值都一樣。</p>
+
+      <h3 data-en="Radians: measuring an angle by the arc it walks">弧度：用走過的弧長量角度</h3>
+      <p data-en-html="On a circle of radius 1, an angle of \(x\) radians cuts off an arc of length exactly \(x\). Half a turn is an arc of length \(\pi\), so \(\pi\ \text{rad} = 180^\circ\) and \(1\ \text{rad} = \frac{180^\circ}{\pi} \approx 57.3^\circ\). This is why the graph uses radians on its \(x\)-axis: walking a distance \(x\) along the axis is the same as walking an arc of length \(x\) around the circle — the circle is unrolled onto a straight line.">在半徑 1 的圓上，\(x\) 弧度的圓心角所對的弧長恰好是 \(x\)。半圈的弧長是 \(\pi\)，所以 \(\pi\ \text{rad} = 180^\circ\)、\(1\ \text{rad} = \frac{180^\circ}{\pi} \approx 57.3^\circ\)。這就是函數圖形的 \(x\) 軸用弧度的原因：沿 \(x\) 軸走 \(x\) 的距離，等於在圓上走了長度 \(x\) 的弧——整個圓周被「攤開」成一條直線。</p>
+
+      <h3 data-en="From the circle to the wave">從圓到波</h3>
+      <p data-en-html="Let \(P\) go round and keep plotting its height to the right: that is the graph of \(y = \sin x\). It repeats every \(2\pi\) (the <strong>period</strong>) and stays between \(-1\) and \(1\). The sideways position of \(P\) gives \(y = \cos x\), the same curve shifted left by a quarter period: \(\cos x = \sin\!\left(x + \frac{\pi}{2}\right)\). The tangent repeats every \(\pi\) and shoots off to infinity where \(\cos x = 0\).">讓 \(P\) 一直轉，把它的高度一路往右畫，就是 \(y = \sin x\) 的圖形：每 \(2\pi\) 重複一次（<strong>週期</strong>），值永遠在 \(-1\) 和 \(1\) 之間。\(P\) 的左右位置畫出 \(y = \cos x\)，是同一條曲線往左平移四分之一個週期：\(\cos x = \sin\!\left(x + \frac{\pi}{2}\right)\)。正切每 \(\pi\) 重複一次，在 \(\cos x = 0\) 的地方衝向無限大。</p>
+
+      <h3 data-en="The four knobs of y = A sin(ωx + φ) + k">y = A sin(ωx + φ) + k 的四個旋鈕</h3>
+      <ul>
+        <li data-en-html="\(|A|\) is the <strong>amplitude</strong>: the curve reaches \(k + |A|\) and \(k - |A|\). A negative \(A\) flips the wave upside down, which is the same as adding \(\pi\) to the phase.">\(|A|\) 是<strong>振幅</strong>：最大值 \(k + |A|\)、最小值 \(k - |A|\)。\(A\) 是負的，波上下翻轉，效果和相位加上 \(\pi\) 一樣。</li>
+        <li data-en-html="\(\omega\) squeezes the wave sideways: the <strong>period</strong> is \(T = \dfrac{2\pi}{\omega}\).">\(\omega\) 把波左右壓縮：<strong>週期</strong> \(T = \dfrac{2\pi}{\omega}\)。</li>
+        <li data-en-html="\(\varphi\) is the <strong>phase</strong>. Write \(\omega x + \varphi = \omega\left(x + \dfrac{\varphi}{\omega}\right)\): the graph of \(y = \sin(\omega x)\) moves <em>left</em> by \(\dfrac{\varphi}{\omega}\), not by \(\varphi\).">\(\varphi\) 是<strong>相位</strong>。把 \(\omega x + \varphi\) 寫成 \(\omega\left(x + \dfrac{\varphi}{\omega}\right)\)：\(y = \sin(\omega x)\) 的圖形往<strong>左</strong>平移 \(\dfrac{\varphi}{\omega}\)，不是平移 \(\varphi\)。</li>
+        <li data-en-html="\(k\) lifts the whole wave; the line \(y = k\) is the <strong>midline</strong>.">\(k\) 把整條波往上移；直線 \(y = k\) 是<strong>中線</strong>。</li>
+      </ul>
+      <p data-en-html="On the left the unit circle becomes a <strong>reference circle</strong> of radius \(|A|\) centred at height \(k\). A point turns on it with angular speed \(\omega\), starting from the angle \(\varphi\); its height is \(y\). This is exactly how physics describes simple harmonic motion and waves.">左邊的單位圓這時變成<strong>參考圓</strong>：半徑 \(|A|\)、圓心在高度 \(k\)。圓上一點以角速度 \(\omega\) 轉動、起始角是 \(\varphi\)，它的高度就是 \(y\)。物理裡的簡諧運動和波動，正是這樣描述的。</p>
+
+      <h3 data-en="Adding a sine and a cosine">正弦與餘弦的疊合</h3>
+      <p data-en-html="A sine plus a cosine of the same \(x\) is again a single sine wave. Expanding with the angle-addition formula, \(r\sin(x + \varphi) = r\cos\varphi\,\sin x + r\sin\varphi\,\cos x\), so matching the coefficients gives">同一個 \(x\) 的正弦加餘弦，仍然是一個正弦波。用和角公式展開 \(r\sin(x + \varphi) = r\cos\varphi\,\sin x + r\sin\varphi\,\cos x\)，比較係數得到</p>
+      <div class="formula">\[ a\sin x + b\cos x = r\sin(x + \varphi), \qquad r = \sqrt{a^{2} + b^{2}}, \quad \cos\varphi = \frac{a}{r}, \quad \sin\varphi = \frac{b}{r} \]</div>
+      <p data-en-html="Geometrically, \(a\sin x\) is the height of an arrow of length \(a\) turned through \(x\), and \(b\cos x\) is the height of an arrow of length \(b\) turned through \(x + 90^\circ\). The two arrows are always perpendicular, so they add up to one arrow of length \(\sqrt{a^{2} + b^{2}}\) — the Pythagorean theorem. The largest value of \(a\sin x + b\cos x\) is therefore \(r\), and the smallest is \(-r\).">從幾何來看，\(a\sin x\) 是長度 \(a\)、轉了 \(x\) 角的箭頭的高度，\(b\cos x\) 是長度 \(b\)、轉了 \(x + 90^\circ\) 的箭頭的高度。兩支箭頭永遠互相垂直，所以合起來是一支長度 \(\sqrt{a^{2} + b^{2}}\) 的箭頭——就是畢氏定理。因此 \(a\sin x + b\cos x\) 的最大值是 \(r\)，最小值是 \(-r\)。</p>
+
+      <h3 data-en="Every sine wave is the shadow of a spiral">每一條正弦波都是螺旋線的影子</h3>
+      <p data-en-html="Move the point round the circle while it also slides steadily along a third axis and it traces a spiral, \(\big(x,\ A\cos(\omega x + \varphi),\ A\sin(\omega x + \varphi) + k\big)\). Seen from the side, its shadow is the sine wave; seen from below, the cosine wave; seen end-on, just the circle. The 3D view shows all three shadows at once.">讓點一邊繞圓轉、一邊沿著第三個方向等速前進，就畫出一條螺旋線 \(\big(x,\ A\cos(\omega x + \varphi),\ A\sin(\omega x + \varphi) + k\big)\)。從側面看，它的影子是正弦波；從下面看，是餘弦波；從正前方看，只剩一個圓。3D 檢視把三個影子同時畫出來。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Signs by quadrant</strong>: drag \(P\) once round the circle. In which quadrants is \(\sin\theta\) positive? \(\cos\theta\)? \(\tan\theta\)?"><strong>各象限的正負</strong>：拖曳 \(P\) 繞一圈。\(\sin\theta\) 在哪些象限是正的？\(\cos\theta\) 呢？\(\tan\theta\) 呢？</li>
+        <li data-en-html="<strong>Two angles, one sine</strong>: \(\sin\theta = \frac12\) at two angles between \(0^\circ\) and \(360^\circ\). Why does a horizontal line meet the circle twice?"><strong>兩個角、同一個正弦</strong>：\(0^\circ\) 到 \(360^\circ\) 之間有兩個角的 \(\sin\theta = \frac12\)。為什麼一條水平線會和圓交於兩點？</li>
+        <li data-en-html="<strong>Phase and period together</strong>: set \(\omega = 2\) and change \(\varphi\). The wave moves only half as far as it did with \(\omega = 1\). Why?"><strong>相位與週期一起看</strong>：把 \(\omega\) 設成 2，再改 \(\varphi\)。波移動的距離只有 \(\omega = 1\) 時的一半，為什麼？</li>
+        <li data-en-html="<strong>One curve, many formulas</strong>: can you make \(y = 2\cos x\) with a negative \(A\)?"><strong>一條曲線、好幾種寫法</strong>：你能用負的 \(A\) 調出 \(y = 2\cos x\) 嗎？</li>
+        <li data-en-html="<strong>3, 4, 5</strong>: in the adding mode set \(a = 3\), \(b = 4\). How high does the sum reach, and where?"><strong>3、4、5</strong>：在疊合模式設 \(a = 3\)、\(b = 4\)。相加後最高到多少？在哪裡？</li>
+        <li data-en-html="<strong>Three shadows</strong>: in 3D, turn the spiral until you look straight along its axis. What is left?"><strong>三個影子</strong>：在 3D 裡把螺旋線轉到順著它的軸看過去，還剩下什麼？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="All values come straight from \(\sin\) and \(\cos\); at multiples of \(90^\circ\) the exact values \(0\) and \(\pm1\) are used, and at multiples of \(15^\circ\) the exact surds (for example \(\sin 15^\circ = \frac{\sqrt6 - \sqrt2}{4}\)) are shown. The unit tests check \(\sin^{2}\theta + \cos^{2}\theta = 1\), the quadrant signs, every exact value from \(-360^\circ\) to \(720^\circ\), the period, the first maximum, and the identity \(a\sin x + b\cos x = r\sin(x + \varphi)\) at thousands of random points.">所有數值直接由 \(\sin\)、\(\cos\) 算出；\(90^\circ\) 的整數倍用精確值 \(0\)、\(\pm1\)，\(15^\circ\) 的倍數另外顯示根式的精確值（例如 \(\sin 15^\circ = \frac{\sqrt6 - \sqrt2}{4}\)）。單元測試在上千個隨機點檢查 \(\sin^{2}\theta + \cos^{2}\theta = 1\)、各象限的正負號、\(-360^\circ\) 到 \(720^\circ\) 每一個精確值、週期、第一個最高點，以及 \(a\sin x + b\cos x = r\sin(x + \varphi)\)。</li>
+        <li data-en="In the challenge your curve counts as matching when it never differs from the target by more than 0.05 anywhere on the graph, so any formula that draws the same curve is accepted.">挑戰時，只要你的曲線在整個畫面上和目標相差都不超過 0.05 就算對準，所以寫法不同、但畫出同一條曲線也算。</li>
+        <li data-en="The vertical scale changes in steps so that the whole wave fits; the grid labels show the scale. The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D.">縱軸的比例會分級調整，讓整條波放得下，比例看格線上的刻度。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics · trigonometric ratios, radians, graphs of trigonometric functions, and combining a sine with a cosine.">課綱對應：高中數學・三角比、弧度、三角函數的圖形、正弦與餘弦的疊合。</li>
+        <li data-en="History: the word “sine” comes, through Arabic, from the Sanskrit word for a bowstring (a chord), and a Latin translator turned it into sinus, “a bay” or “a fold”; the name radian came into use in the late 19th century.">歷史：「正弦」sine 這個字經過阿拉伯文，源自梵文的「弓弦」（弦），拉丁文譯者把它譯成 sinus（海灣、褶子）；「弧度」radian 這個名稱在 19 世紀後期才開始使用。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Unit_circle&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Unit circle (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Radian&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Radian (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/List_of_trigonometric_identities&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Trigonometric identities (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Unit_circle" target="_blank" rel="noopener">Unit circle（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Radian" target="_blank" rel="noopener">Radian（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/List_of_trigonometric_identities" target="_blank" rel="noopener">Trigonometric identities（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/trig-functions-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/trig-functions.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="trig-functions"></script>
+  <script src="js/missions/trig-functions.js"></script>
+  <script src="js/stats.js" data-module="trig-functions"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
