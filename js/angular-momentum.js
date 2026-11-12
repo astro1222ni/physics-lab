@@ -774,7 +774,7 @@
     setHTML('h_w', num(k.om, 3) + ' rad/s');
     setHTML('h_L', num(k.L, 4) + LU + '<small>' + T('相對漂移 ', 'relative drift ') + (Math.abs(k.L / st.L0 - 1) < 1e-12 ? '0' : sig(Math.abs(k.L / st.L0 - 1), 2)) + '</small>');
     setHTML('h_rp', num(k.rperp, 3) + ' m');
-    setHTML('h_T', st.phase === 'free' ? '0 N<small>' + T('繩子沒有拉著小球', 'nothing pulls the ball') + '</small>' : num(k.T, 3) + ' N<small>mv<sup>2</sup>/r = ' + num(k.m === undefined ? st.m * k.vt * k.vt / k.r : st.m * k.vt * k.vt / k.r, 3) + ' N</small>');
+    setHTML('h_T', st.phase === 'free' ? '0 N<small>' + T('繩子沒有拉著小球', 'nothing pulls the ball') + '</small>' : num(k.T, 3) + ' N<small>mrω<sup>2</sup> = mv<sub>⊥</sub><sup>2</sup>/r = ' + num(st.m * k.vt * k.vt / k.r, 3) + ' N</small>');
     setHTML('h_K', num(k.K, 4) + ' J<small>' + T('起始 ', 'start ') + num(st.K0, 4) + ' J，ΔK = ' + num(k.K - st.K0, 4) + ' J</small>');
     setHTML('h_W', num(k.W, 4) + ' J');
     setHTML('h_A', num(k.arealRate, 4) + ' m<sup>2</sup>/s<small>= L/(2m)</small>');
@@ -855,8 +855,8 @@
     setStatus(P.armsIn
       ? T('收手完成：I 變成 ' + num(I1 / mv.I0, 3) + ' 倍，ω 變成 ' + num(w1 / mv.w0, 3) + ' 倍（I 與 ω 的乘積 L 不變）；轉動動能增加 ' + num(K1 - mv.K0, 2) + ' J，來自肌肉作的功。',
         'Arms in: I became ' + num(I1 / mv.I0, 3) + ' times, ω ' + num(w1 / mv.w0, 3) + ' times (their product L is unchanged); the kinetic energy rose by ' + num(K1 - mv.K0, 2) + ' J, the work done by the muscles.')
-      : T('伸手完成：ω 變回 ' + num(w1, 2) + ' rad/s，動能減少 ' + num(mv.K0 - K1, 2) + ' J（回到肌肉）。',
-        'Arms out: ω is back to ' + num(w1, 2) + ' rad/s and the kinetic energy fell by ' + num(mv.K0 - K1, 2) + ' J (back into the muscles).'));
+      : T('伸手完成：ω 變回 ' + num(w1, 2) + ' rad/s，動能減少 ' + num(mv.K0 - K1, 2) + ' J（肌肉作負功，這份能量在肌肉裡變成熱）。',
+        'Arms out: ω is back to ' + num(w1, 2) + ' rad/s and the kinetic energy fell by ' + num(mv.K0 - K1, 2) + ' J (the muscles do negative work; the energy becomes heat in them).'));
     recPlat('move', P.armsIn ? T('收手', 'Arms in') : T('伸手', 'Arms out'));
     emit('arms', {
       dir: P.armsIn ? 'in' : 'out', md: P.p.md, Mb: P.p.Mb, rOut: P.rOut, rIn: P.rIn, r0: mv.r0, r1: mv.r1,

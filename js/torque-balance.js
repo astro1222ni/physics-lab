@@ -956,7 +956,7 @@
         sc.F > 0 ? T('放開後要拉 ', 'After letting go it must pull ') + num(sc.F, 2) + ' N' : T('需要往下壓，彈簧秤做不到', 'It would have to push down — a spring scale cannot')) + '</small>';
     } else $('rF').textContent = num(re.F, 2) + ' N' + (re.F > 0 ? '' : T('（鬆）', ' (slack)'));
     $('rNg').textContent = re.Ng > 0 ? num(re.Ng, 2) + ' N' : '0 N';
-    $('rXcm').innerHTML = sm.Mt > 0 ? num(sm.xcm, 3) + ' m<small>' + T('在支點', '') + (Math.abs(sm.xcm - ss.p) < 5e-4 ? T('正上方', 'right above the pivot') : (sm.xcm < ss.p ? T('左方 ', '') + num(ss.p - sm.xcm, 3) + ' m' + T('', ' left of the pivot') : T('右方 ', '') + num(sm.xcm - ss.p, 3) + ' m' + T('', ' right of the pivot'))) + '</small>' : '—';
+    $('rXcm').innerHTML = sm.Mt > 0 ? num(sm.xcm, 3) + ' m<small>' + (Math.abs(sm.xcm - ss.p) < 5e-4 ? T('與支點在同一鉛直線', 'on the pivot’s vertical line') : T('在支點', '') + (sm.xcm < ss.p ? T('左方 ', '') + num(ss.p - sm.xcm, 3) + ' m' + T('', ' left of the pivot') : T('右方 ', '') + num(sm.xcm - ss.p, 3) + ' m' + T('', ' right of the pivot'))) + '</small>' : '—';
     $('rI').innerHTML = num(sm.I, 3) + ' kg·m<sup>2</sup>';
     $('rTh').textContent = sgn(theta() / D2R, 2) + '°';
     $('rOm').textContent = num(h ? 0 : d.omega, 3) + ' rad/s';

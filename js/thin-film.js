@@ -1046,9 +1046,23 @@
         h += row(T('游標處的間隙 <i>t</i>', 'Gap at the cursor <i>t</i>'), hide ? q : Math.round(t) + ' nm', hide ? 'hide' : '');
         h += row(T('相對亮度', 'Relative brightness'), fx(lumAt(t), 3));
       } else h += row(T('游標半徑 <i>r</i>', 'Cursor radius <i>r</i>'), T('在視野中點一下', 'tap the view'));
-      $('readNote').textContent = whichNow() === 'T'
-        ? T('透射光與反射光互補：T = 1 − R，中心是亮點。', 'Transmitted light is complementary to reflected light: T = 1 − R, and the centre is bright.')
-        : T('中心接觸處（間隙 0）是暗點：半波損失。', 'The point of contact (zero gap) is a dark spot: the half-wave loss.');
+      const eNm = newtonE();
+      let note;
+      if (!(eNm > 0)) {
+        note = whichNow() === 'T'
+          ? T('透射光與反射光互補：T = 1 − R，中心接觸處（間隙 0）是亮點。', 'Transmitted light is complementary to reflected light: T = 1 − R, and the point of contact (zero gap) is bright.')
+          : T('中心接觸處（間隙 0）是暗點：半波損失。', 'The point of contact (zero gap) is a dark spot: the half-wave loss.');
+      } else if (hide || isWhite()) {
+        note = T('中心有間隙 e 時，中心不一定是暗點：反射光在 2ne 是 λ 的整數倍時暗、整數加一半時亮。', 'With a gap e at the centre, the centre is not necessarily dark: in reflected light it is dark when 2ne is a whole number of wavelengths and bright when it is a whole number plus a half.');
+      } else {
+        const k = 2 * p.n * p.e / p.lambda, c2 = k - Math.round(k);
+        const tR = Math.abs(c2) < 0.06 ? 0 : Math.abs(Math.abs(c2) - 0.5) < 0.06 ? 1 : 2;   // 反射光：0 暗、1 亮、2 介於之間
+        const tNow = whichNow() === 'T' ? (tR === 2 ? 2 : 1 - tR) : tR;
+        const word = tNow === 0 ? T('暗點', 'a dark spot') : tNow === 1 ? T('亮點', 'a bright spot') : T('介於亮暗之間', 'in between');
+        note = T('中心間隙 e = ', 'Gap at the centre e = ') + Math.round(eNm) + ' nm' + T('，2ne/λ = ', ', 2ne/λ = ') + fx(k, 2) +
+          T('，所以' + (whichNow() === 'T' ? '透射光' : '反射光') + '的中心' + (tNow === 2 ? '' : '是'), ', so in ' + (whichNow() === 'T' ? 'transmitted' : 'reflected') + ' light the centre is ') + word + T('。', '.');
+      }
+      $('readNote').textContent = note;
     }
     $('readout').innerHTML = h;
   }

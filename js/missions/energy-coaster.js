@@ -98,7 +98,7 @@
     {
       id: 'energy-coaster-8', level: 6,
       title: { zh: '一半變成熱', en: 'Half of it turned to heat' },
-      desc: { zh: '位能零點放在地面（y0 = 0），讓小車先經過最低點再停住，而且停住時熱能恰好是總能的一半（誤差 0.5% 內）。', en: 'With the zero of potential energy on the ground (y0 = 0), make the car pass the lowest point and then stop, with the heat exactly half of the total energy (within 0.5%).' },
+      desc: { zh: '位能零點放在地面（y0 = 0），讓小車先經過最低點再停住，而且停住時熱能恰好占總能的 50.0% ± 0.5%。', en: 'With the zero of potential energy on the ground (y0 = 0), make the car pass the lowest point and then stop, with the heat exactly 50.0% ± 0.5% of the total energy.' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'stop' && near(d.yref, 0) && d.bottomPassed && d.E > 0 && Math.abs(d.Q / d.E - 0.5) <= 0.005;
@@ -116,7 +116,7 @@
     {
       id: 'energy-coaster-10', level: 8,
       title: { zh: '四分之三處離軌', en: 'Off at three quarters' },
-      desc: { zh: '沒有摩擦，讓「自由小車」在迴圈裡離開軌道，離軌點的高度恰好是迴圈高度的 3/4（誤差 1.5% 內）。', en: 'With no friction, make the “Free car” leave the track inside the loop exactly three quarters of the way up (within 1.5% of the loop’s height).' },
+      desc: { zh: '沒有摩擦，讓「自由小車」在迴圈裡離開軌道，離軌點的高度恰好是迴圈高度的 3/4（誤差在迴圈高度的 1.5% 內）。', en: 'With no friction, make the “Free car” leave the track inside the loop exactly three quarters of the way up (within 1.5% of the loop’s height).' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'detach' && d.inLoop && d.mode === 'free' && d.mu === 0 && d.R > 0 && Math.abs(d.yRel / (2 * d.R) - 0.75) <= 0.015;

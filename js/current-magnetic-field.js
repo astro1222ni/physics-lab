@@ -97,6 +97,8 @@
   }
   const f2 = function (x) { return (Math.round(x * 100) / 100).toFixed(2); };
   const f1 = function (x) { return (Math.round(x * 10) / 10).toFixed(1); };
+  // 長度：滑桿可輸入到小數第 2 位，顯示到實際用到的位數（整十分位顯示一位，否則兩位），讀數、表格與計算一致
+  const fL = function (x) { return Math.abs(x * 10 - Math.round(x * 10)) < 1e-6 ? f1(x) : f2(x); };
   const minus = function (s) { s = String(s); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace(/^-/, '−'); };
   /**
    * 畫布上的「含下標」文字：parts = ['B', ['I'], ' = 12 μT']，陣列表示下標（不用 Unicode 下標字元）。
@@ -938,10 +940,10 @@
       const tn = Math.tan(Math.abs(rd) * DEG);
       html += rowHtml(T('磁針偏角 θ（讀數）', 'Needle deflection θ (reading)'), minus(f1(Math.abs(rd))) + '° ' + sideWord(rd), 'em');
       html += rowHtml(T('電流表 I', 'Ammeter I'), f2(ammeter()) + ' A');
-      html += rowHtml(T('導線到磁針', 'Wire to needle'), f1(Math.hypot(val(el.h), val(el.d))) + ' cm');
+      html += rowHtml(T('導線到磁針（斜距 √(r<sup>2</sup> + d<sup>2</sup>)）', 'Wire to needle (slant distance √(r<sup>2</sup> + d<sup>2</sup>))'), f2(Math.hypot(val(el.h), val(el.d))) + ' cm');
       html += rowHtml(T('導線磁場（水平分量）', 'Wire’s field (horizontal part)'), fmtB(f.BIh));
       html += rowHtml('tan θ', Math.abs(rd) < 89.95 ? tn.toFixed(3) : '—');
-      html += rowHtml('μ<sub>0</sub>I/(2πr) ÷ tan θ', Math.abs(rd) >= 1 && Math.abs(rd) < 89 && st.earth ? fmtB(C.wireB(ammeter(), val(el.h) / 100) / tn) : '—');
+      html += rowHtml('μ<sub>0</sub>I/(2πr) ÷ tan θ' + T('（r 為鉛直距離）', ' (r = vertical distance)'), Math.abs(rd) >= 1 && Math.abs(rd) < 89 && st.earth ? fmtB(C.wireB(ammeter(), val(el.h) / 100) / tn) : '—');
       html += rowHtml(T('磁針擺動週期', 'Needle’s swing period'), f.Bh > 0 ? C.needlePeriod(f.Bh).toFixed(2) + ' s' : '∞');
       html += rowHtml(T('狀態', 'State'), atRest ? T('停穩', 'at rest') : T('擺動中', 'swinging'));
     } else {
@@ -1051,7 +1053,7 @@
       st.rowsO.forEach(function (r, i) {
         const dir = Math.abs(r.alpha) < 0.5 ? (r.s > 0 ? T('向北', 'north') : T('向南', 'south')) : (r.s > 0 ? T('正向', 'fwd') : T('反向', 'rev'));
         h += '<tr' + (i === st.rowsO.length - 1 ? ' class="latest"' : '') + '><td>' + (i + 1) + '</td><td>' + f2(r.I) + '</td><td>' + dir + '</td><td>' + (r.above ? T('上', 'above') : T('下', 'below')) +
-          '</td><td>' + f1(r.r) + '</td><td>' + minus(f1(r.theta)) + '</td><td>' + r.tan.toFixed(3) + '</td><td>' + r.BI.toFixed(2) + '</td><td class="em">' + r.BH.toFixed(2) + '</td></tr>';
+          '</td><td>' + fL(r.r) + '</td><td>' + minus(f1(r.theta)) + '</td><td>' + r.tan.toFixed(3) + '</td><td>' + r.BI.toFixed(2) + '</td><td class="em">' + r.BH.toFixed(2) + '</td></tr>';
       });
     } else {
       h += '<thead><tr><th>#</th><th>' + T('形狀', 'Shape') + '</th><th>I<br>(A)</th><th>N</th><th>R<br>(cm)</th><th>L<br>(cm)</th><th>x<br>(cm)</th><th>y<br>(cm)</th>' +
@@ -1060,7 +1062,7 @@
       st.rowsP.forEach(function (r, i) {
         const fx = r.shape === 'coil' ? (r.formula != null ? r.formula : null) : r.formula;
         h += '<tr' + (i === st.rowsP.length - 1 ? ' class="latest"' : '') + '><td>' + (i + 1) + '</td><td>' + SHAPE_NAME(r.shape) + '</td><td>' + f2(r.I) + '</td><td>' + (r.N || '—') + '</td><td>' + (r.R ? f2(r.R) : '—') +
-          '</td><td>' + (r.L ? f1(r.L) : '—') + '</td><td>' + minus(f2(r.x)) + '</td><td>' + minus(f2(r.y)) + '</td><td class="em">' + sig(r.B) + '</td><td>' + (fx != null ? sig(fx) : '—') +
+          '</td><td>' + (r.L ? fL(r.L) : '—') + '</td><td>' + minus(f2(r.x)) + '</td><td>' + minus(f2(r.y)) + '</td><td class="em">' + sig(r.B) + '</td><td>' + (fx != null ? sig(fx) : '—') +
           '</td><td>' + (r.diff != null && isFinite(r.diff) ? minus((r.diff * 100).toFixed(2)) : '—') + '</td></tr>';
       });
     }
@@ -1299,15 +1301,15 @@
   // =====================================================================
   function outs() {
     $('Io').textContent = f2(val(el.I)) + ' A';
-    $('ho').textContent = f1(val(el.h)) + ' cm';
+    $('ho').textContent = fL(val(el.h)) + ' cm';
     $('alphao').textContent = minus(String(Math.round(val(el.alpha) * 10) / 10)) + '°';
-    $('do').textContent = minus(f1(val(el.d))) + ' cm';
+    $('do').textContent = minus(fL(val(el.d))) + ' cm';
     $('dialo').textContent = minus(f1(val(el.dial))) + '°';
     $('No').textContent = String(Math.round(val(el.N)));
-    $('Ro').textContent = f1(val(el.R)) + ' cm';
+    $('Ro').textContent = fL(val(el.R)) + ' cm';
     $('Nso').textContent = String(Math.round(val(el.Ns)));
-    $('Lso').textContent = f1(val(el.Ls)) + ' cm';
-    $('Rso').textContent = f1(val(el.Rs)) + ' cm';
+    $('Lso').textContent = fL(val(el.Ls)) + ' cm';
+    $('Rso').textContent = fL(val(el.Rs)) + ' cm';
     $('pxo').textContent = minus(f2(val(el.px))) + ' cm';
     $('pyo').textContent = minus(f2(val(el.py))) + ' cm';
   }
@@ -1500,7 +1502,7 @@
           if (dy) setVal(el.h, clamp(Math.round((val(el.h) + (st.above ? dy : -dy) * step) * 10) / 10, 1, 10));
           return true;
         },
-        describe: function () { return T('導線：鉛直距離 r = ', 'Wire: vertical distance r = ') + f1(val(el.h)) + T(' cm，側移 d = ', ' cm, sideways d = ') + minus(f1(val(el.d))) + ' cm. ' + T('磁針偏角 ', 'Deflection ') + minus(f1(Math.abs(reading()))) + '° ' + sideWord(reading()); }
+        describe: function () { return T('導線：鉛直距離 r = ', 'Wire: vertical distance r = ') + fL(val(el.h)) + T(' cm，側移 d = ', ' cm, sideways d = ') + minus(fL(val(el.d))) + ' cm. ' + T('磁針偏角 ', 'Deflection ') + minus(f1(Math.abs(reading()))) + '° ' + sideWord(reading()); }
       });
     } else {
       kbItems.push({

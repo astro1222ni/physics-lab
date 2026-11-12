@@ -19,8 +19,8 @@
     {
       id: 'angular-momentum-1', level: 1,
       title: { zh: '放長繩子', en: 'Let the string out' },
-      desc: { zh: '在「穿過小孔的繩子」中，把目標半徑 r1 調得比目前半徑大，按「放繩到 r1」，看小球變慢。',
-        en: 'In “String through a hole”, set the target radius r1 larger than the present radius and press “Let out to r1”. Watch the ball slow down.' },
+      desc: { zh: '在「穿過小孔的繩子」中，把目標半徑 r1 調得比目前半徑大（至少大 0.05 m），按「放繩到 r1」，看小球變慢。',
+        en: 'In “String through a hole”, set the target radius r1 larger than the present radius (by at least 0.05 m) and press “Let out to r1”. Watch the ball slow down.' },
       check: function (ev) { return ev.type === 'arrive' && ev.data.r1 >= ev.data.r0 + 0.05 - 1e-9; }
     },
     {

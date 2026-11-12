@@ -1514,11 +1514,11 @@
     // 統計
     const row = function (dt, dd) { return '<dt>' + dt + '</dt><dd>' + dd + '</dd>'; };
     let o = '';
-    o += row(T('儀器的最小刻度 d', 'Smallest division d'), I.lc.toFixed(2) + ' mm');
+    o += row(T('儀器的精度（最小讀數）d', 'Precision (smallest reading) d'), I.lc.toFixed(2) + ' mm');
     o += row(T('次數 n', 'Readings n'), String(S.n));
     o += row(T('平均值 <span class="xbar">x</span>', 'Mean <span class="xbar">x</span>'), S.n ? fx(S.mean, dec + 3) + ' mm' : '—');
     o += row(T('樣本標準差 s<small>分母 n − 1</small>', 'Sample std. dev. s<small>divide by n − 1</small>'), S.n >= 2 ? fx(S.s, dec + 3) + ' mm' : '—');
-    o += row(T('母體標準差 σ<small>分母 n</small>', 'Population std. dev. σ<small>divide by n</small>'), S.n >= 1 ? fx(S.sp, dec + 3) + ' mm' : '—');
+    o += row(T('標準差 s<sub>n</sub><small>分母 n；不是滑桿的 σ</small>', 'Std. dev. s<sub>n</sub><small>divide by n; not the slider’s σ</small>'), S.n >= 1 ? fx(S.sp, dec + 3) + ' mm' : '—');
     o += row('<span class="f">' + T('A 類', 'Type A') + ' u<sub>A</sub> = s/√n</span>', S.n >= 2 ? fx(S.uA, dec + 3) + ' mm' : '—');
     o += row('<span class="f">' + T('B 類', 'Type B') + ' u<sub>B</sub> = d/(2√3)</span>', fx(S.uB, dec + 3) + ' mm');
     o += row('<span class="f">' + T('組合', 'Combined') + ' √(u<sub>A</sub><sup>2</sup> + u<sub>B</sub><sup>2</sup>)</span>', S.n >= 2 ? fx(S.uAB, dec + 3) + ' mm' : '—');
@@ -1528,12 +1528,12 @@
         T(' mm；X：平均值四捨五入到小數第 ', ' mm. X: the mean rounded to ') + S.result.decimals + T(' 位 → ', ' decimal places → ') + minus(S.result.best) +
         T(' mm（', ' mm (') + S.result.sig + T(' 位有效數字）。', ' significant figures).') + (X.uMode === 'A' ? T('（只算 A 類）', ' (Type A only)') : T('（A、B 類組合）', ' (A and B combined)')) + '</dd>';
     } else if (S.n === 1) o += '<dd class="note">' + T('至少要量 2 次才能算標準差。', 'You need at least 2 readings for a standard deviation.') + '</dd>';
-    else if (S.n >= 2 && X.uMode === 'A' && !(S.uA > 0)) o += '<dd class="note">' + T('每次讀數都一樣，A 類不確定度是 0：這時要靠 B 類（儀器的最小刻度）來估計。', 'Every reading is the same, so Type A is 0: the uncertainty must then come from Type B (the smallest division).') + '</dd>';
+    else if (S.n >= 2 && X.uMode === 'A' && !(S.uA > 0)) o += '<dd class="note">' + T('每次讀數都一樣，A 類不確定度是 0：這時要靠 B 類（儀器的精度）來估計。', 'Every reading is the same, so Type A is 0: the uncertainty must then come from Type B (the instrument’s precision).') + '</dd>';
     o += row(T('真值<small>只有模擬知道</small>', 'True value<small>only the simulation knows</small>'), fx(X.rod.trueUm / 1000, 3) + ' mm');
     if (S.n) o += row(T('平均值 − 真值', 'Mean − true value'), fxs(S.mean - X.rod.trueUm / 1000, dec + 3) + ' mm');
     if (S.n >= 2) {
       o += '<dd class="' + (S.precise ? 'ok' : 'warn') + '">' + (S.precise ? T('精密：s ≤ 2d = ', 'Precise: s ≤ 2d = ') : T('不精密：s > 2d = ', 'Not precise: s > 2d = ')) + fx(S.tau, 2) + ' mm</dd>';
-      o += '<dd class="' + (S.accurate ? 'ok' : 'warn') + '">' + (S.accurate ? T('準確：平均值與真值相差不到 2ΔX', 'Accurate: the mean is within 2ΔX of the true value') : T('不準確：平均值與真值相差超過 2ΔX（有系統誤差）', 'Not accurate: the mean is more than 2ΔX from the true value (systematic error)')) + '</dd>';
+      o += '<dd class="' + (S.accurate ? 'ok' : 'warn') + '">' + (S.accurate ? T('準確：平均值與真值相差不到 2√(u<sub>A</sub><sup>2</sup> + u<sub>B</sub><sup>2</sup>) = ', 'Accurate: the mean is within 2√(u<sub>A</sub><sup>2</sup> + u<sub>B</sub><sup>2</sup>) = ') : T('不準確：平均值與真值相差超過 2√(u<sub>A</sub><sup>2</sup> + u<sub>B</sub><sup>2</sup>) = ', 'Not accurate: the mean is more than 2√(u<sub>A</sub><sup>2</sup> + u<sub>B</sub><sup>2</sup>) = ')) + fx(2 * S.uAB, dec + 3) + ' mm' + (S.accurate ? '' : T('（有系統誤差）', ' from the true value (systematic error)')) + (S.accurate ? T('', ' of the true value') : '') + '</dd>';
     }
     $('statOut').innerHTML = o;
     // 三種儀器比較
