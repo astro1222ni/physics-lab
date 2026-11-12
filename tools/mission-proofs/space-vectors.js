@@ -83,7 +83,8 @@ expect(9, [vecEv('plane', { n: [1, 1, 0], d: 0, q: [3, 1.24, 0] })], false, 'n �
 }
 reach(10, 'plane', { n: [1, 1, 1], d: 3, q: [2, 0.5, 0.5] }, 'n = (1, 1, 1)、d = 3、Q = (2, 0.5, 0.5)');
 expect(10, [vecEv('plane', { n: [1, 1, 1], d: 3, q: [1, 1, 1] })], false, 'Q = (1, 1, 1) 和 n 平行（就是垂足，太簡單）');
-expect(11, [{ type: 'challenge', data: { kind: 'angle', mode: 'inner', target: 47, time: 20, streak: 1, last3: null } }], true, '答對一題');
+expect(11, [{ type: 'challenge', data: { kind: 'angle', mode: 'inner', target: 47, time: 20, streak: 1, last3: null } }, { type: 'challenge', data: { kind: 'dist', mode: 'plane', target: 2.3, time: 25, streak: 2, last3: null } }], true, '內積模式、平面模式各答對一題');
+expect(11, [{ type: 'challenge', data: { kind: 'angle', mode: 'inner', target: 47, time: 20, streak: 1, last3: null } }, { type: 'challenge', data: { kind: 'angle', mode: 'inner', target: 30, time: 20, streak: 2, last3: null } }], false, '同一個模式答對兩題不算');
 expect(12, [{ type: 'challenge', data: { kind: 'dist', mode: 'plane', target: 2.3, time: 15, streak: 3, last3: 52 } }], true, '連續三題共 52 秒');
 expect(12, [{ type: 'challenge', data: { kind: 'dist', mode: 'plane', target: 2.3, time: 15, streak: 3, last3: 61 } }], false, '連續三題共 61 秒');
 // 挑戰中不算一般任務

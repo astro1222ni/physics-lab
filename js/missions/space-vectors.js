@@ -117,10 +117,14 @@
       }
     },
     {
-      id: 'space-vectors-11', level: 4,
+      id: 'space-vectors-11', level: 6,
       title: { zh: '挑戰一題', en: 'One challenge' },
-      desc: { zh: '按「出一題」，在任何一個模式答對一題挑戰。', en: 'Press “New challenge” and solve one challenge in any mode.' },
-      check: function (ev) { return ev.type === 'challenge'; }
+      desc: { zh: '按「出一題」，在兩個不同的模式各答對一題挑戰。', en: 'Press “New challenge” and solve one challenge in each of two different modes.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'challenge') return false;
+        mem.modes = mem.modes || {}; mem.modes[ev.data.mode] = true;
+        return Object.keys(mem.modes).length >= 2;
+      }
     },
     {
       id: 'space-vectors-12', level: 9,
