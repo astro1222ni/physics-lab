@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Action Potential: The Hodgkin–Huxley Model and Nerve Conduction | Astro Ni Science Lab">神經的動作電位：Hodgkin–Huxley 模型與神經衝動的傳導｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="用 Hodgkin–Huxley 模型刺激烏賊巨大軸突：找出閾值、看鈉鉀通道怎麼開關、量不反應期，試試河豚毒素與高血鉀；再讓神經衝動沿軸突傳導，量傳導速度、比較粗細與髓鞘，2D 與 3D 都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 動作電位頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ap-v: #be123c;        /* 膜電位（生理分支色） */
+      --ap-na: #c2410c;       /* 鈉：m、h、g_Na、I_Na、Na+ 離子 */
+      --ap-k: #6d28d9;        /* 鉀：n、g_K、I_K、K+ 離子 */
+      --ap-h: #b45309;        /* 鈉通道的不活化閘門 h */
+      --ap-lipid: #d8a24a;    /* 磷脂頭部 */
+      --ap-tail: #e9dcc0;     /* 磷脂尾部 */
+      --ap-axo: #f2d9cf;      /* 軸漿 */
+      --ap-myelin: #f3ecd8;   /* 髓鞘 */
+      --ap-stim: #0e7490;     /* 刺激電極與刺激電流 */
+      --ap-r1: #0d7f57; --ap-r2: #b45309;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ap-v: #fb7185; --ap-na: #fb923c; --ap-k: #c4b5fd; --ap-h: #fbbf24;
+        --ap-lipid: #c99a4b; --ap-tail: #4b4232; --ap-axo: #3a2a2a; --ap-myelin: #d9d2bf;
+        --ap-stim: #67e8f9; --ap-r1: #3fd69a; --ap-r2: #fbbf24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ap-v: #fb7185; --ap-na: #fb923c; --ap-k: #c4b5fd; --ap-h: #fbbf24;
+      --ap-lipid: #c99a4b; --ap-tail: #4b4232; --ap-axo: #3a2a2a; --ap-myelin: #d9d2bf;
+      --ap-stim: #67e8f9; --ap-r1: #3fd69a; --ap-r2: #fbbf24;
+    }
+    /* 畫布高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 560px; touch-action: auto; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 380px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .ap button { min-height: 44px; }
+    .ap .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ap .playbar button { flex: 1 1 auto; }
+    .ap .playbar .primary { font-weight: 700; }
+    .ap .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ap .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ap .slider input[type="range"] { height: 28px; margin: 0; }
+    .ap .slider label sub, .ap .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .ap [hidden] { display: none !important; }
+    .ap .panel { grid-template-columns: minmax(0, 1fr); }
+    .ap .panel > .card { min-width: 0; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg3 button { padding: 6px 4px; line-height: 1.25; }
+    .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ap .checks label { min-height: 44px; }
+    .ap .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    .ap .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .ap .row2 button { flex: 1 1 auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs td.yes { color: var(--probe); font-weight: 700; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    .ap3-wrap { position: relative; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .ap3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .ap3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .ap3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .ap3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ap3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .ap3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#physiology&quot;>Biology · Physiology</a> / The action potential"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#physiology">生物・生理</a> ／ 神經的動作電位</nav>
+      <h1 data-en="The Action Potential: The Hodgkin–Huxley Model and Nerve Conduction">神經的動作電位：Hodgkin–Huxley 模型與神經衝動的傳導</h1>
+      <p data-en="A nerve cell keeps its inside about 65 mV negative. Push it a little past threshold and sodium channels burst open, the inside swings to about +40 mV, then potassium channels bring it back — all in a couple of milliseconds. This page runs the equations Hodgkin and Huxley wrote for the squid giant axon in 1952. Stimulate a patch of membrane and watch the channels open and close; find the threshold and the refractory period; try tetrodotoxin, extra potassium or a warm bath. Then let the impulse travel along the axon and measure how fast it goes — thick or thin, with or without myelin, in 2D or in 3D.">神經細胞平常讓細胞內比細胞外低大約 65 mV。只要稍微推過「閾值」，鈉通道就成群打開，細胞內在一毫秒內衝到大約 +40 mV，接著鉀通道把它拉回來——這就是動作電位。本頁執行 Hodgkin 與 Huxley 在 1952 年為烏賊巨大軸突寫下的方程式：先刺激一小塊細胞膜，看鈉鉀通道怎麼開關，找出閾值與不反應期，試試河豚毒素、高血鉀或把溫度調高；再讓神經衝動沿著軸突傳導，量它跑多快——粗的細的、有沒有髓鞘，2D 平面或 3D 立體都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Stimulate”, then lower the stimulus strength step by step until the action potential no longer appears.">試試看：按「刺激」，再把刺激強度一點一點調小，找出剛好不再引發動作電位的強度。</p>
+
+    <h2 class="lab-title" data-en-html="1 · A patch of membrane<small>Space clamp: the whole patch has the same voltage, as in Hodgkin and Huxley’s experiments with a wire inside the axon</small>">一・一小塊細胞膜<small>空間鉗制：整塊膜的電壓都一樣，就像 Hodgkin 與 Huxley 在軸突裡插一條導線所做的實驗</small></h2>
+    <div class="lab ap" id="lab1">
+      <div class="stage">
+        <canvas id="cv" role="img" aria-label="細胞膜與鈉鉀通道的示意圖，下方是膜電位、閘門與刺激電流隨時間的變化" data-en-aria-label="Cell membrane with sodium and potassium channels; below, the membrane potential, the gates and the stimulus current against time"></canvas>
+        <div class="playbar">
+          <button id="fire" type="button" class="primary" data-en="Stimulate">刺激</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除保留的波形與紀錄表，設定不變" data-en-title="Clear the kept traces and the table; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <div class="tablewrap"><table class="data runs" id="runs"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardStim">
+          <h2 data-en="Stimulus">刺激</h2>
+          <div class="seg3" role="group" aria-label="刺激方式" data-en-aria-label="Kind of stimulus" id="modeSeg">
+            <button type="button" data-mode="single" aria-pressed="true" data-en="Single pulse">單一脈衝</button>
+            <button type="button" data-mode="paired" aria-pressed="false" data-en="Two pulses">成對脈衝</button>
+            <button type="button" data-mode="step" aria-pressed="false" data-en="Steady current">持續電流</button>
+          </div>
+          <div class="slider"><label for="a1" id="a1Label" data-en-html="Stimulus strength (µA/cm²)">刺激強度（µA/cm²）</label><output id="a1o"></output>
+            <input id="a1" type="range" min="-1.7" max="2.5" step="0.002" value="1.3222" data-decimals="3"></div>
+          <div class="slider" id="rowDur"><label for="dur" data-en="Pulse width (ms)">脈衝寬度（ms）</label><output id="duro"></output>
+            <input id="dur" type="range" min="-1.30103" max="0.69897" step="0.002" value="-0.30103" data-decimals="3"></div>
+          <div id="rowPair" hidden>
+            <div class="slider"><label for="a2" data-en-html="Second pulse strength (µA/cm²)">第二個脈衝強度（µA/cm²）</label><output id="a2o"></output>
+              <input id="a2" type="range" min="-1.7" max="2.5" step="0.002" value="1.6232" data-decimals="3"></div>
+            <div class="slider"><label for="gap" data-en="Interval between the pulses (ms)">兩個脈衝的間隔（ms）</label><output id="gapo"></output>
+              <input id="gap" type="range" min="1" max="40" step="0.1" value="12" data-decimals="2"></div>
+          </div>
+          <p class="hint" id="stimHint" data-en="Negative values push the inside more negative (hyperpolarise). Tap a number to type an exact value.">負值是把細胞內推得更負（過極化）的電流。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card" id="cardEnv">
+          <h2 data-en="Temperature, ions and drugs">溫度、離子與藥物</h2>
+          <div class="slider"><label for="temp" data-en="Temperature (°C)">溫度（°C）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="0" max="40" step="0.1" value="6.3" data-decimals="1"></div>
+          <div class="slider"><label for="kOut" data-en-html="Outside K<sup>+</sup> (× normal)">細胞外 K<sup>+</sup> 濃度（正常的幾倍）</label><output id="kOuto"></output>
+            <input id="kOut" type="range" min="-0.602" max="0.602" step="0.002" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="naOut" data-en-html="Outside Na<sup>+</sup> (× normal)">細胞外 Na<sup>+</sup> 濃度（正常的幾倍）</label><output id="naOuto"></output>
+            <input id="naOut" type="range" min="-1.3" max="0.176" step="0.002" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="ttx" data-en-html="Tetrodotoxin: Na<sup>+</sup> channels blocked (%)">河豚毒素：阻斷的鈉通道（%）</label><output id="ttxo"></output>
+            <input id="ttx" type="range" min="0" max="100" step="1" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="tea" data-en-html="TEA: K<sup>+</sup> channels blocked (%)">四乙銨（TEA）：阻斷的鉀通道（%）</label><output id="teao"></output>
+            <input id="tea" type="range" min="0" max="70" step="1" value="0" data-decimals="1"></div>
+          <div class="row2"><button type="button" id="envReset" data-en="Back to normal (6.3 °C, no drugs)">恢復正常（6.3 °C、無藥物）</button></div>
+          <p class="hint" data-en="These settings apply to both the membrane patch and the axon below.">這些設定同時用在上面的膜片與下面的軸突。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="seg3" role="group" aria-label="下方小圖顯示" data-en-aria-label="Lower plot shows" id="plotSeg">
+            <button type="button" data-plot="gates" aria-pressed="true" data-en="Gates m h n">閘門 m h n</button>
+            <button type="button" data-plot="g" aria-pressed="false" data-en="Conductances">電導</button>
+            <button type="button" data-plot="i" aria-pressed="false" data-en="Currents">電流</button>
+          </div>
+          <div class="slider"><label for="spd" data-en="Animation speed">動畫速度</label><output id="spdo"></output>
+            <input id="spd" type="range" min="-0.602" max="0.602" step="0.01" value="0" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="keep" type="checkbox" checked><span data-en="Keep earlier traces">保留之前的波形</span></label>
+            <label><input id="showE" type="checkbox" checked><span data-en-html="Show E<sub>Na</sub> and E<sub>K</sub>">顯示 E<sub>Na</sub> 與 E<sub>K</sub></span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · The impulse travels along the axon<small>A 10 cm squid axon: the impulse regenerates itself as it goes</small>">二・神經衝動沿著軸突傳導<small>10 cm 長的烏賊軸突：衝動一路往前、一路重新產生</small></h2>
+    <div class="lab ap" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="軸突、刺激電極與兩個記錄電極；上方是此刻沿軸突的膜電位，下方是兩個記錄電極量到的電位。可拖曳電極，或點選畫布後用 Enter 選電極、方向鍵移動" data-en-aria-label="The axon with the stimulating electrode and two recording electrodes; above, the membrane potential along the axon right now; below, the voltage at the two recording electrodes. Drag an electrode, or focus the canvas, press Enter to pick an electrode and move it with the arrow keys"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="cFire" type="button" class="primary" data-en="Stimulate the axon">刺激軸突</button>
+          <button id="cClear" type="button" data-en="Clear all" title="停止傳導、清除紀錄表，設定與電極位置不變" data-en-title="Stop, clear the table; settings and electrode positions stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The axon">軸突</h2>
+          <div class="slider"><label for="diam" data-en="Axon diameter (µm)">軸突直徑（µm）</label><output id="diamo"></output>
+            <input id="diam" type="range" min="1.69897" max="3" step="0.002" value="2.67761" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="myelin" type="checkbox"><span data-en="Wrap it in myelin (illustrative)">包上髓鞘（示意）</span></label>
+            <label><input id="s2on" type="checkbox"><span data-en="A second stimulating electrode">第二個刺激電極</span></label>
+          </div>
+          <p class="hint" data-en="Drag the electrodes along the axon (S = stimulate, R1 and R2 = record). Or focus the picture, press Enter to pick one and move it with the arrow keys (Shift for big steps).">拖曳電極可以改變位置（S 是刺激、R1 與 R2 是記錄）。也可以點選畫面，按 Enter 選電極、用方向鍵移動（加 Shift 一次移比較多）。</p>
+          <p class="hint" data-en="Temperature, ions and drugs come from the settings in part 1.">溫度、離子與藥物用第一部分的設定。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="In 1939 Alan Hodgkin and Andrew Huxley pushed a fine wire down the inside of a squid giant axon — a nerve fibre up to about half a millimetre thick that drives the squid’s escape jet — and recorded, for the first time, the voltage across a nerve membrane during an impulse. After the war they measured, step by step, how the membrane’s permeability to sodium and potassium changes with voltage and time, and in 1952 summed it all up in four equations. Those equations reproduced the shape of the impulse and even predicted how fast it travels, years before anyone could see an ion channel. The work earned them a share of the 1963 Nobel Prize in Physiology or Medicine.">1939 年，霍奇金（Alan Hodgkin）與赫胥黎（Andrew Huxley）把一條細導線從烏賊巨大軸突的切口送進去——這種神經纖維粗到約半毫米，負責讓烏賊噴水逃跑——第一次直接量到神經衝動通過時細胞膜兩側的電壓。戰後他們一步一步量出細胞膜對鈉、鉀的通透性怎麼隨電壓與時間改變，1952 年把結果寫成四條方程式。這組方程式重現了動作電位的形狀，甚至算出它傳導的速度，而那時還沒有人看過離子通道長什麼樣子。兩人因此分享了 1963 年的諾貝爾生理醫學獎。</p>
+
+      <h3 data-en="Resting potential: a battery made of ions">靜止膜電位：用離子做成的電池</h3>
+      <p data-en-html="The sodium–potassium pump keeps K<sup>+</sup> concentrated inside the cell and Na<sup>+</sup> outside. If a membrane let only one kind of ion through, the voltage would settle where the electrical pull balances the concentration difference — the ion’s <strong>equilibrium (Nernst) potential</strong>:">鈉鉀幫浦讓細胞內鉀離子多、細胞外鈉離子多。如果細胞膜只讓一種離子通過，膜電位會停在「電的吸引」剛好抵消「濃度差」的地方，叫做這種離子的<strong>平衡電位（能斯特電位）</strong>：</p>
+      <div class="formula">\[ E_{\text{ion}} = \frac{RT}{zF}\,\ln\frac{[\text{ion}]_{\text{out}}}{[\text{ion}]_{\text{in}}} \]</div>
+      <p data-en-html="In Hodgkin and Huxley’s squid axon E<sub>Na</sub> = +50 mV and E<sub>K</sub> = −77 mV. At rest a few potassium channels (and a small leak) are open, so the membrane sits near E<sub>K</sub>, at −65 mV. Raising the outside K<sup>+</sup> on this page moves E<sub>K</sub> up by (RT/F)·ln(factor) and drags the resting potential with it.">在 Hodgkin 與 Huxley 的烏賊軸突中，E<sub>Na</sub> = +50 mV，E<sub>K</sub> = −77 mV。靜止時只有一些鉀通道（加上少量漏電）開著，所以膜電位靠近 E<sub>K</sub>，停在 −65 mV。本頁提高細胞外 K<sup>+</sup> 時，E<sub>K</sub> 上升 (RT/F)·ln(倍數)，靜止膜電位也被拉上去。</p>
+
+      <h3 data-en="The Hodgkin–Huxley equations">Hodgkin–Huxley 方程式</h3>
+      <p data-en-html="The membrane is a capacitor (1 µF/cm²) with three parallel paths for current. The sodium conductance is controlled by three fast activation gates <em>m</em> and one slower inactivation gate <em>h</em>; the potassium conductance by four slow activation gates <em>n</em>:">細胞膜像一個電容（1 µF/cm²），旁邊並聯三條讓電流通過的路。鈉電導由三個快速的活化閘門 <em>m</em> 與一個較慢的不活化閘門 <em>h</em> 控制；鉀電導由四個較慢的活化閘門 <em>n</em> 控制：</p>
+      <div class="formula">\[ C\frac{dV}{dt} = I_{\text{stim}} - \bar g_{\text{Na}}\,m^3h\,(V-E_{\text{Na}}) - \bar g_{\text{K}}\,n^4\,(V-E_{\text{K}}) - g_L\,(V-E_L) \]</div>
+      <div class="formula">\[ \frac{dx}{dt} = \phi\,\big[\alpha_x(V)\,(1-x) - \beta_x(V)\,x\big],\qquad x = m,\ h,\ n \]</div>
+      <p data-en-html="Here \(\bar g_{\text{Na}}\) = 120 and \(\bar g_{\text{K}}\) = 36 mS/cm² are the conductances with every channel open. The rate constants \(\alpha\) and \(\beta\) are the curves Hodgkin and Huxley fitted to their voltage-clamp data at 6.3 °C; warming speeds every gate up by \(\phi = 3^{(T-6.3)/10}\) (a Q<sub>10</sub> of 3).">其中 \(\bar g_{\text{Na}}\) = 120、\(\bar g_{\text{K}}\) = 36 mS/cm² 是通道全部打開時的電導。速率常數 \(\alpha\)、\(\beta\) 是 Hodgkin 與 Huxley 用 6.3 °C 的電壓鉗制數據擬合出的曲線；溫度升高時，每個閘門都加快 \(\phi = 3^{(T-6.3)/10}\) 倍（Q<sub>10</sub> = 3）。</p>
+
+      <h3 data-en="Why there is a threshold, and why it is all or none">閾值與全有全無</h3>
+      <ul>
+        <li data-en-html="<strong>Positive feedback</strong>: depolarisation opens <em>m</em> gates in a fraction of a millisecond; Na<sup>+</sup> rushes in and depolarises the membrane further. Below threshold the outward K<sup>+</sup> and leak currents win and the voltage falls back; above it the sodium avalanche wins, and the peak hardly depends on how hard you pushed."><strong>正回饋</strong>：去極化讓 <em>m</em> 閘門在不到一毫秒內打開，Na<sup>+</sup> 湧入，使膜更去極化。閾值以下，往外的 K<sup>+</sup> 與漏電流占上風，電壓回落；一旦超過閾值，鈉離子的雪崩就停不下來，峰值幾乎和你推得多用力無關。</li>
+        <li data-en-html="<strong>Turning it off</strong>: within a millisecond or two the <em>h</em> gates close (sodium channels inactivate) and the slow <em>n</em> gates open, so K<sup>+</sup> flows out and brings the voltage back, briefly overshooting toward E<sub>K</sub> (the after-hyperpolarisation)."><strong>關掉它</strong>：一兩毫秒內，<em>h</em> 閘門關上（鈉通道不活化），較慢的 <em>n</em> 閘門打開，K<sup>+</sup> 流出把電壓拉回來，甚至短暫低於靜止電位、往 E<sub>K</sub> 靠近（後過極化）。</li>
+        <li data-en-html="<strong>Threshold is not a fixed voltage</strong>: a short pulse needs a large current, a long one a small current — roughly a fixed <em>charge</em> for very short pulses. Just above threshold the impulse can take several milliseconds to take off."><strong>閾值不是一個固定的電壓</strong>：短脈衝需要大電流，長脈衝只要小電流；脈衝很短時，需要的大約是固定的電荷量。剛好超過閾值時，動作電位可能要等好幾毫秒才衝起來。</li>
+      </ul>
+
+      <h3 data-en="Refractory periods and frequency coding">不反應期與頻率編碼</h3>
+      <p data-en-html="Right after an impulse most sodium channels are inactivated: for a few milliseconds no stimulus can fire another one (<strong>absolute refractory period</strong>); a little later a stronger-than-usual stimulus can, but the second impulse is smaller (<strong>relative refractory period</strong>). This is why a steady current gives a train of impulses rather than one long one, and why a stronger stimulus is signalled by <em>more impulses per second</em>, not by bigger ones.">動作電位剛結束時，大部分鈉通道還在不活化狀態：幾毫秒內，再強的刺激也引發不了下一個（<strong>絕對不反應期</strong>）；再過一會兒，用比平常大的刺激才引發得了，而且第二個動作電位比較小（<strong>相對不反應期</strong>）。所以持續的電流會產生一連串動作電位，而不是一個很長的；刺激越強，神經用「每秒更多個」動作電位來表示，而不是讓每個變大。</p>
+
+      <h3 data-en="Drugs, ions and temperature">藥物、離子與溫度</h3>
+      <ul>
+        <li data-en-html="<strong>Tetrodotoxin (TTX)</strong>, the poison of pufferfish, plugs voltage-gated sodium channels from the outside. Block enough of them and no stimulus can start an impulse — which is why pufferfish poisoning paralyses."><strong>河豚毒素（TTX）</strong>從細胞外堵住電壓控制型的鈉通道。阻斷得夠多，任何刺激都引發不了動作電位——這就是河豚中毒會造成麻痺的原因。</li>
+        <li data-en-html="<strong>Tetraethylammonium (TEA)</strong> blocks potassium channels: the falling phase slows down. In this model K<sup>+</sup> channels also help hold the resting potential, so heavy block depolarises the membrane; the slider stops at 70%."><strong>四乙銨（TEA）</strong>阻斷鉀通道：下降期變慢。在這個模型裡，鉀通道也負責維持靜止膜電位，阻斷太多會讓膜去極化，所以滑桿只到 70%。</li>
+        <li data-en-html="<strong>Low outside sodium</strong> lowers E<sub>Na</sub>, and the peak follows it down — the experiment by which Hodgkin and Katz showed in 1949 that the impulse is carried by sodium."><strong>細胞外鈉離子變少</strong>，E<sub>Na</sub> 下降，峰值也跟著下降——1949 年霍奇金與卡茨（Katz）就是用這個實驗證明動作電位靠的是鈉離子。</li>
+        <li data-en-html="<strong>Raised outside potassium</strong> depolarises the resting membrane. A little makes the nerve more excitable, even firing on its own; more keeps the sodium channels inactivated and the nerve falls silent. Blood potassium is held in a narrow range for exactly this reason."><strong>細胞外鉀離子變多</strong>，靜止膜電位上升。上升一點，神經變得更容易興奮，甚至自己放電；上升太多，鈉通道一直處於不活化，神經反而沒有反應。血液中的鉀離子濃度必須維持在很窄的範圍內，正是這個原因。</li>
+        <li data-en-html="<strong>Warmth</strong> speeds up every gate: the impulse becomes shorter and conduction faster, until above about 34 °C the potassium current arrives so quickly that the impulse fails to travel (heat block)."><strong>溫度升高</strong>讓每個閘門都變快：動作電位變短、傳導變快；但超過大約 34 °C，鉀電流來得太快，動作電位撐不起來，傳導失敗（熱阻斷）。</li>
+      </ul>
+
+      <h3 data-en="How the impulse travels">神經衝動怎麼傳導</h3>
+      <p data-en-html="Inside the axon, current from the active region spreads forward through the axoplasm and charges the next stretch of membrane past threshold, which then fires and does the same for the next. The membrane behind is refractory, so the impulse cannot turn back. Hodgkin and Huxley added the cable equation">軸突裡，興奮區域流進來的電流沿著軸漿往前流，把下一段細胞膜充電到超過閾值，那一段接著產生動作電位，再推動下一段。後面剛興奮過的膜正處於不反應期，所以衝動不會往回走。Hodgkin 與 Huxley 把細胞膜方程式加上纜線方程式</p>
+      <div class="formula">\[ \frac{a}{2R_i}\,\frac{\partial^2 V}{\partial x^2} = C\,\frac{\partial V}{\partial t} + I_{\text{ion}} \]</div>
+      <p data-en-html="(radius \(a\) = 238 µm, axoplasm resistivity \(R_i\) = 35.4 Ω·cm) and computed a speed of 18.8 m/s at 18.5 °C, against 21.2 m/s measured. For an unmyelinated axon the speed grows as the square root of the diameter: four times thicker, twice as fast. Vertebrates found a better trick: <strong>myelin</strong> wraps the axon in many layers of insulating membrane, so the charge only has to cross the membrane at the gaps (nodes of Ranvier), and the impulse skips from node to node (<strong>saltatory conduction</strong>). A 10 µm myelinated fibre in your body conducts about as fast as this half-millimetre squid axon.">（半徑 \(a\) = 238 µm、軸漿電阻率 \(R_i\) = 35.4 Ω·cm），在 18.5 °C 算出 18.8 m/s，實測是 21.2 m/s。沒有髓鞘的軸突，速度與直徑的平方根成正比：粗 4 倍，快 2 倍。脊椎動物找到更好的方法：<strong>髓鞘</strong>用很多層絕緣的細胞膜把軸突包起來，電荷只需要在缺口（蘭氏結）穿過細胞膜，衝動從一個蘭氏結跳到下一個（<strong>跳躍傳導</strong>）。你身體裡直徑 10 µm 的有髓神經纖維，傳導速度就和這條半毫米粗的烏賊軸突差不多。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Threshold</strong>: lower the strength until the impulse just fails. Just above threshold, how long does it take to fire? Then halve the pulse width: how much stronger must the pulse be?"><strong>閾值</strong>：把強度調小到剛好引發不了。剛好超過閾值時，要等多久才發？再把脈衝寬度減半，強度要變大多少？</li>
+        <li data-en-html="<strong>Watch the gates</strong>: in “Gates m h n”, <em>m</em> shoots up first, then <em>h</em> falls and <em>n</em> rises. Switch to “Currents” to see the inward sodium current come and go before the outward potassium current."><strong>看閘門</strong>：在「閘門 m h n」中，<em>m</em> 先衝上去，接著 <em>h</em> 下降、<em>n</em> 上升。切到「電流」，看往內的鈉電流先出現又消失，往外的鉀電流才跟上。</li>
+        <li data-en-html="<strong>Refractory period</strong>: with two pulses, shorten the interval. When does the second impulse get smaller, and when does it vanish altogether?"><strong>不反應期</strong>：用成對脈衝，把間隔縮短。第二個動作電位什麼時候開始變小？什麼時候完全消失？</li>
+        <li data-en-html="<strong>Frequency</strong>: with a steady current, raise the strength from 7 to 50 µA/cm² and read the firing rate. Then try 150."><strong>頻率</strong>：用持續電流，把強度從 7 調到 50 µA/cm²，讀發放頻率；再試試 150。</li>
+        <li data-en-html="<strong>1952 again</strong>: set 18.5 °C, diameter 476 µm, no drugs, and measure the conduction speed. Compare it with Hodgkin and Huxley’s 18.8 m/s."><strong>重現 1952</strong>：設成 18.5 °C、直徑 476 µm、不加藥物，量傳導速度，和 Hodgkin 與 Huxley 算出的 18.8 m/s 比一比。</li>
+        <li data-en-html="<strong>Thicker, faster</strong>: measure the speed at 119 µm and at 476 µm. Then switch on myelin."><strong>越粗越快</strong>：量直徑 119 µm 與 476 µm 的速度；再打開髓鞘。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The membrane patch is integrated with the fourth-order Runge–Kutta method in steps of 0.01 ms (smaller when it is warm), with the pulse edges falling exactly on steps. Hodgkin and Huxley’s original constants are used unchanged; voltages are written in today’s convention (inside minus outside, rest −65 mV).">膜片用四階 Runge–Kutta 法積分，步長 0.01 ms（溫度高時更小），脈衝的開始與結束都落在步長上。Hodgkin 與 Huxley 的原始常數完全不改；電壓用現在的寫法（細胞內減細胞外，靜止 −65 mV）。</li>
+        <li data-en="An action potential is counted when the voltage crosses −20 mV and the membrane’s own net current has turned inward by at least 30 µA/cm² (a regenerative sodium current). A voltage pushed up only by the stimulus does not count.">判定動作電位：膜電位往上越過 −20 mV，而且細胞膜自己的淨電流曾經往內流 30 µA/cm² 以上（再生性的鈉電流）。只靠刺激電流硬推上去的不算。</li>
+        <li data-en="The threshold used by the missions is found by bisection to 0.001%; the page does not show it — finding it is your job.">任務用到的閾值由程式以二分法算到 0.001%；頁面上不顯示——找到它是你的工作。</li>
+        <li data-en="The axon is cut into short segments (0.125–0.5 mm, finer for thin axons) with sealed ends. The gates use exponential integration and the voltage a semi-implicit scheme in steps of 0.005 ms (smaller when warm); halving both steps changes the speed by less than 1.5%. The stimulating electrode injects 1500 µA/cm² for 0.5 ms over 1 mm.">軸突切成很短的小段（0.125–0.5 mm，越細的軸突切得越細），兩端封閉。閘門用指數積分、電壓用半隱式法，步長 0.005 ms（溫度高時更小）；兩種步長都減半，速度的改變小於 1.5%。刺激電極在 1 mm 的範圍內通入 1500 µA/cm²、0.5 ms。</li>
+        <li data-en="The speed is the distance between R1 and R2 divided by the difference in the times at which the voltage there first crosses −20 mV.">傳導速度 ＝ R1 與 R2 的距離 ÷ 兩處膜電位第一次越過 −20 mV 的時間差。</li>
+        <li data-en="Myelin is illustrative: squid axons have none. Between nodes every 5 mm, the membrane capacitance and leak are divided by 200 and there are no channels. Real myelinated fibres are about 1–20 µm thick with nodes about 1 µm wide every 0.2–2 mm.">髓鞘是示意：烏賊軸突沒有髓鞘。本頁每 5 mm 一個蘭氏結，節間的膜電容與漏電導都除以 200，而且沒有鈉鉀通道。真正的有髓神經纖維直徑約 1–20 µm，蘭氏結寬約 1 µm、每隔 0.2–2 mm 一個。</li>
+        <li data-en-html="Changing the outside concentrations shifts E<sub>Na</sub> and E<sub>K</sub> by the Nernst equation; the channels themselves are unchanged. The reversal potentials are otherwise kept at Hodgkin and Huxley’s 6.3 °C values, so temperature acts only through the gates. In the 3D view the axon’s thickness is exaggerated.">改變細胞外濃度時，用能斯特方程式平移 E<sub>Na</sub> 與 E<sub>K</sub>，通道本身不變；除此之外平衡電位維持 Hodgkin 與 Huxley 在 6.3 °C 的值，溫度只透過閘門速度產生影響。3D 檢視中軸突的粗細是放大的示意。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · Nerves and Hormones.">課綱對應：高中生物（108 課綱）・神經與內分泌。</li>
+        <li data-en-html="The model and all its constants: A. L. Hodgkin and A. F. Huxley, “A quantitative description of membrane current and its application to conduction and excitation in nerve”, <cite>J. Physiol.</cite> 117 (1952) 500–544 — <a href=&quot;https://pmc.ncbi.nlm.nih.gov/articles/PMC1392413/&quot;>PMC1392413</a>.">模型與全部常數：A. L. Hodgkin、A. F. Huxley，〈A quantitative description of membrane current and its application to conduction and excitation in nerve〉，<cite>J. Physiol.</cite> 117 (1952) 500–544——<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1392413/">PMC1392413</a>（英文）。</li>
+        <li data-en-html="Sodium and the overshoot: A. L. Hodgkin and B. Katz, “The effect of sodium ions on the electrical activity of the giant axon of the squid”, <cite>J. Physiol.</cite> 108 (1949) 37–77 — <a href=&quot;https://pmc.ncbi.nlm.nih.gov/articles/PMC1392331/&quot;>PMC1392331</a>.">鈉離子與過射：A. L. Hodgkin、B. Katz，〈The effect of sodium ions on the electrical activity of the giant axon of the squid〉，<cite>J. Physiol.</cite> 108 (1949) 37–77——<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC1392331/">PMC1392331</a>（英文）。</li>
+        <li data-en="Constants R and F: CODATA 2018 (exact SI values).">氣體常數 R 與法拉第常數 F：CODATA 2018（SI 定義值）。</li>
+        <li data-en-html="The 1963 Nobel Prize in Physiology or Medicine — <a href=&quot;https://www.nobelprize.org/prizes/medicine/1963/summary/&quot;>nobelprize.org</a>; further reading: OpenStax, <cite>Biology 2e</cite>, section 35.2 How Neurons Communicate — <a href=&quot;https://openstax.org/books/biology-2e/pages/35-2-how-neurons-communicate&quot;>openstax.org</a>.">1963 年諾貝爾生理醫學獎——<a href="https://www.nobelprize.org/prizes/medicine/1963/summary/">nobelprize.org</a>（英文）；延伸閱讀：OpenStax《Biology 2e》35.2 How Neurons Communicate——<a href="https://openstax.org/books/biology-2e/pages/35-2-how-neurons-communicate">openstax.org</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/action-potential-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/action-potential.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="action-potential"></script>
+  <script src="js/missions/action-potential.js"></script>
+  <script src="js/stats.js" data-module="action-potential"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
