@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Riemann Sums, Definite Integrals and Solids of Revolution | Astro Ni Science Lab">黎曼和、定積分與旋轉體｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 黎曼和頁面專用的顏色代號（淺色＋深色；由 js/riemann-sum.js 與 js/riemann-sum-3d.js 讀取） */
+    :root { --rs-curve: #1e3a8a; --rs-pos: #0e7490; --rs-neg: #be123c; --rs-up: #b45309; --rs-pt: #c2410c; --rs-area: #7c3aed; --rs-left: #0e7490; --rs-mid: #15803d; --rs-trap: #9333ea; --rs-ul: #b45309; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --rs-curve: #c7d7ff; --rs-pos: #22d3ee; --rs-neg: #fb7185; --rs-up: #fbbf24; --rs-pt: #fb923c; --rs-area: #c4b5fd; --rs-left: #22d3ee; --rs-mid: #4ade80; --rs-trap: #d8b4fe; --rs-ul: #fbbf24; }
+    }
+    :root[data-theme="dark"] { --rs-curve: #c7d7ff; --rs-pos: #22d3ee; --rs-neg: #fb7185; --rs-up: #fbbf24; --rs-pt: #fb923c; --rs-area: #c4b5fd; --rs-left: #22d3ee; --rs-mid: #4ade80; --rs-trap: #d8b4fe; --rs-ul: #fbbf24; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; }
+    .rs button { min-height: 44px; }
+    .rs [hidden] { display: none !important; }
+    .rs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rs .playbar button { flex: 1 1 auto; }
+    .rs .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .rs .slider input[type="range"] { height: 28px; margin: 0; }
+    .rs .checks label { min-height: 44px; }
+    .rs .checks input { width: 17px; height: 17px; }
+    .rs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rs .panel { grid-template-columns: minmax(0, 1fr); }
+    .rs .panel > .card { min-width: 0; }
+    .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+    .opts button { padding: 6px 8px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+    .opts button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .opts button:disabled { opacity: .45; }
+    .opts small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); opacity: .85; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--rs-mid); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.rules { width: 100%; border-collapse: collapse; }
+    table.rules td, table.rules th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    table.rules th:first-child, table.rules td:first-child { text-align: left; }
+    table.rules tr.on td { color: var(--accent); font-weight: 700; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; gap: 6px; }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2, .stage:not(.is3d) #resetCam { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .s3-wrap { position: relative; }
+    .s3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .s3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .s3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .s3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .s3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .s3-hud span.m { color: var(--muted); font-weight: 500; }
+    .s3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#calculus&quot;>Mathematics · Calculus</a> / Riemann sums"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#calculus">數學・微積分</a> ／ 黎曼和</nav>
+      <h1 data-en="Riemann Sums, Definite Integrals and Solids of Revolution">黎曼和、定積分與旋轉體</h1>
+      <p data-en="Fill the area under a curve with rectangles — left endpoints, right endpoints, midpoints, trapezoids, or the largest and smallest heights — and watch the total close in on the exact integral as the strips get thinner. The error chart shows which method closes in faster. Then spin the curve around the x-axis in 3D and stack thin discs into a solid whose volume is π times the integral of f squared.">用長方形把曲線底下的面積填滿——取左端點、右端點、中點、梯形，或每一段最高與最低的高度——長條越細，總和就越接近準確的定積分；下方的誤差圖告訴你哪一種方法逼近得最快。再到 3D 把曲線繞 x 軸轉一圈，用一片片薄圓盤疊出旋轉體，體積就是 π 乘以 f 平方的積分。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: keep the midpoint rule and drag n from 1 to 200 — then press “Double n” and watch the error shrink by about 4 each time.">試試看：用中點法把 n 從 1 拉到 200；再按「n 一直加倍」，看誤差每次大約變成 1/4。</p>
+    <div class="lab rs" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D area">2D 面積</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D solid">3D 旋轉體</button>
+          </div>
+          <button type="button" id="resetCam" data-en="Reset view">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="黎曼和畫布：上方是函數圖形與長方形，下方是誤差隨 n 變化的對數圖。左右方向鍵改變 n。" data-en-aria-label="Riemann sum canvas: the graph with its rectangles on top, and below it a log–log chart of how the error changes with n. Left and right arrow keys change n."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Double n">n 一直加倍</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄與兩段面積的比較；設定不變" data-en-title="Clear the challenge record; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="l2" style="color:var(--rs-curve)" data-en-html="<i style=&quot;background:var(--rs-curve)&quot;></i>y = f(x)"><i style="background:var(--rs-curve)"></i>y = f(x)</span>
+          <span class="l2" data-en-html="<i style=&quot;background:var(--rs-pos)&quot;></i>Rectangles above the axis"><i style="background:var(--rs-pos)"></i>軸上方的長方形</span>
+          <span class="l2" data-en-html="<i style=&quot;background:var(--rs-neg)&quot;></i>Below the axis (counts negative)"><i style="background:var(--rs-neg)"></i>軸下方（算負的）</span>
+          <span class="l2" style="color:var(--rs-up)" data-en-html="<i class=&quot;dash&quot;></i>Upper sum (in “Upper and lower”)"><i class="dash"></i>上和（「上和與下和」時）</span>
+          <span class="l3" data-en-html="<i style=&quot;background:var(--rs-pos)&quot;></i>Discs (or frustums)"><i style="background:var(--rs-pos)"></i>圓盤（梯形法是圓台）</span>
+          <span class="l3" data-en-html="<i style=&quot;background:var(--rs-area)&quot;></i>The exact solid"><i style="background:var(--rs-area)"></i>準確的旋轉體</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Function">函數</h2>
+          <div class="opts" id="funcs" role="group" aria-label="函數" data-en-aria-label="Function">
+            <button type="button" data-f="sq" aria-pressed="true">x²</button>
+            <button type="button" data-f="sin" aria-pressed="false">sin x</button>
+            <button type="button" data-f="sqrt" aria-pressed="false">√x</button>
+            <button type="button" data-f="exp" aria-pressed="false">e<sup>x</sup></button>
+            <button type="button" data-f="recip" aria-pressed="false">1/x</button>
+            <button type="button" data-f="semi" aria-pressed="false" data-en-html="√(4 − x²)<small>semicircle</small>">√(4 − x²)<small>半圓</small></button>
+          </div>
+          <div class="slider"><label for="aa" data-en="Left end a">左端 a</label><output id="aao"></output>
+            <input id="aa" type="range" min="-7" max="7" step="0.01" value="0" data-decimals="4"></div>
+          <div class="slider"><label for="bb" data-en="Right end b">右端 b</label><output id="bbo"></output>
+            <input id="bb" type="range" min="-7" max="7" step="0.01" value="2" data-decimals="4"></div>
+          <p class="hint" data-en="Each function has its own allowed range; a and b are kept inside it, at least 0.1 apart. Tap a number to type it (to 4 decimal places).">每個函數有自己的範圍，a、b 會停在範圍裡，而且至少差 0.1。點一下數字可以直接輸入（到小數第 4 位）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Method and number of strips">取法與分段數</h2>
+          <div class="opts" id="rules" role="group" aria-label="取法" data-en-aria-label="Method">
+            <button type="button" data-r="left" aria-pressed="false" data-en="Left endpoints">左端點</button>
+            <button type="button" data-r="right" aria-pressed="false" data-en="Right endpoints">右端點</button>
+            <button type="button" data-r="mid" aria-pressed="true" data-en="Midpoints">中點</button>
+            <button type="button" data-r="trap" aria-pressed="false" data-en="Trapezoids">梯形</button>
+            <button type="button" data-r="ul" aria-pressed="false" data-en="Upper and lower">上和與下和</button>
+          </div>
+          <div class="slider"><label for="nn" data-en="Number of strips n">分段數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="1" max="200" step="1" value="6" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="showErr" type="checkbox" checked><span data-en="Show the error chart">顯示誤差圖</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Exact integral">定積分（準確值）</dt><dd id="rI">—</dd>
+            <dt data-en="This method">這個取法的和</dt><dd id="rS">—</dd>
+            <dt data-en="Error">誤差</dt><dd id="rE">—</dd>
+            <dt data-en="Error × n">誤差 × n</dt><dd id="rEn">—</dd>
+            <dt data-en="Error × n²">誤差 × n²</dt><dd id="rEn2">—</dd>
+            <dt data-en="Disc volume (3D)">圓盤體積（3D）</dt><dd id="rV">—</dd>
+            <dt data-en-html="Exact volume π∫f<sup>2</sup> dx">準確體積 π∫f<sup>2</sup> dx</dt><dd id="rVx">—</dd>
+          </dl>
+          <div class="tablewrap"><table class="rules" id="rulesTbl"></table></div>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: estimate the area">挑戰：估計面積</h2>
+          <p class="hint" data-en="You get a function, a left end a and a target area. Move only b until the area under the curve from a to b equals the target (within 3 %). The numbers are hidden: count the grid squares.">出一個函數、左端 a 和目標面積，只能移動 b，讓 a 到 b 曲線下的面積等於目標（誤差 3% 以內）。挑戰時數字都藏起來，請數方格估計。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Riemann sums">黎曼和</h3>
+      <p data-en-html="Cut \([a, b]\) into \(n\) strips of width \(\Delta x = \dfrac{b - a}{n}\) and pick a point \(x_i^*\) in each one. The <strong>Riemann sum</strong> adds up the rectangles:">把 \([a, b]\) 切成 \(n\) 段，每段寬 \(\Delta x = \dfrac{b - a}{n}\)，每段裡挑一個點 \(x_i^*\)。<strong>黎曼和</strong>就是把長方形加起來：</p>
+      <div class="formula">\[ S_n = \sum_{i=1}^{n} f(x_i^*)\,\Delta x . \]</div>
+      <p data-en-html="Taking \(x_i^*\) at the left end, the right end or the middle gives the left, right and midpoint sums. The <strong>trapezoid rule</strong> joins the two ends of each strip with a straight line instead. The <strong>upper sum</strong> uses the largest value of \(f\) on each strip and the <strong>lower sum</strong> the smallest, so they always trap the area between them. Rectangles below the \(x\)-axis count as negative: the integral is a <em>signed</em> area.">\(x_i^*\) 取每段的左端、右端或中點，就是左和、右和、中點和；<strong>梯形法</strong>改用直線連接每段的兩端。<strong>上和</strong>取每段裡 \(f\) 最大的值，<strong>下和</strong>取最小的值，所以真正的面積一定夾在兩者中間。在 \(x\) 軸下方的長方形算負的：定積分是<em>有正負號</em>的面積。</p>
+      <p data-en-html="As \(n \to \infty\) every one of these sums tends to the same number, the <strong>definite integral</strong> \(\int_a^b f(x)\,dx\). By the fundamental theorem of calculus it can be computed from an antiderivative \(F\) (a function with \(F' = f\)):">當 \(n \to \infty\)，這些和全都趨近同一個數，就是<strong>定積分</strong> \(\int_a^b f(x)\,dx\)。由微積分基本定理，它可以用反導函數 \(F\)（滿足 \(F' = f\)）算出來：</p>
+      <div class="formula">\[ \int_a^b f(x)\,dx = F(b) - F(a). \]</div>
+
+      <h3 data-en="How fast the error shrinks">誤差縮小的速度</h3>
+      <p data-en-html="For a smooth function, the left and right sums are off by roughly \(\dfrac{f(b) - f(a)}{2}\,\Delta x\), so the error is proportional to \(1/n\): doubling \(n\) halves it. The midpoint and trapezoid errors are proportional to \(1/n^2\): doubling \(n\) divides them by 4. In fact">函數夠平滑時，左和、右和的誤差大約是 \(\dfrac{f(b) - f(a)}{2}\,\Delta x\)，和 \(1/n\) 成正比：\(n\) 加倍，誤差減半。中點法與梯形法的誤差和 \(1/n^2\) 成正比：\(n\) 加倍，誤差變成 1/4。更精確地說</p>
+      <div class="formula">\[ M_n - \int_a^b f \approx -\frac{(b-a)\,\Delta x^2}{24}\,\overline{f''}, \qquad T_n - \int_a^b f \approx \frac{(b-a)\,\Delta x^2}{12}\,\overline{f''}, \]</div>
+      <p data-en-html="where \(\overline{f''}\) is the average of \(f''\): the midpoint rule is about twice as accurate as the trapezoid rule and errs the other way. On the log–log error chart, an error proportional to \(1/n\) is a line of slope \(-1\) and one proportional to \(1/n^2\) a line of slope \(-2\). The semicircle has a vertical tangent at its ends, so there the convergence is slower.">其中 \(\overline{f''}\) 是 \(f''\) 的平均：中點法大約比梯形法準一倍，而且誤差的方向相反。在雙對數的誤差圖上，和 \(1/n\) 成正比的誤差是斜率 \(-1\) 的直線，和 \(1/n^2\) 成正比的是斜率 \(-2\) 的直線。半圓在兩端的切線是鉛直的，所以收斂得比較慢。</p>
+
+      <h3 data-en="Solids of revolution">旋轉體</h3>
+      <p data-en-html="Spin the graph of \(y = f(x)\) around the \(x\)-axis. A thin slice of width \(\Delta x\) is almost a disc of radius \(|f(x)|\) and volume \(\pi f(x)^2\,\Delta x\); adding the discs and letting them get thinner gives">把 \(y = f(x)\) 的圖形繞 \(x\) 軸轉一圈。寬 \(\Delta x\) 的薄片幾乎是半徑 \(|f(x)|\) 的圓盤，體積 \(\pi f(x)^2\,\Delta x\)；把圓盤加起來、再讓它們越切越薄，就得到</p>
+      <div class="formula">\[ V = \pi \int_a^b f(x)^2\,dx . \]</div>
+      <p data-en-html="Spinning the semicircle \(y = \sqrt{4 - x^2}\) gives a ball of radius 2: \(V = \pi\int_{-2}^{2}(4 - x^2)\,dx = \tfrac{32}{3}\pi\), the familiar \(\tfrac43\pi r^3\). With the trapezoid rule each slice becomes a frustum (a cone with its tip cut off) of volume \(\tfrac13\pi\,\Delta x\,(r_1^2 + r_1 r_2 + r_2^2)\).">把半圓 \(y = \sqrt{4 - x^2}\) 轉一圈就是半徑 2 的球：\(V = \pi\int_{-2}^{2}(4 - x^2)\,dx = \tfrac{32}{3}\pi\)，正是熟悉的 \(\tfrac43\pi r^3\)。用梯形法時每一片變成圓台（削掉尖端的圓錐），體積 \(\tfrac13\pi\,\Delta x\,(r_1^2 + r_1 r_2 + r_2^2)\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Over and under</strong>: for an increasing function the left sum is too small and the right sum too big; for a decreasing one it is the other way round."><strong>多算與少算</strong>：遞增函數的左和偏小、右和偏大；遞減函數剛好相反。</li>
+        <li data-en-html="<strong>Concave or convex</strong>: when the graph bends upwards, trapezoids sit above it (too big) and midpoint rectangles below it (too small)."><strong>凹向上或凹向下</strong>：圖形向上彎時，梯形在曲線上方（偏大），中點長方形偏小。</li>
+        <li data-en-html="<strong>Cancelling out</strong>: \(\sin x\) over a whole period has integral 0 — the part below the axis cancels the part above."><strong>正負抵消</strong>：\(\sin x\) 在一整個週期的積分是 0——軸下方的部分抵消了軸上方的部分。</li>
+        <li data-en-html="<strong>Equal areas under \(1/x\)</strong>: \(\int_a^b \frac{dx}{x} = \ln\frac{b}{a}\) depends only on the ratio \(b/a\)."><strong>\(1/x\) 下的等面積</strong>：\(\int_a^b \frac{dx}{x} = \ln\frac{b}{a}\) 只和比值 \(b/a\) 有關。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every sum is added up exactly as defined (with compensated summation); exact integrals and volumes come from antiderivatives. The largest and smallest value on each strip is found from its ends and the critical points inside it. The unit tests check known formulas (for \(x^2\) the sums have closed forms), the bracketing of the integral by the upper and lower sums, the 1/2 and 1/4 error ratios, and the ball’s volume.">每一種和都照定義逐項相加（用補償加法減少捨入誤差）；準確的積分與體積用反導函數計算。每段的最大、最小值由兩端與段內的臨界點求出。單元測試核對已知公式（\(x^2\) 的各種和有封閉形式）、上下和夾住積分、誤差每次變 1/2 與 1/4 的比例，以及球的體積。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics, elective Mathematics A/B (grade 12) · Riemann sums, definite integrals, the fundamental theorem of calculus, volumes of solids of revolution.">課綱對應：高中數學選修數學甲（高三）・黎曼和、定積分、微積分基本定理、旋轉體體積。</li>
+        <li data-en="History: Archimedes estimated areas and volumes by slicing them up more than 2000 years ago; Riemann gave the precise definition of the integral in 1854.">歷史：兩千多年前阿基米德就把面積和體積切成小片來估計；黎曼在 1854 年給出積分的精確定義。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Riemann_sum&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Riemann sum (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Solid_of_revolution&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Solid of revolution (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Riemann_sum" target="_blank" rel="noopener">Riemann sum（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Solid_of_revolution" target="_blank" rel="noopener">Solid of revolution（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/riemann-sum-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/riemann-sum.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="riemann-sum"></script>
+  <script src="js/missions/riemann-sum.js"></script>
+  <script src="js/stats.js" data-module="riemann-sum"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
