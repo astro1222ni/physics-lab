@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Logic Gates and Adders | Astro Ni Science Lab">邏輯閘與加法器｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 邏輯閘頁面專用的顏色代號（淺色＋兩組深色；由 js/logic-gates.js 讀取） */
+    :root { --lg-hi: #d97706; --lg-lo: #7b8d97; --lg-x: #9a86b8; --lg-gate: #eaf1f4; --lg-edge: #34474f; --lg-chip: #d6ebe4;
+      --lg-glitch: #c2187a; --lg-gen: #2b8a3e; --lg-prop: #1f6fd0; --lg-kill: #8a979d; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
+        --lg-glitch: #ff6fb5; --lg-gen: #69db7c; --lg-prop: #7ab6ff; --lg-kill: #7d8d93; }
+    }
+    :root[data-theme="dark"] { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
+      --lg-glitch: #ff6fb5; --lg-gen: #69db7c; --lg-prop: #7ab6ff; --lg-kill: #7d8d93; }
+
+    /* 畫布高度由程式依版面決定；手機上可以照常捲動，點到開關才算操作 */
+    #cv { aspect-ratio: auto; height: 300px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; cursor: default; margin-top: 10px; }
+    .lg [hidden] { display: none !important; }
+    .lg .panel { grid-template-columns: minmax(0, 1fr); }
+    .lg .panel > .card { min-width: 0; }
+    .lg .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .lg .slider input[type="range"] { height: 28px; margin: 0; }
+    .lg .checks label { min-height: 44px; }
+    .lg .checks input { width: 17px; height: 17px; }
+    /* 模式切換 */
+    .modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+    .modes button { padding: 6px 4px; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
+    .modes button[aria-pressed="true"], .gsel button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+    @media (max-width: 560px) { .modes { grid-template-columns: repeat(6, minmax(0, 1fr)); } .modes button { grid-column: span 2; } .modes button:nth-child(4), .modes button:nth-child(5) { grid-column: span 3; } }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--surface); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 8px; }
+    .row > .lbl { font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    /* 七種閘 */
+    .gsel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+    .gsel button { padding: 4px 2px; line-height: 1.15; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .gsel b { font-size: calc(14px * var(--fs, 1)); letter-spacing: .02em; }
+    .gsel small { font-size: calc(11px * var(--fs, 1)); opacity: .85; }
+    /* 輸入開關 */
+    .ins { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0 0 8px; }
+    .tog { display: flex; align-items: center; justify-content: center; gap: 8px; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .tog .v { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.6em; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); }
+    .tog[aria-pressed="true"] { border-color: var(--lg-hi); background: color-mix(in srgb, var(--lg-hi) 14%, var(--surface)); }
+    .tog[aria-pressed="true"] .v { background: var(--lg-hi); border-color: var(--lg-hi); color: #241600; }
+    .tog:disabled { opacity: .45; cursor: not-allowed; }
+    /* 多位元加法器的位元按鈕：一律 4 欄（8 位元時分兩列，正好是兩個半位元組） */
+    .bitrow { margin: 0 0 8px; }
+    .bitrow .bl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 4px; display: flex; justify-content: space-between; gap: 8px; }
+    .bitrow .bl b { color: var(--text); font-variant-numeric: tabular-nums; }
+    .bits { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .bits button { padding: 2px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .bits button b { font-size: calc(17px * var(--fs, 1)); }
+    .bits button small { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); }
+    .bits button[aria-pressed="true"] { border-color: var(--lg-hi); background: color-mix(in srgb, var(--lg-hi) 18%, var(--surface)); }
+    .bits button[aria-pressed="true"] small { color: var(--text); }
+    /* 萬用閘拼圖的接線 */
+    .wires { display: grid; gap: 6px; margin: 4px 0 8px; }
+    .wire-row { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr) auto; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+    .wire-row .gl { font-weight: 700; font-size: calc(14px * var(--fs, 1)); white-space: nowrap; }
+    .wire-row .gl i { font-style: normal; color: var(--muted); font-weight: 500; }
+    .wire-row .pr { color: var(--muted); }
+    .wire-row.off .gl { opacity: .55; }
+    .lg select { font: inherit; font-size: calc(15px * var(--fs, 1)); min-height: 44px; width: 100%; min-width: 0; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .lg select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .tgt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; font-size: calc(14px * var(--fs, 1)); margin: 0 0 6px; }
+    /* 播放列 */
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; }
+    .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .lg .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .sumline { margin: 8px 4px 0; font-size: calc(15px * var(--fs, 1)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .sumline:empty { display: none; }
+    .sumline code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.02em; letter-spacing: .04em; }
+    .sumline .co { color: var(--lg-glitch); font-weight: 700; }
+    .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    /* 讀數與表格 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 0; }
+    table.tt { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.tt th, table.tt td { padding: 4px 5px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.tt thead th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.tt th.sel, table.tt td.sel { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+    table.tt thead th.sel { color: var(--accent); font-weight: 800; }
+    table.tt tr.cur td { background: color-mix(in srgb, var(--lg-hi) 16%, transparent); font-weight: 700; }
+    table.tt tr.cur td.sel { background: color-mix(in srgb, var(--lg-hi) 30%, transparent); }
+    table.tt td.one { color: var(--text); }
+    table.tt td.zero { color: var(--muted); }
+    table.tt td.ok { color: var(--lg-gen); font-weight: 700; }
+    table.tt td.bad { color: var(--lg-glitch); font-weight: 700; }
+    table.tt td.l { text-align: left; }
+    .tcap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#system&quot;>Information Technology · Computer Systems</a> / Logic gates"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#system">資訊科技・計算機系統</a> ／ 邏輯閘</nav>
+      <h1 data-en="Logic Gates and Adders">邏輯閘與加法器</h1>
+      <p data-en="A computer adds numbers with nothing but tiny switches called logic gates. Flip the inputs and watch the lamps; build every gate out of NAND alone; then chain gates into a half adder, a full adder and a 4- or 8-bit ripple-carry adder. Each gate takes one unit of time to respond, so you can watch a carry ripple from bit to bit — and catch the brief wrong answers (glitches) on the way.">電腦做加法，靠的只是一個個叫做「邏輯閘」的小開關。撥動輸入、看燈亮不亮；只用 NAND 拼出其他的閘；再把閘接成半加器、全加器和 4 或 8 位元的漣波進位加法器。每個閘都要花 1 個單位時間才反應過來，所以你看得到進位一格一格往前傳，還能抓到途中一閃而過的錯誤答案（突波）。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: in “Logic gates”, switch both inputs to 1 and watch the AND lamp light up; then open “Multi-bit adder” and work out 9 + 7.">試試看：在「邏輯閘」把兩個輸入都撥成 1，看 AND 的燈亮起來；再到「多位元加法器」算 9 + 7。</p>
+    <div class="lab lg" id="lab">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+          <button type="button" data-mode="gate" aria-pressed="true" data-en="Logic gates">邏輯閘</button>
+          <button type="button" data-mode="build" aria-pressed="false" data-en="Universal-gate puzzle">萬用閘拼圖</button>
+          <button type="button" data-mode="half" aria-pressed="false" data-en="Half adder">半加器</button>
+          <button type="button" data-mode="full" aria-pressed="false" data-en="Full adder">全加器</button>
+          <button type="button" data-mode="adder" aria-pressed="false" data-en="Multi-bit adder">多位元加法器</button>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="電路畫布：左邊是輸入開關，中間是邏輯閘，右邊是輸出燈。導線是 1 時變成琥珀色，是 0 時是灰色。點一下開關可以切換。" data-en-aria-label="Circuit canvas: input switches on the left, logic gates in the middle and output lamps on the right. A wire turns amber when it carries 1 and grey when it carries 0. Tap a switch to flip it."></canvas>
+        <p class="sumline" id="sumline" aria-live="polite"></p>
+        <div class="playbar">
+          <button id="stepBtn" type="button" class="primary" data-en="Step" title="往前走 1 個閘延遲；已經穩定時從 t = 0 重新看" data-en-title="Move forward one gate delay; once settled, start again from t = 0">單步</button>
+          <button id="replayBtn" type="button" data-en="Replay" title="把剛才那一次輸入的變化從 t = 0 再播一次" data-en-title="Play the last change of the inputs again from t = 0">重播</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉打勾的真值表列與計算紀錄；電路與開關不變" data-en-title="Remove the ticks in the truth table and the calculation log; the circuit and the switches are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--lg-hi)&quot;></i>1 (on)"><i style="background:var(--lg-hi)"></i>1（通電）</span>
+          <span data-en-html="<i style=&quot;background:var(--lg-lo)&quot;></i>0 (off)"><i style="background:var(--lg-lo)"></i>0（不通電）</span>
+          <span style="color:var(--lg-x)" data-en-html="<i class=&quot;dash&quot;></i>X (not connected)"><i class="dash"></i>X（沒接線，未知）</span>
+          <span data-en-html="<i style=&quot;background:var(--lg-glitch)&quot;></i>Glitch (wrong for a moment)"><i style="background:var(--lg-glitch)"></i>突波（短暫的錯誤值）</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Gate still working"><i class="dot" style="background:var(--accent)"></i>閘還在反應中</span>
+        </div>
+        <canvas id="cv2" aria-label="時序圖：橫軸是時間（單位是閘延遲），每一列是一條導線的值，高是 1、低是 0；粉紅色的區段是突波，直線游標是目前播放到的時間。" data-en-aria-label="Timing diagram: time in gate delays across, one row per wire, high for 1 and low for 0; pink stretches are glitches and the vertical cursor is the time being shown."></canvas>
+        <p class="chart-cap" id="chartCap" data-en="Timing diagram: every wire, gate delay by gate delay. The dashed line marks the longest path through the circuit — the slowest it can ever be.">時序圖：每一條導線隨時間（以閘延遲為單位）的值。虛線標出電路裡最長的路徑——最慢也不會超過它。</p>
+      </div>
+
+      <aside class="panel">
+        <!-- 模式一：邏輯閘 -->
+        <section class="card" data-modes="gate">
+          <h2 data-en="Pick a gate">選一種閘</h2>
+          <div class="gsel" role="group" aria-label="閘的種類" data-en-aria-label="Gate type">
+            <button type="button" data-gate="AND" aria-pressed="true"><b>AND</b><small data-en="both">及閘</small></button>
+            <button type="button" data-gate="OR" aria-pressed="false"><b>OR</b><small data-en="either">或閘</small></button>
+            <button type="button" data-gate="NOT" aria-pressed="false"><b>NOT</b><small data-en="invert">反閘</small></button>
+            <button type="button" data-gate="NAND" aria-pressed="false"><b>NAND</b><small data-en="not both">反及閘</small></button>
+            <button type="button" data-gate="NOR" aria-pressed="false"><b>NOR</b><small data-en="neither">反或閘</small></button>
+            <button type="button" data-gate="XOR" aria-pressed="false"><b>XOR</b><small data-en="differ">互斥或閘</small></button>
+            <button type="button" data-gate="XNOR" aria-pressed="false"><b>XNOR</b><small data-en="same">反互斥或閘</small></button>
+          </div>
+          <div class="ins">
+            <button type="button" class="tog" data-in="gate:a" aria-pressed="false"><span>A</span><span class="v">0</span></button>
+            <button type="button" class="tog" data-in="gate:b" aria-pressed="false"><span>B</span><span class="v">0</span></button>
+          </div>
+          <div class="checks"><label><input id="nandView" type="checkbox"><span data-en="Build it from NAND">用 NAND 組成</span></label></div>
+          <p class="hint" id="nandHint" data-en="With “Build it from NAND” on, NOT, AND and OR are drawn using NAND gates only. Try the others yourself in the “Universal-gate puzzle”.">打開「用 NAND 組成」，NOT、AND、OR 會改畫成只用 NAND 接成的電路。其他幾種，到「萬用閘拼圖」自己拼拼看。</p>
+        </section>
+
+        <!-- 模式二：萬用閘拼圖 -->
+        <section class="card" data-modes="build" hidden>
+          <h2 data-en="Build with one kind of gate">只用一種閘來拼</h2>
+          <div class="row"><span class="lbl" data-en="Universal gate">萬用閘</span>
+            <div class="seg" role="group" aria-label="萬用閘" data-en-aria-label="Universal gate">
+              <button type="button" data-utype="NAND" aria-pressed="true">NAND</button>
+              <button type="button" data-utype="NOR" aria-pressed="false">NOR</button>
+            </div>
+          </div>
+          <label class="tgt"><span data-en="Target">目標</span>
+            <select id="target" aria-label="目標函數" data-en-aria-label="Target function">
+              <option value="NOT" data-en="NOT A">NOT A</option>
+              <option value="AND" selected>AND</option>
+              <option value="OR">OR</option>
+              <option value="NAND">NAND</option>
+              <option value="NOR">NOR</option>
+              <option value="XOR">XOR</option>
+              <option value="XNOR">XNOR</option>
+            </select>
+          </label>
+          <div class="slider"><label for="kk" data-en="Number of gates k">閘的數目 k</label><output id="kko"></output>
+            <input id="kk" type="range" min="1" max="6" step="1" value="3" data-decimals="0"></div>
+          <div class="wires" id="wires"></div>
+          <div class="ins">
+            <button type="button" class="tog" data-in="build:a" aria-pressed="false"><span>A</span><span class="v">0</span></button>
+            <button type="button" class="tog" data-in="build:b" aria-pressed="false"><span>B</span><span class="v">0</span></button>
+            <button type="button" id="unwire" data-en="Remove all wires">拆掉所有接線</button>
+          </div>
+          <p class="hint" data-en="Each gate takes its two inputs from A, B or an earlier gate; the last gate is the output. A pin left unconnected is unknown (X).">每個閘的兩個輸入可以接 A、B 或前面的閘；最後一個閘就是輸出。沒接線的腳是未知（X）。</p>
+        </section>
+
+        <!-- 模式三、四：半加器、全加器 -->
+        <section class="card" data-modes="half" hidden>
+          <h2 data-en="Inputs">輸入</h2>
+          <div class="ins">
+            <button type="button" class="tog" data-in="half:a" aria-pressed="false"><span>A</span><span class="v">0</span></button>
+            <button type="button" class="tog" data-in="half:b" aria-pressed="false"><span>B</span><span class="v">0</span></button>
+          </div>
+          <p class="hint" data-en="A half adder adds two bits. S is the sum bit and C is the carry: together they are A + B written in binary.">半加器把兩個位元相加。S 是和的那一位，C 是進位：合起來就是 A + B 的二進位。</p>
+        </section>
+        <section class="card" data-modes="full" hidden>
+          <h2 data-en="Inputs">輸入</h2>
+          <div class="ins">
+            <button type="button" class="tog" data-in="full:a" aria-pressed="false"><span>A</span><span class="v">0</span></button>
+            <button type="button" class="tog" data-in="full:b" aria-pressed="false"><span>B</span><span class="v">0</span></button>
+            <button type="button" class="tog" data-in="full:cin" aria-pressed="false"><span>Cin</span><span class="v">0</span></button>
+          </div>
+          <p class="hint" data-en="A full adder also takes the carry Cin from the bit to its right: two half adders and one OR gate.">全加器多收一個從右邊那一位傳來的進位 Cin：兩個半加器再加一個 OR 閘。</p>
+        </section>
+
+        <!-- 模式五：多位元加法器 -->
+        <section class="card" data-modes="adder" hidden>
+          <h2 data-en="Add two numbers">兩個數相加</h2>
+          <div class="row"><span class="lbl" data-en="Width">位元數</span>
+            <div class="seg" role="group" aria-label="位元數" data-en-aria-label="Width">
+              <button type="button" data-width="4" aria-pressed="true" data-en="4 bits">4 位元</button>
+              <button type="button" data-width="8" aria-pressed="false" data-en="8 bits">8 位元</button>
+            </div>
+          </div>
+          <div class="slider"><label for="av" data-en="A (decimal)">A（十進位）</label><output id="avo"></output>
+            <input id="av" type="range" min="0" max="15" step="1" value="11" data-decimals="0"></div>
+          <div class="slider"><label for="bv" data-en="B (decimal)">B（十進位）</label><output id="bvo"></output>
+            <input id="bv" type="range" min="0" max="15" step="1" value="3" data-decimals="0"></div>
+          <div class="bitrow"><div class="bl"><span data-en="Bits of A (highest bit first)">A 的每一位（最高位在左）</span><b id="aBin"></b></div><div class="bits" id="aBits"></div></div>
+          <div class="bitrow"><div class="bl"><span data-en="Bits of B (highest bit first)">B 的每一位（最高位在左）</span><b id="bBin"></b></div><div class="bits" id="bBits"></div></div>
+          <div class="ins">
+            <button type="button" class="tog" data-in="adder:cin" aria-pressed="false"><span>Cin</span><span class="v">0</span></button>
+          </div>
+          <div class="checks"><label><input id="signedView" type="checkbox"><span data-en="Signed numbers (two’s complement)">有號數（二補數）</span></label></div>
+          <p class="hint" data-en="Moving a slider changes several bits at the same moment; a bit button changes just one. With “Signed numbers” on, the highest bit counts as −2^(n−1).">拉滑桿會讓好幾個位元在同一瞬間改變；按位元按鈕只改一個。打開「有號數」時，最高位代表 −2<sup>n−1</sup>。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Gate delay animation">閘延遲動畫</h2>
+          <div class="slider"><label for="speed" data-en="Speed (gate delays per second)">速度（每秒幾個閘延遲）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0.5" max="8" step="0.5" value="2" data-decimals="1"></div>
+          <div class="checks"><label><input id="autoPlay" type="checkbox" checked><span data-en="Play automatically">自動播放</span></label></div>
+          <p class="hint" data-en="Every gate answers one unit of time after its inputs change. Turn off “Play automatically” and use “Step” to go one gate delay at a time.">每個閘在輸入改變後 1 個單位時間才給出新答案。關掉「自動播放」，就能用「單步」一次走一個閘延遲。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 id="tblTitle" data-en="Truth table">真值表</h2>
+          <div class="tablewrap"><table class="tt" id="tbl"></table></div>
+          <p class="tcap" id="tblCap"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The principles behind it">背後的原理</h2>
+      <h3 data-en="Bits, switches and Boolean algebra">位元、開關與布林代數</h3>
+      <p data-en-html="Inside a computer every wire is either high or low voltage, which we call \(1\) and \(0\). A <strong>logic gate</strong> is a small circuit (a few transistors) whose output depends only on its inputs. The rules that combine \(0\)s and \(1\)s are <strong>Boolean algebra</strong>: \(A \cdot B\) (AND) is \(1\) only when both are \(1\); \(A + B\) (OR) is \(1\) when at least one is \(1\); \(\overline{A}\) (NOT) swaps \(0\) and \(1\); and \(A \oplus B\) (XOR) is \(1\) when the two inputs differ. In 1938 Claude Shannon showed that switching circuits can be designed with exactly this algebra.">電腦裡每一條導線不是高電壓就是低電壓，我們叫它 \(1\) 和 \(0\)。<strong>邏輯閘</strong>是一個小電路（幾個電晶體），輸出只由輸入決定。把 \(0\)、\(1\) 組合起來的規則叫<strong>布林代數</strong>：\(A \cdot B\)（AND）只有兩個都是 \(1\) 才是 \(1\)；\(A + B\)（OR）只要有一個是 \(1\) 就是 \(1\)；\(\overline{A}\)（NOT）把 \(0\)、\(1\) 對調；\(A \oplus B\)（XOR）在兩個輸入不一樣時是 \(1\)。1938 年夏農（Claude Shannon）證明了開關電路可以完全用這套代數來設計。</p>
+      <div class="formula">\[ \text{NAND} = \overline{A \cdot B}, \qquad \text{NOR} = \overline{A + B}, \qquad \text{XNOR} = \overline{A \oplus B} \]</div>
+
+      <h3 data-en="One gate to build them all">一種閘就能拼出全部</h3>
+      <p data-en-html="NAND alone can make every other gate. Joining its two inputs gives NOT: \(\overline{A \cdot A} = \overline{A}\). By <strong>De Morgan’s laws</strong> a NAND of two inverted inputs is an OR:">只用 NAND 就能做出所有其他的閘。把它的兩個輸入接在一起就是 NOT：\(\overline{A \cdot A} = \overline{A}\)。再由<strong>笛摩根定律</strong>，兩個輸入先各自反相、再 NAND，就是 OR：</p>
+      <div class="formula">\[ \overline{A \cdot B} = \overline{A} + \overline{B}, \qquad \overline{A + B} = \overline{A} \cdot \overline{B}, \qquad \overline{\overline{A} \cdot \overline{B}} = A + B \]</div>
+      <p data-en-html="NOR is universal in the same way. That is why chips can be built from huge numbers of one kind of gate. The puzzle shows the fewest gates our program finds by trying every possible wiring (for two-input NAND: NOT 1, AND 2, OR 3, NOR 4, XOR 4, XNOR 5).">NOR 也一樣是萬用閘，所以晶片可以用大量同一種閘做出來。拼圖會顯示程式試遍所有接法後找到的最少閘數（兩個輸入的 NAND：NOT 1 個、AND 2 個、OR 3 個、NOR 4 個、XOR 4 個、XNOR 5 個）。</p>
+
+      <h3 data-en="Adding with gates">用閘來做加法</h3>
+      <p data-en-html="Adding two bits gives a two-bit answer: \(1 + 1 = 10_{2}\). The sum bit is \(S = A \oplus B\) and the carry is \(C = A \cdot B\) — a <strong>half adder</strong>. A <strong>full adder</strong> also adds the carry \(C_{\text{in}}\) coming from the bit on its right:">兩個位元相加得到兩位數的答案：\(1 + 1 = 10_{2}\)。和的那一位是 \(S = A \oplus B\)，進位是 \(C = A \cdot B\)——這就是<strong>半加器</strong>。<strong>全加器</strong>還要加上右邊那一位傳來的進位 \(C_{\text{in}}\)：</p>
+      <div class="formula">\[ P = A \oplus B,\quad G = A \cdot B,\quad S = P \oplus C_{\text{in}},\quad C_{\text{out}} = G + P \cdot C_{\text{in}} \]</div>
+      <p data-en-html="\(G = 1\) means this bit <em>generates</em> a carry by itself; \(P = 1\) means it <em>propagates</em> (passes on) a carry that arrives; when both inputs are \(0\) it <em>kills</em> any carry (K). Chaining \(n\) full adders, each carry-out feeding the next carry-in, gives an \(n\)-bit <strong>ripple-carry adder</strong>. Its answer is \(A + B + C_{\text{in}}\) modulo \(2^{n}\); the carry out of the top bit is the part that does not fit — an unsigned <strong>overflow</strong>.">\(G = 1\) 表示這一位自己就<em>產生</em>進位；\(P = 1\) 表示它會把收到的進位<em>傳遞</em>下去；兩個輸入都是 \(0\) 時，進位到這裡就被<em>吸收</em>（K）。把 \(n\) 個全加器串起來，每一個的進位輸出接到下一個的進位輸入，就是 \(n\) 位元的<strong>漣波進位加法器</strong>。它算出的是 \(A + B + C_{\text{in}}\) 除以 \(2^{n}\) 的餘數；最高位送出的進位就是放不下的部分——無號數的<strong>溢位</strong>。</p>
+
+      <h3 data-en="Gate delays and the critical path">閘延遲與關鍵路徑</h3>
+      <p data-en-html="A real gate needs a little time (picoseconds in a modern chip) before its output follows its inputs. Here every gate takes exactly one unit. Inside a full adder the carry passes through an AND and an OR, so it moves two gate delays per bit; the first bit also has to wait one delay for \(P_{0}\). The carry out of the top bit of an \(n\)-bit adder can therefore need, in gate delays,">真正的閘要花一點點時間（現代晶片裡是皮秒等級）輸出才會跟上輸入。這裡每個閘都剛好花 1 個單位。在全加器裡，進位要經過一個 AND 和一個 OR，所以每往前一位要 2 個閘延遲；最低位還要先等 1 個閘延遲算出 \(P_{0}\)。因此 \(n\) 位元加法器最高位的進位最慢要（以閘延遲為單位）</p>
+      <div class="formula">\[ T_{\max} = 2n + 1 \]</div>
+      <p data-en-html="This longest route is the <strong>critical path</strong>; the clock of a processor must be slow enough for it. Faster designs such as carry-lookahead adders compute the carries in parallel instead of letting them ripple.">這條最長的路線叫<strong>關鍵路徑</strong>，處理器的時脈必須慢到等得了它。進位前瞻加法器之類的設計，就是改成同時把各位的進位算出來，不讓它一格一格傳。</p>
+
+      <h3 data-en="Glitches">突波</h3>
+      <p data-en-html="When signals reach a gate along paths of different length, its output can briefly show a wrong value before settling — a <strong>glitch</strong> (the condition that allows it is called a <strong>hazard</strong>). The final answer is still right, which is why circuits read their results only after everything has settled. Glitches waste energy, and engineers sometimes use them on purpose: \(A \cdot \overline{A}\) should always be \(0\), yet it gives a short pulse right after \(A\) changes.">訊號沿著長短不同的路徑到達同一個閘時，它的輸出可能先錯一下才穩定——這就是<strong>突波</strong>（造成突波的情況叫<strong>危障</strong>）。最後的答案還是對的，所以電路要等一切穩定了才去讀結果。突波會浪費電；工程師有時也故意利用它：\(A \cdot \overline{A}\) 照理永遠是 \(0\)，卻會在 \(A\) 改變的瞬間送出一個短脈衝。</p>
+
+      <h3 data-en="Signed numbers: two’s complement">有號數：二補數</h3>
+      <p data-en-html="With \(n\) bits, two’s complement lets the top bit count as \(-2^{n-1}\), so 4 bits hold \(-8\) to \(7\). The same adder then subtracts: \(-B = \overline{B} + 1\), so \(A - B = A + \overline{B} + 1\) (feed \(\overline{B}\) in and set \(C_{\text{in}} = 1\)). A signed overflow happens when two numbers of the same sign give a result of the other sign; it is detected by \(V = C_{n} \oplus C_{n-1}\).">\(n\) 個位元的二補數，把最高位當成 \(-2^{n-1}\)，所以 4 位元可以表示 \(-8\) 到 \(7\)。同一個加法器也能做減法：\(-B = \overline{B} + 1\)，所以 \(A - B = A + \overline{B} + 1\)（把 \(\overline{B}\) 接進去、令 \(C_{\text{in}} = 1\)）。兩個同號的數相加卻得到異號的結果，就是有號數的溢位，可以用 \(V = C_{n} \oplus C_{n-1}\) 偵測。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Opposites</strong>: look at the truth table of all seven gates. Which pairs of columns are always opposite?"><strong>互為相反</strong>：看七種閘的真值表，哪幾對欄位永遠相反？</li>
+        <li data-en-html="<strong>Why a full adder?</strong> A half adder already gives \(1 + 1 = 10_{2}\). What goes wrong if you chain half adders to add 4-bit numbers?"><strong>為什麼要全加器？</strong>半加器已經算得出 \(1 + 1 = 10_{2}\)。如果把半加器串起來加 4 位元的數，哪裡會出問題？</li>
+        <li data-en-html="<strong>Where did it go?</strong> Work out 9 + 7 with 4 bits. Why is the answer 0? Then try the same sum with 8 bits."><strong>答案跑去哪了？</strong>用 4 位元算 9 + 7。為什麼答案是 0？再用 8 位元算一次。</li>
+        <li data-en-html="<strong>Watch the ripple</strong>: with 4 bits set A = 1110, B = 0000 and Cin = 1, then change A0 to 1 and watch the timing diagram. How many gate delays until it settles? Compare with \(2n + 1\)."><strong>看進位一格一格傳</strong>：4 位元，設 A = 1110、B = 0000、Cin = 1，再把 A0 改成 1，看時序圖。要幾個閘延遲才穩定？和 \(2n + 1\) 比一比。</li>
+        <li data-en-html="<strong>A swinging carry</strong>: with 4 bits, B = 15 and Cin = 1, slide A from 15 straight to 0. How many times does the top carry change its mind before it settles?"><strong>擺盪的進位</strong>：4 位元、B = 15、Cin = 1，把 A 從 15 直接拉到 0。最高位的進位在穩定前改了幾次主意？</li>
+        <li data-en-html="<strong>De Morgan in the puzzle</strong>: compare \(\overline{A \cdot B} = \overline{A} + \overline{B}\) with the way NAND gates are wired into an OR."><strong>拼圖裡的笛摩根</strong>：把 \(\overline{A \cdot B} = \overline{A} + \overline{B}\) 和「用 NAND 接成 OR」的接法對照看看。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="<strong>Event-driven simulation with unit gate delays.</strong> The circuit starts settled; at \(t = 0\) the inputs change. At every later step, only the gates whose inputs changed in the previous step are recomputed, and every new output appears one unit later (wires take no time). The step at which the last wire changes is the settling time. This is the <em>transport-delay</em> model: even a pulse one unit long travels on. Real gates have slightly different delays and can swallow very short pulses, so real glitches are often smaller than here."><strong>單位閘延遲的事件驅動模擬。</strong>電路先處在穩定狀態，\(t = 0\) 時輸入改變。之後每一步，只重算「輸入在上一步改變過」的閘，新的輸出晚 1 個單位出現（導線不花時間）。最後一條導線改變的時刻就是穩定所需的時間。這是<em>傳輸延遲</em>模型：就算只有 1 個單位長的脈衝也會傳下去。真實的閘延遲各不相同，也會吞掉很短的脈衝，所以真實的突波常常比這裡少。</li>
+        <li data-en-html="The unit tests check the truth tables of the seven gates and of their NAND-only versions, De Morgan’s laws, the half and full adder, every one of the 512 inputs of the 4-bit adder and all 131 072 inputs of the 8-bit adder against ordinary integer addition, the critical path \(2n + 1\), that the slowest single-switch change really takes \(2n + 1\) delays, that the event-driven simulation matches a step-by-step recomputation of every gate at every moment, and the fewest NAND or NOR gates for each function found by trying every wiring.">單元測試檢查：七種閘與它們只用 NAND 的版本的真值表、笛摩根定律、半加器與全加器、4 位元加法器全部 512 組輸入與 8 位元全部 131 072 組輸入都等於一般的整數加法、關鍵路徑 \(2n + 1\)、只撥一個開關時最慢真的要 \(2n + 1\) 個閘延遲、事件驅動的結果和「每一步把所有閘都重算」逐時刻相同，以及窮舉所有接法得到的 NAND、NOR 最少閘數。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): S-IV-2 structure and basic working principles of computing platforms (junior high); S-V-1 working principles of computing platforms (senior high).">課綱對應：資S-IV-2 系統平台之組成架構與基本運作原理（國中）；資S-V-1 系統平台之運作原理（高中）。</li>
+        <li data-en="D. A. Patterson and J. L. Hennessy, Computer Organization and Design: The Hardware/Software Interface, RISC-V Edition, Appendix A “The Basics of Logic Design” (gates, truth tables, adders, faster addition).">Patterson & Hennessy《Computer Organization and Design: The Hardware/Software Interface》RISC-V 版，附錄 A〈The Basics of Logic Design〉（邏輯閘、真值表、加法器、更快的加法）。</li>
+        <li data-en="M. M. Mano and M. D. Ciletti, Digital Design, chapter 2 (Boolean algebra and logic gates) and chapter 4 (combinational logic: half adder, full adder, binary adder and carry propagation).">Mano & Ciletti《Digital Design》第 2 章（布林代數與邏輯閘）、第 4 章（組合邏輯：半加器、全加器、二進位加法器與進位傳遞）。</li>
+        <li data-en="C. E. Shannon (1938), “A Symbolic Analysis of Relay and Switching Circuits”, Transactions of the American Institute of Electrical Engineers 57(12): 713–723.">Shannon, C. E. (1938) “A Symbolic Analysis of Relay and Switching Circuits”, Transactions of the American Institute of Electrical Engineers 57(12): 713–723。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Logic_gate&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Logic gate</a>, <a href=&quot;https://en.wikipedia.org/wiki/NAND_logic&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NAND logic</a>, <a href=&quot;https://en.wikipedia.org/wiki/Adder_(electronics)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Adder (electronics)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Hazard_(logic)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Hazard (logic)</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Logic_gate" target="_blank" rel="noopener">Logic gate</a>、<a href="https://en.wikipedia.org/wiki/NAND_logic" target="_blank" rel="noopener">NAND logic</a>、<a href="https://en.wikipedia.org/wiki/Adder_(electronics)" target="_blank" rel="noopener">Adder (electronics)</a>、<a href="https://en.wikipedia.org/wiki/Hazard_(logic)" target="_blank" rel="noopener">Hazard (logic)</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/logic-gates-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/logic-gates.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="logic-gates"></script>
+  <script src="js/missions/logic-gates.js"></script>
+  <script src="js/stats.js" data-module="logic-gates"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
