@@ -139,12 +139,16 @@
     const map = {};
     const chars = Array.from(data.chars);
     for (let i = 0; i + 1 < chars.length; i += 2) map[chars[i]] = chars[i + 1];
-    const keys = Object.keys(data.phrases).sort(function (a, b) { return b.length - a.length; });
+    // 依科目覆寫（例如數學頁面的「向量」不轉成物理用的「矢量」）
+    const page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    const phrases = Object.assign({}, data.phrases);
+    Object.keys(data.bySubject || {}).forEach(function (k) { const b = data.bySubject[k]; if (b.pages.indexOf(page) >= 0) Object.assign(phrases, b.phrases); });
+    const keys = Object.keys(phrases).sort(function (a, b) { return b.length - a.length; });
     const re = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
     const hasHan = /[㐀-鿿豈-﫿「」『』]/;
     return function (s) {
       if (!s || !hasHan.test(s)) return s;
-      s = s.replace(re, function (m) { return data.phrases[m]; });
+      s = s.replace(re, function (m) { return phrases[m]; });
       let out = '';
       for (const ch of s) out += map[ch] || ch;
       return out;

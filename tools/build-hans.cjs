@@ -50,6 +50,13 @@ const PHRASES = {
   '靜止膜電位': '静息膜电位', '動作電位': '动作电位', '膜電位': '膜电位', '靜止電位': '静息电位', '平衡電位': '平衡电位', '閾電位': '阈电位',
   '後過極化': '后超极化', '過極化': '超极化', '不反應期': '不应期', '蘭氏結': '郎飞结', '跳躍傳導': '跳跃式传导',
   '四乙銨': '四乙铵', '鈉鉀幫浦': '钠钾泵', '空間鉗制': '空间钳制', '軸漿': '轴浆', '舉升凝結高度': '抬升凝结高度',
+  '科氏參數': '科里奥利参数', '科氏力': '科里奥利力', '勒沙特列': '勒夏特列', '范特荷夫': '范特霍夫', '哈柏法': '哈伯法',
+  '莫耳分率': '摩尔分数', '注射筒': '注射器', '常態分布': '正态分布', '常態分配': '正态分布', '常態曲線': '正态曲线', '常態近似': '正态近似',
+  '變異數': '方差', '巴斯卡三角形': '杨辉三角', '連續性修正': '连续性校正', '萊布尼茲': '莱布尼茨', '反曲點': '拐点', '單邊導數': '单侧导数',
+  '奧圖': '奥托', '史特林': '斯特林', '伏特計': '电压表', '能斯特方程式': '能斯特方程',
+  '前視圖': '主视图', '側視圖': '左视图', '漢彌爾頓': '哈密顿', '黑維塞': '亥维赛',
+  '族群': '种群', '群集': '群落', '負荷量': '环境容纳量', '邏輯斯': '逻辑斯谛', '掠食者': '捕食者', '生態區位': '生态位', '內在成長率': '内禀增长率',
+  '哈溫平衡': '哈迪-温伯格平衡', '哈溫定律': '哈迪-温伯格定律', '異型合子': '杂合子', '同型合子': '纯合子', '適應度': '适合度', '鐮刀型貧血': '镰状细胞贫血',
   '逆滲透': '反渗透', '凡特荷夫': '范特霍夫', '生理食鹽水': '生理盐水', '原生質體': '原生质体', '葉綠體': '叶绿体',
   '公分': '厘米', '公尺': '米', '公斤': '千克',
   '「': '“', '」': '”', '『': '‘', '』': '’'
@@ -73,7 +80,19 @@ for (const k of Object.keys(OVERRIDES)) { if (OVERRIDES[k]) pairs[k] = OVERRIDES
 for (const k of Object.keys(pairs)) if (pairs[pairs[k]] && pairs[pairs[k]] !== pairs[k]) delete pairs[k];
 
 const chars = Object.keys(pairs).map(k => k + pairs[k]).join('');
+// 依科目覆寫的名詞：大陸數學課本用「向量」（空间向量、向量的数量积），物理才用「矢量」。
+// 頁面清單由 js/missions/index.js 的分支與科目表自動算出，新增數學實驗後重跑本程式就會套用。
+const SUBJECT_PHRASES = { math: { '向量': '向量' } };
+const W = {};
+new Function('window', fs.readFileSync(path.join(__dirname, '..', 'js', 'missions', 'index.js'), 'utf8'))(W);
+const bySubject = {};
+for (const sub of Object.keys(SUBJECT_PHRASES)) {
+  const S = W.LAB_SUBJECTS.find(x => x.id === sub);
+  const pages = Object.keys(W.LAB_MODULE_BRANCH).filter(m => S.branches.includes(W.LAB_MODULE_BRANCH[m])).sort();
+  bySubject[sub] = { pages: pages, phrases: SUBJECT_PHRASES[sub] };
+}
 const out = '/* 由 tools/build-hans.cjs 產生，請勿手動修改。字元對照取自 OpenCC（Apache-2.0）。 */\n' +
-  'window.LAB_HANS = {\n  chars: ' + JSON.stringify(chars) + ',\n  phrases: ' + JSON.stringify(PHRASES, null, 0) + '\n};\n';
+  'window.LAB_HANS = {\n  chars: ' + JSON.stringify(chars) + ',\n  phrases: ' + JSON.stringify(PHRASES, null, 0) +
+  ',\n  bySubject: ' + JSON.stringify(bySubject) + '\n};\n';
 fs.writeFileSync(path.join(__dirname, '..', 'js', 'hans-map.js'), out);
 console.log('pairs', Object.keys(pairs).length, 'bytes', Buffer.byteLength(out));

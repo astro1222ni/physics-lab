@@ -52,5 +52,15 @@
  "reaction-rate": "78fd61de3b",
  "trig-functions": "92ec3549a3",
  "action-potential": "3743d08a90",
- "cloud-formation": "4976887c78"
+ "cloud-formation": "4976887c78",
+ "heat-engine": "5abe73b59d",
+ "chemical-equilibrium": "ba1bc2309c",
+ "electrochemistry": "c62b732a82",
+ "population-growth": "9ac5013968",
+ "hardy-weinberg": "45c1aca0a0",
+ "coriolis": "e35c543101",
+ "greenhouse": "6f2a4ce6d9",
+ "space-vectors": "80a6bb2499",
+ "galton-board": "2bc00423a2",
+ "derivative": "07b483f646"
 }

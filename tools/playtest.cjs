@@ -262,6 +262,7 @@ function quantities(text) {
 const SIGNED = /位移|位置|潮位|水位|海平面|海拔|基準|座標|坐標|速度|加速度|電荷|電位|電勢|電壓|電動勢|電流|力|功|能|動量|角|相位|斜率|高度|深度|像距|物距|焦距|曲率|放大率|偏|差|變化|改變|增|減|誤差|殘差|修正|Δ|δ|淨|合|displacement|position|coordinate|velocity|acceleration|charge|potential|voltage|emf|current|force|work|energy|momentum|angle|phase|slope|height|depth|image|object|focal|curvature|magnification|offset|error|residual|change|difference|net|shift|correction|level|elevation|tide/i;
 const SIGNED_VAR = /(^|[^A-Za-z])(x|y|z|v|a|F|q|U|E|W|p|s|h)([^A-Za-z]|$)/;
 const CHANGE = /Δ|δ|差|變化|改變|增|減|誤差|殘差|偏|change|difference|error|deviation|residual|shift|loss|虧損|defect/i;
+const COMPARE = /比|暖|冷|高於|低於|高出|距平|warmer|cooler|colder|than|anomal/i; // 和某個基準比較的量（溫差）
 const FRACTION = /機率|概率|比例|百分比|佔|透射|穿透|反射|吸收|效率|飽和|濕度|含量|進度|覆蓋|fraction|probability|transmi|reflect|absor|efficien|humidity|percent|progress|coverage|share/i;
 const LEN_POS = /波長|半徑|直徑|距離|長度|周長|厚度|寬度|間距|間隔|射程|路程|行程|wavelength|radius|diameter|distance|length|thickness|width|spacing|separation|range|path/i;
 const TIME_POS = /週期|周期|半衰期|時間|時刻|走時|經過|持續|壽命|period|half-life|time|duration|elapsed|lifetime|travel/i;
@@ -281,7 +282,8 @@ function judgeReading(q, ctx, i) {
   }
   if (!q.kind && !q.unit && PROB.test(ctx) && (v < 0 || v > 1)) return { level: 'confirmed', rule: 'prob', why: '機率應在 0–1' };
   if (v >= 0) return null;
-  if (q.kind === 'kelvin') return CHANGE.test(ctx) ? null : { level: 'confirmed', rule: 'K', why: '絕對溫度（K）不可為負' };
+  // 「比 1750 年的平衡暖 −96 K」「warmer than …」「距平」是溫差，可以是負的
+  if (q.kind === 'kelvin') return CHANGE.test(ctx) || COMPARE.test(ctx) ? null : { level: 'confirmed', rule: 'K', why: '絕對溫度（K）不可為負' };
   if (q.kind === 'mass') return CHANGE.test(ctx) ? null : { level: 'confirmed', rule: 'mass', why: '質量不可為負' };
   if (q.kind === 'length') {
     if (SIGNED.test(ctx) || SIGNED_VAR.test(ctx)) return null;

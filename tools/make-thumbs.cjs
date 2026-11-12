@@ -86,7 +86,21 @@ const PREP = {
   'reaction-rate':     { wait: 3000, anchor: 0.7 },
   // 持續電流 10 µA/cm²：一串動作電位
   'action-potential':  { eval: "document.querySelector('#modeSeg [data-mode=\"step\"]').click(); window.LabNum.set(document.getElementById('a1'), 10); window.__ap.fire(); window.__ap.finish1();", wait: 800, anchor: 0 },
-  'cloud-formation':   { wait: 4500 }
+  'cloud-formation':   { wait: 4500 },
+  'chemical-equilibrium': { wait: 3000 },
+  // 發射一顆球：兩個轉盤上一條直線、一條彎曲的軌跡
+  'coriolis':          { click: ['#launch'], wait: 3500 },
+  // 按一次「沿著曲線走」，下圖描出一段導函數
+  'derivative':        { click: ['#play'], wait: 4000 },
+  // 先放 1000 顆、打開常態曲線，板子才不會空空的
+  'galton-board':      { click: ['#showNormal', '#drop1000'], wait: 3500 },
+  'heat-engine':       { wait: 2500 },
+  'greenhouse':        { wait: 3000 },
+  // 勾上鹽橋，伏特計才有 1.10 V
+  'electrochemistry':  { click: ['#bridge'], wait: 3000 },
+  'space-vectors':     { wait: 2500 },
+  'population-growth': { wait: 3000 },
+  'hardy-weinberg':    { wait: 3000 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

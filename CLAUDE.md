@@ -27,7 +27,7 @@
 | `<模組>.html`、`js/<模組>.js`、`js/<模組>-core.js`、`tests/<模組>-core.test.js` | 各實驗模組 |
 | `lab.css` | 共用樣式與色彩代號（淺色＋深色兩組），字體一律 `calc(Npx * var(--fs, 1))` |
 | `js/settings.js` | 齒輪設定：繁體／简体／English、字體大小、淺色／深色、音效。放在每頁 `<head>` 緊接 `<meta charset>` |
-| `js/hans-map.js` | 簡體對照表，由 `tools/build-hans.cjs` 產生（物理名詞對照在該檔 `PHRASES`） |
+| `js/hans-map.js` | 簡體對照表，由 `tools/build-hans.cjs` 產生（名詞對照在該檔 `PHRASES`，長詞先轉；依科目覆寫在 `SUBJECT_PHRASES`，例如數學頁的「向量」不轉成物理用的「矢量」，頁面清單由任務清單的分支自動算出，**新增數學實驗後要重跑 `node tools/build-hans.cjs`**） |
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
 | `js/stats.js` | 瀏覽人次、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝每分頁一個隨機代號的心跳，150 秒內有心跳算在線） |

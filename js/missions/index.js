@@ -55,11 +55,21 @@ window.LAB_MISSION_MODULES = [
   { id: 'trig-functions', zh: '三角函數：單位圓與正弦波', en: 'Trigonometric Functions: The Unit Circle and Sine Waves' },
   { id: 'reaction-rate', zh: '反應速率與碰撞學說', en: 'Reaction Rates and Collision Theory' },
   { id: 'action-potential', zh: '神經的動作電位：Hodgkin–Huxley 模型與神經衝動的傳導', en: 'The Action Potential: The Hodgkin–Huxley Model and Nerve Conduction' },
-  { id: 'cloud-formation', zh: '絕熱冷卻與雲的形成', en: 'Adiabatic Cooling and Cloud Formation' }
+  { id: 'cloud-formation', zh: '絕熱冷卻與雲的形成', en: 'Adiabatic Cooling and Cloud Formation' },
+  { id: 'chemical-equilibrium', zh: '化學平衡與勒沙特列原理', en: 'Chemical Equilibrium and Le Chatelier\'s Principle' },
+  { id: 'coriolis', zh: '科氏力與大氣的運動', en: 'The Coriolis Effect and Moving Air' },
+  { id: 'galton-board', zh: '高爾頓板與二項分布', en: 'Galton Board and the Binomial Distribution' },
+  { id: 'derivative', zh: '導數與切線', en: 'Derivatives and Tangent Lines' },
+  { id: 'heat-engine', zh: '熱機循環與熱力學第一定律', en: 'Heat Engines and the First Law of Thermodynamics' },
+  { id: 'greenhouse', zh: '溫室效應與地球的能量平衡', en: 'The Greenhouse Effect and Earth’s Energy Balance' },
+  { id: 'electrochemistry', zh: '化學電池與電解', en: 'Electrochemical Cells and Electrolysis' },
+  { id: 'space-vectors', zh: '空間向量：內積、外積與平面', en: 'Space Vectors: Dot Product, Cross Product and Planes' },
+  { id: 'population-growth', zh: '族群成長：指數、邏輯斯與掠食者–獵物', en: 'Population Growth: Exponential, Logistic, Predator and Prey' },
+  { id: 'hardy-weinberg', zh: '哈溫平衡、遺傳漂變與天擇', en: 'Hardy–Weinberg, Genetic Drift and Natural Selection' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation', 'chemical-equilibrium', 'coriolis', 'galton-board', 'derivative', 'heat-engine', 'greenhouse', 'electrochemistry', 'space-vectors', 'population-growth', 'hardy-weinberg'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -93,14 +103,24 @@ window.LAB_MODULE_BRANCH = {
   'acid-base-titration': 'acidbase',
   'molecular-shapes': 'matter',
   'reaction-rate': 'equilibrium',
+  'chemical-equilibrium': 'equilibrium',
+  'electrochemistry': 'acidbase',
   // 生物
   'diffusion-osmosis': 'cell',
   'action-potential': 'physiology',
+  'population-growth': 'ecology',
+  'hardy-weinberg': 'evolution',
+  'heat-engine': 'thermo',
   // 地球科學
   'cloud-formation': 'atmo',
+  'coriolis': 'atmo',
+  'greenhouse': 'atmo',
   'tides': 'ocean',
   'conic-sections': 'geometry',
-  'trig-functions': 'geometry'
+  'trig-functions': 'geometry',
+  'galton-board': 'probability',
+  'space-vectors': 'vectors',
+  'derivative': 'calculus'
 };
 
 /* 四個科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */

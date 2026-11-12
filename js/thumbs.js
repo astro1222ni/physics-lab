@@ -58,7 +58,17 @@
     "trig-functions": "0757862f",
     "reaction-rate": "5c97d2b6",
     "action-potential": "a84e4340",
-    "cloud-formation": "9be01f73"
+    "cloud-formation": "9be01f73",
+    "chemical-equilibrium": "16783a44",
+    "coriolis": "5ccbae47",
+    "galton-board": "7a08a2f4",
+    "derivative": "dfecab84",
+    "heat-engine": "60dfcf16",
+    "greenhouse": "14cccb77",
+    "electrochemistry": "72f72f2a",
+    "space-vectors": "7c9a3d60",
+    "population-growth": "2feb1c40",
+    "hardy-weinberg": "315297b3"
   };
   /* VERSIONS-END */
 
