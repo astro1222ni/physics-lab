@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Heats of Reaction and Hess's Law | Astro Ni Science Lab">反應熱與赫斯定律｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 反應熱與赫斯定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .hl canvas { aspect-ratio: auto; touch-action: auto; }
+    .hl #cv { height: 420px; }
+    .hl #gcv { height: 320px; }
+    .hl button { min-height: 44px; }
+    .hl [hidden] { display: none !important; }
+    .hl .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hl .playbar > button { flex: 1 1 auto; }
+    .hl .playbar #play { font-weight: 700; min-width: 7em; }
+    .hl .playbar #addBtn { font-weight: 700; min-width: 7em; }
+    .hl .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .hl .speedbox .seg4 { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    .seg2 button, .seg3 button, .seg4 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .hl .mode-seg { margin: 0 0 10px; }
+    .hl .stage .status { margin: 6px 4px 0; }
+    .hl .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .hl .card h2 { margin-bottom: 8px; }
+    .hl .card h3 { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 6px; color: var(--muted); }
+    .hl .slider input[type="range"] { height: 28px; margin: 0; }
+    .hl sub, .hl sup, .notes sub, .notes sup { font-size: .75em; }
+    .hl .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .hl .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; }
+    .hl .checks label { min-height: 44px; }
+    .hl .legend .sp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .hl .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .hl .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .hl .legend .box { display: inline-block; width: 14px; height: 10px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+    .hl dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .hl dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .hl .tabs { margin: 0 2px 8px; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .hl .btns button { flex: 1 1 auto; }
+    .hl .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .hl .calc { font-size: calc(14px * var(--fs, 1)); line-height: 1.7; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+    .hl .calc .res { font-weight: 700; color: var(--accent); }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#reaction&quot;&gt;Chemistry · Reactions and Energy&lt;/a&gt; / Heats of Reaction and Hess's Law"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#reaction">化學・化學反應與能量</a> ／ 反應熱與赫斯定律</nav>
+      <h1 data-en="Heats of Reaction and Hess's Law">反應熱與赫斯定律</h1>
+      <p data-en="Use a simple polystyrene-cup calorimeter to measure three heats of reaction: solid sodium hydroxide dissolving in water, sodium hydroxide solution neutralising hydrochloric acid, and solid sodium hydroxide reacting directly with hydrochloric acid. Correct for the heat lost to the room by extrapolating the cooling curve, find the heat capacity of the calorimeter, and check that the first two add up to the third.">用保麗龍杯做的簡易卡計，量三個反應熱：固體氫氧化鈉溶於水、氫氧化鈉溶液與鹽酸中和、固體氫氧化鈉直接和鹽酸反應。用冷卻曲線外插修正散失到空氣中的熱，求出卡計的熱容量，再驗證前兩個加起來等於第三個。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start recording”, wait about half a minute, then press “Add” to drop 2 g of sodium hydroxide into the water. Watch the temperature rise and then slowly fall back.">試試看：按「開始記錄」，等半分鐘左右，再按「加入」把 2 g 氫氧化鈉丟進水裡。看溫度怎麼升高，又怎麼慢慢降回來。</p>
+    <div class="lab hl">
+      <div class="stage" id="stage">
+        <canvas id="cv" role="img" aria-label="簡易卡計" data-en-aria-label="Simple calorimeter"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" type="button" data-en="Start recording">開始記錄</button>
+          <button id="addBtn" type="button" data-en="Add">加入</button>
+          <button id="restart" type="button" data-en="New run" title="倒掉重做：同樣的設定，從室溫重新開始" data-en-title="Empty the cup and start again at room temperature (settings kept)">重做一次</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除分析結果表與赫斯循環的數據" data-en-title="Clear the results table and the Hess cycle">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+            <div class="seg4" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false">×1</button>
+              <button type="button" id="sp1" aria-pressed="true">×5</button>
+              <button type="button" id="sp2" aria-pressed="false">×20</button>
+              <button type="button" id="sp3" aria-pressed="false">×60</button>
+            </div>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="The cup is drawn cut open so you can see inside. The wavy arrows show heat flowing between the cup and the room; the temperature is read from the digital thermometer (0.1 °C).">杯子畫成剖面，方便看到裡面。波浪箭頭表示杯子與空氣之間的熱流動；溫度由數位溫度計讀出（0.1 °C）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <div class="seg3 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" data-mode="solid" aria-pressed="true" data-en="Solid + liquid">固體溶解</button>
+            <button type="button" data-mode="mix" aria-pressed="false" data-en="Mix solutions">溶液混合</button>
+            <button type="button" data-mode="cal" aria-pressed="false" data-en="Calibrate">卡計校正</button>
+          </div>
+          <div id="solidCtl">
+            <div class="seg3" id="solidSeg" role="group" aria-label="固體" data-en-aria-label="Solid">
+              <button type="button" data-solid="NaOH" aria-pressed="true">NaOH</button>
+              <button type="button" data-solid="NH4NO3" aria-pressed="false" data-en-html="NH&lt;sub&gt;4&lt;/sub&gt;NO&lt;sub&gt;3&lt;/sub&gt;">NH<sub>4</sub>NO<sub>3</sub></button>
+              <button type="button" data-solid="X" aria-pressed="false" disabled data-en="Unknown X">未知 X</button>
+            </div>
+            <div class="slider"><label for="mass" data-en="Mass of solid">固體的質量</label><output id="masso"></output>
+              <input id="mass" type="range" min="0.5" max="8" step="0.05" value="2" data-decimals="2"></div>
+            <h3 data-en="Liquid in the cup">杯中的液體</h3>
+            <div class="seg2" id="liqSeg" role="group" aria-label="杯中的液體" data-en-aria-label="Liquid in the cup">
+              <button type="button" data-liq="water" aria-pressed="true" data-en="Water">水</button>
+              <button type="button" data-liq="HCl" aria-pressed="false" data-en="Hydrochloric acid">鹽酸</button>
+            </div>
+            <div class="slider"><label for="liqV" data-en="Volume">體積</label><output id="liqVo"></output>
+              <input id="liqV" type="range" min="50" max="200" step="5" value="100" data-decimals="0"></div>
+            <div class="slider" id="liqCRow" hidden><label for="liqC" data-en="Concentration of HCl">HCl 的濃度</label><output id="liqCo"></output>
+              <input id="liqC" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
+          </div>
+          <div id="mixCtl" hidden>
+            <h3 data-en="In the cup: NaOH(aq)" data-en-html="In the cup: NaOH(aq)">杯中：NaOH(aq)</h3>
+            <div class="slider"><label for="cb" data-en="Concentration">濃度</label><output id="cbo"></output>
+              <input id="cb" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
+            <div class="slider"><label for="Vb" data-en="Volume">體積</label><output id="Vbo"></output>
+              <input id="Vb" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
+            <h3 data-en="Poured in: HCl(aq)">倒入：HCl(aq)</h3>
+            <div class="slider"><label for="ca" data-en="Concentration">濃度</label><output id="cao"></output>
+              <input id="ca" type="range" min="0.1" max="2" step="0.05" value="1" data-decimals="3"></div>
+            <div class="slider"><label for="Va" data-en="Volume">體積</label><output id="Vao"></output>
+              <input id="Va" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
+          </div>
+          <div id="calCtl" hidden>
+            <div class="slider"><label for="Vc" data-en="Cold water in the cup">杯中的冷水</label><output id="Vco"></output>
+              <input id="Vc" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
+            <div class="slider"><label for="Vh" data-en="Hot water poured in">倒入的熱水</label><output id="Vho"></output>
+              <input id="Vh" type="range" min="25" max="100" step="5" value="50" data-decimals="0"></div>
+            <div class="slider"><label for="Th" data-en="Temperature of the hot water">熱水的溫度</label><output id="Tho"></output>
+              <input id="Th" type="range" min="35" max="80" step="0.5" value="60" data-decimals="1"></div>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Conditions">實驗條件</h2>
+          <div class="slider"><label for="Troom" data-en="Room temperature">室溫</label><output id="Troomo"></output>
+            <input id="Troom" type="range" min="15" max="30" step="0.5" value="25" data-decimals="1"></div>
+          <div class="checks">
+            <label><input id="lid" type="checkbox" checked><span data-en="Lid on">蓋上杯蓋</span></label>
+            <label><input id="stir" type="checkbox" checked><span data-en="Stir">攪拌</span></label>
+          </div>
+          <p class="hint" data-en="Changing a setting empties the cup and starts a new run.">改變設定會倒掉杯中的東西、重新開始。</p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab hl">
+      <div class="stage">
+        <h2 data-en="Graph and results">圖表與結果</h2>
+        <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="curve" aria-pressed="true" data-en="Temperature–time">溫度—時間</button>
+          <button type="button" data-tab="hess" aria-pressed="false" data-en="Hess cycle">赫斯循環</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="anaCard">
+          <h2 data-en="Analysis">分析</h2>
+          <div class="seg2" id="methSeg" role="group" aria-label="求溫差的方法" data-en-aria-label="How to find ΔT">
+            <button type="button" data-meth="raw" aria-pressed="false" data-en="Highest reading">最高溫度</button>
+            <button type="button" data-meth="ext" aria-pressed="true" data-en="Extrapolate">外插法</button>
+          </div>
+          <div id="fitRows">
+            <div class="slider"><label for="ta" data-en="Fit the cooling line from">冷卻直線的擬合：從</label><output id="tao"></output>
+              <input id="ta" type="range" min="0" max="600" step="2" value="0" data-decimals="0"></div>
+            <div class="slider"><label for="tb" data-en="to">到</label><output id="tbo"></output>
+              <input id="tb" type="range" min="0" max="600" step="2" value="0" data-decimals="0"></div>
+          </div>
+          <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
+          <div id="anaInputs">
+            <div class="ans"><label for="inC" data-en-html="Heat capacity of the calorimeter C (J/K)">卡計的熱容量 C（J/K）</label><input id="inC" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0"></div>
+            <div class="ans"><label for="inN" id="inNLabel">n（mol）</label><input id="inN" type="text" inputmode="decimal" autocomplete="off" spellcheck="false"></div>
+          </div>
+          <div class="btns"><button type="button" id="calc" class="primary" data-en="Calculate">計算</button></div>
+          <p class="calc" id="calcOut" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="unkCard" data-share-skip>
+          <h2 data-en="Unknown solid X">未知固體 X</h2>
+          <p class="hint" data-en-html="Dissolve an unknown solid in water and find its molar enthalpy of solution ΔH (kJ/mol) with the “Analysis” card. Its molar mass is given.">把一種未知固體溶於水，用「分析」卡求它的莫耳溶解熱 ΔH（kJ/mol）。它的莫耳質量會告訴你。</p>
+          <div class="btns" id="unkBtns">
+            <button type="button" id="unkOn" data-en="Start">開始</button>
+            <button type="button" id="unkNew" data-en="Another one" hidden>換一個</button>
+            <button type="button" id="reveal" data-en="Reveal" hidden>揭曉答案</button>
+            <button type="button" id="unkOff" data-en="Stop" hidden>結束</button>
+          </div>
+          <p class="info" id="unkOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Measure heats of reaction with a simple calorimeter, and correct for heat lost to the surroundings.">用簡易卡計測量反應熱，並修正散失到外界的熱。</li>
+        <li data-en="Find the heat capacity of the calorimeter by mixing hot and cold water.">以冷熱水混合求卡計的熱容量。</li>
+        <li data-en-html="Verify Hess's law: the heat of a reaction does not depend on the path, so ΔH&lt;sub&gt;1&lt;/sub&gt; + ΔH&lt;sub&gt;2&lt;/sub&gt; = ΔH&lt;sub&gt;3&lt;/sub&gt;.">驗證赫斯定律：反應熱與途徑無關，所以 ΔH<sub>1</sub> + ΔH<sub>2</sub> = ΔH<sub>3</sub>。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Measuring heat with a calorimeter">用卡計量熱</h3>
+      <p data-en-html="The heat given out by the reaction warms the solution and the calorimeter itself (cup, lid, thermometer, stirrer). If no heat escapes:">反應放出的熱，使溶液與卡計本身（杯子、杯蓋、溫度計、攪拌棒）升溫。如果熱沒有散失：</p>
+      <div class="formula multi">
+        \[ q = (mc + C)\,\Delta T \]
+        \[ \Delta H = -\frac{q}{n} \]
+      </div>
+      <p data-en-html="\(m\) is the mass of the solution (density taken as 1.00 g/mL), \(c = 4.18\ \mathrm{J/(g\,K)}\), \(C\) is the heat capacity of the calorimeter and \(n\) is the amount (mol) that reacted — for a neutralisation, the &lt;strong&gt;limiting&lt;/strong&gt; reactant. A temperature rise means the reaction is exothermic (ΔH &lt; 0).">\(m\) 是溶液的質量（密度取 1.00 g/mL），\(c = 4.18\ \mathrm{J/(g\,K)}\)，\(C\) 是卡計的熱容量，\(n\) 是反應的物質的量（中和時是<strong>限量試劑</strong>的莫耳數）。溫度上升表示放熱（ΔH &lt; 0）。</p>
+      <h3 data-en="Correcting for heat loss: extrapolation">修正熱散失：外插法</h3>
+      <p data-en="The cup is never perfectly insulated. While the solid is still dissolving, heat is already leaking out, so the highest reading is lower than the temperature the solution would have reached. After the peak, the cooling is almost a straight line: draw that line back to the moment of adding, and read the temperature there. The slower the reaction and the worse the insulation, the bigger the correction.">杯子不可能完全隔熱。固體還在溶解時熱就已經在散失，所以讀到的最高溫度比「瞬間反應完」應有的溫度低。最高點之後的冷卻幾乎是直線：把這條直線往回延伸到加入的時刻，讀出那時的溫度。反應越慢、隔熱越差，修正越大。</p>
+      <h3 data-en="Hess's law">赫斯定律</h3>
+      <div class="formula multi">
+        \[ \mathrm{NaOH(s)} \to \mathrm{Na^+(aq) + OH^-(aq)} \quad \Delta H_1 \]
+        \[ \mathrm{OH^-(aq) + H^+(aq)} \to \mathrm{H_2O(l)} \quad \Delta H_2 \]
+        \[ \mathrm{NaOH(s) + H^+(aq)} \to \mathrm{Na^+(aq) + H_2O(l)} \quad \Delta H_3 = \Delta H_1 + \Delta H_2 \]
+      </div>
+      <p data-en="Enthalpy is a state function: going from the same start to the same end, the total heat is the same whichever way you go — in one step or in two.">焓是狀態函數：從同樣的起點到同樣的終點，不論一步完成或分兩步走，總反應熱都一樣。</p>
+
+      <h3 data-en="Values used in the simulation (25 °C, infinite dilution)">模擬使用的數據（25 °C、無限稀釋）</h3>
+      <div class="tablewrap"><table class="data" id="dataTable"></table></div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Take the lid off and stop stirring: the highest reading drops a lot, but extrapolation gets most of it back.">拿掉杯蓋、不攪拌：最高溫度掉很多，但外插法可以找回大部分。</li>
+        <li data-en="Ignore the calorimeter (C = 0): your ΔH comes out about 4% too small. Calibrate first with hot and cold water.">忽略卡計（C = 0）：算出的 ΔH 大約小 4%。先用冷熱水校正。</li>
+        <li data-en-html="Ammonium nitrate dissolves endothermically: the temperature falls (the principle of instant cold packs).">硝酸銨溶解是吸熱的：溫度下降（瞬間冷敷包的原理）。</li>
+        <li data-en="Use more acid than base: the heat released depends only on the limiting reactant.">酸比鹼多：放出的熱只由限量試劑決定。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="Why is a polystyrene cup with a lid used instead of a glass beaker?">為什麼用加蓋的保麗龍杯，而不用玻璃燒杯？</li>
+        <li data-en="50 mL of 1.0 M HCl and 50 mL of 1.0 M NaOH, both at 25.0 °C, are mixed; the temperature (after correction) reaches 31.4 °C. Taking C = 18 J/K, find ΔH of neutralisation.">50 mL 1.0 M HCl 與 50 mL 1.0 M NaOH 都在 25.0 °C，混合後（修正後）溫度 31.4 °C。取 C = 18 J/K，求中和熱。</li>
+        <li data-en="If 100 mL of 1.0 M NaOH were mixed with 50 mL of 1.0 M HCl instead, would ΔT be larger, smaller or the same? Would ΔH per mole of water change?">如果改成 100 mL 1.0 M NaOH 與 50 mL 1.0 M HCl，ΔT 會變大、變小還是不變？每莫耳水的 ΔH 會變嗎？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="Polystyrene conducts heat very poorly and has a small heat capacity; the lid stops warm air and vapour escaping. Glass conducts heat better and absorbs more of it.">保麗龍導熱很差、熱容量小；杯蓋擋住熱空氣與水蒸氣。玻璃導熱較好，也會吸收較多熱。</li>
+          <li data-en="q = (100 × 4.18 + 18) × 6.4 = 2790 J; n = 0.050 mol; ΔH = −2790 ÷ 0.050 = −55.8 kJ/mol.">q = (100 × 4.18 + 18) × 6.4 = 2790 J；n = 0.050 mol；ΔH = −2790 ÷ 0.050 = −55.8 kJ/mol。</li>
+          <li data-en="The same 0.050 mol of water forms, but the heat is shared by 150 g instead of 100 g, so ΔT is smaller (about 4.3 °C). ΔH per mole of water does not change.">一樣生成 0.050 mol 的水，但熱分給 150 g 而不是 100 g，所以 ΔT 較小（約 4.3 °C）。每莫耳水的 ΔH 不變。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Every solution is treated as water: density 1.00 g/mL, specific heat 4.18 J/(g·K). The heat capacity of the calorimeter is set to 18 J/K (check it yourself with “Calibrate”).">溶液一律當成水：密度 1.00 g/mL、比熱 4.18 J/(g·K)。卡計的熱容量設為 18 J/K（可以用「卡計校正」自己量量看）。</li>
+        <li data-en="Heats of solution and of neutralisation are the values at infinite dilution. Real 1 M solutions give slightly different values (for example, about −57 kJ/mol for neutralisation), because of heats of dilution.">溶解熱與中和熱用無限稀釋的數值。真實的 1 M 溶液因為稀釋熱會稍有不同（例如中和熱約 −57 kJ/mol）。</li>
+        <li data-en="Heat loss follows Newton's law of cooling (heat-loss coefficient 0.25 W/K with the lid, 0.6 W/K without). The solid dissolves with a time constant of 20 s when stirred (80 s otherwise); poured solutions mix within a few seconds. The thermometer responds with a time constant of 4 s.">熱散失依牛頓冷卻定律（散熱係數：有杯蓋 0.25 W/K、沒有 0.6 W/K）。固體溶解的時間常數：攪拌 20 s、不攪拌 80 s；倒入的溶液幾秒內混合。溫度計的反應時間常數 4 s。</li>
+        <li data-en="The unknown solids are invented: molar mass 60–160 g/mol, heat of solution between −60 and −15 or between +12 and +35 kJ/mol.">未知固體是虛構的：莫耳質量 60–160 g/mol，溶解熱在 −60～−15 或 +12～+35 kJ/mol 之間。</li>
+      </ul>
+
+      <h3 data-en="Safety">安全提醒</h3>
+      <p data-en="Solid sodium hydroxide is corrosive and its dissolving is strongly exothermic: wear goggles and gloves, use small amounts, and never touch the pellets. In a real laboratory, follow your teacher's instructions.">固體氫氧化鈉有腐蝕性、溶解時大量放熱：要戴護目鏡與手套、用少量、不可用手拿。真實實驗請依老師指示操作。</p>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Chemical reactions and energy (heats of reaction, Hess's law); the textbook experiment on heats of solution and neutralisation.">課綱對應：高中化學・化學反應與能量（反應熱、赫斯定律）；課本的溶解熱與中和熱實驗。</li>
+        <li data-en-html="Heats of solution of NaOH (−44.50 kJ/mol) and NH&lt;sub&gt;4&lt;/sub&gt;NO&lt;sub&gt;3&lt;/sub&gt; (+25.69 kJ/mol): &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, 90th ed., Enthalpy of Solution of Electrolytes.">NaOH（−44.50 kJ/mol）與 NH<sub>4</sub>NO<sub>3</sub>（+25.69 kJ/mol）的溶解熱：《CRC Handbook of Chemistry and Physics》第 90 版，電解質的溶解焓表。</li>
+        <li data-en-html="Neutralisation: ΔH = ΔfH°(H&lt;sub&gt;2&lt;/sub&gt;O, l) − ΔfH°(OH&lt;sup&gt;−&lt;/sup&gt;, aq) = −285.83 − (−230.0) = −55.83 kJ/mol, from OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix G&lt;/a&gt;. Cross-check: NIST-JANAF ΔfH°(NaOH, s) = −425.93 kJ/mol gives a heat of solution of −44.2 kJ/mol.">中和熱：ΔH = ΔfH°(H<sub>2</sub>O, l) − ΔfH°(OH<sup>−</sup>, aq) = −285.83 − (−230.0) = −55.83 kJ/mol，取自 OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances" target="_blank" rel="noopener">附錄 G</a>（英文）。交叉核對：NIST-JANAF 的 ΔfH°(NaOH, s) = −425.93 kJ/mol，推得溶解熱 −44.2 kJ/mol。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/hess-law-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/hess-law.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="hess-law"></script>
+  <script src="js/missions/hess-law.js"></script>
+  <script src="js/stats.js" data-module="hess-law"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
