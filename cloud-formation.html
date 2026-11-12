@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Adiabatic Cooling and Cloud Formation: Air over a Mountain and the Foehn | Astro Ni Science Lab">絕熱冷卻與雲的形成：氣塊翻山、雲底與焚風｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 雲的形成頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --cf-sky1: #9cc8ec; --cf-sky2: #e8f3fb; --cf-sea: #2f78b7; --cf-land: #6f9a4a; --cf-forest: #3f6f3a; --cf-rock: #8b7e6a; --cf-snow: #f7f9fb;
+      --cf-cloud: #ffffff; --cf-cloud-shade: #b9c3cf; --cf-rain: #3d6fa6;
+      --cf-dry: #c2410c; --cf-moist: #1d4ed8; --cf-lee: #b91c1c; --cf-dew: #047857; --cf-env: #57534e; --cf-cape: #dc2626; --cf-cin: #2563eb;
+      --cf-warm: #e4572e; --cf-cold: #2b6cb0;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cf-sky1: #0b1a2e; --cf-sky2: #1d3550; --cf-sea: #1f5e94; --cf-land: #4f7a35; --cf-forest: #2f5530; --cf-rock: #6d6354; --cf-snow: #dfe6ee;
+        --cf-cloud: #e9eef4; --cf-cloud-shade: #7d8896; --cf-rain: #8fb6e6;
+        --cf-dry: #fb923c; --cf-moist: #60a5fa; --cf-lee: #f87171; --cf-dew: #34d399; --cf-env: #d6d3d1; --cf-cape: #f87171; --cf-cin: #60a5fa;
+        --cf-warm: #ff8a5c; --cf-cold: #6aa8f0;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cf-sky1: #0b1a2e; --cf-sky2: #1d3550; --cf-sea: #1f5e94; --cf-land: #4f7a35; --cf-forest: #2f5530; --cf-rock: #6d6354; --cf-snow: #dfe6ee;
+      --cf-cloud: #e9eef4; --cf-cloud-shade: #7d8896; --cf-rain: #8fb6e6;
+      --cf-dry: #fb923c; --cf-moist: #60a5fa; --cf-lee: #f87171; --cf-dew: #34d399; --cf-env: #d6d3d1; --cf-cape: #f87171; --cf-cin: #60a5fa;
+      --cf-warm: #ff8a5c; --cf-cold: #6aa8f0;
+    }
+    #cv { aspect-ratio: auto; height: 430px; touch-action: pan-y pinch-zoom; cursor: pointer; }
+    @media (max-width: 560px) { #cv { height: 340px; } }
+    .cf button { min-height: 44px; }
+    .cf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cf .playbar button { flex: 1 1 auto; }
+    .cf .playbar #play { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cf .slider input[type="range"] { height: 28px; margin: 0; }
+    .cf [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    dl.readout dd .hot { color: var(--cf-lee); }
+    .stab { display: inline-block; padding: 1px 9px; border-radius: 999px; font-weight: 700; font-size: calc(13px * var(--fs, 1)); background: var(--accent-soft); }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .legend .dot { width: 9px !important; height: 9px !important; border-radius: 50%; }
+    .views { margin-top: 12px; }
+    .view { margin: 0; }
+    #tz { aspect-ratio: auto; height: 380px; cursor: pointer; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #tz { height: 330px; } }
+    .view figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .view figcaption b { color: var(--text); }
+    .curvebar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin: 0 0 6px; }
+    .curvebar .lbl { font-size: calc(14px * var(--fs, 1)); font-weight: 650; }
+    .segw { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .segw button { border: none; border-radius: 0; min-height: 44px; padding: 4px 12px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; height: 430px; border-radius: 8px; cursor: grab; touch-action: none;
+      background: linear-gradient(var(--cf-sky1), var(--cf-sky2));
+    }
+    @media (max-width: 560px) { #view3 canvas { height: 360px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); }
+    .c3-hud span.m { color: var(--muted); font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 測量紀錄 */
+    .records { margin-top: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px clamp(12px, 3vw, 20px); }
+    .records h2 { font-size: calc(16px * var(--fs, 1)); margin: 0 0 4px; }
+    .records p { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .notes li { overflow-wrap: anywhere; }
+    .rec-wrap { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.where { text-align: left; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data td.rate { font-weight: 700; }
+    table.data tr.empty td { text-align: center; color: var(--muted); }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Cloud formation"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 雲的形成</nav>
+      <h1 data-en="Adiabatic Cooling and Cloud Formation: Air over a Mountain and the Foehn">絕熱冷卻與雲的形成：氣塊翻山、雲底與焚風</h1>
+      <p data-en="Wind pushes a parcel of moist air up a mountain. The air pressure drops, the parcel expands and cools — about 10 °C for every kilometre — until it reaches its dew point and a cloud appears. Inside the cloud, condensing water releases latent heat, so the parcel cools more slowly. If the rain falls out on the windward side, the air that sinks down the other side arrives warmer and drier than it started: the foehn. Change the air, the mountain and the rain, read the cloud base, and see when the mountain sets off a thunderstorm — in 2D or 3D.">風把一團潮溼的空氣推上山。氣壓變小，氣塊膨脹降溫——每升高 1 公里約冷 10 °C——直到冷到露點，雲就出現了。雲裡的水氣凝結時放出潛熱，氣塊降溫變慢。雨如果都下在迎風坡，翻過山沉下來的空氣就比出發時更熱、更乾：這就是焚風。改變空氣、山與降雨，量出雲底高度，再看看山什麼時候會引發雷雨——2D 平面或 3D 立體都可以。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag “Precipitation efficiency” to 0% and read the lee-side temperature, then set it back to 100% and compare.">試試看：把「降水效率」拉到 0%，看背風山腳的溫度；再拉回 100% 比一比。</p>
+    <div class="lab cf">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D cross-section">2D 剖面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSide" data-en="Cross-section" title="從側面看，與 2D 剖面相同的方向" data-en-title="Look from the side, the same way as the 2D cross-section">側看剖面</button>
+          <button type="button" id="camOblique" data-en="Wide view" title="斜上方俯看整座山脈" data-en-title="Look down on the whole range at an angle">斜看全景</button>
+          <button type="button" id="camLee" data-en="From the lee side" title="站在背風坡回頭看：雲停在山頂，這一側晴朗" data-en-title="Stand on the lee side and look back: the cloud stops at the crest and this side is clear">從背風坡看</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="山脈的剖面：氣塊沿迎風坡上升、成雲降雨、越過山頂再沿背風坡下沉；點一下剖面可以把氣塊移到那裡" data-en-aria-label="Cross-section of a mountain range: the air parcel rises up the windward slope, forms cloud and rain, crosses the crest and sinks down the lee slope; tap the section to move the parcel there"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">暫停</button>
+          <button id="recBtn" type="button" data-en="Record this point" title="把氣塊目前的高度、溫度、露點與溼度記到下面的表格" data-en-title="Add the parcel’s current height, temperature, dew point and humidity to the table below">記錄這一點</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除測量紀錄，滑桿設定不變" data-en-title="Clear the measurement records; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--cf-dry)" data-en-html="<i style=&quot;background:var(--cf-dry)&quot;></i>Rising, not saturated"><i style="background:var(--cf-dry)"></i>未飽和上升</span>
+          <span style="color:var(--cf-moist)" data-en-html="<i style=&quot;background:var(--cf-moist)&quot;></i>In cloud (saturated)"><i style="background:var(--cf-moist)"></i>雲中（飽和）</span>
+          <span style="color:var(--cf-lee)" data-en-html="<i style=&quot;background:var(--cf-lee)&quot;></i>Sinking, not saturated"><i style="background:var(--cf-lee)"></i>未飽和下沉</span>
+          <span style="color:var(--cf-rain)" data-en-html="<i class=&quot;dash&quot;></i>Cloud base"><i class="dash"></i>雲底</span>
+        </div>
+        <p class="hint l2" data-en-html="Tap the cross-section to move the <b>air parcel</b> there (time stops); press “Play” to let the wind carry it again. Heights are stretched compared with distances; the top-right corner says by how much.">點一下剖面，可以把<b>氣塊</b>移到那裡（時間暫停）；按「播放」讓風繼續推著它走。高度比水平距離誇大，右上角寫著誇大的倍數。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The clouds, the cloud base, the rain and the parcel come from the same calculation as the 2D cross-section; change them with the sliders.">拖曳旋轉，滾輪或雙指縮放。雲、雲底、雨與氣塊都和 2D 剖面是同一份計算；用滑桿調整。</p>
+
+        <div class="views">
+          <figure class="view">
+            <div class="curvebar">
+              <span class="lbl" data-en="Temperature–height diagram">溫度－高度圖</span>
+              <div class="segw" role="group" aria-label="高度範圍" data-en-aria-label="Height range">
+                <button type="button" data-top="5" aria-pressed="true" data-en="0–5 km">0–5 km</button>
+                <button type="button" data-top="18" aria-pressed="false" data-en="Whole troposphere">整個對流層</button>
+              </div>
+            </div>
+            <canvas id="tz" role="img" aria-label="溫度－高度圖：氣塊上升與下沉的溫度、露點，以及周圍大氣的溫度；點一下圖可以把氣塊移到那個高度" data-en-aria-label="Temperature–height diagram: the parcel’s temperature and dew point going up and down, and the temperature of the surrounding air; tap the diagram to move the parcel to that height"></canvas>
+            <figcaption data-en-html="<b>How to read it</b> — thin orange lines: dry adiabats (9.8 °C per km); thin blue dashes: moist adiabats; grey: the surrounding air; green dashes: the parcel’s dew point. Where the parcel is warmer than its surroundings (red shading) it rises by itself."><b>怎麼看</b>——細橘線是乾絕熱線（每公里 9.8 °C），細藍虛線是濕絕熱線，灰線是周圍的大氣，綠色虛線是氣塊的露點。氣塊比周圍暖的地方（紅色區域）會自己往上衝。</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Air at the windward foot">迎風山腳的空氣</h2>
+          <div class="slider"><label for="t0" data-en="Air temperature (°C)">氣溫（°C）</label><output></output>
+            <input id="t0" type="range" min="-10" max="40" step="0.5" value="28" data-decimals="2"></div>
+          <div class="slider"><label for="rh" data-en="Relative humidity (%)">相對溼度（%）</label><output></output>
+            <input id="rh" type="range" min="5" max="100" step="1" value="70" data-decimals="2"></div>
+          <p class="hint" id="airHint">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Mountain and rain">山與降雨</h2>
+          <div class="slider"><label for="hm" data-en="Height of the mountain (m)">山高（m）</label><output></output>
+            <input id="hm" type="range" min="0" max="4000" step="50" value="1500" data-decimals="1"></div>
+          <div class="slider"><label for="eff" data-en="Precipitation efficiency (%)">降水效率（%）</label><output></output>
+            <input id="eff" type="range" min="0" max="100" step="5" value="100" data-decimals="1"></div>
+          <p class="hint" data-en-html="Precipitation efficiency is the share of the condensed water that falls out as rain at once. <b>100%</b>: all of it rains out on the windward side; <b>0%</b>: it stays in the parcel as cloud droplets and evaporates again on the way down. Taiwan’s highest peak, Yushan, is 3952 m.">降水效率＝凝結出來的水有多少比例立刻變成雨落下。<b>100%</b>：全部下在迎風坡；<b>0%</b>：全部留在氣塊裡當雲滴，下坡時再蒸發回去。臺灣最高的玉山是 3952 m。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Surrounding atmosphere">周圍的大氣</h2>
+          <div class="slider"><label for="gam" data-en="Lapse rate of the surrounding air (°C per km)">周圍大氣的遞減率（°C／km）</label><output></output>
+            <input id="gam" type="range" min="3" max="11" step="0.1" value="5.5" data-decimals="2"></div>
+          <p class="hint" id="stabHint">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Results">結果</h2>
+          <dl class="readout">
+            <dt data-en="Cloud base (windward)">雲底（迎風坡）</dt><dd id="rLcl" class="big">—</dd>
+            <dt data-en="Temperature at the cloud base">雲底的溫度</dt><dd id="rTl">—</dd>
+            <dt data-en="Temperature at the crest">山頂的溫度</dt><dd id="rTop">—</dd>
+            <dt data-en="Rain per kg of air">每公斤空氣降下的水</dt><dd id="rRain">—</dd>
+            <dt data-en="Cloud base (lee side)">雲底（背風坡）</dt><dd id="rEvap">—</dd>
+            <dt data-en="Lee foot: temperature">背風山腳：氣溫</dt><dd id="rLeeT" class="big">—</dd>
+            <dt data-en="Lee foot: humidity">背風山腳：溼度</dt><dd id="rLeeRH">—</dd>
+            <dt data-en="Foehn warming">焚風增溫</dt><dd id="rFoehn" class="big">—</dd>
+            <dt class="wide" data-en="Cooling per km while rising">上升時每公里降溫</dt><dd id="rRates" class="wide">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Convection">對流</h2>
+          <dl class="readout">
+            <dt data-en="Level of free convection">自由對流高度</dt><dd id="rLfc">—</dd>
+            <dt data-en="Cloud top (equilibrium level)">雲頂（平衡高度）</dt><dd id="rEl">—</dd>
+            <dt>CAPE</dt><dd id="rCape">—</dd>
+            <dt class="wide" data-en="Does the mountain set off a thunderstorm?">山會不會引發雷雨？</dt><dd id="rTrig" class="wide">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The parcel now">氣塊目前</h2>
+          <dl class="readout">
+            <dt data-en="Where">位置</dt><dd id="pWhere">—</dd>
+            <dt data-en="Height">高度</dt><dd id="pZ">—</dd>
+            <dt data-en="Pressure">氣壓</dt><dd id="pP">—</dd>
+            <dt data-en="Temperature">溫度</dt><dd id="pT" class="big">—</dd>
+            <dt data-en="Dew point">露點</dt><dd id="pTd">—</dd>
+            <dt data-en="Relative humidity">相對溼度</dt><dd id="pRH">—</dd>
+            <dt data-en="Cloud droplets">雲滴</dt><dd id="pL">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="records" aria-labelledby="h-rec">
+      <h2 id="h-rec" data-en="Measurement records">測量紀錄</h2>
+      <p data-en="Move the parcel (tap the cross-section or the diagram, or use the arrow keys), then press “Record this point”. The last column compares each record with the one before it: how many °C the parcel cools per kilometre of height.">移動氣塊（點剖面或溫度－高度圖，或用方向鍵），再按「記錄這一點」。最後一欄比較這一筆與上一筆：高度每差 1 公里，溫度差幾 °C。</p>
+      <div class="rec-wrap">
+        <table class="data" id="recTable">
+          <thead><tr>
+            <th>#</th><th data-en="Where">位置</th><th data-en-html="Height<br>(m)">高度<br>（m）</th><th data-en-html="Pressure<br>(hPa)">氣壓<br>（hPa）</th>
+            <th data-en-html="Temp.<br>(°C)">溫度<br>（°C）</th><th data-en-html="Dew point<br>(°C)">露點<br>（°C）</th><th data-en-html="RH<br>(%)">溼度<br>（%）</th>
+            <th data-en-html="Droplets<br>(g/kg)">雲滴<br>（g/kg）</th><th data-en-html="Cooling<br>(°C/km)">每公里降溫<br>（°C/km）</th>
+          </tr></thead>
+          <tbody id="recBody"><tr class="empty"><td colspan="9" data-en="No records yet.">還沒有紀錄。</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Why rising air cools">空氣上升為什麼會變冷</h3>
+      <p data-en-html="Air pressure falls with height. A parcel of air carried upward expands until its pressure matches its surroundings; in expanding it pushes the surrounding air away and does work. If no heat flows in or out (an <strong>adiabatic</strong> process), that work comes out of the parcel’s internal energy, and it cools. The first law of thermodynamics for 1 kg of dry air, together with the hydrostatic balance \(dp = -\rho g\,dz\), gives the <strong>dry adiabatic lapse rate</strong>:">氣壓隨高度變小。被帶上去的氣塊會膨脹，直到它的氣壓和周圍一樣；膨脹時它把周圍的空氣推開，對外作功。如果沒有熱量進出（<strong>絕熱</strong>），這份功只能從氣塊的內能來，所以氣塊變冷。把熱力學第一定律（以 1 kg 乾空氣計）和靜力平衡 \(dp = -\rho g\,dz\) 放在一起，就得到<strong>乾絕熱遞減率</strong>：</p>
+      <div class="formula">\[ c_p\,dT = \frac{dp}{\rho}=-g\,dz \quad\Longrightarrow\quad \Gamma_d = -\frac{dT}{dz} = \frac{g}{c_p} = \frac{9.807\ \mathrm{m/s^2}}{1005.7\ \mathrm{J/(kg\,K)}} \approx 9.8\ ^\circ\mathrm{C/km} \]</div>
+      <p data-en-html="Equivalently the <strong>potential temperature</strong> \(\theta = T\,(p_0/p)^{R_d/c_p}\) stays the same: \(\theta\) is the temperature the air would have if brought down to sea-level pressure without exchanging heat.">換個說法：<strong>位溫</strong> \(\theta = T\,(p_0/p)^{R_d/c_p}\) 不變。位溫就是「把這團空氣不加熱也不散熱地搬到海平面氣壓時的溫度」。</p>
+
+      <h3 data-en="Dew point and the cloud base">露點與雲底</h3>
+      <p data-en-html="While no water condenses, the parcel keeps the same amount of water vapour per kilogram (its mixing ratio \(r\)). Its dew point still falls slowly, about \(1.8\ ^\circ\mathrm{C/km}\), because the vapour pressure \(e = rp/(\varepsilon + r)\) drops with the total pressure. The temperature falls about 9.8 °C per km and the dew point about 1.8 °C per km, so they close in by about 8 °C per km and meet at the <strong>lifting condensation level</strong> (LCL), the cloud base:">沒有凝結時，每公斤空氣裡的水氣量（混合比 \(r\)）不變。不過露點還是會慢慢下降，每公里約 \(1.8\ ^\circ\mathrm{C}\)，因為水氣壓 \(e = rp/(\varepsilon + r)\) 跟著總氣壓一起變小。氣溫每公里降 9.8 °C、露點每公里降約 1.8 °C，兩者每公里靠近約 8 °C，相遇的高度就是<strong>舉升凝結高度</strong>，也就是雲底：</p>
+      <div class="formula">\[ z_{\text{LCL}} \approx \frac{T - T_d}{9.8 - 1.8}\ \mathrm{km} \approx 125\ \mathrm{m} \times (T - T_d) \]</div>
+      <p data-en-html="Here \(T - T_d\) is the gap between the temperature and the dew point at the ground in °C. This rule of thumb is within a few per cent of the exact value the page computes (the cloud-base temperature agrees with Bolton’s 1980 formula to within 0.15 °C). When the relative humidity is 100%, the cloud base sits on the ground: that is fog.">其中 \(T - T_d\) 是地面的溫度露點差（°C）。這個經驗式和本頁精確算出的雲底只差幾個百分比（雲底溫度與 Bolton 1980 年的公式相差不到 0.15 °C）。相對溼度 100% 時，雲底就在地面上：那就是霧。</p>
+
+      <h3 data-en="Inside the cloud: latent heat">雲裡的氣塊：潛熱</h3>
+      <p data-en-html="Above the cloud base the parcel is saturated. As it keeps rising and cooling, vapour condenses into droplets and releases the latent heat of vaporization \(L_v \approx 2.5\times10^{6}\ \mathrm{J/kg}\), which offsets part of the cooling. The <strong>moist (saturated) adiabatic lapse rate</strong> is therefore smaller:">雲底以上，氣塊已經飽和。它繼續上升、繼續變冷，水氣就凝結成雲滴，放出汽化潛熱 \(L_v \approx 2.5\times10^{6}\ \mathrm{J/kg}\)，抵銷一部分的降溫。所以<strong>濕絕熱（飽和絕熱）遞減率</strong>比較小：</p>
+      <div class="formula">\[ \Gamma_s = \Gamma_d\,\frac{1 + \dfrac{L_v r_s}{R_d T}}{1 + \dfrac{L_v^{2} r_s \varepsilon}{c_p R_d T^{2}}} \]</div>
+      <p data-en-html="Warm air holds much more vapour, so \(\Gamma_s\) is only about 3.6 °C/km for saturated air at 30 °C near sea level, about 6.5 °C/km at 0 °C, and approaches \(\Gamma_d\) in the cold upper troposphere where there is little vapour left to condense.">暖空氣含的水氣多得多，所以海平面附近 30 °C 的飽和空氣，\(\Gamma_s\) 只有每公里約 3.6 °C；0 °C 時約 6.5 °C；到了寒冷的高空，剩下的水氣很少，\(\Gamma_s\) 就趨近 \(\Gamma_d\)。</p>
+
+      <h3 data-en="The foehn">焚風</h3>
+      <p data-en-html="On the way down the lee side the parcel is compressed and warms. If its droplets stayed with it, they evaporate again, take back exactly the heat they gave, and the parcel arrives at the foot of the mountain just as it started. But the water that fell as rain on the windward side has left its latent heat behind in the parcel. Below the lee-side cloud base the parcel warms at the dry rate all the way down, so it arrives <strong>warmer and drier</strong>. With all the condensate rained out, the lee-side temperature equals the potential temperature at the crest, and roughly">下背風坡時，氣塊被壓縮而增溫。如果雲滴一直跟著它，下坡時雲滴會再蒸發、把當初放出的熱剛好收回去，氣塊回到山腳時和出發時一模一樣。但是在迎風坡變成雨落下的水，把它的潛熱留在了氣塊裡。背風坡雲底以下，氣塊一路以乾絕熱增溫，到山腳時就<strong>比出發時更熱、更乾</strong>。凝結水全部降下時，背風山腳的溫度就等於山頂的位溫，大約是</p>
+      <div class="formula">\[ \Delta T_{\text{foehn}} \approx \frac{L_v\,\Delta r_{\text{rain}}}{c_p} \approx 2.5\ ^\circ\mathrm{C} \times \frac{\Delta r_{\text{rain}}}{1\ \mathrm{g/kg}} \]</div>
+      <p data-en-html="(A few per cent more, because heat released high up, at low pressure, raises the potential temperature a little more.) In Taiwan, the east coast — Hualien and Taitung — sometimes gets hot, dry foehn winds when south-westerly winds or a typhoon’s circulation cross the Central Mountain Range.">（實際會再多幾個百分比，因為在高空、低氣壓處放出的熱，讓位溫增加得更多一點。）在臺灣，西南氣流或颱風的環流越過中央山脈時，東部的花蓮、臺東一帶偶爾會吹起又熱又乾的焚風。</p>
+
+      <h3 data-en="Stability and thunderstorms">穩定度與積雨雲</h3>
+      <p data-en-html="Compare the parcel with the surrounding air at the same height. If the surroundings cool more slowly with height than the parcel (lapse rate \(\Gamma_e\) smaller than \(\Gamma_s\)), a lifted parcel is always colder and denser and sinks back: <strong>absolutely stable</strong>. If \(\Gamma_e > \Gamma_d\), any parcel is warmer than its surroundings as soon as it rises: <strong>absolutely unstable</strong>. In between, \(\Gamma_s < \Gamma_e < \Gamma_d\), the air is <strong>conditionally unstable</strong>: a parcel that is lifted far enough above its cloud base becomes warmer than its surroundings at the <strong>level of free convection</strong> (LFC) and then rises by itself up to the <strong>equilibrium level</strong> (EL), the top of a cumulonimbus. The energy available is">把氣塊和同高度的周圍空氣比一比。如果周圍空氣隨高度變冷得比氣塊慢（遞減率 \(\Gamma_e\) 小於 \(\Gamma_s\)），被抬上去的氣塊永遠比周圍冷、比較重，會沉回去：<strong>絕對穩定</strong>。如果 \(\Gamma_e > \Gamma_d\)，氣塊一上升就比周圍暖：<strong>絕對不穩定</strong>。介於兩者之間（\(\Gamma_s < \Gamma_e < \Gamma_d\)）是<strong>條件性不穩定</strong>：氣塊被抬到雲底以上夠高的地方，在<strong>自由對流高度</strong>（LFC）開始比周圍暖，之後就自己一路往上衝，到<strong>平衡高度</strong>（EL）才停下來，那就是積雨雲的雲頂。可以用的能量是</p>
+      <div class="formula">\[ \text{CAPE} = g\int_{\text{LFC}}^{\text{EL}} \frac{T_{\text{parcel}} - T_{\text{env}}}{T_{\text{env}}}\,dz \]</div>
+      <p data-en-html="A mountain is one way to lift air to its LFC. This is one reason summer afternoon thunderstorms in Taiwan so often start over the mountains.">山就是把空氣抬到自由對流高度的一種方式。臺灣夏天午後的雷陣雨常常從山區開始，這是原因之一。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>125 metres per degree</strong>: set the temperature to 30 °C and lower the humidity until the gap between temperature and dew point (shown under the sliders) is 8 °C. The cloud base sits at about 1000 m."><strong>每 1 °C 約 125 公尺</strong>：氣溫設 30 °C，降低溼度，讓滑桿下方顯示的溫度露點差變成 8 °C，雲底大約就在 1000 m。</li>
+        <li data-en-html="<strong>Two slopes</strong>: on the diagram, the orange line (clear air) is steeper than the blue line (in cloud). Record two points below the cloud base and two inside the cloud and compare the last column of the table."><strong>兩種斜率</strong>：溫度－高度圖上，橘線（晴空）比藍線（雲中）陡。在雲底以下記錄兩點、雲中再記錄兩點，比較表格最後一欄。</li>
+        <li data-en-html="<strong>No rain, no foehn</strong>: with a precipitation efficiency of 0% the cloud on the lee side comes down to the same height as on the windward side, and the air reaches the lee foot at its starting temperature. Raise the efficiency step by step and watch the lee-side cloud base climb and the foehn grow."><strong>沒有雨就沒有焚風</strong>：降水效率 0% 時，背風坡的雲底和迎風坡一樣高，空氣回到背風山腳時溫度和出發時相同。一步一步調高降水效率，看背風坡的雲底升高、焚風增強。</li>
+        <li data-en-html="<strong>A mountain sets off a storm</strong>: make the surrounding air cool faster (6.5 °C per km) and raise the mountain. Once the crest is above the level of free convection, a cumulonimbus shoots up; switch the diagram to “Whole troposphere” to see how tall."><strong>山引發雷雨</strong>：讓周圍大氣變冷得快一點（每公里 6.5 °C），再把山加高。山頂一高過自由對流高度，積雨雲就衝上去；把溫度－高度圖切到「整個對流層」，看它長多高。</li>
+        <li data-en-html="<strong>In 3D</strong>: press “From the lee side” — a wall of cloud stops at the crest while the lee slope is sunny (the foehn wall)."><strong>3D 立體</strong>：按「從背風坡看」——一道雲牆停在山頂，背風坡卻是晴天（焚風牆）。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="<strong>Parcel</strong>: 1 kg of dry air with its water vapour and droplets. Its pressure always equals that of the surrounding air at the same height; the surrounding air is in hydrostatic balance with a constant lapse rate up to the tropopause (16 km, or lower if it would otherwise be colder than −80 °C) and constant temperature above, starting from 1013.25 hPa at sea level. The parcel exchanges no heat with its surroundings."><strong>氣塊</strong>：1 kg 乾空氣加上它的水氣與雲滴。它的氣壓永遠等於同高度周圍大氣的氣壓；周圍大氣是靜力平衡、遞減率固定到對流層頂（16 km；若照遞減率算會比 −80 °C 還冷就提早到 −80 °C 的高度），以上等溫，海平面氣壓 1013.25 hPa。氣塊與周圍不交換熱量。</li>
+        <li data-en-html="<strong>Each 5 m step</strong>: first the parcel expands or is compressed at constant potential temperature; then, if it is supersaturated, vapour condenses until it is exactly saturated, releasing latent heat (\(c_p\,\Delta T = L_v\,\Delta r\), solved by Newton’s method); if it has droplets and is below saturation, droplets evaporate and absorb heat. This is the same first law of thermodynamics that gives \(\Gamma_s\) (checked in the unit tests). Of the newly condensed water, the chosen fraction (precipitation efficiency) leaves the parcel as rain."><strong>每一步（5 m）</strong>：先以位溫不變的方式膨脹或壓縮；若超過飽和，多的水氣凝結到剛好飽和，放出潛熱（\(c_p\,\Delta T = L_v\,\Delta r\)，用牛頓法求解）；若有雲滴而且未飽和，雲滴蒸發吸熱。這和推出 \(\Gamma_s\) 用的是同一個熱力學第一定律（單元測試有驗證）。新凝結的水依「降水效率」的比例變成雨離開氣塊。</li>
+        <li data-en-html="<strong>Water and heat</strong>: saturation vapour pressure over liquid water from Murphy and Koop (2005); \(L_v\) varies with temperature (Bolton 1980). Ice (and the extra latent heat of freezing), the heat capacity of the water and the effect of vapour on buoyancy are left out; the dry-air constants \(R_d = 287.04\) and \(c_p = 1005.7\ \mathrm{J/(kg\,K)}\) are used. Because the surrounding air sets the pressure at each height, a parcel that is warmer than its surroundings warms a little faster than 9.8 °C per km on the way down."><strong>水與熱</strong>：液態水的飽和水氣壓用 Murphy 與 Koop（2005）的公式；\(L_v\) 隨溫度變化（Bolton 1980）。不計冰相（與凝固放出的潛熱）、水的熱容量，以及水氣對浮力的影響；用乾空氣的常數 \(R_d = 287.04\)、\(c_p = 1005.7\ \mathrm{J/(kg\,K)}\)。因為每個高度的氣壓由周圍大氣決定，比周圍暖的氣塊下沉時，每公里增溫會比 9.8 °C 略多一點。</li>
+        <li data-en-html="<strong>Convection</strong>: the same parcel is also followed straight up above the crest to 20 km to find the level of free convection, the equilibrium level and CAPE (buoyancy judged by temperature). The mountain “sets off a thunderstorm” when its crest is at or above the LFC. The parcel you see is still pushed over the crest by the wind; the cumulonimbus is drawn above the crest."><strong>對流</strong>：同一個氣塊也從山頂一路往上算到 20 km，找出自由對流高度、平衡高度與 CAPE（以溫度判斷浮力）。山頂高於或等於自由對流高度時，算「山引發了雷雨」。畫面上的氣塊仍被風推過山頂；積雨雲另外畫在山頂上方。</li>
+        <li data-en-html="<strong>Pictures</strong>: the mountain is a smooth ridge about 100 km wide at its base; heights are exaggerated. The clouds are drawn where the parcel model says the air is saturated near the slopes; their exact shape and the rain streaks are illustrations. The 3D view uses the same core and the three.js library (MIT license), downloaded only when you switch to 3D."><strong>畫面</strong>：山是底寬約 100 km 的平滑山脊，高度是誇大的。雲畫在氣塊模型判定為飽和的山坡上空，雲的細部形狀與雨絲是示意。3D 檢視用同一個物理核心與 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · The atmosphere (water vapour, clouds and precipitation, atmospheric stability)">課綱對應：高中地球科學・大氣（水氣、雲與降水、大氣的穩定度）</li>
+        <li data-en-html="Saturation vapour pressure: D. M. Murphy and T. Koop (2005), “Review of the vapour pressures of ice and supercooled water for atmospheric applications”, <i>Quarterly Journal of the Royal Meteorological Society</i> 131, 1539–1565 (doi 10.1256/qj.04.94), equation 10.">飽和水氣壓：D. M. Murphy 與 T. Koop（2005），〈Review of the vapour pressures of ice and supercooled water for atmospheric applications〉，<i>Quarterly Journal of the Royal Meteorological Society</i> 131 卷 1539–1565 頁（doi 10.1256/qj.04.94），式 10。</li>
+        <li data-en-html="Gas constants, specific heat, latent heat, cloud-base temperature and equivalent potential temperature: D. Bolton (1980), “The computation of equivalent potential temperature”, <i>Monthly Weather Review</i> 108, 1046–1053 (doi 10.1175/1520-0493(1980)108&lt;1046:TCOEPT&gt;2.0.CO;2). Lapse rates and stability: American Meteorological Society, <i>Glossary of Meteorology</i>, entries “moist-adiabatic lapse rate”, “lifting condensation level”, “convective available potential energy” and “foehn”.">氣體常數、比熱、潛熱、雲底溫度與相當位溫：D. Bolton（1980），〈The computation of equivalent potential temperature〉，<i>Monthly Weather Review</i> 108 卷 1046–1053 頁（doi 10.1175/1520-0493(1980)108&lt;1046:TCOEPT&gt;2.0.CO;2）。遞減率與穩定度：美國氣象學會《Glossary of Meteorology》的「moist-adiabatic lapse rate」「lifting condensation level」「convective available potential energy」「foehn」條目。</li>
+        <li data-en-html="Standard gravity \(9.806\,65\ \mathrm{m/s^2}\) (SI) and sea-level pressure 1013.25 hPa: NOAA, NASA and U.S. Air Force, <a href=&quot;https://ntrs.nasa.gov/citations/19770009539&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;><i>U.S. Standard Atmosphere, 1976</i></a> (the unit tests check 540.2 hPa at 5 km and 226.3 hPa at 11 km).">標準重力 \(9.806\,65\ \mathrm{m/s^2}\)（SI）與海平面氣壓 1013.25 hPa：NOAA、NASA 與美國空軍〈<a href="https://ntrs.nasa.gov/citations/19770009539" target="_blank" rel="noopener">U.S. Standard Atmosphere, 1976</a>〉（單元測試核對 5 km 為 540.2 hPa、11 km 為 226.3 hPa）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/cloud-formation-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/cloud-formation.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="cloud-formation"></script>
+  <script src="js/missions/cloud-formation.js"></script>
+  <script src="js/stats.js" data-module="cloud-formation"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
