@@ -86,13 +86,13 @@
     {
       id: 'electrochemistry-11', level: 8,
       title: { zh: '未知電極的電位', en: 'Potential of the unknown' },
-      desc: { zh: '在「未知電極 X」找出 X 的標準還原電位 E°，誤差 0.005 V 以內（不可先揭曉答案）。', en: 'With “Unknown electrode X”, find the standard reduction potential E° of X within 0.005 V (without revealing the answer first).' },
+      desc: { zh: '在化學電池模式的未知電極卡片按「開始」，找出 X 的標準還原電位 E°，誤差 0.005 V 以內（不可先揭曉答案）。', en: 'In cell mode, press “Start” on the unknown-electrode card and find the standard reduction potential E° of X within 0.005 V (without revealing the answer first).' },
       check: function (ev) { return ev.type === 'answerE' && ev.data && !ev.data.revealed && ev.data.err <= 0.005 + 1e-9; }
     },
     {
       id: 'electrochemistry-12', level: 9,
       title: { zh: '秤出原子量', en: 'Weighing an atom' },
-      desc: { zh: '在「未知金屬 M」用電解求出 M 的莫耳質量，誤差 1% 以內（不可先揭曉答案）。', en: 'With “Unknown metal M”, find the molar mass of M by electrolysis within 1% (without revealing the answer first).' },
+      desc: { zh: '在電解模式的未知金屬卡片按「開始」，用電解求出 M 的莫耳質量，誤差 1% 以內（不可先揭曉答案）。', en: 'In electrolysis mode, press “Start” on the unknown-metal card and find the molar mass of M by electrolysis within 1% (without revealing the answer first).' },
       check: function (ev) { return ev.type === 'answerM' && ev.data && !ev.data.revealed && ev.data.err <= 0.01 + 1e-12; }
     },
     {

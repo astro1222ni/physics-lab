@@ -80,7 +80,7 @@
     {
       id: 'hess-law-11', level: 8,
       title: { zh: '未知固體', en: 'The unknown solid' },
-      desc: { zh: '在「未知固體 X」揭曉答案之前，量出它的莫耳溶解熱，誤差在 3% 以內。', en: 'Before revealing the answer, measure the molar heat of solution of unknown solid X to within 3%.' },
+      desc: { zh: '在未知固體卡片按「開始」，在揭曉答案之前量出 X 的莫耳溶解熱，誤差在 3% 以內。', en: 'Press “Start” on the unknown-solid card and, before revealing the answer, measure the molar heat of solution of unknown solid X to within 3%.' },
       check: function (ev) { const d = an(ev); return !!d && d.kind === 'dis-X' && !d.revealed && within(d.err, 0.03); }
     },
     {
