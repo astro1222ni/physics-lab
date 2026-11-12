@@ -63,5 +63,16 @@ for (const x of list) {
 const out = '/* catalog.js — 全站實驗目錄（由 tools/build-catalog.cjs 從 index.html 產生，請勿手改；npm run seo 會更新） */\n' +
   'window.LAB_CATALOG = ' + JSON.stringify(list, null, 1).replace(/\n\s*/g, ' ').replace(/\}, \{/g, '},\n{') + ';\n';
 fs.writeFileSync(path.join(ROOT, 'js', 'catalog.js'), out);
+// 章的對照表 js/chapter-map.js（成就系統的「章制霸」用；檔案小，登入後才載入）：首頁順序，每章的分支與已上線實驗
+const chapters = [];
+for (const x of list) {
+  if (!x.c) continue;
+  let c = chapters.find(y => y.id === x.c);
+  if (!c) { c = { id: x.c, zh: x.czh, en: x.cen, b: x.b, m: [] }; chapters.push(c); }
+  c.m.push(x.s);
+}
+fs.writeFileSync(path.join(ROOT, 'js', 'chapter-map.js'),
+  '/* chapter-map.js — 各章的已上線實驗（由 tools/build-catalog.cjs 從 index.html 產生，請勿手改；npm run seo 會更新） */\n' +
+  'window.LAB_CHAPTERS = [\n' + chapters.map(c => JSON.stringify(c)).join(',\n') + '\n];\n');
 const noCh = list.filter(x => !x.c).map(x => x.s);
 console.log('實驗目錄：' + list.length + ' 個實驗' + (noCh.length ? '；沒有章的：' + noCh.join('、') : ''));

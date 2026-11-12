@@ -209,4 +209,13 @@ test('熱阻斷：30 °C 仍能傳導，37 °C 衝動傳不到另一端；部分
   assert.ok(v7 < 0.7 * v0 && v7 > 0.5 * v0, v7 / v0);
 });
 
+test('極強的超極化電流（滑桿最小 −49.1 µA/cm² 持續 50 ms）：數值不發散，膜電位趨近 E_L + I/g_L（試玩 11/12 抓到 RK4 發散）', () => {
+  const I = -(Math.pow(10, 1.7) - 1);
+  [P0, A.params({ T: 40, tea: 0.7, ttx: 0.13 })].forEach(P => {
+    const rec = A.simulate(P, pulse(I, 60, 0), 50);
+    for (let i = 0; i < rec.V.length; i++) assert.ok(isFinite(rec.V[i]) && isFinite(rec.m[i]) && isFinite(rec.h[i]) && isFinite(rec.n[i]), '第 ' + i + ' 筆不是有限值');
+    close(rec.V[rec.V.length - 1], P.EL + I / P.gL, 0.5, '超極化的穩定膜電位');
+  });
+});
+
 console.log(passed + ' 項通過');

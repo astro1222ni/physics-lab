@@ -666,7 +666,7 @@
   }
   function refreshOutputs() {
     $('xao').textContent = fmtSlider(state.a, elA);
-    $('hho').textContent = (state.hsign < 0 ? '−' : '') + DC.trim(hMag(), 3);
+    $('hho').textContent = DC.trim(hMag(), 3);   // 正負號由「h < 0（左邊）」按鈕表示
     Object.keys(coefEls).forEach(function (key) { $('c' + key + 'o').textContent = fmtSlider(val(coefEls[key]), coefEls[key]); });
   }
   /** 改切點 a；quiet：不派送滑桿事件（拖曳、播放時用） */

@@ -175,6 +175,22 @@
       if (nextRec < t + h0 - tol) h0 = nextRec - t;
       if (t + h0 > tEnd) h0 = tEnd - t;
       const I = stimAt(stim, t + h0 * 0.5); // 刺激在一步之內不變（邊緣已對齊）
+      // 很強又很久的超極化電流會把膜電位壓到 −200 mV 以下，閘門速率變得極快（β_m 上萬 /ms），
+      // RK4 遇到這種「僵硬」的方程會發散成非數值。這時改用和纜線相同的穩定算法：
+      // 閘門用指數積分（Rush–Larsen），電壓用電導線性化的半隱式步（無條件穩定）。
+      // 一般範圍（最快的閘門速率 × 步長 ≤ 2）照舊用 RK4，結果完全不變。
+      const f = P.phi;
+      const rm = am(V) + bm(V), rh = ah(V) + bh(V), rn = an(V) + bn(V);
+      if (f * Math.max(rm, rh, rn) * h0 > 2) {
+        m = am(V) / rm + (m - am(V) / rm) * Math.exp(-f * rm * h0);
+        h = ah(V) / rh + (h - ah(V) / rh) * Math.exp(-f * rh * h0);
+        n = an(V) / rn + (n - an(V) / rn) * Math.exp(-f * rn * h0);
+        const gna = P.gNa * m * m * m * h, gk = P.gK * n * n * n * n;
+        V = (P.C * V / h0 + I + gna * P.ENa + gk * P.EK + P.gL * P.EL) / (P.C / h0 + gna + gk + P.gL);
+        t += h0;
+        if (t >= nextRec - tol) { push(Math.round(t / every) * every); nextRec += every; }
+        continue;
+      }
       deriv(V, m, h, n, I, P, k1);
       deriv(V + 0.5 * h0 * k1[0], m + 0.5 * h0 * k1[1], h + 0.5 * h0 * k1[2], n + 0.5 * h0 * k1[3], I, P, k2);
       deriv(V + 0.5 * h0 * k2[0], m + 0.5 * h0 * k2[1], h + 0.5 * h0 * k2[2], n + 0.5 * h0 * k2[3], I, P, k3);
