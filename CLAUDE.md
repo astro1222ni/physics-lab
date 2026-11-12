@@ -51,7 +51,8 @@
 | `js/drawkit.js` | 共用繪圖工具 `LabDraw`（立體球、木塊、陰影、標籤底框、箭頭、格線、背景，深淺色自動）；新畫面一律用它 |
 | `js/thumbs.js`、`js/home.js`、`img/thumbs/` | 首頁縮圖（`npm run thumbs -- <代號>` 產生）、章名按鈕的實驗數 |
 | `tools/seo.cjs`、`img/og/`、`sitemap.xml`、`robots.txt` | `npm run seo`：分享卡、每頁說明與 Open Graph、hreflang、結構化資料、網站地圖 |
-| `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查） |
+| `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查、試玩） |
+| `tools/playtest.cjs`、`tools/playtest/exclude.cjs` | `npm run playtest [-- 代號…]`：自動試玩（像學生亂按、比對任務用字、抓錯誤與不合理數值），報告 `.shots/playtest-report.json`；verify 只重玩改過的實驗 |
 | `docs/WORLD-CLASS.md`、`docs/auto-optimize-log.md` | 世界一流標準、待改清單、自動優化規則與紀錄（每天 01:40 自動優化） |
 
 ## 新增或修改模組的慣例

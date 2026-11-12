@@ -1347,7 +1347,9 @@
     $('tho').textContent = fmtSlider(val(elTh), elTh) + ' s';
     $('th2o').textContent = fmtSlider(val(elTh2), elTh2) + ' s';
     const sp = val(elSpd);
-    $('spdo').textContent = num(sp, sp >= 9.995 ? 0 : 2).replace(/\.?0+$/, '') + '×';
+    // 只去掉小數點後面的尾零（10 不能變成 1）
+    const spTxt = num(sp, sp >= 9.995 ? 0 : 2);
+    $('spdo').textContent = (spTxt.indexOf('.') >= 0 ? spTxt.replace(/\.?0+$/, '') : spTxt) + '×';
     $('guesso').textContent = fmtSlider(val(elGuess), elGuess) + ' s';
   }
   elTh.addEventListener('input', function () { refreshOutputs(); state.th = val(elTh); startFresh(); });

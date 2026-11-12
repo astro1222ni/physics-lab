@@ -56,7 +56,9 @@
     "molecular-shapes": "201a9eb6",
     "diffusion-osmosis": "b612797e",
     "trig-functions": "0757862f",
-    "reaction-rate": "5c97d2b6"
+    "reaction-rate": "5c97d2b6",
+    "action-potential": "a84e4340",
+    "cloud-formation": "9be01f73"
   };
   /* VERSIONS-END */
 

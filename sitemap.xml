@@ -393,6 +393,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/mendelian-inheritance.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/action-potential.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/action-potential.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/action-potential.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/action-potential.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/action-potential.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/moon-phases.html</loc>
     <lastmod>2026-11-12</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/moon-phases.html"/>
@@ -415,6 +423,14 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/earthquake.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/earthquake.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/earthquake.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/cloud-formation.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/cloud-formation.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/cloud-formation.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/cloud-formation.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/cloud-formation.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/tides.html</loc>

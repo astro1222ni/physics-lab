@@ -83,7 +83,10 @@ const PREP = {
   // 單位圓在畫布左側：靠左裁，圓才不會被切掉
   'trig-functions':    { wait: 1500, anchorX: 0 },
   // 3D 容器：往下裁一點，避開上緣的時間與溫度標籤
-  'reaction-rate':     { wait: 3000, anchor: 0.7 }
+  'reaction-rate':     { wait: 3000, anchor: 0.7 },
+  // 持續電流 10 µA/cm²：一串動作電位
+  'action-potential':  { eval: "document.querySelector('#modeSeg [data-mode=\"step\"]').click(); window.LabNum.set(document.getElementById('a1'), 10); window.__ap.fire(); window.__ap.finish1();", wait: 800, anchor: 0 },
+  'cloud-formation':   { wait: 4500 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');

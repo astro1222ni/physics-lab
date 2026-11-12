@@ -53,11 +53,13 @@ window.LAB_MISSION_MODULES = [
   { id: 'molecular-shapes', zh: '分子的形狀：電子對互相推開（VSEPR）', en: 'Molecular Shapes: Electron Pairs Push Apart (VSEPR)' },
   { id: 'diffusion-osmosis', zh: '擴散與滲透：布朗運動、半透膜與細胞的漲縮', en: 'Diffusion and Osmosis: Brownian Motion, Membranes and Cells' },
   { id: 'trig-functions', zh: '三角函數：單位圓與正弦波', en: 'Trigonometric Functions: The Unit Circle and Sine Waves' },
-  { id: 'reaction-rate', zh: '反應速率與碰撞學說', en: 'Reaction Rates and Collision Theory' }
+  { id: 'reaction-rate', zh: '反應速率與碰撞學說', en: 'Reaction Rates and Collision Theory' },
+  { id: 'action-potential', zh: '神經的動作電位：Hodgkin–Huxley 模型與神經衝動的傳導', en: 'The Action Potential: The Hodgkin–Huxley Model and Nerve Conduction' },
+  { id: 'cloud-formation', zh: '絕熱冷卻與雲的形成', en: 'Adiabatic Cooling and Cloud Formation' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -93,6 +95,9 @@ window.LAB_MODULE_BRANCH = {
   'reaction-rate': 'equilibrium',
   // 生物
   'diffusion-osmosis': 'cell',
+  'action-potential': 'physiology',
+  // 地球科學
+  'cloud-formation': 'atmo',
   'tides': 'ocean',
   'conic-sections': 'geometry',
   'trig-functions': 'geometry'
