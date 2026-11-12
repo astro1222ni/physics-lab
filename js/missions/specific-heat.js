@@ -44,7 +44,7 @@
     {
       id: 'specific-heat-6', level: 5,
       title: { zh: '神秘金屬', en: 'The mystery metal' },
-      desc: { zh: '用實驗量出神秘金屬的比熱，在「神秘金屬」卡片輸入答案，誤差 3% 以內。', en: 'Measure the specific heat of the mystery metal and enter it in the “Mystery metal” card, within 3%.' },
+      desc: { zh: '在「樣品」選「神秘金屬」（c = ?），用實驗量出它的比熱，再到「神秘金屬」卡片輸入答案，誤差 3% 以內。', en: 'Choose “Mystery metal” (c = ?) as the “Sample”, measure its specific heat, then enter it in the “Mystery metal” card, within 3%.' },
       check: function (ev) { const d = ev.data; return ev.type === 'guess' && d.measured && Math.abs(d.err) <= 0.03; }
     },
     {

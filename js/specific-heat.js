@@ -25,7 +25,7 @@
     glass: { sub: 'glass', zh: '玻璃', en: 'Glass' },
     ice: { sub: 'h2o', zh: '冰', en: 'Ice' },
     h2o: { sub: 'h2o', zh: '水', en: 'Water' },
-    mys: { sub: null, zh: '神秘金屬', en: 'Mystery' }
+    mys: { sub: null, zh: '神秘金屬', en: 'Mystery metal' }
   };
   const CAL_LIST = ['al', 'fe', 'cu', 'pb', 'glass', 'ice', 'mys'];
   const HEAT_LIST = ['h2o', 'al', 'fe', 'cu', 'pb', 'mys'];

@@ -133,12 +133,22 @@
       id: 'torque-balance-10', level: 7,
       title: { zh: '牆也有摩擦', en: 'A wall with friction' },
       desc: {
-        zh: '選「有摩擦的牆」（μw ≥ 0.2）、梯子上沒有人：讓梯子放手後站得住，而且角度比剛好不滑的最小角度大不到 0.5°。',
-        en: 'Choose the rough wall (μw ≥ 0.2) with nobody on the ladder: make the ladder hold after you let go, yet less than 0.5° above the smallest angle at which it does not slip.'
+        zh: '「牆面」選「有摩擦」（μw ≥ 0.2）、梯子上沒有人，μs 與 μw 都不變：讓梯子在比臨界角小不到 1° 的角度滑倒一次，也在比臨界角大不到 0.5° 的角度放手後站得住（先後不拘），把剛好不滑的最小角度夾出來。',
+        en: 'Set “Wall” to “With friction” (μw ≥ 0.2) with nobody on the ladder, keeping μs and μw fixed: make the ladder slip once at an angle less than 1° below the critical angle, and also hold after you let go at an angle less than 0.5° above it (in either order) — pin down the smallest angle at which it does not slip.'
       },
-      check: function (ev) {
+      // 11/12 自動試玩亂按就完成（放手後改 μs 讓臨界角剛好落在 θ 下方）：改成要從兩邊夾出臨界角，同一組 μs、μw
+      check: function (ev, mem) {
+        if (ev.type !== 'ladderStand' && ev.type !== 'ladderSlip') return false;
         const d = ev.data;
-        return ev.type === 'ladderStand' && d.rough && d.muw >= 0.2 - 1e-9 && d.mp === 0 && d.theta - d.thetaC >= -1e-9 && d.theta - d.thetaC <= 0.5;
+        if (!d.rough || d.muw < 0.2 - 1e-9 || d.mp !== 0) return false;
+        const sameMu = function (o) { return same(o.mu, d.mu) && same(o.muw, d.muw); };
+        const gap = d.theta - d.thetaC;
+        if (ev.type === 'ladderSlip') {
+          if (gap < 0 && gap > -1) remember(mem, 'tb10slip', d);
+          return gap < 0 && gap > -1 && (mem.tb10stand || []).some(sameMu);
+        }
+        if (gap >= -1e-9 && gap <= 0.5) remember(mem, 'tb10stand', d);
+        return gap >= -1e-9 && gap <= 0.5 && (mem.tb10slip || []).some(sameMu);
       }
     },
     {

@@ -164,7 +164,7 @@ const SOL = {
   'torque-balance-7': [['l', { mp: 0, mu: 0.4, th: 51.5 }]],
   'torque-balance-8': [['s', { M: 5, p: 1.5, items: [['w5', 1]] }]],
   'torque-balance-9': [['s', { M: 20, items: [['adult', 0], ['adult', 4], ['w1', 2.25]] }]],
-  'torque-balance-10': [['l', { mp: 0, mu: 0.5, muw: 0.5, rough: true, th: 37 }]],
+  'torque-balance-10': [['l', { mp: 0, mu: 0.5, muw: 0.5, rough: true, th: 36.2 }], ['l', { mp: 0, mu: 0.5, muw: 0.5, rough: true, th: 37 }]],
   'torque-balance-11': [['l', { th: 60, mu: 0.52, ml: 15, mp: 60, d: 4 }]],
   'torque-balance-12': [['lc', { th: 58, mu: 0.5, ml: 40, mp: 40, d: 0 }], ['lc', { th: 58, mu: 0.5, ml: 40, mp: 100, d: 0.5 }]],
   'torque-balance-h1': [['s', { M: 8, p: 1, scale: 2 }]],

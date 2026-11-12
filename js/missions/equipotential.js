@@ -12,7 +12,7 @@
   //           E2（N2 處電場大小）, Ecent（紙中心電場大小）, groupN, groupV, groupSpan, groupVRange（這一點所屬的組）}
   //   probe：放開探針或微調後（電源接通時）{ …同 record 的探針欄位 }
   //   lines：勾選「連成平滑的等位線」{ …共同欄位 }
-  //   fieldlines：勾選「畫出電力線」{ …共同欄位, nCurves（至少 4 點的量測等位線條數）, nLines（畫出的電力線條數）}
+  //   fieldlines：勾選「畫出與等位線垂直的電力線」{ …共同欄位, nCurves（至少 4 點的量測等位線條數）, nLines（畫出的電力線條數）}
   //   estimate：按「估算電場」{ …共同欄位, Eest, Ecalc, err（相對誤差）, dd, dV, x, y（Δd 線段中點）, VA, VB,
   //             usesEl（用了電極當等位線）, distEl（中點到最近電極的距離）, Ecent, sheet（方格紙代號）}
   const NULL_V = 0.02;
@@ -48,7 +48,7 @@
     {
       id: 'equipotential-4', level: 4,
       title: { zh: '與等位線垂直', en: 'At right angles' },
-      desc: { zh: '至少描出 3 條各有 4 點以上的等位線，勾選「畫出電力線」，畫出至少 3 條電力線。', en: 'Trace at least 3 equipotential lines of 4 or more points each, then tick “Draw field lines” and get at least 3 field lines.' },
+      desc: { zh: '至少描出 3 條各有 4 點以上的等位線，勾選「畫出與等位線垂直的電力線」，畫出至少 3 條電力線。', en: 'Trace at least 3 equipotential lines of 4 or more points each, then tick “Draw field lines at right angles to them” and get at least 3 field lines.' },
       check: function (ev) { const d = ev.data; return ev.type === 'fieldlines' && d.drawField && d.nCurves >= 3 && d.nLines >= 3; }
     },
     {
