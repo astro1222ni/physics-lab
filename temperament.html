@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Pythagorean, Just and Equal Temperament | Astro Ni Science Lab">五度相生、純律與十二平均律｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 音律頁面專用的顏色代號（淺色＋兩組深色；由 js/temperament.js 與 js/temperament-3d.js 讀取）
+       pyth 五度相生、just 純律、equal 十二平均律、reg 調和律、stack 疊疊樂的路徑、gap 缺口、narrow／wide 誤差地圖的窄與寬 */
+    :root { --tm-pyth: #1d4ed8; --tm-just: #c2410c; --tm-equal: #0f766e; --tm-reg: #7c3aed; --tm-stack: #be185d; --tm-gap: #b45309; --tm-narrow: #0369a1; --tm-wide: #b91c1c; --tm-key: #fbfaf7; --tm-keyb: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --tm-pyth: #7aa7ff; --tm-just: #fb923c; --tm-equal: #5eead4; --tm-reg: #b9a0ff; --tm-stack: #ff74b0; --tm-gap: #fbbf24; --tm-narrow: #38bdf8; --tm-wide: #f87171; --tm-key: #d9dce2; --tm-keyb: #0d0f13; }
+    }
+    :root[data-theme="dark"] { --tm-pyth: #7aa7ff; --tm-just: #fb923c; --tm-equal: #5eead4; --tm-reg: #b9a0ff; --tm-stack: #ff74b0; --tm-gap: #fbbf24; --tm-narrow: #38bdf8; --tm-wide: #f87171; --tm-key: #d9dce2; --tm-keyb: #0d0f13; }
+
+    /* 主畫布：左邊（手機是上面）鐘面與疊疊樂，右邊（手機是下面）相對十二平均律的偏差長條圖；高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: auto; cursor: default; }
+    #cvBeat { aspect-ratio: auto; height: 150px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
+    .tm [hidden] { display: none !important; }
+    .tm button { min-height: 44px; }
+    .tm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .tm .playbar button { flex: 1 1 auto; }
+    .tm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .tm #stop:disabled { opacity: .5; cursor: default; }
+    .tm .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .tm .panel { grid-template-columns: minmax(0, 1fr); }
+    .tm .panel > .card { min-width: 0; }
+    .tm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 78%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.g { color: var(--tm-gap); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 鍵盤 C4–C5：白鍵 8 個平分寬度，黑鍵疊在上面（按鈕，可用 Tab、Enter、空白鍵操作） */
+    .piano { position: relative; height: 132px; margin: 12px 0 0; user-select: none; -webkit-user-select: none; touch-action: none; }
+    .piano .key { position: absolute; top: 0; padding: 0; margin: 0; min-height: 0; border-radius: 0 0 8px 8px; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center; touch-action: none; -webkit-tap-highlight-color: transparent; }
+    .piano .key.w { height: 100%; background: linear-gradient(180deg, color-mix(in srgb, var(--tm-key) 92%, var(--text)) 0%, var(--tm-key) 14%, var(--tm-key) 86%, color-mix(in srgb, var(--tm-key) 88%, var(--text)) 100%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--text)); color: #3b3f46; z-index: 1;
+      box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--tm-key) 80%, #000), 0 2px 4px rgba(0,0,0,.12); }
+    .piano .key.b { height: 60%; z-index: 2; background: linear-gradient(180deg, color-mix(in srgb, var(--tm-keyb) 80%, #fff) 0%, var(--tm-keyb) 30%, var(--tm-keyb) 100%);
+      border: 1px solid #000; color: #e5e7eb; box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--tm-keyb) 70%, #fff), 0 3px 5px rgba(0,0,0,.3); }
+    .piano .key .kn { font-size: calc(12.5px * var(--fs, 1)); font-weight: 600; line-height: 1.1; margin: 0 0 9px; pointer-events: none; }
+    .piano .key.b .kn { font-size: calc(10px * var(--fs, 1)); margin-bottom: 7px; opacity: .85; }
+    .piano .key .kd { font-size: calc(10px * var(--fs, 1)); line-height: 1.1; margin: 0 0 2px; font-variant-numeric: tabular-nums; pointer-events: none; opacity: 0; }
+    .piano .key[aria-pressed="true"] .kd { opacity: 1; }
+    .piano .key.w[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 34%, var(--tm-key)) 0%, color-mix(in srgb, var(--accent) 22%, var(--tm-key)) 100%); color: #1f2328; }
+    .piano .key.b[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 80%, #fff) 0%, var(--accent) 60%); color: #fff; }
+    .piano .key.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .piano .key.tonic .kn::after { content: ""; display: block; width: 6px; height: 6px; border-radius: 50%; margin: 3px auto 0; background: var(--tm-equal); }
+    .piano .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; z-index: 3; }
+    .piano .above { position: absolute; right: 4px; top: -11px; z-index: 4; font-size: calc(11.5px * var(--fs, 1)); padding: 0 8px; border-radius: 999px;
+      background: var(--accent); color: var(--surface); font-weight: 600; pointer-events: none; }
+    .piano .above:empty { display: none; }
+    .piano-hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    @media (prefers-reduced-motion: reduce) { .piano .key.on { box-shadow: 0 0 0 3px var(--accent); } }
+
+    /* 控制面板 */
+    .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 0; width: 100%; }
+    .kinds button:nth-child(3) { border-left: none; }
+    .kinds button:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .field { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .field select { flex: 1 1 auto; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(84px * var(--fs, 1)), 1fr)); gap: 6px; }
+    .presets button { padding: 6px 6px; }
+    .stackbtns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stackbtns button { padding: 6px 8px; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .sel-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; }
+    .nt { width: 100%; border-collapse: collapse; margin: 10px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .nt th, .nt td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .nt th { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .nt th:first-child, .nt td:first-child { text-align: left; }
+    .pairbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
+    .pairbox h3 { font-size: calc(14px * var(--fs, 1)); margin: 0 0 4px; }
+    .pairbox dl.readout { font-size: calc(13.5px * var(--fs, 1)); }
+    .ok-txt { color: var(--tm-equal); font-weight: 700; }
+    .bad-txt { color: var(--tm-wide); font-weight: 700; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* 誤差地圖：每格是按鈕，點一下就選那兩個音 */
+    .emap { width: 100%; border-collapse: separate; border-spacing: 3px; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+    .emap th { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); font-weight: 600; padding: 0 2px; }
+    .emap tbody th { text-align: left; color: var(--text); white-space: nowrap; }
+    .emap td { padding: 0; }
+    .emap button { width: 100%; min-height: 44px; padding: 2px 2px; border-radius: 6px; font-size: calc(13px * var(--fs, 1)); font-weight: 600; border: 1px solid transparent; }
+    .emap button[aria-pressed="true"] { outline: 3px solid var(--accent); outline-offset: -1px; }
+    .emap-key { display: flex; justify-content: space-between; gap: 8px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 2px 0; }
+    .emap-key i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dia { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tuning&quot;>Music · Tuning and Scales</a> / Temperament"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tuning">音樂・音律與音階</a> ／ 音律</nav>
+      <h1 data-en="Pythagorean, Just and Equal Temperament">五度相生、純律與十二平均律</h1>
+      <p data-en="How were the twelve notes of a piano decided? Pythagoras stacked the sweetest interval, the pure fifth 3 : 2, one on top of another; just intonation makes the thirds of a chord small whole-number ratios too; equal temperament simply splits the octave into twelve equal steps. Stack fifths, listen to the beats, hunt down the “wolf fifth”, see why twelve pure fifths can never come back to where they started — and why the piano settled for being equally out of tune in every key.">鋼琴上的十二個音是怎麼定出來的？畢達哥拉斯把最和諧的純五度 3 : 2 一個一個疊上去；純律讓和弦裡的三度也變成小整數比；十二平均律乾脆把八度平分成十二份。在這裡疊五度、聽拍頻、揪出「狼五度」，看看為什麼十二個純五度永遠回不到原點，以及鋼琴為什麼選擇「每個調都一樣不準」。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Stack a fifth” twelve times, see which side of C you land on, then press “Hear it with C”.">試試看：按「再疊一個五度」十二次，看最後落在 C 的哪一邊，再按「和 C 一起聽」。</p>
+    <div class="lab tm" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D clock">2D 鐘面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D helix">3D 螺旋</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="音律畫布"></canvas>
+        <div id="view3"></div>
+        <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5" data-en-aria-label="Keyboard: C4 to C5"><span class="above" id="above" aria-hidden="true"></span></div>
+        <p class="piano-hint" data-en="Tap keys to pick or drop notes (up to three); hold a key to keep it sounding. The small dot marks the tonic.">點鍵盤選音或取消（最多三個音），按住會一直響；小圓點是主音。</p>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="compare" type="button" data-en="Compare tunings" title="同樣的音依序用五度相生、純律、十二平均律各彈一次" data-en-title="Play the same notes in Pythagorean, just and equal temperament, one after another">比較三種音律</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--tm-pyth)&quot;></i>Pythagorean"><i style="background:var(--tm-pyth)"></i>五度相生</span>
+          <span data-en-html="<i style=&quot;background:var(--tm-just)&quot;></i>Just"><i style="background:var(--tm-just)"></i>純律</span>
+          <span data-en-html="<i style=&quot;background:var(--tm-equal)&quot;></i>Equal temperament (the 0 line)"><i style="background:var(--tm-equal)"></i>十二平均律（0 那條線）</span>
+          <span data-en-html="<i style=&quot;background:var(--tm-reg)&quot;></i>Regular (slider)"><i style="background:var(--tm-reg)"></i>調和律（滑桿）</span>
+          <span data-en-html="<i style=&quot;background:var(--tm-stack)&quot;></i>Stacked fifths"><i style="background:var(--tm-stack)"></i>疊起來的五度</span>
+          <span data-en-html="<i style=&quot;background:var(--tm-gap)&quot;></i>Gap from C"><i style="background:var(--tm-gap)"></i>和 C 的缺口</span>
+        </div>
+        <canvas id="cvBeat" role="img" aria-label="拍頻圖"></canvas>
+        <p class="chart-cap" data-en-html="Beats between the two closest overtones of each pair of notes: the loudness swells and fades |m·f<sub>1</sub> − n·f<sub>2</sub>| times a second. The fast wiggle inside is only a sketch of the carrier (the real one is over 1000 vibrations a second).">每一對音最接近的兩個泛音之間的拍：響度每秒起伏 |m·f<sub>1</sub> − n·f<sub>2</sub>| 次。裡面細密的波只是示意載波（真正的每秒振動超過 1000 次）。</p>
+        <p class="hint l3" data-en="3D: angle = where the note sits in the octave, height = how many octaves up. Drag to rotate, scroll or pinch to zoom. Look straight down and you get the 2D clock.">3D：角度是音在八度裡的位置，高度是往上幾個八度。拖曳旋轉，滾輪或雙指縮放；從正上方往下看，就是 2D 的鐘面。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Tuning">音律</h2>
+          <div class="seg kinds" role="group" aria-label="音律" data-en-aria-label="Tuning">
+            <button type="button" data-kind="pythagorean" aria-pressed="true" data-en="Pythagorean">五度相生</button>
+            <button type="button" data-kind="just" aria-pressed="false" data-en="Just">純律</button>
+            <button type="button" data-kind="equal" aria-pressed="false" data-en="Equal temperament">十二平均律</button>
+            <button type="button" data-kind="regular" aria-pressed="false" data-en="Regular">調和律</button>
+          </div>
+          <div class="field">
+            <label for="tonic" data-en="Tonic">主音</label>
+            <select id="tonic">
+              <option value="0" selected>C</option><option value="1">D♭</option><option value="2">D</option><option value="3">E♭</option>
+              <option value="4">E</option><option value="5">F</option><option value="6">F♯</option><option value="7">G</option>
+              <option value="8">A♭</option><option value="9">A</option><option value="10">B♭</option><option value="11">B</option>
+            </select>
+          </div>
+          <p class="hint" id="kindHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Notes and readings">選音與讀數</h2>
+          <div class="presets" role="group" aria-label="快速選音（從主音起算）" data-en-aria-label="Quick picks (from the tonic)">
+            <button type="button" data-preset="M3" data-en="Major third">大三度</button>
+            <button type="button" data-preset="m3" data-en="Minor third">小三度</button>
+            <button type="button" data-preset="P5" data-en="Fifth">五度</button>
+            <button type="button" data-preset="triad" data-en="Major triad">大三和弦</button>
+            <button type="button" data-preset="none" data-en="Clear notes">清除選音</button>
+          </div>
+          <div id="readout" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Stacking fifths">五度疊疊樂</h2>
+          <div class="stackbtns">
+            <button type="button" id="stackOne" class="primary" data-en="Stack a fifth">再疊一個五度</button>
+            <button type="button" id="stackAuto" data-en="Keep stacking" title="一直疊到 12、24、36…個為止（再按一次暫停）" data-en-title="Keeps stacking up to the next 12, 24, 36… fifths (press again to pause)">連續疊</button>
+            <button type="button" id="stackListen" data-en="Hear it with C">和 C 一起聽</button>
+            <button type="button" id="clear" data-en="Clear all" title="疊起來的五度全部清掉；音律、主音、滑桿與選音不變" data-en-title="Remove every stacked fifth; the tuning, tonic, slider and chosen notes are kept">全部清除</button>
+          </div>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Fifths stacked">疊了幾個五度</dt><dd id="rN">0</dd>
+            <dt data-en="Each fifth">每個五度</dt><dd id="rFifth">—</dd>
+            <dt data-en="Altogether">一共</dt><dd id="rTotal">—</dd>
+            <dt data-en="Lands on">落在</dt><dd id="rLand">—</dd>
+            <dt data-en="Away from C">離 C</dt><dd id="rOffC">—</dd>
+            <dt data-en="Beats with C">和 C 的拍頻</dt><dd id="rStackBeat">—</dd>
+          </dl>
+          <p class="hint" data-en="Each stacked fifth multiplies the frequency by the fifth’s ratio, then halves it whenever it climbs past an octave. The size of the fifth follows the tuning: pure 3/2 for Pythagorean and just, 700 cents for equal temperament, 701.955 − w for the regular temperament.">每疊一個五度，頻率就乘上五度的比值，超過一個八度就除以 2 拉回來。五度的大小跟著音律：五度相生和純律疊純五度 3/2，十二平均律疊 700 音分，調和律疊 701.955 − w 音分。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Narrowing the fifths (regular temperament)">五度收窄（調和律）</h2>
+          <div class="slider"><label for="ww" data-en="Narrow each fifth by w (cents)">五度收窄 w（音分）</label><output id="wwo"></output>
+            <input id="ww" type="range" min="0" max="8" step="0.01" value="0" data-decimals="3"></div>
+          <dl class="readout">
+            <dt data-en="Each fifth">每個五度</dt><dd id="rwFifth">—</dd>
+            <dt data-en="12 fifths − 7 octaves">十二個五度 − 七個八度</dt><dd id="rwGap">—</dd>
+            <dt data-en="Ordinary major thirds">一般的大三度</dt><dd id="rwM3">—</dd>
+            <dt data-en="Ordinary minor thirds">一般的小三度</dt><dd id="rwm3">—</dd>
+            <dt data-en="Wolf fifth">狼五度</dt><dd id="rwWolf">—</dd>
+          </dl>
+          <p class="hint" data-en="All twelve notes come from one chain of fifths, five below and six above the tonic. Moving the slider switches the tuning to “Regular”. w = 0 is Pythagorean tuning. Tap the number to type w to 0.001.">十二個音都由同一條五度鏈產生（主音往下 5 個、往上 6 個）。拖曳滑桿時，音律會自動切到「調和律」。w = 0 就是五度相生。點一下數字可以把 w 打到 0.001。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Interval error map">音程誤差地圖</h2>
+          <p class="hint" id="emapHint" style="margin-top:0"></p>
+          <div class="tablewrap"><table class="emap" id="emap"></table></div>
+          <div class="emap-key" aria-hidden="true"><span><i style="background:var(--tm-narrow)"></i><span data-en="narrower than pure">比純音程窄</span></span><span data-en="(cents)">（音分）</span><span><i style="background:var(--tm-wide)"></i><span data-en="wider than pure">比純音程寬</span></span></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics and science behind it">背後的數學與科學</h2>
+      <h3 data-en="Intervals are ratios; cents turn them into sums">音程是頻率比，音分把乘法變加法</h3>
+      <p data-en-html="Two notes sound like a fifth when their frequencies are in the ratio \(3:2\), an octave when the ratio is \(2:1\). Stacking intervals means <strong>multiplying</strong> ratios: a fifth on top of a fifth is \(\tfrac32 \times \tfrac32 = \tfrac94\). Our ears, too, hear equal ratios as equal steps, so musicians measure intervals on a logarithmic scale, in <strong>cents</strong>: an octave is 1200 cents and an equal-tempered semitone is 100 cents.">兩個音的頻率比是 \(3:2\) 時，聽起來是五度；\(2:1\) 是八度。把音程疊起來，就是把比值<strong>相乘</strong>：五度上面再疊五度，是 \(\tfrac32 \times \tfrac32 = \tfrac94\)。耳朵也是把「相同的比值」聽成「相同的距離」，所以音樂家用對數來量音程，單位是<strong>音分</strong>：一個八度 1200 音分，平均律的一個半音 100 音分。</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \text{cents} = 1200\,\log_2\frac{f_2}{f_1} \\ \log_2(ab) = \log_2 a + \log_2 b \end{gathered} \]">\[ \begin{gathered} \text{音分} = 1200\,\log_2\frac{f_2}{f_1} \\ \log_2(ab) = \log_2 a + \log_2 b \end{gathered} \]</div>
+      <p data-en-html="So a pure fifth is \(1200\log_2 1.5 \approx 701.955\) cents and a pure major third \(5:4\) is \(386.314\) cents. Stacking intervals adds their cents. (This is the same idea as the logarithms of senior-high mathematics.)">所以純五度是 \(1200\log_2 1.5 \approx 701.955\) 音分，純大三度 \(5:4\) 是 \(386.314\) 音分；疊音程就是把音分相加（這正是高中數學「指數與對數」的用法）。</p>
+
+      <h3 data-en="Pythagorean tuning and the comma that never closes">五度相生，和永遠閉不起來的畢氏音差</h3>
+      <p data-en-html="Pythagorean tuning builds all twelve notes from pure fifths: from the tonic go up six fifths and down five, halving or doubling to stay inside one octave. (Ancient China did the same thing with the “add or remove a third” rule (sanfen sunyi), multiplying string lengths by \(\tfrac23\) and \(\tfrac43\).) Twelve fifths ought to bring you back to the starting note, seven octaves higher — but">五度相生律（畢達哥拉斯律）的十二個音全部用純五度疊出來：從主音往上疊 6 個、往下疊 5 個，超過八度就除以 2、不夠就乘以 2，拉回同一個八度（中國古代的「三分損益法」把弦長乘以 \(\tfrac23\) 或 \(\tfrac43\)，做的是同一件事）。照理說，疊 12 個五度應該剛好回到起點、高 7 個八度，可是</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \left(\tfrac32\right)^{12} = \frac{3^{12}}{2^{12}} \ne 2^7 \\ \frac{3^{12}}{2^{19}} = \frac{531441}{524288} \\ \approx 1.01364 \;\Rightarrow\; 23.46\ \text{cents} \end{gathered} \]">\[ \begin{gathered} \left(\tfrac32\right)^{12} = \frac{3^{12}}{2^{12}} \ne 2^7 \\ \frac{3^{12}}{2^{19}} = \frac{531441}{524288} \\ \approx 1.01364 \;\Rightarrow\; 23.46\ \text{音分} \end{gathered} \]</div>
+      <p data-en-html="That leftover is the <strong>Pythagorean comma</strong>. No number of fifths will ever fix it: \(3^a = 2^b\) is impossible for positive whole numbers, because the left side is odd and the right side is even (more generally, every whole number factors into primes in only one way, and 2 and 3 share no factor). The same argument shows that \(\log_2 \tfrac32\) is irrational. In the Pythagorean scale the whole comma is dumped into one fifth, the <strong>wolf fifth</strong> (with C as tonic, F♯–D♭), which is 23.46 cents narrow and howls.">多出來的這一點就是<strong>畢氏音差</strong>。疊再多個五度也補不回來：\(3^a = 2^b\) 對正整數不可能成立，因為左邊是奇數、右邊是偶數（更一般地說，正整數的質因數分解只有一種，2 和 3 互質）。同樣的道理也證明 \(\log_2 \tfrac32\) 是無理數。五度相生律把整個畢氏音差塞進其中一個五度，這個五度窄了 23.46 音分、聽起來像狼嚎，叫做<strong>狼五度</strong>（以 C 為主音時是 F♯–D♭）。</p>
+
+      <h3 data-en="Just intonation and the syntonic comma">純律與同音差</h3>
+      <p data-en-html="Four pure fifths make a major third of \(\tfrac{81}{64}\) (407.82 cents), but the sweetest major third is \(\tfrac54\) (386.31 cents). The difference is the <strong>syntonic comma</strong>:">四個純五度疊出來的大三度是 \(\tfrac{81}{64}\)（407.82 音分），可是最和諧的大三度是 \(\tfrac54\)（386.31 音分），兩者相差一個<strong>同音差</strong>：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \frac{(3/2)^4}{2^2} = \frac{81}{64} \\ \frac{81}{64} \div \frac54 = \frac{81}{80} \;\Rightarrow\; 21.51\ \text{cents} \end{gathered} \]">\[ \begin{gathered} \frac{(3/2)^4}{2^2} = \frac{81}{64} \\ \frac{81}{64} \div \frac54 = \frac{81}{80} \;\Rightarrow\; 21.51\ \text{音分} \end{gathered} \]</div>
+      <p data-en-html="<strong>Just intonation</strong> uses ratios of 2, 3 and 5 so that the major chords on the tonic, the fourth and the fifth (C–E–G, F–A–C, G–B–D) are all exactly \(4:5:6\) and do not beat at all. The price: the scale is built for one tonic. With C as tonic, D–A is \(\tfrac{40}{27}\), a comma narrower than pure, and the D major chord sounds sour. Choose D as the tonic and D–A becomes pure again — that is why a just-tuned keyboard cannot change key.">純律只用 2、3、5 的比值，讓主音、下屬音、屬音上的大三和弦（C–E–G、F–A–C、G–B–D）都剛好是 \(4:5:6\)，完全不拍。代價是：整套音是為一個主音量身訂做的。以 C 為主音時，D–A 是 \(\tfrac{40}{27}\)，比純五度窄了一個同音差，D 大三和弦聽起來發酸；把主音換成 D，D–A 又變回純五度。所以照純律調好的鍵盤沒辦法自由轉調。</p>
+
+      <h3 data-en="Equal temperament">十二平均律</h3>
+      <p data-en-html="Equal temperament gives up on whole-number ratios and makes every semitone the same, \(2^{1/12} \approx 1.05946\). This number is irrational: if \(2^{1/12} = p/q\), then \(2q^{12} = p^{12}\), but the power of 2 in \(p^{12}\) is a multiple of 12 while in \(2q^{12}\) it is not. Every fifth is 700 cents (1.955 narrow), every major third 400 cents (13.69 wide), every minor third 300 cents (15.64 narrow) — the comma is shared out evenly, so every key is equally (slightly) out of tune and no key has a wolf. In China, Zhu Zaiyu worked out this division precisely in the late 16th century; in Europe Simon Stevin proposed it around the same time.">十二平均律放棄整數比，讓每個半音都一樣大：\(2^{1/12} \approx 1.05946\)。這是個無理數：如果 \(2^{1/12} = p/q\)，就有 \(2q^{12} = p^{12}\)，但 \(p^{12}\) 裡 2 的次方是 12 的倍數，\(2q^{12}\) 裡的卻不是。每個五度都是 700 音分（窄 1.955），每個大三度 400 音分（寬 13.69），每個小三度 300 音分（窄 15.64）——音差平均分給大家，每個調都一樣「有一點不準」，但沒有任何一個調有狼五度。明朝的朱載堉在 16 世紀末精確算出了這種分法，歐洲的斯蒂文（Simon Stevin）也在差不多的時候提出同樣的想法。</p>
+
+      <h3 data-en="Regular temperaments: narrowing every fifth">調和律：把每個五度收窄一點</h3>
+      <p data-en-html="Make every fifth \(w\) cents narrower than pure and build all twelve notes from one chain of fifths. Then, using cents and counting fifths,">讓每個五度都比純五度窄 \(w\) 音分，十二個音由同一條五度鏈產生。用音分數五度的個數，就可以算出：</p>
+      <div class="formula" data-en-html="\[ \begin{aligned} &amp;\text{12 fifths} - \text{7 octaves:} \\ &amp;\quad 12(701.955 - w) - 8400 \\ &amp;\quad = 23.46 - 12w \\ &amp;\text{major third error:} \\ &amp;\quad 4(701.955 - w) - 2400 \\ &amp;\quad - 386.31 = 21.51 - 4w \\ &amp;\text{minor third error:} \\ &amp;\quad 2400 - 3(701.955 - w) \\ &amp;\quad - 315.64 = 3w - 21.51 \end{aligned} \]">\[ \begin{aligned} &\text{12 個五度} - \text{7 個八度：} \\ &\quad 12(701.955 - w) - 8400 \\ &\quad = 23.46 - 12w \\ &\text{大三度的誤差：} \\ &\quad 4(701.955 - w) - 2400 \\ &\quad - 386.31 = 21.51 - 4w \\ &\text{小三度的誤差：} \\ &\quad 2400 - 3(701.955 - w) \\ &\quad - 315.64 = 3w - 21.51 \end{aligned} \]</div>
+      <p data-en-html="At \(w = 0\) you have Pythagorean tuning; at \(w = 23.46/12 = 1.955\) the twelve fifths close exactly and you have equal temperament; at \(w = 21.51/4 = 5.377\) (a quarter of a syntonic comma) the major thirds are pure — <strong>quarter-comma meantone</strong>, common on 16th- and 17th-century keyboards. But then twelve fifths fall short of seven octaves, and the wolf fifth comes back, this time far too wide. Other values of \(w\) have their own surprises; the formulas above are enough to find them.">\(w = 0\) 是五度相生；\(w = 23.46/12 = 1.955\) 時十二個五度剛好閉合，就是十二平均律；\(w = 21.51/4 = 5.377\)（四分之一個同音差）時大三度變純，這是 16、17 世紀鍵盤樂器常用的<strong>中全音律</strong>。可是這時十二個五度又比七個八度短了，狼五度回來了，而且變成太寬。其他的 \(w\) 也各有驚喜，用上面的公式就找得到。</p>
+
+      <h3 data-en="Beats">拍頻</h3>
+      <p data-en-html="A real note contains overtones at \(f, 2f, 3f, \ldots\) (the keyboard here uses the first eight, with strengths \(1/k\), an approximate organ-like sound). When the \(m\)-th overtone of the lower note and the \(n\)-th overtone of the upper note almost coincide, the two add up to a tone whose loudness swells and fades:">真實的樂音有泛音 \(f, 2f, 3f, \ldots\)（這裡的鍵盤用前 8 個，強度 \(1/k\)，是近似的風琴音色）。低音的第 \(m\) 個泛音和高音的第 \(n\) 個泛音頻率很接近時，兩者相加，響度會一下大一下小：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} f_\text{beat} = |\,m f_1 - n f_2\,| \\ A = \sqrt{a_1^2 + a_2^2 + 2a_1a_2\cos\theta} \\ \theta = 2\pi f_\text{beat}\, t \end{gathered} \]">\[ \begin{gathered} f_\text{拍} = |\,m f_1 - n f_2\,| \\ A = \sqrt{a_1^2 + a_2^2 + 2a_1a_2\cos\theta} \\ \theta = 2\pi f_\text{拍}\, t \end{gathered} \]</div>
+      <p data-en-html="For an equal-tempered C4–E4 (261.63 Hz and 329.63 Hz), the 5th overtone of C (1308.1 Hz) and the 4th of E (1318.5 Hz) beat about 10.4 times a second; in just intonation \(5 \times f_C = 4 \times f_E\) exactly and the beats vanish. Beats are proportional to frequency, so the same interval beats twice as fast an octave higher.">平均律的 C4–E4（261.63 Hz 與 329.63 Hz）：C 的第 5 泛音 1308.1 Hz 和 E 的第 4 泛音 1318.5 Hz，每秒拍約 10.4 次；純律的 \(5 \times f_C = 4 \times f_E\) 剛好相等，拍就消失了。拍頻和頻率成正比，同樣的音程高八度，拍得快一倍。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Why compromise?">為什麼要妥協？</h3>
+      <p data-en-html="Singers and string players can bend each note a little as the harmony moves, so a choir or a string quartet will often place a major third lower than the piano does, close to the beatless \(5:4\). A piano or an organ cannot: each key has one pitch, fixed when it is tuned. Pure fifths, pure thirds and the freedom to play in every key cannot all be had at once — the commas above prove it — so every keyboard tuning is a compromise. Equal temperament is the compromise that treats every key exactly alike.">歌手和弦樂手可以隨著和聲稍微調整每個音，所以合唱團或弦樂四重奏常把大三度唱（拉）得比鋼琴低一點，靠近不拍的 \(5:4\)。鋼琴和管風琴做不到：每個鍵只有一個音高，調好就固定了。純五度、純三度、隨意轉調三者不可能同時擁有——上面的音差就是證明——所以每一種鍵盤調律都是妥協。十二平均律是「每個調一視同仁」的那一種妥協。</p>
+      <h3 data-en="Bach and the “well-tempered” keyboard">巴哈與「好的調律」</h3>
+      <p data-en-html="Bach called his two books of preludes and fugues in all 24 keys (1722 and about 1742) <em>Das wohltemperierte Klavier</em>, “the well-tempered keyboard”. “Well-tempered” meant a tuning in which every key is usable; it did not necessarily mean today’s equal temperament. Around Bach’s time many unequal “well temperaments” were in use (Werckmeister described several in 1691), in which keys with few sharps or flats are a little purer and remote keys a little rougher, giving each key its own colour. Exactly how Bach tuned is still debated. Equal temperament became the usual way of tuning pianos only in the 19th century.">巴哈把他兩冊、用遍 24 個調的前奏曲與賦格（1722 年與 1742 年前後）取名為《好律鍵盤曲集》（Das wohltemperierte Klavier，中文常譯為《平均律鍵盤曲集》）。「好律」指的是每個調都能用的調律，不一定就是今天的十二平均律。巴哈的時代流行許多「不平均的好律」（例如韋克邁斯特 1691 年描述的幾種）：升降記號少的調比較純，遠系的調比較粗糙，每個調各有自己的色彩。巴哈究竟怎麼調音，至今仍有爭論。十二平均律要到 19 世紀，才成為鋼琴調律的主流。</p>
+      <h3 data-en="What a piano tuner does">調音師的工作</h3>
+      <p data-en-html="A tuner first sets one octave in the middle of the piano, listening to beats: in equal temperament a fifth near middle C should beat slowly, about once a second, and a major third about seven to ten times a second, faster as you go up. The rest of the keyboard is then tuned in octaves from that octave. (Real piano strings are slightly stiff, so their overtones run a little sharp and tuners stretch the octaves a little — this page leaves that out.)">調音師先在鋼琴中間調好一個八度，靠的是聽拍頻：平均律中，中央 C 附近的五度要慢慢地拍，大約每秒一次；大三度每秒拍七到十次，越往高越快。其他的鍵再以這個八度為基準，用八度一路調上去、調下來。（真實的鋼琴弦有一點硬，泛音會略偏高，調音師會把八度略為拉寬；這個實驗沒有考慮這一點。）</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Not quite home</strong>: after twelve pure fifths, which side of C do you land on, and how fast does it beat against C?"><strong>差一點回到家</strong>：疊了十二個純五度，落在 C 的哪一邊？和 C 一起聽，每秒拍幾次？</li>
+        <li data-en-html="<strong>The same third, three ways</strong>: compare C–E in the three tunings. Which one is still, which one beats fastest?"><strong>同一個三度，三種聽法</strong>：用「比較三種音律」聽 C–E，哪一個最安靜？哪一個拍得最快？</li>
+        <li data-en-html="<strong>The error map</strong>: in equal temperament every column is one colour; in Pythagorean and just intonation a few cells stand out. Where are they, and what happens to them when you change the tonic?"><strong>誤差地圖</strong>：十二平均律每一欄都是同一個顏色；五度相生和純律卻有幾格特別顯眼。它們在哪裡？換主音後會跑到哪裡？</li>
+        <li data-en-html="<strong>Slide the fifths</strong>: drag w slowly from 0 to 8 and watch the thirds, the wolf and the 12-fifth gap trade places."><strong>滑動五度</strong>：把 w 從 0 慢慢拉到 8，看大三度、小三度、狼五度和十二個五度的缺口怎麼此消彼長。</li>
+        <li data-en-html="<strong>High beats fast</strong>: play the same equal-tempered interval starting on different notes. Do the beats speed up as you go up?"><strong>越高拍越快</strong>：把同一個平均律音程從不同的音開始彈，拍頻是不是越往高越快？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The tonic always has its equal-tempered frequency (A4 = 440 Hz); every other note is the tonic times its ratio: powers of \(\tfrac32\) for Pythagorean tuning, the 5-limit ratios \(1, \tfrac{16}{15}, \tfrac98, \tfrac65, \tfrac54, \tfrac43, \tfrac{45}{32}, \tfrac32, \tfrac85, \tfrac53, \tfrac95, \tfrac{15}8\) for just intonation, \(2^{k/12}\) for equal temperament, and a chain of fifths of \(701.955 - w\) cents for the regular temperament. Exact ratios are shown as fractions. Unit tests check the commas, the wolf fifths, the formulas for \(w\), the beat formula and the fact that the twelve fifths of any 12-note tuning add up to exactly seven octaves.">主音一律用十二平均律的頻率（A4 = 440 Hz），其他音 = 主音 × 比值：五度相生用 \(\tfrac32\) 的次方；純律用 5 限純律 \(1, \tfrac{16}{15}, \tfrac98, \tfrac65, \tfrac54, \tfrac43, \tfrac{45}{32}, \tfrac32, \tfrac85, \tfrac53, \tfrac95, \tfrac{15}8\)；十二平均律用 \(2^{k/12}\)；調和律用 \(701.955 - w\) 音分的五度鏈。精確的比值以分數顯示。單元測試檢查各種音差、狼五度、\(w\) 的公式、拍頻公式，以及「任何十二音調律的十二個五度加起來剛好七個八度」。</li>
+        <li data-en-html="Beats: among the first eight overtones of the two notes the page finds the pair \(m f_1, n f_2\) that are closest and reports \(|m f_1 - n f_2|\). Above about 20–25 beats a second we hear roughness rather than separate beats.">拍頻：在兩個音的前 8 個泛音裡，找出頻率最接近的一對 \(m f_1\)、\(n f_2\)，報告 \(|m f_1 - n f_2|\)。每秒超過大約 20–25 次時，耳朵聽到的是粗糙感，而不是一下一下的拍。</li>
+        <li data-en-html="The clock: angle \(= 360^\circ \times\) (the fractional part of \(\log_2\) of the ratio to C), so one turn is one octave and 1 cent is 0.3°. Each lap of twelve fifths is drawn on a slightly smaller circle so the laps do not overlap; the radius has no other meaning. The 3D helix uses the same angle and puts the number of octaves on the height; it uses the three.js library (MIT licence), downloaded only when you switch to 3D.">鐘面：角度 \(= 360^\circ \times\)（相對 C 的比值取 \(\log_2\) 後的小數部分），轉一圈是一個八度，1 音分是 0.3°。每疊 12 個五度就換到小一點的圓上畫，讓每一圈不會重疊，半徑沒有其他意義。3D 螺旋用同樣的角度，再把「幾個八度」當成高度；它使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): eight overtones with strengths \(1/k\), gentle volume with fade-in and fade-out. Playback stops by itself after a few seconds, when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：8 個泛音、強度 \(1/k\)，音量溫和、有淡入淡出。幾秒後自動停止；按「■ 停止」、按 Esc 或切換分頁也會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (modes and tonality); Senior-high Music · Appreciation · Music history. Across subjects: senior-high Mathematics, exponents and logarithms.">課綱對應：高中音樂・表現・音樂元素（調式與調性）；高中音樂・鑑賞・音樂史。跨科：高中數學「指數與對數」。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="J. Murray Barbour, Tuning and Temperament: A Historical Survey (Michigan State College Press, 1951).">J. Murray Barbour，《Tuning and Temperament: A Historical Survey》，Michigan State College Press，1951。</li>
+        <li data-en="William A. Sethares, Tuning, Timbre, Spectrum, Scale, 2nd ed. (Springer, 2005).">William A. Sethares，《Tuning, Timbre, Spectrum, Scale》第 2 版，Springer，2005。</li>
+        <li data-en="Ross W. Duffin, How Equal Temperament Ruined Harmony (and Why You Should Care) (W. W. Norton, 2007).">Ross W. Duffin，《How Equal Temperament Ruined Harmony (and Why You Should Care)》，W. W. Norton，2007。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/temperament-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/temperament.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="temperament"></script>
+  <script src="js/missions/temperament.js"></script>
+  <script src="js/stats.js" data-module="temperament"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
