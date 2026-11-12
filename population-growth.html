@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Population Growth: Exponential, Logistic, Predator and Prey | Astro Ni Science Lab">族群成長：指數、邏輯斯與掠食者–獵物｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="在培養皿裡養一群草履蟲：比較 J 型的指數成長與 S 型的邏輯斯成長，量倍增時間、找成長最快的時刻，看小族群怎麼因為運氣不好而滅絕；再讓掠食者與獵物一起循環、讓兩個物種競爭，2D 相平面與 3D 時間螺旋都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 族群成長頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --pg-n: #0f766e;        /* 單一族群 N */
+      --pg-k: #b45309;        /* 負荷量 K */
+      --pg-cell: #2f8f6b;     /* 草履蟲 */
+      --pg-agar: #f1ead2;     /* 培養液 */
+      --pg-prey: #15803d;     /* 獵物 */
+      --pg-pred: #c2410c;     /* 掠食者 */
+      --pg-s1: #1d4ed8;       /* 物種 1 */
+      --pg-s2: #b45309;       /* 物種 2 */
+      --pg-eq: #7c3aed;       /* 平衡點、零成長線 */
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --pg-n: #2dd4bf; --pg-k: #fbbf24; --pg-cell: #6ee7b7; --pg-agar: #2b2a22;
+        --pg-prey: #4ade80; --pg-pred: #fb923c; --pg-s1: #93c5fd; --pg-s2: #fcd34d; --pg-eq: #c4b5fd;
+      }
+    }
+    :root[data-theme="dark"] {
+      --pg-n: #2dd4bf; --pg-k: #fbbf24; --pg-cell: #6ee7b7; --pg-agar: #2b2a22;
+      --pg-prey: #4ade80; --pg-pred: #fb923c; --pg-s1: #93c5fd; --pg-s2: #fcd34d; --pg-eq: #c4b5fd;
+    }
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 424px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .pg button { min-height: 44px; }
+    .pg .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pg .playbar button { flex: 1 1 auto; }
+    .pg .playbar .primary { font-weight: 700; }
+    .pg .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pg .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pg .slider input[type="range"] { height: 28px; margin: 0; }
+    .pg .slider label sub, .pg .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .pg [hidden] { display: none !important; }
+    .pg .panel { grid-template-columns: minmax(0, 1fr); }
+    .pg .panel > .card { min-width: 0; }
+    .seg2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .seg2 button { padding: 6px 4px; line-height: 1.25; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .pg .checks label { min-height: 44px; }
+    .pg .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .pg3-wrap { position: relative; }
+    .pg3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .pg3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .pg3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .pg3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .pg3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .pg3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ecology&quot;>Biology · Ecology</a> / Population growth"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ecology">生物・生態</a> ／ 族群成長</nav>
+      <h1 data-en="Population Growth: Exponential, Logistic, Predator and Prey">族群成長：指數、邏輯斯與掠食者–獵物</h1>
+      <p data-en="Put a few paramecia in a dish of food and they double, and double again — until the food and space run short and the growth levels off. This page lets you grow a population with unlimited resources (the J-shaped exponential curve) and with a carrying capacity (the S-shaped logistic curve), measure its doubling time, find the moment it grows fastest, and count individuals one by one to see how a small population can die out by sheer bad luck. Then put two species together: a predator and its prey that rise and fall in endless cycles, or two competitors where one drives the other out — or both find a way to share. Watch it as graphs, as a path in the phase plane, or as a spiral through time in 3D.">把幾隻草履蟲放進有食物的培養皿，牠們會分裂成兩倍、再兩倍——直到食物和空間不夠，成長才慢下來。本頁讓你養一個族群：資源無限時是 J 型的指數成長，有「負荷量」時是 S 型的邏輯斯成長；量倍增時間、找出成長最快的時刻，再一隻一隻地數個體，看小族群怎麼因為運氣不好而滅絕。接著讓兩個物種同時登場：掠食者與獵物此起彼落、不停循環；兩個競爭者則可能一方把另一方排擠掉，也可能找到共存的方法。可以看曲線、看相平面上的軌跡，也可以在 3D 中看它沿著時間繞成的螺旋。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Grow”, then switch from Exponential to Logistic and compare the J and the S.">試試看：按「開始培養」，再把「指數」切換成「邏輯斯」，比較 J 型與 S 型曲線。</p>
+
+    <h2 class="lab-title" data-en-html="1 · One population in a dish<small>A culture of paramecia: births and deaths, food and space</small>">一・培養皿裡的一個族群<small>草履蟲的培養：出生、死亡、食物與空間</small></h2>
+    <div class="lab pg" id="lab1">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="培養皿中的草履蟲，旁邊是族群數量隨時間的變化與成長速率對族群數量的圖。點一下圖可以檢視某一刻" data-en-aria-label="Paramecia in a dish, with the population against time and the growth rate against population size. Tap a graph to inspect a moment"></canvas>
+        <div class="playbar">
+          <button id="grow" type="button" class="primary" data-en="Grow">開始培養</button>
+          <button id="pause" type="button" data-en="Pause">暫停</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除保留的曲線與紀錄表，設定不變" data-en-title="Clear the kept curves and the table; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <div class="tablewrap"><table class="data runs" id="runs"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Growth model">成長模型</h2>
+          <div class="seg2" role="group" aria-label="成長模型" data-en-aria-label="Growth model" id="modelSeg">
+            <button type="button" data-model="expo" aria-pressed="true" data-en="Exponential (J)">指數（J 型）</button>
+            <button type="button" data-model="logi" aria-pressed="false" data-en="Logistic (S)">邏輯斯（S 型）</button>
+          </div>
+          <div class="checks">
+            <label><input id="stoch" type="checkbox"><span data-en="Count individuals (random births and deaths)">一隻一隻數（出生死亡有隨機性）</span></label>
+          </div>
+          <div class="slider"><label for="r" data-en="Intrinsic growth rate r (per day)">內在成長率 r（每天）</label><output id="ro"></output>
+            <input id="r" type="range" min="0.05" max="2" step="0.005" value="0.5" data-decimals="3"></div>
+          <div class="slider" id="rowK"><label for="K" data-en="Carrying capacity K (individuals)">負荷量 K（個體）</label><output id="Ko"></output>
+            <input id="K" type="range" min="10" max="1000" step="10" value="500" data-decimals="0"></div>
+          <div class="slider"><label for="N0" data-en-html="Starting population N<sub>0</sub>">起始數量 N<sub>0</sub></label><output id="N0o"></output>
+            <input id="N0" type="range" min="1" max="500" step="1" value="10" data-decimals="0"></div>
+          <div class="slider"><label for="tEnd" data-en="Days to watch">觀察天數</label><output id="tEndo"></output>
+            <input id="tEnd" type="range" min="5" max="200" step="1" value="30" data-decimals="0"></div>
+          <p class="hint" data-en="Tap a number to type an exact value. Tap or drag on a graph to read the population at that moment.">點一下數字可直接輸入精確數值。在圖上點一下或拖曳，可以讀出那一刻的族群數量。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="logY" type="checkbox"><span data-en="Logarithmic population axis">縱軸用對數刻度</span></label>
+            <label><input id="keep" type="checkbox" checked><span data-en="Keep earlier curves">保留之前的曲線</span></label>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · Two species<small>Predator and prey (Lotka–Volterra), or two competitors for the same food</small>">二・兩個物種<small>掠食者與獵物（Lotka–Volterra），或爭奪同一種資源的兩個競爭者</small></h2>
+    <div class="lab pg" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="兩個物種的數量隨時間的變化，以及相平面上的軌跡。可拖曳起點，或點選畫布後用方向鍵移動起點" data-en-aria-label="The two populations against time, and the path in the phase plane. Drag the starting point, or focus the canvas and move it with the arrow keys"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="run2" type="button" class="primary" data-en="Run">開始</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清除保留的軌跡與紀錄表，設定不變" data-en-title="Clear the kept paths and the table; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Interaction">交互作用</h2>
+          <div class="seg2" role="group" aria-label="交互作用" data-en-aria-label="Interaction" id="modeSeg">
+            <button type="button" data-mode="pp" aria-pressed="true" data-en="Predator and prey">掠食者與獵物</button>
+            <button type="button" data-mode="comp" aria-pressed="false" data-en="Competition">種間競爭</button>
+          </div>
+          <div id="ppBox">
+            <div class="slider"><label for="pa" data-en="Prey birth rate a (per day)">獵物的出生率 a（每天）</label><output id="pao"></output>
+              <input id="pa" type="range" min="0.2" max="2" step="0.01" value="1" data-decimals="3"></div>
+            <div class="slider"><label for="pb" data-en="Predation rate b (per predator per day)">被捕食率 b（每隻掠食者每天）</label><output id="pbo"></output>
+              <input id="pb" type="range" min="0.005" max="0.05" step="0.0005" value="0.02" data-decimals="4"></div>
+            <div class="slider"><label for="pc" data-en="Conversion c (predator births per prey per day)">轉換率 c（每隻獵物帶來的掠食者出生）</label><output id="pco"></output>
+              <input id="pc" type="range" min="0.002" max="0.03" step="0.0005" value="0.01" data-decimals="4"></div>
+            <div class="slider"><label for="pd" data-en="Predator death rate d (per day)">掠食者的死亡率 d（每天）</label><output id="pdo"></output>
+              <input id="pd" type="range" min="0.2" max="2" step="0.01" value="0.8" data-decimals="3"></div>
+            <div class="checks">
+              <label><input id="useK" type="checkbox"><span data-en="The prey has a carrying capacity">獵物有負荷量</span></label>
+            </div>
+            <div class="slider" id="rowPK" hidden><label for="pK" data-en="Prey carrying capacity K">獵物的負荷量 K</label><output id="pKo"></output>
+              <input id="pK" type="range" min="20" max="1000" step="10" value="400" data-decimals="0"></div>
+            <div class="slider"><label for="pE" data-en="Fishing effort E (both species, per day)">捕撈強度 E（兩種一起，每天）</label><output id="pEo"></output>
+              <input id="pE" type="range" min="0" max="0.6" step="0.01" value="0" data-decimals="3"></div>
+          </div>
+          <div id="compBox" hidden>
+            <div class="slider"><label for="r1" data-en-html="Growth rate r<sub>1</sub> (per day)">成長率 r<sub>1</sub>（每天）</label><output id="r1o"></output>
+              <input id="r1" type="range" min="0.1" max="2" step="0.01" value="0.8" data-decimals="3"></div>
+            <div class="slider"><label for="r2" data-en-html="Growth rate r<sub>2</sub> (per day)">成長率 r<sub>2</sub>（每天）</label><output id="r2o"></output>
+              <input id="r2" type="range" min="0.1" max="2" step="0.01" value="0.8" data-decimals="3"></div>
+            <div class="slider"><label for="K1" data-en-html="Carrying capacity K<sub>1</sub>">負荷量 K<sub>1</sub></label><output id="K1o"></output>
+              <input id="K1" type="range" min="50" max="1000" step="10" value="500" data-decimals="0"></div>
+            <div class="slider"><label for="K2" data-en-html="Carrying capacity K<sub>2</sub>">負荷量 K<sub>2</sub></label><output id="K2o"></output>
+              <input id="K2" type="range" min="50" max="1000" step="10" value="400" data-decimals="0"></div>
+            <div class="slider"><label for="a12" data-en-html="Effect of species 2 on 1, α<sub>12</sub>">物種 2 對 1 的影響 α<sub>12</sub></label><output id="a12o"></output>
+              <input id="a12" type="range" min="0" max="2" step="0.01" value="0.6" data-decimals="3"></div>
+            <div class="slider"><label for="a21" data-en-html="Effect of species 1 on 2, α<sub>21</sub>">物種 1 對 2 的影響 α<sub>21</sub></label><output id="a21o"></output>
+              <input id="a21" type="range" min="0" max="2" step="0.01" value="0.82" data-decimals="3"></div>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Start and time">起點與時間</h2>
+          <div class="slider"><label for="x0" id="x0Label" data-en="Starting prey">起始獵物數量</label><output id="x0o"></output>
+            <input id="x0" type="range" min="1" max="1000" step="1" value="40" data-decimals="1"></div>
+          <div class="slider"><label for="y0" id="y0Label" data-en="Starting predators">起始掠食者數量</label><output id="y0o"></output>
+            <input id="y0" type="range" min="1" max="1000" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="t2" data-en="Days to run">模擬天數</label><output id="t2o"></output>
+            <input id="t2" type="range" min="10" max="200" step="1" value="60" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="keep2" type="checkbox" checked><span data-en="Keep earlier paths">保留之前的軌跡</span></label>
+          </div>
+          <p class="hint" data-en="Drag the white dot in the phase plane to choose where to start, or focus the picture and use the arrow keys (Shift for big steps).">在相平面上拖曳白色圓點可以選起點；也可以點選畫面後用方向鍵移動（加 Shift 一次移比較多）。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="A population is all the individuals of one species living in one place. It grows when births outnumber deaths. In 1798 Thomas Malthus pointed out that a population left alone grows by multiplication, while its food supply does not; in 1838 Pierre-François Verhulst wrote down the equation that makes growth slow down as the population fills up the space it has. In the 1920s Alfred Lotka and Vito Volterra, independently, extended the idea to two species that eat, or compete with, each other.">族群是同一個地方、同一種生物所有個體的集合。出生多於死亡，族群就成長。1798 年馬爾薩斯（Thomas Malthus）指出：不受限制的族群會「倍數」成長，糧食卻不會；1838 年費爾哈斯（Pierre-François Verhulst）寫出一條方程式，讓族群越接近環境能容納的上限，成長就越慢。1920 年代，洛特卡（Alfred Lotka）與沃爾泰拉（Vito Volterra）各自把這個想法推廣到兩個會互相捕食或互相競爭的物種。</p>
+
+      <h3 data-en="Exponential growth: the J curve">指數成長：J 型曲線</h3>
+      <p data-en-html="If every individual has, on average, the same chance of giving birth (rate <em>b</em>) and of dying (rate <em>m</em>) whatever the crowding, the population changes at a rate proportional to its size, with the <strong>intrinsic growth rate</strong> <em>r</em> = <em>b</em> − <em>m</em>:">如果不論族群多擁擠，每個個體平均的出生機率（出生率 <em>b</em>）和死亡機率（死亡率 <em>m</em>）都不變，族群的變化速率就和族群大小成正比，比例常數是<strong>內在成長率</strong> <em>r</em> = <em>b</em> − <em>m</em>：</p>
+      <div class="formula">\[ \frac{dN}{dt} = rN \quad\Longrightarrow\quad N(t) = N_0\,e^{rt},\qquad T_d = \frac{\ln 2}{r} \]</div>
+      <p data-en-html="The population doubles every \(T_d\), whatever its size, so on a logarithmic axis the curve is a straight line. Nothing in nature can keep this up for long: a bacterium dividing every 20 minutes would outweigh the Earth in two days.">族群每過 \(T_d\) 就變成兩倍，不管它現在多大；所以把縱軸改成對數刻度，曲線會變成一條直線。自然界沒有任何族群能一直這樣長下去：每 20 分鐘分裂一次的細菌，兩天後的總質量就會超過地球。</p>
+
+      <h3 data-en="Logistic growth: the S curve">邏輯斯成長：S 型曲線</h3>
+      <p data-en-html="Food, space and waste limit how many individuals an environment can support — its <strong>carrying capacity</strong> <em>K</em>. In the logistic model the growth rate per individual falls in a straight line as the population fills up, and reaches zero at <em>K</em>:">食物、空間與廢物，限制了一個環境能養活的個體數，叫做<strong>負荷量</strong>（環境容納量）<em>K</em>。邏輯斯模型假設：族群越接近 <em>K</em>，每個個體的成長率就按比例下降，到 <em>K</em> 時變成零：</p>
+      <div class="formula">\[ \frac{dN}{dt} = rN\left(1-\frac{N}{K}\right) \quad\Longrightarrow\quad N(t) = \frac{K}{1+\left(\dfrac{K}{N_0}-1\right)e^{-rt}} \]</div>
+      <p data-en-html="Small populations grow almost exponentially; large ones hardly at all. The population grows fastest, at \(rK/4\) per day, when it is exactly half the carrying capacity — the inflection point of the S. Fisheries managers once aimed to keep fish stocks at about <em>K</em>/2 for that reason (the “maximum sustainable yield”), with mixed success. Start above <em>K</em> and the population shrinks back to it.">族群小的時候幾乎是指數成長，接近 <em>K</em> 時幾乎不長。族群剛好是負荷量的一半時成長最快，每天 \(rK/4\)——這就是 S 型曲線的反曲點。漁業管理曾因此想把魚群維持在 <em>K</em>/2 左右（所謂「最大持續產量」），效果好壞參半。如果一開始就比 <em>K</em> 多，族群會減少、回到 <em>K</em>。</p>
+      <p data-en-html="Real cultures follow this shape surprisingly well when the conditions are kept steady: in the 1930s G. F. Gause grew paramecia in test tubes and got clean S curves. The numbers on this page are illustrative, not his data.">條件保持穩定時，真實的培養常常相當接近這個形狀：1930 年代高斯（G. F. Gause）在試管裡養草履蟲，就得到漂亮的 S 型曲線。本頁的數字是示意，不是他的實驗數據。</p>
+
+      <h3 data-en="Counting individuals: chance and extinction">一隻一隻數：運氣與滅絕</h3>
+      <p data-en-html="The equations describe an average. Real populations are made of whole individuals, and each birth or death happens by chance. With “Count individuals” on, the page simulates every birth and death (the Gillespie algorithm): each individual gives birth at rate λ = 2<em>r</em> and dies at rate μ = <em>r</em> (plus, in the logistic case, an extra death rate that rises with crowding, so that λ − μ still falls to zero at <em>K</em>). Large populations follow the smooth curve closely. Small ones wobble — and can hit zero, after which there is no coming back. Starting from <em>N</em><sub>0</sub> individuals with unlimited food, the chance that the line eventually dies out is">方程式描述的是「平均」。真實的族群由一個一個個體組成，每一次出生、死亡都帶有隨機性。勾選「一隻一隻數」時，本頁模擬每一次出生與死亡（Gillespie 演算法）：每個個體的出生率 λ = 2<em>r</em>、死亡率 μ = <em>r</em>（邏輯斯時再加上隨擁擠程度上升的死亡率，讓 λ − μ 在 <em>K</em> 時降到零）。族群大的時候，隨機結果緊貼著平滑曲線；族群小的時候忽上忽下，一旦碰到零就再也回不來。資源無限、從 <em>N</em><sub>0</sub> 個個體開始，最後滅絕的機率是</p>
+      <div class="formula">\[ P_{\text{ext}} =\left(\frac{\mu}{\lambda}\right)^{N_0} = \left(\tfrac12\right)^{N_0} \]</div>
+      <p data-en-html="One founder: a coin toss. Ten founders: about one in a thousand. This is one reason conservation biologists worry about very small populations even when, on paper, they should grow.">只有一個個體：像擲硬幣一樣。十個個體：大約千分之一。這是保育生物學家擔心極小族群的原因之一：就算照平均算它應該會成長，運氣不好還是可能消失。</p>
+
+      <h3 data-en="Predator and prey: the Lotka–Volterra cycles">掠食者與獵物：Lotka–Volterra 循環</h3>
+      <p data-en-html="Let <em>x</em> be the prey and <em>y</em> the predators. Prey breed at rate <em>a</em> and are eaten at a rate proportional to how often the two meet, <em>bxy</em>; predators turn the prey they eat into offspring (<em>cxy</em>) and die at rate <em>d</em>:">設 <em>x</em> 是獵物、<em>y</em> 是掠食者。獵物以 <em>a</em> 的速率繁殖，被吃掉的速率和兩者相遇的機會成正比，是 <em>bxy</em>；掠食者把吃到的獵物轉換成後代（<em>cxy</em>），並以 <em>d</em> 的速率死亡：</p>
+      <div class="formula">\[ \frac{dx}{dt} = ax - bxy,\qquad \frac{dy}{dt} = cxy - dy \]</div>
+      <p data-en-html="Plenty of prey lets the predators multiply; many predators eat the prey down; then the predators starve, and the prey recover. The two populations cycle for ever, the prey peak coming first and the predator peak about a quarter of a cycle later. The populations stand still only at the <strong>equilibrium</strong> \(x^* = d/c,\ y^* = a/b\); near it, one cycle takes \(2\pi/\sqrt{ad}\). In the original model the size of the cycle depends only on where you start: each start gives its own closed loop in the phase plane.">獵物多，掠食者就跟著增加；掠食者多，獵物被吃到變少；接著掠食者餓死，獵物再恢復。兩個族群永遠這樣循環，獵物的高峰先到，掠食者的高峰大約晚四分之一個週期。只有在<strong>平衡點</strong> \(x^* = d/c,\ y^* = a/b\) 兩者才會靜止不動；在平衡點附近，一個循環的時間是 \(2\pi/\sqrt{ad}\)。在原始模型中，循環的大小只由起點決定：每個起點在相平面上畫出自己的一個封閉圈。</p>
+      <p data-en-html="Give the prey a carrying capacity, \(ax(1 - x/K)\), and the loops become an inward spiral that settles at the equilibrium. Make <em>K</em> smaller than \(d/c\) and there are never enough prey to keep any predators alive.">替獵物加上負荷量，改成 \(ax(1 - x/K)\)，封閉圈就變成往內收斂的螺旋，最後停在平衡點。如果 <em>K</em> 比 \(d/c\) 還小，獵物永遠不夠多，養不活任何掠食者。</p>
+
+      <h3 data-en="Volterra and the fish of the Adriatic">沃爾泰拉與亞得里亞海的魚</h3>
+      <p data-en-html="Volterra’s interest was sparked by his future son-in-law, the zoologist Umberto D’Ancona, who had noticed that the share of sharks and other predatory fish in the catches landed at Adriatic ports rose during the First World War, when fishing almost stopped. Volterra’s model explains it. Over a full cycle the average populations are exactly the equilibrium values. Fishing removes a fraction <em>E</em> of both species each day, which changes the equilibrium to">沃爾泰拉的研究，起源於他未來的女婿、動物學家達科納（Umberto D’Ancona）的觀察：第一次世界大戰期間，亞得里亞海幾乎停止捕魚，港口漁獲中鯊魚等掠食性魚類所占的比例反而上升。沃爾泰拉的模型解釋了這件事。在一個完整的循環中，兩個族群的平均值恰好等於平衡點。捕魚每天把兩種魚各移走 <em>E</em> 的比例，平衡點變成</p>
+      <div class="formula">\[ \bar x = \frac{d+E}{c},\qquad \bar y = \frac{a-E}{b} \]</div>
+      <p data-en-html="— more prey and fewer predators on average. Stop fishing and the predators gain. The same logic warns that a pesticide that kills both a pest and its natural enemy can leave the pest more abundant than before.">——獵物的平均反而變多，掠食者變少。停止捕撈，占優勢的就是掠食者。同樣的道理也提醒我們：同時殺死害蟲與害蟲天敵的殺蟲劑，可能讓害蟲比原來更多。</p>
+
+      <h3 data-en="Competition: exclusion or coexistence">種間競爭：排除或共存</h3>
+      <p data-en-html="Two species that use the same resource each grow logistically, but each individual of the other species also uses up part of the room: \(\alpha_{12}\) says how much one individual of species 2 counts against species 1, compared with one of its own kind.">兩個物種利用同一種資源，各自做邏輯斯成長，但另一個物種的個體也會占掉一部分空間：\(\alpha_{12}\) 表示一隻物種 2 對物種 1 的影響，相當於幾隻物種 1 自己。</p>
+      <div class="formula">\[ \frac{dN_1}{dt} = r_1N_1\left(1-\frac{N_1+\alpha_{12}N_2}{K_1}\right),\qquad \frac{dN_2}{dt} = r_2N_2\left(1-\frac{N_2+\alpha_{21}N_1}{K_2}\right) \]</div>
+      <ul>
+        <li data-en-html="If \(K_1 &gt; \alpha_{12}K_2\) and \(K_2 &lt; \alpha_{21}K_1\), species 1 always wins: <strong>competitive exclusion</strong> (and the other way round for species 2). Gause saw exactly this when he grew <em>Paramecium aurelia</em> and <em>P. caudatum</em> together.">如果 \(K_1 &gt; \alpha_{12}K_2\) 而且 \(K_2 &lt; \alpha_{21}K_1\)，物種 1 一定獲勝，物種 2 被排除：這就是<strong>競爭排斥原理</strong>（反過來就是物種 2 獲勝）。高斯把兩種草履蟲養在一起時，看到的正是這種結果。</li>
+        <li data-en-html="If each species holds itself back more than it holds back the other (\(K_1 &gt; \alpha_{12}K_2\) and \(K_2 &gt; \alpha_{21}K_1\)), they <strong>coexist</strong> at an inner equilibrium — what happens in nature when species split up the resource, for example by feeding at different depths or times (niche partitioning).">如果每個物種抑制自己比抑制對方更多（\(K_1 &gt; \alpha_{12}K_2\) 而且 \(K_2 &gt; \alpha_{21}K_1\)），兩者會在中間的平衡點<strong>共存</strong>。自然界中，物種常常靠「分配資源」做到這一點，例如在不同深度或不同時間覓食（生態區位分化）。</li>
+        <li data-en-html="If each holds the other back more than itself, whoever starts ahead wins.">如果每個物種抑制對方都比抑制自己更多，誰一開始占上風，誰就獲勝。</li>
+      </ul>
+      <p data-en-html="The dashed purple lines in the phase plane are the <strong>zero-growth lines</strong> (nullclines): on them one of the species neither grows nor shrinks. Where they cross is an equilibrium.">相平面上紫色虛線是<strong>零成長線</strong>：在線上，其中一個物種既不增加也不減少。兩條線的交點就是平衡點。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>J and S</strong>: grow 10 paramecia exponentially and logistically with the same <em>r</em>. When do the two curves start to part?"><strong>J 與 S</strong>：同樣的 <em>r</em>，各用指數與邏輯斯養 10 隻草履蟲。兩條曲線從什麼時候開始分開？</li>
+        <li data-en-html="<strong>Doubling</strong>: switch on the logarithmic axis. What does exponential growth look like now? Choose <em>r</em> so that the population doubles every 5 days."><strong>倍增</strong>：打開對數刻度，指數成長變成什麼樣子？選一個 <em>r</em>，讓族群每 5 天變成兩倍。</li>
+        <li data-en-html="<strong>The steepest point</strong>: on the logistic curve, find the moment the population grows fastest. How big is it then, compared with <em>K</em>?"><strong>最陡的地方</strong>：在邏輯斯曲線上，找出族群成長最快的時刻。那時族群是 <em>K</em> 的幾分之幾？</li>
+        <li data-en-html="<strong>Bad luck</strong>: count individuals and start with 1, 2 or 3. Run it ten times each. How often does the population vanish?"><strong>運氣不好</strong>：一隻一隻數，從 1、2、3 隻開始，各做十次。族群消失的次數有多少？</li>
+        <li data-en-html="<strong>Cycles</strong>: in predator and prey, which peak comes first? Start closer and closer to the equilibrium: what happens to the loop, and to the period?"><strong>循環</strong>：掠食者與獵物中，哪個先到高峰？起點越來越靠近平衡點，圈和週期會怎麼變？</li>
+        <li data-en-html="<strong>Fishing</strong>: compare the average prey and predators with fishing effort 0 and 0.3."><strong>捕撈</strong>：比較捕撈強度 0 與 0.3 時，獵物與掠食者的平均數量。</li>
+        <li data-en-html="<strong>Competition</strong>: change α<sub>12</sub> and α<sub>21</sub> until the two species can live together."><strong>競爭</strong>：改變 α<sub>12</sub> 與 α<sub>21</sub>，讓兩個物種能夠共存。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The smooth curves of part 1 use the exact solutions above. Time is in days and all parameters are illustrative: real paramecia in a rich medium divide about once or twice a day.">第一部分的平滑曲線直接用上面的解析解。時間單位是天，所有參數都是示意；真實的草履蟲在營養充足的培養液中，大約一天分裂一到兩次。</li>
+        <li data-en="“Count individuals” uses the Gillespie algorithm, which draws the exact random time to the next birth or death. Births happen at 2r per individual and deaths at r, plus r·N/K in the logistic case. Above 3000 individuals with unlimited food the page stops counting one by one and follows the average.">「一隻一隻數」用 Gillespie 演算法，精確地抽出下一次出生或死亡的隨機時刻。每個個體的出生率 2r、死亡率 r，邏輯斯時再加 r·N/K。資源無限、超過 3000 個個體時，本頁不再逐一計算，改用平均值。</li>
+        <li data-en="Part 2 is integrated with the fourth-order Runge–Kutta method in steps of 0.005 days. Without a carrying capacity the conserved quantity of the Lotka–Volterra model changes by less than one part in ten million over 60 days, so the loops really close.">第二部分用四階 Runge–Kutta 法積分，步長 0.005 天。沒有負荷量時，Lotka–Volterra 模型的守恆量在 60 天內的變化小於千萬分之一，所以圈真的是封閉的。</li>
+        <li data-en="The period is measured from the first to the last prey peak; the averages are taken over those whole cycles. The delay is the mean time from each prey peak to the next predator peak.">週期由第一個到最後一個獵物高峰量出；平均值只取這些完整循環內的時間。延遲是每個獵物高峰到下一個掠食者高峰的平均時間。</li>
+        <li data-en="Populations here are continuous numbers. Real cycles, such as the snowshoe hare and lynx records of the Hudson’s Bay Company, are noisier and are shaped by more than one predator and one prey.">本頁的族群數量是連續的數字。真實的循環，例如哈德遜灣公司毛皮紀錄中的雪鞋兔與山貓，雜亂得多，也不只受一種掠食者、一種獵物影響。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · Ecology: populations and communities.">課綱對應：高中生物（108 課綱）・生態：族群與群集。</li>
+        <li data-en-html="OpenStax, <cite>Biology 2e</cite>, 45.3 Environmental Limits to Population Growth — <a href=&quot;https://openstax.org/books/biology-2e/pages/45-3-environmental-limits-to-population-growth&quot;>openstax.org</a>; 45.6 Community Ecology — <a href=&quot;https://openstax.org/books/biology-2e/pages/45-6-community-ecology&quot;>openstax.org</a>.">OpenStax《Biology 2e》45.3 Environmental Limits to Population Growth——<a href="https://openstax.org/books/biology-2e/pages/45-3-environmental-limits-to-population-growth">openstax.org</a>（英文）；45.6 Community Ecology——<a href="https://openstax.org/books/biology-2e/pages/45-6-community-ecology">openstax.org</a>（英文）。</li>
+        <li data-en-html="V. Volterra, “Fluctuations in the abundance of a species considered mathematically”, <cite>Nature</cite> 118 (1926) 558–560 — <a href=&quot;https://doi.org/10.1038/118558a0&quot;>doi:10.1038/118558a0</a>.">V. Volterra，〈Fluctuations in the abundance of a species considered mathematically〉，<cite>Nature</cite> 118 (1926) 558–560——<a href="https://doi.org/10.1038/118558a0">doi:10.1038/118558a0</a>（英文）。</li>
+        <li data-en-html="A. J. Lotka, <cite>Elements of Physical Biology</cite> (Williams &amp; Wilkins, 1925) — <a href=&quot;https://archive.org/details/elementsofphysic017171mbp&quot;>archive.org</a>.">A. J. Lotka，《Elements of Physical Biology》（Williams &amp; Wilkins，1925）——<a href="https://archive.org/details/elementsofphysic017171mbp">archive.org</a>（英文）。</li>
+        <li data-en="D. T. Gillespie, “Exact stochastic simulation of coupled chemical reactions”, J. Phys. Chem. 81 (1977) 2340–2361 (the method used for counting individuals).">D. T. Gillespie，〈Exact stochastic simulation of coupled chemical reactions〉，J. Phys. Chem. 81 (1977) 2340–2361（一隻一隻數所用的方法）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/population-growth-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/population-growth.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="population-growth"></script>
+  <script src="js/missions/population-growth.js"></script>
+  <script src="js/stats.js" data-module="population-growth"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
