@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Astro Ni Science Lab">Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="高中物理・化學・生物・地球科學的互動模擬實驗室：物理依力學、熱學、波動、光學、電磁學、近代物理分類，地球科學有天文與固體地球；調整參數、觀察動畫，所有運算都在你的瀏覽器中完成。">
+  <meta name="description" content="高中物理・化學・生物・地球科學・數學的互動模擬實驗室：依課程的分支與章節編排，調整參數、觀察動畫、完成任務收集星星，所有運算都在你的瀏覽器中完成。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/">
   <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/?lang=zh-Hans">
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/?lang=en">
@@ -35,7 +35,7 @@
   <div class="wrap">
     <header class="top">
       <p class="eyebrow">ASTRO NI SCIENCE LAB</p>
-      <h1 data-en="High School Physics · Chemistry · Biology · Earth Science | Interactive Simulation Lab">高中物理・化學・生物・地球科學｜互動模擬實驗室</h1>
+      <h1 data-en="High School Physics · Chemistry · Biology · Earth Science · Mathematics | Interactive Simulation Lab">高中物理・化學・生物・<span class="nb">地球科學</span>・數學｜<span class="nb">互動模擬實驗室</span></h1>
       <p data-en="Drag things, turn the knobs, and test the laws of science for yourself. Everything is computed in your browser — no sign-in needed, and no AI service is ever contacted.">拖曳、調整旋鈕，親手驗證自然科學的定律。所有計算都在你的瀏覽器裡完成，不需登入，也不會連線到任何 AI 服務。</p>
     </header>
 
@@ -51,13 +51,14 @@
 
     <div class="home-banners">
       <a class="lb-banner" href="leaderboard.html"><span class="lb-star" aria-hidden="true"></span><span><span data-en="Ni Stars Leaderboard">倪的星星排行榜</span><small data-en="Overall and per-subject rankings, missions and achievements">全科與各科排名、任務進度與成就</small></span></a>
-      <a class="lb-banner dl-home" href="daily.html"><span class="dl-home-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="16.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15.2" r="2.7" fill="currentColor"/></svg></span><span><span data-en="Daily missions">每日任務</span><small data-en="Three new missions every day — collect coins, diamonds and rare keys">每天換新三個任務，收集金銀銅幣、鑽石與稀有鑰匙</small></span></a>
+      <a class="lb-banner dl-home" href="daily.html"><span class="dl-home-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="16.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15.2" r="2.7" fill="currentColor"/></svg></span><span><span data-en="Daily missions">每日任務</span><small data-en="Ten new missions every day — collect coins, diamonds and rare keys">每天換新十個任務，收集金銀銅幣、鑽石與稀有鑰匙</small></span></a>
     </div>
 
     <nav class="domain-nav" aria-label="科目" data-en-aria-label="Subjects">
       <a class="domain-tab" href="#physics" style="--c:var(--d-phys)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4"><ellipse cx="24" cy="24" rx="20" ry="7.6"/><ellipse cx="24" cy="24" rx="20" ry="7.6" transform="rotate(60 24 24)"/><ellipse cx="24" cy="24" rx="20" ry="7.6" transform="rotate(-60 24 24)"/></g><circle cx="24" cy="24" r="3.6" fill="currentColor"/></svg><span class="domain-name"><span data-en="Physics">物理</span><span class="domain-count" data-domain="physics"></span></span><span class="domain-sub" data-en="Mechanics · Heat · Waves · Optics · Electromagnetism · Modern">力學・熱學・波動・光學・電磁・近代</span></a>
       <a class="domain-tab" href="#biology" style="--c:var(--d-bio)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z"/><path d="M11 37C19 28 26 20 34 14"/><path d="M18 30l-1-7M23 25l-.5-6.5M28 20l-.2-5M18 30l7.5.6M23 25l7 .4"/></g><path d="M9 39C7 22 18 9 40 8c1 21-11 32-31 31z" fill="currentColor" opacity=".18"/></svg><span class="domain-name"><span data-en="Biology">生物</span><span class="domain-count" data-domain="biology"></span></span><span class="domain-sub" data-en="Cells · Genetics · Physiology · Ecology · Evolution">細胞・遺傳・生理・生態・演化</span></a>
       <a class="domain-tab" href="#earth" style="--c:var(--d-earth)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="24" cy="24" r="19"/><ellipse cx="24" cy="24" rx="8.5" ry="19"/><path d="M5 24h38M8.2 14h31.6M8.2 34h31.6"/></g><path d="M14 18c3-2 6 0 8 2s1 5-2 6-4 4-6 3-3-8 0-11zM29 29c2-1 5 0 6 2s-1 5-3 5-4-1-4-3 0-3 1-4z" fill="currentColor" opacity=".35"/></svg><span class="domain-name"><span data-en="Earth Science">地球科學</span><span class="domain-count" data-domain="earth"></span></span><span class="domain-sub" data-en="Astronomy · Solid Earth · Atmosphere · Ocean">天文・固體地球・大氣・海洋</span></a>
+      <a class="domain-tab" href="#math" style="--c:var(--d-math)"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M12 37C16 13 32 13 36 37z" fill="currentColor" opacity=".18"/><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 41h37M9 44V5" opacity=".6"/><path d="M12 37C16 13 32 13 36 37"/><path d="M15 20h18" stroke-dasharray="2.5 3"/></g><circle cx="24" cy="19" r="3.2" fill="currentColor"/></svg><span class="domain-name"><span data-en="Mathematics">數學</span><span class="domain-count" data-domain="math"></span></span><span class="domain-sub" data-en="Algebra · Geometry · Vectors · Probability · Calculus">代數・幾何・向量・機率統計・微積分</span></a>
       <a class="site-qr" href="https://lab.astroni.org/" data-url="https://lab.astroni.org/" aria-label="本站網址的 QR code，點一下放大投影" data-en-aria-label="QR code for this site — tap to enlarge for projection"><img src="img/qr-site.svg" width="76" height="76" alt=""><span class="site-qr-text"><strong data-en="Scan to open">手機掃描開啟</strong><span data-en="Tap to enlarge for the class">點一下放大，投影給全班</span></span></a>
     </nav>
 
@@ -670,6 +671,100 @@
         <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Properties of Seawater">海水的性質</span>
         <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Motion of Seawater">海水的運動</span>
         <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Ocean and Climate">海洋與氣候</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+    </section>
+
+    <!-- ========== 數學 ========== -->
+
+    <section class="domain" id="math" aria-labelledby="h-math" style="--c:var(--d-math)">
+    <header class="domain-head"><svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M12 37C16 13 32 13 36 37z" fill="currentColor" opacity=".18"/><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 41h37M9 44V5" opacity=".6"/><path d="M12 37C16 13 32 13 36 37"/><path d="M15 20h18" stroke-dasharray="2.5 3"/></g><circle cx="24" cy="19" r="3.2" fill="currentColor"/></svg><div><h2 id="h-math" data-en="Mathematics">數學</h2><p data-en="Arranged by the units of the senior-high mathematics curriculum">依高中數學的單元編排</p></div></header>
+
+    <nav class="branch-nav five" aria-label="數學分支" data-en-aria-label="Branches of mathematics">
+      <a href="#algebra" style="--c:var(--b-algebra)" data-en="Algebra and Functions">代數與函數</a>
+      <a href="#geometry" style="--c:var(--b-geometry)" data-en="Trigonometry and Geometry">三角與幾何</a>
+      <a href="#vectors" style="--c:var(--b-vectors)" data-en="Vectors and Space">向量與空間</a>
+      <a href="#probability" style="--c:var(--b-probability)" data-en="Probability and Statistics">機率與統計</a>
+      <a href="#calculus" style="--c:var(--b-calculus)" data-en="Calculus">微積分</a>
+    </nav>
+
+    <!-- ===== 代數與函數 ===== -->
+    <section class="branch" id="algebra" style="--c:var(--b-algebra)">
+      <header class="branch-head">
+        <h2 data-en="Algebra and Functions">代數與函數</h2>
+        <p data-en="Real numbers and expressions, polynomial functions and their graphs, exponential and logarithmic functions">實數與式的運算、多項式函數與圖形、指數與對數函數</p>
+      </header>
+      <nav class="chapter-nav" aria-label="代數與函數的各章" data-en-aria-label="Chapters in Algebra and Functions">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Numbers and Expressions">數與式</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Polynomial Functions">多項式函數</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Exponents and Logarithms">指數與對數</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 三角與幾何 ===== -->
+    <section class="branch" id="geometry" style="--c:var(--b-geometry)">
+      <header class="branch-head">
+        <h2 data-en="Trigonometry and Geometry">三角與幾何</h2>
+        <p data-en="Trigonometric ratios and functions, lines and circles in the coordinate plane, parabolas, ellipses and hyperbolas">三角比與三角函數、坐標平面上的直線與圓、拋物線、橢圓與雙曲線</p>
+      </header>
+      <nav class="chapter-nav" aria-label="三角與幾何的各章" data-en-aria-label="Chapters in Trigonometry and Geometry">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Trigonometric Functions">三角函數</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Lines and Circles">直線與圓</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Conic Sections">圓錐曲線</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 向量與空間 ===== -->
+    <section class="branch" id="vectors" style="--c:var(--b-vectors)">
+      <header class="branch-head">
+        <h2 data-en="Vectors and Space">向量與空間</h2>
+        <p data-en="Plane vectors and the dot product, lines and planes in space, matrices and linear transformations">平面向量與內積、空間中的直線與平面、矩陣與線性變換</p>
+      </header>
+      <nav class="chapter-nav" aria-label="向量與空間的各章" data-en-aria-label="Chapters in Vectors and Space">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Vectors in the Plane">平面向量</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Vectors in Space">空間向量</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Matrices">矩陣</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 機率與統計 ===== -->
+    <section class="branch" id="probability" style="--c:var(--b-probability)">
+      <header class="branch-head">
+        <h2 data-en="Probability and Statistics">機率與統計</h2>
+        <p data-en="Permutations and combinations, probability and conditional probability, expected value, data analysis and regression">排列與組合、機率與條件機率、期望值、數據分析與迴歸</p>
+      </header>
+      <nav class="chapter-nav" aria-label="機率與統計的各章" data-en-aria-label="Chapters in Probability and Statistics">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Counting">排列組合</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Probability">機率</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Data Analysis">數據分析</span>
+      </nav>
+      <div class="chapters">
+        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>
+      </div>
+    </section>
+
+    <!-- ===== 微積分 ===== -->
+    <section class="branch" id="calculus" style="--c:var(--b-calculus)">
+      <header class="branch-head">
+        <h2 data-en="Calculus">微積分</h2>
+        <p data-en="Limits of sequences and functions, derivatives and tangent lines, definite integrals and area">數列與函數的極限、導數與切線、定積分與面積</p>
+      </header>
+      <nav class="chapter-nav" aria-label="微積分的各章" data-en-aria-label="Chapters in Calculus">
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Limits">極限</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Derivatives">導數</span>
+        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="Integrals">積分</span>
       </nav>
       <div class="chapters">
         <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>

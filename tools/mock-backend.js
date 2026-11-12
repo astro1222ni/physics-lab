@@ -28,7 +28,7 @@
     return v;
   }
   const get = (db, path) => path.split('/').reduce((o, k) => (o == null ? null : o[k]), db) ?? null;
-  const SUBJ = ['phy', 'chem', 'bio', 'earth'];
+  const SUBJ = ['phy', 'chem', 'bio', 'earth', 'math'];
   const TW = 8 * 3600000, DAY = 86400000;
 
   // ---------- 規則：各科星星 ----------

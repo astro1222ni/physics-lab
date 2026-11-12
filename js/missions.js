@@ -10,7 +10,7 @@
  *   check(ev, mem)：ev = { type, data }；mem 為該任務在本頁的暫存物件（可記錄先前的事件）。
  * 規則：必須登入 Google 帳號、開啟任務模式才會判定；每個任務只能領一次星星（資料庫規則把關）。
  * 星星數 = 任務等級（1–10 顆「倪的星星」）。
- * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth）與各科最後得星時間 sa/<科目>。
+ * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth、math）與各科最後得星時間 sa/<科目>。
  * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；每天十個、每個一天只能完成一次。以前完成過的任務也能做，不再加星，但有機率掉寶。
  */
 (function () {
@@ -68,7 +68,7 @@
       });
     },
     all: function () { return registry; },
-    /** 實驗代號 → 科目（phy、chem、bio、earth）；需要 missions/index.js（loadIndex） */
+    /** 實驗代號 → 科目（phy、chem、bio、earth、math）；需要 missions/index.js（loadIndex） */
     subjectOf: function (mod) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(mod) : 'phy'; },
     /** 載入 missions/index.js（實驗清單、分支、科目） */
     loadIndex: function () { return loadIndex(); },

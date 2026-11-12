@@ -50,9 +50,11 @@
     { id: 'phy', zh: '物理', en: 'Physics', short: '物理' },
     { id: 'chem', zh: '化學', en: 'Chemistry', short: '化學' },
     { id: 'bio', zh: '生物', en: 'Biology', short: '生物' },
-    { id: 'earth', zh: '地球科學', en: 'Earth Science', short: '地科' }
+    { id: 'earth', zh: '地球科學', en: 'Earth Science', short: '地科' },
+    { id: 'math', zh: '數學', en: 'Mathematics', short: '數學' }
   ];
-  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio' };
+  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio',
+    algebra: 'math', geometry: 'math', vectors: 'math', probability: 'math', calculus: 'math' };
 
   // ---------- 成就定義 ----------
   // 一、等級系列：第 k 級門檻 = 基數 × k(k+1)/2（級數遞增，越後面差距越大）；探索、全制霸以實驗數量為準（每多一種實驗一級）。
@@ -112,6 +114,11 @@
       stars: { 10: nm('仰望星空', 'Looking up at the stars'), 100: nm('讀懂岩層', 'Reading the rock layers'), 1e3: nm('季風的旋律', 'The melody of the monsoon'), 1e4: nm('板塊的脈動', 'Pulse of the plates'), 1e5: nm('蒼穹之眼', 'Eye of the heavens'), 1e6: nm('蓋婭的知音', "Gaia's confidant") },
       explore: { 1: nm('地科初心', 'An earth scientist at heart'), 3: nm('天地行者', 'Walker of heaven and earth'), all: nm('行遍天地', 'Across heaven and earth') },
       full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), all: nm('通曉天地', 'Knower of heaven and earth') }
+    },
+    math: {
+      stars: { 10: nm('數的啟蒙', 'The dawn of number'), 100: nm('幾何的優雅', 'The elegance of geometry'), 1e3: nm('通往無窮的階梯', 'A staircase to infinity'), 1e4: nm('微積分的鑰匙', 'The key of calculus'), 1e5: nm('歐拉的恆等式', "Euler's identity"), 1e6: nm('宇宙的語言', 'The language of the universe') },
+      explore: { 1: nm('數學初心', 'A mathematician at heart'), 5: nm('圖形的旅人', 'Traveller among graphs'), all: nm('數學全覽', 'All of mathematics') },
+      full: { 1: nm('一門通', 'One lab mastered'), 3: nm('三門精通', 'Three labs mastered'), all: nm('萬物皆數', 'All is number') }
     }
   };
   SUBJ.forEach(function (sb) {

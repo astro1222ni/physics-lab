@@ -321,8 +321,8 @@
     if (!D.api) { app.appendChild(el('p', 'lb-note', T('每日任務暫時無法載入。', 'Daily missions could not be loaded.'))); return; }
     if (!st.user) {
       const box = el('section', 'dl-signin-box');
-      box.appendChild(el('p', null, T('每日任務需要登入 Google 帳號：每天臺灣時間 00:00 換新三個任務，完成可以掉落銅幣、銀幣、金幣、鑽石，運氣好還有稀有鑰匙。',
-        'Daily missions need a Google sign-in: three new missions every day at 00:00 Taiwan time, dropping copper, silver and gold coins, diamonds — and, with luck, a rare key.')));
+      box.appendChild(el('p', null, T('每日任務需要登入 Google 帳號：每天臺灣時間 00:00 換新十個任務，完成可以掉落銅幣、銀幣、金幣、鑽石，運氣好還有稀有鑰匙。',
+        'Daily missions need a Google sign-in: ten new missions every day at 00:00 Taiwan time, dropping copper, silver and gold coins, diamonds — and, with luck, a rare key.')));
       const b = el('button', 'primary', T('用 Google 帳號登入', 'Sign in with Google'));
       b.type = 'button';
       b.addEventListener('click', function () { D.api.signIn().catch(function () {}); });

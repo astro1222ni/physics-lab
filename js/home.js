@@ -20,7 +20,7 @@
     b.textContent = String(n);
     a.appendChild(b);
   });
-  // 兩大科目（物理／地球科學）卡片上的實驗數：數該區已上線的卡片
+  // 各科目（物理、化學、生物、地球科學、數學）卡片上的實驗數：數該區已上線的卡片
   const T = function (zh, en) { return window.LabSettings ? LabSettings.t(zh, en) : zh; };
   document.querySelectorAll('.domain-count[data-domain]').forEach(function (el) {
     const dom = document.getElementById(el.getAttribute('data-domain'));

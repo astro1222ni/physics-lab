@@ -87,9 +87,10 @@ window.LAB_SUBJECTS = [
   { id: 'phy', zh: '物理', en: 'Physics', branches: ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'] },
   { id: 'chem', zh: '化學', en: 'Chemistry', branches: [] },
   { id: 'bio', zh: '生物', en: 'Biology', branches: ['cell', 'genetics', 'physiology', 'ecology', 'evolution'] },
-  { id: 'earth', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] }
+  { id: 'earth', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] },
+  { id: 'math', zh: '數學', en: 'Mathematics', branches: ['algebra', 'geometry', 'vectors', 'probability', 'calculus'] }
 ];
-/* 實驗代號 → 科目代號（phy、chem、bio、earth） */
+/* 實驗代號 → 科目代號（phy、chem、bio、earth、math） */
 window.LAB_SUBJECT_OF = function (moduleId) {
   const b = (window.LAB_MODULE_BRANCH || {})[moduleId];
   const S = window.LAB_SUBJECTS;

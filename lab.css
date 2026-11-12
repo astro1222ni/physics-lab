@@ -1222,3 +1222,21 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 /* 首頁科目卡片超過兩科：自動排列（物理、化學、生物、地球科學），QR code 自成一列（主工作串合併化學區時請一併確認） */
 .domain-nav { grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); }
 .domain-nav .site-qr { grid-column: 1 / -1; justify-self: start; }
+
+/* ---------- 數學（11/12 站長：「試着加入數學這個科目」）：科目色與五個分支色；淺色與兩個深色區塊同時定義 ---------- */
+/* 分支：algebra 代數與函數、geometry 三角與幾何、vectors 向量與空間、probability 機率與統計、calculus 微積分（淺色對白底都 ≥ 5.5） */
+:root {
+  --d-math: #0e7490;
+  --b-algebra: #b91c1c; --b-geometry: #1d4ed8; --b-vectors: #6d28d9; --b-probability: #0f766e; --b-calculus: #8a5a00;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --d-math: #67e8f9;
+    --b-algebra: #fca5a5; --b-geometry: #93c5fd; --b-vectors: #c4b5fd; --b-probability: #5eead4; --b-calculus: #fcd34d;
+  }
+}
+:root[data-theme="dark"] {
+  --d-math: #67e8f9;
+  --b-algebra: #fca5a5; --b-geometry: #93c5fd; --b-vectors: #c4b5fd; --b-probability: #5eead4; --b-calculus: #fcd34d;
+}
+.sb-math { --sc: var(--d-math); }

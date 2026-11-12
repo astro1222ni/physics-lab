@@ -17,7 +17,7 @@
 (function () {
   'use strict';
   // 目錄 catalog.js 的科目代號（首頁科目區塊的 id）→ 相關實驗標籤前面的科目名；物理不加
-  const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'] };
+  const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'], math: ['數學', 'Mathematics'] };
   const S = window.LabSettings;
   const T = function (zh, en) { return S ? S.t(zh, en) : zh; };
   const ver = (((document.currentScript || {}).src || '').match(/\?v=\d+/) || [''])[0];

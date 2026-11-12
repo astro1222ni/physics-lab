@@ -166,7 +166,8 @@
         "s/phy",
         "s/chem",
         "s/bio",
-        "s/earth"
+        "s/earth",
+        "s/math"
       ],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
@@ -183,14 +184,14 @@
         },
         "at": {},
         "s": {
-          ".validate": "newData.hasChildren() && (newData.child('phy').exists() ? newData.child('phy').val() : 0) + (newData.child('chem').exists() ? newData.child('chem').val() : 0) + (newData.child('bio').exists() ? newData.child('bio').val() : 0) + (newData.child('earth').exists() ? newData.child('earth').val() : 0) <= newData.parent().child('stars').val()",
+          ".validate": "newData.hasChildren() && (newData.child('phy').exists() ? newData.child('phy').val() : 0) + (newData.child('chem').exists() ? newData.child('chem').val() : 0) + (newData.child('bio').exists() ? newData.child('bio').val() : 0) + (newData.child('earth').exists() ? newData.child('earth').val() : 0) + (newData.child('math').exists() ? newData.child('math').val() : 0) <= newData.parent().child('stars').val()",
           "$subj": {
-            ".validate": "$subj.matches(/^(phy|chem|bio|earth)$/) && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0)"
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math)$/) && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0)"
           }
         },
         "sa": {
           "$subj": {
-            ".validate": "$subj.matches(/^(phy|chem|bio|earth)$/) && newData.isNumber() && (newData.val() === now || (data.exists() && newData.val() === data.val()))"
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math)$/) && newData.isNumber() && (newData.val() === now || (data.exists() && newData.val() === data.val()))"
           }
         },
         "$other": {
