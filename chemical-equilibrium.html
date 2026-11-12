@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Chemical Equilibrium and Le Chatelier's Principle | Astro Ni Science Lab">化學平衡與勒沙特列原理｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 化學平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .eq canvas { aspect-ratio: auto; touch-action: auto; }
+    .eq #cv { height: 400px; touch-action: none; }
+    .eq #gcv { height: 320px; }
+    .eq + .eq { margin-top: 16px; }
+    .eq button { min-height: 44px; }
+    .eq [hidden] { display: none !important; }
+    .eq .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .eq .playbar > button { flex: 1 1 auto; }
+    .eq .playbar #play { font-weight: 700; min-width: 6.5em; }
+    .eq .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .eq .speedbox .seg3 { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 520px) { .seg4 { grid-template-columns: repeat(2, 1fr); } }
+    .seg2 button, .seg3 button, .seg4 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .eq .stage .status { margin: 6px 4px 0; }
+    .eq .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .eq .slider input[type="range"] { height: 28px; margin: 0; }
+    .eq sub, .eq sup, .notes sub, .notes sup { font-size: .75em; }
+    .eq .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .eq .checks label { min-height: 44px; }
+    .eq .legend .sp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .eq .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .eq .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .eq .rx-seg { margin-bottom: 8px; }
+    .eq .rx-seg button { font-size: calc(13px * var(--fs, 1)); }
+    .eq .mode-seg { margin: 4px 0 8px; }
+    /* 加入／移出 */
+    .amt { display: grid; grid-template-columns: minmax(0, 1fr) auto 44px 44px; gap: 6px; align-items: center; margin: 6px 0; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .amt .nm { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .amt .nm i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; border: 1px solid var(--border); flex: none; }
+    .amt .v { color: var(--muted); font-size: calc(13px * var(--fs, 1)); white-space: nowrap; }
+    .amt button { padding: 0; font-size: calc(18px * var(--fs, 1)); font-weight: 700; line-height: 1; }
+    /* 讀數表 */
+    table.mini { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 4px 0 6px; }
+    table.mini th, table.mini td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.mini th { color: var(--muted); font-weight: 600; }
+    table.mini th:first-child, table.mini td:first-child { text-align: left; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .eq dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .eq dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .qk { margin: 6px 0 2px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); font-size: calc(14px * var(--fs, 1)); font-weight: 600; text-align: center; }
+    .qk.right { border-color: var(--probe); color: var(--probe); }
+    .qk.left { border-color: var(--neg); color: var(--neg); }
+    .qk.eq0 { color: var(--muted); }
+    .eq .tabs { margin: 0 2px 8px; }
+    /* 預測 */
+    .pred { margin-top: 8px; padding: 10px; border: 2px solid var(--accent); border-radius: 10px; background: var(--accent-soft); }
+    .pred p { margin: 0 0 8px; font-weight: 600; }
+    .pred .seg3 button { background: var(--surface); }
+    #predOut .ok, #mysOut .ok { color: var(--probe); font-weight: 700; }
+    #predOut .no, #mysOut .no { color: var(--pos); font-weight: 700; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .eq .btns button { flex: 1 1 auto; }
+    .eq .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#equilibrium&quot;&gt;Chemistry · Rates and Equilibrium&lt;/a&gt; / Chemical Equilibrium and Le Chatelier's Principle"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#equilibrium">化學・反應速率與平衡</a> ／ 化學平衡與勒沙特列原理</nav>
+      <h1 data-en="Chemical Equilibrium and Le Chatelier's Principle">化學平衡與勒沙特列原理</h1>
+      <p data-en-html="A sealed syringe holds a reacting gas mixture. Push or pull the piston, heat or cool it, add or take out a gas, add an inert gas or a catalyst — and watch the mixture shift until the reaction quotient Q equals the equilibrium constant K again. Three real reactions use thermodynamic data from the NIST-JANAF tables: the brown NO<sub>2</sub> that turns colourless N<sub>2</sub>O<sub>4</sub>, the Haber process for ammonia, and hydrogen iodide with violet iodine vapour.">密閉的注射筒裡是正在反應的氣體混合物。推拉活塞、加熱或冷卻、加入或移走某種氣體、加入惰性氣體或催化劑，看混合物怎麼移動，直到反應商 Q 再度等於平衡常數 K。三個真實的反應都用 NIST-JANAF 熱力學數據計算：紅棕色的 NO<sub>2</sub> 與無色的 N<sub>2</sub>O<sub>4</sub>、合成氨的哈柏法，以及碘化氫與紫色的碘蒸氣。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: with N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>, push the piston in to halve the volume. The colour first gets darker (the gas is squeezed), then slowly becomes a little paler — the equilibrium shifts towards fewer molecules.">試試看：選 N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>，把活塞推進去讓體積減半。顏色先變深（氣體被擠緊），接著慢慢變淡一點——平衡往分子數少的一方移動。</p>
+    <div class="lab eq">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="注射筒" data-en-aria-label="Syringe"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+          <button id="fromR" type="button" data-en="Start: reactants" title="把注射筒重新裝入反應物（預設的量），從反應物開始" data-en-title="Refill the syringe with the reactants (default amounts) and start from the reactant side">從反應物開始</button>
+          <button id="fromP" type="button" data-en="Start: products" title="把注射筒重新裝入等量的生成物，從生成物開始" data-en-title="Refill the syringe with the equivalent amount of products and start from the product side">從生成物開始</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除圖上的曲線、紀錄表與預測紀錄；目前的注射筒不變" data-en-title="Clear the graph, the table of equilibria and the prediction record; the syringe stays as it is">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">播放速度</span>
+            <div class="seg3" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="true" data-en="×1">×1</button>
+              <button type="button" id="sp1" aria-pressed="false" data-en="×10">×10</button>
+              <button type="button" id="sp2" aria-pressed="false" data-en="×100">×100</button>
+            </div>
+          </div>
+        </div>
+        <div class="legend" id="spLegend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="pred" id="predBox" hidden>
+          <p id="predQ" data-en="Prediction: which way will the equilibrium shift?">預測：平衡會往哪邊移動？</p>
+          <div class="seg3" role="group" aria-labelledby="predQ">
+            <button type="button" data-pred="-1" data-en="← reactants">← 反應物</button>
+            <button type="button" data-pred="0" data-en="No shift">不移動</button>
+            <button type="button" data-pred="1" data-en="products →">生成物 →</button>
+          </div>
+        </div>
+        <p class="hint" data-en="Drag the piston handle (or focus the drawing and use the arrow keys) to change the volume. Each little cluster is a molecule, drawn to show the proportions in the syringe. The water around the barrel shows the temperature.">拖曳活塞的把手（或選取畫面後按方向鍵）可以改變體積。每一小團是一個分子，數目依注射筒內的比例畫出；筒外的水浴顏色代表溫度。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Reaction">反應</h2>
+          <div class="seg3 rx-seg" id="rxSeg" role="group" aria-label="反應" data-en-aria-label="Reaction">
+            <button type="button" data-rx="n2o4" aria-pressed="true" data-en-html="N&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; ⇌ 2NO&lt;sub&gt;2&lt;/sub&gt;">N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub></button>
+            <button type="button" data-rx="haber" aria-pressed="false" data-en="Haber process">哈柏法</button>
+            <button type="button" data-rx="hi" aria-pressed="false" data-en-html="H&lt;sub&gt;2&lt;/sub&gt; + I&lt;sub&gt;2&lt;/sub&gt; ⇌ 2HI">H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI</button>
+          </div>
+          <p class="info" id="rxInfo"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Conditions">條件</h2>
+          <div class="slider"><label for="temp" data-en="Temperature T (water bath)">溫度 T（水浴）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="273" max="373" step="1" value="298" data-decimals="0"></div>
+          <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="體積或壓力固定" data-en-aria-label="Fixed volume or fixed pressure">
+            <button type="button" data-mode="V" aria-pressed="true" data-en="Fixed volume">定容（固定活塞）</button>
+            <button type="button" data-mode="P" aria-pressed="false" data-en="Fixed pressure">定壓（活塞可動）</button>
+          </div>
+          <div class="slider" id="vRow"><label for="vol" data-en="Volume V">體積 V</label><output id="volo"></output>
+            <input id="vol" type="range" min="10" max="100" step="1" value="50" data-decimals="1"></div>
+          <div class="slider" id="pRow" hidden><label for="pres" data-en="External pressure P">外界壓力 P</label><output id="preso"></output>
+            <input id="pres" type="range" min="0.2" max="6" step="0.05" value="1" data-decimals="2"></div>
+          <div class="checks"><label><input id="cat" type="checkbox"><span data-en="Catalyst">加入催化劑</span></label>
+            <label><input id="predMode" type="checkbox"><span data-en="Prediction mode (stop and predict after each change)">預測模式（每次改變後先停下來預測）</span></label></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Add or remove gases">加入或移出氣體</h2>
+          <div id="amts"></div>
+          <p class="hint" id="amtHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab eq">
+      <div class="stage">
+        <h2 data-en="Graphs and table of equilibria">圖表與平衡紀錄</h2>
+        <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="time" aria-pressed="true" data-en="Partial pressures">分壓—時間</button>
+          <button type="button" data-tab="qk" aria-pressed="false" data-en="Q and K">Q 與 K</button>
+          <button type="button" data-tab="vh" aria-pressed="false" data-en="ln K against 1/T">ln K 對 1/T</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Inside the syringe now">注射筒內現在的狀態</h2>
+          <table class="mini" id="nowTbl"></table>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+          <div class="qk" id="qkBox" aria-live="polite">—</div>
+        </section>
+        <section class="card" id="mysCard" data-share-skip>
+          <h2 data-en="Unknown reaction">未知反應</h2>
+          <p class="hint" data-en-html="A gas A&lt;sub&gt;2&lt;/sub&gt; that splits into 2A, with a hidden ΔH° (between 40 and 80 kJ/mol). Let it reach equilibrium at several temperatures, work out K from the partial pressures in the table, and use the slope of ln K against 1/T to find ΔH°.">一種氣體 A<sub>2</sub> 會分解成 2A，ΔH° 看不到（在 40～80 kJ/mol 之間）。在幾個溫度達到平衡，用紀錄表中的分壓算出 K，再由 ln K 對 1/T 的斜率求出 ΔH°。</p>
+          <div class="btns"><button type="button" id="mysOn" data-en="Start an unknown reaction">開始未知反應</button></div>
+          <div id="mysBox" hidden>
+            <div class="ans"><label for="ansH" data-en="ΔH° (kJ/mol)">ΔH°（kJ/mol）</label><input id="ansH" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 55.0" data-en-placeholder="e.g. 55.0"></div>
+            <div class="btns">
+              <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+              <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+              <button id="mysNew" type="button" data-en="Another one">換一個</button>
+              <button id="mysOff" type="button" data-en="Back to the three reactions">回到三個反應</button>
+            </div>
+          </div>
+          <p class="info" id="mysOut" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Predictions">預測紀錄</h2>
+          <p class="info" id="predOut" data-en="Tick “Prediction mode”: after each change made at equilibrium the syringe stops, and you choose which way it will shift.">勾選「預測模式」：每次在平衡時改變條件，注射筒會先停下來，讓你選平衡往哪邊移動。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="See that at equilibrium the forward and reverse reactions still go on, but the composition stops changing: the reaction quotient Q equals the equilibrium constant K.">了解平衡時正、逆反應仍在進行，但組成不再改變：反應商 Q 等於平衡常數 K。</li>
+        <li data-en="Predict and check how concentration, volume (pressure), temperature, an inert gas and a catalyst affect an equilibrium (Le Chatelier's principle), and explain each case with Q and K.">預測並驗證濃度、體積（壓力）、溫度、惰性氣體與催化劑對平衡的影響（勒沙特列原理），並用 Q 與 K 解釋每一種情形。</li>
+        <li data-en="Find the enthalpy change of a reaction from equilibrium constants measured at several temperatures.">由幾個溫度量到的平衡常數，求出反應的焓變化。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="The equilibrium constant and the reaction quotient">平衡常數與反應商</h3>
+      <p data-en-html="For a gas reaction \(a\mathrm{A} + b\mathrm{B} \rightleftharpoons c\mathrm{C} + d\mathrm{D}\), the reaction quotient uses the partial pressures (in bar) at any moment; at equilibrium it equals the equilibrium constant, which depends only on temperature:">氣體反應 \(a\mathrm{A} + b\mathrm{B} \rightleftharpoons c\mathrm{C} + d\mathrm{D}\) 的反應商用任一時刻的分壓（以 bar 為單位）計算；平衡時它等於平衡常數，而平衡常數只和溫度有關：</p>
+      <div class="formula multi">
+        \[ Q = \frac{P_\mathrm{C}^{\,c}\,P_\mathrm{D}^{\,d}}{P_\mathrm{A}^{\,a}\,P_\mathrm{B}^{\,b}} \]
+        \[ K_p = Q_\text{eq} = e^{-\Delta G^\circ/RT} \]
+        \[ K_c = K_p\left(\frac{P^\circ}{RT}\right)^{\Delta n} \]
+      </div>
+      <p data-en-html="If \(Q &lt; K\) the mixture reacts to the right (towards the products); if \(Q &gt; K\) it reacts to the left; if \(Q = K\) nothing changes. \(K_c\) uses concentrations in mol/L; \(\Delta n\) is the change in the number of gas molecules (+1, −2 and 0 for the three reactions).">若 \(Q &lt; K\)，反應向右（生成物）進行；若 \(Q &gt; K\)，向左進行；\(Q = K\) 時不再改變。\(K_c\) 用 mol/L 的濃度表示，\(\Delta n\) 是氣體分子數的變化（三個反應分別是 +1、−2、0）。</p>
+
+      <h3 data-en="Le Chatelier's principle, case by case">勒沙特列原理：逐項看</h3>
+      <ul>
+        <li data-en-html="<strong>Adding or removing a substance</strong> changes Q but not K: the system uses up part of what was added (or replaces part of what was removed). The change is only partly undone.">加入或移走某成分：Q 改變、K 不變；系統會消耗掉一部分加入的物質（或補回一部分移走的），只部分抵消。</li>
+        <li data-en-html="<strong>Compressing at constant temperature</strong> multiplies every partial pressure by the same factor, so Q changes by that factor to the power \(\Delta n\): the mixture shifts towards fewer gas molecules. For H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI (\(\Delta n = 0\)), nothing shifts, although everything becomes more concentrated.">定溫壓縮：所有分壓乘上同一倍數，Q 變成原來的（倍數）<sup>Δn</sup>，平衡往氣體分子數少的一方移動。H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI 的 \(\Delta n = 0\)，不移動，但每種成分都變濃了。</li>
+        <li data-en-html="<strong>Changing the temperature</strong> is the only change that alters K. Heating favours the endothermic direction: \(\mathrm{d}\ln K/\mathrm{d}T = \Delta H^\circ/RT^2\).">改變溫度是唯一會改變 K 的因素。加熱有利於吸熱方向：\(\mathrm{d}\ln K/\mathrm{d}T = \Delta H^\circ/RT^2\)。</li>
+        <li data-en-html="<strong>An inert gas</strong> (argon) added at constant volume leaves every partial pressure unchanged — no shift. Added at constant pressure, the volume grows and the reacting gases are diluted, like an expansion — a shift towards more molecules.">惰性氣體（氬）：定容加入時各分壓不變，不移動；定壓加入時體積變大、反應氣體被稀釋，等於膨脹，往分子數多的一方移動。</li>
+        <li data-en-html="<strong>A catalyst</strong> speeds up the forward and reverse reactions equally: equilibrium is reached sooner, at exactly the same place.">催化劑：正、逆反應加快一樣多，更快達到平衡，平衡的位置完全相同。</li>
+      </ul>
+
+      <h3 data-en="Equilibrium constants at different temperatures">不同溫度的平衡常數</h3>
+      <div class="formula multi">
+        \[ \ln K = -\frac{\Delta H^\circ}{R}\cdot\frac{1}{T} + \frac{\Delta S^\circ}{R} \]
+      </div>
+      <p data-en-html="If \(\Delta H^\circ\) hardly changes with temperature, a graph of \(\ln K\) against \(1/T\) is a straight line with slope \(-\Delta H^\circ/R\) (the van 't Hoff equation). The unknown reaction in the panel is built to obey this exactly.">若 \(\Delta H^\circ\) 幾乎不隨溫度改變，\(\ln K\) 對 \(1/T\) 是斜率 \(-\Delta H^\circ/R\) 的直線（范特荷夫方程式）。右邊的未知反應就是照這個式子設計的。</p>
+
+      <h3 data-en="The three reactions">三個反應</h3>
+      <div class="tablewrap">
+        <table class="data" id="rxTable"></table>
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>: cool to 273 K (ice water) and warm to 373 K (boiling water) — the classic colour change of this reaction.">N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub>：冷到 273 K（冰水）、熱到 373 K（沸水），看這個反應經典的顏色變化。</li>
+        <li data-en-html="Haber process: at 500 K the yield of ammonia is high but, without a catalyst, the mixture hardly moves (use ×100). At 800 K it is fast but the yield is low. This is why industry uses about 700–800 K, high pressure and an iron catalyst.">哈柏法：500 K 時氨的產率高，但沒有催化劑幾乎不動（用 ×100 看）；800 K 很快，產率卻低。這就是工業上用約 700–800 K、高壓與鐵催化劑的原因。</li>
+        <li data-en-html="H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI: halve the volume. The violet colour doubles in strength at once and then stays: \(\Delta n = 0\).">H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI：體積減半，紫色立刻變成兩倍深，之後就不再改變：\(\Delta n = 0\)。</li>
+        <li data-en-html="Start from the products instead of the reactants with the same conditions: the same equilibrium is reached from the other side.">在相同條件下改成「從生成物開始」：從另一端出發，到達同一個平衡。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en-html="When the N<sub>2</sub>O<sub>4</sub>/NO<sub>2</sub> syringe is compressed, the colour first darkens and then fades a little. Why does it not return to the original colour?">N<sub>2</sub>O<sub>4</sub>／NO<sub>2</sub> 的注射筒被壓縮時，顏色先變深再變淡一點。為什麼不會變回原來的顏色？</li>
+        <li data-en="Argon is added to an equilibrium mixture at constant volume. The total pressure rises. Why does the equilibrium not shift?">在定容下把氬氣加入平衡混合物，總壓力變大了，為什麼平衡不移動？</li>
+        <li data-en="Why is ammonia not made at 400 K, where K is largest?">為什麼工業上不在 K 最大的 400 K 製造氨？</li>
+        <li data-en-html="At 298 K, \(K_p\) for N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> is 0.148. In an equilibrium mixture the partial pressure of N<sub>2</sub>O<sub>4</sub> is 0.70 bar. What is the partial pressure of NO<sub>2</sub>?">298 K 時 N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> 的 \(K_p\) = 0.148。某平衡混合物中 N<sub>2</sub>O<sub>4</sub> 的分壓是 0.70 bar，NO<sub>2</sub> 的分壓是多少？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="Compression multiplies every partial pressure by the same factor; for \(\Delta n = +1\), Q becomes larger than K, so some NO<sub>2</sub> turns into N<sub>2</sub>O<sub>4</sub>. Only part of the change is undone: if NO<sub>2</sub> fell all the way back to its old concentration, Q would be smaller than K.">壓縮使所有分壓變成同一倍數；\(\Delta n = +1\)，Q 變得比 K 大，所以部分 NO<sub>2</sub> 變回 N<sub>2</sub>O<sub>4</sub>。只能部分抵消：如果 NO<sub>2</sub> 濃度完全降回原值，Q 就會比 K 小。</li>
+          <li data-en="Each reacting gas keeps the same amount in the same volume, so its partial pressure — and therefore Q — does not change. Only the partial pressures of the reacting gases appear in Q.">每種反應氣體在同樣的體積中物質的量不變，分壓不變，所以 Q 不變。Q 裡只有參與反應的氣體的分壓。</li>
+          <li data-en="At 400 K the yield at equilibrium would be very high, but the reaction is far too slow, even with a catalyst. A higher temperature is a compromise between yield and rate; high pressure pushes the yield back up.">400 K 的平衡產率很高，但反應太慢，即使有催化劑也一樣。較高的溫度是產率與速率之間的折衷，再用高壓把產率提高。</li>
+          <li data-en-html="\(P_{\mathrm{NO_2}} = \sqrt{K_p\,P_{\mathrm{N_2O_4}}} = \sqrt{0.148 \times 0.70} = 0.32\) bar.">\(P_{\mathrm{NO_2}} = \sqrt{K_p\,P_{\mathrm{N_2O_4}}} = \sqrt{0.148 \times 0.70} = 0.32\) bar。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The gases are ideal. The equilibrium constant comes from \(K = e^{-\Delta G^\circ/RT}\) with standard enthalpies of formation, entropies and heat capacities (Shomate equations) from the NIST Chemistry WebBook (NIST-JANAF tables, Chase 1998). For the Haber process and HI, \(\Delta H^\circ\) and \(\Delta S^\circ\) are corrected to the temperature with \(\int\Delta C_p\,\mathrm{d}T\); for N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> between 273 and 373 K this correction changes K by only 1–2% and is left out.">氣體視為理想氣體。平衡常數由 \(K = e^{-\Delta G^\circ/RT}\) 算出，標準生成焓、熵與熱容（Shomate 式）取自 NIST 化學網路書（NIST-JANAF 表，Chase 1998）。哈柏法與 HI 的 \(\Delta H^\circ\)、\(\Delta S^\circ\) 用 \(\int\Delta C_p\,\mathrm{d}T\) 修正到該溫度；N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> 在 273–373 K 間這項修正只讓 K 改變 1–2%，所以省略。</li>
+        <li data-en-html="Results: K for N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> at 298 K is 0.148 (values around 0.15 are usually quoted); K for H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI at 698.6 K is 57 (classic measurements give about 54). At the high pressures of the Haber process real gases are not ideal, so real yields differ somewhat.">結果：298 K 時 N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> 的 K = 0.148（常見的引用值約 0.15）；698.6 K 時 H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI 的 K = 57（經典實驗約 54）。哈柏法的高壓下真實氣體並不理想，真實的產率會有些差異。</li>
+        <li data-en-html="Equilibrium: the extent of reaction ξ is found so that Q = K exactly (bisection; Q always increases with ξ). With a fixed pressure the volume follows from \(PV = nRT\).">平衡：解反應進度 ξ 使 Q = K（二分法，Q 隨 ξ 單調增加）。定壓時體積由 \(PV = nRT\) 決定。</li>
+        <li data-en-html="Approach to equilibrium: ξ moves exponentially towards its equilibrium value with a time constant that shortens at higher temperature and with a catalyst. These times are illustrative (the real N<sub>2</sub>O<sub>4</sub> reaction takes microseconds; the uncatalysed Haber reaction practically never happens), but the place where the mixture ends up is exact.">趨近平衡：ξ 以指數方式趨近平衡值，時間常數在高溫、有催化劑時變短。這些時間只是示意（真實的 N<sub>2</sub>O<sub>4</sub> 反應只要微秒；沒有催化劑的合成氨幾乎不會發生），但最後到達的平衡位置是精確的。</li>
+        <li data-en-html="Simplifications: real N<sub>2</sub>O<sub>4</sub> condenses to a liquid at low temperature and high pressure, and iodine is a solid below about 457 K; neither is modelled. The temperature changes as soon as you move the slider. The colours follow Beer's law (absorbance ∝ concentration × path length) with illustrative absorption strengths.">簡化：真實的 N<sub>2</sub>O<sub>4</sub> 在低溫高壓下會凝結成液體，碘在約 457 K 以下會變成固體，這裡都不考慮。移動溫度滑桿時溫度立刻改變。顏色依比爾定律（吸光度 ∝ 濃度 × 光程），吸收強度是示意值。</li>
+        <li data-en-html="The 2D view is a side view of the syringe; the 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same molecules. The molecules move randomly for display only; the amounts come from the calculation above.">2D 平面是注射筒的側視圖；3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子。分子的運動只是示意，物質的量由上面的計算決定。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high elective chemistry · Chemical equilibrium (equilibrium constant, reaction quotient, Le Chatelier's principle).">課綱對應：高中選修化學・化學平衡（平衡常數、反應商、勒沙特列原理）。</li>
+        <li data-en-html="Thermodynamic data: NIST Chemistry WebBook, gas-phase thermochemistry (M. W. Chase, NIST-JANAF Thermochemical Tables, 4th ed., 1998): <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C10102440&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NO<sub>2</sub></a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C10544726&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>N<sub>2</sub>O<sub>4</sub></a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C7664417&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NH<sub>3</sub></a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>N<sub>2</sub></a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C1333740&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>H<sub>2</sub></a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C10034852&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>HI</a>, <a href=&quot;https://webbook.nist.gov/cgi/cbook.cgi?ID=C7553562&amp;Mask=1&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>I<sub>2</sub></a>.">熱力學數據：NIST 化學網路書的氣相熱化學數據（M. W. Chase, NIST-JANAF Thermochemical Tables, 4th ed., 1998）：<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C10102440&amp;Mask=1" target="_blank" rel="noopener">NO<sub>2</sub></a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C10544726&amp;Mask=1" target="_blank" rel="noopener">N<sub>2</sub>O<sub>4</sub></a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C7664417&amp;Mask=1" target="_blank" rel="noopener">NH<sub>3</sub></a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C7727379&amp;Mask=1" target="_blank" rel="noopener">N<sub>2</sub></a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C1333740&amp;Mask=1" target="_blank" rel="noopener">H<sub>2</sub></a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C10034852&amp;Mask=1" target="_blank" rel="noopener">HI</a>、<a href="https://webbook.nist.gov/cgi/cbook.cgi?ID=C7553562&amp;Mask=1" target="_blank" rel="noopener">I<sub>2</sub></a>（皆為英文）。</li>
+        <li data-en-html="Cross-check: the standard Gibbs energies agree within 0.6 kJ/mol with Appendix G of OpenStax <i>Chemistry 2e</i>; further reading: <a href=&quot;https://openstax.org/books/chemistry-2e/pages/13-3-shifting-equilibria-le-chateliers-principle&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>13.3 Shifting Equilibria: Le Châtelier’s Principle</a>.">交叉核對：標準吉布斯能與 OpenStax《Chemistry 2e》附錄 G 相差在 0.6 kJ/mol 以內；延伸閱讀：<a href="https://openstax.org/books/chemistry-2e/pages/13-3-shifting-equilibria-le-chateliers-principle" target="_blank" rel="noopener">13.3 平衡的移動：勒沙特列原理</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/chemical-equilibrium-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/chemical-equilibrium-3d.js"></script>
+  <script src="js/chemical-equilibrium.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="chemical-equilibrium"></script>
+  <script src="js/missions/chemical-equilibrium.js"></script>
+  <script src="js/stats.js" data-module="chemical-equilibrium"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
