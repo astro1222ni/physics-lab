@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Binary Numbers and Number Bases | Astro Ni Science Lab">二進位與進位制｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 二進位頁面專用的顏色代號（淺色＋兩組深色；由 js/binary-numbers.js 讀取） */
+    :root { --bn-on: #f59e0b; --bn-off: #b8c2cf; --bn-panel: #e7edf5; --bn-carry: #0891b2; --bn-hex: #7c3aed; --bn-oct: #0f766e; --bn-warn: #dc2626; --bn-ok: #15803d; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bn-on: #fbbf24; --bn-off: #3a4658; --bn-panel: #121a26; --bn-carry: #22d3ee; --bn-hex: #b9a0ff; --bn-oct: #5eead4; --bn-warn: #f87171; --bn-ok: #4ade80; }
+    }
+    :root[data-theme="dark"] { --bn-on: #fbbf24; --bn-off: #3a4658; --bn-panel: #121a26; --bn-carry: #22d3ee; --bn-hex: #b9a0ff; --bn-oct: #5eead4; --bn-warn: #f87171; --bn-ok: #4ade80; }
+
+    #cv { aspect-ratio: auto; height: 300px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 170px; touch-action: pan-y; margin-top: 10px; }
+    .bn button { min-height: 44px; }
+    .bn [hidden] { display: none !important; }
+    .bn .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .bn .playbar button { padding: 6px 4px; font-variant-numeric: tabular-nums; }
+    .bn .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .bn .playbar2 button { flex: 1 1 auto; }
+    .bn .playbar .op { font-size: calc(17px * var(--fs, 1)); font-weight: 600; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    #autoBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .bn .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .bn .slider input[type="range"] { height: 28px; margin: 0; }
+    .bn .checks label { min-height: 44px; }
+    .bn .checks input { width: 17px; height: 17px; }
+    .bn .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bn .panel { grid-template-columns: minmax(0, 1fr); }
+    .bn .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    /* 四種寫法 */
+    .bases { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 4px 0 0; }
+    .bases label { font-size: calc(14px * var(--fs, 1)); white-space: nowrap; }
+    .bases label small { color: var(--muted); font-weight: 400; }
+    .bases input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); letter-spacing: 0.04em; }
+    .bases input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .bases input.bad { border-color: var(--bn-warn); }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.2em; color: var(--muted); }
+    .msg.bad { color: var(--bn-warn); }
+    .msg.ok { color: var(--bn-ok); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    /* 任意進位的位數表 */
+    .digits { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 10px 0 0; }
+    .digits .dg { display: flex; flex-direction: column; align-items: center; min-width: 40px; padding: 6px 6px 4px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+    .digits .dg b { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(22px * var(--fs, 1)); line-height: 1.1; color: var(--bn-hex); }
+    .digits .dg span { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    /* 除法階梯 */
+    .lad-btns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 8px 0 0; }
+    .lad-btns button { padding: 6px 4px; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 8px; white-space: nowrap; }
+    #ladTab td { text-align: right; }
+    #ladTab td.r { text-align: center; font-weight: 700; color: var(--bn-hex); }
+    #ladTab tr.new td { background: var(--accent-soft); }
+    #ladTab:empty { display: none; }
+    .lad-res { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(15px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.3em; word-break: break-all; }
+    /* 轉換挑戰 */
+    .quiz-q { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: calc(16px * var(--fs, 1)); min-height: 1.4em; }
+    .quiz-q b { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.15em; }
+    .quiz-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+    .quiz-row input { width: 7.5em; min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .quiz-row button { flex: 1 1 auto; }
+    .quiz-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .quiz-stat b { color: var(--text); }
+    #roundLog td, #roundLog th { text-align: right; }
+    #roundLog:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 挑戰時把會洩漏答案的讀數藏起來 */
+    .bn.quizzing .noquiz { display: none !important; }
+    .legend .sw { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#data&quot;>Information Technology · Data Representation</a> / Binary numbers"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#data">資訊科技・資料表示</a> ／ 二進位</nav>
+      <h1 data-en="Binary Numbers and Number Bases">二進位與進位制</h1>
+      <p data-en="Inside a computer every number is a row of switches, each one on or off. Switch lamps on and off to build numbers, watch a carry ripple down the row when you add one, see what happens when the row runs out of room, and translate between binary, octal, decimal, hexadecimal and any base from 2 to 16.">電腦裡的每一個數，都是一排只有「開」和「關」的開關。點亮或熄滅燈泡來組出數字，看「加一」時進位怎麼一路傳過去、燈排不夠長時會發生什麼事，再把同一個數在二進位、八進位、十進位、十六進位和任意 2 到 16 進位之間互相翻譯。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: tap the lamps to make 5, then press “+1” a few times and watch the carries.">試試看：點燈泡組出 5，再連按幾次「+1」，看進位怎麼傳。</p>
+    <div class="lab bn" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="燈號畫布：一排位元燈，每盞燈上方是它的位值。點一下燈泡可以切換亮暗；用左右方向鍵選燈，空白鍵或 Enter 切換。" data-en-aria-label="Lamp canvas: a row of bit lamps with the place value of each lamp above it. Tap a lamp to switch it on or off; use the left and right arrow keys to choose a lamp and Space or Enter to switch it."></canvas>
+        <div class="playbar">
+          <button id="incBtn" type="button" class="op" title="加 1（進位一路傳過去）" data-en-title="Add 1 (watch the carry ripple)">+1</button>
+          <button id="decBtn" type="button" class="op" title="減 1（借位）" data-en-title="Subtract 1 (borrow)">−1</button>
+          <button id="shlBtn" type="button" class="op" title="乘以 2：每個位元往左移一格" data-en-title="Multiply by 2: every bit moves one place to the left">×2</button>
+          <button id="shrBtn" type="button" class="op" title="除以 2（取整數）：每個位元往右移一格，最右邊的位元就是餘數" data-en-title="Divide by 2 (whole number): every bit moves one place to the right; the bit that falls off is the remainder">÷2</button>
+          <button id="clearBtn" type="button" data-en="Reset to 0">歸零</button>
+        </div>
+        <div class="playbar2">
+          <button id="autoBtn" type="button" aria-pressed="false" data-en="Count automatically">自動數數</button>
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉波形圖、除法階梯與挑戰紀錄；位元數與燈號不變" data-en-title="Clear the timing chart, the division ladder and the challenge log; the number of bits and the lamps stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv2" aria-label="波形圖：每一列是一個位元，從上到下是最高位到最低位；往右是時間（每次改變數值記一格）。自動數數時，最低位每次都翻轉，往上一位翻轉的頻率是下面一位的一半。" data-en-aria-label="Timing chart: one row per bit, from the highest bit at the top to the lowest at the bottom; time runs to the right, one step per change of the number. When counting, the lowest bit flips every step and each bit above flips half as often as the one below it."></canvas>
+        <p class="chart-cap" data-en="Timing chart: each row is one bit (highest at the top); each step to the right is one change of the number. Count automatically and compare how often each row flips.">波形圖：每一列是一個位元（最高位在上），往右每一格是數值改變一次。按「自動數數」，比較每一列翻轉得多快。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Lamps">燈號</h2>
+          <div class="slider"><label for="nb" data-en="Number of bits n">位元數 n</label><output id="nbo"></output>
+            <input id="nb" type="range" min="1" max="16" step="1" value="8" data-decimals="0"></div>
+          <div class="slider"><label for="rate" data-en="Counting speed (steps per second)">自動數數：每秒幾次</label><output id="rateo"></output>
+            <input id="rate" type="range" min="1" max="30" step="1" value="4" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="showPlace" type="checkbox" checked><span data-en="Place values">位值</span></label>
+            <label><input id="showHex" type="checkbox" checked><span data-en="Hex groups (4 bits)">十六進位分組（4 位元）</span></label>
+            <label><input id="showOct" type="checkbox"><span data-en="Octal groups (3 bits)">八進位分組（3 位元）</span></label>
+          </div>
+          <p class="hint" data-en="Fewer bits keep only the lowest bits of the number. Tap a number beside a slider to type it.">位元數變少時，只留下最低的那幾個位元。點一下滑桿旁的數字可以直接輸入。</p>
+        </section>
+
+        <section class="card noquiz">
+          <h2 data-en="Four ways to write it">四種寫法</h2>
+          <div class="bases">
+            <label for="in2" data-en-html="Binary <small>(base 2)</small>">二進位 <small>（2）</small></label><input id="in2" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="baseMsg">
+            <label for="in8" data-en-html="Octal <small>(base 8)</small>">八進位 <small>（8）</small></label><input id="in8" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="baseMsg">
+            <label for="in10" data-en-html="Decimal <small>(base 10)</small>">十進位 <small>（10）</small></label><input id="in10" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="baseMsg">
+            <label for="in16" data-en-html="Hexadecimal <small>(base 16)</small>">十六進位 <small>（16）</small></label><input id="in16" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-describedby="baseMsg">
+          </div>
+          <p class="msg" id="baseMsg" aria-live="polite" data-en="Type in any box and press Enter; the lamps and the other boxes follow.">在任一欄輸入後按 Enter，燈號和其他欄會跟著改。</p>
+          <dl class="readout">
+            <dt data-en="Lamps lit">亮著的燈</dt><dd id="rOnes">—</dd>
+            <dt data-en="Largest number with n bits">n 個位元的最大值</dt><dd id="rMax">—</dd>
+            <dt data-en="Different patterns">不同的組合數</dt><dd id="rCount">—</dd>
+          </dl>
+          <div class="eq" id="sumEq" aria-live="off"></div>
+        </section>
+
+        <section class="card noquiz">
+          <h2 data-en="Any base b">任意進位</h2>
+          <div class="slider"><label for="bb" data-en="Base b">進位 b</label><output id="bbo"></output>
+            <input id="bb" type="range" min="2" max="16" step="1" value="3" data-decimals="0"></div>
+          <p class="hint" data-en="The same number written in base b. Each digit is worth its value times a power of b.">同一個數寫成 b 進位。每一位數代表「數字 × b 的次方」。</p>
+          <div class="digits" id="digitsB" aria-label="b 進位的各位數與位值" data-en-aria-label="Digits in base b and their place values"></div>
+          <div class="eq" id="baseEq" aria-live="off"></div>
+        </section>
+
+        <section class="card noquiz">
+          <h2 data-en="Decimal to binary">十進位轉二進位</h2>
+          <p class="hint" data-en="Keep dividing by 2. The remainders, read from the bottom up, are the binary digits.">一直除以 2，把餘數由下往上讀，就是二進位。</p>
+          <div class="lad-btns">
+            <button id="ladStep" type="button" data-en="Next step">下一步</button>
+            <button id="ladAll" type="button" data-en="Show all">全部顯示</button>
+            <button id="ladReset" type="button" data-en="Start over">重來</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="ladTab"></table></div>
+          <p class="lad-res" id="ladRes" aria-live="polite"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Conversion challenge">轉換挑戰</h2>
+          <p class="hint" data-en="Ten questions using the current number of bits (at least 4). Set the lamps to the number asked for, or read the lamps and type the decimal value. While the challenge runs, the readouts that would give the answer away are hidden.">用目前的位元數（至少 4 個）出 10 題：照題目把燈設好，或看燈寫出十進位。挑戰時，會洩漏答案的讀數會先藏起來。</p>
+          <div class="quiz-row">
+            <button id="quizStart" type="button" class="primary" data-en="Start the challenge">開始挑戰</button>
+            <button id="quizStop" type="button" hidden data-en="Stop">結束挑戰</button>
+          </div>
+          <div class="quiz-q" id="quizQ" aria-live="polite" data-en="Press “Start the challenge”.">按「開始挑戰」。</div>
+          <div class="quiz-row" id="quizAnsRow" hidden>
+            <label for="quizIn" id="quizInLabel" data-en="Decimal value">十進位是</label>
+            <input id="quizIn" type="text" inputmode="numeric" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="quiz-row">
+            <button id="quizOk" type="button" class="primary" disabled data-en="Check">確定</button>
+          </div>
+          <div class="quiz-stat" id="quizStat"></div>
+          <div class="tablewrap"><table class="data" id="roundLog"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Finished rounds are listed here.">完成的回合會列在這裡。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Place value">位值記數法</h3>
+      <p data-en-html="In base \(b\) a number is written with the digits \(0, 1, \dots, b-1\), and each digit is worth more the further left it stands: the \(k\)-th digit from the right (counting from \(k = 0\)) is multiplied by \(b^{k}\). Decimal is base 10; a computer uses base 2, because a switch, a transistor or a magnetised spot has two reliable states. Each binary digit is a <strong>bit</strong>.">在 \(b\) 進位裡，數字只用 \(0, 1, \dots, b-1\) 來寫，而且越左邊的位數越值錢：從右邊數來第 \(k\) 位（從 \(k = 0\) 數起）要乘上 \(b^{k}\)。十進位是 \(b = 10\)；電腦用二進位（\(b = 2\)），因為開關、電晶體或磁化的小點都只有兩種穩定的狀態。二進位的每一位數叫做一個<strong>位元</strong>（bit）。</p>
+      <div class="formula">\[ (d_{k-1} \cdots d_{1} d_{0})_{b} = \sum_{i=0}^{k-1} d_{i}\, b^{i}, \qquad 0 \le d_{i} < b \]</div>
+      <p data-en-html="For example \((10100101)_2 = 2^{7} + 2^{5} + 2^{2} + 2^{0} = 128 + 32 + 4 + 1 = 165\).">例如 \((10100101)_2 = 2^{7} + 2^{5} + 2^{2} + 2^{0} = 128 + 32 + 4 + 1 = 165\)。</p>
+
+      <h3 data-en="How much can n bits hold?">n 個位元能裝多少？</h3>
+      <p data-en-html="Every bit doubles the number of patterns, so \(n\) bits have \(2^{n}\) different patterns. Used for whole numbers from zero, they cover \(0\) to \(2^{n} - 1\) — all lamps on is the largest number. To store a number \(v \ge 1\) you need at least \(\lfloor \log_2 v \rfloor + 1\) bits.">每多一個位元，組合數就加倍，所以 \(n\) 個位元有 \(2^{n}\) 種不同的組合。拿來表示從 0 開始的整數，範圍是 \(0\) 到 \(2^{n} - 1\)——燈全亮就是最大的數。要存下 \(v \ge 1\)，至少需要 \(\lfloor \log_2 v \rfloor + 1\) 個位元。</p>
+      <div class="formula">\[ 0 \le v \le 2^{n} - 1, \qquad n \ge \lfloor \log_2 v \rfloor + 1 \]</div>
+
+      <h3 data-en="Carries, borrows and overflow">進位、借位與溢位</h3>
+      <p data-en-html="Adding one works exactly like in decimal: the lowest bit goes up by one; if it was already 1 it becomes 0 and carries one to the next bit, and so on. So <em>+1</em> turns the trailing run of 1s into 0s and the first 0 into a 1. If every bit was 1, the carry falls off the end of the row: the result needs \(n + 1\) bits, the row keeps only the lowest \(n\), and the number wraps around to 0. This is called <strong>overflow</strong>. Multiplying by 2 shifts every bit one place to the left (the top bit can fall off), and dividing by 2 shifts them to the right — the bit that drops off is the remainder.">加一和十進位一樣：最低位加一；如果它本來就是 1，就變成 0 並進位到下一位，一路傳下去。所以「+1」會把尾端連續的 1 全變成 0、把第一個 0 變成 1。如果每一位都是 1，進位會從燈排的盡頭掉出去：結果需要 \(n + 1\) 個位元，但燈排只留得下最低的 \(n\) 位，數字就繞回 0，這叫做<strong>溢位</strong>（overflow）。乘以 2 等於所有位元往左移一格（最高位可能被推出去），除以 2 等於往右移一格——掉出去的那一位就是餘數。</p>
+
+      <h3 data-en="Octal and hexadecimal: shorthand for bits">八進位與十六進位：位元的速記</h3>
+      <p data-en-html="Because \(8 = 2^{3}\) and \(16 = 2^{4}\), every octal digit stands for exactly 3 bits and every hexadecimal digit for exactly 4 bits. Hexadecimal uses A–F for ten to fifteen, so one byte (8 bits) is always two hex digits, from 00 to FF. Programmers write long bit patterns this way: \((1100\,1010\,1111\,1110)_2 = \text{CAFE}_{16}\). To convert decimal to binary, keep dividing by 2 and read the remainders from the bottom up; to convert to any base \(b\), divide by \(b\) instead.">因為 \(8 = 2^{3}\)、\(16 = 2^{4}\)，八進位的一位剛好代表 3 個位元，十六進位的一位剛好代表 4 個位元。十六進位用 A–F 表示十到十五，所以一個位元組（8 個位元）永遠是兩位十六進位，從 00 到 FF。程式設計師常用這種寫法記長長的位元：\((1100\,1010\,1111\,1110)_2 = \text{CAFE}_{16}\)。十進位轉二進位：一直除以 2，餘數由下往上讀；要轉成 \(b\) 進位，就改成一直除以 \(b\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The rhythm of counting</strong>: switch on “Count automatically” and watch the timing chart. How often does the lowest bit flip? The next one? Why is each row exactly half as fast as the one below?"><strong>數數的節奏</strong>：打開「自動數數」看波形圖。最低位多久翻一次？上面一位呢？為什麼每一列剛好比下面一列慢一半？</li>
+        <li data-en-html="<strong>Long carries</strong>: which numbers make a single “+1” change many lamps at once?"><strong>長長的進位</strong>：哪些數按一次「+1」會讓很多盞燈一起改變？</li>
+        <li data-en-html="<strong>Odd or even</strong>: look only at the rightmost lamp. What does it tell you about the number?"><strong>奇數還是偶數</strong>：只看最右邊那盞燈，它告訴你這個數的什麼？</li>
+        <li data-en-html="<strong>Powers of two</strong>: what do 1, 2, 4, 8, 16, … look like? And 1, 3, 7, 15, 31, …?"><strong>2 的次方</strong>：1、2、4、8、16……長什麼樣子？1、3、7、15、31……呢？</li>
+        <li data-en-html="<strong>Same lamps, different names</strong>: how many binary digits does one hexadecimal digit replace? Why are octal and hexadecimal so convenient, while decimal is not?"><strong>同樣的燈，不同的名字</strong>：一位十六進位可以代替幾位二進位？為什麼八進位、十六進位很方便，十進位卻不行？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="All numbers are whole numbers from 0 to \(2^{16} - 1 = 65535\), stored exactly. Base conversion uses repeated division by \(b\); +1, −1, ×2 and ÷2 are done on the number and then only the lowest \(n\) bits are kept, which is exactly how a fixed-width register behaves. The unit tests check every number from 0 to 65535 in every base against the built-in conversion, the carry rule for +1, overflow at the top of the range, the division ladder, and the shortest way to build a number from 0 with +1 and ×2 against a brute-force search.">所有數字都是 0 到 \(2^{16} - 1 = 65535\) 的整數，完全精確。進位轉換用連續除以 \(b\)；+1、−1、×2、÷2 先算出結果，再只留下最低的 \(n\) 個位元——這正是固定寬度暫存器的行為。單元測試把 0 到 65535 的每個數在每種進位下都和內建的轉換比對，並檢查 +1 的進位規則、範圍頂端的溢位、除法階梯，以及「只用 +1、×2 從 0 做出一個數」的最少步數（與暴力搜尋比對）。</li>
+        <li data-en="The glow of the lamps, the carry sparks and the sounds are only for the eye and the ear; the number itself changes at once.">燈泡的光暈、進位的火花和聲音只是為了好看好聽；數值本身是立刻改變的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): D-IV-2, ways to represent digital data — binary representation and the idea of encoding; the starting point for the senior-high topics on algorithms and systems.">課綱對應：資訊科技・資料表示、處理及分析——資D-IV-2 數位資料的表示方法（二進位資料表示法、編碼的概念）；高中演算法與系統平台各單元的基礎。</li>
+        <li data-en="Positional number systems: Donald E. Knuth, The Art of Computer Programming, Vol. 2: Seminumerical Algorithms, 3rd ed., Section 4.1 (Positional Number Systems) and Section 4.4 (Radix Conversion).">位值記數與進位轉換：Donald E. Knuth，《The Art of Computer Programming》第 2 卷（Seminumerical Algorithms）第 3 版，4.1 節 Positional Number Systems 與 4.4 節 Radix Conversion。</li>
+        <li data-en="Binary prefixes (kilo = 1000, kibi = 1024): International standard IEC 80000-13:2008, Quantities and units — Part 13: Information science and technology.">二進位字首（kilo = 1000、kibi = 1024）：國際標準 IEC 80000-13:2008〈Quantities and units — Part 13: Information science and technology〉。</li>
+        <li data-en="History: Gottfried Wilhelm Leibniz described binary arithmetic in “Explication de l’arithmétique binaire” (Mémoires de l’Académie royale des sciences, 1703).">歷史：萊布尼茲（G. W. Leibniz）在 1703 年發表〈Explication de l’arithmétique binaire〉（法國皇家科學院紀要），介紹二進位算術。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Binary_number&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Binary number (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Hexadecimal&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Hexadecimal (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Integer_overflow&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Integer overflow (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Binary_number" target="_blank" rel="noopener">Binary number（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Hexadecimal" target="_blank" rel="noopener">Hexadecimal（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Integer_overflow" target="_blank" rel="noopener">Integer overflow（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/binary-numbers-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/binary-numbers.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="binary-numbers"></script>
+  <script src="js/missions/binary-numbers.js"></script>
+  <script src="js/stats.js" data-module="binary-numbers"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
