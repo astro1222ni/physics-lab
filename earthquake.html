@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121802"></script>
+  <script src="js/settings.js?v=202611121848"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Seismic Waves and Locating an Epicenter | Astro Ni Science Lab">地震波與震央定位｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -27,7 +27,7 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"地震波與震央定位","alternateName":"Seismic Waves and Locating an Epicenter","description":"看 P 波、S 波與表面波怎麼讓地面振動；在臺灣地圖上量 S−P 時間差、畫圓定出震央，再找出證明外核是液體的陰影區。","url":"https://lab.astroni.org/earthquake.html","image":"https://lab.astroni.org/img/og/earthquake.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["固體地球（Solid Earth）","地震與地球內部（Earthquakes and the Earth's Interior）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611121802">
+  <link rel="stylesheet" href="lab.css?v=202611121848">
   <style>
     /* 地震波與震央定位頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依模式與寬度決定；在可拖曳的東西上按住時才阻止捲動，其他地方手機可在畫布上捲動頁面 */
@@ -278,11 +278,15 @@
           <p class="hint" data-en-html="The crust in this simulation really has V<sub>P</sub> = 6.0 km/s and V<sub>S</sub> = 3.5 km/s. Try converting with wrong speeds and see what happens to the circles.">這個模擬的地殼實際上 V<sub>P</sub> = 6.0 km/s、V<sub>S</sub> = 3.5 km/s。試試用錯的波速換算，看看圓會怎樣。</p>
         </section>
         <section class="card" data-m="locate" hidden>
-          <h2 data-en="Measure and locate">量測與定位</h2>
+          <h2 data-en="Readings">量測表</h2>
           <table class="picks" id="picks"></table>
           <div class="checks" style="margin-top:6px">
             <label><input id="showChords" type="checkbox" checked><span data-en="Common chords">共同弦</span></label>
           </div>
+        </section>
+        <!-- 標震央與確認另成一張卡片：寬螢幕時版面平衡（js/lab-layout.js）才能把它單獨搬到地圖下方 -->
+        <section class="card" data-m="locate" hidden>
+          <h2 data-en="Locate the epicenter">標出震央</h2>
           <p class="seg-label" id="mkLabel" data-en="My markers:">我標的震央：</p>
           <div class="seg2" role="group" aria-labelledby="mkLabel">
             <button type="button" data-mk="1" aria-pressed="true" data-en="1 point">1 個</button>
@@ -417,17 +421,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611121802"></script>
-  <script src="js/earthquake-core.js?v=202611121802"></script>
-  <script src="js/sound.js?v=202611121802"></script>
-  <script src="js/numinput.js?v=202611121802"></script>
-  <script src="js/drawkit.js?v=202611121802"></script>
-  <script src="js/keys.js?v=202611121802"></script>
-  <script src="js/earthquake.js?v=202611121802"></script>
-  <script src="js/firebase-config.js?v=202611121802"></script>
-  <script src="js/missions.js?v=202611121802" data-module="earthquake"></script>
-  <script src="js/missions/earthquake.js?v=202611121802"></script>
-  <script src="js/stats.js?v=202611121802" data-module="earthquake"></script>
-  <script src="js/comments.js?v=202611121802"></script>
+  <script src="js/math.js?v=202611121848"></script>
+  <script src="js/earthquake-core.js?v=202611121848"></script>
+  <script src="js/sound.js?v=202611121848"></script>
+  <script src="js/numinput.js?v=202611121848"></script>
+  <script src="js/drawkit.js?v=202611121848"></script>
+  <script src="js/keys.js?v=202611121848"></script>
+  <script src="js/earthquake.js?v=202611121848"></script>
+  <script src="js/firebase-config.js?v=202611121848"></script>
+  <script src="js/missions.js?v=202611121848" data-module="earthquake"></script>
+  <script src="js/missions/earthquake.js?v=202611121848"></script>
+  <script src="js/stats.js?v=202611121848" data-module="earthquake"></script>
+  <script src="js/comments.js?v=202611121848"></script>
 </body>
 </html>

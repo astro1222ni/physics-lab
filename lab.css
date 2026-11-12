@@ -1255,3 +1255,7 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
   --b-algebra: #fca5a5; --b-geometry: #93c5fd; --b-vectors: #c4b5fd; --b-probability: #5eead4; --b-calculus: #fcd34d;
 }
 .sb-math { --sc: var(--d-math); }
+
+/* ---------- 實驗台版面平衡（js/lab-layout.js）：面板尾端的卡片搬到畫布下方，報紙式分欄 ---------- */
+.lab-spill > * { break-inside: avoid; margin: 0 0 12px; }
+.lab-spill > :last-child { margin-bottom: 0; }

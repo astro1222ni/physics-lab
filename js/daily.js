@@ -21,7 +21,7 @@
   const st = LM._state;
   const app = document.getElementById('dailyApp');
 
-  const D = { api: null, uid: null, offset: 0, rec: null, bag: {}, loaded: false, failed: false, saveFailed: false, msg: '' };
+  const D = { api: null, uid: null, offset: 0, rec: null, bag: {}, loaded: false, failed: false, saveFailed: false, msg: '', waiting: null };
   let queue = Promise.resolve();
 
   function now() { return Date.now() + D.offset; }
@@ -119,6 +119,7 @@
       if (D.uid !== uid) return;
       D.loaded = true;
       render();
+      resumePending();
     }).catch(function () { D.loading = false; D.failed = true; render(); });
   }
   /**
@@ -146,6 +147,51 @@
   }
 
   // ======================= 完成每日任務：擲骰與寫入 =======================
+  /*
+   * 達成時離上一次完成還不到 10 秒（資料庫規則），要等一下才能寫入。
+   * 等的時候先把這個任務記在本機（localStorage），中途離開這一頁也不會遺失：
+   * 回到每日任務頁、或再打開任何每日任務實驗，載入後會自動補記（Codex 全面測試回報：冷卻中按「回每日任務」，完成就不見了）。
+   * 本機紀錄只是「待寫入」的提醒，能不能記還是由資料庫規則決定（每天十個、每個一次、隔 10 秒）。
+   */
+  const PKEY = 'dl-pending-v1';
+  function pendingRead() { try { return JSON.parse(localStorage.getItem(PKEY) || '{}') || {}; } catch (e) { return {}; } }
+  function pendingIds() {
+    const r = pendingRead()[D.uid];
+    return r && r.d === today() && Array.isArray(r.ids) ? r.ids : [];
+  }
+  function pendingSet(id, on) {
+    if (!D.uid) return;
+    try {
+      const all = pendingRead();
+      const ids = pendingIds().filter(function (x) { return x !== id; });
+      if (on) ids.push(id);
+      if (ids.length) all[D.uid] = { d: today(), ids: ids }; else delete all[D.uid];
+      localStorage.setItem(PKEY, JSON.stringify(all));
+    } catch (e) { /* 私密瀏覽等：只是不能跨頁補記 */ }
+  }
+  /** 載入後把上次沒寫成的完成補記上去（已經換日、已經記過、不是今天的任務就丟掉） */
+  function resumePending() {
+    pendingIds().forEach(function (id) {
+      const m = findMission(id);
+      if (!m || !isPick(id) || doneToday(id)) { pendingSet(id, false); return; }
+      completed(m, false);
+    });
+  }
+  let waitTimer = 0;
+  function waitTick() {
+    clearInterval(waitTimer);
+    waitTimer = setInterval(function () {
+      if (!D.waiting) { clearInterval(waitTimer); return; }
+      // 只更新倒數的字，不重畫整頁（避免焦點、捲動位置跳掉）
+      if (st.daily) renderBanner();
+      if (app) {
+        const chip = app.querySelector('.dl-pending[data-id="' + D.waiting.id + '"]');
+        if (chip) chip.textContent = T('記錄中…再 ' + waitLeft() + ' 秒', 'Recording… ' + waitLeft() + ' s');
+      }
+    }, 1000);
+  }
+  function waitLeft() { return D.waiting ? Math.max(0, Math.ceil((D.waiting.until - now()) / 1000)) : 0; }
+
   /** missions.js 呼叫：m 是剛達成的每日任務；newStars = 以前沒領過這個任務的星星（這次也拿到星星） */
   function completed(m, newStars) {
     queue = queue.then(function () { return reward(m, newStars); }).catch(function () { /* 下次再試 */ });
@@ -153,11 +199,25 @@
   function reward(m, newStars) {
     if (!isPick(m.id)) { D.msg = T('每日任務已經換新了，請回每日任務頁看看今天的任務。', 'The daily missions have been refreshed — check today’s list.'); render(); return; }
     if (doneToday(m.id)) { toast(T('今天已經完成這個每日任務了，明天 00:00 會換新。', 'You have already cleared this daily mission today — new ones arrive at 00:00.')); return; }
-    const drop = C.roll(m.level, stars(), siteTotal(), false);
-    // 資料庫規則：兩次完成的伺服器時間至少隔 10 秒
-    const wait = Math.max(0, ((D.rec && D.rec.at) || 0) + C.GAP - now());
-    return delay(wait).then(function () {
-      const P = 'daily/' + D.uid + '/', B = 'bag/' + D.uid + '/';
+    pendingSet(m.id, true);
+    return writeWhenReady(m, newStars);
+  }
+  /** 寫入前先向伺服器重讀今天的紀錄（別的分頁可能剛記過），還不到 10 秒就等，等完再讀一次 */
+  function writeWhenReady(m, newStars) {
+    const uid = D.uid;
+    return D.api.get('daily/' + uid).catch(function () { return null; }).then(function (r) {
+      if (D.uid !== uid) return;
+      if (r && D.rec && r.d === D.rec.d) { D.rec.n = +r.n || 0; D.rec.at = +r.at || 0; D.rec.done = Object.assign({}, r.done || {}); }
+      if (!isPick(m.id) || doneToday(m.id)) { pendingSet(m.id, false); D.waiting = null; render(); return; }
+      // 資料庫規則：兩次完成的伺服器時間至少隔 10 秒（多留 0.3 秒，避免時鐘誤差剛好差一點被擋）
+      const wait = Math.max(0, ((D.rec && D.rec.at) || 0) + C.GAP - now());
+      if (wait > 0) {
+        D.waiting = { id: m.id, until: now() + wait };
+        waitTick(); render();
+        return delay(wait + 300).then(function () { return writeWhenReady(m, newStars); });
+      }
+      const drop = C.roll(m.level, stars(), siteTotal(), false);
+      const P = 'daily/' + uid + '/', B = 'bag/' + uid + '/';
       const map = {};
       map[P + 'n'] = ((D.rec && D.rec.n) || 0) + 1;
       map[P + 'at'] = D.api.now();
@@ -165,6 +225,7 @@
       map[B + 'dm'] = D.api.inc(1);
       if (drop) map[B + drop.item] = D.api.inc(drop.qty);
       return D.api.update(map).then(function () {
+        pendingSet(m.id, false); D.waiting = null;
         D.rec.n = ((D.rec && D.rec.n) || 0) + 1;
         D.rec.at = now();
         D.rec.done = D.rec.done || {}; D.rec.done[m.id] = true;
@@ -178,6 +239,7 @@
         try { window.dispatchEvent(new CustomEvent('lab:loot', { detail: { item: drop ? drop.item : null, qty: drop ? drop.qty : 0, first: newStars, bag: Object.assign({}, D.bag) } })); } catch (e) { /* 忽略 */ }
         render();
       }, function () {
+        pendingSet(m.id, false); D.waiting = null;
         D.msg = T('這次完成沒有記錄成功（網路或資料庫規則的問題），請再做一次。', 'This clear was not recorded (network or database rules) — please try again.');
         render();
       });
@@ -267,7 +329,13 @@
       return;
     }
     banner.classList.remove('expired');
-    if (doneToday(st.daily)) {
+    if (D.waiting && D.waiting.id === st.daily) {
+      banner.classList.add('waiting');
+      line.textContent = T('✓ 達成了！每日任務兩次完成至少要隔 10 秒，再 ' + waitLeft() + ' 秒就會自動記錄。現在回每日任務頁也沒關係，會自動補記。',
+        '✓ Cleared! Two daily clears must be at least 10 s apart, so this one is recorded automatically in ' + waitLeft() + ' s. You can go back to the daily list now — it will still be recorded.');
+      banner.appendChild(line);
+    } else if (doneToday(st.daily)) {
+      banner.classList.remove('waiting');
       const left = picks().length - doneCount();
       line.textContent = T('✓ 今天已經完成這個每日任務（每個每日任務一天只能完成一次）。', '✓ You have cleared this daily mission today (each one counts once a day). ') +
         (left ? T('今天還有 ' + left + ' 個每日任務沒完成。', left + ' daily missions left today.') : T('今天的十個每日任務全部完成了，明天 00:00 換新！', 'All of today’s daily missions are done — new ones at 00:00!'));
@@ -367,6 +435,11 @@
       top.appendChild(bandChip(m.level));
       top.appendChild(starBadge(m.level, starState(id)));
       if (today_) top.appendChild(el('span', 'dl-done', T('✓ 今天已完成', '✓ Done today')));
+      else if (pendingIds().indexOf(id) >= 0) {
+        const pc = el('span', 'dl-done dl-pending', D.waiting && D.waiting.id === id ? T('記錄中…再 ' + waitLeft() + ' 秒', 'Recording… ' + waitLeft() + ' s') : T('記錄中…', 'Recording…'));
+        pc.setAttribute('data-id', id);
+        top.appendChild(pc);
+      }
       card.appendChild(top);
       card.appendChild(el('span', 'dl-card-mod', moduleName(modOf(id))));
       card.appendChild(el('h3', 'dl-card-title', L(m.title)));

@@ -342,10 +342,19 @@
     document.head.appendChild(s);
   }
 
+  // 實驗台版面平衡：面板很長時把尾端卡片搬到畫布下方（js/lab-layout.js），只在有 .lab 的頁面載入
+  function loadLayout() {
+    if (!document.querySelector('.lab')) return;
+    const s = document.createElement('script');
+    s.src = 'js/lab-layout.js' + HANS_VER;
+    document.head.appendChild(s);
+  }
+
   function onReady() {
     if (st.lang === 'en') applyEnglish();
     buildUI();
     loadClassroom();
+    loadLayout();
     if (st.lang === 'zh-Hans') startHans();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady);
