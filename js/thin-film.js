@@ -1060,7 +1060,7 @@
         const tNow = whichNow() === 'T' ? (tR === 2 ? 2 : 1 - tR) : tR;
         const word = tNow === 0 ? T('暗點', 'a dark spot') : tNow === 1 ? T('亮點', 'a bright spot') : T('介於亮暗之間', 'in between');
         note = T('中心間隙 e = ', 'Gap at the centre e = ') + Math.round(eNm) + ' nm' + T('，2ne/λ = ', ', 2ne/λ = ') + fx(k, 2) +
-          T('，所以' + (whichNow() === 'T' ? '透射光' : '反射光') + '的中心是', ', so in ' + (whichNow() === 'T' ? 'transmitted' : 'reflected') + ' light the centre is ') + word + T('。', '.');
+          T('，所以' + (whichNow() === 'T' ? '透射光' : '反射光') + '的中心' + (tNow === 2 ? '' : '是'), ', so in ' + (whichNow() === 'T' ? 'transmitted' : 'reflected') + ' light the centre is ') + word + T('。', '.');
       }
       $('readNote').textContent = note;
     }
