@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611121730"></script>
+  <script src="js/settings.js?v=202611121802"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Projectile Motion | Astro Ni Science Lab">拋體運動｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -28,7 +28,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611121730">
+  <link rel="stylesheet" href="lab.css?v=202611121802">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
@@ -208,7 +208,7 @@
         <li data-en-html="<strong>45° gives the maximum range</strong>: for \(h_0 = 0\), \(\sin 2\theta\) is largest at \(\theta = 45^\circ\). Raise \(h_0\) and watch how the “angle for maximum range” changes. (It drops below \(45^\circ\).)"><strong>45° 射程最大</strong>：\(h_0 = 0\) 時 \(\sin 2\theta\) 在 \(\theta = 45^\circ\) 最大。把 \(h_0\) 調高，看看「射程最大的仰角」怎麼變？（會小於 \(45^\circ\)）</li>
         <li data-en-html="<strong>Horizontal and vertical motions are independent</strong>: turn on the equal-time markers. Neighbouring markers are equally spaced horizontally (\(v_x\) is constant), while their vertical spacing keeps changing. The \(v_x\) arrow never changes length."><strong>水平與鉛直運動互相獨立</strong>：打開等時距標記，相鄰標記的水平間距都相等（\(v_x\) 不變），鉛直間距則逐漸改變。速度分量 \(v_x\) 的箭頭長度始終不變。</li>
         <li data-en-html="<strong>Horizontal launch</strong>: set the launch angle to \(0^\circ\) and \(h_0 = 20\ \mathrm{m}\), then launch a few times at different speeds. The time to land is always \(\sqrt{2h_0/g}\); only the range changes."><strong>水平拋射</strong>：把仰角調成 \(0^\circ\)、\(h_0 = 20\ \mathrm{m}\)，改變初速多發射幾次——落地時間都是 \(\sqrt{2h_0/g}\)，只有射程不同。</li>
-        <li data-en-html="<strong>Try another world</strong>: with the same launch speed and angle, the range and maximum height on the Moon are about \(9.8/1.62 \approx 6\) times those on Earth, because \(R\), \(H\) and \(T\) are all inversely proportional to \(g\)."><strong>換一個星球</strong>：同樣的初速與仰角，在月球上射程與最大高度約是地球的 \(9.8/1.62 \approx 6\) 倍，因為 \(R\)、\(H\)、\(T\) 都與 \(g\) 成反比。</li>
+        <li data-en-html="<strong>Try another world</strong>: with the same launch speed and angle, the range and maximum height on the Moon are about \(9.8/1.62 \approx 6\) times those on Earth, because, for a launch from the ground with no air resistance, \(R\), \(H\) and \(T\) are all inversely proportional to \(g\)."><strong>換一個星球</strong>：同樣的初速與仰角，在月球上射程與最大高度約是地球的 \(9.8/1.62 \approx 6\) 倍，因為從地面發射、忽略空氣阻力時，\(R\)、\(H\)、\(T\) 都與 \(g\) 成反比。</li>
         <li data-en-html="<strong>Conservation of mechanical energy</strong>: without drag, \(\tfrac12 v^2 + g y\) stays constant throughout the flight; with drag it keeps decreasing, and the lost energy is converted into thermal energy."><strong>力學能守恆</strong>：無阻力時，\(\tfrac12 v^2 + g y\) 在整個飛行過程中保持不變；有阻力時則持續減少，減少的部分轉換為熱能。</li>
         <li data-en-html="<strong>Effect of air resistance</strong>: the range and maximum height both decrease, and the path is no longer symmetric — the descent is steeper and takes longer than the ascent. The angle for maximum range is now <strong>below</strong> \(45^\circ\), and the stronger the drag, the lower it gets. (The Moon has no atmosphere, so turning on drag there is only a hypothetical comparison.)"><strong>空氣阻力的影響</strong>：射程與最大高度都變小，軌跡不再左右對稱——下降段比上升段陡、也比較久。這時射程最大的仰角會<strong>低於</strong> \(45^\circ\)，阻力越大偏離越多。（月球沒有大氣，在月球上開啟阻力只是假想比較。）</li>
       </ul>
@@ -240,17 +240,17 @@ ho v^2 A\)（<a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/d
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611121730"></script>
-  <script src="js/projectile-core.js?v=202611121730"></script>
-  <script src="js/sound.js?v=202611121730"></script>
-  <script src="js/numinput.js?v=202611121730"></script>
-  <script src="js/drawkit.js?v=202611121730"></script>
-  <script src="js/keys.js?v=202611121730"></script>
-  <script src="js/projectile.js?v=202611121730"></script>
-  <script src="js/firebase-config.js?v=202611121730"></script>
-  <script src="js/missions.js?v=202611121730" data-module="projectile"></script>
-  <script src="js/missions/projectile.js?v=202611121730"></script>
-  <script src="js/stats.js?v=202611121730" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611121730"></script>
+  <script src="js/math.js?v=202611121802"></script>
+  <script src="js/projectile-core.js?v=202611121802"></script>
+  <script src="js/sound.js?v=202611121802"></script>
+  <script src="js/numinput.js?v=202611121802"></script>
+  <script src="js/drawkit.js?v=202611121802"></script>
+  <script src="js/keys.js?v=202611121802"></script>
+  <script src="js/projectile.js?v=202611121802"></script>
+  <script src="js/firebase-config.js?v=202611121802"></script>
+  <script src="js/missions.js?v=202611121802" data-module="projectile"></script>
+  <script src="js/missions/projectile.js?v=202611121802"></script>
+  <script src="js/stats.js?v=202611121802" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611121802"></script>
 </body>
 </html>

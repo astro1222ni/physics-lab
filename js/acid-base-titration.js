@@ -1254,7 +1254,12 @@
       rows.push([T('pH', 'pH'), '—<small>' + T('pH 計不在瓶中', 'meter not in the flask') + '</small>']);
     }
     rows.push([T('溶液的顏色', 'Colour of the solution'), state.ind === 'none' ? T('無色（沒有指示劑）', 'colourless (no indicator)') : colourName(state.ind, K.indicatorFraction(state.ind, r.pH))]);
-    if (!hid) rows.push([T('已中和', 'Neutralised'), Math.min(999, r.u / U / r.Veq * 100).toFixed(1) + '%']);
+    if (!hid) {
+      // 已中和最多 100%；過了當量點，多出來的滴定液另列（試玩回報：顯示 230% 不合理）
+      const pct = r.u / U / r.Veq * 100;
+      rows.push([T('已中和', 'Neutralised'), Math.min(100, pct).toFixed(1) + '%']);
+      if (pct > 100.05) rows.push([T('滴定液過量', 'Excess titrant'), (r.u / U - r.Veq).toFixed(2) + ' mL']);
+    }
     $('readout').innerHTML = dl(rows);
   }
   function renderAnalysis() {

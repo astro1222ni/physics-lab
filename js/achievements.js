@@ -402,7 +402,13 @@
 
   // ---------- 解鎖提示 ----------
   const BADGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.4 7.2 16.9l.9-5.4L4.2 7.7l5.4-.8z"/><path d="M7.5 15.5L6 22l6-3 6 3-1.5-6.5" opacity=".6"/></svg>';
+  // 同時解鎖很多個時排隊：手機寬度一次只顯示 1 張、寬螢幕最多 3 張，不蓋住畫布與按鈕（試玩回報：390 px 一次跳出 6 張）
+  const toastWait = [];
+  let toastLive = 0;
   function toast(n) {
+    const max = window.innerWidth <= 600 ? 1 : 3;
+    if (toastLive >= max) { toastWait.push(n); return; }
+    toastLive++;
     const tier = n.single ? (n.single.tier || 1) : n.band;
     const t = el('div', 'ac-toast tier' + tier);
     t.setAttribute('role', 'status');
@@ -422,7 +428,14 @@
     box.appendChild(t);
     const S = window.LabSound;
     if (S && S.enabled()) { S.tone({ freq: 1047, dur: 0.12, gain: 0.4 }); S.tone({ freq: 1568, dur: 0.18, gain: 0.35, delay: 0.1 }); }
-    setTimeout(function () { t.classList.add('out'); setTimeout(function () { t.remove(); }, 400); }, 3400);
+    setTimeout(function () {
+      t.classList.add('out');
+      setTimeout(function () {
+        t.remove();
+        toastLive--;
+        if (toastWait.length) toast(toastWait.shift());
+      }, 400);
+    }, toastWait.length ? 2600 : 3400);
   }
 
   // ---------- 我的成就（排行榜頁） ----------

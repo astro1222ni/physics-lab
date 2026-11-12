@@ -59,7 +59,7 @@
     return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
   function minsec(t) {
-    const m = Math.floor(t / 60), s = t - 60 * m;
+    const r = Math.round(t), m = Math.floor(r / 60), s = r - 60 * m; // 先四捨五入到秒再拆，避免「18 分 60 秒」
     return EN ? m + ' min ' + num(s, 0) + ' s' : m + ' 分 ' + num(s, 0) + ' 秒';
   }
 
@@ -692,6 +692,8 @@
     updateQuakeData();
     startRecording();
     buildKbItems();
+    // 讀數一定要跟著新地震更新：「自己指定震央」「集集」一開始就顯示震央，舊地震的標記、電腦解、「還沒顯示」不可留在面板上
+    refreshPicks();
   }
   function resetPicks(s) { s.picks = { p: null, s: null, mp: false, ms: false, auto: false }; }
   /** 每個測站的到達時間與紀錄（含誤差時：每條路徑的波速有 ±3% 的隨機誤差） */
@@ -1040,7 +1042,10 @@
     const yAx = L.tr.y + 4 + st.length * L.rowH + 2;
     c.strokeStyle = alpha(C.text, 0.3); c.lineWidth = 1;
     c.beginPath(); c.moveTo(x0, snap(yAx)); c.lineTo(x1, snap(yAx)); c.stroke();
-    const span = w.we - w.ws, step = span > 90 ? 20 : 10;
+    // 主刻度間距：依「時:分:秒」標籤的寬度挑，窄螢幕（390 px）標籤才不會互相疊到
+    const span = w.we - w.ws, pxPerS = (x1 - x0) / span, labW = textW(c, '00:00:00', fA) + 12;
+    let step = span > 90 ? 20 : 10;
+    while (step * pxPerS < labW && step < 600) step = step < 30 ? step + 10 : step * 2;
     const first = Math.ceil((w.ws + w.quake.T0) / step) * step - w.quake.T0;
     const minor = step / 5;
     for (let t = Math.ceil((w.ws + w.quake.T0) / minor) * minor - w.quake.T0; t <= w.we + 1e-6; t += minor) {
