@@ -797,12 +797,12 @@
         acted();
         if (state.mode === 'turn') {
           if (dx) { const a = Math.max(-90, Math.min(90, state.aim + dx * (big ? 5 : 0.5))); if (window.LabNum) window.LabNum.set(el.aim, a); else el.aim.value = a; }
-          if (dy) { const v = Math.max(0, Math.min(3, state.v0t - dy * (big ? 0.25 : 0.05))); if (window.LabNum) window.LabNum.set(el.v0t, v); else el.v0t.value = v; }
+          if (dy) { const v = Math.max(0, Math.min(3, state.v0t + dy * (big ? 0.25 : 0.05))); if (window.LabNum) window.LabNum.set(el.v0t, v); else el.v0t.value = v; }
           readSliders(); refreshOutputs(); updateTurnResults();
           return true;
         }
         const L = mapLay(cvSize.w, cvSize.h), st = big ? 200e3 : 50e3;
-        state.cur = { x: Math.max(-L.xMax, Math.min(L.xMax, state.cur.x + dx * st)), y: Math.max(-L.yMax, Math.min(L.yMax, state.cur.y - dy * st)) };
+        state.cur = { x: Math.max(-L.xMax, Math.min(L.xMax, state.cur.x + dx * st)), y: Math.max(-L.yMax, Math.min(L.yMax, state.cur.y + dy * st)) };
         updateEarthHints();
         return true;
       },
