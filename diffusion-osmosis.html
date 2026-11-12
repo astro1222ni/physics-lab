@@ -55,6 +55,8 @@
     .dos .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .dos .playbar button { flex: 1 1 auto; }
     .dos .playbar #play { font-weight: 700; }
+    .dos .eq-toggle { margin-top: 10px; width: 100%; color: var(--muted); }
+    .dos .eq-toggle[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .dos .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
@@ -292,6 +294,8 @@
             <dt data-en="Equilibrium h (predicted)">預測的平衡液面差</dt><dd id="oHeq">—</dd>
             <dt class="wide" data-en-html="If the right side were not diluted: π<sub>0</sub> ÷ ρg">若右管溶液沒有被稀釋：π<sub>0</sub> ÷ ρg</dt><dd id="oH0" class="wide">—</dd>
           </dl>
+          <button id="osmoEqBtn" type="button" class="eq-toggle" aria-pressed="true" data-en="Equilibrium prediction: on">平衡預測：開</button>
+          <p class="hint" data-en="Turn the prediction off if you want to work the equilibrium out yourself (the dashed line on the graph hides too).">想自己算出平衡液面差時，可以關掉預測（圖上的虛線也會一起隱藏）。</p>
         </section>
 
         <section class="card" data-for="cell">

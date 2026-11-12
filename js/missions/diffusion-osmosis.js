@@ -84,8 +84,8 @@
     {
       id: 'diffusion-osmosis-8', level: 6,
       title: { zh: '剛好擋住水', en: 'Just enough to stop the water' },
-      desc: { zh: '滲透：右管比左管濃，調活塞壓力（至少 1 kPa），讓兩管液面一直保持一樣高（相差不到 0.5 cm）並達到平衡。這個壓力就是兩邊的滲透壓差。',
-        en: 'Osmosis: with the right side more concentrated, set a piston pressure of at least 1 kPa so the two levels stay equal (within 0.5 cm) at equilibrium. That pressure is the osmotic pressure difference.' },
+      desc: { zh: '滲透：右管比左管濃，調活塞壓力（至少 1 kPa），讓兩管液面一直保持一樣高（相差不到 0.5 cm）並達到平衡。這個壓力就是兩邊的滲透壓差。提示：水一流過去，右管就被稀釋、Δπ 跟著變小，所以要先設好活塞，再按「液面歸零」。',
+        en: 'Osmosis: with the right side more concentrated, set a piston pressure of at least 1 kPa so the two levels stay equal (within 0.5 cm) at equilibrium. That pressure is the osmotic pressure difference. Hint: once water starts to flow the right side is diluted and Δπ shrinks, so set the piston first, then press “Level the liquids”.' },
       check: function (ev) { const d = ev.data; return isOsmo(ev) && d.osmR0 > d.osmL0 && d.P >= 1 && d.eq && Math.abs(d.h) < 0.5; }
     },
     {
@@ -122,9 +122,9 @@
     {
       id: 'diffusion-osmosis-12', level: 10,
       title: { zh: '精準的滲透計', en: 'A precise osmometer' },
-      desc: { zh: '滲透：左管放純水、不加活塞壓力，選好右管的溶質、濃度與溫度，讓平衡時的液面差落在 50.0–50.5 cm。記得水流過去會把右管稀釋。',
-        en: 'Osmosis: pure water on the left and no piston pressure. Choose the right-hand solute, concentration and temperature so the equilibrium level difference lands between 50.0 and 50.5 cm. Remember that the inflow dilutes the right side.' },
-      check: function (ev) { const d = ev.data; return isOsmo(ev) && d.CL0 === 0 && d.CR0 > 0 && noPiston(d) && d.eq && d.h >= 50 && d.h <= 50.5; }
+      desc: { zh: '滲透：左管放純水、不加活塞壓力，關掉「平衡預測」自己算，選好右管的溶質、濃度與溫度，讓平衡時的液面差落在 50.0–50.5 cm。記得水流過去會把右管稀釋。（打開預測時看過的設定不算。）',
+        en: 'Osmosis: pure water on the left and no piston pressure. Turn the equilibrium prediction off and work it out yourself: choose the right-hand solute, concentration and temperature so the equilibrium level difference lands between 50.0 and 50.5 cm. Remember that the inflow dilutes the right side. (Settings you viewed with the prediction on do not count.)' },
+      check: function (ev) { const d = ev.data; return isOsmo(ev) && d.CL0 === 0 && d.CR0 > 0 && noPiston(d) && d.eq && !d.peek && d.h >= 50 && d.h <= 50.5; }
     },
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {

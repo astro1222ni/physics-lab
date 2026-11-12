@@ -59,7 +59,10 @@
   DF.stats = K.cloudStats(DF.cloud);
   function Dnow() { return K.diffusionUm2(S.Tc, DF.r); }
   // ---------- 滲透 ----------
-  const OS = { solL: 'glucose', solR: 'sucrose', CL: 0, CR: 1, P: 0, st: null, ts: [], hs: [], history: [], eqChimed: false, drip: 0, eqTold: false };
+  const OS = { solL: 'glucose', solR: 'sucrose', CL: 0, CR: 1, P: 0, st: null, ts: [], hs: [], history: [], eqChimed: false, drip: 0, eqTold: false, showEq: true, peeked: {} };
+  // 平衡預測看過哪些設定（溶液、濃度、溫度）：任務 12 要自己算，看過預測的設定不算
+  const osmoKey = function () { return OS.solL + '|' + OS.CL + '|' + OS.solR + '|' + OS.CR + '|' + S.Tc; };
+  const markPeek = function () { if (OS.showEq) OS.peeked[osmoKey()] = true; };
   // ---------- 細胞 ----------
   const CS = { sol: 'nacl', C: 100, rbc: null, plant: null, t: 0, ts: [], rv: [], pv: [], history: [], lysedAt: 0, plasmo: false };
   function osmOut() { return SOL[CS.sol].i * CS.C; }
@@ -788,16 +791,19 @@
     runs.concat([{ ts: OS.ts, hs: OS.hs }]).forEach(function (rn) {
       rn.ts.forEach(function (t, i) { xmax = Math.max(xmax, t / 60); ymin = Math.min(ymin, rn.hs[i]); ymax = Math.max(ymax, rn.hs[i]); });
     });
-    ymin = Math.min(ymin, eq.h * 100); ymax = Math.max(ymax, eq.h * 100);
+    if (OS.showEq) { ymin = Math.min(ymin, eq.h * 100); ymax = Math.max(ymax, eq.h * 100); }
     const pad = (ymax - ymin) * 0.12;
     xmax = niceStep(xmax, 1) * Math.ceil(xmax / niceStep(xmax, 1));
     const A = axes(g, W, H, xmax, ymin - pad, ymax + pad, T('時間（分，已加速）', 'time (min, sped up)'), T('液面差 h（cm）', 'level difference h (cm)'),
       tickFmt, tickFmt);
     runs.forEach(function (rn) { polyline(g, rn.ts.map(function (t) { return t / 60; }), rn.hs, A, C.muted, 1.5, null, 0.45); });
-    const ye = A.Y(eq.h * 100);
-    g.save(); g.setLineDash([6, 4]); g.strokeStyle = C.accent; g.lineWidth = 1.6;
-    g.beginPath(); g.moveTo(A.l, ye); g.lineTo(A.l + A.pw, ye); g.stroke(); g.restore();
-    D.haloText(g, T('平衡 ', 'equilibrium ') + signed(eq.h * 100, 1) + ' cm', A.l + A.pw - 4, ye + (eq.h >= 0 ? 10 : -10), C.accent, 'right', 'middle', '600 11px ' + FONT);
+    if (OS.showEq) {
+      markPeek();
+      const ye = A.Y(eq.h * 100);
+      g.save(); g.setLineDash([6, 4]); g.strokeStyle = C.accent; g.lineWidth = 1.6;
+      g.beginPath(); g.moveTo(A.l, ye); g.lineTo(A.l + A.pw, ye); g.stroke(); g.restore();
+      D.haloText(g, T('平衡 ', 'equilibrium ') + signed(eq.h * 100, 1) + ' cm', A.l + A.pw - 4, ye + (eq.h >= 0 ? 10 : -10), C.accent, 'right', 'middle', '600 11px ' + FONT);
+    }
     polyline(g, OS.ts.map(function (t) { return t / 60; }), OS.hs, A, C['do-water'], 2.6);
     const n = OS.ts.length - 1;
     if (n >= 0) D.ball(g, A.X(OS.ts[n] / 60), A.Y(OS.hs[n]), 4, C['do-water']);
@@ -848,8 +854,9 @@
       ? T('<b>均方位移</b>——實線是 600 個粒子在 x 方向位移平方的平均，虛線是理論 2Dt；舊的紀錄保留在圖上比較。',
         '<b>Mean square displacement</b> — solid: the average of the 600 particles’ squared x-displacements; dashed: the theory 2Dt. Earlier runs stay for comparison.')
       : S.mode === 'osmo'
-        ? T('<b>液面差</b>——右管比左管高多少；虛線是平衡時的液面差（考慮了稀釋）。',
+        ? (OS.showEq ? T('<b>液面差</b>——右管比左管高多少；虛線是平衡時的液面差（考慮了稀釋）。',
           '<b>Level difference</b> — how much higher the right level is than the left; dashed: the equilibrium value (dilution included).')
+          : T('<b>液面差</b>——右管比左管高多少（平衡預測已關閉）。', '<b>Level difference</b> — how much higher the right level is than the left (equilibrium prediction off).'))
         : T('<b>細胞體積</b>——紅線是紅血球的 V／90 fL，綠線是植物細胞的原生質體 ÷ 細胞壁內容積；淡色是之前的紀錄。',
           '<b>Cell volume</b> — red: the red cell’s V / 90 fL; green: the plant protoplast ÷ the volume inside its wall; faint lines are earlier records.');
     $('speedHint').innerHTML = S.mode === 'diff'
@@ -884,12 +891,14 @@
       setText('oT', fmtMin(OS.st.t));
       setHTML('oCL', cs(OS.solL, r.CL));
       setHTML('oCR', cs(OS.solR, r.CR));
-      setText('oDpi', signed(r.dpi / 1000, 3) + ' kPa');
+      const osmS = SOL[OS.solR].i * OS.CR - SOL[OS.solL].i * OS.CL;
+      setHTML('oDpi', signed(r.dpi / 1000, 3) + ' kPa<small>' + T('液面歸零時是 ', 'at refill: ') + signed(K.osmoticPressure(osmS, S.Tc) / 1000, 3) + ' kPa</small>');
       setText('oRgh', signed(r.rhogh / 1000, 3) + ' kPa');
       setText('oP', num(OS.P, 3) + ' kPa');
       setText('oH', signed(r.h * 100, 2) + ' cm');
       setText('oRate', signed(r.rate * 6000, 3) + T(' cm/分', ' cm/min'));
-      setText('oHeq', eq.limited ? T('（管子不夠長）', '(off the tube)') : signed(eq.h * 100, 2) + ' cm');
+      if (OS.showEq) markPeek();
+      setText('oHeq', !OS.showEq ? T('（預測已關閉）', '(prediction off)') : eq.limited ? T('（管子不夠長）', '(off the tube)') : signed(eq.h * 100, 2) + ' cm');
       const osm0 = SOL[OS.solR].i * OS.CR - SOL[OS.solL].i * OS.CL;
       setText('oH0', signed(K.osmoticPressure(osm0, S.Tc) / (K.waterDensity(S.Tc) * K.G) * 100, 2) + ' cm' + T('（起始的濃度差）', ' (starting difference)'));
     } else {
@@ -1022,7 +1031,7 @@
       const rate = r.rate * 6000;
       return { mode: 'osmo', t: OS.st.t / 60, solL: OS.solL, solR: OS.solR, iL: SOL[OS.solL].i, iR: SOL[OS.solR].i, CL0: OS.CL, CR0: OS.CR,
         osmL0: SOL[OS.solL].i * OS.CL, osmR0: SOL[OS.solR].i * OS.CR, T: S.Tc, P: OS.P, h: r.h * 100, dpi: r.dpi / 1000, rhogh: r.rhogh / 1000,
-        rate: rate, eq: Math.abs(rate) < 0.005 && OS.st.t >= 300 && !OS.st.limited, heq: eq.h * 100, limited: OS.st.limited };
+        rate: rate, eq: Math.abs(rate) < 0.005 && OS.st.t >= 300 && !OS.st.limited, heq: eq.h * 100, limited: OS.st.limited, peek: !!OS.peeked[osmoKey()] };
     }
     const osm = osmOut();
     const eqR = K.cellEquilibrium('rbc', osm, S.Tc), eqP = K.cellEquilibrium('plant', osm, S.Tc);
@@ -1132,6 +1141,13 @@
     insetReset();
     if (msg) setStatus(msg);
   }
+  $('osmoEqBtn').addEventListener('click', function () {
+    acted(); OS.showEq = !OS.showEq;
+    const b = $('osmoEqBtn');
+    b.setAttribute('aria-pressed', String(OS.showEq));
+    b.textContent = OS.showEq ? T('平衡預測：開', 'Equilibrium prediction: on') : T('平衡預測：關', 'Equilibrium prediction: off');
+    plotCaption(); updateReadouts(); requestDraw();
+  });
   function osmoInputs() {
     OS.solL = $('solL').value; OS.solR = $('solR').value;
     OS.CL = val(elCL); OS.CR = val(elCR);

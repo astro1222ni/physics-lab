@@ -19,6 +19,7 @@ const hitsOf = ev => defs.filter(m => { try { return m.check(ev, {}); } catch (e
 
 const out = [];
 let fail = 0;
+function ev0type() { return 'osmo'; }
 function claim(ok, msg) { out.push((ok ? '✓ ' : '✗ ') + msg); if (!ok) fail++; }
 const pct = x => (100 * x).toFixed(1) + '%';
 const SOL = K.SOLUTES;
@@ -345,6 +346,7 @@ function twoRuns(seed, a, b, id) {
   let d = null;
   L.play(240, 2, ev => { if (check('12', ev)) { d = ev.data; return true; } return false; });
   claim(d != null && at25.length >= 1, 'M12 精準的滲透計：25 °C 可行 ' + at25.join('、') + '；其他溫度共 ' + (combos.length - at25.length) + ' 組；模擬 ' + pick.sk + ' ' + pick.C + ' mmol/L 在 ' + (d ? d.t.toFixed(0) : '—') + ' 分鐘平衡 h = ' + (d ? d.h.toFixed(2) : '—') + ' cm');
+  claim(d != null && !check('12', { type: ev0type(d), data: Object.assign({}, d, { peek: true }) }), 'M12 對照：打開平衡預測時看過的設定不算（要自己算）');
   // 不經稀釋就照 π0/ρg 算會選錯（教學重點）：π0/ρg = 50 cm 的濃度實際只到約 41 cm
   const Cwrong = 0.5 * K.waterDensity(25) * K.G / K.osmoticPressure(1, 25);
   claim(K.osmoEqPureLeft(Cwrong, 25) < 0.45, '　　照 π0／ρg = 50 cm 選 ' + Cwrong.toFixed(3) + ' mOsm/L 只會得到 ' + (K.osmoEqPureLeft(Cwrong, 25) * 100).toFixed(1) + ' cm（必須考慮稀釋）');
