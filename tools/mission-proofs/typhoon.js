@@ -85,10 +85,12 @@ d = pass(page({ c: 10, st: [30, -90] }));
 expect('8 兩站離路徑不一樣遠（30、90 km）不算', !byId('8').check({ type: 'pass', data: d }));
 expect('8 南半球不算', !byId('8').check(evP(page({ c: 10, lat: -20 }))));
 // 9 小而猛
-p = page({ pc: 935, rm: 12, B: 2.5 }); d = stormData(p);
-expect('9 935 hPa、Rm 12 km、B 2.5 → ' + f1(d.vMax) + ' m/s、七級風半徑 ' + f0(d.r7) + ' km', byId('9').check(evS(p)));
+p = page({ pc: 925, rm: 20, B: 2.5 }); d = stormData(p);
+expect('9 925 hPa、Rm 20 km、B 2.5 → ' + f1(d.vMax) + ' m/s、七級風半徑 ' + f0(d.r7) + ' km', byId('9').check(evS(p)));
 p = page({ pc: 930 }); d = stormData(p);
 expect('9 預設形狀的強颱 ' + f0(d.r7) + ' km 不算', !byId('9').check(evS(p)));
+p = page({ pc: 870, rm: 10, B: 2.5 }); d = stormData(p);
+expect('9 滑桿都拉到底（' + f0(d.r7) + ' km）不算', !byId('9').check(evS(p)));
 // 10 南半球危險半圓
 d = pass(page({ c: 10, lat: -20 }));
 expect('10 南緯 20°、10 m/s：左 ' + f1(d.st[1].maxW) + ' − 右 ' + f1(d.st[0].maxW) + ' = ' + f1(d.st[1].maxW - d.st[0].maxW), byId('10').check({ type: 'pass', data: d }));
@@ -115,8 +117,9 @@ d = pass(page({ pc: 880, rm: 30, B: 2, st: [150, -150] }));
 expect('12 測站離路徑 150 km：' + f1(d.st[0].maxW) + ' m/s 不算', !byId('12').check({ type: 'pass', data: d }));
 
 // 隱藏任務
-expect('h1 中心氣壓 870 hPa', byId('h1').check(evS(page({ pc: 870 }))));
-expect('h1 870.1 hPa 不算', !byId('h1').check(evS(page({ pc: 870.1 }))));
+expect('h1 中心氣壓 870.5 hPa（世界紀錄 870 hPa 再高一格）', byId('h1').check(evS(page({ pc: 870.5 }))));
+expect('h1 滑桿拉到底 870 hPa 不算', !byId('h1').check(evS(page({ pc: 870 }))));
+expect('h1 871 hPa 不算', !byId('h1').check(evS(page({ pc: 871 }))));
 d = pass(page({ c: 0, st: [{ x: 100, y: 0 }, { x: -300, y: 0 }] }));
 expect('h2 颱風不動、跑完 ' + f1(d.t) + ' 小時，A 一直吹 ' + f1(d.st[0].maxW) + ' m/s', byId('h2').check({ type: 'pass', data: d }));
 expect('h2 會動的颱風不算', !byId('h2').check(evP(page())));

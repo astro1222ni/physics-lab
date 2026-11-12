@@ -31,13 +31,13 @@
     {
       id: 'typhoon-1', level: 1,
       title: { zh: '輕度颱風', en: 'A mild typhoon' },
-      desc: { zh: '調整中心氣壓與其他設定，讓這個熱帶氣旋成為「輕度颱風」（最大風速 17.2–32.6 m/s）。', en: 'Adjust the central pressure and the other settings so that this tropical cyclone becomes a “mild typhoon” (maximum wind 17.2–32.6 m/s).' },
+      desc: { zh: '調整中心氣壓與其他設定，讓這個熱帶氣旋成為「輕度颱風」（最大風速 17.2–32.6 m/s）。', en: 'Adjust the central pressure and the other settings so that this tropical cyclone becomes a mild typhoon (maximum wind 17.2–32.6 m/s).' },
       check: function (ev) { const d = St(ev); return !!d && d.cls === 'mild'; }
     },
     {
       id: 'typhoon-2', level: 2,
       title: { zh: '強烈颱風', en: 'A severe typhoon' },
-      desc: { zh: '把颱風增強成「強烈颱風」：最大風速 51.0 m/s 以上。', en: 'Strengthen it into a “severe typhoon”: maximum wind 51.0 m/s or more.' },
+      desc: { zh: '把颱風增強成「強烈颱風」：最大風速 51.0 m/s 以上。', en: 'Strengthen it into a severe typhoon: maximum wind 51.0 m/s or more.' },
       check: function (ev) { const d = St(ev); return !!d && d.cls === 'strong'; }
     },
     {
@@ -79,8 +79,8 @@
     {
       id: 'typhoon-9', level: 6,
       title: { zh: '小而猛', en: 'Small but fierce' },
-      desc: { zh: '做出強烈颱風，但七級風暴風半徑不超過 100 km。', en: 'Make a severe typhoon whose force-7 gale radius is no more than 100 km.' },
-      check: function (ev) { const d = St(ev); return !!d && d.cls === 'strong' && d.r7 > 0 && d.r7 <= 100; }
+      desc: { zh: '做出強烈颱風，但七級風暴風半徑只有 90–100 km：強而緊密。', en: 'Make a severe typhoon whose force-7 gale radius is only 90–100 km: strong but compact.' },
+      check: function (ev) { const d = St(ev); return !!d && d.cls === 'strong' && d.r7 >= 90 && d.r7 <= 100; }
     },
     {
       id: 'typhoon-10', level: 6,
@@ -102,8 +102,8 @@
     },
     {
       id: 'typhoon-h1', level: 4, hidden: true,
-      riddle: { zh: '再低一格，紀錄就要改寫。', en: 'One notch lower, and the record books change.' },
-      check: function (ev) { const d = St(ev); return !!d && d.pc <= 870; }
+      riddle: { zh: '再低一格，就和傳說並肩。', en: 'One notch lower, and you would stand beside the legend.' },
+      check: function (ev) { const d = St(ev); return !!d && Math.abs(d.pc - 870.5) < 0.05; }
     },
     {
       id: 'typhoon-h2', level: 5, hidden: true,
