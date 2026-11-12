@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Free Fall and Motion on an Incline | Astro Ni Physics Lab">自由落體與斜面上的運動｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"自由落體與斜面上的運動","alternateName":"Free Fall and Motion on an Incline","description":"用碼錶與點痕校正打點計時器，讓滑車沿斜面下滑、重物自由落下，從紙帶畫出 x–t、v–t、a–t 圖，求加速度與重力加速度 g。","url":"https://astro1222ni.github.io/physics-lab/free-fall.html","image":"https://astro1222ni.github.io/physics-lab/img/og/free-fall.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","直線運動（Motion in a Straight Line）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 自由落體與斜面頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度與實驗部分決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -118,6 +118,7 @@
     </header>
 
     <!-- 第一部分：實驗裝置與操作 -->
+    <p class="try-hint" data-en="Try it: press “Switch on the timer”, then “Let go of the cart”, and watch the gaps between the dots on the tape grow.">試試看：按「啟動打點計時器」，再按「放開滑車」，看紙帶上的點距愈來愈大。</p>
     <div class="lab ff">
       <div class="stage">
         <div class="modebar" role="group" aria-label="實驗的三個部分" data-en-aria-label="The three parts of the experiment">
@@ -125,11 +126,11 @@
           <button type="button" data-mode="incline" aria-pressed="true" data-en-html="<b>Part 2</b>Incline">  <b>②</b>斜面上的運動</button>
           <button type="button" data-mode="fall" aria-pressed="false" data-en-html="<b>Part 3</b>Free fall">  <b>③</b>自由落體</button>
         </div>
-        <canvas id="cv" aria-label="實驗裝置圖：打點計時器、紙帶與滑車軌道（或鉛直架設的計時器與重物、或手拉紙帶與碼錶）" data-en-aria-label="The apparatus: ticker timer, paper tape and cart on a tilted track (or a vertical timer with a falling weight, or a tape pulled by hand with a stopwatch)"></canvas>
+        <canvas id="cv" role="img" aria-label="實驗裝置圖：打點計時器、紙帶與滑車軌道（或鉛直架設的計時器與重物、或手拉紙帶與碼錶）"></canvas>
         <div class="playbar">
           <button id="go" class="primary" type="button">啟動打點計時器</button>
           <button id="clearAll" type="button" data-en="Clear all" title="清除紙帶、數據表、圖表、計時器校正與 a–sinθ 圖的所有數據；滑桿設定不變" data-en-title="Clear the tapes, data tables, graphs, timer calibration and the a–sinθ points; the slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <div class="speedbox" id="speedBox"><span data-en="Speed">播放</span>
             <div class="seg3" role="group" aria-label="播放速度" data-en-aria-label="Playback speed">
               <button type="button" data-speed="1" aria-pressed="false">1×</button>
@@ -197,7 +198,7 @@
       <div class="stage">
         <h2 id="tapeTitle" data-en="The paper tape">紙帶</h2>
         <p class="hint" id="tapeHint"></p>
-        <canvas id="tcv" aria-label="取下的紙帶：點痕、每隔 n 個點畫的計數線、對齊第 0 點的直尺與讀數放大鏡" data-en-aria-label="The tape taken off the timer: the dots, the counting lines every n dots, a ruler lined up with dot 0 and a magnifier for reading the position"></canvas>
+        <canvas id="tcv" role="img" aria-label="取下的紙帶：點痕、每隔 n 個點畫的計數線、對齊第 0 點的直尺與讀數放大鏡"></canvas>
         <div class="gbtns">
           <button type="button" id="rec" class="primary" data-en="Record">記錄</button>
           <button type="button" id="recAll" data-en="Record all">全部記錄</button>
@@ -207,7 +208,7 @@
 
         <h2 style="margin-top:16px" id="graphTitle" data-en="Graphs">圖表</h2>
         <p class="hint" id="graphHint"></p>
-        <canvas id="gcv" aria-label="由數據表畫出的 x–t 圖、v–t 圖、a–t 圖與各次實驗的 a–sinθ 圖" data-en-aria-label="The x–t, v–t and a–t graphs drawn from the data table, and the a–sinθ graph of all the runs"></canvas>
+        <canvas id="gcv" role="img" aria-label="由數據表畫出的 x–t 圖、v–t 圖、a–t 圖與各次實驗的 a–sinθ 圖"></canvas>
         <div class="gbtns" id="sumBtns">
           <button type="button" id="undoSum" data-en="Remove the last point of the a–sinθ graph">移除 a–sinθ 圖的最後一點</button>
         </div>
@@ -317,6 +318,13 @@
         <li data-en="The unknown timer is a buzzer-type timer whose frequency is chosen at random between 22 and 38 Hz every time you select it. The pulling hand does not move at a steady speed, so the dots of Part 1 are unevenly spaced — only their number matters.">「未知」計時器是電鈴式計時器，每次選它時隨機取 22 到 38 Hz 之間的一個頻率。① 用手拉紙帶的速度忽快忽慢，所以點的間距不均勻——重要的只是點的數目。</li>
         <li data-en="The apparatus is drawn to scale in a slanted (oblique) projection: positions along the motion are exact, the depth is only there to show the shape of the objects. The timer close-up is a schematic and not to scale.">裝置圖依比例繪製，用斜投影畫出立體感：沿運動方向的位置完全依比例，深度只是為了看出物體的形狀。計時器放大圖是示意圖，未依比例。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics I · Motion in a Straight Line">課綱對應：選修物理Ⅰ・直線運動</li>
+        <li data-en-html="Constants and data: \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>). The ticker frequencies 60 Hz and 50 Hz are the mains frequencies (Taiwan uses 60 Hz). The friction f, the rolling-friction coefficient μ and the air-resistance coefficient k are settings you choose, not measured material values; the 0.3 mm ruler error and the 0.10–0.30 s reaction time are typical classroom values.">常數與數據：\(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字）；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。打點頻率 60 Hz、50 Hz 是家用電源的頻率（臺灣用 60 Hz）。紙帶摩擦 f、滾動摩擦係數 μ、空氣阻力係數 k 是可調的設定值，不是某種材料的實測數據；尺的讀數誤差 0.3 mm、按碼錶的反應時間 0.10–0.30 s 是課堂上常見的大小。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/college-physics-2e/pages/2-7-falling-objects&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>College Physics 2e, 2.7 Falling Objects</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/college-physics-2e/pages/2-7-falling-objects" target="_blank" rel="noopener">College Physics 2e，2.7 落體</a>》（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -324,16 +332,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/free-fall-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/free-fall.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="free-fall"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/free-fall-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/free-fall.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="free-fall"></script>
   <script src="js/missions/free-fall.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="free-fall"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="free-fall"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

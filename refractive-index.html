@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Measuring the Refractive Index (Pin Method) | Astro Ni Physics Lab">折射率的測定（插針法）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"折射率的測定（插針法）","alternateName":"Measuring the Refractive Index (Pin Method)","description":"用大頭針透過玻璃磚或半圓形水盒找出光的路徑，量入射角與折射角，由兩角正弦的關係圖斜率求出折射率。","url":"https://astro1222ni.github.io/physics-lab/refractive-index.html","image":"https://astro1222ni.github.io/physics-lab/img/og/refractive-index.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 折射率的測定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ri canvas { aspect-ratio: auto; }
@@ -121,21 +121,23 @@
     </header>
 
     <!-- 第一部分：插針與觀察 -->
+    <p class="try-hint" data-en="Try it: drag the eye until the images of A and B overlap, then drag C and D out of the pincushion onto that same line of sight.">試試看：拖曳眼睛讓 A、B 的像重疊，再從針插拖出 C、D 插在同一條視線上。</p>
     <div class="lab ri">
       <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="俯視圖：軟木板上的方格紙、透明塊、大頭針與眼睛。拖曳針或眼睛可以移動；選取後可用方向鍵微調" data-en-aria-label="Top view: graph paper on a cork board with the transparent block, the pins and the eye. Drag a pin or the eye to move it; after selecting it, the arrow keys fine-tune it"></canvas>
+        <canvas id="cv" aria-label="俯視圖：軟木板上的方格紙、透明塊、大頭針與眼睛。拖曳針或眼睛可以移動；選取後可用方向鍵微調"></canvas>
         <div class="playbar">
           <button id="drawBtn" class="primary" type="button" data-en="Remove the block and draw the rays">移走透明塊，畫出光路</button>
           <button id="recBtn" type="button" disabled data-en="Record">記錄</button>
           <button id="clearAll" type="button" title="清除數據表、紙上的舊光路，針回到針插、透明塊放回；材料與設定不變" data-en-title="Clear the data table and the old rays on the paper, return the pins to the pincushion and put the block back; the material and settings are kept" data-en="Clear all">全部清除</button>
         </div>
-        <p class="status" id="status" aria-live="polite"></p>
+        <p class="status" id="status" aria-live="off"></p>
+        <p class="sr-only" id="srStatus" aria-live="polite"></p>
 
         <div class="view-head">
           <h2 data-en="What the eye sees">眼睛看到的景象</h2>
           <span id="viewNote" data-en="horizontal angles magnified; the lower part of each pin is seen through the block">水平方向放大；針的下半段是透過透明塊看到的</span>
         </div>
-        <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體" data-en-aria-label="What the eye sees: the upper part of each pin is seen directly, the lower part through the block; drag sideways to fine-tune the selected object"></canvas>
+        <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體"></canvas>
         <div class="viewbar">
           <div class="seg2" role="group" aria-label="視野" data-en-aria-label="Field of view">
             <button type="button" data-zoom="wide" aria-pressed="true" data-en-html="Wide&lt;small&gt;±12°&lt;/small&gt;">廣角<small>±12°</small></button>
@@ -221,7 +223,7 @@
     <div class="lab ri">
       <div class="stage">
         <h2 data-en-html="Data table and the sin θ&lt;sub&gt;1&lt;/sub&gt;–sin θ&lt;sub&gt;2&lt;/sub&gt; graph">數據表與 sin θ<sub>1</sub>–sin θ<sub>2</sub> 圖</h2>
-        <canvas id="graph" aria-label="sin θ1 對 sin θ2 的數據點、過原點的最佳直線與公認值直線" data-en-aria-label="Data points of sin θ1 against sin θ2 with the best-fit line through the origin and the line for the accepted value"></canvas>
+        <canvas id="graph" role="img" aria-label="sin θ1 對 sin θ2 的數據點、過原點的最佳直線與公認值直線"></canvas>
         <div class="legend" id="gLegend"></div>
         <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <div class="gbtns">
@@ -339,6 +341,13 @@
         <li data-en="Readings: the protractor is read to 1° or 0.5° and the ruler to 0.01 cm. With errors on, each reading also has a random error (standard deviation 0.25° or 0.02 cm), and the block is placed turned by a hidden 0.6° to 1.4° from L — a systematic error that stays the same until you press “Clear all”.">讀數：量角器取到 1° 或 0.5°，直尺取到 0.01 cm。選「含誤差」時，每個讀數再加上隨機誤差（標準差 0.25° 或 0.02 cm），而且透明塊放歪了一個隱藏的 0.6°～1.4°（沒對準 L）——這是系統誤差，按「全部清除」前都不變。</li>
         <li data-en="Accepted values for yellow light (589 nm) at room temperature: water 1.333 (CRC Handbook of Chemistry and Physics), acrylic (PMMA) 1.49 and crown glass 1.52 (BK7 is 1.517; Schott optical glass data, and E. Hecht, Optics). The unknown sample is a random value between 1.42 and 1.68. Dispersion and the thin walls of the water dish are ignored.">公認值（黃光 589 nm、室溫）：水 1.333（CRC Handbook of Chemistry and Physics），壓克力（PMMA）1.49、冕牌玻璃 1.52（BK7 為 1.517；Schott 光學玻璃資料、E. Hecht《Optics》）。未知樣品的折射率在 1.42～1.68 之間隨機。忽略色散，也忽略水盒的薄壁。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Geometrical Optics">課綱對應：選修物理Ⅲ・幾何光學</li>
+        <li data-en-html="Refractive indices for yellow light (about 589 nm): water 1.333 at 20 °C (M. Daimon and A. Masumura, Appl. Opt. 46, 3811 (2007); <a href=&quot;https://refractiveindex.info/?shelf=main&amp;amp;book=H2O&amp;amp;page=Daimon-20.0C&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>RefractiveIndex.INFO</a>); acrylic (PMMA) 1.49 (N. Sultanova et al., Acta Phys. Pol. A 116, 585 (2009); <a href=&quot;https://refractiveindex.info/?shelf=3d&amp;amp;book=plastics&amp;amp;page=pmma&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>RefractiveIndex.INFO</a>); crown glass N-BK7 n<sub>d</sub> = 1.5168 (<a href=&quot;https://refractiveindex.info/?shelf=specs&amp;amp;book=SCHOTT-optical&amp;amp;page=N-BK7&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>SCHOTT catalogue, via RefractiveIndex.INFO</a>), rounded to 1.52 as in the textbook. The unknown sample is a random setting of the simulation, not a real material.">折射率（黃光，約 589 nm）：水 1.333（20 °C；M. Daimon 與 A. Masumura，Appl. Opt. 46, 3811（2007），<a href="https://refractiveindex.info/?shelf=main&amp;book=H2O&amp;page=Daimon-20.0C" target="_blank" rel="noopener">RefractiveIndex.INFO</a>）；壓克力（PMMA）1.49（N. Sultanova 等，Acta Phys. Pol. A 116, 585（2009），<a href="https://refractiveindex.info/?shelf=3d&amp;book=plastics&amp;page=pmma" target="_blank" rel="noopener">RefractiveIndex.INFO</a>）；冕牌玻璃 N-BK7 的 n<sub>d</sub> = 1.5168（<a href="https://refractiveindex.info/?shelf=specs&amp;book=SCHOTT-optical&amp;page=N-BK7" target="_blank" rel="noopener">SCHOTT 光學玻璃目錄，RefractiveIndex.INFO 收錄</a>），和課本一樣取 1.52。未知樣品是模擬隨機設定的值，不是真實材料。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/college-physics-2e/pages/25-3-the-law-of-refraction&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>College Physics 2e, 25.3 The Law of Refraction</a> (Table 25.1 lists water 1.333 and crown glass 1.52)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/college-physics-2e/pages/25-3-the-law-of-refraction" target="_blank" rel="noopener">College Physics 2e，25.3 折射定律</a>》（英文；表 25.1 列有水 1.333、冕牌玻璃 1.52）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -346,15 +355,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/refractive-index-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/refractive-index.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="refractive-index"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/refractive-index-core.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/refractive-index.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="refractive-index"></script>
   <script src="js/missions/refractive-index.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="refractive-index"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="refractive-index"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

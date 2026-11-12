@@ -1961,6 +1961,7 @@
     putBack();
     L = null;
     resize();
+    updateSceneLabel();
   }
 
   // ---------- 音效 ----------
@@ -2020,6 +2021,9 @@
     const row = { n: state.runs.length + 1, mode: state.mode, p: JSON.parse(JSON.stringify(p)), method: method, slow: slowUsed, paused: !!state.runPaused, t: tShow, d: m.d, aMeas: aMeas, aTh: aTh, gMeas: gMeas, n3: state.n };
     state.runs.push(row);
     renderRuns(true);
+    say(T('第 ', 'Run ') + row.n + T(' 次量測：t = ', ': t = ') + num(tShow, method === 'gate' ? 3 : 2) + ' s' +
+      T('，a 測 = ', ', measured a = ') + num(aMeas, 3) + MS2T + T('，a 理論 = ', ', theory ') + num(aTh, 3) + MS2T +
+      (gMeas != null ? T('，推算 g = ', ', so g = ') + num(gMeas, 2) + MS2T : '') + T('。', '.'));
     emit('run', Object.assign(flatParams(), {
       timing: method, slow: slowUsed, paused: !!state.runPaused, t: tShow, tTrue: m.t, d: m.d, aMeas: aMeas, aTheory: aTh, gMeas: gMeas, dir: m.dir
     }));
@@ -2201,6 +2205,68 @@
   }
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報與畫布說明 ----------
+  // 離散事件（改完條件、量到一筆時間）寫進 aria-live 的 #srSay；運動中每格都在變的速度不播報
+  let sayTimer = 0, theoryTimer = 0;
+  function say(msg) {
+    const box = $('srSay');
+    if (!box || !msg) return;
+    clearTimeout(sayTimer);
+    box.textContent = '';
+    sayTimer = setTimeout(function () { box.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  const MS2T = ' m/s²';
+  function modeName(m) {
+    return [T('阿特午機', 'Atwood machine'), T('桌面木塊＋懸掛物', 'Block on a table + hanging mass'),
+      T('推拉連體木塊', 'Blocks pushed or pulled'), T('斜面木塊＋懸掛物', 'Block on an incline + hanging mass')][m - 1];
+  }
+  /** 目前條件的理論值（與量測紀錄表的 a 理論 相同：釋放後第一段運動） */
+  function theoryText() {
+    const s0 = state.tl.segs[0];
+    const moving = state.mode === 3 ? !s0.rest : !(s0.restA && s0.restB);
+    const name = modeName(state.mode);
+    if (!moving) return name + T('：放手後不會動（a = 0）。', ': it will not move when released (a = 0).');
+    if (state.mode === 3) {
+      const link = s0.dyn && s0.dyn.link ? s0.dyn.link : [];
+      return name + T('：理論加速度 a = ', ': theoretical acceleration a = ') + num(Math.abs(s0.a), 3) + MS2T +
+        (link.length ? (state.push ? T('，木塊之間的接觸力 ', ', contact forces between the blocks ') : T('，繩子的張力 ', ', string tensions ')) +
+          link.map(fN).join(T('、', ', ')) + ' N' : '') + T('。', '.');
+    }
+    return name + T('：理論加速度 a = ', ': theoretical acceleration a = ') + num(Math.abs(s0.aA), 3) + MS2T +
+      T('，繩張力 T = ', ', string tension T = ') + fN(s0.T) + ' N' + T('。', '.');
+  }
+  /** 改完條件後播報（連續改動時只念最後一次） */
+  function sayTheory() {
+    clearTimeout(theoryTimer);
+    theoryTimer = setTimeout(function () { if (state.tl) say(theoryText()); }, 350);
+  }
+  /** 實驗圖畫布（role="img"）的說明：換實驗或改條件時更新 */
+  let sceneKey = '';
+  function updateSceneLabel() {
+    const p = state.p;
+    if (!p) return;
+    let zh, en;
+    if (state.mode === 1) {
+      zh = '阿特午機：定滑輪兩邊掛著 m1 = ' + num(p.m1, 3) + ' kg（離地 ' + num(p.h, 2) + ' m）與 m2 = ' + num(p.m2, 3) + ' kg（在地上）';
+      en = 'Atwood machine: m1 = ' + num(p.m1, 3) + ' kg (' + num(p.h, 2) + ' m above the floor) and m2 = ' + num(p.m2, 3) + ' kg (on the floor) hang over a fixed pulley';
+    } else if (state.mode === 2) {
+      zh = '桌上木塊 M = ' + num(p.M, 3) + ' kg 經滑輪連著懸掛物 m = ' + num(p.m, 3) + ' kg，木塊離擋板 ' + num(p.d, 2) + ' m';
+      en = 'A block M = ' + num(p.M, 3) + ' kg on a table is tied over a pulley to a hanging mass m = ' + num(p.m, 3) + ' kg; the stopper is ' + num(p.d, 2) + ' m away';
+    } else if (state.mode === 3) {
+      zh = (p.push ? '水平外力 ' + fN(p.F) + ' N 推著 ' : '水平外力 ' + fN(p.F) + ' N 拉著以繩相連的 ') + p.m.length + ' 塊木塊（' + p.m.map(function (x) { return num(x, 2); }).join('、') + ' kg），終點線在 ' + num(p.d, 2) + ' m 外';
+      en = 'A horizontal force of ' + fN(p.F) + ' N ' + (p.push ? 'pushes ' : 'pulls ') + p.m.length + ' blocks (' + p.m.map(function (x) { return num(x, 2); }).join(', ') + ' kg)' + (p.push ? '' : ' tied by strings') + '; the finish line is ' + num(p.d, 2) + ' m away';
+    } else {
+      zh = num(p.theta, 0) + '° 斜面上的木塊 M = ' + num(p.M, 3) + ' kg 經斜面頂端的滑輪連著懸掛物 m = ' + num(p.m, 3) + ' kg';
+      en = 'A block M = ' + num(p.M, 3) + ' kg on a ' + num(p.theta, 0) + '° incline is tied over a pulley at the top to a hanging mass m = ' + num(p.m, 3) + ' kg';
+    }
+    const text = T(zh + '。下方有計時器與速度對時間的圖。', en + '. Below are the timer and a velocity–time graph.');
+    if (text === sceneKey) return;
+    sceneKey = text;
+    cv.removeAttribute('data-en-aria-label'); // 改由程式依語言更新
+    cv.setAttribute('aria-label', text);
+  }
+
   function updateButtons() {
     const play = $('play');
     play.textContent = state.phase === 'ready' ? T('釋放', 'Release') : state.phase === 'running' ? T('暫停', 'Pause') : state.phase === 'paused' ? T('繼續', 'Resume') : T('再放一次', 'Release again');
@@ -2299,6 +2365,7 @@
     $('showComp').closest('label').hidden = m !== 4;
     if (focus) tabs[m - 1].focus();
     paramsChanged();
+    sayTheory();
   }
   tabs.forEach(function (b, i) {
     b.addEventListener('click', function () { setMode(i + 1); });
@@ -2318,6 +2385,7 @@
     $('modePush').setAttribute('aria-pressed', String(v));
     $('modePull').setAttribute('aria-pressed', String(!v));
     paramsChanged();
+    sayTheory();
   }
   function setN(n) {
     state.n = n;
@@ -2325,6 +2393,7 @@
     $('n3').setAttribute('aria-pressed', String(n === 3));
     $('box3m3').hidden = n !== 3;
     paramsChanged();
+    sayTheory();
   }
   $('modePush').addEventListener('click', function () { if (!state.push) setPush(true); });
   $('modePull').addEventListener('click', function () { if (state.push) setPush(false); });
@@ -2361,6 +2430,8 @@
       refreshOutputs();
       if (+id.charAt(1) === state.mode) paramsChanged();
     });
+    // 讀數播報：放開滑桿或打完數字後，念出新的理論值
+    el[id].addEventListener('change', function () { if (+id.charAt(1) === state.mode) sayTheory(); });
   });
 
   // ======================= 啟動 =======================
@@ -2370,6 +2441,7 @@
   putBack();
   renderRuns(false);
   updateSoundButton();
+  updateSceneLabel();
   $('showComp').closest('label').hidden = true;
   function themeChanged() { readColors(); if (L) { buildBackground(); } state.segKey = null; renderRuns(false); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);

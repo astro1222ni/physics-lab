@@ -1,5 +1,5 @@
 /*
- * home.js — 首頁小分類（選修物理各章）：在每個章名按鈕上標出該章的實驗數量。
+ * home.js — 首頁小分類（選修物理各章）：在每個章名按鈕上標出該章的實驗數量；兩大科目卡片標出各區實驗數。
  * 數量直接數頁面上的卡片，新增實驗時不必改這支程式；只要把卡片放進對應的 <section class="chapter">，
  * 並把該章的按鈕從 <span class="soon"> 改成 <a href="#ch-…">。
  */
@@ -19,5 +19,12 @@
     b.setAttribute('aria-hidden', 'true');
     b.textContent = String(n);
     a.appendChild(b);
+  });
+  // 兩大科目（物理／地球科學）卡片上的實驗數：數該區已上線的卡片
+  const T = function (zh, en) { return window.LabSettings ? LabSettings.t(zh, en) : zh; };
+  document.querySelectorAll('.domain-count[data-domain]').forEach(function (el) {
+    const dom = document.getElementById(el.getAttribute('data-domain'));
+    const n = dom ? dom.querySelectorAll('.module.live').length : 0;
+    el.textContent = n ? (n + T(' 個實驗', n === 1 ? ' lab' : ' labs')) : T('製作中', 'coming soon');
   });
 })();

@@ -8,7 +8,7 @@
  *   node tools/check-pages.cjs --shots         另外存截圖到 ./.shots/（已列入 .gitignore，記得親自看）
  *
  * 每頁檢查 4 種組合：390 px 淺色繁體、390 px 深色簡體特大字、1280 px 深色 English、1280 px 淺色繁體。
- * 回報：頁面錯誤、左右捲動、.katex-error、English 模式殘留的中文（齒輪設定面板本身的語言名稱除外）、
+ * 回報：頁面錯誤、左右捲動、.katex-error、English 模式殘留的中文（含 aria-label／title／placeholder／alt；齒輪設定面板本身的語言名稱除外）、
  *       Unicode 上標／下標數字字元（部分 Android 字型缺字）。
  * 需要：npm install（playwright）與 npx playwright install chromium。
  * Firebase 連線失敗的訊息會被忽略；任務與留言請改用 tools/mock-backend.js 測試，不要寫入正式資料庫。
@@ -22,7 +22,10 @@ const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於�
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const SHOTS = args.includes('--shots');
-let pages = args.filter(a => !a.startsWith('--'));
+// 頁面可用空格或逗號分開（npm run check -- a,b,c 也可以）
+let pages = args.filter(a => !a.startsWith('--')).flatMap(a => a.split(',')).map(a => a.trim().replace(/\.html$/, '')).filter(Boolean);
+const missing = pages.filter(p => !fs.existsSync(path.join(ROOT, p + '.html')));
+if (missing.length) { console.error('✗ 找不到頁面：' + missing.join('、') + '（不加 .html，用空格或逗號分開）'); process.exit(1); }
 if (!pages.length) {
   const w = {};
   new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
@@ -81,12 +84,20 @@ server.listen(0, '127.0.0.1', async () => {
             if (/[⁰⁴-₟⃗]/.test(t) && sups.length < 3) sups.push(t.trim().slice(0, 40));
           }
           out.cjk = cjk; out.sups = sups;
+          // 螢幕報讀器念的文字也要是英文：aria-label、title、placeholder、圖片 alt
+          const attrs = [];
+          if (lang === 'en') document.querySelectorAll('[aria-label], [title], [placeholder], img[alt]').forEach(el => {
+            if (attrs.length >= 3 || el.closest('.lab-set-panel, .lab-settings, .lab-gear, body [lang^="zh"]')) return;
+            ['aria-label', 'title', 'placeholder', 'alt'].forEach(a => { const v = el.getAttribute(a); if (v && /[一-鿿]/.test(v) && attrs.length < 3) attrs.push(a + '="' + v.slice(0, 30) + '"'); });
+          });
+          out.attrs = attrs;
           return out;
         }, c.lang);
         const probs = errs.slice();
         if (r.sw > r.vw + 1) probs.push('左右捲動：scrollWidth ' + r.sw + ' > ' + r.vw);
         if (r.katex) probs.push(r.katex + ' 個 .katex-error');
         if (r.cjk.length) probs.push('English 模式有中文：' + JSON.stringify(r.cjk));
+        if (r.attrs.length) probs.push('English 模式的屬性有中文：' + r.attrs.join('、'));
         if (r.sups.length) probs.push('上標／下標數字字元：' + JSON.stringify(r.sups));
         const tag = `${slug} ${c.w}px ${c.scheme} ${c.lang} ×${c.fs}`;
         if (probs.length) { bad++; console.log('✗ ' + tag + '\n    ' + probs.join('\n    ')); } else console.log('✓ ' + tag);

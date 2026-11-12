@@ -39,7 +39,14 @@
     "equipotential": "b622662f",
     "thin-lens": "0dca541f",
     "microwave": "6fd86cc6",
-    "current-balance": "26bbe3fc"
+    "current-balance": "26bbe3fc",
+    "measurement": "c65e2ff7",
+    "angular-momentum": "aa95a15f",
+    "thin-film": "1cc1aa1a",
+    "moon-phases": "845630f1",
+    "earthquake": "d5e6194a",
+    "torque-balance": "857c6b3d",
+    "energy-coaster": "47981b92"
   };
   /* VERSIONS-END */
 
@@ -61,6 +68,7 @@
     });
   }
   apply();
+  window.LabThumbs = { apply: apply }; // 實驗頁的「相關實驗」（classroom.js）插入卡片後呼叫
   window.addEventListener('lab:themechange', apply);
   if (mq) {
     if (mq.addEventListener) mq.addEventListener('change', apply);

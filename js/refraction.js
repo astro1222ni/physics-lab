@@ -2,12 +2,14 @@
 (function () {
   'use strict';
   const RC = window.RefractionCore;
+  const LD = window.LabDraw; // 共用繪圖工具（drawkit.js）：背景、格線、立體球、陰影色（純裝飾，不改任何物理量）
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const DEG = Math.PI / 180;
   const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  let kbMain = null, kbChart = null; // 鍵盤操作（keys.js），在檔案後段建立
   const state = {
     mode: 'ray',          // ray | wave | fibre
     n1: 1.00, n2: 1.50,   // 上方（入射）與下方介質
@@ -125,16 +127,15 @@
     if (opt.clamp !== false) bx = Math.max(4, Math.min(main.w - w - 4, bx));
     const by = y - h / 2;
     if (!opt.plain) {
-    ctx.save();
-    ctx.shadowColor = 'rgba(0,0,0,0.18)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 1;
-    ctx.fillStyle = opt.bg || rgba(tokenRGB('surface'), 0.86);
-    roundRect(ctx, bx, by, w, h, h / 2);
-    ctx.fill();
-    ctx.restore();
+      // 與 LabDraw.pill 同一種底框：畫布底色半透明＋語意色細框
+      roundRect(ctx, bx, by, w, h, h / 2);
+      ctx.fillStyle = opt.bg || LD.alpha(colors['canvas-bg'], LD.dark ? 0.86 : 0.9);
+      ctx.fill();
+      ctx.strokeStyle = opt.stroke || LD.alpha(opt.color || colors.muted, LD.dark ? 0.45 : 0.35);
+      ctx.lineWidth = 1;
+      roundRect(ctx, bx + 0.5, by + 0.5, w - 1, h - 1, h / 2 - 0.5);
+      ctx.stroke();
     }
-    if (opt.stroke) { ctx.strokeStyle = opt.stroke; ctx.lineWidth = 1; roundRect(ctx, bx + 0.5, by + 0.5, w - 1, h - 1, h / 2); ctx.stroke(); }
     ctx.fillStyle = opt.color || colors.text;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'left';
@@ -193,45 +194,129 @@
     const t = Math.max(0, Math.min(1, (n - 1) / 1.5));
     return (dark ? 0.30 : 0.22) * Math.pow(t, 0.75);
   }
-  function drawBackdrop(ctx, W, H) {
-    const dark = isDark();
-    ctx.fillStyle = colors['canvas-bg'];
-    ctx.fillRect(0, 0, W, H);
-    return dark;
+  /** 介質的材質（純裝飾）：預設的水、玻璃、鑽石各有質感；自訂折射率當成一般透明固體 */
+  function mediumKind(n) {
+    const near = function (x) { return Math.abs(n - x) < 1e-9; };
+    if (n < 1.0005) return 'air';
+    if (near(1.33)) return 'water';
+    if (near(2.42)) return 'diamond';
+    return 'glass';
   }
-  function vignette(ctx, W, H, dark) {
-    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.3, W / 2, H / 2, Math.hypot(W, H) * 0.62);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, dark ? 'rgba(0,0,0,0.28)' : 'rgba(20,40,50,0.06)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+  /** 介質的色調：由 --neg（玻璃）往 --accent 偏一點（水），全部由色彩代號混合而來 */
+  function mediumTint(kind) {
+    return kind === 'water' ? LD.mix(colors.neg, colors.accent, 0.38) : kind === 'diamond' ? LD.mix(colors.neg, colors.surface, 0.12) : LD.mix(colors.neg, colors.accent, 0.12);
   }
-  /** 一塊介質：顏色深淺隨折射率增加（--neg 色調），上緣高光、下緣漸暗，看起來像一塊透明材料 */
-  function fillMedium(ctx, x, y, w, h, n, dark, edge) {
+  /**
+   * 一塊介質（edge：界面在這塊的 'top' 或 'bottom'）：顏色深淺隨折射率增加，
+   * 靠近界面較亮、越深越暗；水有柔和的水紋、玻璃與鑽石有斜向的反光帶，看起來像一塊透明材料。
+   */
+  function fillMedium(ctx, x, y, w, h, n, dark, edge, plain) {
     const a = tintAlpha(n, dark);
-    if (a <= 0.001) return;
-    const tint = tokenRGB('neg');
-    const g = ctx.createLinearGradient(0, y, 0, y + h);
-    const near = edge === 'top' ? 0 : 1;
-    g.addColorStop(near, rgba(tint, a * 1.15));
-    g.addColorStop(1 - near, rgba(tint, a * 0.8));
+    if (a <= 0.001 || w <= 0 || h <= 0) return;
+    const kind = mediumKind(n);
+    const tint = mediumTint(kind);
+    const iy = edge === 'top' ? y : y + h, fy = edge === 'top' ? y + h : y, s = edge === 'top' ? 1 : -1;
+    const g = ctx.createLinearGradient(0, iy, 0, fy);
+    g.addColorStop(0, LD.alpha(LD.shade(tint, 0.12), a * 0.78));
+    g.addColorStop(0.35, LD.alpha(tint, a));
+    g.addColorStop(1, LD.alpha(LD.shade(tint, -0.22), a * 1.3));
     ctx.fillStyle = g;
     ctx.fillRect(x, y, w, h);
+    if (plain) return;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+    const hi = 'rgba(255,255,255,';
+    if (kind === 'water') {
+      // 水紋：與水面平行的柔和波浪亮線，越深越淡、越疏
+      ctx.lineWidth = 1.2;
+      for (let i = 0; i < 7; i++) {
+        const d = 9 + i * (10 + i * 5), yy = iy + s * d;
+        if ((yy - y) * (yy - (y + h)) > 0) break;
+        const amp = 1.6 + i * 0.5, lam = 70 + i * 22, ph = i * 1.7;
+        ctx.strokeStyle = hi + ((dark ? 0.07 : 0.42) * (1 - i / 7)).toFixed(3) + ')';
+        ctx.beginPath();
+        for (let xx = x - 4; xx <= x + w + 4; xx += 6) {
+          const yv = yy + amp * Math.sin(xx / lam * 2 * Math.PI + ph) + 0.6 * amp * Math.sin(xx / (lam * 0.37) + ph * 2.3);
+          if (xx === x - 4) ctx.moveTo(xx, yv); else ctx.lineTo(xx, yv);
+        }
+        ctx.stroke();
+      }
+    } else if (kind !== 'air') {
+      // 玻璃、鑽石：兩條斜向的柔和反光帶
+      const band = function (cx, bw, al) {
+        ctx.save();
+        ctx.translate(cx, (y + y + h) / 2);
+        ctx.rotate(-0.62);
+        const L = Math.hypot(w, h);
+        const gr = ctx.createLinearGradient(-bw / 2, 0, bw / 2, 0);
+        gr.addColorStop(0, hi + '0)');
+        gr.addColorStop(0.5, hi + al.toFixed(3) + ')');
+        gr.addColorStop(1, hi + '0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(-bw / 2, -L, bw, 2 * L);
+        ctx.restore();
+      };
+      const k = kind === 'diamond' ? 1.35 : 1;
+      band(x + w * 0.22, Math.max(40, w * 0.16), (dark ? 0.045 : 0.34) * k);
+      band(x + w * 0.32, Math.max(10, w * 0.035), (dark ? 0.05 : 0.38) * k);
+      band(x + w * 0.78, Math.max(30, w * 0.1), (dark ? 0.03 : 0.22) * k);
+      if (kind === 'diamond') {
+        // 鑽石：淡淡的切割刻面線
+        ctx.strokeStyle = hi + (dark ? 0.06 : 0.45) + ')';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        const step = Math.max(60, w / 6);
+        for (let xx = x - step; xx < x + w + step; xx += step) {
+          ctx.moveTo(xx, iy); ctx.lineTo(xx + step / 2, fy); ctx.lineTo(xx + step, iy);
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
   }
+  /** 界面：光密一側有一道亮的表面反光，光疏一側有很淡的陰影，再加一條清楚的界面線 */
   function interfaceLine(ctx, x0, x1, y, dark, n1, n2) {
-    // 光密的一側加一條柔和的陰影，讓界面有厚度感
-    const denserBelow = n2 >= n1;
-    const sh = ctx.createLinearGradient(0, y, 0, y + (denserBelow ? 10 : -10));
-    sh.addColorStop(0, dark ? 'rgba(0,0,0,0.25)' : 'rgba(20,40,60,0.10)');
-    sh.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = sh;
-    if (denserBelow) ctx.fillRect(x0, y, x1 - x0, 10); else ctx.fillRect(x0, y - 10, x1 - x0, 10);
+    const same = Math.abs(n1 - n2) < 1e-9;
+    const s = n2 >= n1 ? 1 : -1; // 光密的一側：+1 在下方
+    if (!same) {
+      const gl = ctx.createLinearGradient(0, y, 0, y + s * 16);
+      gl.addColorStop(0, dark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.7)');
+      gl.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = gl;
+      ctx.fillRect(x0, Math.min(y, y + s * 16), x1 - x0, 16);
+      const sh = ctx.createLinearGradient(0, y, 0, y - s * 9);
+      sh.addColorStop(0, LD.shadowInk(dark ? 0.3 : 0.07));
+      sh.addColorStop(1, LD.shadowInk(0));
+      ctx.fillStyle = sh;
+      ctx.fillRect(x0, Math.min(y, y - s * 9), x1 - x0, 9);
+    }
     ctx.lineWidth = 1;
-    ctx.strokeStyle = rgba(tokenRGB('field'), dark ? 0.45 : 0.35);
-    ctx.beginPath(); ctx.moveTo(x0, y + 0.5); ctx.lineTo(x1, y + 0.5); ctx.stroke();
-    ctx.strokeStyle = dark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.85)';
-    ctx.beginPath(); ctx.moveTo(x0, y - 0.5); ctx.lineTo(x1, y - 0.5); ctx.stroke();
+    ctx.strokeStyle = LD.alpha(colors.field, same ? 0.18 : dark ? 0.5 : 0.38);
+    ctx.beginPath(); ctx.moveTo(x0, y + 0.5 * s); ctx.lineTo(x1, y + 0.5 * s); ctx.stroke();
+    if (!same) {
+      ctx.strokeStyle = dark ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.95)';
+      ctx.beginPath(); ctx.moveTo(x0, y + 1.5 * s); ctx.lineTo(x1, y + 1.5 * s); ctx.stroke();
+    }
   }
+  /** 不變的圖層（背景、介質、格線、界面、量角器）畫在離屏畫布，只在參數、尺寸或主題改變時重畫 */
+  const layer = { cv: document.createElement('canvas'), key: '' };
+  function staticLayer(o, key, paint) {
+    const full = key + '|' + o.w + 'x' + o.h + '@' + o.dpr + '|' + LD.ver;
+    if (layer.key !== full) {
+      layer.cv.width = Math.max(1, Math.round(o.w * o.dpr));
+      layer.cv.height = Math.max(1, Math.round(o.h * o.dpr));
+      const c = layer.cv.getContext('2d');
+      c.setTransform(o.dpr, 0, 0, o.dpr, 0, 0);
+      c.clearRect(0, 0, o.w, o.h);
+      c.lineCap = 'round';
+      c.lineJoin = 'round';
+      paint(c);
+      layer.key = full;
+    }
+    return layer.cv;
+  }
+  function gridStep(m) { return Math.max(36, Math.round(m / 8)); }
+  function gridMinor(st) { return st >= 56 ? st / 4 : st / 2; }
 
   // ---------- 光束 ----------
   /** 畫一段光束；I = 相對光強 0–1。亮度與粗細 ∝ √I（標示的百分比為精確值） */
@@ -263,14 +348,19 @@
       const ux = (x1 - x0) / len, uy = (y1 - y0) / len;
       const t = opt.arrowAt != null ? opt.arrowAt : 0.55;
       const ax = x0 + ux * len * t, ay = y0 + uy * len * t;
-      const s = 4 + 3 * v;
-      ctx.fillStyle = rgba(L.core, 0.3 + 0.7 * v);
+      // 方向箭頭：略帶弧度的三角形＋背景色描邊，在光暈上也看得清楚
+      const s = 4.6 + 3.4 * v;
       ctx.beginPath();
-      ctx.moveTo(ax + ux * s * 1.4, ay + uy * s * 1.4);
+      ctx.moveTo(ax + ux * s * 1.5, ay + uy * s * 1.5);
       ctx.quadraticCurveTo(ax - ux * s * 0.2, ay - uy * s * 0.2, ax - ux * s + uy * s, ay - uy * s - ux * s);
       ctx.lineTo(ax - ux * s * 0.45, ay - uy * s * 0.45);
       ctx.lineTo(ax - ux * s - uy * s, ay - uy * s + ux * s);
-      ctx.quadraticCurveTo(ax - ux * s * 0.2, ay - uy * s * 0.2, ax + ux * s * 1.4, ay + uy * s * 1.4);
+      ctx.quadraticCurveTo(ax - ux * s * 0.2, ay - uy * s * 0.2, ax + ux * s * 1.5, ay + uy * s * 1.5);
+      ctx.closePath();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = LD.alpha(colors['canvas-bg'], (L.dark ? 0.55 : 0.85) * (0.4 + 0.6 * v));
+      ctx.stroke();
+      ctx.fillStyle = rgba(L.dark ? mix(L.rgb, WHITE, 0.35) : L.core, 0.35 + 0.65 * v);
       ctx.fill();
     }
     ctx.restore();
@@ -286,52 +376,98 @@
     ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
   }
 
-  /** 雷射筆：圓角金屬筒（上亮下暗）＋出光口，指向 (ux, uy) */
-  function laserDevice(ctx, x, y, ux, uy, L, hover) {
+  /**
+   * 雷射筆：金屬圓筒（橫向漸層＝圓柱感）、止滑環、鍍鉻前環、發光的出光口，指向 (ux, uy)；
+   * (x, y) 是出光口（光線的起點，位置不變）。hover：滑鼠移到上面或正在拖曳；focus：鍵盤選取中（畫焦點框）。
+   */
+  function laserDevice(ctx, x, y, ux, uy, L, hover, focus) {
     const ang = Math.atan2(uy, ux);
-    const base = tokenRGB('field');
     const dark = L.dark;
     ctx.save();
     ctx.translate(x, y);
     if (hover) {
-      const g = ctx.createRadialGradient(0, 0, 8, 0, 0, 34);
-      g.addColorStop(0, rgba(tokenRGB('accent'), 0.35));
-      g.addColorStop(1, rgba(tokenRGB('accent'), 0));
+      const g = ctx.createRadialGradient(0, 0, 8, 0, 0, 38);
+      g.addColorStop(0, LD.alpha(colors.accent, 0.32));
+      g.addColorStop(1, LD.alpha(colors.accent, 0));
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(0, 0, 34, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.arc(0, 0, 38, 0, 2 * Math.PI); ctx.fill();
     }
     ctx.rotate(ang);
     const k = hover ? 1.08 : 1;
     ctx.scale(k, k);
-    const len = 46, hw = 8;
-    ctx.shadowColor = dark ? 'rgba(0,0,0,0.55)' : 'rgba(20,30,40,0.30)';
-    ctx.shadowBlur = 8;
-    ctx.shadowOffsetY = 3;
+    const small = ctx.canvas.clientWidth < 560; // 手機上縮短機身，不要伸出畫布左緣
+    const len = small ? 42 : 54, hw = small ? 7.5 : 8.5, front = small ? 8 : 9;
+    const metal = dark ? LD.shade(colors.field, -0.42) : LD.mix(colors.field, colors.muted, 0.35);
+    // 投影（陰影位移在畫面座標，不受旋轉影響）
+    ctx.save();
+    ctx.shadowColor = dark ? 'rgba(0,0,0,0.6)' : LD.alpha(colors.text, 0.32);
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetY = 4;
+    ctx.fillStyle = metal;
+    roundRect(ctx, -len, -hw, len - front + 1, hw * 2, hw * 0.85);
+    ctx.fill();
+    ctx.restore();
+    // 筒身：上亮下暗＋上方一道反光
     const body = ctx.createLinearGradient(0, -hw, 0, hw);
-    const b0 = dark ? mix(base, BLACK, 0.45) : base;
-    body.addColorStop(0, rgba(mix(b0, WHITE, 0.45), 1));
-    body.addColorStop(0.35, rgba(mix(b0, WHITE, 0.12), 1));
-    body.addColorStop(1, rgba(mix(b0, BLACK, 0.35), 1));
+    body.addColorStop(0, LD.shade(metal, 0.55));
+    body.addColorStop(0.22, LD.shade(metal, 0.22));
+    body.addColorStop(0.6, metal);
+    body.addColorStop(1, LD.shade(metal, -0.45));
     ctx.fillStyle = body;
-    roundRect(ctx, -len, -hw, len - 4, hw * 2, 5);
+    roundRect(ctx, -len, -hw, len - front + 1, hw * 2, hw * 0.85);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
-    // 前端金屬環與出光口
-    const ring = ctx.createLinearGradient(0, -hw + 1, 0, hw - 1);
-    ring.addColorStop(0, 'rgba(235,240,242,1)');
-    ring.addColorStop(1, 'rgba(120,130,135,1)');
-    ctx.fillStyle = ring;
-    roundRect(ctx, -6, -hw + 1.5, 6, hw * 2 - 3, 2);
-    ctx.fill();
-    ctx.fillStyle = rgba(L.rgb, 0.95);
-    ctx.beginPath(); ctx.arc(0, 0, 2.6, 0, 2 * Math.PI); ctx.fill();
-    // 開關按鈕與頂邊高光
-    ctx.fillStyle = rgba(L.rgb, 0.85);
-    roundRect(ctx, -30, -hw - 1.5, 9, 3, 1.5);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    // 止滑環（尾端）
+    ctx.strokeStyle = LD.alpha(LD.shade(metal, -0.5), 0.55);
     ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(-len + 5, -hw + 1.5); ctx.lineTo(-10, -hw + 1.5); ctx.stroke();
+    ctx.beginPath();
+    for (let i = 0; i < 4; i++) { const xx = -len + 7 + i * 3.2; ctx.moveTo(xx, -hw + 1.5); ctx.lineTo(xx, hw - 1.5); }
+    ctx.stroke();
+    // 開關（雷射顏色）
+    ctx.fillStyle = rgba(L.rgb, 0.9);
+    roundRect(ctx, -32, -hw - 1.6, 10, 3.4, 1.7);
+    ctx.fill();
+    // 鍍鉻前環
+    const ring = ctx.createLinearGradient(0, -hw, 0, hw);
+    ring.addColorStop(0, '#f6f9fa');
+    ring.addColorStop(0.35, '#c9d2d6');
+    ring.addColorStop(0.7, '#8d989e');
+    ring.addColorStop(1, '#dfe5e8');
+    ctx.fillStyle = ring;
+    roundRect(ctx, -front, -hw + 0.8, front, hw * 2 - 1.6, 2.5);
+    ctx.fill();
+    ctx.strokeStyle = LD.alpha(LD.shade(metal, -0.5), 0.5);
+    ctx.lineWidth = 0.8;
+    ctx.stroke();
+    // 筒身上方的細高光
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-len + 6, -hw + 2.4); ctx.lineTo(-front - 3, -hw + 2.4); ctx.stroke();
+    // 出光口：雷射色的小光點
+    const ap = ctx.createRadialGradient(0, 0, 0, 0, 0, 6);
+    ap.addColorStop(0, rgba(L.hot, 1));
+    ap.addColorStop(0.45, rgba(L.rgb, 0.85));
+    ap.addColorStop(1, rgba(L.rgb, 0));
+    ctx.fillStyle = ap;
+    ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fill();
+    if (focus) {
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = LD.alpha(colors.accent, 0.95);
+      ctx.lineWidth = 2 / k;
+      roundRect(ctx, -len - 7, -hw - 7, len + 15, hw * 2 + 14, 9);
+      ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  /** 鍵盤焦點框（--accent 虛線圓角框） */
+  function focusBox(ctx, x, y, w, h) {
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = LD.alpha(colors.accent, 0.95);
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.stroke();
     ctx.restore();
   }
 
@@ -340,10 +476,22 @@
     const R = Math.min(g.m * 0.36, g.srcR - 30);
     if (R < 50) return;
     const c = tokenRGB('field');
+    const dark = LD.dark;
     ctx.save();
-    ctx.strokeStyle = rgba(c, 0.16);
+    // 透明壓克力量角器：一圈淡淡的環帶，外緣亮、內緣細線
+    const band = 12;
+    const rg = ctx.createRadialGradient(g.ox, g.cy, R - band, g.ox, g.cy, R);
+    rg.addColorStop(0, rgba(c, 0));
+    rg.addColorStop(1, rgba(c, dark ? 0.09 : 0.07));
+    ctx.fillStyle = rg;
+    ctx.beginPath(); ctx.arc(g.ox, g.cy, R, 0, 2 * Math.PI); ctx.arc(g.ox, g.cy, R - band, 0, 2 * Math.PI, true); ctx.fill();
     ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba(c, 0.22);
     ctx.beginPath(); ctx.arc(g.ox, g.cy, R, 0, 2 * Math.PI); ctx.stroke();
+    ctx.strokeStyle = dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.8)';
+    ctx.beginPath(); ctx.arc(g.ox, g.cy, R - 1, Math.PI * 1.05, Math.PI * 1.7); ctx.stroke();
+    ctx.strokeStyle = rgba(c, 0.08);
+    ctx.beginPath(); ctx.arc(g.ox, g.cy, R - band, 0, 2 * Math.PI); ctx.stroke();
     for (let d = 0; d < 360; d += 5) {
       const a = d * DEG;
       const major = d % 10 === 0;
@@ -354,16 +502,12 @@
       ctx.lineTo(g.ox + Math.cos(a) * R, g.cy + Math.sin(a) * R);
       ctx.stroke();
     }
-    // 由法線量起的度數：30°、60°（四個象限）
-    ctx.font = '10px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = rgba(tokenRGB('muted'), 0.9);
-    [30, 60].forEach(function (d) {
+    // 由法線量起的度數：30°、60°（四個象限）；手機上量角器小，數字會和角度標籤擠在一起，只留刻度
+    if (R >= 125) [30, 60].forEach(function (d) {
       [[1, -1], [-1, -1], [1, 1], [-1, 1]].forEach(function (q) {
         const a = d * DEG;
-        const r = R - 18;
-        ctx.fillText(d + '°', g.ox + q[0] * Math.sin(a) * r, g.cy + q[1] * Math.cos(a) * r);
+        const r = R - 21;
+        LD.haloText(ctx, d + '°', g.ox + q[0] * Math.sin(a) * r, g.cy + q[1] * Math.cos(a) * r, LD.alpha(colors.muted, 0.95), 'center', 'middle', '11px ' + LD.FONT);
       });
     });
     ctx.restore();
@@ -402,11 +546,18 @@
   // ====================================================================
   // 光線模式與波前模式
   // ====================================================================
-  function drawMedia(ctx, g, dark) {
-    fillMedium(ctx, 0, 0, g.W, g.cy, state.n1, dark, 'bottom');
-    fillMedium(ctx, 0, g.cy, g.W, g.H - g.cy, state.n2, dark, 'top');
-    vignette(ctx, g.W, g.H, dark);
-    interfaceLine(ctx, 0, g.W, g.cy, dark, state.n1, state.n2);
+  /** 背景（暈影）＋上下兩種介質＋兩級格線（以入射點為原點）＋界面＋（光線模式）量角器：快取在離屏圖層 */
+  function drawMedia(ctx, g, dark, prot) {
+    const key = ['rw', state.n1, state.n2, prot ? 1 : 0, dark ? 1 : 0].join('|');
+    ctx.drawImage(staticLayer(main, key, function (c) {
+      LD.backdrop(c, g.W, g.H);
+      fillMedium(c, 0, 0, g.W, g.cy, state.n1, dark, 'bottom');
+      fillMedium(c, 0, g.cy, g.W, g.H - g.cy, state.n2, dark, 'top');
+      const st = gridStep(g.m);
+      LD.grid(c, 0, 0, g.W, g.H, st, gridMinor(st), g.ox, g.cy);
+      interfaceLine(c, 0, g.W, g.cy, dark, state.n1, state.n2);
+      if (prot) protractor(c, g);
+    }), 0, 0, g.W, g.H);
   }
   function mediumLabels(ctx, g) {
     const lab = function (n, idx, y) {
@@ -423,9 +574,8 @@
     const ctx = begin(main);
     const g = rayGeom();
     const L = laser();
-    const dark = drawBackdrop(ctx, g.W, g.H);
-    drawMedia(ctx, g, dark);
-    if (state.showProt) protractor(ctx, g);
+    const dark = L.dark;
+    drawMedia(ctx, g, dark, state.showProt);
     // 法線
     dashedLine(ctx, g.ox, 4, g.ox, g.H - 4, rgba(tokenRGB('muted'), 0.75), 1.2, [6, 5]);
     // 臨界角（光密 → 光疏時）：以虛線標出兩側臨界入射方向
@@ -466,7 +616,7 @@
     }
     mediumLabels(ctx, g);
     pill(ctx, T('法線', 'Normal'), g.ox + 6, g.H - 16, { align: 'left', color: colors.muted });
-    laserDevice(ctx, g.sx, g.sy, g.uIn[0], g.uIn[1], L, state.hover || dragging);
+    laserDevice(ctx, g.sx, g.sy, g.uIn[0], g.uIn[1], L, state.hover || dragging, kbMain && kbMain.focused());
   }
 
   function drawArcs(ctx, g, f) {
@@ -576,8 +726,7 @@
     const ctx = begin(main);
     const g = rayGeom();
     const L = laser();
-    const dark = drawBackdrop(ctx, g.W, g.H);
-    drawMedia(ctx, g, dark);
+    drawMedia(ctx, g, L.dark, false);
     dashedLine(ctx, g.ox, 4, g.ox, g.H - 4, rgba(tokenRGB('muted'), 0.6), 1.1, [6, 5]);
     const f = g.f;
     const lam0 = waveScale(g);
@@ -609,6 +758,11 @@
     mediumLabels(ctx, g);
     pill(ctx, T('示意圖：波長已放大', 'Schematic: wavelength enlarged'), g.W - 8, 16, { align: 'right', color: colors.muted });
     if (f.tir) pill(ctx, T('全反射  R = 100%', 'Total internal reflection  R = 100%'), g.W - 8, g.cy - 18, { align: 'right', color: colors.pos });
+    if (kbMain && kbMain.focused()) {
+      // 波前模式沒有畫雷射筆：鍵盤選取時在入射方向上畫一個把手＋焦點框
+      LD.ball(ctx, g.sx, g.sy, 7, colors.accent);
+      focusBox(ctx, g.sx - 14, g.sy - 14, 28, 28);
+    }
   }
   /** 全反射時的漸逝波：波峰垂直於界面、沿界面前進，強度隨深度指數衰減 */
   function evanescent(ctx, g, w, lam0, L) {
@@ -662,35 +816,82 @@
   }
   function toScreen(G, pt) { return [G.x0 + pt.x, G.cy - pt.y]; }
 
+  /**
+   * 光纖的靜態圖層：背景、格線、玻璃棒（包層＋纖芯，位置與厚度和計算完全相同）。
+   * 玻璃棒加上圓柱般的明暗、上緣一道高光、磨亮的端面與柔和投影（純裝飾）。
+   */
+  function paintFibre(c, G, dark) {
+    LD.backdrop(c, G.W, G.H);
+    const st = gridStep(Math.min(G.W, G.H));
+    LD.grid(c, 0, 0, G.W, G.H, st, gridMinor(st), G.x0, G.cy);
+    const hasClad = state.nClad > 1.0005;
+    const top = hasClad ? G.cy - G.a - G.clad : G.cy - G.a, bot = hasClad ? G.cy + G.a + G.clad : G.cy + G.a;
+    const len = G.x1 - G.x0, rodH = bot - top;
+    // 投影：玻璃棒浮在背景上方
+    c.save();
+    c.shadowColor = LD.shadowInk(dark ? 0.6 : 0.2);
+    c.shadowBlur = 18;
+    c.shadowOffsetY = 9;
+    c.fillStyle = colors['canvas-bg'];
+    c.fillRect(G.x0, top, len, rodH);
+    c.restore();
+    c.fillStyle = LD.alpha(colors['canvas-bg'], 1);
+    c.fillRect(G.x0, top, len, rodH);
+    if (hasClad) {
+      fillMedium(c, G.x0, top, len, G.clad, state.nClad, dark, 'bottom', true);
+      fillMedium(c, G.x0, G.cy + G.a, len, G.clad, state.nClad, dark, 'top', true);
+    }
+    fillMedium(c, G.x0, G.cy - G.a, len, 2 * G.a, state.nCore, dark, 'top', true);
+    // 纖芯內部微亮（光被關在裡面的感覺）
+    const cg = c.createLinearGradient(0, G.cy - G.a, 0, G.cy + G.a);
+    cg.addColorStop(0, LD.alpha(colors.surface, dark ? 0.04 : 0.45));
+    cg.addColorStop(0.3, LD.alpha(colors.surface, 0));
+    cg.addColorStop(1, LD.shadowInk(dark ? 0.18 : 0.05));
+    c.fillStyle = cg;
+    c.fillRect(G.x0, G.cy - G.a, len, 2 * G.a);
+    // 整根玻璃棒的圓柱明暗
+    const rg = c.createLinearGradient(0, top, 0, bot);
+    rg.addColorStop(0, dark ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.75)');
+    rg.addColorStop(0.1, dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.22)');
+    rg.addColorStop(0.4, 'rgba(255,255,255,0)');
+    rg.addColorStop(0.82, LD.shadowInk(0));
+    rg.addColorStop(1, LD.shadowInk(dark ? 0.32 : 0.1));
+    c.fillStyle = rg;
+    c.fillRect(G.x0, top, len, rodH);
+    // 界面線（纖芯／包層、外表面）
+    c.lineWidth = 1;
+    c.strokeStyle = LD.alpha(colors.field, dark ? 0.5 : 0.4);
+    c.beginPath();
+    [G.cy - G.a, G.cy + G.a].forEach(function (y) { c.moveTo(G.x0, y + 0.5); c.lineTo(G.x1, y + 0.5); });
+    if (hasClad) [top, bot].forEach(function (y) { c.moveTo(G.x0, y + 0.5); c.lineTo(G.x1, y + 0.5); });
+    c.stroke();
+    c.strokeStyle = dark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.9)';
+    c.beginPath();
+    [G.cy - G.a, G.cy + G.a].forEach(function (y) { c.moveTo(G.x0, y + 1.5); c.lineTo(G.x1, y + 1.5); });
+    c.stroke();
+    // 上緣的細高光
+    c.strokeStyle = dark ? 'rgba(255,255,255,0.28)' : 'rgba(255,255,255,0.95)';
+    c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(G.x0 + 6, top + rodH * 0.07 + 1); c.lineTo(G.x1 - 3, top + rodH * 0.07 + 1); c.stroke();
+    // 磨亮的端面（入射端）與切面（末端）
+    const face = c.createLinearGradient(G.x0 - 3, 0, G.x0 + 2, 0);
+    face.addColorStop(0, LD.alpha(colors.field, dark ? 0.45 : 0.3));
+    face.addColorStop(1, dark ? 'rgba(255,255,255,0.18)' : 'rgba(255,255,255,0.95)');
+    c.fillStyle = face;
+    c.fillRect(G.x0 - 2.5, top, 4, rodH);
+    c.strokeStyle = LD.alpha(colors.field, dark ? 0.55 : 0.45);
+    c.lineWidth = 1;
+    c.beginPath(); c.moveTo(G.x0 - 2, top); c.lineTo(G.x0 - 2, bot); c.moveTo(G.x1 + 0.5, top); c.lineTo(G.x1 + 0.5, bot); c.stroke();
+  }
+
   function drawFibreScene() {
     const ctx = begin(main);
     const G = fibreGeom();
     const L = laser();
-    const dark = drawBackdrop(ctx, G.W, G.H);
+    const dark = L.dark;
     const tr = G.tr;
-    // 包層與纖芯（玻璃棒：上緣高光、下緣陰影）
     const top = G.cy - G.a - G.clad, bot = G.cy + G.a + G.clad;
-    if (state.nClad > 1.0005) {
-      fillMedium(ctx, G.x0, top, G.x1 - G.x0, G.clad, state.nClad, dark, 'bottom');
-      fillMedium(ctx, G.x0, G.cy + G.a, G.x1 - G.x0, G.clad, state.nClad, dark, 'top');
-    }
-    fillMedium(ctx, G.x0, G.cy - G.a, G.x1 - G.x0, 2 * G.a, state.nCore, dark, 'top');
-    const gl = ctx.createLinearGradient(0, G.cy - G.a, 0, G.cy + G.a);
-    gl.addColorStop(0, dark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.55)');
-    gl.addColorStop(0.25, 'rgba(255,255,255,0)');
-    gl.addColorStop(0.8, 'rgba(0,0,0,0)');
-    gl.addColorStop(1, dark ? 'rgba(0,0,0,0.25)' : 'rgba(20,40,60,0.08)');
-    ctx.fillStyle = gl;
-    ctx.fillRect(G.x0, G.cy - G.a, G.x1 - G.x0, 2 * G.a);
-    vignette(ctx, G.W, G.H, dark);
-    const edge = rgba(tokenRGB('field'), dark ? 0.45 : 0.35);
-    ctx.strokeStyle = edge;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    [G.cy - G.a, G.cy + G.a].forEach(function (y) { ctx.moveTo(G.x0, y + 0.5); ctx.lineTo(G.x1, y + 0.5); });
-    if (state.nClad > 1.0005) [top, bot].forEach(function (y) { ctx.moveTo(G.x0, y + 0.5); ctx.lineTo(G.x1, y + 0.5); });
-    ctx.moveTo(G.x0 + 0.5, (state.nClad > 1.0005 ? top : G.cy - G.a)); ctx.lineTo(G.x0 + 0.5, (state.nClad > 1.0005 ? bot : G.cy + G.a));
-    ctx.stroke();
+    ctx.drawImage(staticLayer(main, ['f', state.nCore, state.nClad, dark ? 1 : 0].join('|'), function (c) { paintFibre(c, G, dark); }), 0, 0, G.W, G.H);
     // 端面的法線（光纖軸方向）
     dashedLine(ctx, G.x0 - Math.min(G.Ls, 70), G.cy, G.x0 + 60, G.cy, rgba(tokenRGB('muted'), 0.75), 1.1, [5, 4]);
 
@@ -732,7 +933,7 @@
     const msg = tr.tir ? T('側面全反射：抵達末端 ', 'TIR at the sides: reaching the end ') + fmtPct(tr.out)
       : T('側面部分折射漏光：抵達末端 ', 'Light leaks at the sides: reaching the end ') + fmtPct(tr.out);
     pill(ctx, msg, G.x1 - 6, top - 16, { align: 'right', color: tr.tir ? colors.accent : colors.pos });
-    laserDevice(ctx, G.lx, G.ly, G.uIn[0], G.uIn[1], L, state.hover || dragging);
+    laserDevice(ctx, G.lx, G.ly, G.uIn[0], G.uIn[1], L, state.hover || dragging, kbMain && kbMain.focused());
   }
   function fibreArcs(ctx, G) {
     const tr = G.tr;
@@ -813,8 +1014,7 @@
     const ctx = begin(chart);
     const W = chart.w, H = chart.h;
     const dark = isDark();
-    ctx.fillStyle = colors['canvas-bg'];
-    ctx.fillRect(0, 0, W, H);
+    LD.backdrop(ctx, W, H);
     ctx.font = FONT;
     const fs = fontPx(ctx);
     const PL = Math.round(fs * 3.2), PR = 14, PT = Math.round(fs * 2.4), PB = Math.round(fs * 2.2);
@@ -823,6 +1023,10 @@
     const pr = chartPair();
     const xOf = function (d) { return PL + d / 90 * PW; };
     const yOf = function (v) { return PT + (1 - v) * PH; };
+    // 繪圖區：比背景略亮（淺色）或略深（深色）的圓角面板
+    LD.roundRect(ctx, PL - 0.5, PT - 0.5, PW + 1, PH + 1, 4);
+    ctx.fillStyle = dark ? 'rgba(0,0,0,0.16)' : LD.alpha(colors.surface, 0.75);
+    ctx.fill();
     // 標題
     const title = state.mode === 'fibre'
       ? [T('纖芯→包層：反射率對側面入射角 φ', 'Core → cladding: reflectance vs side angle φ')]
@@ -853,8 +1057,13 @@
         pillC(ctx, T('全反射', 'TIR'), (xc + PL + PW) / 2, PT + PH * 0.55, colors.pos);
       }
     }
-    // 格線
+    // 格線：次格線（每 5°、每 5%）＋主格線
     ctx.lineWidth = 1;
+    ctx.strokeStyle = rgba(fieldRGB, dark ? 0.045 : 0.035);
+    ctx.beginPath();
+    for (let d = 5; d < 90; d += 5) if (d % 15) { const xx = Math.round(xOf(d)) + 0.5; ctx.moveTo(xx, PT); ctx.lineTo(xx, PT + PH); }
+    for (let v = 0.05; v < 0.999; v += 0.05) if (Math.abs(v * 4 - Math.round(v * 4)) > 1e-6) { const yy = Math.round(yOf(v)) + 0.5; ctx.moveTo(PL, yy); ctx.lineTo(PL + PW, yy); }
+    ctx.stroke();
     for (let v = 0; v <= 1.0001; v += 0.25) {
       ctx.strokeStyle = rgba(fieldRGB, v === 0 || v > 0.99 ? 0.22 : 0.08);
       ctx.beginPath(); ctx.moveTo(PL, Math.round(yOf(v)) + 0.5); ctx.lineTo(PL + PW, Math.round(yOf(v)) + 0.5); ctx.stroke();
@@ -927,11 +1136,15 @@
       const f = RC.fresnel(pr.n1, pr.n2, Math.min(th, 89.999 * DEG));
       const x = xOf(th / DEG);
       const probe = tokenRGB('probe');
+      ctx.strokeStyle = LD.alpha(colors['canvas-bg'], 0.7);
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(x, PT); ctx.lineTo(x, PT + PH); ctx.stroke();
       ctx.strokeStyle = rgba(probe, 0.9);
       ctx.lineWidth = 1.6;
       ctx.beginPath(); ctx.moveTo(x, PT); ctx.lineTo(x, PT + PH); ctx.stroke();
-      ball(ctx, x, yOf(f.T), negRGB);
-      ball(ctx, x, yOf(f.R), posRGB);
+      if (kbChart && kbChart.focused()) focusBox(ctx, x - 9, PT - 5, 18, PH + 10);
+      LD.ball(ctx, x, yOf(f.T), 5, colors.neg, { glow: dark ? 0.35 : 0 });
+      LD.ball(ctx, x, yOf(f.R), 5, colors.pos, { glow: dark ? 0.35 : 0 });
       const txt = 'R ' + fmtPct(f.R) + ' · T ' + fmtPct(f.T);
       ctx.font = FONT;
       const tw = measureParts(ctx, txt) + 12;
@@ -947,24 +1160,55 @@
     pill(ctx, parts, x, y, { color: color, clamp: !noClamp });
     main.w = save;
   }
-  /** 立體小球（亮點偏左上） */
-  function ball(ctx, x, y, rgb) {
-    const r = 5;
-    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, 0.5, x, y, r);
-    g.addColorStop(0, rgba(mix(rgb, WHITE, 0.6), 1));
-    g.addColorStop(0.6, rgba(rgb, 1));
-    g.addColorStop(1, rgba(mix(rgb, BLACK, 0.3), 1));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 2 * Math.PI); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-  }
 
   // ====================================================================
   // 讀數與狀態文字
   // ====================================================================
   function setText(id, t) { $(id).textContent = t; }
+  /** 狀態說明（看得到的文字）：內容沒變就不重寫，避免螢幕閱讀器重複朗讀 */
+  function setStatus(s) { const el = $('status'); if (el.textContent !== s) el.textContent = s; }
+
+  // ---------- 讀數播報（螢幕閱讀器）：設定穩定下來後才念一次最重要的結果，間隔至少 1 秒 ----------
+  let liveTimer = 0, liveLast = '', liveAt = 0, liveStatus = '', keyQuiet = 0;
+  function summary() {
+    const sep = T('，', ', ');
+    if (state.mode === 'fibre') {
+      const tr = fibreGeom().tr;
+      return [T('射入角 ', 'Launch angle ') + fmtA(state.thIn) + (state.thIn > 0.05 * DEG ? (state.inSide > 0 ? T('（雷射在光纖軸下方）', ' (laser below the axis)') : T('（雷射在光纖軸上方）', ' (laser above the axis)')) : ''),
+        T('側面入射角 φ ', 'side angle φ ') + fmtA(tr.phi) + (tr.tir ? T('，全反射', ', totally reflected') : T('，有光漏出', ', light leaks out')),
+        T('抵達末端 ', 'power at the far end ') + fmtPct(tr.out)].join(sep) + T('。', '.');
+    }
+    const f = RC.fresnel(state.n1, state.n2, state.th1);
+    const out = [T('入射角 ', 'Angle of incidence ') + fmtA(state.th1) + (state.th1 > 0.05 * DEG ? (state.side < 0 ? T('（雷射在法線左側）', ' (laser left of the normal)') : T('（雷射在法線右側）', ' (laser right of the normal)')) : '')];
+    out.push(f.tir ? T('全反射，沒有折射光', 'total internal reflection, no refracted ray') : T('折射角 ', 'angle of refraction ') + fmtA(f.theta2));
+    out.push(T('反射率 ', 'reflectance ') + fmtPct(f.R));
+    if (!f.tir) out.push(T('穿透率 ', 'transmittance ') + fmtPct(f.T));
+    return out.join(sep) + T('。', '.');
+  }
+  /** 要念的句子：讀數＋（狀態說明有改變時）狀態說明 */
+  function speech() {
+    updateReadout(); // 鍵盤移動後畫面還沒重畫：先更新狀態說明，念的內容才會一致
+    let txt = summary();
+    const st = $('status').textContent;
+    if (st && st !== liveStatus) { txt += ' ' + st; liveStatus = st; }
+    liveLast = txt;
+    liveAt = Date.now();
+    return txt;
+  }
+  function scheduleAnnounce() {
+    const live = $('live');
+    if (!live || !userActed) return;
+    clearTimeout(liveTimer);
+    if (dragging || chartDrag) return;
+    liveTimer = setTimeout(function () {
+      if (Date.now() < keyQuiet) return; // 鍵盤移動時 keys.js 已經念過
+      const prevSt = liveStatus;
+      const txt = speech();
+      if (txt === live.textContent && liveStatus === prevSt) return;
+      live.textContent = txt;
+    }, Math.max(600, 1000 - (Date.now() - liveAt)));
+  }
+
   function updateReadout() {
     if (state.mode === 'fibre') return updateFibreReadout();
     const n1 = state.n1, n2 = state.n2, th = state.th1;
@@ -999,7 +1243,7 @@
     else if (th < 0.05 * DEG) s = T('垂直入射：光不偏折；反射率只由兩介質折射率的差異決定。', 'Normal incidence: the light is not bent, and the reflectance depends only on how different the two refractive indices are.');
     else if (n2 > n1) s = T('進入光密介質：光變慢，折射光偏向法線（θ2 < θ1）。', 'Entering a denser medium: the light slows down and bends toward the normal (θ2 < θ1).');
     else s = T('進入光疏介質：光變快，折射光偏離法線（θ2 > θ1）；入射角到達臨界角時將全反射。', 'Entering a less dense medium: the light speeds up and bends away from the normal (θ2 > θ1); at the critical angle it will be totally reflected.');
-    setText('status', s);
+    setStatus(s);
   }
   function updateFibreReadout() {
     const tr = fibreGeom().tr;
@@ -1020,7 +1264,7 @@
     if (state.nCore <= state.nClad) s = T('纖芯的折射率沒有大於包層，不會全反射，光很快就漏光。', 'The core is not denser than the cladding, so there is no total internal reflection and the light soon leaks out.');
     else if (tr.tir) s = T('側面入射角 φ ≥ 臨界角：每次都全反射，光被限制在纖芯中前進。', 'Side angle φ ≥ critical angle: every reflection is total, so the light is trapped in the core.');
     else s = T('射入角超過最大接收角：側面入射角 φ 小於臨界角，每次反射都有光漏出。', 'Launch angle beyond the acceptance angle: φ is below the critical angle, so light leaks out at every reflection.');
-    setText('status', s);
+    setStatus(s);
   }
 
   // ====================================================================
@@ -1034,6 +1278,7 @@
     else drawFibreScene();
     drawChart();
     scheduleMission();
+    scheduleAnnounce();
   }
   function requestDraw() {
     if (pending) return;
@@ -1233,17 +1478,80 @@
     chartSet(ev);
   });
   chart.cv.addEventListener('pointermove', function (ev) { if (chartDrag) chartSet(ev); });
-  chart.cv.addEventListener('pointerup', function () { chartDrag = false; });
-  chart.cv.addEventListener('pointercancel', function () { chartDrag = false; });
-  chart.cv.addEventListener('keydown', function (ev) {
-    const step = (ev.shiftKey ? 5 : 0.5) * DEG;
-    const cur = chartPair().th;
-    let v;
-    if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') v = cur - step;
-    else if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') v = cur + step;
-    else return;
-    ev.preventDefault();
-    applyChartAngle(Math.max(0, Math.min(89.9 * DEG, v)));
+  const endChartDrag = function () { if (chartDrag) { chartDrag = false; requestDraw(); } };
+  chart.cv.addEventListener('pointerup', endChartDrag);
+  chart.cv.addEventListener('pointercancel', endChartDrag);
+
+  // ---------- 鍵盤操作（keys.js）：畫布上的雷射、圖上的目前角度 ----------
+  const deg01 = function (rad) { return Math.round(rad / DEG * 10) / 10 * DEG; }; // 與拖曳相同：取到 0.1°
+  /**
+   * 轉動雷射（與拖曳相同的範圍 0°–89.9°，可跨到法線或光纖軸的另一側）。
+   * 光線／波前：左右鍵讓雷射沿圓弧左右移動，上鍵靠向法線、下鍵遠離法線。
+   * 光纖：上下鍵讓雷射上下移動（可跨過光纖軸），左右鍵減小／加大射入角。
+   */
+  function moveLaser(dx, dy, big) {
+    const step = (big ? 5 : 0.5) * DEG, MAX = 89.9 * DEG;
+    keyQuiet = Date.now() + 1500;
+    if (state.mode === 'fibre') {
+      let s = -state.inSide * state.thIn; // > 0：雷射在光纖軸上方
+      if (dy) s += dy * step;
+      else s = (s > 0 || (s === 0 && state.inSide < 0) ? 1 : -1) * Math.max(0, Math.abs(s) + dx * step);
+      const before = [state.inSide, state.thIn];
+      if (s > 1e-12) state.inSide = -1; else if (s < -1e-12) state.inSide = 1;
+      setThIn(deg01(Math.min(MAX, Math.abs(s))));
+      return before[0] !== state.inSide || Math.abs(before[1] - state.thIn) > 1e-12;
+    }
+    let a = state.side * state.th1; // < 0：雷射在法線左側
+    if (dx) a += dx * step;
+    else a = (a > 0 || (a === 0 && state.side > 0) ? 1 : -1) * Math.max(0, Math.abs(a) - dy * step);
+    const before = [state.side, state.th1];
+    if (a > 1e-12) state.side = 1; else if (a < -1e-12) state.side = -1;
+    setTh1(deg01(Math.min(MAX, Math.abs(a))));
+    return before[0] !== state.side || Math.abs(before[1] - state.th1) > 1e-12;
+  }
+  if (window.LabKeys) {
+    kbMain = window.LabKeys.attach(main.cv, {
+      label: T('折射實驗畫布。方向鍵轉動雷射：光線與波前模式，左右鍵讓雷射沿圓弧移動（可跨到法線另一側），上鍵靠向法線、下鍵遠離法線；光纖模式，上下鍵移動雷射、左右鍵改變射入角。每次 0.5°，按住 Shift 每次 5°。',
+        'Refraction canvas. Use the arrow keys to swing the laser. In the ray and wavefront views, left and right move it along its arc (it can cross the normal), up turns it toward the normal and down away from it. In the fibre view, up and down move the laser, left and right change the launch angle. 0.5° a step; hold Shift for 5°.'),
+      items: [{
+        name: function () { return T('雷射', 'Laser'); },
+        move: moveLaser,
+        describe: speech
+      }],
+      onChange: requestDraw
+    });
+    kbChart = window.LabKeys.attach(chart.cv, {
+      label: T('反射率與穿透率對入射角的關係圖。左右（或上下）方向鍵改變目前的角度，每次 0.5°，按住 Shift 每次 5°；也可以點擊或拖曳。',
+        'Graph of reflectance and transmittance against the angle. Use the left and right (or up and down) arrow keys to change the current angle, 0.5° a step, 5° with Shift; you can also click or drag.'),
+      items: [{
+        name: function () { return T('目前角度', 'Current angle'); },
+        move: function (dx, dy, big) {
+          const cur = chartPair().th, d = dx || dy;
+          const v = Math.max(0, Math.min(89.9 * DEG, cur + d * (big ? 5 : 0.5) * DEG));
+          if (Math.abs(v - cur) < 1e-12) return false;
+          keyQuiet = Date.now() + 1500;
+          applyChartAngle(v);
+          return true;
+        },
+        describe: speech
+      }],
+      onChange: requestDraw
+    });
+  }
+
+  // ---------- 分享連結：雷射在哪一側、精確的角度（滑桿與按鈕由 classroom.js 記錄） ----------
+  // classroom.js 比本檔晚載入：先放進 LAB_SHARE_EXTRAS，它載入後會補登記（已載入時 push 直接登記）
+  (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
+    get: function () { return { s: state.side, i: state.inSide, a: state.th1, b: state.thIn }; },
+    set: function (o) {
+      if (!o || typeof o !== 'object') return;
+      const ok = function (v) { return typeof v === 'number' && isFinite(v); };
+      if (o.s === 1 || o.s === -1) state.side = o.s;
+      if (o.i === 1 || o.i === -1) state.inSide = o.i;
+      if (ok(o.a)) setTh1(o.a); // setTh1、setThIn 會把角度限制在 0°–89.9°
+      if (ok(o.b)) setThIn(o.b);
+      requestDraw();
+    }
   });
 
   // ---------- 任務模式（missions.js）：設定穩定下來後回報一次目前的光學量 ----------

@@ -63,7 +63,14 @@ const PREP = {
   // f = 10 cm、光源屏 5 cm、像屏 95 cm：透鏡移到 83.5 cm 附近，像屏上成清楚的像（共軛位置 83.54 cm）
   'thin-lens':         { click: ['[data-step="-1"]', '[data-step="-1"]', '[data-step="-1"]', '[data-step="-1"]', '[data-step="-1"]', '[data-step="-1"]',
                                  '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]'], wait: 1500, anchorX: 1 },
-  'resonance-tube':    { click: ['#strike', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1'], wait: 1500, anchor: 0.3 }
+  'resonance-tube':    { click: ['#strike', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1'], wait: 1500, anchor: 0.3 },
+  'thin-film':         { click: ['#drain'], wait: 2500, anchor: 0.5 },
+  'earthquake':        { click: ['[data-mode="earth"]', '#play'], wait: 4500, anchor: 0.5 },
+  'moon-phases':       { wait: 1500 },
+  'measurement':       { click: ['#closeBtn'], wait: 1500, anchor: 0 },
+  'angular-momentum':  { click: ['#pull'], wait: 3200, anchor: 0.15 },
+  'energy-coaster':    { click: ['#presetBox button[data-preset="loop"]'], wait: 2500, anchorX: 1 },
+  'torque-balance':    { eval: "__tb.add('adult', 3.5); __tb.add('w5', 1); __tb.add('w1', 1); __tb.add('brick', 0.5);", click: ['#release'], wait: 3200, anchor: 1 }
 };
 // --quick：只做繁體淺色一張，用來快速檢查取景（不更新版本表與首頁）
 const QUICK = process.argv.includes('--quick');
@@ -123,7 +130,8 @@ server.listen(0, '127.0.0.1', async () => {
         await ctx.addInitScript(o => {
           localStorage.setItem('lab-settings', JSON.stringify({ lang: o.lang, theme: 'auto', fs: 1 }));
           localStorage.setItem('lab-welcome-v1', 'skip');
-        }, { lang });
+          localStorage.setItem('lab-try:' + o.slug, '1'); // 不要「試試看」提示（第一次點擊後才收起，會讓版面移動）
+        }, { lang, slug });
         const page = await ctx.newPage();
         const tag = `${slug} ${lk} ${theme}`;
         try {

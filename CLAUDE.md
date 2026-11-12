@@ -36,7 +36,7 @@
 | `js/achievements.js` | 成就系統（等級系列＋單項成就＋隱藏成就），由 `missions.js` 自動載入 |
 | `leaderboard.html`、`js/leaderboard.js` | 排行榜（前 100 名、自己的名次、公開設定、任務進度與總進度條、我的成就、規則說明、管理員區） |
 | `js/search.js`、`js/math.js` | 首頁搜尋；KaTeX 公式排版 |
-| `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次）；`privacy.html` 為隱私說明 |
+| `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次；實驗頁要先操作 3 次或在前景停留 40 秒才出現，首頁照舊）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |
 | `firebase/database.rules.json` | 資料庫安全規則（修改後需請站長貼到 Firebase 主控台「規則」分頁並發布） |
 | `vendor/` | KaTeX、three.js 等第三方檔案（內建，不依賴 CDN；Firebase SDK 例外，從 gstatic 載入） |

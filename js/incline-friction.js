@@ -56,6 +56,7 @@
     runSeq: 0, lastFF: null,
     hover: false, dragging: false
   };
+  let kb = null; // 鍵盤操作（keys.js）：方向鍵改變斜面角度
 
   function mu() {
     if (state.surf === 'custom') return { mus: state.cmus, muk: Math.min(state.cmuk, state.cmus) };
@@ -583,7 +584,8 @@
 
     // 把手：木板抬高那一端（立體球；滑過或拖曳時放大並加光暈）
     const hp = B.at(0.02, BT / 2);
-    const hot = state.hover || state.dragging;
+    const kbOn = !!(kb && kb.focused() && kb.index() === 0);
+    const hot = state.hover || state.dragging || kbOn;
     const hr = (LA.narrow ? 9 : 10) * (hot ? 1.08 : 1);
     if (hot) {
       const hg = c.createRadialGradient(hp[0], hp[1], hr * 0.8, hp[0], hp[1], hr + 12);
@@ -605,6 +607,17 @@
         c.strokeStyle = alpha(colors['canvas-bg'], 0.85); c.lineWidth = 2.5; c.stroke();
         c.fillStyle = alpha(colors.accent, 0.85); c.fill();
       });
+    }
+    // 鍵盤焦點框：用方向鍵操作時，把手外圍的虛線圓角框
+    if (kbOn) {
+      const bw = hr + 9, bh = hr + 16;
+      c.save();
+      c.setLineDash([5, 4]);
+      c.lineWidth = 2;
+      c.strokeStyle = colors.accent;
+      LD.roundRect(c, hp[0] - bw, hp[1] - bh, bw * 2, bh * 2, 8);
+      c.stroke();
+      c.restore();
     }
 
     // 比例尺（地板上）
@@ -1533,6 +1546,7 @@
   }
   /** 使用者放開滑桿、打完數字或切換選項之後 */
   function commit() {
+    sayParams();
     emit('params', snapshot());
     if (state.phase === 'held') return;
     if (state.s.v !== 0) emit('motion', snapshot({ reason: 'change' }));
@@ -1600,6 +1614,11 @@
       }
       setStatus(e.dir > 0 ? T('靜摩擦力撐不住了，木塊開始往下滑！', 'Static friction can no longer hold it — the block starts to slide down!')
         : T('推力超過重力分量與最大靜摩擦力，木塊開始往上滑！', 'The push beats the weight component plus maximum static friction — the block starts to slide up!'));
+      if (e.dir > 0 && (cause === 'tilt' || cause === 'raise') && Math.abs(state.F) < 1e-12) {
+        say(T('開始滑動的角度 θ = ', 'Started to slide at θ = ') + num(state.theta, 2) + '°' + T('，tan θ = ', ', tan θ = ') + num(Math.tan(state.theta * D2R), 3) + T('。', '.'));
+      } else if (cause === 'ramp') {
+        say(T('外力 F = ', 'Started to slide when F = ') + num(state.F, 2) + T(' N 時開始滑動。', ' N.'));
+      }
       if (state.raising) stopRaise(true);
       if (state.ramping) state.rampLeft = 1.0;
       emit('slip', snapshot({ cause: cause, dir: e.dir, ramp: cause === 'ramp' }));
@@ -1629,6 +1648,8 @@
       if (run && e.end < 0) run.hitTop = true;
       if (state.ramping || state.rampLeft != null) stopRamp(true);
       setStatus(e.end > 0 ? T('木塊撞到下端的擋板停住。', 'The block hit the stop at the bottom.') : T('木塊撞到上端的擋釘。', 'The block hit the peg at the top.'));
+      say(T('撞擊速率 ', 'Impact speed ') + num(sp, 3) + ' m/s' + T('，t = ', ', t = ') + num(e.t, 3) + ' s' +
+        (hide ? '' : T('，摩擦生熱 Q = ', ', heat Q = ') + num(-state.s.wf, 2) + ' J') + T('。', '.'));
       emit('hit', data);
     } else if (e.type === 'gate') {
       gateSound();
@@ -1657,6 +1678,8 @@
     if (clean && !hide) html += ' → a = ' + num(aGate, 3) + ' m/s<sup>2</sup> → μ<sub>k</sub> = ' + num(IC.mukFromAccel(state.theta * D2R, aGate), 3);
     else if (clean) html += ' <small>(' + T('靜止釋放', 'released from rest') + ', θ = ' + num(state.theta, 2) + '°)</small>';
     addRecord(html);
+    say(T('光電門：t1 = ', 'Photogates: t1 = ') + num(g1.t, 3) + ' s' + T('，t2 = ', ', t2 = ') + num(g2.t, 3) + ' s' +
+      (clean && !hide ? T('，a = ', ', a = ') + num(aGate, 3) + MS2T + T('，μk = ', ', μk = ') + num(IC.mukFromAccel(state.theta * D2R, aGate), 3) : '') + T('。', '.'));
     emit('gates', snapshot({ t1: g1.t, t2: g2.t, v1: g1.v, v2: g2.v, dir: dir, sameEpoch: sameEpoch, clean: clean, aGate: aGate }));
   }
 
@@ -1690,6 +1713,9 @@
         if (state.raising) elTheta.value = state.theta;
         if (state.ramping) elF.value = state.F;
         refreshOutputs();
+        // 螢幕閱讀器：連續變化的量，至少間隔 1.5 s 才更新一次
+        if (state.raising) sayNow(T('斜面角度 θ = ', 'Angle θ = ') + num(state.theta, 1) + '°');
+        else if (state.ramping) sayNow(T('外力 F = ', 'Force F = ') + num(state.F, 1) + ' N');
       }
       recordSample();
       recordFF(forcesNow(), state.F !== F0 && state.ramping);
@@ -1708,6 +1734,46 @@
   }
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 離散事件（改完條件、開始滑動、通過兩個光電門、撞到擋板）寫進 aria-live 的 #srSay；
+  // 「慢慢抬高／慢慢加力」時連續變化的角度或外力，寫進 #srNow，至少間隔 1.5 s 才更新一次
+  let sayTimer = 0, sayParamTimer = 0, nowAt = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function sayNow(msg) {
+    const el = $('srNow'), t = performance.now();
+    if (!el || t - nowAt < 1500) return;
+    nowAt = t;
+    el.textContent = msg;
+  }
+  const MS2T = ' m/s²';
+  /** 目前的受力摘要（神秘表面不透露摩擦力與 μ） */
+  function forcesText() {
+    const fo = forcesNow(), hide = mystery();
+    let s = 'θ = ' + fmtSlider(state.theta, elTheta) + '°' + T('：重力沿斜面分量 ', ': weight along the slope ') + num(fo.Wpar, 2) + ' N' +
+      T('，正向力 ', ', normal force ') + num(fo.N, 2) + ' N';
+    if (Math.abs(state.F) > 1e-9) s += T('，外力 ', ', applied force ') + num(state.F, 2) + ' N';
+    if (hide) return s + T('（神秘表面：摩擦力隱藏）。', ' (mystery surface: friction hidden).');
+    if (state.s.v !== 0) {
+      return s + T('；滑動中，動摩擦力 ', '; sliding, kinetic friction ') + num(Math.abs(fo.f), 2) + ' N' + T('，加速度 ', ', acceleration ') +
+        num(Math.abs(fo.a), 2) + MS2T + (Math.abs(fo.a) > 1e-9 ? ' ' + dirWord(fo.a) : '') + T('。', '.');
+    }
+    const holds = Math.abs(fo.D) <= fo.fsMax * (1 + 1e-12) + 1e-12;
+    return s + T('；需要的靜摩擦力 ', '; static friction needed ') + num(Math.abs(fo.D), 2) + ' N' + T('，最大靜摩擦力 ', ', maximum ') + num(fo.fsMax, 2) + ' N' +
+      (holds ? T('，撐得住。', ' — it holds.') : T('，撐不住，放手就會滑。', ' — not enough; released, the block slides.'));
+  }
+  /** 改完條件後播報（連續改動時只念最後一次） */
+  function sayParams() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { say(forcesText()); }, 350);
+  }
+
   function updateButtons() {
     $('play').textContent = state.phase === 'held' ? T('放手', 'Release') : state.phase === 'run' ? T('暫停', 'Pause') : T('繼續', 'Resume');
     $('raise').textContent = state.raising ? T('停止抬高', 'Stop raising') : T('慢慢抬高', 'Raise slowly');
@@ -1907,7 +1973,15 @@
     state.graph = g;
     $('graphV').setAttribute('aria-pressed', String(g === 'v'));
     $('graphX').setAttribute('aria-pressed', String(g === 'x'));
+    graphLabel();
     requestDraw();
+  }
+  /** 圖表畫布（role="img"）的說明，跟著選擇的運動圖表更新 */
+  function graphLabel() {
+    cvB.removeAttribute('data-en-aria-label');
+    cvB.setAttribute('aria-label', state.graph === 'v'
+      ? T('圖表：速度對時間（v–t）圖，以及摩擦力對外力的圖', 'Graphs: velocity against time (v–t), and friction against applied force')
+      : T('圖表：位置對時間（x–t）圖，以及摩擦力對外力的圖', 'Graphs: position against time (x–t), and friction against applied force'));
   }
   $('graphV').addEventListener('click', function () { setGraph('v'); });
   $('graphX').addEventListener('click', function () { setGraph('x'); });
@@ -2001,6 +2075,34 @@
   cvA.addEventListener('pointercancel', endDrag);
   cvA.addEventListener('pointerleave', function () { if (!state.dragging && state.hover) { state.hover = false; cvA.style.cursor = 'default'; requestDraw(); } });
 
+  // ---------- 鍵盤操作（keys.js）：與拖曳把手相同——角度 0–90°、取到 0.1°、同樣停止「慢慢抬高」並回報任務 ----------
+  /** d：+1 變陡（↑、→）、−1 變平（↓、←）；big（Shift）每次 5°，否則 1° */
+  function keyTilt(d, big) {
+    if (!d) return false;
+    const th = Math.max(0, Math.min(90, Math.round((state.theta + d * (big ? 5 : 1)) * 10) / 10));
+    if (th === state.theta) return false;
+    stopRaise(true);
+    state.theta = th;
+    setSlider(elTheta, th);
+    changed('tilt');
+    commit();                    // 和放開拖曳一樣回報（每按一次算一次完整的調整）
+    clearTimeout(sayParamTimer); // 受力摘要改由 keys.js 念 describe()，不重複播報
+    return true;
+  }
+  if (window.LabKeys) {
+    cvA.removeAttribute('data-en-aria-label'); // 說明文字改由程式依語言提供（含按鍵說明）
+    kb = window.LabKeys.attach(cvA, {
+      label: T('斜面與摩擦力模擬畫布：可抬高的木板、木塊、光電門與木塊的受力圖。按 Enter 選取木板把手，方向鍵改變斜面角度：上、右變陡，下、左變平，每次 1°；Shift 加方向鍵每次 5°。',
+        'Incline and friction simulation: a tiltable board with a block and photogates, and the block’s free-body diagram. Press Enter to pick the board handle; the arrow keys change the angle — up or right makes it steeper, down or left flatter — by 1° a step, or 5° with Shift.'),
+      items: [{
+        name: function () { return T('木板把手（斜面角度）', 'board handle (incline angle)'); },
+        move: function (dx, dy, big) { return keyTilt(dx || dy, big); },
+        describe: function () { return forcesText(); }
+      }],
+      onChange: requestDraw
+    });
+  }
+
   // ---------- 啟動 ----------
   readColors();
   state.theta = val(elTheta); state.m = val(elM); state.F = val(elF); state.v0 = val(elV0);
@@ -2015,6 +2117,7 @@
   updateButtons();
   updateSoundButton();
   renderRecords();
+  graphLabel();
   function themeChanged() { readColors(); if (LA) buildBackgrounds(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);

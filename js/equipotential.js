@@ -9,6 +9,8 @@
   const FF = LD.FONT;
   const SW = EC.SHEET_W, SH = EC.SHEET_H;
   const NUDGE = 0.05;          // 方向鍵每按一次移動的距離（cm）
+  const NUDGE_BIG = 0.5;       // Shift＋方向鍵（cm）
+  const NUDGE_FINE = 0.01;     // Alt＋方向鍵（cm）
   const FINE = 0.2;            // 精細拖曳的比例
   const MARK_SIGMA = 0.05;     // 含誤差：描點到方格紙上的誤差（cm）
   const OFFSET_MAX = 0.015;    // 含誤差：電表零點偏差上限（V）
@@ -31,6 +33,8 @@
     needle: 0                  // 檢流計指針（畫面用，-1…1）
   };
   let lastStatus = '';
+  let kb = null;               // 鍵盤操作（js/keys.js）
+  const KB_IDS = ['n2', 'n1'];
 
   // ---------------------------------------------------------------------
   // 數值解（1 V 的解，依電源電壓縮放；同一設定只解一次）
@@ -460,6 +464,7 @@
     drawWires();
     drawProbe('n1');
     drawProbe('n2');
+    drawKeyFocus();
     if (sh.est) drawEstimate(sh.est);   // 估算結果畫在探針上面，不被握把擋住
     drawBand();
     if (!state.power) {
@@ -773,6 +778,7 @@
   function select(id) {
     state.sel = id;
     document.querySelectorAll('[data-sel]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-sel') === id)); });
+    if (kb && kb.index() !== KB_IDS.indexOf(id)) kb.select(KB_IDS.indexOf(id));
     requestDraw();
   }
   cv.addEventListener('pointerdown', function (ev) {
@@ -819,20 +825,84 @@
     }
     stopVoice();
     emitProbe();
+    srSay(probeDesc(d.id));
   }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (hover) { hover = null; requestDraw(); } });
+  // ---- 鍵盤操作（js/keys.js）：Enter 切換探針、方向鍵 0.05 cm、Shift 0.5 cm、Alt 0.01 cm、R 記錄 ----
+  // 走的路與方向鈕、拖曳相同（setProbe 的邊界限制、'probe' 任務事件）
+  function probeName(id) { return id === 'n2' ? T('紅探針 N2', 'red probe N2') : T('黑探針 N1', 'black probe N1'); }
+  function probeDesc(id) {
+    const p = id === 'n1' ? n1Pos() : state.n2;
+    let s = probeName(id) + (id === 'n1' && state.clip ? T('夾在負極', ' clipped to the negative electrode') : ' (' + p.x.toFixed(2) + ', ' + p.y.toFixed(2) + ') cm');
+    s += state.power ? T('，電表讀數 ', ', meter reading ') + minus(meterNow().text) : T('，電源未接通', ', supply off');
+    return s + T('。', '.');
+  }
+  function keyStep(id, dx, dy, step) {
+    if (stage.classList.contains('is3d')) return false;
+    if (state.sel !== id) select(id);
+    const p = id === 'n1' ? n1Pos() : state.n2, clip0 = state.clip;
+    nudge(dx * step, dy * step);
+    const q = id === 'n1' ? n1Pos() : state.n2;
+    return q.x !== p.x || q.y !== p.y || clip0 !== state.clip;
+  }
+  let srTimer = 0;
+  /** 拖曳結束時把讀數念一次（螢幕閱讀器；不在每一格更新） */
+  function srSay(text) {
+    clearTimeout(srTimer);
+    srTimer = setTimeout(function () { const el = $('srMeter'); if (el && el.textContent !== text) el.textContent = text; }, 450);
+  }
+  // Alt＋方向鍵的極小步與 R 記錄：要在 LabKeys 之前攔下
   cv.addEventListener('keydown', function (ev) {
     const k = ev.key;
-    const step = ev.shiftKey ? 0.01 : ev.altKey ? 0.5 : NUDGE;
-    const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
-    if (dirs[k]) { nudge(dirs[k][0] * step, dirs[k][1] * step); ev.preventDefault(); return; }
-    if (k === 'Enter' || k === ' ') { record(); ev.preventDefault(); }
+    if (ev.altKey && !ev.ctrlKey && !ev.metaKey) {
+      const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[k];
+      if (!d) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      if (keyStep(state.sel, d[0], d[1], NUDGE_FINE)) {
+        if (kb) kb.say(probeDesc(state.sel));
+        cv.dispatchEvent(new CustomEvent('lab:keymove', { bubbles: true, detail: { index: KB_IDS.indexOf(state.sel) } }));
+      }
+      return;
+    }
+    if ((k === 'r' || k === 'R') && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); record(); }
   });
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動；鍵盤操作：Enter 切換探針，方向鍵移動 0.05 cm，Shift 加方向鍵移動 0.5 cm，Alt 加方向鍵移動 0.01 cm，R 記錄。',
+        'Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it. Keyboard: Enter picks a probe, the arrow keys move it 0.05 cm, Shift with an arrow key 0.5 cm, Alt with an arrow key 0.01 cm, R records.'),
+      items: KB_IDS.map(function (id) {
+        return {
+          name: function () { return probeName(id); },
+          move: function (dx, dy, big) { return keyStep(id, dx, dy, big ? NUDGE_BIG : NUDGE); },
+          describe: function () { return probeDesc(id); }
+        };
+      }),
+      onChange: function () {
+        const id = KB_IDS[kb.index()];
+        if (id && id !== state.sel) select(id); else requestDraw();
+      }
+    });
+    if (kb.index() !== KB_IDS.indexOf(state.sel)) kb.select(KB_IDS.indexOf(state.sel));
+  }
+  /** 鍵盤選取的探針周圍畫虛線圓角框（--accent） */
+  function drawKeyFocus() {
+    if (!kb || !kb.focused()) return;
+    const id = KB_IDS[kb.index()];
+    if (!id) return;
+    const g = probeGeom(id), pad = 5;
+    const x0 = Math.min(g.tx - 13, g.hx - 7), x1 = Math.max(g.tx + 13, g.hx + 7);
+    const y0 = Math.min(g.ty - 13, g.hy - 7), y1 = Math.max(g.ty + 13, g.hy + 7);
+    ctx.save();
+    ctx.strokeStyle = LD.c.accent; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    LD.roundRect(ctx, x0 - pad, y0 - pad, x1 - x0 + 2 * pad, y1 - y0 + 2 * pad, 8); ctx.stroke();
+    ctx.restore();
+  }
+  function r4(v) { return Math.round(v * 1e4) / 1e4; }
   function nudge(dx, dy) {
     const p = state.sel === 'n1' ? n1Pos() : state.n2;
-    setProbe(state.sel, p.x + dx, p.y + dy);
+    setProbe(state.sel, r4(p.x + dx), r4(p.y + dy));
     emitProbeSoon();
   }
   let probeTimer = 0;
@@ -1314,6 +1384,32 @@
   }
   if (window.ResizeObserver) new ResizeObserver(function () { statKey = ''; requestDraw(); }).observe(cv);
   else window.addEventListener('resize', function () { statKey = ''; requestDraw(); });
+
+  // 分享連結：兩支探針的位置、N1 是否夾在負極、選取的探針（拖曳出來的狀態）
+  // classroom.js 在 DOMContentLoaded 才載入：還沒有 LabShare 時，等 load 再登記（還原在 load 之後才做）
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register({
+      get: function () {
+        return { n2: [r4(state.n2.x), r4(state.n2.y)], n1: [r4(state.n1.x), r4(state.n1.y)], clip: state.clip, sel: state.sel };
+      },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        const pt = function (a) {
+          return Array.isArray(a) && a.length === 2 && typeof a[0] === 'number' && typeof a[1] === 'number' && isFinite(a[0]) && isFinite(a[1]) ? clampP(a[0], a[1]) : null;
+        };
+        const p2 = pt(o.n2), p1 = pt(o.n1);
+        if (p2) state.n2 = p2;
+        if (p1) { if (p1.x !== state.n1.x || p1.y !== state.n1.y) state.n1Touched = true; state.n1 = p1; }
+        if (typeof o.clip === 'boolean') { state.clip = o.clip; if (o.clip) state.n1Touched = true; }
+        if (o.sel === 'n1' || o.sel === 'n2') select(o.sel);
+        probeMoved();
+        updateSteps();
+      }
+    });
+    return true;
+  }
+  if (!regShare()) window.addEventListener('load', regShare);
 
   readSliders();
   refreshOutputs();

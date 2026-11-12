@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120801"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Conservation of Angular Momentum | Astro Ni Physics Lab">角動量守恆｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="繩子穿過小孔拉小球、在旋轉平台上收放啞鈴、把圓盤放到另一個旋轉的圓盤上：看角動量不變時，速率、轉速與動能怎麼變。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/angular-momentum.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="角動量守恆｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="繩子穿過小孔拉小球、在旋轉平台上收放啞鈴、把圓盤放到另一個旋轉的圓盤上：看角動量不變時，速率、轉速與動能怎麼變。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/angular-momentum.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/angular-momentum.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="角動量守恆的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"角動量守恆","alternateName":"Conservation of Angular Momentum","description":"繩子穿過小孔拉小球、在旋轉平台上收放啞鈴、把圓盤放到另一個旋轉的圓盤上：看角動量不變時，速率、轉速與動能怎麼變。","url":"https://astro1222ni.github.io/physics-lab/angular-momentum.html","image":"https://astro1222ni.github.io/physics-lab/img/og/angular-momentum.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","動量與角動量（Momentum and Angular Momentum）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <style>
+    /* 角動量守恆頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: auto; cursor: default; }
+    .am button { min-height: 44px; }
+    .am .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .am .playbar button { flex: 1 1 auto; }
+    .am .playbar .act { font-weight: 600; }
+    .am .playbar .act.warn { color: var(--pos); border-color: var(--pos); }
+    .am .playbar button:disabled { opacity: .45; cursor: not-allowed; }
+    .am .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .am .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .am .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .am .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .am .slider input[type="range"] { height: 28px; margin: 0; }
+    .am .slider input:disabled { opacity: .45; }
+    .am .slider label sub, dl.readout sub { font-size: .75em; }
+    .am [hidden] { display: none !important; }
+    .am .checks label { min-height: 44px; }
+    .am .checks input { width: 17px; height: 17px; }
+    .am .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    /* 三種實驗與 2D／3D 檢視的切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; flex: 1 1 330px; }
+    .seg3 button { padding: 4px 6px; line-height: 1.25; }
+    .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .view-bar .right { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.05; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 紀錄表（classroom.js 會在表格下方自動加「下載 CSV」「複製表格」） */
+    .am .rec { margin: 10px 2px 0; }
+    .am .rec h3 { font-size: calc(14px * var(--fs, 1)); margin: 0 0 4px; }
+    .tablewrap { overflow-x: auto; margin: 4px 0 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 7px; text-align: right; border: 1px solid var(--border); white-space: nowrap; line-height: 1.35; }
+    table.data thead th { color: var(--muted); font-weight: 600; background: var(--accent-soft); text-align: center; }
+    table.data tbody th { text-align: left; font-weight: 600; color: var(--text); }
+    table.data sub, table.data sup { font-size: .75em; }
+    table.data tr.ev-start th { color: var(--muted); }
+    table.data tr.ev-free th { color: var(--pos); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Momentum and angular momentum"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 動量與角動量</nav>
+      <h1 data-en="Conservation of Angular Momentum">角動量守恆</h1>
+      <p data-en="Three experiments where nothing exerts a torque, so the angular momentum stays the same: a ball on a smooth table whose string runs through a small hole (pull the string, let it out, or let go), a person spinning on a turntable with dumbbells in both hands (pull the arms in or stretch them out), and a disc dropped onto a spinning disc. Watch how the speed, the rotation rate and the kinetic energy change while L stays put.">三個「沒有外力矩」的實驗，角動量都保持不變：光滑桌面上的小球，繩子穿過中央小孔（往下拉、慢慢放，或乾脆鬆手）；站在旋轉平台上、雙手拿著啞鈴的人（收手或伸手）；把一個圓盤放到另一個旋轉的圓盤上。看看 L 不變時，速率、轉速與動能怎麼變。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="<span>Try it: press “Pull to r<sub>1</sub>” to halve the radius. How many times faster does the ball go, and does L change?</span>"><span>試試看：按「拉繩到 r<sub>1</sub>」把半徑拉成一半，看速率變幾倍、L 變不變。</span></p>
+    <div class="lab am">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg3" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" id="modeHole" aria-pressed="true" data-en="String through a hole">穿過小孔的繩子</button>
+            <button type="button" id="modePlat" aria-pressed="false" data-en="Turntable">旋轉平台</button>
+            <button type="button" id="modeDisk" aria-pressed="false" data-en="Two discs">兩盤相合</button>
+          </div>
+          <div class="right">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D">3D 立體</button>
+            </div>
+            <button type="button" id="resetCam" hidden data-en="Reset view">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="角動量守恆模擬畫布：主畫面是俯視圖，旁邊是側視圖與圖表，下方是隨時間變化的圖" data-en-aria-label="Angular momentum simulation: the main panel is a top view, with a side view and a graph beside it and a graph against time below"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button" data-en="Pause">暫停</button>
+          <button id="pull" class="act" type="button" data-mode="hole" data-en-html="Pull to r<sub>1</sub>">拉繩到 r<sub>1</sub></button>
+          <button id="letgo" class="act warn" type="button" data-mode="hole" data-en="Let go">鬆手</button>
+          <button id="arms" class="act" type="button" data-mode="plat" hidden data-en="Pull arms in">收手</button>
+          <button id="dropDb" class="act warn" type="button" data-mode="plat" hidden data-en="Let go of the dumbbells">鬆開啞鈴</button>
+          <button id="dropDisk" class="act" type="button" data-mode="disk" hidden data-en="Drop the upper disc">放下上盤</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除軌跡與圖表，回到起始狀態；滑桿設定不變" data-en-title="Clear the trails and graphs and go back to the start; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" data-mode="hole">
+          <span style="color:var(--accent)" data-en-html="<i></i>Path (fading)"><i style="background:var(--accent)"></i>軌跡（漸淡）</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Velocity v"><i style="background:var(--pos)"></i>速度 v</span>
+          <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Tension T (towards the hole)"><i style="background:var(--b-mech)"></i>張力 T（指向小孔）</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Area swept in equal times"><i style="background:var(--equi)"></i>等時間掃過的面積</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Angular momentum L"><i style="background:var(--neg)"></i>角動量 L</span>
+        </div>
+        <div class="legend" data-mode="plat" hidden>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Dumbbell velocity v = ωr"><i style="background:var(--pos)"></i>啞鈴速度 v = ωr</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Angular momentum L (along the axis)"><i style="background:var(--neg)"></i>角動量 L（沿轉軸）</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Arms out / arms in"><i class="dash"></i>伸手／收手的位置</span>
+        </div>
+        <div class="legend" data-mode="disk" hidden>
+          <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Lower disc"><i style="background:var(--accent)"></i>下盤</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Upper disc"><i style="background:var(--equi)"></i>上盤</span>
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Friction torque"><i style="background:var(--pos)"></i>摩擦力矩</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Angular momentum L"><i style="background:var(--neg)"></i>角動量 L</span>
+        </div>
+        <p class="hint" data-mode="hole" data-en-html="Top view: the ball goes round anticlockwise, so L points up, out of the screen (⊙). Arrows are drawn to a fixed scale: velocity 1 m/s → 0.3 m, tension 1 N → 0.25 m; an arrow too long to fit is cut short and marked “≈”. The string breaks above 30 N.">俯視圖：小球逆時針轉，角動量 L 朝上、指出螢幕（⊙）。箭頭依固定比例畫：速度每 1 m/s 畫 0.3 m、張力每 1 N 畫 0.25 m，太長畫不下的箭頭會截短並標「≈」。繩子能承受的最大張力是 30 N，超過就斷。</p>
+        <p class="hint" data-mode="plat" hidden data-en-html="Top view of the turntable (anticlockwise, L up). Velocity arrows: 1 m/s → 0.15 m. The bars compare “arms out” with “arms in” for the current settings.">平台俯視圖（逆時針轉，L 朝上）。速度箭頭每 1 m/s 畫 0.15 m。右邊的長條圖比較目前設定下「伸手」與「收手」兩種姿勢。</p>
+        <p class="hint" data-mode="disk" hidden data-en-html="Top view of the two discs on the same axle (positive ω = anticlockwise). The coloured marks show how far each disc has turned.">兩個圓盤裝在同一根軸上的俯視圖（ω 為正代表逆時針）。盤面上的彩色記號顯示各自轉了多少。</p>
+        <div class="rec" data-mode="hole">
+          <h3 data-en="Record (a row each time the string stops, and when the ball leaves)">紀錄（每次收放完成、鬆手或繩斷時記一列）</h3>
+          <div class="tablewrap"><table class="data" id="recHole">
+            <thead><tr><th data-en="Event">事件</th><th>r (m)</th><th>v (m/s)</th><th>ω (rad/s)</th><th data-en-html="L (kg·m<sup>2</sup>/s)">L (kg·m<sup>2</sup>/s)</th><th>K (J)</th><th data-en="W by hand (J)">手作功 W (J)</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div class="rec" data-mode="plat" hidden>
+          <h3 data-en="Record (a row each time the arms stop moving)">紀錄（每次收手、伸手完成時記一列）</h3>
+          <div class="tablewrap"><table class="data" id="recPlat">
+            <thead><tr><th data-en="Event">事件</th><th data-en="r (m)">r (m)</th><th data-en-html="I (kg·m<sup>2</sup>)">I (kg·m<sup>2</sup>)</th><th>ω (rad/s)</th><th data-en-html="L (kg·m<sup>2</sup>/s)">L (kg·m<sup>2</sup>/s)</th><th>K (J)</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+        <div class="rec" data-mode="disk" hidden>
+          <h3 data-en="Record (a row each time the discs lock together)">紀錄（每次兩盤一起轉時記一列）</h3>
+          <div class="tablewrap"><table class="data" id="recDisk">
+            <thead><tr><th>#</th><th data-en-html="I<sub>1</sub> (kg·m<sup>2</sup>)">I<sub>1</sub> (kg·m<sup>2</sup>)</th><th data-en-html="I<sub>2</sub> (kg·m<sup>2</sup>)">I<sub>2</sub> (kg·m<sup>2</sup>)</th><th data-en-html="ω<sub>1</sub> (rad/s)">ω<sub>1</sub> (rad/s)</th><th data-en-html="ω<sub>2</sub> (rad/s)">ω<sub>2</sub> (rad/s)</th><th data-en-html="ω<sub>f</sub> (rad/s)">ω<sub>f</sub> (rad/s)</th><th data-en-html="L (kg·m<sup>2</sup>/s)">L (kg·m<sup>2</sup>/s)</th><th data-en="K lost">動能損失</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <!-- ===== 模式一：穿過小孔的繩子 ===== -->
+        <section class="card" data-mode="hole">
+          <h2 data-en="Ball and string">小球與繩子</h2>
+          <div class="slider"><label for="m1" data-en="Mass of the ball m">小球質量 m</label><output id="m1o"></output>
+            <input id="m1" type="range" min="0.1" max="1" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="r0" data-en-html="Starting radius r<sub>0</sub>">起始半徑 r<sub>0</sub></label><output id="r0o"></output>
+            <input id="r0" type="range" min="0.3" max="1.5" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="v0" data-en-html="Starting speed v<sub>0</sub>">起始速率 v<sub>0</sub></label><output id="v0o"></output>
+            <input id="v0" type="range" min="0.2" max="2" step="0.05" value="1" data-decimals="3"></div>
+          <p class="hint" data-en="Changing these starts again from the starting radius. Tap a number to type an exact value.">改變這三個條件會從起始半徑重新開始。點一下數字可直接輸入精確數值。</p>
+        </section>
+        <section class="card" data-mode="hole">
+          <h2 data-en="The hand under the table">桌面下的手</h2>
+          <div class="slider"><label for="r1" data-en-html="Target radius r<sub>1</sub>">目標半徑 r<sub>1</sub></label><output id="r1o"></output>
+            <input id="r1" type="range" min="0.15" max="1.8" step="0.05" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="u" data-en="Pulling / releasing speed u">收放繩的速率 u</label><output id="uo"></output>
+            <input id="u" type="range" min="0.05" max="0.5" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="th" data-en="Position angle θ (set while paused)">位置角 θ（暫停時調整）</label><output id="tho"></output>
+            <input id="th" type="range" min="0" max="360" step="1" value="0" data-decimals="1"></div>
+          <p class="hint" data-en-html="The hand pulls the string at speed u until the ball is at r<sub>1</sub> (it speeds up and slows down gently, and lets the string out only as fast as the ball can follow, so the string stays taut). θ can be set only while the string length is fixed.">手以速率 u 收（或放）繩，直到小球的半徑變成 r<sub>1</sub>（起步與停下都平順；放繩時不會比小球自己往外跑得快，繩子一直保持拉緊）。θ 只有在繩長固定時可以調整。</p>
+        </section>
+        <section class="card" data-mode="hole">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="h_t">—</dd>
+            <dt data-en="Radius r">半徑 r</dt><dd id="h_r">—</dd>
+            <dt data-en="Speed v">速率 v</dt><dd id="h_v">—</dd>
+            <dt data-en="Angular speed ω">角速度 ω</dt><dd id="h_w">—</dd>
+            <dt data-en-html="Angular momentum L = mvr<sub>⊥</sub>">角動量 L = mvr<sub>⊥</sub></dt><dd id="h_L">—</dd>
+            <dt data-en-html="Lever arm r<sub>⊥</sub>">力臂 r<sub>⊥</sub></dt><dd id="h_rp">—</dd>
+            <dt data-en="Tension T">張力 T</dt><dd id="h_T">—</dd>
+            <dt data-en="Kinetic energy K">動能 K</dt><dd id="h_K">—</dd>
+            <dt data-en="Work done by the hand W">手作的功 W</dt><dd id="h_W">—</dd>
+            <dt data-en="Area swept per second">每秒掃過的面積</dt><dd id="h_A">—</dd>
+          </dl>
+        </section>
+        <section class="card" data-mode="hole">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showV" type="checkbox" checked><span data-en="Velocity v">速度 v</span></label>
+            <label><input id="showT" type="checkbox" checked><span data-en="Tension T">張力 T</span></label>
+            <label><input id="showTrail" type="checkbox" checked><span data-en="Path">軌跡</span></label>
+            <label><input id="showArea" type="checkbox" checked><span data-en="Equal areas">等面積</span></label>
+            <label><input id="showTarget" type="checkbox"><span data-en="Target">目標靶</span></label>
+          </div>
+          <p class="hint" data-en-html="The shaded wedges are swept in equal times (T<sub>0</sub>/12, where T<sub>0</sub> is the starting period). They always have the same area, ΔA = (L/2m)Δt. The target is at (−1.50, 1.10) m.">陰影扇形是相同時間（起始週期 T<sub>0</sub> 的 1/12）掃過的面積，不論繩子怎麼收放，每一塊都一樣大：ΔA = (L/2m)Δt。目標靶在 (−1.50, 1.10) m。</p>
+        </section>
+
+        <!-- ===== 模式二：旋轉平台 ===== -->
+        <section class="card" data-mode="plat" hidden>
+          <h2 data-en="Person and dumbbells">人與啞鈴</h2>
+          <div class="slider"><label for="md" data-en="Mass of each dumbbell m">每個啞鈴的質量 m</label><output id="mdo"></output>
+            <input id="md" type="range" min="0" max="5" step="0.5" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="rOut" data-en-html="Arms out: dumbbell distance r<sub>out</sub>">伸手時啞鈴離轉軸 r<sub>伸</sub></label><output id="rOuto"></output>
+            <input id="rOut" type="range" min="0.4" max="0.9" step="0.01" value="0.75" data-decimals="3"></div>
+          <div class="slider"><label for="rIn" data-en-html="Arms in: dumbbell distance r<sub>in</sub>">收手時啞鈴離轉軸 r<sub>收</sub></label><output id="rIno"></output>
+            <input id="rIn" type="range" min="0.15" max="0.4" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="w1" data-en-html="Spin with arms out ω<sub>1</sub>">伸手時的角速度 ω<sub>1</sub></label><output id="w1o"></output>
+            <input id="w1" type="range" min="0.5" max="6" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="Mb" data-en="Body mass M">人體質量 M</label><output id="Mbo"></output>
+            <input id="Mb" type="range" min="40" max="90" step="1" value="60" data-decimals="1"></div>
+          <p class="hint" data-en-html="Changing a setting starts again with the arms out, spinning at ω<sub>1</sub>. The body is a uniform cylinder of radius 0.15 m (arms included); the turntable is a uniform disc of 8 kg and radius 0.35 m.">改變條件會重新開始（手臂伸出、角速度 ω<sub>1</sub>）。人體視為半徑 0.15 m 的均勻圓柱（含手臂），平台是質量 8 kg、半徑 0.35 m 的均勻圓盤。</p>
+        </section>
+        <section class="card" data-mode="plat" hidden>
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="p_t">—</dd>
+            <dt data-en="Dumbbell distance r">啞鈴離轉軸 r</dt><dd id="p_r">—</dd>
+            <dt data-en="Moment of inertia I">轉動慣量 I</dt><dd id="p_I">—</dd>
+            <dt data-en="Angular speed ω">角速度 ω</dt><dd id="p_w">—</dd>
+            <dt data-en="Angular momentum L = Iω">角動量 L = Iω</dt><dd id="p_L">—</dd>
+            <dt data-en="Rotational kinetic energy K = ½Iω²">轉動動能 K = ½Iω²</dt><dd id="p_K">—</dd>
+            <dt data-en="Work done by the muscles W">肌肉作的功 W</dt><dd id="p_W">—</dd>
+          </dl>
+        </section>
+        <section class="card" data-mode="plat" hidden>
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showVd" type="checkbox" checked><span data-en="Dumbbell velocity">啞鈴速度</span></label>
+            <label><input id="showRing" type="checkbox" checked><span data-en="Arm positions">手臂位置</span></label>
+          </div>
+        </section>
+
+        <!-- ===== 模式三：兩盤相合 ===== -->
+        <section class="card" data-mode="disk" hidden>
+          <h2 data-en="Two discs">兩個圓盤</h2>
+          <div class="slider"><label for="M1" data-en-html="Lower disc mass M<sub>1</sub>">下盤質量 M<sub>1</sub></label><output id="M1o"></output>
+            <input id="M1" type="range" min="0.5" max="5" step="0.1" value="2" data-decimals="2"></div>
+          <div class="slider"><label for="R1" data-en-html="Lower disc radius R<sub>1</sub>">下盤半徑 R<sub>1</sub></label><output id="R1o"></output>
+            <input id="R1" type="range" min="0.1" max="0.3" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="wA" data-en-html="Lower disc ω<sub>1</sub>">下盤角速度 ω<sub>1</sub></label><output id="wAo"></output>
+            <input id="wA" type="range" min="-15" max="15" step="0.5" value="8" data-decimals="2"></div>
+          <div class="slider"><label for="M2" data-en-html="Upper disc mass M<sub>2</sub>">上盤質量 M<sub>2</sub></label><output id="M2o"></output>
+            <input id="M2" type="range" min="0.5" max="5" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="R2" data-en-html="Upper disc radius R<sub>2</sub>">上盤半徑 R<sub>2</sub></label><output id="R2o"></output>
+            <input id="R2" type="range" min="0.1" max="0.3" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="wB" data-en-html="Upper disc ω<sub>2</sub>">上盤角速度 ω<sub>2</sub></label><output id="wBo"></output>
+            <input id="wB" type="range" min="-15" max="15" step="0.5" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="mu" data-en="Friction coefficient μ">摩擦係數 μ</label><output id="muo"></output>
+            <input id="mu" type="range" min="0.05" max="0.5" step="0.01" value="0.1" data-decimals="3"></div>
+          <p class="hint" data-en="Negative ω means clockwise. Changing a setting lifts the upper disc again.">ω 為負代表順時針。改變條件會把上盤拿起來重新開始。</p>
+        </section>
+        <section class="card" data-mode="disk" hidden>
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="d_t">—</dd>
+            <dt data-en-html="Moments of inertia I<sub>1</sub>, I<sub>2</sub>">轉動慣量 I<sub>1</sub>、I<sub>2</sub></dt><dd id="d_I">—</dd>
+            <dt data-en-html="Lower disc ω<sub>1</sub>">下盤 ω<sub>1</sub></dt><dd id="d_w1">—</dd>
+            <dt data-en-html="Upper disc ω<sub>2</sub>">上盤 ω<sub>2</sub></dt><dd id="d_w2">—</dd>
+            <dt data-en-html="Total L = I<sub>1</sub>ω<sub>1</sub> + I<sub>2</sub>ω<sub>2</sub>">總角動量 L = I<sub>1</sub>ω<sub>1</sub> + I<sub>2</sub>ω<sub>2</sub></dt><dd id="d_L">—</dd>
+            <dt data-en="Total kinetic energy K">總動能 K</dt><dd id="d_K">—</dd>
+            <dt data-en="Heat from friction Q">摩擦生熱 Q</dt><dd id="d_Q">—</dd>
+            <dt data-en-html="Final ω<sub>f</sub> (predicted)">最後的 ω<sub>f</sub>（預測）</dt><dd id="d_wf">—</dd>
+          </dl>
+        </section>
+        <section class="card" data-mode="disk" hidden>
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showW" type="checkbox" checked><span data-en="Rotation arrows">轉動箭頭</span></label>
+            <label><input id="showFr" type="checkbox" checked><span data-en="Friction torque">摩擦力矩</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="For a particle of mass \(m\) moving with velocity \(\vec v\) at position \(\vec r\) from a chosen point, the angular momentum about that point is \(\vec L = \vec r \times m\vec v\). Its magnitude is the momentum times the lever arm \(r_\perp\), the perpendicular distance from the point to the line of the velocity:">質量 \(m\)、速度 \(\vec v\) 的質點，在相對於某一點的位置 \(\vec r\) 時，對該點的角動量是 \(\vec L = \vec r \times m\vec v\)。大小等於動量乘以力臂 \(r_\perp\)（該點到速度所在直線的垂直距離）：</p>
+      <div class="formula">
+        \[ L = m v r_\perp = m v_\perp r = m r^{2}\omega \]
+      </div>
+      <p data-en-html="A torque changes the angular momentum, just as a force changes the momentum. If the net torque about the point is zero, \(L\) does not change:">力矩改變角動量，就像力改變動量一樣。對該點的合力矩為零時，角動量守恆：</p>
+      <div class="formula">
+        \[ \vec\tau = \vec r \times \vec F = \frac{\Delta \vec L}{\Delta t}, \qquad \vec\tau = 0 \;\Rightarrow\; \vec L = \text{constant} \]
+      </div>
+
+      <h3 data-en="1. String through a hole">一、穿過小孔的繩子</h3>
+      <p data-en-html="On the smooth table the only horizontal force on the ball is the tension, and it always points at the hole (a central force). Its lever arm about the hole is zero, so the torque is zero and \(L = m v_\perp r\) stays the same however the hand moves the string. Pull the string and the ball must go faster; when the string is held still the ball moves in a circle again:">光滑桌面上，小球在水平方向只受繩子的張力，而張力永遠指向小孔（連心力），對小孔的力臂是零，力矩為零，所以不論手怎麼收放繩子，\(L = m v_\perp r\) 都不變。把繩子拉短，小球就必須轉得更快；繩長固定時，小球又做等速圓周運動：</p>
+      <div class="formula">
+        \[ v r = \text{constant}\;\Rightarrow\; v \propto \frac{1}{r}, \qquad \omega = \frac{L}{m r^{2}} \propto \frac{1}{r^{2}}, \qquad T = \frac{m v^{2}}{r} = \frac{L^{2}}{m r^{3}} \]
+      </div>
+      <p data-en-html="Halve the radius and the speed doubles, the angular speed becomes 4 times as large, the kinetic energy 4 times and the tension 8 times. The tension does work as the ball moves inward, and this work done by the hand equals the gain in kinetic energy:">半徑減半：速率變 2 倍、角速度變 4 倍、動能變 4 倍、張力變 8 倍。小球往內移時張力對它作正功，手作的功正好等於動能的增加：</p>
+      <div class="formula">
+        \[ W = \Delta K = \frac{L^{2}}{2m}\left(\frac{1}{r_{1}^{2}} - \frac{1}{r_{0}^{2}}\right) \]
+      </div>
+      <p data-en-html="When the string is let out the ball does work on the hand and loses kinetic energy. If the hand lets go, the tension disappears and the ball slides off in a straight line at constant speed — and \(L\) is still the same, because the lever arm \(r_\perp\) of a straight line does not change. In equal times the line from the hole to the ball sweeps out equal areas, the same rule as Kepler’s second law for the planets:">放繩時，小球對手作功，動能減少。如果手鬆開，張力消失，小球沿直線等速滑出——角動量還是一樣，因為直線的力臂 \(r_\perp\) 不變。從小孔到小球的連線，在相等的時間掃過相等的面積，這正是行星運動的克卜勒第二定律：</p>
+      <div class="formula">
+        \[ \frac{\Delta A}{\Delta t} = \frac{1}{2} r v_\perp = \frac{L}{2m} = \text{constant} \]
+      </div>
+
+      <h3 data-en="2. The turntable">二、旋轉平台</h3>
+      <p data-en-html="For a body turning about a fixed axis, add up \(m r^2\) for every piece of mass: that sum is the moment of inertia \(I\), and \(L = I\omega\). Here the turntable is a uniform disc, the body is roughly a uniform cylinder, and each dumbbell is treated as a point mass at distance \(r\) from the axis:">繞固定軸轉動的物體，把每一小塊質量的 \(m r^2\) 加起來就是轉動慣量 \(I\)，角動量 \(L = I\omega\)。這裡平台是均勻圓盤、人體近似均勻圓柱，每個啞鈴看成離轉軸 \(r\) 的質點：</p>
+      <div class="formula">
+        \[ I = \tfrac12 M R_{b}^{2} + \tfrac12 M_{p} R_{p}^{2} + 2 m r^{2} \]
+      </div>
+      <p data-en-html="\(I\) depends only on how the mass is arranged around the axis — on where the dumbbells are — and not on how fast the person turns. The bearing has no friction and the muscles only exert internal forces, so there is no external torque and \(I_1\omega_1 = I_2\omega_2\). Pulling the arms in makes \(I\) smaller and \(\omega\) larger; the kinetic energy goes up, and the extra energy comes from the work done by the muscles:">\(I\) 只由質量相對於轉軸的分布（啞鈴在哪裡）決定，與轉得多快無關。轉軸沒有摩擦、肌肉的力是內力，沒有外力矩，所以 \(I_1\omega_1 = I_2\omega_2\)。收手讓 \(I\) 變小、\(\omega\) 變大；轉動動能增加，多出來的能量來自肌肉作的功：</p>
+      <div class="formula">
+        \[ \frac{\omega_{2}}{\omega_{1}} = \frac{I_{1}}{I_{2}}, \qquad K = \tfrac12 I\omega^{2} = \frac{L^{2}}{2I}, \qquad W = \Delta K = \frac{L^{2}}{2}\left(\frac{1}{I_{2}} - \frac{1}{I_{1}}\right) \]
+      </div>
+      <p data-en-html="Stretching the arms out again does the reverse: \(\omega\) drops back and the same amount of energy goes back into the muscles.">再把手伸出去則相反：\(\omega\) 變回原來的值，同樣多的能量回到肌肉。</p>
+
+      <h3 data-en="3. Two discs">三、兩盤相合</h3>
+      <p data-en-html="An upper disc is dropped onto a lower disc turning on the same axle. Friction between them speeds one up and slows the other down until they turn together. The friction torques on the two discs are equal and opposite (internal), so the total angular momentum is conserved:">把上盤放到同軸旋轉的下盤上，兩盤之間的摩擦力讓一個變快、一個變慢，直到一起轉動。兩盤受到的摩擦力矩大小相等、方向相反（內力矩），總角動量守恆：</p>
+      <div class="formula">
+        \[ I_{1}\omega_{1} + I_{2}\omega_{2} = (I_{1} + I_{2})\,\omega_{f}, \qquad I = \tfrac12 M R^{2} \]
+      </div>
+      <p data-en-html="Kinetic energy is not conserved: the sliding turns some of it into heat. This is the rotational version of a completely inelastic collision. The loss does not depend on the friction coefficient — strong friction only makes the discs lock together sooner:">動能不守恆：滑動的過程把一部分動能變成熱，這是轉動版的「完全非彈性碰撞」。損失的動能與摩擦係數無關，摩擦大只是讓兩盤更快一起轉：</p>
+      <div class="formula">
+        \[ \Delta K = \frac12\,\frac{I_{1}I_{2}}{I_{1}+I_{2}}\,(\omega_{1}-\omega_{2})^{2}, \qquad \frac{\Delta K}{K_{0}} = \frac{I_{2}}{I_{1}+I_{2}}\ \ (\omega_{2} = 0) \]
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Half the radius, twice the speed</strong>: with the default settings (\(r_0 = 1\ \mathrm{m}\), \(v_0 = 1\ \mathrm{m/s}\)) pull the string to \(r_1 = 0.5\ \mathrm{m}\). The speed becomes \(2\ \mathrm{m/s}\), the angular speed four times as large and the kinetic energy four times as large, while \(L\) stays at \(0.500\ \mathrm{kg\,m^2/s}\)."><strong>半徑減半，速率加倍</strong>：用預設值（\(r_0 = 1\ \mathrm{m}\)、\(v_0 = 1\ \mathrm{m/s}\)）把繩子拉到 \(r_1 = 0.5\ \mathrm{m}\)：速率變成 \(2\ \mathrm{m/s}\)，角速度與動能都變 4 倍，而 \(L\) 一直是 \(0.500\ \mathrm{kg\,m^2/s}\)。</li>
+        <li data-en-html="<strong>The work done by the hand</strong>: compare “Work done by the hand W” with the change in kinetic energy — they are always equal. Letting the string out gives negative work."><strong>手作的功</strong>：比較讀數的「手作的功 W」與動能的變化，兩者永遠相等；放繩時功是負的。</li>
+        <li data-en-html="<strong>Equal areas</strong>: the shaded wedges have the same area whether the string is held, pulled or let go — the hallmark of a central force."><strong>等面積</strong>：不論繩子固定、收繩或鬆手，陰影扇形的面積都一樣——這是連心力的特徵。</li>
+        <li data-en-html="<strong>Too much tension</strong>: the tension grows as \(1/r^3\). Pull far enough and the string breaks."><strong>張力太大</strong>：張力和 \(1/r^3\) 成正比，拉得太近繩子會斷。</li>
+        <li data-en-html="<strong>Pirouette</strong>: on the turntable pull the arms in. The bars show \(I\) going down, \(\omega\) going up by the same factor, \(L\) unchanged and \(K\) going up."><strong>花式滑冰的旋轉</strong>：在旋轉平台上收手，長條圖顯示 \(I\) 變小、\(\omega\) 以同樣的倍數變大、\(L\) 不變、\(K\) 增加。</li>
+        <li data-en-html="<strong>Same ratio at any speed</strong>: change \(\omega_1\) and pull in again. The ratio \(\omega_2/\omega_1 = I_1/I_2\) does not change, because \(I\) does not depend on how fast you turn."><strong>轉速倍率與轉速無關</strong>：改變 \(\omega_1\) 再收手一次，倍率 \(\omega_2/\omega_1 = I_1/I_2\) 不變，因為 \(I\) 與轉速無關。</li>
+        <li data-en-html="<strong>Equal discs</strong>: two identical discs, the upper one at rest — the final speed is half and exactly half of the kinetic energy turns into heat."><strong>相同的兩盤</strong>：兩盤完全相同、上盤原本靜止，最後轉速減半，動能剛好損失一半。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="String through a hole: while the string is taut the hand fixes \(r(t)\) (constant acceleration, constant speed \(u\), constant deceleration). The tangential equation of motion \(r\ddot\theta + 2\dot r\dot\theta = 0\) and the work \(W = \int T(-\dot r)\,dt\), with \(T = m(r\dot\theta^2 - \ddot r)\), are integrated with the fourth-order Runge–Kutta method in steps of at most 0.5 ms. \(L\) is not put in by hand: the unit tests check that \(m r^2\dot\theta\) stays the same to better than one part in \(10^{9}\) and that \(W = \Delta K\).">穿過小孔的繩子：繩子拉緊時，手決定 \(r(t)\)（等加速、等速 \(u\)、等減速）。切線方向的運動方程式 \(r\ddot\theta + 2\dot r\dot\theta = 0\) 與手作的功 \(W = \int T(-\dot r)\,dt\)（\(T = m(r\dot\theta^2 - \ddot r)\)）用四階 Runge–Kutta 法數值積分，步長不超過 0.5 ms。程式沒有把 \(L\) 當成已知：單元測試檢查 \(m r^2\dot\theta\) 的漂移小於十億分之一，並檢查 \(W = \Delta K\)。</li>
+        <li data-en-html="When the string is let out, the acceleration is limited so that the tension never drops below half of \(mv^2/r\): a string can pull but not push. After the hand lets go, or the tension passes 30 N and the string breaks, the ball moves in a straight line at constant speed (exact solution).">放繩時加速度有上限，張力至少保持 \(mv^2/r\) 的一半（繩子只能拉、不能推）。手鬆開或張力超過 30 N 繩子斷掉後，小球做等速直線運動（解析解）。</li>
+        <li data-en-html="Turntable: \(\omega = L/I(r)\) with \(L\) fixed. The arms move along a smooth curve (zero speed at both ends), and the angle turned is integrated with Simpson’s rule. The two hands move symmetrically, so swinging them forward adds no net angular momentum. The mass of the arms is included in the body cylinder.">旋轉平台：\(L\) 固定，\(\omega = L/I(r)\)。手臂沿平滑曲線移動（兩端速度為零），轉過的角度用 Simpson 法積分。兩手的姿勢左右對稱，手往前擺不會產生淨角動量。手臂的質量併入人體圓柱。</li>
+        <li data-en-html="Two discs: the contact has uniform pressure, so the kinetic friction torque is \(\tau = \tfrac23\mu M_2 g R_c\) (\(R_c\) = the smaller radius, \(g = 9.80665\ \mathrm{m/s^2}\)). Each disc then has a constant angular acceleration until the two speeds are equal (exact solution).">兩盤相合：接觸面的壓力均勻，動摩擦力矩 \(\tau = \tfrac23\mu M_2 g R_c\)（\(R_c\) 取較小的半徑，\(g = 9.80665\ \mathrm{m/s^2}\)），兩盤各自等角加速度，直到轉速相同（解析解）。</li>
+        <li data-en="The ball and the dumbbells are point masses; their size on screen is only for visibility. Air resistance and friction at the hole and in the bearings are neglected.">小球與啞鈴視為質點，畫面上的大小只是為了看得清楚；不計空氣阻力，小孔與轉軸都沒有摩擦。</li>
+        <li data-en="The 3D view (three.js, MIT licence, downloaded only when you switch to 3D) draws the same state, computed by the same physics core, in metres: the table, the hole and the hanging string; the person, arms, dumbbells and the angular-momentum vector along the axle; and the two discs on their spindle.">3D 檢視使用 three.js 函式庫（MIT 授權，只有切換到 3D 時才會下載），以公尺為單位畫出同一個物理核心算出的狀態：桌面、小孔與下垂的繩子；人、手臂、啞鈴與沿轉軸的角動量向量；以及裝在同一根軸上的兩個圓盤。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics II · Momentum and Angular Momentum">課綱對應：選修物理Ⅱ・動量與角動量</li>
+        <li data-en-html="Constants and data: standard acceleration of gravity \(g_n = 9.80665\ \mathrm{m/s^2}\) (exact), from <a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NIST, CODATA values</a>; used for the normal force between the two discs and for the falling dumbbells. The body, turntable and disc sizes are simple models chosen for this page.">常數與數據：標準重力加速度 \(g_n = 9.80665\ \mathrm{m/s^2}\)（定義值），出自 <a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">NIST CODATA 常數表</a>，用在兩盤之間的正向力與啞鈴落下；人體、平台與圓盤的尺寸是本頁自訂的簡化模型。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/11-2-angular-momentum&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 11.2 Angular Momentum</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/11-3-conservation-of-angular-momentum&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>11.3 Conservation of Angular Momentum</a> (the spinning skater and coupled flywheels)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/11-2-angular-momentum" target="_blank" rel="noopener">University Physics Volume 1，11.2 角動量</a>》、《<a href="https://openstax.org/books/university-physics-volume-1/pages/11-3-conservation-of-angular-momentum" target="_blank" rel="noopener">11.3 角動量守恆</a>》（英文，含花式滑冰旋轉與兩飛輪相合的例題）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/angular-momentum-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/angular-momentum-3d.js?v=202611120801"></script>
+  <script src="js/angular-momentum.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="angular-momentum"></script>
+  <script src="js/missions/angular-momentum.js"></script>
+  <script src="js/stats.js?v=202611120801" data-module="angular-momentum"></script>
+  <script src="js/comments.js?v=202611120801"></script>
+</body>
+</html>

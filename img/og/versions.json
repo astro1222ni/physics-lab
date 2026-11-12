@@ -23,7 +23,7 @@
  "photoelectric": "969322aa69",
  "hydrogen-spectrum": "78c71393a9",
  "radioactive-decay": "713fd086f9",
- "index": "4ab3dadeb9",
+ "index": "0cf6ff7174",
  "free-fall": "ba75a6a746",
  "ripple-tank": "93838f4dbf",
  "resonance-tube": "4c96d3b2f8",
@@ -33,5 +33,12 @@
  "current-balance": "d3ab6ec7be",
  "microwave": "fa4fa2b122",
  "ohms-law": "37c10d5d8d",
- "e-over-m": "8c67b02d3b"
+ "e-over-m": "8c67b02d3b",
+ "measurement": "e8eaf52246",
+ "torque-balance": "ee28cebb8c",
+ "angular-momentum": "cd2b159204",
+ "thin-film": "fa7e8bbee5",
+ "moon-phases": "08312c6a47",
+ "earthquake": "e6762a4f5f",
+ "energy-coaster": "1a286e2488"
 }

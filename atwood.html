@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Connected Bodies and the Atwood Machine | Astro Ni Physics Lab">連體運動與阿特午機｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,10 +25,11 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"連體運動與阿特午機","alternateName":"Connected Bodies and the Atwood Machine","description":"釋放阿特午機、被懸掛物拉動的桌面或斜面木塊，或推、拉一列木塊；依比例畫出每個物體的受力圖與系統圖，比較 a = F合/m總 與各自的 F = ma，判斷靜摩擦，並用光電計時器或手按碼錶量出 g。","url":"https://astro1222ni.github.io/physics-lab/atwood.html","image":"https://astro1222ni.github.io/physics-lab/img/og/atwood.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","牛頓運動定律（Newton's Laws of Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 連體運動與阿特午機頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .lab.aw { grid-template-areas: "scene panel" "fbd panel" "data panel"; grid-template-rows: auto auto 1fr; }
@@ -123,6 +124,7 @@
       <p data-en-html="Bodies tied together by strings or pushing on each other move with the same acceleration. Release an Atwood machine, a block on a table or an incline pulled by a hanging mass, or a train of blocks pushed or pulled by a force. Compare the system view a = F<sub>net</sub> / m<sub>total</sub> with F = ma for each body, read every force from the free-body diagrams drawn to scale, and time the motion to measure g.">用繩子連在一起或互相推擠的物體，會以相同的加速度運動。釋放阿特午機、被懸掛物拉動的桌面木塊或斜面木塊，或用外力推、拉一列木塊；比較「系統觀點」a = F<sub>合</sub> / m<sub>總</sub> 與每個物體各自的 F = ma，從依比例畫出的受力圖讀出每一個力，並計時量出重力加速度 g。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Release” and check in the free-body diagrams that the tension T lies between the two weights.">試試看：按「釋放」，看受力圖中繩張力 T 是否介於兩邊物體的重量之間。</p>
     <div class="lab aw">
       <div class="stage scene-stage">
         <div class="tabs" role="tablist" aria-label="選擇實驗" data-en-aria-label="Choose an experiment">
@@ -131,7 +133,7 @@
           <button type="button" role="tab" id="tab3" aria-selected="false" aria-controls="panel3" data-mode="3" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M1 19h22"/><rect x="3" y="12" width="5" height="7" rx="1" fill="currentColor" opacity=".6"/><rect x="9.5" y="11" width="6" height="8" rx="1" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M16 15h5M19 12.8l2.2 2.2-2.2 2.2"/></svg><span data-en="Push / pull blocks">推拉連體</span></button>
           <button type="button" role="tab" id="tab4" aria-selected="false" aria-controls="panel4" data-mode="4" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M2 20h15V8z"/><rect x="7.2" y="11.6" width="5" height="3.6" rx=".8" transform="rotate(-35 9.7 13.4)" fill="currentColor"/><circle cx="18.3" cy="7.2" r="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path fill="none" stroke="currentColor" stroke-width="1.3" d="M20.3 7.2v6"/><rect x="18.3" y="13.2" width="4" height="4" rx="1" fill="currentColor" opacity=".6"/></svg><span data-en="Incline + hanger">斜面與懸掛</span></button>
         </div>
-        <canvas id="scene" aria-label="連體運動模擬畫布：實驗裝置、計時器與速度對時間的圖" data-en-aria-label="Connected-bodies simulation: the apparatus, the timer and a velocity–time graph"></canvas>
+        <canvas id="scene" role="img" aria-label="連體運動模擬畫布：實驗裝置、計時器與速度對時間的圖" data-en-aria-label="Connected-bodies simulation: the apparatus, the timer and a velocity–time graph"></canvas>
         <div class="bar">
           <button id="play" type="button" class="primary" data-en="Release">釋放</button>
           <button id="lap" type="button" hidden disabled data-en="Stop watch">停錶</button>
@@ -141,6 +143,7 @@
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Weight mg"><i style="background:var(--field)"></i>重力 mg</span>
           <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Tension T"><i style="background:var(--b-mech)"></i>張力 T</span>
@@ -159,7 +162,7 @@
           <h2 data-en="Free-body diagrams (to scale)">受力圖（依比例）</h2>
           <p id="fbdNote" data-en="Every arrow uses the same force scale">所有箭頭使用同一個力的比例尺</p>
         </div>
-        <canvas id="fbd" aria-label="每個物體的受力圖與整個系統沿繩子方向的受力圖" data-en-aria-label="Free-body diagram of each body, and the whole system straightened out along the string"></canvas>
+        <canvas id="fbd" role="img" aria-label="每個物體的受力圖與整個系統沿繩子方向的受力圖" data-en-aria-label="Free-body diagram of each body, and the whole system straightened out along the string"></canvas>
         <div class="compare">
           <section>
             <h3 data-en-html="System view: a = F<sub>net</sub> / m<sub>total</sub>">系統觀點：a = F<sub>合</sub> / m<sub>總</sub></h3>
@@ -367,6 +370,13 @@
         <li data-en="The photogate timer reads to 0.001 s. The hand stopwatch is stopped by you, so it includes your real reaction time; a run that used slow motion or was paused is marked in the table and is not a fair hand measurement.">光電計時器讀到 0.001 s；手按碼錶由你親手停錶，包含你真實的反應時間（用過慢動作或暫停的那一次會在表格中標示，不算公平的手按量測）。</li>
         <li data-en="The sizes of the bodies only grow with mass so you can tell them apart; they do not affect the motion.">物體的大小只是隨質量變大以便分辨，不影響運動。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics I · Newton’s Laws of Motion">課綱對應：選修物理Ⅰ・牛頓運動定律</li>
+        <li data-en-html="Constants and data: \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>). The friction coefficients are settings you choose, not measured values for a particular material.">常數與數據：\(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字）；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。摩擦係數是可調的設定值，不是某種材料的實測數據。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/6-1-solving-problems-with-newtons-laws&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 6.1 Solving Problems with Newton’s Laws</a> (Example 6.4: two attached blocks; Example 6.5: Atwood machine)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/6-1-solving-problems-with-newtons-laws" target="_blank" rel="noopener">University Physics Volume 1，6.1 用牛頓定律解題</a>》（例題 6.4：以繩相連的兩個物體；例題 6.5：阿特午機）（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -374,16 +384,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/atwood-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/atwood.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="atwood"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/atwood-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/atwood.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="atwood"></script>
   <script src="js/missions/atwood.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="atwood"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="atwood"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

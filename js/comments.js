@@ -42,6 +42,18 @@
       provider.setCustomParameters({ prompt: 'select_account' });
       Au.getRedirectResult(auth).catch(function () { /* 沒有進行中的轉址登入 */ });
       const r = function (p) { return D.ref(db, p); };
+      // 免費方案同時連線上限 100：分頁切到背景 3 分鐘就斷開即時連線，回到前景再接上（只在已經連過線時才處理，避免替沒用到資料庫的訪客開連線）
+      let live = false, off = false, offTimer = null;
+      document.addEventListener('visibilitychange', function () {
+        if (!live) return;
+        if (document.hidden) {
+          clearTimeout(offTimer);
+          offTimer = setTimeout(function () { off = true; D.goOffline(db); }, 180000);
+        } else {
+          clearTimeout(offTimer);
+          if (off) { off = false; D.goOnline(db); }
+        }
+      });
 
       return {
         onAuth: function (cb) { Au.onAuthStateChanged(auth, function (u) { cb(u ? { uid: u.uid } : null); }); },
@@ -58,6 +70,7 @@
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },
         isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
         watchComments: function (mod, cb) {
+          live = true;
           D.onValue(D.query(r('comments/' + mod), D.orderByChild('createdAt'), D.limitToLast(100)), function (snap) {
             const list = [];
             snap.forEach(function (c) { list.push(Object.assign({ id: c.key }, c.val())); });
@@ -144,6 +157,15 @@
     wrap.appendChild(btn);
     wrap.appendChild(menu);
     document.documentElement.classList.add('has-account');
+    // 頁首第一行（麵包屑或站名）右側留出登入鈕＋齒輪實際佔的寬度（隨語言、字級、登入狀態改變），標題才不會被按鈕蓋住
+    function reserve() {
+      if (btn.hidden || !btn.offsetParent) return;
+      const room = wrap.getBoundingClientRect().right - 16 - btn.getBoundingClientRect().left + 10;
+      if (room > 0) document.documentElement.style.setProperty('--head-reserve', Math.ceil(room) + 'px');
+    }
+    if ('ResizeObserver' in window) new ResizeObserver(reserve).observe(btn);
+    window.addEventListener('resize', reserve);
+    setTimeout(reserve, 0);
 
     function close() { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
     btn.addEventListener('click', function () {
@@ -387,8 +409,36 @@
   let welcome = null;
   function welcomeSeen() { try { return !!localStorage.getItem(WELCOME_KEY); } catch (e) { return true; } }
   function welcomeMark(v) { try { localStorage.setItem(WELCOME_KEY, v); } catch (e) { /* 無法記錄時照樣關閉 */ } }
+  // 實驗頁先讓學生玩一下：操作 3 次，或頁面在前景停留 40 秒，才跳登入提示（站長 11/12 同意）；首頁照舊
+  let engaged = !moduleId, engageCbs = null;
+  function whenEngaged(cb) {
+    if (engaged) { cb(); return; }
+    if (engageCbs) { engageCbs.push(cb); return; }
+    engageCbs = [cb];
+    let ops = 0, secs = 0, timer = null;
+    const done = function (wait) {
+      if (engaged) return;
+      engaged = true;
+      clearInterval(timer);
+      document.removeEventListener('change', onChange, true);
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('pointerdown', onDown, true);
+      const cbs = engageCbs; engageCbs = null;
+      setTimeout(function () { cbs.forEach(function (f) { f(); }); }, wait); // 第 3 次操作後稍等，不打斷正在拖曳的手
+    };
+    const count = function () { if (++ops >= 3) done(1500); };
+    // 只算真的手動操作（頁面程式自己送出的 change／click 不算）
+    const onChange = function (e) { if (e.isTrusted && e.target.matches && e.target.matches('input, select, textarea')) count(); };
+    const onClick = function (e) { if (e.isTrusted && e.target.closest && e.target.closest('.lab button, .lab [role="button"]')) count(); };
+    const onDown = function (e) { if (e.isTrusted && e.target.closest && e.target.closest('canvas, svg, .stage') && !e.target.closest('button, [role="button"]')) count(); }; // 按鈕裡的圖示由 click 算
+    document.addEventListener('change', onChange, true);
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('pointerdown', onDown, true);
+    timer = setInterval(function () { if (document.visibilityState === 'visible' && ++secs >= 40) done(0); }, 1000);
+  }
   function maybeWelcome() {
     if (welcome || state.user || welcomeSeen()) return;
+    if (document.documentElement.classList.contains('lab-embed')) return; // 嵌入在別的網頁裡：不跳登入提示
     if (/(?:privacy|leaderboard)\.html$/.test(location.pathname)) return;
     const back = el('div', 'lab-welcome');
     const box = el('div', 'lab-welcome-box');
@@ -464,6 +514,23 @@
     }
   }
 
+  // 捲到留言區附近才開始即時讀取留言（每個即時監聽都佔一條連線；免費方案同時連線上限 100，全班同時上課時要省著用）
+  function watchWhenNear() {
+    let started = false;
+    const go = function () {
+      if (started) return;
+      started = true;
+      api.watchComments(moduleId, function (list) { state.comments = list || []; changed(); });
+      api.watchReports(moduleId, function (reps) { state.reports = reps || {}; changed(); });
+    };
+    const sec = document.getElementById('comments');
+    if (!sec || !('IntersectionObserver' in window) || location.hash === '#comments') { go(); return; }
+    const io = new IntersectionObserver(function (es) {
+      if (es.some(function (e) { return e.isIntersecting; })) { io.disconnect(); go(); }
+    }, { rootMargin: '600px 0px' });
+    io.observe(sec);
+  }
+
   // ======================= 啟動 =======================
   function start() {
     buildAccount();
@@ -479,7 +546,7 @@
         state.ready = true;
         changed();
         if (user) closeWelcome('signed');
-        else setTimeout(maybeWelcome, 600); // 讓頁面先出現，再跳出登入提示
+        else setTimeout(function () { whenEngaged(maybeWelcome); }, 600); // 讓頁面先出現；實驗頁等學生先操作幾下再提示
         if (user) {
           Promise.all([api.getNickname(user.uid).catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
             if (!state.user || state.user.uid !== user.uid) return;
@@ -489,10 +556,7 @@
           });
         }
       });
-      if (moduleId) {
-        api.watchComments(moduleId, function (list) { state.comments = list || []; changed(); });
-        api.watchReports(moduleId, function (reps) { state.reports = reps || {}; changed(); });
-      }
+      if (moduleId) watchWhenNear();
     }).catch(function () {
       state.ready = false;
       state.msg = t('留言功能暫時無法載入。', 'Comments could not be loaded right now.');

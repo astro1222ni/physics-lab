@@ -992,6 +992,7 @@
     const prev = committed;
     committed = cur;
     emit('params', Object.assign({ prev: prev }, cur));
+    sayParams();
   }
   /** 剪斷瞬間的資料：剪斷角 theta（度，由 +x 軸逆時針，[0, 360)）、位置與速度 */
   function cutData() {
@@ -1040,6 +1041,47 @@
   }
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報與畫布說明 ----------
+  // 只在離散事件（改完條件、剪斷、暫停）寫入 aria-live 的 #srSay；每格都在變的即時讀數不播報
+  let sayTimer = 0, sayParamTimer = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  const MS2T = ' m/s²';
+  function settingText() {
+    const d = CC.derived(params());
+    return T('半徑 ', 'Radius ') + num(d.r, 2) + ' m' + T('、週期 ', ', period ') + num(d.T, 2) + ' s' +
+      T('：速率 ', ': speed ') + num(d.v, 2) + ' m/s' + T('，向心加速度 ', ', centripetal acceleration ') + num(d.a, 2) + MS2T +
+      T('，向心力 ', ', centripetal force ') + num(d.F, 2) + ' N' + T('。', '.');
+  }
+  /** 改完條件後播報（連續改動時只念最後一次） */
+  function sayParams() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { say(settingText()); }, 350);
+  }
+  /** 畫布的文字說明（role="img"）：條件改變、剪斷或接回繩子時更新 */
+  let labelKey = '';
+  function updateLabel() {
+    const d = CC.derived(params()), cut = state.tCut != null;
+    const key = [d.r, d.T, d.m, cut, T('', 'en')].join('|');
+    if (key === labelKey) return;
+    labelKey = key;
+    cv.removeAttribute('data-en-aria-label'); // 改由程式依語言更新
+    cv.setAttribute('aria-label', T(
+      '等速圓周運動俯視圖：小球在半徑 ' + num(d.r, 2) + ' m 的圓上逆時針轉動，週期 ' + num(d.T, 2) + ' s、速率 ' + num(d.v, 2) +
+      ' m/s；速度箭頭沿切線，向心加速度 ' + num(d.a, 2) + MS2T + ' 指向圓心。' +
+      (cut ? '繩子已剪斷，小球沿切線等速直線前進。' : '') + '右側是 y 對時間的正弦曲線，下方是 x 對時間的餘弦曲線。',
+      'Top view of uniform circular motion: the ball goes anticlockwise round a circle of radius ' + num(d.r, 2) + ' m with period ' +
+      num(d.T, 2) + ' s and speed ' + num(d.v, 2) + ' m/s; the velocity arrow is along the tangent and the centripetal acceleration of ' +
+      num(d.a, 2) + MS2T + ' points to the centre.' + (cut ? ' The string is cut, so the ball moves along the tangent in a straight line at constant speed.' : '') +
+      ' On the right is the y–t graph (a sine curve), below it the x–t graph (a cosine curve).'));
+  }
+
   function updateButtons() {
     $('play').textContent = state.running ? T('暫停', 'Pause') : state.t > 0 && !state.ended ? T('繼續', 'Resume') : T('播放', 'Play');
     const cut = state.tCut != null;
@@ -1056,6 +1098,7 @@
     state.running = play;
     setStatus('');
     updateButtons();
+    updateLabel();
     if (play) startLoop();
     requestDraw();
   }
@@ -1073,6 +1116,10 @@
         attached: !cut, t: state.t, theta: th, x: s.x, y: s.y, vx: s.vx, vy: s.vy, ax: s.ax, ay: s.ay,
         d: Math.hypot(s.x, s.y), tau: cut ? state.t - state.tCut : 0
       }));
+      say(T('暫停：t = ', 'Paused: t = ') + num(state.t, 2) + ' s' +
+        (cut ? T('，與圓心距離 ', ', distance from the centre ') + num(Math.hypot(s.x, s.y), 2) + ' m'
+          : T('，θ = ', ', θ = ') + num(th, 1) + '°') +
+        T('，x = ', ', x = ') + num(s.x, 2) + ' m' + T('，y = ', ', y = ') + num(s.y, 2) + ' m' + T('。', '.'));
       return;
     }
     if (state.ended) { reattach(true); return; }
@@ -1091,9 +1138,13 @@
     setStatus(T('繩子剪斷了！合力變成零，小球保持剪斷瞬間的速度前進。', 'The string is cut! The net force is now zero, so the ball keeps the velocity it had at that instant.'));
     state.running = true; // 剪斷後自動播放，看小球飛出
     updateButtons();
+    updateLabel();
     startLoop();
     requestDraw();
-    emit('cut', cutData());
+    const cd = cutData();
+    emit('cut', cd);
+    say(T('剪斷時 θ = ', 'Cut at θ = ') + num(cd.theta, 1) + '°' + T('：小球以 ', ': the ball leaves along the tangent at ') + num(cd.v, 2) +
+      T(' m/s 沿切線飛出。', ' m/s.'));
   });
 
   // 全部清除：清掉軌跡、x–t／y–t 圖與剪斷後的路徑，回到 t = 0（滑桿設定不變）
@@ -1145,6 +1196,7 @@
     state.t = 0;
     state.fx = [];
     updateButtons();
+    updateLabel();
     requestDraw();
   }
 
@@ -1194,6 +1246,7 @@
   committed = setting();
   refreshOutputs();
   updateButtons();
+  updateLabel();
   function themeChanged() { readColors(); if (L) buildBackground(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);

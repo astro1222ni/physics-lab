@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120809"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Roller Coaster and Conservation of Mechanical Energy | Astro Ni Physics Lab">雲霄飛車與力學能守恆｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="拖曳控制點設計軌道，看動能與重力位能互換、總能守恆；加摩擦看熱能出現，移動位能零點，再找出自由小車過迴圈的 2.5R 條件。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/energy-coaster.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="雲霄飛車與力學能守恆｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="拖曳控制點設計軌道，看動能與重力位能互換、總能守恆；加摩擦看熱能出現，移動位能零點，再找出自由小車過迴圈的 2.5R 條件。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/energy-coaster.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/energy-coaster.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="雲霄飛車與力學能守恆的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"雲霄飛車與力學能守恆","alternateName":"Roller Coaster and Conservation of Mechanical Energy","description":"拖曳控制點設計軌道，看動能與重力位能互換、總能守恆；加摩擦看熱能出現，移動位能零點，再找出自由小車過迴圈的 2.5R 條件。","url":"https://astro1222ni.github.io/physics-lab/energy-coaster.html","image":"https://astro1222ni.github.io/physics-lab/img/og/energy-coaster.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","功與能量（Work and Energy）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120809">
+  <style>
+    /* 雲霄飛車與力學能守恆頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 場景畫布可拖曳小車、控制點與位能零點（touch-action: none）；下方的能量圖畫布不攔截觸控，手機可在上面捲動 */
+    .ec #cv { aspect-ratio: auto; height: 300px; touch-action: none; cursor: default; }
+    .ec #gv { display: block; width: 100%; aspect-ratio: auto; height: 240px; margin-top: 8px; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; cursor: default; }
+    .ec button { min-height: 44px; }
+    .ec .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ec .playbar button { flex: 1 1 auto; }
+    .ec .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ec .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .ec .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .ec .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ec .slider input[type="range"] { height: 28px; margin: 0; }
+    .ec .slider label sub, dl.readout sub, .ec .hint sub { font-size: .75em; }
+    .ec [hidden] { display: none !important; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ec .graphbar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 2px 0; }
+    .ec .graphbar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+    .presets.three { grid-template-columns: repeat(3, 1fr); }
+    .presets button { padding: 6px 4px; line-height: 1.25; }
+    .presets button small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 600; }
+    .ec .checks label { min-height: 44px; }
+    .ec .checks input { width: 17px; height: 17px; }
+    .ec .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ec dl.readout dd { white-space: nowrap; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dt .f { white-space: nowrap; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .ec .rec { margin-top: 12px; }
+    .ec .rec h3 { font-size: calc(15px * var(--fs, 1)); margin: 0 2px 4px; }
+    .tablewrap { overflow-x: auto; margin: 4px 0 0; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 7px; text-align: right; border: 1px solid var(--border); white-space: nowrap; line-height: 1.35; }
+    table.data thead th { color: var(--muted); font-weight: 600; background: var(--accent-soft); text-align: center; }
+    table.data tbody th { text-align: left; font-weight: 600; color: var(--text); }
+    table.data sub, table.data sup { font-size: .75em; }
+    table.data td.res { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); }
+    .ec .pt-info { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; min-height: 1.3em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Work and energy"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 功與能量</nav>
+      <h1 data-en="Roller Coaster and Conservation of Mechanical Energy">雲霄飛車與力學能守恆</h1>
+      <p data-en="A car runs along a track you can reshape. Watch kinetic and gravitational potential energy trade places while the total stays the same, add friction to see mechanical energy turn into heat, move the zero of potential energy, take the car to the Moon or Jupiter, and find out how high a free car must start to get round a loop.">小車沿著可以自己改形狀的軌道跑。看動能與重力位能互相轉換、總能卻始終不變；加上摩擦，看力學能變成熱能；移動位能零點、把小車帶到月球或木星，再找出自由小車要從多高出發才繞得過迴圈。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: set “Kinetic friction μ” to 0.1 — as the heat bar Q grows, does the total energy E change?">試試看：把「動摩擦係數 μ」調到 0.1，看熱能 Q 長條變長時，總能 E 變不變。</p>
+    <div class="lab ec">
+      <div class="stage">
+        <canvas id="cv"></canvas>
+        <div class="playbar">
+          <button id="play" class="primary" data-en="Pause">暫停</button>
+          <button id="restart" type="button" data-en="Start again" title="小車回到出發點重新出發（保留圖表上的舊紀錄）" data-en-title="Put the car back at the start and run again (earlier runs stay on the graph)">重新出發</button>
+          <button id="reset" type="button" data-en="Clear all" title="清除能量圖、舊紀錄、熱能與紀錄表，滑桿與軌道設定不變" data-en-title="Clear the energy graph, earlier runs, the heat and the record table; sliders and the track are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <canvas id="gv" role="img" aria-label="能量圖：動能、位能、熱能與總能隨時間或位置的變化" data-en-aria-label="Energy graph: kinetic, potential, thermal and total energy against time or position"></canvas>
+        <div class="graphbar" role="group" aria-label="能量圖的橫軸" data-en-aria-label="Horizontal axis of the energy graph">
+          <button type="button" id="graphT" aria-pressed="true" data-en="Energy vs time">能量–時間圖</button>
+          <button type="button" id="graphX" aria-pressed="false" data-en="Energy vs position">能量–位置圖</button>
+        </div>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Kinetic energy K"><i style="background:var(--pos)"></i>動能 K</span>
+          <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Gravitational potential energy U"><i style="background:var(--neg)"></i>重力位能 U</span>
+          <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Thermal energy Q"><i style="background:var(--equi)"></i>熱能 Q</span>
+          <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Total energy E"><i style="background:var(--accent)"></i>總能 E</span>
+          <span style="color:var(--neg)" data-en-html="<i class=&quot;dash&quot;></i>Zero of U"><i class="dash"></i>位能零點</span>
+          <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Energy level"><i class="dash"></i>能量水位</span>
+        </div>
+        <p class="hint" data-en-html="Drag the car to change where it starts, drag the round handles to reshape the track, and drag the blue tab on the left to move the zero of potential energy. With the keyboard: focus the picture, press Enter to pick an object and use the arrow keys (Shift for bigger steps). The energy level line is the highest point the car could reach with all its mechanical energy, \(y + v^2/2g\). Arrows: velocity 1 m/s → 0.25 m; forces 1 mg → 1.5 m.">拖曳小車改變出發點，拖曳圓形把手改變軌道形狀，拖曳左邊的藍色標籤移動位能零點。用鍵盤：先選取畫面，按 Enter 選物件，再用方向鍵移動（Shift 移動得更多）。「能量水位」是小車把力學能全部變成位能時能到達的高度 \(y + v^2/2g\)。箭頭比例：速度每 1 m/s 畫 0.25 m，力每 1 mg 畫 1.5 m。</p>
+        <div class="rec">
+          <h3 data-en="Record (a row for every run)">紀錄（每次出發記一列）</h3>
+          <div class="tablewrap"><table class="data" id="recTable">
+            <thead><tr><th>#</th><th data-en="Car">車</th><th data-en-html="g (m/s<sup>2</sup>)">g (m/s<sup>2</sup>)</th><th>μ</th><th data-en-html="h<sub>0</sub> (m)">h<sub>0</sub> (m)</th><th data-en-html="v<sub>bottom</sub> (m/s)">v<sub>最低點</sub> (m/s)</th><th data-en-html="√(v<sub>0</sub><sup>2</sup> + 2gh<sub>0</sub>) (m/s)">√(v<sub>0</sub><sup>2</sup> + 2gh<sub>0</sub>) (m/s)</th><th data-en="Heat Q">熱能 Q</th><th data-en="Result">結果</th></tr></thead>
+            <tbody></tbody>
+          </table></div>
+          <p class="hint" data-en-html="h<sub>0</sub> is the starting height above the lowest point of the track; v<sub>bottom</sub> is the measured speed the first time the car passes the lowest point.">h<sub>0</sub> 是出發點比軌道最低點高多少；v<sub>最低點</sub> 是小車第一次經過最低點時量到的速率。</p>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Track">軌道</h2>
+          <div class="presets" id="presetBox" role="group" aria-label="軌道形狀" data-en-aria-label="Track shape">
+            <button type="button" data-preset="valley" aria-pressed="true" data-en="U-shaped valley">U 形谷</button>
+            <button type="button" data-preset="twin" aria-pressed="false" data-en="Twin peaks">雙峰</button>
+            <button type="button" data-preset="loop" aria-pressed="false" data-en="Circular loop">圓形迴圈</button>
+            <button type="button" data-preset="jump" aria-pressed="false" data-en="Ski jump">跳台</button>
+          </div>
+          <div class="slider" id="boxR" hidden><label for="R" data-en="Loop radius R">迴圈半徑 R</label><output id="Ro"></output>
+            <input id="R" type="range" min="2" max="4.5" step="0.05" value="3.2" data-decimals="2"></div>
+          <p class="pt-info" id="ptInfo"></p>
+          <p class="hint" data-en="Press a shape again to undo your changes to it.">再按一次同一個形狀，可以復原你對它的修改。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Car">小車</h2>
+          <p class="seg-label" id="modeLabel" data-en="Type of car:">小車種類：</p>
+          <div class="seg2" role="group" aria-labelledby="modeLabel">
+            <button type="button" id="modeRail" aria-pressed="true" data-en="Rail car">軌道車</button>
+            <button type="button" id="modeFree" aria-pressed="false" data-en="Free car">自由小車</button>
+          </div>
+          <p class="hint" id="modeHint"></p>
+          <div class="slider"><label for="x0" data-en-html="Starting point x<sub>0</sub>">出發點 x<sub>0</sub></label><output id="x0o"></output>
+            <input id="x0" type="range" min="2" max="30" step="0.01" value="2.6" data-decimals="2"></div>
+          <div class="slider"><label for="v0" data-en-html="Initial velocity v<sub>0</sub> (along the track)">初速 v<sub>0</sub>（沿軌道）</label><output id="v0o"></output>
+            <input id="v0" type="range" min="-15" max="15" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="m" data-en="Mass m">質量 m</label><output id="mo"></output>
+            <input id="m" type="range" min="50" max="1000" step="10" value="500" data-decimals="0"></div>
+          <p class="hint" data-en-html="A positive v<sub>0</sub> points to the right along the track. Tap a number to type an exact value.">v<sub>0</sub> 為正代表沿軌道向右。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Gravity, friction and zero level">重力、摩擦與零點</h2>
+          <div class="presets three" id="gBox" role="group" aria-label="重力加速度預設值" data-en-aria-label="Gravity presets">
+            <button type="button" data-g="9.8" aria-pressed="true" data-en-html="Earth<small>9.8</small>">地球<small>9.8</small></button>
+            <button type="button" data-g="1.62" aria-pressed="false" data-en-html="Moon<small>1.62</small>">月球<small>1.62</small></button>
+            <button type="button" data-g="23.1" aria-pressed="false" data-en-html="Jupiter<small>23.1</small>">木星<small>23.1</small></button>
+          </div>
+          <div class="slider"><label for="g" data-en="Gravitational acceleration g">重力加速度 g</label><output id="go"></output>
+            <input id="g" type="range" min="0.5" max="30" step="0.01" value="9.8" data-decimals="2"></div>
+          <div class="slider"><label for="mu" data-en="Kinetic friction μ">動摩擦係數 μ</label><output id="muo"></output>
+            <input id="mu" type="range" min="0" max="0.5" step="0.005" value="0" data-decimals="3"></div>
+          <div class="slider"><label for="yref" data-en-html="Zero of potential energy y<sub>0</sub>">位能零點高度 y<sub>0</sub></label><output id="yrefo"></output>
+            <input id="yref" type="range" min="0" max="15" step="0.05" value="0" data-decimals="2"></div>
+          <p class="hint" data-en-html="With μ = 0 the mechanical energy K + U is conserved. The zero of potential energy can be put anywhere: U = mg(y − y<sub>0</sub>).">μ = 0 時力學能 K + U 守恆。位能零點可以任意選：U = mg(y − y<sub>0</sub>)。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Live readings">即時讀數</h2>
+          <dl class="readout">
+            <dt data-en="Time t">時間 t</dt><dd id="rT">—</dd>
+            <dt data-en="Speed v">速率 v</dt><dd id="rV">—</dd>
+            <dt data-en="Height above the ground y">離地高度 y</dt><dd id="rY">—</dd>
+            <dt data-en="Normal force N">正向力 N</dt><dd id="rN">—</dd>
+            <dt data-en-html="Kinetic energy <span class=&quot;f&quot;>K = ½mv<sup>2</sup></span>">動能 <span class="f">K = ½mv<sup>2</sup></span></dt><dd id="rK">—</dd>
+            <dt data-en-html="Potential energy <span class=&quot;f&quot;>U = mg(y − y<sub>0</sub>)</span>">位能 <span class="f">U = mg(y − y<sub>0</sub>)</span></dt><dd id="rU">—</dd>
+            <dt data-en="Mechanical energy K + U">力學能 K + U</dt><dd id="rEm">—</dd>
+            <dt data-en="Thermal energy Q">熱能 Q</dt><dd id="rQ">—</dd>
+            <dt data-en="Total energy E = K + U + Q">總能 E = K + U + Q</dt><dd id="rE">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Predicted by the formulas">公式預測</h2>
+          <dl class="readout">
+            <dt data-en-html="Starting height h<sub>0</sub>">出發高度 h<sub>0</sub></dt><dd id="pH">—</dd>
+            <dt data-en="Speed at the bottom (μ = 0)">最低點速率（μ = 0）</dt><dd id="pV">—</dd>
+            <dt data-en="Energy level">能量水位</dt><dd id="pL">—</dd>
+            <dt data-en="Free car round the loop">自由小車過迴圈</dt><dd id="pLoop">—</dd>
+          </dl>
+          <p class="hint" data-en-html="h<sub>0</sub> is how far the start is above the lowest point of the track. Speed at the bottom √(v<sub>0</sub><sup>2</sup> + 2gh<sub>0</sub>); energy level y + v<sup>2</sup>/2g. Starting from rest without friction, the free car only gets round the loop if it starts at least 2.5R above the bottom of the loop.">h<sub>0</sub> 是出發點比軌道最低點高多少。最低點速率 √(v<sub>0</sub><sup>2</sup> + 2gh<sub>0</sub>)；能量水位 y + v<sup>2</sup>/2g。自由小車由靜止出發、沒有摩擦時，出發點要比迴圈底部高 2.5R 以上才繞得過去。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showV" type="checkbox" checked><span data-en="Velocity v">速度 v</span></label>
+            <label><input id="showF" type="checkbox" checked><span data-en="Forces (mg, N, f)">力（mg、N、f）</span></label>
+            <label><input id="showLevel" type="checkbox" checked><span data-en="Energy level">能量水位</span></label>
+            <label><input id="showPts" type="checkbox" checked><span data-en="Control points">控制點</span></label>
+            <label><input id="showTrail" type="checkbox" checked><span data-en="Flight paths">飛行軌跡</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <p data-en-html="Two forces act on the car: its weight \(m\vec g\) and the force from the track. The track’s force has a part perpendicular to the track, the <strong>normal force</strong> \(N\), and (with friction) a part along the track, \(f = \mu N\). The normal force is always perpendicular to the velocity, so it does <strong>no work</strong>. By the work–energy theorem only gravity (and friction) change the kinetic energy:">小車受兩個力：重力 \(m\vec g\) 與軌道的作用力。軌道的力分成垂直軌道的<strong>正向力</strong> \(N\)，與（有摩擦時）沿著軌道的摩擦力 \(f = \mu N\)。正向力永遠和速度垂直，<strong>不作功</strong>。由功能定理，只有重力（與摩擦力）會改變動能：</p>
+      <div class="formula">
+        \[ W_{\text{gravity}} + W_{f} = \Delta K, \qquad W_{\text{gravity}} = -mg\,\Delta y = -\Delta U \]
+      </div>
+      <p data-en-html="Without friction the work done by gravity is just the loss of potential energy, so the <strong>mechanical energy</strong> is conserved at every point of the track, whatever its shape:">沒有摩擦時，重力作的功正好等於位能的減少，所以軌道上任意兩點的<strong>力學能</strong>相等，與軌道形狀無關：</p>
+      <div class="formula">
+        \[ \tfrac12 m v_1^{2} + m g y_1 = \tfrac12 m v_2^{2} + m g y_2 \quad\Rightarrow\quad v = \sqrt{v_0^{2} + 2 g h} \]
+      </div>
+      <p data-en-html="Here \(h\) is how far the car has dropped. The mass cancels, so a heavy car and a light car have the same speed at the same height. On the Moon (\(g = 1.62\ \mathrm{m/s^2}\)) the car is slower at every point, but it follows exactly the same path — it just takes longer.">\(h\) 是小車下降的高度。質量消掉了，所以重的車與輕的車在同一高度速率相同。到了月球（\(g = 1.62\ \mathrm{m/s^2}\)），每一點的速率都變慢，但走的路線完全一樣，只是花的時間比較長。</p>
+
+      <h3 data-en="The zero of potential energy is your choice">位能零點可以自己選</h3>
+      <p data-en-html="Only <em>differences</em> of potential energy have a physical meaning. Choosing the zero at height \(y_0\) gives \(U = mg(y - y_0)\): every value of \(U\) and of the total energy shifts by the same constant \(-mgy_0\), and \(U\) can be negative, but \(\Delta U\), the speeds and the motion do not change at all.">只有位能的<em>差</em>才有物理意義。把零點放在高度 \(y_0\)，位能 \(U = mg(y - y_0)\)：所有的 \(U\) 與總能都差同一個常數 \(-mgy_0\)，\(U\) 也可以是負的，但 \(\Delta U\)、速率與運動完全不變。</p>
+
+      <h3 data-en="Friction turns mechanical energy into heat">摩擦力把力學能變成熱能</h3>
+      <p data-en-html="Kinetic friction \(f = \mu N\) always opposes the motion. The mechanical energy it removes becomes thermal energy \(Q\), and the total energy stays the same:">動摩擦力 \(f = \mu N\) 永遠和運動方向相反。它減少的力學能變成熱能 \(Q\)，總能不變：</p>
+      <div class="formula">
+        \[ Q = \int \mu N\, ds, \qquad K + U + Q = \text{constant} \]
+      </div>
+      <p data-en-html="On a curved track the normal force is <strong>not</strong> \(mg\cos\theta\). Part of it supplies the centripetal force \(mv^2/r\) for the curve. With \(\kappa\) the curvature (positive in a dip, negative over a crest, \(1/R\) in the loop):">在彎曲的軌道上，正向力<strong>不是</strong> \(mg\cos\theta\)：其中一部分要提供轉彎所需的向心力 \(mv^2/r\)。以 \(\kappa\) 表示曲率（谷底為正、山頂為負、迴圈中為 \(1/R\)）：</p>
+      <div class="formula">
+        \[ N = m\left(g\cos\theta + \kappa v^{2}\right) \]
+      </div>
+      <p data-en-html="So a fast car is pressed hard into a dip (and loses more energy to friction there), and is lighter than its weight over a crest. If the car stops where the slope is gentle enough, \(\tan\theta \le \mu\), friction holds it there.">所以小車快速通過谷底時被用力壓向軌道（那裡摩擦生熱也較多），越過山頂時則比重量輕。小車停在夠平緩的地方（\(\tan\theta \le \mu\)）時，摩擦力會讓它停在那裡。</p>
+
+      <h3 data-en="Getting round a vertical loop">繞過鉛直迴圈</h3>
+      <p data-en-html="At the top of a loop of radius \(R\) the track can only push the free car downward (\(N \ge 0\)), so gravity alone must at least supply the centripetal force: \(mv_{\text{top}}^{2}/R \ge mg\). With energy conservation from a start at rest at height \(h\) above the bottom:">半徑 \(R\) 的迴圈頂點，軌道只能往下推自由小車（\(N \ge 0\)），所以至少要讓重力單獨就能提供向心力：\(mv_{\text{top}}^{2}/R \ge mg\)。配合由迴圈底部以上高度 \(h\) 靜止出發的能量守恆：</p>
+      <div class="formula">
+        \[ v_{\text{top}}^{2} = 2g(h - 2R) \ge gR \quad\Rightarrow\quad h \ge \tfrac52 R, \qquad \frac{N_{\text{top}}}{mg} = \frac{2h}{R} - 5 \]
+      </div>
+      <p data-en-html="If \(R < h < 2.5R\), the free car loses contact where \(N\) drops to zero, at height \((R + 2h)/3\) above the bottom, and flies off as a projectile. The rail car has wheels on both sides of the rail, so the rail can also pull it inward and it never falls off. Comparing the bottom and the top of the loop (without friction) gives \(N_{\text{bottom}} - N_{\text{top}} = 6mg\), whatever the speed.">若 \(R < h < 2.5R\)，自由小車會在 \(N\) 降到 0 的地方離開軌道，那裡比迴圈底部高 \((R + 2h)/3\)，之後變成拋體。軌道車的輪子夾住軌道兩側，軌道也能把它往內拉，所以不會掉下來。比較迴圈底部與頂點（無摩擦）可得 \(N_{\text{bottom}} - N_{\text{top}} = 6mg\)，與速率無關。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Speed depends only on the drop</strong>: on the U-shaped valley, start from rest at different points and compare the measured speed at the bottom with \(\sqrt{2gh_0}\) in the record table. Change the mass — nothing changes."><strong>速率只看下降多少</strong>：在 U 形谷由靜止從不同位置出發，比較紀錄表中量到的最低點速率與 \(\sqrt{2gh_0}\)。改變質量——什麼都沒變。</li>
+        <li data-en-html="<strong>Same height on both sides</strong>: with μ = 0 the car always turns back exactly at its starting height — the energy level line. Reshape the track: the turning height stays the same."><strong>兩邊一樣高</strong>：μ = 0 時小車一定在出發的高度（能量水位線）折返。改變軌道形狀，折返高度仍然不變。</li>
+        <li data-en-html="<strong>Heat</strong>: raise μ and watch the heat bar grow while the total energy bar stays the same height. Switch to the energy–position graph: the mechanical energy line steps down."><strong>熱能</strong>：把 μ 調大，看熱能長條變長、總能長條始終一樣高。切到能量–位置圖：力學能那條線一段一段往下降。</li>
+        <li data-en-html="<strong>The 2.5R rule</strong>: choose the circular loop and the free car, and find the lowest start that still gets round. Compare its height above the bottom of the loop with \(2.5R\)."><strong>2.5R 規則</strong>：選圓形迴圈與自由小車，找出還能繞過去的最低出發點，把它比迴圈底部高多少與 \(2.5R\) 比較。</li>
+        <li data-en-html="<strong>Earth and Moon</strong>: on the ski jump the car lands at the same place on the Moon as on Earth (μ = 0), because the take-off speed squared and the fall time squared both scale with \(1/g\) and \(g\)."><strong>地球與月球</strong>：在跳台上（μ = 0），小車在月球與地球落在同一個地方，因為起跳速率的平方與 \(g\) 成正比、落下時間的平方與 \(g\) 成反比，兩者抵消。</li>
+        <li data-en-html="<strong>Move the zero</strong>: drag the blue zero line during a run. The \(U\) and \(E\) bars jump by the same amount, \(K\) and \(Q\) do not move, and the car does not notice."><strong>移動零點</strong>：小車跑的時候拖曳藍色零點線。\(U\) 與 \(E\) 長條跳動相同的量，\(K\) 與 \(Q\) 不動，小車的運動也完全不受影響。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The track is a uniform cubic B-spline \(y = f(x)\) through the first and last control points; its slope and curvature are continuous everywhere. The loop is an exact circle of radius \(R\), joined to level track at its bottom. (The curvature jumps from 0 to \(1/R\) there, like the textbook loop; real coasters use a clothoid transition to avoid that jolt.)">軌道是均勻三次 B 樣條 \(y = f(x)\)，經過第一個與最後一個控制點，斜率與曲率處處連續。迴圈是半徑 \(R\) 的正圓，底部接上水平的軌道（那裡曲率由 0 跳到 \(1/R\)，和課本的迴圈一樣；真正的雲霄飛車用回旋曲線過渡，避免這個衝擊）。</li>
+        <li data-en-html="On the track the car is a point mass moving along the arc length \(s\): \(m\ddot s = -mg\sin\theta - \mu N\,\mathrm{sgn}(v)\) with \(N = m(g\cos\theta + \kappa v^2)\). It is integrated with the fourth-order Runge–Kutta method in fixed steps of 0.5 ms. Events — reaching the end of a piece, the normal force of the free car dropping below zero, the velocity changing sign — are located by bisection to better than \(10^{-12}\) s.">在軌道上，小車是沿弧長 \(s\) 運動的質點：\(m\ddot s = -mg\sin\theta - \mu N\,\mathrm{sgn}(v)\)，\(N = m(g\cos\theta + \kappa v^2)\)。用四階 Runge–Kutta 法、固定步長 0.5 ms 積分；到達一段軌道的端點、自由小車的正向力降到 0 以下、速度變號等事件，用二分法找到發生的瞬間（誤差小於 \(10^{-12}\) s）。</li>
+        <li data-en-html="No energy correction is applied. Without friction the relative drift of \(K + U\) after 120 s is about \(10^{-11}\) (the unit tests require less than \(10^{-6}\)); with friction the heat is checked against an independent numerical integral of \(\mu N\,ds\).">沒有任何能量修正。無摩擦時，跑 120 s 後 \(K + U\) 的相對漂移約 \(10^{-11}\)（單元測試要求小於 \(10^{-6}\)）；有摩擦時，熱能另外用 \(\mu N\,ds\) 的數值積分核對。</li>
+        <li data-en-html="After leaving the track the car is a projectile, calculated from the exact formulas. If it comes down on the track, the velocity component perpendicular to the track is lost (a completely inelastic landing) and that kinetic energy is counted as heat; if it hits the ground, all of its kinetic energy becomes heat and it stops.">離開軌道後小車是拋體，用解析解計算。落回軌道時，垂直軌道的速度分量完全損失（完全非彈性），損失的動能算進熱能；落到地面時，動能全部變成熱能並停住。</li>
+        <li data-en-html="Simplifications: the static friction coefficient is taken equal to μ; air resistance, rolling resistance and the rotation of the wheels are neglected; the car’s size on the screen is only for visibility.">簡化：靜摩擦係數取與 μ 相同；忽略空氣阻力、滾動阻力與輪子的轉動；畫面上小車的大小只是為了看得清楚。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum: Elective Physics II · Work and Energy">課綱對應：選修物理Ⅱ・功與能量</li>
+        <li data-en-html="Constants: Earth \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>).">常數：地球 \(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字）；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。</li>
+        <li data-en-html="Moon \(1.62\ \mathrm{m/s^2}\): surface gravity in the NASA <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Moon Fact Sheet</a>. Jupiter has no solid surface; \(23.1\ \mathrm{m/s^2}\) is the equatorial acceleration at the 1-bar pressure level in the NASA <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/jupiterfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Jupiter Fact Sheet</a> (23.12).">月球 \(1.62\ \mathrm{m/s^2}\)：NASA《<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">Moon Fact Sheet</a>》的表面重力。木星沒有固體表面，\(23.1\ \mathrm{m/s^2}\) 是 NASA《<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/jupiterfact.html" target="_blank" rel="noopener">Jupiter Fact Sheet</a>》中赤道、1 bar 氣壓高度的加速度（23.12）。（英文）</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/8-3-conservation-of-energy&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 8.3 Conservation of Energy</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/8-3-conservation-of-energy" target="_blank" rel="noopener">University Physics Volume 1，8.3 能量守恆</a>》（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120809"></script>
+  <script src="js/energy-coaster-core.js?v=202611120809"></script>
+  <script src="js/sound.js?v=202611120809"></script>
+  <script src="js/numinput.js?v=202611120809"></script>
+  <script src="js/drawkit.js?v=202611120809"></script>
+  <script src="js/keys.js?v=202611120809"></script>
+  <script src="js/energy-coaster.js?v=202611120809"></script>
+  <script src="js/firebase-config.js?v=202611120809"></script>
+  <script src="js/missions.js?v=202611120809" data-module="energy-coaster"></script>
+  <script src="js/missions/energy-coaster.js"></script>
+  <script src="js/stats.js?v=202611120809" data-module="energy-coaster"></script>
+  <script src="js/comments.js?v=202611120809"></script>
+</body>
+</html>

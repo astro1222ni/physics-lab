@@ -48,6 +48,9 @@
     semi: [{ id: 'P', role: 'inc', lab: 'P' }, { id: 'O', role: 'fix', lab: 'O' }, { id: 'P2', role: 'obs', lab: 'P′' }]
   };
   const MARKS = [1, 2, 3, 4, 5].map(function (k) { return v(-k, Math.sqrt(R * R - k * k)); });
+  // 鍵盤操作（keys.js）：俯視圖與「眼睛看到的景象」各一組，選取的物體和 st.sel 同步
+  let kb = null, vkb = null;
+  const kbItems = [], vkbItems = [];
 
   function key() { return st.shape === 'rect' ? 'rect' : st.dir === 'rev' ? 'semiR' : 'semiF'; }
   function cfg() { return CFG[key()]; }
@@ -761,6 +764,23 @@
     }
     c.restore();
     drawTop(c);
+    drawKbFocus(c);
+  }
+  /** 鍵盤焦點框：俯視圖上被選取的眼睛、針，或還在針插上的針 */
+  function drawKbFocus(c) {
+    if (!kb || !kb.focused()) return;
+    const it = kbItems[kb.index()];
+    if (!it) return;
+    let b = null;
+    if (it.id === 'eye') { const e = cfg().eye; b = [X(e.x) - 22, Y(e.y) - 22, 44, 44]; }
+    else if (cfg().pins[it.id]) { const p = cfg().pins[it.id], r = headR() + 9; b = [X(p.x) - r, Y(p.y) - r, 2 * r, 2 * r]; }
+    else {
+      const tp = trayList().filter(function (q) { return q.id === it.id; })[0];
+      if (tp) { const hy = tp.y - 8; b = [tp.x - 13, hy - headR() - 4, 26, headR() + 30]; }
+    }
+    if (!b) return;
+    c.save(); c.setLineDash([5, 4]); c.strokeStyle = D.c.accent; c.lineWidth = 2;
+    D.roundRect(c, b[0], b[1], b[2], b[3], 6); c.stroke(); c.restore();
   }
 
   // ---------------- 眼睛看到的景象 ----------------
@@ -873,6 +893,15 @@
       const rh = clamp(Fv * (G.pinHead / 2) / e.dist * 1.3, 3, 10);
       if (yTop > -rh) D.ball(c, xU, yTop, rh, col, { shadow: false });
     });
+    // 鍵盤焦點框：選取的針的像；選眼睛或針還在針插上時框住整個景象
+    if (vkb && vkb.focused()) {
+      const it = vkbItems[vkb.index()];
+      const lb = it ? labels.filter(function (l) { return l.id === it.id; })[0] : null;
+      c.save(); c.setLineDash([5, 4]); c.strokeStyle = D.c.accent; c.lineWidth = 2;
+      if (lb && lb.x > 0 && lb.x < Wv) D.roundRect(c, lb.x - 11, 4, 22, Hv - 26, 6);
+      else D.roundRect(c, 3, 3, Wv - 6, Hv - 6, 8);
+      c.stroke(); c.restore();
+    }
     // 中央的視線方向記號
     c.fillStyle = D.alpha(D.c.muted, 0.8);
     c.beginPath(); c.moveTo(cx - 5, 0); c.lineTo(cx + 5, 0); c.lineTo(cx, 6); c.closePath(); c.fill();
@@ -926,7 +955,15 @@
     gdpr = Math.min(2.5, window.devicePixelRatio || 1);
     gc.width = Math.round(GW * gdpr); gc.height = Math.round(GH * gdpr);
   }
+  function graphAria() {
+    const gs = groupStats(st.mat);
+    let t = T('sin θ1 對 sin θ2 圖（', 'Graph of sin θ1 against sin θ2 (') + matName(st.mat) + T('）：', '): ') + gs.N + T(' 筆數據', ' rows');
+    if (gs.N && isFinite(gs.fit.m)) t += T('，過原點最佳直線的斜率 n = ', '; slope of the best line through the origin n = ') + gs.fit.m.toFixed(3);
+    if (gs.revealed) t += T('；公認值 ', '; accepted value ') + gs.nAcc.toFixed(3);
+    gc.setAttribute('aria-label', t + T('。', '.'));
+  }
   function drawGraph() {
+    graphAria();
     const c = gctx;
     c.setTransform(gdpr, 0, 0, gdpr, 0, 0);
     c.clearRect(0, 0, GW, GH);
@@ -1170,7 +1207,17 @@
     }
     el.innerHTML = msg; // 只含程式自己的字串（沒有使用者輸入）
     el.classList.toggle('ok', ok);
+    announce(statusOverride ? 'o:' + msg : msg.replace(/[0-9.]+°/g, '#'), msg);
     void oo;
+  }
+  // 螢幕報讀：只在訊息的種類改變時念（跟著拖曳變的數字不念），最多每秒一次
+  let srKind = '', srTimer = 0, srLast = 0, srPending = '';
+  function announce(kind, html) {
+    if (kind === srKind) return;
+    srKind = kind;
+    srPending = html.replace(/<[^>]+>/g, '');
+    const say = function () { srTimer = 0; srLast = Date.now(); const sr = $('srStatus'); if (sr) sr.textContent = srPending; };
+    if (!srTimer) srTimer = setTimeout(say, Math.max(0, 1000 - (Date.now() - srLast)));
   }
   function buildButtons(ai) {
     const db = $('drawBtn');
@@ -1185,7 +1232,7 @@
 
   // ---------------- 更新與重畫 ----------------
   let raf = 0, panelsDirty = true, dataDirty = true, lastT = 0, animating = false;
-  function invalidate() { VC = null; panelsDirty = true; schedule(); }
+  function invalidate() { VC = null; panelsDirty = true; kbSync(); schedule(); }
   function refresh() { panelsDirty = true; schedule(); }
   function schedule() { if (!raf) raf = requestAnimationFrame(frame); }
   function frame(now) {
@@ -1331,17 +1378,116 @@
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { el.addEventListener(ev, stop); });
     el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); nudge(b[1] * stepFor(st.sel)); } });
   });
-  cv.addEventListener('keydown', function (e) {
-    const big = e.shiftKey ? 5 : 1;
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); nudge((e.key === 'ArrowRight' ? 1 : -1) * stepFor(st.sel) * big); }
-    else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); nudge(0, (e.key === 'ArrowUp' ? 1 : -1) * 0.1 * big); }
-    else if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      const ids = ['eye'].concat(pinDefs().filter(function (pd) { return pd.role !== 'fix' && cfg().pins[pd.id]; }).map(function (pd) { return pd.id; }));
-      st.sel = ids[(ids.indexOf(st.sel) + 1) % ids.length];
-      invalidate();
+  // ---------------- 鍵盤操作：和拖曳一樣經過 constrain()、movable()、P 的記號點吸附與 emitReverse() ----------------
+  function kbIds() { return ['eye'].concat(pinDefs().filter(function (pd) { return pd.role !== 'fix'; }).map(function (pd) { return pd.id; })); }
+  function objName(id) { return id === 'eye' ? T('眼睛', 'Eye') : T('針 ', 'Pin ') + pinDef(id).lab; }
+  function objDesc(id) {
+    if (id !== 'eye' && !cfg().pins[id]) return objName(id) + T('：還在針插上，按方向鍵把它插到紙上。', ': still in the pincushion; press an arrow key to push it into the paper.');
+    const p = id === 'eye' ? cfg().eye : cfg().pins[id];
+    let t = objName(id) + T('：x = ', ': x = ') + p.x.toFixed(2) + T(' cm、y = ', ' cm, y = ') + p.y.toFixed(2) + ' cm';
+    if (st.phase === 'align') {
+      const ai = alignInfo(), ii = incIds().map(function (q) { return pinDef(q).lab; });
+      if (id === 'eye' || incIds().indexOf(id) >= 0) {
+        if (ai.placedInc) t += T('；', '; ') + and2(ii[0], ii[1]) + (ai.abOK ? T(' 的像重疊了', ' line up') : T(' 的像還沒重疊', ' do not line up yet'));
+      } else {
+        const o = ai.obs.filter(function (q) { return q.id === id; })[0];
+        if (o && o.placed) t += o.ok ? T('；已和入射側的像對齊', '; lined up with the images') : T('；和入射側的像相差 ', '; off from the images by ') + (isFinite(o.d) ? Math.abs(o.d / DEG).toFixed(2) + '°' : T('（看不到）', '(not visible)'));
+      }
     }
-  });
+    return t + T('。', '.');
+  }
+  /** 鍵盤把針從針插拿出來：插在目前視線上的預設位置（入射側在透明塊另一邊，觀察側在眼睛與透明塊之間），之後再用方向鍵移動 */
+  function kbPlace(id) {
+    const V = views(), pd = pinDef(id), dist = C.len(C.sub(V.tgt, V.eye));
+    if (pd.role === 'inc') {
+      const i = incIds().indexOf(id);
+      return constrain(id, C.add(V.tgt, C.mul(V.look, (st.shape === 'rect' ? st.t / 2 : 0) + (i === 0 ? 5 : 2))));
+    }
+    const oi = obsIds(), j = oi.indexOf(id);
+    return constrain(id, C.add(V.eye, C.mul(V.look, dist * (oi.length === 1 ? 0.5 : j === 0 ? 0.6 : 0.35))));
+  }
+  /**
+   * 鍵盤移動一個物體。mode 'top'（俯視圖）：左右鍵垂直於視線、上下鍵沿視線，方向和畫面一致；
+   * mode 'view'（眼睛看到的景象）：左右鍵和在景象中拖曳一樣（往眼睛的右手邊為正），上下鍵不動。
+   * 步長：左右 0.02 cm（眼睛 0.05 cm），Shift 0.5 cm；上下 0.1 cm，Shift 1 cm。
+   */
+  function kbMove(id, dx, dy, big, mode) {
+    if (mode === 'view' && dy) return false;
+    if (!movable(id)) { sayStatus(T('要移動針，先按「放回透明塊」。', 'Press “Put the block back” to move the pins.')); return false; }
+    touched = true;
+    if (id !== 'eye' && !cfg().pins[id]) { st.sel = id; setPin(id, kbPlace(id)); return true; }
+    const V = views(), p0 = id === 'eye' ? cfg().eye : cfg().pins[id];
+    let right = v(V.look.y, -V.look.x), fwd = V.look;
+    if (mode === 'top') { if (right.x < 0) right = C.mul(right, -1); if (fwd.y < 0) fwd = C.mul(fwd, -1); }
+    let q = dx ? C.add(p0, C.mul(right, dx * (big ? 0.5 : stepFor(id)))) : C.add(p0, C.mul(fwd, dy * (big ? 1 : 0.1)));
+    q = constrain(id, q);
+    // P 靠近記號點時吸附（和放開滑鼠時一樣）；從記號點移開時不會被吸回去
+    if (id === 'P' && key() === 'semiF') {
+      for (let i = 0; i < MARKS.length; i++) {
+        const dq = C.len(C.sub(q, MARKS[i]));
+        if (dq < SNAP && dq < C.len(C.sub(p0, MARKS[i])) - 1e-9) { q = v(MARKS[i].x, MARKS[i].y); st.flash = 1; st.flashAt = q; break; }
+      }
+    }
+    if (C.len(C.sub(q, p0)) < 1e-9) return false;
+    st.sel = id;
+    setPin(id, q);
+    if (id === 'P' || id === 'eye') emitReverse();
+    return true;
+  }
+  function kbFill(list, mode) {
+    const ids = kbIds();
+    if (list.map(function (it) { return it.id; }).join() === ids.join()) return;
+    list.length = 0;
+    ids.forEach(function (id) {
+      list.push({ id: id, name: function () { return objName(id); }, describe: function () { return objDesc(id); },
+        move: function (dx, dy, big) { return kbMove(id, dx, dy, big, mode); } });
+    });
+  }
+  /** 讓兩組鍵盤選取跟著 st.sel（滑鼠點選、換裝置、記錄後回到眼睛時） */
+  function kbSync() {
+    [[kb, kbItems, 'top'], [vkb, vkbItems, 'view']].forEach(function (q) {
+      if (!q[0]) return;
+      kbFill(q[1], q[2]);
+      let i = 0;
+      q[1].forEach(function (it, n) { if (it.id === st.sel) i = n; });
+      if (i !== q[0].index()) q[0].select(i);
+    });
+  }
+  function kbChanged(k, list) {
+    const it = list[k.index()];
+    if (it && k.focused() && it.id !== st.sel) st.sel = it.id;
+    invalidate();
+  }
+  /** Delete／Backspace：把選取的針放回針插（和把針拖回針插一樣） */
+  function kbRemove(e, k, list) {
+    if (e.key !== 'Delete' && e.key !== 'Backspace') return;
+    const it = list[k.index()];
+    if (!it || it.id === 'eye' || !cfg().pins[it.id]) return;
+    e.preventDefault();
+    if (!movable(it.id)) { sayStatus(T('要移動針，先按「放回透明塊」。', 'Press “Put the block back” to move the pins.')); return; }
+    touched = true;
+    cfg().pins[it.id] = null;
+    invalidate();
+    window.LabKeys.say(objName(it.id) + T('：已放回針插。', ': back in the pincushion.'));
+  }
+  if (window.LabKeys) {
+    [cv, vc].forEach(function (el) { el.addEventListener('focus', kbSync); }); // 先對齊 st.sel，再讓 keys.js 念出選取的物體
+    kbFill(kbItems, 'top'); kbFill(vkbItems, 'view');
+    kb = window.LabKeys.attach(cv, {
+      label: T('俯視圖：軟木板上的方格紙、透明塊、大頭針與眼睛。按 Enter 選眼睛或某一支針；左右鍵垂直於視線微移、上下鍵沿視線前後移，Shift 移得較多；還在針插上的針按方向鍵就插到紙上，Delete 把針放回針插。',
+        'Top view: graph paper on a cork board with the transparent block, the pins and the eye. Press Enter to pick the eye or a pin; Left and Right nudge it across the line of sight, Up and Down move it along the line of sight, Shift moves further; an arrow key pushes a pin from the pincushion into the paper, and Delete puts it back.'),
+      items: kbItems,
+      onChange: function () { kbChanged(kb, kbItems); }
+    });
+    vkb = window.LabKeys.attach(vc, {
+      label: T('眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像。按 Enter 選要微調的物體，左右鍵讓它往眼睛的左右微移，Shift 移得較多。',
+        'What the eye sees: the upper part of each pin directly, the lower part through the block. Press Enter to pick the object to fine-tune; Left and Right nudge it to the eye’s left or right, Shift moves further.'),
+      items: vkbItems,
+      onChange: function () { kbChanged(vkb, vkbItems); }
+    });
+    cv.addEventListener('keydown', function (e) { kbRemove(e, kb, kbItems); });
+    vc.addEventListener('keydown', function (e) { kbRemove(e, vkb, vkbItems); });
+  }
   // 在「眼睛看到的景象」中左右拖曳：微調選取的物體，使它的像跟著手指移動
   let vdrag = null;
   vc.addEventListener('pointerdown', function (e) {
@@ -1498,6 +1644,51 @@
   readT();
   syncBoxes();
   relayout();
+
+  // 分享連結：三種裝置各自的針與眼睛位置（形狀、材料等按鈕與滑桿由 classroom.js 自動記錄）
+  function shareGet() {
+    const r4 = function (p) { return p ? [Math.round(p.x * 1e4) / 1e4, Math.round(p.y * 1e4) / 1e4] : null; };
+    const o = {};
+    Object.keys(CFG).forEach(function (k) {
+      const pins = {};
+      Object.keys(CFG[k].pins).forEach(function (id) { pins[id] = r4(CFG[k].pins[id]); });
+      o[k] = { e: r4(CFG[k].eye), p: pins };
+    });
+    return o;
+  }
+  function shareSet(o) {
+    if (!o || typeof o !== 'object') return;
+    const ok = function (a) { return Array.isArray(a) && a.length === 2 && typeof a[0] === 'number' && typeof a[1] === 'number' && isFinite(a[0]) && isFinite(a[1]); };
+    const keep = { shape: st.shape, dir: st.dir };
+    try {
+      Object.keys(CFG).forEach(function (k) {
+        const q = o[k];
+        if (!q || typeof q !== 'object') return;
+        st.shape = k === 'rect' ? 'rect' : 'semi'; st.dir = k === 'semiR' ? 'rev' : 'fwd'; VC = null; // constrain() 用這個裝置的規則
+        if (ok(q.e)) CFG[k].eye = constrain('eye', v(q.e[0], q.e[1]));
+        if (q.p && typeof q.p === 'object') {
+          Object.keys(CFG[k].pins).forEach(function (id) {
+            if (!(id in q.p)) return;
+            const a = q.p[id];
+            if (a === null) { CFG[k].pins[id] = null; return; }
+            if (!ok(a)) return;
+            let pt = constrain(id, v(a[0], a[1]));
+            if (k === 'semiF' && id === 'P') MARKS.forEach(function (m) { if (C.len(C.sub(pt, m)) < 1e-3) pt = v(m.x, m.y); });
+            CFG[k].pins[id] = pt;
+          });
+        }
+      });
+    } finally { st.shape = keep.shape; st.dir = keep.dir; VC = null; }
+    backToAlign();
+    st.sel = 'eye';
+    invalidate();
+  }
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register({ get: shareGet, set: shareSet });
+    return true;
+  }
+  if (!regShare()) window.addEventListener('load', regShare);
 
   // 測試用（Playwright 與任務證明）：讀取狀態、直接放針
   window.__ri = {

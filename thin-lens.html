@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Thin Lens Imaging: The Optical Bench Lab | Astro Ni Physics Lab">薄透鏡的成像（光具座實驗）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"薄透鏡的成像","alternateName":"Thin Lens Imaging","description":"在光具座上用像屏法、視差法、插針法找出凸透鏡與凹透鏡的像，讀數到 1 mm，由 1/q 對 1/p 圖求焦距。","url":"https://astro1222ni.github.io/physics-lab/thin-lens.html","image":"https://astro1222ni.github.io/physics-lab/img/og/thin-lens.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 薄透鏡成像頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度與實驗部分決定 */
@@ -134,6 +135,7 @@
     </header>
 
     <!-- 第一部分：實驗裝置與操作 -->
+    <p class="try-hint" data-en="Try it: drag the lens slowly towards the source screen, watch when the picture on the image screen below is sharpest, then press “Record”.">試試看：把透鏡慢慢拖向光源屏，看下方像屏上的像何時最清楚，再按「記錄」。</p>
     <div class="lab tl">
       <div class="stage">
         <div class="modebar" role="group" aria-label="三種找像的方法" data-en-aria-label="Three ways to locate the image">
@@ -141,7 +143,7 @@
           <button type="button" data-method="parallax" aria-pressed="false" data-en-html="<b>Method 2</b>Parallax">  <b>②</b>視差法</button>
           <button type="button" data-method="pin" aria-pressed="false" data-en-html="<b>Method 3</b>Pins">  <b>③</b>插針法</button>
         </div>
-        <canvas id="cv" tabindex="0" aria-label="實驗裝置圖：光具座上的燈泡與光源屏、透鏡、像屏或參考物（插針法時為方格紙的俯視圖）；拖曳器材可移動，方向鍵每次移動 1 mm" data-en-aria-label="The apparatus: lamp and source screen, lens, image screen or reference rod on the optical bench (a top view of the graph paper in the pin method); drag a piece to move it, arrow keys move it 1 mm"></canvas>
+        <canvas id="cv" tabindex="0" aria-label="實驗裝置圖：光具座上的燈泡與光源屏、透鏡、像屏或參考物（插針法時為方格紙的俯視圖）。拖曳器材可移動；鍵盤操作：Enter 切換器材，方向鍵移動 1 mm，Shift 加方向鍵移動 1 cm，R 記錄。" data-en-aria-label="The apparatus: lamp and source screen, lens, image screen or reference rod on the optical bench (a top view of the graph paper in the pin method). Drag a piece to move it. Keyboard: Enter picks a piece, the arrow keys move it 1 mm, Shift with an arrow key 1 cm, R records."></canvas>
         <div class="nudge" id="nudge">
           <span class="sel" id="selText"></span>
           <button type="button" data-step="-1" aria-label="向左 1 cm" data-en-aria-label="Left 1 cm">« 1 cm</button>
@@ -167,6 +169,7 @@
           <button id="preset" type="button" data-en="Set up as in the textbook">照課本擺好</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
         <p class="hint" id="sceneHint"></p>
       </div>
 
@@ -247,7 +250,7 @@
           <button type="button" data-graph="inv" aria-pressed="true" data-en="1/q against 1/p">1/q 對 1/p 圖</button>
           <button type="button" data-graph="sum" aria-pressed="false" data-en="p + q against p">p + q 對 p 圖</button>
         </div>
-        <canvas id="gcv" aria-label="數據圖：1/q 對 1/p（或 p + q 對 p）的數據點與最佳直線" data-en-aria-label="Graph of the data: 1/q against 1/p (or p + q against p) with the best-fit line"></canvas>
+        <canvas id="gcv" role="img" aria-label="數據圖：1/q 對 1/p（或 p + q 對 p）的數據點與最佳直線" data-en-aria-label="Graph of the data: 1/q against 1/p (or p + q against p) with the best-fit line"></canvas>
       </div>
 
       <aside class="panel">
@@ -336,6 +339,13 @@
 
         <li data-en="The mystery lenses get a random focal length between 11.0 and 19.0 cm (convex) or −11.0 and −19.0 cm (concave) each time the page is loaded.">神秘透鏡的焦距每次開啟頁面時隨機選定：凸透鏡在 11.0 到 19.0 cm、凹透鏡在 −11.0 到 −19.0 cm 之間。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Geometrical Optics.">課綱對應：選修物理Ⅲ・幾何光學。</li>
+        <li data-en="No physical constants are needed: the lenses (±10, ±15, ±20 cm and the mystery lenses, all 5.0 cm across), the 1 m optical bench read to 1 mm, the eye distances and the error sizes are values chosen for this simulation (see “How the simulation works”).">本實驗不需要物理常數：透鏡（±10、±15、±20 cm 與神秘透鏡，直徑都是 5.0 cm）、讀到 1 mm 的 1 m 光具座、眼睛的距離與各項誤差大小，都是本模擬設定的數值（見「模擬方法」）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/2-4-thin-lenses&quot;>OpenStax University Physics Vol. 3 — 2.4 Thin Lenses</a>; <a href=&quot;https://hyperphysics.gsu.edu/hbase/geoopt/lenseq.html&quot;>HyperPhysics: Thin Lens Equation</a>.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-3/pages/2-4-thin-lenses">OpenStax University Physics 第三冊 2.4 薄透鏡</a>、<a href="https://hyperphysics.gsu.edu/hbase/geoopt/lenseq.html">HyperPhysics：薄透鏡公式</a>（英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -343,15 +353,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/thin-lens-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/thin-lens.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="thin-lens"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/thin-lens-core.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/thin-lens.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="thin-lens"></script>
   <script src="js/missions/thin-lens.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="thin-lens"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="thin-lens"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

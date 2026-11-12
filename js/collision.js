@@ -78,6 +78,8 @@
     updateSpringUI();
     updatePlayButton();
     updateTable();
+    updateAria();
+    if (booted) sayPrediction();
     requestDraw();
   }
 
@@ -143,39 +145,26 @@
   let dpr = 1;
   const size = { track: { w: 0, h: 0 }, chart: { w: 0, h: 0 }, force: { w: 0, h: 0 } };
 
+  // 共用繪圖工具（js/drawkit.js）：標籤、箭頭、立體球、方塊、陰影與全站一致
+  const LD = window.LabDraw;
+  const FONT = LD.FONT;
   let colors = {};
   let dark = false, themeKey = '';
   function readColors() {
+    LD.refresh();
     const cs = getComputedStyle(document.documentElement);
     ['--canvas-bg', '--pos', '--neg', '--field', '--equi', '--grid', '--text', '--muted', '--border', '--surface', '--accent']
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
-    const b = rgbOf(colors['canvas-bg']);
-    dark = (0.2126 * b[0] + 0.7152 * b[1] + 0.0722 * b[2]) < 128; // 深色模式：光暈稍強、陰影稍深
-    themeKey = Object.keys(colors).map(function (k) { return colors[k]; }).join(',');
+    dark = LD.dark; // 深色模式：光暈稍強、陰影稍深
+    themeKey = Object.keys(colors).map(function (k) { return colors[k]; }).join(',') + '|' + LD.ver;
   }
   // 尊重「減少動態效果」：關掉碰撞閃光等純裝飾動畫（物理動畫照常，且預設就是暫停）
   const rmq = window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
   let reducedMotion = !!(rmq && rmq.matches);
   if (rmq && rmq.addEventListener) rmq.addEventListener('change', function () { reducedMotion = rmq.matches; requestDraw(); });
 
-  /** 由色彩代號（#rrggbb）產生半透明或調亮／調暗的顏色，不另外發明色相 */
-  function rgbOf(c) {
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(c).trim());
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    const n = String(c).match(/[\d.]+/g);
-    return n && n.length >= 3 ? [+n[0], +n[1], +n[2]] : [128, 128, 128];
-  }
-  function alpha(c, a) { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; }
-  /** f > 0 往白色混合、f < 0 往黑色混合 */
-  function shade(c, f) {
-    const r = rgbOf(c), t = f > 0 ? 255 : 0, k = Math.abs(f);
-    return 'rgb(' + r.map(function (x) { return Math.round(x + (t - x) * k); }).join(',') + ')';
-  }
-  /** 兩個代號顏色之間的混合（t = 0 為 a、1 為 b） */
-  function mix(a, b, t) {
-    const A = rgbOf(a), B = rgbOf(b);
-    return 'rgb(' + A.map(function (x, i) { return Math.round(x + (B[i] - x) * t); }).join(',') + ')';
-  }
+  /** 由色彩代號產生半透明或調亮／調暗的顏色，不另外發明色相（LabDraw） */
+  const alpha = LD.alpha, shade = LD.shade, mix = LD.mix;
 
   function fit(cv, s) {
     dpr = window.devicePixelRatio || 1;
@@ -198,37 +187,52 @@
     requestAnimationFrame(function () { drawPending = false; draw(); });
   }
 
-  function roundRect(ctx, x, y, w, h, r) {
-    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  }
+  const roundRect = LD.roundRect;
+  /** 帶背景色描邊的文字（LabDraw.haloText）：沿用目前的 ctx.font、textAlign、textBaseline */
   function haloText(ctx, text, x, y, color) {
-    ctx.lineWidth = 4;
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = colors['canvas-bg'];
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
+    LD.haloText(ctx, text, x, y, color, ctx.textAlign, ctx.textBaseline, ctx.font);
   }
-  /** 立體小球：亮點偏左上、邊緣加深（標記點、質心頻閃點） */
-  function sphere(ctx, x, y, r, color) {
-    const g = ctx.createRadialGradient(x - r * 0.35, y - r * 0.38, r * 0.1, x, y, r);
-    g.addColorStop(0, shade(color, 0.55));
-    g.addColorStop(0.55, color);
-    g.addColorStop(1, shade(color, -0.3));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  /** 立體小球（LabDraw.ball：亮點偏左上、邊緣加深、細外框；預先畫成小圖）——標記點、質心頻閃點 */
+  function sphere(ctx, x, y, r, color, shadow) {
+    LD.ball(ctx, x, y, r, color, { glow: 0, shadow: !!shadow });
   }
+  /**
+   * 含斜體變數與下標的標籤（例如 v_1、F_max）：parts 為 [文字, 樣式] 的陣列，樣式 'i' 斜體、'_' 下標、其他為一般字。
+   * 畫在 (x, y)（垂直置中），align 為 left／center／right；pill 為 true 時加半透明圓角底框（border 為框線色）。
+   * 傳回 {x, y, w, h}。
+   */
+  function richText(ctx, parts, x, y, color, opts) {
+    opts = opts || {};
+    const px = opts.size || 13, wt = opts.weight || 600;
+    const fN = wt + ' ' + px + 'px ' + FONT, fI = 'italic ' + wt + ' ' + px + 'px ' + FONT, fS = wt + ' ' + (px * 0.74).toFixed(1) + 'px ' + FONT;
+    const fontOf = function (st) { return st === 'i' ? fI : st === '_' ? fS : fN; };
+    let w = 0;
+    const ws = parts.map(function (p) { ctx.font = fontOf(p[1]); const m = ctx.measureText(p[0]).width + (p[1] === '_' ? 0.5 : 0); w += m; return m; });
+    ctx.font = fN;
+    const th = LD.textHeight(ctx.measureText('Mg'), px * 1.25);
+    const al = opts.align || 'left';
+    let x0 = al === 'center' ? x - w / 2 : al === 'right' ? x - w : x;
+    const box = { x: x0 - 6, y: y - th / 2 - 1.5, w: w + 12, h: th + 3 };
+    if (opts.pill) {
+      roundRect(ctx, box.x, box.y, box.w, box.h, box.h / 2);
+      ctx.fillStyle = alpha(colors['canvas-bg'], dark ? 0.86 : 0.9);
+      ctx.fill();
+      ctx.strokeStyle = alpha(opts.border || colors.muted, dark ? 0.45 : 0.35);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    parts.forEach(function (p, i) {
+      const yy = p[1] === '_' ? y + px * 0.3 : y;
+      if (opts.pill) {
+        ctx.font = fontOf(p[1]); ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = color; ctx.fillText(p[0], x0, yy + 0.5);
+      } else LD.haloText(ctx, p[0], x0, yy, color, 'left', 'middle', fontOf(p[1]));
+      x0 += ws[i];
+    });
+    return box;
+  }
+  /** 物理量名稱：斜體主字＋下標（下標可省略） */
+  function qs(sym, sub) { return sub ? [[sym, 'i'], [sub, '_']] : [[sym, 'i']]; }
   /** 柔和的橢圓接觸陰影（radial gradient，不用 shadowBlur） */
   function softShadow(ctx, x, y, rx, ry, a) {
     if (!(rx > 0 && ry > 0)) return;
@@ -266,19 +270,13 @@
     ctx.drawImage(cv, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
-  /** 圖表底色：代號底色加極淡的由上而下漸層與四角暈影 */
+  /** 圖表底色（LabDraw.backdrop：代號底色加四角暈影）＋極淡的由上而下漸層 */
   function paintPanelBg(c, w, h) {
-    const bg = colors['canvas-bg'];
+    LD.backdrop(c, w, h);
     const lg = c.createLinearGradient(0, 0, 0, h);
-    lg.addColorStop(0, dark ? shade(bg, 0.025) : bg);
-    lg.addColorStop(1, dark ? bg : shade(bg, -0.02));
+    lg.addColorStop(0, dark ? 'rgba(255,255,255,0.018)' : 'rgba(255,255,255,0.35)');
+    lg.addColorStop(1, dark ? 'rgba(0,0,0,0)' : alpha(colors.text, 0.015));
     c.fillStyle = lg;
-    c.fillRect(0, 0, w, h);
-    const R = Math.hypot(w, h) / 2;
-    const rg = c.createRadialGradient(w / 2, h * 0.42, R * 0.35, w / 2, h * 0.42, R * 1.05);
-    rg.addColorStop(0, 'rgba(0,0,0,0)');
-    rg.addColorStop(1, 'rgba(0,0,0,' + (dark ? 0.16 : 0.03) + ')');
-    c.fillStyle = rg;
     c.fillRect(0, 0, w, h);
   }
 
@@ -400,36 +398,22 @@
     ctx.beginPath(); ctx.arc(x, y, Math.max(0.8, r * 0.13), 0, Math.PI * 2); ctx.fill();
   }
 
-  /** 車身：上亮下暗的圓角塊、上方光澤、頂邊 1 px 高光與底邊 1 px 暗線（外形與原本的矩形完全相同） */
+  /** 車身（LabDraw.block：上亮下暗、頂邊高光、底邊暗線、圓角、輕微投影）＋上半部光澤；外形與原本的矩形完全相同 */
   function drawCartBody(ctx, left, top, cw, ch, color) {
     const r = Math.min(6, ch * 0.2);
-    const g = ctx.createLinearGradient(0, top, 0, top + ch);
-    g.addColorStop(0, shade(color, 0.16));
-    g.addColorStop(0.55, color);
-    g.addColorStop(1, shade(color, -0.14));
-    ctx.fillStyle = g;
-    roundRect(ctx, left, top, cw, ch, r);
-    ctx.fill();
+    LD.block(ctx, left, top, cw, ch, color, { r: r });
     ctx.save();
     roundRect(ctx, left, top, cw, ch, r);
     ctx.clip();
-    // 上半部的光澤
     const gl = ctx.createLinearGradient(0, top, 0, top + ch * 0.5);
     gl.addColorStop(0, 'rgba(255,255,255,' + (dark ? 0.16 : 0.22) + ')');
     gl.addColorStop(1, 'rgba(255,255,255,0)');
     ctx.fillStyle = gl;
     ctx.fillRect(left, top, cw, ch * 0.5);
-    // 頂邊高光、底邊暗線
-    ctx.fillStyle = 'rgba(255,255,255,' + (dark ? 0.45 : 0.6) + ')';
-    ctx.fillRect(left + r * 0.6, top + 0.5, cw - r * 1.2, 1);
-    ctx.fillStyle = alpha(shade(color, -0.45), 0.7);
-    ctx.fillRect(left, top + ch - 1.5, cw, 1.5);
+    // 側面的細斜光：左上方來的光在車身左緣留一條亮邊
+    ctx.fillStyle = 'rgba(255,255,255,' + (dark ? 0.12 : 0.2) + ')';
+    ctx.fillRect(left + 1, top + r * 0.6, 1, ch - r * 1.2);
     ctx.restore();
-    // 細外框讓邊緣俐落
-    ctx.strokeStyle = alpha(shade(color, -0.35), dark ? 0.5 : 0.45);
-    ctx.lineWidth = 1;
-    roundRect(ctx, left + 0.5, top + 0.5, cw - 1, ch - 1, Math.max(0, r - 0.5));
-    ctx.stroke();
   }
 
   function draw() {
@@ -488,7 +472,7 @@
     }
     ctx.stroke();
     ctx.fillStyle = colors.muted;
-    ctx.font = (narrow ? 10 : 12) + 'px system-ui, sans-serif';
+    ctx.font = (narrow ? 10 : 12) + 'px ' + FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     labeled.forEach(function (m, i) {
@@ -530,13 +514,13 @@
       const ty1 = c.top + c.ch * (showMass ? 0.36 : 0.52);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.font = '700 ' + Math.round(Math.min(18, c.ch * 0.42)) + 'px system-ui, sans-serif';
+      ctx.font = '700 ' + Math.round(Math.min(18, c.ch * 0.42)) + 'px ' + FONT;
       ctx.fillStyle = alpha(shade(c.color, -0.5), 0.45);
       ctx.fillText(c.label, c.px, ty1 + 1);
       ctx.fillStyle = colors['canvas-bg'];
       ctx.fillText(c.label, c.px, ty1);
       if (showMass) {
-        ctx.font = '600 11px system-ui, sans-serif';
+        ctx.font = '600 11px ' + FONT;
         ctx.fillStyle = alpha(shade(c.color, -0.5), 0.4);
         ctx.fillText(num(c.m, 1) + ' kg', c.px, c.top + c.ch * 0.72 + 1);
         ctx.fillStyle = colors['canvas-bg'];
@@ -568,22 +552,21 @@
         const len = Math.max(8, Math.abs(v) * unit), ux = Math.sign(v);
         vecArrow(ctx, c.px, ay, ux, len, alw, c.color);
       } else {
-        ctx.fillStyle = colors['canvas-bg'];
-        ctx.beginPath(); ctx.arc(c.px, ay, 4.7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = alpha(colors['canvas-bg'], 0.85);
+        ctx.beginPath(); ctx.arc(c.px, ay, 4.9, 0, Math.PI * 2); ctx.fill();
         sphere(ctx, c.px, ay, 3.5, c.color);
       }
-      // 數值往外側對齊：兩車相碰時標籤不會重疊
-      ctx.font = '600 ' + (narrow ? 11 : 13) + 'px system-ui, sans-serif';
-      ctx.textBaseline = 'alphabetic';
+      // 數值往外側對齊：兩車相碰時標籤不會重疊（圓角底框，框線用車的顏色；v 為斜體、編號為下標）
       if (c.px + c.cw / 2 < 0 || c.px - c.cw / 2 > w) return; // 車子已離開畫面
-      const name = narrow ? '' : (state.cmFrame ? 'v' + c.label + ' − vcm = ' : 'v' + c.label + ' = ');
-      const text = name + num(v, narrow ? 1 : 2, true) + ' m/s';
-      const tw = ctx.measureText(text).width;
+      const parts = narrow ? [] : qs('v', c.label).concat(state.cmFrame ? [[' − ', '']].concat(qs('v', 'cm')) : []).concat([[' = ', '']]);
+      parts.push([num(v, narrow ? 1 : 2, true) + ' m/s', '']);
+      const size = narrow ? 11 : 13;
+      ctx.font = '600 ' + size + 'px ' + FONT;
+      const tw = parts.reduce(function (acc, p) { ctx.font = (p[1] === 'i' ? 'italic ' : '') + '600 ' + (p[1] === '_' ? (size * 0.74).toFixed(1) : size) + 'px ' + FONT; return acc + ctx.measureText(p[0]).width; }, 0);
       // 車 1 的標籤靠右對齊在車 1 右緣、車 2 靠左對齊在車 2 左緣（向外延伸），再限制在畫面內
       let tx = c.side < 0 ? c.px + c.cw / 2 - tw : c.px - c.cw / 2;
-      tx = Math.max(4, Math.min(w - 4 - tw, tx));
-      ctx.textAlign = 'left';
-      haloText(ctx, text, tx, ay - 9, colors.text);
+      tx = Math.max(10, Math.min(w - 10 - tw, tx));
+      richText(ctx, parts, tx, ay - 10 - size * 0.5, colors.text, { size: size, pill: true, border: c.color });
     });
 
     // 質心標記：虛線 + 軌道下方的立體三角形
@@ -612,41 +595,24 @@
     ctx.strokeStyle = tg;
     ctx.lineWidth = 1.5;
     tri(); ctx.fill(); ctx.stroke();
-    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.font = '600 12px ' + FONT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     haloText(ctx, T('質心', 'CM'), cx + 10, ty0 + 8, colors.text);
 
     // 左上角：時間與參考系（半透明圓角底框）
-    ctx.font = (narrow ? 11 : 13) + 'px system-ui, sans-serif';
+    ctx.font = (narrow ? 11 : 13) + 'px ' + FONT;
     ctx.textAlign = 'left';
     pillText(ctx, 't = ' + num(state.t, 2) + ' s' + (state.cmFrame ? T('　質心參考系', '   CM frame') : ''), 12, narrow ? 14 : 17, colors.muted, 0.75);
   }
 
   // ---------- 彈簧（管狀線圈）與彈力箭頭 ----------
   /**
-   * 向量箭頭：箭身寬 lw、箭頭長約 4 倍箭身寬、兩側略帶弧度。
-   * 箭頭尖端位置 = 起點 + dir × len（len 以像素計，與力的大小成正比）。
+   * 向量箭頭（LabDraw.arrow：全站一致的幾何、背景色描邊、箭身高光）。
+   * 箭頭尖端位置 = 起點 + dir × len（len 以像素計，與速度或力的大小成正比）。
    */
   function vecArrow(ctx, x, y, dir, len, lw, color) {
-    const head = Math.min(4 * lw, len), hw = 1.7 * lw;
-    const xt = x + dir * len, xh = xt - dir * head;
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineCap = 'round';
-    if (len > head + 1) {
-      ctx.lineWidth = lw;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(xh + dir * head * 0.3, y); ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(xt, y);
-    ctx.quadraticCurveTo(xt - dir * head * 0.45, y - hw * 0.35, xh, y - hw);
-    ctx.lineTo(xh + dir * head * 0.2, y);
-    ctx.lineTo(xh, y + hw);
-    ctx.quadraticCurveTo(xt - dir * head * 0.45, y + hw * 0.35, xt, y);
-    ctx.closePath();
-    ctx.fill();
-    ctx.lineCap = 'butt';
+    LD.arrow(ctx, x, y, x + dir * len, y, color, lw);
   }
 
   /** 兩層線條的「管子」：底層粗而暗，上層細而亮、略偏上 */
@@ -723,53 +689,59 @@
         vecArrow(ctx, xL, fy, -1, len, lw, acc);
         vecArrow(ctx, xR, fy, 1, len, lw, acc);
       }
-      ctx.font = '600 ' + (narrow ? 11 : 12) + 'px system-ui, sans-serif';
-      ctx.textBaseline = 'bottom';
-      const label = narrow ? 'F' : 'F = ' + num(st.F, 1) + ' N';
-      ctx.textAlign = 'right';
-      haloText(ctx, label, xL - 2, fy - 6, acc);
-      ctx.textAlign = 'left';
-      haloText(ctx, label, xR + 2, fy - 6, acc);
+      const fs = narrow ? 11 : 12;
+      const label = narrow ? qs('F') : qs('F').concat([[' = ' + num(st.F, 1) + ' N', '']]);
+      richText(ctx, label, xL - 2, fy - 7 - fs * 0.5, acc, { size: fs, align: 'right' });
+      richText(ctx, label, xR + 2, fy - 7 - fs * 0.5, acc, { size: fs, align: 'left' });
     }
   }
 
   // ---------- 彈力–時間圖（只在加彈簧時顯示） ----------
-  /** 有半透明圓角底框（pill）的標籤；ctx.textAlign 決定水平對齊，垂直置中於 y */
-  function pillText(ctx, text, x, y, color, bgAlpha) {
-    const m = ctx.measureText(text), tw = m.width;
-    const fh = m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : 14; // 已含字體大小縮放
-    const ph = fh + 4, pw = tw + 10;
-    const al = ctx.textAlign;
-    const bx = al === 'center' ? x - pw / 2 : al === 'right' ? x - tw - 5 : x - 5;
-    ctx.fillStyle = alpha(colors['canvas-bg'], bgAlpha == null ? 0.9 : bgAlpha);
-    roundRect(ctx, bx, y - ph / 2, pw, ph, ph / 2);
-    ctx.fill();
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y + 0.5);
+  /**
+   * 半透明圓角底框標籤（LabDraw.pill）：沿用 ctx.font，ctx.textAlign 決定水平對齊（文字貼齊 x），垂直置中於 y。
+   * border：框線色（預設用文字色）。不改變呼叫前的 textAlign、textBaseline。
+   */
+  function pillText(ctx, text, x, y, color, bgAlpha, border) {
+    const al = ctx.textAlign, bl = ctx.textBaseline, font = ctx.font;
+    const ph = LD.textHeight(ctx.measureText(text), 14) + 3;
+    const a = al === 'right' || al === 'end' ? 'right' : al === 'center' ? 'center' : 'left';
+    const box = LD.pill(ctx, text, a === 'left' ? x - 6 : a === 'right' ? x + 6 : x, y + ph / 2, color, a, font);
+    if (border) {
+      roundRect(ctx, box.x, box.y, box.w, box.h, box.h / 2);
+      ctx.strokeStyle = alpha(border, dark ? 0.6 : 0.5);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+    ctx.textAlign = al; ctx.textBaseline = bl; ctx.font = font;
+    return box;
   }
   function decimalsFor(step) {
     let d = 0;
     while (d < 6 && Math.abs(step * Math.pow(10, d) - Math.round(step * Math.pow(10, d))) > 1e-6) d++;
     return d;
   }
+  /** 量 richText 的寬度（不畫） */
+  function richWidth(ctx, parts, size) {
+    let w = 0;
+    parts.forEach(function (p) {
+      ctx.font = (p[1] === 'i' ? 'italic ' : '') + '600 ' + (p[1] === '_' ? (size * 0.74).toFixed(1) : size) + 'px ' + FONT;
+      w += ctx.measureText(p[0]).width + (p[1] === '_' ? 0.5 : 0);
+    });
+    return w;
+  }
   function drawForce(st) {
     const ctx = fctx, w = size.force.w, h = size.force.h, sim = state.sim, c = sim.contact;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    // 背景：代號底色加極淡的由上而下漸層
-    const bg = ctx.createLinearGradient(0, 0, 0, h);
-    bg.addColorStop(0, colors['canvas-bg']);
-    bg.addColorStop(1, shade(colors['canvas-bg'], -0.03));
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, w, h);
+    // 背景（離屏圖層）：代號底色、四角暈影與極淡的由上而下漸層
+    blit(ctx, staticLayer('force', w, h, '', paintPanelBg));
     const small = w < 480;
-    ctx.font = '600 ' + (small ? 12 : 13) + 'px system-ui, sans-serif';
+    ctx.font = '600 ' + (small ? 12 : 13) + 'px ' + FONT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.text;
     ctx.fillText(T('彈力 F = kx（N）', 'Spring force F = kx (N)'), 10, 8);
     if (!c) {
-      ctx.font = '13px system-ui, sans-serif';
+      ctx.font = '13px ' + FONT;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = colors.muted;
@@ -783,13 +755,11 @@
     const Y = function (F) { return bottom - F / ax.hi * (bottom - top); };
     const px = function (v) { return Math.round(v) + 0.5; };
 
-    // 格線與刻度
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = colors.grid;
-    ctx.beginPath();
-    ax.ticks.forEach(function (v) { if (v > 0) { ctx.moveTo(left, px(Y(v))); ctx.lineTo(right, px(Y(v))); } });
-    ctx.stroke();
+    // 繪圖區極淡的底色、兩級格線與刻度
+    ctx.fillStyle = alpha(colors.text, dark ? 0.02 : 0.018);
+    ctx.fillRect(left, top, right - left, bottom - top);
+    hGrid(ctx, ax.ticks, Y, left, right, false);
+    ctx.font = '11px ' + FONT;
     const dF = decimalsFor(ax.ticks[1] - ax.ticks[0]);
     ctx.fillStyle = colors.muted;
     ctx.textAlign = 'right';
@@ -798,18 +768,24 @@
     const tStep = niceMax((t1 - t0) / (small ? 3 : 5)), dT = decimalsFor(tStep);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.strokeStyle = colors.grid;
+    ctx.strokeStyle = alpha(colors.text, dark ? 0.07 : 0.06);
+    ctx.lineWidth = 1;
     ctx.beginPath();
+    // 時間軸名稱放在右端（不和縱軸的 0 擠在一起），刻度數字讓出位置
+    const tName = T('t（s）', 't (s)');
+    ctx.font = '600 11px ' + FONT;
+    const tNameW = ctx.measureText(tName).width;
+    ctx.font = '11px ' + FONT;
     for (let tt = Math.ceil(t0 / tStep - 1e-9) * tStep; tt <= t1 + 1e-9; tt += tStep) {
       ctx.moveTo(px(X(tt)), top); ctx.lineTo(px(X(tt)), bottom);
-      ctx.fillText(num(tt, dT), X(tt), bottom + 4);
+      if (X(tt) + ctx.measureText(num(tt, dT)).width / 2 < right - tNameW - 8) ctx.fillText(num(tt, dT), X(tt), bottom + 4);
     }
     ctx.stroke();
     ctx.textAlign = 'right';
-    ctx.fillText(T('t（s）', 't (s)'), left - 5, bottom + 4);
-    ctx.strokeStyle = colors.field;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(left, px(Y(0))); ctx.lineTo(right, px(Y(0))); ctx.stroke();
+    ctx.font = '600 11px ' + FONT;
+    ctx.fillStyle = colors.text;
+    ctx.fillText(tName, right, bottom + 4);
+    baseLine(ctx, left, right, Y(0));
 
     // F(t) = k x(t)：整段半個正弦（虛線預覽）＋到目前為止的實線與陰影面積
     const N = 96, curve = [];
@@ -834,8 +810,8 @@
     if (state.t > sim.tc) {
       done.push([tn, CC.stateAt(sim, Math.min(tn, sim.tr - 1e-12)).F]);
       const area = ctx.createLinearGradient(0, yPeak, 0, Y(0));
-      area.addColorStop(0, alpha(colors.accent, 0.5));
-      area.addColorStop(1, alpha(colors.accent, 0.1));
+      area.addColorStop(0, alpha(colors.accent, dark ? 0.55 : 0.5));
+      area.addColorStop(1, alpha(colors.accent, 0.08));
       ctx.fillStyle = area;
       ctx.beginPath();
       ctx.moveTo(X(sim.tc), Y(0));
@@ -846,54 +822,51 @@
       tube(ctx, done.map(function (p) { return [X(p[0]), Y(p[1])]; }), small ? 2.6 : 3.2, shade(colors.accent, -0.15), shade(colors.accent, 0.5));
     }
 
-    // F_max 標籤
-    ctx.font = '600 ' + (small ? 11 : 12) + 'px system-ui, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'bottom';
-    haloText(ctx, 'F_max = ' + num(c.Fmax, 1) + ' N', left + 4, yPeak - 3, colors.muted);
-    // 最大壓縮瞬間：兩車同速 v_cm（標記點：小球體）
+    // 最大壓縮瞬間：兩車同速 v_cm（標記點：立體小球）；標籤放在頂點右上方
+    const fsz = small ? 11 : 12;
+    const fmaxParts = qs('F', 'max').concat([[' = ' + num(c.Fmax, 1) + ' N', '']]);
+    const fmaxX = left + 4, fmaxW = richWidth(ctx, fmaxParts, fsz);
+    let fmaxBelow = false;
     if (state.t >= tPeak) {
       const r = small ? 4 : 5;
-      const gb = ctx.createRadialGradient(xPeak - r * 0.35, yPeak - r * 0.35, r * 0.1, xPeak, yPeak, r);
-      gb.addColorStop(0, shade(colors.accent, 0.6));
-      gb.addColorStop(1, shade(colors.accent, -0.25));
-      ctx.fillStyle = gb;
-      ctx.beginPath(); ctx.arc(xPeak, yPeak, r, 0, Math.PI * 2); ctx.fill();
-      // 標籤放在頂點右上方（不壓在曲線與 F_max 標籤上）
-      ctx.textAlign = 'left';
-      const lab = 'x_max: v1 = v2 = vcm', lw = ctx.measureText(lab).width;
-      pillText(ctx, lab, Math.min(xPeak + r + 4, right - lw - 5), yPeak - r - 11, colors.text);
+      sphere(ctx, xPeak, yPeak, r, colors.accent, true);
+      const parts = [[T('最大壓縮：', 'Max compression: '), '']].concat(qs('v', '1'), [[' = ', '']], qs('v', '2'), [[' = ', '']], qs('v', 'cm'));
+      const lw = richWidth(ctx, parts, fsz);
+      const lx = Math.max(left + 6, Math.min(xPeak + r + 6, right - lw - 6));
+      // 和 F_max 標籤同一高度會重疊時，F_max 標籤改放到參考線下方
+      if (lx - 6 < fmaxX + fmaxW + 4) fmaxBelow = true;
+      richText(ctx, parts, lx, yPeak - r - 11, colors.text, { size: fsz, pill: true, border: colors.accent });
+    }
+    // F_max 標籤（斜體 F、下標 max）
+    richText(ctx, fmaxParts, fmaxX, fmaxBelow ? yPeak + 4 + fsz * 0.6 : yPeak - 4 - fsz * 0.6, colors.muted, { size: fsz });
+    // 目前時刻：細直線＋曲線上的小球（接觸期間）
+    if (state.t >= t0 && state.t <= t1) {
+      ctx.strokeStyle = alpha(colors.equi, 0.8);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px(X(state.t)), top - 4); ctx.lineTo(px(X(state.t)), bottom); ctx.stroke();
+      if (state.t > sim.tc && state.t < sim.tr) sphere(ctx, X(tn), Y(st.F), small ? 3.2 : 3.8, colors.accent, true);
     }
     // 衝量 = 陰影面積
     if (state.t > sim.tc) {
       const J = st.p2 - state.sum.before.p2;
-      ctx.font = '600 ' + (small ? 12 : 13) + 'px system-ui, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const yJ = Y(c.Fmax * 0.42);
-      pillText(ctx, 'J = ∫F dt = ' + num(J, 2) + ' N·s', xPeak, yJ, colors.text, 0.82);
+      const yJ = Y(c.Fmax * 0.42), jsz = small ? 12 : 13;
+      richText(ctx, [['J', 'i'], [' = ∫', ''], ['F', 'i'], [' d', ''], ['t', 'i'], [' = ' + num(J, 2) + ' N·s', '']], xPeak, yJ, colors.text,
+        { size: jsz, align: 'center', pill: true, border: colors.accent });
       if (state.t >= sim.tr) {
-        ctx.font = (small ? 11 : 12) + 'px system-ui, sans-serif';
-        pillText(ctx, '= Δp2 = −Δp1', xPeak, yJ + (small ? 19 : 21), colors.text, 0.82);
+        richText(ctx, [['= Δ', ''], ['p', 'i'], ['2', '_'], [' = −Δ', ''], ['p', 'i'], ['1', '_']], xPeak, yJ + (small ? 20 : 22), colors.text,
+          { size: fsz, weight: 500, align: 'center', pill: true });
       }
     }
     // 接觸時間 Δt（下方括號）
     const yb = bottom + (small ? 28 : 30), xa = X(sim.tc), xr = X(sim.tr);
     ctx.strokeStyle = colors.muted;
     ctx.lineWidth = 1;
+    ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(xa, yb - 4); ctx.lineTo(xa, yb); ctx.lineTo(xr, yb); ctx.lineTo(xr, yb - 4);
     ctx.stroke();
-    ctx.font = (small ? 11 : 12) + 'px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    pillText(ctx, 'Δt = ' + num(c.dt, 3) + ' s', (xa + xr) / 2, yb, colors.muted, 1);
-    // 目前時刻
-    if (state.t >= t0 && state.t <= t1) {
-      ctx.strokeStyle = alpha(colors.equi, 0.8);
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(px(X(state.t)), top - 4); ctx.lineTo(px(X(state.t)), bottom); ctx.stroke();
-    }
+    ctx.lineCap = 'butt';
+    richText(ctx, [['Δ', ''], ['t', 'i'], [' = ' + num(c.dt, 3) + ' s', '']], (xa + xr) / 2, yb, colors.muted, { size: fsz, weight: 500, align: 'center', pill: true });
   }
 
   // ---------- 圖表共用 ----------
@@ -980,7 +953,7 @@
     const left = x0 + (small ? 8 : 14), right = x0 + pw - (small ? 8 : 14);
     const Y = function (v) { return bottom - (v - lo) / (hi - lo) * (bottom - top); };
 
-    ctx.font = '600 ' + (small ? 12 : 13) + 'px system-ui, sans-serif';
+    ctx.font = '600 ' + (small ? 12 : 13) + 'px ' + FONT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.text;
@@ -1035,15 +1008,15 @@
         ctx.setLineDash([]);
       }
       // 數值標籤：半透明圓角底框，放在長條末端外側
-      ctx.font = '600 ' + (small ? 11 : 12) + 'px system-ui, sans-serif';
+      ctx.font = '600 ' + (small ? 11 : 12) + 'px ' + FONT;
       ctx.textAlign = 'center';
       const below = v < 0;
       const fh = small ? 15 : 16;
       let ty = below ? yv + 4 + fh / 2 : yv - 4 - fh / 2;
       if (!below) ty = Math.max(ty, top + fh / 2 - 6);
-      pillText(ctx, num(v, small ? 1 : 2, kind === 'p'), cx, ty, colors.text, 0.85);
+      pillText(ctx, num(v, small ? 1 : 2, kind === 'p'), cx, ty, colors.text, 0.85, col);
       // 類別標籤
-      ctx.font = (small ? 11 : 12) + 'px system-ui, sans-serif';
+      ctx.font = (small ? 11 : 12) + 'px ' + FONT;
       ctx.textBaseline = 'alphabetic';
       ctx.fillStyle = colors.muted;
       const lab = ser[i].short && ctx.measureText(ser[i].label).width > slot - 4 ? ser[i].short : ser[i].label;
@@ -1074,7 +1047,7 @@
     const Y = function (v) { return bottom - (v - lo) / (hi - lo) * (bottom - top); };
     const pxa = function (v) { return Math.round(v) + 0.5; };
 
-    ctx.font = '600 12px system-ui, sans-serif';
+    ctx.font = '600 12px ' + FONT;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.text;
@@ -1094,7 +1067,7 @@
     ctx.beginPath();
     for (let t = step; t <= tMax + 1e-9; t += step) { const x = pxa(X(t)); ctx.moveTo(x, top); ctx.lineTo(x, bottom); }
     ctx.stroke();
-    ctx.font = '11px system-ui, sans-serif';
+    ctx.font = '11px ' + FONT;
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = colors.muted;
@@ -1103,9 +1076,18 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillStyle = colors.muted;
-    for (let t = 0; t <= tMax + 1e-9; t += step) ctx.fillText(String(t), X(t), bottom + 4);
+    // 時間軸名稱放在右端（不和縱軸最下面的刻度擠在一起），刻度數字讓出位置
+    const tName = T('t（s）', 't (s)'), tNameR = x0 + pw - 6;
+    ctx.font = '600 11px ' + FONT;
+    const tNameW = ctx.measureText(tName).width;
+    ctx.font = '11px ' + FONT;
+    for (let t = 0; t <= tMax + 1e-9; t += step) {
+      if (X(t) + ctx.measureText(String(t)).width / 2 < tNameR - tNameW - 6) ctx.fillText(String(t), X(t), bottom + 4);
+    }
     ctx.textAlign = 'right';
-    ctx.fillText(T('t（s）', 't (s)'), left - 5, bottom + 4);
+    ctx.font = '600 11px ' + FONT;
+    ctx.fillStyle = colors.text;
+    ctx.fillText(tName, tNameR, bottom + 4);
 
     // 彈簧接觸期間：淡色帶（上濃下淡）
     if (sim.spring && isFinite(sim.tc)) {
@@ -1123,7 +1105,7 @@
       ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(xc, top - 4); ctx.lineTo(xc, bottom); ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = '11px system-ui, sans-serif';
+      ctx.font = '11px ' + FONT;
       ctx.textBaseline = 'bottom';
       const label = sim.spring ? T('接觸', 'Contact') : T('碰撞', 'Collision'), lx = X(sim.tc);
       // 窄畫面上標籤若會壓到圖表標題，改放在虛線右側
@@ -1177,10 +1159,10 @@
     ctx.lineCap = 'butt';
     // 線尾：立體小球標出目前的值，旁邊是圓角底框的直接標籤（避開重疊）
     const xe = X(t);
-    ends.forEach(function (e) { e.y0 = e.y; sphere(ctx, xe, e.y, ser[e.i].total ? 4 : 3.2, ser[e.i].color); });
+    ends.forEach(function (e) { e.y0 = e.y; sphere(ctx, xe, e.y, ser[e.i].total ? 4 : 3.2, ser[e.i].color, true); });
     ends.sort(function (a, b) { return a.y - b.y; });
     for (let j = 1; j < ends.length; j++) if (ends[j].y - ends[j - 1].y < 15) ends[j].y = ends[j - 1].y + 15;
-    ctx.font = '600 11px system-ui, sans-serif';
+    ctx.font = '600 11px ' + FONT;
     ctx.textAlign = 'left';
     ends.forEach(function (e) {
       const xx = Math.min(xe + 9, right + 4);
@@ -1189,7 +1171,7 @@
         ctx.lineWidth = 1;
         ctx.beginPath(); ctx.moveTo(xe + 3, e.y0); ctx.lineTo(xx - 2, e.y); ctx.stroke();
       }
-      pillText(ctx, ser[e.i].tag, xx + 2, e.y, colors.text, 0.85);
+      pillText(ctx, ser[e.i].tag, xx + 2, e.y, colors.text, 0.85, ser[e.i].color);
     });
   }
 
@@ -1301,6 +1283,55 @@
     if (S && S.enabled()) S.tone({ freq: 880, dur: 0.08, gain: 0.25 });
   }
 
+  // ---------- 無障礙：畫布說明與讀數播報 ----------
+  // 三個畫布沒有拖曳操作：role="img"，aria-label 隨參數更新。
+  // 離散事件（改完參數的預測、碰撞結束的結果）寫進 aria-live 的 #srSay；播放中的速度寫進 #srNow，至少間隔 1 秒。
+  let booted = false, sayTimer = 0, sayParamTimer = 0, srNowAt = -1e9;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function resultText() {
+    const s = state.sum, a = s.after;
+    if (!s.collides) return T('兩車沒有互相接近（v1 ≤ v2），不會碰撞。', 'The carts are not approaching each other (v1 ≤ v2), so they will not collide.');
+    return T('碰撞後車 1 速度 ' + num(a.v1, 2, true) + ' m/s、車 2 速度 ' + num(a.v2, 2, true) + ' m/s；總動量 ' + num(s.before.p, 2, true) + ' kg·m/s 不變；' +
+        (s.lost > 1e-9 ? '動能減少 ' + num(s.lost, 2) + ' J。' : '總動能不變。'),
+      'After the collision cart 1 moves at ' + num(a.v1, 2, true) + ' m/s and cart 2 at ' + num(a.v2, 2, true) + ' m/s; total momentum stays ' + num(s.before.p, 2, true) + ' kg·m/s; ' +
+        (s.lost > 1e-9 ? 'kinetic energy falls by ' + num(s.lost, 2) + ' J.' : 'total kinetic energy is unchanged.'));
+  }
+  function sayPrediction() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { say(T('預測：', 'Prediction: ') + resultText()); }, 900);
+  }
+  function updateAria() {
+    const p = state.p, s = state.sum, sim = state.sim, c = sim.contact;
+    const e = state.spring ? 1 : p.e;
+    track.setAttribute('aria-label', T(
+      '一維碰撞動畫：車 1（左）質量 ' + num(p.m1, 2) + ' kg、初速度 ' + num(p.v1, 2, true) + ' m/s；車 2（右）質量 ' + num(p.m2, 2) + ' kg、初速度 ' + num(p.v2, 2, true) + ' m/s；恢復係數 e = ' + num(e, 2) + '。' +
+        (state.spring ? '車 1 前端裝彈力常數 ' + Math.round(state.k) + ' N/m 的理想彈簧。' : '') + resultText(),
+      'Animation of a one-dimensional collision: cart 1 (left) has mass ' + num(p.m1, 2) + ' kg and initial velocity ' + num(p.v1, 2, true) + ' m/s; cart 2 (right) has mass ' + num(p.m2, 2) + ' kg and initial velocity ' + num(p.v2, 2, true) + ' m/s; coefficient of restitution e = ' + num(e, 2) + '. ' +
+        (state.spring ? 'An ideal spring with k = ' + Math.round(state.k) + ' N/m is mounted on the front of cart 1. ' : '') + resultText()));
+    const kName = sim.spring ? T('總能量', 'total energy') : T('總動能', 'total kinetic energy');
+    chart.setAttribute('aria-label', (state.mode === 'bars'
+      ? T('長條圖：兩車與總和的動量和動能。', 'Bar chart of the momentum and kinetic energy of each cart and the total. ')
+      : T('時間圖：兩車與總和的動量和能量隨時間的變化。', 'Time graph of the momentum and energy of each cart and the total. ')) +
+      T('總動量碰撞前 ' + num(s.before.p, 2, true) + '、碰撞後 ' + num(s.after.p, 2, true) + ' kg·m/s；' + kName + '碰撞前 ' + num(s.before.K, 2) + '、碰撞後 ' + num(s.after.K, 2) + ' J。',
+        'Total momentum ' + num(s.before.p, 2, true) + ' kg·m/s before and ' + num(s.after.p, 2, true) + ' kg·m/s after; ' + kName + ' ' + num(s.before.K, 2) + ' J before and ' + num(s.after.K, 2) + ' J after.'));
+    force.setAttribute('aria-label', c
+      ? T('彈力–時間圖：接觸時間 Δt = ' + num(c.dt, 3) + ' s，最大彈力 ' + num(c.Fmax, 1) + ' N，陰影面積為衝量 J = ' + num(c.J, 3) + ' N·s。',
+        'Spring force against time: contact time Δt = ' + num(c.dt, 3) + ' s, peak force ' + num(c.Fmax, 1) + ' N; the shaded area is the impulse J = ' + num(c.J, 3) + ' N·s.')
+      : T('彈力–時間圖：兩車沒有接近，彈簧不會被壓縮。', 'Spring force against time: the carts are not approaching, so the spring is never compressed.'));
+  }
+  function sayNow(st) {
+    const t = performance.now();
+    if (t - srNowAt < 1000) return;
+    srNowAt = t;
+    $('srNow').textContent = 't = ' + num(state.t, 1) + ' s' + T('：車 1 速度 ', ': cart 1 ') + num(st.v1, 2, true) + ' m/s' + T('，車 2 速度 ', ', cart 2 ') + num(st.v2, 2, true) + ' m/s';
+  }
+
   // ---------- 動畫 ----------
   let lastT = 0;
   function offscreen(st) {
@@ -1319,7 +1350,7 @@
       if (state.sim.spring) springSound(); else impactSound();
     }
     // 任務模式：動畫時間跨過「碰撞結束」（沒有彈簧時即碰撞瞬間；有彈簧時為分開瞬間）時回報一次
-    if (prevT < state.sim.tr && state.t >= state.sim.tr) emitCollision();
+    if (prevT < state.sim.tr && state.t >= state.sim.tr) { emitCollision(); say(resultText()); }
     const st = CC.stateAt(state.sim, state.t);
     if (state.t >= state.tEnd || (state.t > state.sim.tr && offscreen(st)) || (!isFinite(state.sim.tc) && offscreen(st))) {
       state.running = false;
@@ -1327,7 +1358,7 @@
     }
     updatePlayButton();
     draw();
-    if (state.running) requestAnimationFrame(tick);
+    if (state.running) { sayNow(st); requestAnimationFrame(tick); }
   }
   /** 任務模式（missions.js）：回報這次碰撞的完整結果（全部取自物理核心的解析解） */
   function emitCollision() {
@@ -1389,6 +1420,7 @@
     $('modeBars').setAttribute('aria-pressed', String(m === 'bars'));
     $('modeTime').setAttribute('aria-pressed', String(m === 'time'));
     $('ghostLegend').hidden = m !== 'bars';
+    updateAria();
     requestDraw();
   }
   $('modeBars').addEventListener('click', function () { setMode('bars'); });
@@ -1476,6 +1508,7 @@
   // 齒輪設定切換深淺色時也重畫（settings.js）
   window.addEventListener('lab:themechange', function () { readColors(); requestDraw(); });
   setup();
+  booted = true;
   if (window.ResizeObserver) {
     const ro = new ResizeObserver(resize);
     ro.observe(track);

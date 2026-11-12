@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120801"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Moon Phases and Eclipses | Astro Ni Physics Lab">月相與日月食｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="拖曳月球繞地球，看月相、月出月落與台灣天空的月亮；把交點線轉向太陽，製造日全食、日環食與紅銅色的月全食，再用 3D 看軌道的 5° 傾斜。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/moon-phases.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/moon-phases.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/moon-phases.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/moon-phases.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="月相與日月食｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="拖曳月球繞地球，看月相、月出月落與台灣天空的月亮；把交點線轉向太陽，製造日全食、日環食與紅銅色的月全食，再用 3D 看軌道的 5° 傾斜。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/moon-phases.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/moon-phases.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="月相與日月食的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"月相與日月食","alternateName":"Moon Phases and Eclipses","description":"拖曳月球繞地球，看月相、月出月落與台灣天空的月亮；把交點線轉向太陽，製造日全食、日環食與紅銅色的月全食，再用 3D 看軌道的 5° 傾斜。","url":"https://astro1222ni.github.io/physics-lab/moon-phases.html","image":"https://astro1222ni.github.io/physics-lab/img/og/moon-phases.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","從地球看星空（The Sky as Seen from Earth）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <style>
+    /* 月相與日月食頁面專用樣式（只使用 lab.css 的顏色變數；天空畫面用天空本身的顏色） */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .mp button { min-height: 44px; }
+    .mp .playbar, .mp .stepbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .mp .playbar button { flex: 1 1 auto; }
+    .mp .stepbar button { flex: 1 1 calc(33% - 8px); padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); line-height: 1.25; }
+    .mp .playbar #play { font-weight: 700; }
+    .mp .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .mp .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .mp .slider input[type="range"] { height: 28px; margin: 0; }
+    .mp .slider label sub, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .mp [hidden] { display: none !important; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .mp .checks label { min-height: 44px; }
+    .mp .checks input { width: 17px; height: 17px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    .card h3 { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; color: var(--muted); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.kind { font-weight: 700; }
+    dl.readout dd.ecl { font-weight: 700; color: var(--pos); }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.cone { width: 18px; height: 9px; border-radius: 2px; }
+    /* 三個小畫面：從地球看到的月亮、影子截面、從台灣看的天空 */
+    .views { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; margin-top: 12px; }
+    @media (max-width: 560px) { .views { grid-template-columns: minmax(0, 1fr); } }
+    .view { margin: 0; }
+    .view canvas { aspect-ratio: auto; height: 300px; cursor: default; touch-action: pan-y pinch-zoom; }
+    .view figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .view figcaption b { color: var(--text); }
+    .skyview { margin: 12px 0 0; }
+    .skyview canvas { aspect-ratio: auto; height: 260px; cursor: default; touch-action: pan-y pinch-zoom; }
+    /* 2D／3D 檢視切換（與「行星軌道與克卜勒定律」相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .m3-wrap { position: relative; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 45%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .m3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .m3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .m3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .m3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .m3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .m3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: var(--canvas-bg); background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); }
+    .m3-hud span.m { color: var(--muted); font-weight: 500; }
+    .m3-hud span.e { color: var(--pos); }
+    .m3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 事件紀錄 */
+    .logcard { margin-top: 16px; }
+    .logwrap { overflow-x: auto; max-height: 340px; overflow-y: auto; }
+    table.log { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.log th, table.log td { padding: 5px 6px; text-align: left; border-bottom: 1px solid var(--border); vertical-align: top; }
+    table.log th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+    table.log td.when { white-space: nowrap; }
+    table.log td.ev { font-weight: 600; white-space: nowrap; }
+    table.log tr.ecl td { background: var(--accent-soft); }
+    table.log tr.ecl td.note { color: var(--pos); font-weight: 600; }
+    table.log .empty td { text-align: center; color: var(--muted); padding: 12px 6px; }
+    .logcard .loghead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .logcard .loghead h2 { margin: 0; }
+    .logcard .loghead p { margin: 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Moon Phases and Eclipses"><a href="index.html">首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 月相與日月食</nav>
+      <h1 data-en="Moon Phases and Eclipses">月相與日月食</h1>
+      <p data-en="Half of the Moon is always lit by the Sun; how much of that half we see from the Earth gives the phase. Drag the Moon around its orbit (or play time) and watch the phase, the Moon in Taiwan’s sky, and its rising and setting times change together. Then turn the tilted orbit’s nodes toward the Sun to make solar and lunar eclipses — total, annular, partial and penumbral — and see why they do not happen every month. Switch to 3D to see the 5° tilt of the Moon’s orbit and the shadow cones.">月球永遠有一半被太陽照亮，從地球看得到這一半的多少，就是月相。拖曳月球繞軌道（或播放時間），看月相、台灣天空中的月亮與月出月落時刻一起變化；再把傾斜軌道的交點轉向太陽，製造日食與月食——全食、環食、偏食與半影食，並看出為什麼不是每個月都有。切換到 3D 立體，可以看到月球軌道 5° 的傾斜與本影錐。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the Moon to full, then drag the ascending node until the line of nodes points at the Sun, and watch the Moon turn red.">試試看：把月球拖到滿月，再拖升交點讓交點線對準太陽，看月亮變紅。</p>
+    <div class="lab mp">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camEdge" data-en="Along the nodes" title="沿著交點線、從黃道面的側邊看：看出月球軌道對黃道傾斜 5.145°" data-en-title="Look along the line of nodes, edge-on to the ecliptic: the 5.145° tilt of the Moon’s orbit shows">沿交點線側看</button>
+          <button type="button" id="camSun" data-en="From the Sun" title="從太陽的方向看地球：看出月球從地影的上方、下方或正中經過" data-en-title="Look at the Earth from the Sun’s direction: see whether the Moon passes above, below or through the Earth’s shadow">從太陽方向看</button>
+          <button type="button" id="camTop" data-en="From above" title="從黃道北極往下看（與 2D 畫面相同）" data-en-title="Look down from the north ecliptic pole (same as the 2D view)">從上方俯視</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="俯視的太陽、地球、月球軌道圖：可拖曳月球、升交點與近地點" data-en-aria-label="Top view of the Sun, Earth and the Moon’s orbit: drag the Moon, the ascending node and the perigee"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" class="primary" type="button">暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除事件紀錄與畫面上的比較標記，滑桿設定不變" data-en-title="Clear the event log and the comparison marks; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="stepbar" role="group" aria-label="跳到" data-en-aria-label="Jump">
+          <button type="button" id="dayBack" data-en="−1 day">−1 天</button>
+          <button type="button" id="dayFwd" data-en="+1 day">+1 天</button>
+          <button type="button" id="sidMonth" data-en="+1 sidereal month" title="前進 27.32 日：月球回到同一顆恆星的方向" data-en-title="Go forward 27.32 days: the Moon returns to the direction of the same star">+1 恆星月</button>
+          <button type="button" id="synMonth" data-en="+1 synodic month" title="前進 29.53 日：回到同一個月相" data-en-title="Go forward 29.53 days: back to the same phase">+1 朔望月</button>
+          <button type="button" id="nextNew" data-en="Next new moon">下一次新月</button>
+          <button type="button" id="nextFull" data-en="Next full moon">下一次滿月</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srLive" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Moon’s orbit above the ecliptic"><i style="background:var(--accent)"></i>月球軌道（黃道面上方）</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>below the ecliptic"><i class="dash"></i>（黃道面下方）</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--b-astro, var(--accent))&quot;></i>Ascending / descending node"><i class="dot" style="background:var(--b-astro, var(--accent))"></i>升交點／降交點</span>
+          <span data-en-html="<i class=&quot;cone&quot; style=&quot;background:var(--field);opacity:.55&quot;></i>Umbra and penumbra"><i class="cone" style="background:var(--field);opacity:.55"></i>本影與半影</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Taiwan"><i class="dot" style="background:var(--pos)"></i>台灣</span>
+        </div>
+        <p class="hint l2" data-en-html="Drag the <b>Moon</b> along its orbit, the <b>ascending node</b> to turn the line of nodes, or the small <b>perigee</b> marker. The Earth and Moon are drawn larger than real (the size label says by how much) — press <b>True scale</b> to see how tiny they really are.">拖曳<b>月球</b>沿軌道移動、拖曳<b>升交點</b>轉動交點線，或拖曳小小的<b>近地點</b>標記。地球與月球畫得比實際大（畫面角落寫著放大幾倍）——按<b>真實比例</b>看看它們實際有多小。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Same Moon, orbit and shadows as the 2D view; set them with the sliders.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。月球、軌道與影子都和 2D 畫面相同；用滑桿調整。</p>
+
+        <div class="views">
+          <figure class="view">
+            <canvas id="moonCv" role="img" aria-label="從地球看到的月亮：月相、亮面方向與日月食的樣子" data-en-aria-label="The Moon as seen from the Earth: phase, direction of the bright side and how eclipses look"></canvas>
+            <figcaption data-en-html="<b>The Moon seen from the Earth</b> — as seen from Taiwan with the zenith up"><b>從地球看到的月亮</b>——從台灣看，天頂朝上</figcaption>
+          </figure>
+          <figure class="view">
+            <canvas id="secCv" role="img" aria-label="影子的截面：地球的本影與半影在月球距離處的大小，或月球的影子落在地球上" data-en-aria-label="Shadow cross-section: the Earth’s umbra and penumbra at the Moon’s distance, or the Moon’s shadow falling on the Earth"></canvas>
+            <figcaption data-en-html="<b>Shadow cross-section</b> — looking along the sunlight, to scale"><b>影子的截面</b>——順著陽光方向看，依比例</figcaption>
+          </figure>
+        </div>
+        <figure class="view skyview">
+          <canvas id="skyCv" role="img" aria-label="從台灣看的天空：地平線、月亮與太陽的高度與方位、今天的路徑與時刻" data-en-aria-label="The sky seen from Taiwan: horizon, altitude and direction of the Moon and the Sun, today’s paths and times"></canvas>
+          <figcaption data-en-html="<b>The sky from Taiwan</b> (23.5° N, 121° E) — a 360° panorama facing south; dashed lines are today’s paths"><b>從台灣看的天空</b>（北緯 23.5°、東經 121°）——面向南方的 360° 全景，虛線是今天的路徑</figcaption>
+        </figure>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Time">時間</h2>
+          <div class="slider"><label for="doy" data-en="Date (day of the year)">日期（一年中的第幾天）</label><output id="doyo"></output>
+            <input id="doy" type="range" min="1" max="365" step="1" value="266" data-decimals="0"></div>
+          <div class="slider"><label for="hr" data-en="Time in Taiwan (UTC+8, hours)">台灣時間（UTC+8，時）</label><output id="hro"></output>
+            <input id="hr" type="range" min="0" max="23.99" step="0.25" value="18.5" data-decimals="2"></div>
+          <div class="slider"><label for="rate" data-en="Playback speed (time per second)">播放速度（每秒經過的時間）</label><output id="rateo"></output>
+            <input id="rate" type="range" min="0" max="1000" step="1" value="384"></div>
+          <p class="hint" data-en="Time moves the Sun, the Earth’s rotation and the Moon together. Tap a number to type an exact value.">時間會同時推動太陽、地球自轉與月球。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The Moon and its orbit">月球與軌道</h2>
+          <div class="slider"><label for="elong" data-en="Moon’s position: ecliptic longitude minus the Sun’s (°)">月球位置：與太陽的黃經差（°）</label><output id="elongo"></output>
+            <input id="elong" type="range" min="0" max="360" step="1" value="120" data-decimals="3"></div>
+          <div class="slider"><label for="node" data-en-html="Ascending node longitude Ω (°)">升交點黃經 Ω（°）</label><output id="nodeo"></output>
+            <input id="node" type="range" min="0" max="360" step="1" value="100" data-decimals="2"></div>
+          <div class="slider"><label for="peri" data-en="Perigee longitude (°)">近地點黃經（°）</label><output id="perio"></output>
+            <input id="peri" type="range" min="0" max="360" step="1" value="30" data-decimals="2"></div>
+          <p class="hint" id="orbitInfo"></p>
+          <div class="checks">
+            <label><input id="regress" type="checkbox" checked><span data-en="Nodes regress (once in 18.6 yr)">交點退行（18.6 年一圈）</span></label>
+            <label><input id="precess" type="checkbox" checked><span data-en="Perigee advances (once in 8.85 yr)">近地點前進（8.85 年一圈）</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Display">顯示</h2>
+          <div class="seg2" role="group" aria-label="參考方向" data-en-aria-label="Reference frame">
+            <button type="button" id="frSun" aria-pressed="true" data-en="Sun fixed (right)">太陽固定在右方</button>
+            <button type="button" id="frStar" aria-pressed="false" data-en="Stars fixed">恆星方向固定</button>
+          </div>
+          <div class="seg2" role="group" aria-label="尺寸" data-en-aria-label="Size" style="margin-top:6px">
+            <button type="button" id="scMag" aria-pressed="true" data-en="Enlarged sizes">放大尺寸</button>
+            <button type="button" id="scTrue" aria-pressed="false" data-en="True scale">真實比例</button>
+          </div>
+          <div class="checks" style="margin-top:4px">
+            <label><input id="showNames" type="checkbox" checked><span data-en="Eight phase names">八個月相名稱</span></label>
+            <label><input id="showShadow" type="checkbox" checked><span data-en="Shadow cones">影子（本影、半影）</span></label>
+            <label><input id="showInset" type="checkbox" checked><span data-en="Earth around the Sun">地球繞太陽小圖</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Phase">月相</h2>
+          <dl class="readout">
+            <dt data-en="Phase">月相</dt><dd id="rPhase" class="kind">—</dd>
+            <dt data-en="Moon’s age (since new moon)">月齡（新月後經過）</dt><dd id="rAge">—</dd>
+            <dt data-en="Fraction lit">被照亮的比例</dt><dd id="rIllum">—</dd>
+            <dt data-en="Elongation ψ (Sun–Earth–Moon)">距角 ψ（日—地—月夾角）</dt><dd id="rPsi">—</dd>
+            <dt data-en="Phase angle i (Sun–Moon–Earth)">相角 i（日—月—地夾角）</dt><dd id="rPh">—</dd>
+            <dt data-en="Earth–Moon distance">月地距離</dt><dd id="rDist">—</dd>
+            <dt data-en="Apparent diameters (Moon / Sun)">視直徑（月球／太陽）</dt><dd id="rDiam">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Eclipses">日月食</h2>
+          <dl class="readout">
+            <dt data-en="Moon’s ecliptic latitude β">月球黃緯 β</dt><dd id="rLat">—</dd>
+            <dt data-en="Moon from the nearest node">月球離最近的交點</dt><dd id="rNode">—</dd>
+            <dt data-en="Sun from the line of nodes">太陽離交點線</dt><dd id="rSunNode">—</dd>
+            <dt data-en="Lunar eclipse">月食</dt><dd id="rLunar">—</dd>
+            <dt data-en="Solar eclipse (anywhere on Earth)">日食（地球上某處）</dt><dd id="rSolar">—</dd>
+            <dt data-en="Seen from Taiwan">台灣看到的日食</dt><dd id="rLocal">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Seen from Taiwan">從台灣看</h2>
+          <dl class="readout">
+            <dt data-en="Moon: altitude, direction">月亮：高度、方位</dt><dd id="rMoonAlt">—</dd>
+            <dt data-en="Moonrise / moonset today">今天的月出／月落</dt><dd id="rMoonRS">—</dd>
+            <dt data-en="Sun: altitude">太陽：高度</dt><dd id="rSunAlt">—</dd>
+            <dt data-en="Sunrise / sunset today">今天的日出／日落</dt><dd id="rSunRS">—</dd>
+            <dt data-en="Bright side of the Moon points">月亮亮面朝向</dt><dd id="rLimb">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="card logcard">
+      <div class="loghead">
+        <h2 data-en="Event log">事件紀錄</h2>
+        <p class="hint" data-en="Play time (or use the jump buttons): every principal phase is recorded here, with any eclipse at new or full moon.">播放時間（或按跳到的按鈕）時，經過的每個主要月相都會記在這裡；朔、望時若有日月食也一併記錄。</p>
+      </div>
+      <div class="logwrap"><table class="log" id="log"></table></div>
+    </section>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Why the Moon has phases">月相的成因</h3>
+      <p data-en-html="The Moon does not shine by itself: the half facing the Sun is always lit. From the Earth we see that lit half at an angle. If \(i\) is the phase angle at the Moon between the directions to the Sun and to the Earth, the fraction of the disk we see lit is">月球本身不發光，朝向太陽的那一半永遠是亮的；我們從地球「斜著」看這個亮的半球。設相角 \(i\) 是在月球上看太陽與地球兩個方向的夾角，從地球看到月面被照亮的比例是</p>
+      <div class="formula">\[ k = \frac{1 + \cos i}{2} \approx \frac{1 - \cos\psi}{2}, \qquad i \approx 180^\circ - \psi \]</div>
+      <p data-en-html="where \(\psi\) is the elongation, the angle at the Earth between the Sun and the Moon. The approximation treats the Sun as infinitely far away; the exact phase angle is smaller by the small angle \(\sigma\) at the Sun, \(\sin\sigma = r\sin\psi / d\) (about \(0.15^\circ\) at most). At first quarter \(\psi = 90^\circ\) and \(k\) is a little more than one half.">其中 \(\psi\) 是距角，也就是在地球上看太陽與月球的夾角。近似式把太陽當成無窮遠；精確的相角還要再減去在太陽處的小角 \(\sigma\)，\(\sin\sigma = r\sin\psi / d\)（最多約 \(0.15^\circ\)）。所以上弦時 \(\psi = 90^\circ\)，\(k\) 比一半多一點點。</p>
+      <ul>
+        <li data-en-html="<strong>New moon</strong> (0°): rises and sets with the Sun, not visible. <strong>Waxing crescent</strong>: low in the west after sunset. <strong>First quarter</strong> (90°): rises around noon, highest at sunset, sets around midnight. <strong>Full moon</strong> (180°): rises at sunset, sets at sunrise. <strong>Last quarter</strong> (270°): rises around midnight, sets around noon. <strong>Waning crescent</strong>: in the east before dawn."><strong>新月</strong>（0°）：與太陽同升同落，看不到。<strong>眉月</strong>：日落後在西方低空。<strong>上弦月</strong>（90°）：約中午升起、黃昏時最高、約半夜落下。<strong>滿月</strong>（180°）：日落時升起、日出時落下。<strong>下弦月</strong>（270°）：約半夜升起、中午落下。<strong>殘月</strong>：黎明前在東方。</li>
+        <li data-en-html="The Moon moves about \(12.2^\circ\) a day eastward relative to the Sun, so on average it rises, crosses the meridian and sets about \(24\,\mathrm{h}\times\left(\dfrac{P_{\text{syn}}}{P_{\text{syn}}-1}-1\right) \approx 50\) minutes later each day.">月球相對太陽每天向東移動約 \(12.2^\circ\)，所以月出、上中天、月落平均每天延後 \(24\,\mathrm{h}\times\left(\dfrac{P_{\text{朔望}}}{P_{\text{朔望}}-1}-1\right) \approx 50\) 分鐘。</li>
+        <li data-en-html="<strong>The bright side always points to the Sun</strong> along a great circle of the sky. Taiwan is near the Tropic of Cancer, so the ecliptic stands steeply above the horizon: an evening crescent in the west often lies almost flat, lit from below, like a boat."><strong>亮面永遠朝向太陽</strong>（沿天球上的大圓）。台灣在北回歸線附近，黃道與地平線的夾角很大，所以傍晚西方的眉月常常幾乎「躺著」、亮面朝下，像一艘小船。</li>
+      </ul>
+
+      <h3 data-en="Sidereal month and synodic month">恆星月與朔望月</h3>
+      <p data-en-html="In one <strong>sidereal month</strong> \(P_{\text{sid}} = 27.321\,66\) d the Moon goes once around the Earth relative to the stars. Meanwhile the Earth has moved about \(27^\circ\) around the Sun, so the Moon must go a little further — about 2.2 days — to line up with the Sun again. The angles gained per day must satisfy">在一個<strong>恆星月</strong> \(P_{\text{恆}} = 27.321\,66\) 日裡，月球相對恆星繞地球一圈；但這段時間地球也繞太陽走了約 \(27^\circ\)，月球要再多走約 2.2 天，才會再和太陽排成同一個月相。每天轉過的角度滿足</p>
+      <div class="formula" data-en-html="\[ \frac{360^\circ}{P_{\text{syn}}} = \frac{360^\circ}{P_{\text{sid}}} - \frac{360^\circ}{Y} \;\Rightarrow\; P_{\text{syn}} = \frac{1}{\dfrac{1}{27.321\,66\ \text{d}} - \dfrac{1}{365.256\,36\ \text{d}}} = 29.5306\ \text{d} \]">\[ \frac{360^\circ}{P_{\text{朔望}}} = \frac{360^\circ}{P_{\text{恆}}} - \frac{360^\circ}{Y} \;\Rightarrow\; P_{\text{朔望}} = \frac{1}{\dfrac{1}{27.321\,66\ \text{日}} - \dfrac{1}{365.256\,36\ \text{日}}} = 29.5306\ \text{日} \]</div>
+      <p data-en-html="where \(Y\) is the sidereal year. In the same way the line of nodes regresses once in 18.6 years, which makes the <strong>draconic month</strong> (node to node) \(27.212\,22\) d, and the perigee advances once in 8.85 years, which makes the <strong>anomalistic month</strong> (perigee to perigee) \(27.554\,55\) d.">其中 \(Y\) 是恆星年。同樣的道理，交點線每 18.6 年向西退行一圈，所以<strong>交點月</strong>（交點到交點）是 \(27.212\,22\) 日；近地點每 8.85 年向東前進一圈，所以<strong>近點月</strong>（近地點到近地點）是 \(27.554\,55\) 日。</p>
+
+      <h3 data-en="Why there is not an eclipse every month">為什麼不是每個月都有日月食</h3>
+      <p data-en-html="A solar eclipse needs a new moon and a lunar eclipse a full moon — but that is not enough. The Moon’s orbit is tilted \(5.145^\circ\) to the ecliptic, so at most new and full moons the Moon passes above or below the Sun or the Earth’s shadow. Eclipses happen only when the new or full moon falls near one of the two <strong>nodes</strong>, where the orbit crosses the ecliptic, that is, when the line of nodes points roughly toward the Sun. This lasts about a month and comes twice a year (an <strong>eclipse season</strong>); because the nodes regress, the Sun returns to the same node every \(346.6\) days (the eclipse year).">日食要在新月（朔）、月食要在滿月（望），但這還不夠。月球軌道對黃道傾斜 \(5.145^\circ\)，大多數的朔與望，月球都從太陽或地影的上方或下方錯過。只有當朔或望剛好發生在<strong>交點</strong>（月球軌道穿過黃道面的兩點）附近，也就是交點線大致指向太陽時，才會發生日月食。這樣的時段每年有兩次、每次約一個多月，稱為<strong>食季</strong>；因為交點在退行，太陽回到同一個交點只要 \(346.6\) 日（食年）。</p>
+      <h3 data-en="Umbra and penumbra">本影與半影</h3>
+      <p data-en-html="The Sun is not a point. A sphere of radius \(R_b\) at distance \(D\) from the Sun (radius \(R_\odot\)) casts a cone-shaped <strong>umbra</strong>, where the whole Sun is hidden, and a widening <strong>penumbra</strong>, where only part of the Sun is hidden. At a distance \(x\) behind the body their radii are">太陽不是一個點。半徑 \(R_b\) 的天體在距離太陽（半徑 \(R_\odot\)）\(D\) 處，身後有圓錐形的<strong>本影</strong>（整個太陽都被擋住）與越來越寬的<strong>半影</strong>（只擋住一部分太陽）。在天體後方 \(x\) 處，兩者的半徑是</p>
+      <div class="formula">\[ r_u = (L_u - x)\tan\alpha,\quad L_u = \frac{D R_b}{R_\odot - R_b},\ \sin\alpha = \frac{R_\odot - R_b}{D}; \qquad r_p = (L_p + x)\tan\beta,\quad L_p = \frac{D R_b}{R_\odot + R_b},\ \sin\beta = \frac{R_\odot + R_b}{D} \]</div>
+      <ul>
+        <li data-en-html="The Earth’s umbra is \(1.38\times10^{6}\ \mathrm{km}\) long. At the Moon’s distance it is about \(4600\ \mathrm{km}\) in radius — 2.6 times the Moon’s radius — and the penumbra about \(8200\ \mathrm{km}\). <strong>Total lunar eclipse</strong>: the whole Moon inside the umbra; <strong>partial</strong>: part of it; <strong>penumbral</strong>: only in the penumbra (the Moon just looks a little dimmer).">地球的本影長 \(1.38\times10^{6}\ \mathrm{km}\)，在月球距離處半徑約 \(4600\ \mathrm{km}\)（月球半徑的 2.6 倍），半影約 \(8200\ \mathrm{km}\)。整個月球進入本影是<strong>月全食</strong>，部分進入是<strong>月偏食</strong>，只進入半影是<strong>半影月食</strong>（月亮只是稍微變暗）。</li>
+        <li data-en-html="<strong>Why a totally eclipsed Moon is copper red</strong>: the Earth’s atmosphere bends (refracts) sunlight into the umbra. On its long path through the air the blue light is scattered away — the same reason sunsets are red — so mostly red light reaches the Moon. (The simulation shows this colour; its brightness is turned up so that it can be seen.)"><strong>月全食時月亮是紅銅色</strong>：地球大氣把陽光折射進本影；陽光斜穿過厚厚的大氣時，藍光被散射掉（和夕陽是紅色的原因相同），照到月球的主要是紅光。（模擬畫出這個顏色，亮度有調亮以便看見。）</li>
+        <li data-en-html="The Moon’s umbra is about \(3.73\times10^{5}\ \mathrm{km}\) long — almost the Earth–Moon distance. Because the Moon’s orbit is an ellipse (\(363\,300\) to \(405\,500\ \mathrm{km}\)), the tip sometimes reaches the ground: a <strong>total solar eclipse</strong> (the Moon looks bigger than the Sun), and sometimes falls short: an <strong>annular solar eclipse</strong> (a ring of Sun around the Moon). Outside the umbra, in the penumbra, people see a <strong>partial solar eclipse</strong>.">月球的本影長約 \(3.73\times10^{5}\ \mathrm{km}\)，幾乎等於月地距離。月球軌道是橢圓（\(363\,300\) 到 \(405\,500\ \mathrm{km}\)），所以本影的尖端有時碰得到地面——<strong>日全食</strong>（月球看起來比太陽大），有時碰不到——<strong>日環食</strong>（月球周圍露出一圈太陽）。在本影外、半影裡的人看到<strong>日偏食</strong>。</li>
+      </ul>
+      <div class="formula" data-en-html="\[ \theta = 2\arcsin\frac{R}{d}:\quad \theta_{\text{Moon}} = 29.5'\ \text{(apogee)} \sim 32.9'\ \text{(perigee)},\qquad \theta_{\text{Sun}} = 32.0' \ \text{(1 AU)} \]">\[ \theta = 2\arcsin\frac{R}{d}:\quad \theta_{\text{月}} = 29.5'\ \text{（遠地點）} \sim 32.9'\ \text{（近地點）},\qquad \theta_{\text{日}} = 32.0' \ \text{（1 AU）} \]</div>
+      <p data-en-html="For a central eclipse the dividing line is where the umbra’s tip just touches the ground: an Earth–Moon distance of about \(379\,800\ \mathrm{km}\) (centre to centre). There, on the ground, the Moon and the Sun look exactly the same size.">中心食的分界，是本影尖端剛好碰到地面：月地中心距離約 \(379\,800\ \mathrm{km}\)。在那一點的地面上，月球與太陽的視直徑正好相等。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Phases</strong>: drag the Moon once around. Watch the fraction lit and the Moon in Taiwan’s sky. The ring of eight names shows what each position looks like from the Earth (the top view shows the lit half facing the Sun)."><strong>月相</strong>：把月球拖一圈，對照被照亮的比例與台灣天空中的月亮。外圈的八個月相是「從地球看」的樣子（俯視圖中，月球永遠是朝太陽的那一半亮）。</li>
+        <li data-en-html="<strong>Moonrise</strong>: set the Moon to first quarter (90°) and move the time slider until the Moon sits on the eastern horizon: it is around noon. Press “+1 day” and see the moonrise move about 50 minutes later."><strong>月出時刻</strong>：把月球放在上弦（90°），移動時間滑桿，直到月亮在東方地平線上——大約是中午。按「+1 天」，月出時刻延後約 50 分鐘。</li>
+        <li data-en-html="<strong>2.2 days</strong>: press “+1 sidereal month”: the Moon is back at the same star but not yet at the same phase. Press “+1 synodic month” to compare."><strong>2.2 天</strong>：按「+1 恆星月」：月球回到同一顆恆星的方向，月相卻還沒回來；再按「+1 朔望月」比較。</li>
+        <li data-en-html="<strong>Make an eclipse</strong>: put the Moon at full (180°), then drag the ascending node until the line of nodes points at the Sun. Watch the shadow cross-section: the Moon enters the umbra. Turn the node away by 20° and the eclipse is gone."><strong>製造月食</strong>：把月球放在滿月（180°），再拖曳升交點，讓交點線指向太陽。看影子截面圖：月球走進本影。把交點轉開 20°，月食就消失了。</li>
+        <li data-en-html="<strong>Total or annular</strong>: at a new moon on a node, turn the perigee toward the Moon (total) or away from it (annular)."><strong>全食還是環食</strong>：在交點上的新月，把近地點轉向月球（全食）或轉到背面（環食）。</li>
+        <li data-en-html="<strong>Eclipse seasons</strong>: fix a central eclipse, raise the speed and play: half a year later the Sun reaches the other node and eclipses return; with the nodes regressing, the seasons come about 19 days earlier each year."><strong>食季</strong>：先做出一次中心食，加快速度播放：半年後太陽來到另一個交點，日月食又出現；交點在退行，所以食季每年提早約 19 天。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="<strong>Values used</strong>: Earth’s axial tilt \(23.44^\circ\); the Moon’s orbit inclined \(5.145^\circ\) to the ecliptic, semi-major axis (mean distance) \(384\,400\ \mathrm{km}\), eccentricity \(0.0549\); sidereal month \(27.321\,66\) d, sidereal year \(365.256\,36\) d, node regression 18.6 yr, perigee advance 8.85 yr; radii: Earth \(6371\ \mathrm{km}\), Moon \(1737.4\ \mathrm{km}\), Sun \(696\,000\ \mathrm{km}\); Sun–Earth distance 1 AU \(= 149\,597\,870.7\ \mathrm{km}\). Sources: NASA NSSDCA Moon and Earth fact sheets, the IAU 2012 definition of the astronomical unit, and the mean month lengths in J. Meeus, <i>Astronomical Algorithms</i>."><strong>使用的數值</strong>：地球自轉軸傾角 \(23.44^\circ\)；月球軌道對黃道傾角 \(5.145^\circ\)、半長軸（平均距離）\(384\,400\ \mathrm{km}\)、離心率 \(0.0549\)；恆星月 \(27.321\,66\) 日、恆星年 \(365.256\,36\) 日、交點退行 18.6 年、近地點前進 8.85 年；半徑：地球 \(6371\ \mathrm{km}\)、月球 \(1737.4\ \mathrm{km}\)、太陽 \(696\,000\ \mathrm{km}\)；日地距離 1 AU \(= 149\,597\,870.7\ \mathrm{km}\)。來源：NASA NSSDCA 月球與地球資料表、IAU 2012 天文單位定義、J. Meeus《Astronomical Algorithms》的平均月份長度。</li>
+        <li data-en-html="<strong>Motions</strong>: the Sun moves uniformly along the ecliptic (circular orbit). The Moon’s mean longitude grows uniformly with the sidereal month; its position on the ellipse comes from Kepler’s equation \(M = E - e\sin E\), solved to machine precision every frame (so the Moon is faster near perigee, and single synodic months range from about 29.3 to 29.8 days). The orbit is then tilted about the line of nodes. There is no step-by-step integration, so nothing drifts."><strong>運動</strong>：太陽沿黃道等速移動（圓軌道）。月球的平均黃經隨恆星月等速增加，在橢圓上的位置由克卜勒方程式 \(M = E - e\sin E\) 每一幀解到電腦的最高精度（所以月球在近地點附近走得快，單一個朔望月約在 29.3 到 29.8 日之間）；再把軌道沿交點線傾斜。沒有逐步的數值積分，不會累積誤差。</li>
+        <li data-en-html="<strong>Phases and eclipses</strong>: the fraction lit uses the exact phase angle from the 3D positions. Eclipses are classified from the exact umbra and penumbra cones above: lunar eclipses with the Earth’s shadow at the Moon, solar eclipses with the Moon’s shadow on a spherical Earth (total or annular is decided where the shadow’s axis meets the ground). The shadow cross-section is drawn to scale in the plane perpendicular to the sunlight."><strong>月相與日月食</strong>：被照亮的比例由三維位置算出的精確相角求得。日月食由上面的本影、半影圓錐精確判斷：月食看地影在月球處的大小；日食看月影落在球形地球上的情形（全食或環食在影軸與地面的交點判斷）。影子截面圖是在垂直陽光的平面上依比例畫出。</li>
+        <li data-en-html="<strong>Taiwan’s sky</strong>: an observer at 23.5° N, 121° E on a spherical Earth; sidereal time from the mean Sun (so the Sun crosses the meridian within about 10 minutes of noon). Rising and setting mean the upper limb on the horizon, with \(34'\) of refraction; the times are found by scanning the day and bisecting."><strong>台灣的天空</strong>：觀測者在球形地球上的北緯 23.5°、東經 121°；恆星時由平太陽決定（太陽在中午前後約 10 分鐘內上中天）。升起、落下是指上緣碰到地平線，並計入 \(34'\) 的大氣折射；時刻由掃描一整天再二分法求得。</li>
+        <li data-en-html="<strong>Simplifications</strong>: the Earth’s orbit is a circle (the real Sun–Earth distance varies from 0.983 to 1.017 AU, so the Sun’s apparent diameter varies from 31.5′ to 32.5′); the Sun’s pull on the Moon (evection and other perturbations, up to about 1.3°) and the 2% widening of the Earth’s shadow by the atmosphere are left out; precession is ignored. This is a model of the geometry, not an eclipse calendar — for real eclipse dates, see the Central Weather Administration or NASA. The model calendar has no year; the date is set by the Sun’s position. The earthshine on the dark part of the Moon and the eclipse colours are brightened so they can be seen."><strong>簡化</strong>：地球軌道當成圓（實際日地距離 0.983 到 1.017 AU，太陽視直徑 31.5′ 到 32.5′）；沒有計入太陽對月球的攝動（出差等，最多約 1.3°）與大氣使地影變大約 2%；忽略歲差。這是幾何模型，不是日月食預報——真實的日月食日期請查中央氣象署或 NASA。模型的日曆沒有年份，日期由太陽的位置決定。月面暗部的地球照與日月食的顏色都調亮了，方便看見。</li>
+        <li data-en-html="<strong>3D view</strong>: the same positions from the same code; Earth, Moon, orbit and shadow cones use the same scale as the 2D view (enlarged or true scale). The Sun is drawn much closer and smaller than real (it would be 389 Moon distances away); its light is parallel, as in reality. The 3D view uses the three.js library (MIT license), downloaded only when you switch to 3D."><strong>3D 立體檢視</strong>：位置由同一份程式計算；地球、月球、軌道與影子錐使用與 2D 相同的比例（放大或真實比例）。太陽畫得比實際近得多、也小得多（實際在 389 倍月地距離外），光線則和實際一樣是平行光。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Looking at the sky from the Earth (phases of the Moon, solar and lunar eclipses)">課綱對應：高中地球科學・從地球看星空（月相、日食與月食）</li>
+        <li data-en-html="Astronomical data: the Moon’s mean distance \(384\,400\ \mathrm{km}\), eccentricity 0.0549, inclination \(5.145^\circ\), radius \(1737.4\ \mathrm{km}\) and sidereal period from the <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NASA NSSDCA Moon Fact Sheet</a>; the Earth’s radius \(6371\ \mathrm{km}\), axial tilt \(23.44^\circ\) and sidereal year from the <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Earth Fact Sheet</a>; the Sun’s radius from the <a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Sun Fact Sheet</a> (it lists \(695\,700\ \mathrm{km}\); this page uses the rounded \(696\,000\ \mathrm{km}\), which moves the total/annular boundary by less than 200 km); 1 AU \(= 149\,597\,870\,700\ \mathrm{m}\) exactly, IAU 2012 Resolution B2 (<a href=&quot;https://www.iau.org/Iau/Publications/List-of-Resolutions&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>IAU resolutions</a>); the sidereal, synodic, draconic and anomalistic months and the 18.6-year node regression from J. Meeus, <i>Astronomical Algorithms</i> (2nd ed., 1998).">天文數據：月球平均距離 \(384\,400\ \mathrm{km}\)、離心率 0.0549、軌道傾角 \(5.145^\circ\)、半徑 \(1737.4\ \mathrm{km}\) 與恆星月出自 <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">NASA NSSDCA 月球資料表</a>；地球半徑 \(6371\ \mathrm{km}\)、自轉軸傾角 \(23.44^\circ\)、恆星年出自<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/earthfact.html" target="_blank" rel="noopener">地球資料表</a>；太陽半徑出自<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html" target="_blank" rel="noopener">太陽資料表</a>（表中為 \(695\,700\ \mathrm{km}\)，本頁用取整的 \(696\,000\ \mathrm{km}\)，使全食／環食分界移動不到 200 km）；1 AU \(= 149\,597\,870\,700\ \mathrm{m}\)（定義值，IAU 2012 年 B2 決議，見 <a href="https://www.iau.org/Iau/Publications/List-of-Resolutions" target="_blank" rel="noopener">IAU 決議列表</a>）；恆星月、朔望月、交點月、近點月與 18.6 年的交點退行出自 J. Meeus《Astronomical Algorithms》（第 2 版，1998）。</li>
+        <li data-en-html="Further reading: NASA Science, <a href=&quot;https://science.nasa.gov/moon/moon-phases/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Moon Phases</a> and <a href=&quot;https://science.nasa.gov/eclipses/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Eclipses</a>; for real eclipse dates and maps, the <a href=&quot;https://eclipse.gsfc.nasa.gov/eclipse.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NASA Eclipse Web Site</a>.">延伸閱讀：NASA Science〈<a href="https://science.nasa.gov/moon/moon-phases/" target="_blank" rel="noopener">Moon Phases</a>〉與〈<a href="https://science.nasa.gov/eclipses/" target="_blank" rel="noopener">Eclipses</a>〉（英文）；真實的日月食日期與路徑圖：<a href="https://eclipse.gsfc.nasa.gov/eclipse.html" target="_blank" rel="noopener">NASA Eclipse Web Site</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/moon-phases-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/moon-phases.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="moon-phases"></script>
+  <script src="js/missions/moon-phases.js"></script>
+  <script src="js/stats.js?v=202611120801" data-module="moon-phases"></script>
+  <script src="js/comments.js?v=202611120801"></script>
+</body>
+</html>

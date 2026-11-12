@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const LM = window.LensMirrorCore;
+  const LD = window.LabDraw; // 共用繪圖工具（drawkit.js）：背景、格線、立體球、陰影、文字光暈（純裝飾，不改任何物理量）
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
@@ -17,6 +18,7 @@
     drag: null,
     phase: 0           // 光的行進動畫的相位（px）
   };
+  let kb = null; // 鍵盤操作（keys.js），在檔案後段建立
 
   // ---------- 色彩（lab.css 代號） ----------
   const colors = {};
@@ -164,39 +166,18 @@
     const c = bgctx;
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, cw, ch);
-    const base = colors['canvas-bg'];
-    const rg = c.createRadialGradient(cw / 2, ch / 2, Math.min(cw, ch) * 0.15, cw / 2, ch / 2, Math.hypot(cw, ch) * 0.6);
-    rg.addColorStop(0, colors.dark ? shade(base, 0.035) : base);
-    rg.addColorStop(1, shade(base, colors.dark ? -0.35 : -0.05));
-    c.fillStyle = rg;
-    roundRect(c, 0, 0, cw, ch, 8);
-    c.fill();
-
+    LD.backdrop(c, cw, ch);
+    // 兩級格線（以光心為原點）：主格線每 10 cm、次格線每 2 cm（太密時不畫次格線）
+    LD.grid(c, 0, 0, cw, ch, 10 * V.k, V.k >= 4.5 ? 2 * V.k : 0, V.cx, V.cy);
     const px = function (v) { return Math.round(v) + 0.5; };
-    const nx = Math.ceil(V.XW / 2) + 1, ny = Math.ceil(V.YH / 2) + 1;
-    [[0.035, false], [0.09, true]].forEach(function (lv) {
-      if (!lv[1] && V.k < 4.5) return; // 太密時不畫次格線
-      c.strokeStyle = alpha(colors.text, lv[0] * (colors.dark ? 0.8 : 1));
-      c.lineWidth = 1;
-      c.beginPath();
-      for (let i = -nx; i <= nx; i++) {
-        if ((i % 5 === 0) !== lv[1]) continue;
-        c.moveTo(px(X(i * 2)), 0); c.lineTo(px(X(i * 2)), ch);
-      }
-      for (let j = -ny; j <= ny; j++) {
-        if (j === 0 || (j % 5 === 0) !== lv[1]) continue;
-        c.moveTo(0, px(Y(j * 2))); c.lineTo(cw, px(Y(j * 2)));
-      }
-      c.stroke();
-    });
 
-    // 主軸：兩層線（底層較寬較淡）
+    // 主軸：管狀兩層線（底層較寬較淡）＋上緣細高光
     c.lineCap = 'round';
-    c.strokeStyle = alpha(colors.muted, 0.22);
-    c.lineWidth = 3;
+    c.strokeStyle = alpha(colors.muted, colors.dark ? 0.2 : 0.16);
+    c.lineWidth = 4;
     c.beginPath(); c.moveTo(6, V.cy); c.lineTo(cw - 6, V.cy); c.stroke();
-    c.strokeStyle = alpha(colors.muted, 0.85);
-    c.lineWidth = 1;
+    c.strokeStyle = alpha(colors.muted, 0.88);
+    c.lineWidth = 1.2;
     c.beginPath(); c.moveTo(6, V.cy); c.lineTo(cw - 6, V.cy); c.stroke();
     // 刻度：每 5 cm 短刻度、每 10 cm 長刻度
     c.strokeStyle = alpha(colors.muted, 0.6);
@@ -208,22 +189,19 @@
     }
     c.stroke();
     // 主軸名稱
-    c.font = '600 11px system-ui, sans-serif';
-    c.textAlign = 'right';
-    c.textBaseline = 'bottom';
-    c.fillStyle = alpha(colors.muted, 0.9);
-    c.fillText(T('主軸', 'principal axis'), cw - 8, V.cy - 5);
+    LD.haloText(c, T('主軸', 'principal axis'), cw - 8, V.cy - 6, alpha(colors.muted, 0.95), 'right', 'bottom', '600 11px ' + LD.FONT);
 
-    // 比例尺：寬畫面放右上角；窄畫面放在左上角資訊框下方
-    c.font = '600 11px system-ui, sans-serif';
-    const lw0 = c.measureText('10 cm').width;
-    const sx1 = V.narrow ? 20 + lw0 + 10 * V.k : cw - 12, sx0 = sx1 - 10 * V.k, sy = V.narrow ? 48 : 18;
-    c.font = '600 11px system-ui, sans-serif';
+    // 比例尺：寬畫面放右上角；窄畫面放在左上角資訊框下方（半透明圓角底框，與標籤同一種樣式）
+    c.font = '600 11px ' + LD.FONT;
     const lbl = '10 cm';
     const tw = c.measureText(lbl).width;
-    c.fillStyle = alpha(colors.surface, 0.75);
-    roundRect(c, sx0 - tw - 16, sy - 11, sx1 - sx0 + tw + 24, 20, 6);
+    const sx1 = V.narrow ? 20 + tw + 10 * V.k : cw - 12, sx0 = sx1 - 10 * V.k, sy = V.narrow ? 48 : 18;
+    roundRect(c, sx0 - tw - 16, sy - 11, sx1 - sx0 + tw + 24, 21, 10.5);
+    c.fillStyle = alpha(colors['canvas-bg'], colors.dark ? 0.86 : 0.9);
     c.fill();
+    c.strokeStyle = alpha(colors.muted, colors.dark ? 0.45 : 0.35);
+    c.lineWidth = 1;
+    c.stroke();
     c.strokeStyle = colors.muted;
     c.lineWidth = 1.5;
     c.beginPath();
@@ -234,7 +212,7 @@
     c.fillStyle = colors.muted;
     c.textAlign = 'right';
     c.textBaseline = 'middle';
-    c.fillText(lbl, sx0 - 6, sy);
+    c.fillText(lbl, sx0 - 6, sy + 0.5);
   }
 
   // ---------- 小工具：標籤 ----------
@@ -252,14 +230,16 @@
     bx = Math.max(4, Math.min(cw - w - 4, bx));
     let by = Math.max(4, Math.min(ch - h - 4, y - h / 2));
     if (opt.measure) { ctx.restore(); return { x: bx, y: by, w: w, h: h }; }
-    ctx.shadowColor = 'rgba(0,0,0,0.16)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetY = 1;
-    ctx.fillStyle = alpha(colors.surface, opt.bgAlpha || 0.88);
+    // 與 LabDraw.pill 同一種底框：畫布底色半透明＋語意色細框（虛像用虛線框）
+    ctx.fillStyle = alpha(colors['canvas-bg'], Math.max(opt.bgAlpha || 0, colors.dark ? 0.86 : 0.9));
     roundRect(ctx, bx, by, w, h, h / 2);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
-    if (opt.stroke) { ctx.strokeStyle = opt.stroke; ctx.lineWidth = 1; if (opt.dashed) ctx.setLineDash([3, 3]); roundRect(ctx, bx + 0.5, by + 0.5, w - 1, h - 1, h / 2); ctx.stroke(); ctx.setLineDash([]); }
+    ctx.strokeStyle = opt.stroke || alpha(opt.color || colors.muted, colors.dark ? 0.45 : 0.35);
+    ctx.lineWidth = 1;
+    if (opt.dashed) ctx.setLineDash([3, 3]);
+    roundRect(ctx, bx + 0.5, by + 0.5, w - 1, h - 1, h / 2 - 0.5);
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.fillStyle = opt.color || colors.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -301,8 +281,9 @@
       ctx.setLineDash([]);
     }
     if (e.kind === 'lens') {
-      const tC = Math.max(9, Math.min(16, V.k * 1.5)); // 示意的厚度（px）
-      const thin = 2.5;
+      // 示意的厚度（px）：比例尺不適用於厚度與彎曲（薄透鏡模型），只為了看得出玻璃的形狀與質感
+      const tC = Math.max(12, Math.min(24, V.k * 2.3));
+      const thin = 3;
       const conv = e.sign > 0;
       const half = conv ? tC / 2 : thin / 2;   // 中央半厚
       const edge = conv ? thin / 2 : tC / 2;   // 邊緣半厚
@@ -316,39 +297,62 @@
         ctx.quadraticCurveTo(x0 - ctrl, V.cy, x0 - edge, yTop);
         ctx.closePath();
       };
-      // 柔和投影
+      // 柔和投影（浮在光學台上方）
       ctx.save();
-      ctx.shadowColor = colors.dark ? 'rgba(0,0,0,0.5)' : 'rgba(20,40,60,0.18)';
-      ctx.shadowBlur = 10;
-      ctx.shadowOffsetY = 3;
-      ctx.fillStyle = alpha(glass, colors.dark ? 0.16 : 0.10);
+      ctx.shadowColor = colors.dark ? 'rgba(0,0,0,0.55)' : alpha(colors.text, 0.2);
+      ctx.shadowBlur = 12;
+      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = alpha(glass, colors.dark ? 0.18 : 0.12);
       path(); ctx.fill();
       ctx.restore();
-      // 玻璃：由左而右的漸層（左緣亮、右緣暗），再疊一層由上而下的光澤
-      const g = ctx.createLinearGradient(x0 - tC, 0, x0 + tC, 0);
-      g.addColorStop(0, alpha(shade(glass, 0.55), colors.dark ? 0.45 : 0.55));
-      g.addColorStop(0.45, alpha(glass, colors.dark ? 0.28 : 0.20));
-      g.addColorStop(1, alpha(shade(glass, -0.25), colors.dark ? 0.40 : 0.32));
+      // 玻璃本體：由左而右（迎光面亮、背光面暗）
+      const g = ctx.createLinearGradient(x0 - tC * 0.7, 0, x0 + tC * 0.7, 0);
+      g.addColorStop(0, alpha(shade(glass, 0.6), colors.dark ? 0.5 : 0.6));
+      g.addColorStop(0.4, alpha(shade(glass, 0.15), colors.dark ? 0.3 : 0.24));
+      g.addColorStop(0.75, alpha(glass, colors.dark ? 0.32 : 0.26));
+      g.addColorStop(1, alpha(shade(glass, -0.3), colors.dark ? 0.48 : 0.4));
       ctx.fillStyle = g;
       path(); ctx.fill();
+      // 由上而下的光澤：上亮、中間透明、下緣微暗
       const g2 = ctx.createLinearGradient(0, yTop, 0, yBot);
-      g2.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.10 : 0.35) + ')');
-      g2.addColorStop(0.5, 'rgba(255,255,255,0)');
-      g2.addColorStop(1, 'rgba(0,0,0,' + (colors.dark ? 0.12 : 0.05) + ')');
+      g2.addColorStop(0, 'rgba(255,255,255,' + (colors.dark ? 0.16 : 0.5) + ')');
+      g2.addColorStop(0.18, 'rgba(255,255,255,' + (colors.dark ? 0.04 : 0.12) + ')');
+      g2.addColorStop(0.55, 'rgba(255,255,255,0)');
+      g2.addColorStop(1, 'rgba(0,0,0,' + (colors.dark ? 0.18 : 0.08) + ')');
       ctx.fillStyle = g2;
       path(); ctx.fill();
-      ctx.strokeStyle = alpha(shade(glass, colors.dark ? 0.2 : -0.15), 0.85);
-      ctx.lineWidth = 1.2;
+      // 鏡片邊緣：較深的輪廓＋內側一圈細亮邊（玻璃的厚度感）
+      ctx.strokeStyle = alpha(shade(glass, colors.dark ? 0.25 : -0.2), 0.9);
+      ctx.lineWidth = 1.3;
       path(); ctx.stroke();
-      // 左側高光
-      ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.35 : 0.8) + ')';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(x0 - edge + 1.2, yTop + 6);
-      ctx.quadraticCurveTo(x0 - ctrl + 1.6, V.cy - (yBot - yTop) * 0.1, x0 - edge + 1.2 + (ctrl - edge) * 0.5, V.cy - (yBot - yTop) * 0.12);
-      ctx.stroke();
+      ctx.save();
+      path(); ctx.clip();
+      ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.2 : 0.65) + ')';
+      ctx.lineWidth = 2;
+      ctx.translate(1.2, 0);
+      path(); ctx.stroke();
+      ctx.restore();
+      // 上下兩端的磨邊（平面）
+      ctx.fillStyle = alpha(shade(glass, colors.dark ? 0.2 : -0.1), 0.7);
+      ctx.fillRect(x0 - edge, yTop - 0.5, 2 * edge, 1.6);
+      ctx.fillRect(x0 - edge, yBot - 1.1, 2 * edge, 1.6);
+      // 迎光面的反光：一長一短兩道弧形高光
+      const hl = function (t0, t1, off, wdt, a) {
+        ctx.strokeStyle = 'rgba(255,255,255,' + a + ')';
+        ctx.lineWidth = wdt;
+        ctx.beginPath();
+        for (let i = 0; i <= 12; i++) {
+          const t = t0 + (t1 - t0) * i / 12, y = yTop + (yBot - yTop) * t;
+          const u = 2 * t - 1, xFace = x0 - edge - (ctrl - edge) * (1 - u * u) / 2; // 左表面（二次曲線）的 x
+          if (i === 0) ctx.moveTo(xFace + off, y); else ctx.lineTo(xFace + off, y);
+        }
+        ctx.stroke();
+      };
+      hl(0.1, 0.42, 2.6, 1.6, colors.dark ? 0.45 : 0.9);
+      hl(0.5, 0.58, 2.8, 1.2, colors.dark ? 0.3 : 0.7);
       // 中央平面（光線轉折處）
-      ctx.strokeStyle = alpha(colors.text, 0.18);
+      ctx.strokeStyle = alpha(colors.text, 0.2);
+      ctx.lineWidth = 1;
       ctx.setLineDash([2, 4]);
       ctx.beginPath(); ctx.moveTo(x0, yTop + 3); ctx.lineTo(x0, yBot - 3); ctx.stroke();
       ctx.setLineDash([]);
@@ -356,7 +360,8 @@
       // 面鏡：鏡面朝左（物體在左方），背面畫斜線。凹面鏡兩端向左彎，凸面鏡兩端向右彎（示意）
       const sag = e.sign === 0 ? 0 : (e.sign > 0 ? -1 : 1) * Math.max(6, Math.min(12, V.k * 1.1));
       const xs = function (y) { const t = (y - V.cy) / (yBot - V.cy); return x0 + sag * t * t; };
-      const N = 28;
+      const N = 32;
+      const TH = Math.max(9, Math.min(13, V.k * 1.3)); // 示意的鏡片厚度（px）
       const curve = function (dx) {
         ctx.beginPath();
         for (let i = 0; i <= N; i++) {
@@ -364,36 +369,52 @@
           if (i === 0) ctx.moveTo(xs(y) + dx, y); else ctx.lineTo(xs(y) + dx, y);
         }
       };
-      // 背板（深色帶）＋斜線
+      const slab = function () {
+        curve(0);
+        for (let i = N; i >= 0; i--) { const y = yTop + (yBot - yTop) * i / N; ctx.lineTo(xs(y) + TH, y); }
+        ctx.closePath();
+      };
+      // 鏡片本體：投影＋背面塗層（由鏡面往後漸淡）＋斜線（課本的面鏡背面記號）
       ctx.save();
-      ctx.beginPath();
-      for (let i = 0; i <= N; i++) { const y = yTop + (yBot - yTop) * i / N; if (i === 0) ctx.moveTo(xs(y), y); else ctx.lineTo(xs(y), y); }
-      for (let i = N; i >= 0; i--) { const y = yTop + (yBot - yTop) * i / N; ctx.lineTo(xs(y) + 9, y); }
-      ctx.closePath();
-      const bgr = ctx.createLinearGradient(x0, 0, x0 + 10, 0);
-      bgr.addColorStop(0, alpha(colors.field, colors.dark ? 0.35 : 0.22));
-      bgr.addColorStop(1, alpha(colors.field, 0.02));
+      ctx.shadowColor = colors.dark ? 'rgba(0,0,0,0.55)' : alpha(colors.text, 0.2);
+      ctx.shadowBlur = 10;
+      ctx.shadowOffsetY = 4;
+      ctx.fillStyle = alpha(colors['canvas-bg'], 0.92);
+      slab(); ctx.fill();
+      ctx.restore();
+      ctx.save();
+      const bgr = ctx.createLinearGradient(x0 - Math.abs(sag), 0, x0 + Math.abs(sag) + TH, 0);
+      bgr.addColorStop(0, alpha(colors.field, colors.dark ? 0.42 : 0.3));
+      bgr.addColorStop(1, alpha(colors.field, colors.dark ? 0.14 : 0.06));
       ctx.fillStyle = bgr;
-      ctx.fill();
+      slab(); ctx.fill();
       ctx.clip();
       ctx.strokeStyle = alpha(colors.field, colors.dark ? 0.55 : 0.45);
       ctx.lineWidth = 1;
       ctx.beginPath();
-      for (let y = yTop - 12; y < yBot + 12; y += 7) { ctx.moveTo(x0 - 14, y + 14); ctx.lineTo(x0 + 16, y - 14); }
+      for (let y = yTop - 16; y < yBot + 16; y += 7) { ctx.moveTo(x0 - 16, y + 16); ctx.lineTo(x0 + 20, y - 16); }
       ctx.stroke();
       ctx.restore();
-      // 鏡面：兩層（底層寬、上層細亮），帶銀色漸層
+      ctx.strokeStyle = alpha(colors.field, colors.dark ? 0.4 : 0.3);
+      ctx.lineWidth = 1;
+      slab(); ctx.stroke();
+      // 鏡面（鍍銀面，朝向物體）：底層較寬較暗、上層銀色漸層、最外一道細亮光
       ctx.lineCap = 'round';
-      ctx.strokeStyle = alpha(colors.field, colors.dark ? 0.55 : 0.75);
-      ctx.lineWidth = 4;
-      curve(0.5); ctx.stroke();
+      ctx.strokeStyle = alpha(colors.field, colors.dark ? 0.6 : 0.8);
+      ctx.lineWidth = 4.5;
+      curve(0.6); ctx.stroke();
       const sg = ctx.createLinearGradient(0, yTop, 0, yBot);
-      sg.addColorStop(0, colors.dark ? 'rgba(235,245,250,0.95)' : 'rgba(255,255,255,0.95)');
-      sg.addColorStop(0.5, colors.dark ? 'rgba(170,190,200,0.85)' : 'rgba(190,205,215,0.95)');
-      sg.addColorStop(1, colors.dark ? 'rgba(220,235,240,0.95)' : 'rgba(250,252,255,0.95)');
+      sg.addColorStop(0, colors.dark ? 'rgba(240,248,252,0.98)' : 'rgba(255,255,255,1)');
+      sg.addColorStop(0.3, colors.dark ? 'rgba(165,185,195,0.9)' : 'rgba(178,195,205,1)');
+      sg.addColorStop(0.55, colors.dark ? 'rgba(225,238,244,0.95)' : 'rgba(246,250,252,1)');
+      sg.addColorStop(0.8, colors.dark ? 'rgba(150,170,180,0.9)' : 'rgba(165,182,192,1)');
+      sg.addColorStop(1, colors.dark ? 'rgba(220,235,240,0.95)' : 'rgba(250,252,255,1)');
       ctx.strokeStyle = sg;
-      ctx.lineWidth = 1.6;
-      curve(-0.6); ctx.stroke();
+      ctx.lineWidth = 2.2;
+      curve(-0.5); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,' + (colors.dark ? 0.55 : 0.95) + ')';
+      ctx.lineWidth = 0.9;
+      curve(-1.7); ctx.stroke();
       // 鏡頂所在的平面（光線轉折處）
       if (sag !== 0) {
         ctx.strokeStyle = alpha(colors.text, 0.16);
@@ -424,16 +445,7 @@
       const isF = pt[0] === 'F' || pt[0] === 'F′';
       const col = isF ? colors['b-optics'] : colors.muted;
       const r = isF ? 4 : 3.2;
-      if (pt[0] !== 'O' && pt[0] !== 'V') {
-        const g = ctx.createRadialGradient(x - r * 0.35, V.cy - r * 0.35, 0.3, x, V.cy, r);
-        g.addColorStop(0, shade(col, 0.6));
-        g.addColorStop(1, col);
-        ctx.fillStyle = g;
-        ctx.beginPath(); ctx.arc(x, V.cy, r, 0, 2 * Math.PI); ctx.fill();
-        ctx.strokeStyle = alpha(colors['canvas-bg'], 0.9);
-        ctx.lineWidth = 1;
-        ctx.stroke();
-      }
+      if (pt[0] !== 'O' && pt[0] !== 'V') LD.ball(ctx, x, V.cy, r + 0.6, col, { glow: colors.dark && isF ? 0.4 : 0 });
       haloText(pt[0], x + (pt[0] === 'O' || pt[0] === 'V' ? -8 : 0), V.cy + 7, col);
     });
   }
@@ -537,15 +549,21 @@
   function chevron(xw, yw, dx, dy, color, s) {
     const x = X(xw), y = Y(yw);
     const ux = dx, uy = -dy; // 畫面座標 y 向下
-    s = s || 5;
+    s = s || 5.5;
     ctx.save();
-    ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.moveTo(x + ux * s * 1.4, y + uy * s * 1.4);
+    ctx.moveTo(x + ux * s * 1.5, y + uy * s * 1.5);
     ctx.quadraticCurveTo(x - ux * s * 0.2, y - uy * s * 0.2, x - ux * s + uy * s, y - uy * s - ux * s);
     ctx.lineTo(x - ux * s * 0.45, y - uy * s * 0.45);
     ctx.lineTo(x - ux * s - uy * s, y - uy * s + ux * s);
-    ctx.quadraticCurveTo(x - ux * s * 0.2, y - uy * s * 0.2, x + ux * s * 1.4, y + uy * s * 1.4);
+    ctx.quadraticCurveTo(x - ux * s * 0.2, y - uy * s * 0.2, x + ux * s * 1.5, y + uy * s * 1.5);
+    ctx.closePath();
+    // 背景色描邊：箭頭壓在光暈或其他光線上也清楚
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = alpha(colors['canvas-bg'], colors.dark ? 0.6 : 0.85);
+    ctx.stroke();
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.restore();
   }
@@ -633,7 +651,13 @@
     const dir = xb > xa ? 1 : -1;
     if (Math.abs(xb - xa) > 14) { tip(xa, -dir, a !== x0w); tip(xb, dir, b !== x1w); }
     ctx.restore();
-    pill(label, (xa + xb) / 2, yPx, { color: color, font: '600 11px system-ui, sans-serif', bgAlpha: 0.9 });
+    const lo = { color: color, font: '600 11px ' + LD.FONT, bgAlpha: 0.9, dashed: isDashed };
+    const lw = pill(label, 0, yPx, Object.assign({ measure: true }, lo)).w;
+    if (Math.abs(xb - xa) >= lw + 16) { pill(label, (xa + xb) / 2, yPx, lo); return; }
+    // 距離太短、標籤會蓋住整段線：改放在線段旁邊（左右哪邊空間大就放哪邊）
+    const l = Math.min(xa, xb), r = Math.max(xa, xb);
+    if (l - lw - 8 >= 4 && (l > cw - r || r + lw + 8 > cw - 4)) pill(label, l - 6, yPx, Object.assign({ align: 'right' }, lo));
+    else pill(label, r + 6, yPx, Object.assign({ align: 'left' }, lo));
   }
 
   // ---------- 主繪圖 ----------
@@ -685,6 +709,7 @@
       ctx.fillStyle = g;
       ctx.beginPath(); ctx.arc(xo, (tipY + V.cy) / 2, Math.max(26, (V.cy - tipY) * 0.8), 0, 2 * Math.PI); ctx.fill();
     }
+    LD.contactShadow(ctx, xo, V.cy + 1.5, 7, 0); // 物體立在主軸上的接觸陰影（裝飾）
     drawArrow(xo, V.cy, Y(state.h), colors.equi, { width: (state.hover || state.drag) ? 5 : 4 });
     // 頂端的拖曳把手
     ctx.save();
@@ -692,6 +717,16 @@
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(xo, Y(state.h), 9, 0, 2 * Math.PI); ctx.stroke();
     ctx.restore();
+    if (kb && kb.focused()) {
+      // 鍵盤選取中：--accent 虛線圓角焦點框
+      ctx.save();
+      ctx.setLineDash([4, 3]);
+      ctx.strokeStyle = alpha(colors.accent, 0.95);
+      ctx.lineWidth = 2;
+      roundRect(ctx, xo - 15, Y(state.h) - 15, 30, V.cy - Y(state.h) + 24, 9);
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // 物體標籤與左上角資訊（先畫，像的標籤會避開它們）
     const labelBoxes = [{ x: xo - 10, y: Y(state.h) - 10, w: 20, h: V.cy - Y(state.h) + 10 }];
@@ -764,7 +799,8 @@
     const q4 = s.atInfinity ? '0' : inv(s.invQ);
     $('rSum').innerHTML = inv(s.invP) + ' + ' + (s.invQ < 0 ? '(' + q4 + ')' : q4) + ' = ' + inv(s.invP + s.invQ) + ' cm<sup>−1</sup>';
     $('rInvF').innerHTML = inv(s.invF) + ' cm<sup>−1</sup>';
-    $('status').textContent = statusText(s);
+    const st = statusText(s);
+    if ($('status').textContent !== st) $('status').textContent = st; // 沒變就不重寫
 
     // 物體位置表
     const conv = e.sign > 0;
@@ -808,6 +844,42 @@
     draw();
     syncFlow();
     scheduleMission();
+    scheduleAnnounce();
+  }
+
+  // ---------- 讀數播報（螢幕閱讀器）：設定穩定下來後才念一次成像結果，間隔至少 1 秒 ----------
+  let liveTimer = 0, liveAt = 0, liveStatus = '', keyQuiet = 0;
+  function summary() {
+    const s = LM.solve(state.el, state.fAbs, state.p, state.h);
+    const sep = T('，', ', ');
+    const out = [T('物距 p = ', 'Object distance p = ') + num(state.p, 1) + ' cm', T('物高 h = ', 'height h = ') + num(state.h, 1) + ' cm'];
+    if (s.atInfinity) out.push(T('出射光互相平行，不成像（像在無窮遠）', 'the rays leave parallel: no image (at infinity)'));
+    else {
+      out.push(T('像距 q = ', 'image distance q = ') + signed(s.q, 2) + ' cm');
+      out.push(T('放大率 m = ', 'magnification m = ') + signed(s.m, 2));
+      out.push(natureText(s));
+    }
+    return out.join(sep) + T('。', '.');
+  }
+  /** 要念的句子：讀數＋（成像規律的說明有改變時）說明 */
+  function speech() {
+    let txt = summary();
+    const st = statusText(LM.solve(state.el, state.fAbs, state.p, state.h));
+    if (st !== liveStatus) { txt += ' ' + st; liveStatus = st; }
+    liveAt = Date.now();
+    return txt;
+  }
+  function scheduleAnnounce() {
+    const live = $('live');
+    if (!live || !userActed) return;
+    clearTimeout(liveTimer);
+    if (state.drag) return;
+    liveTimer = setTimeout(function () {
+      if (Date.now() < keyQuiet) return; // 鍵盤移動時 keys.js 已經念過
+      const prev = liveStatus, txt = speech();
+      if (txt === live.textContent && prev === liveStatus) return;
+      live.textContent = txt;
+    }, Math.max(600, 1000 - (Date.now() - liveAt)));
   }
 
   // ---------- 任務模式：設定穩定下來（停止拖曳約 0.3 s）後回報一次成像結果 ----------
@@ -922,20 +994,45 @@
       cv.style.cursor = h === 'tip' ? 'move' : h ? 'ew-resize' : (V && pt[0] < X(0) - 4 ? 'pointer' : 'default');
     }
   });
-  function endDrag() { if (state.drag) { state.drag = null; cv.style.cursor = 'default'; draw(); scheduleMission(); } }
+  function endDrag() { if (state.drag) { state.drag = null; cv.style.cursor = 'default'; draw(); scheduleMission(); scheduleAnnounce(); } }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (state.hover && !state.drag) { state.hover = null; draw(); } });
-  cv.addEventListener('keydown', function (ev) {
-    const big = ev.shiftKey;
-    let handled = true;
-    if (ev.key === 'ArrowLeft') setP(Math.min(P_MAX, Math.round((state.p + (big ? 5 : 0.5)) * 10) / 10));
-    else if (ev.key === 'ArrowRight') setP(Math.max(P_MIN, Math.round((state.p - (big ? 5 : 0.5)) * 10) / 10));
-    else if (ev.key === 'ArrowUp') setH(Math.min(H_MAX, Math.round((state.h + (big ? 1 : 0.5)) * 10) / 10));
-    else if (ev.key === 'ArrowDown') setH(Math.max(H_MIN, Math.round((state.h - (big ? 1 : 0.5)) * 10) / 10));
-    else handled = false;
-    if (handled) ev.preventDefault();
-  });
+  // ---------- 鍵盤操作（keys.js）：← → 移動物體（改變物距）、↑ ↓ 改變物高 ----------
+  /** 物體往左（dx = −1）＝物距變大。限制與拖曳相同（1–45 cm、取到 0.1 cm），經過 F、2F 時會停在上面（和拖曳的吸附一樣） */
+  function moveObject(dx, dy, big) {
+    keyQuiet = Date.now() + 1500;
+    if (dx) {
+      const old = state.p;
+      let p = Math.round((old - dx * (big ? 5 : 0.5)) * 10) / 10;
+      if (state.el !== 'plane-mirror') {
+        [state.fAbs, 2 * state.fAbs].forEach(function (s) {
+          if ((s - old) * (s - p) < 0 && Math.abs(s - old) < Math.abs(p - old)) p = s; // 跨過 F 或 2F：停在上面
+        });
+      }
+      p = Math.max(P_MIN, Math.min(P_MAX, p));
+      if (Math.abs(p - old) < 1e-9) return false;
+      setP(p);
+      return true;
+    }
+    const oh = state.h;
+    const h = Math.max(H_MIN, Math.min(H_MAX, Math.round((oh + dy * (big ? 1 : 0.5)) * 10) / 10));
+    if (Math.abs(h - oh) < 1e-9) return false;
+    setH(h);
+    return true;
+  }
+  if (window.LabKeys) {
+    kb = window.LabKeys.attach(cv, {
+      label: T('透鏡與面鏡成像畫布。左右方向鍵移動物體（改變物距，每次 0.5 cm，按住 Shift 每次 5 cm，經過 F、2F 時會停一下），上下方向鍵改變物高（每次 0.5 cm，按住 Shift 每次 1 cm）。',
+        'Lens and mirror imaging canvas. The left and right arrow keys move the object (object distance, 0.5 cm a step, 5 cm with Shift; it stops at F and 2F on the way); the up and down arrow keys change its height (0.5 cm a step, 1 cm with Shift).'),
+      items: [{
+        name: function () { return T('物體', 'Object'); },
+        move: moveObject,
+        describe: speech
+      }],
+      onChange: function () { draw(); }
+    });
+  }
 
   // ---------- 光的行進動畫（純裝飾；減少動態效果時預設關閉） ----------
   let raf = 0, lastT = 0, visible = true;

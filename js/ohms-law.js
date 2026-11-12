@@ -1224,6 +1224,37 @@
     $('newLamp').hidden = !(el2 === 'lamp' && state.burnt);
     $('zeroBtn').hidden = state.ideal;
     $('zeroBtn').disabled = state.ideal || (state.zeroed.A && state.zeroed.V);
+    updateCanvasLabels();
+  }
+
+  // ---------- 畫布的文字描述（螢幕閱讀器；不設 aria-live，參數改變時更新） ----------
+  function updateCanvasLabels() {
+    const rd = state.rd;
+    if (rd) {
+      const aTxt = rd.A.over ? T('超過量程', 'off scale') : fix(rd.A.reading * 1000, aDec(state.ra, state.ideal)) + ' mA';
+      const vTxt = rd.V.over ? T('超過量程', 'off scale') : fix(rd.V.reading, vDec(state.rv, state.ideal)) + ' V';
+      const fa = sig(fsA() * 1000, 3) + ' mA', fv = fsV() + ' V';
+      const t = T('兩個電表的錶面特寫：毫安培計用 ' + fa + ' 檔，讀數 ' + aTxt + '；伏特計用 ' + fv + ' 檔，讀數 ' + vTxt + '。',
+        'Close-up of the two meter faces: milliammeter on the ' + fa + ' range reads ' + aTxt + '; voltmeter on the ' + fv + ' range reads ' + vTxt + '.');
+      setAria(mv, t);
+    }
+    const el = state.el, m = state.method, list = series(el, m);
+    let g = T('I–V 圖（橫軸電壓 V、縱軸電流 I）：' + elemName(el) + '、' + methodName(m) + '，' + list.length + ' 個數據點',
+      'I–V graph (voltage V across, current I up): ' + elemName(el) + ', ' + methodName(m) + ', ' + list.length + ' data point' + (list.length === 1 ? '' : 's'));
+    if (el === 'lamp') {
+      const ls = lampStats();
+      if (ls.n >= 2) g += T('；V/I 由 ' + fmtR(ls.rmin, 3) + ' 增加到 ' + fmtR(ls.rmax, 3) + '，曲線向 V 軸彎下', '; V/I rises from ' + fmtR(ls.rmin, 3) + ' to ' + fmtR(ls.rmax, 3) + ', so the curve bends towards the V axis');
+    } else {
+      const f = fitOf(list, el, m);
+      if (f) g += T('；通過原點的最佳直線給出 R = ' + fmtR(f.R, 4), '; the best-fit line through the origin gives R = ' + fmtR(f.R, 4));
+    }
+    g += T('。', '.');
+    setAria(gcv, g);
+  }
+  /** 改 aria-label；英文模式也同步 data-en-aria-label，免得載入完成時被 HTML 的靜態英文蓋回去 */
+  function setAria(el, t) {
+    if (el.getAttribute('aria-label') !== t) el.setAttribute('aria-label', t);
+    if (el.hasAttribute('data-en-aria-label') && T('0', '1') === '1') el.setAttribute('data-en-aria-label', t);
   }
 
   // ---------- 步驟 ----------
@@ -1468,7 +1499,11 @@
     reread(); // 再讀一次會有新的估讀誤差
     renderTable(); renderReadouts(); renderSteps(); pulseGraph(); kick();
     const list = series(p.el, p.m);
-    setStatus(T('記錄了第 ' + list.length + ' 點：V = ' + fix(p.V, p.vd) + ' V、I = ' + fix(p.I * 1000, p.ad) + ' mA。', 'Point ' + list.length + ' recorded: V = ' + fix(p.V, p.vd) + ' V, I = ' + fix(p.I * 1000, p.ad) + ' mA.'));
+    // 讀數播報（status 是 aria-live）：這一點的讀數，再加上目前最重要的結果（最佳直線的 R，或燈泡這一點的 V/I）
+    let res = '';
+    if (p.el === 'lamp') { if (p.I > 0) res = T('；這一點 V/I = ', '; V/I at this point = ') + fmtR(p.V / p.I, 3); }
+    else if (list.length >= 2) { const f = fitOf(list, p.el, p.m); if (f) res = T('；最佳直線 R = ', '; best-fit line R = ') + fmtR(f.R, 4); }
+    setStatus(T('記錄了第 ' + list.length + ' 點：V = ' + fix(p.V, p.vd) + ' V、I = ' + fix(p.I * 1000, p.ad) + ' mA', 'Point ' + list.length + ' recorded: V = ' + fix(p.V, p.vd) + ' V, I = ' + fix(p.I * 1000, p.ad) + ' mA') + res + T('。', '.'));
     emit('record', {
       el: p.el, m: p.m, ideal: p.ideal, zeroed: p.zeroed, V: p.V, I: p.I, fsA: fsA(), fsV: fsV(),
       defA: p.I / fsA(), defV: p.V / fsV(), emf: state.emf, box: state.box,

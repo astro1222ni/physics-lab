@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Parallel-Plate Capacitor | Astro Ni Physics Lab">平行板電容器｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"平行板電容器","alternateName":"Parallel-Plate Capacitor","description":"調整平行板電容器的面積、板距與介電質，比較「接上電池（V 固定）」與「充電後斷開（Q 固定）」時電容、電量、電壓、電場與能量的變化。","url":"https://astro1222ni.github.io/physics-lab/capacitor.html","image":"https://astro1222ni.github.io/physics-lab/img/og/capacitor.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","靜電學（Electrostatics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 平行板電容器頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；canvas 允許上下捲動，拖曳上板／介電質時由程式攔截 */
@@ -79,6 +79,30 @@
     .cmp .u { color: var(--pos); font-weight: 700; }
     .cmp .d { color: var(--neg); font-weight: 700; }
     .tablewrap { overflow-x: auto; }
+    /* 2D／3D 檢視切換（與帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-bar #resetCam { min-height: 44px; }
+    .cap.is3d #cv { display: none; }
+    .cap:not(.is3d) .l3, .cap.is3d .l2 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 3 / 2;
+      /* 3D 背景：極淡的徑向暈影（中心亮、四角略暗），隨深淺色自動變化 */
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 .v3notes { position: absolute; top: 8px; right: 8px; left: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: none; }
+    #view3 .v3notes span { padding: 1px 8px; border-radius: 999px; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); max-width: 100%; }
+    #view3 .v3notes span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .legend .plane { width: 16px !important; height: 9px !important; border-radius: 2px; background: color-mix(in srgb, var(--equi) 28%, transparent) !important; border: 1.5px solid var(--equi); }
   </style>
 </head>
 <body data-en-ready>
@@ -86,12 +110,22 @@
     <header class="top">
       <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / Electrostatics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 靜電學</nav>
       <h1 data-en="Parallel-Plate Capacitor">平行板電容器</h1>
-      <p data-en="Two metal plates face each other across a small gap. Change the plate area, the separation and the dielectric between them, and compare what happens when the capacitor stays connected to the battery (V fixed) with what happens after it is charged and disconnected (Q fixed) — a classic exam question. The arrows next to each reading show how it changed from the previous state.">兩片金屬平板隔著小小的間隙相對。調整平板面積、板距與兩板之間的介電質，比較電容器「一直接著電池（V 固定）」與「充電後斷開（Q 固定）」時各個量的變化——這是考試的經典題型。每個讀數旁的箭頭顯示它與前一個狀態相比是變大還是變小。</p>
+      <p data-en="Two metal plates face each other across a small gap. Change the plate area, the separation and the dielectric between them, and compare what happens when the capacitor stays connected to the battery (V fixed) with what happens after it is charged and disconnected (Q fixed) — a classic exam question. The arrows next to each reading show how it changed from the previous state. Switch to 3D to see the charges, the field lines and the equipotential surfaces from any angle.">兩片金屬平板隔著小小的間隙相對。調整平板面積、板距與兩板之間的介電質，比較電容器「一直接著電池（V 固定）」與「充電後斷開（Q 固定）」時各個量的變化——這是考試的經典題型。每個讀數旁的箭頭顯示它與前一個狀態相比是變大還是變小。切換到 3D，可以從各個角度看平板上的電荷、電場線與等位面。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Charged, then disconnected”, double the separation d and watch V and E; then reconnect the battery and compare.">試試看：按「充電後斷開」，把板距 d 拉大一倍，看 V 和 E 怎麼變；再接上電池比比看。</p>
     <div class="lab cap">
-      <div class="stage">
-        <canvas id="cv" aria-label="平行板電容器模擬畫布：側視圖的兩片平板、板上的正負電荷、兩板間的電場線、可推入的介電質板，以及電池、開關與導線" data-en-aria-label="Parallel-plate capacitor simulation: side view of the two plates with their charges, the field lines between them, a sliding dielectric slab, and the battery, switch and wires"></canvas>
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D side view">2D 側視</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="平行板電容器模擬畫布：側視圖的兩片平板、板上的正負電荷、兩板間的電場線、可推入的介電質板，以及電池、開關與導線。可上下拖曳上板、左右拖曳介電質板、點開關。鍵盤：Enter 切換上板、介電質板、開關；上下方向鍵改變板距 0.1 mm，左右方向鍵推入或拉出介電質 1%，Shift 加方向鍵 10 倍；選到開關時按方向鍵切換接上或斷開。" data-en-aria-label="Parallel-plate capacitor simulation: side view of the two plates with their charges, the field lines between them, a sliding dielectric slab, and the battery, switch and wires. Drag the top plate up or down, drag the slab sideways, or click the switch. Keyboard: Enter picks the top plate, the dielectric slab or the switch; the up and down arrow keys change the separation by 0.1 mm, the left and right arrow keys slide the slab in or out by 1%, and Shift with an arrow key moves 10 times as far; with the switch picked, an arrow key closes or opens it."></canvas>
+        <div id="view3"><div class="v3notes" aria-hidden="true"><span data-en="Not to scale: gap ×10">示意圖：板距放大 10 倍</span><span id="v3dv"></span><span id="v3cap"></span></div></div>
         <div class="playbar">
           <div class="modes" role="group" aria-label="連接方式" data-en-aria-label="Connection">
             <button type="button" id="modeV" aria-pressed="true" data-en-html="Battery connected<br>(V fixed)">接上電池<br>（V 固定）</button>
@@ -108,8 +142,10 @@
           <span style="color:var(--b-optics)" data-en-html="<i class=&quot;ring&quot;></i>Bound charge on the dielectric"><i class="ring"></i>介電質表面的束縛電荷</span>
           <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Electric field lines"><i style="background:var(--field)"></i>電場線</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Electrons moving in the wire"><i class="dot" style="background:var(--neg)"></i>導線中移動的電子</span>
+          <span class="l3" data-en-html="<i class=&quot;plane&quot;></i>Equipotential surfaces (equal steps ΔV)"><i class="plane"></i>等位面（每隔相同的 ΔV）</span>
         </div>
-        <p class="hint" id="scaleHint" data-en="Side view, not to scale: the gap is drawn much larger than the plates. The spacing of the charges is inversely proportional to the surface charge density σ, and the spacing of the field lines to E. Drag the top plate up or down to change d, and drag the dielectric slab sideways.">側視示意圖（未依比例）：板距方向放大許多倍。電荷符號越密代表電荷面密度 σ 越大，電場線越密代表 E 越大（間距與 σ、E 成反比）。可上下拖曳上板改變板距，左右拖曳介電質板。</p>
+        <p class="hint l3" data-en="3D view, computed with the same physics core as the 2D view. Plate size and thickness are to scale in centimetres; only the gap is stretched 10 times. Each field line stands for the same amount of flux, so the number of lines per unit area is proportional to E; each free-charge bead stands for the same charge. Drag to rotate, pinch or scroll to zoom. The top plate turns see-through when you look from above, so you can see the charges on its inner face.">3D 立體示意，與 2D 用同一個物理核心計算。平板大小與厚度依實際比例（公分），只有板距放大 10 倍。每一條電場線代表相同的電通量，所以每單位面積的電場線條數與 E 成正比；每一顆電荷小球代表相同的電量。拖曳可旋轉，雙指或滾輪可縮放。從上方看時上板會變成半透明，才看得到它內側表面的正電荷。</p>
+        <p class="hint l2" id="scaleHint" data-en="Side view, not to scale: the gap is drawn much larger than the plates. The spacing of the charges is inversely proportional to the surface charge density σ, and the spacing of the field lines to E. Drag the top plate up or down to change d, and drag the dielectric slab sideways.">側視示意圖（未依比例）：板距方向放大許多倍。電荷符號越密代表電荷面密度 σ 越大，電場線越密代表 E 越大（間距與 σ、E 成反比）。可上下拖曳上板改變板距，左右拖曳介電質板。</p>
       </div>
 
       <aside class="panel">
@@ -155,6 +191,7 @@
             <dt data-en-html="Surface charge density σ">電荷面密度 σ</dt><dd id="rS">—</dd>
           </dl>
           <p class="hint" id="lastStep"></p>
+          <p class="sr-only" id="srRead" aria-live="polite"></p>
         </section>
 
         <section class="card">
@@ -165,6 +202,7 @@
             <label><input id="showBound" type="checkbox" checked><span data-en="Bound charges">束縛電荷</span></label>
             <label><input id="showDip" type="checkbox" checked><span data-en="Polarized molecules (sketch)">分子極化（示意）</span></label>
             <label><input id="showFlow" type="checkbox" checked><span data-en="Charge flow in wires">導線中的電荷流動</span></label>
+            <label class="l3"><input id="showEqui" type="checkbox" checked><span data-en="Equipotential surfaces (3D)">等位面（3D）</span></label>
           </div>
           <p class="hint" data-en="The flow of electrons is shown in slow motion. In a real circuit with ordinary wires it is over in far less than a microsecond.">電子流動以慢動作示意；真實電路中通常不到百萬分之一秒就完成。</p>
         </section>
@@ -243,6 +281,22 @@
         <li data-en="The force between the plates is given only for an air gap; with a solid dielectric in the gap it depends on how the slab touches the plates, which is beyond this model.">兩板吸引力只在兩板間是空氣時計算；有固體介電質時，力與介電質和平板的接觸方式有關，超出這個模型的範圍。</li>
         <li data-en="Water is included because of its very large κ; real tap water conducts a little, so a capacitor would slowly leak through it.">水的 κ 很大，所以列入比較；實際的自來水會稍微導電，電容器會經由水慢慢漏電。</li>
       </ul>
+
+      <h3 data-en="How the 3D view is drawn">3D 檢視怎麼畫</h3>
+      <ul>
+        <li data-en-html="The 3D view uses the same physics core and the same state as the 2D view (including the slow-motion charging). The plates are squares of side \(\sqrt{A}\) and 4 mm thick, drawn to scale in centimetres; only the gap is stretched 10 times, so that the field inside can be seen.">3D 檢視與 2D 使用同一個物理核心、同一組狀態（包括充放電的慢動作）。平板是邊長 \(\sqrt{A}\)、厚 4 mm 的正方形金屬板，依實際比例（公分）畫出；只有板距放大 10 倍，才看得清楚板間的電場。</li>
+        <li data-en-html="Field lines: each line carries the same electric flux, so the number of lines per unit area is proportional to \(E\) and their spacing to \(1/\sqrt{E}\) (at the default 5 kV/m the spacing is 1.4 cm). Each free-charge bead stands for the same charge, so on the plates their spacing is proportional to \(1/\sqrt{\sigma}\); in air every field line starts on a + bead and ends on a − bead. When there are too many to draw, they are drawn at the smallest spacing and a note appears.">電場線：每一條代表相同的電通量，所以每單位面積的條數與 \(E\) 成正比，間距與 \(1/\sqrt{E}\) 成正比（預設 5 kV/m 時間距 1.4 cm）。每一顆自由電荷小球代表相同的電量，所以平板上小球的間距與 \(1/\sqrt{\sigma}\) 成正比；在空氣部分，每一條電場線都由一顆 + 小球出發、終止於一顆 − 小球。太密畫不下時以最小間距畫出，並在畫面上註明。</li>
+        <li data-en-html="With the slab in, the field is \(E = V/d\) in both the dielectric part and the air part (they have the same voltage and the same gap), so the field lines inside the slab are <em>not</em> sparser than beside it. What changes is the charge: the free charge next to the slab is \(\kappa\) times as dense, and the bound charge \(\sigma_{\text{b}} = (\kappa-1)\varepsilon_0E\) on the slab faces (hollow rings) cancels the extra part, so only one free charge in \(\kappa\) has a field line leaving it. With \(Q\) fixed, sliding the slab in makes every field line sparser, because \(E\) drops to \(1/[1+f(\kappa-1)]\) of its value.">推入介電質後，介電質部分與空氣部分的電壓相同、板距相同，電場都是 \(E = V/d\)，所以介電質裡的電場線<em>並不會</em>比旁邊的空氣部分稀疏。改變的是電荷：介電質那一側的自由電荷密 \(\kappa\) 倍，多出來的部分被介電質表面的束縛電荷 \(\sigma_{\text{b}} = (\kappa-1)\varepsilon_0E\)（空心圓環）抵消，所以每 \(\kappa\) 個自由電荷只有 1 個發出電場線。若 \(Q\) 固定，推入介電質會讓全部的電場線一起變稀疏，因為 \(E\) 變成原來的 \(1/[1+f(\kappa-1)]\)。</li>
+        <li data-en-html="Equipotential surfaces are drawn every \(\Delta V\) (the step is shown in the corner); in a uniform field they are flat, and their spacing is \(\Delta V/E\). The fringe field is a sketch: its shape is the exact two-dimensional solution for the edge of two thin, very wide plates (Maxwell’s conformal map \(z = \frac{a}{\pi}(1 + w + e^{w})\), with \(2a\) the gap as drawn), placed along each edge; plate thickness and corners are ignored, and these lines are not counted in the readings.">等位面每隔 \(\Delta V\) 畫一片（間隔寫在畫面角落）；均勻電場中等位面是平面，間距為 \(\Delta V/E\)。邊緣場是示意：形狀取自「兩片很寬的薄平板邊緣」的二維精確解（馬克士威保角映射 \(z = \frac{a}{\pi}(1 + w + e^{w})\)，\(2a\) 為畫面上的板距），沿每一條板邊排列；忽略平板厚度與四個角，也不計入讀數。</li>
+        <li data-en="The polarized molecules in the slab are a sketch, as in the 2D view. The 3D view uses the three.js library (MIT license), which is downloaded only when you switch to 3D.">介電質中的極化分子與 2D 一樣是示意。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics IV · Electrostatics.">課綱對應：選修物理Ⅳ・靜電學。</li>
+        <li data-en-html="Constants and data: vacuum permittivity \(\varepsilon_0 = 8.854\,187\,8128\times10^{-12}\ \mathrm{F/m}\) (CODATA 2018; the CODATA 2022 value is \(8.854\,187\,8188\times10^{-12}\ \mathrm{F/m}\), <a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?ep0&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>NIST</a> — a difference of less than one part in \(10^{9}\), far too small to show in the readings). The dielectric constants are typical values: paper 3.5, glass 5, mica 6, water 80, and air is taken as 1. Table 8.1 of OpenStax University Physics Volume 2 lists dry air 1.00059, paper 3.7, glass 4 to 6, mica 6.0 and water 80; real values depend on the material, the temperature and the frequency.">常數與數據：真空電容率 \(\varepsilon_0 = 8.854\,187\,8128\times10^{-12}\ \mathrm{F/m}\)（CODATA 2018；CODATA 2022 為 \(8.854\,187\,8188\times10^{-12}\ \mathrm{F/m}\)，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?ep0" target="_blank" rel="noopener">NIST</a>，相差不到十億分之一，讀數看不出差別）。介電常數取典型值：紙 3.5、玻璃 5、雲母 6、水 80，空氣當作 1；OpenStax《University Physics Volume 2》表 8.1 列出乾燥空氣 1.00059、紙 3.7、玻璃 4～6、雲母 6.0、水 80，實際數值依材料成分、溫度與頻率而不同。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/8-1-capacitors-and-capacitance&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 2, 8.1 Capacitors and Capacitance</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/8-5-molecular-model-of-a-dielectric&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>8.5 Molecular Model of a Dielectric</a>; <a href=&quot;https://hyperphysics.gsu.edu/hbase/electric/pplate.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>HyperPhysics: Parallel Plate Capacitor</a>.">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-2/pages/8-1-capacitors-and-capacitance" target="_blank" rel="noopener">University Physics Volume 2，8.1 電容器與電容</a>》與〈<a href="https://openstax.org/books/university-physics-volume-2/pages/8-5-molecular-model-of-a-dielectric" target="_blank" rel="noopener">8.5 介電質的分子模型</a>〉；<a href="https://hyperphysics.gsu.edu/hbase/electric/pplate.html" target="_blank" rel="noopener">HyperPhysics：平行板電容器</a>（皆為英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -250,15 +304,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/capacitor-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/capacitor.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="capacitor"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/capacitor-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/capacitor-3d.js?v=202611120801"></script>
+  <script src="js/capacitor.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="capacitor"></script>
   <script src="js/missions/capacitor.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="capacitor"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="capacitor"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

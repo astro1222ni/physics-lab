@@ -2180,6 +2180,7 @@
         'The safety brake grips the rails! The acceleration is now upward, so the reading goes up (overweight).'));
     }
     if (!isFinite(seg.t1)) { runFinished(seg); return; }
+    sayPhase(seg);
     const mid = E.segAt(seg, isFinite(seg.t1) ? (seg.t0 + seg.t1) / 2 : seg.t0 + 0.01);
     const Ts = E.springTension(seg.ms, seg.a);
     emit('phase', {
@@ -2238,6 +2239,8 @@
     }
     if (S.mystery && S.mystery.run === run) updateMystery();
     updateButtons();
+    lastSay = '';
+    updateSceneLabel();
   }
 
   // ---------- 操作：樓層按鈕 ----------
@@ -2279,8 +2282,12 @@
     const run = startRun('trip', { toFloor: n, A: A, V: V, mystery: !!mystery });
     if (mystery) mystery.run = run;
     replan(E.tripProfile(st.y, E.floorY(n), A, V, S.t));
+    // 距離 d < V²/A 時沒有等速段（三角形 v–t 圖），說明要照實際行程講
+    const vp = E.tripPeakSpeed(Math.abs(E.floorY(n) - st.y), A, V), cruise = vp >= V - 1e-9;
     setStatus(mystery ? T('神秘電梯出發！加速度保密，看體重計讀數推算它。', 'The mystery elevator sets off! The acceleration is secret — work it out from the reading.')
-      : T('前往 ' + floorName(n) + '：先以 A 加速，再等速，最後以 A 減速停靠。', 'Going to ' + floorName(n) + ': speed up at A, cruise, then slow down at A and stop.'));
+      : cruise ? T('前往 ' + floorName(n) + '：先以 A 加速，再等速，最後以 A 減速停靠。', 'Going to ' + floorName(n) + ': speed up at A, cruise, then slow down at A and stop.')
+      : T('前往 ' + floorName(n) + '：距離短，來不及加速到 V；先以 A 加速到 ' + num(vp, 2) + ' m/s，接著以 A 減速停靠。',
+        'Going to ' + floorName(n) + ': too short to reach V, so speed up at A to ' + num(vp, 2) + ' m/s, then slow down at A and stop.'));
     updateButtons();
   }
 
@@ -2311,6 +2318,7 @@
     setStatus(T('纜繩斷了！電梯只受重力，做自由落體：體重計讀數 0（完全失重）。', 'The cable has snapped! Gravity is the only force: the elevator is in free fall and the scale reads 0 (weightless).'));
     emit('cut', { y0: st.y, v0: st.v, atFloor: extra.cutFloor, vTrip: p.vt, ab: p.ab, predicted: yp, m: p.m });
     updateButtons();
+    updateSceneLabel();
     startLoop();
   }
   function pressBrake() {
@@ -2389,6 +2397,7 @@
     landSound();
     if (!reducedMotion) S.fx.push({ type: 'land', t0: performance.now(), dur: 450 });
     emit('ball', { h: HB, t: t, t0: t0, ratio: t / t0, aConst: aConst, a: aConst ? as[0] : null, gEff: 2 * HB / (t * t), floated: floatTime > 0, floatTime: floatTime, m: P().m });
+    say(T('小球落地：花了 ', 'The ball landed after ') + num(t, 3) + ' s' + T('（電梯靜止時 ', ' (') + num(t0, 3) + T(' s）。', ' s with the elevator at rest).'));
     updateButtons();
   }
 
@@ -2474,6 +2483,51 @@
   }
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報與畫布說明 ----------
+  // 體重計讀數只在每一段運動開始時改變（離散事件），在那時寫進 aria-live 的 #srSay；每格都在變的高度、速度不播報
+  let sayTimer = 0, lastSay = '';
+  function say(msg) {
+    const box = $('srSay');
+    if (!box || !msg) return;
+    clearTimeout(sayTimer);
+    box.textContent = '';
+    sayTimer = setTimeout(function () { box.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  /** 這一段的運動（用段落中間的速度判斷上升或下降） */
+  function motionName(seg) {
+    if (seg.kind === 'free') return T('纜繩斷了，自由落體', 'cable broken, free fall');
+    const mid = E.segAt(seg, isFinite(seg.t1) ? (seg.t0 + seg.t1) / 2 : seg.t0 + 0.01);
+    const v = Math.abs(mid.v) < 1e-9 ? 0 : Math.sign(mid.v), a = Math.abs(seg.a) < 1e-9 ? 0 : Math.sign(seg.a);
+    if (!v) return T('靜止', 'at rest');
+    if (!a) return v > 0 ? T('等速上升', 'moving up at constant velocity') : T('等速下降', 'moving down at constant velocity');
+    if (a === v) return v > 0 ? T('加速上升', 'speeding up on the way up') : T('加速下降', 'speeding up on the way down');
+    return v > 0 ? T('減速上升', 'slowing down on the way up') : T('減速下降', 'slowing down on the way down');
+  }
+  function sayPhase(seg) {
+    const r = E.reading(seg.m, seg.a), ph = E.phaseOf(seg.a);
+    const msg = motionName(seg) + T('：體重計讀數 ', ': the scale reads ') + num(r, 1) + ' kgw' + T('（', ' (') + phaseName(ph) + T('）。', ').');
+    if (msg === lastSay) return;
+    lastSay = msg;
+    say(msg);
+  }
+  /** 電梯畫布（role="img"）的說明：停下、改質量、剪斷纜繩時更新 */
+  let sceneLabel = '';
+  function updateSceneLabel() {
+    const st = cur(), p = P(), f = E.floorOf(st.y);
+    const where = floorName(f.n) + (Math.abs(f.off) < 0.005 ? '' : ' ' + signed(f.off, 2) + ' m');
+    const text = T('電梯模擬畫布：左邊是大樓與電梯井（高度依比例），電梯在 ' + where + (S.cable === 'cut' ? '，纜繩已斷' : '') +
+      '；中間是車廂內部：質量 ' + num(p.m, 1) + ' kg 的人站在體重計上（讀數 ' + num(E.reading(p.m, st.a), 1) + ' kgw）、彈簧秤吊著 ' + num(p.ms, 2) +
+      ' kg 的物體、手上拿著小球；右邊是體重計刻度盤與人的受力圖。',
+    'Elevator simulation: on the left the building and the shaft (heights to scale), with the elevator at ' + where + (S.cable === 'cut' ? ' and the cable broken' : '') +
+      '; in the middle the inside of the car — a ' + num(p.m, 1) + ' kg person on a bathroom scale (reading ' + num(E.reading(p.m, st.a), 1) + ' kgw), a ' + num(p.ms, 2) +
+      ' kg mass on a spring scale and a ball in the hand; on the right the scale dial and the free-body diagram of the person.');
+    if (text === sceneLabel) return;
+    sceneLabel = text;
+    cv.removeAttribute('data-en-aria-label'); // 改由程式依語言更新
+    cv.setAttribute('aria-label', text);
+  }
+
   function updateButtons() {
     const moving = busy();
     $('play').textContent = S.running ? T('暫停', 'Pause') : T('繼續', 'Resume');
@@ -2561,6 +2615,8 @@
     S.fx = [];
     setStatus(T('已全部清除，滑桿設定不變。按樓層按鈕出發。', 'Everything is cleared; the slider settings are kept. Press a floor button to go.'));
     updateButtons();
+    lastSay = '';
+    updateSceneLabel();
     requestDraw();
   });
 
@@ -2662,10 +2718,25 @@
   [elA, elV, elM, elMs, elVt, elAb].forEach(function (el) {
     el.addEventListener('input', function () {
       refreshOutputs();
-      if (el === elM || el === elMs) massChanged();
+      if (el === elM || el === elMs) { massChanged(); updateSceneLabel(); }
       requestDraw();
     });
+    // 讀數播報：放開滑桿或打完數字後，念出這組設定下體重計會顯示的讀數
+    el.addEventListener('change', sayParams);
   });
+  let paramTimer = 0;
+  function sayParams() {
+    clearTimeout(paramTimer);
+    paramTimer = setTimeout(function () {
+      const p = P();
+      say(T('人 ' + num(p.m, 1) + ' kg：靜止或等速時讀數 ' + num(E.reading(p.m, 0), 1) + ' kgw；以 A = ' + num(p.A, 2) + ' m/s² 起動上升時 ' +
+        num(E.reading(p.m, p.A), 1) + ' kgw、上升停靠時 ' + num(E.reading(p.m, -p.A), 1) + ' kgw；緊急煞車時 ' + num(E.reading(p.m, p.ab), 1) +
+        ' kgw；彈簧秤靜止時 ' + num(E.springTension(p.ms, 0), 2) + ' N。',
+      'Person ' + num(p.m, 1) + ' kg: the scale reads ' + num(E.reading(p.m, 0), 1) + ' kgw at rest or at constant velocity; ' + num(E.reading(p.m, p.A), 1) +
+        ' kgw when setting off upward at A = ' + num(p.A, 2) + ' m/s², ' + num(E.reading(p.m, -p.A), 1) + ' kgw when stopping on the way up, ' +
+        num(E.reading(p.m, p.ab), 1) + ' kgw during emergency braking; the spring scale reads ' + num(E.springTension(p.ms, 0), 2) + ' N at rest.'));
+    }, 350);
+  }
 
   // ---------- 啟動 ----------
   readColors();
@@ -2674,6 +2745,7 @@
   S.lastSeg = S.track[0];
   S.lastReading = E.reading(P().m, 0);
   updateButtons();
+  updateSceneLabel();
   setStatus(reducedMotion ? T('已偵測到「減少動態效果」設定：裝飾動畫已關閉。按樓層按鈕出發。', 'Reduced motion is on: decorative effects are off. Press a floor button to go.')
     : T('電梯停在 1F。按樓層按鈕出發，或改用「手動駕駛」。', 'The elevator is at 1F. Press a floor button to go, or switch to manual drive.'));
   function themeChanged() { readColors(); if (L) { buildBackground(); buildGraphBg(); } requestDraw(); }

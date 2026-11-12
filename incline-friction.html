@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Inclines and Friction | Astro Ni Physics Lab">斜面與摩擦力｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"斜面與摩擦力","alternateName":"Inclines and Friction","description":"抬高斜面找出木塊開始滑動的臨界角，看靜摩擦力「需要多少給多少」再降為動摩擦力；用光電門量下滑加速度求 μk，並沿斜面或水平推木塊。","url":"https://astro1222ni.github.io/physics-lab/incline-friction.html","image":"https://astro1222ni.github.io/physics-lab/img/og/incline-friction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","牛頓運動定律（Newton's Laws of Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 斜面與摩擦力頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 上方畫布（斜面＋受力圖）可以拖曳木板，不讓頁面捲動；下方畫布（圖表）讓手機可以在上面捲動頁面 */
@@ -93,6 +94,7 @@
       <p data-en-html="A block sits on a board that you can tilt. Change the angle, the mass and the surfaces in contact; watch static friction adjust itself up to its maximum μ<sub>s</sub>N and then drop to kinetic friction μ<sub>k</sub>N. Raise the board slowly to find the critical angle, time the slide with two photogates to measure μk, and push the block along the incline or horizontally.">木塊放在可以抬高的木板上。改變斜面角度、質量與接觸面的材質，觀察靜摩擦力「需要多少給多少」，直到最大靜摩擦力 μ<sub>s</sub>N 後滑動、改為動摩擦力 μ<sub>k</sub>N。慢慢抬高斜面找出臨界角，用兩個光電門量下滑時間求出動摩擦係數，也可以沿斜面或水平推木塊。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Raise slowly”, watch the red friction arrow grow, and note the angle at which the block starts to slide.">試試看：按「慢慢抬高」，看紅色摩擦力箭頭變長，記下開始滑的角度。</p>
     <div class="lab inc">
       <div class="stage">
         <canvas id="cv" aria-label="斜面與摩擦力模擬畫布：可抬高的木板、木塊、光電門，以及木塊的受力圖" data-en-aria-label="Incline and friction simulation: a tiltable board with a block and photogates, and the block’s free-body diagram"></canvas>
@@ -106,7 +108,9 @@
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <canvas id="cvg" aria-label="圖表：位置或速度對時間的圖，以及摩擦力對外力的圖" data-en-aria-label="Graphs: position or velocity against time, and friction against applied force"></canvas>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
+        <canvas id="cvg" role="img" aria-label="圖表：位置或速度對時間的圖，以及摩擦力對外力的圖" data-en-aria-label="Graphs: position or velocity against time, and friction against applied force"></canvas>
         <div class="legend">
           <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Weight W = mg"><i style="background:var(--neg)"></i>重力 W = mg</span>
           <span style="color:var(--neg)" data-en-html="<i class=&quot;dash&quot;></i>Components of W"><i class="dash"></i>重力的分量</span>
@@ -115,7 +119,7 @@
           <span style="color:var(--b-mech)" data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Applied force F"><i style="background:var(--b-mech)"></i>外力 F</span>
           <span style="color:var(--b-optics)" data-en-html="<i class=&quot;hollow&quot;></i>Net force ΣF"><i class="hollow"></i>合力 ΣF</span>
         </div>
-        <p class="hint" data-en-html="Signs: along the incline, <strong>down the slope is positive</strong> for x, v, a, friction and net force; the applied force F is positive when it <strong>pushes up</strong> (or, for a horizontal push, towards the slope). Free-body diagram arrows are drawn to scale (scale bar in its corner); the F arrow on the board only shows the direction. Drag the handle at the raised end of the board to change the angle.">正負號：沿斜面方向，x、v、a、摩擦力與合力一律以<strong>沿斜面向下為正</strong>；外力 F 則以<strong>往上推</strong>（水平推時：推向斜面）為正。受力圖的箭頭依比例畫（比例尺在受力圖角落）；木板上的 F 箭頭只表示方向。拖曳木板抬高那一端的把手可以改變角度。</p>
+        <p class="hint" data-en-html="Signs: along the incline, <strong>down the slope is positive</strong> for x, v, a, friction and net force; the applied force F is positive when it <strong>pushes up</strong> (or, for a horizontal push, towards the slope). Free-body diagram arrows are drawn to scale (scale bar in its corner); the F arrow on the board only shows the direction. Drag the handle at the raised end of the board to change the angle — or click the picture (or Tab to it) and use the arrow keys: ↑ / → steeper, ↓ / ← flatter, 1° a step (Shift: 5°).">正負號：沿斜面方向，x、v、a、摩擦力與合力一律以<strong>沿斜面向下為正</strong>；外力 F 則以<strong>往上推</strong>（水平推時：推向斜面）為正。受力圖的箭頭依比例畫（比例尺在受力圖角落）；木板上的 F 箭頭只表示方向。拖曳木板抬高那一端的把手可以改變角度；也可以點一下畫面（或按 Tab 移到畫面）用方向鍵：↑／→ 變陡、↓／← 變平，每次 1°（按住 Shift 每次 5°）。</p>
       </div>
 
       <aside class="panel">
@@ -308,6 +312,14 @@
         <li data-en-html="The block is treated as a particle that slides without tipping; its size on screen is to scale. The board is assumed to rotate slowly, so its own rotation does not affect the block. The block stops dead when it hits a stop (the lost kinetic energy is shown separately from the friction heat). While it rests against a stop, the split between static friction and the stop’s push is not unique; the simulation takes the friction at its maximum \(\mu_s N\).">木塊視為只滑動、不翻倒的質點，畫面上的大小依比例。木板視為緩慢轉動，不考慮木板本身轉動的影響。撞到擋板時木塊立即停止（損失的動能與摩擦生熱分開計算）。靠在擋板上時，靜摩擦力與擋板的推力如何分配在力學上不唯一，模擬取摩擦力為最大值 \(\mu_s N\)。</li>
         <li data-en-html="The photogates report the time and the instantaneous speed when the centre of the block passes. \(g = 9.8\ \mathrm{m/s^2}\).">光電門記錄木塊中心通過的時刻與當時的瞬時速度。\(g = 9.8\ \mathrm{m/s^2}\)。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics I · Newton’s Laws of Motion">課綱對應：選修物理Ⅰ・牛頓運動定律</li>
+        <li data-en-html="Constants: \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>).">常數：\(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字）；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。</li>
+        <li data-en-html="Friction coefficients (typical values, \(\mu_s\) / \(\mu_k\)): wood on wood 0.50 / 0.30, waxed wood on wet snow 0.14 / 0.10 and ice on ice 0.10 / 0.03 are the values in Table 6.1 of OpenStax <em>University Physics Volume 1</em>; steel on steel 0.74 / 0.57, rubber on concrete 1.0 / 0.80 and glass on glass 0.94 / 0.40 are from the friction table in Serway &amp; Jewett, <em>Physics for Scientists and Engineers</em>. Real values depend strongly on the state of the surfaces — OpenStax, for example, gives 0.6 / 0.3 for dry steel on steel.">摩擦係數（典型值，\(\mu_s\)／\(\mu_k\)）：木頭／木頭 0.50／0.30、打蠟木板／濕雪 0.14／0.10、冰／冰 0.10／0.03 與 OpenStax《University Physics Volume 1》表 6.1 相同；鋼／鋼 0.74／0.57、橡膠／混凝土 1.0／0.80、玻璃／玻璃 0.94／0.40 取自 Serway &amp; Jewett《Physics for Scientists and Engineers》的摩擦係數表。實際數值會因表面狀況差很多，例如 OpenStax 的表中乾燥的鋼／鋼是 0.6／0.3。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/6-2-friction&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 6.2 Friction</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/6-2-friction" target="_blank" rel="noopener">University Physics Volume 1，6.2 摩擦力</a>》（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -315,16 +327,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/incline-friction-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/incline-friction.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="incline-friction"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/incline-friction-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/incline-friction.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="incline-friction"></script>
   <script src="js/missions/incline-friction.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="incline-friction"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="incline-friction"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

@@ -1950,6 +1950,55 @@
       undo.disabled = !(A2 && A2.rows > 0);
     }
     $('undoSum').disabled = !state.summary.length;
+    updateAria();
+  }
+
+  // ---------- 畫布的文字說明（螢幕閱讀器用；實驗階段或參數改變時更新，不是每格動畫） ----------
+  function setAria(el, text) { if (el.getAttribute('aria-label') !== text) el.setAttribute('aria-label', text); }
+  function phaseText() {
+    if (state.mode === 'calib') {
+      const c = state.cal;
+      if (c.phase === 'running' || c.phase === 'stopping') return T('正在拉紙帶。', 'The tape is being pulled.');
+      if (c.phase === 'done' && c.last) return T('已拉完：碼錶 T = ', 'Pull finished: stopwatch T = ') + num(c.last.Tmeas, 2) + T(' s，點痕 N = ', ' s, dots N = ') + c.last.N + T('。', '.');
+      return T('準備好了。', 'Ready.');
+    }
+    const p = cur().phase;
+    if (p === 'ticking') return T('計時器正在打點，物體還沒放開。', 'The timer is ticking; the object has not been released.');
+    if (p === 'running' || p === 'after') return T('物體正在運動。', 'The object is moving.');
+    if (p === 'done') return T('跑完了，紙帶已取下。', 'Run finished; the tape has been taken off.');
+    return T('準備好了。', 'Ready.');
+  }
+  function updateAria() {
+    const m = state.mode;
+    const timer = (state.freq ? state.freq + ' Hz ' : T('頻率未知的', 'unknown-frequency ')) + T('打點計時器', 'ticker timer');
+    let a;
+    if (m === 'calib') a = T('實驗裝置圖（① 計時器的時距）：用手拉紙帶穿過', 'Apparatus (Part 1, timer interval): a tape pulled by hand through the ') + timer + T('，旁邊是碼錶。', ', with a stopwatch. ');
+    else if (m === 'incline') a = T('實驗裝置圖（② 斜面）：長 1.20 m 的軌道，兩端高度差 ', 'Apparatus (Part 2, incline): a 1.20 m track whose ends differ in height by ') + num(state.h * 100, 1) + T(' cm（θ = ', ' cm (θ = ') + num(Math.asin(state.h / L) * 180 / Math.PI, 2) + T('°），', '°); a ') + num(state.M, 2) + T(' kg 的滑車拖著紙帶穿過', ' kg cart pulls the tape through the ') + timer + T('。', '. ');
+    else a = T('實驗裝置圖（③ 自由落體）：垂直架設的', 'Apparatus (Part 3, free fall): an upright ') + timer + T('，紙帶下端接 ', ' with a ') + num(state.m, 2) + T(' kg 的重物，落下 90 cm 到沙箱。', ' kg weight on the tape, falling 90 cm into a sand tray. ');
+    setAria(cv, a + phaseText());
+    // 紙帶
+    let t;
+    if (m === 'calib') {
+      const c = state.cal;
+      t = T('拉出來的紙帶：', 'The pulled tape: ') + (c.last ? T('共 ', '') + c.last.N + T(' 個點痕，間距不均勻。', ' dots, unevenly spaced.') : T('還沒有紙帶。', 'no tape yet.'));
+    } else {
+      const rec = cur().run, A2 = analysisFor(rec);
+      if (!rec) t = T('紙帶：還沒有紙帶，先做一次實驗。', 'Tape: no tape yet — do a run first.');
+      else if (!rec.mo.moves) t = T('紙帶：物體沒有動，點痕都疊在同一處。', 'Tape: the object did not move, so all the dots lie on one spot.');
+      else t = T('紙帶：共 ', 'Tape: ') + rec.tape.dots.length + T(' 個點；第 0 點是放手後第 ', ' dots; dot 0 is dot ') + state.j0 + T(' 個點，每隔 ', ' after the release, with a counting line every ') + state.n + T(' 個點畫一條計數線；已記錄 ', ' dots; ') + (A2 ? A2.rows + ' / ' + A2.avail : '0') + T(' 個計數點。', ' counting dots logged.');
+    }
+    setAria(tcv, t);
+    // 圖表
+    let g;
+    if (m === 'calib') {
+      const cm = calMean(state.timerId);
+      g = T('圖表：各次量得的 Δt。', 'Graph: Δt of each pull. ') + (cm ? T('已記錄 ', '') + cm.n + T(' 次，平均 Δt = ', ' pulls recorded, mean Δt = ') + num(cm.dt * 1000, 3) + ' ms' + T('。', '.') : T('還沒有數據。', 'No data yet.'));
+    } else {
+      const A2 = analysisFor(cur().run), an = A2 && A2.an, fit = sumFit();
+      g = T('圖表：由數據表畫出的 x–t、v–t、a–t 圖', 'Graphs: x–t, v–t and a–t from the data table') + (an && an.vfit ? T('；v–t 圖斜率（加速度）= ', '; slope of v–t (acceleration) = ') + num(an.vfit.slope, 3) + ' m/s²' : T('（還沒有數據）', ' (no data yet)')) +
+        T('；a–sinθ 圖有 ', '; the a–sinθ graph has ') + state.summary.length + T(' 個點', ' points') + (fit ? T('，最佳直線斜率 ', ', best-fit slope ') + num(fit.slope, 3) + ' m/s²' : '') + T('。', '.');
+    }
+    setAria(gcv, g);
   }
 
   function snapNow() {
@@ -2146,6 +2195,10 @@
     rec.rows = Math.min(A2.avail, A2.rows + k);
     const B = analysisFor(rec);
     if (B.rows === B.avail && B.avail >= 3 && B.an && B.an.vfit) addSummary(rec, B);
+    // 讀數播報（離散事件：按下記錄）
+    let msg = T('已記錄 ', 'Logged ') + B.rows + ' / ' + B.avail + T(' 個計數點。', ' counting dots.');
+    if (B.an && B.an.vfit) msg += (state.mode === 'fall' ? T('量得的 g = ', ' Measured g = ') : T('v–t 圖斜率 a = ', ' Slope of v–t: a = ')) + num(B.an.vfit.slope, 3) + ' m/s²' + T('。', '.');
+    setStatus(msg);
     drawAll();
     emitRecord();
   }

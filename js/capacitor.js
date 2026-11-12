@@ -34,12 +34,15 @@
     flowPhase: 0,        // 導線中電子點的位置（px）
     flowI: 0,            // 目前的電流（C/s，示意）
     acc: 0,              // 累積流過的電量，用來每 Q_DOT 發一聲
-    show: { lines: true, fringe: false, bound: true, dip: true, flow: true },
+    show: { lines: true, fringe: false, bound: true, dip: true, flow: true, equi: true }, // equi：等位面（只在 3D 顯示）
     base: null,          // 前一狀態（最近一次改變之前）的讀數
     gesture: null,       // 目前這次改變：{ key, t, from }
     hover: null, drag: null,
     fx: []               // 純裝飾效果（開關的火花）
   };
+
+  let view3 = null; // 3D 檢視（capacitor-3d.js）；null 時畫 2D
+  let kb = null;     // 鍵盤操作（keys.js），在畫布拖曳的程式之後建立
 
   function params() { return { A: state.A, d: state.d, kappa: state.kappa, f: state.kappa > 1 ? state.f : 0 }; }
   function eq() { return K.solve(params(), state.mode, state.mode === 'V' ? state.Vb : state.Qfix); }
@@ -421,6 +424,7 @@
   }
 
   function draw() {
+    if (view3) { view3.frame(); return; } // 3D 檢視：畫 3D，2D 畫布隱藏
     if (!L) return;
     const G = geo(), S = disp(), Q = eq();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -445,6 +449,7 @@
     drawOverlay(G, Q);
     drawNotes(G, info);
     drawEffects();
+    drawKeyFocus(G);
   }
 
   /** 電池、開關、導線與導線中流動的電子 */
@@ -1095,6 +1100,7 @@
     if (state.mode === 'Q') state.q = state.Qfix;
     else if (TAU === 0) state.q = s.Q;
     updateReadout();
+    announceSoon();
     endChange();
     emitChange();
     if (busy()) startLoop();
@@ -1212,11 +1218,12 @@
     if (window.LabMission) window.LabMission.emit('reset', {});
     setStatus(T('已恢復預設值：接上 10 V 電池、A = 100 cm²、d = 2 mm、空氣。', 'Defaults restored: 10 V battery connected, A = 100 cm², d = 2 mm, air.'));
     updateReadout();
+    announceSoon();
     requestDraw();
   });
 
   // 顯示選項
-  [['showLines', 'lines'], ['showFringe', 'fringe'], ['showBound', 'bound'], ['showDip', 'dip'], ['showFlow', 'flow']].forEach(function (pair) {
+  [['showLines', 'lines'], ['showFringe', 'fringe'], ['showBound', 'bound'], ['showDip', 'dip'], ['showFlow', 'flow'], ['showEqui', 'equi']].forEach(function (pair) {
     $(pair[0]).addEventListener('change', function (ev) { state.show[pair[1]] = ev.target.checked; requestDraw(); });
   });
 
@@ -1310,6 +1317,206 @@
     if (h === 'plate' || h === 'slab') ev.preventDefault();
   }, { passive: false });
 
+  // ---------- 鍵盤操作（keys.js）：上板（板距）、介電質板（插入比例）、開關；限制與拖曳相同 ----------
+  const KB_ITEMS = ['plate', 'slab', 'switch'];
+  /** 與拖曳相同：經由滑桿改值（觸發相同的 input、任務事件與重畫）；連續按鍵間隔不到 0.9 秒算作同一次改變 */
+  function kbSet(el, v) {
+    const prev = state.drag;
+    state.drag = { what: 'key' };
+    try { window.LabNum ? window.LabNum.set(el, v) : (el.value = v, el.dispatchEvent(new Event('input'))); } finally { state.drag = prev; }
+  }
+  kb = window.LabKeys ? window.LabKeys.attach(cv, {
+    label: T('平行板電容器模擬畫布：側視圖的兩片平板、板上的正負電荷、兩板間的電場線、可推入的介電質板，以及電池、開關與導線。' +
+      '可上下拖曳上板、左右拖曳介電質板、點開關。鍵盤：Enter 切換上板、介電質板、開關；上下方向鍵改變板距 0.1 mm，左右方向鍵推入或拉出介電質 1%，Shift 加方向鍵 10 倍；選到開關時按方向鍵切換接上或斷開。',
+    'Parallel-plate capacitor simulation: side view of the two plates with their charges, the field lines between them, a sliding dielectric slab, and the battery, switch and wires. ' +
+      'Drag the top plate up or down, drag the slab sideways, or click the switch. Keyboard: Enter picks the top plate, the dielectric slab or the switch; the up and down arrow keys change the separation by 0.1 mm, the left and right arrow keys slide the slab in or out by 1%, and Shift with an arrow key moves 10 times as far; with the switch picked, an arrow key closes or opens it.'),
+    items: [
+      { name: function () { return T('上板', 'top plate'); },
+        move: function (dx, dy, big) {
+          if (!dy || view3) return false;
+          const dmm = Math.max(1, Math.min(10, Math.round((val(elD) + dy * (big ? 1 : 0.1)) * 10) / 10));
+          if (Math.abs(dmm - val(elD)) < 1e-9) return false;
+          kbSet(elD, dmm);
+          return true;
+        },
+        describe: function () { return T('板距 d = ', 'separation d = ') + describe('d'); } },
+      { name: function () { return T('介電質板', 'dielectric slab'); },
+        move: function (dx, dy, big) {
+          if (!dx || view3 || state.kappa <= 1) return false;
+          const pct = Math.max(0, Math.min(100, Math.round(val(elF) - dx * (big ? 10 : 1)))); // 往左推入、往右拉出
+          if (Math.abs(pct - val(elF)) < 1e-9) return false;
+          kbSet(elF, pct);
+          return true;
+        },
+        describe: function () {
+          return state.kappa > 1 ? T('介電質插入 ', 'slab inserted ') + describe('f')
+            : T('目前兩板之間是空氣，先選一種介電質。', 'There is only air between the plates; choose a dielectric first.');
+        } },
+      { name: function () { return T('開關', 'switch'); },
+        move: function (dx, dy) {
+          if (!dx && !dy) return false;
+          setMode(state.mode === 'V' ? 'Q' : 'V');
+          return true;
+        },
+        describe: function () { return state.mode === 'V' ? T('開關接上（V 固定）', 'switch closed (V fixed)') : T('開關斷開（Q 固定）', 'switch open (Q fixed)'); } }
+    ],
+    onChange: function () { requestDraw(); }
+  }) : null;
+  /** 鍵盤選取的物件周圍畫焦點框（--accent 色虛線圓角框） */
+  function drawKeyFocus(G) {
+    if (!kb || !kb.focused()) return;
+    const what = KB_ITEMS[kb.index()];
+    let r = null;
+    if (what === 'plate') r = [G.x0, G.yTT - G.oy, G.Lp + G.ox, L.pt + G.oy];
+    else if (what === 'slab' && G.slab) r = [G.xs0, G.yTB - G.oy, G.Lp + G.ox, G.gap + G.oy];
+    else if (what === 'switch') {
+      const sw = switchGeo(), len = sw.yp - sw.yc, cx = sw.x + (state.mode === 'Q' ? len * 0.3 : 0), cy = (sw.yc + sw.yp) / 2;
+      r = [cx - len * 0.8, cy - len * 0.8, len * 1.6, len * 1.6];
+    }
+    if (!r) return;
+    const pad = 6;
+    ctx.save();
+    ctx.strokeStyle = colors.accent; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+    roundRect(ctx, r[0] - pad, r[1] - pad, r[2] + pad * 2, r[3] + pad * 2, 8);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------- 讀數播報：改變參數、切換開關或重設後（停 0.9 秒）把主要讀數寫進 aria-live（讀數一律是平衡值，不隨動畫變） ----------
+  let sayTimer = 0, lastSaid = '';
+  function announceSoon() {
+    clearTimeout(sayTimer);
+    sayTimer = setTimeout(function () {
+      const s = eq(), sep = T('，', ', ');
+      const txt = T('電容 ', 'Capacitance ') + si(s.C, 'F') + sep + T('電量 ', 'charge ') + si(s.Q, 'C') + sep + T('電壓 ', 'voltage ') + si(s.V, 'V') +
+        sep + T('板間電場 ', 'field ') + si(s.E, 'V/m') + sep + T('能量 ', 'energy ') + si(s.U, 'J') + T('。', '.');
+      if (txt === lastSaid) return;
+      lastSaid = txt;
+      $('srRead').textContent = txt;
+    }, 900);
+  }
+
+  // ---------- 分享連結：斷開時固定的電量 Q 由「斷開當時的狀態」決定，滑桿還原不出來，另外記下 ----------
+  // classroom.js 在 DOMContentLoaded 才載入：還沒有 LabShare 時，等 load 再登記（還原在 load 之後才做）
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register(shareHooks);
+    return true;
+  }
+  const shareHooks = {
+    get: function () { return { m: state.mode, q: state.Qfix }; },
+    set: function (o) {
+      if (!o || o.m !== 'Q') return;
+      const q = +o.q;
+      if (!isFinite(q) || q < 0) return;
+      if (state.mode !== 'Q') setMode('Q');
+      state.Qfix = Math.min(q, 1e-3);
+      state.q = state.Qfix;
+      state.flowI = 0;
+      state.base = null;
+      updateReadout();
+      requestDraw();
+    }
+  };
+  if (!regShare()) window.addEventListener('load', regShare);
+
+  // ---------- 3D 立體檢視（three.js 只在第一次切換到 3D 時才載入；物理量與 2D 相同，由 capacitor-core.js 計算） ----------
+  let threeLib = null, loadToken = 0;
+  const labEl = document.querySelector('.lab.cap'), host3 = $('view3'), viewMsg = $('viewMsg');
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); } catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  function volt(v) { // 等位面的電位標示
+    const a = Math.abs(v);
+    return (a >= 100 || Math.abs(v - Math.round(v)) < 1e-9 ? num(v, 0) : a >= 10 ? num(v, 1) : num(v, 2).replace(/0$/, '')) + ' V';
+  }
+  function env3() {
+    return {
+      host: host3, T: T, core: K,
+      colors: function () { return colors; },
+      data: function () {
+        const S = disp(), m = material();
+        return {
+          A: state.A, d: state.d, kappa: state.kappa, f: state.f, slab: state.kappa > 1,
+          mode: state.mode, S: S, Eref: E_REF, show: state.show,
+          // 導線中的電子（與 2D 相同的慢動作示意；相位以「電子點間距」為單位）
+          flowOn: state.show.flow && !reducedMotion && state.mode === 'V' && Math.abs(state.flowI) > 0,
+          flowA: Math.min(1, Math.abs(state.flowI) / (Q_DOT / 0.06)),
+          flowPhase: state.flowPhase / (L && L.narrow ? 13 : 16),
+          charging: state.flowI > 0,
+          slabColor: slabColor(),
+          kText: 'κ = ' + fmtK(state.kappa) + (m ? T('（' + m.zh + '）', ' (' + m.en + ')') : ''),
+          dText: 'd = ' + num(state.d * 1000, 1) + ' mm',
+          aNum: 'A = ' + num(state.A * 1e4, 0) + ' cm',
+          battText: T('電池 ', 'Battery ') + fmtV(state.Vb),
+          volt: volt
+        };
+      },
+      notes: function (dv, capped) {
+        $('v3dv').textContent = dv || '';
+        $('v3cap').textContent = capped || '';
+      },
+      onLost: function () {
+        setView('2d');
+        viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+      }
+    };
+  }
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+    $('resetCam').hidden = mode !== '3d';
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable() || !window.Capacitor3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        labEl.classList.add('is3d'); // 先顯示容器，3D 畫布才量得到大小
+        try { view3 = window.Capacitor3D.create(lib, env3()); }
+        catch (err) { if (window.console) console.warn('3D view unavailable:', err); fail3D(); return; }
+        viewMsg.textContent = '';
+        requestAnimationFrame(function () { if (view3) view3.frame(); });
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      labEl.classList.remove('is3d');
+      $('v3dv').textContent = ''; $('v3cap').textContent = '';
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      resize();
+      requestDraw();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    labEl.classList.remove('is3d');
+    setPressed('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。', 'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resize();
+    requestDraw();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+
   // ---------- 啟動 ----------
   readColors();
   readSliders();
@@ -1321,6 +1528,7 @@
     if (L) { L = layout(); buildBackground(); }
     refreshOutputs();
     updateReadout();
+    if (view3) view3.onTheme();
     requestDraw();
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);

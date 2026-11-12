@@ -881,6 +881,7 @@
       ctx.fillStyle = D.alpha(D.c.accent, 0.18 * st.flash);
       ctx.fillRect(0, sceneH, W, stripH);
     }
+    drawKeyFocus(ctx);
     drawStrip(ctx);
   }
 
@@ -1330,7 +1331,10 @@
     dataDirty = true; panelsDirty = true;
     let msg = T('已記錄第 ', 'Recorded row ') + rows.length + T(' 筆。', '.');
     if (shaky && m !== 'standing') msg += T('（指針還在動，讀數可能不準：等它停下再記錄。）', ' (The needle was still moving — wait for it to settle.)');
-    if (m === 'reflect') msg += ' ' + T('把入射角加 10°，再找一次最大值。', 'Add 10° to the angle of incidence and find the maximum again.');
+    const cm = T('，', ', '), stop = T('。', '. ');
+    if (m === 'reflect') msg += ' θ<sub>i</sub> = ' + row.thetaI.toFixed(1) + '°' + cm + 'θ<sub>r</sub> = ψ − θ<sub>i</sub> = ' + row.thetaR.toFixed(1) + '°' + stop + T('把入射角加 10°，再找一次最大值。', 'Add 10° to the angle of incidence and find the maximum again.');
+    if (m === 'refract') msg += ' ' + T('偏向角', 'Deviation') + ' δ = ' + row.delta.toFixed(1) + '°' + cm + 'n = ' + row.n.toFixed(3) + T('。', '.');
+    if (m === 'polar') msg += ' I = ' + row.I.toFixed(2) + ' mA' + (row.ratio != null ? cm + 'I/I<sub>0</sub> = ' + row.ratio.toFixed(3) : '') + T('。', '.');
     if (m === 'standing') msg += ' λ = ' + row.lam.toFixed(3) + ' cm。' + T('探針可以留在這裡當下一次的起點。', 'You can use this position as the next start.');
     sayStatus(msg, 6000, shaky && m !== 'standing' ? 'warn' : 'ok');
     schedule();
@@ -1366,20 +1370,49 @@
     els.g1.disabled = !st.g1on; els.g2.disabled = !st.g2on;
     document.querySelectorAll('[data-g2]').forEach(function (b) { b.setAttribute('aria-pressed', String(st.g2on && Math.abs(+b.getAttribute('data-g2') - st.g2) < 1e-6)); });
   }
-  function nudgeSpec() {
-    const f1 = function (v) { return v.toFixed(1) + '°'; };
-    if (st.mode === 'reflect') return { el: els.psiR, small: 0.5, big: 5, name: 'ψ', fmt: f1 };
-    if (st.mode === 'refract') return { el: els.psiP, small: 0.5, big: 5, name: 'ψ', fmt: f1 };
-    if (st.mode === 'standing') return { el: els.probe, small: 0.01, big: 0.1, name: 'x', fmt: function (v) { return v.toFixed(2) + ' cm'; } };
-    if (st.g2on) return { el: els.g2, small: 1, big: 5, name: T('柵 2', 'Grid 2'), fmt: function (v) { return round(v, 1) + '°'; } };
-    if (st.g1on) return { el: els.g1, small: 1, big: 5, name: T('柵 1', 'Grid 1'), fmt: function (v) { return round(v, 1) + '°'; } };
-    return { el: els.dist, small: 0.1, big: 1, name: 'd', fmt: function (v) { return v.toFixed(1) + ' cm'; } };
+  // 可以移動的物件（拖曳、◀ ▶ 按鈕、鍵盤共用同一份設定與限制）。偏極柵不能拖曳，但 ◀ ▶ 與鍵盤可以轉。
+  const fDeg1 = function (v) { return v.toFixed(1) + '°'; };
+  const fDegR = function (v) { return round(v, 1) + '°'; };
+  const KEYDEF = {
+    arm: { el: function () { return st.mode === 'reflect' ? els.psiR : els.psiP; }, small: 0.5, big: 5, name: 'ψ', fmt: fDeg1,
+      long: function () { return T('接收器（角度計讀數 ψ）', 'receiver (goniometer reading ψ)'); } },
+    plate: { el: function () { return els.thetaI; }, small: 1, big: 5, name: 'θ<sub>i</sub>', fmt: fDeg1,
+      long: function () { return T('金屬板（入射角 θi）', 'metal plate (angle of incidence θi)'); } },
+    probe: { el: function () { return els.probe; }, small: 0.01, big: 0.1, name: 'x', fmt: function (v) { return v.toFixed(2) + ' cm'; },
+      long: function () { return T('探針（位置 x）', 'probe (position x)'); } },
+    g2: { el: function () { return els.g2; }, small: 1, big: 5, name: T('柵 2', 'Grid 2'), fmt: fDegR,
+      long: function () { return T('偏極柵 2（隙縫角度）', 'grid 2 (slit angle)'); } },
+    g1: { el: function () { return els.g1; }, small: 1, big: 5, name: T('柵 1', 'Grid 1'), fmt: fDegR,
+      long: function () { return T('偏極柵 1（隙縫角度）', 'grid 1 (slit angle)'); } },
+    rx: { el: function () { return els.dist; }, small: 0.1, big: 1, name: 'd', fmt: function (v) { return v.toFixed(1) + ' cm'; },
+      long: function () { return T('接收器（兩喇叭距離 d）', 'receiver (horn distance d)'); } }
+  };
+  /** 目前這個實驗可以移動的物件（第一個是預設選取的） */
+  function keyIds() {
+    const m = st.mode;
+    if (m === 'reflect') return st.plate ? ['arm', 'plate'] : ['arm'];
+    if (m === 'refract') return ['arm'];
+    if (m === 'standing') return ['probe'];
+    const out = [];
+    if (st.g2on) out.push('g2');
+    if (st.g1on) out.push('g1');
+    out.push('rx');
+    return out;
   }
+  let kSel = null;   // 選取的物件（拖曳或鍵盤選取後，◀ ▶ 也改動它）
+  function curKey() { const ids = keyIds(); return ids.indexOf(kSel) >= 0 ? kSel : ids[0]; }
+  function nudgeSpec() {
+    const d = KEYDEF[curKey()];
+    return { el: d.el(), small: d.small, big: d.big, name: typeof d.name === 'function' ? d.name() : d.name, fmt: d.fmt };
+  }
+  /** 依目前選取的物件微調；回傳是否真的動了 */
   function nudge(dir, big) {
-    const sp = nudgeSpec(), el = sp.el;
-    const v = clamp(round(val(el) + dir * (big ? sp.big : sp.small), 4), +el.min, +el.max);
+    const sp = nudgeSpec(), el = sp.el, before = val(el);
+    const v = clamp(round(before + dir * (big ? sp.big : sp.small), 4), +el.min, +el.max);
     touched = true;
+    if (Math.abs(v - before) < 1e-9) return false;
     if (window.LabNum) window.LabNum.set(el, v); else { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); }
+    return true;
   }
   [['nudgeLL', -1, true], ['nudgeL', -1, false], ['nudgeR', 1, false], ['nudgeRR', 1, true]].forEach(function (b) {
     const btn = $(b[0]);
@@ -1403,7 +1436,7 @@
     if (!opts.noTrace) sampleTrace();
     if (st.mode === 'reflect' && !st.plate && st.psiR >= 179.5 && readingTrue() > 0.05) st.aligned = true;
     panelsDirty = true;
-    if (!silent) emitState();
+    if (!silent) { emitState(); srDue = Math.max(srDue, now() + 1); }
     schedule();
   }
   function bindRange(el, apply) {
@@ -1549,6 +1582,7 @@
     e.preventDefault();
     touched = true;
     drag = h;
+    selectKey(h.kind === 'mag' ? 'probe' : h.kind);
     try { cv.setPointerCapture(e.pointerId); } catch (er) { /* 忽略 */ }
     cv.classList.add('grab');
     if (h.kind !== 'mag') applyDrag(p);
@@ -1561,11 +1595,84 @@
   const endDrag = function () { drag = null; cv.classList.remove('grab'); };
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
+
+  // ---------------- 鍵盤操作（js/keys.js）：Enter 切換物件、方向鍵移動（與 ◀ ▶ 同樣的步長與限制）、Shift 大步、R 記錄 ----------------
+  const kbItems = [];   // 依實驗而變；LabKeys 直接讀這個陣列
+  let kb = null, srDue = 0, lastSr = '';
+  function meterText() { const r = readingAt(now()); return r > FS ? T('超過滿刻度', 'off scale') : r.toFixed(2) + ' mA'; }
+  function describeKey(id) {
+    const d = KEYDEF[id], el = d.el();
+    const v = d.fmt(val(el)).replace(/<[^>]+>/g, '');
+    return d.long() + ' ' + v + T('，電表讀數 ', ', meter reading ') + meterText() + T('。', '.');
+  }
+  function keyItem(id) {
+    return {
+      id: id,
+      name: function () { return KEYDEF[id].long(); },
+      move: function (dx, dy, big) {
+        if (stage.classList.contains('is3d')) return false;
+        kSel = id;
+        const moved = nudge(dx || dy, big);
+        srDue = 0;          // 鍵盤移動已由 keys.js 播報讀數，不必再播一次
+        return moved;
+      },
+      describe: function () { return describeKey(id); }
+    };
+  }
+  /** 依目前實驗重建物件清單，並讓鍵盤的選取與 kSel 一致 */
+  function syncKeys() {
+    const ids = keyIds();
+    const same = ids.length === kbItems.length && ids.every(function (id, i) { return kbItems[i].id === id; });
+    if (!same) { kbItems.length = 0; ids.forEach(function (id) { kbItems.push(keyItem(id)); }); }
+    const want = ids.indexOf(curKey());
+    if (kb && kb.index() !== want) kb.select(want);
+  }
+  function selectKey(id) { kSel = id; syncKeys(); panelsDirty = true; schedule(); }
+  if (window.LabKeys) {
+    syncKeys();
+    kb = window.LabKeys.attach(cv, {
+      label: T('俯視圖：角度計、微波發射器與接收器、金屬板或稜鏡或偏極柵、電場的波動，下方是毫安培計與讀數掃描圖。可拖曳接收器、金屬板或探針；鍵盤操作：Enter 切換物件，方向鍵移動，Shift 加方向鍵移動較多，R 記錄。',
+        'Top view: the goniometer, the microwave transmitter and receiver, the metal plate, prism or grids, and the electric field of the waves; below are the milliammeter and a scan of the readings. Drag the receiver, the plate or the probe. Keyboard: Enter picks an object, the arrow keys move it, Shift with an arrow key moves it further, R records.'),
+      items: kbItems,
+      onChange: function () {
+        const it = kbItems[kb.index()];
+        if (it) kSel = it.id;      // 先記下鍵盤選的物件，再依目前實驗整理清單
+        syncKeys();
+        panelsDirty = true; schedule();
+      }
+    });
+  }
   cv.addEventListener('keydown', function (e) {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); nudge(-1, e.shiftKey); }
-    else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); nudge(1, e.shiftKey); }
-    else if (e.key === 'Enter') { e.preventDefault(); record(); }
+    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); record(); }
   });
+  /** 鍵盤選取時，在選取的物件周圍畫虛線圓角框（--accent） */
+  function drawKeyFocus(g) {
+    if (!kb || !kb.focused()) return;
+    const id = curKey(), pad = 5;
+    g.save();
+    g.strokeStyle = D.c.accent; g.lineWidth = 2; g.setLineDash([5, 4]); g.lineCap = 'round';
+    if (id === 'arm' || id === 'rx') {
+      // 接收器：喇叭開口在 r0，盒子尾端在 r0 + 喇叭長 + 盒長
+      const ang = id === 'arm' ? 180 - (st.mode === 'reflect' ? st.psiR : st.psiP) : 0;
+      const half = (K.hornLen + K.boxL) / 2, r0 = id === 'arm' ? K.arm - K.pc : st.d, rc = r0 + half;
+      const cx = id === 'arm' ? rc * Math.cos(ang * DEG) : rc, cy = id === 'arm' ? rc * Math.sin(ang * DEG) : 0;
+      const hl = half * sc + pad, hw = K.mouthW / 2 * sc + pad;
+      g.translate(X(cx), Y(cy)); g.rotate(-ang * DEG);
+      D.roundRect(g, -hl, -hw, 2 * hl, 2 * hw, 8); g.stroke();
+    } else if (id === 'plate') {
+      const th = st.thetaI * DEG, tx = -Math.sin(th), ty = -Math.cos(th);
+      const hl = K.plateW / 2 * sc + pad, hw = Math.max(3.5, 0.6 * sc) / 2 + 1.1 * sc + pad;
+      g.translate(X(0), Y(0)); g.rotate(-Math.atan2(ty, tx));
+      D.roundRect(g, -hl, -hw, 2 * hl, 2 * hw, 8); g.stroke();
+    } else if (id === 'probe') {
+      const hw = Math.max(1.3 * sc, 6) + pad, y0 = Y(0) - Math.max(3.2, 0.55 * sc) - pad, y1 = Y(-13.3) + pad;
+      D.roundRect(g, X(st.s) - hw, y0, 2 * hw, y1 - y0, 8); g.stroke();
+    } else {
+      const x = X(gridX(id === 'g1' ? 1 : 2)), hw = Math.max(4, 0.9 * sc) / 2 + pad;
+      D.roundRect(g, x - hw, Y(12) - pad, 2 * hw, 24 * sc + 2 * pad, 8); g.stroke();
+    }
+    g.restore();
+  }
 
   // ---------------- 動畫迴圈 ----------------
   let raf = 0, lastT = 0, panelsDirty = true, dataDirty = true, visible = true, lastPanel = 0;
@@ -1589,9 +1696,15 @@
     if (st.status && now() >= st.statusUntil) panelsDirty = true;
     if (view3 && view3.active) view3.frame(st.tWave);
     else drawMain(st.tWave);
-    if (panelsDirty) { panelsDirty = false; lastPanel = t; buildReadout(); buildSteps(); buildStatus(); buildButtons(); }
+    if (panelsDirty) { panelsDirty = false; lastPanel = t; syncKeys(); buildReadout(); buildSteps(); buildStatus(); buildButtons(); }
+    // 螢幕閱讀器：讀數穩定後才念一次（最多每秒一次；不在每一格更新）
+    if (srDue && now() >= srDue && !moving) {
+      srDue = 0;
+      const txt = T('電表讀數 ', 'Meter reading ') + meterText() + T('。', '.');
+      if (txt !== lastSr) { lastSr = txt; $('srMeter').textContent = txt; }
+    }
     if (dataDirty) { dataDirty = false; buildTable(); buildFit(); drawGraph(); }
-    const animating = (st.waves && !reduced) || moving || fjob || st.err || st.flash > 0 || (st.status && now() < st.statusUntil + 0.2);
+    const animating = (st.waves && !reduced) || moving || fjob || st.err || st.flash > 0 || srDue || (st.status && now() < st.statusUntil + 0.2);
     if (animating && visible && !document.hidden) schedule(); else lastT = 0;
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden) schedule(); });

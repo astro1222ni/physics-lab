@@ -28,6 +28,8 @@
     visited: { screen: true, parallax: false, pin: false },
     flags: { setup: true, sharpSeen: false, swung: false, parSetup: false, pMoved: false, eyeMoved: false, pinsMoved: false }
   };
+  let kb = null, vkb = null, headItem = null;   // 鍵盤操作（js/keys.js）：主畫布、放大圖（視差法擺頭）
+  const kbItems = [], vkbItems = [];
   function lensObj(id) { id = id || state.lens; for (let i = 0; i < TL.LENSES.length; i++) if (TL.LENSES[i].id === id) return TL.LENSES[i]; return TL.LENSES[0]; }
   function fOf(id) { const L = lensObj(id); return L.f || mystery[L.id]; }
   function isMyst(id) { return !!lensObj(id).mystery; }
@@ -762,6 +764,30 @@
     if (!cv.width) return;
     if (state.method === 'pin') { if (Lp) drawPinBoard(); }
     else if (Lb) drawBench();
+    drawKeyFocus();
+  }
+  /** 鍵盤選取的器材周圍畫虛線圓角框（--accent），只在畫布有鍵盤焦點時 */
+  function drawKeyFocus() {
+    if (!kb || !kb.focused()) return;
+    const it = kbItems[kb.index()];
+    if (!it) return;
+    const id = it.id, c = ctx;
+    if (state.method === 'pin' ? !Lp : !Lb) return;
+    c.save();
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.strokeStyle = LD.c.accent; c.lineWidth = 2; c.setLineDash([5, 4]);
+    if (state.method === 'pin') {
+      const pt = pinPt(id), x = PX(pt[0]), y = PY(pt[1]);
+      const r = (id === 'E' ? Math.max(11, 1.1 * Lp.k) : Math.max(4.5, PIN_HEAD * Lp.k * 1.2)) + 11;
+      LD.roundRect(c, x - r, y - r, 2 * r, 2 * r, 8);
+    } else {
+      const x = posOf(id), bo = BODY[id];
+      const top = id === 'src' ? 4 : id === 'lens' ? R + 0.5 : id === 'screen' ? 5 : rodTop();
+      const x0 = X(x - bo[0]) - 7, x1 = X(x + bo[1]) + 7, y0 = Y(top) - 7, y1 = Y(-12) + 7;
+      LD.roundRect(c, x0, y0, x1 - x0, y1 - y0, 8);
+    }
+    c.stroke();
+    c.restore();
   }
 
   // ======================= 放大圖（vcv） =======================
@@ -1059,6 +1085,10 @@
     c.beginPath(); c.moveTo(cx - Math.min(PW * 0.3, 70), hy); c.lineTo(cx + Math.min(PW * 0.3, 70), hy); c.stroke();
     LD.ball(c, hx, hy, 6, LD.c.text, { shadow: false });
     LD.haloText(c, T('頭', 'head'), hx, hy - 10, LD.c.muted, 'center', 'alphabetic', '600 10px ' + FONT);
+    if (vkb && vkb.focused()) {
+      c.save(); c.strokeStyle = LD.c.accent; c.lineWidth = 2; c.setLineDash([5, 4]);
+      LD.roundRect(c, hx - 17, hy - 24, 34, 32, 8); c.stroke(); c.restore();
+    }
     c.restore();
 
     // 俯視示意
@@ -1638,10 +1668,11 @@
     if (Math.abs(sE) < 0.05) return T('正中', 'centre');
     return (sE < 0 ? T('左 ', 'left ') : T('右 ', 'right ')) + num(Math.abs(sE), 1) + ' cm';
   }
-  function selName() {
+  function itemName(id) {
     const names = { src: T('光源屏', 'source screen'), lens: T('透鏡', 'lens'), screen: T('像屏', 'image screen'), rod: T('參考物', 'reference rod'), P: T('針 P', 'pin P'), A: T('針 A', 'pin A'), B: T('針 B', 'pin B'), E: T('觀測點（眼睛）', 'eye') };
-    return names[state.sel] || '';
+    return names[id] || '';
   }
+  function selName() { return itemName(state.sel); }
   function updateUI() {
     document.querySelectorAll('[data-method]').forEach(function (bt) { bt.setAttribute('aria-pressed', String(bt.getAttribute('data-method') === state.method)); });
     document.querySelectorAll('[data-lens]').forEach(function (bt) { bt.setAttribute('aria-pressed', String(bt.getAttribute('data-lens') === state.lens)); });
@@ -1677,6 +1708,8 @@
     syncSliders();
     renderReadout();
     renderSteps();
+    syncKeys();
+    viewA11y();
   }
 
   let dirty = { main: true, view: true, graph: true };
@@ -1784,7 +1817,8 @@
         return out;
       })()
     }, extra);
-    setStatus(T('已記錄第 ', 'Row ') + rowsL.length + T(' 筆：p = ', ' recorded: p = ') + cm(row.p) + T('，q = ', ', q = ') + cm(row.q) + T('。', '.') +
+    setStatus(T('已記錄第 ', 'Row ') + rowsL.length + T(' 筆：p = ', ' recorded: p = ') + cm(row.p) + T('，q = ', ', q = ') + cm(row.q) +
+      (isFinite(fi) ? T('，由 1/p + 1/q = 1/f 算出 f = ', '; 1/p + 1/q = 1/f gives f = ') + cm(fi) : '') + T('。', '.') +
       (warn ? T('不過左右擺頭時，參考物與像仍會錯開——這一筆的 q 不太準。', ' But the rod and the image still move apart when you swing your head, so this q is not accurate.') : ''));
 
     if (state.method === 'pin') requestDraw('main');
@@ -1857,10 +1891,12 @@
   });
   function endDrag() {
     if (!drag) return;
+    const id = drag.it;
     drag = null;
     cv.style.cursor = 'grab';
     benchEvent();
     refresh('all');
+    srSay(describeItem(id));
   }
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
@@ -1898,19 +1934,80 @@
   document.querySelectorAll('#nudge [data-stepy]').forEach(function (bt) {
     bt.addEventListener('click', function () { nudge(0, +bt.getAttribute('data-stepy')); });
   });
+  // ---- 鍵盤操作（js/keys.js）：Enter 切換器材、方向鍵 1 mm、Shift 1 cm、R 記錄 ----
+  // 走 nudge（與 1 mm／1 cm 按鈕相同）：同樣的位置限制、同樣送出 'bench' 任務事件
+  function snap() { const P = state.pin; return [state.xO, state.xL, state.xS, state.xR, P.p, P.A[0], P.A[1], P.B[0], P.B[1], P.E[0], P.E[1]].join(','); }
+  function keyMove(id, dx, dy, big) {
+    if (state.method !== 'pin' || id === 'P') dy = 0;   // 光凳上的器材與針 P 只能沿主軸移動
+    if (!dx && !dy) return false;
+    state.sel = id;
+    const before = snap(), step = big ? 1 : 0.1;
+    nudge(dx * step, dy * step);
+    return snap() !== before;
+  }
+  function describeItem(id) {
+    const sep = T('，', ', ');
+    if (state.method === 'pin') {
+      const P = state.pin;
+      if (id === 'P') return itemName(id) + sep + T('物距 p = ', 'object distance p = ') + cm(P.p) + T('。', '.');
+      return itemName(id) + ' (' + num(P[id][0], 1) + ', ' + num(P[id][1], 1) + ') cm' + T('。', '.');
+    }
+    const b = bench(), s = b.sol, scr = state.method === 'screen';
+    let t = itemName(id) + ' ' + cm(posOf(id)) + sep + 'p = ' + cm(state.xL - state.xO) + sep + 'q = ' + cm((scr ? state.xS : state.xR) - state.xL);
+    if (scr) {
+      if (!s.real || s.atInfinity) t += sep + T('像屏上接不到像', 'no image on the screen');
+      else if (b.blur <= SHARP) t += sep + T('像清楚', 'the image is sharp');
+      else t += sep + T('像模糊', 'the image is blurred') + (ideal() ? T('（模糊圓斑 ', ' (blur disc ') + num(b.blur * 10, 1) + T(' mm）', ' mm)') : '');
+    }
+    return t + T('。', '.');
+  }
+  function parallaxNote() {
+    if (!ideal() || !state.flags.swung) return '';
+    const b = bench();
+    if (!isFinite(b.xI)) return '';
+    const sense = TL.parallaxSense(b.xE, b.xI, state.xR, 0.05);
+    return T('，', ', ') + (sense === 'none' ? T('沒有視差', 'no parallax') : sense === 'against' ? T('參考物與頭反向移動（比像靠近眼睛）', 'the rod moves against your head (nearer than the image)') : T('參考物與頭同向移動（比像遠）', 'the rod moves with your head (farther than the image)'));
+  }
+  let srTimer = 0;
+  /** 拖曳結束時把結果念一次（螢幕閱讀器；不在每一格更新） */
+  function srSay(text) {
+    clearTimeout(srTimer);
+    srTimer = setTimeout(function () { const el = $('srMeter'); if (el && el.textContent !== text) el.textContent = text; }, 450);
+  }
+  function keyItem(id) {
+    return { id: id, name: function () { return itemName(id); }, move: function (dx, dy, big) { return keyMove(id, dx, dy, big); }, describe: function () { return describeItem(id); } };
+  }
+  /** 依目前的方法重建物件清單，並讓鍵盤的選取與 state.sel 一致 */
+  function syncKeys() {
+    const ids = itemsPresent();
+    if (ids.length !== kbItems.length || ids.some(function (id, i) { return kbItems[i].id !== id; })) {
+      kbItems.length = 0;
+      ids.forEach(function (id) { kbItems.push(keyItem(id)); });
+    }
+    const want = ids.indexOf(state.sel);
+    if (kb && want >= 0 && kb.index() !== want) kb.select(want);
+    // 放大圖：只有視差法可以用鍵盤擺頭
+    const par = state.method === 'parallax';
+    if (headItem && par !== (vkbItems.length > 0)) { vkbItems.length = 0; if (par) vkbItems.push(headItem); }
+  }
   cv.addEventListener('keydown', function (e) {
-    const big = e.shiftKey ? 1 : 0.1;
-    if (e.key === 'ArrowLeft') nudge(-big, 0);
-    else if (e.key === 'ArrowRight') nudge(big, 0);
-    else if (state.method === 'pin' && e.key === 'ArrowUp' && state.sel !== 'P') nudge(0, big);
-    else if (state.method === 'pin' && e.key === 'ArrowDown' && state.sel !== 'P') nudge(0, -big);
-    else if (e.key === 'Enter' || e.key === ' ') {
-      const items = itemsPresent();
-      state.sel = items[(items.indexOf(state.sel) + 1) % items.length];
-      refresh('main');
-    } else return;
-    e.preventDefault();
+    if ((e.key === 'r' || e.key === 'R') && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); record(); }
   });
+  if (window.LabKeys) {
+    syncKeys();
+    kb = window.LabKeys.attach(cv, {
+      label: T('實驗裝置圖：光具座上的燈泡與光源屏、透鏡、像屏或參考物（插針法時為方格紙的俯視圖）。拖曳器材可移動；鍵盤操作：Enter 切換器材，方向鍵移動 1 mm，Shift 加方向鍵移動 1 cm，R 記錄。',
+        'The apparatus: lamp and source screen, lens, image screen or reference rod on the optical bench (a top view of the graph paper in the pin method). Drag a piece to move it. Keyboard: Enter picks a piece, the arrow keys move it 1 mm, Shift with an arrow key 1 cm, R records.'),
+      items: kbItems,
+      onChange: function () {
+        const it = kbItems[kb.index()];
+        if (it && it.id !== state.sel) state.sel = it.id;
+        refresh('main');
+      }
+    });
+    const want = kbItems.map(function (it) { return it.id; }).indexOf(state.sel);
+    if (want >= 0) kb.select(want);
+  }
 
   // 頭的位置
   $('head').addEventListener('input', function () {
@@ -1950,16 +2047,58 @@
   });
   const vend = function () { vdrag = null; };
   vcv.addEventListener('pointerup', vend); vcv.addEventListener('pointercancel', vend);
-  vcv.addEventListener('keydown', function (e) {
-    if (state.method !== 'parallax') return;
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    e.preventDefault(); touch();
-    state.head = Math.max(-1, Math.min(1, state.head + (e.key === 'ArrowLeft' ? -0.1 : 0.1)));
-    if (Math.abs(state.head) > 0.4) state.flags.swung = true;
-    syncing = true; if (window.LabNum) window.LabNum.set($('head'), state.head); syncing = false;
-    $('headO').textContent = headText();
-    renderReadout(); renderSteps(); requestDraw('view');
-  });
+  headItem = {
+    id: 'head',
+    name: function () { return T('頭的位置', 'head position'); },
+    move: function (dx, dy, big) {
+      if (state.method !== 'parallax' || !dx) return false;
+      const h = Math.max(-1, Math.min(1, Math.round((state.head + dx * (big ? 0.5 : 0.1)) * 100) / 100));
+      if (h === state.head) return false;
+      touch();
+      state.auto = false; $('autoSwing').checked = false;
+      state.head = h;
+      if (Math.abs(h) > 0.4) state.flags.swung = true;
+      syncing = true; if (window.LabNum) window.LabNum.set($('head'), h); else $('head').value = String(h); syncing = false;
+      $('headO').textContent = headText();
+      renderReadout(); renderSteps(); requestDraw('view');
+      return true;
+    },
+    describe: function () { return T('頭的位置 ', 'Head position ') + headText() + parallaxNote() + T('。', '.'); }
+  };
+  if (window.LabKeys) {
+    syncKeys();
+    vkb = window.LabKeys.attach(vcv, { label: vcv.getAttribute('aria-label'), items: vkbItems, onChange: function () { requestDraw('view'); } });
+    viewA11y();
+  }
+  /** 放大圖：視差法時可用鍵盤擺頭（application），其他方法只是一張圖（img），文字描述跟著狀態更新 */
+  function viewA11y() {
+    if (!vkb) return;
+    const par = state.method === 'parallax';
+    let t;
+    if (par) {
+      t = T('眼睛看到的景象（由計算得到的視野）：鏡框內是光源屏的像，另有參考物；左右擺頭看兩者有沒有相對移動。鍵盤操作：左右方向鍵擺頭，Shift 加方向鍵擺得較多。',
+        'What your eye sees (calculated view): the image of the source inside the lens rim, and the reference rod. Swing your head and see whether they move apart. Keyboard: the left and right arrow keys swing your head, Shift with an arrow key swings it further.');
+    } else if (state.method === 'screen') {
+      const b = bench(), s = b.sol;
+      t = T('像屏放大圖（依比例，方格 1 cm）：', 'Close-up of the screen (to scale, 1 cm grid): ') +
+        (!s.real || s.atInfinity ? T('像屏上只有一片光，接不到像。', 'only a patch of light; no image is caught on the screen.')
+          : b.blur <= SHARP ? T('清楚的像，', 'a sharp image, ') + natureText(s) + T('。', '.')
+            : T('模糊的像', 'a blurred image') + (ideal() ? T('（模糊圓斑 ', ' (blur disc ') + num(b.blur * 10, 1) + T(' mm）', ' mm)') : '') + T('。', '.'));
+    } else {
+      t = T('從觀測點看到的景象（單眼、透視）：鏡中針 P 的像 I，以及鏡外的針 A、B；三者看起來排成一直線時，A、B 就在 I 的方向上。',
+        'The view from the eye (one eye, in perspective): the image I of pin P in the lens, and pins A and B outside it; when all three line up, A and B point towards I.');
+    }
+    if (vcv.getAttribute('aria-label') !== t) vcv.setAttribute('aria-label', t);
+    // 英文模式也同步 data-en-aria-label，免得載入完成時被 HTML 的靜態英文蓋回去
+    if (T('0', '1') === '1') vcv.setAttribute('data-en-aria-label', t);
+    if (par) {
+      vcv.tabIndex = 0; vcv.setAttribute('role', 'application');
+      vcv.setAttribute('aria-roledescription', T('互動實驗畫布', 'interactive simulation canvas'));
+    } else {
+      if (document.activeElement === vcv) vcv.blur();
+      vcv.removeAttribute('tabindex'); vcv.setAttribute('role', 'img'); vcv.removeAttribute('aria-roledescription');
+    }
+  }
 
   // 滑桿
   [['xO', 'src'], ['xL', 'lens'], ['xS', 'screen'], ['xR', 'rod']].forEach(function (pr) {
@@ -2087,6 +2226,41 @@
     if (window.ResizeObserver) new ResizeObserver(function () { if (el.clientWidth !== widths.get(el)) { widths.set(el, el.clientWidth); fn(); } }).observe(el);
     window.addEventListener('resize', fn);
   }
+  // classroom.js 在 DOMContentLoaded 才載入：還沒有 LabShare 時，等 load 再登記（還原在 load 之後才做）
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register({
+      get: function () {
+        const P = state.pin;
+        return { xO: state.xO, xL: state.xL, xS: state.xS, xR: state.xR, pin: { p: P.p, A: P.A.slice(), B: P.B.slice(), E: P.E.slice() }, sel: state.sel };
+      },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        const okN = function (v) { return typeof v === 'number' && isFinite(v); };
+        const okP = function (a) { return Array.isArray(a) && a.length === 2 && okN(a[0]) && okN(a[1]); };
+        // 從目前合法的擺放出發，逐一用拖曳時的 place 規則移過去（走兩輪：前一個移動後，後一個的範圍才放得開）；
+        // 超出範圍或互相衝突的值會被夾在合法位置。目前方法用不到的器材先記下位置，換方法時 fixAll 會再整理
+        const map = { xO: 'src', xL: 'lens', xS: 'screen', xR: 'rod' };
+        for (let pass = 0; pass < 2; pass++) {
+          Object.keys(map).forEach(function (k) {
+            if (!okN(o[k])) return;
+            const it = map[k], v = TL.round1(Math.min(98.5, Math.max(1.5, o[k])));
+            if (present(it)) setPos(it, place(it, v)); else state[k] = v;
+          });
+        }
+        fixAll();
+        const pin = o.pin && typeof o.pin === 'object' ? o.pin : {};
+        if (okN(pin.p)) clampPin('P', pin.p);
+        ['A', 'B', 'E'].forEach(function (k) { if (okP(pin[k])) clampPin(k, pin[k]); });
+        if (typeof o.sel === 'string' && itemsPresent().indexOf(o.sel) >= 0) state.sel = o.sel;
+        afterBenchMove();
+        refresh('all');
+      }
+    });
+    return true;
+  }
+  if (!regShare()) window.addEventListener('load', regShare);
+
   readColors();
   updateUI();
   renderTable(); renderAnalysis();

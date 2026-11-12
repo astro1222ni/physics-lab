@@ -190,3 +190,39 @@ node tools/mission-proofs/<代號>.js # 證明該實驗的每個任務都做得�
 - **關於本站與授權**：`about.html`（作者、物理怎麼把關、引用格式、授權、隱私）、`LICENSE.md`。首頁、排行榜、隱私說明頁尾都有連結；`tools/seo.cjs` 產生它的 `AboutPage` 結構化資料。內容寫到站長本人，改動前要開卡問站長。
 - **3D 檢視共通做法**：three.js 只在第一次切到 3D 時載入；切回 2D 時 `dispose()` 先把 `active` 設成 false 再 `forceContextLoss()`，`webglcontextlost` 處理程式要先檢查 `active`（否則會誤跳「3D 中斷」）；透明材質先轉色彩空間再乘 alpha（否則玻璃變白霧）。
 - **英文模式檢查的例外**：刻意保留的中文（人名、頻道名、中文引用範例）在元素上標 `lang="zh-Hant"`，`check-pages` 會略過。
+
+## 十一、上課工具與第二批改版（2026-11-12）
+
+- **首頁分兩大科目**：`<nav class="domain-nav">` 兩個大按鈕（物理 `#physics`、地球科學 `#earth`，數量由 `js/home.js` 算），右邊是本站 QR code（`img/qr-site.svg`，`.site-qr` 點一下放大投影）。`<section class="domain" id="physics">` 包住原本六個物理分支；`<section class="domain" id="earth">` 有四個分支：天文（astro）、固體地球（geo）、大氣（atmo）、海洋（ocean），色彩 `--b-astro`、`--b-geo`、`--b-atmo`、`--b-ocean`。地科分支還沒有實驗時顯示 `<p class="branch-soon">`；把卡片放進去時要拿掉它（整合腳本會處理）。搜尋結果的地科卡片前面加「地球科學・」。
+- **`js/classroom.js`**（由 `settings.js` 自動載入，每頁都有，不必加標籤）：
+  - 實驗區上方工具列：「投影」（全螢幕＋字放大 1.25 倍、收起留言與頁尾）、「分享」（網址 `#s=…` 記錄滑桿、選單、勾選框、按下的模式按鈕；QR code 可放大；LINE、Google Classroom、嵌入網頁的 iframe 程式碼）。
+  - 畫布上拖曳出來的狀態由模組自己登記：`LabShare.register({ get, set })`。還原期間 `LabShare.restoring = true`，`missions.js` 不會判定任務完成。`settings.js` 在 `<head>` 就把 `#s=` 存進 `window.LAB_SHARE_HASH`（有些頁面一載入就 `history.replaceState` 洗掉網址的 `#`）。
+  - `?embed=1`：`settings.js` 加上 `html.lab-embed`，只留標題與實驗本身，不跳登入提示，工具列多一個「開啟完整版」。
+  - 「試試看」：頁面 `.lab` 前面放 `<p class="try-hint" data-en="Try it: …">試試看：…</p>`，每頁只出現一次（localStorage `lab-try:<代號>`），學生動手後自動收起。
+  - 數據表（`table.data`／`.runs`／`.rec`／`.picks`／`.hist`／`.log`／`.pts`，或加 `data-export`）下方自動加「下載 CSV」（UTF-8 BOM）與「複製表格」。
+  - 「相關實驗」：捲到說明區附近才載入 `js/catalog.js`（`tools/build-catalog.cjs` 從首頁產生，`npm run seo` 會一起跑），在說明區後面放 3 張卡。新實驗整合進首頁後要重跑 `npm run seo`。
+  - 列印：深色模式自動換淺色再印、收起按鈕與留言，頁首多一行班級／座號／姓名／日期空格。
+  - 頁尾「這個實驗最後更新：YYYY/MM/DD」：日期在 `js/catalog.js` 的 `u`（`tools/build-catalog.cjs` 從 git 算，還沒 commit 的算今天），所以**發布前最後一步也要跑 `npm run seo`**。
+- **`js/keys.js`**（要用的頁面自己載入，放在頁面程式前）：`LabKeys.attach(canvas, { label, items: [{ name, move(dx, dy, big), describe }], onChange })`，Enter 換物件、方向鍵移動、Shift 大步、Esc 離開；用 `aria-live` 念出狀態。逐頁套用的規格在 `docs/briefs/classroom-pass.md`（試試看、參考資料、鍵盤、讀數播報、分享狀態、2D 精修）。
+- **效能與連線**：沒登入的訪客不再下載全站任務檔（`achievements.js` 登入後才載）；留言區捲到附近才開始即時監聽，分頁在背景 3 分鐘就 `goOffline`（免費方案同時連線上限 100）。
+- **頁首**：右上角登入鈕＋齒輪實際佔的寬度寫進 `--head-reserve`（`comments.js` 量），頁首第一行右側留白；900 px 以下第一行至少 40 px 高，標題排在按鈕下方。
+- **推送一律非互動**：`git -c credential.interactive=never -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 push origin main`（11/12 曾因 Git Credential Manager 等登入視窗卡 6 小時）。
+
+## 十二、11/12 上午：新實驗、共用檔修正、全國營運的風險
+
+- **新實驗（6 個）**：測量與不確定度（`ch-measurement`，力學第一章）、角動量守恆（`ch-momentum`）、力矩與靜力平衡（`ch-statics`）、薄膜干涉（物理光學）、月相與日月食（天文 `ch-sky`，含 3D）、地震波與震央定位（固體地球 `ch-quake`）。電容器、都卜勒加了 3D。
+- **成就**：加了 `branch-astro`（伽利略的望遠鏡）、`branch-geo`（魏格納的拼圖）；大氣、海洋有實驗後再加 `branch-atmo`、`branch-ocean`（`branchDone` 已會算這兩個）。
+- **分享狀態的登記**：頁面程式執行時 classroom.js 還沒載入，所以一律寫 `(window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({ get, set })`；classroom.js 載入時補登記（也會送出 `lab:shareready` 事件）。一頁好幾個 `.lab` 都會記；`#soundBtn` 不記。舊寫法「等 load 再 `LabShare.register`」也能用。
+- **登入提示**：實驗頁要先操作 3 次（只算真的手動操作，按鈕裡的圖示不重複算）或在前景停留 40 秒才跳（`comments.js` 的 `whenEngaged`）；首頁照舊。
+- **`npm run check`**：頁面可用空格或逗號分開，找不到的頁面直接報錯（之前逗號寫法會漏檢還顯示全部通過）；英文模式也檢查 aria-label、title、placeholder、alt。
+- **簡體**：`tools/build-hans.cjs` 加了「游標尺／游標卡尺 → 游标卡尺」「震央 → 震中」（「游標」單獨出現仍轉「光标」）。
+- **縮圖**：`make-thumbs.cjs` 先把 `lab-try:<代號>` 設好，不出現「試試看」，版面不會在截圖時移動。
+- **搜尋引擎**：Google、Bing 都還沒收錄（11/12 查 site: 為 0）。`/physics-lab/robots.txt` 裡的 Sitemap 不會被讀（只讀網域最上層的 robots.txt），要在 Search Console 提交 `sitemap.xml`；正在一步一步帶站長做。
+- **全國營運的風險**（站長 11/12 問「全臺高中都用會遇到什麼」，已開卡）：
+  1. Firebase 免費方案同時連線 100（三個班就滿）→ 升級 Blaze＋預算警示（卡 lab-blaze-1112）。
+  2. `stats.js` 在線人數：每分頁每 30 秒下載全站 presence，流量 ∝ N²（同時 1,000 人約 7 GB／小時）→ 改成每分鐘一個計數桶（流量 ∝ N），需要新的資料庫規則。
+  3. 寫入：每分頁每分鐘約 5 次（flush 15 秒＋心跳 60 秒）→ 合併成 1–2 次。
+  4. 排行榜 `countAbove` 下載所有較高分 → 改用分數分布。
+  5. GitHub Pages 每月約 100 GB 流量 → 自己的網域（卡 lab-domain-1112），之後可搬 Cloudflare Pages，網址不變。換網域時 localStorage 會歸零、要重新登入。
+  6. 灌分、留言審核、App Check、學校 Google 帳號（未滿 18 歲）可能不能登入第三方網站、學校網路過濾、個資保存與刪除、回報問題按鈕、只有站長一人有帳號。
+- **四科並行**（站長：「我還要放化學跟生物，總共四個科目要同時並行」）：建議同一網站、首頁四大區、共用引擎；每科找審稿老師；化學、生物各先做 3 個試點（卡 lab-four-subjects-1112、lab-brand-name-1112）。

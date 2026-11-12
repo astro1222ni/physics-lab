@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Current Balance | Astro Ni Physics Lab">電流天平｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"電流天平","alternateName":"Current Balance","description":"用等臂天平秤出螺線管內的磁力，驗證磁場與螺線管電流成正比、磁力與天平電流成正比，再量出真空磁導率。","url":"https://astro1222ni.github.io/physics-lab/current-balance.html","image":"https://astro1222ni.github.io/physics-lab/img/og/current-balance.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 本頁專用的顏色代號（淺色＋深色）：由 js/current-balance.js 與 js/current-balance-3d.js 讀取 */
     :root {
@@ -153,6 +154,7 @@
       <p data-en-html="The textbook current balance, on screen. A U-shaped copper strip on an insulating board is mounted as an equal-arm balance, and its front end reaches into a solenoid. With both circuits switched on, the end segment bc is pushed down by the magnetic force; hang a short piece of enamelled wire on the other end and adjust a current until the balance is level again. Then mg = I<sub>1</sub>LB gives the field inside the solenoid: check that B is proportional to I<sub>2</sub> and F to I<sub>1</sub>, and work out the permeability of free space μ<sub>0</sub>. Switch to 3D to look inside the solenoid.">課本的電流天平實驗：ㄈ字形銅條鋪在絕緣板上，架成一座等臂天平，前端伸進螺線管裡。兩個電路都通電後，前端的 bc 段被磁力往下推；在另一端掛上一小段漆包線，調整電流讓天平恢復水平，就能由 mg = I<sub>1</sub>LB 量出螺線管內的磁場，驗證 B 與 I<sub>2</sub> 成正比、F 與 I<sub>1</sub> 成正比，最後算出真空磁導率 μ<sub>0</sub>。切換到 3D 可以看進螺線管裡面。</p>
     </header>
 
+    <p class="try-hint" data-en-html="<span>Try it: press “Power on”, set I<sub>1</sub> to 2 A, press “Hang it on the balance”, then slowly adjust I<sub>2</sub> until the pointer is level again.</span>"><span>試試看：按「開啟電源」，I<sub>1</sub> 調到 2 A、按「掛上天平」，再慢慢調 I<sub>2</sub> 讓指針回到水平。</span></p>
     <div class="lab cb">
       <div class="stage" id="stage">
         <div class="view-bar">
@@ -163,7 +165,7 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" aria-label="電流天平實驗裝置的立體示意圖：剖開一半的螺線管、伸進管內的ㄈ字形電路、支點、掛在外端的漆包線、歸零螺母與水平指標；下方是從管口往內看的右手開掌定則、指針放大鏡、兩台電源供應器的電流表與電子秤。" data-en-aria-label="Diagram of the current balance: a solenoid cut open, the U-shaped circuit reaching into it, the pivot, the piece of enamelled wire on the outer end, the zero-adjusting nut and the level pointer; below, the view into the solenoid from its mouth with the right-hand rule, a magnifier for the pointer, the ammeters of the two power supplies and the electronic scale."></canvas>
+        <canvas id="cv" role="img" aria-label="電流天平實驗裝置的立體示意圖：剖開一半的螺線管、伸進管內的ㄈ字形電路、支點、掛在外端的漆包線、歸零螺母與水平指標；下方是從管口往內看的右手開掌定則、指針放大鏡、兩台電源供應器的電流表與電子秤。" data-en-aria-label="Diagram of the current balance: a solenoid cut open, the U-shaped circuit reaching into it, the pivot, the piece of enamelled wire on the outer end, the zero-adjusting nut and the level pointer; below, the view into the solenoid from its mouth with the right-hand rule, a magnifier for the pointer, the ammeters of the two power supplies and the electronic scale."></canvas>
         <div id="view3"></div>
         <div class="playbar">
           <button type="button" id="power" aria-pressed="false" data-en="Power on">開啟電源</button>
@@ -299,7 +301,7 @@
               <button type="button" id="g1" aria-pressed="true" data-en-html="Part 1: B–I<sub>2</sub>">實驗一：B–I<sub>2</sub> 圖</button>
               <button type="button" id="g2" aria-pressed="false" data-en-html="Part 2: F–I<sub>1</sub>">實驗二：F–I<sub>1</sub> 圖</button>
             </div>
-            <canvas id="gcv" aria-label="分析圖：實驗一為磁場 B 對螺線管電流 I2、實驗二為磁力 F 對天平電流 I1，含數據點、通過原點的最佳直線與理論線" data-en-aria-label="Analysis graph: B against the solenoid current (part 1) or F against the balance current (part 2), with the data points, the best-fit line through the origin and the theoretical line"></canvas>
+            <canvas id="gcv" role="img" aria-label="分析圖：實驗一為磁場 B 對螺線管電流 I2、實驗二為磁力 F 對天平電流 I1，含數據點、通過原點的最佳直線與理論線" data-en-aria-label="Analysis graph: B against the solenoid current (part 1) or F against the balance current (part 2), with the data points, the best-fit line through the origin and the theoretical line"></canvas>
           </figure>
         </div>
       </section>
@@ -393,6 +395,15 @@
         <li data-en="The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D. The field lines are traced through the same calculated field (in the real-solenoid model) in the vertical and horizontal planes through the axis.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。磁力線是沿同一套計算出的磁場（真實螺線管模型）在通過軸線的鉛直面與水平面上描出來的。</li>
         <li data-en="Sound (off by default): a click when you record, a soft chime when the balance comes to rest level, and a knock when it hits a stop.">音效（預設關閉）：記錄時「喀」一聲，天平水平而且停穩時有輕柔的提示音，撞到擋塊時有碰撞聲。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics IV · Magnetic Effects of Currents.">課綱對應：選修物理Ⅳ・電流的磁效應。</li>
+        <li data-en-html="Vacuum magnetic permeability: the textbook value 4π × 10<sup>−7</sup> T·m/A is used; the CODATA 2022 recommended value is 1.256 637 061 27(20) × 10<sup>−6</sup> N/A<sup>2</sup> (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?mu0&quot;>NIST</a>).">真空磁導率：採用課本的 4π × 10<sup>−7</sup> T·m/A；CODATA 2022 建議值為 1.256 637 061 27(20) × 10<sup>−6</sup> N/A<sup>2</sup>（<a href="https://physics.nist.gov/cgi-bin/cuu/Value?mu0">NIST</a>）。</li>
+        <li data-en-html="Gravitational acceleration g = 9.8 m/s<sup>2</sup>, as in the rest of the site (the SI conventional standard gravity is exactly 9.806 65 m/s<sup>2</sup>, <a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot;>NIST</a>).">重力加速度 g = 9.8 m/s<sup>2</sup>，與全站其他實驗一致（SI 約定的標準重力為 9.806 65 m/s<sup>2</sup> 定義值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn">NIST</a>）。</li>
+        <li data-en="The solenoid (1000 turns, 25.0 cm), bc = 3.00 cm, the 14.0 cm arms and the wire’s 40 mg/cm (copper wire about 0.75 mm thick) are apparatus values chosen for this simulation.">螺線管（1000 匝、長 25.0 cm）、bc 段 3.00 cm、兩臂 14.0 cm、漆包線每公分 40 mg（直徑約 0.75 mm 的銅線），都是本模擬設定的器材數值。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/11-4-magnetic-force-on-a-current-carrying-conductor&quot;>OpenStax University Physics Vol. 2 — 11.4 Magnetic Force on a Current-Carrying Conductor</a>; <a href=&quot;https://hyperphysics.gsu.edu/hbase/magnetic/solenoid.html&quot;>HyperPhysics: Solenoid</a>.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-2/pages/11-4-magnetic-force-on-a-current-carrying-conductor">OpenStax University Physics 第二冊 11.4 載流導線受的磁力</a>、<a href="https://hyperphysics.gsu.edu/hbase/magnetic/solenoid.html">HyperPhysics：螺線管的磁場</a>（英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -400,17 +411,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/current-balance-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/current-balance-3d.js?v=202611120013"></script>
-  <script src="js/current-balance.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="current-balance"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/current-balance-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/current-balance-3d.js?v=202611120801"></script>
+  <script src="js/current-balance.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="current-balance"></script>
   <script src="js/missions/current-balance.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="current-balance"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="current-balance"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

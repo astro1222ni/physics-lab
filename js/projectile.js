@@ -53,49 +53,22 @@
   let dpr = 1, cw = 300, ch = 200;
   let view = null, viewLocked = false;
 
+  // 共用繪圖工具（js/drawkit.js）：標籤、箭頭、立體球、陰影、格線都和全站一致；顏色由 LabDraw 讀取
+  const LD = window.LabDraw;
   let colors = {}, colorsVer = 0, dark = false;
   function readColors() {
+    if (LD) LD.refresh();
     const cs = getComputedStyle(document.documentElement);
     ['--canvas-bg', '--text', '--muted', '--border', '--grid', '--accent', '--accent-soft',
       '--pos', '--neg', '--equi', '--field', '--probe', '--surface']
       .forEach(function (k) { colors[k.slice(2)] = cs.getPropertyValue(k).trim(); });
-    const b = rgbOf(colors['canvas-bg']);
-    dark = (0.2126 * b[0] + 0.7152 * b[1] + 0.0722 * b[2]) < 128;
-    colorsVer++; // 顏色或字體大小改變：靜態圖層與小圖（sprite）要重畫
+    dark = LD ? LD.dark : false;
+    colorsVer++; // 顏色或字體大小改變：靜態圖層要重畫（LabDraw 的小圖快取也同時清掉）
   }
 
-  /** 由色彩代號產生半透明或調亮／調暗的顏色，不另外發明色相 */
-  function rgbOf(c) {
-    const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(String(c).trim());
-    if (m) return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
-    const n = String(c).match(/[\d.]+/g);
-    return n && n.length >= 3 ? [+n[0], +n[1], +n[2]] : [128, 128, 128];
-  }
-  function alpha(c, a) { const r = rgbOf(c); return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')'; }
-  /** f > 0 往白色混合、f < 0 往黑色混合 */
-  function shade(c, f) {
-    const r = rgbOf(c), t = f > 0 ? 255 : 0, k = Math.abs(f);
-    return 'rgb(' + r.map(function (x) { return Math.round(x + (t - x) * k); }).join(',') + ')';
-  }
-  /** 兩個色彩代號之間內插（u = 0 → a，u = 1 → b） */
-  function mix(a, b, u) {
-    const p = rgbOf(a), q = rgbOf(b);
-    return 'rgb(' + p.map(function (x, i) { return Math.round(x + (q[i] - x) * u); }).join(',') + ')';
-  }
-  function roundRect(x, y, w, h, r) {
-    r = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
-    ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + w - r, y);
-    ctx.arcTo(x + w, y, x + w, y + r, r);
-    ctx.lineTo(x + w, y + h - r);
-    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
-    ctx.lineTo(x + r, y + h);
-    ctx.arcTo(x, y + h, x, y + h - r, r);
-    ctx.lineTo(x, y + r);
-    ctx.arcTo(x, y, x + r, y, r);
-    ctx.closePath();
-  }
+  /** 由色彩代號產生半透明或調亮／調暗的顏色，不另外發明色相（LabDraw） */
+  const alpha = LD.alpha, shade = LD.shade, mix = LD.mix;
+  function roundRect(x, y, w, h, r) { LD.roundRect(ctx, x, y, w, h, r); }
   /** 線條對齊實體像素（寬 wPhys 個實體像素），避免糊掉 */
   function snap(v, wPhys) { return (Math.round(v * dpr) + (wPhys % 2 ? 0.5 : 0)) / dpr; }
 
@@ -159,113 +132,20 @@
     requestAnimationFrame(function () { drawPending = false; draw(); });
   }
 
-  const FONT = 'system-ui, -apple-system, "Segoe UI", sans-serif';
+  const FONT = LD.FONT;
 
   /**
-   * 向量箭頭：箭尖正好落在 (x1, y1)（長度 ∝ 速度，比例不變）。
-   * 全頁一致的幾何：箭身寬 lw、箭頭長約 4 倍箭身寬、兩側略帶弧度；底下一圈背景色描邊讓箭頭浮在軌跡之上。
+   * 向量箭頭（LabDraw.arrow）：箭尖正好落在 (x1, y1)（長度 ∝ 速度，比例不變）；
+   * 全站一致的幾何、背景色描邊與箭身高光。
    */
   function arrow(x0, y0, x1, y1, color, width, label, lx, ly, sub) {
-    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
-    if (L < 2) return;
-    const ux = dx / L, uy = dy / L;
-    const head = Math.min(4 * width, L * 0.45), hw = Math.min(1.75 * width, head * 0.5);
-    const bx = x1 - ux * head, by = y1 - uy * head;  // 箭頭底部中心
-    const nx = -uy, ny = ux;                          // 法向量
-    const headPath = function () {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.quadraticCurveTo(x1 - ux * head * 0.45 + nx * hw * 0.35, y1 - uy * head * 0.45 + ny * hw * 0.35, bx + nx * hw, by + ny * hw);
-      ctx.lineTo(bx + ux * head * 0.22, by + uy * head * 0.22);
-      ctx.lineTo(bx - nx * hw, by - ny * hw);
-      ctx.quadraticCurveTo(x1 - ux * head * 0.45 - nx * hw * 0.35, y1 - uy * head * 0.45 - ny * hw * 0.35, x1, y1);
-      ctx.closePath();
-    };
-    const sx = bx + ux * head * 0.3, sy = by + uy * head * 0.3; // 箭身終點（藏在箭頭裡）
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    // 背景色描邊（halo）
-    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.75);
-    ctx.lineWidth = width + 3;
-    if (L > head) { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(sx, sy); ctx.stroke(); }
-    headPath();
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    // 箭身與箭頭
-    ctx.strokeStyle = color;
-    ctx.fillStyle = color;
-    ctx.lineWidth = width;
-    if (L > head) { ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(sx, sy); ctx.stroke(); }
-    headPath();
-    ctx.fill();
-    // 箭身上緣細高光，帶出一點圓柱感
-    if (L > head + 3) {
-      ctx.strokeStyle = alpha(shade(color, 0.55), dark ? 0.35 : 0.5);
-      ctx.lineWidth = Math.max(0.8, width * 0.32);
-      const o = width * 0.2;
-      ctx.beginPath();
-      ctx.moveTo(x0 + ux * width - nx * o * Math.sign(ny || 1), y0 + uy * width - ny * o * Math.sign(ny || 1));
-      ctx.lineTo(bx - nx * o * Math.sign(ny || 1), by - ny * o * Math.sign(ny || 1));
-      ctx.stroke();
-    }
-    ctx.lineCap = 'butt';
-    if (label) {
-      const px = lx === undefined ? x1 + ux * 11 : x1 + lx, py = ly === undefined ? y1 + uy * 11 : y1 + ly;
-      vecLabel(label, sub, px, py, color);
-    }
+    LD.arrow(ctx, x0, y0, x1, y1, color, width, { label: label, sub: sub, lx: lx, ly: ly });
   }
-
-  /** 向量名稱（例如 v、vₓ）：主字＋下標，置中於 (x, y)，背景色描邊 */
-  function vecLabel(text, sub, x, y, color) {
-    const fMain = 'italic 600 13px ' + FONT, fSub = '600 9.5px ' + FONT;
-    ctx.font = fMain;
-    const w1 = ctx.measureText(text).width;
-    let w2 = 0;
-    if (sub) { ctx.font = fSub; w2 = ctx.measureText(sub).width + 0.5; }
-    const x0 = x - (w1 + w2) / 2;
-    haloText(text, x0, y, color, 'left', 'middle', fMain);
-    if (sub) haloText(sub, x0 + w1 + 0.5, y + 4, color, 'left', 'middle', fSub);
-  }
-
-  function haloText(text, x, y, color, align, base, font) {
-    ctx.font = font || '12px ' + FONT;
-    ctx.textAlign = align || 'left';
-    ctx.textBaseline = base || 'alphabetic';
-    ctx.lineJoin = 'round';
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.92);
-    ctx.strokeText(text, x, y);
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
-  }
-
+  function haloText(text, x, y, color, align, base, font) { LD.haloText(ctx, text, x, y, color, align, base, font); }
   /** 文字高度（已含 settings.js 的字體縮放） */
-  function textHeight(m, fallback) {
-    return m.fontBoundingBoxAscent > 0 ? m.fontBoundingBoxAscent + m.fontBoundingBoxDescent : fallback;
-  }
-
-  /**
-   * 圓角底框標籤（pill）：align 為 left/center/right，(x, yb) 是底框底邊的參考點。
-   * 傳回底框範圍，方便避開。
-   */
-  function pill(text, x, yb, color, align, font) {
-    ctx.font = font || '600 12px ' + FONT;
-    const m = ctx.measureText(text), tw = m.width, th = textHeight(m, 15);
-    const pw = tw + 12, ph = th + 3;
-    const bx = align === 'center' ? x - pw / 2 : align === 'right' ? x - pw : x;
-    const by = yb - ph;
-    roundRect(bx, by, pw, ph, ph / 2);
-    ctx.fillStyle = alpha(colors['canvas-bg'], dark ? 0.86 : 0.9);
-    ctx.fill();
-    ctx.strokeStyle = alpha(color, dark ? 0.45 : 0.35);
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = color;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, bx + pw / 2, by + ph / 2 + 0.5);
-    return { x: bx, y: by, w: pw, h: ph };
-  }
+  const textHeight = LD.textHeight;
+  /** 圓角底框標籤（LabDraw.pill）：(x, yb) 是底框底邊的參考點；傳回底框範圍，方便避開 */
+  function pill(text, x, yb, color, align, font) { return LD.pill(ctx, text, x, yb, color, align, font); }
 
   function polyline(pts) {
     ctx.beginPath();
@@ -302,8 +182,8 @@
 
   function drawBackdrop() {
     const oy = view.oy;
-    ctx.fillStyle = colors['canvas-bg'];
-    ctx.fillRect(0, 0, cw, ch);
+    // 底色＋四角極淡的暈影（LabDraw.backdrop）
+    LD.backdrop(ctx, cw, ch);
     // 天空：上方極淡的藍色調，往地平線漸淡
     let g = ctx.createLinearGradient(0, 0, 0, oy);
     g.addColorStop(0, alpha(colors.neg, dark ? 0.085 : 0.06));
@@ -325,57 +205,18 @@
     ctx.fillRect(0, oy, cw, ch - oy);
     // 地面下緣的陰影，讓地表有厚度
     g = ctx.createLinearGradient(0, oy, 0, oy + 8);
-    g.addColorStop(0, alpha(dark ? '#000000' : colors.text, dark ? 0.35 : 0.1));
-    g.addColorStop(1, alpha(dark ? '#000000' : colors.text, 0));
+    g.addColorStop(0, LD.shadowInk(dark ? 0.35 : 0.1));
+    g.addColorStop(1, LD.shadowInk(0));
     ctx.fillStyle = g;
     ctx.fillRect(0, oy, cw, 8);
-    // 暈影：中心亮、四角略暗
-    g = ctx.createRadialGradient(cw * 0.5, ch * 0.42, Math.min(cw, ch) * 0.25, cw * 0.5, ch * 0.5, Math.hypot(cw, ch) * 0.62);
-    g.addColorStop(0, 'rgba(0,0,0,0)');
-    g.addColorStop(1, dark ? 'rgba(0,0,0,0.22)' : alpha(colors.text, 0.05));
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, cw, ch);
   }
 
   function drawAxes() {
     const step = niceStep(56 / view.scale);
     const top = MARGIN.t, right = cw - MARGIN.r;
     const minor = step / (Math.abs(step / Math.pow(10, Math.floor(Math.log10(step) + 1e-9)) - 2) < 1e-9 ? 4 : 5);
-    // 次格線（極淡）
-    if (minor * view.scale >= 6) {
-      ctx.strokeStyle = colors.grid;
-      ctx.globalAlpha = 0.55;
-      ctx.lineWidth = 1 / dpr;
-      ctx.beginPath();
-      for (let i = Math.ceil(view.xlo / minor); i * minor <= view.xhi + 1e-9; i++) {
-        if (Math.abs(i * minor / step - Math.round(i * minor / step)) < 1e-6) continue;
-        const px = snap(view.ox + i * minor * view.scale, 1);
-        ctx.moveTo(px, top); ctx.lineTo(px, view.oy);
-      }
-      for (let j = 1; j * minor <= view.yhi + 1e-9; j++) {
-        if (Math.abs(j * minor / step - Math.round(j * minor / step)) < 1e-6) continue;
-        const py = snap(view.oy - j * minor * view.scale, 1);
-        ctx.moveTo(MARGIN.l, py); ctx.lineTo(right, py);
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    // 主格線
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = colors.grid;
-    ctx.globalAlpha = dark ? 1.25 : 1.4;
-    ctx.globalAlpha = 1;
-    ctx.beginPath();
-    for (let i = Math.ceil(view.xlo / step); i * step <= view.xhi + 1e-9; i++) {
-      if (i === 0) continue;
-      const px = snap(view.ox + i * step * view.scale, dpr);
-      ctx.moveTo(px, top); ctx.lineTo(px, view.oy);
-    }
-    for (let j = 1; j * step <= view.yhi + 1e-9; j++) {
-      const py = snap(view.oy - j * step * view.scale, dpr);
-      ctx.moveTo(MARGIN.l, py); ctx.lineTo(right, py);
-    }
-    ctx.stroke();
+    // 兩級格線（LabDraw.grid）：主格線對齊刻度、次格線為刻度的 1/4 或 1/5，對齊發射點正下方的原點
+    LD.grid(ctx, MARGIN.l, top, right, view.oy, step * view.scale, minor * view.scale >= 6 ? minor * view.scale : 0, view.ox, view.oy);
 
     // y 軸（發射點正下方）
     ctx.strokeStyle = alpha(colors.muted, 0.8);
@@ -447,8 +288,8 @@
     const stone = mix(colors.border, colors.muted, dark ? 0.32 : 0.28);
     // 接地陰影
     let g = ctx.createRadialGradient(x + w / 2, view.oy, 0, x + w / 2, view.oy, w * 1.2);
-    g.addColorStop(0, alpha(dark ? '#000000' : colors.text, dark ? 0.45 : 0.22));
-    g.addColorStop(1, alpha(dark ? '#000000' : colors.text, 0));
+    g.addColorStop(0, LD.shadowInk(dark ? 0.45 : 0.22));
+    g.addColorStop(1, LD.shadowInk(0));
     ctx.fillStyle = g;
     ctx.save();
     ctx.translate(0, view.oy);
@@ -468,7 +309,7 @@
       ctx.save();
       roundRect(x, y, w, h, Math.min(2, h / 2));
       ctx.clip();
-      ctx.strokeStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.28 : 0.1);
+      ctx.strokeStyle = LD.shadowInk(dark ? 0.28 : 0.1);
       ctx.lineWidth = 1 / dpr;
       ctx.beginPath();
       const row = 9;
@@ -481,7 +322,7 @@
       ctx.restore();
     }
     // 外框、左緣高光
-    ctx.strokeStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.55 : 0.3);
+    ctx.strokeStyle = LD.shadowInk(dark ? 0.55 : 0.3);
     ctx.lineWidth = 1;
     roundRect(x + 0.5, y + 0.5, w - 1, h - 1, Math.min(2, h / 2));
     ctx.stroke();
@@ -496,134 +337,85 @@
     ctx.fillStyle = g;
     roundRect(x - 1.5, y, w + 1.5, capH, 1.5);
     ctx.fill();
-    ctx.strokeStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.5 : 0.28);
+    ctx.strokeStyle = LD.shadowInk(dark ? 0.5 : 0.28);
     ctx.lineWidth = 1 / dpr;
     ctx.beginPath(); ctx.moveTo(x - 1.5, y + capH); ctx.lineTo(x + w, y + capH); ctx.stroke();
   }
 
-  // ---------- 小圖（sprite）：球的陰影與光暈預先畫好，每幀只貼圖 ----------
+  // ---------- 球：LabDraw.ball（亮點在左上、邊緣加深、反光、細外框、投影；預先畫成小圖，每幀只貼圖） ----------
   const BALL_R = 7;
-  let ballSprite = null, ballKey = '';
-  function getBallSprite() {
-    const key = dpr + '|' + colorsVer;
-    if (ballSprite && key === ballKey) return ballSprite;
-    ballKey = key;
-    const pad = 12, S = (BALL_R + pad) * 2;
-    const c = document.createElement('canvas');
-    c.width = Math.round(S * dpr); c.height = Math.round(S * dpr);
-    const g = c.getContext('2d');
-    g.scale(dpr, dpr);
-    const cx = S / 2, cy = S / 2, r = BALL_R, acc = colors.accent;
-    // 深色模式：淡淡的光暈
-    if (dark) {
-      const gl = g.createRadialGradient(cx, cy, r * 0.6, cx, cy, r + pad);
-      gl.addColorStop(0, alpha(acc, 0.32));
-      gl.addColorStop(1, alpha(acc, 0));
-      g.fillStyle = gl;
-      g.beginPath(); g.arc(cx, cy, r + pad, 0, Math.PI * 2); g.fill();
-    }
-    // 投影
-    g.save();
-    g.shadowColor = dark ? 'rgba(0,0,0,0.55)' : alpha(colors.text, 0.32);
-    g.shadowBlur = 6;
-    g.shadowOffsetY = 2;
-    g.fillStyle = acc;
-    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-    g.restore();
-    // 球體：亮點在左上方
-    const gr = g.createRadialGradient(cx - r * 0.35, cy - r * 0.38, r * 0.08, cx, cy, r);
-    gr.addColorStop(0, shade(acc, 0.72));
-    gr.addColorStop(0.35, shade(acc, 0.18));
-    gr.addColorStop(0.8, acc);
-    gr.addColorStop(1, shade(acc, -0.38));
-    g.fillStyle = gr;
-    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-    // 右下的反光（rim light）
-    g.strokeStyle = alpha(shade(acc, 0.6), 0.55);
-    g.lineWidth = 0.9;
-    g.beginPath(); g.arc(cx, cy, r - 1.1, Math.PI * 0.05, Math.PI * 0.7); g.stroke();
-    // 細外框（與軌跡分開）
-    g.strokeStyle = alpha(colors.surface, dark ? 0.55 : 0.9);
-    g.lineWidth = 1.2;
-    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
-    ballSprite = { cv: c, size: S };
-    return ballSprite;
-  }
 
-  /** 地面上的接觸陰影：離地越高越淡、越大（純裝飾，不影響位置） */
+  /** 地面上的接觸陰影（LabDraw.contactShadow）：離地越高越淡、越大（純裝飾，不影響位置） */
   function drawContactShadow(px, surfaceY, heightPx) {
-    const u = clamp01(heightPx / Math.max(40, view.plotH * 0.75));
-    const a = (dark ? 0.5 : 0.26) * (1 - 0.85 * u);
-    const rx = BALL_R * (1.05 + 1.4 * u), ry = 2.4 + 1.6 * u;
-    if (a < 0.01) return;
-    ctx.save();
-    ctx.translate(px, surfaceY);
-    ctx.scale(1, ry / rx);
-    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
-    g.addColorStop(0, alpha(dark ? '#000000' : colors.text, a));
-    g.addColorStop(1, alpha(dark ? '#000000' : colors.text, 0));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(0, 0, rx, 0, Math.PI * 2); ctx.fill();
-    ctx.restore();
+    LD.contactShadow(ctx, px, surfaceY, BALL_R, clamp01(heightPx / Math.max(40, view.plotH * 0.75)));
   }
 
-  /** 比較軌跡的編號徽章：帶立體漸層的小圓 */
+  /** 比較軌跡的編號徽章：立體小球（LabDraw.ball）＋白色編號 */
   function badge(x, y, col, n) {
-    ctx.fillStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.4 : 0.18);
-    ctx.beginPath(); ctx.arc(x, y + 1.3, 8.4, 0, Math.PI * 2); ctx.fill();
-    const g = ctx.createRadialGradient(x - 2.8, y - 3, 0.6, x, y, 8);
-    g.addColorStop(0, shade(col, 0.42));
-    g.addColorStop(0.55, col);
-    g.addColorStop(1, shade(col, -0.25));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = alpha(colors.surface, dark ? 0.35 : 0.85);
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = colors.surface;
+    LD.ball(ctx, x, y, 8, col, { glow: 0 });
     ctx.font = '700 11px ' + FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    ctx.fillStyle = alpha(shade(col, -0.55), 0.45);
+    ctx.fillText(String(n), x, y + 1.3);
+    ctx.fillStyle = colors.surface;
     ctx.fillText(String(n), x, y + 0.5);
   }
 
+  /** 比較軌跡：底層較粗較淡、上層細線的柔和「管狀」線，落點有小圓點 */
   function drawGhosts() {
-    const placed = [];
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     state.ghosts.forEach(function (g) {
       const col = colors[GHOST_COLORS[g.color]];
-      // 底層較粗較淡、上層細線：柔和的「管狀」軌跡
       ctx.strokeStyle = alpha(col, dark ? 0.14 : 0.1);
       ctx.lineWidth = 6;
       polyline(g.pts);
       ctx.strokeStyle = alpha(col, dark ? 0.6 : 0.55);
       ctx.lineWidth = 2;
       polyline(g.pts);
-      // 落點的小圓點
+      // 上緣細高光，帶出一點圓柱感
+      ctx.strokeStyle = alpha(shade(col, 0.6), dark ? 0.22 : 0.4);
+      ctx.lineWidth = 0.7;
+      ctx.save(); ctx.translate(0, -0.6); polyline(g.pts); ctx.restore();
       const e = toPx(g.pts[g.pts.length - 1][0], g.pts[g.pts.length - 1][1]);
-      ctx.fillStyle = alpha(col, 0.7);
-      ctx.beginPath(); ctx.arc(e[0], e[1], 2.6, 0, Math.PI * 2); ctx.fill();
-    });
-    state.ghosts.forEach(function (g) {
-      const col = colors[GHOST_COLORS[g.color]];
-      // 編號標在該軌跡的最高點（互補角射程相同但最高點不同，才不會疊在一起）；
-      // 水平或向下發射時最高點就是發射點，改標在落地點
-      let top = g.pts[0];
-      g.pts.forEach(function (pt) { if (pt[1] > top[1]) top = pt; });
-      const atLanding = top === g.pts[0];
-      if (atLanding) top = g.pts[g.pts.length - 1];
-      const q = toPx(top[0], top[1]);
-      if (atLanding) q[1] -= 11;
-      while (placed.some(function (o) { return Math.hypot(o[0] - q[0], o[1] - q[1]) < 17; })) q[0] += 18;
-      placed.push(q);
-      badge(q[0], q[1], col, g.n);
+      LD.ball(ctx, e[0], e[1], 2.8, col, { glow: 0, shadow: false });
     });
     ctx.lineCap = 'butt';
   }
 
+  /** 比較軌跡的編號：標在該軌跡的最高點；避開其他編號、最高點標記與 H、R 標籤（avoid：要避開的矩形） */
+  function drawGhostBadges(avoid) {
+    const placed = [];
+    const hit = function (q) {
+      if (placed.some(function (o) { return Math.hypot(o[0] - q[0], o[1] - q[1]) < 17; })) return true;
+      return avoid.some(function (r) { return q[0] > r.x - 9 && q[0] < r.x + r.w + 9 && q[1] > r.y - 9 && q[1] < r.y + r.h + 9; });
+    };
+    const OFFS = [[0, 0], [0, -19], [18, 0], [-18, 0], [18, -19], [-18, -19], [0, 19]];
+    state.ghosts.forEach(function (g) {
+      const col = colors[GHOST_COLORS[g.color]];
+      // 互補角射程相同但最高點不同，標在最高點才不會疊在一起；水平或向下發射時最高點就是發射點，改標在落地點
+      let top = g.pts[0];
+      g.pts.forEach(function (pt) { if (pt[1] > top[1]) top = pt; });
+      const atLanding = top === g.pts[0];
+      if (atLanding) top = g.pts[g.pts.length - 1];
+      const q0 = toPx(top[0], top[1]);
+      if (atLanding) q0[1] -= 11;
+      let q = null;
+      for (let i = 0; i < OFFS.length && !q; i++) {
+        const c = [q0[0] + OFFS[i][0], q0[1] + OFFS[i][1]];
+        if (c[1] > 8 && c[0] > MARGIN.l && c[0] < cw - 8 && !hit(c)) q = c;
+      }
+      if (!q) { q = q0.slice(); while (placed.some(function (o) { return Math.hypot(o[0] - q[0], o[1] - q[1]) < 17; })) q[0] += 18; }
+      placed.push(q);
+      badge(q[0], q[1], col, g.n);
+    });
+  }
+
+  /** 預測軌跡、最高點與落地點；傳回標籤與標記的範圍，讓比較軌跡的編號避開 */
   function drawPrediction() {
-    if (!state.show.pred) return;
+    const rects = [];
+    if (!state.show.pred) return rects;
     const pr = cache.pred;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -633,10 +425,14 @@
       ctx.setLineDash([5, 6]);
       polyline(cache.ideal.points);
     }
+    // 預測線：背景色描邊讓虛線浮在比較軌跡之上
+    ctx.setLineDash([4.5, 6.5]);
+    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.7);
+    ctx.lineWidth = 3.6;
+    polyline(pr.points);
     ctx.strokeStyle = colors.accent;
     ctx.lineWidth = 1.6;
-    ctx.setLineDash([4.5, 6.5]);
-    ctx.globalAlpha = 0.8;
+    ctx.globalAlpha = 0.85;
     polyline(pr.points);
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
@@ -656,11 +452,16 @@
       ctx.beginPath(); ctx.arc(q[0], q[1], 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       ctx.fillStyle = colors.accent;
       ctx.beginPath(); ctx.arc(q[0], q[1], 1.5, 0, Math.PI * 2); ctx.fill();
-      pill('H = ' + num(pr.H, 2) + ' m', q[0], q[1] - 8, colors.accent, 'center');
+      rects.push({ x: q[0] - 5, y: q[1] - 5, w: 10, h: 10 });
+      rects.push(pill('H = ' + num(pr.H, 2) + ' m', q[0], q[1] - 8, colors.accent, 'center'));
     }
     // 落地點：地面上的小三角旗標＋圓角標籤
     if (pr.R > 0) {
       const q = toPx(pr.R, 0);
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = alpha(colors['canvas-bg'], 0.8);
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(q[0], q[1] - 7); ctx.lineTo(q[0], q[1] + 4); ctx.stroke();
       ctx.strokeStyle = colors.accent;
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(q[0], q[1] - 7); ctx.lineTo(q[0], q[1] + 4); ctx.stroke();
@@ -668,10 +469,13 @@
       ctx.beginPath();
       ctx.moveTo(q[0] - 4, q[1] - 11); ctx.lineTo(q[0] + 4, q[1] - 11); ctx.lineTo(q[0], q[1] - 6.5);
       ctx.closePath(); ctx.fill();
+      // 球剛落在旗標旁時，標籤往上移，不和球、速度箭頭擠在一起
+      const f = state.fly, near = f && f.landed && Math.abs(toPx(f.s.x, 0)[0] - q[0]) < 14;
       const right = q[0] > cw - 90;
-      pill('R = ' + num(pr.R, 2) + ' m', q[0] + (right ? -7 : 7), q[1] - 5, colors.accent, right ? 'right' : 'left');
+      rects.push(pill('R = ' + num(pr.R, 2) + ' m', q[0] + (right ? -7 : 7), q[1] - 5 - (near ? BALL_R + 4 : 0), colors.accent, right ? 'right' : 'left'));
     }
     ctx.lineCap = 'butt';
+    return rects;
   }
 
   function drawAngle() {
@@ -701,32 +505,67 @@
     haloText(fmtVal(state.theta, 1, 0) + '°', a[0] + (r + 14) * Math.cos(mid), a[1] - (r + 10) * Math.sin(mid) + 4, colors.muted, 'left', 'middle', '12px ' + FONT);
   }
 
-  /** 發射器：沿仰角方向的短砲管＋轉軸（拖曳瞄準時加光暈） */
+  /** 發射器：沿仰角方向的短砲管＋轉軸；滑過、拖曳瞄準或鍵盤選取時加光暈，鍵盤選取時加焦點框 */
   function drawLauncher() {
     const a = toPx(0, state.h0), th = state.theta * Math.PI / 180;
-    const len = 17, ex = a[0] + len * Math.cos(th), ey = a[1] - len * Math.sin(th);
+    const kbOn = !!(kb && kb.focused() && kbVisible);
+    const kbAim = kbOn && kb.index() === 0, kbTower = kbOn && kb.index() === 1;
+    const hot = aiming || kbAim || hoverAim;
+    const len = 17 * (hot ? 1.06 : 1), ex = a[0] + len * Math.cos(th), ey = a[1] - len * Math.sin(th);
     const metal = mix(colors.muted, colors.text, 0.25);
-    if (aiming) {
-      const g = ctx.createRadialGradient(a[0], a[1], 4, a[0], a[1], 26);
-      g.addColorStop(0, alpha(colors.accent, 0.3));
+    if (hot) {
+      const R = aiming ? 26 : 22;
+      const g = ctx.createRadialGradient(a[0], a[1], 4, a[0], a[1], R);
+      g.addColorStop(0, alpha(colors.accent, aiming ? 0.3 : 0.22));
       g.addColorStop(1, alpha(colors.accent, 0));
       ctx.fillStyle = g;
-      ctx.beginPath(); ctx.arc(a[0], a[1], 26, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(a[0], a[1], R, 0, Math.PI * 2); ctx.fill();
     }
+    // 砲管：底層暗、上層亮且往左上偏移的「管狀」兩層線，管口一圈暗環
     ctx.lineCap = 'round';
+    ctx.strokeStyle = alpha(colors['canvas-bg'], 0.7);
+    ctx.lineWidth = 9;
+    ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(ex, ey); ctx.stroke();
     ctx.strokeStyle = shade(metal, dark ? -0.35 : -0.15);
     ctx.lineWidth = 6.5;
     ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(ex, ey); ctx.stroke();
     ctx.strokeStyle = shade(metal, dark ? 0.2 : 0.55);
     ctx.lineWidth = 2;
     const ox = -Math.sin(th) * 1.4, oy = -Math.cos(th) * 1.4; // 往左上方偏移的高光
-    ctx.beginPath(); ctx.moveTo(a[0] + ox, a[1] + oy); ctx.lineTo(ex + ox, ey + oy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a[0] + ox, a[1] + oy); ctx.lineTo(ex + ox - Math.cos(th) * 2, ey + oy + Math.sin(th) * 2); ctx.stroke();
     ctx.lineCap = 'butt';
-    const g = ctx.createRadialGradient(a[0] - 1.5, a[1] - 1.5, 0.5, a[0], a[1], 5);
-    g.addColorStop(0, shade(metal, 0.5));
-    g.addColorStop(1, shade(metal, -0.2));
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(a[0], a[1], 4.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = shade(metal, dark ? -0.55 : -0.4);
+    ctx.beginPath(); ctx.arc(ex, ey, 2.1, 0, Math.PI * 2); ctx.fill();
+    // 轉軸：金屬小球（LabDraw.ball）
+    LD.ball(ctx, a[0], a[1], 4.5, metal, { glow: 0 });
+    // 鍵盤焦點框（--accent 虛線圓角框）：選到發射器時框住砲管，選到發射台時框住台頂
+    if (kbAim || kbTower) {
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = colors.accent;
+      if (kbAim) {
+        const x0 = Math.min(a[0], ex) - 10, x1 = Math.max(a[0], ex) + 10, y0 = Math.min(a[1], ey) - 10, y1 = Math.max(a[1], ey) + 10;
+        LD.roundRect(ctx, x0, y0, x1 - x0, y1 - y0, 8);
+      } else {
+        const w = state.h0 > 0 ? Math.min(16, Math.max(6, a[0] - MARGIN.l)) : 0;
+        LD.roundRect(ctx, a[0] - w - 9, a[1] - 11, w + 20, 22, 8);
+      }
+      ctx.stroke();
+      ctx.restore();
+      // 上下（或旋轉）提示箭頭：發射台只能上下移動
+      if (kbTower) {
+        const w = state.h0 > 0 ? Math.min(16, Math.max(6, a[0] - MARGIN.l)) : 0, cx = a[0] - w / 2;
+        ctx.lineJoin = 'round';
+        [-1, 1].forEach(function (sg) {
+          const yy = a[1] + sg * 17;
+          if (sg > 0 && yy > view.oy - 2) return;
+          ctx.beginPath(); ctx.moveTo(cx, yy + sg * 5); ctx.lineTo(cx - 4.5, yy); ctx.lineTo(cx + 4.5, yy); ctx.closePath();
+          ctx.strokeStyle = alpha(colors['canvas-bg'], 0.85); ctx.lineWidth = 2.5; ctx.stroke();
+          ctx.fillStyle = alpha(colors.accent, 0.9); ctx.fill();
+        });
+      }
+    }
   }
 
   /** 等時距標記的時間間隔（秒）；沒有飛行時傳回 0 */
@@ -781,7 +620,7 @@
 
   /** 等時距標記：白色小珠子（陰影＋外環＋中心點） */
   function dot(x, y) {
-    ctx.fillStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.35 : 0.14);
+    ctx.fillStyle = LD.shadowInk(dark ? 0.35 : 0.14);
     ctx.beginPath(); ctx.arc(x, y + 1, 4, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = colors.surface;
     ctx.strokeStyle = colors.accent;
@@ -851,7 +690,7 @@
     if (s2) { ctx.font = f2; const m2 = ctx.measureText(s2); w = Math.max(w, m2.width); h2 = textHeight(m2, 15); }
     const pw = w + 16, ph = h1 + (s2 ? h2 + 2 : 0) + 8;
     const bx = right - pw + 6, by = top - 1;
-    ctx.fillStyle = alpha(dark ? '#000000' : colors.text, dark ? 0.25 : 0.06);
+    ctx.fillStyle = LD.shadowInk(dark ? 0.25 : 0.06);
     roundRect(bx, by + 1.5, pw, ph, 8); ctx.fill();
     roundRect(bx, by, pw, ph, 8);
     ctx.fillStyle = alpha(colors.surface, dark ? 0.78 : 0.86);
@@ -913,8 +752,7 @@
     }
     if (state.show.v) arrow(q[0], q[1], q[0] + s.vx * k, q[1] - s.vy * k, colors.pos, 3, 'v');
 
-    const sp = getBallSprite();
-    ctx.drawImage(sp.cv, q[0] - sp.size / 2, q[1] - sp.size / 2, sp.size, sp.size);
+    LD.ball(ctx, q[0], q[1], BALL_R, colors.accent);
 
     drawClock(dtShown > 0, dtShown);
   }
@@ -934,7 +772,7 @@
     const surf = onTower ? a0[1] : view.oy;
     drawContactShadow(q[0], surf, surf - q[1]);
     drawGhosts();
-    drawPrediction();
+    drawGhostBadges(drawPrediction());
     drawAngle();
     drawLauncher();
     drawPuff();
@@ -968,8 +806,19 @@
     $('pH').innerHTML = num(pr.H, 2) + ' m' + extra(id.H, 2, 'm');
     $('pOpt').innerHTML = num(cache.opt.theta, 1) + '°<br><small>' + T('此時 R = ', 'giving R = ') + num(cache.opt.R, 2) + ' m</small>';
     $('rVt').textContent = state.drag ? num(PC.terminalSpeed(p), 1) + ' m/s' : '—';
-    $('status').textContent = state.status;
+    // 狀態列有 aria-live：只在文字真的改變時才寫（每一幀重寫會讓螢幕閱讀器重複念）
+    if ($('status').textContent !== state.status) $('status').textContent = state.status;
+    // 飛行中的位置：寫進另一個 .sr-only 狀態列，至少間隔 1 秒才更新
+    const f = state.fly;
+    if (f.running) {
+      const t = performance.now();
+      if (t - srNowAt >= 1000) {
+        srNowAt = t;
+        $('srNow').textContent = 't = ' + num(s.t, 1) + ' s' + T('，水平位置 ', ', x = ') + num(s.x, 1) + ' m' + T('，高度 ', ', height ') + num(s.y, 1) + ' m';
+      }
+    }
   }
+  let srNowAt = -1e9;
 
   function renderGhosts() {
     const ul = $('ghosts');
@@ -1028,6 +877,7 @@
   function tick(now) {
     const f = state.fly;
     if (!f.running) return;
+    if (!cache) compute(); // 參數剛改、還沒重畫時也有預測可用
     const dt = Math.min((now - lastT) / 1000, 1 / 30) * state.speed;
     lastT = now;
     const t0 = f.s.t;
@@ -1082,6 +932,7 @@
 
   function start() {
     const f = state.fly;
+    if (!cache) compute(); // 改完參數立刻按「發射」（還沒重畫）時，先算好預測
     if (!f.launched) launchSound(cache.p.v0); // 只在真正發射時「咻」一聲，暫停後繼續不再發聲
     f.running = true;
     f.launched = true;
@@ -1092,6 +943,27 @@
     lastT = performance.now();
     cancelAnimationFrame(rafId); // 確保只有一個動畫迴圈
     rafId = requestAnimationFrame(tick);
+  }
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 落地結果寫進可見的 #status（aria-live）；改參數後的預測結果（停止調整約 0.9 s 後）寫進 .sr-only 的 #srSay
+  let sayTimer = 0, sayParamTimer = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function predictionText() {
+    if (!cache) compute();
+    const pr = cache.pred;
+    return T('預測：射程 R = ' + num(pr.R, 2) + ' m，最大高度 H = ' + num(pr.H, 2) + ' m，飛行時間 T = ' + num(pr.T, 2) + ' s。',
+      'Prediction: range R = ' + num(pr.R, 2) + ' m, maximum height H = ' + num(pr.H, 2) + ' m, time of flight T = ' + num(pr.T, 2) + ' s.');
+  }
+  function sayPrediction() {
+    clearTimeout(sayParamTimer);
+    sayParamTimer = setTimeout(function () { say(predictionText()); }, 900);
   }
 
   function resetFlight(msg) {
@@ -1105,6 +977,7 @@
   function paramsChanged() {
     cache = null;
     resetFlight();
+    sayPrediction();
   }
 
   // ---------- 控制項 ----------
@@ -1156,7 +1029,7 @@
 
   bindSlider('v0', function (v) { return fmtVal(v, 2, 1) + ' m/s'; }, function (v) { state.v0 = v; paramsChanged(); });
   const sTheta = bindSlider('theta', function (v) { return fmtVal(v, 1, 0) + '°'; }, function (v) { state.theta = v; paramsChanged(); });
-  bindSlider('h0', function (v) { return fmtVal(v, 2, 1) + ' m'; }, function (v) { state.h0 = v; paramsChanged(); });
+  const sH0 = bindSlider('h0', function (v) { return fmtVal(v, 2, 1) + ' m'; }, function (v) { state.h0 = v; paramsChanged(); });
   const sG = bindSlider('g', function (v) { return fmtVal(v, 2, 2) + ' m/s<sup>2</sup>'; }, function (v) { state.g = v; syncPresets(); paramsChanged(); });
   bindSlider('k', function () { return fmtK(kOf($('k'))); }, function () { state.k = kOf($('k')); if (state.drag) paramsChanged(); });
   bindSlider('speed', function (v) { return fmtVal(v, 2, 0) + '×'; }, function (v) { state.speed = v; });
@@ -1252,15 +1125,84 @@
     aim(ev);
     ev.preventDefault();
   });
-  cv.addEventListener('pointermove', function (ev) { if (aiming) aim(ev); });
+  // 滑過發射器附近：砲管略為放大並加光暈，游標變成「抓取」（純視覺回饋）
+  let hoverAim = false;
+  function setHover(on) {
+    if (on === hoverAim) return;
+    hoverAim = on;
+    cv.style.cursor = on ? 'grab' : '';
+    requestDraw();
+  }
+  cv.addEventListener('pointermove', function (ev) {
+    if (aiming) { aim(ev); return; }
+    if (!view || ev.pointerType === 'touch') return;
+    const r = cv.getBoundingClientRect(), a = toPx(0, state.h0);
+    setHover(Math.hypot(ev.clientX - r.left - a[0], ev.clientY - r.top - a[1]) < 34);
+  });
+  cv.addEventListener('pointerleave', function () { if (!aiming) setHover(false); });
   const endAim = function () {
     if (!aiming) return;
     aiming = false;
     viewLocked = false;
+    cv.style.cursor = hoverAim ? 'grab' : '';
     requestDraw();
   };
   cv.addEventListener('pointerup', endAim);
   cv.addEventListener('pointercancel', endAim);
+  cv.addEventListener('pointerdown', function () { if (aiming) cv.style.cursor = 'grabbing'; });
+
+  // ---------- 鍵盤操作（js/keys.js）：發射器（仰角）與發射台（高度），限制與拖曳、滑桿完全相同 ----------
+  let kb = null, kbVisible = false;
+  /** 從目前值往 d 方向走 step（先對齊到 grid 的整數倍），限制在 [lo, hi] */
+  function stepFrom(v, d, step, grid, lo, hi) {
+    const base = d > 0 ? Math.floor(v / grid + 1e-9) * grid : Math.ceil(v / grid - 1e-9) * grid;
+    return Math.min(hi, Math.max(lo, +(base + d * step).toFixed(6)));
+  }
+  function keyAim(d, big) {
+    if (!d) return false;
+    const deg = stepFrom(state.theta, d, big ? 5 : 1, 1, 0, 90);
+    if (deg === state.theta) return false;
+    state.theta = deg;
+    sTheta.set(deg);
+    paramsChanged();
+    clearTimeout(sayParamTimer); // 由 keys.js 念 describe()，不重複播報
+    return true;
+  }
+  function keyHeight(d, big) {
+    if (!d) return false;
+    const h = stepFrom(state.h0, d, big ? 5 : 0.5, 0.5, 0, 50);
+    if (h === state.h0) return false;
+    state.h0 = h;
+    sH0.set(h);
+    paramsChanged();
+    clearTimeout(sayParamTimer);
+    return true;
+  }
+  function rangeText() {
+    if (!cache) compute();
+    return T('，預測射程 ' + num(cache.pred.R, 2) + ' m', ', predicted range ' + num(cache.pred.R, 2) + ' m');
+  }
+  if (window.LabKeys) {
+    cv.removeAttribute('data-en-aria-label'); // 說明文字改由程式依語言提供（含按鍵說明）
+    kb = window.LabKeys.attach(cv, {
+      label: T('拋體運動畫布：顯示軌跡、速度向量與座標軸。按 Enter 切換發射器與發射台。發射器：方向鍵改仰角，上、左變大，下、右變小，每次 1°，Shift 加方向鍵每次 5°。發射台：上下鍵改發射高度，每次 0.5 m，Shift 加上下鍵每次 5 m。',
+        'Projectile motion canvas: trajectory, velocity vectors and axes. Press Enter to switch between the launcher and the platform. Launcher: the arrow keys change the launch angle — up or left raises it, down or right lowers it — by 1° a step, or 5° with Shift. Platform: the up and down arrows change the launch height by 0.5 m a step, or 5 m with Shift.'),
+      items: [{
+        name: function () { return T('發射器（仰角）', 'launcher (launch angle)'); },
+        move: function (dx, dy, big) { return keyAim(dy || -dx, big); },
+        describe: function () { return T('仰角 ', 'Launch angle ') + fmtVal(state.theta, 1, 0) + '°' + rangeText(); }
+      }, {
+        name: function () { return T('發射台（發射高度）', 'platform (launch height)'); },
+        move: function (dx, dy, big) { return keyHeight(dy, big); },
+        describe: function () { return T('發射高度 ', 'Launch height ') + fmtVal(state.h0, 2, 1) + ' m' + rangeText(); }
+      }],
+      onChange: requestDraw
+    });
+    // 焦點框只在用鍵盤操作時顯示（滑鼠點畫布瞄準時不顯示）
+    cv.addEventListener('focus', function () { kbVisible = cv.matches(':focus-visible'); requestDraw(); });
+    cv.addEventListener('keydown', function () { if (!kbVisible) { kbVisible = true; requestDraw(); } });
+    cv.addEventListener('pointerdown', function () { kbVisible = false; });
+  }
 
   // ---------- 啟動 ----------
   readColors();

@@ -690,6 +690,7 @@
     sampleTrace();
     if (moved && user) emitTuned();
     updateSteps();
+    updateAria();
     requestDraw();
   }
   elLev.addEventListener('input', function () { setL(val(elLev) / 100, true); });
@@ -758,6 +759,7 @@
     state.lastBinL = null;
     sampleTrace();
     emitTuned();
+    updateAria();
     setStatus(sounding() ? T('聲音響了：慢慢移動水面，注意響度計與耳朵聽到的聲音。', 'Sounding: move the water slowly and watch the meter (or listen).') : T('已停止。', 'Stopped.'));
     updateSteps();
     startLoop();
@@ -805,8 +807,13 @@
     recordSound();
     const an = groupAnalysis(rec.key);
     emit('record', Object.assign({}, rec, { count: state.records.length, clusters: an ? an.count : 0 }));
-    setStatus(T('已記錄（套上橡皮筋）：L = ', 'Recorded (rubber band at) L = ') + cm(Lread, 1) +
-      (isFinite(rec.db) ? T('，響度 ', ', loudness ') + signed(rec.db, 1) + ' dB' : T('（記錄時沒有聲音）', ' (no sound at the time)')) + T('。', '.'));
+    let msg = T('已記錄（套上橡皮筋）：L = ', 'Recorded (rubber band at) L = ') + cm(Lread, 1) +
+      (isFinite(rec.db) ? T('，響度 ', ', loudness ') + signed(rec.db, 1) + ' dB' : T('（記錄時沒有聲音）', ' (no sound at the time)')) + T('。', '.');
+    if (an && an.count >= 2 && an.consistent) {
+      msg += T('目前 ', ' So far ') + an.count + T(' 個共鳴點：λ = ', ' resonances: λ = ') + cm(an.lambda, 2) +
+        (rec.src === 'mystery' ? '' : T('，聲速 v = ', ', speed v = ') + num(an.v, 1) + ' m/s') + T('。', '.');
+    }
+    setStatus(msg);
     refreshAll(true);
   });
   $('undo').addEventListener('click', function () {
@@ -951,7 +958,41 @@
     });
   }
 
+  // ---------- 給螢幕報讀器的畫面說明（只在狀態改變時更新，不放在 aria-live） ----------
+  function updateAria() {
+    const src = state.src === 'app' ? T('手機 App ', 'phone app ') + fmtF(state.appF) + ' Hz'
+      : state.src === 'mystery' ? T('神秘音叉（頻率未知）', 'mystery fork (frequency hidden)')
+      : T('音叉 ', 'tuning fork ') + fmtF(state.forkF) + ' Hz';
+    const on = sounding();
+    const bands = state.records.filter(function (r) { return r.key === curKey(); }).length;
+    cv.setAttribute('aria-label', T('共鳴管實驗裝置：上方是', 'The resonance-tube apparatus: above it, the ') + src +
+      (on ? T('，正在響', ', sounding') : T('，沒有聲音', ', silent')) +
+      T('；室溫 ', '; room temperature ') + num(state.Tc, 1) + ' °C' + T('、管內徑 ', ', tube diameter ') + fmtD(state.d) + ' cm' +
+      T('；水面在管口下 ', '; the water is ') + cm(state.L, 1) + T('', ' below the mouth') +
+      (on ? T('，響度計 ', ', loudness meter ') + signed(levelShown(), 1) + ' dB' : '') +
+      T('；這個條件下已套 ', '; ') + bands + T(' 條橡皮筋。右側是響度對水面位置的掃描曲線。', ' rubber bands for these conditions. On the right, the scan of loudness against water level.'));
+  }
+  function graphAria() {
+    let s;
+    if (state.graph === 'Ln') {
+      const an = groupAnalysis(curKey());
+      s = T('L–n 圖（目前的音叉）：', 'L–n graph (this fork): ');
+      if (!an) s += T('還沒有數據。', 'no data yet.');
+      else {
+        s += an.count + T(' 個共鳴點，', ' resonances, ') + an.means.map(function (m, i) { return 'L' + an.ns[i] + ' = ' + cm(m, 1); }).join(T('、', ', '));
+        if (an.count >= 2) s += T('；最佳直線斜率 λ/2 = ', '; best-fit slope λ/2 = ') + cm(an.slope, 2);
+        s += T('。', '.');
+      }
+    } else {
+      const fit = lambdaFreqFit();
+      s = T('λ–1/f 圖（所有音叉）：', 'λ–1/f graph (all forks): ') + fit.pts.length + T(' 個點', ' points');
+      if (isFinite(fit.v)) s += T('，過原點直線的斜率（聲速）= ', '; slope of the line through the origin (speed of sound) = ') + num(fit.v, 1) + ' m/s';
+      s += T('。', '.');
+    }
+    gcv.setAttribute('aria-label', s);
+  }
   function refreshAll(dataChanged) {
+    updateAria();
     updateAnalysis();
     buildTable();
     const valid = allGroups().filter(function (a) { return a && a.count >= 2 && a.consistent; });
@@ -1021,6 +1062,7 @@
     return { X: X, Y: Y };
   }
   function drawGraph2() {
+    graphAria();
     const c = gctx;
     c.setTransform(gdpr, 0, 0, gdpr, 0, 0);
     LD.backdrop(c, gw, gh);
@@ -1196,6 +1238,7 @@
     const was = loopSounding;
     loopSounding = sounding();
     if (loopSounding) sampleTrace();
+    if (was && !loopSounding) updateAria();
     if (was && !loopSounding && state.src !== 'app') setStatus(T('音叉的聲音已經小到聽不清楚，再敲一次。', 'The fork has faded too much to hear — strike it again.'));
     updateVoice();
     draw();

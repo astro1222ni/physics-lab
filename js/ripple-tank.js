@@ -19,6 +19,9 @@
   const STRIP_THICK = 0.006;                   // 長條形障礙物（繞射）
   const PLATE_LEN = 0.6;                       // 薄壓克力板夠長，轉斜後仍跨過整個水槽
   const LEVEL_OK = 0.03;                       // 度：水平儀氣泡在中央的範圍
+  // 鍵盤操作（keys.js）：kbItems 依實驗項目與起波器即時更新
+  let kb = null;
+  const kbItems = [];
 
   // 含誤差：每次打開頁面隨機決定（旋鈕刻度的偏差、槽底一開始的傾斜）
   function rnd(a, b) { return a + (b - a) * Math.random(); }
@@ -435,8 +438,7 @@
       c.beginPath(); c.moveTo(X(s[0]), Y(s[1])); c.lineTo(px, py); c.stroke();
     });
     c.restore();
-    const hot = hover === 'probe' || (drag && drag.kind === 'probe') || (state.rulerEnd === 'p' && document.activeElement === cv);
-    if (state.rulerEnd === 'p' && document.activeElement === cv) { c.beginPath(); c.arc(px, py, 12, 0, Math.PI * 2); c.strokeStyle = alpha(colors.equi, 0.8); c.lineWidth = 1.5; c.stroke(); }
+    const hot = hover === 'probe' || (drag && drag.kind === 'probe') || kbSel() === 'probe';
     D.ball(c, px, py, hot ? 7.5 : 6.5, colors.equi, { glow: colors.dark ? 0.35 : 0 });
     D.haloText(c, 'P', px + 10, py - 9, colors.equi, 'left', 'middle', fnt(14, 700));
   }
@@ -557,6 +559,7 @@
     drawObjects(c);
     drawRuler(c);
     drawHud(c);
+    drawKbFocus(c);
     drawLoupe(c);
   }
   let spongePat = null, spongeKey = '';
@@ -759,8 +762,21 @@
     renderTable();
     renderAnalysis();
     updateSteps();
-    setStatus(T('已記錄。', 'Recorded.'));
+    setStatus(recordText(id, row));
     emitRecord(id, row);
+  }
+  /** 記錄後的狀態列（aria-live）：說出這次記下的量 */
+  function recordText(id, row) {
+    const fd = fine() ? 1 : 0, fl = fine() ? 2 : 1;
+    const deg = function (v) { return nf(v, fd) + '°'; };
+    let q = '';
+    if (state.part === 1) q = 'λ′ = ' + nf(row.lp, fine() ? 3 : 2) + ' cm' + T('（f = ', ' (f = ') + nf(row.f, 2) + ' Hz' + T('）', ')');
+    else if (state.part === 2) q = (id === 'ti' ? T('入射角 θi = ', 'incidence θi = ') : T('反射角 θr = ', 'reflection θr = ')) + deg(row[id]);
+    else if (state.part === 3) q = id === 't1' ? 'θ1 = ' + deg(row.t1) : id === 't2' ? 'θ2 = ' + deg(row.t2) : (id === 'l1' ? 'λ1′ = ' : 'λ2′ = ') + nf(row[id], fine() ? 3 : 2) + ' cm';
+    else if (state.part === 4) q = id === 'a' ? T('縫寬 a′ = ', 'slit width a′ = ') + nf(row.a, fl) + ' cm' : id === 'lam' ? 'λ′ = ' + nf(row.lam, fine() ? 3 : 2) + ' cm' : T('暗線方向 θ = ', 'dark-line angle θ = ') + deg(row.th);
+    else if (row.type === 'lam') q = 'λ′ = ' + nf(row.lam, fine() ? 3 : 2) + ' cm';
+    else q = (row.type === 'node' ? T('節線：', 'nodal line: ') : T('腹線：', 'antinodal line: ')) + 'PS1′ = ' + nf(row.ps1, fl) + ' cm' + T('、', ', ') + 'PS2′ = ' + nf(row.ps2, fl) + ' cm' + T('，相差 ', ', difference ') + nf(Math.abs(row.ps1 - row.ps2), fl) + ' cm';
+    return T('已記錄：', 'Recorded: ') + q + T('。', '.');
   }
   function rowComplete(p, r) {
     if (p === 1) return true;
@@ -821,6 +837,9 @@
   const gcv = $('graph');
   const gctx = gcv.getContext('2d');
   function plot(o) {
+    const np = (o.pts || []).length;
+    gcv.setAttribute('aria-label', T('分析圖：', 'Analysis graph: ') + o.yl + T(' 對 ', ' against ') + o.xl + T('，', '; ') + np + T(' 個數據點', ' data points') +
+      (o.fit && isFinite(o.fit.m) ? T('，最佳直線斜率 ', '; best-fit slope ') + nf(o.fit.m, 3) : '') + (o.ref ? T('；虛線是理論曲線', '; the dashed curve is the theory') : '') + T('。', '.'));
     const w = gcv.clientWidth;
     if (!w) return;
     const h = Math.round(w * 0.75), r = Math.min(window.devicePixelRatio || 1, 2);
@@ -1023,30 +1042,6 @@
     const html = list.map(function (s, i) { return '<li class="' + (s[1] ? 'done' : i === cur ? 'now' : '') + '">' + s[0] + '</li>'; }).join('');
     if (html !== lastStepsHTML) { $('steps').innerHTML = html; lastStepsHTML = html; }
   }
-
-  // ======================================================================
-  // 試試看
-  // ======================================================================
-  function tryText() {
-    return {
-      1: T('打開閃頻儀，把 fs 調到和起波器相同（10 Hz），條紋就會停住；再在畫面上拖曳，拉一把直尺量波長。', 'Switch on the strobe and set fs equal to the generator (10 Hz): the bands stop. Then drag on the picture to lay a ruler and measure λ.'),
-      2: T('拖曳圓形把手轉動壓克力塊，看反射波前的方向怎麼跟著變。', 'Drag the round handle to turn the block and watch the reflected wavefronts turn.'),
-      3: T('拖曳圓形把手轉動薄壓克力板：波一進入淺水區，波長變短、方向偏折。', 'Drag the round handle to turn the thin plate: in shallow water the waves get shorter and bend.'),
-      4: T('把狹縫調得比波長還窄，或把頻率調低，看穿過的波散得多開。', 'Make the slit narrower than the wavelength, or lower the frequency, and see how far the waves spread.'),
-      5: T('拖曳探針 P 到灰色、幾乎不動的節線上，記錄 PS1 與 PS2。', 'Drag the probe P onto a grey, almost still nodal line and record PS1 and PS2.')
-    }[state.part];
-  }
-  let tryClosed = false;
-  try { tryClosed = localStorage.getItem('rt-try-closed') === '1'; } catch (e) { /* 忽略 */ }
-  function updateTry() {
-    $('tryBox').hidden = tryClosed;
-    if (!tryClosed) $('tryText').textContent = tryText();
-  }
-  $('tryClose').addEventListener('click', function () {
-    tryClosed = true;
-    try { localStorage.setItem('rt-try-closed', '1'); } catch (e) { /* 忽略 */ }
-    updateTry();
-  });
 
   // ======================================================================
   // 動畫
@@ -1335,36 +1330,207 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag && hover) { hover = null; requestDraw(); } });
-  cv.addEventListener('keydown', function (ev) {
-    const step = (ev.shiftKey ? 0.01 : 0.001);
-    const mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[ev.key];
-    if (ev.key === 'Enter' || ev.key === ' ') {
-      // 依序切換：直尺端點 A → 端點 B →（干涉時）探針 P
-      if (!state.ruler) state.ruler = { a: { x: 0.12, y: H / 2 }, b: { x: 0.2, y: H / 2 } };
-      else {
-        const order = state.part === 5 ? ['a', 'b', 'p'] : ['a', 'b'];
-        state.rulerEnd = order[(order.indexOf(state.rulerEnd) + 1) % order.length];
-      }
-      setStatus(state.rulerEnd === 'p' ? T('方向鍵移動探針 P（Shift 加速）。', 'Arrow keys move the probe P (Shift for bigger steps).')
-        : T('方向鍵移動直尺端點 ', 'Arrow keys move ruler end ') + state.rulerEnd.toUpperCase() + T('（Shift 加速）。', ' (Shift for bigger steps).'));
-      ev.preventDefault(); updateReadouts(); requestDraw();
-      return;
+  // ---------- 鍵盤：每個可拖曳的物體都能選取、移動；位置限制與任務事件和拖曳相同 ----------
+  const KB_STEP = 0.001, KB_BIG = 0.01; // 方向鍵 1 mm，Shift 1 cm（水面座標）；角度 1°，Shift 5°
+  const kbTimers = {};
+  /** 和放開滑鼠時一樣送出任務事件；連按方向鍵時，停下來 0.4 s 才送一次 */
+  function kbLater(k, fn) { clearTimeout(kbTimers[k]); kbTimers[k] = setTimeout(fn, 400); }
+  function kbCfg() { geometryChanged(); kbLater('cfg', function () { emitConfig(); updateSteps(); }); }
+  function posText(q) { return '(' + nf(q.x * 100, 1) + T(' cm、', ' cm, ') + nf(q.y * 100, 1) + ' cm)'; }
+  function stepPt(o, dx, dy, big, x0, x1, y0, y1) {
+    const d = big ? KB_BIG : KB_STEP;
+    const q = { x: Math.max(x0, Math.min(x1, o.x + dx * d)), y: Math.max(y0, Math.min(y1, o.y + dy * d)) };
+    return Math.abs(q.x - o.x) < 1e-12 && Math.abs(q.y - o.y) < 1e-12 ? null : q;
+  }
+  function rulerText() {
+    const rd = readRuler();
+    if (!state.ruler) return T('還沒有直尺：按方向鍵放一把。', 'No ruler yet: press an arrow key to lay one.');
+    return T('直尺長 ', 'Ruler length ') + rd.lenText + (rd.angText && state.part !== 1 && state.part !== 5 ? T('，', ', ') + rd.refName + ' ' + rd.angText : '') + T('。', '.');
+  }
+  /** 沒有直尺時，第一次按方向鍵先放一把預設的直尺（和舊版鍵盤操作相同） */
+  function kbNewRuler() {
+    if (state.ruler) return false;
+    state.ruler = { a: { x: 0.12, y: H / 2 }, b: { x: 0.2, y: H / 2 } };
+    updateReadouts(); kbLater('ruler', emitRuler);
+    return true;
+  }
+  function rulerEndItem(e) {
+    return {
+      id: 'r' + e, name: function () { return T('直尺端點 ', 'Ruler end ') + e.toUpperCase(); },
+      on: function () { return true; },
+      move: function (dx, dy, big) {
+        state.rulerEnd = e;
+        if (kbNewRuler()) return true;
+        const q = stepPt(state.ruler[e], dx, dy, big, 0, W, 0, H);
+        if (!q) return false;
+        state.ruler[e] = q;
+        updateReadouts(); kbLater('ruler', emitRuler);
+        return true;
+      },
+      describe: function () { return state.ruler ? T('端點 ', 'End ') + e.toUpperCase() + T(' 在 ', ' at ') + posText(state.ruler[e]) + T('；', '; ') + rulerText() : rulerText(); }
+    };
+  }
+  const KB_ALL = [
+    rulerEndItem('a'), rulerEndItem('b'),
+    { id: 'ruler', name: function () { return T('整把直尺', 'Whole ruler'); }, on: function () { return true; },
+      move: function (dx, dy, big) {
+        if (kbNewRuler()) return true;
+        const r = state.ruler, d = big ? KB_BIG : KB_STEP;
+        const mx = Math.max(-Math.min(r.a.x, r.b.x), Math.min(W - Math.max(r.a.x, r.b.x), dx * d));
+        const my = Math.max(-Math.min(r.a.y, r.b.y), Math.min(H - Math.max(r.a.y, r.b.y), dy * d));
+        if (Math.abs(mx) < 1e-12 && Math.abs(my) < 1e-12) return false;
+        state.ruler = { a: { x: r.a.x + mx, y: r.a.y + my }, b: { x: r.b.x + mx, y: r.b.y + my } };
+        updateReadouts(); kbLater('ruler', emitRuler);
+        return true;
+      },
+      describe: function () { return state.ruler ? T('直尺從 ', 'Ruler from ') + posText(state.ruler.a) + T(' 到 ', ' to ') + posText(state.ruler.b) + T('；', '; ') + rulerText() : rulerText(); } },
+    { id: 'probe', name: function () { return T('探針 P', 'Probe P'); }, on: function () { return state.part === 5; },
+      move: function (dx, dy, big) {
+        const q = stepPt(state.probe, dx, dy, big, 0, W, 0, H);
+        if (!q) return false;
+        state.probe = q;
+        updateReadouts();
+        kbLater('probe', function () { emit('probe', Object.assign(common(), { P: Object.assign({}, state.probe) })); });
+        return true;
+      },
+      describe: function () {
+        const pr = probeRead(), fl = fine() ? 2 : 1;
+        return T('探針 P 在 ', 'Probe P at ') + posText(state.probe) + (pr ? T('；PS1′ = ', '; PS1′ = ') + nf(pr.ps1, fl) + T(' cm、PS2′ = ', ' cm, PS2′ = ') + nf(pr.ps2, fl) + T(' cm，相差 ', ' cm, difference ') + nf(pr.dlt, fl) + ' cm' : '') + T('。', '.');
+      } },
+    { id: 'src', name: function () { return state.src === 'pair' ? T('兩個點波源', 'The two dippers') : T('點波源 S', 'Dipper S'); }, on: function () { return state.src !== 'bar'; },
+      move: function (dx, dy, big) {
+        const o = state.src === 'point' ? state.pt : state.pair;
+        const q = stepPt(o, dx, dy, big, 0.035, W - 0.035, 0.035, H - 0.035);
+        if (!q) return false;
+        if (state.src === 'point') state.pt = q; else state.pair = q;
+        kbCfg();
+        return true;
+      },
+      describe: function () {
+        return state.src === 'pair' ? T('兩個點波源的中點在 ', 'Midpoint of the two dippers at ') + posText(state.pair) + T('，間距 d = ', ', spacing d = ') + nf(state.d * 100, 1) + ' cm' + T('。', '.')
+          : T('點波源 S 在 ', 'Dipper S at ') + posText(state.pt) + T('。', '.');
+      } },
+    { id: 'bar', name: function () { return T('厚壓克力塊', 'Thick acrylic block'); }, on: function () { return state.part === 2 && state.shape === 'straight'; },
+      move: function (dx, dy, big) {
+        const q = stepPt(state.barC, dx, dy, big, 0.1, W - 0.05, 0.05, H - 0.05);
+        if (!q) return false;
+        state.barC = q; kbCfg();
+        return true;
+      },
+      describe: function () { return T('厚壓克力塊的中心在 ', 'Centre of the block at ') + posText(state.barC) + T('，β = ', ', β = ') + state.beta + '°' + T('。', '.'); } },
+    { id: 'barRot', name: function () { return T('壓克力塊的轉向把手', 'Turning handle of the block'); }, on: function () { return state.part === 2 && state.shape === 'straight'; },
+      move: function (dx, dy, big) {
+        const a = Math.max(0, Math.min(70, Math.round(state.beta + (dx || dy) * (big ? 5 : 1))));
+        if (a === state.beta) return false;
+        state.beta = a; setSlider($('beta'), a); kbCfg();
+        return true;
+      },
+      describe: function () { return T('障礙物與波前的夾角 β = ', 'Angle between the block and the wavefronts β = ') + state.beta + '°' + T('（0°～70°）。', ' (0° to 70°).'); } },
+    { id: 'arc', name: function () { return state.shape === 'concave' ? T('凹弧障礙物', 'Concave arc') : T('凸弧障礙物', 'Convex arc'); }, on: function () { return state.part === 2 && state.shape !== 'straight'; },
+      move: function (dx, dy, big) {
+        const o = state.shape === 'concave' ? state.cavV : state.vexV;
+        const q = stepPt(o, dx, dy, big, 0.12, W - 0.04, 0.06, H - 0.06);
+        if (!q) return false;
+        if (state.shape === 'concave') state.cavV = q; else state.vexV = q;
+        kbCfg();
+        return true;
+      },
+      describe: function () { return T('圓弧的頂點在 ', 'Vertex of the arc at ') + posText(state.shape === 'concave' ? state.cavV : state.vexV) + T('。', '.'); } },
+    { id: 'plate', name: function () { return T('薄壓克力板', 'Thin acrylic plate'); }, on: function () { return state.part === 3; },
+      move: function (dx, dy, big) {
+        const q = stepPt(state.plateC, dx, dy, big, 0.1, W - 0.06, 0.04, H - 0.04);
+        if (!q) return false;
+        state.plateC = q; kbCfg();
+        return true;
+      },
+      describe: function () { return T('薄壓克力板的中心在 ', 'Centre of the plate at ') + posText(state.plateC) + T('，α = ', ', α = ') + state.alpha + '°' + T('。', '.'); } },
+    { id: 'plateRot', name: function () { return T('薄板的轉向把手', 'Turning handle of the plate'); }, on: function () { return state.part === 3; },
+      move: function (dx, dy, big) {
+        const a = Math.max(0, Math.min(60, Math.round(state.alpha + (dx || dy) * (big ? 5 : 1))));
+        if (a === state.alpha) return false;
+        state.alpha = a; setSlider($('alpha'), a);
+        if (a >= 15) state.flags.alpha15 = true;
+        if (a === 0) state.flags.alpha0 = true;
+        kbCfg();
+        return true;
+      },
+      describe: function () { return T('板邊與波前的夾角 α = ', 'Angle between the plate edge and the wavefronts α = ') + state.alpha + '°' + T('（0°～60°）。', ' (0° to 60°).'); } },
+    { id: 'diff', name: function () { return state.diff === 'obstacle' ? T('長條形障礙物', 'Strip barrier') : T('狹縫', 'Slit'); }, on: function () { return state.part === 4; },
+      move: function (dx, dy, big) {
+        const o = { x: state.diffX, y: state.obsY };
+        const q = stepPt(o, dx, state.diff === 'obstacle' ? dy : 0, big, 0.09, W - 0.08, 0.05, H - 0.05);
+        if (!q) return false;
+        state.diffX = q.x; if (state.diff === 'obstacle') state.obsY = q.y;
+        kbCfg();
+        return true;
+      },
+      describe: function () {
+        return state.diff === 'obstacle' ? T('長條形障礙物在 ', 'Strip barrier at ') + posText({ x: state.diffX, y: state.obsY }) + T('。', '.')
+          : T('狹縫在 x = ', 'Slit at x = ') + nf(state.diffX * 100, 1) + T(' cm（只能左右移）。', ' cm (it moves left and right only).');
+      } }
+  ];
+  /** 依目前的實驗項目、起波器與障礙物更新可選的物體（保留原本選取的那一個） */
+  function kbFill() {
+    const ids = KB_ALL.filter(function (it) { return it.on(); });
+    if (ids.map(function (it) { return it.id; }).join() === kbItems.map(function (it) { return it.id; }).join()) return;
+    const was = kbSel();
+    kbItems.length = 0;
+    ids.forEach(function (it) { kbItems.push(it); });
+    if (kb) {
+      let i = 0;
+      kbItems.forEach(function (it, n) { if (it.id === was) i = n; });
+      if (i !== kb.index() || kb.index() >= kbItems.length) kb.select(i);
     }
-    if (!mv) return;
-    ev.preventDefault();
-    if (state.rulerEnd === 'p' && state.part === 5) {
-      state.probe = { x: clampX(state.probe.x + mv[0]), y: clampY(state.probe.y + mv[1]) };
-      updateReadouts(); requestDraw();
-      clearTimeout(cv._kt); cv._kt = setTimeout(function () { emit('probe', Object.assign(common(), { P: Object.assign({}, state.probe) })); }, 400);
-      return;
-    }
-    if (state.rulerEnd === 'p') state.rulerEnd = 'b';
-    if (!state.ruler) state.ruler = { a: { x: 0.12, y: H / 2 }, b: { x: 0.2, y: H / 2 } };
-    const e = state.ruler[state.rulerEnd];
-    state.ruler[state.rulerEnd] = { x: clampX(e.x + mv[0]), y: clampY(e.y + mv[1]) };
-    updateReadouts(); requestDraw();
-    clearTimeout(cv._kt); cv._kt = setTimeout(emitRuler, 400);
-  });
+  }
+  function kbSel() { const it = kb ? kbItems[kb.index()] : null; return it ? it.id : null; }
+  /** 鍵盤焦點框（--accent 虛線圓角框） */
+  function drawKbFocus(c) {
+    if (!kb || !kb.focused()) return;
+    const id = kbSel();
+    if (!id) return;
+    const pts = [];
+    let pad = 12;
+    const r = state.ruler;
+    if ((id === 'ra' || id === 'rb') && r) pts.push(r[id.slice(1)]);
+    else if (id === 'ruler' && r) { pts.push(r.a, r.b); }
+    else if (id === 'probe') { pts.push(state.probe); pad = 14; }
+    else if (id === 'src') sourcePoints().forEach(function (q) { pts.push({ x: q[0], y: q[1] }); });
+    else if (id === 'bar') {
+      const o = barObj(), ca = Math.cos(o.ang), sa = Math.sin(o.ang);
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (k) { pts.push({ x: o.cx + k[0] * o.len / 2 * ca - k[1] * o.thick / 2 * sa, y: o.cy + k[0] * o.len / 2 * sa + k[1] * o.thick / 2 * ca }); });
+      pad = 6;
+    } else if (id === 'barRot') pts.push(barRotHandle());
+    else if (id === 'arc') { const o = arcObj(); pts.push({ x: o.vx, y: o.vy }); pad = 14; }
+    else if (id === 'plate') {
+      const p = plateObj(), ca = Math.cos(p.ang), sa = Math.sin(p.ang);
+      [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (k) { pts.push({ x: p.cx + k[0] * p.w / 2 * ca - k[1] * 0.03 * sa, y: p.cy + k[0] * p.w / 2 * sa + k[1] * 0.03 * ca }); });
+      pad = 4;
+    } else if (id === 'plateRot') pts.push(plateRotHandle());
+    else if (id === 'diff') pts.push({ x: state.diffX, y: state.diff === 'obstacle' ? state.obsY : H / 2 + state.slitA / 2 + 0.03 });
+    c.save();
+    c.setLineDash([5, 4]); c.strokeStyle = colors.accent; c.lineWidth = 2;
+    if (pts.length) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      pts.forEach(function (q) { const px = X(q.x), py = Y(q.y); x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); });
+      x0 = Math.max(X(0) + 2, x0 - pad); y0 = Math.max(Y(H) + 2, y0 - pad);
+      x1 = Math.min(X(W) - 2, x1 + pad); y1 = Math.min(Y(0) - 2, y1 + pad);
+      D.roundRect(c, x0, y0, Math.max(8, x1 - x0), Math.max(8, y1 - y0), 6);
+    } else D.roundRect(c, X(0) + 3, Y(H) + 3, W * L.s - 6, H * L.s - 6, 8); // 還沒有直尺：框住整個水槽
+    c.stroke();
+    c.restore();
+  }
+  if (window.LabKeys) {
+    // 先更新清單，keys.js 再處理按鍵（同一個元素上依註冊順序執行）
+    cv.addEventListener('focus', kbFill);
+    cv.addEventListener('keydown', kbFill);
+    kbFill();
+    kb = window.LabKeys.attach(cv, {
+      label: T('水波槽俯視圖：白紙上的亮暗紋投影。在畫面上拖曳可以拉出直尺。鍵盤：Enter 依序選直尺端點 A、B、整把直尺、探針與障礙物，方向鍵移動 1 mm（Shift 1 cm），轉向把手每次轉 1°（Shift 5°）。',
+        'Top view of the ripple tank: the bright and dark bands projected onto the paper. Drag on the picture to lay down a ruler. Keyboard: Enter picks ruler end A, end B, the whole ruler, the probe and the barriers in turn; the arrow keys move by 1 mm (Shift: 1 cm), and a turning handle turns by 1° (Shift: 5°).'),
+      items: kbItems,
+      onChange: function () { const id = kbSel(); if (id === 'ra' || id === 'rb') state.rulerEnd = id.slice(1); requestDraw(); }
+    });
+  }
   let geoPending = false;
   function geometryChanged() {
     if (geoPending) return;
@@ -1448,7 +1614,6 @@
     renderAnalysis();
     updateReadouts();
     updateSteps();
-    updateTry();
     if (user) emitConfig();
   }
   [1, 2, 3, 4, 5].forEach(function (p) { $('part' + p).addEventListener('click', function () { setPart(p, true); }); });
@@ -1729,6 +1894,42 @@
     if (view3 && view3.active) view3.onTheme();
     requestDraw();
   }
+  // 分享連結：畫布上拖曳出來的狀態（直尺、探針、波源與障礙物的位置）
+  function shareGet() {
+    const r3 = function (q) { return [Math.round(q.x * 1e4) / 1e4, Math.round(q.y * 1e4) / 1e4]; };
+    return {
+      r: state.ruler ? [r3(state.ruler.a), r3(state.ruler.b)] : null, p: r3(state.probe), pt: r3(state.pt), pair: r3(state.pair),
+      bar: r3(state.barC), cav: r3(state.cavV), vex: r3(state.vexV), plate: r3(state.plateC), diff: r3({ x: state.diffX, y: state.obsY })
+    };
+  }
+  function shareSet(o) {
+    if (!o || typeof o !== 'object') return;
+    const pt = function (a, x0, x1, y0, y1) {
+      if (!Array.isArray(a) || a.length !== 2 || typeof a[0] !== 'number' || typeof a[1] !== 'number' || !isFinite(a[0]) || !isFinite(a[1])) return null;
+      return { x: Math.max(x0, Math.min(x1, a[0])), y: Math.max(y0, Math.min(y1, a[1])) };
+    };
+    if (o.r === null) state.ruler = null;
+    else if (Array.isArray(o.r)) { const a = pt(o.r[0], 0, W, 0, H), b = pt(o.r[1], 0, W, 0, H); if (a && b) state.ruler = { a: a, b: b }; }
+    let q;
+    if ((q = pt(o.p, 0, W, 0, H))) state.probe = q;
+    if ((q = pt(o.pt, 0.035, W - 0.035, 0.035, H - 0.035))) state.pt = q;
+    if ((q = pt(o.pair, 0.035, W - 0.035, 0.035, H - 0.035))) state.pair = q;
+    if ((q = pt(o.bar, 0.1, W - 0.05, 0.05, H - 0.05))) state.barC = q;
+    if ((q = pt(o.cav, 0.12, W - 0.04, 0.06, H - 0.06))) state.cavV = q;
+    if ((q = pt(o.vex, 0.12, W - 0.04, 0.06, H - 0.06))) state.vexV = q;
+    if ((q = pt(o.plate, 0.1, W - 0.06, 0.04, H - 0.04))) state.plateC = q;
+    if ((q = pt(o.diff, 0.09, W - 0.08, 0.05, H - 0.05))) { state.diffX = q.x; state.obsY = q.y; }
+    syncSim(false);
+    updateReadouts();
+    requestDraw();
+  }
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register({ get: shareGet, set: shareSet });
+    return true;
+  }
+  if (!regShare()) window.addEventListener('load', regShare);
+
   readColors();
   readSliders();
   showOuts();
@@ -1738,7 +1939,6 @@
   updateButtons();
   updateSoundButton();
   setMode('ideal');
-  updateTry();
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopHum(); else { lastNow = 0; requestDraw(); } });

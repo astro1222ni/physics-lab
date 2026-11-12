@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120804"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Images in Lenses and Mirrors | Astro Ni Physics Lab">透鏡與面鏡成像｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"透鏡與面鏡成像","alternateName":"Images in Lenses and Mirrors","description":"選擇凸透鏡、凹透鏡、凹面鏡、凸面鏡或平面鏡，拖曳物體，即時畫出主光線，找出像的位置、大小、正倒與虛實，並用成像公式驗證。","url":"https://astro1222ni.github.io/physics-lab/lens-mirror.html","image":"https://astro1222ni.github.io/physics-lab/img/og/lens-mirror.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120804">
   <style>
     /* 透鏡與面鏡成像頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .stage canvas#cv { aspect-ratio: 2 / 1; cursor: default; }
@@ -75,10 +75,12 @@
       <p data-en="Choose a convex or concave lens, a concave, convex or plane mirror, and drag the object along the principal axis. The principal rays find the image for you: where it is, how big it is, whether it is upright or inverted, and whether it is real or virtual — checked against the lens equation 1/p + 1/q = 1/f.">選擇凸透鏡、凹透鏡、凹面鏡、凸面鏡或平面鏡，沿主軸拖曳物體：主光線會即時找出像的位置、大小、正立或倒立、實像或虛像，並與成像公式 1/p + 1/q = 1/f 互相驗證。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: drag the object from far away toward the convex lens and watch the image flip from real and inverted to virtual and upright as it passes F.">試試看：把物體從遠處拖向凸透鏡，越過 F 時看像怎麼從倒立實像變成正立虛像。</p>
     <div class="lab lm">
       <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="透鏡與面鏡成像模擬畫布：主軸、焦點、物體、主光線與像；拖曳物體可改變物距，拖曳物體頂端可改變物高，也可用方向鍵調整" data-en-aria-label="Lens and mirror imaging simulation: principal axis, focal points, object, principal rays and image; drag the object to change the object distance, drag its tip to change its height, or use the arrow keys"></canvas>
-        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv" tabindex="0" aria-label="透鏡與面鏡成像畫布。左右方向鍵移動物體（改變物距，每次 0.5 cm，按住 Shift 每次 5 cm，經過 F、2F 時會停一下），上下方向鍵改變物高（每次 0.5 cm，按住 Shift 每次 1 cm）。" data-en-aria-label="Lens and mirror imaging canvas. The left and right arrow keys move the object (object distance, 0.5 cm a step, 5 cm with Shift; it stops at F and 2F on the way); the up and down arrow keys change its height (0.5 cm a step, 1 cm with Shift)."></canvas>
+        <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+        <p class="status" id="status"></p>
         <div class="legend" id="legend">
           <span style="color:var(--equi)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--equi)&quot;&gt;&lt;/i&gt;Object"><i class="arrow" style="background:var(--equi)"></i>物體</span>
           <span style="color:var(--b-optics)" data-en-html="&lt;i class=&quot;arrow&quot; style=&quot;background:var(--b-optics)&quot;&gt;&lt;/i&gt;Image (dashed: virtual)"><i class="arrow" style="background:var(--b-optics)"></i>像（虛線：虛像）</span>
@@ -201,7 +203,14 @@
         <li data-en-html="The image is calculated from the lens equation \(1/q = 1/f - 1/p\) and \(m = -q/p\).">像的位置與大小直接由成像公式 \(1/q = 1/f - 1/p\) 與 \(m = -q/p\) 計算。</li>
         <li data-en-html="Every ray is traced independently with the paraxial thin-element rule: a ray reaching the element at height \(y\) with slope \(u\) leaves with slope \(u' = u - y/f\) (a mirror reverses its horizontal direction). The drawn rays therefore really cross at the calculated image; the unit tests check this for all four elements.">每一條光線都用近軸薄元件的規則各自追跡：在元件上高度 \(y\)、斜率 \(u\) 的光線，出射斜率為 \(u' = u - y/f\)（面鏡則水平方向反轉）。所以畫出的光線確實交於計算出的像點，單元測試對四種元件都驗證過。</li>
         <li data-en="This is the ideal thin-lens, paraxial model used in textbooks. Real spherical mirrors and thick lenses have aberrations: rays far from the axis do not meet exactly at one point.">這是課本使用的理想薄透鏡、近軸模型。真實的球面鏡與厚透鏡有像差：離主軸很遠的光線不會剛好交於一點。</li>
-        <li data-en="Distances are drawn to scale (see the 10 cm scale bar). The curvature of the lens and mirror surfaces is exaggerated or reduced only for display.">距離依實際比例繪製（見「10 cm」比例尺）；透鏡與鏡面的彎曲程度只是示意。</li>
+        <li data-en="Distances are drawn to scale (see the 10 cm scale bar). The curvature and thickness of the lens and mirror are drawn only schematically.">距離依實際比例繪製（見「10 cm」比例尺）；透鏡與鏡面的彎曲程度與厚度只是示意。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Geometrical Optics.">課綱對應：選修物理Ⅲ・幾何光學。</li>
+        <li data-en="Constants and data: none — the page uses only the lengths you set (in cm) and the ideal thin-lens, paraxial model; the sign convention is the “real is positive” one of Taiwanese high-school textbooks.">常數與數據：沒有用到物理常數或材料數據，只用你設定的長度（cm）與理想薄透鏡、近軸模型；正負號採臺灣高中課本的「實正虛負」。</li>
+        <li data-en-html="Further reading: &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/2-2-spherical-mirrors&quot;&gt;OpenStax University Physics Vol. 3 — 2.2 Spherical Mirrors&lt;/a&gt;; &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/2-4-thin-lenses&quot;&gt;2.4 Thin Lenses&lt;/a&gt;.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-3/pages/2-2-spherical-mirrors">OpenStax《University Physics》第三冊 2.2 球面鏡</a>、<a href="https://openstax.org/books/university-physics-volume-3/pages/2-4-thin-lenses">2.4 薄透鏡</a>（英文；書中物距、像距寫作 d<sub>o</sub>、d<sub>i</sub>）。</li>
       </ul>
     </section>
 
@@ -210,14 +219,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/lens-mirror-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/lens-mirror.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="lens-mirror"></script>
+  <script src="js/math.js?v=202611120804"></script>
+  <script src="js/lens-mirror-core.js?v=202611120804"></script>
+  <script src="js/numinput.js?v=202611120804"></script>
+  <script src="js/keys.js?v=202611120804"></script>
+  <script src="js/drawkit.js?v=202611120804"></script>
+  <script src="js/lens-mirror.js?v=202611120804"></script>
+  <script src="js/firebase-config.js?v=202611120804"></script>
+  <script src="js/missions.js?v=202611120804" data-module="lens-mirror"></script>
   <script src="js/missions/lens-mirror.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="lens-mirror"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120804" data-module="lens-mirror"></script>
+  <script src="js/comments.js?v=202611120804"></script>
 </body>
 </html>

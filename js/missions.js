@@ -43,6 +43,7 @@
     },
     emit: function (type, data) {
       if (!state.on || !state.user || !state.nickname) return;
+      if (window.LabShare && window.LabShare.restoring) return; // 打開分享連結還原設定時不算完成任務
       const list = registry[state.module] || [];
       list.forEach(function (m) {
         if (state.done[m.id] || m.pending) return;

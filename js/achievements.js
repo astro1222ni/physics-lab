@@ -28,11 +28,16 @@
       document.body.appendChild(s);
     });
   }
-  const listReady = (window.LAB_LIVE_MODULES ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver)).then(function () {
-    const all = LM.all();
-    return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !all[m.id]; })
-      .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js' + ver); }));
-  });
+  // 只有登入後才需要全站任務定義（判定成就）；沒登入的訪客不下載這幾十個檔案，實驗頁開得更快
+  let listP = null;
+  function listReady() {
+    if (!listP) listP = (window.LAB_LIVE_MODULES ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver)).then(function () {
+      const all = LM.all();
+      return Promise.all((window.LAB_MISSION_MODULES || []).filter(function (m) { return !all[m.id]; })
+        .map(function (m) { return loadScript(base + 'missions/' + m.id + '.js' + ver); }));
+    });
+    return listP;
+  }
   const live = function () { return window.LAB_LIVE_MODULES || []; };
   const branchOf = function (m) { return (window.LAB_MODULE_BRANCH || {})[m]; };
 
@@ -116,6 +121,8 @@
     { id: 'branch-optics', tier: 5, cat: 'branch', name: nm('惠更斯的眼睛', "Huygens' eyes"), desc: nm('完成光學分支所有實驗的所有任務。', 'Complete every mission in Optics.'), check: function (c) { return c.branchDone.optics; } },
     { id: 'branch-em', tier: 5, cat: 'branch', name: nm('馬克士威的方程式', "Maxwell's equations"), desc: nm('完成電磁學分支所有實驗的所有任務。', 'Complete every mission in Electromagnetism.'), check: function (c) { return c.branchDone.em; } },
     { id: 'branch-modern', tier: 5, cat: 'branch', name: nm('愛因斯坦的光子', "Einstein's photon"), desc: nm('完成近代物理分支所有實驗的所有任務。', 'Complete every mission in Modern Physics.'), check: function (c) { return c.branchDone.modern; } },
+    { id: 'branch-astro', tier: 5, cat: 'branch', name: nm('伽利略的望遠鏡', "Galileo's telescope"), desc: nm('完成天文分支所有實驗的所有任務。', 'Complete every mission in Astronomy.'), check: function (c) { return c.branchDone.astro; } },
+    { id: 'branch-geo', tier: 5, cat: 'branch', name: nm('魏格納的拼圖', "Wegener's jigsaw"), desc: nm('完成固體地球分支所有實驗的所有任務。', 'Complete every mission in Solid Earth.'), check: function (c) { return c.branchDone.geo; } },
     { id: 'rank-100', tier: 3, cat: 'rank', name: nm('榜上有名', 'On the board'), desc: nm('進入排行榜前 100 名（至少 1 k 顆星）。', 'Reach the top 100 (with at least 1 k stars).'), check: function (c) { return c.rank > 0 && c.rank <= 100 && c.stars >= 1e3; } },
     { id: 'rank-10', tier: 5, cat: 'rank', name: nm('十大物理名人', 'Top ten physicists'), desc: nm('進入排行榜前 10 名（至少 1 M 顆星，且排行榜上至少 100 人）。', 'Reach the top 10 (with at least 1 M stars, among 100 or more players).'), check: function (c) { return c.rank > 0 && c.rank <= 10 && c.stars >= 1e6 && c.boardSize >= 100; } },
     { id: 'rank-1', tier: 6, cat: 'rank', name: nm('站上巔峰', 'Top of the world'), desc: nm('登上排行榜第 1 名（至少 1 G 顆星，且排行榜上至少 1,000 人）。', 'Reach number 1 (with at least 1 G stars, among 1,000 or more players).'), check: function (c) { return c.rank === 1 && c.stars >= 1e9 && c.boardSize >= 1000; } },
@@ -180,7 +187,7 @@
     });
     // 分支制霸：該分支所有已上線實驗都有任務，且全部完成
     const branchDone = {};
-    ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'].forEach(function (b) {
+    ['mech', 'thermo', 'wave', 'optics', 'em', 'modern', 'astro', 'geo', 'atmo', 'ocean'].forEach(function (b) {
       const liveIn = live().filter(function (m) { return branchOf(m) === b; });
       branchDone[b] = liveIn.length > 0 && liveIn.every(function (m) { return all[m] && all[m].length; }) && branchFull[b] === liveIn.length;
     });
@@ -429,8 +436,8 @@
   };
 
   // ---------- 啟動 ----------
-  Promise.all([LM._ready(), listReady]).then(function (r) {
-    api = r[0];
+  Promise.resolve(LM._ready()).then(function (a) {
+    api = a;
     if (!api) return;
     LM.on('ready', function () { if (uid) record(); });
     api.onAuth(function (user) {
@@ -438,7 +445,9 @@
       me.loaded = false;
       me.got = {};
       renderers.forEach(function (f) { f(); });
-      if (uid) load();
+      if (!uid) return;
+      const u = uid;
+      listReady().then(function () { if (uid === u) load(); });
     });
   });
   // 打開任務模式時記錄（成就「接下挑戰」）

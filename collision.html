@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Collisions in One Dimension | Astro Ni Physics Lab">一維碰撞｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"一維碰撞","alternateName":"Collisions in One Dimension","description":"調整質量、初速度與恢復係數，觀察動量守恆，以及彈性與非彈性碰撞的動能變化。","url":"https://astro1222ni.github.io/physics-lab/collision.html","image":"https://astro1222ni.github.io/physics-lab/img/og/collision.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","碰撞（Collisions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 版面：桌機左欄為軌道、圖表、比較表，右欄為控制面板；手機依序為軌道、圖表、控制、比較表 */
     .lab.coll {
@@ -114,9 +114,10 @@
       <p data-en-html="Two carts collide on a frictionless horizontal track. Set the masses, the initial velocities and the coefficient of restitution \(e\), then press “Play” to watch momentum and kinetic energy before and after the collision.">兩台車在無摩擦的水平軌道上相撞。調整質量、初速度與恢復係數 \(e\)，按「播放」觀察碰撞前後的動量與動能。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: press “Play” and watch the bar chart, then press “Perfectly inelastic”, play again and compare the total momentum and total kinetic energy.">試試看：按「播放」看長條圖，再按「完全非彈性」並播放，比較總動量與總動能的變化。</p>
     <div class="lab coll">
       <div class="stage track-stage">
-        <canvas id="track" aria-label="兩台車在軌道上碰撞的動畫" data-en-aria-label="Animation of two carts colliding on a track"></canvas>
+        <canvas id="track" role="img" aria-label="兩台車在軌道上碰撞的動畫"></canvas>
         <div class="playbar">
           <div class="btns">
             <button id="play" class="primary" data-en="Play">播放</button>
@@ -128,7 +129,9 @@
             <label><input id="cmFrame" type="checkbox"><span data-en="Centre-of-mass frame">以質心為參考系</span></label>
           </div>
         </div>
-        <p class="status" id="status" role="status"></p>
+        <p class="status" id="status"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="legend">
           <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
           <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
@@ -145,7 +148,7 @@
             <button id="modeTime" aria-pressed="false" data-en="Time graph">時間圖</button>
           </div>
         </div>
-        <canvas id="chart" aria-label="兩車動量與動能的即時圖表" data-en-aria-label="Live chart of the momentum and kinetic energy of the two carts"></canvas>
+        <canvas id="chart" role="img" aria-label="兩車動量與動能的即時圖表"></canvas>
         <div class="legend">
           <span data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Cart 1"><i style="background:var(--pos)"></i>車 1</span>
           <span data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Cart 2"><i style="background:var(--neg)"></i>車 2</span>
@@ -159,7 +162,7 @@
         <div class="stage-head">
           <h2 data-en="Force–time graph during contact">接觸期間的彈力–時間圖</h2>
         </div>
-        <canvas id="force" aria-label="彈簧彈力隨時間變化的圖，陰影面積為衝量" data-en-aria-label="Graph of the spring force against time; the shaded area is the impulse"></canvas>
+        <canvas id="force" role="img" aria-label="彈簧彈力隨時間變化的圖，陰影面積為衝量"></canvas>
         <p class="hint" data-en-html="The shaded area is the impulse the spring gives cart 2, \(J = \int F\,dt\), equal to cart 2’s change in momentum \(\Delta p_2\); cart 1 receives an impulse of the same size in the opposite direction, \(\Delta p_1 = -J\).">陰影面積就是彈簧給車 2 的衝量 \(J = \int F\,dt\)，等於車 2 的動量變化 \(\Delta p_2\)；車 1 受到大小相等、方向相反的衝量，\(\Delta p_1 = -J\)。</p>
       </div>
 
@@ -319,6 +322,13 @@
         <li data-en-html="With the spring added, it is treated as an &lt;strong&gt;ideal massless spring&lt;/strong&gt; obeying Hooke’s law, mounted on the front of cart 1; contact begins when its tip touches cart 2. During contact the centre of mass keeps moving at constant velocity and the relative motion follows the SHM formula \(x(t) = (u/\omega)\sin\omega t\), so the state is exact at every moment before, during and after contact, with no numerical integration. If the maximum compression would exceed 80% of the natural length, the program lengthens the natural length to \(x_{\max}/0.8\) for that run so the spring never bottoms out (a fully compressed spring would no longer be ideal). The force arrows are drawn in proportion to the spring force, with that run’s peak force as the full length.">加彈簧時，彈簧視為<strong>理想彈簧：質量不計</strong>、遵守虎克定律，裝在車 1 前端；彈簧尖端碰到車 2 時開始接觸。接觸期間質心照樣等速度前進，相對運動用簡諧運動的解析式 \(x(t) = (u/\omega)\sin\omega t\) 計算，所以接觸前、中、後任何時刻都精確，沒有數值積分。若最大壓縮量會超過自然長度的 80%，程式會把該次的自然長度加長為 \(x_{\max}/0.8\)，讓彈簧不會壓到底（壓到底就不再是理想彈簧）。彈力箭頭的長度與彈力成正比，以該次的最大彈力為滿格。</li>
         <li data-en-html="Each animation frame advances at most \(1/30\ \mathrm{s}\) (times 0.25 in slow motion), so the animation does not suddenly jump ahead when you come back from another tab or the device slows down.">動畫的每一格最多前進 \(1/30\ \mathrm{s}\)（慢動作時再乘以 0.25），切換分頁回來或裝置變慢時，動畫不會突然跳到後面。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics II · Collisions">課綱對應：選修物理Ⅱ・碰撞</li>
+        <li data-en="Constants and data: none — every quantity (masses, velocities, the coefficient of restitution and the spring constant) is set with the sliders.">常數與數據：本實驗沒有用到物理常數或材料數據，質量、速度、恢復係數與彈力常數都由滑桿設定。</li>
+        <li data-en-html="Further reading: OpenStax, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/9-4-types-of-collisions&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;University Physics Volume 1, 9.4 Types of Collisions&lt;/a&gt;; HyperPhysics, &lt;a href=&quot;https://hyperphysics.gsu.edu/hbase/elacol.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Elastic and Inelastic Collisions&lt;/a&gt;">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/9-4-types-of-collisions" target="_blank" rel="noopener">University Physics Volume 1，9.4 碰撞的種類</a>》、HyperPhysics〈<a href="https://hyperphysics.gsu.edu/hbase/elacol.html" target="_blank" rel="noopener">Elastic and Inelastic Collisions</a>〉（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · Every calculation runs in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -326,15 +336,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/collision-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/collision.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="collision"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/collision-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/collision.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="collision"></script>
   <script src="js/missions/collision.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="collision"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="collision"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

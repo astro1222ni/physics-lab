@@ -1,4 +1,4 @@
-/* doppler.js — 「都卜勒效應」模組的畫面與互動（物理計算在 doppler-core.js） */
+/* doppler.js — 「都卜勒效應」模組的畫面與互動（物理計算在 doppler-core.js；3D 檢視在 doppler-3d.js） */
 (function () {
   'use strict';
   const DC = window.DopplerCore;
@@ -47,6 +47,7 @@
     return { ratioMax: -Infinity, ratioMin: Infinity, heardTime: 0, boom: false, tBoom: null, two: false, minDist: Infinity, clean: true };
   }
   state.run = newRun();
+  let view3 = null; // 目前的 3D 檢視（切回 2D 時釋放）；見最後的「3D 檢視」
 
   // 任務模式（missions.js）：回報事件與相關物理量
   function emit(type, extra) {
@@ -122,7 +123,8 @@
   let L = null;
   const bg = document.createElement('canvas');
   const bgctx = bg.getContext('2d');
-  let drag = null; // 拖曳觀察者中：{ off: [dx, dy] }（畫布像素）
+  let drag = null; // 拖曳中：觀察者 { off: [dx, dy] }（畫布像素）；救護車 { src: true, … }（見「拖曳」）
+  let kb = null;   // 鍵盤操作（js/keys.js）：0 = 觀察者、1 = 救護車
 
   function layout() {
     const narrow = cw < 560;
@@ -141,7 +143,8 @@
   function toWorld(px, py) { return [(px - L.cx) / L.k, (L.cy - py) / L.k]; }
 
   function resize() {
-    const w = cv.clientWidth;
+    // 3D 檢視時 #cv 隱藏（寬度 0）：改用同一欄的 f′(t) 圖寬度，觀察者的範圍與 2D 相同
+    const w = cv.clientWidth || gv.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
@@ -405,7 +408,11 @@
   function draw() {
     if (!L) return;
     const p = params(), arr = DC.arrivals(p, state.t);
-    drawScene(p, arr);
+    if (view3 && view3.active) {
+      const tNow = performance.now();
+      state.fx = state.fx.filter(function (e) { return tNow - e.t0 < e.dur; });
+      view3.frame(p, arr);
+    } else drawScene(p, arr);
     drawGraph(p);
     updateReadout(p, arr);
   }
@@ -453,8 +460,14 @@
       });
     }
 
-    // 波源（救護車）與速度箭頭
+    // 波源（救護車）與速度箭頭；滑鼠移到救護車上或拖曳中時加外框光暈（可沿道路拖曳）
     const sx = X(S.x), sy = Y(S.y);
+    if (state.hover === 'src' || (drag && drag.src)) {
+      ctx.strokeStyle = alpha(colors.pos, 0.42);
+      ctx.lineWidth = 3;
+      roundRect(ctx, sx - L.carL * 0.62, sy - L.carL * 0.38, L.carL * 1.24, L.carL * 0.76, L.carL * 0.2);
+      ctx.stroke();
+    }
     ambulance(sx, sy, false, tNow);
     if (state.show.vel && state.vs > 0) {
       const len = state.vs * ARROW_T * L.k;
@@ -465,7 +478,7 @@
 
     // 觀察者
     const ox = X(O.x), oy = Y(O.y);
-    observerIcon(ox, oy, state.hover || !!drag);
+    observerIcon(ox, oy, state.hover === 'obs' || !!(drag && !drag.src));
     if (state.show.vel && state.vo !== 0) {
       const len = Math.abs(state.vo) * ARROW_T * L.k, dir = state.vo > 0 ? 1 : -1;
       arrow(ctx, ox + dir * (L.obsR + 3), oy, dir, 0, len, L.lw, colors.neg);
@@ -473,6 +486,23 @@
       pill(ctx, 'v', ox + dir * (L.obsR + len + 9), oy, colors.neg, '700 ' + (L.narrow ? 12 : 13) + 'px system-ui, sans-serif', 0.8, { at: 1, text: 'o' });
     }
     drawEffects(tNow);
+    // 鍵盤焦點框：被選取的物件周圍畫 --accent 色虛線圓角框（js/keys.js）
+    if (kb && kb.focused()) {
+      ctx.save();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = colors.accent;
+      ctx.lineWidth = 2;
+      if (kb.index() === 0) {
+        // 扁一點，不壓到上下方的「觀察者」標籤
+        const hw = L.obsR * 1.7 + 4, hh = L.obsR + 2;
+        roundRect(ctx, ox - hw, oy - hh, 2 * hw, 2 * hh, 7);
+      } else {
+        const hw = L.carL * 0.5 + 9, hh = L.carL * 0.24 + 9;
+        roundRect(ctx, sx - hw, sy - hh, 2 * hw, 2 * hh, 8);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
     // f′ 標籤：觀察者上方（太靠上時放下方）
     let ftxt;
     if (arr.length === 2) ftxt = 'f′ = ' + num(arr[0].fp, 2) + ' Hz ' + T('與', '&') + ' ' + num(Math.abs(arr[1].fp), 1) + ' Hz';
@@ -967,6 +997,8 @@
     }
     state.prev = arr.map(function (a) { return a.te; });
     state.hist.push({ t: state.t, a: arr[0] ? arr[0].fp : null, b: arr[1] ? arr[1].fp : null });
+    if (arr.length) sayNow('t = ' + num(state.t, 1) + ' s' + T('，', ', ') + 'f′ = ' + num(arr[0].fp, 2) + ' Hz' +
+      (arr.length === 2 ? T('，另有 |f′| = ', ', also |f′| = ') + num(Math.abs(arr[1].fp), 2) + ' Hz' : ''));
     if (state.hist.length > 6000) state.hist.splice(0, state.hist.length - 6000);
     updateSound(arr);
 
@@ -985,6 +1017,10 @@
     setStatus(msg);
     updateButtons();
     const r = state.run;
+    say(r.heardTime > 0
+      ? T('這一趟觀察者聽到的 f′/f 最高 ', 'This run: the listener heard f′/f from a highest of ') + num(r.ratioMax, 3) + T('、最低 ', ' to a lowest of ') + num(r.ratioMin, 3) +
+        (r.boom ? T('，並聽到音爆。', ', with a sonic boom.') : T('。', '.'))
+      : T('這一趟觀察者沒有聽到聲音。', 'This run: the listener heard nothing.'));
     emit('runEnd', {
       heard: r.heardTime > 0, heardTime: r.heardTime, ratioMax: r.ratioMax, ratioMin: r.ratioMin,
       boom: r.boom, tBoom: r.tBoom, two: r.two, minDist: r.minDist, clean: r.clean
@@ -998,6 +1034,42 @@
   }
 
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報 ----------
+  // 離散事件（暫停讀數、一趟結束、改完條件或情境）寫進 aria-live 的 #srSay；
+  // 播放中每格都在變的 f′ 不設 aria-live 在讀數上，改寫進 #srNow，至少間隔 1.5 s 才更新一次
+  let sayTimer = 0, condTimer = 0, nowAt = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el || !msg) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  function sayNow(msg) {
+    const el = $('srNow'), tw = performance.now();
+    if (!el || tw - nowAt < 1500 || el.textContent === msg) return;
+    nowAt = tw;
+    el.textContent = msg;
+  }
+  /** 目前條件與公式算出的結果（改完條件後播報；連續改動時只念最後一次） */
+  function conditionsText() {
+    const la = DC.wavelengthAhead(state.f, state.v, state.vs), lb = DC.wavelengthBehind(state.f, state.v, state.vs);
+    const cv2 = collinearValues(), th = DC.machAngle(state.v, state.vs);
+    let s = T('條件：f = ', 'Settings: f = ') + num(state.f, 2) + T(' Hz，聲速 ', ' Hz, speed of sound ') + num(state.v, 0) +
+      T(' m/s，波源速率 ', ' m/s, source speed ') + num(state.vs, 0) + T(' m/s，觀察者速度 ', ' m/s, listener velocity ') + num(state.vo, 0) + T(' m/s。', ' m/s. ');
+    s += la > 1e-9 ? T('前方波長 ', 'Wavelength ahead ') + num(la, 1) + T(' m，後方 ', ' m, behind ')
+      : T('前方沒有波（波源追上或超過了波前），後方波長 ', 'No waves ahead (the source keeps up with or outruns them); wavelength behind ');
+    s += num(lb, 1) + ' m' + T('；', '; ');
+    s += (isFinite(cv2.ahead) ? T('正前方聽到 ', 'straight ahead the listener hears ') + num(cv2.ahead, 2) + ' Hz' : T('聲音傳不到正前方', 'no sound reaches straight ahead')) +
+      T('，正後方 ', ', straight behind ') + num(cv2.behind, 2) + ' Hz';
+    if (isFinite(th)) s += T('；馬赫角 ', '; Mach angle ') + num(th * 180 / Math.PI, 1) + '°';
+    return s + T('。', '.');
+  }
+  function sayConditionsSoon() {
+    clearTimeout(condTimer);
+    condTimer = setTimeout(function () { say(conditionsText()); }, 800);
+  }
   function updateButtons() {
     $('play').textContent = state.running ? T('暫停', 'Pause')
       : state.ended ? T('重新開始', 'Restart')
@@ -1030,6 +1102,8 @@
       requestDraw();
       // 暫停＝讀一次數：回報此刻觀察者聽到的聲音
       const arr = DC.arrivals(params(), state.t), a = arr[0], b = arr[1];
+      say(T('暫停於 t = ', 'Paused at t = ') + num(state.t, 2) + T(' s：觀察者', ' s: the listener ') + heardText() +
+        (a ? T('（f′/f = ', ' (f′/f = ') + num(a.fp / state.f, 3) + T('）', ')') : '') + T('。', '.'));
       emit('measure', {
         n: arr.length, fp: a ? a.fp : null, ratio: a ? a.fp / state.f : null, fp2: b ? b.fp : null,
         us: a ? a.us : null, uo: a ? a.uo : null, lambdaFront: DC.wavelengthAhead(state.f, state.v, state.vs),
@@ -1074,6 +1148,7 @@
   // ---------- 滑桿 ----------
   const elF = $('f'), elV = $('v'), elVs = $('vs'), elVo = $('vob');
   let quiet = false; // 預設情境一次設定多個滑桿時，暫停個別處理
+  let booted = false; // 開頁時套用的預設情境不播報條件
   function refreshOutputs() {
     $('fo').textContent = fmtSlider(val(elF), elF) + ' Hz';
     $('vo').textContent = fmtSlider(val(elV), elV) + ' m/s';
@@ -1092,6 +1167,7 @@
       markPreset(null);
       setStatus('');
       restart(state.running);
+      sayConditionsSoon();
     });
   });
   // 觀察者速度：不必從頭開始，從目前位置以新速度繼續
@@ -1105,6 +1181,7 @@
     state.prev = null;
     markPreset(null);
     requestDraw();
+    sayConditionsSoon();
   });
 
   function setSlider(el, v) {
@@ -1136,6 +1213,7 @@
     markPreset(name);
     restart(play);
     setStatus(T(PRESET_MSG[name][0], PRESET_MSG[name][1]));
+    if (booted) sayConditionsSoon();
   }
   document.querySelectorAll('[data-preset]').forEach(function (b) {
     b.addEventListener('click', function () { applyPreset(b.dataset.preset, true); });
@@ -1161,6 +1239,17 @@
     if (state.ended && state.vo !== 0) { state.ended = false; setStatus(''); updateButtons(); }
     requestDraw();
   }
+  /** 救護車（波源）的起點：沿道路（y = 0）限制在場景內 */
+  const SX_MAX = WX / 2 - 20;
+  function clampSx(x) { return Math.max(-SX_MAX, Math.min(SX_MAX, x)); }
+  /** 把救護車搬到道路上的 x，從那裡重新開始（t = 0；觀察者留在目前的位置，與「全部清除」相同） */
+  function moveSource(x, play) {
+    state.sx = clampSx(x);
+    restart(play);
+  }
+  function sourceMovedMsg() {
+    setStatus(T('救護車的起點改為 x = ' + num(state.sx, 0) + ' m，從頭開始。', 'The ambulance now starts at x = ' + num(state.sx, 0) + ' m; the run starts again.'));
+  }
   function eventPx(ev) {
     const r = cv.getBoundingClientRect();
     return [ev.clientX - r.left, ev.clientY - r.top];
@@ -1169,50 +1258,196 @@
     const O = DC.observerAt(params(), state.t);
     return Math.hypot(q[0] - X(O.x), q[1] - Y(O.y)) < Math.max(26, L.obsR * 2.4);
   }
+  function nearSource(q) {
+    const S = DC.sourceAt(params(), state.t);
+    return Math.abs(q[0] - X(S.x)) < Math.max(22, L.carL * 0.62) && Math.abs(q[1] - Y(S.y)) < Math.max(22, L.carL * 0.4);
+  }
+  /** 指標下的物件：'obs'（觀察者優先）、'src'（救護車）或 false */
+  function hitAt(q) { return nearObserver(q) ? 'obs' : nearSource(q) ? 'src' : false; }
   function setHover(h) {
     if (h !== state.hover) { state.hover = h; requestDraw(); }
     cv.style.cursor = drag ? 'grabbing' : h ? 'grab' : '';
   }
   cv.addEventListener('pointerdown', function (ev) {
     if (!L) return;
-    const q = eventPx(ev), O = DC.observerAt(params(), state.t);
-    let off = [0, 0];
-    if (nearObserver(q)) off = [X(O.x) - q[0], Y(O.y) - q[1]];
-    drag = { off: off };
-    const w = toWorld(q[0] + off[0], q[1] + off[1]);
-    moveObserver(w[0], w[1]);
-    setHover(true);
+    const q = eventPx(ev), p = params(), hit = hitAt(q);
+    if (hit === 'src') {
+      // 救護車：移動超過 4 px 才算拖曳；只點一下＝把觀察者搬到這裡（和點畫面其他地方一樣）
+      const S = DC.sourceAt(p, state.t);
+      drag = { src: true, off: X(S.x) - q[0], q0: q, moved: false, play: state.running || state.ended };
+    } else {
+      const O = DC.observerAt(p, state.t);
+      let off = [0, 0];
+      if (hit === 'obs') off = [X(O.x) - q[0], Y(O.y) - q[1]];
+      drag = { off: off };
+      const w = toWorld(q[0] + off[0], q[1] + off[1]);
+      moveObserver(w[0], w[1]);
+    }
+    setHover(hit === 'src' ? 'src' : 'obs');
     cv.setPointerCapture(ev.pointerId);
     ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {
     if (!L) return;
     const q = eventPx(ev);
-    if (!drag) { if (ev.pointerType !== 'touch') setHover(nearObserver(q)); return; }
+    if (!drag) { if (ev.pointerType !== 'touch') setHover(hitAt(q)); return; }
+    if (drag.src) {
+      if (!drag.moved && Math.hypot(q[0] - drag.q0[0], q[1] - drag.q0[1]) < 4) return;
+      drag.moved = true;
+      moveSource(toWorld(q[0] + drag.off, 0)[0], false); // 拖曳中停在 t = 0，放開後才出發
+      return;
+    }
     const w = toWorld(q[0] + drag.off[0], q[1] + drag.off[1]);
     moveObserver(w[0], w[1]);
   });
   const endDrag = function (ev) {
+    const d = drag;
     drag = null;
-    setHover(ev && ev.pointerType === 'mouse' ? nearObserver(eventPx(ev)) : false);
+    if (d && d.src) {
+      if (d.moved) {
+        if (d.play) { state.running = true; updateButtons(); startLoop(); }
+        sourceMovedMsg();
+      } else if (ev && ev.type === 'pointerup') {
+        const w = toWorld(d.q0[0], d.q0[1]);
+        moveObserver(w[0], w[1]);
+      }
+    }
+    setHover(ev && ev.pointerType === 'mouse' ? hitAt(eventPx(ev)) : false);
   };
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag) setHover(false); });
-  // 鍵盤：方向鍵移動觀察者（Shift 一次 50 m）
-  cv.addEventListener('keydown', function (ev) {
-    const d = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[ev.key];
-    if (!d) return;
-    ev.preventDefault();
-    const s = ev.shiftKey ? 50 : 10, O = DC.observerAt(params(), state.t);
-    moveObserver(O.x + d[0] * s, O.y + d[1] * s);
+
+  // 鍵盤（js/keys.js）：Enter 在觀察者與救護車之間切換，方向鍵移動（每次 10 m，Shift 50 m）；
+  // 限制與拖曳相同（觀察者限制在畫面內；救護車只能沿道路左右移動，移動後從頭開始）
+  const KEY_STEP = 10, KEY_BIG = 50;
+  /** 觀察者此刻聽到的聲音（給螢幕閱讀器） */
+  function heardText() {
+    const arr = DC.arrivals(params(), state.t);
+    if (arr.length === 2) return T('聽到 f′ = ', 'hears f′ = ') + num(arr[0].fp, 2) + ' Hz' + T('，同時還有 |f′| = ', ' and also |f′| = ') + num(Math.abs(arr[1].fp), 2) + ' Hz';
+    if (arr.length === 1) return T('聽到 f′ = ', 'hears f′ = ') + num(arr[0].fp, 2) + ' Hz';
+    return state.vs >= state.v && state.t > 0 && silentInCone(params()) ? T('在馬赫錐外，聽不到聲音', 'is outside the Mach cone and hears nothing') : T('還沒聽到聲音', 'has not heard the sound yet');
+  }
+  const kbItems = [
+    {
+      name: function () { return T('觀察者', 'Listener'); },
+      move: function (dx, dy, big) {
+        const s = big ? KEY_BIG : KEY_STEP, O = DC.observerAt(params(), state.t);
+        moveObserver(O.x + dx * s, O.y + dy * s);
+        return true;
+      },
+      describe: function () {
+        const O = DC.observerAt(params(), state.t);
+        return T('觀察者在 (', 'Listener at (') + num(O.x, 0) + ', ' + num(O.y, 0) + T(') m，', ') m, ') + heardText() + T('。', '.');
+      }
+    },
+    {
+      name: function () { return T('救護車（波源）', 'Ambulance (source)'); },
+      move: function (dx, dy, big) {
+        if (!dx) return false; // 道路固定在 y = 0
+        const S = DC.sourceAt(params(), state.t);
+        moveSource(S.x + dx * (big ? KEY_BIG : KEY_STEP), state.running || state.ended);
+        sourceMovedMsg();
+        return true;
+      },
+      describe: function () {
+        const S = DC.sourceAt(params(), state.t);
+        return T('救護車在道路上 x = ', 'Ambulance on the road at x = ') + num(S.x, 0) + ' m' + T('（起點 ', ' (start ') + num(state.sx, 0) + T(' m），', ' m), ') +
+          (state.vs > 0 ? T('以 ' + num(state.vs, 0) + ' m/s 向右行駛。', 'driving right at ' + num(state.vs, 0) + ' m/s.') : T('靜止。', 'at rest.'));
+      }
+    }
+  ];
+  const CV_LABEL = T('都卜勒效應模擬畫布（俯視圖）：沿道路行駛的救護車、擴散的圓形波前與觀察者。按 Enter 在觀察者與救護車之間切換，方向鍵移動，每次 10 m，Shift 加方向鍵 50 m；救護車只能沿道路左右移動，移動後從頭開始。',
+    'Doppler effect simulation (top view): an ambulance driving along a road, expanding circular wavefronts and a listener. Press Enter to switch between the listener and the ambulance and use the arrow keys to move it, 10 m per press or 50 m with Shift; the ambulance only moves left or right along the road, and moving it starts the run again.');
+  if (window.LabKeys) kb = window.LabKeys.attach(cv, { label: CV_LABEL, items: kbItems, onChange: requestDraw });
+  else cv.setAttribute('aria-label', CV_LABEL);
+
+  // ---------- 3D 檢視（three.js，切換到 3D 時才以 import() 動態載入 vendor/three/） ----------
+  let threeLib = null, loadToken = 0;
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  const opts3 = { cut: true, refs: true };   // 剖開半球、參考聽者（只影響 3D 畫面）
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 給 3D 檢視讀取的介面：同一個物理核心、同一組參數與時間 */
+  const bridge = {
+    state: state, T: T, num: num, params: params,
+    colors: function () { return colors; },
+    WX: WX, ARROW_T: ARROW_T, SLOW: SLOW, reducedMotion: reducedMotion,
+    halfY: function () { return L ? L.WY / 2 : 350; },
+    opts: opts3,
+    moveObserver: function (x, y) { moveObserver(x, y); },
+    lost: function () {
+      setView('2d');
+      viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 俯視圖。', 'The 3D graphics context was lost, so the view switched back to the 2D top view.');
+    }
+  };
+  function setPressed3(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed3('3d');
+      if (!webglAvailable() || !window.Doppler3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return; // 載入期間已切回 2D
+        stage.classList.add('is3d');
+        view3 = window.Doppler3D.create(lib, host3, bridge);
+        $('resetCam').hidden = false;
+        viewMsg.textContent = '';
+        draw();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed3('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      $('resetCam').hidden = true;
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      resize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed3('2d');
+    $('resetCam').hidden = true;
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 俯視圖。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D top view is kept.');
+    resize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  [['cut3', 'cut'], ['refs3', 'refs']].forEach(function (pair) {
+    $(pair[0]).addEventListener('change', function (ev) {
+      opts3[pair[1]] = ev.target.checked;
+      if (view3 && view3.active) view3.onOptions();
+    });
   });
 
   // ---------- 啟動 ----------
   readColors();
   refreshOutputs();
   state.f = val(elF);
-  function themeChanged() { readColors(); if (L) buildBackground(); requestDraw(); }
+  function themeChanged() { readColors(); if (L) buildBackground(); if (view3 && view3.active) view3.onTheme(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
@@ -1222,5 +1457,35 @@
   window.addEventListener('resize', function () { resize(); });
   resize();
   applyPreset('approach', !reducedMotion);
+  booted = true;
+
+  // 分享連結（js/classroom.js）：滑桿、勾選框、情境與檢視按鈕已自動記錄；另外記錄畫布上拖曳出來的
+  // 觀察者位置與救護車起點。記錄的是「這一趟開始時」的位置，打開連結就從頭重播同一個實驗。
+  // （classroom.js 在 DOMContentLoaded 之後才動態載入，所以必要時等 load 再登記；還原在 load 之後才進行）
+  function shareReady(fn) {
+    if (window.LabShare) fn(window.LabShare);
+    else window.addEventListener('load', function () { if (window.LabShare) fn(window.LabShare); });
+  }
+  shareReady(function (LS) {
+    LS.register({
+      get: function () {
+        const p = params();
+        let O = DC.observerAt(p, 0);
+        // 移動中被拖曳過的觀察者，推回 t = 0 可能在畫面外：改記目前的位置
+        if (L && (Math.abs(O.x) > WX / 2 - 12 / L.k || Math.abs(O.y) > L.WY / 2 - 12 / L.k)) O = DC.observerAt(p, state.t);
+        return { ox: Math.round(O.x), oy: Math.round(O.y), sx: Math.round(state.sx) };
+      },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        const ok = function (v) { return typeof v === 'number' && isFinite(v); };
+        const O = DC.observerAt(params(), state.t);
+        if (ok(o.sx)) state.sx = clampSx(o.sx);
+        state.t = 0;
+        state.obs = { x: ok(o.ox) ? o.ox : O.x, y: ok(o.oy) ? o.oy : O.y, t0: 0 };
+        restart(state.running); // 從頭開始；restart() 會把觀察者限制在畫面內
+      }
+    });
+  });
+
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：按「播放」開始。', 'Reduced motion is on: press “Play” to start.'));
 })();

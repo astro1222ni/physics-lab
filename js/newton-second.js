@@ -2011,6 +2011,7 @@
     }
     warn.forEach(function (w) { h += '<dd class="warn">' + w + '</dd>'; });
     setHTML('fitOut', h);
+    updateGraphLabel(si);
   }
 
   // ======================= 音效（sound.js；音效關閉時完全不呼叫） =======================
@@ -2069,6 +2070,58 @@
 
   // ======================= 實驗流程 =======================
   function setStatus(msg) { $('status').textContent = msg || ''; }
+
+  // ---------- 無障礙：讀數播報與畫布說明 ----------
+  // 跑完一次的量測結果寫在 #status（aria-live）；改完條件後的理論值、移除數據點寫進 #srSay（aria-live）
+  let sayTimer = 0, theoryTimer = 0;
+  function say(msg) {
+    const el = $('srSay');
+    if (!el) return;
+    clearTimeout(sayTimer);
+    el.textContent = '';
+    sayTimer = setTimeout(function () { el.textContent = msg; }, 60); // 先清空再寫，同樣的字也會再念一次
+  }
+  const MS2T = ' m/s²';
+  function theoryText() {
+    const d = NS.dynamics(physParams());
+    if (state.mystery) return T('未知摩擦的軌道：理論值隱藏，放開小車，用紙帶量出加速度。', 'Mystery track: the theoretical values are hidden. Run the cart and measure the acceleration from the tape.');
+    if (!state.attached) {
+      return T('取下吊掛物：推出後的加速度 a = ', 'No hanging mass: after the push a = ') + num(d.aMove, 3) + MS2T +
+        T('（tan θ = ', ' (tan θ = ') + num(Math.tan(state.thDeg * DEG), 4) + T('，μ = ', ', μ = ') + num(mu(), 3) + T('）。', ').');
+    }
+    if (!d.startsFromRest) return T('拉力不夠：mg 沒有超過最大靜摩擦力，小車不會動。', 'Not enough pull: mg does not exceed the maximum static friction, so the cart will not move.');
+    return T('理論加速度 a = ', 'Theoretical acceleration a = ') + num(d.aMove, 3) + MS2T + T('，繩張力 T = ', ', string tension T = ') + sig(d.T, 4) +
+      ' N' + T('（mg = ', ' (mg = ') + sig(d.W, 4) + ' N' + T('）。', ').');
+  }
+  /** 改完條件後播報理論值（連續改動時只念最後一次） */
+  function sayTheory() {
+    clearTimeout(theoryTimer);
+    theoryTimer = setTimeout(function () { say(theoryText()); }, 350);
+  }
+  /** 畫布的文字說明（role="img"）：條件改變時更新 */
+  const labels = {};
+  function setLabel(canvas, text) {
+    if (labels[canvas.id] === text) return;
+    labels[canvas.id] = text;
+    canvas.removeAttribute('data-en-aria-label'); // 改由程式依語言更新
+    canvas.setAttribute('aria-label', text);
+  }
+  function updateSceneLabel() {
+    setLabel(cv, T('力學車實驗裝置側視圖：軌道傾角 ' + num(state.thDeg, 2) + '°，小車質量 M = ' + num(state.M, 3) + ' kg' +
+      (state.attached ? '，細繩經滑輪掛著 m = ' + num(state.m, 3) + ' kg 的吊掛物' : '，沒有吊掛物（推一下，初速 ' + num(state.v0, 2) + ' m/s）') +
+      '；打點計時器每秒打 ' + state.freq + ' 點。左下方是小車' + (state.attached ? '與吊掛物' : '') + '的受力圖。',
+    'Side view of the apparatus: track tilted at ' + num(state.thDeg, 2) + '°, cart mass M = ' + num(state.M, 3) + ' kg' +
+      (state.attached ? ', pulled over a pulley by a hanging mass m = ' + num(state.m, 3) + ' kg' : ', no hanging mass (pushed at ' + num(state.v0, 2) + ' m/s)') +
+      '; the ticker prints ' + state.freq + ' dots per second. Free-body diagrams at the lower left.'));
+  }
+  function updateGraphLabel(si) {
+    const exp = state.exp;
+    const name = exp === 1 ? T('實驗一 a–F 圖', 'Experiment 1, a–F graph') : T('實驗二 a–1/(M+m) 圖', 'Experiment 2, a–1/(M+m) graph');
+    const unit = exp === 1 ? (si.ax === 'm' ? ' m/(s²·kg)' : ' 1/kg') : ' N';
+    const fit = si.fit ? T('，最佳直線斜率 ', ', best-fit slope ') + sig(si.fit.slope, 4) + unit + T('、截距 ', ', intercept ') + num(si.fit.intercept, 3) + MS2T : '';
+    setLabel(gcv, name + T('：', ': ') + si.pts.length + T(' 個數據點', si.pts.length === 1 ? ' data point' : ' data points') + fit + T('。', '.'));
+  }
+
   function updateButtons() {
     const go = $('go');
     const label = {
@@ -2216,6 +2269,7 @@
     list.splice(i, 1);
     state.latest[state.exp] = -1;
     drawAll();
+    say(T('已移除一個數據點，剩 ', 'Removed a data point; ') + list.length + T(' 點。', list.length === 1 ? ' point left.' : ' points left.'));
   });
 
   $('slow').addEventListener('change', function (ev) { state.slow = ev.target.checked; requestDraw(); });
@@ -2272,6 +2326,7 @@
     $('toHang').disabled = !state.attached || state.M - 0.01 < 0.2 - 1e-9 || state.m + 0.01 > 0.5 + 1e-9;
     $('toCart').disabled = !state.attached || state.m - 0.01 < 0.01 - 1e-9 || state.M + 0.01 > 2 + 1e-9;
     if (state.mystery) $('muo').textContent = '?';
+    updateSceneLabel();
   }
   function readSliders() {
     state.M = val(elM);
@@ -2289,6 +2344,8 @@
       physChanged();
     });
   });
+  // 讀數播報：放開滑桿或打完數字後，念出新的理論值
+  [elM, elm, elMu, elTh, elV0].forEach(function (el) { el.addEventListener('change', sayTheory); });
   elN.addEventListener('input', function () {
     state.N = Math.max(1, Math.round(val(elN)));
     refreshOutputs();
@@ -2320,6 +2377,7 @@
     $('boxv0').hidden = att;
     refreshOutputs();
     physChanged();
+    sayTheory();
   }
   $('modeHang').addEventListener('click', function () { setMode(true); });
   $('modePush').addEventListener('click', function () { setMode(false); });
@@ -2335,6 +2393,7 @@
     refreshOutputs();
     if (!state.mystery) showOut(elMu, '');
     physChanged();
+    sayTheory();
   });
 
   document.querySelectorAll('.seg4 button[data-f]').forEach(function (b) {
@@ -2373,6 +2432,28 @@
         requestDraw();
         if (state.series[e].length) emitSeries();
       });
+    });
+  });
+
+  // 分享目前設定：第二個實驗區（圖表）的「實驗一／二」與橫軸選擇不在 classroom.js 自動記錄的範圍，另外登記
+  // （classroom.js 在 DOMContentLoaded 之後才動態載入，所以等 load 再登記；還原在 load 之後兩格畫面才進行）
+  function shareReady(fn) {
+    if (window.LabShare) fn(window.LabShare);
+    else window.addEventListener('load', function () { if (window.LabShare) fn(window.LabShare); });
+  }
+  shareReady(function (LS) {
+    LS.register({
+      get: function () { return { e: state.exp, a1: state.axis[1], a2: state.axis[2] }; },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        [1, 2].forEach(function (e) {
+          const ax = o['a' + e];
+          if (typeof ax !== 'string' || ax === state.axis[e]) return;
+          const b = Array.prototype.find.call($('axis' + e).querySelectorAll('button[data-ax]'), function (x) { return x.getAttribute('data-ax') === ax; });
+          if (b) b.click();
+        });
+        if (o.e === 1 || o.e === 2) setExp(o.e);
+      }
     });
   });
 

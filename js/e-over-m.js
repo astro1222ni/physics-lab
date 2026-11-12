@@ -43,6 +43,7 @@
   };
   let orb = null, orbKey = '', orbVer = 0;
   let ver = 0; // 畫面狀態版本（改變時重畫快取）
+  let kb = null; // 鍵盤操作（keys.js），在畫布拖曳的程式後面建立
 
   // ---------- 電表與電子束 ----------
   function meterV() { return st.mode === 'real' ? C.meter(st.V, cal.eV, 1) : Math.round(st.V); }
@@ -721,6 +722,7 @@
     drawLabels(g);
     mags.forEach(function (m) { drawMag(g, m); });
     if (diag) drawDiag(g, diag);
+    drawKbFocus(g);
   }
 
   // ---- 電子運動（每一幀） ----
@@ -978,6 +980,7 @@
     st.parallax = ev.target.checked;
     st.eyeAt = { L: null, R: null }; // 開關視差後，游標要重新對準才算數
     $('eyeBox').hidden = !st.parallax;
+    syncKbItems();
     modeHint();
     if (!side) resize();
     afterChange(true);
@@ -1049,6 +1052,10 @@
       ['aMean', 'aFit'].forEach(function (id) { $(id).innerHTML = $(id).innerHTML.replace('（', ' (').replace('）', ')'); });
     }
     drawGraph(A2);
+    // 分析圖的文字說明（螢幕閱讀器用；數據改變時更新）
+    gcv.setAttribute('aria-label', T('分析圖：縱軸 2V、橫軸 (Br)²，含公認值的參考線。', 'Analysis graph: 2V against (Br)², with a reference line for the accepted value. ') +
+      (A2.n ? T('已記錄 ', '') + A2.n + T(' 筆數據', ' points recorded') + (A2.fit ? T('，通過原點的最佳直線斜率 e/m = ', '; the best-fit line through the origin has slope e/m = ') + (A2.fit.slope / 1e11).toFixed(3) + T(' × 10 的 11 次方 C/kg。', ' × 10 to the 11 C/kg.') : T('。', '.'))
+        : T('還沒有數據。', 'No data yet.')));
   }
 
   // ---------- 分析圖：2V 對 (Br)² ----------
@@ -1177,6 +1184,77 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
   cv.addEventListener('pointerleave', function () { if (!drag && hover) { hover = null; ver++; requestDraw(); } });
+
+  // ---------- 鍵盤操作（keys.js）：和拖曳一樣移動左右游標與眼睛，限制完全相同 ----------
+  // 游標：方向鍵每次 0.01 cm（標尺讀數的最小位數），Shift 每次 0.2 cm；眼睛：每次 0.1 cm，Shift 每次 1 cm
+  const kbItems = [];
+  function cursorItem(side) {
+    return {
+      id: side,
+      name: function () { return side === 'L' ? T('左游標', 'Left cursor') : T('右游標', 'Right cursor'); },
+      move: function (dx, dy, big) {
+        if (!dx) return false;
+        const x0 = side === 'L' ? st.xL : st.xR;
+        moveCursor(side, x0 + dx * (big ? 0.2 : 0.01));
+        return (side === 'L' ? st.xL : st.xR) !== x0;
+      },
+      describe: function () {
+        const xs = side === 'L' ? st.xL : st.xR;
+        return (side === 'L' ? T('左游標讀數 ', 'Left cursor at ') : T('右游標讀數 ', 'Right cursor at ')) + xs.toFixed(2) + ' cm' +
+          T('，直徑 D = ', ', diameter D = ') + (st.xR - st.xL).toFixed(2) + ' cm' + T('。', '.');
+      }
+    };
+  }
+  const eyeItem = {
+    id: 'eye',
+    name: function () { return T('眼睛的位置', 'Eye position'); },
+    move: function (dx, dy, big) {
+      if (!dx) return false;
+      const e0 = st.eye;
+      setVal(elEye, Math.max(0, Math.min(20, Math.round((e0 + dx * (big ? 1 : 0.1)) * 10) / 10)));
+      return st.eye !== e0;
+    },
+    describe: function () {
+      const near = Math.abs(st.eye - st.xL) <= 0.3 ? T('，正對左游標', ', straight in front of the left cursor') : Math.abs(st.eye - st.xR) <= 0.3 ? T('，正對右游標', ', straight in front of the right cursor') : '';
+      return T('眼睛在標尺 ', 'Eye at ') + st.eye.toFixed(1) + ' cm' + near + T('。', '.');
+    }
+  };
+  function syncKbItems() {
+    const want = [cursorItem('L'), cursorItem('R')].concat(st.parallax ? [eyeItem] : []);
+    const sel = kb ? kb.index() : 0;
+    kbItems.length = 0;
+    want.forEach(function (it) { kbItems.push(it); });
+    if (kb && sel >= kbItems.length) kb.select(0);
+  }
+  syncKbItems();
+  kb = window.LabKeys ? window.LabKeys.attach(cv, {
+    label: T('電子荷質比實驗裝置的正面圖：亥姆霍茲線圈、玻璃球中發光的電子束圓圈、左右游標與標尺、電源供應器的電表，以及兩個游標的放大鏡。按 Enter 切換左游標、右游標（開啟視差時還有眼睛的位置），左右方向鍵移動，Shift 加方向鍵移動得更多。',
+      'Front view of the e/m apparatus: Helmholtz coils, the glowing electron-beam circle in the bulb, the left and right cursors with the scale, the meters, and magnifiers for the two cursors. Press Enter to switch between the left cursor, the right cursor (and, with parallax on, the eye position); the left and right arrow keys move it, Shift with an arrow key moves it further.'),
+    items: kbItems,
+    onChange: function () { ver++; requestDraw(); }
+  }) : null;
+  /** 鍵盤選取的物件周圍畫焦點框（--accent 色虛線圓角框） */
+  function drawKbFocus(g) {
+    if (!kb || !kb.focused()) return;
+    const it = kbItems[kb.index()];
+    if (!it) return;
+    g.save();
+    g.setLineDash([5, 4]); g.strokeStyle = LD.c.accent; g.lineWidth = 2;
+    if (it.id === 'L' || it.id === 'R') {
+      const Xw = (it.id === 'L' ? st.xL : st.xR) + ZERO, sg = it.id === 'L' ? -1 : 1;
+      const xa = X(Xw + sg * 1.95), xb = X(Xw - sg * 0.35), top = Y(CUR_TOP), bot = Y(-15.9);
+      LD.roundRect(g, Math.min(xa, xb) - 5, top - 5, Math.abs(xb - xa) + 10, bot - top + 10, 6);
+      g.stroke();
+    } else if (it.id === 'eye' && diag) {
+      // 與 drawDiag 相同的座標換算
+      const d = diag, padX = 14, topY = d.y + 30, botY = d.y + d.h - 26;
+      const kx = (d.w - 2 * padX) / 24, zEye = SD + EL, kz = (botY - topY) / (zEye + 1.5);
+      const ex = d.x + d.w / 2 + eyeX() * kx, ey = topY + (zEye + 1.5) * kz;
+      LD.roundRect(g, ex - 15, ey - 11, 30, 22, 6);
+      g.stroke();
+    }
+    g.restore();
+  }
 
   // =====================================================================
   // 3D 檢視（three.js 以 import() 延遲載入；場景在 e-over-m-3d.js）

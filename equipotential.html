@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Physics Lab">等位線與電場（導電紙實驗）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"等位線與電場（導電紙實驗）","alternateName":"Equipotential Lines and the Electric Field (Conducting Paper)","description":"用探針與三用電表（或檢流計零位法）在導電紙上找等電位點、描等位線，畫出垂直的電力線，由 ΔV/Δd 估算電場，還能看 3D 電位地形。","url":"https://astro1222ni.github.io/physics-lab/equipotential.html","image":"https://astro1222ni.github.io/physics-lab/img/og/equipotential.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","靜電學（Electrostatics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
@@ -131,6 +132,7 @@
     </header>
 
     <!-- 第一部分：實驗桌（導電紙、電極、探針、電源與電表） -->
+    <p class="try-hint" data-en="Try it: press “Switch on the supply”, move the red probe to where the meter reads 0 and press “Record”; record a few more points and watch the line take shape.">試試看：按「接通電源」，把紅探針移到讀數為 0 處按「記錄」，多記幾點看等位線的形狀。</p>
     <div class="lab eq">
       <div class="stage" id="stage">
         <div class="view-bar">
@@ -141,7 +143,7 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動，方向鍵微調，Enter 記錄" data-en-aria-label="Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it, use the arrow keys to fine-tune and Enter to record"></canvas>
+        <canvas id="cv" tabindex="0" aria-label="實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動；鍵盤操作：Enter 切換探針，方向鍵移動 0.05 cm，Shift 加方向鍵移動 0.5 cm，Alt 加方向鍵移動 0.01 cm，R 記錄。" data-en-aria-label="Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it. Keyboard: Enter picks a probe, the arrow keys move it 0.05 cm, Shift with an arrow key 0.5 cm, Alt with an arrow key 0.01 cm, R records."></canvas>
         <div id="view3"></div>
         <div class="playbar">
           <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
@@ -150,6 +152,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
         <div class="legend">
           <span class="lg-mark" data-en-html="<i></i>Recorded points"><i></i>記錄點</span>
           <span class="lg-eq" data-en-html="<i></i>Measured equipotentials"><i></i>量到的等位線</span>
@@ -362,6 +365,13 @@
         <li data-en-html="Field lines from your data: only what you measured is used — the electrodes (V<sub>0</sub> and 0) and the points of your equipotential lines are taken as known potentials, and the potential in between is filled in as smoothly as possible (Laplace’s equation on a coarse grid with insulating edges). Your lines are contour lines of this filled-in potential, so lines drawn straight downhill cross each of them at a right angle. They start on your line closest to half the supply voltage, spaced so that equal current flows between neighbouring lines (denser where the field is stronger), and run to both electrodes. The computed current lines are spaced the same way.">由數據畫電力線：只用量到的資料——電極（V<sub>0</sub> 與 0）與每一條量測線上的點當作已知電位，中間的電位用「最平滑」的方式補起來（在粗網格上解拉普拉斯方程式，紙邊不導電）。量測線就是這個補好的電位的等高線，沿下坡方向畫出的線自然與每一條量測線垂直。起點放在電位最接近電源一半的量測線上，間隔讓相鄰兩線之間流過的電流相等（電場愈強，線愈密），再往兩邊畫到電極。計算的電流線也用同樣的方式分配。</li>
         <li data-en="The 3D landscape uses the same solution (every second grid point). It uses the three.js library (MIT license), which is downloaded only when you switch to 3D.">3D 地形使用同一個數值解（每隔一個格點取一點），以 three.js 函式庫（MIT 授權）繪製，只有切換到 3D 時才會下載。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics IV · Electrostatics.">課綱對應：選修物理Ⅳ・靜電學。</li>
+        <li data-en="The sheet resistance (5 kΩ per square), the galvanometer (±50 μA full scale, 50 kΩ in its circuit), the 0.01 V multimeter resolution and the error sizes are values chosen for this simulation (see “How the simulation works”). For a uniform sheet the potential pattern does not depend on the sheet resistance; it only sets the size of the current.">導電紙面電阻 5 kΩ/□、檢流計（滿刻度 ±50 μA、迴路 50 kΩ）、三用電表解析度 0.01 V 與各項誤差大小，都是本模擬設定的數值（見「模擬方法」）。均勻的導電紙上，電位分布與面電阻無關，面電阻只影響電流大小。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/7-5-equipotential-surfaces-and-conductors&quot;>OpenStax University Physics Vol. 2 — 7.5 Equipotential Surfaces and Conductors</a>; <a href=&quot;https://hyperphysics.gsu.edu/hbase/electric/equipot.html&quot;>HyperPhysics: Equipotential Lines</a>.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-2/pages/7-5-equipotential-surfaces-and-conductors">OpenStax University Physics 第二冊 7.5 等位面與導體</a>、<a href="https://hyperphysics.gsu.edu/hbase/electric/equipot.html">HyperPhysics：等位線</a>（英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -369,17 +379,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/equipotential-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/equipotential-3d.js?v=202611120013"></script>
-  <script src="js/equipotential.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="equipotential"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/equipotential-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/equipotential-3d.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/equipotential.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="equipotential"></script>
   <script src="js/missions/equipotential.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

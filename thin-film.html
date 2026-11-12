@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120801"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Thin-Film Interference: Soap Films, Air Wedges and Newton's Rings | Astro Ni Physics Lab">薄膜干涉（肥皂膜、空氣劈與牛頓環）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="看排液中肥皂膜的真實彩色條紋、數空氣劈的直條紋量細線直徑、量牛頓環半徑求透鏡曲率半徑；認識半波損失與光程差。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/thin-film.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/thin-film.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/thin-film.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/thin-film.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="薄膜干涉（肥皂膜、空氣劈與牛頓環）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="看排液中肥皂膜的真實彩色條紋、數空氣劈的直條紋量細線直徑、量牛頓環半徑求透鏡曲率半徑；認識半波損失與光程差。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/thin-film.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/thin-film.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="薄膜干涉（肥皂膜、空氣劈與牛頓環）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"薄膜干涉（肥皂膜、空氣劈與牛頓環）","alternateName":"Thin-Film Interference: Soap Films, Air Wedges and Newton's Rings","description":"看排液中肥皂膜的真實彩色條紋、數空氣劈的直條紋量細線直徑、量牛頓環半徑求透鏡曲率半徑；認識半波損失與光程差。","url":"https://astro1222ni.github.io/physics-lab/thin-film.html","image":"https://astro1222ni.github.io/physics-lab/img/og/thin-film.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <style>
+    /* 本頁專用色彩代號（--tf-*）：看肥皂膜的黑色背景板與顯微鏡視野在兩種模式下都是暗的；玻璃、金屬、細線的材質色 */
+    :root {
+      --tf-velvet: #0b0f12; --tf-velvet-hi: #1b2329; --tf-ink: rgba(236, 242, 244, 0.94); --tf-ink-dim: rgba(196, 208, 212, 0.78);
+      --tf-pill: rgba(8, 12, 15, 0.78); --tf-metal: #9aa6ad; --tf-glass: #7fc4cc; --tf-water: #3f93d6; --tf-wire: #b5733a;
+      --tf-lamp: #f2c14e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --tf-velvet: #06090b; --tf-velvet-hi: #141b20; --tf-metal: #8b979e; --tf-glass: #5fa9b2; --tf-water: #4a9be0; --tf-wire: #c58449;
+        --tf-pill: rgba(5, 8, 10, 0.82);
+      }
+    }
+    :root[data-theme="dark"] {
+      --tf-velvet: #06090b; --tf-velvet-hi: #141b20; --tf-metal: #8b979e; --tf-glass: #5fa9b2; --tf-water: #4a9be0; --tf-wire: #c58449;
+      --tf-pill: rgba(5, 8, 10, 0.82);
+    }
+    .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 10px; }
+    .modes button { padding: 6px 4px; line-height: 1.25; text-align: center; }
+    .modes button small { display: block; font-size: .78em; color: var(--muted); font-weight: 400; }
+    @media (max-width: 430px) { .modes button small { display: none; } .modes button { min-height: 44px; } }
+    .seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .seg button { padding: 7px 6px; text-align: center; line-height: 1.3; }
+    :is(.modes, .seg) button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 650; }
+    :is(.modes) button[aria-pressed="true"] small { color: var(--accent); }
+    .stage canvas#scene { aspect-ratio: 16 / 10; }
+    .stage canvas#graph { aspect-ratio: 3 / 1; margin-top: 10px; touch-action: pan-y; }
+    .stage canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    @media (max-width: 600px) {
+      .stage canvas#scene { aspect-ratio: 4 / 5; }
+      .stage canvas#graph { aspect-ratio: 2 / 1; }
+    }
+    .stage-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; margin: 8px 4px 0; }
+    .stage-row .hint { margin: 0; flex: 1 1 240px; }
+    .stage-row .btns { flex: 0 0 auto; }
+    .stage-row button { padding: 5px 12px; font-size: calc(13px * var(--fs, 1)); }
+    .btns.presets button { padding: 6px 10px; font-size: calc(13px * var(--fs, 1)); }
+    .btns.presets button i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; border: 1px solid var(--border); }
+    .spectrum { height: 8px; border-radius: 4px; margin: 2px 0 0; border: 1px solid var(--border); grid-column: 1 / -1; }
+    .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--border); }
+    .slider output .sub { font-weight: 400; color: var(--muted); }
+    [hidden] { display: none !important; }
+    dl.readout dt i, .notes i.v { font-family: "Times New Roman", serif; font-size: 1.08em; }
+    dl.readout sub, dl.readout sup { font-size: .72em; line-height: 0; }
+    dl.readout dd.good { color: var(--probe); font-weight: 600; }
+    dl.readout dd.hide { color: var(--muted); }
+    .card .status { margin-top: 6px; }
+    .mys { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+    .mys .checks { margin-top: 4px; }
+    .tablewrap { overflow-x: auto; margin: 8px 0 0; max-height: 220px; overflow-y: auto; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; position: sticky; top: 0; background: var(--surface); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data tr.stale td { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent); }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); }
+    canvas#fit { display: block; width: 100%; aspect-ratio: 16 / 10; margin-top: 10px; border-radius: 8px; background: var(--canvas-bg); border: 1px solid var(--border); }
+    .answer { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .answer input { width: 7.5em; min-height: 44px; font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .answer input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    #ansMsg.ok { color: var(--probe); font-weight: 600; }
+    @media (pointer: coarse) { .slider input[type="range"] { height: 28px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#optics&quot;&gt;Optics&lt;/a&gt; / Physical optics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 物理光學</nav>
+      <h1 data-en="Thin-Film Interference: Soap Films, Air Wedges and Newton's Rings">薄膜干涉（肥皂膜、空氣劈與牛頓環）</h1>
+      <p data-en="Light reflected from the top and the bottom of a thin layer interferes. Watch the true colours of a draining soap film, count the straight fringes of an air wedge to measure a thread's diameter, and measure Newton's rings to find the radius of curvature of a lens.">薄膜上、下兩個表面反射的光互相干涉。看看排液中的肥皂膜真實的彩色條紋、數空氣劈的直條紋量出細線直徑、量牛頓環的半徑求出透鏡的曲率半徑。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Drain ▶” and watch the black band at the top of the soap film grow as the film thins.">試試看：按「排液 ▶」，看肥皂膜變薄時，頂端的黑色區域怎麼越長越大。</p>
+    <div class="lab">
+      <div class="stage">
+        <div class="modes" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+          <button type="button" data-mode="soap" aria-pressed="true" data-en-html="Soap film&lt;small&gt;wedge-shaped film&lt;/small&gt;">肥皂膜<small>上薄下厚的膜</small></button>
+          <button type="button" data-mode="wedge" aria-pressed="false" data-en-html="Air wedge&lt;small&gt;straight fringes&lt;/small&gt;">空氣劈<small>等間距直條紋</small></button>
+          <button type="button" data-mode="newton" aria-pressed="false" data-en-html="Newton's rings&lt;small&gt;concentric rings&lt;/small&gt;">牛頓環<small>同心圓環</small></button>
+        </div>
+        <canvas id="scene" tabindex="0"></canvas>
+        <div class="stage-row">
+          <p class="hint" id="sceneHint"></p>
+          <div class="btns" id="soapBtns">
+            <button type="button" id="drain" data-en="Drain ▶">排液 ▶</button>
+            <button type="button" id="reblow" data-en="New film">重新吹一片膜</button>
+          </div>
+        </div>
+        <canvas id="graph" tabindex="0"></canvas>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Light source">光源</h2>
+          <div class="seg" role="group" aria-label="光源" data-en-aria-label="Light source">
+            <button type="button" data-src="white" aria-pressed="true" data-en="White light (D65)">白光（D65）</button>
+            <button type="button" data-src="mono" aria-pressed="false" data-en="Monochromatic">單色光</button>
+          </div>
+          <div id="monoRows">
+            <div class="slider"><label for="lam" data-en="Wavelength λ">波長 λ</label><output id="lamo"></output>
+              <input id="lam" type="range" min="380" max="750" step="1" value="589" data-decimals="1">
+              <div class="spectrum"></div></div>
+            <div class="btns presets">
+              <button type="button" data-lam="650" data-en-html="&lt;i style=&quot;background:#ff0000&quot;&gt;&lt;/i&gt;Red 650"><i style="background:#ff0000"></i>紅 650</button>
+              <button type="button" data-lam="532" data-en-html="&lt;i style=&quot;background:#00ff00&quot;&gt;&lt;/i&gt;Green 532"><i style="background:#00ff00"></i>綠 532</button>
+              <button type="button" data-lam="450" data-en-html="&lt;i style=&quot;background:#4f00ff&quot;&gt;&lt;/i&gt;Blue 450"><i style="background:#4f00ff"></i>藍 450</button>
+              <button type="button" data-lam="589" data-en-html="&lt;i style=&quot;background:#ff8000&quot;&gt;&lt;/i&gt;Sodium 589"><i style="background:#ff8000"></i>鈉黃 589</button>
+            </div>
+          </div>
+          <p class="status" id="whiteNote" data-en="White light: daylight (CIE illuminant D65); the colour is calculated from the reflected spectrum with the CIE 1931 colour-matching functions.">白光：日光（CIE 標準光源 D65）；顏色由反射光譜以 CIE 1931 配色函數算出。</p>
+        </section>
+
+        <section class="card" id="soapCard">
+          <h2 data-en="Soap film">肥皂膜</h2>
+          <div class="slider"><label for="sh" data-en="Thickness at the bottom">底部厚度 <i>h</i><sub>底</sub></label><output id="sho"></output>
+            <input id="sh" type="range" min="0" max="3000" step="10" value="1000" data-decimals="0"></div>
+          <div class="slider"><label for="sn" data-en="Refractive index of the film n">膜的折射率 <i>n</i></label><output id="sno"></output>
+            <input id="sn" type="range" min="1.2" max="1.6" step="0.01" value="1.33" data-decimals="3"></div>
+          <div class="slider"><label for="sa" data-en="Viewing angle θ (angle of incidence)">觀看角度 θ（入射角）</label><output id="sao"></output>
+            <input id="sa" type="range" min="0" max="60" step="1" value="0" data-decimals="1"></div>
+          <p class="status" data-en="The film is thinnest at the top and thickest at the bottom (a wedge). Gravity drains the liquid downwards, so the whole film slowly gets thinner.">膜上薄下厚（楔形）；重力讓液體往下流，整片膜慢慢變薄。</p>
+        </section>
+
+        <section class="card" id="wedgeCard" hidden>
+          <h2 data-en="Air wedge">空氣劈</h2>
+          <div class="slider"><label for="wD" data-en="Thread diameter D">細線直徑 <i>D</i></label><output id="wDo"></output>
+            <input id="wD" type="range" min="5" max="200" step="0.5" value="20" data-decimals="2"></div>
+          <div class="slider"><label for="wL" data-en="Contact line to thread L">接觸線到細線的距離 <i>L</i></label><output id="wLo"></output>
+            <input id="wL" type="range" min="2" max="15" step="0.1" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="wn" data-en="Refractive index in the wedge n">楔中介質的折射率 <i>n</i></label><output id="wno"></output>
+            <input id="wn" type="range" min="1" max="1.7" step="0.01" value="1" data-decimals="3"></div>
+          <div class="btns presets">
+            <button type="button" data-wn="1" data-en="Air 1.00">空氣 1.00</button>
+            <button type="button" data-wn="1.33" data-en="Water 1.33">充水 1.33</button>
+          </div>
+          <div class="slider"><label for="wx" data-en-html="Microscope position &lt;i&gt;x&lt;/i&gt;&lt;sub&gt;0&lt;/sub&gt;">顯微鏡位置 <i>x</i><sub>0</sub></label><output id="wxo"></output>
+            <input id="wx" type="range" min="0" max="10" step="0.05" value="5" data-decimals="2"></div>
+          <div class="slider"><label for="wv" data-en="Field of view">視野寬度</label><output id="wvo"></output>
+            <input id="wv" type="range" min="2" max="40" step="1" value="10" data-decimals="1"></div>
+          <div class="mys">
+            <div class="btns"><button type="button" id="wMys" data-en="Mystery thread">神秘細線</button></div>
+            <p class="status" id="wMysNote" data-en="Mystery thread: the diameter is hidden. Measure the fringe spacing and work out D yourself.">神秘細線：直徑被藏起來了，量出條紋間距，自己算出 D。</p>
+          </div>
+        </section>
+
+        <section class="card" id="newtonCard" hidden>
+          <h2 data-en="Newton's rings">牛頓環</h2>
+          <div class="seg" role="group" aria-label="觀察方式" data-en-aria-label="Viewing">
+            <button type="button" data-view="R" aria-pressed="true" data-en="Reflected light">反射光</button>
+            <button type="button" data-view="T" aria-pressed="false" data-en="Transmitted light">透射光</button>
+          </div>
+          <div class="checks" id="enhRow"><label><input id="enh" type="checkbox"><span data-en="Stretch the contrast (transmitted light is very pale)">增強對比（透射光很淡）</span></label></div>
+          <div class="slider"><label for="nR" data-en="Radius of curvature of the lens R">透鏡的曲率半徑 <i>R</i></label><output id="nRo"></output>
+            <input id="nR" type="range" min="0.1" max="5" step="0.01" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="nn" data-en="Refractive index in the gap n">間隙中介質的折射率 <i>n</i></label><output id="nno"></output>
+            <input id="nn" type="range" min="1" max="1.7" step="0.01" value="1" data-decimals="3"></div>
+          <div class="btns presets">
+            <button type="button" data-nn="1" data-en="Air 1.00">空氣 1.00</button>
+            <button type="button" data-nn="1.33" data-en="Water 1.33">充水 1.33</button>
+          </div>
+          <div class="slider"><label for="ne" data-en="Gap at the centre e (dust, lifting)">中心的間隙 <i>e</i>（灰塵、抬高）</label><output id="neo"></output>
+            <input id="ne" type="range" min="0" max="1000" step="1" value="0" data-decimals="1"></div>
+          <div class="mys">
+            <div class="btns"><button type="button" id="nMys" data-en="Mystery lens">神秘透鏡</button></div>
+            <div class="checks"><label><input id="dust" type="checkbox"><span data-en="With a speck of dust under the lens">透鏡下有灰塵</span></label></div>
+            <p class="status" id="nMysNote" data-en="Mystery lens: R is hidden. Measure several dark rings, plot r² against m and work out R from the slope.">神秘透鏡：曲率半徑被藏起來了。量幾個暗環，作 r² 對 m 的圖，由斜率算出 R。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Calculation">計算方式</h2>
+          <div class="seg" role="group" aria-label="計算方式" data-en-aria-label="Calculation">
+            <button type="button" data-beams="multi" aria-pressed="true" data-en="Multiple beams (exact)">多光束（精確）</button>
+            <button type="button" data-beams="two" aria-pressed="false" data-en="Two beams">雙光束</button>
+          </div>
+          <p class="status" data-en="Multiple beams adds up every reflection inside the film (Airy formula); two beams keeps only the first two reflected rays.">多光束：把膜內來回反射的每一道光都加起來（艾里公式）；雙光束：只取前兩道反射光。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+          <p class="status" id="readNote"></p>
+          <p class="sr-only" id="live" aria-live="polite" role="status"></p>
+        </section>
+
+        <section class="card" id="measCard" hidden>
+          <h2 data-en="Measurements">量測紀錄</h2>
+          <div class="slider"><label for="idx" id="idxLabel"></label><output id="idxo"></output>
+            <input id="idx" type="range" min="0" max="60" step="1" value="0" data-decimals="0"></div>
+          <div class="btns">
+            <button type="button" id="rec" class="primary" data-en="Record">記錄</button>
+            <button type="button" id="undo" data-en="Undo">撤銷一筆</button>
+            <button type="button" id="clearAll" data-en="Clear all" title="清除量測資料表與圖；滑桿設定不變" data-en-title="Clear the data table and the graph; slider settings are kept">全部清除</button>
+          </div>
+          <p class="status" id="recNote"></p>
+          <div class="tablewrap"><table class="data" id="tbl"></table></div>
+          <canvas id="fit" role="img" aria-label="量測數據與最佳直線" data-en-aria-label="Measured data and best-fit line"></canvas>
+          <dl class="readout" id="fitOut" style="margin-top:8px"></dl>
+          <div class="answer" id="ansRow" hidden>
+            <label for="ans" id="ansLabel"></label>
+            <input id="ans" type="number" inputmode="decimal" step="any">
+            <button type="button" id="ansBtn" data-en="Check">檢查</button>
+            <button type="button" id="reveal" data-en="Reveal">公布答案</button>
+            <span id="ansMsg" role="status"></span>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Two reflected rays and the half-wave loss">兩道反射光與半波損失</h3>
+      <p data-en-html="Light falling on a thin film is partly reflected at the top surface and partly at the bottom surface. The two reflected rays come from the same incident light, so they are coherent and interfere. The amplitude reflection coefficient of a surface at (near-)normal incidence is the Fresnel coefficient">光照到薄膜時，一部分在上表面反射，一部分進入膜內在下表面反射。兩道反射光來自同一道入射光，彼此同調而互相干涉。光（接近）垂直入射時，界面的振幅反射係數為菲涅耳係數</p>
+      <div class="formula">\[ r = \frac{n_1 - n_2}{n_1 + n_2} \]</div>
+      <p data-en-html="When light goes from a medium of lower refractive index to a higher one (\(n_1 &lt; n_2\)), \(r\) is negative: the reflected wave is turned upside down, a phase change of \(\pi\), equivalent to an extra half wavelength of path. This is the &lt;strong&gt;half-wave loss&lt;/strong&gt;. Reflection from higher to lower index has no phase change.">光由低折射率射向高折射率（\(n_1 &lt; n_2\)）時 \(r\) 為負值：反射波上下顛倒，相位改變 \(\pi\)，相當於多走了半個波長，稱為<strong>半波損失</strong>；由高折射率射向低折射率的反射沒有相位改變。</p>
+      <p data-en-html="Inside a film of thickness \(d\) and index \(n\), the second ray travels an extra optical path (refraction angle \(\theta_t\), with \(\sin\theta_1 = n\sin\theta_t\) from air)">在厚度 \(d\)、折射率 \(n\) 的膜內，第二道光多走的光程差為（\(\theta_t\) 為膜內的折射角，從空氣射入時 \(\sin\theta_1 = n\sin\theta_t\)）</p>
+      <div class="formula">\[ \Delta = 2 n d \cos\theta_t \]</div>
+      <p data-en-html="A soap film in air, the air gap of an air wedge and the air gap under a Newton's-ring lens each have &lt;strong&gt;exactly one&lt;/strong&gt; half-wave loss, so for the reflected light">空氣中的肥皂膜、空氣劈與牛頓環的空氣間隙，兩道反射光之中<strong>恰好一道</strong>有半波損失，所以反射光的條件為</p>
+      <div class="formula" data-en-html="\[ \text{bright: } 2nd\cos\theta_t = \left(m + \tfrac{1}{2}\right)\lambda, \qquad \text{dark: } 2nd\cos\theta_t = m\lambda, \qquad m = 0, 1, 2, \ldots \]">
+        \[ \text{亮紋：}\ 2nd\cos\theta_t = \left(m + \tfrac{1}{2}\right)\lambda, \qquad \text{暗紋：}\ 2nd\cos\theta_t = m\lambda, \qquad m = 0, 1, 2, \ldots \]
+      </div>
+      <p data-en-html="&lt;strong&gt;Why the thinnest part of a soap film is black&lt;/strong&gt;: when \(d \to 0\) the path difference vanishes, but one ray has been flipped by the half-wave loss and the other has not, so the two cancel for every wavelength. A film only a few tens of nanometres thick (a &lt;em&gt;black film&lt;/em&gt;) reflects almost nothing and looks black against a dark background, just before it bursts."><strong>為什麼肥皂膜最薄的地方是黑的</strong>：厚度 \(d \to 0\) 時光程差趨近 0，但兩道光一道有半波損失、一道沒有，對所有波長都互相抵消。只有幾十奈米厚的膜（<em>黑膜</em>）幾乎不反射光，在暗背景前看起來是黑色的，那也是肥皂膜快要破掉的時候。</p>
+      <p data-en-html="If both reflections, or neither, have a half-wave loss (for example a magnesium fluoride anti-reflection coating on glass, \(1 &lt; 1.38 &lt; 1.52\)), the two conditions swap: a coating a quarter of a wavelength thick cancels the reflection.">如果兩道反射都有（或都沒有）半波損失，例如玻璃上的氟化鎂增透膜（\(1 &lt; 1.38 &lt; 1.52\)），亮暗條件就對調：四分之一波長厚的膜讓反射光互相抵消。</p>
+
+      <h3 data-en="Air wedge">空氣劈</h3>
+      <p data-en-html="Two flat glass plates touch along one edge and a thread of diameter \(D\) is placed at distance \(L\). The gap grows linearly, \(t = x\tan\theta \approx xD/L\), so lines of equal thickness are straight and the dark fringes are equally spaced:">兩片平板玻璃一端接觸、在距離 \(L\) 處夾一根直徑 \(D\) 的細線。間隙隨位置線性增加，\(t = x\tan\theta \approx xD/L\)，等厚的位置是直線，暗紋等間距：</p>
+      <div class="formula">\[ 2 n t_m = m\lambda \;\Rightarrow\; x_m = \frac{m\lambda L}{2nD}, \qquad \Delta x = \frac{\lambda}{2n\theta} = \frac{\lambda L}{2nD}, \qquad D = \frac{\lambda L}{2n\,\Delta x} \]</div>
+      <p data-en-html="The contact line (\(t = 0\)) is a dark fringe, and there are \(\lfloor 2nD/\lambda \rfloor + 1\) dark fringes from the contact line to the thread. Filling the wedge with water (\(n = 1.33\)) makes the fringes closer together by a factor of 1.33.">接觸線（\(t = 0\)）是暗紋；從接觸線到細線共有 \(\lfloor 2nD/\lambda \rfloor + 1\) 條暗紋。楔中充水（\(n = 1.33\)）時，條紋間距縮小為原來的 1/1.33。</p>
+
+      <h3 data-en="Newton's rings">牛頓環</h3>
+      <p data-en-html="A plano-convex lens of radius of curvature \(R\) rests on a flat plate. At distance \(r\) from the point of contact the gap is \(t = R - \sqrt{R^{2} - r^{2}} \approx r^{2}/2R\), so lines of equal thickness are circles. In reflected light the centre is a dark spot, and the \(m\)th dark ring has radius">曲率半徑 \(R\) 的平凸透鏡放在平板玻璃上，離接觸點 \(r\) 處的間隙 \(t = R - \sqrt{R^{2} - r^{2}} \approx r^{2}/2R\)，等厚的位置是同心圓。反射光的中心是暗點，第 \(m\) 個暗環的半徑</p>
+      <div class="formula">\[ r_m = \sqrt{\frac{m\lambda R}{n}}, \qquad r_m^{2} = \frac{\lambda R}{n}\, m \]</div>
+      <p data-en-html="So a graph of \(r^{2}\) against \(m\) is a straight line of slope \(\lambda R/n\): knowing \(\lambda\) gives \(R\), and knowing \(R\) gives \(\lambda\). If a speck of dust lifts the lens by \(e\), then \(r_m^{2} = (m\lambda/n - 2e)R\): the centre is no longer necessarily dark and the line shifts down, but &lt;strong&gt;the slope is unchanged&lt;/strong&gt;. That is why the experiment uses \(r_m^{2} - r_k^{2} = (m - k)\lambda R/n\) rather than a single ring.">所以 \(r^{2}\) 對 \(m\) 的圖是斜率 \(\lambda R/n\) 的直線：已知 \(\lambda\) 可求 \(R\)，已知 \(R\) 可求 \(\lambda\)。如果透鏡下有灰塵把透鏡抬高 \(e\)，則 \(r_m^{2} = (m\lambda/n - 2e)R\)：中心不一定是暗點，直線整條往下移，但<strong>斜率不變</strong>，這就是實驗要用 \(r_m^{2} - r_k^{2} = (m - k)\lambda R/n\)，而不只量一個環的原因。</p>
+      <p data-en-html="Transmitted light is complementary to reflected light: with no absorption \(T = 1 - R\), so in transmitted light the centre is a bright spot and the dark rings become bright. Because each surface reflects only about 4% of the light, the transmitted rings have very low contrast.">透射光與反射光互補：沒有吸收時 \(T = 1 - R\)，所以透射光的中心是亮點，反射的暗環變成亮環。由於每個界面只反射約 4% 的光，透射光的明暗對比很低。</p>
+
+      <h3 data-en="Many reflections and white light">多次反射與白光</h3>
+      <p data-en-html="Light bounces back and forth inside the film many times. Adding up all the reflected waves gives the Airy formula (\(\delta = 4\pi n d\cos\theta_t/\lambda\)):">光會在膜內來回反射很多次，把所有反射光加起來，得到艾里公式（\(\delta = 4\pi n d\cos\theta_t/\lambda\)）：</p>
+      <div class="formula">\[ r = \frac{r_{12} + r_{23}\,e^{i\delta}}{1 + r_{12}r_{23}\,e^{i\delta}}, \qquad R = |r|^{2}, \qquad R + T = 1 \]</div>
+      <p data-en-html="Because \(|r| \approx 0.14\)–\(0.21\) is small, the third and later rays are very weak and the two-beam result is almost the same. Treating the two rays as having equal amplitude gives the simple form \(R \approx 4r^{2}\sin^{2}(\delta/2)\).">因為 \(|r| \approx 0.14\)–\(0.21\) 很小，第三道以後的光很弱，雙光束的結果幾乎一樣；若把兩道光當成振幅相等，可化簡成 \(R \approx 4r^{2}\sin^{2}(\delta/2)\)。</p>
+      <p data-en-html="Under white light every wavelength forms its own fringes. At each thickness the film reflects some wavelengths strongly and cancels others, and what the eye sees is the colour of that reflected spectrum:">白光照射時，每種波長各自形成條紋。每個厚度強烈反射某些波長、抵消另一些波長，眼睛看到的是這個反射光譜的顏色：</p>
+      <div class="formula">\[ X = \frac{\sum_{\lambda} S(\lambda)R(\lambda)\bar{x}(\lambda)}{\sum_{\lambda} S(\lambda)\bar{y}(\lambda)},\quad Y = \frac{\sum_{\lambda} S(\lambda)R(\lambda)\bar{y}(\lambda)}{\sum_{\lambda} S(\lambda)\bar{y}(\lambda)},\quad Z = \frac{\sum_{\lambda} S(\lambda)R(\lambda)\bar{z}(\lambda)}{\sum_{\lambda} S(\lambda)\bar{y}(\lambda)} \]</div>
+      <p data-en-html="Thin films show the bright, saturated colours of the first orders (black, silvery white, yellow, red, purple, blue, green, …). For a thick film the reflection maxima and minima of neighbouring wavelengths are so close together that they average out, and the colour fades towards white.">薄的地方是鮮豔的低級數顏色（黑、銀白、黃、紅、紫、藍、綠……）；膜很厚時，相鄰波長的亮暗互相錯開而平均掉，顏色就淡成白色。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="&lt;strong&gt;The black top&lt;/strong&gt;: press “Drain” and watch the colour bands move down and spread out as the film thins, while the black region at the top grows."><strong>頂端的黑膜</strong>：按「排液」，看彩色條紋隨著膜變薄往下移、變寬，頂端的黑色區域越來越大。</li>
+        <li data-en-html="&lt;strong&gt;Monochromatic versus white light&lt;/strong&gt;: with sodium light the film shows alternating yellow and black bands; with white light the same film shows a sequence of colours. Look at the reflected spectrum under the film to see which wavelengths are cancelled."><strong>單色光與白光</strong>：鈉黃光下肥皂膜是一條條黃黑相間的條紋；換成白光，同一片膜變成一連串顏色。看下方的反射光譜，找出哪些波長被抵消了。</li>
+        <li data-en-html="&lt;strong&gt;Look at the film at an angle&lt;/strong&gt;: increasing the viewing angle makes \(\cos\theta_t\) smaller, so each colour moves to a thicker part of the film."><strong>斜著看</strong>：觀看角度變大時 \(\cos\theta_t\) 變小，每種顏色都移到膜更厚的地方。</li>
+        <li data-en-html="&lt;strong&gt;Measure a thread&lt;/strong&gt;: in the air wedge, record the positions of several dark fringes; the slope of \(x\) against \(k\) is \(\Delta x\), and \(D = \lambda L/(2n\Delta x)\)."><strong>量細線</strong>：在空氣劈中記錄幾條暗紋的位置，\(x\) 對編號 \(k\) 的斜率就是 \(\Delta x\)，再由 \(D = \lambda L/(2n\Delta x)\) 求出細線直徑。</li>
+        <li data-en-html="&lt;strong&gt;Water in the gap&lt;/strong&gt;: fill the wedge or the Newton's-ring gap with water and the fringes crowd together, because the wavelength in water is \(\lambda/n\)."><strong>充水</strong>：空氣劈或牛頓環的間隙充水後條紋變密，因為水中的波長變成 \(\lambda/n\)。</li>
+        <li data-en-html="&lt;strong&gt;Lifting the lens&lt;/strong&gt;: slowly increase the centre gap \(e\) and the rings shrink into the centre one after another; every \(\lambda/2n\) of lift swallows one ring."><strong>抬高透鏡</strong>：慢慢加大中心間隙 \(e\)，圓環一圈一圈縮進中心消失；每抬高 \(\lambda/2n\) 就吞掉一個環。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Reflection and transmission are calculated from the Fresnel coefficients for s- and p-polarised light at the actual angle (in the air wedge and Newton's rings, normal incidence), and averaged for unpolarised light. The multiple-beam mode uses the exact Airy formula; the tests check \(R + T = 1\) and compare it with adding up the reflected rays one by one.">反射率與透射率用 s、p 兩種偏振的菲涅耳係數在實際角度計算（空氣劈與牛頓環為正入射），自然光取兩者的平均；多光束用精確的艾里公式，測試檢查 \(R + T = 1\)，並與逐道相加的反射光比對。</li>
+        <li data-en-html="Refractive indices: air 1 (really 1.0003), soap water 1.33 (adjustable), glass 1.52; dispersion and absorption are ignored. In the air wedge and Newton's rings only the thin gap between the two glass surfaces is calculated; reflections from the outer surfaces of the thick glass are incoherent with it and are left out.">折射率：空氣取 1（實際 1.0003）、肥皂水 1.33（可調）、玻璃 1.52，忽略色散與吸收。空氣劈與牛頓環只計算兩片玻璃之間的薄間隙；厚玻璃外側表面的反射與它不同調，不列入計算。</li>
+        <li data-en-html="Colours: the CIE 1931 2° colour-matching functions and the CIE standard illuminant D65, both from the official CIE data tables (CIE 015:2018) at 5 nm intervals from 380 to 780 nm, linearly interpolated to 1 nm. XYZ is converted to sRGB (IEC 61966-2-1); colours outside the sRGB gamut are desaturated towards a grey of the same luminance. For speed, white-light colours are precomputed for every 2 nm of thickness; beyond a 16 μm optical path the colours have faded to the incoherent average and that value is used.">顏色：CIE 1931 2° 配色函數與 CIE 標準光源 D65 都取自 CIE 官方資料表（CIE 015:2018），380–780 nm 每 5 nm 一點，線性內插到每 1 nm 積分；XYZ 轉成 sRGB（IEC 61966-2-1），超出 sRGB 色域的顏色往同亮度的灰色降低飽和度。為了速度，白光的顏色預先算好每 2 nm 厚度一格；光程差超過 16 μm 時顏色已淡成不同調相加的平均值，直接用該值。</li>
+        <li data-en-html="Exposure: a soap film reflects at most about 8% of the light, so the picture brightness is \(R/R_{\max}\) (\(R_{\max}\) is the brightest possible reflection of that film), like a camera's automatic exposure. Hue and saturation are unchanged.">曝光：肥皂膜最多只反射約 8% 的光，畫面亮度取 \(R/R_{\max}\)（\(R_{\max}\) 為這片膜最亮的反射），就像相機自動曝光，不改變顏色的色相與飽和度。</li>
+        <li data-en-html="The soap film is modelled as a wedge, \(h = h_{\text{bottom}}\cdot z/H\). Draining follows \(h_{\text{bottom}}(t) = h_0/\sqrt{1 + t/\tau}\), the \(t^{-1/2}\) law of gravitational drainage, with \(\tau = 0.6\ \text{s}\) chosen only for viewing. Real films also show swirls and a thick rim at the frame, which are not drawn.">肥皂膜以楔形 \(h = h_{\text{底}}\cdot z/H\) 表示；排液依重力排液的 \(t^{-1/2}\) 規律 \(h_{\text{底}}(t) = h_0/\sqrt{1 + t/\tau}\)，\(\tau = 0.6\ \text{s}\) 只為了方便觀看。真實的膜還有渦旋與框邊較厚的液膜，這裡沒有畫出。</li>
+        <li data-en-html="The side views are schematic: the gaps and angles are magnified a great deal. Where the fringes are narrower than a pixel, each pixel shows the average over its width, which is what an eye or camera without magnification would see.">側視圖是示意圖，間隙與角度都大幅放大。條紋比一個像素還細時，每個像素顯示其範圍內的平均，與不用放大鏡時眼睛或相機看到的一樣。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Physical Optics (thin-film interference).">課綱對應：選修物理Ⅲ・物理光學（薄膜干涉）。</li>
+        <li data-en-html="Colour data: CIE 1931 colour-matching functions, 2° observer, and CIE standard illuminant D65, 380–780 nm at 5 nm intervals, from the official CIE data tables (&lt;a href=&quot;https://cie.co.at/datatable/cie-1931-colour-matching-functions-2-degree-observer&quot;&gt;CIE: colour-matching functions&lt;/a&gt;, &lt;a href=&quot;https://cie.co.at/datatable/cie-standard-illuminant-d65&quot;&gt;CIE: illuminant D65&lt;/a&gt;; CIE 015:2018). XYZ to sRGB with the matrix and transfer curve of IEC 61966-2-1.">顏色數據：CIE 1931 配色函數（2° 觀察者）與 CIE 標準光源 D65，380–780 nm 每 5 nm 一點，取自 CIE 官方資料表（<a href="https://cie.co.at/datatable/cie-1931-colour-matching-functions-2-degree-observer">CIE：配色函數</a>、<a href="https://cie.co.at/datatable/cie-standard-illuminant-d65">CIE：D65 光源</a>；CIE 015:2018）；XYZ 轉 sRGB 用 IEC 61966-2-1 的矩陣與轉換曲線。</li>
+        <li data-en-html="Refractive indices: water about 1.333 in the middle of the visible spectrum (Hale and Querry, 1973, via &lt;a href=&quot;https://refractiveindex.info/?shelf=3d&amp;book=liquids&amp;page=water&quot;&gt;refractiveindex.info: water&lt;/a&gt;); the glass uses 1.52, close to SCHOTT N-BK7 with (n_d = 1.5168) (&lt;a href=&quot;https://refractiveindex.info/?shelf=popular_glass&amp;book=BK7&amp;page=SCHOTT&quot;&gt;refractiveindex.info: BK7&lt;/a&gt;). The sodium D line 589 nm and the laser wavelengths 650, 532 and 450 nm are the usual nominal values.">折射率：水在可見光中段約 1.333（Hale 與 Querry，1973，見 <a href="https://refractiveindex.info/?shelf=3d&amp;book=liquids&amp;page=water">refractiveindex.info：水</a>）；玻璃取 1.52，接近 SCHOTT N-BK7 的 (n_d = 1.5168)（<a href="https://refractiveindex.info/?shelf=popular_glass&amp;book=BK7&amp;page=SCHOTT">refractiveindex.info：BK7</a>）。鈉 D 線 589 nm 與雷射 650、532、450 nm 為常用的標稱值。</li>
+        <li data-en-html="Further reading: &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/3-4-interference-in-thin-films&quot;&gt;OpenStax University Physics Vol. 3 — 3.4 Interference in Thin Films&lt;/a&gt;; &lt;a href=&quot;http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/thinfilm.html&quot;&gt;HyperPhysics: Thin Film Reflection and Interference&lt;/a&gt;.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-3/pages/3-4-interference-in-thin-films">OpenStax University Physics 第三冊 3.4 薄膜干涉</a>、<a href="http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/thinfilm.html">HyperPhysics：薄膜的反射與干涉</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Physics Lab&lt;/a&gt; · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/thin-film-core.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/thin-film.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="thin-film"></script>
+  <script src="js/missions/thin-film.js"></script>
+  <script src="js/stats.js?v=202611120801" data-module="thin-film"></script>
+  <script src="js/comments.js?v=202611120801"></script>
+</body>
+</html>

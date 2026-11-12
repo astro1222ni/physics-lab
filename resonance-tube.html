@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Resonance in an Air Column: Measuring the Speed of Sound | Astro Ni Physics Lab">氣柱的共鳴（共鳴管測聲速）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,10 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"氣柱的共鳴（共鳴管測聲速）","alternateName":"Resonance in an Air Column: Measuring the Speed of Sound","description":"敲響音叉、拖曳蓄水桶降低水面，用響度計找出共鳴位置並套上橡皮筋，由相鄰共鳴點的間距求出波長、聲速與管口修正。","url":"https://astro1222ni.github.io/physics-lab/resonance-tube.html","image":"https://astro1222ni.github.io/physics-lab/img/og/resonance-tube.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","聲波（Sound Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 氣柱的共鳴頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布可以上下捲動頁面，只有蓄水桶的拖曳把手（#tank）攔下觸控 */
@@ -158,6 +158,7 @@
     </header>
 
     <!-- 第一部分：實驗裝置與操作 -->
+    <p class="try-hint" data-en="Try it: press “Strike the fork”, then press “▼ 1 cm” a few times to lower the water, and watch where the loudness meter suddenly jumps up.">試試看：按「敲音叉」，再連按「▼ 1 cm」讓水面下降，看響度計在哪裡突然變大。</p>
     <div class="lab rt">
       <div class="stage" id="stage">
         <div class="view-bar">
@@ -171,7 +172,7 @@
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
         <div class="cvwrap">
-          <canvas id="cv" aria-label="共鳴管實驗裝置：上方是音叉，玻璃管旁有公分刻度，管內有水，蓄水桶以橡皮管連通；右側是響度計與「響度對水面位置」的掃描曲線" data-en-aria-label="The resonance-tube apparatus: the tuning fork above, the glass tube with a centimetre scale and water inside, the reservoir joined by a rubber hose; on the right, the loudness meter and the scan of loudness against water level"></canvas>
+          <canvas id="cv" aria-label="共鳴管實驗裝置：上方是音叉，玻璃管旁有公分刻度，管內有水，蓄水桶以橡皮管連通；右側是響度計與「響度對水面位置」的掃描曲線" role="img"></canvas>
           <div id="tank" role="slider" tabindex="0" aria-label="蓄水桶：上下拖曳改變管內水面" data-en-aria-label="Reservoir: drag up or down to change the water level in the tube" aria-valuemin="2" aria-valuemax="98" aria-valuenow="40"></div>
         </div>
         <div id="view3"></div>
@@ -187,7 +188,7 @@
           <button id="strike" class="primary" type="button" data-en="Strike the fork">敲音叉</button>
           <button id="record" type="button" data-en="Record (rubber band)">記錄（套橡皮筋）</button>
           <button id="clearAll" type="button" data-en="Clear all" title="清除數據表、橡皮筋與響度掃描曲線；滑桿設定不變" data-en-title="Clear the data table, the rubber bands and the loudness scans; slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
@@ -217,14 +218,14 @@
         <section class="card">
           <h2 data-en="Sound source">聲源</h2>
           <div class="forks" role="group" aria-label="選擇聲源" data-en-aria-label="Choose the sound source" id="forks">
-            <button type="button" data-src="fork" data-f="384" aria-pressed="false">384<small>Hz</small></button>
-            <button type="button" data-src="fork" data-f="440" aria-pressed="false">440<small>Hz</small></button>
-            <button type="button" data-src="fork" data-f="512" aria-pressed="true">512<small>Hz</small></button>
-            <button type="button" data-src="fork" data-f="640" aria-pressed="false">640<small>Hz</small></button>
-            <button type="button" data-src="fork" data-f="768" aria-pressed="false">768<small>Hz</small></button>
-            <button type="button" data-src="fork" data-f="1024" aria-pressed="false">1024<small>Hz</small></button>
-            <button type="button" data-src="mystery" aria-pressed="false" data-en-html="?<small>mystery</small>">?<small>神秘音叉</small></button>
-            <button type="button" data-src="app" aria-pressed="false" data-en-html="App<small>phone</small>">App<small>手機發聲</small></button>
+            <button type="button" id="fork384" data-src="fork" data-f="384" aria-pressed="false">384<small>Hz</small></button>
+            <button type="button" id="fork440" data-src="fork" data-f="440" aria-pressed="false">440<small>Hz</small></button>
+            <button type="button" id="fork512" data-src="fork" data-f="512" aria-pressed="true">512<small>Hz</small></button>
+            <button type="button" id="fork640" data-src="fork" data-f="640" aria-pressed="false">640<small>Hz</small></button>
+            <button type="button" id="fork768" data-src="fork" data-f="768" aria-pressed="false">768<small>Hz</small></button>
+            <button type="button" id="fork1024" data-src="fork" data-f="1024" aria-pressed="false">1024<small>Hz</small></button>
+            <button type="button" id="forkMystery" data-src="mystery" aria-pressed="false" data-en-html="?<small>mystery</small>">?<small>神秘音叉</small></button>
+            <button type="button" id="forkApp" data-src="app" aria-pressed="false" data-en-html="App<small>phone</small>">App<small>手機發聲</small></button>
           </div>
           <div class="slider" id="boxApp" hidden><label for="fApp" data-en="Phone app frequency f">手機 App 的頻率 f</label><output id="fAppo"></output>
             <input id="fApp" type="range" min="250" max="1500" step="1" value="500" data-decimals="1"></div>
@@ -268,7 +269,7 @@
           <button type="button" id="gLn" aria-pressed="true" data-en-html="L–n graph<br>(this fork)">L–n 圖<br>（目前的音叉）</button>
           <button type="button" id="gLf" aria-pressed="false" data-en-html="λ–1/f graph<br>(all forks)">λ–1/f 圖<br>（所有音叉）</button>
         </div>
-        <canvas id="gcv" aria-label="數據圖：共鳴位置 L 對共鳴次序 n，或波長對頻率倒數，含最佳直線" data-en-aria-label="Data graph: resonance position L against its order n, or wavelength against 1/f, with the best-fit line"></canvas>
+        <canvas id="gcv" role="img" aria-label="數據圖：共鳴位置 L 對共鳴次序 n，或波長對頻率倒數，含最佳直線"></canvas>
         <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <div class="gbtns">
           <button type="button" id="undo" data-en="Remove the last reading">刪除最後一筆</button>
@@ -409,6 +410,14 @@
         <li data-en="Analysis: readings within 4 cm are averaged as one resonance; the order n of each resonance is worked out from the positions themselves (they should be close to (n − ½)·λ/2); then a least-squares line L = (λ/2)n − (λ/4 + e) gives λ and e. The mystery fork has a random frequency between 300 and 900 Hz, chosen when the page loads or everything is cleared.">分析：相距 4 cm 以內的讀數平均成一個共鳴點；每個共鳴點是第幾次共鳴，由位置本身推定（應該接近 (n − ½)·λ/2）；再用最小平方法擬合直線 L = (λ/2)n − (λ/4 + e)，求出 λ 與 e。神秘音叉的頻率在 300 到 900 Hz 之間隨機選定，載入頁面或按「全部清除」時重新選。</li>
         <li data-en="3D view: the same physics drives the picture; the tube, water level, rubber bands and the displacement amplitude come from the same calculations as the 2D view. Heights are to scale; the tube is drawn 3 times wider than it really is, so the layers of air inside can be seen. It uses the three.js library (MIT licence), which is downloaded only when you switch to 3D.">3D 檢視：畫面與 2D 使用相同的物理計算（管子、水面、橡皮筋與位移振幅）。高度依真實比例，管徑放大 3 倍示意，才看得見管內的空氣層。使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才會下載。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Sound Waves">課綱對應：選修物理Ⅲ・聲波</li>
+        <li data-en-html="Speed of sound: \(331.3\ \mathrm{m/s}\) for dry air at 0 °C, rising as \(\sqrt{T}\); OpenStax gives the same law with 331 m/s at 0 °C and 343 m/s at 20 °C (<a href=&quot;https://openstax.org/books/college-physics-2e/pages/17-2-speed-of-sound-frequency-and-wavelength&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>College Physics 2e, 17.2</a>). Humid air carries sound slightly faster; the simulation ignores this.">聲速：乾燥空氣 0 °C 時 \(331.3\ \mathrm{m/s}\)，與絕對溫度的平方根成正比；OpenStax 用同一個關係式，0 °C 為 331 m/s、20 °C 為 343 m/s（<a href="https://openstax.org/books/college-physics-2e/pages/17-2-speed-of-sound-frequency-and-wavelength" target="_blank" rel="noopener">College Physics 2e，17.2</a>，英文）。潮濕空氣的聲速略大一些，模擬沒有考慮。</li>
+        <li data-en-html="End correction: \(e = 0.6133\,r\) is the exact value for an open, unflanged circular pipe at low frequency, from H. Levine and J. Schwinger, “<a href=&quot;https://journals.aps.org/pr/abstract/10.1103/PhysRev.73.383&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>On the Radiation of Sound from an Unflanged Circular Pipe</a>”, Phys. Rev. 73, 383 (1948). The textbook rule of thumb \(e \approx 0.6\,r\) agrees. The fork frequencies, tube diameters and the 0.95 loss factor are settings of the simulation.">管口修正：\(e = 0.6133\,r\) 是無凸緣開口圓管在低頻時的精確值，出自 H. Levine 與 J. Schwinger〈<a href="https://journals.aps.org/pr/abstract/10.1103/PhysRev.73.383" target="_blank" rel="noopener">On the Radiation of Sound from an Unflanged Circular Pipe</a>〉，Phys. Rev. 73, 383（1948）；課本常用的 \(e \approx 0.6\,r\) 與它一致。音叉頻率、管徑與損耗係數 0.95 是模擬的設定值。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/college-physics-2e/pages/17-5-sound-interference-and-resonance-standing-waves-in-air-columns&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>College Physics 2e, 17.5 Sound Interference and Resonance: Standing Waves in Air Columns</a>">延伸閱讀：OpenStax《<a href="https://openstax.org/books/college-physics-2e/pages/17-5-sound-interference-and-resonance-standing-waves-in-air-columns" target="_blank" rel="noopener">College Physics 2e，17.5 聲音的干涉與共鳴：氣柱中的駐波</a>》（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -416,17 +425,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/resonance-tube-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/resonance-tube-3d.js?v=202611120013"></script>
-  <script src="js/resonance-tube.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="resonance-tube"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/resonance-tube-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/resonance-tube-3d.js?v=202611120801"></script>
+  <script src="js/resonance-tube.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="resonance-tube"></script>
   <script src="js/missions/resonance-tube.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="resonance-tube"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="resonance-tube"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

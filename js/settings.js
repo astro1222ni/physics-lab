@@ -16,6 +16,10 @@
   'use strict';
 
   const KEY = 'lab-settings';
+  // 分享連結的設定碼（#s=…）：頁面程式可能會改寫網址的 #，先在這裡記下來給 classroom.js 還原
+  window.LAB_SHARE_HASH = /^#s=[\w-]+/.test(location.hash) ? location.hash : '';
+  // 嵌入模式（?embed=1，放進老師的網頁或簡報）：只留實驗本身，載入時就先標記，避免畫面閃一下
+  if (/[?&]embed=1(?:&|$)/.test(location.search)) document.documentElement.classList.add('lab-embed');
   const DEFAULTS = { lang: 'zh-Hant', theme: 'auto', fs: 1, sound: false, volume: 1 };
   const FONT_STEPS = [
     { v: 0.9, zh: '小', en: 'S' },
@@ -331,9 +335,17 @@
     });
   }
 
+  // 上課工具（投影模式、分享目前設定與 QR code、試試看提示）：每頁自動載入，不必改 HTML
+  function loadClassroom() {
+    const s = document.createElement('script');
+    s.src = 'js/classroom.js' + HANS_VER;
+    document.head.appendChild(s);
+  }
+
   function onReady() {
     if (st.lang === 'en') applyEnglish();
     buildUI();
+    loadClassroom();
     if (st.lang === 'zh-Hans') startHans();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady);

@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120804"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Refraction and Total Internal Reflection | Astro Ni Physics Lab">折射與全反射｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"折射與全反射","alternateName":"Refraction and Total Internal Reflection","description":"選擇兩種介質、拖曳雷射改變入射角，觀察司乃耳定律、反射與折射光的強弱、臨界角與全反射，以及光纖導光。","url":"https://astro1222ni.github.io/physics-lab/refraction.html","image":"https://astro1222ni.github.io/physics-lab/img/og/refraction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","幾何光學（Geometrical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120804">
   <style>
     /* 折射與全反射頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .stage canvas#cv { aspect-ratio: 3 / 2; }
@@ -82,11 +82,13 @@
       <p data-en="Choose two media and drag the laser to change the angle of incidence. Watch the reflected and refracted rays obey Snell’s law, see how bright each one is from the Fresnel equations, and find the critical angle where total internal reflection begins. Switch to the wavefront view or the optical-fibre demo.">選擇上下兩種介質，拖曳雷射改變入射角：觀察反射光與折射光如何遵守司乃耳定律、由菲涅耳方程式決定各自有多亮，並找出開始全反射的臨界角；也可以切換到波前圖與光纖示範。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: choose Glass on top and Air below, then drag the laser to larger angles and watch when the refracted ray disappears.">試試看：上方選「玻璃」、下方選「空氣」，拖曳雷射加大入射角，看折射光何時消失。</p>
     <div class="lab">
       <div class="stage">
-        <canvas id="cv" aria-label="折射模擬畫布：上下兩種介質、法線、入射光、反射光與折射光，可拖曳雷射改變入射角" data-en-aria-label="Refraction simulation: two media, the normal, and the incident, reflected and refracted rays; drag the laser to change the angle of incidence"></canvas>
+        <canvas id="cv" aria-label="折射實驗畫布。方向鍵轉動雷射：光線與波前模式，左右鍵讓雷射沿圓弧移動（可跨到法線另一側），上鍵靠向法線、下鍵遠離法線；光纖模式，上下鍵移動雷射、左右鍵改變射入角。每次 0.5°，按住 Shift 每次 5°。" data-en-aria-label="Refraction canvas. Use the arrow keys to swing the laser. In the ray and wavefront views, left and right move it along its arc (it can cross the normal), up turns it toward the normal and down away from it. In the fibre view, up and down move the laser, left and right change the launch angle. 0.5° a step; hold Shift for 5°."></canvas>
+        <p class="sr-only" id="live" role="status" aria-live="polite"></p>
         <div class="stage-row">
-          <p class="status" id="status" aria-live="polite"></p>
+          <p class="status" id="status"></p>
           <button id="anim" type="button" hidden>暫停動畫</button>
         </div>
         <div class="legend" id="legend">
@@ -96,11 +98,11 @@
           <span style="color:var(--accent)" data-m="ray wave" data-en-html="&lt;i style=&quot;background:var(--accent)&quot;&gt;&lt;/i&gt;Angle of refraction"><i style="background:var(--accent)"></i>折射角</span>
           <span style="color:var(--pos)" data-en-html="&lt;i class=&quot;dash&quot;&gt;&lt;/i&gt;Critical angle θc"><i class="dash"></i>臨界角 θ<sub>c</sub></span>
         </div>
-        <p class="hint" id="hintMain" data-m="ray" data-en="Drag anywhere above the interface (or the laser itself) to change the angle of incidence. Ray brightness and thickness follow the Fresnel equations (square-root scale, so weak rays stay visible). Angles are drawn to scale.">在界面上方任意處（或直接拖曳雷射）即可改變入射角。光線的亮度與粗細依菲涅耳方程式計算的光強（以平方根壓縮，弱光也看得到）；角度依實際比例繪製。</p>
+        <p class="hint" id="hintMain" data-m="ray" data-en="Drag anywhere above the interface (or the laser itself) to change the angle of incidence; on the keyboard, click the picture and use the arrow keys (Shift for bigger steps). Ray brightness and thickness follow the Fresnel equations (square-root scale, so weak rays stay visible). Angles are drawn to scale.">在界面上方任意處（或直接拖曳雷射）即可改變入射角；用鍵盤時點一下畫面，再按方向鍵（按住 Shift 轉得多）。光線的亮度與粗細依菲涅耳方程式計算的光強（以平方根壓縮，弱光也看得到）；角度依實際比例繪製。</p>
         <p class="hint" data-m="wave" hidden data-en="Schematic (wavelength enlarged): the bright lines are wave crests. The frequency stays the same, so in the denser medium the wave moves more slowly and its wavelength λ = λ0/n is shorter, which makes the wavefronts bend. The crest speeds on screen are in the true ratio c/n.">示意圖（波長已放大）：亮線是波峰。頻率不變，所以在光密介質中波速較慢、波長 λ = λ0/n 較短，波前因此轉彎；畫面上波峰移動的快慢依 v = c/n 的真實比例。</p>
         <p class="hint" data-m="fibre" hidden data-en="Drag on the left of the fibre to change the launch angle. A planar (2D) fibre: the core is denser than the cladding, so a ray that meets the side beyond the critical angle is totally reflected again and again. The moving dot is a light pulse; it is slower in the core (v = c/n).">在光纖左側拖曳可改變射入角度。這是平面（二維）光纖：纖芯的折射率比包層大，光在側面的入射角超過臨界角時就一再全反射；移動的亮點是一個光脈衝，在纖芯中較慢（v = c/n）。</p>
 
-        <canvas id="chart" tabindex="0" aria-label="反射率與穿透率對入射角的關係圖；可點擊、拖曳或用左右方向鍵改變入射角" data-en-aria-label="Graph of reflectance and transmittance against angle of incidence; click, drag or use the left and right arrow keys to change the angle"></canvas>
+        <canvas id="chart" tabindex="0" aria-label="反射率與穿透率對入射角的關係圖。左右（或上下）方向鍵改變目前的角度，每次 0.5°，按住 Shift 每次 5°；也可以點擊或拖曳。" data-en-aria-label="Graph of reflectance and transmittance against the angle. Use the left and right (or up and down) arrow keys to change the current angle, 0.5° a step, 5° with Shift; you can also click or drag."></canvas>
         <div class="legend">
           <span style="color:var(--pos)" data-en-html="&lt;i style=&quot;background:var(--pos)&quot;&gt;&lt;/i&gt;Reflectance R (unpolarised)"><i style="background:var(--pos)"></i>反射率 R（非偏振光）</span>
           <span style="color:var(--neg)" data-en-html="&lt;i style=&quot;background:var(--neg)&quot;&gt;&lt;/i&gt;Transmittance T = 1 − R"><i style="background:var(--neg)"></i>穿透率 T = 1 − R</span>
@@ -279,6 +281,15 @@
         <li data-en="The fibre is a planar (2D) slab waveguide treated with ray optics. The s- and p-polarised powers are followed separately and multiplied by Rs and Rp at every reflection; light that leaks out is drawn with brightness given by the leaked power. Absorption in the glass is ignored.">光纖以平面（二維）平板波導、幾何光學處理：s、p 偏振的功率分開追蹤，每次反射分別乘上 Rs、Rp；漏出的光依漏出的功率決定亮度。忽略玻璃本身的吸收。</li>
         <li data-en="Dispersion (the dependence of n on wavelength) is ignored, and the media are assumed transparent and non-magnetic.">忽略色散（n 隨波長改變），介質視為透明、非磁性。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Geometrical Optics.">課綱對應：選修物理Ⅲ・幾何光學。</li>
+        <li data-en-html="Speed of light in vacuum \(c = 299\,792\,458\ \mathrm{m/s}\), an exact value by the definition of the metre (SI; &lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?c&quot;&gt;NIST CODATA: speed of light in vacuum&lt;/a&gt;).">真空中的光速 \(c = 299\,792\,458\ \mathrm{m/s}\)，是由公尺的定義而來的精確值（SI；<a href="https://physics.nist.gov/cgi-bin/cuu/Value?c">NIST CODATA：真空中的光速</a>）。</li>
+        <li data-en-html="Refractive indices (for 589 nm light): air 1.000293, water 1.333, crown glass 1.52, diamond 2.419, fused quartz 1.458 (&lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/1-1-the-propagation-of-light&quot;&gt;OpenStax University Physics Vol. 3, Table 1.1&lt;/a&gt;). The presets use the usual two-decimal textbook values: air 1.00, water 1.33, glass 1.50 (ordinary glass is about 1.5 and varies with its composition), diamond 2.42. The fibre values (core 1.48, cladding 1.46) are typical teaching values; the cladding is close to fused quartz.">折射率（波長 589 nm 的光）：空氣 1.000293、水 1.333、冕牌玻璃 1.52、鑽石 2.419、熔融石英 1.458（<a href="https://openstax.org/books/university-physics-volume-3/pages/1-1-the-propagation-of-light">OpenStax《University Physics》第三冊表 1.1</a>）。預設按鈕取課本常用的兩位小數：空氣 1.00、水 1.33、玻璃 1.50（一般玻璃約 1.5，隨成分而異）、鑽石 2.42；光纖的纖芯 1.48、包層 1.46 是教學常用的典型值，包層接近熔融石英。</li>
+        <li data-en="Laser colours: 650 nm (red), 532 nm (green) and 405 nm (violet) are the usual nominal wavelengths of laser pointers.">雷射顏色：650 nm（紅）、532 nm（綠）、405 nm（藍紫）為常見雷射筆的標稱波長。</li>
+        <li data-en-html="Further reading: &lt;a href=&quot;https://openstax.org/books/university-physics-volume-3/pages/1-4-total-internal-reflection&quot;&gt;OpenStax University Physics Vol. 3 — 1.4 Total Internal Reflection&lt;/a&gt;; &lt;a href=&quot;http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/freseq.html&quot;&gt;HyperPhysics: Fresnel’s Equations&lt;/a&gt;.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-3/pages/1-4-total-internal-reflection">OpenStax《University Physics》第三冊 1.4 全反射</a>、<a href="http://hyperphysics.phy-astr.gsu.edu/hbase/phyopt/freseq.html">HyperPhysics：菲涅耳方程式</a>（英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -286,14 +297,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/refraction-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/refraction.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="refraction"></script>
+  <script src="js/math.js?v=202611120804"></script>
+  <script src="js/refraction-core.js?v=202611120804"></script>
+  <script src="js/numinput.js?v=202611120804"></script>
+  <script src="js/keys.js?v=202611120804"></script>
+  <script src="js/drawkit.js?v=202611120804"></script>
+  <script src="js/refraction.js?v=202611120804"></script>
+  <script src="js/firebase-config.js?v=202611120804"></script>
+  <script src="js/missions.js?v=202611120804" data-module="refraction"></script>
   <script src="js/missions/refraction.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="refraction"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120804" data-module="refraction"></script>
+  <script src="js/comments.js?v=202611120804"></script>
 </body>
 </html>

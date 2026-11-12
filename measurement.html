@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120801"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Measurement and Uncertainty: Vernier Caliper and Micrometer | Astro Ni Physics Lab">測量與不確定度（游標尺與螺旋測微器）｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="用游標尺夾圓棒、量圓管內徑與孔深，找出對齊的副尺刻線；轉螺旋測微器估讀到 0.001 mm；再反覆測量，算平均與不確定度，分清精密和準確。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/measurement.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/measurement.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/measurement.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/measurement.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="測量與不確定度（游標尺與螺旋測微器）｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="用游標尺夾圓棒、量圓管內徑與孔深，找出對齊的副尺刻線；轉螺旋測微器估讀到 0.001 mm；再反覆測量，算平均與不確定度，分清精密和準確。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/measurement.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/measurement.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="測量與不確定度（游標尺與螺旋測微器）的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"測量與不確定度（游標尺與螺旋測微器）","alternateName":"Measurement and Uncertainty: Vernier Caliper and Micrometer","description":"用游標尺夾圓棒、量圓管內徑與孔深，找出對齊的副尺刻線；轉螺旋測微器估讀到 0.001 mm；再反覆測量，算平均與不確定度，分清精密和準確。","url":"https://astro1222ni.github.io/physics-lab/measurement.html","image":"https://astro1222ni.github.io/physics-lab/img/og/measurement.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","測量與不確定度（Measurement and Uncertainty）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <style>
+    /* 測量與不確定度頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ms canvas { aspect-ratio: auto; cursor: default; }
+    #cv { height: 420px; touch-action: pan-y; }
+    #cv.spin { touch-action: none; }
+    #hcv { height: 360px; touch-action: auto; }
+    .ms + .ms { margin-top: 16px; }
+    .ms button { min-height: 44px; }
+    .ms [hidden], .ms[hidden] { display: none !important; }
+    .ms .modebar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 0 0 10px; }
+    .ms .modebar button { padding: 6px 6px; line-height: 1.3; font-size: calc(14px * var(--fs, 1)); }
+    .ms .modebar button b { display: block; font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .ms .modebar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .ms .modebar button[aria-pressed="true"] b { color: var(--accent); }
+    .ms .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ms .playbar > button { flex: 1 1 auto; }
+    .ms .playbar .grow { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 8px; }
+    .ms .playbar .grow > button { flex: 1 1 auto; }
+    .ms .rotbox { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; flex: 1 1 100%; }
+    .ms .rotbox button { padding: 6px 4px; font-variant-numeric: tabular-nums; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ms .magbar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 10px 2px 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .ms .magbar .seg5 { flex: 1 1 220px; }
+    .ms .magbar #namesBtn { flex: 0 1 auto; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .seg5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+    .seg2 button, .seg3 button, .seg5 button { padding: 6px 4px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg5 button[aria-pressed="true"], #namesBtn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ms button:disabled { opacity: .45; cursor: not-allowed; }
+    /* 讀數輸入 */
+    .ms .answer { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin: 12px 2px 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); }
+    .ms .answer label { font-weight: 700; font-size: calc(14px * var(--fs, 1)); white-space: nowrap; }
+    .ms .answer input { font: inherit; font-size: calc(18px * var(--fs, 1)); font-variant-numeric: tabular-nums; min-height: 44px; min-width: 0; width: 100%; padding: 6px 10px; border-radius: 8px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text); }
+    .ms .answer input:focus { outline: none; border-color: var(--accent); }
+    .ms .answer button { font-weight: 700; min-width: 5.5em; }
+    @media (max-width: 420px) { .ms .answer { grid-template-columns: minmax(0, 1fr) auto; } .ms .answer label { grid-column: 1 / -1; } }
+    .ms .feedback { margin: 10px 2px 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); font-size: calc(14px * var(--fs, 1)); line-height: 1.6; }
+    .ms .feedback:empty { display: none; }
+    .ms .feedback.ok { border-color: var(--probe); background: color-mix(in srgb, var(--probe) 9%, transparent); }
+    .ms .feedback.bad { border-color: var(--pos); background: color-mix(in srgb, var(--pos) 8%, transparent); }
+    .ms .feedback.warn { border-color: var(--equi); background: color-mix(in srgb, var(--equi) 10%, transparent); }
+    .ms .feedback .verdict { font-weight: 700; display: block; margin-bottom: 2px; }
+    .ms .feedback.ok .verdict { color: var(--probe); }
+    .ms .feedback.bad .verdict { color: var(--pos); }
+    .ms .feedback.warn .verdict { color: var(--equi); }
+    .ms .feedback ol { margin: 4px 0 0; padding-left: 1.4em; }
+    .ms .feedback li { margin: 1px 0; }
+    .ms .feedback { overflow-wrap: anywhere; }
+    .ms .feedback .num { font-variant-numeric: tabular-nums; }
+    .ms .stage .status { margin: 6px 4px 0; }
+    .ms .slider input[type="range"] { height: 28px; margin: 0; }
+    .ms .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ms .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .ms .checks label { min-height: 44px; }
+    .ms .checks input { width: 17px; height: 17px; flex: none; }
+    .ms .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ms .card .btns { margin-top: 10px; }
+    .ms .card .btns button { flex: 1 1 auto; }
+    .ms dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); white-space: nowrap; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.note { color: var(--muted); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.big { grid-column: 1 / -1; text-align: center; font-size: calc(19px * var(--fs, 1)); font-weight: 700; color: var(--accent); padding: 4px 0 2px; }
+    dl.readout dd.ok { color: var(--probe); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    dl.readout dd.warn { color: var(--pos); text-align: left; grid-column: 1 / -1; font-size: calc(13px * var(--fs, 1)); }
+    /* 讀法步驟 */
+    ol.steps { margin: 0; padding: 0 0 0 1.5em; font-size: calc(14px * var(--fs, 1)); color: var(--text); }
+    ol.steps li { margin: 3px 0; line-height: 1.5; }
+    ol.steps li b { color: var(--accent); }
+    /* 數據表 */
+    .tablewrap { overflow: auto; max-height: 300px; margin: 10px 2px 0; border: 1px solid var(--border); border-radius: 8px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 3px 8px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; line-height: 1.4; }
+    table.data thead th { position: sticky; top: 0; color: var(--muted); font-weight: 600; background: var(--accent-soft); text-align: center; z-index: 1; }
+    table.data tbody th { text-align: center; font-weight: 600; color: var(--muted); }
+    table.data tr.latest > * { background: var(--accent-soft); }
+    table.data .empty td, table.data .empty th { text-align: center; color: var(--muted); border: none; padding: 12px; white-space: normal; }
+    table.data td.pos { color: var(--pos); }
+    table.data td.neg { color: var(--neg); }
+    table.cmp { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.cmp th, table.cmp td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; line-height: 1.35; }
+    table.cmp th:first-child, table.cmp td:first-child { text-align: left; }
+    table.cmp thead th { color: var(--muted); font-weight: 600; }
+    table.cmp tr.cur td { color: var(--accent); font-weight: 700; }
+    table.cmp td.yes { color: var(--probe); }
+    table.cmp td.no { color: var(--pos); }
+    .xbar { text-decoration: overline; font-style: italic; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 2px 0; }
+    .notes .q li { margin: 6px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Measurement and uncertainty"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 測量與不確定度</nav>
+      <h1 data-en="Measurement and Uncertainty: Vernier Caliper and Micrometer">測量與不確定度（游標尺與螺旋測微器）</h1>
+      <p data-en="Learn to really read two precision instruments. Slide the vernier caliper onto a rod, into a tube or down a hole, find the vernier line that lines up and type in your reading; turn the micrometer onto a wire or a thin sheet and estimate to 0.001 mm. Switch on zero error to practise correcting a systematic error. Then measure the same rod again and again: watch the histogram grow, work out the mean, the standard deviation and the uncertainty, and see what “precise” and “accurate” really mean.">真正學會讀兩種精密量具：把游標尺夾住圓棒、伸進圓管、插進孔裡，找出對齊的副尺刻線，自己輸入讀數；轉動螺旋測微器夾住細線或薄片，估讀到 0.001 mm。打開「零點誤差」，練習修正系統誤差。再對同一根圓棒反覆測量，看直方圖長出來，算出平均值、標準差與不確定度，分清楚「精密」和「準確」。</p>
+    </header>
+
+    <!-- 第一部分：儀器與讀數 -->
+    <p class="try-hint" data-en="Try it: press “Close on the object”, find the vernier line that lines up in the magnifier, type the reading and press “Check”.">試試看：按「夾緊」，在放大鏡找出對齊的副尺刻線，輸入讀數再按「核對」。</p>
+    <div class="lab ms" id="labA">
+      <div class="stage">
+        <div class="modebar" role="group" aria-label="實驗的三個部分" data-en-aria-label="The three parts of the experiment">
+          <button type="button" data-mode="vernier" aria-pressed="true" data-en-html="<b>Part 1</b>Vernier caliper"><b>①</b>游標尺</button>
+          <button type="button" data-mode="micro" aria-pressed="false" data-en-html="<b>Part 2</b>Micrometer"><b>②</b>螺旋測微器</button>
+          <button type="button" data-mode="multi" aria-pressed="false" data-en-html="<b>Part 3</b>Repeated measurements"><b>③</b>多次測量</button>
+        </div>
+        <canvas id="cv" aria-label="量具的畫面：上方是整支儀器與待測物，下方是讀刻度用的放大鏡" data-en-aria-label="The instrument: the whole tool with the object above, and a magnifier for reading the scale below"></canvas>
+        <div class="magbar">
+          <span id="magLabel" data-en="Magnifier">放大鏡</span>
+          <div class="seg5" role="group" aria-labelledby="magLabel">
+            <button type="button" data-zoom="1" aria-pressed="false">×1</button>
+            <button type="button" data-zoom="2" aria-pressed="false">×2</button>
+            <button type="button" data-zoom="4" aria-pressed="true">×4</button>
+            <button type="button" data-zoom="8" aria-pressed="false">×8</button>
+            <button type="button" data-zoom="16" aria-pressed="false">×16</button>
+          </div>
+          <button type="button" id="namesBtn" aria-pressed="true" data-en="Part names">部件名稱</button>
+        </div>
+        <div class="playbar" id="ctlBar">
+          <div class="grow" id="jawBtns">
+            <button type="button" id="closeBtn" class="primary" data-en="Close on the object">夾緊</button>
+            <button type="button" id="openBtn" data-en="Open">鬆開</button>
+            <button type="button" id="zeroBtn" data-en="Check the zero">檢查零點</button>
+            <button type="button" id="newBtn" data-en="Next object">下一個物件</button>
+          </div>
+          <div class="rotbox" id="rotBox" role="group" aria-label="轉動套管" data-en-aria-label="Turn the thimble">
+            <button type="button" data-rot="-50" aria-label="逆轉一圈（測軸前進 0.5 mm）" data-en-aria-label="One turn in (spindle moves 0.5 mm closer)" data-en="−1 turn">−1 圈</button>
+            <button type="button" data-rot="-1" aria-label="逆轉一格（0.01 mm）" data-en-aria-label="One division in (0.01 mm)" data-en="−1 div">−1 格</button>
+            <button type="button" data-rot="1" aria-label="順轉一格（0.01 mm）" data-en-aria-label="One division out (0.01 mm)" data-en="+1 div">+1 格</button>
+            <button type="button" data-rot="50" aria-label="順轉一圈（測軸後退 0.5 mm）" data-en-aria-label="One turn out (spindle moves 0.5 mm back)" data-en="+1 turn">+1 圈</button>
+          </div>
+          <div class="grow" id="measBtns" hidden>
+            <button type="button" id="meas1" class="primary" data-en="Measure once">量一次</button>
+            <button type="button" id="meas10" data-en="Measure 10 times">量 10 次</button>
+          </div>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除多次測量的所有數據與讀數成績；設定不變" data-en-title="Clear all repeated-measurement data and the reading scores; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <form class="answer" id="ansBox" autocomplete="off" data-share-skip>
+          <label for="ans" id="ansLabel">讀數（mm）</label>
+          <input id="ans" type="text" inputmode="decimal" enterkeyhint="done" spellcheck="false" placeholder="例如 23.45" data-en-placeholder="e.g. 23.45">
+          <button type="submit" id="checkBtn" class="primary" data-en="Check">核對</button>
+        </form>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="sceneHint"></p>
+        <p class="sr-only" id="liveOut" role="status" aria-live="polite"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardV">
+          <h2 data-en="Vernier caliper">游標尺</h2>
+          <p class="seg-label" id="nLabel" data-en="Vernier scale:">副尺刻度：</p>
+          <div class="seg2" role="group" aria-labelledby="nLabel">
+            <button type="button" data-n="20" aria-pressed="true" data-en="20 div · 0.05 mm">20 格・0.05 mm</button>
+            <button type="button" data-n="50" aria-pressed="false" data-en="50 div · 0.02 mm">50 格・0.02 mm</button>
+          </div>
+          <p class="seg-label" id="kindLabel" data-en="What to measure:">要量什麼：</p>
+          <div class="seg3" role="group" aria-labelledby="kindLabel">
+            <button type="button" data-kind="outer" aria-pressed="true" data-en="Outside">外徑</button>
+            <button type="button" data-kind="inner" aria-pressed="false" data-en="Inside">內徑</button>
+            <button type="button" data-kind="depth" aria-pressed="false" data-en="Depth">深度</button>
+          </div>
+          <div class="checks"><label><input id="zeroOnV" type="checkbox"><span data-en="Zero error (not 0 when closed)">零點誤差（合攏時不在 0）</span></label></div>
+          <p class="hint" id="vHint"></p>
+        </section>
+
+        <section class="card" id="cardM" hidden>
+          <h2 data-en="Micrometer">螺旋測微器</h2>
+          <p class="seg-label" id="objLabel" data-en="Object:">待測物：</p>
+          <div class="seg3" role="group" aria-labelledby="objLabel">
+            <button type="button" data-obj="wire" aria-pressed="true" data-en="Thin wire">細線</button>
+            <button type="button" data-obj="sheet" aria-pressed="false" data-en="Thin sheet">薄片</button>
+            <button type="button" data-obj="ball" aria-pressed="false" data-en="Steel ball">鋼珠</button>
+          </div>
+          <div class="checks"><label><input id="zeroOnM" type="checkbox"><span data-en="Zero error (not 0 when closed)">零點誤差（合攏時不在 0）</span></label></div>
+          <p class="hint" data-en="Drag the thimble up or down to turn it (0.01 mm per division); drag it sideways to spin it fast. Near the object, finish with the ratchet: once it clicks, stop.">在套管上下拖曳可轉動（每格 0.01 mm），左右拖曳可快轉。接近物體時改用棘輪，聽到「喀喀」就停。</p>
+        </section>
+
+        <section class="card" id="cardX" hidden>
+          <h2 data-en="Repeated measurements">多次測量</h2>
+          <p class="seg-label" id="instrLabel" data-en="Instrument:">儀器：</p>
+          <div class="seg3" role="group" aria-labelledby="instrLabel">
+            <button type="button" data-instr="v20" aria-pressed="true" data-en="Vernier 0.05 mm">游標尺 0.05 mm</button>
+            <button type="button" data-instr="v50" aria-pressed="false" data-en="Vernier 0.02 mm">游標尺 0.02 mm</button>
+            <button type="button" data-instr="micro" aria-pressed="false" data-en="Micrometer 0.01 mm">測微器 0.01 mm</button>
+          </div>
+          <div class="slider"><label for="sig" data-en="Random error (standard deviation) σ">隨機誤差（標準差）σ</label><output id="sigo"></output>
+            <input id="sig" type="range" min="0" max="0.2" step="0.001" value="0.02" data-decimals="3"></div>
+          <div class="slider"><label for="bias" data-en="Systematic error (e.g. an uncorrected zero error)">系統誤差（例如沒修正的零點誤差）</label><output id="biaso"></output>
+            <input id="bias" type="range" min="-0.2" max="0.2" step="0.001" value="0" data-decimals="3"></div>
+          <p class="seg-label" id="uLabel" data-en="Uncertainty to report:">結果的不確定度用：</p>
+          <div class="seg2" role="group" aria-labelledby="uLabel">
+            <button type="button" data-u="A" aria-pressed="false" data-en="Type A only">只算 A 類</button>
+            <button type="button" data-u="AB" aria-pressed="true" data-en="A and B combined">A、B 類組合</button>
+          </div>
+          <div class="btns"><button type="button" id="newRod" data-en="Another rod">換一根圓棒</button></div>
+          <p class="hint" data-en="Changing σ, the systematic error or the rod starts a new set of data. Switching instruments keeps each instrument’s data for comparison.">改變 σ、系統誤差或換圓棒，會重新開始收集數據；切換儀器時，各儀器的數據會保留下來比較。</p>
+        </section>
+
+        <section class="card" id="cardScore">
+          <h2 data-en="Your readings">讀數成績</h2>
+          <dl class="readout" id="scoreOut"></dl>
+        </section>
+
+        <section class="card" id="cardHow">
+          <h2 data-en="How to read it">讀法</h2>
+          <ol class="steps" id="howV">
+            <li data-en-html="<b>Check the zero:</b> close the jaws. If the vernier 0 is not on the main-scale 0, the reading then is the zero error \(e\).">先<b>檢查零點</b>：合攏夾爪，副尺 0 刻線不在主尺 0 時，這時的讀數就是零點誤差 \(e\)。</li>
+            <li data-en-html="Use the lower <b>outside jaws</b> for a diameter, the upper <b>inside jaws</b> for a hole, the <b>depth rod</b> for a depth. Close gently until they touch.">外徑用下方的<b>外測爪</b>、內徑用上方的<b>內測爪</b>、深度用尾端的<b>深度桿</b>，輕輕碰到就好。</li>
+            <li data-en-html="<b>Main scale:</b> the last millimetre line to the left of the vernier 0 gives \(M\) (whole mm).">從<b>主尺</b>讀出副尺 0 刻線左邊最近的毫米刻線 \(M\)（整數 mm）。</li>
+            <li data-en-html="Look along the vernier for the one line that lines up best with a main-scale line: line \(k\).">沿著副尺找出與主尺刻線<b>對得最齊</b>的那一條：第 \(k\) 條。</li>
+            <li data-en-html="Reading \(R = M + k \times c\), with \(c\) = 0.05 mm or 0.02 mm. Write it to 0.01 mm, keeping a final 0.">讀數 \(R = M + k \times c\)（精度 \(c\) = 0.05 或 0.02 mm），寫到 0.01 mm 位，末位的 0 也要寫。</li>
+            <li data-en-html="Correct the zero: \(L = R - e\).">修正零點誤差：\(L = R - e\)。</li>
+          </ol>
+          <ol class="steps" id="howM" hidden>
+            <li data-en-html="Turn the thimble until the spindle nearly touches, then use the <b>ratchet</b>: stop after it clicks two or three times.">轉動套管到測軸快碰到物體，再改轉<b>棘輪</b>，「喀喀」兩三聲就停。</li>
+            <li data-en-html="<b>Sleeve:</b> the last line showing to the left of the thimble edge — upper lines are whole mm, lower lines are half mm. That is \(S\).">讀<b>套筒</b>：套管邊緣左邊露出的最後一條刻線（上排整毫米、下排半毫米），得 \(S\)。</li>
+            <li data-en-html="<b>Thimble:</b> the division on the reference line, estimated to a tenth of a division: \(n\) (e.g. 37.4).">讀<b>套管</b>：與基準線對齊的格數，估讀到十分之一格，得 \(n\)（例如 37.4 格）。</li>
+            <li data-en-html="Reading \(R = S + n \times 0.01\ \text{mm}\), written to 0.001 mm.">讀數 \(R = S + n \times 0.01\ \text{mm}\)，寫到 0.001 mm 位。</li>
+            <li data-en-html="With a zero error: \(L = R - e\). A thimble just past 0 but before the 0 line means a negative \(e\).">有零點誤差時 \(L = R - e\)；合攏時套管邊緣蓋過 0 刻線，\(e\) 為負。</li>
+          </ol>
+          <ol class="steps" id="howX" hidden>
+            <li data-en-html="Measure the same rod \(n\) times.">對同一根圓棒量 \(n\) 次。</li>
+            <li data-en-html="Mean \(\bar{x}\) and sample standard deviation \(s\) (divide by \(n - 1\)).">算平均值 \(\bar{x}\) 與樣本標準差 \(s\)（分母 \(n - 1\)）。</li>
+            <li data-en-html="Type A: \(u_A = s/\sqrt{n}\). Type B: \(u_B = d/(2\sqrt{3})\), \(d\) = smallest division. Combined: \(\sqrt{u_A^{2} + u_B^{2}}\).">A 類 \(u_A = s/\sqrt{n}\)；B 類 \(u_B = d/(2\sqrt{3})\)（\(d\) 為最小刻度）；組合 \(\sqrt{u_A^{2} + u_B^{2}}\)。</li>
+            <li data-en-html="Round the uncertainty <b>up</b> to 2 significant figures (drop it if the 3rd figure is 0), then round \(\bar{x}\) to the same decimal place.">不確定度<b>無條件進位</b>取 2 位有效數字（第 3 位是 0 就捨去），平均值四捨五入到同一位。</li>
+            <li data-en-html="Write \(X \pm \Delta X\) with the unit.">寫成 \(X \pm \Delta X\)，加上單位。</li>
+          </ol>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：多次測量的數據 -->
+    <div class="lab ms" id="labStats" hidden>
+      <div class="stage">
+        <h2 data-en="Data and histogram">數據與直方圖</h2>
+        <p class="hint" id="histHint" data-en="Bars: how many readings fall in each interval. Curve: a normal distribution with the same mean and standard deviation. Dashed line: the true value (only the simulation knows it). The four targets show what precise and accurate mean; the highlighted one matches your data.">長條：落在各區間的讀數個數；曲線：平均值與標準差相同的常態分布；虛線：真值（只有模擬知道）。四個靶說明精密與準確的意思，亮起來的那個符合你的數據。</p>
+        <canvas id="hcv" role="img" aria-label="讀數的直方圖、常態分布曲線、平均值與真值，以及精密度與準確度的四個靶" data-en-aria-label="Histogram of the readings with a normal curve, the mean and the true value, and four targets showing precision and accuracy"></canvas>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Statistics">統計結果</h2>
+          <dl class="readout" id="statOut"></dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Comparing the instruments">三種儀器比一比</h2>
+          <table class="cmp" id="cmpTbl"></table>
+          <p class="hint" data-en="“Contains”: whether X ± ΔX (A and B combined) includes the true value.">「含真值」：X ± ΔX（A、B 類組合）的範圍有沒有包含真值。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="About the experiment">實驗說明</h2>
+
+      <h3 data-en="Aims">實驗目的</h3>
+      <ol>
+        <li data-en="Use a vernier caliper and a micrometer correctly, read them to their full precision and correct for a zero error.">會正確使用游標尺與螺旋測微器，讀到儀器的精度，並修正零點誤差。</li>
+        <li data-en="Understand significant figures, precision and accuracy, random and systematic errors.">了解有效數字、精密度與準確度、隨機誤差與系統誤差。</li>
+        <li data-en="From repeated measurements find the mean and standard deviation, and report the result with its Type A and Type B uncertainty.">由多次測量求平均值與標準差，用 A 類、B 類不確定度寫出測量結果。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <p data-en="A vernier caliper (0.05 mm or 0.02 mm), a micrometer screw gauge (0.01 mm, estimated to 0.001 mm), and objects to measure: rods, tubes, a block with a hole, thin wires, thin sheets and steel balls.">游標尺（精度 0.05 mm 或 0.02 mm）、螺旋測微器（最小刻度 0.01 mm，估讀到 0.001 mm），以及待測物：圓棒、圓管、有孔的木塊、細金屬線、薄片、鋼珠。</p>
+
+      <h3 data-en="Principle">原理</h3>
+      <p data-en-html="<strong>The vernier.</strong> The main scale is in millimetres. The vernier has \(N\) divisions that together are only \(N-1\) mm long, so each vernier division is shorter than a millimetre by \(c = 1/N\) mm — this is the precision. When the vernier 0 sits a fraction \(k\,c\) past a millimetre line \(M\), the \(k\)-th vernier line is exactly on a main-scale line, and its neighbours miss by \(c\), \(2c\), … on either side:"><strong>游標尺的原理。</strong>主尺每格 1 mm；副尺有 \(N\) 格，總長卻只有 \(N-1\) mm，所以副尺每格比主尺每格短 \(c = 1/N\) mm，這就是精度。副尺 0 刻線超過主尺刻線 \(M\) 剛好 \(k\,c\) 時，副尺第 \(k\) 條刻線恰好和主尺刻線重合，兩旁的刻線依序差 \(c\)、\(2c\)……：</p>
+      <div class="formula multi">\[ c = 1\ \text{mm} - \frac{N-1}{N}\ \text{mm} = \frac{1}{N}\ \text{mm} \] \[ R = M + k\,c \]</div>
+      <p data-en-html="<strong>The micrometer.</strong> One turn of the thimble moves the spindle by the pitch of the screw, 0.5 mm; the thimble has 50 divisions, so one division is 0.01 mm. The screw turns a tiny movement into a large rotation, and you can still estimate a tenth of a division:"><strong>螺旋測微器。</strong>套管轉一圈，測軸沿螺紋前進一個螺距 0.5 mm；套管一圈刻 50 格，每格就是 0.01 mm。螺旋把很小的移動放大成很大的轉動，還可以再估讀十分之一格：</p>
+      <div class="formula multi">\[ \frac{0.5\ \text{mm}}{50} = 0.01\ \text{mm} \] \[ R = S + n \times 0.01\ \text{mm} \]</div>
+      <p data-en-html="<strong>Zero error.</strong> If the instrument does not read zero when it is closed, every reading is shifted by the same amount \(e\). That is a <em>systematic</em> error: averaging cannot remove it, but you can subtract it: \(L = R - e\)."><strong>零點誤差。</strong>合攏時讀數不是 0，每一次讀數都會偏同樣的量 \(e\)。這是<em>系統誤差</em>：取平均消不掉，但可以修正：\(L = R - e\)。</p>
+      <p data-en-html="<strong>Random and systematic errors; precision and accuracy.</strong> Random errors (a slightly different force, a slanted line of sight, an object that is not perfectly round) scatter the readings both ways; systematic errors push them all the same way. <em>Precise</em> means the readings agree closely with each other (small standard deviation); <em>accurate</em> means their mean is close to the true value. Repeating helps against random errors, never against systematic ones."><strong>隨機誤差與系統誤差、精密度與準確度。</strong>隨機誤差（用力稍有不同、視線斜了、物體不是正圓）讓讀數忽大忽小；系統誤差讓讀數都往同一邊偏。<em>精密</em>是讀數彼此很接近（標準差小）；<em>準確</em>是平均值接近真值。多量幾次能對付隨機誤差，對系統誤差卻沒有用。</p>
+      <p data-en-html="<strong>Mean and standard deviation.</strong> For \(n\) readings, the mean is the best estimate and the sample standard deviation \(s\) measures the scatter of a single reading:"><strong>平均值與標準差。</strong>\(n\) 次讀數的平均值是最佳估計，樣本標準差 \(s\) 表示單次讀數的分散程度：</p>
+      <div class="formula multi">\[ \bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i \] \[ s = \sqrt{\frac{1}{n-1}\sum_{i=1}^{n} \left(x_i - \bar{x}\right)^{2}} \]</div>
+      <p data-en-html="<strong>Uncertainty (ISO-GUM).</strong> The mean of \(n\) readings scatters much less than a single reading: Type A uncertainty \(u_A = s/\sqrt{n}\). The instrument itself adds a Type B uncertainty from its smallest division \(d\), assuming any value within one division is equally likely. The two combine like perpendicular sides of a triangle:"><strong>不確定度（ISO-GUM）。</strong>\(n\) 次的平均值比單次讀數穩定得多：A 類不確定度 \(u_A = s/\sqrt{n}\)。儀器本身還有由最小刻度 \(d\) 估計的 B 類不確定度（假設一格之內每個值的機會相同）。兩者像直角三角形的兩股一樣組合：</p>
+      <div class="formula multi">\[ u_A = \frac{s}{\sqrt{n}} \] \[ u_B = \frac{d}{2\sqrt{3}} \] \[ \Delta X = \sqrt{u_A^{2} + u_B^{2}} \]</div>
+      <p data-en-html="Round \(\Delta X\) <em>up</em> to at most two significant figures (but if the third figure is 0, just drop it: 0.1417 → 0.15, 0.1407 → 0.14). Then round the mean to the same decimal place and write \(X \pm \Delta X\). Example: four pendulum periods 2.10, 2.08, 2.09, 2.04 s give \(\bar{x} = 2.0775\) s, \(s = 0.0263\) s, \(u_A = 0.0131\) s → \(2.078 \pm 0.014\) s.">\(\Delta X\) 以<em>無條件進位</em>取至多 2 位有效數字（第 3 位是 0 就直接捨去：0.1417 → 0.15，0.1407 → 0.14），再把平均值四捨五入到與 \(\Delta X\) 末位一致，寫成 \(X \pm \Delta X\)。例：單擺週期量 4 次 2.10、2.08、2.09、2.04 s，\(\bar{x} = 2.0775\) s、\(s = 0.0263\) s、\(u_A = 0.0131\) s，結果是 \(2.078 \pm 0.014\) s。</p>
+      <p data-en-html="<strong>Significant figures.</strong> All non-zero digits count, zeros between them count, leading zeros do not, trailing zeros after the decimal point do. So 23.40 mm (4 figures) says more than 23.4 mm (3 figures): it tells the reader the hundredths were measured and found to be 0."><strong>有效數字。</strong>非零的數字都是；非零數字之間的 0 是；前綴的 0 不是；小數點後的後綴 0 是。所以 23.40 mm（4 位）比 23.4 mm（3 位）多說了一件事：百分位也量了，而且是 0。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <p data-en-html="<strong>① Vernier caliper.</strong> Close the jaws and read the zero. Clamp the object gently: a rod between the lower jaws, a tube on the upper jaws, the depth rod down the hole. Read \(M\) on the main scale and the aligned vernier line \(k\), write \(R = M + kc\) to 0.01 mm and correct it with \(e\)."><strong>① 游標尺。</strong>合攏夾爪讀出零點。輕輕夾住待測物：圓棒放在下方外測爪之間、圓管套在上方內測爪、深度桿伸進孔底。由主尺讀 \(M\)、找出對齊的副尺刻線 \(k\)，寫出 \(R = M + kc\)（到 0.01 mm）並修正零點。</p>
+      <p data-en-html="<strong>② Micrometer.</strong> Close the spindle on the anvil with the ratchet and read the zero. Put the wire or sheet between them, turn the thimble until it nearly touches and finish with the ratchet. Read the sleeve (do not miss the half-millimetre line), read the thimble with one estimated digit, and correct the zero."><strong>② 螺旋測微器。</strong>用棘輪讓測軸碰到測砧，讀出零點。放入細線或薄片，轉套管到快碰到，再用棘輪轉到「喀喀」聲。讀套筒（別漏了半毫米刻線）、讀套管並估讀一位，最後修正零點。</p>
+      <p data-en-html="<strong>③ Repeated measurements.</strong> Measure the same rod many times. Find \(\bar{x}\), \(s\), \(u_A\), \(u_B\) and \(\Delta X\), write the result, and compare the three instruments."><strong>③ 多次測量。</strong>對同一根圓棒量很多次，求 \(\bar{x}\)、\(s\)、\(u_A\)、\(u_B\) 與 \(\Delta X\)，寫出測量結果，比較三種儀器。</p>
+
+      <h3 data-en="Precautions">注意事項</h3>
+      <ul>
+        <li data-en="Do not squeeze: too much force bends the jaws or squashes soft objects. On the micrometer always finish with the ratchet, which slips at the same force every time.">不要用力夾：太用力會讓夾爪變形、壓扁軟的物體。測微器最後一定用棘輪轉，它每次都在同樣的力打滑。</li>
+        <li data-en="Look straight at the scale (no parallax). Keep the jaws square to the object: a tilted caliper reads a diameter too large and an inside diameter too small.">視線垂直刻度面，避免視差。夾爪要和物體垂直：歪斜時量外徑會偏大、量內徑會偏小。</li>
+        <li data-en="Always check the zero first, and remember its sign.">每次使用前先檢查零點，並記下正負號。</li>
+        <li data-en="On the micrometer, watch whether the half-millimetre line is showing — missing it is an error of exactly 0.5 mm.">測微器要注意半毫米刻線有沒有露出來；看漏了就剛好差 0.5 mm。</li>
+        <li data-en="Measure at several places and in several directions: real rods and wires are never perfectly round.">在不同位置、不同方向多量幾次：真實的圓棒和細線都不是完美的圓。</li>
+      </ul>
+
+      <h3 data-en="Questions">問題與討論</h3>
+      <ol class="q">
+        <li data-en-html="A vernier has 10 divisions that are 9 mm long. What is its precision? How would you design a vernier with a precision of 0.1 mm whose lines are spread twice as wide?">副尺 10 格總長 9 mm，精度是多少？如果想讓刻線間隔大一倍、精度仍是 0.1 mm，要怎麼設計？</li>
+        <li data-en-html="With a zero error of −0.15 mm, a caliper reads 23.45 mm. How long is the object really?">零點誤差 −0.15 mm 的游標尺量得 23.45 mm，物體實際多長？</li>
+        <li data-en-html="On a micrometer the thimble edge is right next to the 2.5 mm line and the thimble reads about 48. Is the reading 2.48 mm or 2.98 mm? How do you decide?">測微器的套管邊緣緊貼著 2.5 mm 刻線，套管讀到約 48 格。讀數是 2.48 mm 還是 2.98 mm？怎麼判斷？</li>
+        <li data-en-html="Four readings give \(u_A = 0.020\) mm. How many readings bring it down to 0.010 mm? Why can no number of readings make the combined uncertainty smaller than \(u_B\)?">量 4 次時 \(u_A = 0.020\) mm。要降到 0.010 mm 要量幾次？為什麼量再多次，組合不確定度也不會小於 \(u_B\)？</li>
+        <li data-en-html="Your data are precise but not accurate. Will more readings make them accurate? What should you do instead?">你的數據精密但不準確，多量幾次會變準確嗎？應該怎麼做？</li>
+        <li data-en-html="Why does the textbook rule round the uncertainty <em>up</em>, but the mean to the <em>nearest</em> value?">為什麼不確定度要無條件進位，平均值卻用四捨五入？</li>
+      </ol>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The symmetry of alignment</strong>: zoom in around the aligned vernier line. The lines on its left lean one way, those on its right the other way, and the mismatch grows by \(c\) with every line."><strong>對齊的對稱</strong>：把放大鏡移到對齊的刻線附近，它左邊的刻線往一邊偏、右邊的往另一邊偏，每遠一條就多差 \(c\)。</li>
+        <li data-en-html="<strong>Four times as many, half the uncertainty</strong>: with σ = 0.050 mm compare \(u_A\) after 10 and after 40 readings."><strong>次數變 4 倍，A 類不確定度減半</strong>：σ = 0.050 mm 時，比較量 10 次與量 40 次的 \(u_A\)。</li>
+        <li data-en-html="<strong>The floor set by the instrument</strong>: set σ = 0. Every reading is the same, \(s = 0\), and the uncertainty is just \(u_B\)."><strong>儀器決定的下限</strong>：把 σ 設成 0，每次讀數都相同、\(s = 0\)，不確定度只剩 \(u_B\)。</li>
+        <li data-en-html="<strong>Precise but not accurate</strong>: systematic error 0.100 mm, σ = 0.005 mm. The histogram is narrow but sits away from the dashed true value."><strong>精密但不準確</strong>：系統誤差 0.100 mm、σ = 0.005 mm，直方圖很窄，卻離真值的虛線有一段距離。</li>
+        <li data-en-html="<strong>A better instrument does not always help</strong>: with σ = 0.100 mm all three instruments give about the same uncertainty; with σ = 0.005 mm the micrometer wins clearly."><strong>換精密的儀器不一定有用</strong>：σ = 0.100 mm 時三種儀器的不確定度差不多；σ = 0.005 mm 時測微器明顯勝出。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Every object’s size lies exactly on the instrument’s grid (0.05 mm, 0.02 mm or 0.001 mm), so there is one correct reading. Zero errors are random: up to ±0.30 mm on the 20-division vernier, ±0.20 mm on the 50-division vernier and ±0.015 mm on the micrometer. Readings are stored as whole micrometres, so there is no rounding error.">每個待測物的尺寸都剛好在儀器的格點上（0.05 mm、0.02 mm 或 0.001 mm），所以正確讀數只有一個。零點誤差隨機產生：20 格副尺最多 ±0.30 mm、50 格最多 ±0.20 mm、測微器最多 ±0.015 mm。讀數以整數微米儲存，沒有捨入誤差。</li>
+        <li data-en="The vernier line positions are exact: line k is at R + k(N − 1)/N mm. The magnifier of the caliper stretches only the horizontal direction (the line lengths stay the same so that the numbers remain visible). The micrometer magnifier is a true enlargement; the thimble lines are drawn where they lie on the cylinder, at a height r sin φ.">副尺刻線的位置完全依比例：第 k 條在 R + k(N − 1)/N mm。游標尺的放大鏡只放大水平方向（刻線長度不變，數字才看得到）；測微器的放大鏡是等比例放大，套管刻線依它在圓柱面上的位置畫在 r sin φ 的高度。</li>
+        <li data-en="Repeated measurements: reading = true value + systematic error + a normally distributed random error (Box–Muller), then rounded to what the instrument can show (the nearest vernier line, or 0.001 mm on the micrometer). The random numbers come from a seeded generator, so the tests can be repeated exactly.">多次測量：讀數 = 真值 + 系統誤差 + 常態分布的隨機誤差（Box–Muller 法），再取到儀器讀得出的值（最對齊的副尺刻線，或測微器的 0.001 mm）。隨機數由可設定種子的產生器產生，測試可以完全重現。</li>
+        <li data-en="Uncertainties follow the rules of the Grade 11 elective physics textbook (ISO-GUM): Type A = s/√n, Type B = smallest division/(2√3), rounded up to two significant figures. “Precise” here means s ≤ 2 × the smallest division; “accurate” means the mean is within 2ΔX of the true value.">不確定度依選修物理的寫法（ISO-GUM）：A 類 = s/√n，B 類 = 最小刻度/(2√3)，無條件進位取 2 位有效數字。這裡的「精密」指 s ≤ 2 倍最小刻度，「準確」指平均值與真值相差不到 2ΔX。</li>
+        <li data-en="Not included: backlash and wear of the screw, thermal expansion, elastic deformation of the object, and the dependence of the reading on how hard the caliper is squeezed.">沒有模擬：螺紋的間隙與磨損、熱脹冷縮、物體受夾時的彈性變形，以及游標尺夾持力大小對讀數的影響。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Grade 11 elective physics I · Measurement and uncertainty.">課綱對應：選修物理Ⅰ・測量與不確定度。</li>
+        <li data-en="Instrument data: vernier calipers with 20 divisions (0.05 mm) and 50 divisions (0.02 mm); a micrometer with a 0.5 mm pitch and 50 thimble divisions (0.01 mm), range 0–25 mm — the usual school specifications. No physical constants are used.">儀器數據：20 格（0.05 mm）與 50 格（0.02 mm）游標尺；螺距 0.5 mm、套管 50 格（0.01 mm）、量程 0–25 mm 的螺旋測微器，都是學校常用的規格。本頁沒有用到物理常數。</li>
+        <li data-en-html="Uncertainty method (Type A, Type B, combined standard uncertainty): JCGM 100:2008, <em>Guide to the expression of uncertainty in measurement</em> (GUM), <a href=&quot;https://www.bipm.org/en/committees/jc/jcgm/publications&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;>BIPM</a>; rounding the uncertainty up to two significant figures follows the Taiwanese elective physics textbooks.">不確定度的評估方法（A 類、B 類、組合標準不確定度）：JCGM 100:2008《量測不確定度表示指引》（GUM），<a href="https://www.bipm.org/en/committees/jc/jcgm/publications" rel="noopener" target="_blank">BIPM</a>；不確定度無條件進位取 2 位有效數字，依選修物理課本的寫法。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/college-physics-2e/pages/1-3-accuracy-precision-and-significant-figures&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;>OpenStax College Physics 2e, 1.3 Accuracy, Precision, and Significant Figures</a>.">延伸閱讀：<a href="https://openstax.org/books/college-physics-2e/pages/1-3-accuracy-precision-and-significant-figures" rel="noopener" target="_blank">OpenStax College Physics 2e，1.3 Accuracy, Precision, and Significant Figures</a>（英文）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://www.nist.gov/pml/nist-technical-note-1297&quot; rel=&quot;noopener&quot; target=&quot;_blank&quot;>NIST Technical Note 1297</a>, guidelines for evaluating and expressing the uncertainty of measurement results.">延伸閱讀：<a href="https://www.nist.gov/pml/nist-technical-note-1297" rel="noopener" target="_blank">NIST Technical Note 1297</a>，量測結果不確定度的評估與表示指引（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/measurement-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/measurement.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="measurement"></script>
+  <script src="js/missions/measurement.js"></script>
+  <script src="js/stats.js?v=202611120801" data-module="measurement"></script>
+  <script src="js/comments.js?v=202611120801"></script>
+</body>
+</html>

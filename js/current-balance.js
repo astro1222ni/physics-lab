@@ -1029,6 +1029,20 @@
     $('rev1').setAttribute('aria-pressed', String(st.s1 < 0));
     $('rev2').setAttribute('aria-pressed', String(st.s2 < 0));
     updateTilt();
+    updateCanvasLabel();
+  }
+  /** 畫布的文字描述（螢幕閱讀器；不設 aria-live，狀態改變時更新） */
+  function updateCanvasLabel() {
+    const tp = tipUp();
+    const bal = isLevel() ? T('天平水平', 'the balance is level')
+      : (tp > 0 ? T('外端偏高 ', 'the outer end is ') + Math.abs(tp).toFixed(1) + T(' mm', ' mm high') : T('外端偏低 ', 'the outer end is ') + Math.abs(tp).toFixed(1) + T(' mm', ' mm low'));
+    const cur = st.power ? T('電流表 I1 = ' + I1m().toFixed(2) + ' A、I2 = ' + I2m().toFixed(2) + ' A', 'ammeters I1 = ' + I1m().toFixed(2) + ' A, I2 = ' + I2m().toFixed(2) + ' A') : T('電源關閉', 'power off');
+    const wire = st.hung ? T('外端掛著 ' + st.piece.mg + ' mg 的漆包線', 'a ' + st.piece.mg + ' mg piece of wire hangs on the outer end') : T('掛勾上沒有東西', 'nothing on the hook');
+    const t = T('電流天平示意圖：剖開一半的螺線管與伸進管內的ㄈ字形電路。目前' + cur + '，' + wire + '，' + bal + '。',
+      'Diagram of the current balance: a solenoid cut open with the U-shaped circuit reaching into it. Now ' + cur + ', ' + wire + ', and ' + bal + '.');
+    if (cv.getAttribute('aria-label') !== t) cv.setAttribute('aria-label', t);
+    // 英文模式也同步 data-en-aria-label，免得載入完成時被 HTML 的靜態英文蓋回去
+    if (cv.hasAttribute('data-en-aria-label') && T('0', '1') === '1') cv.setAttribute('data-en-aria-label', t);
   }
   function analysis() {
     return C.analyze(st.rows.map(function (r) { return { part: r.part, m: r.m * 1e-6, I1: r.I1, I2: r.I2 }; }));
@@ -1474,6 +1488,22 @@
     if (mq.addEventListener) mq.addEventListener('change', onTheme);
   }
   if (LD.reducedMotion()) { st.show.flow = false; $('showFlow').checked = false; }
+  // 分享連結：兩個「反向」按鈕是切換鈕（預設 I1 已反向），classroom.js 只會補按「按下」的按鈕，所以電流方向另外記錄
+  // classroom.js 在 DOMContentLoaded 才載入：還沒有 LabShare 時，等 load 再登記（還原在 load 之後才做）
+  function regShare() {
+    if (!window.LabShare) return false;
+    window.LabShare.register({
+      get: function () { return { s1: st.s1, s2: st.s2 }; },
+      set: function (o) {
+        if (!o || typeof o !== 'object') return;
+        if (o.s1 === 1 || o.s1 === -1) st.s1 = o.s1;
+        if (o.s2 === 1 || o.s2 === -1) st.s2 = o.s2;
+        afterChange(false);
+      }
+    });
+    return true;
+  }
+  if (!regShare()) window.addEventListener('load', regShare);
   read(); st.len = val(elWl); outs();
   cutPiece();
   beam.th = C.eqAngle(torque()); beam.om = 0; resting = true;

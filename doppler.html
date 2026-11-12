@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Doppler Effect | Astro Ni Physics Lab">都卜勒效應｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"都卜勒效應","alternateName":"The Doppler Effect","description":"救護車一邊行駛一邊發出聲波：看前方波前被壓縮、後方被拉長，拖曳觀察者讀出聽到的頻率，打開音效聽音調由高變低，超過音速時出現馬赫錐與音爆。","url":"https://astro1222ni.github.io/physics-lab/doppler.html","image":"https://astro1222ni.github.io/physics-lab/img/og/doppler.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["波動與聲音（Waves & Sound）","聲波（Sound Waves）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 都卜勒效應頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 場景畫布可以拖曳觀察者（不捲動頁面）；下方 f′(t) 圖可以在上面捲動頁面 */
@@ -59,6 +60,52 @@
     dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid currentColor; background: none !important; }
+    .dp [hidden] { display: none !important; }
+    /* 2D／3D 檢視切換（與帶電粒子、水波槽相同的樣式） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-opts { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; }
+    .view-opts label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; }
+    .view-opts input { width: 17px; height: 17px; accent-color: var(--accent); }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 88%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    /* 3D 標籤：疊在畫布上的 HTML（字體大小跟著設定、簡體自動轉換） */
+    .dp3-ov { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .dp3-lb { position: absolute; left: 0; top: 0; white-space: nowrap; font: 600 calc(12px * var(--fs, 1))/1.3 system-ui, sans-serif;
+      padding: 1px 7px; border-radius: 999px; background: var(--dp3-pill, rgba(255, 255, 255, .85)); font-variant-numeric: tabular-nums; will-change: transform; }
+    .dp3-lb sub { font-size: .72em; line-height: 0; }
+    .dp3-lb.dp3-strong { font-weight: 700; font-size: calc(13px * var(--fs, 1)); }
+    .dp3-lb.dp3-sm { font-weight: 600; font-size: calc(11.5px * var(--fs, 1)); }
+    .dp3-lb.dp3-big { font-weight: 800; font-size: calc(16px * var(--fs, 1)); }
+    .dp3-hud { will-change: auto; font-weight: 600; }
+    .dp3-tl { left: 10px; top: 8px; font-size: calc(13px * var(--fs, 1)); }
+    .dp3-tl2 { left: 10px; top: calc(14px + 21px * var(--fs, 1)); font-weight: 500; }
+    .dp3-tr { left: auto; right: 10px; top: 8px; font-weight: 500; }
+    .dp3-bl { top: auto; bottom: 8px; left: 10px; font-weight: 500; font-size: calc(11px * var(--fs, 1)); }
+    .dp3-br { top: auto; left: auto; bottom: 8px; right: 10px; font-weight: 500; font-size: calc(11px * var(--fs, 1)); }
+    @media (max-width: 600px) {
+      .dp3-lb { font-size: calc(11px * var(--fs, 1)); padding: 1px 6px; }
+      .dp3-lb.dp3-strong { font-size: calc(12px * var(--fs, 1)); }
+      .dp3-lb.dp3-sm { font-size: calc(10.5px * var(--fs, 1)); }
+      .dp3-tl { font-size: calc(12px * var(--fs, 1)); }
+      .dp3-tl2 { top: calc(12px + 19px * var(--fs, 1)); }
+      .dp3-bl, .dp3-br { font-size: calc(10px * var(--fs, 1)); }
+      .dp3-tr { display: none; }
+    }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -69,24 +116,44 @@
       <p data-en="An ambulance (the sound source) drives along a road while its siren sends out wavefronts (top view). Watch them crowd together in front and spread out behind, drag the listener anywhere, and read the frequency f′ the listener hears — worked out exactly from where the source was when that sound left it. Turn on the sound to hear the pitch drop as it passes, and push the source past the speed of sound to see the Mach cone and the sonic boom.">救護車（波源）一邊沿著道路行駛、一邊發出聲波（俯視圖）。觀察前方的波前被擠在一起、後方被拉開；把觀察者拖到任何位置，讀出他聽到的頻率 f′——由「這個聲音發出時波源在哪裡」精確算出。打開音效聽聽看經過時音調由高變低，再把速度提高到超過音速，看看馬赫錐與音爆。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: turn on “Sound”, then press “Source approaches” — listen to how the pitch changes as the ambulance passes, and compare with the f′(t) graph.">試試看：打開「音效」再按「波源靠近」，聽救護車經過時音調怎麼變，對照 f′(t) 圖。</p>
     <div class="lab dp">
-      <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="都卜勒效應模擬畫布：俯視圖中移動的波源、擴散的圓形波前與可拖曳的觀察者；選取後可用方向鍵移動觀察者" data-en-aria-label="Doppler effect simulation: top view of a moving source, expanding circular wavefronts and a draggable listener; when focused, the arrow keys move the listener"></canvas>
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D: top view">2D 俯視圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-opts l3">
+            <label><input id="cut3" type="checkbox" checked><span data-en="Cut open">剖開半球</span></label>
+            <label><input id="refs3" type="checkbox" checked><span data-en="Reference listeners">參考聽者</span></label>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0"></canvas>
+        <div id="view3"></div>
         <canvas id="graph" aria-label="觀察者聽到的頻率 f′ 對時間 t 的圖" data-en-aria-label="Graph of the frequency f′ heard by the listener against time t"></canvas>
         <div class="playbar">
           <button id="play" class="primary" data-en="Pause">暫停</button>
           <button id="reset" type="button" data-en="Clear all" title="清除所有波前與 f′(t) 圖，波源回到起點重新開始；滑桿設定與觀察者位置不變" data-en-title="Clear all wavefronts and the f′(t) graph and send the source back to its start; slider settings and the listener’s position are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="legend">
           <span style="color:var(--b-wave)" data-en-html="<i class=&quot;ring&quot;></i>Wavefronts (one every 1/f)"><i class="ring"></i>波前（每 1/f 發出一個）</span>
           <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Wavefront reaching the listener now"><i class="dash"></i>此刻傳到觀察者的波前</span>
           <span data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Source velocity v<sub>s</sub>"><i style="background:var(--pos)"></i>波源速度 v<sub>s</sub></span>
           <span data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Listener velocity v<sub>o</sub>"><i style="background:var(--neg)"></i>觀察者速度 v<sub>o</sub></span>
+          <span class="l3" style="color:var(--b-wave)" data-en-html="<i style=&quot;background:var(--b-wave);opacity:.35&quot;></i>3D: hemispherical wavefronts in the air">
+            <i style="background:var(--b-wave);opacity:.35"></i>3D：空氣中的半球形波前</span>
+          <span class="l3" style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos);opacity:.4&quot;></i>3D: Mach cone (supersonic)"><i style="background:var(--pos);opacity:.4"></i>3D：馬赫錐（超音速）</span>
         </div>
-        <p class="hint" data-en-html="Top view, distances in metres (scale bar at the bottom left); the ambulance and the listener are drawn enlarged, not to scale. A velocity arrow shows how far the object moves in 0.5 s. Tap anywhere on the picture, or drag the listener, to move the listener (when the picture is selected, the arrow keys move it 10 m at a time; Shift: 50 m). The faded ambulance marks where the source was when the sound now being heard left it.">俯視圖，距離以公尺計（比例尺在左下角）；救護車與觀察者的圖示放大顯示，未依比例。速度箭頭代表 0.5 秒內移動的距離。點畫面任一處或拖曳觀察者，可以改變觀察者的位置（選取畫面後，方向鍵每次移動 10 m，按住 Shift 為 50 m）。半透明的救護車標出「此刻聽到的聲音」發出時波源所在的位置。</p>
+        <p class="hint l3" data-en-html="3D view: drag to rotate, pinch or scroll to zoom (right-drag or two fingers to pan). Drag the listener, tap the ground or use the arrow keys to move the listener. Each wavefront is a sphere of radius v(t − t<sub>e</sub>) around where it was emitted — above the ground, a hemisphere; the circles on the ground are exactly the 2D top view, and “Cut open” removes the half nearer to you so you can see the cross-section along the road. The three grey reference listeners stand still: on the road ahead, on the road behind, and beside the road. The ambulance and the people are drawn enlarged, not to scale.">3D 立體：拖曳旋轉、雙指或滾輪縮放（右鍵或雙指拖曳可平移）。拖曳觀察者、點地面或按方向鍵可以移動觀察者。每個波前是以「發出位置」為球心、半徑 v(t − t<sub>e</sub>) 的球面，地面以上是半球；地面上的圓就是 2D 俯視圖，「剖開半球」會切掉靠近你的一半，看得到沿著道路的剖面。三個灰色的參考聽者靜止不動：道路前方、道路後方與路旁。救護車與人放大顯示，未依比例。</p>
+        <p class="hint l2" data-en-html="Top view, distances in metres (scale bar at the bottom left); the ambulance and the listener are drawn enlarged, not to scale. A velocity arrow shows how far the object moves in 0.5 s. Tap anywhere on the picture, or drag the listener, to move the listener; drag the ambulance along the road to change where it starts (the run starts again). Keyboard: select the picture, press Enter to switch between the listener and the ambulance, and use the arrow keys to move it 10 m at a time (Shift: 50 m). The faded ambulance marks where the source was when the sound now being heard left it.">俯視圖，距離以公尺計（比例尺在左下角）；救護車與觀察者的圖示放大顯示，未依比例。速度箭頭代表 0.5 秒內移動的距離。點畫面任一處或拖曳觀察者，可以改變觀察者的位置；沿道路拖曳救護車，可以改變它的起點（從頭開始）。鍵盤：選取畫面後按 Enter 在觀察者與救護車之間切換，方向鍵每次移動 10 m，按住 Shift 為 50 m。半透明的救護車標出「此刻聽到的聲音」發出時波源所在的位置。</p>
         <p class="hint" data-en-html="Sound: the on-screen frequency f is only a few hertz so that the wavefronts can be seen, so the speaker plays a scaled-up tone — 660 Hz stands for f, and you hear 660 Hz × f′/f. It gets quieter as the listener gets farther from where the sound was emitted.">音效：畫面上的 f 只有幾 Hz（才看得見一圈一圈的波前），所以喇叭播放的音高按比例放大——以 660 Hz 代表 f，聽到的是 660 Hz × f′/f；距離聲音發出的位置越遠，音量越小。</p>
       </div>
 
@@ -214,6 +281,14 @@
         <li data-en-html="The sound reaching the listener at time \(t\) was emitted at the time \(t_e\) that satisfies \(|\vec{r}_o(t) - \vec{r}_s(t_e)| = v(t - t_e)\). For straight-line motion this is a quadratic equation in \(t - t_e\), solved exactly (two roots inside the Mach cone, none outside it).">在時刻 \(t\) 傳到觀察者的聲音，是在滿足 \(|\vec{r}_o(t) - \vec{r}_s(t_e)| = v(t - t_e)\) 的時刻 \(t_e\) 發出的。等速直線運動時這是 \(t - t_e\) 的二次方程式，直接求精確解（馬赫錐內有兩個根，錐外沒有根）。</li>
         <li data-en-html="The listener hears the phase \(f\,t_e(t)\), so \(f' = f\,\mathrm{d}t_e/\mathrm{d}t\); differentiating the condition above gives exactly \(f' = f\,(v + u_o)/(v - u_s)\). The unit tests check this against the textbook formula, a numerical derivative and the conservation of the number of wavefronts.">觀察者聽到的相位是 \(f\,t_e(t)\)，所以 \(f' = f\,\mathrm{d}t_e/\mathrm{d}t\)；對上面的條件微分，正好得到 \(f' = f\,(v + u_o)/(v - u_s)\)。單元測試用課本公式、數值微分與「波前個數守恆」驗證。</li>
         <li data-en="Distances are in metres and the animation runs in real time (or 0.25× in slow motion). Dragging the listener moves them instantly; that drag is not counted as a velocity.">距離以公尺計，動畫以真實時間播放（慢動作時為 0.25 倍）。拖曳觀察者是直接把他搬到新位置，拖曳的動作不算速度。</li>
+        <li data-en-html="The 3D view uses the same physics core, parameters and time as the 2D view. Sound spreads out in all directions, so each wavefront is really a sphere of radius \(v(t - t_e)\) centred on the source’s position at \(t_e\); the source is on the ground, so above the ground it is a hemisphere. The source and the listener are both on the ground, so the circles where these spheres meet the ground are exactly the 2D wavefronts, and every frequency shown is the same. The Mach cone has its tip at the source and half-angle \(\theta\) with \(\sin\theta = v/v_s\); it reaches back to where it touches the very first wavefront, a slant length of \(t\sqrt{v_s^2 - v^2}\). The reference listeners’ \(f'\) is worked out by the same retarded-time equation.">3D 檢視和 2D 用同一個物理核心、同樣的參數與時間。聲音向四面八方傳播，所以每個波前其實是以 \(t_e\) 時的波源位置為球心、半徑 \(v(t - t_e)\) 的球面；波源在地面上，地面以上就是半球。波源與觀察者都在地面上，這些球面與地面的交線正好是 2D 的波前圓，所有頻率都相同。馬赫錐的頂點在波源，半頂角 \(\theta\) 滿足 \(\sin\theta = v/v_s\)，一直延伸到與最早的波前相切處，斜邊長 \(t\sqrt{v_s^2 - v^2}\)。參考聽者的 \(f'\) 也用同一個推遲時間方程式算出。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics III · Sound Waves">課綱對應：選修物理Ⅲ・聲波</li>
+        <li data-en-html="Constants and data: the scenarios use the speed of sound \(v = 340\ \mathrm{m/s}\), the value commonly used in textbooks (about the speed in air at \(15\ ^\circ\mathrm{C}\)); in air it is about \(331\ \mathrm{m/s}\) at \(0\ ^\circ\mathrm{C}\) and \(343\ \mathrm{m/s}\) at \(20\ ^\circ\mathrm{C}\) (OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/17-2-speed-of-sound&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 17.2 Speed of Sound</a>). The on-screen frequency \(f\) (0.5–4 Hz) is a teaching value chosen so that the wavefronts can be seen, not the frequency of a real siren.">常數與數據：情境使用聲速 \(v = 340\ \mathrm{m/s}\)（課本常用值，約為 \(15\ ^\circ\mathrm{C}\) 空氣中的聲速）；空氣中的聲速在 \(0\ ^\circ\mathrm{C}\) 約 \(331\ \mathrm{m/s}\)、\(20\ ^\circ\mathrm{C}\) 約 \(343\ \mathrm{m/s}\)（OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/17-2-speed-of-sound" target="_blank" rel="noopener">University Physics Volume 1，17.2 聲速</a>》，英文）。畫面上的頻率 \(f\)（0.5–4 Hz）是為了看得見波前而設的教學值，不是真實警笛的頻率。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/17-7-the-doppler-effect&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 17.7 The Doppler Effect</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/17-8-shock-waves&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>17.8 Shock Waves</a> (Mach number and sonic booms)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/17-7-the-doppler-effect" target="_blank" rel="noopener">University Physics Volume 1，17.7 都卜勒效應</a>》與《<a href="https://openstax.org/books/university-physics-volume-1/pages/17-8-shock-waves" target="_blank" rel="noopener">17.8 震波</a>》（馬赫數與音爆；英文）</li>
       </ul>
     </section>
 
@@ -222,15 +297,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/doppler-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/doppler.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="doppler"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/doppler-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/doppler-3d.js?v=202611120801"></script>
+  <script src="js/doppler.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="doppler"></script>
   <script src="js/missions/doppler.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="doppler"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="doppler"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

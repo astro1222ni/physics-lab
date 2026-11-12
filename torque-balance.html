@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611120801"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Torque and Static Equilibrium | Astro Ni Physics Lab">力矩與靜力平衡｜Astro Ni 物理實驗室</title>
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="把砝碼、磚塊和人放上蹺蹺板，看力臂、力矩、支點的力與重心，放開後依 Iα = Στ 轉動；再讓梯子靠牆，找出不會滑倒的臨界角與需要的摩擦力。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://astro1222ni.github.io/physics-lab/torque-balance.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://astro1222ni.github.io/physics-lab/torque-balance.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://astro1222ni.github.io/physics-lab/torque-balance.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://astro1222ni.github.io/physics-lab/torque-balance.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Astro Ni 物理實驗室">
+  <meta property="og:title" content="力矩與靜力平衡｜Astro Ni 物理實驗室">
+  <meta property="og:description" content="把砝碼、磚塊和人放上蹺蹺板，看力臂、力矩、支點的力與重心，放開後依 Iα = Στ 轉動；再讓梯子靠牆，找出不會滑倒的臨界角與需要的摩擦力。">
+  <meta property="og:url" content="https://astro1222ni.github.io/physics-lab/torque-balance.html">
+  <meta property="og:image" content="https://astro1222ni.github.io/physics-lab/img/og/torque-balance.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="力矩與靜力平衡的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"力矩與靜力平衡","alternateName":"Torque and Static Equilibrium","description":"把砝碼、磚塊和人放上蹺蹺板，看力臂、力矩、支點的力與重心，放開後依 Iα = Στ 轉動；再讓梯子靠牆，找出不會滑倒的臨界角與需要的摩擦力。","url":"https://astro1222ni.github.io/physics-lab/torque-balance.html","image":"https://astro1222ni.github.io/physics-lab/img/og/torque-balance.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","靜力平衡（Static Equilibrium）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
+  <style>
+    /* 力矩與靜力平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .tb [hidden] { display: none !important; }
+    #cv { aspect-ratio: auto; height: 420px; cursor: default; }
+    #cv.grab { cursor: grab; }
+    #cv.grabbing { cursor: grabbing; }
+    #cv.place { cursor: copy; }
+
+    /* 分頁：槓桿與蹺蹺板／靠牆的梯子 */
+    .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 10px; padding: 4px; border-radius: 12px; background: var(--bg); border: 1px solid var(--border); }
+    .tabs button { min-height: 44px; border: 1px solid transparent; border-radius: 9px; background: transparent; font-size: calc(15px * var(--fs, 1)); font-weight: 600; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.25; padding: 4px 8px; transition: background-color .18s ease-out, color .18s ease-out; }
+    .tabs button svg { width: 24px; height: 24px; flex: none; }
+    .tabs button[aria-selected="true"] { background: var(--surface); color: var(--accent); border-color: var(--border); box-shadow: 0 1px 4px rgba(0, 0, 0, .08); }
+    .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    /* 工具箱：拖到板上，或先點一下再點板上的格點 */
+    .toolbox { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 10px 2px 0; }
+    @media (max-width: 720px) { .toolbox { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+    .toolbox .chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; padding: 4px 2px; line-height: 1.15; font-size: calc(12.5px * var(--fs, 1)); touch-action: none; user-select: none; -webkit-user-select: none; font-variant-numeric: tabular-nums; }
+    .toolbox .chip svg { width: 30px; height: 26px; flex: none; }
+    .toolbox .chip small { color: var(--muted); font-size: calc(11.5px * var(--fs, 1)); }
+    .toolbox .chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 650; }
+    .toolbox .chip[aria-pressed="true"] small { color: var(--accent); }
+
+    .stage .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .stage .bar button { min-height: 44px; flex: 1 1 auto; }
+    .stage .bar #release { min-width: 7em; }
+    .stage .bar button.on { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .slowbox { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); cursor: pointer; padding: 0 4px; }
+    .slowbox input { width: 18px; height: 18px; accent-color: var(--accent); }
+    .stage .status { margin: 6px 4px 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.cm { width: 12px; height: 12px; border-radius: 50%; background: conic-gradient(currentColor 0 25%, transparent 0 50%, currentColor 0 75%, transparent 0) !important; border: 1.5px solid currentColor; }
+
+    .tb .slider input[type="range"] { height: 28px; margin: 0; }
+    .tb .slider label sub, dl.readout sub, .tb .hint sub { font-size: .75em; }
+    .tb .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tb .checks label { min-height: 44px; }
+    .tb .checks input { width: 17px; height: 17px; }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 4px 0 6px; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 6px 6px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .place-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .place-grid label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); display: grid; gap: 4px; }
+    .tb select {
+      font: inherit; font-size: calc(15px * var(--fs, 1)); width: 100%; min-height: 44px; padding: 6px 8px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .place-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .place-btns button { padding: 6px 4px; line-height: 1.25; }
+    .tb dl.readout { grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); }
+    .tb dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }
+    dl.readout dt .f { white-space: nowrap; }
+    dl.readout .sep { grid-column: 1 / -1; border-top: 1px solid var(--border); margin: 4px 0 2px; height: 0; }
+    dl.readout dd.ccw { color: var(--neg); font-weight: 600; }
+    dl.readout dd.cw { color: var(--pos); font-weight: 600; }
+    dl.readout dd.ok { color: var(--probe); font-weight: 700; }
+    dl.readout dd.bad { color: var(--pos); font-weight: 700; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Static equilibrium"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 靜力平衡</nav>
+      <h1 data-en="Torque and Static Equilibrium">力矩與靜力平衡</h1>
+      <p data-en="Put weights, bricks and people on a seesaw and see the lever arm and torque of every force, the net torque, the force on the pivot and the centre of gravity. Let go of the board and it turns according to Iα = Στ. Then lean a ladder against a wall and find out how much friction keeps it from slipping — and why climbing higher makes it more likely to slide.">把砝碼、磚塊和人放上蹺蹺板，看每個力的力臂與力矩、淨力矩、支點的力與重心；放開木板，它會依 Iα = Στ 轉動。再讓梯子靠在牆上，找出不會滑倒需要多少摩擦力，以及為什麼人爬得越高越容易滑。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: put 2 kg 1 m left of the pivot and 1 kg 2 m to its right, press “Let go” and see whether the board balances.">試試看：支點左邊 1 m 放 2 kg，右邊 2 m 放 1 kg，按「放開」看會不會平衡。</p>
+    <div class="lab tb">
+      <div class="stage">
+        <div class="tabs" role="tablist" aria-label="選擇實驗" data-en-aria-label="Choose an experiment">
+          <button type="button" role="tab" id="tabSeesaw" aria-selected="true" aria-controls="cv" data-mode="seesaw"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 15.5 22 10.5"/><path fill="currentColor" d="M12 13.2 15.6 21H8.4z"/><rect x="2.6" y="10.4" width="4" height="4" rx="1" transform="rotate(-14 4.6 12.4)" fill="currentColor"/><circle cx="19" cy="7.4" r="2.1" fill="currentColor"/></svg><span data-en="Lever and seesaw">槓桿與蹺蹺板</span></button>
+          <button type="button" role="tab" id="tabLadder" aria-selected="false" aria-controls="cv" data-mode="ladder" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M21 2v20M3 21.5h19M5.2 21 18.6 3.2M8.4 21 20.4 5.6"/><path fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" d="M7.3 18.2l2.9.4M10 14.6l2.9.4M12.7 11l2.9.4M15.4 7.4l2.9.4"/></svg><span data-en="Ladder against a wall">靠牆的梯子</span></button>
+        </div>
+        <canvas id="cv" aria-label="力矩與靜力平衡模擬畫布：可拖曳物體到木板上、移動支點，或調整靠牆的梯子" data-en-aria-label="Torque and static equilibrium simulation: drag objects onto the board and move the pivot, or adjust a ladder leaning against a wall"></canvas>
+
+        <div class="toolbox" id="toolbox" data-share-skip role="group" aria-label="工具箱：把物體拖到木板上，或先點一下再點板上的格點" data-en-aria-label="Toolbox: drag an object onto the board, or tap it and then tap a point on the board">
+          <button type="button" class="chip" data-kind="w1" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><path d="M15 2.5v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="15" cy="3" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="9" y="8" width="12" height="13" rx="2.5" fill="currentColor" opacity=".85"/></svg><span data-en="1 kg">1 kg</span><small data-en="weight">砝碼</small></button>
+          <button type="button" class="chip" data-kind="w2" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><path d="M15 2v3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="15" cy="2.6" r="1.8" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="8" y="6.5" width="14" height="16" rx="2.8" fill="currentColor" opacity=".85"/></svg><span data-en="2 kg">2 kg</span><small data-en="weight">砝碼</small></button>
+          <button type="button" class="chip" data-kind="w5" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><path d="M15 1.5v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="15" cy="2" r="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="6" y="5" width="18" height="19" rx="3.2" fill="currentColor" opacity=".85"/></svg><span data-en="5 kg">5 kg</span><small data-en="weight">砝碼</small></button>
+          <button type="button" class="chip" data-kind="brick" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><rect x="3" y="8" width="24" height="11" rx="1.6" fill="currentColor" opacity=".8"/><path d="M3 13.5h24M11 8v5.5M19 13.5V19" stroke="var(--surface)" stroke-width="1.2"/></svg><span data-en="2.5 kg">2.5 kg</span><small data-en="brick">磚塊</small></button>
+          <button type="button" class="chip" data-kind="child" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><circle cx="15" cy="7" r="4" fill="currentColor"/><path d="M9.5 24v-6.5a5.5 5.5 0 0 1 11 0V24z" fill="currentColor" opacity=".8"/></svg><span data-en="20 kg">20 kg</span><small data-en="child">小孩</small></button>
+          <button type="button" class="chip" data-kind="adult" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><circle cx="15" cy="5.6" r="4.4" fill="currentColor"/><path d="M7 25.5v-9a8 8 0 0 1 16 0v9z" fill="currentColor" opacity=".8"/></svg><span data-en="60 kg">60 kg</span><small data-en="adult">大人</small></button>
+          <button type="button" class="chip" data-kind="scale" aria-pressed="false"><svg viewBox="0 0 30 26" aria-hidden="true"><path d="M15 1v3.5M15 21.5V25" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="10.5" y="4.5" width="9" height="17" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12.8 9h4.4M12.8 12h4.4M12.8 15h4.4" stroke="currentColor" stroke-width="1.1"/><path d="M11.5 17.6h7" stroke="var(--b-mech)" stroke-width="2" stroke-linecap="round"/></svg><span data-en="Spring scale">彈簧秤</span><small data-en="pulls up">往上拉</small></button>
+        </div>
+
+        <div class="bar">
+          <button id="release" type="button" class="primary" data-en="Let go">放開</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="移除板上所有物體與彈簧秤，木板回到支架上；滑桿設定不變" data-en-title="Remove every object and the spring scale and put the board back on its supports; slider settings are kept">全部清除</button>
+          <button id="climb" type="button" hidden data-en="Climb up" title="人沿著梯子以 0.4 m/s 往上爬" data-en-title="The person climbs the ladder at 0.4 m/s">往上爬</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
+        </div>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+        <div class="legend" id="legSeesaw">
+          <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Weight, counterclockwise torque"><i style="background:var(--neg)"></i>重力（逆時針力矩）</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Weight, clockwise torque"><i style="background:var(--pos)"></i>重力（順時針力矩）</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Pivot force N"><i style="background:var(--accent)"></i>支點的力 N</span>
+          <span style="color:var(--b-mech)" data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Spring scale F"><i style="background:var(--b-mech)"></i>彈簧秤 F</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Line of action, lever arm"><i class="dash"></i>作用線、力臂</span>
+          <span style="color:var(--equi)" data-en-html="<i class=&quot;cm&quot;></i>Centre of gravity"><i class="cm"></i>系統重心</span>
+        </div>
+        <div class="legend" id="legLadder" hidden>
+          <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Weight"><i style="background:var(--neg)"></i>重力</span>
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Normal forces"><i style="background:var(--accent)"></i>正向力</span>
+          <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Friction"><i style="background:var(--pos)"></i>摩擦力</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Critical angle θ<sub>c</sub>"><i class="dash"></i>臨界角 θ<sub>c</sub></span>
+        </div>
+        <p class="hint" id="hintSeesaw" data-en-html="Drag an object from the toolbox onto a point of the board — above the board to put it on top, below to hang it (weights only). Drag objects to move them, or off the board to remove them; drag the triangle to move the pivot. Positions and lever arms are to scale; object sizes are only schematic. <strong>Counterclockwise torque is positive.</strong>">把工具箱的物體拖到木板的格點上：放在板子上方就放上去，放在下方就吊在板下（只有砝碼能吊）。拖曳物體可以移動，拖離木板就移除；拖曳三角形可以移動支點。位置與力臂依比例，物體大小只是示意。<strong>逆時針力矩為正。</strong></p>
+        <p class="hint" id="hintLadder" hidden data-en-html="The foot of the ladder starts against a small stop. Press “Let go” to remove it: the ladder stays only if friction can supply what is needed. Drag the top of the ladder to change the angle, and drag the person to move them. Force arrows are to scale (scale bar on the floor).">梯子底端一開始有小擋塊頂住。按「放手」移開擋塊：只有摩擦力供應得起需要的力，梯子才站得住。拖曳梯子頂端可以改變角度，拖曳人可以移動位置。力的箭頭依比例畫（比例尺在地板上）。</p>
+      </div>
+
+      <aside class="panel">
+        <!-- ===== 模式一：槓桿與蹺蹺板 ===== -->
+        <section class="card" data-for="seesaw">
+          <h2 data-en="Board and pivot">木板與支點</h2>
+          <div class="slider"><label for="mass" data-en="Board mass M">木板質量 M</label><output id="masso"></output>
+            <input id="mass" type="range" min="0" max="30" step="0.5" value="5" data-decimals="2"></div>
+          <div class="slider"><label for="pivot" data-en="Pivot position p (from the left end)">支點位置 p（由左端量起）</label><output id="pivoto"></output>
+            <input id="pivot" type="range" min="1" max="3" step="0.05" value="2" data-decimals="3"></div>
+          <p class="hint" data-en="A 4 m uniform board with marks every 0.25 m; M = 0 makes it a light rod. Changing the board mass or the pivot puts the supports back under the board. Tap a number to type an exact value.">4 m 長的均勻木板，每 0.25 m 一個格點；M = 0 就是輕桿。改變木板質量或支點時，支架會重新撐住木板。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card" data-for="seesaw" data-share-skip>
+          <h2 data-en="Place exactly">精確放置</h2>
+          <div class="place-grid">
+            <label><span data-en="Object">物體</span>
+              <select id="pKind">
+                <option value="w1" data-en="1 kg weight">1 kg 砝碼</option>
+                <option value="w2" data-en="2 kg weight">2 kg 砝碼</option>
+                <option value="w5" data-en="5 kg weight">5 kg 砝碼</option>
+                <option value="brick" data-en="Brick 2.5 kg">磚塊 2.5 kg</option>
+                <option value="child" data-en="Child 20 kg">小孩 20 kg</option>
+                <option value="adult" data-en="Adult 60 kg">大人 60 kg</option>
+                <option value="scale" data-en="Spring scale">彈簧秤</option>
+              </select></label>
+            <label><span data-en="Position x">位置 x</span>
+              <select id="pX"></select></label>
+          </div>
+          <div class="place-btns">
+            <button type="button" id="pTop" data-en="Put on top">放在板上</button>
+            <button type="button" id="pHang" data-en="Hang below">吊在板下</button>
+            <button type="button" id="pDel" data-en="Clear spot">清空這一格</button>
+          </div>
+          <p class="hint" data-en="Up to 3 weights or bricks can be stacked on one point; a person needs a point of their own. Only weights can hang (one per hook).">同一格最多疊 3 個砝碼或磚塊；人要獨占一格。只有砝碼能吊掛，每個掛鉤掛一個。</p>
+        </section>
+
+        <section class="card" data-for="seesaw">
+          <h2 data-en="Torques and forces">力矩與受力</h2>
+          <dl class="readout">
+            <dt data-en="State">狀態</dt><dd id="rState">—</dd>
+            <dt data-en-html="Board weight <span class=&quot;f&quot;>Mg</span>">木板重量 <span class="f">Mg</span></dt><dd id="rWb">—</dd>
+            <dt data-en-html="Objects on the board <span class=&quot;f&quot;>Σmg</span>">板上物體重量 <span class="f">Σmg</span></dt><dd id="rWi">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en="Counterclockwise torques">逆時針力矩合計</dt><dd id="rCCW" class="ccw">—</dd>
+            <dt data-en="Clockwise torques">順時針力矩合計</dt><dd id="rCW" class="cw">—</dd>
+            <dt data-en="Net torque Στ (gravity)">淨力矩 Στ（重力）</dt><dd id="rNet">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en="Force on the pivot N">支點的力 N</dt><dd id="rN">—</dd>
+            <dt data-en="Spring scale F">彈簧秤讀數 F</dt><dd id="rF">—</dd>
+            <dt data-en="Ground on an end">地面撐住板端的力</dt><dd id="rNg">—</dd>
+            <dt data-en="Centre of gravity x<sub>cm</sub>" data-en-html="Centre of gravity x<sub>cm</sub>">系統重心 x<sub>cm</sub></dt><dd id="rXcm">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en-html="Moment of inertia <span class=&quot;f&quot;>I</span> (about the pivot)">轉動慣量 <span class="f">I</span>（對支點）</dt><dd id="rI">—</dd>
+            <dt data-en="Angle θ">角度 θ</dt><dd id="rTh">—</dd>
+            <dt data-en="Angular velocity ω">角速度 ω</dt><dd id="rOm">—</dd>
+            <dt data-en-html="Angular acceleration <span class=&quot;f&quot;>α = Στ/I</span>">角加速度 <span class="f">α = Στ/I</span></dt><dd id="rAl">—</dd>
+          </dl>
+          <p class="hint" data-en="While the supports hold the board, the pivot and the two supports share the weight in a way statics alone cannot decide, so N is shown only after you let go.">支架撐住時，支點與兩個支架如何分擔重量無法只用靜力學決定，所以放開後才顯示 N。</p>
+        </section>
+
+        <section class="card" data-for="seesaw">
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showF" type="checkbox" checked><span data-en="Forces">力的箭頭</span></label>
+            <label><input id="showArm" type="checkbox" checked><span data-en="Lever arms">力臂</span></label>
+            <label><input id="showTau" type="checkbox" checked><span data-en="Torques">力矩</span></label>
+            <label><input id="showCM" type="checkbox"><span data-en="Centre of gravity">系統重心</span></label>
+          </div>
+        </section>
+
+        <!-- ===== 模式二：靠牆的梯子 ===== -->
+        <section class="card" data-for="ladder" hidden>
+          <h2 data-en="Ladder and floor">梯子與地面</h2>
+          <div class="slider"><label for="lth" data-en="Angle with the floor θ">梯子與地面的夾角 θ</label><output id="ltho"></output>
+            <input id="lth" type="range" min="10" max="85" step="0.1" value="60" data-decimals="2"></div>
+          <div class="slider"><label for="lmu" data-en-html="Floor: static friction μ<sub>s</sub>">地面靜摩擦係數 μ<sub>s</sub></label><output id="lmuo"></output>
+            <input id="lmu" type="range" min="0" max="1" step="0.01" value="0.4" data-decimals="3"></div>
+          <div class="slider"><label for="lml" data-en="Ladder mass">梯子質量</label><output id="lmlo"></output>
+            <input id="lml" type="range" min="5" max="40" step="0.5" value="15" data-decimals="2"></div>
+          <p class="hint" data-en="A uniform 4 m ladder. Tap a number to type an exact value.">均勻的梯子，長 4 m。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card" data-for="ladder" hidden>
+          <h2 data-en="Wall">牆面</h2>
+          <div class="seg2" role="group" aria-label="牆面" data-en-aria-label="Wall">
+            <button type="button" id="wallSmooth" aria-pressed="true" data-en="Smooth">光滑</button>
+            <button type="button" id="wallRough" aria-pressed="false" data-en="With friction">有摩擦</button>
+          </div>
+          <div id="muwBox" hidden>
+            <div class="slider"><label for="lmuw" data-en-html="Wall: friction coefficient μ<sub>w</sub>">牆面摩擦係數 μ<sub>w</sub></label><output id="lmuwo"></output>
+              <input id="lmuw" type="range" min="0" max="1" step="0.01" value="0.3" data-decimals="3"></div>
+          </div>
+        </section>
+
+        <section class="card" data-for="ladder" hidden>
+          <h2 data-en="Person on the ladder">爬梯子的人</h2>
+          <div class="slider"><label for="lmp" data-en="Mass of the person (0 = nobody)">人的質量（0 = 沒有人）</label><output id="lmpo"></output>
+            <input id="lmp" type="range" min="0" max="100" step="1" value="60" data-decimals="1"></div>
+          <div class="slider"><label for="ld" data-en="Distance along the ladder from the foot d">沿梯子離底端的距離 d</label><output id="ldo"></output>
+            <input id="ld" type="range" min="0" max="4" step="0.05" value="0.5" data-decimals="3"></div>
+          <p class="hint" data-en="The person’s weight acts straight down through the rung they stand on.">人的重量看成作用在所站的梯級上、鉛直向下。</p>
+        </section>
+
+        <section class="card" data-for="ladder" hidden>
+          <h2 data-en="Forces on the ladder">梯子的受力</h2>
+          <dl class="readout">
+            <dt data-en="State">狀態</dt><dd id="lState">—</dd>
+            <dt data-en-html="Total weight <span class=&quot;f&quot;>W</span>">總重 <span class="f">W</span></dt><dd id="lW">—</dd>
+            <dt data-en-html="Floor normal force <span class=&quot;f&quot;>N<sub>floor</sub></span>">地面正向力 <span class="f">N<sub>地</sub></span></dt><dd id="lNg">—</dd>
+            <dt data-en-html="Friction needed <span class=&quot;f&quot;>f<sub>floor</sub></span>">需要的地面摩擦力 <span class="f">f<sub>地</sub></span></dt><dd id="lfg">—</dd>
+            <dt data-en-html="Max. static friction <span class=&quot;f&quot;>μ<sub>s</sub>N<sub>floor</sub></span>">最大靜摩擦力 <span class="f">μ<sub>s</sub>N<sub>地</sub></span></dt><dd id="lfmax">—</dd>
+            <dt data-en-html="Wall normal force <span class=&quot;f&quot;>N<sub>wall</sub></span>">牆的正向力 <span class="f">N<sub>牆</sub></span></dt><dd id="lNw">—</dd>
+            <dt data-en-html="Wall friction <span class=&quot;f&quot;>f<sub>wall</sub></span>">牆的摩擦力 <span class="f">f<sub>牆</sub></span></dt><dd id="lfw">—</dd>
+            <dt class="sep" aria-hidden="true"></dt>
+            <dt data-en-html="Critical angle <span class=&quot;f&quot;>θ<sub>c</sub></span>">臨界角 <span class="f">θ<sub>c</sub></span></dt><dd id="lthc">—</dd>
+            <dt data-en-html="Least μ<sub>s</sub> at this angle">此角度所需的最小 μ<sub>s</sub></dt><dd id="lmumin">—</dd>
+            <dt data-en="Safe to climb to">人可以爬到</dt><dd id="ldslip">—</dd>
+          </dl>
+          <p class="hint" id="lRoughNote" hidden data-en="With friction at the wall the ladder is statically indeterminate: many force sets are possible. Shown is the set in which both frictions use the same fraction of their maximum; the ladder holds if any set works, which is exactly when that fraction is at most 1.">牆有摩擦時是靜不定問題，可能的力組不只一組。這裡顯示「兩處摩擦力用到各自上限相同比例」的那一組；只要有任何一組力能平衡就不會滑，而這恰好等於這個比例不超過 1。</p>
+        </section>
+
+        <section class="card" data-for="ladder" hidden>
+          <h2 data-en="Display">顯示</h2>
+          <div class="checks">
+            <label><input id="showLF" type="checkbox" checked><span data-en="Forces">力的箭頭</span></label>
+            <label><input id="showCrit" type="checkbox" checked><span data-en="Critical angle θc">臨界角 θc</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Torque and lever arm">力矩與力臂</h3>
+      <p data-en-html="A force turns a body about an axis according to its <strong>torque</strong>: the force times its <strong>lever arm</strong>, the perpendicular distance from the axis to the force’s line of action. A weight points straight down, so its lever arm is the <strong>horizontal</strong> distance from the pivot — not the distance measured along a tilted board. Here counterclockwise torque is positive:">力讓物體繞轉軸轉動的效果用<strong>力矩</strong>表示：力的大小乘以<strong>力臂</strong>，也就是轉軸到力的作用線的垂直距離。重力鉛直向下，所以它的力臂是與支點的<strong>水平</strong>距離，不是沿著傾斜木板量的距離。本實驗以逆時針力矩為正：</p>
+      <div class="formula">
+        \[ \tau = rF\sin\phi = F\,d_{\perp}, \qquad \tau_i = -m_i g\,(x_i - p)\cos\theta \]
+      </div>
+      <p data-en-html="A weight hanging below the board pulls on the hook straight down, so it has the same line of action — and the same torque — as the same weight placed on top at that mark.">吊在板下的砝碼經由繩子把掛鉤鉛直往下拉，作用線和放在板上同一格的砝碼相同，力矩也相同。</p>
+
+      <h3 data-en="Conditions for static equilibrium">靜力平衡的條件</h3>
+      <p data-en-html="A rigid body stays at rest only if <strong>both</strong> the net force and the net torque (about any point) are zero. For the seesaw the second condition is the law of the lever; the first fixes the force on the pivot:">剛體要保持靜止，合力與（對任一點的）合力矩<strong>都</strong>必須為零。對蹺蹺板而言，第二個條件就是槓桿原理，第一個條件決定支點的力：</p>
+      <div class="formula" data-en-html="\[ \sum \vec F = 0, \qquad \sum \tau = 0 \;\Rightarrow\; \sum_{\text{left}} m_i g\,d_i = \sum_{\text{right}} m_j g\,d_j, \qquad N + F_{\text{scale}} = W_{\text{total}} \]">
+        \[ \sum \vec F = 0, \qquad \sum \tau = 0 \;\Rightarrow\; \sum_{\text{左}} m_i g\,d_i = \sum_{\text{右}} m_j g\,d_j, \qquad N + F_{\text{秤}} = W_{\text{總}} \]
+      </div>
+      <p data-en-html="The board’s own weight acts at its centre (\(x = L/2\)). If the pivot is not at the centre, the board itself supplies a torque \(-Mg(L/2 - p)\) — that is how a single weight can balance a “non-uniform” arrangement, and how you can weigh the board with the lever. Equivalently, the board balances when the <strong>centre of gravity</strong> of the whole system is directly above the pivot:">木板本身的重量作用在中心（\(x = L/2\)）。支點不在中心時，木板自己就有力矩 \(-Mg(L/2 - p)\)：所以只用一個砝碼也能讓這種「不對稱」的配置平衡，也能反過來用槓桿秤出木板的質量。換個說法：整個系統的<strong>重心</strong>在支點正上方時，木板就平衡：</p>
+      <div class="formula">
+        \[ x_{\text{cm}} = \frac{M\,\frac{L}{2} + \sum m_i x_i}{M + \sum m_i} = p \quad\Longleftrightarrow\quad \sum \tau = 0 \]
+      </div>
+      <p data-en-html="A spring scale can only pull up. To hold the board level at a point a distance \(s_k\) from the pivot it must read \(F = -\sum\tau / s_k\); the farther from the pivot, the smaller the force (a lever saves force but not work).">彈簧秤只能往上拉。在離支點 \(s_k\) 的地方要讓木板保持水平，讀數必須是 \(F = -\sum\tau / s_k\)；離支點越遠，需要的力越小（槓桿省力但不省功）。</p>
+
+      <h3 data-en="When the board is not balanced: rotation">不平衡時：轉動</h3>
+      <p data-en-html="After you let go, the board turns about the pivot according to Newton’s second law for rotation. The <strong>moment of inertia</strong> \(I\) depends only on how the mass is distributed about the axis — it does not depend on how fast the board turns:">放開之後，木板依轉動的牛頓第二定律繞支點轉動。<strong>轉動慣量</strong> \(I\) 只由質量對轉軸的分布決定，與木板轉得多快無關：</p>
+      <div class="formula">
+        \[ I\alpha = \sum\tau, \qquad I = M\!\left(\frac{L^2}{12} + \Big(\frac{L}{2} - p\Big)^{2}\right) + \sum m_i (x_i - p)^2 \]
+      </div>
+      <p data-en-html="A small net torque with a large \(I\) (heavy objects far from the pivot) gives a slow, gentle tilt; a large net torque with a small \(I\) slams the end into the ground. While the board turns, its centre of gravity accelerates, so the pivot force is <strong>not</strong> equal to the total weight.">淨力矩小而 \(I\) 大（重物離支點遠）時，木板慢慢傾斜；淨力矩大而 \(I\) 小時，板端重重撞向地面。轉動中重心在加速，所以支點的力<strong>不等於</strong>總重。</p>
+
+      <h3 data-en="The ladder against a wall">靠牆的梯子</h3>
+      <p data-en-html="Five forces act on the ladder: the weights of the ladder and the person, the floor’s normal force \(N_{\text{floor}}\) and friction \(f_{\text{floor}}\), the wall’s normal force \(N_{\text{wall}}\) and (if the wall is rough) its friction \(f_{\text{wall}}\). Taking torques about the foot removes the two floor forces:">梯子受五個力：梯子與人的重量、地面的正向力 \(N_{\text{地}}\) 與摩擦力 \(f_{\text{地}}\)、牆的正向力 \(N_{\text{牆}}\)，以及（牆粗糙時）牆的摩擦力 \(f_{\text{牆}}\)。對梯子底端取力矩，地面的兩個力就消失了：</p>
+      <div class="formula" data-en-html="\[ f_{\text{floor}} = N_{\text{wall}}, \qquad N_{\text{floor}} + f_{\text{wall}} = W, \qquad N_{\text{wall}}\,L\sin\theta + f_{\text{wall}}\,L\cos\theta = \Big(W_{\text{ladder}}\tfrac{L}{2} + W_{\text{person}}\,d\Big)\cos\theta \]">
+        \[ f_{\text{地}} = N_{\text{牆}}, \qquad N_{\text{地}} + f_{\text{牆}} = W, \qquad N_{\text{牆}}\,L\sin\theta + f_{\text{牆}}\,L\cos\theta = \Big(W_{\text{梯}}\tfrac{L}{2} + W_{\text{人}}\,d\Big)\cos\theta \]
+      </div>
+      <p data-en-html="With a smooth wall, \(f_{\text{wall}} = 0\): the floor must supply \(f = (W_{\text{ladder}}/2 + W_{\text{person}}\,d/L)\cot\theta\), but it can supply at most \(\mu_s W\). The ladder is safe if the angle is at least the critical angle">牆光滑時 \(f_{\text{牆}} = 0\)：地面要提供 \(f = (W_{\text{梯}}/2 + W_{\text{人}}\,d/L)\cot\theta\)，但最多只能提供 \(\mu_s W\)。所以梯子的角度至少要達到臨界角才不會滑：</p>
+      <div class="formula" data-en-html="\[ \tan\theta_c = \frac{m_{\text{ladder}}/2 + m_{\text{person}}\,d/L}{\mu_s\,(m_{\text{ladder}} + m_{\text{person}})} \;\xrightarrow{\text{nobody}}\; \tan\theta_c = \frac{1}{2\mu_s} \]">
+        \[ \tan\theta_c = \frac{m_{\text{梯}}/2 + m_{\text{人}}\,d/L}{\mu_s\,(m_{\text{梯}} + m_{\text{人}})} \;\xrightarrow{\text{沒有人}}\; \tan\theta_c = \frac{1}{2\mu_s} \]
+      </div>
+      <p data-en-html="The numerator grows with \(d\): <strong>the higher the person climbs, the steeper the ladder must be</strong>. With friction at the wall too, the critical angle becomes \(\tan\theta_c = \tau_w(1 + \mu_s\mu_w)/(\mu_s W) - \mu_w\), with \(\tau_w = W_{\text{ladder}}/2 + W_{\text{person}}\,d/L\); without a person this is \(\tan\theta_c = (1 - \mu_s\mu_w)/(2\mu_s)\).">分子隨 \(d\) 變大：<strong>人爬得越高，梯子就要放得越陡</strong>。牆也有摩擦時，臨界角變成 \(\tan\theta_c = \tau_w(1 + \mu_s\mu_w)/(\mu_s W) - \mu_w\)，其中 \(\tau_w = W_{\text{梯}}/2 + W_{\text{人}}\,d/L\)；沒有人時為 \(\tan\theta_c = (1 - \mu_s\mu_w)/(2\mu_s)\)。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The law of the lever</strong>: with the pivot in the middle, put 5 kg 0.5 m to its left and 2 kg 1.25 m to its right. The torques are equal and opposite and the board stays level when you let go."><strong>槓桿原理</strong>：支點在中央，左邊 0.5 m 放 5 kg、右邊 1.25 m 放 2 kg，兩邊力矩大小相等、方向相反，放開後木板保持水平。</li>
+        <li data-en-html="<strong>Hanging or on top makes no difference</strong>: move a weight from the top of a mark to the hook below the same mark — the torque does not change."><strong>吊著和放著一樣</strong>：把砝碼從板上某一格移到同一格下方的掛鉤，力矩不變。</li>
+        <li data-en-html="<strong>Weigh the board</strong>: move the pivot off the centre with no objects, then find where a single weight balances it. Then \(M = m\,(p - x)/(L/2 - p)\)."><strong>秤木板</strong>：不放物體、把支點移離中央，找出單一砝碼放在哪裡能讓它平衡，就能由 \(M = m\,(p - x)/(L/2 - p)\) 算出木板質量。</li>
+        <li data-en-html="<strong>The pivot force</strong>: when the board balances, \(N\) equals the total weight. Let an unbalanced board go and watch \(N\) drop below the total weight while it turns."><strong>支點的力</strong>：平衡時 \(N\) 等於總重。放開不平衡的木板，看轉動中的 \(N\) 比總重小。</li>
+        <li data-en-html="<strong>Slow or fast</strong>: with the same small imbalance, put heavy people near the ends (large \(I\)) — the board tilts much more slowly."><strong>慢慢轉或很快轉</strong>：同樣小的不平衡，把重的人放在兩端（\(I\) 大），木板傾斜得慢很多。</li>
+        <li data-en-html="<strong>Ladder</strong>: with nobody on it and a smooth wall, lower the angle step by step until the ladder slips; compare with \(\tan\theta_c = 1/(2\mu_s)\). Then let the person climb: at some height the friction needed exceeds \(\mu_s N\) and the ladder slides."><strong>梯子</strong>：沒有人、牆光滑時，一點一點降低角度直到梯子滑倒，和 \(\tan\theta_c = 1/(2\mu_s)\) 比較。再讓人往上爬：爬到某個高度時，需要的摩擦力超過 \(\mu_s N\)，梯子就滑倒。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Thin-board model: the thickness of the board and of the objects is neglected, so every weight acts on the board’s line at its mark, and a hanging weight acts at its hook with the string vertical. Positions and lever arms are to scale; object sizes are schematic. \(g = 9.80665\ \mathrm{m/s^2}\) (standard gravity).">薄板近似：忽略木板與物體的厚度，每個重量都作用在板子中心線的該格點上；吊掛的砝碼作用在掛鉤上，繩子保持鉛直。位置與力臂依比例，物體大小只是示意。\(g = 9.80665\ \mathrm{m/s^2}\)（標準重力加速度）。</li>
+        <li data-en-html="Equilibrium (\(\sum\tau = 0\), the pivot force, the spring-scale reading, the ladder forces and critical angles) is computed from exact formulas.">平衡（\(\sum\tau = 0\)、支點的力、彈簧秤讀數、梯子的力與臨界角）都用解析公式精確計算。</li>
+        <li data-en-html="After you let go, \(\theta'' = -(g S/I)\cos\theta\) (\(S\) = first moment of the mass about the pivot) is integrated with the fourth-order Runge–Kutta method in steps of at most 0.5 ms. The energy \(\tfrac12 I\omega^2 + gS\sin\theta\) stays constant to better than one part in \(10^{10}\). The moments when an end touches the ground, a hanging weight reaches the floor or the spring scale goes taut are located by bisection.">放開後，用四階龍格–庫塔法（每步不超過 0.5 ms）積分 \(\theta'' = -(g S/I)\cos\theta\)（\(S\) 為質量對支點的一次矩），能量 \(\tfrac12 I\omega^2 + gS\sin\theta\) 的漂移小於百億分之一。板端碰地、吊掛砝碼碰到地面、彈簧秤拉緊的時刻用二分法找出。</li>
+        <li data-en-html="An end hitting the ground stops dead. A hanging weight that reaches the floor rests there (its string goes slack); when it is lifted again, angular momentum about the pivot is conserved. The spring scale is held by a hand that keeps its hook at the level-board height.">板端碰地時立即停住。吊掛的砝碼碰到地面就停在地上（繩子變鬆），再被提起時對支點的角動量守恆。彈簧秤由手拿著，掛鉤固定在木板水平時的高度。</li>
+        <li data-en-html="Ladder sliding (simplified): both ends first stay in contact; the kinetic friction coefficients are taken equal to the static ones. When the wall’s normal force reaches zero the top leaves the wall; the foot then slides until it stops and the ladder falls about it.">梯子滑倒（簡化）：兩端先保持接觸，動摩擦係數取與靜摩擦係數相同；牆的正向力降到零時頂端離開牆面，之後底端滑到停下，梯子再繞底端倒下。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics II · Static equilibrium">課綱對應：選修物理Ⅱ・靜力平衡</li>
+        <li data-en-html="Constants: the standard acceleration of gravity \(g_n = 9.806\,65\ \mathrm{m/s^2}\) is an exact defined value (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>). The masses of the weights, bricks and people are round classroom values chosen for this simulation.">常數：標準重力加速度 \(g_n = 9.806\,65\ \mathrm{m/s^2}\) 為定義的精確值（<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。砝碼、磚塊與人的質量是本模擬取的整數教學值。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/12-1-conditions-for-static-equilibrium&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 12.1 Conditions for Static Equilibrium</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/12-2-examples-of-static-equilibrium&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>12.2 Examples of Static Equilibrium</a> (includes a ladder resting against a wall)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/12-1-conditions-for-static-equilibrium" target="_blank" rel="noopener">University Physics Volume 1，12.1 靜力平衡的條件</a>》與《<a href="https://openstax.org/books/university-physics-volume-1/pages/12-2-examples-of-static-equilibrium" target="_blank" rel="noopener">12.2 靜力平衡的例子</a>》（英文，含靠牆梯子的例題）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/torque-balance-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/torque-balance.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="torque-balance"></script>
+  <script src="js/missions/torque-balance.js"></script>
+  <script src="js/stats.js?v=202611120801" data-module="torque-balance"></script>
+  <script src="js/comments.js?v=202611120801"></script>
+</body>
+</html>

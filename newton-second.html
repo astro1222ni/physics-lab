@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Newton’s Second Law: The Dynamics Cart | Astro Ni Physics Lab">牛頓第二定律（力學車實驗）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,10 +25,11 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"牛頓第二定律（力學車實驗）","alternateName":"Newton's Second Law: The Dynamics Cart","description":"用懸掛的砝碼拉動力學車，剪下打點紙帶畫 v–t 圖求加速度；平衡摩擦力，畫出 a–F 與 a–1/(M+m) 圖，並比較繩張力與 mg。","url":"https://astro1222ni.github.io/physics-lab/newton-second.html","image":"https://astro1222ni.github.io/physics-lab/img/og/newton-second.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","牛頓運動定律（Newton's Laws of Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 牛頓第二定律頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -100,9 +101,10 @@
     </header>
 
     <!-- 第一部分：實驗裝置與操作 -->
+    <p class="try-hint" data-en="Try it: press “Release the cart”, then check that the tops of the strips below line up — the slope is the acceleration.">試試看：按「放開小車」，看紙條頂端是否連成直線，斜率就是加速度。</p>
     <div class="lab ns">
       <div class="stage">
-        <canvas id="cv" aria-label="力學車實驗裝置側視圖：軌道、打點計時器、紙帶、力學車、滑輪與吊掛物，左下方為小車與吊掛物的受力圖" data-en-aria-label="Side view of the apparatus: track, ticker timer, paper tape, dynamics cart, pulley and hanging mass, with free-body diagrams of the cart and the hanging mass at the lower left"></canvas>
+        <canvas id="cv" role="img" aria-label="力學車實驗裝置側視圖：軌道、打點計時器、紙帶、力學車、滑輪與吊掛物，左下方為小車與吊掛物的受力圖" data-en-aria-label="Side view of the apparatus: track, ticker timer, paper tape, dynamics cart, pulley and hanging mass, with free-body diagrams of the cart and the hanging mass at the lower left"></canvas>
         <div class="playbar">
           <button id="go" class="primary" type="button" data-en="Release the cart">放開小車</button>
           <button id="clearAll" type="button" data-en="Clear all" title="清除紙帶、圖表與所有數據點，回到起點；滑桿設定不變" data-en-title="Clear the tape, the graphs and all data points and return the cart to the start; slider settings are kept">全部清除</button>
@@ -110,6 +112,7 @@
           <label class="slowbox"><input id="slow" type="checkbox"><span data-en="Slow motion (0.25×)">慢動作（0.25×）</span></label>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Tension T"><i style="background:var(--accent)"></i>張力 T</span>
           <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Weight Mg, mg"><i style="background:var(--pos)"></i>重力 Mg、mg</span>
@@ -180,7 +183,7 @@
       <div class="stage">
         <h2 data-en="Ticker tape → strips → v–t graph">紙帶 → 剪成紙條 → v–t 圖</h2>
         <p class="hint" data-en="Top: the tape, with the first dot (the moment of release) on the left; the dashed lines show where to cut. Bottom: the strips pasted side by side. Each strip covers the same time τ, so its length is the average velocity × τ; the line through the tops is the v–t graph and its slope is the acceleration.">上方是取下的紙帶，第一點（放開的瞬間）在左邊，虛線是剪開的位置。下方把紙條依序並排貼好：每條代表相同的時間 τ，長度 = 平均速度 × τ，連接紙條頂端的直線就是 v–t 圖，斜率就是加速度。</p>
-        <canvas id="tapeCv" aria-label="紙帶與剪貼紙條：上方為打點紙帶，下方為依序並排的紙條所構成的 v–t 圖與最佳直線" data-en-aria-label="The ticker tape (top) and the strips pasted side by side (bottom), forming a v–t graph with its best-fit line"></canvas>
+        <canvas id="tapeCv" role="img" aria-label="紙帶與剪貼紙條：上方為打點紙帶，下方為依序並排的紙條所構成的 v–t 圖與最佳直線" data-en-aria-label="The ticker tape (top) and the strips pasted side by side (bottom), forming a v–t graph with its best-fit line"></canvas>
 
         <h2 style="margin-top:16px" data-en="Data: a–F and a–1/(M+m)">實驗數據：a–F 圖與 a–1/(M+m) 圖</h2>
         <p class="hint" data-en="Each completed run with the hanging mass on is added automatically to the graph that is selected below.">每次掛著吊掛物跑到擋板，量得的加速度會自動加入下面選定的圖表。</p>
@@ -196,7 +199,7 @@
           <button type="button" data-ax="inv" aria-pressed="true" data-en="x-axis: 1/(M+m)">橫軸：1/(M+m)</button>
           <button type="button" data-ax="invM" aria-pressed="false" data-en="x-axis: 1/M (cart only)">橫軸：1/M（只算小車）</button>
         </div>
-        <canvas id="gcv" aria-label="加速度對拉力或對總質量倒數的數據圖與最佳直線" data-en-aria-label="Graph of acceleration against force or against the reciprocal of the total mass, with the best-fit line"></canvas>
+        <canvas id="gcv" role="img" aria-label="加速度對拉力或對總質量倒數的數據圖與最佳直線" data-en-aria-label="Graph of acceleration against force or against the reciprocal of the total mass, with the best-fit line"></canvas>
         <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <div class="gbtns">
           <button type="button" id="undo" data-en="Remove the last point">移除最後一點</button>
@@ -309,6 +312,13 @@
         <li data-en="The track’s rolling friction is f = μN, and the cart starts moving only if the pull (plus the weight component along the track) is larger than μN. The string and pulley are massless, the pulley frictionless, and the string stays parallel to the track. g = 9.8 m/s².">軌道的滾動摩擦力 f = μN；拉力（加上重力沿軌道的分量）大於 μN 小車才會起動。繩子與滑輪的質量不計、滑輪無摩擦，繩子與軌道保持平行。g = 9.8 m/s²。</li>
         <li data-en="The mystery track picks a random μ between 0.015 and 0.045 each time it is turned on.">「未知摩擦的軌道」每次開啟時隨機選一個 0.015 到 0.045 之間的 μ。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics I · Newton’s Laws of Motion">課綱對應：選修物理Ⅰ・牛頓運動定律</li>
+        <li data-en-html="Constants and data: \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>CODATA 2022, NIST</a>). The ticker frequencies 60 Hz and 50 Hz are the mains frequencies; the friction coefficient μ is a setting you choose, not a measured material value.">常數與數據：\(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字）；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)（精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）。打點頻率 60 Hz、50 Hz 是家用電源的頻率；摩擦係數 μ 是可調的設定值，不是某種材料的實測數據。</li>
+        <li data-en-html="Further reading: OpenStax, <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/5-3-newtons-second-law&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>University Physics Volume 1, 5.3 Newton’s Second Law</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/6-1-solving-problems-with-newtons-laws&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>6.1 Solving Problems with Newton’s Laws</a> (Example 6.4: two attached blocks)">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/5-3-newtons-second-law" target="_blank" rel="noopener">University Physics Volume 1，5.3 牛頓第二定律</a>》、《<a href="https://openstax.org/books/university-physics-volume-1/pages/6-1-solving-problems-with-newtons-laws" target="_blank" rel="noopener">6.1 用牛頓定律解題</a>》（例題 6.4：以繩相連的兩個物體）（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -316,16 +326,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/newton-second-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/newton-second.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="newton-second"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/newton-second-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/newton-second.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="newton-second"></script>
   <script src="js/missions/newton-second.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="newton-second"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="newton-second"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

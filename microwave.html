@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Meeting Electromagnetic Waves: Microwave Experiments | Astro Ni Physics Lab">認識電磁波（微波實驗）｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,9 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"認識電磁波（微波實驗）","alternateName":"Meeting Electromagnetic Waves: Microwave Experiments","description":"用微波發射器、接收器與角度計驗證反射定律、量稜鏡折射率，由駐波波節量出波長與頻率，再用偏極柵證明電磁波是橫波。","url":"https://astro1222ni.github.io/physics-lab/microwave.html","image":"https://astro1222ni.github.io/physics-lab/img/og/microwave.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電磁感應（Electromagnetic Induction）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 認識電磁波（微波實驗）頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .mw canvas { aspect-ratio: auto; }
@@ -137,6 +137,7 @@
     </header>
 
     <!-- 第一部分：實驗台 -->
+    <p class="try-hint" data-en="Try it: press “In place” to fit the metal plate, drag the receiver to the largest reading and check whether the angle of reflection equals the angle of incidence.">試試看：按「裝上」金屬板，拖曳接收器找讀數最大的位置，看反射角是否等於入射角。</p>
     <div class="lab mw">
       <div class="stage" id="stage">
         <div class="modes" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
@@ -156,7 +157,7 @@
           </div>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="俯視圖：角度計、微波發射器與接收器、金屬板或稜鏡或偏極柵、電場的波動，下方是毫安培計與讀數掃描圖。可拖曳接收器或探針" data-en-aria-label="Top view: the goniometer, the microwave transmitter and receiver, the metal plate, prism or grids, and the electric field of the waves; below are the milliammeter and a scan of the readings. Drag the receiver or the probe"></canvas>
+        <canvas id="cv" tabindex="0" aria-label="俯視圖：角度計、微波發射器與接收器、金屬板或稜鏡或偏極柵、電場的波動，下方是毫安培計與讀數掃描圖。可拖曳接收器、金屬板或探針；鍵盤操作：Enter 切換物件，方向鍵移動，Shift 加方向鍵移動較多，R 記錄。" data-en-aria-label="Top view: the goniometer, the microwave transmitter and receiver, the metal plate, prism or grids, and the electric field of the waves; below are the milliammeter and a scan of the readings. Drag the receiver, the plate or the probe. Keyboard: Enter picks an object, the arrow keys move it, Shift with an arrow key moves it further, R records."></canvas>
         <div id="view3"></div>
         <div class="nudge" id="nudge">
           <button type="button" id="nudgeLL" aria-label="大幅減少" data-en-aria-label="Big step down">◀◀</button>
@@ -170,6 +171,7 @@
           <button id="clearAll" type="button" title="清除四個實驗的數據表與讀數掃描，探針回到中點；滑桿設定不變" data-en-title="Clear the data tables and reading scans of all four parts and put the probe back at the middle; slider settings are kept" data-en="Clear all">全部清除</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
         <div class="legend l2" id="legend2">
           <span data-en-html="<i class=&quot;grad&quot;></i>Electric field: red = up (out of the screen), blue = down"><i class="grad"></i>電場：紅＝向上（指出畫面）、藍＝向下</span>
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Reading scan"><i style="background:var(--accent)"></i>讀數掃描</span>
@@ -277,7 +279,7 @@
     <div class="lab mw">
       <div class="stage">
         <h2 id="dataTitle">—</h2>
-        <canvas id="graph" aria-label="目前這個實驗的數據圖" data-en-aria-label="Graph of the data for the current part"></canvas>
+        <canvas id="graph" role="img" aria-label="目前這個實驗的數據圖" data-en-aria-label="Graph of the data for the current part"></canvas>
         <div class="legend" id="gLegend"></div>
         <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <div class="gbtns">
@@ -403,6 +405,14 @@
         <li data-en="The pictures of the field use the same calculation. The waves are drawn slowed down by about ten billion times; the colours are compressed so that weak waves are still visible. The 3D view (three.js library, MIT licence, loaded only when you choose 3D) shows the same apparatus to scale with arrows for the electric field along the beam.">畫面中的電場也用同一套計算，只是放慢約一百億倍，顏色經過壓縮，讓較弱的波也看得到。3D 檢視（three.js 函式庫，MIT 授權，選 3D 時才下載）依實際尺寸畫出同樣的器材，並用箭頭表示光束上的電場。</li>
         <li data-en="Accepted values: polystyrene n ≈ 1.59 and paraffin wax n ≈ 1.49 at about 10 GHz (from the dielectric constants 2.54 and 2.24; A. von Hippel, Dielectric Materials and Applications). c = 2.998 × 10^8 m/s.">公認值：約 10 GHz 時聚苯乙烯 n ≈ 1.59、石蠟 n ≈ 1.49（由介電常數 2.54 與 2.24 換算；A. von Hippel《Dielectric Materials and Applications》）。c = 2.998 × 10^8 m/s。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics IV · Electromagnetic Induction (electromagnetic waves).">課綱對應：選修物理Ⅳ・電磁感應（電磁波）。</li>
+        <li data-en-html="Speed of light in vacuum c = 299 792 458 m/s, an exact value that defines the metre in the SI (<a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?c&quot;>NIST</a>); the wavelength is λ = c/f.">真空中的光速 c = 299 792 458 m/s，是 SI 定義公尺所用的精確值（<a href="https://physics.nist.gov/cgi-bin/cuu/Value?c">NIST</a>）；波長 λ = c/f。</li>
+        <li data-en-html="Refractive indices at about 10 GHz: polystyrene n ≈ 1.59 and paraffin wax n ≈ 1.49, from the relative permittivities 2.54 and 2.24 (n = √ε<sub>r</sub>) in A. R. von Hippel, <i>Dielectric Materials and Applications</i>. The transmitter frequency (10.525 GHz), the unknown frequency and material, and the horn sizes are values chosen for this simulation.">約 10 GHz 的折射率：聚苯乙烯 n ≈ 1.59、石蠟 n ≈ 1.49，由相對介電常數 2.54 與 2.24 換算（n = √ε<sub>r</sub>），出自 A. R. von Hippel《Dielectric Materials and Applications》。發射器頻率 10.525 GHz、未知頻率與未知材料、喇叭尺寸則是本模擬設定的數值。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://science.nasa.gov/ems/06_microwaves/&quot;>NASA Science: Microwaves</a>; <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/16-5-the-electromagnetic-spectrum&quot;>OpenStax University Physics Vol. 2 — 16.5 The Electromagnetic Spectrum</a>.">延伸閱讀：<a href="https://science.nasa.gov/ems/06_microwaves/">NASA Science：微波</a>、<a href="https://openstax.org/books/university-physics-volume-2/pages/16-5-the-electromagnetic-spectrum">OpenStax University Physics 第二冊 16.5 電磁波譜</a>（英文）。</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -410,16 +420,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/microwave-core.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/drawkit.js?v=202611120013"></script>
-  <script src="js/microwave-3d.js?v=202611120013"></script>
-  <script src="js/microwave.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="microwave"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/microwave-core.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/microwave-3d.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/microwave.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="microwave"></script>
   <script src="js/missions/microwave.js"></script>
-  <script src="js/stats.js?v=202611120013" data-module="microwave"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="microwave"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>

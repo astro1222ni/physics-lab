@@ -36,11 +36,18 @@ window.LAB_MISSION_MODULES = [
   { id: 'equipotential', zh: '等位線與電場（導電紙實驗）', en: 'Equipotential Lines and the Electric Field (Conducting Paper)' },
   { id: 'thin-lens', zh: '薄透鏡的成像', en: 'Thin Lens Imaging' },
   { id: 'microwave', zh: '認識電磁波（微波實驗）', en: 'Meeting Electromagnetic Waves: Microwave Experiments' },
-  { id: 'current-balance', zh: '電流天平', en: 'Current Balance' }
+  { id: 'current-balance', zh: '電流天平', en: 'Current Balance' },
+  { id: 'measurement', zh: '測量與不確定度（游標尺與螺旋測微器）', en: 'Measurement and Uncertainty: Vernier Caliper and Micrometer' },
+  { id: 'angular-momentum', zh: '角動量守恆', en: 'Conservation of Angular Momentum' },
+  { id: 'thin-film', zh: '薄膜干涉（肥皂膜、空氣劈與牛頓環）', en: 'Thin-Film Interference: Soap Films, Air Wedges and Newton\'s Rings' },
+  { id: 'moon-phases', zh: '月相與日月食', en: 'Moon Phases and Eclipses' },
+  { id: 'earthquake', zh: '地震波與震央定位', en: 'Seismic Waves and Locating an Epicenter' },
+  { id: 'torque-balance', zh: '力矩與靜力平衡', en: 'Torque and Static Equilibrium' },
+  { id: 'energy-coaster', zh: '雲霄飛車與力學能守恆', en: 'Roller Coaster and Conservation of Mechanical Energy' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -59,5 +66,12 @@ window.LAB_MODULE_BRANCH = {
   'equipotential': 'em',
   'thin-lens': 'optics',
   'microwave': 'em',
-  'current-balance': 'em'
+  'current-balance': 'em',
+  'measurement': 'mech',
+  'angular-momentum': 'mech',
+  'thin-film': 'optics',
+  'moon-phases': 'astro',
+  'earthquake': 'geo',
+  'torque-balance': 'mech',
+  'energy-coaster': 'mech'
 };

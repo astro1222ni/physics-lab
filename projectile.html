@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611120013"></script>
+  <script src="js/settings.js?v=202611120801"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Projectile Motion | Astro Ni Physics Lab">拋體運動｜Astro Ni 物理實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -25,9 +25,10 @@
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"拋體運動","alternateName":"Projectile Motion","description":"調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。","url":"https://astro1222ni.github.io/physics-lab/projectile.html","image":"https://astro1222ni.github.io/physics-lab/img/og/projectile.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","平面運動（Motion in a Plane）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 物理實驗室","alternateName":"Astro Ni Physics Lab","url":"https://astro1222ni.github.io/physics-lab/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
-  <!-- SEO-END -->
+  <!-- SEO-END -->
+
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611120013">
+  <link rel="stylesheet" href="lab.css?v=202611120801">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
@@ -76,6 +77,7 @@
       <p data-en="Set the launch speed, launch angle, launch height and gravitational acceleration, then press “Launch” to watch the trajectory and the velocity components. Turn on air resistance to compare with the ideal parabola.">調整初速、仰角、發射高度與重力加速度，按「發射」觀察軌跡與速度分量；開啟空氣阻力，和理想拋物線比較。</p>
     </header>
 
+    <p class="try-hint" data-en="Try it: set the launch angle to 30° and press “Launch”; after it lands, change it to 60°, launch again and compare where they land.">試試看：把仰角拉到 30° 按「發射」，落地後改成 60° 再發射，比比看落點。</p>
     <div class="lab">
       <div class="stage">
         <canvas id="cv" aria-label="拋體運動模擬畫布：顯示軌跡、速度向量與座標軸" data-en-aria-label="Projectile motion simulation: trajectory, velocity vectors and axes"></canvas>
@@ -89,6 +91,8 @@
             <output id="speedo"></output></label>
           <p class="status" id="status" aria-live="polite"></p>
         </div>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <p class="sr-only" id="srNow" role="status" aria-live="polite" aria-atomic="true"></p>
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Current path"><i style="background:var(--accent)"></i>目前軌跡</span>
           <span style="color:var(--accent)" data-en-html="<i class=&quot;dash&quot;></i>Predicted path"><i class="dash"></i>預測軌跡</span>
@@ -97,7 +101,7 @@
           <span><i style="background:var(--neg)"></i>v<sub>x</sub></span>
           <span><i style="background:var(--equi)"></i>v<sub>y</sub></span>
         </div>
-        <p class="hint" data-en="Drag on the canvas to set the launch angle. Every landed trajectory is kept (up to 5) for comparison.">在畫布上拖曳可直接調整仰角；每次落地的軌跡會保留下來（最多 5 條）方便比較。</p>
+        <p class="hint" data-en="Drag on the canvas to set the launch angle (keyboard: Tab to the canvas, then use the arrow keys). Every landed trajectory is kept (up to 5) for comparison.">在畫布上拖曳可直接調整仰角（鍵盤：Tab 選到畫布，再按方向鍵）；每次落地的軌跡會保留下來（最多 5 條）方便比較。</p>
       </div>
 
       <aside class="panel">
@@ -217,6 +221,18 @@
         <li data-en="The animation is stepped frame by frame with the same RK4 integrator. Under constant acceleration RK4 has no truncation error, so without drag the animation lands exactly where the analytical solution predicts and the mechanical energy stays constant.">動畫使用同一套 RK4 積分器逐格推進；在等加速度的情況下 RK4 沒有截斷誤差，所以無阻力的動畫會準確落在解析解預測的位置，力學能也保持不變。</li>
         <li data-en-html="The object is treated as a point particle: spin (the Magnus effect) and wind are ignored, and \(g\) is taken to be constant.">物體視為質點，不考慮旋轉（馬格努斯效應）與風；\(g\) 視為定值。</li>
       </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics I · Motion in a Plane">課綱對應：選修物理Ⅰ・平面運動</li>
+        <li data-en-html="Gravitational acceleration: Earth \(g = 9.8\ \mathrm{m/s^2}\), the two-figure value used in textbooks; the standard acceleration of gravity is defined as exactly \(g_n = 9.806\,65\ \mathrm{m/s^2}\) (&lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?gn&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;CODATA 2022, NIST&lt;/a&gt;). Moon \(1.62\ \mathrm{m/s^2}\) (&lt;a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Moon Fact Sheet&lt;/a&gt;). Mars \(3.71\ \mathrm{m/s^2}\), the commonly quoted value (the &lt;a href=&quot;https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Mars Fact Sheet&lt;/a&gt; gives a mean surface gravity of 3.73 and 3.69 at the equator).">重力加速度：地球 \(g = 9.8\ \mathrm{m/s^2}\)（課本常用的兩位有效數字；標準重力加速度定義為 \(g_n = 9.806\,65\ \mathrm{m/s^2}\)，精確值，<a href="https://physics.nist.gov/cgi-bin/cuu/Value?gn" target="_blank" rel="noopener">CODATA 2022，NIST</a>）；月球 \(1.62\ \mathrm{m/s^2}\)（<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">NASA 月球資料表</a>）；火星 \(3.71\ \mathrm{m/s^2}\)（常用值；<a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/marsfact.html" target="_blank" rel="noopener">NASA 火星資料表</a>列平均表面重力 3.73、赤道 3.69）。</li>
+        <li data-en-html="Air resistance: \(k = 	frac12 
+ho C_D A\) comes from the drag equation \(D = 	frac12 C_D 
+ho v^2 A\) (&lt;a href=&quot;https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NASA Glenn Research Center, Drag Equation&lt;/a&gt;). The typical \(k/m\) values for balls are rough estimates from an air density of about \(1.2\ \mathrm{kg/m^3}\) and typical masses, diameters and drag coefficients; the shuttlecock value comes from its terminal speed of about \(6\ \mathrm{m/s}\) through \(k/m = g/v_t^2\).">空氣阻力：\(k = 	frac12 
+ho C_D A\) 出自阻力公式 \(D = 	frac12 C_D 
+ho v^2 A\)（<a href="https://www1.grc.nasa.gov/beginners-guide-to-aeronautics/drag-equation/" target="_blank" rel="noopener">NASA Glenn 研究中心〈Drag Equation〉</a>）。各種球的 \(k/m\) 參考值是用空氣密度約 \(1.2\ \mathrm{kg/m^3}\) 與典型的質量、直徑、阻力係數估算的近似值；羽毛球由終端速率約 \(6\ \mathrm{m/s}\) 以 \(k/m = g/v_t^2\) 換算。</li>
+        <li data-en-html="Further reading: OpenStax, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;University Physics Volume 1, 4.3 Projectile Motion&lt;/a&gt;; HyperPhysics, &lt;a href=&quot;https://hyperphysics.gsu.edu/hbase/traj.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Trajectories&lt;/a&gt;">延伸閱讀：OpenStax《<a href="https://openstax.org/books/university-physics-volume-1/pages/4-3-projectile-motion" target="_blank" rel="noopener">University Physics Volume 1，4.3 拋體運動</a>》、HyperPhysics〈<a href="https://hyperphysics.gsu.edu/hbase/traj.html" target="_blank" rel="noopener">Trajectories</a>〉（英文）</li>
+      </ul>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Physics Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 物理實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -224,15 +240,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611120013"></script>
-  <script src="js/projectile-core.js?v=202611120013"></script>
-  <script src="js/sound.js?v=202611120013"></script>
-  <script src="js/numinput.js?v=202611120013"></script>
-  <script src="js/projectile.js?v=202611120013"></script>
-  <script src="js/firebase-config.js?v=202611120013"></script>
-  <script src="js/missions.js?v=202611120013" data-module="projectile"></script>
+  <script src="js/math.js?v=202611120801"></script>
+  <script src="js/projectile-core.js?v=202611120801"></script>
+  <script src="js/sound.js?v=202611120801"></script>
+  <script src="js/numinput.js?v=202611120801"></script>
+  <script src="js/drawkit.js?v=202611120801"></script>
+  <script src="js/keys.js?v=202611120801"></script>
+  <script src="js/projectile.js?v=202611120801"></script>
+  <script src="js/firebase-config.js?v=202611120801"></script>
+  <script src="js/missions.js?v=202611120801" data-module="projectile"></script>
   <script src="js/missions/projectile.js?v=202611111257"></script>
-  <script src="js/stats.js?v=202611120013" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611120013"></script>
+  <script src="js/stats.js?v=202611120801" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611120801"></script>
 </body>
 </html>
