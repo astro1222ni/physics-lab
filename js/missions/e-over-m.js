@@ -112,8 +112,10 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'e-over-m-h1', level: 5, hidden: true,
-      riddle: { zh: '出發時只要歪了一點點，黑暗裡便長出一條彈簧。', en: 'Set off just a little askew, and a spring grows in the dark.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'beam' && d.on && d.warm && d.alpha > 0 && d.turns >= 3; }
+      riddle: { zh: '歪著出發，黑暗裡便長出一條彈簧；它每繞一圈，恰好升高自己的半徑。', en: 'Set off askew and a spring grows in the dark; each turn it climbs exactly its own radius.' },
+      // 11/13 收緊：螺距剛好等於半徑（均勻磁場中 螺距 / r = 2π tan α，α ≈ 9.04°，容許 3%），而且繞滿 3 圈。
+      // 原本只要斜射、繞 3 圈，亂按（試玩第 23 步）就會完成。
+      check: function (ev) { const d = ev.data; return ev.type === 'beam' && d.on && d.warm && d.alpha > 0 && d.turns >= 3 && Math.abs(2 * Math.PI * Math.tan(d.alpha * Math.PI / 180) - 1) <= 0.03; }
     },
     {
       id: 'e-over-m-h2', level: 7, hidden: true,

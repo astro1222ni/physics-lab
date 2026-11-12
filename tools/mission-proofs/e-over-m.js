@@ -68,7 +68,10 @@ set('V', 250); set('I', 1.40); record('m5 250 / m8');            // m5、m8
 set('parallax', true); set('V', 120); set('I', 1.5); record('m7 parallax');
 // h1 螺旋、h2 貼近玻璃、h3 頂端過球心
 set('parallax', false);
-set('V', 100); set('I', 1.92); set('alpha', 6);                   // h1
+set('V', 100); set('I', 2.5); set('alpha', 6);                    // 不是 h1（11/13 收緊）：螺距 0.66r
+if (done['e-over-m-h1']) { console.log('✗ α = 6° 不應完成 h1'); process.exitCode = 1; }
+set('alpha', 9);                                                 // h1：螺距 = 2π tan 9° · r = 0.995r、3.9 圈
+set('I', 1.92);
 set('alpha', 0);
 // h3（11/12 收緊）：光束經過頂端在球心不算，要記錄一筆；任務 4、6 常見的 100 V 2.00 A（頂端 −0.17 cm）、150 V 2.40 A（−0.08 cm）不會完成
 if (done['e-over-m-h3']) { console.log('✗ h3 不應在記錄前完成'); process.exitCode = 1; }
