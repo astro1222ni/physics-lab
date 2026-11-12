@@ -620,7 +620,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function emitNow() {
     if (state.mode === 'compound') { const q = Qc(); emit('compound', { r: q.r * 100, n: q.n, t: q.t, cont: q.cont, A: q.A, An: q.An, Ae: q.Ae }); }
-    else if (state.mode === 'inverse') { const q = Qi(); emit('inverse', { a: q.a, x: q.x, y: q.y, meets: q.meet.pts.length, tangent: q.tangent, ln: q.ln }); }
+    else if (state.mode === 'inverse') { const q = Qi(); emit('inverse', { a: q.a, x: q.x, y: q.y, meets: q.meet.pts.length, meetX: q.meet.pts.map(function (p) { return p[0]; }), meetY: q.meet.pts.map(function (p) { return p[1]; }), tangent: q.tangent, ln: q.ln }); }
     else { const q = Qs(); emit('semilog', { set: state.chal ? 'chal' : state.set, C: q.C, b: q.b, rms: q.rms, chal: !!state.chal }); }
   }
 

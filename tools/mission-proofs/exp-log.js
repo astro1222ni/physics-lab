@@ -19,7 +19,7 @@ function cEv(r, n, t, cont) {
 }
 function iEv(a, x) {
   const y = Math.pow(a, x);
-  return { type: 'inverse', data: { a: a, x: x, y: y, meets: EL.meet(a).pts.length, tangent: Math.abs(a - EL.E_1E) <= 0.0005, ln: Math.log(a) } };
+  return { type: 'inverse', data: { a: a, x: x, y: y, meets: EL.meet(a).pts.length, meetX: EL.meet(a).pts.map(p => p[0]), meetY: EL.meet(a).pts.map(p => p[1]), tangent: Math.abs(a - EL.E_1E) <= 0.0005, ln: Math.log(a) } };
 }
 function sEv(set, C, b) {
   const d = EL.DATASETS[set];
@@ -117,7 +117,10 @@ expect(12, [{ type: 'challenge', data: { time: 25, streak: 3, last3: 80, rms: 0.
 expect(12, [{ type: 'challenge', data: { time: 40, streak: 3, last3: 120, rms: 0.01 } }], false, '三題共 120 秒太慢');
 
 // ---------- 隱藏任務 ----------
-expect('h1', [iEv(0.05, 0)], true, '底數 0.05（滑桿最小值）：' + EL.meet(0.05).pts.length + ' 個交點');
+{ const p = EL.meet(0.05).pts; console.log('       （a = 0.05 的交點 x：' + p.map(q => q[0].toFixed(4)).join('、') + '）');
+  expect('h1', [iEv(0.05, 0.14)], true, '底數 0.05（滑桿最小值）、P 的 x = 0.14（滑桿格點）：在交點 (' + p[0][0].toFixed(3) + ', ' + p[0][1].toFixed(3) + ') 上');
+  expect('h1', [iEv(0.05, 0.66)], true, 'x = 0.66：另一個交點');
+  expect('h1', [iEv(0.05, 0), iEv(0.05, 1), iEv(0.05, 0.35)], false, '只把底數拉到最小、或 P 停在 y = x 上的交點不算'); }
 expect('h1', [iEv(0.07, 0)], false, '0.07 只有 ' + EL.meet(0.07).pts.length + ' 個');
 expect('h2', [iEv(1, 0)], true, '底數 1');
 expect('h3', [iEv(1.4447, 2.718)], true, 'a = 1.4447、x = 2.718：P = (2.718, ' + Math.pow(1.4447, 2.718).toFixed(4) + ') 在 y = x 上');

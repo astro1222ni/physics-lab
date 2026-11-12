@@ -2,7 +2,7 @@
  * 事件（js/exp-log.js 發出，都在使用者操作之後）：
  *   'compound'：複利模式的設定改變。{ r（年利率，%）, n（一年複利次數）, t（年）, cont（連續複利）, A（目前的總額）, An（n 次的總額）, Ae（連續複利） }
  *   'play'：「看著錢長大」播放完畢。{ n, t, r, cont }
- *   'inverse'：指數與對數模式的設定改變。{ a, x, y（a^x）, meets（a^x 與 log_a x 的交點數）, tangent（a ≈ e^(1/e)）, ln（ln a） }
+ *   'inverse'：指數與對數模式的設定改變。{ a, x, y（a^x）, meets（a^x 與 log_a x 的交點數）, meetX、meetY（各交點的坐標）, tangent（a ≈ e^(1/e)）, ln（ln a） }
  *   'semilog'：對數尺度模式的設定改變。{ set（'bacteria' | 'decay' | 'free' | 'chal'）, C, b, rms（擬合誤差；沒有資料時 null）, chal }
  *   'challenge'：挑戰答對一題。{ time（秒）, streak（連續答對幾題）, last3（最近三題總秒數，不到三題為 null）, rms }
  */
@@ -21,7 +21,7 @@
       check: function (ev) { return ev.type === 'compound' && !ev.data.cont && ev.data.n >= 365; }
     },
     {
-      id: 'exp-log-2', level: 3,
+      id: 'exp-log-2', level: 2,
       title: { zh: '逼近 e', en: 'Closing in on e' },
       desc: { zh: '年利率 100%、存 1 年，不勾連續複利，只靠增加複利次數讓總額和 e = 2.71828… 差不到 0.0001。', en: 'With a 100 % rate for 1 year and continuous compounding off, compound often enough that the total is within 0.0001 of e = 2.71828…' },
       check: function (ev) {
@@ -93,9 +93,14 @@
       check: function (ev) { return ev.type === 'challenge' && ev.data.last3 != null && ev.data.last3 <= 90; }
     },
     {
-      id: 'exp-log-h1', level: 5, hidden: true,
-      riddle: { zh: '鏡子裡外的兩個人，握了三次手。', en: 'The one in the mirror and the one outside shook hands three times.' },
-      check: function (ev) { return ev.type === 'inverse' && ev.data.a < E_ME && ev.data.meets === 3; }
+      id: 'exp-log-h1', level: 6, hidden: true,
+      riddle: { zh: '鏡子裡外的兩個人握了三次手，有一次不在鏡面上。', en: 'The one in the mirror and the one outside shook hands three times, once away from the glass.' },
+      check: function (ev) {
+        // 三個交點，而且點 P 停在不在 y = x 上的交點（這時鏡像 Q 是另一個交點：P 和 Q 都在兩條曲線上）
+        const d = ev.data;
+        if (ev.type !== 'inverse' || !(d.a < E_ME) || d.meets !== 3 || !d.meetX) return false;
+        return [0, 2].some(function (i) { return near(d.x, d.meetX[i], 0.005) && Math.abs(d.meetX[i] - d.meetY[i]) > 0.05; });
+      }
     },
     {
       id: 'exp-log-h2', level: 2, hidden: true,
