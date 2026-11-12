@@ -5,7 +5,7 @@
  *   'event'：時間前進時經過朔、上弦、望、下弦（寫進事件紀錄的那一刻），
  *            data = { kind: 'new'|'fq'|'full'|'lq', t, year, month, day, eclipse: 'none'|食的種類, eclKind: 'solar'|'lunar'|'', central, gap }；
  *   'step'：「+1 恆星月」「+1 朔望月」「下一次新月／滿月」跳躍結束，data.kind = 'sid'|'syn'|'new'|'full'；
- *   'cam'：3D 檢視按下視角按鈕，data.preset = 'edge'|'sun'|'top'。
+ *   'cam'：3D 檢視按下視角按鈕，data.preset = 'edge'|'sun'|'top'|'moon'（從地球看月球）。
  * 'state' 的 data：dLam（月球與太陽的黃經差，度）, illum（被照亮的比例 0–1）, phase（'new'|'waxC'|'fq'|'waxG'|'full'|'wanG'|'lq'|'wanC'）,
  *   hour, month, day, year, moonAlt, moonAz, sunAlt, sunAz（度，方位由北向東）, rising（月亮正在升高）,
  *   lunar（'none'|'penumbral'|'partial'|'total'）, solar（'none'|'partial'|'annular'|'total'，全球）, central, ruSurface（地面上的本影半徑 km，負值為偽本影）,

@@ -128,7 +128,11 @@
       ori: K.skyOrientation(el, t, la, lo), cal: lcal(t), key: K.phaseKey(ph.dLam),
       nodeDist: Math.min(Math.abs(K.wrapPi(m.u)), Math.abs(K.wrapPi(m.u - Math.PI))),
       sunNode: Math.min(Math.abs(K.wrapPi(s.lon - node)), Math.abs(K.wrapPi(s.lon - node - Math.PI))),
-      dec: K.declination(m)
+      dec: K.declination(m),
+      // 畫月面用的視圖（含天平動）：近照月球北極朝上（南半球南極朝上）、方向固定；天空全景以天頂為上（天空中真實的方向）
+      face: K.moonView(el, t, la, lo, 'face', state.place.lat < 0),
+      sky: K.moonView(el, t, la, lo, 'sky'),
+      libGeo: K.libration(el, t)            // 地心看的光學天平動（讀數拆出周日天平動用）
     };
     o.rising = K.horizontal(K.moonAt(el, t + 0.002), t + 0.002, la, lo).alt > hm.alt;
     snapCache = o;
@@ -736,7 +740,8 @@
   //   NASA 月球勘測軌道器（LRO）廣角相機（LROC WAC）的彩色月面圖，取自 NASA 科學視覺化工作室（SVS）
   //   「CGI Moon Kit」2019 年版 lroc_color_poles（https://svs.gsfc.nasa.gov/4720/），NASA 製作，公有領域。
   //   影像是等距長方投影：經度 −180°～180°（經度 0 在正中央、東經在右），緯度 90°～−90°（北在上）。
-  //   月球同步自轉：經度 0、緯度 0 的近側永遠朝向地球，以正射投影畫成球；本模擬不計天平動。
+  //   月球等速自轉（自轉軸對黃道傾斜 1.54°，見 MoonCore.moonBody）：從地球看到的月面中央（次觀測點）隨天平動在
+  //   經度 0、緯度 0 附近晃動幾度；以正射投影畫成球（MoonCore.viewFrame 給出畫面與月面座標的換算）。
   // =====================================================================
   const MOON_IMG = ['img/moon/lroc-color-2048.webp', 'img/moon/lroc-color-1024.jpg']; // 第二張給不支援 webp 的瀏覽器
   const moonImg = { el: null, levels: null, waiters: [] };
@@ -747,6 +752,7 @@
     im.decoding = 'async';
     im.onload = function () {
       moonImg.el = im; moonImg.levels = null; diskCache.clear();
+      for (const k in diskLast) delete diskLast[k];
       moonKey = ''; skyKey = '';
       moonImg.waiters.splice(0).forEach(function (f) { f(im); });
       requestDraw();
@@ -776,13 +782,22 @@
     return out;
   }
   /**
-   * 近側月面的正射投影（S×S 像素；rot = 月球北極在畫面上的角度 − 90°）：每個像素的顏色（0–1，RGB）與朝向觀者的分量 mz（圓外為 −1）。
-   * 月面座標：x 東、y 北、z 朝向地球；經度 = atan2(x, z)、緯度 = asin(y)。只在大小或方向改變時重算。
+   * 月面的正射投影（S×S 像素）：每個像素的顏色（0–1，RGB）與朝向觀者的分量 mz（圓外為 −1）。
+   * Rm：畫面座標（x 右、y 上、z 朝觀者）→ 月球本體座標（X 經度 0°、Y 東經 90°、Z 北極）的 3×3 矩陣（MoonCore.viewFrame 的 R）；
+   * 經度 = atan2(Y, X)、緯度 = asin(Z)。只在大小或方向改變時重算：
+   * 方向以 1/S 弧度為單位比對（月面中央移動不到半個像素就沿用），快取保留最近用過的幾張（全景的小月亮每幀都在轉，不會把近照擠掉）。
+   * throttle（毫秒，播放時才給）：大張的月面在這段時間內（或上一次重算花的時間的 10 倍內，慢的平板會自動放寬）已經重算過，
+   * 就先沿用上一張：快速播放時重算最多佔一成的時間；停下來的那一幀（drawAll 不帶 moved）會強制重畫成準確的方向。
    */
-  function moonDisk(S, rot) {
-    const key = S + '|' + rot.toFixed(4);
+  const diskLast = {};
+  function moonDisk(S, Rm, throttle) {
+    const q = Math.max(1e-4, 1 / S);
+    const key = S + '|' + Rm.map(function (v) { return Math.round(v / q); }).join(',');
     const hit = diskCache.get(key);
-    if (hit) return hit;
+    if (hit) { diskCache.delete(key); diskCache.set(key, hit); return hit; }
+    const last = diskLast[S];
+    const t0 = performance.now();
+    if (throttle && last && t0 - last.t < Math.max(throttle, 10 * last.cost)) return last.d;
     const lv = moonLevels();
     let L0 = null;
     if (lv && lv.length) {
@@ -790,17 +805,18 @@
       for (let i = lv.length - 1; i >= 0; i--) if (lv[i].w >= Math.PI * S) { L0 = lv[i]; break; }
     }
     const n = S * S, alb = new Float32Array(n * 3), mzA = new Float32Array(n);
-    const cr = Math.cos(rot), sr = Math.sin(rot), half = S / 2;
+    const r0 = Rm[0], r1 = Rm[1], r2_ = Rm[2], r3 = Rm[3], r4 = Rm[4], r5 = Rm[5], r6 = Rm[6], r7 = Rm[7], r8 = Rm[8], half = S / 2;
     for (let j = 0; j < S; j++) {
       const v = 1 - (j + 0.5) / half;
       for (let i = 0; i < S; i++) {
         const u = (i + 0.5) / half - 1, r2 = u * u + v * v, k = j * S + i;
         if (r2 > 1) { mzA[k] = -1; continue; }
-        const mx = u * cr + v * sr, my = -u * sr + v * cr, mz = Math.sqrt(1 - r2);
+        const mz = Math.sqrt(1 - r2);
         mzA[k] = mz;
         if (!L0) { alb[3 * k] = alb[3 * k + 1] = alb[3 * k + 2] = 0.62; continue; }
-        // 經緯度 → 影像座標，雙線性內插（經度方向首尾相接、緯度方向夾在邊上）
-        const lon = Math.atan2(mx, mz), lat = Math.asin(my > 1 ? 1 : my < -1 ? -1 : my);
+        // 畫面上的點 → 月面經緯度 → 影像座標，雙線性內插（經度方向首尾相接、緯度方向夾在邊上）
+        const bx = r0 * u + r1 * v + r2_ * mz, by = r3 * u + r4 * v + r5 * mz, bz = r6 * u + r7 * v + r8 * mz;
+        const lon = Math.atan2(by, bx), lat = Math.asin(bz > 1 ? 1 : bz < -1 ? -1 : bz);
         const W = L0.w, H = L0.h, P = L0.px;
         const x = (lon / TAU + 0.5) * W - 0.5, y = (0.5 - lat / Math.PI) * H - 0.5;
         let x0 = Math.floor(x), y0 = Math.floor(y);
@@ -814,26 +830,28 @@
       }
     }
     const out = { S: S, alb: alb, mz: mzA, real: !!L0 };
-    if (diskCache.size > 6) diskCache.clear();
     diskCache.set(key, out);
+    if (diskCache.size > 8) diskCache.delete(diskCache.keys().next().value);   // 丟掉最久沒用的
+    const t1 = performance.now();
+    diskLast[S] = { t: t1, d: out, cost: t1 - t0 };
     return out;
   }
-  /** 近側月面的固定方向：北半球與赤道上月球北極朝上；南半球（面向北方看）月球南極朝上。同一個地點不隨時間旋轉 */
-  function moonFaceRot() { return state.place.lat < 0 ? Math.PI : 0; }
+  /** 近照的南半球：面向北方看，月球南極朝上（北半球與赤道上北極朝上）。同一個地點的方向固定，只有天平動的小晃動 */
+  function faceFlip() { return state.place.lat < 0; }
   const MOON_GAIN = 1.08;   // 影像亮度 → 畫面亮度（滿月時亮的高地約 190／255，不會過曝）
   /**
-   * 畫出月面（逐點）。o：{ R（px）, dpr, rot（月球北極在螢幕上的角度 − 90°；固定，見 moonFaceRot）, L（太陽方向，月面座標 x 東 y 北 z 朝觀者）,
-   *   es（地球照 0–1）, ecl：{ lut, ru, x, m, a, E3, N3 }（月食時月面各點離地影軸的距離）, bg：背景色 [r,g,b] 或 null }
+   * 畫出月面（逐點）。o：{ R（px）, dpr, view（MoonCore.viewFrame／moonView：畫面與月面座標的換算、太陽方向）,
+   *   L（可省略：太陽方向的畫面座標，預設 view.sun）, es（地球照 0–1）, ecl（eclipseInfo：月食時月面各點離地影軸的距離）, bg：背景色 [r,g,b] 或 null }
    */
   const moonBuf = document.createElement('canvas');
   function renderMoon(o) {
     const S = Math.max(8, Math.min(384, Math.round(o.R * 2 * o.dpr)));
-    const disk = moonDisk(S, o.rot), AL = disk.alb, MZ = disk.mz;
+    const disk = moonDisk(S, o.view.R, state.running && S >= 96 ? 100 : 0), AL = disk.alb, MZ = disk.mz;
     if (moonBuf.width !== S) { moonBuf.width = S; moonBuf.height = S; }
     const g = moonBuf.getContext('2d');
     const img = g.createImageData(S, S), px = img.data;
-    const cr = Math.cos(o.rot), sr = Math.sin(o.rot);
-    const Lx = o.L[0], Ly = o.L[1], Lz = o.L[2];
+    const Ls = o.L || o.view.sun;
+    const Lx = Ls[0], Ly = Ls[1], Lz = Ls[2];
     const half = S / 2;
     const ecl = o.ecl;
     const bg = o.bg;
@@ -844,9 +862,8 @@
         const k = j * S + i, k4 = 4 * k, mz = MZ[k];
         if (mz < 0) { px[k4 + 3] = 0; continue; }
         const u = (i + 0.5) / half - 1;
-        const mx = u * cr + v * sr, my = -u * sr + v * cr;
         const ar = AL[3 * k], ag = AL[3 * k + 1], ab = AL[3 * k + 2];
-        const mu0 = mx * Lx + my * Ly + mz * Lz;
+        const mu0 = u * Lx + v * Ly + mz * Lz;
         let b = 0;
         if (mu0 > 0) {
           b = 2 * mu0 / (mu0 + mz + 1e-6); // Lommel–Seeliger：滿月時整個圓面一樣亮
@@ -855,9 +872,10 @@
         }
         let wr = b, wg = b, wb = b;
         if (ecl && b > 0) {
-          const qx = ecl.m.x + K.R_MOON * (mx * ecl.E3.x + my * ecl.N3.x);
-          const qy = ecl.m.y + K.R_MOON * (mx * ecl.E3.y + my * ecl.N3.y);
-          const qz = ecl.m.z + K.R_MOON * (mx * ecl.E3.z + my * ecl.N3.z);
+          // 這一點在太空中的位置（月心 + 月球半徑 ×（畫面座標換成黃道座標））
+          const qx = ecl.m.x + K.R_MOON * (u * ecl.ex.x + v * ecl.ey.x + mz * ecl.ez.x);
+          const qy = ecl.m.y + K.R_MOON * (u * ecl.ex.y + v * ecl.ey.y + mz * ecl.ez.y);
+          const qz = ecl.m.z + K.R_MOON * (u * ecl.ex.z + v * ecl.ey.z + mz * ecl.ez.z);
           const ax = qx * ecl.a.x + qy * ecl.a.y + qz * ecl.a.z;
           const rho = Math.sqrt(Math.max(0, qx * qx + qy * qy + qz * qz - ax * ax));
           const li = rho / ecl.step;
@@ -883,8 +901,8 @@
     g.putImageData(img, 0, 0);
     return moonBuf;
   }
-  /** 月食時月面各點的亮度查表：在月球所在的距離，垂直影軸的距離 ρ → 看得到的太陽比例 */
-  function eclipseInfo(sn, viewer) {
+  /** 月食時月面各點的亮度查表：在月球所在的距離，垂直影軸的距離 ρ → 看得到的太陽比例。view：畫這個月亮用的視圖（畫面座標軸） */
+  function eclipseInfo(sn, view) {
     const lu = sn.lunar;
     if (!(lu.x > 0) || lu.d - K.R_MOON > lu.rp * 1.02) return null;
     const a = lu.axis, n = 96, maxR = lu.rp + 2.2 * K.R_MOON, step = maxR / n;
@@ -896,14 +914,8 @@
       const q = K.add(K.mul(a, lu.x), K.mul(perp, i * step));
       lut[i] = K.sunVisibleFrom(q, sn.s, K.v3(0, 0, 0), K.R_EARTH);
     }
-    const f = K.unit(K.sub(sn.m, viewer));
-    let N3 = K.sub(K.v3(0, 0, 1), K.mul(f, f.z));
-    N3 = K.unit(N3);
-    const E3 = K.cross(f, N3);
-    return { lut: lut, step: step, ru: Math.max(1, lu.ru), m: sn.m, a: a, E3: E3, N3: N3, red: 0.75 };
+    return { lut: lut, step: step, ru: Math.max(1, lu.ru), m: sn.m, a: a, ex: view.ex, ey: view.ey, ez: view.ez, red: 0.75 };
   }
-  /** 月面座標（x 東、y 北、z 朝觀者）中的太陽方向（物理核心計算，只和亮邊相對月球北極的角度有關） */
-  const sunInMoonFrame = K.sunInMoonFrame;
 
   // ---------- 天空的顏色（真實天空的顏色，依太陽高度） ----------
   function lerp(a, b, u) { return a + (b - a) * u; }
@@ -972,13 +984,12 @@
     const f2 = '600 12px ' + FONT, f3 = '11px ' + FONT;
     setHTML('moonCap', moonCapText(solarView));
     if (solarView) { drawSolarCloseup(c, sn, cx, cy, R, f2, f3); return; }
-    // 月面：近側固定朝向地球，畫面方向固定（月球北極朝上；南半球南極朝上），不隨時間旋轉。
-    // 太陽方向換算到月面座標（只和亮邊相對月球北極的角度有關），所以明暗界線落在月面上的位置是正確的。
-    const ori = sn.ori;
-    const Lm = sunInMoonFrame(sn.ph.phaseAngle, ori.limb, ori.north);
-    const ecl = eclipseInfo(sn, sn.P);
+    // 月面：畫面方向固定（月球自轉軸朝上；南半球南極朝上），不隨時間旋轉；畫面正中央是次觀測點（天平動），
+    // 所以月面只在經度 0、緯度 0 附近晃動幾度。太陽方向由日、月、觀測者的位置算出，明暗界線落在月面上的位置是正確的。
+    const vf = sn.face;
+    const ecl = eclipseInfo(sn, vf);
     const dayBg = up && sn.hs.alt > -4 * DEG ? bgc.map(function (v) { return v * 0.85; }) : null;
-    const img = renderMoon({ R: R, dpr: mdpr, rot: moonFaceRot(), L: Lm, es: (1 + Math.cos(sn.ph.psi)) / 2, ecl: ecl, bg: dayBg });
+    const img = renderMoon({ R: R, dpr: mdpr, view: vf, es: (1 + Math.cos(sn.ph.psi)) / 2, ecl: ecl, bg: dayBg });
     if (!dayBg) {
       // 夜空：月亮外圍的光暈
       const lit = sn.ph.illum;
@@ -1000,13 +1011,15 @@
     // 畫面上方是月球的哪一極（方向固定）
     arrowUp(c, mw - 30, 44, state.place.lat < 0 ? T('月球南極', 'Lunar S') : T('月球北極', 'Lunar N'));
   }
-  /** 近照的說明：月面方向固定；日食時改成從日食最大的地點看、天頂朝上 */
+  /** 近照的說明：月面方向固定（全景才是天空中真實的方向）；日食時改成從日食最大的地點看、天頂朝上 */
   function moonCapText(solarView) {
     const nm = placeName();
     if (solarView) return T('<b>從地球看到的月亮</b>——日食：從日食最大的地點看，天頂朝上', '<b>The Moon seen from the Earth</b> — solar eclipse, seen where it is greatest, zenith up');
     return state.place.lat < 0
-      ? T('<b>從地球看到的月亮</b>——從' + nm + '看（南半球面向北方，月球南極朝上）；同步自轉，近側永遠朝向地球', '<b>The Moon seen from the Earth</b> — from ' + nm + ' (southern hemisphere, facing north: lunar south up); it always keeps the same near side toward the Earth')
-      : T('<b>從地球看到的月亮</b>——從' + nm + '看，月球北極朝上；同步自轉，近側永遠朝向地球', '<b>The Moon seen from the Earth</b> — from ' + nm + ', lunar north up; it always keeps the same near side toward the Earth');
+      ? T('<b>從地球看到的月亮</b>——從' + nm + '看（南半球面向北方），月球南極朝上，<b>方向固定</b>，只隨天平動微微晃動；在天空中實際傾斜的方向看下方的天空全景',
+        '<b>The Moon seen from the Earth</b> — from ' + nm + ' (southern hemisphere, facing north), lunar south up in a <b>fixed orientation</b>; it only rocks slightly with libration. For the real tilt in the sky, see the sky panorama below')
+      : T('<b>從地球看到的月亮</b>——從' + nm + '看，月球北極朝上，<b>方向固定</b>，只隨天平動微微晃動；在天空中實際傾斜的方向看下方的天空全景',
+        '<b>The Moon seen from the Earth</b> — from ' + nm + ', lunar north up in a <b>fixed orientation</b>; it only rocks slightly with libration. For the real tilt in the sky, see the sky panorama below');
   }
   function LabSettingsKey() { return window.LabSettings ? window.LabSettings.lang + (window.LabSettings.get('fs') || 1) : ''; }
   /** 深色天空上的文字：白字加深色描邊（淺色模式的 haloText 描邊是白色，會糊成一團） */
@@ -1182,7 +1195,8 @@
     const inView = q[0] > -rM && q[0] < sw + rM && q[1] > -rM && q[1] < sh + rM;
     if (inView) {
       // 順著陽光看，看到的是月球朝向太陽的一面（望的時候就是朝向地球的近側）：真實月面、黃道北方朝上、全亮
-      const face = renderMoon({ R: rM, dpr: sdpr, rot: 0, L: [0, 0, 1], es: 0, ecl: null, bg: null });
+      const vf = K.viewFrame(state.el, state.t, a, K.v3(0, 0, 1));
+      const face = renderMoon({ R: rM, dpr: sdpr, view: vf, L: [0, 0, 1], es: 0, ecl: null, bg: null });
       c.save();
       c.imageSmoothingEnabled = true;
       c.drawImage(face, q[0] - rM, q[1] - rM, 2 * rM, 2 * rM);
@@ -1410,6 +1424,7 @@
       nightText(c, NSEW[q], x, yH + 16, '#ffffff', f === 0 ? 'left' : f === 1 ? 'right' : 'center', 'alphabetic', '700 ' + (narrow ? 12 : 13) + 'px ' + FONT);
     });
     // 升落時刻標記（當地時間）
+    const rsSpans = [];   // 升落時刻文字佔的左右範圍：「月亮在地平線下」的提示要避開
     const rsMark = function (tt, col, txt) {
       if (tt == null) return;
       const h = K.horizontal(txt === 'm' ? K.moonAt(state.el, tt) : K.sunAt(tt), tt, plat(), plon());
@@ -1417,7 +1432,9 @@
       c.fillStyle = col; c.beginPath(); c.arc(x, yH, 2.5, 0, TAU); c.fill();
       c.font = f3; c.textAlign = 'center'; c.textBaseline = 'alphabetic';
       c.fillStyle = col;
-      c.fillText(fmtLocalClock(tt), Math.max(16, Math.min(kw - 16, x)), yH + (txt === 'm' ? 30 : 42) - (narrow ? 4 : 0));
+      const s = fmtLocalClock(tt), tx = Math.max(16, Math.min(kw - 16, x)), hw = c.measureText(s).width / 2;
+      c.fillText(s, tx, yH + (txt === 'm' ? 30 : 42) - (narrow ? 4 : 0));
+      rsSpans.push([tx - hw, tx + hw]);
     };
     rsMark(day.moon.rise, 'rgba(235,240,255,0.95)', 'm');
     rsMark(day.moon.set, 'rgba(235,240,255,0.95)', 'm');
@@ -1447,13 +1464,14 @@
       }
       nightText(c, T('太陽', 'Sun') + ' ' + num(sh, 1) + '°', x, Math.max(top + 10, y - SR - 6), '#ffe9b0', 'center', 'alphabetic', f2);
     }
-    // 月亮（真實月面、逐點畫出；月面方向與近照相同，固定不旋轉）
+    // 月亮（真實月面、逐點畫出）：以天頂為上，照天空中真實的方向——月面、明暗界線、亮邊一起轉，亮邊指向太陽。
+    // 只在地平線上才畫（地平線下看不到，也就沒有轉動的畫面）。
     const MR = narrow ? 11 : 13;
     if (sn.hm.alt > -1.2 * DEG) {
       const x = X(sn.hm.az), y = Y(sn.hm.alt);
-      const ori = sn.ori;
-      const ecl = eclipseInfo(sn, sn.P);
-      const img = renderMoon({ R: MR, dpr: kdpr, rot: moonFaceRot(), L: sunInMoonFrame(sn.ph.phaseAngle, ori.limb, ori.north), es: (1 + Math.cos(sn.ph.psi)) / 2, ecl: ecl, bg: null });
+      const vs = sn.sky;
+      const ecl = eclipseInfo(sn, vs);
+      const img = renderMoon({ R: MR, dpr: kdpr, view: vs, es: (1 + Math.cos(sn.ph.psi)) / 2, ecl: ecl, bg: null });
       const gl = c.createRadialGradient(x, y, MR * 0.8, x, y, MR * 2.6);
       gl.addColorStop(0, 'rgba(230,235,245,' + (0.25 * sn.ph.illum * (night ? 1 : 0.4)) + ')'); gl.addColorStop(1, 'rgba(230,235,245,0)');
       c.fillStyle = gl; c.beginPath(); c.arc(x, y, MR * 2.6, 0, TAU); c.fill();
@@ -1465,8 +1483,21 @@
       const ly = y - MR - 6 < top + 10 ? y + MR + 16 : y - MR - 6;
       if (!sunXY || Math.hypot(sunXY[0] - x, sunXY[1] - ly) > 40) nightText(c, lab, x, ly, '#ffffff', 'center', 'alphabetic', f2);
     } else {
-      const x = X(sn.hm.az);
-      nightText(c, '▾ ' + T('月亮在地平線下 ', 'Moon below horizon ') + num(sn.hm.alt / DEG, 0) + '°', Math.max(70, Math.min(kw - 70, x)), kh - 8, 'rgba(235,240,255,0.85)', 'center', 'alphabetic', f3);
+      const s = '▾ ' + T('月亮在地平線下 ', 'Moon below horizon ') + num(sn.hm.alt / DEG, 0) + '°';
+      c.font = f3;
+      const hw = c.measureText(s).width / 2 + 12, lo = hw - 8, hi = kw - hw + 8;
+      const free = function (x) { return x >= lo && x <= hi && rsSpans.every(function (q) { return x + hw < q[0] || x - hw > q[1]; }); };
+      // 放在月亮方位的正下方；和升落時刻的文字重疊時，改放到最近的空位
+      const x0 = Math.max(lo, Math.min(hi, X(sn.hm.az)));
+      let x = x0;
+      if (!free(x0)) {
+        const cand = [];
+        rsSpans.forEach(function (q) { cand.push(q[0] - hw - 1, q[1] + hw + 1); });
+        cand.push(lo, hi);
+        x = cand.filter(free).sort(function (a, b) { return Math.abs(a - x0) - Math.abs(b - x0); })[0];
+        if (x == null) x = x0;
+      }
+      nightText(c, s, x, kh - 8, 'rgba(235,240,255,0.85)', 'center', 'alphabetic', f3);
     }
     // 時間與說明
     D.pill(c, fmtDate(sn.cal) + ' ' + fmtClock(sn.cal.hour) + T('（當地時間 ', ' (local time, ') + zoneText(sn.t, true) + T('）', ')'), 8, top + 18, C.text, 'left', f2);
@@ -1524,6 +1555,7 @@
     setHTML('rSunAlt', num(sn.hs.alt / DEG, 1) + '°');
     setHTML('rSunRS', both(day.sun));
     setHTML('rLimb', limbWords(sn.ori.limb, sn.hm.az) + (sn.hm.alt > 0 ? '' : '<small>' + T('（月亮在地平線下）', '(the Moon is below the horizon)') + '</small>'));
+    setHTML('rLib', libReadout(sn));
     // 軌道說明
     setHTML('orbitInfo', T('太陽黃經目前 <b>', 'The Sun’s longitude is now <b>') + num(sn.s.lon / DEG, 1) + '°</b>' + T('；交點線指向太陽時（Ω ≈ 太陽黃經或 ±180°），朔望才有日月食。', '; eclipses need the line of nodes pointing at the Sun (Ω ≈ the Sun’s longitude or ±180°) at new or full moon.'));
   }
@@ -1539,6 +1571,37 @@
       return names[k] + T('（朝' + d + '方，指向太陽；在天空中以天頂為上）', ', toward ' + d + ' (toward the Sun; in the sky, zenith up)');
     }
     return names[k] + T('（指向太陽；在天空中以天頂為上）', ' (toward the Sun; in the sky, zenith up)');
+  }
+  /** 帶正負號的角度（度，一位小數）：+3.2°、−5.1°、0.0° */
+  function sgnDeg(a) { const s = num(a / DEG, 1); return (a > 0 && s !== '0.0' ? '+' : '') + s + '°'; }
+  /**
+   * 天平動多看到哪一邊。經度 l > 0：次觀測點在東經，東緣（危海那一側）轉過來；緯度 b > 0：北極區轉過來。
+   * 近照方向固定：北半球月球北極朝上、東緣在右；南半球南極朝上、東緣在左。
+   */
+  function libSides(v) {
+    const e = Math.abs(v.l) >= 0.05 * DEG, n = Math.abs(v.b) >= 0.05 * DEG;
+    const right = !faceFlip() === (v.l > 0);
+    const ew = v.l > 0 ? T('東緣（危海那一側', 'the east limb (Mare Crisium side') : T('西緣（風暴洋那一側', 'the west limb (Oceanus Procellarum side');
+    const ewTxt = ew + T('，近照的' + (right ? '右' : '左') + '邊）', ', ' + (right ? 'right' : 'left') + ' in the close-up)');
+    const nsTxt = v.b > 0 ? T('北極區', 'the north polar region') : T('南極區', 'the south polar region');
+    if (e && n) return ewTxt + T('與', ' and ') + nsTxt;
+    if (e) return ewTxt;
+    if (n) return nsTxt;
+    return '';
+  }
+  /** 天平動的一句話（畫布的文字說明用） */
+  function libText(v) {
+    const side = libSides(v);
+    return T('天平動：經度 ', 'libration: longitude ') + sgnDeg(v.l) + T('、緯度 ', ', latitude ') + sgnDeg(v.b) +
+      (side ? T('，多看到', ', showing more of ') + side : '');
+  }
+  /** 讀數「天平動」：從所選地點看（含周日天平動），說明正負號的意思 */
+  function libReadout(sn) {
+    const v = sn.face, g = sn.libGeo, side = libSides(v);
+    return T('經度 ', 'longitude ') + sgnDeg(v.l) + T('、緯度 ', ', latitude ') + sgnDeg(v.b) + '<small>' +
+      (side ? T('多看到', 'Showing more of ') + side + T('。', '. ') : '') +
+      T('經度為正：多看到東緣，為負：西緣；緯度為正：多看到北極區，為負：南極區。其中站在地面上看的周日天平動：經度 ', 'Longitude +: more of the east limb, −: the west limb; latitude +: more of the north polar region, −: the south. Of this, the diurnal libration from standing on the ground: longitude ') +
+      sgnDeg(K.wrapPi(v.l - g.l)) + T('、緯度 ', ', latitude ') + sgnDeg(v.b - g.b) + T('。', '.') + '</small>';
   }
 
   // =====================================================================
@@ -1998,16 +2061,17 @@
   function describeCanvases() {
     const sn = snap();
     const lu = sn.lunar.type !== 'none' ? T('，', ', ') + eclName('lunar', sn.lunar.type) : '';
-    // 近照裡亮面的方向：亮邊相對月球北極的角度，再加上畫面固定的方向
-    const limbImg = sn.ori.limb - sn.ori.north + Math.PI / 2 + moonFaceRot();
+    // 近照裡亮面的方向（畫面方向固定：月球北極朝上，南半球南極朝上）
     mcv.setAttribute('aria-label', T('從地球看到的月亮：', 'The Moon seen from the Earth: ') + phaseName(sn.key) + T('，照亮 ', ', ') + num(sn.ph.illum * 100, 0) + '%' + lu +
-      T('；畫面中亮面朝', '; in the picture the bright side is toward the ') + limbWords(limbImg).replace(/（.*）| \(.*\)/, '') +
-      (state.place.lat < 0 ? T('（月球南極朝上）', ' (lunar south up)') : T('（月球北極朝上）', ' (lunar north up)')));
+      T('；畫面中亮面朝', '; bright side in the picture: ') + limbWords(sn.face.limb).replace(/（.*）| \(.*\)/, '') +
+      (faceFlip() ? T('（月球南極朝上，方向固定）', ' (lunar south up, fixed orientation)') : T('（月球北極朝上，方向固定）', ' (lunar north up, fixed orientation)')) +
+      T('；', '; ') + libText(sn.face, false));
     const side = Math.cos(sn.ph.dLam) < 0;
     scv.setAttribute('aria-label', side
       ? T('影子截面：地球的本影與半影在月球距離處，月食：', 'Shadow cross-section: the Earth’s umbra and penumbra at the Moon’s distance; lunar eclipse: ') + eclName('lunar', sn.lunar.type)
       : T('影子截面：月球的影子落在地球上，日食：', 'Shadow cross-section: the Moon’s shadow on the Earth; solar eclipse: ') + eclName('solar', sn.solar.type));
     kcv.setAttribute('aria-label', T('從' + placeName() + '看的天空（面向' + (skyFacesNorth() ? '北' : '南') + '方的全景）：月亮高度 ', 'The sky seen from ' + placeName() + ' (panorama facing ' + (skyFacesNorth() ? 'north' : 'south') + '): Moon altitude ') + num(sn.hm.alt / DEG, 0) + T('°、方位 ', '°, direction ') + azName(sn.hm.az) +
+      (sn.hm.alt > 0 ? T('，亮面朝', ', bright side: ') + limbWords(sn.sky.limb).replace(/（.*）| \(.*\)/, '') + T('（天空中真實的方向）', ' (real direction in the sky)') : '') +
       T('；太陽高度 ', '; Sun altitude ') + num(sn.hs.alt / DEG, 0) + '°');
   }
 
@@ -2126,8 +2190,8 @@
     $('hSky').textContent = T('從' + nm + '看', 'Seen from ' + nm);
     $('dtLocal').textContent = T(nm + '看到的日食', 'Solar eclipse seen from ' + nm);
     setHTML('moonCap', moonCapText(snap().solar.type !== 'none'));
-    $('skyCap').innerHTML = T('<b>從' + nm + '看的天空</b>（' + latText(p.lat) + '、' + lonText(p.lon) + '）——面向' + (skyFacesNorth() ? '北' : '南') + '方的 360° 全景，虛線是今天的路徑，時刻是當地時間',
-      '<b>The sky from ' + nm + '</b> (' + latText(p.lat) + ', ' + lonText(p.lon) + ') — a 360° panorama facing ' + (skyFacesNorth() ? 'north' : 'south') + '; dashed lines are today’s paths, times are local');
+    $('skyCap').innerHTML = T('<b>從' + nm + '看的天空</b>（' + latText(p.lat) + '、' + lonText(p.lon) + '）——面向' + (skyFacesNorth() ? '北' : '南') + '方的 360° 全景，虛線是今天的路徑，時刻是當地時間；月亮照<b>天空中真實的方向</b>畫出（天頂朝上），亮邊指向太陽',
+      '<b>The sky from ' + nm + '</b> (' + latText(p.lat) + ', ' + lonText(p.lon) + ') — a 360° panorama facing ' + (skyFacesNorth() ? 'north' : 'south') + '; dashed lines are today’s paths, times are local. The Moon is drawn with its <b>real tilt in the sky</b> (zenith up): the bright side points to the Sun');
   }
   /**
    * 換觀測地點。預設保持「當地的日期與時刻」（例如都看當地 18:30 的天空），所以真實的瞬間會差幾個小時；
@@ -2338,6 +2402,7 @@
   $('camEdge').addEventListener('click', function () { if (view3) { view3.camTo('edge'); bridge.onCam('edge'); } });
   $('camSun').addEventListener('click', function () { if (view3) { view3.camTo('sun'); bridge.onCam('sun'); } });
   $('camTop').addEventListener('click', function () { if (view3) { view3.camTo('top'); bridge.onCam('top'); } });
+  $('camMoon').addEventListener('click', function () { if (view3) { view3.camTo('moon'); bridge.onCam('moon'); } });
 
   // =====================================================================
   // 啟動

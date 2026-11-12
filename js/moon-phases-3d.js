@@ -455,12 +455,28 @@
       grp.add(el2);
       L.ref.elab = el2;
       L.ref.rE = rE;
-      // 月球（同步自轉：經度 0 的近側永遠朝向地球；每一幀由 update() 依月球位置轉好方向）
-      const mg = new THREE.SphereGeometry(rM, 64, 40);
+      // 月球（等速自轉、自轉軸對黃道傾斜 1.54°：每一幀由 update() 照 K.moonBody 轉好方向，近側只是「平均」朝向地球，
+      // 所以從地球方向看會看到天平動的晃動）。本地座標：+x 經度 0°、+y 東經 90°、+z 北極
+      const mg = new THREE.SphereGeometry(rM, 96, 64);
       mg.rotateX(Math.PI / 2);
       const moon = new THREE.Mesh(mg, new THREE.MeshStandardMaterial({ map: moonTex, roughness: 0.95, metalness: 0, emissive: new THREE.Color(0x000000) }));
       grp.add(moon);
       L.ref.moon = moon;
+      // 月球的自轉軸（和地球一樣畫一根細線；對黃道北極只傾斜 1.54°，對軌道面的法線傾斜 6.68°）
+      moon.add(line([new THREE.Vector3(0, 0, -1.4 * rM), new THREE.Vector3(0, 0, 1.4 * rM)], col('text'), 0.55));
+      // 月面中央（經度 0°、緯度 0°）的小十字：「從地球看月球」時，它偏離圓面中心多少就是天平動
+      // 沿赤道與本初子午線各畫一小段、再加一個小圓圈（貼著球面，角半徑 4.3°）
+      const ck = new THREE.Group(), cr = 0.075, lift = rM * 1.004;
+      const sph = function (lon, lat) { return new THREE.Vector3(lift * Math.cos(lat) * Math.cos(lon), lift * Math.cos(lat) * Math.sin(lon), lift * Math.sin(lat)); };
+      const seg = function (fn) { const p = []; for (let i = 0; i <= 12; i++) p.push(fn((-1 + 2 * i / 12) * 2.2 * cr)); return p; };
+      ck.add(line(seg(function (s) { return sph(s, 0); }), col('accent'), 0.95));
+      ck.add(line(seg(function (s) { return sph(0, s); }), col('accent'), 0.95));
+      const ring = [];
+      for (let i = 0; i <= 32; i++) { const a = i / 32 * TAU; ring.push(sph(Math.cos(a) * cr, Math.sin(a) * cr)); }
+      ck.add(line(ring, col('accent'), 0.95));
+      ck.visible = false;
+      moon.add(ck);
+      L.ref.center = ck;
       const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: col('accent'), transparent: true, opacity: 0.6, depthWrite: false, sizeAttenuation: false }));
       const hs = 2 * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, ch) * 26;
       halo.scale.set(hs, hs, 1);
@@ -577,13 +593,66 @@
     }
     let camAnim = null;
     function setNearFar(dist) {
-      const near = Math.max(0.03, dist / 300);
+      const near = Math.max(0.03, Math.min(dist / 300, dist * 0.1));
       if (Math.abs(camera.near - near) > 0.1 * near) { camera.near = near; camera.updateProjectionMatrix(); }
     }
-    /** 相機移到 (polar, az) 方向、自動取景；動畫 0.65 秒（減少動態效果時直接跳過去） */
-    function camTo(polar, az, animate, withSun) {
-      const target = withSun ? sunWorld().multiplyScalar(4) : new THREE.Vector3();
-      const dist = fitDistance(dirOf(polar, az), target, withSun);
+
+    // ---------- 「從地球看月球」：相機跟著月球、從地球的方向看月面，看得到天平動的晃動 ----------
+    const MIN_DIST = 1.5;
+    let follow = null;   // 上一幀的月球框架 { o（月心，場景座標）, ax（月 → 地）, ay, az（黃道北方） }
+    function moonWorld() {
+      const Lb = layers.bodies;
+      if (!Lb || !Lb.ref.moon) return null;
+      const a = -B.frameRot(), c = Math.cos(a), s = Math.sin(a), p = Lb.ref.moon.position;
+      const o = new THREE.Vector3(p.x * c - p.y * s, p.x * s + p.y * c, p.z);
+      const ax = o.clone().negate().normalize();
+      const ay = new THREE.Vector3(0, 0, 1).cross(ax).normalize();
+      const az = new THREE.Vector3().crossVectors(ax, ay);
+      return { o: o, ax: ax, ay: ay, az: az, rM: Lb.ref.rM };
+    }
+    /** 月球移動後：相機相對月球的位置（在月球框架中的分量，含使用者自己轉的角度）保持不變 */
+    function followMoon() {
+      if (!follow || camAnim) return;
+      const F = moonWorld();
+      if (!F) return;
+      const off = camera.position.clone().sub(controls.target);
+      const k0 = off.dot(follow.ax), k1 = off.dot(follow.ay), k2 = off.dot(follow.az);
+      controls.target.copy(F.o);
+      camera.position.copy(F.o).addScaledVector(F.ax, k0).addScaledVector(F.ay, k1).addScaledVector(F.az, k2);
+      follow = F;
+    }
+    /** 從地球看月球時只留月球（含自轉軸、十字）：相機離月球很近，軌道管、交點標籤、影錐、黃道線會變成粗管擋住月面。
+     *  月食仍看得出來（月面顏色照常變）。圖層重建後也要再呼叫一次。 */
+    function followVis() {
+      const on = !follow;
+      orbitGroup.visible = on;
+      ['ecl', 'shadows'].forEach(function (k) { if (layers[k] && layers[k].obj) layers[k].obj.visible = on; });
+    }
+    function startFollow(animate) {
+      const F = moonWorld();
+      if (!F) return;
+      follow = F;
+      followVis();
+      controls.minDistance = F.rM * 1.6;
+      const Lb = layers.bodies;
+      if (Lb && Lb.ref.center) Lb.ref.center.visible = true;
+      camTo(Math.acos(Math.max(-1, Math.min(1, F.ax.z))), Math.atan2(F.ax.y, F.ax.x), animate, false, { target: F.o, dist: F.rM * 6.5, follow: true });
+      updateHud(B.snap());
+    }
+    function stopFollow() {
+      if (!follow) return;
+      follow = null;
+      followVis();
+      controls.minDistance = MIN_DIST;
+      const Lb = layers.bodies;
+      if (Lb && Lb.ref.center) Lb.ref.center.visible = false;
+      updateHud(B.snap());
+    }
+    /** 相機移到 (polar, az) 方向、自動取景；動畫 0.65 秒（減少動態效果時直接跳過去）。opt：{ target, dist, follow（終點跟著月球） } */
+    function camTo(polar, az, animate, withSun, opt) {
+      opt = opt || {};
+      const target = opt.target ? opt.target.clone() : withSun ? sunWorld().multiplyScalar(4) : new THREE.Vector3();
+      const dist = opt.dist || fitDistance(dirOf(polar, az), target, withSun);
       if (!animate || B.reducedMotion) {
         camAnim = null;
         controls.target.copy(target);
@@ -597,12 +666,24 @@
       let da = az - s.az;
       while (da > Math.PI) da -= TAU;
       while (da < -Math.PI) da += TAU;
-      camAnim = { t0: performance.now(), dur: 650, p0: s.polar, a0: s.az, d0: s.dist, p1: polar, a1: s.az + da, d1: dist, tg0: controls.target.clone(), tg1: target };
+      camAnim = { t0: performance.now(), dur: opt.follow ? 900 : 650, p0: s.polar, a0: s.az, d0: s.dist, p1: polar, a1: s.az + da, d1: dist, tg0: controls.target.clone(), tg1: target, follow: !!opt.follow };
       requestRender();
     }
     function stepCamAnim() {
       if (!camAnim) return;
       const A = camAnim;
+      if (A.follow) {
+        // 播放中月球一直在動：終點每一幀改成月球現在的位置與「月 → 地」的方向
+        const F = moonWorld();
+        if (F) {
+          A.tg1 = F.o; follow = F;
+          A.p1 = Math.acos(Math.max(-1, Math.min(1, F.ax.z)));
+          let da = Math.atan2(F.ax.y, F.ax.x) - A.a0;
+          while (da > Math.PI) da -= TAU;
+          while (da < -Math.PI) da += TAU;
+          A.a1 = A.a0 + da;
+        }
+      }
       const u = Math.min(1, (performance.now() - A.t0) / A.dur), e = 1 - Math.pow(1 - u, 3);
       const p = A.p0 + (A.p1 - A.p0) * e, a = A.a0 + (A.a1 - A.a0) * e, d = Math.exp(Math.log(A.d0) + (Math.log(A.d1) - Math.log(A.d0)) * e);
       controls.target.copy(A.tg0).lerp(A.tg1, e);
@@ -611,7 +692,7 @@
       if (u >= 1) camAnim = null;
     }
     controls.addEventListener('start', function () { camAnim = null; });
-    function resetCamera(animate) { camTo(defPolar(narrow), DEF_AZ, animate, true); }
+    function resetCamera(animate) { stopFollow(); camTo(defPolar(narrow), DEF_AZ, animate, true); }
 
     // ---------- 每一幀 ----------
     const tmpM = new THREE.Matrix4();
@@ -641,12 +722,15 @@
       R.tw.position.copy(v3(P).multiplyScalar(R.rE * 1.02 / K.R_EARTH));
       R.elab.position.set(0, 0, 0);
       anchorDir(R.elab, R.rE);
-      // 月球
+      // 月球：等速自轉、自轉軸傾斜 1.54°（與 2D 同一份 K.moonBody）。不是每一幀都對準地心，所以看得到天平動
       const mp = v3(sn.m).multiplyScalar(S);
       R.moon.position.copy(mp);
-      R.moon.quaternion.setFromRotationMatrix(basisFrom(mp.clone().negate().normalize(), new THREE.Vector3(0, 0, 1)));
+      const Bm = K.moonBody(el, state.t);
+      R.moon.quaternion.setFromRotationMatrix(tmpM.makeBasis(v3(Bm.X), v3(Bm.Y), v3(Bm.Z)));
       R.mlab.position.copy(mp);
       anchorDir(R.mlab, R.rM);
+      R.center.visible = !!follow;
+      followMoon();
       const mat = R.moon.material, ty = sn.lunar.type;
       const base = new THREE.Color(1, 1, 1), cop = new THREE.Color(C.copper);
       if (ty === 'total') { mat.color.copy(cop).multiplyScalar(0.55); mat.emissive.copy(cop).multiplyScalar(0.18); }
@@ -662,6 +746,7 @@
       // 影錐（距離改變 0.2% 以上、月球移動才重建）
       const key = [mag, colorVer, Math.round(sn.m.x / 50), Math.round(sn.m.y / 50), Math.round(sn.m.z / 50), Math.round(K.sunLon(state.t) / K.DEG * 20), B.lang()].join('|');
       layer('shadows', key, buildShadows);
+      followVis();
       updateHud(sn);
     }
     function anchorDir(sp, r) { sp.userData.gapR = r; }
@@ -751,6 +836,13 @@
       if (sn.lunar.type !== 'none') e = B.eclName('lunar', sn.lunar.type, true);
       else if (sn.solar.type !== 'none') e = B.eclName('solar', sn.solar.type, true);
       setHud('ecl', e || T('沒有日月食', 'No eclipse'), e ? 'e' : 'm');
+      if (follow) {
+        // 從地球看月球：天平動（從地心看，與 2D 同一份 K.libration）
+        const g = sn.libGeo, sg = function (a) { const s = B.num(a / K.DEG, 1); return (a > 0 && s !== '0.0' ? '+' : '') + s + '°'; };
+        setHud('node', T('天平動（從地心看）：經度 ', 'Libration (from the Earth’s centre): longitude ') + sg(g.l) + T('、緯度 ', ', latitude ') + sg(g.b));
+        setHud('scale', T('十字：月面經度 0°、緯度 0°；它離開圓面中心多遠，就是天平動', 'Cross: lunar longitude 0°, latitude 0°; how far it sits from the centre of the disk is the libration'));
+        return;
+      }
       const nd = Math.min(Math.abs(K.wrapPi(sn.s.lon - sn.node)), Math.abs(K.wrapPi(sn.s.lon - sn.node - Math.PI))) / K.DEG;
       setHud('node', T('交點線與太陽方向夾 ', 'Line of nodes ') + B.num(nd, 1) + T('°', '° from the Sun'));
       setHud('scale', B.mag() === 1 ? T('真實比例：地球、月球與距離都依比例；太陽的距離與大小未按比例', 'True scale: Earth, Moon and distances to scale; the Sun is not')
@@ -792,7 +884,7 @@
       if (Math.abs(camera.aspect - lastAspect) > 1e-3) {
         const s = lastAspect ? currentSph() : { polar: defPolar(narrow), az: DEF_AZ };
         lastAspect = camera.aspect;
-        camTo(s.polar, s.az, false, true);
+        if (!follow) camTo(s.polar, s.az, false, true);
       }
       update();
       renderNow();
@@ -821,10 +913,13 @@
         update();
         requestRender();
       },
-      onScale: function () { update(); requestRender(); },
+      onScale: function () { update(); if (follow) startFollow(false); requestRender(); },
       resetCamera: function () { resetCamera(true); },
-      /** 'top'：從黃道北極往下看（與 2D 相同）；'edge'：沿交點線、從黃道面側邊看；'sun'：從太陽的方向看地球 */
+      /** 'top'：從黃道北極往下看（與 2D 相同）；'edge'：沿交點線、從黃道面側邊看；'sun'：從太陽的方向看地球；
+       *  'moon'：從地球的方向看月球（相機跟著月球，看得到天平動） */
       camTo: function (kind) {
+        if (kind === 'moon') { startFollow(true); return; }
+        stopFollow();
         const s = currentSph();
         if (kind === 'top') { camTo(1e-4, -Math.PI / 2, true, true); return; }
         if (kind === 'sun') { const a = K.sunLon(state.t) - B.frameRot(); camTo(Math.PI / 2, a, true, false); return; }

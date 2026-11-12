@@ -583,45 +583,279 @@ test('高緯度：月亮上中天的高度 = 90° − |緯度 − 赤緯|（扣�
   assert.ok(tw.rise != null && tw.set != null, '臺灣照常升落');
 });
 
-test('月面座標中的太陽方向：近側固定的月面上，明暗界線的位置只由日月地的位置決定，不隨觀測時刻轉動；與 3D 同步自轉的月球一致', () => {
-  // 只用到亮邊相對月球北極的角度：整個畫面一起轉，結果不變
-  for (const d of [0.3, 1.7, -2.4, Math.PI]) {
-    const a = K.sunInMoonFrame(1.1, 0.4, 2.0), b = K.sunInMoonFrame(1.1, 0.4 + d, 2.0 + d);
-    for (let k = 0; k < 3; k++) close(b[k], a[k], 1e-12, '轉 ' + d);
-  }
-  // 臺灣 6 小時內：以天頂為上時月球北極的方向轉了很多（這是天頂朝上的畫面造成的轉動），亮邊相對月球北極的角度幾乎不變
+test('明暗界線落在月面上的位置只由太陽與月球決定，和觀測地點、畫面怎麼擺（近照或全景）無關；上弦東半邊亮、下弦西半邊亮、望（在交點上）整個近側亮', () => {
   const t0 = K.timeOf(0, K.doyOf(9, 23), 18.5);
   let el = K.makeElements({});
   el = K.withNode(el, t0, 100 * D); el = K.withPerigee(el, t0, 30 * D); el = K.placeElongation(el, t0, 120 * D);
-  const o0 = K.skyOrientation(el, t0), o1 = K.skyOrientation(el, t0 + 0.25);
-  assert.ok(Math.abs(K.wrapPi(o1.north - o0.north)) > 60 * D, '天頂朝上時月球北極轉了 ' + (K.wrapPi(o1.north - o0.north) / D).toFixed(1) + '°');
-  close(K.wrapPi((o1.limb - o1.north) - (o0.limb - o0.north)), 0, 0.5 * D, '亮邊相對月球北極的角度');
-  // 與 3D 的月球本體座標（x 指向地心＝經度 0、z 朝黃道北極、y 為東）比較：只差觀測者不在地心的視差（< 1.2°）
-  const body = function (e2, t) {
-    const m = K.moonAt(e2, t), s = K.sunAt(t);
-    const X = K.unit(K.mul(m, -1)), Z = K.unit(K.sub(K.v3(0, 0, 1), K.mul(X, X.z))), Y = K.cross(Z, X), sd = K.unit(K.sub(s, m));
-    return [K.dot(sd, Y), K.dot(sd, Z), K.dot(sd, X)];
+  // 太陽方向（畫面座標）換回月球本體座標：R · sun
+  const sunBody = function (v) { const R = v.R, s = v.sun; return [R[0] * s[0] + R[1] * s[1] + R[2] * s[2], R[3] * s[0] + R[4] * s[1] + R[5] * s[2], R[6] * s[0] + R[7] * s[1] + R[8] * s[2]]; };
+  const ref = sunBody(K.viewFrame(el, t0, K.moonAt(el, t0), K.v3(0, 0, 1)));
+  K.PLACES.forEach(function (p) {
+    ['face', 'sky'].forEach(function (mode) {
+      const v = K.moonView(el, t0, p.lat * D, p.lon * D, mode, p.lat < 0), b = sunBody(v);
+      for (let k = 0; k < 3; k++) close(b[k], ref[k], 1e-12, p.id + ' ' + mode);
+      close(Math.hypot(v.sun[0], v.sun[1], v.sun[2]), 1, 1e-12, '單位向量');
+    });
+  });
+  // 從地心看（月球北極朝上）：上弦明暗界線通過圓面中央、東半邊（右邊）亮；下弦西半邊亮；望整個近側亮
+  const geo = function (e2) { return K.viewFrame(e2, t0, K.moonAt(e2, t0), K.moonBody(e2, t0).Z).sun; };
+  const fq = geo(K.placeElongation(el, t0, 90 * D)), lq = geo(K.placeElongation(el, t0, 270 * D));
+  assert.ok(Math.abs(fq[2]) < 0.01 && fq[0] > 0.99, '上弦 ' + fq.map(v => v.toFixed(3)));
+  assert.ok(Math.abs(lq[2]) < 0.01 && lq[0] < -0.99, '下弦 ' + lq.map(v => v.toFixed(3)));
+  const full = geo(K.placeElongation(K.withNode(el, t0, K.sunLon(t0)), t0, 180 * D));
+  assert.ok(full[2] > 0.9999, '望 ' + full.map(v => v.toFixed(4)));
+  // 相角：太陽方向與「朝向觀者」的夾角，就是 phaseAt 的相角（從地心看）
+  const e3 = K.placeElongation(el, t0, 63 * D);
+  close(Math.acos(geo(e3)[2]), K.phaseAt(e3, t0).phaseAngle, 1e-9, '相角');
+});
+
+// ---------------------------------------------------------------------------
+// 月球的自轉與天平動（近照、天空全景、3D 共用 moonBody／libration／viewFrame／moonView）
+// 符號慣例：經度 l 向東為正（危海在東經 59°）；l > 0 多看到東緣，b > 0 多看到北極區
+// ---------------------------------------------------------------------------
+/** 月面經緯度（度）→ 本體座標的單位向量（X 經度 0°、Y 東經 90°、Z 北極） */
+const SEL = function (latd, lond) { const la = latd * D, lo = lond * D; return [Math.cos(la) * Math.cos(lo), Math.cos(la) * Math.sin(lo), Math.sin(la)]; };
+/** 本體座標的月面點 → 畫面座標（R 是畫面 → 本體的正交矩陣，轉置就是反過來） */
+const toScreen = function (R, p) { return [R[0] * p[0] + R[3] * p[1] + R[6] * p[2], R[1] * p[0] + R[4] * p[1] + R[7] * p[2], R[2] * p[0] + R[5] * p[1] + R[8] * p[2]]; };
+const CRISIUM = SEL(17, 59), IMBRIUM = SEL(32.8, -15.6);
+/** f 在 [t0, t1] 的極大值時刻（步長 h 找到後用三點拋物線內插） */
+function peaks(f, t0, t1, h) {
+  const out = [];
+  let a = f(t0), b = f(t0 + h);
+  for (let t = t0 + 2 * h; t <= t1; t += h) {
+    const c = f(t);
+    if (b > a && b >= c) out.push(t - h + h * (a - c) / (2 * (a - 2 * b + c)));
+    a = b; b = c;
+  }
+  return out;
+}
+const meanGap = function (p) { return (p[p.length - 1] - p[0]) / (p.length - 1); };
+
+test('月球的自轉：本體座標右手正交；卡西尼定律（自轉軸、黃道北極、軌道北極共面，黃道北極在中間，月球赤道的交點就是軌道的交點）；等速自轉', () => {
+  const el = K.makeElements({ N0: 0.8, W0: 2.1, L0: 0.3 });
+  const Kp = K.v3(0, 0, 1);
+  for (const t of [0, 3.7, 100.2, 2000]) {
+    const B = K.moonBody(el, t);
+    [B.X, B.Y, B.Z].forEach(v => close(K.len(v), 1, 1e-12, '單位向量'));
+    close(K.dot(B.X, B.Y), 0, 1e-12); close(K.dot(B.X, B.Z), 0, 1e-12); close(K.dot(B.Y, B.Z), 0, 1e-12);
+    close(K.len(K.sub(K.cross(B.X, B.Y), B.Z)), 0, 1e-12, '右手系 X × Y = Z');
+    const n = K.unit(K.cross(K.orbitPoint(el, t, 0.3), K.orbitPoint(el, t, 1.9)));   // 軌道北極（同一時刻軌道面上的兩點）
+    close(K.dot(B.Z, K.unit(K.cross(Kp, n))), 0, 1e-6, '共面');
+    close(K.angle(B.Z, Kp), K.I_MOON, 1e-12, '自轉軸對黃道北極 1.54°');
+    close(K.angle(B.Z, n), K.I_MOON + K.INC, 1e-6, '黃道北極在中間：自轉軸對軌道北極 6.685°');
+    const node = K.unit(K.cross(Kp, B.Z)), Om = K.nodeLon(el, t);
+    close(Math.abs(K.dot(node, K.v3(Math.cos(Om), Math.sin(Om), 0))), 1, 1e-12, '月球赤道與黃道的交點 = 軌道的交點');
+  }
+  // 交點不退行時：自轉軸不動，本初子午線繞自轉軸等速轉動，一個恆星月轉一圈
+  const e0 = K.makeElements({ N0: 0.8, W0: 2.1, regress: false });
+  const B0 = K.moonBody(e0, 10);
+  for (let k = 1; k <= 20; k++) {
+    const Bk = K.moonBody(e0, 10 + k * K.P_SID / 20);
+    close(K.wrapPi(Math.atan2(K.dot(Bk.X, B0.Y), K.dot(Bk.X, B0.X)) - TAU * k / 20), 0, 1e-9, '轉角 ' + k + '/20');
+    close(K.len(K.sub(Bk.Z, B0.Z)), 0, 1e-12, '自轉軸不動');
+  }
+});
+
+test('天平動與 Meeus《Astronomical Algorithms》第 53 章的光學天平動公式一致；正負號：近地點後多看到東緣、月球在軌道最北時多看到南極區', () => {
+  const el = K.makeElements({ N0: 1.2, W0: 0.4 });
+  let worst = 0;
+  for (let t = 0; t < 400; t += 0.37) {
+    const g = K.libration(el, t), m = K.moonAt(el, t), Om = K.nodeLon(el, t), F = K.meanLon(el, t) - Om, I = K.I_MOON;
+    const W = m.lon - Om, be = m.lat;
+    const A = Math.atan2(Math.sin(W) * Math.cos(be) * Math.cos(I) - Math.sin(be) * Math.sin(I), Math.cos(W) * Math.cos(be));
+    const b = Math.asin(-Math.sin(W) * Math.cos(be) * Math.sin(I) - Math.sin(be) * Math.cos(I));
+    worst = Math.max(worst, Math.abs(K.wrapPi(A - F - g.l)), Math.abs(b - g.b));
+  }
+  assert.ok(worst < 1e-9, '最大相差 ' + worst);
+  // t = 0 在近地點、也在升交點；1/4 個月後公轉跑在自轉前面（l > 0：多看到東緣），3/4 個月後落在後面（多看到西緣）
+  const ep = K.makeElements({ regress: false, precess: false });
+  close(K.moonAt(ep, 0).M, 0, 1e-12, '近地點');
+  const q1 = K.libration(ep, K.P_SID / 4), q3 = K.libration(ep, 3 * K.P_SID / 4);
+  assert.ok(q1.l > 6.2 * D, '近地點後：l = ' + (q1.l / D).toFixed(2) + '°');
+  assert.ok(q3.l < -6.2 * D, '遠地點後：l = ' + (q3.l / D).toFixed(2) + '°');
+  // 圓軌道：u = 90° 是軌道最北點，月球在黃道北方 5.145°，從地球多看到南極區 6.685°；u = 270° 相反
+  const ec = K.makeElements({ e: 0, regress: false, precess: false });
+  close(K.moonAt(ec, K.P_SID / 4).lat, K.INC, 1e-9, '軌道最北');
+  const top = K.libration(ec, K.P_SID / 4), bot = K.libration(ec, 3 * K.P_SID / 4);
+  close(top.b, -(K.INC + K.I_MOON), 1e-9, '最北：多看到南極區');
+  close(bot.b, K.INC + K.I_MOON, 1e-9, '最南：多看到北極區');
+  close(top.l, 0, 1e-9, '圓軌道：沒有經度天平動');
+});
+
+test('三種天平動的範圍與週期：經度 ±6.5°（離心率 ±6.3°）、週期近點月；緯度 ±6.685°、週期交點月；周日 ≤ arcsin(R⊕/r) ≈ 1°', () => {
+  const el = K.makeElements({ N0: 1.2, W0: 0.4 });
+  let lmax = -1, lmin = 1, bmax = -1, bmin = 1;
+  for (let t = 0; t < 2200; t += 0.05) {   // 2200 日 ≈ 近點月與交點月的拍頻週期（約 6 年）：(l, b) 的組合全部出現
+    const g = K.libration(el, t);
+    lmax = Math.max(lmax, g.l); lmin = Math.min(lmin, g.l); bmax = Math.max(bmax, g.b); bmin = Math.min(bmin, g.b);
+  }
+  assert.ok(lmax > 6.4 * D && lmax < 6.6 * D && lmin < -6.4 * D && lmin > -6.6 * D, '經度 ' + (lmin / D).toFixed(2) + '° ～ ' + (lmax / D).toFixed(2) + '°');
+  close(bmax, K.INC + K.I_MOON, 0.002 * D, '緯度最大'); close(bmin, -(K.INC + K.I_MOON), 0.002 * D, '緯度最小');
+  // 只看離心率：軌道不傾斜時，經度天平動 ≈ 中心差 ν − M（只差自轉軸 1.54° 的二階小項），最大約 2e = 6.3°
+  const e0 = K.makeElements({ inc: 0, N0: 1.2, W0: 0.4 });
+  let cmax = 0, dev = 0;
+  for (let t = 0; t < 60; t += 0.05) {
+    const m = K.moonAt(e0, t), c = K.wrapPi(m.nu - m.M);
+    cmax = Math.max(cmax, c);
+    dev = Math.max(dev, Math.abs(K.wrapPi(K.libration(e0, t).l - c)));
+  }
+  close(cmax, 2 * K.E_MOON, 0.15 * D, '中心差最大 ≈ 2e');
+  assert.ok(cmax > 6.25 * D && cmax < 6.4 * D, '離心率造成的經度天平動 ' + (cmax / D).toFixed(2) + '°');
+  assert.ok(dev < 0.02 * D, '經度天平動 = 中心差（相差 ' + (dev / D).toFixed(3) + '°）');
+  // 週期：極大值的平均間隔
+  const pl = peaks(t => K.libration(el, t).l, 0, 1100, 0.02), pb = peaks(t => K.libration(el, t).b, 0, 1100, 0.02);
+  close(meanGap(pl), K.P_ANO_REF, 0.02, '經度天平動的週期 = 近點月 ' + meanGap(pl).toFixed(3) + ' 日');
+  close(meanGap(pb), K.P_DRA_REF, 0.02, '緯度天平動的週期 = 交點月 ' + meanGap(pb).toFixed(3) + ' 日');
+  // 關掉近地點進動、交點退行：兩個週期都變成恆星月（確認週期真的來自這兩個運動）
+  const ef = K.makeElements({ N0: 1.2, W0: 0.4, regress: false, precess: false });
+  close(meanGap(peaks(t => K.libration(ef, t).l, 0, 1100, 0.02)), K.P_SID, 0.02, '不進動：經度週期 = 恆星月');
+  close(meanGap(peaks(t => K.libration(ef, t).b, 0, 1100, 0.02)), K.P_SID, 0.02, '不退行：緯度週期 = 恆星月');
+  // 周日天平動：從地面與從地心看，畫面中央的月面點相差的角度 ≤ arcsin(R⊕ / r)；臺灣、赤道、極地都會接近這個上限
+  for (const lat of [23.5, 0, 90, -45]) {
+    let ratio = 0;
+    for (let i = 0; i <= 3000; i++) {
+      const t = 300 + i * 0.0113, P = K.observer(t, lat * D, 121 * D);
+      const g = K.libration(el, t), s = K.libration(el, t, P);
+      const d = K.angle(K.v3.apply(null, SEL(g.b / D, g.l / D)), K.v3.apply(null, SEL(s.b / D, s.l / D)));
+      const lim = Math.asin(K.R_EARTH / K.moonAt(el, t).r);
+      assert.ok(d <= lim * (1 + 1e-6), '周日天平動超過上限');
+      ratio = Math.max(ratio, d / lim);
+    }
+    assert.ok(ratio > 0.97, '緯度 ' + lat + '°：周日天平動最大到上限的 ' + (ratio * 100).toFixed(1) + '%');
+  }
+  close(Math.asin(K.R_EARTH / (K.A_MOON * (1 - K.E_MOON))), 1.0 * D, 0.01 * D, '周日天平動最大約 1.0°');
+});
+
+test('2D 的次觀測點與 3D 月球的幾何一致（地心看，誤差 < 0.1°）；3D 對照符號：經度天平動為正時危海離圓面中心較近（多看到東緣），為負時靠近月緣', () => {
+  // 3D（moon-phases-3d.js）：THREE.SphereGeometry 的頂點 (−cos φ sin θ, cos θ, sin φ sin θ)，φ = 2πu、θ = πv，
+  //   再 rotateX(90°) → (x, −z, y)；貼圖 u = 0.5 是經度 0、u 增加往東，uv.y = 1 − v（影像上緣是北極）。
+  //   網格的本地座標 → 場景座標：makeBasis(X, Y, Z)（K.moonBody）。
+  const sphere3 = function (u, v) { const ph = TAU * u, th = Math.PI * v, x = -Math.cos(ph) * Math.sin(th), y = Math.cos(th), z = Math.sin(ph) * Math.sin(th); return [x, -z, y]; };
+  const lonlat3 = function (B, dir) {
+    const lx = K.dot(dir, B.X), ly = K.dot(dir, B.Y), lz = K.dot(dir, B.Z);
+    const th = Math.acos(Math.max(-1, Math.min(1, lz))), ph = Math.atan2(-ly, -lx);
+    const u = K.norm(ph) / TAU, v = th / Math.PI, p = sphere3(u, v);
+    close(Math.hypot(p[0] - lx, p[1] - ly, p[2] - lz), 0, 1e-9, '網格反解');
+    return { lon: (u - 0.5) * TAU, lat: Math.PI / 2 - v * Math.PI };
   };
+  const el = K.makeElements({ N0: 2.2, W0: 0.9 });
+  let worst = 0;
+  for (let t = 0; t < 60; t += 0.83) {
+    const m = K.moonAt(el, t), B = K.moonBody(el, t), g = K.libration(el, t);
+    const c3 = lonlat3(B, K.unit(K.mul(m, -1)));                 // 3D：朝向地心的月面點
+    const f2 = K.viewFrame(el, t, m, K.v3(0, 0, 1));            // 2D：從地心看的畫面，正中央
+    worst = Math.max(worst, Math.abs(K.wrapPi(c3.lon - g.l)), Math.abs(c3.lat - g.b), Math.abs(K.wrapPi(c3.lon - f2.l)), Math.abs(c3.lat - f2.b));
+    // 畫面上其他點（右緣、上緣、左上）：2D 的矩陣與 3D 的網格指到同一個月面點
+    [[0.999, 0, 0.0447], [0, 0.999, 0.0447], [-0.5, 0.5, Math.SQRT1_2]].forEach(function (q) {
+      const R = f2.R, bx = R[0] * q[0] + R[1] * q[1] + R[2] * q[2], by = R[3] * q[0] + R[4] * q[1] + R[5] * q[2], bz = R[6] * q[0] + R[7] * q[1] + R[8] * q[2];
+      const dir = K.unit(K.add(K.add(K.mul(f2.ex, q[0]), K.mul(f2.ey, q[1])), K.mul(f2.ez, q[2])));
+      const a3 = lonlat3(B, dir);
+      worst = Math.max(worst, Math.abs(K.wrapPi(a3.lon - Math.atan2(by, bx))), Math.abs(a3.lat - Math.asin(bz / Math.hypot(bx, by, bz))));
+    });
+  }
+  assert.ok(worst < 0.1 * D, '最大相差 ' + (worst / D).toExponential(2) + '°');
+  // 經度天平動最大與最小的時刻：3D 中危海（北緯 17°、東經 59°）離「朝向地球的方向」的角度，2D 近照中危海離右緣的距離
+  let tMax = 0, tMin = 0, vMax = -1, vMin = 1;
+  for (let t = 0; t < 28; t += 0.01) { const l = K.libration(el, t).l; if (l > vMax) { vMax = l; tMax = t; } if (l < vMin) { vMin = l; tMin = t; } }
+  const ang3 = function (t) { const m = K.moonAt(el, t), B = K.moonBody(el, t), cr = K.add(K.add(K.mul(B.X, CRISIUM[0]), K.mul(B.Y, CRISIUM[1])), K.mul(B.Z, CRISIUM[2])); return K.angle(cr, K.mul(m, -1)); };
+  const crisAngle0 = K.angle(K.v3.apply(null, CRISIUM), K.v3(1, 0, 0));   // 沒有天平動時危海離圓面中心的角度（約 60°）
+  assert.ok(ang3(tMax) < crisAngle0 - 5 * D, 'l = +' + (vMax / D).toFixed(1) + '°：危海離中心 ' + (ang3(tMax) / D).toFixed(1) + '°（離月緣較遠）');
+  assert.ok(ang3(tMin) > crisAngle0 + 5 * D, 'l = ' + (vMin / D).toFixed(1) + '°：危海離中心 ' + (ang3(tMin) / D).toFixed(1) + '°（靠近月緣）');
+  const tw = K.placeById('tw');
+  const xCris = function (t) { return toScreen(K.moonView(el, t, tw.lat * D, tw.lon * D, 'face', false).R, CRISIUM)[0]; };
+  assert.ok(xCris(tMin) > xCris(tMax) + 0.05, '近照（北極朝上、東緣在右）：l 最小時危海靠右緣 ' + xCris(tMin).toFixed(3) + '，最大時 ' + xCris(tMax).toFixed(3));
+});
+
+test('天空全景：月亮以天頂為上，亮邊就是從觀測者看「月亮 → 太陽」的方向（到機器精度）；臺灣傍晚西方的眉月是右下方亮，不是近照那樣的右邊', () => {
   let worst = 0;
   const e0 = K.makeElements({ N0: 1.2, W0: 0.4 });
-  K.PLACES.forEach(p => {
-    [20, 90, 135, 180, 225, 270, 330].forEach(dl => {
-      [0, 5, 11, 17, 22].forEach(hr => {
-        const t = K.timeOf(0, K.doyOf(5, 10), hr), e2 = K.placeElongation(e0, t, dl * D);
-        const o = K.skyOrientation(e2, t, p.lat * D, p.lon * D);
-        const L = K.sunInMoonFrame(K.phaseAt(e2, t).phaseAngle, o.limb, o.north), B = body(e2, t);
-        worst = Math.max(worst, Math.acos(Math.min(1, L[0] * B[0] + L[1] * B[1] + L[2] * B[2])));
+  K.PLACES.forEach(function (p) {
+    [20, 90, 160, 200, 270, 340].forEach(function (dl) {
+      [3, 9, 15, 21].forEach(function (hr) {
+        const t = K.timeOf(0, K.doyOf(3, 5), hr), e2 = K.placeElongation(e0, t, dl * D);
+        const v = K.moonView(e2, t, p.lat * D, p.lon * D, 'sky'), P = K.observer(t, p.lat * D, p.lon * D);
+        const fm = K.unit(K.sub(K.moonAt(e2, t), P)), fs = K.unit(K.sub(K.sunAt(t), P));
+        const tg = K.sub(fs, K.mul(fm, K.dot(fs, fm)));          // 天球上由月亮指向太陽的大圓方向
+        worst = Math.max(worst, Math.abs(K.wrapPi(Math.atan2(K.dot(tg, v.ey), K.dot(tg, v.ex)) - v.limb)));
+        worst = Math.max(worst, Math.abs(K.wrapPi(K.skyOrientation(e2, t, p.lat * D, p.lon * D).limb - v.limb)));
+        assert.ok(K.dot(v.ey, K.unit(P)) > 0 || Math.abs(K.dot(fm, K.unit(P))) > 0.9999, '畫面上方是天頂那一側');
       });
     });
   });
-  assert.ok(worst < 1.2 * D, '與 3D 最大相差 ' + (worst / D).toFixed(2) + '°');
-  // 上弦：明暗界線通過月面中央（經度 0），東半邊亮；下弦：西半邊亮；望（在交點上）：整個近側亮
-  const L = function (e2) { const o = K.skyOrientation(e2, t0); return K.sunInMoonFrame(K.phaseAt(e2, t0).phaseAngle, o.limb, o.north); };
-  const fq = L(K.placeElongation(el, t0, 90 * D)), lq = L(K.placeElongation(el, t0, 270 * D));
-  assert.ok(Math.abs(fq[2]) < 0.01 && fq[0] > 0.99, '上弦 ' + fq.map(v => v.toFixed(3)));
-  assert.ok(Math.abs(lq[2]) < 0.01 && lq[0] < -0.99, '下弦 ' + lq.map(v => v.toFixed(3)));
-  const full = L(K.placeElongation(K.withNode(el, t0, K.sunLon(t0)), t0, 180 * D));
-  assert.ok(full[2] > 0.9999, '望 ' + full.map(v => v.toFixed(4)));
+  assert.ok(worst < 1e-9, '亮邊方向最大相差 ' + worst);
+  const tw = K.placeById('tw'), el = K.makeElements({ N0: 1.2, W0: 0.4 });
+  [25, 35, 50].forEach(function (dl) {
+    const t = K.timeOf(0, K.doyOf(9, 23), 19), e2 = K.placeElongation(el, t, dl * D);
+    const h = K.moonAlt(e2, t), sky = K.moonView(e2, t, tw.lat * D, tw.lon * D, 'sky'), face = K.moonView(e2, t, tw.lat * D, tw.lon * D, 'face');
+    assert.ok(h.alt > 0 && h.az > 225 * D && h.az < 275 * D, '月亮在西方的天空');
+    assert.ok(sky.limb > -80 * D && sky.limb < -30 * D, '距角 ' + dl + '°：全景亮面朝右下 ' + (sky.limb / D).toFixed(0) + '°');
+    assert.ok(Math.abs(face.limb) < 15 * D, '近照（北極朝上）亮面在右邊 ' + (face.limb / D).toFixed(0) + '°');
+  });
+});
+
+test('近照方向固定：同一地點一天之內，月海（危海 → 雨海的方向）轉不到 1°，危海在月面上只移動 2.5° 以內（都是天平動）；北極（南半球南極）一直朝正上方；同一天天頂朝上的畫面卻轉了 30° 以上', () => {
+  let el = K.makeElements({});
+  const t0 = K.timeOf(0, K.doyOf(9, 23), 0);
+  el = K.withNode(el, t0, 100 * D); el = K.withPerigee(el, t0, 30 * D); el = K.placeElongation(el, t0 + 0.77, 120 * D);
+  ['tw', 'sydney', 'singapore', 'reykjavik', 'nairobi'].forEach(function (id) {
+    const p = K.placeById(id), flip = p.lat < 0;
+    for (let day = 0; day < 30; day += 6) {
+      let a0 = null, c0 = null, s0 = null, rot = 0, move = 0, skyRot = 0;
+      for (let i = 0; i <= 96; i++) {
+        const t = t0 + day + i / 96;
+        const v = K.moonView(el, t, p.lat * D, p.lon * D, 'face', flip), sv = K.moonView(el, t, p.lat * D, p.lon * D, 'sky');
+        close(K.wrapPi(v.pole - (flip ? -Math.PI / 2 : Math.PI / 2)), 0, 1e-9, id + '：月球' + (flip ? '南' : '北') + '極朝正上方');
+        const c = toScreen(v.R, CRISIUM), m = toScreen(v.R, IMBRIUM), ang = Math.atan2(m[1] - c[1], m[0] - c[0]);
+        if (a0 == null) { a0 = ang; c0 = c; s0 = sv.pole; }
+        rot = Math.max(rot, Math.abs(K.wrapPi(ang - a0)));
+        move = Math.max(move, K.angle(K.v3(c[0], c[1], c[2]), K.v3(c0[0], c0[1], c0[2])));
+        skyRot = Math.max(skyRot, Math.abs(K.wrapPi(sv.pole - s0)));
+      }
+      assert.ok(rot < 1 * D, id + ' 第 ' + day + ' 天：月海轉了 ' + (rot / D).toFixed(2) + '°');
+      assert.ok(move < 2.5 * D && move > 0.3 * D, id + ' 第 ' + day + ' 天：危海移動 ' + (move / D).toFixed(2) + '°');
+      assert.ok(skyRot > 30 * D, id + ' 第 ' + day + ' 天：天頂朝上的畫面轉了 ' + (skyRot / D).toFixed(0) + '°');
+    }
+  });
+});
+
+test('長期看得到的月面（頁面說明寫的數字）：天平動的所有組合加起來（約 6 年就全部出現，和 18.6 年的結果相同），從地心 57%、加上周日天平動 58%（真實的月球約 59%）', () => {
+  const el = K.makeElements({ N0: 1.2, W0: 0.4 });
+  // 收集每個時刻「由月心指向觀測者」的方向（本體座標）與可見門檻 R/r（球冠：n·d > R/r 的月面點看得到）
+  const collect = function (observers) {
+    const cells = new Map();
+    for (let t = 0; t < 2200; t += 0.2) {                         // 一個拍頻週期（約 6 年），(l, b) 的組合全部出現
+      const m = K.moonAt(el, t), B = K.moonBody(el, t);
+      (observers ? observers(t) : [K.v3(0, 0, 0)]).forEach(function (P) {
+        if (observers && K.dot(K.unit(P), K.sub(m, P)) < 0) return; // 月亮在地平線下：看不到
+        const v = K.sub(P, m), r = K.len(v), x = K.dot(v, B.X) / r, y = K.dot(v, B.Y) / r, z = K.dot(v, B.Z) / r;
+        const key = Math.round(Math.atan2(y, x) / D * 4) + ',' + Math.round(Math.asin(z) / D * 4);
+        const c = K.R_MOON / r, old = cells.get(key);
+        if (!old || c < old[3]) cells.set(key, [x, y, z, c]);
+      });
+    }
+    return Array.from(cells.values());
+  };
+  const fraction = function (ds) {
+    const N = 30000, ga = Math.PI * (3 - Math.sqrt(5));
+    let vis = 0;
+    for (let i = 0; i < N; i++) {
+      const z = 1 - 2 * (i + 0.5) / N, rr = Math.sqrt(1 - z * z), a = i * ga, x = rr * Math.cos(a), y = rr * Math.sin(a);
+      if (x > 0.2) { vis++; continue; }                           // 近側中央一定看得到
+      for (let k = 0; k < ds.length; k++) { const d = ds[k]; if (x * d[0] + y * d[1] + z * d[2] > d[3]) { vis++; break; } }
+    }
+    return vis / N;
+  };
+  const geo = fraction(collect(null));
+  const obs = function (t) { const out = []; [-90, -60, -30, 0, 30, 60, 90].forEach(function (la) { [0, 90, 180, 270].forEach(function (lo) { out.push(K.observer(t, la * D, lo * D)); }); }); return out; };
+  const surf = fraction(collect(obs));
+  assert.ok(geo > 0.565 && geo < 0.574, '從地心 ' + (geo * 100).toFixed(1) + '%');
+  assert.ok(surf > 0.574 && surf < 0.584, '加上周日天平動 ' + (surf * 100).toFixed(1) + '%');
+  // 頁面說明的數字與模型一致
+  const html = require('fs').readFileSync(require('path').join(__dirname, '..', 'moon-phases.html'), 'utf8');
+  const g = Math.round(geo * 100), s = Math.round(surf * 100);
+  assert.ok(html.includes('從地心長期看得到月面的 ' + g + '%') && html.includes('加上周日天平動是 ' + s + '%'), '中文說明寫 ' + g + '%、' + s + '%');
+  assert.ok(html.includes(g + '% of the Moon’s surface can be seen from the Earth’s centre') && html.includes('and ' + s + '% with the diurnal libration'), '英文說明');
+  assert.ok(html.includes('本模型沒有太陽的攝動，算出 ' + s + '%') && html.includes('this model, without the Sun’s perturbations, gives ' + s + '%'), '天平動小節');
 });
 
 console.log(`moon-phases-core：${passed} 項通過`);
