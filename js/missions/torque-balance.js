@@ -193,7 +193,7 @@
     },
     {
       id: 'torque-balance-h2', level: 5, hidden: true,
-      riddle: { zh: '你方唱罷我登場。', en: 'As one leaves the stage, the other steps on.' },
+      riddle: { zh: '這一頭剛向大地低頭，下一回就換那一頭。', en: 'This end has just bowed to the ground; next time it is the other end’s turn.' },
       check: function (ev) { return ev.type === 'land' && ev.data.prevSide != null && ev.data.prevSide !== ev.data.side; }
     },
     {

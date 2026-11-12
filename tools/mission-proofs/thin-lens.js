@@ -216,11 +216,30 @@ function pinRow(f, p, E, rangeA, rangeB, sa) {
   for (let k = 110; k <= 190; k++) { const f = k / 10; worst = Math.max(worst, Math.abs(r1(5 + f) - 5 - f)); }
   ok('h1 神秘凸透鏡也做得到（格點到焦點的距離 ≤ 0.1）', worst <= 0.1 + 1e-9, '最差 ' + worst.toFixed(3));
 }
-// h2：同一個凸透鏡（f = 10）三種方法各一筆 ≤ 2 %
+// h2（11/12 收緊）：同一個凸透鏡（f = 10）、同一個物距（±0.5 cm），三種方法各一筆 ≤ 2 %
 {
-  const s = screenRow(10, 5, 25, 45), p = parallaxRow(10, 10, 40), n = pinRow(10, 30, [30, -2], [3, 8], [20, 28]);
+  // 照頁面 js/thin-lens.js 的 methodsSameP 計算
+  const sameP = function (rows, f) {
+    const good = rows.filter(function (r) { return err(TL.focalFrom(r.p, r.q), f) <= 0.02; });
+    return good.some(function (a) {
+      return ['screen', 'parallax', 'pin'].every(function (m) { return good.some(function (r) { return r.method === m && Math.abs(r.p - a.p) <= 0.5 + 1e-9; }); });
+    });
+  };
+  let defs = [];
+  const LM = { register: function (id, list) { defs = list; } };
+  global.window = { LabMission: LM }; global.LabMission = LM;
+  require(__ROOT + 'js/missions/thin-lens.js');
+  const h2 = defs.find(function (m) { return m.id === 'thin-lens-h2'; });
+  const fire = function (rows) { return h2.check({ type: 'record', data: { method: rows[rows.length - 1].method, methodsSameP: sameP(rows, 10) } }, {}); };
+
+  const s = screenRow(10, 5, 35, 50), p = parallaxRow(10, 10, 40), n = pinRow(10, 30, [30, -2], [3, 8], [20, 28]);
   const e = [s, p, n].map(function (r) { return err(TL.focalFrom(r.p, r.q), 10); });
-  ok('h2 三種方法都 ≤ 2 %', s.sharp && e.every(function (x) { return x <= 0.02; }), e.map(function (x) { return (100 * x).toFixed(2) + ' %'; }).join(' / '));
+  ok('h2 物距都是 30 cm，三種方法都 ≤ 2 %', s.sharp && s.p === 30 && p.p === 30 && n.p === 30 && e.every(function (x) { return x <= 0.02; }), e.map(function (x) { return (100 * x).toFixed(2) + ' %'; }).join(' / '));
+  ok('h2 任務判定：同一物距三種方法 → 完成', fire([s, p, n]) === true);
+  // 一般任務 1（像屏、p = 20）、6（插針、p = 30）、8（放大鏡視差、p = 6）各做一次：三種方法都量準過，但物距不同 → 不完成
+  const s1 = screenRow(10, 5, 25, 45), p8 = parallaxRow(10, 44, 50);
+  const p8ok = err(TL.focalFrom(p8.p, p8.q), 10) <= 0.02;
+  ok('h2 做完任務 1、6、8（物距 20、30、6 cm）不會順手完成', fire([s1, n, p8]) === false, '放大鏡那筆 ' + (p8ok ? '也在 2 % 內' : '不在 2 % 內'));
 }
 
 console.log(fails ? '\n有 ' + fails + ' 項沒有通過' : '\n全部通過');

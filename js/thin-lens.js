@@ -1815,6 +1815,15 @@
         const out = {};
         rowsL.forEach(function (r) { const e = Math.abs(TL.focalFrom(r.p, r.q) - f) / Math.abs(f); if (e <= 0.02) out[r.method] = true; });
         return out;
+      })(),
+      // 隱藏任務 h2（11/12 收緊）：同一個物距（±0.5 cm）下，像屏法、視差法、插針法各有一筆焦距誤差 ≤ 2 % 的數據——三種方法指向同一個像
+      methodsSameP: (function () {
+        const good = rowsL.filter(function (r) { return Math.abs(TL.focalFrom(r.p, r.q) - f) / Math.abs(f) <= 0.02; });
+        return good.some(function (a) {
+          return ['screen', 'parallax', 'pin'].every(function (m) {
+            return good.some(function (r) { return r.method === m && Math.abs(r.p - a.p) <= 0.5 + 1e-9; });
+          });
+        });
       })()
     }, extra);
     setStatus(T('已記錄第 ', 'Row ') + rowsL.length + T(' 筆：p = ', ' recorded: p = ') + cm(row.p) + T('，q = ', ', q = ') + cm(row.q) +

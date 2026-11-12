@@ -112,7 +112,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'e-over-m-h1', level: 5, hidden: true,
-      riddle: { zh: '不肯回到起點的光環，一圈一圈地離開了平面。', en: 'A ring that will not return to its start, leaving the plane one loop at a time.' },
+      riddle: { zh: '出發時只要歪了一點點，黑暗裡便長出一條彈簧。', en: 'Set off just a little askew, and a spring grows in the dark.' },
       check: function (ev) { const d = ev.data; return ev.type === 'beam' && d.on && d.warm && d.alpha > 0 && d.turns >= 3; }
     },
     {
@@ -123,7 +123,9 @@
     {
       id: 'e-over-m-h3', level: 6, hidden: true,
       riddle: { zh: '光環的頂端，輕輕吻上世界的心臟。', en: 'The crown of the ring gently kisses the heart of the world.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'beam' && d.complete && Math.abs(d.top) <= 0.05; }
+      // 11/12 收緊：要「記錄」一筆光環頂端剛好在球心（±0.05 cm）的數據，而且直徑量得準（±0.10 cm）。
+      // 原本只看光束事件：電子槍在球心下方 4.5 cm，做任務 4（磁場加倍、直徑 9 → 4.5 cm）或拖電流滑桿經過時就會順手完成。
+      check: function (ev) { const d = ev.data; return ev.type === 'record' && isFinite(d.top) && Math.abs(d.top) <= 0.05 && Math.abs(d.row.D - d.row.Dtrue) <= 0.10; }
     }
   ]);
 })();

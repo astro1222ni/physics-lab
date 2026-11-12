@@ -134,7 +134,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'oscillation-h1', level: 5, hidden: true,
-      riddle: { zh: '它在山巔猶豫了好久，才捨得落下。', en: 'It lingers on the summit a long while before it can bear to fall.' },
+      riddle: { zh: '越靠近那個不可能的平衡，它就越捨不得回來。', en: 'The nearer it comes to an impossible balance, the more reluctant it is to come back.' },
       check: function (ev) { return isPeriod(ev, 'pendulum') && ev.data.Tm >= 2.3 * ev.data.T0; }
     },
     {

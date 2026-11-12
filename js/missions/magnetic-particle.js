@@ -132,7 +132,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'magnetic-particle-h1', level: 3, hidden: true,
-      riddle: { zh: '心中一無所帶，萬場皆是坦途。', en: 'Carry nothing in your heart, and every field becomes an open road.' },
+      riddle: { zh: '無牽無掛的旅人，穿過再強的風也不必轉彎。', en: 'A traveller with no ties crosses even the strongest wind without ever turning.' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'exit' && d.axis === 'xy' && d.q === 0 && d.B !== 0 && d.v > 0 && d.along >= 10 && d.maxDev <= 0.01;

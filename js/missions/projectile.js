@@ -148,7 +148,7 @@
     },
     {
       id: 'projectile-h3', level: 9, hidden: true,
-      riddle: { zh: '恰到好處的一段時光。', en: 'A stretch of time that is just right.' },
+      riddle: { zh: '在天空裡停留的時光，剛好夠你數完兩隻手的指頭。', en: 'Its time in the sky is exactly long enough to count every finger on both your hands.' },
       check: function (ev) { const d = ev.data; return ev.type === 'landed' && Math.abs(d.T - 2 * 5) <= 1 / 100; }
     }
   ]);

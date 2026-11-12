@@ -140,7 +140,7 @@ const SOL = {
   'collision-10': [{ m1: 2, m2: 5, v1: 4, v2: 0, e: 0.75 }],
   'collision-11': [{ m1: 1, m2: 1, v1: 4, v2: -4, spring: true, k: 20 }, { m1: 4, m2: 4, v1: 1, v2: -1, spring: true, k: 80 }],
   'collision-12': [{ m1: 5.07, m2: 5.07, v1: 3.14, v2: 0, spring: true, k: 100 }],
-  'collision-h1': [{ v1: 3, v2: 1 }],
+  'collision-h1': [{ v1: 2.5, v2: 2 }],
   'collision-h2': [{ m1: 2, m2: 3, v1: 3, v2: -2, e: 0 }],
   'collision-h3': [{ m1: 10, m2: 0.5, v1: 3, v2: 0, e: 1 }]
 };
@@ -156,6 +156,21 @@ for (const m of missions) {
   console.log((pass ? '✓ ' : '✗ ') + m.id.padEnd(13) + ' ' + String(m.level).padStart(2) + '★' + (m.hidden ? '（隱藏）' : '') + '  ' +
     evs.filter(Boolean).map(describe).join('；') + (bad.length ? '  ' + bad.join('；') : ''));
 }
+
+// ---------- 2. 做一般任務時常見的同向追撞，不可順手完成 h1（11/12 Codex 盲試回報） ----------
+[
+  ['質心參考系（任務 3）：v1 = 3、v2 = 1', { m1: 2, m2: 3, v1: 3, v2: 1, cmFrame: true }],
+  ['質心參考系（任務 3）：v1 = 5、v2 = 1', { m1: 2, m2: 3, v1: 5, v2: 1, cmFrame: true }],
+  ['速度交換（任務 2）同向：v1 = 3、v2 = 1', { m1: 2, m2: 2, v1: 3, v2: 1, e: 1 }],
+  ['速度交換（任務 2）同向：v1 = 4、v2 = 2', { m1: 2, m2: 2, v1: 4, v2: 2, e: 1 }],
+  ['向左追撞：v1 = −1、v2 = −3', { v1: -1, v2: -3 }]
+].forEach(c => {
+  reset();
+  const got = feed([play(c[1])]);
+  const pass = !got.includes('collision-h1');
+  ok = ok && pass;
+  console.log((pass ? '✓ ' : '✗ ') + c[0] + ' → 不完成 h1（完成：' + (got.join('、') || '無') + '）');
+});
 
 console.log(ok ? '全部任務都可達成' : '有任務無法達成');
 process.exitCode = ok ? 0 : 1;

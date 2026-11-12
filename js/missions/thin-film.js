@@ -129,7 +129,7 @@
     },
     {
       id: 'thin-film-h2', level: 6, hidden: true,
-      riddle: { zh: '亮得正好的時候，有一半的光不肯回頭。', en: 'Just when it shines brightest, half of the light refuses to turn back.' },
+      riddle: { zh: '斜到某個特別的角度，亮紋正亮時，仍有一半的光執意穿透、不肯回頭。', en: 'Tilt to one special angle: even while the fringe is at its brightest, half of the light insists on passing through and will not turn back.' },
       check: function (ev) {
         const d = ev.data;
         return mono(ev, 'soap') && d.ang > 5 && near(d.ang, d.brewster, 0.3) && d.Rmax > 0 && d.R >= 0.8 * d.Rmax;
