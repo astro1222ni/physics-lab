@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Coriolis Effect and Moving Air: Turntable, Geostrophic Wind and Pressure Systems | Astro Ni Science Lab">科氏力與大氣的運動：轉盤、地轉風與高低氣壓｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 科氏力頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --co-disk: #e7ecf2; --co-disk2: #cdd6e0; --co-rim: #6b7a8c; --co-target: #dc2626; --co-ball: #f59e0b; --co-launch: #0f766e;
+      --co-low: #a8c9ee; --co-high: #f3cba9; --co-iso: #4b5563; --co-map: #eef3f7;
+      --co-pgf: #2563eb; --co-cor: #ea580c; --co-fri: #78716c; --co-vel: #059669;
+      --co-p1: #2563eb; --co-p2: #db2777; --co-p3: #059669; --co-p4: #d97706; --co-p5: #7c3aed; --co-p6: #0891b2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --co-disk: #253242; --co-disk2: #1b2633; --co-rim: #8aa0b8; --co-target: #f87171; --co-ball: #fbbf24; --co-launch: #5eead4;
+        --co-low: #1f4570; --co-high: #5a3820; --co-iso: #c9d2dc; --co-map: #16202b;
+        --co-pgf: #60a5fa; --co-cor: #fb923c; --co-fri: #a8a29e; --co-vel: #34d399;
+        --co-p1: #60a5fa; --co-p2: #f472b6; --co-p3: #34d399; --co-p4: #fbbf24; --co-p5: #a78bfa; --co-p6: #22d3ee;
+      }
+    }
+    :root[data-theme="dark"] {
+      --co-disk: #253242; --co-disk2: #1b2633; --co-rim: #8aa0b8; --co-target: #f87171; --co-ball: #fbbf24; --co-launch: #5eead4;
+      --co-low: #1f4570; --co-high: #5a3820; --co-iso: #c9d2dc; --co-map: #16202b;
+      --co-pgf: #60a5fa; --co-cor: #fb923c; --co-fri: #a8a29e; --co-vel: #34d399;
+      --co-p1: #60a5fa; --co-p2: #f472b6; --co-p3: #34d399; --co-p4: #fbbf24; --co-p5: #a78bfa; --co-p6: #22d3ee;
+    }
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y pinch-zoom; cursor: crosshair; }
+    @media (max-width: 560px) { #cv { height: 360px; } }
+    .co.turn #cv { height: 380px; cursor: default; }
+    @media (max-width: 560px) { .co.turn #cv { height: 250px; } }
+    .co button { min-height: 44px; }
+    .co .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .co .playbar button { flex: 1 1 auto; }
+    .co .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .co .slider input[type="range"] { height: 28px; margin: 0; }
+    .co [hidden] { display: none !important; }
+    .co.turn .only-earth, .co:not(.turn) .only-turn { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .seglabel { font-size: calc(14px * var(--fs, 1)); margin: 6px 0 0; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 440px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #16233a, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 380px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Coriolis effect"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 科氏力</nav>
+      <h1 data-en="The Coriolis Effect and Moving Air: Turntable, Geostrophic Wind and Pressure Systems">科氏力與大氣的運動：轉盤、地轉風與高低氣壓</h1>
+      <p data-en="Roll a ball across a spinning turntable: seen from outside it goes straight, but to someone riding the turntable it curves. The Earth is a turntable too. Release parcels of air near a low or a high, change the latitude and the friction, and watch the pressure-gradient force, the Coriolis force and friction settle into the geostrophic wind and the swirl of a typhoon — in 2D or on a 3D globe.">在旋轉的轉盤上推一顆球：從外面看它走直線，站在盤上看卻轉了彎。地球也是一個轉盤。在低氣壓或高氣壓旁放出一團空氣，改變緯度與摩擦，看氣壓梯度力、科氏力與摩擦力怎麼平衡成地轉風、捲成颱風的漩渦——2D 平面或 3D 地球都可以看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: in “Wind on the Earth”, release a parcel near the low at 25° N, then set the latitude to −25° and release another one.">試試看：在「地球上的風」，於北緯 25° 的低氣壓旁放出一團空氣；再把緯度改成 −25°（南半球），放出另一團比一比。</p>
+    <div class="lab co turn" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" id="modeTurn" aria-pressed="true" data-en="Turntable">轉盤</button>
+            <button type="button" id="modeEarth" aria-pressed="false" data-en="Wind on the Earth">地球上的風</button>
+          </div>
+          <div class="seg only-earth" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D map">2D 地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D globe">3D 地球</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camSite" data-en="This place" title="從上空看這個地點的氣壓系統" data-en-title="Look down on the pressure system at this place">看這個地點</button>
+          <button type="button" id="camSpace" data-en="From space" title="從太空看地球、自轉軸與這個地點" data-en-title="See the Earth, its axis and this place from space">從太空看</button>
+          <button type="button" id="camPole" data-en="Above the pole" title="從北極正上方看：地球逆時針轉" data-en-title="Look down from above the North Pole: the Earth turns anticlockwise">北極上空</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="轉盤：左邊從外面看、右邊站在盤上看" data-en-aria-label="Turntable: seen from outside on the left, from the turntable on the right"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="launch" class="primary only-turn" type="button" data-en="Launch the ball">發射</button>
+          <button id="play" class="primary only-earth" type="button">播放</button>
+          <button id="releaseBtn" class="only-earth" type="button" data-en="Release here" title="在十字游標的位置放出一團空氣（也可以直接點地圖）" data-en-title="Release a parcel of air at the cross-hair (or just tap the map)">在游標處放出</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除所有軌跡，滑桿設定不變" data-en-title="Clear every track; slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw only-earth" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
+          <button type="button" data-speed="1" aria-pressed="false" data-en="1 h per second">每秒 1 小時</button>
+          <button type="button" data-speed="4" aria-pressed="true" data-en="4 h per second">每秒 4 小時</button>
+          <button type="button" data-speed="12" aria-pressed="false" data-en="12 h per second">每秒 12 小時</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend only-turn">
+          <span style="color:var(--co-ball)" data-en-html="<i style=&quot;background:var(--co-ball)&quot;></i>Ball and its track"><i style="background:var(--co-ball)"></i>球與軌跡</span>
+          <span style="color:var(--co-target)" data-en-html="<i style=&quot;background:var(--co-target)&quot;></i>Target (fixed to the turntable)"><i style="background:var(--co-target)"></i>目標（釘在盤上）</span>
+          <span style="color:var(--co-cor)" data-en-html="<i style=&quot;background:var(--co-cor)&quot;></i>Coriolis force"><i style="background:var(--co-cor)"></i>科氏力</span>
+          <span style="color:var(--co-pgf)" data-en-html="<i style=&quot;background:var(--co-pgf)&quot;></i>Centrifugal force"><i style="background:var(--co-pgf)"></i>離心力</span>
+        </div>
+        <div class="legend only-earth">
+          <span style="color:var(--co-vel)" data-en-html="<i style=&quot;background:var(--co-vel)&quot;></i>Wind (velocity)"><i style="background:var(--co-vel)"></i>風（速度）</span>
+          <span style="color:var(--co-pgf)" data-en-html="<i style=&quot;background:var(--co-pgf)&quot;></i>Pressure-gradient force"><i style="background:var(--co-pgf)"></i>氣壓梯度力</span>
+          <span style="color:var(--co-cor)" data-en-html="<i style=&quot;background:var(--co-cor)&quot;></i>Coriolis force"><i style="background:var(--co-cor)"></i>科氏力</span>
+          <span style="color:var(--co-fri)" data-en-html="<i style=&quot;background:var(--co-fri)&quot;></i>Friction"><i style="background:var(--co-fri)"></i>摩擦力</span>
+          <span style="color:var(--co-iso)" data-en-html="<i style=&quot;background:var(--co-iso)&quot;></i>Isobars"><i style="background:var(--co-iso)"></i>等壓線</span>
+        </div>
+        <p class="hint only-turn" data-en-html="The ball slides without friction. Left: the turntable seen by someone standing on the ground. Right: the same throw seen by someone riding the turntable — for them the target never moves. The arrows on the right are the forces the rider needs to explain the curve (per kilogram).">球在盤面上滑動、沒有摩擦。左邊：站在地上的人看到的轉盤；右邊：同一次發射，站在盤上一起轉的人看到的樣子——對他來說目標從來沒有動。右邊的箭頭是盤上的人為了解釋「轉彎」所需要的力（每公斤）。</p>
+        <p class="hint only-earth l2" data-en-html="Tap the map (or move the cross-hair with the arrow keys and press Enter) to release a parcel of air with the starting wind set on the right. The map is 2000 km across; the <b>latest</b> parcel shows its forces.">點一下地圖（或用方向鍵移動十字游標再按 Enter），用右邊設定的初速放出一團空氣。地圖寬 2000 km；<b>最新</b>放出的那一團會畫出它受的力。</p>
+        <p class="hint only-earth l3" data-en="Drag to rotate, scroll or pinch to zoom. The arrow through the poles is the Earth’s spin Ω; at the chosen place it splits into a vertical part Ω sin φ, which turns the winds, and a horizontal part.">拖曳旋轉，滾輪或雙指縮放。穿過兩極的箭頭是地球自轉 Ω；在選定的地點，它分成垂直的 Ω sin φ（讓風轉彎的就是這一份）與水平的部分。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card only-turn">
+          <h2 data-en="Turntable">轉盤</h2>
+          <p class="seglabel" data-en="Direction of spin (seen from above)">轉向（從上往下看）</p>
+          <div class="segw" role="group" aria-label="轉向" data-en-aria-label="Direction of spin" id="spinSeg">
+            <button type="button" data-spin="1" aria-pressed="true" data-en="Anticlockwise (like the north)">逆時針（像北半球）</button>
+            <button type="button" data-spin="-1" aria-pressed="false" data-en="Clockwise (like the south)">順時針（像南半球）</button>
+          </div>
+          <div class="slider"><label for="rpm" data-en="Spin rate (turns per minute)">轉速（每分鐘幾圈）</label><output></output>
+            <input id="rpm" type="range" min="0" max="30" step="0.5" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="v0t" data-en="Launch speed (m/s)">發射速度（m/s）</label><output></output>
+            <input id="v0t" type="range" min="0" max="3" step="0.05" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="aim" data-en="Aim (° anticlockwise from the target)">瞄準角（目標往逆時針幾度）</label><output></output>
+            <input id="aim" type="range" min="-90" max="90" step="0.5" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="r0" data-en="Launcher distance from the centre (m)">發射點離中心（m）</label><output></output>
+            <input id="r0" type="range" min="0" max="0.9" step="0.05" value="0" data-decimals="3"></div>
+          <p class="hint" data-en-html="The turntable has a radius of <b>1 m</b>. The launcher and the red target are fixed to it, on opposite sides of the centre.">轉盤半徑 <b>1 m</b>。發射器與紅色目標都釘在盤上，在中心的兩側。</p>
+        </section>
+        <section class="card only-turn">
+          <h2 data-en="Result">結果</h2>
+          <dl class="readout">
+            <dt data-en="Time on the turntable">在盤上的時間</dt><dd id="tFlight">—</dd>
+            <dt data-en="Turntable turned">這段時間盤轉了</dt><dd id="tTurned">—</dd>
+            <dt data-en="Landing point vs target">落點與目標</dt><dd id="tMiss" class="big">—</dd>
+            <dt data-en="Coriolis acceleration 2Ωv">科氏加速度 2Ωv</dt><dd id="tCor">—</dd>
+            <dt class="wide" data-en="To hit the target from the centre, aim">從中心發射要打中，要瞄</dt><dd id="tAim" class="wide">—</dd>
+          </dl>
+        </section>
+
+        <section class="card only-earth">
+          <h2 data-en="Place and pressure">地點與氣壓</h2>
+          <div class="slider"><label for="lat" data-en="Latitude (°; negative = south)">緯度（°，負＝南緯）</label><output></output>
+            <input id="lat" type="range" min="-90" max="90" step="0.5" value="25" data-decimals="2"></div>
+          <p class="hint" id="latHint">—</p>
+          <p class="seglabel" data-en="Pressure pattern">氣壓分布</p>
+          <div class="segw" role="group" aria-label="氣壓分布" data-en-aria-label="Pressure pattern" id="fieldSeg">
+            <button type="button" data-field="none" aria-pressed="false" data-en="None">沒有氣壓差</button>
+            <button type="button" data-field="uniform" aria-pressed="false" data-en="Straight isobars">平直等壓線</button>
+            <button type="button" data-field="low" aria-pressed="true" data-en="Low">低氣壓</button>
+            <button type="button" data-field="high" aria-pressed="false" data-en="High">高氣壓</button>
+          </div>
+          <div class="slider" id="gWrap"><label for="grad" data-en="Pressure change (hPa per 100 km)">氣壓變化（每 100 km 幾 hPa）</label><output></output>
+            <input id="grad" type="range" min="0.2" max="5" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider" id="dpWrap"><label for="dp" data-en="Centre vs surroundings (hPa)">中心與外圍的氣壓差（hPa）</label><output></output>
+            <input id="dp" type="range" min="2" max="60" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="fric" data-en-html="Friction <i>k</i> (×10<sup>−5</sup> per second)">摩擦係數 <i>k</i>（×10<sup>−5</sup> 每秒）</label><output></output>
+            <input id="fric" type="range" min="0" max="10" step="0.1" value="2" data-decimals="2"></div>
+          <p class="hint" data-en-html="<b>0</b>: high above the ground, no friction. Near the surface friction slows the wind — less over the sea, more over rough land.">  <b>0</b>：高空，沒有摩擦。靠近地面時摩擦讓風變慢——海面上小，粗糙的陸地上大。</p>
+        </section>
+        <section class="card only-earth">
+          <h2 data-en="Starting wind of a new parcel">新放出空氣的初速</h2>
+          <div class="slider"><label for="v0" data-en="Speed (m/s)">風速（m/s）</label><output></output>
+            <input id="v0" type="range" min="0" max="40" step="0.5" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="dir0" data-en="Blowing toward (°; 0 = north, 90 = east)">吹向（°，0＝北、90＝東）</label><output></output>
+            <input id="dir0" type="range" min="0" max="359" step="1" value="90" data-decimals="1"></div>
+          <p class="hint" id="v0Hint">—</p>
+        </section>
+        <section class="card only-earth">
+          <h2 data-en="Latest parcel">最新的那一團空氣</h2>
+          <dl class="readout">
+            <dt data-en="Time since release">放出後經過</dt><dd id="pT">—</dd>
+            <dt data-en="Wind speed">風速</dt><dd id="pSpd" class="big">—</dd>
+            <dt data-en="Geostrophic wind here">這裡的地轉風速</dt><dd id="pVg">—</dd>
+            <dt data-en="Blowing toward">吹向</dt><dd id="pDir">—</dd>
+            <dt data-en="Angle across the isobars (toward low)">與等壓線的夾角（偏向低壓）</dt><dd id="pAlpha">—</dd>
+            <dt data-en="Turned from the pressure force">偏離氣壓梯度力的方向</dt><dd id="pDefl">—</dd>
+            <dt data-en="Distance from the centre">離中心</dt><dd id="pR">—</dd>
+            <dt data-en="Turns around the centre">繞中心的圈數</dt><dd id="pTurns">—</dd>
+          </dl>
+          <p class="hint" id="steadyHint">—</p>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="A force that only appears when you turn with the ground">只有跟著地面一起轉才會看到的力</h3>
+      <p data-en-html="On the turntable nothing pushes the ball sideways: once launched it slides in a straight line at constant speed (Newton’s first law). But the target turns away underneath it, so to a rider the ball seems to curve. To use Newton’s second law in a rotating frame, the rider must add two “fictitious” forces per kilogram: the <strong>Coriolis force</strong> and the centrifugal force,">轉盤上沒有任何東西從側面推球：推出去之後，球以等速直線滑行（牛頓第一定律）。可是目標在它底下轉走了，所以在盤上的人看來，球轉了彎。在轉動座標裡要用牛頓第二定律，盤上的人必須在每公斤的物體上加兩個「假想力」：<strong>科氏力</strong>與離心力：</p>
+      <div class="formula">\[ {\vec a}' = \frac{\vec F}{m} \;-\; 2\,\vec\Omega\times{\vec v}' \;-\; \vec\Omega\times(\vec\Omega\times{\vec r}') \]</div>
+      <p data-en-html="The Coriolis force is always perpendicular to the velocity, so it changes the direction but never the speed (it does no work). If the turntable spins anticlockwise, it pushes moving things to the <strong>right</strong>; clockwise, to the left. Launched from the centre at speed \(v_0\), the ball needs \(R/v_0\) to reach the rim, while the turntable turns through \(\Omega R/v_0\) radians — that is how far to aim ahead.">科氏力永遠垂直於速度，所以只改變方向、不改變速率（不作功）。轉盤逆時針轉，移動的物體被推向<strong>右邊</strong>；順時針轉則推向左邊。從中心以速度 \(v_0\) 發射，球要 \(R/v_0\) 才到邊緣，這段時間盤轉了 \(\Omega R/v_0\) 弧度——要打中，就得往前瞄這麼多。</p>
+
+      <h3 data-en="Why the latitude matters">為什麼和緯度有關</h3>
+      <p data-en-html="The Earth spins once per sidereal day, \(\Omega = 7.292\times10^{-5}\ \mathrm{s^{-1}}\). For winds that blow along the ground, only the part of \(\vec\Omega\) along the local vertical, \(\Omega\sin\varphi\), turns them, which gives the <strong>Coriolis parameter</strong>">地球每個恆星日自轉一圈，\(\Omega = 7.292\times10^{-5}\ \mathrm{s^{-1}}\)。對沿著地面吹的風，只有 \(\vec\Omega\) 沿著當地鉛直方向的那一份 \(\Omega\sin\varphi\) 會讓它轉彎，所以<strong>科氏參數</strong>是</p>
+      <div class="formula">\[ f = 2\,\Omega\sin\varphi, \qquad \text{Coriolis force per kg} = f\,v \]</div>
+      <p data-en-html="At the North Pole the ground turns like an anticlockwise turntable; at the equator \(f = 0\) and horizontal winds are not turned at all; in the southern hemisphere \(f < 0\) and winds are turned to the left. At 25° N, \(f \approx 6.2\times10^{-5}\ \mathrm{s^{-1}}\): a 10 m/s wind feels only \(6\times10^{-4}\ \mathrm{m/s^2}\), but over hours that is enough to turn it completely around.">在北極，地面就像逆時針轉的轉盤；在赤道 \(f = 0\)，水平的風完全不轉彎；南半球 \(f < 0\)，風往左偏。北緯 25° 的 \(f \approx 6.2\times10^{-5}\ \mathrm{s^{-1}}\)：10 m/s 的風只受到 \(6\times10^{-4}\ \mathrm{m/s^2}\)，但經過幾個小時，就足以讓它整個掉頭。</p>
+
+      <h3 data-en="Geostrophic wind">地轉風</h3>
+      <p data-en-html="Air starts to move from high to low pressure, pushed by the pressure-gradient force \(-\frac{1}{\rho}\nabla p\). As it speeds up the Coriolis force grows and turns it, until the two forces balance: the wind then blows <strong>along the isobars</strong>, with low pressure on its left in the northern hemisphere (on its right in the south). Its speed is the <strong>geostrophic wind</strong>">空氣原本被氣壓梯度力 \(-\frac{1}{\rho}\nabla p\) 從高壓推向低壓。速度變大，科氏力也跟著變大、讓它轉彎，直到兩個力平衡：這時風<strong>沿著等壓線</strong>吹，北半球低壓在風的左手邊（南半球在右手邊）。這個風速就是<strong>地轉風</strong>：</p>
+      <div class="formula">\[ V_g = \frac{1}{\rho\,|f|}\left|\frac{\partial p}{\partial n}\right| \]</div>
+      <p data-en-html="With \(\rho = 1.2\ \mathrm{kg/m^3}\), a change of 1 hPa per 100 km gives about 13 m/s at 25° N. A single parcel released from rest does not settle down by itself: without friction it overshoots and circles around the geostrophic motion (an <strong>inertial oscillation</strong>, period \(2\pi/|f|\), half a sidereal day divided by \(\sin\varphi\)). Its average velocity is exactly the geostrophic wind.">取 \(\rho = 1.2\ \mathrm{kg/m^3}\)，每 100 km 差 1 hPa，在北緯 25° 約是 13 m/s。從靜止放出的一團空氣不會自己停在平衡：沒有摩擦時，它衝過頭、繞著地轉運動打轉（<strong>慣性振盪</strong>，週期 \(2\pi/|f|\)，也就是半個恆星日除以 \(\sin\varphi\)），平均速度剛好就是地轉風。</p>
+
+      <h3 data-en="Friction, lows and highs">摩擦、低氣壓與高氣壓</h3>
+      <p data-en-html="Near the ground, friction slows the wind, so the Coriolis force becomes too weak to balance the pressure force and the wind turns across the isobars <strong>toward low pressure</strong>. In this model friction is \(-k\vec v\) and the steady wind crosses straight isobars at the angle">靠近地面時，摩擦讓風變慢，科氏力變弱、抵不過氣壓梯度力，風就斜斜穿過等壓線、<strong>偏向低壓</strong>。本頁把摩擦寫成 \(-k\vec v\)，平直等壓線下最後的穩定風與等壓線的夾角是</p>
+      <div class="formula">\[ \tan\alpha = \frac{k}{|f|}, \qquad V = V_g\cos\alpha \]</div>
+      <p data-en-html="Around a low this inflow spirals in — anticlockwise in the northern hemisphere, clockwise in the south — and the air that piles up in the middle has to rise, forming clouds. Around a high, air spirals out and sinks. Stand with your back to the wind in the northern hemisphere and low pressure is on your left (Buys Ballot’s law). Near the equator \(f\) is too small to hold such a spiral together, which is why typhoons almost never form right on the equator.">低氣壓周圍，這股吹向中心的風捲成漩渦——北半球逆時針、南半球順時針——擠到中心的空氣只能往上升，形成雲。高氣壓周圍則是向外旋出、空氣下沉。在北半球背對著風站，低氣壓在你的左手邊（白貝羅定律）。赤道附近 \(f\) 太小，撐不住這樣的漩渦，所以颱風幾乎不會在赤道正上方生成。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Who is right?</strong> On the turntable, the person on the ground says “no force acts”; the rider says “the Coriolis force pushed it”. Both describe the same motion — compare the two panels.">  <strong>誰說得對？</strong>轉盤上，地面的人說「沒有力作用」；盤上的人說「科氏力把它推偏了」。兩個人描述的是同一個運動——比較左右兩個畫面。</li>
+        <li data-en-html="<strong>A ball that “does nothing”</strong>: put the launcher away from the centre and give the ball exactly the speed that cancels the turntable’s motion. What does the rider see?"><strong>什麼都不做的球</strong>：把發射點移離中心，給球剛好抵消盤面轉動的速度。盤上的人看到什麼？</li>
+        <li data-en-html="<strong>The equator</strong>: set the latitude to 0° and release a parcel near the low. With no Coriolis force, the air rushes straight into the centre."><strong>赤道</strong>：把緯度設成 0°，在低氣壓旁放出空氣。沒有科氏力，空氣直直衝進中心。</li>
+        <li data-en-html="<strong>Inertial circles</strong>: choose “None”, set the friction to 0 and give the parcel a starting wind. It moves in a circle of radius \(V/|f|\) — at 30° the circle takes about 24 hours."><strong>慣性圓</strong>：選「沒有氣壓差」、摩擦設 0，給空氣一個初速。它沿半徑 \(V/|f|\) 的圓走——在 30° 繞一圈大約 24 小時。</li>
+        <li data-en-html="<strong>The bathtub myth</strong>: water draining from a basin at 0.1 m/s feels a Coriolis acceleration of about \(10^{-5}\ \mathrm{m/s^2}\) — far smaller than the effect of how the basin was filled. The direction of a drain’s swirl is not set by the hemisphere."><strong>洗手台的迷思</strong>：洗手台的水以 0.1 m/s 流向排水孔，受到的科氏加速度只有約 \(10^{-5}\ \mathrm{m/s^2}\)，遠小於放水時留下的擾動。排水的漩渦方向不是由南北半球決定的。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="<strong>Turntable</strong>: exact. The ball moves in a straight line in the ground frame (including the turntable’s own speed at the launcher, \(\Omega r_0\)); the rider’s view is the same path rotated back by \(\Omega t\). The unit tests check that its acceleration equals the Coriolis plus centrifugal terms."><strong>轉盤</strong>：精確解。球在地面座標裡走直線（包括發射點隨盤轉動的速度 \(\Omega r_0\)）；盤上看到的，就是把同一條路徑倒轉 \(\Omega t\)。單元測試核對它的加速度剛好等於科氏力加離心力。</li>
+        <li data-en-html="<strong>Wind</strong>: a horizontal “f-plane” 2000 km across around the chosen latitude (\(f\) held constant), with \(\rho = 1.2\ \mathrm{kg/m^3}\). Each parcel obeys \(d\vec v/dt = -\nabla p/\rho - f\hat k\times\vec v - k\vec v\), integrated by fourth-order Runge–Kutta with one-minute steps; for straight isobars the page also has the exact solution and the tests check that the two agree. Without friction, the tests check that kinetic plus pressure energy and absolute angular momentum are conserved."><strong>風</strong>：選定緯度附近、寬 2000 km 的水平「f 平面」（\(f\) 視為常數），\(\rho = 1.2\ \mathrm{kg/m^3}\)。每團空氣遵守 \(d\vec v/dt = -\nabla p/\rho - f\hat k\times\vec v - k\vec v\)，用四階 Runge–Kutta 以 1 分鐘為一步積分；平直等壓線另有解析解，單元測試核對兩者一致。沒有摩擦時，測試也核對動能加氣壓位能、以及絕對角動量守恆。</li>
+        <li data-en-html="<strong>Simplifications</strong>: each parcel moves on its own (it does not change the pressure field); the low and the high are smooth bell shapes 300 km wide; there is no vertical motion and the curvature of the Earth is ignored inside the map. Real lows also feel the centrifugal force of their own curved flow (gradient wind), which this model includes automatically because it follows the parcel’s full motion."><strong>簡化</strong>：每團空氣各自移動，不會改變氣壓場；低氣壓與高氣壓是寬約 300 km 的鐘形；沒有垂直運動，地圖範圍內不考慮地球曲率。真實的低氣壓還有氣流本身轉彎的離心力（梯度風），本模型跟著空氣完整的運動計算，所以自動包含在內。</li>
+        <li data-en-html="<strong>3D globe</strong>: the same calculation, drawn on a tangent patch at longitude 121° E. Earth image: NASA Blue Marble (public domain). The 3D view uses the three.js library (MIT license), downloaded only when you switch to 3D."><strong>3D 地球</strong>：同一份計算，畫在東經 121° 的切平面上。地球影像：NASA Blue Marble（公有領域）。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · The atmosphere (pressure-gradient force, Coriolis force, geostrophic wind, pressure systems)">課綱對應：高中地球科學・大氣（氣壓梯度力、科氏力、地轉風、高低氣壓）</li>
+        <li data-en-html="Earth’s rotation rate \(7.292\,115\times10^{-5}\ \mathrm{rad/s}\): G. Petit and B. Luzum (eds.), <i>IERS Conventions (2010)</i>, IERS Technical Note 36, Table 1.1.">地球自轉角速度 \(7.292\,115\times10^{-5}\ \mathrm{rad/s}\)：G. Petit 與 B. Luzum 主編，《IERS Conventions (2010)》，IERS Technical Note 36，表 1.1。</li>
+        <li data-en-html="Geostrophic wind, inertial oscillations and friction in the boundary layer: J. R. Holton and G. J. Hakim, <i>An Introduction to Dynamic Meteorology</i>, 5th ed. (Academic Press, 2013), chapters 1–3 and 8.">地轉風、慣性振盪與邊界層的摩擦：J. R. Holton 與 G. J. Hakim，《An Introduction to Dynamic Meteorology》第 5 版（Academic Press，2013），第 1–3 章與第 8 章。</li>
+        <li data-en-html="The Coriolis force on a turntable and on the Earth: A. Persson (1998), “How do we understand the Coriolis force?”, <i>Bulletin of the American Meteorological Society</i> 79, 1373–1385.">轉盤與地球上的科氏力：A. Persson（1998），〈How do we understand the Coriolis force?〉，<i>Bulletin of the American Meteorological Society</i> 79 卷 1373–1385 頁。</li>
+        <li data-en-html="Earth image (3D): Reto Stöckli, NASA Goddard Space Flight Center, “Blue Marble: Land Surface, Shallow Water, and Shaded Topography”, via <a href=&quot;https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikimedia Commons</a>; made by NASA, public domain.">地球影像（3D）：Reto Stöckli（NASA 戈達德太空飛行中心）〈Blue Marble: Land Surface, Shallow Water, and Shaded Topography〉，取自 <a href="https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>；NASA 製作，公有領域。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/coriolis-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/coriolis.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="coriolis"></script>
+  <script src="js/missions/coriolis.js"></script>
+  <script src="js/stats.js" data-module="coriolis"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
