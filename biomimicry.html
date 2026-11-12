@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Biomimicry: the Lotus Effect and the Gecko’s Foot | Astro Ni Science Lab">仿生學：蓮葉效應與壁虎的腳｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="蓮葉為什麼不沾水、還會自己變乾淨？壁虎為什麼能倒吊在天花板上？調整表面的微結構，看水珠從 Wenzel 變成 Cassie、滾落角變小、下雨就洗掉灰塵；再看壁虎腳上幾百萬根剛毛如何靠凡得瓦力黏住、靠剝離角度輕鬆放開。2D 與 3D 微結構都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 仿生學頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --bm-leaf: #6fa34a;      /* 葉面 */
+      --bm-leaf2: #4f8233;
+      --bm-dirt: #8a5a2b;      /* 灰塵 */
+      --bm-water: #3b9ad9;     /* 水 */
+      --bm-water-hi: #d6efff;
+      --bm-air: #eef6fb;       /* 柱間的空氣 */
+      --bm-pillar: #8f9b72;    /* 微結構 */
+      --bm-wall: #c9c2b4;      /* 壁虎的牆 */
+      --bm-gecko: #8fa75a;     /* 壁虎 */
+      --bm-gecko2: #5d7334;
+      --bm-good: #0f766e;
+      --bm-bad: #c2410c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bm-leaf: #4e7d33; --bm-leaf2: #36592a; --bm-dirt: #b98552; --bm-water: #5fb4ec; --bm-water-hi: #cfeaff;
+        --bm-air: #1b2a36; --bm-pillar: #8a9670; --bm-wall: #5b554b; --bm-gecko: #a3bd6b; --bm-gecko2: #6f8a3f;
+        --bm-good: #2dd4bf; --bm-bad: #fb923c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bm-leaf: #4e7d33; --bm-leaf2: #36592a; --bm-dirt: #b98552; --bm-water: #5fb4ec; --bm-water-hi: #cfeaff;
+      --bm-air: #1b2a36; --bm-pillar: #8a9670; --bm-wall: #5b554b; --bm-gecko: #a3bd6b; --bm-gecko2: #6f8a3f;
+      --bm-good: #2dd4bf; --bm-bad: #fb923c;
+    }
+    #cv, #cv2, #cv3 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv { height: 470px; cursor: crosshair; }
+    #cv2 { height: 460px; }
+    #cv3 { height: 300px; }
+    .bm button { min-height: 44px; }
+    .bm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bm .playbar button { flex: 1 1 auto; }
+    .bm .playbar .primary { font-weight: 700; }
+    .bm .playbar button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .bm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .bm .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .bm .slider input[type="range"] { height: 28px; margin: 0; }
+    .bm .slider label sub, .bm .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .bm [hidden] { display: none !important; }
+    .bm .panel { grid-template-columns: minmax(0, 1fr); }
+    .bm .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd.good { color: var(--bm-good); }
+    dl.readout dd.bad { color: var(--bm-bad); }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.yes { color: var(--bm-good); font-weight: 600; }
+    table.runs td.no { color: var(--bm-bad); }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    .chips.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sub-canvas { margin-top: 14px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .bm3-wrap { position: relative; }
+    .bm3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .bm3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .bm3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .bm3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .bm3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .bm3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#evolution&quot;>Biology · Evolution and Diversity</a> / Biomimicry"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#evolution">生物・演化與多樣性</a> ／ 仿生學</nav>
+      <h1 data-en="Biomimicry: the Lotus Effect and the Gecko’s Foot">仿生學：蓮葉效應與壁虎的腳</h1>
+      <p data-en="Rain beads up on a lotus leaf and rolls away, taking the dust with it. A gecko runs up a pane of glass and hangs from the ceiling by one toe, with no glue and no suction. Both tricks come from structures far smaller than a hair: tiny bumps that hold a cushion of air under every drop, and millions of branching hairs that get close enough for van der Waals forces to add up. Engineers copy them in self-cleaning paints and dry adhesives — this is biomimicry. Build your own leaf surface and watch the drops, then tilt a wall under a gecko and see how much of its foot it really needs.">雨落在蓮葉上，聚成水珠滾走，順便把灰塵帶走；壁虎在玻璃上奔跑、用一根腳趾倒吊在天花板上，沒有膠水也沒有吸盤。兩個本事都來自比頭髮細得多的結構：讓每顆水珠底下墊著一層空氣的小突起，以及幾百萬根不斷分岔的細毛，近到讓凡得瓦力累積起來。工程師模仿它們做出自潔塗料和乾式黏膠——這就是仿生學。先自己設計葉面、看水珠怎麼滾，再把牆傾斜，看壁虎到底需要用到多少腳底。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: tap the leaf to place a drop, then tilt it a little. Switch the surface to “Smooth” and try again.">試試看：點一下葉面放一顆水珠，再把葉子稍微傾斜；然後把表面換成「平面」再試一次。</p>
+
+    <h2 class="lab-title" data-en-html="1 · The lotus effect<small>Micro-pillars, trapped air and self-cleaning (Barthlott and Neinhuis 1997)</small>">一・蓮葉效應<small>微結構、墊在底下的空氣與自我清潔（Barthlott 與 Neinhuis 1997）</small></h2>
+    <div class="lab bm" id="lab1">
+      <div class="stage" id="stage1">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D leaf">2D 葉面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D microstructure">3D 微結構</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="傾斜的葉面（俯視）：咖啡色小點是灰塵，藍色圓點是水珠；點一下葉面就放一顆水珠，或點選畫布後用方向鍵移動滴水位置、按「滴一滴」。旁邊是最近一顆水珠的側面與微結構放大圖" data-en-aria-label="A tilted leaf seen from above: brown specks are dust, blue circles are water drops; tap the leaf to place a drop, or focus the canvas, move the dropper with the arrow keys and press “Add a drop”. Beside it, a side view of the latest drop and a close-up of the microstructure"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="dropBtn" type="button" class="primary" data-en="Add a drop">滴一滴</button>
+          <button id="rainBtn" type="button" aria-pressed="false" data-en="Rain">下雨</button>
+          <button id="dirtBtn" type="button" data-en="New dust" title="重新撒上灰塵、擦掉水珠" data-en-title="Sprinkle new dust and wipe the drops">重新撒灰塵</button>
+          <button id="clear1" type="button" data-en="Clear all" title="擦掉水珠、重新撒灰塵，並清除紀錄表；設定不變" data-en-title="Wipe the drops, sprinkle new dust and clear the table; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The material">表面的材料</h2>
+          <div class="chips" id="mats" role="group" aria-label="材料" data-en-aria-label="Material"></div>
+          <div class="slider"><label for="thY" data-en-html="Contact angle on the flat material θ<sub>Y</sub>">平面上的接觸角 θ<sub>Y</sub></label><output id="thYo"></output>
+            <input id="thY" type="range" min="0" max="120" step="1" value="109" data-decimals="0"></div>
+          <div class="slider"><label for="hyst" data-en="Hysteresis of the material (advancing − receding)">材料本身的遲滯（前進角 − 後退角）</label><output id="hysto"></output>
+            <input id="hyst" type="range" min="0" max="30" step="1" value="10" data-decimals="0"></div>
+          <p class="hint" data-en-html="θ<sub>Y</sub> is set by the chemistry of the surface (Young’s equation). Wax and Teflon are water-repelling (hydrophobic, above 90°); glass is water-loving (hydrophilic).">θ<sub>Y</sub> 由表面的化學性質決定（Young 方程）。蠟和鐵氟龍疏水（大於 90°），玻璃親水。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Microstructure (square pillars)">微結構（方柱）</h2>
+          <div class="chips three" id="texs" role="group" aria-label="微結構" data-en-aria-label="Microstructure"></div>
+          <div class="slider"><label for="pa" data-en="Pillar width a (µm)">柱寬 a（µm）</label><output id="pao"></output>
+            <input id="pa" type="range" min="0.5" max="30" step="0.5" value="10" data-decimals="1"></div>
+          <div class="slider"><label for="pb" data-en="Gap b (µm)">間隙 b（µm）</label><output id="pbo"></output>
+            <input id="pb" type="range" min="0.5" max="60" step="0.5" value="10" data-decimals="1"></div>
+          <div class="slider"><label for="ph" data-en="Pillar height h (µm, 0 = smooth)">柱高 h（µm，0 = 平面）</label><output id="pho"></output>
+            <input id="ph" type="range" min="0" max="40" step="0.5" value="20" data-decimals="1"></div>
+          <p class="hint" data-en="A lotus leaf has bumps about ten micrometres across, themselves covered in wax tubules about a tenth of a micrometre thick.">蓮葉的乳突大約十微米大，上面還長滿約 0.1 微米粗的蠟管。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Drops and tilt">水珠與傾斜</h2>
+          <div class="slider"><label for="vol" data-en="Drop volume (µL)">水珠體積（µL）</label><output id="volo"></output>
+            <input id="vol" type="range" min="2" max="40" step="1" value="10" data-decimals="0"></div>
+          <div class="slider"><label for="tilt" data-en="Tilt of the leaf (°)">葉面傾斜角（°）</label><output id="tilto"></output>
+            <input id="tilt" type="range" min="0" max="90" step="0.5" value="0" data-decimals="1"></div>
+          <div class="slider"><label for="rainv" data-en="Speed of the rain drops (m/s)">雨滴落下的速度（m/s）</label><output id="rainvo"></output>
+            <input id="rainv" type="range" min="0.5" max="9" step="0.1" value="2" data-decimals="1"></div>
+          <p class="hint" data-en="Drops you place yourself are set down gently. Drizzle falls at about 2 m/s; big rain drops reach about 9 m/s.">自己放的水珠是輕輕放上去的。毛毛雨大約 2 m/s，大雨滴可以到 9 m/s 左右。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · The gecko’s foot<small>Setae, van der Waals forces, contact splitting and peeling (Autumn et al. 2000, 2002)</small>">二・壁虎的腳<small>剛毛、凡得瓦力、接觸分岔與剝離（Autumn 等 2000、2002）</small></h2>
+    <div class="lab bm" id="lab2">
+      <div class="stage">
+        <canvas id="cv2" tabindex="0" aria-label="一隻壁虎貼在可以傾斜的牆上：箭頭是體重沿牆面的分量（剪力）與把牠拉離牆面的分量；旁邊是腳趾、剛毛、匙突的放大圖與剝離力隨角度變化的圖" data-en-aria-label="A gecko on a wall that can be tilted: arrows show the part of its weight along the wall (shear) and the part pulling it off the wall; beside it, close-ups of the toe, setae and spatulae and a graph of peeling force against angle"></canvas>
+        <div class="playbar">
+          <button id="liftBtn" type="button" class="primary" data-en="Lift a foot">抬起一隻腳</button>
+          <button id="replace2" type="button" data-en="Put the gecko back">把壁虎放回去</button>
+          <button id="clear2" type="button" data-en="Clear all" title="放回壁虎並清除紀錄表；設定不變" data-en-title="Put the gecko back and clear the table; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+
+        <canvas id="cv3" class="sub-canvas" tabindex="0" aria-label="一平方毫米的黏著墊分成 n 個尖端，下面掛著砝碼；右邊是總拉脫力和 n 的關係（對數座標）" data-en-aria-label="A one-square-millimetre pad split into n tips with a weight hanging below it; on the right, the total pull-off force against n on log scales"></canvas>
+        <div class="playbar">
+          <button id="hangBtn" type="button" class="primary" data-en="Hang the weight">掛上砝碼</button>
+        </div>
+        <p class="status" id="status3" aria-live="polite"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The gecko and the wall">壁虎與牆</h2>
+          <div class="slider"><label for="wall" data-en="Tilt of the wall (0 = floor, 90 = wall, 180 = ceiling)">牆的傾角（0 = 地板、90 = 牆、180 = 天花板）</label><output id="wallo"></output>
+            <input id="wall" type="range" min="0" max="180" step="1" value="90" data-decimals="0"></div>
+          <div class="slider"><label for="mass" data-en="Body mass (g)">體重（g）</label><output id="masso"></output>
+            <input id="mass" type="range" min="10" max="400" step="5" value="100" data-decimals="0"></div>
+          <div class="slider"><label for="frac" data-en="Setae in contact (%)">貼住的剛毛比例（%）</label><output id="fraco"></output>
+            <input id="frac" type="range" min="0" max="1000" step="1" value="600" data-decimals="3"></div>
+          <p class="hint" data-en-html="A large gecko has about 6.5 million setae. Each can pull about 194 µN along the wall; straight off the wall it holds at most tan 30° of that (“frictional adhesion”).">大壁虎約有 650 萬根剛毛，每根沿牆面最多能拉約 194 µN；垂直拉離牆面最多只有它的 tan 30° 倍（「摩擦附著」）。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Splitting the contact">分岔的黏著墊</h2>
+          <div class="slider"><label for="nsplit" data-en="Number of tips n on 1 mm²">1 mm² 分成幾個尖端 n</label><output id="nsplito"></output>
+            <input id="nsplit" type="range" min="0" max="800" step="1" value="200" data-decimals="0"></div>
+          <div class="slider"><label for="load" data-en="Weight (g)">砝碼（g）</label><output id="loado"></output>
+            <input id="load" type="range" min="0" max="500" step="1" value="300" data-decimals="3"></div>
+          <p class="hint" data-en="The total contact area stays 1 mm²; only the number of tips changes.">總接觸面積固定 1 mm²，只改尖端的數目。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="Why lotus leaves stay clean">蓮葉為什麼一塵不染</h3>
+      <p data-en-html="In 1997 the botanists Wilhelm Barthlott and Christoph Neinhuis looked at leaves under the scanning electron microscope and found that the cleanest leaves were never smooth. The lotus (<em>Nelumbo nucifera</em>) is covered in bumps (papillae) about ten micrometres across, and every bump is coated with tiny tubes of wax. Water meets the leaf only at the tips of this forest and sits on a cushion of air. The measured contact angle was about 160°, and drops roll off at a slight tilt, picking up dust that sticks to water better than to the leaf. They called it the <strong>lotus effect</strong>.">1997 年，植物學家 Barthlott 與 Neinhuis 用掃描式電子顯微鏡看各種葉子，發現最乾淨的葉子從來不是光滑的。蓮（<em>Nelumbo nucifera</em>）的葉面長滿約十微米大的乳突，每個乳突外面又覆蓋細小的蠟管。水只碰到這片「森林」的尖端，底下墊著一層空氣。他們量到的接觸角約 160°，葉子稍微傾斜水珠就滾走，順便帶走灰塵——灰塵黏水比黏葉子更牢。他們把它叫做<strong>蓮葉效應</strong>。</p>
+
+      <h3 data-en="Contact angles">接觸角</h3>
+      <p data-en-html="On a flat surface the angle θ<sub>Y</sub> between the drop’s edge and the surface is set by the three surface tensions (Young’s equation):">在平面上，水珠邊緣與表面的夾角 θ<sub>Y</sub> 由三個表面張力決定（Young 方程）：</p>
+      <div class="formula">\[ \cos\theta_Y = \frac{\gamma_{SV}-\gamma_{SL}}{\gamma_{LV}} \]</div>
+      <p data-en-html="On a rough surface there are two possibilities. If the water fills every gap (the <strong>Wenzel</strong> state), the real area is \(r\) times larger than it looks, and roughness makes a hydrophobic surface more hydrophobic and a hydrophilic one more hydrophilic. If the water rests on the tips with air underneath (the <strong>Cassie–Baxter</strong> state), it touches solid on only a fraction \(\varphi\) of the area:">粗糙表面有兩種可能。水把每個縫隙都填滿（<strong>Wenzel</strong> 狀態）時，真實面積是看起來的 \(r\) 倍，粗糙讓疏水的更疏水、親水的更親水。水架在尖端、底下是空氣（<strong>Cassie–Baxter</strong> 狀態）時，只有 \(\varphi\) 的面積碰到固體：</p>
+      <div class="formula">\[ \cos\theta_W = r\cos\theta_Y ,\qquad \cos\theta_{CB} = \varphi\,(\cos\theta_Y+1)-1 \]</div>
+      <p data-en-html="For square pillars of width \(a\), gap \(b\) and height \(h\) (period \(p=a+b\)): \(r = 1 + 4ah/p^2\) and \(\varphi = a^2/p^2\). The two states have the same energy when \(\cos\theta_Y = (\varphi-1)/(r-\varphi)\); above that angle Cassie is the lower-energy state. Below it a Cassie drop can still survive for a while — it is <em>metastable</em> — until something pushes it into the gaps.">方柱的柱寬 \(a\)、間隙 \(b\)、柱高 \(h\)（週期 \(p=a+b\)）：\(r = 1 + 4ah/p^2\)、\(\varphi = a^2/p^2\)。當 \(\cos\theta_Y = (\varphi-1)/(r-\varphi)\) 時兩種狀態能量相同；θ<sub>Y</sub> 比這個角度大，Cassie 的能量比較低。比它小時，Cassie 水珠還是可以暫時撐著——叫做<em>亞穩定</em>——直到有東西把水壓進縫裡。</p>
+
+      <h3 data-en="Rolling off">滾下去</h3>
+      <p data-en-html="A drop starts to slide when gravity along the slope beats the pinning of its edge (Furmidge 1962):">沿斜面的重力分量大過邊緣被釘住的力時，水珠開始滑動（Furmidge 1962）：</p>
+      <div class="formula">\[ m g \sin\alpha_c = k\,\gamma\, w\,(\cos\theta_R-\cos\theta_A) \]</div>
+      <p data-en-html="Here \(w\) is the width of the contact patch and θ<sub>A</sub>, θ<sub>R</sub> are the advancing and receding angles. In the Cassie state the edge touches solid only on the pillar tops, so the pinning shrinks by about \(\varphi\), and the round drop touches the leaf on a tiny patch. In the Wenzel state the edge has \(r\) times more solid to cling to. The same leaf can therefore shed drops at under a degree — or hold them even when it is vertical.">\(w\) 是接觸面的寬度，θ<sub>A</sub>、θ<sub>R</sub> 是前進角與後退角。Cassie 狀態時邊緣只在柱頂碰到固體，釘住的力大約縮小成 \(\varphi\) 倍，圓滾滾的水珠接觸面又很小；Wenzel 狀態時邊緣有 \(r\) 倍的固體可以抓。所以同一片葉子，可以不到 1° 就讓水珠滾走——也可以垂直了還抓著水珠不放。</p>
+
+      <h3 data-en="When rain breaks through">雨打穿了</h3>
+      <p data-en-html="The air cushion survives only while the water above it cannot be pushed down the pillars. The capillary pressure that resists it grows as the structure gets finer (Bartolo et al. 2006):">只有當上面的水沒辦法被壓進柱子之間，空氣墊才留得住。抵抗它的毛細壓力，結構越細越大（Bartolo 等 2006）：</p>
+      <div class="formula">\[ \Delta P_{\text{capillary}} = \frac{-\gamma\,(4a)\cos\theta_A}{p^2-a^2} \quad\text{vs.}\quad \tfrac12\rho v^2 \]</div>
+      <p data-en-html="A falling rain drop presses with roughly \(\tfrac12\rho v^2\). If that is larger, the water is driven into the gaps and the drop sticks in the Wenzel state. Shrinking the same shape ten times makes it ten times stronger — one reason the lotus covers its micro-bumps with nanometre wax.">落下的雨滴大約用 \(\tfrac12\rho v^2\) 的壓力往下壓。壓力比較大時，水被擠進縫隙，水珠就黏在 Wenzel 狀態。同樣的形狀縮小十倍，就耐壓十倍——這是蓮葉在微米乳突上再長奈米蠟管的原因之一。</p>
+
+      <h3 data-en="The gecko’s foot">壁虎的腳</h3>
+      <p data-en-html="A gecko’s toes are lined with ridges (lamellae) carrying about 14 400 hairs, called <strong>setae</strong>, on every square millimetre. Each seta ends in hundreds of flat tips called <strong>spatulae</strong>, about 0.2 µm across. In 2000 Kellar Autumn and colleagues pulled on a single seta and measured up to about 194 µN — so the 6.5 million setae of a large gecko could, in principle, hold about 130 kg. In 2002 they showed that the force is <strong>van der Waals attraction</strong>: it works just as well on water-repelling and water-loving surfaces, and depends on the size and shape of the tips, not their chemistry. A single spatula pulls off at about 10 nN (Huber et al. 2005).">壁虎的腳趾底下有一條條皺褶（趾瓣），每平方毫米長著約 14 400 根細毛，叫<strong>剛毛</strong>。每根剛毛末端分成幾百個扁平的尖端，叫<strong>匙突</strong>，寬約 0.2 µm。2000 年 Autumn 等人拉單一根剛毛，量到最大約 194 µN——所以大壁虎的 650 萬根剛毛，理論上可以撐起約 130 公斤。2002 年他們證明這是<strong>凡得瓦力</strong>：在疏水和親水的表面一樣有效，看的是尖端的大小與形狀，不是化學性質。單一個匙突的拉脫力約 10 nN（Huber 等 2005）。</p>
+      <div class="formula">\[ F_{\text{JKR}} = \tfrac32\pi W R ,\qquad W = \frac{A}{12\pi D_0^2} \]</div>
+      <p data-en-html="By the JKR theory of elastic contact, the force needed to pull a round tip off a surface grows with its radius \(R\), not its area. Split one pad into \(n\) tips with the same total area and each tip has radius \(R/\sqrt n\), so the total force grows as \(\sqrt n\) (<strong>contact splitting</strong>, Arzt, Gorb and Spolenak 2003). Fine tips also fit into the bumps of a real surface.">依照彈性接觸的 JKR 理論，把圓形尖端拉離表面的力和半徑 \(R\) 成正比，而不是和面積成正比。把一塊墊子分成 \(n\) 個總面積相同的尖端，每個半徑變成 \(R/\sqrt n\)，總力就變成 \(\sqrt n\) 倍（<strong>接觸分岔</strong>，Arzt、Gorb 與 Spolenak 2003）。細小的尖端也比較能貼合真實表面的起伏。</p>
+
+      <h3 data-en="Letting go">怎麼放開</h3>
+      <p data-en-html="Gripping hard is only half the problem; a running gecko must also let go in milliseconds. A seta lets go when the angle between it and the surface rises above about 30° (Autumn et al. 2000). The physics is the same as peeling tape (Kendall 1975): the force needed to peel a strip of width \(b\) is">黏得牢只是一半的問題，奔跑的壁虎還得在幾毫秒內放開。剛毛和表面的夾角大於約 30° 時就會脫離（Autumn 等 2000）。原理和撕膠帶一樣（Kendall 1975）：撕開寬 \(b\) 的膠條需要的力是</p>
+      <div class="formula">\[ \frac{F}{b} = \frac{W}{1-\cos\theta} \]</div>
+      <p data-en-html="Nearly flat (small θ) it is very hard to peel; at large θ it is easy. The gecko curls its toes upward from the tip (digital hyperextension) to peel its setae off at a large angle.">角度很小時非常難撕，角度大時很容易。壁虎從趾尖往上翻起腳趾（趾的過度伸展），用大角度把剛毛撕開。</p>
+
+      <h3 data-en="Copying nature">模仿自然</h3>
+      <ul>
+        <li data-en="Self-cleaning paints, roof tiles and glass coatings use micro- and nanostructured, water-repelling surfaces.">自潔塗料、屋瓦和玻璃塗層，用的是有微米、奈米結構的疏水表面。</li>
+        <li data-en="“Gecko tape” and dry adhesive grippers use forests of fine elastic hairs; robots and space grippers use them to hold smooth panels without glue.">「壁虎膠帶」和乾式黏著夾爪用的是一大片細小的彈性毛；機器人和太空夾具用它們不靠膠水抓住光滑的板子。</li>
+        <li data-en="Biomimicry starts from understanding the physics of a living structure, then rebuilding the idea with other materials.">仿生學從理解生物構造背後的物理開始，再用別的材料重建同一個想法。</li>
+      </ul>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Smooth versus rough wax</strong>: put a drop on smooth wax, then on wax pillars. Compare the contact angle and the tilt needed to roll."><strong>平的蠟與粗糙的蠟</strong>：先在平的蠟上放一顆水珠，再換成蠟柱，比較接觸角和要傾斜多少才會滾。</li>
+        <li data-en-html="<strong>Rough glass</strong>: switch the material to glass. Does roughness help now?"><strong>粗糙的玻璃</strong>：材料換成玻璃，粗糙還有幫助嗎？</li>
+        <li data-en-html="<strong>Heavy rain</strong>: turn the rain speed up until the drops start to stick. Then make the pillars smaller with the same shape."><strong>大雨</strong>：把雨速調大，直到水珠開始黏住；再把柱子按比例縮小試試。</li>
+        <li data-en-html="<strong>Ceiling</strong>: put the gecko on the ceiling. How small a fraction of its setae does it really need?"><strong>天花板</strong>：把壁虎放到天花板上，牠真正需要多少比例的剛毛？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Drops are treated as spherical caps, which is fair for drops smaller than about 30 µL (the capillary length of water is 2.7 mm). The pillars are an idealised square array.">水珠當成球冠，對 30 µL 以下的水珠相當合理（水的毛細長度約 2.7 mm）。柱子是理想化的方形陣列。</li>
+        <li data-en-html="Advancing and receding angles come from putting the material’s own θ<sub>A</sub> and θ<sub>R</sub> into the Wenzel or Cassie equation, and the pinning force uses the solid fraction under the edge (r or φ) times the material’s hysteresis. This first-order model tends to make Cassie drops roll a little too easily. Furmidge’s factor k is taken as 1.">前進角、後退角是把材料本身的 θ<sub>A</sub>、θ<sub>R</sub> 代入 Wenzel 或 Cassie 式；釘住的力用邊緣底下的固體比例（r 或 φ）乘上材料的遲滯。這個一階模型通常讓 Cassie 水珠滾得比實際稍微容易一些。Furmidge 的係數 k 取 1。</li>
+        <li data-en="A drop breaks into the gaps if the larger of its own Laplace pressure and the rain’s ½ρv² beats the smaller of two limits: the water sliding down the pillar walls, or the sagging surface touching the bottom. The material hysteresis values and the glass angle are illustrative.">水珠本身的 Laplace 壓力和雨的 ½ρv² 取大的，如果超過兩個上限中小的那個——水沿柱壁滑下去，或下垂的水面碰到底——水就會擠進縫隙。材料的遲滯和玻璃的角度是示意值。</li>
+        <li data-en="The motion of a sliding drop is shown five times slower than real time, and its speed is only a sketch. Dust is picked up wherever a drop lands or rolls.">滑動水珠的動作放慢 5 倍顯示，速度只是示意。水珠落下或滾過的地方，灰塵會被帶走。</li>
+        <li data-en="The gecko holds if both the force along the wall and the force pulling it away fit within the setae in contact; the feet can pull against each other so that every seta is loaded in shear. Real geckos also depend on how well each seta is pressed and dragged into place, so the fraction in contact is a rough idea.">壁虎撐得住的條件是：沿牆面的力和把牠拉離的力，都在貼住的剛毛能承受的範圍內；四隻腳可以互相拉，讓每根剛毛都受剪力。真的壁虎還要看每根剛毛有沒有壓好、拖好，所以「貼住的比例」只是概念。</li>
+        <li data-en-html="The pad uses the JKR pull-off force with the Hamaker constant of silica (6.8 × 10<sup>−20</sup> J) and D<sub>0</sub> = 0.165 nm, as Autumn et al. (2002) did. For one spatula it gives about 40 nN, a few times the measured 10 nN.">黏著墊用 JKR 拉脫力，Hamaker 常數取二氧化矽的 6.8 × 10<sup>−20</sup> J、D<sub>0</sub> = 0.165 nm（同 Autumn 等 2002）。算一個匙突約 40 nN，是實測 10 nN 的幾倍。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · adaptation and biodiversity; cross-subject: surface tension and intermolecular forces.">課綱對應：高中生物（108 課綱）・適應與生物多樣性；跨科：表面張力與分子間作用力。</li>
+        <li data-en-html="W. Barthlott and C. Neinhuis, “Purity of the sacred lotus, or escape from contamination in biological surfaces”, <cite>Planta</cite> 202 (1997) 1–8.">W. Barthlott、C. Neinhuis，〈Purity of the sacred lotus, or escape from contamination in biological surfaces〉，<cite>Planta</cite> 202 (1997) 1–8。</li>
+        <li data-en-html="K. Autumn et al., “Adhesive force of a single gecko foot-hair”, <cite>Nature</cite> 405 (2000) 681–685 — <a href=&quot;https://doi.org/10.1038/35015203&quot;>doi:10.1038/35015203</a>.">K. Autumn 等，〈Adhesive force of a single gecko foot-hair〉，<cite>Nature</cite> 405 (2000) 681–685——<a href="https://doi.org/10.1038/35015203">doi:10.1038/35015203</a>（英文）。</li>
+        <li data-en-html="K. Autumn et al., “Evidence for van der Waals adhesion in gecko setae”, <cite>PNAS</cite> 99 (2002) 12252–12256 — <a href=&quot;https://pmc.ncbi.nlm.nih.gov/articles/PMC129431/&quot;>PMC129431</a>.">K. Autumn 等，〈Evidence for van der Waals adhesion in gecko setae〉，<cite>PNAS</cite> 99 (2002) 12252–12256——<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC129431/">PMC129431</a>（英文）。</li>
+        <li data-en="G. Huber et al., “Resolving the nanoscale adhesion of individual gecko spatulae by atomic force microscopy”, Biology Letters 1 (2005) 2–4.">G. Huber 等，〈Resolving the nanoscale adhesion of individual gecko spatulae by atomic force microscopy〉，Biology Letters 1 (2005) 2–4。</li>
+        <li data-en-html="E. Arzt, S. Gorb and R. Spolenak, “From micro to nano contacts in biological attachment devices”, <cite>PNAS</cite> 100 (2003) 10603–10606 — <a href=&quot;https://pmc.ncbi.nlm.nih.gov/articles/PMC196850/&quot;>PMC196850</a>.">E. Arzt、S. Gorb、R. Spolenak，〈From micro to nano contacts in biological attachment devices〉，<cite>PNAS</cite> 100 (2003) 10603–10606——<a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC196850/">PMC196850</a>（英文）。</li>
+        <li data-en="K. Kendall, “Thin-film peeling — the elastic term”, Journal of Physics D 8 (1975) 1449–1452.">K. Kendall，〈Thin-film peeling — the elastic term〉，Journal of Physics D 8 (1975) 1449–1452。</li>
+        <li data-en="D. Bartolo et al., “Bouncing or sticky droplets: impalement transitions on superhydrophobic micropatterned surfaces”, Europhysics Letters 74 (2006) 299–305.">D. Bartolo 等，〈Bouncing or sticky droplets: impalement transitions on superhydrophobic micropatterned surfaces〉，Europhysics Letters 74 (2006) 299–305。</li>
+        <li data-en="R. N. Wenzel, Industrial and Engineering Chemistry 28 (1936) 988; A. B. D. Cassie and S. Baxter, Transactions of the Faraday Society 40 (1944) 546; C. G. L. Furmidge, Journal of Colloid Science 17 (1962) 309.">R. N. Wenzel，Industrial and Engineering Chemistry 28 (1936) 988；A. B. D. Cassie、S. Baxter，Transactions of the Faraday Society 40 (1944) 546；C. G. L. Furmidge，Journal of Colloid Science 17 (1962) 309。</li>
+        <li data-en="P.-G. de Gennes, F. Brochard-Wyart and D. Quéré, Capillarity and Wetting Phenomena (Springer, 2004).">P.-G. de Gennes、F. Brochard-Wyart、D. Quéré，《Capillarity and Wetting Phenomena》（Springer，2004）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/biomimicry-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/biomimicry.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="biomimicry"></script>
+  <script src="js/missions/biomimicry.js"></script>
+  <script src="js/stats.js" data-module="biomimicry"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
