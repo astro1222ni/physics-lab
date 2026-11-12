@@ -109,7 +109,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
-        <canvas id="cv2" aria-label="波形圖：每一列是一個位元，從上到下是最高位到最低位；往右是時間（每次改變數值記一格）。自動數數時，最低位每次都翻轉，往上一位翻轉的頻率是下面一位的一半。" data-en-aria-label="Timing chart: one row per bit, from the highest bit at the top to the lowest at the bottom; time runs to the right, one step per change of the number. When counting, the lowest bit flips every step and each bit above flips half as often as the one below it."></canvas>
+        <canvas id="cv2" aria-label="波形圖：每一列是一個位元，從上到下是最高位到最低位；往右是時間（數值每變一次就記一格）。自動數數時，最低位每次都翻轉，往上一位翻轉的頻率是下面一位的一半。" data-en-aria-label="Timing chart: one row per bit, from the highest bit at the top to the lowest at the bottom; time runs to the right, one step per change of the number. When counting, the lowest bit flips every step and each bit above flips half as often as the one below it."></canvas>
         <p class="chart-cap" data-en="Timing chart: each row is one bit (highest at the top); each step to the right is one change of the number. Count automatically and compare how often each row flips.">波形圖：每一列是一個位元（最高位在上），往右每一格是數值改變一次。按「自動數數」，比較每一列翻轉得多快。</p>
       </div>
 
