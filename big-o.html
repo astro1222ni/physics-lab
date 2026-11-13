@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Time Complexity: How Fast Things Grow | Astro Ni Science Lab">時間複雜度：成長速度的比較｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 時間複雜度頁面專用的顏色代號（淺色＋兩組深色；由 js/big-o.js 讀取）
+       五個演算法：bin 二分搜尋、lin 循序搜尋、mrg 合併排序、pr 兩兩比較、sub 列出所有子集合；ca、cb 是常數因子的兩條線 */
+    :root { --bo-bin: #4f46e5; --bo-lin: #0f766e; --bo-mrg: #b45309; --bo-pr: #be123c; --bo-sub: #7e22ce; --bo-ca: #0369a1; --bo-cb: #c2410c; --bo-cell: #e7ecef; --bo-lane: #fbfcfd; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bo-bin: #8f9bff; --bo-lin: #2dd4bf; --bo-mrg: #fbbf24; --bo-pr: #fb7185; --bo-sub: #c084fc; --bo-ca: #38bdf8; --bo-cb: #fb923c; --bo-cell: #2b3a42; --bo-lane: #1d2a31; }
+    }
+    :root[data-theme="dark"] { --bo-bin: #8f9bff; --bo-lin: #2dd4bf; --bo-mrg: #fbbf24; --bo-pr: #fb7185; --bo-sub: #c084fc; --bo-ca: #38bdf8; --bo-cb: #fb923c; --bo-cell: #2b3a42; --bo-lane: #1d2a31; }
+
+    /* 畫布高度由程式決定；點圖表只是設定 n，手機照常可以上下捲動 */
+    .bo canvas { aspect-ratio: auto; touch-action: pan-y; }
+    #race { height: 420px; cursor: default; }
+    #chart, #cmp { height: 260px; margin-top: 8px; cursor: pointer; }
+    .bo [hidden] { display: none !important; }
+    .bo button { min-height: 44px; }
+    .bo .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bo .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .bo .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .bo .slider input[type="range"] { height: 28px; margin: 0; }
+    .bo .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bo .panel { grid-template-columns: minmax(0, 1fr); }
+    .bo .panel > .card { min-width: 0; }
+    .sub-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin: 18px 4px 0; }
+    .sub-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    /* 分段按鈕 */
+    .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .sub-head .seg { margin: 0; min-width: min(100%, 300px); flex: 0 1 auto; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 6px; background: var(--bg); font-size: calc(14px * var(--fs, 1)); line-height: 1.25; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .row1 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; margin: 8px 0 0; }
+    .row1 button { padding: 6px 8px; line-height: 1.25; }
+    .grp-label { font-size: calc(14px * var(--fs, 1)); margin: 10px 0 0; }
+    /* 讀數表 */
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.bo-t { width: 100%; border-collapse: collapse; font-size: calc(13.5px * var(--fs, 1)); }
+    table.bo-t th, table.bo-t td { padding: 5px 4px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top; font-variant-numeric: tabular-nums; }
+    table.bo-t th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.bo-t th:first-child, table.bo-t td:first-child { text-align: left; }
+    table.bo-t td small { display: block; color: var(--muted); font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); }
+    table.bo-t td.nm { font-weight: 600; }
+    table.bo-t td.hl { font-weight: 700; }
+    .mk { display: inline-block; width: 10px; height: 10px; margin-right: 5px; vertical-align: 0; }
+    .mk.circle { border-radius: 50%; }
+    .mk.square { border-radius: 2px; }
+    .mk.tri { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .mk.dia { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+    .mk.plus { clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%); }
+    .c-bin { color: var(--bo-bin); } .c-lin { color: var(--bo-lin); } .c-mrg { color: var(--bo-mrg); } .c-pr { color: var(--bo-pr); } .c-sub { color: var(--bo-sub); }
+    .b-bin { background: var(--bo-bin); } .b-lin { background: var(--bo-lin); } .b-mrg { background: var(--bo-mrg); } .b-pr { background: var(--bo-pr); } .b-sub { background: var(--bo-sub); }
+    .empty-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 常數因子 */
+    .cmp-row { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px 10px; margin: 10px 0 0; }
+    .cmp-row .side { font-weight: 700; font-size: calc(15px * var(--fs, 1)); }
+    .cmp-row .side.a { color: var(--bo-ca); } .cmp-row .side.b { color: var(--bo-cb); }
+    .cmp-row select { min-height: 44px; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); width: 100%; }
+    .cmp-row .slider { grid-column: 1 / -1; margin: 0; }
+    .cmp-out { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.55; overflow-wrap: anywhere; }
+    .cmp-out p { margin: 0 0 4px; }
+    .cmp-out p:last-child { margin-bottom: 0; }
+    .cmp-out .katex { font-size: 1.02em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Time complexity"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 時間複雜度</nav>
+      <h1 data-en="Time Complexity: How Fast Things Grow">時間複雜度：成長速度的比較</h1>
+      <p data-en-html="Five small algorithms really run on the same \(n\) numbers while the page counts how many basic operations each one performs: binary search, sequential search, merge sort, comparing every pair with a double loop, and listing every subset. Race them against the curves \(\log_2 n\), \(n\), \(n\log_2 n\), \(n^2\) and \(2^n\), double \(n\) to see how each count grows, and find out when a large constant factor stops mattering.">五個小演算法真的在同一批 \(n\) 個數上執行，頁面數出每一種做了幾次基本操作：二分搜尋、循序搜尋、合併排序、用雙層迴圈兩兩比較、列出所有子集合。讓它們和 \(\log_2 n\)、\(n\)、\(n\log_2 n\)、\(n^2\)、\(2^n\) 這幾條曲線一起賽跑，把 \(n\) 加倍看次數怎麼長大，再看看很大的常數因子什麼時候就不重要了。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start race” and watch who finishes first; then press “Double n” a few times and compare how much each count grows.">試試看：按「開始賽跑」，看誰先跑完；再按幾次「n 加倍」，比一比每一種的次數變成幾倍。</p>
+    <div class="lab bo" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="race" aria-label="賽跑畫布：五條跑道由上而下是二分搜尋、循序搜尋、合併排序、兩兩比較、列出所有子集合。大家用同一個時鐘，每一拍各做一次操作；跑道上畫出演算法現在做到哪裡，下方的進度條到右端就是跑完。" data-en-aria-label="Race canvas: five lanes, from top to bottom binary search, sequential search, merge sort, comparing every pair and listing every subset. They share one clock and each performs one operation per tick; each lane shows where its algorithm is, and the bar below reaches the right end when it finishes."></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Start race">開始賽跑</button>
+          <button id="stepBtn" type="button" data-en="Step">單步</button>
+          <button id="skip" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="restart" type="button" data-en="Restart" title="時鐘歸零，n 與資料不變" data-en-title="Set the clock back to zero; n and the data stay the same">重來</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉成長曲線上所有的實驗點與加倍實驗的表；n、資料、常數因子等設定不變" data-en-title="Remove every point on the growth chart and the doubling table; n, the data, the constant factors and the other settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+
+        <div class="sub-head">
+          <h2 data-en="Growth curves">成長曲線</h2>
+          <div class="seg" role="group" aria-label="座標軸" data-en-aria-label="Axes">
+            <button type="button" id="axLin" aria-pressed="true" data-en="Linear">線性</button>
+            <button type="button" id="axSemi" aria-pressed="false" data-en="Semi-log">半對數</button>
+            <button type="button" id="axLog" aria-pressed="false" data-en="Log–log">雙對數</button>
+          </div>
+        </div>
+        <canvas id="chart" aria-label="成長曲線：橫軸是 n，縱軸是指令執行次數。五條曲線是以 2 為底的 log n、n、n log n、n² 與 2 的 n 次方，顏色與線型各不相同；記號是賽跑跑完或加倍實驗量到的實際次數。點圖可以設定 n。" data-en-aria-label="Growth curves: n across, number of operations up. The five curves are log2 n, n, n log2 n, n squared and 2 to the n, each with its own colour and dash pattern; markers are the counts measured in finished races and doubling experiments. Tap the chart to set n."></canvas>
+        <p class="chart-cap" data-en-html="Lines are the functions themselves; markers are real counts (hollow: listing subsets for \(n &gt; 20\), from the formula). On log scales the dashed levels show the time if every operation takes 1 nanosecond.">線是函數本身；記號是真的數出來的次數（空心：\(n &gt; 20\) 的列出所有子集合，用公式算）。對數刻度時，橫的虛線是「每個操作 1 奈秒」時的時間。</p>
+
+        <div class="sub-head">
+          <h2 data-en-html="Constant factors: \(a \cdot f(n)\) against \(b \cdot g(n)\)">常數因子：\(a \cdot f(n)\) 對 \(b \cdot g(n)\)</h2>
+        </div>
+        <canvas id="cmp" aria-label="常數因子的比較圖：兩條粗線是 A（實線）與 B（虛線），縱軸是對數刻度；圓圈標出交叉點，菱形是剛好相等的地方，直的虛線是目前的 n。點圖可以設定 n。" data-en-aria-label="Constant-factor chart: two thick lines A (solid) and B (dashed) on a logarithmic vertical scale; a ring marks the crossover, diamonds mark exact ties and the vertical dashed line is the current n. Tap the chart to set n."></canvas>
+        <p class="chart-cap" data-en="Shading shows which side is larger. Set the two functions and constants in the “Constant factors” card.">底色表示哪一邊比較大。兩邊的函數與常數在「常數因子」卡片裡設定。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Data">資料</h2>
+          <div class="slider"><label for="nn" data-en="Number of items n">元素個數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="0" max="1000" step="1" value="360" data-decimals="0"></div>
+          <div class="slider"><label for="speed" data-en="Speed: operations per second">速度：每秒幾個操作</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0" max="18" step="1" value="4" data-decimals="0"></div>
+          <p class="grp-label" data-en="Data for merge sort">合併排序的資料</p>
+          <div class="seg" role="group" aria-label="合併排序的資料" data-en-aria-label="Data for merge sort">
+            <button type="button" id="shRandom" aria-pressed="true" data-en="Random">隨機</button>
+            <button type="button" id="shSorted" aria-pressed="false" data-en="Sorted">已排好</button>
+            <button type="button" id="shWorst" aria-pressed="false" data-en="Worst case">最壞情況</button>
+          </div>
+          <div class="row1"><button id="reseed" type="button" data-en="New random data">換一組資料</button></div>
+          <p class="hint" data-en="The data are the numbers 1 to n. Both searches look for a number larger than all of them (not found: their worst case); the subset check looks for a total one more than the sum of everything, so no subset can stop it early. Tap a number to type it.">資料是 1 到 n 這 n 個數。兩種搜尋都找一個比全部都大的數（找不到，是它們的最壞情況）；檢查子集合時找的總和比全部加起來還多 1，沒有一個子集合能讓它提早結束。點數字可以直接輸入。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Doubling experiment">加倍實驗</h2>
+          <div class="row1"><button id="dbl" type="button" class="primary" data-en="Double n">n 加倍</button></div>
+          <div class="tablewrap"><table class="bo-t" id="dblT"></table></div>
+          <p class="empty-note" id="dblEmpty" data-en="Press “Double n”: the page runs all five at n and at 2n and lists how many times as many operations each one needs.">按「n 加倍」：頁面在 n 與 2n 各跑一次，列出每一種的次數變成幾倍。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings (1 ns per operation)">讀數（每個操作 1 奈秒）</h2>
+          <div class="tablewrap"><table class="bo-t" id="cntT"></table></div>
+          <p class="hint" data-en="Time assumes every counted operation takes exactly 1 nanosecond (a 1 GHz machine doing one per clock cycle); 1 year = 365.25 days.">時間假設每一次計數的操作剛好花 1 奈秒（像 1 GHz 的機器每個時脈做一次）；1 年 = 365.25 天。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Constant factors">常數因子</h2>
+          <div class="cmp-row">
+            <span class="side a">A</span>
+            <select id="fA" aria-label="A 的函數 f(n)" data-en-aria-label="Function f(n) for A">
+              <option value="log">log n</option><option value="sqrt">√n</option><option value="n">n</option><option value="nlogn" selected>n log n</option>
+              <option value="n2">n²</option><option value="n3">n³</option><option value="exp2">2^n</option><option value="fact">n!</option>
+            </select>
+            <div class="slider"><label for="ca" data-en="Constant a">常數 a</label><output id="cao"></output>
+              <input id="ca" type="range" min="0" max="1000" step="1" value="333" data-decimals="0"></div>
+          </div>
+          <div class="cmp-row">
+            <span class="side b">B</span>
+            <select id="fB" aria-label="B 的函數 g(n)" data-en-aria-label="Function g(n) for B">
+              <option value="log">log n</option><option value="sqrt">√n</option><option value="n">n</option><option value="nlogn">n log n</option>
+              <option value="n2" selected>n²</option><option value="n3">n³</option><option value="exp2">2^n</option><option value="fact">n!</option>
+            </select>
+            <div class="slider"><label for="cb" data-en="Constant b">常數 b</label><output id="cbo"></output>
+              <input id="cb" type="range" min="0" max="1000" step="1" value="0" data-decimals="0"></div>
+          </div>
+          <div class="cmp-out" id="cmpOut" aria-live="polite"></div>
+          <p class="hint" data-en="log means log base 2. The crossover is the smallest n from which the faster-growing side is never smaller again.">log 都以 2 為底。交叉點是「從這個 n 起，長得快的那一邊再也不會比較小」的最小 n。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Counting operations instead of seconds">數操作的次數，不數秒數</h3>
+      <p data-en-html="How long a program takes depends on the computer, the language and even the room temperature. Counting how many times its basic operation is executed depends only on the algorithm and the input, so it is the fair way to compare algorithms. On this page every algorithm counts exactly one kind of operation:">程式跑多久，和電腦、程式語言甚至室溫都有關；數「基本操作執行了幾次」只和演算法與輸入有關，所以拿來比較演算法才公平。這一頁每個演算法都只數一種操作：</p>
+      <ul>
+        <li data-en-html="<strong>Binary search</strong>: comparing the target with \(a[mid]\), \(mid = \lfloor (lo + hi)/2 \rfloor\), counts once. Looking for a number larger than all of them takes \(\lfloor \log_2 n \rfloor + 1\) comparisons, the most it can ever need."><strong>二分搜尋</strong>：把目標和 \(a[mid]\) 比大小算一次，\(mid = \lfloor (lo + hi)/2 \rfloor\)。找一個比全部都大的數要比 \(\lfloor \log_2 n \rfloor + 1\) 次，這是它最多可能的次數。</li>
+        <li data-en-html="<strong>Sequential search</strong>: comparing the target with one element counts once; the missing number takes \(n\) comparisons."><strong>循序搜尋</strong>：把目標和一個元素比是否相等算一次；找不到要比 \(n\) 次。</li>
+        <li data-en-html="<strong>Merge sort</strong> (top-down, left half \(\lceil m/2 \rceil\) elements): comparing two elements while merging counts once. Merging \(m\) elements needs at most \(m - 1\) comparisons, so the worst case \(W(n)\) satisfies \(W(n) = W(\lceil n/2 \rceil) + W(\lfloor n/2 \rfloor) + n - 1\), whose solution is \(W(n) = n\lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1\). Sorted data need fewer, because the left half always runs out first."><strong>合併排序</strong>（由上而下，左半 \(\lceil m/2 \rceil\) 個）：合併時比較兩個元素的大小算一次。合併 \(m\) 個元素最多比 \(m - 1\) 次，所以最壞情況 \(W(n)\) 滿足 \(W(n) = W(\lceil n/2 \rceil) + W(\lfloor n/2 \rfloor) + n - 1\)，解出來是 \(W(n) = n\lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1\)。已排好的資料比較少，因為左半總是先用完。</li>
+        <li data-en-html="<strong>Comparing every pair</strong> (a double loop over \(i &lt; j\), for example to look for repeated values): comparing \(a[i]\) with \(a[j]\) counts once, \((n-1) + (n-2) + \dots + 1 = n(n-1)/2\) times."><strong>兩兩比較</strong>（雙層迴圈跑過所有 \(i &lt; j\)，例如找重複的值）：比較 \(a[i]\) 與 \(a[j]\) 算一次，共 \((n-1) + (n-2) + \dots + 1 = n(n-1)/2\) 次。</li>
+        <li data-en-html="<strong>Listing every subset</strong> (for example, looking for a group of numbers with a given total): checking one subset counts once. Each element is either in or out, so there are \(2^n\) subsets, the empty one included."><strong>列出所有子集合</strong>（例如找總和剛好等於某數的一組數）：檢查一個子集合算一次。每個元素只有「選」或「不選」，所以共有 \(2^n\) 個子集合（包含空集合）。</li>
+      </ul>
+
+      <h3 data-en="Growth rates and the asymptotic notations">成長速度與漸近記號</h3>
+      <p data-en-html="When \(n\) is large, what matters is the shape of the count, not its exact value. Following Cormen et al. (chapter 3), for functions that are eventually non-negative:">\(n\) 很大的時候，重要的是次數的「樣子」，不是確切的值。照 Cormen 等人的課本第 3 章，對最後都不是負數的函數：</p>
+      <div class="formula">\[ f(n) = O(g(n)) \iff \exists\, c &gt; 0,\ n_0 :\ 0 \le f(n) \le c\, g(n) \ \text{for all}\ n \ge n_0 \]</div>
+      <div class="formula">\[ f(n) = \Omega(g(n)) \iff \exists\, c &gt; 0,\ n_0 :\ 0 \le c\, g(n) \le f(n) \ \text{for all}\ n \ge n_0 \]</div>
+      <div class="formula">\[ f(n) = \Theta(g(n)) \iff \exists\, c_1, c_2 &gt; 0,\ n_0 :\ c_1 g(n) \le f(n) \le c_2\, g(n) \ \text{for all}\ n \ge n_0 \]</div>
+      <p data-en-html="So \(O\) is an upper bound, \(\Omega\) a lower bound and \(\Theta\) both at once: \(n(n-1)/2 = \Theta(n^2)\) (take \(c_1 = 1/4\), \(c_2 = 1/2\), \(n_0 = 2\)), \(\lfloor \log_2 n \rfloor + 1 = \Theta(\log n)\), and merge sort makes \(\Theta(n \log n)\) comparisons on every kind of data. Knuth’s 1976 letter <em>Big Omicron and Big Omega and Big Theta</em> proposed using \(\Omega\) and \(\Theta\) in exactly this way, so that \(O\) would no longer be misused for lower bounds. The “=” here really means “belongs to the set”.">所以 \(O\) 是上界、\(\Omega\) 是下界、\(\Theta\) 是兩者同時成立：\(n(n-1)/2 = \Theta(n^2)\)（取 \(c_1 = 1/4\)、\(c_2 = 1/2\)、\(n_0 = 2\)）、\(\lfloor \log_2 n \rfloor + 1 = \Theta(\log n)\)，合併排序不管哪一種資料都是 \(\Theta(n \log n)\) 次比較。Knuth 在 1976 年的短文〈Big Omicron and Big Omega and Big Theta〉提議就這樣使用 \(\Omega\) 與 \(\Theta\)，好讓大家不再拿 \(O\) 來表示下界。式子裡的「=」其實是「屬於這個集合」的意思。</p>
+      <p data-en-html="The “Constant factors” card is the definition of \(O\) in action: if \(a\,f(n) \le b\,g(n)\) for every \(n\) from the crossover \(n_0\) on, then \(f(n) \le (b/a)\, g(n)\) there, so \(c = b/a\) and that \(n_0\) prove \(f(n) = O(g(n))\). Constants can move the crossover, but never stop the faster-growing side from winning.">「常數因子」卡片就是 \(O\) 的定義：如果從交叉點 \(n_0\) 起都有 \(a\,f(n) \le b\,g(n)\)，那裡就有 \(f(n) \le (b/a)\, g(n)\)，所以 \(c = b/a\) 和這個 \(n_0\) 就證明了 \(f(n) = O(g(n))\)。常數可以把交叉點推遠，卻擋不住長得快的那一邊最後勝出。</p>
+
+      <h3 data-en="The doubling experiment">加倍實驗</h3>
+      <p data-en-html="Doubling \(n\) is the quickest way to recognise a growth rate from measurements:">把 \(n\) 加倍，是從量到的次數認出成長速度最快的方法：</p>
+      <div class="formula">\[ \frac{T(2n)}{T(n)}:\quad \log_2(2n) = \log_2 n + 1,\quad \frac{2n}{n} = 2,\quad \frac{2n\log_2 2n}{n \log_2 n} = 2\Big(1 + \frac{1}{\log_2 n}\Big),\quad \frac{(2n)^2}{n^2} = 4,\quad \frac{2^{2n}}{2^n} = 2^n . \]</div>
+      <p data-en-html="A logarithm gains one step, a linear count doubles, \(n\log n\) a little more than doubles, a quadratic count quadruples — and an exponential count is <em>squared</em>.">對數只多一步、線性變兩倍、\(n\log n\) 比兩倍多一點、平方變四倍——指數則是變成原來的<em>平方</em>。</p>
+
+      <h3 data-en="Straight lines on logarithmic axes">對數軸上的直線</h3>
+      <p data-en-html="With a logarithmic vertical axis, \(\log 2^n = n \log 2\) is a straight line in \(n\): exponential growth looks straight on semi-log paper. With both axes logarithmic, \(\log n^k = k \log n\) is a straight line of slope \(k\): every power of \(n\) becomes straight, and the slope is the exponent — \(n^2\) climbs twice as steeply as \(n\).">縱軸取對數時，\(\log 2^n = n \log 2\) 是 \(n\) 的一次式：指數成長在半對數紙上是直線。兩個軸都取對數時，\(\log n^k = k \log n\) 是斜率 \(k\) 的直線：\(n\) 的每一種次方都變成直線，斜率就是次方——\(n^2\) 的坡度是 \(n\) 的兩倍。</p>
+
+      <h3 data-en="One nanosecond per operation">每個操作 1 奈秒</h3>
+      <p data-en-html="Suppose every counted operation takes \(1\ \text{ns} = 10^{-9}\ \text{s}\). At \(n = 1000\), comparing every pair takes half a millisecond, but listing every subset of only \(n = 60\) elements takes \(2^{60}\ \text{ns} \approx 1.15 \times 10^{9}\ \text{s} \approx 36.5\) years (1 year = 365.25 days). A computer 1000 times faster handles about 31 times as many items for \(n^2\), but only about 10 more for \(2^n\), because \(2^{10} \approx 1000\).">假設每一次計數的操作花 \(1\ \text{ns} = 10^{-9}\ \text{s}\)。\(n = 1000\) 時兩兩比較只要半毫秒，可是只有 \(n = 60\) 個元素的所有子集合就要 \(2^{60}\ \text{ns} \approx 1.15 \times 10^{9}\ \text{s} \approx 36.5\) 年（1 年 = 365.25 天）。電腦快 1000 倍，\(n^2\) 的演算法能處理的量大約變成 31 倍，\(2^n\) 的卻只能多處理大約 10 個，因為 \(2^{10} \approx 1000\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The race</strong>: at \(n = 12\), which algorithm finishes first and which one never seems to finish? Make \(n\) very small: is the order still the same?"><strong>賽跑</strong>：\(n = 12\) 時誰先跑完？誰好像永遠跑不完？把 \(n\) 調得很小，名次還一樣嗎？</li>
+        <li data-en-html="<strong>Doubling</strong>: press “Double n” several times. Which count gains only one? Which one is squared? Does the ratio for comparing every pair get closer to 4?"><strong>加倍</strong>：多按幾次「n 加倍」。哪一種只多一次？哪一種變成平方？兩兩比較的倍數會越來越接近 4 嗎？</li>
+        <li data-en-html="<strong>Constants</strong>: compare \(100n\) with \(n^2\). Who is larger at \(n = 10\)? At \(n = 1000\)? Can any constant make \(n^2\) win for ever?"><strong>常數</strong>：比較 \(100n\) 和 \(n^2\)。\(n = 10\) 時誰比較大？\(n = 1000\) 呢？有沒有哪一個常數能讓 \(n^2\) 永遠比較小？</li>
+        <li data-en-html="<strong>Straight lines</strong>: which axes make \(2^n\) straight, and which make \(n\) and \(n^2\) straight? What does the slope tell you?"><strong>直線</strong>：哪一種座標軸讓 \(2^n\) 變直線？哪一種讓 \(n\) 和 \(n^2\) 變直線？斜率告訴你什麼？</li>
+        <li data-en-html="<strong>Same order, different counts</strong>: for merge sort, compare “Random”, “Sorted” and “Worst case” at the same \(n\). They differ, yet all three are \(\Theta(n \log n)\) — why?"><strong>同一個等級、不同的次數</strong>：同一個 \(n\) 下比較合併排序的「隨機」「已排好」「最壞情況」。次數不一樣，卻都是 \(\Theta(n \log n)\)——為什麼？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every count shown is produced by really running the algorithm on the data and adding one at each counted operation; only listing the subsets for \(n &gt; 20\) uses the formula \(2^n\) instead (over two million subsets would freeze the page), and it is marked as such. In the race all lanes share one clock and each performs one operation per tick, so the picture in each lane is the algorithm’s real state after that many operations.">畫面上的次數都是真的把演算法在資料上執行、每做一次計數的操作就加一得到的；只有 \(n &gt; 20\) 的列出所有子集合改用公式 \(2^n\)（超過兩百萬個子集合會讓頁面卡住），並標明「用公式算」。賽跑時所有跑道共用一個時鐘、每一拍各做一次操作，所以每條跑道畫的都是演算法做了這麼多次操作後真正的狀態。</li>
+        <li data-en-html="The crossover is found by checking every \(n\) up to 4096 and, beyond that, where the logarithm of the ratio is monotone, by bisection. Exact ties are confirmed with exact integer arithmetic (BigInt), using the fact that \(\log_2 n\) is rational only when \(n\) is a power of 2.">交叉點的算法：\(n \le 4096\) 逐一檢查，更大的地方兩邊比值的對數是單調的，用二分法找。「剛好相等」用精確的整數運算（BigInt）確認，並利用「只有 \(n\) 是 2 的次方時 \(\log_2 n\) 才是有理數」。</li>
+        <li data-en-html="The unit tests check: \(n\) comparisons for sequential search and \(\lfloor \log_2 n \rfloor + 1\) for binary search (the largest over every target and every gap, \(n = 1\) to 300); \(n(n-1)/2\) for the double loop; that merge sort always sorts, never exceeds \(n\lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1\), reaches it exactly on the “Worst case” data and needs \(nk/2\) on sorted data with \(n = 2^k\) (all \(n\) up to 1000); \(2^n\) subsets; the doubling ratios; \(2^{60}\) ns ≈ 36.5 years; and the crossovers against a direct check of every \(n\).">單元測試檢查：循序搜尋 \(n\) 次、二分搜尋 \(\lfloor \log_2 n \rfloor + 1\) 次（\(n = 1\) 到 300 每個目標與每個空隙裡的最大值）；雙層迴圈 \(n(n-1)/2\) 次；合併排序一定排好、從不超過 \(n\lceil \log_2 n \rceil - 2^{\lceil \log_2 n \rceil} + 1\)、在「最壞情況」的資料剛好達到、在 \(n = 2^k\) 的已排好資料是 \(nk/2\)（\(n\) 到 1000 全部）；子集合 \(2^n\) 個；加倍的倍數；\(2^{60}\) 奈秒約 36.5 年；交叉點和逐一檢查的結果相同。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): A-V-3 analysis of algorithm efficiency (the idea of time complexity, numbers of executed instructions, comparing searching and sorting algorithms); advanced elective A-V-6 analysis and comparison of algorithm efficiency.">課綱對應：資A-V-3 演算法效能分析（時間複雜度的概念、指令執行次數、搜尋或排序演算法的指令執行次數分析與比較）；加深加廣選修 資A-V-6 演算法效能分析與比較。</li>
+        <li data-en="T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms (3rd ed., 2009): chapter 3 “Growth of Functions”, §3.1 asymptotic notation (definitions of Θ, O and Ω); §2.3 merge sort.">Cormen、Leiserson、Rivest、Stein《Introduction to Algorithms》（第 3 版，2009）：第 3 章〈Growth of Functions〉3.1 節 漸近記號（Θ、O、Ω 的定義）；2.3 節 合併排序。</li>
+        <li data-en="D. E. Knuth (1976), “Big Omicron and Big Omega and Big Theta”, SIGACT News 8(2): 18–24.">Knuth, D. E. (1976) “Big Omicron and Big Omega and Big Theta”, SIGACT News 8(2): 18–24。</li>
+        <li data-en="D. E. Knuth, The Art of Computer Programming, Vol. 3: Sorting and Searching (2nd ed., 1998): §5.2.4 sorting by merging, §6.2.1 searching an ordered table (binary search).">Knuth, D. E.《The Art of Computer Programming》第 3 卷 Sorting and Searching（第 2 版，1998）：5.2.4 節 合併排序、6.2.1 節 有序表的搜尋（二分搜尋）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Time_complexity&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Time complexity</a>, <a href=&quot;https://en.wikipedia.org/wiki/Big_O_notation&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Big O notation</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Time_complexity" target="_blank" rel="noopener">Time complexity</a>、<a href="https://en.wikipedia.org/wiki/Big_O_notation" target="_blank" rel="noopener">Big O notation</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/big-o-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/big-o.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="big-o"></script>
+  <script src="js/missions/big-o.js"></script>
+  <script src="js/stats.js" data-module="big-o"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
