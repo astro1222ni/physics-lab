@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="ADSR Envelopes | Astro Ni Science Lab">合成器的 ADSR 包絡｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* ADSR 包絡頁面專用的顏色代號（淺色＋兩組深色；由 js/adsr-envelope.js 與 js/adsr-envelope-3d.js 讀取）
+       --ad-a 起音、--ad-d 衰減、--ad-s 延持、--ad-r 釋音、--ad-wave 波形、--ad-ghost「如果一直按著」的虛線 */
+    :root { --ad-a: #c2410c; --ad-d: #a16207; --ad-s: #0f766e; --ad-r: #6d28d9; --ad-wave: #1d4ed8; --ad-ghost: #64748b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ad-a: #fb923c; --ad-d: #fbbf24; --ad-s: #5eead4; --ad-r: #c4b5fd; --ad-wave: #7aa7ff; --ad-ghost: #94a3b8; }
+    }
+    :root[data-theme="dark"] { --ad-a: #fb923c; --ad-d: #fbbf24; --ad-s: #5eead4; --ad-r: #c4b5fd; --ad-wave: #7aa7ff; --ad-ghost: #94a3b8; }
+
+    /* 包絡圖可以拖曳節點（攔觸控）；示波器只是顯示（手機照常捲動） */
+    #cv { aspect-ratio: auto; height: 320px; touch-action: none; cursor: default; }
+    #scope { aspect-ratio: auto; height: 150px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
+    .ad [hidden] { display: none !important; }
+    .ad button { min-height: 44px; }
+    .ad .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ad .playbar button { flex: 1 1 auto; }
+    .ad .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ad #stop:disabled { opacity: .5; cursor: default; }
+    #rev[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .ad .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ad .hf-warn { margin: 4px 4px 0; padding: 6px 10px; border-radius: 8px; font-size: calc(13px * var(--fs, 1)); background: var(--accent-soft); color: var(--text); }
+    .ad .slider input[type="range"] { height: 28px; margin: 0; }
+    .ad .slider input:disabled { opacity: .55; }
+    .ad .checks label { min-height: 44px; }
+    .ad .checks input { width: 17px; height: 17px; }
+    .ad .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ad .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 14px 0 4px; color: var(--text); }
+    .ad .panel { grid-template-columns: minmax(0, 1fr); }
+    .ad .panel > .card { min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+    .presets button { padding: 6px 8px; }
+    .presets button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .preset-note { font-weight: 600; }
+    .preset-note:empty { display: none; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
+    .hrow > .lbl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); flex: 0 0 auto; min-width: 3.2em; }
+    .hrow .seg { flex: 1 1 auto; }
+    .hrow .seg button { flex: 1 1 0; }
+    /* 四段的顏色標記 */
+    .slider label i.seg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+    /* 琴鍵 */
+    .kbd-wrap { margin: 12px 2px 0; }
+    .kbd-title { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; margin: 0 2px 6px; }
+    .kbd-title h3 { font-size: calc(14px * var(--fs, 1)); margin: 0; }
+    .kbd-title span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .kbd { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; padding: 6px; border-radius: 12px;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--text) 16%, var(--surface)), color-mix(in srgb, var(--text) 28%, var(--surface)));
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.25); touch-action: none; }
+    .kbd button.key { min-height: 96px; padding: 4px 0 8px; border-radius: 4px 4px 9px 9px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent);
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; font-variant-numeric: tabular-nums;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f4f2 70%, #e3e3df 100%); color: #1f2937;
+      box-shadow: 0 3px 0 #b9b9b2, 0 4px 6px rgba(0,0,0,.18); user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+      transition: transform .05s, box-shadow .05s; touch-action: none; }
+    .kbd button.key b { font-size: calc(14px * var(--fs, 1)); }
+    .kbd button.key small { font-size: calc(11px * var(--fs, 1)); color: #6b7280; }
+    .kbd button.key.down { transform: translateY(2px); box-shadow: 0 1px 0 #b9b9b2, 0 1px 2px rgba(0,0,0,.2);
+      background: linear-gradient(180deg, #e8eefc 0%, #d9e3fb 100%); }
+    .kbd button.key.sel { outline: 2px solid var(--accent); outline-offset: -3px; }
+    @media (max-width: 420px) { .kbd button.key { min-height: 80px; } .kbd button.key small { display: none; } }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 70%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#audio&quot;>Music · Space, Recording and Digital Music</a> / Synthesizers and effects"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#audio">音樂・空間、錄音與數位音樂</a> ／ 合成器與效果器</nav>
+      <h1 data-en="ADSR Envelopes">合成器的 ADSR 包絡</h1>
+      <p data-en="Press a piano key and the sound jumps in, then fades away even while you hold it; press an organ key and it stays at full strength until you let go. What differs is the envelope — how the loudness changes over time. Synthesizers describe it with four numbers: Attack, Decay, Sustain and Release. Shape the envelope by dragging its corners, play it on the keys, switch to a decibel scale to see why an exponential decay is a straight line, reverse a piano note to hear it turn into something like an organ, and give the same spectrum five different envelopes to hear five different instruments. In 3D, every harmonic has its own envelope and together they form a landscape.">按下鋼琴的一個鍵，聲音一下子冒出來，就算一直按著也會慢慢消失；按下風琴的鍵，聲音一直飽滿地響，放開才停。差別在<strong>包絡</strong>——響度隨時間怎麼變。合成器用四個數字描述它：起音 Attack、衰減 Decay、延持 Sustain、釋音 Release。在這裡拖曳包絡的轉角、用琴鍵彈它，切到分貝刻度看指數衰減為什麼是直線，把鋼琴倒著放，聽它變得像風琴，再讓同一個頻譜換上五種包絡，聽出五種樂器。切到 3D，每個泛音都有自己的包絡，合起來是一片起伏的地形。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Piano”, hold a key for 2 seconds, then press “Organ” and compare.">試試看：按「鋼琴」，按住一個琴鍵 2 秒，再換「風琴」比比看。</p>
+    <div class="lab ad" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="包絡圖：橫軸是時間，縱軸是振幅（或分貝）。起音、衰減、延持、釋音四段用不同顏色；拖曳圓點可以改變各段的時間和延持的高度。" data-en-aria-label="Envelope graph: time across, level (or decibels) up. Attack, decay, sustain and release are drawn in different colours; drag the dots to change the times and the sustain level."></canvas>
+        <div id="view3"></div>
+        <p class="chart-note l2" data-en-html="Drag the dots: the peak sets A, the end of the decay sets D and S, the release point sets the hold time, and the last dot sets R. Tap anywhere else to look at the waveform at that moment (or focus the graph and use Enter and the arrow keys).">拖曳圓點：頂點調 A，衰減的終點調 D 和 S，放開的點調按住時間，最後一點調 R。點其他地方，示波器就顯示那一刻的波形（也可以點一下圖，用 Enter 和方向鍵）。</p>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="rev" type="button" aria-pressed="false" data-en="Reverse" title="把整個音的包絡左右反過來（倒著播放）" data-en-title="Flip the whole note’s envelope back to front (play it backwards)">倒放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <div class="kbd-wrap">
+          <div class="kbd-title"><h3 data-en="Keys">琴鍵</h3><span data-en="Hold to play, let go to release · computer keys A–K">按住才響，放開進入釋音・電腦鍵盤 A–K</span></div>
+          <div class="kbd" id="kbd" role="group" aria-label="琴鍵：C4 到 C5。按住發聲，放開進入釋音。" data-en-aria-label="Keys: C4 to C5. Hold to sound, let go to release."></div>
+        </div>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--ad-a)&quot;></i>Attack A"><i style="background:var(--ad-a)"></i>起音 A</span>
+          <span data-en-html="<i style=&quot;background:var(--ad-d)&quot;></i>Decay D"><i style="background:var(--ad-d)"></i>衰減 D</span>
+          <span data-en-html="<i style=&quot;background:var(--ad-s)&quot;></i>Sustain S"><i style="background:var(--ad-s)"></i>延持 S</span>
+          <span data-en-html="<i style=&quot;background:var(--ad-r)&quot;></i>Release R"><i style="background:var(--ad-r)"></i>釋音 R</span>
+          <span style="color:var(--ad-ghost)" data-en-html="<i class=&quot;dash&quot;></i>If the key were still held"><i class="dash"></i>如果一直按著</span>
+          <span data-en-html="<i style=&quot;background:var(--ad-wave)&quot;></i>Waveform"><i style="background:var(--ad-wave)"></i>波形</span>
+        </div>
+        <canvas id="scope" role="img" aria-label="示波器：游標那一刻附近四個週期的波形，振幅受包絡控制。" data-en-aria-label="Oscilloscope: four periods of the waveform around the cursor, with the amplitude set by the envelope."></canvas>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Presets">預設</h2>
+          <div class="presets" id="presets" role="group" aria-label="預設包絡" data-en-aria-label="Preset envelopes">
+            <button type="button" data-preset="piano" aria-pressed="false" data-en="Piano">鋼琴</button>
+            <button type="button" data-preset="organ" aria-pressed="false" data-en="Organ">風琴</button>
+            <button type="button" data-preset="strings" aria-pressed="false" data-en="Strings">弦樂</button>
+            <button type="button" data-preset="pluck" aria-pressed="false" data-en="Pluck">撥弦</button>
+            <button type="button" data-preset="perc" aria-pressed="false" data-en="Percussion">打擊</button>
+          </div>
+          <p class="hint preset-note" id="presetNote"></p>
+          <p class="hint" data-en-html="All five use <strong>the same spectrum</strong> (the harmonics below); only the envelope changes. They are <strong>approximations</strong>: a real piano note, for example, decays in two stages and its timbre changes as it fades.">五個預設用<strong>同一個頻譜</strong>（下面的泛音），只換包絡。它們都是<strong>近似</strong>：例如真的鋼琴分兩段衰減，音色也會邊消失邊變。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Envelope ADSR">包絡 ADSR</h2>
+          <div class="slider"><label for="sA" data-en-html="<i class=&quot;seg-dot&quot; style=&quot;background:var(--ad-a)&quot;></i>Attack A (s)"><i class="seg-dot" style="background:var(--ad-a)"></i>起音 A（s）</label><output id="sAo"></output>
+            <input id="sA" type="range" min="0" max="1000" step="1" value="344" data-decimals="4"></div>
+          <div class="slider"><label for="sD" data-en-html="<i class=&quot;seg-dot&quot; style=&quot;background:var(--ad-d)&quot;></i>Decay D (s)"><i class="seg-dot" style="background:var(--ad-d)"></i>衰減 D（s）</label><output id="sDo"></output>
+            <input id="sD" type="range" min="0" max="1000" step="1" value="613" data-decimals="4"></div>
+          <div class="slider"><label for="sS" data-en-html="<i class=&quot;seg-dot&quot; style=&quot;background:var(--ad-s)&quot;></i>Sustain S"><i class="seg-dot" style="background:var(--ad-s)"></i>延持 S</label><output id="sSo"></output>
+            <input id="sS" type="range" min="0" max="1" step="0.01" value="0.6" data-decimals="2"></div>
+          <p class="hint" id="sNote"></p>
+          <div class="slider"><label for="sR" data-en-html="<i class=&quot;seg-dot&quot; style=&quot;background:var(--ad-r)&quot;></i>Release R (s)"><i class="seg-dot" style="background:var(--ad-r)"></i>釋音 R（s）</label><output id="sRo"></output>
+            <input id="sR" type="range" min="0" max="1000" step="1" value="656" data-decimals="4"></div>
+          <div class="hrow"><span class="lbl" data-en="Shape">形狀</span>
+            <div class="seg" role="group" aria-label="曲線形狀" data-en-aria-label="Curve shape">
+              <button type="button" id="shLin" aria-pressed="false" data-en="Linear">線性</button>
+              <button type="button" id="shExp" aria-pressed="true" data-en="Exponential">指數</button>
+            </div>
+          </div>
+          <div class="slider"><label for="sH" data-en="Hold time (for “▶ Play”, s)">按住時間（「▶ 播放」用，s）</label><output id="sHo"></output>
+            <input id="sH" type="range" min="0" max="1000" step="1" value="684" data-decimals="4"></div>
+          <p class="hint" data-en-html="The sound never starts in less than 15 ms or stops in less than 30 ms, to protect your ears (the graph shows the values you set). Exponential: the decay and release are straight lines in decibels, and R is the time to fall 60 dB.">為了保護耳朵，實際發聲的起音不短於 15 ms、結尾不短於 30 ms（圖上畫的是你設定的值）。指數：衰減與釋音在分貝刻度上是直線，R 是掉 60 dB 的時間。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Timbre and view">音色與檢視</h2>
+          <div class="slider"><label for="sN" data-en="Number of harmonics N">泛音數 N</label><output id="sNo"></output>
+            <input id="sN" type="range" min="1" max="12" step="1" value="8" data-decimals="0"></div>
+          <p class="hint" data-en-html="The k-th harmonic has amplitude 1/k (the spectrum of a sawtooth wave).">第 k 個泛音的振幅是 1/k（鋸齒波的頻譜）。</p>
+          <div class="checks">
+            <label><input id="high" type="checkbox"><span data-en="Higher harmonics fade faster">高泛音衰減較快</span></label>
+          </div>
+          <p class="hint" data-en-html="When ticked, harmonic k follows the envelope raised to the power 1 + 0.25(k − 1): in decibels it falls that many times faster, so the tone darkens as it fades, like a struck or plucked string.">勾選時，第 k 個泛音的包絡是總包絡的 1 + 0.25(k − 1) 次方：換成分貝就是掉得快這麼多倍，聲音越小越暗，像敲擊或撥動的弦。</p>
+          <div class="hrow"><span class="lbl" data-en="Scale">刻度</span>
+            <div class="seg" role="group" aria-label="縱軸刻度" data-en-aria-label="Vertical scale">
+              <button type="button" id="scLin" aria-pressed="true" data-en="Amplitude scale">振幅刻度</button>
+              <button type="button" id="scDb" aria-pressed="false" data-en="Decibel scale">分貝刻度</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Now">現在</dt><dd id="rNow">—</dd>
+            <dt data-en="Level now">目前振幅</dt><dd id="rLvl">—</dd>
+            <dt data-en="Decay: time constant τ">衰減的時間常數 τ</dt><dd id="rTauD">—</dd>
+            <dt data-en="Decay: half-life">衰減的半衰期</dt><dd id="rHalfD">—</dd>
+            <dt data-en="Release: time constant τ">釋音的時間常數 τ</dt><dd id="rTauR">—</dd>
+            <dt data-en="Release: half-life">釋音的半衰期</dt><dd id="rHalfR">—</dd>
+            <dt data-en="Slopes in dB (decay, release)">分貝斜率（衰減、釋音）</dt><dd id="rSlope">—</dd>
+            <dt data-en="Reaches −20 dB at">降到 −20 dB 的時刻</dt><dd id="rT20">—</dd>
+            <dt data-en="Audible length (above −40 dB)">聽得到的長度（−40 dB 以上）</dt><dd id="rDur">—</dd>
+            <dt data-en="Decay Q = π f τ">衰減的 Q = π f τ</dt><dd id="rQ">—</dd>
+            <dt data-en="Brightness now (centroid ÷ at peak)">目前的亮度（頻譜重心 ÷ 頂點時）</dt><dd id="rBright">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+      </aside>
+    </div>
+    <p class="sr-only" id="say" aria-live="polite"></p>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="An envelope is amplitude as a function of time">包絡：振幅隨時間的函數</h3>
+      <p data-en-html="A sustained musical tone can be written as a fast oscillation multiplied by a slowly changing <strong>envelope</strong> \(a(t)\):">一個樂音可以寫成「很快的振盪」乘上「慢慢變化的<strong>包絡</strong> \(a(t)\)」：</p>
+      <div class="formula">\[ x(t) = a(t) \sum_{k=1}^{N} \frac{1}{k} \sin(2\pi k f_0 t) \]</div>
+      <p data-en-html="The sum fixes the pitch and the spectrum; \(a(t)\) fixes how the note starts, lives and dies. An ADSR envelope rises from 0 to 1 in the <strong>attack</strong> time \(A\), falls to the <strong>sustain</strong> level \(S\) in the <strong>decay</strong> time \(D\), stays at \(S\) while the key is held, and falls to 0 in the <strong>release</strong> time \(R\) once the key is let go. Note that \(S\) is a <em>level</em>, the other three are <em>times</em>. If you let go early, the release starts from wherever the envelope happens to be (on this page it still takes \(R\) seconds).">求和決定音高與頻譜，\(a(t)\) 決定這個音怎麼開始、怎麼持續、怎麼結束。ADSR 包絡在<strong>起音</strong>時間 \(A\) 內從 0 升到 1，在<strong>衰減</strong>時間 \(D\) 內落到<strong>延持</strong>高度 \(S\)，按著不放就一直停在 \(S\)，放開後在<strong>釋音</strong>時間 \(R\) 內落到 0。注意 \(S\) 是<em>高度</em>，另外三個是<em>時間</em>。提早放開時，釋音從包絡當時的值開始（這一頁仍然花 \(R\) 秒）。</p>
+
+      <h3 data-en="Exponential decay is a straight line in decibels">指數衰減在分貝刻度上是直線</h3>
+      <p data-en-html="A freely vibrating string, bell or air column loses a fixed <em>fraction</em> of its energy every cycle, so its amplitude decays exponentially, just like a damped oscillation:">自由振動的弦、鐘或空氣柱，每振動一次都損失固定<em>比例</em>的能量，所以振幅按指數衰減，和阻尼振動一樣：</p>
+      <div class="formula">\[ a(t) = a_0\, e^{-t/\tau}, \qquad L(t) = 20\log_{10}\frac{a(t)}{a_0} = -\frac{20}{\ln 10}\,\frac{t}{\tau} \approx -8.69\,\frac{t}{\tau}\ \text{dB} \]</div>
+      <p data-en-html="On a decibel scale the level falls by the same number of decibels every second: a straight line. Every \(\tau\) (the <strong>time constant</strong>) the amplitude drops to \(1/e \approx 0.37\); every <strong>half-life</strong> \(t_{1/2} = \tau \ln 2\) it halves (−6.02 dB). On this page an exponential decay from 1 to \(S\) has \(\tau = D / \ln(1/S)\), and an exponential release falls 60 dB in \(R\) seconds, so \(\tau_R = R / \ln 1000\) and \(R\) contains about 9.97 half-lives — the same definition as the reverberation time T60 of a hall.">在分貝刻度上，每秒都掉一樣多的分貝：是一條直線。每過 \(\tau\)（<strong>時間常數</strong>）振幅變成 \(1/e \approx 0.37\)；每過一個<strong>半衰期</strong> \(t_{1/2} = \tau \ln 2\) 變成一半（−6.02 dB）。這一頁的指數衰減從 1 落到 \(S\)，\(\tau = D / \ln(1/S)\)；指數釋音在 \(R\) 秒內掉 60 dB，所以 \(\tau_R = R / \ln 1000\)，\(R\) 裡面大約有 9.97 個半衰期——和音樂廳迴響時間 T60 的定義相同。</p>
+      <div class="formula">\[ \tau_D = \frac{D}{\ln (1/S)}, \qquad \tau_R = \frac{R}{\ln 1000}, \qquad t_{1/2} = \tau \ln 2 \]</div>
+      <p data-en-html="A linear decay looks like a straight line on the amplitude scale but bends steeply downwards on the decibel scale: most of its fall in decibels happens in the last few moments, so it sounds as if it holds on and then suddenly cuts off. The exponential attack here rises like a charging capacitor, \(a = (1 - e^{-3u})/(1 - e^{-3})\), fast at first and gently at the top.">線性衰減在振幅刻度上是直線，在分貝刻度上卻往下彎得很厲害：分貝的下降大多擠在最後一小段，所以聽起來像撐著撐著、突然斷掉。這裡的指數起音像電容充電，\(a = (1 - e^{-3u})/(1 - e^{-3})\)，一開始衝得快，接近頂點時變緩。</p>
+
+      <h3 data-en="Quality factor">品質因數 Q</h3>
+      <p data-en-html="For a damped oscillation of frequency \(f\) whose amplitude has time constant \(\tau\), the <strong>quality factor</strong> is \(Q = \pi f \tau\): roughly the number of cycles it rings for, times π, before its amplitude drops to \(1/e\). A tuning fork or a bell has a Q in the thousands; a drum skin only a few tens.">頻率 \(f\)、振幅時間常數 \(\tau\) 的阻尼振動，<strong>品質因數</strong> \(Q = \pi f \tau\)：大約是振幅降到 \(1/e\) 之前振動的次數乘上 π。音叉或鐘的 Q 有好幾千；鼓皮只有幾十。</p>
+
+      <h3 data-en="Higher harmonics fade faster">高泛音衰減得比較快</h3>
+      <p data-en-html="In a real struck or plucked string, air drag and internal friction remove energy faster from the high harmonics. With “Higher harmonics fade faster”, harmonic \(k\) follows \(a(t)^{q_k}\) with \(q_k = 1 + 0.25(k-1)\), so in decibels it falls \(q_k\) times as fast as the overall envelope. The spectral centroid (the energy-weighted average harmonic) then slides down as the note fades: the tone gets darker. With a full sustain the factor \(a^{q_k}\) stays at 1 and nothing darkens — just as an organ pipe, fed continuously with air, keeps its timbre.">真的弦被敲或撥之後，空氣阻力和內部摩擦把高泛音的能量消耗得比較快。勾選「高泛音衰減較快」時，第 \(k\) 個泛音的包絡是 \(a(t)^{q_k}\)，\(q_k = 1 + 0.25(k-1)\)：換成分貝就是比總包絡掉得快 \(q_k\) 倍。頻譜重心（以能量加權的平均泛音次數）隨著聲音變小而往下滑：音色變暗。延持全滿時 \(a^{q_k}\) 一直是 1，音色就不會變暗——就像持續有空氣送進去的風琴管，音色從頭到尾一樣。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <ul>
+        <li data-en-html="<strong>The attack is a large part of the timbre.</strong> Cut off the first fraction of a second of an instrument recording and listeners confuse instruments surprisingly often. On this page all five presets share exactly the same spectrum, yet they sound like five instruments."><strong>起音是音色很重要的一部分。</strong>把樂器錄音最前面的幾十毫秒剪掉，聽眾分辨樂器時錯得出乎意料地多。這一頁的五個預設頻譜完全相同，聽起來卻像五種樂器。</li>
+        <li data-en-html="<strong>Piano</strong>: a hammer strikes the strings, so the attack is almost instant and there is no sustain — the note dies away even while the key is held; letting go drops the damper. <strong>Pluck</strong> (guitar, harp): the same, but shorter. <strong>Percussion</strong>: a few hundredths of a second."><strong>鋼琴</strong>：琴槌一敲，起音幾乎是瞬間，沒有延持——一直按著聲音也會消失；放開時制音器落下。<strong>撥弦</strong>（吉他、豎琴）：一樣，只是比較短。<strong>打擊</strong>：只有零點零幾秒。</li>
+        <li data-en-html="<strong>Organ</strong>: air flows as long as the key is down, so the tone stays at full level and stops almost at once — the envelope is close to a rectangle. <strong>String pads</strong>: a bow or a section of players fades in slowly and leaves a long tail."><strong>風琴</strong>：按鍵按著，空氣就一直流，聲音一直滿格，放開幾乎立刻停——包絡接近長方形。<strong>弦樂墊音</strong>：弓（或整個弦樂聲部）慢慢拉出來，放開後還留著長長的尾巴。</li>
+        <li data-en-html="<strong>A reversed piano</strong> swells up from nothing and stops dead. Without the hammer’s attack it no longer sounds like a piano at all, but more like a reed organ or a harmonium — a classic experiment in the study of timbre."><strong>倒著放的鋼琴</strong>從無到有慢慢漲起來，然後戛然而止。少了琴槌的起音，它聽起來一點也不像鋼琴，反而像簧風琴——研究音色的經典實驗。</li>
+        <li data-en-html="<strong>Articulation</strong>: staccato, legato and accents are, in the end, different envelopes. Play “Twinkle, Twinkle” with a short release and then a long one."><strong>奏法</strong>：斷奏、圓滑奏、重音，說到底都是不同的包絡。用短的釋音彈〈小星星〉，再換長的釋音比比看。</li>
+        <li data-en-html="<strong>History</strong>: the four-stage envelope was proposed by the composer Vladimir Ussachevsky in the 1960s and built into Robert Moog’s modular synthesizers; the names Attack, Decay, Sustain, Release became the standard on almost every synthesizer since."><strong>歷史</strong>：四段式包絡是作曲家烏薩切夫斯基（Vladimir Ussachevsky）在 1960 年代提出，由穆格（Robert Moog）做進模組合成器；從此 Attack、Decay、Sustain、Release 幾乎成了每一台合成器的標準。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same spectrum, different instruments</strong>: switch between the presets without touching the harmonics. Does the spectrum change? Does the instrument?"><strong>同樣的頻譜，不同的樂器</strong>：不動泛音，在預設之間切換。頻譜有沒有變？樂器有沒有變？</li>
+        <li data-en-html="<strong>Linear or exponential?</strong> Choose “Piano”, switch to the decibel scale, then change the shape. Which one is a straight line in decibels? Which one sounds more natural?"><strong>線性還是指數？</strong>選「鋼琴」，切到分貝刻度，再切換形狀。哪一種在分貝上是直線？哪一種聽起來比較自然？</li>
+        <li data-en-html="<strong>Let go early</strong>: on a slow attack, let go halfway up. Where does the release start from?"><strong>提早放開</strong>：起音很慢的時候，爬到一半就放開。釋音從哪裡開始？</li>
+        <li data-en-html="<strong>Reverse</strong>: reverse the piano and the percussion. Which is still recognizable?"><strong>倒放</strong>：把鋼琴和打擊倒過來放。哪一個還認得出來？</li>
+        <li data-en-html="<strong>The 3D landscape</strong>: tick “Higher harmonics fade faster” and look from above. The ridges of the high harmonics are shorter: the hill tilts backwards."><strong>3D 地形</strong>：勾選「高泛音衰減較快」，從上面看。高泛音的山脊比較短：整座山往後傾斜。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The envelope is computed exactly from the formulas above for any time \(t\), the moment of release and the reversal \(a_{\text{rev}}(t) = a(H + R - t)\). The oscilloscope multiplies it by the sum of the harmonics at the true frequency; the faint oscillation drawn inside the envelope graph is slowed down so you can see it.">包絡用上面的公式，對任何時刻 \(t\)、放開的時刻與倒放 \(a_{\text{rev}}(t) = a(H + R - t)\) 精確計算。示波器把它乘上真實頻率的泛音和；包絡圖裡淡淡的振盪是放慢的示意。</li>
+        <li data-en-html="Sound: the browser’s own additive synthesizer plays the harmonics; the page updates the volume about 60 times a second to follow the envelope (and, with “Higher harmonics fade faster”, updates the harmonic amplitudes about 20 times a second). For hearing protection the sound never starts faster than 15 ms or ends faster than 30 ms, and the overall level is gentle.">聲音：瀏覽器內建的加法合成發出泛音；頁面每秒大約 60 次更新音量來跟著包絡走（勾選「高泛音衰減較快」時，每秒大約 20 次更新各泛音的大小）。為了保護聽力，聲音的開頭不快於 15 ms、結尾不快於 30 ms，整體音量也很溫和。</li>
+        <li data-en-html="The 3D landscape plots, for each harmonic \(k\), its amplitude \(\tfrac{1}{k}\,a(t)^{q_k}\) (or its level in decibels) against time, from the same core functions as the 2D graph; the bright plane marks the current time.">3D 地形畫的是第 \(k\) 個泛音的振幅 \(\tfrac{1}{k}\,a(t)^{q_k}\)（或它的分貝）隨時間的變化，和 2D 圖用同一個核心函式；發亮的平面是目前的時間。</li>
+        <li data-en-html="The unit tests check that the attack ends at exactly 1 and the decay at exactly \(S\), that an early release starts from the current level, that an exponential decay has a constant slope in decibels, that \(t_{1/2} = \tau\ln 2\), the reversal, the hearing-protection limits and the darkening of the spectrum.">單元測試檢查：起音結束剛好是 1、衰減結束剛好是 \(S\)；提早放開時釋音從當時的值開始；指數衰減在分貝刻度上斜率固定；\(t_{1/2} = \tau\ln 2\)；倒放；聽力保護的下限；以及頻譜變暗。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performing · Music technology (music software); Elective Physics I · Periodic motion (damped vibration).">課綱對應：高中音樂・表現・音樂科技（音樂軟體）；選修物理Ⅰ・週期運動（阻尼振動）。</li>
+        <li data-en-html="Across subjects: Music “<a href=&quot;harmonic-series.html&quot;>The harmonic series and timbre</a>”, “<a href=&quot;string-instrument.html&quot;>String instruments</a>” and “<a href=&quot;reverb-room.html&quot;>Reverberation and concert halls</a>” (T60).">跨科：音樂「<a href="harmonic-series.html">泛音列與音色</a>」、「<a href="string-instrument.html">弦樂器：弦長、張力與品格</a>」、「<a href="reverb-room.html">迴響與音樂廳：賽賓公式</a>」（T60）。</li>
+        <li data-en="C. Roads, The Computer Music Tutorial (MIT Press, 1996) — envelopes and envelope generators, additive synthesis.">C. Roads，《The Computer Music Tutorial》（MIT Press，1996）——包絡與包絡產生器、加法合成。</li>
+        <li data-en="T. Pinch and F. Trocco, Analog Days: The Invention and Impact of the Moog Synthesizer (Harvard University Press, 2002) — Ussachevsky’s four-stage envelope and Moog’s modules.">T. Pinch、F. Trocco，《Analog Days: The Invention and Impact of the Moog Synthesizer》（Harvard University Press，2002）——烏薩切夫斯基的四段包絡與穆格的模組。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed. (Springer, 1998) — decay of struck and plucked strings, two-stage piano decay, damping of higher partials.">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版（Springer，1998）——敲擊與撥弦的衰減、鋼琴的兩段衰減、高泛音的阻尼。</li>
+        <li data-en="J.-C. Risset and D. L. Wessel, “Exploration of timbre by analysis and synthesis”, in D. Deutsch (ed.), The Psychology of Music (Academic Press, 1982) — the role of the attack in recognising instruments.">J.-C. Risset、D. L. Wessel，〈Exploration of timbre by analysis and synthesis〉，收於 D. Deutsch 編《The Psychology of Music》（Academic Press，1982）——起音在辨認樂器上的角色。</li>
+        <li data-en="A4 = 440 Hz: ISO 16:1975, Acoustics — Standard tuning frequency.">A4 = 440 Hz：ISO 16:1975〈Acoustics — Standard tuning frequency〉。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/adsr-envelope-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/adsr-envelope.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="adsr-envelope"></script>
+  <script src="js/missions/adsr-envelope.js"></script>
+  <script src="js/stats.js" data-module="adsr-envelope"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
