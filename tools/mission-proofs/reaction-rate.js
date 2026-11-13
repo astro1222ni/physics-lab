@@ -247,6 +247,62 @@ for (let k = 0; k < 6; k++) {
 
 function num(x) { return x == null ? '—' : (+x).toFixed(0); }
 
+// ---------- h4–h10（每個做法只完成它自己這個隱藏任務；判定全部任務） ----------
+const isHid = id => /-h\d+$/.test(id);
+const convOf = Q => { const s = Q.cur.sim; return (s.stats.fwd - s.stats.rev) / Math.min(s.n0[K.A], s.n0[K.B]); };
+function untilHit(P, id, maxT, all) {
+  all = all || [];
+  while (P.cur.sim.t < maxT) { const h = run(P, P.cur.sim.t + 50); all.push.apply(all, h); if (has(h, id)) break; }
+  return all;
+}
+function hidOk(id, hits, note) {
+  const extra = [...new Set(hits.filter(x => isHid(x) && x !== ID(id)))];
+  ok(ID(id), has(hits, ID(id)) && !extra.length, note + (extra.length ? '　← 順便完成了 ' + extra.join('、') : ''));
+}
+only = null;
+{ const P = newPage(); set(P, { T: 1000, Ea: 5, dH: 10 }); const hits = untilHit(P, ID('h4'), 20000);
+  hidOk('h4', hits, '1000 K、Ea 5、ΔH +10、各 100 個：轉化率 ' + convOf(P).toFixed(3) + '（' + num(P.cur.sim.t) + ' ps）'); }
+{ const P = newPage(); set(P, { T: 1000, Ea: 20, dH: -5, cat: true, nA: 200, nB: 200 });
+  run(P, 3000);
+  const a = convOf(P);
+  set(P, { cat: false }); const hits = untilHit(P, ID('h5'), 20000);
+  hidOk('h5', hits, '1000 K、Ea 20、ΔH −5、各 200 個：有催化劑 3000 ps 轉化率 ' + a.toFixed(3) + '，沒有催化劑 ' + num(P.cur.sim.t) + ' ps 轉化率 ' + convOf(P).toFixed(3)); }
+{ const P = newPage(); set(P, { nA: 20, nB: 200 }); const hits = untilHit(P, ID('h6'), 20000);
+  hidOk('h6', hits, 'A 20 個、B 200 個、400 K：A 用掉 ' + (100 * convOf(P)).toFixed(0) + '%（' + num(P.cur.sim.t) + ' ps）'); }
+{ const P = newPage(); set(P, { T: 1000, Ea: 2, dH: 0 }); const hits = untilHit(P, ID('h7'), 20000);
+  hidOk('h7', hits, '1000 K、Ea 2、ΔH 0：轉化率 ' + convOf(P).toFixed(3) + '（' + num(P.cur.sim.t) + ' ps）'); }
+{ const P = newPage(); const all = [];
+  set(P, { Ea: 20, cat: true, nA: 200, nB: 200 });
+  [500, 700, 900].forEach(Tk => { set(P, { T: Tk }); all.push.apply(all, run(P, 20000, Q => Q.cur.sim.stats.fwd >= 120)); });
+  const a = tickData(P).arr;
+  hidOk('h8', all, 'Ea 20、有催化劑（實際 ' + P.cur.sim.EaF.toFixed(1) + '）、500／700／900 K 各 120 次反應：擬合 ' + (a ? a.Ea.toFixed(2) : '—') + '，應得 ' + (a ? a.EaApp.toFixed(2) : '—') + ' kJ/mol'); }
+{ let n9 = 0; const N9 = 6, rs = [];
+  for (let k = 0; k < N9; k++) {
+    const P = newPage(); set(P, { T: 1000, Ea: 5, dH: -10, steric: true, nA: 200, nB: 200 });
+    run(P, 20000, Q => Q.cur.sim.stats.fwd >= 130); const k1 = summary(P.cur).k;
+    set(P, { steric: false }); const hits = run(P, 20000, Q => Q.cur.sim.stats.fwd >= 130);
+    rs.push((k1 / summary(P.cur).k).toFixed(3));
+    const extra = hits.filter(x => isHid(x) && x !== ID('h9'));
+    if (has(hits, ID('h9')) && !extra.length) n9++;
+  }
+  ok(ID('h9'), n9 > 0, '1000 K、Ea 5、有方向因子、沒有方向因子各到 130 次反應：k 的比 ' + rs.join('、') + '，' + N9 + ' 次中 ' + n9 + ' 次在 0.20–0.30');
+  results[ID('h9')].rate = n9 / N9; }
+{ let n10 = 0; const N10 = 6, rs = [];
+  for (let k = 0; k < N10; k++) {
+    const P = newPage(); set(P, { T: 600, Ea: 2, dH: -40, nA: 40, nB: 40 });
+    run(P, 20000, Q => Q.cur.sim.stats.tHalf != null); const t1 = P.cur.sim.stats.tHalf;
+    set(P, { nA: 80, nB: 80 }); const hits = untilHit(P, ID('h10'), 20000);
+    rs.push(P.cur.sim.stats.tHalf ? (P.cur.sim.stats.tHalf / t1).toFixed(2) : '—');
+    const extra = hits.filter(x => isHid(x) && x !== ID('h10'));
+    if (has(hits, ID('h10')) && !extra.length) n10++;
+  }
+  ok(ID('h10'), n10 > 0, '600 K、Ea 2、ΔH −40、A、B 各 40 個與各 80 個：半生期比 ' + rs.join('、') + '，' + N10 + ' 次中 ' + n10 + ' 次在 0.35–0.65');
+  results[ID('h10')].rate = n10 / N10; }
+// 預設頁面跑 3000 ps：不觸發任何隱藏任務
+{ const P = newPage(); set(P, {}); const hits = run(P, 3000); const h = [...new Set(hits.filter(isHid))];
+  console.log((h.length ? '✗' : '✓') + ' 預設條件跑 3000 ps，隱藏任務：' + (h.join('、') || '沒有')); if (h.length) process.exitCode = 1; }
+
+
 // ---------- 報告 ----------
 let fail = 0, stars = 0, hstars = 0;
 missions.forEach(m => {

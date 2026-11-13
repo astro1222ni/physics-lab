@@ -120,6 +120,80 @@
       id: 'reaction-rate-h3', level: 6, hidden: true,
       riddle: { zh: '一點火星，自己燒成了烈焰。', en: 'One spark, and it fed its own fire.' },
       check: function (ev) { const r = ev.data.run; return isT(ev) && r.heat && r.TgasMax >= 1.5 * r.T; }
+    },
+    {
+      id: 'reaction-rate-h4', level: 6, hidden: true,
+      riddle: { zh: '爬坡的路，靠火才走得遠。', en: 'An uphill road, travelled far only with fire.' },
+      // 吸熱反應（ΔH ≥ +10 kJ/mol）的轉化率達 30%：K = e^(−ΔH/RT) 隨溫度升高
+      check: function (ev) { const r = ev.data.run; return isT(ev) && !r.mys && !r.heat && r.dH >= 10 - E && r.conv >= 0.3; }
+    },
+    {
+      id: 'reaction-rate-h5', level: 5, hidden: true,
+      riddle: { zh: '抄了捷徑，終點卻沒有變。', en: 'A shortcut taken, and yet the destination never moved.' },
+      // 同樣條件、有無催化劑各做一次，兩次都接近平衡（逆反應 ≥ 50 次、至少是正反應的一半），轉化率相差不到 5%
+      check: function (ev) {
+        if (!isT(ev)) return false;
+        const rows = ev.data.runs.filter(function (r) { return !r.mys && !r.heat && r.rev >= 50 && r.rev >= 0.5 * r.fwd; });
+        return rows.some(function (p) {
+          return p.cat && rows.some(function (q) {
+            return !q.cat && q.T === p.T && q.Ea === p.Ea && q.dH === p.dH && q.steric === p.steric && q.nA === p.nA && q.nB === p.nB && Math.abs(p.conv - q.conv) <= 0.05;
+          });
+        });
+      }
+    },
+    {
+      id: 'reaction-rate-h6', level: 3, hidden: true,
+      riddle: { zh: '寡不敵眾，最後一個也不剩。', en: 'Hopelessly outnumbered, until not one was left.' },
+      // 一種反應物是另一種的 5 倍以上，量少的那種用掉 95% 以上（限量試劑）
+      check: function (ev) { const r = ev.data.run; return isT(ev) && !r.mys && !r.heat && Math.max(r.nA, r.nB) >= 5 * Math.min(r.nA, r.nB) && r.conv >= 0.95; }
+    },
+    {
+      id: 'reaction-rate-h7', level: 7, hidden: true,
+      riddle: { zh: '不冷也不熱，最後剛好一半。', en: 'Neither cold nor hot, and in the end exactly half.' },
+      // ΔH = 0 時 K = 1；A、B 一樣多，動態平衡時轉化率 0.5
+      check: function (ev) {
+        const r = ev.data.run, q = ev.data.eq;
+        return isT(ev) && !r.mys && !r.heat && r.dH === 0 && r.nA === r.nB && !!q && q.span >= 500 - E && q.f >= 50 && q.r >= 50 && Math.abs(r.conv - 0.5) <= 0.03;
+      }
+    },
+    {
+      id: 'reaction-rate-h8', level: 9, hidden: true,
+      riddle: { zh: '同一座山，鑿了隧道，量出來就矮了一截。', en: 'The same mountain, but dig a tunnel and it measures lower.' },
+      // 有催化劑（活化能滑桿 ≥ 20 kJ/mol）的阿瑞尼斯圖：3 個溫度、跨 400 K 以上，求得的 Ea 和催化途徑應得的值相差 10% 以內
+      check: function (ev) {
+        const r = ev.data.run, a = ev.data.arr;
+        return isT(ev) && !r.mys && r.cat && r.Ea >= 20 - E && !!a && a.nT >= 3 && a.span >= 400 - E && Math.abs(a.Ea - a.EaApp) <= 0.1 * a.EaApp;
+      }
+    },
+    {
+      id: 'reaction-rate-h9', level: 8, hidden: true,
+      riddle: { zh: '只認一扇門，四次才進得去一次。', en: 'Only one door will do, and it lets you in one time in four.' },
+      // 同樣條件、有無方向因子各做一次（各 100 次以上反應）：k 的比在 0.20–0.30（理論 1/4）
+      check: function (ev) {
+        if (!isT(ev)) return false;
+        const rows = ev.data.runs.filter(function (r) { return !r.mys && !r.heat && r.fwd >= 100 && r.k > 0; });
+        return rows.some(function (p) {
+          return p.steric && rows.some(function (q) {
+            const s = p.k / q.k;
+            return !q.steric && q.T === p.T && q.Ea === p.Ea && q.dH === p.dH && q.cat === p.cat && s >= 0.2 && s <= 0.3;
+          });
+        });
+      }
+    },
+    {
+      id: 'reaction-rate-h10', level: 10, hidden: true,
+      riddle: { zh: '人多一倍，等待少一半。', en: 'Twice the crowd, half the wait.' },
+      // 二級反應（A、B 一樣多）的半生期與初濃度成反比：兩者都加倍，半生期變成 0.35–0.65 倍（分子數少，半生期的隨機誤差約 15%）
+      check: function (ev) {
+        if (!isT(ev)) return false;
+        const rows = ev.data.runs.filter(function (r) { return !r.mys && !r.heat && r.nA === r.nB && r.tHalf != null; });
+        return rows.some(function (p) {
+          return rows.some(function (q) {
+            const s = q.tHalf / p.tHalf;
+            return q.key === p.key && q.T === p.T && q.nA === 2 * p.nA && s >= 0.35 && s <= 0.65;
+          });
+        });
+      }
     }
   ]);
 })();
