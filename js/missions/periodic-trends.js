@@ -5,12 +5,14 @@
 
   // 事件（js/periodic-trends.js 只在使用者操作之後回報）：
   //   'select'：{ Z, prop（'r'／'IE'／'EN'／'mp'／'rho'／'cat'）, hiddenSel }
-  //   'graph'：{ tab（'z'／'period'／'group'）, prop, period, group, Z }
+  //   'graph'：{ tab（'z'／'period'／'group'）, prop, period, group, Z, hiddenSel（這個元素的這個性質正被猜猜看藏著） }
   //   'view3d'：{ prop }
   //   'predict'：{ prop, Z, guess, actual, err, hit, streak }
   const sel = function (ev, Z, prop) { const d = ev.type === 'select' && ev.data; return !!d && d.Z === Z && d.prop === prop && !d.hiddenSel; };
   const gr = function (ev) { return ev.type === 'graph' && ev.data ? ev.data : null; };
   const pr = function (ev) { return ev.type === 'predict' && ev.data ? ev.data : null; };
+  /** 「同族」圖表、這個性質、這一族、選到這個元素（數值沒被猜猜看藏起來） */
+  const grSel = function (ev, prop, group, Z) { const d = gr(ev); return !!d && !d.hiddenSel && d.tab === 'group' && d.prop === prop && d.group === group && d.Z === Z; };
 
   LabMission.register('periodic-trends', [
     {
@@ -99,6 +101,41 @@
       id: 'periodic-trends-h3', level: 5, hidden: true,
       riddle: { zh: '差一點點都不行。', en: 'Not even a hair off.' },
       check: function (ev) { const d = pr(ev); return !!d && d.err <= 0.005; }
+    },
+    {
+      id: 'periodic-trends-h4', level: 4, hidden: true,
+      riddle: { zh: '握在掌心，就化成一灘銀。', en: 'Hold it in your palm and it turns into a silver puddle.' },
+      check: function (ev) { return sel(ev, 31, 'mp'); }
+    },
+    {
+      id: 'periodic-trends-h5', level: 5, hidden: true,
+      riddle: { zh: '黑夜裡發光的那根細絲，最不怕熱。', en: 'The thin thread that glows in the dark fears heat the least.' },
+      check: function (ev) { return sel(ev, 74, 'mp'); }
+    },
+    {
+      id: 'periodic-trends-h6', level: 3, hidden: true,
+      riddle: { zh: '同樣一顆骰子大小，它最壓手。', en: 'A die-sized piece of it weighs the most in your hand.' },
+      check: function (ev) { return sel(ev, 76, 'rho'); }
+    },
+    {
+      id: 'periodic-trends-h7', level: 7, hidden: true,
+      riddle: { zh: '樓上的鄰居，反而比較胖。', en: 'The neighbour upstairs is the plumper one.' },
+      check: function (ev) { return grSel(ev, 'r', 13, 31); }
+    },
+    {
+      id: 'periodic-trends-h8', level: 6, hidden: true,
+      riddle: { zh: '一半，剛剛好。', en: 'Exactly half is just right.' },
+      check: function (ev) { const d = gr(ev); return !!d && !d.hiddenSel && d.tab === 'period' && d.prop === 'IE' && (d.Z === 7 || d.Z === 15); }
+    },
+    {
+      id: 'periodic-trends-h9', level: 9, hidden: true,
+      riddle: { zh: '多住了一層樓，身材卻幾乎沒變。', en: 'One more floor to live on, and yet hardly any bigger.' },
+      check: function (ev) { return grSel(ev, 'r', 4, 72); }
+    },
+    {
+      id: 'periodic-trends-h10', level: 10, hidden: true,
+      riddle: { zh: '最底下的那一個，反而沒那麼大方。', en: 'The one at the very bottom is, oddly, not so generous.' },
+      check: function (ev) { return grSel(ev, 'IE', 1, 87); }
     }
   ]);
 })();

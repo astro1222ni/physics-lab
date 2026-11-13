@@ -719,7 +719,7 @@
   function report() {
     const q = P.pos(state.Z);
     emit('select', { Z: state.Z, prop: state.prop, hiddenSel: state.prop !== 'cat' && isHidden(state.Z, state.prop) });
-    emit('graph', { tab: state.tab, prop: gp(), period: q.period, group: q.group, Z: state.Z });
+    emit('graph', { tab: state.tab, prop: gp(), period: q.period, group: q.group, Z: state.Z, hiddenSel: isHidden(state.Z, gp()) });
   }
   function syncSegs() {
     document.querySelectorAll('#propSeg button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.prop === state.prop)); });

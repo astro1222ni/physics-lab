@@ -25,7 +25,7 @@ const hiddenSel = Pg => !!Pg.game && !Pg.game.revealed && Pg.game.Z === Pg.Z && 
 function report(Pg) {
   const q = P.pos(Pg.Z);
   emit(Pg, 'select', { Z: Pg.Z, prop: Pg.prop, hiddenSel: hiddenSel(Pg) });
-  emit(Pg, 'graph', { tab: Pg.tab, prop: gp(Pg), period: q.period, group: q.group, Z: Pg.Z });
+  emit(Pg, 'graph', { tab: Pg.tab, prop: gp(Pg), period: q.period, group: q.group, Z: Pg.Z, hiddenSel: !!Pg.game && !Pg.game.revealed && Pg.game.Z === Pg.Z && Pg.game.prop === gp(Pg) });
 }
 function select(Pg, Z) { Pg.acted = true; Pg.Z = Z; report(Pg); }
 function setProp(Pg, p) { Pg.acted = true; if (Pg.game && !Pg.game.revealed && p !== Pg.game.prop) { Pg.game.revealed = true; Pg.streak = 0; } Pg.prop = p; if (p !== 'cat') Pg.lastNum = p; report(Pg); }
@@ -176,6 +176,44 @@ report2('按「下一個」走到 Og（118 號）', Pg, ['periodic-trends-h1']);
 fresh(); Pg = page();
 setProp(Pg, 'EN'); select(Pg, 79);
 report2('依電負度著色、選 Au（' + P.EL[79].EN + '，金屬中最大：' + P.EL[P.extremes('EN', P.isMetal).max].sym + '）', Pg, ['periodic-trends-h2']);
+
+const hid = id => /-h\d+$/.test(id);
+function reportH(msg, Pg, id) {
+  const extra = Pg.events.filter(x => hid(x) && x !== id);
+  report2(msg + (extra.length ? '　← 順便完成了 ' + extra.join('、') : ''), Pg, [id]);
+  if (extra.length) bad++;
+}
+const v = (Z, p) => P.value(Z, p);
+fresh(); Pg = page(); setProp(Pg, 'mp'); select(Pg, 31);
+reportH('依熔點著色、選 Ga（' + v(31, 'mp').toFixed(1) + ' °C，低於體溫 37 °C）', Pg, 'periodic-trends-h4');
+fresh(); Pg = page(); setProp(Pg, 'mp'); select(Pg, 74);
+reportH('依熔點著色、選 W（' + v(74, 'mp').toFixed(0) + ' °C，金屬中最高：' + P.EL[P.extremes('mp', P.isMetal).max].sym + '）', Pg, 'periodic-trends-h5');
+fresh(); Pg = page(); setProp(Pg, 'rho'); select(Pg, 76);
+reportH('依密度著色、選 Os（' + v(76, 'rho') + ' g/cm3，Ir ' + v(77, 'rho') + '）', Pg, 'periodic-trends-h6');
+fresh(); Pg = page(); setProp(Pg, 'r'); setTab(Pg, 'group'); select(Pg, 31);
+reportH('同族圖、原子半徑、第 13 族選 Ga（' + v(31, 'r') + ' pm，比上一列的 Al ' + v(13, 'r') + ' pm 還小：d 區收縮）', Pg, 'periodic-trends-h7');
+fresh(); Pg = page(); setProp(Pg, 'IE'); setTab(Pg, 'period'); select(Pg, 7);
+reportH('同週期圖、游離能、選 N（' + v(7, 'IE').toFixed(0) + '，比 O 的 ' + v(8, 'IE').toFixed(0) + ' 大：2p 半滿）', Pg, 'periodic-trends-h8');
+fresh(); Pg = page(); setProp(Pg, 'r'); setTab(Pg, 'group'); select(Pg, 72);
+reportH('同族圖、原子半徑、第 4 族選 Hf（' + v(72, 'r') + ' pm，和上一列的 Zr ' + v(40, 'r') + ' pm 幾乎一樣：鑭系收縮）', Pg, 'periodic-trends-h9');
+fresh(); Pg = page(); setProp(Pg, 'IE'); setTab(Pg, 'group'); select(Pg, 87);
+reportH('同族圖、游離能、第 1 族選 Fr（' + v(87, 'IE').toFixed(1) + '，比上一列的 Cs ' + v(55, 'IE').toFixed(1) + ' 大：相對論效應）', Pg, 'periodic-trends-h10');
+// 反例：著色性質不對、圖表分頁不對都不算
+fresh(); Pg = page(); setProp(Pg, 'r'); select(Pg, 31); select(Pg, 74); select(Pg, 76); setTab(Pg, 'period'); select(Pg, 72); select(Pg, 87); setProp(Pg, 'mp'); setTab(Pg, 'group'); select(Pg, 7);
+{ const h = Pg.events.filter(hid); console.log((h.length ? '  ✗ ' : '  ✓ ') + '著色性質或圖表分頁不對時，這些元素都不算隱藏任務' + (h.length ? '：' + h.join('、') : '')); if (h.length) bad++; }
+// 猜猜看正藏著 Fr 的游離能時選到它：不算 h10
+fresh(); Pg = page(); setProp(Pg, 'IE'); setTab(Pg, 'group'); Pg.game = { Z: 87, prop: 'IE', revealed: false }; select(Pg, 87);
+{ const ok = !Pg.events.includes('periodic-trends-h10'); console.log((ok ? '  ✓ ' : '  ✗ ') + '猜猜看藏著 Fr 的游離能時選到它，不算 h10'); if (!ok) bad++; }
+// 每種性質、每個分頁都把 118 個元素點一遍：只會在對的性質與分頁完成
+{
+  const hits = {};
+  ['r', 'IE', 'EN', 'mp', 'rho', 'cat'].forEach(p => ['z', 'period', 'group'].forEach(t => {
+    fresh(); Pg = page(); setProp(Pg, p); setTab(Pg, t);
+    for (let Z = 1; Z <= P.N; Z++) select(Pg, Z);
+    Pg.events.filter(hid).forEach(id => { hits[id] = (hits[id] || 0) + 1; });
+  }));
+  console.log('    （每種性質 × 每個分頁都把 118 個元素點一遍，完成隱藏任務的次數：' + Object.keys(hits).sort().map(k => k.replace('periodic-trends-', '') + '×' + hits[k]).join('、') + '）');
+}
 
 // ---------- 總結 ----------
 const missing = missions.filter(m => !done[m.id]).map(m => m.id);
