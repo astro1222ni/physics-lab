@@ -1542,7 +1542,15 @@
   $('drop').addEventListener('click', function () { addButton(DROP); });
   $('half').addEventListener('click', function () { addButton(HALF); });
   $('tap').addEventListener('click', function () {
-    if (state.tap) { closeTap(); kick(); return; }
+    if (state.tap) {
+      closeTap();
+      // 滴定管讀數在關上的那一刻就停了；已經離開管口、還在空中的液滴會照樣落進瓶裡（2 mL/s 時約 0.3 mL）
+      const air = state.drops.reduce(function (s, d) { return s + d.n; }, 0) / U;
+      setStatus(air >= 0.05
+        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
+        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
+      kick(); return;
+    }
     if (K.BURETTE_UNITS - state.run.fill <= 0) { emptyNotice(); return; }
     state.tap = true; state.acc = 0;
     sndClick();
