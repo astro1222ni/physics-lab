@@ -251,6 +251,83 @@ w0 = P.wall;
 let w = wait(P, 120, Q => Q.events.includes('hess-law-h3') || !Q.rec);
 report('NaOH 4 g、不蓋杯蓋、×60 一直記錄到回到室溫：峰值 ' + P.peak.toFixed(1) + ' °C、t = ' + P.run.t.toFixed(0) + ' s（真實時間 ' + (w - w0).toFixed(0) + ' s）', P, ['hess-law-h3']);
 
+// ---------- 6b. 隱藏任務 h4–h10（每個做法只完成它自己這個隱藏任務） ----------
+const hid = id => /-h\d+$/.test(id);
+function reportH(name, P, id) {
+  const extra = P.events.filter(x => hid(x) && x !== id);
+  report(name + (extra.length ? '　← 順便完成了 ' + extra.join('、') : ''), P, [id]);
+  if (extra.length) bad++;
+}
+freshMissions(); P = newPage();
+experiment(P, { mode: 'mix', mix: { cb: 1, Vb: 50, ca: 1, Va: 50 }, lid: false, stir: false }, 300);
+r = calc(P, 'ext', 18, 0.05);
+reportH('中和 1 M 50 mL + 1 M 50 mL、不蓋、不攪拌、外插：ΔT 最高 ' + r.dTraw.toFixed(2) + '、外插 ' + r.dText.toFixed(2) + '，誤差 ' + pc(r.err), P, 'hess-law-h4');
+
+freshMissions(); P = newPage();
+experiment(P, { mode: 'mix', mix: { cb: 1, Vb: 100, ca: 1, Va: 100 } }, 300);
+r = calc(P, 'raw', 18, 0.1);
+reportH('中和 1 M 100 mL + 1 M 100 mL（有蓋、攪拌，幾秒內混合，溶液多、散熱占比小）、最高溫度法：ΔT 最高 ' + r.dTraw.toFixed(2) + '、外插 ' + r.dText.toFixed(3) + '，誤差 ' + pc(r.err), P, 'hess-law-h5');
+// 對照：慢慢溶解的固體用最高溫度法不算
+freshMissions(); P = newPage();
+experiment(P, { mode: 'solid', solid: { kind: 'NaOH', mass: 2 }, liquid: { kind: 'water', V: 100 } }, 300);
+r = calc(P, 'raw', 18, 0.05);
+console.log('  ' + (P.events.includes('hess-law-h5') ? '✗' : '✓') + ' 對照：NaOH 固體溶解（較慢）用最高溫度法誤差 ' + pc(r.err) + '，不算 h5');
+if (P.events.includes('hess-law-h5')) bad++;
+
+freshMissions(); P = newPage();
+experiment(P, { mode: 'solid', solid: { kind: 'NH4NO3', mass: 5 }, liquid: { kind: 'water', V: 50 } }, 300);
+r = calc(P, 'ext', 18, sig3(5 / 80.043));
+reportH('NH4NO3 5.00 g 溶於 50 mL 水（溫差大）、外插、n = ' + sig3(5 / 80.043) + '：ΔH = ' + r.dH.toFixed(2) + '（誤差 ' + pc(r.err) + '）', P, 'hess-law-h6');
+
+freshMissions(); P = newPage();
+experiment(P, { mode: 'cal', cal: { Vc: 25, Vh: 100, Th: 60 } }, 300);
+let cc = calc(P, 'ext');
+reportH('卡計校正：冷水 25 mL、60 °C 熱水 100 mL、外插：C = ' + cc.C.toFixed(2) + ' J/K（真值 18）', P, 'hess-law-h7');
+
+freshMissions(); P = newPage();
+experiment(P, { mode: 'mix', mix: { cb: 0.3, Vb: 100, ca: 0.3, Va: 100 } }, 300);
+r = calc(P, 'ext', 18, 0.03);
+reportH('中和 0.3 M 100 mL + 0.3 M 100 mL、外插、n = 0.0300：ΔT = ' + r.dT.toFixed(3) + ' °C，ΔH = ' + r.dH.toFixed(2) + '（誤差 ' + pc(r.err) + '）', P, 'hess-law-h8');
+
+freshMissions(); P = newPage();
+experiment(P, { mode: 'solid', solid: { kind: 'NaOH', mass: 2 }, liquid: { kind: 'water', V: 50 } }, 300);
+calc(P, 'ext', 18, sig3(2 / 39.997));
+experiment(P, { mode: 'mix', mix: { cb: 2, Vb: 100, ca: 2, Va: 100 } }, 300);
+calc(P, 'ext', 18, 0.2);
+experiment(P, { mode: 'solid', solid: { kind: 'NaOH', mass: 2 }, liquid: { kind: 'HCl', V: 50, c: 2 } }, 300);
+calc(P, 'ext', 18, sig3(2 / 39.997));
+{
+  const hs2 = hessNow(P);
+  reportH('同一段（溫差都大）：NaOH 2 g 溶於 50 mL 水、2 M 100 mL + 100 mL 中和、NaOH 2 g 加入 2 M HCl 50 mL（C = 18、外插）：誤差 ' + pc(hs2.e1) + '、' + pc(hs2.e2) + '、' + pc(hs2.e3) + '，ΔH1 + ΔH2 與 ΔH3 差 ' + pc((hs2.h1 + hs2.h2) / hs2.h3 - 1), P, 'hess-law-h9');
+}
+
+{
+  let ok10 = 0, worst10 = 0, rs2 = 7;
+  const rng2 = () => { rs2 = (rs2 * 16807) % 2147483647; return rs2 / 2147483647; };
+  const N2 = 60;
+  for (let k = 0; k < N2; k++) {
+    freshMissions(); P = newPage();
+    const u = H.newUnknown(rng2);
+    P.unk = { revealed: false };
+    // 想更準：直接用 8 g 溶於 50 mL 水（溫差最大），記錄到加入後 5 分鐘，外插
+    experiment(P, { mode: 'solid', solid: { kind: 'X', mass: 8 }, liquid: { kind: 'water', V: 50 } }, 300);
+    r = calc(P, 'ext', 18, sig3(8 / u.M));
+    worst10 = Math.max(worst10, Math.abs(r.err));
+    if (P.events.includes('hess-law-h10') && !P.events.some(x => hid(x) && x !== 'hess-law-h10')) ok10++;
+  }
+  console.log('  ' + (ok10 >= N2 * 0.9 ? '✓' : '✗') + ' 未知固體 ' + N2 + ' 個、8 g 溶於 50 mL：1% 以內（h10）有 ' + ok10 + ' 個，最差 ' + pc(worst10));
+  if (ok10 >= N2 * 0.9) done['hess-law-h10'] = true; else bad++;
+}
+// 原本的赫斯三連（1 M、2 g）會不會順便完成這些新的隱藏任務：只列出來
+{
+  freshMissions(); P = newPage();
+  experiment(P, { mode: 'cal', cal: { Vc: 50, Vh: 50, Th: 60 } }, 300); const c0 = +calc(P, 'ext').C.toFixed(1);
+  experiment(P, { mode: 'solid', solid: { kind: 'NaOH', mass: 2 }, liquid: { kind: 'water', V: 100 } }, 300); calc(P, 'ext', c0, sig3(2 / 39.997));
+  experiment(P, { mode: 'mix', mix: { cb: 1, Vb: 50, ca: 1, Va: 50 } }, 300); calc(P, 'ext', c0, 0.05);
+  experiment(P, { mode: 'solid', solid: { kind: 'NaOH', mass: 2 }, liquid: { kind: 'HCl', V: 100, c: 1 } }, 300); calc(P, 'ext', c0, 0.05);
+  { const h3 = hessNow(P); console.log('    （公開任務的赫斯三連：誤差 ' + pc(h3.e1) + '、' + pc(h3.e2) + '、' + pc(h3.e3) + '，相加差 ' + pc((h3.h1 + h3.h2) / h3.h3 - 1) + '；順便完成的隱藏任務：' + (P.events.filter(hid).join('、') || '沒有') + '）'); }
+}
+
 // ---------- 總結 ----------
 const missing = missions.filter(m => !done[m.id]).map(m => m.id);
 console.log(missing.length ? '  ✗ 沒有證明到的任務：' + missing.join('、') : '  ✓ ' + missions.length + ' 個任務都證明做得到');

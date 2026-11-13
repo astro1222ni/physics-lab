@@ -103,6 +103,49 @@
       id: 'hess-law-h3', level: 5, hidden: true,
       riddle: { zh: '走了好遠，又回到原點。', en: 'A long way out, and all the way back.' },
       check: function (ev) { const d = tk(ev); return !!d && d.added && d.peak >= 5 && Math.abs(d.reading - d.Troom) <= 0.3 && d.t - d.tAdd > 60; }
+    },
+    {
+      id: 'hess-law-h4', level: 6, hidden: true,
+      riddle: { zh: '沒有蓋子、也沒有攪拌，答案卻還是對的。', en: 'No lid, no stirring, and still the right answer.' },
+      check: function (ev) { const d = an(ev); return !!d && d.ref != null && !d.lid && !d.stir && d.method === 'ext' && within(d.err, 0.02); }
+    },
+    {
+      id: 'hess-law-h5', level: 5, hidden: true,
+      riddle: { zh: '最高的那一點，就是答案。', en: 'The highest point is the answer.' },
+      check: function (ev) {
+        const d = an(ev);
+        return !!d && d.ref != null && d.method === 'raw' && within(d.err, 0.01) && d.dTraw != null && d.dText != null &&
+          Math.abs(d.dTraw) >= 2 && Math.abs(d.dText / d.dTraw - 1) <= 0.01;
+      }
+    },
+    {
+      id: 'hess-law-h6', level: 6, hidden: true,
+      riddle: { zh: '冷敷包的祕密，算到分毫不差。', en: 'The secret of the cold pack, worked out to the last digit.' },
+      check: function (ev) { const d = an(ev); return !!d && d.kind === 'dis-NH4NO3' && within(d.err, 0.003); }
+    },
+    {
+      id: 'hess-law-h7', level: 7, hidden: true,
+      riddle: { zh: '先把杯子量準，差不到一根頭髮。', en: 'Measure your cup first, not a hair off.' },
+      check: function (ev) { return ev.type === 'calib' && !!ev.data && within(ev.data.err, 0.15); }
+    },
+    {
+      id: 'hess-law-h8', level: 8, hidden: true,
+      riddle: { zh: '淡得幾乎嚐不出味道，熱卻一點也沒少。', en: 'So dilute you could hardly taste it, yet not a bit of the heat is missing.' },
+      check: function (ev) { const d = an(ev); return !!d && d.kind === 'neut' && d.dText != null && Math.abs(d.dText) <= 2 && within(d.err, 0.03); }
+    },
+    {
+      id: 'hess-law-h9', level: 9, hidden: true,
+      riddle: { zh: '兩條路，終點分毫不差。', en: 'Two roads, and they end at exactly the same spot.' },
+      check: function (ev) {
+        const d = an(ev), h = d && d.hess;
+        if (!h || h.h1 == null || h.h2 == null || h.h3 == null) return false;
+        return within(h.e1, 0.01) && within(h.e2, 0.01) && within(h.e3, 0.01) && Math.abs(h.h1 + h.h2 - h.h3) <= 0.002 * Math.abs(h.h3);
+      }
+    },
+    {
+      id: 'hess-law-h10', level: 10, hidden: true,
+      riddle: { zh: '沒見過的陌生人，一眼就認出來。', en: 'A stranger you have never met, recognised at a glance.' },
+      check: function (ev) { const d = an(ev); return !!d && d.kind === 'dis-X' && !d.revealed && within(d.err, 0.01); }
     }
   ]);
 })();
