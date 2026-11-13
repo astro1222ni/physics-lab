@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Cooling Magma: Crystal Size and Bowen’s Reaction Series | Astro Ni Science Lab">岩漿冷卻：晶體大小與鮑文反應序列｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 岩漿冷卻頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --mc-hot: #f59e0b; --mc-melt: #ea580c; --mc-cold: #78716c; --mc-host0: #d6cfc4; --mc-host1: #b8ad9c;
+      --mc-T: #dc2626; --mc-X: #2563eb; --mc-G: #16a34a; --mc-I: #9333ea; --mc-tl: #ea580c; --mc-tg: #64748b;
+      --mc-an: #0e7490; --mc-ab: #db2777; --mc-liq: #f97316; --mc-xtl: #0d9488;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --mc-hot: #fbbf24; --mc-melt: #fb923c; --mc-cold: #a8a29e; --mc-host0: #3a342d; --mc-host1: #2b2621;
+        --mc-T: #f87171; --mc-X: #60a5fa; --mc-G: #4ade80; --mc-I: #c084fc; --mc-tl: #fb923c; --mc-tg: #94a3b8;
+        --mc-an: #22d3ee; --mc-ab: #f472b6; --mc-liq: #fb923c; --mc-xtl: #2dd4bf;
+      }
+    }
+    :root[data-theme="dark"] {
+      --mc-hot: #fbbf24; --mc-melt: #fb923c; --mc-cold: #a8a29e; --mc-host0: #3a342d; --mc-host1: #2b2621;
+      --mc-T: #f87171; --mc-X: #60a5fa; --mc-G: #4ade80; --mc-I: #c084fc; --mc-tl: #fb923c; --mc-tg: #94a3b8;
+      --mc-an: #22d3ee; --mc-ab: #f472b6; --mc-liq: #fb923c; --mc-xtl: #2dd4bf;
+    }
+    #cv { aspect-ratio: auto; height: 560px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 640px; } }
+    #gr { display: block; width: 100%; height: 250px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 250px; } }
+    .mc button { min-height: 44px; }
+    .mc .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .mc .playbar button { flex: 1 1 auto; }
+    .mc .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .mc .slider input[type="range"] { height: 28px; margin: 0; }
+    .mc [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .tex-big { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; }
+    .tex-big small { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .runlog b { color: var(--text); }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Cooling magma"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 岩漿冷卻與結晶</nav>
+      <h1 data-en="Cooling Magma: Crystal Size and Bowen’s Reaction Series">岩漿冷卻：晶體大小與鮑文反應序列</h1>
+      <p data-en="Granite shows crystals you can see with the naked eye; basalt looks almost smooth; obsidian is glass. They can come from melts that are nearly the same — what differs is how fast they cooled. Change the size and depth of the magma body, watch the heat leak away, and look at the rock under the microscope. Then follow plagioclase as it crystallises, and see why its crystals are zoned.">花崗岩的晶體用肉眼就看得到，玄武岩看起來幾乎是平滑的，黑曜岩則是玻璃。它們的岩漿可能很像，差別在於冷得多快。改變岩體的大小與深度，看熱怎麼流失，再用顯微鏡看看長出來的岩石；接著跟著斜長石一路結晶，看看它的晶體為什麼一圈一圈。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: pick “Penghu basalt flow” and press “Cool it”, then try “Granite pluton”. Compare the crystals in the microscope circle.">試試看：選「澎湖玄武岩熔岩流」按「開始冷卻」，再選「花崗岩體」比一比，看右邊顯微鏡裡的晶體差多少。</p>
+    <div class="lab mc" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="cool" aria-pressed="true" data-en="Cooling and crystal size">冷卻與晶體大小</button>
+          <button type="button" data-mode="plag" aria-pressed="false" data-en="Plagioclase and Bowen’s series">斜長石與鮑文反應序列</button>
+        </div>
+        <canvas id="cv" aria-label="岩體剖面的溫度與偏光顯微鏡下的薄片" data-en-aria-label="Temperature in the cross-section of the magma body and the thin section under the microscope"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">開始冷卻</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄並回到冷卻前；設定不變" data-en-title="Clear the comparison log and go back to before cooling; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="Tt" aria-pressed="true" data-en="Temperature and crystals over time">溫度與結晶的歷程</button>
+            <button type="button" data-chart="IG" aria-pressed="false" data-en="Nucleation and growth rates">成核與成長速率</button>
+          </div>
+          <canvas id="gr" aria-label="取樣點的溫度與結晶比例隨時間的變化" data-en-aria-label="Temperature and crystal fraction at the sample point over time"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <div id="coolPanel">
+          <section class="card">
+            <h2 data-en="Magma and magma body">岩漿與岩體</h2>
+            <div class="presets" role="group" aria-label="真實的岩石" data-en-aria-label="Real rocks" id="presetSeg"></div>
+            <div class="segw" role="group" aria-label="岩漿的種類" data-en-aria-label="Kind of magma" id="typeSeg">
+              <button type="button" data-type="basalt" aria-pressed="true" data-en="Basaltic">玄武岩質</button>
+              <button type="button" data-type="andesite" aria-pressed="false" data-en="Andesitic">安山岩質</button>
+              <button type="button" data-type="rhyolite" aria-pressed="false" data-en="Rhyolitic">流紋岩質</button>
+            </div>
+            <div class="slider"><label for="size" data-en="Half-thickness of the body a (m)">岩體的半厚 a（m）</label><output></output>
+              <input id="size" type="range" min="-2" max="3.4771" step="0.01" value="0.6021"></div>
+            <div class="slider"><label for="dep" data-en="Depth z (km)">深度 z（km）</label><output></output>
+              <input id="dep" type="range" min="0" max="15" step="0.5" value="0" data-decimals="1"></div>
+            <div class="slider"><label for="pos" data-en="Sample position (0 = centre, 1 = contact)">取樣位置（0 = 中心，1 = 接觸面）</label><output></output>
+              <input id="pos" type="range" min="0" max="1" step="0.01" value="0" data-decimals="2"></div>
+            <div class="slider"><label for="phen" data-en="Crystals grown first in the deep chamber (%)">先在深處岩漿庫長出的晶體（%）</label><output></output>
+              <input id="phen" type="range" min="0" max="40" step="1" value="0" data-decimals="0"></div>
+            <p class="hint" id="bodyHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="The rock">長出來的岩石</h2>
+            <p class="tex-big" id="rTex">—</p>
+            <dl class="readout">
+              <dt data-en="Crystal size">晶體大小</dt><dd id="rL" class="big">—</dd>
+              <dt data-en-html="Crystals per cm<sup>3</sup>">每立方公分的晶體數</dt><dd id="rN">—</dd>
+              <dt data-en="Glass">玻璃</dt><dd id="rG">—</dd>
+              <dt data-en="Time to solidify">凝固所需的時間</dt><dd id="rT" class="big">—</dd>
+              <dt data-en="Cooling rate while crystallising">結晶時的冷卻速率</dt><dd id="rQ">—</dd>
+              <dt data-en="Undercooling at half crystallised">結晶一半時的過冷度</dt><dd id="rDT">—</dd>
+              <dt data-en="Country rock temperature">圍岩溫度</dt><dd id="rTr">—</dd>
+            </dl>
+          </section>
+          <section class="card">
+            <h2 data-en="Comparison log">比較紀錄</h2>
+            <p class="runlog" id="runlog" data-en="Each time the cooling runs to the end, the result is kept here so you can compare.">每冷卻完一次，結果會記在這裡，方便比較。</p>
+          </section>
+        </div>
+        <div id="plagPanel" hidden>
+          <section class="card">
+            <h2 data-en="Plagioclase crystallising">斜長石的結晶</h2>
+            <div class="segw" role="group" aria-label="結晶的方式" data-en-aria-label="How it crystallises" id="methSeg">
+              <button type="button" data-meth="eq" aria-pressed="true" data-en="Equilibrium" title="晶體一直和熔體反應，整顆晶體的成分一起改變" data-en-title="The crystals keep reacting with the melt, so the whole crystal changes composition">平衡結晶</button>
+              <button type="button" data-meth="frac" aria-pressed="false" data-en="Fractional" title="長出來的部分不再和熔體反應（被新的一層包起來或沉到底）" data-en-title="What has grown no longer reacts with the melt (it is buried by new layers or sinks)">分離結晶</button>
+            </div>
+            <div class="slider"><label for="an0" data-en="Magma composition (An %)">岩漿的成分（鈣長石 An %）</label><output></output>
+              <input id="an0" type="range" min="0" max="100" step="1" value="60" data-decimals="1"></div>
+            <div class="slider"><label for="temp" data-en="Temperature (°C)">溫度（°C）</label><output></output>
+              <input id="temp" type="range" min="1100" max="1560" step="1" value="1520" data-decimals="1"></div>
+            <dl class="readout">
+              <dt data-en="Starts to crystallise (liquidus)">開始結晶（液相線）</dt><dd id="pTL">—</dd>
+              <dt data-en="Fully solid at equilibrium (solidus)">平衡時完全凝固（固相線）</dt><dd id="pTS">—</dd>
+              <dt data-en="Melt composition">熔體的成分</dt><dd id="pXl" class="big">—</dd>
+              <dt data-en="Crystal (outermost layer)">晶體（最外層）</dt><dd id="pXs" class="big">—</dd>
+              <dt data-en="Crystal (average)">晶體（平均）</dt><dd id="pXm">—</dd>
+              <dt data-en="Crystals / melt">晶體／熔體</dt><dd id="pFs">—</dd>
+            </dl>
+            <p class="hint" data-en-html="An = anorthite CaAl<sub>2</sub>Si<sub>2</sub>O<sub>8</sub> (melts at 1553 °C); Ab = albite NaAlSi<sub>3</sub>O<sub>8</sub> (1118 °C). An 60 % means 60 % of the plagioclase is the calcium end.">An 是鈣長石 CaAl<sub>2</sub>Si<sub>2</sub>O<sub>8</sub>（1553 °C 熔化），Ab 是鈉長石 NaAlSi<sub>3</sub>O<sub>8</sub>（1118 °C）。An 60 % 表示斜長石裡 60 % 是鈣的那一端。</p>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="How fast a magma body cools">岩體冷得多快</h3>
+      <p data-en-html="A sheet of magma of half-thickness \(a\) (a dike, a sill or a lava flow) loses its heat by conduction into the colder rock around it. If it starts at temperature \(T_0\) and the country rock is at \(T_r\), the temperature at distance \(x\) from the centre is (Jaeger’s solution, latent heat neglected)">半厚 \(a\) 的板狀岩體（岩脈、岩床、熔岩流）把熱傳導給四周較冷的岩石。一開始是溫度 \(T_0\)，圍岩是 \(T_r\)，離中心 \(x\) 處的溫度是（Jaeger 的解，不計潛熱）</p>
+      <div class="formula">\[ T(x,t) = T_r + \frac{T_0 - T_r}{2}\left[\operatorname{erf}\frac{a - x}{2\sqrt{\kappa t}} + \operatorname{erf}\frac{a + x}{2\sqrt{\kappa t}}\right] \]</div>
+      <p data-en-html="with thermal diffusivity \(\kappa \approx 10^{-6}\ \mathrm{m^2/s}\). The only time scale is \(\tau = a^2/\kappa\): a body ten times thicker takes a hundred times longer. A 4 m lava flow solidifies in weeks; a 2 km granite pluton takes thousands of years. Deeper rock is hotter (about 25 °C per km), so a deep body also cools more slowly. Latent heat, released as crystals form, would stretch these times by another factor of about 1.5–2.">熱擴散率 \(\kappa \approx 10^{-6}\ \mathrm{m^2/s}\)。唯一的時間尺度是 \(\tau = a^2/\kappa\)：岩體厚 10 倍，冷卻時間長 100 倍。4 m 的熔岩流幾個星期就凝固，2 km 的花崗岩體要幾千年。越深的岩石越熱（每公里約 25 °C），深處的岩體也冷得比較慢。結晶時放出的潛熱，還會讓這些時間再拉長約 1.5–2 倍。</p>
+      <h3 data-en="Nucleation and growth">成核與成長</h3>
+      <p data-en-html="Below its liquidus temperature \(T_L\) a melt is <em>undercooled</em> by \(\Delta T = T_L - T\). Two things must happen: new crystal nuclei must appear (rate \(I\), per cubic metre per second) and existing crystals must grow (rate \(G\), metres per second). Both need atoms to move, so both are slowed by the viscosity \(\eta\). In this model">溫度低於液相線 \(T_L\) 時，熔體有了<em>過冷度</em> \(\Delta T = T_L - T\)。這時要發生兩件事：長出新的晶核（成核速率 \(I\)，每立方公尺每秒幾顆）與讓現有的晶體變大（成長速率 \(G\)，每秒幾公尺）。兩件事都要原子移動，所以都被黏度 \(\eta\) 拖慢。本模型用</p>
+      <div class="formula">\[ G = G_0\,\mu\,\frac{\Delta T}{100\ \mathrm{K}}, \qquad I = I_0\,\mu\left(\frac{\Delta T}{100\ \mathrm{K}}\right)^{4}, \qquad \mu = \left(\frac{100\ \mathrm{Pa\cdot s}}{\eta}\right)^{0.65} \]</div>
+      <p data-en-html="Nucleation depends on undercooling much more steeply than growth. Cool slowly and crystallisation happens at a small \(\Delta T\): few nuclei, each with plenty of time and melt to grow — coarse crystals. Cool fast and the melt is driven to a large \(\Delta T\): many nuclei, each tiny. Cool faster still and the viscosity rises so quickly that the atoms stop before they can arrange themselves: glass. The crystal fraction follows the Johnson–Mehl–Avrami–Kolmogorov equation \(X = 1 - e^{-X_e}\), where \(X_e = \int I(\tau)\,\tfrac{4\pi}{3}R(\tau,t)^3\,d\tau\), and the crystal size is \(L = (X/N)^{1/3}\).">成核對過冷度的依賴比成長陡得多。冷得慢，結晶在很小的 \(\Delta T\) 就完成：晶核少，每顆都有充足的時間與熔體可以長大，晶體粗。冷得快，熔體被推到很大的 \(\Delta T\)：晶核很多，每顆都很小。再快一點，黏度上升得太快，原子還來不及排好就動不了了：成為玻璃。結晶比例照 Johnson–Mehl–Avrami–Kolmogorov 方程式 \(X = 1 - e^{-X_e}\)，其中 \(X_e = \int I(\tau)\,\tfrac{4\pi}{3}R(\tau,t)^3\,d\tau\)；晶體大小 \(L = (X/N)^{1/3}\)。</p>
+      <p data-en-html="Viscosity follows \(\log_{10}\eta = A + B/(T - C)\) with \(A = -4.55\) (Giordano et al., 2008); \(B\) and \(C\) are set so that \(\eta\) has a typical value at the liquidus and reaches \(10^{12}\ \mathrm{Pa\cdot s}\) at the glass transition. Silica-rich (rhyolitic) melt is a million times more viscous than basaltic melt, which is why obsidian is rhyolitic. \(G_0\), \(I_0\), the exponent 4 and 0.65 are illustrative values chosen so that typical rocks come out with textbook crystal sizes: trust the trends and the orders of magnitude, not single numbers.">黏度用 \(\log_{10}\eta = A + B/(T - C)\)，\(A = -4.55\)（Giordano 等人，2008）；\(B\)、\(C\) 讓液相線溫度的黏度是典型值、玻璃轉移溫度時達到 \(10^{12}\ \mathrm{Pa\cdot s}\)。富含二氧化矽的流紋岩質熔體比玄武岩質黏上百萬倍，所以黑曜岩是流紋岩質的。\(G_0\)、\(I_0\)、指數 4 與 0.65 是示意值，選來讓常見岩石的晶體大小符合教科書：可以相信趨勢與數量級，不要太相信單一數字。</p>
+      <h3 data-en="Textures">岩石的組織</h3>
+      <ul>
+        <li data-en-html="<strong>Phaneritic</strong> (coarse, crystals of 1 mm or more, visible by eye): plutonic rocks — gabbro, diorite, granite. 3 cm or more: <strong>pegmatite</strong>.">顯晶質（粗粒，晶體 1 mm 以上，肉眼看得見）：深成岩——輝長岩、閃長岩、花崗岩。3 cm 以上叫<strong>偉晶岩</strong>。</li>
+        <li data-en-html="<strong>Aphanitic</strong> (fine, crystals below 1 mm): volcanic rocks — basalt, andesite, rhyolite.">隱晶質（細粒，晶體小於 1 mm）：火山岩——玄武岩、安山岩、流紋岩。</li>
+        <li data-en-html="<strong>Glassy</strong>: obsidian, the glassy rinds of pillow lavas.">玻璃質：黑曜岩、枕狀熔岩的玻璃外殼。</li>
+        <li data-en-html="<strong>Porphyritic</strong>: large crystals (phenocrysts) in a fine groundmass — two stages of cooling, slow in a deep chamber and then fast after eruption. Many andesites of the Tatun volcanoes look like this.">斑狀：細小的石基裡嵌著大晶體（斑晶）——兩階段冷卻：先在深處岩漿庫慢慢冷，噴發後很快冷卻。大屯火山群的安山岩很多就是這樣。</li>
+      </ul>
+      <h3 data-en="Plagioclase and Bowen’s reaction series">斜長石與鮑文反應序列</h3>
+      <p data-en-html="N. L. Bowen (1913) melted mixtures of anorthite (An) and albite (Ab) and found that they form one continuous solid solution. For an ideal solution each end-member obeys">鮑文（N. L. Bowen，1913）熔化鈣長石（An）與鈉長石（Ab）的混合物，發現它們形成連續的固溶體。理想溶液中，每一個端成分都滿足</p>
+      <div class="formula">\[ \ln\frac{x_s}{x_\ell} = \frac{\Delta H_m}{R}\left(\frac{1}{T} - \frac{1}{T_m}\right) \]</div>
+      <p data-en-html="with \(T_m = 1553\ ^\circ\mathrm{C}\), \(\Delta H_m = 121\ \mathrm{kJ/mol}\) for An (Bowen’s own estimate) and \(T_m = 1118\ ^\circ\mathrm{C}\), \(\Delta H_m = 54\ \mathrm{kJ/mol}\) for Ab (chosen to match his diagram). The crystal is always richer in calcium than the melt it grows from. In <strong>equilibrium</strong> crystallisation the crystals keep reacting with the melt and the lever rule gives the amounts; when everything is solid the crystals have the composition of the original magma. In <strong>fractional</strong> crystallisation each new layer is sealed off: the melt keeps getting richer in sodium, the crystals become zoned (calcium-rich core, sodium-rich rim), and the last drops of melt are nearly pure albite. Mass balance gives \(dF/F = dx_\ell/(x_s - x_\ell)\) for the melt fraction \(F\).">\(T_m = 1553\ ^\circ\mathrm{C}\)、\(\Delta H_m = 121\ \mathrm{kJ/mol}\) 是鈣長石（Bowen 自己的估計），\(T_m = 1118\ ^\circ\mathrm{C}\)、\(\Delta H_m = 54\ \mathrm{kJ/mol}\) 是鈉長石（選來符合他的相圖）。晶體永遠比長出它的熔體更富鈣。<strong>平衡結晶</strong>時晶體一直和熔體反應，比例用槓桿定則算；完全凝固時，晶體的成分就是原來岩漿的成分。<strong>分離結晶</strong>時每一層長好就被封住：熔體越來越富鈉，晶體出現環帶（核心富鈣、外圈富鈉），最後的幾滴熔體幾乎是純鈉長石。由質量守恆，剩下的熔體比例 \(F\) 滿足 \(dF/F = dx_\ell/(x_s - x_\ell)\)。</p>
+      <p data-en-html="These experiments were dry and at 1 atmosphere. Natural magmas contain water, which lowers the whole loop by a few hundred degrees with little change in shape (Yoder et al., 1957). Bowen put the minerals of common magmas in order: olivine, pyroxene, amphibole, biotite (the <em>discontinuous</em> branch, each mineral reacting with the melt to make the next) alongside the <em>continuous</em> plagioclase branch from calcium-rich to sodium-rich, ending with K-feldspar, muscovite and quartz. The temperatures in the diagram are rough ranges for natural, water-bearing magmas.">這些實驗是無水、一大氣壓下做的。天然岩漿含水，整個環會往下移數百度，形狀差不多（Yoder 等人，1957）。鮑文把常見岩漿裡的礦物排出順序：橄欖石、輝石、角閃石、黑雲母（<em>不連續</em>系列，每一種和熔體反應變成下一種），旁邊是從富鈣到富鈉的<em>連續</em>斜長石系列，最後是鉀長石、白雲母、石英。圖上的溫度是天然含水岩漿的大約範圍。</p>
+      <h3 data-en="What to watch for">觀察重點</h3>
+      <ul>
+        <li data-en-html="Make the body ten times thicker and the time to solidify grows a hundredfold — and the crystals get bigger.">岩體厚 10 倍，凝固時間變成 100 倍，晶體也變大。</li>
+        <li data-en-html="Move the sample from the centre to the contact: the chilled margin is finer — sometimes glass.">取樣位置從中心移到接觸面：接觸面附近冷得快，晶體細，有時是玻璃（冷凝邊）。</li>
+        <li data-en-html="Same size, same place, different magma: rhyolite freezes to obsidian where basalt still crystallises.">一樣大、一樣的位置，換一種岩漿：玄武岩還能結晶的地方，流紋岩卻凍成黑曜岩。</li>
+        <li data-en-html="In fractional crystallisation, compare the core and the rim of the plagioclase — and notice that melt survives below the equilibrium solidus.">分離結晶時，比較斜長石的核心與外圈；也注意到：降到平衡結晶的固相線以下，竟然還有熔體。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="The body starts at its liquidus temperature everywhere; the country rock follows a geotherm of 25 °C/km from 15 °C at the surface. The cooling path at the sample point comes from the erf solution above; along it the JMAK equations are integrated on 5000 logarithmic time steps until the rock is solid or the remaining melt passes its glass transition. The porphyritic option first cools the magma at \(3 \times 10^{-10}\ ^\circ\mathrm{C/s}\) (about 10 °C per thousand years) until the chosen fraction has crystallised. A lava flow really loses heat from its top to the air as well; here both sides are treated as rock. The microscope view is drawn from the computed size and number of crystals; shapes and interference colours are schematic.">一開始整個岩體都是液相線溫度；圍岩照每公里 25 °C 的地溫梯度（地表 15 °C）。取樣點的冷卻歷程用上面的 erf 解；沿著這條歷程，用 5000 個對數時間步積分 JMAK 方程式，直到完全凝固，或剩下的熔體降到玻璃轉移溫度。斑狀的選項先讓岩漿以每秒 \(3 \times 10^{-10}\ ^\circ\mathrm{C}\)（每千年約 10 °C）冷卻，直到長出設定比例的晶體。熔岩流其實還會從上表面散熱到空氣中，這裡把上下兩側都當成岩石。顯微鏡裡的畫面依計算出的晶體大小與數量畫出，形狀與干涉色是示意。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/magma-crystallization-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/magma-crystallization.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="magma-crystallization"></script>
+  <script src="js/missions/magma-crystallization.js"></script>
+  <script src="js/stats.js" data-module="magma-crystallization"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
