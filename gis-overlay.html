@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Map Overlay and Site Selection: How GIS Helps Decide | Astro Ni Science Lab">圖層疊合與選址：GIS 怎麼幫忙做決定｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 圖層疊合頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --go-water: #6fa8dc; --go-town: #d9826b; --go-farm: #d8e3a3; --go-forest: #5f9a5a; --go-reserve: #2f6b4f;
+      --go-ok: #1f9d6b; --go-no: #8a8f98; --go-flood: #2f6fd0; --go-fault: #d0342c; --go-road: #f4f1ea; --go-roadedge: #6b6255;
+      --go-river: #3d7fd6; --go-probe: #e0a100;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --go-water: #2f5f8f; --go-town: #b5674f; --go-farm: #6e7d45; --go-forest: #3f6f3f; --go-reserve: #284f3d;
+        --go-ok: #3cd197; --go-no: #4a4f57; --go-flood: #5aa0ff; --go-fault: #ff6b5e; --go-road: #d9d2c3; --go-roadedge: #1d1b18;
+        --go-river: #6aa8ff; --go-probe: #ffd34d;
+      }
+    }
+    :root[data-theme="dark"] {
+      --go-water: #2f5f8f; --go-town: #b5674f; --go-farm: #6e7d45; --go-forest: #3f6f3f; --go-reserve: #284f3d;
+      --go-ok: #3cd197; --go-no: #4a4f57; --go-flood: #5aa0ff; --go-fault: #ff6b5e; --go-road: #d9d2c3; --go-roadedge: #1d1b18;
+      --go-river: #6aa8ff; --go-probe: #ffd34d;
+    }
+    #cv { aspect-ratio: 4 / 3.15; touch-action: none; cursor: crosshair; }
+    #cv.rot { cursor: grab; }
+    @media (min-width: 881px) and (min-height: 940px) { .go .stage { position: sticky; top: 12px; } }
+    .go button { min-height: 44px; }
+    .go [hidden] { display: none !important; }
+    .go .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .layers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 0; }
+    .layers button { min-height: 44px; padding: 4px 6px; font-size: calc(13px * var(--fs, 1)); }
+    .layers button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+    @media (max-width: 420px) { .layers { grid-template-columns: repeat(2, 1fr); } }
+    .crit { border-top: 1px solid var(--border); padding: 6px 0 4px; }
+    .crit:first-of-type { border-top: none; }
+    .crit .head { display: flex; align-items: center; gap: 8px; }
+    .crit .ck { flex: 1 1 auto; display: flex; align-items: center; gap: 8px; text-align: left; justify-content: flex-start; padding: 4px 10px; }
+    .crit .ck .box { width: 18px; height: 18px; border-radius: 4px; border: 2px solid currentColor; flex: 0 0 auto; display: grid; place-items: center; font-size: 13px; line-height: 1; }
+    .crit .ck[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .crit .ck[aria-pressed="true"] .box { background: var(--accent); color: var(--surface); }
+    .crit .ck[aria-pressed="true"] .box::after { content: "✓"; }
+    .crit .fail { font-size: calc(12px * var(--fs, 1)); color: var(--muted); white-space: nowrap; }
+    .crit.off .slider { opacity: 0.45; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .chips button { flex: 1 1 auto; min-height: 44px; padding: 4px 8px; font-size: calc(13px * var(--fs, 1)); display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .chips button i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .chips button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; background: var(--accent-soft); }
+    .chips button[aria-pressed="false"] { opacity: 0.7; text-decoration: line-through; }
+    dl.readout dd.big { font-weight: 700; }
+    table.tab { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+    table.tab th, table.tab td { padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.tab th:first-child, table.tab td:first-child { text-align: left; }
+    table.tab td.ok { color: var(--go-ok); font-weight: 700; }
+    table.tab td.no { color: var(--go-fault); font-weight: 700; }
+    table.tab td.off { color: var(--muted); }
+    .legend i.dash { height: 0; border-top: 2px dashed currentColor; background: none !important; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#gis&quot;>Geography · Geospatial Technology</a> / Map overlay"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#gis">地理・空間資訊科技</a> ／ 圖層疊合與選址</nav>
+      <h1 data-en="Map Overlay and Site Selection: How GIS Helps Decide">圖層疊合與選址：GIS 怎麼幫忙做決定</h1>
+      <p data-en="Where should a county put its new incinerator, school or solar farm? A geographic information system stacks map layers — slope, flood depth, distance to an active fault, to roads and to homes, land use — and keeps only the places that meet every rule, or scores every place and adds the scores with weights. The county here is invented, but the method is the one planners use.">一個縣的新焚化廠、學校、太陽能場要蓋在哪裡？地理資訊系統（GIS）把地圖一層一層疊起來：坡度、淹水深度、離活動斷層多遠、離道路多遠、離住家多遠、土地使用。只留下每一條規則都通過的地方，或是幫每個地方打分數、乘上權重相加。這個縣是虛構的，但方法和規劃單位用的一樣。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: pick a facility, then switch the layer buttons to see why each place passes or fails. Tap a cell to read all of its layers.">試試看：選一種設施，再切換下面的圖層按鈕，看每個地方為什麼通過或不通過。點一格可以看那一格的全部資料。</p>
+    <div class="lab go" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="方法" data-en-aria-label="Method" id="methodSeg">
+            <button type="button" data-method="bool" aria-pressed="true" data-en="Boolean overlay" title="每一個條件都要通過（而且）" data-en-title="Every rule must pass (AND)">布林疊合</button>
+            <button type="button" data-method="weight" aria-pressed="false" data-en="Weighted overlay" title="每個條件打分數，乘上權重相加" data-en-title="Score each rule and add with weights">加權疊合</button>
+          </div>
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
+            <button type="button" data-view="map" aria-pressed="true" data-en="Map">平面圖</button>
+            <button type="button" data-view="3d" aria-pressed="false" data-en="Layer stack" title="把每一個圖層一層層疊起來" data-en-title="Stack the layers one above another">圖層疊起來</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="虛構縣的地圖：目前顯示的圖層與選址結果；點一格看那一格的資料" data-en-aria-label="Map of the invented county showing the current layer and the result; tap a cell to read it"></canvas>
+        <div class="layers" role="group" aria-label="顯示的圖層" data-en-aria-label="Layer shown" id="layerSeg">
+          <button type="button" data-layer="result" aria-pressed="true" data-en="Result">結果</button>
+          <button type="button" data-layer="z" aria-pressed="false" data-en="Elevation">高程</button>
+          <button type="button" data-layer="slope" aria-pressed="false" data-en="Slope">坡度</button>
+          <button type="button" data-layer="flood" aria-pressed="false" data-en="Flooding">淹水</button>
+          <button type="button" data-layer="fault" aria-pressed="false" data-en="Fault">斷層</button>
+          <button type="button" data-layer="road" aria-pressed="false" data-en="Roads">道路</button>
+          <button type="button" data-layer="town" aria-pressed="false" data-en="Homes">住家</button>
+          <button type="button" data-layer="land" aria-pressed="false" data-en="Land use">土地使用</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" data-en="Tap the map (or use the arrow keys) to inspect one 250 m × 250 m cell.">點地圖（或用方向鍵）查看一格 250 m × 250 m 的資料。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Facility">要蓋什麼</h2>
+          <div class="segw" role="group" aria-label="設施" data-en-aria-label="Facility" id="facSeg">
+            <button type="button" data-fac="incinerator" aria-pressed="true" data-en="Incinerator">焚化廠</button>
+            <button type="button" data-fac="school" aria-pressed="false" data-en="School">學校</button>
+            <button type="button" data-fac="solar" aria-pressed="false" data-en="Solar farm">太陽能場</button>
+          </div>
+          <div class="slider"><label for="flStage" data-en="Flood scenario: river rises (m)" title="一場大雨讓河水比河床高出幾公尺；比這個高度低、又靠近河的地方會淹水" data-en-title="How far a heavy storm raises the river above its bed; low ground near the river floods">淹水情境：河水上漲（公尺）</label><output></output>
+            <input id="flStage" type="range" min="0" max="6" step="0.1" value="2" data-decimals="1"></div>
+          <dl class="readout">
+            <dt data-en="Flooded land">淹水的土地</dt><dd id="rFlood">—</dd>
+          </dl>
+          <button type="button" id="reset" data-en="Back to this facility's rules">回到這種設施的預設條件</button>
+        </section>
+        <section class="card" id="critCard">
+          <h2 data-en="Rules">條件</h2>
+          <div class="crit" data-c="slope">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Slope at most">坡度不超過</span></button><span class="fail"></span></div>
+            <div class="slider"><label for="cSlope" data-en="Slope (%)">坡度（%）</label><output></output><input id="cSlope" type="range" min="0" max="40" step="1" value="10" data-decimals="1"></div>
+            <div class="slider wt"><label for="wSlope" data-en="Weight">權重</label><output></output><input id="wSlope" type="range" min="0" max="5" step="1" value="2" data-decimals="0"></div>
+          </div>
+          <div class="crit" data-c="flood">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Flood depth at most">淹水深度不超過</span></button><span class="fail"></span></div>
+            <div class="slider"><label for="cFlood" data-en="Depth (m)">深度（公尺）</label><output></output><input id="cFlood" type="range" min="0" max="3" step="0.1" value="0" data-decimals="2"></div>
+            <div class="slider wt"><label for="wFlood" data-en="Weight">權重</label><output></output><input id="wFlood" type="range" min="0" max="5" step="1" value="3" data-decimals="0"></div>
+          </div>
+          <div class="crit" data-c="fault">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Fault buffer at least">離活動斷層至少</span></button><span class="fail"></span></div>
+            <div class="slider"><label for="cFault" data-en="Distance (m)">距離（公尺）</label><output></output><input id="cFault" type="range" min="0" max="4000" step="50" value="1000" data-decimals="0"></div>
+            <div class="slider wt"><label for="wFault" data-en="Weight">權重</label><output></output><input id="wFault" type="range" min="0" max="5" step="1" value="3" data-decimals="0"></div>
+          </div>
+          <div class="crit" data-c="road">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Road within">離道路不超過</span></button><span class="fail"></span></div>
+            <div class="slider"><label for="cRoad" data-en="Distance (m)">距離（公尺）</label><output></output><input id="cRoad" type="range" min="100" max="5000" step="50" value="500" data-decimals="0"></div>
+            <div class="slider wt"><label for="wRoad" data-en="Weight">權重</label><output></output><input id="wRoad" type="range" min="0" max="5" step="1" value="2" data-decimals="0"></div>
+          </div>
+          <div class="crit" data-c="town">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span id="townTxt">離住家至少</span></button><span class="fail"></span></div>
+            <div class="slider"><label for="cTown" data-en="Distance (m)">距離（公尺）</label><output></output><input id="cTown" type="range" min="0" max="5000" step="50" value="2500" data-decimals="0"></div>
+            <div class="slider wt"><label for="wTown" data-en="Weight">權重</label><output></output><input id="wTown" type="range" min="0" max="5" step="1" value="4" data-decimals="0"></div>
+          </div>
+          <div class="crit" data-c="land">
+            <div class="head"><button type="button" class="ck" aria-pressed="true"><span class="box"></span><span data-en="Land use allowed">只能用這些土地</span></button><span class="fail"></span></div>
+            <div class="chips" role="group" aria-label="允許的土地使用" data-en-aria-label="Land uses allowed" id="landChips">
+              <button type="button" data-land="0" aria-pressed="false" data-en-html="<i style=&quot;background:var(--go-water)&quot;></i>Water"><i style="background:var(--go-water)"></i>水域</button>
+              <button type="button" data-land="1" aria-pressed="false" data-en-html="<i style=&quot;background:var(--go-town)&quot;></i>Housing"><i style="background:var(--go-town)"></i>住宅</button>
+              <button type="button" data-land="2" aria-pressed="true" data-en-html="<i style=&quot;background:var(--go-farm)&quot;></i>Farmland"><i style="background:var(--go-farm)"></i>農地</button>
+              <button type="button" data-land="3" aria-pressed="false" data-en-html="<i style=&quot;background:var(--go-forest)&quot;></i>Forest"><i style="background:var(--go-forest)"></i>森林</button>
+              <button type="button" data-land="4" aria-pressed="false" data-en-html="<i style=&quot;background:var(--go-reserve)&quot;></i>Reserve"><i style="background:var(--go-reserve)"></i>保護區</button>
+            </div>
+          </div>
+          <p class="hint" id="critHint"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Result">結果</h2>
+          <dl class="readout" id="rBool">
+            <dt data-en="Suitable area">可以蓋的面積</dt><dd id="rArea" class="big">—</dd>
+            <dt data-en="Separate pieces" title="上下左右相連的格子算同一塊" data-en-title="Cells touching side by side count as one piece">分成幾塊</dt><dd id="rPatch">—</dd>
+            <dt data-en="Largest piece">最大的一塊</dt><dd id="rLargest">—</dd>
+            <dt data-en="Pieces of 0.25 km² or more" title="一座設施至少需要 0.25 平方公里（4 格）連在一起" data-en-title="A facility needs at least 0.25 km² (4 cells) in one piece">夠大（≥ 0.25 km²）的塊數</dt><dd id="rBig">—</dd>
+          </dl>
+          <dl class="readout" id="rWeight" hidden>
+            <dt data-en="Best score">最高分</dt><dd id="rBest" class="big">—</dd>
+            <dt data-en="Best cell">最高分的格子</dt><dd id="rBestAt">—</dd>
+            <dt data-en="Area scoring 70 or more">70 分以上的面積</dt><dd id="rHi">—</dd>
+            <dt data-en="Best cell passes every rule?" title="加權疊合的最高分，在布林疊合裡是否也通過" data-en-title="Whether the top-scoring cell also passes the boolean overlay">最高分也通過每一條？</dt><dd id="rBestOk">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="This cell">這一格</h2>
+          <p class="hint" id="pHint" data-en="Tap the map to inspect a cell.">點地圖查看一格。</p>
+          <table class="tab" id="pTab" aria-label="這一格的圖層" data-en-aria-label="Layers of this cell"></table>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Layers">圖層</h3>
+      <p data-en="A GIS keeps each kind of information in its own layer over the same grid of cells. Some layers are measured (elevation), some are calculated from others (slope from elevation, flood depth from elevation and river level), and some are distances to features (an active fault, a road, the nearest homes). Drawing a band at a fixed distance around a feature is called a buffer.">GIS 把每一種資料放在各自的圖層，所有圖層用同一套網格對齊。有些是量出來的（高程），有些是由別的圖層算出來的（由高程算坡度，由高程與河水高度算淹水深度），有些是到某種地物的距離（活動斷層、道路、最近的住家）。在地物周圍畫出固定距離的帶狀範圍，叫做環域（buffer）。</p>
+      <ul>
+        <li data-en-html="Slope between neighbouring cells: \(\text{slope} = 100\% \times \sqrt{(\Delta z/\Delta x)^2 + (\Delta z/\Delta y)^2}\).">坡度由相鄰格子的高程差算出：\(\text{坡度} = 100\% \times \sqrt{(\Delta z/\Delta x)^2 + (\Delta z/\Delta y)^2}\)。</li>
+        <li data-en-html="Flood depth: a cell floods when the river rises above it, \(\text{depth} = \max(0,\ h_\text{river} - h_\text{above river})\), where the second term is how high the cell sits above the nearest river bed.">淹水深度：河水漲得比這一格還高就會淹，\(\text{深度} = \max(0,\ h_\text{河水上漲} - h_\text{離河高度})\)，離河高度是這一格比最近的河床高多少。</li>
+      </ul>
+      <h3 data-en="Boolean overlay">布林疊合</h3>
+      <p data-en="Each rule turns its layer into yes or no. A cell is suitable only if every rule says yes (logical AND). It is easy to explain, but harsh: a cell that just misses one rule is thrown away however good it is otherwise, and the answer jumps when a threshold moves a little.">每一條規則把它的圖層變成「可以／不可以」。每一條都說可以的格子才算適合（邏輯上的「而且」）。這種方法容易說明，但很嚴格：只差一點點沒通過某一條的格子，不管其他條件多好都會被丟掉；門檻移動一點，答案就可能跳很大。</p>
+      <h3 data-en="Weighted overlay">加權疊合</h3>
+      <p data-en-html="Each rule gives a score from 0 to 1 (here: 1 at the ideal value, 0.5 at the threshold, 0 at twice the threshold), and the suitability is the weighted average \(S = 100 \times \dfrac{\sum w_i s_i}{\sum w_i}\). Land uses that are not allowed stay at 0 as hard constraints. The weights say what matters most, so they are a value judgement that should be discussed openly.">每一條規則給 0 到 1 的分數（這裡：理想值 1 分，剛好在門檻 0.5 分，到兩倍門檻 0 分），適宜度是加權平均 \(S = 100 \times \dfrac{\sum w_i s_i}{\sum w_i}\)。不允許的土地使用仍然是 0，當作限制條件。權重代表「什麼比較重要」，是價值判斷，應該公開討論。</p>
+      <h3 data-en="Why these rules?">為什麼是這些條件？</h3>
+      <div class="tablewrap"><table>
+        <tr><th data-en="Facility">設施</th><th data-en="Typical reasons">常見的考量</th></tr>
+        <tr><td data-en="Incinerator">焚化廠</td><td data-en="Garbage trucks need a road; flat, flood-free land for a large plant; away from an active fault; far from homes because of traffic, smell and public concern.">垃圾車要有路可走；大型廠房需要平坦、不淹水的土地；遠離活動斷層；因為車流、氣味與居民的疑慮，離住家要遠。</td></tr>
+        <tr><td data-en="School">學校</td><td data-en="Close to where children live and to a road; safe from floods and away from an active fault; flat playgrounds.">靠近學生住的地方與道路；不淹水、遠離活動斷層；操場要平坦。</td></tr>
+        <tr><td data-en="Solar farm">太陽能場</td><td data-en="Large flat areas that do not flood and can be reached for building and repairs; whether to use farmland, forest or fish ponds is a real debate.">大片平坦、不淹水、施工維修到得了的土地；要用農地、森林還是魚塭，是真實的爭議。</td></tr>
+      </table></div>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Raise the flood scenario. Which parts of the town go under water first?">把淹水情境調高：城裡哪些地方最先淹？</li>
+        <li data-en="Widen the fault buffer step by step and watch the suitable area shrink. Where does the last site survive?">把斷層環域一步一步加寬，看可用面積怎麼縮小：最後剩下的地在哪裡？</li>
+        <li data-en="Compare the boolean and weighted answers. Is the best-scoring cell one that the boolean overlay rejected?">比較布林與加權的答案：加權的最高分，是不是布林疊合丟掉的格子？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="The county, its terrain, river, fault, roads and towns are invented. Real siting also uses geology, wind, traffic, land prices, laws and public hearings.">這個縣的地形、河流、斷層、道路與城鎮都是虛構的。真實的選址還要考慮地質、風向、交通量、地價、法規與公聽會。</li>
+        <li data-en="Flooding is estimated from height above the nearest river bed only; real flood maps simulate rainfall, drainage and the sea.">淹水只用「離最近河床的高度」估計；真實的淹水潛勢圖會模擬降雨、排水與海水。</li>
+        <li data-en="Distances are straight-line distances between cell centres, so the boundaries are stepped at 250 m.">距離是格子中心之間的直線距離，所以邊界會有 250 m 的鋸齒。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography elective, Geospatial Technology (overlay, buffer, site selection; active faults and facilities).">課綱對應：高中地理選修・空間資訊科技（疊圖分析、環域、選址；活動斷層與設施）。</li>
+        <li data-en="I. L. McHarg (1969), Design with Nature, Natural History Press — the classic use of map overlays for planning.">I. L. McHarg（1969），《Design with Nature》，Natural History Press：用疊圖做規劃的經典。</li>
+        <li data-en="J. Malczewski (2004), GIS-based land-use suitability analysis: a critical overview, Progress in Planning 62(1), 3–65.">J. Malczewski（2004），〈GIS-based land-use suitability analysis: a critical overview〉，Progress in Planning 62(1)，3–65。</li>
+        <li data-en="All map data in this lab are invented for teaching; no outside data are used.">本實驗的地圖資料都是為了教學而虛構的，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gis-overlay-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/gis-overlay.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gis-overlay"></script>
+  <script src="js/missions/gis-overlay.js"></script>
+  <script src="js/stats.js" data-module="gis-overlay"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
