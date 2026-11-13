@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Pitch and Frequency: From Vibration to Note Names | Astro Ni Science Lab">音高與頻率：從振動到音名｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 音高與頻率頁面專用的顏色代號（淺色＋兩組深色；由 js/pitch-frequency.js 與 js/pitch-frequency-3d.js 讀取）
+       wave 波形、period 週期色帶、cur 目前的頻率、inst 樂器、voice 人聲、lin 線性軸、log 對數軸、key／keyb 白鍵與黑鍵、memA／memB 兩個記憶 */
+    :root { --pf-wave: #1d4ed8; --pf-period: #0ea5e9; --pf-cur: #e11d48; --pf-inst: #0f766e; --pf-voice: #b45309; --pf-lin: #7c3aed; --pf-log: #0f766e;
+      --pf-key: #fbfaf7; --pf-keyb: #22252b; --pf-memA: #2563eb; --pf-memB: #c2410c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pf-wave: #7aa7ff; --pf-period: #38bdf8; --pf-cur: #fb7185; --pf-inst: #5eead4; --pf-voice: #fbbf24; --pf-lin: #b9a0ff; --pf-log: #5eead4;
+        --pf-key: #d9dce2; --pf-keyb: #0d0f13; --pf-memA: #7aa7ff; --pf-memB: #fb923c; }
+    }
+    :root[data-theme="dark"] { --pf-wave: #7aa7ff; --pf-period: #38bdf8; --pf-cur: #fb7185; --pf-inst: #5eead4; --pf-voice: #fbbf24; --pf-lin: #b9a0ff; --pf-log: #5eead4;
+      --pf-key: #d9dce2; --pf-keyb: #0d0f13; --pf-memA: #7aa7ff; --pf-memB: #fb923c; }
+
+    /* 畫布高度由程式依寬度決定；波形與軸的畫布不攔觸控（手機照常捲動） */
+    #cv, #cvAxis { aspect-ratio: auto; height: 240px; touch-action: auto; cursor: default; }
+    #cvAxis { height: 150px; margin-top: 10px; }
+    .pf [hidden] { display: none !important; }
+    .pf button { min-height: 44px; }
+    /* 鍵盤與音域圖：手機上在容器裡左右捲動，整頁不捲 */
+    .kbwrap { position: relative; margin: 10px 0 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; border-radius: 8px;
+      background: var(--canvas-bg); overscroll-behavior-x: contain; }
+    .kbwrap canvas#cvKeys { display: block; aspect-ratio: auto; height: 420px; touch-action: pan-x pan-y; cursor: pointer; border-radius: 0; }
+    .kbwrap canvas#cvKeys:focus-visible { outline: 3px solid var(--accent); outline-offset: -3px; }
+    .pf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pf .playbar > button { flex: 1 1 auto; }
+    .pf .playbar .seg { flex: 1 1 auto; }
+    .pf .playbar .seg button { flex: 1 1 auto; white-space: nowrap; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pf #stop:disabled { opacity: .5; cursor: default; }
+    .pf .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pf .panel { grid-template-columns: minmax(0, 1fr); }
+    .pf .panel > .card { min-width: 0; }
+    .pf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .stage .hint.warn { color: var(--pf-voice); }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv, .stage.is3d #cvAxis, .stage.is3d .only2d { display: none; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 16 / 9;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.c { color: var(--pf-cur); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .steps button { padding: 6px 4px; font-variant-numeric: tabular-nums; }
+    .steps .wide { grid-column: 1 / -1; }
+    .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .presets button { padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .presets button small { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+    .namebar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .namebar .seg { flex: 1 1 auto; }
+    .namebar .seg button { flex: 1 1 0; }
+    .toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.big { font-size: 1.25em; font-weight: 700; }
+    .insts { font-size: calc(13px * var(--fs, 1)); color: var(--text); margin: 6px 0 0; line-height: 1.5; }
+    .insts b { color: var(--muted); font-weight: 500; }
+    .membtns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .membtns .wide { grid-column: 1 / -1; }
+    .mem { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 8px; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .mem .tag { font-weight: 700; }
+    .mem .tA { color: var(--pf-memA); } .mem .tB { color: var(--pf-memB); }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rec { width: 100%; border-collapse: collapse; margin: 8px 0 0; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .rec th, .rec td { padding: 3px 4px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .rec th { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .rec th:first-child, .rec td:first-child { text-align: left; }
+    .rec-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tone&quot;>Music · Musical Tone and Hearing</a> / Pitch and frequency"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tone">音樂・樂音與聽覺</a> ／ 音高與頻率</nav>
+      <h1 data-en="Pitch and Frequency: From Vibration to Note Names">音高與頻率：從振動到音名</h1>
+      <p data-en="A note is something vibrating so many times a second. How fast is middle C? Why is the next C exactly twice as fast? Slide the frequency, tap the 88 keys of a piano, change the standard pitch from 440 Hz to the 415 Hz of Baroque music, and find out why adding 100 Hz is several octaves in the bass but less than a semitone in the treble — the ear hears ratios, not differences.">一個音，就是某個東西每秒振動很多次。中央 C 每秒振動幾次？為什麼高一個八度的 C 剛好快一倍？在這裡拖曳頻率、點鋼琴的 88 個鍵，把標準音從 440 Hz 換成巴洛克音樂的 415 Hz，再看看為什麼同樣「加 100 Hz」，在低音區是好幾個八度、在高音區卻不到一個半音——耳朵聽的是比值，不是差。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Add 100 Hz” once on A1 and once on A6, and compare how far the note jumps.">試試看：在 A1 按一次「加 100 Hz」，再到 A6 按一次，比比看音各跳了多遠。</p>
+    <div class="lab pf" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D wave">2D 波形</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D ladder">3D 頻率之梯</button>
+          </div>
+          <div class="seg l3" role="group" aria-label="柱子的高度" data-en-aria-label="Bar height">
+            <button type="button" data-hmode="lin" aria-pressed="true" data-en="Linear height">線性高度</button>
+            <button type="button" data-hmode="log" aria-pressed="false" data-en="Log height">對數高度</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="波形畫布"></canvas>
+        <div id="view3"></div>
+        <div class="kbwrap" id="kbwrap"><canvas id="cvKeys"></canvas></div>
+        <p class="hint" data-en="Tap a key to jump to its equal-tempered frequency (on a phone, swipe the keyboard sideways). The red line is the frequency now; when it is not on a key, the needle shows how many cents it is off. The bars below show roughly what each instrument and voice can reach.">點鍵盤就跳到那個鍵的平均律頻率（手機上可以左右滑動鍵盤）。紅線是目前的頻率；不在鍵上時，指針標出偏了幾音分。下面的長條是各樂器與聲部的大致音域。</p>
+        <canvas id="cvAxis" role="img" aria-label="線性軸與對數軸"></canvas>
+        <p class="chart-cap only2d" data-en="The same octaves (A0 to A7) on two rulers: on the linear ruler (hertz) each octave is twice as wide as the one before; on the logarithmic ruler (what the ear hears) they are all the same width.">同樣的八度（A0 到 A7）畫在兩把尺上：線性的尺（赫茲）每個八度比前一個寬一倍；對數的尺（耳朵的感覺）每個八度一樣寬。</p>
+        <p class="hint l3" data-en="3D: 88 bars stand on the 88 keys; each bar’s height is the frequency of its key. Switch between “Linear height” and “Log height”, drag to rotate, scroll or pinch to zoom.">3D：88 根柱子立在 88 個鍵上，柱子的高度就是那個鍵的頻率。切換「線性高度」和「對數高度」，拖曳旋轉，滾輪或雙指縮放。</p>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <div class="seg" role="group" aria-label="音色" data-en-aria-label="Timbre">
+            <button type="button" data-timbre="pure" aria-pressed="false" data-en="Pure tone">純音</button>
+            <button type="button" data-timbre="soft" aria-pressed="true" data-en="Soft (approx.)">溫和泛音（近似）</button>
+          </div>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint warn" data-en="High notes (above about 2 kHz) sound piercing: if you wear headphones, turn the volume down first. Phone speakers can hardly play below about 200 Hz — choose “Soft (approx.)” so the overtones carry the pitch.">高音（約 2 kHz 以上）很刺耳：戴耳機的同學先把音量調小。手機的小喇叭幾乎放不出 200 Hz 以下的聲音——選「溫和泛音（近似）」，靠泛音也聽得出音高。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Frequency">頻率</h2>
+          <div class="slider"><label for="freq" data-en="Frequency f (Hz)">頻率 f（Hz）</label><output id="freqo"></output>
+            <input id="freq" type="range" min="0" max="8700" step="1" value="4800" data-decimals="2"></div>
+          <div class="steps">
+            <button type="button" data-step="-12" data-en="−1 octave">−1 八度</button>
+            <button type="button" data-step="12" data-en="+1 octave">＋1 八度</button>
+            <button type="button" data-step="-1" data-en="−1 semitone">−1 半音</button>
+            <button type="button" data-step="1" data-en="+1 semitone">＋1 半音</button>
+            <button type="button" id="add100" class="wide" data-en="Add 100 Hz">加 100 Hz</button>
+          </div>
+          <p class="hint" data-en="The slider is logarithmic: every notch is 1 cent, and the same distance is always the same interval. Tap the number to type a frequency to 0.01 Hz (27.5–4186.01 Hz).">滑桿是對數刻度：每一格是 1 音分，同樣的距離永遠是同樣的音程。點一下數字可以打字輸入到 0.01 Hz（27.5–4186.01 Hz）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout">
+            <dt data-en="Nearest note">最接近的音</dt><dd class="big" id="rName">—</dd>
+            <dt data-en="Off by">偏差</dt><dd id="rCents">—</dd>
+            <dt data-en="Frequency f">頻率 f</dt><dd id="rF">—</dd>
+            <dt data-en="Period T = 1/f">週期 T = 1/f</dt><dd id="rT">—</dd>
+            <dt data-en="Wavelength λ (20 °C air)">波長 λ（20 °C 空氣）</dt><dd id="rL">—</dd>
+            <dt data-en="Semitones from A4, n">相對 A4 的半音數 n</dt><dd id="rN">—</dd>
+            <dt data-en="MIDI number">MIDI 編號</dt><dd id="rMidi">—</dd>
+          </dl>
+          <p class="insts" id="rInst"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Standard pitch">標準音</h2>
+          <div class="slider"><label for="a4" data-en="Standard pitch A4 (Hz)">標準音 A4（Hz）</label><output id="a4o"></output>
+            <input id="a4" type="range" min="400" max="466" step="1" value="440" data-decimals="2"></div>
+          <div class="presets" role="group" aria-label="常用的標準音" data-en-aria-label="Common standards">
+            <button type="button" data-a4="415" aria-pressed="false" data-en-html="415<small>Baroque</small>">415<small>巴洛克</small></button>
+            <button type="button" data-a4="440" aria-pressed="true" data-en-html="440<small>ISO 16</small>">440<small>ISO 16</small></button>
+            <button type="button" data-a4="442" aria-pressed="false" data-en-html="442<small>orchestra</small>">442<small>樂團</small></button>
+            <button type="button" data-a4="443" aria-pressed="false" data-en-html="443<small>orchestra</small>">443<small>樂團</small></button>
+          </div>
+          <p class="hint" id="a4Hint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Note names">音名寫法</h2>
+          <div class="namebar">
+            <div class="seg" role="group" aria-label="升降記號" data-en-aria-label="Sharps or flats">
+              <button type="button" data-spell="sharp" aria-pressed="true" data-en="Sharps ♯">升記號 ♯</button>
+              <button type="button" data-spell="flat" aria-pressed="false" data-en="Flats ♭">降記號 ♭</button>
+            </div>
+            <button type="button" id="solfege" class="toggle" aria-pressed="false" data-en="Solfège">唱名</button>
+          </div>
+          <p class="hint" data-en="Solfège here is fixed do: do is always C (do re mi fa sol la si = C D E F G A B). The number after a note name is its octave: C4 is middle C, and the number goes up at every C.">這裡的唱名是固定唱名：Do 永遠是 C（Do Re Mi Fa Sol La Si = C D E F G A B）。音名後面的數字是第幾個八度：C4 是中央 C，每到 C 數字就加 1。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Compare two notes">比較兩個音</h2>
+          <div class="membtns">
+            <button type="button" id="storeA" data-en="Store as A">存成 A</button>
+            <button type="button" id="storeB" data-en="Store as B">存成 B</button>
+            <button type="button" id="cmp" class="wide" data-en="A then B">先 A 後 B</button>
+          </div>
+          <div class="mem" id="mem"></div>
+          <div class="tablewrap" id="recWrap"></div>
+          <div class="membtns" style="margin-top:8px"><button type="button" id="clear" class="wide" data-en="Clear all" title="清掉 A、B 與比較紀錄；頻率、標準音與寫法不變" data-en-title="Clear A, B and the comparison log; the frequency, standard pitch and spelling are kept">全部清除</button></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Frequency, period and wavelength">頻率、週期與波長</h3>
+      <p data-en-html="A string, a reed or a column of air that vibrates back and forth \(f\) times a second pushes the air with the same rhythm; that is the frequency, measured in hertz (Hz). One complete back-and-forth takes the period \(T\), and in that time the sound wave travels one wavelength \(\lambda\):">一條弦、一片簧片或一段空氣柱每秒來回振動 \(f\) 次，就以同樣的節奏推動空氣；\(f\) 就是頻率，單位是赫茲（Hz）。來回一次所花的時間是週期 \(T\)，在這段時間裡聲波前進一個波長 \(\lambda\)：</p>
+      <div class="formula">\[ T = \frac{1}{f}, \qquad \lambda = \frac{v}{f} \]</div>
+      <p data-en-html="In 20 °C air \(v \approx 343\) m/s, so the A at 440 Hz repeats every 2.27 ms and its wave is about 0.78 m long; the lowest note of a piano (27.5 Hz) has a wave 12.5 m long, the highest (4186 Hz) only 8 cm.">在 20 °C 的空氣中 \(v \approx 343\) m/s，所以 440 Hz 的 A 每 2.27 ms 重複一次，波長約 0.78 m；鋼琴最低的音（27.5 Hz）波長有 12.5 m，最高的音（4186 Hz）只有 8 cm。</p>
+
+      <h3 data-en="An octave is twice the frequency">高一個八度＝頻率加倍</h3>
+      <p data-en-html="Two notes an octave apart sound like “the same note, higher” — that is why they share a name. Their frequencies are exactly in the ratio \(2:1\). Going up \(k\) octaves multiplies the frequency by \(2^k\): the A’s on a piano are 27.5, 55, 110, 220, 440, 880, 1760 and 3520 Hz.">相差一個八度的兩個音，聽起來像「同一個音、只是比較高」，所以用同一個音名。它們的頻率剛好是 \(2:1\)。往上 \(k\) 個八度，頻率就乘上 \(2^k\)：鋼琴上的 A 依序是 27.5、55、110、220、440、880、1760、3520 Hz。</p>
+
+      <h3 data-en="Equal temperament and cents">平均律與音分</h3>
+      <p data-en-html="A piano splits each octave into 12 equal semitones, each a ratio of \(2^{1/12} \approx 1.0595\). With the standard pitch \(f_\text{A4}\), the note \(n\) semitones above A4 (below if \(n\) is negative) has">鋼琴把每個八度平分成 12 個半音，每個半音的頻率比是 \(2^{1/12} \approx 1.0595\)。標準音是 \(f_\text{A4}\) 時，比 A4 高 \(n\) 個半音（\(n\) 為負就是低）的音，頻率是</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} f = f_\text{A4}\cdot 2^{n/12} \\ n = 12\log_2\frac{f}{f_\text{A4}} \\ \text{cents} = 1200\log_2\frac{f_2}{f_1} \end{gathered} \]">\[ \begin{gathered} f = f_\text{A4}\cdot 2^{n/12} \\ n = 12\log_2\frac{f}{f_\text{A4}} \\ \text{音分} = 1200\log_2\frac{f_2}{f_1} \end{gathered} \]</div>
+      <p data-en-html="Middle C is \(n = -9\): \(440 \cdot 2^{-9/12} \approx 261.63\) Hz. A frequency that falls between two keys is described by the nearest key and how many <strong>cents</strong> it is off: 100 cents make a semitone, 1200 an octave. For example 450 Hz is A4 +38.9 cents. The MIDI number used by electronic instruments is simply \(69 + n\).">中央 C 是 \(n = -9\)：\(440 \cdot 2^{-9/12} \approx 261.63\) Hz。落在兩個鍵之間的頻率，就用「最接近的鍵」加上「偏了幾<strong>音分</strong>」來描述：100 音分是一個半音，1200 音分是一個八度。例如 450 Hz 是 A4 +38.9 音分。電子樂器用的 MIDI 編號就是 \(69 + n\)。</p>
+
+      <h3 data-en="Why the ear works in ratios">為什麼耳朵用「比值」</h3>
+      <p data-en-html="Adding the same number of hertz does not sound like the same step. From 55 Hz, adding 100 Hz gives 155 Hz, about 1794 cents — an octave and a half; from 2000 Hz the same 100 Hz is only 84 cents, less than a semitone. What sounds equal is equal <em>ratios</em>: every octave is ×2, every semitone ×1.0595. In the musical range our sense of pitch is close to the <strong>logarithm</strong> of the frequency, which is why the slider, the keyboard and the range chart here are all logarithmic. (At the extremes the ear departs from this a little; psychoacoustics has other pitch scales, such as the mel scale, for that.)">加上同樣的赫茲數，聽起來不是同樣的一步。從 55 Hz 加 100 Hz 到 155 Hz，約 1794 音分——一個半八度；從 2000 Hz 加同樣的 100 Hz，只有 84 音分，不到一個半音。聽起來相等的是相等的<em>比值</em>：每個八度都是 ×2，每個半音都是 ×1.0595。在音樂常用的範圍裡，我們對音高的感覺接近頻率的<strong>對數</strong>，所以這裡的滑桿、鍵盤和音域圖都是對數刻度。（在極高、極低的音區，耳朵會稍微偏離這個規則；心理聲學另有梅爾刻度等音高尺度描述它。）</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Note names, solfège and octave numbers">音名、唱名與八度數字</h3>
+      <p data-en-html="The white keys are C D E F G A B; a black key is named from its neighbours with a sharp (♯, a semitone up) or a flat (♭, a semitone down), so C♯ and D♭ are the same key on a piano. In fixed-do solfège, used in many Taiwanese music classes, do re mi fa sol la si are just other names for C D E F G A B. The number after a name tells the octave: the octaves are counted from C, so the number goes up between B and C — B3 is followed by C4 (middle C), and A4 sits above middle C.">白鍵是 C D E F G A B；黑鍵用旁邊的白鍵加升記號（♯，高半音）或降記號（♭，低半音）命名，所以在鋼琴上 C♯ 和 D♭ 是同一個鍵。固定唱名（臺灣音樂課常用）的 Do Re Mi Fa Sol La Si，就是 C D E F G A B 的另一個名字。音名後面的數字是第幾個八度：八度從 C 開始數，所以數字在 B 和 C 之間進位——B3 的下一個是 C4（中央 C），A4 在中央 C 的上方。</p>
+      <h3 data-en="88 keys and the ranges of instruments">88 個鍵與樂器的音域</h3>
+      <p data-en-html="A modern piano has 88 keys, from A0 (27.5 Hz) to C8 (about 4186 Hz) — just over seven octaves, nearly the whole range of musical pitch. Other instruments and voices cover only part of it: the double bass goes down to E1 (41 Hz), the piccolo up to C8, and a choir (bass, tenor, alto, soprano) together spans roughly E2 to A5. The ranges on this page are approximate: the top of a string instrument or a voice depends a lot on the player.">現代鋼琴有 88 個鍵，從 A0（27.5 Hz）到 C8（約 4186 Hz），七個多八度，幾乎是音樂用到的全部音高。其他樂器與人聲只佔其中一段：低音提琴低到 E1（41 Hz），短笛高到 C8，合唱團的男低音、男高音、女低音、女高音合起來大約從 E2 到 A5。這裡的音域都是大致範圍：弦樂器和人聲的最高音，很看演奏者與演唱者。</p>
+      <h3 data-en="Standard pitch: 440, 442, 415…">標準音：440、442、415……</h3>
+      <p data-en-html="For orchestras to play together, everyone tunes to the same A. Pitch has wandered a lot through history: in the Baroque era it differed from town to town and from church to court (anywhere from below 400 to about 465 Hz). France fixed A = 435 Hz by law in 1859; an international conference in London in 1939 chose A = 440 Hz, which became the standard ISO 16 (reaffirmed in 1975). Many orchestras today tune a little higher, at 442 or 443 Hz, for a brighter sound, while early-music ensembles often play Baroque music at A = 415 Hz — almost exactly a semitone below 440. Change the standard and the same frequency gets a different name and deviation: 440 Hz is A4 under 440 but A4 −7.85 cents under 442, and 415 Hz is A4 under 415 but G♯4 under 440.">樂團要一起演奏，大家得對準同一個 A。歷史上的音高變動很大：巴洛克時代每個城市、教堂與宮廷各不相同（從 400 Hz 以下到約 465 Hz 都有）。法國在 1859 年以法令把 A 定為 435 Hz；1939 年倫敦的國際會議選定 A = 440 Hz，後來成為國際標準 ISO 16（1975 年再確認）。今天許多樂團調得稍高，用 442 或 443 Hz，聲音比較明亮；古樂團演奏巴洛克音樂則常用 A = 415 Hz，幾乎剛好比 440 低一個半音。換了標準音，同一個頻率的音名和偏差就跟著變：440 Hz 在 440 標準下是 A4，在 442 標準下是 A4 −7.85 音分；415 Hz 在 415 標準下是 A4，在 440 標準下卻是 G♯4。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Denser and denser</strong>: in the 10 ms window, count the periods of A3, A4 and A5. What happens every octave?"><strong>越高越密</strong>：在 10 ms 的波形窗裡，數一數 A3、A4、A5 各有幾個週期。每高一個八度發生什麼事？</li>
+        <li data-en-html="<strong>The same 100 Hz</strong>: press “Add 100 Hz” in the bass and in the treble. How many cents does each jump?"><strong>同樣的 100 Hz</strong>：在低音區和高音區各按一次「加 100 Hz」，各跳了幾音分？</li>
+        <li data-en-html="<strong>Two rulers</strong>: on the linear ruler, where is middle C? Where would it be if octaves were drawn the way we hear them?"><strong>兩把尺</strong>：在線性的尺上，中央 C 在哪裡？如果照耳朵的感覺畫八度，它又該在哪裡？</li>
+        <li data-en-html="<strong>Who can play it?</strong> Slide from the bottom to the top and watch which instruments and voices light up."><strong>誰演奏得到？</strong>從最低滑到最高，看哪些樂器與聲部亮起來。</li>
+        <li data-en-html="<strong>One frequency, many names</strong>: keep the frequency and switch the standard between 415, 440 and 443."><strong>一個頻率，好幾個名字</strong>：頻率不動，把標準音在 415、440、443 之間切換。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Nearest note: \(n = 12\log_2(f/f_\text{A4})\) is rounded to the nearest whole number; the deviation is \(100\,(n - \text{round}(n))\) cents (exactly halfway is rounded up). Names use scientific pitch notation (C4 = middle C). The slider position is the number of cents above 27.5 Hz (0 to 8700), so each notch is 1 cent. Unit tests check A4 = 440 Hz, C4 = 261.626 Hz, A0 = 27.5 Hz, C8 = 4186.009 Hz, C4 = 262.815 Hz under 442, 450 Hz = A4 +38.9 cents, \(\lambda(440\ \text{Hz}) \approx 0.78\) m, that \(n\) and \(f\) are inverse functions and that an octave doubles the frequency.">最接近的音：把 \(n = 12\log_2(f/f_\text{A4})\) 四捨五入成整數；偏差是 \(100\,(n - \text{取整}(n))\) 音分（剛好在正中間時歸到上面的音）。音名用科學音高記號（C4 = 中央 C）。滑桿的位置就是「比 27.5 Hz 高幾音分」（0 到 8700），每一格 1 音分。單元測試檢查 A4 = 440 Hz、C4 = 261.626 Hz、A0 = 27.5 Hz、C8 = 4186.009 Hz、442 標準下 C4 = 262.815 Hz、450 Hz = A4 +38.9 音分、\(\lambda(440\ \text{Hz}) \approx 0.78\) m、\(n\) 與 \(f\) 互為反函數、高八度頻率加倍。</li>
+        <li data-en-html="The waveform window always shows 10 ms, so higher notes look denser; the shaded bands are single periods. When the waves get too dense to draw faithfully, the window shows the band without inventing a false pattern, and the small panel shows one period enlarged. The keyboard and the range chart share one axis: every octave is seven white keys wide (logarithmic); between two keys the position is interpolated in cents.">波形窗固定是 10 ms，所以越高的音看起來越密；色帶是一個個週期。波太密、畫不清楚時，只畫出它的範圍，不畫出假的疊影，旁邊的小窗把一個週期放大。鍵盤和音域圖共用同一條軸：每個八度都是七個白鍵寬（對數軸），兩鍵之間依音分內插。</li>
+        <li data-en-html="The 3D “frequency ladder” puts a bar on each of the 88 keys. “Linear height” makes the height proportional to \(f\), so the tops trace the exponential curve \(f = 27.5 \cdot 2^{(m-21)/12}\); “log height” makes it proportional to \(\log_2(f/27.5)\), so the tops form a straight ramp and every octave is equally tall. It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D「頻率之梯」在 88 個鍵上各立一根柱子。「線性高度」讓高度和 \(f\) 成正比，柱頂連成指數曲線 \(f = 27.5 \cdot 2^{(m-21)/12}\)；「對數高度」讓高度和 \(\log_2(f/27.5)\) 成正比，柱頂變成一條直線坡道，每個八度一樣高。它使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): a pure sine wave, or a soft approximate tone with a few weaker overtones. It plays only when you press a button or a key, fades in and out, and stops by itself after a few seconds, when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：純音是正弦波；溫和泛音是加上幾個較弱泛音的近似音色。只有按按鈕或琴鍵時才發聲，有淡入淡出，幾秒後自動停止；按「■ 停止」、按 Esc 或切換分頁也會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (pitch); Elective Physics III · Waves and Sound waves (frequency, period, wavelength). Across subjects: senior-high Mathematics, exponents and logarithms.">課綱對應：高中音樂・表現・音樂元素（音高）；選修物理Ⅲ・波動、聲波（頻率、週期、波長）。跨科：高中數學「指數與對數」。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975, Acoustics — Standard tuning frequency (standard musical pitch).">標準音 A4 = 440 Hz：ISO 16:1975〈Acoustics — Standard tuning frequency (standard musical pitch)〉。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed., Springer, 1998 (frequency and pitch, the piano’s compass, the flute’s three-octave range).">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998（頻率與音高、鋼琴的音域、長笛約三個八度的音域）。</li>
+        <li data-en="Instrument ranges (approximate, sounding pitch): Samuel Adler, The Study of Orchestration, W. W. Norton — violin G3 to about A7, cello C2 to about A5, double bass E1 to about G4, guitar E2 to about B5, flute C4 to about C7, piccolo D5 to C8. The highest notes vary with player and repertoire.">樂器音域（大致範圍、實際發音）：Samuel Adler，《The Study of Orchestration》，W. W. Norton——小提琴 G3 到約 A7、大提琴 C2 到約 A5、低音提琴 E1 到約 G4、吉他 E2 到約 B5、長笛 C4 到約 C7、短笛 D5 到 C8。最高音因演奏者與曲目而異。</li>
+        <li data-en="Voice ranges: the usual approximate choral ranges — bass E2–E4, tenor C3–A4, alto F3–D5, soprano C4–A5 (choral textbooks differ by a tone or so at either end; solo singers often go further).">人聲音域：合唱分部常見的大致範圍——男低音 E2–E4、男高音 C3–A4、女低音 F3–D5、女高音 C4–A5（各合唱教材的上下限相差一個全音左右；獨唱者常超出）。</li>
+        <li data-en="History of standard pitch (the 1859 French diapason normal of 435 Hz, the 1939 London conference, Baroque pitches): Bruce Haynes, A History of Performing Pitch: The Story of “A”, Scarecrow Press, 2002.">標準音的歷史（1859 年法國的 435 Hz、1939 年倫敦會議、巴洛克時代的各種音高）：Bruce Haynes，《A History of Performing Pitch: The Story of “A”》，Scarecrow Press，2002。</li>
+        <li data-en="Speed of sound in 20 °C air: about 343 m/s (dry air, ideal-gas value).">20 °C 空氣中的聲速：約 343 m/s（乾燥空氣的理想氣體值）。</li>
+        <li data-en-html="Related on this site: <a href=&quot;harmonic-series.html&quot;>Harmonic series and timbre</a> (why the same note sounds different on different instruments) and <a href=&quot;temperament.html&quot;>Pythagorean, just and equal temperament</a>.">本站相關實驗：<a href="harmonic-series.html">泛音列與音色</a>（同一個音為什麼在不同樂器上聽起來不同）、<a href="temperament.html">五度相生、純律與十二平均律</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/pitch-frequency-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/pitch-frequency.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="pitch-frequency"></script>
+  <script src="js/missions/pitch-frequency.js"></script>
+  <script src="js/stats.js" data-module="pitch-frequency"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

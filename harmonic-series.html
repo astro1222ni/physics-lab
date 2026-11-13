@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Harmonic Series and Timbre | Astro Ni Science Lab">泛音列與音色｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 泛音列與音色頁面專用的顏色代號（淺色＋兩組深色；由 js/harmonic-series.js 與 js/harmonic-series-3d.js 讀取）
+       --hs-low → --hs-high：第 1 個到第 16 個泛音的顏色（兩色內插） */
+    :root { --hs-wave: #1d4ed8; --hs-low: #0f766e; --hs-high: #c2410c; --hs-ideal: #be185d; --hs-cent: #a16207; --hs-string: #475569; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --hs-wave: #7aa7ff; --hs-low: #5eead4; --hs-high: #fb923c; --hs-ideal: #ff74b0; --hs-cent: #fbbf24; --hs-string: #cbd5e1; }
+    }
+    :root[data-theme="dark"] { --hs-wave: #7aa7ff; --hs-low: #5eead4; --hs-high: #fb923c; --hs-ideal: #ff74b0; --hs-cent: #fbbf24; --hs-string: #cbd5e1; }
+
+    /* 畫布高度由程式依寬度決定。波形與弦的小圖不攔觸控（手機照常捲動）；頻譜可以直接拖曳長條 */
+    #cv { aspect-ratio: auto; height: 300px; touch-action: auto; cursor: default; }
+    #spec { aspect-ratio: auto; height: 230px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: none; cursor: pointer; }
+    #str { aspect-ratio: auto; height: 120px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
+    .hs [hidden] { display: none !important; }
+    .hs button { min-height: 44px; }
+    .hs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hs .playbar button { flex: 1 1 auto; }
+    .hs .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .hs #stop:disabled { opacity: .5; cursor: default; }
+    .hs #build[data-run="1"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .hs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .hs .hf-warn { margin: 4px 4px 0; padding: 6px 10px; border-radius: 8px; font-size: calc(13px * var(--fs, 1)); background: var(--accent-soft); color: var(--text); }
+    .hs .slider input[type="range"] { height: 28px; margin: 0; }
+    .hs .checks label { min-height: 44px; }
+    .hs .checks input { width: 17px; height: 17px; }
+    .hs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .hs .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 14px 0 4px; color: var(--text); }
+    .hs .panel { grid-template-columns: minmax(0, 1fr); }
+    .hs .panel > .card { min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 6px; }
+    .presets button { padding: 6px 8px; }
+    .presets button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .preset-note { font-weight: 600; }
+    .preset-note:empty { display: none; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .hrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 0; }
+    .hrow .seg { flex: 1 1 auto; }
+    .hrow .seg button { flex: 1 1 0; }
+    .hrow > button { flex: 1 1 auto; }
+    .seed-no { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .selrow { display: flex; align-items: center; gap: 8px; }
+    .selrow button { flex: none; min-width: 48px; padding: 6px 10px; }
+    .selrow .sel-name { flex: 1 1 auto; min-width: 0; text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+    #solo { width: 100%; }
+    #solo[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    /* 2D／3D 檢視切換（與三角函數模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-bar .faces { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 260px; }
+    .view-bar .faces button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 70%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.band { height: 10px; border-radius: 3px; opacity: .5; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tone&quot;>Music · Musical Tone and Hearing</a> / Harmonics and timbre"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tone">音樂・樂音與聽覺</a> ／ 泛音與音色</nav>
+      <h1 data-en="The Harmonic Series and Timbre">泛音列與音色</h1>
+      <p data-en="A flute, a clarinet, a violin and a singer can all play the same A, yet you can tell them apart at once. The difference is in the harmonics: every musical note is a stack of sine waves at 1, 2, 3, … times the fundamental frequency, and the heights of that stack — the spectrum — are what we hear as timbre. Build tones bar by bar, hear the harmonics join one at a time, rebuild the square, sawtooth and triangle waves from their exact Fourier coefficients, and see that shuffling the phases changes the waveform completely but leaves the spectrum, and almost the sound, unchanged. In 3D the same harmonics stand side by side: from the front you see the waveform, from the side the spectrum.">長笛、單簧管、小提琴和歌手可以發出同一個 A，我們卻一聽就分得出來。差別在泛音：每一個樂音都是好幾個正弦波疊起來的，它們的頻率是基頻的 1、2、3……倍；這些正弦波各有多高（頻譜），就是我們聽到的音色。在這裡一根一根調出頻譜長條，聽泛音一個一個加進來，用精確的傅立葉係數拼出方波、鋸齒波、三角波，再看看打亂相位時，波形面目全非，頻譜卻一點都沒變，聲音也幾乎一樣。切到 3D，同一組泛音並排站好：從正面看是波形，從側面看就是頻譜。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play”, then “Add harmonics one by one”, and listen to the same pitch grow brighter and brighter.">試試看：按「播放」，再按「一個一個加上泛音」，聽同一個音高怎麼越來越亮。</p>
+    <div class="lab hs" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="faces l3" role="group" aria-label="3D 視角" data-en-aria-label="3D viewpoint">
+            <button type="button" id="faceFront" data-en="Front: waveform (time domain)">正面看：波形（時域）</button>
+            <button type="button" id="faceSide" data-en="Side: spectrum (frequency domain)">側面看：頻譜（頻域）</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="合成波形：兩個週期的波形（所有泛音加起來），淡色帶是正負均方根，圓點是峰值。" data-en-aria-label="Combined waveform: two periods of the sum of all the harmonics; the pale band is plus and minus the RMS value and the dot marks the peak."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="build" type="button" data-en="Add harmonics one by one" title="從基頻開始，每 0.7 秒加入下一個泛音" data-en-title="Starting from the fundamental, add the next harmonic every 0.7 seconds">一個一個加上泛音</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--hs-wave)&quot;></i>Combined waveform"><i style="background:var(--hs-wave)"></i>合成波形</span>
+          <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--accent)&quot;></i>± RMS"><i class="band" style="background:var(--accent)"></i>± 均方根</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--probe)&quot;></i>Peak"><i class="dot" style="background:var(--probe)"></i>峰值</span>
+          <span style="color:var(--hs-ideal)" data-en-html="<i class=&quot;dash&quot;></i>Ideal shape (when the bars match)"><i class="dash"></i>理想形狀（長條對上時）</span>
+          <span data-en-html="<i style=&quot;background:linear-gradient(90deg,var(--hs-low),var(--hs-high))&quot;></i>Harmonics 1 → 16"><i style="background:linear-gradient(90deg,var(--hs-low),var(--hs-high))"></i>第 1 → 16 個泛音</span>
+          <span style="color:var(--hs-cent)" data-en-html="<i class=&quot;dash&quot;></i>Spectral centroid"><i class="dash"></i>頻譜重心</span>
+        </div>
+        <canvas id="spec" aria-label="頻譜：第 1 到第 16 個泛音的振幅長條。上下拖曳長條改變振幅，左右拖曳可以一次畫好幾根。" data-en-aria-label="Spectrum: amplitude bars for harmonics 1 to 16. Drag a bar up or down to change it; drag sideways to paint several bars at once."></canvas>
+        <p class="chart-note" data-en-html="Drag the bars (or focus the spectrum and use ← → to pick a harmonic, ↑ ↓ to change it). The small dial under each bar is its phase; a dial pointing left means the sine is upside down.">直接拖曳長條（或點一下頻譜，用 ← → 選泛音、↑ ↓ 調高低）。每根長條下面的小圓盤是它的相位；指向左邊表示這個正弦波上下顛倒。</p>
+        <canvas id="str" role="img" aria-label="弦上的泛音：選取的第 k 個泛音，弦分成 k 段振動。" data-en-aria-label="Harmonics on a string: for the selected k-th harmonic the string vibrates in k segments."></canvas>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Timbre">音色</h2>
+          <div class="presets" id="presets" role="group" aria-label="預設音色" data-en-aria-label="Preset tones">
+            <button type="button" data-preset="pure" aria-pressed="false" data-en="Pure tone">純音</button>
+            <button type="button" data-preset="flute" aria-pressed="false" data-en="Flute">長笛</button>
+            <button type="button" data-preset="clarinet" aria-pressed="false" data-en="Clarinet">單簧管</button>
+            <button type="button" data-preset="oboe" aria-pressed="false" data-en="Oboe">雙簧管</button>
+            <button type="button" data-preset="violin" aria-pressed="true" data-en="Violin">小提琴</button>
+            <button type="button" data-preset="voice" aria-pressed="false" data-en="Voice “ah”">人聲「啊」</button>
+            <button type="button" data-preset="square" aria-pressed="false" data-en="Square wave">方波</button>
+            <button type="button" data-preset="sawtooth" aria-pressed="false" data-en="Sawtooth wave">鋸齒波</button>
+            <button type="button" data-preset="triangle" aria-pressed="false" data-en="Triangle wave">三角波</button>
+          </div>
+          <p class="hint preset-note" id="presetNote"></p>
+          <p class="hint" data-en-html="The flute, clarinet, oboe, violin and voice are <strong>approximations</strong> tuned by hand from harmonics: a real instrument's spectrum changes with pitch, loudness and player. The square, sawtooth and triangle waves use their exact Fourier coefficients.">長笛、單簧管、雙簧管、小提琴、人聲是自己用泛音調出來的<strong>近似</strong>：真實樂器的頻譜隨音高、力度、演奏者而變。方波、鋸齒波、三角波用精確的傅立葉係數。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Fundamental and harmonics">基頻與泛音</h2>
+          <div class="slider"><label for="f0" data-en-html="Fundamental f<sub>0</sub> (Hz)">基頻 f<sub>0</sub>（Hz）</label><output id="f0o"></output>
+            <input id="f0" type="range" min="0" max="1000" step="1" value="333" data-decimals="1"></div>
+          <p class="hint" id="f0Note"></p>
+          <p class="hint" id="lowNote" hidden data-en="Phone speakers can hardly play anything below 200 Hz. The harmonics are still there, though, so you still hear this pitch (the missing fundamental).">手機的小喇叭幾乎放不出 200 Hz 以下的聲音；不過泛音還在，耳朵仍然聽得出這個音高（缺基頻）。</p>
+          <div class="slider"><label for="nh" data-en="Number of harmonics N">泛音數 N</label><output id="nho"></output>
+            <input id="nh" type="range" min="1" max="16" step="1" value="12" data-decimals="0"></div>
+
+          <h3 class="sub" data-en="Selected harmonic">選取的泛音</h3>
+          <div class="selrow">
+            <button type="button" id="selPrev" aria-label="上一個泛音" data-en-aria-label="Previous harmonic">◀</button>
+            <span class="sel-name" id="selName"></span>
+            <button type="button" id="selNext" aria-label="下一個泛音" data-en-aria-label="Next harmonic">▶</button>
+          </div>
+          <div class="slider"><label for="amp" data-en="Amplitude of this harmonic">這個泛音的振幅</label><output id="ampo"></output>
+            <input id="amp" type="range" min="0" max="1" step="0.01" value="1" data-decimals="2" data-share-skip></div>
+          <button type="button" id="solo" aria-pressed="false" data-share-skip data-en="Hear only this harmonic">只聽這一個泛音</button>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Phase">相位</h2>
+          <div class="hrow">
+            <div class="seg" role="group" aria-label="相位" data-en-aria-label="Phase">
+              <button type="button" id="phSine" aria-pressed="true" data-en="In phase">同相</button>
+              <button type="button" id="phRand" aria-pressed="false" data-en="Random phases">隨機相位</button>
+            </div>
+            <button type="button" id="reseed" data-en="New set">換一組</button>
+          </div>
+          <p class="seed-no" id="seedNo"></p>
+          <div class="checks">
+            <label><input id="showComp" type="checkbox"><span data-en="Show each harmonic's own wave">顯示各泛音的分量</span></label>
+          </div>
+          <p class="hint" data-en="In phase: every harmonic starts at zero going up (a negative coefficient is the same sine upside down). Random phases: each harmonic is slid forwards or backwards a little. The bars — the spectrum — do not change.">同相：每個泛音都從 0 開始往上（負的係數＝上下顛倒的正弦波）。隨機相位：每個泛音各自往前或往後錯開一點；長條（頻譜）完全不變。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Fundamental">基頻</dt><dd id="rF0">—</dd>
+            <dt data-en="Waveform repeats at">波形重複的頻率</dt><dd id="rRep">—</dd>
+            <dt data-en="Highest harmonic">最高的泛音</dt><dd id="rTop">—</dd>
+            <dt data-en="Spectral centroid (brightness)">頻譜重心（亮度）</dt><dd id="rCent">—</dd>
+            <dt data-en="Odd : even energy">奇次：偶次能量</dt><dd id="rOE">—</dd>
+            <dt data-en="RMS value">均方根</dt><dd id="rRms">—</dd>
+            <dt data-en="Peak">峰值</dt><dd id="rPeak">—</dd>
+            <dt data-en="Crest factor (peak ÷ RMS)">峰值因數（峰值 ÷ 均方根）</dt><dd id="rCrest">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="hint" data-en="Mean square from the bars (Parseval) and from adding up the waveform point by point: the two always agree, whatever the phases.">均方值用長條算（帕塞瓦爾）和把波形一點一點加起來算，兩者永遠相同，不管相位怎麼變。</p>
+        </section>
+      </aside>
+    </div>
+    <p class="sr-only" id="say" aria-live="polite"></p>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Every periodic sound is a stack of harmonics">每一個週期性的聲音，都是一疊泛音</h3>
+      <p data-en-html="A sound that repeats every \(T = 1/f_0\) seconds can be written as a sum of sine waves whose frequencies are whole-number multiples of \(f_0\) (a <strong>Fourier series</strong>):">一個每隔 \(T = 1/f_0\) 秒重複一次的聲音，可以寫成好幾個正弦波相加，它們的頻率都是 \(f_0\) 的整數倍（<strong>傅立葉級數</strong>）：</p>
+      <div class="formula">\[ x(t) = \sum_{k=1}^{N} a_k \sin\!\left(2\pi k f_0 t + \varphi_k\right) \]</div>
+      <p data-en-html="\(f_0\) is the <strong>fundamental</strong>; \(2f_0, 3f_0, 4f_0, \dots\) form the <strong>harmonic series</strong>. (In music the 2nd harmonic is often called the 1st overtone; this page simply counts harmonics, the fundamental being the 1st.) The bar heights \(|a_k|\) make up the <strong>spectrum</strong>, and the \(\varphi_k\) are the <strong>phases</strong>. The pitch we hear is set by \(f_0\); the timbre mostly by the spectrum.">\(f_0\) 是<strong>基頻</strong>，\(2f_0, 3f_0, 4f_0, \dots\) 排成<strong>泛音列</strong>（音樂上常把第 2 個泛音叫「第一泛音」；這頁直接數第幾個，基頻是第 1 個）。長條的高度 \(|a_k|\) 合起來是<strong>頻譜</strong>，\(\varphi_k\) 是各自的<strong>相位</strong>。我們聽到的音高由 \(f_0\) 決定，音色主要由頻譜決定。</p>
+
+      <h3 data-en="Three classic waveforms">三種經典的波形</h3>
+      <p data-en-html="For a square, a sawtooth and a triangle wave of height 1 the coefficients are known exactly (all in phase):">高度為 1 的方波、鋸齒波、三角波，係數可以精確算出來（全部同相）：</p>
+      <div class="formula" data-en-html="\[ \text{square: } a_k = \frac{4}{\pi k}\ (k \text{ odd}),\qquad \text{sawtooth: } a_k = (-1)^{k+1}\frac{2}{\pi k},\qquad \text{triangle: } a_k = (-1)^{\frac{k-1}{2}}\frac{8}{\pi^2 k^2}\ (k \text{ odd}) \]">\[ \text{方波：} a_k = \frac{4}{\pi k}\ (k \text{ 為奇數}),\qquad \text{鋸齒波：} a_k = (-1)^{k+1}\frac{2}{\pi k},\qquad \text{三角波：} a_k = (-1)^{\frac{k-1}{2}}\frac{8}{\pi^2 k^2}\ (k \text{ 為奇數}) \]</div>
+      <p data-en-html="Even harmonics are zero for the square and the triangle. The square and the sawtooth have <em>jumps</em>, and their harmonics fall off only like \(1/k\): they sound bright and buzzy. The triangle has corners but no jumps, its harmonics fall off like \(1/k^2\), and it sounds soft, close to a pure tone. The smoother the waveform, the faster its spectrum dies away.">方波和三角波的偶次泛音都是 0。方波和鋸齒波有<em>跳躍</em>，泛音只按 \(1/k\) 減弱，聽起來明亮、嗡嗡響；三角波只有轉角、沒有跳躍，泛音按 \(1/k^2\) 減弱，聽起來柔和、接近純音。波形越平滑，頻譜消失得越快。</p>
+
+      <h3 data-en="The ears on a square wave (Gibbs phenomenon)">方波的「耳朵」（吉布斯現象）</h3>
+      <p data-en-html="Add up the first \(N\) harmonics of a square wave and a spike appears next to every jump. With more harmonics the spike gets narrower, but it never gets lower: it always overshoots by about 9 % of the jump,">把方波的前 \(N\) 個泛音加起來，每個跳躍旁邊都會冒出一個尖角。泛音越多，尖角越窄，卻永遠不會變矮：它總是超出跳躍量的大約 9 %，</p>
+      <div class="formula">\[ \frac{1}{\pi}\int_0^{\pi}\frac{\sin u}{u}\,du - \frac12 \approx 0.0895 \]</div>
+      <p data-en-html="The spike comes from cutting the series off abruptly. Turning the highest harmonics down gradually instead (Fejér or Lanczos tapering) smooths it away, at the price of a slightly rounder edge.">尖角來自把級數「一刀切斷」。如果改成讓最高的幾個泛音慢慢變小（費耶或蘭佐斯的平滑法），尖角就消失了，代價是邊緣變得稍微圓一點。</p>
+
+      <h3 data-en="Phase changes the waveform, not the spectrum">相位改變波形，不改變頻譜</h3>
+      <p data-en-html="The average of \(x^2\) over one period — the mean square, a measure of power — depends only on the bar heights (<strong>Parseval's theorem</strong>), because the cross terms between different harmonics average to zero:">\(x^2\) 在一個週期的平均（均方值，代表功率）只和長條的高度有關（<strong>帕塞瓦爾定理</strong>），因為不同泛音的交叉項平均起來都是 0：</p>
+      <div class="formula">\[ \overline{x^2} = \frac1T\int_0^T x^2\,dt = \sum_{k} \frac{a_k^2}{2}, \qquad x_{\text{rms}} = \sqrt{\overline{x^2}} \]</div>
+      <p data-en-html="The <em>peak</em>, however, depends strongly on the phases. The <strong>crest factor</strong> (peak ÷ RMS) is \(\sqrt2 \approx 1.414\) for a pure tone, \(\sqrt3 \approx 1.732\) for a triangle and \(1\) for an ideal square. Line up many equal harmonics in phase and the peaks pile up into one tall spike; scatter the phases and the same energy spreads out evenly. For steady tones the ear is nearly deaf to these phase changes (Ohm's and Helmholtz's observation), which is why timbre is described by the spectrum.">但<em>峰值</em>和相位大有關係。<strong>峰值因數</strong>（峰值 ÷ 均方根）：純音是 \(\sqrt2 \approx 1.414\)，三角波是 \(\sqrt3 \approx 1.732\)，理想的方波是 \(1\)。很多一樣高的泛音同相排好，波峰會疊成一根很高的尖刺；把相位打散，同樣的能量就平均地攤開。對穩定的音，耳朵幾乎聽不出這些相位的改變（歐姆與亥姆霍茲的觀察），所以我們用頻譜來描述音色。</p>
+
+      <h3 data-en="Brightness: the spectral centroid">亮度：頻譜重心</h3>
+      <div class="formula">\[ \bar k = \frac{\sum_k k\,a_k^2}{\sum_k a_k^2}, \qquad f_c = \bar k\, f_0 \]</div>
+      <p data-en-html="The energy-weighted average harmonic number is the <strong>spectral centroid</strong>. Listening experiments found it to be the single quantity that best matches how <em>bright</em> a tone sounds (Grey 1977).">用能量加權的平均泛音次數，叫<strong>頻譜重心</strong>。聽覺實驗發現，它是最能對應「聽起來多<em>亮</em>」的單一個量（Grey 1977）。</p>
+
+      <h3 data-en="Symmetry, gaps and the repeat rate">對稱、缺口與重複的頻率</h3>
+      <p data-en-html="If only odd harmonics are present, then \(x(t + T/2) = -x(t)\): the second half of each period is the first half upside down. If only even harmonics are present, the wave repeats every \(T/2\) — it is really one octave higher. In general the waveform repeats at \(g f_0\), where \(g\) is the greatest common divisor of the harmonic numbers that are sounding. Take away the fundamental and keep the 2nd and 3rd harmonics: \(g = 1\), so the wave still repeats at \(f_0\), and the ear still hears that pitch.">如果只有奇次泛音，就有 \(x(t + T/2) = -x(t)\)：每個週期的後半段，是前半段上下顛倒。如果只有偶次泛音，波形每 \(T/2\) 就重複一次——其實高了一個八度。一般來說，波形以 \(g f_0\) 的頻率重複，\(g\) 是有聲音的那些泛音次數的最大公因數。把基頻拿掉、只留第 2、3 個泛音：\(g = 1\)，波形仍然以 \(f_0\) 重複，耳朵也仍然聽到這個音高。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <ul>
+        <li data-en-html="<strong>Flute</strong>: a strong fundamental and a few weak harmonics — pure, airy, transparent."><strong>長笛</strong>：基頻很強，只有幾個弱的泛音——純淨、透明，帶著氣聲。</li>
+        <li data-en-html="<strong>Clarinet</strong>: a cylindrical tube closed at the reed end. In its low register the odd harmonics are strong and the even ones weak, giving its hollow, woody sound."><strong>單簧管</strong>：管子是圓柱形、吹嘴那一端等於封閉。低音區的奇次泛音強、偶次泛音弱，聽起來「空心」、帶著木頭味。</li>
+        <li data-en-html="<strong>Oboe</strong>: a conical tube with a double reed. Its 2nd to 5th harmonics are stronger than the fundamental: nasal, bright and able to cut through a whole orchestra."><strong>雙簧管</strong>：圓錐形的管子加上雙簧片。第 2 到第 5 個泛音比基頻還強：帶鼻音、明亮，穿得透整個樂團。</li>
+        <li data-en-html="<strong>Violin</strong>: the bow drags the string along and lets it snap back, so the string moves in an almost perfect sawtooth (Helmholtz motion). The wooden body then boosts some frequency bands more than others."><strong>小提琴</strong>：弓把弦一路拖過去，弦再一下子彈回來，所以弦的運動幾乎是完美的鋸齒波（亥姆霍茲運動）。木頭琴身再把某些頻率帶放大得比別的多。</li>
+        <li data-en-html="<strong>Voice</strong>: the vocal folds produce a buzz rich in harmonics; the throat and mouth resonate at a few <em>formant</em> frequencies, and which harmonics fall under the formants decides the vowel. For “ah” the first two formants are near 700 and 1200 Hz. When a soprano sings above the first formant there are hardly any harmonics left inside it, which is why high notes make words hard to understand."><strong>人聲</strong>：聲帶發出含有許多泛音的「嗡」聲；喉嚨和口腔在幾個<strong>共振峰</strong>頻率共鳴，哪些泛音落在共振峰底下，就決定是哪個母音。「啊」的前兩個共振峰大約在 700 和 1200 Hz。女高音唱到第一共振峰以上時，共振峰裡幾乎沒有泛音了，所以唱得很高時歌詞不容易聽清楚。</li>
+        <li data-en-html="<strong>Intervals live inside the series</strong>: 2 : 1 is an octave, 3 : 2 a fifth, 4 : 3 a fourth, 5 : 4 a major third, and 4 : 5 : 6 a major chord. Brass players without valves play notes of the harmonic series by changing only their lips. The 7th harmonic is about 31 cents flatter than the nearest note in equal temperament."><strong>音程就藏在泛音列裡</strong>：2 : 1 是八度，3 : 2 是五度，4 : 3 是四度，5 : 4 是大三度，4 : 5 : 6 是大三和弦。沒有按鍵的銅管樂器只靠嘴唇，就能吹出泛音列上的音。第 7 個泛音比十二平均律裡最接近的音低了大約 31 音分。</li>
+        <li data-en-html="<strong>Synthesizers</strong>: organ drawbars mix sine harmonics directly (additive synthesis); analogue synthesizers start from the harmonic-rich square and sawtooth and filter some away (subtractive synthesis)."><strong>電子合成</strong>：電風琴的拉桿直接混合各個正弦泛音（加法合成）；類比合成器則從泛音豐富的方波、鋸齒波出發，再濾掉一部分（減法合成）。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same pitch, different timbre</strong>: switch between the presets. The fundamental in the readings stays the same; the waveform and the spectrum change completely."><strong>同樣的音高，不同的音色</strong>：在預設之間切換。讀數裡的基頻不變，波形和頻譜卻完全不同。</li>
+        <li data-en-html="<strong>One harmonic at a time</strong>: during “Add harmonics one by one”, does the pitch go up? What does change?"><strong>一次加一個</strong>：按「一個一個加上泛音」的時候，音高有沒有變高？變的是什麼？</li>
+        <li data-en-html="<strong>Not one bar moves</strong>: switch to random phases and press “New set” a few times. Watch the waveform and the crest factor, then compare with the spectrum and with what you hear."><strong>長條一根都沒動</strong>：切到隨機相位，按幾次「換一組」。看看波形和峰值因數，再對照頻譜和你聽到的聲音。</li>
+        <li data-en-html="<strong>Square wave ears</strong>: on the square wave, raise the number of harmonics from 3 to 16. Does the spike next to the jump get lower, or only narrower?"><strong>方波的耳朵</strong>：選方波，把泛音數從 3 調到 16。跳躍旁邊的尖角是變矮了，還是只變窄？</li>
+        <li data-en-html="<strong>Take the fundamental away</strong>: pull the first bar down to 0. Look at the “waveform repeats at” reading, then listen."><strong>把基頻拿掉</strong>：把第 1 根長條拉到 0，看「波形重複的頻率」，再聽聽看。</li>
+        <li data-en-html="<strong>The 3D view</strong>: turn it slowly from the front to the side. Each glowing sine wave turns into a bar of the spectrum."><strong>3D 立體</strong>：從正面慢慢轉到側面，每一條正弦波都變成頻譜上的一根長條。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The waveform is the sum of the sines themselves, sampled at a few hundred points per period. The peak is found by fine sampling followed by a ternary search; the mean square comes from Parseval's formula, and the readings card checks it against a direct numerical integral.">波形直接把正弦波加起來，每個週期取幾百個點。峰值先密集取樣、再用三分搜尋找到最大值；均方值用帕塞瓦爾公式算，讀數卡片同時用數值積分核對。</li>
+        <li data-en-html="Instrument approximations: the flute, clarinet and oboe are hand-tuned tables. The violin is a \(1/k\) sawtooth times body resonances near 280, 470 and 2600 Hz; the voice is a \(1/k\) source times three formants at 700, 1200 and 2600 Hz (bandwidths 110, 120, 160 Hz), rounded from measured averages for “ah” (Peterson &amp; Barney 1952). Both therefore change with the fundamental.">樂器的近似：長笛、單簧管、雙簧管是手調的表。小提琴＝按 \(1/k\) 減弱的鋸齒波，乘上約 280、470、2600 Hz 的琴身共鳴；人聲＝按 \(1/k\) 減弱的聲源，乘上 700、1200、2600 Hz 三個共振峰（頻寬 110、120、160 Hz，由「啊」的實測平均值取整數，Peterson &amp; Barney 1952）。所以這兩個預設會隨基頻改變。</li>
+        <li data-en-html="Note names use equal temperament with A4 = 440 Hz (ISO 16:1975); cents are \(1200 \log_2(f / f_{\text{note}})\).">音名用十二平均律、A4 = 440 Hz（ISO 16:1975）；音分是 \(1200 \log_2(f / f_{\text{音}})\)。</li>
+        <li data-en-html="Sound: the same coefficients are handed to the browser's own additive synthesizer. The loudness is set from the RMS value (with the peak kept below a limit), so adding harmonics or shuffling phases does not make the sound suddenly louder; harmonics above 8 kHz are turned down a little more to protect hearing. The spectrum on screen is always the full one.">聲音：同一組係數交給瀏覽器內建的加法合成。音量依均方根自動調整（峰值也有上限），所以加泛音或打亂相位時，聲音不會突然變大；8 kHz 以上的泛音為了保護聽力會再調小一些。畫面上的頻譜一直是完整的。</li>
+        <li data-en-html="The unit tests check the exact coefficients against numerical integration, the 8.95 % Gibbs overshoot, Parseval's theorem for 200 random tones in both phase modes, the crest factors \(\sqrt2\) and \(\sqrt3\), the half-period symmetry of odd harmonics, the repeat rate, and the presets.">單元測試檢查：精確係數與數值積分相符、吉布斯過衝 8.95 %、兩種相位下 200 組隨機音色的帕塞瓦爾定理、峰值因數 \(\sqrt2\) 與 \(\sqrt3\)、奇次泛音的半週期對稱、波形重複的頻率，以及各個預設。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performing · Musical elements (timbre); Elective Physics III · Waves.">課綱對應：高中音樂・表現・音樂元素（音色）；選修物理Ⅲ・波動。</li>
+        <li data-en-html="Across subjects: Mathematics “Fourier series” (being planned) and “<a href=&quot;trig-functions.html&quot;>Trigonometric functions</a>”; Physics “<a href=&quot;standing-waves.html&quot;>Reflection of waves on a string and standing waves</a>”.">跨科：數學「傅立葉級數」（規劃中）、「<a href="trig-functions.html">三角函數</a>」；物理「<a href="standing-waves.html">繩波的反射與駐波</a>」。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed. (Springer, 1998) — spectra of the clarinet, oboe and flute, bowed strings and violin body resonances.">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版（Springer，1998）——單簧管、雙簧管、長笛的頻譜，弓弦與小提琴琴身的共鳴。</li>
+        <li data-en="H. von Helmholtz, Die Lehre von den Tonempfindungen (1863); English translation by A. J. Ellis, On the Sensations of Tone — timbre and harmonics, the ear's insensitivity to phase, the sawtooth motion of a bowed string.">H. von Helmholtz，《Die Lehre von den Tonempfindungen》（1863）；A. J. Ellis 英譯《On the Sensations of Tone》——音色與泛音、耳朵對相位不敏感、弓弦的鋸齒運動。</li>
+        <li data-en="G. E. Peterson and H. L. Barney, “Control methods used in a study of the vowels”, J. Acoust. Soc. Am. 24, 175 (1952) — vowel formant frequencies.">G. E. Peterson、H. L. Barney，〈Control methods used in a study of the vowels〉，J. Acoust. Soc. Am. 24, 175（1952）——母音的共振峰頻率。</li>
+        <li data-en="J. M. Grey, “Multidimensional perceptual scaling of musical timbres”, J. Acoust. Soc. Am. 61, 1270 (1977) — the spectral centroid and brightness.">J. M. Grey，〈Multidimensional perceptual scaling of musical timbres〉，J. Acoust. Soc. Am. 61, 1270（1977）——頻譜重心與亮度。</li>
+        <li data-en="A4 = 440 Hz: ISO 16:1975, Acoustics — Standard tuning frequency.">A4 = 440 Hz：ISO 16:1975〈Acoustics — Standard tuning frequency〉。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/harmonic-series-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/harmonic-series.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="harmonic-series"></script>
+  <script src="js/missions/harmonic-series.js"></script>
+  <script src="js/stats.js" data-module="harmonic-series"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

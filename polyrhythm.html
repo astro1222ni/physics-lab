@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Polyrhythms and Euclidean Rhythms | Astro Ni Science Lab">多重節奏與歐幾里得節奏｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 多重節奏頁面專用的顏色代號（淺色＋兩組深色；由 js/polyrhythm.js 與 js/polyrhythm-3d.js 讀取）
+       v1、v2、v3 三個聲部，sync 全部聲部一起落拍，cur 播放游標 */
+    :root { --pr-v1: #c2410c; --pr-v2: #1d4ed8; --pr-v3: #15803d; --pr-sync: #a21caf; --pr-cur: #0f766e; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pr-v1: #fb923c; --pr-v2: #7aa7ff; --pr-v3: #4ade80; --pr-sync: #e879f9; --pr-cur: #5eead4; }
+    }
+    :root[data-theme="dark"] { --pr-v1: #fb923c; --pr-v2: #7aa7ff; --pr-v3: #4ade80; --pr-sync: #e879f9; --pr-cur: #5eead4; }
+
+    /* 主畫布：項鍊（同心圓）＋展開的時間格；高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y; cursor: default; }
+    .pr [hidden] { display: none !important; }
+    .pr button { min-height: 44px; }
+    .pr .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pr .playbar button { flex: 1 1 auto; }
+    .pr .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pr #stop:disabled { opacity: .5; cursor: default; }
+    .pr .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pr .panel { grid-template-columns: minmax(0, 1fr); }
+    .pr .panel > .card { min-width: 0; }
+    .pr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+    .seg.full button { padding: 6px 4px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .p3-wrap { position: relative; }
+    .p3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .p3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .p3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .p3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .p3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .p3-hud span.m { color: var(--muted); font-weight: 500; }
+    .p3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(118px * var(--fs, 1)), 1fr)); gap: 6px; margin: 8px 0 0; }
+    .presets button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .presets button.here { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .voice h2 { display: flex; align-items: center; gap: 8px; }
+    .voice h2 .sw { width: 14px; height: 14px; border-radius: 50%; flex: none; box-shadow: inset 0 -2px 3px rgba(0,0,0,.25); }
+    .voice.off > :not(h2):not(.chk) { opacity: .5; }
+    .chk { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); margin: 2px 0 6px; cursor: pointer; }
+    .chk input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; margin: 0; }
+    .tim { margin: 4px 0 6px; }
+    .tim button { font-size: calc(13.5px * var(--fs, 1)); }
+    .vread { margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.55; font-variant-numeric: tabular-nums; }
+    .vread b { font-weight: 700; }
+    .vread .pat { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .06em; word-break: break-all; }
+    .vread .ok { color: var(--pr-v3); font-weight: 700; }
+    .vread .no { color: var(--muted); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd .pat { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; word-break: break-all; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#rhythm&quot;>Music · Rhythm and Form</a> / Rhythm Patterns"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#rhythm">音樂・節奏與曲式</a> ／ 節奏型</nav>
+      <h1 data-en="Polyrhythms and Euclidean Rhythms">多重節奏與歐幾里得節奏</h1>
+      <p data-en="Play three beats against two and the two lines meet again only at the start of each cycle — the least common multiple is the length of the combined rhythm. And many rhythms from around the world turn out to be the answer to one question: how do you spread k accents over n beats as evenly as possible? The answer is generated by the same steps Euclid used to find a greatest common divisor. Build rhythms as necklaces, turn them, stack two or three of them, and watch where the voices land together.">三拍對兩拍，兩條節奏線只在每個循環的開頭重合——最小公倍數就是合起來的節奏有多長。世界各地很多傳統節奏，原來都是同一個問題的答案：怎麼把 k 個重音盡量平均地分到 n 拍裡？答案可以用歐幾里得求最大公因數的步驟產生。把節奏做成一圈項鍊，轉一轉、疊兩三個聲部，看它們在哪裡一起落拍。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: set voice 1 to n = 3, k = 3 and voice 2 to n = 2, k = 2, press “▶ Play”, and watch where the two dots flash together.">試試看：聲部 1 設 n = 3、k = 3，聲部 2 設 n = 2、k = 2，按「▶ 播放」，看兩圈在哪裡一起亮。</p>
+    <div class="lab pr" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D necklaces">2D 項鍊</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D torus knot">3D 環面結</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--pr-v1)&quot;></i>Voice 1"><i style="background:var(--pr-v1)"></i>聲部 1</span>
+          <span data-en-html="<i style=&quot;background:var(--pr-v2)&quot;></i>Voice 2"><i style="background:var(--pr-v2)"></i>聲部 2</span>
+          <span data-en-html="<i style=&quot;background:var(--pr-v3)&quot;></i>Voice 3"><i style="background:var(--pr-v3)"></i>聲部 3</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pr-sync)&quot;></i>All voices together"><i class="dot" style="background:var(--pr-sync)"></i>全部一起落拍</span>
+        </div>
+        <p class="hint l2" data-en="Tap a bead on a necklace (or a box in the time grid) to add or remove an accent. Keyboard: focus the picture, Enter picks a voice, ← → move along its beats, ↑ or ↓ toggles the accent.">點項鍊上的珠子（或下面時間格裡的格子）可以加上或拿掉重音。鍵盤：聚焦畫面後，Enter 選聲部，← → 移動到哪一格，↑ 或 ↓ 切換那一格有沒有重音。</p>
+        <p class="hint l3" data-en-html="3D: going around the ring is voice A’s cycle, going around the tube is voice B’s cycle; time runs along the line. The line closes only when both cycles end together. Drag to rotate, scroll or pinch to zoom.">3D：沿著大圈走是聲部 A 的循環，繞著管子走是聲部 B 的循環；時間沿著線前進。兩個循環同時走完，線才接回起點。拖曳旋轉，滾輪或雙指縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Timing">對齊與速度</h2>
+          <div class="seg full" role="group" aria-label="對齊方式" data-en-aria-label="Alignment">
+            <button type="button" data-align="cycle" aria-pressed="true" data-en="Same cycle">同一個循環</button>
+            <button type="button" data-align="step" aria-pressed="false" data-en="Same beat length">同樣的格長</button>
+          </div>
+          <p class="hint" id="alignHint"></p>
+          <div class="slider"><label for="bpm" data-en="Tempo (beats per minute, voice 1)">速度（每分鐘幾格，聲部 1）</label><output id="bpmo"></output>
+            <input id="bpm" type="range" min="40" max="200" step="1" value="180" data-decimals="0"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Traditional rhythms (Toussaint 2005)">傳統節奏型（Toussaint 2005）</h2>
+          <div class="presets" id="presets" role="group" aria-label="傳統節奏型" data-en-aria-label="Traditional rhythms">
+            <button type="button" data-preset="tresillo" data-en="Cuban tresillo">古巴 tresillo</button>
+            <button type="button" data-preset="cinquillo" data-en="Cuban cinquillo">古巴 cinquillo</button>
+            <button type="button" data-preset="samba" data-en="Brazilian samba">巴西森巴</button>
+            <button type="button" data-preset="bell" data-en="West African bell">西非鈴鼓型</button>
+            <button type="button" data-preset="venda" data-en="Venda clapping">南非 Venda 拍手</button>
+          </div>
+          <p class="hint" id="presetHint" data-en="Each button puts the rhythm in voice 1 and a steady four-beat pulse in voice 2.">每個按鈕把節奏型放進聲部 1，聲部 2 是穩定的四拍。</p>
+        </section>
+
+        <section class="card voice" id="card0">
+          <h2><span class="sw" style="background:var(--pr-v1)"></span><span data-en="Voice 1 (reference)">聲部 1（基準）</span></h2>
+          <div class="seg full tim" role="group" aria-label="聲部 1 的音色" data-en-aria-label="Voice 1 sound">
+            <button type="button" data-tim="0:low" aria-pressed="false" data-en="Low drum">低鼓</button>
+            <button type="button" data-tim="0:high" aria-pressed="false" data-en="High drum">高鼓</button>
+            <button type="button" data-tim="0:clap" aria-pressed="false" data-en="Clap">拍手</button>
+            <button type="button" data-tim="0:bell" aria-pressed="true" data-en="Bell">鈴</button>
+          </div>
+          <div class="slider"><label for="n0" data-en="Beats n">總拍數 n</label><output id="n0o"></output>
+            <input id="n0" type="range" min="2" max="16" step="1" value="12" data-decimals="0"></div>
+          <div class="slider"><label for="k0" data-en="Accents k">重音數 k</label><output id="k0o"></output>
+            <input id="k0" type="range" min="0" max="12" step="1" value="7" data-decimals="0"></div>
+          <div class="slider"><label for="r0" data-en="Rotation (start on beat)">旋轉（從第幾格開始）</label><output id="r0o"></output>
+            <input id="r0" type="range" min="0" max="11" step="1" value="0" data-decimals="0"></div>
+          <p class="vread" id="vr0"></p>
+        </section>
+
+        <section class="card voice" id="card1">
+          <h2><span class="sw" style="background:var(--pr-v2)"></span><span data-en="Voice 2">聲部 2</span></h2>
+          <label class="chk"><input type="checkbox" id="on1" checked><span data-en="Turn on voice 2">開啟聲部 2</span></label>
+          <div class="seg full tim" role="group" aria-label="聲部 2 的音色" data-en-aria-label="Voice 2 sound">
+            <button type="button" data-tim="1:low" aria-pressed="true" data-en="Low drum">低鼓</button>
+            <button type="button" data-tim="1:high" aria-pressed="false" data-en="High drum">高鼓</button>
+            <button type="button" data-tim="1:clap" aria-pressed="false" data-en="Clap">拍手</button>
+            <button type="button" data-tim="1:bell" aria-pressed="false" data-en="Bell">鈴</button>
+          </div>
+          <div class="slider"><label for="n1" data-en="Beats n">總拍數 n</label><output id="n1o"></output>
+            <input id="n1" type="range" min="2" max="16" step="1" value="4" data-decimals="0"></div>
+          <div class="slider"><label for="k1" data-en="Accents k">重音數 k</label><output id="k1o"></output>
+            <input id="k1" type="range" min="0" max="4" step="1" value="4" data-decimals="0"></div>
+          <div class="slider"><label for="r1" data-en="Rotation (start on beat)">旋轉（從第幾格開始）</label><output id="r1o"></output>
+            <input id="r1" type="range" min="0" max="3" step="1" value="0" data-decimals="0"></div>
+          <p class="vread" id="vr1"></p>
+        </section>
+
+        <section class="card voice off" id="card2">
+          <h2><span class="sw" style="background:var(--pr-v3)"></span><span data-en="Voice 3">聲部 3</span></h2>
+          <label class="chk"><input type="checkbox" id="on2"><span data-en="Turn on voice 3">開啟聲部 3</span></label>
+          <div class="seg full tim" role="group" aria-label="聲部 3 的音色" data-en-aria-label="Voice 3 sound">
+            <button type="button" data-tim="2:low" aria-pressed="false" data-en="Low drum">低鼓</button>
+            <button type="button" data-tim="2:high" aria-pressed="false" data-en="High drum">高鼓</button>
+            <button type="button" data-tim="2:clap" aria-pressed="true" data-en="Clap">拍手</button>
+            <button type="button" data-tim="2:bell" aria-pressed="false" data-en="Bell">鈴</button>
+          </div>
+          <div class="slider"><label for="n2" data-en="Beats n">總拍數 n</label><output id="n2o"></output>
+            <input id="n2" type="range" min="2" max="16" step="1" value="3" data-decimals="0"></div>
+          <div class="slider"><label for="k2" data-en="Accents k">重音數 k</label><output id="k2o"></output>
+            <input id="k2" type="range" min="0" max="3" step="1" value="3" data-decimals="0"></div>
+          <div class="slider"><label for="r2" data-en="Rotation (start on beat)">旋轉（從第幾格開始）</label><output id="r2o"></output>
+            <input id="r2" type="range" min="0" max="2" step="1" value="0" data-decimals="0"></div>
+          <p class="vread" id="vr2"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="All voices together">合起來</h2>
+          <dl class="readout" id="rd">
+            <dt data-en="Combined rhythm (one period)">合成節奏（一個週期）</dt><dd id="rdU">—</dd>
+            <dt data-en="Period">週期</dt><dd id="rdL">—</dd>
+            <dt data-en="One box lasts">一格多長</dt><dd id="rdCell">—</dd>
+            <dt data-en="All voices land together">全部一起落拍</dt><dd id="rdT">—</dd>
+            <dt data-en="Pairs landing together">兩兩一起落拍</dt><dd id="rdP">—</dd>
+            <dt data-en="3D torus knot">3D 環面結</dt><dd id="rdK">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Two cycles and the least common multiple">兩個循環與最小公倍數</h3>
+      <p data-en-html="Divide one cycle into 3 equal beats in one voice and 2 in another: “three against two”. On a common grid of \(\operatorname{lcm}(3,2) = 6\) small boxes the first voice plays boxes 0, 2, 4 and the second plays 0, 3, so together they make the combined rhythm <code>x.xxx.</code> and meet only at box 0. In general, voices with \(n_1, n_2, n_3\) beats per cycle need a grid of">一個循環裡，一個聲部平均敲 3 下，另一個平均敲 2 下：這就是「3 對 2」。把它們放在 \(\operatorname{lcm}(3,2) = 6\) 個小格的共同格子上，第一個聲部敲第 0、2、4 格，第二個敲第 0、3 格，合起來是 <code>x.xxx.</code>，只在第 0 格一起落拍。一般來說，每個循環分別有 \(n_1, n_2, n_3\) 拍的聲部，需要的共同格子數是</p>
+      <div class="formula">\[ L = \operatorname{lcm}(n_1, n_2, n_3) \]</div>
+      <p data-en-html="If instead every box lasts the same time (“Same beat length”, a polymeter), voice \(i\) comes back to its start every \(n_i\) boxes, and all voices start together again after \(L\) boxes — for 3 and 4 that is 12 boxes. With one accent each and \(\gcd(n_1, n_2) = 1\), the two voices are sure to land together exactly once per period, wherever they start: that is the Chinese remainder theorem. If \(n_1\) and \(n_2\) share a factor, they can be arranged never to meet.">如果改成每一格都一樣長（「同樣的格長」，又叫多重節拍 polymeter），聲部 \(i\) 每 \(n_i\) 格回到起點一次，全部聲部要 \(L\) 格後才會一起回到起點——3 和 4 就是 12 格。兩個聲部各只敲一下、而且 \(\gcd(n_1, n_2) = 1\) 時，不管從哪裡開始，每個週期一定剛好一起落拍一次：這就是中國剩餘定理（《孫子算經》的「物不知數」）。\(n_1\)、\(n_2\) 有公因數時，就可以安排成永遠不相遇。</p>
+
+      <h3 data-en="Spreading k accents over n beats: Euclid’s algorithm">把 k 個重音平均分到 n 拍：歐幾里得演算法</h3>
+      <p data-en-html="In 2003 E. Bjorklund, working on the timing system of a neutron source at Los Alamos, needed to spread \(k\) pulses over \(n\) time slots as evenly as possible. His recipe: write \(k\) groups <code>[x]</code> and \(n-k\) groups <code>[.]</code>; attach the smaller set of groups, one by one, to the end of the others; whatever is left over becomes the new remainder; repeat until at most one group is left. For \(E(3,8)\):">2003 年，E. Bjorklund 為洛斯阿拉莫斯一座中子源的計時系統，要把 \(k\) 個脈衝盡量平均地分到 \(n\) 個時段。他的做法：先寫 \(k\) 組 <code>[x]</code> 和 \(n-k\) 組 <code>[.]</code>；把比較少的那一組一個一個接到另一組的後面；剩下的成為新的「餘數」；一直做到餘數最多只剩一組。以 \(E(3,8)\) 為例：</p>
+      <div class="formula">\[ \begin{aligned} &[x][x][x]\,[.][.][.][.][.] \\ \to\ &[x.][x.][x.]\,[.][.] \\ \to\ &[x..][x..]\,[x.] \\ \to\ &x..x..x. \end{aligned} \]</div>
+      <p data-en-html="Count the groups: \(8-3 = 5\) and \(3\) become \(3\) and \(2\), then \(2\) and \(1\) — exactly the steps of Euclid’s algorithm for the greatest common divisor, \(\gcd(5,3) \to \gcd(3,2) \to \gcd(2,1)\). Toussaint (2005) noticed that these “Euclidean rhythms” \(E(k,n)\) are traditional rhythms all over the world. The result has only two gap lengths, \(\lfloor n/k \rfloor\) and \(\lceil n/k \rceil\) (only one if \(k\) divides \(n\)), and if \(\gcd(k,n) = d > 1\) the rhythm is a shorter Euclidean rhythm repeated \(d\) times.">數一數每一步的組數：\(8-3 = 5\) 和 \(3\) 變成 \(3\) 和 \(2\)，再變成 \(2\) 和 \(1\)——正好是歐幾里得求最大公因數的輾轉相除：\(\gcd(5,3) \to \gcd(3,2) \to \gcd(2,1)\)。Toussaint（2005）發現，這些「歐幾里得節奏」\(E(k,n)\) 就是世界各地的傳統節奏。結果的重音間距只有 \(\lfloor n/k \rfloor\) 和 \(\lceil n/k \rceil\) 兩種（\(k\) 整除 \(n\) 時只有一種）；\(\gcd(k,n) = d > 1\) 時，節奏是一段較短的歐幾里得節奏重複 \(d\) 次。</p>
+
+      <h3 data-en="Maximally even, and how even is even">最大均勻與均勻度</h3>
+      <p data-en-html="A rhythm is <strong>maximally even</strong> when, for every \(j\), the distances between accents that are \(j\) accents apart take at most two values that differ by one box (Clough and Douthett 1991). The maximally even rhythms are exactly the rotations of \(E(k,n)\) (the page checks this for every rhythm up to 16 beats). To score any rhythm, put its accents on a circle and add up the straight-line distances between every pair; with \(d\) the number of boxes between two accents:">一個節奏如果對每個 \(j\)，「相隔 \(j\) 個重音」的距離最多只有兩種、而且只差一格，就叫<strong>最大均勻</strong>（Clough 與 Douthett 1991）。最大均勻的節奏恰好就是 \(E(k,n)\) 的各種旋轉（這個實驗對 16 拍以內的所有節奏都檢查過）。要替任何節奏打分數，就把重音放在圓上，量出每兩個重音之間的直線距離（弦長）加起來；\(d\) 是兩個重音相隔的格數：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} S = \sum_{\text{pairs}} 2\sin\frac{\pi d}{n} \\ \text{evenness} = \frac{S}{S_{E(k,n)}} \end{gathered} \]">\[ \begin{gathered} S = \sum_{\text{每一對}} 2\sin\frac{\pi d}{n} \\ \text{均勻度} = \frac{S}{S_{E(k,n)}} \end{gathered} \]</div>
+      <p data-en-html="Among all rhythms with \(k\) accents in \(n\) boxes, \(E(k,n)\) has the largest \(S\), so its evenness is 100%. The Cuban son clave <code>x..x..x...x.x...</code> is not Euclidean (gaps 3-3-4-2-4): its evenness is just below 100%.">在 \(n\) 格放 \(k\) 個重音的所有節奏裡，\(E(k,n)\) 的 \(S\) 最大，所以均勻度是 100%。古巴的 son clave <code>x..x..x...x.x...</code> 不是歐幾里得節奏（間距 3-3-4-2-4），均勻度略低於 100%。</p>
+
+      <h3 data-en="Two cycles on a doughnut: torus knots">兩個循環放在甜甜圈上：環面結</h3>
+      <p data-en-html="A point on a torus needs two angles. Let the angle around the ring follow voice A’s cycle and the angle around the tube follow voice B’s: \(\theta_A = 2\pi t / P_A\), \(\theta_B = 2\pi t / P_B\), where \(P\) is the time after which each voice’s pattern repeats. As time passes the point draws a line that closes after \(\operatorname{lcm}(P_A, P_B)\), having gone \(w_A\) times around the ring and \(w_B\) times around the tube. Because \(w_A\) and \(w_B\) have no common factor, the line is a \((w_A, w_B)\) <strong>torus knot</strong>: three against two draws the trefoil knot. Accents of voice A sit on rings around the tube, accents of voice B on rings around the hole, and the moments when both voices sound are the crossing points the line passes through.">環面上的一點要用兩個角度描述。讓沿著大圈的角度跟著聲部 A 的循環走、繞著管子的角度跟著聲部 B 走：\(\theta_A = 2\pi t / P_A\)、\(\theta_B = 2\pi t / P_B\)，\(P\) 是各聲部的節奏多久重複一次。時間一直走，這一點畫出一條線，要到 \(\operatorname{lcm}(P_A, P_B)\) 才接回起點，這時它沿大圈繞了 \(w_A\) 圈、繞管子 \(w_B\) 圈。\(w_A\)、\(w_B\) 沒有公因數，所以這條線是一個 \((w_A, w_B)\) <strong>環面結</strong>：3 對 2 畫出的就是三葉結。聲部 A 的重音在一圈圈套住管子的環上，聲部 B 的重音在一圈圈繞著中間洞的環上，兩個聲部一起響的時刻，就是線穿過兩種環交叉點的地方。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Polyrhythm in practice">多重節奏在音樂裡</h3>
+      <p data-en-html="Three against two is everywhere: triplets against duplets in classical piano music, the hemiola that makes a bar of 6/8 feel like 3/4, and the layered drumming of West Africa, where a bell pattern, several drums and clapping each keep their own cycle and the music lives in how they interlock. Four against three is harder to feel; drummers often learn the combined rhythm (12 small boxes) as one phrase first. A good way to practise: tap one voice with each hand and say the combined rhythm aloud.">3 對 2 到處都是：古典鋼琴曲裡三連音對兩個八分音符、讓 6/8 拍聽起來像 3/4 拍的「三對二」轉換（hemiola），還有西非的多層鼓樂——鈴、幾個鼓和拍手各自守著自己的循環，音樂的精彩就在它們怎麼咬合。4 對 3 比較難感覺，鼓手常先把合起來的節奏（12 個小格）當成一句話學會。練習的好方法：兩手各打一個聲部，嘴巴唸出合成節奏。</p>
+      <h3 data-en="Rotations: same necklace, different rhythm">旋轉：同一串項鍊，不同的節奏</h3>
+      <p data-en-html="Starting the same necklace on a different accent changes how it feels, because the first beat of the cycle is heard as the strong one. \(E(5,8)\) started on its first accent is the Cuban cinquillo, started on its second accent it is the Spanish tango; \(E(5,16)\) started on its third accent is the Brazilian bossa nova; \(E(7,16)\) started on its last accent is a samba rhythm (Toussaint 2005). On this page, “Rotation” = \(r\) means the pattern starts on box \(r\) of \(E(k,n)\).">同一串項鍊從不同的重音開始，聽起來就不一樣，因為循環的第一拍會被聽成強拍。\(E(5,8)\) 從第 1 個重音開始是古巴 cinquillo，從第 2 個重音開始是西班牙探戈；\(E(5,16)\) 從第 3 個重音開始是巴西 bossa nova；\(E(7,16)\) 從最後一個重音開始是一種森巴節奏（Toussaint 2005）。這個實驗的「旋轉」= \(r\)，意思是從 \(E(k,n)\) 的第 \(r\) 格開始。</p>
+      <h3 data-en="Euclidean rhythms around the world">世界各地的歐幾里得節奏</h3>
+      <ul>
+        <li data-en-html="\(E(3,8)\) <code>x..x..x.</code>: Cuban tresillo. \(E(5,8)\) <code>x.xx.xx.</code>: Cuban cinquillo.">\(E(3,8)\) <code>x..x..x.</code>：古巴 tresillo。\(E(5,8)\) <code>x.xx.xx.</code>：古巴 cinquillo。</li>
+        <li data-en-html="\(E(7,12)\) <code>x.xx.x.xx.x.</code>: a common West African bell pattern (for example in the Mpre rhythm of the Ashanti people of Ghana). \(E(5,12)\) <code>x..x.x..x.x.</code>: the Venda clapping pattern of a South African children’s song.">\(E(7,12)\) <code>x.xx.x.xx.x.</code>：常見的西非鈴鼓型（例如迦納阿散蒂人的 Mpre 節奏）。\(E(5,12)\) <code>x..x.x..x.x.</code>：南非 Venda 族兒歌的拍手節奏。</li>
+        <li data-en-html="\(E(4,9)\) <code>x.x.x.x..</code>: the aksak rhythm of Turkey. \(E(3,4)\) <code>x.xx</code>: the cumbia of Colombia. \(E(3,7)\) and \(E(4,7)\): Bulgarian ruchenitza dance rhythms.">\(E(4,9)\) <code>x.x.x.x..</code>：土耳其的 aksak 節奏。\(E(3,4)\) <code>x.xx</code>：哥倫比亞的 cumbia。\(E(3,7)\)、\(E(4,7)\)：保加利亞 ruchenitza 舞曲節奏。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Where do they meet?</strong> With “Same cycle”, try 3 against 2, then 4 against 3. How many boxes does the combined rhythm have, and how often do the voices land together?"><strong>在哪裡相遇？</strong>用「同一個循環」試 3 對 2，再試 4 對 3。合成節奏有幾格？兩個聲部多久一起落拍一次？</li>
+        <li data-en-html="<strong>Same beat length</strong>: switch to “Same beat length” with n = 3 and n = 4. Now the two necklaces turn at different speeds — after how many boxes are both back at the top?"><strong>同樣的格長</strong>：切到「同樣的格長」，n 分別設 3 和 4。現在兩圈項鍊轉得不一樣快——幾格以後兩個都回到最上面？</li>
+        <li data-en-html="<strong>Only two gap lengths</strong>: slide “Accents k” for n = 16 and read the gaps. When is there only one length?"><strong>只有兩種間距</strong>：n = 16 時拉「重音數 k」，讀出間距。什麼時候只剩一種？</li>
+        <li data-en-html="<strong>Repeats</strong>: compare E(3,8) with E(6,16) — what does the greatest common divisor do?"><strong>重複</strong>：比較 E(3,8) 和 E(6,16)——最大公因數做了什麼事？</li>
+        <li data-en-html="<strong>Break the evenness</strong>: tap beads to move one accent of a Euclidean rhythm. What happens to the evenness and the gaps?"><strong>打破均勻</strong>：點珠子把歐幾里得節奏的一個重音挪一格。均勻度和間距怎麼變？</li>
+        <li data-en-html="<strong>The knot</strong>: open “3D torus knot” with 3 against 2, then 5 against 2. Count how many times the line goes around the ring and around the tube."><strong>結</strong>：3 對 2 時打開「3D 環面結」，再換成 5 對 2。數一數線沿大圈繞了幾圈、繞管子幾圈。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="\(E(k,n)\) is generated with Bjorklund’s algorithm exactly as described by Toussaint (2005) (at least one step is always carried out), so every pattern starts with an accent and matches his table; the page’s unit tests compare 24 patterns from the paper letter by letter. “Rotation” \(r\) shifts the start: the pattern played is box \(r, r+1, \dots\) of \(E(k,n)\).">\(E(k,n)\) 用 Bjorklund 演算法產生，步驟照 Toussaint（2005）的描述（至少做一步），所以每個節奏都從重音開始、和論文的表一樣；單元測試逐字比對論文裡的 24 個節奏。「旋轉」\(r\) 改變起點：播放的是 \(E(k,n)\) 的第 \(r, r+1, \dots\) 格。</li>
+        <li data-en-html="When you tap beads, the page checks whether the result is a rotation of some \(E(k,n)\); if it is, the sliders jump to that \(k\) and rotation, otherwise the voice is marked “custom (not a Euclidean rhythm)”. Gaps are counted from the first accent of the cycle.">點珠子之後，程式檢查結果是不是某個 \(E(k,n)\) 的旋轉；是的話，滑桿跳到那個 \(k\) 和旋轉，不是的話這個聲部標成「自訂（不是歐幾里得節奏）」。間距從循環裡的第一個重音算起。</li>
+        <li data-en-html="Timing: one box of voice 1 always lasts \(60/\text{tempo}\) seconds. With “Same cycle” every voice divides voice 1’s cycle (\(n_1\) boxes) into its own \(n_i\) equal boxes; with “Same beat length” every box of every voice lasts \(60/\text{tempo}\) seconds. Both use a common grid of \(L = \operatorname{lcm}\) small boxes. When a voice’s pattern repeats itself inside its cycle (for example <code>x.x.x.x.</code>), the page also reports the shorter true period of the combined rhythm.">時間：聲部 1 的一格永遠是 \(60/\text{速度}\) 秒。「同一個循環」時，每個聲部把聲部 1 的一個循環（\(n_1\) 格）平分成自己的 \(n_i\) 格；「同樣的格長」時，每個聲部的每一格都是 \(60/\text{速度}\) 秒。兩種方式都用 \(L = \operatorname{lcm}\) 個小格的共同格子。如果某個聲部的節奏在循環裡自己就重複（例如 <code>x.x.x.x.</code>），讀數也會寫出合成節奏真正更短的週期。</li>
+        <li data-en-html="The 3D torus (radius 1.6 around the ring, 0.6 around the tube, in arbitrary units) uses the first two voices that have accents. The line is drawn from the same combined-rhythm calculation; beads mark the accents, larger beads the moments when both sound. It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 環面（大圈半徑 1.6、管子半徑 0.6，任意單位）用前兩個有重音的聲部。線由同一套合成節奏的計算畫出；珠子是重音，大珠子是兩個聲部一起響的時刻。3D 使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): drums are a few decaying sine waves at the frequency ratios of an ideal drumhead (1 : 1.59 : 2.14 : 2.65), the bell is a few higher decaying partials and the clap is filtered noise — all approximations. The low drum’s lowest partial is about 175 Hz, which phone speakers barely play; its higher partials carry the sound. Playback stops by itself after 90 seconds; “■ Stop”, Esc or switching tabs stops it at once.">聲音在瀏覽器裡即時合成（沒有錄音檔）：鼓是幾個逐漸衰減的正弦波，頻率比照理想鼓皮（1 : 1.59 : 2.14 : 2.65），鈴是幾個較高的衰減泛音，拍手是濾波後的雜訊——都是近似的音色。低鼓最低的成分約 175 Hz，手機小喇叭幾乎放不出來，要靠較高的泛音聽到。播放 90 秒後自動停止；按「■ 停止」、按 Esc 或切換分頁會立刻停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (rhythm); Senior-high Music · Appreciation · World music. Across subjects: Mathematics (greatest common divisor, least common multiple, Euclid’s algorithm).">課綱對應：高中音樂・表現・音樂元素（節奏）；高中音樂・鑑賞・世界音樂。跨科：數學・因數與倍數（最大公因數、最小公倍數、輾轉相除法）。</li>
+        <li data-en="Godfried Toussaint, “The Euclidean Algorithm Generates Traditional Musical Rhythms”, Proceedings of BRIDGES: Mathematical Connections in Art, Music and Science, Banff, 2005, pp. 47–56 — the rhythm table, rotations and names used on this page.">Godfried Toussaint，〈The Euclidean Algorithm Generates Traditional Musical Rhythms〉，Proceedings of BRIDGES: Mathematical Connections in Art, Music and Science，Banff，2005，47–56 頁（本頁的節奏表、旋轉與名稱）。</li>
+        <li data-en="E. Bjorklund, “The Theory of Rep-Rate Pattern Generation in the SNS Timing System”, SNS ASD Technical Note SNS-NOTE-CNTRL-99, Los Alamos National Laboratory, 2003.">E. Bjorklund，〈The Theory of Rep-Rate Pattern Generation in the SNS Timing System〉，SNS ASD Technical Note SNS-NOTE-CNTRL-99，Los Alamos National Laboratory，2003。</li>
+        <li data-en="John Clough and Jack Douthett, “Maximally Even Sets”, Journal of Music Theory 35, 93–173 (1991).">John Clough、Jack Douthett，〈Maximally Even Sets〉，Journal of Music Theory 35，93–173（1991）。</li>
+        <li data-en="Euclid, Elements, Book VII, Propositions 1–2 (finding the greatest common measure by repeated subtraction).">歐幾里得《幾何原本》第七卷命題 1–2（用輾轉相減求最大公度）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/polyrhythm-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/polyrhythm.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="polyrhythm"></script>
+  <script src="js/missions/polyrhythm.js"></script>
+  <script src="js/stats.js" data-module="polyrhythm"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
