@@ -51,7 +51,7 @@ if (!labs.length) { console.error('首頁找不到已上線的實驗卡片'); pr
 
 const SITE_ZH = 'Astro Ni 科學實驗室', SITE_EN = 'Astro Ni Science Lab';
 const pages = [
-  { slug: 'index', url: SITE, title: SITE_ZH + '｜高中物理・化學・生物・地球科學・數學互動模擬', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '高中物理・化學・生物・地球科學・數學互動模擬實驗室。', kind: 'home' },
+  { slug: 'index', url: SITE, title: SITE_ZH + '｜高中互動模擬實驗', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '給高中生的互動模擬實驗室。', kind: 'home' },
   { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 Astro Ni 科學實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。', kind: 'page' },
   { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。', kind: 'page' },
   { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: 'Astro Ni 科學實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
@@ -222,9 +222,9 @@ if (NO_OG) process.exit(0);
     if (FORCE || vers.index !== v || !fs.existsSync(path.join(outDir, 'index.jpg'))) {
       const html = `<style>${CSS}.text{top:150px;width:470px}h1{font-size:60px}</style><div class="card" style="--c:#196558">
         <div class="brand">ASTRO NI SCIENCE LAB</div>
-        <div class="text"><h1>Astro Ni<br>科學實驗室</h1><h2>高中自然科學互動模擬・${labs.length} 個實驗<br>High School Science Simulations</h2></div>
+        <div class="text"><h1>Astro Ni<br>科學實驗室</h1><h2>高中互動模擬實驗・${labs.length} 個<br>${labs.length} interactive labs</h2></div>
         <div class="grid">${pick.map(l => `<img src="${dataUrl(thumb(l.slug))}">`).join('')}</div>
-        <div class="foot">物理・化學・生物・地球科學・數學</div></div>`;
+        <div class="foot">lab.astroni.org</div></div>`;
       await page.setContent(html, { waitUntil: 'load' });
       await page.screenshot({ path: path.join(outDir, 'index.jpg'), type: 'jpeg', quality: 86 });
       vers.index = v; made++;
