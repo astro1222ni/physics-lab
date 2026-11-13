@@ -105,8 +105,8 @@
     {
       id: 'energy-flow-h3', level: 5, hidden: true,
       title: { zh: '落葉底下的餐桌', en: 'The table under the leaves' },
-      desc: { zh: '森林裡最大的一張餐桌，擺在落葉底下——比所有的嘴加起來還大五十倍。', en: 'The biggest table in the forest is laid under the fallen leaves — fifty times bigger than all the mouths put together.' },
-      check: function (ev) { const d = ev.data; return flow(ev) && d.N >= 2 && d.ing > 0 && d.D >= 50 * d.ing - EPS; }
+      desc: { zh: '森林裡最大的一張餐桌，擺在落葉底下——不多不少，正好是所有的嘴加起來的五十倍。', en: 'The biggest table in the forest is laid under the fallen leaves — exactly fifty times all the mouths put together.' },
+      check: function (ev) { const d = ev.data; return flow(ev) && d.N >= 2 && d.ing > 0 && Math.abs(d.D / d.ing / 50 - 1) <= 0.02 + EPS; }
     },
     {
       id: 'energy-flow-h4', level: 5, hidden: true,

@@ -70,7 +70,8 @@ claim(!check('10', ev(make('grass', { rp: 57.6, ce2: 50, ae2: 76, pe2: 44, ce3: 
 solve('h1', 'grass', { N: 1, dec: 100 }, 'energy', '只留生產者、分解者分解 100%');
 d = solve('h2', 'grass', { rp: 10, dec: 10 }, 'energy', '植物呼吸 10%、分解者只分解 10%');
 out.push(`    累積 ${g(d.store)}、熱 ${g(d.heat)} kJ/m²/年`);
-d = solve('h3', 'forest', { ce2: 1 }, 'energy', '森林、毛毛蟲只吃掉 1%');
+d = solve('h3', 'forest', { ce2: 1.9 }, 'energy', '森林、毛毛蟲只吃掉 1.9%');
+claim(!check('h3', ev(make('forest', { ce2: 1 }))) && !check('h3', ev(make('forest', { ce2: 2.1 }))), 'h3：吃掉 1%（94 倍）或 2.1%（44.7 倍）都不算，要剛好 50 倍');
 out.push(`    碎屑 ÷ 吃進去 = ${g(d.D / d.ing)}`);
 solve('h4', 'grass', { ce2: 10, ce3: 90, ce4: 90 }, 'energy', '蚱蜢只吃 10%，青蛙與蛇各吃掉 90%');
 solve('h5', 'grass', { alpha: 100, elim: 0, ce2: 100, ce3: 100, ce4: 100 }, 'poll', 'α = 100%、e = 0，每一階都把下面吃光');
