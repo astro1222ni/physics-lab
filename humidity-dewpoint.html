@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Humidity and Dew Point | Astro Ni Science Lab">溼度與露點｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 溼度與露點頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。 */
+    :root {
+      --hd-room0: #eef2f7; --hd-room1: #dbe3ee; --hd-wood: #b07a47; --hd-metal: #9aa7b4; --hd-glass: #e8f1f8;
+      --hd-hot: #dc2626; --hd-wet: #2563eb; --hd-dew: #0891b2; --hd-frost: #7c3aed; --hd-rh: #16a34a; --hd-air: #ea580c;
+      --hd-sat: #1e3a8a; --hd-grid: #94a3b8; --hd-mark: #db2777;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --hd-room0: #1b2330; --hd-room1: #121823; --hd-wood: #7a5233; --hd-metal: #6b7785; --hd-glass: #2a3644;
+        --hd-hot: #f87171; --hd-wet: #60a5fa; --hd-dew: #22d3ee; --hd-frost: #c4b5fd; --hd-rh: #4ade80; --hd-air: #fb923c; --hd-sat: #93c5fd; --hd-grid: #64748b; --hd-mark: #f472b6; }
+    }
+    :root[data-theme="dark"] { --hd-room0: #1b2330; --hd-room1: #121823; --hd-wood: #7a5233; --hd-metal: #6b7785; --hd-glass: #2a3644;
+      --hd-hot: #f87171; --hd-wet: #60a5fa; --hd-dew: #22d3ee; --hd-frost: #c4b5fd; --hd-rh: #4ade80; --hd-air: #fb923c; --hd-sat: #93c5fd; --hd-grid: #64748b; --hd-mark: #f472b6; }
+    #cv { aspect-ratio: auto; height: 440px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 470px; } }
+    #gr { display: block; width: 100%; height: 280px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .hd button { min-height: 44px; }
+    .hd .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hd .playbar button { flex: 1 1 auto; }
+    .hd .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .hd .slider input[type="range"] { height: 28px; margin: 0; }
+    .hd [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .segw.col { flex-direction: column; }
+    .segw.col button + button { border-left: none; border-top: 1px solid var(--border); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(13px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 3px 8px; text-align: center; font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Humidity and dew point"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 溼度與露點</nav>
+      <h1 data-en="Humidity and Dew Point">溼度與露點</h1>
+      <p data-en="Wrap a thermometer in wet cloth and it gets colder: the drier the air, the faster the water evaporates. Read humidity from a wet-and-dry-bulb thermometer, cool a metal cup until it “sweats” to find the dew point, and watch dew, fog and frost come and go over a day.">溫度計包上溼紗布就變冷：空氣越乾，水蒸發得越快。用乾溼球溫度計讀出溼度，把金屬杯冷卻到「流汗」量出露點，再看一天裡露水、霧和霜怎麼來、怎麼走。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start reading” and watch the wet bulb cool down. Then lower the humidity: the gap between the two thermometers grows.">試試看：按「開始量」，看溼球慢慢變冷；再把相對溼度調低，兩支溫度計的差距就變大。</p>
+    <div class="lab hd" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="psy" aria-pressed="true" data-en="Wet and dry bulb">乾溼球溫度計</button>
+          <button type="button" data-mode="cup" aria-pressed="false" data-en="The sweating cup">冷杯子找露點</button>
+          <button type="button" data-mode="day" aria-pressed="false" data-en="Humidity over a day">一天的溼度</button>
+        </div>
+        <canvas id="cv" aria-label="乾溼球溫度計" data-en-aria-label="Wet and dry bulb thermometer"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">開始量</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除動畫與紀錄；設定不變" data-en-title="Clear the animation and the records; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <div id="airPanel">
+          <section class="card">
+            <h2 data-en="The air in the room">房間裡的空氣</h2>
+            <div class="slider"><label for="temp" data-en="Air temperature (°C)">氣溫（°C）</label><output></output>
+              <input id="temp" type="range" min="-10" max="40" step="0.1" value="25" data-decimals="1"></div>
+            <div class="slider"><label for="rh" data-en="Relative humidity (%)">相對溼度（%）</label><output></output>
+              <input id="rh" type="range" min="5" max="100" step="0.1" value="60" data-decimals="1"></div>
+            <p class="hint" id="airHint">—</p>
+          </section>
+        </div>
+
+        <div id="psyPanel">
+          <section class="card">
+            <h2 data-en="The psychrometer">乾溼計</h2>
+            <div class="segw" role="group" aria-label="通風" data-en-aria-label="Ventilation" id="typeSeg">
+              <button type="button" data-t="vent" aria-pressed="true" data-en="Fan-ventilated">通風（有風扇）</button>
+              <button type="button" data-t="still" aria-pressed="false" data-en="Screen, no fan">百葉箱、不通風</button>
+            </div>
+            <div class="slider"><label for="alt" data-en="Altitude (m)">海拔高度（m）</label><output></output>
+              <input id="alt" type="range" min="0" max="4000" step="1" value="0" data-decimals="0"></div>
+            <p class="hint" id="psyHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Reading">讀數</h2>
+            <p class="big-num" id="pRH">—</p>
+            <dl class="readout">
+              <dt data-en="Dry bulb">乾球</dt><dd id="pT">—</dd>
+              <dt data-en="Wet bulb (now)">溼球（現在）</dt><dd id="pW" class="big">—</dd>
+              <dt data-en="Difference">溫度差</dt><dd id="pD" class="big">—</dd>
+              <dt data-en="Air pressure">氣壓</dt><dd id="pP">—</dd>
+              <dt data-en="Dew point">露點</dt><dd id="pTd">—</dd>
+              <dt data-en="Water vapour">水氣</dt><dd id="pE">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="cupPanel" hidden>
+          <section class="card">
+            <h2 data-en="Cool the cup with">用什麼冷卻杯子</h2>
+            <div class="segw col" role="group" aria-label="冷卻" data-en-aria-label="Coolant" id="bathSeg"></div>
+            <p class="hint" id="cupHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="The cup">杯子</h2>
+            <p class="big-num" id="cT">—</p>
+            <dl class="readout">
+              <dt data-en="Time">經過時間</dt><dd id="cTime">—</dd>
+              <dt data-en="Outside of the cup">杯子外面</dt><dd id="cState" class="big">—</dd>
+              <dt data-en="Cup temperature when it misted">起霧時的杯溫</dt><dd id="cOn" class="big">—</dd>
+              <dt data-en="True dew point">真正的露點</dt><dd id="cTd">—</dd>
+              <dt data-en="True frost point">真正的霜點</dt><dd id="cTf">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="dayPanel" hidden>
+          <section class="card">
+            <h2 data-en="The weather">天氣</h2>
+            <div class="slider"><label for="tmean" data-en="Mean temperature (°C)">日均溫（°C）</label><output></output>
+              <input id="tmean" type="range" min="-5" max="32" step="0.1" value="20" data-decimals="1"></div>
+            <div class="slider"><label for="range" data-en="Daily range (°C)">日較差（°C）</label><output></output>
+              <input id="range" type="range" min="2" max="16" step="0.1" value="10" data-decimals="1"></div>
+            <div class="slider"><label for="td0" data-en="Dew point of the air (°C)">空氣的露點（°C）</label><output></output>
+              <input id="td0" type="range" min="-20" max="28" step="0.1" value="13" data-decimals="1"></div>
+            <div class="slider"><label for="hour" data-en="Time of day">時刻</label><output></output>
+              <input id="hour" type="range" min="0" max="24" step="0.05" value="12" data-decimals="2"></div>
+            <div class="presets" role="group" aria-label="天氣" data-en-aria-label="Weather" id="wxSeg"></div>
+            <p class="hint" id="dayHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Right now">現在</h2>
+            <p class="big-num" id="dRH">—</p>
+            <dl class="readout">
+              <dt data-en="Temperature">氣溫</dt><dd id="dT">—</dd>
+              <dt data-en="Dew point">露點</dt><dd id="dTd">—</dd>
+              <dt data-en="Water vapour">水氣</dt><dd id="dE">—</dd>
+              <dt data-en="On the grass">草地上</dt><dd id="dDew" class="big">—</dd>
+              <dt data-en="Today">今天</dt><dd id="dSum">—</dd>
+            </dl>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="How much water the air can hold">空氣能含多少水氣</h3>
+      <p data-en-html="Water vapour in the air pushes with its own small pressure, the vapour pressure \(e\). At each temperature there is a maximum, the saturation vapour pressure \(e_s(T)\): beyond it the vapour condenses. It roughly doubles every 10 °C (from the Clausius–Clapeyron equation):">空氣裡的水氣有自己的一份小小壓力，叫水氣壓 \(e\)。每個溫度有一個上限，叫飽和水氣壓 \(e_s(T)\)，超過就會凝結。溫度每升高 10 °C，它大約變成兩倍（克勞修斯–克拉伯龍方程）：</p>
+      <div class="formula">\[ \frac{d\ln e_s}{dT} = \frac{L}{R_v T^2}, \qquad e_s(0\,{}^\circ\mathrm{C}) = 6.11\ \mathrm{hPa},\quad e_s(20\,{}^\circ\mathrm{C}) = 23.4\ \mathrm{hPa},\quad e_s(30\,{}^\circ\mathrm{C}) = 42.5\ \mathrm{hPa} \]</div>
+      <p data-en-html="<strong>Relative humidity</strong> \(f = e/e_s(T)\) says how full the air is. The <strong>dew point</strong> \(T_d\) is the temperature at which the same air would be full: \(e_s(T_d) = e\). Cool the air (or a surface) below it and dew forms. Below 0 °C ice holds on to its molecules more tightly than water, so \(e_{s,\mathrm{ice}} &lt; e_{s,\mathrm{water}}\): frost starts at the <strong>frost point</strong>, which is a little higher than the dew point.">「<strong>相對溼度</strong>」\(f = e/e_s(T)\) 表示空氣裝了幾分滿。「<strong>露點</strong>」\(T_d\) 是同一團空氣剛好裝滿的溫度：\(e_s(T_d) = e\)。空氣（或物體表面）冷到露點以下，就會結露。0 °C 以下，冰抓住水分子比水更牢，冰面的飽和水氣壓比水面小（\(e_{s,\mathrm{ice}} &lt; e_{s,\mathrm{water}}\)），所以從「<strong>霜點</strong>」就開始結霜，霜點比露點高一點。</p>
+      <h3 data-en="The wet and dry bulb thermometer">乾溼球溫度計</h3>
+      <p data-en-html="The wet bulb is cooled by evaporation until the heat it gets from the air balances the latent heat carried away. The drier the air, the colder it gets. The psychrometer equation (WMO) gives the vapour pressure from the two readings:">溼球被蒸發吸熱冷卻，直到從空氣得到的熱等於水蒸發帶走的潛熱。空氣越乾，它就越冷。乾溼計公式（世界氣象組織）由兩個讀數算出水氣壓：</p>
+      <div class="formula">\[ e = e_s(T_w) - A\,p\,(T - T_w), \qquad A = 6.53\times10^{-4}\,(1 + 0.000944\,T_w)\ \mathrm{K}^{-1} \]</div>
+      <p data-en-html="Here \(T\) is the dry bulb, \(T_w\) the wet bulb and \(p\) the air pressure. The constant \(A\) depends on the airflow: in a fan-ventilated psychrometer \(A \approx 6.5\times10^{-4}\ \mathrm{K}^{-1}\); in a screen without a fan the wet bulb does not cool as much and \(A \approx 8.0\times10^{-4}\ \mathrm{K}^{-1}\), so each kind of instrument needs its own table. On a high mountain the pressure is lower, the same difference means moister air, and a sea-level table gives the wrong answer.">\(T\) 是乾球、\(T_w\) 是溼球、\(p\) 是氣壓。係數 \(A\) 和通風有關：有風扇通風的乾溼計 \(A \approx 6.5\times10^{-4}\ \mathrm{K}^{-1}\)；放在百葉箱裡沒有風扇時，溼球冷得沒那麼多，\(A \approx 8.0\times10^{-4}\ \mathrm{K}^{-1}\)，所以不同的儀器要用不同的表。到了高山上氣壓變小，同樣的溫度差代表比較溼的空氣，拿平地的表來查就錯了。</p>
+      <h3 data-en="Dew, fog and frost">露、霧、霜</h3>
+      <p data-en-html="On a clear, calm night the ground loses heat by radiation and the air near it cools. The amount of water vapour stays the same, so as the temperature falls the relative humidity rises; when the temperature reaches the dew point, dew forms on the grass and fog may form in the air. After sunrise the temperature rises, the dew evaporates and the relative humidity falls again. Weather forecasters use this: if tonight’s minimum temperature is at or below the dew point, expect dew or fog.">晴朗無風的夜晚，地面輻射散熱，貼近地面的空氣跟著變冷。水氣的量不變，所以溫度越低、相對溼度越高；溫度降到露點，草上就結露，空氣裡也可能起霧。日出後溫度回升，露水蒸發，相對溼度又降下來。氣象預報就用這個道理：今晚的最低溫若降到露點以下，就可能有露水或霧。</p>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="Saturation vapour pressure over water and ice: Murphy and Koop (2005); relative humidity is taken with respect to water, as the WMO does, even below 0 °C. Wet bulb: the psychrometer equation is solved for \(T_w\) by bisection (with an ice bulb and \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\) below 0 °C); the thermometer approaches it with a time constant of 30 s (ventilated) or 150 s (screen), shown 30 times faster. Air pressure from the standard atmosphere. Cup: Newton’s law of cooling with a 60 s time constant, shown 5 times faster; a film of water becomes visible after a fixed amount of condensation, so a fast-cooling cup mists at a temperature below the true dew point. Day: the temperature follows two half cosines (minimum 05:30, maximum 14:00) and the amount of water vapour stays fixed, except that the air cannot hold more than saturation: the extra becomes dew or frost and evaporates again in the morning.">水面與冰面的飽和水氣壓：Murphy 與 Koop（2005）；相對溼度照世界氣象組織的定義，0 °C 以下也以水面為準。溼球：用二分法解乾溼計公式求 \(T_w\)（0 °C 以下溼球結冰，改用冰面與 \(A_i = 5.75\times10^{-4}\ \mathrm{K}^{-1}\)）；溫度計以 30 秒（通風）或 150 秒（百葉箱）的時間常數趨近，畫面快 30 倍。氣壓用標準大氣。杯子：牛頓冷卻定律，時間常數 60 秒，畫面快 5 倍；杯壁凝結到一定的量才看得出水膜，所以冷得快的杯子，起霧時的杯溫比真正的露點低。一天：氣溫照兩段半餘弦（05:30 最低、14:00 最高），水氣量整天固定，只是空氣最多只能到飽和，多的變成露或霜，早上再蒸發回來。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/humidity-dewpoint-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/humidity-dewpoint.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="humidity-dewpoint"></script>
+  <script src="js/missions/humidity-dewpoint.js"></script>
+  <script src="js/stats.js" data-module="humidity-dewpoint"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
