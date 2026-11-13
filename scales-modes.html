@@ -1,0 +1,380 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Scales and Modes | Astro Ni Science Lab">音階與調式｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 音階與調式頁面專用的顏色代號（淺色＋兩組深色；由 js/scales-modes.js 與 js/scales-modes-3d.js 讀取）
+       w 全音、h 半音、a 增二度與更大的步伐、tonic 主音、ref 記住的音階、low 被降半音的音、poly 音階多邊形、key／keyb 鍵盤 */
+    :root { --sm-w: #2563eb; --sm-h: #ea580c; --sm-a: #be185d; --sm-tonic: #0f766e; --sm-ref: #7c3aed; --sm-low: #b91c1c; --sm-poly: #0e7490; --sm-key: #fbfaf7; --sm-keyb: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --sm-w: #7aa7ff; --sm-h: #fb923c; --sm-a: #ff74b0; --sm-tonic: #5eead4; --sm-ref: #b9a0ff; --sm-low: #f87171; --sm-poly: #67e8f9; --sm-key: #d9dce2; --sm-keyb: #0d0f13; }
+    }
+    :root[data-theme="dark"] { --sm-w: #7aa7ff; --sm-h: #fb923c; --sm-a: #ff74b0; --sm-tonic: #5eead4; --sm-ref: #b9a0ff; --sm-low: #f87171; --sm-poly: #67e8f9; --sm-key: #d9dce2; --sm-keyb: #0d0f13; }
+
+    #cv { aspect-ratio: auto; height: 420px; touch-action: manipulation; cursor: pointer; }
+    .sm [hidden] { display: none !important; }
+    .sm button { min-height: 44px; }
+    .sm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 2px 0; }
+    .sm .playbar button { flex: 1 1 auto; }
+    .sm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sm #stop:disabled { opacity: .5; cursor: default; }
+    .sm .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .sm .panel { grid-template-columns: minmax(0, 1fr); }
+    .sm .panel > .card { min-width: 0; }
+    .sm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .playopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(150px * var(--fs, 1)), 1fr)); gap: 8px 14px; align-items: end; margin: 10px 2px 0; }
+    .playopts .slider { margin: 0; }
+    .field { display: flex; align-items: center; gap: 10px; margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    .card .field + .field { margin-top: 10px; }
+    .field label { white-space: nowrap; }
+    .field select { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 78%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.lo { color: var(--sm-low); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 步伐條：寬度 ∝ 半音數；中間亮的一段剛好一個八度（12 個半音），整條是同一串步伐一直重複，換調式時整條滑動 */
+    .stepcap { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 12px 4px 4px; font-size: calc(13px * var(--fs, 1)); }
+    .stepcap b { font-size: calc(14px * var(--fs, 1)); }
+    .stepcap span { color: var(--muted); }
+    .stepbar { position: relative; height: calc(54px + 26px * var(--fs, 1)); overflow: hidden; border-radius: 10px;
+      background: color-mix(in srgb, var(--canvas-bg) 70%, var(--surface)); border: 1px solid var(--border); }
+    .stepbar .track { position: absolute; left: 0; top: 6px; height: 52px; width: calc(100% * 36 / 14); display: flex; will-change: transform; }
+    .stepbar .track.anim { transition: transform .42s cubic-bezier(.2,.7,.2,1); }
+    .stepbar .blk { flex: none; height: 52px; margin: 0; padding: 0 1px; border: none; border-radius: 0; background: none; min-height: 0; cursor: pointer; position: relative; color: #fff; }
+    .stepbar .blk i { position: absolute; inset: 2px 1.5px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700;
+      font-size: calc(13px * var(--fs, 1)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.15); overflow: hidden; white-space: nowrap; }
+    .stepbar .blk.w i { background: linear-gradient(180deg, color-mix(in srgb, var(--sm-w) 78%, #fff) 0%, var(--sm-w) 55%, color-mix(in srgb, var(--sm-w) 85%, #000) 100%); }
+    .stepbar .blk.h i { background: linear-gradient(180deg, color-mix(in srgb, var(--sm-h) 78%, #fff) 0%, var(--sm-h) 55%, color-mix(in srgb, var(--sm-h) 85%, #000) 100%); }
+    .stepbar .blk.a i { background: linear-gradient(180deg, color-mix(in srgb, var(--sm-a) 78%, #fff) 0%, var(--sm-a) 55%, color-mix(in srgb, var(--sm-a) 85%, #000) 100%); }
+    :root[data-theme="dark"] .stepbar .blk i { color: #10131a; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stepbar .blk i { color: #10131a; } }
+    .stepbar .blk.out { pointer-events: none; opacity: .28; filter: saturate(.6); }
+    .stepbar .blk.on i { outline: 3px solid var(--text); outline-offset: -3px; }
+    .stepbar .blk:focus-visible { outline: none; }
+    .stepbar .blk:focus-visible i { outline: 3px solid var(--accent); outline-offset: -1px; }
+    .stepbar .win { position: absolute; top: 3px; height: 58px; left: calc(100% / 14); width: calc(100% * 12 / 14); border: 2px solid var(--text); border-radius: 10px; pointer-events: none; opacity: .55; }
+    .stepbar .names { position: absolute; left: 0; right: 0; top: 64px; height: calc(22px * var(--fs, 1)); pointer-events: none; }
+    .stepbar .names span { position: absolute; transform: translateX(-50%); font-size: calc(12px * var(--fs, 1)); font-weight: 700; white-space: nowrap; color: var(--text); }
+    .stepbar .names span.t { color: var(--sm-tonic); }
+    .stepbar::before, .stepbar::after { content: ""; position: absolute; top: 0; bottom: 0; width: calc(100% / 14); z-index: 2; pointer-events: none; }
+    .stepbar::before { left: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--canvas-bg) 92%, var(--surface)), transparent); }
+    .stepbar::after { right: 0; background: linear-gradient(270deg, color-mix(in srgb, var(--canvas-bg) 92%, var(--surface)), transparent); }
+    @media (prefers-reduced-motion: reduce) { .stepbar .track.anim { transition: none; } }
+
+    /* 鍵盤 C4–C5：點鍵把音加進或移出音階（主音不能移出） */
+    .piano { position: relative; height: 128px; margin: 12px 0 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .piano .key { position: absolute; top: 0; padding: 0; margin: 0; min-height: 0; border-radius: 0 0 8px 8px; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center; -webkit-tap-highlight-color: transparent; }
+    .piano .key.w { height: 100%; background: linear-gradient(180deg, color-mix(in srgb, var(--sm-key) 92%, var(--text)) 0%, var(--sm-key) 14%, var(--sm-key) 86%, color-mix(in srgb, var(--sm-key) 88%, var(--text)) 100%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--text)); color: #3b3f46; z-index: 1;
+      box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--sm-key) 80%, #000), 0 2px 4px rgba(0,0,0,.12); }
+    .piano .key.b { height: 60%; z-index: 2; background: linear-gradient(180deg, color-mix(in srgb, var(--sm-keyb) 80%, #fff) 0%, var(--sm-keyb) 30%, var(--sm-keyb) 100%);
+      border: 1px solid #000; color: #e5e7eb; box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--sm-keyb) 70%, #fff), 0 3px 5px rgba(0,0,0,.3); }
+    .piano .key .kn { font-size: calc(12px * var(--fs, 1)); font-weight: 600; line-height: 1.1; margin: 0 0 8px; pointer-events: none; }
+    .piano .key.b .kn { font-size: calc(10px * var(--fs, 1)); margin-bottom: 6px; }
+    .piano .key .kd { font-size: calc(11px * var(--fs, 1)); font-weight: 700; line-height: 1; margin: 0 0 4px; min-width: 1.6em; padding: 2px 3px; border-radius: 999px; pointer-events: none; visibility: hidden; font-variant-numeric: tabular-nums; }
+    .piano .key[aria-pressed="true"] .kd { visibility: visible; background: var(--sm-poly); color: var(--surface); }
+    .piano .key.tonic[aria-pressed="true"] .kd { background: var(--sm-tonic); }
+    .piano .key.w[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--sm-poly) 30%, var(--sm-key)) 0%, color-mix(in srgb, var(--sm-poly) 16%, var(--sm-key)) 100%); color: #1f2328; }
+    .piano .key.b[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--sm-poly) 70%, #fff) 0%, var(--sm-poly) 60%); color: #fff; }
+    :root[data-theme="dark"] .piano .key.b[aria-pressed="true"] { color: #0d0f13; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piano .key.b[aria-pressed="true"] { color: #0d0f13; } }
+    .piano .key[aria-pressed="false"] .kn { opacity: .6; }
+    .piano .key.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .piano .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; z-index: 3; }
+    .piano-hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    @media (prefers-reduced-motion: reduce) { .piano .key.on { box-shadow: 0 0 0 3px var(--accent); } }
+
+    /* 亮暗階梯：七個按鈕排成往下的階梯 */
+    .ladder { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 0; }
+    .ladder button { text-align: left; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .ladder button small { color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ladder button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 700; }
+    .ladder button[aria-pressed="true"] small { color: inherit; opacity: .85; }
+    .ladder button:nth-child(1) { margin-left: 0; } .ladder button:nth-child(2) { margin-left: 4%; } .ladder button:nth-child(3) { margin-left: 8%; }
+    .ladder button:nth-child(4) { margin-left: 12%; } .ladder button:nth-child(5) { margin-left: 16%; } .ladder button:nth-child(6) { margin-left: 20%; } .ladder button:nth-child(7) { margin-left: 24%; }
+    .ladder-step { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; }
+    .twobtn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    dl.readout { grid-template-columns: fit-content(55%) minmax(0, 1fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .ok-txt { color: var(--sm-tonic); font-weight: 700; }
+    .no-txt { color: var(--muted); font-weight: 600; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nt { width: 100%; border-collapse: collapse; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .nt th, .nt td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .nt th { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .nt th:first-child, .nt td:first-child, .nt th:nth-child(2), .nt td:nth-child(2) { text-align: left; }
+    .nt tr.on td { background: var(--accent-soft); }
+    .nt td.t { color: var(--sm-tonic); font-weight: 700; }
+    .iv { width: 100%; border-collapse: collapse; margin: 6px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; text-align: center; }
+    .iv th, .iv td { border: 1px solid var(--border); padding: 3px 2px; }
+    .iv th { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .iv td { font-weight: 700; }
+    .idbox { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
+    .idbox .nm { font-size: calc(16px * var(--fs, 1)); font-weight: 700; }
+    .idbox .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 2px; }
+    .refbox { margin: 10px 0 0; font-size: calc(13.5px * var(--fs, 1)); }
+    .refbox:empty { display: none; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tuning&quot;>Music · Tuning and Scales</a> / Scales and Modes"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tuning">音樂・音律與音階</a> ／ 音階與調式</nav>
+      <h1 data-en="Scales and Modes">音階與調式</h1>
+      <p data-en="Play the white keys from C and you get the bright major scale; play the very same white keys from D or from E and the music turns sad, solemn or strange. A scale is a row of steps — whole steps and half steps — and a mode is simply where you start in that row. Turn the row, climb the ladder from the brightest mode to the darkest, build your own scale on the keyboard and let the page tell you what it is, and meet the mathematics hiding in the seven-note scale: maximal evenness, Myhill’s property and the interval vector.">從 C 開始彈白鍵，是明亮的大調；同樣一組白鍵，從 D 或 E 開始彈，音樂卻變得憂鬱、莊嚴或奇特。音階是一串步伐（全音、半音），調式只是「從這串步伐的哪裡開始走」。在這裡轉動步伐、走一遍從最亮到最暗的「亮暗階梯」、在鍵盤上自己拼音階讓網頁認出它，還會看到藏在七聲音階裡的數學：最大均勻、Myhill 性質和音程向量。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “D” as the “Tonic” and “Dorian” as the scale — the same white keys, a new mood. Watch the step bar slide.">試試看：「主音」選 D、音階選「多利亞」：還是那一組白鍵，味道卻不一樣，看步伐條怎麼滑動。</p>
+    <div class="lab sm" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D clock">2D 鐘面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D tower of modes">3D 調式之塔</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="音階鐘面與亮暗階梯"></canvas>
+        <div id="view3"></div>
+
+        <div class="stepcap"><b data-en="Step bar">步伐條</b><span id="stepSeq"></span></div>
+        <div class="stepbar" id="stepbar" role="group" aria-label="步伐條：點一格聽那兩個相鄰的音" data-en-aria-label="Step bar: tap a step to hear its two notes">
+          <div class="track" id="track"></div>
+          <div class="win" aria-hidden="true"></div>
+          <div class="names" id="stepNames" aria-hidden="true"></div>
+        </div>
+        <p class="piano-hint" data-en="Blocks are as wide as their steps: whole step = 2 semitones, half step = 1. The bright window is one octave; the faded ends show that the same row of steps keeps going. Tap a step to hear its two notes.">每一格的寬度就是步伐的大小：全音 2 個半音、半音 1 個半音。框起來的一段剛好一個八度，兩端淡淡的部分表示同一串步伐一直重複下去。點一格就聽到那兩個相鄰的音。</p>
+
+        <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5，點鍵把音加進或移出音階" data-en-aria-label="Keyboard C4 to C5: tap a key to add it to or remove it from the scale"></div>
+        <p class="piano-hint" data-en="Tap a key (or a cell of the clock) to add or remove that note and build your own scale; the tonic always stays. The badge on a key is its scale degree.">點鍵盤（或鐘面上的格子）就能把那個音加進或移出音階，自己拼音階；主音一定留著。鍵上的小圓標是第幾級。</p>
+
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="playopts">
+          <div class="field"><label for="dir" data-en="Direction">方向</label>
+            <select id="dir">
+              <option value="up" selected data-en="Up">上行</option>
+              <option value="down" data-en="Down">下行</option>
+              <option value="updown" data-en="Up and down">上行再下行</option>
+              <option value="arp" data-en="Tonic-chord arpeggio">主三和弦琶音</option>
+            </select></div>
+          <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
+            <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+            <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
+          </div>
+          <div class="slider"><label for="tempo" data-en="Speed (notes per minute)">速度（每分鐘幾個音）</label><output id="tempoO"></output>
+            <input id="tempo" type="range" min="60" max="240" step="10" value="120" data-decimals="0"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--sm-w)&quot;></i>Whole step (W)"><i style="background:var(--sm-w)"></i>全音（全）</span>
+          <span data-en-html="<i style=&quot;background:var(--sm-h)&quot;></i>Half step (H)"><i style="background:var(--sm-h)"></i>半音（半）</span>
+          <span data-en-html="<i style=&quot;background:var(--sm-a)&quot;></i>Wider step (e.g. augmented second)"><i style="background:var(--sm-a)"></i>更大的步伐（例如增二度）</span>
+          <span data-en-html="<i style=&quot;background:var(--sm-tonic)&quot;></i>Tonic"><i style="background:var(--sm-tonic)"></i>主音</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--sm-ref)&quot;></i>Remembered scale"><i class="dash" style="color:var(--sm-ref)"></i>記住的音階</span>
+          <span data-en-html="<i style=&quot;background:var(--sm-low)&quot;></i>Note lowered on the ladder"><i style="background:var(--sm-low)"></i>階梯上被降半音的音</span>
+        </div>
+        <p class="piano-hint l3" data-en="3D: the clock becomes the cross-section of a tower. The seven modes on one tonic are stacked from brightest (bottom) to darkest (top); each storey is a seven-sided polygon. Straight posts mean “same note”; the slanted red post is the one note that drops a half step on the way up. Drag to rotate, scroll or pinch to zoom.">3D：鐘面變成塔的橫截面。同一個主音的七個調式由亮（下）到暗（上）一層一層疊起來，每一層是一個七邊形。直立的柱子表示「同一個音」；紅色的斜柱就是往上一層時唯一降半音的那個音。拖曳旋轉，滾輪或雙指縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Scale">音階</h2>
+          <div class="field">
+            <label for="tonic" data-en="Tonic">主音</label>
+            <select id="tonic">
+              <option value="C" selected>C</option><option value="C♯">C♯</option><option value="D♭">D♭</option><option value="D">D</option>
+              <option value="D♯">D♯</option><option value="E♭">E♭</option><option value="E">E</option><option value="F">F</option>
+              <option value="F♯">F♯</option><option value="G♭">G♭</option><option value="G">G</option><option value="G♯">G♯</option>
+              <option value="A♭">A♭</option><option value="A">A</option><option value="A♯">A♯</option><option value="B♭">B♭</option><option value="B">B</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="scale" data-en="Scale">音階</label>
+            <select id="scale">
+              <option value="ionian" selected data-en="Ionian (major)">伊奧尼亞（大調）</option>
+              <option value="dorian" data-en="Dorian">多利亞</option>
+              <option value="phrygian" data-en="Phrygian">弗里吉亞</option>
+              <option value="lydian" data-en="Lydian">利底亞</option>
+              <option value="mixolydian" data-en="Mixolydian">混合利底亞</option>
+              <option value="aeolian" data-en="Aeolian (natural minor)">伊奧利亞（自然小調）</option>
+              <option value="locrian" data-en="Locrian">洛克里亞</option>
+              <option value="harmonic" data-en="Harmonic minor">和聲小調</option>
+              <option value="melodic" data-en="Melodic minor (ascending)">旋律小調（上行）</option>
+              <option value="wholetone" data-en="Whole-tone scale">全音音階</option>
+              <option value="chromatic" data-en="Chromatic scale">半音音階</option>
+              <option value="custom" data-en="Custom (tap keys)">自訂（點鍵盤）</option>
+            </select>
+          </div>
+          <p class="hint" data-en="The black-key tonics come in two spellings: B♭ major is written with flats, A♯ major would need double sharps — try both.">黑鍵主音有升、降兩種寫法：B♭ 大調用降記號寫，A♯ 大調卻要用到重升記號，兩種都試試看。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Brightness ladder">亮暗階梯</h2>
+          <div class="ladder" id="ladder" role="group" aria-label="亮暗階梯：由亮到暗的七個調式" data-en-aria-label="Brightness ladder: the seven modes from brightest to darkest">
+            <button type="button" data-ladder="lydian" aria-pressed="false"><span data-en="Lydian">利底亞</span><small>+21</small></button>
+            <button type="button" data-ladder="ionian" aria-pressed="true"><span data-en="Ionian">伊奧尼亞</span><small>+14</small></button>
+            <button type="button" data-ladder="mixolydian" aria-pressed="false"><span data-en="Mixolydian">混合利底亞</span><small>+7</small></button>
+            <button type="button" data-ladder="dorian" aria-pressed="false"><span data-en="Dorian">多利亞</span><small>0</small></button>
+            <button type="button" data-ladder="aeolian" aria-pressed="false"><span data-en="Aeolian">伊奧利亞</span><small>−7</small></button>
+            <button type="button" data-ladder="phrygian" aria-pressed="false"><span data-en="Phrygian">弗里吉亞</span><small>−14</small></button>
+            <button type="button" data-ladder="locrian" aria-pressed="false"><span data-en="Locrian">洛克里亞</span><small>−21</small></button>
+          </div>
+          <div class="ladder-step">
+            <button type="button" id="brighter" data-en="▲ Brighter">▲ 更亮</button>
+            <button type="button" id="darker" data-en="▼ Darker">▼ 更暗</button>
+          </div>
+          <p class="hint" id="ladderHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="What scale is this?">這是什麼音階？</h2>
+          <div class="idbox" id="idbox" aria-live="off"></div>
+          <dl class="readout" id="readout"></dl>
+          <h3 class="sub" style="margin:10px 0 0;font-size:calc(14px * var(--fs, 1))" data-en="Interval vector">音程向量</h3>
+          <div class="tablewrap"><table class="iv" id="ivTable"></table></div>
+          <p class="hint" data-en="How many pairs of notes lie 1, 2, 3, 4, 5 or 6 semitones apart (larger gaps are counted the other way round: 7 = 12 − 5).">音階裡任兩個音相差 1、2、3、4、5、6 個半音的各有幾對（超過 6 的從另一邊算：7 個半音算成 12 − 7 = 5）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Compare">比較</h2>
+          <div class="twobtn">
+            <button type="button" id="pin" data-en="Remember this scale">記住這個音階</button>
+            <button type="button" id="clear" data-en="Clear all" title="清掉記住的音階；主音、音階與播放設定不變" data-en-title="Forget the remembered scale; the tonic, the scale and the playing options are kept">全部清除</button>
+          </div>
+          <div class="refbox" id="refbox"></div>
+          <p class="hint" data-en="The remembered scale stays on the clock as a dashed outline, so you can count the notes two scales share.">記住的音階會以虛線留在鐘面上，可以數一數兩個音階共用幾個音。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Notes of the scale">音表</h2>
+          <div class="tablewrap"><table class="nt" id="noteTable"></table></div>
+          <p class="hint" id="tableHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="A scale is a row of steps">音階是一串步伐</h3>
+      <p data-en-html="Count semitones (one key to the next, black keys included). The major scale climbs in the steps \(2,2,1,2,2,2,1\) — whole, whole, half, whole, whole, whole, half — and the steps add up to \(12\), one octave. The seven <strong>church modes</strong> use the same row of steps but start somewhere else in it: starting on the 2nd step gives \(2,1,2,2,2,1,2\) (Dorian), on the 3rd \(1,2,2,2,1,2,2\) (Phrygian), and so on. In mathematics this is a <strong>cyclic shift</strong> (rotation) of a sequence:">以半音為單位（鍵盤上相鄰兩鍵，黑鍵也算）。大調音階的步伐是 \(2,2,1,2,2,2,1\)——全、全、半、全、全、全、半——加起來是 \(12\)，剛好一個八度。七個<strong>教會調式</strong>用的是同一串步伐，只是從不同的位置開始走：從第 2 步開始是 \(2,1,2,2,2,1,2\)（多利亞），從第 3 步開始是 \(1,2,2,2,1,2,2\)（弗里吉亞）……數學上這叫做數列的<strong>循環移位</strong>（轉位）：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} (s_1, s_2, \ldots, s_7) \;\to\; (s_{k+1}, \ldots, s_7, s_1, \ldots, s_k) \\ s_1 + s_2 + \cdots + s_7 = 12 \end{gathered} \]">\[ \begin{gathered} (s_1, s_2, \ldots, s_7) \;\to\; (s_{k+1}, \ldots, s_7, s_1, \ldots, s_k) \\ s_1 + s_2 + \cdots + s_7 = 12 \end{gathered} \]</div>
+      <p data-en-html="That is why the white keys alone give seven different modes: C Ionian, D Dorian, E Phrygian, F Lydian, G Mixolydian, A Aeolian and B Locrian all share the same seven notes. On the clock the polygon does not move at all — only the tonic marker does.">所以只用白鍵就有七個不同的調式：C 伊奧尼亞、D 多利亞、E 弗里吉亞、F 利底亞、G 混合利底亞、A 伊奧利亞、B 洛克里亞，用的都是同樣七個音。在鐘面上，多邊形完全不動，動的只有主音的標記。</p>
+
+      <h3 data-en="Seven fifths in a row">七個連續的五度</h3>
+      <p data-en-html="Line the note names up in fifths: … B♭ F C G D A E B F♯ … The white keys are exactly <strong>seven consecutive fifths</strong>, F C G D A E B. Give each name its position on this line (C = 0, G = 1, F = −1, and a sharp moves a name 7 places to the right). Add up the positions of the seven notes measured from the tonic and you get the <strong>brightness</strong> of the mode:">把音名照五度排成一列：… B♭ F C G D A E B F♯ …；白鍵剛好是<strong>七個連續的五度</strong> F C G D A E B。給每個音名一個位置（C = 0、G = 1、F = −1，加一個升記號就往右移 7 格），把七個音相對主音的位置加起來，就是這個調式的<strong>亮度</strong>：</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \text{brightness} = \sum_{i=1}^{7} \bigl(q(\text{note}_i) - q(\text{tonic})\bigr) \\ \text{Lydian } {+21},\ \text{Ionian } {+14},\ \text{Mixolydian } {+7},\ \text{Dorian } 0, \\ \text{Aeolian } {-7},\ \text{Phrygian } {-14},\ \text{Locrian } {-21} \end{gathered} \]">\[ \begin{gathered} \text{亮度} = \sum_{i=1}^{7} \bigl(q(\text{第 } i \text{ 個音}) - q(\text{主音})\bigr) \\ \text{利底亞 } {+21}\text{、}\text{伊奧尼亞 } {+14}\text{、}\text{混合利底亞 } {+7}\text{、}\text{多利亞 } 0\text{、} \\ \text{伊奧利亞 } {-7}\text{、}\text{弗里吉亞 } {-14}\text{、}\text{洛克里亞 } {-21} \end{gathered} \]</div>
+      <p data-en-html="Lowering one note by a half step (a sharp to a natural, a natural to a flat) moves it 7 places left on the line, so going one rung down the ladder lowers <em>exactly one</em> note: Lydian → Ionian lowers the 4th, → Mixolydian the 7th, → Dorian the 3rd, → Aeolian the 6th, → Phrygian the 2nd, → Locrian the 5th. Only the tonic is left — and lowering that is a surprise worth finding yourself.">把一個音降半音（升變還原、還原變降），它在五度鏈上就往左移 7 格，所以階梯每往下一格，<em>剛好只降一個音</em>：利底亞 → 伊奧尼亞降第 4 級，→ 混合利底亞降第 7 級，→ 多利亞降第 3 級，→ 伊奧利亞降第 6 級，→ 弗里吉亞降第 2 級，→ 洛克里亞降第 5 級。最後只剩主音沒降過——把主音也降下去會發生什麼事，留給你自己發現。</p>
+
+      <h3 data-en="Maximally even, and Myhill’s property">最大均勻與 Myhill 性質</h3>
+      <p data-en-html="Seven notes cannot be spread over twelve semitones perfectly evenly (\(12/7\) is not a whole number), but the diatonic scale comes as close as possible: every “generic” interval comes in at most two sizes, one semitone apart. Seconds are 1 or 2 semitones, thirds 3 or 4, fourths 5 or 6, and so on. Such sets are called <strong>maximally even</strong> (Clough and Douthett, 1991). Having <em>exactly</em> two sizes of every generic interval is <strong>Myhill’s property</strong> (Carey and Clampitt, 1989); it is why every third in a major or minor scale is either major or minor.">七個音沒辦法完美平均地放進十二個半音（\(12/7\) 不是整數），但自然音階已經盡可能平均：每一種「度數」最多只有兩種大小，而且只差一個半音。二度是 1 或 2 個半音，三度是 3 或 4 個，四度是 5 或 6 個……這種音的集合叫做<strong>最大均勻</strong>（Clough 與 Douthett，1991）。每一種度數<em>剛好</em>有兩種大小，叫做 <strong>Myhill 性質</strong>（Carey 與 Clampitt，1989）；大調、小調裡每一個三度不是大三度就是小三度，原因就在這裡。</p>
+      <div class="formula" data-en-html="\[ \text{generic interval } d \;\Rightarrow\; \text{size } \in \Bigl\{ \Bigl\lfloor \tfrac{12d}{7} \Bigr\rfloor,\ \Bigl\lceil \tfrac{12d}{7} \Bigr\rceil \Bigr\} \]">\[ \text{跨 } d \text{ 個音的度數} \;\Rightarrow\; \text{大小} \in \Bigl\{ \Bigl\lfloor \tfrac{12d}{7} \Bigr\rfloor,\ \Bigl\lceil \tfrac{12d}{7} \Bigr\rceil \Bigr\} \]</div>
+      <h3 data-en="The interval vector">音程向量</h3>
+      <p data-en-html="Count every pair of notes in a scale by how many semitones apart they are (1 to 6; 7 counts as 5, and so on). For the major scale the six counts are \((2, 5, 4, 3, 6, 1)\): six perfect fourths or fifths, only one tritone — and, unusually, all six numbers are different (Forte, 1973). Every mode of the same white keys has the same vector, because it is the same set of notes.">把音階裡的每一對音，依照相差幾個半音（1 到 6；7 個半音算成 5，以此類推）分類計數。大調音階的六個數字是 \((2, 5, 4, 3, 6, 1)\)：完全四、五度有 6 對，三全音只有 1 對——而且六個數字剛好都不一樣（Forte，1973）。同一組白鍵的每個調式，音程向量都一樣，因為它們是同一組音。</p>
+      <h3 data-en="Transposition symmetry">移位對稱</h3>
+      <p data-en-html="Move every note of the whole-tone scale up two semitones and you land on exactly the same notes; the octatonic scale does the same after three semitones. On the clock such a scale is a shape that matches itself before a full turn. The composer Olivier Messiaen called these the <strong>modes of limited transposition</strong> (1944): they can be transposed only a few times before repeating. The seven church modes have no such symmetry — which is exactly why each of them has a single, recognisable tonic.">把全音音階的每個音都往上移兩個半音，得到的還是同一組音；八聲音階往上移三個半音也一樣。在鐘面上，這種音階的形狀轉不到一整圈就和自己重合。作曲家梅湘把它們叫做<strong>有限移位調式</strong>（1944）：只能移調少數幾次就會重複。七個教會調式都沒有這種對稱——所以每一個都有一個清楚、認得出來的主音。</p>
+      <h3 data-en="Frequencies">頻率</h3>
+      <p data-en-html="The tonic is placed between C4 and B4 at its equal-tempered frequency (A4 = 440 Hz). In <strong>equal temperament</strong> a note \(k\) semitones above the tonic has frequency \(f_0 \cdot 2^{k/12}\). In <strong>just intonation</strong> (5-limit, built on the tonic) it is \(f_0\) times a small whole-number ratio: \(1, \tfrac{16}{15}, \tfrac98, \tfrac65, \tfrac54, \tfrac43, \tfrac{45}{32}, \tfrac32, \tfrac85, \tfrac53, \tfrac95, \tfrac{15}8\). The note table shows the ratio and how many cents each note is away from equal temperament.">主音放在 C4 到 B4 之間，用十二平均律的頻率（A4 = 440 Hz）。<strong>十二平均律</strong>中，比主音高 \(k\) 個半音的音，頻率是 \(f_0 \cdot 2^{k/12}\)；<strong>純律</strong>（以主音為準的 5 限純律）則是 \(f_0\) 乘上小整數比：\(1, \tfrac{16}{15}, \tfrac98, \tfrac65, \tfrac54, \tfrac43, \tfrac{45}{32}, \tfrac32, \tfrac85, \tfrac53, \tfrac95, \tfrac{15}8\)。音表列出每個音的比值，以及和十二平均律差幾音分。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Major and the three minors">大調與三種小調</h3>
+      <p data-en-html="The <strong>natural minor</strong> is the Aeolian mode: compared with major, its 3rd, 6th and 7th are a half step lower. Its 7th is a whole step below the tonic, which pulls towards home only weakly, so composers often raise it: that is the <strong>harmonic minor</strong>, and it leaves a gap of three semitones between the 6th and 7th, the <strong>augmented second</strong>, with an exotic flavour. To smooth the gap the 6th can be raised too: the <strong>melodic minor</strong> (ascending). Traditionally it goes back down as the natural minor.">「<strong>自然小調</strong>」就是伊奧利亞調式：和大調比，第 3、6、7 級各低半音。它的第 7 級離主音一個全音，往主音「回家」的拉力不強，所以作曲家常把它升高：這就是「<strong>和聲小調</strong>」，第 6、7 級之間因此空出 3 個半音的「<strong>增二度</strong>」，帶點異國風味。為了讓旋律平順，再把第 6 級也升高，就是「<strong>旋律小調</strong>」（上行）；傳統上下行時改回自然小調。</p>
+      <h3 data-en="Modes in real music">調式在真實音樂裡</h3>
+      <p data-en-html="The church modes come from medieval chant, where they were numbered and named after ancient Greek regions (their names do not match the ancient Greek modes). From about 1600 most European music settled on major and minor, but modes never went away: folk tunes and many film scores use Dorian for a wistful-but-bold colour, Mixolydian for a relaxed rock or folk feeling, Lydian (with its raised 4th) for a floating, dreamy sound, and Phrygian (with its flat 2nd) for a dark, Spanish-flamenco tinge. Locrian is rare, because its tonic chord is a diminished chord and never feels settled.">教會調式來自中世紀的聖歌，用古希臘地名命名（名字和古希臘真正的調式並不對應）。大約 1600 年以後，歐洲音樂大多只用大調和小調，但調式從沒消失：民謠和許多電影配樂用多利亞營造「帶點憂愁卻勇敢」的色彩，混合利底亞有輕鬆的搖滾、民謠感，利底亞（升高的第 4 級）聽起來輕飄、夢幻，弗里吉亞（降低的第 2 級）帶著陰暗的西班牙佛朗明哥味道。洛克里亞很少用，因為它的主三和弦是減三和弦，永遠站不穩。</p>
+      <h3 data-en="Movable do and fixed do">首調唱名與固定唱名</h3>
+      <p data-en-html="In <strong>movable do</strong> the tonic is always Do, so every major scale is sung Do Re Mi Fa Sol La Si; the note table marks altered degrees with ♭ or ♯ (Dorian sings ♭Mi and ♭Si). In <strong>fixed do</strong> Do always means C, so F major is Fa Sol La ♭Si Do Re Mi. (Some teachers sing minor keys starting on La instead; this page always calls the tonic Do.)">「<strong>首調唱名</strong>」把主音都唱成 Do，所以每個大調都唱 Do Re Mi Fa Sol La Si；音表用 ♭、♯ 標出和大調不同的級（多利亞唱 ♭Mi、♭Si）。「<strong>固定唱名</strong>」的 Do 永遠是 C，所以 F 大調唱 Fa Sol La ♭Si Do Re Mi。（也有老師把小調從 La 開始唱；這一頁一律把主音叫做 Do。）</p>
+      <h3 data-en="Why F major has B♭ and not A♯">為什麼 F 大調寫 B♭ 不寫 A♯</h3>
+      <p data-en-html="A seven-note scale uses each letter A–G exactly once, so that every step from one letter to the next is a “second”. F G A B♭ C D E uses all seven letters; F G A A♯ C D E would use A twice and skip B. Choose a tonic whose name needs many sharps and you may even run into double sharps (written ♯♯ here) — the reason musicians prefer B♭ major to A♯ major.">七聲音階的七個音，A 到 G 每個字母剛好用一次，這樣每一步才都是「二度」。F G A B♭ C D E 七個字母都用到；F G A A♯ C D E 卻用了兩次 A、跳過 B。如果選一個要很多升記號的主音，甚至會出現重升記號（這裡寫成 ♯♯）——這就是音樂家寧可寫 B♭ 大調、不寫 A♯ 大調的原因。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same keys, new home</strong>: keep the white keys and change only the tonic. The polygon on the clock stays still, the step bar slides, and the mood changes."><strong>同樣的鍵，不同的家</strong>：只用白鍵、只換主音，鐘面的多邊形不動，步伐條卻在滑動，聽起來的情緒也變了。</li>
+        <li data-en-html="<strong>One note at a time</strong>: walk down the brightness ladder. Which degree drops at each rung? Is it ever more than one?"><strong>一次只動一個音</strong>：沿著亮暗階梯往下走，每一格降的是第幾級？有沒有哪一格動了兩個音？</li>
+        <li data-en-html="<strong>Where are the half steps?</strong> In every church mode there are exactly two, and they are never next to each other. How far apart are they?"><strong>半音在哪裡？</strong>每個教會調式都剛好有兩個半音，而且從不相鄰。它們之間隔了幾步？</li>
+        <li data-en-html="<strong>Two sizes only</strong>: in the readings, every generic interval of a church mode has exactly two sizes. Which familiar scale breaks this rule?"><strong>只有兩種大小</strong>：看讀數，教會調式的每一種度數都剛好兩種大小。哪一個常見的音階打破了這個規則？</li>
+        <li data-en-html="<strong>Equal or just</strong>: play one scale in both tunings. Which degrees move the most in cents?"><strong>平均律還是純律</strong>：同一個音階用兩種音律各播一次，哪幾級的音分差最多？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Each scale is stored as its row of steps; the church modes are the rotations of \(2,2,1,2,2,2,1\). A scale you build yourself is compared with every rotation of the known scale families (church modes, harmonic and melodic minor, pentatonic, whole-tone, octatonic and chromatic) to name it.">每個音階都用它的步伐序列表示；教會調式是 \(2,2,1,2,2,2,1\) 的各個轉位。自己拼的音階，會和已知音階族（教會調式、和聲小調、旋律小調、五聲、全音、八聲、半音音階）的每一個轉位比對，找出它的名字。</li>
+        <li data-en-html="Spelling: starting from the tonic’s letter, each note gets the next unused letter (letters may be skipped in scales of fewer than seven notes), choosing the spelling with the fewest sharps and flats. Scales of more than seven notes cannot avoid repeating letters and are spelled note by note.">拼音：從主音的字母開始，每個音依序用下一個字母（少於七個音的音階可以跳過字母），選升降記號最少的寫法。超過七個音的音階一定會重複字母，就逐音拼寫。</li>
+        <li data-en-html="Maximal evenness: for every generic interval the sizes differ by at most one semitone. Myhill’s property: every generic interval has exactly two sizes. Unit tests check these against the cases in the references (the diatonic scale has both; the harmonic minor has neither).">最大均勻：每一種度數的大小最多相差一個半音。Myhill 性質：每一種度數剛好兩種大小。單元測試用參考資料裡的例子檢查（自然音階兩者都成立；和聲小調兩者都不成立）。</li>
+        <li data-en-html="The 3D tower uses the same clock angles (C at the back, clockwise from above); the height of each storey is just its rung on the ladder. It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 調式之塔用同樣的鐘面角度（C 在後方，從上往下看順時針），每一層的高度就是它在階梯上的位置。它使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): six harmonics with strengths \(1/k\), an approximate organ-like sound, with gentle fade-in and fade-out. The page plays only scales, arpeggios and the notes you tap. Playback stops when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：6 個泛音、強度 \(1/k\)，是近似的風琴音色，有淡入淡出。這一頁只播音階、琶音和你自己點的音。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Musical elements (modes and scales); Senior-high Music · Appreciation · Music history (church modes).">課綱對應：高中音樂・表現・音樂元素（調式與音階）；高中音樂・鑑賞・音樂史（教會調式）。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="John Clough and Jack Douthett, “Maximally Even Sets”, Journal of Music Theory 35, 93–173 (1991).">John Clough、Jack Douthett，〈Maximally Even Sets〉，Journal of Music Theory 35，93–173（1991）。</li>
+        <li data-en="Norman Carey and David Clampitt, “Aspects of Well-Formed Scales”, Music Theory Spectrum 11, 187–206 (1989) — Myhill’s property.">Norman Carey、David Clampitt，〈Aspects of Well-Formed Scales〉，Music Theory Spectrum 11，187–206（1989）（Myhill 性質）。</li>
+        <li data-en="Allen Forte, The Structure of Atonal Music (Yale University Press, 1973) — interval vectors.">Allen Forte，《The Structure of Atonal Music》，Yale University Press，1973（音程向量）。</li>
+        <li data-en="Olivier Messiaen, Technique de mon langage musical (Leduc, 1944) — modes of limited transposition.">Olivier Messiaen，《Technique de mon langage musical》，Leduc，1944（有限移位調式）。</li>
+        <li data-en="Dmitri Tymoczko, A Geometry of Music (Oxford University Press, 2011) — scales as rotations and the circle of fifths.">Dmitri Tymoczko，《A Geometry of Music》，Oxford University Press，2011（音階的轉位與五度圈）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/scales-modes-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/scales-modes.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="scales-modes"></script>
+  <script src="js/missions/scales-modes.js"></script>
+  <script src="js/stats.js" data-module="scales-modes"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
