@@ -174,8 +174,17 @@
       id: 'current-magnetic-field-h3', level: 7, hidden: true,
       riddle: { zh: '門內風雨，門外無聲。', en: 'A storm inside the door; silence outside.' },
       check: function (ev) {
+        // 11/12 自動試玩亂按就完成（只要在外面記一筆）：改成門內、門外都要記錄——同一個螺線管、同樣電流，
+        // 中段內部（|y| ≤ R/2）B ≥ 公式值的一半，中段外部 B ≤ 公式值的 1%
         const r = probeRow(ev, 'solenoid');
-        return !!r && r.I > 0 && Math.abs(r.x) <= r.L / 4 && Math.abs(r.y) >= r.R + 0.5 && r.formula > 0 && r.B <= 0.01 * r.formula;
+        if (!r || !(r.I > 0) || !(r.formula > 0)) return false;
+        const mid = function (o) { return Math.abs(o.x) <= o.L / 4; };
+        const out = function (o) { return mid(o) && Math.abs(o.y) >= o.R + 0.5 && o.B <= 0.01 * o.formula; };
+        const inn = function (o) { return mid(o) && Math.abs(o.y) <= o.R / 2 && o.B >= 0.5 * o.formula; };
+        const rows = ev.data.rows || [];
+        if (out(r)) return rows.some(function (o) { return o.shape === 'solenoid' && sameShape(o, r) && inn(o); });
+        if (inn(r)) return rows.some(function (o) { return o.shape === 'solenoid' && sameShape(o, r) && out(o); });
+        return false;
       }
     }
   ]);

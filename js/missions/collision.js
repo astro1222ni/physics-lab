@@ -164,7 +164,10 @@
       riddle: { zh: '背影走得再遠，也終究會被追上。', en: 'However far a back runs ahead, it is caught in the end.' },
       check: function (ev) {
         const d = ev.data;
-        return hit(ev) && d.v1 * d.v2 > 0 && Math.min(Math.abs(d.v1), Math.abs(d.v2)) >= 0.5;
+        // 11/12 收緊：同向追撞，而且前車（較慢的）速率至少是接近速率的 4 倍，追上前前車已跑了至少 4 倍的初始間距
+        // （原本只要同向追撞，做「質心參考系」等一般任務時就會順手完成）
+        const lead = Math.min(Math.abs(d.v1), Math.abs(d.v2));
+        return hit(ev) && d.v1 * d.v2 > 0 && lead >= 0.5 && lead >= 4 * Math.abs(d.v1 - d.v2) - 1e-9;
       }
     },
     {

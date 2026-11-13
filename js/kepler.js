@@ -1584,6 +1584,21 @@
   }
   function readLog(el) { return window.LabNum ? window.LabNum.value(el) : el._toValue(+el.value); }
 
+  // 數字按鈕的提示與無障礙名稱跟著標籤走：換中心天體（太陽／地球）或換語言時標籤會變，
+  // 共用的 numinput.js 只在載入時設一次 title，所以在這裡同步（名稱含目前的值）
+  function syncNumNames() {
+    ['M', 'r0', 'v0', 'al', 'ts', 'vw'].forEach(function (id) {
+      const range = $(id), box = range && range.closest('.slider');
+      const out = box && box.querySelector('output'), lab = box && box.querySelector('label[for="' + id + '"]');
+      if (!out || !lab) return;
+      // 英文模式直接用標籤的 data-en／data-en-html（頁面剛載入時標籤可能還沒翻成英文）
+      const en = lab.getAttribute('data-en') || (lab.getAttribute('data-en-html') || '').replace(/<[^>]*>/g, '');
+      const zh = lab.textContent.replace(/\s+/g, ' ').trim();
+      const name = en ? T(zh, en) : zh;
+      out.setAttribute('title', T('點擊輸入數值：', 'Click to type a value: ') + name);
+      out.setAttribute('aria-label', name + T('：', ': ') + out.textContent.trim() + T('（點擊輸入數值）', ' (click to type a value)'));
+    });
+  }
   function refreshOutputs() {
     const pr = P();
     $('Mo').textContent = fmtSlider(val(elM), elM) + T(' 倍', ' ×');
@@ -1595,6 +1610,7 @@
     $('Mlabel').textContent = isSun() ? T('質量 M（太陽質量的倍數）', 'Mass M (in solar masses)') : T('質量 M（地球質量的倍數）', 'Mass M (in Earth masses)');
     $('oRpL').innerHTML = (isSun() ? T('近日點距離', 'Perihelion distance') : T('近地點距離', 'Perigee distance')) + ' r<sub>p</sub>';
     $('oRaL').innerHTML = (isSun() ? T('遠日點距離', 'Aphelion distance') : T('遠地點距離', 'Apogee distance')) + ' r<sub>a</sub>';
+    syncNumNames();
   }
 
   /** 發射條件改變：只更新預測軌道（飛行中的物體繼續沿原軌道運動） */

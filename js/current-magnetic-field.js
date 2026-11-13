@@ -909,7 +909,9 @@
     if (dt > 0) updateReadouts(true);
     return !atRest;
   }
-  function wake() { atRest = false; restT = 0; kickDone = false; updateButtons(); requestDraw(); }
+  /* 磁針重新擺動：上一句「磁針停穩」已經過時，先清掉 */
+  function clearStatus() { const s = document.getElementById('status'); if (s) s.textContent = ''; }
+  function wake() { atRest = false; restT = 0; kickDone = false; clearStatus(); updateButtons(); requestDraw(); }
   function onRest() {
     updateReadouts();
     updateButtons();
@@ -1368,6 +1370,7 @@
   function setMode(m) {
     if (st.mode === m) return;
     st.mode = m;
+    clearStatus();
     ['mOer', 'mWire', 'mCoil', 'mSol'].forEach(function (id) { $(id).setAttribute('aria-pressed', String($(id).getAttribute('data-mode') === m)); });
     if (isExp()) {
       const R = RANGE[m], p = st.probe[m];

@@ -1018,7 +1018,9 @@
       row: Object.assign({ em: em, err: em / C.EM - 1 }, row),
       rows: st.rows.map(function (r, i) { return Object.assign({ em: A2.rows[i].em }, r); }),
       n: A2.n, distinctV: Object.keys(vset).length, fitErr: A2.fitErr, meanErr: A2.meanErr,
-      allReal: st.rows.every(function (r) { return r.mode === 'real' && r.parallax && r.eyeOK; })
+      allReal: st.rows.every(function (r) { return r.mode === 'real' && r.parallax && r.eyeOK; }),
+      // 記錄當下光環頂端的高度（cm，以玻璃球中心為 0；隱藏任務 h3 用）
+      top: orb && complete() ? orb.yMax : NaN
     });
   });
   $('undo').addEventListener('click', function () {

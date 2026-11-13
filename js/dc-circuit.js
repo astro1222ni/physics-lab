@@ -1286,7 +1286,20 @@
     setSlider(elSel, e.R);
     showOut(elSel, 'Ω');
   }
-  function showOut(el, unit) { $(el.id + 'o').textContent = fmtSlider(val(el), el) + ' ' + unit; }
+  function showOut(el, unit) {
+    const out = $(el.id + 'o');
+    out.textContent = fmtSlider(val(el), el) + ' ' + unit;
+    // 數字按鈕的提示與無障礙名稱跟著標籤走：換選取的元件（R1 → R2…）或換語言時標籤會變，
+    // 共用的 numinput.js 只在載入時設一次 title，所以在這裡同步（名稱含目前的值）
+    const lab = document.querySelector('label[for="' + el.id + '"]');
+    if (!lab) return;
+    // 英文模式直接用標籤的 data-en／data-en-html（頁面剛載入時標籤可能還沒翻成英文）
+    const en = lab.getAttribute('data-en') || (lab.getAttribute('data-en-html') || '').replace(/<[^>]*>/g, '');
+    const zh = lab.textContent.replace(/\s+/g, ' ').trim();
+    const name = en ? T(zh, en) : zh;
+    out.setAttribute('title', T('點擊輸入數值：', 'Click to type a value: ') + name);
+    out.setAttribute('aria-label', name + T('：', ': ') + out.textContent + T('（點擊輸入數值）', ' (click to type a value)'));
+  }
   function refreshBatteryUI() {
     const E = state.c.elements[0];
     setSlider(elEmf, E.emf); setSlider(elRin, E.r);
@@ -1701,7 +1714,12 @@
   setPreset('single', 3);
   updatePlay();
   updateSoundButton();
-  function themeChanged() { readColors(); if (L) { buildBackground(); rebuild(); } }
+  function themeChanged() {
+    readColors();
+    if (L) { buildBackground(); rebuild(); }
+    // 換語言也會發 themechange：重寫「選取：R1」標籤與數字按鈕名稱
+    refreshBatteryUI(); refreshSelUI();
+  }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {

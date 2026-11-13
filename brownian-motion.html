@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Brownian Motion and the Reality of Atoms | Astro Ni Science Lab">布朗運動與原子的存在｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/brownian-motion.js 與 js/brownian-motion-3d.js 讀取 */
+    :root {
+      --bm-field: #f6f1e4; --bm-field-edge: #d9cfb8; --bm-scope: #2f3437; --bm-grain: #c98a12; --bm-grain-hi: #b4232c;
+      --bm-mol: #3b82c4; --bm-big: #c98a12; --bm-trail: #7c3aed; --bm-tube: #9fb4bd; --bm-liquid: #dcecf2;
+      --bm-fit: #c2410c; --bm-theory: #15803d; --bm-ens: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bm-field: #1d2326; --bm-field-edge: #11161a; --bm-scope: #090c0e; --bm-grain: #f2b23a; --bm-grain-hi: #f87171;
+        --bm-mol: #6fb3ee; --bm-big: #f2b23a; --bm-trail: #b197fc; --bm-tube: #6f8791; --bm-liquid: #17323d;
+        --bm-fit: #fb923c; --bm-theory: #4ade80; --bm-ens: #60a5fa;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bm-field: #1d2326; --bm-field-edge: #11161a; --bm-scope: #090c0e; --bm-grain: #f2b23a; --bm-grain-hi: #f87171;
+      --bm-mol: #6fb3ee; --bm-big: #f2b23a; --bm-trail: #b197fc; --bm-tube: #6f8791; --bm-liquid: #17323d;
+      --bm-fit: #fb923c; --bm-theory: #4ade80; --bm-ens: #60a5fa;
+    }
+    .bm button { min-height: 44px; }
+    .bm button:disabled { opacity: .45; cursor: not-allowed; }
+    .bm [hidden] { display: none !important; }
+    .bm #cv { aspect-ratio: auto; height: 460px; cursor: default; }
+    .bm .modes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; margin: 0; }
+    .bm .modes button { padding: 6px 8px; line-height: 1.25; text-align: left; }
+    .bm .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 4px 0 6px; }
+    .seg3 button { padding: 6px 4px; }
+    .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
+    .bm .slider { margin: 4px 0 6px; }
+    .bm .slider input[type="range"] { height: 28px; margin: 0; }
+    .bm .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .bm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bm .checks label { min-height: 44px; }
+    .bm .checks input { width: 18px; height: 18px; flex: none; }
+    .bm select {
+      font: inherit; font-size: calc(15px * var(--fs, 1)); width: 100%; min-height: 44px; padding: 6px 10px;
+      border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    }
+    .bm .field-label { display: block; font-size: calc(14px * var(--fs, 1)); margin: 8px 0 4px; }
+    .bm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bm .playbar button { flex: 1 1 auto; }
+    .bm .playbar .main { font-weight: 700; flex: 2 1 9em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .bm .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); min-height: 1.4em; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd.em { color: var(--accent); font-weight: 700; }
+    dl.readout sub, dl.readout sup, .bm .hint sub, table.data sub, table.data sup, .bm label sub { font-size: .75em; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.05; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .lab.bm { grid-template-areas: "stage panel" "data panel"; grid-template-rows: auto 1fr; }
+    .lab.bm > .stage { grid-area: stage; }
+    .lab.bm > .panel { grid-area: panel; }
+    .lab.bm > .bm-data { grid-area: data; align-self: start; margin: 0; }
+    @media (max-width: 880px) { .lab.bm { grid-template-areas: "stage" "panel" "data"; grid-template-rows: auto; } }
+    .bm-data h2 { font-size: calc(17px * var(--fs, 1)); }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 5px 7px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; background: var(--bg); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.empty td { text-align: center; color: var(--muted); white-space: normal; padding: 14px 8px; }
+    table.data td.em { font-weight: 700; }
+    #gcv { display: block; width: 100%; height: 300px; border-radius: 8px; background: var(--canvas-bg); touch-action: auto; cursor: default; margin-top: 10px; }
+    .bm-data .result { margin-top: 10px; }
+    .bm-data .result dd { font-weight: 600; }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .formula.multi .flabel { display: block; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 6px; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    @media (max-width: 560px) { #gcv { height: 260px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / The make-up of matter">
+        <a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 物質的組成與交互作用</nav>
+      <h1 data-en="Brownian Motion and the Reality of Atoms">布朗運動與原子的存在</h1>
+      <p data-en-html="In 1827 the botanist Robert Brown watched, under a microscope, the tiny particles released from pollen grains into water: they never stopped jiggling, and so did specks of crushed rock. In 1905 Einstein explained why — the particles are kicked from every side by water molecules too small to see, and the kicks never quite balance — and predicted that the mean square displacement grows in proportion to time, ⟨r<sup>2</sup>⟩ = 4Dt, with D = k<sub>B</sub>T/(6πηa). In 1908–1909 Jean Perrin measured this and the way particles settle with height, counted out Avogadro’s number and ended the long argument over whether atoms are real. Watch the collisions, track particles under the microscope, and count atoms the way Perrin did.">1827 年，植物學家布朗在顯微鏡下看到花粉粒放出到水中的細小微粒不停地亂跳，連磨碎的岩石粉末也一樣。1905 年愛因斯坦解釋了原因：顆粒四面八方被看不見的水分子撞擊，而每一瞬間的撞擊都不完全平衡；他並預言均方位移與時間成正比，⟨r<sup>2</sup>⟩ = 4Dt，D = k<sub>B</sub>T/(6πηa)。1908–1909 年佩蘭量出了這個關係，也量了顆粒隨高度的分布，數出亞佛加厥數，終結了「原子是否真的存在」的爭論。在這裡看分子怎麼撞、在顯微鏡下追蹤顆粒，再像佩蘭一樣數出原子。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Record” after the first run, then halve the particle radius a, press “Start observing” again and compare the two values of D.">試試看：第一次觀察結束後按「記錄」，再把顆粒半徑 a 減半、重新「開始觀察」，比比看兩次的 D。</p>
+    <div class="lab bm">
+      <div class="stage" id="stage">
+        <div class="view-bar" id="viewBar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="實驗畫面"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button type="button" id="start" class="primary main" data-en="Start observing">開始觀察</button>
+          <button type="button" id="record" data-en="Record">記錄</button>
+          <button type="button" id="photo" class="primary main" data-en="Photograph &amp; count">拍照計數</button>
+          <button type="button" id="pause" data-en="Pause">暫停</button>
+          <button type="button" id="slow" aria-pressed="false" data-en="Slow motion">慢放</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除紀錄、照片計數與軌跡；設定不變" data-en-title="Clear the records, photo counts and trails; the settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srState" role="status"></p>
+        <p class="hint l2" id="hint2"></p>
+        <p class="hint l3" id="hint3"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" id="mMD" data-mode="md" aria-pressed="false" data-en="Molecular view">分子視角</button>
+            <button type="button" id="mMicro" data-mode="micro" aria-pressed="true" data-en="Microscope &amp; MSD">顯微鏡與均方位移</button>
+            <button type="button" id="mSed" data-mode="sed" aria-pressed="false" data-en="Sedimentation">沉降平衡</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Liquid and temperature">液體與溫度</h2>
+          <div id="liqBox">
+            <label class="field-label" for="liquid" data-en="Liquid">液體</label>
+            <select id="liquid">
+              <option value="water" data-en="Water">水</option>
+              <option value="gly50" data-en="50% glycerol (by mass)">甘油 50%（質量分率）</option>
+              <option value="gly80" data-en="80% glycerol (by mass)">甘油 80%（質量分率）</option>
+            </select>
+          </div>
+          <p class="hint" id="sedLiquid" data-en="Sedimentation is done in water.">沉降平衡在水中進行。</p>
+          <div class="slider"><label for="T" data-en="Temperature T">溫度 T</label><output id="To"></output>
+            <input id="T" type="range" min="0" max="100" step="0.5" value="20" data-decimals="1"></div>
+          <p class="hint" id="etaHint"></p>
+        </section>
+
+        <section class="card" id="cardParticle">
+          <h2 data-en="Particles">顆粒</h2>
+          <div id="matBox">
+            <label class="field-label" for="material" data-en="Particle material">顆粒材料</label>
+            <select id="material">
+              <option value="gamboge" data-en="Gamboge (Perrin), 1.20 g/cm³">藤黃（佩蘭），1.20 g/cm³</option>
+              <option value="polystyrene" data-en="Polystyrene, 1.05 g/cm³">聚苯乙烯，1.05 g/cm³</option>
+              <option value="silica" data-en="Silica, 2.0 g/cm³">二氧化矽，2.0 g/cm³</option>
+            </select>
+          </div>
+          <div class="slider" id="aBox"><label for="a" data-en="Particle radius a">顆粒半徑 a</label><output id="ao"></output>
+            <input id="a" type="range" min="0" max="1000" step="1" value="411"></div>
+          <div id="microBox">
+            <div class="slider"><label for="N" data-en="Number of particles N">顆粒數 N</label><output id="No"></output>
+              <input id="N" type="range" min="1" max="50" step="1" value="20" data-decimals="0"></div>
+            <div class="slider"><label for="tObs" data-en="Observation time">觀察時間</label><output id="tObso"></output>
+              <input id="tObs" type="range" min="1" max="60" step="1" value="10" data-decimals="1"></div>
+            <p class="seg-label" id="spLabel" data-en="Playback speed">播放速度</p>
+            <div class="seg3" role="group" aria-labelledby="spLabel">
+              <button type="button" id="sp1" aria-pressed="false">×1</button>
+              <button type="button" id="sp5" aria-pressed="true">×5</button>
+              <button type="button" id="sp20" aria-pressed="false">×20</button>
+            </div>
+            <div class="checks">
+              <label><input id="trails" type="checkbox" checked><span data-en="Show trails">顯示軌跡</span></label>
+            </div>
+          </div>
+          <div id="mdBox">
+            <div class="slider"><label for="ratio" data-en="Mass of the big particle ÷ mass of a molecule">大顆粒質量 ÷ 分子質量</label><output id="ratioo"></output>
+              <input id="ratio" type="range" min="50" max="200" step="10" value="100" data-decimals="0"></div>
+            <div class="checks">
+              <label><input id="onlyBig" type="checkbox"><span data-en="Particle only">只看大顆粒</span></label>
+            </div>
+            <p class="hint" data-en="Real molecules are about a thousand times smaller than a micrometre particle and a billion times lighter; here both ratios are scaled right down so that you can see the collisions.">真實的分子比微米顆粒小約一千倍、輕約十億倍；這裡兩個比例都大幅縮小，才看得到碰撞。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+      </aside>
+
+      <section class="card bm-data" id="dataCard">
+        <h2 id="dataTitle" data-en="Records and analysis">紀錄與分析</h2>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+        <dl class="readout result" id="ana"></dl>
+        <canvas id="gcv" role="img" aria-label="分析圖"></canvas>
+        <div class="legend" id="glegend"></div>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="What Brown actually saw">布朗到底看到了什麼</h2>
+      <p data-en="It is often said that Brown saw pollen grains dancing. He did not: the pollen grains of the plant he studied are far too big to jiggle visibly. What moved were the much smaller particles held inside the grains and released into the water — a few micrometres long, and smaller still. Brown first wondered whether they were alive, so he ground up old dried plants, glass and even rock and found inanimate specks dancing in exactly the same way. The motion is not life: it is the liquid itself.">常有人說布朗看到「花粉粒」在跳，其實不是：他研究的那種植物，花粉粒本身太大，幾乎看不出在動。真正在跳的，是花粉粒裡所含、放出到水中的細小微粒，長度只有幾微米，甚至更小。布朗起初懷疑它們是活的，於是把乾燥多年的植物、玻璃、甚至岩石磨成粉來看，發現無生命的微粒也同樣在跳。這種運動不是生命現象，而是液體本身造成的。</p>
+
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. Unbalanced kicks">1. 不平衡的撞擊</h3>
+      <p data-en-html="A particle in a liquid is struck by roughly \(10^{20}\) molecules every second. On average the kicks from all sides cancel, but at every instant there are a few more on one side than the other, so the particle is pushed this way and that. The liquid also drags on it: a sphere of radius \(a\) moving at speed \(v\) through a liquid of viscosity \(\eta\) feels the Stokes drag \(6\pi\eta a v\). The random kicks and the drag come from the same molecules; Einstein showed that the balance between them fixes the diffusion coefficient:">液體裡的顆粒每秒大約被 \(10^{20}\) 個分子撞擊。平均起來各方向的撞擊互相抵消，但每一瞬間總有一邊多一點，於是顆粒被推來推去。液體也同時拖住它：半徑 \(a\) 的球以速率 \(v\) 在黏滯係數 \(\eta\) 的液體中運動，受到斯托克斯阻力 \(6\pi\eta a v\)。隨機的撞擊與阻力來自同一群分子；愛因斯坦證明兩者的平衡決定了擴散係數：</p>
+      <div class="formula">\[ D = \frac{k_B T}{6\pi\eta a} \]</div>
+      <p data-en-html="Smaller particles, hotter and thinner liquids give a larger \(D\). Note that heating water does two things: \(T\) rises and \(\eta\) falls sharply — from 20 °C to 80 °C the absolute temperature grows by a factor of only 1.20, but \(\eta\) drops to about a third.">顆粒越小、溫度越高、液體越稀，\(D\) 越大。注意加熱水會同時做兩件事：\(T\) 升高，\(\eta\) 也大幅下降——從 20 °C 到 80 °C，絕對溫度只變成 1.20 倍，\(\eta\) 卻掉到約三分之一。</p>
+      <h3 data-en="2. The mean square displacement">2. 均方位移</h3>
+      <p data-en-html="Each step is random, so the average displacement is zero. What grows is the average of the square of the displacement:">每一步都是隨機的，所以位移的平均是零。會變大的是位移平方的平均：</p>
+      <div class="formula multi">
+        <div><span class="flabel" data-en="Along one axis">沿一個方向</span>\[ \langle x^2\rangle = 2Dt \]</div>
+        <div><span class="flabel" data-en="In the plane (what a microscope sees)">在平面上（顯微鏡看到的）</span>\[ \langle r^2\rangle = 4Dt \]</div>
+        <div><span class="flabel" data-en="In space">在空間中</span>\[ \langle r^2\rangle = 6Dt \]</div>
+      </div>
+      <p data-en-html="It is \(t\), not \(t^2\): the typical distance grows only like \(\sqrt t\). To wander four times as far takes sixteen times as long. That is why the jiggling looks so frantic up close and yet carries a particle so slowly across a room.">是 \(t\) 而不是 \(t^2\)：典型的距離只隨 \(\sqrt t\) 增加，要走遠 4 倍，得花 16 倍的時間。所以近看顆粒跳得非常激烈，但要跨過一個房間卻慢得驚人。</p>
+      <h3 data-en="3. Counting atoms: two of Perrin’s methods">3. 數原子：佩蘭的兩種方法</h3>
+      <p data-en-html="<b>Diffusion.</b> Measure \(D\), and \(k_B = 6\pi\eta a D/T\). The gas constant \(R\) was already known from experiments on gases, so Avogadro’s number follows: \(N_A = R/k_B\).">
+        <b>擴散法</b>：量出 \(D\)，就得到 \(k_B = 6\pi\eta a D/T\)。氣體常數 \(R\) 早已由氣體實驗量得，於是亞佛加厥數 \(N_A = R/k_B\)。</p>
+      <p data-en-html="<b>Sedimentation equilibrium.</b> Gravity pulls the particles down, the kicks spread them up. In equilibrium the number per unit volume falls off with height like the air in the atmosphere:"><b>沉降平衡</b>：重力把顆粒往下拉，撞擊把它們往上散開。平衡時，單位體積的顆粒數隨高度遞減，就像大氣：</p>
+      <div class="formula">\[ n(h) = n_0\, e^{-h/H}, \qquad H = \frac{k_B T}{m' g}, \qquad m' = \tfrac43\pi a^3(\rho_p - \rho_f) \]</div>
+      <p data-en-html="\(m'\) is the mass minus the buoyancy of the liquid. Plotting \(\ln n\) against \(h\) gives a straight line of slope \(-1/H\); then \(k_B = m' g H/T\). Perrin did this with gamboge grains about 0.75 μm across and found the number halving every 6 μm or so of height.">\(m'\) 是扣掉液體浮力之後的質量。以 \(\ln n\) 對 \(h\) 作圖是一條斜率 \(-1/H\) 的直線，於是 \(k_B = m' g H/T\)。佩蘭用直徑約 0.75 μm 的藤黃顆粒做這個實驗，發現高度每增加約 6 μm，顆粒數就減半。</p>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en="In the molecular view, switch on “Particle only”: the big particle seems to move by itself, as it did for Brown. Every sudden jerk is a slightly lopsided burst of collisions.">分子視角打開「只看大顆粒」：大顆粒彷彿自己在動，就像布朗看到的樣子。每一次突然的抖動，都是一陣稍微偏向一邊的撞擊。</li>
+        <li data-en-html="On the ⟨r<sup>2</sup>⟩–t graph the points follow a straight line through the origin, not a parabola. The average over many starting times (time average) is much less noisy than the average over particles from the start alone.">在 ⟨r<sup>2</sup>⟩–t 圖上，數據點沿著通過原點的直線，而不是拋物線。用許多起點平均的「時間平均」，比只從起點量的「多顆粒平均」平滑得多。</li>
+        <li data-en="Halve the radius: D doubles. Warm the water from 20 °C to 80 °C: D grows about 3.4 times, mostly because the water gets thinner, not because the molecules get faster.">半徑減半，D 加倍。把水從 20 °C 加熱到 80 °C，D 變成約 3.4 倍，主要是因為水變稀了，而不是分子變快了。</li>
+        <li data-en="In 80% glycerol a particle barely moves. Bigger particles move less too: a 5 μm particle is hard to tell apart from one stuck in place.">在甘油 80% 裡，顆粒幾乎不動。顆粒越大也動得越少：5 μm 的顆粒看起來跟卡住了差不多。</li>
+        <li data-en-html="Few particles and short observations give scattered values of D. More particles and longer times shrink the scatter roughly as \(1/\sqrt{N\,t}\).">顆粒少、看得短，量到的 D 很分散；顆粒多、看得久，分散大約隨 \(1/\sqrt{N\,t}\) 縮小。</li>
+        <li data-en="In sedimentation, heavier or bigger particles crowd to the bottom (small H); light, tiny ones spread almost evenly (large H).">沉降平衡中，越重、越大的顆粒越擠在底部（H 小）；又輕又小的顆粒幾乎均勻散開（H 大）。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li><span data-en="Why does a 1 μm particle jiggle visibly while a 1 mm sand grain in the same water does not?">為什麼 1 μm 的顆粒會明顯地亂跳，同樣的水裡 1 mm 的沙粒卻不會？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="A sand grain is hit by vastly more molecules at once, so the imbalance is a far smaller fraction of the total; and \(D \propto 1/a\): in 10 s its typical displacement \(\sqrt{4Dt}\) is about 4 nm, invisible.">沙粒同時被多得多的分子撞擊，不平衡的部分只佔極小的比例；而且 \(D \propto 1/a\)：10 s 內它的典型位移 \(\sqrt{4Dt}\) 約只有 4 nm，看不見。</p></details></li>
+        <li><span data-en-html="A particle wanders 3 μm (root mean square) in 1 s. About how long does it take to wander 30 μm?">一顆顆粒在 1 s 內的方均根位移是 3 μm，要走到 30 μm 大約要多久？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Distance \(\propto \sqrt t\): ten times as far takes \(10^2 = 100\) times as long, about 100 s.">距離 \(\propto \sqrt t\)：遠 10 倍要花 \(10^2 = 100\) 倍的時間，約 100 s。</p></details></li>
+        <li><span data-en-html="In water at 20 °C, a particle of radius 0.5 μm has D = 4.29 × 10<sup>−13</sup> m<sup>2</sup>/s. Use it to estimate Boltzmann’s constant.">20 °C 的水中，半徑 0.5 μm 的顆粒 D = 4.29 × 10<sup>−13</sup> m<sup>2</sup>/s，用它估計波茲曼常數。</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(k_B = 6\pi\eta a D/T = 6\pi(1.002\times10^{-3})(0.5\times10^{-6})(4.29\times10^{-13})/293 \approx 1.38\times10^{-23}\ \mathrm{J/K}\), and \(N_A = 8.314/k_B \approx 6.0\times10^{23}\).">\(k_B = 6\pi\eta a D/T = 6\pi(1.002\times10^{-3})(0.5\times10^{-6})(4.29\times10^{-13})/293 \approx 1.38\times10^{-23}\ \mathrm{J/K}\)，\(N_A = 8.314/k_B \approx 6.0\times10^{23}\)。</p></details></li>
+        <li><span data-en="Why must the buoyancy of the water be subtracted from the particle’s weight in the sedimentation method?">沉降法為什麼要把水的浮力從顆粒的重量裡扣掉？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="What drives the particles down is their weight minus the buoyant force, \((\rho_p - \rho_f)Vg\). A particle as dense as water would not settle at all, however heavy it is.">讓顆粒往下沉的是重量減去浮力 \((\rho_p - \rho_f)Vg\)。和水一樣密的顆粒，不管多重都不會沉。</p></details></li>
+        <li><span data-en="Two physicists measure Avogadro’s number, one with diffusion and one with sedimentation, using different particles and different liquids, and they agree. Why was this so convincing in 1909?">兩位物理學家用不同的顆粒、不同的液體，一位用擴散法、一位用沉降法量亞佛加厥數，結果一致。為什麼這在 1909 年那麼有說服力？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en="If molecules were just a convenient fiction, there would be no reason for unrelated experiments to land on the same number. Perrin listed more than a dozen independent methods — Brownian motion, sedimentation, gas viscosity, the blue sky, radioactivity, black-body radiation — all giving about 6 × 10²³; the agreement made molecules impossible to doubt.">如果分子只是方便計算的想像，完全不相關的實驗沒有理由得到同一個數。佩蘭列出十幾種獨立的方法——布朗運動、沉降、氣體黏滯、天空的藍色、放射性、黑體輻射——全都得到約 6 × 10<sup>23</sup>；這麼多方法一致，使分子的存在再也無法懷疑。</p></details></li>
+      </ol>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="Constants: \(k_B = 1.380\,649\times10^{-23}\ \mathrm{J/K}\) and \(N_A = 6.022\,140\,76\times10^{23}\ \mathrm{mol^{-1}}\) (exact SI values). When working Avogadro’s number back from a measurement the page uses \(R = 8.314\ \mathrm{J/(mol\,K)}\), as if \(R\) were known only from experiments on gases.">常數：\(k_B = 1.380\,649\times10^{-23}\ \mathrm{J/K}\)、\(N_A = 6.022\,140\,76\times10^{23}\ \mathrm{mol^{-1}}\)（SI 定義值）。由量測反推亞佛加厥數時使用 \(R = 8.314\ \mathrm{J/(mol\,K)}\)，當作只從氣體實驗量得的氣體常數。</li>
+        <li data-en-html="Viscosity: water from the CRC Handbook table (0–100 °C every 10 °C), interpolated with a cubic spline in \(\ln\eta\). Glycerol–water mixtures from the empirical formula of Cheng (2008), which matches tabulated values to within a few per cent. Density of water from the CRC table.">黏滯係數：水用 CRC Handbook 的表（0–100 °C 每 10 °C），在 \(\ln\eta\) 上做三次樣條內插。甘油水溶液用 Cheng（2008）的經驗式，與文獻表值相差幾個百分點以內。水的密度用 CRC 的表。</li>
+        <li data-en-html="Microscope: each particle takes independent Gaussian steps of standard deviation \(\sqrt{2D\,\Delta t}\) along each axis every \(\Delta t = 0.1\ \mathrm s\) (a 10-frame-per-second camera). This is the overdamped Langevin equation; it is exact here because \(\Delta t\) is enormously longer than the time \(\tau = m/(6\pi\eta a)\) over which a particle forgets its velocity (about 0.06 μs for a 1 μm polystyrene sphere in water). Particles do not interact, and are tracked perfectly even if they leave the field of view.">顯微鏡：每顆顆粒每 \(\Delta t = 0.1\ \mathrm s\)（每秒 10 張的攝影機）沿每個方向走一個標準差 \(\sqrt{2D\,\Delta t}\) 的常態亂數步。這就是過阻尼的朗之萬方程；因為 \(\Delta t\) 比顆粒「忘記」自己速度的時間 \(\tau = m/(6\pi\eta a)\)（直徑 1 μm 的聚苯乙烯球在水中約 0.06 μs）長得多，這個做法是精確的。顆粒彼此不交互作用；就算走出視野也照樣追蹤。</li>
+        <li data-en-html="Measuring D: the time-averaged mean square displacement (every possible starting frame, all particles) at the first few time lags is fitted by a straight line through the origin, and its slope is divided by 4. The ± value comes from splitting the observation into four quarters and comparing the four answers. The “particle average” curve on the graph is measured from the starting points only.">量 D：取前幾個時間間隔的「時間＋多顆粒平均」均方位移（每一格都當起點、所有顆粒一起平均），做通過原點的直線擬合，斜率除以 4。± 的值是把觀察時間切成 4 段、比較 4 個結果得到的。圖上的「多顆粒平均」只從起點量。</li>
+        <li data-en-html="Sedimentation: in water only. Each photograph is an independent snapshot of the equilibrium distribution (between photographs the emulsion is left for many times \(H^2/D\)); about 400 particles are in view, and every one is counted. The animation between photographs uses the Langevin equation with a downward drift \(D/H\) and a reflecting bottom, speeded up as shown. The fit of \(\ln n\) against \(h\) is weighted by \(n\), because the counting error of \(\ln n\) is about \(1/\sqrt n\).">沉降平衡：只在水中。每張照片都是平衡分布的獨立快照（兩張照片之間讓懸浮液靜置遠超過 \(H^2/D\) 的時間）；視窗裡約有 400 顆，每一顆都數。照片之間的動畫用含向下漂移 \(D/H\)、底部反射的朗之萬方程，並依畫面標示加速。\(\ln n\) 對 \(h\) 的擬合以 \(n\) 加權，因為 \(\ln n\) 的計數誤差約為 \(1/\sqrt n\)。</li>
+        <li data-en="Molecular view (for looking only): a 2D hard-disc simulation. The small discs start with a 2D Maxwell–Boltzmann velocity distribution, and every collision is perfectly elastic, so the total energy (and, without walls, the total momentum) is conserved; the tests check both. The big disc is only 50–200 times heavier than a small one — a real particle is more than a billion times heavier than a water molecule — so its jiggling is greatly exaggerated. Quantitative results come from the microscope mode.">分子視角（只用來看）：二維硬圓盤模擬。小圓盤的初速取自二維馬克士威–波茲曼分布，每次碰撞都完全彈性，所以總能量（沒有牆時還有總動量）守恆，單元測試兩者都檢查。大圓盤只比小圓盤重 50–200 倍——真正的顆粒比水分子重十億倍以上——所以它的抖動被大大誇大了。定量的結果請用顯微鏡模式。</li>
+        <li data-en="The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D. Microscope mode: the very same random steps as the 2D view, including the depth component that a microscope cannot see, with every particle moved to a common starting point and drawn as a small ball (not to scale); the translucent sphere has radius σ = √(2Dt), the spread along each axis, so the cloud grows like √t. Only about a fifth of the particles are inside that sphere — in three dimensions most of a Gaussian cloud lies outside one standard deviation. Sedimentation mode: the particles of the current snapshot in a section of tube, with the exponential profile drawn alongside.">3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。顯微鏡模式：用和 2D 完全相同的亂數步，包括顯微鏡看不到的深度方向，並把每顆顆粒移到同一個起點、畫成固定大小的小球（不照比例）；半透明球的半徑是每個方向的分散 σ = √(2Dt)，所以雲的大小隨 √t 增加。球裡只有約五分之一的顆粒——在三維空間，高斯分布的雲大部分都在一個標準差之外。沉降模式：目前這張快照的顆粒放在一段管子裡，旁邊畫指數分布曲線。</li>
+        <li data-en="Sound (off by default): a short click when you record and a shutter sound when you photograph. Brownian motion itself makes no sound, so there is no continuous sound.">音效（預設關閉）：記錄時「喀」一聲，拍照時有快門聲。布朗運動本身沒有聲音，所以沒有持續的音效。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Required Physics · The make-up of matter; Elective Physics II · Kinetic theory of gases (extension).">課綱對應：必修物理・物質的組成；選修物理Ⅱ・氣體動力論（延伸）。</li>
+        <li data-en-html="Boltzmann constant and Avogadro constant: exact values of the SI, CODATA 2022 (<a href=&quot;https://physics.nist.gov/cuu/Constants/&quot;>NIST</a>).">波茲曼常數與亞佛加厥常數：SI 定義值，CODATA 2022（<a href="https://physics.nist.gov/cuu/Constants/">NIST</a>）。</li>
+        <li data-en="Viscosity and density of water: CRC Handbook of Chemistry and Physics. Glycerol–water mixtures: N.-S. Cheng, “Formula for the viscosity of a glycerol–water mixture”, Industrial &amp; Engineering Chemistry Research 47, 3285–3288 (2008). Particle densities: gamboge about 1.20 g/cm³ (Perrin), polystyrene 1.05 g/cm³, silica about 2.0 g/cm³ (handbook values).">水的黏滯係數與密度：CRC Handbook of Chemistry and Physics。甘油水溶液：N.-S. Cheng，〈Formula for the viscosity of a glycerol–water mixture〉，Industrial &amp; Engineering Chemistry Research 47, 3285–3288（2008）。顆粒密度：藤黃約 1.20 g/cm<sup>3</sup>（佩蘭）、聚苯乙烯 1.05 g/cm<sup>3</sup>、二氧化矽約 2.0 g/cm<sup>3</sup>（手冊值）。</li>
+        <li data-en="R. Brown, “A brief account of microscopical observations made in the months of June, July and August, 1827, on the particles contained in the pollen of plants; and on the general existence of active molecules in organic and inorganic bodies” (1828).">R. Brown，〈A brief account of microscopical observations made in the months of June, July and August, 1827, on the particles contained in the pollen of plants; and on the general existence of active molecules in organic and inorganic bodies〉（1828）。</li>
+        <li data-en="A. Einstein, “Über die von der molekularkinetischen Theorie der Wärme geforderte Bewegung von in ruhenden Flüssigkeiten suspendierten Teilchen”, Annalen der Physik 17, 549–560 (1905).">A. Einstein，〈Über die von der molekularkinetischen Theorie der Wärme geforderte Bewegung von in ruhenden Flüssigkeiten suspendierten Teilchen〉，Annalen der Physik 17, 549–560（1905）。</li>
+        <li data-en="J. Perrin, “Mouvement brownien et réalité moléculaire”, Annales de Chimie et de Physique 18, 5–114 (1909); Nobel Lecture “Discontinuous structure of matter” (11 December 1926) — gamboge grains about 0.75 μm across, the number halving every 6 μm, N about 68 × 10²² from sedimentation and 64 × 10²² from Brownian displacements.">J. Perrin，〈Mouvement brownien et réalité moléculaire〉，Annales de Chimie et de Physique 18, 5–114（1909）；諾貝爾演講〈Discontinuous structure of matter〉（1926 年 12 月 11 日）——藤黃顆粒直徑約 0.75 μm、高度每增加 6 μm 顆粒數減半，沉降法得到 N 約 68 × 10<sup>22</sup>、布朗位移得到約 64 × 10<sup>22</sup>。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://www.mit.edu/~kardar/research/seminars/motility/PerrinNobelLecture.html&quot;>Perrin’s Nobel Lecture (1926), full text</a>.">延伸閱讀：<a href="https://www.mit.edu/~kardar/research/seminars/motility/PerrinNobelLecture.html">佩蘭的諾貝爾演講全文（1926，英文）</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/brownian-motion-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/brownian-motion-3d.js"></script>
+  <script src="js/brownian-motion.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="brownian-motion"></script>
+  <script src="js/missions/brownian-motion.js"></script>
+  <script src="js/stats.js" data-module="brownian-motion"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

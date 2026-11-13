@@ -131,7 +131,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'capacitor-h1', level: 5, hidden: true,
-      riddle: { zh: '一枚小小的寶藏，不多也不少，剛好整整一份。', en: 'A tiny treasure — not more, not less, exactly one whole share.' },
+      riddle: { zh: '兩片之間攢下的力氣，小到得用「微」來稱呼，卻剛好整整一份。', en: 'The strength hoarded between the plates is so small it must be called “micro”, yet it is exactly one whole share.' },
       check: function (ev) { return ev.type === 'change' && Math.abs(ev.data.U - 1e-6) <= 5e-9; }
     },
     {

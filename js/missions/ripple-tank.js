@@ -145,11 +145,14 @@
     {
       id: 'ripple-tank-h2', level: 5, hidden: true,
       riddle: { zh: '當目光比浪還急，浪便沿著來時的路，慢慢走回家。', en: 'When the eye is quicker than the wave, the wave slowly walks home along the way it came.' },
-      check: function (ev) {
+      // 11/12 收緊：先在同一個起波頻率下把條紋定住（fs = f），再刻意把閃頻調高一點，看條紋倒退。
+      // 原本只看 fs − f，把閃頻往 f 調的途中（任務 1 的必經過程）放開滑桿就會順手完成。
+      check: function (ev, mem) {
         const d = ev.data;
         if ((ev.type !== 'strobe' && ev.type !== 'config') || !d.strobe || !d.gen) return false;
+        if (d.frozen && d.frozenN === 1) { mem.f0 = d.f; return false; }
         const g = d.fs - d.f;
-        return g >= 0.05 && g <= 0.6;
+        return mem.f0 != null && Math.abs(d.f - mem.f0) < 1e-6 && g >= 0.05 && g <= 0.6;
       }
     },
     {

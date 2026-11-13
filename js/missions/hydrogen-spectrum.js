@@ -73,7 +73,7 @@
     {
       id: 'hydrogen-spectrum-6', level: 4,
       title: { zh: '精準射擊', en: 'A precise shot' },
-      desc: { zh: '用「射入光子」自己設定能量或波長，讓基態（n = 1）的電子吸收光子後剛好停在 n = 4。', en: 'With “Fire a photon”, set the energy or wavelength yourself so that an electron in the ground state (n = 1) absorbs the photon and lands exactly on n = 4.' },
+      desc: { zh: '在「射入光子」卡片自己設定能量或波長，按「射入光子」，讓基態（n = 1）的電子吸收光子後剛好停在 n = 4。', en: 'Set the photon’s energy or wavelength yourself and press “Fire the photon” so that an electron in the ground state (n = 1) absorbs the photon and lands exactly on n = 4.' },
       check: function (ev) { const d = ev.data; return ev.type === 'absorb' && d.source === 'gun' && d.from === 1 && d.to === 4; }
     },
     {

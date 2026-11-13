@@ -99,7 +99,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'lens-mirror-h1', level: 4, hidden: true,
-      riddle: { zh: '站在世界彎曲的中心，你會遇見顛倒的自己。', en: 'Stand at the centre of a curved world and you will meet yourself upside down.' },
+      riddle: { zh: '站在它夢裡那個完整的圓的心上，你會遇見一個頭下腳上、卻和你一樣高的人。', en: 'Stand at the heart of the whole circle it dreams of, and you will meet someone upside down, yet exactly as tall as you.' },
       check: function (ev) { return img(ev, 'concave-mirror') && ev.data.case === 'at2F'; }
     },
     {

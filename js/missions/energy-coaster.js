@@ -144,7 +144,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'energy-coaster-h1', level: 5, hidden: true,
-      riddle: { zh: '蝙蝠的午睡。', en: 'A bat’s afternoon nap.' },
+      riddle: { zh: '蝙蝠的午睡：倒掛著，也要抓得住才睡得著。', en: 'A bat’s afternoon nap: hanging upside down, it can only sleep if it can grip.' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'stop' && d.inLoop && d.mode === 'rail' && d.phi != null && Math.abs(d.phi - PI) <= 10 * PI / 180;
@@ -161,7 +161,7 @@
     },
     {
       id: 'energy-coaster-h3', level: 4, hidden: true,
-      riddle: { zh: '有一整秒，世界忘了托住你。', en: 'For one whole second, the world forgot to hold you up.' },
+      riddle: { zh: '有一整秒，世界忘了托住你；醒來時，腳下仍是原來那條路。', en: 'For one whole second the world forgot to hold you up; when you woke, the same road was still beneath you.' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'attach' && d.flight >= 1 && !(d.xa != null && Math.abs(d.x - d.xa) <= d.R + 0.01);

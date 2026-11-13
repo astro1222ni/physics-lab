@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Blackbody Radiation and Planck’s Law | Astro Ni Science Lab">黑體輻射與普朗克定律｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/blackbody.js 與 js/blackbody-3d.js 讀取 */
+    :root {
+      --bb-planck: #c2410c; --bb-rj: #1d4ed8; --bb-wien: #7c3aed; --bb-kept: #52606d;
+      --bb-brick: #9a4a2c; --bb-uv: #7c3aed; --bb-ir: #b91c1c; --bb-mw: #0e7490;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bb-planck: #fb923c; --bb-rj: #60a5fa; --bb-wien: #c4b5fd; --bb-kept: #9fb0bf;
+        --bb-brick: #7a3a22; --bb-uv: #a78bfa; --bb-ir: #f87171; --bb-mw: #22d3ee;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bb-planck: #fb923c; --bb-rj: #60a5fa; --bb-wien: #c4b5fd; --bb-kept: #9fb0bf;
+      --bb-brick: #7a3a22; --bb-uv: #a78bfa; --bb-ir: #f87171; --bb-mw: #22d3ee;
+    }
+    .bb button { min-height: 44px; }
+    .bb [hidden] { display: none !important; }
+    .bb #cv { aspect-ratio: auto; height: 440px; cursor: ew-resize; touch-action: pan-y; }
+    .bb .slider { margin: 4px 0 6px; }
+    .bb .slider input[type="range"] { height: 28px; margin: 0; }
+    .bb .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .bb .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bb .checks { display: grid; gap: 2px; margin: 6px 0 4px; }
+    .bb .checks label { min-height: 44px; display: flex; align-items: center; gap: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .bb .checks input { width: 18px; height: 18px; flex: none; }
+    .bb .checks .sw { display: inline-block; width: 22px; height: 0; border-top: 3px dashed currentColor; flex: none; }
+    .refs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 6px 0 0; }
+    .refs button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; padding: 5px 9px; text-align: left; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .refs button small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .refs button.on { border-color: var(--accent); background: var(--accent-soft); }
+    .refs button .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+    .seg-label { font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
+    .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 2px 0 6px; }
+    .seg2 button { padding: 6px 4px; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .bb .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bb .playbar button { flex: 1 1 auto; }
+    .bb .playbar .main { font-weight: 700; flex: 2 1 10em; }
+    .probe-out { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); line-height: 1.6; color: var(--text); font-variant-numeric: tabular-nums; }
+    .probe-out .k { color: var(--muted); }
+    .probe-out .rj { color: var(--bb-rj); }
+    .probe-out .wi { color: var(--bb-wien); }
+    .probe-out span.it { display: inline-block; margin-right: 12px; }
+    .bb .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); min-height: 1.4em; }
+    .minis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 10px; }
+    .minis figure { margin: 0; }
+    .minis canvas { aspect-ratio: auto !important; height: 250px; cursor: default !important; touch-action: auto !important; }
+    .minis figcaption { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    @media (max-width: 700px) { .minis { grid-template-columns: minmax(0, 1fr); } }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd.em { color: var(--accent); font-weight: 700; }
+    .bb .nw { white-space: nowrap; }
+    dl.readout dd .swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.3); }
+    dl.readout sub, dl.readout sup, .probe-out sup, .probe-out sub, .bb label sub, .bb .hint sub, .bb .hint sup { font-size: .75em; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv, .stage.is3d #probeOut { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .formula.multi .flabel { display: block; text-align: center; font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 6px; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; margin: 8px 0; }
+    table.reft { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.reft th, table.reft td { padding: 5px 8px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    table.reft th:first-child, table.reft td:first-child { text-align: left; white-space: normal; }
+    table.reft th { color: var(--muted); font-weight: 600; background: var(--bg); }
+    table.reft tbody tr:last-child td { border-bottom: none; }
+    @media (max-width: 560px) { .bb #cv { height: 450px; } .minis canvas { height: 230px; } }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Blackbody radiation and Planck’s law">
+        <a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 黑體輻射與普朗克定律</nav>
+      <h1 data-en="Blackbody Radiation and Planck’s Law">黑體輻射與普朗克定律</h1>
+      <p data-en-html="Everything that has a temperature glows — you, a stove, the Sun, even the empty universe. A perfect absorber, a <b>black body</b>, glows with a spectrum that depends on its temperature alone. Classical physics predicted that this glow should blow up at short wavelengths; in 1900 Max Planck fixed the formula by assuming that the energy of each oscillation comes in lumps of \(hf\), and quantum physics was born. Change the temperature, measure the curve with a cursor, compare it with the classical predictions and see the colour and brightness that the glow would have.">
+        任何有溫度的東西都在發光：你、電爐、太陽，連空蕩蕩的宇宙也是。完美的吸收體叫<b>黑體</b>，它發出的光譜只由溫度決定。古典物理預測這種光在短波會無限增大；1900 年普朗克假設每一種振動的能量只能一份一份地增減、每份 \(hf\)，寫出了正確的公式，量子物理從這裡誕生。在這裡改變溫度、用游標量曲線、和古典理論比較，再看看這種光的顏色與亮度。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Human body”, then “The Sun”, and watch where the peak of the curve goes and how tall it becomes.">試試看：先按「人體」再按「太陽」，看曲線的峰跑到哪裡、變得多高。</p>
+    <div class="lab bb">
+      <div class="stage" id="stage">
+        <div class="view-bar" id="viewBar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <p class="probe-out" id="probeOut"></p>
+        <div class="playbar">
+          <button type="button" id="keep" class="primary main" data-en="Keep this curve">保留這條曲線</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除保留的曲線；溫度與設定不變" data-en-title="Clear the kept curves; the temperature and settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" id="hint2"></p>
+        <p class="hint l3" id="hint3"></p>
+        <div class="minis">
+          <figure>
+            <canvas id="cav" role="img" aria-label="空腔示意圖" data-en-aria-label="Cavity diagram"></canvas>
+            <figcaption data-en="A cavity with a small hole is an almost perfect black body: the hole shows the colour of the glow, and the bar shows how bright it really is.">有小孔的空腔幾乎是完美的黑體：孔裡是這種光的顏色，下方的長條是它實際有多亮。</figcaption>
+          </figure>
+          <figure>
+            <canvas id="modes" role="img" aria-label="每個模式的平均能量" data-en-aria-label="Average energy per mode"></canvas>
+            <figcaption data-en-html="Average energy of one oscillation mode of the cavity, in units of \(kT\): classical physics gives every mode \(kT\); Planck’s modes above \(hf \approx kT\) are “frozen out”.">空腔中每個振動模式平均分到的能量（以 \(kT\) 為單位）：古典理論每個模式都是 \(kT\)；普朗克的模式在 \(hf \approx kT\) 以上就被「凍結」了。</figcaption>
+          </figure>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Temperature">溫度</h2>
+          <div class="slider"><label for="T" data-en="Temperature T">溫度 T</label><output id="To"></output>
+            <input id="T" type="range" min="0" max="2000" step="1" value="1306"></div>
+          <p class="hint" data-en="Logarithmic scale from 2.5 K to 40 000 K; tap the number to type a value.">對數刻度，2.5 K～40000 K；點數字可以直接輸入。</p>
+          <p class="seg-label" id="refLabel" data-en="Reference objects">參考物體</p>
+          <div class="refs" id="refs" role="group" aria-labelledby="refLabel"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Spectrum graph">光譜圖</h2>
+          <p class="seg-label" id="xLabel" data-en="Wavelength axis">波長軸</p>
+          <div class="seg2" role="group" aria-labelledby="xLabel">
+            <button type="button" id="xLin" aria-pressed="true" data-en="Linear (auto)">線性（自動）</button>
+            <button type="button" id="xLog" aria-pressed="false" data-en="Log 10 nm–10 mm">對數 10 nm–10 mm</button>
+          </div>
+          <p class="seg-label" id="yLabel" data-en="Exitance axis">出射度軸</p>
+          <div class="seg2" role="group" aria-labelledby="yLabel">
+            <button type="button" id="yLin" aria-pressed="true" data-en="Linear">線性</button>
+            <button type="button" id="yLog" aria-pressed="false" data-en="Logarithmic">對數</button>
+          </div>
+          <div class="checks">
+            <label style="color:var(--bb-rj)"><input id="showRJ" type="checkbox"><span class="sw"></span><span data-en="Show Rayleigh–Jeans">顯示瑞利–金斯</span></label>
+            <label style="color:var(--bb-wien)"><input id="showWien" type="checkbox"><span class="sw" style="border-top-style:dotted"></span><span data-en="Show Wien approximation">顯示維恩近似</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. What is a black body?">1. 什麼是黑體</h3>
+      <p data-en-html="Every object is made of charges that jiggle with the heat, and jiggling charges radiate. An object that absorbs all the light falling on it, of every wavelength, is called a <b>black body</b>. The best real one is a closed oven with a tiny hole: light that enters the hole bounces around inside until it is absorbed, so the hole looks perfectly black at room temperature. The light coming <i>out</i> of the hole has come into equilibrium with the walls, and its spectrum depends only on the temperature — not on the material of the walls.">物體由帶電粒子組成，熱運動使它們不停振動，而振動的電荷會發出電磁波。能吸收所有照到它的光（每一種波長都吸收）的物體叫<b>黑體</b>。真實世界最好的黑體是一個開了小孔的密閉爐子：從小孔射進去的光在裡面反覆反射，最後一定被吸收，所以室溫下那個孔看起來全黑。從孔裡<i>出來</i>的光已經和爐壁達到熱平衡，它的光譜只由溫度決定，與爐壁的材料無關。</p>
+      <h3 data-en="2. Planck’s law">2. 普朗克定律</h3>
+      <p data-en-html="The power emitted per unit area of the surface, per unit wavelength, into the half space in front of it, is the <b>spectral exitance</b>:">表面每單位面積、每單位波長，向前方半個空間發出的功率，叫<b>光譜出射度</b>：</p>
+      <div class="formula">\[ M_\lambda(\lambda, T) = \frac{2\pi h c^2}{\lambda^5}\,\frac{1}{e^{hc/\lambda k T}-1} \]</div>
+      <p data-en-html="Here \(h\) is Planck’s constant, \(c\) the speed of light and \(k\) Boltzmann’s constant. The graph plots \(M_\lambda\) in W·m<sup>−2</sup>·nm<sup>−1</sup>, the power in each 1 nm band of wavelengths. Two simple results follow from it:">\(h\) 是普朗克常數，\(c\) 是光速，\(k\) 是波茲曼常數。圖上畫的 \(M_\lambda\) 單位是 W·m<sup>−2</sup>·nm<sup>−1</sup>，也就是每 1 nm 波長範圍內的功率。由這個公式可以得到兩個簡單的結果：</p>
+      <div class="formula multi">
+        <div><span class="flabel" data-en="Wien’s displacement law (the peak)">維恩位移定律（峰的位置）</span>\[ \lambda_{\max}\, T = b = 2.898\times10^{-3}\ \mathrm{m\,K} \]</div>
+        <div><span class="flabel" data-en="Stefan–Boltzmann law (area under the curve)">斯特凡–波茲曼定律（曲線下的面積）</span>\[ M = \int_0^\infty M_\lambda\, d\lambda = \sigma T^4 \]</div>
+      </div>
+      <p data-en-html="Hotter means a peak at shorter wavelength and a much larger area: doubling \(T\) halves \(\lambda_{\max}\), multiplies the total \(M\) by 16 and the height of the peak by \(2^5 = 32\). The constant \(b\) comes from solving \(x = 5(1-e^{-x})\), whose root is \(x = hc/\lambda_{\max}kT = 4.965\ldots\)">溫度越高，峰越往短波移，面積也大得多：溫度加倍，\(\lambda_{\max}\) 減半，總出射度 \(M\) 變成 16 倍，峰的高度變成 \(2^5 = 32\) 倍。常數 \(b\) 來自方程式 \(x = 5(1-e^{-x})\) 的根 \(x = hc/\lambda_{\max}kT = 4.965\ldots\)</p>
+      <p data-en-html="<b>Careful: two different peaks.</b> If you plot the same light against frequency instead (power per unit <i>frequency</i>), its peak is at \(\nu_{\max} = 5.879\times10^{10}\ \mathrm{Hz/K}\times T\). But \(c/\nu_{\max}\) is <i>not</i> \(\lambda_{\max}\): it is about 1.76 times longer. A 1 nm band and a 1 Hz band are not the same slice of the spectrum (\(d\nu = c\,d\lambda/\lambda^2\)), so the two curves have different shapes. For the Sun, \(\lambda_{\max} \approx 502\) nm (blue-green) but \(c/\nu_{\max} \approx 884\) nm (infrared). Asking “what colour does the Sun emit most?” has no single answer.">
+        <b>注意：有兩種峰。</b>如果把同一束光改成對頻率作圖（每單位<i>頻率</i>的功率），峰值在 \(\nu_{\max} = 5.879\times10^{10}\ \mathrm{Hz/K}\times T\)。但是 \(c/\nu_{\max}\) <i>不等於</i> \(\lambda_{\max}\)，大約長 1.76 倍。1 nm 寬的一段與 1 Hz 寬的一段不是光譜上同樣大小的一片（\(d\nu = c\,d\lambda/\lambda^2\)），兩條曲線的形狀不同。太陽的 \(\lambda_{\max} \approx 502\) nm（藍綠色），\(c/\nu_{\max}\) 卻約 884 nm（紅外線）。「太陽發出最多的是什麼顏色的光？」其實沒有唯一的答案。</p>
+      <h3 data-en="3. The ultraviolet catastrophe and Planck’s quantum">3. 紫外災難與普朗克的量子</h3>
+      <p data-en-html="Classical physics counts the standing-wave modes in the cavity — there are \(8\pi f^2/c^3\) of them per unit volume per unit frequency, more and more at high frequency — and gives each one the average energy \(kT\) (equipartition). The result is the Rayleigh–Jeans law">古典物理先數空腔裡的駐波模式：每單位體積、每單位頻率有 \(8\pi f^2/c^3\) 個，頻率越高越多；再依能量均分定理讓每個模式平均分到 \(kT\)。結果是瑞利–金斯定律</p>
+      <div class="formula">\[ M_\lambda^{\text{RJ}} = \frac{2\pi c k T}{\lambda^4}, \]</div>
+      <p data-en-html="which works at long wavelengths but grows without limit as \(\lambda \to 0\): the total power would be infinite. This was later called the <b>ultraviolet catastrophe</b>. Planck assumed instead that an oscillator of frequency \(f\) can only have the energies \(0, hf, 2hf, \ldots\) Then a mode with \(hf \gg kT\) can hardly ever be excited, and its average energy is">它在長波正確，但 \(\lambda \to 0\) 時無限增大，總功率變成無限大，後來被稱為<b>紫外災難</b>。普朗克改成假設頻率 \(f\) 的振子只能有 \(0, hf, 2hf, \ldots\) 這些能量。於是 \(hf \gg kT\) 的模式幾乎不可能被激發，平均能量變成</p>
+      <div class="formula">\[ \langle E \rangle = \frac{hf}{e^{hf/kT}-1} \;\to\; \begin{cases} kT, & hf \ll kT \\ hf\,e^{-hf/kT}, & hf \gg kT \end{cases} \]</div>
+      <p data-en-html="Low-frequency modes still get \(kT\), so Planck’s law agrees with Rayleigh–Jeans at long wavelengths; high-frequency modes are frozen out, which cuts the curve off at short wavelengths. In that limit Planck’s law becomes Wien’s approximation \(M_\lambda \approx (2\pi hc^2/\lambda^5)\,e^{-hc/\lambda kT}\), proposed by Wien in 1896. In 1900, measurements by Rubens and Kurlbaum at about 51 μm on bodies at hundreds of degrees showed that Wien’s formula failed at long wavelengths and that the radiation there grows in proportion to \(T\); that same autumn Planck found the formula that joins the two limits.">低頻的模式仍分到 \(kT\)，所以普朗克定律在長波和瑞利–金斯一致；高頻的模式被凍結，曲線在短波被截斷。在短波的極限，普朗克定律變成維恩在 1896 年提出的近似 \(M_\lambda \approx (2\pi hc^2/\lambda^5)\,e^{-hc/\lambda kT}\)。1900 年魯本斯與庫爾鮑姆在約 51 μm 量了幾百度的物體，發現維恩的公式在長波不對、那裡的輻射與 \(T\) 成正比；同年秋天普朗克找到了把兩個極限接起來的公式。</p>
+      <h3 data-en="4. Colour and brightness">4. 顏色與亮度</h3>
+      <p data-en-html="The eye does not see the spectrum; it sees three numbers. The page weights the Planck spectrum with the CIE 1931 colour-matching functions to get the colour (chromaticity) and with the eye’s sensitivity \(\bar y(\lambda)\) to get the luminance \(L = 683\ \mathrm{lm/W}\int \bar y\, B_\lambda\, d\lambda\) in cd/m<sup>2</sup>. As the temperature rises a black body goes from deep red through orange and white to bluish white, but never green: the spectrum is always too broad. Below about 800 K the glow is far too faint to see, although a person at 310 K radiates about 500 W per square metre of skin in the infrared — which is what a thermal camera sees.">眼睛看不到整條光譜，只看到三個數。本頁把普朗克光譜乘上 CIE 1931 配色函數，得到顏色（色度）；乘上人眼的敏感度 \(\bar y(\lambda)\)，得到亮度 \(L = 683\ \mathrm{lm/W}\int \bar y\, B_\lambda\, d\lambda\)（單位 cd/m<sup>2</sup>）。溫度升高時，黑體從深紅、橘、白一路變成藍白，但永遠不會是綠色：它的光譜總是太寬。大約 800 K 以下的光暗到看不見，但 310 K 的人每平方公尺皮膚在紅外線發出約 500 W——熱像儀看到的就是這個。</p>
+      <h3 data-en="5. Real objects are not perfect black bodies">5. 真實的物體不是完美的黑體</h3>
+      <p data-en-html="A real surface emits \(\varepsilon(\lambda)\) times the black-body value, with an emissivity \(\varepsilon \le 1\). Skin is very close to black in the infrared (\(\varepsilon \approx 0.98\)); polished tungsten has \(\varepsilon\) of only about 0.3–0.45 and slightly favours short wavelengths, so a filament is dimmer than a black body at the same temperature. The Sun’s spectrum has absorption lines and its “effective temperature” 5772 K is defined so that \(\sigma T^4\) gives its real output; the cosmic microwave background is the most perfect black body ever measured.">真實表面發出的是黑體值的 \(\varepsilon(\lambda)\) 倍，放射率 \(\varepsilon \le 1\)。皮膚在紅外線非常接近黑體（\(\varepsilon \approx 0.98\)）；拋光的鎢放射率只有約 0.3–0.45，而且略偏向短波，所以燈絲比同溫度的黑體暗。太陽的光譜有吸收線，它的「有效溫度」5772 K 的定義是讓 \(\sigma T^4\) 等於它實際發出的功率；宇宙微波背景是人類量過最完美的黑體。</p>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en-html="Press the reference objects from cold to hot: the peak slides from millimetres (microwaves) through micrometres (infrared) into the visible and the ultraviolet, and the curve rises enormously — switch the exitance axis to logarithmic to see them all.">從冷到熱依序按參考物體：峰從毫米（微波）、微米（紅外線）一路移進可見光與紫外線，曲線也高出非常多；把出射度軸切成對數就能一起看到。</li>
+        <li data-en-html="Keep a curve and double the temperature: the new curve lies above the old one at <i>every</i> wavelength. Black-body curves never cross — a blue-white star gives out more red light than a red one.">保留一條曲線再把溫度加倍：新的曲線在<i>每一個</i>波長都比舊的高。黑體曲線永遠不會交叉——藍白色的星發出的紅光，比紅色的星還多。</li>
+        <li data-en-html="Show Rayleigh–Jeans and use the logarithmic wavelength axis: far to the right the two lines merge; towards the left the classical line shoots up while Planck’s curve dives.">顯示瑞利–金斯並用對數波長軸：最右邊兩條線重合；往左邊古典的線往上衝，普朗克的曲線卻往下掉。</li>
+        <li data-en-html="In the small graph of the modes, the knee at \(hf = kT\) moves to higher frequency as you heat up. At room temperature visible-light modes get essentially nothing; that is why things do not glow.">在模式的小圖裡，\(hf = kT\) 的轉折隨著加熱往高頻移動。室溫下可見光的模式幾乎分不到能量，所以東西不會發光。</li>
+        <li data-en-html="The share of visible light is largest at about 6900 K, but the whitest colour is at about 6500 K. The Sun (5772 K) is close to both.">可見光的比例在約 6900 K 最大，但最接近白色的是約 6500 K；太陽（5772 K）兩者都很接近。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li><span data-en="Your skin is at about 306 K. At what wavelength does it radiate most? Why can a thermal camera see you in the dark?">皮膚的溫度約 306 K，它在哪個波長輻射最強？為什麼熱像儀在黑暗中也看得到你？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(\lambda_{\max} = b/T = 2.898\times10^{-3}/306 \approx 9.5\ \mu\mathrm m\), far in the infrared. A thermal camera is sensitive around 8–14 μm, where your own glow is strongest; it needs no other light.">\(\lambda_{\max} = b/T = 2.898\times10^{-3}/306 \approx 9.5\ \mu\mathrm m\)，在遠紅外線。熱像儀對 8–14 μm 敏感，正好是你自己發光最強的地方，不需要其他光源。</p></details></li>
+        <li><span data-en-html="A star has twice the Sun’s surface temperature and the same radius. How much more power does it emit, and where is its peak?">一顆星的表面溫度是太陽的 2 倍、半徑相同。它發出的功率是太陽的幾倍？峰在哪裡？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Power \(\propto T^4\): \(2^4 = 16\) times. Peak at \(502/2 \approx 251\) nm, in the ultraviolet — yet it still looks bluish white, because the visible part of its spectrum slopes towards blue.">功率 \(\propto T^4\)：\(2^4 = 16\) 倍。峰在 \(502/2 \approx 251\) nm，在紫外線；它看起來仍是藍白色，因為光譜在可見光那一段往藍色傾斜。</p></details></li>
+        <li><span data-en="Why did the classical theory predict infinite power, and what exactly did Planck change?">為什麼古典理論會算出無限大的功率？普朗克到底改了什麼？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="The number of modes grows like \(f^2\) without limit, and classically each one holds \(kT\), so the total diverges. Planck kept the counting of modes but allowed each oscillator only whole numbers of \(hf\); modes with \(hf \gg kT\) then hold almost no energy, and the total becomes \(\sigma T^4\).">模式的數目隨 \(f^2\) 無限增加，古典理論又讓每個模式都有 \(kT\)，總和就發散了。普朗克保留了模式的數法，但讓每個振子的能量只能是 \(hf\) 的整數倍；\(hf \gg kT\) 的模式幾乎分不到能量，總和就變成 \(\sigma T^4\)。</p></details></li>
+        <li><span data-en="A light bulb filament is at about 2856 K. Roughly what fraction of its radiation is visible light? Why are LED lamps so much more efficient?">燈泡的鎢絲約 2856 K，它的輻射大約有多少比例是可見光？為什麼 LED 燈的效率高得多？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="Only about 10% (read it off at 2856 K): the peak is near 1 μm, so most of the power is infrared heat. An LED emits only in the visible band instead of a thermal spectrum.">只有約 10%（在 2856 K 讀出來）：峰在 1 μm 附近，大部分功率是紅外線，也就是熱。LED 只在可見光的波段發光，不是熱輻射的光譜。</p></details></li>
+      </ol>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="Every curve is computed from Planck’s formula with the exact SI constants; nothing is fitted. \(e^x - 1\) is evaluated with <code>expm1</code> so that long wavelengths stay accurate, and very small values are handled as logarithms, so even 10 nm at 2.5 K gives a finite \(\log M_\lambda\).">每條曲線都直接由普朗克公式和 SI 定義的常數算出，沒有任何擬合。\(e^x - 1\) 用 <code>expm1</code> 計算，長波也精確；非常小的值改用對數處理，所以 2.5 K 時 10 nm 的 \(\log M_\lambda\) 也算得出來。</li>
+        <li data-en-html="\(\sigma\), \(b\) and the frequency constant are calculated from \(h\), \(c\) and \(k\) and checked against CODATA 2022 in the unit tests. The peak equation is solved by Newton’s method. The unit tests also integrate the curve numerically (two independent ways) and recover \(\sigma T^4\) to a millionth.">\(\sigma\)、\(b\) 與頻率形式的常數都由 \(h\)、\(c\)、\(k\) 算出，單元測試與 CODATA 2022 比對；峰值方程式用牛頓法解。單元測試也用兩種獨立的方法對曲線做數值積分，得到 \(\sigma T^4\)，相對誤差在百萬分之一以內。</li>
+        <li data-en-html="The fraction below a wavelength uses \(x = hc/\lambda kT\) and the series <span class=&quot;formula&quot; style=&quot;display:block&quot;>\[ F = \frac{15}{\pi^4}\sum_{n=1}^{\infty} e^{-nx}\left(\frac{x^3}{n} + \frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}\right) \]</span> (for \(x < 1\) a Bernoulli-number expansion of the complement); the visible fraction is the part between 380 and 780 nm.">某個波長以下的比例：令 \(x = hc/\lambda kT\)，用級數<span class="formula" style="display:block">\[ F = \frac{15}{\pi^4}\sum_{n=1}^{\infty} e^{-nx}\left(\frac{x^3}{n} + \frac{3x^2}{n^2} + \frac{6x}{n^3} + \frac{6}{n^4}\right) \]</span>（\(x < 1\) 時改用補數的伯努利數展開）；可見光比例是 380 到 780 nm 之間的部分。</li>
+        <li data-en-html="Colour: the CIE 1931 2° colour-matching functions (official 5 nm table, interpolated to 1 nm) times the Planck spectrum give X, Y, Z; these are converted to linear sRGB (D65). Below about 1900 K the colour of a black body lies outside what a screen can show (a deeper red than the screen’s red), so negative components are set to zero; the brightest channel is then set to full, so the hole shows the hue and the bar shows the brightness on a logarithmic scale, the way the eye responds. The distance from white is \(\Delta uv\) in the CIE 1960 diagram, measured from D65 (\(x = 0.3127,\ y = 0.3290\)).">顏色：CIE 1931 2° 配色函數（官方每 5 nm 的表，內插到每 1 nm）乘上普朗克光譜，得到 X、Y、Z，再換成線性 sRGB（D65）。大約 1900 K 以下，黑體的顏色比螢幕的紅色還深，超出螢幕能顯示的範圍，所以把負的分量設為 0；再把最亮的通道調到最大，孔裡顯示的是色調，長條則用對數刻度顯示亮度（眼睛的感覺也接近對數）。與白點的色差是 CIE 1960 色度圖上到 D65（\(x = 0.3127,\ y = 0.3290\)）的距離 \(\Delta uv\)。</li>
+        <li data-en-html="Luminance uses the daylight (photopic) sensitivity of the eye. In the dark the eye switches to rod vision, which is more sensitive but colour-blind, so a body near 800 K is seen as a dim grey-red glow only in a dark room.">亮度用的是眼睛在亮處（明視覺）的敏感度。在暗處眼睛改用桿細胞，比較靈敏但分不出顏色，所以 800 K 左右的物體只在暗室裡看得到微弱的暗紅光。</li>
+        <li data-en-html="3D view (three.js, MIT licence, downloaded only when you switch to 3D): the surface is \(\log_{10} M_\lambda\) over \(\log_{10}\lambda\) (10 nm–10 mm) and \(\log_{10} T\) (2.5–40 000 K), computed point by point with the same core and clipped below \(10^{-15}\ \mathrm{W\,m^{-2}\,nm^{-1}}\). On these logarithmic axes the ridge of peaks \(\lambda_{\max}T = b\) is a straight line, rising 5 decades for every decade of temperature, and the long-wavelength side becomes a flat slope (the Rayleigh–Jeans law, \(M_\lambda \propto T/\lambda^4\)). The thick green line is the current temperature, the same curve as the 2D graph; cold temperatures are at the front and hot ones at the back; the visible band is painted in its real colours. With “Show Rayleigh–Jeans” the classical surface is drawn as a mesh: it agrees with Planck on the right and towers above it on the left.">3D 檢視（使用 three.js，MIT 授權，只有切換到 3D 時才下載）：曲面高度是 \(\log_{10} M_\lambda\)，兩個水平軸是 \(\log_{10}\lambda\)（10 nm–10 mm）與 \(\log_{10} T\)（2.5–40000 K），用同一個物理核心逐點算出，低於 \(10^{-15}\ \mathrm{W\,m^{-2}\,nm^{-1}}\) 的部分截平。在這種對數座標下，峰值的山脊 \(\lambda_{\max}T = b\) 是一條直線：溫度每增加 10 倍，峰高增加 5 個數量級；長波那一側變成一片平坦的斜面（瑞利–金斯定律 \(M_\lambda \propto T/\lambda^4\)）。綠色的粗線是目前的溫度，與 2D 圖是同一條曲線；冷的在前、熱的在後；可見光的那一條帶塗上真實的顏色。勾選「顯示瑞利–金斯」時，古典理論的曲面畫成網格：右邊與普朗克貼合，左邊遠遠高出。</li>
+        <li data-en="Optics and radiation are not sound, so this page has no sound effects.">光與輻射不是聲學現象，所以本頁沒有音效。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Elective Physics V · Quantum Phenomena">課綱對應：選修物理Ⅴ・量子現象</li>
+        <li data-en-html="Constants: \(h\), \(c\), \(k\) are exact SI values; \(\sigma = 5.670\,374\,419\times10^{-8}\ \mathrm{W\,m^{-2}\,K^{-4}}\), \(b = 2.897\,771\,955\times10^{-3}\ \mathrm{m\,K}\), \(b' = 5.878\,925\,757\times10^{10}\ \mathrm{Hz\,K^{-1}}\): CODATA 2022 (<a href=&quot;https://physics.nist.gov/cuu/Constants/&quot;>NIST</a>).">常數：\(h\)、\(c\)、\(k\) 是 SI 定義值；\(\sigma = 5.670\,374\,419\times10^{-8}\ \mathrm{W\,m^{-2}\,K^{-4}}\)、\(b = 2.897\,771\,955\times10^{-3}\ \mathrm{m\,K}\)、\(b' = 5.878\,925\,757\times10^{10}\ \mathrm{Hz\,K^{-1}}\)：CODATA 2022（<a href="https://physics.nist.gov/cuu/Constants/">NIST</a>）。</li>
+        <li data-en="Colour: CIE 015:2018 Colorimetry, 4th edition — CIE 1931 2° colour-matching functions (CIE dataset, 5 nm), white point D65 and standard illuminant A (2856 K, representing a tungsten lamp); sRGB conversion: IEC 61966-2-1. Luminous efficacy 683 lm/W: SI definition of the candela.">顏色：CIE 015:2018 Colorimetry 第 4 版——CIE 1931 2° 配色函數（CIE 資料集，每 5 nm）、白點 D65、標準光源 A（2856 K，代表鎢絲燈）；sRGB 轉換：IEC 61966-2-1。683 lm/W：SI 燭光的定義。</li>
+        <li data-en="Reference objects: cosmic microwave background 2.72548 ± 0.00057 K (D. J. Fixsen, Astrophysical Journal 707, 916, 2009); human body temperature about 37 °C; the Draper point, about 525 °C, at which solids start to glow dim red (J. W. Draper, 1847); incandescent lamp: CIE illuminant A, 2856 K; the Sun: nominal effective temperature 5772 K (IAU 2015 Resolution B3); Sirius A: 9845 ± 64 K (J. Davis et al., Publications of the Astronomical Society of Australia 28, 58, 2011).">參考物體：宇宙微波背景 2.72548 ± 0.00057 K（D. J. Fixsen，Astrophysical Journal 707, 916，2009）；人體溫度約 37 °C；固體開始發出暗紅光的德雷珀點約 525 °C（J. W. Draper，1847）；白熾燈：CIE 標準光源 A，2856 K；太陽：名目有效溫度 5772 K（IAU 2015 B3 號決議）；天狼星 A：9845 ± 64 K（J. Davis 等，Publications of the Astronomical Society of Australia 28, 58，2011）。</li>
+        <li data-en="M. Planck, “Ueber das Gesetz der Energieverteilung im Normalspectrum”, Annalen der Physik 4, 553–563 (1901).">M. Planck，〈Ueber das Gesetz der Energieverteilung im Normalspectrum〉，Annalen der Physik 4, 553–563（1901）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://hyperphysics.gsu.edu/hbase/mod6.html&quot;>HyperPhysics: Blackbody radiation</a> (cavity modes, Rayleigh–Jeans versus Planck).">延伸閱讀：<a href="https://hyperphysics.gsu.edu/hbase/mod6.html">HyperPhysics：Blackbody Radiation（英文，空腔模式、瑞利–金斯與普朗克的比較）</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/blackbody-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/blackbody-3d.js"></script>
+  <script src="js/blackbody.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="blackbody"></script>
+  <script src="js/missions/blackbody.js"></script>
+  <script src="js/stats.js" data-module="blackbody"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

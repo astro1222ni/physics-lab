@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="AC Generators and Transformers | Astro Ni Science Lab">交流發電機與變壓器｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 本頁專用的顏色代號（淺色＋深色）：由 js/ac-generator.js 與 js/ac-generator-3d.js 讀取 */
+    :root {
+      --ag-copper: #b45309; --ag-iron: #7b8794; --ag-eps: #c2410c; --ag-phi: #1d4ed8; --ag-cur: #0d7f57;
+      --ag-pow: #a16207; --ag-loss: #dc2626; --ag-use: #15803d; --ag-v2: #7c3aed; --ag-lamp: #f59e0b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ag-copper: #f59e0b; --ag-iron: #8a96a3; --ag-eps: #fb923c; --ag-phi: #60a5fa; --ag-cur: #3fd69a;
+        --ag-pow: #facc15; --ag-loss: #f87171; --ag-use: #4ade80; --ag-v2: #b197fc; --ag-lamp: #fbbf24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ag-copper: #f59e0b; --ag-iron: #8a96a3; --ag-eps: #fb923c; --ag-phi: #60a5fa; --ag-cur: #3fd69a;
+      --ag-pow: #facc15; --ag-loss: #f87171; --ag-use: #4ade80; --ag-v2: #b197fc; --ag-lamp: #fbbf24;
+    }
+    .ag button { min-height: 44px; }
+    .ag [hidden] { display: none !important; }
+    .ag #cv { aspect-ratio: auto; height: 560px; outline: none; cursor: default; touch-action: pan-y; }
+    .ag #cv.grab { cursor: grab; }
+    .ag #cv.grabbing { cursor: grabbing; }
+    .ag #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+    .ag .stage { position: relative; }
+    /* 端視圖的拖曳區（蓋在畫布上，觸控拖曳時不捲動頁面） */
+    .ag .ag-hit { position: absolute; border-radius: 50%; touch-action: none; cursor: grab; z-index: 1; }
+    .ag .ag-hit.grabbing { cursor: grabbing; }
+    .stage.is3d .ag-hit { display: none; }
+    .ag .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0; }
+    .ag .modes button { padding: 5px 4px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .ag .modes button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .ag .modes button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 700; }
+    .ag .modes button[aria-pressed="true"] small { color: var(--surface); opacity: .88; }
+    .ag .seg2, .ag .seg3 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 8px 0 6px; }
+    .ag .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ag .seg2 button, .ag .seg3 button { padding: 6px 4px; line-height: 1.25; }
+    .ag .seg2 button small, .ag .seg3 button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .ag .seg2 button[aria-pressed="true"], .ag .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .ag .slider { margin: 4px 0 6px; }
+    .ag .slider input[type="range"] { height: 28px; margin: 0; }
+    .ag .slider output.lab-num { min-height: 44px; display: inline-flex; align-items: center; justify-content: flex-end; }
+    .ag .slider label sub, dl.readout sub, .ag .hint sub, table.data sub, .ag .seg2 sub, .ag .seg3 sub, .legend sub, .ag .warn sub { font-size: .75em; }
+    .ag .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ag .checks label { min-height: 44px; }
+    .ag .checks input { width: 18px; height: 18px; flex: none; }
+    .ag .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
+    .ag .btnrow button { flex: 1 1 8em; }
+    .ag .btnrow button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .ag .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ag .playbar button { flex: 1 1 auto; }
+    .ag .playbar #record { font-weight: 700; flex: 2 1 10em; }
+    .ag .playbar #play { min-width: 6.5em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ag .stage .status { margin: 8px 4px 0; font-size: calc(14px * var(--fs, 1)); color: var(--text); min-height: 1.4em; }
+    .ag .warn { margin: 6px 4px 0; font-size: calc(13px * var(--fs, 1)); color: color-mix(in srgb, var(--pos) 72%, var(--text)); }
+    .ag .warn:empty { display: none; }
+    .ag .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; }
+    dl.readout dd.em { color: var(--accent); font-weight: 700; }
+    dl.readout dt.sep, dl.readout dd.sep { border-top: 1px solid var(--border); padding-top: 4px; margin-top: 2px; }
+    .legend .dash { background: none !important; border-top: 2.5px dashed currentColor; height: 0 !important; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1.1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .opts3 { display: none; }
+    .stage.is3d .opts3 { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 8px 4px 0; }
+    /* 記錄表：桌機放在畫面下方（左欄），手機在控制面板之後 */
+    .lab.ag { grid-template-areas: "stage panel" "data panel"; grid-template-rows: auto 1fr; }
+    .lab.ag > .stage { grid-area: stage; }
+    .lab.ag > .panel { grid-area: panel; }
+    .lab.ag > .ag-data { grid-area: data; align-self: start; margin: 0; }
+    .lab.ag > * { min-width: 0; }
+    @media (max-width: 880px) { .lab.ag { grid-template-areas: "stage" "panel" "data"; grid-template-rows: auto; } }
+    .ag-data h2 { font-size: calc(17px * var(--fs, 1)); }
+    .ag-data .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: -4px 2px 8px; }
+    .tablewrap { position: relative; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 10px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 5px 7px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; background: var(--bg); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data tbody tr:last-child td { border-bottom: none; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.empty td { text-align: center; color: var(--muted); white-space: normal; padding: 14px 8px; }
+    .notes details { margin: 6px 0 10px; }
+    .notes details summary { cursor: pointer; color: var(--accent); font-weight: 600; min-height: 32px; }
+    .notes ol { padding-left: 1.4em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; }
+    .notes .tablewrap { margin: 8px 0 12px; }
+    table.proc { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); }
+    table.proc th, table.proc td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; }
+    table.proc th { background: var(--bg); color: var(--muted); font-weight: 600; }
+    table.proc td:first-child, table.proc th:first-child { text-align: left; }
+    table.proc tr:last-child td { border-bottom: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#em&quot;>Electromagnetism</a> / AC generators and transformers"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 交流發電機與變壓器</nav>
+      <h1 data-en="AC Generators and Transformers">交流發電機與變壓器</h1>
+      <p data-en-html="Turn a coil in a magnetic field and the flux through it rises and falls: out comes an alternating emf. See why the emf is largest exactly when the flux is zero, swap the slip rings for a commutator to get pulsating DC, and feel Lenz’s law — the more current you draw, the harder the turbine has to push. Then send the electricity through an iron-core transformer (and find out why a battery cannot be transformed), and finally across a long transmission line: step the voltage up, watch the line current and the losses fall, and step it back down to 110 V for the houses at the end.">讓線圈在磁場中轉動，穿過線圈的磁通量時增時減，就產生了交流電動勢。看看為什麼磁通量為零的那一刻電動勢反而最大；把滑環換成換向器，得到脈動直流；體會冷次定律——取用的電流越大，水輪機就要出越大的力。接著把電送進鐵心變壓器（順便弄清楚電池為什麼不能變壓），最後送上長長的輸電線：把電壓升高，看線電流與線損一起下降，再降回 110 V 送進家家戶戶。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the coil in the end view to 90°, where the flux is zero — then press Play and watch the emf peak at that very moment.">試試看：在端視圖把線圈拖到 90°（磁通量為零），再按「播放」，看電動勢是不是正好在這一刻最大。</p>
+    <div class="lab ag">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div class="opts3 checks" id="opts3">
+          <label><input id="s3field" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
+          <label><input id="s3vec" type="checkbox" checked><span data-en="Area vector and forces">面積向量與磁力</span></label>
+          <label><input id="s3dots" type="checkbox" checked><span data-en="Moving charges">流動的電荷</span></label>
+        </div>
+        <div class="playbar">
+          <button type="button" id="play">暫停</button>
+          <button type="button" id="record" class="primary" data-en="Record">記錄</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除記錄表；設定不變" data-en-title="Clear the table of records; the settings are kept">全部清除</button>
+          <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srState" role="status"></p>
+        <p class="warn" id="warn"></p>
+        <p class="hint l2" id="hint2"></p>
+        <p class="hint l3" id="hint3"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="What to study">實驗模式</h2>
+          <div class="modes" role="group" aria-label="實驗模式" data-en-aria-label="Mode">
+            <button type="button" id="mGen" aria-pressed="true" data-en-html="Generator<small>coil in a field</small>">發電機<small>線圈在磁場中轉</small></button>
+            <button type="button" id="mXf" aria-pressed="false" data-en-html="Transformer<small>iron core</small>">變壓器<small>鐵心與兩組線圈</small></button>
+            <button type="button" id="mGrid" aria-pressed="false" data-en-html="Power line<small>step up, step down</small>">遠距輸電<small>升壓、降壓</small></button>
+          </div>
+        </section>
+
+        <section class="card" id="cardGen">
+          <h2 data-en="Generator">發電機</h2>
+          <div class="seg2" role="group" aria-label="輸出方式" data-en-aria-label="Output">
+            <button type="button" id="gSlip" aria-pressed="true" data-en-html="Slip rings<small>alternating current</small>">滑環<small>輸出交流</small></button>
+            <button type="button" id="gComm" aria-pressed="false" data-en-html="Commutator<small>pulsating DC</small>">換向器<small>輸出脈動直流</small></button>
+          </div>
+          <div class="slider"><label for="gN" data-en="Turns N">線圈匝數 N</label><output id="gNo"></output>
+            <input id="gN" type="range" min="1" max="500" step="1" value="100" data-decimals="0"></div>
+          <div class="slider"><label for="gB" data-en="Magnetic field B">磁場 B</label><output id="gBo"></output>
+            <input id="gB" type="range" min="0.01" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="slider"><label for="gL" data-en="Length along the axis L">沿轉軸的邊長 L</label><output id="gLo"></output>
+            <input id="gL" type="range" min="5" max="40" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="gW" data-en="Width w">線圈寬 w</label><output id="gWo"></output>
+            <input id="gW" type="range" min="5" max="40" step="1" value="10" data-decimals="1"></div>
+          <div class="slider"><label for="gF" data-en="Turning rate f">轉速 f</label><output id="gFo"></output>
+            <input id="gF" type="range" min="0.5" max="100" step="0.5" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="gR" data-en="Load resistance R">負載電阻 R</label><output id="gRo"></output>
+            <input id="gR" type="range" min="0" max="1000" step="1" value="325"></div>
+          <div class="checks">
+            <label><input id="gOpen" type="checkbox"><span data-en="Open circuit (take the lamp out)">開路（拿掉燈泡）</span></label>
+          </div>
+          <div class="slider"><label for="gr" data-en="Coil resistance r">線圈電阻 r</label><output id="gro"></output>
+            <input id="gr" type="range" min="0.1" max="20" step="0.1" value="2" data-decimals="2"></div>
+          <p class="hint" data-en="The turning rate is kept constant by whatever drives the shaft (a water turbine, say): it supplies exactly the torque the magnetic force takes away.">轉速由帶動轉軸的外力（例如水輪機）維持固定：它提供的力矩正好抵銷磁力造成的阻力矩。</p>
+        </section>
+
+        <section class="card" id="cardXf" hidden>
+          <h2 data-en="Transformer">變壓器</h2>
+          <div class="seg3" role="group" aria-label="一次側電源" data-en-aria-label="Primary supply">
+            <button type="button" id="xAC" aria-pressed="true" data-en-html="AC supply<small>fixed</small>">交流電源<small>固定</small></button>
+            <button type="button" id="xGen" aria-pressed="false" data-en-html="Generator<small>from mode 1</small>">接發電機<small>第一個模式</small></button>
+            <button type="button" id="xDC" aria-pressed="false" data-en-html="DC supply<small>battery</small>">直流電源<small>電池</small></button>
+          </div>
+          <div id="xSrcBox">
+            <div class="slider"><label for="xV" id="xVlab" data-en-html="Supply voltage V<sub>1</sub> (rms)">電源電壓 V<sub>1</sub>（有效值）</label><output id="xVo"></output>
+              <input id="xV" type="range" min="1" max="400" step="1" value="110" data-decimals="1"></div>
+            <div class="slider" id="xFbox"><label for="xF" data-en="Frequency f">頻率 f</label><output id="xFo"></output>
+              <input id="xF" type="range" min="1" max="100" step="1" value="60" data-decimals="1"></div>
+          </div>
+          <p class="hint" id="xGenHint" hidden data-en="The generator’s emf, frequency and coil resistance r are set in the Generator mode. Feeding a transformer it uses its slip rings.">發電機的電動勢、頻率與線圈電阻 r 在「發電機」模式設定；接到變壓器時一律用滑環輸出。</p>
+          <div class="btnrow" id="xSwBox" hidden>
+            <button type="button" id="xSwitch" data-en="Close the switch">接通開關</button>
+          </div>
+          <div class="slider"><label for="xN1" data-en-html="Primary turns N<sub>1</sub>">一次線圈匝數 N<sub>1</sub></label><output id="xN1o"></output>
+            <input id="xN1" type="range" min="10" max="1000" step="1" value="200" data-decimals="0"></div>
+          <div class="slider"><label for="xN2" data-en-html="Secondary turns N<sub>2</sub>">二次線圈匝數 N<sub>2</sub></label><output id="xN2o"></output>
+            <input id="xN2" type="range" min="10" max="1000" step="1" value="100" data-decimals="0"></div>
+          <div class="slider"><label for="xRL" data-en-html="Load resistance R<sub>L</sub>">負載電阻 R<sub>L</sub></label><output id="xRLo"></output>
+            <input id="xRL" type="range" min="0" max="1000" step="1" value="425"></div>
+        </section>
+
+        <section class="card" id="cardGrid" hidden>
+          <h2 data-en="Transmission">輸電</h2>
+          <div class="slider"><label for="tVg" data-en-html="Generator voltage V<sub>g</sub> (rms)">發電機電壓 V<sub>g</sub>（有效值）</label><output id="tVgo"></output>
+            <input id="tVg" type="range" min="1" max="25" step="0.1" value="11" data-decimals="2"></div>
+          <div class="slider"><label for="tK1" data-en-html="Step-up ratio 1 : k<sub>1</sub>">升壓比 1 : k<sub>1</sub></label><output id="tK1o"></output>
+            <input id="tK1" type="range" min="1" max="40" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="tRl" data-en-html="Line resistance R<sub>line</sub> (there and back)">輸電線電阻 R<sub>line</sub>（來回合計）</label><output id="tRlo"></output>
+            <input id="tRl" type="range" min="1" max="100" step="0.5" value="20" data-decimals="2"></div>
+          <div class="slider"><label for="tK2" data-en-html="Step-down ratio k<sub>2</sub> : 1">降壓比 k<sub>2</sub> : 1</label><output id="tK2o"></output>
+            <input id="tK2" type="range" min="0" max="1000" step="1" value="541"></div>
+          <div class="seg2" role="group" aria-label="用戶的額定電壓" data-en-aria-label="Rated voltage of the users">
+            <button type="button" id="tV110" aria-pressed="true" data-en-html="110 V<small>sockets</small>">110 V<small>一般插座</small></button>
+            <button type="button" id="tV220" aria-pressed="false" data-en-html="220 V<small>air conditioners</small>">220 V<small>冷氣等大電器</small></button>
+          </div>
+          <div class="slider"><label for="tP" data-en="Users’ load (power at the rated voltage)">用戶負載（額定電壓時的功率）</label><output id="tPo"></output>
+            <input id="tP" type="range" min="0" max="1000" step="1" value="767"></div>
+          <p class="hint" data-en-html="The users are one big resistor R<sub>u</sub> = V<sub>rated</sub><sup>2</sup>/P<sub>rated</sub>: if the voltage they actually get is lower, they also draw less power.">用戶被當成一個大電阻 R<sub>u</sub> = V<sub>額定</sub><sup>2</sup>/P<sub>額定</sub>：實際拿到的電壓偏低，用電功率也跟著變小。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+      </aside>
+
+      <section class="card ag-data" id="dataCard">
+        <h2 id="recTitle" data-en="Records">記錄表</h2>
+        <p class="hint" id="recHint"></p>
+        <div class="tablewrap"><table class="data" id="rec"></table></div>
+      </section>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose">實驗目的</h2>
+      <ol>
+        <li data-en="See how a coil turning in a uniform magnetic field produces a sinusoidal emf, and why the emf peaks when the flux is zero.">了解線圈在均勻磁場中轉動，如何產生正弦變化的電動勢，以及為什麼磁通量為零時電動勢最大。</li>
+        <li data-en="Use Lenz’s law and energy conservation to explain why a generator is harder to turn when it supplies more current.">用冷次定律與能量守恆，說明發電機供應的電流越大、為什麼越難轉動。</li>
+        <li data-en="Verify the ideal-transformer relations, see why a transformer does not work on DC, and understand why electricity is transmitted at high voltage.">驗證理想變壓器的關係式，看出變壓器為什麼不能用在直流上，並理解電力為什麼要用高壓輸送。</li>
+      </ol>
+
+      <h2 data-en="Theory">原理</h2>
+      <h3 data-en="1. The AC generator">1. 交流發電機</h3>
+      <p data-en-html="A rectangular coil of \(N\) turns, with sides \(L\) (along the axle) and \(w\), turns at a steady angular speed \(\omega = 2\pi f\) in a uniform field \(B\). Call \(\theta\) the angle between the coil’s area vector and \(\vec B\); then \(\theta = \omega t\) and the flux through each turn is">\(N\) 匝的矩形線圈，沿轉軸的邊長 \(L\)、寬 \(w\)，在均勻磁場 \(B\) 中以固定角速度 \(\omega = 2\pi f\) 轉動。令 \(\theta\) 為線圈面積向量與 \(\vec B\) 的夾角，\(\theta = \omega t\)，每一匝的磁通量是</p>
+      <div class="formula">\[ \Phi_B = BA\cos\theta, \qquad A = Lw \]</div>
+      <p data-en-html="Faraday’s law gives the emf of the whole coil:">由法拉第定律，整個線圈的電動勢是</p>
+      <div class="formula">\[ \varepsilon = -N\frac{d\Phi_B}{dt} = NBA\omega\sin\theta, \qquad \varepsilon_{\max} = NBA\omega, \qquad \varepsilon_{\text{rms}} = \frac{\varepsilon_{\max}}{\sqrt2} \]</div>
+      <p data-en-html="The flux is a cosine and the emf a sine: they are a quarter of a turn (90°) out of step. When the coil faces the field squarely (\(\theta = 0\)) the flux is largest but is momentarily not changing, so \(\varepsilon = 0\). When the coil lies along the field (\(\theta = 90^\circ\)) no flux goes through it at all, yet the flux is changing fastest, so \(\varepsilon\) is largest.">磁通量是餘弦、電動勢是正弦，兩者相差四分之一圈（90°）。線圈正對磁場（\(\theta = 0\)）時磁通量最大，但這一瞬間磁通量不變，所以 \(\varepsilon = 0\)；線圈平行磁場（\(\theta = 90^\circ\)）時沒有磁力線穿過，磁通量卻變化得最快，\(\varepsilon\) 最大。</p>
+      <p data-en-html="<strong>Another way to see it.</strong> Only the two long sides cut field lines. Each moves on a circle of radius \(w/2\) at speed \(v = \omega w/2\), and the part of its velocity perpendicular to \(\vec B\) is \(v\sin\theta\). Each side therefore gives \(BLv\sin\theta\) per turn, and the two sides add up:"><strong>另一個觀點</strong>：只有兩條長邊在切割磁力線。每條長邊沿半徑 \(w/2\) 的圓周運動，速率 \(v = \omega w/2\)，速度垂直於 \(\vec B\) 的分量是 \(v\sin\theta\)，所以每一匝的每一條長邊產生 \(BLv\sin\theta\)，兩邊相加：</p>
+      <div class="formula">\[ \varepsilon = 2NBLv\sin\theta = 2NBL\cdot\frac{\omega w}{2}\sin\theta = NBA\omega\sin\theta \]</div>
+      <p data-en-html="The same answer. At \(\theta = 90^\circ\) the long sides move straight across the field lines; at \(\theta = 0\) they move along them and cut nothing. The short sides never contribute: the force on charges in them points across the wire, not along it.">兩個觀點得到同一個答案。\(\theta = 90^\circ\) 時長邊正好垂直切過磁力線；\(\theta = 0\) 時長邊順著磁力線走，什麼也沒切到。短邊永遠沒有貢獻：短邊裡的電荷受到的磁力垂直於導線，不會推動電荷沿導線走。</p>
+
+      <h3 data-en="2. Slip rings and the commutator">2. 滑環與換向器</h3>
+      <p data-en-html="With <strong>slip rings</strong>, each end of the coil is joined to its own ring and a brush rubs on each ring, so the outside circuit gets the coil’s emf as it is: alternating current. A <strong>commutator</strong> is a single ring cut into two halves. Every half turn, just as \(\varepsilon\) passes through zero, the halves swap brushes, so the outside circuit always receives \(|\varepsilon|\): a direct current that pulses between 0 and \(\varepsilon_{\max}\), with average \(2\varepsilon_{\max}/\pi\). The current inside the coil is still alternating.">用<strong>滑環</strong>時，線圈的兩端各接一個環，各有一個電刷在環上滑動，外電路得到的就是線圈原本的電動勢：交流電。<strong>換向器</strong>是一個切成兩半的環，每轉半圈（正好在 \(\varepsilon\) 經過零的時候）兩片半環就交換所接觸的電刷，外電路永遠得到 \(|\varepsilon|\)：在 0 與 \(\varepsilon_{\max}\) 之間脈動的直流電，平均值 \(2\varepsilon_{\max}/\pi\)。線圈裡面的電流仍然是交流。</p>
+
+      <h3 data-en="3. Lenz’s law and energy conservation">3. 冷次定律與能量守恆</h3>
+      <p data-en-html="With a load \(R\) and coil resistance \(r\), the current is \(i = \varepsilon/(R + r)\) (we ignore the coil’s self-inductance, so \(i\) and \(\varepsilon\) are in step). In the field, the current-carrying long sides feel magnetic forces that always form a torque <em>against</em> the rotation — that is Lenz’s law:">接上負載 \(R\)，線圈電阻 \(r\)，電流 \(i = \varepsilon/(R + r)\)（忽略線圈自感，\(i\) 與 \(\varepsilon\) 同相）。帶電流的長邊在磁場中受力，這兩個力形成的力矩永遠<em>阻礙</em>轉動，這就是冷次定律：</p>
+      <div class="formula">\[ \tau = NiAB\sin\theta = \frac{(NBA\omega)^2\sin^2\theta}{(R + r)\,\omega} \;\ge\; 0 \]</div>
+      <p data-en-html="To keep the speed steady, the turbine must supply exactly this torque. Its mechanical power equals the electrical power at every instant:">要維持轉速不變，水輪機必須剛好提供這個力矩。外力的機械功率每一瞬間都等於電功率：</p>
+      <div class="formula">\[ P_{\text{mech}} = \tau\omega = i^2(R + r) = \varepsilon\, i, \qquad \overline{P} = \frac{\varepsilon_{\text{rms}}^2}{R + r} \]</div>
+      <p data-en-html="Open the circuit (\(R \to \infty\)): no current, no torque, and the shaft turns freely. The smaller \(R\), the larger the current and the harder the turbine has to push. The load itself receives \(\overline{P}_R = \varepsilon_{\text{rms}}^2 R/(R + r)^2\).">把電路斷開（\(R \to \infty\)）：沒有電流、沒有阻力矩，轉軸可以自由轉動。\(R\) 越小，電流越大，水輪機越吃力。負載本身得到的平均功率是 \(\overline{P}_R = \varepsilon_{\text{rms}}^2 R/(R + r)^2\)。</p>
+
+      <h3 data-en="4. The ideal transformer">4. 理想變壓器</h3>
+      <p data-en-html="Two coils share an iron core. An alternating voltage \(v_1\) on the primary makes the core flux \(\Phi\) change so that \(v_1 = N_1\,d\Phi/dt\); the same changing flux passes through the secondary and induces \(v_2 = N_2\,d\Phi/dt\). For an <strong>ideal</strong> transformer — no flux leaks out of the core, no energy is lost in the iron or the copper, the core is infinitely easy to magnetize and never saturates —">兩組線圈繞在同一個鐵心上。一次線圈加上交流電壓 \(v_1\)，鐵心中的磁通量 \(\Phi\) 跟著變化，使 \(v_1 = N_1\,d\Phi/dt\)；同一個變化的磁通量也穿過二次線圈，感應出 \(v_2 = N_2\,d\Phi/dt\)。<strong>理想</strong>變壓器（磁力線全部留在鐵心裡、鐵心與銅線都沒有能量損失、鐵心極容易磁化而且不飽和）滿足</p>
+      <div class="formula">\[ \frac{V_2}{V_1} = \frac{N_2}{N_1}, \qquad I_1V_1 = I_2V_2, \qquad R' = \frac{V_1}{I_1} = \left(\frac{N_1}{N_2}\right)^2 R_L \]</div>
+      <p data-en-html="\(v_1\) and \(v_2\) are in step (with both coils wound the same way; reversing one winding would simply flip the sign of \(v_2\)). Seen from the primary, the load behaves like a resistor \(R'\): this is how the page solves the generator-plus-transformer circuit, \(V_1 = \varepsilon_{\text{rms}}R'/(R' + r)\).">\(v_1\) 與 \(v_2\) 同相（兩組線圈繞的方向相同；把其中一組反過來繞，只是 \(v_2\) 變號）。從一次側看，負載就像一個電阻 \(R'\)：本頁用它解「發電機接變壓器」的電路，\(V_1 = \varepsilon_{\text{rms}}R'/(R' + r)\)。</p>
+      <p data-en-html="The peak flux in the core is \(\Phi_{\max} = \sqrt2\,V_1/(N_1\omega)\). Real iron saturates at about 1.8–2 T, so a transformer built for 60 Hz needs more primary turns to work at a lower frequency; the page warns you when the flux density in its 25 cm² core goes above 1.7 T.">鐵心中的磁通量峰值 \(\Phi_{\max} = \sqrt2\,V_1/(N_1\omega)\)。真實的鐵約在 1.8～2 T 飽和，所以為 60 Hz 設計的變壓器，若要用在更低的頻率，一次線圈就要更多匝；本頁的鐵心截面積 25 cm²，磁通密度峰值超過 1.7 T 時會提醒你。</p>
+
+      <h3 data-en="5. Why DC cannot be transformed">5. 直流為什麼不能變壓</h3>
+      <p data-en-html="Connect a battery and close the switch. The current in the primary — and the flux in the core — grows for a short while and then stays constant. Only while the flux is <em>changing</em> is there an emf in the secondary, so the secondary gives a short pulse and then nothing at all, however strong the steady flux is. Meanwhile only the copper resistance of the primary limits its current, so the primary simply heats up. Opening the switch makes the flux collapse and gives a pulse of the opposite sign.">接上電池、接通開關：一次線圈的電流（以及鐵心的磁通量）先增加一小段時間，然後就固定不變。只有磁通量<em>正在改變</em>時，二次線圈才有感應電動勢，所以二次側只出現一個短暫的脈衝，之後就什麼都沒有，不管穩定的磁通量有多大。這時一次線圈的電流只受銅線電阻限制，線圈只是白白發熱。切斷開關時磁通量消失，二次側出現一個方向相反的脈衝。</p>
+
+      <h3 data-en="6. Long-distance transmission">6. 遠距輸電</h3>
+      <p data-en-html="A generator of voltage \(V_g\) feeds a step-up transformer \(1 : k_1\), a line of total resistance \(R_{\text{line}}\), a step-down transformer \(k_2 : 1\) and the users \(R_u\). Each ideal transformer multiplies a resistance by the square of its turns ratio, so the whole thing is one series circuit on the line:">電壓 \(V_g\) 的發電機，經過升壓變壓器 \(1 : k_1\)、總電阻 \(R_{\text{line}}\) 的輸電線、降壓變壓器 \(k_2 : 1\)，送到用戶 \(R_u\)。理想變壓器會把電阻乘上匝數比的平方，所以在輸電線上看，整條線就是一個串聯電路：</p>
+      <div class="formula">\[ I_{\text{line}} = \frac{k_1V_g}{R_{\text{line}} + k_2^2R_u}, \qquad P_{\text{loss}} = I_{\text{line}}^2R_{\text{line}}, \qquad V_u = \frac{I_{\text{line}}\,k_2^2R_u}{k_2}, \qquad \eta = \frac{k_2^2R_u}{R_{\text{line}} + k_2^2R_u} \]</div>
+      <p data-en-html="To deliver the same power \(P\), a line at voltage \(V_L\) must carry \(I_{\text{line}} \approx P/V_L\). Raising the voltage \(k\) times cuts the current to about \(1/k\) and the loss \(I^2R_{\text{line}}\) to about \(1/k^2\) — then the step-down transformer brings the voltage back to 110 V or 220 V for the houses.">要送出同樣的功率 \(P\)，電壓 \(V_L\) 的輸電線電流約為 \(P/V_L\)。把電壓提高 \(k\) 倍，電流約變成 \(1/k\)，線損 \(I^2R_{\text{line}}\) 約變成 \(1/k^2\)；最後再由降壓變壓器把電壓降回 110 V 或 220 V，送進家家戶戶。</p>
+      <p data-en-html="In Taiwan the grid runs at 60 Hz and homes get 110 V and 220 V. Taipower’s transmission network uses 345 kV for its extra-high-voltage backbone and 161 kV and 69 kV for the lower levels, before the distribution network steps the voltage down further.">臺灣的電網頻率是 60 Hz，家用電是 110 V 與 220 V。台電的輸電網以 345 kV 超高壓為骨幹，再經 161 kV、69 kV 逐級降壓，最後由配電系統降到家用電壓。</p>
+
+      <h2 data-en="Things to observe">觀察重點</h2>
+      <ul>
+        <li data-en="Pause when the Φ curve crosses zero: the coil lies along the field, both long sides move straight across the field lines, and ε is at its peak. Pause at the top of the Φ curve and ε is zero.">在 Φ 曲線穿過零時暫停：線圈平行磁場，兩條長邊正好垂直切過磁力線，ε 最大。在 Φ 曲線的最高點暫停，ε 是零。</li>
+        <li data-en="Double N, B, the area or f: the peak emf doubles each time. Doubling f also halves the period on the oscilloscope.">把 N、B、面積或 f 加倍，電動勢峰值都跟著加倍；f 加倍時，示波器上的週期也減半。</li>
+        <li data-en="Switch to the commutator: the emf curve folds up above the axis, while the current arrows on the coil still reverse every half turn.">換成換向器：電動勢曲線全部翻到軸的上方，但線圈上的電流箭頭仍然每半圈反向一次。</li>
+        <li data-en="Lower R and watch the torque peak and the power go up together. Tick “Open circuit”: the torque drops to zero, the lamp goes out, but the emf is still there.">把 R 調小，看外力矩峰值與功率一起變大。勾選「開路」：力矩變成零、燈泡熄滅，電動勢卻還在。</li>
+        <li data-en="The power curve p(t) never goes negative and repeats twice per turn: the turbine always pushes, hardest at θ = 90° and 270°.">功率曲線 p(t) 永遠不是負的，而且每轉一圈重複兩次：水輪機一直都在出力，在 θ = 90° 與 270° 時最吃力。</li>
+        <li data-en="In the transformer, change N2 and watch the v2 curve grow or shrink while staying in step with v1. Lower R_L: both I2 and I1 go up — the primary current is set by what the secondary draws.">在變壓器模式改 N2，看 v2 曲線變大或變小，但始終和 v1 同步。把 R_L 調小：I2 與 I1 一起變大——一次側的電流是由二次側用多少來決定的。</li>
+        <li data-en="Switch to the DC supply and close the switch: the core flux arrows light up and stay lit, but after the first moment the secondary voltage is zero.">換成直流電源、接通開關：鐵心的磁通量箭頭亮起來並一直亮著，但只有一開始的瞬間二次側有電壓。</li>
+        <li data-en="On the power line, start with no step-up (k1 = 1): most of the power is lost on the line. Raise k1 (and k2 with it) and watch the red glow fade.">輸電模式先不升壓（k1 = 1）：大部分的功率都損失在線上。把 k1 調高（k2 也跟著調），看線上的紅色光暈慢慢消失。</li>
+        <li data-en="In 3D, turn the camera to look along the axle at θ = 90°: the long sides are moving straight across the field lines, and the moving charges in the coil are at their fastest.">在 3D 中轉到沿著轉軸看，停在 θ = 90°：長邊正好垂直切過磁力線，線圈裡流動的電荷跑得最快。</li>
+      </ul>
+
+      <h2 data-en="Questions and discussion">問題與討論</h2>
+      <ol>
+        <li><span data-en="A 200-turn coil of area 0.03 m² turns at 60 Hz in a 0.2 T field. Find the peak and rms emf.">200 匝、面積 0.03 m² 的線圈在 0.2 T 的磁場中以 60 Hz 轉動，求電動勢的峰值與有效值。</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(\varepsilon_{\max} = NBA\omega = 200 \times 0.2 \times 0.03 \times 2\pi \times 60 \approx 452\ \mathrm V\); \(\varepsilon_{\text{rms}} = 452/\sqrt2 \approx 320\ \mathrm V\).">\(\varepsilon_{\max} = NBA\omega = 200 \times 0.2 \times 0.03 \times 2\pi \times 60 \approx 452\ \mathrm V\)；\(\varepsilon_{\text{rms}} = 452/\sqrt2 \approx 320\ \mathrm V\)。</p></details></li>
+        <li><span data-en="Why does a bicycle dynamo become harder to pedal when the lamp is switched on?">為什麼腳踏車的發電機打開車燈之後，踩起來比較吃力？</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="With the lamp on, a current flows in the coil; the magnetic force on that current gives a torque that opposes the rotation (Lenz’s law). The extra work you do each second, \(\tau\omega\), is exactly the electrical power going into the lamp and the coil.">打開車燈後線圈中有電流，這個電流在磁場中受力，形成阻礙轉動的力矩（冷次定律）。你每秒多作的功 \(\tau\omega\)，正好等於送進燈泡與線圈的電功率。</p></details></li>
+        <li><span data-en="An ideal transformer with N1 = 500 and N2 = 50 is connected to 110 V AC and a 2.2 Ω load. Find V2, I2 and I1.">理想變壓器 N1 = 500、N2 = 50，一次側接 110 V 交流，二次側接 2.2 Ω 的負載。求 V2、I2、I1。</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="\(V_2 = 110 \times 50/500 = 11\ \mathrm V\), \(I_2 = 11/2.2 = 5\ \mathrm A\), \(I_1 = I_2 \times 50/500 = 0.5\ \mathrm A\) (check: \(110 \times 0.5 = 11 \times 5 = 55\ \mathrm W\)).">\(V_2 = 110 \times 50/500 = 11\ \mathrm V\)，\(I_2 = 11/2.2 = 5\ \mathrm A\)，\(I_1 = I_2 \times 50/500 = 0.5\ \mathrm A\)（檢查：\(110 \times 0.5 = 11 \times 5 = 55\ \mathrm W\)）。</p></details></li>
+        <li><span data-en="10 MW is sent through a line of 10 Ω. Compare the losses at 11 kV and at 161 kV.">10 MW 的電力經過 10 Ω 的輸電線送出。比較用 11 kV 與 161 kV 輸送時的線損。</span>
+          <details><summary data-en="Answer">參考答案</summary><p data-en-html="At 11 kV, \(I \approx 909\ \mathrm A\) and \(I^2R \approx 8.3\ \mathrm{MW}\) — most of the power. At 161 kV, \(I \approx 62\ \mathrm A\) and \(I^2R \approx 39\ \mathrm{kW}\), about 0.4 %. (The first estimate is too rough, since the loss is no longer small; the page solves the circuit exactly.)">11 kV 時 \(I \approx 909\ \mathrm A\)，\(I^2R \approx 8.3\ \mathrm{MW}\)，幾乎全損失掉；161 kV 時 \(I \approx 62\ \mathrm A\)，\(I^2R \approx 39\ \mathrm{kW}\)，約 0.4%。（第一個估計太粗略，因為損失已經不小；本頁是用完整的電路解。）</p></details></li>
+      </ol>
+
+      <h2 data-en="How the simulation works">模擬方法</h2>
+      <ul>
+        <li data-en-html="Every number comes from the exact formulas above (no step-by-step integration). The tests check them against a numerical derivative of the flux, numerical averages over a period, \(\tau\omega = i^2(R + r)\) at every angle, the energy balance over a period, and \(P_g = P_u + P_{\text{loss}}\) on the line.">所有數值都由上面的解析式算出，不是一步一步積分。單元測試再用磁通量的數值微分、一個週期的數值平均、每個角度的 \(\tau\omega = i^2(R + r)\)、一個週期的能量收支，以及輸電線的 \(P_g = P_u + P_{\text{loss}}\) 檢查。</li>
+        <li data-en-html="Simplifications: the field between the poles is perfectly uniform and ends sharply; the coil’s self-inductance is ignored (so \(i\) and \(\varepsilon\) are in step); the turning rate stays constant whatever the load, because the turbine always supplies the torque needed. The coil resistance \(r\) is a slider of its own rather than worked out from the wire.">簡化：磁極之間的磁場完全均勻、邊緣截然而止；忽略線圈自感（所以 \(i\) 與 \(\varepsilon\) 同相）；不論負載多大，轉速都固定，因為水輪機總是提供所需的力矩。線圈電阻 \(r\) 用滑桿直接設定，不由導線長度推算。</li>
+        <li data-en-html="Slow motion: 60 turns a second cannot be watched, so the animation runs slowed down (the factor is shown on the screen). The oscilloscope’s time axis is in real seconds. The lamp’s brightness is proportional to the instantaneous power in it (full brightness at 200 W); a real filament stays hot between the peaks and hardly flickers at 60 Hz.">慢動作：每秒 60 圈看不清楚，所以動畫放慢播放（倍率顯示在畫面上），示波器的時間軸是真實的秒數。燈泡亮度與它的瞬時功率成正比（200 W 時全亮）；真實的燈絲在兩個峰之間來不及冷卻，60 Hz 時幾乎看不出閃爍。</li>
+        <li data-en-html="Transformer: the AC relations are those of the ideal transformer (the small magnetizing current is ignored). An ideal transformer has no meaning on DC, so for the battery the page gives the primary a resistance of 0.01 Ω per turn and the core a magnetizing inductance \(L_m = \mu_0\mu_rAN_1^2/l\) with \(\mu_r = 2000\), \(A = 25\ \mathrm{cm^2}\), \(l = 40\ \mathrm{cm}\) — illustrative values for a small laminated core. The flux arrows in the core show the flux itself: their direction follows \(\Phi\) and their brightness \(|\Phi|\).">變壓器：交流時用理想變壓器的關係（忽略很小的磁化電流）。理想變壓器在直流下沒有意義，所以電池模式另外給一次線圈每匝 0.01 Ω 的電阻，以及磁化電感 \(L_m = \mu_0\mu_rAN_1^2/l\)（\(\mu_r = 2000\)、\(A = 25\ \mathrm{cm^2}\)、\(l = 40\ \mathrm{cm}\)，小型疊片鐵心的示意值）。鐵心中的磁通量箭頭表示磁通量本身：方向跟著 \(\Phi\)，亮度跟著 \(|\Phi|\)。</li>
+        <li data-en-html="Power line: everything is solved as one circuit with ideal transformers; the users are a pure resistance \(R_u = V_{\text{rated}}^2/P_{\text{rated}}\). The picture is not to scale; the moving dots go faster where the current is larger (on a logarithmic scale), and the red glow on the wires grows with the fraction of the power lost.">輸電：全部用理想變壓器當成一個電路解；用戶是純電阻 \(R_u = V_{\text{額定}}^2/P_{\text{額定}}\)。示意圖未依比例；移動的小點在電流越大的地方跑得越快（對數刻度），導線上的紅色光暈隨損失的比例增加。</li>
+        <li data-en-html="<strong>3D view</strong> (three.js library, MIT licence, downloaded only when you switch to 3D): the generator and the transformer are drawn from the same physics core and the same angle or time as the 2D view. The field lines are straight lines between the poles; the dots in the coil move along the wire at a speed proportional to the current and reverse with it; the arrows on the long sides are the magnetic forces \(NiL B\), whose torque opposes the rotation. The power line has a 2D view only.">3D 檢視（使用 three.js 函式庫，MIT 授權，只有切換到 3D 時才下載）：發電機與變壓器由同一個物理核心、與 2D 相同的角度或時刻畫出。磁力線是兩極之間的直線；線圈裡的小點沿著導線移動，速率與電流成正比、方向隨電流反轉；長邊上的箭頭是磁力 \(NiLB\)，它們的力矩阻礙轉動。輸電模式只有 2D 示意圖。</li>
+        <li data-en="Sound (off by default): while the generator runs, a hum whose loudness follows |ε| and whose pitch rises with f (the pitch is only a sketch: 60 Hz itself is too low for phone speakers); a soft hum while the transformer has AC on it; a click when the DC switch is operated.">音效（預設關閉）：發電機運轉時有嗡聲，音量跟著 |ε| 起伏、音高隨 f 升高（音高只是示意：真正的 60 Hz 太低，手機喇叭播不出來）；變壓器通交流電時有輕微的嗡聲；直流開關接通或切斷時有喀一聲。</li>
+        <li data-en="Keyboard: click the drawing (or Tab to it); in the Generator mode the left and right arrow keys turn the coil 1° (Shift: 15°) and pause it. P plays or pauses, R records.">鍵盤：點一下畫面（或用 Tab 移到畫面上）；發電機模式用左右方向鍵把線圈轉 1°（Shift：15°）並暫停。P 播放或暫停，R 記錄。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum: Elective Physics IV · Electromagnetic Induction">課綱對應：選修物理Ⅳ・電磁感應</li>
+        <li data-en-html="Constants and data: vacuum permeability \(\mu_0 = 1.256\,637\,061\,27(20)\times10^{-6}\ \mathrm{N/A^2}\) (CODATA 2022, NIST: <a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?mu0&quot;>μ<sub>0</sub></a>), used only for the illustrative DC transient. The coil, magnet and core sizes are values chosen for this simulation.">常數與數據：真空磁導率 \(\mu_0 = 1.256\,637\,061\,27(20)\times10^{-6}\ \mathrm{N/A^2}\)（CODATA 2022，NIST：<a href="https://physics.nist.gov/cgi-bin/cuu/Value?mu0">μ<sub>0</sub></a>），只用在直流暫態的示意計算。線圈、磁鐵與鐵心的尺寸是本模擬自訂的數值。</li>
+        <li data-en-html="Taiwan’s grid: 60 Hz, homes 110/220 V (<a href=&quot;https://en.wikipedia.org/wiki/Mains_electricity_by_country&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikipedia, Mains electricity by country</a>); 345 kV and 161 kV transmission lines (Central News Agency, 2018-06-05, <a href=&quot;https://www.cna.com.tw/news/afe/201806050375.aspx&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>the new Zhuyuan extra-high-voltage substation</a>, in Chinese); 69 kV for the secondary system (<a href=&quot;https://zh.wikipedia.org/zh-tw/%E5%8F%B0%E7%81%A3%E9%9B%BB%E5%8A%9B%E5%85%AC%E5%8F%B8&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Chinese Wikipedia, Taiwan Power Company</a>).">臺灣電網：60 Hz、家用 110／220 V（<a href="https://en.wikipedia.org/wiki/Mains_electricity_by_country" target="_blank" rel="noopener">維基百科〈Mains electricity by country〉</a>，英文）；345 kV 與 161 kV 輸電線（中央社 2018-06-05〈<a href="https://www.cna.com.tw/news/afe/201806050375.aspx" target="_blank" rel="noopener">竹園超高壓變電所啟用 新竹供電更穩定</a>〉）；二次系統 69 kV（<a href="https://zh.wikipedia.org/zh-tw/%E5%8F%B0%E7%81%A3%E9%9B%BB%E5%8A%9B%E5%85%AC%E5%8F%B8" target="_blank" rel="noopener">維基百科〈台灣電力公司〉</a>）。</li>
+        <li data-en-html="Further reading: OpenStax, University Physics Volume 2 — <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/13-6-electric-generators-and-back-emf&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>13.6 Electric Generators and Back Emf</a> and <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>15.6 Transformers</a> (including why power is transmitted at high voltage).">延伸閱讀：OpenStax《University Physics Volume 2》〈<a href="https://openstax.org/books/university-physics-volume-2/pages/13-6-electric-generators-and-back-emf" target="_blank" rel="noopener">13.6 發電機與反電動勢</a>〉與〈<a href="https://openstax.org/books/university-physics-volume-2/pages/15-6-transformers" target="_blank" rel="noopener">15.6 變壓器</a>〉（含為什麼用高壓輸電；英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/ac-generator-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/ac-generator-3d.js"></script>
+  <script src="js/ac-generator.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="ac-generator"></script>
+  <script src="js/missions/ac-generator.js"></script>
+  <script src="js/stats.js" data-module="ac-generator"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

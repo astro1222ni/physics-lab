@@ -44,7 +44,7 @@ function record(label) {
   const em = A.rows[A.rows.length - 1].em;
   const vset = new Set(rows.map(r => r.V));
   emit('record', { row: Object.assign({ em, err: em / C.EM - 1 }, row), rows: rows.map((r, i) => Object.assign({ em: A.rows[i].em }, r)),
-    n: A.n, distinctV: vset.size, fitErr: A.fitErr, meanErr: A.meanErr, allReal: rows.every(r => r.mode === 'real' && r.parallax && r.eyeOK) },
+    n: A.n, distinctV: vset.size, fitErr: A.fitErr, meanErr: A.meanErr, allReal: rows.every(r => r.mode === 'real' && r.parallax && r.eyeOK), top: b.top },
   `${label}: V=${row.V} I=${row.I.toFixed(2)} D=${row.D.toFixed(2)} (true ${b.D.toFixed(3)}) e/m err ${((em / C.EM - 1) * 100).toFixed(2)}% fit ${(A.fitErr * 100).toFixed(2)}%`);
   return { row, A, em };
 }
@@ -68,8 +68,16 @@ set('V', 250); set('I', 1.40); record('m5 250 / m8');            // m5、m8
 set('parallax', true); set('V', 120); set('I', 1.5); record('m7 parallax');
 // h1 螺旋、h2 貼近玻璃、h3 頂端過球心
 set('parallax', false);
-set('V', 100); set('I', 1.92); set('alpha', 6);                   // h1
-set('alpha', 0);                                                 // h3（I = 1.92 → 頂端 y ≈ 0.008 cm）
+set('V', 100); set('I', 2.5); set('alpha', 6);                    // 不是 h1（11/13 收緊）：螺距 0.66r
+if (done['e-over-m-h1']) { console.log('✗ α = 6° 不應完成 h1'); process.exitCode = 1; }
+set('alpha', 9);                                                 // h1：螺距 = 2π tan 9° · r = 0.995r、3.9 圈
+set('I', 1.92);
+set('alpha', 0);
+// h3（11/12 收緊）：光束經過頂端在球心不算，要記錄一筆；任務 4、6 常見的 100 V 2.00 A（頂端 −0.17 cm）、150 V 2.40 A（−0.08 cm）不會完成
+if (done['e-over-m-h3']) { console.log('✗ h3 不應在記錄前完成'); process.exitCode = 1; }
+set('V', 150); set('I', 2.40); record('不是 h3：150 V 2.40 A');
+if (done['e-over-m-h3']) { console.log('✗ 150 V 2.40 A 不應完成 h3'); process.exitCode = 1; }
+set('V', 100); set('I', 1.92); record('h3：100 V 1.92 A，頂端 0.007 cm');
 set('V', 300); set('I', 1.22);                                   // h2
 // m9：含誤差模式，同一電壓的小圓與大圓
 set('mode', 'real'); set('V', 150); set('I', 2.0); record('m9 small');

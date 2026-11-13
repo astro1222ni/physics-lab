@@ -154,7 +154,7 @@
     },
     {
       id: 'slit-interference-h2', level: 6, hidden: true,
-      riddle: { zh: '第二道彩虹的尾巴，被第三道彩虹的頭輕輕踩住。', en: 'The tail of the second rainbow is gently stepped on by the head of the third.' },
+      riddle: { zh: '第二道彩虹的尾巴，被第三道彩虹的頭輕輕踩住；伸手指著那一處，別讓它暗得看不見。', en: 'The tail of the second rainbow is gently stepped on by the head of the third; point right at that spot, and do not let it fade into the dark.' },
       check: function (ev) {
         const d = ev.data;
         return white(ev) && d.mode === 'grating' && d.cursor && Math.abs(d.pathD) >= 1140 && Math.abs(d.pathD) <= 1500 && d.I >= 0.02;

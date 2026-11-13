@@ -98,7 +98,7 @@
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'refraction-h1', level: 5, hidden: true,
-      riddle: { zh: '千年壓出的那顆星，只需輕輕側身，就把光藏進了自己的心裡。', en: 'The star pressed out over a thousand years needs only to lean a little to hide the light in its own heart.' },
+      riddle: { zh: '最堅硬的那顆心，不必轉身太多，就把光留成了囚徒。', en: 'The hardest heart need not turn far to make the light its prisoner.' },
       check: function (ev) { const d = ev.data; return flat(ev) && is(d.n1, 2.42) && is(d.n2, 1) && d.tir && d.th1 <= 30 + EPS; }
     },
     {

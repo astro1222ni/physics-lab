@@ -168,6 +168,9 @@
     o.cv.width = Math.max(1, Math.round(o.w * o.dpr));
     o.cv.height = Math.max(1, Math.round(o.h * o.dpr));
   }
+  const stage = $('stage');
+  const is3d = function () { return stage.classList.contains('is3d'); };
+  let view3 = null;               // 3D 檢視（js/thin-film-3d.js）；2D 時為 null
   const off1 = document.createElement('canvas'), off1c = off1.getContext('2d');   // 一維條紋圖（肥皂膜、空氣劈）
   const off2 = document.createElement('canvas'), off2c = off2.getContext('2d');   // 空氣劈全長俯視
   const ringCv = document.createElement('canvas'), ringCx = ringCv.getContext('2d'); // 牛頓環視野
@@ -266,6 +269,7 @@
   // 繪圖：場景
   // ====================================================================
   function drawScene() {
+    if (is3d()) { if (view3 && view3.active) view3.update(); return; } // 3D 檢視：同一個狀態交給 3D 場景畫
     const o = scene, ctx = o.ctx;
     ctx.setTransform(o.dpr, 0, 0, o.dpr, 0, 0);
     D.backdrop(ctx, o.w, o.h);
@@ -1007,7 +1011,7 @@
       } else {
         const col = C.filmColor(L, th);
         h += row(T('看到的顏色', 'Colour seen'), '<span class="swatch" style="background:rgb(' + col.srgb.join(',') + ')"></span>' + T('亮度 ', 'brightness ') + fx(col.Y, 2));
-        h += row('<i>R</i><sub>s</sub> / <i>R</i><sub>p</sub>（550 nm）', fx(L.Rs(th, 550) * 100, 2) + ' % / ' + fx(L.Rp(th, 550) * 100, 2) + ' %');
+        h += row('<i>R</i><sub>s</sub> / <i>R</i><sub>p</sub>' + T('（550 nm）', ' (550 nm)'),fx(L.Rs(th, 550) * 100, 2) + ' % / ' + fx(L.Rp(th, 550) * 100, 2) + ' %');
       }
       h += row(T('最大反射率 <i>R</i><sub>max</sub>', 'Maximum reflectance <i>R</i><sub>max</sub>'), fx(L.Rmax * 100, 2) + ' %');
       h += row(T('排液時間', 'Draining time'), fx(s.t, 1) + ' s');
@@ -1244,7 +1248,8 @@
     msg.className = ok ? 'ok' : '';
     msg.textContent = ok ? T('正確！誤差 ', 'Correct! Error ') + fx(err * 100, 1) + ' %' : (Math.abs(err) <= 0.1 ? T('很接近了，再量準一點', 'Close — measure more carefully') : T('還差得遠，檢查一下公式與單位', 'Not yet — check the formula and units'));
     if (window.LabMission && userActed) {
-      window.LabMission.emit('answer', { kind: wedge ? 'wire' : 'lens', truth: truth, guess: g, err: err, dust: !wedge && !!st.newton.mys.e, e: wedge ? 0 : st.newton.mys.e, revealed: st.revealed[st.mode] });
+      window.LabMission.emit('answer', { kind: wedge ? 'wire' : 'lens', truth: truth, guess: g, err: err, dust: !wedge && !!st.newton.mys.e, e: wedge ? 0 : st.newton.mys.e, revealed: st.revealed[st.mode],
+        n: wedge ? st.wedge.n : st.newton.n });   // n：楔中（間隙中）介質的折射率（隱藏任務 h8 用）
     }
   });
   $('reveal').addEventListener('click', function () {
@@ -1587,6 +1592,79 @@
     document.querySelectorAll('.spectrum').forEach(function (e) { e.style.background = 'linear-gradient(90deg,' + stops.join(',') + ')'; });
   })();
 
+  // ---------- 3D 檢視（three.js 以 import() 延遲載入；場景在 js/thin-film-3d.js） ----------
+  let threeLib = null, loadToken = 0;
+  const viewMsg = $('viewMsg');
+  function webglAvailable() {
+    try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); }
+    catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  /** 交給 3D 場景的狀態：與 2D 同一個 st；先 prep()，讓 colorAvg 對準目前的模式與光源。神秘模式時附上 hide，3D 不顯示 D、R、e 與倍數 */
+  function state3() {
+    prep();
+    return {
+      mode: st.mode, white: isWhite(), lam: lamNm(), which: whichNow(), beams: st.beams,
+      ckey: Lkey + '|' + (isWhite() ? 'W' : lamNm()), ray: rayColor(),
+      soap: { hb: st.soap.hb, n: st.soap.n, ang: st.soap.ang, z: st.soap.z, h: soapCursorH() },
+      wedge: { D: wedgeD(), L: st.wedge.L, n: st.wedge.n, x0: st.wedge.x0, vw: st.wedge.vw, cx: st.wedge.cx, hide: !!st.wedge.mys && !st.revealed.wedge },
+      newton: { R: newtonR(), e: newtonE(), n: st.newton.n, view: st.newton.view, cx: st.newton.cx, rv: newtonView(),
+        hide: !!st.newton.mys && !st.revealed.newton, dust: !!(st.newton.mys && st.newton.mys.e) }
+    };
+  }
+  function setPressed3(m) { $('view2d').setAttribute('aria-pressed', String(m === '2d')); $('view3d').setAttribute('aria-pressed', String(m === '3d')); }
+  function setView(m) {
+    if (m === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed3('3d');
+      if (!webglAvailable() || !window.ThinFilm3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        stage.classList.add('is3d');
+        view3 = window.ThinFilm3D.create(lib, {
+          host: $('view3'), core: C, T: T, state: state3, tokens: function () { return K; },
+          colorAvg: function (t0, t1, out) { return colorAvg(t0, t1, out); }, g8: g8,
+          lost: function () { setView('2d'); viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D。', 'The 3D graphics context was lost, so the view switched back to 2D.'); }
+        });
+        viewMsg.textContent = '';
+        changed(true);
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed3('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      onResize();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed3('2d');
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    onResize();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('camFace').addEventListener('click', function () { if (view3) view3.viewFrom('face'); });
+  $('camSide').addEventListener('click', function () { if (view3) view3.viewFrom('side'); });
+
   function onResize() {
     size(scene); size(graph); size(fitC);
     ringKey = '';
@@ -1594,10 +1672,10 @@
     if (st.mode !== 'soap') renderFit();
   }
   readTokens();
-  window.addEventListener('lab:themechange', function () { readTokens(); ringKey = ''; onResize(); });
+  window.addEventListener('lab:themechange', function () { readTokens(); ringKey = ''; if (view3 && view3.active) view3.onTheme(); onResize(); });
   if (window.matchMedia) {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const f = function () { setTimeout(function () { readTokens(); ringKey = ''; onResize(); }, 0); };
+    const f = function () { setTimeout(function () { readTokens(); ringKey = ''; if (view3 && view3.active) view3.onTheme(); onResize(); }, 0); };
     if (mq.addEventListener) mq.addEventListener('change', f); else if (mq.addListener) mq.addListener(f);
   }
   if (window.ResizeObserver) {

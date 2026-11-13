@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611131322"></script>
+  <script src="js/settings.js?v=202611130848"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Spring Oscillator and Pendulum | Astro Ni Science Lab">彈簧振子與單擺｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -28,7 +28,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611131322">
+  <link rel="stylesheet" href="lab.css?v=202611130848">
   <style>
     /* 彈簧振子與單擺頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .lab.osc { grid-template-areas: "scene panel" "graphs panel"; grid-template-rows: auto 1fr; }
@@ -98,6 +98,29 @@
     dl.readout dd small { color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
     dl.readout dd.hi { font-weight: 700; color: var(--accent); }
     dl.readout dt .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: 0; }
+    /* 2D／3D 檢視切換（與拋體運動相同的結構） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-bar .seg button { padding: 4px 14px; }
+    .cam3 { display: none; flex-wrap: wrap; gap: 6px; }
+    .osc.is3d .cam3 { display: flex; }
+    .cam3 button { min-height: 44px; padding: 6px 12px; }
+    .osc.is3d #scene, .osc.is3d .hint2, .osc:not(.is3d) .only3 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 9; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 35%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 88%, var(--text)) 100%);
+    }
+    @media (max-width: 560px) { #view3 canvas { aspect-ratio: 5 / 4; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 .clock3 {
+      position: absolute; top: 8px; right: 8px; padding: 4px 10px; border-radius: 8px; white-space: pre; text-align: right;
+      background: color-mix(in srgb, var(--surface) 86%, transparent); border: 1px solid var(--border);
+      font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; pointer-events: none; line-height: 1.35;
+    }
+    #view3 .clock3::first-line { color: var(--text); font-weight: 600; font-size: calc(13px * var(--fs, 1)); }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
     .regime { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
   </style>
 </head>
@@ -116,7 +139,21 @@
           <button type="button" role="tab" id="tabSpring" aria-selected="true" aria-controls="springPanel" data-mode="spring"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M2 5v14M2 12h2l1.5-4 2 8 2-8 2 8 2-8 1.5 4h1"/><rect x="16.5" y="8" width="6" height="8" rx="1.5" fill="currentColor"/></svg><span data-en="Spring oscillator">彈簧振子</span></button>
           <button type="button" role="tab" id="tabPend" aria-selected="false" aria-controls="pendPanel" data-mode="pendulum" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M5 3h14M12 3l5 13"/><circle cx="17.6" cy="17.6" r="3.2" fill="currentColor"/><path fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2" d="M12 3v15"/></svg><span data-en="Simple pendulum">單擺</span></button>
         </div>
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="cam3" role="group" aria-label="3D 視角" data-en-aria-label="3D camera">
+            <button type="button" id="camReal" data-en="Apparatus">看實物</button>
+            <button type="button" id="camSide" data-en="From above (x–t graph)">從上方看（x–t 圖）</button>
+            <button type="button" id="camFront" data-en="Head-on (phase portrait)">從正前方看（相圖）</button>
+            <button type="button" id="resetCam" data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="scene" aria-label="簡諧運動模擬畫布：彈簧振子或單擺，可拖曳木塊或擺錘設定釋放位置" data-en-aria-label="Simple harmonic motion simulation: spring oscillator or pendulum; drag the block or the bob to set where it is released"></canvas>
+        <div id="view3"></div>
         <div class="bar">
           <button id="play" type="button" class="primary" data-en="Pause">暫停</button>
           <button id="reset" type="button" data-en="Release again">重新釋放</button>
@@ -139,8 +176,10 @@
           <span data-en-html="<i style=&quot;background:var(--equi)&quot;></i>Tangential acceleration a<sub>t</sub>"><i style="background:var(--equi)"></i>切向加速度 a<sub>t</sub></span>
           <span id="legGhost" style="color:var(--muted)" data-en-html="<i class=&quot;ring&quot;></i>Small-angle approximation (ghost)"><i class="ring"></i>小角度近似（虛影）</span>
         </div>
-        <p class="hint" id="hintSpring" data-en="Drag the block left or right to choose where it is released; it starts oscillating as soon as you let go. Arrow lengths are proportional to v and a (full length = this run’s maximum).">左右拖曳木塊可設定釋放位置，放手後立刻開始振動。箭頭長度與 v、a 成正比（以本次最大值為滿格）。</p>
-        <p class="hint" id="hintPend" hidden data-en="Drag the bob to choose the release angle; it starts swinging as soon as you let go. The bob hangs on a light rigid rod (a string would go slack above 90°).">拖曳擺錘可設定釋放角，放手後立刻開始擺動。擺錘掛在質量可忽略的輕桿上（超過 90° 時繩子會鬆弛，只有硬桿能維持圓周運動）。</p>
+        <div class="legend only3" id="leg3"></div>
+        <p class="hint hint2" id="hintSpring" data-en="Drag the block left or right to choose where it is released; it starts oscillating as soon as you let go. Arrow lengths are proportional to v and a (full length = this run’s maximum).">左右拖曳木塊可設定釋放位置，放手後立刻開始振動。箭頭長度與 v、a 成正比（以本次最大值為滿格）。</p>
+        <p class="hint only3" id="hint3" data-en-html="3D view: drag to rotate, scroll or pinch to zoom. The phase-space helix beside the apparatus has position across, velocity ÷ ω<sub>0</sub> up (same unit and scale) and time in depth — the front face is “now”. The dotted line joins the real object to its point on the helix.">3D 檢視：拖曳旋轉、滾輪或兩指縮放。實物旁的相空間螺旋：橫軸是位置、縱軸是速度 ÷ ω<sub>0</sub>（同單位同比例），深度是時間，最前面是「現在」；細虛線把實物連到螺旋上的目前點。</p>
+        <p class="hint hint2" id="hintPend" hidden data-en="Drag the bob to choose the release angle; it starts swinging as soon as you let go. The bob hangs on a light rigid rod (a string would go slack above 90°).">拖曳擺錘可設定釋放角，放手後立刻開始擺動。擺錘掛在質量可忽略的輕桿上（超過 90° 時繩子會鬆弛，只有硬桿能維持圓周運動）。</p>
       </div>
 
       <div class="stage graph-stage">
@@ -268,6 +307,7 @@
           <div class="checks">
             <label><input id="showArrows" type="checkbox" checked><span data-en="Velocity and acceleration arrows">速度與加速度箭頭</span></label>
             <label id="ghostWrap" hidden><input id="showGhost" type="checkbox" checked><span data-en="Small-angle ghost">小角度近似虛影</span></label>
+            <label class="only3"><input id="s3phase" type="checkbox" checked><span data-en="Phase-space helix (3D)">相空間螺旋（3D）</span></label>
           </div>
         </section>
       </aside>
@@ -334,6 +374,8 @@
         <li data-en="Each animation frame advances at most 1/30 s (times the playback speed), so the motion never jumps ahead when you switch tabs.">動畫每一格最多前進 1/30 s（再乘以播放速度），切換分頁回來時不會突然跳到後面。</li>
       </ul>
 
+      <h3 data-en="How the 3D view is computed">3D 檢視怎麼算</h3>
+      <p data-en-html="The 3D view uses exactly the same state as the 2D view. Beside the apparatus is the <strong>phase space</strong>: position \(x\) (or \(	heta\)) across, \(v/\omega_0\) (or \(\omega/\omega_0\)) up in the same unit and scale, and time in depth over the same window as the graphs (about the last three periods). For simple harmonic motion the state point runs around a circle of radius \(A\) at constant speed — the <strong>reference circle</strong>: SHM is the shadow of uniform circular motion. Seen head-on you get the phase portrait; seen from above, the \(x\)–\(t\) graph. Damping turns the circle into an inward spiral; a large-angle pendulum gives a squashed closed curve that approaches the separatrix near \(180^\circ\).">3D 和 2D 用同一個物理狀態。實物旁邊是<strong>相空間</strong>：橫軸是位置 \(x\)（單擺用 \(	heta\)），縱軸是 \(v/\omega_0\)（單擺用 \(\omega/\omega_0\)），兩軸同單位同比例；深度是時間，範圍與圖表相同（約最近 3 個週期）。簡諧運動的狀態點以等速率繞半徑 \(A\) 的圓，也就是<strong>參考圓</strong>：簡諧運動是等速圓周運動的投影。從正前方看是相圖，從上方看就是 \(x\)–\(t\) 圖；有阻尼時圓變成向內的螺線，大角度單擺則是上下壓扁的封閉曲線，接近 \(180^\circ\) 時貼近分界線。</p>
       <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: Elective Physics I · Periodic Motion">課綱對應：選修物理Ⅰ・週期運動</li>
@@ -348,17 +390,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611131322"></script>
-  <script src="js/oscillation-core.js?v=202611131322"></script>
-  <script src="js/sound.js?v=202611131322"></script>
-  <script src="js/numinput.js?v=202611131322"></script>
-  <script src="js/drawkit.js?v=202611131322"></script>
-  <script src="js/keys.js?v=202611131322"></script>
-  <script src="js/oscillation.js?v=202611131322"></script>
-  <script src="js/firebase-config.js?v=202611131322"></script>
-  <script src="js/missions.js?v=202611131322" data-module="oscillation"></script>
-  <script src="js/missions/oscillation.js?v=202611131322"></script>
-  <script src="js/stats.js?v=202611131322" data-module="oscillation"></script>
-  <script src="js/comments.js?v=202611131322"></script>
+  <script src="js/math.js?v=202611130848"></script>
+  <script src="js/oscillation-core.js?v=202611130848"></script>
+  <script src="js/sound.js?v=202611130848"></script>
+  <script src="js/numinput.js?v=202611130848"></script>
+  <script src="js/drawkit.js?v=202611130848"></script>
+  <script src="js/keys.js?v=202611130848"></script>
+  <script src="js/oscillation-3d.js"></script>
+  <script src="js/oscillation.js?v=202611130848"></script>
+  <script src="js/firebase-config.js?v=202611130848"></script>
+  <script src="js/missions.js?v=202611130848" data-module="oscillation"></script>
+  <script src="js/missions/oscillation.js?v=202611130848"></script>
+  <script src="js/stats.js?v=202611130848" data-module="oscillation"></script>
+  <script src="js/comments.js?v=202611130848"></script>
 </body>
 </html>

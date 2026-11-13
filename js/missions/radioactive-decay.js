@@ -93,7 +93,7 @@
     {
       id: 'radioactive-decay-h2', level: 6, hidden: true,
       riddle: { zh: '滿桌喧嘩，命運卻在這一刻屏住了呼吸。', en: 'The table rattles, and for one moment fate holds its breath.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'roll' && d.before >= 12 && d.decayed === 0; }
+      check: function (ev) { const d = ev.data; return ev.type === 'roll' && d.before >= 20 && d.decayed === 0; /* 11/12 由 12 收緊到 20：(5/6)^12 ≈ 11%、每輪約 20% 太容易誤觸；(5/6)^20 ≈ 2.6%、每輪約 3% */ }
     },
     {
       id: 'radioactive-decay-h3', level: 8, hidden: true,

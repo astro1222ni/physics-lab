@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611131322"></script>
+  <script src="js/settings.js?v=202611130848"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Thin-Film Interference: Soap Films, Air Wedges and Newton's Rings | Astro Ni Science Lab">薄膜干涉（肥皂膜、空氣劈與牛頓環）｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -28,7 +28,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611131322">
+  <link rel="stylesheet" href="lab.css?v=202611130848">
   <style>
     /* 本頁專用色彩代號（--tf-*）：看肥皂膜的黑色背景板與顯微鏡視野在兩種模式下都是暗的；玻璃、金屬、細線的材質色 */
     :root {
@@ -92,6 +92,27 @@
     .answer input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
     #ansMsg.ok { color: var(--probe); font-weight: 600; }
     @media (pointer: coarse) { .slider input[type="range"] { height: 28px; } }
+    /* 2D／3D 檢視切換（與拋體運動、電流的磁效應相同的外觀） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .vseg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .vseg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .vseg button + button { border-left: 1px solid var(--border); }
+    .vseg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam3 { display: none; flex-wrap: wrap; gap: 6px; }
+    .stage.is3d .cam3 { display: flex; }
+    .cam3 button { min-height: 44px; padding: 6px 12px; }
+    .stage.is3d canvas#scene { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 35%, var(--canvas-bg) 50%, color-mix(in srgb, var(--canvas-bg) 88%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
   </style>
 </head>
 <body data-en-ready>
@@ -104,15 +125,29 @@
 
     <p class="try-hint" data-en="Try it: press “Drain ▶” and watch the black band at the top of the soap film grow as the film thins.">試試看：按「排液 ▶」，看肥皂膜變薄時，頂端的黑色區域怎麼越長越大。</p>
     <div class="lab">
-      <div class="stage">
+      <div class="stage" id="stage">
         <div class="modes" role="group" aria-label="實驗" data-en-aria-label="Experiment">
           <button type="button" data-mode="soap" aria-pressed="true" data-en-html="Soap film&lt;small&gt;wedge-shaped film&lt;/small&gt;">肥皂膜<small>上薄下厚的膜</small></button>
           <button type="button" data-mode="wedge" aria-pressed="false" data-en-html="Air wedge&lt;small&gt;straight fringes&lt;/small&gt;">空氣劈<small>等間距直條紋</small></button>
           <button type="button" data-mode="newton" aria-pressed="false" data-en-html="Newton's rings&lt;small&gt;concentric rings&lt;/small&gt;">牛頓環<small>同心圓環</small></button>
         </div>
+        <div class="view-bar">
+          <div class="vseg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="cam3" role="group" aria-label="3D 視角" data-en-aria-label="3D camera">
+            <button type="button" id="camFace" data-en="Look at the fringes">看條紋</button>
+            <button type="button" id="camSide" data-en="Look at the thickness">看厚度（側面）</button>
+            <button type="button" id="resetCam" data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="scene" tabindex="0"></canvas>
+        <div id="view3"></div>
         <div class="stage-row">
-          <p class="hint" id="sceneHint"></p>
+          <p class="hint l2" id="sceneHint"></p>
+          <p class="hint l3" data-en="3D view: drag to rotate, scroll or pinch to zoom. “Look at the fringes” faces the film or looks straight down on the glass; “Look at the thickness” shows from the side the thin wedge or gap that makes the path difference. The thickness direction is magnified (the factor is shown); the colours are exactly those of the 2D view. Move the cursor on the graph below.">3D 檢視：拖曳旋轉、滾輪或兩指縮放。「看條紋」正對膜面或從正上方看玻璃；「看厚度」從側面看造成光程差的薄楔形或間隙。厚度方向已放大（倍數標在畫面上），顏色和 2D 完全相同；游標可在下方的圖上移動。</p>
           <div class="btns" id="soapBtns">
             <button type="button" id="drain" data-en="Drain ▶">排液 ▶</button>
             <button type="button" id="reblow" data-en="New film">重新吹一片膜</button>
@@ -294,6 +329,14 @@
         <li data-en-html="The side views are schematic: the gaps and angles are magnified a great deal. Where the fringes are narrower than a pixel, each pixel shows the average over its width, which is what an eye or camera without magnification would see.">側視圖是示意圖，間隙與角度都大幅放大。條紋比一個像素還細時，每個像素顯示其範圍內的平均，與不用放大鏡時眼睛或相機看到的一樣。</li>
       </ul>
 
+      <h3 data-en="How the 3D view is calculated">3D 檢視怎麼算</h3>
+      <ul>
+        <li data-en-html="The 3D view (three.js library, MIT licence, downloaded only when you switch to 3D) uses the same state and the same colour function as the 2D view: every texel of the soap film, of the fringes under the upper glass plate and of the rings under the lens is the colour of that thickness computed by the same code (white light from the CIE tables, monochromatic light as \(R/R_{\max}\)). Where the fringes are finer than a texel the texel shows their average, exactly as in 2D.">3D 檢視（使用 three.js 函式庫，MIT 授權，只有切換到 3D 時才下載）和 2D 用同一個狀態、同一個顏色函式：肥皂膜、上片玻璃下方的條紋、透鏡下的圓環，每一格貼圖都是用同一段程式算出該厚度的顏色（白光查 CIE 表，單色光取 \(R/R_{\max}\)）；條紋比一格還細時顯示平均，和 2D 一樣。</li>
+        <li data-en-html="&lt;strong&gt;Soap film&lt;/strong&gt;: the frame is drawn 9 cm tall (an illustrative size). Next to it a slice of the film is pulled out and its thickness is magnified 15 000 times, so you can see the wedge \(h = h_{\text{bottom}}\cdot z/H\) thin out as the film drains. The rays are drawn at the viewing angle θ (at least 15°, so that the two rays do not overlap); the film colours are those seen from that direction and do not change when you rotate the camera."><strong>肥皂膜</strong>：框畫成 9 cm 高（示意的大小）；旁邊拉出一片截面，厚度放大 15 000 倍，看得到楔形 \(h = h_{\text{底}}\cdot z/H\) 在排液時變薄。光線畫在觀看角度 θ（至少畫成 15°，免得兩道光疊在一起）；膜的顏色是從這個方向看到的顏色，轉動相機不會改變。</li>
+        <li data-en-html="&lt;strong&gt;Air wedge&lt;/strong&gt;: the plates are drawn at their real length \(L\) (1 cm = 1 unit) and 3 cm wide; the gap \(t = xD/L\) is magnified by the factor shown so that the wedge angle can be seen from the side. The fringes lie on the lower surface of the upper plate, where the air gap is. The microscope stands at \(x_0\) and the outlined box is the 2D field of view."><strong>空氣劈</strong>：玻璃依實際長度 \(L\) 畫（1 cm 為 1 單位）、寬 3 cm；間隙 \(t = xD/L\) 依畫面標示的倍數放大，從側面看得出楔角。條紋畫在上片玻璃的下表面，也就是空氣間隙所在的地方；顯微鏡在 \(x_0\) 的正上方，框出的範圍就是 2D 的視野。</li>
+        <li data-en-html="&lt;strong&gt;Newton's rings&lt;/strong&gt;: the lens has an aperture of 8 mm and is drawn at its real width (1 mm = 1 unit); only the height of the air gap \(t = e + R - \sqrt{R^{2} - r^{2}}\) is magnified, by the factor shown, so from the side you see the gap grow from the centre outwards. The dashed circle is the 2D microscope field. In the mystery modes the curvature and the dust are drawn with a fixed schematic shape and no factor, so the 3D view gives nothing away."><strong>牛頓環</strong>：透鏡口徑 8 mm，寬度依實際比例（1 mm 為 1 單位）；只有空氣間隙 \(t = e + R - \sqrt{R^{2} - r^{2}}\) 的高度依畫面標示的倍數放大，從側面看得到間隙由中心往外變厚。虛線圓是 2D 顯微鏡的視野。神秘細線、神秘透鏡時，弧面、楔角與灰塵都用固定的示意畫法、不標倍數，3D 不會洩漏答案。</li>
+      </ul>
+
       <h3 data-en="References">參考資料</h3>
       <ul>
         <li data-en="Curriculum: Elective Physics III · Physical Optics (thin-film interference).">課綱對應：選修物理Ⅲ・物理光學（薄膜干涉）。</li>
@@ -308,16 +351,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611131322"></script>
-  <script src="js/thin-film-core.js?v=202611131322"></script>
-  <script src="js/numinput.js?v=202611131322"></script>
-  <script src="js/drawkit.js?v=202611131322"></script>
-  <script src="js/keys.js?v=202611131322"></script>
-  <script src="js/thin-film.js?v=202611131322"></script>
-  <script src="js/firebase-config.js?v=202611131322"></script>
-  <script src="js/missions.js?v=202611131322" data-module="thin-film"></script>
-  <script src="js/missions/thin-film.js?v=202611131322"></script>
-  <script src="js/stats.js?v=202611131322" data-module="thin-film"></script>
-  <script src="js/comments.js?v=202611131322"></script>
+  <script src="js/math.js?v=202611130848"></script>
+  <script src="js/thin-film-core.js?v=202611130848"></script>
+  <script src="js/numinput.js?v=202611130848"></script>
+  <script src="js/drawkit.js?v=202611130848"></script>
+  <script src="js/keys.js?v=202611130848"></script>
+  <script src="js/thin-film-3d.js"></script>
+  <script src="js/thin-film.js?v=202611130848"></script>
+  <script src="js/firebase-config.js?v=202611130848"></script>
+  <script src="js/missions.js?v=202611130848" data-module="thin-film"></script>
+  <script src="js/missions/thin-film.js?v=202611130848"></script>
+  <script src="js/stats.js?v=202611130848" data-module="thin-film"></script>
+  <script src="js/comments.js?v=202611130848"></script>
 </body>
 </html>

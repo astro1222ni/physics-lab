@@ -90,7 +90,8 @@
     {
       id: 'thin-lens-h2', level: 6, hidden: true,
       riddle: { zh: '布幕、眼角、針尖，說的是同一句話。', en: 'The screen, the corner of the eye and the point of a pin all say the same thing.' },
-      check: function (ev) { const o = ev.data.methodsOk || {}; return rec(ev) && o.screen && o.parallax && o.pin; }
+      // 11/12 收緊：三種方法要在同一個物距（±0.5 cm）下各量準一次。原本只要三種方法各做過（任務 1、6、8 的必經操作）就會順手完成。
+      check: function (ev) { return rec(ev) && ev.data.methodsSameP === true; }
     },
     {
       id: 'thin-lens-h3', level: 8, hidden: true,

@@ -195,6 +195,21 @@ console.log('\n隱藏任務');
     const n = Math.round(f / fs), drift = Math.abs(f - n * fs);
     claim(n >= 2 && n <= 4 && drift < 0.02 * n, `隱藏 1：fs = ${fs} Hz → 每 ${n} 個週期閃一次，條紋每秒移動 ${drift.toFixed(2)} 個波長（靜止）`);
   }
+  // 11/12 收緊後的隱藏 2：實際餵事件給任務判定
+  {
+    let defs = [];
+    const LM = { register: function (id, list) { defs = list; } };
+    const savedW = global.window, savedL = global.LabMission;
+    global.window = { LabMission: LM }; global.LabMission = LM;
+    require(__ROOT + 'js/missions/ripple-tank.js');
+    global.window = savedW; global.LabMission = savedL;
+    const h2 = defs.find(function (m) { return m.id === 'ripple-tank-h2'; });
+    const ev = function (fs, frozen) { return { type: 'strobe', data: { strobe: true, gen: true, f: 10, fs: fs, frozen: frozen, frozenN: 1 } }; };
+    const run = function (seq) { const mem = {}; return seq.some(function (e) { return h2.check(e, mem); }); };
+    claim(!run([ev(8, false), ev(10.3, false), ev(10.2, false), ev(10, true)]), '隱藏 2：往 f 調閃頻的途中（8 → 10.3 → 10.2 → 10 定住）不會順手完成');
+    claim(run([ev(9.5, false), ev(10, true), ev(10.2, false)]), '隱藏 2：先在 10 Hz 定住、再調高到 10.2 Hz → 完成');
+    claim(!run([ev(10, true), { type: 'strobe', data: { strobe: true, gen: true, f: 12, fs: 12.2, frozen: false, frozenN: 1 } }]), '隱藏 2：定住後換了起波頻率（10 → 12 Hz），沒有在新頻率下先定住 → 不算');
+  }
   claim(10.2 - 10 >= 0.05 && 10.2 - 10 <= 0.6, '隱藏 2：fs = 10.20 Hz（比 f 高 0.2 Hz）→ 每次閃光時波只走了 0.98 個波長，看起來條紋以每秒 0.2 個波長的速度往起波器倒退');
   for (const [ff, obs, long] of [[5, 0.02, 0.1], [10, 0.012, 0.08]]) {
     const lam = RC.wavelength(ff, 0.008);

@@ -1529,8 +1529,8 @@
         + '<small>' + T('與理想氣體相差 ', 'differs from ideal by ') + num(dev * 100, 1) + '%</small>');
       setHTML('rPth', num(Pth, Pth < 10 ? 3 : 1) + ' kPa<small>' + T('用量到的 T = ', 'with measured T = ') + num(s.T, 1) + ' K</small>'
         + (Z - 1 > 0.006 ? '<small>' + T('考慮分子大小 ×Z = ', 'with molecule size ×Z = ') + num(Z, 3) + ' → ' + num(Pth * Z, Pth < 10 ? 3 : 1) + ' kPa</small>' : ''));
-      const exactT = !bathOn() && !(s.Terr >= 0.05); // 絕熱且活塞不動：總動能守恆，溫度不變
-      setHTML('rT', num(s.T, 1) + (isFinite(s.Terr) && !exactT ? ' ± ' + num(s.Terr, 1) : '') + ' K<small>' + (bathOn() ? T('恆溫槽 ', 'heat bath ') + num(gas.bath.T, 1) + ' K' : exactT ? T('絕熱：總動能守恆，溫度保持不變', 'adiabatic: the total kinetic energy is conserved, so T stays fixed') : T('絕熱（沒有恆溫槽）', 'adiabatic (no heat bath)')) + '</small>');
+      const exactT = !bathOn() && !(s.Terr >= 0.05); // 絕熱、沒有統計誤差：T 由總動能精確算出（活塞靜止時總動能守恆、T 不變；活塞在動時作功、T 會變）
+      setHTML('rT', num(s.T, 1) + (isFinite(s.Terr) && !exactT ? ' ± ' + num(s.Terr, 1) : '') + ' K<small>' + (bathOn() ? T('恆溫槽 ', 'heat bath ') + num(gas.bath.T, 1) + ' K' : exactT ? (state.moving ? T('絕熱：活塞在動，對氣體作功（或氣體對外作功），溫度跟著變', 'adiabatic: the moving piston does work on the gas (or the gas on it), so T changes') : T('絕熱、活塞靜止時：總動能守恆，溫度保持不變', 'adiabatic, piston at rest: the total kinetic energy is conserved, so T stays fixed')) : T('絕熱（沒有恆溫槽）', 'adiabatic (no heat bath)')) + '</small>');
       let ke = '', vr = '';
       for (let k = 0; k < nsp; k++) {
         if (!cts[k]) continue;

@@ -24,6 +24,27 @@
     const s = pts.map(function (p) { return p.sin; });
     return Math.max.apply(null, s) - Math.min.apply(null, s);
   };
+  /* 以下給隱藏任務 h4–h10 用（11/13 補到 10 個） */
+  const full = function (ev) { return rec(ev) && ev.data.complete; };
+  const close = function (a, b, r) { return Math.abs(a - b) <= r * Math.max(Math.abs(a), Math.abs(b), 1e-12); };
+  const ratio = function (a, b) { return Math.max(a, b) / Math.min(a, b); };
+  /* 記住最近幾張「記錄完整張表」的紙帶（同一條紙帶只留最新的一筆），供「兩次比較」的任務使用 */
+  const remember = function (mem, d) {
+    const L = mem.list = (mem.list || []).filter(function (o) { return o.runId !== d.runId; });
+    L.push(d);
+    if (L.length > 12) L.shift();
+    return L;
+  };
+  /* 最小平方法直線（只用在 a–sinθ 圖的部分點） */
+  const lineOf = function (pts) {
+    const n = pts.length;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    pts.forEach(function (p) { sx += p.sin; sy += p.a; });
+    const mx = sx / n, my = sy / n;
+    pts.forEach(function (p) { sxx += (p.sin - mx) * (p.sin - mx); sxy += (p.sin - mx) * (p.a - my); });
+    if (!(sxx > 0)) return null;
+    return { slope: sxy / sxx, intercept: my - sxy / sxx * mx };
+  };
 
   LabMission.register('free-fall', [
     {
@@ -149,6 +170,109 @@
       id: 'free-fall-h3', level: 6, hidden: true,
       riddle: { zh: '頭尾之間，恰好一甲子。', en: 'Between the first and the last, exactly threescore.' },
       check: function (ev) { return ev.type === 'calib' && ev.data.N === 61; }
+    },
+    {
+      /* 阿波羅 15 號（1971）月面上的鐵鎚與羽毛：含誤差模式下親手把紙帶摩擦 f 與空氣阻力 k 都歸零（自己造出真空），
+         兩個質量相差至少 10 倍的重物各記錄完一張表，量得的 g 都與 9.8 相差不到 1%。
+         理想模式不算（不必動手就沒有阻力）；任務 7、8、11 都要求 f ≥ 0.050 N，不會順便完成 */
+      id: 'free-fall-h4', level: 5, hidden: true,
+      riddle: { zh: '不在完美的夢裡，而是親手把風與拉扯都收走之後：太空人同時鬆手，鐵鎚與羽毛，誰也沒有贏。', en: 'Not in a perfect dream, but after you yourself have cleared away the wind and every tug: the astronaut lets go of both at once — hammer and feather, and neither wins.' },
+      check: function (ev, mem) {
+        if (!full(ev)) return false;
+        const d = ev.data;
+        if (d.mode !== 'fall' || d.ideal || d.f > EPS || d.k > EPS || !(Math.abs(d.errPct) <= 1 + EPS)) return false;
+        return remember(mem, d).some(function (o) { return o.runId !== d.runId && ratio(o.mass, d.mass) >= 10 - EPS; });
+      }
+    },
+    {
+      /* 庫侖／阿蒙頓摩擦定律：滾動摩擦 μ m g cosθ 和重量成正比，a = g (sinθ − μ cosθ) 與質量無關。
+         含誤差、紙帶摩擦 f = 0、空氣阻力 k = 0（只留軌道摩擦 μ ≥ 0.010），同一個高度差，滑車質量相差至少 5 倍，
+         摩擦明顯（吃掉重力分量的 10% 以上），兩張表量得的加速度相差不到 2%。和 h4 是同一個道理換到斜面上。
+         一般任務都用預設的 f = 0.050 N，不會順便完成 */
+      id: 'free-fall-h5', level: 5, hidden: true,
+      riddle: { zh: '路面按著每位旅人的分量收過路費；於是輕的、重的，下坡時依舊並肩。', en: 'The road charges each traveller a toll in proportion to their weight — so the light and the heavy still go downhill side by side.' },
+      check: function (ev, mem) {
+        if (!full(ev)) return false;
+        const d = ev.data;
+        if (d.mode !== 'incline' || d.ideal || d.f > EPS || d.k > EPS || !(d.mu >= 0.01 - EPS) || !(d.aTheory <= 0.9 * G * d.sin)) return false;
+        return remember(mem, d).some(function (o) {
+          return o.runId !== d.runId && Math.abs(o.sin - d.sin) <= 1e-9 && Math.abs(o.mu - d.mu) <= EPS && ratio(o.mass, d.mass) >= 5 - EPS && close(o.aFit, d.aFit, 0.02);
+        });
+      }
+    },
+    {
+      /* 反直覺：「自由落體」不一定比斜面快。含誤差的自由落體（紙帶摩擦大、重物輕：f/m 要到 4 N/kg 以上才行），
+         量得的加速度比某一次斜面上滑車量得的還小 10% 以上（斜面最大只有 g/2 = 4.9 m/s²）。
+         任務 7、8 的自然解（f = 0.050 N）落下的加速度都在 7 m/s² 以上，不會順便完成 */
+      id: 'free-fall-h6', level: 6, hidden: true,
+      riddle: { zh: '筆直墜落的，竟輸給了斜斜滑下的——拖住它的，不是大地。', en: 'The one that dropped straight down lost to the one that slid aslant — and it was not the earth that held it back.' },
+      check: function (ev, mem) {
+        if (!full(ev) || !(ev.data.aFit > 0)) return false;
+        const d = ev.data;
+        return remember(mem, d).some(function (o) {
+          if (o.runId === d.runId || o.mode === d.mode || !(o.aFit > 0)) return false;
+          const inc = o.mode === 'incline' ? o : d, fall = inc === o ? d : o;
+          return !fall.ideal && inc.aFit >= 1.1 * fall.aFit;
+        });
+      }
+    },
+    {
+      /* 相似律：a = g − f/m − (k/m) v²，運動只由 f/m 與 k/m 決定。兩次含誤差的自由落體，質量相差至少 2 倍，
+         f/m 與 k/m 都相同（0.5% 內），而且空氣阻力不可忽略（k/m ≥ 0.05 /m），兩張表量得的加速度相差不到 3%。
+         任務 8 的 k/m = 0.4 /m 要配 m ≥ 0.10 kg 就得 k ≥ 40 g/m（滑桿最大 20），不會順便完成 */
+      id: 'free-fall-h7', level: 7, hidden: true,
+      riddle: { zh: '身子變重了，風與繩的拉扯也照比例加重；兩次墜落，步調分毫不差。', en: 'The body grew heavier, and the pull of the wind and the tether grew in proportion: two falls, in perfect step.' },
+      check: function (ev, mem) {
+        if (!full(ev)) return false;
+        const d = ev.data;
+        if (d.mode !== 'fall' || d.ideal || !(d.k / d.mass >= 0.05 - EPS)) return false;
+        return remember(mem, d).some(function (o) {
+          return o.runId !== d.runId && ratio(o.mass, d.mass) >= 2 - EPS && close(o.k / o.mass, d.k / d.mass, 0.005) &&
+            (o.f + d.f <= EPS || close(o.f / o.mass, d.f / d.mass, 0.005)) && close(o.aFit, d.aFit, 0.03);
+        });
+      }
+    },
+    {
+      /* 摩擦角：紙帶摩擦 f = 0、軌道摩擦 μ ≥ 0.020 時 a = g (sinθ − μ cosθ)，a–sinθ 線延長到 a = 0 處就是剛好滑不動的
+         sinθ，tanθ = μ（緩坡 sinθ ≤ 0.2 時 cosθ ≈ 1）。至少 3 點、都是同一個 μ 的斜面，x 截距與 μ 相差不到 5%。
+         任務 9、12 要 sinθ 相差 0.2 以上、任務 12 要 f ≥ 0.050 N，都不會順便完成 */
+      id: 'free-fall-h8', level: 8, hidden: true,
+      riddle: { zh: '只讓路面開口時，把幾道緩坡連成一條線，延長到再也滑不動的地方——那裡寫著路面的脾氣。', en: 'When only the road is allowed to speak, join a few gentle ramps into one line and extend it to where nothing slides any more: the road’s temper is written there.' },
+      check: function (ev) {
+        if (ev.type !== 'summary' || ev.data.n < 3) return false;
+        const pts = ev.data.points, mu = pts[0].mu;
+        if (!(mu >= 0.02 - EPS) || !(ev.data.slope > 0)) return false;
+        return pts.every(function (p) { return p.mode === 'incline' && !p.ideal && p.f <= EPS && Math.abs(p.mu - mu) <= EPS && p.sin <= 0.2 + EPS; }) &&
+          Math.abs(-ev.data.intercept / ev.data.slope / mu - 1) <= 0.05;
+      }
+    },
+    {
+      /* 伽利略的外推：斜面立到 90° 就是自由落體。軌道摩擦 μ = 0（只剩紙帶摩擦 f），a = g sinθ − f/M，
+         至少 3 個斜面點（sinθ 相差至少 0.2）的直線截距明顯小於 0（≤ −0.05 m/s²），延長到 sinθ = 1 正好接住
+         自由落體的點（0.5% 內；重物要和滑車一樣重，f/m 才相同）。任務 9、12 都要 μ ≥ 0.010，不會順便完成 */
+      id: 'free-fall-h9', level: 9, hidden: true,
+      riddle: { zh: '把斜坡一路扶到直立，伽利略相信那條線會接住墜落的那一點；只要輪下無礙，連紙帶的拖累也一併算準。', en: 'Raise the ramp all the way upright and, Galileo believed, the line will catch the falling point — so long as the wheels roll free, even the drag of the tape is accounted for.' },
+      check: function (ev) {
+        if (ev.type !== 'summary' || ev.data.n < 4) return false;
+        const pts = ev.data.points;
+        const inc = pts.filter(function (p) { return p.mode === 'incline'; }), falls = pts.filter(function (p) { return p.mode === 'fall'; });
+        if (inc.length < 3 || !falls.length || !pts.every(function (p) { return !p.ideal; })) return false;
+        if (!inc.every(function (p) { return p.mu <= EPS; }) || spreadOf(inc) < 0.2 - EPS) return false;
+        const fit = lineOf(inc);
+        return !!fit && fit.intercept <= -0.05 + EPS && falls.every(function (p) { return close(p.a, fit.slope + fit.intercept, 0.005); });
+      }
+    },
+    {
+      /* 牛頓的月球檢驗（1666）：月球距地心約 60 個地球半徑，向地心的加速度是 g/60² = g/3600 ≈ 2.72 mm/s²。
+         含誤差的斜面，摩擦幾乎抵消重力的分量，紙帶量得的加速度與 g/3600 相差不到 3%（至少 8 個計數點）。
+         任務 5 的自然設定（μ 0.010–0.050、f 0、0.050、0.100 N、M 0.2–2 kg、h 滑桿）都不在這個範圍 */
+      id: 'free-fall-h10', level: 10, hidden: true,
+      riddle: { zh: '牛頓抬頭望見的那位墜落者，在桌面上重演它的步調。', en: 'The faller Newton looked up at: re-enact its pace on the tabletop.' },
+      check: function (ev) {
+        if (!full(ev)) return false;
+        const d = ev.data;
+        return d.mode === 'incline' && !d.ideal && d.rows >= 8 && Math.abs(d.aFit / (G / 3600) - 1) <= 0.03;
+      }
     }
   ]);
 })();
