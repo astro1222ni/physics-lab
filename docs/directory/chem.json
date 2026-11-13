@@ -1,0 +1,254 @@
+{
+  "subject": "chem",
+  "updated": "11/12 23:40",
+  "branches": [
+    {
+      "id": "matter",
+      "zh": "物質與結構",
+      "en": "Matter and Structure",
+      "chapters": [
+        {
+          "id": "ch-separation",
+          "zh": "物質的分離",
+          "en": "Separating Mixtures",
+          "modules": [
+            "paper-chromatography",
+            "solvent-extraction",
+            "fractional-distillation"
+          ]
+        },
+        {
+          "id": "ch-atom",
+          "zh": "原子結構與週期表",
+          "en": "Atomic Structure and the Periodic Table",
+          "modules": [
+            "mass-spectrometry",
+            "flame-test",
+            "atomic-orbitals",
+            "electron-configuration",
+            "periodic-trends"
+          ]
+        },
+        {
+          "id": "ch-bonds",
+          "zh": "化學鍵與分子形狀",
+          "en": "Chemical Bonds and Molecular Shapes",
+          "modules": [
+            "bond-types",
+            "molecular-shapes",
+            "hybrid-orbitals"
+          ]
+        },
+        {
+          "id": "ch-gases",
+          "zh": "氣體",
+          "en": "Gases",
+          "modules": [
+            "molar-mass-gas",
+            "partial-pressure",
+            "gas-diffusion",
+            "real-gases"
+          ]
+        },
+        {
+          "id": "ch-condensed",
+          "zh": "液體與固體",
+          "en": "Liquids and Solids",
+          "modules": [
+            "intermolecular-forces",
+            "vapor-pressure",
+            "phase-diagram",
+            "crystal-structures",
+            "ionic-lattice"
+          ]
+        },
+        {
+          "id": "ch-solutions",
+          "zh": "溶液",
+          "en": "Solutions",
+          "modules": [
+            "solution-concentration",
+            "solubility-curve",
+            "raoult-law",
+            "colligative-properties",
+            "colloids",
+            "beer-lambert"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "reaction",
+      "zh": "化學反應與能量",
+      "en": "Reactions and Energy",
+      "chapters": [
+        {
+          "id": "ch-stoich",
+          "zh": "化學計量",
+          "en": "Stoichiometry",
+          "modules": [
+            "mole-concept",
+            "balancing-equations",
+            "empirical-formula",
+            "hydrate-water",
+            "stoichiometry"
+          ]
+        },
+        {
+          "id": "ch-reaction-heat",
+          "zh": "反應熱",
+          "en": "Heats of Reaction",
+          "modules": [
+            "hess-law",
+            "formation-enthalpy",
+            "combustion-heat",
+            "bond-enthalpy"
+          ]
+        },
+        {
+          "id": "ch-spontaneity",
+          "zh": "熵與自發反應",
+          "en": "Entropy and Spontaneity",
+          "modules": [
+            "entropy-microstates",
+            "gibbs-free-energy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "equilibrium",
+      "zh": "反應速率與平衡",
+      "en": "Rates and Equilibrium",
+      "chapters": [
+        {
+          "id": "ch-rate",
+          "zh": "反應速率",
+          "en": "Reaction Rates",
+          "modules": [
+            "iodine-clock",
+            "first-order-reaction",
+            "reaction-rate",
+            "catalysis",
+            "reaction-mechanism"
+          ]
+        },
+        {
+          "id": "ch-equilibrium",
+          "zh": "化學平衡",
+          "en": "Chemical Equilibrium",
+          "modules": [
+            "chemical-equilibrium",
+            "cobalt-equilibrium",
+            "equilibrium-constant",
+            "haber-process"
+          ]
+        },
+        {
+          "id": "ch-solubility",
+          "zh": "溶解平衡",
+          "en": "Solubility Equilibria",
+          "modules": [
+            "solubility-equilibrium",
+            "selective-precipitation",
+            "complex-ions"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "acidbase",
+      "zh": "酸鹼與氧化還原",
+      "en": "Acids, Bases and Redox",
+      "chapters": [
+        {
+          "id": "ch-acidbase",
+          "zh": "酸鹼反應",
+          "en": "Acid–Base Reactions",
+          "modules": [
+            "ph-scale",
+            "red-cabbage-indicator",
+            "salt-hydrolysis",
+            "acid-base-titration",
+            "buffer-solutions",
+            "polyprotic-titration"
+          ]
+        },
+        {
+          "id": "ch-redox",
+          "zh": "氧化還原反應",
+          "en": "Redox Reactions",
+          "modules": [
+            "oxidation-numbers",
+            "metal-activity",
+            "redox-titration",
+            "iodometry"
+          ]
+        },
+        {
+          "id": "ch-electrochem",
+          "zh": "電化學",
+          "en": "Electrochemistry",
+          "modules": [
+            "electrochemistry",
+            "practical-batteries",
+            "fuel-cell",
+            "corrosion"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "organic",
+      "zh": "有機與生活化學",
+      "en": "Organic and Everyday Chemistry",
+      "chapters": [
+        {
+          "id": "ch-hydrocarbons",
+          "zh": "烴",
+          "en": "Hydrocarbons",
+          "modules": [
+            "hydrocarbon-naming",
+            "organic-isomers",
+            "alkene-addition",
+            "aromatic-compounds"
+          ]
+        },
+        {
+          "id": "ch-functional",
+          "zh": "官能基",
+          "en": "Functional Groups",
+          "modules": [
+            "functional-group-tests",
+            "alcohol-oxidation",
+            "esterification",
+            "saponification"
+          ]
+        },
+        {
+          "id": "ch-polymers",
+          "zh": "聚合物與材料",
+          "en": "Polymers and Materials",
+          "modules": [
+            "polymerization",
+            "nylon-synthesis",
+            "polymer-crosslinking",
+            "plastics-recycling"
+          ]
+        },
+        {
+          "id": "ch-everyday",
+          "zh": "生活中的化學",
+          "en": "Chemistry in Everyday Life",
+          "modules": [
+            "water-hardness",
+            "baking-chemistry",
+            "tofu-coagulation",
+            "fuel-energy",
+            "green-chemistry"
+          ]
+        }
+      ]
+    }
+  ]
+}

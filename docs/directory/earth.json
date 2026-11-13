@@ -1,0 +1,66 @@
+{
+  "subject": "earth",
+  "updated": "11/13 07:40",
+  "branches": [
+    {
+      "id": "astro", "zh": "天文", "en": "Astronomy",
+      "chapters": [
+        { "id": "ch-sky", "zh": "從地球看星空", "en": "The Sky as Seen from Earth",
+          "modules": ["celestial-sphere", "solar-day", "seasons", "moon-phases", "planet-motion"] },
+        { "id": "ch-observe", "zh": "天文觀測", "en": "Astronomical Observation",
+          "modules": ["telescope", "spectra-doppler", "parallax"] },
+        { "id": "ch-stars", "zh": "恆星", "en": "Stars",
+          "modules": ["magnitudes", "stars-hr", "binary-stars", "stellar-evolution", "cepheid"] },
+        { "id": "ch-solar-system", "zh": "太陽系", "en": "The Solar System",
+          "modules": ["sun-energy", "planet-atmospheres", "impact-craters", "habitable-zone", "exoplanet-transit"] },
+        { "id": "ch-universe", "zh": "星系與宇宙", "en": "Galaxies and the Universe",
+          "modules": ["galaxy-rotation", "hubble-expansion", "cosmic-background"] }
+      ]
+    },
+    {
+      "id": "geo", "zh": "固體地球", "en": "Solid Earth",
+      "chapters": [
+        { "id": "ch-quake", "zh": "地震與地球內部", "en": "Earthquakes and the Earth's Interior",
+          "modules": ["earthquake", "quake-magnitude", "earth-interior", "heat-flow"] },
+        { "id": "ch-rocks", "zh": "岩石與礦物", "en": "Rocks and Minerals",
+          "modules": ["mineral-crystals", "magma-crystallization", "rock-cycle"] },
+        { "id": "ch-surface", "zh": "地表的作用", "en": "Surface Processes",
+          "modules": ["weathering", "sediment-transport", "groundwater-flow"] },
+        { "id": "ch-history", "zh": "地球的歷史", "en": "Earth's History",
+          "modules": ["earth-formation", "geologic-time", "life-atmosphere"] },
+        { "id": "ch-plates", "zh": "板塊構造", "en": "Plate Tectonics",
+          "modules": ["continental-drift", "seafloor-spreading", "plate-boundaries", "mantle-convection", "isostasy", "taiwan-orogeny"] },
+        { "id": "ch-structure", "zh": "地質構造", "en": "Geologic Structures",
+          "modules": ["strike-dip", "faults-folds"] },
+        { "id": "ch-hazards", "zh": "地質災害", "en": "Geologic Hazards",
+          "modules": ["volcano-eruption", "quake-early-warning", "liquefaction", "building-resonance"] }
+      ]
+    },
+    {
+      "id": "atmo", "zh": "大氣", "en": "Atmosphere",
+      "chapters": [
+        { "id": "ch-atmo-structure", "zh": "大氣的組成與結構", "en": "Composition and Structure of the Atmosphere",
+          "modules": ["atmosphere-layers", "sky-color", "ozone-layer", "daily-temperature"] },
+        { "id": "ch-atmo-water", "zh": "大氣中的水", "en": "Water in the Atmosphere",
+          "modules": ["humidity-dewpoint", "cloud-formation", "atmospheric-stability", "raindrop-growth"] },
+        { "id": "ch-atmo-motion", "zh": "大氣的運動", "en": "Motion of the Atmosphere",
+          "modules": ["sea-breeze", "coriolis", "friction-wind", "jet-stream"] },
+        { "id": "ch-weather", "zh": "天氣與颱風", "en": "Weather and Typhoons",
+          "modules": ["weather-map", "fronts", "thunderstorm", "typhoon", "radar-rain"] },
+        { "id": "ch-climate", "zh": "氣候變遷", "en": "Climate Change",
+          "modules": ["greenhouse", "climate-response", "volcanic-cooling", "milankovitch", "ice-core"] }
+      ]
+    },
+    {
+      "id": "ocean", "zh": "海洋", "en": "Oceans",
+      "chapters": [
+        { "id": "ch-seawater", "zh": "海水的性質", "en": "Properties of Seawater",
+          "modules": ["seawater", "sea-ice", "ocean-light", "ocean-sound"] },
+        { "id": "ch-ocean-motion", "zh": "海水的運動", "en": "Motion of Seawater",
+          "modules": ["ocean-waves", "rip-current", "tsunami", "tides"] },
+        { "id": "ch-ocean-climate", "zh": "海洋與氣候", "en": "Ocean and Climate",
+          "modules": ["kuroshio", "ekman-upwelling", "thermohaline", "ocean-acidification"] }
+      ]
+    }
+  ]
+}

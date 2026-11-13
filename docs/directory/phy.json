@@ -1,0 +1,192 @@
+{
+  "subject": "phy",
+  "updated": "11/12 23:15",
+  "branches": [
+    {
+      "id": "mech",
+      "zh": "力學",
+      "en": "Mechanics",
+      "chapters": [
+        {
+          "id": "ch-measurement",
+          "zh": "測量與不確定度",
+          "en": "Measurement and Uncertainty",
+          "modules": ["measurement", "scale-of-universe"]
+        },
+        {
+          "id": "ch-linear",
+          "zh": "直線運動",
+          "en": "Motion in a Straight Line",
+          "modules": ["free-fall"]
+        },
+        {
+          "id": "ch-planar",
+          "zh": "平面運動",
+          "en": "Motion in a Plane",
+          "modules": ["projectile"]
+        },
+        {
+          "id": "ch-newton",
+          "zh": "牛頓運動定律",
+          "en": "Newton's Laws of Motion",
+          "modules": ["newton-second", "incline-friction", "atwood", "elevator"]
+        },
+        {
+          "id": "ch-periodic",
+          "zh": "週期運動",
+          "en": "Periodic Motion",
+          "modules": ["circular-motion", "oscillation"]
+        },
+        {
+          "id": "ch-gravitation",
+          "zh": "萬有引力",
+          "en": "Universal Gravitation",
+          "modules": ["kepler"]
+        },
+        {
+          "id": "ch-statics",
+          "zh": "靜力平衡",
+          "en": "Static Equilibrium",
+          "modules": ["torque-balance"]
+        },
+        {
+          "id": "ch-momentum",
+          "zh": "動量與角動量",
+          "en": "Momentum and Angular Momentum",
+          "modules": ["angular-momentum"]
+        },
+        {
+          "id": "ch-energy",
+          "zh": "功與能量",
+          "en": "Work and Energy",
+          "modules": ["energy-coaster", "power-generation"]
+        },
+        {
+          "id": "ch-collisions",
+          "zh": "碰撞",
+          "en": "Collisions",
+          "modules": ["collision"]
+        }
+      ]
+    },
+    {
+      "id": "thermo",
+      "zh": "熱學",
+      "en": "Heat",
+      "chapters": [
+        {
+          "id": "ch-heat",
+          "zh": "溫度與熱",
+          "en": "Temperature and Heat",
+          "modules": ["specific-heat", "heat-conduction"]
+        },
+        {
+          "id": "ch-gas-thermo",
+          "zh": "氣體與熱力學",
+          "en": "Gases and Thermodynamics",
+          "modules": ["ideal-gas", "heat-engine"]
+        }
+      ]
+    },
+    {
+      "id": "wave",
+      "zh": "波動與聲音",
+      "en": "Waves & Sound",
+      "chapters": [
+        {
+          "id": "ch-waves",
+          "zh": "波動",
+          "en": "Waves",
+          "modules": ["standing-waves", "ripple-tank"]
+        },
+        {
+          "id": "ch-sound",
+          "zh": "聲波",
+          "en": "Sound Waves",
+          "modules": ["resonance-tube", "doppler"]
+        }
+      ]
+    },
+    {
+      "id": "optics",
+      "zh": "光學",
+      "en": "Optics",
+      "chapters": [
+        {
+          "id": "ch-geometrical-optics",
+          "zh": "幾何光學",
+          "en": "Geometrical Optics",
+          "modules": ["refraction", "refractive-index", "lens-mirror", "thin-lens"]
+        },
+        {
+          "id": "ch-physical-optics",
+          "zh": "物理光學",
+          "en": "Physical Optics",
+          "modules": ["slit-interference", "thin-film", "polarization"]
+        }
+      ]
+    },
+    {
+      "id": "em",
+      "zh": "電磁學",
+      "en": "Electromagnetism",
+      "chapters": [
+        {
+          "id": "ch-electrostatics",
+          "zh": "靜電學",
+          "en": "Electrostatics",
+          "modules": ["electric-field", "equipotential", "capacitor"]
+        },
+        {
+          "id": "ch-magnetism",
+          "zh": "電流的磁效應",
+          "en": "Magnetic Effects of Currents",
+          "modules": ["current-magnetic-field", "current-balance", "magnetic-particle"]
+        },
+        {
+          "id": "ch-induction",
+          "zh": "電磁感應與電磁波",
+          "en": "Electromagnetic Induction and Waves",
+          "modules": ["faraday", "ac-generator", "em-spectrum", "microwave"]
+        },
+        {
+          "id": "ch-circuits",
+          "zh": "電路學",
+          "en": "Electric Circuits",
+          "modules": ["ohms-law", "dc-circuit", "household-electricity"]
+        }
+      ]
+    },
+    {
+      "id": "modern",
+      "zh": "近代物理",
+      "en": "Modern Physics",
+      "chapters": [
+        {
+          "id": "ch-matter",
+          "zh": "物質的組成與交互作用",
+          "en": "Matter and Its Interactions",
+          "modules": ["brownian-motion", "standard-model"]
+        },
+        {
+          "id": "ch-quantum",
+          "zh": "量子現象",
+          "en": "Quantum Phenomena",
+          "modules": ["e-over-m", "x-ray", "blackbody", "photoelectric", "electron-diffraction"]
+        },
+        {
+          "id": "ch-atomic",
+          "zh": "原子結構",
+          "en": "Atomic Structure",
+          "modules": ["rutherford-scattering", "hydrogen-spectrum"]
+        },
+        {
+          "id": "ch-nuclear",
+          "zh": "原子核",
+          "en": "The Atomic Nucleus",
+          "modules": ["nuclear-binding", "radioactive-decay", "nuclear-chain-reaction"]
+        }
+      ]
+    }
+  ]
+}

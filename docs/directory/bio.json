@@ -1,0 +1,324 @@
+{
+  "subject": "bio",
+  "updated": "11/13",
+  "branches": [
+    {
+      "id": "cell",
+      "zh": "細胞與分子",
+      "en": "Cells and Molecules",
+      "chapters": [
+        {
+          "id": "ch-cell-structure",
+          "zh": "細胞的構造",
+          "en": "Cell Structure",
+          "modules": [
+            "microscope",
+            "cell-size"
+          ]
+        },
+        {
+          "id": "ch-membrane",
+          "zh": "細胞膜與物質運輸",
+          "en": "Membranes and Transport",
+          "modules": [
+            "diffusion-osmosis",
+            "membrane-transport"
+          ]
+        },
+        {
+          "id": "ch-biomolecules",
+          "zh": "生物分子",
+          "en": "Biological Molecules",
+          "modules": [
+            "protein-folding",
+            "dna-melting"
+          ]
+        },
+        {
+          "id": "ch-enzyme",
+          "zh": "酵素與代謝",
+          "en": "Enzymes and Metabolism",
+          "modules": [
+            "enzyme-kinetics",
+            "cellular-respiration"
+          ]
+        },
+        {
+          "id": "ch-photosynthesis",
+          "zh": "光合作用",
+          "en": "Photosynthesis",
+          "modules": [
+            "action-spectrum",
+            "photosynthesis",
+            "c3-c4-cam"
+          ]
+        },
+        {
+          "id": "ch-division",
+          "zh": "細胞分裂與週期",
+          "en": "Cell Division and the Cell Cycle",
+          "modules": [
+            "cell-division",
+            "cell-cycle",
+            "cancer-incidence"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "genetics",
+      "zh": "遺傳",
+      "en": "Genetics",
+      "chapters": [
+        {
+          "id": "ch-mendel",
+          "zh": "孟德爾遺傳法則",
+          "en": "Mendel's Laws",
+          "modules": [
+            "mendelian-inheritance",
+            "blood-types"
+          ]
+        },
+        {
+          "id": "ch-chromosome",
+          "zh": "染色體與性聯遺傳",
+          "en": "Chromosomes and Sex Linkage",
+          "modules": [
+            "linkage-map",
+            "pedigree"
+          ]
+        },
+        {
+          "id": "ch-dna",
+          "zh": "DNA 與基因表現",
+          "en": "DNA and Gene Expression",
+          "modules": [
+            "gene-expression",
+            "fluctuation-test"
+          ]
+        },
+        {
+          "id": "ch-regulation",
+          "zh": "基因表現的調控",
+          "en": "Gene Regulation",
+          "modules": [
+            "lac-operon",
+            "quorum-sensing"
+          ]
+        },
+        {
+          "id": "ch-development",
+          "zh": "基因與發育",
+          "en": "Genes and Development",
+          "modules": [
+            "morphogen-gradient",
+            "turing-patterns"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "physiology",
+      "zh": "生理",
+      "en": "Physiology",
+      "chapters": [
+        {
+          "id": "ch-circulation",
+          "zh": "循環與呼吸",
+          "en": "Circulation and Breathing",
+          "modules": [
+            "oxygen-hemoglobin",
+            "breathing",
+            "blood-flow",
+            "cardiac-cycle",
+            "ecg"
+          ]
+        },
+        {
+          "id": "ch-nerve",
+          "zh": "神經與內分泌",
+          "en": "Nerves and Hormones",
+          "modules": [
+            "action-potential",
+            "synapse",
+            "reaction-time",
+            "hormone-feedback",
+            "circadian"
+          ]
+        },
+        {
+          "id": "ch-senses",
+          "zh": "感覺",
+          "en": "The Senses",
+          "modules": [
+            "eye-vision",
+            "color-vision",
+            "hearing"
+          ]
+        },
+        {
+          "id": "ch-homeostasis",
+          "zh": "恆定",
+          "en": "Homeostasis",
+          "modules": [
+            "blood-glucose",
+            "kidney",
+            "thermoregulation"
+          ]
+        },
+        {
+          "id": "ch-immune",
+          "zh": "免疫與病毒",
+          "en": "Immunity and Viruses",
+          "modules": [
+            "virus-replication",
+            "immune-response",
+            "antibody-diversity"
+          ]
+        },
+        {
+          "id": "ch-movement",
+          "zh": "運動與代謝",
+          "en": "Movement and Metabolism",
+          "modules": [
+            "muscle-contraction",
+            "allometry"
+          ]
+        },
+        {
+          "id": "ch-plant",
+          "zh": "植物的構造與生理",
+          "en": "Plant Structure and Physiology",
+          "modules": [
+            "transpiration",
+            "phototropism",
+            "photoperiodism"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ecology",
+      "zh": "生態",
+      "en": "Ecology",
+      "chapters": [
+        {
+          "id": "ch-population",
+          "zh": "族群與群集",
+          "en": "Populations and Communities",
+          "modules": [
+            "sampling",
+            "population-growth",
+            "fisheries-msy"
+          ]
+        },
+        {
+          "id": "ch-interaction",
+          "zh": "物種間的交互作用",
+          "en": "Interactions Between Species",
+          "modules": [
+            "competition",
+            "food-web",
+            "island-biogeography",
+            "habitat-fragmentation"
+          ]
+        },
+        {
+          "id": "ch-ecosystem",
+          "zh": "生態系",
+          "en": "Ecosystems",
+          "modules": [
+            "energy-flow",
+            "carbon-cycle",
+            "nitrogen-cycle"
+          ]
+        },
+        {
+          "id": "ch-human-env",
+          "zh": "人類與環境",
+          "en": "People and the Environment",
+          "modules": [
+            "epidemic",
+            "eutrophication",
+            "invasive-species",
+            "coral-bleaching"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "evolution",
+      "zh": "演化與多樣性",
+      "en": "Evolution and Diversity",
+      "chapters": [
+        {
+          "id": "ch-popgen",
+          "zh": "天擇與族群遺傳",
+          "en": "Natural Selection and Population Genetics",
+          "modules": [
+            "hardy-weinberg",
+            "natural-selection",
+            "antibiotic-resistance"
+          ]
+        },
+        {
+          "id": "ch-speciation",
+          "zh": "物種形成與親緣",
+          "en": "Speciation and Phylogeny",
+          "modules": [
+            "speciation",
+            "phylogeny"
+          ]
+        },
+        {
+          "id": "ch-behavior",
+          "zh": "行為的演化",
+          "en": "The Evolution of Behaviour",
+          "modules": [
+            "optimal-foraging",
+            "hawk-dove",
+            "kin-selection",
+            "flocking"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "biotech",
+      "zh": "生物與科技",
+      "en": "Biology and Technology",
+      "chapters": [
+        {
+          "id": "ch-genetic-eng",
+          "zh": "基因工程",
+          "en": "Genetic Engineering",
+          "modules": [
+            "restriction-mapping",
+            "pcr-gel",
+            "transformation",
+            "crispr"
+          ]
+        },
+        {
+          "id": "ch-medtech",
+          "zh": "醫學檢驗與用藥",
+          "en": "Medical Tests and Medicines",
+          "modules": [
+            "rapid-test",
+            "pharmacokinetics"
+          ]
+        },
+        {
+          "id": "ch-bioinspired",
+          "zh": "仿生與生物運算",
+          "en": "Bio-inspired Design and Computing",
+          "modules": [
+            "biomimicry",
+            "slime-mold",
+            "animal-flight"
+          ]
+        }
+      ]
+    }
+  ]
+}

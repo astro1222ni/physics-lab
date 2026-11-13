@@ -63,7 +63,7 @@
   const CROSS5 = ['phy', 'chem', 'bio', 'earth', 'math'];
   // 分頁要不要顯示這一科：新科等第一個實驗上線（missions/index.js 的 LAB_SUBJECT_SHOWN）
   const shownSubj = function (sid) { return !window.LAB_SUBJECT_SHOWN || window.LAB_SUBJECT_SHOWN(sid); };
-  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio',
+  const BRANCH_SUBJ = { mech: 'phy', thermo: 'phy', wave: 'phy', optics: 'phy', em: 'phy', modern: 'phy', astro: 'earth', geo: 'earth', atmo: 'earth', ocean: 'earth', cell: 'bio', genetics: 'bio', physiology: 'bio', ecology: 'bio', evolution: 'bio', biotech: 'bio',
     algebra: 'math', geometry: 'math', vectors: 'math', probability: 'math', calculus: 'math',
     matter: 'chem', reaction: 'chem', equilibrium: 'chem', acidbase: 'chem', organic: 'chem',
     data: 'info', algo: 'info', prog: 'info', system: 'info', network: 'info', ai: 'info',
@@ -235,6 +235,7 @@
     { id: 'branch-physiology', tier: 5, cat: 'branch', name: nm('霍奇金與赫胥黎的烏賊', "Hodgkin and Huxley's squid"), desc: nm('完成生理分支所有實驗的所有任務。', 'Complete every mission in Physiology.'), check: function (c) { return c.branchDone.physiology; } },
     { id: 'branch-ecology', tier: 5, cat: 'branch', name: nm('沃爾泰拉的漁網', "Volterra's fishing net"), desc: nm('完成生態分支所有實驗的所有任務。', 'Complete every mission in Ecology.'), check: function (c) { return c.branchDone.ecology; } },
     { id: 'branch-evolution', tier: 5, cat: 'branch', name: nm('加拉巴哥的雀鳥', "Galápagos finches"), desc: nm('完成演化分支所有實驗的所有任務。', 'Complete every mission in Evolution.'), check: function (c) { return c.branchDone.evolution; } },
+    { id: 'branch-biotech', tier: 5, cat: 'branch', name: nm('穆利斯的試管', "Mullis's test tube"), desc: nm('完成生物與科技分支所有實驗的所有任務。', 'Complete every mission in Biology and Technology.'), check: function (c) { return c.branchDone.biotech; } },
     { id: 'branch-equilibrium', tier: 5, cat: 'branch', name: nm('勒沙特列的天平', "Le Chatelier's balance"), desc: nm('完成反應速率與平衡分支所有實驗的所有任務。', 'Complete every mission in Rates and Equilibrium.'), check: function (c) { return c.branchDone.equilibrium; } },
     { id: 'branch-acidbase', tier: 5, cat: 'branch', name: nm('阿瑞尼斯的離子', "Arrhenius's ions"), desc: nm('完成酸鹼與氧化還原分支所有實驗的所有任務。', 'Complete every mission in Acids, Bases and Redox.'), check: function (c) { return c.branchDone.acidbase; } },
     { id: 'branch-geometry', tier: 5, cat: 'branch', name: nm('阿波羅尼奧斯的圓錐', "Apollonius's cones"), desc: nm('完成三角與幾何分支所有實驗的所有任務。', 'Complete every mission in Trigonometry and Geometry.'), check: function (c) { return c.branchDone.geometry; } },

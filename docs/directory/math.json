@@ -1,0 +1,317 @@
+{
+  "subject": "math",
+  "updated": "11/13 05:30",
+  "branches": [
+    {
+      "id": "algebra",
+      "zh": "代數與函數",
+      "en": "Algebra and Functions",
+      "chapters": [
+        {
+          "id": "ch-numbers",
+          "zh": "數與式",
+          "en": "Numbers and Expressions",
+          "modules": [
+            "real-number-line",
+            "abs-value"
+          ]
+        },
+        {
+          "id": "ch-quadratic",
+          "zh": "二次函數",
+          "en": "Quadratic Functions",
+          "modules": [
+            "quadratic-function",
+            "quadratic-applications"
+          ]
+        },
+        {
+          "id": "ch-polynomial",
+          "zh": "多項式函數",
+          "en": "Polynomial Functions",
+          "modules": [
+            "poly-division",
+            "polynomial"
+          ]
+        },
+        {
+          "id": "ch-sequence",
+          "zh": "數列與級數",
+          "en": "Sequences and Series",
+          "modules": [
+            "sequences-series",
+            "recursive-sequence",
+            "induction-dominoes",
+            "hanoi-tower"
+          ]
+        },
+        {
+          "id": "ch-explog",
+          "zh": "指數與對數",
+          "en": "Exponents and Logarithms",
+          "modules": [
+            "exp-log",
+            "log-slide-rule",
+            "log-scales"
+          ]
+        },
+        {
+          "id": "ch-lp",
+          "zh": "線性規劃",
+          "en": "Linear Programming",
+          "modules": [
+            "inequality-regions",
+            "linear-programming"
+          ]
+        },
+        {
+          "id": "ch-complex",
+          "zh": "複數",
+          "en": "Complex Numbers",
+          "modules": [
+            "complex-plane",
+            "fundamental-algebra",
+            "mandelbrot"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "geometry",
+      "zh": "三角與幾何",
+      "en": "Trigonometry and Geometry",
+      "chapters": [
+        {
+          "id": "ch-lines",
+          "zh": "直線與圓",
+          "en": "Lines and Circles",
+          "modules": [
+            "lines-circles",
+            "inscribed-angle",
+            "apollonius-circle"
+          ]
+        },
+        {
+          "id": "ch-trigratio",
+          "zh": "三角比",
+          "en": "Trigonometric Ratios",
+          "modules": [
+            "pythagoras",
+            "trig-ratios"
+          ]
+        },
+        {
+          "id": "ch-triangle",
+          "zh": "三角形的邊角關係",
+          "en": "Solving Triangles",
+          "modules": [
+            "law-of-cosines",
+            "heron-area",
+            "triangle-centers"
+          ]
+        },
+        {
+          "id": "ch-trig",
+          "zh": "三角函數",
+          "en": "Trigonometric Functions",
+          "modules": [
+            "trig-functions",
+            "sum-angle-formula",
+            "trig-equations"
+          ]
+        },
+        {
+          "id": "ch-polar",
+          "zh": "極坐標與參數式",
+          "en": "Polar Coordinates and Parametric Curves",
+          "modules": [
+            "polar-curves",
+            "parametric-curves"
+          ]
+        },
+        {
+          "id": "ch-conics",
+          "zh": "圓錐曲線",
+          "en": "Conic Sections",
+          "modules": [
+            "conic-sections",
+            "ellipse-reflection",
+            "parabola-reflector",
+            "hyperbola-positioning"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vectors",
+      "zh": "向量與空間",
+      "en": "Vectors and Space",
+      "chapters": [
+        {
+          "id": "ch-plane-vectors",
+          "zh": "平面向量",
+          "en": "Vectors in the Plane",
+          "modules": [
+            "plane-vectors",
+            "vector-line-param",
+            "determinant-area"
+          ]
+        },
+        {
+          "id": "ch-space-vectors",
+          "zh": "空間向量",
+          "en": "Vectors in Space",
+          "modules": [
+            "space-coordinates",
+            "space-vectors"
+          ]
+        },
+        {
+          "id": "ch-planes",
+          "zh": "空間中的平面與直線",
+          "en": "Planes and Lines in Space",
+          "modules": [
+            "lines-planes-space",
+            "linear-systems",
+            "sphere-plane"
+          ]
+        },
+        {
+          "id": "ch-matrix",
+          "zh": "矩陣",
+          "en": "Matrices",
+          "modules": [
+            "matrix-multiplication",
+            "linear-transform",
+            "markov-chain",
+            "hill-cipher"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "probability",
+      "zh": "機率與統計",
+      "en": "Probability and Statistics",
+      "chapters": [
+        {
+          "id": "ch-counting",
+          "zh": "排列組合",
+          "en": "Counting",
+          "modules": [
+            "permutation-combination",
+            "inclusion-exclusion",
+            "pascal-triangle"
+          ]
+        },
+        {
+          "id": "ch-probability",
+          "zh": "機率",
+          "en": "Probability",
+          "modules": [
+            "dice-sum",
+            "birthday-problem",
+            "galton-board",
+            "monte-carlo-pi",
+            "random-walk"
+          ]
+        },
+        {
+          "id": "ch-conditional",
+          "zh": "條件機率",
+          "en": "Conditional Probability",
+          "modules": [
+            "independence-tree",
+            "monty-hall",
+            "bayes-test"
+          ]
+        },
+        {
+          "id": "ch-data",
+          "zh": "數據分析",
+          "en": "Data Analysis",
+          "modules": [
+            "mean-sd",
+            "box-plot",
+            "regression"
+          ]
+        },
+        {
+          "id": "ch-randomvar",
+          "zh": "隨機變數",
+          "en": "Random Variables",
+          "modules": [
+            "expected-value-games",
+            "geometric-distribution",
+            "normal-distribution"
+          ]
+        },
+        {
+          "id": "ch-inference",
+          "zh": "抽樣與信賴區間",
+          "en": "Sampling and Confidence Intervals",
+          "modules": [
+            "sampling-poll",
+            "confidence-interval"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "calculus",
+      "zh": "微積分",
+      "en": "Calculus",
+      "chapters": [
+        {
+          "id": "ch-limit",
+          "zh": "極限與連續",
+          "en": "Limits and Continuity",
+          "modules": [
+            "limits",
+            "continuity-ivt"
+          ]
+        },
+        {
+          "id": "ch-derivative",
+          "zh": "導數",
+          "en": "Derivatives",
+          "modules": [
+            "derivative",
+            "chain-rule",
+            "curve-sketch"
+          ]
+        },
+        {
+          "id": "ch-deriv-app",
+          "zh": "導數的應用",
+          "en": "Applications of Derivatives",
+          "modules": [
+            "optimization",
+            "newton-method",
+            "taylor-series"
+          ]
+        },
+        {
+          "id": "ch-integral",
+          "zh": "積分",
+          "en": "Integrals",
+          "modules": [
+            "riemann-sum",
+            "ftc",
+            "area-between",
+            "fourier-series"
+          ]
+        },
+        {
+          "id": "ch-diffeq",
+          "zh": "微分方程",
+          "en": "Differential Equations",
+          "modules": [
+            "slope-field",
+            "euler-method"
+          ]
+        }
+      ]
+    }
+  ]
+}

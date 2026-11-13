@@ -145,20 +145,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/collision.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/ideal-gas.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ideal-gas.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ideal-gas.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ideal-gas.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ideal-gas.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/specific-heat.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/specific-heat.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/specific-heat.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/specific-heat.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/specific-heat.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/ideal-gas.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ideal-gas.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ideal-gas.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ideal-gas.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ideal-gas.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/heat-engine.html</loc>
@@ -185,20 +185,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ripple-tank.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/doppler.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/doppler.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/doppler.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/doppler.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/doppler.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/resonance-tube.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/resonance-tube.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/resonance-tube.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/resonance-tube.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/resonance-tube.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/doppler.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/doppler.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/doppler.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/doppler.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/doppler.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/refraction.html</loc>
@@ -209,20 +209,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/refraction.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/lens-mirror.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/lens-mirror.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/lens-mirror.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/lens-mirror.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/lens-mirror.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/refractive-index.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/refractive-index.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/refractive-index.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/refractive-index.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/refractive-index.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/lens-mirror.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/lens-mirror.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/lens-mirror.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/lens-mirror.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/lens-mirror.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/thin-lens.html</loc>
@@ -257,20 +257,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/electric-field.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/capacitor.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/capacitor.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/capacitor.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/capacitor.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/capacitor.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/equipotential.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/equipotential.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/equipotential.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/equipotential.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/equipotential.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/capacitor.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/capacitor.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/capacitor.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/capacitor.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/capacitor.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/current-magnetic-field.html</loc>
@@ -281,20 +281,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/current-magnetic-field.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/magnetic-particle.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/magnetic-particle.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/magnetic-particle.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/magnetic-particle.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/magnetic-particle.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/current-balance.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/current-balance.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/current-balance.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/current-balance.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/current-balance.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/magnetic-particle.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/magnetic-particle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/magnetic-particle.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/magnetic-particle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/magnetic-particle.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/faraday.html</loc>
@@ -305,20 +305,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/faraday.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/ac-generator.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ac-generator.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ac-generator.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ac-generator.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ac-generator.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/microwave.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/microwave.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/microwave.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/microwave.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/microwave.html"/>
-  </url>
-  <url>
-    <loc>https://lab.astroni.org/dc-circuit.html</loc>
-    <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/dc-circuit.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/dc-circuit.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/dc-circuit.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/dc-circuit.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/ohms-law.html</loc>
@@ -329,12 +329,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ohms-law.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/photoelectric.html</loc>
+    <loc>https://lab.astroni.org/dc-circuit.html</loc>
     <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/photoelectric.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/photoelectric.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/photoelectric.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/photoelectric.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/dc-circuit.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/dc-circuit.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/dc-circuit.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/dc-circuit.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/brownian-motion.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/brownian-motion.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/brownian-motion.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/brownian-motion.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/brownian-motion.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/e-over-m.html</loc>
@@ -343,6 +351,22 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/e-over-m.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/e-over-m.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/e-over-m.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/blackbody.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/blackbody.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/blackbody.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/blackbody.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/blackbody.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/photoelectric.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/photoelectric.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/photoelectric.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/photoelectric.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/photoelectric.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/hydrogen-spectrum.html</loc>
@@ -361,12 +385,132 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/radioactive-decay.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/paper-chromatography.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/paper-chromatography.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/paper-chromatography.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/paper-chromatography.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/paper-chromatography.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/flame-test.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/flame-test.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/flame-test.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/flame-test.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/flame-test.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/atomic-orbitals.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/atomic-orbitals.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/atomic-orbitals.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/atomic-orbitals.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/atomic-orbitals.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/electron-configuration.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/electron-configuration.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/electron-configuration.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/electron-configuration.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/electron-configuration.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/periodic-trends.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/periodic-trends.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/periodic-trends.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/periodic-trends.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/periodic-trends.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/molecular-shapes.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/molecular-shapes.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/molecular-shapes.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/molecular-shapes.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/molecular-shapes.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/gas-diffusion.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gas-diffusion.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gas-diffusion.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gas-diffusion.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gas-diffusion.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/phase-diagram.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/phase-diagram.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/phase-diagram.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/phase-diagram.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/phase-diagram.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/crystal-structures.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/crystal-structures.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/crystal-structures.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/crystal-structures.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/crystal-structures.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/solution-concentration.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/solution-concentration.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/solution-concentration.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/solution-concentration.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/solution-concentration.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/colligative-properties.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/colligative-properties.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/colligative-properties.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/colligative-properties.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/colligative-properties.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/mole-concept.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/mole-concept.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/mole-concept.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/mole-concept.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/mole-concept.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/stoichiometry.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/stoichiometry.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/stoichiometry.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/stoichiometry.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/stoichiometry.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/hess-law.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hess-law.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/hess-law.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/hess-law.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hess-law.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/gibbs-free-energy.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gibbs-free-energy.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gibbs-free-energy.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gibbs-free-energy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gibbs-free-energy.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/iodine-clock.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/iodine-clock.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/iodine-clock.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/iodine-clock.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/iodine-clock.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/reaction-rate.html</loc>
@@ -385,12 +529,52 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/chemical-equilibrium.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/solubility-equilibrium.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/solubility-equilibrium.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/solubility-equilibrium.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/solubility-equilibrium.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/solubility-equilibrium.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/ph-scale.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ph-scale.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ph-scale.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ph-scale.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ph-scale.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/acid-base-titration.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/acid-base-titration.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/acid-base-titration.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/acid-base-titration.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/acid-base-titration.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/buffer-solutions.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/buffer-solutions.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/buffer-solutions.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/buffer-solutions.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/buffer-solutions.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/metal-activity.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/metal-activity.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/metal-activity.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/metal-activity.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/metal-activity.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/redox-titration.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/redox-titration.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/redox-titration.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/redox-titration.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/redox-titration.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/electrochemistry.html</loc>
@@ -401,12 +585,60 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/electrochemistry.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/organic-isomers.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/organic-isomers.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/organic-isomers.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/organic-isomers.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/organic-isomers.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/esterification.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/esterification.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/esterification.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/esterification.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/esterification.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/polymerization.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/polymerization.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/polymerization.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/polymerization.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/polymerization.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/water-hardness.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/water-hardness.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/water-hardness.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/water-hardness.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/water-hardness.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/diffusion-osmosis.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/diffusion-osmosis.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/diffusion-osmosis.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/diffusion-osmosis.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/diffusion-osmosis.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/enzyme-kinetics.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/enzyme-kinetics.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/enzyme-kinetics.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/enzyme-kinetics.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/enzyme-kinetics.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/cell-division.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/cell-division.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/cell-division.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/cell-division.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/cell-division.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/mendelian-inheritance.html</loc>
@@ -417,12 +649,36 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/mendelian-inheritance.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/gene-expression.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gene-expression.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gene-expression.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gene-expression.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gene-expression.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/oxygen-hemoglobin.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/oxygen-hemoglobin.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/oxygen-hemoglobin.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/oxygen-hemoglobin.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/oxygen-hemoglobin.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/action-potential.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/action-potential.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/action-potential.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/action-potential.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/action-potential.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/blood-glucose.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/blood-glucose.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/blood-glucose.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/blood-glucose.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/blood-glucose.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/population-growth.html</loc>
@@ -433,6 +689,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/population-growth.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/energy-flow.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/energy-flow.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/energy-flow.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/energy-flow.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/energy-flow.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/hardy-weinberg.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hardy-weinberg.html"/>
@@ -441,12 +705,20 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hardy-weinberg.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/moon-phases.html</loc>
+    <loc>https://lab.astroni.org/biomimicry.html</loc>
     <lastmod>2026-11-13</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/moon-phases.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/moon-phases.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/moon-phases.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/moon-phases.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/biomimicry.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/biomimicry.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/biomimicry.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/biomimicry.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/slime-mold.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/slime-mold.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/slime-mold.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/slime-mold.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/slime-mold.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/seasons.html</loc>
@@ -457,12 +729,116 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/seasons.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/moon-phases.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/moon-phases.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/moon-phases.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/moon-phases.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/moon-phases.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/parallax.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/parallax.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/parallax.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/parallax.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/parallax.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/stars-hr.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/stars-hr.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/stars-hr.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/stars-hr.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/stars-hr.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/sun-energy.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sun-energy.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sun-energy.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/sun-energy.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sun-energy.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/hubble-expansion.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hubble-expansion.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/hubble-expansion.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/hubble-expansion.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hubble-expansion.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/earthquake.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/earthquake.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/earthquake.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/earthquake.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/earthquake.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/magma-crystallization.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/magma-crystallization.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/magma-crystallization.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/magma-crystallization.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/magma-crystallization.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/sediment-transport.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sediment-transport.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sediment-transport.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/sediment-transport.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sediment-transport.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/geologic-time.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/geologic-time.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/geologic-time.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/geologic-time.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/geologic-time.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/seafloor-spreading.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/seafloor-spreading.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/seafloor-spreading.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/seafloor-spreading.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/seafloor-spreading.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/faults-folds.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/faults-folds.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/faults-folds.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/faults-folds.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/faults-folds.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/quake-early-warning.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/quake-early-warning.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/quake-early-warning.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/quake-early-warning.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/quake-early-warning.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/atmosphere-layers.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/atmosphere-layers.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/atmosphere-layers.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/atmosphere-layers.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/atmosphere-layers.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/humidity-dewpoint.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/humidity-dewpoint.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/humidity-dewpoint.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/humidity-dewpoint.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/humidity-dewpoint.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/cloud-formation.html</loc>
@@ -481,6 +857,22 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/coriolis.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/fronts.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/fronts.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/fronts.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/fronts.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/fronts.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/typhoon.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/typhoon.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/typhoon.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/typhoon.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/typhoon.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/greenhouse.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/greenhouse.html"/>
@@ -489,12 +881,116 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/greenhouse.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/seawater.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/seawater.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/seawater.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/seawater.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/seawater.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/tides.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/tides.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/tides.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/tides.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/tides.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/ekman-upwelling.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ekman-upwelling.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/ekman-upwelling.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/ekman-upwelling.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/ekman-upwelling.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/quadratic-function.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/quadratic-function.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/quadratic-function.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/quadratic-function.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/quadratic-function.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/polynomial.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/polynomial.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/polynomial.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/polynomial.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/polynomial.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/sequences-series.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sequences-series.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sequences-series.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/sequences-series.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sequences-series.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/recursive-sequence.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/recursive-sequence.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/recursive-sequence.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/recursive-sequence.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/recursive-sequence.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/exp-log.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/exp-log.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/exp-log.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/exp-log.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/exp-log.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/linear-programming.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/linear-programming.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/linear-programming.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/linear-programming.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/linear-programming.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/complex-plane.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/complex-plane.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/complex-plane.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/complex-plane.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/complex-plane.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/lines-circles.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/lines-circles.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/lines-circles.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/lines-circles.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/lines-circles.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/inscribed-angle.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/inscribed-angle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/inscribed-angle.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/inscribed-angle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/inscribed-angle.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/law-of-cosines.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/law-of-cosines.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/law-of-cosines.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/law-of-cosines.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/law-of-cosines.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/triangle-centers.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/triangle-centers.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/triangle-centers.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/triangle-centers.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/triangle-centers.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/trig-functions.html</loc>
@@ -513,12 +1009,36 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/conic-sections.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/plane-vectors.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/plane-vectors.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/plane-vectors.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/plane-vectors.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/plane-vectors.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/space-vectors.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/space-vectors.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/space-vectors.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/space-vectors.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/space-vectors.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/linear-transform.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/linear-transform.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/linear-transform.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/linear-transform.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/linear-transform.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/pascal-triangle.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/pascal-triangle.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/pascal-triangle.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/pascal-triangle.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/pascal-triangle.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/galton-board.html</loc>
@@ -529,6 +1049,22 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/galton-board.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/regression.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/regression.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/regression.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/regression.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/regression.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/limits.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/limits.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/limits.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/limits.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/limits.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/derivative.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/derivative.html"/>
@@ -537,12 +1073,36 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/derivative.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/riemann-sum.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/riemann-sum.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/riemann-sum.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/riemann-sum.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/riemann-sum.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/binary-numbers.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/binary-numbers.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/binary-numbers.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/binary-numbers.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/binary-numbers.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/twos-complement.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/twos-complement.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/twos-complement.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/twos-complement.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/twos-complement.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/text-encoding.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/text-encoding.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/text-encoding.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/text-encoding.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/text-encoding.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/image-digitization.html</loc>
@@ -561,6 +1121,14 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/data-compression.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/big-o.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/big-o.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/big-o.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/big-o.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/big-o.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/binary-search.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/binary-search.html"/>
@@ -577,6 +1145,22 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sorting.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/hanoi.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hanoi.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/hanoi.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/hanoi.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hanoi.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/graph-traversal.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/graph-traversal.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/graph-traversal.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/graph-traversal.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/graph-traversal.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/shortest-path.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/shortest-path.html"/>
@@ -585,12 +1169,44 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/shortest-path.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/code-tracing.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/code-tracing.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/code-tracing.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/code-tracing.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/code-tracing.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/stack-queue.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/stack-queue.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/stack-queue.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/stack-queue.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/stack-queue.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/logic-gates.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/logic-gates.html"/>
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/logic-gates.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/logic-gates.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/logic-gates.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/cpu-scheduling.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/cpu-scheduling.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/cpu-scheduling.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/cpu-scheduling.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/cpu-scheduling.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/page-replacement.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/page-replacement.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/page-replacement.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/page-replacement.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/page-replacement.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/packet-routing.html</loc>
@@ -617,6 +1233,118 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/perceptron.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/knn.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/knn.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/knn.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/knn.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/knn.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/time-zones.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/time-zones.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/time-zones.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/time-zones.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/time-zones.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/map-projection.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/map-projection.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/map-projection.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/map-projection.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/map-projection.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/contour-map.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/contour-map.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/contour-map.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/contour-map.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/contour-map.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/gps-trilateration.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gps-trilateration.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gps-trilateration.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gps-trilateration.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gps-trilateration.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/remote-sensing.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/remote-sensing.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/remote-sensing.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/remote-sensing.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/remote-sensing.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/gis-overlay.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gis-overlay.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gis-overlay.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gis-overlay.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gis-overlay.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/climograph.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/climograph.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/climograph.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/climograph.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/climograph.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/river-meander.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/river-meander.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/river-meander.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/river-meander.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/river-meander.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/population-pyramid.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/population-pyramid.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/population-pyramid.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/population-pyramid.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/population-pyramid.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/central-place.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/central-place.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/central-place.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/central-place.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/central-place.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/urban-heat-island.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/urban-heat-island.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/urban-heat-island.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/urban-heat-island.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/urban-heat-island.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/gravity-model.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/gravity-model.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/gravity-model.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/gravity-model.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/gravity-model.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/von-thunen.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/von-thunen.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/von-thunen.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/von-thunen.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/von-thunen.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/pitch-frequency.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/pitch-frequency.html"/>
@@ -633,6 +1361,30 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/harmonic-series.html"/>
   </url>
   <url>
+    <loc>https://lab.astroni.org/missing-fundamental.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/missing-fundamental.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/missing-fundamental.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/missing-fundamental.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/missing-fundamental.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/loudness.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/loudness.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/loudness.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/loudness.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/loudness.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/intervals.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/intervals.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/intervals.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/intervals.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/intervals.html"/>
+  </url>
+  <url>
     <loc>https://lab.astroni.org/temperament.html</loc>
     <lastmod>2026-11-13</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/temperament.html"/>
@@ -647,6 +1399,30 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/scales-modes.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/scales-modes.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/scales-modes.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/pentatonic.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/pentatonic.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/pentatonic.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/pentatonic.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/pentatonic.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/circle-of-fifths.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/circle-of-fifths.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/circle-of-fifths.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/circle-of-fifths.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/circle-of-fifths.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/beats-tuning.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/beats-tuning.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/beats-tuning.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/beats-tuning.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/beats-tuning.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/consonance.html</loc>
@@ -695,5 +1471,21 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/polyrhythm.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/polyrhythm.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/polyrhythm.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/reverb-room.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/reverb-room.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/reverb-room.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/reverb-room.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/reverb-room.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/adsr-envelope.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/adsr-envelope.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/adsr-envelope.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/adsr-envelope.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/adsr-envelope.html"/>
   </url>
 </urlset>

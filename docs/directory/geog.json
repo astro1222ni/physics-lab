@@ -1,0 +1,289 @@
+{
+  "subject": "geog",
+  "updated": "11/12 23:40",
+  "branches": [
+    {
+      "id": "mapping",
+      "zh": "地圖與地理技能",
+      "en": "Maps and Geographic Skills",
+      "chapters": [
+        {
+          "id": "ch-latlong-time",
+          "zh": "經緯度與時間",
+          "en": "Coordinates and Time",
+          "modules": [
+            "time-zones",
+            "great-circle",
+            "twd97"
+          ]
+        },
+        {
+          "id": "ch-projection",
+          "zh": "地圖投影",
+          "en": "Map Projections",
+          "modules": [
+            "map-projection",
+            "map-scale"
+          ]
+        },
+        {
+          "id": "ch-topomap",
+          "zh": "地形圖判讀",
+          "en": "Reading Topographic Maps",
+          "modules": [
+            "contour-map",
+            "compass-bearing",
+            "slope-aspect",
+            "viewshed"
+          ]
+        },
+        {
+          "id": "ch-thematic-map",
+          "zh": "主題地圖",
+          "en": "Thematic Maps",
+          "modules": [
+            "choropleth",
+            "cartogram",
+            "isoline"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gis",
+      "zh": "空間資訊科技",
+      "en": "Geospatial Technology",
+      "chapters": [
+        {
+          "id": "ch-gis-data",
+          "zh": "空間資料與定位",
+          "en": "Spatial Data and Positioning",
+          "modules": [
+            "raster-vector",
+            "gps-trilateration",
+            "remote-sensing",
+            "night-lights"
+          ]
+        },
+        {
+          "id": "ch-spatial-analysis",
+          "zh": "空間分析",
+          "en": "Spatial Analysis",
+          "modules": [
+            "gis-overlay",
+            "buffer-analysis",
+            "thiessen",
+            "isochrone",
+            "point-pattern",
+            "spatial-autocorrelation"
+          ]
+        },
+        {
+          "id": "ch-gis-applications",
+          "zh": "空間資訊的應用",
+          "en": "Applying Geospatial Information",
+          "modules": [
+            "cholera-map",
+            "hazard-map",
+            "geo-privacy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "climate",
+      "zh": "氣候與自然景觀",
+      "en": "Climate and Natural Landscapes",
+      "chapters": [
+        {
+          "id": "ch-climate-elements",
+          "zh": "氣候要素",
+          "en": "Climate Elements",
+          "modules": [
+            "temperature-controls",
+            "taiwan-rainfall",
+            "thermal-comfort"
+          ]
+        },
+        {
+          "id": "ch-geog-circulation",
+          "zh": "大氣環流與洋流",
+          "en": "Atmospheric Circulation and Ocean Currents",
+          "modules": [
+            "pressure-belts",
+            "monsoon",
+            "ocean-currents"
+          ]
+        },
+        {
+          "id": "ch-climate-types",
+          "zh": "氣候類型",
+          "en": "Climate Types",
+          "modules": [
+            "climograph",
+            "ideal-continent",
+            "water-balance",
+            "climate-shift"
+          ]
+        },
+        {
+          "id": "ch-biome-zones",
+          "zh": "自然景觀帶",
+          "en": "Natural Landscape Zones",
+          "modules": [
+            "biome-zones",
+            "altitude-zones"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "landform",
+      "zh": "地形與水文",
+      "en": "Landforms and Water",
+      "chapters": [
+        {
+          "id": "ch-fluvial",
+          "zh": "河流地形",
+          "en": "River Landforms",
+          "modules": [
+            "river-profile",
+            "river-meander",
+            "alluvial-fan",
+            "stream-order",
+            "watershed"
+          ]
+        },
+        {
+          "id": "ch-coastal",
+          "zh": "海岸地形",
+          "en": "Coastal Landforms",
+          "modules": [
+            "longshore-drift",
+            "sea-cliff",
+            "sea-level-rise"
+          ]
+        },
+        {
+          "id": "ch-arid-glacial",
+          "zh": "冰河、乾燥與溶蝕地形",
+          "en": "Glacial, Arid and Karst Landforms",
+          "modules": [
+            "glacier",
+            "sand-dunes",
+            "karst"
+          ]
+        },
+        {
+          "id": "ch-water-hazard",
+          "zh": "水資源與坡地災害",
+          "en": "Water Resources and Slope Hazards",
+          "modules": [
+            "runoff-reservoir",
+            "urban-flood",
+            "land-subsidence",
+            "landslide"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "population",
+      "zh": "人口與都市",
+      "en": "Population and Cities",
+      "chapters": [
+        {
+          "id": "ch-demography",
+          "zh": "人口成長與轉型",
+          "en": "Population Growth and Transition",
+          "modules": [
+            "demographic-transition",
+            "population-pyramid"
+          ]
+        },
+        {
+          "id": "ch-pop-distribution",
+          "zh": "人口分布與移動",
+          "en": "Population Distribution and Migration",
+          "modules": [
+            "population-center",
+            "push-pull",
+            "eco-footprint"
+          ]
+        },
+        {
+          "id": "ch-central-place",
+          "zh": "聚落與中地",
+          "en": "Settlements and Central Places",
+          "modules": [
+            "central-place",
+            "rank-size"
+          ]
+        },
+        {
+          "id": "ch-urban",
+          "zh": "都市化與都市結構",
+          "en": "Urbanization and Urban Structure",
+          "modules": [
+            "urbanization",
+            "bid-rent",
+            "urban-structure",
+            "urban-heat-island",
+            "commuting"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "economy",
+      "zh": "產業、交通與全球化",
+      "en": "Economy, Transport and Globalization",
+      "chapters": [
+        {
+          "id": "ch-spatial-interaction",
+          "zh": "交通與空間互動",
+          "en": "Transport and Spatial Interaction",
+          "modules": [
+            "gravity-model",
+            "accessibility",
+            "hub-spoke",
+            "shipping-routes"
+          ]
+        },
+        {
+          "id": "ch-agri-food",
+          "zh": "農業與糧食",
+          "en": "Agriculture and Food",
+          "modules": [
+            "von-thunen",
+            "growing-degree",
+            "food-miles",
+            "virtual-water"
+          ]
+        },
+        {
+          "id": "ch-industry-location",
+          "zh": "工業與商業區位",
+          "en": "Industrial and Retail Location",
+          "modules": [
+            "weber-location",
+            "agglomeration",
+            "hotelling",
+            "market-area"
+          ]
+        },
+        {
+          "id": "ch-globalization",
+          "zh": "區域發展與全球化",
+          "en": "Regional Development and Globalization",
+          "modules": [
+            "core-periphery",
+            "spatial-diffusion",
+            "energy-mix",
+            "global-value-chain"
+          ]
+        }
+      ]
+    }
+  ]
+}

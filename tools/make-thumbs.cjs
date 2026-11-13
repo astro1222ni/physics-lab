@@ -27,6 +27,7 @@ const W = 720, H = 405;
 // click：依序點擊的按鈕；wait：擷取前等待的毫秒數；canvas：主畫布（預設頁面第一個 canvas）；
 // eval：點擊前先在頁面執行的程式（例如用測試介面直接插針）；anchor：畫布比 16:9 高時，裁切位置（0 = 上緣、0.5 = 置中、1 = 下緣）
 const PREP = {
+  'hanoi':             { canvas: '#view3 canvas', wait: 2500 },
   'projectile':        { click: ['#run'], wait: 2600, anchor: 1 },
   'newton-second':     { click: ['#go'], wait: 1800, anchor: 0 },
   'incline-friction':  { click: ['#play'], wait: 1600 },

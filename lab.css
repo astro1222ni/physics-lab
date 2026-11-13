@@ -1255,17 +1255,17 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 /* 分支：cell 細胞與分子、genetics 遺傳、physiology 生理、ecology 生態、evolution 演化與多樣性（淺色在白底與章節按鈕的淡底上，對比都 ≥ 4.5） */
 /* 豌豆：黃與綠的明暗差很大（色盲也分得出），白花在淺色底上另畫外框 */
 :root {
-  --b-cell: #7e22ce; --b-genetics: #3f6212; --b-physiology: #be123c; --b-ecology: #047857; --b-evolution: #854d0e;
+  --b-cell: #7e22ce; --b-genetics: #3f6212; --b-physiology: #be123c; --b-ecology: #047857; --b-evolution: #854d0e; --b-biotech: #0f766e;
   --pea-yellow: #e3bf2f; --pea-green: #5a8f2e; --pea-tan: #c4ab82; --pea-purple: #7b3fa6; --pea-white: #f7f5ec; --pea-stem: #4a8a32;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047;
+    --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047; --b-biotech: #5eead4;
     --pea-yellow: #e8c547; --pea-green: #6fae45; --pea-tan: #b9a27c; --pea-purple: #b17ddc; --pea-white: #ecebe2; --pea-stem: #5fa548;
   }
 }
 :root[data-theme="dark"] {
-  --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047;
+  --b-cell: #d8b4fe; --b-genetics: #a3e635; --b-physiology: #fda4af; --b-ecology: #6ee7b7; --b-evolution: #fde047; --b-biotech: #5eead4;
   --pea-yellow: #e8c547; --pea-green: #6fae45; --pea-tan: #b9a27c; --pea-purple: #b17ddc; --pea-white: #ecebe2; --pea-stem: #5fa548;
 }
 /* 生物有五個分支：寬螢幕一列五個 */
