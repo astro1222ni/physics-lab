@@ -78,7 +78,17 @@
     "data-compression": "79bb9436",
     "perceptron": "dae0090f",
     "shortest-path": "5b518f7f",
-    "image-digitization": "906ada1e"
+    "image-digitization": "906ada1e",
+    "temperament": "665fc3a8",
+    "harmonic-series": "25c542aa",
+    "string-instrument": "15038ed5",
+    "consonance": "944a1b13",
+    "wind-instrument": "a1993203",
+    "chords": "72d7361d",
+    "drum-modes": "8ccb3dbe",
+    "pitch-frequency": "f12f1c67",
+    "polyrhythm": "1318ca6a",
+    "scales-modes": "db1fdbf4"
   };
   /* VERSIONS-END */
 

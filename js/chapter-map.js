@@ -51,5 +51,14 @@ window.LAB_CHAPTERS = [
 {"id":"ch-logic","zh":"邏輯閘與電路","en":"Logic Gates and Circuits","b":"system","m":["logic-gates"]},
 {"id":"ch-network","zh":"網路的運作","en":"How Networks Work","b":"network","m":["packet-routing"]},
 {"id":"ch-crypto","zh":"密碼學","en":"Cryptography","b":"network","m":["cryptography"]},
-{"id":"ch-ml","zh":"機器學習","en":"Machine Learning","b":"ai","m":["perceptron"]}
+{"id":"ch-ml","zh":"機器學習","en":"Machine Learning","b":"ai","m":["perceptron"]},
+{"id":"ch-pitch","zh":"音高與音色","en":"Pitch and Timbre","b":"tone","m":["pitch-frequency","harmonic-series"]},
+{"id":"ch-temperament","zh":"音律","en":"Temperament","b":"tuning","m":["temperament"]},
+{"id":"ch-scales","zh":"音階與調式","en":"Scales and Modes","b":"tuning","m":["scales-modes"]},
+{"id":"ch-consonance","zh":"協和與不協和","en":"Consonance and Dissonance","b":"harmony","m":["consonance"]},
+{"id":"ch-chords","zh":"和弦","en":"Chords","b":"harmony","m":["chords"]},
+{"id":"ch-strings","zh":"弦樂器","en":"String Instruments","b":"instruments","m":["string-instrument"]},
+{"id":"ch-winds","zh":"管樂器","en":"Wind Instruments","b":"instruments","m":["wind-instrument"]},
+{"id":"ch-percussion","zh":"打擊樂器","en":"Percussion","b":"instruments","m":["drum-modes"]},
+{"id":"ch-polyrhythm","zh":"節奏型","en":"Rhythmic Patterns","b":"rhythm","m":["polyrhythm"]}
 ];

@@ -76,11 +76,22 @@ window.LAB_MISSION_MODULES = [
   { id: 'data-compression', zh: '資料壓縮：遊程編碼與霍夫曼編碼', en: 'Data Compression: Run-Length and Huffman Coding' },
   { id: 'perceptron', zh: '感知器：一條線分兩類', en: 'The Perceptron: One Line, Two Classes' },
   { id: 'shortest-path', zh: '最短路徑：Dijkstra 演算法', en: 'Shortest Paths: Dijkstra’s Algorithm' },
-  { id: 'image-digitization', zh: '圖片數位化：取樣、解析度與色深', en: 'Digitizing Images: Sampling, Resolution and Color Depth' }
+  { id: 'image-digitization', zh: '圖片數位化：取樣、解析度與色深', en: 'Digitizing Images: Sampling, Resolution and Color Depth' },
+  // 音樂（11/13 第一批 10 個）
+  { id: 'temperament', zh: '五度相生、純律與十二平均律', en: 'Pythagorean, Just and Equal Temperament' },
+  { id: 'harmonic-series', zh: '泛音列與音色', en: 'The Harmonic Series and Timbre' },
+  { id: 'string-instrument', zh: '弦樂器：弦長、張力與品格', en: 'String Instruments: Length, Tension and Frets' },
+  { id: 'consonance', zh: '協和與不協和', en: 'Consonance and Dissonance' },
+  { id: 'wind-instrument', zh: '管樂器：直笛、長笛與單簧管', en: 'Wind Instruments: Recorder, Flute and Clarinet' },
+  { id: 'chords', zh: '和弦的頻率比', en: 'Chords and Frequency Ratios' },
+  { id: 'drum-modes', zh: '鼓與板的振動模態', en: 'Vibration Modes of Drums and Plates' },
+  { id: 'pitch-frequency', zh: '音高與頻率：從振動到音名', en: 'Pitch and Frequency: From Vibration to Note Names' },
+  { id: 'polyrhythm', zh: '多重節奏與歐幾里得節奏', en: 'Polyrhythms and Euclidean Rhythms' },
+  { id: 'scales-modes', zh: '音階與調式', en: 'Scales and Modes' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation', 'chemical-equilibrium', 'coriolis', 'galton-board', 'derivative', 'heat-engine', 'greenhouse', 'electrochemistry', 'space-vectors', 'population-growth', 'hardy-weinberg', 'binary-numbers', 'binary-search', 'sorting', 'logic-gates', 'cryptography', 'packet-routing', 'data-compression', 'perceptron', 'shortest-path', 'image-digitization'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation', 'chemical-equilibrium', 'coriolis', 'galton-board', 'derivative', 'heat-engine', 'greenhouse', 'electrochemistry', 'space-vectors', 'population-growth', 'hardy-weinberg', 'binary-numbers', 'binary-search', 'sorting', 'logic-gates', 'cryptography', 'packet-routing', 'data-compression', 'perceptron', 'shortest-path', 'image-digitization', 'temperament', 'harmonic-series', 'string-instrument', 'consonance', 'wind-instrument', 'chords', 'drum-modes', 'pitch-frequency', 'polyrhythm', 'scales-modes'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -141,7 +152,17 @@ window.LAB_MODULE_BRANCH = {
   'data-compression': 'data',
   'perceptron': 'ai',
   'shortest-path': 'algo',
-  'image-digitization': 'data'
+  'image-digitization': 'data',
+  'temperament': 'tuning',
+  'harmonic-series': 'tone',
+  'string-instrument': 'instruments',
+  'consonance': 'harmony',
+  'wind-instrument': 'instruments',
+  'chords': 'harmony',
+  'drum-modes': 'instruments',
+  'pitch-frequency': 'tone',
+  'polyrhythm': 'rhythm',
+  'scales-modes': 'tuning'
 };
 
 /* 各科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */

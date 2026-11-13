@@ -72,5 +72,15 @@
  "logic-gates": "adf89c746f",
  "packet-routing": "65461f2454",
  "cryptography": "27c2189507",
- "perceptron": "1648fc5130"
+ "perceptron": "1648fc5130",
+ "pitch-frequency": "03be65c0c6",
+ "harmonic-series": "f337d393cb",
+ "temperament": "73a9cef269",
+ "scales-modes": "16f79243a8",
+ "consonance": "f5900363dc",
+ "chords": "2b00e97199",
+ "string-instrument": "fd02c8b239",
+ "wind-instrument": "e88f462a27",
+ "drum-modes": "799f186320",
+ "polyrhythm": "248ad691ab"
 }

@@ -119,13 +119,13 @@
     {
       id: 'chemical-equilibrium-h1', level: 3, hidden: true,
       title: { zh: '顏色睡著了', en: 'The colour fell asleep' },
-      desc: { zh: '冷到連顏色都睡著了。', en: 'So cold that even the colour fell asleep.' },
+      riddle: { zh: '冷到連顏色都睡著了。', en: 'So cold that even the colour fell asleep.' },
       check: function (ev) { return isS(ev, 'n2o4') && ev.data.Ar === 0 && ev.data.x.NO2 <= 0.05; }
     },
     {
       id: 'chemical-equilibrium-h2', level: 5, hidden: true,
       title: { zh: '換季不換色', en: 'New season, same colour' },
-      desc: { zh: '換了季節，顏色卻沒變。', en: 'The season changed, but the colour did not.' },
+      riddle: { zh: '換了季節，顏色卻沒變。', en: 'The season changed, but the colour did not.' },
       check: function (ev) {
         if (!isS(ev, 'n2o4')) return false;
         const d = ev.data;
@@ -135,7 +135,7 @@
     {
       id: 'chemical-equilibrium-h3', level: 4, hidden: true,
       title: { zh: '拆得比建的快', en: 'Torn down faster than built' },
-      desc: { zh: '拆得比建的快。', en: 'Torn down faster than it was built.' },
+      riddle: { zh: '拆得比建的快。', en: 'Torn down faster than it was built.' },
       check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.origin === 'P' && d.T >= 850 && d.x.NH3 <= 0.03; }
     }
   ]);

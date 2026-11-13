@@ -1,0 +1,74 @@
+{
+  "subject": "music",
+  "updated": "11/13 00:30",
+  "branches": [
+    {
+      "id": "tone", "zh": "樂音與聽覺", "en": "Musical Tone and Hearing",
+      "chapters": [
+        { "id": "ch-pitch", "zh": "音高與音色", "en": "Pitch and Timbre",
+          "modules": ["pitch-frequency", "harmonic-series", "missing-fundamental", "shepard-tone", "vibrato-tremolo", "attack-timbre"] },
+        { "id": "ch-loudness", "zh": "響度與聽覺", "en": "Loudness and Hearing",
+          "modules": ["loudness", "noise-dose", "masking", "sound-localization", "pitch-discrimination"] }
+      ]
+    },
+    {
+      "id": "tuning", "zh": "音律與音階", "en": "Tuning and Scales",
+      "chapters": [
+        { "id": "ch-intervals", "zh": "音程", "en": "Intervals",
+          "modules": ["intervals", "monochord", "pitch-helix"] },
+        { "id": "ch-temperament", "zh": "音律", "en": "Temperament",
+          "modules": ["temperament", "comma", "meantone", "edo-explorer", "just-intonation-drift"] },
+        { "id": "ch-scales", "zh": "音階與調式", "en": "Scales and Modes",
+          "modules": ["scales-modes", "pentatonic", "circle-of-fifths", "world-scales", "transposition"] }
+      ]
+    },
+    {
+      "id": "harmony", "zh": "和聲", "en": "Harmony",
+      "chapters": [
+        { "id": "ch-consonance", "zh": "協和與不協和", "en": "Consonance and Dissonance",
+          "modules": ["beats-tuning", "consonance", "combination-tones", "lissajous-intervals"] },
+        { "id": "ch-chords", "zh": "和弦", "en": "Chords",
+          "modules": ["chords", "chord-progression", "voice-leading", "tonnetz", "inversions"] },
+        { "id": "ch-counterpoint", "zh": "對位與織度", "en": "Counterpoint and Texture",
+          "modules": ["canon", "counterpoint", "melody-transform"] }
+      ]
+    },
+    {
+      "id": "instruments", "zh": "樂器的科學", "en": "The Science of Instruments",
+      "chapters": [
+        { "id": "ch-strings", "zh": "弦樂器", "en": "String Instruments",
+          "modules": ["string-instrument", "pluck-position", "bowed-string", "piano-inharmonicity", "body-resonance"] },
+        { "id": "ch-winds", "zh": "管樂器", "en": "Wind Instruments",
+          "modules": ["wind-instrument", "overblowing", "brass-valves", "bottle-resonance", "dizi-xiao"] },
+        { "id": "ch-percussion", "zh": "打擊樂器", "en": "Percussion",
+          "modules": ["drum-modes", "chladni", "bars-bells", "bells", "tuning-fork"] },
+        { "id": "ch-voice", "zh": "人聲", "en": "The Voice",
+          "modules": ["formants", "singer-formant", "vocal-range"] },
+        { "id": "ch-ensemble", "zh": "樂團與電子樂器", "en": "Ensembles and Electronic Instruments",
+          "modules": ["orchestra-ranges", "electric-guitar", "theremin"] }
+      ]
+    },
+    {
+      "id": "rhythm", "zh": "節奏與曲式", "en": "Rhythm and Form",
+      "chapters": [
+        { "id": "ch-meter", "zh": "拍與拍號", "en": "Beat and Meter",
+          "modules": ["tempo-meter", "note-values", "swing-groove"] },
+        { "id": "ch-polyrhythm", "zh": "節奏型", "en": "Rhythmic Patterns",
+          "modules": ["polyrhythm", "phase-shift", "rhythm-necklace", "syncopation"] },
+        { "id": "ch-musical-form", "zh": "曲式與結構", "en": "Musical Form",
+          "modules": ["musical-form", "fractal-melody", "markov-melody", "dice-music"] }
+      ]
+    },
+    {
+      "id": "audio", "zh": "空間、錄音與數位音樂", "en": "Space, Recording and Digital Music",
+      "chapters": [
+        { "id": "ch-room-acoustics", "zh": "空間聲學", "en": "Room Acoustics",
+          "modules": ["reverb-room", "echo-delay", "room-modes"] },
+        { "id": "ch-digital-audio", "zh": "數位聲音", "en": "Digital Sound",
+          "modules": ["spectrogram", "audio-compression", "pitch-detection"] },
+        { "id": "ch-synthesis", "zh": "合成器與效果器", "en": "Synthesizers and Effects",
+          "modules": ["adsr-envelope", "subtractive-synth", "fm-synthesis", "equalizer", "dynamics-compressor", "karplus-strong"] }
+      ]
+    }
+  ]
+}
