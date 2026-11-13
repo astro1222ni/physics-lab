@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Laws of Sines and Cosines: Solving Triangles | Astro Ni Science Lab">正弦定理、餘弦定理與解三角形｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 解三角形頁面專用的顏色代號（淺色＋深色；由 js/law-of-cosines.js 讀取）：三個頂點各一色，對邊同色 */
+    :root { --lc-a: #2563eb; --lc-b: #db2777; --lc-c: #0d9488; --lc-tri: #f59e0b; --lc-circ: #7c3aed; --lc-h: #64748b; --lc-ok: #0d9488; --lc-bad: #dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lc-a: #60a5fa; --lc-b: #f472b6; --lc-c: #2dd4bf; --lc-tri: #fbbf24; --lc-circ: #a78bfa; --lc-h: #cbd5e1; --lc-ok: #2dd4bf; --lc-bad: #f87171; }
+    }
+    :root[data-theme="dark"] { --lc-a: #60a5fa; --lc-b: #f472b6; --lc-c: #2dd4bf; --lc-tri: #fbbf24; --lc-circ: #a78bfa; --lc-h: #cbd5e1; --lc-ok: #2dd4bf; --lc-bad: #f87171; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: none; }
+    .lc button { min-height: 44px; }
+    .lc [hidden] { display: none !important; }
+    .lc .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .lc .playbar button { flex: 1 1 auto; }
+    .lc .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .lc .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .lc .slider input[type="range"] { height: 28px; margin: 0; }
+    .lc .checks label { min-height: 44px; }
+    .lc .checks input { width: 17px; height: 17px; }
+    .lc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .lc .panel { grid-template-columns: minmax(0, 1fr); }
+    .lc .panel > .card { min-width: 0; }
+    .modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+    .modes button { padding: 4px 4px; line-height: 1.2; }
+    .modes button small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes button[aria-pressed="true"] small { color: inherit; opacity: 0.85; }
+    @media (max-width: 420px) { .modes { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .row2 button { flex: 1 1 auto; }
+    .ans-row { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; }
+    .ans-row label { white-space: nowrap; font-weight: 600; }
+    .ans-row input { flex: 1 1 auto; min-width: 0; min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--lc-ok); font-weight: 600; }
+    .chal-msg.bad { color: var(--lc-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    @media (max-width: 480px) { .eq .katex { font-size: 0.88em; } }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geometry&quot;>Mathematics · Trigonometry and Geometry</a> / Solving Triangles"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geometry">數學・三角與幾何</a> ／ 解三角形</nav>
+      <h1 data-en="Laws of Sines and Cosines: Solving Triangles">正弦定理、餘弦定理與解三角形</h1>
+      <p data-en="Drag the corners of a triangle and watch the law of cosines balance three squares, and the law of sines tie every side to the circumcircle. Then give three facts and let the triangle build itself — or refuse, or come out two different ways.">拖曳三角形的頂點，看餘弦定理怎麼讓三個正方形的面積對上帳，正弦定理怎麼把每一邊都綁在外接圓上。再給三個條件，讓三角形自己長出來——有時長不出來，有時長出兩個。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the corner C over the side AB and watch the angle C pass 90°. Then press “SSA” and slide the side a: the circle meets the ray twice, once, or not at all.">試試看：把頂點 C 拖過 AB 的上方，看角 C 跨過 90° 的那一刻。再按「SSA」，拉動邊 a：圓弧和射線有時交兩次、有時一次、有時碰不到。</p>
+    <div class="lab lc" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="三角形畫布：可以拖曳的頂點 A、B、C，三邊、三個角、外接圓與三邊上的正方形；解三角形時顯示由已知條件畫出的三角形。" data-en-aria-label="Triangle canvas: the draggable corners A, B and C, the sides, the angles, the circumcircle and the squares on the sides; when solving, the triangle built from the given facts."></canvas>
+        <div class="playbar">
+          <button id="mark" type="button" class="primary" data-en="Record">記下這一組</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除記下的結果與挑戰紀錄；三角形與滑桿不變" data-en-title="Clear the recorded results and the challenge record; the triangle and the sliders are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lc-a)&quot;></i>A and side a"><i class="dot" style="background:var(--lc-a)"></i>A 與對邊 a</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lc-b)&quot;></i>B and side b"><i class="dot" style="background:var(--lc-b)"></i>B 與對邊 b</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lc-c)&quot;></i>C and side c"><i class="dot" style="background:var(--lc-c)"></i>C 與對邊 c</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--lc-circ)&quot;></i>Circumcircle"><i class="dash" style="color:var(--lc-circ)"></i>外接圓</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="What is given">已知什麼</h2>
+          <div class="modes" id="modes" role="group" aria-label="已知條件" data-en-aria-label="What is given">
+            <button type="button" data-mode="free" aria-pressed="true" data-en-html="Drag<small>corners</small>">拖曳<small>三個頂點</small></button>
+            <button type="button" data-mode="sss" aria-pressed="false" data-en-html="SSS<small>3 sides</small>">SSS<small>三邊</small></button>
+            <button type="button" data-mode="sas" aria-pressed="false" data-en-html="SAS<small>angle between</small>">SAS<small>兩邊夾角</small></button>
+            <button type="button" data-mode="asa" aria-pressed="false" data-en-html="ASA<small>2 angles</small>">ASA<small>兩角夾邊</small></button>
+            <button type="button" data-mode="ssa" aria-pressed="false" data-en-html="SSA<small>angle not between</small>">SSA<small>兩邊一對角</small></button>
+          </div>
+          <p class="hint" id="modeNote"></p>
+        </section>
+
+        <section class="card" id="cardGiven" hidden>
+          <h2 data-en="Given">已知條件</h2>
+          <div class="slider" id="boxA"><label for="ga" data-en="Angle A (degrees)">角 A（度）</label><output id="gao"></output>
+            <input id="ga" type="range" min="1" max="179" step="1" value="70" data-decimals="3"></div>
+          <div class="slider" id="boxB"><label for="gb" data-en="Angle B (degrees)">角 B（度）</label><output id="gbo"></output>
+            <input id="gb" type="range" min="1" max="179" step="1" value="60" data-decimals="3"></div>
+          <div class="slider" id="boxa"><label for="sa" data-en="Side a = BC">邊 a = BC</label><output id="sao"></output>
+            <input id="sa" type="range" min="1" max="10" step="0.1" value="5" data-decimals="3"></div>
+          <div class="slider" id="boxb"><label for="sb" data-en="Side b = CA">邊 b = CA</label><output id="sbo"></output>
+            <input id="sb" type="range" min="1" max="10" step="0.1" value="6" data-decimals="3"></div>
+          <div class="slider" id="boxc"><label for="sc" data-en="Side c = AB">邊 c = AB</label><output id="sco"></output>
+            <input id="sc" type="range" min="1" max="10" step="0.1" value="7" data-decimals="3"></div>
+          <div class="row2" id="ssaRow" hidden>
+            <button id="ssaSel" type="button" data-en="Show the other solution">看另一個解</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Show">顯示</h2>
+          <div class="checks">
+            <label><input id="showSq" type="checkbox" checked><span data-en="Squares on the sides">三邊上的正方形</span></label>
+            <label><input id="showCirc" type="checkbox" checked><span data-en="Circumcircle and 2R">外接圓與 2R</span></label>
+            <label><input id="showAng" type="checkbox" checked><span data-en="Angles">角度</span></label>
+            <label><input id="showH" type="checkbox"><span data-en="Altitudes">高</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Sides a, b, c">三邊 a、b、c</dt><dd id="rSides">—</dd>
+            <dt data-en="Angles A, B, C">三角 A、B、C</dt><dd id="rAngs">—</dd>
+            <dt data-en="Type">形狀</dt><dd id="rKind">—</dd>
+            <dt data-en="Area">面積</dt><dd id="rArea">—</dd>
+            <dt data-en="Perimeter">周長</dt><dd id="rPer">—</dd>
+            <dt data-en="a／sin A, b／sin B, c／sin C">a／sin A、b／sin B、c／sin C</dt><dd id="rSine">—</dd>
+            <dt data-en="Circumradius R">外接圓半徑 R</dt><dd id="rR">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Record” to keep a list of the triangles you have made.">按「記下這一組」可以把做過的三角形列成一張表。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: solve the triangle">挑戰：解三角形</h2>
+          <p class="hint" data-en="Three facts are marked on a triangle; work out the one with a question mark (a calculator is fine) and type it in. Sides to within 1%, angles to within 0.5°.">三角形上標了三個已知條件，算出標著問號的那一個（可以用計算機），打進答案。邊長誤差 1% 以內、角度 0.5° 以內算對。</p>
+          <div class="row2">
+            <button id="newChal" type="button" data-en="New problem">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <div class="ans-row" id="ansRow" hidden>
+            <label for="ans" id="ansLabel">？</label>
+            <input id="ans" type="text" inputmode="decimal" autocomplete="off" placeholder="答案" data-en-placeholder="Answer">
+            <button id="submitC" type="button" data-en="Check">對答案</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="The law of cosines">餘弦定理</h3>
+      <div class="formula">\[ c^2 = a^2 + b^2 - 2ab\cos C,\qquad \cos C = \frac{a^2 + b^2 - c^2}{2ab} \]</div>
+      <p data-en-html="When \(C = 90^\circ\) the last term vanishes and this is Pythagoras’ theorem. The picture shows why: the altitudes cut each square on a side into two rectangles, and the two rectangles that meet at the same corner have the same area — for example the two next to \(C\) both have area \(ab\cos C\). So the square on \(c\) is the other two squares minus those two pieces. If \(C\) is obtuse, \(\cos C &lt; 0\) and the piece is added instead.">當 \(C = 90^\circ\) 時最後一項消失，就是畢氏定理。畫面說明原因：三條高把每個邊上的正方形切成兩個長方形，靠在同一個頂點旁的兩個長方形面積相同，例如靠近 \(C\) 的兩塊面積都是 \(ab\cos C\)。所以 \(c\) 上的正方形，就是另外兩個正方形扣掉這兩塊。\(C\) 是鈍角時 \(\cos C &lt; 0\)，扣掉就變成加上。</p>
+      <h3 data-en="The law of sines">正弦定理</h3>
+      <div class="formula">\[ \frac{a}{\sin A} = \frac{b}{\sin B} = \frac{c}{\sin C} = 2R \]</div>
+      <p data-en-html="Every triangle has exactly one circle through its three corners. The angle at \(A\) is an inscribed angle standing on the chord \(BC\), so \(a = 2R\sin A\). The same is true for the other two sides, which is why all three ratios equal the diameter. The area is \(\tfrac12 ab\sin C = \dfrac{abc}{4R}\).">每個三角形都恰好有一個通過三個頂點的圓。角 \(A\) 是弦 \(BC\) 所對的圓周角，所以 \(a = 2R\sin A\)；另外兩邊也一樣，三個比值都等於直徑。面積是 \(\tfrac12 ab\sin C = \dfrac{abc}{4R}\)。</p>
+      <h3 data-en="Solving a triangle">解三角形</h3>
+      <ul>
+        <li data-en-html="<strong>SSS</strong>: three sides fix the triangle if each is shorter than the other two together; the angles come from the law of cosines."><strong>SSS</strong>：三邊只要任兩邊和大於第三邊，三角形就確定了；角用餘弦定理求。</li>
+        <li data-en-html="<strong>SAS</strong>: the law of cosines gives the third side, then the angles."><strong>SAS</strong>：先用餘弦定理求第三邊，再求角。</li>
+        <li data-en-html="<strong>ASA</strong>: the third angle is \(180^\circ - A - B\); the law of sines gives the other two sides."><strong>ASA</strong>：第三個角是 \(180^\circ - A - B\)，再用正弦定理求另外兩邊。</li>
+        <li data-en-html="<strong>SSA</strong> is the ambiguous case. Draw the angle \(A\) and the side \(b = CA\); then \(B\) must lie on the ray from \(A\) at distance \(a\) from \(C\). A circle of radius \(a\) about \(C\) can miss the ray (\(a &lt; h = b\sin A\)), touch it (\(a = h\), a right angle), cut it twice (\(h &lt; a &lt; b\)), or cut it once (\(a \ge b\))."><strong>SSA</strong> 是「可能兩解」的情形。畫好角 \(A\) 與邊 \(b = CA\)，\(B\) 就要在從 \(A\) 出發的射線上、離 \(C\) 恰好 \(a\)。以 \(C\) 為圓心、\(a\) 為半徑的圓，可能碰不到射線（\(a &lt; h = b\sin A\)）、剛好相切（\(a = h\)，直角）、交兩點（\(h &lt; a &lt; b\)）或只交一點（\(a \ge b\)）。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Across 90°</strong>: drag \(C\) until the angle \(C\) crosses \(90^\circ\). The circumcentre leaves the triangle exactly then, and the term \(-2ab\cos C\) changes sign."><strong>跨過 90°</strong>：拖曳 \(C\)，讓角 \(C\) 跨過 \(90^\circ\)。就在那一刻，外心離開三角形，\(-2ab\cos C\) 也變號。</li>
+        <li data-en-html="<strong>Same ratio</strong>: however you drag, the three numbers \(a/\sin A\), \(b/\sin B\), \(c/\sin C\) stay equal to each other and to the diameter \(2R\)."><strong>同一個比</strong>：不管怎麼拖，\(a/\sin A\)、\(b/\sin B\)、\(c/\sin C\) 三個數永遠相等，而且等於直徑 \(2R\)。</li>
+        <li data-en-html="<strong>Two answers</strong>: in SSA the two triangles share \(A\), \(b\) and \(a\), and their angles at \(B\) add up to \(180^\circ\)."><strong>兩個答案</strong>：SSA 的兩個解有相同的 \(A\)、\(b\)、\(a\)，兩個三角形在 \(B\) 的角加起來是 \(180^\circ\)。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Angles come from the law of cosines with the cosine clipped to \([-1, 1]\); the circumcentre is the intersection of the perpendicular bisectors. SSA solves \(c^2 - 2bc\cos A + b^2 - a^2 = 0\) for the position of \(B\) on the ray.">角由餘弦定理求（cos 值夾在 \([-1, 1]\) 之間），外心是三條中垂線的交點。SSA 解 \(c^2 - 2bc\cos A + b^2 - a^2 = 0\)，得到 \(B\) 在射線上的位置。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 11) · the laws of sines and cosines, solving triangles, area of a triangle.">課綱對應：高中數學（高二）・正弦定理、餘弦定理、解三角形、三角形面積。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Law_of_cosines&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Law of cosines (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Law_of_sines&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Law of sines (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Law_of_cosines" target="_blank" rel="noopener">Law of cosines（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Law_of_sines" target="_blank" rel="noopener">Law of sines（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/law-of-cosines-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/law-of-cosines.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="law-of-cosines"></script>
+  <script src="js/missions/law-of-cosines.js"></script>
+  <script src="js/stats.js" data-module="law-of-cosines"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
