@@ -133,7 +133,8 @@ const SOL = {
   'moon-phases-12': null,
   'moon-phases-h1': null,
   'moon-phases-h2': null,
-  'moon-phases-h3': null
+  'moon-phases-h3': null,
+  'moon-phases-h4': null, 'moon-phases-h5': null, 'moon-phases-h6': null, 'moon-phases-h7': null, 'moon-phases-h8': null, 'moon-phases-h9': null, 'moon-phases-h10': null
 };
 
 // 6：上弦月在東方升起——在打字精度 0.01 h 上找月亮高度 −1°～2.5° 的時刻
@@ -230,6 +231,72 @@ const SOL = {
   }
 })();
 
+// ---------- 新增的隱藏任務 h4–h10（11/13，隱藏任務補到 10 個） ----------
+// h4：超級月亮——月球位置 180°（滿月），近地點拖到月球的黃經
+SOL['moon-phases-h4'] = ['月球位置 180°（滿月），近地點 = 月球黃經', S => { S.elong(180); S.peri(S.moonLon()); }];
+// h5：白天的弦月——找日期、時刻、月球位置 ±90° 讓太陽與月亮都在 30° 以上
+(function () {
+  for (const doy of [266, 172, 80, 355]) for (const e of [90, 270]) for (let h = 6; h <= 18; h += 0.25) {
+    const run = S => { S.doy(doy); S.hr(h); S.elong(e); };
+    if (passes('moon-phases-h5', run)) { SOL['moon-phases-h5'] = ['日期第 ' + doy + ' 天、時刻 ' + h + ' 時、月球位置 ' + e + '°', run]; return; }
+  }
+})();
+// h6：冬至前後的午夜滿月
+(function () {
+  for (const doy of [355, 356, 354, 357, 350, 360]) for (let h = 22; h <= 26; h += 0.25) for (const e of [180, 179, 181, 178, 182]) {
+    const hh = h % 24, dd = h >= 24 ? doy + 1 : doy;
+    const run = S => { S.doy(dd); S.hr(hh); S.elong(e); };
+    if (passes('moon-phases-h6', run)) { SOL['moon-phases-h6'] = ['日期第 ' + dd + ' 天、時刻 ' + hh + ' 時、月球位置 ' + e + '°（冬至前後的午夜滿月）', run]; return; }
+  }
+})();
+// h7：不到一天的眉月——春分前後的黃昏，月球位置 8°–13°
+(function () {
+  for (const doy of [80, 90, 70, 100, 60, 110, 120]) for (let h = 18; h <= 19.5; h += 0.05) for (let e = 8; e <= 13; e += 0.5) {
+    const hh = Math.round(h * 100) / 100;
+    const run = S => { S.doy(doy); S.hr(hh); S.elong(e); };
+    if (passes('moon-phases-h7', run)) { SOL['moon-phases-h7'] = ['日期第 ' + doy + ' 天、時刻 ' + hh + ' 時、月球位置 ' + e + '°', run]; return; }
+  }
+})();
+// h8：很深的月全食——月球位置 180°，升交點對準月球黃經（月球正在交點上）；近地點與遠地點都試
+(function () {
+  for (const dp of [180, 90, 0]) {
+    const run = S => { S.elong(180); S.node(S.moonLon()); S.peri(S.moonLon() + dp); };
+    if (passes('moon-phases-h8', run)) { SOL['moon-phases-h8'] = ['月球位置 180°，升交點 = 月球黃經，近地點 = 月球黃經 + ' + dp + '°', run]; return; }
+  }
+})();
+// h9：同一個食季的月全食與日全食——月球位置 160°，近地點 = 月球黃經 + pp，升交點放在月球前方 20 + off 度，按「下一次滿月」再按「下一次新月」
+(function () {
+  for (const pp of [180, 150, -150]) for (let off = 4; off <= 8; off += 0.25) {
+    const run = S => { S.elong(160); S.peri(S.moonLon() + pp); S.node(S.moonLon() + 20 + off); S.next('full'); S.next('new'); };
+    if (passes('moon-phases-h9', run)) { SOL['moon-phases-h9'] = ['月球位置 160°，近地點 = 月球黃經 + ' + pp + '°，升交點 = 月球黃經 + ' + (20 + off).toFixed(2) + '°，按「下一次滿月」、再按「下一次新月」', run]; return; }
+  }
+})();
+// h10：臺灣白天的日環食——和任務 12 同樣的做法，但把近地點轉到對面（月球在遠地點）
+(function () {
+  const tryHour = function (hour, doy) {
+    const run = S => {
+      S.doy(doy); S.hr(hour); S.elong(0); S.peri(S.sunLon() + 180);
+      for (let it = 0; it < 6; it++) {
+        const st = S.get(), t = st.t, el = st.el;
+        const P = K.observer(t), s = K.sunAt(t), u = K.unit(K.sub(s, P)), r = K.moonAt(el, t).r;
+        const b = K.dot(P, u), c = K.dot(P, P) - r * r, lam = -b + Math.sqrt(b * b - c);
+        const mT = K.add(P, K.mul(u, lam));
+        const lon = Math.atan2(mT.y, mT.x), beta = Math.asin(mT.z / r);
+        const uu = Math.asin(Math.max(-1, Math.min(1, Math.sin(beta) / Math.sin(el.inc))));
+        const Om = lon - Math.atan2(Math.cos(el.inc) * Math.sin(uu), Math.cos(uu));
+        S.node(Om / DEG);
+        S.elong((lon - K.sunLon(t)) / DEG);
+        S.peri(S.sunLon() + 180);
+      }
+    };
+    return passes('moon-phases-h10', run) ? run : null;
+  };
+  for (const doy of [266, 172, 80]) for (const hour of [12, 11.5, 12.5, 10, 14]) {
+    const run = tryHour(hour, doy);
+    if (run) { SOL['moon-phases-h10'] = ['日期第 ' + doy + ' 天、時刻 ' + hour + ' 時；近地點 = 太陽黃經 + 180°（遠地點）；升交點與月球位置讓月球落在臺灣與太陽的連線上', run]; return; }
+  }
+})();
+
 // ---------- 檢查 ----------
 let fail = 0;
 // 預設狀態（9/23 18:30、黃經差 120°、Ω = 100°、近地點 30°）：任何任務都不能通過
@@ -258,7 +325,7 @@ missions.forEach(m => {
 })();
 // 選了臺灣以外的地點：綁臺灣天空的任務不判定，其餘任務照樣做得到
 (function () {
-  const TW_ONLY = ['moon-phases-4', 'moon-phases-6', 'moon-phases-12', 'moon-phases-h3'];
+  const TW_ONLY = ['moon-phases-4', 'moon-phases-6', 'moon-phases-12', 'moon-phases-h3', 'moon-phases-h5', 'moon-phases-h6', 'moon-phases-h7', 'moon-phases-h10'];
   const bad = [];
   missions.forEach(m => {
     const sol = SOL[m.id];
@@ -267,7 +334,28 @@ missions.forEach(m => {
     if (ok === TW_ONLY.includes(m.id)) bad.push(m.id + (ok ? ' 不該通過' : ' 應該通過'));
   });
   if (bad.length) { fail++; console.log('✗ 別的觀測地點：' + bad.join('、')); }
-  else console.log('✓ 選了別的觀測地點：任務 4、6、12、h3（臺灣的天空）不判定，其餘 ' + (missions.length - TW_ONLY.length) + ' 個照樣做得到');
+  else console.log('✓ 選了別的觀測地點：任務 4、6、12、h3、h5、h6、h7、h10（臺灣的天空）不判定，其餘 ' + (missions.length - TW_ONLY.length) + ' 個照樣做得到');
+})();
+// 隱藏任務彼此不連帶完成：每個隱藏任務的解法，不會讓其他隱藏任務也成立
+(function () {
+  const H = missions.filter(m => m.hidden);
+  H.forEach(a => {
+    const sol = SOL[a.id];
+    if (!sol) return;
+    const S = session(); sol[1](S);
+    const hit = H.filter(b => b !== a && (() => { b.mem = {}; return S.events.some(ev => { try { return b.check(ev, b.mem); } catch (e) { return false; } }); })());
+    if (hit.length) { fail++; console.log('✗ ' + a.id + ' 的解法也完成了 ' + hit.map(m => m.id).join('、')); }
+    else console.log('✓ ' + a.id + ' 的解法不會順便完成別的隱藏任務');
+  });
+})();
+// 新的隱藏任務：預設參數播放 60 天（每天暫停一次）也不觸發
+(function () {
+  const S = session();
+  for (let i = 0; i < 60; i++) S.play(1);
+  const ids = ['h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10'].map(x => 'moon-phases-' + x);
+  const hit = missions.filter(m => ids.includes(m.id) && (() => { m.mem = {}; return S.events.some(ev => { try { return m.check(ev, m.mem); } catch (e) { return false; } }); })());
+  if (hit.length) { fail++; console.log('✗ 預設參數播放 60 天觸發了 ' + hit.map(m => m.id).join('、')); }
+  else console.log('✓ 預設參數播放 60 天、每天暫停一次：h4–h10 都不觸發');
 })();
 console.log(fail ? '\n有 ' + fail + ' 項沒有通過' : '\n全部 ' + missions.length + ' 個任務都做得到');
 process.exitCode = fail ? 1 : 0;

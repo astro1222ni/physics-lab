@@ -133,6 +133,54 @@
         const d = ev.data;
         return isState(ev) && d.dec >= 28.5 && isFinite(d.moonAlt) && d.moonAlt > -1 && d.moonAlt < 3 && (d.moonAz < 62 || d.moonAz > 298);
       }
+    },
+    {
+      // 超級月亮：滿月（照亮 99.5% 以上）剛好在近地點附近（月地距離 ≤ 363 320 km：近地點 363 296 km，月球離近地點不到約 3°；預設播放時的滿月最近 363 382 km，不算）
+      id: 'moon-phases-h4', level: 3, hidden: true,
+      riddle: { zh: '最圓的那一晚，她也走得最近。', en: 'On the night she is fullest, she also comes nearest.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.illum >= 0.995 && d.dist <= 363320; }
+    },
+    {
+      // 白天的半個月亮：從臺灣看，弦月（照亮 49%–51%）與太陽都在 30° 以上的高空
+      id: 'moon-phases-h5', level: 4, hidden: true,
+      riddle: { zh: '陽光正亮的時候，半張臉高高掛在天上。', en: 'In broad daylight, half a face hangs high in the sky.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.illum >= 0.49 && d.illum <= 0.51 && d.sunAlt >= 30 && d.moonAlt >= 30; }
+    },
+    {
+      // 冬夜的滿月幾乎在頭頂：滿月的位置和太陽相對，冬至前後的滿月赤緯接近 +23°，臺灣（北緯 23.5°）看它可到天頂附近
+      id: 'moon-phases-h6', level: 6, hidden: true,
+      riddle: { zh: '最長的夜裡，最圓的她爬到了頭頂。', en: 'On the longest night, the fullest Moon climbs overhead.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.illum >= 0.98 && d.moonAlt >= 85 && d.sunAlt <= -18; }
+    },
+    {
+      // 新月後不到一天的眉月：黃昏（太陽 −8°～−3°）在臺灣西方低空看到（月亮高度 3° 以上）
+      id: 'moon-phases-h7', level: 7, hidden: true,
+      riddle: { zh: '出生還不到一天的她，在黃昏露出一根細細的眉毛。', en: 'Not yet a day old, she shows one thin eyebrow at dusk.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.phase === 'waxC' && d.age <= 1 && d.sunAlt >= -8 && d.sunAlt <= -3 && d.moonAlt >= 3; }
+    },
+    {
+      // 很深的月全食：本影食分 1.7 以上（月球幾乎從本影正中央穿過）
+      id: 'moon-phases-h8', level: 7, hidden: true,
+      riddle: { zh: '她走進陰影最深、最中央的地方。', en: 'She walks into the deepest, most central part of the shadow.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.lunar === 'total' && d.magU >= 1.7; }
+    },
+    {
+      // 同一個食季先後有日全食與月全食（相隔 16 天以內）
+      id: 'moon-phases-h9', level: 9, hidden: true,
+      riddle: { zh: '半個月之內，白天與黑夜都被完全遮住一次。', en: 'Within half a month, both the day and the night are completely covered once.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'event' || ev.data.eclipse !== 'total' || !ev.data.eclKind) return false;
+        const list = mem.tot = (mem.tot || []).filter(function (e) { return Math.abs(ev.data.t - e.t) < 40; });
+        const ok = list.some(function (e) { return e.k !== ev.data.eclKind && Math.abs(ev.data.t - e.t) <= 16; });
+        list.push({ k: ev.data.eclKind, t: ev.data.t });
+        return ok;
+      }
+    },
+    {
+      // 臺灣在白天（太陽 5° 以上）看到日環食
+      id: 'moon-phases-h10', level: 10, hidden: true,
+      riddle: { zh: '在臺灣的天空，太陽戴上一枚火的戒指。', en: 'In Taiwan’s sky, the Sun puts on a ring of fire.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.local === 'annular' && d.sunAlt >= 5; }
     }
   ]);
 })();
