@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Erosion, Transport and Deposition: the Hjulström Curve | Astro Ni Science Lab">侵蝕、搬運與沉積：Hjulström 曲線｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 侵蝕、搬運與沉積頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --st-sky0: #cfe6f7; --st-sky1: #eef6fc; --st-water0: #8cc3e8; --st-water1: #3f7fb3; --st-bank: #a08a6a; --st-bank2: #7a6548;
+      --st-clay: #b45309; --st-silt: #ca8a04; --st-sand: #e0b84a; --st-granule: #a3a3a3; --st-pebble: #78716c; --st-cobble: #57534e;
+      --st-erode: #dc2626; --st-move: #2563eb; --st-dep: #16a34a; --st-flow: #0f4c81; --st-mine: #db2777; --st-gold: #d4a017; --st-mag: #334155; --st-coal: #1f2937;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --st-sky0: #1e3a5f; --st-sky1: #2b4a6f; --st-water0: #2a6496; --st-water1: #143d63; --st-bank: #6b5a43; --st-bank2: #4a3d2c;
+        --st-clay: #f59e0b; --st-silt: #facc15; --st-sand: #f3d36b; --st-granule: #d4d4d4; --st-pebble: #a8a29e; --st-cobble: #d6d3d1;
+        --st-erode: #f87171; --st-move: #60a5fa; --st-dep: #4ade80; --st-flow: #bfdbfe; --st-mine: #f472b6; --st-gold: #fbbf24; --st-mag: #94a3b8; --st-coal: #9ca3af;
+      }
+    }
+    :root[data-theme="dark"] {
+      --st-sky0: #1e3a5f; --st-sky1: #2b4a6f; --st-water0: #2a6496; --st-water1: #143d63; --st-bank: #6b5a43; --st-bank2: #4a3d2c;
+      --st-clay: #f59e0b; --st-silt: #facc15; --st-sand: #f3d36b; --st-granule: #d4d4d4; --st-pebble: #a8a29e; --st-cobble: #d6d3d1;
+      --st-erode: #f87171; --st-move: #60a5fa; --st-dep: #4ade80; --st-flow: #bfdbfe; --st-mine: #f472b6; --st-gold: #fbbf24; --st-mag: #94a3b8; --st-coal: #9ca3af;
+    }
+    #cv { aspect-ratio: auto; height: 480px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 560px; } }
+    #gr { display: block; width: 100%; height: 270px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .st button { min-height: 44px; }
+    .st .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .st .playbar button { flex: 1 1 auto; }
+    .st .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .st .slider input[type="range"] { height: 28px; margin: 0; }
+    .st [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .big-num small { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .runlog b { color: var(--text); }
+    .runlog .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Erosion, transport and deposition"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 侵蝕、搬運與沉積</nav>
+      <h1 data-en="Erosion, Transport and Deposition: the Hjulström Curve">侵蝕、搬運與沉積：Hjulström 曲線</h1>
+      <p data-en="Why is fine sand the easiest thing for a river to pick up, while sticky clay needs a flood? Why does mud stay cloudy in almost still water, and why do pebbles stop in the mountains while silt reaches the sea? Change the grain size and the flow, drop grains into a column of water, and send a river’s load from the mountains to the sea.">為什麼河水最容易挖起來的是細砂，黏答答的黏土反而要洪水才沖得動？為什麼泥水在幾乎不動的水裡還是混濁的？為什麼礫石停在山裡，粉砂卻一路流到海裡？改變顆粒大小和流速，把顆粒丟進水管看它沉降，再讓一條河把泥沙從山上帶到海邊。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose fine sand and raise the flow until the bed starts to move. Then try clay at the same speed.">試試看：選細砂，慢慢加大流速，看河床什麼時候開始被挖動；再換成黏土，用同樣的流速試試。</p>
+    <div class="lab st" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="bed" aria-pressed="true" data-en="River bed">河床上的顆粒</button>
+          <button type="button" data-mode="settle" aria-pressed="false" data-en="Settling column">沉降水管</button>
+          <button type="button" data-mode="river" aria-pressed="false" data-en="Mountains to the sea">從山到海</button>
+        </div>
+        <canvas id="cv" aria-label="河床上的顆粒" data-en-aria-label="Grains on a river bed"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">從上游放一把</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="grainCard">
+          <h2 data-en="Your grain">你的顆粒</h2>
+          <div class="slider"><label for="size" data-en="Grain diameter D (mm)">粒徑 D（mm）</label><output></output>
+            <input id="size" type="range" min="-3" max="2.301" step="0.001" value="-0.699"></div>
+          <div class="presets" role="group" aria-label="常見的顆粒" data-en-aria-label="Common grains" id="sampleSeg"></div>
+          <p class="hint" id="clsHint">—</p>
+          <div class="segw" role="group" aria-label="礦物" data-en-aria-label="Mineral" id="minSeg"></div>
+          <div class="segw" role="group" aria-label="形狀" data-en-aria-label="Shape" id="shapeSeg">
+            <button type="button" data-shape="natural" aria-pressed="true" data-en="Natural grain">天然顆粒</button>
+            <button type="button" data-shape="sphere" aria-pressed="false" data-en="Smooth sphere">光滑的球</button>
+          </div>
+        </section>
+
+        <div id="bedPanel">
+          <section class="card">
+            <h2 data-en="The river">河水</h2>
+            <div class="slider"><label for="vel" data-en="Mean flow speed U (m/s)">平均流速 U（m/s）</label><output></output>
+              <input id="vel" type="range" min="-3" max="0.699" step="0.001" value="-0.699"></div>
+            <div class="slider"><label for="depth" data-en="Water depth h (m)">水深 h（m）</label><output></output>
+              <input id="depth" type="range" min="0.2" max="10" step="0.1" value="1" data-decimals="1"></div>
+            <div class="segw" role="group" aria-label="細粒沉積物" data-en-aria-label="Fine sediment" id="consolSeg">
+              <button type="button" data-c="1" aria-pressed="true" data-en="Loose mud">鬆散的泥</button>
+              <button type="button" data-c="4" aria-pressed="false" data-en="Compacted clay">壓實的黏土</button>
+            </div>
+          </section>
+          <section class="card">
+            <h2 data-en="What happens">會發生什麼</h2>
+            <p class="big-num" id="bZone">—</p>
+            <dl class="readout">
+              <dt data-en="Grains on the bed">河床上的顆粒</dt><dd id="bBed" class="big">—</dd>
+              <dt data-en="Grains from upstream">上游帶來的顆粒</dt><dd id="bInc" class="big">—</dd>
+              <dt data-en="Speed to pick it up">挖起來要的流速</dt><dd id="bUe">—</dd>
+              <dt data-en="Speed where it settles">停下來的流速</dt><dd id="bUd">—</dd>
+              <dt data-en="Shear velocity u*">剪力速度 u*</dt><dd id="bUs">—</dd>
+              <dt data-en="Settling velocity w">沉降速度 w</dt><dd id="bW">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="settlePanel" hidden>
+          <section class="card">
+            <h2 data-en="The water column">水管</h2>
+            <div class="slider"><label for="temp" data-en="Water temperature (°C)">水溫（°C）</label><output></output>
+              <input id="temp" type="range" min="0" max="40" step="0.5" value="20" data-decimals="1"></div>
+            <p class="hint" data-en="The column is 1 m tall. The six quartz grains on the left are the reference; your grain is on the right.">水管高 1 m。左邊六種是石英的參考顆粒，最右邊是你的顆粒。</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Falling 1 m">沉 1 公尺要多久</h2>
+            <p class="big-num" id="sT">—</p>
+            <dl class="readout">
+              <dt data-en="Settling velocity w">沉降速度 w</dt><dd id="sW" class="big">—</dd>
+              <dt data-en="Stokes’ law would say">史托克斯定律算的</dt><dd id="sSt">—</dd>
+              <dt data-en="Grain Reynolds number">顆粒雷諾數</dt><dd id="sRe">—</dd>
+              <dt data-en="Water viscosity">水的黏度</dt><dd id="sMu">—</dd>
+            </dl>
+            <p class="runlog" id="arrLog">—</p>
+          </section>
+        </div>
+
+        <div id="riverPanel" hidden>
+          <section class="card">
+            <h2 data-en="The river">河流</h2>
+            <div class="slider"><label for="u0" data-en="Flow speed in the mountains (m/s)">山上的流速（m/s）</label><output></output>
+              <input id="u0" type="range" min="0.5" max="5" step="0.05" value="2" data-decimals="2"></div>
+            <p class="hint" data-en="Downstream the valley widens and flattens and the river slows down to almost nothing at the sea. A flood raises the speed everywhere.">往下游河谷變寬、變平，流速越來越慢，到海口幾乎停住。洪水時沿途都變快。</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Where each grain stops">各種顆粒停在哪裡</h2>
+            <p class="runlog" id="stopLog">—</p>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Settling: Stokes and beyond">沉降：史托克斯定律與更大的顆粒</h3>
+      <p data-en-html="A grain sinking through still water soon reaches a constant <strong>settling velocity</strong> \(w\), where its weight in water balances the drag. For tiny grains the drag is viscous (Stokes’ law):">顆粒在靜水裡下沉，很快就達到固定的<strong>沉降速度</strong> \(w\)：在水中的重量和阻力平衡。很小的顆粒受的是黏滯阻力（史托克斯定律）：</p>
+      <div class="formula">\[ w_{\mathrm{Stokes}} = \frac{R\,g\,D^2}{18\,\nu}, \qquad R = \frac{\rho_s}{\rho} - 1 \]</div>
+      <p data-en-html="so a grain ten times smaller sinks a hundred times slower. Larger grains push water out of the way (form drag) and \(w\) grows only like \(\sqrt{D}\). Ferguson and Church (2004) join the two limits in one formula that fits natural sand (\(C_2 = 1.0\); smooth spheres \(C_2 = 0.4\)):">顆粒小 10 倍，沉得慢 100 倍。大顆粒要把水推開（形狀阻力），\(w\) 只和 \(\sqrt{D}\) 成正比。Ferguson 與 Church（2004）把兩個極限接成一條式子，和天然砂粒的實測相符（天然顆粒 \(C_2 = 1.0\)，光滑的球 \(C_2 = 0.4\)）：</p>
+      <div class="formula">\[ w = \frac{R\,g\,D^2}{18\,\nu + \sqrt{0.75\,C_2\,R\,g\,D^3}} \]</div>
+      <p data-en-html="Cold water is more viscous: at 0 °C \(\nu\) is 1.8 times its value at 20 °C, so silt and clay settle almost half as fast. Stokes’ law holds only while the grain Reynolds number \(wD/\nu\) is below about 1.">冷水比較黏：0 °C 時 \(\nu\) 是 20 °C 的 1.8 倍，粉砂和黏土沉得慢將近一半。史托克斯定律只在顆粒雷諾數 \(wD/\nu\) 小於約 1 時成立。</p>
+      <h3 data-en="Picking grains up: the Shields criterion">把顆粒挖起來：Shields 準則</h3>
+      <p data-en-html="Flowing water drags on the bed with a shear stress \(\tau = \rho u_*^2\) (\(u_*\) is the shear velocity). A grain starts to move when \(\tau\) beats a critical value; the critical <strong>Shields number</strong> \(\theta_c\) is from Soulsby and Whitehouse (1997):">流動的水對河床有剪應力 \(\tau = \rho u_*^2\)（\(u_*\) 是剪力速度）。\(\tau\) 超過臨界值時，顆粒就開始移動；臨界 <strong>Shields 數</strong> \(\theta_c\) 用 Soulsby 與 Whitehouse（1997）的式子：</p>
+      <div class="formula">\[ \tau_c = \theta_c\,(\rho_s - \rho)\,g\,D + \frac{\beta}{D}, \qquad \theta_c = \frac{0.30}{1 + 1.2D_*} + 0.055\left(1 - e^{-0.020D_*}\right) \]</div>
+      <p data-en-html="The first term grows with size: big stones are heavy. The second is <strong>cohesion</strong>: tiny clay particles stick together (van der Waals forces and surface charges), and per unit area this pull grows as the grains get smaller. That is why the curve has a minimum near fine sand (0.1–0.3 mm). Compacted clay is even harder to erode. \(\beta = 5\times10^{-6}\ \mathrm{N/m}\) for loose mud is an illustrative value; real muds vary a lot.">第一項隨顆粒變大而增加：大石頭重。第二項是<strong>黏聚力</strong>：很小的黏土顆粒會黏在一起（凡得瓦力與表面電荷），平均到單位面積，顆粒越小黏得越緊。所以曲線在細砂（0.1–0.3 mm）附近最低。壓實過的黏土更難侵蝕。鬆散的泥取 \(\beta = 5\times10^{-6}\ \mathrm{N/m}\) 是示意值，真實的泥差異很大。</p>
+      <p data-en-html="The mean speed of a river of depth \(h\) follows from the logarithmic velocity profile, \(U = (u_*/\kappa)\,[\ln(h/z_0) - 1]\) with \(\kappa = 0.41\) and a bed roughness \(z_0\) set by the grains. Deeper water needs a higher mean speed for the same pull on the bed.">水深 \(h\) 的河，平均流速從對數流速剖面算出：\(U = (u_*/\kappa)\,[\ln(h/z_0) - 1]\)，\(\kappa = 0.41\)，粗糙長度 \(z_0\) 由河床的顆粒決定。水越深，要對河床產生同樣的拉力，平均流速就要越大。</p>
+      <h3 data-en="Carried or dropped">搬運還是沉積</h3>
+      <p data-en-html="A grain already moving keeps going in <strong>suspension</strong> while the turbulence is stronger than its settling (\(u_* > w\)), or as <strong>bedload</strong> (rolling and hopping) while \(u_*\) stays above about 2/3 of the starting threshold. When neither holds, it is <strong>deposited</strong>. This is the Hjulström–Sundborg diagram (Hjulström 1935, Sundborg 1956): above the erosion curve the bed is eroded; between the two curves grains already moving are carried but the bed is left alone; below the lower curve they settle.">已經在移動的顆粒，只要亂流比沉降強（\(u_* > w\)）就繼續<strong>懸浮</strong>；或者 \(u_*\) 還在起動門檻的約 2/3 以上，就繼續<strong>推移</strong>（滾動、跳躍）。兩樣都做不到時就<strong>沉積</strong>。這就是 Hjulström–Sundborg 圖（Hjulström 1935、Sundborg 1956）：侵蝕線以上，河床被侵蝕；兩條線之間，本來在走的繼續被搬運，但河床上的不會被挖起；沉積線以下，顆粒停下來。</p>
+      <h3 data-en="What to watch for">觀察重點</h3>
+      <ul>
+        <li data-en-html="Fine sand is the easiest to erode; clay and big gravel both need fast water.">最容易被侵蝕的是細砂；黏土和大礫石都要很快的水。</li>
+        <li data-en-html="Clay, once stirred up, stays suspended in nearly still water: that is why flood water stays muddy for days.">黏土一旦被攪起來，在幾乎不動的水裡也會一直懸浮：洪水過後的河水好幾天都是混濁的。</li>
+        <li data-en-html="In the column, the big grains land first and the fine ones last: a <em>graded bed</em>.">水管裡大顆的先到底、細的最後才到：形成<em>級層</em>（粒級層理）。</li>
+        <li data-en-html="Heavy minerals (magnetite, gold) settle fast and are hard to move, so they collect where the flow slows: placer deposits.">重礦物（磁鐵礦、金）沉得快、難沖走，會聚在水流變慢的地方：砂礦。</li>
+        <li data-en-html="Along a river the load is sorted: gravel in the mountains, sand in the plains, mud at the delta.">沿著一條河，泥沙依大小分選：礫石在山區、砂在平原、泥在三角洲。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="Water viscosity uses Bingham’s formula (CRC Handbook) and its density the formula of Tanaka et al. (2001). The bed roughness is \(k_s = 2.5D\) with the smooth-to-rough blend \(z_0 = k_s/30 + \nu/(9u_*)\). The river from the mountains to the sea uses an illustrative speed profile \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\) with a constant depth of 1 m; real rivers change depth, width and slope together. The grains in the pictures are drawn much larger than scale.">水的黏度用 Bingham 式（CRC 手冊），密度用 Tanaka 等人（2001）的式子。河床粗糙度 \(k_s = 2.5D\)，光滑到粗糙的過渡用 \(z_0 = k_s/30 + \nu/(9u_*)\)。從山到海的河流用示意的流速分布 \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\)，水深固定 1 m；真實的河流水深、寬度和坡度會一起變化。畫面上的顆粒都畫得比實際大很多。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/sediment-transport-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/sediment-transport.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="sediment-transport"></script>
+  <script src="js/missions/sediment-transport.js"></script>
+  <script src="js/stats.js" data-module="sediment-transport"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
