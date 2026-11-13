@@ -30,11 +30,11 @@
   <link rel="stylesheet" href="lab.css?v=202611130848">
   <style>
     /* 封包與路由頁面專用的顏色代號（淺色＋兩組深色；由 js/packet-routing.js 讀取） */
-    :root { --pr-wire: #8a9bb0; --pr-path: #0d9488; --pr-cut: #dc2626; --pr-router: #3d6595; --pr-host: #52606f; --pr-data: #e08a00; --pr-ack: #15803d; --pr-probe: #7c3aed; --pr-icmp: #db2777; --pr-loop: #ea580c; --pr-panel: #e8eef5; --pr-ok: #15803d; --pr-warn: #c2410c; }
+    :root { --pr-wire: #8a9bb0; --pr-path: #0d9488; --pr-path-ink: #0f766e; --pr-cut: #dc2626; --pr-router: #3d6595; --pr-host: #52606f; --pr-data: #e08a00; --pr-ack: #15803d; --pr-probe: #7c3aed; --pr-icmp: #db2777; --pr-loop: #ea580c; --pr-panel: #e8eef5; --pr-ok: #15803d; --pr-warn: #c2410c; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
+      :root:not([data-theme="light"]) { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-path-ink: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
     }
-    :root[data-theme="dark"] { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
+    :root[data-theme="dark"] { --pr-wire: #5f7288; --pr-path: #2dd4bf; --pr-path-ink: #2dd4bf; --pr-cut: #f87171; --pr-router: #5b8bd0; --pr-host: #9aa8b8; --pr-data: #fbbf24; --pr-ack: #4ade80; --pr-probe: #b69cff; --pr-icmp: #f472b6; --pr-loop: #fb923c; --pr-panel: #121a26; --pr-ok: #4ade80; --pr-warn: #fb923c; }
 
     #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
     #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; margin-top: 10px; cursor: default; }
@@ -93,6 +93,8 @@
     .hdr { margin: 6px 4px 0; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); display: flex; flex-wrap: wrap; gap: 4px 14px; font-variant-numeric: tabular-nums; min-height: 1.4em; }
     .hdr b { font-weight: 700; }
     .hdr code { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; white-space: pre; }
+    /* 速度數字欄的隱形觸控範圍往上 17 px，會被上方按鈕列蓋掉一點；多留 6 px 才滿 44 px */
+    .pr .stage .playbar + .slider { margin-top: 16px; }
   </style>
 </head>
 <body data-en-ready>
@@ -112,7 +114,7 @@
           <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-ack)&quot;></i>Acknowledgement (ACK)"><i class="sw" style="background:var(--pr-ack)"></i>確認（ACK）</span>
           <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-probe)&quot;></i>Probe"><i class="sw" style="background:var(--pr-probe)"></i>探測封包</span>
           <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--pr-icmp)&quot;></i>ICMP reply"><i class="sw" style="background:var(--pr-icmp)"></i>ICMP 回報</span>
-          <span style="color:var(--pr-path)" data-en-html="<i style=&quot;background:var(--pr-path)&quot;></i>Current route"><i style="background:var(--pr-path)"></i>目前的路</span>
+          <span style="color:var(--pr-path-ink)" data-en-html="<i style=&quot;background:var(--pr-path)&quot;></i>Current route"><i style="background:var(--pr-path)"></i>目前的路</span>
           <span style="color:var(--pr-cut)" data-en-html="<i class=&quot;dash&quot;></i>Cut link"><i class="dash"></i>斷線</span>
         </div>
         <div class="playbar">

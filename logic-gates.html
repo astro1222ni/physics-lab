@@ -30,13 +30,13 @@
   <link rel="stylesheet" href="lab.css?v=202611130848">
   <style>
     /* 邏輯閘頁面專用的顏色代號（淺色＋兩組深色；由 js/logic-gates.js 讀取） */
-    :root { --lg-hi: #d97706; --lg-lo: #7b8d97; --lg-x: #9a86b8; --lg-gate: #eaf1f4; --lg-edge: #34474f; --lg-chip: #d6ebe4;
+    :root { --lg-hi: #d97706; --lg-lo: #7b8d97; --lg-x: #9a86b8; --lg-x-ink: #6b5694; --lg-gate: #eaf1f4; --lg-edge: #34474f; --lg-chip: #d6ebe4;
       --lg-glitch: #c2187a; --lg-gen: #2b8a3e; --lg-prop: #1f6fd0; --lg-kill: #8a979d; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
+      :root:not([data-theme="light"]) { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-x-ink: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
         --lg-glitch: #ff6fb5; --lg-gen: #69db7c; --lg-prop: #7ab6ff; --lg-kill: #7d8d93; }
     }
-    :root[data-theme="dark"] { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
+    :root[data-theme="dark"] { --lg-hi: #fbbf24; --lg-lo: #5d717b; --lg-x: #a996cc; --lg-x-ink: #a996cc; --lg-gate: #22323a; --lg-edge: #b4c7cf; --lg-chip: #1c3a33;
       --lg-glitch: #ff6fb5; --lg-gen: #69db7c; --lg-prop: #7ab6ff; --lg-kill: #7d8d93; }
 
     /* 畫布高度由程式依版面決定；手機上可以照常捲動，點到開關才算操作 */
@@ -161,7 +161,7 @@
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--lg-hi)&quot;></i>1 (on)"><i style="background:var(--lg-hi)"></i>1（通電）</span>
           <span data-en-html="<i style=&quot;background:var(--lg-lo)&quot;></i>0 (off)"><i style="background:var(--lg-lo)"></i>0（不通電）</span>
-          <span style="color:var(--lg-x)" data-en-html="<i class=&quot;dash&quot;></i>X (not connected)"><i class="dash"></i>X（沒接線，未知）</span>
+          <span style="color:var(--lg-x-ink)" data-en-html="<i class=&quot;dash&quot;></i>X (not connected)"><i class="dash"></i>X（沒接線，未知）</span>
           <span data-en-html="<i style=&quot;background:var(--lg-glitch)&quot;></i>Glitch (wrong for a moment)"><i style="background:var(--lg-glitch)"></i>突波（短暫的錯誤值）</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Gate still working"><i class="dot" style="background:var(--accent)"></i>閘還在反應中</span>
         </div>

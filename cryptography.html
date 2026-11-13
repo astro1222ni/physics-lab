@@ -31,15 +31,15 @@
   <style>
     /* 加密頁面專用的顏色代號（淺色＋兩組深色；由 js/cryptography.js 讀取） */
     :root { --cr-plain: #2563eb; --cr-cipher: #c2410c; --cr-key: #b45309; --cr-ref: #64748b; --cr-pub: #0f766e; --cr-priv: #7c3aed; --cr-eve: #be123c;
-      --cr-ok: #15803d; --cr-warn: #dc2626; --cr-disc: #dfe6ee; --cr-disc2: #f3ead8; --cr-wood: #b9895a;
+      --cr-ok: #15803d; --cr-warn: #dc2626; --cr-warn-ink: #b91c1c; --cr-disc: #dfe6ee; --cr-disc2: #f3ead8; --cr-wood: #b9895a;
       --cr-c1: #2563eb; --cr-c2: #c2410c; --cr-c3: #15803d; --cr-c4: #7c3aed; --cr-c5: #b45309; --cr-c6: #0e7490; }
     @media (prefers-color-scheme: dark) {
       :root:not([data-theme="light"]) { --cr-plain: #7aa7ff; --cr-cipher: #ff8a5c; --cr-key: #fbbf24; --cr-ref: #9fb0c3; --cr-pub: #4fd1c5; --cr-priv: #b9a0ff; --cr-eve: #fb7185;
-        --cr-ok: #4ade80; --cr-warn: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
+        --cr-ok: #4ade80; --cr-warn: #f87171; --cr-warn-ink: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
         --cr-c1: #7aa7ff; --cr-c2: #ff8a5c; --cr-c3: #4ade80; --cr-c4: #b9a0ff; --cr-c5: #fbbf24; --cr-c6: #5eead4; }
     }
     :root[data-theme="dark"] { --cr-plain: #7aa7ff; --cr-cipher: #ff8a5c; --cr-key: #fbbf24; --cr-ref: #9fb0c3; --cr-pub: #4fd1c5; --cr-priv: #b9a0ff; --cr-eve: #fb7185;
-      --cr-ok: #4ade80; --cr-warn: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
+      --cr-ok: #4ade80; --cr-warn: #f87171; --cr-warn-ink: #f87171; --cr-disc: #233040; --cr-disc2: #3a3226; --cr-wood: #8a6440;
       --cr-c1: #7aa7ff; --cr-c2: #ff8a5c; --cr-c3: #4ade80; --cr-c4: #b9a0ff; --cr-c5: #fbbf24; --cr-c6: #5eead4; }
 
     #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
@@ -73,7 +73,7 @@
     .outbox.cipher { color: var(--cr-cipher); }
     .outbox.plain { color: var(--cr-plain); }
     .safe { margin: 10px 2px 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--cr-warn); background: color-mix(in srgb, var(--cr-warn) 8%, var(--surface)); font-size: calc(13px * var(--fs, 1)); line-height: 1.55; }
-    .safe strong { color: var(--cr-warn); }
+    .safe strong { color: var(--cr-warn-ink); }
     /* 控制面板 */
     .cr .slider input[type="range"] { height: 28px; margin: 0; }
     .cr .checks label { min-height: 44px; }
