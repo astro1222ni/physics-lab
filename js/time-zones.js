@@ -756,7 +756,7 @@
         move: function (dx, dy, big) {
           acted();
           const P = probePlace(), s = big ? 10 : 1;
-          state.probe = { lon: Math.round(K.n180(P.lon + dx * s) * 100) / 100, lat: Math.max(-89.9, Math.min(89.9, Math.round((P.lat - dy * s) * 100) / 100)), city: null };
+          state.probe = { lon: Math.round(K.n180(P.lon + dx * s) * 100) / 100, lat: Math.max(-89.9, Math.min(89.9, Math.round((P.lat + dy * s) * 100) / 100)), city: null };
           $('selCity').value = '';
           afterChange(true); return true;
         },

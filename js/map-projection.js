@@ -842,7 +842,7 @@
 
   // ---------- 鍵盤 ----------
   if (window.LabKeys) {
-    const moveLL = function (p, dx, dy, big, fine) { const s = (fine ? (big ? 2 : 0.2) : (big ? 5 : 1)) * DEG; return [K.wrapPi(p[0] + dx * s), Math.max(-89 * DEG, Math.min(89 * DEG, p[1] - dy * s))]; };
+    const moveLL = function (p, dx, dy, big, fine) { const s = (fine ? (big ? 2 : 0.2) : (big ? 5 : 1)) * DEG; return [K.wrapPi(p[0] + dx * s), Math.max(-89 * DEG, Math.min(89 * DEG, p[1] + dy * s))]; };
     window.LabKeys.attach(cv, {
       label: T('世界地圖。方向鍵轉動地圖；Enter 換成移動陸塊、量測點或航線端點。', 'World map. Arrow keys turn the map; Enter switches to moving the landmass, the measuring point or a route end.'),
       items: [{
@@ -851,7 +851,7 @@
           acted();
           let l = state.lam0 + dx * (big ? 10 : 1); l = ((l + 180) % 360 + 360) % 360 - 180;
           setQuiet(el.lam0, l);
-          if (P.family === 'azi' && dy) setQuiet(el.phi0, Math.max(-90, Math.min(90, state.phi0 - dy * (big ? 10 : 1))));
+          if (P.family === 'azi' && dy) setQuiet(el.phi0, Math.max(-90, Math.min(90, state.phi0 + dy * (big ? 10 : 1))));
           readSliders(); makeProj(); refreshOutputs(); afterChange(true); return true;
         },
         describe: function () { return T('中央經線 ', 'Central meridian ') + num(state.lam0, 0) + '°' + (P.family === 'azi' ? T('，中心緯度 ', ', centre latitude ') + num(state.phi0, 0) + '°' : ''); }

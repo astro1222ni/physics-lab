@@ -787,7 +787,7 @@
 
   // ---------- 鍵盤 ----------
   if (window.LabKeys) {
-    const step = function (p, dx, dy, big) { const s = big ? 100 : 10; return clampXY([p[0] + dx * s, p[1] - dy * s]); };
+    const step = function (p, dx, dy, big) { const s = big ? 100 : 10; return clampXY([p[0] + dx * s, p[1] + dy * s]); };
     const where = function (p) { return num(p[0] / 1000, 2) + ', ' + num(p[1] / 1000, 2) + ' km'; };
     window.LabKeys.attach(cv, {
       label: T('等高線地圖。方向鍵移動量測點（每步 10 m，Shift 100 m）；Enter 換成移動剖面的 A 或 B。', 'Contour map. Arrow keys move the measuring point (10 m a step, Shift 100 m); Enter switches to moving A or B of the profile.'),
