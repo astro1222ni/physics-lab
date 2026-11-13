@@ -92,7 +92,7 @@
     },
     {
       id: 'tides-h2', level: 4, hidden: true,
-      riddle: { zh: '最滿的一刻，依舊是空的。', en: 'Even at its fullest, it is still empty.' },
+      riddle: { zh: '最滿的一刻，依舊在平常之下。', en: 'At its fullest, still below the usual.' },
       check: function (ev) { return isHigh(ev) && ev.data.h < 0; }
     },
     {

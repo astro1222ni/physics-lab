@@ -189,7 +189,7 @@
             <dt data-en="Turntable turned">這段時間盤轉了</dt><dd id="tTurned">—</dd>
             <dt data-en="Landing point vs target">落點與目標</dt><dd id="tMiss" class="big">—</dd>
             <dt data-en="Coriolis acceleration 2Ωv">科氏加速度 2Ωv</dt><dd id="tCor">—</dd>
-            <dt class="wide" data-en="To hit the target from the centre, aim">從中心發射要打中，要瞄</dt><dd id="tAim" class="wide">—</dd>
+            <dt class="wide" data-en="Aiming straight at the target from the centre, the ball lands">從中心對準目標直直發射，落點會偏</dt><dd id="tAim" class="wide">—</dd>
           </dl>
         </section>
 
@@ -248,7 +248,8 @@
 
       <h3 data-en="Why the latitude matters">為什麼和緯度有關</h3>
       <p data-en-html="The Earth spins once per sidereal day, \(\Omega = 7.292\times10^{-5}\ \mathrm{s^{-1}}\). For winds that blow along the ground, only the part of \(\vec\Omega\) along the local vertical, \(\Omega\sin\varphi\), turns them, which gives the <strong>Coriolis parameter</strong>">地球每個恆星日自轉一圈，\(\Omega = 7.292\times10^{-5}\ \mathrm{s^{-1}}\)。對沿著地面吹的風，只有 \(\vec\Omega\) 沿著當地鉛直方向的那一份 \(\Omega\sin\varphi\) 會讓它轉彎，所以<strong>科氏參數</strong>是</p>
-      <div class="formula">\[ f = 2\,\Omega\sin\varphi, \qquad \text{Coriolis force per kg} = f\,v \]</div>
+      <div class="formula">\[ f = 2\,\Omega\sin\varphi, \qquad \frac{F_{\mathrm{c}}}{m} = f\,v \]</div>
+      <p data-en-html="\(F_{\mathrm{c}}/m\): the Coriolis force on each kilogram of air (horizontal part); \(v\): wind speed.">\(F_{\mathrm{c}}/m\)：每公斤空氣受到的科氏力（水平分量）；\(v\)：風速。</p>
       <p data-en-html="At the North Pole the ground turns like an anticlockwise turntable; at the equator \(f = 0\) and horizontal winds are not turned at all; in the southern hemisphere \(f < 0\) and winds are turned to the left. At 25° N, \(f \approx 6.2\times10^{-5}\ \mathrm{s^{-1}}\): a 10 m/s wind feels only \(6\times10^{-4}\ \mathrm{m/s^2}\), but over hours that is enough to turn it completely around.">在北極，地面就像逆時針轉的轉盤；在赤道 \(f = 0\)，水平的風完全不轉彎；南半球 \(f < 0\)，風往左偏。北緯 25° 的 \(f \approx 6.2\times10^{-5}\ \mathrm{s^{-1}}\)：10 m/s 的風只受到 \(6\times10^{-4}\ \mathrm{m/s^2}\)，但經過幾個小時，就足以讓它整個掉頭。</p>
 
       <h3 data-en="Geostrophic wind">地轉風</h3>

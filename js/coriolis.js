@@ -174,8 +174,9 @@
     const w = omega();
     setHTML('tCor', num(2 * Math.abs(w) * state.v0t, 2) + ' m/s²');
     const a = state.v0t > 0 ? K.aimToHit(Math.abs(w), state.v0t, 1) : Infinity;
+    // 試玩回報 C7：不直接給「要往哪邊瞄」的答案，只說直射的落點偏多少、往哪邊偏，讓學生自己決定怎麼修
     setHTML('tAim', !(a < 90) ? T('超過 90°：從中心發射打不中，要更快或盤轉慢一點', 'More than 90°: from the centre it cannot hit; launch faster or spin slower')
-      : (w > 0 ? T('往逆時針（左）', '') : w < 0 ? T('往順時針（右）', '') : '') + num(a, 1) + '°' + (w > 0 ? T('', ' anticlockwise (to the left)') : w < 0 ? T('', ' clockwise (to the right)') : ''));
+      : (w > 0 ? T('往順時針（右）', '') : w < 0 ? T('往逆時針（左）', '') : '') + num(a, 1) + '°' + (w > 0 ? T('', ' clockwise (to the right)') : w < 0 ? T('', ' anticlockwise (to the left)') : '') + (w ? T('<small>落點偏到哪一邊，要往哪一邊修正？</small>', '<small>Which way should you correct?</small>') : ''));
     if (!sh) { ['tFlight', 'tTurned', 'tMiss'].forEach(function (id) { setHTML(id, '—'); }); return; }
     const r = sh.res;
     const flew = isFinite(r.T) && r.T <= sh.end + 1e-9;
@@ -693,7 +694,10 @@
     setHTML('pVg', d.vg == null ? T('無限大（f = 0）', 'infinite (f = 0)') : F.type === 'none' ? '—' : num(d.vg, 1) + ' m/s');
     setHTML('pDir', d.speed < 0.05 ? '—' : num(bearing(s.u, s.v), 0) + '°' + T('（', ' (') + compass(bearing(s.u, s.v)) + T('）', ')'));
     setHTML('pAlpha', d.alpha == null ? '—' : num(d.alpha, 1) + '°');
-    setHTML('pDefl', d.deflect == null ? '—' : (Math.abs(d.deflect) < 0.05 ? '0°' : (d.deflect > 0 ? T('往右 ', 'right ') : T('往左 ', 'left ')) + num(Math.abs(d.deflect), 1) + '°'));
+    // 試玩回報 C8：衝過低壓中心後，風和氣壓梯度力正好相反，那不是被科氏力偏轉，要說清楚
+    setHTML('pDefl', d.deflect == null ? '—' : Math.abs(d.deflect) < 0.05 ? '0°'
+      : Math.abs(d.deflect) > 179.95 ? T('180°<small>正好逆著氣壓梯度力：衝過頭了，不是被偏轉</small>', '180°<small>straight against the pressure-gradient force: it overshot, it was not turned</small>')
+      : (d.deflect > 0 ? T('往右 ', 'right ') : T('往左 ', 'left ')) + num(Math.abs(d.deflect), 1) + '°');
     const round = F.type === 'low' || F.type === 'high';
     setHTML('pR', round ? num(d.r, 0) + ' km' : '—');
     setHTML('pTurns', round ? num(Math.abs(d.winding), 2) + (Math.abs(d.winding) < 0.005 ? '' : d.winding > 0 ? T('（逆時針）', ' (anticlockwise)') : T('（順時針）', ' (clockwise)')) : '—');
