@@ -497,9 +497,16 @@
     c.fillRect(sx, ys - 1.5, bw, 3);
     c.fillRect(sx, ys - 4, 1.5, 8); c.fillRect(sx + bw - 1.5, ys - 4, 1.5, 8);
     c.font = fnt(narrow ? 10.5 : 11.5, 600); c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillStyle = C.muted;
-    c.fillText(num(len * 100, 0) + ' cm', sx + bw + 6, ys);
+    const sTxt = num(len * 100, 0) + ' cm';
+    c.fillText(sTxt, sx + bw + 6, ys);
+    // 右邊的「放大示意」：放不下就換短的說法（字體特大、英文、手機）
+    const room = cw - Lo.pad - 2 - (sx + bw + 6 + c.measureText(sTxt).width + 14);
+    const cands = inf.inst === 'recorder'
+      ? [T('直笛示意：內徑、位移放大', 'Recorder (illustration): bore and motion enlarged'), T('內徑、位移放大', 'Bore, motion enlarged'), T('放大示意', 'Enlarged')]
+      : [T('內徑、位移放大示意', 'Bore and motion enlarged'), T('放大示意', 'Enlarged')];
+    const pick = cands.find(function (t) { return c.measureText(t).width <= room; });
     c.textAlign = 'right';
-    c.fillText(inf.inst === 'recorder' ? T('直笛示意：內徑、位移放大', 'Recorder (illustration): bore and motion enlarged') : T('內徑、位移放大示意', 'Bore and motion enlarged'), cw - Lo.pad - 2, ys);
+    if (pick) c.fillText(pick, cw - Lo.pad - 2, ys);
     c.restore();
   }
 
@@ -568,18 +575,23 @@
     // 標籤：一個節點（軸上方）、一個腹點（下方菱形旁邊）
     const lf = fnt(narrow ? 10 : 11, 600);
     const fits = function (text, x) { c.font = lf; return x + c.measureText(text).width + 16 < cw - Lo.pad - 4; };
-    const interior = nd.pNodes.filter(function (u) { return u > 0.02 && u < 0.98; });
-    const un = interior.length ? interior[0] : 1;
-    const xn = xa + (xb - xa) * un;
-    const tn = T('壓力節點', 'Pressure node');
-    const nRight = un < 0.98 && fits(tn, xn + 8);
-    D.pill(c, tn, nRight ? xn + 8 : xn - 8, gy - 6, C['wi-p'], nRight ? 'left' : 'right', lf);
     let ua = nd.pAnti[0];
     nd.pAnti.forEach(function (u) { if (Math.abs(u - 0.35) < Math.abs(ua - 0.35)) ua = u; });
     const xan = xa + (xb - xa) * ua;
     const ta = T('壓力腹點', 'Pressure antinode');
     const aRight = fits(ta, xan + 8);
-    D.pill(c, ta, aRight ? xan + 8 : xan - 8, gy - ay + 8, C['wi-p'], aRight ? 'left' : 'right', lf);
+    const ra = D.pill(c, ta, aRight ? xan + 8 : xan - 8, gy - ay + 8, C['wi-p'], aRight ? 'left' : 'right', lf);
+    // 節點：先找管內的節點；沒有的話（第 1 模式）標在開管的吹口端或閉管的開口端
+    const interior = nd.pNodes.filter(function (u) { return u > 0.02 && u < 0.98; });
+    const un = interior.length ? interior[0] : (nd.pNodes.some(function (u) { return u < 0.02; }) ? 0 : 1);
+    const xn = xa + (xb - xa) * un;
+    const tn = T('壓力節點', 'Pressure node');
+    const nRight = un < 0.98 && fits(tn, xn + 8);
+    c.font = lf;
+    const nw = c.measureText(tn).width + 12, nx0 = nRight ? xn + 8 : xn - 8 - nw;
+    // 和腹點的標籤擠在一起時，改放到軸的下方
+    const clash = nx0 < ra.x + ra.w + 4 && nx0 + nw > ra.x - 4 && gy - 6 - ra.h < ra.y + ra.h + 4;
+    D.pill(c, tn, nRight ? xn + 8 : xn - 8, clash ? gy + 8 + ra.h : gy - 6, C['wi-p'], nRight ? 'left' : 'right', lf);
     // 有效開口（紫色虛線，從管子上方畫到圖的底部）
     c.save();
     c.setLineDash([5, 4]); c.strokeStyle = C['wi-end']; c.lineWidth = 1.6;
@@ -589,20 +601,28 @@
     ends.forEach(function (sx) { const x = Math.round(X(sx)) + 0.5; c.moveTo(x, Lo.tubeT + Lo.labH - 2); c.lineTo(x, bot - 4); });
     c.stroke();
     c.restore();
-    const endTxt = inf.inst === 'recorder' && inf.first >= 0 ? T('有效開口（' + holeName(inf.first) + '下方 ' + num(inf.holeDelta * 1000, 1) + ' mm）', 'Effective open end (' + num(inf.holeDelta * 1000, 1) + ' mm below the ' + holeName(inf.first) + ')') : T('有效開口', 'Effective open end');
     c.font = lf;
+    const ex = X(inf.sEnd), xMinL = Lo.pad + 4, xMaxR = cw - Lo.pad - 4;
+    let endTxt = inf.inst === 'recorder' && inf.first >= 0 ? T('有效開口（' + holeName(inf.first) + '下方 ' + num(inf.holeDelta * 1000, 1) + ' mm）', 'Effective open end (' + num(inf.holeDelta * 1000, 1) + ' mm below ' + holeName(inf.first) + ')') : T('有效開口', 'Effective open end');
+    if (c.measureText(endTxt).width + 14 > xMaxR - xMinL) endTxt = T('有效開口', 'Effective open end');
     const tw = c.measureText(endTxt).width + 14;
-    const ex = X(inf.sEnd);
-    const right = ex + 8 + tw < cw - Lo.pad - 4;
-    D.pill(c, endTxt, right ? ex + 8 : ex - 8, bot - 6, C['wi-end'], right ? 'left' : 'right', lf);
+    // 放在紫線右邊；放不下就放左邊；兩邊都放不下就貼著畫布邊緣
+    let ebx = ex + 8;
+    if (ebx + tw > xMaxR) ebx = ex - 8 - tw;
+    if (ebx < xMinL) ebx = Math.max(xMinL, Math.min(xMaxR - tw, ex - tw / 2));
+    D.pill(c, endTxt, ebx, bot - 6, C['wi-end'], 'left', lf);
     // 圖說與慢動作倍率
-    c.font = fnt(narrow ? 10.5 : 11.5, 600); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = C.muted;
-    c.fillText(narrow ? T('壓力 p、位移 ξ', 'Pressure p, displacement ξ') : T('沿著管子：壓力 p、空氣位移 ξ', 'Along the tube: pressure p, air displacement ξ'), Lo.pad + 10, top + 6);
     let tag;
     if (!state.blow) tag = T('靜止：最大壓縮的瞬間', 'Still: greatest compression');
     else if (!moving) tag = T('減少動態：靜止畫面', 'Reduced motion: still');
     else tag = T('放慢約 ' + slowText(inf.f) + ' 倍', 'Slowed ≈ ' + slowText(inf.f) + '×');
-    D.pill(c, tag, cw - Lo.pad - 8, top + 20, state.blow ? C['wi-good'] : C.muted, 'right', fnt(narrow ? 10 : 11, 600));
+    const rt = D.pill(c, tag, cw - Lo.pad - 8, top + 20, state.blow ? C['wi-good'] : C.muted, 'right', fnt(narrow ? 10 : 11, 600));
+    // 左上的圖說：和右上的標籤擠在一起時換短的說法
+    c.font = fnt(narrow ? 10.5 : 11.5, 600); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = C.muted;
+    const capRoom = rt.x - 10 - (Lo.pad + 10);
+    const caps = [T('沿著管子：壓力 p、空氣位移 ξ', 'Along the tube: pressure p, air displacement ξ'), T('壓力 p、位移 ξ', 'Pressure p, displacement ξ'), T('p、ξ', 'p, ξ')];
+    const cap = caps.find(function (t) { return c.measureText(t).width <= capRoom; }) || caps[caps.length - 1];
+    c.fillText(cap, Lo.pad + 10, top + 6);
     c.restore();
   }
   function slowText(f) {
@@ -869,8 +889,10 @@
   function refreshOutputs() {
     const rec = state.inst === 'recorder';
     const L = rec ? REC.L + state.pull / 1000 : state.L;
-    $('leno').textContent = num(L, decFor(L, 3, 4));
     const d = rec ? REC.d : state.d;
+    // 直笛的管長跟著頭管拉出改變：鎖住的滑桿也要跟著，讀值才和顯示一致
+    if (rec && window.LabNum && Math.abs(window.LabNum.value(elL) - L) > 1e-9) setSlider(elL, L);
+    $('leno').textContent = num(L, decFor(L, 3, 4));
     $('diao').textContent = num(d, decFor(d, 1, 2));
     $('tempo').textContent = num(state.T, decFor(state.T, 1, 2));
     $('pullo').textContent = num(state.pull, decFor(state.pull, 1, 2));
@@ -943,16 +965,16 @@
   function updateReadouts() {
     const inf = info();
     $('rF').textContent = hz(inf.f);
-    $('rNote').textContent = inf.name + ' ' + signed(inf.cents, 1) + T(' 音分', ' ¢');
+    $('rNote').textContent = inf.name + '\u00a0' + signed(inf.cents, 1) + T('\u00a0音分', '\u00a0¢');   // 不換行空白：值換行時數字和單位不拆開
     $('rMode').textContent = modeText(inf);
-    $('rV').textContent = num(inf.v, 2) + ' m/s';
-    $('rLp').textContent = num(inf.L, 4) + ' → ' + num(inf.Lp, 4) + ' m';
-    $('rDelta').innerHTML = num(inf.delta * 1000, 2) + ' mm <small>(' + (inf.kEnd ? num(inf.kEnd, 4) + ' r' : T('不計', 'ignored')) + ')</small>';
+    $('rV').textContent = num(inf.v, 2) + '\u00a0m/s';
+    $('rLp').textContent = num(inf.L, 4) + '\u00a0→ ' + num(inf.Lp, 4) + '\u00a0m';
+    $('rDelta').innerHTML = num(inf.delta * 1000, 2) + '&nbsp;mm <small>(' + (inf.kEnd ? num(inf.kEnd, 4) + ' r' : T('不計', 'ignored')) + ')</small>';
     if (inf.inst === 'recorder') {
-      $('rHole').textContent = inf.first >= 0 ? holeName(inf.first) + T('，有效開口在它下方 ', '; effective end ') + num(inf.holeDelta * 1000, 1) + T(' mm', ' mm below it') : T('全部按住（管尾）', 'all covered (foot)');
+      $('rHole').textContent = inf.first >= 0 ? holeName(inf.first) + T('，有效開口在它下方 ', '; effective end ') + num(inf.holeDelta * 1000, 1) + T('\u00a0mm', '\u00a0mm below it') : T('全部按住（管尾）', 'all covered (foot)');
     }
-    $('rLam').textContent = num(inf.lambda, 4) + ' m';
-    $('rRes').textContent = inf.res.slice(0, 4).map(function (f) { return num(f, 1); }).join('、 ') + ' Hz';
+    $('rLam').textContent = num(inf.lambda, 4) + '\u00a0m';
+    $('rRes').textContent = inf.res.slice(0, 4).map(function (f) { return num(f, 1); }).join(T('、', ', ')) + ' Hz';
     let tex;
     const Lp = inf.Lp.toFixed(4), v = inf.v.toFixed(2), f = inf.f.toFixed(2);
     if (inf.type === 'closed') tex = 'f=\\dfrac{(2m-1)\\,v}{4L\'}=\\dfrac{' + (2 * inf.m - 1) + '\\times' + v + '}{4\\times' + Lp + '}=' + f + '\\ \\mathrm{Hz}';
