@@ -18,7 +18,9 @@
  *   MusicAudio.modal({ modes: [{ f: 200, a: 1, tau: 0.8 }, { f: 319, a: 0.5, tau: 0.4 }] }) // 鼓、鐘：每個成分各自衰減
  *   const v = MusicAudio.sustain({ f0, partials }); v.set({ f0: 330 }, 0.05); v.stop();      // 持續音
  *   MusicAudio.hit({ at, gain: 0.5, filter: 2500, dur: 0.08 })                             // 打擊（濾波雜訊）
- *   const seq = MusicAudio.sequencer({ tick: function (t0, t1) { … 在 [t0, t1) 之間排程 … } }); seq.start(); seq.stop();
+ *   const seq = MusicAudio.sequencer({ tick: function (t0, t1, start) { … 在 [t0, t1) 之間排程 … } });
+ *   seq.begin(delay); seq.stop(); seq.elapsed();   // begin 回傳起點時刻；第一次 tick 在 begin 裡同步呼叫
+ *   （音訊環境晚一步才開始跑時，排程器自動把起點與游標平移到音訊時鐘，可選 onRebase(delta, start) 通知頁面）
  *   const rv = MusicAudio.reverb({ t60: 1.5, wet: 0.35 }); MusicAudio.tone({ …, reverb: rv });
  *   MusicAudio.stopAll(); MusicAudio.onChange(function (n) { 停止鍵.disabled = n === 0; });
  *   if (!MusicAudio.enabled()) status.textContent = MusicAudio.offHint();
@@ -74,7 +76,8 @@
     return ctx;
   }
   /** 目前的音訊時間（秒）；還沒有音訊環境時用頁面時鐘，畫面同步照樣可用 */
-  function now() { return ctx && ctx.state === 'running' ? ctx.currentTime : performance.now() / 1000; }
+  function now() { return isAudioClock() ? ctx.currentTime : performance.now() / 1000; }
+  function isAudioClock() { return !!(ctx && ctx.state === 'running'); }
 
   function notify() {
     const n = voices.length + (anyRunning() ? 1 : 0);
@@ -377,13 +380,14 @@
    */
   function sequencer(o) {
     const look = o.lookahead || 0.12;
-    let timer = null, cursor = 0;
+    let timer = null, cursor = 0, audioClock = false;
     const s = {
       running: false, start: 0,
       begin: function (delay) {
         s.stop();
         context();
         s.running = true;
+        audioClock = isAudioClock();
         s.start = now() + (delay == null ? 0.06 : delay);
         cursor = s.start;
         timer = setInterval(step, 25);
@@ -400,6 +404,14 @@
       elapsed: function () { return s.running ? now() - s.start : 0; }
     };
     function step() {
+      // 開始時音訊環境還沒跑（用頁面時鐘），之後才跑起來：把起點與游標平移到音訊時鐘，節奏不中斷、不重複
+      if (!audioClock && isAudioClock()) {
+        const delta = ctx.currentTime - performance.now() / 1000;
+        audioClock = true;
+        s.start += delta;
+        cursor += delta;
+        if (o.onRebase) { try { o.onRebase(delta, s.start); } catch (e) { /* 忽略 */ } }
+      }
       const t1 = now() + look;
       if (t1 <= cursor) return;
       try { o.tick(cursor, t1, s.start); } catch (e) { s.stop(); throw e; }

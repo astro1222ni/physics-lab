@@ -324,7 +324,11 @@
     bell: function (at, g) { AU.modal({ at: at, gain: g * 0.65, dur: 0.6, modes: [{ f: 784, a: 1, tau: 0.26 }, { f: 1176, a: 0.45, tau: 0.15 }, { f: 2093, a: 0.18, tau: 0.07 }] }); }
   };
   const GAIN = 0.5;
-  const seq = AU.sequencer({ tick: tick });
+  const seq = AU.sequencer({ tick: tick, onRebase: function (delta) {
+    // 音訊環境晚一步才開始跑：排程器把時鐘換到音訊時鐘，這裡的錨點跟著平移（畫面用的頁面時鐘 pA 不動）
+    const p = state.play;
+    if (p) { p.tA += delta; p.lastT1 += delta; }
+  } });
   /** 現在的「聲部 1 第幾格」（畫面用；頁面時鐘，不受音訊時鐘換基準影響） */
   function beatNow() {
     const p = state.play;
