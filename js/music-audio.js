@@ -41,6 +41,8 @@
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   let ctx = null, bus = null, out = null;
   const voices = [];
+  /** 頁面建立過的迴響（stopAll 時一起清掉尾巴） */
+  const reverbs = [];
   const listeners = [];
 
   function available() { return !!(window.AudioContext || window.webkitAudioContext); }
@@ -329,24 +331,44 @@
 
   /**
    * 迴響：用指數衰減的雜訊當脈衝響應（左右聲道不同，聽起來有空間感），衰減 60 dB 的時間 = t60。
-   * 傳回 { input, wet, set(t60, wet) }，交給 tone/modal/hit 的 reverb 參數。音效關閉時傳回 null。
+   * 傳回 { input, wet, set(t60, wet), clear(fade) }，交給 tone/modal/hit 的 reverb 參數。音效關閉時傳回 null。
    */
   function reverb(o) {
     o = o || {};
     if (!context()) return null;
-    const conv = ctx.createConvolver();
-    const out = ctx.createGain();
-    out.gain.value = 1;
-    conv.connect(out); out.connect(bus);
-    const rv = { input: conv, wet: Math.max(0, Math.min(1, o.wet == null ? 0.3 : o.wet)), t60: 0 };
+    // input（固定的入口）→ conv → out → bus；clear() 換一組新的 conv、out，舊的尾巴淡出後丟掉
+    const input = ctx.createGain();
+    let conv = null, out = null, buf = null;
+    function chain() {
+      conv = ctx.createConvolver();
+      if (buf) conv.buffer = buf;
+      out = ctx.createGain();
+      out.gain.value = 1;
+      input.connect(conv); conv.connect(out); out.connect(bus);
+    }
+    chain();
+    const rv = { input: input, wet: Math.max(0, Math.min(1, o.wet == null ? 0.3 : o.wet)), t60: 0 };
     rv.set = function (t60, wet) {
       if (wet != null) rv.wet = Math.max(0, Math.min(1, wet));
       if (t60 != null && Math.abs(t60 - rv.t60) > 1e-3) {
         rv.t60 = Math.max(0.05, Math.min(8, t60));
-        conv.buffer = impulse(rv.t60, o.predelay || 0.01);
+        buf = impulse(rv.t60, o.predelay || 0.01);
+        conv.buffer = buf;
       }
     };
+    /** 停掉還在響的迴響尾巴（fade 秒內淡出）；之後送進來的聲音照常有迴響 */
+    rv.clear = function (fade) {
+      const f = Math.max(0.01, fade == null ? 0.08 : fade);
+      const oldConv = conv, oldOut = out, t = ctx.currentTime;
+      try { input.disconnect(oldConv); } catch (e) {}
+      oldOut.gain.cancelScheduledValues(t);
+      oldOut.gain.setValueAtTime(oldOut.gain.value, t);
+      oldOut.gain.linearRampToValueAtTime(0, t + f);
+      setTimeout(function () { try { oldConv.disconnect(); oldOut.disconnect(); } catch (e) {} }, (f + 0.1) * 1000);
+      chain();
+    };
     rv.set(o.t60 == null ? 1.2 : o.t60);
+    reverbs.push(rv);
     return rv;
   }
   /** 脈衝響應：振幅 e^(−6.91 t / T60)（6.91 = ln 1000，振幅降到千分之一 = −60 dB） */
@@ -428,6 +450,7 @@
   function stopAll(fade) {
     sequencers.forEach(function (s) { s.stop(); });
     voices.slice().forEach(function (v) { v.stop(fade == null ? 0.08 : fade); });
+    reverbs.forEach(function (r) { r.clear(fade); });
     notify();
   }
 
