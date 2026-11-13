@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Metal Activity Series | Astro Ni Science Lab">金屬活性序｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 金屬活性序頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ma canvas { aspect-ratio: auto; }
+    .ma #cv { height: 380px; touch-action: manipulation; }
+    .ma #gcv { height: 260px; touch-action: auto; }
+    .ma + .ma { margin-top: 16px; }
+    .ma button { min-height: 44px; }
+    .ma [hidden] { display: none !important; }
+    .ma .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ma .playbar > button { flex: 1 1 auto; }
+    .ma .playbar #insert { font-weight: 700; min-width: 7.5em; }
+    .ma .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .ma .speedbox .seg3 { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .grid4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .grid4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    @media (max-width: 420px) { .grid4 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .seg2 button, .seg3 button, .grid4 button { padding: 4px 3px; line-height: 1.15; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .grid4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .grid4 button small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .grid4 button[aria-pressed="true"] small { color: var(--accent); }
+    .grid4 button .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; border: 1px solid var(--border); vertical-align: -1px; margin-right: 4px; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: 70%; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .r3-hud sup, .r3-hud sub { font-size: .72em; }
+    .ma .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ma .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ma .slider input[type="range"] { height: 28px; margin: 0; }
+    .ma sub, .ma sup, .notes sub, .notes sup { font-size: .75em; }
+    .ma .card .hint, .ma .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ma .checks label { min-height: 44px; }
+    .ma .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .ma .tabs { margin: 0 2px 8px; }
+    .ma .btns button { flex: 1 1 auto; }
+    .ma dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ma dl.readout dd { text-align: right; }
+    .ma dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .eqn { margin: 4px 0 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); font-size: calc(14px * var(--fs, 1)); line-height: 1.6; overflow-x: auto; }
+    .eqn .k { color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+    .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .tablewrap { overflow: auto; margin: 6px 2px 0; max-height: 340px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); white-space: nowrap; }
+    table.data td { white-space: nowrap; }
+    table.data td.obs { white-space: normal; text-align: left; min-width: 12em; }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    table.data td.yes { color: var(--probe); font-weight: 700; }
+    table.data td.no { color: var(--muted); }
+    table.data tr.sel td { background: var(--accent-soft); }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    table.mtx { border-collapse: collapse; font-size: calc(12.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 4px; }
+    table.mtx th, table.mtx td { border: 1px solid var(--border); padding: 3px 5px; text-align: center; white-space: nowrap; }
+    table.mtx th { color: var(--muted); font-weight: 600; background: var(--surface); }
+    table.mtx td.y { color: var(--probe); font-weight: 700; }
+    table.mtx td.n { color: var(--muted); }
+    table.mtx td.p { color: var(--neg); font-weight: 600; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+    .chips button { min-width: 44px; padding: 4px 10px; font-weight: 600; }
+    .orderline { margin: 6px 0; padding: 8px 10px; min-height: 44px; border: 2px dashed var(--border); border-radius: 10px; font-size: calc(15px * var(--fs, 1)); font-weight: 700; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+    .orderline.empty { color: var(--muted); font-weight: 500; font-size: calc(13px * var(--fs, 1)); }
+    #rankOut .ok { color: var(--probe); font-weight: 700; }
+    #rankOut .no { color: var(--pos); font-weight: 700; }
+    #rankOut ul { margin: 4px 0 0; padding-left: 1.2em; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+    .series { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 6px; margin: 8px 0; font-weight: 700; font-size: calc(15px * var(--fs, 1)); }
+    .series span { padding: 2px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); }
+    .series span.h { color: var(--accent); border-style: dashed; }
+    .series i { font-style: normal; color: var(--muted); font-weight: 500; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Metal Activity Series"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 金屬活性序</nav>
+      <h1 data-en="Metal Activity Series">金屬活性序</h1>
+      <p data-en-html="A test-tube rack and eleven metals. Drop a strip of metal into a solution of another metal's ions, into dilute hydrochloric acid or into water, and watch: does a new metal grow on the strip, does the blue fade, do bubbles of hydrogen appear — or does nothing happen at all? From the results alone, put the metals in order of how easily they give away electrons. Every result comes from standard reduction potentials (CRC Handbook, OpenStax), including the reactions that stop half-way.">一排試管、十一種金屬。把金屬片放進另一種金屬的離子溶液、稀鹽酸或水裡，看看會發生什麼：金屬片上長出新的金屬？藍色褪去？冒出氫氣？還是什麼都沒發生？只根據實驗結果，把金屬依照「失去電子的難易」排出順序。每一個結果都由標準還原電位（CRC 手冊、OpenStax）算出，連停在半路的反應也一樣。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: an iron nail is already reacting in blue Cu&lt;sup&gt;2+&lt;/sup&gt; solution. Now choose “Cu” and “Zn&lt;sup&gt;2+&lt;/sup&gt;” and press “Put in a tube”: does copper also push zinc out of its solution?">試試看：鐵釘已經在藍色的 Cu<sup>2+</sup> 溶液裡反應了。接著選「銅」和「Zn<sup>2+</sup>」，按「放入試管」：銅能不能也把鋅從溶液裡置換出來？</p>
+    <div class="lab ma">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D rack">2D 試管架</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D surface">3D 金屬表面</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="試管架：點一支試管可以選取它" data-en-aria-label="Test-tube rack: tap a tube to select it"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="insert" class="primary" type="button" data-en="Put in a tube">放入試管</button>
+          <button id="play" type="button" data-en="Pause">暫停</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清空試管架、觀察紀錄與排序；金屬、溶液與條件的選擇不變" data-en-title="Empty the rack, the record table and the ranking; the chosen metal, solution and conditions stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Time">時間倍率</span>
+            <div class="seg3" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
+              <button type="button" id="sp1" aria-pressed="true" data-en="×10">×10</button>
+              <button type="button" id="sp2" aria-pressed="false" data-en="×100">×100</button>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Each tube holds 10.0 mL of liquid and a whole strip of metal (2.0 mmol; potassium, sodium and calcium are small 1.0 mmol pieces). A tube is observed until the reaction is 99% complete or for 20 minutes, then its result goes into the record table. Tap a tube to see its readings and graph. The rack holds six tubes; a seventh replaces the oldest.">每支試管有 10.0 mL 液體與一整片浸在液體裡的金屬（2.0 mmol；鉀、鈉、鈣是 1.0 mmol 的小塊）。每支試管觀察到反應完成 99% 或滿 20 分鐘，結果就記入觀察紀錄。點一支試管可以看它的讀數與圖表。試管架放得下 6 支，第 7 支會取代最舊的一支。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Metal">金屬</h2>
+          <div class="grid4" id="metalSeg" role="group" aria-label="金屬" data-en-aria-label="Metal"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Liquid">液體</h2>
+          <div class="grid4" id="liqSeg" role="group" aria-label="液體" data-en-aria-label="Liquid"></div>
+          <p class="hint" data-en-html="Metal-ion solutions are the nitrates, e.g. Cu(NO&lt;sub&gt;3&lt;/sub&gt;)&lt;sub&gt;2&lt;/sub&gt; for Cu&lt;sup&gt;2+&lt;/sup&gt;; HCl is dilute hydrochloric acid.">金屬離子溶液都是硝酸鹽，例如 Cu<sup>2+</sup> 是 Cu(NO<sub>3</sub>)<sub>2</sub>；HCl 是稀鹽酸。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Conditions for the next tube">下一支試管的條件</h2>
+          <div class="slider"><label for="conc" data-en="Concentration c (ions or HCl)">濃度 c（離子或鹽酸）</label><output id="conco"></output>
+            <input id="conc" type="range" min="0" max="1000" step="1" value="435" data-decimals="3"></div>
+          <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
+            <input id="temp" type="range" min="5" max="95" step="1" value="25" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="salt" type="checkbox"><span data-en-html="Add a pinch of table salt (Cl&lt;sup&gt;−&lt;/sup&gt;)">加一小撮食鹽（含 Cl<sup>−</sup>）</span></label>
+            <label><input id="phph" type="checkbox"><span data-en="Add phenolphthalein">先加入酚酞指示劑</span></label>
+          </div>
+          <p class="hint" id="condHint"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Unknown-metal challenge">未知金屬挑戰</h2>
+          <div class="checks"><label><input id="unk" type="checkbox"><span data-en="Unknown-metal challenge">未知金屬挑戰</span></label></div>
+          <p class="hint" data-en-html="Adds three grey metals X, Y and Z (and solutions of their 2+ ions) whose order is hidden. Find it by experiment, rank them below, then reveal. Turning the challenge on or off starts a new round and clears the rack.">加入三種灰色金屬 X、Y、Z（以及它們的 2+ 離子溶液），活性順序看不到。用實驗找出順序、在下方排好，再揭曉。打開或關閉挑戰會開始新的一輪並清空試管架。</p>
+          <div class="btns" id="unkBtns" hidden>
+            <button type="button" id="newRound" data-en="New round">換一組</button>
+            <button type="button" id="reveal" data-en="Reveal">揭曉</button>
+          </div>
+          <p class="info" id="unkInfo" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab ma">
+      <div class="stage">
+        <h2 id="gTitle" data-en="Selected tube">選取的試管</h2>
+        <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="conc" aria-pressed="true" data-en="Concentrations">濃度—時間</button>
+          <button type="button" data-tab="mass" aria-pressed="false" data-en="Mass and gas">質量與氣體—時間</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="選取的試管的圖表" data-en-aria-label="Graph of the selected tube" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <h2 style="margin-top:14px" data-en="Record of observations">觀察紀錄</h2>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <div class="eqn" id="eqn">—</div>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" data-share-skip>
+          <h2 data-en="Build the activity series">排出活性序</h2>
+          <p class="hint" data-en="What each metal did with each liquid (from the record table):">每種金屬在每種液體裡的結果（取自觀察紀錄）：</p>
+          <div class="tablewrap"><table class="mtx" id="mtx"></table></div>
+          <p class="hint" data-en="Tap the metals from the MOST reactive to the LEAST reactive, then check. Every neighbouring pair needs evidence from your tubes.">由「最活潑」到「最不活潑」依序點選金屬，再按核對。每相鄰兩種金屬都要有試管的實驗證據。</p>
+          <div class="chips" id="chips"></div>
+          <div class="orderline empty" id="orderLine" aria-live="polite"></div>
+          <div class="btns">
+            <button type="button" id="undo" data-en="Undo">撤回一個</button>
+            <button type="button" id="resetOrder" data-en="Start again">重新排</button>
+            <button type="button" id="checkOrder" class="primary" data-en="Check the order">核對排序</button>
+          </div>
+          <div class="info" id="rankOut" aria-live="polite"></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Observe displacement reactions between metals and metal-ion solutions, and the reactions of metals with dilute acid and with water.">觀察金屬與金屬離子溶液的置換反應，以及金屬與稀酸、與水的反應。</li>
+        <li data-en="From the results alone, rank metals by how easily they are oxidised (the activity series), and find where hydrogen fits in.">只根據實驗結果，排出金屬被氧化的難易順序（活性序），並找出氫在其中的位置。</li>
+        <li data-en="Connect the activity series with standard reduction potentials and equilibrium constants, and see where the simple rule needs care.">把活性序和標準還原電位、平衡常數連起來，並看看這條簡單的規則在哪裡要小心使用。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Displacement: the more active metal gives its electrons away">置換反應：較活潑的金屬把電子交出去</h3>
+      <p data-en-html="A metal M placed in a solution of the ions of another metal N gives electrons to those ions if M is more easily oxidised: M dissolves as ions and N is deposited on the strip.">金屬 M 放進另一種金屬 N 的離子溶液時，若 M 比較容易被氧化，它就把電子交給 N 的離子：M 溶解成離子，N 析出在金屬片上。</p>
+      <div class="formula multi">
+        \[ \mathrm{Zn(s) + Cu^{2+}(aq) \longrightarrow Zn^{2+}(aq) + Cu(s)} \]
+        \[ \mathrm{Cu(s) + 2Ag^{+}(aq) \longrightarrow Cu^{2+}(aq) + 2Ag(s)} \]
+      </div>
+      <p data-en-html="How far the reaction goes is fixed by the difference of the standard reduction potentials, \(\Delta E^\circ = E^\circ_\text{ion being reduced} - E^\circ_\text{metal being oxidised}\), through the equilibrium constant (25 °C, \(n\) electrons in the balanced equation):">反應能進行到哪裡，由兩者標準還原電位的差 \(\Delta E^\circ = E^\circ_\text{被還原的離子} - E^\circ_\text{被氧化的金屬}\) 經由平衡常數決定（25 °C，配平後轉移 \(n\) 個電子）：</p>
+      <div class="formula multi">
+        \[ \log K = \frac{n\,\Delta E^\circ}{0.0592\ \mathrm{V}} \]
+        \[ \Delta G^\circ = -nF\Delta E^\circ = -RT\ln K \]
+      </div>
+      <p data-en-html="For Zn + Cu<sup>2+</sup>, \(\Delta E^\circ = 1.10\) V and \(K \approx 10^{37}\): the copper ions are used up completely. For Cu + Zn<sup>2+</sup>, \(K \approx 10^{-37}\): nothing at all happens. When the two potentials are almost equal — tin and lead differ by only 0.011 V, \(K \approx 2.4\) — the reaction stops half-way, in either direction.">Zn + Cu<sup>2+</sup> 的 \(\Delta E^\circ = 1.10\) V、\(K \approx 10^{37}\)：銅離子完全用完。Cu + Zn<sup>2+</sup> 的 \(K \approx 10^{-37}\)：完全不反應。兩個電位幾乎相等時——錫和鉛只差 0.011 V、\(K \approx 2.4\)——反應會停在半路，從哪一邊開始都一樣。</p>
+
+      <h3 data-en="Metals with acids and with water">金屬與酸、與水</h3>
+      <div class="formula multi">
+        \[ \mathrm{Mg(s) + 2H^{+}(aq) \longrightarrow Mg^{2+}(aq) + H_2(g)} \]
+        \[ \mathrm{2Na(s) + 2H_2O(l) \longrightarrow 2Na^{+}(aq) + 2OH^{-}(aq) + H_2(g)} \]
+      </div>
+      <p data-en-html="Metals whose \(E^\circ\) is below that of hydrogen (0 V) can reduce H<sup>+</sup> in dilute acid to hydrogen gas; copper and silver cannot. Only the most active metals (K, Ca, Na) react with cold water; magnesium reacts with hot water. The hydroxide ions turn phenolphthalein pink and precipitate metal ions such as Cu<sup>2+</sup> as Cu(OH)<sub>2</sub>.">\(E^\circ\) 比氫（0 V）低的金屬，能把稀酸中的 H<sup>+</sup> 還原成氫氣；銅和銀不能。只有最活潑的鉀、鈣、鈉能和冷水反應；鎂要用熱水。生成的 OH<sup>−</sup> 讓酚酞變成粉紅色，也會把 Cu<sup>2+</sup> 這類金屬離子沉澱成 Cu(OH)<sub>2</sub>。</p>
+
+      <h3 data-en="The activity series">活性序</h3>
+      <div class="series" aria-label="活性序" data-en-aria-label="Activity series"><span>K</span><span>Ca</span><span>Na</span><span>Mg</span><span>Al</span><span>Zn</span><span>Fe</span><span>Sn</span><span>Pb</span><span class="h">(H)</span><span>Cu</span><span>Ag</span></div>
+      <p class="hint" style="text-align:center" data-en="More active (easily oxidised, strong reducing agent) on the left; less active on the right.">左邊較活潑（容易被氧化、還原力強），右邊較不活潑。</p>
+      <div class="tablewrap">
+        <table class="data" id="e0Table"></table>
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="Put a copper strip into Ag<sup>+</sup>: silver crystals grow like a tree and the colourless solution slowly turns blue. Compare the mass of the strip before and after.">把銅片放進 Ag<sup>+</sup>：銀的晶體像樹一樣長出來，無色的溶液慢慢變藍。比較金屬片前後的質量。</li>
+        <li data-en-html="Put the metals one by one into dilute HCl. Which give bubbles, which stay quiet? Compare how fast the bubbles come — and look closely at lead.">把各種金屬依序放進稀鹽酸，哪些冒泡、哪些不動？比較冒泡的快慢，也仔細看看鉛。</li>
+        <li data-en-html="Aluminium is very active, yet an aluminium strip in Cu<sup>2+</sup> can look unchanged. Try the same tube with a pinch of salt.">鋁非常活潑，但鋁片放進 Cu<sup>2+</sup> 裡卻可能看起來毫無變化。同樣的試管，加一小撮食鹽再試一次。</li>
+        <li data-en-html="Drop sodium into blue Cu<sup>2+</sup> solution. Does copper appear?">把鈉丟進藍色的 Cu<sup>2+</sup> 溶液裡，會析出銅嗎？</li>
+        <li data-en-html="Switch to “3D surface” and select a tube: you see the atoms of the strip, the ions arriving, electrons jumping across, and the new metal growing in islands (a sketch, not to scale).">切到「3D 金屬表面」並選一支試管：可以看到金屬片表面的原子、游過來的離子、跳過去的電子，以及一島一島長出來的新金屬（示意圖，未依比例）。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en-html="An iron nail is left in 10.0 mL of 0.10 M Cu<sup>2+</sup>. By how many milligrams does the nail (with the copper on it) change in mass when all the Cu<sup>2+</sup> has reacted?">鐵釘放在 10.0 mL、0.10 M 的 Cu<sup>2+</sup> 溶液中，Cu<sup>2+</sup> 完全反應後，鐵釘（連同上面的銅）的質量改變多少毫克？</li>
+        <li data-en="Sodium is far more active than copper. Why does sodium not deposit copper from a copper(II) solution?">鈉比銅活潑得多，為什麼鈉不能從銅離子溶液中置換出銅？</li>
+        <li data-en-html="Zinc in Pb<sup>2+</sup> gives a “lead tree”, and lead in Cu<sup>2+</sup> gives copper. Without any more experiments, what will happen to zinc in Cu<sup>2+</sup>? What principle are you using?">鋅放進 Pb<sup>2+</sup> 會長出「鉛樹」，鉛放進 Cu<sup>2+</sup> 會析出銅。不再做實驗，鋅放進 Cu<sup>2+</sup> 會怎樣？你用了什麼原理？</li>
+        <li data-en-html="Tin and lead: E° = −0.138 V and −0.126 V. Calculate K for Sn + Pb<sup>2+</sup> ⇌ Sn<sup>2+</sup> + Pb and explain why a lead strip in Sn<sup>2+</sup> solution also reacts a little.">錫和鉛的 E° 分別是 −0.138 V 和 −0.126 V。算出 Sn + Pb<sup>2+</sup> ⇌ Sn<sup>2+</sup> + Pb 的 K，並說明為什麼鉛片放進 Sn<sup>2+</sup> 溶液也會反應一點。</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="1.0 mmol of Fe dissolves (55.85 mg) and 1.0 mmol of Cu is deposited (63.55 mg): the nail gains about 7.7 mg.">溶解 1.0 mmol 鐵（55.85 mg）、析出 1.0 mmol 銅（63.55 mg）：鐵釘變重約 7.7 mg。</li>
+          <li data-en-html="Sodium reacts with the water first (2Na + 2H<sub>2</sub>O → 2NaOH + H<sub>2</sub>). The hydroxide ions then precipitate blue Cu(OH)<sub>2</sub>. The activity series for displacement only applies to metals that do not react with water.">鈉會先和水反應（2Na + 2H<sub>2</sub>O → 2NaOH + H<sub>2</sub>），生成的 OH<sup>−</sup> 再把 Cu<sup>2+</sup> 沉澱成藍色的 Cu(OH)<sub>2</sub>。用置換反應比較活性，只適用於不和水反應的金屬。</li>
+          <li data-en="Zn > Pb and Pb > Cu, so Zn > Cu: zinc will deposit copper. The order is transitive — that is what makes a single series possible.">Zn > Pb、Pb > Cu，所以 Zn > Cu：鋅會置換出銅。這種順序有遞移性，所以才能排成一條活性序。</li>
+          <li data-en-html="\(\log K = 2 \times 0.0113 / 0.0592 = 0.38\), \(K \approx 2.4\). At equilibrium \([\mathrm{Sn^{2+}}]/[\mathrm{Pb^{2+}}] = 2.4\). A lead strip in Sn<sup>2+</sup> starts with no Pb<sup>2+</sup> at all (Q = 0 &lt; 1/K), so some lead dissolves until the ratio is 2.4 again.">\(\log K = 2 \times 0.0113 / 0.0592 = 0.38\)，\(K \approx 2.4\)。平衡時 \([\mathrm{Sn^{2+}}]/[\mathrm{Pb^{2+}}] = 2.4\)。鉛片放進 Sn<sup>2+</sup> 時一開始完全沒有 Pb<sup>2+</sup>（Q = 0，小於這個方向的 K = 1/2.4），所以會溶解一些鉛，直到比值回到 2.4。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Standard reduction potentials at 25 °C from the CRC Handbook of Chemistry and Physics (“Electrochemical Series”, P. Vanýsek), the same as OpenStax <i>Chemistry 2e</i> Appendix L (copper 0.337 V, as on this site's “Electrochemical Cells” page). Solubility products of Mg(OH)<sub>2</sub>, Ca(OH)<sub>2</sub>, AgCl and PbCl<sub>2</sub> from the CRC Handbook. Atomic masses: IUPAC.">標準還原電位（25 °C）取自 CRC Handbook of Chemistry and Physics 的「Electrochemical Series」（P. Vanýsek），與 OpenStax《Chemistry 2e》附錄 L 相同（銅 0.337 V，和本站「化學電池與電解」一致）。Mg(OH)<sub>2</sub>、Ca(OH)<sub>2</sub>、AgCl、PbCl<sub>2</sub> 的溶度積取自 CRC 手冊；原子量用 IUPAC 標準原子量。</li>
+        <li data-en-html="Where each tube ends up is exact thermodynamics: the amount of electrons transferred is solved (bisection) so that \(\tfrac{1}{m}\log[\mathrm{M}^{m+}] - \tfrac{1}{n}\log[\mathrm{N}^{n+}] = \Delta E^\circ/0.0592\), limited by whichever runs out first, the metal or the ions. Concentrations are used instead of activities.">每支試管最後停在哪裡是精確的熱力學：解出轉移的電子數，使 \(\tfrac{1}{m}\log[\mathrm{M}^{m+}] - \tfrac{1}{n}\log[\mathrm{N}^{n+}] = \Delta E^\circ/0.0592\)（二分法），並受先用完的金屬或離子限制。以濃度代替活性。</li>
+        <li data-en-html="How fast it gets there is illustrative: the extent approaches equilibrium exponentially, with a rate constant for each metal and reaction type, faster when hotter (Arrhenius, 35–75 kJ/mol) and, for acids, proportional to the acid concentration. Lead with HCl is very slow (a PbCl<sub>2</sub> layer in reality). Aluminium is covered by an oxide film: without chloride its rate is multiplied by 0.0002; with chloride (HCl or added salt) the film breaks after an induction time. Zinc and iron are taken as not reacting with water, and magnesium only noticeably above about 35 °C.">到達的快慢是示意值：反應進度以指數方式趨近平衡，每種金屬、每類反應各有一個速率常數，溫度越高越快（阿瑞尼士式，35–75 kJ/mol），酸的速率與濃度成正比。鉛和鹽酸非常慢（實際上是 PbCl<sub>2</sub> 薄膜的影響）。鋁有氧化鋁薄膜：沒有氯離子時速率乘 0.0002；有氯離子（鹽酸或加了食鹽）時，薄膜經過一段誘導期才破。鋅、鐵視為不和水反應；鎂約在 35 °C 以上才看得出反應。</li>
+        <li data-en-html="Simplifications: the temperature does not change K (25 °C potentials are used); hydrolysis of the metal ions, the oxygen in the air and side reactions (such as magnesium releasing some hydrogen in Cu<sup>2+</sup> solution) are ignored; hydroxides from K, Na or Ca precipitate the metal ions completely, and amphoteric hydroxides do not redissolve; the colours follow Beer's law with illustrative strengths. In reality, sodium and potassium should only be tried as small pieces in a large trough of water, behind a screen.">簡化：溫度不改變 K（用 25 °C 的電位）；不考慮金屬離子的水解、空氣中的氧與副反應（例如鎂在 Cu<sup>2+</sup> 溶液中也會放出一些氫氣）；鉀、鈉、鈣生成的 OH<sup>−</sup> 把金屬離子完全沉澱，兩性氫氧化物不再溶解；顏色依比爾定律，強度是示意值。真實的鈉、鉀只能取小塊放進大水槽、隔著防護板操作。</li>
+        <li data-en-html="The 2D view shows each tube from the side; the drawing of deposits, bubbles and precipitates is sized by the calculated amounts. The 3D view (three.js, MIT licence, downloaded only when you switch to it) zooms into the surface of the selected strip: the fraction of the surface covered by new metal and the number of ions in the solution follow the calculation; the motion of individual atoms is a sketch.">2D 是試管的側視圖，析出物、氣泡、沉澱的大小依計算出的量畫出。3D（three.js 函式庫，MIT 授權，切換時才下載）把選取的金屬片表面放大：新金屬覆蓋的比例與溶液中離子的數目依計算結果，個別原子的運動只是示意。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Redox reactions (activity series of metals, displacement reactions, standard reduction potentials).">課綱對應：高中化學・氧化還原反應（金屬活性序、置換反應、標準還原電位）。</li>
+        <li data-en-html="Standard reduction potentials: OpenStax <i>Chemistry 2e</i>, <a href=&quot;https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Appendix L: Standard Electrode (Half-Cell) Potentials</a>; P. Vanýsek, “Electrochemical Series”, in CRC Handbook of Chemistry and Physics.">標準還原電位：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials" target="_blank" rel="noopener">附錄 L：Standard Electrode (Half-Cell) Potentials</a>（英文）；P. Vanýsek，“Electrochemical Series”，CRC Handbook of Chemistry and Physics。</li>
+        <li data-en-html="Further reading: OpenStax <i>Chemistry 2e</i>, <a href=&quot;https://openstax.org/books/chemistry-2e/pages/17-3-electrode-and-cell-potentials&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>17.3 Electrode and Cell Potentials</a> and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/17-4-potential-free-energy-and-equilibrium&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>17.4 Potential, Free Energy, and Equilibrium</a>.">延伸閱讀：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/17-3-electrode-and-cell-potentials" target="_blank" rel="noopener">17.3 電極電位與電池電位</a>、<a href="https://openstax.org/books/chemistry-2e/pages/17-4-potential-free-energy-and-equilibrium" target="_blank" rel="noopener">17.4 電位、自由能與平衡</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/metal-activity-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/metal-activity-3d.js"></script>
+  <script src="js/metal-activity.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="metal-activity"></script>
+  <script src="js/missions/metal-activity.js"></script>
+  <script src="js/stats.js" data-module="metal-activity"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
