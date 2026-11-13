@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Gibbs Free Energy and Spontaneity | Astro Ni Science Lab">自由能與自發性｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 自由能與自發性頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .gf canvas { aspect-ratio: auto; touch-action: auto; }
+    .gf #cv { height: 420px; }
+    .gf #gcv { height: 340px; touch-action: none; cursor: crosshair; }
+    .gf + .gf { margin-top: 16px; }
+    .gf button { min-height: 44px; }
+    .gf [hidden] { display: none !important; }
+    .gf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gf .playbar > button { flex: 1 1 auto; }
+    .gf .playbar #record { font-weight: 700; min-width: 8em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .seg2 button, .seg3 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .gf .rx-seg button { font-size: calc(13px * var(--fs, 1)); }
+    .gf .rx-seg button .q { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 500; letter-spacing: .02em; }
+    .gf .stage .status { margin: 6px 4px 0; }
+    .gf .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .gf .slider input[type="range"] { height: 28px; margin: 0; }
+    .gf sub, .gf sup, .notes sub, .notes sup { font-size: .75em; }
+    .gf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .gf .card .info { font-size: calc(14px * var(--fs, 1)); margin: 8px 0 2px; line-height: 1.55; font-variant-numeric: tabular-nums; }
+    .gf .card .info .eqn { display: block; font-weight: 700; font-size: calc(15px * var(--fs, 1)); margin-bottom: 2px; }
+    .gf .checks label { min-height: 44px; }
+    .gf dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .gf dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.yes { color: var(--probe); font-weight: 700; }
+    dl.readout dd.no { color: var(--pos); font-weight: 700; }
+    dl.readout dt small, dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-weight: 400; }
+    .gf .warn { margin: 6px 4px 0; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--pos); color: var(--text); background: color-mix(in srgb, var(--pos) 9%, transparent); font-size: calc(13px * var(--fs, 1)); }
+    .gf .warn:empty { display: none; }
+    .gf .tabs { margin: 0 2px 8px; }
+    .gf .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .gf .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .gf .legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+    .gf .legend .box { display: inline-block; width: 14px; height: 10px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .gf .btns button { flex: 1 1 auto; }
+    #mysOut .ok { color: var(--probe); font-weight: 700; }
+    #mysOut .no { color: var(--pos); font-weight: 700; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data td.yes { color: var(--probe); font-weight: 600; }
+    table.data td.no { color: var(--pos); font-weight: 600; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    /* 手機：ΔH°、ΔS° 兩欄收起（同一個反應都一樣，讀數區看得到），讓 K 與判斷不必左右捲動 */
+    @media (max-width: 560px) { table.data tr:not(.empty) > :nth-child(4), table.data tr:not(.empty) > :nth-child(5) { display: none; } table.data td.l { white-space: normal; min-width: 5.5em; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#reaction&quot;&gt;Chemistry · Reactions and Energy&lt;/a&gt; / Gibbs Free Energy and Spontaneity"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#reaction">化學・化學反應與能量</a> ／ 自由能與自發性</nav>
+      <h1 data-en="Gibbs Free Energy and Spontaneity">自由能與自發性</h1>
+      <p data-en-html="Will a reaction go by itself? Heat released (ΔH°) and the spreading out of matter and energy (ΔS°) pull against each other, and temperature decides who wins: ΔG° = ΔH° − TΔS°. Nine real reactions with standard data from NIST, CODATA, the CRC Handbook and OpenStax — water boiling, a cold pack, the brown NO&lt;sub&gt;2&lt;/sub&gt; gas, the lime kiln, the Haber and contact processes, hydrogen peroxide, diamond and ozone — plus a reaction you design yourself and an unknown reaction to crack from its equilibrium constant.">一個反應會不會自己發生？放出的熱（ΔH°）與物質、能量的分散（ΔS°）互相拉扯，由溫度決定誰贏：ΔG° = ΔH° − TΔS°。九個真實的反應用 NIST、CODATA、CRC 手冊與 OpenStax 的標準數據：水的汽化、冷敷包、紅棕色的 NO<sub>2</sub>、石灰窯、哈柏法與接觸法、雙氧水、鑽石與臭氧；另外可以自己設計反應，或由平衡常數破解一個未知反應。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: with “Water vaporises” selected, press “Temperature sweep” and watch the −TΔS° arrow grow until it outweighs ΔH°. The moment ΔG° crosses zero is the turning temperature T*.">試試看：選「水的汽化」，按「溫度掃描」，看 −TΔS° 的箭頭越來越長，直到壓過 ΔH°。ΔG° 越過零的那一刻，就是轉折溫度 T*。</p>
+    <div class="lab gf">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="反應示意與能量圖" data-en-aria-label="Reaction picture and energy diagram"></canvas>
+        <div class="playbar">
+          <button id="record" class="primary" type="button" data-en="Record this point">記錄這一點</button>
+          <button id="sweep" type="button" data-en="Temperature sweep">溫度掃描</button>
+          <button id="roomT" type="button" data-en="Back to 25 °C">回到 25 °C</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上的紀錄點，開始新的一段紀錄；目前的反應與溫度不變" data-en-title="Clear the table and the recorded points and start a new set of records; the reaction and temperature stay as they are">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="warn" id="warn"></p>
+        <p class="hint" data-en="Left: the particles before and after the reaction (a sketch, not to scale; they move faster at higher temperature). Right: the energy diagram, drawn to scale — ΔH° and −TΔS° add up to ΔG°.">左邊是反應前後的粒子示意（未依比例；溫度越高動得越快）。右邊是依比例畫的能量圖：ΔH° 加上 −TΔS° 就是 ΔG°。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Reaction">反應</h2>
+          <div class="seg2 rx-seg" id="rxSeg" role="group" aria-label="反應" data-en-aria-label="Reaction">
+            <button type="button" data-rx="vap" aria-pressed="true" data-en-html="Water vaporises&lt;span class=&quot;q&quot;&gt;ΔH &gt; 0, ΔS &gt; 0&lt;/span&gt;">水的汽化<span class="q">ΔH &gt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="nh4cl" aria-pressed="false" data-en-html="NH&lt;sub&gt;4&lt;/sub&gt;Cl dissolves&lt;span class=&quot;q&quot;&gt;ΔH &gt; 0, ΔS &gt; 0&lt;/span&gt;">氯化銨溶解<span class="q">ΔH &gt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="n2o4" aria-pressed="false" data-en-html="N&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; splits&lt;span class=&quot;q&quot;&gt;ΔH &gt; 0, ΔS &gt; 0&lt;/span&gt;">N<sub>2</sub>O<sub>4</sub> 解離<span class="q">ΔH &gt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="caco3" aria-pressed="false" data-en-html="Limestone breaks down&lt;span class=&quot;q&quot;&gt;ΔH &gt; 0, ΔS &gt; 0&lt;/span&gt;">石灰石分解<span class="q">ΔH &gt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="haber" aria-pressed="false" data-en-html="Making ammonia&lt;span class=&quot;q&quot;&gt;ΔH &lt; 0, ΔS &lt; 0&lt;/span&gt;">合成氨<span class="q">ΔH &lt; 0、ΔS &lt; 0</span></button>
+            <button type="button" data-rx="so3" aria-pressed="false" data-en-html="Contact process&lt;span class=&quot;q&quot;&gt;ΔH &lt; 0, ΔS &lt; 0&lt;/span&gt;">接觸法<span class="q">ΔH &lt; 0、ΔS &lt; 0</span></button>
+            <button type="button" data-rx="h2o2" aria-pressed="false" data-en-html="H&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;2&lt;/sub&gt; decomposes&lt;span class=&quot;q&quot;&gt;ΔH &lt; 0, ΔS &gt; 0&lt;/span&gt;">雙氧水分解<span class="q">ΔH &lt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="diamond" aria-pressed="false" data-en-html="Diamond to graphite&lt;span class=&quot;q&quot;&gt;ΔH &lt; 0, ΔS &gt; 0&lt;/span&gt;">鑽石變石墨<span class="q">ΔH &lt; 0、ΔS &gt; 0</span></button>
+            <button type="button" data-rx="ozone" aria-pressed="false" data-en-html="Oxygen to ozone&lt;span class=&quot;q&quot;&gt;ΔH &gt; 0, ΔS &lt; 0&lt;/span&gt;">氧變成臭氧<span class="q">ΔH &gt; 0、ΔS &lt; 0</span></button>
+            <button type="button" data-rx="custom" aria-pressed="false" data-en-html="Custom reaction&lt;span class=&quot;q&quot;&gt;you set ΔH and ΔS&lt;/span&gt;">自訂反應<span class="q">自己設定 ΔH、ΔS</span></button>
+          </div>
+          <p class="info" id="rxInfo"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Conditions">條件</h2>
+          <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
+            <input id="temp" type="range" min="100" max="1500" step="1" value="298" data-decimals="2"></div>
+          <div id="customRows" hidden>
+            <div class="slider"><label for="cH" data-en="ΔH° (kJ/mol)">ΔH°（kJ/mol）</label><output id="cHo"></output>
+              <input id="cH" type="range" min="-400" max="400" step="0.5" value="20" data-decimals="2"></div>
+            <div class="slider"><label for="cS" data-en="ΔS° (J/(mol·K))">ΔS°（J/(mol·K)）</label><output id="cSo"></output>
+              <input id="cS" type="range" min="-400" max="400" step="0.5" value="50" data-decimals="1"></div>
+          </div>
+          <p class="hint" data-en="Click the number next to a slider to type an exact value. You can also drag on the graph below to change the temperature.">點滑桿旁的數字可以直接打字輸入。也可以在下面的圖上拖曳來改變溫度。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab gf">
+      <div class="stage">
+        <h2 data-en="Graphs and records">圖表與紀錄</h2>
+        <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="dg" aria-pressed="true" data-en="ΔG° against T">ΔG°—T</button>
+          <button type="button" data-tab="map" aria-pressed="false" data-en="ΔH° against ΔS°">ΔH°—ΔS° 四象限</button>
+          <button type="button" data-tab="k" aria-pressed="false" data-en="ln K against 1/T">ln K—1/T</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <div class="checks"><label><input id="showAll" type="checkbox"><span data-en="Show all nine reactions">顯示全部九個反應</span></label></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="mysCard" data-share-skip>
+          <h2 data-en="Unknown reaction">未知反應</h2>
+          <p class="hint" data-en-html="A gas reaction A(g) → B(g) with hidden ΔH° and ΔS°. All you can measure is its equilibrium constant K at the temperature you choose. Record K at a few temperatures, work out ΔG° = −RT ln K for each, and find ΔH° and ΔS° from the straight line ΔG° = ΔH° − TΔS°.">一個氣相反應 A(g) → B(g)，ΔH° 與 ΔS° 看不到，只量得到你選的溫度下的平衡常數 K。在幾個溫度記錄 K，各自算出 ΔG° = −RT ln K，再由直線 ΔG° = ΔH° − TΔS° 求出 ΔH° 與 ΔS°。</p>
+          <div class="btns"><button type="button" id="mysOn" data-en="Start">開始</button></div>
+          <div id="mysBox" hidden>
+            <div class="ans"><label for="ansH" data-en="ΔH° (kJ/mol)">ΔH°（kJ/mol）</label><input id="ansH" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 −85.0" data-en-placeholder="e.g. −85.0"></div>
+            <div class="ans"><label for="ansS" data-en="ΔS° (J/(mol·K))">ΔS°（J/(mol·K)）</label><input id="ansS" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 −120" data-en-placeholder="e.g. −120"></div>
+            <div class="btns">
+              <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+              <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+              <button id="mysNew" type="button" data-en="Another one">換一個</button>
+              <button id="mysOff" type="button" data-en="Back to the reactions">回到反應列表</button>
+            </div>
+          </div>
+          <p class="info" id="mysOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="See how the enthalpy change ΔH° and the entropy change ΔS° together decide whether a reaction is spontaneous.">看焓變 ΔH° 與熵變 ΔS° 怎麼一起決定反應是否自發。</li>
+        <li data-en="Find the turning temperature T* = ΔH°/ΔS° and see why it exists only when ΔH° and ΔS° have the same sign.">找出轉折溫度 T* = ΔH°/ΔS°，並了解為什麼只有 ΔH° 與 ΔS° 同號時才有轉折溫度。</li>
+        <li data-en="Connect ΔG° with the equilibrium constant, ΔG° = −RT ln K, and use it to find ΔH° and ΔS° of an unknown reaction.">連結 ΔG° 與平衡常數：ΔG° = −RT ln K，並用它求出未知反應的 ΔH° 與 ΔS°。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Gibbs free energy">吉布斯自由能</h3>
+      <div class="formula multi">
+        \[ \Delta G^\circ = \Delta H^\circ - T\,\Delta S^\circ \]
+        \[ \Delta G^\circ = -RT\ln K \]
+      </div>
+      <p data-en-html="At constant temperature and pressure, a reaction can go by itself (is &lt;strong&gt;spontaneous&lt;/strong&gt;) when \(\Delta G &lt; 0\). The two terms pull against each other: giving out heat (\(\Delta H &lt; 0\)) helps, and so does spreading out into more ways of arranging matter and energy (\(\Delta S &gt; 0\), for example making more gas molecules). The entropy term is multiplied by \(T\), so the hotter it is, the more it matters. With standard values (gases at 1 bar, solutions at 1 mol/L), \(\Delta G^\circ &lt; 0\) means \(K &gt; 1\): at equilibrium the products are favoured.">在定溫定壓下，\(\Delta G &lt; 0\) 的反應可以自己發生（<strong>自發</strong>）。兩項互相拉扯：放熱（\(\Delta H &lt; 0\)）有利，分散成更多種排列物質與能量的方式（\(\Delta S &gt; 0\)，例如氣體分子變多）也有利。熵這一項要乘上 \(T\)，所以溫度越高越重要。用標準值（氣體 1 bar、溶液 1 mol/L）時，\(\Delta G^\circ &lt; 0\) 表示 \(K &gt; 1\)：平衡時偏向生成物。</p>
+      <h3 data-en="Four combinations">四種組合</h3>
+      <div class="tablewrap">
+        <table class="data">
+          <thead><tr><th class="l">ΔH°</th><th class="l">ΔS°</th><th class="l" data-en="Spontaneous when">什麼時候自發</th><th class="l" data-en="Example here">這裡的例子</th></tr></thead>
+          <tbody>
+            <tr><td class="l">&lt; 0</td><td class="l">&gt; 0</td><td class="l" data-en="at every temperature">任何溫度</td><td class="l" data-en="hydrogen peroxide, diamond → graphite">雙氧水分解、鑽石變石墨</td></tr>
+            <tr><td class="l">&lt; 0</td><td class="l">&lt; 0</td><td class="l" data-en="below T* (low temperature)">低於 T*（低溫）</td><td class="l" data-en="Haber process, contact process">合成氨、接觸法</td></tr>
+            <tr><td class="l">&gt; 0</td><td class="l">&gt; 0</td><td class="l" data-en="above T* (high temperature)">高於 T*（高溫）</td><td class="l" data-en-html="boiling, dissolving NH&lt;sub&gt;4&lt;/sub&gt;Cl, N&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; splitting, limestone">水的汽化、氯化銨溶解、N<sub>2</sub>O<sub>4</sub> 解離、石灰石分解</td></tr>
+            <tr><td class="l">&gt; 0</td><td class="l">&lt; 0</td><td class="l" data-en="never">任何溫度都不自發</td><td class="l" data-en="oxygen → ozone">氧變成臭氧</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="formula multi">
+        \[ T^* = \frac{\Delta H^\circ}{\Delta S^\circ} \]
+        \[ \ln K = -\frac{\Delta H^\circ}{R}\cdot\frac{1}{T} + \frac{\Delta S^\circ}{R} \]
+      </div>
+      <p data-en-html="At the turning temperature \(T^*\), \(\Delta G^\circ = 0\) and \(K = 1\). For boiling, \(T^*\) is the boiling point at 1 bar, because K is the vapour pressure of the liquid in bar. Plotting \(\ln K\) against \(1/T\) gives a straight line with slope \(-\Delta H^\circ/R\) (the van 't Hoff equation, the same one used in “Chemical Equilibrium”).">在轉折溫度 \(T^*\)，\(\Delta G^\circ = 0\)、\(K = 1\)。對汽化來說，K 就是液體的蒸氣壓（以 bar 為單位），所以 \(T^*\) 就是 1 bar 下的沸點。把 \(\ln K\) 對 \(1/T\) 作圖是一條直線，斜率 \(-\Delta H^\circ/R\)（凡特荷夫方程式，與「化學平衡」實驗相同）。</p>
+      <p data-en-html="Spontaneous does not mean fast. Diamond turning into graphite and hydrogen peroxide breaking down are both spontaneous, but at room temperature they are extremely slow; ΔG° says &lt;em&gt;whether&lt;/em&gt; a reaction can go, not &lt;em&gt;how quickly&lt;/em&gt;.">自發不等於快。鑽石變石墨、雙氧水分解都是自發的，但在室溫下慢得幾乎看不到；ΔG° 告訴我們反應「能不能」進行，不告訴我們「多快」。</p>
+
+      <h3 data-en="Data used (298.15 K)">使用的數據（298.15 K）</h3>
+      <div class="tablewrap"><table class="data" id="rxTable"></table></div>
+      <div class="tablewrap"><table class="data" id="spTable"></table></div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Sweep the temperature for each reaction. Only the reactions with ΔH° and ΔS° of the same sign change their verdict; the others never do.">每個反應都做一次溫度掃描。只有 ΔH° 與 ΔS° 同號的反應會改變判斷，其他的不論多冷多熱都不變。</li>
+        <li data-en="Open the “ΔH° against ΔS°” graph and change T: the dividing line ΔH° = TΔS° turns, sweeping reactions from one side to the other.">打開「ΔH°—ΔS° 四象限」圖並改變 T：分界線 ΔH° = TΔS° 會旋轉，把反應從一邊掃到另一邊。</li>
+        <li data-en="Count gas molecules: reactions that make more gas (Δn > 0) have ΔS° > 0, reactions that use up gas have ΔS° &lt; 0.">數一數氣體分子：氣體變多（Δn &gt; 0）的反應 ΔS° &gt; 0，氣體變少的反應 ΔS° &lt; 0。</li>
+        <li data-en="Water: the turning temperature comes out at 370 K, not 373 K. The 2-degree gap is the price of treating ΔH° and ΔS° as constants.">水：算出的轉折溫度是 370 K，而不是 373 K。差的這兩三度，就是把 ΔH°、ΔS° 當成定值的代價。</li>
+        <li data-en="The Haber process is run at about 700 K, where ΔG° &gt; 0 and K &lt; 1. Industry accepts a smaller yield to get a useful rate, and pushes the yield back up with high pressure.">哈柏法在約 700 K 進行，那裡 ΔG° &gt; 0、K &lt; 1。工業上用較低的產率換取夠快的速率，再用高壓把產率拉回來。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en="Ammonium chloride dissolves even though the solution gets colder. Where does the “push” come from?">氯化銨溶解時溶液變冷，它還是會溶。推動它的是什麼？</li>
+        <li data-en-html="For CaCO&lt;sub&gt;3&lt;/sub&gt;(s) → CaO(s) + CO&lt;sub&gt;2&lt;/sub&gt;(g), ΔH° = +179.2 kJ/mol and ΔS° = +160.2 J/(mol·K). Find the lowest temperature at which it is spontaneous under standard conditions.">CaCO<sub>3</sub>(s) → CaO(s) + CO<sub>2</sub>(g) 的 ΔH° = +179.2 kJ/mol、ΔS° = +160.2 J/(mol·K)。求標準狀態下自發的最低溫度。</li>
+        <li data-en="Diamond → graphite has ΔG° = −2.9 kJ/mol at 25 °C. Why are diamonds still around after millions of years?">鑽石變石墨在 25 °C 的 ΔG° = −2.9 kJ/mol。為什麼鑽石放了幾百萬年還是鑽石？</li>
+        <li data-en-html="Why can no temperature make 3O&lt;sub&gt;2&lt;/sub&gt; → 2O&lt;sub&gt;3&lt;/sub&gt; spontaneous? How is ozone made in the upper atmosphere, then?">為什麼任何溫度都不能讓 3O<sub>2</sub> → 2O<sub>3</sub> 自發？那高空中的臭氧是怎麼來的？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="Entropy. The ordered crystal breaks up into ions spread through the water (ΔS° = +75 J/(mol·K)), and at room temperature TΔS° (about 22 kJ/mol) is larger than ΔH° (+14.7 kJ/mol), so ΔG° ≈ −7.7 kJ/mol.">熵。整齊的晶體拆成散布在水中的離子（ΔS° = +75 J/(mol·K)），室溫下 TΔS° 約 22 kJ/mol，比 ΔH°（+14.7 kJ/mol）大，所以 ΔG° ≈ −7.7 kJ/mol。</li>
+          <li data-en-html="T* = ΔH°/ΔS° = 179 200 ÷ 160.2 ≈ 1119 K (about 845 °C). Above this temperature ΔG° &lt; 0 (taking ΔH° and ΔS° as constant). In open air, where the CO&lt;sub&gt;2&lt;/sub&gt; pressure is far below 1 bar, it starts to break down at a lower temperature.">T* = ΔH°/ΔS° = 179 200 ÷ 160.2 ≈ 1119 K（約 845 °C），高於這個溫度 ΔG° &lt; 0（ΔH°、ΔS° 當成定值）。在開放的空氣中，CO<sub>2</sub> 的分壓遠低於 1 bar，所以在更低的溫度就開始分解。</li>
+          <li data-en="ΔG° only says the change is possible. Turning diamond into graphite means breaking very strong C–C bonds in the whole crystal, so the activation energy is huge and the rate at room temperature is practically zero. Diamond is kinetically stable but thermodynamically unstable.">ΔG° 只說明變化「可能」發生。鑽石變石墨要打斷整個晶體裡非常強的 C–C 鍵，活化能非常大，室溫下的速率幾乎是零。鑽石是「動力學上穩定」而「熱力學上不穩定」。</li>
+          <li data-en-html="ΔH° &gt; 0 and ΔS° &lt; 0, so ΔG° = ΔH° − TΔS° is positive at every temperature. In the stratosphere ultraviolet light supplies the energy: it splits O&lt;sub&gt;2&lt;/sub&gt; into O atoms, which then join O&lt;sub&gt;2&lt;/sub&gt; to make O&lt;sub&gt;3&lt;/sub&gt; — energy from outside drives the reaction.">ΔH° &gt; 0、ΔS° &lt; 0，所以 ΔG° = ΔH° − TΔS° 在任何溫度都是正的。平流層中由紫外線提供能量：把 O<sub>2</sub> 拆成 O 原子，O 原子再和 O<sub>2</sub> 結合成 O<sub>3</sub>——是外來的能量推動了反應。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="ΔH° and ΔS° of each reaction are calculated from the standard enthalpies of formation and standard molar entropies at 298.15 K (table above). &lt;strong&gt;Simplification:&lt;/strong&gt; ΔH° and ΔS° are taken as constant at all temperatures (the heat capacities are ignored), so ΔG° = ΔH° − TΔS° is a straight line in T. Real values drift slowly with temperature, so the farther from 298 K, the larger the error — for example, the turning temperature of water comes out at 370.4 K, while water really boils at 372.8 K at 1 bar.">每個反應的 ΔH°、ΔS° 由 298.15 K 的標準生成焓與標準莫耳熵（上表）相加算出。<strong>簡化：</strong>假設 ΔH°、ΔS° 在任何溫度都不變（忽略熱容量），所以 ΔG° = ΔH° − TΔS° 對 T 是一條直線。真實的值會隨溫度慢慢改變，離 298 K 越遠誤差越大，例如水算出的轉折溫度是 370.4 K，而 1 bar 下真正的沸點是 372.8 K。</li>
+        <li data-en-html="\(K = e^{-\Delta G^\circ/RT}\) with \(R = 8.314\ \mathrm{J/(mol\,K)}\), using standard states of 1 bar for gases and 1 mol/L for solutions. For boiling, K is the vapour pressure in bar; for limestone, K is the pressure of CO&lt;sub&gt;2&lt;/sub&gt; in bar.">\(K = e^{-\Delta G^\circ/RT}\)，\(R = 8.314\ \mathrm{J/(mol\,K)}\)，標準狀態：氣體 1 bar、溶液 1 mol/L。汽化的 K 就是蒸氣壓（bar）；石灰石分解的 K 就是 CO<sub>2</sub> 的分壓（bar）。</li>
+        <li data-en="Each reaction has a temperature range in which the phases written in the equation make sense (for example, liquid water between 0 and about 177 °C). Outside it the page warns you that the result is only an extrapolation.">每個反應都有一個方程式中各相合理的溫度範圍（例如液態水在 0 到約 177 °C 之間）；超出範圍時頁面會提醒結果只是外推。</li>
+        <li data-en="The particle pictures are sketches: the numbers of particles follow the coefficients of the equation and their speed grows with √T, but sizes and spacing are not to scale.">粒子圖只是示意：粒子數依方程式的係數畫出、運動快慢隨 √T 增加，但大小與間距不依比例。</li>
+        <li data-en="The unknown reaction has ΔH° between ±20 and ±200 kJ/mol and ΔS° between ±40 and ±250 J/(mol·K) (invented values); K is shown to three significant figures, which is precise enough to find ΔH° and ΔS° to better than 1% from two temperatures far apart.">未知反應的 ΔH° 在 ±20～±200 kJ/mol、ΔS° 在 ±40～±250 J/(mol·K) 之間（虛構的數值）；K 顯示三位有效數字，用兩個相距很遠的溫度就足以把 ΔH°、ΔS° 算到 1% 以內。</li>
+        <li data-en="There is no 3D view: the quantities here are numbers that describe a whole reaction (ΔH°, ΔS°, ΔG°, K), and the 2D energy diagram and graphs show their relations most clearly; a 3D picture of molecules would not add any chemistry.">沒有做 3D 檢視：這裡的量（ΔH°、ΔS°、ΔG°、K）是描述整個反應的數值，2D 的能量圖與圖表最能看清它們的關係；畫成 3D 分子不會多出化學內容。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Chemical reactions and energy (entropy, Gibbs free energy and spontaneity).">課綱對應：高中化學・化學反應與能量（熵、吉布斯自由能與自發性）。</li>
+        <li data-en-html="OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix G&lt;/a&gt;: H&lt;sub&gt;2&lt;/sub&gt;O, H&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;2&lt;/sub&gt;, O&lt;sub&gt;2&lt;/sub&gt;, O&lt;sub&gt;3&lt;/sub&gt;, SO&lt;sub&gt;2&lt;/sub&gt;, SO&lt;sub&gt;3&lt;/sub&gt;, NH&lt;sub&gt;4&lt;/sub&gt;Cl and its ions, diamond and graphite.">OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances" target="_blank" rel="noopener">附錄 G</a>（英文）：H<sub>2</sub>O、H<sub>2</sub>O<sub>2</sub>、O<sub>2</sub>、O<sub>3</sub>、SO<sub>2</sub>、SO<sub>3</sub>、NH<sub>4</sub>Cl 與其離子、鑽石與石墨。</li>
+        <li data-en-html="NIST Chemistry WebBook (NIST-JANAF Thermochemical Tables, 4th ed., 1998): N&lt;sub&gt;2&lt;/sub&gt;, H&lt;sub&gt;2&lt;/sub&gt;, NH&lt;sub&gt;3&lt;/sub&gt;, NO&lt;sub&gt;2&lt;/sub&gt;, N&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; (the same data as “Chemical Equilibrium”); CODATA Key Values for Thermodynamics (Cox, Wagman and Medvedev) via the WebBook: CaO and CO&lt;sub&gt;2&lt;/sub&gt;.">NIST Chemistry WebBook（NIST-JANAF 熱力學表第 4 版，1998）：N<sub>2</sub>、H<sub>2</sub>、NH<sub>3</sub>、NO<sub>2</sub>、N<sub>2</sub>O<sub>4</sub>（與「化學平衡」實驗相同）；同站的 CODATA 關鍵值（Cox、Wagman、Medvedev）：CaO、CO<sub>2</sub>。</li>
+        <li data-en-html="&lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Standard Thermodynamic Properties of Chemical Substances: CaCO&lt;sub&gt;3&lt;/sub&gt; (calcite), and the heat of fusion of ice (6.01 kJ/mol).">《CRC Handbook of Chemistry and Physics》化學物質的標準熱力學性質表：CaCO<sub>3</sub>（方解石）；冰的熔化熱 6.01 kJ/mol。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gibbs-free-energy-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/gibbs-free-energy.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gibbs-free-energy"></script>
+  <script src="js/missions/gibbs-free-energy.js"></script>
+  <script src="js/stats.js" data-module="gibbs-free-energy"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
