@@ -919,7 +919,7 @@
     let busy = false;
     if (view3 && view3.active) { view3.frame(tnow); busy = view3.busy(); }
     else drawMap();
-    if (busy || interacting) raf = requestAnimationFrame(loop);
+    if (busy || interacting) requestDraw();
   }
 
   // =====================================================================

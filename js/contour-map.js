@@ -848,7 +848,7 @@
     if (view3 && view3.active) { view3.frame(tnow); busy = view3.busy(); }
     else drawMap();
     drawProfile();
-    if (busy) raf = requestAnimationFrame(loop);
+    if (busy) requestDraw();
   }
 
   // =====================================================================

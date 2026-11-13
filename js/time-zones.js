@@ -809,7 +809,7 @@
     let busy = false;
     if (view3 && view3.active) { view3.frame(tnow); busy = view3.busy(); }
     else drawMap();
-    if (state.flying || state.playing || busy) raf = requestAnimationFrame(loop);
+    if (state.flying || state.playing || busy) requestDraw();
   }
 
   // =====================================================================
