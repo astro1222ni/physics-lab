@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Climographs and the Köppen Climate Classification | Astro Ni Science Lab">氣候圖與柯本氣候分類｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 氣候圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --cl-temp: #d9480f; --cl-rain: #1c7ed6; --cl-rain2: #74c0fc; --cl-summer: #f59f00; --cl-mark: #495057;
+      --cl-pin1: #7048e8; --cl-pin2: #0ca678; --cl-pin3: #c2255c; --cl-dry: #e03131; --cl-steppe: #f08c00;
+      --cl-ocean: #d3e6f3; --cl-ocean2: #b2d1e8; --cl-land: #ece4cb; --cl-land2: #dccfa8; --cl-coast: #8a7d55; --cl-grid: #7a93a8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cl-temp: #ff8a5c; --cl-rain: #4dabf7; --cl-rain2: #a5d8ff; --cl-summer: #ffc54d; --cl-mark: #ced4da;
+        --cl-pin1: #b197fc; --cl-pin2: #38d9a9; --cl-pin3: #f783ac; --cl-dry: #ff6b6b; --cl-steppe: #ffa94d;
+        --cl-ocean: #17344d; --cl-ocean2: #0d2236; --cl-land: #56604a; --cl-land2: #48513f; --cl-coast: #a7a083; --cl-grid: #6d8193;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cl-temp: #ff8a5c; --cl-rain: #4dabf7; --cl-rain2: #a5d8ff; --cl-summer: #ffc54d; --cl-mark: #ced4da;
+      --cl-pin1: #b197fc; --cl-pin2: #38d9a9; --cl-pin3: #f783ac; --cl-dry: #ff6b6b; --cl-steppe: #ffa94d;
+      --cl-ocean: #17344d; --cl-ocean2: #0d2236; --cl-land: #56604a; --cl-land2: #48513f; --cl-coast: #a7a083; --cl-grid: #6d8193;
+    }
+    #cv { aspect-ratio: 16 / 10; height: auto; touch-action: none; }
+    @media (max-width: 560px) { #cv { aspect-ratio: 1 / 1; } }
+    .stage.v-map #cv { aspect-ratio: 2 / 1; cursor: pointer; }
+    .stage.v-map.tw #cv { aspect-ratio: 1 / 1; }
+    #cv.dragging { cursor: grabbing; }
+    @media (min-width: 881px) and (min-height: 900px) { .cg .stage { position: sticky; top: 12px; } }
+    .cg button { min-height: 44px; }
+    .cg [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; }
+    .toggles button { flex: 1 1 150px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 4px; }
+    .row2 > * { flex: 1 1 130px; }
+    .cg select.full { width: 100%; min-height: 44px; font-size: calc(14px * var(--fs, 1)); }
+    .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 6px; }
+    .legend .ln { display: inline-block; width: 18px; height: 0; border-top: 3px solid; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+    .legend .ln.dash { border-top-style: dashed; border-top-width: 2px; }
+    /* 判定結果 */
+    .result { display: flex; align-items: center; gap: 12px; margin: 2px 0 8px; }
+    .chip { display: inline-grid; place-items: center; min-width: 64px; height: 52px; padding: 0 10px; border-radius: 10px; font-size: calc(24px * var(--fs, 1)); font-weight: 800; letter-spacing: .02em;
+      color: #111; border: 1px solid rgba(0, 0, 0, .18); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .45), 0 2px 6px rgba(0, 0, 0, .12); font-variant-numeric: tabular-nums; }
+    .chip.light { color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, .35); }
+    .result b { display: block; font-size: calc(16px * var(--fs, 1)); line-height: 1.3; }
+    .result small { display: block; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    ol.steps { list-style: none; margin: 4px 0 6px; padding: 0; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; }
+    ol.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 2px 6px; padding: 5px 0; border-top: 1px dashed var(--border); }
+    ol.steps li:first-child { border-top: none; }
+    ol.steps .mk { position: relative; width: 16px; height: 16px; margin-top: 2px; font-weight: 800; text-align: center; line-height: 16px; }
+    ol.steps li.ok .mk::before { content: ""; position: absolute; left: 5px; top: 0; width: 5px; height: 10px; border: solid var(--pos, #2b8a3e); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+    ol.steps li.no .mk::before, ol.steps li.no .mk::after { content: ""; position: absolute; left: 7px; top: 2px; width: 2px; height: 12px; border-radius: 1px; background: var(--muted); transform: rotate(45deg); }
+    ol.steps li.no .mk::after { transform: rotate(-45deg); }
+    ol.steps li.end .mk { color: var(--accent); }
+    ol.steps li.end { font-weight: 700; }
+    ol.steps .q { font-variant-numeric: tabular-nums; }
+    ol.steps .a { grid-column: 2; color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+    ol.steps li.ok .a { color: var(--text); }
+    ol.steps .lt { display: inline-block; min-width: 1.6em; padding: 0 5px; margin-right: 4px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); font-weight: 800; text-align: center; }
+    .badge { display: inline-block; font-size: calc(12px * var(--fs, 1)); padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; margin-left: 6px; vertical-align: 2px; }
+    /* 比較清單 */
+    ul.pins { list-style: none; margin: 0 0 6px; padding: 0; }
+    ul.pins li { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px dashed var(--border); font-size: calc(14px * var(--fs, 1)); }
+    ul.pins li:first-child { border-top: none; }
+    ul.pins .dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+    ul.pins .nm { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+    ul.pins .cd { font-weight: 700; font-variant-numeric: tabular-nums; padding: 0 6px; border-radius: 5px; color: #111; }
+    ul.pins button { min-height: 44px; min-width: 44px; padding: 0 10px; }
+    ul.pins li.empty { color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    /* 數值表 */
+    details.vals { margin: 10px 2px 0; }
+    details.vals summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-weight: 600; color: var(--accent); }
+    .vals-wrap { max-width: 100%; overflow-x: auto; }
+    table.vt { border-collapse: collapse; width: 100%; max-width: 520px; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.vt th, table.vt td { border-bottom: 1px solid var(--border); padding: 2px 6px; text-align: right; }
+    table.vt th:first-child, table.vt td:first-child { text-align: left; white-space: nowrap; }
+    table.vt input { width: 100%; max-width: 9em; min-height: 40px; box-sizing: border-box; text-align: right; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+    table.vt input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    table.vt tr.summer td:first-child::after { content: " ☀"; color: var(--cl-summer); }
+    table.vt td.diff input { border-color: var(--accent); background: var(--accent-soft); }
+    .maplegend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    .maplegend span { white-space: nowrap; }
+    .maplegend i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; border: 1px solid rgba(0, 0, 0, .25); }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; vertical-align: top; }
+    .notes .tw { max-width: 100%; overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#climate&quot;>Geography · Climate and Natural Landscapes</a> / Climographs"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#climate">地理・氣候與自然景觀</a> ／ 氣候圖</nav>
+      <h1 data-en="Climographs and the Köppen Climate Classification">氣候圖與柯本氣候分類</h1>
+      <p data-en="Twelve monthly temperatures and twelve monthly rainfall totals are enough to name a climate. Pick a weather station in Taiwan or anywhere in the world, read its climograph, and watch the Köppen–Geiger rules decide its type step by step. Then drag the bars and the line to make your own climate and see which threshold you cross.">十二個月的均溫和十二個月的雨量，就能替一個地方的氣候取名字。選一個臺灣或世界各地的測站，讀它的氣候圖，看柯本－蓋格的規則一步一步判定類型；再拖曳長條和折線，自己造一個氣候，看看越過了哪一條門檻。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag Taipei’s January temperature below 0 °C and watch the type change; then switch to Cairo or Yushan and compare.">試試看：把臺北 1 月的溫度往下拖到 0 °C 以下，看類型怎麼變；再換到開羅或玉山比較。</p>
+    <div class="lab cg" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="vChart" aria-pressed="true" data-en="Climograph">氣候圖</button>
+            <button type="button" id="vDry" aria-pressed="false" data-en="Dryness line">乾燥界線</button>
+            <button type="button" id="vMap" aria-pressed="false" data-en="Station map">測站地圖</button>
+          </div>
+          <div class="seg" role="group" aria-label="地圖範圍" data-en-aria-label="Map area" id="scopeSeg" hidden>
+            <button type="button" data-scope="world" aria-pressed="true" data-en="World">世界</button>
+            <button type="button" data-scope="tw" aria-pressed="false" data-en="Taiwan">臺灣</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="氣候圖：紅線是月均溫、藍色長條是月雨量；拖曳可以修改" data-en-aria-label="Climograph: the red line is the monthly mean temperature and the blue bars are the monthly precipitation; drag to change them"></canvas>
+        <div class="legend" id="legChart">
+          <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-temp)&quot;></i>Mean temperature (°C, left)"><i class="ln" style="border-color:var(--cl-temp)"></i>月均溫（°C，左軸）</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-rain)&quot;></i>Precipitation (mm, right)"><i class="sw" style="background:var(--cl-rain)"></i>月雨量（mm，右軸）</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-summer);opacity:.35&quot;></i>Summer half-year"><i class="sw" style="background:var(--cl-summer);opacity:.35"></i>夏半年</span>
+          <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>Thresholds used in this decision"><i class="ln dash" style="border-color:var(--cl-mark)"></i>這次判定用到的門檻</span>
+        </div>
+        <div class="legend" id="legDry" hidden>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-dry);opacity:.35&quot;></i>Desert (BW)"><i class="sw" style="background:var(--cl-dry);opacity:.35"></i>沙漠（BW）</span>
+          <span data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--cl-steppe);opacity:.35&quot;></i>Steppe (BS)"><i class="sw" style="background:var(--cl-steppe);opacity:.35"></i>草原（BS）</span>
+          <span data-en-html="<i class=&quot;ln&quot; style=&quot;border-color:var(--cl-dry)&quot;></i>Dryness line for this rain pattern"><i class="ln" style="border-color:var(--cl-dry)"></i>這種降雨季節的乾燥界線</span>
+          <span data-en-html="<i class=&quot;ln dash&quot; style=&quot;border-color:var(--cl-mark)&quot;></i>The lines for the other two patterns"><i class="ln dash" style="border-color:var(--cl-mark)"></i>另外兩種降雨季節的界線</span>
+        </div>
+        <div class="maplegend" id="legMap" hidden></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l-chart" data-en="Drag a red dot to change that month’s temperature; drag up or down inside a month to set its rainfall; tap a month to read it. With the chart selected, ← → choose the month and ↑ ↓ change the value (Shift: bigger steps); Enter switches between temperature and rainfall.">拖曳紅點改那個月的均溫；在月份欄裡上下拖曳設定雨量；點一下可以讀數值。選取圖表後，← → 選月份、↑ ↓ 調整數值（加 Shift 一次調多一點）；Enter 切換溫度與雨量。</p>
+        <p class="hint l-dry" hidden data-en="Drag the large dot: sideways warms or cools every month by the same amount, up and down scales every month’s rainfall by the same factor, so the seasons keep their shape. The arrow keys do the same.">拖曳大圓點：左右移動，每個月同時變暖或變冷同樣的度數；上下移動，每個月的雨量按同樣的比例增減，季節的形狀不變。方向鍵也可以。</p>
+        <p class="hint l-map" hidden data-en="Each dot is a station, coloured by its Köppen–Geiger type. Tap a dot to open it (on the world map, tap Taiwan to zoom in). Only land and coastlines are drawn.">每個點是一個測站，顏色代表它的柯本－蓋格類型。點一下測站就換過去（世界地圖上點臺灣會放大）。地圖只畫陸地與海岸線。</p>
+        <div class="toggles" id="chartOpts" role="group" aria-label="圖表選項" data-en-aria-label="Chart options">
+          <button type="button" id="tMarks" aria-pressed="true" data-en="Threshold lines">門檻線</button>
+          <button type="button" id="tJul" aria-pressed="false" data-en="Start the chart in July" title="南半球的夏天在 12–2 月，從 7 月開始畫，夏天就在圖的中間" data-en-title="Summer in the Southern Hemisphere is December–February; starting in July puts it in the middle">從 7 月開始畫</button>
+        </div>
+        <details class="vals" id="valsBox">
+          <summary data-en="Table of values (type to change)">數值表（可以直接輸入）</summary>
+          <div class="vals-wrap">
+            <table class="vt" id="vt">
+              <thead><tr><th data-en="Month">月份</th><th data-en="Mean temp. (°C)">均溫（°C）</th><th data-en="Precip. (mm)">雨量（mm）</th></tr></thead>
+              <tbody id="vtBody"></tbody>
+            </table>
+          </div>
+          <p class="hint" data-en="☀ marks the summer half-year used by the rules. Temperatures −50 to 40 °C, rainfall 0 to 1000 mm.">☀ 是判定規則用的夏半年。溫度可輸入 −50 到 40 °C，雨量 0 到 1000 mm。</p>
+        </details>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Weather station">測站</h2>
+          <label class="hint" for="selStation" style="display:block;margin:0 0 4px" data-en="Choose a station">選擇測站</label>
+          <select id="selStation" class="full"></select>
+          <dl class="readout" style="margin-top:8px">
+            <dt data-en="Location">位置</dt><dd id="rLoc">—</dd>
+            <dt data-en="Elevation">海拔</dt><dd id="rElev">—</dd>
+            <dt class="wide" data-en="Data">資料</dt><dd class="wide" id="rSrc">—</dd>
+          </dl>
+          <p class="hint" data-en="Treat these data as if the station were in the">把這組資料放在</p>
+          <div class="segw" role="group" aria-label="半球" data-en-aria-label="Hemisphere" id="hemiSeg">
+            <button type="button" data-hemi="n" aria-pressed="true" data-en="Northern Hemisphere">北半球</button>
+            <button type="button" data-hemi="s" aria-pressed="false" data-en="Southern Hemisphere">南半球</button>
+          </div>
+          <div class="row2">
+            <button type="button" id="restore" data-en="Restore the station data" title="回到測站的原始資料與所在半球" data-en-title="Back to the station’s own data and hemisphere">還原測站資料</button>
+            <button type="button" id="pin" data-en="Pin for comparison" title="把目前的氣候圖留在畫面上，最多 3 個" data-en-title="Keep the current climograph on screen for comparison (up to 3)">釘選比較</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Köppen–Geiger type">柯本－蓋格氣候類型</h2>
+          <div class="result">
+            <span class="chip" id="rCode">—</span>
+            <div><b id="rName">—</b><small id="rGroup">—</small></div>
+          </div>
+          <ol class="steps" id="rSteps" aria-label="判定步驟" data-en-aria-label="Decision steps"></ol>
+          <p class="hint" data-en="Boundary between C and D (coldest month)">C 與 D 的分界（最冷月）</p>
+          <div class="segw" role="group" aria-label="C 與 D 的分界" data-en-aria-label="Boundary between C and D" id="cdSeg">
+            <button type="button" data-cd="0" aria-pressed="true" data-en="0 °C (Peel et al. 2007)">0 °C（Peel 等 2007）</button>
+            <button type="button" data-cd="-3" aria-pressed="false" data-en="−3 °C (Köppen’s original)">−3 °C（柯本原本）</button>
+          </div>
+          <p class="hint" id="rAlt"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Numbers behind the type">判定用的數值</h2>
+          <dl class="readout">
+            <dt data-en="Annual mean temperature">年均溫</dt><dd id="rMAT">—</dd>
+            <dt data-en="Annual precipitation">年雨量</dt><dd id="rMAP" class="big">—</dd>
+            <dt data-en="Warmest month">最熱月</dt><dd id="rHot">—</dd>
+            <dt data-en="Coldest month">最冷月</dt><dd id="rCold">—</dd>
+            <dt data-en="Annual range">年溫差</dt><dd id="rRange">—</dd>
+            <dt data-en="Wettest month">最溼月</dt><dd id="rWet">—</dd>
+            <dt data-en="Driest month">最乾月</dt><dd id="rDry">—</dd>
+            <dt data-en="Rain in the summer half">夏半年雨量占</dt><dd id="rShare">—</dd>
+            <dt data-en="Dryness threshold" title="乾燥門檻 Pth（公分）：2 × 年均溫，再依雨季加 0、14 或 28" data-en-title="Dryness threshold Pth (cm): 2 × annual mean temperature, plus 0, 14 or 28 depending on the rainy season">乾燥門檻 Pth</dt><dd id="rPth">—</dd>
+            <dt data-en="Dryness line (10 Pth)">乾燥界線（10 Pth）</dt><dd id="rLine">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Comparison">比較</h2>
+          <ul class="pins" id="pinList"></ul>
+          <button type="button" id="clear" data-en="Clear all" title="清除所有釘選的比較；目前的測站與修改不變" data-en-title="Remove every pinned comparison; the current station and your changes stay">全部清除</button>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Reading a climograph">怎麼讀氣候圖</h3>
+      <p data-en-html="A climograph puts two kinds of monthly averages on one picture: the <strong>line</strong> is the mean temperature of each month (left axis) and the <strong>bars</strong> are the total precipitation of each month (right axis). The numbers are <strong>climate normals</strong> — averages over 30 years (here 1991–2020) — so a single unusual year does not change them much. From the line you read how warm the year is and how big the seasons are; from the bars you read how wet it is and <em>when</em> the rain falls.">氣候圖把兩種每月平均畫在同一張圖上：<strong>折線</strong>是每個月的平均氣溫（左軸），<strong>長條</strong>是每個月的總雨量（右軸）。這些數字是<strong>氣候平均值</strong>，也就是 30 年（這裡用 1991–2020 年）的平均，所以某一年特別熱或特別多雨，不太會改變它。看折線，知道一年有多暖、季節差多大；看長條，知道有多溼、雨下在<em>什麼時候</em>。</p>
+
+      <h3 data-en="Five groups, decided in order">五大類，照順序判定</h3>
+      <p data-en-html="The Köppen classification, devised by Wladimir Köppen about a century ago and refined by Geiger and later authors, uses only these 24 numbers. The rules are checked in a fixed order, and the first one that fits gives the first letter. With \(T_\text{hot}\) and \(T_\text{cold}\) the warmest and coldest monthly means, \(T_\text{ann}\) the annual mean and \(P_\text{ann}\) the annual precipitation:">柯本分類由柯本（Wladimir Köppen）大約一百年前提出，經蓋格（Geiger）與後來的學者修訂，只用這 24 個數字。規則照固定的順序檢查，最先符合的那一條決定第一個字母。令 \(T_\text{hot}\)、\(T_\text{cold}\) 為最熱月與最冷月的均溫，\(T_\text{ann}\) 為年均溫，\(P_\text{ann}\) 為年雨量：</p>
+      <div class="tw"><table>
+        <tr><th data-en="Order">順序</th><th data-en="Group">大類</th><th data-en="Rule">規則</th></tr>
+        <tr><td>1</td><td data-en="E polar">E 極地</td><td>\(T_\text{hot} &lt; 10^\circ\text{C}\)</td></tr>
+        <tr><td>2</td><td data-en="B arid">B 乾燥</td><td>\(P_\text{ann} &lt; 10\,P_\text{th}\)</td></tr>
+        <tr><td>3</td><td data-en="A tropical">A 熱帶</td><td>\(T_\text{cold} \ge 18^\circ\text{C}\)</td></tr>
+        <tr><td>4</td><td data-en="C temperate">C 溫帶</td><td>\(T_\text{cold} &gt; 0^\circ\text{C}\)</td></tr>
+        <tr><td>5</td><td data-en="D continental">D 冷溫帶（大陸性）</td><td data-en="all the rest">其他</td></tr>
+      </table></div>
+      <p data-en-html="Because the order matters, a place can have every month above 18 °C and still be <em>arid</em> (B) rather than tropical: dryness is checked first. The dryness threshold \(P_\text{th}\) (in centimetres) depends on temperature and on <em>when</em> the rain falls, because summer rain evaporates faster:">因為有順序，一個每個月都在 18 °C 以上的地方，仍然可能被判成<em>乾燥</em>（B）而不是熱帶：乾燥先檢查。乾燥門檻 \(P_\text{th}\)（單位公分）和氣溫有關，也和雨下在<em>什麼時候</em>有關，因為夏天的雨蒸發得比較快：</p>
+      <div class="formula">\[ P_\text{th} = 2\,T_\text{ann} + c \]</div>
+      <p data-en-html="where \(c = 0\) if at least 70% of the year’s precipitation falls in the winter half-year, \(c = 28\) if at least 70% falls in the summer half-year, and \(c = 14\) otherwise. Ten times \(P_\text{th}\) is then the dryness line in millimetres.">其中雨量有 70% 以上下在冬半年時 \(c = 0\)，70% 以上下在夏半年時 \(c = 28\)，其他情況 \(c = 14\)。\(P_\text{th}\) 乘以 10，就是以毫米為單位的乾燥界線。</p>
+      <p data-en-html="The summer half-year is April–September in the Northern Hemisphere and October–March in the Southern. Below \(5\,P_\text{th}\) (half the dryness line) the climate is a desert, BW; otherwise a steppe, BS. The third letter is h if \(T_\text{ann} \ge 18^\circ\text{C}\), k if colder.">夏半年在北半球是 4–9 月，南半球是 10–3 月。年雨量不到 \(5\,P_\text{th}\)（乾燥界線的一半）是沙漠 BW，否則是草原 BS；第三個字母看年均溫，\(T_\text{ann} \ge 18^\circ\text{C}\) 是 h（熱），否則是 k（冷）。</p>
+
+      <h3 data-en="The second and third letters">第二、第三個字母</h3>
+      <div class="tw"><table>
+        <tr><th data-en="Letter">字母</th><th data-en="Meaning">意思</th><th data-en="Rule (P in mm)">規則（P 單位 mm）</th></tr>
+        <tr><td>Af</td><td data-en="rain every month">每個月都有雨</td><td data-en-html="driest month \(\ge 60\)">最乾月 \(\ge 60\)</td></tr>
+        <tr><td>Am</td><td data-en="short dry season, monsoon">短乾季（季風）</td><td data-en-html="driest month \(\ge 100 - P_\text{ann}/25\)">最乾月 \(\ge 100 - P_\text{ann}/25\)</td></tr>
+        <tr><td>Aw</td><td data-en="long dry season">長乾季</td><td data-en="all other A">其餘的 A</td></tr>
+        <tr><td>s</td><td data-en="dry summer">夏乾</td><td data-en-html="driest summer month \(&lt; 40\) and \(&lt; \tfrac13\) of the wettest winter month">夏半年最乾月 \(&lt; 40\)，且 \(&lt; \tfrac13\) 冬半年最溼月</td></tr>
+        <tr><td>w</td><td data-en="dry winter">冬乾</td><td data-en-html="driest winter month \(&lt; \tfrac1{10}\) of the wettest summer month">冬半年最乾月 \(&lt; \tfrac1{10}\) 夏半年最溼月</td></tr>
+        <tr><td>f</td><td data-en="no dry season">沒有乾季</td><td data-en="neither s nor w (if both, the drier half-year wins)">s、w 都不成立（都成立時看哪半年比較乾）</td></tr>
+        <tr><td>a / b / c</td><td data-en="hot / warm / cool summer">夏熱／夏暖／夏涼</td><td data-en-html="\(T_\text{hot} \ge 22\); at least 4 months above 10 °C; the rest">\(T_\text{hot} \ge 22\)；至少 4 個月高於 10 °C；其他</td></tr>
+        <tr><td>d</td><td data-en="severe winter (D only)">冬季極寒（只有 D）</td><td>\(T_\text{cold} \le -38^\circ\text{C}\)</td></tr>
+        <tr><td>ET / EF</td><td data-en="tundra / ice cap">苔原／冰原</td><td data-en-html="\(T_\text{hot} &gt; 0\) / \(T_\text{hot} \le 0\)">\(T_\text{hot} &gt; 0\)／\(T_\text{hot} \le 0\)</td></tr>
+      </table></div>
+
+      <h3 data-en="Taiwan in the classification">臺灣的氣候類型</h3>
+      <p data-en-html="With the 1991–2020 normals of the Central Weather Administration and these rules, Taiwan holds three groups. The north (Taipei, Keelung, Yilan) is Cfa: rain in every season, with the northeast monsoon bringing winter rain. The central and southwestern plains (Taichung, Chiayi, Tainan, Penghu) are Cwa: almost all the rain falls with the plum rains and typhoons of summer, and winter is dry. Kaohsiung and Hengchun pass the 18 °C test and become Aw; the east coast (Hualien, Taitung) is Am, and Chenggong and Lanyu, wet all year, are Af. Up in the mountains it gets cooler: Alishan is Cwb, and the summit of Yushan, whose warmest month stays below 10 °C, is tundra, ET.">用中央氣象署 1991–2020 年的平均值和這套規則，臺灣有三個大類。北部（臺北、基隆、宜蘭）是 Cfa：四季都有雨，東北季風帶來冬雨。中部與西南部平原（臺中、嘉義、臺南、澎湖）是 Cwa：雨幾乎都下在夏天的梅雨與颱風季，冬天乾。高雄、恆春通過 18 °C 的門檻，成為 Aw；東岸的花蓮、臺東是 Am，全年溼潤的成功、蘭嶼是 Af。往山上越來越涼：阿里山是 Cwb，玉山頂最熱的月也不到 10 °C，是苔原氣候 ET。</p>
+      <p data-en="Textbooks and atlases sometimes give Taiwan simpler labels; a different period, a different station or a slightly different rule moves places that sit near a threshold. That is a good reason to look at the numbers, not only the letters.">教科書與地圖集有時用比較簡化的名稱；換一段年份、換一個測站，或規則稍有不同，靠近門檻的地方就可能換類型。這也是要看數字、不只看字母的原因。</p>
+
+      <h3 data-en="0 °C or −3 °C?">0 °C 還是 −3 °C？</h3>
+      <p data-en-html="Köppen separated C from D at a coldest month of −3 °C, roughly where snow lies on the ground for about a month. Many recent maps, including Peel et al. (2007) and Beck et al. (2018) used here, choose 0 °C instead. Seoul (coldest month −2.0 °C) and Lhasa (−0.3 °C) are D with the 0 °C rule but C with Köppen’s original −3 °C.">柯本原本用最冷月 −3 °C 區分 C 與 D，大約是地面積雪一個月左右的地方。近年的許多地圖，包括這裡採用的 Peel 等（2007）與 Beck 等（2018），改用 0 °C。首爾（最冷月 −2.0 °C）和拉薩（−0.3 °C）用 0 °C 的規則是 D，用柯本原本的 −3 °C 則是 C。</p>
+      <p data-en-html="Verkhoyansk is usually listed as Dfd. With the 1991–2020 normals and these rules it comes out as Dsd: April, counted in the summer half-year, gets only 4.0 mm — less than 40 mm and less than a third of the wettest winter month (12.8 mm in October). Near a threshold, one month can change a letter.">維科揚斯克通常被列為 Dfd。用 1991–2020 年的平均值和這套規則，它會被判成 Dsd：算在夏半年的 4 月只有 4.0 mm，少於 40 mm，也少於冬半年最溼月（10 月 12.8 mm）的三分之一。靠近門檻時，一個月就能改變一個字母。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same latitude, different climate.</strong> Compare Taipei, Cairo and Riyadh: all lie near 25–30° N. What makes them so different?"><strong>同一個緯度，不同的氣候。</strong>比較臺北、開羅、利雅德：都在北緯 25–30° 附近，為什麼差這麼多？</li>
+        <li data-en-html="<strong>The size of the seasons.</strong> Put Singapore and Yakutsk side by side. How big is the annual range in each, and why?"><strong>季節有多大。</strong>把新加坡和雅庫次克並排，各自的年溫差有多大？為什麼？</li>
+        <li data-en-html="<strong>When the rain falls.</strong> Rome and Taichung both get rain, but in opposite seasons. Find the letter that tells them apart."><strong>雨下在什麼時候。</strong>羅馬和臺中都有雨，但下在相反的季節。哪一個字母分出了它們？</li>
+        <li data-en-html="<strong>Cross a line.</strong> In the dryness view, move Beijing just above and just below its dryness line. How much rain does it take?"><strong>越過一條線。</strong>在「乾燥界線」檢視裡，把北京移到界線的上方和下方，需要多少雨？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The decision follows the Köppen–Geiger rules as written by Peel, Finlayson and McMahon (2007) and Beck et al. (2018), including their 0 °C boundary between C and D (switchable to −3 °C) and their colours for each type.">判定照 Peel、Finlayson 與 McMahon（2007）以及 Beck 等（2018）寫下的柯本－蓋格規則，包括 C／D 以 0 °C 為界（可改成 −3 °C）與各類型的配色。</li>
+        <li data-en="Taiwan: monthly mean temperature and precipitation, 1991–2020 climate normals of the Central Weather Administration (Hsinchu from 1992; Kaohsiung uses the station before its 2022 move); station positions from the CWA station list. Other stations: WMO 1991–2020 climate normals as archived by NOAA NCEI; Mumbai, New Delhi and Dakar give no monthly mean, so the average of the mean daily maximum and minimum is used.">臺灣：中央氣象署 1991–2020 年月平均氣溫與降水量（新竹站從 1992 年起；高雄用 2022 年遷站前的測站）；測站位置取自氣象署測站清單。其他測站：WMO 1991–2020 年氣候平均值（NOAA NCEI 典藏）；孟買、新德里、達卡沒有月均溫，用月平均最高與最低氣溫的平均代替。</li>
+        <li data-en="When you edit the chart, temperatures are kept to 0.1 °C and rainfall to 0.1 mm; nothing else is estimated or smoothed.">修改氣候圖時，溫度到 0.1 °C、雨量到 0.1 mm；其他沒有任何估計或平滑。</li>
+        <li data-en="Coastlines: Natural Earth (public domain). No borders are drawn; this lab does not use or ask for your location.">海岸線：Natural Earth（公有領域）。地圖不畫國界；本實驗不使用也不詢問你的位置。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Climate system (Ba-Ⅴ-3 climate types).">課綱對應：高中地理・氣候系統（地 Ba-Ⅴ-3 氣候類型）。</li>
+        <li data-en="Peel, M. C., Finlayson, B. L. &amp; McMahon, T. A. (2007). Updated world map of the Köppen–Geiger climate classification. Hydrology and Earth System Sciences, 11, 1633–1644 (CC BY).">Peel, M. C., Finlayson, B. L. &amp; McMahon, T. A.（2007）。Updated world map of the Köppen–Geiger climate classification。Hydrology and Earth System Sciences，11，1633–1644（CC BY）。</li>
+        <li data-en="Beck, H. E. et al. (2018). Present and future Köppen–Geiger climate classification maps at 1-km resolution. Scientific Data, 5, 180214 (CC BY 4.0).">Beck, H. E. 等（2018）。Present and future Köppen–Geiger climate classification maps at 1-km resolution。Scientific Data，5，180214（CC BY 4.0）。</li>
+        <li data-en="Central Weather Administration, monthly mean climate statistics 1991–2020, and the CODiS station list (Open Government Data License, version 1.0).">中央氣象署，1991–2020 年月平均氣候統計，以及 CODiS 測站清單（政府資料開放授權條款第 1 版）。</li>
+        <li data-en="World Meteorological Organization 1991–2020 climatological standard normals, archived by NOAA National Centers for Environmental Information (accession 0253808).">世界氣象組織（WMO）1991–2020 年氣候標準平均值，NOAA 國家環境資訊中心典藏（accession 0253808）。</li>
+        <li data-en="Natural Earth 1:110m Land and 1:50m Land (Taiwan), public domain.">Natural Earth 1:110m 陸地與 1:50m 陸地（臺灣），公有領域。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/geog-world.js"></script>
+  <script src="js/climograph-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/climograph.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="climograph"></script>
+  <script src="js/missions/climograph.js"></script>
+  <script src="js/stats.js" data-module="climograph"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

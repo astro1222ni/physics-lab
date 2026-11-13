@@ -24,7 +24,7 @@
   const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const SUMMER_N = [3, 4, 5, 6, 7, 8];          // 4–9 月（0 起算）
   const SUMMER_S = [9, 10, 11, 0, 1, 2];        // 10–3 月
-  const T_MIN = -50, T_MAX = 40, P_MAX = 900;   // 編輯範圍
+  const T_MIN = -50, T_MAX = 40, P_MAX = 1000;   // 編輯範圍
 
   const r1 = function (v) { return Math.round(v * 10) / 10; };
   const sum = function (a) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i]; return s; };
@@ -336,7 +336,7 @@
   const STATION = {};
   STATIONS.forEach(function (s) { s.south = s.lat < 0; STATION[s.id] = s; });
 
-  /** 頁面與任務共用的快照：st = { T, P, south, cd, base（測站 id）, edited, startJul, pins：[{ id 或 null, T, P, south }], view } */
+  /** 頁面與任務共用的快照：st = { T, P, south, cd, base（測站 id）, edited, startJul, pins：[{ id 或 null, T, P, south }], view, moving（拖曳中） } */
   function snapshot(st) {
     const k = classify(st.T, st.P, st.south, { cd: st.cd });
     const alt = classify(st.T, st.P, st.south, { cd: st.cd === 0 ? -3 : 0 });
@@ -354,7 +354,7 @@
       Pdry: r(s.Pdry), Pwet: r(s.Pwet), Pth: r(s.Pth), dryLine: r(s.dryLine), desertLine: r(s.desertLine),
       dryRatio: s.dryLine > 0 ? r(s.MAP / s.dryLine) : null, season: s.season, sShare: r(s.sShare),
       hot: s.hot, cold: s.cold, dry: s.dry, wet: s.wet,
-      T: st.T.map(r1), P: st.P.map(r1), pins: pins, view: st.view || 'chart'
+      T: st.T.map(r1), P: st.P.map(r1), pins: pins, view: st.view || 'chart', moving: !!st.moving
     };
   }
 
