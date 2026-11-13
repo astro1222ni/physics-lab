@@ -154,6 +154,7 @@
       return {
         onAuth: function (cb) { Au.onAuthStateChanged(auth, function (u) { cb(u ? { uid: u.uid } : null); }); },
         signIn: function () {
+          if (window.LabInApp && LabInApp.escape()) return new Promise(function () {}); // App 內建瀏覽器：改用手機瀏覽器開（settings.js）
           return Au.signInWithPopup(auth, provider).catch(function (e) {
             if (e && /popup-blocked|operation-not-supported|web-storage-unsupported/.test(e.code || '')) return Au.signInWithRedirect(auth, provider);
             throw e;

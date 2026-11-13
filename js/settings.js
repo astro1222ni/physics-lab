@@ -381,3 +381,35 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', onReady);
   else onReady();
 })();
+
+/* App 內建瀏覽器的登入（11/13）：LINE、Facebook、Instagram 的內建瀏覽器擋登入小視窗，改整頁跳轉時
+ * 又因暫存被隔開而失敗（"missing initial state"）。LINE 支援 openExternalBrowser=1，按登入時改用手機的瀏覽器開同一頁；
+ * 其他 App 顯示提示請學生改用瀏覽器開啟。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
+(function () {
+  'use strict';
+  const ua = navigator.userAgent || '';
+  function kind() {
+    if (/\bLine\//i.test(ua)) return 'line';
+    if (/FBAN|FBAV|FB_IAB|FBIOS|Instagram/i.test(ua)) return 'meta';
+    return '';
+  }
+  function t(zh, en) { return window.LabSettings ? LabSettings.t(zh, en) : zh; }
+  window.LabInApp = {
+    kind: kind,
+    escape: function () {
+      const k = kind();
+      if (k === 'line') {
+        const u = new URL(location.href);
+        u.searchParams.set('openExternalBrowser', '1');
+        location.href = u.toString();
+        return true;
+      }
+      if (k === 'meta') {
+        alert(t('這個 App 的內建瀏覽器不能用 Google 登入。請按右上角的三個點選單，選「用瀏覽器開啟」，再到瀏覽器裡登入。',
+          'Google sign-in does not work in this app’s built-in browser. Tap the three-dot menu at the top right, choose “Open in browser”, then sign in there.'));
+        return true;
+      }
+      return false;
+    }
+  };
+})();

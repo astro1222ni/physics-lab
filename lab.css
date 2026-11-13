@@ -1362,3 +1362,59 @@ html.lab-projector .related, html.lab-embed .related { display: none; }
 @media (max-height: 480px) { .to-top { min-height: 44px; padding: 0 12px; } .to-top span { display: none; } }
 @media (prefers-reduced-motion: reduce) { .to-top { transition: none; transform: none; } }
 @media print { .to-top { display: none !important; } }
+
+/* 首頁捲動時的頂端科目列（11/13 站長選方案一）：捲過科目選單才滑下來，標出目前在哪一科，手機可左右滑 */
+.subjbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 40;
+  padding-top: env(safe-area-inset-top, 0px);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
+  transform: translateY(-110%); opacity: 0; pointer-events: none;
+  transition: transform .22s ease, opacity .22s ease;
+}
+.subjbar.show { transform: none; opacity: 1; pointer-events: auto; }
+.subjbar-in {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain;
+  max-width: 1180px; margin: 0 auto;
+  padding: 7px max(16px, env(safe-area-inset-right, 0px)) 7px max(16px, env(safe-area-inset-left, 0px));
+}
+.subjbar-in::-webkit-scrollbar { display: none; }
+.subjbar-in > :first-child { margin-left: auto; }
+.subjbar-in > :last-child { margin-right: auto; }
+.subjbar-chip {
+  flex: none; display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px 0 10px; border-radius: 999px;
+  color: var(--c); background: var(--surface);
+  border: 1.5px solid color-mix(in srgb, var(--c) 45%, var(--border));
+  font-size: calc(15px * var(--fs, 1)); font-weight: 700; white-space: nowrap; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.subjbar-chip svg { width: 22px; height: 22px; flex: none; }
+.subjbar-chip:hover { background: color-mix(in srgb, var(--c) 12%, var(--surface)); }
+.subjbar-chip.on { background: var(--c); border-color: var(--c); color: var(--surface); }
+.subjbar-chip:focus-visible { outline: 3px solid var(--c); outline-offset: 2px; }
+/* 跳到科目、分支、章時，標題不被科目列蓋住 */
+html.has-subjbar .domain { scroll-margin-top: calc(70px + env(safe-area-inset-top, 0px)); }
+html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74px + env(safe-area-inset-top, 0px)); }
+@media (prefers-reduced-motion: reduce) { .subjbar { transition: none; } }
+@media print { .subjbar { display: none !important; } }
+
+/* 手機的實驗卡改「左圖右文」（11/13 方案一）：高度約減一半，說明最多三行 */
+@media (max-width: 640px) {
+  .modules { gap: 10px; }
+  .module.live {
+    display: grid; grid-template-columns: 112px minmax(0, 1fr); column-gap: 12px; align-items: start;
+    padding: 10px 12px 10px 10px; border-top-width: 1px; border-left: 4px solid var(--c);
+  }
+  .module.live .module-thumb {
+    grid-row: 1 / span 2; width: 112px; margin: 0; aspect-ratio: 4 / 3;
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .module.live h4 { margin: 0 0 4px; font-size: calc(16px * var(--fs, 1)); line-height: 1.35; }
+  .module.live p {
+    font-size: calc(13.5px * var(--fs, 1)); line-height: 1.5;
+    display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
+  }
+}
