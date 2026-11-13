@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Circle of Fifths, Key Signatures and Modulation | Astro Ni Science Lab">五度圈、調號與轉調｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 五度圈頁面專用的顏色代號（淺色＋兩組深色；由 js/circle-of-fifths.js 與 js/circle-of-fifths-3d.js 讀取）
+       sharp 升記號方向、flat 降記號方向、key 目前的調、target 比較的調、heat 熱圖、c5／c6 乘 k 的第 5、6 個圈、ink 五線譜 */
+    :root { --cf-sharp: #c2410c; --cf-flat: #1d4ed8; --cf-key: #0f766e; --cf-target: #7c3aed; --cf-heat: #0e7490; --cf-c5: #b45309; --cf-c6: #be185d; --cf-ink: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cf-sharp: #fb923c; --cf-flat: #7aa7ff; --cf-key: #5eead4; --cf-target: #c4a5ff; --cf-heat: #22d3ee; --cf-c5: #fbbf24; --cf-c6: #ff74b0; --cf-ink: #d9dce2; }
+    }
+    :root[data-theme="dark"] { --cf-sharp: #fb923c; --cf-flat: #7aa7ff; --cf-key: #5eead4; --cf-target: #c4a5ff; --cf-heat: #22d3ee; --cf-c5: #fbbf24; --cf-c6: #ff74b0; --cf-ink: #d9dce2; }
+
+    /* 左（手機在上）：五度圈轉盤（拖曳旋轉，所以不讓頁面捲動）；右（手機在下）：調號、熱圖或乘 k（可以捲動頁面） */
+    .cvrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .cvrow.wide { grid-template-columns: minmax(0, 48fr) minmax(0, 52fr); }
+    .cvrow canvas { display: block; width: 100%; aspect-ratio: auto; border-radius: 10px; }
+    #cv { height: 420px; touch-action: none; cursor: grab; }
+    #cv.dragging { cursor: grabbing; }
+    #cv2 { height: 420px; touch-action: pan-y; }
+    .cf [hidden] { display: none !important; }
+    .cf button { min-height: 44px; }
+    .cf .turnbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 2px 0; }
+    .cf .turnbar button { font-weight: 600; padding-left: 4px; padding-right: 4px; white-space: nowrap; }
+    @media (max-width: 420px) { .cf .turnbar button { font-size: calc(14px * var(--fs, 1)); } }
+    .cf .turnbar small { display: block; font-weight: 400; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .cf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cf .playbar button { flex: 1 1 auto; }
+    .cf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cf #stop:disabled { opacity: .5; cursor: default; }
+    .cf .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .cf .panel { grid-template-columns: minmax(0, 1fr); }
+    .cf .panel > .card { min-width: 0; }
+    .cf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .playopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(170px * var(--fs, 1)), 1fr)); gap: 8px 14px; align-items: end; margin: 10px 2px 0; }
+    .playopts .slider { margin: 0; }
+    .field { display: flex; align-items: center; gap: 10px; margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    .card .field + .field, .card .field + .segrow, .card .segrow + .field, .card .segrow + .segrow { margin-top: 10px; }
+    .field label { white-space: nowrap; }
+    .field select { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .segrow { display: flex; align-items: center; gap: 10px; font-size: calc(14px * var(--fs, 1)); flex-wrap: wrap; }
+    .segrow > span { white-space: nowrap; color: var(--text); }
+    .segrow .seg { flex: 1 1 auto; }
+    .segrow .seg button { flex: 1 1 0; }
+
+    /* 2D／3D 檢視切換、右側圖的分頁 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d .cvrow { display: none; }
+    .stage.is3d #panelSeg { display: none; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) {
+      #view3 canvas { aspect-ratio: 2 / 3; }
+      .t3-hud [data-k="cur"], .t3-hud [data-k="tip"] { display: none; }
+      .t3-hud .tl { max-width: calc(100% - 16px); }
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 78%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.en { color: var(--cf-key); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .l3row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .l3row button { flex: 1 1 auto; }
+    #flat[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+
+    dl.readout { grid-template-columns: fit-content(48%) minmax(0, 1fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .keybox { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
+    .keybox .nm { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    .keybox .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 2px; }
+    .tg { color: var(--cf-target); font-weight: 700; }
+    .chg { color: var(--cf-target); font-weight: 700; white-space: nowrap; }
+    .rsp { white-space: nowrap; font-weight: 600; }
+    .twobtn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tuning&quot;>Music · Tuning and Scales</a> / The Circle of Fifths"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tuning">音樂・音律與音階</a> ／ 五度圈、調號與轉調</nav>
+      <h1 data-en="The Circle of Fifths, Key Signatures and Modulation">五度圈、調號與轉調</h1>
+      <p data-en="Go up a fifth from C and you reach G major, which needs one sharp; another fifth gives D major with two sharps, and so on, while going down by fifths adds flats. Arranged in a ring, the twelve major keys and their relative minors form the circle of fifths: neighbours on the ring share six of their seven notes, which is why music moves so easily between them. Turn the dial, read the key signature on the staff, compare two keys, play a modulation, and discover the arithmetic behind the ring: multiplying by 7 modulo 12.">從 C 往上一個五度是 G 大調，要一個升記號；再往上一個五度是 D 大調，兩個升記號……往下走五度則一個一個加降記號。把十二個大調和它們的關係小調排成一圈，就是「五度圈」：圈上相鄰的兩個調，七個音裡有六個相同，所以音樂很容易在它們之間轉來轉去。在這裡轉動五度圈、在五線譜上看調號、比較兩個調、聽一段轉調，還會發現圈背後的算術：乘 7、除以 12 取餘數。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Dominant ▶” to bring G to the top, see which sharp the key signature gains, then keep turning.">試試看：按「屬調 ▶」把 G 轉到最上面，看調號多了哪個升記號，再一路轉下去。</p>
+    <div class="lab cf" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D circle">2D 五度圈</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D key spiral">3D 調號螺旋</button>
+          </div>
+          <div class="seg" id="panelSeg" role="group" aria-label="右側（手機在下方）的圖" data-en-aria-label="Second picture">
+            <button type="button" data-panel="sig" aria-pressed="true" data-en="Staff">調號</button>
+            <button type="button" data-panel="heat" aria-pressed="false" data-en="Common notes">共同音</button>
+            <button type="button" data-panel="k" aria-pressed="false" data-en="Times k">乘 k</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvrow" id="cvrow"><canvas id="cv"></canvas><canvas id="cv2"></canvas></div>
+        <div id="view3"></div>
+        <div class="l3row l3">
+          <button type="button" id="flat" aria-pressed="false" data-en="Squash the spiral into a circle (equal temperament)">把螺旋壓成圓（平均律）</button>
+        </div>
+        <p class="piano-hint l3" style="font-size:calc(13px * var(--fs, 1));color:var(--muted);margin:8px 4px 0" data-en="3D: every key sits on a spiral. Going round is the circle of fifths; going up is adding sharps, going down is adding flats. After one full turn you are back above your starting point, twelve accidentals higher: the vertical posts join keys that are played on the same piano keys but written differently (F♯ and G♭ major, C♯ and D♭ major…). Squash the spiral and the posts shrink to nothing — that is what equal temperament does. Drag to rotate, scroll or pinch to zoom.">3D：每個調都在一條螺旋上。繞圈就是五度圈；往上是加升記號，往下是加降記號。繞完一整圈，你回到起點的正上方，但多了 12 個記號：直立的柱子連起來的，是彈同一組鍵、寫法卻不同的兩個調（F♯ 與 G♭ 大調、C♯ 與 D♭ 大調……）。把螺旋壓扁，柱子縮成一點——十二平均律做的就是這件事。拖曳旋轉，滾輪或雙指縮放。</p>
+
+        <div class="turnbar">
+          <button type="button" id="ccw" data-en-html="◀ Subdominant<small>one more ♭</small>">◀ 下屬調<small>多一個 ♭</small></button>
+          <button type="button" id="cw" data-en-html="Dominant ▶<small>one more ♯</small>">屬調 ▶<small>多一個 ♯</small></button>
+        </div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="playopts">
+          <div class="field"><label for="what" data-en="What to play">播放內容</label>
+            <select id="what">
+              <option value="triad" selected data-en="Tonic chord">主三和弦</option>
+              <option value="scale" data-en="Scale">音階</option>
+              <option value="cadence" data-en="Cadence I–IV–V–I">終止式 I–IV–V–I</option>
+              <option value="modulate" data-en="Modulation demo">轉調示範</option>
+              <option value="kseq" data-en="Times-k sequence">乘 k 的序列</option>
+            </select></div>
+          <div class="slider"><label for="tempo" data-en="Speed (beats per minute)">速度（每分鐘幾拍）</label><output id="tempoO"></output>
+            <input id="tempo" type="range" min="60" max="180" step="4" value="96" data-decimals="0"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--cf-key)&quot;></i>Current key"><i style="background:var(--cf-key)"></i>目前的調</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--cf-target)&quot;></i>Compared key"><i class="dash" style="color:var(--cf-target)"></i>比較的調</span>
+          <span data-en-html="<i style=&quot;background:var(--accent)&quot;></i>Window: the five closely related keys"><i style="background:var(--accent)"></i>窗口：五個近關係調</span>
+          <span data-en-html="<i style=&quot;background:var(--cf-sharp)&quot;></i>Sharp side"><i style="background:var(--cf-sharp)"></i>升記號這一邊</span>
+          <span data-en-html="<i style=&quot;background:var(--cf-flat)&quot;></i>Flat side"><i style="background:var(--cf-flat)"></i>降記號這一邊</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Key">調</h2>
+          <div class="segrow"><span data-en="Mode">調式</span>
+            <div class="seg" id="modeSeg" role="group" aria-label="調式" data-en-aria-label="Mode">
+              <button type="button" data-mode="major" aria-pressed="true" data-en="Major">大調</button>
+              <button type="button" data-mode="minor" aria-pressed="false" data-en="Minor">小調</button>
+            </div></div>
+          <div class="segrow"><span data-en="Spelling">寫法</span>
+            <div class="seg" id="spellSeg" role="group" aria-label="寫法" data-en-aria-label="Spelling">
+              <button type="button" data-spell="auto" aria-pressed="true" data-en="Usual">常用</button>
+              <button type="button" data-spell="sharp" aria-pressed="false" aria-label="一律寫成升記號" data-en-aria-label="Always with sharps">♯</button>
+              <button type="button" data-spell="flat" aria-pressed="false" aria-label="一律寫成降記號" data-en-aria-label="Always with flats">♭</button>
+            </div></div>
+          <p class="hint" data-en="“Usual” picks the spelling with fewer accidentals. “♯” and “♭” force one direction — beyond seven you reach theoretical keys with double sharps or double flats.">「常用」選記號比較少的寫法；「♯」「♭」一律往同一個方向寫——超過七個記號，就會走進要用重升、重降的「理論上的調」。</p>
+          <div class="keybox" id="keybox" style="margin-top:10px"></div>
+          <dl class="readout" id="keyRead"></dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Compare and modulate">比較與轉調</h2>
+          <div class="field"><label for="target" data-en="Compare with">比較的調</label>
+            <select id="target"></select></div>
+          <dl class="readout" id="cmpRead" style="margin-top:10px"></dl>
+          <p class="hint" data-en="To hear the change, choose “Modulation demo” in “What to play”: I–IV–V–I in the current key, then IV–V–I in the compared key.">想聽聽看，就在「播放內容」選「轉調示範」：先在目前的調彈 I–IV–V–I，再到比較的調彈 IV–V–I。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Common-note map">共同音熱圖</h2>
+          <div class="segrow"><span data-en="Order">順序</span>
+            <div class="seg" id="orderSeg" role="group" aria-label="熱圖的順序" data-en-aria-label="Order of the map">
+              <button type="button" data-order="fifths" aria-pressed="true" data-en="By fifths">五度順序</button>
+              <button type="button" data-order="chrom" aria-pressed="false" data-en="By semitones">半音順序</button>
+            </div></div>
+          <p class="hint" data-en="How many notes two major keys share (a minor key has the same notes as its relative major). Tap a cell: its row becomes the current key and its column the compared key.">兩個大調共用幾個音（小調和它的關係大調用同一組音）。點一格：那一列變成目前的調、那一欄變成比較的調。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Times k">乘 k</h2>
+          <div class="slider"><label for="kk" data-en="Times k">乘 k</label><output id="kkO"></output>
+            <input id="kk" type="range" min="1" max="11" step="1" value="7" data-decimals="0"></div>
+          <div class="twobtn">
+            <button type="button" id="arr" data-en="× k rearrange">× k 重排</button>
+            <button type="button" id="arrReset" data-en="Back to the semitone circle">回到半音圈</button>
+          </div>
+          <dl class="readout" id="kRead" style="margin-top:10px"></dl>
+          <p class="hint" data-en="Start at the tonic and keep adding k semitones. “× k rearrange” moves every note n to slot k·n (mod 12) — with k = 7 the semitone circle becomes the circle of fifths.">從主音出發，每次往上加 k 個半音。「× k 重排」把每個音 n 搬到第 k·n（除以 12 的餘數）格——k = 7 時，半音圈就變成五度圈。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Footprints">足跡</h2>
+          <dl class="readout" id="footRead"></dl>
+          <div class="twobtn">
+            <button type="button" id="clear" style="grid-column:1 / -1" data-en="Clear all" title="清掉足跡、比較的調與重排；目前的調、寫法、k 與速度不變" data-en-title="Clear the footprints, the compared key and the rearrangement; the current key, spelling, k and speed are kept">全部清除</button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Seven fifths make a key">七個連續的五度組成一個調</h3>
+      <p data-en-html="Write the note names in a row of fifths: … B♭ F C G D A E B F♯ C♯ … Every major scale is <strong>seven neighbours</strong> in this row: C major is F C G D A E B. Number the row with C = 0, G = 1, F = −1, and so on. If the tonic of a major key is at position \(j\), its notes are at positions \(j-1, j, \ldots, j+5\). For \(j \gt 0\) the notes beyond B are sharps, for \(j \lt 0\) the notes before F are flats, so">把音名照五度排成一列：… B♭ F C G D A E B F♯ C♯ …。每個大調音階都是這一列裡<strong>相鄰的七個</strong>：C 大調是 F C G D A E B。把這一列編號，C = 0、G = 1、F = −1……如果大調的主音在第 \(j\) 個位置，它的七個音就在第 \(j-1, j, \ldots, j+5\) 個位置。\(j \gt 0\) 時，比 B 更右邊的是升記號；\(j \lt 0\) 時，比 F 更左邊的是降記號，所以</p>
+      <div class="formula" data-en-html="\[ \begin{gathered} \text{sharps} = j \ (j \gt 0), \qquad \text{flats} = -j \ (j \lt 0) \\ \text{tonic} \equiv 7j \pmod{12}, \qquad \text{relative minor tonic} = \text{position } j+3 \end{gathered} \]">\[ \begin{gathered} \text{升記號數} = j \ (j \gt 0), \qquad \text{降記號數} = -j \ (j \lt 0) \\ \text{主音} \equiv 7j \pmod{12}, \qquad \text{關係小調的主音在第 } j+3 \text{ 個位置} \end{gathered} \]</div>
+      <p data-en-html="Moving one step to the right drops F (or whatever note is at the left end) and adds the note seven places further right, one semitone higher: that is why the sharps always arrive in the order F C G D A E B, each new sharp being the 7th degree (leading note) of the new key. Moving left adds flats in the reverse order B E A D G C F, each one the 4th degree of the new key.">往右移一格，就是丟掉最左邊的音、換成同一個字母高半音的音（在五度鏈上往右 7 格）：所以升記號永遠依 F C G D A E B 的順序加上去，新加的升記號正好是新調的第 7 級（導音）。往左移一格則依相反的順序 B E A D G C F 加降記號，新加的降記號是新調的第 4 級。</p>
+
+      <h3 data-en="Why twelve steps bring you home: 7 and 12 are coprime">為什麼走 12 步就回家：7 與 12 互質</h3>
+      <p data-en-html="A fifth is 7 semitones. Starting on C and adding 7 each time, modulo 12 (one octave), gives 0, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5, 0. You visit every one of the twelve notes exactly once before returning, because \(\gcd(7, 12) = 1\). In general, stepping by \(k\) semitones splits the twelve notes into">五度是 7 個半音。從 C 開始每次加 7，再除以 12 取餘數（同一個八度裡），得到 0、7、2、9、4、11、6、1、8、3、10、5，然後回到 0。十二個音每個剛好走到一次，因為 \(\gcd(7, 12) = 1\)。一般來說，每次跨 \(k\) 個半音，十二個音會分成</p>
+      <div class="formula" data-en-html="\[ g = \gcd(k, 12) \text{ cycles}, \qquad \text{each with } \tfrac{12}{g} \text{ notes} \]">\[ g = \gcd(k, 12) \text{ 個圈}, \qquad \text{每圈 } \tfrac{12}{g} \text{ 個音} \]</div>
+      <p data-en-html="Only \(k = 1, 5, 7, 11\) give a single cycle. \(k = 2\) gives the two whole-tone scales, \(k = 3\) the three diminished-seventh chords, \(k = 4\) the four augmented triads and \(k = 6\) the six tritone pairs. The circle of fifths is the semitone circle rearranged by \(n \mapsto 7n \pmod{12}\): even-numbered notes stay where they are and odd-numbered notes jump to the opposite side. Since \(7 \times 7 = 49 \equiv 1\), doing the rearrangement twice brings everything back; the same is true for 5 and 11, and \(5 \times 7 \times 11 \equiv 1\) as well (these four numbers form what mathematicians call the Klein four-group).">只有 \(k = 1, 5, 7, 11\) 是一個圈。\(k = 2\) 得到兩個全音音階，\(k = 3\) 是三個減七和弦，\(k = 4\) 是四個增三和弦，\(k = 6\) 是六對三全音。五度圈就是把半音圈依 \(n \mapsto 7n \pmod{12}\) 重新排列：偶數號的音不動，奇數號的音跳到正對面。因為 \(7 \times 7 = 49 \equiv 1\)，重排兩次就回到原樣；5 和 11 也一樣，而且 \(5 \times 7 \times 11 \equiv 1\)（這四個數在數學上組成「克萊因四元群」）。</p>
+
+      <h3 data-en="How many notes do two keys share?">兩個調共用幾個音？</h3>
+      <p data-en-html="Two keys whose signatures are \(d\) steps apart on the circle are two runs of seven neighbours shifted by \(d\), so they overlap in">調號在五度圈上相距 \(d\) 格的兩個調，是五度鏈上錯開 \(d\) 格的兩段「七個相鄰的音」，重疊的部分就是共同音：</p>
+      <div class="formula" data-en-html="\[ \text{common notes} = 7 - |d| \quad (|d| \le 5), \qquad 2 \quad (|d| = 6) \]">\[ \text{共同音數} = 7 - |d| \quad (|d| \le 5), \qquad 2 \quad (|d| = 6) \]</div>
+      <p data-en-html="In the heat map ordered by fifths every row is the row above shifted by one: a smooth band. Ordered by semitones the very same numbers look scattered — the circle of fifths is simply the order in which key relationships become visible.">熱圖依五度排列時，每一列都是上一列往右移一格，形成一條平順的帶子；依半音排列時，同樣的數字卻看起來亂成一團——五度圈就是讓調與調之間的關係「看得見」的排列方式。</p>
+
+      <h3 data-en="Enharmonic keys">同名異音的調</h3>
+      <p data-en-html="Positions \(j\) and \(j-12\) are played on the same piano keys: F♯ major (6 sharps) and G♭ major (6 flats), C♯ major (7 sharps) and D♭ major (5 flats). Their accidentals always add up to 12. On a piano tuned in equal temperament the twelve fifths close the circle exactly; tuned in pure 3 : 2 fifths they overshoot by the Pythagorean comma (about 23.46 cents), so F♯ and G♭ would really be slightly different notes — see <a href=&quot;temperament.html&quot;>Pythagorean, Just and Equal Temperament</a>. That is why the 3D view is a spiral, and equal temperament squashes it into a circle.">第 \(j\) 和第 \(j-12\) 個位置在鋼琴上彈的是同一組鍵：F♯ 大調（6 個升記號）與 G♭ 大調（6 個降記號）、C♯ 大調（7 個升記號）與 D♭ 大調（5 個降記號）。兩個寫法的記號數加起來永遠是 12。用十二平均律調音的鋼琴，十二個五度剛好繞回原點；如果每個五度都是純的 3 : 2，繞一圈會多出畢氏音差（約 23.46 音分），F♯ 和 G♭ 就真的是兩個不同的音（見〈<a href="temperament.html">五度相生、純律與十二平均律</a>〉）。這就是 3D 檢視畫成螺旋的原因，而十二平均律把它壓成一個圓。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Key signatures and relative keys">調號與關係大小調</h3>
+      <p data-en-html="A key signature tells the player which notes are sharp or flat throughout the piece. Each signature belongs to one major and one minor key, the <strong>relative</strong> pair: C major and A minor have no accidentals, G major and E minor one sharp. The minor tonic is a minor third below the major one. The <strong>parallel</strong> minor shares the tonic instead (C major and C minor) and differs by three accidentals.">調號告訴演奏者：整首曲子裡哪些音要升、哪些要降。每一個調號同時屬於一個大調和一個小調，叫做「<strong>關係大小調</strong>」：C 大調和 a 小調都沒有升降記號，G 大調和 e 小調都是一個升記號，小調的主音比大調低小三度。「<strong>平行調</strong>」則是主音相同（C 大調與 c 小調），調號差三個記號。</p>
+      <h3 data-en="Closely related keys and modulation">近關係調與轉調</h3>
+      <p data-en-html="The five <strong>closely related</strong> keys of a key are its neighbours in the window: the dominant (one fifth up), the subdominant (one fifth down), the relative key, and the relatives of the dominant and the subdominant. They differ from the home key by at most one note, so a piece can <strong>modulate</strong> to them smoothly — composers of the Baroque and Classical periods did so all the time. Keys far apart on the circle share few notes; a direct jump to them sounds sudden and bright, which composers also use on purpose.">一個調的五個「<strong>近關係調</strong>」就是窗口裡的鄰居：屬調（上方五度）、下屬調（下方五度）、關係調，以及屬調和下屬調的關係調。它們和原調最多只差一個音，所以樂曲可以很順地「<strong>轉調</strong>」過去——巴洛克與古典時期的作曲家經常這樣做。在圈上離得很遠的調共同音很少，直接跳過去聽起來突然、鮮明，作曲家也會刻意這樣用。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One more sharp, one fewer note</strong>: turn one step and watch the staff. Which single note changes? Is it always the 7th degree of the new key?"><strong>多一個升記號，只改一個音</strong>：轉一格，看五線譜：哪一個音變了？是不是每次都是新調的第 7 級？</li>
+        <li data-en-html="<strong>The window</strong>: the six keys inside the window share at least six notes with the top one. Compare a key inside the window with one on the far side of the circle and play the modulation demo for each."><strong>窗口</strong>：窗口裡的六個調，和最上面的調至少共用六個音。拿窗口裡的調和圈對面的調各比較一次，都播一次轉調示範。</li>
+        <li data-en-html="<strong>Same numbers, different order</strong>: switch the heat map between “By fifths” and “By semitones”. Which picture lets you guess the next row?"><strong>同樣的數字、不同的順序</strong>：熱圖在「五度順序」和「半音順序」之間切換，哪一張圖看得出下一列長什麼樣？</li>
+        <li data-en-html="<strong>Stars and polygons</strong>: move “Times k” from 1 to 11. Which values draw one twelve-pointed star, and which break into triangles, squares or hexagons?"><strong>星形與多邊形</strong>：把「乘 k」從 1 拉到 11，哪些值畫出一顆十二角星？哪些分裂成三角形、正方形或六邊形？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every key is stored as its signature number \(j\) (sharps positive, flats negative) and its mode. Note names come from the position in the row of fifths: letter \(=\) F C G D A E B repeating, and one sharp (or flat) for each time the row wraps past B (or F). Common notes, changed notes and the 12 × 12 map are computed by comparing the sets of seven notes.">每個調都用調號 \(j\)（升記號為正、降記號為負）和調式表示。音名由五度鏈上的位置決定：字母依 F C G D A E B 循環，每越過 B 一次就多一個升記號（越過 F 一次多一個降記號）。共同音、要改的音和 12 × 12 熱圖都是直接比較兩個調的七個音。</li>
+        <li data-en-html="Frequencies use equal temperament with A4 = 440 Hz; the tonic is placed between C4 and B4 and chords are voiced with the root between G3 and F♯4 plus a bass note an octave lower. In minor keys the dominant chord uses the raised 7th (harmonic minor), as in classical practice.">頻率用十二平均律、A4 = 440 Hz；主音放在 C4 到 B4 之間，和弦的根音放在 G3 到 F♯4 之間，再加一個低八度的低音。小調的屬和弦依古典音樂的慣例用升高的第 7 級（和聲小調）。</li>
+        <li data-en-html="The 3D spiral uses the same angles as the 2D circle (C at the back, clockwise from above); the height is the signature number \(j\). It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 螺旋用和 2D 五度圈一樣的角度（C 在後方，從上往下看順時針），高度就是調號 \(j\)。它使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): six harmonics with strengths \(1/k\), an approximate organ-like sound with gentle fade-in and fade-out. The page plays only chords, scales and sequences generated from the key you choose. Playback stops when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：6 個泛音、強度 \(1/k\)，是近似的風琴音色，有淡入淡出。這一頁只播依你選的調產生的和弦、音階與序列。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Music theory (key signatures, modulation); related mathematics: congruences and greatest common divisors.">課綱對應：高中音樂・表現・樂理（調號、轉調）；相關的數學：整數的同餘、最大公因數。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="Johann David Heinichen, Der General-Bass in der Composition (Dresden, 1728) — an early printed circle of keys.">Johann David Heinichen，《Der General-Bass in der Composition》，Dresden，1728（早期印行的調圈）。</li>
+        <li data-en="David J. Benson, Music: A Mathematical Offering (Cambridge University Press, 2006) — tuning, the Pythagorean comma and the group structure of pitch classes.">David J. Benson，《Music: A Mathematical Offering》，Cambridge University Press，2006（音律、畢氏音差與音高類別的群結構）。</li>
+        <li data-en="Dmitri Tymoczko, A Geometry of Music (Oxford University Press, 2011) — key distance and the circle of fifths.">Dmitri Tymoczko，《A Geometry of Music》，Oxford University Press，2011（調的距離與五度圈）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/circle-of-fifths-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/circle-of-fifths.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="circle-of-fifths"></script>
+  <script src="js/missions/circle-of-fifths.js"></script>
+  <script src="js/stats.js" data-module="circle-of-fifths"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
