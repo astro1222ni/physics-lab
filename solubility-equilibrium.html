@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Solubility Equilibria and Ksp | Astro Ni Science Lab">溶解平衡與 Ksp｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 溶解平衡頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .se canvas { aspect-ratio: auto; touch-action: auto; }
+    .se #cv { height: 440px; }
+    .se #gcv { height: 340px; }
+    .se button, .se select { min-height: 44px; }
+    .se [hidden] { display: none !important; }
+    .se .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .se .playbar > button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .reag { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .reag { grid-template-columns: repeat(auto-fill, minmax(5.4em, 1fr)); }
+    .seg2 button, .seg3 button, .reag button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .reag button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .se .reag button { font-variant-numeric: tabular-nums; }
+    .se .reag .sw { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: 0; border: 1px solid var(--border); }
+    .se .stage .status { margin: 6px 4px 0; min-height: 1.5em; }
+    .se .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .se .card h2 { margin-bottom: 8px; }
+    .se .card h3 { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 6px; color: var(--muted); }
+    .se .slider input[type="range"] { height: 28px; margin: 0; }
+    .se sub, .se sup, .notes sub, .notes sup { font-size: .75em; }
+    .se .card .hint, .se .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .se .btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .se .btns button { flex: 1 1 auto; }
+    .se .btns button.primary { font-weight: 700; }
+    .se select { width: 100%; font: inherit; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .se .legend .sp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .se .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .se .legend .box { display: inline-block; width: 14px; height: 10px; vertical-align: middle; margin-right: 6px; border-radius: 2px; }
+    .se dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .se dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.over { color: var(--pos, #d1453b); font-weight: 700; }
+    .se .tabs { margin: 0 2px 8px; }
+    .se .grow { display: flex; align-items: center; gap: 8px; margin: 0 2px 8px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .se .grow select { flex: 1 1 auto; width: auto; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 300px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data td.wrap { white-space: normal; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#equilibrium&quot;&gt;Chemistry · Rates and Equilibrium&lt;/a&gt; / Solubility Equilibria and Ksp"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#equilibrium">化學・反應速率與平衡</a> ／ 溶解平衡與 Ksp</nav>
+      <h1 data-en="Solubility Equilibria and Ksp">溶解平衡與 Ksp</h1>
+      <p data-en="Mix solutions drop by drop, sprinkle in sparingly soluble salts, or add water, and watch precipitates appear and dissolve. The beaker always settles to the true equilibrium: a salt precipitates only when its ion product Q goes above Ksp, and a precipitate stays only while Q = Ksp. Try the common-ion effect, fractional precipitation and the Mohr titration.">一滴一滴混合溶液、撒入難溶鹽、或加水稀釋，看沉澱怎麼出現、怎麼溶解。燒杯永遠停在真正的平衡：離子積 Q 超過 Ksp 才會沉澱，沉澱存在時 Q 一定等於 Ksp。試試同離子效應、分步沉澱與莫耳法滴定。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: choose AgNO&lt;sub&gt;3&lt;/sub&gt; and add 1 mL, then choose NaCl and add 1 mL. A white precipitate of silver chloride appears. Now keep adding water and see whether it can all dissolve again.">試試看：選 AgNO<sub>3</sub> 加 1 mL，再選 NaCl 加 1 mL，出現白色的氯化銀沉澱。接著一直加水，看沉澱能不能全部溶回去。</p>
+    <div class="lab se">
+      <div class="stage" id="stage">
+        <canvas id="cv" role="img" aria-label="燒杯與微觀示意" data-en-aria-label="Beaker and particle view"></canvas>
+        <div class="playbar">
+          <button id="newBeaker" type="button" data-en="Empty the beaker" title="倒掉重來：換一個裝 50 mL 純水的乾淨燒杯（紀錄表保留）" data-en-title="Start again with a clean beaker of 50 mL pure water (the log is kept)">倒掉重來</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除操作紀錄、離子積圖的軌跡與飽和溶液比較表，並換一個乾淨燒杯" data-en-title="Clear the log, the trail on the ion-product graph and the saturated-solution table, and start with a clean beaker">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="The beaker starts with 50 mL of pure water and holds up to 250 mL. The circle on the right is a particle view of the salt shown on the ion-product graph (not to scale): in a saturated solution, ions leave and join the crystal at the same rate.">燒杯一開始裝 50 mL 純水，最多裝 250 mL。右邊的圓圈是離子積圖上那種鹽的粒子示意（不照真實比例）：飽和時，離子離開與回到晶體的速率相等。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Add a solution">加入溶液</h2>
+          <div class="reag" id="solnSeg" role="group" aria-label="溶液" data-en-aria-label="Solution"></div>
+          <div class="slider"><label for="conc" data-en="Concentration">濃度</label><output id="conco"></output>
+            <input id="conc" type="range" min="0" max="1000" step="1" value="800"></div>
+          <div class="btns">
+            <button type="button" id="addDrop" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
+            <button type="button" id="add1" data-en="1 mL">1 mL</button>
+            <button type="button" id="add10" data-en="10 mL">10 mL</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Add a solid">加入固體</h2>
+          <select id="solidSel" aria-label="難溶鹽" data-en-aria-label="Sparingly soluble salt"></select>
+          <div class="slider"><label for="mass" data-en="Mass">質量</label><output id="masso"></output>
+            <input id="mass" type="range" min="0" max="1000" step="1" value="500"></div>
+          <div class="btns"><button type="button" id="addSolid" data-en="Add the solid">加入固體</button></div>
+          <h3 data-en="Pure water">純水</h3>
+          <div class="btns">
+            <button type="button" id="water1" data-en="Add 1 mL of water">加水 1 mL</button>
+            <button type="button" id="water10" data-en="Add 10 mL of water">加水 10 mL</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab se">
+      <div class="stage">
+        <h2 data-en="Graphs and log">圖表與紀錄</h2>
+        <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="q" aria-pressed="true" data-en="Ion product">離子積圖</button>
+          <button type="button" data-tab="bar" aria-pressed="false" data-en="Concentrations">各離子濃度</button>
+        </div>
+        <div class="grow" id="kspRow"><label for="kspSel" data-en="Salt">鹽類</label><select id="kspSel"></select></div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="logTbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Saturated solutions in pure water">純水中的飽和溶液</h2>
+          <p class="hint" data-en="Put just one solid into pure water and leave some undissolved: the solubility you measured appears here, so you can compare different salts.">只放一種固體到純水裡，而且留下沒溶完的固體：量到的溶解度會列在這裡，方便比較不同的鹽。</p>
+          <div class="tablewrap"><table class="data" id="satTbl"></table></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Understand the solubility product Ksp and its relation to molar solubility.">認識溶度積 Ksp，以及它和莫耳溶解度的關係。</li>
+        <li data-en="Use the ion product Q to predict whether a precipitate forms or dissolves.">用離子積 Q 判斷會不會產生沉澱、沉澱會不會溶解。</li>
+        <li data-en="Observe the common-ion effect, fractional precipitation, precipitate conversion and the Mohr titration.">觀察同離子效應、分步沉澱、沉澱的轉化與莫耳法滴定。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Solubility product">溶度積</h3>
+      <p data-en="A sparingly soluble salt in contact with its saturated solution is in a dynamic equilibrium: ions leave the crystal and return to it at the same rate.">難溶鹽和它的飽和溶液接觸時，處於動態平衡：離子離開晶體與回到晶體的速率相等。</p>
+      <div class="formula multi">
+        \[ \mathrm{A}_a\mathrm{B}_b(s) \rightleftharpoons a\,\mathrm{A}^{m+}(aq) + b\,\mathrm{B}^{n-}(aq) \]
+        \[ K_{sp} = [\mathrm{A}^{m+}]^a\,[\mathrm{B}^{n-}]^b \]
+      </div>
+      <p data-en-html="If the salt dissolves in pure water with molar solubility \(s\) (mol/L), then \([\mathrm{A}] = as\) and \([\mathrm{B}] = bs\):">如果鹽在純水中的莫耳溶解度是 \(s\)（mol/L），則 \([\mathrm{A}] = as\)、\([\mathrm{B}] = bs\)：</p>
+      <div class="formula multi">
+        \[ \mathrm{AgCl}:\ K_{sp} = s^2 \]
+        \[ \mathrm{Ag_2CrO_4}:\ K_{sp} = (2s)^2 s = 4s^3 \]
+        \[ \mathrm{PbI_2}:\ K_{sp} = s(2s)^2 = 4s^3 \]
+      </div>
+      <p data-en="So Ksp can be used to compare solubilities directly only for salts of the same type (AB with AB, AB2 with AB2). Ag2CrO4 has a smaller Ksp than AgCl, yet it is more soluble.">所以只有同型的鹽（AB 和 AB、AB<sub>2</sub> 和 AB<sub>2</sub>）才能直接用 Ksp 比較溶解度。Ag<sub>2</sub>CrO<sub>4</sub> 的 Ksp 比 AgCl 小，溶解度卻比較大。</p>
+      <h3 data-en="Ion product Q: precipitate or not?">離子積 Q：會不會沉澱？</h3>
+      <p data-en="The ion product Q has the same form as Ksp, but uses the concentrations at any moment:">離子積 Q 的形式和 Ksp 一樣，但用的是任意時刻的濃度：</p>
+      <div class="formula multi">
+        \[ Q = [\mathrm{A}^{m+}]^a\,[\mathrm{B}^{n-}]^b \]
+      </div>
+      <ul>
+        <li data-en="Q &lt; Ksp: unsaturated; no precipitate, and any solid present dissolves.">Q &lt; Ksp：未飽和，不會沉澱，已有的固體會溶解。</li>
+        <li data-en="Q = Ksp: saturated; solid and solution coexist.">Q = Ksp：飽和，固體與溶液共存。</li>
+        <li data-en="Q &gt; Ksp: supersaturated; a precipitate forms until Q falls back to Ksp.">Q &gt; Ksp：過飽和，產生沉澱，直到 Q 降回 Ksp。</li>
+      </ul>
+      <h3 data-en="Common-ion effect">同離子效應</h3>
+      <p data-en-html="Adding a soluble salt that shares an ion pushes the equilibrium to the left. In 0.10 M NaCl, the solubility of AgCl falls from 1.3 × 10&lt;sup&gt;−5&lt;/sup&gt; M to \(K_{sp}/0.10 = 1.8 \times 10^{-9}\) M.">加入含有共同離子的可溶鹽，平衡向左移。在 0.10 M NaCl 中，AgCl 的溶解度從 1.3 × 10<sup>−5</sup> M 降到 \(K_{sp}/0.10 = 1.8 \times 10^{-9}\) M。</p>
+      <h3 data-en="Fractional precipitation and the Mohr method">分步沉澱與莫耳法</h3>
+      <p data-en="When Ag+ is added slowly to a mixture of Cl− and I−, the salt that needs the smaller [Ag+] to reach its Ksp — AgI — precipitates first; AgCl starts only when almost all the iodide has gone. The Mohr method uses the same idea: a little chromate is added to the chloride, and red-brown Ag2CrO4 appears only after the chloride has been used up.">把 Ag<sup>+</sup> 慢慢加入含 Cl<sup>−</sup> 與 I<sup>−</sup> 的溶液，需要較小 [Ag<sup>+</sup>] 就達到 Ksp 的那一種（AgI）先沉澱；碘離子幾乎沉澱完，AgCl 才開始出現。莫耳法用同一個道理：在氯離子溶液中加少量鉻酸根，等氯離子用完，紅棕色的 Ag<sub>2</sub>CrO<sub>4</sub> 才出現，指示終點。</p>
+      <div class="formula multi">
+        \[ [\mathrm{Ag^+}]_{\mathrm{eq}} = \sqrt{K_{sp}(\mathrm{AgCl})} \]
+        \[ [\mathrm{CrO_4^{2-}}]_{\mathrm{ideal}} = \frac{K_{sp}(\mathrm{Ag_2CrO_4})}{K_{sp}(\mathrm{AgCl})} \approx 6.3 \times 10^{-3}\ \mathrm{M} \]
+      </div>
+
+      <h3 data-en="Ksp values used in the simulation (25 °C)">模擬使用的 Ksp（25 °C）</h3>
+      <div class="tablewrap"><table class="data" id="dataTable"></table></div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Put AgCl and Ag2CrO4 into pure water in turn and compare the [Ag+] of the two saturated solutions.">分別把 AgCl 和 Ag<sub>2</sub>CrO<sub>4</sub> 放進純水，比較兩杯飽和溶液的 [Ag<sup>+</sup>]。</li>
+        <li data-en="Make an AgCl precipitate, then add KI: the white solid turns yellow. AgI is far less soluble, so AgCl converts into AgI.">先做出 AgCl 沉澱再加 KI：白色變成黃色。AgI 的溶解度小得多，AgCl 轉化成 AgI。</li>
+        <li data-en="Add Pb2+ and Ba2+ together and drip in chromate: which yellow precipitate comes first?">同時有 Pb<sup>2+</sup> 與 Ba<sup>2+</sup> 時滴入鉻酸根：哪一種黃色沉澱先出現？</li>
+        <li data-en="Ag2SO4 and CaSO4 are only 'slightly soluble': you need fairly concentrated solutions to see them precipitate.">Ag<sub>2</sub>SO<sub>4</sub>、CaSO<sub>4</sub> 只是「微溶」：要相當濃的溶液才看得到沉澱。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en-html="Calculate the molar solubilities of AgCl (Ksp = 1.77 × 10&lt;sup&gt;−10&lt;/sup&gt;) and Ag&lt;sub&gt;2&lt;/sub&gt;CrO&lt;sub&gt;4&lt;/sub&gt; (Ksp = 1.12 × 10&lt;sup&gt;−12&lt;/sup&gt;) in pure water. Which is more soluble?">計算 AgCl（Ksp = 1.77 × 10<sup>−10</sup>）與 Ag<sub>2</sub>CrO<sub>4</sub>（Ksp = 1.12 × 10<sup>−12</sup>）在純水中的莫耳溶解度。哪一個比較容易溶？</li>
+        <li data-en-html="10 mL of 0.0010 M AgNO&lt;sub&gt;3&lt;/sub&gt; is mixed with 10 mL of 0.0010 M NaCl. Does a precipitate form?">10 mL 0.0010 M AgNO<sub>3</sub> 與 10 mL 0.0010 M NaCl 混合，會不會產生沉澱？</li>
+        <li data-en="In the Mohr method, why must the chromate concentration be neither too high nor too low?">莫耳法中，鉻酸根的濃度為什麼不能太濃，也不能太稀？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="AgCl: s = √(1.77 × 10&lt;sup&gt;−10&lt;/sup&gt;) = 1.33 × 10&lt;sup&gt;−5&lt;/sup&gt; M. Ag&lt;sub&gt;2&lt;/sub&gt;CrO&lt;sub&gt;4&lt;/sub&gt;: 4s&lt;sup&gt;3&lt;/sup&gt; = 1.12 × 10&lt;sup&gt;−12&lt;/sup&gt;, s = 6.54 × 10&lt;sup&gt;−5&lt;/sup&gt; M. Silver chromate is about 5 times more soluble, even though its Ksp is smaller.">AgCl：s = √(1.77 × 10<sup>−10</sup>) = 1.33 × 10<sup>−5</sup> M。Ag<sub>2</sub>CrO<sub>4</sub>：4s<sup>3</sup> = 1.12 × 10<sup>−12</sup>，s = 6.54 × 10<sup>−5</sup> M。鉻酸銀的溶解度約是氯化銀的 5 倍，雖然它的 Ksp 比較小。</li>
+          <li data-en-html="After mixing, [Ag&lt;sup&gt;+&lt;/sup&gt;] = [Cl&lt;sup&gt;−&lt;/sup&gt;] = 5.0 × 10&lt;sup&gt;−4&lt;/sup&gt; M, so Q = 2.5 × 10&lt;sup&gt;−7&lt;/sup&gt; &gt; Ksp: a precipitate forms.">混合後 [Ag<sup>+</sup>] = [Cl<sup>−</sup>] = 5.0 × 10<sup>−4</sup> M，Q = 2.5 × 10<sup>−7</sup> &gt; Ksp，會產生沉澱。</li>
+          <li data-en-html="At the equivalence point [Ag&lt;sup&gt;+&lt;/sup&gt;] = 1.33 × 10&lt;sup&gt;−5&lt;/sup&gt; M. Too much chromate: Ag&lt;sub&gt;2&lt;/sub&gt;CrO&lt;sub&gt;4&lt;/sub&gt; appears before all the chloride has reacted (end point too early). Too little: more Ag&lt;sup&gt;+&lt;/sup&gt; is needed after the equivalence point (end point too late). The ideal value is about 6.3 × 10&lt;sup&gt;−3&lt;/sup&gt; M (in practice a little less, because the yellow chromate makes the first red-brown hard to see).">當量點時 [Ag<sup>+</sup>] = 1.33 × 10<sup>−5</sup> M。鉻酸根太濃：氯離子還沒反應完，Ag<sub>2</sub>CrO<sub>4</sub> 就出現（終點太早）；太稀：過了當量點還要多加 Ag<sup>+</sup> 才會出現（終點太晚）。理想值約 6.3 × 10<sup>−3</sup> M（實際上用稍少一點，因為鉻酸根本身的黃色會讓人不容易看出第一抹紅棕色）。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="25 °C, ideal solutions: activities are taken equal to concentrations; ionic strength, complex ions (such as AgCl2−) and hydrolysis are ignored. Real solubilities in concentrated solutions differ somewhat.">25 °C、理想溶液：活性取等於濃度，不考慮離子強度、錯離子（例如 AgCl<sub>2</sub><sup>−</sup>）與水解。真實的濃溶液中，溶解度會有些差別。</li>
+        <li data-en="After every addition the beaker is brought straight to equilibrium: for each salt, either it has precipitated and Q = Ksp, or there is none and Q ≤ Ksp. This set of conditions has exactly one solution, which the program finds with Newton's method.">每次加入後，燒杯直接到達平衡：每一種鹽，要嘛有沉澱且 Q = Ksp，要嘛沒有沉澱且 Q ≤ Ksp。這組條件只有一個解，程式用牛頓法求出。</li>
+        <li data-en="Volumes simply add (one drop = 0.05 mL), and the volume of the solids is ignored. Pouring, falling particles and the particle view are illustrations; all quantities come from the calculation.">體積直接相加（一滴 = 0.05 mL），固體的體積忽略不計。傾倒、落下的顆粒與粒子示意只是圖示，所有數值都來自計算。</li>
+      </ul>
+
+      <h3 data-en="Safety">安全提醒</h3>
+      <p data-en="Silver nitrate stains skin black and is corrosive; lead and barium compounds are toxic; chromates are toxic and carcinogenic. Wear goggles and gloves, use small amounts, and collect the waste for proper disposal — never pour it down the sink. In a real laboratory, follow your teacher's instructions.">硝酸銀會把皮膚染黑、有腐蝕性；鉛與鋇的化合物有毒；鉻酸鹽有毒且會致癌。要戴護目鏡與手套、用少量，廢液要回收處理，不可倒進水槽。真實實驗請依老師指示操作。</p>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Chemical equilibrium (solubility equilibria and the solubility product).">課綱對應：高中化學・化學平衡（溶解平衡與溶度積）。</li>
+        <li data-en-html="Ksp values: &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Solubility Product Constants (25 °C); PbCrO&lt;sub&gt;4&lt;/sub&gt; from OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/j-solubility-products&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix J&lt;/a&gt;.">Ksp 數據：《CRC Handbook of Chemistry and Physics》溶度積常數表（25 °C）；PbCrO<sub>4</sub> 取自 OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/j-solubility-products" target="_blank" rel="noopener">附錄 J</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/solubility-equilibrium-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/solubility-equilibrium.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="solubility-equilibrium"></script>
+  <script src="js/missions/solubility-equilibrium.js"></script>
+  <script src="js/stats.js" data-module="solubility-equilibrium"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
