@@ -198,15 +198,20 @@
           <div class="checks">
             <label><input id="merge" type="checkbox"><span data-en="Merge identical gametes in the square">方格中合併相同的配子</span></label>
             <label><input id="genoChart" type="checkbox"><span data-en="Bar chart by genotype">長條圖改看基因型</span></label>
+            <label><input id="fresh" type="checkbox"><span data-en="Clear before each batch (every tray is a new experiment)">每一批先清除（每一盤都是一次新的實驗）</span></label>
             <label><input id="showRange" type="checkbox" checked><span data-en="Show the 95% range">顯示約 95% 範圍</span></label>
             <label><input id="showMendel" type="checkbox" checked><span data-en="Compare with Mendel’s data">與孟德爾的數據比較</span></label>
           </div>
-          <p class="hint" data-en="Tap a number to type an exact value. At most 20 000 offspring can be kept.">點一下數字可直接輸入精確數值。子代最多累積 20 000 個。</p>
+          <p class="hint" data-en="Tap a number to type an exact value. At most 20 000 offspring can be kept. Tick “Clear before each batch” to repeat the same-sized experiment again and again and compare one tray with the next.">點一下數字可直接輸入精確數值。子代最多累積 20 000 個。勾選「每一批先清除」，就能反覆做同樣大小的實驗，比較每一盤的結果。</p>
         </section>
 
         <section class="card">
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="ro"></dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Chi-square, step by step">卡方檢定的計算</h2>
           <div class="tablewrap"><table class="data" id="tbl"></table></div>
         </section>
       </aside>
@@ -241,6 +246,7 @@
 
       <h3 data-en="The test cross">試交</h3>
       <p data-en-html="A plant with the dominant phenotype can be RR or Rr. Cross it with a recessive homozygote rr: every gamete of rr then carries r, so each offspring simply shows which allele the tested plant passed on. RR gives only dominant offspring; Rr gives dominant and recessive in the ratio 1 : 1 (and RrYy × rryy gives 1 : 1 : 1 : 1). One recessive offspring proves the plant is heterozygous. Proving it is homozygous is never certain: a heterozygote gives \(n\) dominant offspring in a row with probability \((1/2)^n\) — for 8 offspring only about 0.4%.">顯性表現型的植株可能是 RR，也可能是 Rr。讓它和隱性同型合子 rr 雜交：rr 的配子一定帶 r，所以每個子代的表現型直接說出受測植株給了哪個對偶基因。RR 只會產生顯性子代；Rr 則產生顯性與隱性各半（1 : 1；RrYy × rryy 為 1 : 1 : 1 : 1）。只要出現一個隱性子代，就證明它是異型合子；要證明它是同型合子卻永遠無法百分之百確定——異型合子連續產生 \(n\) 個顯性子代的機率是 \((1/2)^n\)，8 個時只有約 0.4%。</p>
+      <p data-en-html="Mendel used crosses like these to check what gametes a hybrid makes, and he made each one in both directions, once with the hybrid RrYy as the seed parent and once as the pollen parent. Crossed with rryy, the hybrid gave four kinds of seed (see the table below). Crossed with the pure dominant RRYY, every seed came out round and yellow, so he sowed them and checked which plants bred true the next year. With the hybrid as the seed parent, 90 plants were RRYY / RRYy / RrYY / RrYy = 20 / 23 / 25 / 22. With the hybrid as the pollen parent, 87 plants were 25 / 19 / 22 / 21. Egg cells and pollen carried the four kinds of gamete in equal shares.">孟德爾也用這類雜交檢驗雜種產生哪些配子，而且每一組都正反各做一次：一次讓雜種 RrYy 當母本（結種子的一方），一次讓雜種當父本（提供花粉的一方）。和 rryy 雜交，直接得到四種種子（見下方表格）。和純種顯性 RRYY 雜交，種子全都是圓黃色，所以他把種子種下，隔年看哪些植株能穩定遺傳。雜種當母本時，90 株的 RRYY／RRYy／RrYY／RrYy 是 20／23／25／22；雜種當父本時，87 株是 25／19／22／21。卵細胞和花粉裡，四種配子都一樣多。</p>
 
       <h3 data-en="The chi-square goodness-of-fit test">卡方適合度檢定</h3>
       <p data-en-html="Random sampling never gives exactly 3 : 1. Is a departure just chance, or a sign that the hypothesis is wrong? Compare each observed count \(O_i\) with the count expected from the hypothesis, \(E_i = N p_i\):">隨機抽樣幾乎不會剛好得到 3 : 1。觀察值與期望值的差距，只是運氣，還是假說錯了？把每一類的觀察次數 \(O_i\) 與假說預測的期望次數 \(E_i = N p_i\) 比較：</p>
