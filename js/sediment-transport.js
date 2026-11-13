@@ -29,7 +29,9 @@
   };
   logReg(el.size, 0.001, 200, 4);
   logReg(el.vel, 0.001, 5, 4);
-  function setSlider(inp, v) { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; }
+  // LabNum.set 會送出 input／change 事件；程式自己設定滑桿時，事件處理要略過
+  let quiet = 0;
+  function setSlider(inp, v) { quiet++; try { if (window.LabNum) window.LabNum.set(inp, v); else inp.value = v; } finally { quiet--; } }
   function readSliders() {
     state.D = Math.max(0.001, Math.min(200, val(el.size))) / 1000;
     state.U = Math.max(0.001, Math.min(5, val(el.vel)));
@@ -823,11 +825,11 @@
   // =====================================================================
   // 控制項
   // =====================================================================
-  el.size.addEventListener('input', function () { acted(); readSliders(); state.sample = ''; cancelRun('settle'); cancelRun('river'); cancelRun('bed'); refreshOutputs(); afterChange(); });
-  [el.vel, el.depth].forEach(function (inp) { inp.addEventListener('input', function () { acted(); readSliders(); refreshOutputs(); afterChange(); }); });
-  el.temp.addEventListener('input', function () { acted(); readSliders(); cancelRun('settle'); refreshOutputs(); afterChange(); });
-  el.u0.addEventListener('input', function () { acted(); readSliders(); cancelRun('river'); refreshOutputs(); afterChange(); });
-  [el.size, el.vel, el.depth, el.temp, el.u0].forEach(function (inp) { inp.addEventListener('change', function () { afterChange(true); }); });
+  el.size.addEventListener('input', function () { if (quiet) return; acted(); readSliders(); state.sample = ''; cancelRun('settle'); cancelRun('river'); cancelRun('bed'); refreshOutputs(); afterChange(); });
+  [el.vel, el.depth].forEach(function (inp) { inp.addEventListener('input', function () { if (quiet) return; acted(); readSliders(); refreshOutputs(); afterChange(); }); });
+  el.temp.addEventListener('input', function () { if (quiet) return; acted(); readSliders(); cancelRun('settle'); refreshOutputs(); afterChange(); });
+  el.u0.addEventListener('input', function () { if (quiet) return; acted(); readSliders(); cancelRun('river'); refreshOutputs(); afterChange(); });
+  [el.size, el.vel, el.depth, el.temp, el.u0].forEach(function (inp) { inp.addEventListener('change', function () { if (!quiet) afterChange(true); }); });
   document.querySelectorAll('#shapeSeg button').forEach(function (b) { b.addEventListener('click', function () { acted(); state.shape = b.getAttribute('data-shape'); cancelRun('settle'); cancelRun('river'); refreshOutputs(); afterChange(true); }); });
   document.querySelectorAll('#consolSeg button').forEach(function (b) { b.addEventListener('click', function () { acted(); state.consol = +b.getAttribute('data-c'); refreshOutputs(); afterChange(true); }); });
   document.querySelectorAll('#modeSeg button').forEach(function (b) {
