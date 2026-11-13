@@ -55,7 +55,7 @@
 | `tools/seo.cjs`、`img/og/`、`sitemap.xml`、`robots.txt` | `npm run seo`：分享卡、每頁說明與 Open Graph、hreflang、結構化資料、網站地圖 |
 | `tools/verify.cjs` | `npm run verify`：一鍵總檢查（單元測試、任務證明、靜態稽核、介面稽核、頁面檢查、試玩） |
 | `tools/playtest.cjs`、`tools/playtest/exclude.cjs` | `npm run playtest [-- 代號…]`：自動試玩（像學生亂按、比對任務用字、抓錯誤與不合理數值），報告 `.shots/playtest-report.json`；verify 只重玩改過的實驗 |
-| `docs/WORLD-CLASS.md`、`docs/auto-optimize-log.md` | 世界一流標準、待改清單、自動優化規則與紀錄（每天 01:40 自動優化） |
+| `docs/WORLD-CLASS.md`、`docs/auto-optimize-log.md` | 世界一流標準、待改清單、自動優化規則與紀錄（每週五 04:00 自動優化，11/13 站長改） |
 
 ## 新增或修改模組的慣例
 
