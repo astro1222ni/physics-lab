@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Beats and Tuning | Astro Ni Science Lab">拍頻與調音｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 拍頻與調音頁面專用的顏色代號（淺色＋兩組深色；由 js/beats-tuning.js 與 js/beats-tuning-3d.js 讀取）
+       ref 參考音、tun 待調音、sum 相加的波形、beat 打拍的那一對泛音、ok 調準了、lamp 拍頻計的燈、twin 另一對拍得一樣快的泛音 */
+    :root { --bt-ref: #1d4ed8; --bt-tun: #c2410c; --bt-sum: #0f766e; --bt-beat: #be123c; --bt-ok: #15803d; --bt-lamp: #d97706; --bt-twin: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --bt-ref: #7aa7ff; --bt-tun: #fb923c; --bt-sum: #5eead4; --bt-beat: #fb7185; --bt-ok: #4ade80; --bt-lamp: #fbbf24; --bt-twin: #b9a0ff; }
+    }
+    :root[data-theme="dark"] { --bt-ref: #7aa7ff; --bt-tun: #fb923c; --bt-sum: #5eead4; --bt-beat: #fb7185; --bt-ok: #4ade80; --bt-lamp: #fbbf24; --bt-twin: #b9a0ff; }
+
+    /* 主畫布：拍頻計、調音器、波形、拍的包絡、頻譜；高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 600px; touch-action: pan-y; }
+    .bt [hidden] { display: none !important; }
+    .bt button { min-height: 44px; }
+    .bt .playbar, .bt .recbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bt .playbar button, .bt .recbar button { flex: 1 1 auto; }
+    .bt .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .bt #stop:disabled, .bt #clear:disabled, .bt #record:disabled { opacity: .5; cursor: default; }
+    .bt #tap { font-weight: 600; }
+    .bt #tap.hit { box-shadow: 0 0 0 3px var(--bt-lamp); }
+    .bt .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .bt .panel { grid-template-columns: minmax(0, 1fr); }
+    .bt .panel > .card { min-width: 0; }
+    .bt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .bt .card .hint.tight { margin-top: -4px; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; width: 100%; }
+    .seg.full button { padding: 6px 6px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    .stage.is3d .l2 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-wrap { position: relative; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 86%; }
+    .c3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .c3-hud span.m { color: var(--muted); font-weight: 500; }
+    .c3-hud span.ok { color: var(--bt-ok); }
+    .c3-hud span.w { color: var(--bt-tun); }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .ivs { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(64px * var(--fs, 1)), 1fr)); gap: 6px; margin: 4px 0 8px; }
+    .ivs button { padding: 4px 4px; font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    .ivs button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); color: var(--accent); font-weight: 700; }
+    .grp-label { font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); margin: 10px 0 4px; }
+    .bt .seg.full + .grp-label { margin-top: 10px; }
+    dl.readout { grid-template-columns: minmax(5.5em, 1fr) minmax(0, 1.6fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .ok-txt { color: var(--bt-ok); font-weight: 700; }
+    .wide-txt { color: var(--bt-tun); font-weight: 700; }
+    .narrow-txt { color: var(--bt-ref); font-weight: 700; }
+    .f2big { font-size: calc(15px * var(--fs, 1)); margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+    .f2big b { font-size: calc(18px * var(--fs, 1)); }
+    table.rec { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin-top: 8px; }
+    table.rec th, table.rec td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.rec th:first-child, table.rec td:first-child { text-align: left; }
+    table.rec th { color: var(--muted); font-weight: 600; }
+    .rec-empty { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; }
+    .rec-wrap { overflow-x: auto; }
+    table.etb { border-collapse: collapse; margin: 8px 0; font-variant-numeric: tabular-nums; }
+    table.etb th, table.etb td { padding: 4px 10px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.etb th:first-child, table.etb td:first-child { text-align: left; }
+    .etb-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#harmony&quot;>Music · Harmony</a> / Beats and Tuning"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#harmony">音樂・和聲</a> ／ 拍頻與調音</nav>
+      <h1 data-en="Beats and Tuning">拍頻與調音</h1>
+      <p data-en-html="Two notes that are almost, but not quite, the same pitch make the loudness swell and fade — “wah… wah… wah…”. These are <strong>beats</strong>, and they come exactly |f<sub>2</sub> − f<sub>1</sub>| times a second. Every tuner, guitarist and orchestra player uses them: turn the peg until the beats slow down and stop. For a fifth or a third the beats come from overtones that nearly coincide, and on a piano the equal-tempered intervals are not tuned to zero beats at all, but to a particular number of beats per second that you can work out. Turn the tuning knob, count the beats and tune like a professional.">兩個音高幾乎一樣、但差一點點的音一起響，響度會一下大、一下小——「哇…哇…哇…」。這就是<strong>拍</strong>，每秒剛好起伏 |f<sub>2</sub> − f<sub>1</sub>| 次。調音師、吉他手、樂團團員都靠它：轉動弦軸，聽拍越來越慢，直到不拍。五度、三度的拍來自兩個音幾乎重合的泛音；鋼琴的平均律音程甚至不是調到「不拍」，而是調到一個算得出來的每秒拍數。轉動調音旋鈕、數一數拍，像專業調音師一樣調音。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “▶ Play”, then drag “Tuning knob (coarse)” toward 0 — the “wah-wah” slows down and the lamp stops flashing.">試試看：按「▶ 播放」，把「調音旋鈕（粗調）」慢慢拉向 0，聽「哇哇」聲越來越慢、燈不再閃。</p>
+    <div class="lab bt" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D meters">2D 儀表</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D beat spiral">3D 拍的螺旋</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="tap" type="button" data-en="Tap with the beats" title="每聽到（或看到燈亮）一拍就按一下，連按 5 下以上，看看你數到每秒幾拍" data-en-title="Press once for every beat you hear (or every flash of the lamp), 5 times or more, to see how many beats a second you counted">跟著拍按</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend l2">
+          <span data-en-html="<i style=&quot;background:var(--bt-ref)&quot;></i>Reference note f<sub>1</sub>"><i style="background:var(--bt-ref)"></i>參考音 f<sub>1</sub></span>
+          <span data-en-html="<i style=&quot;background:var(--bt-tun)&quot;></i>Note being tuned f<sub>2</sub>"><i style="background:var(--bt-tun)"></i>待調音 f<sub>2</sub></span>
+          <span data-en-html="<i style=&quot;background:var(--bt-sum)&quot;></i>Sum (what you hear)"><i style="background:var(--bt-sum)"></i>相加（耳朵聽到的）</span>
+          <span data-en-html="<i style=&quot;background:var(--bt-beat)&quot;></i>The pair of overtones that beats"><i style="background:var(--bt-beat)"></i>打拍的那一對泛音</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--bt-lamp)&quot;></i>Beat lamp"><i class="dot" style="background:var(--bt-lamp)"></i>拍頻計的燈</span>
+        </div>
+        <p class="hint l2" data-en="Top: the beat meter and the tuner. Middle: the real waveforms over a few thousandths of a second, and the loudness envelope of the beating pair over a few seconds. Bottom: the overtones of both notes; the two that nearly coincide are the ones that beat. The timbres are synthesized approximations.">上面是拍頻計與調音器；中間是幾毫秒內的真實波形，以及打拍那一對泛音幾秒內的響度包絡；下面是兩個音的泛音，幾乎重合的那兩根就是在打拍的。音色是合成的近似。</p>
+        <p class="hint l3" data-en-html="3D: time runs from left to right. In a frame that turns with the reference overtone, the beating overtone of the tuned note is a little arrow going round and round; the tip of the sum traces a spiral. Its distance from the axis is the loudness, and the way it turns (anticlockwise = sharp, clockwise = flat, looking along time) tells you which way to turn the peg. Drag to rotate, scroll or pinch to zoom.">3D：時間從左往右。在「跟著參考泛音一起轉」的座標裡，待調音那根泛音是一支不停繞圈的小箭頭，兩者相加的尖端畫出一條螺旋。螺旋離中心軸的距離就是響度；順著時間看，逆時針轉是偏高、順時針轉是偏低——告訴你弦軸該往哪邊轉。拖曳旋轉，滾輪或雙指縮放。</p>
+        <p class="hint" data-en="Pure tones are pure sine waves, so they play for at most 4 seconds (hearing protection); tones with overtones play for 12 seconds. Phone speakers barely play below 200 Hz — choose “With overtones” for low notes. If you wear earphones, turn the volume down first.">純音是純正弦波，最多響 4 秒（保護聽力）；帶泛音的音響 12 秒。手機小喇叭聽不太到 200 Hz 以下，低音請選「帶泛音」。戴耳機的同學先把音量調小。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Two notes">兩個音</h2>
+          <div class="slider"><label for="ref" data-en-html="Reference note f<sub>1</sub> (Hz)">參考音 f<sub>1</sub>（Hz）</label><output id="refo"></output>
+            <input id="ref" type="range" min="33" max="81" step="1" value="69" data-decimals="2"></div>
+          <p class="hint tight" id="refNote"></p>
+          <p class="grp-label" id="ivLabel" data-en="Interval (the note being tuned above the reference)">音程（待調音在參考音上方）</p>
+          <div class="ivs" role="group" aria-labelledby="ivLabel">
+            <button type="button" data-iv="unison" aria-pressed="true" data-en="Unison">同度</button>
+            <button type="button" data-iv="octave" aria-pressed="false" data-en="Octave">八度</button>
+            <button type="button" data-iv="fifth" aria-pressed="false" data-en="Fifth">五度</button>
+            <button type="button" data-iv="fourth" aria-pressed="false" data-en="Fourth">四度</button>
+            <button type="button" data-iv="third" aria-pressed="false" data-en="Major third">大三度</button>
+          </div>
+          <p class="grp-label" id="tgLabel" data-en="Target">目標</p>
+          <div class="seg full" role="group" aria-labelledby="tgLabel">
+            <button type="button" data-target="just" aria-pressed="true" data-en="Just">純律</button>
+            <button type="button" data-target="equal" aria-pressed="false" data-en="Equal temperament">平均律</button>
+          </div>
+          <p class="grp-label" id="mdLabel" data-en="Timbre (both notes)">音色（兩個音一樣）</p>
+          <div class="seg full" role="group" aria-labelledby="mdLabel">
+            <button type="button" data-mode="pure" aria-pressed="false" data-en="Pure tone">純音</button>
+            <button type="button" data-mode="rich" aria-pressed="true" data-en="With overtones">帶泛音</button>
+          </div>
+          <p class="hint" id="ivHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Tuning knob">調音旋鈕</h2>
+          <div class="slider"><label for="coarse" data-en="Tuning knob (coarse, Hz)">調音旋鈕（粗調）（Hz）</label><output id="coarseo"></output>
+            <input id="coarse" type="range" min="-20" max="20" step="0.1" value="3" data-decimals="2"></div>
+          <div class="slider"><label for="fine" data-en="Fine (Hz)">細調（Hz）</label><output id="fineo"></output>
+            <input id="fine" type="range" min="-1" max="1" step="0.01" value="0" data-decimals="2"></div>
+          <p class="f2big" id="f2big"></p>
+          <p class="hint" data-en-html="The knob is how far the note being tuned is from the just (beat-free) pitch of the chosen interval: f<sub>2</sub> = f<sub>1</sub> × ratio + coarse + fine. Changing the interval keeps the knob where it is, just as a peg keeps its tension.">旋鈕是待調音離所選音程「純律（不拍）」的高度差多少 Hz：f<sub>2</sub> = f<sub>1</sub> × 頻率比 + 粗調 + 細調。換音程時旋鈕不動，就像弦軸的鬆緊不會自己改變。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="rd">
+            <dt data-en="Note being tuned">待調音</dt><dd id="rdF2">—</dd>
+            <dt data-en="The pair that beats">打拍的那一對</dt><dd id="rdPair">—</dd>
+            <dt data-en="Beat rate">拍頻</dt><dd id="rdBeat">—</dd>
+            <dt data-en="High (wide) or low (narrow)?">偏高（寬）還是偏低（窄）</dt><dd id="rdSide">—</dd>
+            <dt data-en="Target beat rate">目標拍數</dt><dd id="rdTarget">—</dd>
+            <dt data-en="Off from the target">和目標差</dt><dd id="rdCents">—</dd>
+            <dt data-en="Your count">你數到的拍頻</dt><dd id="rdTap">—</dd>
+            <dt data-en="Equal-tempered beats on this reference">這個參考音上平均律的拍數</dt><dd id="rdEt">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Tuning log">調音紀錄</h2>
+          <div class="recbar">
+            <button id="record" type="button" data-en="Log this tuning">記下這次調音</button>
+            <button id="clear" type="button" disabled data-en="Clear all" title="清掉調音紀錄與數拍；滑桿和按鈕的設定不變" data-en-title="Remove the log and your tap count; the sliders and buttons stay as they are">全部清除</button>
+          </div>
+          <div class="rec-wrap"><table class="rec" id="recTable" hidden>
+            <thead><tr><th data-en="Interval">音程</th><th>f<sub>1</sub> (Hz)</th><th>f<sub>2</sub> (Hz)</th><th data-en="Beats/s">拍／秒</th><th data-en="Cents">音分</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table></div>
+          <p class="rec-empty" id="recEmpty" data-en="Nothing logged yet. Log a few tunings to compare, for example an equal-tempered fifth and major third on the same reference.">還沒有紀錄。記下幾次調音來比較，例如同一個參考音上平均律的五度與大三度。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Two waves, one swelling sound">兩個波，一個起伏的聲音</h3>
+      <p data-en-html="Add two sine waves of equal size with frequencies \(f_1\) and \(f_2\). A trigonometric identity turns the sum into a product:">把兩個一樣大、頻率 \(f_1\)、\(f_2\) 的正弦波加起來，用三角函數的和差化積公式：</p>
+      <div class="formula">\[ \sin 2\pi f_1 t + \sin 2\pi f_2 t = 2\cos\!\Bigl(2\pi\,\tfrac{f_2 - f_1}{2}\,t\Bigr)\,\sin\!\Bigl(2\pi\,\tfrac{f_1 + f_2}{2}\,t\Bigr) \]</div>
+      <p data-en-html="The ear hears a tone at the average frequency \((f_1 + f_2)/2\) whose amplitude is the slowly varying cosine in front. The loudness depends on the size of that factor, which reaches a maximum twice in each of its periods, so the sound swells">耳朵聽到的是平均頻率 \((f_1 + f_2)/2\) 的音，振幅是前面那個變化很慢的餘弦。響度看的是它的大小，每個餘弦週期有兩次最大，所以聲音每秒起伏</p>
+      <div class="formula">\[ f_\text{beat} = |f_2 - f_1| \]</div>
+      <p data-en-html="times a second. 440 Hz against 442 Hz gives 2 beats a second; when the beats stop, the two pitches are equal. If the two waves have different sizes \(a\) and \(b\), the loudness envelope is \(A(t)^2 = a^2 + b^2 + 2ab\cos(2\pi f_\text{beat} t)\): it never falls to zero, so the beats are less deep. Physics calls this the <strong>superposition</strong> of waves.">次。440 Hz 對 442 Hz 每秒拍 2 次；拍停了，兩個音就一樣高。如果兩個波大小不同（\(a\)、\(b\)），響度包絡是 \(A(t)^2 = a^2 + b^2 + 2ab\cos(2\pi f_\text{拍} t)\)，永遠不會降到 0，拍就比較淺。這就是物理課的<strong>波的疊加</strong>。</p>
+      <h3 data-en="Beats between overtones">泛音之間的拍</h3>
+      <p data-en-html="A real note has overtones at \(f, 2f, 3f, \dots\). When the note being tuned is close to the ratio \(m:n\) above the reference, overtone \(m\) of the reference and overtone \(n\) of the tuned note nearly coincide, and <em>they</em> beat:">真實的樂音有泛音 \(f, 2f, 3f, \dots\)。待調音接近參考音上方 \(m:n\) 的比值時，參考音的第 \(m\) 泛音與待調音的第 \(n\) 泛音幾乎重合，打拍的就是<em>它們</em>：</p>
+      <div class="formula" data-en-html="\[ s = n f_2 - m f_1 \qquad \begin{aligned} &\text{octave } 2f_1 \leftrightarrow f_2 \\ &\text{fifth } 3f_1 \leftrightarrow 2f_2 \\ &\text{fourth } 4f_1 \leftrightarrow 3f_2 \\ &\text{major third } 5f_1 \leftrightarrow 4f_2 \end{aligned} \]">\[ s = n f_2 - m f_1 \qquad \begin{aligned} &\text{八度 } 2f_1 \leftrightarrow f_2 \\ &\text{五度 } 3f_1 \leftrightarrow 2f_2 \\ &\text{四度 } 4f_1 \leftrightarrow 3f_2 \\ &\text{大三度 } 5f_1 \leftrightarrow 4f_2 \end{aligned} \]</div>
+      <p data-en-html="The beat rate is \(|s|\); its sign says whether the interval is <strong>wide</strong> (\(s &gt; 0\), the upper note is sharp) or <strong>narrow</strong> (\(s &lt; 0\)). Two pure tones a fifth apart have no overtones that can coincide, so there is nothing slow to count — which is why tuners listen to rich tones. (A trained ear can still hear a faint, very shallow “second-order” beat between mistuned pure tones; this page leaves it out.) Note that the knob moves \(f_2\), and the overtone \(n f_2\) moves \(n\) times as fast: in a fifth, 1 Hz on the knob is 2 beats a second.">拍頻是 \(|s|\)；它的正負號告訴你音程是<strong>寬</strong>（\(s &gt; 0\)，上面的音偏高）還是<strong>窄</strong>（\(s &lt; 0\)）。兩個相距五度的純音沒有可以重合的泛音，就沒有慢到可以數的拍——所以調音師要聽帶泛音的音。（受過訓練的耳朵在兩個沒調準的純音之間，仍聽得到很弱的「第二類拍」，這個實驗沒有畫出來。）注意旋鈕改的是 \(f_2\)，泛音 \(n f_2\) 會改變 \(n\) 倍：五度時旋鈕動 1 Hz，拍就改變每秒 2 次。</p>
+      <h3 data-en="Equal temperament has to beat">平均律一定要拍</h3>
+      <p data-en-html="In twelve-tone equal temperament every semitone is \(2^{1/12}\), so the fifth is \(2^{7/12} = 1.4983\) instead of \(3/2\), the fourth \(2^{5/12} = 1.3348\) instead of \(4/3\), and the major third \(2^{4/12} = 1.2599\) instead of \(5/4\). Put them into \(s = n f_2 - m f_1\) and you get the number of beats a correctly tempered interval <em>should</em> have:">十二平均律每個半音都是 \(2^{1/12}\)，所以五度是 \(2^{7/12} = 1.4983\) 而不是 \(3/2\)，四度是 \(2^{5/12} = 1.3348\) 而不是 \(4/3\)，大三度是 \(2^{4/12} = 1.2599\) 而不是 \(5/4\)。代進 \(s = n f_2 - m f_1\)，就得到一個「調對了」的平均律音程<em>應該</em>有的拍數：</p>
+      <div class="formula" data-en-html="\[ \begin{aligned} s_\text{fifth} &= f_1\,(2\cdot 2^{7/12} - 3) \approx -0.00339\,f_1 \\ s_\text{fourth} &= f_1\,(3\cdot 2^{5/12} - 4) \approx +0.00452\,f_1 \\ s_\text{major third} &= f_1\,(4\cdot 2^{4/12} - 5) \approx +0.0397\,f_1 \end{aligned} \]">\[ \begin{aligned} s_\text{五度} &= f_1\,(2\cdot 2^{7/12} - 3) \approx -0.00339\,f_1 \\ s_\text{四度} &= f_1\,(3\cdot 2^{5/12} - 4) \approx +0.00452\,f_1 \\ s_\text{大三度} &= f_1\,(4\cdot 2^{4/12} - 5) \approx +0.0397\,f_1 \end{aligned} \]</div>
+      <div class="etb-wrap"><table class="etb">
+        <thead><tr><th data-en-html="Reference f<sub>1</sub>">參考音 f<sub>1</sub></th><th data-en="Fifth">五度</th><th data-en="Fourth">四度</th><th data-en="Major third">大三度</th></tr></thead>
+        <tbody>
+          <tr><td>C3（130.81 Hz）</td><td data-en="0.44 narrow">0.44 窄</td><td data-en="0.59 wide">0.59 寬</td><td data-en="5.19 wide">5.19 寬</td></tr>
+          <tr><td>A3（220.00 Hz）</td><td data-en="0.74 narrow">0.74 窄</td><td data-en="0.99 wide">0.99 寬</td><td data-en="8.73 wide">8.73 寬</td></tr>
+          <tr><td>C4（261.63 Hz）</td><td data-en="0.89 narrow">0.89 窄</td><td data-en="1.18 wide">1.18 寬</td><td data-en="10.38 wide">10.38 寬</td></tr>
+          <tr><td>A4（440.00 Hz）</td><td data-en="1.49 narrow">1.49 窄</td><td data-en="1.99 wide">1.99 寬</td><td data-en="17.46 wide">17.46 寬</td></tr>
+        </tbody>
+      </table></div>
+      <p data-en-html="(beats per second, computed by this page). The fifth beats less than once a second, the major third about ten times a second around middle C — almost twelve times faster. All the rates double when you go up an octave. The octave alone is the same in both systems, so a tempered octave is still tuned to zero beats.">（每秒拍數，由這個實驗算出）。五度每秒拍不到一次，中央 C 附近的大三度每秒約十次——快了將近十二倍。每往上一個八度，所有拍數都加倍。只有八度在兩種音律裡完全一樣，所以平均律的八度仍然要調到不拍。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Tuning a guitar">吉他調音</h3>
+      <p data-en-html="<strong>The 5th-fret method</strong>: on standard tuning the 5th fret of one string (the 4th fret on the G string) gives the same note as the next open string, so you play both and turn the peg until the beats stop — a unison. <strong>The harmonics method</strong>: touch the low E string lightly above the 5th fret and you get its 4th overtone (\(4 \times 82.41 = 329.6\) Hz); the 7th-fret harmonic of the A string is its 3rd overtone (\(3 \times 110 = 330\) Hz). Tuning these to zero beats is the fourth’s \(4f_1 \leftrightarrow 3f_2\) — a pure fourth, about 2 cents narrower than the equal-tempered one. That is why some guitar teachers check the result by fretted unisons as well."><strong>第 5 格法</strong>：標準調弦時，一條弦的第 5 格（G 弦是第 4 格）和下一條空弦是同一個音，兩個一起彈，轉弦軸到不拍——這是同度。<strong>泛音法</strong>：在低音 E 弦第 5 格上方輕觸，得到它的第 4 泛音（\(4 \times 82.41 = 329.6\) Hz）；A 弦第 7 格泛音是它的第 3 泛音（\(3 \times 110 = 330\) Hz）。把這兩個調到不拍，就是四度的 \(4f_1 \leftrightarrow 3f_2\)——得到純四度，比平均律窄約 2 音分。所以有些老師會再用按格的同度檢查一次。</p>
+      <h3 data-en="The piano tuner counts">鋼琴調音師在數拍</h3>
+      <p data-en-html="A piano tuner first tunes one octave in the middle of the keyboard (the “temperament octave”) from a tuning fork, setting each fifth slightly <em>narrow</em> so that it beats a little under once a second, each fourth slightly <em>wide</em>, and checks the work with the fast-beating thirds and sixths, whose rates must rise smoothly from note to note. The rest of the piano is then tuned by octaves. Tuners use checks like the one hidden in the table: the fourth C3–F3 and the fifth F3–C4 beat at exactly the same rate, because both are the beat between \(3 \times\) F3 and \(4 \times\) C3.">鋼琴調音師先用音叉，把鍵盤中間的一個八度（「調律八度」）調好：每個五度調得稍微<em>窄</em>一點，每秒拍不到一次；每個四度稍微<em>寬</em>一點；再用拍得很快的三度、六度檢查，它們的拍數要一個音一個音平順地加快。其他的琴鍵再用八度一路調出去。調音師也會用表裡藏著的檢查法：四度 C3–F3 與五度 F3–C4 拍得一樣快，因為兩者都是 \(3 \times\) F3 對 \(4 \times\) C3 的拍。</p>
+      <h3 data-en="Orchestras and choirs">樂團與合唱</h3>
+      <p data-en-html="Before a concert the oboe plays an A and everyone tunes to it by listening for beats (many orchestras use A = 442 Hz instead of 440). String players then tune their other strings in pure fifths, which beat not at all. Choirs and string quartets, free of a keyboard, often “beat out” their chords: they lower the third of a major chord about 14 cents until it stops beating — the just major third \(5:4\) — and the chord suddenly rings. The tuner on this page shows exactly that 13.7-cent difference.">音樂會開始前，雙簧管吹一個 A，大家聽拍對準它（很多樂團用 A = 442 Hz，不是 440）。弦樂手再用不拍的純五度調其他弦。不受鍵盤限制的合唱團、弦樂四重奏，常把和弦「拍掉」：把大三和弦的三音降低約 14 音分，直到不拍——也就是純律大三度 \(5:4\)——和弦一下子變得很亮。這個實驗的調音器會顯示這 13.7 音分的差。</p>
+      <h3 data-en="Counting beats made the standard pitch">數拍定出了標準音</h3>
+      <p data-en-html="In 1834 the German silk manufacturer and amateur acoustician Johann Heinrich Scheibler built a “tonometer”, a row of tuning forks about 4 Hz apart, and measured pitch by counting the beats between neighbours. With it he proposed A = 440 Hz at a scientific meeting in Stuttgart; today’s international standard, ISO 16, uses the same value.">1834 年，德國的絲綢商、業餘聲學家史艾布勒（Johann Heinrich Scheibler）做了一組「音高計」：一排音叉，相鄰兩支相差約 4 Hz，靠數鄰居之間的拍量出音高。他用它在斯圖加特的一場科學會議上提出 A = 440 Hz；現在的國際標準 ISO 16 也是這個值。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Beats = difference</strong>: in “Unison”, set the knob to 1, 2, 3 Hz. Does the lamp flash 1, 2, 3 times a second?"><strong>拍頻 = 頻率差</strong>：在「同度」把旋鈕調成 1、2、3 Hz，燈每秒閃幾次？</li>
+        <li data-en-html="<strong>Too fast to count</strong>: push the knob past 15 Hz with “Pure tone”. When do the beats stop sounding like beats and start sounding rough?"><strong>快到數不清</strong>：選「純音」把旋鈕推過 15 Hz，拍什麼時候聽起來不再像拍，而是變粗糙？</li>
+        <li data-en-html="<strong>Which overtones?</strong> In “Fifth”, look at the spectrum: which two bars almost touch? Switch to “Pure tone” — what is left to beat?"><strong>哪兩根泛音？</strong>在「五度」看頻譜，哪兩根幾乎碰在一起？換成「純音」，還剩誰可以打拍？</li>
+        <li data-en-html="<strong>Not zero</strong>: choose “Equal temperament”. How many beats should a fifth, a fourth and a major third have on the same reference? Which way (wide or narrow)?"><strong>不是 0</strong>：選「平均律」。同一個參考音上，五度、四度、大三度各應該拍幾次？往哪一邊（寬或窄）？</li>
+        <li data-en-html="<strong>The spiral turns</strong>: in the 3D view, make the note a little sharp, then a little flat with the same beat rate. What changes?"><strong>螺旋的轉向</strong>：在 3D 檢視裡，把音調得偏高一點，再調成偏低、拍數一樣，什麼不一樣了？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The note being tuned is \(f_2 = f_1 \cdot m/n + \text{coarse} + \text{fine}\). The beat meter shows \(|n f_2 - m f_1|\) for the pair the interval uses; with “Pure tone” only the unison has such a pair. The target is \(f_1 \cdot m/n\) (just, zero beats) or \(f_1 \cdot 2^{k/12}\) (equal temperament), and the tuner shows \(1200 \log_2 (f_2 / f_\text{target})\) cents.">待調音 \(f_2 = f_1 \cdot m/n + \text{粗調} + \text{細調}\)。拍頻計顯示所選音程那一對泛音的 \(|n f_2 - m f_1|\)；「純音」只有同度有這一對。目標是 \(f_1 \cdot m/n\)（純律，不拍）或 \(f_1 \cdot 2^{k/12}\)（平均律），調音器顯示 \(1200 \log_2 (f_2 / f_\text{目標})\) 音分。</li>
+        <li data-en-html="“With overtones” means 8 overtones at \(k f\) with amplitudes \(1/k\) (a synthesized approximation, not a recording of any instrument). The waveform panel is the exact sum of all overtones over a few periods, moving on in real time while the sound plays. The envelope panel is \(A(t)\) of the beating pair, \(a = 1/m\), \(b = 1/n\), with the phase between them advancing by \(2\pi s\) each second; the fine wave inside it is only a sketch of the carrier.">「帶泛音」是 8 個泛音，在 \(k f\)、振幅 \(1/k\)（合成的近似，不是任何樂器的錄音）。波形圖是所有泛音在幾個週期內的精確總和，播放時跟著真實時間往前走。包絡圖是打拍那一對（\(a = 1/m\)、\(b = 1/n\)）的 \(A(t)\)，兩者的相位差每秒前進 \(2\pi s\)；裡面細密的波只是示意載波。</li>
+        <li data-en-html="“Tap with the beats” keeps your last taps (up to 8) as long as each gap is within 30% of their average, and reports \(1/\text{average gap}\). A pause of more than 5 seconds, or any change of setting, starts a new count.">「跟著拍按」保留你最後按的幾下（最多 8 下），只要每個間隔都在平均間隔的 30% 以內，就回報 \(1/\text{平均間隔}\)。停超過 5 秒或改了任何設定，就重新數。</li>
+        <li data-en-html="The 3D spiral is the sum of two phasors in a frame turning with the reference overtone: \(z(t) = a + b\,e^{i 2\pi s t}\); its length \(|z|\) is exactly the envelope \(A(t)\). It is computed from the same core functions and uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 螺旋是兩個相量在「跟著參考泛音一起轉」的座標裡相加：\(z(t) = a + b\,e^{i 2\pi s t}\)；它的長度 \(|z|\) 剛好就是包絡 \(A(t)\)。用同樣的核心函式計算，使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): the two notes start in step, and while they play, moving the knob changes the tuned note at once. “■ Stop”, Esc or switching tabs stops everything.">聲音在瀏覽器裡即時合成（沒有錄音檔）：兩個音同時起音；播放時轉旋鈕，待調音立刻跟著改。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Performance skills (tuning). Across subjects: Elective Physics III · Waves (superposition) and Sound waves (beats).">課綱對應：高中音樂・表現・演奏技巧（調音）。跨科：選修物理Ⅲ・波動（波的疊加）、聲波（拍）。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="Hermann von Helmholtz, On the Sensations of Tone (1863; English translation by A. J. Ellis, 1885) — beats between partials and the tuning of consonances.">Hermann von Helmholtz，《On the Sensations of Tone》（1863；A. J. Ellis 英譯，1885）：泛音之間的拍與協和音程的調音。</li>
+        <li data-en="Neville H. Fletcher and Thomas D. Rossing, The Physics of Musical Instruments, 2nd ed. (Springer, 1998).">Neville H. Fletcher、Thomas D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998。</li>
+        <li data-en="Owen H. Jorgensen, Tuning (Michigan State University Press, 1991) — beat-rate tables used by piano tuners.">Owen H. Jorgensen，《Tuning》，Michigan State University Press，1991（鋼琴調音師用的拍數表）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/beats-tuning-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/beats-tuning.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="beats-tuning"></script>
+  <script src="js/missions/beats-tuning.js"></script>
+  <script src="js/stats.js" data-module="beats-tuning"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

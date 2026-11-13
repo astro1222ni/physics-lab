@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Pentatonic Scales | Astro Ni Science Lab">五聲音階：宮商角徵羽｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 五聲音階頁面專用的顏色代號（淺色＋兩組深色；由 js/pentatonic.js 與 js/pentatonic-3d.js 讀取）
+       w 大二度、m3 小三度、h 半音、a 更大的步伐、tonic 主音、gong 宮、poly 音階的音、sun 損（× 2/3）、yi 益（× 4/3）、extra 第 6 個以後產生的音、key／keyb 鍵盤 */
+    :root { --pt-w: #2563eb; --pt-m3: #7c3aed; --pt-h: #ea580c; --pt-a: #be185d; --pt-tonic: #0f766e; --pt-gong: #b45309; --pt-poly: #0e7490; --pt-sun: #e11d48; --pt-yi: #4f46e5; --pt-extra: #dc2626; --pt-wood: #a16207; --pt-key: #fbfaf7; --pt-keyb: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pt-w: #7aa7ff; --pt-m3: #b9a0ff; --pt-h: #fb923c; --pt-a: #ff74b0; --pt-tonic: #5eead4; --pt-gong: #fbbf24; --pt-poly: #67e8f9; --pt-sun: #fb7185; --pt-yi: #a5b4fc; --pt-extra: #f87171; --pt-wood: #d6a54a; --pt-key: #d9dce2; --pt-keyb: #0d0f13; }
+    }
+    :root[data-theme="dark"] { --pt-w: #7aa7ff; --pt-m3: #b9a0ff; --pt-h: #fb923c; --pt-a: #ff74b0; --pt-tonic: #5eead4; --pt-gong: #fbbf24; --pt-poly: #67e8f9; --pt-sun: #fb7185; --pt-yi: #a5b4fc; --pt-extra: #f87171; --pt-wood: #d6a54a; --pt-key: #d9dce2; --pt-keyb: #0d0f13; }
+
+    #cv { aspect-ratio: auto; height: 420px; touch-action: manipulation; cursor: pointer; }
+    .pt [hidden] { display: none !important; }
+    .pt button { min-height: 44px; }
+    .pt .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 2px 0; }
+    .pt .playbar button { flex: 1 1 auto; }
+    .pt .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pt #stop:disabled { opacity: .5; cursor: default; }
+    .pt .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .pt .panel { grid-template-columns: minmax(0, 1fr); }
+    .pt .panel > .card { min-width: 0; }
+    .pt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .playopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(160px * var(--fs, 1)), 1fr)); gap: 8px 14px; align-items: end; margin: 10px 2px 0; }
+    .playopts .slider { margin: 0; }
+    .field { display: flex; align-items: center; gap: 10px; margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    .card .field + .field, .card .field + .seglab, .card .seglab + .field { margin-top: 10px; }
+    .field label { white-space: nowrap; }
+    .field select { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .seglab { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 4px; }
+
+    /* 2D／3D 檢視切換、分段按鈕 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: flex; }
+    .seg.full button { flex: 1 1 0; min-width: 0; padding: 6px 6px; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(54px * var(--fs, 1)), 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .modes button { word-break: keep-all; border: none; border-radius: 0; min-height: 52px; padding: 4px 2px; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; }
+        .modes button b { font-size: calc(18px * var(--fs, 1)); }
+    .modes button small { font-size: calc(11px * var(--fs, 1)); color: var(--muted); }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+    .modes button[aria-pressed="true"] small { color: inherit; opacity: .85; }
+    .genbtns { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(84px * var(--fs, 1)), 1fr)); gap: 8px; margin: 10px 0 0; }
+    .genbtns button { padding: 4px 6px; white-space: nowrap; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.x { color: var(--pt-extra); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 步伐條：寬度 ∝ 半音數；框起來的一段剛好一個八度，整條是同一串步伐一直重複，換調式時整條滑動 */
+    .stepcap { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 12px 4px 4px; font-size: calc(13px * var(--fs, 1)); }
+    .stepcap b { font-size: calc(14px * var(--fs, 1)); }
+    .stepcap span { color: var(--muted); text-align: right; }
+    .stepbar { position: relative; height: calc(58px + 28px * var(--fs, 1)); overflow: hidden; border-radius: 10px;
+      background: color-mix(in srgb, var(--canvas-bg) 70%, var(--surface)); border: 1px solid var(--border); }
+    .stepbar .track { position: absolute; left: 0; top: 6px; height: 52px; width: calc(100% * 36 / 14); display: flex; will-change: transform; }
+    .stepbar .track.anim { transition: transform .42s cubic-bezier(.2,.7,.2,1); }
+    .stepbar .blk { flex: none; height: 52px; margin: 0; padding: 0 1px; border: none; border-radius: 0; background: none; min-height: 0; cursor: pointer; position: relative; color: #fff; }
+    .stepbar .blk i { position: absolute; inset: 2px 1.5px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-style: normal; font-weight: 700;
+      font-size: calc(13px * var(--fs, 1)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset 0 -3px 0 rgba(0,0,0,.18), 0 2px 4px rgba(0,0,0,.15); overflow: hidden; white-space: nowrap; }
+    .stepbar .blk.w i { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-w) 78%, #fff) 0%, var(--pt-w) 55%, color-mix(in srgb, var(--pt-w) 85%, #000) 100%); }
+    .stepbar .blk.m i { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-m3) 78%, #fff) 0%, var(--pt-m3) 55%, color-mix(in srgb, var(--pt-m3) 85%, #000) 100%); }
+    .stepbar .blk.h i { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-h) 78%, #fff) 0%, var(--pt-h) 55%, color-mix(in srgb, var(--pt-h) 85%, #000) 100%); }
+    .stepbar .blk.a i { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-a) 78%, #fff) 0%, var(--pt-a) 55%, color-mix(in srgb, var(--pt-a) 85%, #000) 100%); }
+    :root[data-theme="dark"] .stepbar .blk i { color: #10131a; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stepbar .blk i { color: #10131a; } }
+    .stepbar .blk.out { pointer-events: none; opacity: .28; filter: saturate(.6); }
+    .stepbar .blk.on i { outline: 3px solid var(--text); outline-offset: -3px; }
+    .stepbar .blk:focus-visible { outline: none; }
+    .stepbar .blk:focus-visible i { outline: 3px solid var(--accent); outline-offset: -1px; }
+    .stepbar .win { position: absolute; top: 3px; height: 58px; left: calc(100% / 14); width: calc(100% * 12 / 14); border: 2px solid var(--text); border-radius: 10px; pointer-events: none; opacity: .55; }
+    .stepbar .names { position: absolute; left: 0; right: 0; top: 64px; height: calc(22px * var(--fs, 1)); pointer-events: none; }
+    .stepbar .names span { position: absolute; transform: translateX(-50%); font-size: calc(12px * var(--fs, 1)); font-weight: 700; white-space: nowrap; color: var(--text); }
+    .stepbar .names span.t { color: var(--pt-tonic); }
+    .stepbar::before, .stepbar::after { content: ""; position: absolute; top: 0; bottom: 0; width: calc(100% / 14); z-index: 2; pointer-events: none; }
+    .stepbar::before { left: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--canvas-bg) 92%, var(--surface)), transparent); }
+    .stepbar::after { right: 0; background: linear-gradient(270deg, color-mix(in srgb, var(--canvas-bg) 92%, var(--surface)), transparent); }
+    @media (prefers-reduced-motion: reduce) { .stepbar .track.anim { transition: none; } }
+
+    /* 鍵盤 C4–C5：點鍵把音加進或移出音階（主音不能移出） */
+    .piano { position: relative; height: 128px; margin: 12px 0 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .piano .key { position: absolute; top: 0; padding: 0; margin: 0; min-height: 0; border-radius: 0 0 8px 8px; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center; -webkit-tap-highlight-color: transparent; }
+    .piano .key.w { height: 100%; background: linear-gradient(180deg, color-mix(in srgb, var(--pt-key) 92%, var(--text)) 0%, var(--pt-key) 14%, var(--pt-key) 86%, color-mix(in srgb, var(--pt-key) 88%, var(--text)) 100%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--text)); color: #3b3f46; z-index: 1;
+      box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--pt-key) 80%, #000), 0 2px 4px rgba(0,0,0,.12); }
+    .piano .key.b { height: 60%; z-index: 2; background: linear-gradient(180deg, color-mix(in srgb, var(--pt-keyb) 80%, #fff) 0%, var(--pt-keyb) 30%, var(--pt-keyb) 100%);
+      border: 1px solid #000; color: #e5e7eb; box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--pt-keyb) 70%, #fff), 0 3px 5px rgba(0,0,0,.3); }
+    .piano .key .kn { font-size: calc(12px * var(--fs, 1)); font-weight: 600; line-height: 1.1; margin: 0 0 8px; pointer-events: none; }
+    .piano .key.b .kn { font-size: calc(10px * var(--fs, 1)); margin-bottom: 6px; }
+    .piano .key .kd { font-size: calc(12px * var(--fs, 1)); font-weight: 700; line-height: 1; margin: 0 0 4px; min-width: 1.6em; padding: 3px 3px; border-radius: 999px; pointer-events: none; visibility: hidden; }
+    .piano .key[aria-pressed="true"] .kd { visibility: visible; background: var(--pt-poly); color: var(--surface); }
+    .piano .key.gong[aria-pressed="true"] .kd { background: var(--pt-gong); }
+    .piano .key.tonic[aria-pressed="true"] .kd { background: var(--pt-tonic); }
+    .piano .key.w[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-poly) 30%, var(--pt-key)) 0%, color-mix(in srgb, var(--pt-poly) 16%, var(--pt-key)) 100%); color: #1f2328; }
+    .piano .key.b[aria-pressed="true"] { background: linear-gradient(180deg, color-mix(in srgb, var(--pt-poly) 70%, #fff) 0%, var(--pt-poly) 60%); color: #fff; }
+    :root[data-theme="dark"] .piano .key.b[aria-pressed="true"] { color: #0d0f13; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piano .key.b[aria-pressed="true"] { color: #0d0f13; } }
+    .piano .key[aria-pressed="false"] .kn { opacity: .6; }
+    .piano .key.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .piano .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; z-index: 3; }
+    .piano-hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    @media (prefers-reduced-motion: reduce) { .piano .key.on { box-shadow: 0 0 0 3px var(--accent); } }
+
+    /* 隨機旋律的音 */
+    .melody { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 2px 0; align-items: flex-end; }
+    .melody:empty { display: none; }
+    .melody .mcap { width: 100%; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .melody span.n { display: inline-flex; flex-direction: column; align-items: center; min-width: 2em; padding: 2px 5px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); font-size: calc(13px * var(--fs, 1)); font-weight: 700; line-height: 1.15; }
+    .melody span.n small { font-size: calc(10.5px * var(--fs, 1)); font-weight: 500; color: var(--muted); }
+    .melody span.n.t { color: var(--pt-tonic); }
+    .melody span.n.on { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .melody span.n.on small { color: inherit; }
+
+    dl.readout { grid-template-columns: fit-content(55%) minmax(0, 1fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .ok-txt { color: var(--pt-tonic); font-weight: 700; }
+    .no-txt { color: var(--muted); font-weight: 600; }
+    .x-txt { color: var(--pt-extra); font-weight: 700; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .nt { width: 100%; border-collapse: collapse; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .nt th, .nt td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .nt th { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .nt th:first-child, .nt td:first-child, .nt th:nth-child(2), .nt td:nth-child(2) { text-align: left; }
+    .nt tr.on td { background: var(--accent-soft); }
+    .nt td.t { color: var(--pt-tonic); font-weight: 700; }
+    .nt td.g { color: var(--pt-gong); font-weight: 700; }
+    .iv { width: 100%; border-collapse: collapse; margin: 6px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; text-align: center; }
+    .iv th, .iv td { border: 1px solid var(--border); padding: 3px 2px; }
+    .iv th { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .iv td { font-weight: 700; }
+    .idbox { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
+    .idbox .nm { font-size: calc(16px * var(--fs, 1)); font-weight: 700; }
+    .idbox .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 2px; }
+    .chainline { margin: 10px 0 0; font-size: calc(14px * var(--fs, 1)); line-height: 1.7; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .chainline b { white-space: nowrap; }
+    .chainline .s { color: var(--pt-sun); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; white-space: nowrap; }
+    .chainline .y { color: var(--pt-yi); font-size: calc(11.5px * var(--fs, 1)); font-weight: 700; white-space: nowrap; }
+    .chainline .x { color: var(--pt-extra); }
+    .pairbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 10px; border: 1px dashed var(--border); font-size: calc(13.5px * var(--fs, 1)); }
+    .pairbox:empty { display: none; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tuning&quot;>Music · Tuning and Scales</a> / Pentatonic Scales"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tuning">音樂・音律與音階</a> ／ 五聲音階：宮商角徵羽</nav>
+      <h1 data-en="Pentatonic Scales: Gong, Shang, Jue, Zhi, Yu">五聲音階：宮商角徵羽</h1>
+      <p data-en="Play only the black keys of a piano and almost anything you improvise sounds pleasant: you are playing a pentatonic scale, the five notes that Chinese music calls gong, shang, jue, zhi and yu (Do Re Mi Sol La). Two thousand years ago the same five notes were worked out on a string with nothing but fractions: take away a third of the length, add a third, again and again. Make the notes step by step with that rule, see why the ancients stopped at five, turn the five notes into five different modes, and let the page invent melodies that use nothing else.">只彈鋼琴的黑鍵，隨便怎麼彈都很好聽——因為你彈的是五聲音階，也就是中國音樂說的宮、商、角、徵、羽（Do Re Mi Sol La）。兩千多年前，古人只用分數就在一根弦上把這五個音算出來：弦長去掉三分之一、加上三分之一，一再重複。在這裡一步一步用這個「三分損益」生出五個音，看看古人為什麼停在五個，把同樣五個音變成五種調式，再讓網頁用這五個音隨機編出旋律。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “↺ Start over”, then keep pressing “Next ▶” — watch the strings grow long, short, long, short.">試試看：按「↺ 從頭」再連按「下一步 ▶」，看弦一長一短地長出來。</p>
+    <div class="lab pt" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D clock and strings">2D 鐘面與弦</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D strings and spiral">3D 弦與五度螺旋</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="五聲音階的鐘面與三分損益的弦長"></canvas>
+        <div id="view3"></div>
+
+        <div class="stepcap"><b data-en="Step bar">步伐條</b><span id="stepSeq"></span></div>
+        <div class="stepbar" id="stepbar" role="group" aria-label="步伐條：點一格聽那兩個相鄰的音" data-en-aria-label="Step bar: tap a step to hear its two notes">
+          <div class="track" id="track"></div>
+          <div class="win" aria-hidden="true"></div>
+          <div class="names" id="stepNames" aria-hidden="true"></div>
+        </div>
+        <p class="piano-hint" data-en="Blocks are as wide as their steps: a major second is 2 semitones, a minor third 3. The framed part is one octave; the faded ends show that the same row keeps going. Tap a step to hear its two notes.">每一格的寬度就是步伐的大小：大二度 2 個半音、小三度 3 個半音。框起來的一段剛好一個八度，兩端淡淡的部分表示同一串步伐一直重複下去。點一格就聽到那兩個相鄰的音。</p>
+
+        <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5，點鍵把音加進或移出音階" data-en-aria-label="Keyboard C4 to C5: tap a key to add it to or remove it from the scale"></div>
+        <p class="piano-hint" data-en="Tap a key (or a cell of the clock) to add or remove that note and build your own scale; the tonic always stays. The badge on a key is its name in the pentatonic scale.">點鍵盤（或鐘面上的格子）就能把那個音加進或移出音階，自己拼音階；主音一定留著。鍵上的小圓標是它在五聲音階裡的名字。</p>
+
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="playopts">
+          <div class="field"><label for="content" data-en="What to play">播放內容</label>
+            <select id="content">
+              <option value="up" selected data-en="Up">上行</option>
+              <option value="down" data-en="Down">下行</option>
+              <option value="updown" data-en="Up and down">上行再下行</option>
+              <option value="melody" data-en="Random melody">隨機旋律</option>
+              <option value="gen" data-en="Strings in the order they were made">三分損益的順序</option>
+            </select></div>
+          <div class="seg full" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
+            <button type="button" data-tune="pyth" aria-pressed="true" data-en="Pure fifths">五度相生</button>
+            <button type="button" data-tune="equal" aria-pressed="false" data-en="Equal">十二平均律</button>
+          </div>
+          <div class="slider"><label for="tempo" data-en="Speed (beats per minute)">速度（每分鐘幾拍）</label><output id="tempoO"></output>
+            <input id="tempo" type="range" min="60" max="240" step="10" value="120" data-decimals="0"></div>
+          <button type="button" id="newMelody" data-en="New melody">換一段旋律</button>
+        </div>
+        <div class="melody" id="melody" aria-live="off"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--pt-w)&quot;></i>Major second (2 semitones)"><i style="background:var(--pt-w)"></i>大二度（2 個半音）</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-m3)&quot;></i>Minor third (3)"><i style="background:var(--pt-m3)"></i>小三度（3 個半音）</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-h)&quot;></i>Half step"><i style="background:var(--pt-h)"></i>半音</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-tonic)&quot;></i>Tonic"><i style="background:var(--pt-tonic)"></i>主音</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-gong)&quot;></i>Gong"><i style="background:var(--pt-gong)"></i>宮</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-sun)&quot;></i>× 2/3 (remove a third)"><i style="background:var(--pt-sun)"></i>× 2/3（損）</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-yi)&quot;></i>× 4/3 (add a third)"><i style="background:var(--pt-yi)"></i>× 4/3（益）</span>
+          <span data-en-html="<i style=&quot;background:var(--pt-extra)&quot;></i>Notes after the fifth one"><i style="background:var(--pt-extra)"></i>第 6 個以後的音</span>
+        </div>
+        <p class="piano-hint l3" data-en="3D, left: the strings stand side by side from low to high, each as tall as its length (so the five pentatonic strings fall like a little harp). Right: the spiral of fifths — every new note is one pure fifth (701.96 cents) further round and one storey higher; the floor is the 12-cell clock. Up to five notes no two shadows on the floor are closer than a whole step; the sixth lands a half step from gong (an arc on the floor), and the thirteenth misses gong by the Pythagorean comma. Drag to rotate, scroll or pinch to zoom.">3D 左邊：弦由低到高並排立著，每根的高度就是它的弦長（五聲的五根弦像一架小豎琴）。右邊：五度螺旋——每產生一個新音，就沿著圓周再轉一個純五度（701.96 音分）、往上升一層，地板就是 12 格鐘面。五個音以內，地板上的投影彼此至少隔一個全音；第 6 個音落在離宮只有半音的地方（地板上的弧），第 13 個音差一個畢氏音差回不到宮。拖曳旋轉，滾輪或雙指縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Pentatonic scale">五聲音階</h2>
+          <div class="field">
+            <label for="tonic" data-en="Tonic">主音</label>
+            <select id="tonic">
+              <option value="C" selected>C</option><option value="C♯">C♯</option><option value="D♭">D♭</option><option value="D">D</option>
+              <option value="D♯">D♯</option><option value="E♭">E♭</option><option value="E">E</option><option value="F">F</option>
+              <option value="F♯">F♯</option><option value="G♭">G♭</option><option value="G">G</option><option value="G♯">G♯</option>
+              <option value="A♭">A♭</option><option value="A">A</option><option value="A♯">A♯</option><option value="B♭">B♭</option><option value="B">B</option>
+            </select>
+          </div>
+          <p class="seglab" data-en="Mode (which note is the tonic)">調式（以哪一個音當主音）</p>
+          <div class="modes" id="modes" role="group" aria-label="調式" data-en-aria-label="Mode">
+            <button type="button" data-mode="gong" aria-pressed="true" data-en="Gong mode">宮調式</button>
+            <button type="button" data-mode="shang" aria-pressed="false" data-en="Shang mode">商調式</button>
+            <button type="button" data-mode="jue" aria-pressed="false" data-en="Jue mode">角調式</button>
+            <button type="button" data-mode="zhi" aria-pressed="false" data-en="Zhi mode">徵調式</button>
+            <button type="button" data-mode="yu" aria-pressed="false" data-en="Yu mode">羽調式</button>
+          </div>
+          <p class="seglab" data-en="Clock order">鐘面排列</p>
+          <div class="seg full" role="group" aria-label="鐘面排列" data-en-aria-label="Clock order" id="arrSeg">
+            <button type="button" data-arr="chrom" aria-pressed="true" data-en="Semitones">半音順序</button>
+            <button type="button" data-arr="fifths" aria-pressed="false" data-en="Fifths">五度順序</button>
+          </div>
+          <p class="hint" data-en="The tonic is the home note of the mode. Gong mode on C is C D E G A; yu mode on A uses the same five notes but starts and ends on A. Black-key tonics come in two spellings; try both.">主音是調式的「家」。C 宮調式是 C D E G A；A 羽調式用的是同樣五個音，只是從 A 開始、回到 A 結束。黑鍵主音有升、降兩種寫法，兩種都試試看。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Add or remove a third (sanfen sunyi)">三分損益</h2>
+          <p class="seglab" data-en="First move">起手</p>
+          <div class="seg full" role="group" aria-label="起手" data-en-aria-label="First move" id="orderSeg">
+            <button type="button" data-order="sun" aria-pressed="true" data-en="Remove first (Shiji)">先損（史記）</button>
+            <button type="button" data-order="yi" aria-pressed="false" data-en="Add first (Guanzi)">先益（管子）</button>
+          </div>
+          <div class="genbtns">
+            <button type="button" id="genReset" data-en="↺ Start over">↺ 從頭</button>
+            <button type="button" id="genPrev" data-en="◀ Back">◀ 上一步</button>
+            <button type="button" id="genNext" class="primary" data-en="Next ▶">下一步 ▶</button>
+          </div>
+          <div class="slider" style="margin-top:10px"><label for="L0" data-en="Gong string length">宮的弦長</label><output id="L0o"></output>
+            <input id="L0" type="range" min="9" max="999" step="1" value="81" data-decimals="0"></div>
+          <div class="chainline" id="chainLine"></div>
+          <dl class="readout" id="genOut"></dl>
+          <div class="pairbox" id="pairBox" aria-live="polite"></div>
+          <p class="hint" data-en="Tap a string in the bar chart to hear it; tap two strings one after the other to compare them. The strings always sound at their own lengths (the rule’s tuning).">點長條圖上的弦就會聽到它；先後點兩根弦，就能比較它們的比值。弦一律照自己的弦長發聲（三分損益的音高）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="What scale is this?">這是什麼音階？</h2>
+          <div class="idbox" id="idbox" aria-live="off"></div>
+          <dl class="readout" id="readout"></dl>
+          <h3 class="sub" style="margin:10px 0 0;font-size:calc(14px * var(--fs, 1))" data-en="Interval vector">音程向量</h3>
+          <div class="tablewrap"><table class="iv" id="ivTable"></table></div>
+          <p class="hint" data-en="How many pairs of notes lie 1, 2, 3, 4, 5 or 6 semitones apart (larger gaps are counted the other way round: 7 = 12 − 5).">音階裡任兩個音相差 1、2、3、4、5、6 個半音的各有幾對（超過 6 的從另一邊算：7 個半音算成 12 − 7 = 5）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Notes of the scale">音表</h2>
+          <div class="tablewrap"><table class="nt" id="noteTable"></table></div>
+          <p class="hint" id="tableHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Five notes, two kinds of steps">五個音、兩種步伐</h3>
+      <p data-en-html="Counting in semitones, the five notes gong, shang, jue, zhi, yu lie \(0, 2, 4, 7, 9\) semitones above gong — Do Re Mi Sol La. The steps between them are \(2, 2, 3, 2, 3\): only <strong>major seconds</strong> (2) and <strong>minor thirds</strong> (3), and never a half step. Each of the five notes can be the home note (tonic), which gives five <strong>modes</strong>; their steps are the five rotations of the same row:">以半音為單位，宮、商、角、徵、羽比宮高 \(0, 2, 4, 7, 9\) 個半音，也就是 Do Re Mi Sol La。它們之間的步伐是 \(2, 2, 3, 2, 3\)：只有<strong>大二度</strong>（2）與<strong>小三度</strong>（3）兩種，一個半音也沒有。五個音每一個都可以當「家」（主音），就有五種<strong>調式</strong>，它們的步伐是同一串的五種轉位：</p>
+      <div class="formula" data-en-html="\[ \begin{aligned} &amp;\text{gong } (2,2,3,2,3) &amp;&amp; \text{shang } (2,3,2,3,2) &amp;&amp; \text{jue } (3,2,3,2,2) \\ &amp;\text{zhi } (2,3,2,2,3) &amp;&amp; \text{yu } (3,2,2,3,2) &amp;&amp; 2+2+3+2+3 = 12 \end{aligned} \]">\[ \begin{aligned} &amp;\text{宮 } (2,2,3,2,3) &amp;&amp; \text{商 } (2,3,2,3,2) &amp;&amp; \text{角 } (3,2,3,2,2) \\ &amp;\text{徵 } (2,3,2,2,3) &amp;&amp; \text{羽 } (3,2,2,3,2) &amp;&amp; 2+2+3+2+3 = 12 \end{aligned} \]</div>
+      <h3 data-en="Five fifths in a row">五個連續的五度</h3>
+      <p data-en-html="Stack pure fifths (frequency × 3/2) from C: C, G, D, A, E. Bring them back into one octave and you have C D E G A — the pentatonic scale. Turn the clock to “Fifths” order and the five notes sit in five neighbouring cells. That is why the five notes have only two step sizes, and why the five pentatonic scales that share a note with a given one are its neighbours on the circle of fifths: moving gong one fifth changes exactly one note.">從 C 開始一直往上疊純五度（頻率 × 3/2）：C、G、D、A、E，再用八度把它們拉回同一個八度，就得到 C D E G A——五聲音階。把鐘面改成「五度順序」，五個音剛好是連續的五格。所以五聲音階只有兩種步伐；宮在五度圈上移一格，也剛好只換一個音。</p>
+      <h3 data-en="Sanfen sunyi: add or remove a third">三分損益</h3>
+      <p data-en-html="On a string of fixed tension, frequency is inversely proportional to length. Taking away one third of the length (<em>sun</em>, × 2/3) raises the note a pure fifth; adding one third (<em>yi</em>, × 4/3) lowers it a pure fourth — the same note one octave below that fifth. Alternate the two so the note stays in the same octave. Starting from 81 (the Shiji’s “nine nines”):">張力相同的弦，頻率和弦長成反比。弦長去掉三分之一（「損」，× 2/3），音就升高一個純五度；加上三分之一（「益」，× 4/3），音降低一個純四度——也就是那個五度再低八度。兩種交替使用，音就一直留在同一個八度裡。從 81（《史記・律書》的「九九八十一」）開始：</p>
+      <div class="formula" data-en-html="\[ \underset{\text{gong}}{81} \xrightarrow{\times\frac23} \underset{\text{zhi}}{54} \xrightarrow{\times\frac43} \underset{\text{shang}}{72} \xrightarrow{\times\frac23} \underset{\text{yu}}{48} \xrightarrow{\times\frac43} \underset{\text{jue}}{64} \]">\[ \underset{\text{宮}}{81} \xrightarrow{\times\frac23} \underset{\text{徵}}{54} \xrightarrow{\times\frac43} \underset{\text{商}}{72} \xrightarrow{\times\frac23} \underset{\text{羽}}{48} \xrightarrow{\times\frac43} \underset{\text{角}}{64} \]</div>
+      <p data-en-html="Frequency ratios to gong are \(81/L\): shang \(9/8\), jue \(81/64\), zhi \(3/2\), yu \(27/16\) — exactly the Pythagorean tuning of the West. The <em>Guanzi</em> (chapter “Diyuan”), the oldest surviving record of the method, starts with <em>yi</em> instead: \(81 \to 108 \to 72 \to 96 \to 64\), so zhi and yu lie below gong. Why 81? Each step divides by 3, and four steps need \(81 = 3^4\) for every length to stay a whole number.">各音和宮的頻率比是 \(81/L\)：商 \(9/8\)、角 \(81/64\)、徵 \(3/2\)、羽 \(27/16\)，和西方的五度相生律（畢達哥拉斯律）完全相同。現存最早的記載《管子・地員》則是先益：\(81 \to 108 \to 72 \to 96 \to 64\)，徵、羽比宮低。為什麼是 81？每一步都要除以 3，四步就需要 \(81 = 3^4\)，弦長才會一直是整數。</p>
+      <h3 data-en="Why stop at five?">為什麼停在五個？</h3>
+      <p data-en-html="Take a sixth step and you get \(64 \times \tfrac23 = 42\tfrac23\): the note B (<em>biangong</em>), only a half step \(256/243\) below the upper gong. Up to five notes the smallest gap is a whole step; the sixth note brings the first half step and a third step size. Keep going and seven notes again have just two step sizes (the seven-note <em>yayue</em> scale), and so do twelve; the thirteenth note should come back to gong but misses it by the <strong>Pythagorean comma</strong>:">再走第 6 步，得到 \(64 \times \tfrac23 = 42\tfrac23\)：B（變宮），離上面的宮只有半音 \(256/243\)。五個音以內，最小的間隔是全音；第 6 個音帶來第一個半音，步伐也變成三種。繼續下去，7 個音（雅樂音階）又只剩兩種步伐，12 個音也是；第 13 個音本來應該回到宮，卻差了一個<strong>畢氏音差</strong>：</p>
+      <div class="formula" data-en-html="\[ \frac{3^{12}}{2^{19}} = \frac{531441}{524288} \approx 1.01364 \quad (\approx 23.46 \text{ cents}) \]">\[ \frac{3^{12}}{2^{19}} = \frac{531441}{524288} \approx 1.01364 \quad (\approx 23.46 \text{ 音分}) \]</div>
+      <p data-en-html="Chinese tuning theorists wrestled with this for two thousand years. In the Han dynasty Jing Fang carried the rule on to 60 notes; in 1584 the Ming prince Zhu Zaiyu solved it by making every semitone exactly \(\sqrt[12]{2}\) — twelve-tone equal temperament, computed to many digits, at about the same time as Simon Stevin in Europe.">中國的律學家為此努力了兩千年：西漢的京房把三分損益一直推到 60 律；1584 年，明代的朱載堉讓每個半音都剛好是 \(\sqrt[12]{2}\)——十二平均律，算到很多位數，和歐洲的斯蒂文差不多同時。</p>
+      <h3 data-en="Maximally even">最大均勻</h3>
+      <p data-en-html="Five notes cannot divide twelve semitones evenly (\(12/5 = 2.4\)), but the pentatonic scale comes as close as possible: every step is 2 or 3 semitones, every “skip” 4 or 5, and so on. Among all five-note sets it is the only one with this property (it is <strong>maximally even</strong>). Its interval vector \((0, 3, 2, 1, 4, 0)\) shows no half steps and no tritone — the two most clashing intervals — which is one reason why it is so hard to play a “wrong” note on the black keys.">五個音沒辦法平均分配十二個半音（\(12/5 = 2.4\)），但五聲音階已經盡可能平均：每一步是 2 或 3 個半音，每隔一個音是 4 或 5 個半音……五個音的集合裡只有它有這個性質（叫做<strong>最大均勻</strong>）。它的音程向量 \((0, 3, 2, 1, 4, 0)\)：沒有半音、也沒有三全音——兩種最刺耳的音程——這也是在黑鍵上很難彈出「錯音」的原因之一。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Five modes">五種調式</h3>
+      <p data-en-html="Chinese music names a mode after its tonic: gong mode, shang mode, jue mode, zhi mode, yu mode. With movable do (gong = Do) they are Do-, Re-, Mi-, Sol- and La-centred. Gong and zhi modes sound bright (they have a major third above the tonic); yu mode sounds like a minor key — it is the “minor pentatonic” of blues and rock; shang mode has the same steps forwards and backwards. Line the notes up along the chain of fifths and add their positions measured from the tonic: gong +10, zhi +5, shang 0, yu −5, jue −10. Going down this list on one tonic changes exactly one note each time.">中國音樂用主音替調式命名：宮調式、商調式、角調式、徵調式、羽調式。用首調唱名（宮 = Do）來說，就是以 Do、Re、Mi、Sol、La 為家。宮調式、徵調式明亮（主音上方有大三度）；羽調式像小調，也就是藍調和搖滾樂常用的「小調五聲音階」；商調式的步伐正著走、倒著走都一樣。把音照五度鏈排好，各音相對主音的位置加起來：宮 +10、徵 +5、商 0、羽 −5、角 −10；同一個主音照這個順序換調式，每次剛好只換一個音。</p>
+      <p data-en-html="An ancient book, the <em>Record of Music</em> in the <em>Liji</em>, compares the five notes to a state: gong is the ruler, shang the ministers, jue the people, zhi affairs and yu things — gong is the reference from which all the others are measured.">古書《禮記・樂記》把五音比作一個國家：宮為君、商為臣、角為民、徵為事、羽為物——宮是基準，其他的音都從它算起。</p>
+      <h3 data-en="Around the world">世界各地的五聲音階</h3>
+      <p data-en-html="Scales of five notes without half steps turn up independently in many places: traditional music of China, Korea and Japan (the Japanese <em>yo</em> scale), Scottish and Irish folk tunes, much West African music, African-American spirituals and the blues, and many traditional songs of Taiwan. Because there are no half steps, every note fits with almost every other, which makes the scale friendly for singing in groups and for improvising.">沒有半音的五聲音階在許多地方各自出現：中國、韓國、日本的傳統音樂（例如日本的「陽音階」）、蘇格蘭與愛爾蘭的民謠、許多西非音樂、美國的黑人靈歌和藍調，還有許多臺灣的傳統歌謠。因為沒有半音，幾乎每個音和其他音放在一起都和諧，很適合大家一起唱、也適合即興。</p>
+      <h3 data-en="Seven-note scales built on the five">從五聲到七聲</h3>
+      <p data-en-html="Chinese seven-note scales add two notes to the five. Adding <em>bianzhi</em> (♯4) and <em>biangong</em> (7) gives the <em>yayue</em> (ancient) scale — exactly what the sixth and seventh steps of the rule produce; adding <em>qingjue</em> (4) and <em>biangong</em> gives the <em>qingyue</em> (new) scale, the Western major scale; adding <em>qingjue</em> and <em>run</em> (♭7) gives the <em>yanyue</em> scale. Build them on the keyboard and the readings will name them.">中國的七聲音階是在五聲上再加兩個音：加變徵（升 4）與變宮（7）是「雅樂音階」（古音階）——正好是三分損益第 6、7 步生出的音；加清角（4）與變宮是「清樂音階」（新音階），也就是西方的大調；加清角與閏（降 7）是「燕樂音階」。在鍵盤上拼拼看，讀數會認出它們。</p>
+      <h3 data-en="Movable do">首調唱名</h3>
+      <p data-en-html="This page sings gong as Do whatever the key (movable do), so gong, shang, jue, zhi, yu are always Do Re Mi Sol La; the note names change with the key, the syllables do not. Tunes on this page are invented by the computer from the scale and are not taken from any existing song.">這一頁不論是什麼調，都把宮唱成 Do（首調唱名），所以宮商角徵羽永遠是 Do Re Mi Sol La；調改變時，音名會變，唱名不變。這一頁的旋律都是電腦用音階裡的音隨機編的，不是任何現成的歌曲。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Zigzag lengths</strong>: in the bar chart the strings go long, short, long, short. Why must the rule alternate?"><strong>長短交錯</strong>：長條圖上的弦一長一短交錯。三分損益為什麼一定要一損一益？</li>
+        <li data-en-html="<strong>The sixth step</strong>: press “Next ▶” after five notes. Where on the clock does the new note land, and what is its length?"><strong>第 6 步</strong>：五個音之後再按「下一步 ▶」，新的音落在鐘面的哪裡？它的弦長是多少？</li>
+        <li data-en-html="<strong>Same notes, new home</strong>: keep the gong and change the mode. The pentagon stays, the step bar slides, and the mood changes."><strong>同樣的音，不同的家</strong>：宮不變、只換調式，鐘面的五邊形不動，步伐條在滑動，聽起來的情緒也變了。</li>
+        <li data-en-html="<strong>Fifths or equal</strong>: play one scale in both tunings. Which note moves the most? (Look at the last column of the note table.)"><strong>五度相生還是平均律</strong>：同一個音階用兩種音律各播一次，哪一個音差最多？（看音表最後一欄。）</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The \(n\)-th note of the rule is \(n-1\) pure fifths above gong, \(3^{n-1}\) times the gong frequency, divided by a power of 2 to stay in range: \([1, 2)\) of the gong frequency for “remove first”, \([\tfrac34, \tfrac32)\) for “add first”. The length is the gong length divided by that ratio, kept as an exact fraction; whether a step was <em>sun</em> or <em>yi</em> follows from comparing two lengths.">三分損益的第 \(n\) 個音比宮高 \(n-1\) 個純五度，頻率是宮的 \(3^{n-1}\) 倍，再除以 2 的次方拉回範圍：先損是宮頻率的 \([1, 2)\)，先益是 \([\tfrac34, \tfrac32)\)。弦長 = 宮的弦長 ÷ 這個比值，用分數精確計算；每一步是「損」還是「益」，由前後兩根弦的長短決定。</li>
+        <li data-en-html="Spelling: the page first finds gong (for a yu mode on A, gong is C) and gives the five notes the letters of degrees 1, 2, 3, 5 and 6 of gong’s major scale. In “fifths” tuning every ratio is a power of 3 times a power of 2; in equal temperament a note \(k\) semitones above the tonic has ratio \(2^{k/12}\). The tonic is placed between C4 and B4 at its equal-tempered frequency (A4 = 440 Hz).">拼音：先找出宮（A 羽調式的宮是 C），五個音依序用宮的大調第 1、2、3、5、6 級的字母。五度相生時，每個比值都是 3 的次方乘 2 的次方；十二平均律時，比主音高 \(k\) 個半音的比值是 \(2^{k/12}\)。主音放在 C4 到 B4 之間，用十二平均律的頻率（A4 = 440 Hz）。</li>
+        <li data-en-html="Random melodies: four bars of 4/4 built only from the notes of the current scale — mostly steps to a neighbouring note, sometimes a skip, ending on the tonic. The 3D view uses the same numbers: string heights are the lengths, and the spiral angle is the exact cent value of each note (one turn = 1200 cents). It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">隨機旋律：4/4 拍、四小節，只用目前音階裡的音，大多走到相鄰的音，偶爾跳一下，最後回到主音。3D 用同樣的數字：弦的高度就是弦長，螺旋上的角度就是每個音的音分（一圈 = 1200 音分）。3D 使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): an approximate plucked-string sound made of six harmonics that die away, the higher ones faster. Playback stops when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：用 6 個逐漸消失的泛音（越高的消失得越快）調出近似的撥弦音色。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Appreciation · Local and traditional music (pentatonic scales and modes); Senior-high Music · Performance · Musical elements (scales). Related mathematics: ratio and proportion, exponents.">課綱對應：高中音樂・鑑賞・在地與傳統音樂（五聲音階與調式）；高中音樂・表現・音樂元素（音階）。相關數學：比與比例、指數。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="Guanzi, chapter “Diyuan” — the oldest record of the add-or-remove-a-third rule (public domain).">《管子・地員》：三分損益法現存最早的記載（公有領域）。</li>
+        <li data-en="Sima Qian, Shiji, “Treatise on the Pitch Pipes” — the lengths 81, 54, 72, 48, 64 (public domain).">司馬遷《史記・律書》：宮 81、徵 54、商 72、羽 48、角 64 的律數（公有領域）。</li>
+        <li data-en="Liji, “Record of Music” — gong as ruler, shang as ministers… (public domain).">《禮記・樂記》：宮為君、商為臣……（公有領域）。</li>
+        <li data-en="David J. Benson, Music: A Mathematical Offering (Cambridge University Press, 2006) — Pythagorean tuning and the pentatonic scale.">David J. Benson，《Music: A Mathematical Offering》，Cambridge University Press，2006（五度相生律與五聲音階）。</li>
+        <li data-en="John Clough and Jack Douthett, “Maximally Even Sets”, Journal of Music Theory 35, 93–173 (1991).">John Clough、Jack Douthett，〈Maximally Even Sets〉，Journal of Music Theory 35，93–173（1991）。</li>
+        <li data-en="Yang Yinliu, A Draft History of Ancient Chinese Music (People’s Music Publishing House, 1981) — the yayue, qingyue and yanyue scales.">楊蔭瀏，《中國古代音樂史稿》，人民音樂出版社，1981（雅樂、清樂、燕樂音階）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/pentatonic-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/pentatonic.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="pentatonic"></script>
+  <script src="js/missions/pentatonic.js"></script>
+  <script src="js/stats.js" data-module="pentatonic"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

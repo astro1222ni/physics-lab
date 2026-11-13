@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Intervals and Frequency Ratios | Astro Ni Science Lab">音程與頻率比｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 音程頁面專用的顏色代號（淺色＋兩組深色；由 js/intervals.js 與 js/intervals-3d.js 讀取）
+       lo 下方音、hi 上方音、main 音程長條、inv 轉位、gap 音差、b1–b4 疊音程的積木、key／keyb 鍵盤 */
+    :root { --iv-lo: #0f766e; --iv-hi: #c2410c; --iv-main: #2563eb; --iv-inv: #7c3aed; --iv-gap: #dc2626; --iv-b1: #2563eb; --iv-b2: #059669; --iv-b3: #d97706; --iv-b4: #db2777; --iv-key: #fbfaf7; --iv-keyb: #22252b; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --iv-lo: #5eead4; --iv-hi: #fb923c; --iv-main: #7aa7ff; --iv-inv: #b9a0ff; --iv-gap: #f87171; --iv-b1: #7aa7ff; --iv-b2: #34d399; --iv-b3: #fbbf24; --iv-b4: #f472b6; --iv-key: #d9dce2; --iv-keyb: #0d0f13; }
+    }
+    :root[data-theme="dark"] { --iv-lo: #5eead4; --iv-hi: #fb923c; --iv-main: #7aa7ff; --iv-inv: #b9a0ff; --iv-gap: #f87171; --iv-b1: #7aa7ff; --iv-b2: #34d399; --iv-b3: #fbbf24; --iv-b4: #f472b6; --iv-key: #d9dce2; --iv-keyb: #0d0f13; }
+
+    #cv { aspect-ratio: auto; height: 440px; touch-action: manipulation; }
+    .ivl [hidden] { display: none !important; }
+    .ivl button { min-height: 44px; }
+    .ivl .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 2px 0; }
+    .ivl .playbar button { flex: 1 1 auto; }
+    .ivl .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ivl button:disabled { opacity: .5; cursor: default; }
+    .ivl .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ivl .panel { grid-template-columns: minmax(0, 1fr); }
+    .ivl .panel > .card { min-width: 0; }
+    .ivl .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .playopts { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(170px * var(--fs, 1)), 1fr)); gap: 8px 14px; align-items: end; margin: 10px 2px 0; }
+    .playopts .slider { margin: 0; }
+    .field { display: flex; align-items: center; gap: 10px; margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    .card .field + .field, .card .field + .seg-row, .card .seg-row + .field, .card .seg-row + .seg-row { margin-top: 10px; }
+    .field label, .seg-row > span { white-space: nowrap; }
+    .field select { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .two-sel { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; flex: 1 1 auto; min-width: 0; }
+    .seg-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: calc(14px * var(--fs, 1)); }
+
+    /* 2D／3D 檢視切換、分段按鈕 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.qual { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
+    .seg.qual button { padding: 6px 2px; }
+    .seg.qual button:disabled { opacity: .35; text-decoration: line-through; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 5; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.g { color: var(--iv-gap); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 鍵盤（HTML 按鈕）：寬螢幕 C4–C6，窄螢幕一次一個八度 */
+    .kbwrap { display: flex; align-items: stretch; gap: 6px; margin: 12px 0 0; }
+    .kbwrap .kbnav { flex: none; width: 44px; padding: 0; font-size: calc(18px * var(--fs, 1)); }
+    .piano { position: relative; flex: 1 1 auto; height: 124px; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .piano .key { position: absolute; top: 0; padding: 0; margin: 0; min-height: 0; border-radius: 0 0 8px 8px; cursor: pointer;
+      display: flex; flex-direction: column; justify-content: flex-end; align-items: center; -webkit-tap-highlight-color: transparent; overflow: hidden; }
+    .piano .key.w { height: 100%; background: linear-gradient(180deg, color-mix(in srgb, var(--iv-key) 92%, var(--text)) 0%, var(--iv-key) 14%, var(--iv-key) 86%, color-mix(in srgb, var(--iv-key) 88%, var(--text)) 100%);
+      border: 1px solid color-mix(in srgb, var(--border) 80%, var(--text)); color: #3b3f46; z-index: 1;
+      box-shadow: inset 0 -5px 0 color-mix(in srgb, var(--iv-key) 80%, #000), 0 2px 4px rgba(0,0,0,.12); }
+    .piano .key.b { height: 60%; z-index: 2; background: linear-gradient(180deg, color-mix(in srgb, var(--iv-keyb) 80%, #fff) 0%, var(--iv-keyb) 30%, var(--iv-keyb) 100%);
+      border: 1px solid #000; color: #e5e7eb; box-shadow: inset 0 -4px 0 color-mix(in srgb, var(--iv-keyb) 70%, #fff), 0 3px 5px rgba(0,0,0,.3); }
+    .piano .key .kn { font-size: calc(11px * var(--fs, 1)); font-weight: 600; line-height: 1.1; margin: 0 0 7px; pointer-events: none; white-space: nowrap; }
+    .piano .key.b .kn { font-size: calc(9.5px * var(--fs, 1)); margin-bottom: 5px; }
+    .piano .key .kd { font-size: calc(10.5px * var(--fs, 1)); font-weight: 700; line-height: 1; margin: 0 0 4px; padding: 2px 4px; border-radius: 999px; pointer-events: none; visibility: hidden; white-space: nowrap; color: #fff; }
+    .piano .key.lo .kd, .piano .key.hi .kd { visibility: visible; }
+    .piano .key.lo .kd { background: var(--iv-lo); }
+    .piano .key.hi .kd { background: var(--iv-hi); }
+    :root[data-theme="dark"] .piano .key .kd { color: #0d0f13; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .piano .key .kd { color: #0d0f13; } }
+    .piano .key.w.lo { background: linear-gradient(180deg, color-mix(in srgb, var(--iv-lo) 30%, var(--iv-key)) 0%, color-mix(in srgb, var(--iv-lo) 14%, var(--iv-key)) 100%); color: #1f2328; }
+    .piano .key.w.hi { background: linear-gradient(180deg, color-mix(in srgb, var(--iv-hi) 30%, var(--iv-key)) 0%, color-mix(in srgb, var(--iv-hi) 14%, var(--iv-key)) 100%); color: #1f2328; }
+    .piano .key.b.lo { background: linear-gradient(180deg, color-mix(in srgb, var(--iv-lo) 70%, #fff) 0%, var(--iv-lo) 60%); color: #fff; }
+    .piano .key.b.hi { background: linear-gradient(180deg, color-mix(in srgb, var(--iv-hi) 70%, #fff) 0%, var(--iv-hi) 60%); color: #fff; }
+    .piano .key.mid { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 45%, transparent); }
+    .piano .key.on { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 14px color-mix(in srgb, var(--accent) 60%, transparent); }
+    .piano .key:focus-visible { outline: 3px solid var(--accent); outline-offset: 1px; z-index: 3; }
+    .piano-hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 4px 0; }
+    @media (prefers-reduced-motion: reduce) { .piano .key.on { box-shadow: 0 0 0 3px var(--accent); } }
+
+    .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; }
+    .btnrow.three { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 420px) { .btnrow.three { grid-template-columns: 1fr 1fr; } .btnrow.three > :last-child { grid-column: 1 / -1; } }
+    dl.readout { grid-template-columns: fit-content(55%) minmax(0, 1fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .namebox { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); }
+    .namebox .nm { font-size: calc(18px * var(--fs, 1)); font-weight: 700; }
+    .namebox .sub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin-top: 2px; }
+    .chainbox { margin: 8px 0 0; font-size: calc(14px * var(--fs, 1)); line-height: 1.6; }
+    .chainbox:empty { display: none; }
+    .chainbox .gap { color: var(--iv-gap); font-weight: 700; }
+    .chainbox .eq { font-weight: 700; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .it { width: 100%; border-collapse: collapse; margin: 6px 0 0; font-size: calc(13.5px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .it th, .it td { padding: 0; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .it th { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 500; padding: 4px 4px; }
+    .it th:first-child, .it td:first-child { text-align: left; }
+    .it td button { all: unset; box-sizing: border-box; display: block; width: 100%; padding: 6px 4px; min-height: 44px; cursor: pointer; }
+    .it td button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .it tr.on td { background: var(--accent-soft); font-weight: 700; }
+    .it tr:hover td { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
+    .it td.odd { color: var(--iv-gap); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tuning&quot;>Music · Tuning and Scales</a> / Intervals"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tuning">音樂・音律與音階</a> ／ 音程</nav>
+      <h1 data-en="Intervals and Frequency Ratios">音程與頻率比</h1>
+      <p data-en="Two notes make an interval. Musicians give it a number by counting letter names (C to G is a fifth: C D E F G) and a quality — perfect, major, minor, augmented or diminished — by counting semitones. Physics gives it a frequency ratio, and the ear hears the ratio, not the difference in hertz. Pick two notes, spell them two ways, turn the interval upside down, and stack intervals like building blocks: ratios multiply while cents add up — and sometimes the blocks almost, but not quite, reach the top.">兩個音構成一個音程。音樂家數字母給它一個「度數」（C 到 G 是五度：C D E F G），再數半音決定「性質」：完全、大、小、增、減。物理學給它一個頻率比，耳朵聽的是比值，不是相差幾赫茲。在這裡選兩個音、換一種寫法、把音程上下翻轉（轉位），再像積木一樣把音程疊起來：比值相乘、音分相加——而有時候，積木疊起來就是差那麼一點點。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “Just intonation”, set a major third, press “Invert” and watch 5/4 turn into 8/5 — their product is exactly 2.">試試看：選「純律」、做出大三度，按「轉位」：看 5/4 變成 8/5，兩個相乘剛好是 2。</p>
+    <div class="lab ivl" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D staff and ruler">2D 譜與音分尺</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D interval blocks">3D 音程積木</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="五線譜上的兩個音、音分尺上的音程長條與疊音程"></canvas>
+        <div id="view3"></div>
+
+        <div class="kbwrap">
+          <button type="button" class="kbnav" id="kbDown" hidden aria-label="鍵盤往低八度" data-en-aria-label="Keyboard one octave lower">◀</button>
+          <div class="piano" id="piano" role="group" aria-label="鍵盤：點一個鍵設定上方音或下方音" data-en-aria-label="Keyboard: tap a key to set the upper or lower note"></div>
+          <button type="button" class="kbnav" id="kbUp" hidden aria-label="鍵盤往高八度" data-en-aria-label="Keyboard one octave higher">▶</button>
+        </div>
+        <div class="seg-row" style="margin:8px 2px 0">
+          <span data-en="Keyboard sets the">點鍵盤設定</span>
+          <div class="seg" role="group" id="kbSeg" aria-label="點鍵盤設定" data-en-aria-label="Keyboard sets the">
+            <button type="button" data-kb="upper" aria-pressed="true" data-en="Upper note">上方音</button>
+            <button type="button" data-kb="lower" aria-pressed="false" data-en="Lower note">下方音</button>
+          </div>
+        </div>
+        <p class="piano-hint" data-en="A black key has two names: the page spells the upper note so the interval gets the plainest name (major, minor or perfect when possible). Use “Respell (enharmonic)” to try the other name.">黑鍵有兩種寫法：點鍵盤時，網頁會選讓音程名字最單純的寫法（盡量是大、小、完全）。想看另一種寫法，按「等音（換個寫法）」。</p>
+
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="playopts">
+          <div class="field"><label for="pmode" data-en="Playing">播放方式</label>
+            <select id="pmode">
+              <option value="both" selected data-en="One after the other, then together">先後再同時</option>
+              <option value="melodic" data-en="One after the other only">只有先後</option>
+              <option value="harmonic" data-en="Together only">只有同時</option>
+            </select></div>
+          <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
+            <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+            <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
+          </div>
+          <div class="slider"><label for="dur" data-en="Length of each note (s)">每個音的長度（秒）</label><output id="durO"></output>
+            <input id="dur" type="range" min="0.3" max="1.5" step="0.1" value="0.7" data-decimals="1"></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--iv-lo)&quot;></i>Lower note"><i style="background:var(--iv-lo)"></i>下方音</span>
+          <span data-en-html="<i style=&quot;background:var(--iv-hi)&quot;></i>Upper note"><i style="background:var(--iv-hi)"></i>上方音</span>
+          <span data-en-html="<i style=&quot;background:var(--iv-main)&quot;></i>Interval (length ∝ cents)"><i style="background:var(--iv-main)"></i>音程（長度 ∝ 音分）</span>
+          <span data-en-html="<i style=&quot;background:var(--iv-inv)&quot;></i>Inversion"><i style="background:var(--iv-inv)"></i>轉位</span>
+          <span data-en-html="<i style=&quot;background:var(--iv-gap)&quot;></i>Comma (small gap)"><i style="background:var(--iv-gap)"></i>音差（差一點點）</span>
+        </div>
+        <p class="piano-hint l3" data-en="3D: every just ratio is 2^a · 3^b · 5^c. The floor is a grid: one step right multiplies by 3/2 (a fifth), one step back by 5/4 (a major third); height is cents. Each interval is a block; stacked blocks walk across the grid while they climb. In equal temperament the grid collapses and the blocks form one straight tower. Drag to rotate, scroll or pinch to zoom.">3D：每個純律比值都是 2<sup>a</sup> · 3<sup>b</sup> · 5<sup>c</sup>。地板是格子：往右一格乘 3/2（五度）、往後一格乘 5/4（大三度），高度是音分。每個音程是一塊積木，疊起來的積木一邊往上爬、一邊在格子上走。十二平均律把格子壓成一點，積木變成一根直直的塔。拖曳旋轉，滾輪或雙指縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Interval">音程</h2>
+          <div class="field">
+            <label for="loLetter" data-en="Lower note">下方音</label>
+            <div class="two-sel">
+              <select id="loLetter" aria-label="下方音的字母" data-en-aria-label="Letter of the lower note">
+                <option value="0" selected>C</option><option value="1">D</option><option value="2">E</option><option value="3">F</option>
+                <option value="4">G</option><option value="5">A</option><option value="6">B</option>
+              </select>
+              <select id="loAcc" aria-label="下方音的升降記號" data-en-aria-label="Accidental of the lower note">
+                <option value="-2" data-en="♭♭ double flat">♭♭ 重降</option>
+                <option value="-1" data-en="♭ flat">♭ 降</option>
+                <option value="0" selected data-en="♮ natural">♮ 本位</option>
+                <option value="1" data-en="♯ sharp">♯ 升</option>
+                <option value="2" data-en="♯♯ double sharp">♯♯ 重升</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="num" data-en="Number">度數</label>
+            <select id="num">
+              <option value="1" data-en="Unison (1st)">一度（同度）</option>
+              <option value="2" data-en="2nd">二度</option>
+              <option value="3" selected data-en="3rd">三度</option>
+              <option value="4" data-en="4th">四度</option>
+              <option value="5" data-en="5th">五度</option>
+              <option value="6" data-en="6th">六度</option>
+              <option value="7" data-en="7th">七度</option>
+              <option value="8" data-en="Octave (8th)">八度</option>
+              <option value="9" data-en="9th">九度</option>
+              <option value="10" data-en="10th">十度</option>
+              <option value="11" data-en="11th">十一度</option>
+              <option value="12" data-en="12th">十二度</option>
+              <option value="13" data-en="13th">十三度</option>
+              <option value="14" data-en="14th">十四度</option>
+              <option value="15" data-en="15th (two octaves)">十五度</option>
+            </select>
+          </div>
+          <div class="seg-row">
+            <span data-en="Quality">性質</span>
+            <div class="seg qual" role="group" id="qualSeg" aria-label="性質" data-en-aria-label="Quality">
+              <button type="button" data-q="d" aria-pressed="false" data-en="dim">減</button>
+              <button type="button" data-q="m" aria-pressed="false" data-en="minor">小</button>
+              <button type="button" data-q="P" aria-pressed="false" data-en="perfect">完全</button>
+              <button type="button" data-q="M" aria-pressed="true" data-en="major">大</button>
+              <button type="button" data-q="A" aria-pressed="false" data-en="aug">增</button>
+            </div>
+          </div>
+          <div class="btnrow">
+            <button type="button" id="respell" data-en="Respell (enharmonic)">等音（換個寫法）</button>
+            <button type="button" id="invert" data-en="Invert">轉位</button>
+          </div>
+          <p class="hint" data-en="Inverting moves the lower note up an octave: a third becomes a sixth (3 + 6 = 9), major becomes minor, augmented becomes diminished. A compound interval is first reduced to its simple part.">轉位就是把下方音升高八度：三度變六度（3 + 6 = 9），大變小、增變減，完全還是完全。複音程先化成八度以內再轉位。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <div class="namebox" id="namebox" aria-live="off"></div>
+          <dl class="readout" id="readout"></dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Stacking intervals">疊音程</h2>
+          <div class="btnrow">
+            <button type="button" id="push" data-en="+ Stack it on">＋ 疊上去</button>
+            <button type="button" id="pop" disabled data-en="↶ Remove the last block">↶ 拿掉最後一塊</button>
+          </div>
+          <div class="btnrow">
+            <button type="button" id="playStack" disabled data-en="▶ Hear the stack">▶ 聽疊出來的音</button>
+            <button type="button" id="clear" data-en="Clear all" title="清掉疊好的音程；下方音、音程與播放設定不變" data-en-title="Remove the stacked intervals; the lower note, the interval and the playing options are kept">全部清除</button>
+          </div>
+          <div class="chainbox" id="chainbox" aria-live="polite"></div>
+          <p class="hint" data-en="“+ Stack it on” adds the interval chosen above to the top of the stack (up to four blocks, three octaves). Frequencies multiply, cents add — and the page compares the result with the table ratio. If the interval chosen above lands on the same key as the stack, the two are compared as well.">按「＋ 疊上去」就把上面選的音程接到疊好的音上面（最多四塊、三個八度）。頻率相乘、音分相加；網頁會把結果和表上的比值比一比。上面選的音程如果和疊出來的音落在同一個鍵上，也會並排比一比。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Interval table">音程表</h2>
+          <div class="tablewrap"><table class="it" id="ivTable"></table></div>
+          <p class="hint" data-en="Tap a row to choose that interval above the current lower note. The red product shows the one inversion pair in this table that does not multiply to exactly 2.">點一列就把那個音程放到目前的下方音上。紅色的那一格，是這張表裡唯一轉位相乘不剛好等於 2 的一對。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics and science behind it">背後的數學與科學</h2>
+      <h3 data-en="Number: count letters; quality: count semitones">度數數字母，性質數半音</h3>
+      <p data-en-html="The <strong>number</strong> of an interval counts letter names, both ends included: C–E is a third (C D E), C–G a fifth. Sharps and flats do not change the number. The <strong>quality</strong> then compares the actual number of semitones with a standard: unisons, fourths, fifths and octaves are <em>perfect</em> at 0, 5, 7 and 12 semitones; seconds, thirds, sixths and sevenths are <em>major</em> at 2, 4, 9 and 11. One semitone more is <em>augmented</em>; one less is <em>minor</em> (or <em>diminished</em> for the perfect ones), and two less than major is diminished.">音程的<strong>度數</strong>是數字母（兩端都算）：C–E 是三度（C D E），C–G 是五度。升降記號不改變度數。<strong>性質</strong>則拿實際的半音數和標準比：一度、四度、五度、八度在 0、5、7、12 個半音時叫<em>完全</em>；二度、三度、六度、七度在 2、4、9、11 個半音時叫<em>大</em>。多一個半音叫<em>增</em>；少一個半音叫<em>小</em>（完全音程少一個半音叫<em>減</em>），比大音程少兩個半音也叫減。</p>
+      <div class="formula" data-en-html="\[ \text{number} = (\text{letter steps}) + 1, \qquad \text{quality} = f\bigl(\text{semitones} - \text{standard}\bigr) \]">\[ \text{度數} = (\text{字母相差的格數}) + 1, \qquad \text{性質} = f\bigl(\text{半音數} - \text{標準半音數}\bigr) \]</div>
+      <p data-en-html="That is why C–E♭ and C–D♯ are different intervals although they use the same key: C–E♭ spans three letters (a minor third), C–D♯ only two (an augmented second). On the piano in equal temperament they sound identical; in a key they do different jobs, and in just intonation they are even different sizes.">所以 C–E♭ 和 C–D♯ 雖然彈的是同一個鍵，卻是不同的音程：C–E♭ 跨三個字母（小三度），C–D♯ 只跨兩個（增二度）。在十二平均律的鋼琴上兩者聽起來一樣；放進樂曲裡，它們扮演不同的角色；在純律裡，連大小都不一樣。</p>
+
+      <h3 data-en="Ratios, and cents that turn multiplication into addition">比值，以及把乘法變成加法的音分</h3>
+      <p data-en-html="The ear hears an interval as a frequency <strong>ratio</strong>: an octave is always \(2:1\), whether it is 220 → 440 Hz or 1000 → 2000 Hz. Putting one interval on top of another <em>multiplies</em> the ratios. The <strong>cent</strong> is a logarithmic unit that turns this multiplication into addition; an octave is 1200 cents and an equal-tempered semitone is 100 cents:">耳朵把音程聽成頻率的<strong>比值</strong>：八度永遠是 \(2:1\)，不管是 220 → 440 Hz 還是 1000 → 2000 Hz。把一個音程接在另一個音程上面，比值要<em>相乘</em>。<strong>音分</strong>是一種對數單位，把乘法變成加法；八度是 1200 音分，平均律的半音是 100 音分：</p>
+      <div class="formula">\[ c = 1200 \log_2 \frac{f_2}{f_1}, \qquad c\!\left(\tfrac{p_1}{q_1} \cdot \tfrac{p_2}{q_2}\right) = c\!\left(\tfrac{p_1}{q_1}\right) + c\!\left(\tfrac{p_2}{q_2}\right) \]</div>
+      <p data-en-html="For example a major third and a minor third make a perfect fifth: \(\tfrac54 \times \tfrac65 = \tfrac32\), and \(386.31 + 315.64 = 701.96\) cents. On the cents ruler the blocks simply line up end to end.">例如大三度加小三度等於完全五度：\(\tfrac54 \times \tfrac65 = \tfrac32\)，而 \(386.31 + 315.64 = 701.96\) 音分。在音分尺上，就是把兩根長條頭尾接起來。</p>
+
+      <h3 data-en="Inversion: the two halves of an octave">轉位：一個八度的兩半</h3>
+      <p data-en-html="Moving the lower note up an octave <strong>inverts</strong> the interval. The interval and its inversion fill exactly one octave, so their numbers add up to 9 (one letter is counted twice), their semitones to 12, and their ratios multiply to 2:">把下方音升高八度，就是<strong>轉位</strong>。原來的音程和它的轉位合起來剛好一個八度，所以度數相加是 9（中間那個字母數了兩次）、半音相加是 12、比值相乘是 2：</p>
+      <div class="formula">\[ n + n' = 9, \qquad s + s' = 12, \qquad r \cdot r' = 2 \;\Rightarrow\; r' = \frac{2}{r} \]</div>
+      <p data-en-html="Major turns into minor, augmented into diminished, perfect stays perfect. In this page’s just-intonation table every pair multiplies to exactly 2 except one: the major second \(\tfrac98\) and the minor seventh \(\tfrac95\). Just intonation has two whole tones, \(\tfrac98\) and \(\tfrac{10}9\), and the table’s minor seventh is built on the smaller one — so the product overshoots 2 by the <strong>syntonic comma</strong> \(\tfrac{81}{80}\) (21.51 cents). (Some tables use \(\tfrac{16}{9}\) for the minor seventh instead.)">大變小、增變減、完全還是完全。這一頁的純律表裡，每一對轉位相乘都剛好是 2，只有一對例外：大二度 \(\tfrac98\) 與小七度 \(\tfrac95\)。純律有兩種全音 \(\tfrac98\) 與 \(\tfrac{10}9\)，表上的小七度是用小的那一種組成的，所以相乘比 2 多了一個<strong>同音差</strong> \(\tfrac{81}{80}\)（21.51 音分）。（也有樂理書把小七度寫成 \(\tfrac{16}{9}\)。）</p>
+
+      <h3 data-en="Just ratios and commas">純律的比值與音差</h3>
+      <p data-en-html="Just intonation (5-limit) builds every interval from the primes 2, 3 and 5: \(\tfrac32\), \(\tfrac54\), \(\tfrac65\), \(\tfrac{45}{32}\)… Stacking such ratios rarely lands exactly on another table ratio, and the tiny leftovers have names: two whole tones \(\tfrac{81}{64}\) exceed the major third \(\tfrac54\) by \(\tfrac{81}{80}\); two major thirds \(\tfrac{25}{16}\) fall short of the minor sixth \(\tfrac85\) by the <strong>lesser diesis</strong> \(\tfrac{128}{125}\) (41.06 cents); the augmented fourth \(\tfrac{45}{32}\) and the diminished fifth \(\tfrac{64}{45}\) differ by the <strong>diaschisma</strong> \(\tfrac{2048}{2025}\) (19.55 cents). Equal temperament makes all of these zero, because every interval there is a whole number of identical semitones \(2^{1/12}\).">純律（5 限純律）只用質數 2、3、5 組成每一個音程：\(\tfrac32\)、\(\tfrac54\)、\(\tfrac65\)、\(\tfrac{45}{32}\)……把這些比值疊起來，很少剛好落在表上另一個比值上，剩下的那一點點都有名字：兩個全音 \(\tfrac{81}{64}\) 比大三度 \(\tfrac54\) 多 \(\tfrac{81}{80}\)；兩個大三度 \(\tfrac{25}{16}\) 比小六度 \(\tfrac85\) 少一個<strong>小迪耶西斯</strong> \(\tfrac{128}{125}\)（41.06 音分）；增四度 \(\tfrac{45}{32}\) 和減五度 \(\tfrac{64}{45}\) 差一個<strong>迪亞斯基斯瑪</strong> \(\tfrac{2048}{2025}\)（19.55 音分）。十二平均律把這些差全部變成 0，因為每個音程都是整數個一樣大的半音 \(2^{1/12}\)。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Consonant and dissonant">協和與不協和</h3>
+      <p data-en-html="The intervals with the simplest ratios — unison \(1:1\), octave \(2:1\), fifth \(3:2\), fourth \(4:3\) — are the <strong>perfect consonances</strong>; thirds and sixths (\(5:4\), \(6:5\), \(5:3\), \(8:5\)) are the sweeter <strong>imperfect consonances</strong>; seconds, sevenths and the tritone are dissonant and want to move on. Western harmony from about 1400 onward is largely the art of using these three families.">比值最簡單的音程——同度 \(1:1\)、八度 \(2:1\)、五度 \(3:2\)、四度 \(4:3\)——是<strong>完全協和音程</strong>；三度和六度（\(5:4\)、\(6:5\)、\(5:3\)、\(8:5\)）是比較甜的<strong>不完全協和音程</strong>；二度、七度與三全音不協和，聽起來想往下一個音走。大約 1400 年以後的西方和聲，很大一部分就是在運用這三類音程。</p>
+      <h3 data-en="Why spelling matters">為什麼拼寫很重要</h3>
+      <p data-en-html="A chord is built in thirds: C–E–G, A–C–E. If you wrote C–E–G as C–F♭–G, the middle note would look like a fourth and the chord would be unreadable. Spelling an interval correctly tells a musician how the note will move: a D♯ wants to rise to E, an E♭ tends to fall to D. Augmented and diminished intervals appear exactly where notes lean towards their neighbours — the tritone F–B (augmented fourth) of a dominant seventh resolves outward to E–C, while B–F (diminished fifth) resolves inward to C–E.">和弦是用三度疊起來的：C–E–G、A–C–E。如果把 C–E–G 寫成 C–F♭–G，中間那個音看起來像四度，整個和弦就讀不懂了。正確的拼寫告訴演奏者這個音要往哪裡走：D♯ 想往上到 E，E♭ 傾向往下到 D。增、減音程正出現在音往鄰居傾斜的地方——屬七和弦裡的三全音 F–B（增四度）往外解決到 E–C，而 B–F（減五度）往內解決到 C–E。</p>
+      <h3 data-en="Singers and string players vs. the piano">歌手、弦樂手與鋼琴</h3>
+      <p data-en-html="A piano is tuned once, in equal temperament, so C–D♯ and C–E♭ must be the same key. Singers, string and wind players can adjust each note, and in slow chords they often lean towards just ratios: a major third a little lower than the piano’s (about 14 cents), a minor third a little higher (about 16 cents). That is why a barbershop quartet or a string quartet can sound “sweeter” than a piano.">鋼琴只調一次音，而且是十二平均律，所以 C–D♯ 和 C–E♭ 只能是同一個鍵。歌手、弦樂與管樂演奏者可以微調每一個音，在慢的和弦裡常常往純律靠：大三度比鋼琴低一點（約 14 音分）、小三度高一點（約 16 音分）。這就是理髮店四重唱或弦樂四重奏有時聽起來比鋼琴「更甜」的原因。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same key, two names</strong>: press “Respell (enharmonic)”. The number and quality change, the semitones do not. In just intonation, does the size change too?"><strong>同一個鍵，兩個名字</strong>：按「等音（換個寫法）」。度數和性質變了，半音數沒變。在純律裡，大小有沒有跟著變？</li>
+        <li data-en-html="<strong>Nine and twelve</strong>: invert several intervals. Add up the numbers and the semitones each time."><strong>九和十二</strong>：轉位幾個不同的音程，每次把度數和半音數各自加起來。</li>
+        <li data-en-html="<strong>Blocks that almost fit</strong>: stack two major seconds and compare with a major third, or three major thirds and compare with an octave — first in just intonation, then in equal temperament."><strong>差一點點的積木</strong>：疊兩個大二度和大三度比，或疊三個大三度和八度比——先用純律，再用十二平均律。</li>
+        <li data-en-html="<strong>Bigger number, smaller interval?</strong> Can an interval with a larger number have fewer semitones than one with a smaller number?"><strong>度數大，音程反而小？</strong>有沒有可能，度數比較大的音程，半音數反而比較少？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Each note is stored as a letter, an accidental (double flat to double sharp) and an octave. The number of an interval is the difference in letter positions plus 1; the quality is the difference between its semitones and the standard (perfect or major) size. Unit tests check every lower note with every number and quality: spelling the upper note and measuring back gives the same interval.">每個音存成字母、升降記號（重降到重升）與八度。音程的度數 = 字母位置相差 + 1；性質 = 半音數和標準（完全或大）半音數的差。單元測試對每一個下方音、每一種度數與性質都檢查：拼出上方音再量回來，得到同一個音程。</li>
+        <li data-en-html="Equal temperament: ratio \(2^{s/12}\) for \(s\) semitones, frequencies from A4 = 440 Hz. Just intonation: the lower note keeps its equal-tempered frequency and the upper note is the lower note times the 5-limit ratio in the interval table (compound intervals are multiplied by 2 for each octave). The major, minor and perfect ratios are the same as on the other music pages; the augmented and diminished ratios are common 5-limit values chosen so that inversions multiply to 2.">十二平均律：\(s\) 個半音的比值是 \(2^{s/12}\)，頻率以 A4 = 440 Hz 為準。純律：下方音保持平均律的頻率，上方音 = 下方音 × 音程表上的 5 限純律比值（複音程每多一個八度再乘 2）。大、小、完全音程的比值和其他音樂實驗頁相同；增、減音程用常見的 5 限比值，並讓轉位相乘等於 2。</li>
+        <li data-en-html="Stacked intervals: the ratios are multiplied as exact fractions and reduced, so a comma such as \(\tfrac{81}{80}\) is found exactly, not just approximately.">疊音程：比值用分數精確相乘再約分，所以 \(\tfrac{81}{80}\) 這種音差是精確算出來的，不是近似值。</li>
+        <li data-en-html="The 3D blocks: every just ratio is factorised as \(2^a 3^b 5^c\); a block stands on the grid point \((b, c)\) and its height is its size in cents. In equal temperament all blocks stand on the same point. The 3D view uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 積木：每個純律比值都分解成 \(2^a 3^b 5^c\)，積木立在格子點 \((b, c)\) 上，高度是它的音分。十二平均律時所有積木都立在同一點上。3D 檢視使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): five harmonics with strengths \(1/k\), an approximate soft organ-like tone, with gentle fade-in and fade-out. Very high pairs are played an octave (or two) lower so the top note stays below 1760 Hz; the ratio is unchanged. Playback stops when you press “■ Stop”, press Esc or switch tabs.">聲音在瀏覽器裡即時合成（沒有錄音檔）：5 個泛音、強度 \(1/k\)，是近似的柔和風琴音色，有淡入淡出。太高的音會整組降低一兩個八度播放，讓最高音不超過 1760 Hz；比值不變。按「■ 停止」、按 Esc 或切換分頁都會停止。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · Music theory (intervals); Senior-high Mathematics · Exponents and logarithms.">課綱對應：高中音樂・表現・樂理（音程）；高中數學・指數與對數。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="David J. Benson, Music: A Mathematical Offering (Cambridge University Press, 2006) — ratios, cents, just intonation and commas (chapters 5–6).">David J. Benson，《Music: A Mathematical Offering》，Cambridge University Press，2006（比值、音分、純律與音差，第 5–6 章）。</li>
+        <li data-en="Neville H. Fletcher and Thomas D. Rossing, The Physics of Musical Instruments, 2nd ed. (Springer, 1998) — harmonics and intervals.">Neville H. Fletcher、Thomas D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998（泛音與音程）。</li>
+        <li data-en="William A. Sethares, Tuning, Timbre, Spectrum, Scale, 2nd ed. (Springer, 2005) — just intonation and the 5-limit lattice.">William A. Sethares，《Tuning, Timbre, Spectrum, Scale》第 2 版，Springer，2005（純律與 5 限格子）。</li>
+        <li data-en="Hermann von Helmholtz, On the Sensations of Tone (1863; English translation by A. J. Ellis, 1885) — Ellis introduced the cent.">Hermann von Helmholtz，《論音的感覺》（1863；A. J. Ellis 英譯本 1885）——音分就是 Ellis 在譯本裡提出的單位。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/intervals-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/intervals.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="intervals"></script>
+  <script src="js/missions/intervals.js"></script>
+  <script src="js/stats.js" data-module="intervals"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

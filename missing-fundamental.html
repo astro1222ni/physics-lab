@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Missing Fundamental | Astro Ni Science Lab">缺基頻：聽到不存在的音｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 缺基頻頁面專用的顏色代號（淺色＋兩組深色；由 js/missing-fundamental.js 與 js/missing-fundamental-3d.js 讀取）
+       bar 喇叭放出的成分、gone 被拿掉的成分、pitch 聽到的音高（不存在的那個音）、wave 合成波形、full 完整音（A）、acf 自相關、filt 濾波器、band 週期色帶 */
+    :root { --mf-bar: #0f766e; --mf-gone: #94a3b8; --mf-pitch: #be185d; --mf-wave: #1d4ed8; --mf-full: #64748b; --mf-acf: #7c3aed; --mf-filt: #b45309; --mf-band: #0ea5e9; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --mf-bar: #5eead4; --mf-gone: #64748b; --mf-pitch: #ff74b0; --mf-wave: #7aa7ff; --mf-full: #94a3b8; --mf-acf: #b9a0ff; --mf-filt: #fbbf24; --mf-band: #38bdf8; }
+    }
+    :root[data-theme="dark"] { --mf-bar: #5eead4; --mf-gone: #64748b; --mf-pitch: #ff74b0; --mf-wave: #7aa7ff; --mf-full: #94a3b8; --mf-acf: #b9a0ff; --mf-filt: #fbbf24; --mf-band: #38bdf8; }
+
+    /* 主畫布：頻譜、波形、自相關三格；高度由程式依寬度決定 */
+    #cv { aspect-ratio: auto; height: 600px; touch-action: pan-y; }
+    .mf [hidden] { display: none !important; }
+    .mf button { min-height: 44px; }
+    .mf .playbar, .mf .recbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .mf .playbar button, .mf .recbar button { flex: 1 1 auto; }
+    .mf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .mf #stop:disabled, .mf #clear:disabled { opacity: .5; cursor: default; }
+    .mf #ab[data-run="1"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .mf .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .mf .hf-warn { margin: 4px 4px 0; padding: 6px 10px; border-radius: 8px; font-size: calc(13px * var(--fs, 1)); background: var(--accent-soft); color: var(--text); }
+    .mf .panel { grid-template-columns: minmax(0, 1fr); }
+    .mf .panel > .card { min-width: 0; }
+    .mf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .mf .slider input[type="range"] { height: 28px; margin: 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.box { background: none !important; border: 1.5px dashed currentColor; height: 9px; width: 9px; border-radius: 2px; }
+    .legend i.dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    /* 泛音開關 */
+    .harm { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 4px 0 8px; }
+    .harm button { padding: 2px 2px; line-height: 1.1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-variant-numeric: tabular-nums; }
+    .harm button b { font-size: calc(15px * var(--fs, 1)); }
+    .harm button small { font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .harm button[aria-pressed="true"] { border-color: var(--mf-bar); box-shadow: inset 0 0 0 1px var(--mf-bar); color: var(--mf-bar); }
+    .harm button[aria-pressed="true"] small { color: inherit; }
+    .harm button.cut { border-style: dashed; }
+    .harm button[aria-pressed="false"] b { opacity: .55; text-decoration: line-through; }
+    .grp-label { font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); margin: 10px 0 4px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .filt { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .filt button { padding: 4px 6px; line-height: 1.2; }
+    .filt button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .quick { display: grid; grid-template-columns: repeat(auto-fit, minmax(calc(110px * var(--fs, 1)), 1fr)); gap: 6px; margin-top: 8px; }
+    .quick button { padding: 4px 6px; line-height: 1.2; }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    .stage.is3d .l2 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .m3-wrap { position: relative; }
+    .m3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .m3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .m3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 86%; }
+    .m3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .m3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .m3-hud span.m { color: var(--muted); font-weight: 500; }
+    .m3-hud span.p { color: var(--mf-pitch); }
+    .m3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 讀數與紀錄 */
+    dl.readout { grid-template-columns: minmax(5.5em, 1fr) minmax(0, 1.5fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .pitch-big { font-size: calc(15px * var(--fs, 1)); margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-variant-numeric: tabular-nums; }
+    .pitch-big b { font-size: calc(18px * var(--fs, 1)); color: var(--mf-pitch); }
+    .pitch-big .low-warn { display: inline-block; margin-top: 4px; font-size: calc(13px * var(--fs, 1)); color: var(--text); }
+    table.rec { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin-top: 8px; }
+    table.rec th, table.rec td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; vertical-align: top; }
+    table.rec th:first-child, table.rec td:first-child { text-align: left; }
+    table.rec td.fr { text-align: left; overflow-wrap: anywhere; }
+    table.rec th { color: var(--muted); font-weight: 600; }
+    table.rec tr.same td { background: color-mix(in srgb, var(--mf-pitch) 10%, transparent); }
+    .rec-empty { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; }
+    .rec-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tone&quot;>Music · Musical Tone and Hearing</a> / Pitch and timbre"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tone">音樂・樂音與聽覺</a> ／ 音高與音色</nav>
+      <h1 data-en="The Missing Fundamental">缺基頻：聽到不存在的音</h1>
+      <p data-en-html="A phone’s tiny speaker can hardly move any air below about 200 Hz, yet you can still follow the bass line of a song on it. On the telephone a man’s voice has its fundamental cut away, yet you still know how high he is speaking. Take the lowest harmonic out of a note — or the lowest three — and the ear keeps hearing the <strong>same pitch</strong>, at a frequency the speaker is not playing at all. The reason is the <strong>period</strong>: the harmonics that remain still line up every \(1/f_0\) seconds, and the pitch follows that repetition, which is the greatest common divisor of the frequencies. Switch harmonics on and off, put the sound through a phone speaker or a telephone line, shift every component by the same amount, and watch the waveform and its autocorrelation keep the beat.">手機的小喇叭幾乎推不動 200 Hz 以下的空氣，我們卻仍然聽得出歌裡的貝斯在彈哪個音；電話把男生聲音的基頻切掉了，我們照樣知道他說話多低。把一個音最低的泛音拿掉——甚至拿掉最低的三根——耳朵聽到的仍然是<strong>同一個音高</strong>，而喇叭根本沒有放出那個頻率。祕密在<strong>週期</strong>：剩下的泛音每隔 \(1/f_0\) 秒仍然會對齊一次，音高跟著這個重複走，也就是各頻率的最大公因數。在這裡一根一根開關泛音、讓聲音經過手機小喇叭或電話線、把所有成分一起平移，看波形和自相關怎麼守住節拍。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “A/B compare”, then switch off harmonic 1 and press it again — the timbre changes, the pitch does not.">試試看：按「A／B 比較」，再關掉第 1 根泛音重按一次，聽音色變了、音高卻沒變。</p>
+    <div class="lab mf" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D waterfall">3D 瀑布圖</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="ab" type="button" data-en="A/B compare" title="先播 A：有基頻的完整音，再播 B：目前的聲音" data-en-title="First A: the complete tone with its fundamental, then B: the current sound">A／B 比較</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hf-warn" id="hfWarn" hidden data-en="Some components are above 4 kHz: if you are wearing headphones, turn the volume down first.">有成分超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <div class="legend l2">
+          <span style="color:var(--mf-bar)" data-en-html="<i style=&quot;background:var(--mf-bar)&quot;></i>From the speaker"><i style="background:var(--mf-bar)"></i>喇叭放出的成分</span>
+          <span style="color:var(--mf-gone)" data-en-html="<i class=&quot;box&quot;></i>Removed or filtered out"><i class="box"></i>拿掉或被濾掉的</span>
+          <span style="color:var(--mf-pitch)" data-en-html="<i class=&quot;dash&quot;></i>Pitch heard"><i class="dash"></i>聽到的音高</span>
+          <span style="color:var(--mf-filt)" data-en-html="<i class=&quot;dash&quot;></i>Speaker / phone response"><i class="dash"></i>喇叭／電話的響應</span>
+          <span style="color:var(--mf-full)" data-en-html="<i class=&quot;dash&quot;></i>Complete tone (A)"><i class="dash"></i>完整音（A）</span>
+          <span style="color:var(--mf-band)" data-en-html="<i style=&quot;background:var(--mf-band);opacity:.45&quot;></i>One period"><i style="background:var(--mf-band);opacity:.45"></i>一個週期</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Harmonics">泛音</h2>
+          <p class="grp-label" id="hLabel" data-en="Harmonic switches (press to turn on or off)">泛音開關（按一下開或關）</p>
+          <div class="harm" id="harm" role="group" aria-labelledby="hLabel"></div>
+          <div class="slider"><label for="low" data-en="Remove the lowest n">移除最低 n 根</label><output id="lowo"></output>
+            <input id="low" type="range" min="0" max="9" step="1" value="0" data-decimals="0"></div>
+          <div class="quick">
+            <button type="button" id="qAll" data-en="All on">全部打開</button>
+            <button type="button" id="qNoF" data-en="All but the fundamental">只拿掉基頻</button>
+          </div>
+          <p class="hint" data-en-html="Before any filter, the k-th harmonic has amplitude \(1/\sqrt{k}\). A dashed button is switched on but blocked by the filter.">濾波前，第 k 根的振幅是 \(1/\sqrt{k}\)。按鈕是虛線框的，表示開著、卻被濾波器擋掉了。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Fundamental">基頻</h2>
+          <div class="slider"><label for="f0" data-en-html="Fundamental f<sub>0</sub> (Hz)">基頻 f<sub>0</sub>（Hz）</label><output id="f0o"></output>
+            <input id="f0" type="range" min="100" max="400" step="1" value="200" data-decimals="0"></div>
+          <p class="hint" id="f0Note"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Speaker and filter">喇叭與濾波</h2>
+          <div class="filt" role="group" aria-label="濾波" data-en-aria-label="Filter">
+            <button type="button" data-filter="none" aria-pressed="true" data-en="No filter">不濾波</button>
+            <button type="button" data-filter="speaker" aria-pressed="false" data-en="Phone speaker">手機小喇叭</button>
+            <button type="button" data-filter="phone" aria-pressed="false" data-en="Telephone">電話</button>
+            <button type="button" data-filter="custom" aria-pressed="false" data-en="Custom high-pass">自訂高通</button>
+          </div>
+          <div class="slider"><label for="cut" data-en="High-pass cutoff (Hz)">高通截止頻率（Hz）</label><output id="cuto"></output>
+            <input id="cut" type="range" min="0" max="1500" step="10" value="500" data-decimals="0" disabled></div>
+          <p class="hint" id="filtNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Advanced: the shift experiment">進階：位移實驗</h2>
+          <div class="slider"><label for="delta" data-en="Shift everything by Δ (Hz)">全部平移 Δ（Hz）</label><output id="deltao"></output>
+            <input id="delta" type="range" min="-150" max="150" step="1" value="0" data-decimals="0"></div>
+          <p class="hint" data-en-html="Every component moves by the same Δ, so they stay f<sub>0</sub> apart but are no longer whole multiples of anything sensible (Schouten’s experiment, 1940). Advanced: the pitch moves by about Δ/n.">每一根都加上同樣的 Δ：彼此仍然相隔 f<sub>0</sub>，卻不再是同一個基頻的整數倍（Schouten 1940 年的實驗）。進階內容：音高大約移動 Δ/n。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="From the speaker">喇叭放出的成分</dt><dd id="rComp">—</dd>
+            <dt data-en="Lowest component">最低的成分</dt><dd id="rLow">—</dd>
+            <dt data-en="Greatest common divisor">最大公因數</dt><dd id="rGcd">—</dd>
+            <dt data-en="Waveform repeats every">波形重複的週期</dt><dd id="rPer">—</dd>
+            <dt data-en="Autocorrelation peak">自相關峰</dt><dd id="rAcf">—</dd>
+            <dt data-en-html="Shift estimate <i>f</i><sub>0</sub> + Δ/<i>n</i>">位移的估計 <i>f</i><sub>0</sub> + Δ/<i>n</i></dt><dd id="rDb">—</dd>
+          </dl>
+          <p class="pitch-big" id="rPitch"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Sound log">聲音紀錄</h2>
+          <div class="recbar">
+            <button id="record" type="button" data-en="Record this sound">記錄這個聲音</button>
+            <button id="clear" type="button" disabled data-en="Clear all" title="清掉紀錄表；滑桿和開關的設定不變" data-en-title="Remove the log; the sliders and switches stay as they are">全部清除</button>
+          </div>
+          <div class="rec-wrap"><table class="rec" id="recTable" hidden>
+            <thead><tr><th>f<sub>0</sub></th><th data-en="Frequencies (Hz)">頻率（Hz）</th><th data-en="Pitch heard">聽到的音高</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table></div>
+          <p class="rec-empty" id="recEmpty" data-en="Nothing recorded yet. Record a few sounds to compare: rows with the same pitch are highlighted.">還沒有紀錄。記下幾個聲音來比較：音高相同的列會標上顏色。</p>
+        </section>
+      </aside>
+    </div>
+    <p class="sr-only" id="say" aria-live="polite"></p>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="A sound without its fundamental still has the same period">拿掉基頻，週期不變</h3>
+      <p data-en-html="A musical note with fundamental \(f_0\) is a sum of harmonics at \(f_0, 2f_0, 3f_0, \dots\). Remove some of them, the fundamental included, and what is left is still">基頻 \(f_0\) 的樂音，是頻率 \(f_0, 2f_0, 3f_0, \dots\) 的泛音疊起來的。拿掉幾根——連基頻一起拿掉——剩下的仍然是</p>
+      <div class="formula">\[ x(t) = \sum_{k \in S} a_k \sin(2\pi k f_0 t), \qquad x\!\left(t + \tfrac{1}{f_0}\right) = x(t) \]</div>
+      <p data-en-html="because every \(k f_0 \cdot \tfrac{1}{f_0} = k\) is a whole number of turns. The waveform still repeats \(f_0\) times a second, as long as the harmonic numbers \(k\) that remain have no common factor. More generally the repetition rate is the <strong>greatest common divisor</strong> of the frequencies: 200, 300 and 400 Hz repeat 100 times a second. If only even harmonics remain, the divisor is \(2f_0\) and the pitch really does jump up an octave.">因為每一根 \(k f_0 \cdot \tfrac{1}{f_0} = k\) 都剛好轉了整數圈。只要剩下的泛音次數 \(k\) 沒有共同的因數，波形就仍然每秒重複 \(f_0\) 次。更一般地說，重複的頻率是各頻率的<strong>最大公因數</strong>：200、300、400 Hz 每秒重複 100 次。如果只剩偶次泛音，公因數變成 \(2f_0\)，音高真的會高一個八度。</p>
+      <p data-en-html="The ear follows this repetition. The pitch we hear for such a sound is called the <strong>residue pitch</strong> or <strong>virtual pitch</strong>: it is there even though no energy at all is present at that frequency.">耳朵跟著這個重複走。這種聲音聽到的音高叫<strong>殘餘音高</strong>或<strong>虛擬音高</strong>：在那個頻率上明明一點能量都沒有，音高卻在那裡。</p>
+
+      <h3 data-en="Autocorrelation: a simple model of finding the period">自相關：找週期的簡化模型</h3>
+      <p data-en-html="Compare the sound with a copy of itself delayed by \(\tau\). The average of \(x(t)\,x(t+\tau)\), divided by the mean square, is the <strong>autocorrelation</strong>; for a sum of sines it has an exact form:">把聲音和延遲 \(\tau\) 秒的自己相比：\(x(t)\,x(t+\tau)\) 的平均除以均方值，叫<strong>自相關</strong>。正弦波相加時有精確的公式：</p>
+      <div class="formula">\[ r(\tau) = \frac{\sum_i \tfrac{1}{2}A_i^2 \cos(2\pi f_i \tau)}{\sum_i \tfrac{1}{2}A_i^2} \]</div>
+      <p data-en-html="When \(\tau\) equals the period every cosine is 1 and \(r = 1\), a peak. The page takes the highest peak between 0.2 and 30 ms (slightly preferring shorter delays, and not going below one tenth of the lowest component), and calls \(1/\tau\) the pitch heard. This is a <strong>simplified model</strong>: the real auditory system first splits the sound into frequency bands and works on the nerve firing patterns, but the idea that pitch comes from periodicity is the same.">\(\tau\) 等於週期時，每一個餘弦都是 1，\(r = 1\)，形成一個峰。本頁在 0.2–30 ms 之間找最高的峰（稍微偏向較短的延遲，而且音高不低於最低成分的十分之一），把 \(1/\tau\) 當作聽到的音高。這是<strong>簡化模型</strong>：真實的聽覺系統會先把聲音分成很多頻帶，再處理神經放電的時間型態，但「音高來自週期性」的想法是一樣的。</p>
+
+      <h3 data-en="Speakers and telephones are high-pass filters">喇叭和電話都是高通濾波器</h3>
+      <p data-en-html="Each filter here is a 4th-order Butterworth response, falling 24 dB per octave below the cutoff \(f_c\):">這裡的濾波器都是四階巴特沃斯響應，在截止頻率 \(f_c\) 以下每八度降 24 dB：</p>
+      <div class="formula">\[ |H(f)| = \frac{1}{\sqrt{1 + (f_c/f)^8}} \]</div>
+      <p data-en-html="“Phone speaker” uses \(f_c = 250\) Hz; “Telephone” keeps 300–3400 Hz, the classic voice band of the telephone network. A component reduced to less than 0.1 of its size (more than 20 dB down) is treated as not coming out of the speaker. The cutoffs are round illustrative values: real speakers differ from model to model.">「手機小喇叭」用 \(f_c = 250\) Hz；「電話」只留 300–3400 Hz，也就是傳統電話網路的語音頻帶。被壓到原本 0.1 倍以下（小了 20 dB 以上）的成分，當作喇叭放不出來。截止頻率是取整數的示意值，真實的喇叭每一款都不一樣。</p>
+
+      <h3 data-en="Advanced: the shift experiment">進階：位移實驗</h3>
+      <p data-en-html="Shift every component by the same \(\Delta\): for example, take 1000, 1200 and 1400 Hz (harmonics 5, 6 and 7 of 200 Hz) and add 30 Hz to get 1030, 1230 and 1430 Hz. The spacing is still 200 Hz, yet listeners hear a pitch slightly <em>above</em> 200 Hz — about 205 Hz. Strictly the waveform now repeats only every 1/10 of a second (the greatest common divisor is 10 Hz), far too slow to be a pitch. Schouten (1940) and de Boer (1956) described the result with">把每一根都加上同樣的 \(\Delta\)：例如 1000、1200、1400 Hz（200 Hz 的第 5、6、7 根）加上 30 Hz，變成 1030、1230、1430 Hz。間距仍然是 200 Hz，聽者聽到的音高卻比 200 Hz 稍微<em>高</em>一點——大約 205 Hz。嚴格說來，波形現在要 1/10 秒才重複一次（最大公因數是 10 Hz），慢到不可能是音高。Schouten（1940）與 de Boer（1956）用下面的式子描述這個結果：</p>
+      <div class="formula">\[ p \approx f_0 + \frac{\Delta}{n} \]</div>
+      <p data-en-html="where \(n\) is the harmonic number of the middle component. The pitch therefore follows the <em>fine structure</em> near the middle of the spectrum, not the spacing and not the true mathematical period. The autocorrelation model reproduces this (the peak moves to a slightly shorter delay). When \(\Delta\) gets close to half of \(f_0\), the sound becomes ambiguous and different listeners — and different models — choose different pitches. This rule only holds when the low harmonics are gone (the lowest component is harmonic 3 or higher): if harmonic 1 or 2 is still there, the ear mostly just hears that lowest component itself.">其中 \(n\) 是中間那一根的泛音次數。所以音高跟著頻譜中間的<em>細部結構</em>走，不是跟著間距，也不是跟著數學上真正的週期。自相關模型也算得出這個結果（峰往較短的延遲移動）。\(\Delta\) 接近 \(f_0\) 的一半時，聲音變得模稜兩可，不同的人——和不同的模型——會聽出不同的音高。這個規則只在低次泛音都拿掉時成立（最低的成分至少是第 3 根）；第 1 或第 2 根還在的話，耳朵多半直接聽到那根最低的成分。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <ul>
+        <li data-en-html="<strong>Bass on small speakers</strong>: phones, laptops and earbuds without much bass still let you follow a bass line, because the 2nd, 3rd and 4th harmonics of each note come through. Audio engineers even add harmonics on purpose (“psychoacoustic bass”) so that a small speaker seems to play lower than it can."><strong>小喇叭上的貝斯</strong>：手機、筆電、低音不足的耳機，仍然讓我們跟得上貝斯的旋律，因為每個音的第 2、3、4 根泛音放得出來。錄音工程師甚至會刻意加上泛音（「心理聲學低音」），讓小喇叭聽起來比它實際能放的更低。</li>
+        <li data-en-html="<strong>Voices on the telephone</strong>: a man speaks with a fundamental of roughly 85–155 Hz, a woman 165–255 Hz. The telephone band starts at 300 Hz, so most fundamentals never arrive — but the pitch, and with it the intonation of a question, still does."><strong>電話裡的人聲</strong>：男生說話的基頻大約 85–155 Hz，女生大約 165–255 Hz。電話頻帶從 300 Hz 開始，大部分的基頻根本傳不過來——音高卻傳得過來，問句語尾上揚也聽得出來。</li>
+        <li data-en-html="<strong>The organ’s resultant bass</strong>: a pipe organ can imitate a very long pipe it does not have by sounding two shorter pipes a fifth apart. The two pipes play the 2nd and 3rd harmonics of the missing note (ratio 3 : 2), and the ear supplies the fundamental."><strong>管風琴的合成低音</strong>：管風琴沒有那麼長的管子，就同時吹兩根相差五度的短管，來模仿一根很長的管子。兩根管子剛好是那個不存在的音的第 2、3 根泛音（頻率比 3 : 2），基頻由耳朵自己補上。</li>
+        <li data-en-html="<strong>Timbre and pitch are separate</strong>: removing harmonics changes the colour of the sound (thinner, brighter, more nasal) but not the note. Which harmonics are present is a matter of timbre; how they repeat is a matter of pitch."><strong>音色和音高是兩回事</strong>：拿掉泛音會改變聲音的顏色（變薄、變亮、帶鼻音），卻不改變是哪個音。有哪些泛音是音色的事；它們怎麼重複是音高的事。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The period markers do not move</strong>: switch off harmonic 1, then 2, then 3. The blue period bands under the waveform stay exactly as wide, and the autocorrelation peak stays at the same delay."><strong>週期標記不動</strong>：依序關掉第 1、2、3 根。波形底下藍色的週期色帶寬度完全不變，自相關的峰也停在同一個延遲。</li>
+        <li data-en-html="<strong>Only even harmonics</strong>: leave 2, 4, 6 and 8. Now the bands become half as wide — the pitch really is an octave up."><strong>只留偶次</strong>：留下 2、4、6、8。這時色帶變成一半寬——音高真的高了一個八度。</li>
+        <li data-en-html="<strong>Through the phone</strong>: choose “Telephone” and drag the fundamental down to 100 Hz. Watch the lowest bars disappear behind the orange response curve while the pitch heard stays on f<sub>0</sub>."><strong>透過電話</strong>：選「電話」，把基頻拉到 100 Hz。看最低的幾根長條消失在橘色響應曲線後面，聽到的音高卻一直留在 f<sub>0</sub>。</li>
+        <li data-en-html="<strong>One is not enough</strong>: with a single component left there is nothing to compare, and the pitch is simply that component."><strong>一根不夠</strong>：只剩一根成分時沒有東西可以比，音高就是那一根自己。</li>
+        <li data-en-html="<strong>The 3D waterfall</strong>: every change adds a row. The pink “pitch heard” pillar stays on one line while the real bars come and go."><strong>3D 瀑布圖</strong>：每改一次就多一排。粉紅色「聽到的音高」柱子一直站在同一條線上，真正的長條卻來來去去。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Components: \(f_k = k f_0 + \Delta\), amplitude \(1/\sqrt{k}\) times the filter response; components below 20 Hz are dropped. The waveform is the sum of the sines (all starting at phase 0; the filters’ phase delays are not drawn), shown over 0–20 ms.">成分：\(f_k = k f_0 + \Delta\)，振幅 \(1/\sqrt{k}\) 乘上濾波器的響應；低於 20 Hz 的丟掉。波形是正弦波直接相加（相位都從 0 開始，不畫濾波器的相位延遲），顯示 0–20 ms。</li>
+        <li data-en-html="Greatest common divisor: Euclid’s algorithm on the whole-number frequencies of the components that come out of the speaker. Autocorrelation: the exact formula above, sampled every 0.01 ms and refined at each peak by golden-section search.">最大公因數：用輾轉相除法算喇叭放出的成分（整數 Hz）。自相關：上面的精確公式，每 0.01 ms 取一點，再用黃金分割搜尋把每個峰找準。</li>
+        <li data-en-html="3D waterfall: frequency across, a new row for every change (older rows move back and fade), bar height = amplitude after the filter; removed components are glass outlines; the pink pillar stands at the pitch heard. The wall at the back shows the current waveform over 0–20 ms with its period bands.">3D 瀑布圖：橫軸是頻率，每改一次設定就多一排（舊的往後退、變淡），長條高度 = 濾波後的振幅；拿掉的成分是透明的玻璃框；粉紅色柱子站在聽到的音高上。後方的牆是目前的波形（0–20 ms）和它的週期色帶。</li>
+        <li data-en-html="Sound: the same components, with the loudness set from the RMS value (and the peak kept below a limit), so taking harmonics away does not make the sound suddenly quiet. When the frequencies share a divisor of 20 Hz or more they are played as one periodic wave; otherwise (after most shifts) each component is a separate sine for 4 seconds.">聲音：同一組成分，音量依均方根調整（峰值也有上限），所以拿掉泛音時聲音不會突然變很小。各頻率的公因數在 20 Hz 以上時，用一個週期波播放；否則（大部分平移以後）每一根各用一個正弦波，播 4 秒。</li>
+        <li data-en-html="The unit tests check the greatest common divisor, that the pitch equals f<sub>0</sub> for every one of more than 3000 harmonic subsets with no common factor, the autocorrelation formula against a direct time average, the Butterworth responses, and the direction and size of the shift (1030, 1230, 1430 Hz → about 205 Hz).">單元測試檢查：最大公因數；三千多組沒有公因數的泛音子集合，音高全部等於 f<sub>0</sub>；自相關公式和直接對時間平均的結果相同；巴特沃斯響應；位移實驗中音高移動的方向和大小（1030、1230、1430 Hz → 約 205 Hz）。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Appreciation · Musical vocabulary (timbre and pitch); Elective Physics III · Waves (superposition, period).">課綱對應：高中音樂・鑑賞・音樂語彙（音色與音高）；選修物理Ⅲ・波動（波的疊加、週期）。</li>
+        <li data-en-html="Across subjects: Music “<a href=&quot;harmonic-series.html&quot;>The Harmonic Series and Timbre</a>” and “<a href=&quot;pitch-frequency.html&quot;>Pitch and Frequency</a>”; Mathematics: greatest common divisor.">跨科：音樂「<a href="harmonic-series.html">泛音列與音色</a>」、「<a href="pitch-frequency.html">音高與頻率</a>」；數學：最大公因數。</li>
+        <li data-en="J. F. Schouten, “The residue and the mechanism of hearing”, Proc. Koninklijke Nederlandse Akademie van Wetenschappen 43, 991 (1940) — the residue pitch and the pitch of shifted components.">J. F. Schouten，〈The residue and the mechanism of hearing〉，Proc. Koninklijke Nederlandse Akademie van Wetenschappen 43, 991（1940）——殘餘音高與位移成分的音高。</li>
+        <li data-en-html="E. de Boer, On the “residue” in hearing, doctoral thesis, University of Amsterdam (1956) — the rule p ≈ f<sub>0</sub> + Δ/n.">E. de Boer，《On the “residue” in hearing》，阿姆斯特丹大學博士論文（1956）——p ≈ f<sub>0</sub> + Δ/n 的規則。</li>
+        <li data-en="C. J. Plack, A. J. Oxenham, R. R. Fay and A. N. Popper (eds.), Pitch: Neural Coding and Perception (Springer, 2005) — autocorrelation models of pitch and the existence region of the residue.">C. J. Plack、A. J. Oxenham、R. R. Fay、A. N. Popper 編，《Pitch: Neural Coding and Perception》（Springer，2005）——音高的自相關模型與殘餘音高的存在範圍。</li>
+        <li data-en="ITU-T Recommendation G.712 — the 300–3400 Hz band of the traditional telephone channel.">ITU-T 建議書 G.712——傳統電話通道的 300–3400 Hz 頻帶。</li>
+        <li data-en="Note names: equal temperament with A4 = 440 Hz (ISO 16:1975, Acoustics — Standard tuning frequency).">音名：十二平均律、A4 = 440 Hz（ISO 16:1975〈Acoustics — Standard tuning frequency〉）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/missing-fundamental-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/missing-fundamental.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="missing-fundamental"></script>
+  <script src="js/missions/missing-fundamental.js"></script>
+  <script src="js/stats.js" data-module="missing-fundamental"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

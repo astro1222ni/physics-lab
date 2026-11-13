@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Reverberation and Concert Halls: Sabine’s Formula | Astro Ni Science Lab">迴響與音樂廳：賽賓公式｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 迴響頁面專用的顏色代號（淺色＋兩組深色；由 js/reverb-room.js 與 js/reverb-room-3d.js 讀取） */
+    :root {
+      --rv-concrete: #9aa1ab; --rv-tile: #a9c9ec; --rv-plaster: #e9dfc6; --rv-wood: #b5763c; --rv-glass: #5cc7d8;
+      --rv-carpet: #b9524c; --rv-curtain: #8b5cf6; --rv-panel: #5f8a2c; --rv-open: #38bdf8;
+      --rv-src: #ea580c; --rv-lis: #2563eb; --rv-ray1: #d97706; --rv-ray2: #9333ea; --rv-sab: #2563eb; --rv-eyr: #dc2626;
+      --rv-good: #15803d; --rv-warn: #b45309; --rv-people: #64748b; --rv-floor: #efe7d6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --rv-concrete: #8a9099; --rv-tile: #7fa7d1; --rv-plaster: #cfc4a6; --rv-wood: #a86b35; --rv-glass: #3fb3c6;
+        --rv-carpet: #c8615a; --rv-curtain: #a78bfa; --rv-panel: #7fae45; --rv-open: #7dd3fc;
+        --rv-src: #fb923c; --rv-lis: #60a5fa; --rv-ray1: #fbbf24; --rv-ray2: #c084fc; --rv-sab: #60a5fa; --rv-eyr: #f87171;
+        --rv-good: #4ade80; --rv-warn: #fbbf24; --rv-people: #94a3b8; --rv-floor: #34312b;
+      }
+    }
+    :root[data-theme="dark"] {
+      --rv-concrete: #8a9099; --rv-tile: #7fa7d1; --rv-plaster: #cfc4a6; --rv-wood: #a86b35; --rv-glass: #3fb3c6;
+      --rv-carpet: #c8615a; --rv-curtain: #a78bfa; --rv-panel: #7fae45; --rv-open: #7dd3fc;
+      --rv-src: #fb923c; --rv-lis: #60a5fa; --rv-ray1: #fbbf24; --rv-ray2: #c084fc; --rv-sab: #60a5fa; --rv-eyr: #f87171;
+      --rv-good: #4ade80; --rv-warn: #fbbf24; --rv-people: #94a3b8; --rv-floor: #34312b;
+    }
+
+    /* 畫布高度由程式依寬度決定；只有按在聲源或聽者上才攔下觸控，其他時候手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; }
+    #cv2 { aspect-ratio: auto; height: 300px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; background: var(--canvas-bg); }
+    .rv button { min-height: 44px; }
+    .rv [hidden] { display: none !important; }
+    .rv .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rv .playbar > button { flex: 1 1 auto; }
+    .rv .playbar .seg { flex: 1 1 auto; }
+    .rv .playbar .seg button { flex: 1 1 0; }
+    .rv .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rv #stop:disabled { opacity: .5; }
+    .rv .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .rv .stage .hint { margin: 2px 4px 0; }
+    .rv .slider input[type="range"] { height: 28px; margin: 0; }
+    .rv .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rv .panel { grid-template-columns: minmax(0, 1fr); }
+    .rv .panel > .card { min-width: 0; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 10px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .presets button { min-width: 0; padding: 6px 4px; }
+    .presets button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .mats { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 6px 8px; align-items: center; }
+    .mats label { font-size: calc(14px * var(--fs, 1)); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .mats label i { width: 12px; height: 12px; border-radius: 3px; flex: none; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); }
+    .mats select { min-height: 44px; width: 100%; min-width: 0; font: inherit; font-size: calc(14px * var(--fs, 1)); padding: 4px 8px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+    .rowbtns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .rowbtns button { flex: 1 1 auto; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(6.5em, 1fr) minmax(0, max-content); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; color: var(--rv-sab); }
+    dl.readout dd.big2 { font-weight: 700; color: var(--rv-eyr); }
+    dl.readout dd.good { color: var(--rv-good); font-weight: 700; }
+    dl.readout dd.warn { color: var(--rv-warn); font-weight: 700; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.rv-t { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.rv-t th, table.rv-t td { padding: 4px 5px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; }
+    table.rv-t th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.rv-t th:first-child, table.rv-t td:first-child { text-align: left; }
+    table.rv-t tr.sum td { font-weight: 700; border-top: 2px solid var(--border); }
+    table.rv-t td i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .formula { overflow-x: auto; overflow-y: hidden; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .stage.is3d .cvwrap { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .rv3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .rv3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
+    .rv3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#audio&quot;>Music · Space, Recording and Digital Music</a> / Room Acoustics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#audio">音樂・空間、錄音與數位音樂</a> ／ 空間聲學</nav>
+      <h1 data-en="Reverberation and Concert Halls: Sabine’s Formula">迴響與音樂廳：賽賓公式</h1>
+      <p data-en="Why does singing in the bathroom sound so good, while a bare classroom makes speech hard to follow? After a sound stops, it keeps bouncing between the walls and dies away little by little. Change the size of the room, the material of each surface and the number of people, and see — and hear — how long the sound lingers, using the formula Wallace Sabine found in 1898 and its improved form by Carl Eyring.">為什麼在浴室唱歌特別好聽，空蕩的教室卻讓人聽不清楚老師在說什麼？聲音停下來以後，還會在牆壁之間來回反射，一點一點消失。改變房間的大小、每一面的材料和人數，用賽賓在 1898 年找到的公式（以及艾林改良的版本），看看、也聽聽聲音會留多久。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “▶ Clap”, then set “People” to 35 and clap again — watch how much faster the decay curve drops.">試試看：按「▶ 拍手」，再把「人數」調到 35 再拍一次，看衰減曲線掉得快多少。</p>
+    <div class="lab rv" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plan">2D 平面圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" tabindex="0"></canvas>
+        </div>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="clap" type="button" class="primary" data-en="▶ Clap">▶ 拍手</button>
+          <button id="melody" type="button" data-en="▶ Twinkle">▶ 小星星</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <div class="seg" id="wetSeg" role="group" aria-label="迴響或乾聲" data-en-aria-label="Reverb or dry">
+            <button type="button" id="wetOn" aria-pressed="true" data-en="Reverb">有迴響</button>
+            <button type="button" id="dryOn" aria-pressed="false" data-en="Dry">乾聲</button>
+          </div>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="The sound is an approximation: a clap of filtered noise or a simple synthesized melody, sent through early reflections and a reverberation tail that dies away in exactly the T60 shown. “Dry” switches the room off.">聲音是近似：拍手是濾波後的雜訊、旋律是簡單合成的音色，再加上早期反射和衰減時間剛好等於畫面上 T60 的迴響尾巴。「乾聲」就是把房間關掉。</p>
+        <p class="hint" id="longHint" hidden></p>
+        <div class="legend">
+          <span style="color:var(--rv-src)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--rv-src)&quot;></i>Source"><i class="dot" style="background:var(--rv-src)"></i>聲源</span>
+          <span style="color:var(--rv-lis)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--rv-lis)&quot;></i>Listener"><i class="dot" style="background:var(--rv-lis)"></i>聽者</span>
+          <span style="color:var(--rv-ray1)" data-en-html="<i style=&quot;background:var(--rv-ray1)&quot;></i>1st reflections"><i style="background:var(--rv-ray1)"></i>一次反射</span>
+          <span style="color:var(--rv-ray2)" data-en-html="<i style=&quot;background:var(--rv-ray2)&quot;></i>2nd reflections"><i style="background:var(--rv-ray2)"></i>二次反射</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Line from an image source"><i class="dash"></i>鏡像源的直線</span>
+        </div>
+        <canvas id="cv2" role="img" aria-label="左：聲音衰減曲線（分貝對時間），實線是賽賓公式、虛線是艾林公式；右：聽者收到的聲音（直達聲、一次與二次反射、迴響尾巴）；下：常見用途建議的迴響時間。" data-en-aria-label="Left: the decay curve (decibels against time), solid for Sabine and dashed for Eyring. Right: what the listener receives (direct sound, first and second reflections, reverberation tail). Bottom: reverberation times usually recommended for different uses."></canvas>
+        <p class="chart-note" data-en-html="The decay curve is a straight line in decibels: the level drops by \(60/T_{60}\) dB every second. In the echogram each spike is one path; its height is the level compared with the direct sound (distance and wall absorption), and the shaded tail is a sketch of the dense late reverberation with the same slope.">衰減曲線用分貝畫是一條直線：每秒降低 \(60/T_{60}\) 分貝。右邊每一根尖峰是一條聲音的路徑，高度是它和直達聲相比的強弱（依距離和牆面吸收算），陰影的尾巴是後來密密麻麻的迴響（示意，斜率相同）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Room">房間</h2>
+          <div class="presets" id="presets" role="group" aria-label="房間預設" data-en-aria-label="Room presets">
+            <button type="button" data-preset="classroom" aria-pressed="true" data-en="Classroom">教室</button>
+            <button type="button" data-preset="bathroom" aria-pressed="false" data-en="Bathroom">浴室</button>
+            <button type="button" data-preset="living" aria-pressed="false" data-en="Living room">客廳</button>
+            <button type="button" data-preset="hall" aria-pressed="false" data-en="Concert hall">音樂廳</button>
+            <button type="button" data-preset="cathedral" aria-pressed="false" data-en="Cathedral">大教堂</button>
+            <button type="button" data-preset="studio" aria-pressed="false" data-en="Studio">錄音室</button>
+          </div>
+          <p class="hint" id="presetNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Size">大小</h2>
+          <div class="slider"><label for="len" data-en="Length L (m)">長 L（m）</label><output id="leno"></output>
+            <input id="len" type="range" min="2" max="80" step="0.1" value="9" data-decimals="2"></div>
+          <div class="slider"><label for="wid" data-en="Width W (m)">寬 W（m）</label><output id="wido"></output>
+            <input id="wid" type="range" min="1.5" max="50" step="0.1" value="8" data-decimals="2"></div>
+          <div class="slider"><label for="hei" data-en="Height H (m)">高 H（m）</label><output id="heio"></output>
+            <input id="hei" type="range" min="2" max="35" step="0.1" value="3.2" data-decimals="2"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Surfaces (absorption at 500 Hz)">每一面的材料（500 Hz 吸音係數）</h2>
+          <div class="mats" id="mats"></div>
+          <p class="hint" data-en-html="The absorption coefficient \(\alpha\) is the fraction of sound energy a surface does not send back. An open window sends nothing back: \(\alpha = 1\).">吸音係數 \(\alpha\) 是聲能碰到這一面時「沒有被反射回來」的比例。打開的窗戶什麼都不反射：\(\alpha = 1\)。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Audience">聽眾</h2>
+          <div class="slider"><label for="ppl" data-en="People">人數</label><output id="pplo"></output>
+            <input id="ppl" type="range" min="0" max="144" step="1" value="0" data-decimals="0"></div>
+          <p class="hint" id="pplNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Formula and display">公式與顯示</h2>
+          <div class="seg full" id="formulaSeg" role="group" aria-label="計算迴響時間的公式" data-en-aria-label="Formula for the reverberation time">
+            <button type="button" data-formula="sabine" aria-pressed="true" data-en="Sabine">賽賓</button>
+            <button type="button" data-formula="eyring" aria-pressed="false" data-en="Eyring">艾林</button>
+          </div>
+          <p class="hint" data-en="The chosen formula sets the length of the reverberation you hear and the bold curve; both are always shown.">選的公式決定聽到的迴響長度和粗線；兩個公式的結果都會顯示。</p>
+          <div class="seg full" id="orderSeg" role="group" aria-label="畫出幾次反射" data-en-aria-label="Reflections drawn" style="margin-top:8px">
+            <button type="button" data-order="1" aria-pressed="false" data-en="1st reflections">一次反射</button>
+            <button type="button" data-order="2" aria-pressed="true" data-en="Up to 2nd">到二次反射</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Volume V">體積 V</dt><dd id="rV">—</dd>
+            <dt data-en="Surface area S">表面積 S</dt><dd id="rS">—</dd>
+            <dt data-en="Total absorption A">總吸音量 A</dt><dd id="rA">—</dd>
+            <dt data-en="Average absorption coefficient">平均吸音係數</dt><dd id="rAbar">—</dd>
+            <dt data-en="T60 (Sabine)">T60（賽賓）</dt><dd class="big" id="rTs">—</dd>
+            <dt data-en="T60 (Eyring)">T60（艾林）</dt><dd class="big2" id="rTe">—</dd>
+            <dt data-en="Eyring shorter by">艾林比賽賓短</dt><dd id="rDiff">—</dd>
+            <dt data-en="Decay rate (chosen formula)">衰減速率（選的公式）</dt><dd id="rRate">—</dd>
+            <dt data-en="Direct sound">直達聲</dt><dd id="rDir">—</dd>
+            <dt data-en="First reflection (after direct)">第一個反射（比直達聲晚）</dt><dd id="rFirst">—</dd>
+            <dt data-en="First reflection not via the floor">不經地板的第一個反射</dt><dd id="rFirstUp">—</dd>
+            <dt data-en="Critical distance">臨界距離</dt><dd id="rRc">—</dd>
+            <dt data-en="Suits">適合</dt><dd id="rUse">—</dd>
+          </dl>
+          <p class="hint" data-en="Critical distance: closer than this, the direct sound is stronger than the reverberation; farther away, the room is louder than the source.">臨界距離：比它近，直達聲比迴響強；比它遠，整個房間的迴響比聲源本身還大聲。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Where the absorption comes from">吸音量從哪裡來</h2>
+          <div class="tablewrap"><table class="rv-t" id="absTable"></table></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Rooms to compare">比較的房間</h2>
+          <div class="rowbtns">
+            <button type="button" id="rec" data-en="＋ Keep this room">＋ 記下這個房間</button>
+            <button type="button" id="clear" data-en="Clear all" title="清除記下的房間與比較用的衰減曲線並停止聲音；房間設定不變" data-en-title="Clear the kept rooms and their comparison curves and stop the sound; the room settings stay">全部清除</button>
+          </div>
+          <div class="tablewrap"><table class="rv-t" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No rooms kept yet. Kept rooms appear as faint lines on the decay curve.">還沒有記下任何房間。記下的房間會以淡淡的線畫在衰減曲線上。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Sabine’s formula">賽賓公式</h3>
+      <p data-en-html="In 1895 the young Harvard physicist Wallace Clement Sabine was asked to fix a new lecture room in which nobody could follow the speaker. Timing by ear how long a sound from an organ pipe stayed audible, he found that the empty room kept it for about 5.6 s. Then he brought in seat cushions from a nearby theatre a few at a time and showed that the time fell in a simple way: the reverberation time is proportional to the volume of the room and inversely proportional to the total absorption.">1895 年，哈佛大學的年輕物理學家賽賓（Wallace Clement Sabine）被請去改善一間新講堂：在裡面誰也聽不清楚講者在說什麼。他用耳朵和碼錶量「管風琴管的聲音停下來後還聽得到多久」，空講堂大約是 5.6 秒。他從附近的劇院一批一批搬來座墊，發現時間的變化很簡單：迴響時間和房間的體積成正比，和總吸音量成反比。</p>
+      <div class="formula">\[ T_{60} = \frac{0.161\,V}{A}, \qquad A = \sum_i S_i\,\alpha_i + N \times 0.5\ \mathrm{m^2} \]</div>
+      <p data-en-html="\(T_{60}\) is the time for the sound to fall by 60 dB (to a millionth of its energy) after the source stops; \(V\) is in m<sup>3</sup>, and \(A\) is in m<sup>2</sup> of ‘open window’ (sabins): each surface of area \(S_i\) and absorption coefficient \(\alpha_i\) counts as \(S_i\alpha_i\) square metres of perfectly absorbing window. Each seated listener adds about 0.5 m<sup>2</sup>. The number 0.161 is not magic: sound energy spread evenly in the room hits the walls \(cS/4V\) times per second, so \(0.161 = 24\ln 10 / c\) with \(c = 343\) m/s.">\(T_{60}\) 是聲源停止後，聲音降低 60 分貝（能量剩下百萬分之一）所需的時間；\(V\) 的單位是 m<sup>3</sup>，\(A\) 的單位是「多少平方公尺的開窗」（賽賓）：面積 \(S_i\)、吸音係數 \(\alpha_i\) 的一面，相當於 \(S_i\alpha_i\) 平方公尺完全吸音的窗。每位坐著的聽眾大約增加 0.5 m<sup>2</sup>。0.161 不是湊出來的：聲能均勻分布在房間裡時，每秒碰到牆面 \(cS/4V\) 次，所以 \(0.161 = 24\ln 10 / c\)（\(c = 343\) m/s）。</p>
+
+      <h3 data-en="Eyring’s formula for ‘dead’ rooms">艾林公式：吸音很多的房間</h3>
+      <p data-en-html="Sabine’s formula has a strange limit: make every surface an open window (\(\alpha = 1\)) and it still gives \(T_{60} = 0.161V/S\), although the sound should vanish at the first wall. In 1930 Carl Eyring followed the sound from bounce to bounce: each reflection keeps \(1 - \bar\alpha\) of the energy, so">賽賓公式有一個奇怪的極限：把每一面都變成開窗（\(\alpha = 1\)），它還是給出 \(T_{60} = 0.161V/S\)，可是聲音明明碰到第一面牆就沒了。1930 年艾林（Carl Eyring）改成一次一次追蹤反射：每反射一次，能量剩下 \(1 - \bar\alpha\)，於是</p>
+      <div class="formula">\[ T_{60} = \frac{0.161\,V}{-S\,\ln(1-\bar\alpha)}, \qquad \bar\alpha = \frac{A}{S} \]</div>
+      <p data-en-html="When \(\bar\alpha\) is small, \(-\ln(1-\bar\alpha) \approx \bar\alpha\) and the two formulas agree (they differ by about \(\bar\alpha/2\)). In a studio full of absorbing panels Eyring’s is noticeably shorter, and at \(\bar\alpha = 1\) it gives exactly zero.">\(\bar\alpha\) 很小時，\(-\ln(1-\bar\alpha) \approx \bar\alpha\)，兩個公式幾乎一樣（大約相差 \(\bar\alpha/2\)）。在貼滿吸音板的錄音室裡，艾林的結果明顯比較短；\(\bar\alpha = 1\) 時它剛好是零。</p>
+
+      <h3 data-en="Straight-line decay and image sources">直線的衰減與鏡像源</h3>
+      <p data-en-html="The energy of the reverberant sound falls off exponentially, \(E(t) = E_0\,e^{-13.8\,t/T_{60}}\), so in decibels it is a straight line, \(L(t) = -60\,t/T_{60}\). The first few reflections can be followed one by one. A flat wall acts like a mirror: the reflected sound reaches you as if it came in a straight line from an <strong>image source</strong> behind the wall. Reflecting the image again gives the second reflections. Each path is \(r\) metres long, arrives \(r/c\) after the clap, and is weaker by \(20\log_{10}(r_0/r)\) dB from the distance plus \(10\log_{10}(1-\alpha)\) dB for every wall it touches.">迴響聲的能量以指數衰減 \(E(t) = E_0\,e^{-13.8\,t/T_{60}}\)，所以用分貝畫是一條直線：\(L(t) = -60\,t/T_{60}\)。最先到的幾個反射可以一個一個追蹤。平的牆面像一面鏡子：反射聲傳到你耳朵，就好像是從牆後面的<strong>鏡像源</strong>直線傳來；把鏡像源再對另一面牆鏡射一次，就是二次反射。每條路徑長 \(r\) 公尺，在拍手後 \(r/c\) 秒到達，比直達聲弱：距離造成 \(20\log_{10}(r_0/r)\) dB，每碰一面牆再加上 \(10\log_{10}(1-\alpha)\) dB。</p>
+      <div class="formula">\[ r_c = \sqrt{\frac{A}{16\pi}} \approx 0.057\sqrt{\frac{V}{T_{60}}} \]</div>
+      <p data-en-html="The <strong>critical distance</strong> \(r_c\) is where the direct sound and the reverberant sound are equally strong. Closer than \(r_c\) you mostly hear the source; farther away you mostly hear the room.">在<strong>臨界距離</strong> \(r_c\)，直達聲和迴響聲一樣強。比 \(r_c\) 近，聽到的主要是聲源；比它遠，聽到的主要是房間。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <h3 data-en="Every kind of music has its own room">每一種音樂都有適合的房間</h3>
+      <p data-en-html="Speech needs short reverberation (about 0.6–0.8 s): each syllable must fade before the next one starts, or the words smear together — that is the bare classroom’s problem. Orchestras sound best in halls of about 1.8–2.2 s, where the sound blends and swells. Organ music and Gregorian chant were written for stone churches with several seconds of reverberation, which is why their slow harmonies feel at home there. Recording studios are kept very dry, so that the reverberation can be chosen later. In the bathroom, hard tiles keep your voice going for one or two seconds, filling the gaps and smoothing out wobbly notes — so everyone sounds better there.">說話需要短的迴響（大約 0.6–0.8 秒）：每個音節要在下一個開始前消失，不然字會糊在一起——這就是空教室的問題。交響樂團在 1.8–2.2 秒左右的音樂廳最好聽，聲音能融合、飽滿。管風琴音樂和葛利果聖歌是寫給有好幾秒迴響的石造教堂的，緩慢的和聲在那裡聽起來最自然。錄音室刻意做得很「乾」，迴響可以之後再加。在浴室裡，磁磚讓你的聲音延續一兩秒，填滿空隙、把不穩的音修圓——所以每個人在浴室都覺得自己唱得比較好。</p>
+      <h3 data-en="Full hall, empty hall">坐滿與空場</h3>
+      <p data-en-html="The audience is often the biggest absorber in a concert hall. That is why a rehearsal in an empty hall sounds more reverberant than the concert, and why good halls use upholstered seats that absorb about as much as a seated person. Halls are also judged by the <em>initial time delay gap</em>: the time between the direct sound and the first reflection that does not graze the audience. Concert halls rated as intimate have gaps of about 20 ms or less.">聽眾常常是音樂廳裡吸音最多的東西。所以空場彩排時聽起來比正式演出更「響」，好的音樂廳會用有軟墊的座椅，讓空位的吸音接近坐了人。音樂廳還會看<em>初始時間延遲</em>：直達聲和第一個不貼著觀眾席掠過的反射相隔多久。聽起來親密的音樂廳，大約在 20 毫秒以內。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>People absorb</strong>: in the classroom, compare 0 and 35 people. In the concert hall, how much of the absorption comes from the audience?"><strong>人會吸音</strong>：在教室比較 0 人和 35 人。在音樂廳，總吸音量有多少來自聽眾？</li>
+        <li data-en-html="<strong>One wall can change everything</strong>: in the classroom, change only the ceiling to absorbing panels. Which surface is the best place for them?"><strong>換一面就差很多</strong>：在教室只把天花板改成吸音板。吸音板放在哪一面最有效？</li>
+        <li data-en-html="<strong>Bigger is longer</strong>: keep the materials and double every side of the room. What happens to \(T_{60}\), and why does it not become eight times longer?"><strong>越大越長</strong>：材料不變，把房間每一邊都加倍。\(T_{60}\) 怎麼變？為什麼不是變成 8 倍？</li>
+        <li data-en-html="<strong>The two formulas</strong>: compare Sabine and Eyring in the bathroom and in the studio."><strong>兩個公式</strong>：在浴室和錄音室比較賽賓和艾林的結果。</li>
+        <li data-en-html="<strong>Image sources</strong>: drag the listener towards a wall and watch the image sources and the delay of the first reflection."><strong>鏡像源</strong>：把聽者拖向一面牆，看鏡像源和第一個反射的延遲怎麼變。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The room is a box \(L \times W \times H\). The source stands 1.5 m and the listener’s ears 1.2 m above the floor. Absorption coefficients are for the 500 Hz octave band; real materials absorb differently at other frequencies (carpet and curtains mostly at high frequencies), which is left out, and so is the absorption of the air (it matters in very large halls at high frequencies).">房間是 \(L \times W \times H\) 的長方體。聲源離地 1.5 m，聽者的耳朵離地 1.2 m。吸音係數用 500 Hz 頻帶的值；真實材料在不同頻率吸音不同（地毯和窗簾主要吸高頻），這裡沒有計入，空氣本身的吸音（在很大的廳裡對高頻有影響）也沒有計入。</li>
+        <li data-en-html="Image sources: for each wall the image is the mirror image of the source; for two walls the image of the image (6 first and 18 second reflections). The path drawn on the plan is found by folding the straight line from the listener to the image back into the room. Unit tests check the path lengths against the images, the angle of incidence = angle of reflection, the two formulas against each other for small \(\bar\alpha\), Eyring’s zero for \(\bar\alpha = 1\), and \(T_{60} \propto\) size when every side is scaled.">鏡像源：對一面牆，鏡像就是聲源的鏡中像；碰兩面牆就是鏡像的鏡像（一次反射 6 個、二次反射 18 個）。平面圖上的反射路徑，是把「聽者到鏡像源」的直線折回房間裡得到的。單元測試檢查路徑長等於鏡像源的距離、入射角等於反射角、\(\bar\alpha\) 很小時兩個公式一致、\(\bar\alpha = 1\) 時艾林剛好是 0，以及每邊等比放大時 \(T_{60}\) 跟著等比變長。</li>
+        <li data-en-html="Picture: the plan is to scale; the expanding circles after a clap are the wavefronts at ear height (the circle centred on each image source is that reflection’s wavefront), shown in slow motion. In the 3D view the room, the audience, the source, the listener and the reflection paths (1st and 2nd, fainter when weaker) are drawn from the same calculation; the colour of each surface is its material.">畫面：平面圖依比例畫；拍手後擴散的圓是耳朵高度的波前（以鏡像源為圓心的圓，就是那一個反射的波前），用慢動作顯示。3D 檢視裡的房間、聽眾、聲源、聽者與反射路徑（一次與二次，越弱越淡）來自同一個計算，每一面的顏色就是它的材料。</li>
+        <li data-en-html="Sound (an approximation): the clap is a burst of filtered noise, followed by the strongest early reflections at their own delays and levels; the reverberation is the shared engine’s exponentially decaying noise, whose 60 dB decay time is set to the chosen formula’s \(T_{60}\) (up to 8 s). The mix of reverberant and direct sound follows the distance compared with the critical distance.">聲音（近似）：拍手是一陣濾波雜訊，接著是最強的幾個早期反射（各自的延遲與強度）；迴響用共用聲音引擎的指數衰減雜訊，降低 60 分貝的時間設成所選公式的 \(T_{60}\)（最長 8 秒）。迴響和直達聲的比例依聽者距離和臨界距離的比較決定。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Practice · performance spaces and music in daily life; Elective Physics III · Sound waves.">課綱對應：高中音樂・實踐・展演空間與音樂生活；選修物理Ⅲ・聲波。</li>
+        <li data-en="W. C. Sabine, Collected Papers on Acoustics, Harvard University Press, 1922 (including “Reverberation”, 1900).">W. C. Sabine，《Collected Papers on Acoustics》，Harvard University Press，1922（收錄 1900 年的〈Reverberation〉）。</li>
+        <li data-en="C. F. Eyring, “Reverberation time in ‘dead’ rooms”, J. Acoust. Soc. Am. 1, 217 (1930).">C. F. Eyring，〈Reverberation time in “dead” rooms〉，J. Acoust. Soc. Am. 1, 217（1930）。</li>
+        <li data-en="J. B. Allen and D. A. Berkley, “Image method for efficiently simulating small-room acoustics”, J. Acoust. Soc. Am. 65, 943 (1979).">J. B. Allen、D. A. Berkley，〈Image method for efficiently simulating small-room acoustics〉，J. Acoust. Soc. Am. 65, 943（1979）。</li>
+        <li data-en-html="Absorption coefficients at 500 Hz from the materials database of the open-source project pyroomacoustics (entries rough_concrete 0.03, ceramic_tiles 0.01, plasterboard 0.06, wood_16mm 0.10, glass_window 0.04, carpet_tufted_9m 0.30, curtains_cotton_0.5 0.65, rockwool_50mm_80kgm3 0.92; audience on wooden chairs, 1 per m<sup>2</sup>, 0.56, from which about 0.5 m<sup>2</sup> per person): <a href=&quot;https://pyroomacoustics.readthedocs.io/en/stable/pyroomacoustics.materials.database.html&quot;>pyroomacoustics materials database</a>. Handbooks give somewhat different values for similar materials.">500 Hz 吸音係數：開放原始碼專案 pyroomacoustics 的材料資料庫（項目 rough_concrete 0.03、ceramic_tiles 0.01、plasterboard 0.06、wood_16mm 0.10、glass_window 0.04、carpet_tufted_9m 0.30、curtains_cotton_0.5 0.65、rockwool_50mm_80kgm3 0.92；木椅上的聽眾、每平方公尺 1 人 0.56，由此估計每人約 0.5 m<sup>2</sup>）：<a href="https://pyroomacoustics.readthedocs.io/en/stable/pyroomacoustics.materials.database.html">pyroomacoustics materials database</a>。不同手冊對類似材料的數值會有些差異。</li>
+        <li data-en="H. Kuttruff, Room Acoustics, 6th ed., CRC Press, 2016 (Sabine and Eyring formulas, critical distance).">H. Kuttruff，《Room Acoustics》第 6 版，CRC Press，2016（賽賓與艾林公式、臨界距離）。</li>
+        <li data-en="L. L. Beranek, Concert Halls and Opera Houses, 2nd ed., Springer, 2004 (reverberation times of concert halls, initial time delay gap).">L. L. Beranek，《Concert Halls and Opera Houses》第 2 版，Springer，2004（音樂廳的迴響時間、初始時間延遲）。</li>
+        <li data-en="Speed of sound 343 m/s: dry air at 20 °C.">聲速 343 m/s：20 °C 的乾燥空氣。</li>
+        <li data-en="Related on this site: “Harmonic Series and Timbre” in Music; sound waves in Physics.">相關實驗：本站音樂科「泛音列與音色」；物理科的聲波實驗。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/reverb-room-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/reverb-room.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="reverb-room"></script>
+  <script src="js/missions/reverb-room.js"></script>
+  <script src="js/stats.js" data-module="reverb-room"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
