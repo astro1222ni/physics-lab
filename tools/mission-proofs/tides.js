@@ -196,8 +196,100 @@ expect(10, [stateEv({ dist: 0.5 })], false, '只把距離減半（8 倍）');
   expect('h3', hs4, false, '舊版的誤觸：關掉太陽、預設緯度 23.5°、赤緯拉到最小：' + hs4.map(e => cm(e.data.h)).join('、'));
 }
 
+// ---------- 新增的隱藏任務 h4–h10（11/13，隱藏任務補到 10 個） ----------
+const ach = {};   // 每個隱藏任務的達成例（用來證明彼此不連帶完成）
+// h4 引力加倍：距離 1/√2
+{
+  const e = [stateEv({ dist: 0.7071 })];
+  ach.h4 = e;
+  expect('h4', e, true, '距離打 0.7071 倍：引力 ' + (1 / 0.7071 / 0.7071).toFixed(3) + ' 倍、引潮力 ' + (1 / Math.pow(0.7071, 3)).toFixed(3) + ' 倍');
+  expect('h4', [stateEv({ dist: 0.71 })], false, '滑桿最近的格子 0.71 倍碰不到（要打字）');
+  expect('h4', [stateEv({ dist: 0.794 })], false, '任務 10 的距離（引潮力 2 倍）不算');
+}
+// h5 近地點大潮
+{
+  const e = [stateEv({ dist: 0.945, psi: 0 })];
+  ach.h5 = e;
+  expect('h5', e, true, '近地點 0.945 倍、新月');
+  expect('h5', [stateEv({ dist: 0.945, psi: 181.5 })], true, '近地點、滿月附近 181.5°');
+  expect('h5', [stateEv({ dist: 0.95, psi: 0 })], false, '滑桿格子 0.95 倍碰不到（要打 0.945）');
+  expect('h5', [stateEv({ dist: 0.945, psi: 90 })], false, '近地點但小潮');
+  expect('h5', [stateEv({ dist: 0.945, psi: 0, sun: false })], false, '關掉太陽');
+}
+// h6 月亮在天頂時的高潮
+{
+  const hs = highEvs({ sun: false, lat: 20, dec: 20 }, 2);
+  ach.h6 = hs;
+  expect('h6', hs, true, '關掉太陽，緯度 = 赤緯 = 20°：高潮時月高 ' + hs.map(e => e.data.moonAlt.toFixed(2) + '°').join('、'));
+  expect('h6', highEvs({ sun: false, lat: 21, dec: 20 }, 2), false, '差 1°：月高最多 89°');
+  const hs2 = highEvs({ lat: 20, dec: 20 }, 2);
+  expect('h6', hs2, false, '有太陽不算，高潮時月高 ' + hs2.map(e => e.data.moonAlt.toFixed(1) + '°').join('、'));
+}
+// h7 兩邊一樣大、站在同一邊
+{
+  const d = Math.pow(K.H_MOON / K.H_SUN, 1 / 3);
+  const e = [stateEv({ dist: 1.296, psi: 180 })];
+  ach.h7 = e;
+  expect('h7', e, true, '距離 1.296 倍（理論 ' + d.toFixed(4) + '）、滿月：月球與太陽的引潮力相等');
+  expect('h7', [stateEv({ dist: 1.3, psi: 0 })], false, '滑桿格子 1.30 倍碰不到');
+  expect('h7', [stateEv({ dist: 1.296, psi: 90 })], false, '同樣距離但在小潮（那是任務 11）');
+  expect(11, e, false, '這個達成例不會完成任務 11（大潮時赤道潮差 ' + cm(e[0].data.eqRange) + '）');
+}
+// h8、h9 大潮與小潮的潮差比
+function sn(o) { return [stateEv(Object.assign({ lat: 0, dec: 0, psi: 0 }, o)), stateEv(Object.assign({ lat: 0, dec: 0, psi: 90 }, o))]; }
+const rat = ev => (ev[0].data.range / ev[1].data.range).toFixed(3);
+{
+  const e = sn({ dist: 1.1 });
+  ach.h8 = e;
+  expect('h8', e, true, '赤道、赤緯 0°、距離 1.10 倍：大潮 ÷ 小潮 = ' + rat(e));
+  const e2 = sn({ dist: 1.09 });
+  expect('h8', e2, false, '1.09 倍：' + rat(e2));
+  const e3 = [stateEv({ lat: 0, dec: 0, psi: 0, dist: 1.1 }), stateEv({ lat: 0, dec: 0, psi: 90, dist: 1.2 })];
+  expect('h8', e3, false, '大潮、小潮在不同距離量的不算');
+  const e4 = sn({ dist: 1.1, lat: 23.5 });
+  expect('h8', e4, false, '不在赤道（緯度 23.5°）不算');
+}
+{
+  const e = sn({ dist: 1 });
+  ach.h9 = e;
+  expect('h9', e, true, '赤道、赤緯 0°、真實距離：大潮 ÷ 小潮 = ' + rat(e) + '（大潮 ' + cm(e[0].data.range) + '、小潮 ' + cm(e[1].data.range) + '）');
+  expect('h9', sn({ dist: 1.1 }), false, '距離 1.10 倍（那是 h8）');
+  expect('h9', [stateEv({ lat: 0, dec: 0, psi: 0 })], false, '只量了大潮');
+  expect('h9', sn({ dist: 1, sun: false }), false, '關掉太陽：沒有大小潮');
+}
+// h10 日潮不等南北顛倒
+{
+  const n = highEvs({ lat: 23.5, dec: 20 }, 2), so = highEvs({ lat: -23.5, dec: 20 }, 2);
+  ach.h10 = n.concat(so);
+  const show = hs => hs.map(e => cm(e.data.h) + '（月高 ' + e.data.moonAlt.toFixed(0) + '°）').join('、');
+  expect('h10', ach.h10, true, '有太陽、赤緯 20°：北緯 23.5° ' + show(n) + '；南緯 23.5° ' + show(so));
+  expect('h10', n, false, '只做北半球');
+  expect('h10', n.concat(highEvs({ lat: -30, dec: 20 }, 2)), false, '南北緯度不對稱（23.5° 與 −30°）');
+  expect('h10', highEvs({ sun: false, lat: 23.5, dec: 20 }, 2).concat(highEvs({ sun: false, lat: -23.5, dec: 20 }, 2)), false, '關掉太陽不算（避免和 h3 連帶）');
+  expect('h3', ach.h10, false, '這個達成例不會完成 h3');
+  expect('h2', ach.h10, false, '也不會完成 h2（四次高潮都在平均海面以上）');
+}
+// 新的隱藏任務：預設狀態與預設參數播放 30 天都不觸發
+{
+  const evs = [stateEv({})].concat(highEvs({}, 30));
+  ['h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10'].forEach(id => expect(id, evs, false, '預設狀態與預設參數播放 30 天'));
+}
+// 彼此不連帶完成：每個隱藏任務的達成例，不會讓其他隱藏任務成立
+{
+  ach.h1 = [stateEv({ lat: 90 })]; ach.h2 = highEvs({ sun: false, lat: 70, dec: 0 }, 1); ach.h3 = highEvs({ sun: false, lat: 45, dec: -25 }, 2);
+  const ids = Object.keys(ach);
+  ids.forEach(a => {
+    // 已知例外（已上線的判定不改）：h3 要「月在地平線下那次高 40 cm 以上」，只開月球時另一次高潮必然在平均海面以下，
+    // 所以 h3 一定伴隨 h2（逐一試過緯度 0–90°、赤緯 0 至 −28.6° 都找不到反例）。新的 h4–h10 都沒有這種情形。
+    const KNOWN = { h3: ['h2'] };
+    const hit = ids.filter(b => b !== a && !(KNOWN[a] || []).includes(b) && (() => { const m = byId(b); m.mem = {}; return ach[a].some(e => m.check(e, m.mem)); })());
+    if (hit.length) { fail++; console.log('  ✗ ' + a + ' 的達成例也完成了 ' + hit.join('、')); }
+    else console.log('  ✓ ' + a + ' 的達成例不會順便完成別的隱藏任務');
+  });
+}
+
 let stars = 0, hidden = 0;
-missions.forEach(m => { if (m.hidden) hidden += m.level; else stars += m.level; });
-console.log('\n任務 ' + missions.filter(m => !m.hidden).length + ' 個（' + stars + ' 顆星）＋ 隱藏 ' + missions.filter(m => m.hidden).length + ' 個（' + hidden + ' 顆星）');
+missions.forEach(m => { if (m.hidden) hidden += m.level * 2; else stars += m.level; });
+console.log('\n任務 ' + missions.filter(m => !m.hidden).length + ' 個（' + stars + ' 顆星）＋ 隱藏 ' + missions.filter(m => m.hidden).length + ' 個（等級 × 2 共 ' + hidden + ' 顆星）');
 console.log(fail ? '有 ' + fail + ' 項失敗' : '全部通過');
 process.exitCode = fail ? 1 : 0;

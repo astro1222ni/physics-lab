@@ -17,6 +17,19 @@
   const isHigh = function (ev) { return ev.type === 'high'; };
   const near = function (a, b, tol) { let d = Math.abs(((a - b) % 360 + 360) % 360); if (d > 180) d = 360 - d; return d <= tol; };
   const paired = function (ev) { return isHigh(ev) && ev.data.gap != null; };
+  /** 赤道（緯度 0 ± 0.5°）、月球在天赤道上（赤緯 0 ± 0.3°）、有太陽：分別記下大潮（ψ 0／180 ± 2°）與小潮（ψ 90／270 ± 2°）的潮差，
+   *  同一個月地距離（± 0.0005）都量到後，把「大潮潮差 ÷ 小潮潮差」交給 ok 判斷 */
+  const springNeap = function (ev, mem, key, ok) {
+    if (!isState(ev)) return false;
+    const d = ev.data;
+    if (!d.sun || Math.abs(d.lat) > 0.5 || Math.abs(d.dec) > 0.3 || !(d.range > 0)) return false;
+    const m = mem[key] || (mem[key] = {});
+    if (near(d.psi, 0, 2) || near(d.psi, 180, 2)) m.sp = { dist: d.dist, r: d.range };
+    else if (near(d.psi, 90, 2) || near(d.psi, 270, 2)) m.np = { dist: d.dist, r: d.range };
+    else return false;
+    if (!m.sp || !m.np || Math.abs(m.sp.dist - m.np.dist) > 0.0005) return false;
+    return ok(m.sp.r / m.np.r, d.dist);
+  };
 
   LabMission.register('tides', [
     {
@@ -102,6 +115,57 @@
         const d = ev.data;
         // 只有月球（關掉太陽）、真實的月地距離，月亮在地平線下的那次高潮比上一次（月亮在天上）高 40 cm 以上
         return paired(ev) && !d.sun && Math.abs(d.dist - 1) < 0.005 && d.gap < 20 && d.moonAlt < 0 && d.prevMoonAlt != null && d.prevMoonAlt > 0 && d.dh >= 0.4;
+      }
+    },
+    {
+      // 引力 ∝ 1/r²、引潮力 ∝ 1/r³：引力變 2 倍要把距離縮成 1/√2 = 0.7071 倍，那時引潮力是 2√2 ≈ 2.83 倍（滑桿碰不到，要打字）
+      id: 'tides-h4', level: 3, hidden: true,
+      riddle: { zh: '她靠近到拉力剛好加倍，海給的卻不只一倍。', en: 'She comes close enough to pull exactly twice as hard, yet the sea gives more than twice.' },
+      check: function (ev) { return isState(ev) && Math.abs(ev.data.dist - Math.SQRT1_2) <= 0.0015; }
+    },
+    {
+      // 近地點大潮：月球在平均近地點（363 300 km = 0.9451 倍），又是新月或滿月
+      id: 'tides-h5', level: 5, hidden: true,
+      riddle: { zh: '她走到離我們最近的地方，又剛好和太陽排成一直線。', en: 'She comes to her nearest point, just as she lines up with the Sun.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.sun && Math.abs(d.dist - 0.94511) <= 0.002 && (near(d.psi, 0, 3) || near(d.psi, 180, 3)); }
+    },
+    {
+      // 只有月球時，月球在天頂（緯度 = 赤緯）那一刻正好是高潮
+      id: 'tides-h6', level: 6, hidden: true,
+      riddle: { zh: '抬頭正好看見她的那一刻，海也漲到最滿。', en: 'The moment you look straight up and see her, the sea is at its fullest.' },
+      check: function (ev) { return isHigh(ev) && !ev.data.sun && ev.data.moonAlt >= 89.5; }
+    },
+    {
+      // 月球的引潮力恰好等於太陽的（d = (H☾/H☉)^(1/3) = 1.2962 倍，滑桿碰不到），又是大潮的位置
+      id: 'tides-h7', level: 7, hidden: true,
+      riddle: { zh: '兩個拉潮的人力氣一樣大，又站在同一邊。', en: 'Two who pull the tide, equally strong, standing on the same side.' },
+      check: function (ev) { const d = ev.data; return isState(ev) && d.sun && Math.abs(d.dist - 1.29616) <= 0.003 && (near(d.psi, 0, 3) || near(d.psi, 180, 3)); }
+    },
+    {
+      // 赤道、月球在天赤道上，同一個距離：大潮的潮差是小潮的 4 倍（(r + 0.459)/(r − 0.459) = 4 → 約 1.10 倍距離）
+      id: 'tides-h8', level: 8, hidden: true,
+      riddle: { zh: '在赤道上，滿月那天的起落，正好是弦月那天的四倍。', en: 'On the equator, the sea rises and falls exactly four times as much at full moon as at the quarter.' },
+      check: function (ev, mem) { return springNeap(ev, mem, 'r8', function (r, dist) { return r >= 3.97 && r <= 4.03; }); }
+    },
+    {
+      // 真實距離的大小潮比：赤道、月球在天赤道上，大潮的潮差約是小潮的 2.66 倍（真實海洋常見 2–3 倍）
+      id: 'tides-h9', level: 4, hidden: true,
+      riddle: { zh: '不動她的距離，在赤道上比一比滿月和弦月那兩天，海的起落差了幾倍。', en: 'Leave her distance alone, and on the equator compare how far the sea rises and falls at full moon and at the quarter.' },
+      check: function (ev, mem) { return springNeap(ev, mem, 'r9', function (r, dist) { return Math.abs(dist - 1) <= 0.005 && r >= 2.6 && r <= 2.75; }); }
+    },
+    {
+      // 日潮不等南北顛倒：北半球「月亮在天上」那次高潮比較高，同一個赤緯到南半球的對稱緯度，換成「月亮在地平線下」那次比較高
+      id: 'tides-h10', level: 10, hidden: true,
+      riddle: { zh: '同一個月亮，到了赤道的另一邊，換成另一次高潮比較高。', en: 'The same Moon; across the equator, the other high tide becomes the higher one.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (!paired(ev) || !d.sun || Math.abs(d.dist - 1) > 0.005 || d.gap >= 20 || Math.abs(d.dec) < 15 || d.dh < 0.1 || d.prevMoonAlt == null) return false;
+        // 北邊（或南邊）的一對：這一次高潮比上一次高至少 10 cm，而且這一次月亮在天上、上一次在地平線下
+        const up = d.moonAlt > 0 && d.prevMoonAlt < 0, down = d.moonAlt < 0 && d.prevMoonAlt > 0;
+        const sameSide = d.lat * d.dec > 0;
+        if (Math.abs(d.lat) >= 20 && sameSide && up) mem.a = { lat: d.lat, dec: d.dec };
+        if (Math.abs(d.lat) >= 20 && !sameSide && down) mem.b = { lat: d.lat, dec: d.dec };
+        return !!(mem.a && mem.b && Math.abs(mem.a.lat + mem.b.lat) <= 0.5 && Math.abs(mem.a.dec - mem.b.dec) <= 0.3);
       }
     }
   ]);
