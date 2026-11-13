@@ -48,6 +48,26 @@
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    /* 2D／3D 切換（3D：js/acid-base-titration-3d.js，three.js 切換時才下載） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cam3 { display: flex; flex-wrap: wrap; gap: 6px; }
+    .cam3 button { padding: 6px 12px; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    .ti #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    .ti #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: calc(50% - 14px); }
+    .r3-hud.tl { top: 8px; left: 8px; font-weight: 600; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.tc { top: 44px; left: 50%; transform: translateX(-50%); color: var(--b-acidbase, var(--accent)); font-weight: 700; max-width: none; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); max-width: calc(100% - 16px); }
     .ti .stage .rate { margin: 12px 4px 0; }
     .ti .stage .status { margin: 6px 4px 0; }
     .ti .stage .status.warn { color: var(--pos); font-weight: 600; }
@@ -126,8 +146,21 @@
     <!-- 第一部分：滴定裝置 -->
     <p class="try-hint" data-en="Try it: press “Open stopcock”, let the NaOH run to about 24 mL and close it, then finish with “1 drop” and “½ drop” — which drop turns the phenolphthalein pink?">試試看：按「打開活栓」讓 NaOH 流到大約 24 mL 再關上，接著改用「一滴」「半滴」，看酚酞在哪一滴變成粉紅色。</p>
     <div class="lab ti">
-      <div class="stage">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="cam3" id="cam3" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+            <button type="button" id="resetCam" data-en="Whole set-up">全景</button>
+            <button type="button" id="camFlask" data-en="Flask close-up">看錐形瓶</button>
+            <button type="button" id="camEye" title="鏡頭與彎月面最低點同高，正對刻度讀數" data-en-title="The camera at the height of the bottom of the meniscus, facing the scale" data-en="Eye level with meniscus">平視液面</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" role="img" aria-label="滴定裝置：鐵架上的滴定管、放在磁石攪拌器上的錐形瓶、pH 計，以及放大滴定管液面的放大鏡" data-en-aria-label="The titration set-up: a burette on a stand, a conical flask on a magnetic stirrer, a pH meter, and a magnifier showing the liquid level in the burette"></canvas>
+        <div id="view3"></div>
         <div class="playbar">
           <button id="drop" class="primary" type="button" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
           <button id="half" type="button" data-en="½ drop">半滴</button>
@@ -327,6 +360,7 @@
         <li data-en-html="<strong>Strong and weak.</strong> Titrate HCl and then acetic acid (same concentrations) well past the equivalence point and compare the two curves: different starts, a flat buffer region for the weak acid, and different pH at the equivalence point — but the same equivalence volume."><strong>強酸與弱酸</strong>：鹽酸和醋酸（濃度相同）各滴到超過當量點，比較兩條曲線：起點不同、弱酸有平緩的緩衝區、當量點的 pH 不同——但當量點的體積一樣。</li>
         <li data-en-html="<strong>The wrong indicator.</strong> Titrate acetic acid with methyl orange: the colour changes almost at once. Then try bromothymol blue and phenolphthalein, and press “Record end point” the moment the colour changes."><strong>選錯指示劑</strong>：用甲基橙滴定醋酸，幾乎一開始就變色了。再換溴瑞香草酚藍與酚酞，在變色的那一刻按「記錄終點」比比看。</li>
         <li data-en-html="<strong>Very dilute.</strong> Make both solutions 0.0010 M. The jump at the equivalence point shrinks to about pH 5–9, and methyl orange no longer works even for HCl."><strong>很稀的溶液</strong>：兩種溶液都改成 0.0010 M，當量點的跳躍縮小到大約 pH 5～9，連鹽酸也不能再用甲基橙了。</li>
+        <li data-en-html="<strong>In 3D.</strong> Press “Eye level with meniscus”: the camera sits at the height of the bottom of the meniscus, the right way to read a burette. Rotate a little up or down and the same meniscus seems to sit on a different mark — parallax error."><strong>在 3D 裡</strong>：按「平視液面」，鏡頭和彎月面最低點同高，這才是正確的讀法；往上或往下轉一點，同一個液面好像對到不同的刻度——這就是視差。</li>
         <li data-en-html="<strong>Watch the drops.</strong> Near the end point the colour flashes where each drop lands and fades as the stirrer mixes it in — the sign to slow down."><strong>看滴落處</strong>：快到終點時，每一滴落下的地方都會閃現顏色，攪勻後又消失——這就是該放慢的訊號。</li>
         <li data-en-html="<strong>The unknown acid.</strong> Choose “Unknown HX”, titrate it with the pH meter in the flask, find \(V_{\mathrm{eq}}\) from the steepest point and the pH at \(V_{\mathrm{eq}}/2\), then work out \(c = c_\mathrm{b} V_{\mathrm{eq}}/V_\mathrm{a}\) and \(\mathrm{p}K_\mathrm{a}\)."><strong>未知弱酸</strong>：選「未知弱酸」，插著 pH 計滴定，由最陡的地方找出 \(V_{\mathrm{eq}}\)、再看 \(V_{\mathrm{eq}}/2\) 時的 pH，算出 \(c = c_\mathrm{b} V_{\mathrm{eq}}/V_\mathrm{a}\) 與 \(\mathrm{p}K_\mathrm{a}\)。</li>
       </ul>
@@ -340,6 +374,7 @@
         <li data-en="The colour that flashes where a drop lands is the drop mixed with about 1 mL of the solution; it is only a picture and does not change the pH of the flask.">滴落處閃現的顏色，是把那一滴和大約 1 mL 的溶液混合來算的，只是畫面效果，不影響瓶中的 pH。</li>
         <li data-en-html="The unknown acid: concentration 0.050–0.150 M and \(K_\mathrm{a}\) between \(1.0 \times 10^{-6}\) and \(9.9 \times 10^{-5}\), chosen at random. Answers are checked by their relative error.">未知弱酸：濃度 0.050～0.150 M、\(K_\mathrm{a}\) 在 \(1.0 \times 10^{-6}\) 到 \(9.9 \times 10^{-5}\) 之間，隨機產生；答案以相對誤差判斷。</li>
         <li data-en="The height of the liquid in the flask is calculated from the shape of a real 250 mL conical flask; the rest of the drawing is not to scale.">錐形瓶裡的液面高度依真實 250 mL 錐形瓶的形狀計算；其餘畫面未依比例。</li>
+        <li data-en-html="The 3D view (three.js, MIT licence, downloaded only when you switch to it) draws the same titration: it reads the burette reading, the volume and pH in the flask, the indicator and the drops in the air from the 2D simulation and changes nothing. The flask has the real 250 mL dimensions and its liquid level uses the same formula; the solution colour is the same Beer’s-law colour as in 2D; each drop is 0.05 mL (about 4.6 mm across) and falls in step with the 2D drop. The burette is drawn at 0.4 cm per mL (a real 50 mL burette is about 1 cm per mL) and its reading is taken at the bottom of the meniscus; the meniscus shape, the vortex of the stirrer and the electrode position are only pictures.">3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一次滴定：滴定管讀數、瓶中溶液的體積與 pH、指示劑、空中的液滴都直接取自 2D 的模擬，不改變任何數值。錐形瓶是真實 250 mL 錐形瓶的尺寸，液面高度用同一個公式；溶液顏色與 2D 相同（比爾定律）；一滴 0.05 mL（直徑約 4.6 mm），和 2D 的液滴同步落下。滴定管畫成每 mL 0.4 cm（真實的 50 mL 滴定管約每 mL 1 cm），讀數在彎月面的最低點；彎月面的形狀、攪拌的漩渦與電極的位置只是示意。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>
@@ -361,6 +396,7 @@
   <script src="js/sound.js?v=202611130647"></script>
   <script src="js/numinput.js?v=202611130647"></script>
   <script src="js/drawkit.js?v=202611130647"></script>
+  <script src="js/acid-base-titration-3d.js"></script>
   <script src="js/acid-base-titration.js?v=202611130647"></script>
   <script src="js/firebase-config.js?v=202611130647"></script>
   <script src="js/missions.js?v=202611130647" data-module="acid-base-titration"></script>
