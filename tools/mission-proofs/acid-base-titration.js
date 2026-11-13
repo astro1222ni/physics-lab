@@ -261,6 +261,52 @@ function studentTitration(P) {
   console.log('  （對照）揭曉答案後填正確濃度：' + (m10.check({ type: 'answer', data: answerData(P, 0.087, 4.48) }, {}) ? '錯誤：通過了' : '不通過（正確）'));
 }
 
+
+console.log('\n=== h4–h10（每個做法只完成它自己這個隱藏任務） ===');
+{
+  const isHid = id => /-h\d+$/.test(id);
+  let hbad = 0;
+  const only = (hits, id) => { const x = hits.map(m => m.id).filter(k => isHid(k) && k !== id); if (x.length) { hbad++; console.log('  ✗ ' + id + ' 順便完成了 ' + x.join('、')); } };
+  let P, e, hits;
+  // h4：醋酸用甲基橙
+  P = newPage({ sys: 'wa', ind: 'mo' }); setMeter(P, false); dropUntilChange(P, 2); e = endpointData(P);
+  hits = endpoint(P, '醋酸＋NaOH、甲基橙：' + e.Vend.toFixed(3) + ' mL 就變色（誤差 ' + fmt(e.err, 2) + '）→ h4'); only(hits, 'acid-base-titration-h4');
+  // h5：鹽酸 0.100 M 25.00 mL，另加水 0 與 50 mL 各滴到 27 mL
+  P = newPage(); add(P, 1080); settle(P, '鹽酸、不加水，滴到 27.00 mL');
+  set(P, { Vw: 50 }); add(P, 1080);
+  hits = settle(P, '同樣的鹽酸另加水 50 mL，也滴到 27.00 mL（當量點都是 ' + K.Veq(P.run.p).toFixed(2) + ' mL）→ h5'); only(hits, 'acid-base-titration-h5');
+  // h6：醋酸剛好滴到當量點
+  P = newPage({ sys: 'wa', ind: 'php' }); add(P, 1000);
+  hits = settle(P, '醋酸＋NaOH 插 pH 計剛好 25.000 mL：pH ' + K.pH(P.run.p, 25).toFixed(2) + ' → h6'); only(hits, 'acid-base-titration-h6');
+  // h7：氨水半當量點
+  P = newPage({ sys: 'wb', ind: 'mr' }); add(P, 500);
+  hits = settle(P, '氨水＋HCl 插 pH 計滴到 12.50 mL：pH ' + K.pH(P.run.p, 12.5).toFixed(2) + '（14 − pKb ' + K.pKaOf(P.run.p).toFixed(2) + '）→ h7'); only(hits, 'acid-base-titration-h7');
+  // h8：0.001 M 鹽酸＋0.001 M NaOH、溴瑞香草酚藍、不用 pH 計、半滴
+  P = newPage({ Ca: 0.001, Cb: 0.001, ind: 'btb' }); setMeter(P, false); add(P, 960); dropUntilChange(P, 1); e = endpointData(P);
+  hits = endpoint(P, '0.001 M 鹽酸＋0.001 M NaOH、溴瑞香草酚藍、半滴到變色 ' + e.Vend.toFixed(3) + ' mL（誤差 ' + fmt(e.err) + '）→ h8'); only(hits, 'acid-base-titration-h8');
+  { const Q = newPage({ Ca: 0.001, Cb: 0.001, ind: 'php' }); setMeter(Q, false); add(Q, 960); dropUntilChange(Q, 1); const x = endpointData(Q);
+    console.log('  （對照）同樣的稀溶液用酚酞：誤差 ' + fmt(x.err) + ' mL，不算 h8'); }
+  // h9：醋酸＋NaOH、酚酞、不用 pH 計、最後用半滴
+  P = newPage({ sys: 'wa', ind: 'php' }); setMeter(P, false); add(P, 980); dropUntilChange(P, 1); e = endpointData(P);
+  hits = endpoint(P, '醋酸＋NaOH、酚酞、不用 pH 計、半滴到變色 ' + e.Vend.toFixed(3) + ' mL（誤差 ' + fmt(e.err) + '）→ h9'); only(hits, 'acid-base-titration-h9');
+  // h10：未知弱酸一瓶，濃度 0.1%、Ka 1%（做法乙）
+  {
+    const rng = mulberry32(31); let n = 0, first = null; const N = 400;
+    const m10 = missions.find(m => m.id === 'acid-base-titration-h10');
+    log = false;
+    for (let i = 0; i < N; i++) {
+      const s = K.mysterySample(rng);
+      const Q = newPage({ sys: 'mx', sample: { C: s.C, Ka: s.Ka, flasks: 0, revealed: false } });
+      const st = studentTitration(Q), b = answerData(Q, st.c, st.pKaB);
+      if (m10.check({ type: 'answer', data: b }, {})) { n++; if (!first) first = { Q, st, s }; }
+    }
+    log = true;
+    console.log('  未知弱酸 ' + N + ' 個樣品、一瓶、做法乙：濃度 ≤ 0.1% 且 Ka ≤ 1% 有 ' + (100 * n / N).toFixed(1) + '%');
+    if (first) { hits = fire('樣品 C = ' + first.s.C.toFixed(3) + ' M：c = ' + first.st.c.toFixed(4) + '、pKa = ' + first.st.pKaB.toFixed(3) + ' → h10', 'answer', answerData(first.Q, first.st.c, first.st.pKaB)); only(hits, 'acid-base-titration-h10'); }
+  }
+  if (hbad) { console.log('  ✗ 有 ' + hbad + ' 項隱藏任務互相連帶'); process.exitCode = 1; }
+}
+
 console.log('\n=== 結果 ===');
 let ok = true;
 missions.forEach(m => {
