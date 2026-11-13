@@ -67,13 +67,13 @@ test('時鐘當作準的：三顆衛星也能解，但時鐘偏 1 μs（300 m）
   near(norm(sub(ok.x, r)) * 1000, 0, 1e-3);
 });
 
-test('DOP：和 (GᵀG)⁻¹ 的對角線一致；衛星擠在一起時變大；隨機雜訊的水平均方根 ≈ HDOP × σ', () => {
+test('DOP：和 (G^T G)^-1 的對角線一致；衛星擠在一起時變大；隨機雜訊的水平均方根 ≈ HDOP × σ', () => {
   const v = K.sky({ lat: 23.5, lon: 121, t: 0, mask: 5 }).filter(s => s.visible);
   const D = K.dop(K.geometry3(v));
   near(D.g * D.g, D.p * D.p + D.t * D.t, 1e-9);
   near(D.p * D.p, D.h * D.h + D.v * D.v, 1e-9);
   assert.ok(D.p >= 1 && D.p < 3);
-  // 理想幾何：一顆在天頂、三顆在仰角 −19.47°（正四面體）→ 只看 E、N、U 的 GᵀG = (4/3) I，PDOP = √(3 × 3/4)
+  // 理想幾何：一顆在天頂、三顆在仰角 −19.47°（正四面體）→ 只看 E、N、U 的 G^TG = (4/3) I，PDOP = √(3 × 3/4)
   const t = Math.asin(1 / 3);
   const tet = [{ enu: [0, 0, 1] }].concat([0, 120, 240].map(a => ({ enu: [Math.cos(t) * Math.sin(a * Math.PI / 180), Math.cos(t) * Math.cos(a * Math.PI / 180), -1 / 3] })));
   near(K.dopFixed(tet).p, Math.sqrt(9 / 4), 1e-9);

@@ -5,7 +5,7 @@
  * 未知數有四個（x、y、z、τ），所以至少要四顆衛星；平面上（x、y、τ）至少要三座發射塔。
  * 用最小平方法（高斯－牛頓迭代）解；誤差放大倍數由幾何決定：
  *   G 的第 i 列 = [−e_i, 1]（e_i 是從接收機指向衛星的單位向量，東、北、天三個分量），
- *   Q = (GᵀG)⁻¹，HDOP = √(Q_EE + Q_NN)，VDOP = √Q_UU，PDOP = √(Q_EE + Q_NN + Q_UU)，TDOP = √Q_tt，GDOP = √tr Q。
+ *   Q = (G^T G)^-1，HDOP = √(Q_EE + Q_NN)，VDOP = √Q_UU，PDOP = √(Q_EE + Q_NN + Q_UU)，TDOP = √Q_tt，GDOP = √tr Q。
  *   每個距離的誤差標準差 σ（UERE）→ 位置誤差約 PDOP × σ。
  *
  * 衛星星系：24 顆、6 個軌道面（升交點相隔 60°）、傾角 55°、軌道半徑 26,560 km、週期半個恆星日（Walker 24/6/1）。
@@ -51,7 +51,7 @@
     }
     return A.map(r => r.slice(n));
   }
-  /** GᵀG */
+  /** G^TG */
   function normalMatrix(G) {
     const m = G[0].length, N = Array.from({ length: m }, () => new Array(m).fill(0));
     G.forEach(row => { for (let i = 0; i < m; i++) for (let j = 0; j < m; j++) N[i][j] += row[i] * row[j]; });
@@ -177,7 +177,7 @@
    * 重複定位 count 次：每個距離加上 N(0, σ²) 的雜訊（σ 公尺）與多路徑偏差 mp = { m, el }。
    * assumeTau 是數值時：接收機以為時鐘是準的（不解時鐘），但時鐘其實偏了 assumeTau μs，
    *   每個距離都多了 c·τ —— 三顆衛星就能算，但位置整個偏掉。
-   * 誤差只有幾公尺到幾百公尺，用線性化 δ = (GᵀG)⁻¹ Gᵀ ε 就很準（單元測試和完整迭代比對過）。
+   * 誤差只有幾公尺到幾百公尺，用線性化 δ = (G^T G)^-1 G^T ε 就很準（單元測試和完整迭代比對過）。
    * 回傳每一次的 [東, 北, 天]（公尺）、平均、水平均方根誤差、系統偏差 bias 與 DOP。
    */
   function scatter(sats, sigma, count, seed, mp, assumeTau) {
