@@ -27,4 +27,38 @@
     const n = dom ? dom.querySelectorAll('.module.live').length : 0;
     el.textContent = n ? (n + T(' 個實驗', n === 1 ? ' lab' : ' labs')) : T('製作中', 'coming soon');
   });
+  // 回頂端浮動按鈕（11/13）：捲過科目選單才出現，按一下回到頁首、焦點移到標題
+  (function () {
+    const nav = document.querySelector('.domain-nav');
+    const head = document.querySelector('.top h1');
+    if (!nav || !head) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'to-top';
+    b.setAttribute('aria-label', T('回到頁首', 'Back to top'));
+    b.setAttribute('data-en-aria-label', 'Back to top');
+    b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-en="Top">' + T('回頂端', 'Top') + '</span>';
+    b.tabIndex = -1;
+    document.body.appendChild(b);
+    let shown = false, raf = 0;
+    function update() {
+      raf = 0;
+      const on = nav.getBoundingClientRect().bottom < 0;
+      if (on === shown) return;
+      shown = on;
+      b.classList.toggle('show', on);
+      b.tabIndex = on ? 0 : -1;
+      b.setAttribute('aria-hidden', on ? 'false' : 'true');
+    }
+    addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(update); }, { passive: true });
+    addEventListener('resize', update);
+    b.addEventListener('click', function () {
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+      if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+      head.setAttribute('tabindex', '-1');
+      head.focus({ preventScroll: true });
+    });
+    update();
+  })();
 })();
