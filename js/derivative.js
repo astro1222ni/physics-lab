@@ -644,7 +644,7 @@
     emit('state', {
       fn: state.fn, k: Object.assign({}, state.k), x: q.a, h: q.h, fa: q.fa, dq: q.dq, sq: q.sq, sym: state.show.sym,
       d1: q.d1, d2: q.d2, err: q.err, errSym: q.errSym, chal: !!state.chal, tan: state.show.tan && !state.chal,
-      b: q.tan ? q.tan.b : null, roots: state.fn === 'cubic' ? DC.cubicRoots(state.k) : null
+      b: q.tan ? q.tan.b : null, xi: q.tan ? q.tan.xInt : null, roots: state.fn === 'cubic' ? DC.cubicRoots(state.k) : null
     });
   }
   function emitTrace() { emit('trace', { fn: state.fn, k: Object.assign({}, state.k), coverage: coverage() }); }
