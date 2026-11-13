@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Remote Sensing: False Colour and NDVI | Astro Ni Science Lab">遙測：假色影像與植生指標 NDVI｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 遙測頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root { --rs-veg: #2e8b3a; --rs-soil: #a8794a; --rs-water: #2f6fd0; --rs-urban: #7d7f86; --rs-sand: #d9b860; --rs-probe: #e0a100; --rs-band: #6b7f99; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --rs-veg: #5fd06e; --rs-soil: #d39a63; --rs-water: #6aa8ff; --rs-urban: #a3a6ad; --rs-sand: #f0d27a; --rs-probe: #ffd34d; --rs-band: #8fa3bf; }
+    }
+    :root[data-theme="dark"] { --rs-veg: #5fd06e; --rs-soil: #d39a63; --rs-water: #6aa8ff; --rs-urban: #a3a6ad; --rs-sand: #f0d27a; --rs-probe: #ffd34d; --rs-band: #8fa3bf; }
+    #cv { aspect-ratio: 4 / 3; touch-action: none; cursor: crosshair; }
+    @media (max-width: 600px) { #cv.tall { aspect-ratio: 1 / 1; } }
+    @media (min-width: 881px) and (min-height: 900px) { .rs .stage { position: sticky; top: 12px; } }
+    .rs button { min-height: 44px; }
+    .rs [hidden] { display: none !important; }
+    .rs .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .rgb { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 8px; }
+    .rgb label { display: flex; flex-direction: column; gap: 2px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; }
+    .rgb select { min-height: 44px; font-size: calc(14px * var(--fs, 1)); border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 6px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
+    .row button { flex: 1 1 auto; }
+    table.tab { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+    table.tab th, table.tab td { overflow-wrap: anywhere; padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.tab th:first-child, table.tab td:first-child { text-align: left; }
+    table.tab td.bar { width: 40%; }
+    table.tab td.bar i { display: block; height: 10px; border-radius: 3px; background: var(--rs-band); }
+    dl.readout dd.big { font-weight: 700; }
+    .rs .card { min-width: 0; overflow-wrap: anywhere; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#gis&quot;>Geography · Geospatial Technology</a> / Remote sensing"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#gis">地理・空間資訊科技</a> ／ 遙測與 NDVI</nav>
+      <h1 data-en="Remote Sensing: False Colour and NDVI">遙測：假色影像與植生指標 NDVI</h1>
+      <p data-en="A satellite camera splits sunlight into bands, some of them invisible to us. Plants are dark in red light but very bright in near-infrared, water is dark in both, and soil and concrete sit in between. Put the bands into a picture in different ways and the landscape tells you what is growing, what is flooded and what is dry — for a whole year of rice in an invented river valley.">衛星相機把陽光分成好幾個波段，有些是我們看不到的。植物在紅光很暗、在近紅外線卻很亮；水兩個都暗；土壤和水泥在中間。把波段用不同的方式組成影像，地表就會告訴你哪裡長了作物、哪裡淹了水、哪裡乾掉了。這裡是一個虛構河谷裡一整年的稻田。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: switch to “Colour infrared” — the paddies turn red. Then drag the day of the year and watch the rice grow.">試試看：切到「標準假色」，稻田變成紅色；再拖動日期，看稻子長大、收割。</p>
+    <div class="lab rs" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
+            <button type="button" data-view="image" aria-pressed="true" data-en="Image">影像</button>
+            <button type="button" data-view="spectrum" aria-pressed="false" data-en="Spectra" title="反射率隨波長變化的曲線" data-en-title="Reflectance against wavelength">光譜曲線</button>
+            <button type="button" data-view="scatter" aria-pressed="false" data-en="Red–NIR plot" title="每個像元的紅光與近紅外反射率" data-en-title="Red and near-infrared reflectance of every pixel">紅光–近紅外</button>
+          </div>
+          <div class="seg" role="group" aria-label="影像內容" data-en-aria-label="Image shows" id="layerSeg">
+            <button type="button" data-layer="rgb" aria-pressed="true" data-en="Composite">合成影像</button>
+            <button type="button" data-layer="ndvi" aria-pressed="false">NDVI</button>
+            <button type="button" data-layer="ndwi" aria-pressed="false">NDWI</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="虛構河谷的衛星影像；點一個像元看它的光譜" data-en-aria-label="Satellite image of an invented river valley; tap a pixel to read its spectrum"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="cvHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Band combination">波段組合</h2>
+          <div class="segw" role="group" aria-label="波段組合" data-en-aria-label="Band combination" id="compSeg">
+            <button type="button" data-comp="natural" aria-pressed="true" data-en="Natural colour" title="紅＝紅光、綠＝綠光、藍＝藍光（4-3-2）" data-en-title="Red, green, blue (4-3-2)">真實色彩</button>
+            <button type="button" data-comp="cir" aria-pressed="false" data-en="Colour infrared" title="紅＝近紅外、綠＝紅光、藍＝綠光（5-4-3）" data-en-title="NIR, red, green (5-4-3)">標準假色</button>
+            <button type="button" data-comp="agri" aria-pressed="false" data-en="Agriculture" title="6-5-2" data-en-title="6-5-2">農業</button>
+            <button type="button" data-comp="swir" aria-pressed="false" data-en="SWIR" title="7-6-4" data-en-title="7-6-4">短波紅外</button>
+            <button type="button" data-comp="custom" aria-pressed="false" data-en="Custom">自訂</button>
+          </div>
+          <div class="rgb" id="rgbSel">
+            <label style="color:#d0342c"><span data-en="Red ←">紅 ←</span><select id="selR" aria-label="紅色頻道用哪個波段" data-en-aria-label="Band shown in red"></select></label>
+            <label style="color:#1f9d6b"><span data-en="Green ←">綠 ←</span><select id="selG" aria-label="綠色頻道用哪個波段" data-en-aria-label="Band shown in green"></select></label>
+            <label style="color:#2f6fd0"><span data-en="Blue ←">藍 ←</span><select id="selB" aria-label="藍色頻道用哪個波段" data-en-aria-label="Band shown in blue"></select></label>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Date and conditions">日期與環境</h2>
+          <div class="slider"><label for="rDay" data-en="Day of the year" title="1 = 1 月 1 日" data-en-title="1 = 1 January">一年中的第幾天</label><output></output>
+            <input id="rDay" type="range" min="1" max="365" step="1" value="70" data-decimals="0"></div>
+          <dl class="readout">
+            <dt data-en="Date">日期</dt><dd id="rDate">—</dd>
+            <dt data-en="The rice">稻田</dt><dd id="rRice">—</dd>
+          </dl>
+          <div class="row"><button type="button" id="play" aria-pressed="false" data-en="▶ Run the year">▶ 播放一年</button></div>
+          <div class="slider"><label for="rDrought" data-en="Drought (0–1)" title="缺水讓葉子的葉綠素和水分減少，土壤也變乾" data-en-title="Less chlorophyll and leaf water, drier soil">乾旱程度（0–1）</label><output></output>
+            <input id="rDrought" type="range" min="0" max="1" step="0.05" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="rTurb" data-en="Muddy river (0–1)" title="大雨後河水帶很多泥沙" data-en-title="After heavy rain the river carries mud">河水混濁度（0–1）</label><output></output>
+            <input id="rTurb" type="range" min="0" max="1" step="0.05" value="0.3" data-decimals="2"></div>
+          <div class="slider"><label for="rHaze" data-en="Haze" title="大氣散射的光（藍光最多）加在每個像元上" data-en-title="Light scattered by the air (mostly blue) is added to every pixel">霧霾</label><output></output>
+            <input id="rHaze" type="range" min="0" max="0.15" step="0.005" value="0" data-decimals="3"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="This pixel">這個像元</h2>
+          <p class="hint" id="pHint" data-en="Tap the image (or use the arrow keys) to read one 30 m × 30 m pixel.">點影像（或用方向鍵）讀一個 30 m × 30 m 的像元。</p>
+          <table class="tab" id="pTab" aria-label="這個像元的波段反射率" data-en-aria-label="Band reflectance of this pixel"></table>
+        </section>
+        <section class="card">
+          <h2 data-en="Whole image: mean NDVI">整張影像的平均 NDVI</h2>
+          <dl class="readout">
+            <dt data-en="Rice paddies">稻田</dt><dd id="mPaddy" class="big">—</dd>
+            <dt data-en="Forest">森林</dt><dd id="mForest">—</dd>
+            <dt data-en="Town">城鎮</dt><dd id="mTown">—</dd>
+            <dt data-en="River">河水</dt><dd id="mWater">—</dd>
+          </dl>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Spectral signatures">光譜特徵</h3>
+      <p data-en="Every surface reflects a different share of each wavelength. Chlorophyll absorbs blue and red light for photosynthesis, so a leaf is dark there and a little brighter in green. Just beyond red, at about 700 nm, reflectance jumps (the red edge), because the cells inside a leaf scatter near-infrared light strongly. Water absorbs near-infrared and shortwave infrared almost completely. Leaf water also absorbs at 1450 and 1940 nm, so a dry leaf is brighter in shortwave infrared.">每一種地表對每一種波長的反射比例都不一樣。葉綠素為了光合作用吸收藍光和紅光，所以葉子在那裡很暗、綠光稍亮。紅光再過去一點（約 700 nm），反射率突然升高（紅邊），因為葉子內部的細胞把近紅外線強烈地散射回去。水幾乎完全吸收近紅外線與短波紅外線；葉子裡的水也在 1450 與 1940 nm 吸收，所以乾掉的葉子在短波紅外比較亮。</p>
+      <h3 data-en="Bands and composites">波段與合成影像</h3>
+      <p data-en="A screen has only red, green and blue, so we choose which three bands to show in those channels. Natural colour (4-3-2) looks like a photograph. Colour infrared (5-4-3) puts near-infrared in red: healthy plants glow red, water turns black, towns look grey-blue. Bands 6-5-2 and 7-6-4 use shortwave infrared to separate wet and dry ground.">螢幕只有紅、綠、藍三種光，所以要選三個波段放進這三個頻道。真實色彩（4-3-2）看起來像照片；標準假色（5-4-3）把近紅外放在紅色：健康的植物發紅、水變黑、城鎮是藍灰色。6-5-2、7-6-4 用短波紅外，把溼的地和乾的地分開。</p>
+      <h3 data-en="Vegetation index">植生指標</h3>
+      <p data-en-html="The normalised difference vegetation index uses the contrast between near-infrared and red: \[\text{NDVI} = \frac{\rho_\text{NIR} - \rho_\text{red}}{\rho_\text{NIR} + \rho_\text{red}}.\] It runs from −1 to 1: water is negative, bare soil and concrete are near 0.1, and dense healthy plants reach 0.8 or more. The water index \(\text{NDWI} = (\rho_\text{green} - \rho_\text{NIR})/(\rho_\text{green} + \rho_\text{NIR})\) is positive over open water, which is how flooded paddies show up before transplanting.">常態化差異植生指標（NDVI）利用近紅外與紅光的差別： \[\text{NDVI} = \frac{\rho_\text{近紅外} - \rho_\text{紅}}{\rho_\text{近紅外} + \rho_\text{紅}}\] 數值在 −1 到 1 之間：水是負的，裸土和水泥大約 0.1，茂密健康的植物可以到 0.8 以上。水體指標 \(\text{NDWI} = (\rho_\text{綠} - \rho_\text{近紅外})/(\rho_\text{綠} + \rho_\text{近紅外})\) 在開放水面是正的，插秧前灌滿水的稻田就是這樣被看出來的。</p>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Run the year. When do the paddies look like water, when are they greenest, and when are they yellow before the harvest?">播放一年：稻田什麼時候看起來像水？什麼時候最綠？收割前什麼時候變黃？</li>
+        <li data-en="Raise the drought. Which drops first, the NDVI of the rice or of the forest?">調高乾旱：稻田和森林的 NDVI，哪一個掉得比較快？</li>
+        <li data-en="Add haze. Natural colour turns pale blue, but colour infrared still shows the fields. Why is NDVI a little lower?">加一點霧霾：真實色彩變成灰藍，標準假色仍然看得見田。為什麼 NDVI 會變低一點？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="The valley, its fields and its town are invented. The rice calendar follows Taiwan's two crops a year (first crop planted around mid-February, second around early August), simplified.">河谷、田與城鎮都是虛構的。稻作曆照臺灣一年兩期（一期約二月中插秧、二期約八月初插秧）簡化。</li>
+        <li data-en="The spectral curves are smooth functions shaped after typical samples in the USGS Spectral Library, not measured values. A pixel's spectrum is a linear mix of vegetation, soil, water and urban surfaces.">光譜曲線是照 USGS 光譜庫典型樣本的形狀做成的平滑函數，不是實測值；一個像元的光譜是植物、土壤、水、都市四種地表的線性混合。</li>
+        <li data-en-html="Haze is modelled as extra light proportional to \(1/\lambda^4\) (Rayleigh scattering) added to every band; real atmospheric correction is far more detailed.">霧霾用「和 \(1/\lambda^4\) 成正比的額外光」（瑞利散射）加在每個波段上；真正的大氣校正複雜得多。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography elective, Geospatial Technology (sources of spatial data: remote sensing).">課綱對應：高中地理選修・空間資訊科技（空間資料的來源：遙測）。</li>
+        <li data-en="USGS, Landsat 8–9 Operational Land Imager band designations (public domain).">USGS，Landsat 8–9 OLI 的波段範圍（美國政府資料，公有領域）。</li>
+        <li data-en="R. F. Kokaly et al. (2017), USGS Spectral Library Version 7, U.S. Geological Survey Data Series 1035 (public domain) — shapes of the typical curves.">R. F. Kokaly 等（2017），USGS Spectral Library Version 7，USGS Data Series 1035（公有領域）：典型曲線的形狀。</li>
+        <li data-en="J. W. Rouse et al. (1974), Monitoring vegetation systems in the Great Plains with ERTS (NDVI); S. K. McFeeters (1996), International Journal of Remote Sensing 17(7) (NDWI).">J. W. Rouse 等（1974），用 ERTS 監測大平原的植物（NDVI）；S. K. McFeeters（1996），International Journal of Remote Sensing 17(7)（NDWI）。</li>
+        <li data-en="All images on this page are generated by the model; no outside data are used.">本頁的影像都由頁面上的模型產生，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/remote-sensing-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/remote-sensing.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="remote-sensing"></script>
+  <script src="js/missions/remote-sensing.js"></script>
+  <script src="js/stats.js" data-module="remote-sensing"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
