@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Inscribed Angles and the Power of a Point | Astro Ni Science Lab">圓周角與圓冪｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 圓周角頁面專用的顏色代號（淺色＋深色；由 js/inscribed-angle.js 讀取） */
+    :root { --ia-c: #475569; --ia-a: #d97706; --ia-o: #7c3aed; --ia-q: #0d9488; --ia-l1: #0369a1; --ia-l2: #e11d48; --ia-t: #16a34a; --ia-ok: #0d9488; --ia-bad: #dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ia-c: #cbd5e1; --ia-a: #fbbf24; --ia-o: #a78bfa; --ia-q: #2dd4bf; --ia-l1: #38bdf8; --ia-l2: #fb7185; --ia-t: #4ade80; --ia-ok: #2dd4bf; --ia-bad: #f87171; }
+    }
+    :root[data-theme="dark"] { --ia-c: #cbd5e1; --ia-a: #fbbf24; --ia-o: #a78bfa; --ia-q: #2dd4bf; --ia-l1: #38bdf8; --ia-l2: #fb7185; --ia-t: #4ade80; --ia-ok: #2dd4bf; --ia-bad: #f87171; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: none; }
+    .ia button { min-height: 44px; }
+    .ia [hidden] { display: none !important; }
+    .ia .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ia .playbar button { flex: 1 1 auto; }
+    .ia .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ia .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .ia .checks label { min-height: 44px; }
+    .ia .checks input { width: 17px; height: 17px; }
+    .ia .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ia .panel { grid-template-columns: minmax(0, 1fr); }
+    .ia .panel > .card { min-width: 0; }
+    .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .modes button { padding: 4px 2px; line-height: 1.2; }
+    .modes button small { display: block; font-size: calc(11px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes button[aria-pressed="true"] small { color: inherit; opacity: 0.85; }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .row2 button { flex: 1 1 auto; }
+    .ansrow { display: flex; gap: 8px; margin: 8px 0 0; align-items: stretch; }
+    .ansrow input { flex: 1 1 auto; min-width: 0; min-height: 44px; font-size: calc(16px * var(--fs, 1)); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .ansrow button { flex: 0 0 auto; padding: 0 18px; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--ia-ok); font-weight: 600; }
+    .chal-msg.bad { color: var(--ia-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    @media (max-width: 480px) { .eq .katex { font-size: 0.9em; } }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child, #log td:nth-child(2) { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geometry&quot;>Mathematics · Trigonometry and Geometry</a> / Inscribed angles"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geometry">數學・三角與幾何</a> ／ 圓周角與圓冪</nav>
+      <h1 data-en="Inscribed Angles and the Power of a Point">圓周角與圓冪</h1>
+      <p data-en="Slide a point along a circle and the angle it sees a chord under does not change. Put four points on a circle and the opposite angles always add to 180°. Draw any line through a fixed point: the two pieces cut off by the circle always have the same product.">讓一個點沿著圓走，它看一條弦的角度始終不變；圓上四個點連成的四邊形，對角加起來永遠 180°；過一個固定點隨便畫一條線，被圓截出的兩段相乘，結果永遠一樣。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: in Inscribed angle, drag P slowly around the circle. The angle stays put until P crosses A or B — then it jumps to its supplement. In Power of a point, turn the first line and watch QA · QB stay fixed while QA and QB both change.">試試看：在「圓周角」裡慢慢把 P 繞著圓拖。角度一直不變，直到 P 越過 A 或 B，才跳成它的補角。在「圓冪」裡轉動第一條線，QA、QB 都在變，QA·QB 卻不變。</p>
+    <div class="lab ia" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="圓周角畫布：圓 O，可以沿圓拖曳的點，或可以拖曳的點 Q 與過 Q 的直線。" data-en-aria-label="Circle canvas: the circle O with points you can drag along it, or a point Q you can drag with lines through it."></canvas>
+        <div class="playbar">
+          <button id="mark" type="button" class="primary" data-en="Record">記下這一組</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除記下的結果與挑戰紀錄；圖形不變" data-en-title="Clear the records and the challenge record; the figure is kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" id="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="ins" aria-pressed="true" data-en-html="Inscribed angle<small>same arc</small>">圓周角<small>同弧</small></button>
+            <button type="button" data-mode="quad" aria-pressed="false" data-en-html="Cyclic quadrilateral<small>opposite angles</small>">內接四邊形<small>對角</small></button>
+            <button type="button" data-mode="pow" aria-pressed="false" data-en-html="Power of a point<small>chords, secants</small>">圓冪<small>弦與割線</small></button>
+          </div>
+          <p class="hint" id="modeNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Settings">設定</h2>
+          <div class="slider"><label for="rad" data-en="Radius R">半徑 R</label><output id="rado"></output>
+            <input id="rad" type="range" min="1" max="6" step="0.1" value="4" data-decimals="2"></div>
+          <div id="powCtl" hidden>
+            <div class="slider"><label for="th1" data-en="Direction of line 1 (°)">第一條線的方向（°）</label><output id="th1o"></output>
+              <input id="th1" type="range" min="0" max="179.5" step="0.5" value="10" data-decimals="1"></div>
+            <div class="slider"><label for="th2" data-en="Direction of line 2 (°)">第二條線的方向（°）</label><output id="th2o"></output>
+              <input id="th2" type="range" min="0" max="179.5" step="0.5" value="120" data-decimals="1"></div>
+          </div>
+          <div class="checks">
+            <label id="lCen"><input id="showCen" type="checkbox" checked><span data-en="Central angle ∠AOB">圓心角 ∠AOB</span></label>
+            <label id="lP2"><input id="showP2" type="checkbox"><span data-en="A second point P′">再放一點 P′</span></label>
+            <label id="lDiag" hidden><input id="showDiag" type="checkbox" checked><span data-en="Diagonals">對角線</span></label>
+            <label id="l2" hidden><input id="show2" type="checkbox"><span data-en="Line 2">第二條線</span></label>
+            <label id="lTan" hidden><input id="showTan" type="checkbox" checked><span data-en="Tangents from Q">從 Q 畫切線</span></label>
+          </div>
+          <p class="hint" id="dragNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Record” to keep a list of what you have measured.">按「記下這一組」可以把量到的結果列成一張表。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: find the missing value">挑戰：求出未知量</h2>
+          <p class="hint" data-en="A figure appears with some angles or lengths given. Use the inscribed-angle theorem, opposite angles of a cyclic quadrilateral or the power of a point to find the value marked “?”.">畫面出現一個圖形，標出幾個已知的角或長度。用圓周角定理、內接四邊形對角互補或圓冪，求出標著「？」的量。</p>
+          <div class="row2">
+            <button id="newChal" type="button" data-en="New problem">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <div class="ansrow" id="ansRow" hidden>
+            <input id="ans" type="text" inputmode="decimal" autocomplete="off" aria-label="你的答案" data-en-aria-label="Your answer" placeholder="答案" data-en-placeholder="Answer">
+            <button id="answer" type="button" class="primary" data-en="Check">對答案</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="The inscribed-angle theorem">圓周角定理</h3>
+      <div class="formula">\[ \angle APB = \tfrac12\,\angle AOB \]</div>
+      <p data-en-html="An angle whose corner \(P\) is on the circle sees the chord \(AB\) under half of the central angle on the arc that does not contain \(P\). Join \(P\) to the centre: the two triangles \(OPA\) and \(OPB\) are isosceles (\(OP = OA = OB = R\)), and an exterior angle equals the sum of the two opposite interior angles. Consequences: all inscribed angles on the same arc are equal; an angle in a semicircle is \(90^\circ\) (Thales); points on opposite arcs see \(AB\) under angles adding to \(180^\circ\).">頂點 \(P\) 在圓上的角，看弦 \(AB\) 的角度等於「不含 \(P\) 那段弧」所對圓心角的一半。把 \(P\) 和圓心連起來：\(\triangle OPA\)、\(\triangle OPB\) 都是等腰三角形（\(OP = OA = OB = R\)），再用「外角等於兩個不相鄰內角的和」就得到。推論：同弧所對的圓周角都相等；半圓（直徑）所對的圓周角是 \(90^\circ\)（泰勒斯）；在兩側的點看 \(AB\) 的兩個角互補。</p>
+      <h3 data-en="Cyclic quadrilaterals">圓內接四邊形</h3>
+      <div class="formula">\[ \angle A + \angle C = \angle B + \angle D = 180^\circ,\qquad AC\cdot BD = AB\cdot CD + AD\cdot BC \]</div>
+      <p data-en-html="\(\angle A\) and \(\angle C\) stand on the two arcs \(BCD\) and \(DAB\), which together make the whole circle, so the angles add to half of \(360^\circ\). Conversely, a convex quadrilateral whose opposite angles are supplementary can be inscribed in a circle. The second formula is Ptolemy’s theorem (about 150 AD).">\(\angle A\)、\(\angle C\) 分別對著弧 \(BCD\) 和弧 \(DAB\)，兩段弧合起來是整個圓，所以兩角的和是 \(360^\circ\) 的一半。反過來，對角互補的凸四邊形一定有外接圓。第二個式子是托勒密定理（約西元 150 年）。</p>
+      <h3 data-en="The power of a point">圓冪</h3>
+      <div class="formula">\[ QX\cdot QY = \left|\,OQ^2 - R^2\,\right|,\qquad QT^2 = OQ^2 - R^2 \]</div>
+      <p data-en-html="Through a point \(Q\) draw any line meeting the circle at \(X\) and \(Y\). Writing the line as \(Q + s\,\mathbf u\) and substituting into \(|P|^2 = R^2\) gives \(s^2 + 2(Q\cdot\mathbf u)\,s + (OQ^2 - R^2) = 0\); the product of the two roots is \(OQ^2 - R^2\) whatever the direction \(\mathbf u\). Inside the circle this is the intersecting-chords theorem, outside it is the secant theorem, and when the line touches the circle the two points merge into the tangent point \(T\).">過點 \(Q\) 畫任一條直線，交圓於 \(X\)、\(Y\)。把直線寫成 \(Q + s\,\mathbf u\) 代入 \(|P|^2 = R^2\)，得到 \(s^2 + 2(Q\cdot\mathbf u)\,s + (OQ^2 - R^2) = 0\)；不管方向 \(\mathbf u\) 怎麼選，兩根的乘積都是 \(OQ^2 - R^2\)。\(Q\) 在圓內就是相交弦定理，在圓外是割線定理，直線和圓相切時兩個交點合成切點 \(T\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same arc, same angle</strong>: hold \(A\) and \(B\) still and drag \(P\). Only crossing \(A\) or \(B\) changes the angle — to \(180^\circ\) minus it."><strong>同弧同角</strong>：固定 \(A\)、\(B\)，拖動 \(P\)。只有越過 \(A\) 或 \(B\) 時角度才改變，變成 \(180^\circ\) 減去原來的角。</li>
+        <li data-en-html="<strong>Reflex central angles</strong>: when \(P\) is on the short arc, the arc it looks at is longer than a semicircle and \(\angle AOB\) is a reflex angle — still exactly twice \(\angle APB\)."><strong>優角的圓心角</strong>：\(P\) 在短弧上時，它看的那段弧比半圓長，圓心角變成優角，仍然恰好是圓周角的兩倍。</li>
+        <li data-en-html="<strong>One number for every line</strong>: the power \(OQ^2 - R^2\) is negative inside the circle, zero on it and positive outside. It does not depend on the line — only on where \(Q\) is."><strong>每條線都是同一個數</strong>：圓冪 \(OQ^2 - R^2\) 在圓內是負的、圓上是 0、圓外是正的。它和直線無關，只看 \(Q\) 在哪裡。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Every angle is measured directly from the coordinates of the points (with the dot product), and every length from the actual intersection points, so the theorems you see are checked, not assumed. Points on the circle move in steps of \(0.5^\circ\) when dragged and \(0.1^\circ\) with the arrow keys.">每個角都直接用點的座標（內積）量，每段長度都用真正算出來的交點量，所以畫面上的定理是驗證出來的，不是先假設好的。圓上的點用拖的每次 \(0.5^\circ\)，用方向鍵每次 \(0.1^\circ\)。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics · circles, inscribed angles, cyclic quadrilaterals, the power of a point.">課綱對應：高中數學・圓、圓周角、圓內接四邊形、圓冪。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Inscribed_angle&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Inscribed angle (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Power_of_a_point&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Power of a point (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Inscribed_angle" target="_blank" rel="noopener">Inscribed angle（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Power_of_a_point" target="_blank" rel="noopener">Power of a point（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/inscribed-angle-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/inscribed-angle.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="inscribed-angle"></script>
+  <script src="js/missions/inscribed-angle.js"></script>
+  <script src="js/stats.js" data-module="inscribed-angle"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
