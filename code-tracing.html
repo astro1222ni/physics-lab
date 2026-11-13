@@ -9,15 +9,15 @@
   <link rel="stylesheet" href="lab.css">
   <style>
     /* 程式追蹤頁面專用的顏色代號（淺色＋兩組深色；由 js/code-tracing.js 讀取） */
-    :root { --ct-kw: #8b3fd9; --ct-ty: #0e7490; --ct-num: #b45309; --ct-str: #15803d; --ct-fn: #1d4ed8; --ct-com: #7d8a8e; --ct-esc: #c2410c;
+    :root { --ct-num-ink: #92400e; --ct-kw: #8b3fd9; --ct-ty: #0e7490; --ct-num: #b45309; --ct-str: #15803d; --ct-fn: #1d4ed8; --ct-com: #7d8a8e; --ct-esc: #c2410c;
       --ct-cur: #d6eee6; --ct-bar: #196558; --ct-next: #eef5f2; --ct-seg: #fde68a; --ct-true: #15803d; --ct-false: #c2410c; --ct-warn: #a16207; --ct-bad: #dc2626;
       --ct-box: #e6edf6; --ct-arr: #efe6d6; --ct-ptr: #7c3aed; --ct-pbg: #fff1bf; --ct-pbd: #c99a06; --ct-con: #1d2528; --ct-conf: #e3ecec; --ct-new: #ffd166; --ct-frame: #e9e3f5; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
+      :root:not([data-theme="light"]) { --ct-num-ink: #fbbf24; --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
         --ct-cur: #1f3d36; --ct-bar: #5cc2a8; --ct-next: #172529; --ct-seg: #6b5310; --ct-true: #4ade80; --ct-false: #fb923c; --ct-warn: #fbbf24; --ct-bad: #f87171;
         --ct-box: #22313a; --ct-arr: #33291c; --ct-ptr: #c9a7ff; --ct-pbg: #3d3312; --ct-pbd: #d4a72c; --ct-con: #0a0f11; --ct-conf: #d6e2e2; --ct-new: #ffd166; --ct-frame: #2c2540; }
     }
-    :root[data-theme="dark"] { --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
+    :root[data-theme="dark"] { --ct-num-ink: #fbbf24; --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
       --ct-cur: #1f3d36; --ct-bar: #5cc2a8; --ct-next: #172529; --ct-seg: #6b5310; --ct-true: #4ade80; --ct-false: #fb923c; --ct-warn: #fbbf24; --ct-bad: #f87171;
       --ct-box: #22313a; --ct-arr: #33291c; --ct-ptr: #c9a7ff; --ct-pbg: #3d3312; --ct-pbd: #d4a72c; --ct-con: #0a0f11; --ct-conf: #d6e2e2; --ct-new: #ffd166; --ct-frame: #2c2540; }
 
@@ -60,7 +60,7 @@
     .code .com { color: var(--ct-com); font-style: italic; }
     .code .lit { color: var(--ct-kw); }
     .code .op { color: var(--muted); }
-    .code .param { color: var(--ct-num); background: var(--ct-pbg); border: 1px dashed var(--ct-pbd); border-radius: 4px; padding: 0 2px; margin: 0 -3px; cursor: pointer; font-weight: 700; }
+    .code .param { color: var(--ct-num-ink); background: var(--ct-pbg); border: 1px dashed var(--ct-pbd); border-radius: 4px; padding: 0 2px; margin: 0 -3px; cursor: pointer; font-weight: 700; }
     .code .param:hover, .code .param:focus-visible { border-style: solid; outline: none; }
     .ct .pynote { margin: 0; padding: 4px 10px 6px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); border-top: 1px dashed var(--border); }
     /* 輸出 */
@@ -82,7 +82,7 @@
     .sound-btn .wave { opacity: 0.25; }
     .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
-    .ct .speedrow { margin: 4px 2px 0; }
+    .ct .speedrow { margin: 14px 2px 0; }
     .ct .stage .status { margin: 8px 4px 0; min-height: 2.8em; }
     .ct .stage .status.bad { color: var(--ct-bad); }
     .ct .stage .status.warn { color: var(--ct-warn); }

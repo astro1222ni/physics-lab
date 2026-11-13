@@ -9,11 +9,11 @@
   <link rel="stylesheet" href="lab.css">
   <style>
     /* k 最近鄰頁面專用的顏色代號（淺色＋兩組深色；由 js/knn.js 讀取）。A、B 兩類和感知器的 +1、−1 同色同形狀 */
-    :root { --kn-a: #e8590c; --kn-a-btn: #c2410c; --kn-b: #1d63d6; --kn-c: #2b8a3e; --kn-c-btn: #237032; --kn-q: #6d28d9; --kn-wrong: #dc2626; --kn-cur: #d97706; --kn-ok: #15803d; --kn-panel: #e9eef5; }
+    :root { --kn-a-ink: #c2410c; --kn-c-ink: #237032; --kn-a: #e8590c; --kn-a-btn: #c2410c; --kn-b: #1d63d6; --kn-c: #2b8a3e; --kn-c-btn: #237032; --kn-q: #6d28d9; --kn-wrong: #dc2626; --kn-cur: #d97706; --kn-ok: #15803d; --kn-panel: #e9eef5; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
+      :root:not([data-theme="light"]) { --kn-a-ink: #ff8a3d; --kn-c-ink: #5fd17a; --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
     }
-    :root[data-theme="dark"] { --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
+    :root[data-theme="dark"] { --kn-a-ink: #ff8a3d; --kn-c-ink: #5fd17a; --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
 
     /* 畫布高度由程式依寬度決定；按在點或查詢點上才攔下觸控（拖曳），其他時候手機可以照常捲動 */
     #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: crosshair; }
@@ -61,9 +61,9 @@
     dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
     dl.readout dd.ok { color: var(--kn-ok); font-weight: 700; }
     dl.readout dd.bad { color: var(--kn-wrong); font-weight: 700; }
-    dl.readout dd .ca { color: var(--kn-a); font-weight: 700; }
+    dl.readout dd .ca { color: var(--kn-a-ink); font-weight: 700; }
     dl.readout dd .cb { color: var(--kn-b); font-weight: 700; }
-    dl.readout dd .cc { color: var(--kn-c); font-weight: 700; }
+    dl.readout dd .cc { color: var(--kn-c-ink); font-weight: 700; }
     .stepbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; border: 1px dashed var(--border); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.6; min-height: 4.8em; overflow-x: auto; }
     .stepbox .katex { font-size: 1em; }
     .stepbox .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-weight: 700; font-size: 0.92em; }

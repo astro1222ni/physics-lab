@@ -10,13 +10,13 @@
   <style>
     /* CPU 排程頁面專用的顏色代號（淺色＋兩組深色；由 js/cpu-scheduling.js 讀取）
        p1–p8：八個行程（再配花紋與編號區分）；wait 等待、sw 情境切換、idle 閒置、chip CPU 晶片、best 最好的方法 */
-    :root { --cs-p1: #2563eb; --cs-p2: #d97706; --cs-p3: #0f9a6e; --cs-p4: #dc2626; --cs-p5: #7c3aed; --cs-p6: #0891b2; --cs-p7: #be185d; --cs-p8: #5f8a0b;
+    :root { --cs-p2-ink: #b45309; --cs-p3-ink: #047857; --cs-p1: #2563eb; --cs-p2: #d97706; --cs-p3: #0f9a6e; --cs-p4: #dc2626; --cs-p5: #7c3aed; --cs-p6: #0891b2; --cs-p7: #be185d; --cs-p8: #5f8a0b;
       --cs-wait: #94a3b8; --cs-sw: #8b6f47; --cs-idle: #a3adb8; --cs-chip: #334155; --cs-best: #b45309; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
+      :root:not([data-theme="light"]) { --cs-p2-ink: #fbbf24; --cs-p3-ink: #34d399; --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
         --cs-wait: #7b8a9e; --cs-sw: #c8a678; --cs-idle: #64707e; --cs-chip: #1e293b; --cs-best: #fcd34d; }
     }
-    :root[data-theme="dark"] { --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
+    :root[data-theme="dark"] { --cs-p2-ink: #fbbf24; --cs-p3-ink: #34d399; --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
       --cs-wait: #7b8a9e; --cs-sw: #c8a678; --cs-idle: #64707e; --cs-chip: #1e293b; --cs-best: #fcd34d; }
 
     /* 畫布高度由程式依寬度與行程數決定；手機上可以照常捲動 */
@@ -149,8 +149,8 @@
         <div class="legend">
           <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>RR average waiting time"><i style="background:var(--accent)"></i>RR 的平均等待時間</span>
           <span data-en-html="<i class=&quot;bar&quot; style=&quot;background:color-mix(in srgb, var(--cs-sw) 45%, transparent)&quot;></i>Context switches"><i class="bar" style="background:color-mix(in srgb, var(--cs-sw) 45%, transparent)"></i>情境切換次數</span>
-          <span style="color:var(--cs-p2)" data-en-html="<i class=&quot;dash&quot;></i>FCFS"><i class="dash"></i>FCFS</span>
-          <span style="color:var(--cs-p3)" data-en-html="<i class=&quot;dot&quot;></i>SRTF (the least possible)"><i class="dot"></i>SRTF（不可能更少）</span>
+          <span style="color:var(--cs-p2-ink)" data-en-html="<i class=&quot;dash&quot;></i>FCFS"><i class="dash"></i>FCFS</span>
+          <span style="color:var(--cs-p3-ink)" data-en-html="<i class=&quot;dot&quot;></i>SRTF (the least possible)"><i class="dot"></i>SRTF（不可能更少）</span>
         </div>
         <p class="chart-cap" data-en="Once q is at least the longest burst, nobody is ever cut off and round robin becomes FCFS. A very small q cuts everyone into slices — and with a switch cost, the switches pile up.">q 一旦不小於最長的執行時間，就沒有人會被打斷，RR 變成 FCFS；q 很小時每個人都被切成很多段——有切換成本時，切換的時間就一路疊上去。</p>
       </div>
