@@ -213,6 +213,44 @@ console.log('  ' + (ok11 === N ? '✓' : '✗') + ' 未知電極 ' + N + ' 次�
 console.log('  ' + (ok12 === N ? '✓' : '✗') + ' 未知金屬 ' + N + ' 次（1 A、3600 s）：成功 ' + ok12 + ' 次，最大誤差 ' + (100 * worst12).toFixed(3) + '%');
 if (ok11 !== N || ok12 !== N) bad++;
 
+// ---------- h4–h10（每個做法只完成它自己這個隱藏任務） ----------
+{
+  const isHid = id => /-h\d+$/.test(id);
+  const H = n => 'electrochemistry-h' + n;
+  const reportH = (name, Q, id) => {
+    const extra = Q.events.filter(x => isHid(x) && x !== id);
+    report(name + (extra.length ? '　← 順便完成了 ' + extra.join('、') : ''), Q, [id]);
+    if (extra.length) bad++;
+  };
+  const cellPage = (L, R, cL, cR, vol) => { freshMissions(); const Q = newPage(); set(Q, 'L', L); set(Q, 'R', R); set(Q, 'cL', cL); set(Q, 'cR', cR); if (vol) set(Q, 'vol', vol); set(Q, 'bridge', true); return Q; };
+  let Q;
+  Q = cellPage('Ag', 'Ag', 0.001, 2); run(Q, 1);
+  reportH('Ag | Ag 濃差電池 0.001 M 與 2 M：E = ' + C.emf(Q.cell.L, Q.cell.R).toFixed(4) + ' V（Cu 同樣濃度只有 ' + (C.KN / 2 * Math.log10(2000)).toFixed(4) + ' V）', Q, H(4));
+  Q = cellPage('Zn', 'Cu', 1, 0.001); set(Q, 'load', 'R'); set(Q, 'Rload', 10); Q.speed = 1;
+  let w = run(Q, 120, X => X.events.includes(H(5)));
+  reportH('Zn 1 M | Cu 0.001 M、100 mL、接 10 Ω、×100（真實 ' + w.toFixed(1) + ' s）：Cu²⁺ 剩 ' + Q.cell.R.c.toExponential(2) + ' M', Q, H(5));
+  Q = cellPage('Sn', 'Pb', 2, 0.002); run(Q, 1);
+  reportH('Sn 2 M | Pb 0.002 M：E = ' + C.emf(Q.cell.L, Q.cell.R).toFixed(4) + ' V（標準狀態 +' + (C.METALS.Pb.E - C.METALS.Sn.E).toFixed(4) + ' V）', Q, H(6));
+  Q = cellPage('Zn', 'Cu', 1, 2, 250); set(Q, 'load', 'R'); set(Q, 'Rload', 1); Q.speed = 3;
+  w = run(Q, 60, X => X.events.includes(H(7)));
+  reportH('Zn 1 M | Cu 2 M、250 mL、接 1 Ω、×10⁶（真實 ' + w.toFixed(1) + ' s）：鋅片剩 ' + Q.cell.L.m.toFixed(4) + ' g', Q, H(7));
+  Q = cellPage('Zn', 'Cu', 1, 1); set(Q, 'load', 'R'); set(Q, 'Rload', 5); run(Q, 1);
+  { const E = C.emf(Q.cell.L, Q.cell.R), Pw = R => (E / (R + 5)) ** 2 * R;
+    reportH('Zn | Cu 接 5.0 Ω（內電阻 5 Ω）：功率 ' + Pw(5).toFixed(4) + ' W（4 Ω ' + Pw(4).toFixed(4) + '、6 Ω ' + Pw(6).toFixed(4) + '）', Q, H(8)); }
+  freshMissions(); Q = newPage(); Q.mode = 'elec'; set(Q, 'elec', 'Cu'); set(Q, 'I', 2); Q.speed = 2;
+  w = run(Q, 60, X => X.events.includes(H(9)));
+  reportH('銅電極、2 A、×10⁴（真實 ' + w.toFixed(1) + ' s）：陽極剩 ' + Q.elx.mAnode.toFixed(4) + ' g、陰極 ' + Q.elx.mCath.toFixed(3) + ' g', Q, H(9));
+  Q = cellPage('Zn', 'Cu', 0.0035, 2); run(Q, 1);
+  reportH('Zn 0.0035 M | Cu 2 M：E = ' + C.emf(Q.cell.L, Q.cell.R).toFixed(4) + ' V（最大可到 ' + (1.0988 + C.KN / 2 * Math.log10(2000)).toFixed(3) + ' V）', Q, H(10));
+  // 反例：Zn 1 M | Cu 1 M 接 4 Ω 不算 h8；Cu | Cu 濃差電池 0.001／2 M 不算 h4；Ni | Sn 換濃度也翻不過來
+  Q = cellPage('Zn', 'Cu', 1, 1); set(Q, 'load', 'R'); set(Q, 'Rload', 4); run(Q, 1);
+  Q.events.some(isHid) ? (console.log('  ✗ 4 Ω 也算了：' + Q.events.join('、')), bad++) : console.log('  ✓ 接 4 Ω 不算 h8');
+  Q = cellPage('Cu', 'Cu', 0.001, 2); run(Q, 1);
+  Q.events.some(isHid) ? (console.log('  ✗ 銅的濃差電池也算了：' + Q.events.join('、')), bad++) : console.log('  ✓ 銅的濃差電池 0.001／2 M（' + C.emf(Q.cell.L, Q.cell.R).toFixed(4) + ' V）不算隱藏任務');
+  Q = cellPage('Ni', 'Sn', 2, 0.001); run(Q, 1);
+  Q.events.some(isHid) ? (console.log('  ✗ Ni | Sn 也算了'), bad++) : console.log('  ✓ Ni 2 M | Sn 0.001 M 仍是 ' + C.emf(Q.cell.L, Q.cell.R).toFixed(4) + ' V（翻不過來），不算 h6');
+}
+
 // ---------- 結論 ----------
 const missing = missions.filter(m => !results[m.id]).map(m => m.id);
 let stars = 0, hid = 0;
