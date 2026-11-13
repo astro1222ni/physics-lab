@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="DNA Replication, Transcription and Translation | Astro Ni Science Lab">DNA 複製、轉錄與轉譯｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="從 β 血紅素基因開始，看 DNA 轉錄成 mRNA、核糖體每三個鹼基讀一個密碼子接上胺基酸。自己改一個鹼基，做出同義、錯義、無意義、移碼突變，重現鐮刀型貧血症的突變；設計會產生指定胜肽的 DNA。再重做 Meselson–Stahl 實驗，用密度梯度離心的條帶排除全保留與分散複製。3D 雙股螺旋看得到每圈 10.5 對鹼基與大溝、小溝。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* DNA 複製、轉錄與轉譯頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ge-a: #2f9e44; --ge-t: #e03131; --ge-g: #e8890c; --ge-c: #1c7ed6; --ge-u: #ae3ec9;
+      --ge-np: #c99a2e; --ge-p: #2a9d8f; --ge-pos: #4263eb; --ge-neg: #e8590c; --ge-stop: #868e96;
+      --ge-heavy: #1e3a8a; --ge-light: #93c5fd; --ge-tube: #eef2f6;
+      --ge-good: #0f766e; --ge-bad: #c2410c; --ge-sel: #f59f00;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ge-a: #51cf66; --ge-t: #ff6b6b; --ge-g: #ffa94d; --ge-c: #4dabf7; --ge-u: #da77f2;
+        --ge-np: #e3b341; --ge-p: #38d9a9; --ge-pos: #748ffc; --ge-neg: #ff8a4c; --ge-stop: #adb5bd;
+        --ge-heavy: #3b5bdb; --ge-light: #a5d8ff; --ge-tube: #1d2733;
+        --ge-good: #2dd4bf; --ge-bad: #fb923c; --ge-sel: #ffd43b;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ge-a: #51cf66; --ge-t: #ff6b6b; --ge-g: #ffa94d; --ge-c: #4dabf7; --ge-u: #da77f2;
+      --ge-np: #e3b341; --ge-p: #38d9a9; --ge-pos: #748ffc; --ge-neg: #ff8a4c; --ge-stop: #adb5bd;
+      --ge-heavy: #3b5bdb; --ge-light: #a5d8ff; --ge-tube: #1d2733;
+      --ge-good: #2dd4bf; --ge-bad: #fb923c; --ge-sel: #ffd43b;
+    }
+    #cv, #cv2 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv { height: 480px; cursor: pointer; }
+    #cv2 { height: 440px; }
+    .ge button { min-height: 44px; }
+    .ge .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ge .playbar button { flex: 1 1 auto; }
+    .ge .playbar .primary { font-weight: 700; }
+    .ge .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ge .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ge .slider input[type="range"] { height: 28px; margin: 0; }
+    .ge [hidden] { display: none !important; }
+    .ge .panel { grid-template-columns: minmax(0, 1fr); }
+    .ge .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.good { color: var(--ge-good); }
+    dl.readout dd.bad { color: var(--ge-bad); }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend i.sq { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.seq { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    .bases { display: grid; grid-template-columns: auto repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; margin: 8px 0 0; }
+    .bases span { font-size: calc(13px * var(--fs, 1)); color: var(--muted); white-space: nowrap; }
+    .bases button { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 700; padding: 4px 0; }
+    .bases button[data-b="A"] { color: var(--ge-a); } .bases button[data-b="T"] { color: var(--ge-t); }
+    .bases button[data-b="G"] { color: var(--ge-g); } .bases button[data-b="C"] { color: var(--ge-c); }
+    .row2 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 8px 0 0; }
+    .row2 button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); }
+    .selinfo { margin: 4px 0 0; font-size: calc(14px * var(--fs, 1)); }
+    .selinfo code, .target code { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-weight: 700; }
+    textarea.seqin { width: 100%; box-sizing: border-box; min-height: 64px; margin: 8px 0 0; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: 14px/1.4 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: 0.04em; resize: vertical; }
+    .target { margin: 2px 0 0; font-size: calc(15px * var(--fs, 1)); overflow-wrap: anywhere; }
+    .target small { display: block; color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+    .hyps { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; align-items: stretch; }
+    .hyps button { padding: 4px 8px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.25; }
+    .hyps button.pick[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; }
+    .hyps button.pick.out { text-decoration: line-through; color: var(--muted); }
+    .hyps button.elim { min-width: 64px; }
+    .tog { width: 100%; margin: 8px 0 0; }
+    .tog[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .ge3-wrap { position: relative; }
+    .ge3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .ge3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .ge3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .ge3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .ge3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .ge3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#genetics&quot;>Biology · Genetics</a> / DNA replication, transcription and translation"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#genetics">生物・遺傳</a> ／ DNA 複製、轉錄與轉譯</nav>
+      <h1 data-en="DNA Replication, Transcription and Translation">DNA 複製、轉錄與轉譯</h1>
+      <p data-en="A gene is a run of letters — A, T, C and G — on one strand of DNA. The cell copies it into messenger RNA, and a ribosome reads the RNA three letters at a time, adding one amino acid for each three-letter codon until it reaches a stop codon. Start with the real beginning of the β-globin gene of your red blood cells, change single letters and watch what happens to the protein. Then repeat the 1958 experiment of Meselson and Stahl, which showed how DNA itself is copied.">基因是 DNA 一股上的一串字母——A、T、C、G。細胞先把它抄成傳訊 RNA，核糖體再每三個字母讀一次，每讀到一個密碼子就接上一個胺基酸，直到遇到終止密碼子。從你紅血球裡 β 血紅素基因真正的開頭出發，改一個字母，看看蛋白質會怎樣；再重做 1958 年 Meselson 與 Stahl 的實驗，看 DNA 自己是怎麼複製的。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Transcribe and translate”, then tap a letter of the DNA and change it.">試試看：按「轉錄＋轉譯」，再點 DNA 上的一個字母，把它換掉。</p>
+
+    <h2 class="lab-title" data-en-html="1 · From gene to protein<small>Transcription, the genetic code, translation and mutations</small>">一・從基因到蛋白質<small>轉錄、遺傳密碼、轉譯與突變</small></h2>
+    <div class="lab ge" id="lab1">
+      <div class="stage" id="stage1">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D strands">2D 序列</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D double helix">3D 雙股螺旋</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="上面是 DNA 的兩股、轉錄出的 mRNA 與讀出的胺基酸，下面比較原本和現在的蛋白質。點一個鹼基選取它，左右拖曳捲動；點選畫布後，左右鍵移動選取，按 A、T、C、G 換掉鹼基，Shift 加字母插入，Delete 刪除，Enter 轉錄＋轉譯" data-en-aria-label="At the top, the two DNA strands, the mRNA copied from them and the amino acids read from it; below, the original and the current protein. Tap a base to select it and drag sideways to scroll. With the canvas focused, move the selection with the left and right keys, press A, T, C or G to change the base, Shift with a letter to insert, Delete to remove, and Enter to transcribe and translate"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="runBtn" type="button" class="primary" data-en="Transcribe and translate">轉錄＋轉譯</button>
+          <button id="skipBtn" type="button" data-en="Skip to the end">直接看結果</button>
+          <button id="clear1" type="button" data-en="Clear all" title="清掉動畫與紀錄表；DNA 序列不變" data-en-title="Clear the animation and the table; the DNA sequence stays">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Gene">基因</h2>
+          <div class="chips" id="genes" role="group" aria-label="基因" data-en-aria-label="Gene"></div>
+          <textarea class="seqin" id="seqIn" rows="3" spellcheck="false" autocomplete="off" aria-label="自己輸入編碼股（5' 到 3'，只用 A、T、C、G）" data-en-aria-label="Type your own coding strand (5′ to 3′, using only A, T, C and G)" placeholder="自己輸入編碼股 5'→3'，例如 ATGAAATGGTAA" data-en-placeholder="Type a coding strand 5′→3′, e.g. ATGAAATGGTAA"></textarea>
+          <div class="row2"><button type="button" id="applySeq" data-en="Use this DNA">使用這段 DNA</button><button type="button" id="undoBtn" data-en="Undo">復原一步</button><button type="button" id="resetSeq" data-en="Restore the gene">還原基因</button></div>
+          <p class="hint" id="geneHint"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Change one base">改一個鹼基</h2>
+          <p class="selinfo" id="selInfo"></p>
+          <div class="bases" id="subBtns"><span data-en="Change to">換成</span><button type="button" data-b="A">A</button><button type="button" data-b="T">T</button><button type="button" data-b="C">C</button><button type="button" data-b="G">G</button></div>
+          <div class="bases" id="insBtns"><span data-en="Insert before">前面插入</span><button type="button" data-b="A">A</button><button type="button" data-b="T">T</button><button type="button" data-b="C">C</button><button type="button" data-b="G">G</button></div>
+          <div class="row2"><button type="button" id="delBtn" data-en="Delete base">刪除鹼基</button><button type="button" id="prevB" data-en="◀ Previous">◀ 前一個</button><button type="button" id="nextB" data-en="Next ▶">後一個 ▶</button></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Design challenge">設計挑戰</h2>
+          <p class="target" id="target"></p>
+          <div class="row2"><button type="button" id="newTarget" data-en="New target">換一個目標</button><button type="button" id="codeTable" aria-pressed="false" data-en="Codon table">密碼表</button><button type="button" id="hintBtn" data-en="Hint">提示</button></div>
+          <p class="hint" id="targetHint" data-en="Write a coding strand that starts with ATG and ends with a stop codon, so that the ribosome makes exactly this peptide. Then press “Transcribe and translate”.">寫一段以 ATG 開頭、以終止密碼子結尾的編碼股，讓核糖體剛好做出這條胜肽，再按「轉錄＋轉譯」。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · How DNA copies itself<small>The Meselson–Stahl experiment (1958): heavy nitrogen and a density gradient</small>">二・DNA 怎麼複製自己<small>Meselson–Stahl 實驗（1958）：重氮與密度梯度離心</small></h2>
+    <div class="lab ge" id="lab2">
+      <div class="stage">
+        <canvas id="cv2" tabindex="0" aria-label="左邊是選取的假說畫出的 DNA 分子（深色是含重氮的舊股、淺色是新股），右邊是每次離心的試管，暗色條帶是 DNA 停下來的位置；試管旁的小三角形是選取的假說預測的位置。點選畫布後，左右鍵改代數、Enter 離心一次" data-en-aria-label="On the left, DNA molecules drawn by the chosen hypothesis (dark: old strands with heavy nitrogen; pale: new strands); on the right, the tube from each spin, where dark bands show where the DNA settled. Small triangles beside each tube mark where the chosen hypothesis predicts the bands. Focus the canvas, change the generation with the left and right keys and press Enter to spin"></canvas>
+        <div class="playbar">
+          <button id="spinBtn" type="button" class="primary" data-en="Spin the sample">離心一次</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清掉所有試管與排除的假說" data-en-title="Clear every tube and every ruled-out hypothesis">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Sample">取樣</h2>
+          <div class="slider"><label for="gen" data-en-html="Generations in light nitrogen (<sup>14</sup>N)">移到輕氮後的代數</label><output id="geno"></output>
+            <input id="gen" type="range" min="0" max="4" step="1" value="1" data-decimals="0"></div>
+          <button type="button" class="tog" id="denatBtn" aria-pressed="false" data-en="Heat first: separate the strands">先加熱：把雙股分開</button>
+          <p class="hint" data-en-html="The bacteria first grew for many generations with heavy nitrogen, <sup>15</sup>N, then were moved to ordinary <sup>14</sup>N. Generation 0 is the moment of the move.">細菌先在重氮 <sup>15</sup>N 中培養很多代，再移到一般的 <sup>14</sup>N 培養液。第 0 代就是剛移過去的時候。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Three hypotheses">三種假說</h2>
+          <div class="hyps" id="hyps"></div>
+          <p class="hint" data-en="Tap a hypothesis to draw its molecules and its predicted bands. Rule one out only when a tube you have spun disagrees with it.">點一個假說，看它畫出的分子和預測的條帶。只有離心過的試管和它不合，才能排除它。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="Two strands, read in opposite directions">兩股、方向相反</h3>
+      <p data-en-html="DNA has two strands held together by base pairs: A with T (two hydrogen bonds) and G with C (three). The strands run in opposite directions, 5′→3′ and 3′→5′. RNA polymerase reads the <strong>template strand</strong> and builds an mRNA that is complementary to it, so the mRNA has the same sequence as the other, <strong>coding strand</strong> — except that RNA uses U instead of T.">DNA 有兩股，靠鹼基配對連在一起：A 配 T（兩個氫鍵）、G 配 C（三個氫鍵）。兩股方向相反，一股 5′→3′、另一股 3′→5′。RNA 聚合酶讀的是<strong>模板股</strong>，合成和它互補的 mRNA，所以 mRNA 的序列和另一股<strong>編碼股</strong>相同——只是 RNA 用 U 代替 T。</p>
+
+      <h3 data-en="The genetic code">遺傳密碼</h3>
+      <p data-en-html="Three bases make one codon, so there are 4<sup>3</sup> = 64 codons for 20 amino acids and the stop signal. Most amino acids therefore have several codons, usually differing only in the third letter — which is why many changes in the third position do nothing (synonymous, or silent, mutations). Translation starts at the first AUG (methionine) and ends at UAA, UAG or UGA.">三個鹼基組成一個密碼子，所以有 4<sup>3</sup> = 64 個密碼子，對應 20 種胺基酸和終止訊號。因此大多數胺基酸有好幾個密碼子，通常只差在第三個字母——這就是為什麼很多第三個位置的改變沒有影響（同義突變，又叫沉默突變）。轉譯從第一個 AUG（甲硫胺酸）開始，到 UAA、UAG 或 UGA 停止。</p>
+      <div class="formula">\[ 4 \times 4 \times 4 = 64 = 61 + 3 \]</div>
+
+      <h3 data-en="Kinds of mutation">突變的種類</h3>
+      <ul>
+        <li data-en-html="<strong>Synonymous (silent)</strong>: the codon changes but still codes for the same amino acid."><strong>同義（沉默）突變</strong>：密碼子變了，但還是同一種胺基酸。</li>
+        <li data-en-html="<strong>Missense</strong>: one amino acid becomes another. In sickle-cell disease, codon 7 of β-globin changes from GAG to GTG, so glutamic acid (written as position 6 of the mature protein, because the first methionine is removed) becomes valine. The haemoglobin sticks together when oxygen is low and bends the red cells into sickles."><strong>錯義突變</strong>：一個胺基酸變成另一個。鐮刀型貧血症就是 β 血紅素第 7 個密碼子從 GAG 變成 GTG，麩胺酸變成纈胺酸（成熟的蛋白質會切掉開頭的甲硫胺酸，所以文獻寫成第 6 個胺基酸）。缺氧時這種血紅素會黏成長條，把紅血球撐成鐮刀形。</li>
+        <li data-en-html="<strong>Nonsense</strong>: a codon becomes a stop codon and the protein is cut short."><strong>無意義突變</strong>：一個密碼子變成終止密碼子，蛋白質提早結束。</li>
+        <li data-en-html="<strong>Frameshift</strong>: inserting or deleting a number of bases that is not a multiple of three shifts every codon after it. Crick, Brenner and colleagues (1961) showed that a +1 and a −1 change close together restore the reading frame — the first evidence that the code is read in threes from a fixed start."><strong>移碼突變</strong>：插入或刪除的鹼基數不是 3 的倍數，後面每一個密碼子都錯開。Crick、Brenner 等人（1961）發現，一個 +1 加上附近一個 −1 可以把讀碼框救回來——這是「密碼從固定起點、每三個一讀」的第一個證據。</li>
+        <li data-en-html="<strong>In-frame deletion</strong>: removing exactly three bases removes one amino acid. The commonest cystic fibrosis mutation, ΔF508, removes one phenylalanine this way."><strong>框內缺失</strong>：剛好刪掉三個鹼基，就只少一個胺基酸。囊腫纖維化最常見的突變 ΔF508 就是這樣少了一個苯丙胺酸。</li>
+      </ul>
+
+      <h3 data-en="Meselson and Stahl">Meselson 與 Stahl</h3>
+      <p data-en-html="DNA made with heavy nitrogen (<sup>15</sup>N) is about 1% denser than DNA made with <sup>14</sup>N. Spun for about a day in a caesium chloride solution, the salt forms a density gradient and each kind of DNA settles where its density matches: 1.710 g/cm<sup>3</sup> for light DNA, 1.724 g/cm<sup>3</sup> for heavy DNA, and in between for hybrid DNA. The three hypotheses predict different bands:">用重氮 <sup>15</sup>N 合成的 DNA，比用 <sup>14</sup>N 合成的密度大約 1%。放在氯化銫溶液裡高速離心約一天，鹽會形成密度梯度，每種 DNA 停在密度相同的地方：輕的 DNA 1.710 g/cm<sup>3</sup>、重的 1.724 g/cm<sup>3</sup>，一半一半的在中間。三種假說預測的條帶不同：</p>
+      <ul>
+        <li data-en-html="<strong>Semi-conservative</strong> (Watson and Crick): each new molecule keeps one old strand. Generation 1: all hybrid. Generation 2: half hybrid, half light."><strong>半保留</strong>（Watson 與 Crick）：每個新分子保留一股舊的。第 1 代全部是中間；第 2 代中間、輕的各一半。</li>
+        <li data-en-html="<strong>Conservative</strong>: the old double helix stays whole and a completely new one is made. Generation 1: one heavy band and one light band."><strong>全保留</strong>：舊的雙股完整保留，另外做一個全新的。第 1 代就有重、輕兩條帶。</li>
+        <li data-en-html="<strong>Dispersive</strong>: old and new pieces are mixed along every strand. Every generation gives a single band that moves steadily towards light."><strong>分散</strong>：每一股都是新舊片段混在一起。每一代都只有一條帶，一代一代往輕的方向移。</li>
+      </ul>
+      <p data-en-html="For semi-conservative copying, the fractions of hybrid (f<sub>M</sub>) and light (f<sub>L</sub>) DNA in generation n are">半保留複製時，第 n 代中間帶（f<sub>M</sub>）與輕帶（f<sub>L</sub>）所占的比例是</p>
+      <div class="formula">\[ f_\text{M} = \frac{2}{2^n} ,\qquad f_\text{L} = 1-\frac{2}{2^n} \qquad (n \ge 1) \]</div>
+      <p data-en="Heating separates the two strands. In generation 1 the semi-conservative molecules then give a heavy single-strand band and a light one, while dispersive strands, each half heavy, give one band in between.">加熱會把兩股分開。半保留的第 1 代分開後，會得到一條重的單股帶和一條輕的單股帶；分散式的每一股都是一半重、一半輕，只會得到中間一條。</p>
+
+      <h3 data-en="Things to try">可以試試</h3>
+      <ul>
+        <li data-en-html="<strong>Sickle cell</strong>: in the β-globin gene, change the A in the middle of codon 7 (GAG) to T."><strong>鐮刀型貧血</strong>：在 β 血紅素基因，把第 7 個密碼子 GAG 中間的 A 換成 T。</li>
+        <li data-en-html="<strong>Wobble</strong>: change the third letter of several codons. How many leave the protein unchanged?"><strong>擺動</strong>：改幾個密碼子的第三個字母，有幾個不影響蛋白質？</li>
+        <li data-en-html="<strong>Crick’s experiment</strong>: insert one base, watch everything after it change, then delete a base a few letters later."><strong>Crick 的實驗</strong>：插入一個鹼基，看後面全部改變；再在後面幾個字母的地方刪掉一個。</li>
+        <li data-en-html="<strong>Both strands</strong>: the other strand, read 5′→3′, can carry a gene too. Can you write a short DNA in which both strands make a peptide?"><strong>兩股都有基因</strong>：另一股從它的 5′ 往 3′ 讀，也可以帶著基因。你能寫出一段兩股都做得出胜肽的 DNA 嗎？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The genetic code is the standard code used by the nuclei of almost all organisms. The β-globin sequence is the end of the 5′ untranslated region, the first 31 codons of the human <em>HBB</em> coding sequence and the start of its 3′ untranslated region; the rest of the gene (and its introns) is left out, and the stop codon is joined on directly — that part is a simplification.">遺傳密碼是幾乎所有生物細胞核共用的標準密碼表。β 血紅素序列是人類 <em>HBB</em> 基因 5′ 非轉譯區的結尾、編碼序列的前 31 個密碼子和 3′ 非轉譯區的開頭；基因其餘部分（含內含子）省略，終止密碼子直接接上——這部分是簡化。</li>
+        <li data-en-html="Real eukaryotic genes are first copied into a pre-mRNA whose introns are spliced out; here the DNA has no introns. The ribosome starts at the first ATG, which in real cells also depends on the bases around it.">真正的真核基因會先轉錄成前驅 mRNA，再把內含子剪掉；這裡的 DNA 沒有內含子。核糖體從第一個 ATG 開始讀；在真正的細胞裡，起點還和它附近的鹼基有關。</li>
+        <li data-en-html="The animation runs in real time: RNA polymerase II copies about 40 bases per second and a eukaryotic ribosome adds about 6 amino acids per second (typical measured values).">動畫照真實速度：RNA 聚合酶 II 每秒約抄 40 個鹼基，真核細胞的核糖體每秒約接 6 個胺基酸（實驗量到的典型值）。</li>
+        <li data-en-html="Band positions use Meselson and Stahl’s buoyant densities. The extra density of single strands (about 0.015 g/cm<sup>3</sup>) and the band widths are illustrative, and the culture here divides in exact, synchronised generations.">條帶位置用 Meselson 與 Stahl 量到的浮力密度。單股多出來的密度（約 0.015 g/cm<sup>3</sup>）與條帶的寬度是示意值；這裡的細菌也假設每一代整齊同步分裂。</li>
+        <li data-en-html="The 3D helix is B-DNA: 10.5 base pairs per turn, 0.34 nm per base pair, about 2 nm across, with a wide major groove and a narrow minor groove. The atoms are not drawn individually.">3D 螺旋是 B 型 DNA：每圈 10.5 對鹼基、每對升高 0.34 nm、直徑約 2 nm，有寬的大溝和窄的小溝。沒有畫出個別原子。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · the structure of DNA, replication, transcription, translation and mutation.">課綱對應：高中生物（108 課綱）・DNA 的構造、複製、轉錄、轉譯與突變。</li>
+        <li data-en="M. Meselson and F. W. Stahl, “The replication of DNA in Escherichia coli”, Proceedings of the National Academy of Sciences USA 44 (1958) 671–682.">M. Meselson、F. W. Stahl，〈The replication of DNA in Escherichia coli〉，Proceedings of the National Academy of Sciences USA 44 (1958) 671–682。</li>
+        <li data-en="F. H. C. Crick, L. Barnett, S. Brenner and R. J. Watts-Tobin, “General nature of the genetic code for proteins”, Nature 192 (1961) 1227–1232.">F. H. C. Crick、L. Barnett、S. Brenner、R. J. Watts-Tobin，〈General nature of the genetic code for proteins〉，Nature 192 (1961) 1227–1232。</li>
+        <li data-en="V. M. Ingram, “Gene mutations in human haemoglobin: the chemical difference between normal and sickle cell haemoglobin”, Nature 180 (1957) 326–328.">V. M. Ingram，〈Gene mutations in human haemoglobin: the chemical difference between normal and sickle cell haemoglobin〉，Nature 180 (1957) 326–328。</li>
+        <li data-en="NCBI Reference Sequence NM_000518 (Homo sapiens haemoglobin subunit beta, HBB, mRNA).">NCBI 參考序列 NM_000518（人類血紅素 β 次單元 HBB 的 mRNA）。</li>
+        <li data-en="R. Milo and R. Phillips, Cell Biology by the Numbers (Garland Science, 2015) — rates of transcription and translation.">R. Milo、R. Phillips，《Cell Biology by the Numbers》（Garland Science，2015）——轉錄與轉譯的速率。</li>
+        <li data-en="R. E. Dickerson et al., “The anatomy of A-, B-, and Z-DNA”, Science 216 (1982) 475–485.">R. E. Dickerson 等，〈The anatomy of A-, B-, and Z-DNA〉，Science 216 (1982) 475–485。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gene-expression-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/gene-expression.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gene-expression"></script>
+  <script src="js/missions/gene-expression.js"></script>
+  <script src="js/stats.js" data-module="gene-expression"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

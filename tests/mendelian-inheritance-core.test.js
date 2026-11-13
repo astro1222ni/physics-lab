@@ -41,7 +41,7 @@ test('分離律：異型合子產生兩種配子各 1/2，同型合子只有一�
   assert.deepStrictEqual(M.gametes([0]).map(x => [x.a.join(''), M.fstr(x.p)]), [['0', '1']]);
 });
 
-test('自由分配律：RrYy 產生 RY、Ry、rY、ry 各 1/4；RRYy 產生 RY、Ry 各 1/2', () => {
+test('獨立分配律：RrYy 產生 RY、Ry、rY、ry 各 1/4；RRYy 產生 RY、Ry 各 1/2', () => {
   const sy = ['R', 'Y'];
   assert.deepStrictEqual(M.gametes([1, 1]).map(x => M.gameteStr(x.a, sy) + ' ' + M.fstr(x.p)), ['RY 1/4', 'Ry 1/4', 'rY 1/4', 'ry 1/4']);
   assert.deepStrictEqual(M.gametes([2, 1]).map(x => M.gameteStr(x.a, sy) + ' ' + M.fstr(x.p)), ['RY 1/2', 'Ry 1/2']);
@@ -90,7 +90,7 @@ test('雙性狀子二代：RrYy × RrYy → 表現型 9:3:3:1、基因型 1:2:1:
   assert.deepStrictEqual(c.genoRatio, [1, 2, 1, 2, 4, 2, 1, 2, 1]);
   assert.strictEqual(c.cells.length, 4);
   assert.strictEqual(c.cells[0].length, 4);
-  // 表現型 = 兩個 3:1 獨立相乘（自由分配律）
+  // 表現型 = 兩個 3:1 獨立相乘（獨立分配律）
   const one = M.cross([1], [1]).phenoP;
   for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) assert.deepStrictEqual(c.phenoP[a * 2 + b], M.fmul(one[a], one[b]));
   assert.strictEqual(M.crossKind([1, 1], [1, 1]), 'F2');

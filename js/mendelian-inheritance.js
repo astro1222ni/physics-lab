@@ -29,7 +29,7 @@
   // ---------- 狀態 ----------
   const state = {
     L: 1, traits: ['shape', 'color'], g1: [1, 1], g2: [1, 1],
-    speed: 1, merge: false, genoChart: false, showRange: true, showMendel: true,
+    speed: 1, merge: false, genoChart: false, fresh: false, showRange: true, showMendel: true,
     my: { on: false, truth: [2, 2], hyp: [1, 1], id: 0, answered: false }
   };
   const rand = MC.rng((Math.random() * 4294967296) >>> 0);
@@ -280,7 +280,7 @@
     g.drawImage(s.cv, x - s.ax, y + size * 0.44 - s.base, s.w, s.h);
   }
 
-  // ---------- 配子：卵（平滑、有外膜）與花粉（表面有小突起） ----------
+  // ---------- 配子：卵細胞（平滑、有外膜）與精細胞（畫在表面有小突起的花粉粒裡） ----------
   function paintGamete(g, x, y, r, egg) {
     const base = egg ? LD.c.accent : LD.c.equi;
     const body = LD.mix(base, LD.c['canvas-bg'], LD.dark ? 0.55 : 0.66);
@@ -528,7 +528,7 @@
   }
   function drawGametes(r, who) {
     const g = ctx, slots = who === 1 ? cr.slots1 : cr.slots2;
-    txt(g, who === 1 ? T('雌配子（卵）', 'Eggs') : T('雄配子（花粉）', 'Pollen'), r.x + 4, r.y + r.labH - 2, { size: 11, weight: 600, color: LD.c.muted, maxW: r.w - 8 });
+    txt(g, who === 1 ? T('雌配子（卵）', 'Eggs') : T('雄配子（精細胞）', 'Sperm cells'), r.x + 4, r.y + r.labH - 2, { size: 11, weight: 600, color: LD.c.muted, maxW: r.w - 8 });
     for (let k2 = 0; k2 < slots.length; k2++) {
       const p = slotPos(who, k2);
       const label = who === 1 && hidden() ? '?' : MC.gameteStr(slots[k2], syms());
@@ -781,9 +781,9 @@
     const ch = chiNow();
     let pillTxt, pillCol;
     if (N === 0) { pillTxt = T('χ² 檢定：尚無子代', 'χ² test: no offspring yet'); pillCol = LD.c.muted; }
-    else if (ch.impossible) { pillTxt = 'χ² = ∞　p = 0'; pillCol = LD.c.pos; }
+    else if (ch.impossible) { pillTxt = 'χ² = ∞' + T('　', '   ') + 'p = 0'; pillCol = LD.c.pos; }
     else if (ch.df === 0) { pillTxt = T('只有一種表現型（df = 0）', 'One phenotype only (df = 0)'); pillCol = LD.c.muted; }
-    else { pillTxt = 'χ² = ' + fmtChi(ch.chi2) + '　df = ' + ch.df + '　p = ' + fmtP(ch.p); pillCol = ch.p > 0.05 ? LD.c.probe : LD.c.pos; }
+    else { pillTxt = 'χ² = ' + fmtChi(ch.chi2) + T('　', '   ') + 'df = ' + ch.df + T('　', '   ') + 'p = ' + fmtP(ch.p); pillCol = ch.p > 0.05 ? LD.c.probe : LD.c.pos; }
     g.save();
     g.font = '600 12px ' + FONT;
     const pw = g.measureText(pillTxt).width + 12;
@@ -919,6 +919,11 @@
     n = Math.max(0, Math.floor(n));
     if (!n) return;
     settle();
+    // 「每一批重新數」：按下產生前先清掉上一批，每一盤都是一次獨立的實驗（任務照常收到 reset）
+    if (state.fresh && byUser && counts.N > 0) {
+      clearOffspring();
+      if (window.LabMission) window.LabMission.emit('reset', {});
+    }
     const room = MAX_N - counts.N;
     if (room <= 0) { setStatus(T('子代已達上限 20 000 個；按「全部清除」重新開始。', 'The limit of 20 000 offspring has been reached; press “Clear all” to start again.')); return; }
     const clipped = n > room;
@@ -1035,7 +1040,7 @@
     const ch = chiNow();
     window.LabMission.emit('sow', {
       L: state.L, traits: traitsOn(), g1: gMotherShown(), g2: gFather(), mystery: state.my.on,
-      kind: MC.crossKind(gMotherShown(), gFather()), n: b.n, N: counts.N,
+      kind: MC.crossKind(gMotherShown(), gFather()), n: b.n, N: counts.N, gchart: state.genoChart && !state.my.on,
       pheno: counts.pheno.slice(), geno: state.my.on ? null : counts.geno.slice(),
       chi2: ch.chi2, df: ch.df, p: ch.p, impossible: ch.impossible, minE: ch.minExpected
     });
@@ -1075,8 +1080,8 @@
     const md = mendelData();
     if (md && state.showMendel) {
       const mc = MC.chiSquare(md.counts, crShow.phenoP), sum = md.counts.reduce(function (a, b) { return a + b; }, 0);
-      const ratio = state.L === 1 ? '（' + (md.counts[0] / md.counts[1]).toFixed(2) + ' : 1）' : '';
-      rows.push([T('孟德爾的數據', 'Mendel’s counts'), md.counts.join(' : ') + ratio + '<small>N = ' + sum + '，χ² = ' + fmtChi(mc.chi2) + '，p = ' + fmtP(mc.p) + '</small>']);
+      const ratio = state.L === 1 ? T('（', ' (') + (md.counts[0] / md.counts[1]).toFixed(2) + T(' : 1）', ' : 1)') : '';
+      rows.push([T('孟德爾的數據', 'Mendel’s counts'), md.counts.join(' : ') + ratio + '<small>N = ' + sum + T('，χ² = ', ', χ² = ') + fmtChi(mc.chi2) + T('，p = ', ', p = ') + fmtP(mc.p) + '</small>']);
     }
     $('ro').innerHTML = rows.map(function (r) { return '<dt>' + r[0] + '</dt><dd>' + r[1] + '</dd>'; }).join('');
     // 表格（卡方檢定的計算過程）
@@ -1116,8 +1121,8 @@
         : kd === 'F2' ? T('子二代的表現型比為 ' + ratio + '。', 'The F<sub>2</sub> phenotypes come in the ratio ' + ratio + '.')
           : kd === 'test' ? T('一方是隱性同型合子，子代的表現型直接反映另一方產生的配子：期望 ' + ratio + '。', 'One parent is homozygous recessive, so the offspring show the gametes of the other parent directly: expect ' + ratio + '.')
             : T('期望的表現型比為 ' + ratio + '。', 'Expected phenotype ratio ' + ratio + '.');
-      s = '<strong>' + kindLabel(kd) + '</strong>：' + desc;
-      if (L === 2) s += T('兩對基因自由分配。', ' The two genes assort independently.');
+      s = '<strong>' + kindLabel(kd) + '</strong>' + T('：', ': ') + desc;
+      if (L === 2) s += T('兩對基因獨立分配。', ' The two genes assort independently.');
     }
     $('crossInfo').innerHTML = s;
   }
@@ -1328,6 +1333,7 @@
   elN.addEventListener('input', refreshOutputs);
   $('merge').addEventListener('change', function (e) { state.merge = e.target.checked; cellFlash = {}; updateLabels(true); requestDraw(); });
   $('genoChart').addEventListener('change', function (e) { state.genoChart = e.target.checked; updateLabels(true); requestDraw(); });
+  $('fresh').addEventListener('change', function (e) { state.fresh = e.target.checked; });
   $('showRange').addEventListener('change', function (e) { state.showRange = e.target.checked; updateLegend(); requestDraw(); });
   $('showMendel').addEventListener('change', function (e) { state.showMendel = e.target.checked; updateLegend(); updateReadouts(true); requestDraw(); });
 

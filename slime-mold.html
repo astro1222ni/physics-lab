@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Slime Mould Pathfinding: Mazes and a Railway Network | Astro Ni Science Lab">黏菌找路：走迷宮與設計鐵路網｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="多頭絨泡菌沒有腦，卻能走出迷宮、連出像鐵路一樣有效率的網路。用 Tero 等人的流量–管徑模型，看黏菌在迷宮裡留下最短路徑，再把燕麥片放在臺灣各城市，看它長出的管網和臺鐵比一比，2D 地圖與 3D 地形都能看。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 黏菌找路頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --sm-agar: #f4ecd2;      /* 洋菜膠 */
+      --sm-agar2: #e9dcb4;
+      --sm-wall: #7d7466;      /* 迷宮的牆 */
+      --sm-tube: #d99a00;      /* 黏菌的管子 */
+      --sm-tube-hi: #ffd54a;   /* 管子裡流動的原生質 */
+      --sm-food: #d8b98a;      /* 燕麥片 */
+      --sm-food-edge: #9c7b4e;
+      --sm-sea: #d3e6f1;
+      --sm-low: #d5e5b9;       /* 平地 */
+      --sm-mid: #c6b68c;       /* 山坡 */
+      --sm-high: #a08d73;      /* 高山 */
+      --sm-coast: #5b7a8c;
+      --sm-rail: #1f2937;      /* 臺鐵 */
+      --sm-mst: #7c3aed;       /* 最小生成樹 */
+      --sm-best: #0f766e;      /* 最短路線 */
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --sm-agar: #2c2717; --sm-agar2: #3a321c; --sm-wall: #6b6355; --sm-tube: #f2b705; --sm-tube-hi: #ffe27a;
+        --sm-food: #c9a877; --sm-food-edge: #8a6d44; --sm-sea: #10243a; --sm-low: #2f4a2a; --sm-mid: #5c5236; --sm-high: #857561;
+        --sm-coast: #7aa2b8; --sm-rail: #e5e7eb; --sm-mst: #c4b5fd; --sm-best: #2dd4bf;
+      }
+    }
+    :root[data-theme="dark"] {
+      --sm-agar: #2c2717; --sm-agar2: #3a321c; --sm-wall: #6b6355; --sm-tube: #f2b705; --sm-tube-hi: #ffe27a;
+      --sm-food: #c9a877; --sm-food-edge: #8a6d44; --sm-sea: #10243a; --sm-low: #2f4a2a; --sm-mid: #5c5236; --sm-high: #857561;
+      --sm-coast: #7aa2b8; --sm-rail: #e5e7eb; --sm-mst: #c4b5fd; --sm-best: #2dd4bf;
+    }
+    #cv { aspect-ratio: auto; height: 440px; touch-action: pan-y pinch-zoom; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 600px; touch-action: pan-y pinch-zoom; cursor: default; }
+    .sm button { min-height: 44px; }
+    .sm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .sm .playbar button { flex: 1 1 auto; }
+    .sm .playbar .primary { font-weight: 700; }
+    .sm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sm .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .sm .slider input[type="range"] { height: 28px; margin: 0; }
+    .sm .slider label sub, .sm .slider label sup, dl.readout sub, dl.readout sup { font-size: .75em; }
+    .sm [hidden] { display: none !important; }
+    .sm .panel { grid-template-columns: minmax(0, 1fr); }
+    .sm .panel > .card { min-width: 0; }
+    .sm .card > button.wide { width: 100%; margin-top: 8px; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; }
+    .card .check { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; }
+    .card .check input { width: 20px; height: 20px; margin: 0; flex: none; }
+    dl.readout dt small { display: block; font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd { overflow-wrap: anywhere; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.yes { color: var(--sm-best); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    /* 城市按鈕 */
+    .cities { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
+    .cities button { padding: 4px 2px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .cities button[aria-pressed="true"] { background: color-mix(in srgb, var(--sm-tube) 22%, var(--surface)); border-color: var(--sm-tube); font-weight: 700; color: var(--text); }
+    .city-tools { display: flex; gap: 6px; margin-top: 8px; }
+    .city-tools button { flex: 1 1 0; font-size: calc(13px * var(--fs, 1)); padding: 4px; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv2 { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .sm3-wrap { position: relative; }
+    .sm3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .sm3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .sm3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .sm3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .sm3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .sm3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#evolution&quot;>Biology · Evolution and Diversity</a> / Slime mould pathfinding"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#evolution">生物・演化與多樣性</a> ／ 黏菌找路</nav>
+      <h1 data-en="Slime Mould Pathfinding: Mazes and a Railway Network">黏菌找路：走迷宮與設計鐵路網</h1>
+      <p data-en="The yellow slime mould Physarum polycephalum is a single cell with millions of nuclei and no brain at all. Yet put it in a maze with food at two exits and it shrinks back to the shortest route; scatter oat flakes on a map of cities and it grows a network that rivals one designed by engineers. The trick is simple: tubes that carry a lot of flowing protoplasm get thicker, tubes that carry little wither away. Watch that one rule solve a maze, then lay food on the cities of Taiwan and compare the slime mould’s railway with the real one — on a 2D map or over 3D terrain.">黃色的多頭絨泡菌是一個有幾百萬個細胞核的「單一細胞」，完全沒有腦。可是把它放進迷宮、在兩個出口放食物，它會縮成最短的那條路；把燕麥片撒在城市地圖上，它長出的網路可以和工程師設計的鐵路比一比。訣竅很簡單：原生質流得多的管子變粗，流得少的管子萎縮消失。先看這一條規則怎麼走出迷宮，再把食物放在臺灣各城市，看黏菌的「鐵路網」和臺鐵比一比——2D 地圖、3D 地形都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Grow” and watch the dead ends fade first. Then set μ to 0.5 and grow again.">試試看：按「開始生長」，看死路怎麼先消失；再把 μ 調到 0.5 重來一次。</p>
+
+    <h2 class="lab-title" data-en-html="1 · A slime mould in a maze<small>Tubes that carry more flow grow thicker (Nakagaki 2000, Tero 2007)</small>">一・迷宮裡的黏菌<small>流得多的管子變粗（Nakagaki 2000、Tero 2007）</small></h2>
+    <div class="lab sm" id="lab1">
+      <div class="stage">
+        <canvas id="cv" tabindex="0" aria-label="洋菜膠上的迷宮：黃色是黏菌的管子，越粗表示導度越大；兩片燕麥是食物。可以拖曳燕麥換位置，或點選畫布後用方向鍵移動。旁邊是剩下的管子隨時間變化的圖" data-en-aria-label="A maze on agar: the yellow lines are the slime mould’s tubes, thicker for more conductance; the two oat flakes are food. Drag an oat flake to move it, or focus the canvas and use the arrow keys. Beside it, a graph of how much tube is left over time"></canvas>
+        <div class="playbar">
+          <button id="run1" type="button" class="primary" data-en="Grow">開始生長</button>
+          <button id="finish1" type="button" data-en="Jump to the end">直接看結果</button>
+          <button id="reset1" type="button" data-en="Start again" title="同一個迷宮重新鋪滿黏菌" data-en-title="Fill the same maze with slime mould again">重來</button>
+          <button id="newMaze" type="button" data-en="New maze">換一個迷宮</button>
+          <button id="clear1" type="button" data-en="Clear all" title="重新鋪滿並清除紀錄表，設定不變" data-en-title="Fill the maze again and clear the table; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="How the tubes adapt">管子怎麼調整</h2>
+          <div class="slider"><label for="mu" data-en-html="Exponent μ in f(Q) = |Q|<sup>μ</sup>">指數 μ（f(Q) = |Q|<sup>μ</sup>）</label><output id="muo"></output>
+            <input id="mu" type="range" min="0.3" max="2.5" step="0.05" value="1" data-decimals="2"></div>
+          <p class="hint" data-en-html="A tube grows toward f(Q), the strength of the flow through it. <b>μ = 1</b>: in proportion to the flow. <b>μ &gt; 1</b>: strong flows are rewarded more. <b>μ &lt; 1</b>: weak flows are spared.">管子朝 f(Q) 長粗或變細，Q 是流過它的流量。<b>μ = 1</b>：跟流量成正比；<b>μ &gt; 1</b>：流得多的特別吃香；<b>μ &lt; 1</b>：流得少的也留得住。</p>
+          <div class="slider"><label for="noise" data-en="Unevenness of the starting tubes">起始管徑的不均勻</label><output id="noiseo"></output>
+            <input id="noise" type="range" min="0" max="0.5" step="0.01" value="0.1" data-decimals="2"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="The maze">迷宮</h2>
+          <div class="slider"><label for="mw" data-en="Width (cells)">寬（格）</label><output id="mwo"></output>
+            <input id="mw" type="range" min="6" max="24" step="1" value="12" data-decimals="0"></div>
+          <div class="slider"><label for="mh" data-en="Height (cells)">高（格）</label><output id="mho"></output>
+            <input id="mh" type="range" min="4" max="16" step="1" value="8" data-decimals="0"></div>
+          <div class="slider"><label for="loops" data-en="Extra openings (loops)">多拆的牆（環路）</label><output id="loopso"></output>
+            <input id="loops" type="range" min="0" max="40" step="1" value="6" data-decimals="0"></div>
+          <p class="hint" data-en="With no extra openings there is exactly one route between any two cells. Drag the oat flakes to put the food somewhere else.">不多拆牆時，任兩格之間只有一條路。拖曳燕麥片可以把食物換位置。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · A slime mould railway for Taiwan<small>Food on many cities: cost, distance and fault tolerance (Tero et al. 2010)</small>">二・黏菌設計的臺灣鐵路<small>食物放在好幾個城市：成本、距離與容錯（Tero 等 2010）</small></h2>
+    <div class="lab sm" id="lab2">
+      <div class="stage" id="stage2">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D map">2D 地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D terrain">3D 地形</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv2" tabindex="0" aria-label="臺灣地圖：黃色是黏菌的管子，燕麥片是放了食物的城市，深色虛線是臺鐵主要路線；旁邊是黏菌網、臺鐵與最小生成樹的總長、平均距離與容錯比較。點城市名稱可以放上或拿掉食物" data-en-aria-label="A map of Taiwan: the yellow lines are the slime mould’s tubes, the oat flakes are cities with food, the dark dashed line is the main railway; beside it, the length, mean distance and fault tolerance of the slime mould network, the railway and the minimum spanning tree. Tap a city name to add or remove its food"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="run2" type="button" class="primary" data-en="Grow">開始生長</button>
+          <button id="finish2" type="button" data-en="Jump to the end">直接看結果</button>
+          <button id="reset2" type="button" data-en="Start again" title="重新鋪滿整個臺灣" data-en-title="Cover the whole island again">重來</button>
+          <button id="clear2" type="button" data-en="Clear all" title="重新鋪滿並清除紀錄表，設定不變" data-en-title="Cover the island again and clear the table; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Food on the cities">食物放在哪些城市</h2>
+          <div class="cities" id="cities" role="group" aria-label="城市" data-en-aria-label="Cities"></div>
+          <div class="city-tools">
+            <button type="button" id="cityDefault" data-en="The 15 railway cities">鐵路 15 城</button>
+            <button type="button" id="cityAll" data-en="All 17">全部 17 城</button>
+          </div>
+          <p class="hint" data-en="Changing the cities starts the growth again.">換城市會重新開始生長。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="The slime mould">黏菌</h2>
+          <div class="slider"><label for="I0" data-en-html="Flow from each food source I<sub>0</sub>">每個食物源的流量 I<sub>0</sub></label><output id="I0o"></output>
+            <input id="I0" type="range" min="0.2" max="6" step="0.05" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="gam" data-en="Steepness γ of f(Q)">f(Q) 的陡度 γ</label><output id="gamo"></output>
+            <input id="gam" type="range" min="1.2" max="2.5" step="0.05" value="1.8" data-decimals="2"></div>
+          <div class="slider"><label for="mtn" data-en="Mountain resistance (light on the mountains)">山區阻力（山上照光）</label><output id="mtno"></output>
+            <input id="mtn" type="range" min="0" max="15" step="0.5" value="0" data-decimals="1"></div>
+          <p class="hint" data-en-html="A slime mould avoids light, so Tero and colleagues lit up the mountains and lakes. Here a tube in the mountains counts as (1 + resistance × height) times longer.">黏菌怕光，Tero 等人就用光照代替山和湖。這裡山區的管子被當成長了 (1 + 阻力 × 高度) 倍。</p>
+          <label class="check"><input type="checkbox" id="showRail" checked><span data-en="Show the main railway">顯示臺鐵主要路線</span></label>
+          <label class="check"><input type="checkbox" id="showMst"><span data-en="Show the minimum spanning tree">顯示最小生成樹</span></label>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+      <p data-en-html="<em>Physarum polycephalum</em>, the “many-headed slime mould”, is not a fungus. It is an amoeba-like protist (Amoebozoa). In its feeding stage, the <strong>plasmodium</strong>, it is one enormous cell with millions of nuclei, spread out as a network of tubes that can cover a whole Petri dish. Inside the tubes the protoplasm streams back and forth about once every minute or two (<strong>shuttle streaming</strong>), carrying food and signals across the cell.">多頭絨泡菌（<em>Physarum polycephalum</em>）不是真菌，而是像變形蟲一樣的原生生物（變形蟲類）。它覓食時的型態叫<strong>變形體</strong>：一個有幾百萬個細胞核的巨大單一細胞，攤成一張管子的網，可以鋪滿整個培養皿。管子裡的原生質大約每一、兩分鐘來回流動一次（<strong>穿梭流動</strong>），把養分和訊號送到細胞的各處。</p>
+
+      <h3 data-en="Solving a maze">走迷宮</h3>
+      <p data-en-html="In 2000 Toshiyuki Nakagaki and colleagues filled a small agar maze with pieces of one plasmodium and put oat flakes at two exits. Within hours the mould pulled out of the dead ends, then out of the longer of the remaining routes, and left a single thick tube along the shortest path. There is no plan behind it. Tubes simply adapt to the flow inside them: a tube in a dead end carries no flow and withers; of two routes, the shorter one carries more flow, grows thicker, and so carries even more.">2000 年，中垣俊之（Toshiyuki Nakagaki）等人把黏菌鋪滿一個小小的洋菜膠迷宮，在兩個出口放燕麥片。幾個小時之內，黏菌先從死路撤出，再從剩下比較長的路線撤出，最後只在最短的路上留下一條粗管。這背後沒有任何計畫，只是每條管子各自跟著管內的流動調整：死路裡沒有流動，就萎縮；兩條路線中，短的那條流量比較大、長得比較粗，於是流量又更大。</p>
+
+      <h3 data-en="The model">模型</h3>
+      <p data-en-html="Atsushi Tero, Ryo Kobayashi and Nakagaki turned this into equations in 2007. Each tube <em>ij</em> has a length \(L_{ij}\) and a conductance \(D_{ij}\); for a tube with Poiseuille flow \(D = \pi r^4/8\eta\), so the drawn width grows as \(D^{1/4}\). The flow through it is">2007 年，手老篤史（Atsushi Tero）、小林亮與中垣把它寫成方程式。每條管子 <em>ij</em> 有長度 \(L_{ij}\) 和導度 \(D_{ij}\)；管內是 Poiseuille 流時 \(D = \pi r^4/8\eta\)，所以畫面上的管徑跟 \(D^{1/4}\) 成正比。流過管子的流量是</p>
+      <div class="formula">\[ Q_{ij} = \frac{D_{ij}}{L_{ij}}\,(p_i - p_j) \]</div>
+      <p data-en-html="with the pressures \(p_i\) fixed by conservation at every junction (Kirchhoff’s law): a flow \(I_0\) enters at one food source and leaves at the other. Then each tube adapts:">每個交會點流進等於流出（Kirchhoff 定律）決定各點的壓力 \(p_i\)：一個食物源流進 \(I_0\)，另一個流出 \(I_0\)。然後每條管子調整：</p>
+      <div class="formula">\[ \frac{dD_{ij}}{dt} = f\big(|Q_{ij}|\big) - D_{ij} ,\qquad f(Q) = Q^{\mu} \]</div>
+      <p data-en-html="With μ = 1 the tubes always end up on the shortest path between the two foods — a fact later proved mathematically by Bonifaci, Mehlhorn and Varma (2012). With μ &gt; 1 only one route survives, but not always the shortest; with μ &lt; 1 several routes share the flow. On the canvas, the flowing streaks show the direction of the flow, and the speed of the animation is only for show.">μ = 1 時，管子最後一定停在兩個食物之間的最短路徑上——Bonifaci、Mehlhorn 與 Varma 在 2012 年用數學證明了這件事。μ &gt; 1 時只剩一條路線，但不一定是最短的；μ &lt; 1 時好幾條路線一起分攤流量。畫面上流動的亮紋表示流動的方向，動畫的快慢只是示意。</p>
+
+      <h3 data-en="Many food sources: a railway network">很多個食物源：鐵路網</h3>
+      <p data-en-html="In 2010 Tero, Nakagaki and colleagues placed 36 oat flakes on a map in the positions of the cities around Tokyo, lit the mountains and sea to keep the mould off them, and let it grow. The network it built was close to the real railway system in three ways at once: total length (cost), the distance between cities along the network (efficiency) and the chance that one broken link cuts off part of the network (fault tolerance). Their model is the same with two changes: the food sources take turns being the entry, and">2010 年，Tero、中垣等人把 36 片燕麥片放在東京附近各城市的位置，用光照住山和海，讓黏菌不走那裡，再讓它生長。它長出的網路和真實的鐵路系統在三方面同時接近：總長（成本）、城市之間沿網路的距離（效率），以及斷掉一段會不會讓某些地方被隔開（容錯）。他們的模型和上面一樣，只改了兩點：每個食物源輪流當入口，以及</p>
+      <div class="formula">\[ f(Q) = \frac{Q^{\gamma}}{1+Q^{\gamma}} ,\qquad \gamma \approx 1.8 \]</div>
+      <p data-en-html="A small \(I_0\) gives a lean tree, close to the <strong>minimum spanning tree</strong> (the shortest set of links joining all cities, which fails if any link breaks). A large \(I_0\) keeps extra links, so the network costs more but survives a broken link. Somewhere in between is a network that is cheap, short to travel and robust — the balance engineers look for.">\(I_0\) 小，網路是一棵精簡的樹，接近<strong>最小生成樹</strong>（把所有城市連起來、總長最短的連線，但斷任何一段都會隔開）。\(I_0\) 大，網路多留幾條備援，比較貴，但斷一段也不怕。兩者之間，有一個便宜、好走又耐用的網路——正是工程師想找的平衡。</p>
+
+      <h3 data-en="Comparing networks">怎麼比較網路</h3>
+      <ul>
+        <li data-en-html="<strong>Total length</strong> (cost): the length of all the tubes, divided by that of the minimum spanning tree."><strong>總長</strong>（成本）：所有管子的長度，除以最小生成樹的總長。</li>
+        <li data-en-html="<strong>Mean distance</strong> (efficiency): the distance between two cities along the network, averaged over every pair, divided by the same for the minimum spanning tree."><strong>平均距離</strong>（效率）：兩城市之間沿網路的距離，對每一對城市平均，再除以最小生成樹的值。</li>
+        <li data-en-html="<strong>Fault tolerance</strong>: if one random stretch of tube breaks, the chance that every city can still reach every other. A tree scores 0; a ring scores 1."><strong>容錯</strong>：隨便斷一段管子，所有城市仍然互相連得到的機率。樹是 0，一個環是 1。</li>
+      </ul>
+      <p data-en-html="To be fair, the railway and the minimum spanning tree are laid on the same grid as the slime mould: each railway line follows the cheapest lowland route between its two cities, and the tree follows the cheapest route with the current mountain resistance.">為了公平，臺鐵和最小生成樹也畫在跟黏菌一樣的格子上：每段鐵路沿兩個城市之間最省力的平地路線走，最小生成樹則照目前的山區阻力走最省的路。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Dead ends first</strong>: in the maze, which tubes vanish first? Which go next?"><strong>死路先消失</strong>：迷宮裡哪些管子最先消失？接著是哪些？</li>
+        <li data-en-html="<strong>Two equal routes</strong>: find a maze where two routes are equally short. What does μ = 1 do? And μ = 2?"><strong>兩條一樣短</strong>：找一個有兩條一樣短路線的迷宮。μ = 1 會怎樣？μ = 2 呢？</li>
+        <li data-en-html="<strong>Tree or ring</strong>: on the map, raise \(I_0\) step by step. When does the first loop appear? What happens to the fault tolerance and the total length?"><strong>樹還是環</strong>：在地圖上一步一步調大 \(I_0\)。第一個環在什麼時候出現？容錯和總長怎麼變？</li>
+        <li data-en-html="<strong>The Central Range</strong>: with no mountain resistance the mould cuts straight across the mountains. Turn it up. Does the network start to look like the railway?"><strong>中央山脈</strong>：沒有山區阻力時，黏菌直接翻過山。把阻力調大，網路有沒有越來越像臺鐵？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="The maze is a grid of cells; each open passage is a tube of length 1. The map of Taiwan is a triangular grid with 7 km sides (about 850 junctions), and the city nearest each grid point is moved onto it.">迷宮是方格，每個打通的通道是一條長度 1 的管子。臺灣地圖是邊長 7 公里的三角格子（大約 850 個交會點），每個城市放在離它最近的格點上。</li>
+        <li data-en-html="Each step solves Kirchhoff’s equations exactly (a banded Cholesky factorisation) and updates every tube with a semi-implicit step, which is stable and keeps <em>D</em> positive. Tubes below 10<sup>−7</sup> are removed; tubes below 0.001 are not drawn and not counted.">每一步用帶狀 Cholesky 分解精確解出 Kirchhoff 方程，再用半隱式的方法更新每條管子（穩定、<em>D</em> 不會變負）。小於 10<sup>−7</sup> 的管子拿掉；小於 0.001 的管子不畫也不算。</li>
+        <li data-en="With many food sources, every source takes a turn as the entry in each step and f is averaged over the turns; Tero et al. picked one at random each step, which averages to the same thing when the steps are small. So the same settings always give the same network.">很多食物源時，每一步每個食物源都輪流當一次入口，再把 f 平均；Tero 等人是每一步隨機選一個，步長很小時平均起來是一樣的。所以同樣的設定一定得到同樣的網路。</li>
+        <li data-en="The coastline is simplified, the terrain is a smooth sketch of the Central and Coastal Ranges, and the railway is reduced to its main lines between 15 cities. The flows, I0 and the mountain resistance are in arbitrary units. The animation runs far faster than a real slime mould, which takes about a day.">海岸線是簡化的，地形是中央山脈與海岸山脈的平滑示意，臺鐵只畫 15 個城市之間的主要路線。流量、I0 與山區阻力都沒有單位，是示意。動畫比真的黏菌快很多——真的要大約一天。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · Biodiversity: protists (slime moulds).">課綱對應：高中生物（108 課綱）・生物多樣性：原生生物（黏菌）。</li>
+        <li data-en-html="OpenStax, <cite>Biology 2e</cite>, 23.3 Groups of Protists — <a href=&quot;https://openstax.org/books/biology-2e/pages/23-3-groups-of-protists&quot;>openstax.org</a>.">OpenStax《Biology 2e》23.3 Groups of Protists——<a href="https://openstax.org/books/biology-2e/pages/23-3-groups-of-protists">openstax.org</a>（英文）。</li>
+        <li data-en-html="T. Nakagaki, H. Yamada and Á. Tóth, “Maze-solving by an amoeboid organism”, <cite>Nature</cite> 407 (2000) 470 — <a href=&quot;https://doi.org/10.1038/35035159&quot;>doi:10.1038/35035159</a>.">T. Nakagaki、H. Yamada、Á. Tóth，〈Maze-solving by an amoeboid organism〉，<cite>Nature</cite> 407 (2000) 470——<a href="https://doi.org/10.1038/35035159">doi:10.1038/35035159</a>（英文）。</li>
+        <li data-en="A. Tero, R. Kobayashi and T. Nakagaki, “A mathematical model for adaptive transport network in path finding by true slime mold”, Journal of Theoretical Biology 244 (2007) 553–564.">A. Tero、R. Kobayashi、T. Nakagaki，〈A mathematical model for adaptive transport network in path finding by true slime mold〉，Journal of Theoretical Biology 244 (2007) 553–564。</li>
+        <li data-en-html="A. Tero et al., “Rules for biologically inspired adaptive network design”, <cite>Science</cite> 327 (2010) 439–442 — <a href=&quot;https://doi.org/10.1126/science.1177894&quot;>doi:10.1126/science.1177894</a>.">A. Tero 等，〈Rules for biologically inspired adaptive network design〉，<cite>Science</cite> 327 (2010) 439–442——<a href="https://doi.org/10.1126/science.1177894">doi:10.1126/science.1177894</a>（英文）。</li>
+        <li data-en="V. Bonifaci, K. Mehlhorn and G. Varma, “Physarum can compute shortest paths”, Journal of Theoretical Biology 309 (2012) 121–133.">V. Bonifaci、K. Mehlhorn、G. Varma，〈Physarum can compute shortest paths〉，Journal of Theoretical Biology 309 (2012) 121–133。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/slime-mold-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/slime-mold.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="slime-mold"></script>
+  <script src="js/missions/slime-mold.js"></script>
+  <script src="js/stats.js" data-module="slime-mold"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

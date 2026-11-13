@@ -203,6 +203,17 @@ const START = [0.5, 0, 0.5];   // 頁面預設：紅白各半
   claim(hits.length === 0, '預設的操作不會完成 L4 以上的任務或隱藏任務' + (hits.length ? '（誤觸：' + hits.join('、') + '）' : ''));
 }
 
+// 邊界值：學生照說明打剛好的值（浮點誤差算出 0.19999…、0.0999…）也要算完成；差一點點則不算
+{
+  const g4 = { gen: 3, sigMin: 1, H0: 0.6 * (1 / 3), H: 0.025 };   // 0.6 × 1/3 在浮點是 0.19999999999999998
+  claim(H0Below(g4.H0) && byId['4'].check({ type: 'gen', data: g4 }, {}), '任務 4：起始異型合子比例剛好 20%（浮點 ' + g4.H0 + '）算完成');
+  claim(!byId['4'].check({ type: 'gen', data: Object.assign({}, g4, { H0: 0.199, H: 0.0248 }) }, {}), '任務 4：19.9% 不算');
+  const base11 = { mutSelQ: 0.1, v: 0, m: 0, pops: 10, N: 2000, p0: 0.99, gens: 300, meanP: 0.9 };
+  claim(1 - 0.9 / 1.0 < 0.1 && byId['11'].check({ type: 'drift', data: Object.assign({ w: [1, 1, 0.9] }, base11) }, {}), '任務 11：w_aa 剛好低 10%（1 − 0.9/1 = ' + (1 - 0.9 / 1.0) + '）算完成');
+  claim(!byId['11'].check({ type: 'drift', data: Object.assign({ w: [1, 1, 0.91] }, base11) }, {}), '任務 11：只低 9% 不算');
+  function H0Below(x) { return x < 0.2; }
+}
+
 const starsOf = m => m.hidden ? 2 * m.level : m.level;
 const total = defs.reduce((s, m) => s + starsOf(m), 0), pub = defs.filter(m => !m.hidden).reduce((s, m) => s + m.level, 0);
 out.push(`任務 ${defs.length} 個（公開 ${defs.filter(m => !m.hidden).length}、隱藏 ${defs.filter(m => m.hidden).length}），共 ${total} 顆星（公開 ${pub}，隱藏 ${total - pub}）`);

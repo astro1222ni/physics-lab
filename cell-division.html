@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Cell Division | Astro Ni Science Lab">細胞分裂｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="看一個細胞走過間期、前期、中期、後期、末期：DNA 怎麼複製、紡錘體怎麼把染色體拉開。比較有絲分裂與減數分裂每個細胞的染色體數與 DNA 量，看同源染色體的聯會、互換與獨立分配，製造第一次或第二次分裂的不分離。再一次做上千次減數分裂，量出重組率與 Haldane 作圖函數，數出 2 的 n 次方種配子。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 細胞分裂頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --cd-mat: #d6336c; --cd-pat: #1c7ed6; --cd-cyto: #fff4e6; --cd-mem: #e8590c; --cd-nuc: #ae3ec9;
+      --cd-spin: #2b8a3e; --cd-pole: #f08c00; --cd-chrom: #c2255c; --cd-dna: #1971c2; --cd-xo: #f59f00;
+      --cd-bad: #e03131; --cd-ok: #2b8a3e; --cd-k1: #1098ad; --cd-k2: #7048e8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cd-mat: #f06595; --cd-pat: #4dabf7; --cd-cyto: #3b2f25; --cd-mem: #ff922b; --cd-nuc: #da77f2;
+        --cd-spin: #69db7c; --cd-pole: #ffc078; --cd-chrom: #f783ac; --cd-dna: #74c0fc; --cd-xo: #ffd43b;
+        --cd-bad: #ff6b6b; --cd-ok: #69db7c; --cd-k1: #66d9e8; --cd-k2: #b197fc;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cd-mat: #f06595; --cd-pat: #4dabf7; --cd-cyto: #3b2f25; --cd-mem: #ff922b; --cd-nuc: #da77f2;
+      --cd-spin: #69db7c; --cd-pole: #ffc078; --cd-chrom: #f783ac; --cd-dna: #74c0fc; --cd-xo: #ffd43b;
+      --cd-bad: #ff6b6b; --cd-ok: #69db7c; --cd-k1: #66d9e8; --cd-k2: #b197fc;
+    }
+    #cv, #cvg, #cv2 { aspect-ratio: auto; touch-action: pan-y pinch-zoom; }
+    #cv { height: 470px; }
+    #cvg { height: 250px; cursor: ew-resize; margin-top: 8px; }
+    #cv2 { height: 400px; }
+    .cd button { min-height: 44px; }
+    .cd .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cd .playbar button { flex: 1 1 auto; }
+    .cd .playbar .primary { font-weight: 700; }
+    .cd .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cd .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .cd .slider input[type="range"] { height: 28px; margin: 0; }
+    .cd [hidden] { display: none !important; }
+    .cd .panel { grid-template-columns: minmax(0, 1fr); }
+    .cd .panel > .card { min-width: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd { overflow-wrap: anywhere; }
+    dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    dl.readout dd.good { color: var(--cd-ok); }
+    dl.readout dd.bad { color: var(--cd-bad); }
+    .legend i.dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend i.ln { width: 18px; height: 0; border-top: 3px solid; display: inline-block; vertical-align: middle; }
+    .legend i.ln.dash { border-top-style: dashed; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.runs td, table.runs th { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    table.runs th, table.runs td { padding: 4px 10px; text-align: left; }
+    table.runs th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; }
+    table.runs td.bad { color: var(--cd-bad); font-weight: 600; }
+    table.runs td.rec { color: var(--cd-xo); font-weight: 600; }
+    .lab-title { font-size: calc(17px * var(--fs, 1)); margin: 22px 2px 8px; }
+    .lab-title small { display: block; font-weight: 400; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); margin-top: 2px; }
+    .chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 4px 0 8px; }
+    .chips.c3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .chips button { padding: 4px 6px; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.2; }
+    .chips button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); border-color: var(--accent); font-weight: 700; color: var(--text); }
+    .chips button:disabled { opacity: 0.45; }
+    .sub-h { font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; font-weight: 600; }
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { margin: 0 2px 6px; min-height: 0; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      aspect-ratio: auto; cursor: grab; touch-action: none; display: block; width: 100%;
+      border-radius: 12px; border: 1px solid var(--border);
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 45%, color-mix(in srgb, var(--canvas-bg) 86%, var(--text)) 100%);
+    }
+    #view3 canvas:active { cursor: grabbing; }
+    .cd3-wrap { position: relative; }
+    .cd3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .cd3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .cd3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
+    .cd3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .cd3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .cd3-hud span.m { color: var(--muted); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#cell&quot;>Biology · Cells and Molecules</a> / Cell division"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#cell">生物・細胞與分子</a> ／ 細胞分裂</nav>
+      <h1 data-en="Cell Division">細胞分裂</h1>
+      <p data-en="Before a cell divides it copies every one of its DNA molecules, then a spindle of protein fibres pulls the copies apart so that each new cell gets a complete set. That is mitosis, and it is how you grew from one cell. To make eggs and sperm the cell divides twice after copying only once: the chromosome number halves, matching chromosomes from your mother and father swap pieces and are dealt out at random, so almost every gamete is different. Watch both, count the chromosomes and the DNA at every stage, break the process on purpose, and then run thousands of meioses to measure what Mendel only saw in pea pods.">細胞分裂之前，先把每一條 DNA 都複製一份，再由蛋白質纖維組成的紡錘體把兩份拉開，讓每個新細胞都拿到完整的一套。這就是有絲分裂——你就是這樣從一個細胞長大的。要製造卵和精子時，細胞只複製一次、卻連續分裂兩次：染色體數目減半，來自爸爸和媽媽的同源染色體互相交換片段，再隨機分到兩邊，所以幾乎每個配子都不一樣。在這裡看完兩種分裂，數出每一期的染色體數和 DNA 量，故意讓它出錯，再一口氣做幾千次減數分裂，量出孟德爾只能從豌豆莢裡看到的規律。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose “Meiosis”, press play, and pause when the matching chromosomes line up in pairs — look for the yellow crossing points.">試試看：按「減數分裂」再播放，等同源染色體兩兩排在中間時暫停——找找黃色的交叉點。</p>
+
+    <h2 class="lab-title" data-en-html="1 · Watch a cell divide<small>Chromosomes, spindle and DNA, stage by stage</small>">一・看細胞分裂<small>一期一期看染色體、紡錘體與 DNA</small></h2>
+    <div class="lab cd" id="lab1">
+      <div class="stage" id="stage1">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D cell">2D 細胞</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D spindle">3D 紡錘體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="細胞的剖面：紅色是來自母方的染色體，藍色是來自父方的；綠色細線是紡錘絲，橘色是中心體；黃色圓點是交叉。點選畫布後，左右鍵前後移動時間，空白鍵播放或暫停" data-en-aria-label="A section through the cell: red chromosomes come from the mother, blue from the father; thin green lines are spindle fibres, orange dots the centrosomes and yellow dots the crossing points. With the canvas focused, the left and right keys move through time and Space plays or pauses"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="playBtn" type="button" class="primary" data-en="Play">播放</button>
+          <button id="stepBtn" type="button" data-en="Next stage" title="跳到下一期的開頭並暫停" data-en-title="Jump to the start of the next stage and pause">下一期</button>
+          <button id="againBtn" type="button" data-en="Divide again" title="從頭再分裂一次（互換與分配重新隨機）" data-en-title="Start again with a new random crossover and assortment">再分裂一次</button>
+          <button id="clear1" type="button" data-en="Clear all" title="清除配子紀錄表；設定不變" data-en-title="Clear the table of gametes; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <canvas id="cvg" tabindex="0" aria-label="上面是每個細胞的染色體數，下面是每個細胞的 DNA 量（C 是一套單倍體的量），橫軸是時間與各期；最下面是分裂完成的細胞或配子。點或拖曳圖移動時間；點選畫布後，左右鍵移動時間" data-en-aria-label="Top: chromosomes per cell; bottom: DNA per cell (C is the amount in one haploid set), against time and stage. Underneath, the finished daughter cells or gametes. Tap or drag the graph to move in time; with the canvas focused, the left and right keys move in time"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div class="legend" id="legend1"></div>
+        <div class="tablewrap"><table class="data runs" id="runs1"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Division">分裂方式</h2>
+          <div class="chips" id="modes" role="group" aria-label="分裂方式" data-en-aria-label="Division"></div>
+          <div class="slider"><label for="n" data-en="Pairs of chromosomes n (2n = 2–8)">染色體對數 n（2n = 2–8）</label><output id="no"></output>
+            <input id="n" type="range" min="1" max="4" step="1" value="2" data-decimals="0"></div>
+          <p class="sub-h" data-en="Crossing over">互換</p>
+          <div class="chips" id="xos" role="group" aria-label="互換" data-en-aria-label="Crossing over"></div>
+          <p class="sub-h" data-en="Nondisjunction of pair 1">第 1 對不分離</p>
+          <div class="chips c3" id="nds" role="group" aria-label="第 1 對不分離" data-en-aria-label="Nondisjunction of pair 1"></div>
+          <p class="hint" data-en="Pair 1 (the longest) carries two genes: A near one end and B near the other. Mother's copy carries A and B, father's carries a and b.">第 1 對（最長的）上有兩個基因：A 靠近一端、B 靠近另一端。母方那條帶 A 和 B，父方那條帶 a 和 b。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro1"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <h2 class="lab-title" data-en-html="2 · A thousand meioses<small>Measure recombination and count the gametes of independent assortment</small>">二・一千次減數分裂<small>量出重組率，數一數獨立分配能做出幾種配子</small></h2>
+    <div class="lab cd" id="lab2">
+      <div class="stage" id="stage2">
+        <canvas id="cv2" tabindex="0" aria-label="一邊是四種配子 AB、Ab、aB、ab 的數目，重組型用黃色；另一邊是重組率對兩個基因距離的圖，曲線是 Haldane 作圖函數，點是量到的重組率與 95% 信賴區間；下面是配子的來源組合看過幾種。點選畫布後，左右鍵改變距離、Enter 再做 1000 次" data-en-aria-label="On one side, the numbers of AB, Ab, aB and ab gametes, with the recombinants in yellow; on the other, recombination frequency against the distance between the genes, with Haldane's mapping function as a curve and the measured values with 95% confidence intervals as points; underneath, how many origin patterns have been seen. With the canvas focused, left and right change the distance and Enter runs 1000 more"></canvas>
+        <div class="playbar">
+          <button id="run100" type="button" data-en="Run 100 meioses">做 100 次</button>
+          <button id="run1000" type="button" class="primary" data-en="Run 1000 meioses">做 1000 次</button>
+          <button id="clear2" type="button" data-en="Clear all" title="清掉所有統計；設定不變" data-en-title="Clear all the counts; the settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status2" aria-live="polite"></p>
+        <div class="legend" id="legend2"></div>
+        <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Settings">設定</h2>
+          <div class="slider"><label for="d" data-en="Distance between A and B (cM)">A 與 B 的距離（cM）</label><output id="do"></output>
+            <input id="d" type="range" min="0" max="200" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="n2" data-en="Pairs of chromosomes n">染色體對數 n</label><output id="n2o"></output>
+            <input id="n2" type="range" min="1" max="8" step="1" value="3" data-decimals="0"></div>
+          <p class="hint" data-en="1 centimorgan (cM) is the distance over which, on average, 1 gamete in 100 has a crossover. Changing a setting starts a new count.">1 厘摩（cM）是平均每 100 個配子有 1 個在這一段發生交換的距離。改了設定就開始新的一輪統計。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro2"></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The biology behind it">背後的生物學</h2>
+
+      <h3 data-en="The cell cycle and mitosis">細胞週期與有絲分裂</h3>
+      <p data-en-html="In interphase the cell grows (G<sub>1</sub>), copies its DNA (S) and gets ready to divide (G<sub>2</sub>). After S each chromosome consists of two identical <strong>sister chromatids</strong> held together at the centromere, so the DNA has doubled from 2C to 4C while the number of chromosomes — counted by centromeres — is still 2n. In prophase the chromosomes coil up and the two centrosomes move apart; in prometaphase the nuclear envelope breaks down and spindle fibres attach to the kinetochores; in metaphase the chromosomes line up on the equator; in anaphase the centromeres split and the sisters are pulled to opposite poles, so for a moment the cell holds 4n chromosomes; in telophase two nuclei form and the cytoplasm divides. Each daughter cell is 2n and 2C, identical to the parent.">間期裡，細胞先長大（G<sub>1</sub> 期）、複製 DNA（S 期）、準備分裂（G<sub>2</sub> 期）。S 期之後，每條染色體由兩條一模一樣、在著絲點相連的<strong>姊妹染色分體</strong>組成：DNA 由 2C 加倍成 4C，但以著絲點來數，染色體還是 2n 條。前期染色體捲曲變粗、兩個中心體往兩極移動；前中期核膜消失，紡錘絲接上著絲點；中期染色體排在赤道板上；後期著絲點分開，姊妹分體被拉往兩極——這時細胞裡暫時有 4n 條染色體；末期形成兩個細胞核，細胞質分開。每個子細胞都是 2n、2C，和親代一樣。</p>
+
+      <h3 data-en="Meiosis: one copy, two divisions">減數分裂：複製一次、分裂兩次</h3>
+      <p data-en-html="In prophase I the matching (homologous) chromosomes from the mother and the father pair up along their whole length — <strong>synapsis</strong> — forming a bivalent of four chromatids. Non-sister chromatids break and rejoin at the same place: <strong>crossing over</strong>, visible later as a chiasma. In metaphase I the bivalents sit on the equator and each one faces the poles at random, independently of the others; anaphase I separates the homologues, not the sisters. Each cell is now n but still 2C. Meiosis II is like a mitosis without copying: the sisters separate and four gametes form, each n and 1C.">前期 I，來自母方和父方、形狀相同的<strong>同源染色體</strong>沿全長配對——<strong>聯會</strong>——形成由四條分體組成的二價體（四分體）。非姊妹分體在同一個位置斷開、互相接上：這就是<strong>互換</strong>，之後看到的交叉點叫交叉（chiasma）。中期 I 二價體排在赤道上，每一對朝向哪一極是隨機的，而且和別對無關；後期 I 分開的是同源染色體，不是姊妹分體。這時每個細胞是 n，但仍有 2C。減數分裂 II 像一次不複製的有絲分裂：姊妹分體分開，形成四個配子，每個都是 n、1C。</p>
+      <div class="formula">\[ 2n,\ 2C \xrightarrow{\ \mathrm{S}\ } 2n,\ 4C \xrightarrow{\ \mathrm{I}\ } n,\ 2C \xrightarrow{\ \mathrm{II}\ } n,\ 1C \]</div>
+
+      <h3 data-en="Independent assortment">獨立分配</h3>
+      <p data-en-html="Because every bivalent orients by chance, a parent with n pairs can make 2<sup>n</sup> combinations of whole maternal and paternal chromosomes. For humans n = 23, so 2<sup>23</sup> ≈ 8.4 million, before counting crossing over. This is the cellular basis of Mendel's second law; the 9 : 3 : 3 : 1 of a dihybrid cross appears when two genes sit on different pairs (see <a href=&quot;mendelian-inheritance.html&quot;>Mendelian inheritance</a>).">每一對二價體的方向都是隨機的，所以有 n 對染色體的親代，光是整條母方或父方染色體的組合就有 2<sup>n</sup> 種。人類 n = 23，2<sup>23</sup> ≈ 838 萬種——還沒算互換。這就是孟德爾第二定律（獨立分配律）在細胞裡的原因；兩個基因在不同對染色體上時，雙性狀雜交就出現 9 : 3 : 3 : 1（見〈<a href="mendelian-inheritance.html">孟德爾遺傳</a>〉）。</p>
+      <div class="formula">\[ N=2^{\,n},\qquad 2^{23}\approx 8.4\times10^{6} \]</div>
+
+      <h3 data-en="Linkage and recombination">連鎖與重組</h3>
+      <p data-en-html="Two genes on the same chromosome travel together unless a crossover falls between them. The recombination frequency r is the fraction of gametes that are recombinant (here Ab and aB). Haldane (1919) assumed that crossovers fall independently along the chromosome, on average 2 chiasmata per Morgan in a bivalent, which gives 1 crossover per Morgan on each gamete chromatid; a gamete is recombinant when an odd number of crossovers lies between the genes:">兩個基因在同一條染色體上時會一起遺傳，除非兩者之間發生互換。重組率 r 是重組型配子（這裡是 Ab 與 aB）所占的比例。Haldane（1919）假設交換在染色體上各自獨立地發生：二價體上平均每 Morgan 有 2 個交叉，相當於每條配子分體平均每 Morgan 1 次交換；兩個基因之間有奇數次交換時，配子就是重組型：</p>
+      <div class="formula">\[ r=\tfrac12\left(1-e^{-2d}\right) \]</div>
+      <p data-en-html="For short distances r ≈ d, which is why 1 cM is defined as 1% recombination; for long distances r approaches 50% and two linked genes look as if they assort independently. Two recombinant classes are always about equally common, and so are the two parental classes.">距離短時 r ≈ d，所以 1 cM 定義為 1% 的重組率；距離很長時 r 趨近 50%，同一條染色體上的兩個基因看起來就像獨立分配。兩種重組型的數目總是差不多，兩種親代型也一樣。</p>
+
+      <h3 data-en="Nondisjunction">不分離</h3>
+      <p data-en-html="If a pair fails to separate in meiosis I, both homologues go to one cell: two gametes get n + 1 chromosomes (one maternal and one paternal copy of that pair) and two get n − 1. If the sisters fail to separate in meiosis II, only one cell is affected: two normal gametes, one n + 1 (two copies of the same chromosome) and one n − 1. A gamete with an extra chromosome 21, fertilised normally, gives trisomy 21 (Down syndrome); most such errors happen in meiosis I in the egg.">如果某一對在減數分裂 I 沒有分開，兩條同源染色體都跑到同一個細胞：兩個配子是 n + 1（這一對一條來自母方、一條來自父方），兩個是 n − 1。如果在減數分裂 II 姊妹分體沒有分開，只影響其中一個細胞：兩個正常配子、一個 n + 1（同一條染色體的兩份）、一個 n − 1。多一條第 21 號染色體的配子和正常配子受精，就是 21 號三染色體（唐氏症）；這類錯誤大多發生在卵的減數分裂 I。</p>
+
+      <h3 data-en="Things to try">可以試試</h3>
+      <ul>
+        <li data-en-html="<strong>Count the centromeres</strong>: in mitosis, pause in metaphase and again in anaphase. Did the DNA change? Did the number of chromosomes?">「<strong>數著絲點</strong>」：有絲分裂在中期暫停，再到後期暫停。DNA 量變了嗎？染色體數呢？</li>
+        <li data-en-html="<strong>n but 2C</strong>: in meiosis, find the moment when each cell has n chromosomes but still 2C of DNA.">「<strong>n 條卻有 2C</strong>」：減數分裂裡，找出每個細胞只有 n 條染色體、DNA 卻還是 2C 的時刻。</li>
+        <li data-en-html="<strong>Different sisters</strong>: with crossing over on, make a meiosis II nondisjunction. Can the two copies in the n + 1 gamete differ?">「<strong>不一樣的姊妹</strong>」：開著互換，製造第二次分裂不分離。n + 1 配子裡的兩份會不會不一樣？</li>
+        <li data-en-html="<strong>The 50% ceiling</strong>: in part 2, move the genes 150 cM apart. Can the recombination frequency ever pass 50%?">「<strong>50% 的天花板</strong>」：在第二部分把兩個基因拉開到 150 cM。重組率會不會超過 50%？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Each chromatid is stored as a list of segments labelled maternal or paternal. In meiosis the number of chiasmata on a bivalent of genetic length L (in Morgans) is Poisson with mean 2L, at uniform random positions (Haldane's no-interference model); each chiasma joins one chromatid that is maternal at that point with one that is paternal, chosen at random, and they exchange the segment away from the centromere. Every bivalent orients at random in metaphase I, and every pair of sisters at random in metaphase II.">每條染色分體記成一串標明「母方／父方」的片段。減數分裂時，遺傳長度 L（Morgan）的二價體上，交叉的數目是平均 2L 的卜瓦松分布、位置均勻隨機（Haldane 的無干擾模型）；每個交叉隨機挑一條在那個位置是母方、一條是父方的分體，交換遠離著絲點的那一段。中期 I 每一對二價體的方向、中期 II 每一對姊妹分體的方向都隨機。</li>
+        <li data-en-html="Illustrative parts: the relative lengths of the chromosomes (pair 1 is 1.6 Morgans long, with A at 18% and B at 72% of its length), the shapes, the timing of the stages and the positions in the cell are drawn for clarity, not to scale. Real cells have at least one crossover per bivalent and crossovers that keep their distance (interference), so real map distances are fitted with other mapping functions, such as Kosambi's; Haldane's is the simplest.">示意的部分：各對染色體的相對長度（第 1 對長 1.6 Morgan，A 在全長的 18%、B 在 72%）、形狀、各期的時間長短與在細胞中的位置是為了看清楚而畫的，沒有依比例。真實細胞每對二價體至少有一個交叉，交叉之間也會互相保持距離（干擾），所以實際的遺傳圖距常用 Kosambi 等其他作圖函數；Haldane 的是最簡單的一個。</li>
+        <li data-en-html="DNA per cell is counted in units of C, the DNA of one haploid set, weighting each pair by its length. In part 2 the 95% confidence interval of r is Wilson's score interval.">每個細胞的 DNA 量以 C（一套單倍體的 DNA 量）為單位，各對依長度加權。第二部分 r 的 95% 信賴區間用 Wilson 區間。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Biology (108 curriculum) · cell division: mitosis and meiosis; genetics: linkage and crossing over, chromosomal abnormalities.">課綱對應：高中生物（108 課綱）・細胞分裂：有絲分裂與減數分裂；遺傳：連鎖與互換、染色體異常。</li>
+        <li data-en="J. B. S. Haldane, “The combination of linkage values and the calculation of distances between the loci of linked factors”, Journal of Genetics 8 (1919) 299–309.">J. B. S. Haldane，〈The combination of linkage values and the calculation of distances between the loci of linked factors〉，Journal of Genetics 8 (1919) 299–309。</li>
+        <li data-en="A. H. Sturtevant, “The linear arrangement of six sex-linked factors in Drosophila, as shown by their mode of association”, Journal of Experimental Zoology 14 (1913) 43–59.">A. H. Sturtevant，〈The linear arrangement of six sex-linked factors in Drosophila, as shown by their mode of association〉，Journal of Experimental Zoology 14 (1913) 43–59。</li>
+        <li data-en="T. Hassold and P. Hunt, “To err (meiotically) is human: the genesis of human aneuploidy”, Nature Reviews Genetics 2 (2001) 280–291.">T. Hassold、P. Hunt，〈To err (meiotically) is human: the genesis of human aneuploidy〉，Nature Reviews Genetics 2 (2001) 280–291。</li>
+        <li data-en="B. Alberts et al., Molecular Biology of the Cell, 7th ed., chapter 17 “The Cell Cycle”, W. W. Norton (2022).">B. Alberts 等，《Molecular Biology of the Cell》第 7 版，第 17 章〈The Cell Cycle〉，W. W. Norton（2022）。</li>
+        <li data-en="E. B. Wilson, “Probable inference, the law of succession, and statistical inference”, Journal of the American Statistical Association 22 (1927) 209–212.">E. B. Wilson，〈Probable inference, the law of succession, and statistical inference〉，Journal of the American Statistical Association 22 (1927) 209–212。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/cell-division-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/cell-division.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="cell-division"></script>
+  <script src="js/missions/cell-division.js"></script>
+  <script src="js/stats.js" data-module="cell-division"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
