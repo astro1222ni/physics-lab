@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Acid–Base Strength and pH | Astro Ni Science Lab">酸鹼強度與 pH｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 酸鹼強度與 pH 頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ph canvas { aspect-ratio: auto; touch-action: auto; }
+    .ph #cv { height: 480px; }
+    .ph #gcv { height: 300px; }
+    .ph + .ph { margin-top: 16px; }
+    .ph button { min-height: 44px; }
+    .ph [hidden] { display: none !important; }
+    .ph .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ph .playbar > button { flex: 1 1 auto; }
+    .ph .playbar #measure { font-weight: 700; min-width: 8em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg2 button, .seg3 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .sp-seg button { font-size: calc(13px * var(--fs, 1)); overflow-wrap: anywhere; }
+    .sp-seg button small { display: block; font-size: .82em; font-weight: 500; color: var(--muted); }
+    .sp-seg button[aria-pressed="true"] small { color: inherit; }
+    .sp-seg sub, .ph sub, .ph sup, .notes sub, .notes sup { font-size: .75em; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: 48%; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); max-width: 90%; }
+    .ph .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ph .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ph .slider input[type="range"] { height: 28px; margin: 0; }
+    .ph .card .hint, .ph .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ph .stage .hint { margin: 8px 4px 0; }
+    .ph .checks label { min-height: 44px; }
+    .ph .legend .sp { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .ph .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .ph .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .ph .legend .ring { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 2px solid currentColor; }
+    .cval { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: -6px 0 8px; font-variant-numeric: tabular-nums; }
+    .beaker-tag { display: inline-block; min-width: 1.6em; padding: 0 6px; margin-right: 6px; border-radius: 6px; color: var(--surface); text-align: center; font-weight: 700; }
+    .ph .btns button { flex: 1 1 auto; }
+    table.mini { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 4px 0 6px; table-layout: fixed; }
+    table.mini th, table.mini td { padding: 3px 4px; text-align: right; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+    table.mini th { color: var(--muted); font-weight: 600; }
+    table.mini th:first-child, table.mini td:first-child { text-align: left; color: var(--muted); font-weight: 500; width: 38%; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .ph dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ph dl.readout dd { white-space: nowrap; }
+    .ph .tabs { margin: 0 2px 8px; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .ph .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    #xOut .ok { color: var(--probe); font-weight: 700; }
+    #xOut .no { color: var(--pos); font-weight: 700; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Acid–Base Strength and pH"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 酸鹼強度與 pH</nav>
+      <h1 data-en="Acid–Base Strength and pH">酸鹼強度與 pH</h1>
+      <p data-en-html="Two beakers, a pH meter and a magnifier that shows what is really in the water. Choose a strong or weak acid or base, set its concentration from 1 M down to 10<sup>−8</sup> M, dilute it, heat it — and compare the pH, the degree of ionisation and the particles in solution. Every reading is calculated exactly from the charge balance and the acid dissociation constants, including the ions that water itself provides.">兩個燒杯、一台 pH 計，還有一個看得到水裡真正有什麼的放大鏡。選一種強酸、弱酸、強鹼或弱鹼，把濃度從 1 M 調到 10<sup>−8</sup> M、加水稀釋、加熱，比較兩杯的 pH、解離百分率和溶液裡的粒子。每個讀數都由電荷平衡與酸的解離常數精確算出，連水自己解離出來的離子也算進去。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: beaker A holds 0.010 M hydrochloric acid. Set beaker B to acetic acid at the same concentration — the pH is 1.4 higher, and the magnifier shows that most acetic acid molecules have not given away their proton.">試試看：A 杯是 0.010 M 鹽酸。把 B 杯換成同濃度的醋酸——pH 高了 1.4，放大鏡裡大部分醋酸分子都還沒有把質子交出去。</p>
+    <div class="lab ph">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="兩個燒杯與 pH 計，每杯下方的放大鏡畫出溶液中的分子與離子，最下方是 pH 色階" data-en-aria-label="Two beakers with pH meters; under each beaker a magnifier shows the molecules and ions in the solution; at the bottom is the pH colour scale"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="measure" class="primary" type="button" data-en="Measure &amp; record" title="記下兩杯此刻的 pH 與解離百分率（加進下面的圖與紀錄表）" data-en-title="Record the pH and degree of ionisation of both beakers now (added to the graph and the table below)">測量並記錄</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除紀錄表與圖上記錄的點；兩杯溶液不變" data-en-title="Clear the table and the recorded points on the graph; the two beakers stay as they are">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="legend" id="spLegend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="The magnifiers are drawn to scale in proportion, not in number: each beaker shows 40 particles of the dissolved substance (plus some water molecules), whatever the concentration. A coloured ring marks an ion (red: positive, blue: negative). With a weak acid you can watch protons hop on and off — the equilibrium never stops.">放大鏡依「比例」畫，不是依「數目」：不管濃度多少，每杯都畫 40 個溶質粒子（再加一些水分子）。帶顏色外圈的是離子（紅圈帶正電、藍圈帶負電）。弱酸裡可以看到質子跳上跳下——平衡一直在進行。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardA">
+          <h2><span class="beaker-tag" id="tagA">A</span><span data-en="Beaker A">A 杯</span></h2>
+          <div class="seg3 sp-seg" id="spA" role="group" aria-label="A 杯的物質" data-en-aria-label="Substance in beaker A"></div>
+          <div class="slider"><label for="cA" data-en="Concentration C">濃度 C</label><output id="cAo"></output>
+            <input id="cA" type="range" min="0" max="800" step="1" value="600" data-decimals="2"></div>
+          <p class="cval" id="cAv"></p>
+          <div class="btns"><button type="button" id="dilA" data-en="Dilute 10 times with water">加水稀釋 10 倍</button></div>
+        </section>
+        <section class="card" id="cardB">
+          <h2><span class="beaker-tag" id="tagB">B</span><span data-en="Beaker B">B 杯</span></h2>
+          <div class="seg3 sp-seg" id="spB" role="group" aria-label="B 杯的物質" data-en-aria-label="Substance in beaker B"></div>
+          <div class="slider"><label for="cB" data-en="Concentration C">濃度 C</label><output id="cBo"></output>
+            <input id="cB" type="range" min="0" max="800" step="1" value="700" data-decimals="2"></div>
+          <p class="cval" id="cBv"></p>
+          <div class="btns"><button type="button" id="dilB" data-en="Dilute 10 times with water">加水稀釋 10 倍</button></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Conditions">條件</h2>
+          <div class="slider"><label for="temp" data-en="Temperature T (both beakers)">溫度 T（兩杯相同）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="25" max="100" step="1" value="25" data-decimals="0"></div>
+          <div class="checks"><label><input id="ind" type="checkbox" checked><span data-en="Universal indicator">加入廣用指示劑</span></label></div>
+          <p class="hint" data-en-html="The concentration slider moves in powers of ten: the number shown is the exponent, so 10<sup>−2.00</sup> M = 0.0100 M. Tap the number to type an exponent.">濃度滑桿以 10 的次方移動：顯示的是次方，例如 10<sup>−2.00</sup> M = 0.0100 M。點數字可以直接輸入次方。</p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab ph">
+      <div class="stage">
+        <h2 data-en="Graph and table of measurements">圖表與測量紀錄</h2>
+        <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="ph" aria-pressed="true" data-en="pH against concentration">pH 對濃度</button>
+          <button type="button" data-tab="alpha" aria-pressed="false" data-en="Ionisation against concentration">解離百分率對濃度</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表：兩杯物質的 pH（或解離百分率）隨濃度變化的曲線，以及記錄的測量點" data-en-aria-label="Graph: how the pH (or the degree of ionisation) of the two substances changes with concentration, with the recorded measurements" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings now">兩杯現在的讀數</h2>
+          <table class="mini" id="nowTbl"></table>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="xCard" data-share-skip>
+          <h2 data-en="Unknown acid HX">未知酸 HX</h2>
+          <p class="hint" data-en-html="A weak acid whose K&lt;sub&gt;a&lt;/sub&gt; is hidden (pK&lt;sub&gt;a&lt;/sub&gt; between 2.5 and 6.0). Put “Unknown HX” in a beaker, read the pH and [H&lt;sub&gt;3&lt;/sub&gt;O&lt;sup&gt;+&lt;/sup&gt;], and work out pK&lt;sub&gt;a&lt;/sub&gt; = −log K&lt;sub&gt;a&lt;/sub&gt;.">一種看不到 K<sub>a</sub> 的弱酸（pK<sub>a</sub> 在 2.5 到 6.0 之間）。把一杯換成「未知酸 HX」，讀 pH 與 [H<sub>3</sub>O<sup>+</sup>]，算出 pK<sub>a</sub> = −log K<sub>a</sub>。</p>
+          <div class="ans"><label for="ansK" data-en-html="Your pK&lt;sub&gt;a&lt;/sub&gt;">你算出的 pK<sub>a</sub></label><input id="ansK" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 4.20" data-en-placeholder="e.g. 4.20"></div>
+          <div class="btns">
+            <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+            <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+            <button id="newX" type="button" data-en="Another one">換一個</button>
+          </div>
+          <p class="info" id="xOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Relate pH, pOH, [H3O+] and [OH−] through the ion product of water, and see that the neutral pH depends on temperature.">由水的離子積了解 pH、pOH、[H<sub>3</sub>O<sup>+</sup>] 與 [OH<sup>−</sup>] 的關係，並看到中性的 pH 會隨溫度改變。</li>
+        <li data-en="Compare strong and weak acids and bases: the same concentration gives a different pH because the degree of ionisation is different.">比較強酸、弱酸與強鹼、弱鹼：同樣的濃度，解離的比例不同，pH 也不同。</li>
+        <li data-en="See how dilution changes the pH and the degree of ionisation, and when the simple formulas of the textbook stop working.">看稀釋怎麼改變 pH 與解離百分率，以及課本的簡化公式什麼時候不再適用。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="pH and the ion product of water">pH 與水的離子積</h3>
+      <div class="formula multi">
+        \[ \mathrm{pH} = -\log[\mathrm{H_3O^+}] \]
+        \[ \mathrm{pOH} = -\log[\mathrm{OH^-}] \]
+        \[ K_w = [\mathrm{H_3O^+}][\mathrm{OH^-}] \]
+        \[ \mathrm{pH} + \mathrm{pOH} = \mathrm{p}K_w \]
+      </div>
+      <p data-en-html="Water ionises a little: \(2\mathrm{H_2O} \rightleftharpoons \mathrm{H_3O^+} + \mathrm{OH^-}\). At 25 °C, \(K_w = 1.0\times10^{-14}\), so neutral water has pH 7.00. The ionisation is endothermic, so \(K_w\) grows with temperature: at 100 °C, \(K_w \approx 5.5\times10^{-13}\) and neutral water has pH 6.13. A solution is neutral when \([\mathrm{H_3O^+}] = [\mathrm{OH^-}]\), not when pH = 7.">水會微微解離：\(2\mathrm{H_2O} \rightleftharpoons \mathrm{H_3O^+} + \mathrm{OH^-}\)。25 °C 時 \(K_w = 1.0\times10^{-14}\)，中性的水 pH = 7.00。水的解離是吸熱反應，溫度升高 \(K_w\) 變大：100 °C 時 \(K_w \approx 5.5\times10^{-13}\)，中性的水 pH = 6.13。判斷中性要看 \([\mathrm{H_3O^+}] = [\mathrm{OH^-}]\)，不是看 pH 是不是 7。</p>
+
+      <h3 data-en="Strong and weak acids">強酸與弱酸</h3>
+      <div class="formula multi">
+        \[ \mathrm{HA} + \mathrm{H_2O} \rightleftharpoons \mathrm{H_3O^+} + \mathrm{A^-} \]
+        \[ K_a = \frac{[\mathrm{H_3O^+}][\mathrm{A^-}]}{[\mathrm{HA}]} \]
+        \[ \alpha = \frac{[\mathrm{A^-}]}{C} \]
+      </div>
+      <p data-en-html="A strong acid such as HCl gives up all its protons (\(\alpha = 1\)), so \([\mathrm{H_3O^+}] = C\). A weak acid gives up only a fraction \(\alpha\); the larger \(K_a\), the stronger the acid. If water's own ions can be neglected, \(K_a = C\alpha^2/(1-\alpha)\). Bases work the same way with \(\mathrm{B} + \mathrm{H_2O} \rightleftharpoons \mathrm{BH^+} + \mathrm{OH^-}\) and \(K_b\).">強酸（例如 HCl）把質子全部交給水（\(\alpha = 1\)），\([\mathrm{H_3O^+}] = C\)。弱酸只有一部分 \(\alpha\) 解離；\(K_a\) 越大，酸越強。若水自己解離的離子可以忽略，\(K_a = C\alpha^2/(1-\alpha)\)。鹼也一樣：\(\mathrm{B} + \mathrm{H_2O} \rightleftharpoons \mathrm{BH^+} + \mathrm{OH^-}\)，用 \(K_b\) 表示強弱。</p>
+
+      <h3 data-en="The textbook shortcut and dilution">課本的近似式與稀釋</h3>
+      <div class="formula multi">
+        \[ [\mathrm{H_3O^+}] \approx \sqrt{K_a C} \]
+        \[ \alpha \approx \sqrt{K_a / C} \]
+      </div>
+      <p data-en-html="When \(\alpha\) is small (less than about 5%) and \(K_aC \gg K_w\), the weak acid's pH follows the shortcut above. Diluting a strong acid ten times raises the pH by 1; diluting a weak acid ten times raises it by only about 0.5, because \(\alpha\) grows by \(\sqrt{10}\) (Ostwald's dilution law). In very dilute solutions the ions from water take over, and every acid or base approaches the neutral pH — never crossing it.">當 \(\alpha\) 很小（約小於 5%）而且 \(K_aC \gg K_w\) 時，弱酸的 pH 可以用上面的近似式。強酸稀釋 10 倍 pH 加 1；弱酸稀釋 10 倍 pH 只加約 0.5，因為 \(\alpha\) 變成 \(\sqrt{10}\) 倍（奧士華稀釋定律）。非常稀的時候，水自己解離的離子變成主角，任何酸或鹼都會趨近中性的 pH，但不會越過去。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="Same concentration, different strength: 0.010 M HCl has pH 2.00, 0.010 M acetic acid pH 3.38. In the magnifier only about 4 of the 100 acetic acid molecules are ionised.">同濃度、不同強度：0.010 M 鹽酸 pH 2.00，0.010 M 醋酸 pH 3.38。放大鏡裡，醋酸大約每 100 個分子只有 4 個解離。</li>
+        <li data-en-html="Press “Dilute 10 times with water” for each beaker: the strong acid goes up by 1.00 each time, the weak acid by about 0.5, and its degree of ionisation keeps rising.">兩杯各按幾次「加水稀釋 10 倍」：強酸每次 pH 加 1.00，弱酸約加 0.5，而且解離百分率越來越大。</li>
+        <li data-en-html="Compare HF, acetic acid, HClO and HCN at 0.10 M: the pH increases in the same order as \(K_a\) decreases.">比較 0.10 M 的 HF、醋酸、HClO、HCN：\(K_a\) 越小，pH 越大。</li>
+        <li data-en-html="Heat pure water: the pH falls, yet [H<sub>3</sub>O<sup>+</sup>] and [OH<sup>−</sup>] stay equal — the water is still neutral. Watch the “neutral” mark on the pH scale move.">加熱純水：pH 變小，但 [H<sub>3</sub>O<sup>+</sup>] 與 [OH<sup>−</sup>] 仍然相等——水還是中性。看 pH 色階上的「中性」記號跟著移動。</li>
+        <li data-en-html="Compare the exact pH with the shortcut \(\sqrt{K_aC}\) in the readings: they agree for 0.10 M acetic acid, but not for very dilute or fairly strong weak acids.">在讀數表比較精確的 pH 與近似式 \(\sqrt{K_aC}\) 的 pH：0.10 M 醋酸兩者幾乎相同，很稀或較強的弱酸就差很多。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">問題與討論</h3>
+      <ol>
+        <li data-en="0.10 M HCl and 0.10 M acetic acid contain the same number of moles of acid. Why do their pH values differ by almost 2, and why would they both need the same volume of NaOH to be neutralised?">0.10 M 鹽酸與 0.10 M 醋酸含有一樣多莫耳的酸，為什麼 pH 差了將近 2？為什麼中和它們卻要一樣多的 NaOH？</li>
+        <li data-en="Hydrochloric acid with pH 5.00 is diluted 1000 times. Is the pH now 8.00? Explain.">pH = 5.00 的鹽酸稀釋 1000 倍，pH 會變成 8.00 嗎？為什麼？</li>
+        <li data-en="Pure water at 100 °C has pH 6.13. Is it acidic?">100 °C 的純水 pH = 6.13，它是酸性的嗎？</li>
+        <li data-en="What concentration of acetic acid (Ka = 1.8 × 10^−5) has the same pH as 0.0010 M hydrochloric acid?">多少濃度的醋酸（K<sub>a</sub> = 1.8 × 10<sup>−5</sup>）和 0.0010 M 鹽酸的 pH 一樣？</li>
+        <li data-en="Calculate the pH of 0.10 M HF (Ka = 6.3 × 10^−4) exactly and with the shortcut √(KaC). Which is acceptable, and why?">分別用精確解與近似式 √(K<sub>a</sub>C) 計算 0.10 M HF（K<sub>a</sub> = 6.3 × 10<sup>−4</sup>）的 pH。哪一個可以接受？為什麼？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="pH measures only the H<sub>3</sub>O<sup>+</sup> that is already free. HCl is completely ionised ([H<sub>3</sub>O<sup>+</sup>] = 0.10 M, pH 1.00), but only 1.3% of the acetic acid is ([H<sub>3</sub>O<sup>+</sup>] = 0.0013 M, pH 2.87). When NaOH removes H<sub>3</sub>O<sup>+</sup>, the acetic acid equilibrium shifts and releases more, until all 0.10 mol/L has reacted, so neutralisation needs the same amount of base.">pH 只量到已經游離出來的 H<sub>3</sub>O<sup>+</sup>。HCl 完全解離（[H<sub>3</sub>O<sup>+</sup>] = 0.10 M，pH 1.00），醋酸只解離 1.3%（[H<sub>3</sub>O<sup>+</sup>] = 0.0013 M，pH 2.87）。NaOH 把 H<sub>3</sub>O<sup>+</sup> 用掉後，醋酸的平衡會向右移、再放出 H<sub>3</sub>O<sup>+</sup>，直到 0.10 mol/L 全部反應完，所以中和要一樣多的鹼。</li>
+          <li data-en-html="No. The acid is now 1.0 × 10<sup>−8</sup> M, far less than the 1.0 × 10<sup>−7</sup> M of H<sub>3</sub>O<sup>+</sup> from water. Solving the charge balance \([\mathrm{H_3O^+}] = C + K_w/[\mathrm{H_3O^+}]\) gives \([\mathrm{H_3O^+}] = 1.05\times10^{-7}\) M, pH 6.98: an acid, however dilute, never becomes basic.">不會。這時酸只剩 1.0 × 10<sup>−8</sup> M，比水本身的 1.0 × 10<sup>−7</sup> M H<sub>3</sub>O<sup>+</sup> 還少。解電荷平衡 \([\mathrm{H_3O^+}] = C + K_w/[\mathrm{H_3O^+}]\) 得 \([\mathrm{H_3O^+}] = 1.05\times10^{-7}\) M，pH = 6.98：酸再怎麼稀，也不會變成鹼性。</li>
+          <li data-en-html="No. In pure water [H<sub>3</sub>O<sup>+</sup>] = [OH<sup>−</sup>] at every temperature, so it is neutral. At 100 °C, \(K_w\) is about 55 times larger, so both ions are about 7.4 times more concentrated and neutral pH is 6.13.">不是。純水在任何溫度都是 [H<sub>3</sub>O<sup>+</sup>] = [OH<sup>−</sup>]，所以是中性。100 °C 時 \(K_w\) 約大 55 倍，兩種離子都濃了約 7.4 倍，中性的 pH 就是 6.13。</li>
+          <li data-en-html="We need \([\mathrm{H_3O^+}] = 1.0\times10^{-3}\) M. From \(K_a = x^2/(C-x)\): \(C = x + x^2/K_a = 0.0010 + (1.0\times10^{-6})/(1.8\times10^{-5}) = 0.057\) M — about 57 times more concentrated than the HCl.">需要 \([\mathrm{H_3O^+}] = 1.0\times10^{-3}\) M。由 \(K_a = x^2/(C-x)\) 得 \(C = x + x^2/K_a = 0.0010 + (1.0\times10^{-6})/(1.8\times10^{-5}) = 0.057\) M，大約是鹽酸的 57 倍濃。</li>
+          <li data-en-html="Exact: \(x^2/(0.10-x) = 6.3\times10^{-4}\) gives \(x = 7.6\times10^{-3}\) M, pH 2.12, \(\alpha = 7.6\%\). Shortcut: \(\sqrt{6.3\times10^{-5}} = 7.9\times10^{-3}\) M, pH 2.10. The difference in pH is small here, but \(\alpha\) is above 5%, so the shortcut overestimates [H<sub>3</sub>O<sup>+</sup>] by 4%; for more dilute HF the error grows quickly.">精確解：\(x^2/(0.10-x) = 6.3\times10^{-4}\)，\(x = 7.6\times10^{-3}\) M，pH 2.12，\(\alpha = 7.6\%\)。近似式：\(\sqrt{6.3\times10^{-5}} = 7.9\times10^{-3}\) M，pH 2.10。這裡 pH 只差一點，但 \(\alpha\) 已超過 5%，近似式把 [H<sub>3</sub>O<sup>+</sup>] 高估了 4%；HF 再稀一點，誤差會迅速變大。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="For each beaker, \([\mathrm{H_3O^+}]\) is the single root of the charge balance — for an acid \([\mathrm{H_3O^+}] = K_w/[\mathrm{H_3O^+}] + C\,K_a/(K_a + [\mathrm{H_3O^+}])\), for a base \([\mathrm{H_3O^+}] + C\,[\mathrm{H_3O^+}]/([\mathrm{H_3O^+}] + K_w/K_b) = K_w/[\mathrm{H_3O^+}]\) — found by bisection on \(\log[\mathrm{H_3O^+}]\). No shortcut formula is used, so the water's own ions are always included. Activity coefficients are taken as 1 (ideal dilute solutions), so readings at 0.1–1 M are idealised.">每一杯的 \([\mathrm{H_3O^+}]\) 都是電荷平衡唯一的根——酸：\([\mathrm{H_3O^+}] = K_w/[\mathrm{H_3O^+}] + C\,K_a/(K_a + [\mathrm{H_3O^+}])\)；鹼：\([\mathrm{H_3O^+}] + C\,[\mathrm{H_3O^+}]/([\mathrm{H_3O^+}] + K_w/K_b) = K_w/[\mathrm{H_3O^+}]\)——對 \(\log[\mathrm{H_3O^+}]\) 用二分法求解。完全不用近似式，水自己解離的離子一直都算在內。活性係數視為 1（理想稀薄溶液），所以 0.1–1 M 的讀數是理想化的值。</li>
+        <li data-en-html="\(K_w\) at each temperature comes from the empirical equation of Harned and Robinson (1940), \(\mathrm{p}K_w = 4470.99/T - 6.0875 + 0.01706\,T\), which agrees within 0.01 with the values of Marshall and Franck (1981) up to 100 °C. To match the textbook, the whole curve is shifted by +0.005 so that \(K_w = 1.00\times10^{-14}\) at 25 °C.">各溫度的 \(K_w\) 由 Harned 與 Robinson（1940）的經驗式 \(\mathrm{p}K_w = 4470.99/T - 6.0875 + 0.01706\,T\) 算出，到 100 °C 與 Marshall 與 Franck（1981）的值相差在 0.01 以內。為了和課本一致，整條曲線平移 +0.005，讓 25 °C 時 \(K_w = 1.00\times10^{-14}\)。</li>
+        <li data-en-html="Dissociation constants at 25 °C (CRC Handbook): HF \(K_a = 6.3\times10^{-4}\) (pK<sub>a</sub> 3.20), acetic acid \(1.8\times10^{-5}\) (the textbook value; CRC 4.756), HClO \(4.0\times10^{-8}\) (7.40), HCN \(6.2\times10^{-10}\) (9.21), ammonia \(K_b = 1.8\times10^{-5}\). They are kept at their 25 °C values at every temperature (a simplification: the pK<sub>a</sub> of acetic acid changes by only 0.04 between 0 and 60 °C). HCl and NaOH are taken as completely ionised. The unknown acid has a random pK<sub>a</sub> between 2.50 and 6.00.">25 °C 的解離常數（CRC Handbook）：HF \(K_a = 6.3\times10^{-4}\)（pK<sub>a</sub> 3.20）、醋酸 \(1.8\times10^{-5}\)（課本常用值；CRC 為 4.756）、HClO \(4.0\times10^{-8}\)（7.40）、HCN \(6.2\times10^{-10}\)（9.21）、氨 \(K_b = 1.8\times10^{-5}\)。各溫度都用 25 °C 的值（簡化：醋酸的 pK<sub>a</sub> 在 0–60 °C 間只變 0.04）。HCl 與 NaOH 視為完全解離。未知酸的 pK<sub>a</sub> 在 2.50 到 6.00 之間隨機產生。</li>
+        <li data-en-html="The magnifiers show 40 particles of solute in each beaker, ionised in the calculated proportion (rounded to whole particles). Ions from water are added in proportion too, but at most 12 pairs are drawn. The motion and the protons hopping on and off are for display only; the number of ions always matches \(\alpha\). The indicator colours follow a typical universal-indicator chart and are illustrative.">放大鏡每杯畫 40 個溶質粒子，依算出的比例畫成離子（四捨五入成整數個）。水解離出的離子也照比例畫，但最多畫 12 對。粒子的運動與質子跳上跳下只是示意，畫出的離子數一直對應 \(\alpha\)。指示劑的顏色依常見的廣用指示劑色卡，只是示意。</li>
+        <li data-en-html="The 2D view shows the beakers, pH meters and magnifiers; the 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same particles inside two magnified droplets that you can rotate. Hydrofluoric acid really attacks glass and is very toxic; in a real laboratory it is kept in plastic and handled with special care.">2D 平面畫燒杯、pH 計與放大鏡；3D 立體（three.js 函式庫，MIT 授權，切換時才下載）把同一批粒子放在兩顆放大的液滴裡，可以旋轉觀察。真實的氫氟酸會腐蝕玻璃、毒性很強，實驗室要放在塑膠容器並特別小心處理。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Acids and bases (pH, the ion product of water, strong and weak acids and bases, degree of ionisation).">課綱對應：高中化學・酸鹼反應（pH、水的離子積、強酸與弱酸、強鹼與弱鹼、解離百分率）。</li>
+        <li data-en="Dissociation constants: W. M. Haynes (ed.), CRC Handbook of Chemistry and Physics, 97th ed. (2016), “Dissociation constants of inorganic acids and bases” and “Dissociation constants of organic acids and bases”.">解離常數：W. M. Haynes 主編，CRC Handbook of Chemistry and Physics 第 97 版（2016），「Dissociation constants of inorganic acids and bases」與「Dissociation constants of organic acids and bases」（英文）。</li>
+        <li data-en="Ion product of water: H. S. Harned and R. A. Robinson, Trans. Faraday Soc. 36, 973 (1940); W. L. Marshall and E. U. Franck, J. Phys. Chem. Ref. Data 10, 295 (1981).">水的離子積：H. S. Harned、R. A. Robinson，Trans. Faraday Soc. 36, 973（1940）；W. L. Marshall、E. U. Franck，J. Phys. Chem. Ref. Data 10, 295（1981）（皆為英文）。</li>
+        <li data-en-html="Further reading: OpenStax <i>Chemistry 2e</i>, <a href=&quot;https://openstax.org/books/chemistry-2e/pages/14-2-ph-and-poh&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>14.2 pH and pOH</a> and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/14-3-relative-strengths-of-acids-and-bases&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>14.3 Relative Strengths of Acids and Bases</a>.">延伸閱讀：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/14-2-ph-and-poh" target="_blank" rel="noopener">14.2 pH 與 pOH</a>、<a href="https://openstax.org/books/chemistry-2e/pages/14-3-relative-strengths-of-acids-and-bases" target="_blank" rel="noopener">14.3 酸與鹼的相對強度</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/ph-scale-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/ph-scale-3d.js"></script>
+  <script src="js/ph-scale.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="ph-scale"></script>
+  <script src="js/missions/ph-scale.js"></script>
+  <script src="js/stats.js" data-module="ph-scale"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
