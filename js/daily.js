@@ -52,6 +52,7 @@
   function isPick(id) { return !!(D.loaded && D.rec && D.rec.d === today() && picks().indexOf(id) >= 0); }
   /** 今天的每日任務、而且今天還沒完成（只有這時候才判定、掉寶） */
   function active(id) { return isPick(id) && !doneToday(id); }
+  function ev(x) { return x >= 0.1 ? x.toFixed(2) : x >= 0.01 ? x.toFixed(3) : x.toFixed(4); }
   function pct(x) { const v = 100 * x; return (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + '%'; }
 
   // ======================= 圖示 =======================
@@ -508,14 +509,16 @@
       th.appendChild(el('span', 'dl-rep-inline', T('掉寶 ', 'Drop ') + pct(C.repeatChance(lv, S, TT))));
       tr.appendChild(th);
       tr.appendChild(el('td', 'dl-rep-col', pct(C.repeatChance(lv, S, TT))));
-      C.table(lv, S, TT).forEach(function (p) { tr.appendChild(el('td', null, pct(p))); });
+      // 期望值（11/13 站長「改為期望值」）：完成一個每日任務平均拿到幾個＝掉寶機率 × 掉到這一種的機率 × 掉到時的平均數量
+      const rep = C.repeatChance(lv, S, TT);
+      C.table(lv, S, TT).forEach(function (p, i) { tr.appendChild(el('td', null, ev(rep * p * C.qtyMean(C.ITEMS[i].id, lv, S, TT)))); });
       body.appendChild(tr);
     });
     tb.appendChild(body);
     wrap.appendChild(tb);
     sec.appendChild(wrap);
-    sec.appendChild(el('p', 'lb-note', T('每完成一個每日任務，先依「掉寶機率」決定有沒有掉寶（新任務和做過的任務一樣）；掉寶時只掉一種，是哪一種看銅幣到鑰匙各欄的機率。',
-      'Each daily mission you clear first rolls the “Drop chance” (the same for new missions and ones you have done); a drop is always one kind of treasure, and the copper-to-key columns give which.')));
+    sec.appendChild(el('p', 'lb-note', T('銅幣到鑰匙各欄是期望值：完成一個這種難度的每日任務，平均可以拿到幾個（＝掉寶機率 × 掉到這一種的機率 × 掉到時的平均數量）。例如 0.05 表示平均完成 20 個才拿到 1 個。每次掉寶只掉一種，新任務和做過的任務一樣。',
+      'The copper-to-key columns are expected values: how many you get on average per daily mission of that difficulty (drop chance × chance of that kind × average amount). For example, 0.05 means about 1 in every 20 missions. A drop is always one kind of treasure, the same for new missions and ones you have done.')));
 
     // 掉到時的數量：和掉寶機率同一組條件（任務難度＋星星比例），越好越偏多；鑽石與鑰匙最多 1 個（11/12 站長）
     sec.appendChild(el('h3', 'dl-odds-sub', T('掉到時的平均數量', 'Average amount when it drops')));
