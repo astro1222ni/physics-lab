@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Tower of Hanoi | Astro Ni Science Lab">河內塔｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 河內塔頁面專用的顏色代號（淺色＋兩組深色；由 js/hanoi.js 與 js/hanoi-3d.js 讀取） */
+    :root {
+      --hn-d1: #e8590c; --hn-d2: #f2b705; --hn-d3: #94c11f; --hn-d4: #2f9e44; --hn-d5: #1098ad;
+      --hn-d6: #1c7ed6; --hn-d7: #5f3dc4; --hn-d8: #ae3ec9; --hn-d9: #d6336c; --hn-d10: #3d4a52;
+      --hn-wood: #c8955c; --hn-wood2: #94612f; --hn-peg: #b98048;
+      --hn-goal: #196558; --hn-sel: #e8890c; --hn-bad: #e03131; --hn-hint: #d6336c; --hn-trail: #7048e8; --hn-ok: #2b8a3e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --hn-d1: #ff7a2e; --hn-d2: #ffcd38; --hn-d3: #a9e34b; --hn-d4: #51cf66; --hn-d5: #3bc9db;
+        --hn-d6: #4dabf7; --hn-d7: #8f74ff; --hn-d8: #da77f2; --hn-d9: #f06595; --hn-d10: #8c9aa3;
+        --hn-wood: #9a6a3c; --hn-wood2: #5e3d1f; --hn-peg: #a8763f;
+        --hn-goal: #5cc2a8; --hn-sel: #ffb44d; --hn-bad: #ff6b6b; --hn-hint: #f783ac; --hn-trail: #b197fc; --hn-ok: #69db7c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --hn-d1: #ff7a2e; --hn-d2: #ffcd38; --hn-d3: #a9e34b; --hn-d4: #51cf66; --hn-d5: #3bc9db;
+      --hn-d6: #4dabf7; --hn-d7: #8f74ff; --hn-d8: #da77f2; --hn-d9: #f06595; --hn-d10: #8c9aa3;
+      --hn-wood: #9a6a3c; --hn-wood2: #5e3d1f; --hn-peg: #a8763f;
+      --hn-goal: #5cc2a8; --hn-sel: #ffb44d; --hn-bad: #ff6b6b; --hn-hint: #f783ac; --hn-trail: #b197fc; --hn-ok: #69db7c;
+    }
+
+    /* 畫布高度由程式依寬度決定；按在盤子上才攔下觸控（拖曳盤子），其他時候手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 340px; touch-action: pan-y; cursor: pointer; }
+    #cvRec, #cvGraph { aspect-ratio: auto; touch-action: pan-y; cursor: default; margin-top: 10px; }
+    #cvGraph { cursor: pointer; }
+    .hn button { min-height: 44px; }
+    .hn [hidden] { display: none !important; }
+    .pegbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .pegbar button { font-weight: 600; letter-spacing: 0.02em; }
+    .pegbar button[aria-pressed="true"] { background: var(--hn-sel); border-color: var(--hn-sel); color: #fff; }
+    .pegbar button.goal { box-shadow: inset 0 -3px 0 var(--hn-goal); }
+    .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 8px 2px 0; }
+    .playbar button { padding: 6px 4px; line-height: 1.25; }
+    .playbar .wide { grid-column: span 2; }
+    @media (max-width: 520px) { .playbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .hn .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .hn .slider input[type="range"] { height: 28px; margin: 0; }
+    .hn .checks label { min-height: 44px; }
+    .hn .checks input { width: 17px; height: 17px; }
+    .hn .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .hn .panel > .card { min-width: 0; }
+    .lbl { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; }
+    .seg2, .seg3 { display: grid; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .seg2 button, .seg3 button { border: none; border-radius: 0; min-height: 44px; padding: 6px 4px; background: var(--bg); line-height: 1.25; }
+    .seg2 button + button, .seg3 button + button { border-left: 1px solid var(--border); }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg3 button:disabled { opacity: 0.45; cursor: not-allowed; }
+    .row2, .row3 { display: grid; gap: 8px; margin: 10px 0 0; }
+    .row2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .row3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .row2 button, .row3 button { padding: 6px 4px; line-height: 1.25; }
+    /* 2D／3D 檢視切換（與其他有 3D 的模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 38%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 4 / 3; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .p3-wrap { position: relative; }
+    .p3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .p3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .p3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .p3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .p3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .p3-hud span.m { color: var(--muted); font-weight: 500; }
+    .p3-hud span.ok { color: var(--hn-ok); }
+    .p3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd.ok { color: var(--hn-ok); font-weight: 700; }
+    dl.readout dd.bad { color: var(--hn-bad); font-weight: 700; }
+    dl.readout dd.wrap { white-space: normal; overflow-wrap: anywhere; }
+    .stepbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; border: 1px dashed var(--border); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.6; min-height: 3.4em; overflow-x: auto; }
+    .stepbox .katex { font-size: 1em; }
+    .stepbox .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-weight: 700; font-size: 0.92em; }
+    .stepbox .tag.ok { background: color-mix(in srgb, var(--hn-ok) 16%, transparent); color: var(--hn-ok); }
+    .stepbox .tag.bad { background: color-mix(in srgb, var(--hn-bad) 16%, transparent); color: var(--hn-bad); }
+    .stepbox .muted { color: var(--muted); }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend .sw { width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 5px; border-radius: 50%; }
+    .quiz-q { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: calc(14px * var(--fs, 1)); line-height: 1.55; min-height: 2.6em; }
+    .quiz-q:empty { display: none; }
+    .answers { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 8px 0 0; }
+    .answers.mv { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .answers button { padding: 4px 2px; font-weight: 600; font-variant-numeric: tabular-nums; }
+    .answers button.right { background: color-mix(in srgb, var(--hn-ok) 22%, var(--surface)); border-color: var(--hn-ok); }
+    .answers button.wrong { background: color-mix(in srgb, var(--hn-bad) 18%, var(--surface)); border-color: var(--hn-bad); }
+    .big { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    pre.code { margin: 8px 0; padding: 10px 14px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; font-size: calc(13.5px * var(--fs, 1)); line-height: 1.55; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Tower of Hanoi"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 河內塔</nav>
+      <h1 data-en="The Tower of Hanoi">河內塔</h1>
+      <p data-en="Move the whole tower to another peg — one disc at a time, and never a bigger disc on a smaller one. The neatest way to think about it is recursion: to move n discs, first move n − 1 of them out of the way. Solve it yourself, watch the recursion unfold call by call, see why the disc moved at step k follows the marks on a ruler, and discover the Sierpiński triangle hidden in the map of all positions.">把整疊盤子搬到另一根柱子上：一次只能搬一個，大盤不能壓在小盤上。最漂亮的想法是遞迴——要搬 n 個盤子，先把上面 n − 1 個搬開。自己動手解解看，再看遞迴一層一層展開、第 k 步搬哪一個盤為什麼跟尺上的刻度一樣，還有所有狀態畫成的地圖裡藏著的謝爾賓斯基三角形。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: tap “Peg A” and then “Peg C” (or drag the top disc) to move a disc; then press “Skip subproblem” three times and watch the whole tower move.">試試看：按「A 柱」再按「C 柱」（或直接拖曳最上面的盤子）搬一個盤；再連按三次「跳過子問題」，看整疊怎麼搬完。</p>
+    <div class="lab hn" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D side view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D tower">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="河內塔畫布：三根柱子與盤子。點一根柱子拿起最上面的盤，再點另一根柱子放下；也可以直接拖曳盤子。鍵盤：1、2、3（或 A、B、C）選柱子，左右方向鍵移動游標、Enter 拿起或放下，Backspace 是上一步。" data-en-aria-label="Tower of Hanoi canvas: three pegs and the discs. Tap a peg to pick up its top disc, then tap another peg to put it down; you can also drag a disc. Keyboard: 1, 2, 3 (or A, B, C) pick a peg, left and right arrows move a cursor, Enter picks up or puts down, Backspace undoes."></canvas>
+        <div id="view3"></div>
+        <div class="pegbar" role="group" aria-label="柱子" data-en-aria-label="Pegs">
+          <button type="button" id="peg0" aria-pressed="false" data-en="Peg A">A 柱</button>
+          <button type="button" id="peg1" aria-pressed="false" data-en="Peg B">B 柱</button>
+          <button type="button" id="peg2" aria-pressed="false" data-en="Peg C">C 柱</button>
+        </div>
+        <div class="playbar">
+          <button id="undoBtn" type="button" title="把最後一步倒回去" data-en-title="Take back the last move" data-en="Undo">上一步</button>
+          <button id="resetBtn" type="button" title="整疊放回 A 柱，步數歸零" data-en-title="Put the whole tower back on peg A and start counting again" data-en="Restart">重來</button>
+          <button id="shuffleBtn" type="button" title="隨機排成一個合法但不整齊的狀態" data-en-title="Arrange the discs into a random legal but untidy position" data-en="Shuffle">打亂</button>
+          <button id="clearBtn" type="button" title="清掉步數、走過的路徑、搜尋結果與挑戰紀錄，從目前的狀態重新計算；盤子數、目標與其他設定不變" data-en-title="Clear the move count, the path walked, the search result and the quiz record and start counting from the current position; the number of discs, the target and other settings stay" data-en="Clear all">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cvRec" aria-label="遞迴圖：左邊（窄螢幕在上方）是呼叫堆疊，由最外層的呼叫到目前這一層；右邊是遞迴樹，每個節點是一次呼叫，橫向位置是它搬盤子的那一步，高度是搬的盤子大小，所以排起來像尺上的刻度。" data-en-aria-label="Recursion view: the call stack on the left (on top on narrow screens), from the outermost call down to the current one; on the right the recursion tree, where each node is one call placed at the step where it moves its disc and drawn as high as that disc is large, so the nodes line up like the marks on a ruler."></canvas>
+        <p class="chart-cap" id="recCap" data-en="Recursion tree: reading the nodes from left to right gives the order of the moves; the height of each node is the disc it moves (1, 2, 1, 3, 1, 2, 1, …).">遞迴樹：節點由左到右的順序就是搬的順序；節點的高度是它搬的盤子（1、2、1、3、1、2、1……）。</p>
+        <canvas id="cvGraph" tabindex="0" aria-label="狀態圖：每一個點是一種合法的擺法，每一條線是一次合法的移動；三個角是整疊在 A、B、C。亮點是目前的狀態，圓圈是目標。點一個點可以看它離目前幾步；選了「自訂目標」時，點一下就把它設成目標。" data-en-aria-label="State graph: each dot is one legal arrangement and each line is one legal move; the three corners are the whole tower on A, B and C. The bright dot is the current state and the ring is the target. Tap a dot to see how far it is from here; with “Custom target” selected, tapping a dot makes it the target."></canvas>
+        <p class="chart-cap" id="graphCap" data-en-html="State graph (up to 7 discs, 3<sup>7</sup> = 2187 states): the states with the largest disc on A, B or C form three smaller copies of the same graph, joined by single moves of the largest disc — the Sierpiński triangle.">狀態圖（最多畫到 7 個盤子，3 的 7 次方 = 2187 個狀態）：最大的盤在 A、B、C 的狀態各自組成小一號的同一張圖，三塊之間只靠最大的盤搬一步相連——謝爾賓斯基三角形。</p>
+        <div class="legend" aria-hidden="true">
+          <span><span class="sw" style="background:var(--accent)"></span><span data-en="current state">目前狀態</span></span>
+          <span><span class="sw" style="background:transparent;border:2px solid var(--hn-goal);width:8px;height:8px"></span><span data-en="target">目標</span></span>
+          <span><i style="background:var(--hn-trail)"></i><span data-en="path walked">走過的路</span></span>
+          <span><i style="background:var(--hn-hint)"></i><span data-en="shortest path">最短路</span></span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The tower">塔</h2>
+          <div class="slider"><label for="nDisks" data-en="Number of discs n">盤子數 n</label><output id="nDiskso"></output>
+            <input id="nDisks" type="range" min="1" max="10" step="1" value="4" data-decimals="0"></div>
+          <p class="lbl" id="goalLbl" data-en="Target">目標</p>
+          <div class="seg3" role="group" aria-labelledby="goalLbl">
+            <button type="button" id="goalB" aria-pressed="false" data-en="Target B">目標 B</button>
+            <button type="button" id="goalC" aria-pressed="true" data-en="Target C">目標 C</button>
+            <button type="button" id="goalX" aria-pressed="false" data-en="Custom target">自訂目標</button>
+          </div>
+          <dl class="readout" style="margin-top:12px">
+            <dt data-en="Moves so far">已經搬了</dt><dd id="rMoves">—</dd>
+            <dt data-en="Moves still needed (shortest)">離目標還要（最少）</dt><dd id="rDist">—</dd>
+            <dt data-en-html="Fewest for the whole tower 2<sup>n</sup> − 1">整疊最少 2<sup>n</sup> − 1</dt><dd id="rMin">—</dd>
+            <dt data-en="Blocked (big on small)">被擋下（大壓小）</dt><dd id="rIllegal">—</dd>
+            <dt data-en="Where each disc is (disc 1 first)">每個盤在哪（盤 1 起）</dt><dd id="rState" class="wrap">—</dd>
+          </dl>
+          <div class="checks" style="margin-top:6px">
+            <label><input id="hint" type="checkbox"><span data-en="Show shortest path">顯示最短路</span></label>
+          </div>
+          <p class="hint" data-en="Disc 1 is the smallest. “Shuffle” and “Restart” start counting again; so does changing n or the target. With “Custom target”, tap a dot on the state graph (up to 7 discs).">盤 1 最小。按「打亂」「重來」、改盤子數或目標，步數都從頭算。選「自訂目標」後，在狀態圖上點一個點（最多 7 個盤子）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Auto solve">自動解</h2>
+          <div class="seg2" role="group" aria-label="解法" data-en-aria-label="Method">
+            <button type="button" id="algRec" aria-pressed="true" data-en="Recursive">遞迴</button>
+            <button type="button" id="algIter" aria-pressed="false" data-en="Smallest disc alternates">最小盤輪流</button>
+          </div>
+          <div class="row3">
+            <button id="playBtn" type="button" class="primary" aria-pressed="false" title="一步一步自動搬，再按一次暫停" data-en-title="Move automatically step by step; press again to pause" data-en="Auto solve">自動解</button>
+            <button id="stepBtn" type="button" title="自動搬一步" data-en-title="Make one automatic move" data-en="Step">單步</button>
+            <button id="skipBtn" type="button" title="把目前這一層呼叫的下一件事整個做完：如果下一件事是一個遞迴呼叫，就一口氣把那個子問題解完" data-en-title="Finish the next thing the current call does in one go: if it is a recursive call, solve that whole subproblem at once" data-en="Skip subproblem">跳過子問題</button>
+          </div>
+          <div class="slider"><label for="speed" data-en="Speed (moves per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="60" step="1" value="3" data-decimals="0"></div>
+          <dl class="readout">
+            <dt data-en="Current call">目前的呼叫</dt><dd id="rCall" class="wrap">—</dd>
+            <dt data-en="Call depth">呼叫深度</dt><dd id="rDepth">—</dd>
+            <dt data-en="Next move">下一步</dt><dd id="rNext" class="wrap">—</dd>
+          </dl>
+          <div class="stepbox" id="stepBox" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="State graph">狀態圖</h2>
+          <div class="row2">
+            <button id="bfsBtn" type="button" class="wide" title="從目前的狀態出發，一層一層找出每個狀態最少要幾步" data-en-title="Starting from the current state, find layer by layer how many moves each state needs" data-en="Breadth-first search">廣度優先搜尋</button>
+          </div>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en-html="States 3<sup>n</sup>">狀態數 3<sup>n</sup></dt><dd id="rStates">—</dd>
+            <dt data-en="Moves (lines)">移動（線）數</dt><dd id="rEdges">—</dd>
+            <dt data-en="Search layers">搜尋的層數</dt><dd id="rLayers">—</dd>
+            <dt data-en="Shortest moves to the target">到目標最少幾步</dt><dd id="rBfsDist">—</dd>
+          </dl>
+          <p class="hint" id="graphHint" data-en="Breadth-first search visits the states nearest the start first: layer 1 is one move away, layer 2 two moves away, and so on. The number of layers is the distance to the farthest state.">廣度優先搜尋先拜訪離起點最近的狀態：第 1 層離起點 1 步、第 2 層 2 步……；層數就是離起點最遠的狀態有幾步。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge">挑戰</h2>
+          <div class="row2">
+            <button id="quizBtn" type="button" data-en="New question">出題</button>
+            <button id="quizHardBtn" type="button" data-en="Hard question">進階題</button>
+          </div>
+          <div class="quiz-q" id="quizQ" aria-live="polite"></div>
+          <div class="answers" id="answers" role="group" aria-label="答案" data-en-aria-label="Answers" hidden></div>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Correct in a row">連續答對</dt><dd id="rStreak">—</dd>
+          </dl>
+          <p class="hint" data-en="Every question is about the shortest solution for 10 discs from peg A to peg C (1023 moves).">題目都是 10 個盤子、從 A 柱搬到 C 柱的最少步數解法（共 1023 步）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The tower of the legend">傳說中的塔</h2>
+          <div class="slider"><label for="legN" data-en="Discs in the legend N">傳說的盤子數 N</label><output id="legNo"></output>
+            <input id="legN" type="range" min="1" max="100" step="1" value="10" data-decimals="0"></div>
+          <div class="seg3" role="group" aria-label="搬的速度" data-en-aria-label="Speed of moving">
+            <button type="button" id="rate1" aria-pressed="true" data-en="1 move per second">每秒 1 步</button>
+            <button type="button" id="rate1k" aria-pressed="false" data-en="1000 moves per second">每秒 1000 步</button>
+            <button type="button" id="rate1g" aria-pressed="false" data-en-html="10<sup>9</sup> moves per second">每秒 10 億步</button>
+          </div>
+          <dl class="readout" style="margin-top:12px">
+            <dt data-en-html="Fewest moves 2<sup>N</sup> − 1">最少步數 2<sup>N</sup> − 1</dt><dd id="rLegSteps" class="wrap big">—</dd>
+            <dt data-en="Time needed">需要的時間</dt><dd id="rLegTime">—</dd>
+            <dt data-en="Compared with the age of the universe">和宇宙年齡比</dt><dd id="rLegAge">—</dd>
+          </dl>
+          <p class="hint" data-en="One year = 365.25 days. The age of the universe is about 13.8 billion years (Planck 2018).">一年以 365.25 天計。宇宙年齡約 138 億年（Planck 2018）。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="The rules">規則</h3>
+      <p data-en="There are three pegs and n discs of different sizes, all stacked on one peg from the largest at the bottom to the smallest at the top. Move the whole tower to another peg. You may move only one disc at a time, always the top disc of some peg, and a disc may never be placed on a smaller one. Because every disc must sit on a larger disc or on the base, a position is decided completely by which peg each disc is on: there are exactly \(3^n\) legal positions.">有三根柱子和 n 個大小不同的盤子，一開始由大到小疊在同一根柱子上。目標是把整疊搬到另一根柱子：一次只能搬一個盤、只能拿某根柱子最上面的那一個，而且大盤不能放在小盤上。因為每個盤子一定壓在比它大的盤子或底座上，只要知道每個盤子在哪一根柱子，整個擺法就決定了：合法的擺法剛好有 \(3^n\) 種。</p>
+
+      <h3 data-en="Thinking recursively">用遞迴來想</h3>
+      <p data-en-html="To move n discs from A to C, the largest disc has to move at some point, and at that moment all the other \(n-1\) discs must be out of its way — every one of them on B. So: move \(n-1\) discs from A to B (the same puzzle, one size smaller), move the largest disc from A to C, then move the \(n-1\) discs from B to C (the same puzzle again). A problem solved by calling itself on smaller versions of the same problem is <strong>recursion</strong>; the one-disc puzzle (just move it) is the <strong>base case</strong> that stops it.">要把 n 個盤從 A 搬到 C，最大的盤總有一刻要搬，那一刻其他 \(n-1\) 個盤一定都不能擋路——全部在 B 上。所以：先把 \(n-1\) 個盤從 A 搬到 B（小一號的同一個問題），把最大的盤從 A 搬到 C，再把 \(n-1\) 個盤從 B 搬到 C（又是同一個問題）。用「更小的同一個問題」來解自己，就是<strong>遞迴</strong>；只有一個盤時直接搬，是讓遞迴停下來的<strong>基本情況</strong>。</p>
+      <pre class="code" data-en="hanoi(k, from, to, via):
+    if k = 0: return
+    hanoi(k − 1, from, via, to)
+    move disc k: from → to
+    hanoi(k − 1, via, to, from)">hanoi(k, from, to, via):
+    if k = 0: return
+    hanoi(k − 1, from, via, to)
+    搬盤 k：from → to
+    hanoi(k − 1, via, to, from)</pre>
+      <p data-en-html="Let \(T(n)\) be the number of moves. The plan above uses \(T(n-1) + 1 + T(n-1)\) moves, and no plan can do better: before the largest disc first moves, the other \(n-1\) discs must all be gathered on the third peg, which takes at least \(T(n-1)\) moves; after its last move they must all be brought on top of it, at least \(T(n-1)\) more. Therefore">設 \(T(n)\) 是最少步數。上面的做法用了 \(T(n-1) + 1 + T(n-1)\) 步，而且不可能更少：最大的盤第一次搬之前，其他 \(n-1\) 個盤必須全部集中到第三根柱子，至少要 \(T(n-1)\) 步；它最後一次搬完之後，這些盤又要全部搬到它上面，至少再 \(T(n-1)\) 步。所以</p>
+      <div class="formula">\[ T(1) = 1,\qquad T(n) = 2\,T(n-1) + 1 \quad\Longrightarrow\quad T(n) + 1 = 2\bigl(T(n-1) + 1\bigr) \quad\Longrightarrow\quad T(n) = 2^n - 1 \]</div>
+      <p data-en-html="Each extra disc doubles the work (plus one). The recursion is only \(n\) calls deep, but it makes \(2^n - 1\) calls in total — one for every move.">每多一個盤，工作量就加倍再加一。遞迴最深只有 \(n\) 層，但總共呼叫 \(2^n - 1\) 次——每一步對應一次呼叫。</p>
+
+      <h3 data-en="The ruler function">尺規函數</h3>
+      <p data-en-html="Write down which disc moves at each step of the shortest solution: 1, 2, 1, 3, 1, 2, 1, 4, 1, 2, 1, 3, … — the same pattern as the marks on a ruler. At step \(k\) the disc moved is">把最少步數解法每一步搬的盤子寫下來：1、2、1、3、1、2、1、4、1、2、1、3……和尺上刻度的長短一模一樣。第 \(k\) 步搬的盤子是</p>
+      <div class="formula" data-en-html="\[ d(k) = \nu_2(k) + 1,\qquad \nu_2(k) = \text{the number of zeros at the end of } k \text{ in binary} \]">\[ d(k) = \nu_2(k) + 1,\qquad \nu_2(k) = k \text{ 的二進位結尾 0 的個數} \]</div>
+      <p data-en-html="For example \(k = 12 = 1100_2\) ends in two zeros, so step 12 moves disc 3. Disc \(d\) moves \(2^{\,n-d}\) times, and always around the pegs in the same direction: for a tower going from A to C, discs with \(n - d\) even go A → C → B → A, the others A → B → C → A. That gives a solution with no recursion at all: on odd steps move the smallest disc one peg along its direction; on even steps make the only legal move that does not touch the smallest disc. It produces exactly the same moves as the recursion.">例如 \(k = 12 = 1100_2\) 結尾有兩個 0，所以第 12 步搬盤 3。盤 \(d\) 一共搬 \(2^{\,n-d}\) 次，而且永遠朝同一個方向繞：整疊從 A 搬到 C 時，\(n - d\) 是偶數的盤照 A → C → B → A 繞，其他的照 A → B → C → A 繞。於是有一個完全不用遞迴的解法：奇數步把最小的盤沿它的方向搬一格；偶數步做「不動最小盤」的那一個合法移動（只有一個）。它搬出來的每一步都和遞迴一樣。</p>
+      <p data-en="Why? In the recursion tree each call is a node, placed under the call that made it. Reading the tree in order — left subtree, the node’s own move, right subtree — gives the moves in order, and a node that moves disc d sits n − d levels below the top. The tree is the ruler.">為什麼？在遞迴樹裡，每次呼叫是一個節點，掛在呼叫它的節點下面。依「左子樹、自己這一步、右子樹」的順序讀（中序），讀到的就是搬的順序；搬盤 d 的節點在最上層下面 n − d 層。遞迴樹本身就是那把尺。</p>
+
+      <h3 data-en="The state graph and the Sierpiński triangle">狀態圖與謝爾賓斯基三角形</h3>
+      <p data-en-html="Draw one dot for every legal position and join two dots when a single move turns one into the other. The positions whose largest disc is on A form a copy of the graph for \(n-1\) discs, and so do those with the largest disc on B or on C; the three copies are joined by just three lines, the moves of the largest disc. Repeating this all the way down gives the Sierpiński triangle. The graph has \(3^n\) dots and \(\tfrac{3}{2}(3^n - 1)\) lines; the three corners are the whole tower on A, B and C, and the shortest way between two corners runs straight along a side: \(2^n - 1\) moves.">每一種合法擺法畫一個點，一步就能互相變過去的兩個點連一條線。最大的盤在 A 的那些擺法，正好組成 \(n-1\) 個盤的同一張圖；最大的盤在 B、在 C 的也是。這三塊之間只有三條線相連——就是最大的盤的那三種搬法。一直這樣分下去，就是謝爾賓斯基三角形。這張圖有 \(3^n\) 個點、\(\tfrac{3}{2}(3^n - 1)\) 條線；三個角是整疊在 A、B、C，兩個角之間的最短路就是三角形的一條邊：\(2^n - 1\) 步。</p>
+      <p data-en-html="From any position, the fewest moves needed to gather all discs on peg \(t\) can be found from the largest disc down. If disc \(d\) is already on the peg it must end on, look at the next smaller disc. If not, disc \(d\) must move there once, and before that the smaller discs must all be on the third peg, so add \(2^{\,d-1}\) and make the third peg the new destination for the smaller discs.">從任何擺法出發，要把所有盤集中到柱 \(t\) 最少要幾步，可以由最大的盤往下算：如果盤 \(d\) 已經在它該去的柱子上，就看下一個小一點的盤；如果不在，盤 \(d\) 一定要搬過去一次，而那之前比它小的盤必須全部在第三根柱子上——加上 \(2^{\,d-1}\)，並把第三根柱子當作比它小的盤的新目標。</p>
+      <div class="formula" data-en-html="\[ \text{for } d = n, n-1, \dots, 1:\quad \text{if } p_d \ne t:\ \ \text{moves} \mathrel{+}= 2^{\,d-1},\ \ t \leftarrow \text{the third peg (not } p_d, \text{ not } t) \]">\[ d = n, n-1, \dots, 1:\quad p_d \ne t \ \text{時}\ \ \text{步數} \mathrel{+}= 2^{\,d-1},\ \ t \leftarrow \text{第三根柱子（不是 } p_d \text{ 也不是 } t\text{）} \]</div>
+
+      <h3 data-en="The legend">傳說</h3>
+      <p data-en-html="The puzzle was published in Paris in 1883 by “N. Claus de Siam, professor at the college of Li-Sou-Stian” — anagrams of Lucas d’Amiens and Saint-Louis: the French mathematician Édouard Lucas, who taught at the Lycée Saint-Louis. A legend soon came with it: in a temple in Benares, priests move 64 golden discs day and night by these same rules, and when the last disc is in place the world will end. That takes \(2^{64} - 1 = 18\,446\,744\,073\,709\,551\,615\) moves; at one move per second, about \(5.85 \times 10^{11}\) years — some 42 times the age of the universe.">這個謎題 1883 年在巴黎推出，作者署名「暹羅的 N. Claus 教授，任教於 Li-Sou-Stian 學院」——那是 Lucas d’Amiens 與 Saint-Louis 的重排字母：法國數學家盧卡斯（Édouard Lucas），當時在聖路易中學任教。不久就流傳著一個傳說：在貝拿勒斯的一座神廟裡，僧侶日夜照同樣的規則搬動 64 片金盤，最後一片放好的那一刻，世界就會結束。那需要 \(2^{64} - 1 = 18\,446\,744\,073\,709\,551\,615\) 步；每秒搬一步，大約要 \(5.85 \times 10^{11}\) 年——宇宙年齡的 42 倍左右。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The ruler</strong>: press “Step” again and again and watch the recursion tree. Which disc moves at step 8? At step 24? How many times does disc 1 move in all?"><strong>那把尺</strong>：一直按「單步」，看遞迴樹。第 8 步搬哪個盤？第 24 步呢？盤 1 總共搬幾次？</li>
+        <li data-en-html="<strong>Which way does the smallest disc turn?</strong> Solve with “Smallest disc alternates” for n = 4 and n = 5. Does the smallest disc go round the same way? And when the target is B instead of C?"><strong>最小的盤往哪邊繞？</strong>用「最小盤輪流」解 n = 4 和 n = 5，最小的盤繞的方向一樣嗎？目標換成 B 呢？</li>
+        <li data-en-html="<strong>The call stack</strong>: how deep does the call stack get for n discs? Why can the recursion be so shallow when it makes \(2^n - 1\) calls?"><strong>呼叫堆疊</strong>：n 個盤時，呼叫堆疊最深有幾層？遞迴總共呼叫 \(2^n - 1\) 次，為什麼可以這麼淺？</li>
+        <li data-en-html="<strong>On the map</strong>: watch the bright dot on the state graph while the tower is solved. Where does it cross from one big triangle to another? Which disc moves at those moments?"><strong>在地圖上</strong>：自動解的時候看狀態圖上的亮點。它在哪裡從一個大三角形跨到另一個？那一刻搬的是哪個盤？</li>
+        <li data-en-html="<strong>Lost and found</strong>: press “Shuffle” and press “Breadth-first search”. Can a shuffled position be farther than \(2^n - 1\) moves from the target? How far is the farthest state from you?"><strong>迷路之後</strong>：按「打亂」，再按「廣度優先搜尋」。打亂後離目標會不會超過 \(2^n - 1\) 步？離你最遠的狀態有幾步遠？</li>
+        <li data-en-html="<strong>The legend</strong>: how long do 64 discs take at one move per second? And at \(10^9\) moves per second, roughly how many simple operations a computer can do in a second?"><strong>傳說</strong>：64 個盤子每秒搬一步要多久？換成每秒 \(10^9\) 步（大約是電腦一秒能做的簡單運算次數）呢？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="A position is stored as the peg of each disc (a string such as AABC, disc 1 first), or as the number \(\sum_d p_d\,3^{\,d-1}\). A move is legal when it takes the top disc of a non-empty peg to an empty peg or onto a larger disc; anything else is refused and explained.">擺法存成每個盤在哪根柱子（像 AABC 這樣的字串，第 1 個字母是盤 1），或是編號 \(\sum_d p_d\,3^{\,d-1}\)。合法的移動是：拿一根柱子最上面的盤，放到空柱子或比它大的盤上；其他的移動一律擋下並說明原因。</li>
+        <li data-en="“Auto solve” builds the whole recursion tree in advance and walks through it. From a full tower it is the classic recursion; from any other position it is the same idea with the smaller discs first gathered on the third peg, which always gives the shortest path. “Skip subproblem” finishes the next instruction of the current call at once: from the start, three presses solve any tower (the first n − 1 discs, the largest disc, the n − 1 discs again).">「自動解」先建好整棵遞迴樹，再一步一步走。從整疊開始時就是經典的遞迴；從其他擺法開始時用同樣的想法（先把小盤集中到第三根柱子），得到的一定是最短路。「跳過子問題」一口氣做完目前這一層呼叫的下一個指令：從頭開始時，按三次就能解完任何一座塔（上面 n − 1 個、最大的盤、再 n − 1 個）。</li>
+        <li data-en-html="The unit tests check: the recursion takes 2<sup>n</sup> − 1 moves, every move is legal and the count equals the shortest path found by breadth-first search (up to 8 discs); the distance formula above equals breadth-first search for every position and every target peg (up to 8 discs, 6561 positions); the disc moved at step k is the ruler function for every step up to 10 discs; the alternating method and the recursion agree move by move; the step k and the position after k moves can be computed directly; the graph has (3/2)(3<sup>n</sup> − 1) lines and its drawing has all lines the same length.">單元測試檢查：遞迴解用 2^n − 1 步、每一步都合法、和廣度優先搜尋找到的最短步數相同（最多 8 個盤子）；上面的距離算法對每一種擺法、每一個目標柱都和廣度優先搜尋相同（最多 8 個盤子，6561 種擺法）；到 10 個盤子為止，每一步搬的盤子都等於尺規函數；最小盤輪流和遞迴每一步都相同；第 k 步與 k 步之後的擺法可以直接算出；狀態圖有 (3/2)(3^n − 1) 條線，畫出來每條線都一樣長。</li>
+        <li data-en-html="Drawing the state graph: from the largest disc down, the disc’s peg chooses a corner of the current triangle, worth \(2^{\,d-1}\) of the side; inside the smaller triangle the two other pegs swap corners. Dividing by \(2^n - 1\) puts every dot on the Sierpiński triangle. Breadth-first search uses a queue over all \(3^n\) positions (59 049 for 10 discs); a custom target uses its distance table.">狀態圖的畫法：由最大的盤往下，盤子所在的柱子決定它在目前三角形的哪一個角（占邊長的 \(2^{\,d-1}\)），進到小三角形後另外兩根柱子的角互換；最後除以 \(2^n - 1\)，每個點就落在謝爾賓斯基三角形上。廣度優先搜尋用佇列走過全部 \(3^n\) 種擺法（10 個盤子是 59 049 種）；自訂目標用它算出的距離表。</li>
+        <li data-en-html="The legend uses exact whole numbers for \(2^N - 1\) (up to \(N = 100\)), one year = 365.25 days, and 13.8 billion years for the age of the universe. The 3D view shows exactly the same position as the 2D view; disc sizes and colours are only for drawing.">傳說的計算用精確的整數算 \(2^N - 1\)（到 \(N = 100\)），一年 365.25 天，宇宙年齡用 138 億年。3D 檢視和 2D 是同一個擺法；盤子的大小與顏色只是畫圖用的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum (Taiwan, Information Technology, senior high): A-V-2 concepts and applications of important algorithms (recursive structures); P-V-3 programming important algorithms (recursive structures); A-V-3 analysis of algorithm efficiency (counting executed instructions); A-V-1 concepts and applications of important data structures (graphs, tree traversal); and A-V-6 analysis and comparison of algorithm efficiency (iteration and recursion) in the advanced elective “Advanced Programming”.">課綱對應：資A-V-2 重要演算法的概念與應用（遞迴結構）；資P-V-3 重要演算法的程式設計實作（遞迴結構）；資A-V-3 演算法效能分析（指令執行次數）；資A-V-1 重要資料結構的概念與應用（圖、樹的走訪）；以及加深加廣選修「進階程式設計」的資A-V-6 演算法效能分析與比較（重複與遞迴結構）。</li>
+        <li data-en="The recurrence and its proof: R. L. Graham, D. E. Knuth and O. Patashnik, Concrete Mathematics, 2nd edition (Addison-Wesley, 1994), Chapter 1 “Recurrent Problems”, Section 1.1 “The Tower of Hanoi”.">遞迴關係與證明：R. L. Graham、D. E. Knuth、O. Patashnik，《Concrete Mathematics》第 2 版（Addison-Wesley，1994），第 1 章 Recurrent Problems，1.1 節 The Tower of Hanoi。</li>
+        <li data-en="The book on the puzzle, its history, the Hanoi graphs and the Sierpiński graphs: A. M. Hinz, S. Klavžar, U. Milutinović and C. Petr, The Tower of Hanoi — Myths and Maths (Birkhäuser, 2013); 2nd edition by A. M. Hinz, S. Klavžar and C. Petr (Birkhäuser, 2018).">謎題的歷史、河內圖與謝爾賓斯基圖的專書：A. M. Hinz、S. Klavžar、U. Milutinović、C. Petr，《The Tower of Hanoi — Myths and Maths》（Birkhäuser，2013）；第 2 版作者為 A. M. Hinz、S. Klavžar、C. Petr（Birkhäuser，2018）。</li>
+        <li data-en="The ruler function: The On-Line Encyclopedia of Integer Sequences, A001511 (the disc moved at the n-th step of the Tower of Hanoi).">尺規函數：整數數列線上大全（OEIS）A001511（河內塔第 n 步搬的盤子）。</li>
+        <li data-en="The age of the universe: Planck Collaboration (2020), “Planck 2018 results. VI. Cosmological parameters”, Astronomy &amp; Astrophysics 641, A6 — about 13.8 billion years.">宇宙年齡：Planck Collaboration（2020）〈Planck 2018 results. VI. Cosmological parameters〉，Astronomy &amp; Astrophysics 641，A6——約 138 億年。</li>
+        <li data-en-html="History and further reading: &lt;a href=&quot;https://mathshistory.st-andrews.ac.uk/HistTopics/Towers_of_Hanoi/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;The Towers of Hanoi (MacTutor)&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/Tower_of_Hanoi&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Tower of Hanoi (Wikipedia)&lt;/a&gt;">歷史與延伸閱讀：<a href="https://mathshistory.st-andrews.ac.uk/HistTopics/Towers_of_Hanoi/" target="_blank" rel="noopener">The Towers of Hanoi（MacTutor）</a>、<a href="https://en.wikipedia.org/wiki/Tower_of_Hanoi" target="_blank" rel="noopener">Tower of Hanoi（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/hanoi-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/hanoi.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="hanoi"></script>
+  <script src="js/missions/hanoi.js"></script>
+  <script src="js/stats.js" data-module="hanoi"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
