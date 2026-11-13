@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Linear Programming: Feasible Regions and Objective Functions | Astro Ni Science Lab">線性規劃：可行域與目標函數｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 線性規劃頁面專用的顏色代號（淺色＋深色；由 js/linear-programming.js 讀取） */
+    :root { --lp-c1: #2563eb; --lp-c2: #db2777; --lp-c3: #0d9488; --lp-c4: #9333ea; --lp-region: #0ea5e9; --lp-level: #ea580c; --lp-best: #e11d48; --lp-int: #b45309; --lp-ok: #0d9488; --lp-bad: #dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lp-c1: #60a5fa; --lp-c2: #f472b6; --lp-c3: #2dd4bf; --lp-c4: #c084fc; --lp-region: #38bdf8; --lp-level: #fb923c; --lp-best: #fb7185; --lp-int: #fbbf24; --lp-ok: #2dd4bf; --lp-bad: #f87171; }
+    }
+    :root[data-theme="dark"] { --lp-c1: #60a5fa; --lp-c2: #f472b6; --lp-c3: #2dd4bf; --lp-c4: #c084fc; --lp-region: #38bdf8; --lp-level: #fb923c; --lp-best: #fb7185; --lp-int: #fbbf24; --lp-ok: #2dd4bf; --lp-bad: #f87171; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: none; }
+    .lp button { min-height: 44px; }
+    .lp [hidden] { display: none !important; }
+    .lp .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .lp .playbar button { flex: 1 1 auto; }
+    .lp .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .lp .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .lp .slider input[type="range"] { height: 28px; margin: 0; }
+    .lp .checks label { min-height: 44px; }
+    .lp .checks input { width: 17px; height: 17px; }
+    .lp .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .lp .panel { grid-template-columns: minmax(0, 1fr); }
+    .lp .panel > .card { min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 6px; }
+    .presets button { padding: 4px 8px; line-height: 1.25; }
+    .cons { display: grid; gap: 6px; margin: 0 0 8px; }
+    .con { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: stretch; gap: 6px; }
+    .con label.on { display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; }
+    .con label.on input { width: 18px; height: 18px; margin: 0; }
+    .con .pick { text-align: left; padding: 4px 10px 4px 26px; position: relative; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .con .pick::before { content: ""; position: absolute; left: 10px; top: 50%; width: 9px; height: 9px; margin-top: -4.5px; border-radius: 50%; background: var(--cc, var(--muted)); }
+    .con .pick[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); font-weight: 600; }
+    .con.off .pick { opacity: 0.5; text-decoration: line-through; }
+    .seg { display: flex; gap: 6px; margin: 4px 0 8px; }
+    .seg button { flex: 1 1 0; }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .row2 button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--lp-ok); font-weight: 600; }
+    .chal-msg.bad { color: var(--lp-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Linear Programming"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 線性規劃</nav>
+      <h1 data-en="Linear Programming: Feasible Regions and Objective Functions">線性規劃：可行域與目標函數</h1>
+      <p data-en="Every inequality cuts the plane in half; the points that obey all of them form the feasible region. The objective z = px + qy draws a family of parallel lines. Slide one across the region and watch where it leaves: the best value always waits at a corner.">每一條不等式把平面切成兩半，同時滿足全部不等式的點組成可行域。目標函數 z = px + qy 的等高線是一族平行線；讓它掃過可行域，看它最後離開的地方——最好的值總是在頂點上等你。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Sweep” and watch the orange line slide across the region. The last point it touches is the best answer. Then change p and q and see the winner jump to another corner.">試試看：按「掃描」，看橘色的等高線掃過可行域，最後碰到的那一點就是最好的答案。再改 p、q，看最佳解跳到別的頂點。</p>
+    <div class="lab lp" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="線性規劃畫布：坐標平面上的限制線、塗色的可行域、目標函數的等高線與點 P。拖曳限制線可以平移它，拖曳橘色等高線可以改 k，點一下平面可以把 P 移過去。" data-en-aria-label="Linear programming canvas: constraint lines, the shaded feasible region, the level line of the objective and the point P. Drag a constraint line to slide it, drag the orange level line to change k, and tap the plane to move P there."></canvas>
+        <div class="playbar">
+          <button id="sweep" type="button" class="primary" data-en="Sweep">掃描</button>
+          <button id="mark" type="button" data-en="Record P">記下 P</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除記下的點與挑戰紀錄；限制式與目標函數不變" data-en-title="Clear the recorded points and the challenge record; the constraints and the objective are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--lp-region)&quot;></i>Feasible region"><i style="background:var(--lp-region)"></i>可行域</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--lp-level)&quot;></i>Level line z = k"><i class="dash" style="color:var(--lp-level)"></i>等高線 z = k</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lp-best)&quot;></i>Best vertex"><i class="dot" style="background:var(--lp-best)"></i>最佳頂點</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--accent)&quot;></i>Point P"><i class="dot" style="background:var(--accent)"></i>點 P</span>
+          <span id="lgInt" hidden data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--lp-int)&quot;></i>Lattice points (best integer one ringed)"><i class="dot" style="background:var(--lp-int)"></i>格子點（圈起來的是最好的整數解）</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Example problems">例題</h2>
+          <div class="presets" id="presets" role="group" aria-label="例題" data-en-aria-label="Example problems">
+            <button type="button" data-preset="factory" data-en="Factory">工廠生產</button>
+            <button type="button" data-preset="diet" data-en="Cheapest feed">最省飼料</button>
+            <button type="button" data-preset="basic" data-en="Textbook">課本基本題</button>
+            <button type="button" data-preset="open" data-en="Unbounded">無界</button>
+          </div>
+          <p class="hint" id="presetNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Constraints">限制式</h2>
+          <div class="cons" id="cons"></div>
+          <div class="seg" role="group" aria-label="不等號" data-en-aria-label="Inequality sign">
+            <button type="button" id="sLe" aria-pressed="true">≤</button>
+            <button type="button" id="sGe" aria-pressed="false">≥</button>
+          </div>
+          <div class="slider"><label for="ca" data-en="Coefficient a (of x)">x 的係數 a</label><output id="cao"></output>
+            <input id="ca" type="range" min="-5" max="5" step="1" value="1" data-decimals="3"></div>
+          <div class="slider"><label for="cb" data-en="Coefficient b (of y)">y 的係數 b</label><output id="cbo"></output>
+            <input id="cb" type="range" min="-5" max="5" step="1" value="2" data-decimals="3"></div>
+          <div class="slider"><label for="cc" data-en="Right-hand side c">右邊的常數 c</label><output id="cco"></output>
+            <input id="cc" type="range" min="-10" max="20" step="1" value="14" data-decimals="3"></div>
+          <div class="checks">
+            <label><input id="nonneg" type="checkbox" checked><span data-en="Also require x ≥ 0 and y ≥ 0">另外要求 x ≥ 0、y ≥ 0</span></label>
+          </div>
+          <p class="hint" data-en="Pick a constraint above to edit it; the box on its left switches it on and off. On the canvas you can drag a constraint line to slide it.">點上面的式子來修改，左邊的方框可以開關這一條。也可以在畫布上直接拖曳限制線來平移。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Objective z = px + qy">目標函數 z = px + qy</h2>
+          <div class="seg" role="group" aria-label="求最大或最小" data-en-aria-label="Maximise or minimise">
+            <button type="button" id="tMax" aria-pressed="true" data-en="Maximum">求最大值</button>
+            <button type="button" id="tMin" aria-pressed="false" data-en="Minimum">求最小值</button>
+          </div>
+          <div class="slider"><label for="pp" data-en="p">p</label><output id="ppo"></output>
+            <input id="pp" type="range" min="-5" max="5" step="1" value="3" data-decimals="3"></div>
+          <div class="slider"><label for="qq" data-en="q">q</label><output id="qqo"></output>
+            <input id="qq" type="range" min="-5" max="5" step="1" value="2" data-decimals="3"></div>
+          <div class="slider"><label for="kk" data-en="Level line z = k">等高線 z = k</label><output id="kko"></output>
+            <input id="kk" type="range" min="-60" max="60" step="0.5" value="6" data-decimals="3"></div>
+          <div class="checks">
+            <label><input id="showZ" type="checkbox" checked><span data-en="Show z at every vertex">標出每個頂點的 z 值</span></label>
+            <label><input id="showDir" type="checkbox" checked><span data-en="Show the direction (p, q) in which z grows">標出 z 變大的方向 (p, q)</span></label>
+            <label><input id="showInt" type="checkbox"><span data-en="Lattice points and the best integer solution">格子點與最好的整數解</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Feasible region">可行域</dt><dd id="rRegion">—</dd>
+            <dt data-en="Vertices">頂點</dt><dd id="rVerts">—</dd>
+            <dt data-en="Area">面積</dt><dd id="rArea">—</dd>
+            <dt id="rBestL" data-en="Best value">最佳值</dt><dd id="rBest">—</dd>
+            <dt data-en="Where">在哪裡</dt><dd id="rWhere">—</dd>
+            <dt class="ri" data-en="Best integer solution">最好的整數解</dt><dd class="ri" id="rInt">—</dd>
+            <dt data-en="Point P (x, y)">點 P (x, y)</dt><dd id="rP">—</dd>
+            <dt data-en="z at P">P 的 z 值</dt><dd id="rPz">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Record P” to keep a list of points you have tried.">按「記下 P」可以把試過的點列成一張表。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: find the best corner">挑戰：找出最佳頂點</h2>
+          <p class="hint" data-en="A new problem appears with the vertex values hidden. Move P onto the corner you think is best (tap near it), then press “This one”.">出一題新的題目，頂點的 z 值會先藏起來。把 P 移到你認為最好的頂點（在頂點附近點一下），再按「就是這裡」。</p>
+          <div class="row2">
+            <button id="newChal" type="button" data-en="New problem">出一題</button>
+            <button id="submitC" type="button" hidden data-en="This one">就是這裡</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Half-planes and the feasible region">半平面與可行域</h3>
+      <p data-en-html="The line \(ax + by = c\) cuts the plane into two half-planes, \(ax + by < c\) and \(ax + by > c\). To see which side an inequality keeps, test one point that is not on the line (the origin is the easiest). The points that obey every inequality at once form the <strong>feasible region</strong>. It is always convex: the segment between any two feasible points stays inside.">直線 \(ax + by = c\) 把平面分成 \(ax + by < c\) 和 \(ax + by > c\) 兩半。要知道不等式留下哪一邊，拿一個不在線上的點代進去試（原點最方便）。同時滿足所有不等式的點，組成<strong>可行域</strong>。可行域一定是凸的：任兩個可行點之間的線段整條都在裡面。</p>
+      <h3 data-en="Level lines of the objective">目標函數的等高線</h3>
+      <div class="formula">\[ z = px + qy = k \quad\Longleftrightarrow\quad \text{a line with normal vector } (p, q). \]</div>
+      <p data-en-html="Fixing \(z = k\) gives a line; changing \(k\) slides it without turning it. The vector \((p, q)\) is perpendicular to all these lines and points the way \(z\) grows. Sweep the line across the region in that direction: the last feasible point it touches gives the maximum, the first one the minimum.">固定 \(z = k\) 得到一條直線，改 \(k\) 只會讓它平移、不會轉動。向量 \((p, q)\) 垂直於這些直線，指向 \(z\) 變大的方向。讓等高線沿著這個方向掃過可行域：最後碰到的可行點給出最大值，最先碰到的給出最小值。</p>
+      <h3 data-en="Why the best point is a vertex">最佳解為什麼在頂點</h3>
+      <p data-en-html="When the region is bounded and not empty, the last touch happens at a corner, so it is enough to compute \(z\) at every vertex and compare. If the level lines are parallel to an edge, the whole edge touches at once and there are infinitely many best points. If the region runs off to infinity, the line may never leave it, and then there is no maximum (or minimum).">可行域有界而且不是空的時候，最後的接觸一定發生在頂點，所以只要算出每個頂點的 \(z\) 再比大小。等高線剛好和某一條邊平行時，整條邊同時碰到，最佳解有無限多組。可行域往外無限延伸時，等高線可能永遠離不開它，這時就沒有最大值（或最小值）。</p>
+      <h3 data-en="Integer solutions">整數解</h3>
+      <p data-en-html="Tables and chairs come in whole numbers. Then only the lattice points of the region count, and the best one need not be the vertex rounded off — the rounded point may even fall outside the region. For a small region the safest way is to check the lattice points near the best vertex one by one, as the page does when you switch on the lattice points.">桌子、椅子只能做整數個。這時只有可行域裡的格子點算數，最好的那一點不一定是把最佳頂點四捨五入——四捨五入的點甚至可能跑到可行域外面。可行域不大時，最穩當的做法是把最佳頂點附近的格子點一個一個算，頁面打開「格子點」時就是這樣做的。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The winner changes corners</strong>: in the factory problem, slowly change \(p\) with \(q = 2\) fixed. The best corner jumps exactly when the level lines become parallel to an edge."><strong>最佳頂點會換人</strong>：在工廠生產的題目裡固定 \(q = 2\)，慢慢改 \(p\)。等高線剛好和某一條邊平行的那一刻，最佳頂點就換到隔壁。</li>
+        <li data-en-html="<strong>Maximum and minimum together</strong>: switching between “Maximum” and “Minimum” only flips the direction of the sweep; both answers are corners."><strong>最大與最小</strong>：「求最大值」和「求最小值」只是掃描的方向相反，兩個答案都在頂點上。</li>
+        <li data-en-html="<strong>Rounding is not enough</strong>: in the factory problem the best vertex is \((4.4, 4.8)\) with \(z = 22.8\), and the best integer point is \((4, 5)\) with \(z = 22\)."><strong>四捨五入不保險</strong>：工廠生產的最佳頂點是 \((4.4, 4.8)\)，\(z = 22.8\)；最好的整數解是 \((4, 5)\)，\(z = 22\)。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="The feasible region is found by clipping a very large square by each half-plane in turn (Sutherland–Hodgman), and every corner is then recomputed exactly as the crossing of the two lines it lies on. If a corner of the large square survives, the region is unbounded. The best value compares \(z\) at the vertices and, for unbounded regions, also far out along the region. Integer solutions are found by checking every lattice point inside the region.">可行域的算法是拿一個很大的正方形，依序用每個半平面去切（Sutherland–Hodgman），再把每個頂點改用它所在的兩條直線精確求交點。大正方形的角如果留下來，可行域就是無界的。最佳值比較各頂點的 \(z\)；可行域無界時，也比較沿著可行域往遠方走的值。整數解是把可行域裡的格子點逐一檢查。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 11, Mathematics A and B) · linear inequalities in two variables and linear programming.">課綱對應：高中數學（高二數甲、數乙）・二元一次不等式與線性規劃。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Linear_programming&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Linear programming (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Linear_programming" target="_blank" rel="noopener">Linear programming（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/linear-programming-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/linear-programming.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="linear-programming"></script>
+  <script src="js/missions/linear-programming.js"></script>
+  <script src="js/stats.js" data-module="linear-programming"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

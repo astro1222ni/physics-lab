@@ -14,6 +14,8 @@
   const near = function (v, want, tol) { return v != null && isFinite(v) && Math.abs(v - want) <= tol; };
   const norm = function (v) { return Math.hypot(v[0], v[1], v[2]); };
   const nz = function (v) { return (Math.abs(v[0]) > EPS) + (Math.abs(v[1]) > EPS) + (Math.abs(v[2]) > EPS); };
+  /** 長度開根號開不盡（分量最多打到小數第 2 位，所以 10000|v|² 是整數） */
+  const irr = function (v) { const q = Math.round((v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 1e4), r = Math.round(Math.sqrt(q)); return r * r !== q; };
   const dot = function (a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; };
   const cross = function (a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; };
   const par = function (a, b) { return norm(cross(a, b)) <= 1e-9 * Math.max(1, norm(a) * norm(b)); };
@@ -93,9 +95,16 @@
     },
     {
       id: 'space-vectors-9', level: 6,
-      title: { zh: '離平面 3 步', en: 'Three steps from the plane' },
-      desc: { zh: '在「平面與距離」模式讓 Q 到平面的距離是 3（誤差 0.01 以內），法向量 n 至少有兩個分量不是 0。', en: 'In “Planes” mode make the distance from Q to the plane 3 (within 0.01), with at least two nonzero components in the normal n.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'vec' && d.mode === 'plane' && !d.chal && nz(d.n) >= 2 && near(d.dist, 3, 0.01); }
+      title: { zh: '平面兩側各 3 步', en: 'Three steps on either side' },
+      desc: { zh: '在「平面與距離」模式，同一個平面（n、d 不變）兩側各放一次 Q，距離都是 3（誤差 0.01 以內）；法向量 n 的三個分量都不是 0，而且長度 |n| 開根號開不盡（例如 (1, 1, 1) 的長度是 √3）。點數字可以打到小數第 2 位。', en: 'In “Planes” mode, keep one plane (same n and d) and put Q at distance 3 (within 0.01) once on each side of it; all three components of the normal n must be nonzero and |n| an irrational square root (e.g. (1, 1, 1) has length √3). Tap a number to type it to 2 decimal places.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'plane' || d.chal || nz(d.n) !== 3 || !irr(d.n) || !near(d.dist, 3, 0.01)) return false;
+        const key = d.n.join(',') + '|' + d.d, side = d.sdist > 0 ? 'p' : 'm';
+        if (mem.key !== key) { mem.key = key; mem.side = {}; }
+        mem.side[side] = true;
+        return !!(mem.side.p && mem.side.m);
+      }
     },
     {
       id: 'space-vectors-10', level: 5,
@@ -110,8 +119,12 @@
     {
       id: 'space-vectors-11', level: 6,
       title: { zh: '挑戰一題', en: 'One challenge' },
-      desc: { zh: '按「出一題」，在任何一個模式答對一題挑戰。', en: 'Press “New challenge” and solve one challenge in any mode.' },
-      check: function (ev) { return ev.type === 'challenge'; }
+      desc: { zh: '按「出一題」，在兩個不同的模式各答對一題挑戰。', en: 'Press “New challenge” and solve one challenge in each of two different modes.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'challenge') return false;
+        mem.modes = mem.modes || {}; mem.modes[ev.data.mode] = true;
+        return Object.keys(mem.modes).length >= 2;
+      }
     },
     {
       id: 'space-vectors-12', level: 9,
@@ -145,6 +158,109 @@
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'vec' && ab(d) && !d.chal && d.dot > 0.1 && near(d.area, d.dot, 0.01);
+      }
+    },
+    // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------
+    {
+      // 投影長 = |a|，也就是 a · b = |a|²、(b − a) ⊥ a：b 的尖端落在「過 a 的尖端、和 a 垂直」的平面上。
+      // a 不變（不在坐標軸上、|a| ≥ 1），找到兩個這樣的 b（都不和 a 平行，兩個 b 也不平行）
+      id: 'space-vectors-h4', level: 4, hidden: true,
+      riddle: { zh: '影子不長也不短，剛好走到他的指尖；換另一個人來，也是一樣。', en: 'The shadow is neither long nor short: it ends exactly at his fingertip. Send someone else, and it does the same.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'inner' || d.chal) return false;
+        const la = norm(d.a);
+        if (la < 1 || nz(d.a) < 2 || nz(d.b) < 2 || par(d.a, d.b) || Math.abs(d.dot - la * la) > 1e-9) return false;
+        const key = d.a.join(',');
+        if (mem.key !== key) { mem.key = key; mem.bs = []; }
+        const hit = mem.bs.some(function (b) { return !par(b, d.b); });
+        mem.bs.push(d.b.slice());
+        if (mem.bs.length > 10) mem.bs.shift();
+        return hit;
+      }
+    },
+    {
+      // c = a × b：c 和底面垂直，盒子的高就是 |a × b|，所以體積 = 底面積的平方
+      id: 'space-vectors-h5', level: 5, hidden: true,
+      riddle: { zh: '第三根柱子不自己選方向，它站在前兩根的肩膀上，筆直朝天。', en: 'The third pillar does not choose its own way: it stands on the shoulders of the first two and points straight to the sky.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'volume' || d.chal) return false;
+        if (nz(d.a) < 2 || nz(d.b) < 2 || par(d.a, d.b) || norm(d.a) <= EPS || norm(d.b) <= EPS) return false;
+        const x = cross(d.a, d.b);
+        return Math.abs(d.c[0] - x[0]) <= 1e-9 && Math.abs(d.c[1] - x[1]) <= 1e-9 && Math.abs(d.c[2] - x[2]) <= 1e-9;
+      }
+    },
+    {
+      // 立方體的正六邊形截面：法向量沿著體對角線（|n_x| = |n_y| = |n_z|），平面通過中心（d = 0）
+      id: 'space-vectors-h6', level: 6, hidden: true,
+      riddle: { zh: '一刀切開方糖，切口有六條一樣長的邊。', en: 'One clean cut through a sugar cube, and the wound has six equal edges.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'plane' || d.chal || nz(d.n) !== 3) return false;
+        const m = Math.abs(d.n[0]);
+        return Math.abs(Math.abs(d.n[1]) - m) <= 1e-9 && Math.abs(Math.abs(d.n[2]) - m) <= 1e-9 && Math.abs(d.d) <= 1e-9;
+      }
+    },
+    {
+      // 截距式：同一個平面（n 三個分量都不是 0、d ≠ 0）和三軸的交點 (d/n_x, 0, 0)、(0, d/n_y, 0)、(0, 0, d/n_z)，三個截距都不一樣長；Q 依序放上三個交點
+      id: 'space-vectors-h7', level: 7, hidden: true,
+      riddle: { zh: '同一面牆，在三條路上各留下一個腳印，三個腳印離家都不一樣遠。', en: 'One wall leaves a footprint on each of the three roads, and no two footprints are the same distance from home.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'plane' || d.chal || nz(d.n) !== 3 || Math.abs(d.d) <= EPS) return false;
+        const t = [d.d / d.n[0], d.d / d.n[1], d.d / d.n[2]].map(Math.abs);
+        if (Math.abs(t[0] - t[1]) <= 1e-9 || Math.abs(t[0] - t[2]) <= 1e-9 || Math.abs(t[1] - t[2]) <= 1e-9) return false;
+        const key = d.n.join(',') + '|' + d.d;
+        if (mem.key !== key) { mem.key = key; mem.ax = {}; }
+        if (nz(d.q) !== 1 || d.sdist == null || Math.abs(d.sdist) > 1e-9) return false;
+        mem.ax[[0, 1, 2].filter(function (i) { return Math.abs(d.q[i]) > EPS; })[0]] = true;
+        return !!(mem.ax[0] && mem.ax[1] && mem.ax[2]);
+      }
+    },
+    {
+      // 鏡像：同一個平面（d ≠ 0、n 三個分量都不是 0），先放 Q，再放 Q' = Q − 2(n · Q − d)/|n|² n：兩點在兩側、一樣遠，連線和平面垂直
+      id: 'space-vectors-h8', level: 8, hidden: true,
+      riddle: { zh: '湖面上站著一個人，湖底下也站著一個人，兩人隔著水面對望。', en: 'One figure stands above the lake and another below it, gazing at each other through the surface.' },
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'plane' || d.chal || nz(d.n) !== 3 || Math.abs(d.d) <= EPS || d.sdist == null) return false;
+        const key = d.n.join(',') + '|' + d.d;
+        if (mem.key !== key) { mem.key = key; mem.qs = []; }
+        if (Math.abs(d.sdist) < 0.5) return false;
+        const hit = mem.qs.some(function (p) {
+          if (Math.abs(p.s + d.sdist) > 1e-9) return false;
+          const dq = [d.q[0] - p.q[0], d.q[1] - p.q[1], d.q[2] - p.q[2]];
+          return par(dq, d.n);
+        });
+        mem.qs.push({ q: d.q.slice(), s: d.sdist });
+        if (mem.qs.length > 40) mem.qs.shift();
+        return hit;
+      }
+    },
+    {
+      // 四面體角（甲烷的鍵角、體心立方的原始向量）：三個一樣長的向量兩兩夾 arccos(−1/3) ≈ 109.47°
+      id: 'space-vectors-h9', level: 9, hidden: true,
+      riddle: { zh: '四隻一樣長的手臂，彼此離得越遠越好；你只要找到其中三隻。', en: 'Four arms of equal reach, spread as far from one another as they can be; you need only find three of them.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'volume' || d.chal) return false;
+        const la = norm(d.a), L2 = la * la;
+        if (la < 0.5 || Math.abs(norm(d.b) - la) > 1e-9 || Math.abs(norm(d.c) - la) > 1e-9) return false;
+        const want = -L2 / 3;
+        return Math.abs(dot(d.a, d.b) - want) <= 1e-9 && Math.abs(dot(d.a, d.c) - want) <= 1e-9 && Math.abs(dot(d.b, d.c) - want) <= 1e-9;
+      }
+    },
+    {
+      // 整數格子的基底：九個分量都是不為 0 的整數、|a · (b × c)| = 1。剪切（把一列加到另一列）不改體積，歪得再厲害也和單位立方體一樣大，裡面沒有別的格點
+      id: 'space-vectors-h10', level: 10, hidden: true,
+      riddle: { zh: '歪了又歪，九根骨頭沒有一根是零，它占的地方卻和一顆骰子一樣。', en: 'Skewed and skewed again, nine bones and not one of them zero, yet it takes up exactly the room of a single die.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'vec' || d.mode !== 'volume' || d.chal) return false;
+        const all = d.a.concat(d.b, d.c);
+        if (!all.every(function (x) { return x !== 0 && Math.abs(x - Math.round(x)) <= 1e-9; })) return false;
+        return Math.abs(Math.abs(d.triple) - 1) <= 1e-9;
       }
     }
   ]);

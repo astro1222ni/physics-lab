@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Exponents and Logarithms: Compound Interest, e and Log Scales | Astro Ni Science Lab">指數與對數：複利、e 與對數尺度｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 指數與對數頁面專用的顏色代號（淺色＋深色；由 js/exp-log.js 讀取） */
+    :root { --el-exp: #c2410c; --el-log: #1d4ed8; --el-cont: #7c3aed; --el-simple: #64748b; --el-coin: #b7791f; --el-data: #0f766e; --el-res: #be185d; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --el-exp: #fb923c; --el-log: #7aa7ff; --el-cont: #b9a0ff; --el-simple: #94a3b8; --el-coin: #f6c453; --el-data: #5eead4; --el-res: #ff74b0; }
+    }
+    :root[data-theme="dark"] { --el-exp: #fb923c; --el-log: #7aa7ff; --el-cont: #b9a0ff; --el-simple: #94a3b8; --el-coin: #f6c453; --el-data: #5eead4; --el-res: #ff74b0; }
+
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y; }
+    .el button { min-height: 44px; }
+    .el [hidden] { display: none !important; }
+    .el .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .el .playbar button { flex: 1 1 auto; }
+    .el .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .el .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .el .slider input[type="range"] { height: 28px; margin: 0; }
+    .el .checks label { min-height: 44px; }
+    .el .checks input { width: 17px; height: 17px; }
+    .el .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .el .panel { grid-template-columns: minmax(0, 1fr); }
+    .el .panel > .card { min-width: 0; }
+    /* 三種模式 */
+    .el:not([data-mode="compound"]) .mc, .el:not([data-mode="inverse"]) .mi, .el:not([data-mode="semilog"]) .ms { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+    .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .quick { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .quick button { flex: 1 1 auto; min-width: 52px; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+    .quick button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--el-data); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.02em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Exponents and logarithms"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 指數與對數</nav>
+      <h1 data-en="Exponents and Logarithms: Compound Interest, e and Log Scales">指數與對數：複利、e 與對數尺度</h1>
+      <p data-en-html="Compound your money more and more often and watch the total creep up to a ceiling set by the number e. Reflect the curve y = a<sup>x</sup> in the line y = x to get its inverse, the logarithm, and find the one base for which the two curves just touch. Then put exponential data on a logarithmic axis, where growth and decay turn into straight lines you can fit by eye.">把錢複利得越來越頻繁，總額會慢慢逼近一個由 e 決定的上限。把曲線 y = a<sup>x</sup> 對直線 y = x 鏡射，就得到它的反函數——對數；找出讓兩條曲線剛好相切的那個底數。最後把指數成長或衰變的資料畫在對數刻度上，曲線變成直線，用眼睛就能擬合。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: set the rate to 100 %, one year, and slide “times per year” all the way up — the total stops near 2.718…">試試看：把年利率設成 100%、存一年，再把「一年複利幾次」一路拉到最大，總額會停在 2.718… 附近。</p>
+    <div class="lab el" id="lab" data-mode="compound">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="指數與對數畫布：依模式畫出複利的成長、指數與對數曲線，或資料在一般刻度與對數刻度上的圖。" data-en-aria-label="Exponents and logarithms canvas: depending on the mode, the growth of compound interest, the exponential and logarithm curves, or data on ordinary and logarithmic scales."></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary mc" data-en="Watch it grow">看著錢長大</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄；滑桿設定不變" data-en-title="Clear the challenge record; the sliders are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span class="mc" data-en-html="<i style=&quot;background:var(--el-exp)&quot;></i>Compounded n times a year"><i style="background:var(--el-exp)"></i>一年複利 n 次</span>
+          <span class="mc" style="color:var(--el-cont)" data-en-html="<i class=&quot;dash&quot;></i>Continuous, e<sup>rt</sup>"><i class="dash"></i>連續複利</span>
+          <span class="mc" style="color:var(--el-simple)" data-en-html="<i class=&quot;dash&quot;></i>Simple interest"><i class="dash"></i>單利</span>
+          <span class="mi" data-en-html="<i style=&quot;background:var(--el-exp)&quot;></i>y = a<sup>x</sup>"><i style="background:var(--el-exp)"></i>y = a<sup>x</sup></span>
+          <span class="mi" data-en-html="<i style=&quot;background:var(--el-log)&quot;></i>y = log<sub>a</sub> x"><i style="background:var(--el-log)"></i>y = log<sub>a</sub> x</span>
+          <span class="mi" style="color:var(--muted)" data-en-html="<i class=&quot;dash&quot;></i>Mirror line y = x"><i class="dash"></i>鏡射線 y = x</span>
+          <span class="ms" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--el-data)&quot;></i>Data"><i class="dot" style="background:var(--el-data)"></i>資料</span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--el-exp)&quot;></i>Model y = C·b<sup>x</sup>"><i style="background:var(--el-exp)"></i>模型 y = C·b<sup>x</sup></span>
+          <span class="ms" data-en-html="<i style=&quot;background:var(--el-res)&quot;></i>Misfit on the log scale"><i style="background:var(--el-res)"></i>對數刻度上的差距</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="compound" aria-pressed="true" data-en-html="Compound interest<small>where e comes from</small>">複利與 e<small>e 從哪裡來</small></button>
+            <button type="button" data-mode="inverse" aria-pressed="false" data-en-html="Exponentials and logs<small>inverse functions</small>">指數與對數<small>互為反函數</small></button>
+            <button type="button" data-mode="semilog" aria-pressed="false" data-en-html="Log scale<small>curves become lines</small>">對數尺度<small>曲線變直線</small></button>
+          </div>
+        </section>
+
+        <section class="card mc">
+          <h2 data-en="Compound interest">複利</h2>
+          <div class="slider"><label for="rr" data-en="Annual interest rate r (%)">年利率 r（%）</label><output id="rro"></output>
+            <input id="rr" type="range" min="0" max="100" step="1" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="ty" data-en="Years t">存幾年 t</label><output id="tyo"></output>
+            <input id="ty" type="range" min="1" max="30" step="1" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="nn" data-en="Times compounded per year n">一年複利幾次 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="0" max="100" step="0.5" value="0"></div>
+          <div class="quick" role="group" aria-label="常用的次數" data-en-aria-label="Common choices">
+            <button type="button" data-n="1" data-en="yearly">每年</button>
+            <button type="button" data-n="4" data-en="quarterly">每季</button>
+            <button type="button" data-n="12" data-en="monthly">每月</button>
+            <button type="button" data-n="365" data-en="daily">每天</button>
+          </div>
+          <div class="checks">
+            <label><input id="contC" type="checkbox"><span data-en="Continuous compounding (n → ∞)">連續複利（n → ∞）</span></label>
+          </div>
+          <p class="hint" data-en="Tap a number to type it; the rate can be typed to 0.01 %.">點一下數字可以直接輸入；利率可以打到 0.01%。</p>
+        </section>
+
+        <section class="card mi">
+          <h2 data-en="Base and point">底數與點</h2>
+          <div class="slider"><label for="aa" data-en="Base a">底數 a</label><output id="aao"></output>
+            <input id="aa" type="range" min="0.05" max="5" step="0.01" value="2" data-decimals="4"></div>
+          <div class="quick" role="group" aria-label="常用的底數" data-en-aria-label="Common bases">
+            <button type="button" data-a="0.5">1/2</button>
+            <button type="button" data-a="2">2</button>
+            <button type="button" data-a="e">e</button>
+            <button type="button" data-a="10">10</button>
+          </div>
+          <div class="slider"><label for="px" data-en-html="Point P on y = a<sup>x</sup>: x">y = a<sup>x</sup> 上的點 P：x</label><output id="pxo"></output>
+            <input id="px" type="range" min="-3" max="3" step="0.01" value="1" data-decimals="3"></div>
+          <div class="checks">
+            <label><input id="showTan" type="checkbox" checked><span data-en="Tangent at (0, 1) and its mirror image">在 (0, 1) 的切線與它的鏡像</span></label>
+            <label><input id="showMirror" type="checkbox" checked><span data-en="Show P, its mirror image Q and the line y = x">顯示 P、鏡像 Q 與 y = x</span></label>
+          </div>
+          <p class="hint" data-en="Drag on the picture to move P along the curve. The base can be typed to 4 decimal places.">在圖上拖曳可以讓 P 沿著曲線移動；底數可以打到小數第 4 位。</p>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en="Data and model">資料與模型</h2>
+          <div class="quick" role="group" aria-label="資料" data-en-aria-label="Data">
+            <button type="button" data-set="bacteria" data-en="Bacteria">細菌培養</button>
+            <button type="button" data-set="decay" data-en="Radioactive decay">放射性衰變</button>
+            <button type="button" data-set="free" data-en="No data">不用資料</button>
+          </div>
+          <p class="hint" id="setNote"></p>
+          <div class="slider"><label for="cc" data-en="Starting value C">起始值 C</label><output id="cco"></output>
+            <input id="cc" type="range" min="0" max="100" step="0.1" value="50"></div>
+          <div class="slider"><label for="bb" data-en="Growth factor b (per unit of x)">成長倍率 b（x 每增加 1）</label><output id="bbo"></output>
+            <input id="bb" type="range" min="0.2" max="4" step="0.01" value="2" data-decimals="3"></div>
+          <p class="hint" data-en="Line the model up with the data on the right-hand (log-scale) picture; the pink segments show how far each point is from the model.">在右邊（對數刻度）的圖上把模型對齊資料；粉紅色線段是每個點離模型多遠。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout mc">
+            <dt data-en="Compounded n times a year">一年複利 n 次</dt><dd id="cA">—</dd>
+            <dt data-en-html="Continuous, e<sup>rt</sup>">連續複利 e<sup>rt</sup></dt><dd id="cE">—</dd>
+            <dt data-en="Simple interest 1 + rt">單利 1 + rt</dt><dd id="cS">—</dd>
+            <dt data-en="Short of continuous by">比連續複利少</dt><dd id="cD">—</dd>
+            <dt data-en="Doubling time">翻倍需要</dt><dd id="cT">—</dd>
+          </dl>
+          <dl class="readout mi">
+            <dt>P = (x, a<sup>x</sup>)</dt><dd id="iP">—</dd>
+            <dt data-en="Mirror image Q">鏡像 Q</dt><dd id="iQ">—</dd>
+            <dt data-en-html="Slope of a<sup>x</sup> at x = 0 (ln a)">a<sup>x</sup> 在 x = 0 的斜率（ln a）</dt><dd id="iL">—</dd>
+            <dt data-en-html="Where a<sup>x</sup> and log<sub>a</sub> x meet">a<sup>x</sup> 與 log<sub>a</sub> x 的交點</dt><dd id="iM">—</dd>
+          </dl>
+          <dl class="readout ms">
+            <dt data-en="Model">模型</dt><dd id="sM">—</dd>
+            <dt data-en="Slope on the log scale (log b)">對數刻度上的斜率（log b）</dt><dd id="sS">—</dd>
+            <dt data-en="Doubling time / half-life">翻倍時間／半衰期</dt><dd id="sT">—</dd>
+            <dt data-en="Misfit (rms, in powers of 10)">擬合誤差（以 10 的次方計的均方根）</dt><dd id="sR">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card ms">
+          <h2 data-en="Challenge">挑戰</h2>
+          <p class="hint" data-en="You get a new set of exponential data. Adjust C and b until the model fits (misfit 0.012 or less); the misfit number is hidden while you play.">出一組新的指數資料，調整 C 和 b，讓模型對準資料（擬合誤差 0.012 以內）；挑戰時誤差的數字會藏起來。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Compound interest and the number e">複利與 e</h3>
+      <p data-en-html="Put 1 dollar in an account paying an annual rate \(r\). If the interest is added \(n\) times a year, each time the balance is multiplied by \(1 + \frac{r}{n}\), so after \(t\) years">把 1 元存進年利率 \(r\) 的帳戶。如果一年把利息加進本金 \(n\) 次，每次餘額都乘上 \(1 + \frac{r}{n}\)，\(t\) 年後就是</p>
+      <div class="formula">\[ A_n = \left(1 + \frac{r}{n}\right)^{nt}. \]</div>
+      <p data-en-html="Adding interest more often always helps, but by less and less: the totals climb towards a ceiling. With \(r = 100\%\) and \(t = 1\) that ceiling is the number">利息加得越頻繁，錢一定越多，但多出來的越來越少：總額爬向一個上限。年利率 100%、存一年時，這個上限就是</p>
+      <div class="formula">\[ e = \lim_{n\to\infty}\left(1 + \frac1n\right)^n = 2.718281828\ldots \]</div>
+      <p data-en-html="and in general \(A_n \to e^{rt}\), the <strong>continuous compounding</strong> formula. The gap shrinks roughly like \(1/n\): \(e - (1 + \frac1n)^n \approx \frac{e}{2n}\). Simple interest \(1 + rt\) only adds interest to the original dollar and always lags behind.">一般來說 \(A_n \to e^{rt}\)，這就是<strong>連續複利</strong>。差距大約和 \(1/n\) 成正比：\(e - (1 + \frac1n)^n \approx \frac{e}{2n}\)。單利 \(1 + rt\) 只對本金算利息，永遠落在後面。</p>
+      <p data-en-html="<strong>Doubling time.</strong> Solving \((1 + r)^t = 2\) gives \(t = \dfrac{\ln 2}{\ln(1 + r)} \approx \dfrac{0.693}{r}\); bankers round this to the “rule of 72”: at \(r\%\) a year, money doubles in about \(72 / r\) years."><strong>翻倍時間。</strong>解 \((1 + r)^t = 2\) 得 \(t = \dfrac{\ln 2}{\ln(1 + r)} \approx \dfrac{0.693}{r}\)；銀行家把它記成「72 法則」：年利率 \(r\%\)，大約 \(72 / r\) 年翻一倍。</p>
+
+      <h3 data-en="Exponentials and logarithms are mirror images">指數和對數是鏡像</h3>
+      <p data-en-html="For a base \(a &gt; 0\), \(a \ne 1\), the logarithm answers “which power of \(a\) gives \(y\)?”: \(\log_a y = x \iff a^x = y\). Swapping the roles of \(x\) and \(y\) is a reflection in the line \(y = x\), so the graph of \(y = \log_a x\) is the mirror image of \(y = a^x\): the point \(P = (x, a^x)\) goes to \(Q = (a^x, x)\). Logarithms turn products into sums, \(\log_a(uv) = \log_a u + \log_a v\), and any base can be changed to another:">底數 \(a &gt; 0\)、\(a \ne 1\) 時，對數回答「\(a\) 的幾次方是 \(y\)」：\(\log_a y = x \iff a^x = y\)。把 \(x\)、\(y\) 的角色互換，就是對直線 \(y = x\) 鏡射，所以 \(y = \log_a x\) 的圖形是 \(y = a^x\) 的鏡像：點 \(P = (x, a^x)\) 變成 \(Q = (a^x, x)\)。對數把乘法變成加法，\(\log_a(uv) = \log_a u + \log_a v\)，而且可以換底：</p>
+      <div class="formula">\[ \log_a y = \frac{\ln y}{\ln a}, \qquad \frac{d}{dx}a^x\Big|_{x=0} = \ln a. \]</div>
+      <p data-en-html="The slope of \(a^x\) where it crosses the \(y\)-axis is \(\ln a\); the base \(a = e\) is the one whose slope there is exactly 1 — that is what makes \(e\) “natural”. Base \(a = 1\) has no logarithm at all: \(1^x\) is always 1. For \(0 &lt; a &lt; 1\) the exponential decreases and so does its mirror image.">\(a^x\) 穿過 \(y\) 軸時的斜率是 \(\ln a\)；底數 \(a = e\) 剛好讓這個斜率等於 1，這就是 \(e\)「自然」的原因。底數 1 沒有對數：\(1^x\) 永遠是 1。\(0 &lt; a &lt; 1\) 時指數函數遞減，它的鏡像也遞減。</p>
+      <p data-en-html="<strong>Where do the two curves meet?</strong> For \(a &gt; 1\) both are increasing, so they can only meet on the mirror line, where \(a^x = x\). They cross twice when \(a &lt; e^{1/e} \approx 1.4447\) (for \(a = \sqrt2\): at \(x = 2\) and \(x = 4\)), just touch at \((e, e)\) when \(a = e^{1/e}\), and never meet for larger \(a\). For bases below 1 something stranger happens: when \(a &lt; e^{-e} \approx 0.066\) they meet three times."><strong>兩條曲線在哪裡相遇？</strong>\(a &gt; 1\) 時兩條都遞增，只會在鏡射線上相遇，也就是 \(a^x = x\) 的地方。\(a &lt; e^{1/e} \approx 1.4447\) 時交兩次（例如 \(a = \sqrt2\)：在 \(x = 2\) 和 \(x = 4\)），\(a = e^{1/e}\) 時剛好在 \((e, e)\) 相切，\(a\) 再大就不相遇。底數小於 1 時更奇妙：\(a &lt; e^{-e} \approx 0.066\) 時它們相遇三次。</p>
+
+      <h3 data-en="Logarithmic scales straighten exponentials">對數尺度把指數拉直</h3>
+      <p data-en-html="If \(y = C\,b^x\), then \(\log y = \log C + x \log b\): on a vertical axis marked in powers of 10 (a <strong>semi-log</strong> plot), exponential growth or decay is a straight line with slope \(\log b\) and intercept \(\log C\). Equal steps up the axis mean equal <em>factors</em>, not equal amounts. That is why scientists plot bacteria counts, radioactivity, earthquake energy and sound levels on logarithmic scales. The fit on this page minimises the vertical distances on the log scale, so a 10 % miss counts the same at 50 as at 50 000.">如果 \(y = C\,b^x\)，那麼 \(\log y = \log C + x \log b\)：在縱軸以 10 的次方標刻度的<strong>半對數圖</strong>上，指數成長或衰變是一條直線，斜率 \(\log b\)、截距 \(\log C\)。縱軸往上走同樣的距離代表乘上同樣的<em>倍數</em>，不是加上同樣的量。所以科學家把細菌數、放射性、地震能量、聲音的強度畫在對數刻度上。這一頁的擬合看的是對數刻度上的垂直距離，所以在 50 差 10% 和在 50 000 差 10% 算一樣多。</p>
+      <p data-en-html="Doubling time and half-life come straight from \(b\): \(T_2 = \dfrac{\ln 2}{\ln b}\) when \(b &gt; 1\), and \(T_{1/2} = \dfrac{\ln 2}{\ln(1/b)}\) when \(b &lt; 1\).">翻倍時間與半衰期直接由 \(b\) 算出：\(b &gt; 1\) 時 \(T_2 = \dfrac{\ln 2}{\ln b}\)，\(b &lt; 1\) 時 \(T_{1/2} = \dfrac{\ln 2}{\ln(1/b)}\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Diminishing returns</strong>: going from yearly to monthly helps a lot; going from daily to every second hardly matters."><strong>效果遞減</strong>：從每年改成每月差很多，從每天改成每秒幾乎沒差。</li>
+        <li data-en-html="<strong>The natural base</strong>: tick the tangent and move \(a\) until the tangent at \((0, 1)\) is parallel to \(y = x\)."><strong>自然的底數</strong>：勾選切線，調整 \(a\)，直到 \((0, 1)\) 的切線和 \(y = x\) 平行。</li>
+        <li data-en-html="<strong>Factors, not steps</strong>: on the log-scale picture, each grid line up is 10 times the one below it."><strong>是倍數，不是差</strong>：在對數刻度的圖上，每往上一條格線就是下一條的 10 倍。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Compound totals use \(\exp\!\big(nt\,\ln(1 + r/n)\big)\) with an accurate \(\ln(1 + u)\), so even a million compoundings a year are computed without rounding trouble. The meeting points of \(a^x\) and \(\log_a x\) are found by bisection; the unit tests check them against exact cases (\(\sqrt2\), \(e^{1/e}\)) and that every challenge can be fitted with the sliders.">複利用 \(\exp\!\big(nt\,\ln(1 + r/n)\big)\) 搭配精確的 \(\ln(1 + u)\) 計算，一年複利一百萬次也沒有捨入問題。\(a^x\) 與 \(\log_a x\) 的交點用二分法求；單元測試用已知的情形（\(\sqrt2\)、\(e^{1/e}\)）核對，也檢查每一道挑戰都能用滑桿對準。</li>
+        <li data-en="The bacteria and decay data are made-up teaching data: an exact exponential model with a few percent of random scatter added (bacteria doubling every half hour; a half-life of 8 days, like iodine-131).">細菌與衰變的資料是教學用的模擬資料：在準確的指數模型上加幾個百分比的隨機誤差（細菌每半小時加倍；半衰期 8 天，和碘-131 一樣）。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 10–11) · exponential and logarithmic functions, laws of logarithms, change of base, applications.">課綱對應：高中數學（高一、高二）・指數與對數函數、對數律、換底公式、應用。</li>
+        <li data-en="History: Napier published tables of logarithms in 1614 to turn multiplication into addition; Jacob Bernoulli met the number e in 1683 while studying compound interest; Euler named it and showed many of its properties.">歷史：納皮爾在 1614 年出版對數表，把乘法變成加法；雅各布・白努利在 1683 年研究複利時遇到 e；歐拉替它命名，並證明了它的許多性質。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/E_(mathematical_constant)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>e (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Semi-log_plot&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Semi-log plot (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/E_(mathematical_constant)" target="_blank" rel="noopener">e（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Semi-log_plot" target="_blank" rel="noopener">Semi-log plot（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/exp-log-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/exp-log.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="exp-log"></script>
+  <script src="js/missions/exp-log.js"></script>
+  <script src="js/stats.js" data-module="exp-log"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

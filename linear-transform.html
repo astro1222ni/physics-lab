@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Matrices and Linear Transformations | Astro Ni Science Lab">矩陣與線性變換｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 矩陣與線性變換頁面專用的顏色代號（淺色＋深色；由 js/linear-transform.js 讀取） */
+    :root { --lt-i: #dc2626; --lt-j: #15803d; --lt-k: #0369a1; --lt-pos: #4f46e5; --lt-neg: #e11d48; --lt-x: #7c3aed; --lt-ax: #c026d3; --lt-eig: #b45309; --lt-flag: #0f766e; --lt-target: #ea580c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --lt-i: #f87171; --lt-j: #4ade80; --lt-k: #38bdf8; --lt-pos: #a5b4fc; --lt-neg: #fb7185; --lt-x: #c4b5fd; --lt-ax: #f0abfc; --lt-eig: #fbbf24; --lt-flag: #5eead4; --lt-target: #fb923c; }
+    }
+    :root[data-theme="dark"] { --lt-i: #f87171; --lt-j: #4ade80; --lt-k: #38bdf8; --lt-pos: #a5b4fc; --lt-neg: #fb7185; --lt-x: #c4b5fd; --lt-ax: #f0abfc; --lt-eig: #fbbf24; --lt-flag: #5eead4; --lt-target: #fb923c; }
+
+    #cv { aspect-ratio: auto; height: 480px; touch-action: none; }
+    .lt button { min-height: 44px; }
+    .lt [hidden] { display: none !important; }
+    .lt .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .lt .playbar button { flex: 1 1 auto; }
+    .lt .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .lt .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .lt .slider input[type="range"] { height: 28px; margin: 0; }
+    .lt .checks label { min-height: 44px; }
+    .lt .checks input { width: 17px; height: 17px; }
+    .lt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .lt .panel { grid-template-columns: minmax(0, 1fr); }
+    .lt .panel > .card { min-width: 0; }
+    .lt:not([data-mode="m2"]) .m2, .lt:not([data-mode="m3"]) .m3 { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+    .modes button, .cols button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
+    .modes button[aria-pressed="true"], .cols button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes small { font-weight: 400; font-size: calc(12.5px * var(--fs, 1)); opacity: .85; }
+    .cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    .cols button { align-items: center; text-align: center; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; }
+    .presets button { flex: 1 1 auto; padding: 6px 10px; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--lt-flag); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.box { width: 12px; height: 10px; border-radius: 2px; }
+    /* 空間模式的 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .stage.is3d #cv { display: none; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none;
+      cursor: grab; aspect-ratio: 4 / 3;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .s3-wrap { position: relative; }
+    .s3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .s3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .s3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 70%; }
+    .s3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .s3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--surface) 82%, transparent); border: 1px solid var(--border); }
+    .s3-hud span.m { color: var(--muted); font-weight: 500; }
+    .s3-hud span:empty { display: none; }
+    .view-msg { margin: 0 0 6px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .view-msg:empty { display: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#vectors&quot;>Mathematics · Vectors and Space</a> / Linear transformations"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#vectors">數學・向量與空間</a> ／ 線性變換</nav>
+      <h1 data-en="Matrices and Linear Transformations">矩陣與線性變換</h1>
+      <p data-en="A matrix is a recipe for moving the whole plane at once: its columns say where the two basis arrows land, and every grid square follows. See the determinant as the factor by which areas (and, in 3D, volumes) grow, and find the special directions — the eigenvectors — that the matrix only stretches.">矩陣是一次搬動整個平面的方法：它的兩行說出兩個基底箭頭被搬到哪裡，每一格方格都跟著走。看行列式就是面積（在空間裡是體積）放大的倍數，再找出只被拉長、方向不變的特別方向——特徵向量。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the tip of the green j arrow over to the other side of the red i arrow and watch the little flag turn into its mirror image just as the determinant becomes negative.">試試看：把綠色 j 箭頭的尖端拖到紅色 i 箭頭的另一側，看小旗子在行列式變成負數的那一刻翻成鏡子裡的樣子。</p>
+    <div class="lab lt" id="lab" data-mode="m2">
+      <div class="stage" id="stage">
+        <div class="view-bar m3">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D drawing">2D 投影圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D space">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" data-en="Reset view">重設視角</button>
+        </div>
+        <p class="view-msg m3" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="線性變換畫布：平面模式是方格紙被 2×2 矩陣變形，紅色 i、綠色 j 箭頭是矩陣的兩行，可以拖曳；紫色探針 x 和它的像 A x；空間模式是單位立方體被 3×3 矩陣變成平行六面體，拖曳可以轉動視角。" data-en-aria-label="Linear transformation canvas: in plane mode a grid deformed by a 2×2 matrix, with the red i and green j arrows (the matrix columns) that you can drag, and a purple probe x with its image Ax; in space mode the unit cube turned into a parallelepiped by a 3×3 matrix, dragged to turn the view."></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Play the change">播放變形</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，矩陣、探針與視角回到一開始" data-en-title="Clear the challenge record and put the matrices, the probe and the view back to the start">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i style=&quot;background:var(--lt-i)&quot;></i>i ↦ first column"><i style="background:var(--lt-i)"></i>i ↦ 第 1 行</span>
+          <span data-en-html="<i style=&quot;background:var(--lt-j)&quot;></i>j ↦ second column"><i style="background:var(--lt-j)"></i>j ↦ 第 2 行</span>
+          <span class="m3" data-en-html="<i style=&quot;background:var(--lt-k)&quot;></i>k ↦ third column"><i style="background:var(--lt-k)"></i>k ↦ 第 3 行</span>
+          <span data-en-html="<i class=&quot;box&quot; style=&quot;background:var(--lt-pos)&quot;></i>Image of the unit square / cube"><i class="box" style="background:var(--lt-pos)"></i>單位正方形（立方體）的像</span>
+          <span class="m2" data-en-html="<i class=&quot;box&quot; style=&quot;background:var(--lt-flag)&quot;></i>Flag (shows flipping)"><i class="box" style="background:var(--lt-flag)"></i>小旗子（看翻面）</span>
+          <span class="m2" data-en-html="<i style=&quot;background:var(--lt-x)&quot;></i>Probe x, <i style=&quot;background:var(--lt-ax)&quot;></i>its image Ax"><i style="background:var(--lt-x)"></i>探針 x、<i style="background:var(--lt-ax)"></i>它的像 Ax</span>
+          <span class="m2" style="color:var(--lt-eig)" data-en-html="<i class=&quot;dash&quot;></i>Eigenvector directions"><i class="dash"></i>特徵向量方向</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Mode">模式</h2>
+          <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="m2" aria-pressed="true" data-en-html="Plane (2×2)<small>area and eigenvectors</small>">平面 2×2<small>面積與特徵向量</small></button>
+            <button type="button" data-mode="m3" aria-pressed="false" data-en-html="Space (3×3)<small>the unit cube and volume</small>">空間 3×3<small>單位立方體與體積</small></button>
+          </div>
+        </section>
+
+        <section class="card m2">
+          <h2 data-en="Matrix A (2×2): rows (a, b) and (c, d)">2×2 矩陣 A：兩列是 (a, b)、(c, d)</h2>
+          <div class="slider"><label for="ma" data-en="a (i goes to x = a)">a（i 的 x 坐標）</label><output id="mao"></output>
+            <input id="ma" type="range" min="-3" max="3" step="0.1" value="1.5" data-decimals="2"></div>
+          <div class="slider"><label for="mc" data-en="c (i goes to y = c)">c（i 的 y 坐標）</label><output id="mco"></output>
+            <input id="mc" type="range" min="-3" max="3" step="0.1" value="0.5" data-decimals="2"></div>
+          <div class="slider"><label for="mb" data-en="b (j goes to x = b)">b（j 的 x 坐標）</label><output id="mbo"></output>
+            <input id="mb" type="range" min="-3" max="3" step="0.1" value="0.5" data-decimals="2"></div>
+          <div class="slider"><label for="md" data-en="d (j goes to y = d)">d（j 的 y 坐標）</label><output id="mdo"></output>
+            <input id="md" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <p class="hint" data-en="The first column (a, c) is where i = (1, 0) lands; the second column (b, d) is where j = (0, 1) lands. Drag the arrow tips on the picture (0.1 at a time), or tap a number to type it to 2 decimal places.">第 1 行 (a, c) 是 i = (1, 0) 被搬到的位置，第 2 行 (b, d) 是 j = (0, 1) 被搬到的位置。可以在圖上拖曳箭頭尖端（每次 0.1），或點一下數字打到小數第 2 位。</p>
+          <div class="presets" role="group" aria-label="範例矩陣" data-en-aria-label="Example matrices">
+            <button type="button" data-p2="id" data-en="Identity">單位矩陣</button>
+            <button type="button" data-p2="stretch" data-en="Stretch">伸縮</button>
+            <button type="button" data-p2="shear" data-en="Shear">剪切</button>
+            <button type="button" data-p2="mirror" data-en="Mirror">鏡射</button>
+            <button type="button" data-p2="proj" data-en="Projection">投影</button>
+            <button type="button" data-p2="sym" data-en="Symmetric">對稱矩陣</button>
+          </div>
+        </section>
+
+        <section class="card m2">
+          <h2 data-en="Probe x and what to show">探針 x 與顯示</h2>
+          <div class="slider"><label for="px" data-en="x: first component">x 的第 1 個分量</label><output id="pxo"></output>
+            <input id="px" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="py" data-en="x: second component">x 的第 2 個分量</label><output id="pyo"></output>
+            <input id="py" type="range" min="-4" max="4" step="0.1" value="2" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="gridC" type="checkbox" checked><span data-en="Show the deformed grid">顯示變形後的方格</span></label>
+            <label><input id="circC" type="checkbox"><span data-en="Show the image of the unit circle (an ellipse)">顯示單位圓的像（橢圓）</span></label>
+            <label><input id="eigC" type="checkbox"><span data-en="Show the eigenvector directions">顯示特徵向量的方向</span></label>
+          </div>
+          <p class="hint" data-en="Drag the purple dot on the picture. When x and Ax line up, x is an eigenvector and Ax = λx.">在圖上拖曳紫色的點。x 和 A x 在同一條直線上時，x 就是特徵向量，A x = λ x。</p>
+        </section>
+
+        <section class="card m3">
+          <h2 data-en="Matrix A (3×3), one column at a time">3×3 矩陣 A（一次調一行）</h2>
+          <div class="cols" role="group" aria-label="要調整的行" data-en-aria-label="Column to adjust">
+            <button type="button" data-col="0" aria-pressed="true" data-en="1st: i ↦">第 1 行：i ↦</button>
+            <button type="button" data-col="1" aria-pressed="false" data-en="2nd: j ↦">第 2 行：j ↦</button>
+            <button type="button" data-col="2" aria-pressed="false" data-en="3rd: k ↦">第 3 行：k ↦</button>
+          </div>
+          <div class="slider"><label for="cx" data-en="x component">x 分量</label><output id="cxo"></output>
+            <input id="cx" type="range" min="-3" max="3" step="0.1" value="1" data-decimals="2"></div>
+          <div class="slider"><label for="cy" data-en="y component">y 分量</label><output id="cyo"></output>
+            <input id="cy" type="range" min="-3" max="3" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="cz" data-en="z component">z 分量</label><output id="czo"></output>
+            <input id="cz" type="range" min="-3" max="3" step="0.1" value="0.5" data-decimals="2"></div>
+          <p class="hint" data-en="Each column is where one edge of the unit cube (i, j or k) goes. Drag on the picture to turn the view.">每一行是單位立方體的一條邊（i、j 或 k）被搬到的位置。在圖上拖曳可以轉動視角。</p>
+          <div class="presets" role="group" aria-label="範例矩陣" data-en-aria-label="Example matrices">
+            <button type="button" data-p3="id" data-en="Identity">單位矩陣</button>
+            <button type="button" data-p3="stretch" data-en="Stretch">伸縮</button>
+            <button type="button" data-p3="shear" data-en="Shear">剪切</button>
+            <button type="button" data-p3="rot" data-en="Turn 90° about z">繞 z 軸轉 90°</button>
+            <button type="button" data-p3="mirror" data-en="Mirror">鏡射</button>
+            <button type="button" data-p3="proj" data-en="Flatten onto the floor">投影到地板</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="From I to A">從 I 漸變到 A</h2>
+          <div class="slider"><label for="tt" data-en="t (0 = do nothing, 1 = the whole matrix)">t（0 不動，1 是整個矩陣）</label><output id="tto"></output>
+            <input id="tt" type="range" min="0" max="1" step="0.01" value="1" data-decimals="2"></div>
+          <p class="hint" data-en-html="The picture shows \((1 - t)I + tA\). “Play the change” runs t from 0 to 1.">畫面顯示 \((1 - t)I + tA\)；「播放變形」讓 t 從 0 走到 1。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Determinant det A">行列式 det A</dt><dd id="rDet">—</dd>
+            <dt class="m2" data-en="Area becomes">面積變成</dt><dd class="m2" id="rArea">—</dd>
+            <dt class="m3" data-en="Volume becomes">體積變成</dt><dd class="m3" id="rVol">—</dd>
+            <dt data-en="Orientation">方向</dt><dd id="rOri">—</dd>
+            <dt class="m3" data-en="Rank">秩</dt><dd class="m3" id="rRank">—</dd>
+            <dt class="m2" data-en="Trace tr A = a + d">跡 tr A = a + d</dt><dd class="m2" id="rTr">—</dd>
+            <dt class="m2" data-en="Eigenvalues">特徵值</dt><dd class="m2" id="rEig">—</dd>
+            <dt class="m2" data-en-html="Ellipse half-axes σ<sub>1</sub>, σ<sub>2</sub>">橢圓半軸 σ<sub>1</sub>、σ<sub>2</sub></dt><dd class="m2" id="rSig">—</dd>
+            <dt class="m2" data-en="Probe: Ax">探針：A x</dt><dd class="m2" id="rAx">—</dd>
+            <dt class="m2" data-en="Angle from x to Ax">x 到 A x 的夾角</dt><dd class="m2" id="rAng">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="eq" id="rEq2" aria-live="off"></div>
+        </section>
+
+        <section class="card m2">
+          <h2 data-en="Challenge">挑戰</h2>
+          <p class="hint" data-en="A dashed orange shape shows where the unit square and the flag were sent by a mystery matrix with whole-number entries. Set the same matrix (each entry within 0.05).">橘色虛線畫出一個神祕矩陣（元素都是整數）把單位正方形和小旗子搬到哪裡。調出同一個矩陣（每個元素差 0.05 以內）。</p>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="A matrix moves every point at once">矩陣一次搬動所有的點</h3>
+      <p data-en-html="Multiplying by \(A = \begin{bmatrix} a &amp; b \\ c &amp; d \end{bmatrix}\) sends \((x, y)\) to \((ax + by,\; cx + dy)\). Since \((x, y) = x\,\mathbf i + y\,\mathbf j\) and the map is <strong>linear</strong>, \(A(x\mathbf i + y\mathbf j) = x\,A\mathbf i + y\,A\mathbf j\): once you know where \(\mathbf i\) and \(\mathbf j\) go (the two columns), you know where every point goes. Straight lines stay straight, parallel lines stay parallel, evenly spaced grid lines stay evenly spaced, and the origin never moves.">乘上 \(A = \begin{bmatrix} a &amp; b \\ c &amp; d \end{bmatrix}\) 把 \((x, y)\) 送到 \((ax + by,\; cx + dy)\)。因為 \((x, y) = x\,\mathbf i + y\,\mathbf j\)，而且這個變換是<strong>線性</strong>的：\(A(x\mathbf i + y\mathbf j) = x\,A\mathbf i + y\,A\mathbf j\)。只要知道 \(\mathbf i\)、\(\mathbf j\) 被搬到哪裡（也就是 A 的兩行），就知道每一個點被搬到哪裡。直線還是直線、平行線還是平行、等距的格線還是等距，原點永遠不動。</p>
+
+      <h3 data-en="The determinant is the area factor">行列式是面積的倍率</h3>
+      <p data-en-html="The unit square becomes the parallelogram spanned by the columns \((a, c)\) and \((b, d)\), whose signed area is">單位正方形變成由兩行 \((a, c)\)、\((b, d)\) 張成的平行四邊形，它的有號面積是</p>
+      <div class="formula">\[ \det A = ad - bc. \]</div>
+      <p data-en-html="Every grid square turns into a copy of that parallelogram, so <strong>every</strong> region (the flag, a circle, anything) has its area multiplied by \(|\det A|\). When \(\det A &lt; 0\) the plane is flipped over, like looking in a mirror; when \(\det A = 0\) the whole plane is squashed onto a line (or a point) and cannot be undone. For two matrices, \(\det(AB) = \det A \cdot \det B\). In space, a \(3 \times 3\) matrix turns the unit cube into the parallelepiped spanned by its three columns, and \(\det A\) is that solid’s signed volume.">每一格方格都變成同樣的平行四邊形，所以<strong>任何</strong>圖形（小旗子、圓、什麼都可以）面積都乘上 \(|\det A|\)。\(\det A &lt; 0\) 時整張紙被翻面，像照鏡子；\(\det A = 0\) 時整個平面被壓到一條線（或一點）上，再也還原不了。兩個矩陣相乘時 \(\det(AB) = \det A \cdot \det B\)。在空間裡，\(3 \times 3\) 矩陣把單位立方體變成由三行張成的平行六面體，\(\det A\) 就是它的有號體積。</p>
+
+      <h3 data-en="Eigenvectors: directions that do not turn">特徵向量：方向不變的向量</h3>
+      <p data-en-html="Most vectors are turned by \(A\). A nonzero vector \(\mathbf x\) with \(A\mathbf x = \lambda\mathbf x\) is only stretched (by the factor \(\lambda\), which flips it if negative): it is an <strong>eigenvector</strong> with <strong>eigenvalue</strong> \(\lambda\). The eigenvalues are the roots of">大部分的向量被 \(A\) 轉了方向。若非零向量 \(\mathbf x\) 滿足 \(A\mathbf x = \lambda\mathbf x\)，它只被拉長（倍數 \(\lambda\)，負的就反向），叫做<strong>特徵向量</strong>，\(\lambda\) 是<strong>特徵值</strong>。特徵值是下面方程式的根：</p>
+      <div class="formula">\[ \lambda^2 - (\operatorname{tr} A)\,\lambda + \det A = 0, \qquad \operatorname{tr} A = a + d. \]</div>
+      <p data-en-html="So \(\lambda_1 + \lambda_2 = \operatorname{tr} A\) and \(\lambda_1 \lambda_2 = \det A\). If \((\operatorname{tr} A)^2 - 4\det A &lt; 0\) there is no real eigenvalue and every direction gets turned (a rotation is the typical case). A shear has a repeated eigenvalue 1 but only one eigenvector direction.">所以 \(\lambda_1 + \lambda_2 = \operatorname{tr} A\)、\(\lambda_1 \lambda_2 = \det A\)。若 \((\operatorname{tr} A)^2 - 4\det A &lt; 0\)，沒有實數特徵值，每個方向都被轉走（旋轉就是這樣）。剪切有重根 1，但只有一個特徵向量的方向。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Flip</strong>: drag j across the line of i; at the instant they line up the parallelogram has no area (\(\det A = 0\)), and just after it the flag is mirrored."><strong>翻面</strong>：把 j 拖過 i 所在的直線；兩者共線的那一刻平行四邊形面積是 0（\(\det A = 0\)），再過去小旗子就變成鏡像。</li>
+        <li data-en-html="<strong>Circle to ellipse</strong>: the unit circle becomes an ellipse with half-axes \(\sigma_1 \ge \sigma_2\) (the singular values), and \(\sigma_1\sigma_2 = |\det A|\)."><strong>圓變橢圓</strong>：單位圓變成半軸 \(\sigma_1 \ge \sigma_2\)（奇異值）的橢圓，\(\sigma_1\sigma_2 = |\det A|\)。</li>
+        <li data-en-html="<strong>Symmetric matrices</strong> (\(b = c\)) always have two real eigenvalues, and their eigenvectors are perpendicular — they lie along the axes of the ellipse."><strong>對稱矩陣</strong>（\(b = c\)）一定有兩個實數特徵值，兩個特徵向量互相垂直，剛好沿著橢圓的軸。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Eigenvalues come from the quadratic above; a discriminant within \(10^{-9}\) of 0 counts as a repeated root, so matrices typed to two decimals behave exactly. The rank of a \(3 \times 3\) matrix is found by Gaussian elimination with partial pivoting. The unit tests check that the determinant equals the shoelace area of the transformed square and flag, that it equals the volume of the transformed cube, that \(A\mathbf v = \lambda\mathbf v\), and the singular values against a fine sweep of the unit circle.">特徵值由上面的二次方程式求出；判別式和 0 相差 \(10^{-9}\) 以內算重根，所以打字到小數兩位的矩陣會得到正確的判斷。\(3 \times 3\) 矩陣的秩用部分選主元的高斯消去法求。單元測試檢查行列式等於變形後正方形與小旗子的鞋帶公式面積、等於變形後立方體的體積、\(A\mathbf v = \lambda\mathbf v\)，並用細密掃過單位圓的方式核對奇異值。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 11–12) · matrices: matrix operations, 2×2 and 3×3 determinants, matrices as linear transformations of the plane.">課綱對應：高中數學（高二、高三）・矩陣：矩陣運算、二階與三階行列式、矩陣作為平面上的線性變換。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Linear_map&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Linear map (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Eigenvalues_and_eigenvectors&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Eigenvalues and eigenvectors (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Linear_map" target="_blank" rel="noopener">Linear map（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Eigenvalues_and_eigenvectors" target="_blank" rel="noopener">Eigenvalues and eigenvectors（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/linear-transform-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/linear-transform.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="linear-transform"></script>
+  <script src="js/missions/linear-transform.js"></script>
+  <script src="js/stats.js" data-module="linear-transform"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

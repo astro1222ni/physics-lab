@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Complex Plane: Multiplication Is Rotation and Scaling | Astro Ni Science Lab">複數平面：乘法是旋轉與伸縮｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 複數平面頁面專用的顏色代號（淺色＋深色；由 js/complex-plane.js 讀取） */
+    :root { --cx-z: #2563eb; --cx-w: #db2777; --cx-r: #ea580c; --cx-grid: #0d9488; --cx-unit: #7c3aed; --cx-tgt: #64748b; --cx-ok: #0d9488; --cx-bad: #dc2626; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cx-z: #60a5fa; --cx-w: #f472b6; --cx-r: #fb923c; --cx-grid: #2dd4bf; --cx-unit: #a78bfa; --cx-tgt: #cbd5e1; --cx-ok: #2dd4bf; --cx-bad: #f87171; }
+    }
+    :root[data-theme="dark"] { --cx-z: #60a5fa; --cx-w: #f472b6; --cx-r: #fb923c; --cx-grid: #2dd4bf; --cx-unit: #a78bfa; --cx-tgt: #cbd5e1; --cx-ok: #2dd4bf; --cx-bad: #f87171; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: none; }
+    .cx button { min-height: 44px; }
+    .cx [hidden] { display: none !important; }
+    .cx .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cx .playbar button { flex: 1 1 auto; }
+    .cx .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cx .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .cx .slider input[type="range"] { height: 28px; margin: 0; }
+    .cx .checks label { min-height: 44px; }
+    .cx .checks input { width: 17px; height: 17px; }
+    .cx .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cx .panel { grid-template-columns: minmax(0, 1fr); }
+    .cx .panel > .card { min-width: 0; }
+    .modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .modes button { padding: 4px 6px; line-height: 1.2; }
+    .modes button small { display: block; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .modes button[aria-pressed="true"] small { color: inherit; opacity: 0.85; }
+    .sub2 { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 10px 0 2px; font-weight: 600; }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .row2 button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--cx-ok); font-weight: 600; }
+    .chal-msg.bad { color: var(--cx-bad); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    @media (max-width: 480px) { .eq .katex { font-size: 0.9em; } }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / The Complex Plane"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 複數平面</nav>
+      <h1 data-en="The Complex Plane: Multiplication Is Rotation and Scaling">複數平面：乘法是旋轉與伸縮</h1>
+      <p data-en="Every complex number a + bi is a point in the plane. Adding slides the plane; multiplying by z turns the whole grid by the angle of z and stretches it by |z|. Raise z to a power and the points spiral; take n-th roots and they stand at the corners of a regular polygon.">每一個複數 a + bi 都是平面上的一點。加法讓整個平面平移；乘以 z，整張方格紙轉過 z 的幅角、再伸縮 |z| 倍。z 一次次乘下去畫出螺線；開 n 次方根，根就站在正 n 邊形的頂點上。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: in “Multiply”, drag the blue point z and press “Play”. Watch the grid turn by the angle of z and stretch by |z|. Then put z on i.">試試看：在「乘法」拖曳藍色的點 z，再按「播放」，看整張方格紙轉過 z 的角度、伸縮 |z| 倍。再把 z 放到 i 上看看。</p>
+    <div class="lab cx" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="複數平面畫布：實軸、虛軸、單位圓與可以拖曳的點 z、w，以及加法、乘法、次方或方根的結果。" data-en-aria-label="Complex plane canvas: the real and imaginary axes, the unit circle, the draggable points z and w, and the result of adding, multiplying, raising to a power or taking roots."></canvas>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="Play">播放</button>
+          <button id="mark" type="button" data-en="Record">記下這一組</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除記下的結果與挑戰紀錄；z、w 與 n 不變" data-en-title="Clear the recorded results and the challenge record; z, w and n are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cx-z)&quot;></i>z"><i class="dot" style="background:var(--cx-z)"></i>z</span>
+          <span id="lgW" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cx-w)&quot;></i>w"><i class="dot" style="background:var(--cx-w)"></i>w</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--cx-r)&quot;></i>Result"><i class="dot" style="background:var(--cx-r)"></i>結果</span>
+          <span data-en-html="<i class=&quot;dash&quot; style=&quot;color:var(--cx-unit)&quot;></i>Unit circle |z| = 1"><i class="dash" style="color:var(--cx-unit)"></i>單位圓 |z| = 1</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Operation">運算</h2>
+          <div class="modes" id="modes" role="group" aria-label="運算" data-en-aria-label="Operation">
+            <button type="button" data-mode="add" aria-pressed="false" data-en-html="Add<small>z + w</small>">加法<small>z + w</small></button>
+            <button type="button" data-mode="mul" aria-pressed="true" data-en-html="Multiply<small>z · w</small>">乘法<small>z · w</small></button>
+            <button type="button" data-mode="pow" aria-pressed="false" data-en-html="Powers<small>z to the n</small>">次方<small>z 的 n 次方</small></button>
+            <button type="button" data-mode="root" aria-pressed="false" data-en-html="Roots<small>n-th roots of z</small>">方根<small>z 的 n 次方根</small></button>
+          </div>
+          <p class="hint" id="modeNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The number z">複數 z</h2>
+          <div class="slider"><label for="za" data-en="Real part a">實部 a</label><output id="zao"></output>
+            <input id="za" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="4"></div>
+          <div class="slider"><label for="zb" data-en="Imaginary part b">虛部 b</label><output id="zbo"></output>
+            <input id="zb" type="range" min="-4" max="4" step="0.1" value="1" data-decimals="4"></div>
+          <p class="sub2" data-en="or in polar form r(cos θ + i sin θ)">或用極式 r(cos θ + i sin θ)</p>
+          <div class="slider"><label for="zr" data-en="Modulus r = |z|">絕對值 r = |z|</label><output id="zro"></output>
+            <input id="zr" type="range" min="0" max="5.66" step="0.05" value="1.4142" data-decimals="4"></div>
+          <div class="slider"><label for="zt" data-en="Argument θ (degrees)">幅角 θ（度）</label><output id="zto"></output>
+            <input id="zt" type="range" min="-180" max="180" step="1" value="45" data-decimals="4"></div>
+        </section>
+
+        <section class="card" id="cardW">
+          <h2 data-en="The number w">複數 w</h2>
+          <div class="slider"><label for="wa" data-en="Real part">實部</label><output id="wao"></output>
+            <input id="wa" type="range" min="-4" max="4" step="0.1" value="2" data-decimals="4"></div>
+          <div class="slider"><label for="wb" data-en="Imaginary part">虛部</label><output id="wbo"></output>
+            <input id="wb" type="range" min="-4" max="4" step="0.1" value="0.5" data-decimals="4"></div>
+        </section>
+
+        <section class="card" id="cardN" hidden>
+          <h2 id="nTitle" data-en="Exponent n">次方 n</h2>
+          <div class="slider" id="pnBox"><label for="pn" data-en="Power n">次方 n</label><output id="pno"></output>
+            <input id="pn" type="range" min="1" max="100" step="1" value="6"></div>
+          <div class="slider" id="rnBox"><label for="rn" data-en="Root n">開 n 次方</label><output id="rno"></output>
+            <input id="rn" type="range" min="2" max="24" step="1" value="5"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Show">顯示</h2>
+          <div class="checks">
+            <label><input id="showGrid" type="checkbox" checked><span data-en="The grid moves with the multiplication">方格紙跟著乘</span></label>
+            <label><input id="showTri" type="checkbox" checked><span data-en="Similar triangles">相似三角形</span></label>
+            <label><input id="showArc" type="checkbox" checked><span data-en="Angles">角度</span></label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt>z</dt><dd id="rZ">—</dd>
+            <dt data-en="|z| and arg z">|z| 與 arg z</dt><dd id="rZp">—</dd>
+            <dt class="rw">w</dt><dd class="rw" id="rW">—</dd>
+            <dt class="rw" data-en="|w| and arg w">|w| 與 arg w</dt><dd class="rw" id="rWp">—</dd>
+            <dt id="rResL" data-en="Result">結果</dt><dd id="rRes">—</dd>
+            <dt id="rResPL" data-en="Its modulus and argument">它的絕對值與幅角</dt><dd id="rResP">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Press “Record” to keep a list of what you have tried.">按「記下這一組」可以把試過的結果列成一張表。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: find z">挑戰：找出 z</h2>
+          <p class="hint" data-en="A hidden number z has turned and stretched the grey square. Set z so that your blue square lands exactly on it, then press “This z”.">一個藏起來的 z 已經把灰色的正方形轉過、伸縮過。調整 z，讓你的藍色正方形剛好疊上去，再按「就是這個 z」。</p>
+          <div class="row2">
+            <button id="newChal" type="button" data-en="New problem">出一題</button>
+            <button id="submitC" type="button" hidden data-en="This z">就是這個 z</button>
+            <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Numbers as points">複數是平面上的點</h3>
+      <p data-en-html="The number \(z = a + bi\) sits at the point \((a, b)\): the real part along the horizontal axis, the imaginary part up the vertical one. Its distance from 0 is the modulus \(|z| = \sqrt{a^2 + b^2}\), and the angle from the positive real axis is the argument \(\arg z = \theta\). So \(z = r(\cos\theta + i\sin\theta)\) with \(r = |z|\).">複數 \(z = a + bi\) 對應平面上的點 \((a, b)\)：實部在橫軸、虛部在縱軸。它到 0 的距離是絕對值 \(|z| = \sqrt{a^2 + b^2}\)，從正實軸轉到它的角度是幅角 \(\arg z = \theta\)。所以 \(z = r(\cos\theta + i\sin\theta)\)，其中 \(r = |z|\)。</p>
+      <h3 data-en="Adding slides, multiplying turns">加法是平移，乘法是旋轉</h3>
+      <div class="formula">\[ z + w:\ \text{parallelogram},\qquad |zw| = |z|\,|w|,\qquad \arg(zw) = \arg z + \arg w \]</div>
+      <p data-en-html="Adding \(w\) moves every point by the same arrow: \(0, z, z + w, w\) form a parallelogram. Multiplying by \(z\) is different: every point turns about 0 by \(\arg z\) and moves \(|z|\) times as far. That is why the triangle \((0, 1, z)\) and the triangle \((0, w, zw)\) are similar, and why \(i\) — modulus 1, argument 90° — turns everything through a right angle: \(i^2 = -1\).">加上 \(w\) 是讓每一點都沿著同一個箭頭移動：\(0, z, z + w, w\) 圍成平行四邊形。乘以 \(z\) 就不同了：每一點都繞 0 轉過 \(\arg z\)，到 0 的距離變成 \(|z|\) 倍。所以三角形 \((0, 1, z)\) 和三角形 \((0, w, zw)\) 相似；\(i\) 的絕對值是 1、幅角 90°，乘以 \(i\) 就是把整個平面轉一個直角，\(i^2 = -1\)。</p>
+      <h3 data-en="De Moivre’s theorem">棣美弗定理</h3>
+      <div class="formula">\[ \bigl[r(\cos\theta + i\sin\theta)\bigr]^n = r^n(\cos n\theta + i\sin n\theta) \]</div>
+      <p data-en-html="Multiplying by \(z\) again and again adds the same angle each time and multiplies the distance by the same factor, so \(1, z, z^2, \dots\) lie on a spiral. If \(|z| < 1\) the spiral winds inwards, if \(|z| > 1\) outwards, and if \(|z| = 1\) the points walk round the unit circle.">一直乘以 \(z\)，每次都加上同一個角度、距離乘上同一個倍數，所以 \(1, z, z^2, \dots\) 排在一條螺線上。\(|z| < 1\) 時螺線往內捲，\(|z| > 1\) 時往外，\(|z| = 1\) 時點沿著單位圓走。</p>
+      <h3 data-en="n-th roots">n 次方根</h3>
+      <div class="formula">\[ w^n = z \quad\Longleftrightarrow\quad w_k = \sqrt[n]{|z|}\Bigl(\cos\frac{\theta + 360^\circ k}{n} + i\sin\frac{\theta + 360^\circ k}{n}\Bigr),\quad k = 0, 1, \dots, n-1 \]</div>
+      <p data-en-html="Every non-zero \(z\) has exactly \(n\) different \(n\)-th roots. They all have the same modulus and their angles differ by \(360^\circ/n\), so they are the corners of a regular \(n\)-gon centred at 0, and they add up to 0.">每一個不是 0 的 \(z\) 都恰好有 \(n\) 個不同的 \(n\) 次方根。它們的絕對值都一樣，幅角相差 \(360^\circ/n\)，所以是以 0 為中心的正 \(n\) 邊形的頂點，加起來是 0。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Similar triangles</strong>: in “Multiply”, move \(w\) anywhere. The shaded triangle \((0, w, zw)\) always has the same shape as \((0, 1, z)\)."><strong>相似三角形</strong>：在「乘法」裡把 \(w\) 拖到任何地方，塗色的三角形 \((0, w, zw)\) 永遠和 \((0, 1, z)\) 一樣形狀。</li>
+        <li data-en-html="<strong>Conjugates</strong>: multiplying \(z\) by its conjugate \(\bar z\) turns forwards and back by the same angle, leaving the real number \(|z|^2\)."><strong>共軛</strong>：\(z\) 乘以它的共軛 \(\bar z\)，先轉過去再轉回來，剩下實數 \(|z|^2\)。</li>
+        <li data-en-html="<strong>Coming home</strong>: with \(|z| = 1\) and \(\theta = 360^\circ/n\), the powers of \(z\) come back to 1 after exactly \(n\) steps."><strong>回到原點</strong>：\(|z| = 1\)、\(\theta = 360^\circ/n\) 時，\(z\) 的次方剛好走 \(n\) 步回到 1。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Powers are computed by repeated multiplication, exactly as the picture builds them. Roots use the polar formula above. The animation of a multiplication turns by \(t\arg z\) and stretches by \(|z|^t\) as \(t\) goes from 0 to 1, so every point travels along a piece of a logarithmic spiral.">次方用一次一次的乘法算，和畫面上一步一步畫的一樣。方根用上面的極式公式。「播放」乘法時，\(t\) 從 0 走到 1，畫面轉過 \(t\arg z\)、伸縮 \(|z|^t\) 倍，所以每一點都沿著一小段對數螺線移動。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 12, Mathematics A) · complex numbers, the complex plane, polar form and De Moivre’s theorem.">課綱對應：高中數學（高三數甲）・複數、複數平面、極式與棣美弗定理。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Complex_plane&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Complex plane (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Complex_plane" target="_blank" rel="noopener">Complex plane（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/complex-plane-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/complex-plane.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="complex-plane"></script>
+  <script src="js/missions/complex-plane.js"></script>
+  <script src="js/stats.js" data-module="complex-plane"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Scatter Plots, Correlation and the Regression Line | Astro Ni Science Lab">散布圖、相關係數與迴歸直線｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 迴歸頁面專用的顏色代號（淺色＋深色；由 js/regression.js 讀取） */
+    :root { --rg-data: #0f766e; --rg-line: #1d4ed8; --rg-mine: #c2410c; --rg-sq: #db2777; --rg-pos: #2563eb; --rg-neg: #dc2626; --rg-mean: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --rg-data: #5eead4; --rg-line: #7aa7ff; --rg-mine: #fb923c; --rg-sq: #ff74b0; --rg-pos: #7aa7ff; --rg-neg: #ff8080; --rg-mean: #b9a0ff; }
+    }
+    :root[data-theme="dark"] { --rg-data: #5eead4; --rg-line: #7aa7ff; --rg-mine: #fb923c; --rg-sq: #ff74b0; --rg-pos: #7aa7ff; --rg-neg: #ff8080; --rg-mean: #b9a0ff; }
+
+    #cv { aspect-ratio: auto; height: 520px; touch-action: none; cursor: crosshair; }
+    #cv.del { cursor: not-allowed; }
+    #cv.locked { cursor: default; touch-action: pan-y; }
+    .rg button { min-height: 44px; }
+    .rg [hidden] { display: none !important; }
+    .rg .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rg .playbar button { flex: 1 1 auto; }
+    .rg .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rg .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .rg .slider input[type="range"] { height: 28px; margin: 0; }
+    .rg .checks label { min-height: 44px; }
+    .rg .checks input { width: 17px; height: 17px; }
+    .rg .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rg .panel { grid-template-columns: minmax(0, 1fr); }
+    .rg .panel > .card { min-width: 0; }
+    .tools, .sets { display: grid; gap: 6px; }
+    .tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sets { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); margin: 0 0 4px; }
+    .tools button, .sets button { padding: 6px 10px; line-height: 1.25; }
+    .tools button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    .sets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .sets .sub { grid-column: 1 / -1; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .chal { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .chal button { flex: 1 1 auto; }
+    .chal-msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; color: var(--muted); }
+    .chal-msg.ok { color: var(--rg-data); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #log { width: 100%; }
+    #log td, #log th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #log th:first-child, #log td:first-child { text-align: center; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .ov { text-decoration: overline; }
+    .legend .sq { width: 10px; height: 10px; border-radius: 2px; opacity: .55; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#probability&quot;>Mathematics · Probability and Statistics</a> / Scatter plots and regression"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#probability">數學・機率與統計</a> ／ 散布圖與迴歸直線</nav>
+      <h1 data-en="Scatter Plots, Correlation and the Regression Line">散布圖、相關係數與迴歸直線</h1>
+      <p data-en="Tap to add points and drag them around: the correlation coefficient r and the least-squares regression line follow every move. Each residual can be drawn as a real square, and the regression line is the one line that makes the total area of those squares as small as possible. Try to beat it by hand, see why four very different pictures can share the same r, and practise guessing r at a glance.">點一下加點、拖曳移動：相關係數 r 和最小平方迴歸直線跟著每一個動作改變。每個殘差都可以畫成真正的正方形，迴歸直線就是讓這些正方形總面積最小的那一條直線。試著用手畫贏它，看看為什麼四張完全不同的圖可以有同樣的 r，再練習一眼猜出 r。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: turn on “Squared residuals”, then drag a single point far away from the others — watch one huge square pull the whole line towards it.">試試看：打開「殘差平方」，再把一個點拖到離大家很遠的地方：一個超大的正方形會把整條直線拉過去。</p>
+    <div class="lab rg" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="散布圖畫布：點一下加點、拖曳移動點；畫出迴歸直線、殘差、殘差平方、平均點與相關係數的計量表。" data-en-aria-label="Scatter plot canvas: tap to add a point and drag points to move them; shows the regression line, residuals, squared residuals, the mean point and a gauge for the correlation coefficient."></canvas>
+        <div class="playbar">
+          <button id="undo" type="button" data-en="Undo">復原</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉所有的點與挑戰紀錄；勾選的顯示方式不變" data-en-title="Remove every point and the challenge record; the display options are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--rg-data)&quot;></i>Data"><i class="dot" style="background:var(--rg-data)"></i>資料點</span>
+          <span data-en-html="<i style=&quot;background:var(--rg-line)&quot;></i>Regression line"><i style="background:var(--rg-line)"></i>迴歸直線</span>
+          <span style="color:var(--rg-mine)" data-en-html="<i class=&quot;dash&quot;></i>My line"><i class="dash"></i>我的直線</span>
+          <span data-en-html="<i class=&quot;sq&quot; style=&quot;background:var(--rg-sq)&quot;></i>Squared residuals"><i class="sq" style="background:var(--rg-sq)"></i>殘差平方</span>
+          <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--rg-mean)&quot;></i>Mean point (<span class=&quot;ov&quot;>x</span>, <span class=&quot;ov&quot;>y</span>)"><i class="dot" style="background:var(--rg-mean)"></i>平均點 (<span class="ov">x</span>, <span class="ov">y</span>)</span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Points">點</h2>
+          <div class="tools" role="group" aria-label="點的工具" data-en-aria-label="Point tool">
+            <button type="button" data-tool="add" aria-pressed="true" data-en="Add and drag">加點與拖曳</button>
+            <button type="button" data-tool="del" aria-pressed="false" data-en="Delete points">刪除點</button>
+          </div>
+          <div class="checks">
+            <label><input id="snapC" type="checkbox"><span data-en="Snap to grid (steps of 0.5)">對齊格線（每 0.5 一格）</span></label>
+          </div>
+          <h3 class="sub" data-en="Example data">範例資料</h3>
+          <div class="sets" role="group" aria-label="範例資料" data-en-aria-label="Example data">
+            <button type="button" data-set="default" data-en="Starting set">一開始的點</button>
+            <button type="button" data-set="pos" data-en="Positive">正相關</button>
+            <button type="button" data-set="neg" data-en="Negative">負相關</button>
+            <button type="button" data-set="none" data-en="Hardly related">幾乎無關</button>
+            <p class="sub" data-en="Anscombe’s quartet (1973)">安斯康姆四重奏（1973）</p>
+            <button type="button" data-set="I" data-en="Anscombe I">安斯康姆 I</button>
+            <button type="button" data-set="II" data-en="Anscombe II">安斯康姆 II</button>
+            <button type="button" data-set="III" data-en="Anscombe III">安斯康姆 III</button>
+            <button type="button" data-set="IV" data-en="Anscombe IV">安斯康姆 IV</button>
+          </div>
+          <p class="hint" data-en="Tap an empty spot to add a point and drag a point to move it. On a keyboard: Enter picks what to move, the arrow keys move it.">點空白處加點，拖曳點可以移動。鍵盤：Enter 選要移動的東西，方向鍵移動。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Show">顯示</h2>
+          <div class="checks">
+            <label><input id="lineC" type="checkbox" checked><span data-en="Regression line">迴歸直線</span></label>
+            <label><input id="residC" type="checkbox"><span data-en="Residuals (vertical segments)">殘差（鉛直線段）</span></label>
+            <label><input id="sqC" type="checkbox"><span data-en="Squared residuals (squares)">殘差平方（正方形）</span></label>
+            <label><input id="rectC" type="checkbox"><span data-en="Products of deviations (rectangles)">離均差的乘積（長方形）</span></label>
+            <label><input id="zC" type="checkbox"><span data-en="Standardise (z-scores)">標準化（z 分數）</span></label>
+            <label><input id="mineC" type="checkbox"><span data-en="My line">我的直線</span></label>
+          </div>
+          <div id="mineBox" hidden>
+            <div class="slider"><label for="mm" data-en="My slope">我的斜率</label><output id="mmo"></output>
+              <input id="mm" type="range" min="-3" max="3" step="0.01" value="0" data-decimals="3"></div>
+            <div class="slider"><label for="mc" data-en="My intercept">我的截距</label><output id="mco"></output>
+              <input id="mc" type="range" min="-30" max="40" step="0.1" value="10" data-decimals="2"></div>
+            <p class="hint" data-en="With “My line” on, the residuals and squares belong to your line. Make the total area of the squares as small as you can.">打開「我的直線」時，殘差和正方形都是你的直線的。把正方形的總面積調到越小越好。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Number of points n">點數 n</dt><dd id="rN">—</dd>
+            <dt data-en-html="Means (<span class=&quot;ov&quot;>x</span>, <span class=&quot;ov&quot;>y</span>)">平均 (<span class="ov">x</span>, <span class="ov">y</span>)</dt><dd id="rM">—</dd>
+            <dt data-en="Standard deviations sx, sy">標準差 sx、sy</dt><dd id="rS">—</dd>
+            <dt data-en="Correlation coefficient r">相關係數 r</dt><dd id="rR">—</dd>
+            <dt data-en="Regression line">迴歸直線</dt><dd id="rL">—</dd>
+            <dt data-en="Least sum of squared residuals">最小的殘差平方和</dt><dd id="rE">—</dd>
+            <dt data-en="My line’s sum of squared residuals">我的直線的殘差平方和</dt><dd id="rY">—</dd>
+          </dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Challenge: guess r">挑戰：猜 r</h2>
+          <p class="hint" data-en="You get a new cloud of points with the numbers hidden. Guess its correlation coefficient; within 0.05 counts as a hit.">出一團新的點，數字都藏起來；猜它的相關係數，誤差 0.05 以內算猜中。</p>
+          <div class="slider"><label for="rg" data-en="My guess for r">我猜 r</label><output id="rgo"></output>
+            <input id="rg" type="range" min="-1" max="1" step="0.01" value="0" data-decimals="2" disabled></div>
+          <div class="chal">
+            <button id="newChal" type="button" data-en="New challenge">出一題</button>
+            <button id="guessBtn" type="button" class="primary" hidden data-en="Guess!">猜！</button>
+            <button id="quitChal" type="button" hidden data-en="Back to my points">回到我的點</button>
+          </div>
+          <p class="chal-msg" id="chalMsg" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="No challenges yet.">還沒有挑戰紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The mathematics behind it">背後的數學</h2>
+      <h3 data-en="Correlation coefficient">相關係數</h3>
+      <p data-en-html="For \(n\) data points \((x_i, y_i)\) with means \(\bar x, \bar y\), write \(x_i - \bar x\) and \(y_i - \bar y\) for the deviations from the mean. The correlation coefficient compares how the two deviations move together with how much each one varies on its own:">有 \(n\) 筆資料 \((x_i, y_i)\)，平均是 \(\bar x, \bar y\)；\(x_i - \bar x\)、\(y_i - \bar y\) 叫做離均差。相關係數比較兩個離均差「一起變動」的程度和它們各自的變動大小：</p>
+      <div class="formula">\[ r = \frac{\sum (x_i - \bar x)(y_i - \bar y)}{\sqrt{\sum (x_i - \bar x)^2}\,\sqrt{\sum (y_i - \bar y)^2}}, \qquad -1 \le r \le 1. \]</div>
+      <p data-en-html="Each product \((x_i - \bar x)(y_i - \bar y)\) is the signed area of the rectangle between the point and the mean point: positive (blue) in the upper-right and lower-left quarters, negative (red) in the other two. When blue wins, \(r &gt; 0\); when red wins, \(r &lt; 0\). \(|r| = 1\) exactly when all the points lie on one slanted line. Shifting the data or stretching an axis by a positive factor does not change \(r\), and \(r\) has no units.">每一個乘積 \((x_i - \bar x)(y_i - \bar y)\) 都是點和平均點之間那個長方形的「有號面積」：在右上、左下兩區是正的（藍色），另外兩區是負的（紅色）。藍色贏，\(r &gt; 0\)；紅色贏，\(r &lt; 0\)。所有點都在同一條斜直線上時，\(|r|\) 剛好是 1。把資料平移、或把某一軸乘上正數，\(r\) 都不變；\(r\) 沒有單位。</p>
+
+      <h3 data-en="The least-squares regression line">最小平方迴歸直線</h3>
+      <p data-en-html="For a line \(\hat y = mx + c\), the vertical miss \(e_i = y_i - \hat y_i\) at each point is its <strong>residual</strong>. Drawing \(e_i^2\) as a real square (both axes use the same unit on this page), the line that makes the total area of the squares smallest is">對直線 \(\hat y = mx + c\)，每個點鉛直方向差的 \(e_i = y_i - \hat y_i\) 叫做<strong>殘差</strong>。把 \(e_i^2\) 畫成真正的正方形（這一頁兩軸用同樣的單位長），讓正方形總面積最小的那條直線是</p>
+      <div class="formula">\[ \hat y - \bar y = r\,\frac{s_y}{s_x}\,(x - \bar x), \qquad \min \sum e_i^2 = (1 - r^2)\sum (y_i - \bar y)^2, \]</div>
+      <p data-en-html="where \(s_x, s_y\) are the standard deviations. The line always passes through the mean point \((\bar x, \bar y)\), and its residuals add up to zero. After standardising, \(z_x = \frac{x - \bar x}{s_x}\) and \(z_y = \frac{y - \bar y}{s_y}\), the regression line is simply \(z_y = r\,z_x\): its slope <em>is</em> the correlation coefficient, always less steep than 45°.">其中 \(s_x, s_y\) 是標準差。這條直線一定通過平均點 \((\bar x, \bar y)\)，殘差加起來是 0。標準化成 \(z_x = \frac{x - \bar x}{s_x}\)、\(z_y = \frac{y - \bar y}{s_y}\) 之後，迴歸直線就是 \(z_y = r\,z_x\)：斜率<em>就是</em>相關係數，永遠不會比 45° 陡。</p>
+      <p data-en-html="<strong>Why squares?</strong> Squaring treats misses above and below the line alike, punishes big misses much more than small ones — which is why one outlier can drag the whole line — and gives a single best line with a simple formula (found by setting the derivatives with respect to \(m\) and \(c\) to zero)."><strong>為什麼用平方？</strong>平方讓線上、線下的差一視同仁，大的差被懲罰得比小的多很多（所以一個離群值就能把整條線拉走），而且只有一條最好的直線、公式簡單（對 \(m\)、\(c\) 微分令它等於 0 就求得出來）。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Same numbers, different stories</strong>: Anscombe’s four data sets share the means, standard deviations, \(r \approx 0.816\) and the line \(\hat y = 3 + 0.5x\), yet one is a curve and two are ruled by a single point. Always look at the picture."><strong>數字一樣，故事不同</strong>：安斯康姆的四組資料平均、標準差、\(r \approx 0.816\)、迴歸直線 \(\hat y = 3 + 0.5x\) 都一樣，卻有一組是曲線、兩組被一個點左右。一定要看圖。</li>
+        <li data-en-html="<strong>\(r\) measures straight-line relations only</strong>: points on a symmetric parabola are perfectly related, yet \(r = 0\)."><strong>\(r\) 只量直線關係</strong>：在對稱拋物線上的點關係再明確不過，\(r\) 卻是 0。</li>
+        <li data-en-html="<strong>Correlation is not causation</strong>: a large \(r\) says the points line up, not that one quantity causes the other."><strong>相關不等於因果</strong>：\(r\) 很大只說明點排得像一條線，不代表一個量造成另一個量。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Standard deviations divide by \(n\), as in the senior-high textbook; \(r\) and the regression line come out the same whether you divide by \(n\) or \(n - 1\). The unit tests check the formulas against a hand-worked example, against Anscombe’s published numbers, and that no nearby line ever has a smaller sum of squares.">標準差和高中課本一樣除以 \(n\)；除以 \(n\) 或 \(n - 1\)，\(r\) 和迴歸直線都一樣。單元測試用手算的例子、安斯康姆論文裡的數字核對公式，也檢查附近的任何一條直線的平方和都不會更小。</li>
+        <li data-en="The “Positive”, “Negative” and “Hardly related” sets and the challenge clouds are random points built so that r is exactly the value shown (0.8, −0.8, 0.1). Anscombe’s quartet is the real published data.">「正相關」「負相關」「幾乎無關」與挑戰的點是亂數造出來的，而且特意讓 r 剛好等於設定值（0.8、−0.8、0.1）。安斯康姆四重奏是論文裡真正的資料。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Mathematics (grade 10) · data analysis: scatter plots, correlation coefficient, least-squares regression line.">課綱對應：高中數學（高一）・數據分析：散布圖、相關係數、最小平方迴歸直線。</li>
+        <li data-en="History: Francis Galton studied “regression towards the mean” in the heights of parents and children (1886); Karl Pearson gave the correlation coefficient its modern form (1896); Legendre (1805) and Gauss published the method of least squares.">歷史：高爾頓研究父母與子女的身高，提出「向平均數迴歸」（1886）；皮爾森給了相關係數現在的形式（1896）；最小平方法由勒壤得（1805）與高斯發表。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Anscombe%27s_quartet&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Anscombe’s quartet (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Pearson_correlation_coefficient&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Pearson correlation coefficient (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Anscombe%27s_quartet" target="_blank" rel="noopener">Anscombe’s quartet（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Pearson_correlation_coefficient" target="_blank" rel="noopener">Pearson correlation coefficient（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/regression-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/regression.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="regression"></script>
+  <script src="js/missions/regression.js"></script>
+  <script src="js/stats.js" data-module="regression"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
