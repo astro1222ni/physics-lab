@@ -139,6 +139,10 @@
     if (p >= 0.01) return sig(p, 3) + '%';
     return sci(p, 3) + '%';
   }
+  /** 淨浮力（以可以多吊起的質量表示）；負的代表升不起來，寫成「還差多少」 */
+  function liftText(m) {
+    return m >= 0 ? num(m, 2) + ' kg' : T('升不起來（還差 ', 'Will not rise (short by ') + num(-m, 2) + ' kg' + T('）', ')');
+  }
   function kmText(zkm) { return zkm < 10 ? num(zkm, 3) + ' km' : zkm < 100 ? num(zkm, 2) + ' km' : num(zkm, 1) + ' km'; }
   function zLabel(zkm) { return zkm * 1000 < 9999.5 ? num(zkm * 1000, 0) + ' m' : kmText(zkm); }
   function timeText(s) {
@@ -323,16 +327,28 @@
       const cxs = x0 + w * 0.22, cyb = yOf(L, 1.2);
       const cr = Math.max(4, Math.min(16, pxKm * 0.8));
       puff(cxs, cyb - cr * 0.6, cr, ca); puff(cxs + cr, cyb - cr * 0.3, cr * 0.8, ca); puff(cxs - cr * 0.9, cyb - cr * 0.2, cr * 0.7, ca);
-      // 積雨雲：從 1 km 長到對流層頂，頂端是砧狀
-      const xc = x0 + w * 0.7, ytop = yOf(L, TROPO - 0.3), ybot = yOf(L, 1);
-      const bw = Math.max(10, Math.min(w * 0.18, 30));
-      const cg = g.createLinearGradient(0, ybot, 0, ytop);
-      cg.addColorStop(0, D.alpha(D.dark ? '#64748b' : '#94a3b8', ca)); cg.addColorStop(1, D.alpha('#ffffff', ca));
-      g.fillStyle = cg;
-      g.beginPath();
-      g.moveTo(xc - bw, ybot); g.quadraticCurveTo(xc - bw * 0.7, (ybot + ytop) / 2, xc - bw * 0.5, ytop + 6);
-      g.quadraticCurveTo(xc - bw * 2.2, ytop + 4, xc - bw * 2.4, ytop); g.lineTo(xc + bw * 2.6, ytop); g.quadraticCurveTo(xc + bw * 2.3, ytop + 5, xc + bw * 0.5, ytop + 6);
-      g.quadraticCurveTo(xc + bw * 0.7, (ybot + ytop) / 2, xc + bw, ybot); g.closePath(); g.fill();
+      // 積雨雲：一團團往上堆的雲塔，頂到對流層頂就攤成砧狀（往右邊下風處拉長）
+      g.save();
+      g.beginPath(); g.rect(x0, yT, w, yB - yT); g.clip();
+      const xc = x0 + w * 0.62, ytop = yOf(L, TROPO - 0.15), ybot = yOf(L, 1.2);
+      const bw = Math.max(6, Math.min(w * 0.085, 15));
+      const ta = ca * 0.85;
+      const n = Math.max(6, Math.round((ybot - ytop) / (bw * 0.85)));
+      for (let i = 0; i <= n; i++) {
+        const u = i / n, y = ybot + (ytop + bw * 0.5 - ybot) * u;
+        const r = bw * (0.7 + 0.4 * u) * (0.92 + 0.16 * Math.sin(i * 2.3));
+        const dx = bw * 0.28 * Math.sin(i * 1.7 + 0.4);
+        puff(xc + dx - r * 0.42, y + r * 0.1, r * 0.8, ta);
+        puff(xc + dx + r * 0.42, y, r * 0.82, ta);
+      }
+      // 砧狀雲頂：貼著對流層頂的扁平雲層，底緣有一排小雲團
+      const aw = Math.min(bw * 3.6, w * 0.34), ax = xc + aw * 0.25, ay = ytop + bw * 0.4;
+      const ag = g.createLinearGradient(0, ytop - bw * 0.3, 0, ytop + bw * 0.9);
+      ag.addColorStop(0, D.alpha('#ffffff', ta)); ag.addColorStop(1, D.alpha(D.dark ? '#94a3b8' : '#d3dce8', ta * 0.9));
+      g.fillStyle = ag;
+      g.beginPath(); g.ellipse(ax, ay, aw, bw * 0.6, 0, 0, Math.PI * 2); g.fill();
+      for (let k = -3; k <= 3; k++) puff(ax + k * aw * 0.27, ay + bw * 0.35, bw * (0.55 - 0.05 * Math.abs(k)), ta * 0.8);
+      g.restore();
     }
     // 地面與山：玉山、聖母峰照比例畫
     const yg = yOf(L, 0);
@@ -418,7 +434,7 @@
       const ya = yOf(L, Math.min(b[1], state.range)), yb = yOf(L, b[0]);
       if (yb - ya < 20) return;
       const ink = D.dark ? D.shade(C[LAYERS[i].c], 0.35) : D.shade(C[LAYERS[i].c], -0.3);
-      D.pill(g, layerName(i), L.s0 + 6, Math.min(yb - 6, (ya + yb) / 2 + 8), ink, 'left', font('700'));
+      D.pill(g, layerName(i), L.s0 + 6, Math.min(yb - 6, ya + 22), ink, 'left', font('700'));   // 放在色帶頂端附近，不壓到山名
     });
     // 分界名稱：寫在溫度圖左上
     const bnames = [T('對流層頂', 'Tropopause'), T('平流層頂', 'Stratopause'), T('中氣層頂', 'Mesopause')];
@@ -476,9 +492,10 @@
       const ql = qText(s);
       g.font = font('700'); const qw = g.measureText(ql).width + 12;
       D.pill(g, ql, Math.max(L.q0 + qw / 2, Math.min(L.q1 - qw / 2, xQ)), ty, C['al-q'], 'center', font('700'));
-      D.pill(g, zLabel(state.z), L.s0 + 4, above ? yp - 4 : yp + 20, C.accent, 'left', font('700'));
+      // 高度標籤放天空欄右邊，不和左邊的層名重疊
+      D.pill(g, zLabel(state.z), L.s1 - 4, above ? yp - 4 : yp + 20, C.accent, 'right', font('700'));
     } else {
-      D.pill(g, '↑ ' + zLabel(state.z), L.s0 + 4, L.yTop + 18, C.accent, 'left', font('700'));
+      D.pill(g, '↑ ' + zLabel(state.z), L.s1 - 4, L.yTop + 18, C.accent, 'right', font('700'));
     }
   }
 
@@ -494,7 +511,8 @@
       const x = Math.round(tX(L, v)) + 0.5;
       g.strokeStyle = D.alpha(C.text, v === 0 ? 0.25 : 0.08); g.lineWidth = 1;
       g.beginPath(); g.moveTo(x, L.yTop); g.lineTo(x, L.yBot); g.stroke();
-      D.haloText(g, num(v, 0), x, L.yBot + 11, C.muted, 'center', 'middle', font('500', -0.5));
+      // 太靠近面板左右邊界的刻度數字不寫，免得和隔壁面板的數字擠在一起
+      if (x > L.t0 + 12 && x < L.t1 - 12) D.haloText(g, num(v, 0), x, L.yBot + 11, C.muted, 'center', 'middle', font('500', -0.5));
     }
     D.haloText(g, T('溫度（°C）', 'Temperature (°C)'), (L.t0 + L.t1) / 2, L.yBot + 26, C['al-temp'], 'center', 'middle', font('600'));
     g.save();
@@ -531,7 +549,7 @@
         const x = Math.round(qX(L, Math.pow(10, e), P)) + 0.5;
         g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
         g.beginPath(); g.moveTo(x, L.yTop); g.lineTo(x, L.yBot); g.stroke();
-        if ((e - P.a) % every === 0 && (!L.narrow || nd <= 5 || (e - P.a) % (every * 2) === 0)) D.supText(g, '10', num(e, 0), x, L.yBot + 15, C.muted, f2, 'center');
+        if (x > L.q0 + 12 && x < L.q1 - 12 && (e - P.a) % every === 0 && (!L.narrow || nd <= 5 || (e - P.a) % (every * 2) === 0)) D.supText(g, '10', num(e, 0), x, L.yBot + 15, C.muted, f2, 'center');
       }
     } else {
       const st = niceStep(P.b - P.a, L.narrow ? 2 : 4);
@@ -539,11 +557,11 @@
         const x = Math.round(qX(L, v, P)) + 0.5;
         g.strokeStyle = D.alpha(C.text, 0.08); g.lineWidth = 1;
         g.beginPath(); g.moveTo(x, L.yTop); g.lineTo(x, L.yBot); g.stroke();
-        D.haloText(g, num(v, 0), x, L.yBot + 11, C.muted, 'center', 'middle', f2);
+        if (x > L.q0 + 12 && x < L.q1 - 12) D.haloText(g, num(v, 0), x, L.yBot + 11, C.muted, 'center', 'middle', f2);
       }
     }
     const Q = QDEF[state.q];
-    D.haloText(g, T(Q.zh, Q.en) + '（' + Q.unit + '）', (L.q0 + L.q1) / 2, L.yBot + 28, C['al-q'], 'center', 'middle', font('600'));
+    D.haloText(g, T(Q.zh, Q.en) + T('（', ' (') + Q.unit + T('）', ')'), (L.q0 + L.q1) / 2, L.yBot + 28, C['al-q'], 'center', 'middle', font('600'));
     g.save();
     g.beginPath(); g.rect(L.q0, L.yTop, L.q1 - L.q0, L.yBot - L.yTop); g.clip();
     const pl = function (pts, color, w, dash) {
@@ -819,14 +837,14 @@
       setHTML('bV', state.bstate === 'burst' ? T('—（已爆破）', '— (burst)') : num(st.v, 2) + ' m/s');
       setHTML('bD', num(st.D, 2) + ' m ／ ' + num(b.burstD, 2) + ' m');
       setHTML('bVol', num(st.V, st.V < 100 ? 2 : 0) + ' m³');
-      setHTML('bL', num(st.freeLift, 2) + ' kg');
+      setHTML('bL', liftText(st.freeLift));
       setHTML('bT', timeText(b.t));
     } else {
       setHTML('bZ', T('在地面', 'on the ground'));
       setHTML('bV', '—');
       setHTML('bD', num(state.D0, 2) + ' m ／ ' + num(K.BALLOONS[state.btype].burst, 2) + ' m');
       setHTML('bVol', num(Math.PI * Math.pow(state.D0, 3) / 6, 2) + ' m³');
-      setHTML('bL', num(st0.freeLift, 2) + ' kg');
+      setHTML('bL', liftText(st0.freeLift));
       setHTML('bT', '—');
     }
     const last = state.flights.slice(-3).reverse();

@@ -48,17 +48,6 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x000000, 0);
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(34, 1.6, 0.005, 100);
-    camera.up.set(0, 0, 1);
-    const controls = new lib.OrbitControls(camera, canvas);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.12;
-    controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
-    controls.minDistance = 1.25;
-    controls.maxDistance = 9;
-
     // 臺灣（23.5°N、121°E）的位置與當地的東、北方向
     const V = function (x, y, z) { return new THREE.Vector3(x, y, z); };
     const dirOf = function (lat, lon) { return V(Math.cos(lat * DEG) * Math.cos(lon * DEG), Math.cos(lat * DEG) * Math.sin(lon * DEG), Math.sin(lat * DEG)); };
@@ -66,8 +55,21 @@
     const EAST = V(-Math.sin(121 * DEG), Math.cos(121 * DEG), 0);
     const NORTH = new THREE.Vector3().crossVectors(N0, EAST).normalize();
 
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(34, 1.6, 0.005, 100);
+    // 畫面的「上」＝臺灣的鉛直方向：從側面看，高度柱是直立的（OrbitControls 建立時就讀 camera.up，所以要先設）
+    camera.up.copy(N0);
+    const controls = new lib.OrbitControls(camera, canvas);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.12;
+    controls.rotateSpeed = 0.7;
+    controls.enablePan = false;
+    controls.minDistance = 0.45;
+    controls.maxDistance = 9;
+
+
     // 太陽：從臺灣的東南上方照過來（下午，晝夜交界在畫面上看得到）
-    scene.add(new THREE.HemisphereLight(0x8fa8c8, 0x101820, 0.22));
+    scene.add(new THREE.HemisphereLight(0x9fb6d4, 0x18222e, 0.5));
     const sun = new THREE.DirectionalLight(0xffffff, 2.5);
     sun.position.copy(dirOf(-8, 160).multiplyScalar(6));
     scene.add(sun);
@@ -219,6 +221,24 @@
       fitLabel(sp);
       return sp;
     }
+    // 釘在高度柱上的標籤：每一格依相機的左右方向偏移固定的像素，從哪個方向看都不會疊在柱子上
+    const pinned = [];
+    function pin(sp, zkm, side, px, keepFar) { sp.userData.pin = { z: zkm, side: side, px: px, keepFar: !!keepFar }; pinned.push(sp); return sp; }
+    const tmpR = new THREE.Vector3(), tmpP = new THREE.Vector3();
+    function placeLabels() {
+      camera.updateMatrixWorld();
+      tmpR.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
+      const k = 2 * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, ch);
+      for (let i = pinned.length - 1; i >= 0; i--) {
+        const sp = pinned[i];
+        if (!sp.parent) { pinned.splice(i, 1); continue; }
+        const q = sp.userData.pin;
+        tmpP.copy(N0).multiplyScalar(rOf(q.z));
+        const d = camera.position.distanceTo(tmpP);
+        sp.position.copy(tmpP).addScaledVector(tmpR, q.side * q.px * d * k);
+        sp.visible = q.keepFar || d < 2.4;   // 遠看整個地球時，柱子太短，層名會擠成一團，只留「臺灣」
+      }
+    }
     function fitLabel(sp) {
       const k = 2 * Math.tan(camera.fov * Math.PI / 360) / Math.max(1, ch);
       sp.scale.set(sp.userData.lw * k, sp.userData.lh * k, 1);
@@ -231,11 +251,12 @@
     function buildLayerLabels() {
       disposeObject(layerLabels); layerLabels.clear();
       const mids = [5.5, 31, 68.5, 103];
+      // 層名在柱子右邊，臭氧層與探測點在左邊；臺灣寫在柱腳下方
       mids.forEach(function (z, i) {
-        layerLabels.add(label(B.layerName(i), LIGHT[i], at(z).add(EAST.clone().multiplyScalar(0.03)), false));
+        layerLabels.add(pin(label(B.layerName(i), LIGHT[i], at(z), false), z, 1, 12));
       });
-      layerLabels.add(label(T('臭氧層', 'Ozone layer'), '#d8b4fe', at(25).add(EAST.clone().multiplyScalar(-0.03)), true));
-      layerLabels.add(label(T('臺灣', 'Taiwan'), '#f1f5f9', N0.clone().multiplyScalar(1.004).add(EAST.clone().multiplyScalar(-0.025)), true));
+      layerLabels.add(pin(label(T('臭氧層', 'Ozone layer'), '#d8b4fe', at(25), true), 25, -1, 12));
+      layerLabels.add(pin(label(T('臺灣', 'Taiwan'), '#f1f5f9', at(-9), false), -9, 1, 4, true));
     }
 
     // ---------- 探測點、參考點、氣球 ----------
@@ -276,7 +297,7 @@
       if (pk !== labelKey) {
         labelKey = pk;
         disposeObject(probeLabel); probeLabel.clear();
-        probeLabel.add(label(B.zLabel(state.z) + '・' + B.cel(s.T) + '・' + B.pText(s.P), '#ffffff', at(state.z).add(EAST.clone().multiplyScalar(-0.03)), true));
+        probeLabel.add(pin(label(B.zLabel(state.z) + '・' + B.cel(s.T) + '・' + B.pText(s.P), '#ffffff', at(state.z), true), state.z, -1, 16));
       }
       // 氣球：照直徑放大（示意，放大很多倍），放在柱子北邊一點
       const b = state.balloon;
@@ -291,7 +312,7 @@
       setHud('probe2', T('頭上還有 ', 'Air above: ') + (s.above >= 0.001 ? B.num(s.above * 100, s.above >= 0.1 ? 1 : 3) + '%' : T('不到 0.1%', 'under 0.1%')) + T(' 的空氣', ''));
       setHud('layer', B.layerName(s.layer));
       setHud('balloon', b ? (state.bstate === 'burst' ? T('氣球在 ', 'Balloon burst at ') + B.zLabel(b.z / 1000) + T(' 爆破', '') : T('氣球 ', 'Balloon ') + B.zLabel(b.z / 1000)) : '');
-      setHud('note', narrow ? T('大氣厚度放大 20 倍', 'Atmosphere ×20 thicker') : T('大氣的厚度放大 20 倍；氣球也放大畫', 'Atmosphere drawn 20 times thicker; balloon enlarged'));
+      setHud('note', narrow ? T('大氣厚度放大 20 倍', 'Atmosphere ×20 thicker') : T('大氣的厚度放大 20 倍，氣球也畫大了', 'Atmosphere drawn 20 times thicker; balloon enlarged'));
     }
 
     // ---------- 相機 ----------
@@ -315,13 +336,15 @@
     function presetFor(kind) {
       const k = camera.aspect < 1.2 ? 1.5 : 1;
       if (kind === 'taiwan') {
-        const tgt = at(45);
-        return { pos: tgt.clone().add(EAST.clone().multiplyScalar(0.75 * k)).add(NORTH.clone().multiplyScalar(-0.25 * k)).add(N0.clone().multiplyScalar(0.12)), tgt: tgt };
+        // 從東南方的高處斜斜往下看臺灣與高度柱
+        const tgt = at(50);
+        return { pos: tgt.clone().add(N0.clone().multiplyScalar(0.48 * k)).add(EAST.clone().multiplyScalar(0.42 * k)).add(NORTH.clone().multiplyScalar(-0.5 * k)), tgt: tgt };
       }
-      if (kind === 'far') return { pos: N0.clone().multiplyScalar(4.2 * k).add(NORTH.clone().multiplyScalar(1.6 * k)), tgt: V(0, 0, 0) };
+      // 整個地球：從向陽的一側看，臺灣在畫面上半部
+      if (kind === 'far') return { pos: N0.clone().multiplyScalar(0.55).add(sun.position.clone().normalize().multiplyScalar(0.75)).normalize().multiplyScalar(4.2 * k), tgt: V(0, 0, 0) };
       // 地球邊緣：從側面看高度柱，柱子立在地平線上
-      const tgt = at(40);
-      return { pos: tgt.clone().add(EAST.clone().multiplyScalar(2.1 * k)).add(N0.clone().multiplyScalar(0.25)).add(NORTH.clone().multiplyScalar(-0.35 * k)), tgt: tgt };
+      const tgt = at(55);
+      return { pos: tgt.clone().add(EAST.clone().multiplyScalar(1.2 * k)).add(N0.clone().multiplyScalar(0.03)).add(NORTH.clone().multiplyScalar(-0.3 * k)), tgt: tgt };
     }
     function camTo(kind, animate) {
       const P = presetFor(kind);
@@ -348,6 +371,7 @@
       if (renderer.getPixelRatio() !== want) { renderer.setPixelRatio(want); renderer.setSize(cw, ch, false); }
       stepCam();
       moving = controls.update();
+      placeLabels();
       renderer.render(scene, camera);
     }
     const ro = window.ResizeObserver ? new ResizeObserver(function () { resize3(); }) : null;
