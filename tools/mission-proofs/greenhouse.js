@@ -118,6 +118,8 @@ expect('10 900 ppm 還不夠 → ' + f2(s.T) + ' K', !hits('10', s));
 s = page({ wv: true, ice: true }); s.sun = 95; jump(s); s.sun = 100; jump(s); s.co2 = 2000; jump(s);
 expect('10 開水氣回饋時 2000 ppm 也融不掉 → ' + f2(s.T) + ' K', !hits('10', s));
 expect('10 點圖直接放到 290 K 不算', !hits('10', jump(setTemp(page({ ice: true, co2: 950 }), 290))));
+s = page({ ice: true }); s.sun = 86; jump(s); s.sun = 100; jump(s); s.eps = 0.85; jump(s);
+expect('10 試玩回報 C5：CO₂ 不動、ε₀ 調到 0.85 融化 → ' + f2(s.T) + ' K，不算（要只靠 CO₂）', s.T >= 285 && !hits('10', s));
 // 11 年輕太陽
 s = page({ ice: true, eps: 0.95 }); s.sun = 75; jump(s);
 expect('11 先把 ε₀ 調到 0.95 再調暗太陽 → ' + f2(s.T) + ' K', hits('11', s));

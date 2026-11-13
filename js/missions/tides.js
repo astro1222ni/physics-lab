@@ -52,8 +52,8 @@
     {
       id: 'tides-6', level: 4,
       title: { zh: '一高一低', en: 'One high, one low' },
-      desc: { zh: '調整月球赤緯與觀測點緯度，讓同一天相連的兩次高潮相差 20 cm 以上（日潮不等）。', en: 'Adjust the Moon’s declination and the site’s latitude so that two high tides in a row on the same day differ by at least 20 cm (diurnal inequality).' },
-      check: function (ev) { return paired(ev) && ev.data.gap < 20 && Math.abs(ev.data.dh) >= 0.2; }
+      desc: { zh: '調整月球赤緯與觀測點緯度，讓同一天相連的兩次高潮相差 20 cm 以上（日潮不等），而且兩次高潮都還在平均海面以上。', en: 'Adjust the Moon’s declination and the site’s latitude so that two high tides in a row on the same day differ by at least 20 cm (diurnal inequality), with both high tides still above mean sea level.' },
+      check: function (ev) { return paired(ev) && ev.data.gap < 20 && Math.abs(ev.data.dh) >= 0.2 && ev.data.h > 0 && ev.data.prevH > 0; }
     },
     {
       id: 'tides-7', level: 5,
@@ -82,7 +82,7 @@
     {
       id: 'tides-11', level: 10,
       title: { zh: '隆起消失', en: 'The bulges vanish' },
-      desc: { zh: '加入太陽，讓月球留在天赤道上（赤緯 0°，誤差 0.3° 以內），只調整月球的位置與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: 'With the Sun included and the Moon kept on the celestial equator (declination 0°, within 0.3°), adjust only the Moon’s position and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
+      desc: { zh: '先按暫停，加入太陽，讓月球留在天赤道上（赤緯 0°，誤差 0.3° 以內），只調整月球的位置與距離，讓赤道上的潮差小於 1 cm：月球與太陽的半日潮正好互相抵消。', en: 'Pause first. With the Sun included and the Moon kept on the celestial equator (declination 0°, within 0.3°), adjust only the Moon’s position and distance until the tidal range on the equator is under 1 cm: the Moon’s and the Sun’s semidiurnal tides cancel exactly.' },
       check: function (ev) { return isState(ev) && ev.data.sun && Math.abs(ev.data.dec) <= 0.3 && ev.data.eqRange < 0.01; }
     },
     {

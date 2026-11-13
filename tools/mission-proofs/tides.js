@@ -112,11 +112,15 @@ expect(4, [cam('side', 15), cam('top', 25)], false, 'δ = 15° 側看、δ = 25�
 }
 // 6 一高一低
 {
-  const hs = highEvs({ sun: false, lat: 30, dec: 25 }, 2);
-  expect(6, hs, true, '關掉太陽，緯度 30°、赤緯 25°：相連高潮差 ' + hs.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、'));
+  const hs = highEvs({ sun: false, lat: 23.5, dec: 20 }, 2);
+  expect(6, hs, true, '關掉太陽，緯度 23.5°、赤緯 20°：相連高潮差 ' + hs.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、') + '，高潮最低 ' + cm(Math.min.apply(null, hs.map(e => e.data.h))));
   const hs2 = highEvs({ lat: 23.5, dec: 25 }, 2);
   expect(6, hs2, true, '有太陽，緯度 23.5°、赤緯 25°：' + hs2.filter(e => e.data.dh != null).map(e => cm(Math.abs(e.data.dh))).join('、'));
+  expect('h2', hs.concat(hs2), false, '上面兩個任務 6 的達成例都不會順便完成隱藏 h2（兩次高潮都在平均海面以上）');
   expect(6, highEvs({ sun: false, lat: 0, dec: 25 }, 2), false, '赤道上沒有日潮不等');
+  const old = highEvs({ sun: false, lat: 30, dec: 25 }, 2);
+  expect(6, old, false, '試玩回報 C17 的做法（關掉太陽，緯度 30°、赤緯 25°）：第二次高潮 ' + cm(Math.min.apply(null, old.map(e => e.data.h))) + '，不在平均海面以上，不算');
+  expect(6, highEvs({ sun: false, lat: 50, dec: 25 }, 2), false, '緯度 50°：差很大，但第二次高潮在平均海面以下');
 }
 // 7 赤道的公平
 {

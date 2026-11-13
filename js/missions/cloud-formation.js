@@ -28,7 +28,7 @@
     {
       id: 'cloud-formation-1', level: 1,
       title: { zh: '雲出現了', en: 'A cloud appears' },
-      desc: { zh: '讓風把氣塊推上山坡（播放中），看它在雲底冷到露點、長出雲來。', en: 'Let the wind carry the parcel up the slope (while playing) until it cools to its dew point at the cloud base and a cloud forms.' },
+      desc: { zh: '先動手調一個條件（任何一個滑桿都可以），再讓風把氣塊推上山坡（播放中），看它在雲底冷到露點、長出雲來。', en: 'First change any setting yourself (any slider will do), then let the wind carry the parcel up the slope (while playing) until it cools to its dew point at the cloud base and a cloud forms.' },
       check: function (ev) { return ev.type === 'pass'; }
     },
     {
