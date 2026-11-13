@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Page Replacement: FIFO, LRU and LFU | Astro Ni Science Lab">分頁置換：FIFO、LRU、LFU｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 分頁置換頁面專用的顏色代號（淺色＋兩組深色；由 js/page-replacement.js 讀取）
+       fifo／lru／lfu／opt：四種方法（再配形狀與線型區分）；hit 命中、fault 缺頁；c0–c9：頁面的顏色（頁號除以 10 的餘數，再配頁號文字） */
+    :root { --pr-fifo: #2563eb; --pr-lru: #7c3aed; --pr-lfu: #c2410c; --pr-opt: #0f766e; --pr-hit: #15803d; --pr-fault: #dc2626; --pr-slot: #94a3b8;
+      --pr-c0: #3b6fd8; --pr-c1: #d9822b; --pr-c2: #2f9e6e; --pr-c3: #c2415b; --pr-c4: #7b5bd6; --pr-c5: #1b98b0; --pr-c6: #b8860b; --pr-c7: #5f7d1b; --pr-c8: #c0569e; --pr-c9: #5a6b80; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --pr-fifo: #6ea8ff; --pr-lru: #b99bff; --pr-lfu: #fb923c; --pr-opt: #2dd4bf; --pr-hit: #4ade80; --pr-fault: #f87171; --pr-slot: #64748b;
+        --pr-c0: #5b8def; --pr-c1: #f0a04b; --pr-c2: #45c08a; --pr-c3: #e36681; --pr-c4: #9d84ef; --pr-c5: #33b8d1; --pr-c6: #d9a83a; --pr-c7: #8db33a; --pr-c8: #df7fbf; --pr-c9: #8496ad; }
+    }
+    :root[data-theme="dark"] { --pr-fifo: #6ea8ff; --pr-lru: #b99bff; --pr-lfu: #fb923c; --pr-opt: #2dd4bf; --pr-hit: #4ade80; --pr-fault: #f87171; --pr-slot: #64748b;
+      --pr-c0: #5b8def; --pr-c1: #f0a04b; --pr-c2: #45c08a; --pr-c3: #e36681; --pr-c4: #9d84ef; --pr-c5: #33b8d1; --pr-c6: #d9a83a; --pr-c7: #8db33a; --pr-c8: #df7fbf; --pr-c9: #8496ad; }
+
+    /* 畫布高度由程式依寬度、框數與字串長度決定；手機上可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 220px; touch-action: pan-y; cursor: default; margin-top: 6px; }
+    #cv3 { aspect-ratio: auto; height: 240px; touch-action: pan-y; cursor: pointer; margin-top: 6px; }
+    .pr [hidden] { display: none !important; }
+    .pr .panel { grid-template-columns: minmax(0, 1fr); }
+    .pr .panel > .card { min-width: 0; }
+    .pr .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .pr .slider input[type="range"] { height: 28px; margin: 0; }
+    .pr .checks label { min-height: 44px; }
+    .pr .checks input { width: 17px; height: 17px; flex: none; }
+    /* 播放列 */
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; padding: 7px 10px; }
+    .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pr .stage .status { margin: 6px 4px 0; min-height: 2.9em; }
+    .legend .sym { display: inline-block; min-width: 1.2em; text-align: center; font-weight: 800; margin-right: 4px; }
+    .legend .sym.hit { color: var(--pr-hit); }
+    .legend .sym.fault { color: var(--pr-fault); }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 16px 4px 0; flex-wrap: wrap; }
+    .chart-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .chart-head span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    /* 歷程表的方法選擇 */
+    .tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 6px 0 0; }
+    .tabs button { min-height: 44px; padding: 4px 6px; font-weight: 600; }
+    .tabs button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+    /* 參考字串 */
+    .refrow { display: flex; gap: 8px; align-items: stretch; margin: 4px 0 0; }
+    .refrow input { flex: 1 1 auto; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; letter-spacing: .02em;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    .refrow input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .refrow input.bad { border-color: var(--pr-fault); }
+    .refrow button { flex: 0 0 auto; }
+    .referr { font-size: calc(13px * var(--fs, 1)); color: var(--pr-fault); margin: 4px 0 0; min-height: 1.2em; }
+    .rowline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0 0; }
+    .rowline button { flex: 1 1 auto; }
+    .rowline select { flex: 1 1 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(14px * var(--fs, 1)); padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .seedinfo { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    /* 讀數與表格 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq-note { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 0; }
+    table.nums { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.nums th, table.nums td { padding: 4px 5px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    table.nums th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); white-space: normal; vertical-align: bottom; line-height: 1.25; }
+    table.nums th:first-child, table.nums td:first-child { text-align: left; }
+    table.nums td.best { color: var(--pr-hit); font-weight: 700; }
+    table.nums td.str { text-align: left; white-space: normal; overflow-wrap: anywhere; max-width: 11em; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    table.nums .chip { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#system&quot;>Information Technology · Computer Systems</a> / Page replacement"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#system">資訊科技・計算機系統</a> ／ 分頁置換</nav>
+      <h1 data-en="Page Replacement: FIFO, LRU and LFU">分頁置換：FIFO、LRU、LFU</h1>
+      <p data-en="A program is cut into pages, but only a few of them fit into memory at once. Every time the program needs a page that is not there — a page fault — the operating system must fetch it from the disk and throw another page out. Which one? Watch first-in-first-out, least-recently-used, least-frequently-used and the clairvoyant optimal algorithm work through the same reference string side by side, count their page faults, and discover why one more frame can make things worse.">程式被切成一頁一頁，記憶體卻一次只放得下其中幾頁。每當程式要用的那一頁不在記憶體裡——這叫缺頁——作業系統就得從磁碟把它搬進來，再把另一頁請出去。要請誰出去？看先進先出（FIFO）、最近最少使用（LRU）、最不常使用（LFU）和能預知未來的最佳演算法（OPT）並排處理同一串參考字串，數一數各自缺頁幾次，再找找看：為什麼多給一個框，有時反而更糟？</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play”, then choose the example “Belady’s classic string” and compare 3 frames with 4 frames in the chart of frames and page faults.">試試看：按「播放」看四種方法怎麼換頁，再選範例「Belady 的經典字串」，在「框數與缺頁次數」圖上比一比 3 個框和 4 個框。</p>
+    <div class="lab pr" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="分頁置換畫布：最上面是參考字串，游標指著這一步要用的頁；下面四條是 FIFO、LRU、LFU、OPT 的記憶體框，每個框裡是一頁，框下面寫著各方法用來挑犧牲頁的數值；命中打勾、缺頁打叉，被換出的頁會飛出去。左右方向鍵可以一步一步前進或後退。" data-en-aria-label="Page-replacement canvas: the reference string at the top, with a cursor on the page used in this step; below it four rows of memory frames for FIFO, LRU, LFU and OPT, one page per frame, with the value each algorithm uses to pick a victim written under each frame; a hit gets a tick, a fault gets a cross, and the evicted page flies out. Use the left and right arrow keys to step backwards and forwards."></canvas>
+        <div class="playbar">
+          <button id="back" type="button" data-en="Step back">上一步</button>
+          <button id="step" type="button" data-en="Step" title="處理參考字串裡的下一頁" data-en-title="Handle the next page of the reference string">單步</button>
+          <button id="play" type="button" class="primary" data-en="Play">播放</button>
+          <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="reset" type="button" data-en="Restart">重來</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表與圖上跑過的點，回到第 0 步；參考字串與設定不變" data-en-title="Remove the records and the points you have run on the chart and go back to step 0; the reference string and the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<span class=&quot;sym hit&quot;>✓</span>Hit: the page is already in memory"><span class="sym hit">✓</span>命中：這一頁已經在記憶體裡</span>
+          <span data-en-html="<span class=&quot;sym fault&quot;>✗</span>Page fault: load it (and evict one if memory is full)"><span class="sym fault">✗</span>缺頁：要載入（記憶體滿了就換出一頁）</span>
+          <span data-en-html="<span class=&quot;sym&quot;>↗</span>Evicted page"><span class="sym">↗</span>被換出的頁</span>
+          <span data-en-html="Under each frame — FIFO: step it was loaded; LRU: step it was last used; LFU: how many uses; OPT: step of its next use (∞ = never again)">框下的數字——FIFO：第幾步載入；LRU：最後在第幾步用到；LFU：用了幾次；OPT：下次在第幾步用到（∞ 表示不再用到）</span>
+        </div>
+
+        <div class="chart-head">
+          <h2 data-en="Step by step, frame by frame">歷程表</h2>
+          <span id="histNote"></span>
+        </div>
+        <div class="tabs" id="tabs" role="group" aria-label="歷程表要看的方法" data-en-aria-label="Algorithm shown in the history table">
+          <button type="button" data-algo="fifo" aria-pressed="true">FIFO</button>
+          <button type="button" data-algo="lru" aria-pressed="false">LRU</button>
+          <button type="button" data-algo="lfu" aria-pressed="false">LFU</button>
+          <button type="button" data-algo="opt" aria-pressed="false">OPT</button>
+        </div>
+        <canvas id="cv2" aria-label="歷程表：課本常見的表格，一欄是一步，最上面是參考的頁，下面每一列是一個框在那一步之後放著哪一頁；缺頁的那一欄打叉、新載入的頁加粗，命中打勾，最下面一列是被換出的頁。" data-en-aria-label="History table, as in the textbooks: one column per step, the referenced page at the top, then one row per frame showing which page it holds after that step; fault columns are crossed and the newly loaded page is bold, hits are ticked, and the bottom row shows the evicted page."></canvas>
+
+        <div class="chart-head">
+          <h2 data-en="Frames and page faults">框數與缺頁次數</h2>
+          <span id="curveNote"></span>
+        </div>
+        <canvas id="cv3" aria-label="框數與缺頁次數圖：橫軸是框數 1 到 7，縱軸是同一串參考字串的缺頁次數；四條折線是 FIFO、LRU、LFU、OPT，各有自己的顏色、形狀與線型；多一個框反而缺頁更多的地方（Belady 異常）用紅色標出；你實際跑到最後過的點是實心的。點一下圖可以換成那個框數。" data-en-aria-label="Chart of frames and page faults: the number of frames from 1 to 7 across, the page faults for the same reference string up the side; four lines for FIFO, LRU, LFU and OPT, each with its own colour, marker and dash; places where one more frame gives more faults (Belady’s anomaly) are marked in red; points you have actually run to the end are filled. Tap the chart to switch to that number of frames."></canvas>
+        <div class="legend" id="curveLegend">
+          <span style="color:var(--pr-fifo)" data-en-html="<span class=&quot;sym&quot;>●</span>FIFO"><span class="sym">●</span>FIFO</span>
+          <span style="color:var(--pr-lru)" data-en-html="<span class=&quot;sym&quot;>■</span>LRU"><span class="sym">■</span>LRU</span>
+          <span style="color:var(--pr-lfu)" data-en-html="<span class=&quot;sym&quot;>▲</span>LFU"><span class="sym">▲</span>LFU</span>
+          <span style="color:var(--pr-opt)" data-en-html="<span class=&quot;sym&quot;>◆</span>OPT"><span class="sym">◆</span>OPT</span>
+          <span style="color:var(--pr-fault)" data-en-html="<span class=&quot;sym&quot;>↑</span>Belady’s anomaly"><span class="sym">↑</span>Belady 異常</span>
+        </div>
+        <p class="chart-cap" data-en="Hollow markers are computed; a marker fills in once you have run that number of frames to the end. LRU and OPT never go up as frames are added; FIFO sometimes does.">空心的點是算出來的；用那個框數實際跑到最後，點就變成實心。框數變多時，LRU 和 OPT 的缺頁只會變少或不變；FIFO 卻不一定。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Reference string">參考字串</h2>
+          <div class="refrow">
+            <input id="refs" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="200" aria-label="參考字串：頁號 0–99，用空白或逗號分開" data-en-aria-label="Reference string: page numbers 0–99 separated by spaces or commas">
+            <button id="apply" type="button" data-en="Apply">套用</button>
+          </div>
+          <p class="referr" id="refErr" aria-live="polite"></p>
+          <div class="rowline">
+            <select id="preset" aria-label="範例" data-en-aria-label="Examples">
+              <option value="" data-en="Examples…">範例…</option>
+              <option value="silb" data-en="Textbook string (Silberschatz, 20 pages)">課本的參考字串（Silberschatz，20 頁）</option>
+              <option value="belady" data-en="Belady’s classic string">Belady 的經典字串</option>
+              <option value="loop" data-en="A loop: 1 2 3 4, three times">繞圈子：1 2 3 4 繞三圈</option>
+            </select>
+            <button id="rand" type="button" data-en="Random">隨機產生</button>
+            <button id="rev" type="button" data-en="Reverse">倒過來</button>
+          </div>
+          <div class="slider"><label for="len" data-en="Length of a random string">隨機字串的長度</label><output id="leno"></output>
+            <input id="len" type="range" min="6" max="30" step="1" value="20" data-decimals="0"></div>
+          <div class="slider"><label for="kinds" data-en="Different pages in a random string">隨機字串的頁面種類</label><output id="kindso"></output>
+            <input id="kinds" type="range" min="2" max="10" step="1" value="6" data-decimals="0"></div>
+          <p class="seedinfo" id="seedInfo"></p>
+          <p class="hint" data-en="Up to 30 page numbers from 0 to 99, separated by spaces or commas; a run of digits with no separators is one page per digit. Moving the two sliders makes a new random string.">最多 30 個頁號（0–99），用空白或逗號分開；一整串沒有分隔的數字，就一個數字一頁。拉動下面兩個滑桿，會產生新的隨機字串。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Memory">記憶體</h2>
+          <div class="slider"><label for="frames" data-en="Frames">框數</label><output id="frameso"></output>
+            <input id="frames" type="range" min="1" max="7" step="1" value="3" data-decimals="0"></div>
+          <div class="checks"><label><input id="keep" type="checkbox"><span data-en="LFU: keep a page’s count after it is evicted">LFU：換出後保留次數（不歸零）</span></label></div>
+          <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0.5" max="6" step="0.5" value="1.5" data-decimals="1"></div>
+          <p class="hint" data-en="Ties: LFU and OPT evict, among equally good pages, the one used least recently. By default LFU counts the uses since the page was loaded and starts again from zero when it is evicted.">平手時：LFU 與 OPT 都在一樣差的頁之間，換出最久沒被用到的那一頁。LFU 預設從載入那一刻開始數次數，被換出就歸零。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+          <div class="tablewrap"><table class="nums" id="sumTable"></table></div>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note" id="eqNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Records">紀錄</h2>
+          <div class="tablewrap"><table class="nums" id="logTable"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every run that reaches the end adds a row here. “Clear all” removes them.">每次跑到最後，就在這裡加一列。按「全部清除」才會清掉。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The principles behind it">背後的原理</h2>
+      <h3 data-en="Pages, frames and page faults">頁、框與缺頁</h3>
+      <p data-en-html="In <strong>virtual memory</strong> a program’s address space is cut into equal-sized <strong>pages</strong>, and physical memory into <strong>frames</strong> of the same size. Only some of the pages sit in frames; the rest stay on the disk. With <strong>demand paging</strong> a page is brought in only when it is used. If the page is already in a frame, the access is a <strong>hit</strong>; if not, it is a <strong>page fault</strong>: the operating system reads the page from the disk, and if every frame is taken it must first choose a <strong>victim</strong> to evict. The sequence of pages a program uses is its <strong>reference string</strong>.">在<strong>虛擬記憶體</strong>裡，程式的位址空間被切成一樣大的<strong>頁</strong>（page），實體記憶體被切成同樣大小的<strong>框</strong>（frame）。只有一部分的頁放在框裡，其餘的留在磁碟上。<strong>需求分頁</strong>（demand paging）是要用到某一頁時才把它搬進來：那一頁已經在某個框裡，叫<strong>命中</strong>；不在，叫<strong>缺頁</strong>（page fault）——作業系統得從磁碟讀進這一頁，如果框都滿了，還要先挑一頁<strong>犧牲頁</strong>換出去。程式依序用到的頁，排成一串，叫<strong>參考字串</strong>（reference string）。</p>
+      <p data-en-html="Faults are expensive. In the textbook example a memory access takes 200 ns while servicing a page fault takes about 8 ms — forty thousand times longer. With a fault rate \(p\) the effective access time is">缺頁的代價很高。課本的例子：存取一次記憶體約 200 奈秒，處理一次缺頁約 8 毫秒——差了四萬倍。缺頁率是 \(p\) 時，平均每次存取的時間是</p>
+      <div class="formula">\[ \text{EAT} = (1-p)\times 200\ \text{ns} + p \times 8\ \text{ms}, \]</div>
+      <p data-en-html="so to slow memory down by less than 10% a program may fault less than once in about 400 000 accesses. Every fault a replacement algorithm saves really counts.">所以要讓記憶體慢不到一成，大約每 40 萬次存取才能缺頁一次。置換演算法每少一次缺頁，都真的很有價值。</p>
+
+      <h3 data-en="Four ways to choose a victim">挑犧牲頁的四種方法</h3>
+      <ul>
+        <li data-en-html="<strong>FIFO</strong> (first in, first out): evict the page that was <em>loaded</em> earliest. Using a page again does not save it."><strong>FIFO</strong>（先進先出）：換出最早<em>載入</em>的頁。就算剛剛才又用過，也救不了它。</li>
+        <li data-en-html="<strong>LRU</strong> (least recently used): evict the page whose last use is longest ago — the recent past is taken as a guide to the near future."><strong>LRU</strong>（最近最少使用）：換出最久沒被用到的頁——用剛過去的情形，猜接下來會用哪些頁。</li>
+        <li data-en-html="<strong>LFU</strong> (least frequently used): evict the page with the smallest use count. Its weakness: a page used heavily early on keeps a big count and may hog a frame long after it stops being needed."><strong>LFU</strong>（最不常使用）：換出被用到次數最少的頁。它的弱點：一頁在一開始被用得很兇，次數很高，之後就算再也用不到，也一直占著框。</li>
+        <li data-en-html="<strong>OPT</strong> (optimal, Belady’s MIN): evict the page whose next use lies furthest in the future. No algorithm can have fewer faults, but it needs to know the future, so a real system cannot use it; it serves as the yardstick."><strong>OPT</strong>（最佳，Belady 的 MIN）：換出下一次被用到的時間最晚的頁。沒有任何演算法的缺頁比它少，但它得先知道未來，真正的系統做不到；它是拿來當比較標準的。</li>
+      </ul>
+
+      <h3 data-en="Belady’s anomaly and stack algorithms">Belady 異常與堆疊演算法</h3>
+      <p data-en-html="One would expect more frames to mean fewer faults. In 1969 Belady, Nelson and Shedler showed that FIFO can do the opposite: on 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 it faults 9 times with 3 frames but 10 times with 4. LRU and OPT never do this. They are <strong>stack algorithms</strong> (Mattson et al. 1970): at every step, the pages held with \(f\) frames are always among the pages held with \(f+1\) frames,">直覺上框越多、缺頁越少。1969 年 Belady、Nelson、Shedler 發現 FIFO 偏偏不一定：1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5 用 3 個框缺頁 9 次，用 4 個框卻缺頁 10 次。LRU 和 OPT 永遠不會這樣，因為它們是<strong>堆疊演算法</strong>（Mattson 等人 1970）：每一步，\(f\) 個框裡的頁，一定都在 \(f+1\) 個框裡，</p>
+      <div class="formula">\[ M_t(f) \subseteq M_t(f+1) \quad \Longrightarrow \quad \text{faults}(f+1) \le \text{faults}(f). \]</div>
+      <p data-en-html="For LRU this gives a neat shortcut. Picture all pages in a stack ordered by their last use; the <strong>stack distance</strong> \(d_t\) of a reference is how deep its page is in that stack (\(\infty\) the first time). With \(f\) frames LRU faults exactly when \(d_t > f\), so one pass over the string gives the whole LRU curve:">LRU 因此有一個漂亮的算法：把所有頁照最後使用的時間疊成一疊，每一次參考的<strong>堆疊距離</strong> \(d_t\) 就是那一頁在這疊裡的深度（第一次出現是 \(\infty\)）。\(f\) 個框時，LRU 剛好在 \(d_t > f\) 時缺頁，所以掃過一遍字串，就得到整條 LRU 曲線：</p>
+      <div class="formula">\[ \text{faults}_{\text{LRU}}(f) = \#\{\, t : d_t > f \,\}. \]</div>
+      <p data-en-html="LFU depends on how it counts. If the counts cover the whole history and survive eviction, LFU is a stack algorithm too; if a page’s count restarts from zero every time it is evicted (the default here), it is not, and it can show Belady’s anomaly as well. One more curious fact from the textbook: reversing the reference string does not change the number of faults of LRU or of OPT.">LFU 要看次數怎麼算。次數從頭算到尾、換出也保留的話，LFU 也是堆疊演算法；如果一頁每次被換出就歸零重算（本頁的預設），它就不是，也會出現 Belady 異常。課本上還有一個有趣的事實：把參考字串倒過來，LRU 和 OPT 的缺頁次數都不會變。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The textbook string</strong> with 3 frames: FIFO 15, LRU 12, OPT 9 faults. Step through and look at the numbers under the frames: which one does each algorithm pick, and why?"><strong>課本的字串</strong>用 3 個框：FIFO 缺頁 15 次、LRU 12 次、OPT 9 次。一步一步看框下面的數字：每種方法挑了哪一頁？為什麼？</li>
+        <li data-en-html="<strong>Belady’s anomaly</strong>: choose the example “Belady’s classic string” and look at the FIFO line in the chart. Where does it go up? Compare the history tables at 3 and 4 frames."><strong>Belady 異常</strong>：選範例「Belady 的經典字串」，看圖上 FIFO 那條線在哪裡往上翹？再比較 3 個框和 4 個框的歷程表。</li>
+        <li data-en-html="<strong>A loop just too big</strong>: with the example “A loop: 1 2 3 4, three times” and 3 frames, why does LRU fault on every single reference? How does OPT get away with far fewer?"><strong>剛好放不下的迴圈</strong>：範例「繞圈子」用 3 個框，為什麼 LRU 每一次都缺頁？OPT 怎麼少缺那麼多？</li>
+        <li data-en-html="<strong>How many frames are enough?</strong> Where does each curve flatten out? Compare that number with the number of different pages."><strong>幾個框才夠？</strong>每條曲線在哪裡變平？和字串裡不同頁的個數比一比。</li>
+        <li data-en-html="<strong>Yesterday’s favourite</strong>: type a string in which one page is used many times at the start and never again. What happens to LFU, and does ticking “keep a page’s count” help?"><strong>過去的熱門</strong>：輸入一串一開始猛用某一頁、之後再也不用它的字串，LFU 會怎樣？勾選「保留次數」有沒有幫助？</li>
+        <li data-en-html="<strong>Backwards</strong>: press “Reverse”. Which algorithms keep exactly the same number of faults?"><strong>倒過來</strong>：按「倒過來」，哪幾種方法的缺頁次數一點也沒變？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="<strong>Demand paging from empty memory.</strong> Every reference is handled in order. Loading a page counts as a fault even when a frame is still free (the first faults are unavoidable, so the number of faults is never less than the number of different pages). A page loaded into a free frame takes the lowest-numbered one; on replacement the new page takes the victim’s frame."><strong>從空的記憶體開始需求分頁。</strong>參考字串依序處理。即使還有空框，載入一頁也算缺頁（一開始的缺頁躲不掉，所以缺頁次數不會少於不同頁的個數）。放進空框時放進編號最小的空框；換出時，新頁放進犧牲頁原本的框。</li>
+        <li data-en-html="<strong>Ties.</strong> FIFO and LRU never tie (loading and use times are all different). LFU: among pages with the same smallest count, evict the least recently used. OPT: if several pages are never used again, evict the least recently used of them. This tie rule depends only on the string, not on the number of frames, so OPT keeps the stack property; the number of OPT faults does not depend on the tie rule at all (tested)."><strong>平手規則。</strong>FIFO 與 LRU 不會平手（載入時刻、使用時刻都不同）。LFU：次數一樣最少的頁之間，換出最久沒被用到的。OPT：之後都不再用到的頁不只一個時，換出其中最久沒被用到的。這個平手規則只看參考字串、和框數無關，所以 OPT 保有堆疊性質；OPT 的缺頁次數和平手規則完全無關（單元測試驗證）。</li>
+        <li data-en-html="<strong>LFU counts.</strong> By default a page’s count starts at 1 when it is loaded, goes up by 1 on every hit and is forgotten when the page is evicted. With the box ticked the count is the number of uses since the start of the string, kept after eviction."><strong>LFU 的次數。</strong>預設：一頁載入時次數是 1，每命中一次加 1，被換出就忘掉。勾選「換出後保留次數」時，次數是從字串開頭算起用過幾次，換出也保留。</li>
+        <li data-en-html="The unit tests check Belady’s string (FIFO 9 faults with 3 frames and 10 with 4), the textbook string (FIFO 15, OPT 9, LRU 12 with 3 frames, including the victims step by step), the tie rules and both ways of counting for LFU; that OPT never has more faults than any other algorithm (20 000 random strings × 7 frame counts) and equals the minimum found by trying every possible choice of victim; that LRU, OPT and LFU with kept counts satisfy the inclusion property at every step, so their faults never rise with more frames, while LFU with reset counts can show the anomaly; that the LRU curve equals the count of stack distances; and that reversing the string leaves LRU and OPT unchanged.">單元測試檢查：Belady 的字串（FIFO 3 框 9 次、4 框 10 次）；課本的字串（3 框 FIFO 15、OPT 9、LRU 12，連每一步換出哪一頁都對照）；平手規則與 LFU 兩種次數算法；OPT 的缺頁不比任何方法多（隨機 20 000 串 × 7 種框數），而且等於窮舉每一種換出選擇的最小值；LRU、OPT 與保留次數的 LFU 每一步都滿足包含性質、框數變多缺頁不會變多，歸零的 LFU 則會出現異常；LRU 曲線等於堆疊距離的計數；以及字串倒過來時 LRU 與 OPT 的缺頁次數不變。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): S-V-1 working principles of computing platforms (job management and resource allocation; common scheduling algorithms such as FIFO, LRU and LFU and how they relate to the way a computer runs); S-IV-2 structure and basic working principles of computing platforms (junior high: the operating system and memory).">課綱對應：資S-V-1 系統平台之運作原理（工作管理與資源分配；常見的排程演算法，如 FIFO、LRU、LFU 等，與電腦運作的關係）；資S-IV-2 系統平台之組成架構與基本運作原理（國中：作業系統、記憶體）。</li>
+        <li data-en="A. Silberschatz, P. B. Galvin and G. Gagne, Operating System Concepts, 10th edition (Wiley, 2018), chapter 10 “Virtual Memory”: 10.2 Demand Paging (the effective access time example) and 10.4 Page Replacement (FIFO and Belady’s anomaly, optimal, LRU and stack algorithms, the reversed reference string, counting-based LFU). The textbook string 7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1 is from this section.">Silberschatz, Galvin, Gagne《Operating System Concepts》第 10 版（Wiley, 2018），第 10 章〈Virtual Memory〉：10.2 節 Demand Paging（平均存取時間的例子）、10.4 節 Page Replacement（FIFO 與 Belady 異常、最佳演算法、LRU 與堆疊演算法、倒過來的參考字串、以次數為準的 LFU）。課本的字串 7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1 出自這一節。</li>
+        <li data-en="L. A. Belady (1966), “A study of replacement algorithms for a virtual-storage computer”, IBM Systems Journal 5(2): 78–101 (the optimal algorithm MIN).">Belady, L. A. (1966) “A study of replacement algorithms for a virtual-storage computer”, IBM Systems Journal 5(2): 78–101（最佳演算法 MIN）。</li>
+        <li data-en="L. A. Belady, R. A. Nelson and G. S. Shedler (1969), “An anomaly in space-time characteristics of certain programs running in a paging machine”, Communications of the ACM 12(6): 349–353.">Belady, L. A., Nelson, R. A., Shedler, G. S. (1969) “An anomaly in space-time characteristics of certain programs running in a paging machine”, Communications of the ACM 12(6): 349–353。</li>
+        <li data-en="R. L. Mattson, J. Gecsei, D. R. Slutz and I. L. Traiger (1970), “Evaluation techniques for storage hierarchies”, IBM Systems Journal 9(2): 78–117 (stack algorithms, the inclusion property and stack distances).">Mattson, R. L., Gecsei, J., Slutz, D. R., Traiger, I. L. (1970) “Evaluation techniques for storage hierarchies”, IBM Systems Journal 9(2): 78–117（堆疊演算法、包含性質與堆疊距離）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Page_replacement_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Page replacement algorithm</a>, <a href=&quot;https://en.wikipedia.org/wiki/B%C3%A9l%C3%A1dy%27s_anomaly&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Bélády’s anomaly</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Page_replacement_algorithm" target="_blank" rel="noopener">Page replacement algorithm</a>、<a href="https://en.wikipedia.org/wiki/B%C3%A9l%C3%A1dy%27s_anomaly" target="_blank" rel="noopener">Bélády’s anomaly</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/page-replacement-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/page-replacement.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="page-replacement"></script>
+  <script src="js/missions/page-replacement.js"></script>
+  <script src="js/stats.js" data-module="page-replacement"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
