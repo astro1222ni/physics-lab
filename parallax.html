@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Stellar Parallax and the Parsec | Astro Ni Science Lab">恆星視差與秒差距｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 恆星視差頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
+    :root {
+      --px-space0: #0b1530; --px-space1: #1c2b4d; --px-orbit: #7dd3fc; --px-earth: #3b82f6; --px-sun: #fbbf24; --px-star: #fde68a;
+      --px-path: #f472b6; --px-pm: #a3e635; --px-fit: #22d3ee; --px-photo: #fb923c;
+      --px-x: #2563eb; --px-y: #dc2626; --px-true: #16a34a; --px-meas: #db2777;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --px-space0: #050b1c; --px-space1: #13203d; --px-x: #60a5fa; --px-y: #f87171; --px-true: #4ade80; --px-meas: #f472b6; }
+    }
+    :root[data-theme="dark"] { --px-space0: #050b1c; --px-space1: #13203d; --px-x: #60a5fa; --px-y: #f87171; --px-true: #4ade80; --px-meas: #f472b6; }
+    #cv { aspect-ratio: auto; height: 470px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 600px; } }
+    #gr { display: block; width: 100%; height: 270px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .px button { min-height: 44px; }
+    .px .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .px .playbar button { flex: 1 1 auto; }
+    .px .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .px .slider input[type="range"] { height: 28px; margin: 0; }
+    .px [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .segw.col { flex-direction: column; }
+    .segw.col button + button { border-left: none; border-top: 1px solid var(--border); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .big-num small { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .runlog b { color: var(--text); }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Stellar parallax"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 恆星視差</nav>
+      <h1 data-en="Stellar Parallax and the Parsec">恆星視差與秒差距</h1>
+      <p data-en="As the Earth goes round the Sun, nearby stars trace tiny ellipses against the distant background. Watch the ellipse a year at a time, take photographs with Tycho’s eye, Bessel’s heliometer or the Gaia satellite and measure the distance yourself, then stretch the baseline out to the edge of the Solar System.">地球繞著太陽轉，近的恆星就在遙遠的背景前畫出小小的橢圓。看一整年的視差橢圓，用第谷的肉眼、貝索的量日儀或 Gaia 衛星拍照，自己量出恆星的距離；再把基線拉長到太陽系的邊緣。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play a year” and watch Proxima Centauri trace its ellipse. Then move the star onto the ecliptic.">試試看：按「播放一年」，看比鄰星畫出視差橢圓；再把恆星移到黃道上，看橢圓變成什麼樣子。</p>
+    <div class="lab px" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="orbit" aria-pressed="true" data-en="A year of parallax">一年的視差</button>
+          <button type="button" data-mode="measure" aria-pressed="false" data-en="Measure the distance">量測距離</button>
+          <button type="button" data-mode="baseline" aria-pressed="false" data-en="A longer baseline">拉長基線</button>
+        </div>
+        <canvas id="cv" aria-label="恆星視差" data-en-aria-label="Stellar parallax"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">播放一年</button>
+          <button id="burst" type="button" hidden>兩年拍 12 張</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除照片與動畫；設定不變" data-en-title="Clear the photos and the animation; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The star">恆星</h2>
+          <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
+          <div class="slider"><label for="dist" data-en="Distance d (pc)">距離 d（pc）</label><output></output>
+            <input id="dist" type="range" min="0" max="4" step="0.001" value="0.115"></div>
+          <div class="slider"><label for="beta" data-en="Ecliptic latitude β (°)">黃緯 β（°）</label><output></output>
+            <input id="beta" type="range" min="-90" max="90" step="0.5" value="-44.5" data-decimals="1"></div>
+          <div class="segw" role="group" aria-label="自行" data-en-aria-label="Proper motion" id="pmSeg">
+            <button type="button" data-pm="on" aria-pressed="true" data-en="Real proper motion">真實的自行</button>
+            <button type="button" data-pm="off" aria-pressed="false" data-en="No proper motion">不計自行</button>
+          </div>
+          <p class="hint" id="starHint">—</p>
+        </section>
+
+        <section class="card" id="dateCard">
+          <h2 data-en="Date">日期</h2>
+          <div class="slider"><label for="date" data-en="Time since 1 January of year 1 (years)">從第 1 年 1 月 1 日起（年）</label><output></output>
+            <input id="date" type="range" min="0" max="3" step="0.0027379" value="0" data-decimals="3"></div>
+          <p class="hint" id="dateHint">—</p>
+        </section>
+
+        <div id="orbitPanel">
+          <section class="card">
+            <h2 data-en="Parallax">視差</h2>
+            <p class="big-num" id="oP">—</p>
+            <dl class="readout">
+              <dt data-en="Distance">距離</dt><dd id="oD" class="big">—</dd>
+              <dt data-en="Light years">光年</dt><dd id="oLy">—</dd>
+              <dt data-en="Astronomical units">天文單位</dt><dd id="oAu">—</dd>
+              <dt data-en="Ellipse: long axis">橢圓的半長軸</dt><dd id="oA">—</dd>
+              <dt data-en="Ellipse: short axis">橢圓的半短軸</dt><dd id="oB">—</dd>
+              <dt data-en="Proper motion per year">每年的自行</dt><dd id="oMu">—</dd>
+              <dt data-en="Shift today">今天的位移</dt><dd id="oNow">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="measurePanel" hidden>
+          <section class="card">
+            <h2 data-en="Instrument">儀器</h2>
+            <div class="segw col" role="group" aria-label="儀器" data-en-aria-label="Instrument" id="instSeg"></div>
+            <div class="segw" role="group" aria-label="怎麼解" data-en-aria-label="What to solve for" id="fitSeg">
+              <button type="button" data-fit="pm" aria-pressed="true" data-en="Solve parallax + proper motion">解視差＋自行</button>
+              <button type="button" data-fit="p" aria-pressed="false" data-en="Parallax only">只解視差</button>
+            </div>
+            <p class="hint" id="instHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Your measurement">你的量測</h2>
+            <p class="big-num" id="mD">—</p>
+            <dl class="readout">
+              <dt data-en="Photos">照片</dt><dd id="mN">—</dd>
+              <dt data-en="Time span">時間跨度</dt><dd id="mSpan">—</dd>
+              <dt data-en="Measured parallax">量到的視差</dt><dd id="mP" class="big">—</dd>
+              <dt data-en="Uncertainty of the distance">距離的誤差</dt><dd id="mErr">—</dd>
+              <dt data-en="Measured proper motion">量到的自行</dt><dd id="mMu">—</dd>
+              <dt data-en="True distance">真正的距離</dt><dd id="mTrue">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="basePanel" hidden>
+          <section class="card">
+            <h2 data-en="The baseline">基線</h2>
+            <div class="slider"><label for="base" data-en="Distance between the observers B (AU)">兩個觀測者的距離 B（AU）</label><output></output>
+              <input id="base" type="range" min="-4.5" max="2.301" step="0.001" value="0.301"></div>
+            <div class="presets" role="group" aria-label="常見的基線" data-en-aria-label="Common baselines" id="baseSeg"></div>
+            <p class="hint" id="baseHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="How far it jumps">恆星跳了多少</h2>
+            <p class="big-num" id="bTheta">—</p>
+            <dl class="readout">
+              <dt data-en="Baseline">基線</dt><dd id="bB">—</dd>
+              <dt data-en="Star distance">恆星的距離</dt><dd id="bD">—</dd>
+              <dt data-en="Compared with a year on Earth (2p)">和地球半年比（2p）</dt><dd id="bRatio" class="big">—</dd>
+              <dt data-en="Can the naked eye see it?">肉眼看得出來嗎</dt><dd id="bEye">—</dd>
+            </dl>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Parallax and the parsec">視差與秒差距</h3>
+      <p data-en-html="Hold up a finger and look at it with one eye, then the other: it jumps against the background. The Earth’s orbit does the same for nearby stars. The <strong>parallax</strong> \(p\) is the angle that 1 AU (the Earth–Sun distance) makes as seen from the star; half a year apart the star is seen from two points 2 AU apart and shifts by \(2p\). For small angles">伸出一根手指，先用一隻眼睛看，再換另一隻：手指在背景前跳了一下。地球繞太陽轉，近的恆星也會這樣跳。<strong>視差</strong> \(p\) 是從恆星看過來，1 AU（日地距離）張開的角度；相隔半年，我們從相距 2 AU 的兩個地方看恆星，它移動了 \(2p\)。角度很小時：</p>
+      <div class="formula">\[ d = \frac{1\ \mathrm{AU}}{\tan p} \approx \frac{1}{p\,[\mathrm{rad}]}\ \mathrm{AU}, \qquad d\,[\mathrm{pc}] = \frac{1}{p\,[\mathrm{arcsec}]} \]</div>
+      <p data-en-html="One <strong>parsec</strong> (parallax of one arcsecond) is 206 265 AU, 3.26 light years or \(3.09\times10^{13}\) km. Even the nearest star, Proxima Centauri, has \(p = 0.768''\): the width of a coin seen from 5 km away.">1 <strong>秒差距</strong>（視差 1 角秒的距離）是 206 265 AU、3.26 光年，或 \(3.09\times10^{13}\) km。就連最近的恆星比鄰星，視差也只有 \(p = 0.768''\)：相當於從 5 公里外看一枚硬幣的寬度。</p>
+      <h3 data-en="Why an ellipse">為什麼是橢圓</h3>
+      <p data-en-html="The shift is the Earth’s position projected onto the sky, divided by the distance. In ecliptic coordinates (\(\lambda\), \(\beta\)) with the Sun at longitude \(\lambda_\odot\):">位移就是地球的位置投影到天空上、再除以距離。用黃道座標（黃經 \(\lambda\)、黃緯 \(\beta\)），太陽在黃經 \(\lambda_\odot\)：</p>
+      <div class="formula">\[ \Delta\lambda\cos\beta = p\,\sin(\lambda_\odot - \lambda), \qquad \Delta\beta = -p\,\sin\beta\,\cos(\lambda_\odot - \lambda) \]</div>
+      <p data-en-html="Over a year this is an ellipse with semi-major axis \(p\) and semi-minor axis \(p\,|\sin\beta|\): a circle at the ecliptic pole, a straight line on the ecliptic. Stars also drift across the sky (<strong>proper motion</strong>), so the real path is a wavy line; to separate the two you need photos spread over more than a year.">一年下來就是一個橢圓，半長軸 \(p\)、半短軸 \(p\,|\sin\beta|\)：在黃極是圓，在黃道上壓成一條直線段。恆星本身也在天空中慢慢移動（<strong>自行</strong>），所以真正的路徑是一條波浪線；要把兩者分開，照片得跨一年以上。</p>
+      <h3 data-en="Measuring it">量測</h3>
+      <p data-en-html="Each photo gives the star’s position with an error \(\sigma\). With several photos we fit the five numbers \(x_0, y_0, \mu_x, \mu_y, p\) by least squares; the uncertainty of \(p\) shrinks like \(\sigma/\sqrt{N}\), and photos taken when the shift is largest count most. The relative error of the distance equals that of the parallax.">每一張照片給出恆星的位置，誤差 \(\sigma\)。有好幾張照片，就用最小平方法解出五個數 \(x_0, y_0, \mu_x, \mu_y, p\)；\(p\) 的誤差隨 \(\sigma/\sqrt{N}\) 變小，位移最大的時候拍的照片最有用。距離的相對誤差和視差的相對誤差一樣。</p>
+      <h3 data-en="A short history">簡史</h3>
+      <ul>
+        <li data-en-html="Tycho Brahe (1580s) measured to about one arcminute and saw no parallax at all, which he took as evidence that the Earth does not move. The stars were simply far too distant.">第谷（1580 年代）的量測精度約 1 角分，完全看不到視差，他把這當成地球不動的證據。其實是恆星實在太遠了。</li>
+        <li data-en-html="Friedrich Bessel (1838) measured 61 Cygni with a heliometer: \(0.314''\) (the modern value is \(0.286''\)), the first stellar distance.">貝索（1838）用量日儀量天鵝座 61：\(0.314''\)（現代值 \(0.286''\)），人類第一次量到恆星的距離。</li>
+        <li data-en-html="Hipparcos (1989–1993) measured 118 000 stars to about 1 milliarcsecond; Gaia (from 2014) measures more than a billion, the best to about 20 microarcseconds.">依巴谷衛星（1989–1993）量了 11.8 萬顆恆星，精度約 1 毫角秒；Gaia（2014 起）量了十億顆以上，最好的到 20 微角秒。</li>
+        <li data-en-html="In April 2020 the New Horizons spacecraft, about 47 AU from the Sun, photographed Proxima Centauri and Wolf 359 at the same time as telescopes on Earth: the stars visibly jumped.">2020 年 4 月，離太陽約 47 AU 的新視野號和地球上的望遠鏡同時拍下比鄰星與沃夫 359：恆星明顯跳了位置。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="The Earth’s orbit is a circle of 1 AU and the Sun moves uniformly in longitude (starting at 280.46° on 1 January). Star positions, parallaxes and proper motions are from Gaia DR3; the four bright stars (Sirius, Vega, Polaris, Betelgeuse) are too bright for Gaia, so theirs come from the 2007 Hipparcos reduction. Photo errors are random but repeatable: clearing and retaking at the same dates gives the same photos. The pictures exaggerate every angle enormously.">地球軌道當成半徑 1 AU 的圓，太陽在黃經上等速移動（1 月 1 日在 280.46°）。恆星的位置、視差與自行取自 Gaia DR3；天狼星、織女星、北極星、參宿四這四顆太亮，Gaia 量不準，改用依巴谷 2007 年重新歸算的資料。照片的誤差是亂數，但可以重現：清除後在同樣的日期重拍，會得到同樣的照片。畫面上的角度都放大了非常非常多倍。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/parallax-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/parallax.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="parallax"></script>
+  <script src="js/missions/parallax.js"></script>
+  <script src="js/stats.js" data-module="parallax"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
