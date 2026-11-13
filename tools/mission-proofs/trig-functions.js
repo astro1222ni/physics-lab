@@ -113,6 +113,118 @@ expect('h3', [{ type: 'axis3d', data: { angle: 3 } }], true, '3D 轉到順著 x 
   else console.log('  ✓ 3000 個隨機挑戰題都落在滑桿格點上（拖滑桿就調得出來）');
 }
 
+// ---------- 11/13 新的隱藏任務 h4–h10 ----------
+const DEG = Math.PI / 180;
+expect('h4', [angle(100), angle(280), angle(460)], true, '連續停在 100°、280°、460°：tan 都是 ' + Math.tan(100 * DEG).toFixed(3));
+expect('h4', [angle(700), angle(520), angle(340)], true, '往回也可以：700°、520°、340°');
+expect('h4', [angle(100), angle(280)], false, '只停了兩次');
+expect('h4', [angle(100), angle(280), angle(100)], false, '走過去又走回來（方向不一致）');
+expect('h4', [angle(100), angle(280), angle(300), angle(480)], false, '中間停到別的角，鏈斷了');
+expect('h4', [angle(90), angle(270), angle(450)], false, '90° 的 tan 沒有定義');
+expect('h5', [wave(1, 3.14, 0, 0)], true, 'ω = 3.14（打字）：週期 2π／3.14 = ' + (2 * Math.PI / 3.14).toFixed(4));
+expect('h5', [wave(1, 3.15, 0, 0)], false, '滑桿只到 ω = 3.15：週期 ' + (2 * Math.PI / 3.15).toFixed(4));
+expect('h5', [wave(0, 3.14, 0, 1)], false, 'A = 0 是水平線，沒有週期可言');
+{
+  const s = TC.superpose(0.966, 0.259);
+  expect('h6', [sum(0.966, 0.259)], true, 'a = 0.966、b = 0.259（打字）：r = ' + s.r.toFixed(4) + '、相位 ' + s.phi.toFixed(3) + '°');
+}
+expect('h6', [sum(1, 0.3)], false, '滑桿格點 a = 1、b = 0.3：r = ' + TC.superpose(1, 0.3).r.toFixed(3));
+expect('h6', [sum(0.966, -0.259)], false, '相位 −15°');
+expect('h6', [sum(1.932, 0.518)], false, 'r = 2（相位對了，長度不是 1）');
+expect('h7', [angle(42.3)], true, 'θ = 42.3°（打字）：θ = ' + (42.3 * DEG).toFixed(4) + ' 弧度，cos θ = ' + Math.cos(42.3 * DEG).toFixed(4));
+expect('h7', [angle(42.4)], true, 'θ = 42.4° 也在 ±0.06° 內');
+expect('h7', [angle(42)], false, '滑桿整數 42°：cos θ − θ = ' + (Math.cos(42 * DEG) - 42 * DEG).toFixed(4));
+expect('h7', [angle(402.3)], false, '402.3°：cos 一樣，但弧度是 7.02');
+expect('h8', [wave(0.5, 2, -90, 0.5)], true, 'y = ½ sin(2x − 90°) + ½ = sin²x（滑桿格點就到得了）');
+expect('h8', [wave(-0.5, 2, 90, 0.5)], true, 'y = −½ sin(2x + 90°) + ½ 也是同一條');
+expect('h8', [wave(0.5, 2, 90, 0.5)], false, 'φ = +90°：那是 cos²x');
+expect('h8', [wave(0.5, 2, -90, 0)], false, '少了中線 ½：會沉到水面以下');
+{
+  const s = TC.superpose(1, 1.272);
+  expect('h9', [sum(1, 1.272)], true, 'a = 1、b = 1.272（打字）：1 : ' + (1.272).toFixed(3) + ' : ' + s.r.toFixed(4) + '，√φ = ' + Math.sqrt((1 + Math.sqrt(5)) / 2).toFixed(4) + '、φ = 1.6180');
+}
+expect('h9', [sum(-1.272, 1)], true, '兩股換邊、帶負號也算');
+expect('h9', [sum(1.1, 1.4)], false, '滑桿格點 1.1、1.4：比 ' + (1.4 / 1.1).toFixed(4));
+expect('h9', [sum(1, 1.27)], false, '1、1.27：比差 0.002');
+{
+  // 滑桿格點（0.1）上沒有任何一組做得到
+  let hits = 0;
+  for (let i = -40; i <= 40; i++) for (let j = -40; j <= 40; j++) if (byId('h9').check(sum(i / 10, j / 10), {})) hits++;
+  console.log((hits ? '  ✗ ' : '  ✓ ') + 'h9  a、b 只用滑桿格點（0.1）的 6561 組都做不到，要打字'); if (hits) fail++;
+}
+expect('h10', [angle(257.5), angle(442.6), angle(624.8)], true, '257.5°、442.6°、624.8°（打字）：tan θ − θ = ' + [257.5, 442.6, 624.8].map(t => (Math.tan(t * DEG) - t * DEG).toFixed(3)).join('、'));
+expect('h10', [angle(624.8), angle(257.5), angle(442.6)], true, '先後不拘');
+expect('h10', [angle(257.5), angle(442.6)], false, '只找到兩處');
+expect('h10', [angle(257), angle(443), angle(625)], false, '滑桿整數角：tan θ − θ = ' + [257, 443, 625].map(t => (Math.tan(t * DEG) - t * DEG).toFixed(2)).join('、'));
+{
+  // 每一個根附近 0.1° 的格點，至少有一個落在 ±0.06° 內；根本身真的滿足 tan θ = θ
+  const ok = [257.4534, 442.6243, 624.7602].every(r => Math.abs(Math.tan(r * DEG) - r * DEG) < 0.01 && Math.abs(Math.round(r * 10) / 10 - r) <= 0.05);
+  console.log((ok ? '  ✓ ' : '  ✗ ') + 'h10 三個根 257.4534°、442.6243°、624.7602° 都滿足 tan θ = θ，最近的 0.1° 格點都在 ±0.05° 內'); if (!ok) fail++;
+}
+
+// ---------- 亂按模擬：新的隱藏任務不可以被誤觸 ----------
+{
+  let seed = 1113;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const pick = (lo, hi, step) => lo + Math.round(rand() * (hi - lo) / step) * step;
+  const round = (v, n) => Math.round(v * Math.pow(10, n)) / Math.pow(10, n);
+  const NEW = ['h4', 'h5', 'h6', 'h7', 'h8', 'h9', 'h10'];
+  const hits = {};
+  for (let run = 0; run < 2000; run++) {
+    missions.forEach(m => { m.mem = {}; m.got = false; });
+    let th = 30, W = { A: 1, w: 1, phi: 0, k: 0 }, S = { a: 1.5, b: 1 };
+    for (let st = 0; st < 150; st++) {
+      const r = rand();
+      let e;
+      if (r < 0.35) { th = pick(0, 720, 1); e = angle(th); }
+      else if (r < 0.42) { th = round(rand() * 720, 1); e = angle(th); }
+      else if (r < 0.47) { th = Math.min(720, Math.max(0, th + (rand() < 0.5 ? -1 : 1))); e = angle(th); }
+      else if (r < 0.72) {
+        const k = ['A', 'w', 'phi', 'k'][Math.floor(rand() * 4)];
+        W[k] = k === 'A' ? pick(-3, 3, 0.1) : k === 'w' ? pick(0.25, 4, 0.05) : k === 'phi' ? pick(-180, 180, 5) : pick(-2, 2, 0.1);
+        W[k] = round(W[k], 2); e = wave(W.A, W.w, W.phi, W.k);
+      } else if (r < 0.77) {
+        const k = ['A', 'w', 'phi', 'k'][Math.floor(rand() * 4)];
+        W[k] = k === 'A' ? round(rand() * 6 - 3, 2) : k === 'w' ? round(0.25 + rand() * 3.75, 2) : k === 'phi' ? round(rand() * 360 - 180, 1) : round(rand() * 4 - 2, 2);
+        e = wave(W.A, W.w, W.phi, W.k);
+      } else if (r < 0.94) { S[rand() < 0.5 ? 'a' : 'b'] = round(pick(-4, 4, 0.1), 1); e = sum(S.a, S.b); }
+      else { S[rand() < 0.5 ? 'a' : 'b'] = round(rand() * 8 - 4, 3); e = sum(S.a, S.b); }
+      missions.forEach(m => { if (!m.got && m.check(e, m.mem)) { m.got = true; const id = m.id.replace('trig-functions-', ''); hits[id] = (hits[id] || 0) + 1; } });
+    }
+  }
+  const worst = NEW.filter(id => (hits[id] || 0) > 30);
+  console.log((worst.length ? '  ✗ ' : '  ✓ ') + '亂按 2000 回（每回 150 步）：' + Object.keys(hits).map(k => k + ' ' + hits[k] + ' 次').join('、') + '（新的隱藏任務每個都不到 1.5%）');
+  if (worst.length) fail++;
+}
+
+// ---------- 做法交叉檢查：每個新任務的做法只完成它自己 ----------
+{
+  const ways = {
+    h4: [angle(100), angle(280), angle(460)],
+    h5: [wave(1, 3.14, 0, 0)],
+    h6: [sum(0.966, 0.259)],
+    h7: [angle(42.3)],
+    h8: [wave(0.5, 2, -90, 0.5)],
+    h9: [sum(1, 1.272)],
+    h10: [angle(257.5), angle(442.6), angle(624.8)]
+  };
+  const bad = [];
+  Object.keys(ways).forEach(id => {
+    missions.forEach(m => {
+      if (m.id === 'trig-functions-' + id) return;
+      m.mem = {}; let got = false;
+      ways[id].forEach(e => { got = m.check(e, m.mem) || got; });
+      if (got) bad.push(id + ' → ' + m.id.replace('trig-functions-', ''));
+    });
+  });
+  console.log((bad.length ? '  ✗ 做法會連帶完成別的任務：' + bad.join('、') : '  ✓ 新隱藏任務的做法都只完成它自己')); if (bad.length) fail++;
+}
+{
+  const hidL = missions.filter(m => m.hidden).map(m => m.level);
+  const ok = hidL.length === 10 && hidL.every(l => l >= 3 && l <= 10) && hidL.filter(l => l >= 7).length >= 3;
+  console.log((ok ? '  ✓ ' : '  ✗ ') + '隱藏任務 ' + hidL.length + ' 個，等級 ' + hidL.join('、') + '（7 級以上 ' + hidL.filter(l => l >= 7).length + ' 個）'); if (!ok) fail++;
+}
+
 // ---------- 總覽 ----------
 const pub = missions.filter(m => !m.hidden), hid = missions.filter(m => m.hidden);
 const starsOf = m => (m.hidden ? 2 : 1) * m.level;   // 隱藏任務星星加倍（與 js/missions.js 的 LabMission.starsOf 相同）

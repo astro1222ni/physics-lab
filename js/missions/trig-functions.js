@@ -22,6 +22,20 @@
     }
     return g;
   }
+  /** 和 y = sin²x 整條曲線的最大差距（取樣 0–4π） */
+  function gapToSin2(d) {
+    let g = 0;
+    for (let i = 0; i <= 400; i++) {
+      const x = 4 * PI * i / 400, s = Math.sin(x);
+      g = Math.max(g, Math.abs(d.A * Math.sin(d.w * x + d.phi * PI / 180) + d.k - s * s));
+    }
+    return g;
+  }
+  /** tan θ = θ（弧度）在 0°～720° 的三個正根（度） */
+  const TAN_ROOTS = [257.4534, 442.6243, 624.7602];
+  /** cos θ = θ（弧度）的根（Dottie 數 0.739085… 弧度，度） */
+  const DOTTIE = 42.3465;
+  const SQRT_PHI = Math.sqrt((1 + Math.sqrt(5)) / 2);
 
   LabMission.register('trig-functions', [
     {
@@ -119,6 +133,67 @@
       id: 'trig-functions-h3', level: 6, hidden: true,
       riddle: { zh: '從盡頭望過去，所有的起伏都只是在原地打轉。', en: 'Seen from the very end, every rise and fall is only going round in circles.' },
       check: function (ev) { return ev.type === 'axis3d'; }
+    },
+    // ---------- 11/13 補到 10 個隱藏任務（h4–h10；h1–h3 不改） ----------
+    {
+      // tan 的週期是 180°：連續停在 θ、θ ± 180°、θ ± 360°（同一個方向，誤差 ±0.5°，tan 都有定義）
+      id: 'trig-functions-h4', level: 4, hidden: true,
+      riddle: { zh: '同一個陡度，每走半圈就再遇到一次；連著遇到三次。', en: 'The same steepness meets you again every half turn; meet it three times in a row.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'angle') return false;
+        const t = ev.data.theta;
+        if (!isFinite(ev.data.tan) || Math.abs(Math.cos(t * PI / 180)) < 0.01) { mem.n = 0; return false; }
+        const step = mem.n ? t - mem.last : 0;
+        if (mem.n && near(Math.abs(step), 180, 0.5) && (mem.n < 2 || step * mem.dir > 0)) { mem.n++; mem.dir = step; }
+        else mem.n = 1;
+        mem.last = t;
+        return mem.n >= 3;
+      }
+    },
+    {
+      // ω = π：週期剛好是 2（誤差 ±0.002）。滑桿只到 0.05 的格點，要打字
+      id: 'trig-functions-h5', level: 5, hidden: true,
+      riddle: { zh: '一來一回剛好兩步，可是決定步伐的那個數，永遠寫不完。', en: 'There and back in exactly two steps, yet the number that sets the stride can never be written out in full.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'wave' && d.amp >= 0.1 && near(d.period, 2, 0.002); }
+    },
+    {
+      // a sin x + b cos x = sin(x + 15°)：a = cos 15° = (√6 + √2)／4、b = sin 15° = (√6 − √2)／4（r 誤差 ±0.002、相位 ±0.1°）
+      id: 'trig-functions-h6', level: 6, hidden: true,
+      riddle: { zh: '長度為一的指針，被地球轉了一個小時。', en: 'A hand of length one, turned by the Earth for one hour.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'sum' && near(d.r, 1, 0.002) && near(d.phi, 15, 0.1); }
+    },
+    {
+      // cos θ = θ（弧度）：Dottie 數 0.7391 弧度 = 42.35°（誤差 ±0.06°）；計算機一直按 cos 會停在這裡
+      id: 'trig-functions-h7', level: 7, hidden: true,
+      riddle: { zh: '把它交給餘弦，餘弦原封不動地還給你。', en: 'Hand it to the cosine, and the cosine hands it right back, untouched.' },
+      check: function (ev) { return ev.type === 'angle' && near(ev.data.theta, DOTTIE, 0.06); }
+    },
+    {
+      // 降冪公式 sin²x = (1 − cos 2x)／2 = ½ sin(2x − 90°) + ½：整條曲線和 y = sin²x 重合（差距 ≤ 0.01）
+      id: 'trig-functions-h8', level: 8, hidden: true,
+      riddle: { zh: '一道浪自己乘上自己，就再也沉不到水面以下；它變成一道快一倍、矮一半的浪。', en: 'A wave multiplied by itself can never sink below the water again; it becomes a wave twice as fast and half as tall.' },
+      check: function (ev) { return ev.type === 'wave' && gapToSin2(ev.data) <= 0.01; }
+    },
+    {
+      // 克卜勒三角形：兩股 |a|、|b| 與斜邊 r 成等比（1 : √φ : φ，φ 是黃金比例），長股 ÷ 短股 = √φ（誤差 ±0.0003），短股 ≥ 0.3
+      id: 'trig-functions-h9', level: 9, hidden: true,
+      riddle: { zh: '一個直角三角形，三條邊一條比一條長出同樣的倍數；有人說古埃及人把它砌成了石頭的斜坡。', en: 'A right triangle whose sides each grow by the same factor; some say the Egyptians built it into a slope of stone.' },
+      check: function (ev) {
+        const d = ev.data;
+        if (ev.type !== 'sum') return false;
+        const s = Math.min(Math.abs(d.a), Math.abs(d.b)), m = Math.max(Math.abs(d.a), Math.abs(d.b));
+        return s >= 0.3 && near(m / s, SQRT_PHI, 0.0003);
+      }
+    },
+    {
+      // tan θ = θ（弧度）在 0°～720° 的三個正根 257.45°、442.62°、624.76° 都停過（各 ±0.06°，先後不拘）
+      id: 'trig-functions-h10', level: 10, hidden: true,
+      riddle: { zh: '坡有多陡，你就走了多遠；兩圈之內，這樣的地方有三處，一處都不能少。', en: 'As steep as the slope, so far have you walked; within two turns there are three such places, and you must find every one.' },
+      check: function (ev, mem) {
+        if (ev.type !== 'angle') return false;
+        TAN_ROOTS.forEach(function (r, i) { if (near(ev.data.theta, r, 0.06)) mem['r' + i] = true; });
+        return !!(mem.r0 && mem.r1 && mem.r2);
+      }
     }
   ]);
 })();
