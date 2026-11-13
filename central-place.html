@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Central Place Theory: Thresholds, Ranges and Hexagons | Astro Ni Science Lab">中地理論：門檻、商品圈與六角形市場區｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 中地理論頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --cp-l1: #5d8a3a; --cp-l2: #2f74c8; --cp-l3: #8a4fc4; --cp-l4: #d0442f;
+      --cp-served: #cfe6b8; --cp-gap: #f2c9bf; --cp-range: #3e8f3a; --cp-thr: #b0631c;
+      --cp-road: #9a7b52; --cp-probe: #e0a100; --cp-ground: #efe9d8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cp-l1: #8fc566; --cp-l2: #6aa8ff; --cp-l3: #bf8cf5; --cp-l4: #ff7a63;
+        --cp-served: #2f4a2a; --cp-gap: #5a2f2a; --cp-range: #8fd47f; --cp-thr: #f0a35a;
+        --cp-road: #c9a878; --cp-probe: #ffd34d; --cp-ground: #262a26;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cp-l1: #8fc566; --cp-l2: #6aa8ff; --cp-l3: #bf8cf5; --cp-l4: #ff7a63;
+      --cp-served: #2f4a2a; --cp-gap: #5a2f2a; --cp-range: #8fd47f; --cp-thr: #f0a35a;
+      --cp-road: #c9a878; --cp-probe: #ffd34d; --cp-ground: #262a26;
+    }
+    #cv { aspect-ratio: 1 / 0.82; touch-action: none; cursor: crosshair; }
+    #cv.rot { cursor: grab; }
+    @media (max-width: 560px) { #cv { aspect-ratio: 1 / 0.95; } }
+    @media (min-width: 881px) and (min-height: 940px) { .cp .stage { position: sticky; top: 12px; } }
+    .cp button { min-height: 44px; }
+    .cp [hidden] { display: none !important; }
+    .cp .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .segw button small { display: block; font-size: calc(11px * var(--fs, 1)); font-weight: 400; color: var(--muted); }
+    .segl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .playbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; }
+    .playbar #run { flex: 2 1 140px; font-weight: 600; }
+    .toggle { width: 100%; margin: 4px 0 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .toggle .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; }
+    .toggle[aria-pressed="true"] .dot { background: currentColor; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    table.tab { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+    table.tab th, table.tab td { padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.tab th:first-child, table.tab td:first-child { text-align: left; }
+    table.tab td[colspan] { text-align: left; color: var(--muted); }
+    table.tab td:not(:first-child) { white-space: nowrap; }
+    #hTab { font-size: calc(12px * var(--fs, 1)); }
+    #hTab th, #hTab td { padding: 4px 2px; }
+    table.tab th { color: var(--muted); font-weight: 600; }
+    table.tab i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+    table.tab tr.hl td { background: var(--accent-soft); }
+    .legend i.ring { background: none !important; border: 2px solid currentColor; border-radius: 50%; }
+    .legend i.dash { height: 0; border-top: 2px dashed currentColor; background: none !important; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#population&quot;>Geography · Population and Cities</a> / Central place theory"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#population">地理・人口與都市</a> ／ 中地理論</nav>
+      <h1 data-en="Central Place Theory: Thresholds, Ranges and Hexagons">中地理論：門檻、商品圈與六角形市場區</h1>
+      <p data-en="Why are villages, towns and cities spaced the way they are, and why are there so many more villages than cities? On a uniform plain where everyone shops at the nearest place, a shop needs enough customers (the threshold) who are willing to travel that far (the range). Watch shops fill the plain until their market areas become hexagons, then build Christaller's hierarchy of central places.">村莊、鄉鎮、城市為什麼隔著那樣的距離？為什麼村莊比城市多那麼多？在一片均質平原上，每個人都到最近的地方買東西；一家店要有足夠的顧客（門檻），而顧客也要願意走那麼遠（商品圈）。看商店怎麼佈滿平原，市場區怎麼變成六邊形，再搭出克里斯泰勒的中地體系。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Watch shops open” and see the circles squeeze into hexagons. Then switch to “Hierarchy” and compare k = 3, 4 and 7.">試試看：按「看商店開張」，看圓形的市場區怎麼擠成六邊形。再切到「中地體系」，比較 k = 3、4、7。</p>
+    <div class="lab cp" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="模式" data-en-aria-label="Mode" id="modeSeg">
+            <button type="button" data-mode="single" aria-pressed="true" data-en="One good">一種商品</button>
+            <button type="button" data-mode="hier" aria-pressed="false" data-en="Hierarchy">中地體系</button>
+          </div>
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg" hidden>
+            <button type="button" data-view="map" aria-pressed="true" data-en="Map">平面圖</button>
+            <button type="button" data-view="3d" aria-pressed="false" data-en="3D ranks" title="把中地的等級畫成高度" data-en-title="Draw each central place's rank as height">立體等級</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="平原上的商店或中地與它們的市場區；點一下放一位消費者" data-en-aria-label="Shops or central places on the plain and their market areas; tap to place a shopper"></canvas>
+        <div class="playbar" id="playbar">
+          <button id="run" type="button" data-en="Watch shops open">看商店開張</button>
+          <button id="denser" type="button" hidden data-en="Shops closer" title="暫停時把店再排密一點" data-en-title="While paused, move the shops a little closer">店靠近一點</button>
+          <button id="looser" type="button" hidden data-en="Shops apart" title="暫停時把店再排疏一點" data-en-title="While paused, move the shops a little apart">店分開一點</button>
+          <button id="rewind" type="button" data-en="Back to the start" title="回到第一批商店剛開張（商品圈剛好相切）的時候" data-en-title="Back to when the first shops opened (ranges just touching)">回到一開始</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legS">
+          <span style="color:var(--cp-range)" data-en-html="<i class=&quot;ring&quot;></i>Range (farthest a shopper will go)"><i class="ring"></i>商品圈（顧客最遠願意走到）</span>
+          <span style="color:var(--cp-thr)" data-en-html="<i class=&quot;dash&quot;></i>Threshold radius"><i class="dash"></i>門檻半徑</span>
+          <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-served)&quot;></i>Can buy it"><i style="background:var(--cp-served)"></i>買得到</span>
+          <span style="color:var(--muted)" data-en-html="<i style=&quot;background:var(--cp-gap)&quot;></i>Too far: cannot buy it"><i style="background:var(--cp-gap)"></i>太遠，買不到</span>
+        </div>
+        <div class="legend" id="legH" hidden>
+          <span style="color:var(--cp-l1)" data-en-html="<i style=&quot;background:var(--cp-l1)&quot;></i>Rank 1 (village)"><i style="background:var(--cp-l1)"></i>第 1 級（村）</span>
+          <span style="color:var(--cp-l2)" data-en-html="<i style=&quot;background:var(--cp-l2)&quot;></i>Rank 2 (town)"><i style="background:var(--cp-l2)"></i>第 2 級（鎮）</span>
+          <span style="color:var(--cp-l3)" data-en-html="<i style=&quot;background:var(--cp-l3)&quot;></i>Rank 3 (city)"><i style="background:var(--cp-l3)"></i>第 3 級（市）</span>
+          <span style="color:var(--cp-l4)" data-en-html="<i style=&quot;background:var(--cp-l4)&quot;></i>Rank 4 (regional capital)"><i style="background:var(--cp-l4)"></i>第 4 級（區域中心）</span>
+          <span style="color:var(--cp-road)" data-en-html="<i class=&quot;dash&quot;></i>Roads"><i class="dash"></i>道路</span>
+        </div>
+        <p class="hint" data-en="Tap the map (or use the arrow keys) to place a shopper; near a shop or central place the marker snaps onto it.">點地圖（或用方向鍵）放一位消費者；靠近商店或中地時會自動對準。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Shoppers">消費者</h2>
+          <div class="slider"><label for="rho" data-en="Population density (people per km²)" title="平原上每平方公里住幾個人（到處一樣）" data-en-title="People living on each square kilometre of the plain (the same everywhere)">人口密度（人／平方公里）</label><output></output>
+            <input id="rho" type="range" min="10" max="1000" step="10" value="100" data-decimals="0"></div>
+        </section>
+        <section class="card" id="cardS">
+          <h2 data-en="The good">商品</h2>
+          <div class="slider"><label for="thr" data-en="Threshold (customers needed)" title="一家店至少要有這麼多顧客才撐得下去" data-en-title="The fewest customers a shop needs to stay open">門檻人口（至少要幾位顧客）</label><output></output>
+            <input id="thr" type="range" min="1.69897" max="5" step="0.005" value="3.30103" data-decimals="0"></div>
+          <div class="slider"><label for="rng" data-en="Range (km)" title="顧客為了買這種商品最遠願意走幾公里" data-en-title="The farthest a shopper will travel for this good">商品圈（公里）</label><output></output>
+            <input id="rng" type="range" min="0.5" max="20" step="0.1" value="5" data-decimals="2"></div>
+          <dl class="readout">
+            <dt data-en="Threshold radius" title="住在這個圓裡的人剛好是門檻人數：√(門檻 ÷ π ÷ 密度)" data-en-title="A circle holding exactly the threshold number of people: √(threshold ÷ π ÷ density)">門檻半徑</dt><dd id="sRT">—</dd>
+            <dt class="wide" data-en="Result">結果</dt><dd class="wide big" id="sStatus">—</dd>
+            <dt data-en="Shop spacing" title="自由進入以後，相鄰兩家店的距離" data-en-title="Distance between neighbouring shops once no more can enter">商店間距</dt><dd id="sD">—</dd>
+            <dt data-en="Market area per shop">每家店的市場區</dt><dd id="sA">—</dd>
+            <dt data-en="Shops per 1000 km²">每 1000 平方公里</dt><dd id="sN">—</dd>
+            <dt data-en="Farthest shopper" title="市場區裡離店最遠的顧客（六邊形的角）" data-en-title="The shopper farthest from the shop (a corner of the hexagon)">最遠的顧客</dt><dd id="sFar">—</dd>
+            <dt data-en="Average trip" title="市場區裡所有顧客到店的平均距離" data-en-title="Average distance from shoppers to the shop">平均走多遠</dt><dd id="sMean">—</dd>
+            <dt data-en="Can buy it">買得到的人</dt><dd id="sCov">—</dd>
+          </dl>
+          <dl class="readout" id="sGrow">
+            <dt data-en="Spacing now">現在的間距</dt><dd id="sS">—</dd>
+            <dt data-en="Customers per shop" title="每家店現在的顧客數（市場區 ∩ 商品圈裡的人）" data-en-title="Customers each shop has now (people in its market area and within range)">每家店的顧客</dt><dd id="sCus">—</dd>
+          </dl>
+        </section>
+        <section class="card" id="cardH" hidden>
+          <h2 data-en="Central places">中地體系</h2>
+          <p class="segl" data-en="Principle (k)">原則（k 值）</p>
+          <div class="segw" role="group" aria-label="原則" data-en-aria-label="Principle" id="kSeg">
+            <button type="button" data-k="3" aria-pressed="true" data-en-html="k = 3<small>Market</small>">k = 3<small>市場原則</small></button>
+            <button type="button" data-k="4" aria-pressed="false" data-en-html="k = 4<small>Transport</small>">k = 4<small>交通原則</small></button>
+            <button type="button" data-k="7" aria-pressed="false" data-en-html="k = 7<small>Administrative</small>">k = 7<small>行政原則</small></button>
+          </div>
+          <p class="segl" data-en="Number of ranks">等級數</p>
+          <div class="segw" role="group" aria-label="等級數" data-en-aria-label="Number of ranks" id="nSeg">
+            <button type="button" data-n="2" aria-pressed="false">2</button>
+            <button type="button" data-n="3" aria-pressed="true">3</button>
+            <button type="button" data-n="4" aria-pressed="false">4</button>
+          </div>
+          <div class="slider"><label for="d1" data-en="Spacing of rank-1 places (km)" title="相鄰兩個最低級中地（村）的距離" data-en-title="Distance between neighbouring lowest-rank places (villages)">第 1 級中地的間距（公里）</label><output></output>
+            <input id="d1" type="range" min="1" max="20" step="0.1" value="6" data-decimals="2"></div>
+          <p class="segl" data-en="Shade the market areas of rank">塗色顯示哪一級的市場區</p>
+          <div class="segw" role="group" aria-label="塗色顯示的市場區" data-en-aria-label="Market areas to shade" id="showSeg">
+            <button type="button" data-show="0" aria-pressed="false" data-en="None">不塗</button>
+            <button type="button" data-show="1" aria-pressed="false">1</button>
+            <button type="button" data-show="2" aria-pressed="true">2</button>
+            <button type="button" data-show="3" aria-pressed="false">3</button>
+            <button type="button" data-show="4" aria-pressed="false">4</button>
+          </div>
+          <div data-share-skip><button type="button" class="toggle" id="roads" aria-pressed="false"><span class="dot"></span><span data-en="Roads between rank-2 places">畫出第 2 級中地之間的道路</span></button></div>
+          <table class="tab" id="hTab" aria-label="各級中地" data-en-aria-label="Each rank"></table>
+        </section>
+        <section class="card" id="cardG" hidden>
+          <h2 data-en="Where is this good sold?">這種商品在哪一級賣？</h2>
+          <div class="slider"><label for="gT" data-en="Threshold (customers needed)">門檻人口（至少要幾位顧客）</label><output></output>
+            <input id="gT" type="range" min="2" max="7" step="0.005" value="4" data-decimals="0"></div>
+          <div class="slider"><label for="gR" data-en="Range (km)">商品圈（公里）</label><output></output>
+            <input id="gR" type="range" min="1" max="100" step="0.1" value="30" data-decimals="2"></div>
+          <dl class="readout">
+            <dt data-en="Sold at" title="市場區人數 ≥ 門檻的最低一級中地" data-en-title="The lowest rank whose market area holds at least the threshold">在哪一級賣</dt><dd id="gL" class="big">—</dd>
+            <dt data-en="People in its market area">市場區的人口</dt><dd id="gPop">—</dd>
+            <dt data-en="Threshold ÷ market" title="門檻占市場區人口的比例；100% 表示剛好夠、沒有多賺" data-en-title="Threshold as a share of the market; 100% means just enough, no excess profit">門檻占市場區</dt><dd id="gFill">—</dd>
+            <dt data-en="Farthest shopper" title="這一級市場區裡離中地最遠的顧客" data-en-title="The farthest shopper in a market area of this rank">最遠的顧客</dt><dd id="gFar">—</dd>
+            <dt data-en="Can buy it">買得到的人</dt><dd id="gCov">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="The shopper">消費者在這裡</h2>
+          <p class="hint" id="pHint" data-en="Tap the map to place a shopper.">點地圖放一位消費者。</p>
+          <table class="tab" id="pTab" aria-label="最近的商店或中地" data-en-aria-label="Nearest shops or central places"></table>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Threshold and range">門檻與商品圈</h3>
+      <p data-en="In 1933 the German geographer Walter Christaller studied the towns of southern Germany and asked why they were spaced so regularly. His answer starts with two limits that every good or service has.">1933 年，德國地理學家克里斯泰勒（Walter Christaller）研究德國南部的城鎮，想知道它們為什麼分布得那麼有規律。他的答案從每一種商品或服務都有的兩個界限開始。</p>
+      <ul>
+        <li data-en-html="<b>Threshold</b>: the smallest number of customers a shop needs to cover its costs. On a plain with density \(\rho\), the threshold fits inside a circle of radius \(r_T = \sqrt{T/(\pi\rho)}\).">門檻：一家店要撐得下去，至少需要的顧客數。在人口密度 \(\rho\) 的平原上，門檻人數剛好住在半徑 \(r_T = \sqrt{T/(\pi\rho)}\) 的圓裡。</li>
+        <li data-en-html="<b>Range</b>: the farthest a shopper is willing to travel for the good. People go far for a hospital or a department store, but not for bread.">商品圈（最大範圍）：顧客為了買這種商品最遠願意走多遠。看醫院、逛百貨公司可以走很遠，買麵包就不會。</li>
+        <li data-en-html="If the range is smaller than the threshold radius, no shop can survive: the good is simply not offered here.">商品圈比門檻半徑還小，任何店都撐不下去：這裡根本買不到這種商品。</li>
+      </ul>
+      <h3 data-en="Why hexagons?">為什麼是六邊形？</h3>
+      <p data-en-html="While shops earn more than they need, new shops keep opening between them. Circles cannot cover a plane without gaps or overlaps, so the market areas are squeezed into the shape that tiles the plane while staying closest to a circle: the regular hexagon. Entry stops when each hexagon holds exactly the threshold:">只要店家賺的比需要的多，就會有新店開在它們之間。圓形沒辦法不留空隙、也不重疊地鋪滿平面，市場區被擠成「可以鋪滿平面、又最接近圓」的形狀：正六邊形。當每個六邊形剛好裝下門檻人數，就不再有新店開張：</p>
+      <div class="formula">\[ \rho\cdot\frac{\sqrt3}{2}\,d^2 = T \quad\Longrightarrow\quad d = \sqrt{\frac{2T}{\sqrt3\,\rho}} \]</div>
+      <ul>
+        <li data-en-html="The farthest shopper is at a corner of the hexagon, \(d/\sqrt3\) away. Everyone can buy the good only if the range reaches that far.">最遠的顧客在六邊形的角，距離 \(d/\sqrt3\)。商品圈要伸到那裡，才是人人買得到。</li>
+        <li data-en-html="The average trip in a regular hexagon is \(\left(\tfrac23 + \tfrac{\ln 3}{2}\right)\dfrac{d}{2\sqrt3} \approx 0.351\,d\).">在正六邊形裡，顧客到店的平均距離是 \(\left(\tfrac23 + \tfrac{\ln 3}{2}\right)\dfrac{d}{2\sqrt3} \approx 0.351\,d\)。</li>
+        <li data-en="Double the population density and every shop needs only half the area, so the spacing shrinks by a factor of √2.">人口密度變兩倍，每家店只需要一半的面積，間距縮成 1/√2。</li>
+      </ul>
+      <h3 data-en="The hierarchy of central places">中地的等級</h3>
+      <p data-en="Goods with a small threshold (bread, a convenience store) are sold in every village; goods with a large threshold (a hospital, a university) only in a few big places, each serving a large market area that contains many smaller ones. Every higher-rank place also sells everything the lower ranks sell. How the small market areas nest inside the large ones follows one of three principles:">門檻小的商品（麵包、便利商店）每個村都有；門檻大的（大醫院、大學）只在少數大地方，每個大地方服務一個包含許多小市場區的大市場區。高級中地也同時賣所有低級中地賣的東西。小市場區怎麼套進大市場區，有三種原則：</p>
+      <div class="tablewrap"><table>
+        <tr><th data-en="Principle">原則</th><th>k</th><th data-en="Where the lower places sit">低級中地在哪裡</th><th data-en="Rank areas: 1, 2, 3, 4">各級市場區數</th></tr>
+        <tr><td data-en="Market">市場原則</td><td>3</td><td data-en="At the corners of the higher market area, shared by three higher places: shoppers can choose among three. Serves the most people with the fewest places.">在高級市場區的角上，被三個高級中地共用：消費者有三個一樣近的選擇。用最少的中地服務所有人。</td><td>1 : 3 : 9 : 27</td></tr>
+        <tr><td data-en="Transport">交通原則</td><td>4</td><td data-en="Halfway along the straight road between two higher places, so as many places as possible lie on the main roads.">在兩個高級中地之間的直路正中間，讓最多的中地位在主要道路上。</td><td>1 : 4 : 16 : 64</td></tr>
+        <tr><td data-en="Administrative">行政原則</td><td>7</td><td data-en="Entirely inside one higher market area, so each lower place belongs to exactly one higher place — handy for drawing administrative boundaries.">完全在一個高級市場區裡面，每個低級中地只屬於一個高級中地，方便畫行政區界。</td><td>1 : 7 : 49 : 343</td></tr>
+      </table></div>
+      <p data-en-html="With \(n\) ranks, the spacing grows by \(\sqrt k\) from one rank to the next, and one top-rank market area contains \(k^{\,n-1}\) rank-1 market areas. Counting places that are exactly rank \(L\), there are \(1\), \(k-1\), \(k(k-1)\), … of them per top-rank area: far more villages than cities.">有 \(n\) 個等級時，每升一級間距變成 \(\sqrt k\) 倍，一個最高級市場區包含 \(k^{\,n-1}\) 個第 1 級市場區。數「剛好是第 \(L\) 級」的中地，每個最高級市場區裡依序有 \(1\)、\(k-1\)、\(k(k-1)\)……個：村比城市多得多。</p>
+      <p data-en="Christaller found this pattern in southern Germany: the smallest market towns were about 7 km apart, and the next ranks about 12, 21, 36 and 62 km — each about √3 times the one before, as the market principle predicts.">克里斯泰勒在德國南部找到的就是這種規律：最小的市集鎮大約相隔 7 公里，往上幾級大約相隔 12、21、36、62 公里，每一級約是前一級的 √3 倍，正是市場原則的預測。</p>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Make the range just a little bigger than the threshold radius. Where are the people who cannot buy the good?">讓商品圈只比門檻半徑大一點點：買不到的人住在哪裡？</li>
+        <li data-en="In the hierarchy, put a shopper on a rank-1 place. How many equally near rank-2 places can they choose from under k = 3, 4 and 7?">在中地體系裡，把消費者放在一個第 1 級中地上：k = 3、4、7 時，各有幾個一樣近的第 2 級中地可以選？</li>
+        <li data-en="Raise the threshold of a good step by step. At which values does it jump to the next rank?">把一種商品的門檻一點一點調高：在哪些數字會跳到更高一級？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="The plain is perfectly flat and uniform, travel costs the same in every direction, and every shopper goes to the nearest place that sells the good.">平原完全平坦均質，往各方向移動的成本一樣，每個人都到最近一個有賣的地方買。</li>
+        <li data-en="Shops of one good are placed on a perfect triangular grid. Real towns are shaped by rivers, mountains, history and roads, so the pattern is never this regular; the theory explains the tendency, not every town.">同一種商品的店排成完美的三角形格子。真實的城鎮受到河流、山地、歷史與交通的影響，不會這麼規則；中地理論說明的是傾向，不是每一個城鎮。</li>
+        <li data-en="The opening animation shows free entry: shops start with their ranges just touching and move closer while each still has more customers than the threshold.">開店動畫是「自由進入」的示意：一開始商品圈剛好相切，只要每家店的顧客還比門檻多，店就越開越密。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Settlements and transport (Bd-Ⅴ, central places).">課綱對應：高中地理・聚落與交通（地 Bd-Ⅴ，中地）。</li>
+        <li data-en="W. Christaller (1933), Die zentralen Orte in Süddeutschland, Jena: Gustav Fischer. English translation by C. W. Baskin (1966), Central Places in Southern Germany, Prentice-Hall.">W. Christaller（1933），《Die zentralen Orte in Süddeutschland》（德國南部的中地），耶拿：Gustav Fischer；C. W. Baskin 英譯（1966），《Central Places in Southern Germany》，Prentice-Hall。</li>
+        <li data-en="A. Lösch (1940), Die räumliche Ordnung der Wirtschaft (The Economics of Location), Jena: Gustav Fischer.">A. Lösch（1940），《Die räumliche Ordnung der Wirtschaft》（區位經濟學），耶拿：Gustav Fischer。</li>
+        <li data-en="All numbers in this lab are invented for teaching; no outside data are used.">本實驗的數字都是為了教學而設計的，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/central-place-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/central-place.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="central-place"></script>
+  <script src="js/missions/central-place.js"></script>
+  <script src="js/stats.js" data-module="central-place"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
