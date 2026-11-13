@@ -553,12 +553,22 @@
 
     toggle.addEventListener('click', function () {
       state.on = !state.on;
-      try { sessionStorage.setItem('ms-on:' + state.module, state.on ? '1' : ''); } catch (e) { /* 忽略 */ }
+      msPref = state.on;
+      try { sessionStorage.setItem('ms-on:' + state.module, state.on ? '1' : '0'); } catch (e) { /* 忽略 */ }
       if (state.on) list.forEach(function (m) { m.mem = {}; }); // 開啟時重新開始判定
       changed();
     });
-    try { state.on = !!sessionStorage.getItem('ms-on:' + state.module); } catch (e) { /* 忽略 */ }
+    /* 任務模式開關：這個分頁裡自己按過就照自己的選擇（'1' 開、'0' 或舊版的 '' 關）；
+       沒按過時，用 Google 帳號登入就預設開啟、沒登入就預設關閉（11/13 站長要求） */
+    let msPref = null;
+    try { const v = sessionStorage.getItem('ms-on:' + state.module); msPref = v === '1' ? true : v === null ? null : false; } catch (e) { /* 忽略 */ }
+    state.on = msPref === true || (msPref === null && !!state.user);
     if (state.daily) state.on = true; // 每日任務模式：一進來就開任務模式
+    listeners.push(function () {
+      if (msPref !== null || state.daily) return;
+      const want = !!state.user;
+      if (state.on !== want) { state.on = want; if (want) list.forEach(function (m) { m.mem = {}; }); }
+    });
 
     function render() {
       const total = list.reduce(function (a, m) { return a + starsOf(m); }, 0);
