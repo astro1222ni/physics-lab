@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Vibration Modes of Drums and Plates | Astro Ni Science Lab">鼓與板的振動模態｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 鼓與板頁面專用的顏色代號（淺色＋兩組深色；由 js/drum-modes.js 與 js/drum-modes-3d.js 讀取） */
+    :root {
+      --dm-up: #c2410c; --dm-down: #1d4ed8; --dm-skin: #eee6d3; --dm-node: #facc15; --dm-strike: #7c3aed;
+      --dm-bar: #2563eb; --dm-good: #15803d; --dm-warn: #b45309; --dm-rim: #a8adb3; --dm-copper: #b8743d;
+      --dm-shell: #8f2d2d; --dm-plate: #c9ced4; --dm-felt: #f3ecdc;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --dm-up: #fb923c; --dm-down: #60a5fa; --dm-skin: #3a3630; --dm-node: #fde047; --dm-strike: #c4b5fd;
+        --dm-bar: #7aa7ff; --dm-good: #4ade80; --dm-warn: #fbbf24; --dm-rim: #8d939a; --dm-copper: #a7652f;
+        --dm-shell: #7a2a2a; --dm-plate: #9aa1a8; --dm-felt: #e2d9c6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --dm-up: #fb923c; --dm-down: #60a5fa; --dm-skin: #3a3630; --dm-node: #fde047; --dm-strike: #c4b5fd;
+      --dm-bar: #7aa7ff; --dm-good: #4ade80; --dm-warn: #fbbf24; --dm-rim: #8d939a; --dm-copper: #a7652f;
+      --dm-shell: #7a2a2a; --dm-plate: #9aa1a8; --dm-felt: #e2d9c6;
+    }
+
+    /* 畫布高度由程式依寬度決定。只有按在鼓面上才攔下觸控，其他時候手機可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: pointer; }
+    #cv2 { aspect-ratio: auto; height: 190px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; background: var(--canvas-bg); cursor: pointer; touch-action: pan-y; }
+    .dm button { min-height: 44px; }
+    .dm [hidden] { display: none !important; }
+    .dm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .dm .playbar button { flex: 1 1 auto; }
+    .dm .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .dm #stop:disabled { opacity: .5; }
+    .dm .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .dm .stage .hint { margin: 2px 4px 0; }
+    .dm .slider input[type="range"] { height: 28px; margin: 0; }
+    .dm .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .dm .panel { grid-template-columns: minmax(0, 1fr); }
+    .dm .panel > .card { min-width: 0; }
+    /* 圓形鼓（理想膜、定音鼓）與方板顯示不同的控制項；單一模態時才有「只聽這個模態」 */
+    .dm[data-drum="plate"] .circ-only { display: none !important; }
+    .dm:not([data-drum="plate"]) .plate-only { display: none !important; }
+    .dm[data-sel="all"] .single-only { display: none !important; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 10px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1 1 0; min-width: 0; }
+    .modepick { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: 6px; align-items: center; margin: 4px 0 0; }
+    .modepick label { grid-column: 1 / -1; font-size: calc(14px * var(--fs, 1)); }
+    .modepick select { min-height: 44px; width: 100%; min-width: 0; font: inherit; font-size: calc(14px * var(--fs, 1)); padding: 4px 8px; border-radius: 10px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text); font-variant-numeric: tabular-nums; }
+    .modepick button { padding: 0; }
+    .dm .wide { width: 100%; margin: 10px 0 0; }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.big { font-weight: 700; color: var(--dm-bar); }
+    dl.readout dd.good { color: var(--dm-good); font-weight: 700; }
+    dl.readout dd.warn { color: var(--dm-warn); font-weight: 700; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.dm-t { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.dm-t th, table.dm-t td { padding: 4px 5px; border-bottom: 1px solid var(--border); white-space: nowrap; text-align: right; }
+    table.dm-t th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); }
+    table.dm-t th:first-child, table.dm-t td:first-child { text-align: left; }
+    table.dm-t tr.sel td { background: var(--accent-soft); }
+    table.dm-t td.ok { color: var(--dm-good); font-weight: 600; }
+    table.dm-t td.off { color: var(--dm-warn); font-weight: 600; }
+    #log:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .formula { overflow-x: auto; overflow-y: hidden; }
+    /* 2D／3D 檢視切換（與弦樂器、帶電粒子模組相同） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-tools { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .stage.is3d .cvwrap { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; cursor: grab; aspect-ratio: 16 / 10; touch-action: none;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .dm3-labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: 8px; }
+    .dm3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
+    .dm3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#instruments&quot;>Music · The Science of Instruments</a> / Percussion"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#instruments">音樂・樂器的科學</a> ／ 打擊樂器</nav>
+      <h1 data-en="Vibration Modes of Drums and Plates">鼓與板的振動模態</h1>
+      <p data-en="Why does a snare drum or a bass drum have no clear pitch, while the timpani can be tuned and play with the orchestra? A drumhead vibrates in many patterns at once, each with its own frequency — and they are not whole-number multiples of each other. Strike the drumhead in different places, look at the shape of each mode and its lines that never move, and compare an ideal membrane, a kettledrum and a square metal plate.">為什麼小鼓、大鼓沒有明確的音高，定音鼓卻可以調音、和樂團一起演奏？鼓面同時用很多種形狀振動，每一種有自己的頻率，而且彼此不是整數倍。敲在鼓面不同的地方、看每個模態的形狀和永遠不動的節線，比一比理想的圓膜、定音鼓和方形金屬板。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “▶ Strike”, then set “From the centre r/a” to 0 and strike again — which bars are gone?">試試看：按「▶ 敲一下」，再把「離中心 r/a」設成 0 再敲，看頻譜少了哪些長條。</p>
+    <div class="lab dm" id="lab" data-drum="membrane" data-sel="all">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="view-tools">
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <div class="cvwrap">
+          <canvas id="cv" tabindex="0" aria-label="鼓面俯視圖：顏色表示鼓面往上（暖色）或往下（冷色），亮黃線是節線，圓點是敲擊點。在鼓面上點一下就敲那裡，按住拖曳可以先找位置，放開才敲。" data-en-aria-label="Top view of the drumhead: warm colours mean the surface is moving up, cool colours down; bright yellow lines are nodal lines and the dot is the striking point. Tap the drumhead to strike there; drag to choose a spot and let go to strike."></canvas>
+        </div>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="strike" type="button" class="primary" data-en="▶ Strike">▶ 敲一下</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除敲擊紀錄並讓鼓面停下；鼓的種類、滑桿的設定不變" data-en-title="Clear the striking record and stop the drumhead; the drum and slider settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="earHint" data-en="Wearing headphones? Turn the volume down first: a small, tight drum and the plate’s high modes can be shrill. The sound is an approximation made by adding the modes.">戴耳機的同學先把音量調小：小而緊的鼓、方板的高次模態可能很尖。聲音是把各個模態加起來合成的近似。</p>
+        <p class="hint" id="lowHint" hidden></p>
+        <div class="legend">
+          <span style="color:var(--dm-up)" data-en-html="<i style=&quot;background:var(--dm-up)&quot;></i>Moving up"><i style="background:var(--dm-up)"></i>往上</span>
+          <span style="color:var(--dm-down)" data-en-html="<i style=&quot;background:var(--dm-down)&quot;></i>Moving down"><i style="background:var(--dm-down)"></i>往下</span>
+          <span data-en-html="<i style=&quot;background:var(--dm-node)&quot;></i>Nodal lines (single mode)"><i style="background:var(--dm-node)"></i>節線（單一模態）</span>
+          <span style="color:var(--dm-strike)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--dm-strike)&quot;></i>Striking point"><i class="dot" style="background:var(--dm-strike)"></i>敲擊點</span>
+          <span data-en-html="<i class=&quot;dash&quot;></i>Whole-number multiples"><i class="dash"></i>整數倍的位置</span>
+        </div>
+        <canvas id="cv2" role="img" aria-label="頻譜：各模態的頻率與振幅，虛線是整數倍泛音的位置。點一根長條可以單獨看那個模態。" data-en-aria-label="Spectrum: the frequency and amplitude of each mode; dashed lines mark whole-number multiples. Tap a bar to look at that mode alone."></canvas>
+        <p class="chart-note" data-en-html="Bar height: how far each mode swings after the strike (\(\propto\) the mode’s value at the striking point ÷ its frequency). The outline is what a strike at the current point would give; the filled part fades after a strike — high modes fade first. A small hollow mark is a mode that is not excited at all. Horizontal axis: frequency ÷ the reference \(f_\mathrm{ref}\), so a perfectly harmonic sound would put every bar on a dashed line.">長條高度：敲一下後各模態振動的幅度（\(\propto\) 模態在敲擊點的值 ÷ 頻率）。外框是「在目前的敲擊點敲下去」會得到的大小；敲過之後實心部分逐漸衰減，高次模態先消失。底下的小空心記號是完全沒被敲出來的模態。橫軸是頻率 ÷ 參考基音 \(f_\mathrm{ref}\)：如果是整數倍的泛音，每根長條都會剛好落在虛線上。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Kind of drum">鼓的種類</h2>
+          <div class="seg full" id="drums" role="group" aria-label="鼓的種類" data-en-aria-label="Kind of drum">
+            <button type="button" data-drum="membrane" aria-pressed="true" data-en="Ideal membrane">理想膜</button>
+            <button type="button" data-drum="timpani" aria-pressed="false" data-en="Timpani">定音鼓</button>
+            <button type="button" data-drum="plate" aria-pressed="false" data-en="Square plate">方形薄板</button>
+          </div>
+          <p class="hint" id="drumNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Size and tension">大小與張力</h2>
+          <div class="circ-only">
+            <div class="slider"><label for="rad" data-en="Radius a (cm)">半徑 a（cm）</label><output id="rado"></output>
+              <input id="rad" type="range" min="10" max="40" step="0.1" value="30" data-decimals="2"></div>
+            <div class="slider"><label for="ten" data-en="Tension T (N/m)">張力 T（N/m）</label><output id="teno"></output>
+              <input id="ten" type="range" min="800" max="10000" step="10" value="3000" data-decimals="1"></div>
+            <p class="hint" data-en-html="Drumhead: polyester film (Mylar) 0.19 mm thick, about 0.264 kg per m<sup>2</sup>. \(T\) is the pull on each metre of the rim.">鼓皮：厚 0.19 mm 的聚酯薄膜（Mylar），每平方公尺約 0.264 kg。\(T\) 是鼓邊每公尺受到的拉力。</p>
+          </div>
+          <div class="plate-only">
+            <div class="slider"><label for="side" data-en="Side length L (cm)">邊長 L（cm）</label><output id="sideo"></output>
+              <input id="side" type="range" min="15" max="40" step="0.1" value="30" data-decimals="2"></div>
+            <div class="slider"><label for="thick" data-en="Plate thickness h (mm)">板厚 h（mm）</label><output id="thicko"></output>
+              <input id="thick" type="range" min="1.5" max="5" step="0.01" value="2" data-decimals="3"></div>
+            <p class="hint" data-en-html="Aluminium plate (\(E\) = 69 GPa, density 2700 kg/m<sup>3</sup>), simply supported on all four edges: the edges cannot move up or down but are free to tilt.">鋁板（\(E\) = 69 GPa、密度 2700 kg/m<sup>3</sup>），四邊簡支：邊緣不能上下移動，但可以自由轉動。</p>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Striking point">敲擊點</h2>
+          <div class="circ-only">
+            <div class="slider"><label for="sr" data-en="From the centre r/a">離中心 r/a</label><output id="sro"></output>
+              <input id="sr" type="range" min="0" max="0.98" step="0.001" value="0.55" data-decimals="4"></div>
+            <div class="slider"><label for="sth" data-en="Direction θ (°)">方位角 θ（°）</label><output id="stho"></output>
+              <input id="sth" type="range" min="0" max="359" step="1" value="30" data-decimals="1"></div>
+          </div>
+          <div class="plate-only">
+            <div class="slider"><label for="sx" data-en="Across x/L">橫向 x/L</label><output id="sxo"></output>
+              <input id="sx" type="range" min="0.02" max="0.98" step="0.001" value="0.3" data-decimals="4"></div>
+            <div class="slider"><label for="sy" data-en="Up y/L">縱向 y/L</label><output id="syo"></output>
+              <input id="sy" type="range" min="0.02" max="0.98" step="0.001" value="0.37" data-decimals="4"></div>
+          </div>
+          <p class="hint" data-en="You can also tap the drumhead to strike there, or drag to find a spot and let go to strike.">也可以直接在鼓面上點一下（就敲在那裡），或按住拖曳找位置、放開才敲。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="One mode at a time">單一模態</h2>
+          <div class="modepick">
+            <label for="modeSel" data-en="Mode">模態</label>
+            <button type="button" id="modePrev" aria-label="上一個模態（頻率較低）" data-en-aria-label="Previous mode (lower)">◀</button>
+            <select id="modeSel"></select>
+            <button type="button" id="modeNext" aria-label="下一個模態（頻率較高）" data-en-aria-label="Next mode (higher)">▶</button>
+          </div>
+          <p class="hint" id="modeNote"></p>
+          <button type="button" class="wide single-only" id="hearMode" data-en="▶ Hear this mode alone">▶ 只聽這個模態</button>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Damping">阻尼</h2>
+          <div class="slider"><label for="damp" data-en="Damping γ (1/s, lowest mode)">阻尼 γ（1/s，最低模態）</label><output id="dampo"></output>
+            <input id="damp" type="range" min="0.3" max="8" step="0.1" value="1.2" data-decimals="2"></div>
+          <p class="hint" data-en-html="Each mode dies away as \(e^{-t/\tau}\) with \(1/\tau = \gamma\,f/f_\mathrm{low}\): the higher the mode, the faster it fades.">每個模態以 \(e^{-t/\tau}\) 衰減，\(1/\tau = \gamma\,f/f_\mathrm{low}\)：頻率越高的模態消失得越快。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt id="rBaseL">基準頻率</dt><dd class="big" id="rBase">—</dd>
+            <dt data-en="Note (A4 = 440 Hz)">音名（A4 = 440 Hz）</dt><dd id="rNote">—</dd>
+            <dt data-en-html="Reference \(f_\mathrm{ref}\) for whole-number multiples">整數倍的參考基音 \(f_\mathrm{ref}\)</dt><dd id="rRef">—</dd>
+            <dt id="rCL">波速 c</dt><dd id="rC">—</dd>
+            <dt data-en="Modes excited">被敲出來的模態</dt><dd id="rEx">—</dd>
+            <dt data-en="Off whole-number multiples (weighted)">偏離整數倍（振幅加權）</dt><dd id="rInh">—</dd>
+            <dt data-en="Spectral centre (brightness)">頻譜重心（亮度）</dt><dd id="rCen">—</dd>
+            <dt data-en="Selected mode">選中的模態</dt><dd id="rSel">—</dd>
+          </dl>
+          <p class="hint" data-en="The fewer cents off, the more the modes sound like the harmonics of one note — the clearer the pitch.">偏離的音分越小，各模態越像同一個音的泛音，音高就越明確。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Modes excited here">這裡敲得出來的模態</h2>
+          <div class="tablewrap"><table class="dm-t" id="modeTable"></table></div>
+          <p class="hint" id="modeTableNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Striking record">敲擊紀錄</h2>
+          <div class="tablewrap"><table class="dm-t" id="log"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Nothing struck yet.">還沒有敲過。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="The modes of a round drumhead">圓形鼓膜的模態</h3>
+      <p data-en-html="A drumhead is a thin membrane stretched with tension \(T\) (force per metre of rim) and mass per area \(\sigma\). A small bump travels across it at \(c = \sqrt{T/\sigma}\), and its height \(w\) obeys the two-dimensional wave equation \(\partial^2 w/\partial t^2 = c^2 \nabla^2 w\). The rim holds the edge still, \(w(a) = 0\). The shapes that can keep vibrating on their own, the <strong>modes</strong>, are">鼓皮是一張被張力 \(T\)（鼓邊每公尺的拉力）張緊、每平方公尺質量 \(\sigma\) 的薄膜。鼓面上的小起伏以 \(c = \sqrt{T/\sigma}\) 傳開，鼓面的高度 \(w\) 遵守二維波動方程式 \(\partial^2 w/\partial t^2 = c^2 \nabla^2 w\)，而鼓框讓邊緣固定不動：\(w(a) = 0\)。能夠自己一直振動下去的形狀叫做<strong>模態</strong>：</p>
+      <div class="formula">\[ w_{m,n}(r,\theta,t) = J_m\!\left(j_{m,n}\frac{r}{a}\right)\cos m\theta\,\cos 2\pi f_{m,n}t, \qquad f_{m,n} = \frac{j_{m,n}}{2\pi a}\sqrt{\frac{T}{\sigma}}, \qquad J_m(j_{m,n}) = 0 \]</div>
+      <p data-en-html="\(J_m\) is the Bessel function of order \(m\), and \(j_{m,n}\) is its \(n\)-th zero, because the edge \(r = a\) must be a zero. Mode \((m, n)\) has \(m\) <strong>nodal diameters</strong> and \(n\) <strong>nodal circles</strong> (counting the rim) — lines that never move. The first zeros are \(j_{0,1} = 2.405\), \(j_{1,1} = 3.832\), \(j_{2,1} = 5.136\), \(j_{0,2} = 5.520\), \(j_{3,1} = 6.380\), \(j_{1,2} = 7.016\), so the frequencies are 1 : 1.593 : 2.136 : 2.295 : 2.653 : 2.917 … — not 1 : 2 : 3 : 4 like a string. That is why an ordinary drum sounds like a thud with no clear note. The page computes the Bessel function and its zeros itself and checks them against the published tables.">\(J_m\) 是 \(m\) 階的貝索函數；因為鼓邊 \(r = a\) 一定要是零點，所以用到它的第 \(n\) 個零點 \(j_{m,n}\)。模態 \((m, n)\) 有 \(m\) 條<strong>直徑節線</strong>與 \(n\) 個<strong>節圓</strong>（包含鼓邊），這些線永遠不動。前幾個零點是 \(j_{0,1} = 2.405\)、\(j_{1,1} = 3.832\)、\(j_{2,1} = 5.136\)、\(j_{0,2} = 5.520\)、\(j_{3,1} = 6.380\)、\(j_{1,2} = 7.016\)，頻率比是 1 : 1.593 : 2.136 : 2.295 : 2.653 : 2.917……，不像弦那樣是 1 : 2 : 3 : 4。所以一般的鼓聽起來是「咚」一聲，沒有明確的音名。這一頁自己算出貝索函數與零點，並和數學手冊的表對照。</p>
+
+      <h3 data-en="Where you strike decides which modes sound">敲哪裡決定哪些模態會響</h3>
+      <p data-en-html="A quick tap at the point \((r_s, \theta_s)\) gives each mode a speed proportional to the mode’s value at that point; the mode then swings with amplitude speed ÷ \(2\pi f\):">在 \((r_s, \theta_s)\) 快速敲一下，每個模態得到的速度和「模態在敲擊點的值」成正比，接著以「速度 ÷ \(2\pi f\)」的幅度振動：</p>
+      <div class="formula">\[ w(r,\theta,t) = \sum_{m,n} \frac{\hat\phi_{m,n}(r_s)}{2\pi f_{m,n}}\,\hat\phi_{m,n}(r,\theta-\theta_s)\, e^{-t/\tau_{m,n}} \sin 2\pi f_{m,n}t \]</div>
+      <p data-en-html="Here \(\hat\phi\) is the mode shape scaled so that its root-mean-square over the whole drumhead is 1. Strike on a nodal circle of a mode and that mode stays silent. Strike at the very centre and every mode with \(m \ge 1\) is silent, since \(J_m(0) = 0\): only the round, ‘breathing’ modes \((0, n)\) remain. The nodal diameters behave differently: every mode with \(m \ge 1\) comes in a pair (\(\cos m\theta\) and \(\sin m\theta\)) with exactly the same frequency, so the strike always excites the combination whose crest passes through the striking point. The diameters turn to dodge the stick — only the nodal circles and the centre cannot be dodged.">\(\hat\phi\) 是把模態的大小調成「在整個鼓面上的均方根 = 1」。敲在某個模態的節圓上，那個模態就不會響。敲在正中心，所有 \(m \ge 1\) 的模態都不響（因為 \(J_m(0) = 0\)），只剩圓對稱、像在「呼吸」的 \((0, n)\) 模態。直徑節線卻不一樣：\(m \ge 1\) 的模態都是成對的（\(\cos m\theta\) 與 \(\sin m\theta\)），頻率完全相同，敲下去被激發的永遠是「波峰剛好通過敲擊點」的那個組合。直徑節線會轉個方向躲開鼓棒——躲不掉的只有節圓和中心。</p>
+
+      <h3 data-en="The timpani">定音鼓</h3>
+      <p data-en-html="A kettledrum uses the same kind of head, but the head has to push the air above it and the air sealed in the copper kettle below. This extra load lowers the frequencies by different amounts. Measured on real timpani, the modes \((1,1), (2,1), (3,1), (4,1), (5,1)\) come out at 1.00 : 1.50 : 1.98 : 2.44 : 2.94 (Fletcher &amp; Rossing; Rossing 1982) — almost 2 : 3 : 4 : 5 : 6, like harmonics 2 to 6 of one note. The \((1,1)\) mode is called the <em>principal tone</em>; \((2,1)\) sounds a fifth above it and \((3,1)\) almost an octave above. The round modes \((0, n)\) push the air in and out of the kettle; they lose their energy very quickly and mostly add the thud at the start, so they are left out here. The page uses the measured ratios with the ideal mode shapes.">定音鼓的鼓皮一樣，但鼓皮要推動上方的空氣、還有底下銅製鼓腔裡封住的空氣。這個額外的負載讓各模態的頻率降低不同的量。真實定音鼓的實測：\((1,1)\)、\((2,1)\)、\((3,1)\)、\((4,1)\)、\((5,1)\) 的頻率比是 1.00 : 1.50 : 1.98 : 2.44 : 2.94（Fletcher 與 Rossing；Rossing 1982），幾乎就是 2 : 3 : 4 : 5 : 6，像同一個音的第 2 到第 6 泛音。\((1,1)\) 叫做主音（principal tone），\((2,1)\) 比它高五度、\((3,1)\) 幾乎高八度。圓對稱的 \((0, n)\) 模態讓空氣進出鼓腔，能量很快就散掉，主要貢獻剛敲下去的那一聲「咚」，所以這裡沒有放進來。這一頁用實測的比值，配上理想膜的模態形狀。</p>
+
+      <h3 data-en="A square plate">方形薄板</h3>
+      <p data-en-html="A thin plate is stiff instead of stretched: it resists bending, so its waves follow a different equation and the frequencies grow with the square of the wave number. For a square aluminium plate of side \(L\), thickness \(h\), simply supported on all four edges,">薄板不是靠張力，而是靠「抗彎曲的硬度」恢復原狀，所以波動方程式不同，頻率和波數的平方成正比。邊長 \(L\)、厚度 \(h\)、四邊簡支的方形鋁板：</p>
+      <div class="formula">\[ w_{m,n} = \sin\frac{m\pi x}{L}\sin\frac{n\pi y}{L}, \qquad f_{m,n} = \frac{\pi}{2}\sqrt{\frac{D}{\rho h}}\;\frac{m^2+n^2}{L^2}, \qquad D = \frac{E h^3}{12(1-\nu^2)} \]</div>
+      <p data-en-html="Doubling the side lowers every mode by two octaves; doubling the thickness raises them by one. Modes \((m, n)\) and \((n, m)\) have the same frequency, and a strike mixes them into new patterns — the same idea as Chladni figures, which violin and guitar makers use to check their plates (another experiment on this site will show them). Some equalities are pure coincidences of arithmetic: \(1^2 + 7^2 = 5^2 + 5^2 = 50\).">邊長加倍，每個模態都低兩個八度；厚度加倍，高一個八度。\((m, n)\) 與 \((n, m)\) 的頻率相同，敲一下會把它們混成新的圖形——這就是克拉尼圖形的道理，小提琴、吉他的製琴師也用它檢查面板（本站另有克拉尼圖形的實驗）。有些頻率相同純粹是數字的巧合：\(1^2 + 7^2 = 5^2 + 5^2 = 50\)。</p>
+
+      <h2 data-en="What it means in music">音樂上的意義</h2>
+      <h3 data-en="Drums with and without a note">有音高與沒有音高的鼓</h3>
+      <p data-en-html="Snare drums, bass drums and tom-toms are written on a percussion staff without note names: their modes are spread out at non-whole-number ratios, and the ear cannot fuse them into one pitch. Timpani are written with real notes and are tuned to the key of the piece. The player turns the tuning handles or presses the pedal to change the tension; since \(f \propto \sqrt{T}\), raising a note by a fifth (3 : 2) needs \((3/2)^2 = 2.25\) times the tension. An orchestra often has two timpani tuned to the tonic and the dominant of the key, a fourth or fifth apart.">小鼓、大鼓、中鼓在打擊樂譜上不寫音名：它們的模態以非整數比散開，耳朵沒辦法把它們合成一個音高。定音鼓卻寫真正的音符，而且要依樂曲的調來調音。演奏者轉動調音把手或踩踏板改變張力；因為 \(f \propto \sqrt{T}\)，要升高一個五度（3 : 2），張力要變成 \((3/2)^2 = 2.25\) 倍。管弦樂團常用兩個定音鼓，分別調在曲子的主音與屬音，相差四度或五度。</p>
+      <h3 data-en="Where to hit">打在哪裡</h3>
+      <p data-en-html="Hitting a drum at the centre sounds dull and short: only the round modes are excited. Moving towards the rim excites more and more of the higher modes and the sound gets brighter. Timpanists strike between the centre and the rim, closer to the rim, where the pitched modes \((1,1)\), \((2,1)\), \((3,1)\) are all strong; they also choose soft or hard mallets, since a soft mallet stays on the head longer and excites fewer high modes (not modelled here).">敲在鼓的正中心，聲音悶而短：只有圓對稱的模態被敲出來。越往鼓邊移動，敲出來的高次模態越多，聲音越亮。定音鼓手敲在中心和鼓邊之間、比較靠近鼓邊的地方，那裡有音高的 \((1,1)\)、\((2,1)\)、\((3,1)\) 都很強；他們也會選軟或硬的鼓槌——軟槌貼在鼓皮上的時間比較長，敲出來的高次模態比較少（這裡沒有模擬）。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Not twice</strong>: look at mode \((1,1)\) alone. How many times higher than \((0,1)\) is it? Where are its lines that never move?"><strong>不是兩倍</strong>：單獨看 \((1,1)\) 模態。它是 \((0,1)\) 的幾倍？永遠不動的線在哪裡？</li>
+        <li data-en-html="<strong>The centre</strong>: strike at \(r/a = 0\) and compare the spectrum with a strike near the rim. Which bars are missing, and which sound is brighter?"><strong>正中心</strong>：在 \(r/a = 0\) 敲一下，和靠近鼓邊敲比一比頻譜。少了哪些長條？哪一個比較亮？</li>
+        <li data-en-html="<strong>Dodging diameters</strong>: look at \((1,1)\) alone and change the direction θ of the striking point. What happens to its nodal diameter?"><strong>會躲的直徑</strong>：單獨看 \((1,1)\)，改變敲擊點的方位角 θ。它的直徑節線怎麼了？</li>
+        <li data-en-html="<strong>Ideal membrane or timpani</strong>: strike both at the same point. Compare the bars with the dashed lines, and the ‘Off whole-number multiples’ reading."><strong>理想膜與定音鼓</strong>：在同一點各敲一下，比較長條和虛線的位置，以及「偏離整數倍」的讀數。</li>
+        <li data-en-html="<strong>Twins on a plate</strong>: on the square plate, compare modes \((1,2)\) and \((2,1)\). Then strike on a diagonal and on the middle line."><strong>方板上的雙胞胎</strong>：在方形薄板上比較 \((1,2)\) 和 \((2,1)\) 模態，再敲在對角線上、敲在中線上試試。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Bessel functions: \(J_m(x) = \frac{1}{2\pi}\int_0^{2\pi}\cos(m t - x\sin t)\,dt\) evaluated with the trapezoid rule (exact to machine precision for a periodic integrand with enough points); zeros \(j_{m,n}\) by scanning for a sign change and halving the interval. Unit tests compare \(J_m\) with its power series and with tabulated values, the zeros with Abramowitz &amp; Stegun to better than \(10^{-5}\), check the recurrence \(J_{m-1} + J_{m+1} = (2m/x) J_m\), that the modes are orthonormal (numerical integration over the disc and the square), that a strike at the centre leaves only \(m = 0\), that a strike on the nodal circle of \((0,2)\) removes it, that the timpani ratios are within 45 cents of 2 : 3 : 4 : 5 : 6 while the ideal membrane is not, and the scaling laws \(f \propto \sqrt{T}/a\) and \(f \propto h/L^2\).">貝索函數：\(J_m(x) = \frac{1}{2\pi}\int_0^{2\pi}\cos(m t - x\sin t)\,dt\) 用梯形法計算（週期函數取足夠的點，準確到電腦的精度）；零點 \(j_{m,n}\) 先找變號再用二分法。單元測試把 \(J_m\) 和冪級數、數學手冊的數值比對，零點和 Abramowitz 與 Stegun 的表比對到 \(10^{-5}\) 以內，並檢查遞迴關係 \(J_{m-1} + J_{m+1} = (2m/x) J_m\)、模態彼此正交而且正規化（在圓面與方板上做數值積分）、敲在中心只剩 \(m = 0\)、敲在 \((0,2)\) 的節圓上它就消失、定音鼓的比值離 2 : 3 : 4 : 5 : 6 都在 45 音分以內而理想膜不是，以及 \(f \propto \sqrt{T}/a\)、\(f \propto h/L^2\) 的縮放關係。</li>
+        <li data-en-html="‘Off whole-number multiples’: each excited mode is compared with the nearest whole-number multiple of the reference \(f_\mathrm{ref}\) — \(f_{0,1}\) for the ideal membrane, \(f_{1,1}/2\) for the timpani, \(f_{1,1}\) for the plate — and the differences in cents are averaged, weighted by amplitude. ‘Spectral centre’ is the amplitude-weighted average frequency divided by the lowest mode.">「偏離整數倍」：每個被敲出來的模態和參考基音 \(f_\mathrm{ref}\) 最接近的整數倍比較（理想膜用 \(f_{0,1}\)、定音鼓用 \(f_{1,1}/2\)、方板用 \(f_{1,1}\)），把相差的音分以振幅加權平均。「頻譜重心」是以振幅加權的平均頻率除以最低模態的頻率。</li>
+        <li data-en-html="Picture: the drumhead is drawn in slow motion (the lowest mode swings about once every two seconds; the factor is shown) and the height is exaggerated; the mode ratios, the shapes and the order in which modes die away follow the formulas, but the fading is also slowed down 5 times. The 3D view uses the same core: the surface is the same sum of modes, the stick lands on the striking point, and in single-mode view the nodal lines glow on the surface.">畫面：鼓面以慢動作畫出（最低模態大約兩秒擺一次，畫面上標示放慢倍數），高度放大示意；各模態的頻率比、形狀、誰先消失都依照公式，只是衰減也放慢了 5 倍。3D 檢視用同一個核心：鼓面是同一個模態疊加，鼓棒落在敲擊點上，單一模態時節線在鼓面上發光。</li>
+        <li data-en-html="Sound (an approximation): ‘Strike’ plays each excited mode as a sine wave at its own frequency, with the amplitude above and its own decay time. Real drums add the stick’s contact time, the way each mode radiates into the air and the resonance of the shell, which are left out.">聲音（近似）：「敲一下」把每個被敲出來的模態用各自的頻率、上面的振幅與衰減時間合成成正弦波。真實的鼓還有鼓棒接觸的時間、各模態把聲音輻射到空氣的效率、鼓身的共鳴，這裡沒有計入。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Performance · instrument construction; Elective Physics III · Waves.">課綱對應：高中音樂・表現・樂器構造；選修物理Ⅲ・波動。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed., Springer, 1998: chapter 3 (membranes and plates) and chapter 18 (drums; the measured timpani ratios).">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998：第 3 章（膜與板）、第 18 章（鼓；定音鼓的實測頻率比）。</li>
+        <li data-en="T. D. Rossing, “The Physics of Kettledrums”, Scientific American 247(5), 1982.">T. D. Rossing，〈The Physics of Kettledrums〉，Scientific American 247(5)，1982。</li>
+        <li data-en="Zeros of Bessel functions: M. Abramowitz and I. A. Stegun (eds.), Handbook of Mathematical Functions, National Bureau of Standards, 1964, table 9.5.">貝索函數的零點：M. Abramowitz、I. A. Stegun 編，《Handbook of Mathematical Functions》，美國國家標準局，1964，表 9.5。</li>
+        <li data-en="Typical values: Mylar drumhead 0.19 mm thick, density about 1390 kg/m³; aluminium E = 69 GPa, density 2700 kg/m³, Poisson’s ratio 0.33 (handbook values; real drumheads and plates differ).">典型值：Mylar 鼓皮厚 0.19 mm、密度約 1390 kg/m³；鋁 E = 69 GPa、密度 2700 kg/m³、帕松比 0.33（材料手冊的典型值，實際的鼓皮與板子各有不同）。</li>
+        <li data-en="Standard pitch A4 = 440 Hz: ISO 16:1975.">標準音高 A4 = 440 Hz：ISO 16:1975。</li>
+        <li data-en="Related: “Harmonic Series and Timbre” and “String Instruments” in Music, and “Reflection of Waves on a String and Standing Waves” in Physics, on this site.">相關實驗：本站音樂科「泛音列與音色」、「弦樂器：弦長、張力與品格」，物理科「繩波的反射與駐波」。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/drum-modes-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/drum-modes.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="drum-modes"></script>
+  <script src="js/missions/drum-modes.js"></script>
+  <script src="js/stats.js" data-module="drum-modes"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
