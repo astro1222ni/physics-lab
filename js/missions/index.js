@@ -65,11 +65,22 @@ window.LAB_MISSION_MODULES = [
   { id: 'electrochemistry', zh: '化學電池與電解', en: 'Electrochemical Cells and Electrolysis' },
   { id: 'space-vectors', zh: '空間向量：內積、外積與平面', en: 'Space Vectors: Dot Product, Cross Product and Planes' },
   { id: 'population-growth', zh: '族群成長：指數、邏輯斯與掠食者–獵物', en: 'Population Growth: Exponential, Logistic, Predator and Prey' },
-  { id: 'hardy-weinberg', zh: '哈溫平衡、遺傳漂變與天擇', en: 'Hardy–Weinberg, Genetic Drift and Natural Selection' }
+  { id: 'hardy-weinberg', zh: '哈溫平衡、遺傳漂變與天擇', en: 'Hardy–Weinberg, Genetic Drift and Natural Selection' },
+  // 資訊科技（11/13 第一批 10 個）
+  { id: 'binary-numbers', zh: '二進位與進位制', en: 'Binary Numbers and Number Bases' },
+  { id: 'binary-search', zh: '線性搜尋與二分搜尋', en: 'Linear Search and Binary Search' },
+  { id: 'sorting', zh: '排序演算法比較', en: 'Sorting Algorithms Compared' },
+  { id: 'logic-gates', zh: '邏輯閘與加法器', en: 'Logic Gates and Adders' },
+  { id: 'cryptography', zh: '加密：從凱撒密碼到公鑰', en: 'Encryption: From Caesar to Public Keys' },
+  { id: 'packet-routing', zh: '網路封包與路由', en: 'Packets and Routing' },
+  { id: 'data-compression', zh: '資料壓縮：遊程編碼與霍夫曼編碼', en: 'Data Compression: Run-Length and Huffman Coding' },
+  { id: 'perceptron', zh: '感知器：一條線分兩類', en: 'The Perceptron: One Line, Two Classes' },
+  { id: 'shortest-path', zh: '最短路徑：Dijkstra 演算法', en: 'Shortest Paths: Dijkstra’s Algorithm' },
+  { id: 'image-digitization', zh: '圖片數位化：取樣、解析度與色深', en: 'Digitizing Images: Sampling, Resolution and Color Depth' }
 ];
 
 /* 網站上所有已上線的實驗（成就「全能物理學家」用）。新增實驗上線時一起更新。 */
-window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation', 'chemical-equilibrium', 'coriolis', 'galton-board', 'derivative', 'heat-engine', 'greenhouse', 'electrochemistry', 'space-vectors', 'population-growth', 'hardy-weinberg'];
+window.LAB_LIVE_MODULES = ['projectile', 'collision', 'circular-motion', 'oscillation', 'slit-interference', 'refraction', 'electric-field', 'magnetic-particle', 'lens-mirror', 'doppler', 'standing-waves', 'capacitor', 'kepler', 'dc-circuit', 'photoelectric', 'faraday', 'radioactive-decay', 'hydrogen-spectrum', 'specific-heat', 'newton-second', 'incline-friction', 'ideal-gas', 'atwood', 'elevator', 'free-fall', 'ripple-tank', 'resonance-tube', 'refractive-index', 'e-over-m', 'ohms-law', 'equipotential', 'thin-lens', 'microwave', 'current-balance', 'measurement', 'angular-momentum', 'thin-film', 'moon-phases', 'earthquake', 'torque-balance', 'energy-coaster', 'seasons', 'current-magnetic-field', 'mendelian-inheritance', 'acid-base-titration', 'tides', 'conic-sections', 'molecular-shapes', 'diffusion-osmosis', 'trig-functions', 'reaction-rate', 'action-potential', 'cloud-formation', 'chemical-equilibrium', 'coriolis', 'galton-board', 'derivative', 'heat-engine', 'greenhouse', 'electrochemistry', 'space-vectors', 'population-growth', 'hardy-weinberg', 'binary-numbers', 'binary-search', 'sorting', 'logic-gates', 'cryptography', 'packet-routing', 'data-compression', 'perceptron', 'shortest-path', 'image-digitization'];
 
 /* 各實驗所屬的物理分支（成就「分支制霸」用）。新增實驗時一起加上。 */
 window.LAB_MODULE_BRANCH = {
@@ -120,7 +131,17 @@ window.LAB_MODULE_BRANCH = {
   'trig-functions': 'geometry',
   'galton-board': 'probability',
   'space-vectors': 'vectors',
-  'derivative': 'calculus'
+  'derivative': 'calculus',
+  'binary-numbers': 'data',
+  'binary-search': 'algo',
+  'sorting': 'algo',
+  'logic-gates': 'system',
+  'cryptography': 'network',
+  'packet-routing': 'network',
+  'data-compression': 'data',
+  'perceptron': 'ai',
+  'shortest-path': 'algo',
+  'image-digitization': 'data'
 };
 
 /* 各科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */

@@ -68,7 +68,17 @@
     "electrochemistry": "72f72f2a",
     "space-vectors": "7c9a3d60",
     "population-growth": "2feb1c40",
-    "hardy-weinberg": "315297b3"
+    "hardy-weinberg": "315297b3",
+    "binary-numbers": "0d7049fb",
+    "binary-search": "4dcbde7a",
+    "sorting": "aade7705",
+    "logic-gates": "3c1f3c23",
+    "cryptography": "72511a6f",
+    "packet-routing": "35b8288a",
+    "data-compression": "79bb9436",
+    "perceptron": "dae0090f",
+    "shortest-path": "5b518f7f",
+    "image-digitization": "906ada1e"
   };
   /* VERSIONS-END */
 

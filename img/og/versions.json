@@ -62,5 +62,15 @@
  "greenhouse": "6f2a4ce6d9",
  "space-vectors": "80a6bb2499",
  "galton-board": "2bc00423a2",
- "derivative": "07b483f646"
+ "derivative": "07b483f646",
+ "binary-numbers": "305b2546d0",
+ "image-digitization": "3a7d90152d",
+ "data-compression": "153ef2d039",
+ "binary-search": "a21dc4efca",
+ "sorting": "841bd36b33",
+ "shortest-path": "4260cdc12c",
+ "logic-gates": "adf89c746f",
+ "packet-routing": "65461f2454",
+ "cryptography": "27c2189507",
+ "perceptron": "1648fc5130"
 }

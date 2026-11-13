@@ -141,32 +141,49 @@
     for (let i = 0; i + 1 < chars.length; i += 2) map[chars[i]] = chars[i + 1];
     // 依科目覆寫（例如數學頁面的「向量」不轉成物理用的「矢量」）
     const page = (location.pathname.split('/').pop() || '').replace(/\.html$/, '');
+    const bySub = data.bySubject || {};
+    function make(phrases) {
+      const keys = Object.keys(phrases).sort(function (a, b) { return b.length - a.length; });
+      const re = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
+      return function (s) { return s.replace(re, function (m) { return phrases[m]; }); };
+    }
     const phrases = Object.assign({}, data.phrases);
-    Object.keys(data.bySubject || {}).forEach(function (k) { const b = data.bySubject[k]; if (b.pages.indexOf(page) >= 0) Object.assign(phrases, b.phrases); });
-    const keys = Object.keys(phrases).sort(function (a, b) { return b.length - a.length; });
-    const re = new RegExp(keys.map(function (k) { return k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }).join('|'), 'g');
-    const hasHan = /[㐀-鿿豈-﫿「」『』]/;
-    return function (s) {
+    Object.keys(bySub).forEach(function (k) { if (bySub[k].pages.indexOf(page) >= 0) Object.assign(phrases, bySub[k].phrases); });
+    const base = make(phrases);
+    // 首頁等跨科頁面：標了 data-hans-subject="<科目>" 的區塊（例如首頁的資訊科區）改用該科的名詞（11/13 資訊科上線時加）
+    const scoped = {};
+    function forSubject(sub) {
+      if (!sub || !bySub[sub]) return base;
+      if (!scoped[sub]) scoped[sub] = make(Object.assign({}, phrases, bySub[sub].phrases));
+      return scoped[sub];
+    }
+    const hasHan = /[㐀-鿿豈-﫿「」『』]/;
+    return function (s, sub) {
       if (!s || !hasHan.test(s)) return s;
-      s = s.replace(re, function (m) { return phrases[m]; });
+      s = forSubject(sub)(s);
       let out = '';
       for (const ch of s) out += map[ch] || ch;
       return out;
     };
+  }
+  function subjOf(node) {
+    const el = node.nodeType === 1 ? node : node.parentElement;
+    const box = el && el.closest('[data-hans-subject]');
+    return box ? box.getAttribute('data-hans-subject') : null;
   }
 
   const SKIP = /^(SCRIPT|STYLE|TEXTAREA|CODE|PRE|NOSCRIPT)$/;
   const ATTRS = ['placeholder', 'title', 'aria-label', 'alt'];
   function convertTree(root) {
     if (root.nodeType === 3) {
-      const v = toHans(root.nodeValue);
+      const v = toHans(root.nodeValue, subjOf(root));
       if (v !== root.nodeValue) root.nodeValue = v;
       return;
     }
     if (root.nodeType !== 1 || SKIP.test(root.tagName) || root.closest('[data-no-convert]')) return;
     ATTRS.forEach(function (a) {
       if (root.hasAttribute(a)) {
-        const v = toHans(root.getAttribute(a));
+        const v = toHans(root.getAttribute(a), subjOf(root));
         if (v !== root.getAttribute(a)) root.setAttribute(a, v);
       }
     });
@@ -178,13 +195,13 @@
     });
     let n;
     while ((n = walker.nextNode())) {
-      const v = toHans(n.nodeValue);
+      const v = toHans(n.nodeValue, subjOf(n));
       if (v !== n.nodeValue) n.nodeValue = v;
     }
     root.querySelectorAll('[' + ATTRS.join('],[') + ']').forEach(function (el) {
       ATTRS.forEach(function (a) {
         if (el.hasAttribute(a)) {
-          const v = toHans(el.getAttribute(a));
+          const v = toHans(el.getAttribute(a), subjOf(el));
           if (v !== el.getAttribute(a)) el.setAttribute(a, v);
         }
       });

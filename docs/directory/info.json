@@ -1,0 +1,82 @@
+{
+  "subject": "info",
+  "updated": "11/12 23:59",
+  "branches": [
+    {
+      "id": "data", "zh": "資料表示", "en": "Data Representation",
+      "chapters": [
+        { "id": "ch-binary", "zh": "二進位與數字", "en": "Binary and Numbers",
+          "modules": ["binary-numbers", "twos-complement", "bitwise-ops", "floating-point"] },
+        { "id": "ch-encoding", "zh": "文字編碼與錯誤偵測", "en": "Text Encoding and Error Detection",
+          "modules": ["text-encoding", "check-digits", "parity-hamming"] },
+        { "id": "ch-media", "zh": "多媒體的數位化", "en": "Digitizing Media",
+          "modules": ["color-models", "image-digitization", "audio-digitization", "vector-graphics", "image-filters"] },
+        { "id": "ch-compression", "zh": "資料壓縮", "en": "Data Compression",
+          "modules": ["data-compression", "lzw", "jpeg-dct"] }
+      ]
+    },
+    {
+      "id": "algo", "zh": "演算法", "en": "Algorithms",
+      "chapters": [
+        { "id": "ch-search", "zh": "搜尋與效能", "en": "Searching and Efficiency",
+          "modules": ["big-o", "binary-search", "hash-table", "binary-search-tree"] },
+        { "id": "ch-sorting", "zh": "排序", "en": "Sorting",
+          "modules": ["sorting", "merge-quick-sort", "heap-sort"] },
+        { "id": "ch-recursion", "zh": "遞迴", "en": "Recursion",
+          "modules": ["hanoi", "fibonacci-recursion", "recursive-fractals", "n-queens"] },
+        { "id": "ch-graph", "zh": "圖與最短路徑", "en": "Graphs and Shortest Paths",
+          "modules": ["graph-traversal", "shortest-path", "spanning-tree"] },
+        { "id": "ch-strategy", "zh": "演算法設計策略", "en": "Algorithm Design Strategies",
+          "modules": ["greedy", "dynamic-programming", "tsp"] }
+      ]
+    },
+    {
+      "id": "prog", "zh": "程式設計", "en": "Programming",
+      "chapters": [
+        { "id": "ch-control", "zh": "程式的流程", "en": "Control Flow",
+          "modules": ["code-tracing", "nested-loops", "turtle-graphics", "robot-maze"] },
+        { "id": "ch-arrays", "zh": "陣列", "en": "Arrays",
+          "modules": ["array-basics", "game-of-life", "cellular-automata"] },
+        { "id": "ch-data-structures", "zh": "資料結構", "en": "Data Structures",
+          "modules": ["stack-queue", "linked-list", "expression-eval"] },
+        { "id": "ch-functions", "zh": "函式與亂數", "en": "Functions and Randomness",
+          "modules": ["call-stack", "monte-carlo"] },
+        { "id": "ch-practice", "zh": "除錯與協作", "en": "Debugging and Collaboration",
+          "modules": ["debugging", "version-control"] }
+      ]
+    },
+    {
+      "id": "system", "zh": "計算機系統", "en": "Computer Systems",
+      "chapters": [
+        { "id": "ch-logic", "zh": "邏輯閘與電路", "en": "Logic Gates and Circuits",
+          "modules": ["logic-gates", "boolean-algebra", "flip-flops"] },
+        { "id": "ch-cpu", "zh": "處理器與記憶體", "en": "Processors and Memory",
+          "modules": ["cpu-simulator", "cache-memory"] },
+        { "id": "ch-os", "zh": "作業系統", "en": "Operating Systems",
+          "modules": ["cpu-scheduling", "page-replacement"] },
+        { "id": "ch-distributed", "zh": "分散式系統與雲端", "en": "Distributed Systems and the Cloud",
+          "modules": ["map-reduce", "load-balancing", "iot-control"] }
+      ]
+    },
+    {
+      "id": "network", "zh": "網路與資訊安全", "en": "Networks and Security",
+      "chapters": [
+        { "id": "ch-network", "zh": "網路的運作", "en": "How Networks Work",
+          "modules": ["packet-routing", "ip-subnet", "tcp-reliability", "wireless-access"] },
+        { "id": "ch-crypto", "zh": "密碼學", "en": "Cryptography",
+          "modules": ["cryptography", "rsa", "diffie-hellman", "hash-function", "password-strength"] },
+        { "id": "ch-society", "zh": "資訊社會", "en": "Information and Society",
+          "modules": ["blockchain", "k-anonymity", "misinformation-spread"] }
+      ]
+    },
+    {
+      "id": "ai", "zh": "人工智慧", "en": "Artificial Intelligence",
+      "chapters": [
+        { "id": "ch-ml", "zh": "機器學習", "en": "Machine Learning",
+          "modules": ["perceptron", "knn", "kmeans", "decision-tree", "gradient-descent", "neural-network", "overfitting"] },
+        { "id": "ch-ai-apps", "zh": "資料科學與應用", "en": "Data Science in Action",
+          "modules": ["confusion-matrix", "naive-bayes", "markov-text", "minimax", "pagerank"] }
+      ]
+    }
+  ]
+}

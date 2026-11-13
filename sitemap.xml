@@ -536,4 +536,84 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/derivative.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/derivative.html"/>
   </url>
+  <url>
+    <loc>https://lab.astroni.org/binary-numbers.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/binary-numbers.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/binary-numbers.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/binary-numbers.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/binary-numbers.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/image-digitization.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/image-digitization.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/image-digitization.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/image-digitization.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/image-digitization.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/data-compression.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/data-compression.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/data-compression.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/data-compression.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/data-compression.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/binary-search.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/binary-search.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/binary-search.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/binary-search.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/binary-search.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/sorting.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sorting.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/sorting.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/sorting.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sorting.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/shortest-path.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/shortest-path.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/shortest-path.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/shortest-path.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/shortest-path.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/logic-gates.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/logic-gates.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/logic-gates.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/logic-gates.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/logic-gates.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/packet-routing.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/packet-routing.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/packet-routing.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/packet-routing.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/packet-routing.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/cryptography.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/cryptography.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/cryptography.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/cryptography.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/cryptography.html"/>
+  </url>
+  <url>
+    <loc>https://lab.astroni.org/perceptron.html</loc>
+    <lastmod>2026-11-12</lastmod>
+    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/perceptron.html"/>
+    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/perceptron.html?lang=zh-Hans"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/perceptron.html?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/perceptron.html"/>
+  </url>
 </urlset>

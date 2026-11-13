@@ -60,7 +60,8 @@ const liveWhere = {}; // 模組 → { branch, chapter }
 Object.keys(W.LAB_MODULE_BRANCH).length; // 只用來確認載入成功
 for (const s of W.LAB_SUBJECTS) for (const b of s.branches) {
   const blk = branchBlock(html, b);
-  if (!blk) { errors.push('首頁找不到分支 ' + b + ' 的區塊（或結構和預期不同）'); continue; }
+  // 新科（newSubject）還沒放上首頁時沒有分支區塊，略過；放上首頁以後照樣檢查
+  if (!blk) { if (!(s.newSubject && !html.includes('<section class="domain" id="' + s.id + '"'))) errors.push('首頁找不到分支 ' + b + ' 的區塊（或結構和預期不同）'); continue; }
   const region = html.slice(blk.open, blk.close);
   const secRe = /<section class="chapter[^"]*" id="([^"]+)"[\s\S]*?\n {8}<\/section>\n/g;
   let m;
@@ -82,6 +83,7 @@ if (!dirs.length) { console.log('沒有要套用的目錄檔（' + path.relative
 const seenCh = {}, seenMod = {};
 for (const { f, d } of dirs) {
   if (!SUBJ[d.subject]) { errors.push(f + '：科目代號 ' + d.subject + ' 不在 LAB_SUBJECTS'); continue; }
+  if (d.branches.some(b => !branchBlock(html, b.id))) { errors.push(f + '：首頁還沒有 ' + d.subject + ' 的分支區塊（新科要先加科目區）'); continue; }
   for (const b of d.branches) {
     if (!SUBJ[d.subject].branches.includes(b.id)) errors.push(f + '：分支 ' + b.id + ' 不屬於 ' + d.subject + '（新分支要先加進 js/missions/index.js 的 LAB_SUBJECTS 與首頁）');
     if (!b.chapters || !b.chapters.length) errors.push(f + '：分支 ' + b.id + ' 沒有任何章');

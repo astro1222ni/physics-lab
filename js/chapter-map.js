@@ -41,5 +41,15 @@ window.LAB_CHAPTERS = [
 {"id":"ch-conics","zh":"圓錐曲線","en":"Conic Sections","b":"geometry","m":["conic-sections"]},
 {"id":"ch-space-vectors","zh":"空間向量","en":"Vectors in Space","b":"vectors","m":["space-vectors"]},
 {"id":"ch-probability","zh":"機率","en":"Probability","b":"probability","m":["galton-board"]},
-{"id":"ch-derivative","zh":"導數","en":"Derivatives","b":"calculus","m":["derivative"]}
+{"id":"ch-derivative","zh":"導數","en":"Derivatives","b":"calculus","m":["derivative"]},
+{"id":"ch-binary","zh":"二進位與數字","en":"Binary and Numbers","b":"data","m":["binary-numbers"]},
+{"id":"ch-media","zh":"多媒體的數位化","en":"Digitizing Media","b":"data","m":["image-digitization"]},
+{"id":"ch-compression","zh":"資料壓縮","en":"Data Compression","b":"data","m":["data-compression"]},
+{"id":"ch-search","zh":"搜尋與效能","en":"Searching and Efficiency","b":"algo","m":["binary-search"]},
+{"id":"ch-sorting","zh":"排序","en":"Sorting","b":"algo","m":["sorting"]},
+{"id":"ch-graph","zh":"圖與最短路徑","en":"Graphs and Shortest Paths","b":"algo","m":["shortest-path"]},
+{"id":"ch-logic","zh":"邏輯閘與電路","en":"Logic Gates and Circuits","b":"system","m":["logic-gates"]},
+{"id":"ch-network","zh":"網路的運作","en":"How Networks Work","b":"network","m":["packet-routing"]},
+{"id":"ch-crypto","zh":"密碼學","en":"Cryptography","b":"network","m":["cryptography"]},
+{"id":"ch-ml","zh":"機器學習","en":"Machine Learning","b":"ai","m":["perceptron"]}
 ];
