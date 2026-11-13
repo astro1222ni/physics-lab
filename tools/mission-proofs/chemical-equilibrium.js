@@ -149,9 +149,8 @@ freshMissions();
 P = newPage('n2o4'); run(P);
 setT(P, 273); run(P); setV(P, 20); run(P);
 report('n2o4 273 K、20 mL：x(N2O4) = ' + P.rows[P.rows.length - 1].x.N2O4.toFixed(3), P, ['chemical-equilibrium-3']);
-for (let k = 0; k < 8; k++) amount(P, 'N2O4', 1);
 setV(P, 10); run(P);
-report('n2o4 273 K、10 mL、N2O4 加到 6 mmol：x(NO2) = ' + P.rows[P.rows.length - 1].x.NO2.toFixed(3), P, ['chemical-equilibrium-h1']);
+report('n2o4 273 K、10 mL（預設用量，又冷又擠）：x(NO2) = ' + P.rows[P.rows.length - 1].x.NO2.toFixed(3), P, ['chemical-equilibrium-h1']);
 // ---------- 4. HI 壓縮不動 ----------
 freshMissions();
 P = newPage('hi'); const w4a = run(P);
@@ -257,6 +256,87 @@ for (let trial = 0; trial < N; trial++) {
 }
 results['chemical-equilibrium-11'] = ok11 > 0; results['chemical-equilibrium-12'] = ok12 > 0;
 console.log('  未知反應 ' + N + ' 次（290、350、410 K，分壓取 3 位有效數字）：任務 11 成功 ' + ok11 + ' 次，任務 12 成功 ' + ok12 + ' 次');
+
+// ---------- h4–h10（每個做法只完成它自己這個隱藏任務） ----------
+const isHid = id => /-h\d+$/.test(id);
+const last = Q => Q.rows[Q.rows.length - 1];
+function reportH(name, Q, id) {
+  const extra = Q.events.filter(x => isHid(x) && x !== id);
+  report(name + (extra.length ? '　← 順便完成了 ' + extra.join('、') : ''), Q, [id]);
+  if (extra.length) bad++;
+}
+// h4：K = 1
+freshMissions(); P = newPage('n2o4'); run(P);
+setT(P, 325); run(P);
+reportH('n2o4 325 K：K = ' + last(P).K.toFixed(4) + '（324 K ' + E.K('n2o4', 324).toFixed(3) + '、326 K ' + E.K('n2o4', 326).toFixed(3) + '）', P, 'chemical-equilibrium-h4');
+// h5：同樣的元素總量，從兩邊開始
+freshMissions(); P = newPage('n2o4'); run(P);
+amount(P, 'N2O4', 1); run(P);
+startFrom(P, 'P'); P.acted = true; run(P);
+amount(P, 'NO2', 1); amount(P, 'NO2', 1); run(P);
+reportH('n2o4 從反應物開始再加 0.5 mmol N2O4、從生成物開始再加 1.0 mmol NO2（N 都是 5.0 mmol）：x(NO2) ' + P.rows[P.rows.length - 3].x.NO2.toFixed(4) + ' 與 ' + last(P).x.NO2.toFixed(4), P, 'chemical-equilibrium-h5');
+freshMissions(); P = newPage('hi'); run(P);
+amount(P, 'H2', 1); run(P);
+startFrom(P, 'P'); P.acted = true; run(P);
+amount(P, 'H2', 1); run(P);
+reportH('hi 兩邊都多加 0.25 mmol H2', P, 'chemical-equilibrium-h5');
+// 預設用量從兩邊開始不算（太容易）
+freshMissions(); P = newPage('n2o4'); P.acted = true; run(P); startFrom(P, 'P'); P.acted = true; run(P);
+{ const ok = !P.events.includes('chemical-equilibrium-h5'); console.log((ok ? '  ✓' : '  ✗') + ' 預設用量從反應物、從生成物各開始一次，不算 h5'); if (!ok) bad++; }
+// h6：哈柏法定壓加氬，NH3 變少
+freshMissions(); P = newPage('haber'); run(P);
+setMode(P, 'P'); setP(P, 200); run(P);
+{ const a = last(P); for (let k = 0; k < 8; k++) amount(P, 'Ar', 1); run(P);
+  reportH('haber 700 K 定壓 200 bar 加 0.2 mol 氬：NH3 ' + a.n.NH3.toFixed(4) + ' → ' + last(P).n.NH3.toFixed(4) + ' mol（' + (last(P).n.NH3 / a.n.NH3).toFixed(3) + ' 倍）', P, 'chemical-equilibrium-h6'); }
+// h7：低溫拿掉催化劑
+freshMissions(); P = newPage('haber'); run(P);
+setCat(P, true); setT(P, 500); P.speed = 2; run(P);
+setCat(P, false); run(P);
+reportH('haber 500 K 有催化劑平衡後拿掉催化劑：x(NH3) ' + P.rows[P.rows.length - 2].x.NH3.toFixed(4) + ' → ' + last(P).x.NH3.toFixed(4), P, 'chemical-equilibrium-h7');
+// h8：室溫下一半一半
+freshMissions(); P = newPage('n2o4'); run(P);
+{ let best = null;
+  for (let r = 0; r <= 3 && !best; r++) for (let V = 10; V <= 100; V += 0.5) {
+    const Q = JSON.parse(JSON.stringify({ n: P.n }));
+    let n = Object.assign({}, P.n); n.N2O4 = Math.max(0, 2e-3 - r * 5e-4); n.NO2 = 0;
+    const x = E.props('n2o4', E.equilibrium('n2o4', n, { T: 298, V: V / 1000 }).n, { T: 298, V: V / 1000 }).x.NO2;
+    if (Math.abs(x - 0.5) <= 0.003) { best = { r, V }; break; }
+  }
+  if (!best) { console.log('  ✗ 298 K 找不到 x(NO2) = 0.5 的條件'); bad++; }
+  else {
+    for (let k = 0; k < best.r; k++) amount(P, 'N2O4', -1);
+    setV(P, best.V); run(P);
+    reportH('n2o4 298 K、減少 ' + (best.r * 0.5).toFixed(1) + ' mmol N2O4、' + best.V + ' mL：x(NO2) = ' + last(P).x.NO2.toFixed(4), P, 'chemical-equilibrium-h8');
+  } }
+// h9：只跨 5 K 的兩個溫度
+{
+  let ok9 = 0, rs9 = 3; const N9 = 100;
+  const rng9 = () => { rs9 = (rs9 * 16807) % 2147483647; return rs9 / 2147483647; };
+  for (let t = 0; t < N9; t++) {
+    freshMissions();
+    const mp = E.newMystery(rng9);
+    P = newPage('mys'); P.mysId = 1; P.acted = true; run(P);
+    setT(P, P.T + 5); run(P);
+    const pts = P.rows.filter(r => r.mys === 1).map(r => { const p3 = {}; Object.keys(r.p).forEach(k => { p3[k] = +r.p[k].toPrecision(3); }); return { T: r.T, K: Math.exp(lnKRow(Object.assign({}, r, { p: p3 }))) }; });
+    const f = E.vantHoff(pts), a = +f.dH.toFixed(1);
+    emit(P, 'answer', { ans: a, err: Math.abs(a - mp.dH) / mp.dH, nT: 2, span: 5, tries: 1, revealed: false });
+    if (P.events.includes('chemical-equilibrium-h9') && !P.events.some(x => isHid(x) && x !== 'chemical-equilibrium-h9')) ok9++;
+  }
+  console.log('  ' + (ok9 ? '✓' : '✗') + ' chemical-equilibrium-h9：未知反應 ' + N9 + ' 次，只量 330、335 K（分壓 3 位有效數字）第一次核對在 1% 內 ' + ok9 + ' 次');
+  if (ok9) results['chemical-equilibrium-h9'] = true; else bad++;
+  // 第二次以後核對、或溫差大都不算
+  freshMissions(); P = newPage('mys'); P.mysId = 1; P.acted = true;
+  emit(P, 'answer', { ans: 57, err: 0, nT: 2, span: 5, tries: 2, revealed: false });
+  emit(P, 'answer', { ans: 57, err: 0, nT: 2, span: 60, tries: 1, revealed: false });
+  emit(P, 'answer', { ans: 57, err: 0, nT: 3, span: 5, tries: 1, revealed: false });
+  const ok = !P.events.includes('chemical-equilibrium-h9'); console.log((ok ? '  ✓' : '  ✗') + ' 第二次核對、溫差 60 K、量三個溫度都不算 h9'); if (!ok) bad++;
+}
+// h10：高溫高壓擠出氨
+freshMissions(); P = newPage('haber'); run(P);
+setMode(P, 'P'); setP(P, 500); setT(P, 850); P.speed = 2; run(P);
+reportH('haber 定壓 500 bar、850 K：x(NH3) = ' + last(P).x.NH3.toFixed(3) + '（900 K 只有 ' + E.props('haber', E.equilibrium('haber', last(P).n, { T: 900, P: 500 }).n, { T: 900, P: 500 }).x.NH3.toFixed(3) + '）', P, 'chemical-equilibrium-h10');
+{ freshMissions(); const Q = newPage('haber'); run(Q); setV(Q, 20); setT(Q, 850); Q.speed = 2; run(Q);
+  console.log('  （對照：定容最小 20 mL、850 K：x(NH3) = ' + last(Q).x.NH3.toFixed(3) + '、' + last(Q).P.toFixed(0) + ' bar，' + (Q.events.includes('chemical-equilibrium-h10') ? '也算' : '不算') + ' h10）'); }
 
 // ---------- 結論 ----------
 const missing = missions.filter(m => !results[m.id]).map(m => m.id);

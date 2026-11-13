@@ -408,6 +408,8 @@
   }
   function registerP() {
     const Pr = rxd().Pr;
+    // 滑桿本身是 0–1000 的對數位置（不是 bar）；範圍若不是 0–1000，瀏覽器會把位置夾掉，壓力就跑到下限
+    elP.min = 0; elP.max = 1000; elP.step = 1;
     if (window.LabNum) {
       window.LabNum.register(elP, {
         toValue: function (pos) { const q = rxd().Pr; return q[0] * Math.pow(q[1] / q[0], pos / 1000); },

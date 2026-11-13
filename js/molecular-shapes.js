@@ -19,6 +19,7 @@
   const LAM0 = VC.MODEL.lam;
   const RATE = 7;            // 動畫的鬆弛速率（1/s）：最硬的振動模式約 1/7 秒衰減
   const MAX_RATE = 2.4;      // 電子域最快每秒轉 2.4 rad（約 140°）
+  const SWAP_DEG = 20;       // 放手時離另一個電子域原本的位置 20° 以內，就和它換位
   const SETTLE = 0.004;      // 角速度小於 0.004 rad/s 視為穩定
   const LP_LEN = 1.05;       // 孤對電子瓣的長度（Å，示意）
 
@@ -508,10 +509,10 @@
     rows.push(['<dt>' + T('類型', 'Type') + '</dt>', '<dd>' + axeHTML(info.m, info.n) + '</dd>']);
     rows.push(['<dt>' + T('電子域', 'Electron domains') + '</dt>', '<dd>' + info.N + '<small>' + T('鍵結 ', 'bonds ') + info.m + T('、孤對 ', ', lone pairs ') + info.n + '</small></dd>']);
     rows.push(['<dt>' + T('電子對幾何', 'Electron-pair geometry') + '</dt>', '<dd>' + shapeName(info.egeom) + '</dd>']);
-    rows.push(['<dt>' + T('分子形狀', 'Shape') + '</dt>', '<dd>' + shapeName(info.shape) + (info.isGlobal ? '' : '<small>' + T('（目前不是能量最低的排列）', '(not the lowest-energy arrangement yet)') + '</small>') + '</dd>']);
+    rows.push(['<dt>' + T('分子形狀', 'Shape') + '</dt>', '<dd>' + shapeName(info.shape) + (info.isGlobal || !state.settled ? '' : '<small>' + T('（目前不是能量最低的排列）', '(not the lowest-energy arrangement yet)') + '</small>') + '</dd>']);
     rows.push(['<dt>' + T('鍵角', 'Bond angles') + '</dt>', '<dd id="angCell">' + anglesHTML(info.groups) + '</dd>']);
     const pol = info.polar ? T('極性分子', 'polar') : T('非極性分子', 'non-polar');
-    rows.push(['<dt>' + T('極性', 'Polarity') + '</dt>', '<dd>' + pol + '<small>' + T('淨偶極 ', 'net dipole ') + num(info.dipole.mag < 5e-4 ? 0 : info.dipole.mag, 2) + T('（電負度差）', ' (in Δχ)') + '</small></dd>']);
+    rows.push(['<dt>' + T('極性', 'Polarity') + '</dt>', !state.settled ? '<dd>' + T('調整中…', 'moving…') + '</dd>' : '<dd>' + pol + '<small>' + T('淨偶極 ', 'net dipole ') + num(info.dipole.mag < 5e-4 ? 0 : info.dipole.mag, 2) + T('（電負度差）', ' (in Δχ)') + '</small></dd>']);
     rows.push(['<dt>' + T('能量', 'Energy') + '</dt>', '<dd id="eCell">' + num(info.E, 3) + '<small>' + T('最低 ', 'lowest ') + num(info.Eg, 3) + T('（相對單位）', ' (relative units)') + '</small></dd>']);
     rows.push(['<dt>' + T('狀態', 'State') + '</dt>', '<dd id="stCell" class="' + (state.settled ? (info.isGlobal ? 'good' : 'warn') : '') + '">' + stateText(info) + '</dd>']);
     setHTML($('readout'), rows.map(function (r) { return r.join(''); }).join(''));
@@ -523,6 +524,8 @@
   }
   /** 動畫中只更新會變的格子 */
   function updateLive() {
+    // 試玩 P10：組合一改就先換分子式、類型、電子域與形狀（只看組合，不必等穩定）；鍵角、能量跟著動畫更新，極性等穩定再寫
+    if (!state.info || state.info.key !== VC.specKey(state.spec)) { state.info = analyze(); updateReadouts(); }
     const a = $('angCell'), e = $('eCell'), s = $('stCell');
     if (!a || !e || !s) return;
     const ang = VC.groupAngles(VC.bondAngles(state.doms, U()));
@@ -613,6 +616,19 @@
   function handleOf(d) {
     const L = d.k === 'L' ? LP_LEN * 0.8 : bondLen(d);
     return proj([d.u[0] * L, d.u[1] * L, d.u[2] * L]);
+  }
+  /** 2D 放手的位置落在哪一個電子域「開始拖之前」的握把上（和點選用同樣的半徑）；沒有就傳回 null */
+  function dropTarget2D(pt, dragId) {
+    if (!state.drag || !state.drag.all) return null;
+    let best = null, bd = Infinity;
+    state.doms.forEach(function (d, k) {
+      if (d.id === dragId || !state.drag.all[k]) return;
+      const h = handleOf({ k: d.k, lig: d.lig, bo: d.bo, u: state.drag.all[k] });
+      const r = Math.max(16, (d.k === 'L' ? 0.32 : ballR(d.lig)) * scale * h.f + 4);
+      const dist = Math.hypot(pt.x - h.x, pt.y - h.y);
+      if (dist <= r && dist < bd) { bd = dist; best = d.id; }
+    });
+    return best;
   }
   function hitDomain(x, y) {
     let best = null;
@@ -977,7 +993,7 @@
     const p = ptr;
     ptr = null;
     cv.classList.remove('dragging');
-    if (p.moved && p.dom != null) endDrag();
+    if (p.moved && p.dom != null) endDrag(dropTarget2D(evPos(ev), p.dom));
     else if (p.moved) onViewChanged('2d');
     else if (p.dom != null) {
       const d = state.doms[domIndex(p.dom)];
@@ -1000,7 +1016,7 @@
   function beginDrag(id, kbd) {
     const i = domIndex(id);
     if (i < 0) return;
-    state.drag = { id: id, start: state.doms[i].u.slice(), max: 0, kbd: !!kbd };
+    state.drag = { id: id, start: state.doms[i].u.slice(), all: U().map(function (u) { return u.slice(); }), max: 0, kbd: !!kbd };
     state.anneal = null;
     state.present = null;
     state.cause = 'drag';
@@ -1016,15 +1032,24 @@
     state.drag.max = Math.max(state.drag.max, VC.angleDeg(state.drag.start, state.doms[i].u));
     kick();
   }
-  function endDrag() {
+  /**
+   * 放手：dropId 是畫面上放手的位置落在哪一個電子域「開始拖之前的位置」上（2D、3D 由畫面距離判斷）；
+   * 沒給（鍵盤）就看方向是否在 SWAP_DEG 以內。落在別人的位置上就兩者換位，再一起推開（見 VC.dropSwap 的說明）。
+   */
+  function endDrag(dropId) {
     if (!state.drag) return;
     state.dragAngle = state.drag.max;
+    const i = domIndex(state.drag.id);
+    const sw = i < 0 ? null : (dropId != null ? VC.swapDomains(state.drag.all, i, domIndex(dropId)) : VC.dropSwap(state.drag.all, i, state.doms[i].u, SWAP_DEG));
+    if (sw) state.doms.forEach(function (d, k) { d.u = sw.U[k]; });
     state.drag = null;
     state.autoShakes = 3; // 放手後停在哪裡就是哪裡（可能是局部最低點）
     lastMeasureKey = '';
     state.cause = 'drag'; state.user = true;
     state.moving = true; state.settled = false;
-    setStatus(T('放手了：電子域互相推開，正在穩定下來…', 'Let go: the domains push each other and settle…'));
+    setStatus(sw
+      ? T('放在另一個電子域原本的位置：兩個交換位置，再互相推開…', 'Dropped on another domain’s place: the two swap places, then push each other and settle…')
+      : T('放手了：電子域互相推開，正在穩定下來…', 'Let go: the domains push each other and settle…'));
     kick();
   }
   /** 視角轉完：看視線和哪個鍵最接近平行（隱藏任務） */
@@ -1250,7 +1275,9 @@
     stateText: function () { return state.settled ? ((state.info && state.info.isGlobal) ? 'ok' : 'warn') : 'm'; },
     dragStart: function (id) { beginDrag(id, false); },
     dragTo: function (id, u) { dragTo(id, u); },
-    dragEnd: function () { endDrag(); },
+    dragEnd: function (dropId) { endDrag(dropId); },
+    /** 拖曳中：各電子域開始拖之前的方向（3D 判斷放在誰原本的位置上） */
+    dragFrom: function () { return state.drag && state.drag.all ? state.doms.map(function (d, k) { return { id: d.id, d: d, u: state.drag.all[k] }; }) : null; },
     pick: function (id) {
       const d = state.doms[domIndex(id)];
       if (d && d.k === 'B') toggleSel(id);
@@ -1394,6 +1421,65 @@
   });
 
   // 說明區的「模型與實驗值」表：用和畫面相同的計算
+  // 比較表：每一列是「哪一個角」（試玩 B-L2：同一種角的模型值與實驗值放同一列）
+  const POS_TAG = { ax: ['軸', 'ax'], eq: ['赤', 'eq'], ap: ['頂', 'ap'], bas: ['底', 'bas'] };
+  const POS_ORDER = ['ax', 'eq', 'ap', 'bas'];
+  /** 各電子域的位置：5 個電子域分軸向／赤道；6 個電子域只有 1 對孤對電子時，分頂端（和孤對電子相對）／底面 */
+  function posTags(doms, Ug) {
+    const tags = doms.map(function () { return null; });
+    if (doms.length === 5) {
+      const ax = VC.axialFlags(Ug);
+      doms.forEach(function (d, i) { tags[i] = ax[i] ? 'ax' : 'eq'; });
+    } else if (doms.length === 6) {
+      const lps = [];
+      doms.forEach(function (d, i) { if (d.k === 'L') lps.push(i); });
+      if (lps.length === 1) {
+        let ap = -1, best = -1;
+        doms.forEach(function (d, i) { if (d.k === 'B') { const a = VC.angleDeg(Ug[i], Ug[lps[0]]); if (a > best) { best = a; ap = i; } } });
+        doms.forEach(function (d, i) { if (d.k === 'B') tags[i] = i === ap ? 'ap' : 'bas'; });
+      }
+    }
+    return tags;
+  }
+  function angLabel(p, cls, a, N) {
+    const L = p.ligs[0], C0 = p.center;
+    if (cls) {
+      const t = cls.split('-');
+      return L + '<sub>' + T(POS_TAG[t[0]][0], POS_TAG[t[0]][1]) + '</sub>–' + C0 + '–' + L + '<sub>' + T(POS_TAG[t[1]][0], POS_TAG[t[1]][1]) + '</sub>' + (cls === 'bas-bas' ? cisTrans(N, a) : '');
+    }
+    return L + '–' + C0 + '–' + L + cisTrans(N, a);
+  }
+  /** 八面體上兩根鍵：相鄰（約 90°）或相對（約 180°） */
+  function cisTrans(N, a) { return N === 6 ? (a < 135 ? T('（相鄰）', ' (cis)') : T('（相對）', ' (trans)')) : ''; }
+  /** 一個分子的比較列：[{ cls, a, exp }]，依模型角度由小到大 */
+  function compareRows(p, doms, Ug) {
+    const tags = posTags(doms, Ug);
+    const byCls = {};
+    VC.bondAngles(doms, Ug).forEach(function (b) {
+      let cls = '';
+      if (tags[b.i] && tags[b.j]) {
+        const t = [tags[b.i], tags[b.j]].sort(function (x, y) { return POS_ORDER.indexOf(x) - POS_ORDER.indexOf(y); });
+        cls = t.join('-');
+      }
+      (byCls[cls] = byCls[cls] || []).push(b.a);
+    });
+    const rows = [];
+    Object.keys(byCls).forEach(function (cls) {
+      VC.groupAngles(byCls[cls].sort(function (x, y) { return x - y; })).forEach(function (g) { rows.push({ cls: cls, a: g.a, exp: null }); });
+    });
+    p.exp.forEach(function (e) {
+      let best = null, bd = 20;
+      rows.forEach(function (r) {
+        // 實驗值有標明哪一種角（w）就只對同一種；沒標明的（例如 XeF2 的 180°）就對最接近的模型角
+        if ((e.w && e.w !== r.cls) || r.exp != null) return;
+        const dd = Math.abs(r.a - e.a);
+        if (e.w ? (best == null || dd < bd) : dd <= bd) { best = r; bd = dd; }
+      });
+      if (best) best.exp = e.a;
+    });
+    rows.sort(function (x, y) { return x.a - y.a; });
+    return rows;
+  }
   function fillCompare() {
     const tb = $('cmpTable');
     if (!tb) return;
@@ -1401,14 +1487,16 @@
     const rows = VC.PRESETS.map(function (p) {
       const doms = VC.domainsOf(p);
       const g = VC.globalMin(doms, P0);
-      const groups = VC.groupAngles(VC.bondAngles(doms, g.U));
       const f = VC.formula(p);
       const shape = VC.shapeOf(p.ligs.length, p.lp);
-      const model = groups.map(function (x) { return deg(x.a); }).join(T('、', ', '));
-      const exp = p.exp.map(function (e) { return deg(e.a); }).join(T('、', ', '));
-      return '<tr><td>' + formulaHTML(f) + '</td><td>' + shapeName(shape) + '</td><td>' + model + '</td><td>' + exp + '</td></tr>';
+      const list = compareRows(p, doms, g.U);
+      const span = list.length > 1 ? ' rowspan="' + list.length + '"' : '';
+      return list.map(function (r, k) {
+        return '<tr>' + (k === 0 ? '<td' + span + '>' + formulaHTML(f) + '</td><td' + span + '>' + shapeName(shape) + '</td>' : '') +
+          '<td>' + angLabel(p, r.cls, r.a, doms.length) + '</td><td>' + deg(r.a) + '</td><td>' + (r.exp == null ? '—' : deg(r.exp)) + '</td></tr>';
+      }).join('');
     });
-    tb.innerHTML = '<tr><th>' + T('分子', 'Molecule') + '</th><th>' + T('分子形狀', 'Shape') + '</th><th>' + T('本模型的鍵角', 'Angles in this model') + '</th><th>' + T('實驗值', 'Experiment') + '</th></tr>' + rows.join('');
+    tb.innerHTML = '<tr><th>' + T('分子', 'Molecule') + '</th><th>' + T('分子形狀', 'Shape') + '</th><th>' + T('哪一個角', 'Which angle') + '</th><th>' + T('本模型的鍵角', 'Angle in this model') + '</th><th>' + T('實驗值', 'Experiment') + '</th></tr>' + rows.join('');
   }
 
   // 給縮圖與測試用的介面（不回報任務事件）
@@ -1418,7 +1506,10 @@
     settleNow: function () { let n = 0; while (state.moving && n++ < 2000) step(1 / 60); drawAll(); },
     view: function (m) { setView(m); },
     /** 2D 畫面上第 i 個電子域的握把位置（相對於畫布左上角，CSS px），給端到端測試做真的拖曳 */
-    handleXY: function (i) { const h = handleOf(state.doms[i]); return { x: h.x, y: h.y }; }
+    handleXY: function (i) { const h = handleOf(state.doms[i]); return { x: h.x, y: h.y }; },
+    /** 拖曳中：畫布座標 (x, y) 放手的話會和誰換位（給端到端測試） */
+    view3: function () { return view3; },
+    dropAt: function (x, y) { return state.drag ? dropTarget2D({ x: x, y: y }, state.drag.id) : undefined; }
   };
 
   // =====================================================================

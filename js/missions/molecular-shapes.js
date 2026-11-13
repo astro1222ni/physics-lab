@@ -107,7 +107,7 @@
     {
       id: 'molecular-shapes-9', level: 7,
       title: { zh: '赤道上的孤對電子', en: 'Lone pairs on the equator' },
-      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF4），把孤對電子拖到軸向位置、放手讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF4), drag a lone pair onto an axial position and let go so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
+      desc: { zh: '在三角雙錐的電子對幾何中（5 個電子域、有孤對電子，例如 SF4），把孤對電子拖到一個軸向原子的位置上放手（兩個會交換位置），讓它卡在局部最低點，再按「搖一搖（退火）」讓它回到能量最低的排列。', en: 'In a trigonal-bipyramidal arrangement (5 domains with a lone pair, such as SF4), drag a lone pair onto the place of an axial atom and let go (the two swap places) so that it sticks in a local minimum, then press “Shake (anneal)” to let it reach the lowest-energy arrangement.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.cause === 'shake' && d.N === 5 && d.n >= 1 && d.fromLocal && d.isGlobal; }
     },
     {
@@ -122,7 +122,7 @@
     {
       id: 'molecular-shapes-11', level: 9,
       title: { zh: '不同的原子，照樣抵消', en: 'Different atoms, still cancelled' },
-      desc: { zh: '用「自己組合」做出一個有兩種不同鍵結原子、卻是非極性的分子（電中性、穩定在能量最低的排列）。提示：讓相同的原子站在對稱的位置。', en: 'Use “Build your own” to make a molecule with two different kinds of bonded atom that is still non-polar (no charge, settled in its lowest-energy arrangement). Hint: put identical atoms in symmetric positions.' },
+      desc: { zh: '用「自己組合」做出一個有兩種不同鍵結原子、卻是非極性的分子（電中性、穩定在能量最低的排列）。提示：讓相同的原子站在對稱的位置；把一個原子拖到另一個原子的位置上放手，兩個會交換位置。', en: 'Use “Build your own” to make a molecule with two different kinds of bonded atom that is still non-polar (no charge, settled in its lowest-energy arrangement). Hint: put identical atoms in symmetric positions; drop one atom on another atom’s place and the two swap places.' },
       check: function (ev) {
         const d = ev.data;
         if (!isS(ev) || !d.custom || !ok(d) || d.charge !== 0 || d.polar) return false;
@@ -154,13 +154,69 @@
     {
       id: 'molecular-shapes-h2', level: 2, hidden: true,
       riddle: { zh: '站在它的延長線上，最長的也看不見。', en: 'Stand on its extension, and even the longest one vanishes.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'view' && d && d.settled && d.m >= 2 && d.along <= 2; }
+      check: function (ev) { const d = ev.data; return ev.type === 'view' && d && d.settled && d.m >= 2 && d.along <= 5; }  // 試玩：2° 用滑鼠太難、鍵盤一步 5°，放寬到 5°（和三角函數 h3 相近）
     },
     {
       id: 'molecular-shapes-h3', level: 4, hidden: true,
-      riddle: { zh: '多一點或少一點，它照樣站得端正。', en: 'A little more or a little less, and it still stands up straight.' },
+      riddle: { zh: '得一個或失一個，它照樣站得端正。', en: 'Gain one or lose one, and it still stands up straight.' },
       // 帶電的離子、中心原子有孤對電子，形狀仍然對稱（非極性），例如 ClF2−、BrF4−
       check: function (ev) { const d = ev.data; return isS(ev) && d.custom && ok(d) && d.charge !== 0 && d.n >= 1 && d.m >= 2 && !d.polar; }
+    },
+    {
+      id: 'molecular-shapes-h4', level: 3, hidden: true,
+      riddle: { zh: '六個人圍成一圈，總有兩個背對著背。', en: 'Six stand around, and two of them are always back to back.' },
+      // 八面體（AX6）量到兩個相對的鍵：180°
+      check: function (ev) { const d = ev.data; return isM(ev) && d.m === 6 && d.n === 0 && d.isGlobal && d.angle >= 179.5; }
+    },
+    {
+      id: 'molecular-shapes-h5', level: 7, hidden: true,
+      riddle: { zh: '沉默的兩位不再霸道，大家終於一樣寬。', en: 'The two silent ones stop pushing, and everyone gets the same room.' },
+      // 把孤對電子的排斥強度調小，讓水的鍵角回到正四面體角 109.47°（0.15° 以內）
+      check: function (ev) {
+        const d = ev.data;
+        return isS(ev) && !d.lamDefault && sameLigs(d, 'O', ['H', 'H'], 2) && d.isGlobal && d.angles.length === 1 && Math.abs(d.angles[0] - 109.47) <= 0.15;
+      }
+    },
+    {
+      id: 'molecular-shapes-h6', level: 8, hidden: true,
+      riddle: { zh: '同樣是方方正正，換個座位就有了脾氣。', en: 'Just as square as before, but change the seats and it shows a temper.' },
+      // 自己組合的平面四方形（AX4E2）、電中性，卻是極性分子：兩種原子各自相鄰（順式）
+      check: function (ev) { const d = ev.data; return isS(ev) && d.custom && ok(d) && d.m === 4 && d.n === 2 && d.charge === 0 && d.polar; }
+    },
+    {
+      id: 'molecular-shapes-h7', level: 6, hidden: true,
+      riddle: { zh: '兩個沉默的人，終於坐到了彼此的對面。', en: 'Two silent ones finally sit across from each other.' },
+      // 八面體的兩對孤對電子卡在相鄰（局部最低點），搖一搖後回到相對位置（平面四方形）
+      check: function (ev) { const d = ev.data; return isS(ev) && d.cause === 'shake' && d.N === 6 && d.n === 2 && d.fromLocal && d.isGlobal; }
+    },
+    {
+      id: 'molecular-shapes-h8', level: 5, hidden: true,
+      riddle: { zh: '一個胖子坐下，兩旁的人只好擠一擠。', en: 'One stout one sits down, and the two beside it have to squeeze up.' },
+      // 自己組合的平面三角形（AX3）有一個雙鍵 O：另外兩個單鍵的夾角被擠到 119° 以下
+      check: function (ev) {
+        const d = ev.data;
+        if (!isS(ev) || !d.custom || !ok(d) || d.m !== 3 || d.n !== 0) return false;
+        const o = d.ligs.filter(function (x) { return x === 'O'; }).length;
+        return o === 1 && d.angles[0] < 119;
+      }
+    },
+    {
+      id: 'molecular-shapes-h9', level: 10, hidden: true,
+      riddle: { zh: '三家人坐成一圈，誰也不偏向誰。', en: 'Three families around one table, and no one leans to any side.' },
+      // 自己組合、電中性、有三種不同的鍵結原子，卻是非極性分子
+      check: function (ev) {
+        const d = ev.data;
+        if (!isS(ev) || !d.custom || !ok(d) || d.charge !== 0 || d.polar) return false;
+        const kinds = {};
+        d.ligs.forEach(function (x) { kinds[x] = true; });
+        return Object.keys(kinds).length >= 3;
+      }
+    },
+    {
+      id: 'molecular-shapes-h10', level: 9, hidden: true,
+      riddle: { zh: '三個沉默的人圍著腰，兩個說話的才站成一直線。', en: 'Three silent ones circle the waist, and only then do the two speakers line up straight.' },
+      // 電中性的 AX2E3（例如 XeF2）：孤對電子卡在軸向（局部最低點），搖一搖後三對孤對電子都到赤道、兩個鍵成一直線
+      check: function (ev) { const d = ev.data; return isS(ev) && d.cause === 'shake' && d.m === 2 && d.n === 3 && d.charge === 0 && d.fromLocal && d.isGlobal; }
     }
   ]);
 })();

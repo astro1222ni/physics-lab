@@ -191,6 +191,25 @@ test('選指示劑：變色範圍要包含當量點 pH（強酸 7.00 → 溴瑞�
   near(v, 25, 0.1, '酚酞在當量點附近變色');
 });
 
+test('變色判定用滴定指數 pT：0.100 M 強酸用甲基橙在 0.05 mL 內變色、變色時的 pH 落在範圍內；稀溶液時甲基橙明顯提早', function () {
+  const ph0 = K.pH(SA, 0);
+  ['php', 'mo', 'mr', 'btb'].forEach(function (ind) {
+    let v = 0; while (!K.changed(ind, ph0, K.pH(SA, v))) v += 0.025;
+    near(v, 25, 0.05, indName(ind) + ' 在當量點附近變色');
+    const I = K.INDICATORS[ind];
+    assert.ok(I.pT >= I.lo && I.pT <= I.hi, ind + ' 的 pT 在變色範圍內');
+  });
+  // 以前的規則（鹼型比例改變 0.15）讓甲基橙在 pH 2.72 就算變色；現在要到 pH 4.0
+  assert.ok(!K.changed('mo', ph0, 2.72) && !K.changed('mo', ph0, 3.9) && K.changed('mo', ph0, 4.0));
+  const SAd = K.setup({ sys: 'sa', Ca: 0.001, Va: 25, Vw: 0, Cb: 0.001 }), p0 = K.pH(SAd, 0);
+  let v = 0; while (!K.changed('mo', p0, K.pH(SAd, v))) v += 0.025;
+  assert.ok(v < 24, '0.001 M 時甲基橙在 ' + v.toFixed(2) + ' mL 就變色（太稀不適合）');
+  // 反方向（以酸滴定鹼）：越過 pT 往下
+  const WB0 = K.pH(WB, 0); v = 0; while (!K.changed('mr', WB0, K.pH(WB, v))) v += 0.025;
+  near(v, 25, 0.05, '氨水用甲基紅');
+});
+function indName(k) { return K.INDICATORS[k].zh; }
+
 // ---------------- 未知弱酸 ----------------
 test('未知弱酸：濃度 0.050–0.150 M、pKa 4.00–6.00', function () {
   for (let i = 0; i < 500; i++) {

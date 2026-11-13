@@ -284,6 +284,29 @@
     cache.set(key, res);
     return res;
   }
+  /**
+   * 拖曳放手時的「換位」：被拖的第 i 個電子域若落在另一個電子域「開始拖之前的位置」tolDeg 度以內，
+   * 兩者交換位置（其他電子域回到開始拖之前的位置），之後再讓它們互相推開。
+   * 拖曳時被抓住的電子域固定不動，其他電子域會整體轉開，所以「拖到某個位置」本身做不出換位後的排列
+   * （例如 SF4 孤對電子在軸向的局部最低點），要靠放手時換位。U0：開始拖之前的方向。傳回 { U, j } 或 null。
+   */
+  function dropSwap(U0, i, u, tolDeg) {
+    const tol = tolDeg == null ? 20 : tolDeg;
+    let j = -1, best = tol;
+    for (let k = 0; k < U0.length; k++) {
+      if (k === i) continue;
+      const a = angleDeg(u, U0[k]);
+      if (a <= best) { best = a; j = k; }
+    }
+    return j < 0 ? null : swapDomains(U0, i, j);
+  }
+  /** 第 i、j 個電子域交換位置（其他不動）；畫面上放在某個電子域原本的位置上時用（2D、3D 用畫面上的距離判斷是哪一個） */
+  function swapDomains(U0, i, j) {
+    if (i === j || i < 0 || j < 0 || i >= U0.length || j >= U0.length) return null;
+    const U = U0.map(function (v) { return v.slice(); });
+    U[i] = U0[j].slice(); U[j] = U0[i].slice();
+    return { U: U, j: j };
+  }
   /** 是不是能量最低的排列（容許數值誤差） */
   function isGlobal(E, Eg) { return E <= Eg + 1e-6 * Math.max(1, Math.abs(Eg)); }
 
@@ -714,7 +737,7 @@
     mulberry32: mulberry32, gauss: gauss, randomUnit: randomUnit,
     dot: dot, norm: norm, unit: unit, cross: cross, angleDeg: angleDeg, rotate: rotate, rotateFromTo: rotateFromTo,
     domainsOf: domainsOf, weight: weight, energy: energy, gradient: gradient, relax: relax,
-    IDEAL: IDEAL, assignments: assignments, globalMin: globalMin, isGlobal: isGlobal, orient: orient,
+    IDEAL: IDEAL, assignments: assignments, globalMin: globalMin, isGlobal: isGlobal, dropSwap: dropSwap, swapDomains: swapDomains, orient: orient,
     orientQuat: orientQuat, qRot: qRot, qPart: qPart, qMul: qMul, qAxis: qAxis, qAngle: qAngle,
     flow: flow, TAIL: TAIL, jiggle: jiggle, thermal: thermal, despin: despin, scatter: scatter, ANNEAL: ANNEAL, stiffness: stiffness, freeDirection: freeDirection,
     SHAPES: SHAPES, EGEOM: EGEOM, SHAPE_OF: SHAPE_OF, STANDARD13: STANDARD13, shapeOf: shapeOf, axe: axe,

@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Gas Diffusion and Effusion (Graham's Law) | Astro Ni Science Lab">氣體擴散與逸散（格雷厄姆定律）｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 氣體擴散頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .gd canvas { aspect-ratio: auto; touch-action: auto; }
+    .gd #cv { height: 460px; touch-action: none; }
+    .gd #gcv { height: 320px; }
+    .gd + .gd { margin-top: 16px; }
+    .gd button, .gd select { min-height: 44px; }
+    .gd [hidden] { display: none !important; }
+    .gd .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gd .playbar > button { flex: 1 1 auto; }
+    .gd .playbar #run { font-weight: 700; min-width: 6.5em; }
+    .gd .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .gd .speedbox .seg4 { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    .seg2 button, .seg3 button, .seg4 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg2 button:disabled, .seg4 button:disabled { opacity: .45; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .gd .stage .status { margin: 6px 4px 0; }
+    .gd .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .gd .slider input[type="range"] { height: 28px; margin: 0; }
+    .gd sub, .gd sup, .notes sub, .notes sup { font-size: .75em; }
+    .gd .card .hint, .gd .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .gd .seg-lab { display: block; font-size: calc(14px * var(--fs, 1)); margin: 8px 0 4px; }
+    .gd .mode-seg { margin: 2px 0 6px; }
+    .gd .selrow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 6px 0; font-size: calc(14px * var(--fs, 1)); }
+    .gd .selrow select { font: inherit; width: 100%; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+    .gd .fixed { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .gd dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .gd dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .gd .tabs { margin: 0 2px 8px; }
+    .gd .legend { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+    .gd .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .gd .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .gd .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 8em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .gd .btns button { flex: 1 1 auto; }
+    .gd .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    #unkOut .ok { color: var(--probe); font-weight: 700; }
+    #unkOut .no { color: var(--pos); font-weight: 700; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#matter&quot;&gt;Chemistry · Matter and Structure&lt;/a&gt; / Gas Diffusion and Effusion"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#matter">化學・物質與結構</a> ／ 氣體擴散與逸散</nav>
+      <h1 data-en="Gas Diffusion and Effusion (Graham's Law)">氣體擴散與逸散（格雷厄姆定律）</h1>
+      <p data-en-html="Push cotton wool soaked in concentrated ammonia and in concentrated hydrochloric acid into the two ends of a long glass tube at the same moment. The two gases spread through the air in the tube, and where they meet a white ring of ammonium chloride appears. Change the pair of gases, the temperature and the length of the tube, compare the ideal Graham's-law prediction with diffusion through air, and switch to effusion: gases escaping through a tiny hole into a vacuum, at rates proportional to 1/√M.">長玻璃管的兩端同時塞入沾了濃氨水與濃鹽酸的棉花，兩種氣體在管中的空氣裡擴散，相遇的地方出現氯化銨的白煙環。換不同的氣體對、溫度、管長，比較理想的格雷厄姆定律與在空氣中擴散的結果；也可以切換到逸散：氣體從小孔逸入真空，速率與 1/√M 成正比。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: press “Start”, then choose ×100. The white ring of NH<sub>4</sub>Cl appears about 59% of the way from the ammonia end (ideal model) — ammonia molecules are lighter, so they travel farther. Then switch the model to “Diffusion in air” and run again.">試試看：按「開始」，再選 ×100。氯化銨白煙環出現在距氨端約 59% 的地方（理想模型）——氨分子比較輕，走得比較遠。再把模型換成「在空氣中擴散」重做一次。</p>
+    <div class="lab gd">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="玻璃管與分子放大鏡" data-en-aria-label="Glass tube and molecular magnifier"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="run" class="primary" type="button" data-en="Start">開始</button>
+          <button id="reset" type="button" data-en="Reset" title="清空玻璃管（或容器），回到開始前；設定不變" data-en-title="Empty the tube (or the containers) and go back to the start; the settings stay">重來</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除測量紀錄表、環的位置圖與答題紀錄；設定不變" data-en-title="Clear the table of measurements, the ring-position graph and the answers; the settings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+            <div class="seg4" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false" data-en="×1">×1</button>
+              <button type="button" id="sp1" aria-pressed="false" data-en="×10">×10</button>
+              <button type="button" id="sp2" aria-pressed="true" data-en="×100">×100</button>
+              <button type="button" id="sp3" aria-pressed="false" data-en="×1000">×1000</button>
+            </div>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="stageHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗</h2>
+          <div class="seg2 mode-seg" id="modeSeg" role="group" aria-label="實驗" data-en-aria-label="Experiment">
+            <button type="button" data-mode="diff" aria-pressed="true" data-en="Diffusion (glass tube)">擴散（玻璃管）</button>
+            <button type="button" data-mode="eff" aria-pressed="false" data-en="Effusion (pinhole)">逸散（小孔）</button>
+          </div>
+        </section>
+
+        <section class="card" id="diffCard">
+          <h2 data-en="Glass tube">玻璃管</h2>
+          <span class="seg-lab" id="baseLab" data-en="Left end (base)">左端（鹼）</span>
+          <div class="seg2" id="baseSeg" role="group" aria-labelledby="baseLab">
+            <button type="button" data-g="NH3" aria-pressed="true" data-en-html="NH&lt;sub&gt;3&lt;/sub&gt; (ammonia)">NH<sub>3</sub>（氨）</button>
+            <button type="button" data-g="CH3NH2" aria-pressed="false" data-en-html="CH&lt;sub&gt;3&lt;/sub&gt;NH&lt;sub&gt;2&lt;/sub&gt; (methylamine)">CH<sub>3</sub>NH<sub>2</sub>（甲胺）</button>
+          </div>
+          <span class="seg-lab" id="acidLab" data-en="Right end (acid)">右端（酸）</span>
+          <div class="seg4" id="acidSeg" role="group" aria-labelledby="acidLab">
+            <button type="button" data-g="HCl" aria-pressed="true" data-en="HCl">HCl</button>
+            <button type="button" data-g="HNO3" aria-pressed="false" data-en-html="HNO&lt;sub&gt;3&lt;/sub&gt;">HNO<sub>3</sub></button>
+            <button type="button" data-g="HBr" aria-pressed="false" data-en="HBr">HBr</button>
+            <button type="button" data-g="HI" aria-pressed="false" data-en="HI">HI</button>
+          </div>
+          <span class="seg-lab" id="modelLab" data-en="Model">模型</span>
+          <div class="seg2" id="modelSeg" role="group" aria-labelledby="modelLab">
+            <button type="button" data-model="graham" aria-pressed="true" data-en="Graham's law (ideal)">格雷厄姆（理想）</button>
+            <button type="button" data-model="air" aria-pressed="false" data-en="Diffusion in air">在空氣中擴散</button>
+          </div>
+          <div class="slider"><label for="temp" data-en="Temperature T">溫度 T</label><output id="tempo"></output>
+            <input id="temp" type="range" min="263" max="343" step="1" value="298" data-decimals="1"></div>
+          <div class="slider"><label for="len" data-en="Tube length L">管長 L</label><output id="leno"></output>
+            <input id="len" type="range" min="30" max="150" step="1" value="100" data-decimals="1"></div>
+          <p class="hint" id="diffHint" data-en="Changing a setting empties the tube; press “Start” again.">改變設定會清空玻璃管，請再按「開始」。</p>
+        </section>
+
+        <section class="card" id="effCard" hidden>
+          <h2 data-en="Two containers, one pinhole each">兩個容器，各有一個小孔</h2>
+          <div class="selrow"><label for="gasA" data-en="Left container: gas A">左邊容器：氣體 A</label><select id="gasA"></select></div>
+          <div class="selrow"><label for="gasB" data-en="Right container: gas B">右邊容器：氣體 B</label><select id="gasB"></select></div>
+          <div class="slider"><label for="tA" data-en="Temperature of A">A 的溫度</label><output id="tAo"></output>
+            <input id="tA" type="range" min="250" max="600" step="1" value="298" data-decimals="1"></div>
+          <div class="slider"><label for="tB" data-en="Temperature of B">B 的溫度</label><output id="tBo"></output>
+            <input id="tB" type="range" min="250" max="600" step="1" value="298" data-decimals="1"></div>
+          <div class="slider"><label for="hole" data-en="Hole diameter d">孔徑 d</label><output id="holeo"></output>
+            <input id="hole" type="range" min="10" max="200" step="1" value="100" data-decimals="1"></div>
+          <div class="slider"><label for="p0" data-en-html="Starting pressure P&lt;sub&gt;0&lt;/sub&gt; (amount of gas)">起始壓力 P<sub>0</sub>（起始量）</label><output id="p0o"></output>
+            <input id="p0" type="range" min="0" max="1000" step="1" value="500" data-decimals="2"></div>
+          <p class="fixed" id="effFixed" data-en="Each container: 1.00 L, the same hole; outside: vacuum.">每個容器 1.00 L、孔一樣大；外面是真空。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="readTitle" data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab gd">
+      <div class="stage">
+        <h2 data-en="Graphs and measurements">圖表與測量紀錄</h2>
+        <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="prof" aria-pressed="true" data-en="Along the tube">管中濃度</button>
+          <button type="button" data-tab="ring" aria-pressed="false" data-en="Ring position">環的位置</button>
+          <button type="button" data-tab="pres" aria-pressed="false" data-en="Pressure–time" hidden>壓力—時間</button>
+          <button type="button" data-tab="speed" aria-pressed="false" data-en="Speed distribution">速率分布</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="unkCard" data-share-skip>
+          <h2 id="unkTitle" data-en="Unknown gas">未知氣體</h2>
+          <p class="hint" id="unkIntro"></p>
+          <div class="btns"><button type="button" id="unkOn" data-en="Start the challenge">開始挑戰</button></div>
+          <div id="unkBox" hidden>
+            <div class="ans"><label for="ansM" data-en="Molar mass (g/mol)">莫耳質量（g/mol）</label><input id="ansM" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 64.0" data-en-placeholder="e.g. 64.0"></div>
+            <div class="btns">
+              <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+              <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+              <button id="unkNew" type="button" data-en="Another one">換一個</button>
+              <button id="unkOff" type="button" data-en="End the challenge">結束挑戰</button>
+            </div>
+          </div>
+          <p class="info" id="unkOut" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Theory at a glance">理論速查</h2>
+          <dl class="readout" id="theory"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="See that at the same temperature lighter gas molecules move faster: the mean speed is proportional to √(T/M).">了解同溫時較輕的氣體分子跑得較快：平均速率與 √(T/M) 成正比。</li>
+        <li data-en="Use Graham's law to predict where the white ring forms in the ammonia–hydrogen chloride experiment, and see why the real ring forms closer to the middle.">用格雷厄姆定律預測氨與氯化氫實驗中白煙環的位置，並了解真實的環為什麼比較靠近中央。</li>
+        <li data-en="Measure effusion times and use them to find the molar mass of an unknown gas.">測量逸散時間，並用它求出未知氣體的莫耳質量。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="How fast do gas molecules move?">氣體分子跑多快？</h3>
+      <p data-en-html="In a gas at temperature \(T\) the molecules have a spread of speeds, the Maxwell distribution. Its mean, the root-mean-square speed and the most probable speed all grow with \(\sqrt{T/M}\) (\(M\) in kg/mol):">溫度 \(T\) 的氣體中，分子的速率有快有慢，分布是馬克士威分布。平均速率、方均根速率、最可能速率都和 \(\sqrt{T/M}\) 成正比（\(M\) 以 kg/mol 計）：</p>
+      <div class="formula multi">
+        \[ f(v) = 4\pi\left(\frac{M}{2\pi RT}\right)^{3/2} v^2\, e^{-Mv^2/2RT} \]
+        \[ \bar v = \sqrt{\frac{8RT}{\pi M}} \]
+        \[ v_\text{rms} = \sqrt{\frac{3RT}{M}} \]
+      </div>
+      <p data-en-html="At 25 °C an ammonia molecule averages about 609 m/s and a hydrogen chloride molecule about 416 m/s. Both have the same average kinetic energy \(\tfrac{3}{2}kT\); the lighter one simply has to move faster.">25 °C 時氨分子平均約 609 m/s，氯化氫分子約 416 m/s。兩者的平均動能都是 \(\tfrac{3}{2}kT\)，較輕的分子只好跑得比較快。</p>
+
+      <h3 data-en="Effusion: escaping through a tiny hole">逸散：從小孔跑出去</h3>
+      <p data-en-html="If the hole is much smaller than the mean free path, the molecules leave one by one, without colliding on the way: each second \(\tfrac14 n\bar v A\) molecules escape (\(n\) molecules per unit volume, \(A\) the area of the hole). The pressure therefore falls exponentially, and at the same temperature the time to halve it is proportional to \(\sqrt{M}\) — Graham's law of effusion (1846):">如果小孔比分子的平均自由徑小得多，分子一個一個跑出去、途中不互相碰撞：每秒逸出 \(\tfrac14 n\bar v A\) 個分子（\(n\) 是單位體積的分子數，\(A\) 是孔的面積）。於是壓力以指數下降，同溫時壓力減半所需的時間與 \(\sqrt{M}\) 成正比——格雷厄姆逸散定律（1846）：</p>
+      <div class="formula multi">
+        \[ P(t) = P_0\, e^{-t/\tau},\quad \tau = \frac{4V}{A\bar v} \]
+        \[ \frac{r_\mathrm{A}}{r_\mathrm{B}} = \frac{t_\mathrm{B}}{t_\mathrm{A}} = \sqrt{\frac{M_\mathrm{B}}{M_\mathrm{A}}} \]
+      </div>
+      <p data-en-html="The time constant does not depend on the starting pressure: with twice as much gas, twice as many molecules leave each second. A hole twice as wide has four times the area and empties the container four times as fast, but the ratio of the two times stays the same.">時間常數和起始壓力無關：氣體多一倍，每秒跑出去的分子也多一倍。孔徑加倍，面積變 4 倍，容器空得快 4 倍，但兩種氣體的時間比不變。</p>
+
+      <h3 data-en="Diffusion in a tube: the white ring">管中的擴散：白煙環</h3>
+      <p data-en-html="Ammonia and hydrogen chloride react at once to form tiny crystals of ammonium chloride: \(\mathrm{NH_3(g) + HCl(g) \rightarrow NH_4Cl(s)}\). Each gas spreads from its end by diffusion; the distance it covers in a given time is proportional to \(\sqrt{Dt}\). The ring first appears where the two gases first meet, so the distances from the two ends are in the ratio of the diffusion coefficients:">氨與氯化氫一相遇就反應，生成細小的氯化銨晶體：\(\mathrm{NH_3(g) + HCl(g) \rightarrow NH_4Cl(s)}\)。兩種氣體各自從管端擴散，在一定時間內走的距離與 \(\sqrt{Dt}\) 成正比。白煙環出現在兩股氣體第一次相遇的地方，所以它到兩端的距離比等於擴散係數的比：</p>
+      <div class="formula multi">
+        \[ \frac{x_\mathrm{NH_3}}{x_\mathrm{HCl}} = \frac{D_\mathrm{NH_3}}{D_\mathrm{HCl}} \]
+        \[ \left(\frac{D_\mathrm{NH_3}}{D_\mathrm{HCl}}\right)_\text{Graham} = \sqrt{\frac{M_\mathrm{HCl}}{M_\mathrm{NH_3}}} = 1.46 \]
+      </div>
+      <p data-en-html="If each gas simply moved in proportion to its mean speed (the ideal Graham's-law picture), the ring would be 59.4% of the way from the ammonia end. But the molecules are not moving through empty space: they push through air, colliding about ten billion times a second. The diffusion coefficient of a gas in air depends on the reduced mass of the gas–air pair and on the sizes of the molecules, so the ratio is closer to 1.28 and the ring forms about 56% of the way along — close to the 1.27 often measured in class.">如果每種氣體只是照平均速率前進（理想的格雷厄姆圖像），白煙環會在距氨端 59.4% 的地方。但分子並不是在真空中前進，而是在空氣裡擠著走，每秒和空氣分子碰撞約一百億次。氣體在空氣中的擴散係數和「氣體與空氣的約化質量」以及分子的大小有關，所以比值接近 1.28，環出現在約 56% 的地方——和課堂上常量到的 1.27 相近。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="Put the magnifier near the ammonia end, then near the acid end: the NH<sub>3</sub> molecules zip around faster than the heavier HCl molecules, and both are knocked about by the air molecules.">把放大鏡移到氨端附近，再移到酸端附近：NH<sub>3</sub> 分子比較重的 HCl 分子跑得快，兩者都被空氣分子撞來撞去。</li>
+        <li data-en-html="Change HCl to HBr and then to HI: the heavier the acid, the closer the ring is to the acid end.">把 HCl 換成 HBr，再換成 HI：酸越重，白煙環越靠近酸端。</li>
+        <li data-en="Change the temperature or the length of the tube: the ring forms sooner or later, but always in the same place.">改變溫度或管長：白煙環出現得比較早或比較晚，但位置不變。</li>
+        <li data-en-html="Compare the two models with the same gases. For HI the ideal and the realistic predictions differ by almost a tenth of the tube.">用同一對氣體比較兩種模型。HI 的理想預測與較真實的預測相差將近十分之一管長。</li>
+        <li data-en-html="In the effusion experiment, put H<sub>2</sub> on one side and O<sub>2</sub> on the other: oxygen is 16 times heavier and takes 4 times as long.">逸散實驗中，一邊放 H<sub>2</sub>、一邊放 O<sub>2</sub>：氧重 16 倍，逸散時間是 4 倍。</li>
+      </ul>
+
+      <h3 data-en="Think about it">想一想</h3>
+      <ol>
+        <li data-en-html="Ammonia molecules are lighter than hydrogen chloride molecules. Why does the ring still take about a quarter of an hour to appear in a 1 m tube, when NH<sub>3</sub> molecules move at about 600 m/s?">氨分子比氯化氫分子輕，而且 NH<sub>3</sub> 分子的平均速率約 600 m/s。為什麼 1 m 長的管子還要大約一刻鐘才出現白煙？</li>
+        <li data-en="Why is the ring in a real tube closer to the middle than Graham's law predicts?">為什麼真實的玻璃管裡，白煙環比格雷厄姆定律的預測更靠近中央？</li>
+        <li data-en-html="An unknown gas takes 2.00 times as long as oxygen to effuse through the same hole at the same temperature. What is its molar mass?">某未知氣體在同溫、同一小孔逸散所需的時間是氧氣的 2.00 倍，它的莫耳質量是多少？</li>
+        <li data-en-html="Uranium hexafluoride made with U-235 effuses only 0.43% faster than that made with U-238. Why did the gaseous-diffusion plants of the 1940s need more than a thousand stages in a row?">含 U-235 的六氟化鈾只比含 U-238 的快 0.43%。為什麼 1940 年代的氣體擴散廠需要串接一千多級？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="The molecules do not fly straight down the tube: in air each one collides with other molecules billions of times a second and changes direction each time, so it wanders in a random walk. The distance covered grows only as √t, not as t.">分子並不是沿著管子直直飛過去：在空氣中每個分子每秒碰撞幾十億次、每撞一次就換方向，像醉漢一樣隨機漫步，走的距離只和 √t 成正比，不是和 t 成正比。</li>
+          <li data-en-html="Both gases diffuse through air, not through each other. The diffusion coefficient in air depends on the reduced mass of the gas and an air molecule, \(M_\mathrm{AB} = 2/(1/M + 1/M_\text{air})\), and on molecular size. For a light gas the air molecules dominate the reduced mass, so the advantage of being light is smaller than √M suggests. Air currents, the walls of the tube soaking up gas, and unequal strengths of the two solutions also shift the ring.">兩種氣體都是在空氣中擴散，而不是在彼此之中。氣體在空氣中的擴散係數和「氣體與空氣分子的約化質量」\(M_\mathrm{AB} = 2/(1/M + 1/M_\text{空氣})\) 以及分子大小有關；較輕的氣體，約化質量主要由空氣決定，所以「輕」的優勢比 √M 小。管中的氣流、管壁吸附氣體、兩端溶液濃度不同，也會讓環的位置偏移。</li>
+          <li data-en-html="\(M = 32.00 \times 2.00^2 = 128\) g/mol (for example HI).">\(M = 32.00 \times 2.00^2 = 128\) g/mol（例如 HI）。</li>
+          <li data-en-html="One stage changes the ratio of U-235 to U-238 by at most a factor of 1.0043. To raise the U-235 content from 0.72% to about 3% (for a power reactor), the ratio must grow about 4.3 times, so ln 4.3 / ln 1.0043 ≈ 340 ideal stages are needed — and real stages separate less than the ideal factor, so plants used well over a thousand.">每一級最多只能把 U-235 與 U-238 的比值提高 1.0043 倍。要把 U-235 從 0.72% 提高到約 3%（發電用），比值要變約 4.3 倍，需要 ln 4.3 ÷ ln 1.0043 ≈ 340 級理想的分離；實際每一級分得比理想差，所以工廠要用一千多級。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Molar masses use the IUPAC 2021 standard atomic weights (isotopes: D, U-235 and U-238 from the 2020 Atomic Mass Evaluation). Speeds follow the Maxwell distribution of an ideal gas.">莫耳質量用 IUPAC 2021 標準原子量計算（D、U-235、U-238 用 2020 年原子質量評估的同位素質量）；分子速率照理想氣體的馬克士威分布。</li>
+        <li data-en-html="<strong>Effusion</strong>: each 1.00 L container leaks through a circular hole into a vacuum, \(P = P_0 e^{-t/\tau}\) with \(\tau = 4V/(A\bar v)\). The starting pressure is kept at 0.1–5 Pa so that the mean free path (millimetres, estimated with an effective molecular diameter of 0.37 nm) is much larger than the hole: the Knudsen number is shown, and the flow is effusion. At ordinary pressures the gas would rush out in a jet instead, and Graham's law would no longer apply.">逸散：每個 1.00 L 的容器經由圓孔漏到真空，\(P = P_0 e^{-t/\tau}\)、\(\tau = 4V/(A\bar v)\)。起始壓力限制在 0.1–5 Pa，讓平均自由徑（以分子有效直徑 0.37 nm 估計，約幾毫米）遠大於孔徑：讀數中的克努森數 Kn 都大於 5，才是逸散。在一般壓力下氣體會成團噴出，格雷厄姆定律就不適用了。</li>
+        <li data-en-html="<strong>Diffusion in the tube</strong>: each piece of cotton keeps the vapour at its end at a fixed concentration, and each gas spreads into the tube as \(c = \operatorname{erfc}\!\big(x/2\sqrt{Dt}\big)\) (one-dimensional diffusion). The ring is placed where the two gases first meet, \(x/(L-x) = D_\mathrm{A}/D_\mathrm{B}\) (the limit of a very small threshold for the product of the two concentrations); it appears when the product there reaches an illustrative threshold, chosen so that a 1 m tube with NH<sub>3</sub> and HCl at 25 °C takes about 17 minutes (classroom demonstrations usually take 15–20 minutes). The appearance time is therefore proportional to \(L^2/D\). After the ring appears, its growth is drawn for display only.">管中的擴散：兩端的棉花讓管端的蒸氣維持固定濃度，每種氣體以 \(c = \operatorname{erfc}\!\big(x/2\sqrt{Dt}\big)\) 向管內擴散（一維擴散）。白煙環放在兩股氣體第一次相遇的地方 \(x/(L-x) = D_\mathrm{A}/D_\mathrm{B}\)（兩種濃度乘積的門檻很小時的極限）；當該處乘積達到示意的門檻時白煙出現，門檻校準成 1 m 的管、NH<sub>3</sub> 與 HCl、25 °C 約 17 分鐘（課堂示範通常 15–20 分鐘），所以出現時間與 \(L^2/D\) 成正比。白煙出現後的變濃、變寬只是示意。</li>
+        <li data-en-html="<strong>The two models</strong>: “Graham's law (ideal)” uses \(D \propto 1/\sqrt{M}\), scaled so that NH<sub>3</sub> has its value in air. “Diffusion in air” uses the binary diffusion coefficient of each gas in air from the Fuller–Schettler–Giddings equation, \[\small D = \frac{0.00143\,T^{1.75}}{P\sqrt{M_\mathrm{AB}}\,(\Sigma v_\mathrm{A}^{1/3} + \Sigma v_\mathrm{B}^{1/3})^2}\], with the diffusion volumes in Poling, Prausnitz and O'Connell, <i>The Properties of Gases and Liquids</i> (5th ed., Table 11-1); typical error about 5%. It gives 0.220 cm²/s for NH<sub>3</sub> and 0.172 cm²/s for HCl at 25 °C (measured: about 0.23 and 0.16–0.17). Both models scale as \(T^{1.75}\).">兩種模型：「格雷厄姆（理想）」用 \(D \propto 1/\sqrt{M}\)，並讓 NH<sub>3</sub> 的值等於它在空氣中的值。「在空氣中擴散」用每種氣體對空氣的二元擴散係數，由 Fuller–Schettler–Giddings 式 \[\small D = \frac{0.00143\,T^{1.75}}{P\sqrt{M_\mathrm{AB}}\,(\Sigma v_\mathrm{A}^{1/3} + \Sigma v_\mathrm{B}^{1/3})^2}\]（單位 cm²/s）計算，擴散體積取自 Poling、Prausnitz、O'Connell《The Properties of Gases and Liquids》第 5 版表 11-1，一般誤差約 5%。25 °C 時 NH<sub>3</sub> 為 0.220、HCl 為 0.172 cm²/s（實測約 0.23 與 0.16–0.17）。兩種模型的 D 都隨 \(T^{1.75}\) 變化。</li>
+        <li data-en-html="<strong>Left out</strong>: air currents, gas soaking into the glass and the cotton, the different vapour pressures above the two solutions (concentrated ammonia gives off much more gas than concentrated hydrochloric acid), the ring drifting slowly towards the acid end afterwards, and the change of vapour pressure with temperature. Real measurements scatter widely because of these: distance ratios from about 1.3 to above 2 have been reported. The molecules in the magnifier and the dots in the tube are a picture of the concentrations; their speeds on screen are slowed down enormously.">沒有考慮：管中的氣流、玻璃與棉花吸附氣體、兩種溶液上方的蒸氣壓不同（濃氨水放出的氣體比濃鹽酸多得多）、白煙環之後慢慢往酸端移動，以及蒸氣壓隨溫度的變化。真實的測量因此差異很大：文獻中的距離比從約 1.3 到 2 以上都有。放大鏡裡的分子和管中的小點是濃度的示意圖，畫面上的速率大大放慢。</li>
+        <li data-en-html="The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same tube, dots and ring, or the same two containers.">3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一支玻璃管、同一批小點與白煙環，或同樣的兩個容器。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Gases (kinetic theory of gases, diffusion and effusion, Graham's law).">課綱對應：高中化學・氣體（氣體動力論、擴散與逸散、格雷厄姆定律）。</li>
+        <li data-en-html="Molar masses: IUPAC Commission on Isotopic Abundances and Atomic Weights, standard atomic weights 2021; isotope masses from AME2020. Speeds and effusion: OpenStax <i>Chemistry 2e</i>, <a href=&quot;https://openstax.org/books/chemistry-2e/pages/9-4-effusion-and-diffusion-of-gases&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>9.4 Effusion and Diffusion of Gases</a> and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/9-5-the-kinetic-molecular-theory&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>9.5 The Kinetic-Molecular Theory</a>.">分子量：IUPAC 同位素豐度與原子量委員會 2021 年標準原子量；同位素質量取自 AME2020。速率與逸散：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/9-4-effusion-and-diffusion-of-gases" target="_blank" rel="noopener">9.4 氣體的逸散與擴散</a>、<a href="https://openstax.org/books/chemistry-2e/pages/9-5-the-kinetic-molecular-theory" target="_blank" rel="noopener">9.5 氣體動力論</a>（英文）。</li>
+        <li data-en-html="Diffusion coefficients: B. E. Poling, J. M. Prausnitz, J. P. O'Connell, <i>The Properties of Gases and Liquids</i>, 5th ed. (McGraw-Hill, 2001), §11-4 (Fuller method); HCl in air measured by Tang et al., <i>Atmos. Chem. Phys.</i> 14, 9233 (2014).">擴散係數：B. E. Poling、J. M. Prausnitz、J. P. O'Connell《The Properties of Gases and Liquids》第 5 版（McGraw-Hill，2001）§11-4（Fuller 法）；HCl 在空氣中的實測值：Tang 等人，《Atmos. Chem. Phys.》14, 9233（2014）。</li>
+        <li data-en-html="The classroom demonstration and why the ring is not exactly where Graham's law puts it: Royal Society of Chemistry, <i>Education in Chemistry</i>, “<a href=&quot;https://edu.rsc.org/exhibition-chemistry/demonstrating-the-diffusion-of-ammonia-and-hydrogen-chloride/4013696.article&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Demonstrating the diffusion of ammonia and hydrogen chloride</a>”.">課堂示範與白煙環為什麼不在格雷厄姆定律預測的位置：英國皇家化學會《Education in Chemistry》〈<a href="https://edu.rsc.org/exhibition-chemistry/demonstrating-the-diffusion-of-ammonia-and-hydrogen-chloride/4013696.article" target="_blank" rel="noopener">Demonstrating the diffusion of ammonia and hydrogen chloride</a>〉（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gas-diffusion-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/gas-diffusion-3d.js"></script>
+  <script src="js/gas-diffusion.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gas-diffusion"></script>
+  <script src="js/missions/gas-diffusion.js"></script>
+  <script src="js/stats.js" data-module="gas-diffusion"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Chemical Equilibrium and Le Chatelier's Principle | Astro Ni Science Lab">化學平衡與勒沙特列原理｜Astro Ni 科學實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用范特荷夫圖求出未知反應的 ΔH°。">
+  <meta name="description" content="推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用凡特荷夫圖求出未知反應的 ΔH°。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/chemical-equilibrium.html">
   <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/chemical-equilibrium.html?lang=zh-Hans">
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/chemical-equilibrium.html?lang=en">
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Astro Ni 科學實驗室">
   <meta property="og:title" content="化學平衡與勒沙特列原理｜Astro Ni 科學實驗室">
-  <meta property="og:description" content="推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用范特荷夫圖求出未知反應的 ΔH°。">
+  <meta property="og:description" content="推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用凡特荷夫圖求出未知反應的 ΔH°。">
   <meta property="og:url" content="https://lab.astroni.org/chemical-equilibrium.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/chemical-equilibrium.jpg">
   <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"化學平衡與勒沙特列原理","alternateName":"Chemical Equilibrium and Le Chatelier's Principle","description":"推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用范特荷夫圖求出未知反應的 ΔH°。","url":"https://lab.astroni.org/chemical-equilibrium.html","image":"https://lab.astroni.org/img/og/chemical-equilibrium.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["反應速率與平衡（Rates and Equilibrium）","化學平衡（Chemical Equilibrium）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"化學平衡與勒沙特列原理","alternateName":"Chemical Equilibrium and Le Chatelier's Principle","description":"推拉注射筒、加熱冷卻、加入氣體或催化劑，看紅棕色的 NO2、合成氨與碘化氫怎麼移動到新的平衡。用 Q 與 K 預測方向，再用凡特荷夫圖求出未知反應的 ΔH°。","url":"https://lab.astroni.org/chemical-equilibrium.html","image":"https://lab.astroni.org/img/og/chemical-equilibrium.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["反應速率與平衡（Rates and Equilibrium）","化學平衡（Chemical Equilibrium）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
@@ -201,7 +201,7 @@
           <div class="slider" id="vRow"><label for="vol" data-en="Volume V">體積 V</label><output id="volo"></output>
             <input id="vol" type="range" min="10" max="100" step="1" value="50" data-decimals="1"></div>
           <div class="slider" id="pRow" hidden><label for="pres" data-en="External pressure P">外界壓力 P</label><output id="preso"></output>
-            <input id="pres" type="range" min="0.2" max="6" step="0.05" value="1" data-decimals="2"></div>
+            <input id="pres" type="range" min="0" max="1000" step="1" value="473" data-decimals="2"></div>
           <div class="checks"><label><input id="cat" type="checkbox"><span data-en="Catalyst">加入催化劑</span></label>
             <label><input id="predMode" type="checkbox"><span data-en="Prediction mode (stop and predict after each change)">預測模式（每次改變後先停下來預測）</span></label></div>
         </section>
@@ -288,7 +288,7 @@
       <div class="formula multi">
         \[ \ln K = -\frac{\Delta H^\circ}{R}\cdot\frac{1}{T} + \frac{\Delta S^\circ}{R} \]
       </div>
-      <p data-en-html="If \(\Delta H^\circ\) hardly changes with temperature, a graph of \(\ln K\) against \(1/T\) is a straight line with slope \(-\Delta H^\circ/R\) (the van 't Hoff equation). The unknown reaction in the panel is built to obey this exactly.">若 \(\Delta H^\circ\) 幾乎不隨溫度改變，\(\ln K\) 對 \(1/T\) 是斜率 \(-\Delta H^\circ/R\) 的直線（范特荷夫方程式）。右邊的未知反應就是照這個式子設計的。</p>
+      <p data-en-html="If \(\Delta H^\circ\) hardly changes with temperature, a graph of \(\ln K\) against \(1/T\) is a straight line with slope \(-\Delta H^\circ/R\) (the van 't Hoff equation). The unknown reaction in the panel is built to obey this exactly.">若 \(\Delta H^\circ\) 幾乎不隨溫度改變，\(\ln K\) 對 \(1/T\) 是斜率 \(-\Delta H^\circ/R\) 的直線（凡特荷夫方程式）。右邊的未知反應就是照這個式子設計的。</p>
 
       <h3 data-en="The three reactions">三個反應</h3>
       <div class="tablewrap">
@@ -314,7 +314,7 @@
         <summary data-en="Show suggested answers">看參考答案</summary>
         <ol>
           <li data-en-html="Compression multiplies every partial pressure by the same factor; for \(\Delta n = +1\), Q becomes larger than K, so some NO<sub>2</sub> turns into N<sub>2</sub>O<sub>4</sub>. Only part of the change is undone: if NO<sub>2</sub> fell all the way back to its old concentration, Q would be smaller than K.">壓縮使所有分壓變成同一倍數；\(\Delta n = +1\)，Q 變得比 K 大，所以部分 NO<sub>2</sub> 變回 N<sub>2</sub>O<sub>4</sub>。只能部分抵消：如果 NO<sub>2</sub> 濃度完全降回原值，Q 就會比 K 小。</li>
-          <li data-en="Each reacting gas keeps the same amount in the same volume, so its partial pressure — and therefore Q — does not change. Only the partial pressures of the reacting gases appear in Q.">每種反應氣體在同樣的體積中物質的量不變，分壓不變，所以 Q 不變。Q 裡只有參與反應的氣體的分壓。</li>
+          <li data-en="Each reacting gas keeps the same amount in the same volume, so its partial pressure — and therefore Q — does not change. Only the partial pressures of the reacting gases appear in Q.">每種反應氣體在同樣的體積中莫耳數不變，分壓不變，所以 Q 不變。Q 裡只有參與反應的氣體的分壓。</li>
           <li data-en="At 400 K the yield at equilibrium would be very high, but the reaction is far too slow, even with a catalyst. A higher temperature is a compromise between yield and rate; high pressure pushes the yield back up.">400 K 的平衡產率很高，但反應太慢，即使有催化劑也一樣。較高的溫度是產率與速率之間的折衷，再用高壓把產率提高。</li>
           <li data-en-html="\(P_{\mathrm{NO_2}} = \sqrt{K_p\,P_{\mathrm{N_2O_4}}} = \sqrt{0.148 \times 0.70} = 0.32\) bar.">\(P_{\mathrm{NO_2}} = \sqrt{K_p\,P_{\mathrm{N_2O_4}}} = \sqrt{0.148 \times 0.70} = 0.32\) bar。</li>
         </ol>
@@ -326,8 +326,8 @@
         <li data-en-html="Results: K for N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> at 298 K is 0.148 (values around 0.15 are usually quoted); K for H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI at 698.6 K is 57 (classic measurements give about 54). At the high pressures of the Haber process real gases are not ideal, so real yields differ somewhat.">結果：298 K 時 N<sub>2</sub>O<sub>4</sub> ⇌ 2NO<sub>2</sub> 的 K = 0.148（常見的引用值約 0.15）；698.6 K 時 H<sub>2</sub> + I<sub>2</sub> ⇌ 2HI 的 K = 57（經典實驗約 54）。哈柏法的高壓下真實氣體並不理想，真實的產率會有些差異。</li>
         <li data-en-html="Equilibrium: the extent of reaction ξ is found so that Q = K exactly (bisection; Q always increases with ξ). With a fixed pressure the volume follows from \(PV = nRT\).">平衡：解反應進度 ξ 使 Q = K（二分法，Q 隨 ξ 單調增加）。定壓時體積由 \(PV = nRT\) 決定。</li>
         <li data-en-html="Approach to equilibrium: ξ moves exponentially towards its equilibrium value with a time constant that shortens at higher temperature and with a catalyst. These times are illustrative (the real N<sub>2</sub>O<sub>4</sub> reaction takes microseconds; the uncatalysed Haber reaction practically never happens), but the place where the mixture ends up is exact.">趨近平衡：ξ 以指數方式趨近平衡值，時間常數在高溫、有催化劑時變短。這些時間只是示意（真實的 N<sub>2</sub>O<sub>4</sub> 反應只要微秒；沒有催化劑的合成氨幾乎不會發生），但最後到達的平衡位置是精確的。</li>
-        <li data-en-html="Simplifications: real N<sub>2</sub>O<sub>4</sub> condenses to a liquid at low temperature and high pressure, and iodine is a solid below about 457 K; neither is modelled. The temperature changes as soon as you move the slider. The colours follow Beer's law (absorbance ∝ concentration × path length) with illustrative absorption strengths.">簡化：真實的 N<sub>2</sub>O<sub>4</sub> 在低溫高壓下會凝結成液體，碘在約 457 K 以下會變成固體，這裡都不考慮。移動溫度滑桿時溫度立刻改變。顏色依比爾定律（吸光度 ∝ 濃度 × 光程），吸收強度是示意值。</li>
-        <li data-en-html="The 2D view is a side view of the syringe; the 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same molecules. The molecules move randomly for display only; the amounts come from the calculation above.">2D 平面是注射筒的側視圖；3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子。分子的運動只是示意，物質的量由上面的計算決定。</li>
+        <li data-en-html="Simplifications: real N<sub>2</sub>O<sub>4</sub> condenses to a liquid at low temperature and high pressure, and iodine (melting point about 387 K, boiling point about 457 K at 1 atm) condenses when its partial pressure exceeds its vapour pressure; neither is modelled. The temperature changes as soon as you move the slider. The colours follow Beer's law (absorbance ∝ concentration × path length) with illustrative absorption strengths.">簡化：真實的 N<sub>2</sub>O<sub>4</sub> 在低溫高壓下會凝結成液體，碘在 1 atm 下約 387 K 熔化、約 457 K 沸騰，分壓超過該溫度的蒸氣壓時會凝結，這裡都不考慮。移動溫度滑桿時溫度立刻改變。顏色依比爾定律（吸光度 ∝ 濃度 × 光程），吸收強度是示意值。</li>
+        <li data-en-html="The 2D view is a side view of the syringe; the 3D view (three.js, MIT licence, downloaded only when you switch to it) shows the same molecules. The molecules move randomly for display only; the amounts come from the calculation above.">2D 平面是注射筒的側視圖；3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批分子。分子的運動只是示意，莫耳數由上面的計算決定。</li>
       </ul>
 
       <h3 data-en="References">參考資料</h3>

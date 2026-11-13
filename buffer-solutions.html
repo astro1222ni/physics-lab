@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Buffer Solutions | Astro Ni Science Lab">緩衝溶液｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 緩衝溶液頁面專用樣式（只用 lab.css 的顏色變數，深色模式自動適用） */
+    .bs canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    .bs #cv { height: 440px; }
+    .bs #gcv { height: 340px; cursor: crosshair; }
+    .bs + .bs { margin-top: 16px; }
+    .bs button { min-height: 44px; }
+    .bs [hidden] { display: none !important; }
+    .bs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .bs .playbar button { flex: 1 1 auto; }
+    .bs .playbar button:disabled { opacity: .5; cursor: not-allowed; }
+    .bs .playbar .add { font-weight: 700; }
+    .bs .playbar #addAcid { border-color: color-mix(in srgb, var(--pos) 55%, var(--border)); }
+    .bs .playbar #addBase { border-color: color-mix(in srgb, var(--neg) 55%, var(--border)); }
+    .bs .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .amt { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 10px 2px 0; }
+    .amt button { padding: 4px 2px; line-height: 1.25; }
+    .amt button small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }
+    .amt button[aria-pressed="true"], .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .amt button[aria-pressed="true"] small, .seg2 button[aria-pressed="true"] small { color: var(--accent); }
+    /* 2D／3D 切換（3D：js/buffer-solutions-3d.js，three.js 切換時才下載） */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    .bs #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    .bs #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: calc(50% - 14px); }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; max-width: calc(100% - 16px); }
+    .r3-hud b { font-weight: 700; }
+    .r3-hud .chip { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin: 0 4px 0 8px; vertical-align: -1px; }
+    .r3-hud .chip:first-child { margin-left: 0; }
+    .r3-hud .tip { color: var(--muted); display: block; margin-top: 2px; }
+    .bs .stage .rate { margin: 12px 4px 0; }
+    .bs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .bs .stage .status.warn { color: var(--pos); font-weight: 600; }
+    .bs .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .bs .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .bs .slider input[type="range"] { height: 28px; margin: 0; }
+    .bs sub, .bs sup, .notes sub, .notes sup { font-size: .75em; }
+    .bs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .bs .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2.three { grid-template-columns: 1fr; }
+    .seg2 button { padding: 5px 6px; line-height: 1.3; text-align: left; }
+    .seg2 button small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }
+    .bs .checks { margin-top: 8px; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .bs dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .bs dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(18px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.warn { color: var(--pos); }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .bs .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .bs .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .bs .legend .ln.band { height: 10px; border-radius: 3px; opacity: .35; }
+    .tablewrap { overflow: auto; margin: 8px 2px 0; max-height: 280px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l { text-align: left; }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 3px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tblnote { overflow-x: auto; }
+    .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 10px; text-align: center; white-space: nowrap; }
+    .notes table.spec th { color: var(--muted); font-weight: 600; }
+    .notes table.spec td.l { text-align: left; white-space: normal; min-width: 9em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Buffer Solutions"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 緩衝溶液</nav>
+      <h1 data-en="Buffer Solutions">緩衝溶液</h1>
+      <p data-en-html="Two beakers stand side by side, each with a pH meter: on the left a buffer — a weak acid mixed with its conjugate base — and on the right a comparison solution, such as pure water. Every drop of hydrochloric acid or sodium hydroxide goes into both. Watch which pH barely moves and which one jumps, find out why, and design buffers of your own: choose the right acid–base pair, the right ratio and enough concentration for the job.">兩個燒杯並排，各插一支 pH 計：左邊是緩衝溶液——弱酸和它的共軛鹼混在一起；右邊是對照的溶液，例如純水。每一滴鹽酸或氫氧化鈉都同時加進兩杯。看哪一杯的 pH 幾乎不動、哪一杯大跳，想想為什麼；再自己設計緩衝溶液：選對酸鹼對、配對比例、給足濃度。</p>
+    </header>
+
+    <!-- 第一部分：兩個燒杯 -->
+    <p class="try-hint" data-en-html="Try it: with the defaults, press “Add HCl” once (one drop of 1.0 M acid). The buffer barely moves; the pure water drops by almost four pH units. Then switch to “3D particles” to see where the H&lt;sub&gt;3&lt;/sub&gt;O&lt;sup&gt;+&lt;/sup&gt; ions go.">試試看：用預設值按一下「加入 HCl」（一滴 1.0 M 鹽酸）。緩衝溶液幾乎不動，純水卻掉了將近 4 個 pH；再切到「3D 立體」，看 H<sub>3</sub>O<sup>+</sup> 跑到哪裡去了。</p>
+    <div class="lab bs">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D beakers">2D 燒杯</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D particles">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset view">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="兩個燒杯：左邊是緩衝溶液，右邊是對照的溶液，各插一支 pH 計，上方各有一支滴管" data-en-aria-label="Two beakers: the buffer on the left and the comparison solution on the right, each with a pH meter and a dropper above it"></canvas>
+        <div id="view3"></div>
+        <div class="amt" id="amtSeg" role="group" aria-label="每次加入的量" data-en-aria-label="Amount added each time">
+          <button type="button" data-ml="0.05" aria-pressed="true" data-en-html="1 drop&lt;small&gt;0.05 mL&lt;/small&gt;">一滴<small>0.05 mL</small></button>
+          <button type="button" data-ml="0.5" aria-pressed="false" data-en-html="0.5 mL&lt;small&gt;10 drops&lt;/small&gt;">0.5 mL<small>10 滴</small></button>
+          <button type="button" data-ml="1" aria-pressed="false" data-en-html="1 mL&lt;small&gt;20 drops&lt;/small&gt;">1 mL<small>20 滴</small></button>
+          <button type="button" data-ml="5" aria-pressed="false" data-en-html="5 mL&lt;small&gt;100 drops&lt;/small&gt;">5 mL<small>100 滴</small></button>
+        </div>
+        <div class="playbar">
+          <button id="addAcid" class="add" type="button" data-en="Add HCl">加入 HCl</button>
+          <button id="addBase" class="add" type="button" data-en="Add NaOH">加入 NaOH</button>
+          <button id="addWater" type="button" title="在兩個燒杯各加入和原來體積一樣多的蒸餾水" data-en-title="Add as much distilled water as the starting volume to each beaker" data-en="Add water (dilute)">加水稀釋</button>
+        </div>
+        <div class="playbar">
+          <button id="newRun" type="button" title="換兩杯剛配好的溶液，圖上留下這一次的曲線" data-en-title="Start again with two freshly made solutions; this run’s curve stays on the graph" data-en="Fresh beakers">換新的兩杯</button>
+          <button id="clearAll" type="button" title="清除圖上所有曲線與數據表，換兩杯剛配好的溶液；配方與對照的選擇不變" data-en-title="Clear every curve and the data table and start with two fresh beakers; the recipe and the comparison stay as they are" data-en="Clear all">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="slider rate"><label for="cs" data-en="Concentration of the HCl and NaOH in the droppers">滴管裡 HCl 與 NaOH 的濃度</label><output id="cso"></output>
+          <input id="cs" type="range" min="0" max="1000" step="1" value="870"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Not to scale. Both beakers always receive exactly the same thing. The colour is a universal indicator (a mixture of indicators; each brand’s colour chart differs a little) and does not change the pH. A beaker holds at most 250 mL.">示意圖，未依比例。兩個燒杯每次都加入完全一樣的東西。溶液的顏色是萬用指示劑（多種指示劑的混合物，各廠牌的色卡略有不同），不影響 pH。燒杯最多裝 250 mL。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+
+        <section class="card">
+          <h2 id="sysLabel" data-en="Buffer (left beaker)">緩衝溶液（左杯）</h2>
+          <div class="seg2 three" id="sysSeg" role="group" aria-labelledby="sysLabel">
+            <button type="button" data-sys="ac" aria-pressed="true" data-en-html="Acetic acid + sodium acetate&lt;small&gt;CH&lt;sub&gt;3&lt;/sub&gt;COOH / CH&lt;sub&gt;3&lt;/sub&gt;COO&lt;sup&gt;−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 4.74&lt;/small&gt;">醋酸＋醋酸鈉<small>CH<sub>3</sub>COOH／CH<sub>3</sub>COO<sup>−</sup>，pK<sub>a</sub> 4.74</small></button>
+            <button type="button" data-sys="ph" aria-pressed="false" data-en-html="Phosphate: NaH&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt; + Na&lt;sub&gt;2&lt;/sub&gt;HPO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;H&lt;sub&gt;2&lt;/sub&gt;PO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; / HPO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;2−&lt;/sup&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 7.21&lt;/small&gt;">磷酸二氫鈉＋磷酸氫二鈉<small>H<sub>2</sub>PO<sub>4</sub><sup>−</sup>／HPO<sub>4</sub><sup>2−</sup>，pK<sub>a</sub> 7.21</small></button>
+            <button type="button" data-sys="nh" aria-pressed="false" data-en-html="Ammonium chloride + ammonia&lt;small&gt;NH&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;+&lt;/sup&gt; / NH&lt;sub&gt;3&lt;/sub&gt;, pK&lt;sub&gt;a&lt;/sub&gt; 9.26&lt;/small&gt;">氯化銨＋氨<small>NH<sub>4</sub><sup>+</sup>／NH<sub>3</sub>，pK<sub>a</sub> 9.26</small></button>
+          </div>
+          <div class="slider"><label for="cha" id="chaLabel">弱酸</label><output id="chao"></output>
+            <input id="cha" type="range" min="0" max="400" step="1" value="300"></div>
+          <div class="slider"><label for="ca" id="caLabel">共軛鹼</label><output id="cao"></output>
+            <input id="ca" type="range" min="0" max="400" step="1" value="300"></div>
+          <div class="slider"><label for="v0" data-en="Volume of each solution">每杯溶液的體積</label><output id="v0o"></output>
+            <input id="v0" type="range" min="20" max="200" step="1" value="100" data-decimals="1"></div>
+          <p class="info" id="sysInfo">—</p>
+          <p class="hint" data-en="Changing the recipe or the comparison starts two fresh beakers; the old curve stays on the graph (up to 4). Tap a number to type an exact value.">改配方或對照會換兩杯新的溶液，舊曲線留在圖上（最多 4 條）。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 id="cmpLabel" data-en="Comparison (right beaker)">對照（右杯）</h2>
+          <div class="seg2" id="cmpSeg" role="group" aria-labelledby="cmpLabel">
+            <button type="button" data-cmp="water" aria-pressed="true" data-en-html="Pure water&lt;small&gt;pH 7.00&lt;/small&gt;">純水<small>pH 7.00</small></button>
+            <button type="button" data-cmp="same" aria-pressed="false" data-en-html="Same pH, no buffer&lt;small&gt;dilute HCl or NaOH&lt;/small&gt;">同 pH 的強酸或強鹼<small>沒有緩衝作用</small></button>
+            <button type="button" data-cmp="dil10" aria-pressed="false" data-en-html="The same buffer ÷ 10&lt;small&gt;both concentrations ÷ 10&lt;/small&gt;">同一緩衝溶液稀釋 10 倍<small>兩種濃度都 ÷ 10</small></button>
+            <button type="button" data-cmp="acid" aria-pressed="false"><span id="cmpAcidName">只有弱酸</span><small data-en="same concentration">濃度相同</small></button>
+            <button type="button" data-cmp="base" aria-pressed="false"><span id="cmpBaseName">只有共軛鹼</span><small data-en="same concentration">濃度相同</small></button>
+          </div>
+          <div class="checks">
+            <label><input id="uind" type="checkbox" checked><span data-en="Universal indicator in both beakers">兩杯都加萬用指示劑</span></label>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：曲線、數據表與分析 -->
+    <div class="lab bs">
+      <div class="stage">
+        <h2 data-en="pH against acid or base added">pH 與加入的酸、鹼</h2>
+        <p class="hint" data-en="Horizontal axis: the net amount of strong base added (mmol); to the left of zero, strong acid. Each point is one addition. The shaded band is pKa ± 1, where the buffer works well.">橫軸是淨加入的強鹼莫耳數（mmol），零的左邊是強酸；每一點是一次加入。色帶是 pK<sub>a</sub> ± 1，緩衝溶液有效的範圍。</p>
+        <canvas id="gcv" role="img" aria-label="pH 對淨加入的強酸或強鹼莫耳數：緩衝溶液與對照溶液的兩條曲線，標出 pKa 與有效緩衝範圍" data-en-aria-label="pH against the net amount of strong acid or base added: curves for the buffer and the comparison, with pKa and the effective buffer range marked"></canvas>
+        <div class="checks">
+          <label><input id="theory" type="checkbox"><span data-en="Theoretical curves">理論曲線</span></label>
+          <label><input id="band" type="checkbox" checked><span data-en-html="Effective range pK<sub>a</sub> ± 1">有效範圍 pK<sub>a</sub> ± 1</span></label>
+        </div>
+        <div class="legend" id="curveLegend"></div>
+        <div class="tablewrap" id="tblWrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析</h2>
+          <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
+          <p class="hint" data-en="β: the amount of strong base, per litre of solution, needed to raise the pH by 1 at this point (the slope of the curve, turned upside down).">β（緩衝容量）：在目前的狀態下，每公升溶液要讓 pH 升高 1 所需的強鹼莫耳數（曲線斜率的倒數）。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Compare how the pH of a buffer and of pure water (or of an unbuffered solution with the same pH) changes when a little strong acid or strong base is added.">比較緩衝溶液與純水（或 pH 相同、但沒有緩衝作用的溶液）加入少量強酸或強鹼時，pH 的變化。</li>
+        <li data-en="Explain buffering with the reactions of the weak acid and its conjugate base, and calculate the pH of a buffer with the Henderson–Hasselbalch equation.">用弱酸與共軛鹼的反應解釋緩衝作用，並用亨德森–哈塞爾巴赫公式計算緩衝溶液的 pH。</li>
+        <li data-en="Find out what the buffer capacity depends on (the concentrations and their ratio) and where a buffer stops working.">找出緩衝容量和什麼有關（濃度與兩者的比例），以及緩衝溶液在什麼情況下失效。</li>
+        <li data-en="Choose a suitable acid–base pair and ratio to make a buffer with a given pH.">選擇合適的酸鹼對與比例，配出指定 pH 的緩衝溶液。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="What a buffer is">什麼是緩衝溶液</h3>
+      <p data-en-html="A <strong>buffer solution</strong> contains a weak acid HA together with its conjugate base A<sup>−</sup> in comparable amounts (for example acetic acid with sodium acetate). Added H<sup>+</sup> is taken up by A<sup>−</sup>, and added OH<sup>−</sup> is taken up by HA; both reactions go essentially to completion, so the strong acid or base is turned into the weak one:">弱酸 HA 和它的共軛鹼 A<sup>−</sup> 以相近的量同時存在的溶液，叫做<strong>緩衝溶液</strong>（例如醋酸加醋酸鈉）。加進來的 H<sup>+</sup> 被 A<sup>−</sup> 接走，加進來的 OH<sup>−</sup> 被 HA 中和；這兩個反應幾乎完全進行，強酸、強鹼都被換成了弱酸、弱鹼：</p>
+      <div class="formula multi">
+        \[ \mathrm{A^- + H_3O^+ \longrightarrow HA + H_2O} \] \[ \mathrm{HA + OH^- \longrightarrow A^- + H_2O} \]
+      </div>
+      <p data-en-html="Only the ratio of HA to A<sup>−</sup> changes a little, so the pH changes a little. From \(K_\mathrm{a} = [\mathrm{H^+}][\mathrm{A^-}]/[\mathrm{HA}]\) comes the <strong>Henderson–Hasselbalch equation</strong>:">於是只有 HA 與 A<sup>−</sup> 的比例稍微改變，pH 也就只稍微改變。由 \(K_\mathrm{a} = [\mathrm{H^+}][\mathrm{A^-}]/[\mathrm{HA}]\) 可得<strong>亨德森–哈塞爾巴赫公式</strong>：</p>
+      <div class="formula multi">
+        \[ \mathrm{pH} = \mathrm{p}K_\mathrm{a} + \log\frac{[\mathrm{A^-}]}{[\mathrm{HA}]} = \mathrm{p}K_\mathrm{a} + \log\frac{n_\mathrm{A^-}}{n_\mathrm{HA}} \]
+      </div>
+      <p data-en-html="Both are in the same volume, so the ratio of concentrations equals the ratio of amounts (mmol). After adding \(x\) mmol of strong acid: \(\mathrm{pH} = \mathrm{p}K_\mathrm{a} + \log\dfrac{n_\mathrm{A^-} - x}{n_\mathrm{HA} + x}\). With the defaults (10.0 mmol of each in 100 mL), one drop of 1.0 M HCl is 0.050 mmol: the pH goes from 4.74 to 4.74 + log(9.95/10.05) = 4.74 − 0.004. The same drop in 100 mL of pure water makes [H<sup>+</sup>] = 5.0 × 10<sup>−4</sup> M, pH 3.30.">兩者在同一杯溶液裡，濃度比就等於莫耳數比。加入 \(x\) mmol 強酸以後：\(\mathrm{pH} = \mathrm{p}K_\mathrm{a} + \log\dfrac{n_\mathrm{A^-} - x}{n_\mathrm{HA} + x}\)。用預設值（兩者各 10.0 mmol、100 mL），一滴 1.0 M 鹽酸是 0.050 mmol：pH 由 4.74 變成 4.74 + log(9.95/10.05) = 4.74 − 0.004。同樣一滴加進 100 mL 純水，[H<sup>+</sup>] = 5.0 × 10<sup>−4</sup> M，pH 3.30。</p>
+
+      <h3 data-en="Dilution">稀釋</h3>
+      <p data-en-html="Adding water changes both concentrations by the same factor, so their ratio — and the pH — stays the same. This is only approximately true: when the buffer is very dilute (about 10<sup>−3</sup> M or less), the weak acid’s own ionisation and the water’s are no longer negligible and the pH drifts.">加水時兩種濃度變成同樣的倍數，比值不變，pH 也就不變。這只是近似：緩衝溶液很稀（約 10<sup>−3</sup> M 以下）時，弱酸本身的解離與水的解離不能再忽略，pH 就會慢慢偏移。</p>
+
+      <h3 data-en="Buffer capacity and the effective range">緩衝容量與有效範圍</h3>
+      <p data-en-html="The <strong>buffer capacity</strong> \(\beta\) is the amount of strong base, per litre, needed to raise the pH by 1 (for a strong acid, to lower it by 1). For a weak acid–conjugate base pair of total concentration \(C\):">每公升溶液要讓 pH 改變 1 所需的強鹼（或強酸）莫耳數，叫做<strong>緩衝容量</strong> \(\beta\)。總濃度為 \(C\) 的弱酸與共軛鹼：</p>
+      <div class="formula multi">
+        \[ \beta = \frac{\mathrm{d}C_\mathrm{b}}{\mathrm{d\,pH}} = 2.303\left([\mathrm{H^+}] + [\mathrm{OH^-}] + \frac{C\,K_\mathrm{a}[\mathrm{H^+}]}{(K_\mathrm{a} + [\mathrm{H^+}])^2}\right) \]
+      </div>
+      <p data-en-html="It is largest when \([\mathrm{HA}] = [\mathrm{A^-}]\), i.e. at pH = pK<sub>a</sub>, where \(\beta \approx 2.303\,C/4 = 0.576\,C\). It is proportional to the concentration, so a buffer ten times more dilute has the same pH but a tenth of the capacity. When the ratio \([\mathrm{A^-}]/[\mathrm{HA}]\) goes beyond 10 or below 1/10, the capacity has fallen to about a third of its maximum: the useful range of a buffer is roughly <strong>pH = pK<sub>a</sub> ± 1</strong>. Choose a pair whose pK<sub>a</sub> is close to the pH you want.">在 \([\mathrm{HA}] = [\mathrm{A^-}]\)，也就是 pH = pK<sub>a</sub> 時最大，\(\beta \approx 2.303\,C/4 = 0.576\,C\)。緩衝容量和濃度成正比：稀釋 10 倍的緩衝溶液 pH 一樣，容量卻只剩十分之一。比值 \([\mathrm{A^-}]/[\mathrm{HA}]\) 超過 10 或小於 1/10 時，容量只剩最大值的三分之一左右，所以緩衝溶液大約只在 <strong>pH = pK<sub>a</sub> ± 1</strong> 的範圍內好用。要配某個 pH，就選 pK<sub>a</sub> 接近它的酸鹼對。</p>
+      <div class="tblnote">
+        <table class="spec">
+          <tr><th data-en="Buffer">緩衝系統</th><th data-en="Weak acid / conjugate base">弱酸／共軛鹼</th><th data-en-html="pK&lt;sub&gt;a&lt;/sub&gt; (25 °C)">pK<sub>a</sub>（25 °C）</th><th data-en="Effective range">有效範圍</th><th data-en="Common uses">常見用途</th></tr>
+          <tr><td data-en="Acetate">醋酸鹽</td><td>CH<sub>3</sub>COOH／CH<sub>3</sub>COO<sup>−</sup></td><td>4.74</td><td>3.7–5.7</td><td class="l" data-en="food chemistry, electroplating">食品、電鍍</td></tr>
+          <tr><td data-en="Phosphate">磷酸鹽</td><td>H<sub>2</sub>PO<sub>4</sub><sup>−</sup>／HPO<sub>4</sub><sup>2−</sup></td><td>7.21</td><td>6.2–8.2</td><td class="l" data-en="biochemistry, cells (PBS, pH 7.4)">生化實驗、細胞（PBS，pH 7.4）</td></tr>
+          <tr><td data-en="Ammonia">氨</td><td>NH<sub>4</sub><sup>+</sup>／NH<sub>3</sub></td><td>9.26</td><td>8.3–10.3</td><td class="l" data-en="EDTA titrations of water hardness (pH 10)">EDTA 滴定水的硬度（pH 10）</td></tr>
+        </table>
+      </div>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>One drop.</strong> With the defaults, add a single drop of HCl and then of NaOH. The buffer moves by 0.004; the pure water jumps by almost four pH units each way. Its colour changes from green to red and then to purple."><strong>一滴之差</strong>：用預設值先加一滴 HCl、再加一滴 NaOH。緩衝溶液只動了 0.004，純水卻每次都跳將近 4 個 pH，顏色由綠變紅、再變紫。</li>
+        <li data-en-html="<strong>Not just the pH.</strong> Choose “Same pH, no buffer” on the right: both beakers start at pH 4.74 and look identical, but the first drop of base sends the right one to pH 10 or more."><strong>不只看 pH</strong>：右杯選「同 pH 的強酸或強鹼」：兩杯起點都是 pH 4.74，看起來一模一樣，加第一滴鹼右杯就衝到 pH 10 以上。</li>
+        <li data-en-html="<strong>Use it up.</strong> Add HCl 1 mL at a time. The buffer holds until most of the acetate is used up (about 10 mL of 1.0 M HCl), then the pH falls fast: the curve leaves the shaded band."><strong>用到見底</strong>：一次加 1 mL HCl。緩衝溶液一直撐到醋酸根快用完（1.0 M 鹽酸大約 10 mL），pH 才急速下降，曲線離開色帶。</li>
+        <li data-en-html="<strong>Concentration matters.</strong> Compare with “The same buffer ÷ 10”: the two start at the same pH, but the dilute one gives way ten times sooner."><strong>濃度決定容量</strong>：對照選「同一緩衝溶液稀釋 10 倍」：兩杯的起點 pH 相同，稀的那杯卻早十倍撐不住。</li>
+        <li data-en-html="<strong>Add water.</strong> “Add water” hardly changes the buffer, while an unbuffered solution of the same pH moves towards 7. Try it with a very dilute buffer (10<sup>−4</sup> M) too."><strong>加水看看</strong>：按「加水稀釋」，緩衝溶液幾乎不變，pH 相同但沒有緩衝作用的溶液卻往 7 靠近。再用很稀的緩衝溶液（10<sup>−4</sup> M）試試。</li>
+        <li data-en-html="<strong>In 3D.</strong> Each sphere stands for the same amount of substance. Watch every H<sub>3</sub>O<sup>+</sup> that falls into the buffer find an A<sup>−</sup> and turn it into HA, while in the water the H<sub>3</sub>O<sup>+</sup> ions stay free. Only when the A<sup>−</sup> runs out do free H<sub>3</sub>O<sup>+</sup> ions appear in the buffer."><strong>在 3D 裡</strong>：每一顆粒子代表一樣多的莫耳數。看每一個掉進緩衝溶液的 H<sub>3</sub>O<sup>+</sup> 找到一個 A<sup>−</sup>、把它變成 HA；純水裡的 H<sub>3</sub>O<sup>+</sup> 卻一直自由地游來游去。要等 A<sup>−</sup> 用完，緩衝溶液裡才會出現自由的 H<sub>3</sub>O<sup>+</sup>。</li>
+      </ul>
+
+      <h3 data-en="Think about it">想一想</h3>
+      <ol>
+        <li data-en-html="A drop of 1.0 M HCl lowers the pH of 100 mL of pure water from 7.00 to 3.30, but the default buffer only by 0.004. Where did the H&lt;sup&gt;+&lt;/sup&gt; go?">一滴 1.0 M 鹽酸讓 100 mL 純水的 pH 由 7.00 掉到 3.30，預設的緩衝溶液卻只降了 0.004。H<sup>+</sup> 到哪裡去了？</li>
+        <li data-en="A buffer is diluted to twice its volume. What happens to its pH, and to its buffer capacity?">把緩衝溶液加水稀釋成兩倍體積，pH 會怎樣？緩衝容量呢？</li>
+        <li data-en="Is a solution of sodium acetate alone a buffer? What about acetic acid alone?">只有醋酸鈉的溶液是緩衝溶液嗎？只有醋酸的呢？</li>
+        <li data-en-html="You need a buffer at pH 7.40. Which of the three pairs would you use, and in what ratio?">要配 pH 7.40 的緩衝溶液，三種酸鹼對要選哪一種？比例是多少？</li>
+        <li data-en-html="Why is the useful range of a buffer about pK&lt;sub&gt;a&lt;/sub&gt; ± 1?">為什麼緩衝溶液的有效範圍大約是 pK<sub>a</sub> ± 1？</li>
+        <li data-en-html="Human blood is kept at pH 7.35–7.45, mainly by the H&lt;sub&gt;2&lt;/sub&gt;CO&lt;sub&gt;3&lt;/sub&gt;/HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; pair (pK&lt;sub&gt;a&lt;/sub&gt; about 6.1 at body temperature, counting the dissolved CO&lt;sub&gt;2&lt;/sub&gt;). Roughly what is the ratio [HCO&lt;sub&gt;3&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt;]/[H&lt;sub&gt;2&lt;/sub&gt;CO&lt;sub&gt;3&lt;/sub&gt;]? Which does this buffer resist better, acid or base?">人體血液的 pH 維持在 7.35～7.45，主要靠 H<sub>2</sub>CO<sub>3</sub>／HCO<sub>3</sub><sup>−</sup>（體溫下、把溶解的 CO<sub>2</sub> 算進去，pK<sub>a</sub> 約 6.1）。[HCO<sub>3</sub><sup>−</sup>]／[H<sub>2</sub>CO<sub>3</sub>] 大約是多少？這個緩衝系統比較擋得住酸還是鹼？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="It reacted with acetate ions: \(\mathrm{CH_3COO^- + H^+ \rightarrow CH_3COOH}\). The 0.050 mmol of H<sup>+</sup> became 0.050 mmol of acetic acid, a weak acid that ionises very little. The ratio changes from 10.00/10.00 to 9.95/10.05, so the pH changes by log(9.95/10.05) = −0.004.">被醋酸根接走了：\(\mathrm{CH_3COO^- + H^+ \rightarrow CH_3COOH}\)。0.050 mmol 的 H<sup>+</sup> 變成 0.050 mmol 的醋酸，醋酸是弱酸，只解離一點點。比例由 10.00/10.00 變成 9.95/10.05，pH 只改變 log(9.95/10.05) = −0.004。</li>
+          <li data-en-html="The pH stays almost the same, because the ratio \([\mathrm{A^-}]/[\mathrm{HA}]\) does not change. But the capacity per litre is halved; the total amount of acid or base the whole beaker can take is unchanged, because the amounts of HA and A<sup>−</sup> are unchanged.">pH 幾乎不變，因為 \([\mathrm{A^-}]/[\mathrm{HA}]\) 的比值沒變。但每公升的緩衝容量減半；整杯能承受的酸鹼總量則不變，因為 HA 與 A<sup>−</sup> 的莫耳數沒變。</li>
+          <li data-en-html="Neither is a good buffer on its own. Sodium acetate has nothing to neutralise added OH<sup>−</sup>, and acetic acid has almost no A<sup>−</sup> to take up added H<sup>+</sup>. But add a little strong acid to the acetate (or strong base to the acetic acid) and you make the other partner: that is one way buffers are prepared — for example, half-neutralise acetic acid with NaOH and pH = pK<sub>a</sub>.">單獨都不是好的緩衝溶液：醋酸鈉沒有東西可以中和加進來的 OH<sup>−</sup>；醋酸幾乎沒有 A<sup>−</sup> 可以接走加進來的 H<sup>+</sup>。不過在醋酸鈉裡加一些強酸（或在醋酸裡加一些強鹼），就做出了另一半——這正是配製緩衝溶液的一種方法，例如用 NaOH 中和一半的醋酸，pH 就等於 pK<sub>a</sub>。</li>
+          <li data-en-html="The phosphate pair (pK<sub>a</sub> 7.21) is closest. \(\log([\mathrm{HPO_4^{2-}}]/[\mathrm{H_2PO_4^-}]) = 7.40 - 7.21 = 0.19\), so the ratio is about 1.55 : 1, for example 0.155 M Na<sub>2</sub>HPO<sub>4</sub> with 0.100 M NaH<sub>2</sub>PO<sub>4</sub>.">磷酸鹽（pK<sub>a</sub> 7.21）最接近。\(\log([\mathrm{HPO_4^{2-}}]/[\mathrm{H_2PO_4^-}]) = 7.40 - 7.21 = 0.19\)，比例約 1.55 : 1，例如 0.155 M Na<sub>2</sub>HPO<sub>4</sub> 配 0.100 M NaH<sub>2</sub>PO<sub>4</sub>。</li>
+          <li data-en-html="At pH = pK<sub>a</sub> ± 1 the ratio is 10 : 1 (or 1 : 10). The partner that is in short supply is then only 1/11 of the total, so a small amount of acid or base uses it up; the capacity is \(\beta \propto r/(1+r)^2\), which for \(r = 10\) is only 33% of its maximum.">pH = pK<sub>a</sub> ± 1 時比例是 10 : 1（或 1 : 10），比較少的那一方只占總量的 1/11，加一點點酸或鹼就用完了；緩衝容量 \(\beta \propto r/(1+r)^2\)，\(r = 10\) 時只剩最大值的 33%。</li>
+          <li data-en-html="\(\log r = 7.40 - 6.1 = 1.3\), so \(r \approx 20\): about 20 HCO<sub>3</sub><sup>−</sup> for every H<sub>2</sub>CO<sub>3</sub>. There is plenty of base to take up acid, which suits the body, since metabolism produces mostly acids (CO<sub>2</sub>, lactic acid). The lungs breathe out CO<sub>2</sub> and the kidneys adjust HCO<sub>3</sub><sup>−</sup>, so the body keeps restoring the ratio — which a beaker cannot do.">\(\log r = 7.40 - 6.1 = 1.3\)，\(r \approx 20\)：每一個 H<sub>2</sub>CO<sub>3</sub> 約有 20 個 HCO<sub>3</sub><sup>−</sup>。接住酸的鹼很多，正好適合人體，因為新陳代謝產生的多半是酸（CO<sub>2</sub>、乳酸）。肺會呼出 CO<sub>2</sub>、腎臟會調節 HCO<sub>3</sub><sup>−</sup>，身體一直在把比例拉回來——這是燒杯做不到的。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="After every addition the pH of each beaker is calculated exactly, not with the Henderson–Hasselbalch equation. The solution must be electrically neutral: \([\mathrm{H^+}] + [\mathrm{Na^+}] + [\mathrm{NH_4^+}] = [\mathrm{OH^-}] + [\mathrm{Cl^-}] + [\mathrm{CH_3COO^-}] + [\mathrm{H_2PO_4^-}] + 2[\mathrm{HPO_4^{2-}}] + 3[\mathrm{PO_4^{3-}}]\). The fraction of each form of the weak acid follows from its K<sub>a</sub> values and [H<sup>+</sup>], which leaves one equation in [H<sup>+</sup>]; it is solved by bisection on log[H<sup>+</sup>] to better than 10<sup>−13</sup>. Phosphoric acid is treated with all three K<sub>a</sub> values, so adding a lot of acid or base reaches its other buffer regions too.">每次加入後都精確計算兩杯的 pH，不用亨德森公式：溶液必須電中性，\([\mathrm{H^+}] + [\mathrm{Na^+}] + [\mathrm{NH_4^+}] = [\mathrm{OH^-}] + [\mathrm{Cl^-}] + [\mathrm{CH_3COO^-}] + [\mathrm{H_2PO_4^-}] + 2[\mathrm{HPO_4^{2-}}] + 3[\mathrm{PO_4^{3-}}]\)。弱酸各種形式所占的比例由它的 K<sub>a</sub> 與 [H<sup>+</sup>] 決定，代入後只剩 [H<sup>+</sup>] 一個未知數，用二分法對 log[H<sup>+</sup>] 求解，誤差小於 10<sup>−13</sup>。磷酸用三個 K<sub>a</sub> 一起算，所以加很多酸或鹼時，也會走到它另外兩段緩衝區。</li>
+        <li data-en-html="Constants at 25 °C (OpenStax Chemistry 2e, Appendices H and I): \(K_\mathrm{w} = 1.0 \times 10^{-14}\); acetic acid \(K_\mathrm{a} = 1.8 \times 10^{-5}\); phosphoric acid \(K_{\mathrm{a}1} = 7.5 \times 10^{-3}\), \(K_{\mathrm{a}2} = 6.2 \times 10^{-8}\), \(K_{\mathrm{a}3} = 4.2 \times 10^{-13}\); ammonia \(K_\mathrm{b} = 1.8 \times 10^{-5}\), so for NH<sub>4</sub><sup>+</sup> \(K_\mathrm{a} = K_\mathrm{w}/K_\mathrm{b} = 5.6 \times 10^{-10}\). Activity coefficients are taken as 1 (ideal dilute solutions), so in concentrated buffers real pH meters read somewhat differently; temperature changes, carbon dioxide from the air and the indicator’s own effect on the pH are ignored.">25 °C 的常數（OpenStax Chemistry 2e 附錄 H、I）：\(K_\mathrm{w} = 1.0 \times 10^{-14}\)；醋酸 \(K_\mathrm{a} = 1.8 \times 10^{-5}\)；磷酸 \(K_{\mathrm{a}1} = 7.5 \times 10^{-3}\)、\(K_{\mathrm{a}2} = 6.2 \times 10^{-8}\)、\(K_{\mathrm{a}3} = 4.2 \times 10^{-13}\)；氨 \(K_\mathrm{b} = 1.8 \times 10^{-5}\)，所以 NH<sub>4</sub><sup>+</sup> 的 \(K_\mathrm{a} = K_\mathrm{w}/K_\mathrm{b} = 5.6 \times 10^{-10}\)。活性係數當成 1（理想的稀薄溶液），所以濃的緩衝溶液實際用 pH 計量會有些差異；也忽略溫度變化、空氣中的二氧化碳與指示劑本身對 pH 的影響。</li>
+        <li data-en-html="Buffer capacity: \(\beta = 2.303\,\big([\mathrm{H^+}] + [\mathrm{OH^-}] + C\,(\overline{i^2} - \bar{i}^{\,2})\big)\), where \(\bar{i}\) is the average number of protons the weak acid has lost; for one pair this is the formula in “Principle”. “To change by 1” is found by adding acid or base step by step in the calculation (bisection), including the extra volume.">緩衝容量：\(\beta = 2.303\,\big([\mathrm{H^+}] + [\mathrm{OH^-}] + C\,(\overline{i^2} - \bar{i}^{\,2})\big)\)，\(\bar{i}\) 是弱酸平均失去的質子數；只有一對時就是「原理」裡的公式。「pH 改變 1 需要多少」是在計算裡一點一點加酸或鹼（二分法）找出來的，也算進增加的體積。</li>
+        <li data-en-html="The right beaker: “Same pH, no buffer” is HCl (or NaOH) of exactly the concentration that gives the buffer’s starting pH; “only weak acid” and “only conjugate base” have the same concentration as in the buffer. Spectator ions (Na<sup>+</sup>, Cl<sup>−</sup>) are counted in the charge balance but not drawn.">右杯：「同 pH 的強酸或強鹼」是濃度剛好讓 pH 等於緩衝溶液起始 pH 的 HCl（或 NaOH）；「只有弱酸」「只有共軛鹼」的濃度和緩衝溶液裡的相同。旁觀離子（Na<sup>+</sup>、Cl<sup>−</sup>）算進電荷平衡，但不畫出來。</li>
+        <li data-en-html="The 3D view (three.js, MIT licence, downloaded only when you switch to it) shows each beaker as a cube of solution whose volume follows the real volume. Every sphere stands for the same amount, 1/48 of the weak acid and conjugate base in the buffer; the numbers of HA, A<sup>−</sup>, free H<sub>3</sub>O<sup>+</sup> and OH<sup>−</sup> are rounded from the exact amounts in the 2D calculation. The motion of the particles and the path of each ion to its partner are only a picture; water molecules and spectator ions are not drawn.">3D 立體（three.js 函式庫，MIT 授權，切換時才下載）把每一杯畫成一塊溶液，體積跟著真實體積變化。每一顆粒子代表一樣多的莫耳數（緩衝溶液中弱酸與共軛鹼總量的 1/48）；HA、A<sup>−</sup>、自由的 H<sub>3</sub>O<sup>+</sup> 與 OH<sup>−</sup> 的顆數由 2D 精確計算的莫耳數四捨五入而來。粒子的運動、離子游向對象的路徑只是示意；水分子與旁觀離子沒有畫出來。</li>
+        <li data-en="The colour of the universal indicator is interpolated from a typical colour chart (red at pH 1–3 through yellow, green at 7, blue, to violet at 11 and above).">萬用指示劑的顏色由常見色卡內插（pH 1～3 紅，經過黃色、pH 7 綠、藍，到 11 以上的紫）。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high elective chemistry · Acid–base reactions (buffer solutions).">課綱對應：高中選修化學・酸鹼反應（緩衝溶液）。</li>
+        <li data-en-html="Equilibrium constants: <a href=&quot;https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids&quot;>OpenStax Chemistry 2e, Appendix H</a> (acetic acid, phosphoric acid) and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/i-ionization-constants-of-weak-bases&quot;>Appendix I</a> (ammonia).">平衡常數：<a href="https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids">OpenStax Chemistry 2e 附錄 H</a>（醋酸、磷酸）、<a href="https://openstax.org/books/chemistry-2e/pages/i-ionization-constants-of-weak-bases">附錄 I</a>（氨），英文。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/chemistry-2e/pages/14-6-buffers&quot;>OpenStax Chemistry 2e — 14.6 Buffers</a> (buffer capacity, the Henderson–Hasselbalch equation and the blood buffer).">延伸閱讀：<a href="https://openstax.org/books/chemistry-2e/pages/14-6-buffers">OpenStax Chemistry 2e 14.6 緩衝溶液</a>（緩衝容量、亨德森公式與血液的緩衝系統），英文。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/buffer-solutions-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/buffer-solutions-3d.js"></script>
+  <script src="js/buffer-solutions.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="buffer-solutions"></script>
+  <script src="js/missions/buffer-solutions.js"></script>
+  <script src="js/stats.js" data-module="buffer-solutions"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

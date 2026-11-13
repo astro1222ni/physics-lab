@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Isomers: Same Formula, Different Molecules | Astro Ni Science Lab">同分異構物：分子式相同、分子不同｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 同分異構物頁面專用樣式。元素顏色（近似 CPK 慣用色）在淺色與兩個深色區塊同時定義 */
+    :root { --el-C: #3b4450; --el-O: #d4372f; --el-H: #8a96a3; --oi-bond: #4a5563; --oi-new: #0d7f57; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --el-C: #d7dde4; --el-O: #ff6a5c; --el-H: #9aa6b2; --oi-bond: #c3ccd6; --oi-new: #3fcf8e; }
+    }
+    :root[data-theme="dark"] { --el-C: #d7dde4; --el-O: #ff6a5c; --el-H: #9aa6b2; --oi-bond: #c3ccd6; --oi-new: #3fcf8e; }
+    .oi [hidden] { display: none !important; }
+    .oi button { min-height: 44px; }
+    .oi sub, .oi sup, .notes sub, .notes sup { font-size: .75em; }
+    .oi .panel { grid-template-columns: minmax(0, 1fr); }
+    .oi .panel > .card { min-width: 0; }
+    .oi .card .hint, .oi .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv, .stage.is3d .l2 { display: none; }
+    .stage:not(.is3d) .l3 { display: none; }
+    .oi #cv { aspect-ratio: 5 / 4; cursor: pointer; touch-action: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; aspect-ratio: 5 / 4; border-radius: 8px; touch-action: none; cursor: grab;
+      background: var(--canvas-bg); background: radial-gradient(ellipse at 50% 38%, var(--canvas-bg) 52%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%); }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: calc(100% - 16px); }
+    .r3-hud:empty { display: none; }
+    .r3-hud.tl { top: 8px; left: 8px; font-weight: 600; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; max-width: 48%; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .r3-hud sub { font-size: .75em; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .tools { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 10px 2px 0; }
+    .tools .btns button { flex: 1 1 auto; padding: 6px 10px; }
+    .tools .seg button { padding: 6px 12px; }
+    @media (max-width: 520px) { .tools { grid-template-columns: minmax(0, 1fr); } .tools .seg { justify-self: start; } }
+    .opts { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 8px 2px 0; }
+    .opts .checks label { min-height: 44px; }
+    .oi .stage .status { margin: 8px 4px 0; }
+    .oi .stage .status.warn { color: var(--pos); }
+    .oi .stage .status.good { color: var(--probe); }
+    .molname { font-size: calc(22px * var(--fs, 1)); font-weight: 750; line-height: 1.3; margin: 0; overflow-wrap: anywhere; }
+    .molname.none { font-size: calc(15px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .molsub { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 2px 0 10px; min-height: 1.3em; }
+    .oi dl.readout { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+    .oi dl.readout dd { overflow-wrap: anywhere; }
+    .oi dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .oi label.sel { display: grid; gap: 4px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .oi select { font: inherit; font-size: calc(15px * var(--fs, 1)); min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); width: 100%; min-width: 0; }
+    .oi select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .dexbar { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; }
+    .dexbar .count { font-size: calc(20px * var(--fs, 1)); font-weight: 750; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .dexbar .dots { display: flex; flex-wrap: wrap; gap: 4px; }
+    .dexbar .dots i { width: 11px; height: 11px; border-radius: 50%; border: 1.5px solid var(--accent); display: inline-block; }
+    .dexbar .dots i.on { background: var(--accent); box-shadow: inset -2px -2px 3px rgba(0,0,0,.25); }
+    .dexmsg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.4em; color: var(--muted); }
+    .dexmsg.good { color: var(--probe); font-weight: 600; }
+    .dexmsg.warn { color: var(--pos); }
+    .dexlist { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; margin: 8px 0 0; max-height: 300px; overflow: auto; }
+    .dexlist button { display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; padding: 6px 10px; font-variant-numeric: tabular-nums; }
+    .dexlist button span { min-width: 0; overflow-wrap: anywhere; }
+    .dexlist button small { color: var(--muted); white-space: nowrap; }
+    .dexlist button.flash { border-color: var(--probe); box-shadow: 0 0 0 2px color-mix(in srgb, var(--probe) 35%, transparent); }
+    .dexlist .none { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .oi .btns button { flex: 1 1 auto; }
+    .oi .slider input[type="range"] { height: 28px; margin: 0; }
+    #ecv { width: 100%; height: 130px; display: block; border-radius: 8px; background: var(--canvas-bg); margin: 8px 0 0; }
+    #gcv { aspect-ratio: auto; height: 340px; cursor: default; touch-action: auto; }
+    @media (max-width: 520px) { #gcv { height: 380px; } }
+    .oi .tabs { margin: 0 2px 8px; }
+    .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .seg2 button { padding: 4px 6px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .oi .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .oi .info { font-size: calc(14px * var(--fs, 1)); line-height: 1.6; margin: 0; }
+    .notes .tblnote { overflow-x: auto; }
+    .notes table.spec { border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 6px 0; }
+    .notes table.spec th, .notes table.spec td { border-bottom: 1px solid var(--border); padding: 4px 9px; text-align: center; white-space: nowrap; }
+    .notes table.spec th { color: var(--muted); font-weight: 600; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#organic&quot;&gt;Chemistry · Organic and Everyday Chemistry&lt;/a&gt; / Isomers"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#organic">化學・有機與生活化學</a> ／ 同分異構物</nav>
+      <h1 data-en="Isomers: Same Formula, Different Molecules">同分異構物：分子式相同、分子不同</h1>
+      <p data-en-html="Snap carbon and oxygen atoms together on a grid to build a skeleton. The program checks whether two drawings are really the same molecule, names what you built (2-methylbutane, cis-2-butene …), and turns it into a 3D ball-and-stick model you can twist. Hunt down every isomer of a formula — C&lt;sub&gt;5&lt;/sub&gt;H&lt;sub&gt;12&lt;/sub&gt; has three, C&lt;sub&gt;8&lt;/sub&gt;H&lt;sub&gt;18&lt;/sub&gt; eighteen — and see why the more branched ones boil at lower temperatures.">在格子上把碳和氧一個一個接起來，組出碳骨架。程式會判斷兩種畫法是不是同一個分子、替你組的分子命名（2-甲基丁烷、順-2-丁烯……），還能變成可以扭轉的 3D 球棍模型。把一個分子式的異構物全部找出來——C<sub>5</sub>H<sub>12</sub> 有 3 種、C<sub>8</sub>H<sub>18</sub> 有 18 種——再看看為什麼支鏈越多，沸點越低。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: build the straight chain of five carbons, then move one end carbon to the second carbon. The name changes from pentane to 2-methylbutane, the formula stays C&lt;sub&gt;5&lt;/sub&gt;H&lt;sub&gt;12&lt;/sub&gt; — and the boiling point drops by 8 °C.">試試看：先組出五個碳的直鏈，再把最末端的碳改接到第二個碳上。名稱從戊烷變成 2-甲基丁烷，分子式還是 C<sub>5</sub>H<sub>12</sub>——沸點卻低了 8 °C。</p>
+    <div class="lab oi">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D build">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D model">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset view">重設視角</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="組分子的格子" data-en-aria-label="Grid for building the molecule"></canvas>
+        <div id="view3"></div>
+        <div class="tools l2">
+          <div class="seg" role="group" aria-label="新原子" data-en-aria-label="New atom">
+            <button type="button" id="penC" aria-pressed="true" data-en="Carbon">放碳</button>
+            <button type="button" id="penO" aria-pressed="false" data-en="Oxygen">放氧</button>
+          </div>
+          <div class="btns">
+            <button type="button" id="swapBtn" data-en="C ⇄ O" aria-label="把選取的原子在碳與氧之間切換" data-en-aria-label="Switch the selected atom between carbon and oxygen">C ⇄ O</button>
+            <button type="button" id="delBtn" data-en="Delete atom">刪除原子</button>
+            <button type="button" id="undoBtn" data-en="Undo">復原</button>
+            <button type="button" id="clearBtn" data-en="Empty grid">清空</button>
+          </div>
+        </div>
+        <div class="opts l2">
+          <div class="seg" role="group" aria-label="畫法" data-en-aria-label="Drawing style">
+            <button type="button" id="drawFull" aria-pressed="true" data-en="Condensed">結構式</button>
+            <button type="button" id="drawSkel" aria-pressed="false" data-en="Skeletal">鍵線式</button>
+          </div>
+          <div class="checks"><label><input type="checkbox" id="numChk" checked> <span data-en="Main chain numbers">主鏈編號</span></label></div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" data-en="Tap an empty point next to the selected atom (or drag from an atom) to add a bonded atom. Tap a bond to change it: single → double → triple. Drag from one atom to a neighbouring atom to close a ring. Keyboard: arrow keys move the cursor, C or O adds an atom, 1, 2, 3 set the bond order, Delete removes an atom.">點選取原子旁邊的空格點（或從原子拖出去）就接上一個新原子；點一下鍵可以改成單鍵 → 雙鍵 → 參鍵；從一個原子拖到相鄰的原子可以接成環。鍵盤：方向鍵移動游標，C 或 O 加原子，1、2、3 設定鍵級，Delete 刪除原子。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. Tap a bond, then use “Twist angle” to turn one half of the molecule about it.">拖曳旋轉，滾輪或雙指縮放。點一個鍵，再用「扭轉角」把分子的一半繞著它轉動。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="molCard">
+          <h2 data-en="This molecule">這個分子</h2>
+          <p class="molname" id="mName">—</p>
+          <p class="molsub" id="mSub"></p>
+          <dl class="readout" id="mOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card l3" id="twCard">
+          <h2 data-en="Turn about a bond">繞鍵旋轉</h2>
+          <label class="sel" for="bondSel"><span data-en="Bond to turn about">要轉的鍵</span>
+            <select id="bondSel"></select>
+          </label>
+          <p class="info" id="twMsg" aria-live="polite"></p>
+          <div class="slider">
+            <label for="twist" data-en="Twist angle">扭轉角</label><output id="twisto">0°</output>
+            <input type="range" id="twist" min="-180" max="180" step="1" value="0" data-decimals="0">
+          </div>
+          <div class="checks"><label><input type="checkbox" id="light"> <span data-en="Shine UV light">照光</span></label></div>
+          <canvas id="ecv" role="img" aria-label="扭轉能對扭轉角的圖" data-en-aria-label="Twisting energy against twist angle"></canvas>
+          <dl class="readout" id="twOut"><dt>—</dt><dd>—</dd></dl>
+          <div class="btns" style="margin-top:8px"><button type="button" id="twReset" data-en="Back to start">回到原位</button></div>
+        </section>
+        <section class="card" id="dexCard">
+          <h2 data-en="Isomer collection">異構物圖鑑</h2>
+          <label class="sel" for="target"><span data-en="Formula to collect">要收集的分子式</span>
+            <select id="target"></select>
+          </label>
+          <div class="dexbar"><span class="count" id="dexCount">0 / 0</span><span class="dots" id="dexDots" aria-hidden="true"></span></div>
+          <div class="btns">
+            <button type="button" id="collectBtn" class="primary" data-en="Add to collection">收進圖鑑</button>
+            <button type="button" id="dexClear" data-en="Clear all" title="清空這個分子式的圖鑑" data-en-title="Empty the collection for this formula">全部清除</button>
+          </div>
+          <p class="dexmsg" id="dexMsg" aria-live="polite"></p>
+          <div class="dexlist" id="dexList"></div>
+        </section>
+        <section class="card l2">
+          <h2 data-en="Quick start">快速開始</h2>
+          <div class="slider">
+            <label for="nC" data-en="Carbons in the chain">直鏈的碳數</label><output id="nCo">5</output>
+            <input type="range" id="nC" min="1" max="8" step="1" value="5" data-decimals="0">
+          </div>
+          <div class="btns"><button type="button" id="chainBtn" data-en="Straight chain">產生直鏈</button></div>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab oi">
+      <div class="stage">
+        <h2 data-en="Boiling points of the isomers">異構物的沸點</h2>
+        <div class="seg2 tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" id="chartBar" aria-pressed="true" data-en="Boiling point bars">沸點長條</button>
+          <button type="button" id="chartW" aria-pressed="false" data-en="Against the Wiener index">對維納指數</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖鑑裡異構物的沸點" data-en-aria-label="Boiling points of the isomers in the collection" data-share-skip></canvas>
+        <p class="hint" id="gHint"></p>
+      </div>
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Why do they boil differently?">為什麼沸點不同？</h2>
+          <p class="info" id="whyOut"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="What to look for">實驗目的</h2>
+      <ol>
+        <li data-en="Build molecules with the same formula and decide whether they are the same molecule or isomers.">組出分子式相同的分子，判斷它們是同一個分子還是同分異構物。</li>
+        <li data-en="Tell apart chain, position, functional-group and cis–trans (geometric) isomers.">分辨碳鏈異構、位置異構、官能基異構與順反（幾何）異構。</li>
+        <li data-en="Name alkanes, alkenes, alcohols, ethers, aldehydes and ketones by the IUPAC rules.">用 IUPAC 規則替烷、烯、醇、醚、醛、酮命名。</li>
+        <li data-en="Explain why branching lowers the boiling point, and why an alcohol boils far above its isomeric ether.">解釋為什麼支鏈越多沸點越低，以及為什麼醇的沸點遠高於同分子式的醚。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Same formula, different structure">分子式相同、結構不同</h3>
+      <p data-en="Isomers have the same molecular formula but their atoms are joined differently (structural isomers) or arranged differently in space (stereoisomers). Two drawings show the same molecule if you can bend, rotate or flip one into the other without breaking a bond: what matters is which atom is bonded to which, not how the chain is drawn.">同分異構物的分子式相同，但原子的連接方式不同（結構異構），或連接方式相同而在空間中的排列不同（立體異構）。兩種畫法只要能在不打斷任何鍵的情況下彎曲、轉動、翻面而互相重疊，就是同一個分子：重要的是「誰和誰鍵結」，不是鏈畫成直的還是彎的。</p>
+      <div class="tblnote">
+        <table class="spec">
+          <thead><tr><th data-en="Kind">種類</th><th data-en="What differs">哪裡不同</th><th data-en="Example">例子</th></tr></thead>
+          <tbody>
+            <tr><td data-en="Chain">碳鏈異構</td><td data-en="the carbon skeleton">碳骨架（直鏈或支鏈）</td><td data-en="pentane, 2-methylbutane, 2,2-dimethylpropane">戊烷、2-甲基丁烷、2,2-二甲基丙烷</td></tr>
+            <tr><td data-en="Position">位置異構</td><td data-en="where the double bond or group sits">雙鍵或官能基的位置</td><td data-en="1-butene, 2-butene; 1-propanol, 2-propanol">1-丁烯、2-丁烯；1-丙醇、2-丙醇</td></tr>
+            <tr><td data-en="Functional group">官能基異構</td><td data-en="the kind of compound">化合物的類別</td><td data-en="ethanol, methoxymethane; propanal, propanone; propene, cyclopropane">乙醇、甲氧基甲烷；丙醛、丙酮；丙烯、環丙烷</td></tr>
+            <tr><td data-en="Cis–trans">順反異構</td><td data-en="the two sides of a C=C">C=C 兩側的空間排列</td><td data-en="cis-2-butene, trans-2-butene">順-2-丁烯、反-2-丁烯</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p data-en-html="The degree of unsaturation counts rings and π bonds: each one removes two hydrogens from the saturated formula \(\mathrm{C}_n\mathrm{H}_{2n+2}\) (oxygen does not change it).">不飽和度數的是環與 π 鍵的個數：每多一個，就比飽和的 \(\mathrm{C}_n\mathrm{H}_{2n+2}\) 少兩個氫（氧不影響）。</p>
+      <div class="formula" data-en-html="\[ U = \frac{2C + 2 - H}{2} \qquad \mathrm{C_4H_8}:\ U = 1 \;(\text{one double bond or one ring}) \]">\[ U = \frac{2C + 2 - H}{2} \qquad \mathrm{C_4H_8}:\ U = 1 \;(\text{一個雙鍵或一個環}) \]</div>
+      <h3 data-en="How many isomers?">有幾種異構物？</h3>
+      <p data-en="The number of alkane structural isomers grows quickly with the number of carbons. There is no simple formula for it; the program counts them by building every carbon skeleton atom by atom and throwing away the duplicates.">烷類的結構異構物數目隨碳數迅速增加，沒有簡單的公式；程式是把所有碳骨架一個原子一個原子長出來，再把重複的去掉而數出來的。</p>
+      <div class="tblnote">
+        <table class="spec">
+          <thead><tr><th data-en="Formula">分子式</th><td>C<sub>4</sub>H<sub>10</sub></td><td>C<sub>5</sub>H<sub>12</sub></td><td>C<sub>6</sub>H<sub>14</sub></td><td>C<sub>7</sub>H<sub>16</sub></td><td>C<sub>8</sub>H<sub>18</sub></td><td>C<sub>9</sub>H<sub>20</sub></td><td>C<sub>10</sub>H<sub>22</sub></td></tr></thead>
+          <tbody><tr><th data-en="Isomers">異構物</th><td>2</td><td>3</td><td>5</td><td>9</td><td>18</td><td>35</td><td>75</td></tr></tbody>
+        </table>
+      </div>
+      <h3 data-en="Why a C=C does not turn: cis and trans">雙鍵不能轉：順式與反式</h3>
+      <p data-en-html="Around a single bond the two halves turn freely: the barrier in ethane is only about 12 kJ/mol, a few times the thermal energy \(RT \approx 2.5\) kJ/mol at room temperature. A double bond has a π bond made of two p orbitals side by side; twisting one end by 90° pulls them apart and breaks the π bond, which costs about 611 − 345 ≈ 266 kJ/mol. So each carbon of a C=C keeps its two groups on fixed sides. If both carbons carry two different groups, the molecule has a cis isomer (the main chain continues on the same side) and a trans isomer (opposite sides).">單鍵兩邊可以自由旋轉：乙烷的轉動障礙只有約 12 kJ/mol，是室溫熱能 \(RT \approx 2.5\) kJ/mol 的幾倍而已。雙鍵裡有一個由兩個 p 軌域並排形成的 π 鍵；把一端扭 90° 就會把它們拉開、打斷 π 鍵，要大約 611 − 345 ≈ 266 kJ/mol。所以 C=C 兩個碳上的原子團位置固定。兩個碳都各接著兩個不同的原子團時，就有順式（主鏈在同一側延伸）與反式（在兩側）兩種異構物。</p>
+      <div class="formula" data-en-html="\[ E_\pi(\theta) \approx 266\ \text{kJ/mol} \times \sin^2\theta \qquad E_\text{ethane}(\text{eclipsed}) \approx 3 \times 4.0 = 12\ \text{kJ/mol} \]">\[ E_\pi(\theta) \approx 266\ \text{kJ/mol} \times \sin^2\theta \qquad E_\text{乙烷}(\text{重疊式}) \approx 3 \times 4.0 = 12\ \text{kJ/mol} \]</div>
+      <h3 data-en="Branching and boiling point">支鏈與沸點</h3>
+      <p data-en="Alkane molecules attract one another only by London dispersion forces, which act where the molecules touch. A straight chain is long and can lie alongside its neighbours over a large surface; a branched molecule is more compact, closer to a sphere, with less surface in contact, so the attraction is weaker and it boils at a lower temperature. An alcohol has an O–H group that forms hydrogen bonds, so ethanol boils about 100 °C higher than methoxymethane, its isomer.">烷類分子之間只靠倫敦分散力互相吸引，而且只在分子互相接觸的地方作用。直鏈分子長長的，可以和鄰居大面積並排；支鏈分子比較緊湊、接近球形，接觸面積小，吸引力弱，所以沸點較低。醇有 O–H 基，可以形成氫鍵，所以乙醇的沸點比它的異構物甲氧基甲烷高了大約 100 °C。</p>
+      <p data-en-html="In 1947 Harry Wiener measured how stretched-out a skeleton is with one number: add up, over every pair of carbons, the number of bonds between them. The Wiener index \(W\) is larger for longer, less branched molecules and follows the boiling point quite well (not perfectly).">1947 年，維納（Harry Wiener）用一個數字描述碳骨架有多「伸展」：把每一對碳之間隔了幾個鍵全部加起來。維納指數 \(W\) 越大，分子越長、支鏈越少，和沸點的順序相當一致（但不是完全一致）。</p>
+      <div class="formula" data-en-html="\[ W = \sum_{i&lt;j} d_{ij} \qquad \text{pentane } 20 \;&gt;\; \text{2-methylbutane } 18 \;&gt;\; \text{2,2-dimethylpropane } 16 \]">\[ W = \sum_{i&lt;j} d_{ij} \qquad \text{戊烷 } 20 \;&gt;\; \text{2-甲基丁烷 } 18 \;&gt;\; \text{2,2-二甲基丙烷 } 16 \]</div>
+
+      <h3 data-en="Naming (IUPAC)">命名（IUPAC）</h3>
+      <ol>
+        <li data-en="Find the main chain: it must contain the principal group (–OH, –CHO, C=O) and as many C=C / C≡C as possible; then take the longest such chain, and if there is a tie, the one with more branches.">找主鏈：要包含主要官能基（–OH、–CHO、C=O）與最多的雙鍵、參鍵；再取最長的；一樣長時取支鏈較多的。</li>
+        <li data-en="Number it from the end that gives the lowest numbers, first to the principal group, then to the multiple bonds, then to the branches.">從使位號最小的一端編號：先讓主要官能基、再讓多重鍵、再讓取代基的位號最小。</li>
+        <li data-en="Write the branches in front with their numbers; identical ones are grouped as di-, tri-, tetra-. In Chinese the simpler group is written first (methyl before ethyl); in English they are in alphabetical order (ethyl before methyl).">取代基連同位號寫在前面，相同的合併成二、三、四。中文把簡單的取代基寫在前面（甲基在乙基前面），英文依字母順序（ethyl 在 methyl 前面）。</li>
+        <li data-en="For a C=C with cis–trans isomers, put cis- or trans- in front, judged by the main chain.">C=C 有順反異構時，名稱前加「順-」或「反-」，以主鏈的延伸方向判斷。</li>
+      </ol>
+      <p data-en-html="Examples: CH&lt;sub&gt;3&lt;/sub&gt;CH(CH&lt;sub&gt;3&lt;/sub&gt;)CH&lt;sub&gt;2&lt;/sub&gt;CH&lt;sub&gt;3&lt;/sub&gt; is 2-methylbutane; (CH&lt;sub&gt;3&lt;/sub&gt;)&lt;sub&gt;3&lt;/sub&gt;COH is 2-methyl-2-propanol; CH&lt;sub&gt;3&lt;/sub&gt;CH&lt;sub&gt;2&lt;/sub&gt;OCH&lt;sub&gt;3&lt;/sub&gt; is methoxyethane (ethyl methyl ether).">例：CH<sub>3</sub>CH(CH<sub>3</sub>)CH<sub>2</sub>CH<sub>3</sub> 是 2-甲基丁烷；(CH<sub>3</sub>)<sub>3</sub>COH 是 2-甲基-2-丙醇；CH<sub>3</sub>CH<sub>2</sub>OCH<sub>3</sub> 是甲氧基乙烷（甲乙醚）。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Draw the same butane bent in three different ways and add each to the collection: the program says it is already there.">把同一個丁烷畫成三種不同的彎法，每次都按收進圖鑑：程式會告訴你圖鑑裡已經有了。</li>
+        <li data-en-html="In C&lt;sub&gt;5&lt;/sub&gt;H&lt;sub&gt;12&lt;/sub&gt;, the boiling point falls from 36.1 °C to 27.8 °C to 9.5 °C as the molecule gets more branched and rounder.">C<sub>5</sub>H<sub>12</sub> 裡，分子越分支、越圓，沸點從 36.1 °C、27.8 °C 降到 9.5 °C。</li>
+        <li data-en="Add a methyl to 2-butene on one side or the other: 2-methyl-2-butene has no cis–trans isomers, because one carbon carries two identical methyls.">在 2-丁烯的雙鍵碳上加一個甲基：2-甲基-2-丁烯沒有順反異構，因為有一個碳接著兩個相同的甲基。</li>
+        <li data-en="In 3D, twist ethane about its C–C bond: the energy peaks at 12 kJ/mol whenever the hydrogens line up (eclipsed). Then try to twist the C=C of 2-butene.">在 3D 中把乙烷繞著 C–C 轉：每當前後的氫對齊（重疊式），能量就升到 12 kJ/mol。再試著扭 2-丁烯的 C=C。</li>
+        <li data-en="Vision works by a cis–trans switch: light turns 11-cis-retinal in the eye into all-trans-retinal. Tick “Shine UV light” and twist a C=C past 90° to see the idea.">我們看得見，靠的就是順反轉換：光讓眼睛裡的 11-順-視黃醛變成全反式視黃醛。勾「照光」再把 C=C 扭過 90°，就能看到這個過程。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en="Why does propene have no cis–trans isomers, while 2-butene does?">為什麼丙烯沒有順反異構物，2-丁烯卻有？</li>
+        <li data-en-html="Ethanol and methoxymethane have the same formula C&lt;sub&gt;2&lt;/sub&gt;H&lt;sub&gt;6&lt;/sub&gt;O. Which one boils higher, and why?">乙醇和甲氧基甲烷的分子式都是 C<sub>2</sub>H<sub>6</sub>O。哪一個沸點高？為什麼？</li>
+        <li data-en="2,2,3,3-Tetramethylbutane boils lower than octane but melts at about 101 °C — it is a solid at room temperature, while octane melts at −57 °C. Why might a compact, symmetric molecule melt so much higher?">2,2,3,3-四甲基丁烷的沸點比辛烷低，熔點卻約 101 °C（室溫下是固體），而辛烷的熔點是 −57 °C。為什麼緊湊又對稱的分子熔點會高這麼多？</li>
+        <li data-en="Can you have cis–trans isomers when neither carbon of the C=C has a hydrogen?">如果 C=C 兩端的碳上都沒有氫，還會有順反異構嗎？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="In propene one carbon of the C=C carries two hydrogens. Swapping them gives the same molecule, so there is only one arrangement. In 2-butene each carbon carries a hydrogen and a methyl, two different groups.">丙烯的雙鍵有一個碳接著兩個氫，交換它們還是同一個分子，只有一種排法。2-丁烯的兩個雙鍵碳各接一個氫和一個甲基，是兩個不同的原子團。</li>
+          <li data-en="Ethanol (78.3 °C) is far higher than methoxymethane (−24.8 °C): its O–H hydrogen can form hydrogen bonds with the oxygen of a neighbouring molecule. The ether has no H on its oxygen.">乙醇（78.3 °C）遠高於甲氧基甲烷（−24.8 °C）：乙醇的 O–H 上的氫可以和鄰近分子的氧形成氫鍵；醚的氧上沒有氫，不能彼此形成氫鍵。</li>
+          <li data-en="Boiling depends on how strongly molecules attract one another in the liquid, which needs contact area. Melting also depends on how well the molecules pack into a crystal: a compact, almost spherical molecule packs very neatly and the crystal holds together until a high temperature.">沸點看液體中分子互相吸引的強弱，和接觸面積有關。熔點還要看分子在晶體裡排得多整齊：緊湊、接近球形又對稱的分子很容易整整齊齊地堆積，晶體要到較高溫才會瓦解。</li>
+          <li data-en="Yes. What matters is that each carbon carries two different groups, not that one of them is hydrogen. 3,4-Dimethyl-3-hexene has cis and trans forms (judged by the main chain).">會。條件是兩個碳都接著兩個「不同」的原子團，不一定要有氫。3,4-二甲基-3-己烯就有順式與反式（以主鏈判斷）。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en="Same molecule or not: the bonds form a graph. The program refines atom classes by their neighbours (Morgan-type refinement) and tries every tie-breaking order, then keeps the smallest description; two molecules are the same exactly when these canonical strings are equal. Cis or trans is read from the drawing (same side of the C=C axis or not) and is part of the string.">是不是同一個分子：鍵把原子連成一張圖。程式依照每個原子的鄰居反覆細分原子的類別（摩根演算法的精煉），遇到分不出來的再逐一試，取最小的描述當作標準化字串；兩個分子是同一個，若且唯若它們的字串相同。順反由畫法判斷（在 C=C 鍵軸的同一側或兩側），也寫進字串。</li>
+        <li data-en="Counting: grow every skeleton one atom at a time, add rings and multiple bonds to use up the unsaturation, try both cis and trans at each C=C, and keep each canonical string once. The counts are checked against the known values (alkanes C1–C10: 1, 1, 1, 2, 3, 5, 9, 18, 35, 75, OEIS A000602).">數異構物：所有骨架一個原子一個原子長出來，再加環、加多重鍵把不飽和度用完，每個 C=C 試順式與反式，標準化字串相同的只留一個。數目和已知值核對（烷類 C1–C10：1、1、1、2、3、5、9、18、35、75，OEIS A000602）。</li>
+        <li data-en="Simplifications: only C, O and H; no O–O bonds; mirror-image (optical) isomers are not counted separately, so 3-methylhexane counts once although it has a pair of enantiomers; cis–trans on rings (which needs wedge bonds) is not handled. Names are given for alkanes, alkenes, alkynes, cycloalkanes, benzene, alcohols, ethers, aldehydes and ketones.">簡化：只有碳、氧、氫；不做 O–O 鍵；鏡像（光學）異構不另外算，所以 3-甲基己烷雖然有一對鏡像異構物，仍算一種；環上的順反（要用楔形鍵表示）不處理。命名範圍是烷、烯、炔、環烷、苯、醇、醚、醛、酮。</li>
+        <li data-en="Naming follows the textbook rules above (the main chain contains the most multiple bonds, as in Taiwanese senior-high textbooks; the 2013 IUPAC rules instead put chain length first, which only matters for branched dienes).">命名照上面課本的規則（主鏈要包含最多的多重鍵，和臺灣高中課本相同；2013 年 IUPAC 新規則改成先看鏈長，只有分支的二烯類才會不同）。</li>
+        <li data-en="3D model: bond lengths C–C 154, C=C 134, C≡C 120, C–O 143, C=O 121, C–H 109, O–H 96 pm; angles 109.5° (sp3), 120° (sp2), 180° (sp). Each length and angle acts like a spring and the shape relaxes from the grid drawing; the C=C plane and its cis or trans arrangement are kept; then each single bond is turned to its lowest-energy (staggered, anti) position.">3D 模型：鍵長 C–C 154、C=C 134、C≡C 120、C–O 143、C=O 121、C–H 109、O–H 96 pm；鍵角 109.5°（sp<sup>3</sup>）、120°（sp<sup>2</sup>）、180°（sp）。每個鍵長和鍵角都像彈簧，從格子上的畫法放鬆成立體形狀；C=C 保持平面與原來的順反，最後把每個單鍵轉到能量最低的位置（錯開式、反式）。</li>
+        <li data-en="Twisting energy, single bond: each pair of groups lined up (eclipsed) costs H/H 4.0, H/CH3 6.0, CH3/CH3 11 kJ/mol, and two carbon groups 60° apart (gauche) 3.8 kJ/mol (McMurry, OpenStax Organic Chemistry). Double bond: 266 kJ/mol × sin²θ, from the average bond energies C=C 611 and C–C 345 kJ/mol (OpenStax Chemistry 2e). With “Shine UV light”, the light breaks the π bond and the twist is free; let go past 90° and the molecule falls into the other isomer.">扭轉能，單鍵：每一對前後對齊（重疊）的原子團，H/H 4.0、H/CH<sub>3</sub> 6.0、CH<sub>3</sub>/CH<sub>3</sub> 11 kJ/mol，兩個碳原子團相差 60°（偏轉式）3.8 kJ/mol（McMurry，OpenStax《Organic Chemistry》）。雙鍵：266 kJ/mol × sin²θ，由平均鍵能 C=C 611、C–C 345 kJ/mol 推得（OpenStax《Chemistry 2e》）。勾「照光」時，光把 π 鍵打開、可以自由扭轉；扭過 90° 放手，就落到另一個異構物。</li>
+        <li data-en="Boiling points at 1 atm from the CRC Handbook of Chemistry and Physics, each checked against the NIST Chemistry WebBook; most agree within 0.3 °C. Ethyne sublimes at −84 °C.">沸點（1 atm）取自 CRC Handbook of Chemistry and Physics，逐項以 NIST Chemistry WebBook 核對，多數相差 0.3 °C 以內。乙炔在 −84 °C 昇華。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Organic compounds (hydrocarbons, isomerism, naming, functional groups).">課綱對應：高中化學・有機化合物（烴、同分異構物、命名、官能基）。</li>
+        <li data-en="W. M. Haynes (ed.), CRC Handbook of Chemistry and Physics, Physical Constants of Organic Compounds.">W. M. Haynes 編，《CRC Handbook of Chemistry and Physics》，有機化合物物理常數。</li>
+        <li data-en-html="&lt;a href=&quot;https://webbook.nist.gov/chemistry/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;NIST Chemistry WebBook&lt;/a&gt; (phase-change data, boiling points)."><a href="https://webbook.nist.gov/chemistry/" target="_blank" rel="noopener">NIST Chemistry WebBook</a>（英文，相變數據、沸點）。</li>
+        <li data-en-html="&lt;a href=&quot;https://oeis.org/A000602&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OEIS A000602&lt;/a&gt;: number of alkane structural isomers."><a href="https://oeis.org/A000602" target="_blank" rel="noopener">OEIS A000602</a>（英文）：烷類結構異構物的數目。</li>
+        <li data-en="H. Wiener, “Structural determination of paraffin boiling points”, Journal of the American Chemical Society 69, 17 (1947).">H. Wiener，〈Structural determination of paraffin boiling points〉，《Journal of the American Chemical Society》69 卷 17 頁（1947）。</li>
+        <li data-en="J. McMurry, Organic Chemistry (OpenStax), sections 3.6–3.7 (conformations of ethane and butane) and 7.4 (cis–trans isomerism of alkenes); OpenStax, Chemistry 2e, Table 7.2 (average bond energies).">J. McMurry，《Organic Chemistry》（OpenStax）3.6–3.7 節（乙烷與丁烷的構形）、7.4 節（烯類的順反異構）；OpenStax《Chemistry 2e》表 7.2（平均鍵能）。</li>
+        <li data-en="IUPAC, Nomenclature of Organic Chemistry: IUPAC Recommendations and Preferred Names 2013.">IUPAC，《Nomenclature of Organic Chemistry: IUPAC Recommendations and Preferred Names 2013》。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/organic-isomers-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/organic-isomers-3d.js"></script>
+  <script src="js/organic-isomers.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="organic-isomers"></script>
+  <script src="js/missions/organic-isomers.js"></script>
+  <script src="js/stats.js" data-module="organic-isomers"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

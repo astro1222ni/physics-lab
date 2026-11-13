@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Esterification | Astro Ni Science Lab">酯化反應｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 酯化反應頁面專用樣式。元素與器材的顏色代號（淺色、深色兩組），其餘用 lab.css 的代號 */
+    :root { --el-c: #4a5260; --el-o: #e0453a; --el-h: #f2f4f7; --el-18: #d39b06; --es-bath: #9ccbe6; --es-glass: #7d97a5; --es-liq: #e9eef2; --es-ester: #f3d58a; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --el-c: #9aa3ae; --el-o: #ff5e50; --el-h: #e6e9ee; --el-18: #f2c94c; --es-bath: #3f6f8c; --es-glass: #a9c3cf; --es-liq: #5b6670; --es-ester: #c9a24a; }
+    }
+    :root[data-theme="dark"] { --el-c: #9aa3ae; --el-o: #ff5e50; --el-h: #e6e9ee; --el-18: #f2c94c; --es-bath: #3f6f8c; --es-glass: #a9c3cf; --es-liq: #5b6670; --es-ester: #c9a24a; }
+    .es canvas { aspect-ratio: auto; }
+    .es #cv { touch-action: manipulation; }
+    .es #gcv { height: 320px; touch-action: auto; }
+    .es button { min-height: 44px; }
+    .es [hidden] { display: none !important; }
+    .es sub, .es sup, .notes sub, .notes sup { font-size: .75em; }
+    .es .panel > .card { min-width: 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-bar .right { display: flex; flex-wrap: wrap; gap: 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv, .stage.is3d .l2 { display: none !important; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab;
+      background: var(--canvas-bg); background: radial-gradient(ellipse at 50% 38%, var(--canvas-bg) 52%, color-mix(in srgb, var(--canvas-bg) 90%, var(--text)) 100%); }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 84%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: calc(100% - 16px); }
+    .r3-hud:empty { display: none; }
+    .r3-hud.tl { top: 8px; left: 8px; font-weight: 600; max-width: 62%; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; max-width: 40%; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .r3-hud sub, .r3-hud sup { font-size: .75em; }
+    .r3-hud .lab18 { color: var(--el-18); font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg5 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .seg5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+    .seg2 button, .seg3 button, .seg5 button { padding: 4px 4px; line-height: 1.2; min-width: 0; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg5 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar > button { flex: 1 1 auto; }
+    .playbar #play { font-weight: 700; min-width: 7.5em; }
+    .speedbox { display: flex; align-items: center; gap: 6px; flex: 1 1 100%; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    .speedbox .seg5 { flex: 1 1 auto; }
+    .speedbox .seg5 button { font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .addbar { display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); gap: 6px; align-items: center; margin: 8px 2px 0; }
+    .addbar .lbl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); line-height: 1.25; }
+    .addbar button { padding: 4px 4px; min-width: 0; }
+    @media (max-width: 560px) { .addbar { grid-template-columns: repeat(5, minmax(0, 1fr)); } .addbar .lbl { grid-column: 1 / -1; } }
+    .mechbar { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; align-items: center; margin: 10px 2px 0; }
+    .mechbar .slider { margin: 0; }
+    .mechbar .checks { grid-column: 1 / -1; }
+    .checks label { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: calc(14px * var(--fs, 1)); }
+    .checks input { width: 20px; height: 20px; accent-color: var(--accent); flex: none; }
+    .es .stage .status { margin: 8px 4px 0; min-height: 1.4em; }
+    .es .stage .status.good { color: var(--probe); font-weight: 600; }
+    .es .stage .status.warn { color: var(--pos); }
+    .es .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .es .card h3 { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 6px; color: var(--muted); }
+    .es .card .hint, .es .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .es .slider input[type="range"] { height: 28px; margin: 0; }
+    .es .prod { font-size: calc(14px * var(--fs, 1)); margin: 10px 0 2px; line-height: 1.5; }
+    .es .prod b { font-size: calc(16px * var(--fs, 1)); }
+    .es dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .es dl.readout dd { white-space: nowrap; }
+    .es dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    .es dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .es dl.readout .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+    .es .tabs { margin: 0 2px 8px; }
+    .es .calc { font-size: calc(14px * var(--fs, 1)); line-height: 1.75; margin: 6px 0 0; font-variant-numeric: tabular-nums; overflow-x: auto; }
+    .es .calc .res { font-weight: 700; color: var(--accent); }
+    .es .smell { font-size: calc(18px * var(--fs, 1)); font-weight: 700; margin: 2px 0 6px; }
+    .es .legend .ln { display: inline-block; width: 22px; height: 0; border-top: 3px solid currentColor; vertical-align: middle; margin-right: 6px; }
+    .es .legend .ln.dash { border-top-style: dashed; }
+    .es .legend .ln.dot { border-top-style: dotted; }
+    .es .legend .dotm { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: -1px; margin-right: 6px; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 300px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; }
+    .notes .katex-display { overflow-x: auto; overflow-y: hidden; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#organic&quot;&gt;Chemistry · Organic and Everyday Chemistry&lt;/a&gt; / Esterification"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#organic">化學・有機與生活化學</a> ／ 酯化反應</nav>
+      <h1 data-en="Esterification: Making the Smell of Bananas">酯化反應：做出香蕉的味道</h1>
+      <p data-en-html="Warm a carboxylic acid and an alcohol with a few drops of concentrated sulfuric acid and they slowly join into an ester — the molecules behind the smell of bananas, pineapples and nail-polish remover — and water. The reaction never quite finishes: it stops at an equilibrium where ester and water turn back into acid and alcohol just as fast as they form. Find out how much ester you can get, and how to push the yield higher with an excess of one reactant or by taking the water away. In 3D, follow an oxygen-18 label to see which bonds really break.">把羧酸和醇加幾滴濃硫酸一起溫熱，它們會慢慢結合成酯——香蕉、鳳梨、去光水的氣味都來自酯——同時生成水。這個反應永遠不會「做完」：它停在一個平衡，酯和水變回酸和醇的速率，正好等於生成的速率。看看最多能得到多少酯，再想辦法用過量的反應物、或把水移走，讓產率更高。切到 3D，跟著做了記號的氧-18，看清楚到底斷的是哪一個鍵。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Start heating” and watch the ester build up. When it stops rising, press “Add water” and see what happens to the ester.">試試看：按「開始加熱」，看酯一點一點變多。等它不再增加，按「加水」，看看酯會怎樣。</p>
+    <div class="lab es">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D experiment">2D 實驗</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D molecules">3D 分子</button>
+          </div>
+          <div class="right">
+            <button type="button" id="resetCam" hidden data-en="Reset view">重設視角</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" role="img" aria-label="迴流加熱裝置與分子示意圖" data-en-aria-label="Reflux apparatus and a magnified view of the molecules"></canvas>
+        <div id="view3"></div>
+        <div class="mechbar l3">
+          <button type="button" id="mechPlay" class="primary" data-en="Play the reaction">播放反應</button>
+          <div class="slider"><label for="mechP" data-en="Reaction progress">反應進度</label><output id="mechPo"></output>
+            <input id="mechP" type="range" min="0" max="100" step="1" value="0" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="mechAlt" type="checkbox"><span data-en="Wrong guess: the alcohol loses its OH">錯誤的猜想：醇失去 OH</span></label>
+          </div>
+        </div>
+        <div class="playbar l2">
+          <button id="play" class="primary" type="button" data-en="Start heating">開始加熱</button>
+          <button id="restart" type="button" data-en="Prepare again" title="同樣的設定，重新配一瓶" data-en-title="Make up a fresh flask with the same settings">重新配製</button>
+          <button id="workup" type="button" data-en="Separate the ester" title="倒進飽和碳酸鈉溶液、用分液漏斗分出酯層（這一瓶就結束了）" data-en-title="Pour into saturated sodium carbonate solution and separate the ester layer (ends this run)">分出酯層</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除舊的曲線與平衡紀錄" data-en-title="Clear the old curves and the table of equilibria">全部清除</button>
+          <div class="speedbox"><span id="speedLabel" data-en="Speed">時間倍率</span>
+            <div class="seg5" role="group" aria-labelledby="speedLabel">
+              <button type="button" id="sp0" aria-pressed="false" title="真實時間" data-en-title="Real time">×1</button>
+              <button type="button" id="sp1" aria-pressed="true" title="1 秒 = 1 分鐘" data-en-title="1 s = 1 minute">×60</button>
+              <button type="button" id="sp2" aria-pressed="false" title="1 秒 = 10 分鐘" data-en-title="1 s = 10 minutes">×600</button>
+              <button type="button" id="sp3" aria-pressed="false" title="1 秒 = 100 分鐘" data-en-title="1 s = 100 minutes">×6000</button>
+              <button type="button" id="sp4" aria-pressed="false" title="1 秒 ≈ 17 小時" data-en-title="1 s ≈ 17 hours">×60000</button>
+            </div>
+          </div>
+        </div>
+        <div class="addbar l2" role="group" aria-labelledby="addLabel">
+          <span class="lbl" id="addLabel" data-en="Add (0.10 mol each):">加入（每次 0.10 mol）：</span>
+          <button type="button" id="addA" data-en="Add acid">加酸</button>
+          <button type="button" id="addB" data-en="Add alcohol">加醇</button>
+          <button type="button" id="addE" data-en="Add ester">加酯</button>
+          <button type="button" id="addW" data-en="Add water">加水</button>
+          <button type="button" id="addS" data-en="Add sieves" title="加入 20 g 分子篩（3A），會吸走水" data-en-title="Add 20 g of 3A molecular sieves, which soak up water">加分子篩</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" data-en="The flask is heated in a water bath under a reflux condenser: anything that boils off condenses and runs back. The colour of the liquid is only a hint (all four liquids are colourless); the circle (on the right, or below on a phone) shows a few dozen molecules in the same proportions as in the flask.">燒瓶在水浴中加熱，上面接迴流冷凝管：蒸發的物質冷凝後流回燒瓶。液體的顏色只是示意（四種液體其實都無色）；圓圈（手機在下方）放大顯示幾十個分子，比例和瓶中相同。</p>
+        <p class="hint l3" data-en-html="Ball-and-stick models with real bond lengths and angles. Grey carbon, red oxygen, white hydrogen; the gold oxygen is oxygen-18 from the alcohol. The motion is only a sketch: the real path goes through a tetrahedral intermediate and needs H&lt;sup&gt;+&lt;/sup&gt;.">球棍模型的鍵長、鍵角是真實的數值。灰色是碳、紅色是氧、白色是氫；金色的氧是醇裡的氧-18。運動過程只是示意：真實的反應途徑經過四面體中間體，而且需要 H<sup>+</sup> 幫忙。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Reactants">反應物</h2>
+          <h3 id="acidLbl" data-en="Carboxylic acid">羧酸</h3>
+          <div class="seg3" id="acidSeg" role="group" aria-labelledby="acidLbl">
+            <button type="button" data-acid="formic" aria-pressed="false" data-en="Formic acid">甲酸</button>
+            <button type="button" data-acid="acetic" aria-pressed="true" data-en="Acetic acid">乙酸</button>
+            <button type="button" data-acid="butyric" aria-pressed="false" data-en="Butanoic acid">丁酸</button>
+          </div>
+          <h3 id="alcLbl" data-en="Alcohol">醇</h3>
+          <div class="seg3" id="alcSeg" role="group" aria-labelledby="alcLbl">
+            <button type="button" data-alc="methanol" aria-pressed="false" data-en="Methanol">甲醇</button>
+            <button type="button" data-alc="ethanol" aria-pressed="true" data-en="Ethanol">乙醇</button>
+            <button type="button" data-alc="isoamyl" aria-pressed="false" data-en="Isopentyl alcohol">異戊醇</button>
+          </div>
+          <p class="prod" id="prodLine"></p>
+          <div class="slider"><label for="nA" id="nALbl" data-en="Acid">酸</label><output id="nAo"></output>
+            <input id="nA" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="nB" id="nBLbl" data-en="Alcohol">醇</label><output id="nBo"></output>
+            <input id="nB" type="range" min="0" max="1.5" step="0.01" value="0.5" data-decimals="3"></div>
+          <div class="slider"><label for="nE" id="nELbl" data-en="Ester">酯</label><output id="nEo"></output>
+            <input id="nE" type="range" min="0" max="1" step="0.01" value="0" data-decimals="3"></div>
+          <div class="slider"><label for="nW" data-en="Water">水</label><output id="nWo"></output>
+            <input id="nW" type="range" min="0" max="2" step="0.01" value="0" data-decimals="3"></div>
+          <div class="slider"><label for="cat" data-en="Concentrated sulfuric acid (catalyst)">濃硫酸（催化劑）</label><output id="cato"></output>
+            <input id="cat" type="range" min="0" max="2" step="0.1" value="1" data-decimals="2"></div>
+          <div class="checks">
+            <label><input id="label18" type="checkbox"><span data-en-html="Label the alcohol's oxygen with &lt;sup&gt;18&lt;/sup&gt;O">醇的氧用 <sup>18</sup>O 標記</span></label>
+          </div>
+          <p class="hint" data-en="Changing anything on this card makes up a fresh flask.">改變這張卡上的設定，會重新配一瓶。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Water bath">水浴</h2>
+          <div class="slider"><label for="temp" data-en="Temperature">溫度</label><output id="tempo"></output>
+            <input id="temp" type="range" min="20" max="80" step="1" value="70" data-decimals="1"></div>
+          <p class="hint" data-en="You can change the temperature while the reaction is running.">反應進行中也可以改變溫度。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="In the flask now">瓶中現在的狀態</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab es">
+      <div class="stage">
+        <h2 data-en="Graphs and table of equilibria">圖表與平衡紀錄</h2>
+        <div class="seg3 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="n" aria-pressed="true" data-en="Amount–time">莫耳數—時間</button>
+          <button type="button" data-tab="q" aria-pressed="false" data-en="Q and K">Q 與 K</button>
+          <button type="button" data-tab="r" aria-pressed="false" data-en="Yield and ratio">產率與莫耳比</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph" data-share-skip></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Check K yourself">自己算 K</h2>
+          <p class="calc" id="kCalc"></p>
+          <p class="hint" data-en-html="Because the same number of molecules is on each side, the volume cancels: &lt;i&gt;K&lt;/i&gt; can be worked out from amounts in moles.">兩邊的分子數相同，體積可以消去：直接用莫耳數就能算 <i>K</i>。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="This ester">這種酯</h2>
+          <p class="prod" id="esterName"></p>
+          <p class="smell" id="esterSmell"></p>
+          <dl class="readout" id="esterInfo"><dt>—</dt><dd>—</dd></dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Make esters from carboxylic acids and alcohols, and learn how they are named.">用羧酸和醇製造酯，並學會酯的命名。</li>
+        <li data-en="See that esterification is reversible: it reaches an equilibrium, and the same equilibrium is reached from either side.">觀察酯化是可逆反應：會達到平衡，而且從哪一邊出發都到同一個平衡。</li>
+        <li data-en="Work out K from the equilibrium amounts, and use Le Chatelier's principle to raise the yield.">由平衡時的莫耳數算出 K，並用勒沙特列原理提高產率。</li>
+        <li data-en="Tell the jobs of the catalyst and of heating apart: they make the reaction faster, not more complete.">分清楚催化劑和加熱的作用：讓反應變快，不是讓反應更完全。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="The reaction">酯化反應</h3>
+      <div class="formula">
+        \[ \mathrm{RCOOH + R'OH \;\xrightleftharpoons{\;H_2SO_4,\ \Delta\;}\; RCOOR' + H_2O} \]
+      </div>
+      <p data-en-html="A carboxylic acid and an alcohol lose a molecule of water between them and join through an oxygen atom. The ester is named after the acid and the alkyl group of the alcohol: acetic acid + ethanol gives &lt;b&gt;ethyl acetate&lt;/b&gt;, acetic acid + isopentyl alcohol gives &lt;b&gt;isopentyl acetate&lt;/b&gt; (banana oil), butanoic acid + ethanol gives &lt;b&gt;ethyl butanoate&lt;/b&gt; (pineapple).">羧酸和醇之間脫去一分子水，經由一個氧原子接在一起。酯的名字是「酸的名稱＋醇的烷基＋酯」：乙酸＋乙醇 → <b>乙酸乙酯</b>；乙酸＋異戊醇 → <b>乙酸異戊酯</b>（香蕉油）；丁酸＋乙醇 → <b>丁酸乙酯</b>（鳳梨的香味）。</p>
+      <h3 data-en="Which bonds break? The oxygen-18 experiment">斷的是哪個鍵？氧-18 的實驗</h3>
+      <p data-en-html="Water could be made in two ways: the acid gives its OH and the alcohol its H, or the other way round. In 1938 Roberts and Urey labelled the alcohol's oxygen with the heavy isotope &lt;sup&gt;18&lt;/sup&gt;O: the label ended up in the ester, not in the water. So the acid loses OH and the alcohol loses H (the C–O bond of the acid breaks). Switch to 3D and compare with the wrong guess.">水可能有兩種來源：酸給 OH、醇給 H；或是反過來。1938 年 Roberts 與 Urey 把醇的氧換成較重的同位素 <sup>18</sup>O，結果標記出現在酯裡，不在水裡。所以是<b>酸失去 OH、醇失去 H</b>（斷的是酸的 C–O 鍵）。切到 3D，和錯誤的猜想比較看看。</p>
+      <h3 data-en="Equilibrium constant and yield">平衡常數與產率</h3>
+      <div class="formula multi">
+        \[ K_c = \frac{[\mathrm{RCOOR'}][\mathrm{H_2O}]}{[\mathrm{RCOOH}][\mathrm{R'OH}]} = \frac{n_\mathrm{E}\,n_\mathrm{W}}{n_\mathrm{A}\,n_\mathrm{B}} \]
+      </div>
+      <p data-en-html="A, B, E, W stand for acid, alcohol, ester and water. The reaction quotient &lt;i&gt;Q&lt;/i&gt; has the same form but uses the amounts at any moment: if &lt;i&gt;Q&lt;/i&gt; &amp;lt; &lt;i&gt;K&lt;/i&gt; the reaction goes forward (more ester); if &lt;i&gt;Q&lt;/i&gt; &amp;gt; &lt;i&gt;K&lt;/i&gt; it goes backward (hydrolysis).">A、B、E、W 代表酸、醇、酯、水。反應商 <i>Q</i> 的寫法相同，但用任何時刻的莫耳數：<i>Q</i> &lt; <i>K</i> 時反應向右（酯變多）；<i>Q</i> &gt; <i>K</i> 時向左（酯水解）。</p>
+      <p data-en-html="For acetic acid and ethanol &lt;i&gt;K&lt;/i&gt; ≈ 4 at room temperature. Starting from 1 mol of each, let &lt;i&gt;x&lt;/i&gt; mol of ester form: \(x^2/(1-x)^2 = 4\), so \(x = 2/3\). With 3 mol of ethanol instead: \(x^2/[(1-x)(3-x)] = 4\) gives \(x \approx 0.90\) — an excess of the cheaper reactant raises the yield of the dearer one. Removing water as it forms (with concentrated sulfuric acid or molecular sieves) pushes the reaction further still.">乙酸和乙醇在室溫的 <i>K</i> ≈ 4。各取 1 mol，設生成 <i>x</i> mol 酯：\(x^2/(1-x)^2 = 4\)，得 \(x = 2/3\)。若乙醇改用 3 mol：\(x^2/[(1-x)(3-x)] = 4\)，得 \(x \approx 0.90\)——讓便宜的反應物過量，可以提高另一個反應物變成酯的比例。把生成的水移走（濃硫酸吸水、分子篩），反應還能更完全。</p>
+      <h3 data-en="Why concentrated sulfuric acid, and why heat?">為什麼加濃硫酸？為什麼加熱？</h3>
+      <p data-en-html="Without a catalyst, at room temperature, the reaction takes months. H&lt;sup&gt;+&lt;/sup&gt; from the sulfuric acid speeds it up; heating speeds it up further. Neither changes where the reaction stops: the reaction is only very slightly exothermic (ΔH° ≈ −4 kJ/mol), so &lt;i&gt;K&lt;/i&gt; falls only from 4.0 at 25 °C to about 3.2 at 75 °C. Heat is for speed, not for yield; the reflux condenser keeps the volatile liquids from escaping.">不加催化劑、在室溫下，反應要好幾個月。硫酸提供的 H<sup>+</sup> 使反應加快；加熱再加快。但兩者都不改變反應停在哪裡：這個反應只稍微放熱（ΔH° ≈ −4 kJ/mol），<i>K</i> 從 25 °C 的 4.0 只降到 75 °C 的 3.2 左右。加熱是為了快、不是為了多；迴流冷凝管讓容易揮發的液體不會跑掉。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Run the same mixture at 25 °C and at 80 °C: the yields at equilibrium are almost equal, but the times are very different.">同一瓶在 25 °C 和 80 °C 各做一次：平衡時的產率幾乎一樣，花的時間差很多。</li>
+        <li data-en="Start from ester and water only: acid and alcohol appear, and the mixture ends up where the forward reaction would have.">只放酯和水：會生出酸和醇，最後停在正反應也會到達的同一個平衡。</li>
+        <li data-en="At equilibrium, add water, then alcohol: watch Q jump away from K and the reaction move to bring it back.">平衡後加水、再加醇：看 Q 跳離 K，反應又往讓 Q 回到 K 的方向進行。</li>
+        <li data-en="Turn the catalyst down to zero: the reaction crawls, but it heads for the same equilibrium.">把濃硫酸調到 0：反應慢得像在爬，但終點一樣。</li>
+        <li data-en="Try all nine acid–alcohol pairs and open the “This ester” card to find their smells.">試試九種酸和醇的組合，在「這種酯」卡片看看它們聞起來像什麼。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en="0.50 mol of acetic acid and 0.50 mol of ethanol reach equilibrium with 0.33 mol of ethyl acetate. Find K.">0.50 mol 乙酸和 0.50 mol 乙醇達到平衡時有 0.33 mol 乙酸乙酯，求 K。</li>
+        <li data-en="Why is it better to use an excess of ethanol rather than an excess of acetic acid when making ethyl acetate in a school laboratory?">學校實驗做乙酸乙酯時，為什麼通常讓乙醇過量，而不是乙酸過量？</li>
+        <li data-en="A student says: “Heating gives more ester, so the reaction must be endothermic.” What is wrong with this?">某生說：「加熱以後酯變多，所以這個反應是吸熱的。」錯在哪裡？</li>
+        <li data-en="At the end the mixture is poured into saturated sodium carbonate solution. Why does it fizz, and why does the ester form a layer on top?">最後把混合液倒進飽和碳酸鈉溶液，為什麼會冒泡？為什麼酯會浮在上層？</li>
+        <li data-en-html="If the alcohol is labelled with &lt;sup&gt;18&lt;/sup&gt;O, which product would contain the label if the alcohol lost its OH instead?">如果醇的氧用 <sup>18</sup>O 標記，假設醇失去的是 OH，標記會出現在哪個產物？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="At equilibrium: acid 0.17, ethanol 0.17, ester 0.33, water 0.33 mol. K = (0.33 × 0.33) ÷ (0.17 × 0.17) ≈ 3.8 (the volume cancels).">平衡時：酸 0.17、醇 0.17、酯 0.33、水 0.33 mol。K = (0.33 × 0.33) ÷ (0.17 × 0.17) ≈ 3.8（體積可以消去）。</li>
+          <li data-en="Ethanol is cheap, easy to wash out with water, and boils low; an excess of either reactant raises the yield equally well, so we choose the one that is cheaper and easier to remove.">乙醇便宜、可以用水洗掉、沸點也低；任何一個反應物過量都能提高產率，所以選便宜又容易去除的那一個。</li>
+          <li data-en="Heating makes the reaction reach equilibrium sooner, so in a fixed time you get more ester. At equilibrium, heating actually gives slightly less ester, because the reaction is slightly exothermic.">加熱使反應較快到達平衡，所以在固定時間內得到較多酯。到了平衡以後，加熱反而讓酯稍微變少，因為反應稍微放熱。</li>
+          <li data-en="The leftover acetic acid and sulfuric acid react with the carbonate to give carbon dioxide gas. The ester hardly dissolves in the salty water and is less dense (about 0.90 g/mL), so it floats.">剩下的乙酸和硫酸與碳酸鈉反應，放出二氧化碳氣體。酯幾乎不溶於鹽水、密度又較小（約 0.90 g/mL），所以浮在上層。</li>
+          <li data-en-html="In the water: H&lt;sub&gt;2&lt;/sub&gt;&lt;sup&gt;18&lt;/sup&gt;O (molar mass 20). The experiment found the label in the ester instead, which rules this mechanism out.">在水裡：H<sub>2</sub><sup>18</sup>O（莫耳質量 20）。實驗發現標記在酯裡，所以這個機構被排除了。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Equilibrium: &lt;i&gt;K&lt;/i&gt; = 4.0 at 25 °C for every acid–alcohol pair (Berthelot and Péan de Saint-Gilles found the limit nearly the same for different acids and alcohols; measured values lie roughly between 3 and 5.5, methanol being the highest). Temperature follows the van 't Hoff equation with ΔH° = −3.8 kJ/mol.">平衡：九種組合在 25 °C 都用 <i>K</i> = 4.0（Berthelot 與 Péan de Saint-Gilles 發現極限和酸、醇的種類幾乎無關；實測值大約在 3–5.5 之間，甲醇最高）。溫度的影響用凡特荷夫方程式，ΔH° = −3.8 kJ/mol。</li>
+        <li data-en-html="Rate: \(\dfrac{d\xi}{dt} = \dfrac{k}{V}\left(n_\text{A}n_\text{B} - \dfrac{n_\text{E}n_\text{W}}{K}\right)\), with \(k\) = (self-catalysis by the carboxylic acid) + (a term proportional to the sulfuric acid concentration), each following the Arrhenius equation (activation energies 65 and 55 kJ/mol). The rate constants are estimates chosen to match the usual school experiment (about an hour under reflux); the smaller acids and alcohols react a little faster.">速率：\(\dfrac{d\xi}{dt} = \dfrac{k}{V}\left(n_\text{A}n_\text{B} - \dfrac{n_\text{E}n_\text{W}}{K}\right)\)，\(k\) =（羧酸自己催化）＋（和硫酸濃度成正比的一項），兩項都依阿瑞尼斯方程式（活化能 65 與 55 kJ/mol）。速率常數是估計值，讓時間尺度接近學校實驗（迴流約 1 小時）；較小的酸和醇反應稍快。</li>
+        <li data-en="The volume is the sum of the volumes of the pure liquids (the small change on mixing is ignored). Nothing is lost by evaporation because of the reflux condenser. The temperature of the flask follows the water bath at once.">體積是各純液體體積的和（忽略混合時的小變化）。因為有迴流冷凝管，不計揮發損失。燒瓶的溫度立刻等於水浴溫度。</li>
+        <li data-en="Molecular sieves (3A): each 20 g soaks up at most 20% of its mass of water (0.222 mol), at a rate proportional to the water present and to the capacity left (time constant 15 min). The water taken up by concentrated sulfuric acid is not counted.">分子篩（3A）：每 20 g 最多吸本身質量 20% 的水（0.222 mol），吸水速率和瓶中的水量、剩下的容量成正比（時間常數 15 分鐘）。濃硫酸本身的吸水作用沒有計入。</li>
+        <li data-en="“At equilibrium” means Q is within 0.3% of K. The circle of molecules is drawn to scale in number only.">「達到平衡」的判定：Q 與 K 相差 0.3% 以內。圓圈裡的分子只有「數目比例」是照實際的。</li>
+      </ul>
+      <div class="tablewrap"><table class="data" id="dataTable"></table></div>
+
+      <h3 data-en="Safety">安全提醒</h3>
+      <p data-en="Concentrated sulfuric acid is corrosive: add it slowly, wear goggles and gloves. Methanol is poisonous. Smell esters by wafting the vapour towards your nose with your hand; never sniff directly. Heat with a water bath, never an open flame — the liquids are flammable. In a real laboratory, follow your teacher's instructions.">濃硫酸有腐蝕性：要慢慢加，戴護目鏡與手套。甲醇有毒。聞酯的氣味要用手把氣體搧向鼻子，不可直接湊近聞。用水浴加熱，不可用明火——這些液體都會燃燒。真實實驗請依老師指示操作。</p>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Organic chemistry (functional groups: carboxylic acids, alcohols, esters) and chemical equilibrium; the textbook experiment on preparing esters.">課綱對應：高中化學・有機化合物（官能基：羧酸、醇、酯）與化學平衡；課本的酯類製備實驗。</li>
+        <li data-en-html="M. Berthelot and L. Péan de Saint-Gilles, “Recherches sur les affinités”, &lt;i&gt;Annales de Chimie et de Physique&lt;/i&gt; (3) 65–68 (1862–63): the limit of esterification (about 2/3 for equal amounts), nearly independent of temperature and of the acid and alcohol used.">M. Berthelot 與 L. Péan de Saint-Gilles，〈Recherches sur les affinités〉，《Annales de Chimie et de Physique》第 3 輯 65–68 卷（1862–63）：酯化的極限（等莫耳時約 2/3），幾乎與溫度、酸和醇的種類無關。</li>
+        <li data-en-html="I. Roberts and H. C. Urey, &lt;i&gt;J. Am. Chem. Soc.&lt;/i&gt; 60, 2391 (1938): oxygen-18 tracer study of acid-catalysed esterification.">I. Roberts 與 H. C. Urey，《J. Am. Chem. Soc.》60 卷 2391 頁（1938）：用氧-18 追蹤酸催化的酯化。</li>
+        <li data-en-html="Enthalpies of formation (liquids): ethyl acetate −479.86 kJ/mol (NIST Chemistry WebBook, Wiberg and Waldron 1991); acetic acid −484.3, ethanol −277.6, water −285.83 kJ/mol (OpenStax, &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Appendix G&lt;/a&gt;).">生成焓（液態）：乙酸乙酯 −479.86 kJ/mol（NIST Chemistry WebBook，Wiberg 與 Waldron 1991）；乙酸 −484.3、乙醇 −277.6、水 −285.83 kJ/mol（OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/g-standard-thermodynamic-properties-for-selected-substances" target="_blank" rel="noopener">附錄 G</a>，英文）。</li>
+        <li data-en-html="Molar masses, densities and boiling points: &lt;i&gt;CRC Handbook of Chemistry and Physics&lt;/i&gt;, Physical Constants of Organic Compounds.">莫耳質量、密度、沸點：《CRC Handbook of Chemistry and Physics》有機化合物物理常數表。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/esterification-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/esterification-3d.js"></script>
+  <script src="js/esterification.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="esterification"></script>
+  <script src="js/missions/esterification.js"></script>
+  <script src="js/stats.js" data-module="esterification"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

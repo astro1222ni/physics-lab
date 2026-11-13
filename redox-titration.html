@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Redox Titration with Permanganate | Astro Ni Science Lab">氧化還原滴定（過錳酸鉀）｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 氧化還原滴定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
+    .rx canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
+    .rx #cv { height: 500px; }
+    .rx #gcv { height: 340px; cursor: crosshair; }
+    .rx + .rx { margin-top: 16px; }
+    .rx button { min-height: 44px; }
+    .rx [hidden] { display: none !important; }
+    .rx .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rx .playbar button { flex: 1 1 auto; }
+    .rx .playbar #drop { font-weight: 700; min-width: 7.5em; }
+    .rx .playbar button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .rx .playbar button:disabled { opacity: .5; cursor: not-allowed; }
+    .rx .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .rx .stage .rate { margin: 12px 4px 0; }
+    .rx .stage .status { margin: 6px 4px 0; min-height: 1.5em; }
+    .rx .stage .status.warn { color: var(--pos); font-weight: 600; }
+    .rx .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .rx .stage h2 + .hint { margin-top: -4px; margin-bottom: 8px; }
+    .rx .slider input[type="range"] { height: 28px; margin: 0; }
+    .rx sub, .rx sup, .notes sub, .notes sup { font-size: .75em; }
+    .rx .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .rx .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .seg2 button { padding: 5px 4px; line-height: 1.3; }
+    .seg2 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg2 button small { display: block; font-weight: 400; font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); }
+    .seg2 button[aria-pressed="true"] small { color: var(--accent); }
+    .rx .checks { margin-top: 8px; }
+    dl.readout dd small, dl.readout dt small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .rx dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .rx dl.readout dd { white-space: nowrap; }
+    dl.readout dd.big { font-size: calc(18px * var(--fs, 1)); font-weight: 700; }
+    dl.readout dd.warn { color: var(--pos); }
+    dl.readout dd.good { color: var(--probe); font-weight: 700; }
+    .rx .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .rx .legend .ln.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .rx .legend .ln.old { opacity: .5; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 9em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .rx .btns button { flex: 1 1 auto; }
+    #mysOut .ok { color: var(--probe); font-weight: 700; }
+    #mysOut .no { color: var(--pos); font-weight: 700; }
+    .tablewrap { overflow: auto; margin: 8px 2px 0; max-height: 300px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.col { text-align: left; }
+    table.data td.col i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--border); vertical-align: -1px; margin-right: 5px; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    table.data tr.latest td { background: var(--accent-soft); }
+    table.data tr.jump td.d { color: var(--pos); font-weight: 700; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi { max-width: 100%; }
+    @media (max-width: 480px) { .formula.multi .katex { font-size: 1em; } }
+    /* 長的反應式在手機上自己左右捲動，不撐寬整頁（min-width:0 讓 flex 子項可以縮；relative 讓 KaTeX 的隱藏 MathML 也被裁切） */
+    .formula.multi .katex-display { margin: 4px 0; overflow-x: auto; overflow-y: hidden; max-width: 100%; min-width: 0; flex: 0 1 auto; position: relative; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .equip { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 4px 18px; padding-left: 1.3em; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Redox Titration with Permanganate"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 氧化還原滴定（過錳酸鉀）</nav>
+      <h1 data-en="Redox Titration with Permanganate">氧化還原滴定（過錳酸鉀）</h1>
+      <p data-en-html="A burette of deep-purple potassium permanganate, and a conical flask of iron(II) or oxalic acid acidified with sulfuric acid on a hot-plate stirrer. Every drop of MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; loses its colour as it reacts — until there is nothing left to react with, and the first drop in excess turns the whole flask pink: permanganate is its own indicator. A platinum electrode follows the potential, and the potentiometric titration curve draws itself. Standardise an unknown permanganate solution with oxalic acid, then use it to find an unknown iron(II) concentration.">滴定管裡是深紫色的過錳酸鉀，錐形瓶裡是加了硫酸的 Fe<sup>2+</sup> 或草酸溶液，放在加熱攪拌器上。每一滴 MnO<sub>4</sub><sup>−</sup> 一反應就褪色；等到瓶中再也沒有東西可以和它反應，多出來的第一滴就讓整瓶變成淡粉紅色——過錳酸鉀是自己的指示劑。鉑電極量出溶液的電位，電位滴定曲線跟著畫出來。最後用草酸標定一瓶濃度未知的過錳酸鉀，再用它求出未知 Fe<sup>2+</sup> 的濃度。</p>
+    </header>
+
+    <!-- 第一部分：滴定裝置 -->
+    <p class="try-hint" data-en-html="Try it: open the stopcock and let the KMnO&lt;sub&gt;4&lt;/sub&gt; run to about 24 mL, close it, then go on with “1 drop” and “½ drop”: which drop leaves the flask pink?">試試看：打開活栓，讓 KMnO<sub>4</sub> 流到大約 24 mL 再關上，接著改用「一滴」「半滴」，看哪一滴讓整瓶留下粉紅色。</p>
+    <div class="lab rx">
+      <div class="stage">
+        <canvas id="cv" role="img" aria-label="滴定裝置：鐵架上裝著過錳酸鉀的滴定管、放在加熱攪拌器上的錐形瓶、鉑電極與電位計，以及放大滴定管液面的放大鏡" data-en-aria-label="The titration set-up: a burette of potassium permanganate on a stand, a conical flask on a hot-plate stirrer, a platinum electrode with a potentiometer, and a magnifier showing the liquid level in the burette"></canvas>
+        <div class="playbar">
+          <button id="drop" class="primary" type="button" data-en="1 drop (0.05 mL)">一滴（0.05 mL）</button>
+          <button id="half" type="button" data-en="½ drop">半滴</button>
+          <button id="tap" type="button" aria-pressed="false" data-share-skip data-en="Open stopcock">打開活栓</button>
+          <button id="endBtn" type="button" data-en="Record end point">記錄終點</button>
+        </div>
+        <div class="playbar">
+          <button id="ffBtn" type="button" aria-pressed="false" data-share-skip title="時間快轉 20 倍：等粉紅色褪去，或確認粉紅色維持 30 秒；快轉時不能加滴定液" data-en-title="Time runs 20 times faster: wait for the pink to fade, or check that it lasts 30 s; no titrant can be added while fast-forwarding" data-en="Fast-forward">快轉等待</button>
+          <button id="refill" type="button" data-en="Refill burette">補充滴定液</button>
+          <button id="newFlask" type="button" data-en="New flask">換一瓶</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除圖上所有曲線、數據表與終點紀錄，換一瓶新的溶液；濃度、體積、溫度等設定不變" data-en-title="Clear every curve, the data table and the end point, and start a fresh flask; the concentrations, volumes and temperature stay as they are">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="slider rate"><label for="rate" data-en="Stopcock opening (flow rate)">活栓開度（流速）</label><output id="rateo"></output>
+          <input id="rate" type="range" min="0.1" max="2" step="0.05" value="0.5" data-decimals="2"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en="Not to scale. One drop is 0.05 mL, half a drop 0.025 mL. Permanganate is so dark that the bottom of the meniscus cannot be seen: read the top edge, with your eye level with it, to 0.01 mL (see the magnifier). “Fast-forward” makes time run 20 times faster, for waiting while a drop decolourises or while you check that the pink lasts 30 s.">示意圖，未依比例。一滴 0.05 mL、半滴 0.025 mL。過錳酸鉀顏色太深，看不到彎月面的最低點，要讀<strong>上緣</strong>，視線與它同高，估讀到 0.01 mL（看放大鏡）。「快轉等待」讓時間快 20 倍：等一滴褪色、或確認粉紅色維持 30 秒時使用。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+
+        <section class="card">
+          <h2 id="sysLabel" data-en="What is titrated">滴定組合</h2>
+          <div class="seg2" id="sysSeg" role="group" aria-labelledby="sysLabel">
+            <button type="button" data-sys="fe" aria-pressed="true" data-en-html="Fe&lt;sup&gt;2+&lt;/sup&gt; ← KMnO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;known iron(II)&lt;/small&gt;">Fe<sup>2+</sup> ← KMnO<sub>4</sub><small>已知濃度的亞鐵</small></button>
+            <button type="button" data-sys="ox" aria-pressed="false" data-en-html="Oxalic acid ← KMnO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;H&lt;sub&gt;2&lt;/sub&gt;C&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt;, heat it&lt;/small&gt;">草酸 ← KMnO<sub>4</sub><small>H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>，要加熱</small></button>
+            <button type="button" data-sys="std" aria-pressed="false" data-en-html="Standardise KMnO&lt;sub&gt;4&lt;/sub&gt;&lt;small&gt;weighed oxalic acid&lt;/small&gt;">標定 KMnO<sub>4</sub><small>用精稱的草酸</small></button>
+            <button type="button" data-sys="mx" aria-pressed="false" data-en-html="Unknown Fe&lt;sup&gt;2+&lt;/sup&gt;&lt;small&gt;same KMnO&lt;sub&gt;4&lt;/sub&gt;&lt;/small&gt;">未知 Fe<sup>2+</sup><small>用同一瓶 KMnO<sub>4</sub></small></button>
+          </div>
+          <p class="info" id="sysInfo">—</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Solutions">溶液</h2>
+          <div class="slider" id="caRow"><label for="ca" id="caLabel" data-en-html="Concentration of Fe&lt;sup&gt;2+&lt;/sup&gt;">Fe<sup>2+</sup> 的濃度</label><output id="cao"></output>
+            <input id="ca" type="range" min="0" max="300" step="1" value="195"></div>
+          <div class="slider" id="massRow" hidden><label for="mass" data-en-html="Mass of oxalic acid H&lt;sub&gt;2&lt;/sub&gt;C&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt;·2H&lt;sub&gt;2&lt;/sub&gt;O">草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O 的質量</label><output id="masso"></output>
+            <input id="mass" type="range" min="0.05" max="0.4" step="0.0001" value="0.1576" data-decimals="4"></div>
+          <div class="slider"><label for="va" id="vaLabel" data-en="Volume of the sample (pipette)">待測液的體積（移液管）</label><output id="vao"></output>
+            <input id="va" type="range" min="5" max="50" step="0.5" value="25" data-decimals="2"></div>
+          <div class="slider"><label for="vacid" data-en="3 M sulfuric acid added">加入的 3 M 硫酸</label><output id="vacido"></output>
+            <input id="vacid" type="range" min="0" max="20" step="0.5" value="10" data-decimals="1"></div>
+          <div class="slider" id="cbRow"><label for="cb" data-en-html="Concentration of KMnO&lt;sub&gt;4&lt;/sub&gt; (burette)">KMnO<sub>4</sub> 的濃度（滴定管）</label><output id="cbo"></output>
+            <input id="cb" type="range" min="0" max="300" step="1" value="195"></div>
+          <div class="slider"><label for="temp" data-en="Hot plate (temperature of the flask)">加熱板（錐形瓶的溫度）</label><output id="tempo"></output>
+            <input id="temp" type="range" min="20" max="95" step="1" value="25" data-decimals="0"></div>
+          <p class="hint" data-en="Changing any of these starts a fresh flask; the old curve stays on the graph for comparison (up to 5). Tap a number to type an exact value.">改這些設定會換一瓶新的溶液，舊的曲線留在圖上方便比較（最多 5 條）。點一下數字可直接輸入精確數值。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Potentiometer">電位計</h2>
+          <div class="checks">
+            <label><input id="meter" type="checkbox" checked><span data-en="Platinum electrode in the flask">鉑電極放在錐形瓶中</span></label>
+          </div>
+          <p class="hint" data-en-html="The meter shows the potential of the platinum electrode against the standard hydrogen electrode (E, in volts). A real meter uses a reference electrode such as a saturated calomel electrode (+0.241 V); the reading has been converted.">電位計顯示鉑電極相對於標準氫電極的電位 E（伏特）。實際的電位計搭配飽和甘汞電極等參考電極（+0.241 V），這裡已換算好。</p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- 第二部分：電位滴定曲線、數據表與分析 -->
+    <div class="lab rx">
+      <div class="stage">
+        <h2 data-en="Potentiometric titration curve and data table">電位滴定曲線與數據表</h2>
+        <p class="hint" data-en="Potential of the platinum electrode against the volume of KMnO4 added. Points are only recorded while the electrode is in the flask. The strip under the axis shows the colour of the flask at each volume.">縱軸是鉑電極的電位、橫軸是加入的 KMnO<sub>4</sub> 體積；電極放在瓶中時才有數據點。橫軸下方的色條是每個體積時錐形瓶的顏色。</p>
+        <canvas id="gcv" role="img" aria-label="電位滴定曲線：電位對加入的過錳酸鉀體積，標出半當量點、當量點與兩個標準還原電位" data-en-aria-label="Potentiometric titration curve: potential against the volume of permanganate added, with the half-equivalence point, the equivalence point and the two standard reduction potentials"></canvas>
+        <div class="checks">
+          <label><input id="theory" type="checkbox"><span data-en="Theoretical curve">理論曲線</span></label>
+          <label><input id="deriv" type="checkbox"><span data-en="Slope ΔE/ΔV">斜率 ΔE/ΔV</span></label>
+        </div>
+        <div class="legend" id="curveLegend"></div>
+        <div class="tablewrap" id="tblWrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Analysis">分析</h2>
+          <dl class="readout" id="anaOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="mysCard" hidden data-share-skip>
+          <h2 data-en="Your answers for the unknowns">未知樣品的答案</h2>
+          <p class="hint" data-en-html="The KMnO&lt;sub&gt;4&lt;/sub&gt; in the burette is about 0.015–0.025 M; standardise it first with “Standardise KMnO&lt;sub&gt;4&lt;/sub&gt;”, then titrate 25.00 mL of the “Unknown Fe&lt;sup&gt;2+&lt;/sup&gt;” (0.06–0.14 M) with the same solution. Fill in one or both answers.">滴定管裡的 KMnO<sub>4</sub> 約 0.015–0.025 M：先用「標定 KMnO<sub>4</sub>」求出它的濃度，再用同一瓶滴定「未知 Fe<sup>2+</sup>」（0.06–0.14 M）。可以只填一個，也可以兩個都填。</p>
+          <div class="ans"><label for="ansMn" data-en-html="c(KMnO&lt;sub&gt;4&lt;/sub&gt;) (M)">c(KMnO<sub>4</sub>)（M）</label><input id="ansMn" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 0.01985" data-en-placeholder="e.g. 0.01985"></div>
+          <div class="ans"><label for="ansFe" data-en-html="c(Fe&lt;sup&gt;2+&lt;/sup&gt;) (M)">c(Fe<sup>2+</sup>)（M）</label><input id="ansFe" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 0.1042" data-en-placeholder="e.g. 0.1042"></div>
+          <div class="btns">
+            <button id="check" class="primary" type="button" data-en="Check">核對答案</button>
+            <button id="reveal" type="button" data-en="Reveal">揭曉答案</button>
+            <button id="newMys" type="button" data-en="New unknowns">換一組未知樣品</button>
+          </div>
+          <p class="info" id="mysOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Titrate iron(II) with potassium permanganate in acid solution and use the 1 : 5 mole ratio to find a concentration.">在酸性溶液中用過錳酸鉀滴定亞鐵離子，利用莫耳數比 1 : 5 求出濃度。</li>
+        <li data-en="See why permanganate needs no indicator, and judge the end point by a faint pink that lasts 30 seconds.">了解過錳酸鉀為什麼不必另加指示劑，學會以「淡粉紅色 30 秒不褪」判斷終點。</li>
+        <li data-en="Standardise a permanganate solution with a weighed amount of oxalic acid (2 : 5), and see why the flask must be heated and why the reaction speeds itself up.">用精稱的草酸標定過錳酸鉀（莫耳數比 2 : 5），了解為什麼要加熱、為什麼反應會越來越快。</li>
+        <li data-en="Follow the potential with a platinum electrode and use the Nernst equation to explain the potentiometric titration curve.">用鉑電極量電位，以能斯特方程式解釋電位滴定曲線。</li>
+      </ol>
+
+      <h3 data-en="Apparatus">實驗器材</h3>
+      <ul class="equip">
+        <li data-en="50 mL burette with a glass (or PTFE) stopcock — not a burette with rubber tubing">50 mL 酸式滴定管（玻璃或鐵氟龍活栓，不可用接橡皮管的鹼式滴定管）</li>
+        <li data-en="Retort stand and burette clamp">鐵架與滴定管夾</li>
+        <li data-en="250 mL conical flask, 25 mL pipette and filler">250 mL 錐形瓶、25 mL 移液管與安全吸球</li>
+        <li data-en="Hot-plate magnetic stirrer, thermometer">加熱磁石攪拌器、溫度計</li>
+        <li data-en="Analytical balance (0.0001 g)">分析天平（0.0001 g）</li>
+        <li data-en="Platinum electrode, reference electrode and potentiometer (optional)">鉑電極、參考電極與電位計（電位滴定用）</li>
+        <li data-en="About 0.02 M KMnO4, 3 M H2SO4">約 0.02 M KMnO<sub>4</sub>、3 M H<sub>2</sub>SO<sub>4</sub></li>
+        <li data-en="Iron(II) ammonium sulfate (Mohr’s salt) solution, oxalic acid dihydrate H2C2O4·2H2O">莫耳鹽（硫酸亞鐵銨）溶液、草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O</li>
+      </ul>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Half-reactions and mole ratios">半反應與莫耳數比</h3>
+      <p data-en-html="In acid solution the manganese in MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; goes from oxidation number +7 to +2, taking five electrons. Fe&lt;sup&gt;2+&lt;/sup&gt; gives one electron, and each C in oxalic acid goes from +3 to +4, so one H&lt;sub&gt;2&lt;/sub&gt;C&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt; gives two. Balancing the electrons gives the equations and mole ratios:">在酸性溶液中，MnO<sub>4</sub><sup>−</sup> 的 Mn 由氧化數 +7 變成 +2，得到 5 個電子；Fe<sup>2+</sup> 失去 1 個電子；草酸的每個 C 由 +3 變成 +4，一個 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub> 失去 2 個電子。讓得失的電子數相等，就得到反應式與莫耳數比：</p>
+      <div class="formula multi">
+        \[ \mathrm{MnO_4^- + 8H^+ + 5e^- \rightarrow Mn^{2+} + 4H_2O} \]
+      </div>
+      <div class="formula multi">
+        \[ \mathrm{MnO_4^- + 5Fe^{2+} + 8H^+ \rightarrow Mn^{2+} + 5Fe^{3+} + 4H_2O} \]
+        \[ \mathrm{2MnO_4^- + 5H_2C_2O_4 + 6H^+ \rightarrow 2Mn^{2+} + 10CO_2 + 8H_2O} \]
+      </div>
+      <p data-en-html="At the equivalence point the moles of electrons given equal the moles taken, \(5\,n(\mathrm{MnO_4^-}) = n(\mathrm{Fe^{2+}}) = 2\,n(\mathrm{H_2C_2O_4})\):">在當量點，失去與得到的電子莫耳數相等，\(5\,n(\mathrm{MnO_4^-}) = n(\mathrm{Fe^{2+}}) = 2\,n(\mathrm{H_2C_2O_4})\)：</p>
+      <div class="formula multi">
+        \[ 5\,c_{\mathrm{KMnO_4}}V_{\mathrm{eq}} = c_{\mathrm{Fe^{2+}}}V_{\mathrm{Fe}} \]
+        \[ 5\,c_{\mathrm{KMnO_4}}V_{\mathrm{eq}} = 2\times\frac{m}{126.07\ \mathrm{g/mol}} \]
+      </div>
+      <p data-en-html="The second form is the standardisation: \(m\) grams of oxalic acid dihydrate H&lt;sub&gt;2&lt;/sub&gt;C&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt;·2H&lt;sub&gt;2&lt;/sub&gt;O (a primary standard: pure, stable, weighed directly) are titrated with the permanganate. For example 0.1576 g is 1.250 mmol; if it needs 25.00 mL, \(c = 2 \times 1.250 / (5 \times 25.00) = 0.02000\) M. Permanganate itself cannot be weighed out as a standard: it slowly oxidises dust and organic matter in water and decomposes in light, so it is always standardised.">第二式就是標定：精稱 \(m\) 克草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O（一級標準品：純、穩定、可直接稱量）用過錳酸鉀滴定。例如 0.1576 g 是 1.250 mmol，用去 25.00 mL，\(c = 2 \times 1.250 / (5 \times 25.00) = 0.02000\) M。過錳酸鉀本身不能直接稱量配成標準溶液：它會慢慢氧化水中的灰塵與有機物、見光也會分解，所以一定要標定。</p>
+
+      <h3 data-en="Its own indicator">自身指示劑</h3>
+      <p data-en-html="MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; is deep purple, while Mn&lt;sup&gt;2+&lt;/sup&gt; is almost colourless in dilute solution. As long as Fe&lt;sup&gt;2+&lt;/sup&gt; (or oxalic acid) is left, every drop is decolourised. The first excess drop has nothing to react with: about 1 × 10&lt;sup&gt;−5&lt;/sup&gt; M of MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; is enough to make the whole flask a faint pink. The end point is taken when this pink lasts 30 s (it fades slowly later, because MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; also reacts slowly with Mn&lt;sup&gt;2+&lt;/sup&gt; and with impurities).">MnO<sub>4</sub><sup>−</sup> 是深紫色，Mn<sup>2+</sup> 在稀溶液中幾乎無色。只要瓶中還有 Fe<sup>2+</sup>（或草酸），每一滴都會被還原而褪色；多出來的第一滴沒有東西可以反應，大約 1 × 10<sup>−5</sup> M 的 MnO<sub>4</sub><sup>−</sup> 就能讓整瓶溶液呈淡粉紅色。淡粉紅色維持 30 秒不褪，就是終點（放久了還是會慢慢褪，因為 MnO<sub>4</sub><sup>−</sup> 也會和 Mn<sup>2+</sup> 及雜質慢慢反應）。</p>
+
+      <h3 data-en="Why sulfuric acid?">為什麼要加硫酸？</h3>
+      <p data-en-html="Each MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; needs eight H&lt;sup&gt;+&lt;/sup&gt; to become Mn&lt;sup&gt;2+&lt;/sup&gt;. Without enough acid it stops at manganese dioxide, a brown precipitate, and takes only three electrons: \(\mathrm{MnO_4^-} + 4\mathrm{H^+} + 3e^- \rightarrow \mathrm{MnO_2} + 2\mathrm{H_2O}\). The brown colour hides the end point and more permanganate is used (5/3 times as much if all of it goes to MnO&lt;sub&gt;2&lt;/sub&gt;). Sulfuric acid is used rather than hydrochloric acid, which permanganate would oxidise to chlorine, or nitric acid, which is itself an oxidising agent.">每個 MnO<sub>4</sub><sup>−</sup> 要 8 個 H<sup>+</sup> 才能變成 Mn<sup>2+</sup>。酸不夠時，它只還原到二氧化錳（棕色沉澱），只拿 3 個電子：\(\mathrm{MnO_4^-} + 4\mathrm{H^+} + 3e^- \rightarrow \mathrm{MnO_2} + 2\mathrm{H_2O}\)。棕色擋住了終點的顏色，用掉的過錳酸鉀也變多（全部變成 MnO<sub>2</sub> 時是 5/3 倍）。酸要用硫酸：鹽酸的 Cl<sup>−</sup> 會被過錳酸根氧化成氯氣，硝酸本身就是氧化劑。</p>
+
+      <h3 data-en="Oxalic acid: heat, and a reaction that speeds itself up">草酸：要加熱，而且越反應越快</h3>
+      <p data-en-html="Permanganate reacts with oxalic acid very slowly at room temperature, so the flask is heated to about 60–70 °C. Even then the first drops take a while to lose their colour. The Mn&lt;sup&gt;2+&lt;/sup&gt; produced catalyses the reaction (&lt;strong&gt;autocatalysis&lt;/strong&gt;), so once a little has formed, each new drop is decolourised almost at once. Add the first drops slowly; if you pour in a lot at the start, the purple builds up and then suddenly clears. Do not go above about 85 °C: oxalic acid starts to decompose and the result comes out low.">過錳酸鉀與草酸在室溫下反應很慢，所以要把錐形瓶加熱到約 60–70 °C。就算加熱了，最初幾滴也要等一陣子才褪色；生成的 Mn<sup>2+</sup> 是這個反應的催化劑（<strong>自催化</strong>），有了一點 Mn<sup>2+</sup> 之後，每一滴幾乎立刻褪色。所以一開始要慢慢加；一開始就倒很多，紫色會先積起來，再突然一下子褪掉。溫度不要超過約 85 °C：草酸會分解，結果會偏低。</p>
+
+      <h3 data-en="Potential and the Nernst equation">電位與能斯特方程式</h3>
+      <p data-en-html="A platinum electrode takes up the potential set by the redox couples in the solution. Before the equivalence point both Fe&lt;sup&gt;3+&lt;/sup&gt; and Fe&lt;sup&gt;2+&lt;/sup&gt; are present, so the iron couple decides; after it, MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; and Mn&lt;sup&gt;2+&lt;/sup&gt; are both present and the manganese couple decides (at 25 °C, \(s = 2.303RT/F = 0.05916\) V):">鉑電極的電位由溶液中的氧化還原電對決定。當量點之前，Fe<sup>3+</sup> 與 Fe<sup>2+</sup> 都在，由鐵的電對決定；當量點之後，MnO<sub>4</sub><sup>−</sup> 與 Mn<sup>2+</sup> 都在，由錳的電對決定（25 °C，\(s = 2.303RT/F = 0.05916\) V）：</p>
+      <div class="formula multi">
+        \[ E = E^\circ_{\mathrm{Fe}} + s\log\frac{[\mathrm{Fe^{3+}}]}{[\mathrm{Fe^{2+}}]} \]
+        \[ E = E^\circ_{\mathrm{Mn}} + \frac{s}{5}\log\frac{[\mathrm{MnO_4^-}][\mathrm{H^+}]^8}{[\mathrm{Mn^{2+}}]} \]
+      </div>
+      <p data-en-html="with \(E^\circ_{\mathrm{Fe}}\) = 0.771 V and \(E^\circ_{\mathrm{Mn}}\) = 1.507 V. At half the equivalence volume \([\mathrm{Fe^{3+}}] = [\mathrm{Fe^{2+}}]\), so \(E = E^\circ_{\mathrm{Fe}}\). At the equivalence point \([\mathrm{Fe^{3+}}] = 5[\mathrm{Mn^{2+}}]\) and \([\mathrm{Fe^{2+}}] = 5[\mathrm{MnO_4^-}]\); adding the first equation to five times the second, the logarithms cancel and the potential is a weighted average:">其中 \(E^\circ_{\mathrm{Fe}}\) = 0.771 V、\(E^\circ_{\mathrm{Mn}}\) = 1.507 V。加到當量點體積的一半時 \([\mathrm{Fe^{3+}}] = [\mathrm{Fe^{2+}}]\)，所以 \(E = E^\circ_{\mathrm{Fe}}\)。在當量點，\([\mathrm{Fe^{3+}}] = 5[\mathrm{Mn^{2+}}]\)、\([\mathrm{Fe^{2+}}] = 5[\mathrm{MnO_4^-}]\)，把第一式加上第二式的 5 倍，對數項互相抵消，電位是加權平均：</p>
+      <div class="formula multi">
+        \[ E_{\mathrm{eq}} = \frac{E^\circ_{\mathrm{Fe}} + 5E^{\circ\prime}_{\mathrm{Mn}}}{6} \]
+        \[ E^{\circ\prime}_{\mathrm{Mn}} = E^\circ_{\mathrm{Mn}} + \frac{8s}{5}\log[\mathrm{H^+}] \]
+      </div>
+      <p data-en-html="With [H&lt;sup&gt;+&lt;/sup&gt;] = 1 M this is (0.771 + 5 × 1.507)/6 = 1.384 V — much nearer to manganese, because each MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; counts five electrons. At twice the equivalence volume \([\mathrm{MnO_4^-}] = [\mathrm{Mn^{2+}}]\) and \(E = E^{\circ\prime}_{\mathrm{Mn}}\). Only ratios of concentrations appear, so diluting everything hardly changes the curve — unlike an acid–base titration.">[H<sup>+</sup>] = 1 M 時是 (0.771 + 5 × 1.507)/6 = 1.384 V，比較靠近錳，因為每個 MnO<sub>4</sub><sup>−</sup> 算 5 個電子。加到兩倍當量點體積時 \([\mathrm{MnO_4^-}] = [\mathrm{Mn^{2+}}]\)，\(E = E^{\circ\prime}_{\mathrm{Mn}}\)。式子裡只有濃度的比值，所以全部稀釋，曲線幾乎不變——這一點和酸鹼滴定不同。</p>
+
+      <h3 data-en="Procedure">實驗步驟</h3>
+      <ol>
+        <li data-en="Rinse the burette with a little KMnO4 solution, fill it, clear the air from the tip and read the top of the meniscus.">滴定管用少量 KMnO<sub>4</sub> 溶液潤洗後裝滿，排除尖端的氣泡，讀彎月面上緣的初讀數。</li>
+        <li data-en="Pipette 25.00 mL of the iron(II) solution into the flask (or weigh the oxalic acid and dissolve it in about 25 mL of water) and add about 10 mL of 3 M sulfuric acid. For oxalic acid, heat to 60–70 °C.">用移液管取 25.00 mL 亞鐵溶液放進錐形瓶（或精稱草酸，溶在約 25 mL 水中），加約 10 mL 的 3 M 硫酸；滴定草酸時加熱到 60–70 °C。</li>
+        <li data-en="Add the permanganate while stirring. With oxalic acid, wait for the first drops to lose their colour before going on. Near the end point add single drops, then half drops.">一邊攪拌一邊加入過錳酸鉀；滴定草酸時，最初幾滴要等褪色後再加。接近終點時一滴一滴、最後半滴半滴地加。</li>
+        <li data-en="Stop when a faint pink lasts 30 s. Final reading − initial reading = volume used. Repeat until two results agree within 0.10 mL.">淡粉紅色 30 秒不褪即為終點，末讀數 − 初讀數 = 用去的體積。重複到兩次結果相差不超過 0.10 mL。</li>
+      </ol>
+
+      <h3 data-en="Things to watch out for">注意事項</h3>
+      <ul>
+        <li data-en="Use a burette with a glass or PTFE stopcock: permanganate attacks rubber.">要用玻璃或鐵氟龍活栓的酸式滴定管：過錳酸鉀會氧化橡皮管。</li>
+        <li data-en="Read the top edge of the meniscus: the solution is too dark to see the bottom.">讀彎月面的上緣：溶液顏色太深，看不到最低點。</li>
+        <li data-en="Store KMnO4 in a brown bottle, away from light, and standardise it before use.">KMnO<sub>4</sub> 溶液放在棕色瓶中避光保存，使用前要標定。</li>
+        <li data-en="Potassium permanganate stains skin and clothes brown (MnO2) and is a strong oxidising agent; sulfuric acid is corrosive. Wear safety glasses, and take care with the hot flask.">過錳酸鉀會把皮膚、衣服染成棕色（MnO<sub>2</sub>），是強氧化劑；硫酸有腐蝕性。要戴護目鏡，拿熱的錐形瓶要小心燙。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en="Why does this titration need no indicator? How faint is the pink at the end point?">為什麼這個滴定不必另加指示劑？終點的粉紅色有多淡？</li>
+        <li data-en="25.00 mL of iron(II) needs 24.60 mL of 0.0200 M KMnO4. What is the concentration of Fe2+?">25.00 mL 的亞鐵溶液用去 0.0200 M KMnO<sub>4</sub> 24.60 mL，Fe<sup>2+</sup> 的濃度是多少？</li>
+        <li data-en="0.2017 g of H2C2O4·2H2O needs 31.45 mL of KMnO4. What is the concentration of the KMnO4?">0.2017 g 的 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O 用去 KMnO<sub>4</sub> 31.45 mL，KMnO<sub>4</sub> 的濃度是多少？</li>
+        <li data-en="What goes wrong if you forget the sulfuric acid? Would hydrochloric acid do instead?">忘了加硫酸會怎樣？可以改用鹽酸嗎？</li>
+        <li data-en="Why must oxalic acid be heated, and why do the first drops lose their colour so slowly?">草酸為什麼要加熱？為什麼最初幾滴褪色特別慢？</li>
+        <li data-en="Why is the potential at the equivalence point 1.38 V and not halfway between 0.771 V and 1.507 V?">當量點的電位為什麼是 1.38 V，而不是 0.771 V 和 1.507 V 的正中間？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; is intensely purple and its product Mn&lt;sup&gt;2+&lt;/sup&gt; is practically colourless, so the first excess of permanganate shows itself. Half a drop of 0.0200 M (5 × 10&lt;sup&gt;−4&lt;/sup&gt; mmol) in 60 mL is only about 8 × 10&lt;sup&gt;−6&lt;/sup&gt; M, yet it gives a visible pink.">MnO<sub>4</sub><sup>−</sup> 顏色非常深，生成的 Mn<sup>2+</sup> 幾乎無色，所以第一點過量的過錳酸根就看得出來。半滴 0.0200 M（5 × 10<sup>−4</sup> mmol）在 60 mL 中只有約 8 × 10<sup>−6</sup> M，就已經看得到淡粉紅色。</li>
+          <li data-en-html="\(n(\mathrm{MnO_4^-}) = 0.0200 \times 24.60 = 0.492\) mmol, \(n(\mathrm{Fe^{2+}}) = 5 \times 0.492 = 2.46\) mmol, \(c = 2.46/25.00 = 0.0984\) M.">\(n(\mathrm{MnO_4^-}) = 0.0200 \times 24.60 = 0.492\) mmol，\(n(\mathrm{Fe^{2+}}) = 5 \times 0.492 = 2.46\) mmol，\(c = 2.46/25.00 = 0.0984\) M。</li>
+          <li data-en-html="\(n(\mathrm{H_2C_2O_4}) = 0.2017/126.07 = 1.600\) mmol, \(n(\mathrm{MnO_4^-}) = \tfrac{2}{5} \times 1.600 = 0.6400\) mmol, \(c = 0.6400/31.45 = 0.02035\) M.">\(n(\mathrm{H_2C_2O_4}) = 0.2017/126.07 = 1.600\) mmol，\(n(\mathrm{MnO_4^-}) = \tfrac{2}{5} \times 1.600 = 0.6400\) mmol，\(c = 0.6400/31.45 = 0.02035\) M。</li>
+          <li data-en-html="Without enough H&lt;sup&gt;+&lt;/sup&gt;, permanganate stops at brown MnO&lt;sub&gt;2&lt;/sub&gt; and takes only 3 electrons: the solution goes brown and cloudy, the end point is hard to see and too much KMnO&lt;sub&gt;4&lt;/sub&gt; is used. Hydrochloric acid will not do: permanganate oxidises Cl&lt;sup&gt;−&lt;/sup&gt; to Cl&lt;sub&gt;2&lt;/sub&gt;, which also uses up titrant (the result comes out high).">H<sup>+</sup> 不夠時，過錳酸根只還原到棕色的 MnO<sub>2</sub>、只拿 3 個電子：溶液變棕色混濁、終點看不清楚，KMnO<sub>4</sub> 也會用多。不能用鹽酸：過錳酸根會把 Cl<sup>−</sup> 氧化成 Cl<sub>2</sub>，也會消耗滴定液，結果偏高。</li>
+          <li data-en-html="The reaction has a large activation energy and is slow at room temperature; heating speeds it up (about 18 times from 25 °C to 65 °C in this model). It is also catalysed by its own product, Mn&lt;sup&gt;2+&lt;/sup&gt;. At the start there is no Mn&lt;sup&gt;2+&lt;/sup&gt; yet, so the first drops are slow; once some has formed, the drops are decolourised almost at once.">這個反應的活化能大，室溫下很慢；加熱可以加快（本模擬中 65 °C 比 25 °C 快約 18 倍）。它還被自己的產物 Mn<sup>2+</sup> 催化：一開始瓶中沒有 Mn<sup>2+</sup>，所以最初幾滴很慢；生成一些 Mn<sup>2+</sup> 之後，每一滴幾乎立刻褪色。</li>
+          <li data-en-html="The two couples do not exchange the same number of electrons. At the equivalence point \(E\) must satisfy both Nernst equations; the manganese equation carries \(s/5\), so it takes five of it to cancel one of the iron equation, and \(E_{\mathrm{eq}} = (E^\circ_{\mathrm{Fe}} + 5E^{\circ\prime}_{\mathrm{Mn}})/6\) lies five-sixths of the way towards manganese. With the acid in the flask \(E^{\circ\prime}_{\mathrm{Mn}}\) is a little below 1.507 V, so the meter shows about 1.36 V.">兩個電對交換的電子數不同。當量點的 \(E\) 要同時滿足兩條能斯特方程式；錳的式子前面是 \(s/5\)，要乘 5 倍才能抵消鐵的對數項，所以 \(E_{\mathrm{eq}} = (E^\circ_{\mathrm{Fe}} + 5E^{\circ\prime}_{\mathrm{Mn}})/6\)，落在往錳那邊六分之五的位置。瓶中 [H<sup>+</sup>] 不到 1 M，\(E^{\circ\prime}_{\mathrm{Mn}}\) 比 1.507 V 低一點，所以電位計顯示約 1.36 V。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The first drop in excess.</strong> With the defaults, run in about 24 mL, then add single drops and half drops. At 25.00 mL the flask is pale yellow (Fe&lt;sup&gt;3+&lt;/sup&gt;); half a drop more and it turns pink, and the potential jumps by more than 0.4 V."><strong>過量的第一滴</strong>：用預設值先流到大約 24 mL，再一滴一滴、半滴半滴地加。25.00 mL 時溶液是淡黃色（Fe<sup>3+</sup>）；再多半滴就變成淡粉紅色，電位跳了 0.4 V 以上。</li>
+        <li data-en-html="<strong>Half and double.</strong> With the electrode in, stop at half the equivalence volume and read 0.771 V; go on to twice the equivalence volume and the meter shows the manganese potential."><strong>一半與兩倍</strong>：插著鉑電極，停在當量點體積的一半，電位是 0.771 V；再加到兩倍，電位計顯示錳電對的電位。</li>
+        <li data-en-html="<strong>Cold and hot oxalic acid.</strong> Titrate oxalic acid at 25 °C: the first drop stays pink for minutes (try “Fast-forward”). Then heat to 65 °C and compare the first drop with a drop added a few millilitres later."><strong>冷的與熱的草酸</strong>：在 25 °C 滴定草酸，第一滴的粉紅色好幾分鐘都不褪（可以用「快轉等待」）。再加熱到 65 °C，比較第一滴和加了幾毫升之後的一滴。</li>
+        <li data-en-html="<strong>No acid.</strong> Set the sulfuric acid to 0 and watch the brown MnO&lt;sub&gt;2&lt;/sub&gt; appear."><strong>不加酸</strong>：把硫酸調成 0，看棕色的 MnO<sub>2</sub> 出現。</li>
+        <li data-en-html="<strong>The unknowns.</strong> Standardise the permanganate with weighed oxalic acid, then titrate the unknown iron(II) with the same solution and check your answers. Can you do each with a single flask?"><strong>未知樣品</strong>：先用精稱的草酸標定過錳酸鉀，再用它滴定未知的亞鐵溶液，核對答案。能不能各只用一瓶就做到？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Standard reduction potentials at 25 °C from OpenStax Chemistry 2e, Appendix L: Fe&lt;sup&gt;3+&lt;/sup&gt;/Fe&lt;sup&gt;2+&lt;/sup&gt; 0.771 V, MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt;/Mn&lt;sup&gt;2+&lt;/sup&gt; 1.507 V (often rounded to 1.51 V). Acid constants from Appendix H: HSO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; 1.2 × 10&lt;sup&gt;−2&lt;/sup&gt;, oxalic acid 6.0 × 10&lt;sup&gt;−2&lt;/sup&gt; and 6.1 × 10&lt;sup&gt;−5&lt;/sup&gt;. Molar mass of H&lt;sub&gt;2&lt;/sub&gt;C&lt;sub&gt;2&lt;/sub&gt;O&lt;sub&gt;4&lt;/sub&gt;·2H&lt;sub&gt;2&lt;/sub&gt;O 126.07 g/mol.">標準還原電位（25 °C）取自 OpenStax Chemistry 2e 附錄 L：Fe<sup>3+</sup>/Fe<sup>2+</sup> 0.771 V、MnO<sub>4</sub><sup>−</sup>/Mn<sup>2+</sup> 1.507 V（常寫成 1.51 V）。酸解離常數取自附錄 H：HSO<sub>4</sub><sup>−</sup> 1.2 × 10<sup>−2</sup>、草酸 6.0 × 10<sup>−2</sup> 與 6.1 × 10<sup>−5</sup>。草酸晶體 H<sub>2</sub>C<sub>2</sub>O<sub>4</sub>·2H<sub>2</sub>O 的莫耳質量 126.07 g/mol。</li>
+        <li data-en-html="The potential is not taken from the piecewise formulas. After every drop the electron balance \(n_{\mathrm{Fe}}\,x_{\mathrm{Fe^{3+}}}(E) = 5\,n_{\mathrm{Mn}}\,x_{\mathrm{Mn^{2+}}}(E) + 3\,n_{\mathrm{MnO_2}}\) is solved for \(E\) by bisection, with the fractions from the Nernst equation; so it is exact at the equivalence point too. The tests check it against \(E^\circ_{\mathrm{Fe}}\) at half-equivalence, the weighted average at equivalence and \(E^{\circ\prime}_{\mathrm{Mn}}\) at twice the equivalence volume. Before any permanganate is added, 0.1% of the iron is assumed to be Fe&lt;sup&gt;3+&lt;/sup&gt; already (air oxidation). Activity coefficients are taken as 1 and potentials are calculated for 25 °C.">電位不是分段套公式：每加一滴，就用二分法解電子平衡 \(n_{\mathrm{Fe}}\,x_{\mathrm{Fe^{3+}}}(E) = 5\,n_{\mathrm{Mn}}\,x_{\mathrm{Mn^{2+}}}(E) + 3\,n_{\mathrm{MnO_2}}\)，各型的比例由能斯特方程式算出，所以當量點也是精確解。測試裡用半當量點的 \(E^\circ_{\mathrm{Fe}}\)、當量點的加權平均、兩倍當量點的 \(E^{\circ\prime}_{\mathrm{Mn}}\) 核對。還沒加過錳酸鉀時，假設已有 0.1% 的鐵被空氣氧化成 Fe<sup>3+</sup>。活性係數當成 1，電位一律以 25 °C 計算。</li>
+        <li data-en-html="[H&lt;sup&gt;+&lt;/sup&gt;] comes from a proton balance of the sulfuric acid (second step) and oxalic acid; the H&lt;sup&gt;+&lt;/sup&gt; used by the reaction is subtracted. When [H&lt;sup&gt;+&lt;/sup&gt;] falls below 0.1 M, a fraction \((1 - [\mathrm{H^+}]/0.1\ \mathrm{M})^2\) of the permanganate is reduced only to MnO&lt;sub&gt;2&lt;/sub&gt; — a teaching approximation of the observed behaviour, not a literature formula.">[H<sup>+</sup>] 由硫酸（第二步解離）與草酸的質子平衡算出，並扣掉反應用掉的 H<sup>+</sup>。[H<sup>+</sup>] 低於 0.1 M 時，有 \((1 - [\mathrm{H^+}]/0.1\ \mathrm{M})^2\) 的過錳酸根只還原成 MnO<sub>2</sub>——這是描述實際現象的教學近似，不是文獻公式。</li>
+        <li data-en-html="Iron(II) reacts instantly. The rate of the oxalic acid reaction is illustrative, not a literature value: first order in MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; with \(k = k_0(T)\,(1 + [\mathrm{Mn^{2+}}]/1.0\times10^{-4}\ \mathrm{M})\), \(k_0\) = 1/20 s&lt;sup&gt;−1&lt;/sup&gt; at 65 °C and an activation energy of 60 kJ/mol. Above 85 °C oxalic acid decomposes at 1.0 × 10&lt;sup&gt;−4&lt;/sup&gt; s&lt;sup&gt;−1&lt;/sup&gt;, doubling every 5 °C (also illustrative). The hot plate holds the flask at the set temperature.">Fe<sup>2+</sup> 的反應視為瞬間完成。草酸的反應速率是教學示意值，不是文獻值：對 MnO<sub>4</sub><sup>−</sup> 一階，\(k = k_0(T)\,(1 + [\mathrm{Mn^{2+}}]/1.0\times10^{-4}\ \mathrm{M})\)，65 °C 時 \(k_0\) = 1/20 s<sup>−1</sup>，活化能 60 kJ/mol。超過 85 °C 時草酸以 1.0 × 10<sup>−4</sup> s<sup>−1</sup> 分解、每升高 5 °C 加倍（也是示意值）。加熱板讓錐形瓶保持在設定的溫度。</li>
+        <li data-en-html="Colour: the absorbances of MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt; (strongest in green light, molar absorptivity about 2.4 × 10&lt;sup&gt;3&lt;/sup&gt; M&lt;sup&gt;−1&lt;/sup&gt; cm&lt;sup&gt;−1&lt;/sup&gt;), Fe&lt;sup&gt;3+&lt;/sup&gt;, Fe&lt;sup&gt;2+&lt;/sup&gt; and MnO&lt;sub&gt;2&lt;/sub&gt; in red, green and blue light (approximate teaching values) are added over a 4 cm path and turned into transmitted light (Beer’s law). The flask counts as pink when [MnO&lt;sub&gt;4&lt;/sub&gt;&lt;sup&gt;−&lt;/sup&gt;] ≥ 4 × 10&lt;sup&gt;−6&lt;/sup&gt; M.">顏色：MnO<sub>4</sub><sup>−</sup>（綠光吸收最強，莫耳吸收係數約 2.4 × 10<sup>3</sup> M<sup>−1</sup> cm<sup>−1</sup>）、Fe<sup>3+</sup>、Fe<sup>2+</sup>、MnO<sub>2</sub> 在紅、綠、藍光的吸光度（教學用近似值）以 4 cm 光程相加，再換成穿透光的顏色（比爾定律）。[MnO<sub>4</sub><sup>−</sup>] ≥ 4 × 10<sup>−6</sup> M 時算整瓶呈粉紅色。</li>
+        <li data-en="Volumes are counted exactly in half drops (0.025 mL). The unknown permanganate is 0.0150–0.0250 M and the unknown iron(II) 0.060–0.140 M, chosen at random; answers are checked by their relative error. The liquid height in the flask follows the shape of a real 250 mL conical flask; the rest of the drawing is not to scale.">體積以半滴（0.025 mL）為單位精確累計。未知的過錳酸鉀 0.0150–0.0250 M、未知的亞鐵 0.060–0.140 M，隨機產生；答案以相對誤差判斷。錐形瓶裡的液面高度依真實 250 mL 錐形瓶的形狀計算，其餘畫面未依比例。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high elective chemistry · Redox reactions (oxidation numbers, redox titration, standard reduction potentials).">課綱對應：高中選修化學・氧化還原反應（氧化數、氧化還原滴定、標準還原電位）。</li>
+        <li data-en-html="<a href=&quot;https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials&quot;>OpenStax Chemistry 2e, Appendix L: Standard Electrode (Half-Cell) Potentials</a> and <a href=&quot;https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids&quot;>Appendix H: Ionization Constants of Weak Acids</a>."><a href="https://openstax.org/books/chemistry-2e/pages/l-standard-electrode-half-cell-potentials">OpenStax Chemistry 2e 附錄 L：標準還原電位</a>、<a href="https://openstax.org/books/chemistry-2e/pages/h-ionization-constants-of-weak-acids">附錄 H：弱酸的解離常數</a>（英文）。</li>
+        <li data-en-html="<a href=&quot;https://openstax.org/books/chemistry-2e/pages/17-3-electrode-and-cell-potentials&quot;>OpenStax Chemistry 2e — 17.3 Electrode and Cell Potentials</a> and 17.4 (the Nernst equation).">延伸閱讀：<a href="https://openstax.org/books/chemistry-2e/pages/17-3-electrode-and-cell-potentials">OpenStax Chemistry 2e 17.3 電極電位與電池電位</a>、17.4 能斯特方程式（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/redox-titration-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/redox-titration.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="redox-titration"></script>
+  <script src="js/missions/redox-titration.js"></script>
+  <script src="js/stats.js" data-module="redox-titration"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

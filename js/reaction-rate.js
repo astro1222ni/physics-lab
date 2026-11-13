@@ -820,7 +820,7 @@
   function describeCanvas() {
     if (!cur) return;
     const s = cur.sim;
-    cv.setAttribute('aria-label', T('反應容器（立體透視圖）：', 'Reaction box (perspective drawing): ') + 'A ' + s.count[0] + '、B ' + s.count[1] + '、C ' + s.count[2] + '、D ' + s.count[3] +
+    cv.setAttribute('aria-label', T('反應容器（立體透視圖）：', 'Reaction box (perspective drawing): ') + 'A ' + s.count[0] + T('、B ', ', B ') + s.count[1] + T('、C ', ', C ') + s.count[2] + T('、D ', ', D ') + s.count[3] +
       T(' 個分子，溫度 ', ' molecules, temperature ') + num(cur.Tgas, 0) + ' K' + T('，經過 ', ', time ') + num(s.t, 0) + ' ps' + T('。', '.'));
   }
 

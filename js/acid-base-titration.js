@@ -68,13 +68,15 @@
   function colourName(ind, fb) {
     const I = K.INDICATORS[ind];
     if (!I) return T('無色', 'colourless');
+    // 顏色名稱的分界跟著課本的變色範圍 lo–hi 走（換算成鹼型比例）
+    const fLo = K.indicatorFraction(ind, I.lo), fHi = K.indicatorFraction(ind, I.hi);
     if (ind === 'php') {
-      if (fb < 0.05) return T('無色', 'colourless');
+      if (fb < fLo) return T('無色', 'colourless');
       if (fb < 0.5) return T('淡粉紅', 'pale pink');
       return T('粉紅', 'pink');
     }
-    if (fb < 0.1) return T(I.acidName[0], I.acidName[1]);
-    if (fb > 0.9) return T(I.baseName[0], I.baseName[1]);
+    if (fb < fLo) return T(I.acidName[0], I.acidName[1]);
+    if (fb > fHi) return T(I.baseName[0], I.baseName[1]);
     const mid = { mo: ['橙', 'orange'], mr: ['橙', 'orange'], btb: ['綠', 'green'] }[ind];
     return T(mid[0], mid[1]);
   }
@@ -817,26 +819,36 @@
   }
 
   // ======================= 動畫與液滴 =======================
-  let raf = 0, lastT = 0, lastGraph = 0, onScreen = true, skip = false;
+  let raf = 0, lastT = 0, lastGraph = 0, onScreen = true, skip = false, inFrame = false;
+  // 3D 檢視（js/acid-base-titration-3d.js）：開著時由同一條動畫迴圈畫 3D，不另開迴圈
+  let view3 = null, onScreen3 = true;
+  function shown() { return view3 ? onScreen3 : onScreen; }
+  function paint() { if (view3) view3.frame(); else drawBench(); }
   function busy() {
     return state.tap || state.pendingSettle || state.drops.length > 0 || state.plumes.length > 0 || state.ripples.length > 0 ||
       state.flash > 0 || (state.tag && state.tag.t > 0) || Math.abs(state.cock - (state.tap ? 1 : 0)) > 1e-3;
   }
   function frame(now) {
     raf = 0;
-    const dt = Math.min(1 / 30, Math.max(0, (now - lastT) / 1000));
+    // 畫面動畫的 dt 有上限（切回分頁時不會一次跳太多）；活栓的流量用真實經過的時間（最多 0.25 s），標示的 mL/s 才名實相符
+    const raw = Math.max(0, (now - lastT) / 1000);
     lastT = now;
-    step(dt);
-    const b = busy();
+    inFrame = true;
+    try { step(Math.min(1 / 30, raw), Math.min(0.25, raw)); } finally { inFrame = false; }
+    const b = busy(), vis = shown();
     // 只有攪拌子在轉時，約 30 fps 就夠了；畫布捲出畫面時不畫，但活栓開著、液滴還在空中就照樣流（曲線與讀數繼續更新）
-    if (onScreen && (b || !skip || reduced)) drawBench();
+    // 3D 檢視正在轉動視角時每一幀都畫，轉起來才順
+    if (vis && (b || !skip || reduced || (view3 && view3.moving()))) paint();
     skip = !skip;
     if (graphDirty && now - lastGraph > 120) { lastGraph = now; drawGraph(); renderReadouts(); }
-    if (!document.hidden && (onScreen ? (b || !reduced) : b)) raf = requestAnimationFrame(frame);
+    if (!raf && !document.hidden && (vis ? (b || !reduced || (view3 && view3.moving())) : b)) raf = requestAnimationFrame(frame);
   }
   function kick() {
-    if (raf || document.hidden) { if (!raf) drawBench(); return; }
-    if (!onScreen && !busy()) { drawBench(); return; }
+    // frame() 執行中（例如活栓放出一滴）不另開一條動畫迴圈：frame 結束時自己會排下一幀。
+    // 以前這裡會在 raf 剛歸零時再排一次，每放一滴就多一條迴圈，滴越多越卡（11/12 修正）。
+    if (inFrame) return;
+    if (raf || document.hidden) { if (!raf) paint(); return; }
+    if (!shown() && !busy()) { paint(); return; }
     lastT = performance.now();
     raf = requestAnimationFrame(frame);
   }
@@ -845,13 +857,14 @@
     new IntersectionObserver(function (es) { onScreen = es[es.length - 1].isIntersecting; if (onScreen) kick(); }).observe(cv);
   }
 
-  function step(dt) {
+  function step(dt, flowDt) {
+    if (flowDt == null) flowDt = dt;
     if (!reduced) state.stir = (state.stir + STIR_W * dt) % (Math.PI * 200);
     const target = state.tap ? 1 : 0;
     state.cock += Math.sign(target - state.cock) * Math.min(Math.abs(target - state.cock), dt / 0.15);
     // 活栓開著：依流速累積，每 2 單位（0.05 mL）成一滴
     if (state.tap) {
-      state.acc += state.rate * U * dt;
+      state.acc += state.rate * U * flowDt;
       while (state.acc >= DROP && state.tap) {
         state.acc -= DROP;
         release(DROP, false);
@@ -923,7 +936,7 @@
         if (state.plumes.length > 8) state.plumes.shift();
       }
       // 滴落處出現顏色、攪勻後又消失：快到終點了
-      if (!r.hinted && r.changedAt == null && Math.abs(fbLoc - K.indicatorFraction(state.ind, r.pH0)) > 0.35 && Math.abs(fbBulk - K.indicatorFraction(state.ind, r.pH0)) < K.CHANGE) {
+      if (!r.hinted && r.changedAt == null && Math.abs(fbLoc - K.indicatorFraction(state.ind, r.pH0)) > 0.35 && !K.changed(state.ind, r.pH0, r.pH)) {
         r.hinted = true;
         setStatus(T('滴落的地方出現了顏色，攪勻後又消失：快到終點了，改成一滴一滴加。', 'Colour appears where the drop lands and fades as it mixes in: the end point is close — go drop by drop.'));
       }
@@ -1117,7 +1130,8 @@
         g.save(); g.setLineDash([3, 3]); g.strokeStyle = LD.alpha(C.text, 0.45); g.lineWidth = 1;
         g.beginPath(); g.moveTo(x0, py); g.lineTo(px, py); g.lineTo(px, y1); g.stroke(); g.restore();
         LD.ball(g, px, py, 4, C.sys[p.sys], { shadow: false });
-        const lab = p.sys === 'wb' ? T('半當量點 pH ' + f2(ph) + '（= 14 − pKb）', 'half-equivalence pH ' + f2(ph) + ' (= 14 − pKb)') : T('半當量點 pH = pKa = ' + f2(ph), 'half-equivalence: pH = pKa = ' + f2(ph));
+        const pk = halfRef(p);
+        const lab = p.sys === 'wb' ? T('半當量點 pH ' + f2(ph) + '（≈ 14 − pKb = ' + f2(pk) + '）', 'half-equivalence pH ' + f2(ph) + ' (≈ 14 − pKb = ' + f2(pk) + ')') : T('半當量點 pH ' + f2(ph) + '（≈ pKa ' + f2(pk) + '）', 'half-equivalence pH ' + f2(ph) + ' (≈ pKa ' + f2(pk) + ')');
         const up = p.sys === 'wb' ? py + 24 : py - 8;
         pillGraph(g, lab, px - 6, up, C.text, 'right', x0, x1);
       }
@@ -1262,12 +1276,17 @@
     }
     $('readout').innerHTML = dl(rows);
   }
+  /** 半當量點要對照的值：弱酸的 pKa；弱鹼的 14 − pKb（= NH4+ 的 pKa） */
+  function halfRef(p) { return K.pKaOf(p); }
   function renderAnalysis() {
     const r = state.run, p = r.p, hid = mysteryHidden(), rows = [];
     const weak = K.SYSTEMS[p.sys].kind !== 'strong-acid';
     rows.push([T('當量點體積（理論）', 'Equivalence volume (theory)') + '<small>V<sub>eq</sub> = c<sub>a</sub>V<sub>a</sub> / c<sub>b</sub></small>', hid ? '？' : r.Veq.toFixed(2) + ' mL']);
     rows.push([T('當量點的 pH（理論）', 'pH at equivalence (theory)'), hid ? '？' : f2(r.pHeq)]);
-    if (weak) rows.push([p.sys === 'wb' ? T('半當量點的 pH（= 14 − pK<sub>b</sub>）', 'pH at half-equivalence (= 14 − pK<sub>b</sub>)') : T('半當量點的 pH（= pK<sub>a</sub>）', 'pH at half-equivalence (= pK<sub>a</sub>)'), hid ? '？' : f2(K.pH(p, r.Veq / 2))]);
+    if (weak) {
+      rows.push([p.sys === 'wb' ? T('半當量點的 pH（≈ 14 − pK<sub>b</sub>）', 'pH at half-equivalence (≈ 14 − pK<sub>b</sub>)') : T('半當量點的 pH（≈ pK<sub>a</sub>）', 'pH at half-equivalence (≈ pK<sub>a</sub>)'), hid ? '？' : f2(K.pH(p, r.Veq / 2))]);
+      rows.push([p.sys === 'wb' ? '14 − pK<sub>b</sub>' : 'pK<sub>a</sub>', hid ? '？' : f2(halfRef(p))]);
+    }
     if (r.endpoint != null) {
       rows.push([T('你記錄的終點', 'Your end point'), vRead(r.endpoint * U) + ' mL', 'good']);
       if (!hid) {
@@ -1341,6 +1360,8 @@
     $('mysCard').hidden = sys !== 'mx';
     const th = $('theory');
     th.disabled = mysteryHidden();
+    // 停用時理論曲線並沒有畫：勾選框要顯示實際狀態（不打勾），恢復時再顯示學生原本的選擇
+    th.checked = !th.disabled && state.theory;
     th.parentElement.style.opacity = th.disabled ? '0.5' : '';
     th.parentElement.title = th.disabled ? T('未知弱酸揭曉答案後才能看理論曲線', 'Available after the unknown acid is revealed') : '';
   }
@@ -1526,7 +1547,15 @@
   $('drop').addEventListener('click', function () { addButton(DROP); });
   $('half').addEventListener('click', function () { addButton(HALF); });
   $('tap').addEventListener('click', function () {
-    if (state.tap) { closeTap(); kick(); return; }
+    if (state.tap) {
+      closeTap();
+      // 滴定管讀數在關上的那一刻就停了；已經離開管口、還在空中的液滴會照樣落進瓶裡（2 mL/s 時約 0.3 mL）
+      const air = state.drops.reduce(function (s, d) { return s + d.n; }, 0) / U;
+      setStatus(air >= 0.05
+        ? T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。已經在空中的約 ' + air.toFixed(2) + ' mL 還會落進瓶裡，讀數已經算進去了。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL. About ' + air.toFixed(2) + ' mL already in the air will still fall into the flask; the reading already includes it.')
+        : T('活栓關上了，滴定管讀數 ' + vRead(state.run.fill) + ' mL。', 'Stopcock closed at a burette reading of ' + vRead(state.run.fill) + ' mL.'));
+      kick(); return;
+    }
     if (K.BURETTE_UNITS - state.run.fill <= 0) { emptyNotice(); return; }
     state.tap = true; state.acc = 0;
     sndClick();
@@ -1674,6 +1703,106 @@
     }
   });
 
+  // ======================= 3D 檢視 =======================
+  // three.js 只在按「3D 立體」時才下載；3D 只讀這裡的狀態來畫，任務事件仍由上面的 2D 程式送出
+  let threeLib = null, loadToken = 0;
+  const stage = $('stage'), host3 = $('view3'), viewMsg = $('viewMsg');
+  if (window.IntersectionObserver) {
+    new IntersectionObserver(function (es) { onScreen3 = es[es.length - 1].isIntersecting; if (onScreen3 && view3) kick(); }).observe(host3);
+  }
+  function webglAvailable() {
+    try {
+      const c = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl')));
+    } catch (e) { return false; }
+  }
+  function loadThree() {
+    if (threeLib) return Promise.resolve(threeLib);
+    const base = new URL('vendor/three/', document.baseURI).href;
+    return Promise.all([import(base + 'three.module.min.js'), import(base + 'OrbitControls.js')]).then(function (mods) {
+      threeLib = { THREE: mods[0], OrbitControls: mods[1].OrbitControls };
+      return threeLib;
+    });
+  }
+  function host3Api() {
+    return {
+      T: T, host: host3, reduced: reduced,
+      colors: function () { return C; },
+      rgb: LD.rgb, mix: LD.mix,
+      st: state, U: U, DROP: DROP, STREAM_RATE: STREAM_RATE,
+      flask: FL,
+      /** 體積（mL）→ 錐形瓶液面高（cm），與 2D 同一個公式 */
+      hCm: function (V) { return hPx(V) / FL.px; },
+      vt: vtLanded,
+      liquid: function () { return liquidRGB(state.ind, state.run.pH, vtLanded()); },
+      /** 空中液滴落下的進度（0 = 剛離開尖端，1 = 到液面），取自 2D 的同一顆液滴 */
+      fall: function (d) { const ys = surfaceY(); return Math.max(0, Math.min(1, (d.y - VY.tip - dropRadius(d.n)) / Math.max(1, ys - VY.tip - dropRadius(d.n)))); },
+      lcd: function () { return state.meter ? f2(Math.max(0, Math.min(14, state.run.pH))).padStart(5, ' ') : '--.--'; },
+      hud: function () {
+        const r = state.run, cn = state.ind === 'none' ? T('無色', 'colourless') : colourName(state.ind, K.indicatorFraction(state.ind, r.pH));
+        return {
+          tl: T('滴定管讀數 ', 'Burette reading ') + vRead(r.fill) + ' mL',
+          tr: (state.meter ? 'pH ' + f2(r.pH) + T('・', ' · ') : T('pH 計不在瓶中・', 'meter out · ')) + T('溶液', 'solution ') + cn,
+          tag: state.tag && state.tag.t > 0 ? state.tag.text : ''
+        };
+      },
+      kick: kick,
+      contextLost: function () {
+        setView('2d');
+        viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D 平面。', 'The 3D graphics context was lost, so the view switched back to 2D.');
+      }
+    };
+  }
+  function setPressed(mode) {
+    $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
+    $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
+  }
+  function camButtons(on) { $('cam3').hidden = !on; }
+  function setView(mode) {
+    if (mode === '3d') {
+      if (view3 && view3.active) return;
+      const token = ++loadToken;
+      setPressed('3d');
+      if (!webglAvailable() || !window.Titr3D) { fail3D(); return; }
+      viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
+      loadThree().then(function (lib) {
+        if (token !== loadToken) return;
+        stage.classList.add('is3d');
+        view3 = window.Titr3D.create(lib, host3Api());
+        viewMsg.textContent = '';
+        camButtons(true);
+        kick();
+        if (view3) view3.frame();
+      }).catch(function (err) {
+        if (token !== loadToken) return;
+        if (window.console) console.warn('3D view unavailable:', err);
+        fail3D();
+      });
+    } else {
+      loadToken++;
+      setPressed('2d');
+      if (view3) { view3.dispose(); view3 = null; }
+      stage.classList.remove('is3d');
+      camButtons(false);
+      if (/3D/.test(viewMsg.textContent) && !/2D/.test(viewMsg.textContent)) viewMsg.textContent = '';
+      resizeBench(); drawBench(); kick();
+    }
+  }
+  function fail3D() {
+    if (view3) { try { view3.dispose(); } catch (e) { /* 忽略 */ } view3 = null; }
+    stage.classList.remove('is3d');
+    setPressed('2d');
+    camButtons(false);
+    viewMsg.textContent = T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D 平面。',
+      'The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');
+    resizeBench(); drawBench(); kick();
+  }
+  $('view2d').addEventListener('click', function () { setView('2d'); });
+  $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+  $('camFlask').addEventListener('click', function () { if (view3) view3.view('flask'); });
+  $('camEye').addEventListener('click', function () { if (view3) view3.view('eye'); });
+
   // ======================= 啟動 =======================
   readColors();
   newSample();
@@ -1687,7 +1816,7 @@
   newRun(false);
   indSwatches();
   updateSoundButton();
-  function themeChanged() { readColors(); indSwatches(); if (L) buildStatic(); renderAll(); }
+  function themeChanged() { readColors(); indSwatches(); if (L) buildStatic(); if (view3) view3.onTheme(); renderAll(); }
   window.addEventListener('lab:themechange', themeChanged);
   if (window.matchMedia) {
     const dm = window.matchMedia('(prefers-color-scheme: dark)');

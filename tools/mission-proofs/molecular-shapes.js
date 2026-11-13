@@ -104,9 +104,15 @@ function removeLP(pg, label) { pg.spec.lp--; pg.doms.pop(); pg.U.pop(); return b
 /** 拖動第 i 個電子域到方向 u（拖動中其他電子域被推開），放手後穩定（放手不自動搖） */
 function drag(pg, i, u, label) {
   const start = pg.U[i].slice();
-  pg.U[i] = VC.unit(u);
-  pg.U = VC.relax(pg.doms, pg.U, pg.P, { pin: i, tol: 1e-9 }).U;
-  const ang = VC.angleDeg(start, pg.U[i]);
+  // 和頁面一樣：放在另一個電子域原本的位置 20° 以內就換位（VC.dropSwap）；否則抓著它、其他電子域被推開
+  const sw = VC.dropSwap(pg.U, i, VC.unit(u), 20);
+  let ang;
+  if (sw) { ang = VC.angleDeg(start, u); pg.U = sw.U; }
+  else {
+    pg.U[i] = VC.unit(u);
+    pg.U = VC.relax(pg.doms, pg.U, pg.P, { pin: i, tol: 1e-9 }).U;
+    ang = VC.angleDeg(start, pg.U[i]);
+  }
   settle(pg);
   return settleEv(pg, 'drag', label + '（拖動 ' + ang.toFixed(1) + '°，' + (pg.info.isGlobal ? '能量最低' : '局部最低') + '）', { dragAngle: ang });
 }
@@ -263,6 +269,80 @@ console.log('\n=== h3：帶電、有孤對電子，形狀仍然對稱 ===');
   // 自動補搖是機率性的：還停在局部最低點時，學生會照狀態列的提示按「搖一搖（退火）」
   if (!pg.info.isGlobal) shake(pg, '狀態列說還在局部最低點，按「搖一搖（退火）」→ 直線形 → h3');
   else console.log('  （已經是能量最低的直線形）→ h3');
+}
+
+
+console.log('\n=== h4–h10（每個做法只完成它自己這個隱藏任務） ===');
+{
+  const isHid = id => /-h\d+$/.test(id);
+  let hbad = 0;
+  const only = (hits, id, what) => {
+    const h = hits.map(m => m.id).filter(isHid);
+    const extra = h.filter(x => x !== id);
+    if (extra.length) { hbad++; console.log('  ✗ ' + what + ' 順便完成了 ' + extra.join('、')); }
+  };
+  let pg, hits;
+  // h4：SF6 量相對的兩個鍵
+  pg = newPage(); preset(pg, 'SF6', '按 SF6');
+  { const B = bondIdx(pg); let j = B[1]; B.forEach(k => { if (VC.angleDeg(pg.U[B[0]], pg.U[k]) > 179) j = k; });
+    hits = measure(pg, B[0], j, '量 SF6 兩個相對的 S–F → h4'); only(hits, 'molecular-shapes-h4', 'h4'); }
+  // h5：水的鍵角調回 109.47°
+  pg = newPage(); preset(pg, 'H2O', '按 H2O');
+  hits = setLam(pg, 0.46, '排斥強度調到 0.46（水 ' + (() => { const U = VC.globalMin(VC.domainsOf(VC.preset('H2O')), VC.params(0.46)).U; return VC.angleDeg(U[0], U[1]).toFixed(2); })() + '°）→ h5');
+  only(hits, 'molecular-shapes-h5', 'h5');
+  // h6：自組 XeF2Cl2，把一個 Cl 拖到 F 的位置換位，變成順式 → 極性
+  pg = newPage(); setSpec(pg, { center: 'Xe', ligs: ['F', 'F', 'Cl', 'Cl'], lp: 2 }); pg.custom = true; pg.preset = null;
+  built(pg, '自己組合 XeF2Cl2（' + (pg.info && pg.info.polar ? '極性' : '非極性') + '）');
+  {
+    const B = bondIdx(pg), cl = B.filter(i => pg.doms[i].lig === 'Cl'), f = B.filter(i => pg.doms[i].lig === 'F');
+    // 找一個和 cl[0] 相對（180°）的 F 以外：把 cl[1] 換到和 cl[0] 相鄰的 F 位置
+    const nb = f.find(i => Math.abs(VC.angleDeg(pg.U[cl[0]], pg.U[i]) - 90) < 5);
+    const tgt = cl.find(i => i !== cl[0] && Math.abs(VC.angleDeg(pg.U[cl[0]], pg.U[i]) - 90) > 5);
+    if (tgt != null && nb != null) hits = drag(pg, tgt, pg.U[nb].slice(), '把一個 Cl 拖到和另一個 Cl 相鄰的 F 上換位 → 順式 → h6');
+    else hits = [];
+    only(hits, 'molecular-shapes-h6', 'h6');
+  }
+  // h7：XeF4 把孤對電子拖到 F 上換位（兩對孤對電子相鄰，局部最低點），再搖一搖
+  pg = newPage(); preset(pg, 'XeF4', '按 XeF4');
+  { const L = lpIdx(pg), B = bondIdx(pg); drag(pg, L[0], pg.U[B[0]].slice(), '把一對孤對電子拖到 F 上換位'); }
+  hits = shake(pg, '搖一搖 → h7');
+  for (let k = 0; k < 3 && !pg.info.isGlobal; k++) { const L = lpIdx(pg), B = bondIdx(pg); drag(pg, L[0], pg.U[B[0]].slice(), '還是局部最低：再把孤對電子拖到 F 上'); hits = shake(pg, '再搖一搖 → h7'); }
+  only(hits, 'molecular-shapes-h7', 'h7');
+  // h8：自己組合 COCl2
+  pg = newPage(); setSpec(pg, { center: 'C', ligs: ['Cl', 'Cl', 'O'], lp: 0 }); pg.custom = true; pg.preset = null;
+  hits = built(pg, '自己組合 COCl2（Cl–C–Cl ' + '…）→ h8');
+  { const B = bondIdx(pg).filter(i => pg.doms[i].lig === 'Cl'); console.log('    （Cl–C–Cl = ' + VC.angleDeg(pg.U[B[0]], pg.U[B[1]]).toFixed(2) + '°）'); }
+  only(hits, 'molecular-shapes-h8', 'h8');
+  // h9：自己組合 SF2Cl2Br2，相同的原子兩兩相對
+  pg = newPage(); setSpec(pg, { center: 'S', ligs: ['F', 'F', 'Cl', 'Cl', 'Br', 'Br'], lp: 0 }); pg.custom = true; pg.preset = null;
+  built(pg, '自己組合 SF2Cl2Br2');
+  if (!done['molecular-shapes-h9']) {
+    // 還不是非極性：把相同原子換到相對的位置
+    for (const el of ['F', 'Cl', 'Br']) {
+      const B = bondIdx(pg), mine = B.filter(i => pg.doms[i].lig === el);
+      if (Math.abs(VC.angleDeg(pg.U[mine[0]], pg.U[mine[1]]) - 180) < 5) continue;
+      const opp = B.find(i => Math.abs(VC.angleDeg(pg.U[mine[0]], pg.U[i]) - 180) < 5);
+      hits = drag(pg, mine[1], pg.U[opp].slice(), '把 ' + el + ' 換到另一個 ' + el + ' 的對面');
+      if (done['molecular-shapes-h9']) break;
+    }
+  }
+  console.log('    （SF2Cl2Br2 ' + (pg.info.polar ? '極性' : '非極性') + '）');
+  // h10：XeF2 把孤對電子拖到軸向 F 的位置換位（局部最低點），再搖一搖
+  pg = newPage(); preset(pg, 'XeF2', '按 XeF2');
+  { const L = lpIdx(pg), B = bondIdx(pg); drag(pg, L[0], pg.U[B[0]].slice(), '把一對孤對電子拖到 F 上換位'); }
+  hits = shake(pg, '搖一搖 → h10');
+  for (let k = 0; k < 3 && !pg.info.isGlobal; k++) { const L = lpIdx(pg), B = bondIdx(pg); drag(pg, L[0], pg.U[B[0]].slice(), '還是局部最低：再把孤對電子拖到 F 上'); hits = shake(pg, '再搖一搖 → h10'); }
+  only(hits, 'molecular-shapes-h10', 'h10');
+  // 反例：預設排斥強度的水、自組 BF3（沒有雙鍵）、只按 XeF4 不拖、SF4 搖一搖，都不算
+  pg = newPage(); log = false;
+  const before = Object.keys(done).length;
+  preset(pg, 'H2O'); setLam(pg, 0.7);
+  setSpec(pg, { center: 'B', ligs: ['F', 'F', 'F'], lp: 0 }); pg.custom = true; pg.preset = null; built(pg, 'BF3');
+  preset(pg, 'XeF4'); shake(pg, 'XeF4 直接搖');
+  log = true;
+  console.log((Object.keys(done).length === before ? '  ✓' : '  ✗') + ' 反例（預設強度的水、自組 BF3、XeF4 直接搖）不觸發新的任務');
+  if (Object.keys(done).length !== before) hbad++;
+  if (hbad) { console.log('  ✗ 有 ' + hbad + ' 項隱藏任務互相連帶或反例誤觸'); process.exitCode = 1; }
 }
 
 console.log('\n=== 結果 ===');

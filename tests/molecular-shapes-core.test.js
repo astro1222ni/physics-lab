@@ -474,4 +474,34 @@ test('電負度（鮑林）與價電子數', function () {
   assert.strictEqual(VC.ELEMENTS.Xe.v, 8); assert.strictEqual(VC.ELEMENTS.N.v, 5); assert.strictEqual(VC.ELEMENTS.Be.v, 2);
 });
 
+test('放手換位：SF4 孤對電子換到軸向 → 局部最低點；XeF2Cl2 順式換成反式 → 能量最低、非極性', function () {
+  const P = VC.params(VC.MODEL.lam);
+  const settle = function (doms, U) {
+    for (let k = 0; k < 900; k++) U = VC.flow(doms, U, P, 1 / 60, { mob: 1, maxRate: 2.4, tail: true }).U;
+    return VC.relax(doms, U, P, { tol: 1e-10 }).U;
+  };
+  // 沒落在別人的位置附近：不換
+  assert.strictEqual(VC.dropSwap(VC.IDEAL[4], 0, VC.unit([0, 0, 1]), 20), null);
+  const d = VC.domainsOf(VC.preset('SF4')), g = VC.globalMin(d, P);
+  const li = d.findIndex(function (x) { return x.k === 'L'; });
+  const ax = g.U.map(function (u, i) { return i; }).filter(function (i) { return d[i].k === 'B' && VC.angleDeg(g.U[i], g.U[li]) < 105; });
+  // 放在軸向 F 原本位置的 15° 內
+  const off = VC.unit(VC.rotate(g.U[ax[0]], VC.unit(VC.cross(g.U[ax[0]], g.U[li])), 15 * Math.PI / 180));
+  near(VC.angleDeg(off, g.U[ax[0]]), 15, 1e-6);
+  const sw = VC.dropSwap(g.U, li, off, 20);
+  assert.ok(sw && sw.j === ax[0], '應該和軸向的 F 換位');
+  const U = settle(d, sw.U);
+  assert.ok(VC.axialFlags(U)[li], '孤對電子留在軸向');
+  assert.ok(!VC.isGlobal(VC.energy(d, U, P), g.E), '是局部最低點，不是能量最低');
+  const spec = { center: 'Xe', ligs: ['F', 'F', 'Cl', 'Cl'], lp: 2 }, d2 = VC.domainsOf(spec), g2 = VC.globalMin(d2, P);
+  let V = g2.U.map(function (u) { return u.slice(); });
+  if (VC.angleDeg(V[2], V[3]) > 150) V = VC.dropSwap(V, 3, V[0], 1).U;       // 先排成順式
+  assert.ok(Math.abs(VC.angleDeg(V[2], V[3]) - 90) < 1);
+  const opp = [0, 1].filter(function (j) { return VC.angleDeg(V[j], V[2]) > 150; })[0];
+  const W = settle(d2, VC.dropSwap(V, 3, V[opp], 20).U);                       // 第二個 Cl 放到第一個 Cl 對面那個 F 的位置
+  assert.ok(VC.angleDeg(W[2], W[3]) > 179, '換成反式');
+  assert.ok(VC.isGlobal(VC.energy(d2, W, P), g2.E));
+  assert.ok(!VC.dipole(spec, d2, W).polar, '反式是非極性');
+});
+
 console.log(`\n分子的形狀核心：${passed} 項通過`);

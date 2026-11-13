@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Crystal Structures and Packing | Astro Ni Science Lab">晶體結構與堆積｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 晶體結構與堆積頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .cs canvas { aspect-ratio: auto; }
+    .cs #cv { height: 440px; touch-action: none; cursor: grab; }
+    .cs #cv:active { cursor: grabbing; }
+    .cs #gcv { height: 300px; touch-action: manipulation; }
+    .cs + .cs { margin-top: 16px; }
+    .cs button { min-height: 44px; }
+    .cs [hidden] { display: none !important; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .view-bar .vb-r { display: flex; flex-wrap: wrap; gap: 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: 70%; }
+    .r3-hud:empty { display: none; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    @media (max-width: 639px) { .r3-hud.tl { max-width: 44%; overflow-wrap: anywhere; } .r3-hud.tr { max-width: 52%; } }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .seg2, .seg3, .seg4 { display: grid; gap: 6px; }
+    .seg2 { grid-template-columns: repeat(2, 1fr); }
+    .seg3 { grid-template-columns: repeat(3, 1fr); }
+    .seg4 { grid-template-columns: repeat(4, 1fr); }
+    @media (max-width: 1100px) and (min-width: 821px) { .cs .panel .seg4 { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 520px) { .seg4 { grid-template-columns: repeat(2, 1fr); } }
+    .seg2 button, .seg3 button, .seg4 button { padding: 4px 4px; line-height: 1.2; }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"], .seg4 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .seg4 button:disabled, .seg3 button:disabled { opacity: .45; cursor: not-allowed; }
+    .cs .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cs .playbar > button { flex: 1 1 auto; }
+    .cs .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .cs .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .cs .card h3 { font-size: calc(14px * var(--fs, 1)); margin: 10px 0 6px; color: var(--muted); font-weight: 600; }
+    .cs .card h3:first-of-type { margin-top: 4px; }
+    .cs .slider input[type="range"] { height: 28px; margin: 0; }
+    .cs sub, .cs sup, .notes sub, .notes sup { font-size: .75em; }
+    .cs .card .hint, .cs .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cs .checks { display: grid; grid-template-columns: 1fr; gap: 0; }
+    .cs .checks label { min-height: 44px; }
+    .cs .checks label.off { opacity: .5; cursor: not-allowed; }
+    .cs select { font: inherit; font-size: calc(15px * var(--fs, 1)); min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); width: 100%; }
+    .cs select:disabled { opacity: .75; }
+    .cs select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .cs .field { display: grid; gap: 4px; margin: 10px 0 4px; font-size: calc(14px * var(--fs, 1)); }
+    .cs .stackbtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .cs .stackbtns button { font-weight: 700; font-size: calc(16px * var(--fs, 1)); }
+    .cs .stackbtns button i { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+    .cs .seqout { font-size: calc(18px * var(--fs, 1)); font-weight: 700; letter-spacing: .12em; text-align: center; margin: 10px 0 4px; font-variant-numeric: tabular-nums; word-break: break-all; }
+    .cs .btns button { flex: 1 1 auto; }
+    .cs .legend .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .cs .legend .ln { display: inline-block; width: 20px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+    .cs dl.readout { grid-template-columns: minmax(7em, 42%) minmax(0, 1fr); }
+    .cs dl.readout dd { white-space: normal; text-align: right; }
+    .cs dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    .cs dl.readout dt small, .cs dl.readout dd small { display: block; color: var(--muted); font-size: calc(12px * var(--fs, 1)); font-weight: 400; }
+    .cs .tabs { margin: 0 2px 8px; }
+    .ans { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 9em); gap: 8px; align-items: center; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); }
+    .ans input { font: inherit; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; width: 100%; }
+    .ans input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .qgiven { font-size: calc(14px * var(--fs, 1)); line-height: 1.6; margin: 8px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-variant-numeric: tabular-nums; }
+    #qOut .ok { color: var(--probe); font-weight: 700; }
+    #qOut .no { color: var(--pos); font-weight: 700; }
+    .cs .card .info { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .tablewrap { overflow: auto; margin: 10px 2px 0; max-height: 320px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; line-height: 1.25; vertical-align: bottom; position: sticky; top: 0; background: var(--surface); }
+    table.data th small { font-weight: 500; font-size: .85em; }
+    table.data th:first-child, table.data td:first-child { text-align: center; }
+    table.data td.l, table.data th.l { text-align: left; }
+    table.data .empty td { text-align: center; color: var(--muted); white-space: normal; }
+    @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+    .notes .tablewrap { max-height: none; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#matter&quot;&gt;Chemistry · Matter and Structure&lt;/a&gt; / Crystal Structures and Packing"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#matter">化學・物質與結構</a> ／ 晶體結構與堆積</nav>
+      <h1 data-en="Crystal Structures and Packing">晶體結構與堆積</h1>
+      <p data-en-html="Metals, salts and diamond are built from one small box repeated in every direction — the unit cell. Turn the cell in 3D, count how much of each atom really lies inside it, find each atom's neighbours and the holes between them, and stack layers of spheres yourself. From the measured lattice constant (X-ray diffraction) the page works out the radius, the packing fraction and the density of real crystals, and compares them with measured densities.">金屬、食鹽與鑽石，都是由一個小盒子往四面八方重複堆成的——這個小盒子叫做晶胞。在 3D 中轉動晶胞，數一數每個原子有多少真的在晶胞裡、找出每個原子的鄰居與原子之間的空隙，也可以自己一層一層疊球。頁面用實測的晶格常數（X 光繞射）算出真實晶體的原子半徑、堆積率與密度，再和實測密度比較。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: choose “Face-centred cubic”, switch to “3D view” and tick “Show coordination”: count the neighbours touching one copper atom. Then try “Body-centred cubic”.">試試看：選「面心立方」、切到「3D 立體」，再勾「顯示配位數」，數一數一個銅原子周圍有幾個鄰居緊貼著它；再換成「體心立方」比一比。</p>
+    <div class="lab cs">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div class="vb-r">
+            <button type="button" id="axisBtn" hidden data-en="Look along the stacking axis" title="把視線轉到最密堆積層的堆疊方向" data-en-title="Turn the camera to look along the stacking direction of the close-packed layers">沿堆積方向看</button>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          </div>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="晶胞與截面" data-en-aria-label="Unit cell and cross-section"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="record" class="primary" type="button" data-en="Record" title="把目前的晶體記到下面的比較表" data-en-title="Add the current crystal to the comparison table below">記下來</button>
+          <button id="clearAll" type="button" data-en="Clear all" title="清除比較表、動手算的紀錄與疊好的層；目前選的晶體不變" data-en-title="Clear the comparison table, the calculation record and the stacked layers; the crystal you are looking at stays">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="legend" id="legend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="stageHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="What to look at">看什麼</h2>
+          <div class="seg2" id="modeSeg" role="group" aria-label="模式" data-en-aria-label="Mode">
+            <button type="button" data-mode="cell" aria-pressed="true" data-en="Unit cell">晶胞</button>
+            <button type="button" data-mode="stack" aria-pressed="false" data-en="Stack the layers">疊疊看</button>
+          </div>
+        </section>
+
+        <section class="card" id="cellCard">
+          <h2 data-en="Crystal">晶體</h2>
+          <h3 data-en="Metals">金屬</h3>
+          <div class="seg4" id="structSeg1" role="group" aria-label="金屬的排列方式" data-en-aria-label="Metal structures">
+            <button type="button" data-s="sc" aria-pressed="false" data-en="Simple cubic">簡單立方</button>
+            <button type="button" data-s="bcc" aria-pressed="false" data-en="Body-centred cubic">體心立方</button>
+            <button type="button" data-s="fcc" aria-pressed="true" data-en="Face-centred cubic">面心立方</button>
+            <button type="button" data-s="hcp" aria-pressed="false" data-en="Hexagonal close-packed">六方最密</button>
+          </div>
+          <h3 data-en="Ionic and covalent network">離子與共價網狀</h3>
+          <div class="seg4" id="structSeg2" role="group" aria-label="離子與共價網狀晶體" data-en-aria-label="Ionic and covalent network structures">
+            <button type="button" data-s="nacl" aria-pressed="false" data-en="Rock salt">氯化鈉型</button>
+            <button type="button" data-s="cscl" aria-pressed="false" data-en="Caesium chloride">氯化銫型</button>
+            <button type="button" data-s="zns" aria-pressed="false" data-en="Zinc blende">閃鋅礦型</button>
+            <button type="button" data-s="diamond" aria-pressed="false" data-en="Diamond">鑽石型</button>
+          </div>
+          <div class="field"><label for="matSel" data-en="Substance">物質</label><select id="matSel"></select></div>
+          <div class="checks"><label id="hypoLab"><input id="hypo" type="checkbox"><span data-en="Keep the same atoms, change the packing (imaginary)">保持同一種原子，改排法（假想）</span></label></div>
+          <p class="hint" id="matInfo"></p>
+        </section>
+
+        <section class="card" id="dispCard">
+          <h2 data-en="Show">顯示</h2>
+          <div class="slider"><label for="size" data-en="Sphere size (% of the real radius)">球的大小（真實半徑的 %）</label><output id="sizeo"></output>
+            <input id="size" type="range" min="20" max="100" step="1" value="100" data-decimals="0"></div>
+          <div class="checks" id="dispChecks">
+            <label id="cutLab"><input id="cut" type="checkbox"><span data-en="Only the part inside the cell">只看晶胞內的部分</span></label>
+            <label><input id="coord" type="checkbox"><span data-en="Show coordination">顯示配位數</span></label>
+            <label id="voOctLab"><input id="voOct" type="checkbox"><span data-en="Octahedral holes">八面體空隙</span></label>
+            <label id="voTetLab"><input id="voTet" type="checkbox"><span data-en="Tetrahedral holes">四面體空隙</span></label>
+            <label id="voCubeLab"><input id="voCube" type="checkbox"><span data-en="Cubic hole">立方體空隙</span></label>
+            <label id="layersLab"><input id="layers" type="checkbox"><span data-en="Colour the close-packed layers">標出最密堆積層</span></label>
+          </div>
+          <div class="seg3" id="cellsSeg" role="group" aria-label="晶胞數" data-en-aria-label="Number of cells" style="margin-top:8px">
+            <button type="button" data-n="1" aria-pressed="true" data-en="1 cell">1 個晶胞</button>
+            <button type="button" data-n="2" aria-pressed="false" data-en="2 × 2 × 2">2 × 2 × 2</button>
+            <button type="button" data-n="3" aria-pressed="false" data-en="3 × 3 × 3">3 × 3 × 3</button>
+          </div>
+          <p class="hint" id="dispHint"></p>
+        </section>
+
+        <section class="card" id="stackCard" hidden>
+          <h2 data-en="Stack the layers">疊疊看</h2>
+          <p class="hint" data-en="Every layer is a flat sheet of touching spheres. Put the next layer on the A, B or C positions: on a different letter it sits in the hollows; on the same letter it sits right on top.">每一層都是緊密排在一起的一片球。下一層放在 A、B 或 C 的位置：換一個字母，就落進下面那一層的凹處；同一個字母，就疊在正上方。</p>
+          <div class="stackbtns" role="group" aria-label="放下一層" data-en-aria-label="Add the next layer">
+            <button type="button" id="addA" data-en-html="&lt;i style=&quot;background:#3f7fd6&quot;&gt;&lt;/i&gt;Place A"><i style="background:#3f7fd6"></i>放 A</button>
+            <button type="button" id="addB" data-en-html="&lt;i style=&quot;background:#e08a2e&quot;&gt;&lt;/i&gt;Place B"><i style="background:#e08a2e"></i>放 B</button>
+            <button type="button" id="addC" data-en-html="&lt;i style=&quot;background:#2fae6a&quot;&gt;&lt;/i&gt;Place C"><i style="background:#2fae6a"></i>放 C</button>
+          </div>
+          <div class="btns" style="margin-top:8px"><button type="button" id="undo" data-en="Remove the top layer">拿掉最上層</button></div>
+          <p class="seqout" id="seqOut" aria-live="polite">A</p>
+          <p class="hint" id="stackHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab cs">
+      <div class="stage">
+        <h2 data-en="Graph and comparison table">圖表與比較表</h2>
+        <div class="seg2 tabs" id="tabs" role="group" aria-label="圖表" data-en-aria-label="Graph">
+          <button type="button" data-tab="cn" aria-pressed="true" data-en="Packing vs coordination">堆積率與配位數</button>
+          <button type="button" data-tab="rho" aria-pressed="false" data-en="Calculated vs measured density">算出的與實測的密度</button>
+        </div>
+        <canvas id="gcv" role="img" aria-label="圖表" data-en-aria-label="Graph"></canvas>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" id="gHint"></p>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="roTitle" data-en="This crystal">這個晶體</h2>
+          <dl class="readout" id="readout"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="quizCard" data-share-skip>
+          <h2 data-en="Work it out">動手算</h2>
+          <p class="hint" data-en="A question about the crystal you have chosen, with the numbers a chemist would have. Work it out on paper, then type the answer (within 1% counts as correct).">用你目前選的晶體出一題，給的是化學家手上會有的數據。在紙上算好，再填答案（誤差 1% 以內算對）。</p>
+          <div class="seg3" id="qType" role="group" aria-label="題型" data-en-aria-label="Question type">
+            <button type="button" data-q="rho" aria-pressed="true" data-en="Density">求密度</button>
+            <button type="button" data-q="r" aria-pressed="false" data-en="Atomic radius">求原子半徑</button>
+            <button type="button" data-q="NA" aria-pressed="false" data-en="Avogadro’s number">求亞佛加厥數</button>
+          </div>
+          <div class="btns" style="margin-top:8px"><button type="button" id="qNew" data-en="New question">出題</button></div>
+          <div id="qBox" hidden>
+            <p class="qgiven" id="qText"></p>
+            <div class="ans"><label for="qAns" id="qLabel">—</label><input id="qAns" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="例如 8.93" data-en-placeholder="e.g. 8.93"></div>
+            <div class="btns">
+              <button id="qCheck" class="primary" type="button" data-en="Check">核對答案</button>
+              <button id="qReveal" type="button" data-en="Show the answer">看答案</button>
+            </div>
+          </div>
+          <p class="info" id="qOut" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="Purpose of the experiment">實驗目的</h2>
+      <ol>
+        <li data-en="Count the atoms in a unit cell (corners 1/8, edges 1/4, faces 1/2, inside 1) and find the coordination number of the common metal and ionic structures.">數出晶胞中的原子數（角 1/8、稜 1/4、面 1/2、內部 1），找出常見金屬與離子晶體的配位數。</li>
+        <li data-en="Relate the lattice constant to the atomic radius and work out the packing fraction and the density of real crystals.">由晶格常數與原子半徑的關係，算出真實晶體的堆積率與密度。</li>
+        <li data-en="Build close-packed structures layer by layer, and see the octahedral and tetrahedral holes that ions can fill.">一層一層疊出最密堆積，認識離子可以填入的八面體與四面體空隙。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Atoms per unit cell and the coordination number">每個晶胞的原子數與配位數</h3>
+      <p data-en-html="A unit cell shares its corner, edge and face atoms with its neighbours. In a cube, a corner atom is shared by 8 cells, an edge atom by 4 and a face atom by 2; in the hexagonal prism of hexagonal close packing a corner atom is shared by 6 prisms. The coordination number is the number of nearest neighbours touching an atom.">晶胞角上、稜上、面上的原子由相鄰的晶胞共用。立方晶胞的角由 8 個晶胞共用、稜由 4 個、面由 2 個；六方最密的六角柱，角上的原子由 6 個六角柱共用。配位數是緊貼著一個原子的最近鄰居數。</p>
+      <div class="tablewrap">
+        <table class="data" id="structTable"></table>
+      </div>
+
+      <h3 data-en="Radius, packing fraction and density">半徑、堆積率與密度</h3>
+      <p data-en-html="Along the direction in which the spheres touch, the length equals a whole number of radii: along an edge in simple cubic, along a body diagonal in body-centred cubic, along a face diagonal in face-centred cubic.">沿著球彼此相切的方向，長度剛好是半徑的整數倍：簡單立方沿著稜、體心立方沿著體對角線、面心立方沿著面對角線。</p>
+      <div class="formula multi">
+        \[ a = 2r \]
+        \[ \sqrt{3}\,a = 4r \]
+        \[ \sqrt{2}\,a = 4r \]
+      </div>
+      <p data-en-html="The packing fraction is the share of the cell filled by spheres, and the density follows from the mass of the atoms in the cell (Z atoms, or Z formula units for a salt, molar mass M) divided by its volume V:">堆積率是晶胞中被球占去的比例；密度則是晶胞內原子的質量（Z 個原子，離子晶體是 Z 個化學式單位，莫耳質量 M）除以晶胞體積 V：</p>
+      <div class="formula multi">
+        \[ f = \frac{Z\cdot\frac{4}{3}\pi r^{3}}{V} \]
+        \[ \rho = \frac{Z\,M}{N_\mathrm{A}\,V} \]
+      </div>
+      <p data-en-html="For hard spheres this gives \(\pi/6 \approx 52.4\%\) (simple cubic), \(\sqrt{3}\pi/8 \approx 68.0\%\) (body-centred cubic) and \(\pi/(3\sqrt{2}) \approx 74.0\%\) for both close-packed structures. A cube has \(V = a^{3}\); the hexagonal prism has \(V = \tfrac{3\sqrt{3}}{2}a^{2}c\), and ideally \(c = \sqrt{8/3}\,a \approx 1.633\,a\).">對硬球而言：簡單立方 \(\pi/6 \approx 52.4\%\)、體心立方 \(\sqrt{3}\pi/8 \approx 68.0\%\)，兩種最密堆積都是 \(\pi/(3\sqrt{2}) \approx 74.0\%\)。立方晶胞 \(V = a^{3}\)；六角柱 \(V = \tfrac{3\sqrt{3}}{2}a^{2}c\)，理想情況 \(c = \sqrt{8/3}\,a \approx 1.633\,a\)。</p>
+
+      <h3 data-en="Close packing and the holes between the spheres">最密堆積與空隙</h3>
+      <p data-en-html="In a flat layer each sphere touches 6 others. The next layer sits in half of the hollows (B on A); the third layer can sit over the first (ABAB…, hexagonal close-packed) or in the remaining hollows (ABCABC…, cubic close-packed, which is the face-centred cubic cell seen along its body diagonal). Either way each sphere touches 12 others and the packing fraction is 74.05% — Kepler guessed in 1611 that nothing denser is possible, and this was proved only in 1998–2014. Between the spheres are octahedral holes (surrounded by 6 spheres) and tetrahedral holes (4 spheres); the largest sphere that fits has the radius">平面上每個球緊貼 6 個球。下一層坐在一半的凹處（A 上放 B）；第三層可以對準第一層（ABAB…，六方最密），或坐在剩下的凹處（ABCABC…，立方最密，就是沿體對角線看的面心立方）。兩種排法每個球都緊貼 12 個球，堆積率都是 74.05%——克卜勒在 1611 年猜測不可能更密，直到 1998–2014 年才被證明。球與球之間有八面體空隙（被 6 個球圍住）與四面體空隙（被 4 個球圍住），能塞進去的最大球半徑是：</p>
+      <div class="formula multi">
+        \[ r_\text{oct} = (\sqrt{2}-1)\,r \approx 0.414\,r \]
+        \[ r_\text{tet} = \left(\sqrt{3/2}-1\right) r \approx 0.225\,r \]
+      </div>
+      <p data-en-html="In rock salt the Cl&lt;sup&gt;−&lt;/sup&gt; ions are face-centred cubic and the smaller Na&lt;sup&gt;+&lt;/sup&gt; ions fill all the octahedral holes; in zinc blende the Zn&lt;sup&gt;2+&lt;/sup&gt; ions fill half of the tetrahedral holes; diamond is the same arrangement with carbon in both places. In caesium chloride the large Cs&lt;sup&gt;+&lt;/sup&gt; sits in the cubic hole of a simple cubic Cl&lt;sup&gt;−&lt;/sup&gt; lattice (\(r_\text{cube} = (\sqrt{3}-1)r \approx 0.732\,r\)).">氯化鈉中 Cl<sup>−</sup> 排成面心立方，較小的 Na<sup>+</sup> 填滿全部的八面體空隙；閃鋅礦的 Zn<sup>2+</sup> 填入一半的四面體空隙；鑽石是同樣的排法，兩種位置都是碳。氯化銫中較大的 Cs<sup>+</sup> 坐在簡單立方 Cl<sup>−</sup> 晶格的立方體空隙（\(r_\text{cube} = (\sqrt{3}-1)r \approx 0.732\,r\)）。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="Tick “Only the part inside the cell” and count: 8 × 1/8 + 6 × 1/2 = 4 for face-centred cubic.">勾「只看晶胞內的部分」再數：面心立方是 8 × 1/8 + 6 × 1/2 = 4。</li>
+        <li data-en="With “Colour the close-packed layers” on, press “Look along the stacking axis” in 3D: the face-centred cube turns into the A, B, C layers.">勾「標出最密堆積層」，在 3D 按「沿堆積方向看」：面心立方的方塊變成 A、B、C 三種層。</li>
+        <li data-en="Compare the calculated density with the measured one: they agree to better than 1% — X-ray lattice constants and a balance tell the same story.">比較算出的密度與實測密度：相差不到 1%——X 光量到的晶格常數和天平量到的質量互相吻合。</li>
+        <li data-en="Zinc's layers are farther apart than ideal (c/a = 1.856 instead of 1.633), so 6 of its 12 neighbours are a little farther away.">鋅的層距比理想值大（c/a = 1.856，不是 1.633），所以 12 個鄰居中有 6 個稍遠。</li>
+      </ul>
+
+      <h3 data-en="Think about it">想一想</h3>
+      <ol>
+        <li data-en="Iron is body-centred cubic at room temperature but face-centred cubic above 912 °C. Which form is denser, if the atoms keep the same size?">鐵在室溫是體心立方，912 °C 以上變成面心立方。若原子大小不變，哪一種比較密？</li>
+        <li data-en="Why do both close-packed structures have exactly the same packing fraction?">為什麼兩種最密堆積的堆積率完全一樣？</li>
+        <li data-en-html="Copper is face-centred cubic with a = 361.5 pm. What is the radius of a copper atom?">銅是面心立方，a = 361.5 pm。銅原子的半徑是多少？</li>
+        <li data-en-html="Why does NaCl take the rock-salt structure while CsCl takes a different one? (r(Na&lt;sup&gt;+&lt;/sup&gt;) = 102 pm, r(Cs&lt;sup&gt;+&lt;/sup&gt;) = 174 pm, r(Cl&lt;sup&gt;−&lt;/sup&gt;) = 181 pm.)">為什麼 NaCl 是氯化鈉型，CsCl 卻是另一種結構？（r(Na<sup>+</sup>) = 102 pm、r(Cs<sup>+</sup>) = 174 pm、r(Cl<sup>−</sup>) = 181 pm）</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en-html="Face-centred cubic: its packing fraction is 74.05% against 68.02%, so the same atoms are 74.05/68.02 = 1.089 times as dense. Real iron changes only by about 1% at 912 °C, because the atoms are not hard spheres of fixed size (try recording both forms of iron).">面心立方：堆積率 74.05%，體心立方 68.02%，同樣的原子密度會是 74.05/68.02 = 1.089 倍。真實的鐵在 912 °C 只變了約 1%，因為原子不是固定大小的硬球（試著把兩種鐵都記下來比較）。</li>
+          <li data-en="Every layer is the same close-packed sheet and every next layer sits in hollows, so the distance between layers is always the same (1.633 r). Only the order of the hollows differs, not how full the space is.">每一層都是同樣的最密平面，下一層都坐在凹處，層與層的距離永遠相同（1.633 r）。不同的只是凹處的順序，空間被填滿的程度一樣。</li>
+          <li data-en-html="\(r = \sqrt{2}\,a/4 = 1.414 \times 361.5 / 4 \approx 127.8\) pm.">\(r = \sqrt{2}\,a/4 = 1.414 \times 361.5 / 4 \approx 127.8\) pm。</li>
+          <li data-en-html="The radius ratio: Na&lt;sup&gt;+&lt;/sup&gt;/Cl&lt;sup&gt;−&lt;/sup&gt; = 0.56 is larger than 0.414, so Na&lt;sup&gt;+&lt;/sup&gt; fits an octahedral hole and still touches 6 anions; Cs&lt;sup&gt;+&lt;/sup&gt;/Cl&lt;sup&gt;−&lt;/sup&gt; = 0.96 is larger than 0.732, so Cs&lt;sup&gt;+&lt;/sup&gt; can be surrounded by 8 anions (cubic hole). More neighbours of opposite charge give a lower energy, as long as the cation still touches them.">半徑比：Na<sup>+</sup>/Cl<sup>−</sup> = 0.56，大於 0.414，Na<sup>+</sup> 放在八面體空隙還能碰到 6 個陰離子；Cs<sup>+</sup>/Cl<sup>−</sup> = 0.96，大於 0.732，Cs<sup>+</sup> 可以被 8 個陰離子包圍（立方體空隙）。只要陽離子還碰得到陰離子，異號的鄰居越多能量越低。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Atoms are rigid spheres that touch along the contact direction. The lattice constants are measured values (X-ray diffraction, room temperature unless stated); the radius is worked out from them, so it is a metallic (or, for diamond-type, covalent) radius, and the density is \(\rho = ZM/(N_\mathrm{A}V)\) with \(N_\mathrm{A} = 6.02214076\times10^{23}\) mol&lt;sup&gt;−1&lt;/sup&gt;.">原子是相切的硬球。晶格常數是實測值（X 光繞射，未註明者為室溫）；原子半徑由它算出，所以是金屬半徑（鑽石型是共價半徑）；密度 \(\rho = ZM/(N_\mathrm{A}V)\)，\(N_\mathrm{A} = 6.02214076\times10^{23}\) mol<sup>−1</sup>。</li>
+        <li data-en="For hexagonal close packing the radius is half the shortest distance between atoms. When c/a is smaller than 1.633 (beryllium, titanium) the atoms in the layers above and below are a little closer than those in the same layer, so the packing fraction is below 74.05%; the radius question is only asked for magnesium, cobalt and zinc, where r = a/2.">六方最密的原子半徑取最近兩原子距離的一半。c/a 小於 1.633 時（鈹、鈦），上下層的原子比同一層更近，堆積率會小於 74.05%；「求原子半徑」的題目只出鎂、鈷、鋅（r = a/2）。</li>
+        <li data-en="Ions: the cation–anion distance comes from the lattice constant (a/2, √3a/2 or √3a/4), and it is shared between the two ions in the ratio of Shannon's ionic radii (1976). The packing fraction of a salt is an estimate made with these radii.">離子：陽、陰離子的距離由晶格常數決定（a/2、√3a/2 或 √3a/4），再依 Shannon（1976）離子半徑的比例分給兩種離子。離子晶體的堆積率是用這組半徑估算的。</li>
+        <li data-en="“Keep the same atoms, change the packing” keeps the radius of the real crystal and builds an imaginary one (ideal c/a for hexagonal); no measured density exists for it.">「保持同一種原子，改排法」保留真實晶體的原子半徑，排成假想的結構（六方用理想 c/a），沒有實測密度可以比較。</li>
+        <li data-en="Coordination: all atoms (of opposite charge in a salt) within 1.12 times the nearest distance. Holes: the largest sphere that fits is the distance to the nearest atom minus the atomic radius. Stacking: layers on different letters are 2r√(2/3) = 1.633 r apart, layers on the same letter 2r; the packing fraction is for the pattern repeated forever.">配位數：距離在最近距離 1.12 倍以內的原子（離子晶體只算異號離子）。空隙：能塞進的最大球半徑 = 到最近原子的距離 − 原子半徑。疊疊看：不同字母的層距 2r√(2/3) = 1.633 r，同一個字母的層距 2r；堆積率是這個排列無限重複時的值。</li>
+        <li data-en="The 2D view shows an oblique drawing of the cell (drag to turn it) and a true-scale cross-section through the plane in which the spheres touch; circles drawn lighter belong to atoms whose centres are a little in front of or behind that plane. The 3D view (three.js, MIT licence, downloaded only when you switch to it) draws the same atoms from the same calculation.">2D 平面左邊是晶胞的斜視圖（拖曳可以轉動），右邊是通過「球彼此相切的平面」的真實比例截面；顏色較淡的圓，球心在截面的前方或後方一點。3D 立體（three.js 函式庫，MIT 授權，切換時才下載）畫的是同一批計算出來的原子。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high elective chemistry · States of matter: crystal structures of metals and ionic solids (unit cells, coordination number, packing).">課綱對應：高中選修化學・物質的狀態：金屬與離子晶體的結構（晶胞、配位數、堆積）。</li>
+        <li data-en="Lattice constants: CRC Handbook of Chemistry and Physics, “Crystal structures and lattice parameters of allotropes of the elements” and X-ray data for the salts; iron at 912 °C (α) and 916 °C (γ): Basinski, Hume-Rothery and Sutton, Proc. R. Soc. A 229, 459 (1955). Measured densities: CRC Handbook.">晶格常數：CRC Handbook of Chemistry and Physics〈Crystal structures and lattice parameters of allotropes of the elements〉及鹽類的 X 光數據；鐵在 912 °C（α）與 916 °C（γ）：Basinski、Hume-Rothery、Sutton，《Proc. R. Soc. A》229 卷 459 頁（1955）。實測密度：CRC Handbook。</li>
+        <li data-en="Ionic radii: R. D. Shannon, “Revised effective ionic radii”, Acta Crystallographica A 32, 751 (1976).">離子半徑：R. D. Shannon，〈Revised effective ionic radii〉，《Acta Crystallographica A》32 卷 751 頁（1976）。</li>
+        <li data-en-html="Further reading: OpenStax &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/10-6-lattice-structures-in-crystalline-solids&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;10.6 Lattice Structures in Crystalline Solids&lt;/a&gt;.">延伸閱讀：OpenStax《Chemistry 2e》<a href="https://openstax.org/books/chemistry-2e/pages/10-6-lattice-structures-in-crystalline-solids" target="_blank" rel="noopener">10.6 晶體固體的晶格結構</a>（英文）。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/crystal-structures-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/crystal-structures-3d.js"></script>
+  <script src="js/crystal-structures.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="crystal-structures"></script>
+  <script src="js/missions/crystal-structures.js"></script>
+  <script src="js/stats.js" data-module="crystal-structures"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

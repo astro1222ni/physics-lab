@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Shapes of Atomic Orbitals | Astro Ni Science Lab">原子軌域的形狀｜Astro Ni 科學實驗室</title>
+
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 原子軌域頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
+    .ao #cv { aspect-ratio: 1 / 1; max-height: 640px; touch-action: none; cursor: crosshair; }
+    .ao #lPick button small, .ao #zPick button small { display: block; font-size: calc(11px * var(--fs, 1)); font-weight: 400; opacity: 0.72; line-height: 1.3; }
+    .ao #gcv { aspect-ratio: auto; height: 300px; touch-action: none; cursor: ew-resize; }
+    .ao button { min-height: 44px; }
+    .ao [hidden] { display: none !important; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .stage.is3d #cv { display: none; }
+    #view3 { position: relative; }
+    #view3 canvas { display: block; width: 100%; border-radius: 8px; background: var(--canvas-bg); touch-action: none; cursor: grab; aspect-ratio: auto; }
+    #view3 canvas:active { cursor: grabbing; }
+    .r3-hud { position: absolute; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.35; color: var(--text); font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 82%, transparent); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; max-width: 60%; }
+    .r3-hud.tl { top: 8px; left: 8px; }
+    .r3-hud.tr { top: 8px; right: 8px; text-align: right; }
+    .r3-hud.bl { bottom: 8px; left: 8px; color: var(--muted); }
+    @media (max-width: 520px) { .r3-hud { font-size: calc(10.5px * var(--fs, 1)); } }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .pick { display: grid; gap: 6px; margin: 4px 0 8px; }
+    .pick.n5 { grid-template-columns: repeat(5, 1fr); }
+    .pick.l4 { grid-template-columns: repeat(4, 1fr); }
+    .pick.keys { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+    .pick.c3 { grid-template-columns: repeat(3, 1fr); }
+    .pick button { padding: 4px 4px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .pick button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
+    .pick button:disabled { opacity: .38; cursor: not-allowed; }
+    .ao .lab-l { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 2px; }
+    .ao .card h2 { margin-bottom: 6px; }
+    .ao .card .hint, .ao .stage .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .ao sub, .ao sup, .notes sub, .notes sup { font-size: .75em; }
+    .ao dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ao dl.readout dd { white-space: nowrap; }
+    .ao dl.readout dd.wr { white-space: normal; }
+    dl.readout dd.big { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    .ao .checks { margin: 6px 0 2px; }
+    .ao .checks label { min-height: 44px; }
+    .ao .checks input:disabled + span { opacity: .5; }
+    .ao .btns { margin: 8px 0 0; }
+    .ao .btns button { flex: 1 1 auto; }
+    .ao .stage h2 { font-size: calc(16px * var(--fs, 1)); margin: 4px 4px 8px; }
+    .ao .legend .sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; border: 1px solid var(--border); }
+    .ao .legend .ramp { display: inline-block; width: 90px; height: 10px; border-radius: 3px; vertical-align: middle; margin: 0 6px; border: 1px solid var(--border); }
+    .ao .legend .ln { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-right: 6px; border-top: 2px solid; }
+    .ao .legend .ln.dash { border-top-style: dashed; }
+    .ao .info { font-size: calc(14px * var(--fs, 1)); margin: 6px 0 2px; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .ao .quiz-ans { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 8px 0 0; }
+    .ao .quiz-ans label { display: grid; gap: 2px; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .ao select { font: inherit; min-height: 44px; padding: 4px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); width: 100%; min-width: 0; }
+    .tablewrap { overflow: auto; margin: 10px 0 0; max-height: 240px; }
+    table.data { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.data th, table.data td { padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
+    table.data th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--surface); }
+    table.data .empty td { color: var(--muted); white-space: normal; }
+    .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
+    .formula.multi .katex-display { margin: 4px 0; overflow: visible; }
+    table.qn { border-collapse: collapse; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); width: 100%; }
+    table.qn th, table.qn td { border: 1px solid var(--border); padding: 5px 8px; text-align: left; vertical-align: top; }
+    table.qn th { background: var(--accent-soft); }
+    .qn-wrap { overflow-x: auto; }
+    .notes ol { padding-left: 1.4em; }
+    .notes ol li, .notes ul li { margin: 3px 0; }
+    .notes details { margin: 6px 0 0; }
+    .notes details summary { cursor: pointer; color: var(--accent); min-height: 44px; display: flex; align-items: center; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#matter&quot;&gt;Chemistry · Matter and Structure&lt;/a&gt; / Shapes of Atomic Orbitals"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#matter">化學・物質與結構</a> ／ 原子軌域的形狀</nav>
+      <h1 data-en="Shapes of Atomic Orbitals">原子軌域的形狀</h1>
+      <p data-en="Where is the electron in an atom? Quantum mechanics only gives the probability of finding it, and that probability has a shape: a sphere for s, a dumbbell for p, a four-leaf clover for d. These shapes are calculated here from the exact wave functions of the hydrogen atom. Cut the electron cloud with a plane, look for the nodes where the electron is never found, drag along the radial distribution, and turn the cloud around in 3D.">電子在原子裡的哪裡？量子力學只能告訴我們「在某處找到電子的機率」，而這個機率有形狀：s 是球、p 是啞鈴、d 像四葉草。這裡的形狀都由氫原子的精確波函數算出來。用平面把電子雲切開，找出電子永遠不會出現的節面，沿著徑向分布找最可能的半徑，再到 3D 把電子雲轉一圈。</p>
+    </header>
+
+    <p class="try-hint" data-en-html="Try it: choose 3s and look at the slice: two dark rings where the cloud vanishes. These are radial nodes — 3s has n − l − 1 = 2 of them. Then switch to “3D view”, tick “Cut away a corner” and see the onion-like shells.">試試看：選 3s，看切面上有兩圈全暗的環——那是電子雲消失的徑向節面，3s 有 n − l − 1 = 2 個。再切換到「3D 立體」，勾選「切開一角」，看看像洋蔥一樣的球殼。</p>
+    <div class="lab ao">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D slice">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" tabindex="0" aria-label="電子雲的 2D 切面：點一下或拖曳放探針，方向鍵移動探針" data-en-aria-label="2D slice of the electron cloud: tap or drag to place the probe, arrow keys move it"></canvas>
+        <div id="view3"></div>
+        <div class="legend" id="legend"></div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="stageHint" data-en="Tap or drag on the slice to place a probe and read the probability density there. In the 3D view, drag to rotate and pinch or scroll to zoom.">在切面上點一下或拖曳，放下探針讀出那一點的機率密度。3D 立體時拖曳可旋轉，雙指或滾輪可縮放。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Choose an orbital">選軌域</h2>
+          <p class="lab-l" data-en="Principal quantum number n">主量子數 n</p>
+          <div class="pick n5" id="nPick" role="group" aria-label="主量子數 n" data-en-aria-label="Principal quantum number n">
+            <button type="button" data-n="1" aria-pressed="false">1</button>
+            <button type="button" data-n="2" aria-pressed="true">2</button>
+            <button type="button" data-n="3" aria-pressed="false">3</button>
+            <button type="button" data-n="4" aria-pressed="false">4</button>
+            <button type="button" data-n="5" aria-pressed="false">5</button>
+          </div>
+          <p class="lab-l" data-en="Subshell (angular quantum number l)">副層（角量子數 l）</p>
+          <div class="pick l4" id="lPick" role="group" aria-label="副層" data-en-aria-label="Subshell">
+            <button type="button" data-l="0" aria-pressed="false">s<small>l = 0</small></button>
+            <button type="button" data-l="1" aria-pressed="true">p<small>l = 1</small></button>
+            <button type="button" data-l="2" aria-pressed="false">d<small>l = 2</small></button>
+            <button type="button" data-l="3" aria-pressed="false">f<small>l = 3</small></button>
+          </div>
+          <p class="lab-l" data-en="Which orbital">哪一個軌域</p>
+          <div class="pick keys" id="kPick" role="group" aria-label="哪一個軌域" data-en-aria-label="Which orbital"></div>
+          <p class="lab-l" data-en="Atom or ion (one electron)">原子或離子（只有一個電子）</p>
+          <div class="pick c3" id="zPick" role="group" aria-label="原子或離子" data-en-aria-label="Atom or ion">
+            <button type="button" data-z="1" aria-pressed="true">H<small>Z = 1</small></button>
+            <button type="button" data-z="2" aria-pressed="false">He<sup>+</sup><small>Z = 2</small></button>
+            <button type="button" data-z="3" aria-pressed="false">Li<sup>2+</sup><small>Z = 3</small></button>
+          </div>
+          <div class="checks"><label><input id="sumChk" type="checkbox"><span data-en="Whole subshell (sum of all its orbitals)">整個副層加總</span></label></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="2D slice">2D 切面</h2>
+          <div class="pick c3" id="planePick" role="group" aria-label="切面" data-en-aria-label="Slice plane">
+            <button type="button" data-plane="xz" aria-pressed="true" data-en="xz plane">xz 平面</button>
+            <button type="button" data-plane="xy" aria-pressed="false" data-en="xy plane">xy 平面</button>
+            <button type="button" data-plane="yz" aria-pressed="false" data-en="yz plane">yz 平面</button>
+          </div>
+          <div class="slider"><label for="off" id="offLabel" data-en="Slice position (distance from the nucleus)">切面位置（離原子核的距離）</label><output id="offo"></output>
+            <input id="off" type="range" min="-30" max="30" step="0.05" value="0" data-decimals="2"></div>
+          <div class="pick" style="grid-template-columns:1fr 1fr" id="dispPick" role="group" aria-label="顯示" data-en-aria-label="Show">
+            <button type="button" data-disp="dens" aria-pressed="true" data-en-html="Density |ψ|&lt;sup&gt;2&lt;/sup&gt;">機率密度 |ψ|<sup>2</sup></button>
+            <button type="button" data-disp="phase" aria-pressed="false" data-en="Wave function ψ (sign)">波函數 ψ（正負）</button>
+          </div>
+          <div class="slider"><label for="zoom" data-en="Half-width of the view">視野半寬</label><output id="zoomo"></output>
+            <input id="zoom" type="range" min="0" max="1000" step="1" value="500" data-decimals="1"></div>
+          <div class="checks"><label><input id="autoChk" type="checkbox" checked><span data-en="Auto zoom">自動縮放</span></label>
+            <label><input id="logChk" type="checkbox"><span data-en="Log colour scale (see the faint parts)">對數色階（看清淡的地方）</span></label></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="3D options">3D 選項</h2>
+          <div class="pick c3" id="stylePick" role="group" aria-label="3D 畫法" data-en-aria-label="3D style">
+            <button type="button" data-style="iso" aria-pressed="true" data-en="Isosurface">等值面</button>
+            <button type="button" data-style="cloud" aria-pressed="false" data-en="Dot cloud">機率雲</button>
+            <button type="button" data-style="both" aria-pressed="false" data-en="Both">兩者</button>
+          </div>
+          <div class="slider"><label for="pct" data-en="Probability inside the isosurface">等值面包住的機率</label><output id="pcto"></output>
+            <input id="pct" type="range" min="10" max="99" step="1" value="90" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="nodeChk" type="checkbox" checked><span data-en="Show nodes">顯示節面</span></label>
+            <label><input id="cutChk" type="checkbox"><span data-en="Cut away a corner">切開一角</span></label>
+            <label><input id="planeChk" type="checkbox"><span data-en="Show the 2D slice">顯示 2D 切面</span></label>
+          </div>
+          <p class="hint" data-en="These options apply in the 3D view. The isosurface also appears in the 2D slice as a solid outline.">這些選項在 3D 立體時使用；等值面在 2D 切面上就是那條實線輪廓。</p>
+        </section>
+      </aside>
+    </div>
+
+    <div class="lab ao">
+      <div class="stage">
+        <h2 data-en="Radial distribution">徑向分布</h2>
+        <canvas id="gcv" tabindex="0" role="img" aria-label="徑向分布圖：拖曳移動游標，方向鍵微調" data-en-aria-label="Radial distribution: drag to move the cursor, arrow keys fine-tune it" data-share-skip></canvas>
+        <div class="slider"><label for="cur" data-en="Cursor radius r">游標半徑 r</label><output id="curo"></output>
+          <input id="cur" type="range" min="0" max="1000" step="1" value="129" data-decimals="3"></div>
+        <div class="btns">
+          <button type="button" id="pinBtn" data-en="Keep this curve">保留這條曲線</button>
+          <button type="button" id="clearAll" data-en="Clear all" title="清除保留的曲線；目前的軌域與游標不變" data-en-title="Clear the kept curves; the current orbital and cursor stay">全部清除</button>
+        </div>
+        <div class="checks"><label><input id="rChk" type="checkbox"><span data-en="Overlay R(r)">疊上 R(r)</span></label></div>
+        <div class="legend" id="gLegend"></div>
+        <p class="hint" data-en-html="The radial distribution \(P(r) = r^2R^2\) is the probability per unit radius of finding the electron in a thin shell at distance r. The shaded area from 0 to the cursor is the probability of finding the electron within that radius.">徑向分布 \(P(r) = r^2R^2\) 是在距離 r 的薄球殼內找到電子的機率（每單位半徑）。從 0 到游標的陰影面積，就是電子出現在這個半徑以內的機率。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Quantum numbers and values">量子數與數值</h2>
+          <dl class="readout" id="qOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Cursor and probe">游標與探針</h2>
+          <dl class="readout" id="cOut"><dt>—</dt><dd>—</dd></dl>
+        </section>
+        <section class="card" id="quizCard" data-share-skip>
+          <h2 data-en="Name that orbital">認軌域</h2>
+          <p class="hint" data-en="A mystery orbital is shown with its name hidden. Count its radial and angular nodes, then say which orbital it is. Changing the orbital yourself ends the round.">畫面換成一個不知名的軌域，名稱都藏起來。數一數它的徑向節面和角節面，說出它是哪一個軌域。自己換軌域就算放棄這一題。</p>
+          <div class="btns">
+            <button type="button" id="quizOn" class="primary" data-en="Start">開始</button>
+            <button type="button" id="quizNext" hidden data-en="Another one">換一題</button>
+            <button type="button" id="quizClear" data-en="Clear record" title="清除認軌域的紀錄與連勝" data-en-title="Clear the record and the streak">清除紀錄</button>
+          </div>
+          <p class="info" id="quizQ" aria-live="polite"></p>
+          <div id="quizIn" hidden>
+            <div class="quiz-ans">
+              <label><span data-en="n">n</span><select id="qN"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+              <label><span data-en="Subshell">副層</span><select id="qL"><option value="0">s</option><option value="1">p</option><option value="2">d</option><option value="3">f</option></select></label>
+              <label><span data-en="Orbital (optional)">軌域（可不選）</span><select id="qK"></select></label>
+            </div>
+            <div class="btns"><button type="button" id="quizCheck" class="primary" data-en="Check">核對</button><button type="button" id="quizGive" data-en="Show the answer">看答案</button></div>
+          </div>
+          <p class="info" id="quizOut" aria-live="polite"></p>
+          <div class="tablewrap"><table class="data" id="quizTbl"></table></div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="What to look for">實驗目的</h2>
+      <ol>
+        <li data-en="See the shapes of the s, p, d (and f) orbitals and how they are oriented in space.">認識 s、p、d（以及 f）軌域的形狀與在空間中的方向。</li>
+        <li data-en="Find the radial and angular nodes and relate their numbers to the quantum numbers n and l.">找出徑向節面與角節面，並把它們的數目和量子數 n、l 連起來。</li>
+        <li data-en="Read the radial distribution: the most probable radius, the average radius and the probability of finding the electron inside a sphere.">讀懂徑向分布：最可能半徑、平均半徑，以及電子出現在某個球以內的機率。</li>
+      </ol>
+
+      <h2 style="margin-top:18px" data-en="Principle">原理</h2>
+      <h3 data-en="Wave function and orbital">波函數與軌域</h3>
+      <p data-en-html="Solving the Schrödinger equation for an atom with one electron (H, He&lt;sup&gt;+&lt;/sup&gt;, Li&lt;sup&gt;2+&lt;/sup&gt;) gives wave functions ψ. Each one splits into a radial part, which depends only on the distance r, and an angular part, which depends only on the direction. An orbital is one such wave function; \(|\psi|^2\) is the probability density — the probability of finding the electron in a tiny volume around a point, divided by that volume.">解單一電子原子（H、He<sup>+</sup>、Li<sup>2+</sup>）的薛丁格方程式，得到波函數 ψ。每一個都能拆成只和距離 r 有關的徑向部分，與只和方向有關的角度部分。一個波函數就是一個軌域；\(|\psi|^2\) 是機率密度——在某點附近一個小體積內找到電子的機率，除以這個體積。</p>
+      <div class="formula">\[ \psi_{n\ell m}(r,\theta,\phi) = R_{n\ell}(r)\,Y_{\ell m}(\theta,\phi), \qquad \int |\psi|^2\,dV = 1 \]</div>
+      <h3 data-en="Four quantum numbers">四個量子數</h3>
+      <div class="qn-wrap"><table class="qn">
+        <tr><th data-en="Quantum number">量子數</th><th data-en="Allowed values">可以是</th><th data-en="Decides">決定什麼</th></tr>
+        <tr><td data-en="Principal n">主量子數 n</td><td>1, 2, 3, …</td><td data-en="Energy (for one electron, only n matters) and size">能量（單一電子時只看 n）與大小</td></tr>
+        <tr><td data-en="Angular l">角量子數 l</td><td data-en="0, 1, …, n − 1 (s, p, d, f)">0, 1, …, n − 1（s, p, d, f）</td><td data-en="Shape; number of angular nodes">形狀；角節面的數目</td></tr>
+        <tr><td data-en-html="Magnetic m&lt;sub&gt;l&lt;/sub&gt;">磁量子數 m<sub>l</sub></td><td>−l, …, 0, …, +l</td><td data-en="Orientation; 2l + 1 orbitals in a subshell">方向；一個副層有 2l + 1 個軌域</td></tr>
+        <tr><td data-en-html="Spin m&lt;sub&gt;s&lt;/sub&gt;">自旋量子數 m<sub>s</sub></td><td>+½, −½</td><td data-en="Two electrons per orbital (not drawn: it does not change the shape)">每個軌域最多 2 個電子（不影響形狀，所以不畫）</td></tr>
+      </table></div>
+      <p data-en-html="The textbook orbitals p&lt;sub&gt;x&lt;/sub&gt;, p&lt;sub&gt;y&lt;/sub&gt;, d&lt;sub&gt;xy&lt;/sub&gt; … are real combinations of the wave functions with \(m_l = +|m|\) and \(-|m|\); p&lt;sub&gt;z&lt;/sub&gt;, d&lt;sub&gt;z&lt;sup&gt;2&lt;/sup&gt;&lt;/sub&gt; and f&lt;sub&gt;z&lt;sup&gt;3&lt;/sup&gt;&lt;/sub&gt; have \(m_l = 0\).">課本上的 p<sub>x</sub>、p<sub>y</sub>、d<sub>xy</sub>…是 \(m_l = +|m|\) 與 \(-|m|\) 兩個波函數組合成的實數軌域；p<sub>z</sub>、d<sub>z<sup>2</sup></sub>、f<sub>z<sup>3</sup></sub> 則是 \(m_l = 0\)。</p>
+      <h3 data-en="Energy">能量</h3>
+      <div class="formula">\[ E_n = -\frac{Z^2}{n^2}\times 13.6\ \text{eV} = -\frac{Z^2}{n^2}\times 1312\ \text{kJ/mol} \]</div>
+      <p data-en="With only one electron, 3s, 3p and 3d have exactly the same energy. In atoms with many electrons the inner electrons shield the outer ones unequally, and s &lt; p &lt; d inside the same shell.">只有一個電子時，3s、3p、3d 的能量完全相同。多電子原子中，內層電子對外層電子的遮蔽不一樣，同一層內才變成 s &lt; p &lt; d。</p>
+      <h3 data-en="Nodes">節面</h3>
+      <p data-en-html="A node is a surface on which ψ = 0: the electron is never found there. Where the radial part is zero we get spheres (radial nodes); where the angular part is zero we get planes or cones through the nucleus (angular nodes). ψ changes sign across every node.">節面是 ψ = 0 的曲面：電子絕不會出現在上面。徑向部分為 0 的地方是球面（徑向節面）；角度部分為 0 的地方是通過原子核的平面或圓錐（角節面）。每穿過一個節面，ψ 就變號一次。</p>
+      <div class="formula multi">
+        \[ \text{radial} = n-\ell-1 \]
+        \[ \text{angular} = \ell \]
+        \[ \text{total} = n-1 \]
+      </div>
+      <p data-en-html="Examples: 2s has a spherical node at \(r = 2a_0/Z\); 2p&lt;sub&gt;z&lt;/sub&gt; has the xy plane; d&lt;sub&gt;z&lt;sup&gt;2&lt;/sup&gt;&lt;/sub&gt; has two cones at \(\theta = 54.7^\circ\), where \(3\cos^2\theta - 1 = 0\).">例如：2s 在 \(r = 2a_0/Z\) 有一個球形節面；2p<sub>z</sub> 的節面是 xy 平面；d<sub>z<sup>2</sup></sub> 的節面是兩個圓錐，在 \(3\cos^2\theta - 1 = 0\) 的 \(\theta = 54.7^\circ\)。（公式中 radial 是徑向節面、angular 是角節面、total 是總數。）</p>
+      <h3 data-en="Radial distribution">徑向分布</h3>
+      <div class="formula multi">
+        \[ P(r) = r^2 R_{n\ell}(r)^2 \]
+        \[ \langle r \rangle = \frac{a_0}{2Z}\left[3n^2 - \ell(\ell+1)\right] \]
+        \[ R_{1s} = 2\left(\frac{Z}{a_0}\right)^{3/2} e^{-Zr/a_0} \]
+      </div>
+      <p data-en-html="\(|\psi|^2\) of 1s is largest at the nucleus, but the volume of a thin shell grows as \(4\pi r^2\,dr\). The product peaks at \(r = a_0/Z\): for hydrogen exactly the Bohr radius \(a_0 = 52.9\) pm. For orbitals with \(\ell = n - 1\) (1s, 2p, 3d, 4f) the most probable radius is \(n^2a_0/Z\) — the radius of Bohr's orbits.">1s 的 \(|\psi|^2\) 在原子核處最大，但薄球殼的體積 \(4\pi r^2\,dr\) 隨 r 變大。兩者相乘，最大值在 \(r = a_0/Z\)：氫原子剛好是波耳半徑 \(a_0 = 52.9\) pm。\(\ell = n - 1\) 的軌域（1s、2p、3d、4f）最可能半徑是 \(n^2a_0/Z\)，正好是波耳軌道的半徑。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en="1s, 2s, 3s: the same sphere, but larger and with 0, 1, 2 spherical nodes. Keep the three curves and compare.">1s、2s、3s：同樣是球形，卻越來越大，徑向節面 0、1、2 個。保留三條曲線比較看看。</li>
+        <li data-en-html="2p&lt;sub&gt;z&lt;/sub&gt; in the xz plane is a dumbbell; in the xy plane through the nucleus it vanishes completely, because that whole plane is its node.">2p<sub>z</sub> 在 xz 平面像啞鈴；在通過原子核的 xy 平面上卻完全消失，因為整個平面就是它的節面。</li>
+        <li data-en-html="Switch to “Wave function ψ (sign)”: the two lobes of a p orbital have opposite signs. The sign is not a charge; it matters when orbitals overlap to form bonds.">切換到「波函數 ψ（正負）」：p 軌域兩瓣的正負號相反。正負號不是電荷，而是軌域重疊形成化學鍵時才有意義。</li>
+        <li data-en-html="d&lt;sub&gt;z&lt;sup&gt;2&lt;/sup&gt;&lt;/sub&gt; looks different from the other four d orbitals: two lobes along z and a ring around the middle.">d<sub>z<sup>2</sup></sub> 和其他四個 d 軌域長得不一樣：沿 z 軸兩瓣，中間繞一圈環。</li>
+        <li data-en="Tick “Whole subshell”: px + py + pz together (or all five d orbitals) make a perfect sphere. That is why a filled or half-filled subshell is spherically symmetric.">勾選「整個副層加總」：px、py、pz 加起來（或五個 d 軌域加起來）是完美的球形。這就是填滿或半填滿的副層呈球對稱的原因。</li>
+        <li data-en-html="He&lt;sup&gt;+&lt;/sup&gt; and Li&lt;sup&gt;2+&lt;/sup&gt;: the same shapes shrink by a factor Z, because the nucleus pulls harder.">He<sup>+</sup>、Li<sup>2+</sup>：形狀一樣，只是縮小成 1/Z，因為原子核拉得更緊。</li>
+      </ul>
+
+      <h3 data-en="Questions for discussion">想一想</h3>
+      <ol>
+        <li data-en-html="Can an electron in 2p&lt;sub&gt;z&lt;/sub&gt; get from the upper lobe to the lower lobe, when the probability on the plane between them is zero?">2p<sub>z</sub> 上下兩瓣之間的平面上機率是 0，電子要怎麼從上面那瓣到下面那瓣？</li>
+        <li data-en="For 1s, |ψ|² is largest at the nucleus, yet the radial distribution is zero there. Is that a contradiction?">1s 的 |ψ|² 在原子核處最大，可是徑向分布在那裡卻是 0。這矛盾嗎？</li>
+        <li data-en="How many nodes does a 4d orbital have, and of which kinds?">4d 軌域有幾個節面？各是哪一種？</li>
+        <li data-en="A 2s electron spends a little time very close to the nucleus (the small inner hump), but 2p never does. How does this explain why, in lithium, 2s is lower in energy than 2p?">2s 電子有一小部分時間非常靠近原子核（內側的小峰），2p 卻沒有。這怎麼解釋鋰原子中 2s 的能量比 2p 低？</li>
+      </ol>
+      <details>
+        <summary data-en="Show suggested answers">看參考答案</summary>
+        <ol>
+          <li data-en="The electron is not a small ball travelling along a path. The orbital describes one standing wave spread over both lobes at once; asking how it ‘crosses’ the node treats it as a particle with a trajectory, which quantum mechanics does not give.">電子不是沿著軌跡移動的小球。軌域描述的是一個同時分布在兩瓣上的駐波；問它怎麼「穿過」節面，是把它當成有軌跡的粒子，而量子力學並不給電子軌跡。</li>
+          <li data-en-html="No. |ψ|² is the probability per unit volume. P(r) = 4πr²|ψ|² for 1s is the probability per unit radius: the shells near the nucleus are tiny, so even a high density gives a small probability. The peak at a&lt;sub&gt;0&lt;/sub&gt; comes from the balance of the two.">不矛盾。|ψ|² 是每單位體積的機率；1s 的 P(r) = 4πr²|ψ|² 是每單位半徑的機率。靠近原子核的球殼體積非常小，密度再大，機率還是很小。兩者平衡，峰值落在 a<sub>0</sub>。</li>
+          <li data-en="n − 1 = 3 nodes: n − l − 1 = 1 spherical (radial) node and l = 2 angular nodes (two planes, or two cones for 4dz²).">共 n − 1 = 3 個：n − l − 1 = 1 個球形（徑向）節面，l = 2 個角節面（兩個平面；4dz² 是兩個圓錐）。</li>
+          <li data-en="Close to the nucleus the 2s electron is hardly shielded by the 1s electrons and feels almost the full charge +3. This penetration lowers its average energy below that of 2p.">2s 電子靠近原子核時，幾乎沒有被 1s 電子遮住，感受到接近 +3 的完整核電荷。這種穿透效應讓它的平均能量比 2p 低。</li>
+        </ol>
+      </details>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Exact hydrogen-like wave functions: \(R_{n\ell}\) with generalized Laguerre polynomials and the usual normalization, and the real spherical harmonics used in chemistry textbooks. Every picture — slice, nodes, radial curve, isosurface and dot cloud — is calculated from these formulas; no shape is drawn by hand. Lengths are in Bohr radii \(a_0 = 52.9177\) pm; the nucleus is treated as infinitely heavy (for hydrogen the true ionization energy is 1312.0 instead of 1312.75 kJ/mol).">用類氫原子的精確波函數：\(R_{n\ell}\) 由廣義拉蓋爾多項式與標準歸一化常數組成，角度部分用化學課本的實數球諧函數。切面、節面、徑向曲線、等值面與機率雲全部由這些公式算出，沒有任何形狀是手畫的。長度以波耳半徑 \(a_0 = 52.9177\) pm 為單位；原子核質量視為無限大（氫原子真正的游離能是 1312.0 kJ/mol，這裡是 1312.75）。</li>
+        <li data-en-html="2D slice: ψ is evaluated on a grid in the chosen plane. Colour strength is proportional to |ψ| (the square root of |ψ|&lt;sup&gt;2&lt;/sup&gt;) so that the faint outer parts remain visible. Dashed circles are radial nodes (analytic), dashed lines and curves are angular nodes (where the angular part changes sign), the solid outline is the 3D isosurface cut by the plane.">2D 切面：在所選平面的格點上計算 ψ。顏色深淺 ∝ |ψ|（= √|ψ|<sup>2</sup>），讓外圍較淡的部分也看得到。虛線圓是徑向節面（解析解），虛線直線與曲線是角節面（角度部分變號的地方），實線輪廓是 3D 等值面和切面的交線。</li>
+        <li data-en-html="Isosurface: the value c is chosen so that the region \(|\psi| &gt; c\) contains exactly the chosen probability (default 90%), by integrating the separable \(R^2Y^2\) over 4000 directions and a fine radial grid; the surface \(\psi = \pm c\) is then extracted from a 3D grid (surface nets). Red is ψ &gt; 0, blue ψ &lt; 0.">等值面：選一個值 c，使 \(|\psi| &gt; c\) 的區域剛好包住指定的機率（預設 90%）——把可分離的 \(R^2Y^2\) 對 4000 個方向與細的徑向格點積分求得；再從 3D 格點取出 \(\psi = \pm c\) 的曲面（surface nets 法）。紅色是 ψ &gt; 0，藍色是 ψ &lt; 0。</li>
+        <li data-en="Dot cloud: 15 000 points drawn at random exactly from |ψ|²: the radius from the radial distribution (inverse of its cumulative integral) and the direction from the angular part by rejection sampling.">機率雲：依 |ψ|² 精確地隨機抽 15000 個點：半徑由徑向分布的累積積分反查，方向由角度部分用拒絕抽樣決定。</li>
+        <li data-en="“Whole subshell” shows the average of the 2l + 1 orbitals of the subshell, which is spherical (Unsöld's theorem). “Name that orbital” uses the 30 orbitals with n ≤ 4.">「整個副層加總」畫的是副層中 2l + 1 個軌域的平均，結果是球形（Unsöld 定理）。「認軌域」從 n ≤ 4 的 30 個軌域中抽題。</li>
+        <li data-en="Limitations: only one-electron atoms are exact. In many-electron atoms the orbitals have similar shapes, but their sizes and energies change because of shielding. The 3D view uses three.js (MIT licence), downloaded only when you switch to it, and scales every orbital to fit the screen; its true size is shown in the corner.">限制：只有單一電子的原子是精確的。多電子原子的軌域形狀相似，但大小與能量因遮蔽而改變。3D 立體使用 three.js 函式庫（MIT 授權，切換時才下載），每個軌域都自動縮放到填滿畫面，真正的大小寫在角落。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high chemistry · Atomic structure (quantum numbers, shapes of atomic orbitals, electron configuration).">課綱對應：高中化學・原子構造（量子數、原子軌域的形狀、電子組態）。</li>
+        <li data-en-html="OpenStax &lt;i&gt;Chemistry 2e&lt;/i&gt;, &lt;a href=&quot;https://openstax.org/books/chemistry-2e/pages/6-3-development-of-quantum-theory&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;6.3 Development of Quantum Theory&lt;/a&gt; (quantum numbers, shapes of orbitals, nodes)."><a href="https://openstax.org/books/chemistry-2e/pages/6-3-development-of-quantum-theory" target="_blank" rel="noopener">OpenStax《Chemistry 2e》6.3 Development of Quantum Theory</a>（英文；量子數、軌域形狀、節面）。</li>
+        <li data-en="L. Pauling and E. B. Wilson, Introduction to Quantum Mechanics (McGraw-Hill, 1935), chapter V — the hydrogen-atom wave functions.">L. Pauling、E. B. Wilson，《Introduction to Quantum Mechanics》（McGraw-Hill，1935）第五章——氫原子的波函數。</li>
+        <li data-en-html="Constants: CODATA 2018 (NIST), &lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Bohr radius&lt;/a&gt; 52.917 721 pm and &lt;a href=&quot;https://physics.nist.gov/cgi-bin/cuu/Value?rydhcev&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Rydberg energy&lt;/a&gt; 13.605 693 eV.">常數：CODATA 2018（NIST）的<a href="https://physics.nist.gov/cgi-bin/cuu/Value?bohrrada0" target="_blank" rel="noopener">波耳半徑</a> 52.917721 pm 與<a href="https://physics.nist.gov/cgi-bin/cuu/Value?rydhcev" target="_blank" rel="noopener">芮得柏能量</a> 13.605693 eV（英文）。</li>
+        <li data-en="A. Unsöld, Annalen der Physik 82, 355 (1927) — the sum over a subshell is spherical.">A. Unsöld，《Annalen der Physik》82 卷 355 頁（1927）——副層加總是球形。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/atomic-orbitals-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/atomic-orbitals-3d.js"></script>
+  <script src="js/atomic-orbitals.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="atomic-orbitals"></script>
+  <script src="js/missions/atomic-orbitals.js"></script>
+  <script src="js/stats.js" data-module="atomic-orbitals"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

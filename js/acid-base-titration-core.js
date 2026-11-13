@@ -188,18 +188,22 @@
    * pKin：指示劑的解離常數（取文獻常用值）；lo–hi：課本上肉眼看得出的變色範圍。
    * acid／base：兩種型在本模擬「2 滴指示劑、溶液 45 mL」時的吸光度（紅、綠、藍三個波段，教學用的近似值），
    * 只決定畫面顏色，不影響任何 pH 的計算。
+   * pT：滴定指數（titration exponent，Kolthoff），也就是用這個指示劑時實際判定終點的 pH：
+   *   酚酞 9.0（明顯的粉紅）、甲基橙 4.0（由紅轉橙）、甲基紅 5.0（橙）、溴瑞香草酚藍 7.0（綠）。
+   *   「顏色已經變了」= pH 從起點那一側越過 pT（11/12 改；以前用「鹼型比例改變 0.15」，甲基橙在 pH 2.72 就算變色，
+   *   比課本的 3.1–4.4 還早，強酸滴定的終點早了 0.93 mL）。
    */
   const INDICATORS = {
-    php: { zh: '酚酞', en: 'phenolphthalein', pKin: 9.4, lo: 8.2, hi: 10.0,
+    php: { zh: '酚酞', en: 'phenolphthalein', pKin: 9.4, lo: 8.2, hi: 10.0, pT: 9.0,
       acidName: ['無色', 'colourless'], baseName: ['粉紅', 'pink'],
       acid: [0, 0, 0], base: [0.03, 0.82, 0.28] },
-    mo: { zh: '甲基橙', en: 'methyl orange', pKin: 3.46, lo: 3.1, hi: 4.4,
+    mo: { zh: '甲基橙', en: 'methyl orange', pKin: 3.46, lo: 3.1, hi: 4.4, pT: 4.0,
       acidName: ['紅', 'red'], baseName: ['橙黃', 'orange-yellow'],
       acid: [0.06, 0.95, 0.62], base: [0.0, 0.22, 0.95] },
-    mr: { zh: '甲基紅', en: 'methyl red', pKin: 5.1, lo: 4.4, hi: 6.2,
+    mr: { zh: '甲基紅', en: 'methyl red', pKin: 5.1, lo: 4.4, hi: 6.2, pT: 5.0,
       acidName: ['紅', 'red'], baseName: ['黃', 'yellow'],
       acid: [0.04, 0.9, 0.5], base: [0.0, 0.07, 0.85] },
-    btb: { zh: '溴瑞香草酚藍', en: 'bromothymol blue', pKin: 7.1, lo: 6.0, hi: 7.6,
+    btb: { zh: '溴瑞香草酚藍', en: 'bromothymol blue', pKin: 7.1, lo: 6.0, hi: 7.6, pT: 7.0,
       acidName: ['黃', 'yellow'], baseName: ['藍', 'blue'],
       acid: [0.0, 0.08, 0.8], base: [0.95, 0.32, 0.05] }
   };
@@ -225,9 +229,14 @@
     if (!INDICATORS[ind]) return 0;
     return Math.abs(indicatorFraction(ind, ph) - indicatorFraction(ind, ph0));
   }
-  /** 「顏色已經變了」：鹼型比例改變至少 15%（例如酚酞的淡粉紅，肉眼已看得出來） */
+  /** 舊的判定門檻（鹼型比例改變量），只留給「滴落處出現顏色」這類提示參考 */
   const CHANGE = 0.15;
-  function changed(ind, ph0, ph) { return indicatorMoved(ind, ph0, ph) >= CHANGE; }
+  /** 「顏色已經變了」：pH 從起點那一側越過這個指示劑的滴定指數 pT */
+  function changed(ind, ph0, ph) {
+    const I = INDICATORS[ind];
+    if (!I) return false;
+    return ph0 < I.pT ? ph >= I.pT : ph <= I.pT;
+  }
   /** 指示劑的變色範圍是否包含某個 pH（例如當量點的 pH） */
   function covers(ind, ph) { const I = INDICATORS[ind]; return !!I && ph >= I.lo && ph <= I.hi; }
 

@@ -40,7 +40,7 @@
     {
       id: 'acid-base-titration-4', level: 4,
       title: { zh: '停在半當量點', en: 'Stop at half-equivalence' },
-      desc: { zh: '醋酸＋NaOH：剛好加入當量點一半的體積（±0.05 mL），看 pH 計：這時 pH 等於醋酸的 pKa。', en: 'Acetic acid + NaOH: add exactly half of the equivalence volume (±0.05 mL) and look at the pH meter — now pH equals the pKa of acetic acid.' },
+      desc: { zh: '醋酸＋NaOH：剛好加入當量點一半的體積（±0.05 mL），看 pH 計：這時 pH 約等於醋酸的 pKa。', en: 'Acetic acid + NaOH: add exactly half of the equivalence volume (±0.05 mL) and look at the pH meter — now the pH is close to the pKa of acetic acid.' },
       check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'wa' && d.meter && Math.abs(d.V - d.Veq / 2) <= 0.05 + E; }
     },
     {
@@ -52,7 +52,7 @@
     {
       id: 'acid-base-titration-6', level: 5,
       title: { zh: '強酸與弱酸的兩條曲線', en: 'Strong and weak, side by side' },
-      desc: { zh: '濃度、體積都相同的鹽酸和醋酸各滴定一次，都加到當量點體積的 1.5 倍以上，讓兩條滴定曲線同時留在圖上比較。', en: 'Titrate hydrochloric acid and acetic acid of the same concentration and volume, each to at least 1.5 times the equivalence volume, so both curves stay on the graph together.' },
+      desc: { zh: '鹽酸和醋酸各滴定一次（待測液的濃度與體積、另加的水、NaOH 的濃度都相同），都加到當量點體積的 1.5 倍以上，讓兩條滴定曲線同時留在圖上比較。', en: 'Titrate hydrochloric acid and acetic acid once each (same sample concentration and volume, same added water, same NaOH concentration), each to at least 1.5 times the equivalence volume, so both curves stay on the graph together.' },
       check: function (ev) {
         const d = ev.data;
         if (!isS(ev) || !d.curves) return false;
@@ -120,6 +120,64 @@
       check: function (ev) {
         const d = ev.data;
         return isS(ev) && (d.sys === 'wa' || d.sys === 'wb' || d.sys === 'mx') && d.meter && Math.abs(d.pH - 7) <= 0.05 && d.V < d.Veq - 0.02;
+      }
+    },
+    {
+      id: 'acid-base-titration-h4', level: 3, hidden: true,
+      riddle: { zh: '看錯了臉色，提早下了車。', en: 'Misread the face and got off too early.' },
+      // 醋酸＋NaOH 用甲基橙（3.1–4.4）判斷終點：還差 1 mL 以上就變色（指示劑選錯）
+      check: function (ev) { const d = ev.data; return isE(ev) && d.sys === 'wa' && d.ind === 'mo' && d.changed && d.indFixed && d.err <= -1 + E; }
+    },
+    {
+      id: 'acid-base-titration-h5', level: 5, hidden: true,
+      riddle: { zh: '多倒了一杯水，終點卻沒有搬家。', en: 'An extra cup of water, and the finish line did not move.' },
+      // 同一組待測液與滴定液，只改另加的水（相差 20 mL 以上），兩條曲線都滴過當量點：當量點體積一樣
+      check: function (ev) {
+        const d = ev.data;
+        if (!isS(ev) || !d.curves) return false;
+        const full = d.curves.filter(function (c) { return c.Vmax >= c.Veq - E; });
+        return full.some(function (a) {
+          return full.some(function (b) { return a.sys === b.sys && same(a.Ca, b.Ca) && same(a.Va, b.Va) && same(a.Cb, b.Cb) && b.Vw - a.Vw >= 20 - E; });
+        });
+      }
+    },
+    {
+      id: 'acid-base-titration-h6', level: 6, hidden: true,
+      riddle: { zh: '剛好扯平，卻還是偏向一邊。', en: 'Exactly even, and yet it still leans to one side.' },
+      // 醋酸＋NaOH 插著 pH 計剛好滴到當量點：pH 在 8 以上（醋酸根水解，鹽溶液呈鹼性）
+      check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'wa' && d.meter && Math.abs(d.V - d.Veq) <= 0.025 + E && d.pH >= 8; }
+    },
+    {
+      id: 'acid-base-titration-h7', level: 4, hidden: true,
+      riddle: { zh: '走到半路，它說出了自己的祕密。', en: 'Halfway along, it gives away its secret.' },
+      // 氨水＋HCl 插著 pH 計滴到半當量點：pH = 14 − pKb（≈ 9.25）
+      check: function (ev) { const d = ev.data; return isS(ev) && d.sys === 'wb' && d.meter && Math.abs(d.V - d.Veq / 2) <= 0.05 + E; }
+    },
+    {
+      id: 'acid-base-titration-h8', level: 9, hidden: true,
+      riddle: { zh: '淡得幾乎沒有味道，還是抓住了那一刻。', en: 'So weak it barely tastes of anything, and still the moment was caught.' },
+      // 0.002 M 以下的鹽酸與 NaOH：不用 pH 計、用顏色判斷終點，誤差 ≤ 0.10 mL（只有變色範圍在 7 附近的指示劑做得到）
+      check: function (ev) {
+        const d = ev.data;
+        return isE(ev) && d.sys === 'sa' && d.Ca <= 0.002 + E && d.Cb <= 0.002 + E && !d.meterUsed && d.ind !== 'none' && d.changed && d.indFixed && Math.abs(d.err) <= 0.1 + E;
+      }
+    },
+    {
+      id: 'acid-base-titration-h9', level: 7, hidden: true,
+      riddle: { zh: '不看儀表，只憑一雙眼，半滴也不差。', en: 'No meter, only a pair of eyes, and not half a drop off.' },
+      // 弱酸或弱鹼（醋酸、氨水）不用 pH 計，選對指示劑，用顏色判斷終點，誤差 ≤ 0.025 mL（半滴）
+      check: function (ev) {
+        const d = ev.data;
+        return isE(ev) && (d.sys === 'wa' || d.sys === 'wb') && !d.meterUsed && d.covers && d.changed && d.indFixed && Math.abs(d.err) <= 0.025 + E;
+      }
+    },
+    {
+      id: 'acid-base-titration-h10', level: 10, hidden: true,
+      riddle: { zh: '一瓶就夠，連出題的人都要點頭。', en: 'One flask is enough, and even the one who set it has to nod.' },
+      // 未知弱酸只用一瓶：濃度誤差 ≤ 0.1%、Ka 誤差 ≤ 1%（比大師任務更嚴）
+      check: function (ev) {
+        const d = ev.data;
+        return isA(ev) && d.flasks <= 1 && isFinite(d.errC) && isFinite(d.errKa) && Math.abs(d.errC) <= 0.001 + E && Math.abs(d.errKa) <= 0.01 + E;
       }
     }
   ]);
