@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Ocean Currents and Climate: Ekman Transport, Upwelling and El Niño | Astro Ni Science Lab">洋流與氣候：艾克曼輸送、湧升流與聖嬰｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 艾克曼與湧升頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root { --ek-wind: #475569; --ek-trans: #c2410c; --ek-probe: #db2777; --ek-land: #d6c7a1; --ek-sky: #e0f2fe; --ek-sea: #0e7490; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ek-wind: #cbd5e1; --ek-trans: #fb923c; --ek-probe: #f472b6; --ek-land: #6b5d43; --ek-sky: #0b1626; --ek-sea: #22d3ee; }
+    }
+    :root[data-theme="dark"] { --ek-wind: #cbd5e1; --ek-trans: #fb923c; --ek-probe: #f472b6; --ek-land: #6b5d43; --ek-sky: #0b1626; --ek-sea: #22d3ee; }
+    #cv { aspect-ratio: auto; height: 480px; touch-action: pan-y pinch-zoom; }
+    #gr { display: block; width: 100%; height: 260px; touch-action: pan-y pinch-zoom; }
+    .ek button, .ek select { min-height: 44px; }
+    .ek .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ek .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ek .slider input[type="range"] { height: 28px; margin: 0; }
+    .ek [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card { min-width: 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .ek dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .ek dl.readout dd { white-space: nowrap; }
+    .ek dl.readout dd.big { font-weight: 700; }
+    .ek dl.readout .sub { display: block; font-size: 0.88em; color: var(--muted); font-weight: 500; }
+    .state { display: inline-block; padding: 1px 10px; border-radius: 999px; font-weight: 700; background: var(--accent-soft); color: var(--accent); }
+    .state.nino { background: rgba(220, 38, 38, 0.14); color: #b91c1c; }
+    .state.nina { background: rgba(37, 99, 235, 0.14); color: #1d4ed8; }
+    :root[data-theme="dark"] .state.nino { color: #fca5a5; } :root[data-theme="dark"] .state.nina { color: #93c5fd; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .state.nino { color: #fca5a5; } :root:not([data-theme="light"]) .state.nina { color: #93c5fd; } }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 500px; border-radius: 8px; cursor: grab; touch-action: none; }
+    @media (max-width: 560px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+    .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 2px 0; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .legend .bar { display: inline-block; width: 120px; height: 10px; border-radius: 3px; vertical-align: -1px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ocean&quot;>Earth Science · Oceans</a> / Ekman transport and El Niño"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ocean">地球科學・海洋</a> ／ 艾克曼輸送與聖嬰</nav>
+      <h1 data-en="Ocean Currents and Climate: Ekman Transport, Upwelling and El Niño">洋流與氣候：艾克曼輸送、湧升流與聖嬰</h1>
+      <p data-en="Wind drags the sea surface, and the Earth’s rotation twists the current into a spiral that carries water at right angles to the wind. Use it to pull cold, nutrient-rich water up along a coast, then tilt the whole equatorial Pacific with the trade winds and see how El Niño and La Niña begin. In 2D or 3D.">風拖著海面走，地球自轉把海流扭成一道螺旋，讓整層海水往和風垂直的方向移動。用它把又冷又營養的深層海水拉上岸邊，再用信風把整個赤道太平洋的溫躍層吹斜，看聖嬰與反聖嬰怎麼開始。2D、3D 都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: a north wind blows along a west-facing coast in the Northern Hemisphere. Switch to “Coastal upwelling” and press “Play” to watch cold water rise.">試試看：北半球、海在西邊的海岸吹著北風。切到「沿岸湧升」按「播放」，看冷水怎麼湧上來。</p>
+    <div class="lab ek" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="主題" data-en-aria-label="Topic" id="modeSeg">
+            <button type="button" data-mode="spiral" aria-pressed="true" data-en="Ekman spiral">艾克曼螺旋</button>
+            <button type="button" data-mode="coast" aria-pressed="false" data-en="Coastal upwelling">沿岸湧升</button>
+            <button type="button" data-mode="equator" aria-pressed="false" data-en="Equatorial Pacific">赤道太平洋</button>
+          </div>
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D">2D</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D">3D</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Tilted" title="斜看" data-en-title="Tilted view">斜看</button>
+          <button type="button" id="camTop" data-en="From above" title="從上往下看" data-en-title="Looking straight down">正上方</button>
+          <button type="button" id="camSide" data-en="From the side" title="從側面看剖面" data-en-title="Side view of the section">側面</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="艾克曼螺旋：左邊從上往下看各深度的海流，右邊是斜看的海流柱" data-en-aria-label="Ekman spiral: currents at each depth seen from above (left) and as a tilted column (right)"></canvas>
+        <div id="view3"></div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
+        <div class="playbar">
+          <button id="playBtn" type="button" data-en="Play" hidden>播放</button>
+          <button id="clearBtn" type="button" data-en="Clear all" title="時間歸零、清掉圖表上的軌跡；滑桿設定不變" data-en-title="Reset the time and clear the traces on the chart; the sliders stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" id="hint2d">—</p>
+        <p class="hint l3" id="hint3d">—</p>
+
+        <section class="chart-card">
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="windCard">
+          <h2 data-en="Wind and latitude">風與緯度</h2>
+          <div class="segw" role="group" aria-label="半球" data-en-aria-label="Hemisphere" id="hemiSeg">
+            <button type="button" data-hemi="N" aria-pressed="true" data-en="Northern Hemisphere">北半球</button>
+            <button type="button" data-hemi="S" aria-pressed="false" data-en="Southern Hemisphere">南半球</button>
+          </div>
+          <div class="slider"><label for="lat" data-en="Latitude (°)">緯度（度）</label><output></output>
+            <input id="lat" type="range" min="5" max="80" step="0.5" value="35" data-decimals="2"></div>
+          <div class="slider"><label for="U" data-en="Wind speed (m/s, 10 m above the sea)">風速（m/s，海面上 10 m）</label><output></output>
+            <input id="U" type="range" min="0" max="25" step="0.1" value="10" data-decimals="2"></div>
+          <div class="slider"><label for="windFrom" data-en="Wind blows from (° from north; 0 = north wind)">風從哪裡吹來（由北順時針的方位；0＝北風）</label><output></output>
+            <input id="windFrom" type="range" min="0" max="359" step="1" value="0" data-decimals="1"></div>
+          <p class="hint" id="windHint">—</p>
+        </section>
+        <section class="card" id="spiralCard">
+          <h2 data-en="Ekman spiral">艾克曼螺旋</h2>
+          <div class="slider"><label for="Av" data-en-html="Eddy viscosity A&lt;sub&gt;v&lt;/sub&gt; (m&lt;sup&gt;2&lt;/sup&gt;/s)">渦黏滯係數 A<sub>v</sub>（m<sup>2</sup>/s）</label><output></output>
+            <input id="Av" type="range" min="0.005" max="0.1" step="0.001" value="0.02" data-decimals="4"></div>
+          <div class="slider"><label for="zProbe" data-en="Probe depth (m)">探測深度（m）</label><output></output>
+            <input id="zProbe" type="range" min="0" max="300" step="1" value="30" data-decimals="1"></div>
+          <p class="hint" data-en="The eddy viscosity measures how strongly turbulence passes momentum downward: stronger mixing gives a deeper spiral.">渦黏滯係數代表亂流把動量往下傳的能力：混合越強，螺旋伸得越深。</p>
+        </section>
+        <section class="card" id="coastCard" hidden>
+          <h2 data-en="Coast">海岸</h2>
+          <div class="segw" role="group" aria-label="海岸方向" data-en-aria-label="Which side the sea is on" id="coastSeg">
+            <button type="button" data-coast="W" aria-pressed="true" data-en="Sea to the west (e.g. California, Peru)">海在西邊（例：加州、秘魯）</button>
+            <button type="button" data-coast="E" aria-pressed="false" data-en="Sea to the east (e.g. eastern Taiwan)">海在東邊（例：臺灣東岸）</button>
+          </div>
+          <div class="slider"><label for="H1" data-en="Warm surface layer thickness (m)">表層暖水的厚度（m）</label><output></output>
+            <input id="H1" type="range" min="10" max="80" step="1" value="30" data-decimals="1"></div>
+          <div class="slider"><label for="days" data-en="Days the wind has blown">風吹了幾天</label><output></output>
+            <input id="days" type="range" min="0" max="20" step="0.1" value="0" data-decimals="2"></div>
+        </section>
+        <section class="card" id="eqCard" hidden>
+          <h2 data-en="Trade winds">信風</h2>
+          <div class="slider"><label for="p" data-en="Trade-wind stress (% of normal; negative = westerly)">信風的風應力（平常的 %；負＝西風）</label><output></output>
+            <input id="p" type="range" min="-50" max="200" step="1" value="100" data-decimals="1"></div>
+          <p class="hint" id="eqHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="rdSpiral">
+            <dt data-en="Coriolis parameter f">科氏參數 f</dt><dd id="rF">—</dd>
+            <dt data-en="Wind stress τ">風應力 τ</dt><dd id="rTau">—</dd>
+            <dt data-en="Surface current">表面流</dt><dd id="rV0" class="big">—</dd>
+            <dt data-en="Ekman depth">艾克曼深度</dt><dd id="rDE" class="big">—</dd>
+            <dt data-en="Net Ekman transport">淨艾克曼輸送</dt><dd id="rM" class="big">—</dd>
+            <dt data-en="At the probe depth">探測深度的海流</dt><dd id="rProbe">—</dd>
+          </dl>
+          <dl class="readout" id="rdCoast" hidden>
+            <dt data-en="Offshore Ekman transport">離岸的艾克曼輸送</dt><dd id="rMoff" class="big">—</dd>
+            <dt data-en="Upwelling index">湧升指數</dt><dd id="rBakun">—</dd>
+            <dt data-en="Rossby radius R">羅士比變形半徑 R</dt><dd id="rRd">—</dd>
+            <dt data-en="Upwelling speed at the coast">岸邊的湧升速度</dt><dd id="rW" class="big">—</dd>
+            <dt data-en="Thermocline rise at the coast">岸邊溫躍層抬升</dt><dd id="rEta">—</dd>
+            <dt data-en="Sea-surface temperature at the coast">岸邊海面溫度</dt><dd id="rSST" class="big">—</dd>
+            <dt data-en="Nitrate at the surface">海面的硝酸鹽</dt><dd id="rNO3">—</dd>
+          </dl>
+          <dl class="readout" id="rdEq" hidden>
+            <dt data-en="Wind stress τ">風應力 τ</dt><dd id="rTauE">—</dd>
+            <dt data-en="Thermocline depth west / east">溫躍層深度 西／東</dt><dd id="rH" class="big">—</dd>
+            <dt data-en="Sea level, west minus east">海面高度差（西減東）</dt><dd id="rDeta" class="big">—</dd>
+            <dt data-en="Sea-surface temperature, east">東太平洋海面溫度</dt><dd id="rSstE">—</dd>
+            <dt data-en="State">狀態</dt><dd id="rState" class="big">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="The Ekman spiral">艾克曼螺旋</h3>
+      <p data-en-html="In 1893 Fridtjof Nansen noticed that sea ice drifted 20–40° to the right of the wind. Vagn Walfrid Ekman worked out why (1905): the wind drags the top layer, the Coriolis effect turns it to the right (Northern Hemisphere), the top layer drags the next one, which turns further, and so on. The current weakens and turns with depth like a spiral staircase:">1893 年南森發現北極的海冰不是順著風漂，而是偏向風的右邊 20–40°。艾克曼（V. W. Ekman）在 1905 年解釋了原因：風拖動最上層的水，科氏效應讓它往右偏（北半球）；這一層再拖動下一層，下一層又再偏一點……海流隨深度越來越弱、越轉越多，像一道螺旋梯：</p>
+      <div class="formula">\[ V(z) = V_0\, e^{z/d},\qquad d = \sqrt{\frac{2A_v}{|f|}},\qquad V_0 = \frac{\tau}{\rho\sqrt{A_v |f|}},\qquad f = 2\Omega\sin\varphi \]</div>
+      <p data-en-html="The surface current runs 45° from the wind, and at the <strong>Ekman depth</strong> \(D_E = \pi d\) it flows exactly the opposite way, at only \(e^{-\pi} \approx 4\%\) of its surface speed. Add up all the layers and the <strong>net transport is at right angles to the wind</strong> — to the right in the north, to the left in the south — and does not depend on the eddy viscosity:">表面流偏離風向 45°；到了<strong>艾克曼深度</strong> \(D_E = \pi d\)，海流剛好反向，速度只剩表面的 \(e^{-\pi} \approx 4\%\)。把每一層加起來，<strong>淨輸送和風向垂直</strong>——北半球在右邊、南半球在左邊——而且和渦黏滯係數無關：</p>
+      <div class="formula">\[ M = \frac{\tau}{\rho\,|f|}\quad(\text{m}^2/\text{s}),\qquad \tau = \rho_{\text{air}}\,C_D\,U^2 \]</div>
+      <h3 data-en="Coastal upwelling">沿岸湧升</h3>
+      <p data-en-html="When the wind blows along a coast with the sea on its left (Northern Hemisphere, looking downwind), the Ekman transport carries surface water away from the shore. Water from below rises to replace it, within about a Rossby radius \(R = \sqrt{g'H_1}/|f|\) (about 10 km) of the coast, at a few metres to tens of metres per day. The cold, nutrient-rich water feeds plankton and fish: the coasts of California, Peru–Chile, north-west and south-west Africa are only about 1% of the ocean’s area, yet supply roughly a fifth of the world’s fish catch.">風沿著海岸吹，北半球順著風看海在左手邊時，艾克曼輸送把表層水推離岸邊，下面的水就湧上來補充。湧升集中在離岸約一個羅士比變形半徑 \(R = \sqrt{g'H_1}/|f|\)（約 10 km）以內，速度每天幾公尺到幾十公尺。湧上來的水又冷又富含營養鹽，養活大量浮游生物和魚：加州、秘魯–智利、西北非與西南非的湧升區只占海洋面積約 1%，漁獲卻約占全世界的五分之一。</p>
+      <div class="formula">\[ w = \frac{M_\perp}{R},\qquad \eta(x,t) = \frac{M_\perp\, t}{R}\,e^{-x/R} \]</div>
+      <h3 data-en="The equatorial Pacific and El Niño">赤道太平洋與聖嬰</h3>
+      <p data-en-html="The trade winds push warm surface water west, piling it up in the western Pacific warm pool. In steady state the push is balanced by the slope of the thermocline (the boundary between the warm upper layer and the cold water below, usually taken as the 20 °C isotherm):">信風把溫暖的表層海水往西推，堆在西太平洋的暖池。穩定時，這股推力和溫躍層（上層暖水與下層冷水的交界，赤道上習慣用 20 °C 等溫線）的傾斜互相平衡：</p>
+      <div class="formula">\[ \Delta h = \frac{\tau L}{\rho\, g' H},\qquad \Delta\eta = \frac{g'}{g}\,\Delta h \]</div>
+      <p data-en-html="Normally the thermocline is about 200 m deep in the west but only about 40 m in the east, where upwelling easily brings cold water to the surface; the sea surface in the west stands about half a metre higher. When the trade winds weaken, the thermocline flattens, the east warms — <strong>El Niño</strong>; when they strengthen, the east cools further — <strong>La Niña</strong>. The real ocean then amplifies these changes through the Bjerknes feedback (warmer east → weaker trades → even warmer east), which this steady model leaves out.">平常溫躍層在西邊約 200 m 深，在東邊只有約 40 m，湧升很容易把冷水帶到海面；西邊的海面比東邊高約半公尺。信風減弱時溫躍層變平、東太平洋變暖——<strong>聖嬰</strong>；信風增強時東邊更冷——<strong>反聖嬰</strong>。真實的海洋還會透過「畢雅克尼斯回饋」放大這些變化（東邊變暖 → 信風更弱 → 東邊更暖），這個穩定模式沒有包含。</p>
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Spiral</strong>: change only the eddy viscosity. The spiral stretches or squeezes, but the net transport (the orange arrow) stays exactly the same.">
+          <strong>螺旋</strong>：只改渦黏滯係數，螺旋會拉長或壓扁，但淨輸送（橘色箭頭）完全不變。</li>
+        <li data-en-html="<strong>Taiwan</strong>: in summer the south-west monsoon blows along the east coast of Taiwan (sea to the east). Does it cause upwelling or downwelling? What about the north-east monsoon in winter?">
+          <strong>臺灣</strong>：夏季西南季風沿著臺灣東岸（海在東邊）吹，會造成湧升還是下沉？冬季的東北季風呢？</li>
+        <li data-en-html="<strong>El Niño</strong>: lower the trade winds to 80% of normal and watch where the warmest water — and the rain clouds above it — move.">
+          <strong>聖嬰</strong>：把信風降到平常的 80%，看最暖的海水——以及它上方的雨雲——跑到哪裡去。</li>
+      </ul>
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Ekman spiral: steady state, constant eddy viscosity, infinitely deep ocean (Ekman 1905). Wind stress from the Large &amp; Pond (1981) drag coefficient, ρ = 1025 kg/m³ for sea water, 1.22 kg/m³ for air. Ekman theory fails near the equator where \(f \to 0\), so latitudes start at 5°.">艾克曼螺旋：穩定狀態、渦黏滯係數固定、海無限深（Ekman 1905）。風應力用 Large 與 Pond（1981）的拖曳係數；海水 ρ = 1025 kg/m³、空氣 1.22 kg/m³。赤道附近 \(f \to 0\)，艾克曼理論不適用，所以緯度從 5° 起。</li>
+        <li data-en-html="Coastal upwelling: the linear two-layer response of Gill (1982, §10.8) with \(g' = 0.02\) m/s². The whole upper ocean is lifted by \(\eta\), so the water at depth \(z\) came from \(z - \eta\). The temperature and nitrate profiles are typical illustrative values (surface 20 °C, deep 8 °C; no nitrate in the surface layer, 25 μmol/L at depth). The model is linear: once the cold water reaches the surface the real front stops moving offshore, which is not included.">沿岸湧升：Gill（1982，第 10.8 節）的線性兩層模式，\(g' = 0.02\) m/s²。上層海洋整體被抬高 \(\eta\)，所以深度 \(z\) 的水原本在 \(z - \eta\)。溫度與硝酸鹽的剖面是典型的示意值（表層 20 °C、深層 8 °C；表層幾乎沒有硝酸鹽、深層 25 μmol/L）。模式是線性的：真實的冷水露出海面後，湧升鋒面會停下來，這裡沒有包含。</li>
+        <li data-en-html="Equatorial Pacific: steady reduced-gravity balance (Gill 1982, §11; Philander 1990), basin width 15 000 km, mean thermocline depth 120 m, \(g' = 0.04\) m/s², normal trade winds about 6 m/s. Normal (100%) gives 200 m in the west, 40 m in the east and a 0.66 m sea-level difference. The eastern sea-surface temperature is an illustrative formula, \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C: the shallower the 20 °C isotherm, the colder the water upwelling brings up. “El Niño-like” means 0.5 °C warmer than normal, the threshold NOAA uses for its Oceanic Niño Index. The rain cloud is drawn over the water warmer than about 28.5 °C, where deep convection happens (illustrative).">赤道太平洋：約化重力模式的穩定平衡（Gill 1982 第 11 節；Philander 1990），海盆寬 15000 km、平均溫躍層深 120 m、\(g' = 0.04\) m/s²，平常的信風約 6 m/s。平常（100%）西邊 200 m、東邊 40 m、海面高低差 0.66 m。東太平洋海溫用示意公式 \(T = 29.5 - 9.5\,e^{-h_E/40}\) °C：20 °C 等溫線越淺，湧升帶上來的水越冷。「類似聖嬰」是比平常暖 0.5 °C 以上，和美國 NOAA 海洋聖嬰指數的門檻相同。雨雲畫在海面溫度超過約 28.5 °C、對流旺盛的海域上空（示意）。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Ocean currents, upwelling, El Niño and the Southern Oscillation">課綱對應：高中地球科學・洋流、湧升流、聖嬰與南方振盪</li>
+        <li data-en-html="V. W. Ekman (1905), “On the influence of the earth’s rotation on ocean-currents”, <i>Arkiv för Matematik, Astronomi och Fysik</i> 2 (11).">V. W. Ekman（1905），“On the influence of the earth’s rotation on ocean-currents”，<i>Arkiv för Matematik, Astronomi och Fysik</i> 2 卷 11 期。</li>
+        <li data-en-html="W. G. Large and S. Pond (1981), “Open ocean momentum flux measurements in moderate to strong winds”, <i>Journal of Physical Oceanography</i> 11, 324–336.">W. G. Large 與 S. Pond（1981），<i>Journal of Physical Oceanography</i> 11 卷 324–336 頁（拖曳係數）。</li>
+        <li data-en-html="A. E. Gill (1982), <i>Atmosphere–Ocean Dynamics</i>, Academic Press.">A. E. Gill（1982），<i>Atmosphere–Ocean Dynamics</i>，Academic Press。</li>
+        <li data-en-html="S. G. H. Philander (1990), <i>El Niño, La Niña, and the Southern Oscillation</i>, Academic Press.">S. G. H. Philander（1990），<i>El Niño, La Niña, and the Southern Oscillation</i>，Academic Press。</li>
+        <li data-en-html="A. Bakun (1973), “Coastal upwelling indices, west coast of North America”, NOAA Technical Report NMFS SSRF-671 (upwelling index in m³/s per 100 m of coastline).">A. Bakun（1973），NOAA 技術報告 NMFS SSRF-671（湧升指數：每 100 m 海岸每秒幾立方公尺）。</li>
+        <li data-en-html="NOAA Climate Prediction Center, Oceanic Niño Index (ONI) definition (±0.5 °C threshold).">美國 NOAA 氣候預報中心：海洋聖嬰指數（ONI）的定義（±0.5 °C 門檻）。</li>
+        <li data-en-html="R. H. Stewart (2008), <i>Introduction to Physical Oceanography</i>, Texas A&amp;M University (open textbook), chapters 9 and 14.">R. H. Stewart（2008），<i>Introduction to Physical Oceanography</i>，Texas A&amp;M 大學開放教科書第 9、14 章。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/ekman-upwelling-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/ekman-upwelling.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="ekman-upwelling"></script>
+  <script src="js/missions/ekman-upwelling.js"></script>
+  <script src="js/stats.js" data-module="ekman-upwelling"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

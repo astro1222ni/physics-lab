@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Strata and Geologic Time: Relative and Radiometric Dating | Astro Ni Science Lab">地層與地質年代：相對定年與放射性定年｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 地層與地質年代頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root { --gt-sel: #db2777; --gt-ok: #15803d; --gt-bad: #b91c1c; --gt-sky: #dbeafe; --gt-sky2: #f8fafc; --gt-sea: rgba(14, 116, 144, 0.28); }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --gt-sel: #f472b6; --gt-ok: #4ade80; --gt-bad: #f87171; --gt-sky: #0b1626; --gt-sky2: #111c2e; --gt-sea: rgba(34, 211, 238, 0.22); }
+    }
+    :root[data-theme="dark"] { --gt-sel: #f472b6; --gt-ok: #4ade80; --gt-bad: #f87171; --gt-sky: #0b1626; --gt-sky2: #111c2e; --gt-sea: rgba(34, 211, 238, 0.22); }
+    #cv { aspect-ratio: auto; height: 460px; touch-action: pan-y pinch-zoom; cursor: crosshair; }
+    #gr { display: block; width: 100%; height: 240px; touch-action: pan-y pinch-zoom; }
+    .gt button, .gt select { min-height: 44px; }
+    .gt .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .gt .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .gt .slider input[type="range"] { height: 28px; margin: 0; }
+    .gt [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card { min-width: 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .gt dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .gt dl.readout dd { white-space: nowrap; }
+    .gt dl.readout dd.big { font-weight: 700; }
+    .gt dl.readout dd.wrap { white-space: normal; text-align: right; }
+    .gt dl.readout .sub { display: block; font-size: 0.88em; color: var(--muted); font-weight: 500; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    #view3 canvas { display: block; width: 100%; height: 500px; border-radius: 8px; cursor: grab; touch-action: none; }
+    @media (max-width: 560px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    #view3 { position: relative; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+    .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin: 8px 2px 0; font-size: calc(12px * var(--fs, 1)); color: var(--muted); }
+    .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 4px; border: 1px solid rgba(0, 0, 0, 0.25); }
+    .events { list-style: none; margin: 6px 0 0; padding: 0; font-size: calc(13px * var(--fs, 1)); max-height: 320px; overflow-y: auto; }
+    .events li { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 6px; padding: 4px 6px; border-radius: 6px; color: var(--muted); }
+    .events li.done { color: var(--text); }
+    .events li.now { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .events li span:first-child { font-variant-numeric: tabular-nums; text-align: right; }
+    .pick { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin: 6px 0; }
+    .pick button { min-height: 44px; padding: 4px 8px; font-size: calc(13px * var(--fs, 1)); text-align: left; display: flex; align-items: center; gap: 6px; }
+    .pick button b { display: inline-flex; align-items: center; justify-content: center; min-width: 1.7em; height: 1.7em; border-radius: 6px; background: var(--accent-soft); color: var(--accent); flex: none; }
+    .pick button[aria-pressed="true"] { opacity: 0.45; }
+    .pick button[aria-pressed="true"] b { background: var(--border); color: var(--muted); }
+    .seq { display: flex; flex-wrap: wrap; gap: 4px; min-height: 36px; padding: 6px; border: 1px dashed var(--border); border-radius: 8px; margin: 6px 0; align-items: center; }
+    .seq span { display: inline-flex; align-items: center; justify-content: center; min-width: 1.9em; height: 1.9em; padding: 0 4px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: calc(13px * var(--fs, 1)); }
+    .seq span.ok { background: rgba(21, 128, 61, 0.15); color: var(--gt-ok); }
+    .seq span.bad { background: rgba(185, 28, 28, 0.15); color: var(--gt-bad); }
+    .seq em { color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+    .rowbtn { display: flex; flex-wrap: wrap; gap: 6px; }
+    .rowbtn button { flex: 1 1 auto; }
+    .sel-name { font-weight: 700; margin: 2px 0 6px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Strata and geologic time"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 地層與地質年代</nav>
+      <h1 data-en="Strata and Geologic Time: Relative and Radiometric Dating">地層與地質年代：相對定年與放射性定年</h1>
+      <p data-en="Play a cliff’s 1.7-billion-year story layer by layer: seas come and go, rocks tilt, faults slip, magma intrudes and erosion rips pages out of the book. Then work like a geologist: put the events in order with nothing but the rocks, and measure real ages with uranium–lead, potassium–argon, rubidium–strontium and carbon-14. In 2D or 3D.">一層一層播放一面岩壁 17 億年的故事：海來了又走、地層傾斜、斷層滑動、岩漿侵入、侵蝕把整本書撕掉好幾頁。再像地質學家一樣工作：只看岩石排出事件的先後，並用鈾–鉛、鉀–氬、銣–鍶與碳十四量出真正的年代。2D、3D 都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” to watch the cliff form, then switch to “Dating lab”, tap the thin pale volcanic ash bed and measure it with uranium–lead.">試試看：按「播放」看岩壁怎麼形成，再切到「定年實驗室」，點那層淡色的薄火山灰，用鈾–鉛法量量看。</p>
+    <div class="lab gt" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="模式" data-en-aria-label="Mode" id="modeSeg">
+            <button type="button" data-mode="story" aria-pressed="true" data-en="The story">地層的故事</button>
+            <button type="button" data-mode="date" aria-pressed="false" data-en="Dating lab">定年實驗室</button>
+            <button type="button" data-mode="order" aria-pressed="false" data-en="Put in order">排出先後</button>
+          </div>
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D">2D</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D">3D</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Tilted" title="斜看" data-en-title="Tilted view">斜看</button>
+          <button type="button" id="camFront" data-en="Cliff face" title="正對岩壁" data-en-title="Facing the cliff">正面</button>
+          <button type="button" id="camTop" data-en="From above" title="從上往下看地表" data-en-title="Looking down on the surface">正上方</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="地層剖面" data-en-aria-label="Cross-section of the strata"></canvas>
+        <div id="view3"></div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
+        <div class="playbar">
+          <button id="playBtn" type="button" data-en="Play">播放</button>
+          <button id="clearBtn" type="button" data-en="Clear all" title="清掉量測紀錄與排好的順序，時間回到開頭；剖面選擇不變" data-en-title="Clear the measurements and your sequence and go back to the start; the chosen section stays">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" id="hint2d">—</p>
+        <p class="hint l3" id="hint3d" data-en="Drag to turn the block, pinch or scroll to zoom. The front face is the same cross-section as in 2D; the top is the land surface at the chosen time.">拖曳可以轉動方塊，雙指或滾輪縮放。正面就是 2D 的剖面；頂面是所選時間的地表。</p>
+
+        <section class="chart-card" id="chartCard">
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Cross-section">剖面</h2>
+          <div class="segw" role="group" aria-label="剖面" data-en-aria-label="Cross-section" id="scenSeg">
+            <button type="button" data-scen="A" aria-pressed="true" data-en="Section 1: 1.7 billion years">剖面一：17 億年</button>
+            <button type="button" data-scen="B" aria-pressed="false" data-en="Section 2: 500 million years">剖面二：5 億年</button>
+          </div>
+          <p class="hint" id="scenHint">—</p>
+        </section>
+        <section class="card" id="storyCard">
+          <h2 data-en="Time">時間</h2>
+          <div class="slider"><label for="t" data-en="Time (million years ago)">時間（百萬年前）</label><output></output>
+            <input id="t" type="range" min="0" max="1000" step="1" value="0" data-decimals="3"></div>
+          <p class="hint" data-en="The slider is stretched toward the present so the younger events have room; tap the number to type an exact time.">滑桿越接近現在刻度越細，讓年輕的事件也有空間；點數字可以直接輸入時間。</p>
+          <ol class="events" id="events"></ol>
+        </section>
+        <section class="card" id="dateCard" hidden>
+          <h2 data-en="Sample and method">樣本與定年法</h2>
+          <p class="sel-name" id="selName">—</p>
+          <p class="hint" data-en="Tap a rock in the cross-section to take a sample (or use the arrow keys on the picture).">在剖面上點一塊岩石來採樣（也可以在圖上用方向鍵）。</p>
+          <div class="segw" role="group" aria-label="定年法" data-en-aria-label="Dating method" id="sysSeg">
+            <button type="button" data-sys="U238" aria-pressed="true" data-en-html="&lt;sup&gt;238&lt;/sup&gt;U → &lt;sup&gt;206&lt;/sup&gt;Pb"><sup>238</sup>U → <sup>206</sup>Pb</button>
+            <button type="button" data-sys="U235" aria-pressed="false" data-en-html="&lt;sup&gt;235&lt;/sup&gt;U → &lt;sup&gt;207&lt;/sup&gt;Pb"><sup>235</sup>U → <sup>207</sup>Pb</button>
+            <button type="button" data-sys="K40" aria-pressed="false" data-en-html="&lt;sup&gt;40&lt;/sup&gt;K → &lt;sup&gt;40&lt;/sup&gt;Ar"><sup>40</sup>K → <sup>40</sup>Ar</button>
+            <button type="button" data-sys="Rb87" aria-pressed="false" data-en-html="&lt;sup&gt;87&lt;/sup&gt;Rb → &lt;sup&gt;87&lt;/sup&gt;Sr"><sup>87</sup>Rb → <sup>87</sup>Sr</button>
+            <button type="button" data-sys="C14" aria-pressed="false" data-en-html="&lt;sup&gt;14&lt;/sup&gt;C"><sup>14</sup>C</button>
+          </div>
+          <div class="rowbtn"><button type="button" id="measureBtn" data-en="Measure">量測</button></div>
+          <p class="hint" id="sysHint">—</p>
+        </section>
+        <section class="card" id="orderCard" hidden>
+          <h2 data-en="From oldest to youngest">由老到新排排看</h2>
+          <p class="hint" data-en="Tap the letters (in the picture or below) from the oldest event to the youngest. Rock units, the fault, the tilting and the unconformities (wavy lines) all count as events.">從最老的事件開始，依序點字母（在圖上或下面）。岩層、斷層、地層傾斜、不整合面（波浪線）都算一個事件。</p>
+          <p class="hint" id="tiltHint"></p>
+          <div class="pick" id="pick"></div>
+          <div class="seq" id="seq" aria-live="polite"></div>
+          <div class="rowbtn">
+            <button type="button" id="undoBtn" data-en="Undo">退一步</button>
+            <button type="button" id="checkBtn" data-en="Check">檢查</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="rdStory">
+            <dt data-en="Time">時間</dt><dd id="rT" class="big">—</dd>
+            <dt data-en="Era / period">代／紀</dt><dd id="rPer">—</dd>
+            <dt data-en="Happening now">正在發生</dt><dd id="rNow" class="wrap">—</dd>
+            <dt data-en="Ground surface">地表高度</dt><dd id="rLevel">—</dd>
+          </dl>
+          <dl class="readout" id="rdDate" hidden>
+            <dt data-en="Half-life">半衰期</dt><dd id="rHalf">—</dd>
+            <dt data-en="Measured ratio">量到的比值</dt><dd id="rRatio">—</dd>
+            <dt data-en="Age">年代</dt><dd id="rAge" class="big">—</dd>
+            <dt data-en="What the age means">這個年代代表</dt><dd id="rWhat" class="wrap">—</dd>
+            <dt data-en="Fossils">化石</dt><dd id="rFos" class="wrap">—</dd>
+          </dl>
+          <dl class="readout" id="rdOrder" hidden>
+            <dt data-en="Events to place">要排的事件</dt><dd id="rN">—</dd>
+            <dt data-en="Placed">已排</dt><dd id="rPlaced">—</dd>
+            <dt data-en="Result">結果</dt><dd id="rRes" class="big wrap">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Relative dating: reading the order">相對定年：讀出先後</h3>
+      <p data-en-html="In 1669 Nicolas Steno wrote down the rules every geologist still uses. <strong>Superposition</strong>: in undisturbed layers, the lower ones are older. <strong>Original horizontality</strong>: sediment settles in flat layers, so tilted or folded beds were moved later. <strong>Cross-cutting relationships</strong>: a dike, fault or erosion surface is younger than everything it cuts. An <strong>unconformity</strong> is a buried erosion surface — missing pages in the book. Above tilted layers it is an angular unconformity (James Hutton saw one at Siccar Point in 1788 and realised how vast geologic time must be); on top of granite or gneiss it is a nonconformity.">1669 年斯坦諾（Nicolas Steno）寫下了地質學家到今天都還在用的規則。<strong>疊置原理</strong>：沒有被擾動的地層，下面的比上面的老。<strong>原始水平原理</strong>：沉積物一層層平平地堆積，所以傾斜或褶皺的地層是後來才被移動的。<strong>截切關係</strong>：岩脈、斷層、侵蝕面比被它切過的一切都年輕。<strong>不整合面</strong>是被埋起來的侵蝕面——書裡被撕掉的幾頁；蓋在傾斜地層上的叫角度不整合（赫頓 1788 年在蘇格蘭的西卡角看到它，領悟地質時間有多麼漫長），蓋在花崗岩或片麻岩上的叫非整合。</p>
+      <p data-en-html="<strong>Fossils</strong> tell the time too (William Smith, 1815): each species lived for a limited span, so trilobites, graptolites, ammonites and dinosaurs mark different slices of the geologic time scale.">化石也能報時（威廉・史密斯，1815）：每種生物只生存在一段時間裡，所以三葉蟲、筆石、菊石、恐龍各自標記地質年代表上不同的時段。</p>
+      <h3 data-en="Radiometric dating: reading the clock">放射性定年：讀出時鐘</h3>
+      <p data-en-html="When a mineral crystallises it locks in radioactive parent atoms \(P\). They decay into daughter atoms \(D\) at a fixed rate, no matter the temperature or pressure:">礦物結晶時把放射性的母元素 \(P\) 鎖在晶體裡。母元素以固定的速率衰變成子元素 \(D\)，與溫度、壓力無關：</p>
+      <div class="formula">\[ P = P_0\,e^{-\lambda t},\qquad \frac{D}{P} = e^{\lambda t} - 1,\qquad t = \frac{1}{\lambda}\ln\!\left(1 + \frac{D}{P}\right),\qquad \lambda = \frac{\ln 2}{T_{1/2}} \]</div>
+      <p data-en-html="After one half-life \(D/P = 1\), after two \(D/P = 3\). Only 10.48% of \(^{40}\mathrm{K}\) decays become \(^{40}\mathrm{Ar}\), so K–Ar multiplies by that branching ratio. Rb–Sr uses an <strong>isochron</strong>: minerals from the same magma start with the same \(^{87}\mathrm{Sr}/^{86}\mathrm{Sr}\) but different amounts of Rb; they fall on a straight line whose slope is \(e^{\lambda t}-1\), so the initial strontium does not need to be known. Carbon-14 is different: living things keep the same \(^{14}\mathrm{C}\) level as the air, and after death it simply runs down, \(N/N_0 = e^{-\lambda t}\), useful only up to about 50 000 years.">經過一個半衰期 \(D/P = 1\)，兩個半衰期 \(D/P = 3\)。\(^{40}\mathrm{K}\) 只有 10.48% 衰變成 \(^{40}\mathrm{Ar}\)，所以鉀–氬法要乘上這個分支比。銣–鍶法用<strong>等時線</strong>：同一團岩漿結晶出的礦物，一開始的 \(^{87}\mathrm{Sr}/^{86}\mathrm{Sr}\) 相同、銣的含量不同，它們會落在一條直線上，斜率就是 \(e^{\lambda t}-1\)，不必知道一開始有多少鍶。碳十四不一樣：生物活著時體內的 \(^{14}\mathrm{C}\) 和大氣相同，死後只減不增，\(N/N_0 = e^{-\lambda t}\)，只能用到大約 5 萬年。</p>
+      <h3 data-en="Which rocks can be dated?">哪些岩石可以定年？</h3>
+      <p data-en-html="A radiometric age tells you when the clock was <em>started</em> — when the mineral crystallised. That is the age of an igneous rock (granite, basalt, volcanic ash). In a sandstone, the zircon grains are older debris eroded from somewhere else, so their age is only an upper limit for the sandstone. Shale and limestone have no suitable minerals, so geologists date them by <strong>bracketing</strong>: a layer sandwiched between two dated volcanic layers must be younger than the lower one and older than the upper one.">放射性定年量到的是時鐘「開始走」的時間——礦物結晶的時間。對火成岩（花崗岩、玄武岩、火山灰）來說這就是岩石的年代。砂岩裡的鋯石卻是從別處侵蝕來的碎屑，比砂岩老，只能當砂岩年代的上限。頁岩、石灰岩沒有適合的礦物，地質學家用<strong>夾擊</strong>的方法：一層岩石如果被兩層定過年的火山岩夾住，它一定比下面那層年輕、比上面那層老。</p>
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Two uranium clocks</strong>: measure the same ash bed with both uranium clocks. Two independent clocks that agree are the strongest evidence that the age is right.">
+          <strong>兩個鈾時鐘</strong>：同一層火山灰用 \(^{238}\mathrm{U}\) 和 \(^{235}\mathrm{U}\) 各量一次。兩個獨立的時鐘一致，是年代可信最有力的證據。</li>
+        <li data-en-html="<strong>The wrong clock</strong>: try carbon-14 on the 150-million-year-old ash. Why does it say “no carbon-14 left”, and what would happen if you used uranium on the 12 000-year-old charcoal?">
+          <strong>用錯時鐘</strong>：拿碳十四量 1.5 億年前的火山灰，為什麼說「碳十四已經衰變光了」？反過來用鈾去量 1.2 萬年前的木炭又會怎樣？</li>
+        <li data-en-html="<strong>Hutton’s gap</strong>: in Section 1, how many million years are missing at the wavy line above the tilted layers?">
+          <strong>赫頓的空白</strong>：在剖面一，傾斜地層上方那條波浪線，少掉了幾億年的紀錄？</li>
+      </ul>
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The cross-section is built from a list of geologic events. To find the rock at a point, the program runs time backwards from the youngest event: it un-tilts and un-faults the point, checks whether a dike or an erosion surface reaches it, and fills each sedimentary layer only where there was air at the time — so superposition, unconformities and cross-cutting all come out of the same rules. The sections are illustrative (inspired by the Grand Canyon, but not a copy of it).">剖面由一串地質事件建立。程式找某一點是什麼岩石時，從最年輕的事件往回推：把傾斜轉回去、把斷層移回去，看岩脈或侵蝕面有沒有經過這一點；沉積層只填滿當時是空氣的地方——疊置、不整合與截切關係都從同一套規則產生。兩個剖面是示意的（參考大峽谷的層序，但不是照抄）。</li>
+        <li data-en-html="Decay constants: \(^{238}\mathrm{U}\) 1.55125×10<sup>−10</sup> /yr and \(^{235}\mathrm{U}\) 9.8485×10<sup>−10</sup> /yr (Jaffey et al. 1971); \(^{40}\mathrm{K}\) 5.543×10<sup>−10</sup> /yr with 0.581×10<sup>−10</sup> /yr to argon (Steiger &amp; Jäger 1977); \(^{87}\mathrm{Rb}\) 1.3972×10<sup>−11</sup> /yr (Villa et al. 2015); \(^{14}\mathrm{C}\) half-life 5700 yr (NUBASE2020). Each measurement adds a reproducible random error of 0.2–0.6% (1σ), and the age uncertainty is propagated from it.">衰變常數：\(^{238}\mathrm{U}\) 1.55125×10<sup>−10</sup>／年、\(^{235}\mathrm{U}\) 9.8485×10<sup>−10</sup>／年（Jaffey 等人 1971）；\(^{40}\mathrm{K}\) 5.543×10<sup>−10</sup>／年，其中變成氬的是 0.581×10<sup>−10</sup>／年（Steiger 與 Jäger 1977）；\(^{87}\mathrm{Rb}\) 1.3972×10<sup>−11</sup>／年（Villa 等人 2015）；\(^{14}\mathrm{C}\) 半衰期 5700 年（NUBASE2020）。每次量測加上 0.2–0.6%（1σ）可重現的隨機誤差，年代的誤差由它傳遞而來。</li>
+        <li data-en-html="Simplifications: every mineral is a closed system (no lead, argon or strontium lost or gained), the metamorphic gneiss resets only its uranium clock, and radiocarbon ages are not calibrated against tree rings. Fossil ranges and period boundaries follow the International Chronostratigraphic Chart (2023).">簡化：每個礦物都是封閉系統（沒有鉛、氬、鍶跑掉或跑進來）；變質的片麻岩只重設鈾時鐘；碳十四年代沒有用樹輪校正。化石的生存年代與各紀的界線依國際地層委員會的地質年代表（2023）。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Strata, fossils, relative and absolute dating, the geologic time scale">課綱對應：高中地球科學・地層與化石、相對定年與絕對定年、地質年代</li>
+        <li data-en-html="A. H. Jaffey et al. (1971), “Precision measurement of half-lives and specific activities of <sup>235</sup>U and <sup>238</sup>U”, <i>Physical Review C</i> 4, 1889.">A. H. Jaffey 等人（1971），<i>Physical Review C</i> 4 卷 1889 頁（鈾的半衰期）。</li>
+        <li data-en-html="R. H. Steiger and E. Jäger (1977), “Subcommission on geochronology: convention on the use of decay constants in geo- and cosmochronology”, <i>Earth and Planetary Science Letters</i> 36, 359–362.">R. H. Steiger 與 E. Jäger（1977），<i>Earth and Planetary Science Letters</i> 36 卷 359–362 頁（定年用的衰變常數）。</li>
+        <li data-en-html="I. M. Villa et al. (2015), “IUPAC-IUGS recommendation on the half-life of <sup>87</sup>Rb”, <i>Geochimica et Cosmochimica Acta</i> 164, 382–385.">I. M. Villa 等人（2015），<i>Geochimica et Cosmochimica Acta</i> 164 卷 382–385 頁（<sup>87</sup>Rb 的半衰期）。</li>
+        <li data-en-html="F. G. Kondev et al. (2021), “The NUBASE2020 evaluation of nuclear physics properties”, <i>Chinese Physics C</i> 45, 030001.">F. G. Kondev 等人（2021），NUBASE2020，<i>Chinese Physics C</i> 45 卷 030001。</li>
+        <li data-en-html="International Commission on Stratigraphy, <i>International Chronostratigraphic Chart</i> v2023/09.">國際地層委員會，《國際年代地層表》2023/09 版。</li>
+        <li data-en-html="G. B. Dalrymple (1991), <i>The Age of the Earth</i>, Stanford University Press.">G. B. Dalrymple（1991），<i>The Age of the Earth</i>，Stanford University Press。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/geologic-time-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/geologic-time.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="geologic-time"></script>
+  <script src="js/missions/geologic-time.js"></script>
+  <script src="js/stats.js" data-module="geologic-time"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

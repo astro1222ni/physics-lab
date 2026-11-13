@@ -92,7 +92,17 @@ s.sun = 95; jump(s);
 expect('8 太陽 95%、從 288 K 出發 → ' + f2(s.T) + ' K、冰 ' + (snapshot(s).iceFrac * 100).toFixed(1) + '%', hits('8', s));
 expect('8 點圖直接放到 220 K 不算（沒有從溫暖的地球出發）', !hits('8', setTemp(page({ wv: true, ice: true }), 220)));
 s = page({ ice: true }); s.sun = 86; jump(s);
-expect('8 只開冰回饋、太陽 86% 也做得到 → ' + f2(s.T) + ' K', hits('8', s));
+expect('8 只開冰回饋、太陽 86% → ' + f2(s.T) + ' K 是雪球，但不算（要兩種回饋、太陽不低於 95%）', !hits('8', s));
+s = page({ wv: true, ice: true }); s.sun = 95.5; jump(s);
+expect('8 太陽 95.5%（滑桿一格）也做得到 → ' + f2(s.T) + ' K', hits('8', s));
+s = page({ wv: true, ice: true }); s.sun = 96; jump(s);
+expect('8 太陽 96%：還在臨界點上面，不會結冰 → ' + f2(s.T) + ' K', !hits('8', s));
+s = page({ wv: true, ice: true }); s.sun = 70; jump(s);
+expect('8 太陽拉到最小 70% 不算（暗太多）→ ' + f2(s.T) + ' K', !hits('8', s));
+s = page({ wv: true, ice: true, co2: 100 }); jump(s);
+expect('8 CO2 拉到最小 100 ppm 不算 → ' + f2(s.T) + ' K', !hits('8', s));
+s = page({ wv: true, ice: true }); s.eps = 0.5; jump(s);
+expect('8 改 ε0 讓地球變冷不算 → ' + f2(s.T) + ' K', !hits('8', s));
 // 9 回不去了
 s = page({ wv: true, ice: true }); s.sun = 95; jump(s); s.sun = 100; jump(s);
 expect('9 太陽調回 100% → 仍是 ' + f2(s.T) + ' K', hits('9', s));
@@ -108,6 +118,8 @@ expect('10 900 ppm 還不夠 → ' + f2(s.T) + ' K', !hits('10', s));
 s = page({ wv: true, ice: true }); s.sun = 95; jump(s); s.sun = 100; jump(s); s.co2 = 2000; jump(s);
 expect('10 開水氣回饋時 2000 ppm 也融不掉 → ' + f2(s.T) + ' K', !hits('10', s));
 expect('10 點圖直接放到 290 K 不算', !hits('10', jump(setTemp(page({ ice: true, co2: 950 }), 290))));
+s = page({ ice: true }); s.sun = 86; jump(s); s.sun = 100; jump(s); s.eps = 0.85; jump(s);
+expect('10 試玩回報 C5：CO₂ 不動、ε₀ 調到 0.85 融化 → ' + f2(s.T) + ' K，不算（要只靠 CO₂）', s.T >= 285 && !hits('10', s));
 // 11 年輕太陽
 s = page({ ice: true, eps: 0.95 }); s.sun = 75; jump(s);
 expect('11 先把 ε₀ 調到 0.95 再調暗太陽 → ' + f2(s.T) + ' K', hits('11', s));

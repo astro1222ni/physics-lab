@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Hubble’s Law and the Age of the Universe | Astro Ni Science Lab">哈伯定律與宇宙年齡｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 哈伯定律頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
+    :root {
+      --hb-space0: #070d22; --hb-space1: #1a2347; --hb-home: #38bdf8; --hb-target: #f472b6; --hb-light: #fde047; --hb-lightc: #ca8a04; --hb-arrow: #a3e635;
+      --hb-sphere: #f59e0b; --hb-fit: #0891b2; --hb-true: #16a34a; --hb-hub: #b45309; --hb-cep: #7c3aed; --hb-sn: #db2777;
+      --hb-curve: #2563eb; --hb-ref: #94a3b8; --hb-warn: #dc2626;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --hb-lightc: #fde047; --hb-space0: #03071a; --hb-space1: #121a3a; --hb-fit: #22d3ee; --hb-true: #4ade80; --hb-hub: #fbbf24; --hb-cep: #a78bfa; --hb-sn: #f472b6; --hb-curve: #60a5fa; --hb-ref: #64748b; --hb-warn: #f87171; }
+    }
+    :root[data-theme="dark"] { --hb-lightc: #fde047; --hb-space0: #03071a; --hb-space1: #121a3a; --hb-fit: #22d3ee; --hb-true: #4ade80; --hb-hub: #fbbf24; --hb-cep: #a78bfa; --hb-sn: #f472b6; --hb-curve: #60a5fa; --hb-ref: #64748b; --hb-warn: #f87171; }
+    #cv { aspect-ratio: auto; height: 480px; touch-action: pan-y pinch-zoom; cursor: pointer; }
+    @media (max-width: 560px) { #cv { height: 560px; } }
+    #gr { display: block; width: 100%; height: 280px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .hb button { min-height: 44px; }
+    .hb .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .hb .playbar button { flex: 1 1 auto; }
+    .hb .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .hb .slider input[type="range"] { height: 28px; margin: 0; }
+    .hb [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .segw.col { flex-direction: column; }
+    .segw.col button + button { border-left: none; border-top: 1px solid var(--border); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .notes li { overflow-wrap: anywhere; }
+    .warn { color: var(--hb-warn); font-weight: 700; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Hubble’s law"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 哈伯定律</nav>
+      <h1 data-en="Hubble’s Law and the Age of the Universe">哈伯定律與宇宙年齡</h1>
+      <p data-en="Galaxies are flying apart, and the farther they are the faster they go. Watch space itself stretch and carry the light’s wavelength with it, measure distances with Cepheids and supernovae to build your own Hubble diagram, then mix matter and dark energy to find out how old the universe is.">星系彼此遠離，而且越遠的跑得越快。看空間本身怎麼拉長、把光的波長一起拉長；用造父變星和超新星量距離，畫出你自己的哈伯圖；再調配物質與暗能量，算出宇宙有多老。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Expand”: the pink galaxy sends us a ray of light, and the light arrives redder than it left. Then make another galaxy your home and play again.">試試看：按「膨脹」，粉紅色的星系送來一道光，看光到達時變得多紅；再「搬家」到別的星系，重新播放一次。</p>
+    <div class="lab hb" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="expand" aria-pressed="true" data-en="The expanding universe">膨脹的宇宙</button>
+          <button type="button" data-mode="measure" aria-pressed="false" data-en="Measure Hubble’s constant">量哈伯常數</button>
+          <button type="button" data-mode="age" aria-pressed="false" data-en="The age of the universe">宇宙的年齡</button>
+        </div>
+        <canvas id="cv" aria-label="膨脹的宇宙" data-en-aria-label="The expanding universe"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">膨脹</button>
+          <button id="burst" type="button" hidden>全部量一遍</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除量測與動畫；設定不變" data-en-title="Clear the measurements and the animation; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <div id="expandPanel">
+          <section class="card">
+            <h2 data-en="Stretching space">拉長空間</h2>
+            <div class="slider"><label for="scale" data-en="Scale factor a (now = 1)">尺度因子 a（現在 = 1）</label><output></output>
+              <input id="scale" type="range" min="0.4" max="3" step="0.01" value="1" data-decimals="2"></div>
+            <div class="presets" role="group" aria-label="家" data-en-aria-label="Home">
+              <button type="button" id="moveHome" data-en="Move home to the pink galaxy">搬家到粉紅色的星系</button>
+              <button type="button" id="backHome" data-en="Back to the Milky Way">回到銀河系</button>
+            </div>
+            <p class="hint" id="expandHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="The pink galaxy">粉紅色的星系</h2>
+            <p class="big-num" id="eV">—</p>
+            <dl class="readout">
+              <dt data-en="Distance now">現在的距離</dt><dd id="eR" class="big">—</dd>
+              <dt data-en="Recession speed ÷ light speed">退行速度 ÷ 光速</dt><dd id="eVc">—</dd>
+              <dt data-en="Hubble parameter H">哈伯參數 H</dt><dd id="eH">—</dd>
+              <dt data-en="Hubble radius c/H">哈伯半徑 c/H</dt><dd id="eHub">—</dd>
+              <dt data-en="Light from it">它發出的光</dt><dd id="eZ">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="measurePanel" hidden>
+          <section class="card">
+            <h2 data-en="Measuring distance">量距離的方法</h2>
+            <div class="segw col" role="group" aria-label="方法" data-en-aria-label="Method" id="methodSeg"></div>
+            <p class="hint" id="methodHint">—</p>
+          </section>
+          <section class="card">
+            <h2 id="gName">—</h2>
+            <dl class="readout">
+              <dt data-en="Redshift z">紅移 z</dt><dd id="gZ">—</dd>
+              <dt data-en="Velocity v = cz">速度 v = cz</dt><dd id="gV" class="big">—</dd>
+              <dt data-en="Standard candle">標準燭光</dt><dd id="gC">—</dd>
+              <dt data-en="Distance">距離</dt><dd id="gD" class="big">—</dd>
+            </dl>
+          </section>
+          <section class="card">
+            <h2 data-en="Your Hubble constant">你的哈伯常數</h2>
+            <p class="big-num" id="mH">—</p>
+            <dl class="readout">
+              <dt data-en="Galaxies">星系</dt><dd id="mN">—</dd>
+              <dt data-en-html="Hubble time 1/H<sub>0</sub>">哈伯時間 1/H<sub>0</sub></dt><dd id="mT">—</dd>
+              <dt data-en="Age (with dark energy)">年齡（含暗能量）</dt><dd id="mAge" class="big">—</dd>
+              <dt data-en="This simulated universe">這個模擬宇宙</dt><dd id="mTrue">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="agePanel" hidden>
+          <section class="card">
+            <h2 data-en="What the universe is made of">宇宙的成分</h2>
+            <div class="slider"><label for="h0" data-en-html="Hubble constant H<sub>0</sub> (km/s/Mpc)">哈伯常數 H<sub>0</sub>（km/s/Mpc）</label><output></output>
+              <input id="h0" type="range" min="1.602" max="2.778" step="0.0005" value="1.8287"></div>
+            <div class="slider"><label for="om" data-en="Matter Ωm">物質 Ωm</label><output></output>
+              <input id="om" type="range" min="0" max="3" step="0.005" value="0.315" data-decimals="3"></div>
+            <div class="slider"><label for="ol" data-en="Dark energy ΩΛ">暗能量 ΩΛ</label><output></output>
+              <input id="ol" type="range" min="-1" max="1.5" step="0.005" value="0.685" data-decimals="3"></div>
+            <div class="presets" role="group" aria-label="宇宙模型" data-en-aria-label="Models" id="modelSeg"></div>
+            <p class="hint" id="ageHint">—</p>
+          </section>
+          <section class="card">
+            <h2 data-en="Its age and fate">年齡與命運</h2>
+            <p class="big-num" id="aAge">—</p>
+            <dl class="readout">
+              <dt data-en-html="Hubble time 1/H<sub>0</sub>">哈伯時間 1/H<sub>0</sub></dt><dd id="aT">—</dd>
+              <dt data-en="Curvature Ωk">曲率 Ωk</dt><dd id="aK">—</dd>
+              <dt data-en="Expansion now">現在的膨脹</dt><dd id="aQ">—</dd>
+              <dt data-en="Speeding up since">從何時開始加速</dt><dd id="aAcc">—</dd>
+              <dt data-en="The future">未來</dt><dd id="aFut" class="big">—</dd>
+              <dt data-en="Oldest stars (about 12.5 billion years)">最老的恆星（約 125 億年）</dt><dd id="aStar">—</dd>
+            </dl>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Hubble’s law">哈伯定律</h3>
+      <p data-en-html="In 1929 Edwin Hubble found that the farther a galaxy is, the faster it is moving away, in proportion:">1929 年，哈伯發現星系越遠，遠離我們的速度越快，而且成正比：</p>
+      <div class="formula">\[ v = H_0\, d, \qquad v \approx c\,z \;\;(z \ll 1), \qquad 1 + z = \frac{\lambda_{\mathrm{obs}}}{\lambda_{\mathrm{emit}}} \]</div>
+      <p data-en-html="It is not that the galaxies fly through space away from us: <strong>space itself stretches</strong>. If every distance grows by the same factor \(a(t)\), then any galaxy sees every other one receding at \(v = (\dot a / a)\,r = H r\): there is no centre. Light travelling between galaxies is stretched too, so \(1 + z = a_{\mathrm{rec}} / a_{\mathrm{emit}}\) (the scale factor when the light is received, divided by the one when it was sent). Beyond the <strong>Hubble radius</strong> \(c/H\) galaxies recede faster than light; this breaks no law, because nothing moves through space faster than light.">不是星系在空間中飛離我們，而是<strong>空間本身在拉長</strong>。所有距離都乘上同一個倍數 \(a(t)\)，任何一個星系看別的星系，退行速度都是 \(v = (\dot a / a)\,r = H r\)：宇宙沒有中心。星系之間走著的光也一起被拉長，所以 \(1 + z = a_{\mathrm{rec}} / a_{\mathrm{emit}}\)（收到時的尺度因子除以發出時的）。超過<strong>哈伯半徑</strong> \(c/H\) 的星系，退行速度比光還快；這不違反相對論，因為沒有東西在空間中跑得比光快。</p>
+      <h3 data-en="Measuring distances: standard candles">量距離：標準燭光</h3>
+      <p data-en-html="If you know how bright a star really is (absolute magnitude \(M\)) and you measure how bright it looks (\(m\)), the distance follows from the distance modulus. Henrietta Leavitt (1912) found that Cepheid variables with longer periods are brighter; Type Ia supernovae all peak at about \(M \approx -19.3\) and can be seen across the universe.">知道一顆星真正有多亮（絕對星等 \(M\)），再量它看起來有多亮（視星等 \(m\)），就能從距離模數算出距離。勒維特（1912）發現造父變星的週期越長越亮；Ia 型超新星最亮時都約 \(M \approx -19.3\)，在宇宙的另一頭也看得到。</p>
+      <div class="formula">\[ m - M = 5\log_{10}\frac{d}{10\ \mathrm{pc}}, \qquad M_V = -2.43\,(\log_{10} P - 1) - 4.05 \]</div>
+      <p data-en-html="Nearby galaxies have their own motions of a few hundred km/s (Andromeda is approaching us at 300 km/s), so only distant galaxies follow the law cleanly. Hubble’s own distances were about 7 times too small (Walter Baade found two kinds of Cepheids in 1952; Allan Sandage found in 1958 that Hubble’s “brightest stars” were glowing gas clouds), which gave \(H_0 \approx 500\) km/s/Mpc and a universe younger than the Earth.">近的星系還有各自幾百 km/s 的本動速度（仙女座星系以 300 km/s 朝我們飛來），只有遠的星系才乖乖照著定律走。哈伯自己的距離少算了約 7 倍（巴德 1952 年發現造父變星有兩種；桑德奇 1958 年發現哈伯當成「最亮恆星」的，其實是發光的氣體雲），所以他得到 \(H_0 \approx 500\) km/s/Mpc，算出的宇宙比地球還年輕。</p>
+      <h3 data-en="The age of the universe">宇宙的年齡</h3>
+      <p data-en-html="Run the expansion backwards: if it had always been at today’s speed, the age would be the Hubble time \(1/H_0\) (\(977.8/H_0\) billion years). Gravity of matter slows the expansion, so a matter-only universe is younger, \(\tfrac{2}{3}\cdot\tfrac{1}{H_0}\); dark energy speeds it up and makes the universe older. The Friedmann equation gives the whole history:">把膨脹倒著播：如果一直都是現在的速度，年齡就是哈伯時間 \(1/H_0\)（\(977.8/H_0\) 十億年）。物質的重力讓膨脹變慢，所以只有物質的宇宙比較年輕，只有 \(\tfrac{2}{3}\cdot\tfrac{1}{H_0}\)；暗能量讓膨脹加速，宇宙就老一些。整段歷史由 Friedmann 方程決定：</p>
+      <div class="formula">\[ H^2 = H_0^2\left(\frac{\Omega_r}{a^4} + \frac{\Omega_m}{a^3} + \frac{\Omega_k}{a^2} + \Omega_\Lambda\right), \qquad t_0 = \int_0^1 \frac{da}{a\,H(a)} \]</div>
+      <ul>
+        <li data-en-html="Planck (2018): \(H_0 = 67.4\), \(\Omega_m = 0.315\), \(\Omega_\Lambda = 0.685\): age 13.8 billion years, flat, speeding up since \(z \approx 0.63\) (about 6 billion years ago).">Planck 衛星（2018）：\(H_0 = 67.4\)、\(\Omega_m = 0.315\)、\(\Omega_\Lambda = 0.685\)：年齡 138 億年、平坦、從 \(z \approx 0.63\)（約 60 億年前）開始加速膨脹。</li>
+        <li data-en-html="Cepheids and supernovae (SH0ES, 2022) give \(H_0 = 73.0 \pm 1.0\): the two methods disagree by about 8 %. This “Hubble tension” is still unresolved; this simulation uses \(H_0 = 70\).">造父變星＋超新星（SH0ES，2022）得到 \(H_0 = 73.0 \pm 1.0\)：兩種方法差了約 8 %，這就是還沒解決的「哈伯張力」。這個模擬用 \(H_0 = 70\)。</li>
+        <li data-en-html="In the 1990s, measurements of \(H_0 \approx 70\) with a matter-only universe gave an age of 9 billion years, less than the oldest stars (about 12–13 billion years). The discovery of accelerating expansion in 1998 (Nobel Prize 2011) solved this “age crisis”.">1990 年代量到 \(H_0 \approx 70\)，若宇宙只有物質，年齡只有 90 億年，比最老的恆星（約 120–130 億年）還年輕。1998 年發現宇宙加速膨脹（2011 年諾貝爾物理獎），才解決了這個「年齡危機」。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="Expanding universe: 49 galaxies on a jittered grid, repeated in every direction; the expansion is uniform (\(\dot a\) constant, so \(H = H_0/a\) with \(H_0 = 70\)), and the light is integrated exactly, \(d\chi/dt = c/a\). Measuring: 7 real galaxies (distances and heliocentric velocities: representative values from NED) and 21 simulated galaxies in a universe with \(H_0 = 70\) and peculiar velocities of about 250 km/s; every measurement has a repeatable random error (Cepheids 0.15 mag, supernovae 0.12 mag, Hubble’s 1929 scale 0.35 mag and 7.2 times too close). All galaxies have \(z < 0.03\), where \(v = cz\) is accurate to about 2 %. Age: the Friedmann equation with radiation \(\Omega_r = 4.18\times10^{-5}/h^2\); the age is integrated exactly and \(a(t)\) is integrated with Runge–Kutta from \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\).">膨脹的宇宙：49 個星系排在微微錯開的格子上，往四面八方重複；膨脹是等速的（\(\dot a\) 固定，所以 \(H = H_0/a\)，\(H_0 = 70\)），光的路徑精確積分 \(d\chi/dt = c/a\)。量哈伯常數：7 個真實星系（距離與日心速度用 NED 的代表值）和 21 個模擬星系，模擬的宇宙 \(H_0 = 70\)、本動速度約 250 km/s；每次量測都有可重現的亂數誤差（造父變星 0.15 星等、超新星 0.12 星等、哈伯 1929 年的尺度 0.35 星等而且近了 7.2 倍）。所有星系 \(z < 0.03\)，\(v = cz\) 的誤差約 2 % 以內。宇宙年齡：Friedmann 方程含輻射 \(\Omega_r = 4.18\times10^{-5}/h^2\)；年齡精確積分，\(a(t)\) 用 Runge–Kutta 解 \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\)。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/hubble-expansion-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/hubble-expansion.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="hubble-expansion"></script>
+  <script src="js/missions/hubble-expansion.js"></script>
+  <script src="js/stats.js" data-module="hubble-expansion"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

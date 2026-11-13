@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Cold Fronts, Warm Fronts and the Plum Rain Front | Astro Ni Science Lab">冷鋒、暖鋒與梅雨鋒面｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 鋒面頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。 */
+    :root {
+      --fr-sky0: #9cc9ee; --fr-sky1: #e6f1fa; --fr-ground0: #7aa45a; --fr-ground1: #4d7a3a;
+      --fr-cold: #2563eb; --fr-warm: #dc2626; --fr-surf: #1e293b; --fr-cloud: #f8fafc; --fr-ns: #94a3b8; --fr-cb: #e2e8f0;
+      --fr-rain: #1d4ed8; --fr-press: #7c3aed; --fr-td: #0891b2; --fr-mark: #db2777; --fr-map: #f1f5f9;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --fr-sky0: #1f3a5a; --fr-sky1: #36506c; --fr-ground0: #3f5f33; --fr-ground1: #2a4224;
+        --fr-cold: #60a5fa; --fr-warm: #f87171; --fr-surf: #e2e8f0; --fr-cloud: #e5e7eb; --fr-ns: #8b97a8; --fr-cb: #cbd5e1;
+        --fr-rain: #93c5fd; --fr-press: #c4b5fd; --fr-td: #22d3ee; --fr-mark: #f472b6; --fr-map: #1e293b; }
+    }
+    :root[data-theme="dark"] { --fr-sky0: #1f3a5a; --fr-sky1: #36506c; --fr-ground0: #3f5f33; --fr-ground1: #2a4224;
+      --fr-cold: #60a5fa; --fr-warm: #f87171; --fr-surf: #e2e8f0; --fr-cloud: #e5e7eb; --fr-ns: #8b97a8; --fr-cb: #cbd5e1;
+      --fr-rain: #93c5fd; --fr-press: #c4b5fd; --fr-td: #22d3ee; --fr-mark: #f472b6; --fr-map: #1e293b; }
+    #cv { aspect-ratio: auto; height: 470px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 480px; } }
+    #gr { display: block; width: 100%; height: 300px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .fr button { min-height: 44px; }
+    .fr .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .fr .playbar button { flex: 1 1 auto; }
+    .fr .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .fr .slider input[type="range"] { height: 28px; margin: 0; }
+    .fr [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Fronts"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 鋒面</nav>
+      <h1 data-en="Cold Fronts, Warm Fronts and the Plum Rain Front">冷鋒、暖鋒與梅雨鋒面</h1>
+      <p data-en="Where cold air meets warm air, the cold air slides underneath like a wedge and the warm air is pushed up its slope, cools and makes clouds and rain. Let a front sweep over a weather station and record the temperature, pressure, wind and rain: why does a cold front bring a short downpour, a warm front a long drizzle, and the plum rain front rain for days?">冷空氣和暖空氣相遇，冷空氣像楔子鑽到下面，暖空氣被推上斜坡、冷卻、成雲致雨。讓鋒面掃過氣象站，記下氣溫、氣壓、風向和雨量：為什麼冷鋒是短短一陣大雨、暖鋒是綿綿細雨，而梅雨鋒面一下就是好幾天？</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Let the front pass” and watch the record at the station. Then switch to the warm front: the clouds arrive a day before the rain.">試試看：按「讓鋒面通過」，看測站的紀錄。再換成暖鋒：雲比雨早到一天多。</p>
+    <div class="lab fr" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="鋒面" data-en-aria-label="Front" id="modeSeg">
+          <button type="button" data-mode="cold" aria-pressed="true" data-en="Cold front">冷鋒</button>
+          <button type="button" data-mode="warm" aria-pressed="false" data-en="Warm front">暖鋒</button>
+          <button type="button" data-mode="stat" aria-pressed="false" data-en="Plum rain front">梅雨鋒面</button>
+        </div>
+        <canvas id="cv" aria-label="鋒面的剖面" data-en-aria-label="Cross-section through the front"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">讓鋒面通過</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除動畫與紀錄；設定不變" data-en-title="Clear the animation and the records; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true" data-en="Station record">測站紀錄</button>
+            <button type="button" data-chart="b" aria-pressed="false" data-en="Rain along the section">沿剖面的雨</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The two air masses">兩個氣團</h2>
+          <div class="slider"><label for="tw" data-en="Warm air: temperature (°C)">暖氣團的氣溫（°C）</label><output></output>
+            <input id="tw" type="range" min="5" max="35" step="0.1" value="25" data-decimals="1"></div>
+          <div class="slider"><label for="tdw" data-en="Warm air: dew point (°C)">暖氣團的露點（°C）</label><output></output>
+            <input id="tdw" type="range" min="-10" max="30" step="0.1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="tc" data-en="Cold air: temperature (°C)">冷氣團的氣溫（°C）</label><output></output>
+            <input id="tc" type="range" min="-10" max="30" step="0.1" value="15" data-decimals="1"></div>
+          <div class="slider"><label for="tdc" data-en="Cold air: dew point (°C)">冷氣團的露點（°C）</label><output></output>
+            <input id="tdc" type="range" min="-25" max="30" step="0.1" value="9" data-decimals="1"></div>
+          <p class="hint" id="airHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="The front">鋒面</h2>
+          <div class="slider"><label for="slope" data-en="Slope of the front, 1 :">鋒面的坡度 1 ：</label><output></output>
+            <input id="slope" type="range" min="30" max="400" step="1" value="80" data-decimals="0"></div>
+          <div class="slider"><label for="u" data-en="Speed of the front (km/h)">鋒面移動的速度（km/h）</label><output></output>
+            <input id="u" type="range" min="0" max="60" step="0.5" value="36" data-decimals="1"></div>
+          <div class="slider"><label for="v" data-en="Warm air climbing the slope (m/s)">暖空氣爬上鋒面的風速（m/s）</label><output></output>
+            <input id="v" type="range" min="1" max="20" step="0.1" value="10" data-decimals="1"></div>
+          <div class="presets" role="group" aria-label="例子" data-en-aria-label="Examples" id="presetSeg"></div>
+          <p class="hint" id="frontHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="At the weather station">氣象站</h2>
+          <p class="big-num" id="rRain">—</p>
+          <dl class="readout">
+            <dt data-en="Time">時間</dt><dd id="rTime">—</dd>
+            <dt data-en="Sky">天空</dt><dd id="rSky" class="big">—</dd>
+            <dt data-en="Temperature">氣溫</dt><dd id="rT">—</dd>
+            <dt data-en="Dew point">露點</dt><dd id="rTd">—</dd>
+            <dt data-en="Pressure">氣壓</dt><dd id="rP">—</dd>
+            <dt data-en="Wind">風</dt><dd id="rWind">—</dd>
+            <dt data-en="Rain so far">累積雨量</dt><dd id="rTot" class="big">—</dd>
+            <dt data-en="Rain class">雨量分級</dt><dd id="rClass">—</dd>
+          </dl>
+          <dl class="readout">
+            <dt data-en="Uplift speed">上升速度</dt><dd id="rW">—</dd>
+            <dt data-en="Cloud base">雲底（凝結高度）</dt><dd id="rLCL">—</dd>
+            <dt data-en="Rain band">雨帶</dt><dd id="rBand">—</dd>
+            <dt data-en="Wind shear (Margules)">要多少風切（Margules）</dt><dd id="rShear">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="A wedge of cold air">一塊冷空氣的楔子</h3>
+      <p data-en-html="Cold air is denser than warm air, so where two air masses meet the cold air slides underneath. The boundary, the <strong>frontal surface</strong>, is a very gentle slope: a cold front rises about 1 km for every 50–100 km, a warm front 1 km for every 150–300 km. On a weather map the line where it meets the ground is the front: blue triangles for a cold front, red semicircles for a warm front, both pointing the way the front moves; a stationary front such as the plum rain front alternates the two.">冷空氣比暖空氣重，兩個氣團相遇時冷空氣鑽到下面。交界面叫「<strong>鋒面面</strong>」，是非常平緩的斜坡：冷鋒大約每 50–100 km 升高 1 km，暖鋒每 150–300 km 才升高 1 km。它和地面相交的線，就是天氣圖上的鋒面：冷鋒畫藍色三角形、暖鋒畫紅色半圓，都指向鋒面前進的方向；滯留鋒（例如梅雨鋒面）兩種交錯。</p>
+      <h3 data-en="Clouds and rain from uplift">抬升造成雲和雨</h3>
+      <p data-en-html="Warm air moving towards the front at speed \(V\) has to climb the slope \(\tan\alpha\), so it rises at">暖空氣以風速 \(V\) 朝鋒面吹來，只能沿坡度 \(\tan\alpha\) 往上爬，上升速度是</p>
+      <div class="formula">\[ w = V\tan\alpha \]</div>
+      <p data-en-html="Above the lifting condensation level (about 125 m for every degree between temperature and dew point) the rising air is saturated and cools along the moist adiabat, so its mixing ratio \(r\) falls and the difference rains out. Adding up the condensation in the rising column from the cloud base \(z_b\) to the tropopause gives the rain rate">升到舉升凝結高度（氣溫和露點每差 1 °C 大約 125 m）以上，上升的空氣就飽和了，沿溼絕熱線降溫，混合比 \(r\) 越來越小，少掉的水氣凝結落下。把整根上升氣柱從雲底 \(z_b\) 到對流層頂的凝結量加起來，就是降雨率：</p>
+      <div class="formula">\[ R = \rho\, w\,\bigl[r(z_b) - r(z_\mathrm{top})\bigr] \]</div>
+      <p data-en-html="A cold front is steep and fast, so \(w\) is large: cumulonimbus, a short heavy downpour and thunder. A warm front is gentle, so \(w\) is small: a wide sheet of layered cloud, cirrus first, then cirrostratus, altostratus and finally nimbostratus with long steady rain. The rain falling at one place lasts about (width of the rain band) ÷ (speed of the front), so a front that hardly moves, like the plum rain front fed by the moist south-westerly monsoon, can pour for days.">冷鋒坡度陡、移動快，\(w\) 大：積雨雲，短時間的大雨、打雷。暖鋒坡度緩，\(w\) 小：一大片層狀雲，先看到卷雲、卷層雲，再來是高層雲，最後雨層雲下著綿綿細雨。同一個地方下雨的時間大約是「雨帶寬度 ÷ 鋒面的速度」，所以幾乎不動的鋒面（例如有西南季風送來水氣的梅雨鋒面）可以連下好幾天。</p>
+      <h3 data-en="What a station records">測站記到什麼</h3>
+      <p data-en-html="Behind a cold front the station sits under a deepening layer of cold, dense air, so (hydrostatic balance) the pressure rises: \(\Delta p = g\,h\,(\rho_c - \rho_w)\). The temperature and dew point drop and the wind veers from south-west to north-west (northern hemisphere). Ahead of a warm front it is the other way round: the cold layer gets thinner, the pressure falls, and after the front passes it is warm and humid with a south-west wind.">冷鋒過後，測站頭上的冷空氣越來越厚，冷空氣比較重，照靜力平衡氣壓上升：\(\Delta p = g\,h\,(\rho_c - \rho_w)\)；氣溫、露點下降，風由西南轉成西北（北半球）。暖鋒正好相反：前方的冷空氣越來越薄，氣壓下降；鋒面過後變得溫暖潮溼，吹西南風。</p>
+      <p data-en-html="Rainfall at one place is the rain rate integrated over the band as it moves past: the total \(P = \frac{1}{U}\int R\,ds\), so a front that moves half as fast gives twice the rain. Taiwan’s Central Weather Administration grades it by the most rain in any running window: <b>heavy rain</b> 80 mm in 24 h or 40 mm in 1 h; <b>extremely heavy rain</b> 200 mm in 24 h or 100 mm in 3 h; <b>torrential rain</b> 350 mm in 24 h; <b>extremely torrential rain</b> 500 mm in 24 h. When the ground is at or below 0 °C the precipitation is counted as snow (as melted water).">同一個地方的雨量，是雨帶從頭上經過時降雨率的累積：雨量 \(P = \frac{1}{U}\int R\,ds\)，鋒面走得慢一半，雨量就加倍。中央氣象署用任意連續時段的最大雨量分級：<b>大雨</b>是 24 小時 80 mm 或 1 小時 40 mm；<b>豪雨</b>是 24 小時 200 mm 或 3 小時 100 mm；<b>大豪雨</b>是 24 小時 350 mm；<b>超大豪雨</b>是 24 小時 500 mm。地面氣溫在 0 °C 以下時，落下的算成雪（以融化後的水量計）。</p>
+      <h3 data-en="Why the slope? (Margules)">坡度從哪裡來（Margules 公式）</h3>
+      <p data-en-html="On the rotating Earth a sloping boundary between two air masses can stay put only if the wind along the front is different on the two sides (geostrophic balance):">在自轉的地球上，兩個氣團之間的斜面要穩住，兩邊沿著鋒面的風必須不一樣（地轉平衡）：</p>
+      <div class="formula">\[ \tan\alpha = \frac{f\,\bar T\,\Delta v}{g\,\Delta T}, \qquad f = 2\Omega\sin\varphi \]</div>
+      <p data-en-html="The readout shows the wind shear \(\Delta v\) needed at latitude 25° (Taiwan) for your slope and temperature contrast. A steep cold front needs a large shear; in real cold fronts friction near the ground also steepens the nose.">讀數顯示在北緯 25°（臺灣）要撐住你設定的坡度和溫差，需要多大的風切 \(\Delta v\)。陡的冷鋒需要很大的風切；真實的冷鋒還有地面摩擦把鋒面的前端推得更陡。</p>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="A two-dimensional cross-section with a straight frontal surface. The warm-air parcel: lifting condensation level from Bolton (1980); above it the pseudo-adiabatic lapse rate (latent heat varying with temperature) integrated to the tropopause at 10 km, with hydrostatic pressure; its equivalent potential temperature stays constant to 0.3 K. Rain reaches the ground only where the cloud base is below 2 km (higher up it evaporates in the dry cold air beneath, as virga). Cloud type by base height: below 2 km a raining cloud (cumulonimbus where the uplift is at least 0.1 m/s, otherwise nimbostratus), 2–6 km altostratus, above 6 km cirrostratus and cirrus. The cold layer counts for the pressure up to 2.5 km thick. Temperature and dew point change across the front over about ±8 km.">二維剖面，鋒面面是平的斜面。暖空氣的氣塊：舉升凝結高度用 Bolton（1980）公式；以上照假溼絕熱減溫率（潛熱隨溫度變）積分到 10 km 的對流層頂，氣壓照靜力平衡；它的相當位溫守恆到 0.3 K。雲底低於 2 km，雨才落得到地面（再高的雲下的雨，在下面乾冷的空氣裡蒸發成雨幡）。雲的種類看雲底的高度：2 km 以下是會下雨的雲（上升速度 0.1 m/s 以上畫成積雨雲，否則是雨層雲）、2–6 km 高層雲、6 km 以上卷層雲與卷雲。氣壓的計算中，冷空氣最多算 2.5 km 厚。氣溫和露點在鋒面線前後大約 ±8 km 內換成另一個氣團的值。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/fronts-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/fronts.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="fronts"></script>
+  <script src="js/missions/fronts.js"></script>
+  <script src="js/stats.js" data-module="fronts"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

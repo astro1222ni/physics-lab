@@ -1323,6 +1323,7 @@
     if (s.polar === 'day') txt += T('今天永晝。', ' Midnight sun today.');
     else if (s.polar === 'night') txt += T('今天永夜。', ' Polar night today.');
     else if (Math.abs(st.clock - s.noon) < 1 / 60) txt += T('正午：太陽正在子午線上。', ' Noon: the Sun is on the meridian.');
+    if (st.clockPaused && !st.playing) txt += T('（改了時刻，動畫先暫停；按「播放」繼續。）', ' (Paused because you changed the time; press “Play” to continue.)');
     $('status').textContent = txt;
     $('locInfo').textContent = (st.loc ? locName() : T('自訂緯度', 'Custom latitude')) + T('：', ': ') + latText(st.lat) + T('、', ', ') + lonText(st.lon) + T('，', ', ') + zoneText(st.zone) + (st.loc ? '' : T('（經度、時區沿用上一個地點）', ' (longitude and time zone kept from the last place)'));
   }
@@ -1518,6 +1519,7 @@
   function kick() { if (!raf && needLoop()) { lastT = 0; raf = requestAnimationFrame(loop); } }
   function setPlaying(on, byUser) {
     st.playing = on;
+    if (on) st.clockPaused = false;
     if (byUser) st.userPlay = on;
     prevAlt = null; prevH = null;
     if (on && st.mode === 'year') { st.dayF = st.day + 0.001; recordAna(); }
@@ -1577,7 +1579,11 @@
   elClock.addEventListener('input', function () {
     st.clock = clamp(val(elClock), 0, 24);
     if (st.clock >= 24) st.clock = 23.9999;
-    if (st.playing && st.mode === 'day') setPlaying(false, true);
+    if (st.playing && st.mode === 'day') {
+      // 試玩回報 P7：改時刻會停下來（不然時間馬上又被動畫推走），狀態列要告訴學生是暫停、不是當掉
+      st.clockPaused = true;
+      setPlaying(false, true);
+    }
     userChanged();
   });
   elEps.addEventListener('input', function () { st.eps = clamp(val(elEps), 0, 90); earthCache.clear(); userChanged(); });

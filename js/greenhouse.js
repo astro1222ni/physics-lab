@@ -554,7 +554,7 @@
   function updateReadouts() {
     const c = now(), f = c.f;
     setHTML('rT', tempText(state.T));
-    setHTML('rDT', c.base != null ? sgn(state.T - c.base, 2) + ' K' : '—');
+    setHTML('rDT', c.base != null ? (function (d) { return Math.abs(d) < 0.005 ? T('一樣', 'the same') : (d > 0 ? T('暖 ', 'warmer by ') : T('冷 ', 'colder by ')) + num(Math.abs(d), 2) + ' K'; })(state.T - c.base) + T('<small>（和同設定、CO<sub>2</sub> 280 ppm 的平衡比）</small>', '<small> (vs. the same settings at 280 ppm CO<sub>2</sub>)</small>') : '—');
     setHTML('rN', sgn(f.N, 2) + ' W/m²' + (Math.abs(f.N) < EQ_N ? T('（收支平衡）', ' (balanced)') : f.N > 0 ? T('（變暖中）', ' (warming)') : T('（變冷中）', ' (cooling)')));
     setHTML('rEq', c.Teq != null ? tempText(c.Teq) : '—');
     setHTML('rTe', tempText(K.bareTemp(state.S, f.alpha)));

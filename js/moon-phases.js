@@ -1881,8 +1881,24 @@
   });
   $('dayFwd').addEventListener('click', function () {
     acted(); clearDemo();
-    if (state.tween) return;
-    startTween(K.fromLocal(state.place, localT(state.t) + 1), function () { setStatus(T('前進 1 天：月球相對太陽向東移了約 12°，月出晚了約 50 分鐘。', 'One day later: the Moon has moved about 12° east of the Sun, and rises about 50 minutes later.')); }, 600);
+    const tw = state.tween;
+    if (tw && tw.days) {
+      // 試玩回報 P8：補間中再按，不要吃掉，改成接著多走一天
+      tw.days++;
+      tw.t0 = state.t; tw.start = performance.now();
+      tw.t1 = K.fromLocal(state.place, localT(tw.t1) + 1);
+      return;
+    }
+    if (tw) return;
+    let mine = null;
+    startTween(K.fromLocal(state.place, localT(state.t) + 1), function () {
+      const n = mine ? mine.days : 1;
+      setStatus(n > 1
+        ? T('前進 ' + n + ' 天：月球相對太陽向東移了約 ' + Math.round(12.19 * n) + '°，月出每天晚約 50 分鐘。', n + ' days later: the Moon has moved about ' + Math.round(12.19 * n) + '° east of the Sun; it rises about 50 minutes later each day.')
+        : T('前進 1 天：月球相對太陽向東移了約 12°，月出晚了約 50 分鐘。', 'One day later: the Moon has moved about 12° east of the Sun, and rises about 50 minutes later.'));
+    }, 600);
+    mine = state.tween;
+    if (mine) mine.days = 1;
   });
   $('sidMonth').addEventListener('click', function () {
     acted();

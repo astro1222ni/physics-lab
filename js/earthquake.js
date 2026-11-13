@@ -1804,6 +1804,8 @@
     $('vsWarn').hidden = vs <= lim;
     if (vs > lim) vs = Math.floor(lim * 100) / 100;
     w.vs = vs;
+    // 被限制時，滑桿旁的數字顯示實際採用的 VS（試玩回報 P4：原本顯示 5.00、計算卻用 3.46）
+    $('vs1o').textContent = fmtSlider(vs, elVs) + ' km/s' + (val(elVs) > lim ? T('（上限）', ' (max)') : '');
   }
   function params1Changed() {
     readSliders1();

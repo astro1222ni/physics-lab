@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Colour and Brightness of Stars: Blackbody Radiation and the HR Diagram | Astro Ni Science Lab">恆星的顏色與亮度：黑體輻射與 HR 圖｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* HR 圖頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）
+     * HR 圖本身一律畫在夜空色的底上（深淺色模式都一樣），恆星的顏色才看得出白、藍、橘、紅。 */
+    :root {
+      --st-sky1: #0a1022; --st-sky2: #1b2745; --st-grid: #94a3b8; --st-ms: #fbbf24; --st-me: #f472b6;
+      --st-curve: #7c3aed; --st-sun: #d97706; --st-cmp: #0891b2; --st-uv: #7c3aed; --st-ir: #b91c1c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --st-curve: #c4b5fd; --st-sun: #fbbf24; --st-cmp: #67e8f9; --st-uv: #a78bfa; --st-ir: #f87171; }
+    }
+    :root[data-theme="dark"] { --st-curve: #c4b5fd; --st-sun: #fbbf24; --st-cmp: #67e8f9; --st-uv: #a78bfa; --st-ir: #f87171; }
+    #cv { aspect-ratio: auto; height: 500px; touch-action: none; cursor: crosshair; border-radius: 8px; }
+    @media (max-width: 560px) { #cv { height: 460px; touch-action: pan-y pinch-zoom; } }
+    #gr { display: block; width: 100%; height: 260px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 240px; } }
+    .st button, .st select { min-height: 44px; }
+    .st .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .st .playbar button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .st .slider input[type="range"] { height: 28px; margin: 0; }
+    .st [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .st dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    .st dl.readout dd { white-space: nowrap; }
+    dl.readout .sub { font-size: 0.88em; color: var(--muted); font-weight: 500; }
+    .swatch { display: inline-block; width: 1.1em; height: 1.1em; border-radius: 50%; vertical-align: -0.2em; margin-right: 6px; box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 0 8px rgba(255,255,255,0.35); }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+    .presets button { flex: 1 1 auto; padding: 6px 8px; font-size: calc(13px * var(--fs, 1)); }
+    .pick-row { display: flex; gap: 8px; align-items: center; }
+    .pick-row select { flex: 1 1 auto; min-width: 0; padding: 6px 8px; font: inherit; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 500px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #121a33, #03050b); }
+    @media (max-width: 560px) { #view3 canvas { height: 420px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Colour and brightness of stars"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 恆星的顏色與亮度</nav>
+      <h1 data-en="Colour and Brightness of Stars: Blackbody Radiation and the HR Diagram">恆星的顏色與亮度：黑體輻射與 HR 圖</h1>
+      <p data-en="A star’s colour tells you its surface temperature; its brightness depends on both temperature and size. Build a star, watch its blackbody spectrum change, and place it on the Hertzsprung–Russell diagram among real stars — from red dwarfs and white dwarfs to red supergiants. In 2D or 3D.">恆星的顏色告訴你它表面的溫度；它有多亮，要看溫度也要看大小。做一顆自己的恆星，看它的黑體光譜怎麼變，再把它放到赫羅圖（HR 圖）上和真實的恆星比一比——從紅矮星、白矮星到紅超巨星。2D、3D 都能看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag your star (the ringed dot) around the HR diagram and watch its colour and spectrum change. Tap a real star to compare.">試試看：在 HR 圖上拖曳你的恆星（有圈的那一點），看它的顏色和光譜怎麼變；點一顆真實的恆星來比較。</p>
+    <div class="lab st" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D HR diagram">2D HR 圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D sizes">3D 大小比較</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camFit" data-en="Fit both stars" title="把你的恆星和比較的恆星都放進畫面" data-en-title="Fit your star and the comparison star in view">兩顆都看到</button>
+          <button type="button" id="camMine" data-en="Close-up" title="靠近你的恆星" data-en-title="Close in on your star">靠近你的恆星</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="赫羅圖：橫軸是表面溫度（左邊熱、右邊冷），縱軸是光度；點是真實的恆星，有圈的是你的恆星" data-en-aria-label="Hertzsprung–Russell diagram: surface temperature across (hot on the left, cool on the right), luminosity up; dots are real stars and the ringed dot is your star"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="pinBtn" type="button" data-en="Leave a marker" title="在 HR 圖和光譜上留下現在這顆恆星的記號，方便比較" data-en-title="Mark the current star on the HR diagram and spectrum to compare later">留下記號</button>
+          <button id="clearBtn" type="button" data-en="Clear all" title="清除記號與比較的恆星；你的恆星設定不變" data-en-title="Remove markers and the comparison star; your star stays as it is">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint l2" data-en="Drag your star (or focus the diagram and use the arrow keys: left/right = temperature, up/down = luminosity; Shift for bigger steps). Tap a real star to compare it.">拖曳你的恆星（或選取 HR 圖後用方向鍵：左右＝溫度、上下＝光度，Shift 走大步）。點一顆真實的恆星可以比較。</p>
+        <p class="hint l3" data-en="True-to-scale sizes: your star, the comparison star and the Sun (and the Earth when it is big enough to see). Drag to rotate, scroll or pinch to zoom.">依真實比例的大小：你的恆星、比較的恆星和太陽（夠大時也有地球）。拖曳旋轉，滾輪或雙指縮放。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="光譜圖" data-en-aria-label="Spectrum" id="specSeg">
+            <button type="button" data-spec="abs" aria-pressed="true" data-en="Same scale (per m² of surface)">同一尺度（每平方公尺表面）</button>
+            <button type="button" data-spec="norm" aria-pressed="false" data-en="Each scaled to its peak">各自以峰值為 1</button>
+          </div>
+          <canvas id="gr" aria-label="黑體光譜：橫軸是波長，縱軸是每平方公尺表面發出的光" data-en-aria-label="Blackbody spectrum: wavelength across, light given off per square metre of surface up"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Your star">你的恆星</h2>
+          <div class="segw" role="group" aria-label="怎麼決定這顆恆星" data-en-aria-label="How the star is set" id="modeSeg">
+            <button type="button" data-mode="free" aria-pressed="true" data-en="Temperature + radius">溫度＋半徑</button>
+            <button type="button" data-mode="ms" aria-pressed="false" data-en="Main-sequence mass">主序星的質量</button>
+          </div>
+          <div id="freeBox">
+            <div class="slider"><label for="temp" data-en="Surface temperature (K)">表面溫度（K）</label><output></output>
+              <input id="temp" type="range" min="3.30103" max="4.69897" step="0.001" value="3.76133" data-decimals="0"></div>
+            <div class="slider"><label for="rad" data-en="Radius (× the Sun’s)">半徑（太陽的幾倍）</label><output></output>
+              <input id="rad" type="range" min="-2.30103" max="3.30103" step="0.001" value="0" data-decimals="4"></div>
+            <div class="presets" role="group" aria-label="快速設定" data-en-aria-label="Quick settings">
+              <button type="button" data-t="5772" data-r="1" data-en="Sun">太陽</button>
+              <button type="button" data-t="3200" data-r="0.2" data-en="Red dwarf">紅矮星</button>
+              <button type="button" data-t="10000" data-r="0.012" data-en="White dwarf">白矮星</button>
+              <button type="button" data-t="3500" data-r="700" data-en="Red supergiant">紅超巨星</button>
+            </div>
+          </div>
+          <div id="msBox" hidden>
+            <div class="slider"><label for="mass" data-en="Mass (× the Sun’s)">質量（太陽的幾倍）</label><output></output>
+              <input id="mass" type="range" min="-1" max="1.30103" step="0.001" value="0" data-decimals="3"></div>
+            <p class="hint" data-en="A star on the main sequence (burning hydrogen in its core) is set by its mass alone: temperature, radius, luminosity and lifetime all follow from it.">主序星（核心正在燃燒氫）只由質量決定：溫度、半徑、光度、壽命都跟著定下來。</p>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Colour and spectral type">顏色與光譜型</dt><dd id="rColor">—</dd>
+            <dt data-en="Peak wavelength (Wien)">峰值波長（維恩）</dt><dd id="rPeak" class="big">—</dd>
+            <dt data-en-html="Power per m² of surface (σT&lt;sup&gt;4&lt;/sup&gt;)">每平方公尺表面的功率（σT<sup>4</sup>）</dt><dd id="rFlux">—</dd>
+            <dt data-en="Luminosity">光度</dt><dd id="rL" class="big">—</dd>
+            <dt data-en="Bolometric absolute magnitude">絕對熱星等</dt><dd id="rMbol">—</dd>
+            <dt data-en="Radius">半徑</dt><dd id="rR">—</dd>
+            <dt data-en="Ultraviolet / visible / infrared">紫外／可見光／紅外</dt><dd id="rBands">—</dd>
+            <dt id="rLifeT" data-en="Main-sequence lifetime">主序壽命</dt><dd id="rLife">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Compare with a real star">和真實的恆星比較</h2>
+          <div class="pick-row">
+            <label class="sr-only" for="starSel" data-en="Real star">真實的恆星</label>
+            <select id="starSel"></select>
+          </div>
+          <dl class="readout" id="pickBox">
+            <dt data-en="Temperature">溫度</dt><dd id="pT">—</dd>
+            <dt data-en="Luminosity">光度</dt><dd id="pL">—</dd>
+            <dt data-en="Radius">半徑</dt><dd id="pR">—</dd>
+            <dt data-en="Distance">距離</dt><dd id="pD">—</dd>
+          </dl>
+          <p class="hint" id="pickHint" data-en="Tap a star on the diagram or choose one from the list.">點 HR 圖上的恆星，或從清單選一顆。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Stars glow like blackbodies">恆星像黑體一樣發光</h3>
+      <p data-en-html="A hot, dense gas gives off light at every wavelength, with a spectrum that depends only on its temperature — a <strong>blackbody</strong> spectrum. Planck’s law describes it exactly:">又熱又密的氣體在每個波長都會發光，光譜的形狀只由溫度決定——這叫<strong>黑體</strong>輻射。普朗克定律精確地描述它：</p>
+      <div class="formula">\[ B_\lambda(T) = \frac{2hc^2}{\lambda^5}\,\frac{1}{e^{hc/\lambda k T}-1} \]</div>
+      <p data-en-html="Two simple rules come out of it. The hotter the star, the shorter the wavelength of the peak (<strong>Wien’s law</strong>), so hot stars look blue-white and cool stars orange-red. And every square metre of surface gives off power in proportion to the fourth power of temperature (<strong>Stefan–Boltzmann law</strong>):">由它可以推出兩條簡單的規則。溫度越高，光譜峰值的波長越短（<strong>維恩位移定律</strong>），所以熱的星看起來藍白、冷的星看起來橘紅。每平方公尺表面發出的功率和溫度的四次方成正比（<strong>史蒂芬－波茲曼定律</strong>）：</p>
+      <div class="formula">\[ \lambda_{\max} = \frac{b}{T},\quad b = 2.898\times10^{-3}\ \mathrm{m\,K} \qquad\qquad L = 4\pi R^2\,\sigma T^4 \]</div>
+      <p data-en-html="So a star can be very luminous because it is hot, or because it is huge. Comparing with the Sun, \(L/L_\odot = (R/R_\odot)^2\,(T/T_\odot)^4\): twice as hot means 16 times as much light from each square metre.">所以一顆星很亮，可能是因為它很熱，也可能是因為它很大。和太陽比：\(L/L_\odot = (R/R_\odot)^2\,(T/T_\odot)^4\)，溫度變 2 倍，每平方公尺發出的光就變 16 倍。</p>
+
+      <h3 data-en="The Hertzsprung–Russell diagram">赫羅圖（HR 圖）</h3>
+      <p data-en-html="Plot temperature (hot on the left, by tradition) against luminosity and stars do not fall just anywhere. Most lie on the <strong>main sequence</strong>, where they burn hydrogen in their cores; giants and supergiants are cool but enormous, so they sit high on the right; white dwarfs are hot but about the size of the Earth, so they sit low on the left. The sloping dashed lines are lines of equal radius.">把溫度（習慣上左邊熱、右邊冷）和光度畫成圖，恆星並不是到處亂落。大部分落在<strong>主序帶</strong>上，它們的核心正在燃燒氫；巨星與超巨星溫度低但非常大，所以在右上方；白矮星很熱但只有地球那麼大，所以在左下方。斜的虛線是等半徑線。</p>
+      <p data-en-html="On the main sequence a heavier star is much more luminous (roughly \(L \propto M^{3.5}\)–\(M^{4}\)), so it uses up its fuel far faster: a star 10 times the Sun’s mass lasts only a few tens of millions of years, while a red dwarf can shine for hundreds of billions of years.">在主序帶上，質量越大的星亮得多（大約 \(L \propto M^{3.5}\) 到 \(M^{4}\)），燃料用得也快得多：10 倍太陽質量的星只能活幾千萬年，紅矮星卻可以亮上幾千億年。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Colour and temperature</strong>: slide the temperature from 2000 K to 50 000 K. Where is the peak when the star looks white? Why is there no green star?"><strong>顏色與溫度</strong>：把溫度從 2000 K 滑到 50000 K。恆星看起來是白色時，峰值在哪裡？為什麼沒有綠色的星？</li>
+        <li data-en-html="<strong>Hot or big?</strong> Find two ways to make a star 100 times as luminous as the Sun."><strong>熱還是大？</strong>找兩種方法讓恆星的光度變成太陽的 100 倍。</li>
+        <li data-en-html="<strong>Main sequence</strong>: switch to “Main-sequence mass” and drag along the band. How does the lifetime change?"><strong>主序帶</strong>：切到「主序星的質量」，沿著主序帶拖曳。壽命怎麼變？</li>
+        <li data-en-html="<strong>White dwarfs</strong>: compare Sirius A and Sirius B. Which is hotter, and why is the hot one so faint?"><strong>白矮星</strong>：比較天狼星 A 和天狼星 B。哪一顆比較熱？比較熱的那顆為什麼這麼暗？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="Real stars are treated as blackbodies with the given effective temperature. Real spectra have absorption lines and are not perfect blackbodies, but the overall shape is close.">把恆星當成有效溫度相同的黑體。真實的恆星光譜有吸收線，不是完美的黑體，但整體形狀很接近。</li>
+        <li data-en-html="Colours: the spectrum is weighted with the CIE 1931 colour-matching functions (analytic fit by Wyman, Sloan and Shirley 2013) and converted to sRGB, scaled so the brightest channel is full. The real colour also depends on the eye, the screen and the sky.">顏色：把光譜乘上 CIE 1931 色彩匹配函數（Wyman、Sloan 與 Shirley 2013 的解析擬合）換成 sRGB，再把最亮的顏色通道調到最大。實際看到的顏色也和眼睛、螢幕、天空有關。</li>
+        <li data-en-html="Main sequence: an approximate zero-age main sequence for 0.1–20 solar masses — piecewise mass–luminosity relation, \(R \propto M^{0.8}\) below and \(M^{0.57}\) above one solar mass, temperature from \(L = 4\pi R^2\sigma T^4\), lifetime \(\approx 10^{10}\) years \(\times\,(M/M_\odot)/(L/L_\odot)\). Real stars differ by tens of per cent.">主序星：0.1–20 倍太陽質量的零齡主序星近似——分段的質量－光度關係，半徑小於 1 倍太陽質量時 \(R \propto M^{0.8}\)、大於時 \(M^{0.57}\)，溫度由 \(L = 4\pi R^2\sigma T^4\) 算出，壽命約 \(10^{10}\) 年 \(\times\,(M/M_\odot)/(L/L_\odot)\)。和真實的恆星可能差到幾成。</li>
+        <li data-en-html="Real stars: representative values of temperature and luminosity from the recent literature (variable and rapidly rotating stars averaged); radii are computed from them. Spectral-type boundaries are approximate.">真實的恆星：溫度與光度取近年文獻的代表值（變星、快速自轉的星取平均），半徑由它們算出。光譜型的溫度界線是約略值。</li>
+        <li data-en-html="The three.js library (MIT license) is downloaded only when you switch to 3D.">three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Stars and astronomical observation (blackbody radiation, HR diagram)">課綱對應：高中地球科學・恆星與天文觀測（黑體輻射、HR 圖）</li>
+        <li data-en-html="IAU 2015 Resolutions B2 and B3: nominal solar values \(L_\odot = 3.828\times10^{26}\) W, \(R_\odot = 6.957\times10^{8}\) m, \(T_\odot = 5772\) K, and \(M_{\mathrm{bol},\odot} = 4.74\).">國際天文聯合會（IAU）2015 年 B2、B3 決議：太陽名目值 \(L_\odot = 3.828\times10^{26}\) W、\(R_\odot = 6.957\times10^{8}\) m、\(T_\odot = 5772\) K，以及 \(M_{\mathrm{bol},\odot} = 4.74\)。</li>
+        <li data-en-html="C. Wyman, P.-P. Sloan and P. Shirley (2013), “Simple analytic approximations to the CIE XYZ color matching functions”, <i>Journal of Computer Graphics Techniques</i> 2(2), 1–11.">C. Wyman、P.-P. Sloan 與 P. Shirley（2013），〈Simple analytic approximations to the CIE XYZ color matching functions〉，<i>Journal of Computer Graphics Techniques</i> 2 卷 2 期 1–11 頁。</li>
+        <li data-en-html="B. Kim et al. (2002), cubic-spline approximation of the Planckian locus (used to test the colours).">B. Kim 等（2002），Planckian locus 的三次近似（用來檢驗顏色）。</li>
+        <li data-en-html="M. Duric (2004), <i>Advanced Astrophysics</i>, Cambridge University Press (mass–luminosity relation).">M. Duric（2004），<i>Advanced Astrophysics</i>，劍橋大學出版社（質量－光度關係）。</li>
+        <li data-en-html="M. J. Pecaut and E. E. Mamajek (2013), “Intrinsic colors, temperatures, and bolometric corrections of pre-main-sequence stars”, <i>ApJS</i> 208, 9 (temperature scale of spectral types).">M. J. Pecaut 與 E. E. Mamajek（2013），<i>ApJS</i> 208 卷 9 號（光譜型的溫度尺度）。</li>
+        <li data-en-html="J. B. Holberg et al. (1998), “Sirius B: a new, more accurate view”, <i>ApJ</i> 497, 935.">J. B. Holberg 等（1998），〈Sirius B: a new, more accurate view〉，<i>ApJ</i> 497 卷 935 頁。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/stars-hr-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/stars-hr.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="stars-hr"></script>
+  <script src="js/missions/stars-hr.js"></script>
+  <script src="js/stats.js" data-module="stars-hr"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

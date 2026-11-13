@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Layers of the Atmosphere: Pressure, Temperature and the Standard Atmosphere | Astro Ni Science Lab">大氣分層、氣壓與標準大氣｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 大氣分層頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --al-tropo: #3b82f6; --al-strato: #0d9488; --al-meso: #7c3aed; --al-thermo: #db2777;
+      --al-temp: #dc2626; --al-std: #64748b; --al-q: #0369a1; --al-ref: #b45309; --al-balloon: #e11d48; --al-sonde: #f97316;
+      --al-sky0: #bfdcf7; --al-sky1: #4b7fc2; --al-sky2: #0b1530; --al-ground: #5f8a4a; --al-ozone: #a855f7; --al-aurora: #22c55e;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --al-tropo: #60a5fa; --al-strato: #2dd4bf; --al-meso: #a78bfa; --al-thermo: #f472b6;
+        --al-temp: #f87171; --al-std: #94a3b8; --al-q: #38bdf8; --al-ref: #fbbf24; --al-balloon: #fb7185; --al-sonde: #fb923c;
+        --al-sky0: #1d3a5f; --al-sky1: #142a4d; --al-sky2: #04070f; --al-ground: #3f6431; --al-ozone: #c084fc; --al-aurora: #4ade80;
+      }
+    }
+    :root[data-theme="dark"] {
+      --al-tropo: #60a5fa; --al-strato: #2dd4bf; --al-meso: #a78bfa; --al-thermo: #f472b6;
+      --al-temp: #f87171; --al-std: #94a3b8; --al-q: #38bdf8; --al-ref: #fbbf24; --al-balloon: #fb7185; --al-sonde: #fb923c;
+      --al-sky0: #1d3a5f; --al-sky1: #142a4d; --al-sky2: #04070f; --al-ground: #3f6431; --al-ozone: #c084fc; --al-aurora: #4ade80;
+    }
+    #cv { aspect-ratio: auto; height: 500px; touch-action: pan-x pinch-zoom; cursor: ns-resize; }
+    @media (max-width: 560px) { #cv { height: 470px; } }
+    #gr { display: block; width: 100%; height: 260px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 240px; } }
+    .al button { min-height: 44px; }
+    .al .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .al .playbar button { flex: 1 1 auto; }
+    .al .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .al .slider input[type="range"] { height: 28px; margin: 0; }
+    .al [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .seglabel { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 8px 2px 0; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .toggles button { flex: 1 1 140px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .row2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .row2 button { flex: 1 1 120px; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 440px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 40%, #16233a, #05080f); }
+    @media (max-width: 560px) { #view3 canvas { height: 400px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 62%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .tr { right: 8px; top: 8px; align-items: flex-end; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#atmo&quot;>Earth Science · Atmosphere</a> / Layers of the atmosphere"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#atmo">地球科學・大氣</a> ／ 大氣分層</nav>
+      <h1 data-en="Layers of the Atmosphere: Pressure, Temperature and the Standard Atmosphere">大氣分層、氣壓與標準大氣</h1>
+      <p data-en="Climb from the sea to 120 km. The temperature falls, rises, falls and rises again — that is how the atmosphere is divided into four layers — while the pressure keeps dropping, halving about every 5.5 km. Read the air on top of Yushan and Everest, find where water boils at body temperature, and send a weather balloon up until it bursts. In 2D or over a 3D Earth.">從海平面爬到 120 公里高。溫度先降、再升、又降、再升——大氣就是這樣分成四層；氣壓卻一路往下掉，大約每升高 5.5 公里就減半。讀讀玉山頂與聖母峰頂的空氣，找出水在體溫就沸騰的高度，再放一顆探空氣球，看它飛到哪裡爆破。2D 或 3D 地球都可以看。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag up and down on the picture to move the probe, then press “Launch” to send the weather balloon up — watch it swell as the air thins.">試試看：在圖上上下拖曳移動探測點，再按「放飛」送探空氣球上天——看它在越來越稀薄的空氣裡越脹越大。</p>
+    <div class="lab al" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D profile">2D 剖面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D Earth">3D 地球</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camLimb" data-en="Edge of the Earth" title="從太空看地球的邊緣：大氣層像一層薄殼" data-en-title="Look at the Earth’s edge from space: the atmosphere is a thin shell">地球邊緣</button>
+          <button type="button" id="camTaiwan" data-en="Above Taiwan" title="靠近臺灣上空的大氣柱與探空氣球" data-en-title="Close to the column of air above Taiwan and the balloon">臺灣上空</button>
+          <button type="button" id="camFar" data-en="Whole Earth" title="遠看整個地球與極光" data-en-title="The whole Earth and the auroral ovals">整個地球</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="大氣的垂直剖面：溫度與氣壓隨高度的變化，上下拖曳移動探測點" data-en-aria-label="Vertical profile of the atmosphere: temperature and pressure against height; drag up or down to move the probe"></canvas>
+        <div id="view3"></div>
+        <div class="playbar">
+          <button id="launch" class="primary" type="button">放飛</button>
+          <button id="recall" type="button" data-en="Bring it down" title="收回氣球，回到地面重新充氣" data-en-title="Bring the balloon back to the ground to refill it">收回氣球</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除探空紀錄、飛行紀錄與參考點；探測高度與設定不變" data-en-title="Clear the soundings, the flight log and the reference point; the probe and the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw" role="group" aria-label="時間快轉" data-en-aria-label="Time speed" id="speedSeg">
+          <button type="button" data-speed="30" aria-pressed="false" data-en="30 s per second">每秒 30 秒</button>
+          <button type="button" data-speed="120" aria-pressed="true" data-en="2 min per second">每秒 2 分鐘</button>
+          <button type="button" data-speed="600" aria-pressed="false" data-en="10 min per second">每秒 10 分鐘</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="seglabel l2" data-en="Height shown">顯示的高度</p>
+        <div class="segw l2" role="group" aria-label="顯示的高度範圍" data-en-aria-label="Height range" id="rangeSeg">
+          <button type="button" data-range="20" aria-pressed="false" data-en="0–20 km">0–20 km</button>
+          <button type="button" data-range="50" aria-pressed="false" data-en="0–50 km">0–50 km</button>
+          <button type="button" data-range="120" aria-pressed="true" data-en="0–120 km">0–120 km</button>
+        </div>
+        <p class="seglabel l2" data-en="Right-hand plot">右邊的圖</p>
+        <div class="segw l2" role="group" aria-label="右邊的圖畫哪一個量" data-en-aria-label="Quantity in the right-hand plot" id="qSeg">
+          <button type="button" data-q="P" aria-pressed="true" data-en="Pressure">氣壓</button>
+          <button type="button" data-q="rho" aria-pressed="false" data-en="Density">密度</button>
+          <button type="button" data-q="c" aria-pressed="false" data-en="Speed of sound">聲速</button>
+          <button type="button" data-q="mfp" aria-pressed="false" data-en="Mean free path">平均自由徑</button>
+        </div>
+        <div class="toggles l2" role="group" aria-label="圖的選項" data-en-aria-label="Plot options">
+          <button type="button" id="logBtn" aria-pressed="true" data-en="Logarithmic scale" title="對數刻度：指數下降變成一條直線，斜率就是 1/尺度高度" data-en-title="Log scale: an exponential fall becomes a straight line whose slope is 1/scale height">對數刻度</button>
+          <button type="button" id="stdBtn" aria-pressed="true" data-en="Standard atmosphere (dashed)" title="ΔT 不是 0 時，用虛線畫出標準大氣來比較" data-en-title="When ΔT is not 0, draw the standard atmosphere as a dashed line for comparison">標準大氣（虛線）</button>
+        </div>
+        <p class="hint l2" data-en-html="Left: the sky by height, with the four layers. Middle: temperature. Right: the quantity you choose. The horizontal line is the probe — drag it, or use the slider. The orange dots are what the balloon’s instruments measured on the way up.">左：天空與四個分層；中：溫度；右：你選的量。橫線是探測點——直接拖曳，或用滑桿。橘色小點是氣球上的儀器一路量到的溫度。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The shells are the four layers; their thickness is stretched 20 times so you can see them — at true scale the whole atmosphere is thinner than the skin of an apple.">拖曳旋轉，滾輪或雙指縮放。幾層球殼是大氣的四個分層；厚度放大了 20 倍才看得到——照真實比例，整個大氣層比蘋果皮還薄。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="氣球圖表" data-en-aria-label="Balloon chart" id="chartSeg">
+            <button type="button" data-chart="time" aria-pressed="true" data-en="Height vs time">高度與時間</button>
+            <button type="button" data-chart="size" aria-pressed="false" data-en="Diameter vs height">直徑與高度</button>
+          </div>
+          <canvas id="gr" aria-label="探空氣球的高度隨時間的變化" data-en-aria-label="Height of the weather balloon against time"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Probe height">探測高度</h2>
+          <div class="slider"><label for="z" data-en="Height above sea level (km)">海拔高度（km）</label><output></output>
+            <input id="z" type="range" min="0" max="120" step="0.01" value="0" data-decimals="3"></div>
+          <div class="presets" role="group" aria-label="參考高度" data-en-aria-label="Reference heights">
+            <button type="button" data-z="0" data-en="Sea level" title="海平面" data-en-title="Sea level">海平面</button>
+            <button type="button" data-z="3.952" data-en="Yushan 3952 m" title="玉山主峰 3952 m，臺灣最高峰" data-en-title="Yushan (Jade Mountain), 3952 m, the highest peak in Taiwan">玉山 3952 m</button>
+            <button type="button" data-z="8.849" data-en="Everest 8849 m" title="聖母峰 8848.86 m（2020 年中國、尼泊爾共同公布）" data-en-title="Mount Everest, 8848.86 m (China and Nepal, 2020)">聖母峰 8849 m</button>
+            <button type="button" data-z="11" data-en="Airliner 11 km" title="噴射客機的巡航高度約 10–12 km" data-en-title="Jet airliners cruise at about 10–12 km">客機 11 km</button>
+            <button type="button" data-z="25" data-en="Ozone 25 km" title="中緯度的臭氧層，濃度最高約在 20–25 km" data-en-title="At mid-latitudes the ozone layer peaks at about 20–25 km">臭氧層 25 km</button>
+            <button type="button" data-z="100" data-en="Kármán line 100 km" title="卡門線：常用來當作太空的起點" data-en-title="The Kármán line, often used as the edge of space">卡門線 100 km</button>
+          </div>
+          <div class="row2">
+            <button type="button" id="mark" data-en="Mark this point" title="把這個高度記下來當參考點，下面會顯示兩點的差別" data-en-title="Keep this height as a reference point; the difference between the two points is shown below">記下這一點</button>
+            <button type="button" id="unmark" data-en="Remove the mark" disabled>取消參考點</button>
+          </div>
+          <p class="hint" id="refHint" data-en="No reference point yet. Press “Mark this point”, then move the probe to compare two heights.">還沒有參考點。按「記下這一點」，再移動探測點，就能比較兩個高度。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="At this height">這個高度</h2>
+          <dl class="readout">
+            <dt data-en="Layer">所在的層</dt><dd id="rLayer" class="big">—</dd>
+            <dt data-en="Temperature">溫度</dt><dd id="rT" class="big">—</dd>
+            <dt data-en="Lapse rate">溫度遞減率</dt><dd id="rLapse">—</dd>
+            <dt data-en="Pressure">氣壓</dt><dd id="rP" class="big">—</dd>
+            <dt data-en="Air still above you">頭上還有的空氣</dt><dd id="rAbove">—</dd>
+            <dt data-en="Density">密度</dt><dd id="rRho">—</dd>
+            <dt data-en="Oxygen (partial pressure)">氧分壓</dt><dd id="rO2">—</dd>
+            <dt data-en="Water boils at">水的沸點</dt><dd id="rBoil">—</dd>
+            <dt data-en="Speed of sound">聲速</dt><dd id="rC">—</dd>
+            <dt data-en="Scale height">尺度高度</dt><dd id="rH">—</dd>
+            <dt data-en="Mean free path">平均自由徑</dt><dd id="rMfp">—</dd>
+          </dl>
+          <p class="sr-only" id="srNow" aria-live="polite"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Temperature of the whole air column">整層大氣的溫度</h2>
+          <div class="slider"><label for="dT" data-en="Warmer or colder than standard, ΔT (K)">比標準大氣暖或冷 ΔT（K）</label><output></output>
+            <input id="dT" type="range" min="-30" max="30" step="0.5" value="0" data-decimals="2"></div>
+          <div class="presets" role="group" aria-label="溫度偏差的參考值" data-en-aria-label="Reference values of ΔT">
+            <button type="button" data-dt="-20" data-en="Cold −20" title="寒流南下：整層空氣比標準冷 20 K" data-en-title="A cold outbreak: the whole column 20 K colder than standard">冷 −20</button>
+            <button type="button" data-dt="0" data-en="Standard 0" title="標準大氣：海平面 15 °C、1013.25 hPa" data-en-title="The standard atmosphere: 15 °C and 1013.25 hPa at sea level">標準 0</button>
+            <button type="button" data-dt="15" data-en="Warm +15" title="熱帶的夏天：整層空氣比標準暖 15 K" data-en-title="A tropical summer: the whole column 15 K warmer than standard">暖 +15</button>
+          </div>
+          <p class="hint" id="dtHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Weather balloon">探空氣球</h2>
+          <div class="segw" role="group" aria-label="氣球型號（乳膠的質量）" data-en-aria-label="Balloon size (mass of latex)" id="typeSeg">
+            <button type="button" data-type="b300" aria-pressed="false">300 g</button>
+            <button type="button" data-type="b600" aria-pressed="true">600 g</button>
+            <button type="button" data-type="b1200" aria-pressed="false">1200 g</button>
+            <button type="button" data-type="b3000" aria-pressed="false">3000 g</button>
+          </div>
+          <div class="slider"><label for="d0" data-en-html="Diameter filled with helium on the ground D<sub>0</sub> (m)">在地面充氦氣的直徑 D<sub>0</sub>（m）</label><output></output>
+            <input id="d0" type="range" min="1" max="3" step="0.01" value="1.5" data-decimals="3"></div>
+          <p class="hint" id="liftHint">—</p>
+          <dl class="readout">
+            <dt data-en="Height">高度</dt><dd id="bZ" class="big">—</dd>
+            <dt data-en="Rising at">上升速率</dt><dd id="bV">—</dd>
+            <dt data-en="Diameter / bursts at">直徑／爆破直徑</dt><dd id="bD">—</dd>
+            <dt data-en="Volume">體積</dt><dd id="bVol">—</dd>
+            <dt data-en="Net lift">淨浮力</dt><dd id="bL">—</dd>
+            <dt data-en="Flight time">飛行時間</dt><dd id="bT">—</dd>
+            <dt data-en="Last bursts">最近的爆破高度</dt><dd id="bLog">—</dd>
+          </dl>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Four layers, told apart by temperature">用溫度分出的四層</h3>
+      <p data-en-html="The atmosphere is divided by how its temperature changes with height. In the <strong>troposphere</strong> the air is heated from below by the ground and cools by about 6.5 °C per kilometre; it holds almost all the water vapour, the clouds and the weather. Above the <strong>tropopause</strong> (about 11 km in the standard atmosphere, 8 km near the poles and 17 km in the tropics) lies the <strong>stratosphere</strong>, where ozone absorbs ultraviolet sunlight and the temperature rises to about −2.5 °C at 47–51 km. In the <strong>mesosphere</strong> the temperature falls again to the coldest air on Earth, about −86 °C near 86 km, where most meteors burn up. In the <strong>thermosphere</strong> oxygen and nitrogen absorb the Sun’s extreme ultraviolet: the very thin gas there reaches hundreds of degrees, and the aurora glows above about 100 km.">大氣是照「溫度怎麼隨高度變化」來分層的。<strong>對流層</strong>的空氣由下面的地面加熱，大約每升高 1 公里冷 6.5 °C；幾乎所有的水氣、雲與天氣都在這一層。<strong>對流層頂</strong>（標準大氣約 11 km；極區約 8 km、熱帶約 17 km）以上是<strong>平流層</strong>：臭氧吸收太陽的紫外線，溫度往上回升，到 47–51 km 約 −2.5 °C。<strong>中氣層</strong>的溫度又往下掉，到 86 km 附近約 −86 °C，是地球上最冷的空氣，大部分流星在這裡燒掉。<strong>增溫層</strong>的氧與氮吸收太陽的極紫外線，非常稀薄的氣體可以到好幾百度，極光大多出現在 100 km 以上。</p>
+
+      <h3 data-en="Pressure is the weight of the air above">氣壓是頭上空氣的重量</h3>
+      <p data-en-html="A thin slab of air of thickness \(dz\) is held up because the pressure below it is a little larger than the pressure above it (<strong>hydrostatic balance</strong>). With the ideal gas law \(\rho = PM/(RT)\):">一薄層厚度 \(dz\) 的空氣能浮在那裡，是因為它下面的氣壓比上面稍大一點（<strong>靜力平衡</strong>）。再用理想氣體方程式 \(\rho = PM/(RT)\)：</p>
+      <div class="formula">\[ \frac{dP}{dz} = -\rho g \quad\Rightarrow\quad \frac{dP}{P} = -\frac{dz}{H}, \qquad H = \frac{RT}{Mg} \approx 8\ \mathrm{km} \]</div>
+      <p data-en-html="\(H\) is the <strong>scale height</strong>. Where the temperature is constant, \(P = P_1 e^{-(z-z_1)/H}\): every climb of \(H\) divides the pressure by \(e\). Because the pressure is the weight of all the air above a square metre, \(P/P_0\) is also the fraction of the atmosphere still over your head: half of it lies below about 5.5 km, 90% below 16 km and 99% below 31 km.">\(H\) 叫<strong>尺度高度</strong>。溫度不變的地方 \(P = P_1 e^{-(z-z_1)/H}\)：每往上 \(H\)，氣壓就變成 \(1/e\)。氣壓就是每平方公尺上方所有空氣的重量，所以 \(P/P_0\) 也是「頭上還有多少比例的空氣」：一半的空氣在 5.5 km 以下，90% 在 16 km 以下，99% 在 31 km 以下。</p>
+      <p data-en-html="Integrating between two pressure levels gives the <strong>hypsometric equation</strong>: the thickness of a layer is proportional to its mean temperature \(\bar T\). A warm column of air is thick, a cold one is thin — which is why the height of the 500 hPa surface on weather maps is high over warm air and low over cold air.">在兩個氣壓面之間積分，就是<strong>測高方程式</strong>：一層空氣的厚度和它的平均溫度 \(\bar T\) 成正比。暖的空氣柱厚、冷的薄——所以天氣圖上 500 hPa 等壓面的高度，在暖空氣上方高、冷空氣上方低。</p>
+      <div class="formula">\[ z_2 - z_1 = \frac{R\bar T}{Mg}\ln\frac{P_1}{P_2} \]</div>
+
+      <h3 data-en="Boiling water, thin air">煮不開的水、稀薄的空氣</h3>
+      <p data-en-html="Water boils when its vapour pressure reaches the pressure of the air. On Yushan it boils at about 87 °C, on Everest at about 70 °C. Near 19 km the pressure is only 6.3 kPa, the vapour pressure of water at 37 °C: body fluids would boil without any heating (the <strong>Armstrong limit</strong>), so above it a pressure suit is needed. Below 611.657 Pa (the <strong>triple point</strong> of water, near 34.6 km) liquid water cannot exist at all — ice turns straight into vapour.">水的蒸氣壓等於外面的氣壓時，水就沸騰。玉山上水約 87 °C 就滾，聖母峰上約 70 °C。到了 19 km 附近，氣壓只剩 6.3 kPa，剛好是水在 37 °C 的蒸氣壓：體液不加熱也會沸騰（<strong>阿姆斯壯極限</strong>），再往上就一定要穿加壓衣。氣壓低於 611.657 Pa（水的<strong>三相點</strong>，約 34.6 km）時，液態水根本不能存在——冰直接變成水蒸氣。</p>
+
+      <h3 data-en="A balloon that keeps growing">越飛越大的氣球</h3>
+      <p data-en-html="A weather balloon is a stretchy latex bag of helium. Its gas is at the same pressure and temperature as the air outside, so its volume grows as \(V \propto T/P\) — a balloon 1.5 m across on the ground is more than 6 m across at 30 km. The mass of air it pushes aside, \(nM_{\text{air}}\), therefore stays the same, and so does its <strong>net lift</strong>. It keeps rising at about 5 m/s until the latex is stretched to its bursting diameter:">探空氣球是一個裝了氦氣、可以伸縮的乳膠袋。裡面的氣體和外面的空氣同壓、同溫，所以體積照 \(V \propto T/P\) 長大——地面上直徑 1.5 m 的氣球，到 30 km 超過 6 m。它排開的空氣質量 \(nM_{\text{空氣}}\) 因此不變，<strong>淨浮力</strong>也不變。它以每秒約 5 m 一路上升，直到乳膠撐到爆破直徑：</p>
+      <div class="formula">\[ \left(\frac{D_{\text{burst}}}{D_0}\right)^3 = \frac{P_0}{P}\cdot\frac{T}{T_0} \]</div>
+      <p data-en-html="Weather services around the world, including Taiwan’s Central Weather Administration, launch radiosondes like this every day; the temperature, humidity and wind they measure on the way up go into every weather forecast.">全世界的氣象單位（包括臺灣的中央氣象署）每天都會施放這樣的探空氣球；它一路往上量到的溫度、溼度與風，是每一份天氣預報的基礎。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Halving height</strong>: with the log scale off, the pressure curve looks like a slide; with it on, it is almost straight. Where the line is steeper, the scale height is smaller — the air is colder."><strong>減半高度</strong>：關掉對數刻度，氣壓曲線像溜滑梯；打開後幾乎是直線。直線越陡的地方，尺度高度越小——那裡的空氣比較冷。</li>
+        <li data-en-html="<strong>Warm air is thick</strong>: put the probe at 500 hPa, then change ΔT. The 500 hPa surface goes up when the column warms."><strong>暖空氣比較厚</strong>：把探測點放在 500 hPa，再改 ΔT。整層變暖時，500 hPa 等壓面跟著升高。</li>
+        <li data-en-html="<strong>Constant lift</strong>: watch the balloon’s net lift while it rises. The diameter and the volume change; the lift does not."><strong>不變的浮力</strong>：看氣球上升時的淨浮力。直徑、體積一直變，淨浮力卻不變。</li>
+        <li data-en-html="<strong>Small fill, high flight</strong>: put less helium in the same balloon. It rises more slowly but bursts higher — and with too little it never leaves the ground."><strong>少充一點、飛得更高</strong>：同一顆氣球少充一點氦氣：上升變慢，卻破得更高；充太少，就根本飛不起來。</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="0–86 km: the U.S. Standard Atmosphere 1976 (the same as the ICAO standard atmosphere below 32 km). The temperature is linear in geopotential height in seven layers, and the pressure is the exact solution of hydrostatic balance in each layer. Between 80 and 86 km the small drop in mean molecular mass is included as in the standard.">0–86 km：美國標準大氣 1976（32 km 以下和國際民航組織的標準大氣相同）。溫度在七層裡各自對位勢高度呈線性，氣壓是每一層靜力平衡的解析解；80–86 km 平均分子量的微小下降照標準處理。</li>
+        <li data-en-html="86–120 km: the temperature formulas of the 1976 standard; the pressure is integrated from hydrostatic balance with the tabulated mean molecular mass and gravity falling with height. It agrees with the standard’s table to within 1%.">86–120 km：溫度用 1976 標準的公式；氣壓由靜力平衡積分，平均分子量用標準的表值、重力隨高度減小，和標準的表格差 1% 以內。</li>
+        <li data-en-html="ΔT adds the same amount to every height (like “ISA + ΔT” in aviation) with the sea-level pressure kept at 1013.25 hPa. The real atmosphere is not this tidy: the tropopause is higher in the tropics and lower near the poles, and the stratosphere does not warm when the ground does.">ΔT 是在每一個高度都加上同樣的溫度（像航空上的「ISA + ΔT」），海平面氣壓維持 1013.25 hPa。真實的大氣沒有這麼整齊：熱帶的對流層頂比較高、極區比較低，地面變暖時平流層也不會跟著變暖。</li>
+        <li data-en-html="Balloon: helium at the outside pressure and temperature (the small overpressure of the latex is ignored), a 0.25 kg radiosonde and parachute, drag coefficient 0.30, always rising at the speed where lift equals drag. Bursting diameters are typical catalogue values for sounding balloons. Water’s boiling point: the Antoine equation.">氣球：氦氣和外面同壓同溫（忽略乳膠的一點點額外壓力）；探空儀加降落傘 0.25 kg；阻力係數 0.30，隨時以「浮力＝阻力」的速率上升。爆破直徑用探空氣球型錄的典型值。水的沸點用 Antoine 方程式。</li>
+        <li data-en-html="3D view: Earth image NASA Blue Marble (public domain); the three.js library (MIT license) is downloaded only when you switch to 3D.">3D 地球：地球影像為 NASA Blue Marble（公有領域）；three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Earth Science · Composition and structure of the atmosphere (layers, pressure and height)">課綱對應：高中地球科學・大氣的組成與結構（大氣分層、氣壓與高度）</li>
+        <li data-en-html="NOAA, NASA and U.S. Air Force (1976), <i>U.S. Standard Atmosphere, 1976</i>, NOAA-S/T 76-1562 (equations, Tables I and 8).">NOAA、NASA 與美國空軍（1976），《U.S. Standard Atmosphere, 1976》，NOAA-S/T 76-1562（公式、表 I 與表 8）。</li>
+        <li data-en-html="Barometric pressure on the summit of Everest, 253 Torr (33.7 kPa): J. B. West et al. (1983), “Barometric pressures at extreme altitudes on Mt. Everest: physiological significance”, <i>Journal of Applied Physiology</i> 54, 1188–1194.">聖母峰頂的氣壓 253 Torr（33.7 kPa）：J. B. West 等（1983），〈Barometric pressures at extreme altitudes on Mt. Everest: physiological significance〉，<i>Journal of Applied Physiology</i> 54 卷 1188–1194 頁。</li>
+        <li data-en-html="Triple point of water 611.657 Pa: IAPWS (2011), <i>Revised Release on the Pressure along the Melting and Sublimation Curves of Ordinary Water Substance</i>. Antoine constants for water (1–100 °C): A = 8.07131, B = 1730.63, C = 233.426 (mmHg, °C).">水的三相點 611.657 Pa：IAPWS（2011），《Revised Release on the Pressure along the Melting and Sublimation Curves of Ordinary Water Substance》。水的 Antoine 常數（1–100 °C）：A = 8.07131、B = 1730.63、C = 233.426（mmHg、°C）。</li>
+        <li data-en-html="Height of Everest 8848.86 m: joint announcement of China and Nepal, 8 December 2020. Yushan 3952 m: Ministry of the Interior, Taiwan.">聖母峰高 8848.86 m：中國與尼泊爾 2020 年 12 月 8 日共同公布。玉山 3952 m：內政部。</li>
+        <li data-en-html="Weather balloons and radiosondes: World Meteorological Organization, <i>Guide to Instruments and Methods of Observation</i> (WMO-No. 8), Volume I, Chapter 12.">探空氣球與探空儀：世界氣象組織，《Guide to Instruments and Methods of Observation》（WMO-No. 8）第一冊第 12 章。</li>
+        <li data-en-html="Earth image (3D): Reto Stöckli, NASA Goddard Space Flight Center, “Blue Marble: Land Surface, Shallow Water, and Shaded Topography”, via <a href=&quot;https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Wikimedia Commons</a>; made by NASA, public domain.">地球影像（3D）：Reto Stöckli（NASA 戈達德太空飛行中心）〈Blue Marble: Land Surface, Shallow Water, and Shaded Topography〉，取自 <a href="https://commons.wikimedia.org/wiki/File:Land_shallow_topo_2048.jpg" target="_blank" rel="noopener">Wikimedia Commons</a>；NASA 製作，公有領域。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/atmosphere-layers-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/atmosphere-layers.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="atmosphere-layers"></script>
+  <script src="js/missions/atmosphere-layers.js"></script>
+  <script src="js/stats.js" data-module="atmosphere-layers"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
