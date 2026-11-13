@@ -67,7 +67,7 @@
     {
       id: 'chords-6', level: 4,
       title: { zh: '前後都有兩個共同音', en: 'Two shared notes on both sides' },
-      desc: { zh: '選「I–vi–IV–V」，在和弦清單裡點那個「和前一個、也和後一個和弦都有兩個共同音」的和弦來聽。', en: 'Choose “I–vi–IV–V” and, in the chord list, tap the chord that shares two notes with the chord before it and two with the chord after it.' },
+      desc: { zh: '選「I–vi–IV–V」，在和弦清單裡找出和前一個、也和後一個和弦都有兩個共同音的那個和弦，點它來聽。', en: 'Choose “I–vi–IV–V” and, in the chord list, tap the chord that shares two notes with the chord before it and two with the chord after it.' },
       check: function (ev) { const d = ev.data; return ev.type === 'progPick' && d.prog === 'I-vi-IV-V' && d.commonPrev === 2 && d.commonNext === 2; }
     },
     {

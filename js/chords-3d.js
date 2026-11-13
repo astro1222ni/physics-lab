@@ -189,6 +189,7 @@
       }
       if (opt.at) sp.position.copy(opt.at);
       if (opt.axis) sp.userData.axis = opt.axis;
+      if (opt.wall) sp.userData.wall = opt.wall;
       return sp;
     }
     function fitLabel(sp) {
@@ -233,9 +234,9 @@
       });
       gWalls.add(segs(minor, C.text, isDark() ? 0.07 : 0.08), segs(major, C.text, 0.2));
       const sz = narrow ? 10.5 : 11.5;
-      gWalls.add(label(T('上面（x–y）', 'top (x–y)'), C.muted, { at: V(-W, -W, -W), dir: [-1, -0.6], size: sz, weight: 600 }));
-      gWalls.add(label(T('正面（x–z）', 'front (x–z)'), C.muted, { at: V(0, W, W), dir: [0, 1], size: sz, weight: 600 }));
-      gWalls.add(label(T('側面（y–z）', 'side (y–z)'), C.muted, { at: V(-W, 0, W), dir: [-0.4, 1], size: sz, weight: 600 }));
+      gWalls.add(label(T('上面（x–y）', 'top (x–y)'), C.muted, { at: V(-W, -W, -W), dir: [-1, -0.6], size: sz, weight: 600, wall: 'z' }));
+      gWalls.add(label(T('正面（x–z）', 'front (x–z)'), C.muted, { at: V(0, W, W), dir: [0, 1], size: sz, weight: 600, wall: 'y' }));
+      gWalls.add(label(T('側面（y–z）', 'side (y–z)'), C.muted, { at: V(-W, 0, W), dir: [-0.4, 1], size: sz, weight: 600, wall: 'x' }));
     }
 
     // ---------- 曲線 ----------
@@ -360,7 +361,7 @@
     // ---------- 資訊列 ----------
     function updateHud() {
       const a = A;
-      const names = a.act.slice(0, 3).map(function (t, i) { return '<b style="color:' + B.roleColor(t.role) + '">' + 'xyz'[i] + '</b> ' + t.name; }).join(T('　', '  '));
+      const names = a.act.slice(0, 3).map(function (t, i) { return '<b style="color:' + B.roleColor(t.role) + '">' + 'xyz'[i] + '</b> ' + t.name; }).join(T('　', ' · '));
       setHud('eq', a.count ? names : '—');
       let p = '';
       if (a.count === 1) p = T('只有一個音：在 x 軸上來回', 'One note only: back and forth along x');
@@ -418,37 +419,56 @@
     // ---------- 視角 ----------
     function defaultDir() { return V(narrow ? 0.62 : 0.6, -1, narrow ? 0.7 : 0.62).normalize(); }
     const fitC = V(0, 0, 0);
-    function fitZoom(dir) {
+    /** 資訊列實際佔的高度（會因字體大小、語言、折行而不同） */
+    function hudPad(cls) {
+      const e = hud.querySelector('.' + cls);
+      return e && e.textContent.trim() ? e.offsetHeight + 14 : 8;
+    }
+    /**
+     * 從 dir 方向看時，讓方盒的 8 個角和看得到的標籤剛好裝進畫面（上方留給資訊列、下方留給生長進度）的 zoom 與觀察中心。
+     * 標籤是固定像素大小，所以用二分法找最大的「每單位像素」s，再把內容的中心移到可用區域的中心。
+     */
+    function fitView(dir) {
       const d = dir.clone().normalize();
       const fwd = d.clone().negate();
       const right = new THREE.Vector3().crossVectors(fwd, V(0, 0, 1));
       if (right.lengthSq() < 1e-8) right.set(1, 0, 0);
       right.normalize();
       const up = new THREE.Vector3().crossVectors(right, fwd).normalize();
-      const hw = cw / 2, hh = ch / 2;
-      const hudN = 2 + (A.act[3] ? 1 : 0);
-      const padS = 8, padT = 10 + hudN * 22, padB = (tipGone || narrow) && !grow ? 8 : 30;
-      let s = Infinity;
-      function fit(p, l, r, b, t) {
-        const v = p.clone().sub(fitC), u = v.dot(right), w = v.dot(up);
-        if (u > 1e-6) s = Math.min(s, Math.max(4, hw - padS - r) / u);
-        if (u < -1e-6) s = Math.min(s, Math.max(4, hw - padS - l) / -u);
-        if (w > 1e-6) s = Math.min(s, Math.max(4, hh - padT - t) / w);
-        if (w < -1e-6) s = Math.min(s, Math.max(4, hh - padB - b) / -w);
-      }
-      [-W, W].forEach(function (x) { [-W, W].forEach(function (y) { [-W, W].forEach(function (z) { fit(V(x, y, z), 0, 0, 0, 0); }); }); });
+      // 下方一律留一行給「生長中」的進度
+      const padS = 8, padT = hudPad('tl'), padB = Math.max(hudPad('bl'), (hudEl.eq.offsetHeight || 22) + 14);
+      const pts = [];
+      const add = function (p, l, r, b, t) { const v = p.clone().sub(fitC); pts.push([v.dot(right), v.dot(up), l, r, b, t]); };
+      [-W, W].forEach(function (x) { [-W, W].forEach(function (y) { [-W, W].forEach(function (z) { add(V(x, y, z), 0, 0, 0, 0); }); }); });
       [gWalls, gAxes].forEach(function (g) {
         g.children.forEach(function (o) {
           if (!o.userData || !o.userData.isLabel || !labelVisible(o, d)) return;
           const lw = o.userData.lw, lh = o.userData.lh;
-          fit(o.position, o.center.x * lw, (1 - o.center.x) * lw, o.center.y * lh, (1 - o.center.y) * lh);
+          add(o.position, o.center.x * lw, (1 - o.center.x) * lw, o.center.y * lh, (1 - o.center.y) * lh);
         });
       });
-      if (!isFinite(s)) return 1;
-      return Math.max(controls.minZoom, Math.min(controls.maxZoom, s * viewH / Math.max(1, ch)));
+      const availW = Math.max(40, cw - 2 * padS), availH = Math.max(40, ch - padT - padB);
+      const ext = function (k) {
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        pts.forEach(function (q) { x0 = Math.min(x0, k * q[0] - q[2]); x1 = Math.max(x1, k * q[0] + q[3]); y0 = Math.min(y0, k * q[1] - q[4]); y1 = Math.max(y1, k * q[1] + q[5]); });
+        return { x0: x0, x1: x1, y0: y0, y1: y1 };
+      };
+      let lo = 1, hi = 4000;
+      for (let n = 0; n < 40; n++) {
+        const mid = Math.sqrt(lo * hi), e = ext(mid);
+        if (e.x1 - e.x0 <= availW && e.y1 - e.y0 <= availH) lo = mid; else hi = mid;
+      }
+      const sc = lo, e = ext(sc);
+      const zoom = Math.max(controls.minZoom, Math.min(controls.maxZoom, sc * viewH / Math.max(1, ch)));
+      const k = zoom * Math.max(1, ch) / viewH;   // zoom 被限制時，實際的每單位像素
+      const dx = (e.x1 + e.x0) / 2 * k / sc, dy = ((e.y1 + e.y0) / 2 * k / sc) - (padB - padT) / 2;
+      const target = fitC.clone().addScaledVector(right, dx / k).addScaledVector(up, dy / k);
+      return { zoom: zoom, target: target };
     }
     /** 沿著某一軸看過去時，那一軸的標籤會疊到別的東西上：先藏起來 */
     function labelVisible(o, dir) {
+      // 牆的名字：從側邊看（牆變成一條線）時藏起來
+      if (o.userData.wall) return Math.abs(dir[o.userData.wall]) > 0.2;
       const ax = o.userData.axis;
       if (!ax) return true;
       return Math.abs(dir[ax]) < 0.95;
@@ -499,13 +519,14 @@
     }
     function face(which) {
       hideTip();
-      const dir = faceDir(which);
-      goTo(dir, fitZoom(dir), fitC);
+      const dir = faceDir(which), f = fitView(dir);
+      goTo(dir, f.zoom, f.target);
     }
     function resetCamera() {
       setFrustum();
       anim = null; controls.enabled = true;
-      place(defaultDir(), fitZoom(defaultDir()), fitC);
+      const f = fitView(defaultDir());
+      place(defaultDir(), f.zoom, f.target);
     }
 
     // ---------- 繪製 ----------
@@ -532,7 +553,7 @@
       else if (controls.update()) moving = true;
       if (Math.abs(camera.zoom - lastZoom) > 1e-6) { lastZoom = camera.zoom; sizeLabels(); }
       const dir = camera.position.clone().sub(controls.target).normalize();
-      gAxes.children.forEach(function (o) { if (o.userData && o.userData.isLabel) o.visible = labelVisible(o, dir); });
+      gAxes.children.concat(gWalls.children).forEach(function (o) { if (o.userData && o.userData.isLabel) o.visible = labelVisible(o, dir); });
       renderer.render(scene, camera);
       if (moving) requestRender();
     }
@@ -553,8 +574,10 @@
         const refit = lastAspect && !anim;
         lastAspect = asp;
         if (refit) {
-          const d = camera.position.clone().sub(controls.target).normalize();
-          camera.zoom = fitZoom(d);
+          const d = camera.position.clone().sub(controls.target).normalize(), f = fitView(d);
+          controls.target.copy(f.target);
+          camera.position.copy(f.target).addScaledVector(d, CAM_DIST);
+          camera.zoom = f.zoom;
           camera.updateProjectionMatrix();
         }
       }

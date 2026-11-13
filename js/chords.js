@@ -139,7 +139,20 @@
     updateStop(); requestDraw(); update3D();
   }
   function busy() { return !!(state.vis || state.progPlay || state.pick); }
-  function updateStop() { $('stop').disabled = !(AU.playing() || busy()); }
+  function updateStop() { $('stop').disabled = !(AU.playing() || busy()); updateHF(); }
+  /** 正在發出的聲音裡最高的泛音（Hz）：風琴音色每個音有 6 個泛音 */
+  function topHz() {
+    const nP = CC.TIMBRES[state.timbre].length;
+    let f = 0;
+    if (state.vis && state.vis.sound) A.act.forEach(function (t) { f = Math.max(f, t.f * nP); });
+    const pp = state.progPlay || state.pick;
+    if (pp && AU.enabled()) pp.p.chords.forEach(function (c) { c.notes.forEach(function (x) { f = Math.max(f, x.f * nP); }); });
+    return f;
+  }
+  function updateHF() {
+    const on = topHz() >= 4000, w = $('hfWarn');
+    if (w.hidden === on) w.hidden = !on;
+  }
   AU.onChange(updateStop);
 
   function addLog() {
@@ -429,13 +442,13 @@
     const tb = $('logTable');
     $('logEmpty').hidden = state.log.length > 0;
     if (!state.log.length) { tb.innerHTML = ''; return; }
-    let h = '<thead><tr><th>' + T('和弦', 'Chord') + '</th><th>' + T('音律', 'Tuning') + '</th><th>' + T('比值', 'Ratio') + '</th><th>T</th></tr></thead><tbody>';
+    let h = '<thead><tr><th>' + T('和弦', 'Chord') + '</th><th>' + T('音律', 'Tuning') + '</th><th>' + T('比值', 'Ratio') + '</th><th>' + T('T（ms）', 'T (ms)') + '</th></tr></thead><tbody>';
     state.log.forEach(function (r) {
       const c = CC.CHORDS[r.type];
       const n = c.semis.length, partial = r.on.slice(0, n).some(function (x) { return !x; });
       h += '<tr><td>' + CC.spellRoot(r.root, false) + ' ' + T(c.short, c.enShort) + (r.inv ? '<small> ' + ['', T('一轉', '1st'), T('二轉', '2nd'), T('三轉', '3rd')][r.inv] + '</small>' : '') +
         (partial ? '<small>' + T('（部分）', ' (part)') + '</small>' : '') + '</td><td>' + (r.tuning === 'just' ? T('純律', 'Just') : T('平均律', 'Equal')) + '</td><td>' +
-        (r.ints ? r.ints.join(':') : (r.intsJ && r.intsJ.length > 1 ? '≈ ' + r.intsJ.join(':') : '—')) + '</td><td>' + (r.T ? msText(r.T) : T('不重複', 'none')) + '</td></tr>';
+        (r.ints ? r.ints.join(':<wbr>') : (r.intsJ && r.intsJ.length > 1 ? '≈ ' + r.intsJ.join(':<wbr>') : '—')) + '</td><td>' + (r.T ? num(r.T * 1000, r.T < 0.1 ? 2 : 1) : T('不重複', 'none')) + '</td></tr>';
     });
     tb.innerHTML = h + '</tbody>';
   }
@@ -688,10 +701,43 @@
     return k >= 100 ? String(Math.round(k)) : num(k, 0);
   }
 
+  // ---------- 標籤排版：幾列文字，擠在一起時換列，還是放不下就往旁邊挪 ----------
+  function Placer(nRows, xmin, xmax, gap) { this.occ = []; for (let r = 0; r < nRows; r++) this.occ.push([]); this.xmin = xmin; this.xmax = xmax; this.gap = gap; }
+  Placer.prototype.free = function (r, a, b) {
+    const g = this.gap;
+    return a >= this.xmin - 0.5 && b <= this.xmax + 0.5 && this.occ[r].every(function (q) { return b + g <= q[0] || a >= q[1] + g; });
+  };
+  Placer.prototype.take = function (r, a, b) { this.occ[r].push([a, b]); };
+  /** 想放在中心 cx、寬 w 的標籤；opt.rows 可以用哪幾列、opt.shift 可以挪、opt.must 一定要畫。傳回 { row, cx } 或 null */
+  Placer.prototype.place = function (cx, w, opt) {
+    opt = opt || {};
+    const self = this, rows = opt.rows || this.occ.map(function (q, r) { return r; });
+    const a = Math.max(this.xmin, Math.min(this.xmax - w, cx - w / 2));
+    for (let k = 0; k < rows.length; k++) if (this.free(rows[k], a, a + w)) { this.take(rows[k], a, a + w); return { row: rows[k], cx: a + w / 2 }; }
+    if (opt.shift) {
+      let best = null;
+      rows.forEach(function (r) {
+        const cands = [];
+        self.occ[r].forEach(function (q) { cands.push(q[1] + self.gap, q[0] - self.gap - w); });
+        cands.forEach(function (a2) {
+          if (self.free(r, a2, a2 + w) && (!best || Math.abs(a2 - a) < Math.abs(best.a - a))) best = { r: r, a: a2 };
+        });
+      });
+      if (best) { this.take(best.r, best.a, best.a + w); return { row: best.r, cx: best.a + w / 2 }; }
+    }
+    if (opt.must) { this.take(rows[0], a, a + w); return { row: rows[0], cx: a + w / 2 }; }
+    return null;
+  };
+
   // ---------- 泛音列階梯 ----------
   function drawLadder() {
     const x0 = L.x0 + 6, x1 = L.x1 - 6, ry0 = L.ry0, ry1 = L.ry1, ymid = (ry0 + ry1) / 2;
-    D.pill(ctx, T('泛音列階梯：第 k 根 = 虛擬基頻 × k', 'Harmonic ladder: rung k = virtual fundamental × k'), L.x0, L.ly0 + 20 * fs, C['ch-per'], 'left', fnt(Math.round(12.5 * fs), 700));
+    const tf = fnt(Math.round(12.5 * fs), 700);
+    let title = T('泛音列階梯：第 k 根 = 虛擬基頻 × k', 'Harmonic ladder: rung k = virtual fundamental × k');
+    ctx.font = tf;
+    if (ctx.measureText(title).width + 14 > L.x1 - L.x0) title = T('泛音列階梯：第 k 根 = k × 虛擬基頻', 'Harmonic ladder: rung k = k × fv');
+    if (ctx.measureText(title).width + 14 > L.x1 - L.x0) title = T('泛音列階梯', 'Harmonic ladder');
+    D.pill(ctx, title, L.x0, L.ly0 + 20 * fs, C['ch-per'], 'left', tf);
     if (!A.count) return;
     const just = A.tuning === 'just';
     const ints = A.intsJ, fv = A.fvJ;
@@ -699,7 +745,7 @@
     const fLo = fv / 1.3, fHi = fMax * 1.12;
     const lo = Math.log2(fLo), span = Math.log2(fHi) - lo;
     const X = function (f) { return x0 + (Math.log2(f) - lo) / span * (x1 - x0); };
-    // 聽不到的範圍
+    // 聽不到的範圍：200 Hz 以下（手機喇叭）、20 Hz 以下（人耳）
     const zoneF = fnt(Math.round(10.5 * fs), 600);
     if (fLo < 200) {
       const xb = X(Math.min(200, fHi));
@@ -707,17 +753,20 @@
       ctx.fillRect(x0, ry0 - 2, xb - x0, ry1 - ry0 + 4);
       ctx.fillStyle = alpha(C.text, 0.3); ctx.fillRect(Math.round(xb), ry0 - 6, 1, ry1 - ry0 + 12);
       ctx.font = zoneF; ctx.fillStyle = C.muted; ctx.textBaseline = 'top';
-      const txt = T('200 Hz 以下：手機喇叭幾乎放不出', 'below 200 Hz: phone speakers barely play it');
-      ctx.textAlign = 'right';
-      if (xb - x0 > ctx.measureText(txt).width + 6) ctx.fillText(txt, xb - 4, L.zoneY);
-      else { ctx.textAlign = xb > x1 - 120 ? 'right' : 'left'; ctx.fillText(T('← 200 Hz：手機喇叭的下限', '← 200 Hz: phone speaker limit'), xb > x1 - 120 ? xb - 4 : xb + 4, L.zoneY); }
+      const full = T('200 Hz 以下：手機喇叭幾乎放不出', 'below 200 Hz: phone speakers barely play it');
+      const short = T('200 Hz：手機喇叭的下限', '200 Hz: phone speaker limit');
+      const wf = ctx.measureText(full).width, ws = ctx.measureText('← ' + short).width;
+      const tiny = T('手機 < 200 Hz', 'phone < 200 Hz');
+      if (xb - 4 - wf >= x0) { ctx.textAlign = 'right'; ctx.fillText(full, xb - 4, L.zoneY); }
+      else if (xb + 4 + ws <= x1) { ctx.textAlign = 'left'; ctx.fillText('← ' + short, xb + 4, L.zoneY); }
+      else if (xb - 4 - ctx.measureText(short + ' →').width >= x0) { ctx.textAlign = 'right'; ctx.fillText(short + ' →', xb - 4, L.zoneY); }
+      else if (xb - 4 - ctx.measureText(tiny + ' →').width >= x0) { ctx.textAlign = 'right'; ctx.fillText(tiny + ' →', xb - 4, L.zoneY); }
+      else { ctx.textAlign = 'left'; ctx.fillText('← ' + tiny, Math.min(xb + 4, x1 - ctx.measureText('← ' + tiny).width), L.zoneY); }
     }
     if (fLo < 20) {
       const xb = X(Math.min(20, fHi));
       ctx.fillStyle = alpha(C.text, D.dark ? 0.1 : 0.08);
       ctx.fillRect(x0, ry0 - 2, xb - x0, ry1 - ry0 + 4);
-      ctx.font = zoneF; ctx.fillStyle = C['ch-off']; ctx.textBaseline = 'bottom'; ctx.textAlign = 'left';
-      D.haloText(ctx, T('20 Hz 以下聽不見', 'below 20 Hz: inaudible'), x0 + 3, ry0 - 4, C['ch-off'], 'left', 'bottom', zoneF);
     }
     // 兩根扶手
     D.tube(ctx, function (c) { c.moveTo(x0, ry0); c.lineTo(x1, ry0); }, alpha(C.muted, 0.9), 4);
@@ -726,8 +775,7 @@
     const chordRung = {};
     ints.forEach(function (k, i) { chordRung[k] = A.act[i]; });
     const K = Math.floor(fHi / fv);
-    let lastX = -1e9, lastLabel = -1e9;
-    ctx.font = fnt(Math.round(10.5 * fs), 600);
+    let lastX = -1e9;
     for (let k = 1; k <= K; k++) {
       const x = X(k * fv), gap = x - lastX;
       const isChord = !!chordRung[k];
@@ -738,42 +786,52 @@
         else { ctx.fillStyle = alpha(isChord ? C.text : C.muted, a); ctx.fillRect(Math.round(x) - 0.5, ry0 + 2, isChord ? 1.6 : 1, ry1 - ry0 - 4); }
         lastX = x;
       }
-      // 根號數字
-      const want = k === 1 || isChord || (gap >= 15 * fs && k <= 24);
-      if (want && x - lastLabel >= 12 * fs) {
-        D.haloText(ctx, String(k), x, L.numY, isChord ? roleColor(chordRung[k].role) : k === 1 ? C['ch-per'] : C.muted, 'center', 'bottom', fnt(Math.round((isChord || k === 1 ? 11.5 : 10) * fs), isChord || k === 1 ? 700 : 500));
-        lastLabel = x;
-      }
     }
-    // 虛擬基頻
-    const xv = X(fv);
-    const vtxt = (just ? T('虛擬基頻 ', 'virtual fundamental ') : T('純律版本的虛擬基頻 ', 'just version: ')) + hz(fv) + ' Hz';
-    // 和弦音（球）與名字
+    if (fLo < 20) {
+      // 「聽不見」寫在扶手之間的深色區
+      D.haloText(ctx, T('20 Hz 以下聽不見', 'below 20 Hz: inaudible'), x0 + 4, ymid, C['ch-off'], 'left', 'middle', zoneF);
+    }
+    // 根號數字（兩列）：第 1 根與和弦音一定標，擠的時候換到上面一列；其他的有空位才標
+    const numP = new Placer(2, x0 - 4, x1 + 4, 3 * fs);
+    const numF = function (big) { return fnt(Math.round((big ? 11.5 : 10) * fs), big ? 700 : 500); };
+    const drawNum = function (k, x, color, big, opt) {
+      ctx.font = numF(big);
+      const w = ctx.measureText(String(k)).width;
+      const p = numP.place(x, w, opt);
+      if (!p) return;
+      const y = L.numY - p.row * L.numRow;
+      if (p.row) { ctx.strokeStyle = alpha(color, 0.45); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, ry0 - 3); ctx.lineTo(p.cx, y - 1); ctx.stroke(); }
+      D.haloText(ctx, String(k), p.cx, y, color, 'center', 'bottom', numF(big));
+    };
+    drawNum(1, X(fv), C['ch-per'], true, { must: true });
+    A.act.forEach(function (t, i) { drawNum(ints[i], X(ints[i] * fv), roleColor(t.role), true, { must: true, shift: true }); });
+    for (let k = 2; k <= Math.min(K, 24); k++) {
+      if (chordRung[k]) continue;
+      const x = X(k * fv), xp = X((k - 1) * fv);
+      if (x - xp >= 15 * fs) drawNum(k, x, C.muted, false, { rows: [0] });
+    }
+    // 虛擬基頻的標籤先放在名字列的最左邊；和弦音的名字（兩列，擠的時候換列或挪開，並畫引線）再繞開它
     const nameF = fnt(Math.round(11 * fs), 600);
-    const rows = [-1e9, -1e9];
+    const nameP = new Placer(2, x0 - 4, x1 + 4, 8);
+    const vtxt = (just ? T('虛擬基頻 ', 'virtual fundamental ') : T('純律版本的虛擬基頻 ', 'just version: ')) + hz(fv) + ' Hz';
+    const vf = fnt(Math.round(11 * fs), 700);
+    ctx.font = vf;
+    const vw = ctx.measureText(vtxt).width + 12;
+    const xv = X(fv);
+    const vp = nameP.place(Math.max(x0 + vw / 2, xv - 6 + vw / 2), vw, { must: true, shift: true });
     A.act.forEach(function (t, i) {
       const x = X(t.f);
       D.ball(ctx, x, ymid, L.narrow ? 6.5 : 7.5, roleColor(t.role));
       let txt = t.name;
-      if (!just) {
-        const dev = 1200 * Math.log2(t.f / (ints[i] * fv));
-        if (Math.abs(dev) >= 0.05) txt += ' ' + signed(dev, 1);
-      }
+      const dev = just ? 0 : 1200 * Math.log2(t.f / (ints[i] * fv));
+      if (!just && Math.abs(dev) >= 0.05) txt += ' ' + signed(dev, 1);
       ctx.font = nameF;
-      const tw = ctx.measureText(txt).width;
-      let r = 0;
-      if (x - tw / 2 < rows[0] + 6) r = 1;
-      const xx = Math.max(x0 + tw / 2, Math.min(x1 - tw / 2, x));
-      D.haloText(ctx, txt, xx, L.nameY + r * 15 * fs, !just && Math.abs(1200 * Math.log2(t.f / (ints[i] * fv))) > 30 ? C['ch-off'] : roleColor(t.role), 'center', 'top', nameF);
-      rows[r] = xx + tw / 2;
+      const p = nameP.place(x, ctx.measureText(txt).width, { must: true, shift: true });
+      const y = L.nameY + p.row * L.nameRow;
+      if (p.row || Math.abs(p.cx - x) > 2) { ctx.strokeStyle = alpha(roleColor(t.role), 0.5); ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, ry1 + 3); ctx.lineTo(p.cx, y); ctx.stroke(); }
+      D.haloText(ctx, txt, p.cx, y, Math.abs(dev) > 30 ? C['ch-off'] : roleColor(t.role), 'center', 'top', nameF);
     });
-    // 虛擬基頻的標籤放在名字列，避開和弦音的名字
-    ctx.font = fnt(Math.round(11 * fs), 700);
-    const vw = ctx.measureText(vtxt).width + 12;
-    let vx = Math.max(x0, Math.min(x1 - vw, xv - 6));
-    const firstName = X(A.act[0].f) - 40;
-    const row = vx + vw < firstName ? 0 : 1;
-    D.pill(ctx, vtxt, vx, L.nameY + (row ? 15 * fs : 0) + 16 * fs, C['ch-per'], 'left', fnt(Math.round(11 * fs), 700));
+    D.pill(ctx, vtxt, vp.cx, L.nameY + vp.row * L.nameRow + L.nameRow - 3, C['ch-per'], 'center', vf);
   }
 
   // ---------- 鍵盤 ----------
@@ -836,9 +894,10 @@
       c.fillStyle = g; c.fill();
       c.restore();
     });
-    // 圓點與標籤
-    const lf = fnt(Math.round(11.5 * fs), 700);
-    const rows = [-1e9, -1e9];
+    // 圓點與標籤（兩列：先放靠近鍵盤的那一列，擠的時候換列或挪開；和弦進行的標記先佔住上面一列的右端）
+    const lf = fnt(Math.round(11.5 * fs), 700), tagF = fnt(Math.round(12 * fs), 700);
+    const rowH = 17 * fs + 5;
+    const P = new Placer(2, 2, W - 2, 4);
     notes.slice().sort(function (a, b) { return a.midi - b.midi; }).forEach(function (n) {
       const p = pos[n.midi];
       if (!p) return;
@@ -846,18 +905,18 @@
       D.ball(c, cx, cy, Math.max(3.5, Math.min(6.5, p.w * 0.28)), n.color, { shadow: false });
       c.font = lf;
       const tw = c.measureText(n.name).width + 12;
-      let r = cx - tw / 2 < rows[0] + 3 ? 1 : 0;
-      if (r === 1 && cx - tw / 2 < rows[1] + 3) r = 0;
-      const xx = Math.max(tw / 2, Math.min(W - tw / 2, cx));
-      const yb = (r + 1) * (17 * fs + 5);
+      const q = P.place(cx, tw, { rows: [1, 0], shift: true, must: true });
+      const yb = (q.row ? 2 : 1) * rowH;
       c.strokeStyle = alpha(n.color, 0.6); c.lineWidth = 1;
-      c.beginPath(); c.moveTo(cx, yb); c.lineTo(cx, ky0 + 2); c.stroke();
-      D.pill(c, n.name, xx, yb, n.color, 'center', lf);
-      rows[r] = xx + tw / 2;
+      c.beginPath(); c.moveTo(q.cx, yb); c.lineTo(cx, ky0 + 2); c.stroke();
+      D.pill(c, n.name, q.cx, yb, n.color, 'center', lf);
     });
     if (info.tag) {
-      c.font = fnt(Math.round(12 * fs), 700);
-      D.pill(c, T('和弦進行 ', 'progression ') + info.tag, W - 4, 17 * fs + 5, C['ch-per'], 'right', fnt(Math.round(12 * fs), 700));
+      const tagTxt = T('和弦進行 ', 'progression ') + info.tag;
+      c.font = tagF;
+      const tw = c.measureText(tagTxt).width + 12;
+      const q = P.place(W - 4 - tw / 2, tw, { rows: [0, 1] }) || P.place(4 + tw / 2, tw, { rows: [0, 1] }) || P.place(W / 2, tw, { rows: [0, 1], shift: true, must: true });
+      D.pill(c, tagTxt, q.cx, (q.row ? 2 : 1) * rowH, C['ch-per'], 'center', tagF);
     }
   }
 
@@ -885,6 +944,7 @@
       if (!$('stage').classList.contains('is3d')) { drawWave(); drawLadder(); }
       drawKb();
     }
+    updateHF();
     if (busy()) raf = requestAnimationFrame(frame);
   }
 

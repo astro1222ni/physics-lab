@@ -31,6 +31,7 @@
     .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
     .ch #stop:disabled { opacity: .5; cursor: default; }
     .ch .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ch .hf-warn { margin: 4px 4px 0; padding: 6px 10px; border-radius: 8px; font-size: calc(13px * var(--fs, 1)); background: var(--accent-soft); color: var(--text); }
     .ch .stage .slider { margin: 12px 4px 4px; }
     .ch .panel { grid-template-columns: minmax(0, 1fr); }
     .ch .panel > .card { min-width: 0; }
@@ -102,6 +103,7 @@
     .nt td i.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: 0; }
     .nt td small.rl { margin-left: 4px; color: var(--muted); font-size: .85em; }
     .nt tr.off td { color: var(--muted); }
+    #logTable td:first-child, #logTable td:nth-child(3) { white-space: normal; }
     .ok-txt { color: var(--ch-5); font-weight: 700; }
     .bad-txt { color: var(--ch-off); font-weight: 700; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
@@ -157,6 +159,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
         <p class="hint" data-en="Phone speakers hardly play anything below about 200 Hz: low roots (C3–G3) sound faint on a phone, and the virtual fundamental is never actually played — your ear fills it in. Headphones or a proper speaker work best.">手機喇叭幾乎放不出 200 Hz 以下的聲音：低的根音（C3–G3）在手機上會很小聲；虛擬基頻本來就沒有發出聲音，是耳朵自己「補」出來的。戴耳機或接喇叭聽得最清楚。</p>
         <div class="slider" id="spanBox"><label for="span" data-en="Time shown (ms)">顯示的時間（ms）</label><output id="spano"></output>
           <input id="span" type="range" min="0" max="1000" step="1" value="482" data-decimals="1"></div>
