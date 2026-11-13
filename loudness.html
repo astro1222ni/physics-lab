@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Decibels, Equal-Loudness Contours and Hearing Protection | Astro Ni Science Lab">分貝、等響曲線與聽力保護｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 分貝與等響曲線頁面專用的顏色代號（淺色＋兩組深色；由 js/loudness.js 與 js/loudness-3d.js 讀取）
+       curve 等響曲線、thr 聽閾、pt 目前的點、lock 鎖定的曲線、s1／s2 兩個聲源、sum 合計、safe／warn／danger 安全／注意／危險、
+       heat0／heat1 響度級色階的兩端、rec 記錄的點 */
+    :root { --ld-curve: #4f46e5; --ld-thr: #0f766e; --ld-pt: #e11d48; --ld-lock: #c2410c; --ld-s1: #2563eb; --ld-s2: #0891b2; --ld-sum: #7c3aed;
+      --ld-safe: #15803d; --ld-warn: #b45309; --ld-danger: #dc2626; --ld-heat0: #e0f2fe; --ld-heat1: #6d28d9; --ld-rec: #0f172a; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ld-curve: #a5b4fc; --ld-thr: #5eead4; --ld-pt: #fb7185; --ld-lock: #fdba74; --ld-s1: #7aa7ff; --ld-s2: #67e8f9; --ld-sum: #c4b5fd;
+        --ld-safe: #4ade80; --ld-warn: #fbbf24; --ld-danger: #f87171; --ld-heat0: #0c1a2b; --ld-heat1: #8b5cf6; --ld-rec: #e2e8f0; }
+    }
+    :root[data-theme="dark"] { --ld-curve: #a5b4fc; --ld-thr: #5eead4; --ld-pt: #fb7185; --ld-lock: #fdba74; --ld-s1: #7aa7ff; --ld-s2: #67e8f9; --ld-sum: #c4b5fd;
+      --ld-safe: #4ade80; --ld-warn: #fbbf24; --ld-danger: #f87171; --ld-heat0: #0c1a2b; --ld-heat1: #8b5cf6; --ld-rec: #e2e8f0; }
+
+    /* 畫布高度由程式依寬度決定；等響曲線圖可以拖曳（只在圖上攔觸控），合計圖不攔觸控 */
+    #cv { aspect-ratio: auto; height: 380px; touch-action: none; }
+    #cvSum { aspect-ratio: auto; height: 260px; margin-top: 10px; touch-action: auto; cursor: default; }
+    .ld [hidden] { display: none !important; }
+    .ld button { min-height: 44px; }
+    .ld .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ld .playbar > button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ld #stop:disabled { opacity: .5; cursor: default; }
+    .ld .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .ld .panel { grid-template-columns: minmax(0, 1fr); }
+    .ld .panel > .card { min-width: 0; }
+    .ld .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .safety { margin: 10px 2px 0; padding: 8px 12px; border-radius: 10px; font-size: calc(13px * var(--fs, 1)); line-height: 1.55;
+      border: 1px solid color-mix(in srgb, var(--ld-warn) 45%, transparent); background: color-mix(in srgb, var(--ld-warn) 9%, transparent); color: var(--text); }
+    .safety b { color: var(--ld-warn); }
+
+    /* 2D／3D 檢視切換 */
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .stage.is3d #cv, .stage.is3d .only2d { display: none; }
+    .stage:not(.is3d) .l3 { display: none !important; }
+    #view3 canvas {
+      display: block; width: 100%; border-radius: 8px; touch-action: none; cursor: grab; aspect-ratio: 16 / 10;
+      background: var(--canvas-bg);
+      background: radial-gradient(ellipse at 50% 40%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 92%, var(--text)) 100%);
+    }
+    @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .t3-wrap { position: relative; }
+    .t3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
+    .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 80%; }
+    .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
+      background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+    .t3-hud span.m { color: var(--muted); font-weight: 500; }
+    .t3-hud span.c { color: var(--ld-pt); }
+    .t3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+
+    /* 控制面板 */
+    .presets { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .presets.six { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    @media (max-width: 380px) { .presets.six { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .presets button { padding: 4px 2px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15; font-variant-numeric: tabular-nums; }
+    .presets button small { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); font-weight: 400; }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+    .dyn button b { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 1.12em; }
+    .toggle { width: 100%; }
+    .toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+    .slider input:disabled { opacity: .55; }
+    .slider:has(input:disabled) label { color: var(--muted); }
+    .slider:has(input:disabled) output { color: var(--muted); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.big { font-size: 1.2em; font-weight: 700; }
+    .twobtn { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .rec { width: 100%; border-collapse: collapse; margin: 8px 0 0; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .rec th, .rec td { padding: 3px 4px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; }
+    .rec th { font-size: calc(11.5px * var(--fs, 1)); color: var(--muted); font-weight: 500; }
+    .rec th:first-child, .rec td:first-child { text-align: left; }
+    .rec-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .notes table.lv { border-collapse: collapse; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    .notes table.lv th, .notes table.lv td { border-bottom: 1px solid var(--border); padding: 3px 10px; text-align: left; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tone&quot;>Music · Musical Tone and Hearing</a> / Loudness and hearing"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tone">音樂・樂音與聽覺</a> ／ 響度與聽覺</nav>
+      <h1 data-en="Decibels, Equal-Loudness Contours and Hearing Protection">分貝、等響曲線與聽力保護</h1>
+      <p data-en="Is a sound of 60 dB always equally loud? Not to your ears: a low note needs far more sound pressure than a note near 3 kHz to sound as loud. Explore the international equal-loudness contours, find out why two violins are not twice as loud as one, how much quieter it gets when you step back, and how long you can safely listen at a given level each day. The decibels on this page are simulated values on the chart — the page cannot know how loud your speaker or headphones really are.">同樣是 60 dB，聽起來一樣響嗎？對耳朵來說不是：低音要比 3 kHz 附近的音大很多的聲壓，才聽起來一樣響。在這裡探索國際標準的等響曲線，看看為什麼兩把小提琴不是一把的兩倍響、退後幾步會小聲多少，以及某個音量每天能安全地聽多久。這一頁的分貝都是圖上的模擬值——網頁不知道你的喇叭或耳機實際有多大聲。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: turn on “Lock to a contour”, slide the frequency from 1 kHz down to 50 Hz and watch how many decibels it takes.">試試看：打開「鎖定在等響曲線上」，把頻率從 1 kHz 拉到 50 Hz，看聲壓級要加多少。</p>
+    <div class="lab ld" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D contours">2D 等響曲線</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D loudness surface">3D 響度曲面</button>
+          </div>
+          <div class="seg l3" role="group" aria-label="曲面的高度" data-en-aria-label="Surface height">
+            <button type="button" data-hmode="phon" aria-pressed="true" data-en="Height: phon">高度：phon</button>
+            <button type="button" data-hmode="sone" aria-pressed="false" data-en="Height: sone">高度：sone</button>
+          </div>
+          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <p class="hint only2d" data-en="Drag on the chart (or use the sliders) to move the red point. Each curve joins the pure tones that sound equally loud; its name in phon is its level at 1 kHz. Below the green threshold curve nothing can be heard. Dashed parts lie outside the range the standard covers.">在圖上拖曳（或用滑桿）移動紅點。每一條曲線連起「聽起來一樣響」的純音，它的 phon 數就是它在 1 kHz 的分貝數。綠色的聽閾曲線以下什麼也聽不到；虛線的部分超出標準的有效範圍。</p>
+        <p class="hint l3" data-en="3D: across the floor run frequency (left to right, logarithmic) and sound pressure level (front to back); the height is the loudness level (or the loudness in sone). The equal-loudness contours are the contour lines of this surface. Drag to rotate, scroll or pinch to zoom.">3D：地面的兩個方向是頻率（左到右、對數刻度）與聲壓級（前到後），高度是響度級（或以 sone 計的響度）。等響曲線就是這個曲面的等高線。拖曳旋轉，滾輪或雙指縮放。</p>
+        <div class="playbar">
+          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+          <button id="cmp1k" type="button" data-en="1 kHz, then this">先 1 kHz 再這個頻率</button>
+          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="safety" data-en-html="<b>Hearing protection:</b> the page cannot know how loud your speaker or headphones really are — every decibel here is a simulated value on the chart, not what reaches your ears. Playback is always gentle and capped: setting 120 dB does <em>not</em> play anything loud. Do not use your ears to “test” the threshold of hearing or very loud levels. Tones above 4 kHz are piercing: if you wear headphones, turn the volume down first. Phone speakers can hardly play below about 200 Hz."><b>聽力保護：</b>網頁不知道你的喇叭或耳機實際有多大聲——這裡的分貝都是圖上的模擬值，不是你耳朵聽到的值。試聽一律用溫和的音量，而且有上限：把聲壓級拉到 120 dB <em>不會</em>真的放很大聲。不要用耳朵去「測試」聽閾或很大的音量。4 kHz 以上的純音很刺耳：戴耳機的同學先把音量調小。手機的小喇叭幾乎放不出 200 Hz 以下的聲音。</p>
+        <canvas id="cvSum" role="img" aria-label="分貝相加與安全聆聽時間"></canvas>
+        <p class="chart-cap" data-en="Left: adding sound sources and stepping back (levels at 1 m, then at the distance you chose). Right: how long you may listen each day at a given A-weighted level (NIOSH: 85 dBA for 8 hours, half the time for every 3 dB more).">左：聲源相加與退後（先算 1 公尺處，再換到你選的距離）。右：某個 A 加權聲級每天可以聽多久（NIOSH：85 dBA 8 小時，每多 3 dB 時間減半）。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="A point on the chart">等響曲線上的點</h2>
+          <div class="slider"><label for="freq" data-en="Frequency f (Hz)">頻率 f（Hz）</label><output id="freqo"></output>
+            <input id="freq" type="range" min="0" max="1000" step="1" value="500" data-decimals="1"></div>
+          <div class="presets" role="group" aria-label="常用的頻率" data-en-aria-label="Common frequencies">
+            <button type="button" data-fq="63">63</button>
+            <button type="button" data-fq="125">125</button>
+            <button type="button" data-fq="250">250</button>
+            <button type="button" data-fq="500">500</button>
+            <button type="button" data-fq="1000">1 k</button>
+            <button type="button" data-fq="2000">2 k</button>
+            <button type="button" data-fq="4000">4 k</button>
+            <button type="button" data-fq="8000">8 k</button>
+          </div>
+          <div class="slider"><label for="lp" data-en="Sound pressure level Lp (dB)">聲壓級 L<sub>p</sub>（dB）</label><output id="lpo"></output>
+            <input id="lp" type="range" min="-10" max="130" step="0.5" value="60" data-decimals="1"></div>
+          <button type="button" id="lock" class="toggle" aria-pressed="false" data-en="Lock to a contour">鎖定在等響曲線上</button>
+          <div class="slider"><label for="phon" data-en="Loudness level LN (phon)">響度級 L<sub>N</sub>（phon）</label><output id="phono"></output>
+            <input id="phon" type="range" min="0" max="100" step="0.5" value="40" data-decimals="1" disabled></div>
+          <p class="hint" id="lockHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout">
+            <dt data-en="Loudness level">響度級</dt><dd class="big" id="rPhon">—</dd>
+            <dt data-en="Loudness">響度</dt><dd id="rSone">—</dd>
+            <dt data-en="Sound pressure level">聲壓級</dt><dd id="rLp">—</dd>
+            <dt data-en="Threshold of hearing here">這個頻率的聽閾</dt><dd id="rThr">—</dd>
+            <dt data-en="Above the threshold">高出聽閾</dt><dd id="rAbove">—</dd>
+            <dt data-en="Equally loud at 1 kHz">在 1 kHz 一樣響要</dt><dd id="r1k">—</dd>
+            <dt data-en="A-weighted level">A 加權聲級</dt><dd id="rA">—</dd>
+            <dt data-en="Steepness (phon per dB)">陡度（phon／dB）</dt><dd id="rSlope">—</dd>
+          </dl>
+          <div class="twobtn">
+            <button type="button" id="rec" data-en="Record this point">記下這個點</button>
+            <button type="button" id="clear" data-en="Clear all" title="清掉記下的點；滑桿的設定不變" data-en-title="Clear the recorded points; the sliders are kept">全部清除</button>
+          </div>
+          <div class="tablewrap" id="recWrap"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Adding decibels">分貝相加</h2>
+          <div class="presets six dyn" role="group" aria-label="力度記號（示意值）" data-en-aria-label="Dynamics (rough values)">
+            <button type="button" data-dyn="pp"><b>pp</b><small>50</small></button>
+            <button type="button" data-dyn="p"><b>p</b><small>58</small></button>
+            <button type="button" data-dyn="mp"><b>mp</b><small>64</small></button>
+            <button type="button" data-dyn="mf"><b>mf</b><small>70</small></button>
+            <button type="button" data-dyn="f"><b>f</b><small>80</small></button>
+            <button type="button" data-dyn="ff"><b>ff</b><small>90</small></button>
+          </div>
+          <p class="hint" data-en="Dynamics set source 1 to a rough level for one instrument about 1 m away (it varies a lot with the instrument and the room).">力度記號把聲源 1 設成一件樂器在約 1 公尺處的大致聲壓級（示意值，隨樂器與場地差很多）。</p>
+          <div class="slider"><label for="l1" data-en="Source 1 at 1 m (dB)">聲源 1（1 m 處，dB）</label><output id="l1o"></output>
+            <input id="l1" type="range" min="30" max="110" step="0.5" value="70" data-decimals="1"></div>
+          <div class="slider"><label for="nsrc" data-en="Identical copies of source 1, N">相同的聲源 1 有幾個 N</label><output id="nsrco"></output>
+            <input id="nsrc" type="range" min="1" max="20" step="1" value="1" data-decimals="0"></div>
+          <button type="button" id="on2" class="toggle" aria-pressed="true" data-en="Source 2">聲源 2</button>
+          <div class="slider"><label for="l2" data-en="Source 2 at 1 m (dB)">聲源 2（1 m 處，dB）</label><output id="l2o"></output>
+            <input id="l2" type="range" min="30" max="110" step="0.5" value="64" data-decimals="1"></div>
+          <div class="slider"><label for="dist" data-en="Distance r (m)">距離 r（m）</label><output id="disto"></output>
+            <input id="dist" type="range" min="-4" max="20" step="1" value="0" data-decimals="2"></div>
+          <dl class="readout">
+            <dt data-en="Total at 1 m">合計（1 m 處）</dt><dd class="big" id="sTot">—</dd>
+            <dt id="sRlab" data-en="At the distance r">在距離 r 處</dt><dd id="sR">—</dd>
+            <dt data-en="More than one source 1">比一個聲源 1 多</dt><dd id="sInc">—</dd>
+            <dt data-en="Sounds about … as loud">聽起來大約響幾倍</dt><dd id="sRatio">—</dd>
+          </dl>
+          <p class="hint" data-en="The distance slider doubles the distance every 4 notches (0.5 m to 32 m); tap the number to type any distance.">距離滑桿每 4 格距離加倍（0.5 m 到 32 m）；點數字可以打任何距離。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Safe listening time">安全聆聽時間</h2>
+          <div class="slider"><label for="lv" data-en="A-weighted level (dBA)">A 加權聲級（dBA）</label><output id="lvo"></output>
+            <input id="lv" type="range" min="70" max="115" step="0.5" value="80" data-decimals="1"></div>
+          <div class="slider"><label for="hrs" data-en="Hours of listening per day">每天聽幾小時</label><output id="hrso"></output>
+            <input id="hrs" type="range" min="0" max="12" step="0.25" value="2" data-decimals="2"></div>
+          <button type="button" id="useSum" class="toggle" data-en="Use the total above">用上面的合計</button>
+          <dl class="readout">
+            <dt data-en="Allowed per day (NIOSH)">每天容許時間（NIOSH）</dt><dd class="big" id="dT">—</dd>
+            <dt data-en="Daily noise dose">每日噪音劑量</dt><dd id="dDose">—</dd>
+          </dl>
+          <p class="hint" id="doseHint"></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Sound pressure level and the decibel">聲壓級與分貝</h3>
+      <p data-en-html="Sound is a tiny ripple of air pressure on top of the atmosphere. The quietest 1 kHz tone a young listener can hear is about \(20\ \mu\text{Pa}\); a rock concert can reach a million times more. Because the ear handles such a huge range, we use a logarithmic scale, the <strong>sound pressure level</strong>:">聲音是大氣壓力上極小的起伏。年輕人聽得到的最小 1 kHz 聲音約是 \(20\ \mu\text{Pa}\)；搖滾演唱會可以大到一百萬倍。耳朵能處理這麼大的範圍，所以用對數的尺來量，這就是<strong>聲壓級</strong>：</p>
+      <div class="formula">\[ L_p = 20\log_{10}\frac{p}{p_0}\ \text{dB},\qquad p_0 = 20\ \mu\text{Pa} \]</div>
+      <p data-en-html="The intensity (power per area) is proportional to \(p^2\), so the same level is also \(10\log_{10}(I/I_0)\). Every 10 dB is ten times the intensity; every 20 dB is ten times the pressure.">聲音的強度（每單位面積的功率）和 \(p^2\) 成正比，所以同一個聲壓級也可以寫成 \(10\log_{10}(I/I_0)\)。每多 10 dB，強度變成 10 倍；每多 20 dB，聲壓變成 10 倍。</p>
+
+      <h3 data-en="Adding sources and stepping back">聲源相加與距離</h3>
+      <p data-en-html="Two unrelated sources (two violins, two speakers playing different things) add their <em>intensities</em>, not their decibels:">兩個互不相關的聲源（兩把小提琴、兩個播放不同內容的喇叭）相加的是<em>強度</em>，不是分貝數：</p>
+      <div class="formula" data-en-html="\[ L = 10\log_{10}\left(10^{L_1/10} + 10^{L_2/10}\right),\qquad N \text{ identical sources}:\ L_1 + 10\log_{10}N \]">\[ L = 10\log_{10}\left(10^{L_1/10} + 10^{L_2/10}\right),\qquad N \text{ 個相同聲源}:\ L_1 + 10\log_{10}N \]</div>
+      <p data-en-html="Two equal sources give +3.01 dB; ten give +10 dB. If one source is 10 dB weaker, it adds only 0.41 dB. A small source far away spreads its power over a sphere of area \(4\pi r^2\), so doubling the distance lowers the level by \(20\log_{10}2 \approx 6.02\) dB (outdoors, without reflections; in a room the reverberation makes the drop smaller).">兩個一樣大的聲源加起來 +3.01 dB；十個加起來 +10 dB。若其中一個小 10 dB，只多 0.41 dB。小聲源的功率散布在面積 \(4\pi r^2\) 的球面上，所以距離加倍，聲壓級降低 \(20\log_{10}2 \approx 6.02\) dB（戶外、沒有反射時；在室內，迴響會讓它降得少一些）。</p>
+
+      <h3 data-en="Equal-loudness contours and the phon">等響曲線與 phon</h3>
+      <p data-en-html="The ear is not equally sensitive at all frequencies. In listening tests, people adjust a pure tone until it sounds as loud as a 1 kHz reference; joining the results gives an <strong>equal-loudness contour</strong>. A contour is named by the level of its 1 kHz tone: every tone on the 60-phon contour sounds as loud as a 1 kHz tone at 60 dB. The international standard ISO 226 gives the contours by a formula with three numbers for each third-octave frequency from 20 Hz to 12.5 kHz: the exponent \(\alpha_f\), the transfer magnitude \(L_U\) and the threshold of hearing \(T_f\):">耳朵對各個頻率的敏感度不一樣。聽力實驗中，受試者把一個純音調到和 1 kHz 的參考音一樣響，把結果連起來就是<strong>等響曲線</strong>。曲線用它在 1 kHz 的分貝數命名：60 phon 曲線上的每個純音，聽起來都和 60 dB 的 1 kHz 純音一樣響。國際標準 ISO 226 用一條公式給出這些曲線，每個三分之一倍頻程頻率（20 Hz–12.5 kHz）有三個數：指數 \(\alpha_f\)、傳遞函數的大小 \(L_U\) 和聽閾 \(T_f\)：</p>
+      <div class="formula">\[ \begin{gathered} A_f = 4.47\times10^{-3}\left(10^{0.025L_N}-1.15\right) + \left(0.4\cdot10^{\frac{T_f+L_U}{10}-9}\right)^{\alpha_f} \\ L_p = \frac{10}{\alpha_f}\log_{10}A_f - L_U + 94\ \text{dB} \end{gathered} \]</div>
+      <p data-en-html="The contours crowd together at low frequencies: at 20 Hz each extra decibel adds about 2 phon, while at 1 kHz it adds exactly 1. The lowest point of every contour is around 3–3.4 kHz, where the ear canal (about 2.5 cm long, closed at the eardrum) resonates like a quarter-wave tube. Near 10 kHz the contours rise to a small hill. The threshold of hearing at 1 kHz is 2.4 dB, not 0 dB: the 20 μPa reference is a round number, not a measurement.">等響曲線在低頻擠在一起：20 Hz 每多 1 dB，響度級約多 2 phon；1 kHz 則剛好多 1 phon。每條曲線的最低點都在 3–3.4 kHz 附近，那裡是外耳道（長約 2.5 cm、一端被鼓膜封住）像四分之一波長管一樣共振的地方。到了 10 kHz 附近，曲線又升起一座小山。1 kHz 的聽閾是 2.4 dB，不是 0 dB：20 μPa 這個參考值是取整數，不是量出來的。</p>
+
+      <h3 data-en="Loudness in sone">響度與 sone</h3>
+      <p data-en-html="Phon says <em>which</em> sounds are equally loud, not <em>how much</em> louder one is than another. For that, Stevens introduced the <strong>sone</strong>: 40 phon is 1 sone, and above that every 10 phon doubles the loudness:">phon 告訴我們「哪些聲音一樣響」，卻沒說「一個比另一個響幾倍」。為此 Stevens 定義了 <strong>sone</strong>：40 phon = 1 sone，40 phon 以上每多 10 phon，響度加倍：</p>
+      <div class="formula">\[ N = 2^{(L_N-40)/10}\ \text{sone}\quad(L_N \ge 40),\qquad N \approx \left(\frac{L_N}{40}\right)^{2.642}\quad(L_N < 40) \]</div>
+      <p data-en-html="So two violins (+3 dB) sound only about \(2^{0.3} \approx 1.23\) times as loud as one; to sound twice as loud you need about ten.">所以兩把小提琴（+3 dB）聽起來只有一把的 \(2^{0.3} \approx 1.23\) 倍響；要聽起來兩倍響，大約要十把。</p>
+
+      <h2 data-en="What it means for music">音樂上的意義</h2>
+      <h3 data-en="Dynamics">力度記號</h3>
+      <p data-en-html="Musicians write loudness as dynamics: <em>pp</em>, <em>p</em>, <em>mp</em>, <em>mf</em>, <em>f</em>, <em>ff</em>. They are relative, not decibel values: a flute’s <em>ff</em> is much softer than a trumpet’s, and an orchestra’s <em>ff</em> is mostly many instruments added together. The values on the buttons (50–90 dB for one instrument about a metre away) are only rough, typical numbers. Because of the decibel rule above, doubling the violin section adds only 3 dB — composers get a bigger crescendo from more instruments of different kinds, higher registers and brighter timbres than from sheer numbers.">音樂家用力度記號寫音量：<em>pp</em>、<em>p</em>、<em>mp</em>、<em>mf</em>、<em>f</em>、<em>ff</em>。它們是相對的，不是分貝數：長笛的 <em>ff</em> 比小號的小聲得多，管弦樂團的 <em>ff</em> 大半是許多樂器加起來的效果。按鈕上的數字（一件樂器在約 1 公尺處 50–90 dB）只是大致的典型值。根據上面的分貝規則，小提琴聲部的人數加倍只多 3 dB——作曲家要更大的漸強，靠的是加入不同的樂器、更高的音域與更明亮的音色，而不是只加人數。</p>
+      <h3 data-en="Loudness compensation">響度補償</h3>
+      <p data-en-html="Turn the music down and the bass seems to vanish first: because the low-frequency contours are crowded, the same drop in decibels removes more phon in the bass than in the midrange. That is why some amplifiers have a “loudness” switch that boosts the bass (and a little treble) at low volume, and why a mix should be checked at more than one volume.">音樂轉小聲時，低音好像先消失了：低頻的等響曲線擠在一起，降同樣的分貝，低音少掉的 phon 比中音多。所以有些擴大機有「響度補償（loudness）」開關，在小音量時把低音（和一點高音）加強；混音時也要用不只一種音量檢查。</p>
+      <h3 data-en="Protecting your hearing">保護聽力</h3>
+      <p data-en-html="Noise-induced hearing loss is permanent and builds up silently. The U.S. National Institute for Occupational Safety and Health (NIOSH) recommends at most 85 dBA for 8 hours a day, and half that time for every 3 dB more (the “equal-energy” rule, because +3 dB doubles the energy):">噪音造成的聽力損失是永久的，而且不知不覺地累積。美國國家職業安全衛生研究所（NIOSH）建議：85 dBA 每天最多 8 小時，每多 3 dB 時間減半（「等能量」原則，因為 +3 dB 就是能量加倍）：</p>
+      <div class="formula" data-en-html="\[ T = \frac{8\ \text{h}}{2^{(L-85)/3}},\qquad \text{dose} = \frac{\text{listening time}}{T}\times100\% \]">\[ T = \frac{8\ \text{h}}{2^{(L-85)/3}},\qquad \text{劑量} = \frac{\text{聽的時間}}{T}\times100\% \]</div>
+      <table class="lv">
+        <tr><th data-en="Level">聲級</th><th data-en="Allowed per day">每天容許</th><th data-en="For example (rough)">例如（大致）</th></tr>
+        <tr><td>85 dBA</td><td data-en="8 h">8 小時</td><td data-en="busy traffic">繁忙的路口</td></tr>
+        <tr><td>88 dBA</td><td data-en="4 h">4 小時</td><td data-en="a loud restaurant">吵雜的餐廳</td></tr>
+        <tr><td>94 dBA</td><td data-en="1 h">1 小時</td><td data-en="band room, karaoke">練團室、KTV</td></tr>
+        <tr><td>100 dBA</td><td data-en="15 min">15 分鐘</td><td data-en="front of a concert">演唱會前排</td></tr>
+        <tr><td>110 dBA</td><td data-en="about 1.5 min">約 1.5 分鐘</td><td data-en="next to a speaker">喇叭旁</td></tr>
+      </table>
+      <p data-en-html="The World Health Organization’s 2022 standard for venues and events asks that the average level not exceed 100 dB(A) over any 15 minutes, with chill-out zones and free earplugs. With headphones: keep the volume moderate, take breaks, and if you cannot hear someone next to you, it is too loud. Earplugs made for musicians lower the level fairly evenly at all frequencies, so the music still sounds natural.">世界衛生組織（WHO）2022 年給場館與活動的標準要求：任何 15 分鐘的平均不超過 100 dB(A)，並設休息區、提供耳塞。戴耳機時：音量保持適中、定時休息；如果聽不到旁邊的人說話，就是太大聲了。給音樂人用的耳塞在各頻率降低得比較平均，音樂聽起來仍然自然。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Low notes need more</strong>: lock to the 40-phon contour and slide from 1 kHz to 100 Hz. How many decibels does it take?"><strong>低音要更多</strong>：鎖定在 40 phon 曲線，從 1 kHz 滑到 100 Hz，聲壓級要多幾 dB？</li>
+        <li data-en-html="<strong>The ear’s favourite</strong>: on any contour, where is the lowest point? Compare it with the threshold curve."><strong>耳朵最喜歡的頻率</strong>：每條曲線的最低點在哪裡？和聽閾曲線比一比。</li>
+        <li data-en-html="<strong>Crowded bass</strong>: read the steepness at 50 Hz and at 1 kHz. Which needs fewer decibels for the same rise in loudness?"><strong>擠在一起的低音</strong>：比較 50 Hz 和 1 kHz 的陡度：哪裡只要少少的分貝，響度級就升很多？</li>
+        <li data-en-html="<strong>Two violins</strong>: switch on source 2 at the same level as source 1. How many decibels, and how many times as loud?"><strong>兩把小提琴</strong>：打開聲源 2、調成和聲源 1 一樣大：多幾 dB？聽起來響幾倍？</li>
+        <li data-en-html="<strong>Step back</strong>: double the distance a few times and watch the level and the safe time."><strong>退後幾步</strong>：把距離加倍幾次，看聲壓級和安全時間怎麼變。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Equal-loudness contours: the formula and the 29 × 3 parameters of ISO 226:2003 (\(\alpha_f\), \(L_U\), \(T_f\)), checked number by number against two independent published implementations. Between the tabulated frequencies the three parameters are interpolated with a Catmull–Rom cubic in \(\log f\), which passes through every table value. The inverse (level → phon) solves the same formula exactly, so the two directions agree to \(10^{-9}\); the approximate inverse in clause 4.2 of the standard differs by less than 0.1 phon. ISO 226:2003 is valid from 20 to 90 phon (20 Hz–4 kHz) and 20 to 80 phon (5–12.5 kHz); outside that, including the 10- and 100-phon curves, the contours are drawn dashed. The 2023 edition changed the contours by at most about 0.6 dB.">等響曲線：ISO 226:2003 的公式與 29 × 3 個參數（\(\alpha_f\)、\(L_U\)、\(T_f\)），已逐一和兩份獨立公開的程式碼核對。表上頻率之間，三個參數對 \(\log f\) 用 Catmull–Rom 三次內插（通過每一個表值）。反算（聲壓級 → phon）把同一條公式精確解開，正反算相差不到 \(10^{-9}\)；標準第 4.2 節的近似反算公式和它相差不到 0.1 phon。ISO 226:2003 的有效範圍是 20–90 phon（20 Hz–4 kHz）與 20–80 phon（5–12.5 kHz）；範圍外（包括 10 與 100 phon 曲線）畫成虛線。2023 年版的修訂讓曲線改變最多約 0.6 dB。</li>
+        <li data-en-html="Unit tests check that at 1 kHz the loudness level equals the sound pressure level (±0.1), the 40-phon values at all 29 frequencies (for example 64.37 dB at 100 Hz), that the threshold curve is about a 2.4-phon contour, that two equal sources add 3.01 dB and sources 10 dB apart add 0.41 dB, that doubling the distance takes off 6.02 dB, NIOSH times (85 dBA 8 h, 88 dBA 4 h, 94 dBA 1 h, 100 dBA 15 min), 40 phon = 1 sone and 50 phon = 2 sone, and the A-weighting of IEC 61672-1.">單元測試檢查：1 kHz 的響度級等於聲壓級（±0.1）、40 phon 曲線在 29 個頻率的值（例如 100 Hz 為 64.37 dB）、聽閾曲線約是一條 2.4 phon 的等響曲線、兩個一樣大的聲源加 3.01 dB、相差 10 dB 只加 0.41 dB、距離加倍降 6.02 dB、NIOSH 的時間（85 dBA 8 小時、88 dBA 4 小時、94 dBA 1 小時、100 dBA 15 分鐘）、40 phon = 1 sone、50 phon = 2 sone，以及 IEC 61672-1 的 A 加權。</li>
+        <li data-en-html="“Sounds about … as loud” in the adder uses the sone rule (10 dB ≈ twice as loud), which holds above about 40 phon. The A-weighted level of a point is \(L_p + A(f)\) with the analytic A-weighting of IEC 61672-1. The safe listening card treats its level as a steady A-weighted level over the whole time.">加法器的「聽起來大約響幾倍」用 sone 的規則（10 dB ≈ 兩倍響），在約 40 phon 以上成立。一個點的 A 加權聲級是 \(L_p + A(f)\)，A 加權用 IEC 61672-1 的解析式。安全聆聽時間把聲級當成整段時間不變的 A 加權聲級。</li>
+        <li data-en-html="The 3D surface is the loudness level \(L_N(f, L_p)\) computed by the same functions on a 120 × 100 grid (frequency logarithmic, 20 Hz–12.5 kHz; level −10 to 130 dB); below the threshold it lies flat on the floor. Its contour lines at 10, 20, …, 100 phon are exactly the 2D curves. With “Height: sone” the height is the loudness in sone instead. It uses the three.js library (MIT licence), downloaded only when you switch to 3D.">3D 曲面是用同一套函數在 120 × 100 的格點上算出的響度級 \(L_N(f, L_p)\)（頻率為對數刻度 20 Hz–12.5 kHz，聲壓級 −10 到 130 dB）；聽閾以下平貼在地面。曲面在 10、20、…、100 phon 的等高線，就是 2D 的那些曲線。「高度：sone」時，高度改成以 sone 計的響度。它使用 three.js 函式庫（MIT 授權），只有切換到 3D 時才下載。</li>
+        <li data-en-html="Sound is synthesized in your browser (no recordings): a pure sine tone. It plays only when you press a button, fades in and out, and stops after 1.5 s (or when you press “■ Stop”, press Esc or switch tabs). The playback volume depends only gently on the loudness level and has a fixed upper limit; to hint at equal loudness, low and high tones get a little more volume following the contours (at most +12 dB, still under the same limit). Points below the threshold are not played. Your speaker and the room change what you actually hear.">聲音在瀏覽器裡即時合成（沒有錄音檔）：一個純正弦波。只有按按鈕時才發聲，有淡入淡出，1.5 秒後停止（按「■ 停止」、按 Esc 或切換分頁也會停止）。播放音量只隨響度級溫和地變化，而且有固定的上限；為了示意「一樣響」，低音與高音會依等響曲線多給一點音量（最多 +12 dB，仍在同一個上限之下）。聽閾以下的點不播放。你實際聽到的還會被喇叭與房間改變。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: Senior-high Music · Practice · Music and daily life (hearing protection); Elective Physics III · Sound waves (sound intensity and decibels). Across subjects: senior-high Mathematics, logarithms.">課綱對應：高中音樂・實踐・音樂與生活（聽力保護）；選修物理Ⅲ・聲波（聲音的強度與分貝）。跨科：高中數學「對數」。</li>
+        <li data-en="ISO 226:2003, Acoustics — Normal equal-loudness-level contours (formula, parameters αf, LU, Tf, range of validity). The parameter table was checked against two independent implementations: J. Tackett’s MATLAB iso226.m (dsprelated.com, code 174) and S. R. Mathias’s Python version (crackedbassoon.com).">ISO 226:2003〈Acoustics — Normal equal-loudness-level contours〉（公式、參數 αf、LU、Tf、有效範圍）。參數表已和兩份獨立的實作逐一核對：J. Tackett 的 MATLAB iso226.m（dsprelated.com 程式碼 174）與 S. R. Mathias 的 Python 版（crackedbassoon.com）。</li>
+        <li data-en-html="Y. Suzuki, H. Takeshima, K. Kurakata, “Revision of ISO 226 ‘Normal equal-loudness-level contours’ from 2003 to 2023 edition: the background and results”, Acoustical Science and Technology 45(1), 1–8 (2024): the 2023 edition differs by at most 0.6 dB (<a href=&quot;https://doi.org/10.1250/ast.e23.66&quot;>doi:10.1250/ast.e23.66</a>). Y. Suzuki, H. Takeshima, J. Acoust. Soc. Am. 116, 918 (2004).">Y. Suzuki、H. Takeshima、K. Kurakata，〈Revision of ISO 226 “Normal equal-loudness-level contours” from 2003 to 2023 edition: the background and results〉，Acoustical Science and Technology 45(1), 1–8 (2024)：2023 年版和 2003 年版最多相差 0.6 dB（<a href="https://doi.org/10.1250/ast.e23.66">doi:10.1250/ast.e23.66</a>）。Y. Suzuki、H. Takeshima，J. Acoust. Soc. Am. 116, 918 (2004)。</li>
+        <li data-en="NIOSH (1998), Criteria for a Recommended Standard: Occupational Noise Exposure, Revised Criteria 1998 (85 dBA for 8 hours, 3-dB exchange rate).">NIOSH（1998），《Criteria for a Recommended Standard: Occupational Noise Exposure, Revised Criteria 1998》（85 dBA 8 小時、3 dB 交換率）。</li>
+        <li data-en="World Health Organization (2022), WHO Global Standard for Safe Listening Venues and Events (100 dB LAeq over 15 minutes).">世界衛生組織（2022），《WHO Global Standard for Safe Listening Venues and Events》（15 分鐘平均 100 dB LAeq）。</li>
+        <li data-en="S. S. Stevens (1936), “A scale for the measurement of a psychological magnitude: loudness”, Psychological Review 43, 405–416 (the sone).">S. S. Stevens（1936），〈A scale for the measurement of a psychological magnitude: loudness〉，Psychological Review 43, 405–416（sone）。</li>
+        <li data-en="IEC 61672-1:2013, Electroacoustics — Sound level meters (A-weighting). Reference pressure 20 μPa (ISO 1683).">IEC 61672-1:2013〈Electroacoustics — Sound level meters〉（A 加權）。參考聲壓 20 μPa（ISO 1683）。</li>
+        <li data-en="N. H. Fletcher and T. D. Rossing, The Physics of Musical Instruments, 2nd ed., Springer, 1998 (sound level, loudness, dynamics of instruments). Dynamic levels on the buttons are rough typical values, not measurements.">N. H. Fletcher、T. D. Rossing，《The Physics of Musical Instruments》第 2 版，Springer，1998（聲壓級、響度、樂器的力度）。按鈕上的力度數值是大致的典型值，不是測量值。</li>
+        <li data-en-html="Related on this site: <a href=&quot;pitch-frequency.html&quot;>Pitch and frequency</a> and <a href=&quot;harmonic-series.html&quot;>Harmonic series and timbre</a>.">本站相關實驗：<a href="pitch-frequency.html">音高與頻率</a>、<a href="harmonic-series.html">泛音列與音色</a>。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations and sounds run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算與聲音都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/music-theory.js"></script>
+  <script src="js/loudness-core.js"></script>
+  <script src="js/music-audio.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/loudness.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="loudness"></script>
+  <script src="js/missions/loudness.js"></script>
+  <script src="js/stats.js" data-module="loudness"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
