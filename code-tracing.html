@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Tracing Code: Variables, Branches and Loops | Astro Ni Science Lab">程式追蹤：變數、選擇與迴圈｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 程式追蹤頁面專用的顏色代號（淺色＋兩組深色；由 js/code-tracing.js 讀取） */
+    :root { --ct-kw: #8b3fd9; --ct-ty: #0e7490; --ct-num: #b45309; --ct-str: #15803d; --ct-fn: #1d4ed8; --ct-com: #7d8a8e; --ct-esc: #c2410c;
+      --ct-cur: #d6eee6; --ct-bar: #196558; --ct-next: #eef5f2; --ct-seg: #fde68a; --ct-true: #15803d; --ct-false: #c2410c; --ct-warn: #a16207; --ct-bad: #dc2626;
+      --ct-box: #e6edf6; --ct-arr: #efe6d6; --ct-ptr: #7c3aed; --ct-pbg: #fff1bf; --ct-pbd: #c99a06; --ct-con: #1d2528; --ct-conf: #e3ecec; --ct-new: #ffd166; --ct-frame: #e9e3f5; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
+        --ct-cur: #1f3d36; --ct-bar: #5cc2a8; --ct-next: #172529; --ct-seg: #6b5310; --ct-true: #4ade80; --ct-false: #fb923c; --ct-warn: #fbbf24; --ct-bad: #f87171;
+        --ct-box: #22313a; --ct-arr: #33291c; --ct-ptr: #c9a7ff; --ct-pbg: #3d3312; --ct-pbd: #d4a72c; --ct-con: #0a0f11; --ct-conf: #d6e2e2; --ct-new: #ffd166; --ct-frame: #2c2540; }
+    }
+    :root[data-theme="dark"] { --ct-kw: #c9a7ff; --ct-ty: #67e8f9; --ct-num: #fbbf24; --ct-str: #86efac; --ct-fn: #93c5fd; --ct-com: #7f9094; --ct-esc: #fdba74;
+      --ct-cur: #1f3d36; --ct-bar: #5cc2a8; --ct-next: #172529; --ct-seg: #6b5310; --ct-true: #4ade80; --ct-false: #fb923c; --ct-warn: #fbbf24; --ct-bad: #f87171;
+      --ct-box: #22313a; --ct-arr: #33291c; --ct-ptr: #c9a7ff; --ct-pbg: #3d3312; --ct-pbd: #d4a72c; --ct-con: #0a0f11; --ct-conf: #d6e2e2; --ct-new: #ffd166; --ct-frame: #2c2540; }
+
+    .ct [hidden] { display: none !important; }
+    .ct .mono, .ct code, .ct pre, .ct .code { font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; }
+    #cv { aspect-ratio: auto; height: 260px; touch-action: pan-y; cursor: default; margin-top: 8px; }
+    .ct .pickrow { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 2px 8px; }
+    .ct .pickrow label { font-size: calc(14px * var(--fs, 1)); font-weight: 600; }
+    .ct select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .ct .seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
+    .ct .seg3 button { border: none; border-radius: 0; padding: 4px 6px; background: var(--bg); line-height: 1.2; }
+    .ct .seg3 button + button { border-left: 1px solid var(--border); }
+    .ct .seg3 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    /* 程式碼：等寬字、語法上色、目前這一行亮起 */
+    .codes { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    @media (min-width: 700px) { .codes.both { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+    .codebox { min-width: 0; border: 1px solid var(--border); border-radius: 10px; background: var(--canvas-bg); overflow: hidden; }
+    .codehead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 3px 10px; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--canvas-bg) 85%, var(--border)); }
+    .codehead b { color: var(--text); font-weight: 700; }
+    .code { overflow-x: auto; padding: 4px 0 6px; font-size: calc(14px * var(--fs, 1)); line-height: 1.62; -webkit-overflow-scrolling: touch; }
+    @media (max-width: 480px) { .code { font-size: calc(12.5px * var(--fs, 1)); } }
+    .code .lines { display: inline-block; min-width: 100%; vertical-align: top; }
+    .code .ln { display: grid; grid-template-columns: 2.2em 2.9em max-content; white-space: pre; min-height: 1.62em; position: relative; }
+    .code .no { color: var(--muted); text-align: right; padding-right: 0.5em; opacity: 0.75; user-select: none; }
+    .code .cnt { color: var(--muted); text-align: right; padding-right: 0.8em; font-size: 0.78em; font-variant-numeric: tabular-nums; user-select: none; }
+    .code .txt { padding-right: 14px; }
+    .code .ln.cur { background: var(--ct-cur); box-shadow: inset 4px 0 0 var(--ct-bar); }
+    .code .ln.cur .no { color: var(--ct-bar); opacity: 1; font-weight: 700; }
+    .code .ln.nxt { background: var(--ct-next); }
+    .code .ln.nxt .no::before { content: "›"; color: var(--ct-bar); margin-right: 2px; font-weight: 700; }
+    .code .ln.err { background: color-mix(in srgb, var(--ct-bad) 16%, transparent); box-shadow: inset 4px 0 0 var(--ct-bad); }
+    .code .ln.pyd .txt::after { content: "  ⚠"; color: var(--ct-warn); font-weight: 700; }
+    .code mark { background: var(--ct-seg); color: inherit; border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ct-pbd) 60%, transparent); }
+    .code .kw { color: var(--ct-kw); font-weight: 600; }
+    .code .ty { color: var(--ct-ty); font-weight: 600; }
+    .code .num { color: var(--ct-num); }
+    .code .str { color: var(--ct-str); }
+    .code .esc { color: var(--ct-esc); font-weight: 600; }
+    .code .fn { color: var(--ct-fn); }
+    .code .com { color: var(--ct-com); font-style: italic; }
+    .code .lit { color: var(--ct-kw); }
+    .code .op { color: var(--muted); }
+    .code .param { color: var(--ct-num); background: var(--ct-pbg); border: 1px dashed var(--ct-pbd); border-radius: 4px; padding: 0 2px; margin: 0 -3px; cursor: pointer; font-weight: 700; }
+    .code .param:hover, .code .param:focus-visible { border-style: solid; outline: none; }
+    .ct .pynote { margin: 0; padding: 4px 10px 6px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); border-top: 1px dashed var(--border); }
+    /* 輸出 */
+    .console { margin: 8px 0 0; border-radius: 10px; background: var(--ct-con); color: var(--ct-conf); border: 1px solid color-mix(in srgb, var(--ct-con) 70%, var(--border)); overflow: hidden; }
+    .console .conhead { display: flex; justify-content: space-between; padding: 3px 10px; font-size: calc(12px * var(--fs, 1)); color: color-mix(in srgb, var(--ct-conf) 65%, transparent); border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+    #out { margin: 0; padding: 6px 10px 8px; min-height: 3.4em; max-height: 11em; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: calc(14px * var(--fs, 1)); line-height: 1.5; }
+    #out .new { background: color-mix(in srgb, var(--ct-new) 30%, transparent); color: #fff; border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ct-new) 50%, transparent); }
+    #out .cursor { display: inline-block; width: 0.55em; height: 1.05em; vertical-align: -0.18em; background: color-mix(in srgb, var(--ct-conf) 55%, transparent); }
+    #out .none { color: color-mix(in srgb, var(--ct-conf) 50%, transparent); font-style: italic; }
+    /* 播放列 */
+    .ct .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .ct .playbar button { padding: 6px 4px; line-height: 1.2; }
+    @media (max-width: 560px) { .ct .playbar { grid-template-columns: repeat(6, minmax(0, 1fr)); } .ct .playbar button { grid-column: span 2; } .ct .playbar button:nth-child(n+4) { grid-column: span 3; } }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .ct .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .ct .playbar2 button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ct .speedrow { margin: 4px 2px 0; }
+    .ct .stage .status { margin: 8px 4px 0; min-height: 2.8em; }
+    .ct .stage .status.bad { color: var(--ct-bad); }
+    .ct .stage .status.warn { color: var(--ct-warn); }
+    .ct .slider input[type="range"] { height: 28px; margin: 0; }
+    .ct .panel { grid-template-columns: minmax(0, 1fr); }
+    .ct .panel > .card { min-width: 0; }
+    .ct .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    #progDesc { margin: 0; font-size: calc(14px * var(--fs, 1)); }
+    /* 先猜再看 */
+    #qText { margin: 0 0 6px; font-size: calc(14.5px * var(--fs, 1)); font-weight: 600; }
+    .guessrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    #guess { min-width: 0; min-height: 44px; box-sizing: border-box; font: inherit; font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; font-size: calc(15px * var(--fs, 1)); padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    #guess:disabled { opacity: 0.55; }
+    #guessBtn { border-color: var(--accent); }
+    #guessMsg { margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); min-height: 1.4em; overflow-wrap: anywhere; }
+    #guessMsg.ok { color: var(--ct-true); font-weight: 600; }
+    #guessMsg.no { color: var(--ct-false); font-weight: 600; }
+    #guessMsg .ans { font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; white-space: pre-wrap; }
+    /* 讀數與紀錄 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd.t { color: var(--ct-true); font-weight: 600; }
+    dl.readout dd.f { color: var(--ct-false); font-weight: 600; }
+    dl.readout dd.w { color: var(--ct-warn); font-weight: 600; }
+    dl.readout dd.bad { color: var(--ct-bad); font-weight: 600; }
+    .tablewrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; max-height: 300px; }
+    #logTab { width: 100%; font-size: calc(13px * var(--fs, 1)); }
+    #logTab td, #logTab th { padding: 3px 6px; text-align: left; vertical-align: top; }
+    #logTab td.mono { font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; overflow-wrap: anywhere; }
+    #logTab td.ok { color: var(--ct-true); font-weight: 600; }
+    #logTab td.no { color: var(--ct-false); font-weight: 600; }
+    #logTab td.bad { color: var(--ct-bad); }
+    #logTab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .notes pre.eq { background: var(--canvas-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; overflow-x: auto; font-size: calc(14px * var(--fs, 1)); line-height: 1.55; }
+    .notes table.cmp { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); margin: 8px 0; }
+    .notes table.cmp th, .notes table.cmp td { border-bottom: 1px solid var(--border); padding: 4px 8px; text-align: left; vertical-align: top; }
+    .notes table.cmp code { font-size: 0.95em; }
+    .notes .cmpwrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#prog&quot;>Information Technology · Programming</a> / Tracing code"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#prog">資訊科技・程式設計</a> ／ 程式追蹤</nav>
+      <h1 data-en="Tracing Code: Variables, Branches and Loops">程式追蹤：變數、選擇與迴圈</h1>
+      <p data-en="Read a program the way a computer runs it: one line at a time, keeping track of every variable. Pick one of 22 short programs, change the marked numbers, predict what it will print, then step through it — the current line lights up, the boxes that change flash, and every condition shows whether it came out true or false. The same program is also shown in Python, with the places where the two languages disagree marked.">像電腦一樣讀程式：一次一行，記住每一個變數現在是多少。從 22 支小程式裡挑一支，改改標出來的數字，先預測它會印出什麼，再一步一步執行——目前這一行會亮起來、改變的格子會閃一下、每個條件都告訴你是真是假。同一支程式也可以換成 Python 的寫法，兩種語言結果不同的地方會標出來。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: choose a program, type what you think it will print and press “Submit guess”, then press “Step” again and again and watch the variables change.">試試看：選一支程式，寫下你猜它會印出什麼、按「送出猜測」，再一直按「單步」，看變數怎麼改變。</p>
+    <div class="lab ct" id="lab">
+      <div class="stage" id="stage">
+        <div class="pickrow"><label for="progSel" data-en="Program">程式</label><select id="progSel"></select></div>
+        <div class="seg3" role="group" aria-label="顯示哪一種寫法" data-en-aria-label="Which language to show">
+          <button type="button" data-view="c" aria-pressed="true">C</button>
+          <button type="button" data-view="py" aria-pressed="false">Python</button>
+          <button type="button" data-view="both" aria-pressed="false" data-en="C and Python">C 與 Python</button>
+        </div>
+        <div class="codes" id="codes">
+          <div class="codebox" id="boxC">
+            <div class="codehead"><b>C</b><span id="headC"></span></div>
+            <div class="code" id="codeC" role="region" aria-label="C 程式碼" data-en-aria-label="C code" tabindex="0"></div>
+          </div>
+          <div class="codebox" id="boxPy" hidden>
+            <div class="codehead"><b>Python</b><span id="headPy"></span></div>
+            <div class="code" id="codePy" role="region" aria-label="Python 程式碼" data-en-aria-label="Python code" tabindex="0"></div>
+            <p class="pynote" id="pyNote"></p>
+          </div>
+        </div>
+
+        <div class="playbar">
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
+          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="resetBtn" type="button" data-en="Restart">重來</button>
+        </div>
+        <div class="slider speedrow"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+          <input id="speed" type="range" min="1" max="30" step="1" value="3" data-decimals="0"></div>
+
+        <canvas id="cv" aria-label="變數與記憶體的畫布" data-en-aria-label="Variables and memory canvas"></canvas>
+        <div class="console">
+          <div class="conhead"><span data-en="Output">輸出</span><span id="outInfo"></span></div>
+          <pre id="out" aria-live="off"></pre>
+        </div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉執行紀錄、輸出與目前的進度，回到可以重新開始的狀態；選的程式和數字不變" data-en-title="Clear the run log, the output and the current progress so you can start again; the chosen program and numbers stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 id="progTitle"></h2>
+          <p id="progDesc"></p>
+        </section>
+
+        <section class="card" id="paramCard">
+          <h2 data-en="Numbers you can change">可以改的數字</h2>
+          <div class="slider" id="ps1"><label for="p1" id="pl1"></label><output id="p1o"></output><input id="p1" type="range" min="0" max="10" step="1" value="0" data-decimals="0"></div>
+          <div class="slider" id="ps2"><label for="p2" id="pl2"></label><output id="p2o"></output><input id="p2" type="range" min="0" max="10" step="1" value="0" data-decimals="0"></div>
+          <div class="slider" id="ps3"><label for="p3" id="pl3"></label><output id="p3o"></output><input id="p3" type="range" min="0" max="10" step="1" value="0" data-decimals="0"></div>
+          <p class="hint" data-en="These are the numbers on a yellow background in the code; tap the number next to a slider (or the number in the code) to type an exact value. Changing a number starts the program again.">就是程式碼裡黃底虛線框的數字；點滑桿旁的數字（或程式碼裡的數字）可以直接打字。改了數字，程式會從頭開始。</p>
+        </section>
+
+        <section class="card" id="guessCard">
+          <h2 data-en="Guess first, then look">先猜再看</h2>
+          <p id="qText"></p>
+          <div class="guessrow">
+            <input id="guess" type="text" maxlength="120" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="你的猜測" data-en-aria-label="Your guess" placeholder="例如 1 2 3" data-en-placeholder="e.g. 1 2 3">
+            <button id="guessBtn" type="button" data-en="Submit guess">送出猜測</button>
+          </div>
+          <p id="guessMsg" aria-live="polite"></p>
+          <p class="hint" data-en="Guess before the first step. Several lines of output can be typed on one line separated by spaces; extra spaces do not matter.">要在按第一步之前猜。好幾行的輸出可以打在同一行、用空格隔開；多打的空格沒有關係。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Run log">執行紀錄</h2>
+          <div class="tablewrap"><table class="data" id="logTab"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every run that reaches the end is listed here (newest first).">每一次跑完都會記在這裡（最新的在最上面）。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Tracing: be the computer">程式追蹤：把自己當成電腦</h3>
+      <p data-en-html="To <strong>trace</strong> a program is to run it by hand: go through it line by line in the order the computer would, and write down the value of every variable after each line (a trace table). It is the most reliable way to understand code you did not write, and it is the main question type in the “program reading” part of Taiwan’s APCS test. The canvas on this page is that trace table drawn as boxes: each variable is a box with its name on top, and the box that just changed flashes.">「<strong>程式追蹤</strong>」就是用手執行程式：照電腦執行的順序一行一行走，每走一行就記下每個變數現在的值（追蹤表）。這是讀懂別人寫的程式最可靠的方法，也是 APCS「程式識讀」最主要的題型。本頁的畫布就是畫成盒子的追蹤表：每個變數是一個上面寫著名字的盒子，剛剛改變的盒子會閃一下。</p>
+      <p data-en-html="<strong>Assignment is not an equation.</strong> <code>a = b;</code> means: work out the right-hand side, then put that value into the box on the left; the old value is gone. So <code>a = b; b = a;</code> does not swap two values — both boxes end up holding the old <code>b</code>. That is why “Swapping two variables” needs a third box <code>t</code>.">指定不是等式。<code>a = b;</code> 的意思是：先算出右邊的值，再把它放進左邊的盒子，舊的值就不見了。所以 <code>a = b; b = a;</code> 換不了兩個值——兩個盒子最後都是原本的 <code>b</code>。這就是「交換兩個變數」要多一個盒子 <code>t</code> 的原因。</p>
+
+      <h3 data-en="Sequence, selection, repetition">循序、選擇、重複</h3>
+      <p data-en-html="Every program is built from three kinds of control structure: <strong>sequence</strong> (one statement after another), <strong>selection</strong> (<code>if</code>, <code>else if</code>, <code>else</code>: the condition is evaluated once, and only the first branch whose condition holds runs) and <strong>repetition</strong> (<code>while</code>, <code>for</code>). A <code>while</code> loop tests its condition <em>before</em> every pass, so if the condition is false at the start, the body never runs at all. A <code>for</code> loop has three parts and runs them in this order:">程式由三種控制結構組成：<strong>循序</strong>（一個敘述接一個）、<strong>選擇</strong>（<code>if</code>、<code>else if</code>、<code>else</code>：條件只算一次，只執行第一個成立的分支）與<strong>重複</strong>（<code>while</code>、<code>for</code>）。<code>while</code> 在<em>每一圈之前</em>先判斷條件，所以一開始條件就不成立時，本體一次也不會執行。<code>for</code> 有三段，執行順序是：</p>
+      <pre class="eq">for (A; B; C) { S }      ≡      A;  while (B) { S  C }
+
+A → B → S → C → B → S → C → … → B（false）</pre>
+      <p data-en-html="The two forms behave the same except for <code>continue</code>: inside a <code>for</code>, <code>continue</code> skips the rest of the body but still runs part C; inside the <code>while</code> version, C would be skipped too. <code>break</code> leaves the loop at once and C is not run. On the canvas, a <code>for</code> line highlights exactly the part being run (A, B or C).">兩種寫法只有遇到 <code>continue</code> 時不一樣：在 <code>for</code> 裡，<code>continue</code> 跳過本體剩下的部分，但還是會做第三段 C；改成 <code>while</code> 的寫法時，C 也會被跳過。<code>break</code> 立刻離開迴圈，不做 C。執行到 <code>for</code> 那一行時，畫面會把正在做的那一段（A、B 或 C）標出來。</p>
+
+      <h3 data-en="Integer division in C and in Python">C 和 Python 的整數除法</h3>
+      <p data-en-html="In C, an <code>int</code> divided by an <code>int</code> is an <code>int</code>: since C99 the fraction is thrown away, rounding <strong>towards zero</strong>, and <code>%</code> is defined so that \(a = (a / b) \cdot b + a \,\%\, b\) always holds — so the remainder has the same sign as \(a\). Python’s <code>//</code> rounds <strong>down</strong> (towards \(-\infty\)) instead, and its <code>%</code> has the sign of \(b\). For positive numbers the two agree; with a negative operand they can differ by one:">在 C 裡，<code>int</code> 除以 <code>int</code> 還是 <code>int</code>：C99 起規定小數部分直接丟掉、<strong>向 0 取整</strong>，而 <code>%</code> 要讓 \(a = (a / b) \cdot b + a \,\%\, b\) 永遠成立——所以餘數的正負號跟著 \(a\)。Python 的 <code>//</code> 則是<strong>向下取整</strong>（往 \(-\infty\)），<code>%</code> 的正負號跟著 \(b\)。兩個數都是正的時候結果一樣；有負數時可能差一：</p>
+      <div class="formula">\[ q_{\mathrm{C}} = \operatorname{trunc}\!\left(\frac{a}{b}\right), \qquad q_{\mathrm{Python}} = \left\lfloor \frac{a}{b} \right\rfloor, \qquad r = a - q\,b \]</div>
+      <div class="formula">\[ \mathrm{C}:\ -7 / 2 = -3,\ \ -7 \,\%\, 2 = -1 \qquad\quad \mathrm{Python}:\ -7 \,/\!/\, 2 = -4,\ \ -7 \,\%\, 2 = 1 \]</div>
+      <p data-en-html="The Python version on this page is translated from the same syntax tree as the C program, with <code>/</code> written as <code>//</code>. The page always computes with C’s rule; whenever a step divides with a negative operand and Python would get a different answer, that line is marked ⚠ and the message under the buttons gives both results. (To get C’s answer in Python you can write <code>int(a / b)</code> for whole numbers of this size, and <code>a - b * int(a / b)</code> for the remainder.)">本頁的 Python 寫法和 C 程式由同一棵語法樹轉出來，<code>/</code> 寫成 <code>//</code>。頁面永遠照 C 的規則計算；只要某一步的除法有負數、而 Python 會算出不同的答案，那一行就標上 ⚠，按鈕下方的說明會同時寫出兩邊的結果。（想在 Python 得到 C 的答案，這種大小的整數可以寫 <code>int(a / b)</code>，餘數寫 <code>a - b * int(a / b)</code>。）</p>
+
+      <h3 data-en="How big can an int be?">int 能放多大的數？</h3>
+      <p data-en-html="On almost every computer today an <code>int</code> is 32 bits, so it holds whole numbers from \(-2^{31} = -2147483648\) to \(2^{31} - 1 = 2147483647\). The C standard says that if a signed calculation goes beyond that range the behaviour is <strong>undefined</strong>: anything may happen, and different compilers really do behave differently. Most machines simply wrap round, but an optimising compiler is allowed to assume it never happens. Python’s whole numbers have no size limit. <strong>This page stops at the step that overflows and explains why</strong>, rather than pretending to wrap round, so the C and Python versions never quietly give two different answers. Dividing by zero, using an index outside the array and reading a variable that has not been given a value also stop the program with an explanation.">今天幾乎所有電腦上的 <code>int</code> 都是 32 位元，能放 \(-2^{31} = -2147483648\) 到 \(2^{31} - 1 = 2147483647\) 的整數。C 標準規定：有號整數的計算超出這個範圍，行為是<strong>未定義</strong>的——什麼事都可能發生，不同的編譯器真的會有不同的結果。多數機器會直接繞回去，但會最佳化的編譯器可以假設它永遠不會發生。Python 的整數則沒有大小限制。<strong>本頁遇到溢位就停在那一步並說明原因</strong>，不假裝繞回，所以 C 和 Python 兩種寫法不會在你不知道的情況下各算出不同的答案。除以 0、陣列索引超出範圍、讀取還沒給值的變數，也都會停下來說明。</p>
+
+      <h3 data-en="Precedence and short circuits">優先順序與短路求值</h3>
+      <p data-en-html="Without brackets, C works out operators in this order (highest first). Operators on the same level are worked out from left to right.">沒有括號時，C 照下面的順序計算（上面的先算），同一層由左往右：</p>
+      <div class="cmpwrap"><table class="cmp">
+        <tr><th data-en="Level">層</th><th data-en="Operators">運算子</th><th data-en="Python">Python</th></tr>
+        <tr><td>1</td><td><code>!</code>　<code>-</code>（<span data-en="unary">一元</span>）</td><td><code>not</code>（<span data-en="much lower in Python">在 Python 裡低很多</span>）　<code>-</code></td></tr>
+        <tr><td>2</td><td><code>*</code>　<code>/</code>　<code>%</code></td><td><code>*</code>　<code>//</code>　<code>%</code></td></tr>
+        <tr><td>3</td><td><code>+</code>　<code>-</code></td><td><code>+</code>　<code>-</code></td></tr>
+        <tr><td>4</td><td><code>&lt;</code>　<code>&lt;=</code>　<code>&gt;</code>　<code>&gt;=</code></td><td rowspan="2" data-en="all one level, and chained: a &lt; b &lt; c means a &lt; b and b &lt; c">同一層，而且會連鎖：<code>a &lt; b &lt; c</code> 是 <code>a &lt; b and b &lt; c</code></td></tr>
+        <tr><td>5</td><td><code>==</code>　<code>!=</code></td></tr>
+        <tr><td>6</td><td><code>&amp;&amp;</code></td><td><code>and</code></td></tr>
+        <tr><td>7</td><td><code>||</code></td><td><code>or</code></td></tr>
+      </table></div>
+      <p data-en-html="<code>&amp;&amp;</code> and <code>||</code> evaluate their left side first. If the left side of <code>&amp;&amp;</code> is false, or the left side of <code>||</code> is true, the answer is already known and the right side is <strong>not evaluated at all</strong> (a short circuit). That is not just faster: in <code>i &lt; n &amp;&amp; a[i] != t</code>, the left side stops <code>a[i]</code> from ever being read when <code>i</code> has run past the end. The canvas shows a skipped right side as “…”. Python’s <code>and</code> and <code>or</code> short-circuit in the same way."><code>&amp;&amp;</code>、<code>||</code> 先算左邊。<code>&amp;&amp;</code> 的左邊是假、或 <code>||</code> 的左邊是真時，答案已經確定，右邊<strong>根本不算</strong>（短路）。這不只是比較快：在 <code>i &lt; n &amp;&amp; a[i] != t</code> 裡，<code>i</code> 走過頭時左邊就擋住了，<code>a[i]</code> 永遠不會被讀到。畫布上被跳過的右邊寫成「…」。Python 的 <code>and</code>、<code>or</code> 也一樣會短路。</p>
+
+      <h3 data-en="C and Python side by side">C 與 Python 對照</h3>
+      <div class="cmpwrap"><table class="cmp">
+        <tr><th>C</th><th>Python</th><th data-en="Note">說明</th></tr>
+        <tr><td><code>int x = 5;</code></td><td><code>x = 5</code></td><td data-en="Python has no declarations; a name exists once it is assigned">Python 不宣告型別，指定之後名字就存在</td></tr>
+        <tr><td><code>x++;</code>　<code>x += 2;</code></td><td><code>x += 1</code>　<code>x += 2</code></td><td data-en="Python has no ++">Python 沒有 ++</td></tr>
+        <tr><td><code>{ … }</code></td><td data-en="indentation">縮排</td><td data-en="in C the braces mark a block, in Python the indentation does">C 用大括號、Python 用縮排表示區塊</td></tr>
+        <tr><td><code>for (int i = 0; i &lt; n; i++)</code></td><td><code>for i in range(n):</code></td><td data-en="only when the loop just counts with a fixed step and the body does not change i or n; otherwise the page writes a while loop">只有在迴圈單純用固定的步長數數、本體不改 i 和 n 時；其他情形本頁寫成 while</td></tr>
+        <tr><td><code>a / b</code>　<code>a % b</code></td><td><code>a // b</code>　<code>a % b</code></td><td data-en="the same for positive numbers; different with a negative operand (see above)">正數時相同；有負數時可能不同（見上面）</td></tr>
+        <tr><td><code>&amp;&amp;</code>　<code>||</code>　<code>!</code>　<code>true</code></td><td><code>and</code>　<code>or</code>　<code>not</code>　<code>True</code></td><td></td></tr>
+        <tr><td><code>printf("%d\n", x);</code></td><td><code>print(x)</code></td><td data-en="print adds a line break unless you write end=&quot;&quot;">print 會自動換行，除非寫 end=""</td></tr>
+        <tr><td><code>int a[3] = {0};</code></td><td><code>a = [0] * 3</code></td><td data-en="a C array has a fixed size; a Python list can grow">C 的陣列大小固定，Python 的串列可以變長</td></tr>
+      </table></div>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Off by one</strong>: in “Off by one: < and <=” with n = 4, how many times does each loop run? Which numbers does <code>i</code> take in each?"><strong>差一圈</strong>：「差一圈：&lt; 與 &lt;=」在 n = 4 時，兩個迴圈各跑幾圈？<code>i</code> 各走過哪些數？</li>
+        <li data-en-html="<strong>The order of a for loop</strong>: step through “Counting down by k” and watch which part of the <code>for</code> line is highlighted at each step. When is <code>i -= k</code> run for the last time?"><strong>for 的順序</strong>：在「倒數：每次減 k」一步一步走，看 <code>for</code> 那一行每一步亮起的是哪一段。<code>i -= k</code> 最後一次是什麼時候做的？</li>
+        <li data-en-html="<strong>Negative division</strong>: in “Integer division and remainder”, try a = −7, b = 2 and then a = 7, b = −2. Does the last line still print a? What would Python print?"><strong>負數的除法</strong>：在「整數除法與餘數」試試 a = −7、b = 2，再試 a = 7、b = −2。最後一行還是印出 a 嗎？Python 會印出什麼？</li>
+        <li data-en-html="<strong>Short circuits</strong>: in “Leap years (&& and ||)”, which years make the right side of <code>&amp;&amp;</code> unnecessary? Look for the “…” in the condition on the canvas."><strong>短路</strong>：在「閏年（&amp;&amp; 與 ||）」，哪些年份讓 <code>&amp;&amp;</code> 的右邊不必算？看畫布上條件裡的「…」。</li>
+        <li data-en-html="<strong>Counting with nested loops</strong>: in “Nested loops: a triangle of stars”, the small numbers beside the line numbers count how many times each line has run. How many times does <code>printf(&quot;*&quot;)</code> run for n rows? Compare with \(\frac{n(n+1)}{2}\)."><strong>巢狀迴圈數一數</strong>：在「巢狀迴圈：星號三角形」，行號旁的小數字是每一行執行了幾次。n 列時 <code>printf("*")</code> 執行幾次？和 \(\frac{n(n+1)}{2}\) 比一比。</li>
+        <li data-en-html="<strong>Down and back up</strong>: in “Recursion: down and back up”, why is the second half of the output in the opposite order to the first half? Watch the stack of calls on the canvas grow and shrink."><strong>去程與回程</strong>：在「遞迴：去程與回程」，為什麼輸出的後半段和前半段順序相反？看畫布上呼叫一層層疊上去、再一層層退回來。</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="The programs are run by a small interpreter written for this page (no eval, no new Function, nothing is sent anywhere): a scanner splits the text into tokens, a recursive-descent parser builds a syntax tree, and the tree is executed while every step is recorded. “Step back” simply shows the previous record. The Python version is printed from the same syntax tree.">程式由本頁自己寫的小直譯器執行（不用 eval、不用 new Function，也不送到任何地方）：掃描器把文字切成記號，遞迴下降剖析器建出語法樹，再一邊執行語法樹、一邊記下每一步。「上一步」只是顯示前一筆紀錄。Python 寫法也是從同一棵語法樹印出來的。</li>
+        <li data-en="One step is: one declaration, assignment, printf, break, continue, return or function call; one evaluation of a condition (if, while, or the middle part of for); or the first or third part of a for. The small number beside each line number counts how many steps that line has had so far.">一步的定義：一個宣告、指定、printf、break、continue、return 或函式呼叫；算一次條件（if、while 或 for 的中間那段）；或 for 的第一段、第三段。行號旁的小數字是那一行到目前為止執行了幾步。</li>
+        <li data-en="Limits: 10000 steps (then the page stops and says it may be an infinite loop), 2000 characters of output, 40 nested calls, arrays of up to 64 cells, programs of up to 4000 characters and 80 lines. Supported: int, bool, one-dimensional int arrays, if/else, while, for, break, continue, functions with return, and printf with %d.">上限：10000 步（超過就停，說明可能是無窮迴圈）、輸出 2000 個字元、呼叫 40 層、陣列 64 格、程式 4000 個字元與 80 行。支援 int、bool、一維 int 陣列、if／else、while、for、break、continue、有 return 的函式，以及 printf 的 %d。</li>
+        <li data-en="The unit tests check integer division and remainder against Math.trunc on 20000 random pairs (and that (a / b)·b + a % b = a); 3000 random fully bracketed expressions against direct calculation, including short circuits that avoid a division by zero; operator precedence; the order in which the three parts of for run, with continue and break; the limits of a 32-bit int (12! fits, 13! overflows, (−2) to the 31st is exactly the smallest int); block scope, arrays and recursion; and the Python translation (range or while, brackets, print). During development every built-in program was also run in a real Python 3.11 with 40 sets of numbers each and compared with this page.">單元測試：整數除法與餘數和 Math.trunc 比對 20000 組隨機數（並檢查 (a / b)·b + a % b = a）；3000 個全部加括號的隨機運算式和直接計算比對，包含短路避開除以 0 的情形；運算子優先順序；for 三段的執行順序，以及 continue、break；32 位元 int 的界限（12! 放得下、13! 溢位、(−2) 的 31 次方剛好是最小的 int）；區塊範圍、陣列與遞迴；轉成 Python 的寫法（range 或 while、括號、print）。開發時另外把每一支內建程式各用 40 組數字，放進真的 Python 3.11 執行，和本頁的結果比對。</li>
+        <li data-en="The flashes, the floating old values and the sounds are only for the eye and the ear; every value is exactly what the interpreter computed at that step.">閃光、飄走的舊值和聲音只是為了好看好聽；每個數值都是直譯器在那一步算出來的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): P-V-1, concepts and practice of text-based programming (compiling and interpreting; syntax and semantics); from junior high: P-IV-2, structured programming (sequence, selection and repetition).">課綱對應：資P-V-1 文字式程式設計概念與實作（程式的編譯與直譯、程式的語法與語意）；國中已學：資P-IV-2 結構化程式設計（循序、選擇與重複結構）。</li>
+        <li data-en-html="APCS (Advanced Placement Computer Science test, Taiwan), official site, <a href=&quot;https://apcs.csie.ntnu.edu.tw/index.php/questionstypes/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>assessment framework</a>: “program reading” is multiple choice, and its question types include code tracing, code completion, testing and debugging, performance analysis and computational logic; the content covers data types, constants, variables, assignment and expressions, control structures (sequence, selection, repetition), functions, recursion, arrays and lists, basic data structures and basic algorithms. Candidates choose a C or a Python paper (“test content and schedule” page; read November 2026).">大學程式設計先修檢測（APCS）官網<a href="https://apcs.csie.ntnu.edu.tw/index.php/questionstypes/" target="_blank" rel="noopener">評量架構</a>：「程式識讀」以單選題命題，題型包括程式運行追蹤（code tracing）、程式填空、程式測試與除錯、程式效能分析與解析計算邏輯；檢測範圍包括資料型態、常數、變數、指定、表達式，控制結構（循序、選擇、重複），函式與模組化、遞迴、陣列與串列、基礎資料結構與基礎演算法。考生可選 C 或 Python 題本（官網「檢測內容與時程」頁，2026 年 11 月查閱）。</li>
+        <li data-en="B. W. Kernighan, D. M. Ritchie, The C Programming Language, 2nd ed. (1988): 2.5 “Arithmetic Operators” (in that older standard the rounding of / with negative operands was left to the machine), 2.6 “Relational and Logical Operators” (&& and || stop as soon as the answer is known), 2.12 “Precedence and Order of Evaluation”, 3.5 “Loops — While and For” (the for/while equivalence and its exception for continue).">B. W. Kernighan、D. M. Ritchie《The C Programming Language》第 2 版（1988）：2.5 節〈Arithmetic Operators〉（當時的標準把負數除法怎麼取整交給機器決定）、2.6 節〈Relational and Logical Operators〉（&& 與 || 一知道答案就停）、2.12 節〈Precedence and Order of Evaluation〉、3.5 節〈Loops — While and For〉（for 與 while 的等價寫法，以及 continue 的例外）。</li>
+        <li data-en="ISO/IEC 9899:1999 (C99): 6.5 paragraph 5 (a result outside the range of its type is undefined behaviour), 6.5.5 (division by zero is undefined; the quotient is truncated towards zero; (a/b)*b + a%b equals a), 6.5.13 and 6.5.14 (&& and ||: left operand first, right operand not evaluated when the result is already known), 6.8.5.3 (the for statement), 7.16 (&lt;stdbool.h&gt;).">ISO/IEC 9899:1999（C99）：6.5 節第 5 段（結果超出型別的範圍是未定義行為）、6.5.5 節（除以 0 未定義；商向 0 截斷；(a/b)*b + a%b 等於 a）、6.5.13 與 6.5.14 節（&& 與 ||：先算左運算元，結果確定時不算右運算元）、6.8.5.3 節（for 敘述）、7.16 節（&lt;stdbool.h&gt;）。</li>
+        <li data-en="The Python Language Reference (Python 3): 6.7 “Binary arithmetic operations” (// is floor division; % takes the sign of its second operand), 6.11 “Boolean operations” (and, or evaluate the right side only when needed), 3.2 “The standard type hierarchy” (integers have unlimited range).">《The Python Language Reference》（Python 3）：6.7 節〈Binary arithmetic operations〉（// 是向下取整的除法；% 的正負號跟著第二個運算元）、6.11 節〈Boolean operations〉（and、or 只在需要時才算右邊）、3.2 節〈The standard type hierarchy〉（整數沒有範圍限制）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Trace_table&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Trace table (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Short-circuit_evaluation&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Short-circuit evaluation (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Off-by-one_error&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Off-by-one error (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Modulo&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Modulo (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Integer_overflow&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Integer overflow (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Trace_table" target="_blank" rel="noopener">Trace table（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Short-circuit_evaluation" target="_blank" rel="noopener">Short-circuit evaluation（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Off-by-one_error" target="_blank" rel="noopener">Off-by-one error（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Modulo" target="_blank" rel="noopener">Modulo（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Integer_overflow" target="_blank" rel="noopener">Integer overflow（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/code-tracing-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/code-tracing.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="code-tracing"></script>
+  <script src="js/missions/code-tracing.js"></script>
+  <script src="js/stats.js" data-module="code-tracing"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
