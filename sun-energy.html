@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="The Sun’s Energy: Fusion, Luminosity and the Solar Constant | Astro Ni Science Lab">太陽的能量：核融合、光度與太陽常數｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 太陽的能量頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --se-space0: #16213a; --se-space1: #0b1324; --se-ray: #f59e0b; --se-panel: #e2e8f0;
+      --se-sky0: #7cb7e8; --se-sky1: #d7ecfb; --se-dusk: #f6a65a; --se-ground0: #8a9a5b; --se-ground1: #5f6f3a;
+      --se-water: #2563eb; --se-pan: #1f2937; --se-hot: #dc2626; --se-air: #64748b;
+      --se-p: #e11d48; --se-n: #64748b; --se-pos: #db2777; --se-nu: #16a34a; --se-g: #7c3aed; --se-he: #d97706;
+      --se-chem: #78716c; --se-grav: #2563eb; --se-nuc: #ea580c; --se-fit: #0d9488;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --se-space0: #0f172a; --se-space1: #020617; --se-ray: #fbbf24; --se-panel: #cbd5e1;
+        --se-sky0: #1d4f7c; --se-sky1: #3b6f9c; --se-dusk: #c2703a; --se-ground0: #4d5a2f; --se-ground1: #343e1f;
+        --se-water: #60a5fa; --se-pan: #0b1220; --se-hot: #f87171; --se-air: #94a3b8;
+        --se-p: #fb7185; --se-n: #94a3b8; --se-pos: #f472b6; --se-nu: #4ade80; --se-g: #a78bfa; --se-he: #fbbf24;
+        --se-chem: #a8a29e; --se-grav: #60a5fa; --se-nuc: #fb923c; --se-fit: #2dd4bf;
+      }
+    }
+    :root[data-theme="dark"] {
+      --se-space0: #0f172a; --se-space1: #020617; --se-ray: #fbbf24; --se-panel: #cbd5e1;
+      --se-sky0: #1d4f7c; --se-sky1: #3b6f9c; --se-dusk: #c2703a; --se-ground0: #4d5a2f; --se-ground1: #343e1f;
+      --se-water: #60a5fa; --se-pan: #0b1220; --se-hot: #f87171; --se-air: #94a3b8;
+      --se-p: #fb7185; --se-n: #94a3b8; --se-pos: #f472b6; --se-nu: #4ade80; --se-g: #a78bfa; --se-he: #fbbf24;
+      --se-chem: #a8a29e; --se-grav: #60a5fa; --se-nuc: #fb923c; --se-fit: #2dd4bf;
+    }
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y pinch-zoom; }
+    @media (max-width: 560px) { #cv { height: 600px; } }
+    #gr { display: block; width: 100%; height: 250px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    .se button { min-height: 44px; }
+    .se .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .se .playbar button { flex: 1 1 auto; }
+    .se .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .se .slider input[type="range"] { height: 28px; margin: 0; }
+    .se [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 6px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+    .big-num small { font-size: calc(14px * var(--fs, 1)); font-weight: 600; color: var(--muted); }
+    .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .runlog b { color: var(--text); }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / The Sun’s energy"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 太陽的能量</nav>
+      <h1 data-en="The Sun’s Energy: Fusion, Luminosity and the Solar Constant">太陽的能量：核融合、光度與太陽常數</h1>
+      <p data-en="Every square metre facing the Sun just above the atmosphere receives about 1361 watts. Where does that number come from, how can you measure it from the ground with a pan of water, and what keeps the Sun burning for ten billion years? Change the star and the distance, measure sunlight through the air, and follow four hydrogen nuclei as they become one helium nucleus.">大氣層頂端每一平方公尺面向太陽的地方，每秒收到約 1361 焦耳的陽光。這個數字從哪裡來？站在地面上怎麼用一盒水把它量出來？又是什麼讓太陽能燒上一百億年？換一顆恆星、換一個距離，隔著大氣量陽光，再跟著四個氫原子核變成一個氦原子核。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the distance to 2 AU and watch the light spread over four times the area. Then switch to “Measure it on the ground”.">試試看：把距離拉到 2 AU，看同樣的光攤到 4 倍的面積上；再切到「在地面量太陽常數」實際量一次。</p>
+    <div class="lab se" id="lab">
+      <div class="stage" id="stage">
+        <div class="segw" role="group" aria-label="實驗" data-en-aria-label="Experiment" id="modeSeg">
+          <button type="button" data-mode="flux" aria-pressed="true" data-en="Luminosity and solar constant">光度與太陽常數</button>
+          <button type="button" data-mode="ground" aria-pressed="false" data-en="Measure it on the ground">在地面量太陽常數</button>
+          <button type="button" data-mode="fusion" aria-pressed="false" data-en="Fusion and the Sun’s lifetime">核融合與太陽的壽命</button>
+        </div>
+        <canvas id="cv" aria-label="恆星的光向外擴散" data-en-aria-label="Starlight spreading out"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">送出一道光</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除紀錄與動畫；設定不變" data-en-title="Clear the records and the animation; the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" id="cvHint">—</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+          <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="starCard">
+          <h2 data-en="The star">恆星</h2>
+          <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
+          <div class="slider" id="rBox"><label for="rad" data-en="Radius R (solar radii)">半徑 R（太陽半徑）</label><output></output>
+            <input id="rad" type="range" min="-2.301" max="3" step="0.001" value="0"></div>
+          <div class="slider" id="tBox"><label for="temp" data-en="Surface temperature T (K)">表面溫度 T（K）</label><output></output>
+            <input id="temp" type="range" min="3.301" max="4.602" step="0.0005" value="3.7613"></div>
+          <div class="slider" id="mBox" hidden><label for="mass" data-en="Mass M (solar masses)">質量 M（太陽質量）</label><output></output>
+            <input id="mass" type="range" min="-1.097" max="1.699" step="0.001" value="0"></div>
+        </section>
+
+        <div id="fluxPanel">
+          <section class="card">
+            <h2 data-en="Distance">距離</h2>
+            <div class="slider"><label for="dist" data-en="Distance from the star d (AU)">離恆星的距離 d（AU）</label><output></output>
+              <input id="dist" type="range" min="-2" max="1.699" step="0.001" value="0"></div>
+            <div class="presets" role="group" aria-label="行星的距離" data-en-aria-label="Planet distances" id="planetSeg"></div>
+          </section>
+          <section class="card">
+            <h2 data-en="What arrives">收到多少</h2>
+            <p class="big-num" id="fS">—</p>
+            <dl class="readout">
+              <dt data-en="Compared with Earth today">和今天的地球比</dt><dd id="fRel" class="big">—</dd>
+              <dt data-en="Luminosity L">光度 L</dt><dd id="fL">—</dd>
+              <dt data-en="Brightest wavelength">輻射最強的波長</dt><dd id="fLam">—</dd>
+              <dt data-en="Light travel time">光要走多久</dt><dd id="fT">—</dd>
+              <dt data-en-html="Neutrinos per cm<sup>2</sup> per second">每平方公分每秒的微中子</dt><dd id="fNu">—</dd>
+            </dl>
+          </section>
+        </div>
+
+        <div id="groundPanel" hidden>
+          <section class="card">
+            <h2 data-en="Sun and sky">太陽與天空</h2>
+            <div class="slider"><label for="alt" data-en="Sun’s altitude h (°)">太陽高度角 h（°）</label><output></output>
+              <input id="alt" type="range" min="2" max="90" step="0.5" value="60" data-decimals="1"></div>
+            <div class="slider"><label for="tau" data-en="Haze: optical depth τ">空氣的混濁程度：光學厚度 τ</label><output></output>
+              <input id="tau" type="range" min="0.05" max="1" step="0.01" value="0.3" data-decimals="2"></div>
+            <h2 data-en="Black water pan (10 cm × 10 cm, facing the Sun)" style="margin-top:10px">黑色水盒（10 cm × 10 cm，對準太陽）</h2>
+            <div class="slider"><label for="alpha" data-en="Absorptivity of the black paint α">黑漆的吸收率 α</label><output></output>
+              <input id="alpha" type="range" min="0.5" max="1" step="0.01" value="0.95" data-decimals="2"></div>
+            <div class="slider"><label for="mw" data-en="Water (g)">水（g）</label><output></output>
+              <input id="mw" type="range" min="50" max="1000" step="10" value="200" data-decimals="0"></div>
+            <div class="slider"><label for="dur" data-en="Time in the sun (min)">曬的時間（分鐘）</label><output></output>
+              <input id="dur" type="range" min="0.5" max="60" step="0.5" value="10" data-decimals="1"></div>
+          </section>
+          <section class="card">
+            <h2 data-en="Result">量到的結果</h2>
+            <p class="big-num" id="gEst">—</p>
+            <dl class="readout">
+              <dt data-en="Air mass m">大氣質量 m</dt><dd id="gM">—</dd>
+              <dt data-en="Actual sunlight on the ground">地面上實際的陽光</dt><dd id="gIg" class="big">—</dd>
+              <dt data-en="Water warmed by">水溫上升</dt><dd id="gDT">—</dd>
+              <dt data-en="Heat lost at the end">結束時的散熱</dt><dd id="gLoss">—</dd>
+              <dt data-en="Langley extrapolation">Langley 法外推</dt><dd id="gLg" class="big">—</dd>
+            </dl>
+          </section>
+          <section class="card">
+            <h2 data-en="Measurements">量測紀錄</h2>
+            <p class="runlog" id="runlog" data-en="Each finished measurement is kept here. Measure at several sun altitudes on the same day (same haze) and draw the Langley plot.">每量完一次會記在這裡。同一天（混濁程度不變）在不同的太陽高度多量幾次，就能畫 Langley 圖。</p>
+          </section>
+        </div>
+
+        <div id="fusionPanel" hidden>
+          <section class="card">
+            <h2 data-en="Fuel">燃料</h2>
+            <div class="slider"><label for="frac" data-en="Mass turned from hydrogen into helium (%)">氫變成氦的質量（占全部 %）</label><output></output>
+              <input id="frac" type="range" min="1" max="100" step="0.5" value="10" data-decimals="1"></div>
+          </section>
+          <section class="card">
+            <h2 data-en="Every second">每一秒</h2>
+            <dl class="readout">
+              <dt data-en="Fusion reactions">核融合反應</dt><dd id="uRate" class="big">—</dd>
+              <dt data-en="Hydrogen used">用掉的氫</dt><dd id="uH">—</dd>
+              <dt data-en="Mass turned into energy">變成能量的質量</dt><dd id="uDm" class="big">—</dd>
+              <dt data-en="Neutrinos released">放出的微中子</dt><dd id="uNu">—</dd>
+            </dl>
+          </section>
+          <section class="card">
+            <h2 data-en="How long could it shine?">能燒多久？</h2>
+            <dl class="readout">
+              <dt data-en="As coal (chemical)">如果是煤（化學燃燒）</dt><dd id="uChem">—</dd>
+              <dt data-en="By shrinking (gravity)">靠收縮（重力位能）</dt><dd id="uGrav">—</dd>
+              <dt data-en="By fusion">靠核融合</dt><dd id="uNuc" class="big">—</dd>
+              <dt data-en="Age of the Earth">地球的年齡</dt><dd data-en="4.54 billion years">45.4 億年</dd>
+            </dl>
+          </section>
+        </div>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Luminosity and the inverse-square law">光度與平方反比</h3>
+      <p data-en-html="A star radiates roughly like a black body. Each square metre of its surface sends out \(\sigma T^4\) (Stefan–Boltzmann law), so its total power, the <strong>luminosity</strong>, is">恆星大致像黑體一樣發光。表面每平方公尺放出 \(\sigma T^4\)（史特凡–波茲曼定律），所以總功率，也就是<strong>光度</strong>是</p>
+      <div class="formula">\[ L = 4\pi R^2 \sigma T^4, \qquad \sigma = 5.67\times10^{-8}\ \mathrm{W\,m^{-2}\,K^{-4}} \]</div>
+      <p data-en-html="For the Sun, \(R = 6.957\times10^{8}\ \mathrm{m}\) and \(T = 5772\ \mathrm{K}\) give \(L = 3.83\times10^{26}\ \mathrm{W}\). Far away, this power is spread evenly over a sphere of radius \(d\):">太陽 \(R = 6.957\times10^{8}\ \mathrm{m}\)、\(T = 5772\ \mathrm{K}\)，得到 \(L = 3.83\times10^{26}\ \mathrm{W}\)。離開恆星以後，這些功率平均攤在半徑 \(d\) 的球面上：</p>
+      <div class="formula">\[ S = \frac{L}{4\pi d^2} \]</div>
+      <p data-en-html="At \(d = 1\ \mathrm{AU}\) this is the <strong>solar constant</strong>, about \(1361\ \mathrm{W/m^2}\) (measured from satellites, Kopp &amp; Lean 2011). Twice as far, the same light covers four times the area. The brightest wavelength follows Wien’s law \(\lambda_{\max} = b/T\), \(b = 2.898\times10^{-3}\ \mathrm{m\cdot K}\): about 500 nm for the Sun.">\(d = 1\ \mathrm{AU}\) 時就是<strong>太陽常數</strong>，約 \(1361\ \mathrm{W/m^2}\)（人造衛星量的值，Kopp 與 Lean，2011）。距離 2 倍，同樣的光攤在 4 倍的面積上。輻射最強的波長照維恩位移定律 \(\lambda_{\max} = b/T\)，\(b = 2.898\times10^{-3}\ \mathrm{m\cdot K}\)：太陽約 500 nm。</p>
+      <h3 data-en="Measuring it from the ground">在地面量太陽常數</h3>
+      <p data-en-html="Before satellites, the solar constant had to be measured through the air. A blackened pan of water facing the Sun absorbs \(\alpha S_g A\); with heat capacity \(C\) and heat loss \(k(T - T_{\mathrm{air}})\)">人造衛星出現以前，太陽常數只能隔著大氣量。對準太陽的黑色水盒吸收 \(\alpha S_g A\)；熱容是 \(C\)，向四周散熱 \(k(T - T_{\mathrm{air}})\)：</p>
+      <div class="formula">\[ C\frac{dT}{dt} = \alpha S_g A - k\,(T - T_{\mathrm{air}}) \]</div>
+      <p data-en-html="The simple estimate \(S \approx C\Delta T/(A\,t)\) is always a little low: the paint does not absorb everything, and the warm water loses heat. Short measurements and a very black pan help. Here \(A = 0.01\ \mathrm{m^2}\), the pan adds \(40\ \mathrm{J/K}\) and \(k = 0.25\ \mathrm{W/K}\).">簡單的估計 \(S \approx C\Delta T/(A\,t)\) 一定偏小一點：黑漆不會全部吸收，變熱的水也會散熱。量的時間短一點、盒子塗得越黑越好。這裡 \(A = 0.01\ \mathrm{m^2}\)，盒子本身的熱容 \(40\ \mathrm{J/K}\)，\(k = 0.25\ \mathrm{W/K}\)。</p>
+      <p data-en-html="The air dims the beam too. Along a path through \(m\) times the air above your head (the <em>air mass</em>, about \(1/\sin h\) for a sun at altitude \(h\)), the beam is reduced by the Beer–Lambert law:">大氣也會讓陽光變弱。陽光穿過的空氣是頭頂正上方的 \(m\) 倍（<em>大氣質量</em>，太陽高度 \(h\) 時約 \(1/\sin h\)；這裡用 Kasten 與 Young 1989 的公式，接近地平線時更準），照比爾–朗伯定律變弱：</p>
+      <div class="formula">\[ S_g = S\,e^{-\tau m} \quad\Longrightarrow\quad \ln S_g = \ln S - \tau\,m \]</div>
+      <p data-en-html="Samuel Langley (1880s) used exactly this: measure at several sun altitudes on one clear day, plot \(\ln S_g\) against \(m\), and extend the straight line to \(m = 0\) — the top of the atmosphere. The slope gives the haze \(\tau\). Errors that multiply every point by the same factor (the paint, roughly the heat loss) shift the line but not its slope.">朗利（Samuel Langley，1880 年代）用的就是這個方法：同一個晴天、在不同的太陽高度量幾次，把 \(\ln S_g\) 對 \(m\) 畫成圖，直線延長到 \(m = 0\)——大氣的頂端。斜率就是混濁程度 \(\tau\)。讓每一點都乘上同一個比例的誤差（黑漆、大致上還有散熱），只會讓直線上下平移，不會改變斜率。</p>
+      <h3 data-en="Where the energy comes from">能量從哪裡來</h3>
+      <p data-en-html="In the core of the Sun (about 15 million K), hydrogen nuclei fuse into helium through the proton–proton chain. Four hydrogen atoms are heavier than one helium atom:">太陽的核心（約 1500 萬 K）裡，氫原子核經過質子–質子鏈融合成氦。4 個氫原子比 1 個氦原子重：</p>
+      <div class="formula">\[ \Delta m = 4m(^1\mathrm{H}) - m(^4\mathrm{He}) = 4(1.007825) - 4.002603 = 0.028697\ \mathrm{u} \]</div>
+      <p data-en-html="and \(E = \Delta m\,c^2 = 26.73\ \mathrm{MeV}\) (0.7 % of the mass). The two neutrinos carry away about 0.6 MeV and escape; the rest heats the Sun and finally leaves as light. To supply \(3.83\times10^{26}\ \mathrm{W}\), about \(9\times10^{37}\) reactions happen every second, using 600 billion kilograms of hydrogen and turning 4.4 billion kilograms of mass into energy. About \(6.5\times10^{10}\) solar neutrinos pass through every square centimetre of you each second.">\(E = \Delta m\,c^2 = 26.73\ \mathrm{MeV}\)（質量的 0.7 %）。兩個微中子帶走約 0.6 MeV，直接跑掉；其餘加熱太陽，最後變成光離開。要供應 \(3.83\times10^{26}\ \mathrm{W}\)，每秒要發生約 \(9\times10^{37}\) 次反應，用掉約 6000 億公斤的氫，讓 44 億公斤的質量變成能量。每一秒都有約 \(6.5\times10^{10}\) 個太陽微中子穿過你身上每一平方公分。</p>
+      <h3 data-en="How long can the Sun shine?">太陽能燒多久</h3>
+      <div class="formula">\[ t_{\text{chem}} \approx \frac{M e}{L}, \qquad t_{\text{KH}} \approx \frac{GM^2}{RL}, \qquad t_{\text{nuc}} = \frac{f\,M\,\eta\,c^2}{L} \]</div>
+      <p data-en-html="A Sun made of coal and oxygen (\(e \approx 3\times10^{7}\ \mathrm{J/kg}\)) would burn out in about 5000 years. In the 1860s Kelvin and Helmholtz proposed that the Sun shines by slowly shrinking, which gives about 30 million years — but geologists and Darwin needed hundreds of millions of years, and today rocks and meteorites show the Earth is 4.54 billion years old. Only nuclear fusion (Eddington 1920, Bethe 1939) is enough: if 10 % of the Sun’s mass (\(f = 0.1\), roughly its core) turns from hydrogen into helium with efficiency \(\eta \approx 0.7\%\), the Sun shines for about 10 billion years.">如果太陽是一團煤和氧（\(e \approx 3\times10^{7}\ \mathrm{J/kg}\)），大約 5000 年就燒完。1860 年代克耳文與亥姆霍茲提出太陽靠慢慢收縮發光，可以燒約 3000 萬年——可是地質學家和達爾文需要數億年；今天從岩石和隕石知道地球已經 45.4 億歲。只有核融合（愛丁頓 1920、貝特 1939）夠用：太陽質量的 10 %（\(f = 0.1\)，大約是核心）由氫變成氦，效率 \(\eta \approx 0.7\%\)，可以燒約 100 億年。</p>
+      <h3 data-en="What to watch for">觀察重點</h3>
+      <ul>
+        <li data-en-html="Double the distance: the light spreads over 4 times the area, so each square metre gets 1/4.">距離 2 倍：光攤到 4 倍的面積上，每平方公尺只剩 1/4。</li>
+        <li data-en-html="Double the temperature: 16 times the luminosity. Double the radius: 4 times.">溫度 2 倍，光度 16 倍；半徑 2 倍，光度 4 倍。</li>
+        <li data-en-html="A low Sun shines through much more air: at sunset the air mass can be 10 or more.">太陽越低，陽光穿過的空氣越多：日落時大氣質量可以超過 10。</li>
+        <li data-en-html="Long measurements underestimate: watch the heat loss grow as the water warms.">量太久會低估：看水變熱以後，散熱越來越多。</li>
+        <li data-en-html="In the Langley plot the points from one day line up; the line meets \(m = 0\) near 1361.">同一天的點在 Langley 圖上排成直線，延長到 \(m = 0\) 會碰到 1361 附近。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="Stars are treated as black bodies; star data are rounded literature values (the young Sun from the standard solar model, about 70 % of today’s luminosity; the red-giant Sun is a rough stage near the tip of the red-giant branch). The atmosphere uses one broadband optical depth, so real sunlight, whose different colours are dimmed differently, curves the Langley plot slightly. The water pan heats according to the exact solution of the equation above with the air at 25 °C. Fusion counts only the proton–proton chain (it supplies about 99 % of the Sun’s energy); the lifetimes use today’s luminosity throughout.">恆星當成黑體；恆星的數據是文獻的約略值（45 億年前的太陽取標準太陽模型，約今天光度的 70 %；紅巨星太陽是接近紅巨星分支頂端的大約狀態）。大氣只用一個寬頻的光學厚度；真實的陽光各種顏色變弱的程度不同，Langley 圖會稍微彎曲。水盒照上面方程式的解析解升溫，氣溫 25 °C。核融合只算質子–質子鏈（提供太陽約 99 % 的能量）；壽命一律用今天的光度計算。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/sun-energy-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/sun-energy.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="sun-energy"></script>
+  <script src="js/missions/sun-energy.js"></script>
+  <script src="js/stats.js" data-module="sun-energy"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
