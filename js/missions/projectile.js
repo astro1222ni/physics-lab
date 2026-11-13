@@ -152,24 +152,26 @@
       check: function (ev) { const d = ev.data; return ev.type === 'landed' && Math.abs(d.T - 2 * 5) <= 1 / 100; }
     },
     {
-      /* 水平拋出（θ = 0、無阻力）：落地時 vy = vx（以 45° 撞地）⇔ v0² = 2 g h0 ⇔ 射程 R = 2 h0 */
+      /* 水平拋出（θ = 0、無阻力）：落地時 vy = vx（以 45° 撞地）⇔ v0² = 2 g h0 ⇔ 射程 R = 2 h0。
+         限 1 m ≤ h0 < 10 m：任務 3（h0 ≥ 10）、任務 6（h0 ≥ 20、落在 50 m，選 h0 = 25 就是 R = 2 h0）不會順便完成 */
       id: 'projectile-h4', level: 3, hidden: true,
-      riddle: { zh: '平平地出發，斜斜地著陸；橫走的與直落的，在終點握手言和。', en: 'It set out level and came down aslant; at the finish, the sideways and the downward made peace.' },
+      riddle: { zh: '從矮牆上平平地出發，斜斜地著陸；橫走的與直落的，在終點握手言和。', en: 'It set out level from a low wall and came down aslant; at the finish, the sideways and the downward made peace.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'landed' && !d.drag && same(d.theta, 0) && d.h0 >= 1 && close(d.R, 2 * d.h0, 0.002);
+        return ev.type === 'landed' && !d.drag && same(d.theta, 0) && d.h0 >= 1 && d.h0 < 10 && close(d.R, 2 * d.h0, 0.002);
       }
     },
     {
-      /* 伽利略的平方律：兩次水平拋出（θ = 0、無阻力、同一個 g），飛行時間剛好 2 倍 ⇔ 高度剛好 4 倍（T = √(2h0/g)） */
+      /* 伽利略的平方律：兩次水平拋出（θ = 0、無阻力、同一個 g、同一個初速），飛行時間剛好 2 倍 ⇔ 高度剛好 4 倍（T = √(2h0/g)），射程也剛好 2 倍。
+         要求同一個初速：任務 3（初速不同）接任務 6（h0 = 40）時不會碰巧完成 */
       id: 'projectile-h5', level: 4, hidden: true,
-      riddle: { zh: '想在空中多待一倍的光陰，高塔可不只要加高一倍。', en: 'To linger in the air twice as long, a tower must grow far more than twice as tall.' },
+      riddle: { zh: '用同樣的力氣丟出，想在空中多待一倍的光陰，高塔可不只要加高一倍。', en: 'Thrown with the same strength, to linger in the air twice as long, a tower must grow far more than twice as tall.' },
       check: function (ev, mem) {
         if (ev.type !== 'landed') return false;
         const d = ev.data;
         if (d.drag || !same(d.theta, 0) || d.h0 < 2) return false;
         return remember(mem, d).some(function (o) {
-          if (o === d || o.drag || !same(o.theta, 0) || o.h0 < 2 || !same(o.g, d.g)) return false;
+          if (o === d || o.drag || !same(o.theta, 0) || o.h0 < 2 || !same(o.g, d.g) || !same(o.v0, d.v0)) return false;
           const a = o.T > d.T ? o : d, b = a === o ? d : o;
           return close(a.T, 2 * b.T, 0.002);
         });

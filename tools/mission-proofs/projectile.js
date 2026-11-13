@@ -107,7 +107,7 @@ const SOL = {
   'projectile-h1': [{ theta: 90 }],
   'projectile-h2': [{ g: 1.62, v0: 50 }],
   'projectile-h3': [{ v0: 49, theta: 90 }],
-  'projectile-h4': [{ theta: 0, h0: 10, v0: 14 }],
+  'projectile-h4': [{ theta: 0, h0: 2.5, v0: 7 }],
   'projectile-h5': [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 40, v0: 5 }],
   'projectile-h6': [{ v0: 29.98 }, { v0: 29.98, drag: true, k: 0.0162 }],
   'projectile-h7': [{ v0: 30, drag: true, k: 0.05, theta: 35.7 }],
@@ -222,6 +222,9 @@ only('projectile-h4', [{ theta: 5, h0: 10, v0: 14 }], false, '要水平拋出');
 only('projectile-h5', [{ theta: 0, h0: 20, v0: 10 }, { theta: 0, h0: 20, v0: 25 }], false, '任務 3 的解：同一高度，時間相同');
 only('projectile-h5', [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 20, v0: 5 }], false, '高度 2 倍只換來 √2 倍的時間');
 only('projectile-h5', [{ theta: 0, h0: 10, v0: 5 }, { theta: 0, h0: 40, v0: 5, g: 1.62 }], false, '換了星球');
+only('projectile-h4', [{ theta: 0, h0: 10, v0: 14 }], false, 'h0 = 10、v0 = 14（任務 3 的下限高度）：R = 2 h0 但塔太高，不算');
+only('projectile-h4', [{ theta: 0, h0: 25, v0: 22.14 }], false, '任務 6 的自然解：h0 = 25、落在 50 m（R = 2 h0），不算');
+only('projectile-h5', [{ theta: 0, h0: 10, v0: 10 }, { theta: 0, h0: 40, v0: 17.5 }], false, '任務 3（h0 = 10）接任務 6（h0 = 40、落在 50 m）：時間 2 倍但初速不同，不算');
 only('projectile-h6', [{ drag: true, v0: 20 }, { v0: 17.5 }], false, '任務 8 的解：初速不同');
 only('projectile-h6', [{ v0: 30 }, { v0: 30, drag: true, k: 0.01 }], false, '阻力預設值 0.01：只少了 ' + f(100 - launch({ v0: 30, drag: true, k: 0.01 }).data.R / launch({ v0: 30 }).data.R * 100, 1) + '%');
 only('projectile-h6', [{ v0: 30 }, { v0: 30, drag: true, k: 0.0158 }], false, '滑桿上相鄰的 0.0158：R 比 ' + f(launch({ v0: 30, drag: true, k: 0.0158 }).data.R / launch({ v0: 30 }).data.R, 4));
