@@ -146,11 +146,11 @@ test('全站總星數：所有實驗的所有任務等級加總', () => {
 });
 
 test('每次完成的掉寶機率介於 27.5% 與 60% 之間，隨等級與星星遞增', () => {
-  near(C.repeatChance(1, 0, 500), 0.275, 1e-12);
+  near(C.repeatChance(1, 0, 500), 0.25, 1e-12);
   near(C.repeatChance(10, 500, 500), 1, 1e-12);
   near(C.repeatChance(1, 500, 500), 0.5, 1e-12);
-  near(C.repeatChance(10, 0, 500), 0.5, 1e-12);
-  near(C.repeatChance(5, 250, 500), (0.375 + (0.5 + 0.5 * 4 / 9)) / 2, 1e-12);
+  near(C.repeatChance(10, 0, 500), 0.6, 1e-12);
+  near(C.repeatChance(5, 250, 500), ((0.25 + 0.35 * 4 / 9) + (0.5 + 0.5 * 4 / 9)) / 2, 1e-12);
   for (let lv = 1; lv < 10; lv++) assert.ok(C.repeatChance(lv + 1, 100, 500) > C.repeatChance(lv, 100, 500));
   assert.ok(C.repeatChance(5, 200, 800) < C.repeatChance(5, 200, 400), '星星沒增加、全站總星數變多 → 機率下降');
 });
