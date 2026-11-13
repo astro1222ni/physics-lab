@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Population Pyramids and Projections | Astro Ni Science Lab">人口金字塔與人口推估｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 人口金字塔頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --pp-m: #2f74c8; --pp-f: #d4507a; --pp-young: #2e9d6a; --pp-old: #8a55c4;
+      --pp-cmp: #20262e; --pp-ndc: #c27a12; --pp-sel: #e0a100; --pp-band: rgba(30, 40, 60, 0.05);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --pp-m: #6aa8ff; --pp-f: #ff86a8; --pp-young: #57d39a; --pp-old: #b98cf0;
+        --pp-cmp: #e8edf3; --pp-ndc: #f2b14a; --pp-sel: #ffd34d; --pp-band: rgba(255, 255, 255, 0.04);
+      }
+    }
+    :root[data-theme="dark"] {
+      --pp-m: #6aa8ff; --pp-f: #ff86a8; --pp-young: #57d39a; --pp-old: #b98cf0;
+      --pp-cmp: #e8edf3; --pp-ndc: #f2b14a; --pp-sel: #ffd34d; --pp-band: rgba(255, 255, 255, 0.04);
+    }
+    #cv { aspect-ratio: 1 / 0.86; touch-action: manipulation; cursor: pointer; }
+    @media (max-width: 560px) { #cv { aspect-ratio: 1 / 1.08; } }
+    #ts { height: 210px; aspect-ratio: auto; margin-top: 10px; }
+    @media (max-width: 560px) { #ts { height: 190px; } }
+    @media (min-width: 881px) and (min-height: 940px) { .pp .stage { position: sticky; top: 12px; } }
+    .pp button { min-height: 44px; }
+    .pp [hidden] { display: none !important; }
+    .pp .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .pp .playbar button { flex: 1 1 auto; }
+    .pp .playbar #run { flex: 2 1 120px; font-weight: 600; }
+    .pp .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .segl { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend i.line { height: 3px; border-radius: 2px; }
+    .legend i.dash { height: 0; border-top: 2px dashed currentColor; background: none !important; }
+    .chip-cls { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+    .yearrow { display: flex; align-items: center; gap: 10px; margin: 8px 2px 0; }
+    .yearrow .slider { flex: 1 1 auto; margin: 0; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#population&quot;>Geography · Population and Cities</a> / Population pyramids"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#population">地理・人口與都市</a> ／ 人口金字塔</nav>
+      <h1 data-en="Population Pyramids and Projections">人口金字塔與人口推估</h1>
+      <p data-en="Taiwan's real population by single year of age, from 1992 to 2025, and where it goes next. Every year each age group grows one year older, a few die, babies are born and people move in or out. Change the birth rate, life expectancy and migration and watch the pyramid change shape over a hundred years.">臺灣每一個年齡的真實人數，從 1992 年到 2025 年，以及接下來會怎麼走。每過一年，每一層的人都老一歲、有人過世、有嬰兒出生、有人移入或移出。調整生育率、平均壽命和遷移，看金字塔在一百年裡怎麼變形。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press Play to follow the official medium projection to 2075. Then tap a bar to follow everyone born in that year as they grow old.">試試看：按「播放」，照國發會的中推估一路走到 2075 年。再點一條長條，跟著那一年出生的人一起變老。</p>
+    <div class="lab pp" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="推估情境" data-en-aria-label="Scenario" id="modeSeg">
+            <button type="button" data-mode="ndc" aria-pressed="true" data-en="Official projection" title="照國發會 2026–2075 年人口推估的中推估假設（生育率、死亡率、出生性比例、遷移逐年變化）" data-en-title="Use the medium-variant assumptions of Taiwan's official 2026–2075 projection (fertility, mortality, sex ratio at birth and migration change year by year)">國發會中推估</button>
+            <button type="button" data-mode="custom" aria-pressed="false" data-en="My own" title="從 2025 年的真實人口出發，用你設定的生育率、平均壽命、遷移" data-en-title="Start from the real 2025 population and use your own birth rate, life expectancy and migration">自訂</button>
+            <button type="button" data-mode="stable" aria-pressed="false" data-en="Stable population" title="生育率和死亡率長期固定、沒有遷移時，最後會形成的年齡結構" data-en-title="The age structure a population settles into when birth and death rates stay fixed for a long time with no migration">穩定人口</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="人口金字塔：左邊男性、右邊女性，由下往上是 0 到 100 歲以上；點一條長條跟著那一年出生的人" data-en-aria-label="Population pyramid: men on the left, women on the right, ages 0 to 100+ from bottom to top; tap a bar to follow the people born in that year"></canvas>
+        <div class="yearrow">
+          <div class="slider"><label for="yr" data-en="Year">年份</label><output></output>
+            <input id="yr" type="range" min="2025" max="2125" step="1" value="2025" data-decimals="0"></div>
+        </div>
+        <div class="playbar">
+          <button id="run" type="button" data-en="Play">播放</button>
+          <button id="step" type="button" data-en="+1 year" title="往後一年" data-en-title="One year on">往後 1 年</button>
+          <button id="back" type="button" data-en="Back to 2025" title="回到 2025 年（真實資料的最後一年）；設定不變" data-en-title="Back to 2025, the last year of real data; settings stay">回到 2025 年</button>
+        </div>
+        <p class="segl" data-en="Real data from earlier years:">看過去的真實資料：</p>
+        <div class="segw" role="group" aria-label="過去的年份" data-en-aria-label="Earlier years" id="pastSeg">
+          <button type="button" data-past="1992" aria-pressed="false">1992</button>
+          <button type="button" data-past="2000" aria-pressed="false">2000</button>
+          <button type="button" data-past="2010" aria-pressed="false">2010</button>
+          <button type="button" data-past="2020" aria-pressed="false">2020</button>
+          <button type="button" data-past="2024" aria-pressed="false">2024</button>
+        </div>
+        <canvas id="ts" aria-label="總人口與 65 歲以上比例隨年份的變化" data-en-aria-label="Total population and share aged 65+ over the years"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--pp-young)" data-en-html="<i style=&quot;background:var(--pp-young)&quot;></i>0–14 years"><i style="background:var(--pp-young)"></i>0–14 歲</span>
+          <span style="color:var(--pp-m)" data-en-html="<i style=&quot;background:var(--pp-m)&quot;></i>15–64, men"><i style="background:var(--pp-m)"></i>15–64 歲男性</span>
+          <span style="color:var(--pp-f)" data-en-html="<i style=&quot;background:var(--pp-f)&quot;></i>15–64, women"><i style="background:var(--pp-f)"></i>15–64 歲女性</span>
+          <span style="color:var(--pp-old)" data-en-html="<i style=&quot;background:var(--pp-old)&quot;></i>65 and over"><i style="background:var(--pp-old)"></i>65 歲以上</span>
+          <span style="color:var(--pp-cmp)" data-en-html="<i class=&quot;dash&quot;></i>Comparison outline"><i class="dash"></i>對照的輪廓</span>
+        </div>
+        <p class="hint" data-en="Tap a bar (or use the arrow keys) to follow everyone born in that year. Each bar is one year of age; the outline compares with another year.">點一條長條（或用方向鍵）跟著那一年出生的人；每一條是一歲，虛線輪廓是拿來對照的另一個年份。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardSet">
+          <h2 data-en="Assumptions">假設</h2>
+          <p class="hint" id="hintNdc" data-en="The official medium variant: fertility falls to 0.57 around 2030 and slowly recovers to 0.80 by 2075; life expectancy keeps rising; a few thousand more people move in than out each year. After 2075 the 2075 values are kept.">國發會中推估：總生育率 2030 年前後降到 0.57，到 2075 年慢慢回到 0.80；平均壽命持續延長；每年淨遷入幾千人。2075 年以後沿用 2075 年的數值。</p>
+          <div id="custom" hidden>
+            <div class="slider"><label for="tfr" data-en="Total fertility rate (children per woman)" title="一位女性一生平均生幾個孩子（照今年各年齡的生育率）" data-en-title="Average number of children a woman would have at this year's birth rates for each age">總生育率（每位女性生幾個孩子）</label><output></output>
+              <input id="tfr" type="range" min="0.5" max="6" step="0.05" value="0.7" data-decimals="2"></div>
+            <div class="slider"><label for="e0" data-en="Life expectancy at birth (years)" title="男女平均的出生時平均餘命" data-en-title="Average of men's and women's life expectancy at birth">平均壽命（歲）</label><output></output>
+              <input id="e0" type="range" min="30" max="95" step="0.5" value="81.5" data-decimals="1"></div>
+            <div class="slider" id="netRow"><label for="net" data-en="Net migration (thousand people / year)" title="每年移入減移出；正的是淨移入" data-en-title="People moving in minus people moving out each year">淨遷入（千人／年）</label><output></output>
+              <input id="net" type="range" min="-100" max="300" step="5" value="0" data-decimals="0"></div>
+            <div class="slider"><label for="srb" data-en="Sex ratio at birth (boys per 100 girls)" title="每出生 100 個女嬰，同時出生幾個男嬰" data-en-title="Boys born for every 100 girls">出生性比例（每 100 女嬰的男嬰數）</label><output></output>
+              <input id="srb" type="range" min="95" max="125" step="0.5" value="107" data-decimals="1"></div>
+            <p class="hint" id="hintStable" hidden data-en="A stable population has no migration. It keeps the same shape for ever and grows or shrinks by the same percentage every year.">穩定人口沒有遷移；它的形狀永遠不變，每年按同一個百分比增加或減少。</p>
+          </div>
+          <dl class="readout">
+            <dt data-en="This year: fertility rate">這一年的總生育率</dt><dd id="rTfr">—</dd>
+            <dt data-en="Births this year">這一年出生</dt><dd id="rB">—</dd>
+            <dt data-en="Deaths this year">這一年死亡</dt><dd id="rD">—</dd>
+            <dt data-en="Net migration this year">這一年淨遷入</dt><dd id="rN">—</dd>
+            <dt data-en="Growth rate">人口成長率</dt><dd id="rG">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 id="hYear" data-en="Population">人口</h2>
+          <dl class="readout">
+            <dt data-en="Total">總人口</dt><dd id="rTot" class="big">—</dd>
+            <dt data-en="Shape">類型</dt><dd id="rShape">—</dd>
+            <dt data-en="Aged 0–14">0–14 歲</dt><dd id="rY">—</dd>
+            <dt data-en="Aged 15–64">15–64 歲</dt><dd id="rW">—</dd>
+            <dt data-en="Aged 65+">65 歲以上</dt><dd id="rO">—</dd>
+            <dt data-en="Ageing stage" title="65 歲以上占 7% 以上：高齡化社會；14%：高齡社會；20%：超高齡社會" data-en-title="65+ share of 7%: ageing society; 14%: aged society; 20%: super-aged society">高齡化階段</dt><dd id="rStage">—</dd>
+            <dt data-en="Dependency ratio" title="(0–14 歲 + 65 歲以上) ÷ 15–64 歲 × 100：每 100 個青壯年要扶養幾個人" data-en-title="(aged 0–14 + aged 65+) ÷ aged 15–64 × 100: dependants per 100 people of working age">扶養比</dt><dd id="rDep">—</dd>
+            <dt data-en="Ageing index" title="65 歲以上 ÷ 0–14 歲 × 100" data-en-title="aged 65+ ÷ aged 0–14 × 100">老化指數</dt><dd id="rAge">—</dd>
+            <dt data-en="Median age">年齡中位數</dt><dd id="rMed">—</dd>
+            <dt data-en="Sex ratio" title="每 100 位女性對應幾位男性" data-en-title="Men per 100 women">性比例</dt><dd id="rSex">—</dd>
+            <dt data-en="Aged 100+">100 歲以上</dt><dd id="rCent">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Following one birth year">跟著一個出生年</h2>
+          <dl class="readout">
+            <dt class="wide" data-en="Born in">出生年</dt><dd class="wide" id="rCoh">—</dd>
+            <dt data-en="Age now">現在幾歲</dt><dd id="rCohA">—</dd>
+            <dt data-en="Still here">現在人數</dt><dd id="rCohN">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Compare with">對照</h2>
+          <div class="segw" role="group" aria-label="對照的輪廓" data-en-aria-label="Comparison outline" id="cmpSeg">
+            <button type="button" data-cmp="none" aria-pressed="false" data-en="None">不對照</button>
+            <button type="button" data-cmp="start" aria-pressed="true" data-en="2025 (real)">2025 年（真實）</button>
+            <button type="button" data-cmp="ndc" aria-pressed="false" data-en="Official projection" title="國發會公布的推估人數（2030、2040、2050、2070、2075 年）" data-en-title="Taiwan's published projection (2030, 2040, 2050, 2070, 2075)">國發會推估</button>
+          </div>
+          <dl class="readout">
+            <dt data-en="Difference" title="逐歲人數差的總和 ÷ 對照的總人口" data-en-title="Sum of the differences at each age ÷ total of the comparison">逐歲差距</dt><dd id="rCmp">—</dd>
+          </dl>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Reading a population pyramid">怎麼讀人口金字塔</h3>
+      <p data-en="Each bar is the number of people of one age: men to the left, women to the right, babies at the bottom. The bars are the history of a country written sideways: a wide bar is a year with many births (or many arrivals), a notch is a year with few. Every year the whole picture moves up one step and loses a little at the top.">每一條長條是某一個年齡的人數：男性在左、女性在右，嬰兒在最下面。整張圖就像橫著寫的國家歷史：特別寬的一條是那一年出生（或移入）的人多，凹進去的是那一年出生的人少。每過一年，整張圖往上移一格，最上面的人慢慢變少。</p>
+      <ul>
+        <li data-en-html="<b>Expansive</b> (pyramid-shaped): each younger group is clearly larger than the one above it — many births, the population is young and growing. Here we call it expansive when people aged 0–14 outnumber those aged 15–29 by 15% or more.">擴張型（金字塔型）：越年輕的人越多，底部寬，人口年輕而且在增加。這裡以 0–14 歲人數至少是 15–29 歲的 1.15 倍來判定。</li>
+        <li data-en-html="<b>Stationary</b> (bell-shaped): the lower layers are about the same width; births and deaths roughly balance (0–14 is 0.9 to 1.15 times 15–29).">穩定型（鐘型）：下面幾層差不多寬，出生和死亡大致平衡（0–14 歲是 15–29 歲的 0.9 到 1.15 倍）。</li>
+        <li data-en-html="<b>Constrictive</b> (urn-shaped): the base is narrower than the middle — fewer babies every year, and the population is ageing and will shrink (0–14 is less than 0.9 times 15–29). Taiwan has had this shape for years.">收縮型（壺型、甕型）：底部比中間窄，每年出生的人越來越少，人口老化、之後會減少（0–14 歲不到 15–29 歲的 0.9 倍）。臺灣已經是這一型好多年了。</li>
+      </ul>
+      <h3 data-en="How the projection works">推估是怎麼算的</h3>
+      <p data-en-html="Demographers use the <b>cohort-component method</b>: follow each birth year (cohort) separately and add up three components every year — survival, births and migration.">人口學家用「世代組成法」：把每一個出生年（世代）分開來跟，每一年加上三個組成：存活、出生、遷移。</p>
+      <div class="formula">\[ P_{a+1}(t+1) = P_a(t)\,\frac{L_{a+1}}{L_a} + M_{a+1},\qquad B(t) = \sum_a f_a\,\bar F_a \]</div>
+      <ul>
+        <li data-en-html="\(P_a(t)\): people aged \(a\) at the end of year \(t\). \(L_a\): from a life table, the years lived at age \(a\) — the ratio \(L_{a+1}/L_a\) is the chance of reaching the next age.">\(P_a(t)\)：第 \(t\) 年年底 \(a\) 歲的人數。\(L_a\)：生命表裡在 \(a\) 歲這一年平均活過的年數；\(L_{a+1}/L_a\) 就是活到下一歲的機率。</li>
+        <li data-en-html="\(B(t)\): births, from the age-specific birth rates \(f_a\) and the number of women of each age \(\bar F_a\) (average of the start and end of the year). The total fertility rate is \(\sum f_a\). Boys and girls are split by the sex ratio at birth.">\(B(t)\)：出生數，由各年齡的生育率 \(f_a\) 乘上該年齡的婦女人數 \(\bar F_a\)（年初與年底的平均）。總生育率就是 \(\sum f_a\)。男嬰女嬰照出生性比例分。</li>
+        <li data-en-html="\(M_a\): net migration. In <i>My own</i>, it is shared equally between men and women and spread over ages with a standard migration age curve (young adults move most).">\(M_a\)：淨遷入。在「自訂」裡，男女各半，年齡分布用標準的遷移年齡曲線（年輕人最常遷移）。</li>
+        <li data-en-html="About 2.1 children per woman replaces the parents (a little over 2, because slightly more boys are born and some girls die before they have children). This is the <b>replacement level</b>.">每位女性平均大約生 2.1 個孩子，下一代的人數才會和父母一代一樣多（比 2 多一點，因為男嬰稍多，也有少數女孩活不到生育年齡）：這叫做替代水準。</li>
+      </ul>
+      <h3 data-en="Momentum">人口慣性</h3>
+      <p data-en="A population does not react at once. A country with many young adults keeps growing for decades even after fertility falls to replacement level, because those young adults are still having children. Taiwan is in the opposite situation: there are now far fewer children than parents, so even if fertility jumped back to 2.1 tomorrow, the population would still shrink for a long time. Try it.">人口的改變不會馬上發生。一個年輕人很多的國家，就算生育率降到替代水準，人口仍會再增加好幾十年，因為那些年輕人還在生孩子。臺灣剛好相反：現在孩子比父母一代少很多，就算明天生育率回到 2.1，人口仍會減少很久。可以自己試試看。</p>
+      <h3 data-en="Taiwan in numbers">臺灣的數字</h3>
+      <div class="tablewrap"><table>
+        <tr><th data-en="Year (end)">年（年底）</th><th data-en="Population">人口</th><th data-en="Aged 0–14">0–14 歲</th><th data-en="Aged 65+">65 歲以上</th><th data-en="Fertility rate">總生育率</th></tr>
+        <tr><td>1992</td><td data-en="20.80 million">2,080 萬</td><td>25.8%</td><td>6.8%</td><td>1.73</td></tr>
+        <tr><td>2025</td><td data-en="23.30 million">2,330 萬</td><td>11.5%</td><td>20.1%</td><td>0.695</td></tr>
+        <tr><td data-en="2050 (projection)">2050（推估）</td><td data-en="18.78 million">1,878 萬</td><td>5.1%</td><td>41.0%</td><td>0.65</td></tr>
+        <tr><td data-en="2075 (projection)">2075（推估）</td><td data-en="12.15 million">1,215 萬</td><td>4.8%</td><td>52.9%</td><td>0.80</td></tr>
+      </table></div>
+      <ul>
+        <li data-en="Taiwan became an ageing society (65+ above 7%) in 1993, an aged society (14%) in 2018, and at the end of 2025 the 65+ share reached 20.06%: a super-aged society.">臺灣 1993 年成為高齡化社會（65 歲以上超過 7%），2018 年成為高齡社會（14%），2025 年底 65 歲以上占 20.06%，進入超高齡社會。</li>
+        <li data-en="Look for the notches: births in the Year of the Dragon (1976, 1988, 2000, 2012) stand out above their neighbours, while 1998 and 2010 (Years of the Tiger) are visibly low. This is usually put down to the popular preference for dragon babies and against tiger years.">找找看長條上的凹凸：龍年（1976、1988、2000、2012）出生的人明顯比前後年多，虎年（1998、2010）明顯比較少。一般認為和民間偏好龍年、避開虎年的習俗有關。</li>
+        <li data-en="These are registered residents (citizens with household registration). Foreign workers and students living in Taiwan are not included.">這裡的人口是戶籍人口（設有戶籍的國民），不包括在臺灣工作或讀書的外籍人士。</li>
+      </ul>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Compare 1992 with 2025 and find the generation born around 1976 in both pictures.">比較 1992 年和 2025 年，在兩張圖裡找到 1976 年前後出生的那一群人。</li>
+        <li data-en="Set the fertility rate to 2.1 with no migration. How long does it take for the population to stop shrinking?">把總生育率設成 2.1、淨遷入設成 0：要過多久人口才不再減少？</li>
+        <li data-en="How many people would have to move in every year to keep the population at 23 million with today's fertility?">用現在的生育率，每年要淨移入多少人，人口才能維持在 2,300 萬？</li>
+        <li data-en="In Stable population, change only the fertility rate. When is the dependency ratio lowest?">在「穩定人口」只改生育率：什麼時候扶養比最低？</li>
+      </ul>
+      <h3 data-en="Method and simplifications">方法與簡化</h3>
+      <ul>
+        <li data-en="Single years of age 0–99 plus an open group 100+, one-year steps. Deaths in 2025 come from the Ministry of the Interior's abridged life table (to age 84) and the National Development Council's projection beyond that.">單一年齡 0–99 歲加上 100 歲以上一組，每次推一年。2025 年的死亡機率 0–84 歲用內政部簡易生命表，85 歲以上用國發會推估的值。</li>
+        <li data-en-html="<i>Official projection</i> uses the medium-variant fertility, sex ratio, net migration and death probabilities of each year (death probabilities between published years are interpolated). Our results are within 0.2% of the published totals up to 2050 and within about 2% in 2075; the small difference comes from the shape of the birth-age curve and the age pattern of migration, which are not published.">「國發會中推估」逐年使用中推估的總生育率、出生性比例、社會增加與死亡機率（公布年份之間內插）。算出的總人口到 2050 年和國發會公布值相差 0.2% 以內，2075 年相差約 2%；差異來自生育年齡分布與遷移年齡分布（國發會沒有公布）。</li>
+        <li data-en-html="<i>My own</i> keeps the 2025 birth-age pattern and scales it to your fertility rate. Life expectancy is changed with the Brass logit model, which shifts the whole survival curve in a realistic way.">「自訂」保持 2025 年各年齡生育率的比例，整體乘到你設定的總生育率；平均壽命用 Brass 邏輯斯模型調整（把整條存活曲線一起平移，形狀比較接近真實世界）。</li>
+        <li data-en="Migration age pattern: the standard model migration schedule of Rogers and Castro (1981).">遷移的年齡分布：Rogers 與 Castro（1981）的標準遷移年齡曲線。</li>
+        <li data-en="A projection is not a prediction: it shows what would happen if the assumptions held.">推估不是預言：它說的是「如果假設成立，會發生什麼事」。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Population (Bc-Ⅴ-1 to Bc-Ⅴ-3); elective Social and Environmental Issues (Ka-Ⅴ population doubling time and demographic dividend).">課綱對應：高中地理・人口（地 Bc-Ⅴ-1～3）；選修社會環境議題（地 Ka-Ⅴ 人口倍時與人口紅利）</li>
+        <li data-en="Population by single year of age and sex, end of 1992, 2000, 2010, 2020, 2024, 2025: Department of Statistics, Ministry of the Interior (data.gov.tw dataset 14226). Open Government Data License, version 1.0.">各年底單一年齡人口（1992、2000、2010、2020、2024、2025 年）：內政部統計處「人口數單一年齡組─按性別、區域別分」（政府資料開放平臺 14226）。政府資料開放授權條款－第 1 版。</li>
+        <li data-en="Fertility 2025: Ministry of the Interior, age-specific fertility rates (dataset 14238) and births by mother's single year of age (100321) and by date of occurrence (146626). Open Government Data License, version 1.0.">2025 年生育率：內政部統計處「育齡婦女生育率」（14238）、戶政司「嬰兒出生數按性別、生母單一年齡分」（100321）與「按發生」（146626）。政府資料開放授權條款－第 1 版。</li>
+        <li data-en="Mortality 2025: Ministry of the Interior, abridged life table for Taiwan, 2025 (published under the Ministry's open data declaration).">2025 年死亡機率：內政部「114 年全國簡易生命表」（依內政部政府網站資料開放宣告）。</li>
+        <li data-en="Projection: National Development Council, Population Projections for the Republic of China (Taiwan) 2026–2075, medium variant (datasets 6101, 39490–39493). Open Government Data License, version 1.0.">推估：國家發展委員會「中華民國人口推估（2026 年至 2075 年）」中推估（政府資料開放平臺 6101、39490–39493）。政府資料開放授權條款－第 1 版。</li>
+        <li data-en="A. Rogers and L. J. Castro (1981), Model Migration Schedules, IIASA Research Report RR-81-30.">A. Rogers、L. J. Castro（1981），《Model Migration Schedules》，IIASA Research Report RR-81-30。</li>
+        <li data-en="W. Brass (1971), On the scale of mortality, in Biological Aspects of Demography.">W. Brass（1971），〈On the scale of mortality〉，收於《Biological Aspects of Demography》。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/population-pyramid-data.js"></script>
+  <script src="js/population-pyramid-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/population-pyramid.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="population-pyramid"></script>
+  <script src="js/missions/population-pyramid.js"></script>
+  <script src="js/stats.js" data-module="population-pyramid"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

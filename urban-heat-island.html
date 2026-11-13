@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Urban Heat Island | Astro Ni Science Lab">都市熱島｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 都市熱島頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root { --uh-zero: #eef0e4; --uh-cold: #3f74b8; --uh-river: #4f8fd6; --uh-park: #2f9a55; --uh-edge: #4a4038; --uh-probe: #1d2a44; --uh-ground: #b9b19c; --uh-bldg: #8d8a86; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --uh-zero: #283230; --uh-cold: #6aa6f0; --uh-river: #5aa0ea; --uh-park: #5cd08a; --uh-edge: #e8dccb; --uh-probe: #f4f6ff; --uh-ground: #5a5446; --uh-bldg: #77767a; }
+    }
+    :root[data-theme="dark"] { --uh-zero: #283230; --uh-cold: #6aa6f0; --uh-river: #5aa0ea; --uh-park: #5cd08a; --uh-edge: #e8dccb; --uh-probe: #f4f6ff; --uh-ground: #5a5446; --uh-bldg: #77767a; }
+    #cv { aspect-ratio: 5 / 4; touch-action: none; cursor: crosshair; }
+    @media (max-width: 600px) { #cv { aspect-ratio: 1 / 0.92; } }
+    @media (min-width: 881px) and (min-height: 900px) { .uh .stage { position: sticky; top: 12px; } }
+    .uh button { min-height: 44px; }
+    .uh [hidden] { display: none !important; }
+    .uh .slider input[type="range"] { height: 28px; margin: 0; }
+    .uh .card { min-width: 0; overflow-wrap: anywhere; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
+    .row button { flex: 1 1 auto; }
+    dl.readout dd.big { font-weight: 700; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#population&quot;>Geography · Population and Settlements</a> / Urban heat island"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#population">地理・人口與聚落</a> ／ 都市熱島</nav>
+      <h1 data-en="Urban Heat Island">都市熱島</h1>
+      <p data-en="On a clear, calm night a city can be several degrees warmer than the fields around it: asphalt, concrete and roofs store the day's sunshine and give it back after dark, and cars, air conditioners and factories add their own heat. Build a city, change the wind, the clouds and the hour, and try parks, green space and cool roofs to bring the temperature down.">晴朗無風的夜裡，城市可以比周圍的田野暖好幾度：柏油、水泥和屋頂白天存下陽光，天黑後再慢慢放出來，汽車、冷氣和工廠也一直在排熱。蓋一座城市，改變風、雲和時刻，再試試公園、綠地和涼屋頂能讓溫度降多少。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: raise the wind speed slowly and watch the warm island lean to the east and then disappear.">試試看：慢慢加大風速，看溫暖的島先往東偏，最後消失。</p>
+    <div class="lab uh" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
+            <button type="button" data-view="map" aria-pressed="true" data-en="Map">溫度地圖</button>
+            <button type="button" data-view="surface" aria-pressed="false" data-en="3D">立體溫度</button>
+            <button type="button" data-view="profile" aria-pressed="false" data-en="Profile">東西剖面</button>
+            <button type="button" data-view="oke" aria-pressed="false" data-en="Population" title="熱島強度和都市人口的關係" data-en-title="How heat-island intensity depends on population">人口與強度</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="都市熱島的溫度地圖；點一下放溫度計" data-en-aria-label="Temperature map of the urban heat island; tap to place a thermometer"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="cvHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout">
+            <dt data-en="Heat-island intensity" title="城裡最熱的地方比郊區高多少" data-en-title="How much warmer the hottest spot is than the countryside">熱島強度</dt><dd id="rMax" class="big">—</dd>
+            <dt data-en="City centre">市中心</dt><dd id="rCenter">—</dd>
+            <dt data-en="Countryside">郊區氣溫</dt><dd id="rRural">—</dd>
+            <dt data-en="Thermometer">溫度計</dt><dd id="rProbe">—</dd>
+            <dt data-en="Hottest spot">最熱的地方</dt><dd id="rPeak">—</dd>
+            <dt data-en="Area ≥ 2 °C warmer">溫差 ≥ 2 °C 的範圍</dt><dd id="rArea">—</dd>
+            <dt data-en="Critical wind speed" title="風速超過它，熱島消失" data-en-title="Above this wind speed the heat island disappears">臨界風速</dt><dd id="rUc">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="City">城市</h2>
+          <div class="slider"><label for="hP" data-en="Population (10,000s)">人口（萬人）</label><output></output>
+            <input id="hP" type="range" min="0" max="1000" step="1" value="686" data-decimals="1"></div>
+          <div class="row">
+            <button type="button" id="parkBtn" data-en="Plant a park at the thermometer">在溫度計的位置種公園</button>
+            <button type="button" id="clearBtn" data-en="Clear all parks">清除公園</button>
+          </div>
+          <p class="hint" id="parkHint"></p>
+        </section>
+        <section class="card">
+          <h2 data-en="Weather">天氣</h2>
+          <div class="slider"><label for="hWind" data-en="West wind (m/s)">西風風速（m/s）</label><output></output>
+            <input id="hWind" type="range" min="0" max="10" step="0.5" value="1" data-decimals="1"></div>
+          <div class="slider"><label for="hHour" data-en="Time of day">時刻</label><output></output>
+            <input id="hHour" type="range" min="0" max="24" step="1" value="21" data-decimals="0"></div>
+          <div class="slider"><label for="hCloud" data-en="Cloud cover (tenths)" title="0 是晴朗無雲，10 是滿天雲" data-en-title="0 is a clear sky, 10 is overcast">雲量（成）</label><output></output>
+            <input id="hCloud" type="range" min="0" max="10" step="1" value="3" data-decimals="0"></div>
+        </section>
+        <section class="card">
+          <h2 data-en="Cooling the city">降溫對策</h2>
+          <div class="slider"><label for="hGreen" data-en="Extra green space (%)" title="把不透水的地面換成草地、行道樹" data-en-title="Replace paved ground with grass and street trees">增加綠地（%）</label><output></output>
+            <input id="hGreen" type="range" min="0" max="50" step="5" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="hCool" data-en="Cool roofs (%)" title="淺色、反光的屋頂，白天吸收的熱比較少" data-en-title="Light, reflective roofs absorb less heat by day">涼屋頂（%）</label><output></output>
+            <input id="hCool" type="range" min="0" max="100" step="10" value="0" data-decimals="0"></div>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Why cities are warmer">城市為什麼比較暖</h3>
+      <ul>
+        <li data-en="Asphalt, concrete and brick soak up sunshine by day and release it at night; tall buildings trap the heat between them and block the view of the cold night sky.">柏油、水泥和磚白天吸收大量陽光，夜裡再放出來；高樓之間把熱困住，也擋住了向寒冷夜空散熱的視野。</li>
+        <li data-en="Paved ground lets rain run off at once, so little water is left to evaporate, while fields and trees spend much of their energy evaporating water instead of heating the air.">不透水的地面讓雨水馬上流走，留下來蒸發的水很少；田野和樹木則把很多能量用在蒸發水，而不是加熱空氣。</li>
+        <li data-en="Traffic, air conditioners and factories release waste heat directly into the city air.">汽車、冷氣和工廠直接把廢熱排進城裡的空氣。</li>
+      </ul>
+      <h3 data-en="How big is the island?">熱島有多強</h3>
+      <p data-en-html="Comparing cities on clear, calm nights, T. R. Oke found that the largest urban–rural difference grows with the logarithm of the population. For European cities \[\Delta T_{\max} \approx 2.01 \log_{10} P - 4.06 \;(^\circ\mathrm{C}).\] Ten times as many people adds only about 2 °C. Wind mixes city air with country air; above a critical wind speed of about \(u_c \approx 3.4 \log_{10} P - 11.6\) m/s, the island can no longer be seen.">比較許多城市晴朗無風的夜晚，T. R. Oke 發現城鄉最大的溫差隨人口的對數增加。歐洲城市大約是 \[\Delta T_{\max} \approx 2.01 \log_{10} P - 4.06 \;(^\circ\mathrm{C})\] 人口多十倍，熱島只強大約 2 °C。風會把城裡和郊外的空氣混在一起；風速超過臨界風速，大約 \(u_c \approx 3.4 \log_{10} P - 11.6\) m/s，就看不出熱島了。</p>
+      <h3 data-en="The model on this page">本頁的模型</h3>
+      <p data-en-html="Each 0.5 km cell gets a heating rate \(S\) from paved surfaces and waste heat, minus cooling by parks, green space and the river. The extra temperature \(T\) then spreads by turbulent mixing (\(K\)), is lost to the atmosphere (\(\lambda\)) and is carried east by the wind (\(u\)): \[\lambda T - K \nabla^2 T + u\,\frac{\partial T}{\partial x} = S.\] The page solves this equation, then scales the result so that the plain city matches Oke's formula, reduced for wind, cloud and the hour of the day.">每一格（0.5 km）有一個加熱量 \(S\)：來自不透水面與廢熱，減去公園、綠地和河流的降溫。多出來的溫度 \(T\) 會被亂流混開（\(K\)）、散失到大氣（\(\lambda\)）、被風往東帶（\(u\)）：\[\lambda T - K \nabla^2 T + u\,\frac{\partial T}{\partial x} = S\] 頁面解這個方程，再依 Oke 的公式定出大小，並依風、雲量和時刻打折。</p>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Compare 2 p.m. and 2 a.m. Why is the island strongest at night, when the city is not actually being heated by the sun?">比較下午 2 點和凌晨 2 點：太陽已經下山了，熱島為什麼反而最強？</li>
+        <li data-en="Increase the wind. Where does the hottest spot go, and how warm are the fields east of the city?">加大風速：最熱的地方跑到哪裡？城市東邊的田野有多暖？</li>
+        <li data-en="Place three parks. Where do they help most: in the centre, or where the heat has drifted?">種三座公園：放在市中心比較有效，還是放在熱漂過去的地方？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="The city is imaginary: round, on flat land, with one river and a steady west wind. Real cities have hills, coasts, sea breezes and several centres.">城市是虛構的：圓形、平地、一條河、穩定的西風。真實的城市有山、海岸、海風和好幾個中心。</li>
+        <li data-en="The urban area grows with population at a fixed average density of 6,000 people per km².">都市的面積依人口計算，平均人口密度固定為每 km² 6,000 人。</li>
+        <li data-en="The weakening by wind is taken as linear up to the critical wind speed, and the daily cycle and cloud effect are smooth factors, not a full energy balance.">風造成的減弱簡化成到臨界風速為止的直線；一天的變化和雲的影響是平滑的係數，不是完整的能量收支。</li>
+        <li data-en="Oke's formula is an empirical fit to measurements on clear, calm nights; it describes typical cities, not any particular one, and real values scatter around it by a degree or two.">Oke 的公式是從晴朗無風夜晚的觀測整理出來的經驗式，描述的是一般的城市，不是哪一座特定的城市；真實的數值會在它上下差一、兩度。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography, urbanisation and urban problems.">課綱對應：高中地理・都市化與都市問題。</li>
+        <li data-en="T. R. Oke (1973), City size and the urban heat island, Atmospheric Environment 7, 769–779.">T. R. Oke（1973），City size and the urban heat island，Atmospheric Environment 7，769–779。</li>
+        <li data-en="T. R. Oke and F. G. Hannell (1970), The form of the urban heat island in Hamilton, Canada, WMO Technical Note 108.">T. R. Oke 與 F. G. Hannell（1970），The form of the urban heat island in Hamilton, Canada，WMO Technical Note 108。</li>
+        <li data-en="The city, its land cover and all temperatures are generated by the model on this page; no outside data are used.">城市、土地利用和所有溫度都由頁面上的模型產生，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/urban-heat-island-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/urban-heat-island.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="urban-heat-island"></script>
+  <script src="js/missions/urban-heat-island.js"></script>
+  <script src="js/stats.js" data-module="urban-heat-island"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

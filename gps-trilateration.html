@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="GPS Trilateration and Positioning Error | Astro Ni Science Lab">GPS 三邊定位與定位誤差｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* GPS 頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --gp-sat: #d98a00; --gp-off: #9aa0a8; --gp-sig: #1f9d6b; --gp-block: #c0392b; --gp-mp: #e67e22;
+      --gp-sea1: #cfe3f5; --gp-sea2: #8fb8e0; --gp-land: #d9e4b8; --gp-land2: #b7c98a; --gp-orbit: #6b7f99;
+      --gp-a: #d0342c; --gp-b: #2f6fd0; --gp-c: #1f9d6b; --gp-d: #8e44ad; --gp-e: #c27c0e;
+      --gp-rx: #1b1f24; --gp-fix: #e0a100; --gp-wall: #8c7b6b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --gp-sat: #ffc247; --gp-off: #5d636c; --gp-sig: #3cd197; --gp-block: #ff6b5e; --gp-mp: #ffa04d;
+        --gp-sea1: #17304a; --gp-sea2: #0e2236; --gp-land: #3e4f35; --gp-land2: #2f3d29; --gp-orbit: #8fa3bf;
+        --gp-a: #ff6b5e; --gp-b: #6aa8ff; --gp-c: #3cd197; --gp-d: #c592e6; --gp-e: #ffb347;
+        --gp-rx: #f2f4f7; --gp-fix: #ffd34d; --gp-wall: #7d6e61;
+      }
+    }
+    :root[data-theme="dark"] {
+      --gp-sat: #ffc247; --gp-off: #5d636c; --gp-sig: #3cd197; --gp-block: #ff6b5e; --gp-mp: #ffa04d;
+      --gp-sea1: #17304a; --gp-sea2: #0e2236; --gp-land: #3e4f35; --gp-land2: #2f3d29; --gp-orbit: #8fa3bf;
+      --gp-a: #ff6b5e; --gp-b: #6aa8ff; --gp-c: #3cd197; --gp-d: #c592e6; --gp-e: #ffb347;
+      --gp-rx: #f2f4f7; --gp-fix: #ffd34d; --gp-wall: #7d6e61;
+    }
+    #cv { aspect-ratio: 4 / 3; touch-action: none; cursor: crosshair; }
+    #cv.rot { cursor: grab; }
+    @media (max-width: 600px) { #cv.tall { aspect-ratio: 1 / 1; } }
+    @media (min-width: 881px) and (min-height: 900px) { .gp .stage { position: sticky; top: 12px; } }
+    .gp button { min-height: 44px; }
+    .gp [hidden] { display: none !important; }
+    .gp .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 4px; }
+    .chips button { flex: 1 1 auto; min-height: 44px; min-width: 44px; padding: 4px 8px; font-size: calc(14px * var(--fs, 1)); font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .chips button i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+    .chips button[aria-pressed="true"] { border-color: currentColor; background: var(--accent-soft); }
+    .chips button[aria-pressed="false"] { opacity: 0.6; color: var(--muted); text-decoration: line-through; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
+    .row button { flex: 1 1 auto; }
+    dl.readout dd.big { font-weight: 700; }
+    dl.readout dd.ok { color: var(--gp-sig); font-weight: 700; }
+    dl.readout dd.no { color: var(--gp-block); font-weight: 700; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#gis&quot;>Geography · Geospatial Technology</a> / GPS"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#gis">地理・空間資訊科技</a> ／ GPS 三邊定位</nav>
+      <h1 data-en="GPS Trilateration and Positioning Error">GPS 三邊定位與定位誤差</h1>
+      <p data-en="A GPS receiver never sees a satellite; it only times radio signals. Time × the speed of light gives a distance, and a few distances pin down a point. But the receiver's cheap clock is off, so every distance is wrong by the same amount — which is why it needs one more satellite than you might expect. Then the layout of the satellites in the sky decides how much the small errors grow.">GPS 接收機看不到衛星，它只量無線電訊號飛了多久。時間 × 光速 = 距離，幾個距離就能決定一個點。可是接收機裡便宜的時鐘不準，每一個距離都錯了同樣的量，所以要比想像中多一顆衛星。再來，衛星在天上排得好不好，決定小小的誤差會被放大多少。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: in the tower practice, drag the clock correction until the three circles meet at one point. Then look up at the satellites.">試試看：在「平面練習」裡拖動時鐘修正，讓三個圓交在同一點；再到「天上的衛星」看看真正的 GPS。</p>
+    <div class="lab gp" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="練習" data-en-aria-label="Mode" id="modeSeg">
+            <button type="button" data-mode="plane" aria-pressed="true" data-en="Tower practice" title="平面上的發射塔：用圓交會" data-en-title="Radio towers on a plane: intersecting circles">平面練習</button>
+            <button type="button" data-mode="sky" aria-pressed="false" data-en="Satellites" title="24 顆衛星的星系" data-en-title="A 24-satellite constellation">天上的衛星</button>
+          </div>
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg" hidden>
+            <button type="button" data-view="globe" aria-pressed="true" data-en="Earth">地球</button>
+            <button type="button" data-view="skyplot" aria-pressed="false" data-en="Sky plot" title="從測站往上看的天空" data-en-title="The sky seen from the station">天空圖</button>
+            <button type="button" data-view="fix" aria-pressed="false" data-en="Fixes" title="重複定位很多次，每一次的位置" data-en-title="The position from many repeated fixes">定位點</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="GPS 定位的畫面" data-en-aria-label="GPS positioning view"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="cvHint"></p>
+      </div>
+
+      <aside class="panel">
+        <!-- 平面練習 -->
+        <section class="card" data-for="plane">
+          <h2 data-en="Radio towers">發射塔</h2>
+          <div class="chips" role="group" aria-label="使用的發射塔" data-en-aria-label="Towers in use" id="towerChips">
+            <button type="button" data-t="0" aria-pressed="true" style="color:var(--gp-a)"><i style="background:var(--gp-a)"></i>A</button>
+            <button type="button" data-t="1" aria-pressed="true" style="color:var(--gp-b)"><i style="background:var(--gp-b)"></i>B</button>
+            <button type="button" data-t="2" aria-pressed="true" style="color:var(--gp-c)"><i style="background:var(--gp-c)"></i>C</button>
+            <button type="button" data-t="3" aria-pressed="false" style="color:var(--gp-d)"><i style="background:var(--gp-d)"></i>D</button>
+            <button type="button" data-t="4" aria-pressed="false" style="color:var(--gp-e)"><i style="background:var(--gp-e)"></i>E</button>
+          </div>
+          <div class="slider"><label for="pTau" data-en="Receiver clock error τ (μs)" title="接收機的時鐘比標準時間慢了多少（負值＝快了）；每一個距離都多算 c τ" data-en-title="How far the receiver clock lags (negative = runs fast); every distance gains c τ">接收機時鐘偏差 τ（μs）</label><output></output>
+            <input id="pTau" type="range" min="-40" max="40" step="0.5" value="12" data-decimals="1"></div>
+          <div class="slider"><label for="pGuess" data-en="Your clock correction τ̂ (μs)" data-en-html="Your clock correction \(\hat\tau\) (μs)" title="你猜的時鐘偏差；圓的半徑 = 量到的距離 − c × 這個值" data-en-title="Your guess of the clock error; circle radius = measured distance − c × this">時鐘修正 \(\hat\tau\)（μs）</label><output></output>
+            <input id="pGuess" type="range" min="-40" max="40" step="0.1" value="0" data-decimals="2"></div>
+          <div class="slider"><label for="pNoise" data-en="Distance noise σ (m)" title="每座塔的距離另外有一點隨機誤差" data-en-title="Each tower's distance also has a small random error">距離雜訊 σ（m）</label><output></output>
+            <input id="pNoise" type="range" min="0" max="500" step="10" value="0" data-decimals="0"></div>
+          <div class="row">
+            <button type="button" id="pSolve" data-en="Let the receiver solve it">讓接收機自己解</button>
+          </div>
+          <p class="hint" data-en="Drag the hiker on the map (or use the arrow keys) to move the receiver.">拖曳地圖上的登山客（或用方向鍵）移動接收機。</p>
+        </section>
+        <section class="card" data-for="plane">
+          <h2 data-en="Result">結果</h2>
+          <dl class="readout">
+            <dt data-en="Do the circles meet?" title="最小平方點到每個圓的距離（均方根）" data-en-title="RMS distance from the best point to the circles">圓交在同一點嗎？</dt><dd id="rMiss" class="big">—</dd>
+            <dt data-en="Position error">位置誤差</dt><dd id="rErr">—</dd>
+            <dt data-en="Distance error per microsecond" title="光一微秒走多遠" data-en-title="How far light travels in one microsecond">每 1 μs 的距離</dt><dd>≈ 300 m</dd>
+            <dt data-en="Clock error found">解出的時鐘偏差</dt><dd id="rTau">—</dd>
+          </dl>
+        </section>
+
+        <!-- 天上的衛星 -->
+        <section class="card" data-for="sky" hidden>
+          <h2 data-en="Station and time">測站與時間</h2>
+          <div class="slider"><label for="sLat" data-en="Latitude of the imaginary station (°)" title="虛擬測站；不使用你的位置" data-en-title="An imaginary station; your own location is never used">虛擬測站的緯度（°）</label><output></output>
+            <input id="sLat" type="range" min="-90" max="90" step="0.5" value="23.5" data-decimals="1"></div>
+          <div class="slider"><label for="sLon" data-en="Longitude (°)">經度（°）</label><output></output>
+            <input id="sLon" type="range" min="-180" max="180" step="1" value="121" data-decimals="1"></div>
+          <div class="slider"><label for="sT" data-en="Time (minutes)" title="從 0 分開始經過的時間；衛星繞一圈約 718 分鐘" data-en-title="Minutes since 0; a satellite circles in about 718 minutes">時間（分鐘）</label><output></output>
+            <input id="sT" type="range" min="0" max="2880" step="1" value="0" data-decimals="0"></div>
+          <div class="row">
+            <button type="button" id="play" aria-pressed="false" data-en="▶ Run time">▶ 時間前進</button>
+          </div>
+        </section>
+        <section class="card" data-for="sky" hidden>
+          <h2 data-en="Surroundings and errors">環境與誤差</h2>
+          <div class="slider"><label for="sMask" data-en="Elevation mask (°)" title="太低的衛星訊號穿過很厚的大氣，又容易被地形擋住，所以不用" data-en-title="Satellites lower than this are not used">仰角遮罩（°）</label><output></output>
+            <input id="sMask" type="range" min="0" max="40" step="1" value="10" data-decimals="0"></div>
+          <div class="slider"><label for="sWall" data-en="Street canyon: rooftop angle (°)" title="站在南北向的街上，兩側大樓頂端的仰角；0 = 空曠" data-en-title="Standing in a north–south street: elevation of the rooftops on both sides; 0 = open sky">街谷：兩側大樓頂的仰角（°）</label><output></output>
+            <input id="sWall" type="range" min="0" max="75" step="1" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="sMp" data-en="Multipath: extra path (m)" title="低仰角的訊號先撞到地面或牆再進接收機，路徑變長；仰角越低越多" data-en-title="Low signals bounce off the ground or walls first and travel farther">多路徑：反射多走的距離（m）</label><output></output>
+            <input id="sMp" type="range" min="0" max="30" step="1" value="0" data-decimals="0"></div>
+          <div class="slider"><label for="sSig" data-en="Range error σ (m)" title="每個距離的隨機誤差（大氣、衛星時鐘與軌道等）" data-en-title="Random error of each distance (atmosphere, satellite clock and orbit…)">距離誤差 σ（m）</label><output></output>
+            <input id="sSig" type="range" min="0.5" max="20" step="0.5" value="3" data-decimals="1"></div>
+          <div class="segw" role="group" aria-label="接收機的時鐘" data-en-aria-label="Receiver clock" id="clockSeg">
+            <button type="button" data-clock="solve" aria-pressed="true" data-en="Solve the clock too">連時鐘一起解</button>
+            <button type="button" data-clock="assume" aria-pressed="false" data-en="Assume the clock is right">假設時鐘是準的</button>
+          </div>
+          <div class="slider" id="tauRow" hidden><label for="sTau" data-en="Actual clock error (μs)">時鐘其實偏了（μs）</label><output></output>
+            <input id="sTau" type="range" min="-1" max="1" step="0.01" value="0.2" data-decimals="3"></div>
+          <div class="row">
+            <button type="button" id="useAll" data-en="Use every satellite">每一顆都用</button>
+          </div>
+          <p class="hint" data-en="On the sky plot, tap a satellite to stop or start using it.">在天空圖上點一顆衛星，可以不用它或重新用它。</p>
+        </section>
+        <section class="card" data-for="sky" hidden>
+          <h2 data-en="Fix quality">定位品質</h2>
+          <dl class="readout">
+            <dt data-en="Satellites in view / used">看得到／用到的衛星</dt><dd id="rSats" class="big">—</dd>
+            <dt data-en="PDOP" title="位置精度因子：距離誤差被放大成位置誤差的倍數" data-en-title="Position dilution of precision">PDOP</dt><dd id="rP">—</dd>
+            <dt data-en="HDOP / VDOP" title="水平／垂直精度因子" data-en-title="Horizontal / vertical dilution of precision">HDOP／VDOP</dt><dd id="rHV">—</dd>
+            <dt data-en="Horizontal error ≈ HDOP × σ">水平誤差 ≈ HDOP × σ</dt><dd id="rH">—</dd>
+            <dt data-en="Systematic offset (horizontal / vertical)" title="多路徑與時鐘造成的固定偏移，重複量再多次也平均不掉" data-en-title="A fixed shift from multipath or the clock; averaging cannot remove it">固定偏移（水平／垂直）</dt><dd id="rBias">—</dd>
+          </dl>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The science behind it">背後的科學</h2>
+      <h3 data-en="Distance from time">用時間量距離</h3>
+      <p data-en-html="Each satellite broadcasts the time its signal left. The receiver notes when it arrived; the difference times the speed of light \(c\) is the distance. Light travels about 300 m in one microsecond, so the clocks must agree to a few billionths of a second. The satellites carry atomic clocks; the receiver does not.">每顆衛星都廣播訊號發出的時間，接收機記下收到的時間，兩者相減再乘上光速 \(c\) 就是距離。光一微秒走大約 300 公尺，所以時間要準到十億分之幾秒。衛星上有原子鐘，接收機裡沒有。</p>
+      <h3 data-en="Why four satellites?">為什麼要四顆衛星？</h3>
+      <p data-en-html="If the receiver clock lags by \(\tau\), every measured distance is too long by the same \(c\tau\). These are called pseudoranges: \[\rho_i = \sqrt{(x_i - x)^2 + (y_i - y)^2 + (z_i - z)^2} + c\tau \] There are four unknowns, \(x, y, z\) and \(\tau\), so four satellites are needed. On a flat map with towers there are three unknowns (\(x, y, \tau\)) and three towers are needed. In the tower practice you solve for \(\tau\) by hand: only the right correction makes all the circles meet at one point.">如果接收機的時鐘慢了 \(\tau\)，每一個量到的距離都多了同樣的 \(c\tau\)，叫做虛擬距離： \[\rho_i = \sqrt{(x_i - x)^2 + (y_i - y)^2 + (z_i - z)^2} + c\tau \] 未知數有 \(x, y, z, \tau\) 四個，所以要四顆衛星。平面上的發射塔只有 \(x, y, \tau\) 三個未知數，要三座塔。在平面練習裡，你用手把 \(\tau\) 解出來：只有修正對了，所有的圓才會交在同一點。</p>
+      <h3 data-en="Geometry: dilution of precision">幾何精度因子（DOP）</h3>
+      <p data-en-html="With more satellites than unknowns, the receiver takes the least-squares solution. Each row of the geometry matrix \(G\) holds minus the unit vector toward a satellite (east, north, up) and a 1 for the clock. With \(Q = (G^\mathsf{T} G)^{-1}\): \[\text{PDOP} = \sqrt{Q_{EE} + Q_{NN} + Q_{UU}},\quad \text{HDOP} = \sqrt{Q_{EE} + Q_{NN}}\] \[\sigma_\text{position} \approx \text{DOP} \times \sigma_\text{range}\] Satellites spread around the sky give small DOP; satellites bunched together give a large one. All the satellites lie above the horizon, so the height is always less certain than the horizontal position (VDOP &gt; HDOP).">衛星比未知數多時，接收機取最小平方解。幾何矩陣 \(G\) 的每一列是指向衛星的單位向量（東、北、天）取負號，再加上時鐘的 1。令 \(Q = (G^\mathsf{T} G)^{-1}\)： \[\text{PDOP} = \sqrt{Q_{EE} + Q_{NN} + Q_{UU}},\quad \text{HDOP} = \sqrt{Q_{EE} + Q_{NN}}\] \[\sigma_\text{位置} \approx \text{DOP} \times \sigma_\text{距離}\] 衛星散布在天空各處，DOP 小；擠在一起，DOP 就大。衛星都在地平線以上，所以高度通常比水平位置不準（VDOP &gt; HDOP）。</p>
+      <h3 data-en="Errors that do not average out">平均不掉的誤差</h3>
+      <ul>
+        <li data-en="Random errors (atmosphere, receiver noise) scatter the fixes around the true point; averaging many fixes helps.">隨機誤差（大氣、接收機雜訊）讓定位點散在真正位置的周圍，多量幾次取平均會變好。</li>
+        <li data-en="Multipath: a signal that bounces off the ground or a wall arrives late, so its distance is always too long. That shifts every fix the same way, and averaging does not remove it.">多路徑：撞到地面或牆再進來的訊號比較晚到，距離永遠偏長。每一次定位都往同一個方向偏，平均也去不掉。</li>
+        <li data-en="Blocking: in a street canyon the buildings hide the low satellites across the street, leaving the satellites in a narrow strip along the street — and a large DOP across it.">遮蔽：在大樓之間的街谷，兩側的低仰角衛星被擋住，只剩沿著街道的一長條天空，垂直街道方向的 DOP 就變大。</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="The constellation is an ideal 24-satellite pattern (6 orbital planes, 55° inclination, radius 26,560 km), not the real satellites on any particular day. The Earth is a sphere.">衛星星系是理想的 24 顆排列（6 個軌道面、傾角 55°、半徑 26,560 km），不是某一天真實的衛星位置；地球當作球體。</li>
+        <li data-en="The station is imaginary; this page never asks for or reads your location.">測站是虛擬的；這個頁面不會要求、也不會讀取你的位置。</li>
+        <li data-en="Relativity, the ionosphere and the troposphere are folded into one random range error σ.">相對論效應、電離層與對流層的延遲，都併在一個隨機的距離誤差 σ 裡。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography elective, Geospatial Technology (global navigation satellite systems and positioning).">課綱對應：高中地理選修・空間資訊科技（全球衛星導航系統與定位）。</li>
+        <li data-en="P. Misra and P. Enge (2011), Global Positioning System: Signals, Measurements, and Performance, 2nd ed., Ganga-Jamuna Press.">P. Misra、P. Enge（2011），《Global Positioning System: Signals, Measurements, and Performance》第 2 版，Ganga-Jamuna Press。</li>
+        <li data-en="U.S. Space Force, GPS Standard Positioning Service Performance Standard (5th ed., 2020) — the nominal 24-slot constellation.">美國太空軍，《GPS Standard Positioning Service Performance Standard》（第 5 版，2020）：24 個標準軌道位置。</li>
+        <li data-en="All positions and numbers here are generated by the model on this page; no outside data are used.">本頁的位置與數字都是由頁面上的模型產生，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gps-trilateration-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/gps-trilateration.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gps-trilateration"></script>
+  <script src="js/missions/gps-trilateration.js"></script>
+  <script src="js/stats.js" data-module="gps-trilateration"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

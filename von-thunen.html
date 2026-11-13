@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Von Thünen's Rings of Farming | Astro Ni Science Lab">杜能的農業區位圈｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 杜能農業區位頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --vt-veg: #5fae3a; --vt-wood: #2c7a50; --vt-grain: #d6a42a; --vt-live: #b98457;
+      --vt-wild: #e9e4d6; --vt-river: #2f86c9; --vt-city: #5b6270; --vt-probe: #d2433c;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --vt-veg: #7fd05a; --vt-wood: #45a874; --vt-grain: #f0c04a; --vt-live: #d9a477;
+        --vt-wild: #2a2c2a; --vt-river: #5bb0f0; --vt-city: #c9cfd9; --vt-probe: #ff6b62;
+      }
+    }
+    :root[data-theme="dark"] {
+      --vt-veg: #7fd05a; --vt-wood: #45a874; --vt-grain: #f0c04a; --vt-live: #d9a477;
+      --vt-wild: #2a2c2a; --vt-river: #5bb0f0; --vt-city: #c9cfd9; --vt-probe: #ff6b62;
+    }
+    #cv { aspect-ratio: 1 / 0.8; touch-action: none; cursor: crosshair; }
+    #cv.rot { cursor: grab; }
+    @media (max-width: 560px) { #cv { aspect-ratio: 1 / 0.92; } }
+    #gr { height: calc(220px * var(--fs, 1)); aspect-ratio: auto; margin-top: 10px; cursor: crosshair; touch-action: manipulation; }
+    @media (max-width: 560px) { #gr { height: calc(210px * var(--fs, 1)); } }
+    @media (min-width: 881px) and (min-height: 940px) { .vt .stage { position: sticky; top: 12px; } }
+    .vt button { min-height: 44px; }
+    .vt [hidden] { display: none !important; }
+    .vt .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .zoomrow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .zoomrow .seg button { padding: 4px 10px; font-size: calc(13px * var(--fs, 1)); }
+    .segw.crops { display: grid; grid-template-columns: 1fr 1fr; }
+    .crops button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .segw.crops button + button { border-left: none; }
+    .segw.crops button:nth-child(2n) { border-left: 1px solid var(--border); }
+    .segw.crops button:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .crops i, .ringtab i, .legend i.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; }
+    .toggle { width: 100%; margin: 4px 0 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 600; }
+    .toggle .dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid currentColor; }
+    .toggle[aria-pressed="true"] .dot { background: currentColor; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    table.ringtab { width: 100%; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+    table.ringtab th, table.ringtab td { padding: 4px 4px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.ringtab th:first-child, table.ringtab td:first-child { text-align: left; }
+    table.ringtab th { color: var(--muted); font-weight: 600; }
+    table.ringtab td.off { color: var(--muted); }
+    table.ringtab .nm { display: inline-flex; align-items: center; gap: 6px; }
+    #reset { width: 100%; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    .notes .tablewrap { overflow-x: auto; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#economy&quot;>Geography · Industry, Transport and Globalisation</a> / Von Thünen's rings"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#economy">地理・產業、交通與全球化</a> ／ 杜能的農業區位圈</nav>
+      <h1 data-en="Von Thünen's Rings of Farming">杜能的農業區位圈</h1>
+      <p data-en="A flat plain, one city in the middle, and every farmer sells to that city. The farther away a field is, the more it costs to carry the harvest to market — so each piece of land goes to whoever can pay the most rent for it. Change the prices, yields and transport costs, add a river, and watch the rings of farming move.">一片平坦的平原，中間只有一座城市，所有農民都把收成運到城裡賣。田離城越遠，運費越貴；每一塊地最後都交給「付得起最高地租」的那一種作物。調整價格、產量和運費，再加一條河，看農業的圈怎麼移動、變形。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: tap anywhere on the map to see what grows there and why. Then switch on the river and watch the rings stretch along it.">試試看：點地圖上任何一個地方，看那裡種什麼、為什麼。再打開河流，看圈怎麼順著河拉長。</p>
+    <div class="lab vt" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
+            <button type="button" data-view="map" aria-pressed="true" data-en="Map">平面圖</button>
+            <button type="button" data-view="3d" aria-pressed="false" data-en="Rent surface (3D)" title="把每一塊地的地租畫成高度：城市最高，越遠越低" data-en-title="Draw each field's rent as height: highest at the city, lower farther out">立體地租曲面</button>
+          </div>
+          <div class="zoomrow"><span data-en="Range">範圍</span>
+            <div class="seg" role="group" aria-label="地圖範圍（中心到邊）" data-en-aria-label="Map range (centre to edge)" id="zoomSeg">
+              <button type="button" data-zoom="0" aria-pressed="true" data-en="Auto">自動</button>
+              <button type="button" data-zoom="100" aria-pressed="false">100 km</button>
+              <button type="button" data-zoom="300" aria-pressed="false">300 km</button>
+              <button type="button" data-zoom="1000" aria-pressed="false">1000 km</button>
+            </div>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="平原的地圖：中央是城市，外面一圈一圈是不同的農業；點一下看那塊地種什麼" data-en-aria-label="Map of the plain: the city in the middle and rings of farming around it; tap to see what grows there"></canvas>
+        <canvas id="gr" aria-label="地租線：每一種作物的地租隨運輸距離下降，最高的那一條決定種什麼" data-en-aria-label="Bid-rent lines: each crop's rent falls with transport distance; the highest line decides what is grown"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend">
+          <span style="color:var(--vt-veg)" data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--vt-veg)&quot;></i>Vegetables and dairy"><i class="sw" style="background:var(--vt-veg)"></i>蔬菜與牛奶</span>
+          <span style="color:var(--vt-wood)" data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--vt-wood)&quot;></i>Forestry (firewood, timber)"><i class="sw" style="background:var(--vt-wood)"></i>林木（薪柴、木材）</span>
+          <span style="color:var(--vt-grain)" data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--vt-grain)&quot;></i>Grain"><i class="sw" style="background:var(--vt-grain)"></i>穀物</span>
+          <span style="color:var(--vt-live)" data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--vt-live)&quot;></i>Livestock grazing"><i class="sw" style="background:var(--vt-live)"></i>放牧</span>
+          <span style="color:var(--muted)" data-en-html="<i class=&quot;sw&quot; style=&quot;background:var(--vt-wild);border:1px solid var(--border)&quot;></i>Wilderness (rent ≤ 0)"><i class="sw" style="background:var(--vt-wild);border:1px solid var(--border)"></i>荒野（地租 ≤ 0）</span>
+        </div>
+        <p class="hint" id="hintMap" data-en="Tap or drag on the map to move the field marker (arrow keys work too; Shift moves 10 km). In the bid-rent chart, tap a distance to put the marker that far north of the city.">點或拖曳地圖移動「這塊地」的標記（也可以用方向鍵，Shift 一次 10 公里）。在下面的地租線圖上點一個距離，標記會放在城市正北方那麼遠的地方。</p>
+        <p class="hint" id="hint3d" hidden data-en="Drag to turn the rent surface. Height is the rent a field can pay; colour is the crop that pays the most.">拖曳可以轉動地租曲面。高度是那塊地付得起的地租，顏色是付得最多的作物。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="cardCrop">
+          <h2 data-en="Crops">作物</h2>
+          <div class="segw crops" role="group" aria-label="選擇作物" data-en-aria-label="Choose a crop" id="cropSeg">
+            <button type="button" data-crop="veg" aria-pressed="true" data-en-html="<i style=&quot;background:var(--vt-veg)&quot;></i>Vegetables"><i style="background:var(--vt-veg)"></i>蔬菜牛奶</button>
+            <button type="button" data-crop="wood" aria-pressed="false" data-en-html="<i style=&quot;background:var(--vt-wood)&quot;></i>Forestry"><i style="background:var(--vt-wood)"></i>林木</button>
+            <button type="button" data-crop="grain" aria-pressed="false" data-en-html="<i style=&quot;background:var(--vt-grain)&quot;></i>Grain"><i style="background:var(--vt-grain)"></i>穀物</button>
+            <button type="button" data-crop="live" aria-pressed="false" data-en-html="<i style=&quot;background:var(--vt-live)&quot;></i>Grazing"><i style="background:var(--vt-live)"></i>放牧</button>
+          </div>
+          <div data-share-skip>
+            <button type="button" class="toggle" id="grow" aria-pressed="true"><span class="dot"></span><span id="growTxt">種植中</span></button>
+            <div class="slider"><label for="cY" data-en="Yield (t per hectare per year)" title="每公頃土地一年收成幾噸" data-en-title="Tonnes harvested from one hectare in a year">產量（噸／公頃・年）</label><output></output>
+              <input id="cY" type="range" min="0.1" max="40" step="0.1" value="20" data-decimals="2"></div>
+            <div class="slider"><label for="cP" data-en="Price in the city (per tonne)" title="在城裡的市場每噸賣多少元" data-en-title="What one tonne sells for at the city market">城裡的價格（元／噸）</label><output></output>
+              <input id="cP" type="range" min="0" max="3000" step="10" value="800" data-decimals="0"></div>
+            <div class="slider"><label for="cC" data-en="Production cost (per tonne)" title="種出一噸要花的成本（種子、肥料、工資…），不含運費" data-en-title="Cost of producing one tonne (seed, fertiliser, labour…), not counting transport">生產成本（元／噸）</label><output></output>
+              <input id="cC" type="range" min="0" max="3000" step="10" value="500" data-decimals="0"></div>
+            <div class="slider"><label for="cF" data-en="Freight (per tonne per km)" title="把一噸運一公里要多少元（走陸路）" data-en-title="Cost of carrying one tonne one kilometre over land">運費（元／噸・公里）</label><output></output>
+              <input id="cF" type="range" min="0.5" max="40" step="0.5" value="20" data-decimals="2"></div>
+          </div>
+          <dl class="readout">
+            <dt data-en="Rent at the city" title="Y(p − c)：在城門口一公頃付得起的地租" data-en-title="Y(p − c): the rent one hectare right at the city can pay">在城市的地租</dt><dd id="rA">—</dd>
+            <dt data-en="Falls by (per km)" title="Y × 運費 × 運輸技術倍率：每遠一公里，一公頃少付多少" data-en-title="Y × freight × transport factor: how much less a hectare can pay for each extra km">每公里少</dt><dd id="rB">—</dd>
+            <dt data-en="Rent reaches 0 at" title="地租線碰到 0 的距離：再遠就不划算" data-en-title="Where the rent line hits zero: farther than this it does not pay">地租歸零</dt><dd id="rD0">—</dd>
+            <dt class="wide" data-en="Its ring">它的圈</dt><dd class="wide" id="rRing">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Transport">交通</h2>
+          <div class="slider"><label for="tm" data-en="Transport cost factor (all crops)" title="所有作物的運費一起乘上這個倍率：1 是杜能的設定，0.5 是運費減半（例如鐵路）" data-en-title="Multiplies every crop's freight: 1 is von Thünen's setting, 0.5 halves it (a railway, say)">運輸技術（運費倍率）</label><output></output>
+            <input id="tm" type="range" min="0.25" max="2" step="0.01" value="1" data-decimals="3"></div>
+          <div data-share-skip><button type="button" class="toggle" id="riverBtn" aria-pressed="false"><span class="dot"></span><span data-en="River">河流</span></button></div>
+          <div class="slider" id="kRow"><label for="tk" data-en="River freight (× land freight)" title="坐船運一噸一公里的運費，是陸運的幾倍" data-en-title="The cost of shipping one tonne one km by river, as a fraction of the land cost">河運費率（陸運的幾倍）</label><output></output>
+            <input id="tk" type="range" min="0.05" max="1" step="0.01" value="0.4" data-decimals="3"></div>
+          <dl class="readout">
+            <dt data-en="Along the river, rings reach" title="沿著河，每一個圈都延伸成 1/k 倍" data-en-title="Along the river every ring reaches 1/k times as far">沿河延伸</dt><dd id="rStretch">—</dd>
+            <dt data-en="Farmland area" title="有河時農地面積是沒有河時的幾倍" data-en-title="Farmland with the river, compared with no river">農地面積</dt><dd id="rAreaF">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="This field">這塊地</h2>
+          <dl class="readout">
+            <dt data-en="Straight-line distance">離城直線距離</dt><dd id="pDist">—</dd>
+            <dt class="wide" data-en="Cheapest way to market">最省的運法</dt><dd class="wide" id="pRoute">—</dd>
+            <dt data-en="Transport distance" title="把運費換算成「走陸路幾公里」；地租就看這個距離" data-en-title="The trip's freight expressed as kilometres over land; rent depends on this">運輸距離（換成陸路）</dt><dd id="pD">—</dd>
+            <dt data-en="Grows">種什麼</dt><dd id="pCrop" class="big">—</dd>
+            <dt data-en="Rent" title="這塊地每公頃一年付得起的地租" data-en-title="Rent this field can pay per hectare per year">地租</dt><dd id="pRent">—</dd>
+          </dl>
+          <table class="ringtab" id="pTab" aria-label="這塊地各種作物的地租" data-en-aria-label="Rent each crop could pay here"></table>
+        </section>
+        <section class="card">
+          <h2 data-en="The rings">農業的圈</h2>
+          <table class="ringtab" id="ringTab" aria-label="由內而外的圈" data-en-aria-label="Rings from the inside out"></table>
+          <dl class="readout">
+            <dt data-en="Edge of farming" title="地租降到 0 的運輸距離；再遠是荒野" data-en-title="Transport distance where rent falls to 0; beyond it is wilderness">農業的最外緣</dt><dd id="rFront">—</dd>
+            <dt data-en="Farmland">農地面積</dt><dd id="rFarm">—</dd>
+            <dt data-en="Total rent" title="整個平原一年的地租加起來（地主的總收入）" data-en-title="All the rent on the plain in a year (the landowners' total income)">全區總地租</dt><dd id="rTotal">—</dd>
+          </dl>
+          <button type="button" id="reset" data-en="Back to von Thünen's settings">回到杜能的設定</button>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="The isolated state">孤立國</h3>
+      <p data-en="In 1826 the German landowner and economist Johann Heinrich von Thünen asked a simple question: if a city sits alone in the middle of a uniform plain, what should be grown where? He kept detailed accounts of his own estate and found that distance to market alone was enough to sort farming into rings.">1826 年，德國的地主兼經濟學家杜能（Johann Heinrich von Thünen）問了一個簡單的問題：如果一座城市孤零零地位在一片均質平原的中央，哪裡該種什麼？他仔細記錄自己莊園的帳目，發現光是「離市場多遠」這一件事，就足以把農業排成一圈一圈。</p>
+      <ul>
+        <li data-en="The plain is flat and equally fertile everywhere, with no rivers or roads (until you add one).">平原平坦、各處一樣肥沃，沒有河流與道路（除非你自己加上）。</li>
+        <li data-en="There is one market, the city, and no trade with the outside world.">只有一個市場（城市），不和外界往來。</li>
+        <li data-en="Farmers carry their own produce to the city; freight is proportional to weight and distance.">農民自己把收成運進城，運費和重量、距離成正比。</li>
+        <li data-en="Every farmer chooses the crop that earns the most, so each field goes to the use that can pay the highest rent.">每一位農民都選最賺錢的作物，所以每一塊地都交給付得起最高地租的用途。</li>
+      </ul>
+      <h3 data-en="Location rent">區位地租</h3>
+      <div class="formula">\[ R = Y\,(p - c) - Y\,f\,d \]</div>
+      <ul>
+        <li data-en-html="\(R\): the rent one hectare can pay in a year — what is left after paying for production and transport.">\(R\)：一公頃土地一年付得起的地租，也就是收入扣掉生產成本與運費後剩下的錢。</li>
+        <li data-en-html="\(Y\): yield (tonnes per hectare); \(p\): price in the city; \(c\): production cost per tonne; \(f\): freight per tonne per km; \(d\): distance to the city.">\(Y\)：每公頃產量（噸）；\(p\)：城裡的價格；\(c\)：每噸的生產成本；\(f\)：每噸每公里的運費；\(d\)：離城的距離。</li>
+        <li data-en-html="For each crop the rent falls along a straight line: it starts at \(Y(p-c)\) at the city and drops by \(Yf\) for every km. The line reaches zero at \(d = (p-c)/f\).">每一種作物的地租都是一條直線：在城裡是 \(Y(p-c)\)，每遠一公里少 \(Yf\)；在 \(d = (p-c)/f\) 降到 0。</li>
+        <li data-en-html="Where two lines cross, the land changes hands. Steep lines (heavy, bulky or perishable produce with high yields) win near the city; gentle lines win farther out. That is why the rings appear, and why their order depends on \(Yf\), not on price alone.">兩條線交叉的地方，土地就換一種用途。坡度陡的（又重、占體積或容易壞、產量又高的作物）在城市附近勝出；坡度緩的在外圈勝出。圈就是這樣出現的，而圈的順序看的是 \(Yf\)，不只是價格。</li>
+      </ul>
+      <h3 data-en="Von Thünen's rings">杜能的圈</h3>
+      <div class="tablewrap"><table>
+        <tr><th data-en="Ring">圈</th><th data-en="Why there">為什麼在那裡</th></tr>
+        <tr><td data-en="Vegetables, milk">蔬菜、牛奶</td><td data-en="Perishable and in daily demand: they must reach the city fresh, so they pay the most to be close.">容易壞、每天都要，必須新鮮送進城，所以願意付最高的地租換來近距離。</td></tr>
+        <tr><td data-en="Forestry">林木</td><td data-en="In 1826 the city burned wood for heat and cooking. Wood is heavy and bulky, so it was grown surprisingly close in.">1826 年的城市靠木柴取暖、煮飯；木頭又重又占空間，所以種在出乎意料的內圈。</td></tr>
+        <tr><td data-en="Grain">穀物</td><td data-en="Keeps well and is fairly light for its value, so it can travel farther.">耐放、以價值來說不算重，可以運得比較遠。</td></tr>
+        <tr><td data-en="Livestock">放牧</td><td data-en="Very little produce per hectare, and animals can walk to market, so the freight per hectare is tiny.">每公頃產量很少，牲口又能自己走進城，每公頃的運費很低。</td></tr>
+        <tr><td data-en="Wilderness">荒野</td><td data-en="Beyond the last ring no crop covers its costs: the rent would be negative.">最外圈以外，任何作物都不划算：地租是負的。</td></tr>
+      </table></div>
+      <p data-en="The numbers in this lab are invented but keep von Thünen's proportions, so his order of rings appears with the default settings.">本實驗的數字是虛構的，但保留杜能的比例關係，所以預設值會排出他提出的順序。</p>
+      <h3 data-en="A river stretches the rings">河流把圈拉長</h3>
+      <p data-en-html="If shipping by river costs only \(k\) times as much as carrying goods over land, a farmer away from the river walks to the bank and then takes a boat. The cheapest landing point makes the land route meet the river at an angle \(\theta\) with \(\cos\theta = k\) — the same rule that bends light when it enters water. Every ring stretches along the river to \(1/k\) times its width across it, and the farmland grows by a factor">如果河運的運費只有陸運的 \(k\) 倍，離河的農民會先走到岸邊再坐船。最省的上岸點，讓陸路和河的夾角 \(\theta\) 滿足 \(\cos\theta = k\)：和光從空氣射進水裡會轉彎是同一個道理。每一個圈沿河延伸成 \(1/k\) 倍，農地面積變成</p>
+      <div class="formula">\[ S(k) = \frac{2}{\pi}\left(\arcsin k + \frac{\sqrt{1-k^2}}{k}\right) \]</div>
+      <p data-en="times what it was without the river. Von Thünen himself drew his plain with a navigable river and a second small town, and the rings became bands along the water.">倍。杜能自己的書裡也畫了一條可以通航的河和另一座小城鎮，圈就變成順著河的帶狀。</p>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Halve all freight costs (a railway). How much wider do the rings get? How much does the total rent change?">把所有運費減半（鐵路通車）：圈變寬幾倍？全區總地租變成幾倍？</li>
+        <li data-en="Today cities heat with gas and electricity. Lower the price of wood and see where the forest goes.">現代城市用瓦斯和電取暖：把木材的價格降下來，看林木圈跑到哪裡。</li>
+        <li data-en="Refrigerated lorries make milk and vegetables easy to carry. Lower their freight: what happens to the rings around them?">冷藏車讓牛奶、蔬菜容易運送：把它們的運費調低，周圍的圈會怎樣？</li>
+        <li data-en="Find a field near the river whose cheapest route does not use the river at all. Why?">在河附近找一塊「最省的運法根本不坐船」的地：為什麼？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="Four kinds of land use instead of von Thünen's six (he split grain farming into three systems of different intensity).">只用四種土地利用；杜能原本有六圈（他把穀物分成三種不同集約程度的耕作制度）。</li>
+        <li data-en="Prices are fixed. In reality, growing more of something lowers its price, which would shrink its ring again.">價格固定不變。真實世界裡，某種作物種得越多價格越低，圈又會縮回來。</li>
+        <li data-en="The river runs straight through the city and boats can load anywhere along the bank, at no extra charge.">河筆直穿過城市，沿岸任何地方都能上船，沒有額外的裝卸費。</li>
+        <li data-en="Rent is in yuan per hectare per year (1 km² = 100 hectares); the money is imaginary.">地租的單位是元／公頃・年（1 平方公里 = 100 公頃）；金額是虛構的。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Geographic systems: industries (Bf-Ⅴ, location of agriculture).">課綱對應：高中地理・地理系統：產業（地 Bf-Ⅴ，農業的區位）。</li>
+        <li data-en="J. H. von Thünen (1826), Der isolirte Staat in Beziehung auf Landwirthschaft und Nationalökonomie, Hamburg.">J. H. von Thünen（1826），《Der isolirte Staat in Beziehung auf Landwirthschaft und Nationalökonomie》（孤立國），漢堡。</li>
+        <li data-en="P. Hall, ed. (1966), Von Thünen's Isolated State, translated by C. M. Wartenberg, Pergamon Press.">P. Hall 編（1966），《Von Thünen's Isolated State》，C. M. Wartenberg 英譯，Pergamon Press。</li>
+        <li data-en="All numbers in this lab are invented for teaching; no outside data are used.">本實驗的數字都是為了教學而設計的虛構值，沒有使用外部資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/von-thunen-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/von-thunen.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="von-thunen"></script>
+  <script src="js/missions/von-thunen.js"></script>
+  <script src="js/stats.js" data-module="von-thunen"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

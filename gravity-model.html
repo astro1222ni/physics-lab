@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Gravity Model and Distance Decay | Astro Ni Science Lab">重力模型與距離衰減｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 重力模型頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root { --gm-land: #e9e4d2; --gm-coast: #8a8270; --gm-sea: #d7e6f0; --gm-flow: #c0472b; --gm-city: #2f6fd0; --gm-town: #d08a00; --gm-break: #7a3fbf; --gm-hsr: #1b8a7a; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --gm-land: #2c3328; --gm-coast: #8f9a80; --gm-sea: #16212b; --gm-flow: #ff8a65; --gm-city: #6aa8ff; --gm-town: #ffc24d; --gm-break: #c79bff; --gm-hsr: #4fd1c0; }
+    }
+    :root[data-theme="dark"] { --gm-land: #2c3328; --gm-coast: #8f9a80; --gm-sea: #16212b; --gm-flow: #ff8a65; --gm-city: #6aa8ff; --gm-town: #ffc24d; --gm-break: #c79bff; --gm-hsr: #4fd1c0; }
+    #cv { aspect-ratio: 4 / 3; touch-action: none; cursor: pointer; }
+    @media (max-width: 600px) { #cv { aspect-ratio: 3 / 4; } #cv.wide { aspect-ratio: 1 / 1; } }
+    @media (min-width: 881px) and (min-height: 900px) { .gm .stage { position: sticky; top: 12px; } }
+    .gm button { min-height: 44px; }
+    .gm [hidden] { display: none !important; }
+    .gm .slider input[type="range"] { height: 28px; margin: 0; }
+    .gm .card { min-width: 0; overflow-wrap: anywhere; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 12px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 4px 0 8px; }
+    .pick label { display: flex; flex-direction: column; gap: 2px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; }
+    .pick select { min-height: 44px; font-size: calc(14px * var(--fs, 1)); border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 6px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
+    .row button { flex: 1 1 auto; }
+    table.tab { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+    table.tab th, table.tab td { overflow-wrap: anywhere; padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
+    table.tab th:first-child, table.tab td:first-child { text-align: left; }
+    table.tab td.bar i { display: block; height: 10px; border-radius: 3px; background: var(--gm-flow); }
+    dl.readout dd.big { font-weight: 700; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#economy&quot;>Geography · Economy, Transport and Globalisation</a> / Gravity model"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#economy">地理・產業、交通與全球化</a> ／ 重力模型</nav>
+      <h1 data-en="Gravity Model and Distance Decay">重力模型與距離衰減</h1>
+      <p data-en="Two places trade, travel and phone each other more when they are big and when they are close. The gravity model turns this into a formula, borrowed from Newton: interaction grows with the product of the populations and falls with distance to a power b. Try it on the 19 cities and counties of Taiwan, add a high-speed railway, and drop in a new town of your own.">兩個地方越大、越近，彼此的交通、貿易、電話往來就越多。重力模型借用牛頓的萬有引力，把這件事寫成公式：互動量和兩地人口的乘積成正比，和距離的 b 次方成反比。用臺灣本島 19 個縣市試試看，再加上高鐵，或放一座自己的新市鎮。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: tap Taichung, then drag the distance-decay exponent b from 0.5 to 3 and watch where its interactions go.">試試看：點臺中，再把距離衰減指數 b 從 0.5 拉到 3，看它的互動流向哪裡。</p>
+    <div class="lab gm" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="畫面" data-en-aria-label="View" id="viewSeg">
+            <button type="button" data-view="flows" aria-pressed="true" data-en="Flows">互動流量</button>
+            <button type="button" data-view="areas" aria-pressed="false" data-en="Trade areas" title="地圖上每一點歸給引力最大的城市" data-en-title="Each point goes to the city that pulls it hardest">勢力範圍</button>
+            <button type="button" data-view="decay" aria-pressed="false" data-en="Distance decay" title="互動量隨距離變小的對數圖" data-en-title="Log–log plot of interaction against distance">距離衰減</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="臺灣本島的城市與互動流量；點一座城市當作出發地" data-en-aria-label="Cities of Taiwan and their interactions; tap a city to start from it"></canvas>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="cvHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Cities">城市</h2>
+          <div class="pick">
+            <label><span data-en="From (A)">出發地 A</span><select id="selFrom" aria-label="出發城市" data-en-aria-label="Starting city"></select></label>
+            <label><span data-en="Compare with (B)">比較對象 B</span><select id="selTo" aria-label="比較的城市" data-en-aria-label="City to compare with"></select></label>
+          </div>
+          <dl class="readout">
+            <dt data-en="A–B straight line">A–B 直線距離</dt><dd id="rKm">—</dd>
+            <dt data-en="By car">開車</dt><dd id="rCar">—</dd>
+            <dt data-en="Fastest with HSR">搭高鐵最快</dt><dd id="rHsr">—</dd>
+            <dt data-en="Break point from A" title="雷利法則：兩城引力相等的點" data-en-title="Reilly's law: where the two pulls are equal">分界點離 A</dt><dd id="rBrk" class="big">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Model">模型</h2>
+          <div class="slider"><label for="gB" data-en="Distance-decay exponent b" title="b 越大，距離越重要" data-en-title="The larger b, the more distance matters">距離衰減指數 b</label><output></output>
+            <input id="gB" type="range" min="0.5" max="3" step="0.1" value="2" data-decimals="1"></div>
+          <div class="segw" role="group" aria-label="距離用什麼量" data-en-aria-label="Measure distance as" id="distSeg">
+            <button type="button" data-mode="km" aria-pressed="true" data-en="Straight-line km">直線距離（km）</button>
+            <button type="button" data-mode="hsr" aria-pressed="false" data-en="Travel time with HSR" title="開車，或開車到高鐵站再搭高鐵，取比較快的（分鐘）" data-en-title="Drive, or drive to the high-speed rail and ride it — whichever is faster (minutes)">交通時間（含高鐵）</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="A new town">新市鎮</h2>
+          <div class="row"><button type="button" id="townBtn" aria-pressed="false" data-en="＋ Add a new town">＋ 加入新市鎮</button></div>
+          <div class="slider" id="popRow"><label for="gPop" data-en="Population (10,000s)">人口（萬人）</label><output></output>
+            <input id="gPop" type="range" min="1" max="300" step="1" value="50" data-decimals="0"></div>
+          <p class="hint" id="townHint" data-en="Drag the orange town on the map (or use the arrow keys).">在地圖上拖曳橘色的新市鎮（或用方向鍵）。</p>
+        </section>
+        <section class="card">
+          <h2 id="flowH" data-en="Where A's interaction goes">A 的互動流向</h2>
+          <table class="tab" id="flowTab" aria-label="出發城市和其他城市的互動占比" data-en-aria-label="Share of the starting city's interaction with each city"></table>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="The gravity model">重力模型</h3>
+      <p data-en-html="The interaction between places \(i\) and \(j\) — trips, trade, phone calls, migrants — is estimated as \[T_{ij} = k\,\frac{P_i\,P_j}{d_{ij}^{\,b}},\] where \(P\) is population, \(d\) is distance and \(b\) is the distance-decay exponent. With \(b = 2\) it has the same form as Newton's law of gravitation. Only ratios matter here, so the page shows each city's share of A's total interaction.">兩地 \(i\)、\(j\) 之間的互動量（旅次、貿易、通話、遷移人數）估計成 \[T_{ij} = k\,\frac{P_i\,P_j}{d_{ij}^{\,b}}\] \(P\) 是人口，\(d\) 是距離，\(b\) 是距離衰減指數。\(b = 2\) 時和牛頓的萬有引力公式長得一樣。這裡只比較相對大小，所以頁面顯示的是「A 的全部互動裡，各城市占多少」。</p>
+      <h3 data-en="Distance decay">距離衰減</h3>
+      <p data-en-html="Doubling the distance divides the interaction by \(2^b\). On a log–log plot \(\log (T/P_iP_j) = \log k - b \log d\) is a straight line with slope \(-b\), which is how \(b\) is measured from real data: walking trips decay fast (large \(b\)), air travel and the internet decay slowly (small \(b\)). Cheaper and faster transport lowers \(b\) — the world “shrinks”.">距離加倍，互動量變成 \(1/2^b\)。取對數後 \(\log (T/P_iP_j) = \log k - b \log d\) 是斜率 \(-b\) 的直線，真實資料就是這樣量出 \(b\) 的：走路的旅次衰減很快（\(b\) 大），航空、網路衰減很慢（\(b\) 小）。交通越便宜、越快，\(b\) 越小，世界就「變小」了。</p>
+      <h3 data-en="Reilly's law and trade areas">雷利法則與勢力範圍</h3>
+      <p data-en-html="Between two cities, a shopper is pulled equally where \(P_A/x^b = P_B/(d - x)^b\), that is \[x = \frac{d}{1 + (P_B/P_A)^{1/b}}\] from A. The bigger city's trade area reaches further. Giving every point on the map to the city that pulls it hardest draws the trade areas; with unequal cities, the line of equal pull is not straight but a circle around the smaller city.">兩城之間，消費者受兩邊吸引一樣大的地方是 \(P_A/x^b = P_B/(d - x)^b\)，也就是離 A \[x = \frac{d}{1 + (P_B/P_A)^{1/b}}\] 大城的勢力伸得比較遠。把地圖上每一點都歸給引力最大的城市，就畫出勢力範圍；兩城大小不同時，引力相等的界線不是直線，而是圍著小城的一個圓。</p>
+      <h3 data-en="Time–space convergence">時空收斂</h3>
+      <p data-en="Measured in travel time instead of kilometres, places on a fast line move closer together. In this page's model, Taipei to Kaohsiung shrinks from about 390 minutes by car to about 130 minutes with the high-speed railway, while the east coast, which has none, stays just as far.">距離改用交通時間來量，在快速路線上的地方就彼此靠近。在本頁的模型裡，臺北到高雄開車約 390 分鐘，搭高鐵約 130 分鐘；沒有高鐵的東部，距離一點都沒有縮短。</p>
+      <h3 data-en="Things to try">可以試試看</h3>
+      <ul>
+        <li data-en="Small b or large b: which city does Taipei interact with most, and how much goes to Kaohsiung?">b 小與 b 大：臺北和誰互動最多？流到高雄的有多少？</li>
+        <li data-en="Switch to travel time. Which cities gain the most, and which do not change at all?">換成交通時間：哪些城市的互動變多最多？哪些完全沒變？</li>
+        <li data-en="Put a new town in the mountains, then next to a big city. How large is its trade area each time?">把新市鎮放在山裡，再放到大城旁邊：它的勢力範圍各有多大？</li>
+      </ul>
+      <h3 data-en="Simplifications">簡化</h3>
+      <ul>
+        <li data-en="Each county or city is one point near its government seat, with its population rounded to 10,000 (end of 2024). Outlying islands are left out.">每個縣市只用縣市政府附近的一個點，人口取到萬人的約略值（2024 年底）；外島沒有列入。</li>
+        <li data-en="Driving time is straight-line distance × 1.3 at 60 km/h, so mountains are ignored. The rail option is: drive to the nearest HSR station, 25 minutes to get on and off, 200 km/h between stations, drive again. Real timetables and roads differ.">開車時間＝直線距離 × 1.3 ÷ 時速 60 公里，所以沒有考慮山脈；高鐵的走法是：開車到最近的高鐵站、上下車等候 25 分鐘、站間平均時速 200 公里、再開車。和真正的時刻表與道路不同。</li>
+        <li data-en="The model has no k and no real trip data: only the relative sizes of the flows mean anything.">模型沒有常數 k，也沒有真實的旅次資料；只有流量之間的相對大小有意義。</li>
+        <li data-en="The coastline is a simplified outline for illustration.">海岸線是簡化的示意輪廓。</li>
+      </ul>
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography, settlements and transport; spatial interaction (Bd-Ⅴ).">課綱對應：高中地理・聚落與交通、空間互動（地 Bd-Ⅴ）。</li>
+        <li data-en="W. J. Reilly (1931), The Law of Retail Gravitation; J. Q. Stewart (1948), Demographic gravitation, Sociometry 11.">W. J. Reilly（1931），《The Law of Retail Gravitation》；J. Q. Stewart（1948），Demographic gravitation，Sociometry 11。</li>
+        <li data-en="Populations: Ministry of the Interior, Department of Household Registration, population statistics by county and city (end of 2024), rounded (Open Government Data License, version 1.0).">人口：內政部戶政司各縣市人口統計（2024 年底），取到萬人（政府資料開放授權條款第 1 版）。</li>
+        <li data-en="Positions of county seats and HSR stations are approximate; all distances and times are computed on the page.">縣市政府與高鐵站的位置是約略值；距離與時間都由頁面計算。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/gravity-model-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/gravity-model.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="gravity-model"></script>
+  <script src="js/missions/gravity-model.js"></script>
+  <script src="js/stats.js" data-module="gravity-model"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

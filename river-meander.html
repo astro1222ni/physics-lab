@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Meandering Rivers: Oxbow Lakes and a Wandering Channel | Astro Ni Science Lab">曲流、牛軛湖與河道變遷｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 曲流頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --rm-water: #3d8fd1; --rm-water2: #1f5f99; --rm-bank: #6b5236; --rm-cut: #c2410c; --rm-bar: #e6cf96;
+      --rm-plain: #cfe3b0; --rm-plain2: #b6d39a; --rm-hill: #9db17d; --rm-hill2: #7a8d5d; --rm-scroll: #8a7a4e;
+      --rm-marsh: #6f9e5a; --rm-art: #e8590c; --rm-sel: #7c3aed; --rm-sin: #0b6e99;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --rm-water: #3b82c4; --rm-water2: #18456f; --rm-bank: #c9a77c; --rm-cut: #ff8a5c; --rm-bar: #9b8a5c;
+        --rm-plain: #2c3a26; --rm-plain2: #26331f; --rm-hill: #3d4a30; --rm-hill2: #4c5a3a; --rm-scroll: #a8996c;
+        --rm-marsh: #5f8f4c; --rm-art: #ffa94d; --rm-sel: #c4b5fd; --rm-sin: #67c6f2;
+      }
+    }
+    :root[data-theme="dark"] {
+      --rm-water: #3b82c4; --rm-water2: #18456f; --rm-bank: #c9a77c; --rm-cut: #ff8a5c; --rm-bar: #9b8a5c;
+      --rm-plain: #2c3a26; --rm-plain2: #26331f; --rm-hill: #3d4a30; --rm-hill2: #4c5a3a; --rm-scroll: #a8996c;
+      --rm-marsh: #5f8f4c; --rm-art: #ffa94d; --rm-sel: #c4b5fd; --rm-sin: #67c6f2;
+    }
+    #cv { aspect-ratio: 2 / 1.12; touch-action: none; cursor: crosshair; }
+    @media (max-width: 560px) { #cv { aspect-ratio: 2 / 1.25; } }
+    .rm.cutmode #cv { cursor: cell; }
+    .subviews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .subviews canvas { flex: 1 1 300px; min-width: 0; height: 190px; aspect-ratio: auto; }
+    @media (max-width: 560px) { .subviews canvas { flex-basis: 100%; height: 170px; } }
+    @media (min-width: 881px) and (min-height: 940px) { .rm .stage { position: sticky; top: 12px; } }
+    .rm button { min-height: 44px; }
+    .rm [hidden] { display: none !important; }
+    .rm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .rm .playbar button { flex: 1 1 auto; }
+    .rm .playbar #run { flex: 2 1 120px; font-weight: 600; }
+    .rm .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .toggles button { flex: 1 1 110px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .legend i.line { height: 3px; border-radius: 2px; }
+    .chip-cls { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: calc(12px * var(--fs, 1)); font-weight: 600; background: var(--accent-soft); color: var(--accent); margin-left: 4px; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#landform&quot;>Geography · Landforms and Water</a> / Meandering rivers"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#landform">地理・地形與水文</a> ／ 曲流</nav>
+      <h1 data-en="Meandering Rivers: Oxbow Lakes and a Wandering Channel">曲流、牛軛湖與河道變遷</h1>
+      <p data-en="A river on a flat valley floor never stays straight. In every bend the water scours the outer bank and drops sand on the inner bank, so the bend grows and slides downstream until two loops touch and the river takes a shortcut, leaving an oxbow lake behind. Watch centuries go by in seconds, look at a cross-section of any bend, and try straightening the river yourself.">平坦谷底上的河流不會一直是直的。每個彎道的水都在沖刷外側的河岸、在內側堆積泥沙，彎道越長越大、一邊往下游移，直到兩個彎碰在一起，河流抄近路，留下一個牛軛湖。在這裡幾秒鐘就過了幾百年：看任何一個彎道的橫剖面，也可以自己動手把河道截彎取直。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press Play and wait for the first oxbow lake. Then tap a sharp bend to see why its outer bank is steep and its inner bank is a sandy slope.">試試看：按「播放」，等第一個牛軛湖出現。再點一個很彎的彎道，看看為什麼外側是陡坎、內側是一片沙灘。</p>
+    <div class="lab rm" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="點河道時" data-en-aria-label="Tapping the river">
+            <button type="button" id="toolLook" aria-pressed="true" data-en="Cross-section" title="點河道看那裡的橫剖面；點牛軛湖看它的年紀" data-en-title="Tap the river to see its cross-section there; tap an oxbow lake to see how old it is">看剖面</button>
+            <button type="button" id="toolCut" aria-pressed="false" data-en="Cut a bend" title="點一個彎道，從它的頸部挖一條直的新河道" data-en-title="Tap a bend to dig a straight new channel across its neck">人工截彎</button>
+          </div>
+          <div class="seg" role="group" aria-label="速度" data-en-aria-label="Speed" id="spdSeg">
+            <button type="button" data-spd="10" aria-pressed="false" data-en="10 yr/s" title="每秒 10 年" data-en-title="10 years per second">10 年/秒</button>
+            <button type="button" data-spd="25" aria-pressed="true" data-en="25 yr/s" title="每秒 25 年" data-en-title="25 years per second">25 年/秒</button>
+            <button type="button" data-spd="100" aria-pressed="false" data-en="100 yr/s" title="每秒 100 年（電腦慢時會自動放慢）" data-en-title="100 years per second (slows down on slow devices)">100 年/秒</button>
+          </div>
+        </div>
+        <canvas id="cv" aria-label="河谷俯視圖：水由左往右流；點河道看橫剖面，切到人工截彎後點彎道可以截彎取直" data-en-aria-label="Valley seen from above, water flowing left to right; tap the river for a cross-section, or switch to Cut a bend and tap a bend"></canvas>
+        <div class="subviews">
+          <canvas id="xs" aria-label="河道橫剖面" data-en-aria-label="Channel cross-section"></canvas>
+          <canvas id="sg" aria-label="彎曲度隨時間的變化" data-en-aria-label="Sinuosity through time"></canvas>
+        </div>
+        <div class="playbar">
+          <button id="run" type="button" data-en="Play">播放</button>
+          <button id="step" type="button" data-en="+1 year" title="往前走一年（暫停時微調用）" data-en-title="Move on one year (for fine control while paused)">往前 1 年</button>
+          <button id="newRiver" type="button" data-en="New valley" title="換一條新的河谷（不同的初始彎曲），從頭開始" data-en-title="Start again in a new valley with different small initial wiggles">換一條河谷</button>
+          <button id="clear" type="button" data-en="Clear all" title="同一條河谷從頭開始：清掉牛軛湖、舊河道和彎曲度紀錄；滑桿設定不變" data-en-title="Start this valley again: remove oxbow lakes, old channels and the sinuosity record; the sliders stay">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span style="color:var(--rm-water2)" data-en-html="<i style=&quot;background:var(--rm-water)&quot;></i>River (flows left → right)"><i style="background:var(--rm-water)"></i>河道（水由左往右流）</span>
+          <span style="color:var(--rm-cut)" data-en-html="<i class=&quot;line&quot; style=&quot;background:var(--rm-cut)&quot;></i>Eroding bank"><i class="line" style="background:var(--rm-cut)"></i>侵蝕的河岸</span>
+          <span style="color:var(--rm-scroll)" data-en-html="<i style=&quot;background:var(--rm-bar)&quot;></i>New sand (point bar)"><i style="background:var(--rm-bar)"></i>堆積的沙（曲流沙洲）</span>
+          <span style="color:var(--rm-water2)" data-en-html="<i style=&quot;background:var(--rm-water2)&quot;></i>Oxbow lake"><i style="background:var(--rm-water2)"></i>牛軛湖</span>
+          <span style="color:var(--rm-marsh)" data-en-html="<i style=&quot;background:var(--rm-marsh)&quot;></i>Filled-in oxbow (wetland)"><i style="background:var(--rm-marsh)"></i>淤滿的牛軛湖（溼地）</span>
+          <span style="color:var(--rm-scroll)" data-en-html="<i class=&quot;line&quot; style=&quot;background:var(--rm-scroll)&quot;></i>Old channel lines (every 20 years)"><i class="line" style="background:var(--rm-scroll)"></i>舊河道（每 20 年一條）</span>
+        </div>
+        <p class="hint" id="hintLook" data-en="Tap the river to put the cross-section there (it follows the river as it moves). Tap an oxbow lake to see how old it is. Arrow keys move the cross-section along the river.">點河道把橫剖面放在那裡（河道移動時剖面跟著走）；點牛軛湖看它幾歲。選取畫布後可以用方向鍵沿著河道移動剖面。</p>
+        <p class="hint" id="hintCut" hidden data-en="Tap a bend: a straight new channel is dug across its narrowest neck and the old loop becomes a lake. Wide-open bends cannot be cut.">點一個彎道：從它最窄的頸部挖一條直的新河道，舊的那一段變成湖。張得太開的彎沒辦法截。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="River">河流</h2>
+          <div class="slider"><label for="W" data-en="Channel width W (m)">河寬 W（m）</label><output></output>
+            <input id="W" type="range" min="40" max="160" step="10" value="80" data-decimals="0"></div>
+          <div class="slider"><label for="k" data-en="Bank erodibility k (m/year)" title="河岸多容易被沖走：沙質、沒有植物的河岸大，黏土或樹根盤結的河岸小" data-en-title="How easily the banks wash away: large for bare sand, small for clay or banks held by roots">河岸可侵蝕程度 k（m/年）</label><output></output>
+            <input id="k" type="range" min="2" max="30" step="1" value="8" data-decimals="1"></div>
+          <dl class="readout">
+            <dt data-en="Years gone by">經過時間</dt><dd id="rT" class="big">—</dd>
+            <dt data-en="Mean depth D (= W/25)">平均水深 D（＝W／25）</dt><dd id="rD">—</dd>
+          </dl>
+          <p class="hint" data-en="Wider rivers make bigger bends; banks that erode faster make everything happen sooner.">河越寬，彎越大；河岸越容易沖刷，一切來得越快。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Shape of the channel">河道的形狀</h2>
+          <dl class="readout">
+            <dt data-en="Sinuosity" title="河道長度 ÷ 河谷長度（8 km）" data-en-title="Channel length ÷ valley length (8 km)">彎曲度</dt><dd id="rSin" class="big">—</dd>
+            <dt data-en="Channel length">河道長度</dt><dd id="rLen">—</dd>
+            <dt data-en="Meander wavelength" title="沿著河谷方向，一個完整的左彎加右彎有多長" data-en-title="Down-valley length of one full left-and-right bend">曲流波長</dt><dd id="rLam">—</dd>
+            <dt data-en="Fastest bank retreat">最快的河岸後退</dt><dd id="rMig">—</dd>
+            <dt data-en="Channel slope" title="河谷坡度 1‰ ÷ 彎曲度" data-en-title="Valley slope 1‰ ÷ sinuosity">河道坡度</dt><dd id="rSlope">—</dd>
+          </dl>
+          <p class="hint" data-en="Sinuosity = channel length ÷ valley length. Below 1.05 the river is called straight, from 1.5 up it is called meandering.">彎曲度＝河道長度 ÷ 河谷長度。小於 1.05 叫平直河道，1.5 以上叫曲流河。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Cut-offs and oxbow lakes">截彎取直與牛軛湖</h2>
+          <dl class="readout">
+            <dt data-en="Natural cut-offs">自然截彎</dt><dd id="rCuts" class="big">—</dd>
+            <dt data-en="Cut by people">人工截彎</dt><dd id="rArt">—</dd>
+            <dt data-en="Oxbow lakes (open water)">牛軛湖（還有水）</dt><dd id="rLakes">—</dd>
+            <dt data-en="Filled in (wetland)">淤滿（溼地）</dt><dd id="rMarsh">—</dd>
+            <dt class="wide" data-en="Last cut-off">上一次截彎</dt><dd class="wide" id="rLast">—</dd>
+          </dl>
+          <p class="hint" data-en="A natural cut-off happens when the two banks of a narrowing neck touch. An oxbow lake slowly fills with mud and plants; here it takes about 400 years to become a wetland.">頸部越來越窄，兩岸碰在一起就自然截彎。牛軛湖會慢慢被泥沙和植物填滿，這裡大約 400 年變成溼地。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Cross-section">橫剖面</h2>
+          <dl class="readout">
+            <dt class="wide" data-en="Where">位置</dt><dd class="wide" id="rWhere">—</dd>
+            <dt data-en="Radius of the bend">彎道的曲率半徑</dt><dd id="rRad">—</dd>
+            <dt data-en="Outer bank depth" title="面向下游，彎道外側（凹岸）的水深" data-en-title="Water depth at the outer (concave) bank">凹岸水深</dt><dd id="rHo">—</dd>
+            <dt data-en="Inner bank depth" title="面向下游，彎道內側（凸岸）的水深" data-en-title="Water depth at the inner (convex) bank">凸岸水深</dt><dd id="rHi">—</dd>
+            <dt data-en="Bank retreat here">這裡的河岸後退</dt><dd id="rMv">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Layers">圖層</h2>
+          <div class="toggles" role="group" aria-label="圖層" data-en-aria-label="Layers">
+            <button type="button" id="tHist" aria-pressed="true" data-en="Old channels">舊河道</button>
+            <button type="button" id="tErode" aria-pressed="true" data-en="Erosion and deposition">侵蝕與堆積</button>
+            <button type="button" id="tFlow" aria-pressed="true" data-en="Flowing water">水流</button>
+          </div>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="Why a bend keeps growing">彎道為什麼越來越彎</h3>
+      <p data-en-html="Water going round a bend is flung outward, so the surface tilts up a little against the outer bank. Near the bed the water is slowed by friction, and the tilted surface pushes this slow bottom water back toward the inner bank. The flow therefore spirals: fast surface water dives down at the outer bank and scours a deep pool, while bottom water carries sand up onto the inner bank. The result:">水流過彎道時被甩向外側，水面在外岸稍微堆高。靠近河床的水被摩擦拖慢，堆高的水面把這些慢的底層水推回內岸。所以水在彎道裡是螺旋前進的：表面的快水在外岸往下鑽、刷出深潭，底層的水把沙帶上內岸。結果是：</p>
+      <ul>
+        <li data-en-html="<strong>Outer (concave) bank — cut bank:</strong> deep water, fast flow, erosion; the bank is a steep, undercut wall that keeps retreating."><strong>外側（凹岸）＝攻擊坡：</strong>水深、流快、侵蝕，河岸是被掏空的陡坎，一直往後退。</li>
+        <li data-en-html="<strong>Inner (convex) bank — slip-off slope:</strong> shallow water, slow flow, deposition; sand piles up into a gentle point bar that grows outward."><strong>內側（凸岸）＝滑走坡：</strong>水淺、流慢、堆積，沙堆成一片緩緩的曲流沙洲，一直往外長。</li>
+        <li data-en-html="Because the outer bank retreats and the inner bank advances, the whole bend moves sideways and grows. Water arriving from the bend upstream still remembers that bend, so the strongest erosion is a little <em>downstream</em> of each bend’s apex: meanders also creep down the valley.">外岸後退、內岸前進，整個彎就往側面移、越長越大。從上游彎道流過來的水還「記得」上一個彎，所以侵蝕最強的地方在每個彎頂的<em>下游</em>一點：曲流也一邊往下游爬。</li>
+      </ul>
+      <p data-en-html="In the model the bed slopes across the channel in proportion to the curvature: with \(C\) the curvature (1/radius) and \(n\) the distance from the centreline toward the outer bank, the depth is">模型裡河床的橫向坡度和彎曲程度成正比：\(C\) 是曲率（曲率半徑的倒數），\(n\) 是從中心線往凹岸的距離，水深是</p>
+      <div class="formula">\[ h(n) = D\,(1 + A\,C\,n), \qquad A \approx 2.9 \]</div>
+      <p data-en-html="When the bend is tight enough that \(A\,C\,W/2 > 1\) (radius below about 1.5 W), the inner side of the bed rises above the water: a bare sandbank.">彎到 \(A\,C\,W/2 > 1\)（曲率半徑小於約 1.5 倍河寬）時，內側的河床會高出水面，露出一片沙洲。</p>
+
+      <h3 data-en="Cut-offs and oxbow lakes">截彎取直與牛軛湖</h3>
+      <p data-en-html="As a loop grows, its two sides come closer, leaving a narrow <strong>neck</strong>. When the banks meet — often during a flood — the river pours through the shortcut. Sand soon seals the ends of the abandoned loop, which becomes a curved <strong>oxbow lake</strong>. Over centuries the lake fills with mud and plants and turns into a wetland; finally only a curved scar is left in the fields. The old channel lines left behind on the inside of every bend (drawn every 20 years here) are the <strong>meander scrolls</strong> you can see on air photos of real flood plains.">彎越長越大，兩側越靠越近，中間只剩窄窄的<strong>曲流頸</strong>。兩岸一碰（常常是在洪水時），河水就從捷徑衝過去。被拋下的那一圈兩端很快被沙堵住，成為彎月形的<strong>牛軛湖</strong>。幾百年間湖被泥沙與植物慢慢填滿，變成溼地，最後只在田裡留下一道彎彎的痕跡。每個彎內側留下的一道道舊河道（這裡每 20 年畫一條），就是真實河谷空照圖上看得到的<strong>曲流痕（曲流遺跡）</strong>。</p>
+
+      <h3 data-en="Measuring a meander">量一量曲流</h3>
+      <table>
+        <tr><th data-en="Quantity">量</th><th data-en="Meaning">意思</th><th data-en="Typical value">常見的值</th></tr>
+        <tr><td data-en="Sinuosity">彎曲度</td><td data-en="channel length ÷ valley length">河道長度 ÷ 河谷長度</td><td data-en="straight &lt; 1.05; meandering ≥ 1.5">平直 &lt; 1.05；曲流 ≥ 1.5</td></tr>
+        <tr><td data-en="Wavelength">曲流波長</td><td data-en="down-valley length of one left + right bend">一個左彎加一個右彎沿河谷的長度</td><td data-en="about 10–14 W">約 10–14 倍河寬</td></tr>
+        <tr><td data-en="Radius of a bend">彎道曲率半徑</td><td data-en="radius of the circle that fits the bend">貼合彎道的圓的半徑</td><td data-en="about 2–3 W">約 2–3 倍河寬</td></tr>
+      </table>
+      <p data-en-html="Because wavelength and bend radius both scale with the channel width, a small stream and a great river make the same shapes at different sizes. The channel slope is the valley slope divided by the sinuosity: a winding river flows down a gentler slope.">波長和曲率半徑都和河寬成正比，所以小溪和大河彎出來的形狀一樣，只是大小不同。河道坡度＝河谷坡度 ÷ 彎曲度：越彎的河，水流過的坡越緩。</p>
+
+      <h3 data-en="Straightening rivers">人工截彎取直</h3>
+      <p data-en-html="People have often dug straight channels across meander necks: the river becomes shorter, floods drain away faster, boats travel less and the old loops can be filled in to make new land. In Taipei, part of the Keelung River was straightened in the 1990s, and the filled-in old channel became new city districts around Dazhi and Neihu. The costs: a shorter channel on the same valley drop is steeper, so the water flows faster, cuts its bed deeper and can send floods downstream sooner; wetlands and the habitats in the loops are lost. Left alone, a straightened river on a soft flood plain soon starts to bend again.">人們常在曲流頸挖一條直的新河道：河道變短，洪水退得快，船走的路少，舊河道還可以填平變成新的土地。臺北的基隆河在 1990 年代做過截彎取直，填平的舊河道成為大直、內湖一帶的新市區。代價是：同樣的河谷落差配上更短的河道，坡度變陡，水流變快，河床被往下刷深，洪水也可能更快衝到下游；舊河道裡的溼地與生物棲地也跟著消失。如果放著不管，在鬆軟沖積平原上被拉直的河，很快又會開始彎起來。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Follow one bend</strong> for a few hundred years: does it only grow, or does it also travel downstream?"><strong>盯著一個彎</strong>看幾百年：它只是長大，還是也往下游走？</li>
+        <li data-en-html="<strong>Watch the sinuosity graph</strong> after the first cut-offs: why does it look like a saw blade?"><strong>看彎曲度圖</strong>：出現截彎之後，曲線為什麼像鋸齒？</li>
+        <li data-en-html="<strong>Change the width</strong> from 40 m to 160 m and start again: how does the wavelength change? Divide it by the width."><strong>把河寬從 40 m 改成 160 m</strong> 再重來：曲流波長怎麼變？除以河寬看看。</li>
+        <li data-en-html="<strong>Straighten the river</strong> with cuts until the sinuosity is close to 1, then let it run. How long until it is meandering again?"><strong>用人工截彎把河拉直</strong>到彎曲度接近 1，再讓它繼續流。要多久又變回曲流河？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The river is a centreline of points spaced about W/2 apart in a valley 8 km long and 4 km wide; water enters at the left and leaves at the right, and both ends are fixed. The valley floor is flat and uniform and the width W stays the same everywhere (depth D = W/25).">河道用一條中心線表示，線上的點相距約 W/2；河谷長 8 km、寬 4 km，水從左邊進、右邊出，兩端固定。谷底是平坦均勻的沖積平原，河寬 W 處處相同（水深 D = W/25）。</li>
+        <li data-en-html="Bank migration follows the linear bend-flow theory of Ikeda, Parker and Sawai as written by Howard and Knutson: the local rate is \(R_0 = k\,W C\), and the actual rate adds the influence of the bends upstream, \(R_1(s) = \Omega R_0(s) + \Gamma \dfrac{\int_0^\infty R_0(s-\xi)\,e^{-\alpha\xi}\,d\xi}{\int_0^\infty e^{-\alpha\xi}\,d\xi}\), with \(\Omega = -1\), \(\Gamma = 2.5\) and \(\alpha = 2C_f/D\) (\(C_f = 0.01\)). Each point moves sideways by \(R_1\,\Delta t\).">河岸遷移照 Ikeda、Parker 與 Sawai 的彎道水流線性理論，用 Howard 與 Knutson 的寫法：局部速率 \(R_0 = k\,W C\)，實際速率再加上游各個彎的影響，\(R_1(s) = \Omega R_0(s) + \Gamma \dfrac{\int_0^\infty R_0(s-\xi)\,e^{-\alpha\xi}\,d\xi}{\int_0^\infty e^{-\alpha\xi}\,d\xi}\)，\(\Omega = -1\)、\(\Gamma = 2.5\)、\(\alpha = 2C_f/D\)（\(C_f = 0.01\)）。每個點往側面移動 \(R_1\,\Delta t\)。</li>
+        <li data-en-html="Cut-off: when two parts of the centreline more than 3 W apart along the river come closer than W, the loop between them is removed and kept as an oxbow lake. A cut by people joins the narrowest neck (at most 12 W wide) around the tapped point, if the loop is at least 1.25 times as long as the neck and saves at least 3 W.">截彎：沿河道相距超過 3 W 的兩段中心線距離小於 W 時，把中間那一圈去掉、留成牛軛湖。人工截彎在點到的地方附近找最窄的頸部（最寬 12 W）挖過去；那一段河道至少要是頸寬的 1.25 倍、而且至少省下 3 W。</li>
+        <li data-en-html="Time steps are chosen so no point moves more than a tenth of the point spacing in one step (at most one year). The steps depend only on the river itself, so the same valley, settings and actions always give the same river. The edges of the valley act as walls the channel cannot cross.">時間步長讓每一步每個點移動不超過點距的十分之一（最多一年）。步長只由河道本身決定，所以同一條河谷、同樣的設定和操作，一定得到同樣的河。河谷兩側是河道越不過的谷壁。</li>
+        <li data-en-html="Simplifications: no floods or changing discharge, no vegetation or varied bank material, oxbow lakes do not affect the river, and the valley is not lowered or raised. Real rivers are messier, but the shapes, the cut-off cycle and the scaling with width come out the same.">簡化：沒有洪水與流量變化、沒有植物或不同的河岸物質、牛軛湖不影響河道、河谷不會抬升或下降。真實的河流複雜得多，但彎的形狀、截彎的循環、和河寬成比例的關係都一樣。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Landform systems (Bb-Ⅴ-1 landform processes, Bb-Ⅴ-2 landform systems, Bb-Ⅴ-4 landforms and human life)">課綱對應：高中地理・地形系統（地 Bb-Ⅴ-1 地形營力、地 Bb-Ⅴ-2 各類地形系統、地 Bb-Ⅴ-4 地形與人類生活）</li>
+        <li data-en-html="S. Ikeda, G. Parker and K. Sawai (1981), “Bend theory of river meanders. Part 1. Linear development”, <i>Journal of Fluid Mechanics</i> 112.">S. Ikeda、G. Parker、K. Sawai（1981），〈Bend theory of river meanders. Part 1. Linear development〉，《Journal of Fluid Mechanics》第 112 卷。</li>
+        <li data-en-html="A. D. Howard and T. R. Knutson (1984), “Sufficient conditions for river meandering: A simulation approach”, <i>Water Resources Research</i> 20(11).">A. D. Howard、T. R. Knutson（1984），〈Sufficient conditions for river meandering: A simulation approach〉，《Water Resources Research》第 20 卷第 11 期。</li>
+        <li data-en-html="Z. Sylvester, P. Durkin and J. A. Covault (2019), “High curvatures drive river meandering”, <i>Geology</i> 47(3); their open-source model meanderpy (Apache License 2.0) was used as a reference for the method.">Z. Sylvester、P. Durkin、J. A. Covault（2019），〈High curvatures drive river meandering〉，《Geology》第 47 卷第 3 期；方法參考他們的開放原始碼模型 meanderpy（Apache License 2.0）。</li>
+        <li data-en-html="L. B. Leopold and M. G. Wolman (1960), “River meanders”, <i>Geological Society of America Bulletin</i> 71 (wavelength and bend radius against width).">L. B. Leopold、M. G. Wolman（1960），〈River meanders〉，《Geological Society of America Bulletin》第 71 卷（波長、曲率半徑與河寬的關係）。</li>
+        <li data-en="The valley and river are invented for this lab; no real map data is used.">河谷與河流是本實驗自己設計的，沒有使用真實地圖資料。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/river-meander-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/river-meander.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="river-meander"></script>
+  <script src="js/missions/river-meander.js"></script>
+  <script src="js/stats.js" data-module="river-meander"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

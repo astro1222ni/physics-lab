@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Contour Lines and 3D Terrain: Profiles, Slope and Saddles | Astro Ni Science Lab">等高線與 3D 地形：剖面、坡度與鞍部｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 等高線頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --cm-sea: #9cc8e6; --cm-sea2: #3f7fb5; --cm-coast: #1d4f73; --cm-line: #8a6440; --cm-index: #5b3a1c;
+      --cm-river: #2477c9; --cm-prof: #7c3aed; --cm-see: #0d8a50; --cm-block: #d1453b; --cm-slice: #e8590c; --cm-probe: #0b5fb8;
+      --cm-paper: #fbf8f1;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --cm-sea: #1c3a55; --cm-sea2: #0b1d2e; --cm-coast: #8cc3ea; --cm-line: #d9b88f; --cm-index: #f2dcc0;
+        --cm-river: #5aa9f0; --cm-prof: #c4b5fd; --cm-see: #3fd69a; --cm-block: #ff7a6b; --cm-slice: #ffa94d; --cm-probe: #7cc0ff;
+        --cm-paper: #1a2027;
+      }
+    }
+    :root[data-theme="dark"] {
+      --cm-sea: #1c3a55; --cm-sea2: #0b1d2e; --cm-coast: #8cc3ea; --cm-line: #d9b88f; --cm-index: #f2dcc0;
+      --cm-river: #5aa9f0; --cm-prof: #c4b5fd; --cm-see: #3fd69a; --cm-block: #ff7a6b; --cm-slice: #ffa94d; --cm-probe: #7cc0ff;
+      --cm-paper: #1a2027;
+    }
+    #cv { aspect-ratio: auto; height: 470px; touch-action: none; cursor: crosshair; }
+    @media (min-width: 881px) { #cv { height: 520px; } }
+    #cv.dragging { cursor: grabbing; }
+    @media (max-width: 560px) { #cv { height: 360px; } }
+    #pf { aspect-ratio: auto; height: 210px; margin-top: 10px; }
+    @media (max-width: 560px) { #pf { height: 180px; } }
+    @media (min-width: 881px) and (min-height: 940px) { .cm .stage { position: sticky; top: 12px; } }
+    .cm button { min-height: 44px; }
+    .cm [hidden] { display: none !important; }
+    .cm .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .cm .playbar button { flex: 1 1 auto; }
+    .cm .slider input[type="range"] { height: 28px; margin: 0; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .terrains { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 6px; }
+    .terrains button { padding: 4px 8px; text-align: left; line-height: 1.25; font-size: calc(13.5px * var(--fs, 1)); }
+    .terrains button small { display: block; font-weight: 400; color: var(--muted); font-size: calc(11.5px * var(--fs, 1)); }
+    .terrains button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+    .toggles button { flex: 1 1 110px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .cam-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+    .cam-bar button { flex: 1 1 auto; padding: 6px 10px; }
+    .stage.is3d #cv { display: none; }
+    .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
+    .c3-wrap { position: relative; }
+    #view3 canvas { display: block; width: 100%; height: 470px; border-radius: 8px; cursor: grab; touch-action: none; background: radial-gradient(circle at 50% 35%, #1d2c40, #070b12); }
+    @media (max-width: 560px) { #view3 canvas { height: 380px; } }
+    #view3 canvas:active { cursor: grabbing; }
+    .c3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
+    .c3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
+    .c3-hud .tl { left: 8px; top: 8px; align-items: flex-start; }
+    .c3-hud .br { right: 8px; bottom: 8px; align-items: flex-end; max-width: calc(100% - 16px); }
+    .c3-hud span { padding: 1px 8px; border-radius: 999px; color: #f1f5f9; font-weight: 600; font-variant-numeric: tabular-nums; background: rgba(8, 14, 24, 0.72); }
+    .c3-hud span.m { color: #cbd5e1; font-weight: 500; }
+    .c3-hud span:empty { display: none; }
+    .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
+    .view-msg:empty { display: none; }
+    .ramp { display: flex; align-items: center; gap: 8px; font-size: calc(12px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; flex-wrap: wrap; }
+    .ramp i { flex: 1 1 140px; max-width: 260px; height: 9px; border-radius: 4px; }
+    .ramp.cls i { display: none; }
+    .ramp .chips { display: flex; flex-wrap: wrap; gap: 4px; }
+    .ramp .chips span { display: inline-flex; align-items: center; gap: 4px; }
+    .ramp .chips b { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .notes li { overflow-wrap: anywhere; }
+    .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
+    .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mapping&quot;>Geography · Maps and Geographic Skills</a> / Contour lines"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mapping">地理・地圖與地理技能</a> ／ 等高線</nav>
+      <h1 data-en="Contour Lines and 3D Terrain: Profiles, Slope and Saddles">等高線與 3D 地形：剖面、坡度與鞍部</h1>
+      <p data-en="A contour line joins points of the same height — it is where a level plane cuts the land. Pick one of four imaginary islands, change the contour interval, raise the sea, drop a measuring point to read the slope, and drag a line across the map to draw its cross-section. In 3D, slide a level plane through the mountains and watch it trace the contour lines.">等高線把一樣高的地方連起來，也就是一個水平面切過地面留下的線。選一座虛擬島嶼，改等高距、讓海平面上升，放量測點讀坡度，在地圖上拉一條線畫出地形剖面。切到 3D，用水平面切過山，看它怎麼描出等高線。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag a line on the map from the sea over the highest peak, then raise the vertical exaggeration and watch the gentle slopes turn into cliffs.">試試看：在地圖上從海邊拉一條線越過最高峰，再把垂直誇大調高，看平緩的山坡怎麼變成懸崖。</p>
+    <div class="lab cm" id="lab">
+      <div class="stage" id="stage">
+        <div class="view-bar">
+          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D map">2D 地圖</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D terrain">3D 立體地形</button>
+          </div>
+        </div>
+        <div class="cam-bar" id="camBar" role="group" aria-label="3D 視角" data-en-aria-label="3D camera" hidden>
+          <button type="button" id="camTilt" data-en="Oblique">斜看</button>
+          <button type="button" id="camSide" data-en="Side view" title="從剖面線的側面看" data-en-title="Look at the profile line from the side">側面</button>
+          <button type="button" id="camTop" data-en="From above" title="從正上方往下看，就是等高線地圖" data-en-title="Look straight down — that is the contour map">正上方</button>
+          <button type="button" id="resetCam" data-en="Reset" title="回到預設視角" data-en-title="Back to the default view">重設</button>
+        </div>
+        <p class="view-msg" id="viewMsg" role="status"></p>
+        <canvas id="cv" aria-label="等高線地圖：點一下放量測點，拖一條線畫剖面，拖曳 A、B 或量測點可以移動" data-en-aria-label="Contour map: tap to drop the measuring point, drag a line to draw a profile, drag A, B or the point to move them"></canvas>
+        <div id="view3"></div>
+        <canvas id="pf" aria-label="地形剖面圖" data-en-aria-label="Terrain profile"></canvas>
+        <div class="playbar">
+          <button id="clear" type="button" data-en="Clear all" title="清除剖面線與量測點；地形、海平面與設定不變" data-en-title="Remove the profile line and the measuring point; the island, sea level and settings stay">全部清除</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="ramp" id="ramp"><span id="rampLo">0 m</span><i id="rampBar"></i><span id="rampHi">—</span><span class="chips" id="rampChips"></span></div>
+        <div class="legend">
+          <span style="color:var(--cm-index)" data-en-html="<i style=&quot;background:var(--cm-index)&quot;></i>Index contour (labelled)"><i style="background:var(--cm-index)"></i>計曲線（有標高度）</span>
+          <span style="color:var(--cm-river)" data-en-html="<i style=&quot;background:var(--cm-river)&quot;></i>River"><i style="background:var(--cm-river)"></i>河流</span>
+          <span style="color:var(--cm-prof)" data-en-html="<i style=&quot;background:var(--cm-prof)&quot;></i>Profile line A–B"><i style="background:var(--cm-prof)"></i>剖面線 A–B</span>
+          <span style="color:var(--cm-slice)" data-en-html="<i style=&quot;background:var(--cm-slice)&quot;></i>Level plane (slice)"><i style="background:var(--cm-slice)"></i>水平切面</span>
+        </div>
+        <p class="hint l2" data-en="Tap the map to drop the measuring point. Drag across the map to draw a new profile line; drag A, B or the point to move them. North is up; the grid is 1 km.">點一下地圖放量測點；在地圖上拖一條線就畫出新的剖面線；拖曳 A、B 或量測點可以移動。上方是北，格線每格 1 km。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The map below the island is the same contour map: move the level plane and see its edge on the land and on the map.">拖曳旋轉，滾輪或雙指縮放。島下方的底圖就是同一張等高線地圖：移動水平切面，看它在地面上切出的線，和底圖上的等高線是同一條。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Island">島嶼</h2>
+          <div class="terrains" id="terrainBtns" role="group" aria-label="地形" data-en-aria-label="Terrain">
+            <button type="button" data-terrain="twin" aria-pressed="true" data-en-html="Twin-peak island<small>two summits and a saddle</small>">雙峰島<small>兩座山峰與鞍部</small></button>
+            <button type="button" data-terrain="volcano" aria-pressed="false" data-en-html="Volcanic island<small>a cone with a crater</small>">火山島<small>圓錐與火山口</small></button>
+            <button type="button" data-terrain="valley" aria-pressed="false" data-en-html="Valley island<small>a ridge, V-shaped valleys and a pass</small">河谷島<small>山脊、V 形谷與山口</small></button>
+            <button type="button" data-terrain="terrace" aria-pressed="false" data-en-html="Terrace island<small>sea cliff and raised terraces</small">海階島<small>海崖與階梯狀的海階</small></button>
+          </div>
+          <dl class="readout">
+            <dt data-en="Highest point">最高點</dt><dd id="rMax" class="big">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Contour lines">等高線</h2>
+          <p class="hint" style="margin:0 0 2px" data-en="Contour interval (height between neighbouring lines)">等高距（相鄰兩條等高線的高度差）</p>
+          <div class="segw" role="group" aria-label="等高距" data-en-aria-label="Contour interval" id="ivSeg">
+            <button type="button" data-iv="10" aria-pressed="false">10 m</button>
+            <button type="button" data-iv="20" aria-pressed="false">20 m</button>
+            <button type="button" data-iv="25" aria-pressed="false">25 m</button>
+            <button type="button" data-iv="50" aria-pressed="true">50 m</button>
+            <button type="button" data-iv="100" aria-pressed="false">100 m</button>
+          </div>
+          <p class="hint" id="ivHint">—</p>
+          <div class="segw" role="group" aria-label="地圖著色" data-en-aria-label="Map colouring" id="tintSeg" style="margin-top:8px">
+            <button type="button" data-tint="height" aria-pressed="true" data-en="Height tints">分層設色</button>
+            <button type="button" data-tint="slope" aria-pressed="false" data-en="Slope classes">坡度分級</button>
+            <button type="button" data-tint="none" aria-pressed="false" data-en="Plain paper">不著色</button>
+          </div>
+          <div class="toggles" role="group" aria-label="圖層" data-en-aria-label="Layers">
+            <button type="button" id="tShade" aria-pressed="true" data-en="Hill shading" title="假設陽光從西北方斜射，背光的山坡比較暗" data-en-title="Sunlight from the north-west; slopes facing away are darker">陰影</button>
+            <button type="button" id="tLines" aria-pressed="true" data-en="Contours">等高線</button>
+            <button type="button" id="tRivers" aria-pressed="true" data-en="Rivers">河流</button>
+          </div>
+        </section>
+        <section class="card">
+          <h2 data-en="Sea level">海平面</h2>
+          <div class="slider"><label for="sea" data-en="Sea level (m above today’s sea)">海平面（比現在高幾公尺）</label><output></output>
+            <input id="sea" type="range" min="0" max="1000" step="1" value="0" data-decimals="1"></div>
+          <dl class="readout">
+            <dt data-en="Islands">島嶼數</dt><dd id="rIsl" class="big">—</dd>
+            <dt data-en="Land area">陸地面積</dt><dd id="rLand">—</dd>
+            <dt data-en="Land left">剩下的陸地</dt><dd id="rFrac">—</dd>
+          </dl>
+          <p class="hint" data-en="Raising the sea floods the land up to that contour: the new coastline is a contour line.">海平面升到哪裡，海水就淹到哪一條等高線：新的海岸線就是一條等高線。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Measuring point">量測點</h2>
+          <dl class="readout">
+            <dt data-en="Position (km east, km north)">位置（東 km，北 km）</dt><dd id="rPos">—</dd>
+            <dt data-en="Height">高度</dt><dd id="rH" class="big">—</dd>
+            <dt data-en="Slope">坡度</dt><dd id="rSl" class="big">—</dd>
+            <dt data-en="Slope class (Taiwan)">坡度分級（臺灣）</dt><dd id="rCls">—</dd>
+            <dt data-en="Slope faces">坡向</dt><dd id="rAsp">—</dd>
+            <dt data-en="Landform here">這裡是</dt><dd id="rCrit">—</dd>
+            <dt class="wide" data-en="Gap to the next contour on the map">到下一條等高線的水平距離</dt><dd class="wide" id="rGap">—</dd>
+            <dt data-en="Catchment area" title="下雨後會流到這裡的範圍有多大" data-en-title="How much land drains through this point">集水面積</dt><dd id="rCat">—</dd>
+          </dl>
+          <p class="hint" data-en="Focus the map and use the arrow keys to nudge the point (Shift for big steps); Enter switches to A or B.">選取地圖後可以用方向鍵微調量測點（加 Shift 走大步）；按 Enter 換成移動 A 或 B。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Profile">剖面</h2>
+          <div class="slider"><label for="vexag" data-en="Vertical exaggeration (×)">垂直誇大（倍）</label><output></output>
+            <input id="vexag" type="range" min="1" max="10" step="0.5" value="2" data-decimals="2"></div>
+          <dl class="readout">
+            <dt data-en="Length">長度</dt><dd id="rL">—</dd>
+            <dt data-en="Heights of A → B">A → B 的高度</dt><dd id="rAB">—</dd>
+            <dt data-en="Average slope">平均坡度</dt><dd id="rAvg" class="big">—</dd>
+            <dt data-en="Steepest part">最陡的一段</dt><dd id="rMaxS">—</dd>
+            <dt class="wide" data-en="Steepest part as drawn on the profile">最陡的一段在剖面圖上看起來</dt><dd class="wide" id="rApp">—</dd>
+            <dt data-en="Total climb / descent">累積爬升／下降</dt><dd id="rAsc">—</dd>
+            <dt class="wide" data-en="Can A and B see each other? (eyes 1.6 m above the ground)">A、B 看得到彼此嗎？（眼睛離地 1.6 m）</dt><dd class="wide" id="rVis">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="Level plane">水平切面</h2>
+          <div class="slider"><label for="slice" data-en="Height of the level plane (m)">水平切面的高度（m）</label><output></output>
+            <input id="slice" type="range" min="0" max="1000" step="1" value="600" data-decimals="1"></div>
+          <p class="hint" data-en="The orange line on the map is where this plane cuts the land — a contour line at that height. It shows most clearly in 3D.">地圖上的橘色線就是這個平面切過地面的地方，也就是這個高度的等高線。切到 3D 最清楚。</p>
+        </section>
+        <p class="sr-only" id="srNow" aria-live="polite"></p>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The geography behind it">背後的地理</h2>
+      <h3 data-en="A contour line is a slice">等高線就是一刀水平切面</h3>
+      <p data-en-html="Imagine flooding an island one step at a time: each shoreline is a contour line. A topographic map draws these lines at a fixed height step, the <strong>contour interval</strong>; every fifth line is drawn thicker and labelled — the <strong>index contour</strong>. Taiwan’s 1:25,000 maps use a 10 m interval and 1:50,000 maps a 20 m interval.">想像海水一層一層把島淹上來：每一圈海岸線都是一條等高線。地形圖每隔固定的高度畫一條，這個高度差叫<strong>等高距</strong>；每五條加粗並標上高度，叫<strong>計曲線</strong>。臺灣的二萬五千分之一地形圖等高距是 10 m，五萬分之一是 20 m。</p>
+
+      <h3 data-en="Reading the lines">讀懂等高線</h3>
+      <ul>
+        <li data-en-html="<strong>Close together = steep, far apart = gentle.</strong> If the interval is \(\Delta h\) and the slope angle is \(\theta\), the lines are \(d = \Delta h / \tan\theta\) apart on the ground."><strong>越密越陡，越疏越緩。</strong>等高距是 \(\Delta h\)、坡角是 \(\theta\) 時，相鄰等高線的水平距離是 \(d = \Delta h / \tan\theta\)。</li>
+        <li data-en-html="<strong>V shapes</strong>: where contours bend into a V, the tip of the V points <em>uphill</em> in a valley and <em>downhill</em> on a spur or ridge. Rivers run along the tips of the uphill-pointing Vs."><strong>V 字形</strong>：等高線彎成 V 字時，山谷的 V 尖端指向<em>高處</em>，山脊（稜線）的 V 尖端指向<em>低處</em>。河流就沿著指向高處的那些 V 的尖端流。</li>
+        <li data-en-html="<strong>Saddle</strong>: the low point on a ridge between two summits. Two closed loops face each other and the lines pinch together like an hourglass. Mountain passes and roads over ridges are at saddles."><strong>鞍部</strong>：兩座山頂之間稜線上最低的地方。兩組封閉的等高線面對面，中間像沙漏一樣收窄。翻越山脈的山口與道路常常經過鞍部。</li>
+        <li data-en-html="<strong>Which way up?</strong> The height on an index contour is written with the top of the numbers toward higher ground, so some numbers appear upside down."><strong>數字朝哪邊？</strong>計曲線上的高度數字，字的上方朝向比較高的一側，所以有些數字看起來是倒過來的。</li>
+        <li data-en-html="<strong>Depressions</strong>: a closed loop around lower ground is marked with short ticks pointing downhill (the crater on the volcanic island)."><strong>窪地</strong>：封閉的等高線裡面比外面低時，在線上畫短短的示坡線，指向低處（火山島的火山口）。</li>
+      </ul>
+
+      <h3 data-en="Slope">坡度</h3>
+      <p data-en-html="Slope can be written as a percentage \(s\) or an angle \(\theta\), where \(\Delta h\) is the rise over a horizontal distance \(d\):">坡度可以用百分比 \(s\) 或角度 \(\theta\) 表示；\(\Delta h\) 是水平前進 \(d\) 時升高的高度：</p>
+      <div class="formula">\[ s = \frac{\Delta h}{d}\times 100\%, \qquad \theta = \arctan\frac{\Delta h}{d} \]</div>
+      <p data-en-html="A 100% slope rises 1 m for every 1 m across, which is 45°. Taiwan grades hillside land into six classes by slope when deciding what it may be used for:">坡度 100% 是每水平前進 1 m 就升高 1 m，也就是 45°。臺灣判定山坡地能怎麼利用時，把坡度分成六級：</p>
+      <table>
+        <tr><th data-en="Class">級別</th><th data-en="Slope">坡度</th><th data-en="Class">級別</th><th data-en="Slope">坡度</th></tr>
+        <tr><td data-en="Class 1">一級坡</td><td>≤ 5%</td><td data-en="Class 4">四級坡</td><td>30%–40%</td></tr>
+        <tr><td data-en="Class 2">二級坡</td><td>5%–15%</td><td data-en="Class 5">五級坡</td><td>40%–55%</td></tr>
+        <tr><td data-en="Class 3">三級坡</td><td>15%–30%</td><td data-en="Class 6">六級坡</td><td>&gt; 55%</td></tr>
+      </table>
+
+      <h3 data-en="Profiles and vertical exaggeration">地形剖面與垂直誇大</h3>
+      <p data-en-html="A profile is the shape of the ground along a line. Real hills are much wider than they are high, so profiles are usually drawn with the vertical scale stretched \(V\) times. Every slope then looks steeper: a real angle \(\theta\) is drawn as \(\theta'\), with">地形剖面是沿著一條線看到的地面高低。真實的山寬度遠大於高度，所以剖面圖通常把垂直方向放大 \(V\) 倍。這樣一來，每一段坡看起來都比較陡：真實的坡角 \(\theta\) 在圖上畫成 \(\theta'\)，</p>
+      <div class="formula">\[ \tan\theta' = V\,\tan\theta \]</div>
+      <p data-en-html="A 20° slope drawn with \(V = 5\) looks like 61°. Always check the exaggeration before judging how steep a mountain is.">20° 的坡用 \(V = 5\) 畫，看起來有 61°。判斷一座山有多陡之前，一定要先看垂直誇大了幾倍。</p>
+
+      <h3 data-en="Can they see each other?">看得見嗎？</h3>
+      <p data-en-html="Two people can see each other if the straight line between their eyes stays above the ground. Over long distances the Earth’s curvature lifts the ground in the middle by \(\Delta = \dfrac{d_1 d_2}{2R}(1-k)\), where \(d_1, d_2\) are the distances to the two ends, \(R\) is the Earth’s radius and \(k \approx 0.13\) allows for light bending in the air.">兩個人的眼睛之間連一條直線，只要這條線一直在地面上方，就看得見彼此。距離長的時候，地球是圓的，中間的地面會被「抬高」\(\Delta = \dfrac{d_1 d_2}{2R}(1-k)\)；\(d_1, d_2\) 是到兩端的距離，\(R\) 是地球半徑，\(k \approx 0.13\) 是光在空氣中彎曲（大氣折射）的修正。</p>
+
+      <h3 data-en="Things to try">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Where is it steepest?</strong> Switch the colouring to “Slope classes” and compare it with how close the contours are."><strong>哪裡最陡？</strong>把著色換成「坡度分級」，和等高線的疏密比一比。</li>
+        <li data-en-html="<strong>Find the saddle</strong> on the twin-peak island, then raise the sea until the island splits in two: at what height does it happen?"><strong>找到雙峰島的鞍部</strong>，再讓海平面上升，直到島分成兩座：在哪個高度分開？</li>
+        <li data-en-html="<strong>Follow a river upstream</strong> on the valley island: every time it crosses a contour, which way does the V point?"><strong>沿著河谷島的河往上游走</strong>：每次穿過等高線時，V 字的尖端指向哪邊？</li>
+        <li data-en-html="<strong>Change the interval</strong> from 100 m to 10 m. Which landforms only appear with the finer interval?"><strong>把等高距從 100 m 改成 10 m</strong>，有哪些地形只有在等高距小的時候才看得出來？</li>
+      </ul>
+
+      <h3 data-en="How the simulation works">模擬方法</h3>
+      <ul>
+        <li data-en-html="The four islands are imaginary, 8 km × 8 km each. Their heights are smooth formulas (Gaussian hills, a cone with a bowl-shaped crater, a rounded ridge with V-shaped side valleys, steps for the terraces) plus a fixed fractal noise so the contours wiggle like real ones.">四座島都是虛構的，各 8 km × 8 km。高度由平滑的數學式組成（高斯形狀的山、帶碗形火山口的圓錐、頂部圓滑的山脊加 V 形支谷、海階的階梯），再加上固定的碎形雜訊，讓等高線像真的一樣彎彎曲曲。</li>
+        <li data-en-html="Contours are traced on a 201 × 201 grid (40 m spacing) with the marching-squares method. Heights, slopes and profiles at the measuring point use the formula itself (slope by central differences 1 m apart), so they do not depend on the grid.">等高線在 201 × 201 的網格（間距 40 m）上用「方格行進法」描出來。量測點的高度、坡度與剖面直接用數學式計算（坡度用相距 1 m 的中央差分），和網格無關。</li>
+        <li data-en-html="Rivers: depressions are filled (priority-flood), each grid cell drains to its steepest downhill neighbour of eight (D8), and a river starts where more than 0.35 km² drains through a cell; its line is then traced straight down the true slope, so it is not bent to the eight grid directions. Islands are counted with diagonal neighbours connected; at least two grid cells make an island.">河流：先把窪地填平（優先佇列填窪法），每一格的水流向八個鄰格中最陡的下坡（D8 流向），集水面積超過 0.35 km² 的地方開始畫河；河道再沿真正的坡度方向往下描，所以不會被格子限制成八個方向。島嶼數：斜角相鄰的陸地算連在一起，至少兩格才算一座島。</li>
+        <li data-en-html="Sightlines: eyes 1.6 m above the ground (above the water at sea), with the Earth’s curvature and refraction as above; the profile is sampled at 400 points.">通視：眼睛離地 1.6 m（在海上時離水面 1.6 m），地球曲率與折射照上面的公式；剖面取 400 個點。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum: High school Geography · Geographic skills: maps (Ac-Ⅴ-1 the nature and elements of maps, Ac-Ⅴ-2 kinds of maps and their uses)">課綱對應：高中地理・地理技能：地圖（地 Ac-Ⅴ-1 地圖本質與要素、地 Ac-Ⅴ-2 地圖種類及其用途）</li>
+        <li data-en="Slope classes: Standards for Classifying the Permissible Use of Hillside Land, Ministry of Agriculture, Taiwan.">坡度分級：農業部〈山坡地土地可利用限度分類標準〉。</li>
+        <li data-en="Contour intervals of Taiwan’s topographic maps: National Land Surveying and Mapping Center, Ministry of the Interior.">臺灣地形圖的等高距：內政部國土測繪中心。</li>
+        <li data-en-html="R. Barnes, C. Lehman and D. Mulla (2014), “Priority-flood: An optimal depression-filling and watershed-labeling algorithm for digital elevation models”, <i>Computers &amp; Geosciences</i> 62.">R. Barnes、C. Lehman、D. Mulla（2014），〈Priority-flood: An optimal depression-filling and watershed-labeling algorithm for digital elevation models〉，《Computers &amp; Geosciences》第 62 卷。</li>
+        <li data-en-html="J. F. O’Callaghan and D. M. Mark (1984), “The extraction of drainage networks from digital elevation data”, <i>Computer Vision, Graphics, and Image Processing</i> 28 (the D8 flow direction).">J. F. O’Callaghan、D. M. Mark（1984），〈The extraction of drainage networks from digital elevation data〉，《Computer Vision, Graphics, and Image Processing》第 28 卷（D8 流向）。</li>
+        <li data-en-html="W. E. Lorensen and H. E. Cline (1987), “Marching cubes: A high resolution 3D surface construction algorithm”, <i>SIGGRAPH ’87</i> (the 2D version, marching squares, is used for the contours).">W. E. Lorensen、H. E. Cline（1987），〈Marching cubes: A high resolution 3D surface construction algorithm〉，《SIGGRAPH ’87》（等高線用的是它的二維版本「方格行進法」）。</li>
+        <li data-en="The islands are invented for this lab; no real map data is used. The three.js library (MIT license) is downloaded only when you switch to 3D.">島嶼地形是本實驗自己設計的，沒有使用真實地圖資料。three.js 函式庫（MIT 授權）只有切換到 3D 時才下載。</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/contour-map-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/contour-map.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="contour-map"></script>
+  <script src="js/missions/contour-map.js"></script>
+  <script src="js/stats.js" data-module="contour-map"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
