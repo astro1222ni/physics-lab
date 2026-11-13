@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Negative Numbers and Two’s Complement | Astro Ni Science Lab">負數與二補數｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 二補數頁面專用的顏色代號（淺色＋兩組深色；由 js/twos-complement.js 讀取） */
+    :root { --tc-pos: #ea580c; --tc-neg: #2563eb; --tc-zero: #eef2f7; --tc-sign: #c026d3; --tc-on: #f59e0b; --tc-off: #b8c2cf; --tc-panel: #e7edf5; --tc-c: #0891b2; --tc-v: #dc2626; --tc-ok: #15803d; --tc-b: #7c3aed; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --tc-pos: #fb923c; --tc-neg: #60a5fa; --tc-zero: #3a4556; --tc-sign: #e879f9; --tc-on: #fbbf24; --tc-off: #3a4658; --tc-panel: #121a26; --tc-c: #22d3ee; --tc-v: #f87171; --tc-ok: #4ade80; --tc-b: #b9a0ff; }
+    }
+    :root[data-theme="dark"] { --tc-pos: #fb923c; --tc-neg: #60a5fa; --tc-zero: #3a4556; --tc-sign: #e879f9; --tc-on: #fbbf24; --tc-off: #3a4658; --tc-panel: #121a26; --tc-c: #22d3ee; --tc-v: #f87171; --tc-ok: #4ade80; --tc-b: #b9a0ff; }
+
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    .cv2wrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; margin-top: 10px; border-radius: 12px; }
+    #cv2 { aspect-ratio: auto; height: 210px; touch-action: pan-x pan-y; display: block; }
+    .tc button { min-height: 44px; }
+    .tc [hidden] { display: none !important; }
+    .tc .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .tc .playbar button { padding: 6px 4px; font-variant-numeric: tabular-nums; }
+    .tc .playbar .op { font-size: calc(17px * var(--fs, 1)); font-weight: 600; }
+    .tc .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .tc .playbar2 button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .tc .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .tc .slider input[type="range"] { height: 28px; margin: 0; }
+    .tc .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tc .panel { grid-template-columns: minmax(0, 1fr); }
+    .tc .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    /* 四種表示法 */
+    .reps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 10px 0 0; }
+    .reps button { border: none; border-radius: 0; min-height: 44px; padding: 6px 6px; background: var(--bg); font-size: calc(14.5px * var(--fs, 1)); }
+    .reps button:nth-child(2n) { border-left: 1px solid var(--border); }
+    .reps button:nth-child(n+3) { border-top: 1px solid var(--border); }
+    .reps button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .reps button:disabled { opacity: 0.55; }
+    /* 輸入欄 */
+    .fields { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 10px 0 0; }
+    .fields label { font-size: calc(14px * var(--fs, 1)); white-space: nowrap; }
+    .fields input { width: 100%; min-width: 0; min-height: 44px; box-sizing: border-box; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(16px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); letter-spacing: 0.03em; }
+    .fields input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .fields input.bad { border-color: var(--tc-v); }
+    .fields input:disabled { opacity: 0.6; }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; min-height: 1.2em; color: var(--muted); }
+    .msg.bad { color: var(--tc-v); }
+    .msg.ok { color: var(--tc-ok); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .ops2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .ops2 button { font-size: calc(17px * var(--fs, 1)); font-weight: 600; }
+    .ops1 { display: flex; gap: 8px; margin: 8px 0 0; }
+    .ops1 button { flex: 1 1 auto; }
+    .flags { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.55; min-height: 2.6em; }
+    .flags b.c { color: var(--tc-c); }
+    .flags b.v { color: var(--tc-v); }
+    .flags p { margin: 0; }
+    .flags p + p { margin-top: 4px; }
+    .cmp { font-size: calc(13.5px * var(--fs, 1)); margin: 8px 0 0; line-height: 1.55; min-height: 1.2em; }
+    .cmp .ok { color: var(--tc-ok); font-weight: 600; }
+    .cmp .bad { color: var(--tc-v); font-weight: 600; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 8px; white-space: nowrap; }
+    #opLog td { text-align: right; }
+    #opLog td:first-child { text-align: left; }
+    #opLog td.on-c { color: var(--tc-c); font-weight: 700; }
+    #opLog td.on-v { color: var(--tc-v); font-weight: 700; }
+    #opLog:empty, #roundLog:empty { display: none; }
+    #readTab td:nth-child(2) { text-align: right; font-weight: 600; }
+    #readTab td:nth-child(3) { color: var(--muted); font-size: calc(12.5px * var(--fs, 1)); }
+    #readTab tr.cur td { background: var(--accent-soft); }
+    #readTab tr.cur td:first-child { font-weight: 700; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 旗標挑戰 */
+    .quiz-q { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: calc(15.5px * var(--fs, 1)); min-height: 1.4em; line-height: 1.6; }
+    .quiz-q b { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .quiz-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+    .quiz-row button { flex: 1 1 auto; }
+    .quiz-row .pick { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
+    .quiz-row .pick[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .quiz-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .quiz-stat b { color: var(--text); }
+    #roundLog td, #roundLog th { text-align: right; }
+    .tc.quizzing .noquiz { display: none !important; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#data&quot;>Information Technology · Data Representation</a> / Two’s complement"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#data">資訊科技・資料表示</a> ／ 二補數</nav>
+      <h1 data-en="Negative Numbers and Two’s Complement">負數與二補數</h1>
+      <p data-en="A register is only a row of lamps — there is no minus sign inside a computer. Bend the row of patterns into a ring, decide which half counts as negative, and watch one and the same adder handle positive and negative numbers. See why “invert and add one” negates a number, why the carry flag C and the overflow flag V are two different alarms, and how a negative number keeps its value when it is widened.">暫存器只是一排燈，電腦裡沒有「負號」這種東西。把所有位元圖樣彎成一個圓環，決定哪一半算負數，就能讓同一個加法器同時處理正數和負數。看「取反再加一」為什麼就是取負、最高位進位 C 和溢位 V 為什麼是兩盞不同的警示燈，以及負數變寬時怎麼保持原值。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: from 0, press “−1” and watch every lamp light up. Then switch between the four representations: the same lamps read as a different number.">試試看：從 0 按「−1」，看所有的燈一起亮起來；再切換四種表示法，同一排燈讀出不同的數。</p>
+    <div class="lab tc" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="數字環與暫存器 A：所有位元圖樣排成一圈，0 在頂端、順時針遞增；外圈標無號值，內圈標目前表示法的值。頂端是 C 的接縫，底端是 V 的接縫。右邊（窄螢幕在下面）是暫存器 A 的燈，點一下燈可以切換亮暗。" data-en-aria-label="Number ring and register A: every bit pattern sits on a ring, 0 at the top, increasing clockwise; the outside shows unsigned values and the inside the value in the current representation. The C seam is at the top and the V seam at the bottom. To the right (below on narrow screens) are the lamps of register A; tap a lamp to switch it."></canvas>
+        <div class="playbar">
+          <button id="incBtn" type="button" class="op" title="A 加 1（指針順時針走一格）" data-en-title="Add 1 to A (the pointer moves one step clockwise)">+1</button>
+          <button id="decBtn" type="button" class="op" title="A 減 1（指針逆時針走一格）" data-en-title="Subtract 1 from A (the pointer moves one step anticlockwise)">−1</button>
+          <button id="notBtn" type="button" title="每一位取反（0 變 1、1 變 0）" data-en-title="Invert every bit (0 becomes 1, 1 becomes 0)" data-en="Invert">取反</button>
+          <button id="negBtn" type="button" title="用目前的表示法求 −A" data-en-title="Work out −A in the current representation" data-en="Negate">取負</button>
+          <button id="clearBtn" type="button" data-en="Reset to 0">歸零</button>
+        </div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉直式、弧線、運算紀錄與挑戰紀錄；位元數、表示法、A、B 不變" data-en-title="Clear the worked sum, the arcs, the operation log and the challenge log; the number of bits, the representation, A and B stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="cv2wrap" id="cv2wrap">
+          <canvas id="cv2" aria-label="直式：最近一次運算一位一位算出來的樣子。最上面一列是每一位的進位，下面是 A、B 與結果，最下面是 C、V、N、Z 四盞旗標燈。點 B 那一列的位元可以切換。" data-en-aria-label="Worked sum: the latest operation, bit by bit. The top row shows the carry into each column, then A, B and the result, and the four flag lamps C, V, N and Z at the bottom. Tap a bit in the B row to switch it."></canvas>
+        </div>
+        <p class="chart-cap" data-en="Worked sum: carries run from right to left. The carry that leaves the top bit is C; V compares the carries into and out of the top bit.">直式：進位由右往左傳。最高位送出去的進位就是 C；V 比較的是流進、流出最高位的兩個進位。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Register A">暫存器 A</h2>
+          <div class="slider"><label for="nb" data-en="Number of bits n">位元數 n</label><output id="nbo"></output>
+            <input id="nb" type="range" min="4" max="32" step="1" value="8" data-decimals="0"></div>
+          <div class="reps" role="group" aria-label="表示法" data-en-aria-label="Representation">
+            <button id="repTwos" type="button" aria-pressed="true" data-en="Two’s complement">二補數</button>
+            <button id="repOnes" type="button" aria-pressed="false" data-en="Ones’ complement">一補數</button>
+            <button id="repSign" type="button" aria-pressed="false" data-en="Sign–magnitude">原碼</button>
+            <button id="repBias" type="button" aria-pressed="false" data-en="Offset (bias)">偏移碼</button>
+          </div>
+          <div class="fields">
+            <label for="inDec" data-en="Decimal">十進位</label><input id="inDec" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="aMsg">
+            <label for="inHex" data-en="Hexadecimal">十六進位</label><input id="inHex" type="text" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-describedby="aMsg">
+            <label for="inBin" data-en="Binary">二進位</label><input id="inBin" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" aria-describedby="aMsg">
+          </div>
+          <p class="msg" id="aMsg" aria-live="polite" data-en="Type in a box and press Enter. Decimal is read in the current representation (−0 is allowed where it exists); hexadecimal and binary set the lamps directly.">在欄位輸入後按 Enter。十進位照目前的表示法寫進燈裡（有負零的表示法可以輸入 −0）；十六進位、二進位直接設定燈號。</p>
+          <dl class="readout">
+            <dt data-en="Range">範圍</dt><dd id="rRange">—</dd>
+            <dt data-en="Ways to write 0">0 的寫法</dt><dd id="rZero">—</dd>
+            <dt data-en="Different numbers">不同的數</dt><dd id="rCount">—</dd>
+          </dl>
+          <p class="hint" data-en="Changing the representation keeps the lamps and reads them in a new way. Changing n keeps the value when it still fits (a negative number in two’s complement is sign-extended); otherwise only the lowest bits stay. Tap the number beside a slider to type it.">換表示法時燈號不變，只是換一種讀法。改位元數時，值放得下就保留（二補數的負數會做符號延伸），放不下就只留最低的幾個位元。點一下滑桿旁的數字可以直接輸入。</p>
+        </section>
+
+        <section class="card noquiz">
+          <h2 data-en="Adding and subtracting">加法與減法</h2>
+          <div class="fields">
+            <label for="inB" data-en="B (decimal)">B（十進位）</label><input id="inB" type="text" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="bMsg">
+          </div>
+          <p class="msg" id="bMsg" aria-live="polite" data-en="Type B and press Enter, or tap the bits of the B row in the worked sum.">輸入 B 後按 Enter，或點直式裡 B 那一列的位元。</p>
+          <div class="ops2">
+            <button id="addBtn" type="button" class="primary">A + B</button>
+            <button id="subBtn" type="button" class="primary">A − B</button>
+          </div>
+          <div class="flags" id="flagMsg" aria-live="polite"></div>
+          <p class="cmp" id="cmpMsg" aria-live="polite"></p>
+          <div class="ops1">
+            <button id="resBtn" type="button" disabled data-en="Put the result into A">結果放回 A</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="opLog"></table></div>
+          <p class="log-empty" id="opEmpty" data-en="Each sum you work out is listed here.">算過的加減法會列在這裡。</p>
+        </section>
+
+        <section class="card noquiz">
+          <h2 data-en="Sign extension">符號延伸</h2>
+          <div class="slider"><label for="mb" data-en="Widen to m bits">延伸到 m 位元</label><output id="mbo"></output>
+            <input id="mb" type="range" min="5" max="32" step="1" value="16" data-decimals="0"></div>
+          <div class="ops1">
+            <button id="extBtn" type="button" class="primary" data-en="Extend">延伸</button>
+          </div>
+          <p class="msg" id="extMsg" aria-live="polite"></p>
+          <p class="hint" data-en="Widening copies the sign bit into every new bit (sign extension) and compares it with filling the new bits with 0 (zero extension). Both are read as two’s complement.">把 A 放寬成 m 位元：新的高位全部複製符號位（符號延伸），並和「新的高位全部補 0」（補零延伸）比較；兩者都用二補數讀。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Flag challenge">旗標挑戰</h2>
+          <p class="hint" data-en="Ten sums in two’s complement with the current number of bits. Before the adder runs, predict both flags: is the carry C out of the top bit 1? Is the signed answer out of range (V = 1)?">用目前的位元數、二補數出 10 題加減法。加法器算之前，先預測兩盞旗標：最高位會不會送出進位（C）？有號的答案會不會超出範圍（V）？</p>
+          <div class="quiz-row">
+            <button id="quizStart" type="button" class="primary" data-en="Start the challenge">開始挑戰</button>
+            <button id="quizStop" type="button" hidden data-en="Stop">結束挑戰</button>
+          </div>
+          <div class="quiz-q" id="quizQ" aria-live="polite" data-en="Press “Start the challenge”.">按「開始挑戰」。</div>
+          <div class="quiz-row" id="quizPick" hidden>
+            <button id="pickC" type="button" class="pick" aria-pressed="false">C = 0</button>
+            <button id="pickV" type="button" class="pick" aria-pressed="false">V = 0</button>
+          </div>
+          <div class="quiz-row">
+            <button id="quizOk" type="button" class="primary" disabled data-en="Check">確定</button>
+          </div>
+          <div class="quiz-stat" id="quizStat"></div>
+          <div class="tablewrap"><table class="data" id="roundLog"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Finished rounds are listed here.">完成的回合會列在這裡。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="One row of lamps, five readings">同一排燈的五種讀法</h2>
+          <div class="tablewrap"><table class="data" id="readTab"></table></div>
+          <p class="hint" data-en="The highlighted row is the representation in use. Unsigned and two’s complement always agree when the top bit is 0.">底色那一列是目前使用的表示法。最高位是 0 時，無號與二補數讀出來一定一樣。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en-html="A clock with 2<sup>n</sup> places">只有 2<sup>n</sup> 格的時鐘</h3>
+      <p data-en-html="A register of \(n\) bits keeps only the lowest \(n\) bits of every result, so all its arithmetic is done modulo \(2^{n}\): like a clock, one step past \(2^{n}-1\) is \(0\) again (see <a href=&quot;binary-numbers.html&quot;>Binary Numbers and Number Bases</a> for the unsigned view). On this ring, one step back from \(0\) lands on \(11\cdots1\). That is the natural pattern for \(-1\): it is the number that gives \(0\) when you add \(1\). <strong>Two’s complement</strong> simply declares the second half of the ring — every pattern whose top bit is 1 — to be the negative numbers.">\(n\) 個位元的暫存器只留得住結果的最低 \(n\) 位，所以它的算術全都是 mod \(2^{n}\)：像時鐘一樣，\(2^{n}-1\) 再走一格就回到 \(0\)（無號數的部分見〈<a href="binary-numbers.html">二進位與進位制</a>〉）。在這個環上，從 \(0\) 往回走一格就到 \(11\cdots1\)。把它叫做 \(-1\) 最自然：它就是「加 1 會得到 0」的那個數。<strong>二補數</strong>就是把環的後半圈——最高位是 1 的圖樣——全部當成負數。</p>
+      <div class="formula">\[ v = -b_{n-1}\,2^{n-1} + \sum_{i=0}^{n-2} b_i\, 2^{i}, \qquad -2^{n-1} \le v \le 2^{n-1}-1 \]</div>
+      <p data-en-html="So the top bit is worth \(-2^{n-1}\) instead of \(+2^{n-1}\); for 8 bits, \((1100\,1000)_2 = -128 + 64 + 8 = -56\). The same pattern read as an unsigned number is \(200 = -56 + 256\): the two readings always differ by \(2^{n}\) or by nothing.">也就是最高位的權重是 \(-2^{n-1}\)，不是 \(+2^{n-1}\)；8 位元時 \((1100\,1000)_2 = -128 + 64 + 8 = -56\)。同一排燈當成無號數讀是 \(200 = -56 + 256\)：兩種讀法不是相等，就是剛好差 \(2^{n}\)。</p>
+
+      <h3 data-en="Invert, then add one">取反再加一</h3>
+      <p data-en-html="Inverting every bit of \(x\) gives \(\bar{x}\), and \(x + \bar{x}\) is a row of all 1s, which is \(2^{n}-1\). Therefore \(\bar{x} + 1 = 2^{n} - x\), and modulo \(2^{n}\) that is exactly \(-x\). The one number that breaks the rule is the most negative one, \(-2^{n-1}\): its opposite \(+2^{n-1}\) does not fit, and negating it gives itself back (only 0 shares this property).">把 \(x\) 的每一位取反得到 \(\bar{x}\)，而 \(x + \bar{x}\) 是全部是 1 的一排，也就是 \(2^{n}-1\)。所以 \(\bar{x} + 1 = 2^{n} - x\)，mod \(2^{n}\) 正好是 \(-x\)。唯一的例外是最小的數 \(-2^{n-1}\)：它的相反數 \(+2^{n-1}\) 放不下，取負之後還是它自己（另一個取負不變的數只有 0）。</p>
+      <div class="formula">\[ x + \bar{x} = 2^{n} - 1 \;\Longrightarrow\; -x \equiv \bar{x} + 1 \pmod{2^{n}} \]</div>
+
+      <h3 data-en="Four ways to store a negative number">負數的四種存法</h3>
+      <ul>
+        <li data-en-html="<strong>Sign–magnitude</strong>: the top bit is the sign, the other bits are the size. Range \(-(2^{n-1}-1)\) to \(2^{n-1}-1\), with both \(+0\) and \(-0\). Easy for people to read, but an adder must first compare signs and sizes."><strong>原碼</strong>（符號＋大小）：最高位是符號，其餘是大小。範圍 \(-(2^{n-1}-1)\) 到 \(2^{n-1}-1\)，有 \(+0\) 和 \(-0\)。人看起來最直覺，但加法器得先比較符號和大小。</li>
+        <li data-en-html="<strong>Ones’ complement</strong>: a negative number is its positive partner with every bit inverted. Same range, also with \(-0\) (all 1s). When adding, a carry out of the top bit must be added back in at the bottom (the end-around carry)."><strong>一補數</strong>：負數 = 把對應的正數每一位取反。範圍同原碼，也有 \(-0\)（全部是 1）。相加時，最高位送出的進位要加回最低位（迴繞進位）。</li>
+        <li data-en-html="<strong>Two’s complement</strong>: invert, then add one. Range \(-2^{n-1}\) to \(2^{n-1}-1\) with a single 0. Addition and subtraction use exactly the same adder as unsigned numbers, with no need to look at signs — which is why practically every modern processor uses it."><strong>二補數</strong>：取反再加一。範圍 \(-2^{n-1}\) 到 \(2^{n-1}-1\)，只有一個 0。加法和減法跟無號數用同一個加法器，完全不必看正負——這就是現代處理器幾乎都用它的原因。</li>
+        <li data-en-html="<strong>Offset (bias)</strong>: value = unsigned value \(-\,2^{n-1}\). The order of the patterns is the order of the values, so two numbers can be compared like unsigned ones; it differs from two’s complement only in the top bit. The exponent of IEEE 754 floating-point numbers is stored with an offset too (there the offset is \(2^{k-1}-1\), for example 127 in single precision)."><strong>偏移碼</strong>：值 = 無號值 \(-\,2^{n-1}\)。圖樣的大小順序就是數值的順序，可以直接當成無號數比大小；它和二補數只差最高位。IEEE 754 浮點數的指數也用偏移的寫法（偏移量是 \(2^{k-1}-1\)，例如單精度的 127）。</li>
+      </ul>
+
+      <h3 data-en="Two different alarms: C and V">兩盞不同的警示燈：C 與 V</h3>
+      <p data-en-html="The adder works one column at a time; \(c_i\) is the carry into column \(i\) (\(c_0\) is the carry-in) and \(c_n\) is the carry out of the top column. Four flags describe the result \(r\):">加法器一位一位地算；\(c_i\) 是流進第 \(i\) 位的進位（\(c_0\) 是進位輸入），\(c_n\) 是最高位送出去的進位。四盞旗標描述結果 \(r\)：</p>
+      <div class="formula">\[ C = c_{n}, \qquad V = c_{n} \oplus c_{n-1}, \qquad N = r_{n-1}, \qquad Z = \begin{cases} 1 & r = 0 \\ 0 & r \ne 0 \end{cases} \]</div>
+      <ul>
+        <li data-en-html="<strong>C (carry)</strong> speaks about the <em>unsigned</em> reading: in an addition, \(C = 1\) means the true sum is at least \(2^{n}\) and wrapped round the ring. A subtraction \(A - B\) is done by the same adder as \(A + \bar{B} + 1\); then \(C = 1\) means <em>no borrow</em> (\(A \ge B\) as unsigned numbers) and \(C = 0\) means a borrow. This page follows the convention of ARM, PowerPC and the 6502; on x86 the carry flag CF is inverted for subtraction and records the borrow itself."><strong>C（進位）</strong>說的是<em>無號</em>的讀法：加法時 \(C = 1\) 表示真正的和至少是 \(2^{n}\)，繞過了一圈。減法 \(A - B\) 用同一個加法器算 \(A + \bar{B} + 1\)；這時 \(C = 1\) 表示<em>沒有借位</em>（當成無號數 \(A \ge B\)），\(C = 0\) 表示借位。本頁採用 ARM、PowerPC、6502 的慣例；x86 的 CF 在減法時反過來，記的就是借位。</li>
+        <li data-en-html="<strong>V (overflow)</strong> speaks about the <em>signed</em> (two’s complement) reading: \(V = 1\) means the true answer is outside \(-2^{n-1}\dots 2^{n-1}-1\). The rule of thumb: two numbers with the same sign are added and the result has the other sign (for \(A - B\): \(A\) and \(B\) have different signs and the result’s sign differs from \(A\)’s). Adding numbers with different signs can never overflow."><strong>V（溢位）</strong>說的是<em>有號</em>（二補數）的讀法：\(V = 1\) 表示真正的答案超出 \(-2^{n-1}\dots 2^{n-1}-1\)。判斷的口訣：兩個同號的數相加，結果卻變號（減法 \(A - B\)：\(A\)、\(B\) 異號，結果和 \(A\) 異號）。異號的兩數相加永遠不會溢位。</li>
+        <li data-en-html="On the ring, the C seam is at the top (\(11\cdots1 \to 00\cdots0\)) and the V seam at the bottom (\(01\cdots1 \to 10\cdots0\)). The same sum walks an unsigned arc and a signed arc that end at the same place but may cross different seams, so all four combinations of C and V happen.">在數字環上，C 的接縫在頂端（\(11\cdots1 \to 00\cdots0\)），V 的接縫在底端（\(01\cdots1 \to 10\cdots0\)）。同一個加法，當成無號數走的弧與當成有號數走的弧終點相同，卻可能跨過不同的接縫，所以 C 和 V 的四種組合都會發生。</li>
+      </ul>
+
+      <h3 data-en="Sign extension">符號延伸</h3>
+      <p data-en-html="To widen a two’s complement number from \(n\) to \(m\) bits, copy the sign bit into every new bit. The value stays the same, because the new top weight and the copied 1s add up to the old top weight:">把二補數從 \(n\) 位元放寬成 \(m\) 位元時，新的高位全部複製符號位，值不變——新的最高位權重加上複製出來的那些 1，剛好等於原來的最高位權重：</p>
+      <div class="formula">\[ -2^{m-1} + \sum_{i=n-1}^{m-2} 2^{i} = -2^{m-1} + \left(2^{m-1} - 2^{n-1}\right) = -2^{n-1} \]</div>
+      <p data-en-html="Filling the new bits with 0 instead (zero extension) keeps unsigned numbers but turns a negative number into a large positive one. Going the other way, cutting a number down to fewer bits (truncation) keeps only the lowest bits, and the value survives only if it fits in the new range. The adder itself is built from logic gates — see <a href=&quot;logic-gates.html&quot;>Logic Gates</a>.">如果新的高位補 0（補零延伸），無號數不變，負數卻會變成很大的正數。反過來把位元數變少（截斷）時只留最低的位元，值要在新的範圍裡才保得住。加法器本身由邏輯閘組成，見〈<a href="logic-gates.html">邏輯閘</a>〉。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>All lamps on</strong>: from 0, press “−1”. Why does every lamp light up? Switch to the other three representations: what does the same row of lamps mean now?"><strong>燈全亮</strong>：從 0 按「−1」，為什麼所有的燈都亮了？切到另外三種表示法，同一排燈代表什麼？</li>
+        <li data-en-html="<strong>Where the colours break</strong>: on the ring, which representation has its jump at the top, and which at the bottom? Why do the negative numbers of sign–magnitude run “backwards”?"><strong>顏色在哪裡斷開</strong>：數字環上，哪一種表示法的顏色在頂端斷開、哪一種在底端？原碼的負數為什麼是「倒著排」的？</li>
+        <li data-en-html="<strong>C without V, V without C</strong>: find an addition with C = 1 whose answer is still right, and one with V = 1 but no carry. Why can two negative numbers give C = 1 and V = 1 at the same time?"><strong>有 C 沒 V、有 V 沒 C</strong>：找一個 C = 1 但答案完全正確的加法，再找一個 V = 1 卻沒有進位的加法。為什麼兩個負數相加可能 C、V 同時是 1？</li>
+        <li data-en-html="<strong>One more negative</strong>: why does two’s complement have one more negative number than positive numbers? What happens when you negate the smallest one?"><strong>負數多一個</strong>：二補數為什麼負數比正數多一個？把最小的那個數取負會怎樣？</li>
+        <li data-en-html="<strong>Widening</strong>: an 8-bit negative number widened to 16 bits — why must the eight new lamps be on? What would it become if they were 0?"><strong>放寬</strong>：一個 8 位元的負數放寬成 16 位元，新的 8 盞燈為什麼要亮？如果補 0，會變成多少？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="A bit pattern is stored as a whole number from \(0\) to \(2^{n}-1\) with \(n \le 32\), which JavaScript numbers hold exactly (the page does not use JavaScript’s 32-bit bitwise operators). Additions and subtractions run through a simulated ripple-carry adder that records every carry \(c_0 \dots c_n\); the flags are read from those carries.">位元圖樣存成 \(0\) 到 \(2^{n}-1\) 的整數（\(n \le 32\)，JavaScript 的數字可以完全精確地表示，本頁不使用 JavaScript 的 32 位元位元運算子）。加減法交給模擬的漣波進位加法器，一位一位記下進位 \(c_0 \dots c_n\)，旗標由這些進位讀出。</li>
+        <li data-en-html="The unit tests convert every pattern for \(n = 4\) to \(16\) to a value and back in all four representations; check that sums and differences agree with integer arithmetic modulo \(2^{n}\); compare, for every pair \(A, B\) with \(n \le 8\), the three definitions of V (carry exclusive-or, the sign rule, and “the true result is out of range”) and the definition of C (unsigned sum \(\ge 2^{n}\); \(A \ge B\) for subtraction); and test negation, sign extension, truncation and the 32-bit sum \(2147483647 + 1\).">單元測試：\(n = 4\) 到 \(16\) 的每一個圖樣在四種表示法裡往返轉換；加減法與整數運算 mod \(2^{n}\) 一致；\(n \le 8\) 的每一組 \(A, B\) 都比對 V 的三種定義（進位互斥或、同號規則、真正的結果超出範圍）與 C 的定義（無號和 \(\ge 2^{n}\)；減法時 \(A \ge B\)）；另外檢查取負、符號延伸、截斷與 32 位元的 \(2147483647 + 1\)。</li>
+        <li data-en="The pointer movement, the growing arcs, the rippling carries and the sounds only show results that have already been computed; the numbers themselves change at once.">指針轉動、弧線伸長、進位一格一格傳和聲音，只是把已經算好的結果畫出來；數值本身是立刻改變的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): D-IV-2, ways to represent digital data (binary representation of data, the idea of encoding); P-IV-1, basic concepts, functions and uses of programming languages (data types, arithmetic); S-IV-2, the structure of a system platform and how it basically works (the CPU).">課綱對應：資D-IV-2 數位資料的表示方法（二進位資料表示法、編碼的概念）；資P-IV-1 程式語言基本概念、功能及應用（資料形態、算術運算）；資S-IV-2 系統平台之組成架構與基本運作原理（CPU）。</li>
+        <li data-en="David A. Patterson and John L. Hennessy, Computer Organization and Design: The Hardware/Software Interface, Chapter 2, section “Signed and Unsigned Numbers” (two’s complement, negation, sign extension, overflow).">David A. Patterson、John L. Hennessy，《Computer Organization and Design: The Hardware/Software Interface》第 2 章〈Signed and Unsigned Numbers〉一節（二補數、取負、符號延伸、溢位）。</li>
+        <li data-en="Donald E. Knuth, The Art of Computer Programming, Vol. 2: Seminumerical Algorithms, 3rd ed., Section 4.1 (Positional Number Systems), on two’s and ones’ complement notation.">Donald E. Knuth，《The Art of Computer Programming》第 2 卷（Seminumerical Algorithms）第 3 版，4.1 節 Positional Number Systems（二補數與一補數記法）。</li>
+        <li data-en="The carry flag after a subtraction: Intel 64 and IA-32 Architectures Software Developer’s Manual, Vol. 1, Section 3.4.3.1 (Status Flags: CF records a borrow); Arm Architecture Reference Manual, pseudocode function AddWithCarry (subtraction as A + NOT(B) + 1, carry = 1 means no borrow).">減法時的進位旗標：Intel 64 and IA-32 Architectures Software Developer’s Manual 第 1 卷 3.4.3.1 節（Status Flags；CF 記的是借位）；Arm Architecture Reference Manual 的虛擬碼 AddWithCarry（減法算 A + NOT(B) + 1，進位 = 1 表示沒有借位）。</li>
+        <li data-en="End-around carry in practice: RFC 1071, Computing the Internet Checksum (R. Braden, D. Borman, C. Partridge, 1988) — the checksum of IP, TCP and UDP headers is a 16-bit ones’ complement sum.">迴繞進位的實際用途：RFC 1071〈Computing the Internet Checksum〉（R. Braden、D. Borman、C. Partridge，1988）——IP、TCP、UDP 表頭的校驗和就是 16 位元的一補數加法。</li>
+        <li data-en="Since C++20 the C++ standard requires signed integers to use two’s complement: proposal P0907, Signed Integers are Two’s Complement (J. F. Bastien), adopted in the wording of P1236R1 (Jens Maurer, 2018).">C++20 起，C++ 標準規定有號整數一律用二補數：提案 P0907〈Signed Integers are Two’s Complement〉（J. F. Bastien），採用的條文是 P1236R1（Jens Maurer，2018）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Two%27s_complement&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Two’s complement (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Signed_number_representations&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Signed number representations (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Carry_flag&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Carry flag (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Overflow_flag&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Overflow flag (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Two%27s_complement" target="_blank" rel="noopener">Two’s complement（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Signed_number_representations" target="_blank" rel="noopener">Signed number representations（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Carry_flag" target="_blank" rel="noopener">Carry flag（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Overflow_flag" target="_blank" rel="noopener">Overflow flag（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/twos-complement-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/twos-complement.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="twos-complement"></script>
+  <script src="js/missions/twos-complement.js"></script>
+  <script src="js/stats.js" data-module="twos-complement"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="CPU Scheduling | Astro Ni Science Lab">CPU 排程：先到先做、最短優先與輪流｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* CPU 排程頁面專用的顏色代號（淺色＋兩組深色；由 js/cpu-scheduling.js 讀取）
+       p1–p8：八個行程（再配花紋與編號區分）；wait 等待、sw 情境切換、idle 閒置、chip CPU 晶片、best 最好的方法 */
+    :root { --cs-p2-ink: #b45309; --cs-p3-ink: #047857; --cs-p1: #2563eb; --cs-p2: #d97706; --cs-p3: #0f9a6e; --cs-p4: #dc2626; --cs-p5: #7c3aed; --cs-p6: #0891b2; --cs-p7: #be185d; --cs-p8: #5f8a0b;
+      --cs-wait: #94a3b8; --cs-sw: #8b6f47; --cs-idle: #a3adb8; --cs-chip: #334155; --cs-best: #b45309; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --cs-p2-ink: #fbbf24; --cs-p3-ink: #34d399; --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
+        --cs-wait: #7b8a9e; --cs-sw: #c8a678; --cs-idle: #64707e; --cs-chip: #1e293b; --cs-best: #fcd34d; }
+    }
+    :root[data-theme="dark"] { --cs-p2-ink: #fbbf24; --cs-p3-ink: #34d399; --cs-p1: #6ea8ff; --cs-p2: #fbbf24; --cs-p3: #34d399; --cs-p4: #f87171; --cs-p5: #b99bff; --cs-p6: #22d3ee; --cs-p7: #f472b6; --cs-p8: #a3e635;
+      --cs-wait: #7b8a9e; --cs-sw: #c8a678; --cs-idle: #64707e; --cs-chip: #1e293b; --cs-best: #fcd34d; }
+
+    /* 畫布高度由程式依寬度與行程數決定；手機上可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 420px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 260px; touch-action: pan-y; cursor: pointer; margin-top: 6px; }
+    #cv3 { aspect-ratio: auto; height: 220px; touch-action: pan-y; cursor: default; margin-top: 6px; }
+    .cs [hidden] { display: none !important; }
+    .cs .panel { grid-template-columns: minmax(0, 1fr); }
+    .cs .panel > .card { min-width: 0; }
+    .cs .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .cs .slider input[type="range"] { height: 28px; margin: 0; }
+    .cs .checks label { min-height: 44px; }
+    .cs .checks input { width: 17px; height: 17px; flex: none; }
+    /* 演算法選擇 */
+    .algos { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 0 0 8px; }
+    @media (max-width: 720px) { .algos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .algos button { padding: 4px 4px; min-height: 48px; line-height: 1.15; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-width: 0; }
+    .algos b { font-size: calc(14.5px * var(--fs, 1)); letter-spacing: .02em; }
+    .algos small { font-size: calc(11.5px * var(--fs, 1)); opacity: .85; overflow-wrap: anywhere; text-align: center; }
+    .algos button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+    /* 播放列 */
+    .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .playbar button { flex: 1 1 auto; padding: 7px 10px; }
+    .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .cs .stage .status { margin: 6px 4px 0; min-height: 2.9em; }
+    .legend .sym { display: inline-block; min-width: 1.1em; text-align: center; font-weight: 700; margin-right: 4px; }
+    .legend i.run { height: 10px; width: 16px; background: repeating-linear-gradient(135deg, var(--cs-p1) 0 4px, color-mix(in srgb, var(--cs-p1) 70%, #fff) 4px 6px); }
+    .legend i.wait { height: 8px; width: 16px; background: color-mix(in srgb, var(--cs-wait) 35%, transparent); border: 1px dashed var(--cs-wait); }
+    .legend i.sw { height: 10px; width: 10px; background: repeating-linear-gradient(45deg, var(--cs-sw) 0 2px, transparent 2px 4px); border: 1px solid var(--cs-sw); }
+    .legend i.idle { height: 8px; width: 16px; background: none; border: 1px dashed var(--cs-idle); }
+    .chart-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 16px 4px 0; flex-wrap: wrap; }
+    .chart-head h2 { font-size: calc(15px * var(--fs, 1)); margin: 0; }
+    .chart-head span { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+    .legend i.dot { background: none !important; border-top: 2px dotted currentColor; height: 0; }
+    .legend i.bar { height: 10px; width: 10px; border-radius: 2px; }
+    /* 工作表 */
+    .sheetwrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 4px 0 0; }
+    table.sheet { border-collapse: collapse; width: 100%; font-size: calc(14px * var(--fs, 1)); }
+    table.sheet th { font-size: calc(12px * var(--fs, 1)); color: var(--muted); font-weight: 600; padding: 2px 3px 4px; text-align: center; line-height: 1.2; vertical-align: bottom; }
+    table.sheet td { padding: 2px 3px; text-align: center; }
+    table.sheet td.pid { font-weight: 700; white-space: nowrap; text-align: left; }
+    table.sheet .chip { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 5px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); }
+    table.sheet input { width: 100%; min-width: 3.2em; max-width: 5em; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 2px 4px; text-align: center;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font-variant-numeric: tabular-nums; }
+    table.sheet input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    table.sheet input.bad { border-color: var(--cs-p4); }
+    table.sheet tr.dim td.pri input { opacity: .55; }
+    .rowline { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0 0; }
+    .rowline button { flex: 0 0 auto; }
+    .rowline select { flex: 1 1 10em; min-width: 0; min-height: 44px; font: inherit; font-size: calc(14px * var(--fs, 1)); padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .rowline .seedinfo { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    /* 讀數與表格 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    .eq { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; background: var(--accent-soft); overflow-x: auto; overflow-y: hidden; text-align: center; min-height: 2.6em; }
+    .eq .katex { font-size: 1.0em; }
+    .eq-note { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 6px 0 0; }
+    table.nums { border-collapse: collapse; width: 100%; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.nums th, table.nums td { padding: 4px 5px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--border); }
+    table.nums th { color: var(--muted); font-weight: 600; font-size: calc(12px * var(--fs, 1)); white-space: normal; vertical-align: bottom; line-height: 1.25; }
+    table.nums th:first-child, table.nums td:first-child { text-align: left; }
+    table.nums tr.cur td { background: color-mix(in srgb, var(--accent) 12%, transparent); font-weight: 700; }
+    table.nums td.best { color: var(--cs-best); font-weight: 700; }
+    table.nums td.pend { color: var(--muted); }
+    table.nums .chip { display: inline-block; width: 11px; height: 11px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#system&quot;>Information Technology · Computer Systems</a> / CPU scheduling"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#system">資訊科技・計算機系統</a> ／ CPU 排程</nav>
+      <h1 data-en="CPU Scheduling: First Come, Shortest First and Taking Turns">CPU 排程：先到先做、最短優先與輪流</h1>
+      <p data-en="One processor, many programs waiting for it. Whenever the CPU is free, the operating system has to pick who goes next — and that choice decides how long everyone waits. Fill in a table of processes, then watch first-come-first-served, shortest-job-first, shortest-remaining-time, round robin and priority scheduling build their Gantt charts step by step. Compare the waiting, turnaround and response times side by side, change the time quantum, and see what context switches really cost.">一顆 CPU，很多程式在排隊。每當 CPU 空下來，作業系統就得決定下一個輪到誰——這個決定，決定了大家要等多久。填好一張行程的工作表，看先到先做、最短優先、最短剩餘時間、輪流與優先權排程一步一步畫出甘特圖；把等待時間、周轉時間、回應時間並排比較，調整時間片，看看情境切換到底要付出多少代價。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play” to watch FCFS at work, then choose “RR” and compare the average waiting times in the side-by-side chart.">試試看：按「播放」看 FCFS 怎麼排，再選「RR」，在並排比較圖上比一比平均等待時間。</p>
+    <div class="lab cs" id="lab">
+      <div class="stage" id="stage">
+        <div class="algos" id="algos" role="group" aria-label="排程方法" data-en-aria-label="Scheduling algorithm">
+          <button type="button" data-algo="fcfs" aria-pressed="true" data-en-html="<b>FCFS</b><small>first come, first served</small>"><b>FCFS</b><small>先到先做</small></button>
+          <button type="button" data-algo="sjf" aria-pressed="false" data-en-html="<b>SJF</b><small>shortest job first</small>"><b>SJF</b><small>最短優先</small></button>
+          <button type="button" data-algo="srtf" aria-pressed="false" data-en-html="<b>SRTF</b><small>shortest remaining time</small>"><b>SRTF</b><small>最短剩餘時間</small></button>
+          <button type="button" data-algo="rr" aria-pressed="false" data-en-html="<b>RR</b><small>round robin</small>"><b>RR</b><small>輪流</small></button>
+          <button type="button" data-algo="pn" aria-pressed="false" data-en-html="<b>Priority</b><small>non-preemptive</small>"><b>優先權</b><small>不搶先</small></button>
+          <button type="button" data-algo="pp" aria-pressed="false" data-en-html="<b>Priority</b><small>preemptive</small>"><b>優先權</b><small>可搶先</small></button>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="排程畫布：上方是 CPU 與就緒佇列，中間是甘特圖（每個行程一種顏色加花紋與編號），下面是每個行程的時間線與就緒佇列的長度。左右方向鍵可以一步一步前進或後退。" data-en-aria-label="Scheduling canvas: the CPU and the ready queue at the top, the Gantt chart in the middle (each process has its own colour, pattern and number), and below it a timeline for every process and the length of the ready queue. Use the left and right arrow keys to step backwards and forwards."></canvas>
+        <div class="playbar">
+          <button id="back" type="button" data-en="Step back" title="回到上一個排程事件" data-en-title="Go back to the previous scheduling event">上一步</button>
+          <button id="step" type="button" data-en="Step" title="前進到下一個排程事件：有行程到達、開始、被換下或做完的時刻" data-en-title="Go to the next scheduling event: a process arrives, starts, is switched out or finishes">單步</button>
+          <button id="play" type="button" class="primary" data-en="Play">播放</button>
+          <button id="toEnd" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="reset" type="button" data-en="Restart">重來</button>
+          <button id="clear" type="button" data-en="Clear all" title="清掉紀錄表，回到 t = 0；工作表與設定不變" data-en-title="Remove the record table and go back to t = 0; the table of processes and the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<i class=&quot;run&quot;></i>Running (one colour, pattern and number per process)"><i class="run"></i>執行（每個行程一種顏色、花紋與編號）</span>
+          <span data-en-html="<i class=&quot;wait&quot;></i>Waiting in the ready queue"><i class="wait"></i>在就緒佇列等待</span>
+          <span data-en-html="<i class=&quot;sw&quot;></i>Context switch"><i class="sw"></i>情境切換</span>
+          <span data-en-html="<i class=&quot;idle&quot;></i>CPU idle"><i class="idle"></i>CPU 閒置</span>
+          <span data-en-html="<span class=&quot;sym&quot;>▼</span>Arrival"><span class="sym">▼</span>到達</span>
+          <span data-en-html="<span class=&quot;sym&quot;>¦</span>Quantum used up, nobody else waiting: keeps going"><span class="sym">¦</span>時間片用完、沒人在等：繼續做</span>
+        </div>
+
+        <div class="chart-head">
+          <h2 data-en="All six side by side">六種方法並排比較</h2>
+          <span id="cmpNote"></span>
+        </div>
+        <canvas id="cv2" aria-label="並排比較圖：同一張工作表用六種方法排程的甘特圖，一列一種方法，右邊是平均等待時間的長條；平均等待時間最少的標上星號。點一列可以換成那種方法。" data-en-aria-label="Side-by-side chart: the Gantt chart of the same table under each of the six algorithms, one row each, with a bar for the average waiting time on the right; the smallest average waiting time is starred. Tap a row to switch to that algorithm."></canvas>
+        <div class="tablewrap"><table class="nums" id="cmpTable"></table></div>
+        <p class="chart-cap" data-en="Same table, same time quantum and switch cost for all six. The current algorithm is highlighted.">六種方法用同一張工作表、同樣的時間片與切換成本；目前選的方法反白。</p>
+
+        <div class="chart-head">
+          <h2 data-en="Round robin: the time quantum">輪流（RR）的時間片</h2>
+          <span id="scanNote"></span>
+        </div>
+        <canvas id="cv3" aria-label="時間片圖：橫軸是 RR 的時間片 q，從 1 到 20；折線是平均等待時間，淺色長條是情境切換次數；虛線是 FCFS 的平均等待時間，點線是 SRTF（所有方法中最少）的平均等待時間；直線標出目前的 q。" data-en-aria-label="Time-quantum chart: the round-robin quantum q from 1 to 20 across; the line is the average waiting time and the pale bars are the number of context switches; the dashed line is FCFS and the dotted line is SRTF (the smallest possible average wait); the vertical line marks the current q."></canvas>
+        <div class="legend">
+          <span style="color:var(--accent)" data-en-html="<i style=&quot;background:var(--accent)&quot;></i>RR average waiting time"><i style="background:var(--accent)"></i>RR 的平均等待時間</span>
+          <span data-en-html="<i class=&quot;bar&quot; style=&quot;background:color-mix(in srgb, var(--cs-sw) 45%, transparent)&quot;></i>Context switches"><i class="bar" style="background:color-mix(in srgb, var(--cs-sw) 45%, transparent)"></i>情境切換次數</span>
+          <span style="color:var(--cs-p2-ink)" data-en-html="<i class=&quot;dash&quot;></i>FCFS"><i class="dash"></i>FCFS</span>
+          <span style="color:var(--cs-p3-ink)" data-en-html="<i class=&quot;dot&quot;></i>SRTF (the least possible)"><i class="dot"></i>SRTF（不可能更少）</span>
+        </div>
+        <p class="chart-cap" data-en="Once q is at least the longest burst, nobody is ever cut off and round robin becomes FCFS. A very small q cuts everyone into slices — and with a switch cost, the switches pile up.">q 一旦不小於最長的執行時間，就沒有人會被打斷，RR 變成 FCFS；q 很小時每個人都被切成很多段——有切換成本時，切換的時間就一路疊上去。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Table of processes">工作表</h2>
+          <div class="slider"><label for="nn" data-en="Number of processes n">行程數 n</label><output id="nno"></output>
+            <input id="nn" type="range" min="3" max="8" step="1" value="5" data-decimals="0"></div>
+          <div class="sheetwrap"><table class="sheet" id="sheet"></table></div>
+          <div class="rowline">
+            <button id="rand" type="button" data-en="Random">隨機產生</button>
+            <select id="preset" aria-label="範例" data-en-aria-label="Examples">
+              <option value="" data-en="Examples…">範例…</option>
+              <option value="convoy" data-en="Textbook: 24, 3, 3 arriving together">課本：24、3、3 同時到達</option>
+              <option value="srtf" data-en="Textbook: the SRTF example (four processes)">課本：SRTF 的例子（四個行程）</option>
+              <option value="stallings" data-en="Stallings: five processes A–E">Stallings：五個行程 A–E</option>
+              <option value="equal" data-en="Five equal jobs arriving together">五個一樣長、同時到達</option>
+            </select>
+          </div>
+          <p class="rowline seedinfo" id="seedInfo"></p>
+          <p class="hint" data-en="Arrival time 0–30, burst (CPU time needed) 1–20, priority 1–9 (a smaller number means more urgent), all whole numbers. When several processes arrive together, the smaller number goes first.">到達時間 0–30、執行時間（需要的 CPU 時間）1–20、優先權 1–9（數字越小越優先），都是整數。同時到達時，編號小的排前面。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Scheduler settings">排程設定</h2>
+          <div class="slider"><label for="qq" data-en="Time quantum q (RR)">時間片 q（RR）</label><output id="qqo"></output>
+            <input id="qq" type="range" min="1" max="20" step="1" value="3" data-decimals="0"></div>
+          <div class="slider"><label for="csw" data-en="Context-switch cost">情境切換成本</label><output id="cswo"></output>
+            <input id="csw" type="range" min="0" max="2" step="0.5" value="0" data-decimals="1"></div>
+          <div class="checks"><label><input id="tieOld" type="checkbox"><span data-en="At the same moment, the process just switched out queues before new arrivals">同一時刻，被換下的行程排在新到達的前面</span></label></div>
+          <div class="slider"><label for="speed" data-en="Speed (time units per second)">速度（每秒幾個時間單位）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0.5" max="10" step="0.5" value="3" data-decimals="1"></div>
+          <p class="hint" data-en="A context switch costs time only when the CPU goes straight from one process to another; starting after an idle spell is free. Round robin: by default, a process arriving at the very moment another uses up its quantum joins the queue first.">只有 CPU 從一個行程直接換到另一個行程時，情境切換才要花時間；閒置之後開始執行不用。RR：預設是在某個行程用完時間片的同一刻到達的新行程，先排進佇列。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="ro"></dl>
+          <div class="eq" id="rEq" aria-live="off"></div>
+          <p class="eq-note" id="eqNote"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Every process">每個行程</h2>
+          <div class="tablewrap"><table class="nums" id="procTable"></table></div>
+          <p class="eq-note" data-en="A dash means the process has not finished (or started) yet at the current time.">「—」表示到目前的時間為止，這個行程還沒做完（或還沒開始）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Records">紀錄</h2>
+          <div class="tablewrap"><table class="nums" id="logTable"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every run that reaches the end adds a row here. “Clear all” removes them.">每次跑到最後，就在這裡加一列。按「全部清除」才會清掉。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The principles behind it">背後的原理</h2>
+      <h3 data-en="Who gets the CPU next?">下一個輪到誰？</h3>
+      <p data-en-html="A running program is called a <strong>process</strong>. Processes that are ready to run but are not on the CPU wait in the <strong>ready queue</strong>. Every time the CPU becomes free — or a new process arrives — the operating system’s <strong>scheduler</strong> picks one of them, and the <strong>dispatcher</strong> hands the CPU over. Saving the state of one process and loading another is a <strong>context switch</strong>; during that time no useful work gets done. A scheduler is <strong>non-preemptive</strong> if a process keeps the CPU until it finishes, and <strong>preemptive</strong> if the operating system can take the CPU away halfway.">正在執行的程式叫做<strong>行程</strong>（process）。準備好可以執行、卻還沒拿到 CPU 的行程，在<strong>就緒佇列</strong>裡排隊。每當 CPU 空出來，或有新的行程到達，作業系統的<strong>排程器</strong>就從裡面挑一個，再由<strong>分派器</strong>把 CPU 交給它。保存一個行程的狀態、載入另一個行程，叫做<strong>情境切換</strong>（context switch）；切換的那段時間，CPU 沒有做任何有用的工作。行程一旦拿到 CPU 就做到完，叫<strong>不搶先</strong>（non-preemptive）；作業系統可以中途把 CPU 收回來，叫<strong>搶先</strong>（preemptive）。</p>
+
+      <h3 data-en="Three ways to measure waiting">衡量「等多久」的三種時間</h3>
+      <p data-en-html="For process \(i\) with arrival time \(A_i\), burst time (CPU time it needs) \(B_i\), first start \(S_i\) and completion time \(C_i\):">行程 \(i\) 的到達時間是 \(A_i\)、執行時間（需要的 CPU 時間）是 \(B_i\)、第一次開始執行的時間是 \(S_i\)、完成時間是 \(C_i\)：</p>
+      <div class="formula">\[ T_i = C_i - A_i, \qquad W_i = T_i - B_i, \qquad R_i = S_i - A_i, \qquad \overline{W} = \frac{1}{n}\sum_{i=1}^{n} W_i \]</div>
+      <p data-en-html="\(T_i\) is the <strong>turnaround time</strong> (from arrival to completion), \(W_i\) the <strong>waiting time</strong> (all the time spent in the ready queue) and \(R_i\) the <strong>response time</strong> (how long until it first gets the CPU). Without preemption a process runs in one piece, so \(W_i = R_i\). Adding up the length of the ready queue over time gives exactly \(\sum W_i\): every moment a process spends in the queue counts once. That is why the shaded area under the queue-length strip equals the total waiting time.">\(T_i\) 是<strong>周轉時間</strong>（從到達到完成），\(W_i\) 是<strong>等待時間</strong>（在就緒佇列裡等的時間總和），\(R_i\) 是<strong>回應時間</strong>（到達後多久第一次拿到 CPU）。不搶先時每個行程一口氣做完，所以 \(W_i = R_i\)。把就緒佇列的長度對時間加總，剛好就是 \(\sum W_i\)：每個行程在佇列裡的每一刻都算一次。所以畫布最下面「佇列長度」那一條的面積，就等於所有人的等待時間加起來。</p>
+
+      <h3 data-en="Six rules">六種規則</h3>
+      <ul>
+        <li data-en-html="<strong>FCFS</strong> (first come, first served): a plain queue. Simple and fair in order, but one long job at the front makes everyone behind it wait — the <strong>convoy effect</strong>."><strong>FCFS</strong>（先到先做）：單純排隊。簡單、照順序，但只要一個很長的工作排在前面，後面每個人都得陪它等——這叫<strong>護航效應</strong>（convoy effect）。</li>
+        <li data-en-html="<strong>SJF</strong> (shortest job first, non-preemptive): when the CPU is free, take the shortest burst."><strong>SJF</strong>（最短優先，不搶先）：CPU 空下來時，挑執行時間最短的。</li>
+        <li data-en-html="<strong>SRTF</strong> (shortest remaining time first): like SJF, but a newcomer whose burst is shorter than the remaining time of the running process takes the CPU at once."><strong>SRTF</strong>（最短剩餘時間優先）：和 SJF 一樣挑最短的，但新來的行程若比正在執行的「剩下的時間」還短，就立刻搶走 CPU。</li>
+        <li data-en-html="<strong>RR</strong> (round robin): a queue again, but each turn lasts at most one <strong>time quantum</strong> \(q\); a process that is not done goes back to the end of the queue."><strong>RR</strong>（輪流）：一樣排隊，但每次最多只能用一個<strong>時間片</strong> \(q\)；時間到了還沒做完，就回到隊伍最後面。</li>
+        <li data-en-html="<strong>Priority</strong>: the smallest priority number goes first, either waiting for the CPU to become free (non-preemptive) or taking it at once (preemptive)."><strong>優先權</strong>：優先權數字最小的先做；可以等 CPU 空下來（不搶先），也可以立刻搶（可搶先）。</li>
+      </ul>
+
+      <h3 data-en="Why shortest first?">為什麼「短的先做」？</h3>
+      <p data-en-html="If all \(n\) processes arrive together and run in some order with bursts \(B_{(1)}, B_{(2)}, \ldots, B_{(n)}\), the \(k\)-th one makes the \(n-k\) processes behind it wait \(B_{(k)}\) longer:">如果 \(n\) 個行程同時到達，照某個順序執行、執行時間依序是 \(B_{(1)}, B_{(2)}, \ldots, B_{(n)}\)，那麼第 \(k\) 個行程會讓排在它後面的 \(n-k\) 個行程各多等 \(B_{(k)}\)：</p>
+      <div class="formula">\[ \overline{W} = \frac{(n-1)\,B_{(1)} + (n-2)\,B_{(2)} + \cdots + 1 \cdot B_{(n-1)}}{n} \]</div>
+      <p data-en-html="The biggest weight goes to whoever runs first, so the average is smallest when the bursts go from short to long — that is SJF — and largest from long to short. Allowing preemption, SRTF is optimal for every table, whatever the arrival times: no schedule at all has a smaller average waiting time (Schrage 1968). The catch: the scheduler must know the burst times in advance; a real operating system can only predict them, for example from how long the previous bursts took. Always favouring the short or the urgent also has a dark side — <strong>starvation</strong>: a long or low-priority process can be overtaken again and again. <strong>Aging</strong>, which slowly raises the priority of processes that have waited a long time, is the usual cure.">權重最大的是第一個做的人，所以執行時間由短到長排時平均最小——這就是 SJF；由長到短排時最大。如果允許搶先，那麼不管到達時間怎麼安排，SRTF 都是最佳的：所有可能的排程中，沒有一種的平均等待時間比它更少（Schrage 1968）。代價是排程器必須事先知道執行時間；真正的作業系統只能預估，例如看這個行程前幾次用了多久。一直偏袒短的或急的，也有黑暗面——<strong>飢餓</strong>（starvation）：很長或優先權很低的行程可能一再被插隊。常見的解法是<strong>老化</strong>（aging）：等得越久，優先權慢慢提高。</p>
+
+      <h3 data-en="The time quantum and the cost of switching">時間片與切換的代價</h3>
+      <p data-en-html="With round robin, \(n\) processes that arrive together each get the CPU again within \((n-1)\,q\), so the response time is short. If \(q\) is at least the longest burst, nobody is ever cut off and RR is exactly FCFS. If \(q\) is tiny, everyone is cut into many slices; when each context switch costs \(c\), the CPU spends a share of its time on switching instead of on work (\(C_{\max}\) is the time the last process finishes):">RR 讓同時到達的 \(n\) 個行程，每一個最多等 \((n-1)\,q\) 就再輪到一次，所以回應很快。如果 \(q\) 不小於最長的執行時間，就沒有人會被打斷，RR 和 FCFS 一模一樣；如果 \(q\) 很小，每個人都被切成很多段。每次情境切換要花 \(c\) 時，CPU 有一部分時間花在切換、而不是做事（\(C_{\max}\) 是最後一個行程完成的時間）：</p>
+      <div class="formula" data-en-html="\[ \text{CPU utilization} = \frac{\sum B_i}{C_{\max}}, \qquad \text{switch share} = \frac{(\text{number of switches}) \times c}{C_{\max}} \]">\[ \text{CPU 使用率} = \frac{\sum B_i}{C_{\max}}, \qquad \text{切換占的比例} = \frac{(\text{切換次數}) \times c}{C_{\max}} \]</div>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>The convoy</strong>: choose the example “24, 3, 3 arriving together” and compare FCFS with SJF. How much of FCFS’s waiting is caused by the single long job?"><strong>護航效應</strong>：選範例「課本：24、3、3 同時到達」，比較 FCFS 和 SJF。FCFS 的等待時間，有多少是那一個長工作造成的？</li>
+        <li data-en-html="<strong>Sweep the quantum</strong>: in the time-quantum chart, where does RR touch the FCFS line? Is the best \(q\) the smallest one?"><strong>掃過時間片</strong>：在時間片圖上，RR 的折線從哪個 \(q\) 開始和 FCFS 重合？最好的 \(q\) 是最小的那個嗎？</li>
+        <li data-en-html="<strong>Fast to answer, slow to finish</strong>: compare the average response and turnaround times of RR with the others. What does round robin buy, and what does it pay?"><strong>回應快、完成慢</strong>：比較 RR 和其他方法的平均回應時間與平均周轉時間。輪流換到了什麼？又付出了什麼？</li>
+        <li data-en-html="<strong>The price of a switch</strong>: set the context-switch cost to 1 and the quantum to 1. What happens to the CPU utilization?"><strong>切換的價錢</strong>：把情境切換成本調成 1、時間片調成 1，CPU 使用率變成多少？</li>
+        <li data-en-html="<strong>Area of the queue</strong>: pause halfway and add up the waiting times so far. Why do they always match the shaded area of the queue-length strip?"><strong>佇列的面積</strong>：播到一半暫停，把到目前為止的等待時間加起來，為什麼一定和佇列長度那一條的陰影面積一樣？</li>
+        <li data-en-html="<strong>Can anyone beat SRTF?</strong> Try every algorithm and every quantum on a random table. What does SRTF need to know that the others do not?"><strong>有人贏得了 SRTF 嗎？</strong>隨機產生一張工作表，試遍每一種方法和每一個時間片。SRTF 需要事先知道什麼，別人不用？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="<strong>Event-driven simulation.</strong> Time jumps from one event to the next: an arrival, the end of a burst, the end of a quantum or the end of a context switch. All times are whole numbers or multiples of 0.5, so every result is exact. Each process has a single CPU burst and no I/O."><strong>事件驅動模擬。</strong>時間從一個事件跳到下一個事件：有行程到達、執行完畢、時間片用完、或情境切換結束。所有時間都是整數或 0.5 的倍數，所以每個結果都是精確值。每個行程只有一段 CPU 工作，沒有 I/O。</li>
+        <li data-en-html="<strong>Ties.</strong> Equal bursts, remaining times or priorities are broken by arrival time, then by process number. A newcomer preempts only if it is strictly better, so equally good processes do not cause pointless switches. A process that finishes exactly as its quantum runs out counts as finished. If its quantum runs out while nobody else is waiting, it simply carries on (the ¦ mark) and no switch is counted."><strong>平手規則。</strong>執行時間、剩餘時間或優先權相同時，先比到達時間，再比編號。新來的行程要「嚴格」比較好才會搶先，一樣好就不白白切換。時間片用完的那一刻剛好做完，算做完。時間片用完時如果沒有別人在等，它就繼續做（畫面上的 ¦ 記號），不算切換。</li>
+        <li data-en-html="<strong>Round robin at the same moment.</strong> When a process uses up its quantum at the very moment a new one arrives, both join the queue at once. Textbooks do not all say which goes first. This page puts the <em>new arrival</em> first by default — the convention that reproduces Stallings’ worked example of five processes A–E (round robin with \(q = 1\) finishes them at 4, 18, 17, 20 and 15). Tick the box to put the process just switched out first instead and see whether your table changes."><strong>RR 的同一時刻。</strong>某個行程用完時間片的那一刻，剛好有新行程到達，兩個都要進佇列。各本教科書沒有統一說誰先；本頁預設讓<em>新到達的</em>先排——這樣算正好重現 Stallings 課本五個行程 A–E 的例子（RR、\(q = 1\) 時完成時間是 4、18、17、20、15）。勾選設定裡的方框，就改成讓剛被換下的先排，看看你的工作表結果會不會變。</li>
+        <li data-en-html="<strong>Context switches.</strong> When the CPU goes straight from one process to another it first spends the switch cost, and only when the switch ends does the scheduler choose (so a process that arrived during the switch can be chosen). Starting after an idle spell costs nothing. The time spent waiting for a switch counts as waiting time."><strong>情境切換。</strong>CPU 從一個行程直接換到另一個行程時，先花掉切換成本，切換結束的那一刻排程器才挑下一個（所以切換期間到達的行程也有機會被挑中）。CPU 閒置之後開始執行不用花切換時間。等切換的時間也算在等待時間裡。</li>
+        <li data-en-html="The unit tests check the worked examples of Silberschatz et al. (average waiting times 17, 3, 7, 6.5, 17/3 and 8.2) and the five finishing times of Stallings’ example for FCFS, SJF, SRTF and RR with \(q = 1\) and \(q = 4\); that every process gets exactly its burst time, the Gantt chart never overlaps and the CPU is never idle while someone waits (24 000 random schedules); that the area of the ready queue equals the total waiting time; that SJF is the best of all \(n!\) orders when everyone arrives together (\(n \le 6\)); that SRTF equals the optimum found by exhaustive dynamic programming over every possible schedule; that round robin with \(q\) at least the longest burst is exactly FCFS; and both round-robin tie rules.">單元測試檢查：Silberschatz 等人課本的例子（平均等待時間 17、3、7、6.5、17/3、8.2），Stallings 課本例子在 FCFS、SJF、SRTF、RR（\(q = 1\)、\(q = 4\)）下五個行程的完成時間；每個行程的執行時間總和都不變、甘特圖不重疊、有人在等時 CPU 不會閒置（隨機 24 000 個排程）；就緒佇列的面積等於等待時間的總和；所有人同時到達時，SJF 是 \(n!\) 種順序裡最好的（\(n \le 6\)）；SRTF 和用動態規劃窮舉所有排程得到的最佳值相同；時間片不小於最長的執行時間時 RR 和 FCFS 完全相同；以及 RR 同一時刻的兩種排隊規則。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): S-V-1 working principles of computing platforms (job management and resource allocation, common scheduling algorithms); S-IV-2 structure and basic working principles of computing platforms (junior high: the operating system and the CPU).">課綱對應：資S-V-1 系統平台之運作原理（工作管理與資源分配、常見的排程演算法）；資S-IV-2 系統平台之組成架構與基本運作原理（國中：作業系統、CPU）。</li>
+        <li data-en="A. Silberschatz, P. B. Galvin and G. Gagne, Operating System Concepts, 10th edition (Wiley, 2018), chapter 5 “CPU Scheduling”: 5.2 Scheduling Criteria (turnaround, waiting and response time) and 5.3 Scheduling Algorithms (FCFS and the convoy effect, SJF, shortest-remaining-time-first, round robin, priority scheduling, starvation and aging).">Silberschatz, Galvin, Gagne《Operating System Concepts》第 10 版（Wiley, 2018），第 5 章〈CPU Scheduling〉：5.2 節 Scheduling Criteria（周轉、等待、回應時間的定義）、5.3 節 Scheduling Algorithms（FCFS 與護航效應、SJF、最短剩餘時間優先、RR、優先權排程、飢餓與老化）。</li>
+        <li data-en="W. Stallings, Operating Systems: Internals and Design Principles, 9th edition (Pearson, 2018), chapter 9 “Uniprocessor Scheduling” (the comparison of scheduling policies on five processes A–E).">Stallings《Operating Systems: Internals and Design Principles》第 9 版（Pearson, 2018），第 9 章〈Uniprocessor Scheduling〉（五個行程 A–E 的各種排程比較）。</li>
+        <li data-en="L. Schrage (1968), “A Proof of the Optimality of the Shortest Remaining Processing Time Discipline”, Operations Research 16(3): 687–690.">Schrage, L. (1968) “A Proof of the Optimality of the Shortest Remaining Processing Time Discipline”, Operations Research 16(3): 687–690。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Scheduling_(computing)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Scheduling (computing)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Round-robin_scheduling&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Round-robin scheduling</a>, <a href=&quot;https://en.wikipedia.org/wiki/Shortest_remaining_time&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Shortest remaining time</a>, <a href=&quot;https://en.wikipedia.org/wiki/Starvation_(computer_science)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Starvation (computer science)</a> (Wikipedia)">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Scheduling_(computing)" target="_blank" rel="noopener">Scheduling (computing)</a>、<a href="https://en.wikipedia.org/wiki/Round-robin_scheduling" target="_blank" rel="noopener">Round-robin scheduling</a>、<a href="https://en.wikipedia.org/wiki/Shortest_remaining_time" target="_blank" rel="noopener">Shortest remaining time</a>、<a href="https://en.wikipedia.org/wiki/Starvation_(computer_science)" target="_blank" rel="noopener">Starvation (computer science)</a>（維基百科，英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/cpu-scheduling-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/cpu-scheduling.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="cpu-scheduling"></script>
+  <script src="js/missions/cpu-scheduling.js"></script>
+  <script src="js/stats.js" data-module="cpu-scheduling"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

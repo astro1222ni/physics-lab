@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="k-Nearest Neighbours | Astro Ni Science Lab">k 最近鄰分類｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* k 最近鄰頁面專用的顏色代號（淺色＋兩組深色；由 js/knn.js 讀取）。A、B 兩類和感知器的 +1、−1 同色同形狀 */
+    :root { --kn-a-ink: #c2410c; --kn-c-ink: #237032; --kn-a: #e8590c; --kn-a-btn: #c2410c; --kn-b: #1d63d6; --kn-c: #2b8a3e; --kn-c-btn: #237032; --kn-q: #6d28d9; --kn-wrong: #dc2626; --kn-cur: #d97706; --kn-ok: #15803d; --kn-panel: #e9eef5; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --kn-a-ink: #ff8a3d; --kn-c-ink: #5fd17a; --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
+    }
+    :root[data-theme="dark"] { --kn-a-ink: #ff8a3d; --kn-c-ink: #5fd17a; --kn-a: #ff8a3d; --kn-a-btn: #c2410c; --kn-b: #5b9bff; --kn-c: #5fd17a; --kn-c-btn: #237032; --kn-q: #c4b5fd; --kn-wrong: #f87171; --kn-cur: #fbbf24; --kn-ok: #4ade80; --kn-panel: #131b27; }
+
+    /* 畫布高度由程式依寬度決定；按在點或查詢點上才攔下觸控（拖曳），其他時候手機可以照常捲動 */
+    #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: crosshair; }
+    #cv2 { aspect-ratio: auto; height: 170px; touch-action: pan-y; margin-top: 10px; cursor: pointer; }
+    .kn button { min-height: 44px; }
+    .kn [hidden] { display: none !important; }
+    .kn .playbar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .kn .playbar button { padding: 6px 4px; line-height: 1.25; }
+    .kn .playbar .wide { grid-column: span 2; }
+    @media (max-width: 520px) { .kn .playbar { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .kn .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .kn .slider input[type="range"] { height: 28px; margin: 0; }
+    .kn .checks label { min-height: 44px; }
+    .kn .checks input { width: 17px; height: 17px; }
+    .kn .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .kn .panel > .card { min-width: 0; }
+    .presets { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+    .presets button { grid-column: span 2; padding: 6px 4px; font-weight: 600; letter-spacing: 0.02em; }
+    .presets .wide { grid-column: span 3; }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+    .row2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .row2 .wide { grid-column: span 2; }
+    .lbl { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; }
+    .seg2, .seg3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .seg2 button, .seg3 button { border: none; border-radius: 0; min-height: 44px; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    .seg2 button + button, .seg3 button + button { border-left: 1px solid var(--border); }
+    .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .cls-a[aria-pressed="true"] { background: var(--kn-a-btn) !important; color: #fff !important; }
+    .cls-b[aria-pressed="true"] { background: var(--kn-b) !important; color: #fff !important; }
+    .cls-c[aria-pressed="true"] { background: var(--kn-c-btn) !important; color: #fff !important; }
+    .shape { display: inline-block; width: 11px; height: 11px; vertical-align: -1px; margin-right: 4px; background: currentColor; }
+    .shape.circ { border-radius: 50%; }
+    .shape.sq { border-radius: 2px; }
+    .shape.tri { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    /* 讀數 */
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    dl.readout dd.ok { color: var(--kn-ok); font-weight: 700; }
+    dl.readout dd.bad { color: var(--kn-wrong); font-weight: 700; }
+    dl.readout dd .ca { color: var(--kn-a-ink); font-weight: 700; }
+    dl.readout dd .cb { color: var(--kn-b); font-weight: 700; }
+    dl.readout dd .cc { color: var(--kn-c-ink); font-weight: 700; }
+    .stepbox { margin: 10px 0 0; padding: 8px 10px; border-radius: 8px; border: 1px dashed var(--border); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.6; min-height: 4.8em; overflow-x: auto; }
+    .stepbox .katex { font-size: 1em; }
+    .stepbox .tag { display: inline-block; padding: 0 8px; border-radius: 999px; font-weight: 700; font-size: 0.92em; }
+    .stepbox .tag.ok { background: color-mix(in srgb, var(--kn-ok) 16%, transparent); color: var(--kn-ok); }
+    .stepbox .tag.bad { background: color-mix(in srgb, var(--kn-wrong) 16%, transparent); color: var(--kn-wrong); }
+    .stepbox .tag.tie { background: color-mix(in srgb, var(--kn-cur) 18%, transparent); color: var(--kn-cur); }
+    .stepbox .muted { color: var(--muted); }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .legend .sw { width: 11px; height: 11px; display: inline-block; vertical-align: -1px; margin-right: 5px; }
+    .legend .sw.round { border-radius: 50%; }
+    .legend .sw.sq { border-radius: 2px; }
+    .legend .sw.tri { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .legend .sw.star { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+    .legend .sw.ring { border-radius: 50%; border: 2px dashed var(--kn-wrong); background: transparent; width: 9px; height: 9px; }
+    .legend i.ln { height: 0; border-top: 2px dashed var(--kn-q); background: none !important; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    #hist { width: 100%; }
+    #hist td, #hist th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; text-align: right; }
+    #hist th:first-child, #hist td:first-child { text-align: left; }
+    #hist:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#ai&quot;>Information Technology · Artificial Intelligence</a> / k-nearest neighbours"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#ai">資訊科技・人工智慧</a> ／ k 最近鄰</nav>
+      <h1 data-en="k-Nearest Neighbours">k 最近鄰分類</h1>
+      <p data-en="To guess the class of a new point, k-nearest neighbours simply asks the k closest known points and lets them vote. There is no training at all: the data itself is the model. Drag the star-shaped query point around, change k and the way distance is measured, colour the whole plane by its answers, and test honestly with leave-one-out cross-validation: how many points would it get right if each one had to be guessed by the others?">要猜一個新的點是哪一類，k 最近鄰的做法很直接：找出離它最近的 k 個已知的點，讓它們投票。它完全不用「訓練」，資料本身就是模型。拖曳查詢點、改變 k 和量距離的方式，看整片平面被分成哪幾塊；再用留一法交叉驗證誠實地考一考：每個點都讓其他點來猜，能猜對幾個？</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the star from the orange group towards the blue one and watch the vote change; then set k to 1 and to a very large value and compare the coloured regions.">試試看：把星形查詢點從橘色那團往藍色那團拖，看投票怎麼變；再把 k 調成 1 和很大的數，比較兩種上色結果。</p>
+    <div class="lab kn" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" tabindex="0" aria-label="特徵平面畫布：資料點、星形的查詢點、它最近的 k 個鄰居與涵蓋它們的距離邊界，底色是整片平面的分類結果；右邊（窄螢幕在下方）是鄰居的距離與投票。拖曳星形移動查詢點；點空白處放一個點，點一下已有的點把它移除，拖曳可以移動點。" data-en-aria-label="Feature-plane canvas: the data points, the star-shaped query point, its k nearest neighbours and the distance boundary around them; the background colour is how every spot of the plane would be classified. On the right (below on narrow screens) are the neighbours’ distances and the vote. Drag the star to move the query point; tap an empty spot to place a point, tap a point to remove it, drag a point to move it."></canvas>
+        <div class="playbar">
+          <button id="stepBtn" type="button" class="primary" title="留一法：拿出下一個點，用其他的點來猜它" data-en-title="Leave-one-out: take out the next point and let the others guess it" data-en="Step">單步</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="runBtn" type="button" title="把留一法剩下的點一次走完" data-en-title="Go through the rest of leave-one-out at once" data-en="Finish leave-one-out">跑完留一法</button>
+          <button id="restartBtn" type="button" title="留一法從第一個點重新走；資料與設定不變" data-en-title="Start leave-one-out again from the first point; data and settings stay" data-en="Restart">重來</button>
+          <button id="wipeBtn" type="button" title="清掉實驗紀錄、正確率圖上疊著的舊曲線，留一法從頭走；資料與設定不變" data-en-title="Clear the log and the old curves on the accuracy chart, and restart leave-one-out; data and settings stay" data-en="Clear all">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn wide" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" aria-hidden="true">
+          <span><span class="sw round" style="background:var(--kn-a)"></span><span data-en="class A (circle)">A 類（圓）</span></span>
+          <span><span class="sw sq" style="background:var(--kn-b)"></span><span data-en="class B (square)">B 類（方塊）</span></span>
+          <span><span class="sw tri" style="background:var(--kn-c)"></span><span data-en="class C (triangle)">C 類（三角形）</span></span>
+          <span><span class="sw star" style="background:var(--kn-q)"></span><span data-en="query point">查詢點</span></span>
+          <span><i class="ln"></i><span data-en="reach of the k neighbours">k 個鄰居的範圍</span></span>
+          <span><span class="sw ring"></span><span data-en="guessed wrong in leave-one-out">留一法猜錯</span></span>
+        </div>
+        <canvas id="cv2" aria-label="留一法正確率對 k 的圖：橫軸是 k（只取奇數），縱軸是留一法猜對的比例；目前的 k 用直線標出，最好的 k 用圓點標出，虛線是換設定之前的舊曲線。點一下圖可以把 k 設成那個值。" data-en-aria-label="Leave-one-out accuracy against k: the horizontal axis is k (odd values only) and the vertical axis is the share of points guessed right; the current k is marked by a line, the best k by dots, and dashed lines are older curves from before a setting changed. Tap the chart to set k to that value."></canvas>
+        <p class="chart-cap" data-en="Leave-one-out accuracy for every k. Small k follows every single point (even the odd ones out); very large k smooths everything away until it only ever guesses the biggest class.">每個 k 的留一法正確率。k 很小時，連離群的點也照單全收；k 很大時，什麼細節都被抹平，最後只會猜人數最多的那一類。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Data">資料</h2>
+          <div class="presets" role="group" aria-label="預設資料" data-en-aria-label="Preset data">
+            <button type="button" data-set="blobs" aria-pressed="true" data-en="Two blobs">兩團</button>
+            <button type="button" data-set="three" aria-pressed="false" data-en="Three blobs">三團</button>
+            <button type="button" data-set="moons" aria-pressed="false" data-en="Moons">月牙</button>
+            <button type="button" data-set="checker" class="wide" aria-pressed="false" data-en="Checkerboard">棋盤</button>
+            <button type="button" data-set="noisy" class="wide" aria-pressed="false" data-en="Noisy">有雜訊</button>
+          </div>
+          <p class="lbl" id="clsLbl" data-en="Class of the next point you place">放點的類別</p>
+          <div class="seg3" role="group" aria-labelledby="clsLbl">
+            <button type="button" id="clsA" class="cls-a" aria-pressed="true" data-en="Place A">放 A 類</button>
+            <button type="button" id="clsB" class="cls-b" aria-pressed="false" data-en="Place B">放 B 類</button>
+            <button type="button" id="clsC" class="cls-c" aria-pressed="false" data-en="Place C">放 C 類</button>
+          </div>
+          <div class="row2">
+            <button type="button" id="clearPts" class="wide" title="拿掉所有的點，自己放" data-en-title="Remove every point and place your own" data-en="Clear points">清空資料</button>
+          </div>
+          <p class="hint" data-en="Tap an empty spot to add a point, tap a point to remove it, drag to move it; drag the star to move the query point. Points snap to a 0.05 grid; at most 80 points. Each press of a preset gives a new random set.">點空白處放點、點一下點把它移除、拖曳可以移動；拖曳星形移動查詢點。座標吸附在 0.05 的格點上，最多 80 個點。每按一次預設資料，就換一份新的亂數資料。</p>
+          <dl class="readout" style="margin-top:10px">
+            <dt data-en="Points n (A / B / C)">點數 n（A／B／C）</dt><dd id="rN">—</dd>
+          </dl>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Classifier settings">分類設定</h2>
+          <div class="slider"><label for="kSl" data-en="Number of neighbours k">鄰居數 k</label><output id="kOut"></output>
+            <input id="kSl" type="range" min="0" max="49" step="1" value="2" data-decimals="0"></div>
+          <p class="lbl" id="metLbl" data-en="Distance">距離</p>
+          <div class="seg2" role="group" aria-labelledby="metLbl">
+            <button type="button" id="metE" aria-pressed="true" data-en="Euclidean">歐氏</button>
+            <button type="button" id="metM" aria-pressed="false" data-en="Manhattan">曼哈頓</button>
+          </div>
+          <p class="lbl" id="unitLbl" data-en="Unit of x2 (e.g. metres → centimetres)">x2 的單位（例如公尺改成公分）</p>
+          <div class="seg2" role="group" aria-labelledby="unitLbl">
+            <button type="button" id="unit1" aria-pressed="true">× 1</button>
+            <button type="button" id="unit100" aria-pressed="false">× 100</button>
+          </div>
+          <div class="checks">
+            <label><input id="stdChk" type="checkbox"><span data-en="Standardise">標準化</span></label>
+            <label><input id="regionChk" type="checkbox" checked><span data-en="Colour the regions">決策區域上色</span></label>
+            <label><input id="wrongChk" type="checkbox" checked><span data-en="Mark leave-one-out mistakes">標出留一法猜錯的點</span></label>
+          </div>
+          <p class="hint" data-en="k only takes odd values. Standardise: subtract each feature’s mean and divide by its standard deviation before measuring distance, so the unit of x2 no longer matters.">k 只取奇數。標準化：量距離之前，每個特徵先減去平均、再除以標準差，這樣 x2 用什麼單位就不再有影響。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The vote at the query point">查詢點的投票</h2>
+          <dl class="readout">
+            <dt data-en-html="Query point (<i>x</i><sub>1</sub>, <i>x</i><sub>2</sub>)">查詢點 (<i>x</i><sub>1</sub>, <i>x</i><sub>2</sub>)</dt><dd id="rQ">—</dd>
+            <dt data-en="k actually used">實際用的 k</dt><dd id="rK">—</dd>
+            <dt data-en="Distance to the k-th neighbour">第 k 近的距離</dt><dd id="rKth">—</dd>
+            <dt data-en="Votes A : B : C">票數 A：B：C</dt><dd id="rVotes">—</dd>
+            <dt data-en="Prediction">預測</dt><dd id="rPred">—</dd>
+          </dl>
+          <div class="stepbox" id="voteBox" aria-live="off"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Leave-one-out cross-validation">留一法交叉驗證</h2>
+          <dl class="readout">
+            <dt data-en="Accuracy at this k">目前 k 的正確率</dt><dd id="rLoo">—</dd>
+            <dt data-en="Best k (accuracy)">最好的 k（正確率）</dt><dd id="rBest">—</dd>
+            <dt data-en="Marking its own homework (k = 1 is always 100%)">自己考自己（k = 1 一定全對）</dt><dd id="rResub">—</dd>
+            <dt data-en-html="Distances computed <i>n</i>(<i>n</i> − 1)">距離計算次數 <i>n</i>(<i>n</i> − 1)</dt><dd id="rDist">—</dd>
+            <dt data-en="Walk-through so far">一步步走到</dt><dd id="rWalk">—</dd>
+          </dl>
+          <div class="slider"><label for="rate" data-en="Speed of “Play” (points per second)">播放速度（每秒幾個點）</label><output id="rateo"></output>
+            <input id="rate" type="range" min="1" max="30" step="1" value="4" data-decimals="0"></div>
+          <div class="stepbox" id="walkBox" aria-live="off"></div>
+          <h3 style="margin:14px 0 0;font-size:calc(15px * var(--fs, 1))" data-en="Log">實驗紀錄</h3>
+          <p class="hint" data-en="One row each time leave-one-out is walked to the end. “Clear all” empties it.">每次留一法走完記一列；按「全部清除」清空。</p>
+          <div class="tablewrap"><table class="data" id="hist"></table></div>
+          <p class="log-empty" id="histEmpty" data-en="Nothing yet.">還沒有紀錄。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Ask the neighbours">問問鄰居</h3>
+      <p data-en-html="Every point has two features \(x_1, x_2\) and a class (A, B or C). To classify a new point \(\mathbf{q}\), measure its distance to every known point, keep the \(k\) closest — its <strong>k nearest neighbours</strong> — and let them vote; the class with the most votes wins. That is the whole method. There is nothing to train: it stores the data and does all the work at question time, which is why it is called a <em>lazy</em> learner.">每個點有兩個特徵 \(x_1, x_2\)，以及一個類別（A、B 或 C）。要分類一個新的點 \(\mathbf{q}\)，就量它到每個已知點的距離，留下最近的 \(k\) 個——它的 <strong>k 個最近鄰</strong>——讓它們投票，票最多的類別勝出。整個方法就這樣。它沒有要訓練的東西：只把資料存起來，等到有人發問才開始算，所以也叫「懶惰的」學習法。</p>
+      <h3 data-en="Two ways to measure distance">兩種量距離的方法</h3>
+      <div class="formula">\[ d_{\text{Euclid}} = \sqrt{(\Delta f_1)^2 + (\Delta f_2)^2}, \qquad d_{\text{Manhattan}} = |\Delta f_1| + |\Delta f_2| \]</div>
+      <p data-en-html="The Euclidean distance is the length of a straight line; the Manhattan distance is how far you walk along a grid of streets. Points at the same Euclidean distance from \(\mathbf{q}\) form a circle; at the same Manhattan distance they form a diamond. That is the shape drawn around the star: everything inside it is closer than the \(k\)-th neighbour.">歐氏距離是直線的長度；曼哈頓距離是沿著棋盤似的街道走的路程。和 \(\mathbf{q}\) 歐氏距離相同的點排成一個圓；曼哈頓距離相同的點排成一個菱形。星形周圍畫的就是這個形狀：在它裡面的點，都比第 \(k\) 個鄰居還近。</p>
+      <h3 data-en="Units matter: standardise">單位很重要：標準化</h3>
+      <p data-en-html="The features here are \(f_1 = x_1\) and \(f_2 = s\,x_2\), where \(s\) is the unit of \(x_2\) (×1 or ×100, like metres changed to centimetres). With \(s = 100\) a tiny difference in \(x_2\) outweighs any difference in \(x_1\): the circle is squashed into a thin horizontal band and the classifier effectively looks at \(x_2\) alone. <strong>Standardising</strong> each feature fixes this:">這裡的特徵是 \(f_1 = x_1\)、\(f_2 = s\,x_2\)，\(s\) 是 \(x_2\) 的單位（×1 或 ×100，好比公尺改成公分）。\(s = 100\) 時，\(x_2\) 一點點的差距就比 \(x_1\) 的任何差距都大：圓被壓扁成一條細細的橫帶，分類器等於只看 \(x_2\)。把每個特徵<strong>標準化</strong>就能解決：</p>
+      <div class="formula">\[ z = \frac{f - \bar{f}}{\sigma_f}, \qquad \sigma_f = \sqrt{\tfrac{1}{n}\textstyle\sum (f - \bar{f})^2} \]</div>
+      <p data-en-html="Multiplying \(f\) by 100 multiplies both \(f - \bar{f}\) and \(\sigma_f\) by 100, so \(z\) does not change at all: after standardising, the unit of \(x_2\) makes no difference.">\(f\) 乘以 100，\(f - \bar{f}\) 和 \(\sigma_f\) 也都乘以 100，所以 \(z\) 完全不變：標準化之後，\(x_2\) 用什麼單位都一樣。</p>
+      <h3 data-en="Rules for ties (this page)">平手時怎麼辦（本頁的規則）</h3>
+      <ul>
+        <li data-en="Choosing neighbours: points are ordered by distance; when two are equally far, the one placed earlier comes first.">挑鄰居：照距離由近到遠排；兩個點一樣遠時，先放的點排在前面。</li>
+        <li data-en="Voting: one vote per neighbour; the class with the most votes wins.">投票：每個鄰居一票，票最多的類別勝出。</li>
+        <li data-en="Tied vote: among the tied classes, the one whose neighbours have the smaller total distance (closer as a group) wins; if those totals are equal too, the class of the tied neighbour that comes first in the order wins. With two classes and odd k a tied vote cannot happen; with three classes it can (for example 1 : 1 : 1 when k = 3).">票數平手：在平手的幾類裡，鄰居的距離總和比較小（整體比較近）的那一類勝出；總和也一樣時，看平手的鄰居裡排在最前面的是哪一類。只有兩類、k 又是奇數時不會平手；有三類時就可能（例如 k = 3 時 1：1：1）。</li>
+        <li data-en="k larger than the number of points: the query uses all n points; leave-one-out uses the other n − 1.">k 比點數還大時：查詢點用全部 n 個點，留一法用其他 n − 1 個點。</li>
+      </ul>
+      <h3 data-en="Leave-one-out cross-validation">留一法交叉驗證</h3>
+      <p data-en-html="Checking a classifier on the very points it stores is cheating: with \(k = 1\) every point’s nearest neighbour is itself, so it always scores 100%. Instead, take each point out in turn, let the other \(n - 1\) points guess it, and count the hits:">用分類器存著的同一批點來考它是作弊：\(k = 1\) 時每個點最近的鄰居就是它自己，一定 100% 答對。比較誠實的做法是：每個點輪流拿出來，讓其他 \(n - 1\) 個點來猜，數一數猜對幾個：</p>
+      <div class="formula">\[ \mathrm{Acc}_{\mathrm{LOO}}(k) = \frac{1}{n}\sum_{i=1}^{n} \mathbf{1}\!\left[\hat{y}^{(-i)}_{k}(\mathbf{x}_i) = y_i\right] \]</div>
+      <p data-en-html="Here \(\hat{y}^{(-i)}_{k}\) is the guess made by \(k\) neighbours after point \(i\) has been taken out, and \(\mathbf{1}[\cdot]\) counts 1 for a hit and 0 for a miss. Each guess needs \(n - 1\) distances, so the whole test needs \(n(n-1)\). Plotting this accuracy against \(k\) shows the classic trade-off: \(k = 1\) follows every point, noise included (over-fitting); a huge \(k\) smooths away all detail (under-fitting). The best \(k\) is usually somewhere in between.">其中 \(\hat{y}^{(-i)}_{k}\) 是拿掉第 \(i\) 個點之後，用 \(k\) 個鄰居猜出來的答案；\(\mathbf{1}[\cdot]\) 猜對算 1、猜錯算 0。每猜一個點要算 \(n - 1\) 個距離，整個測驗要算 \(n(n-1)\) 個。把這個正確率對 \(k\) 畫出來，就是經典的取捨：\(k = 1\) 連雜訊也照單全收（過度擬合）；\(k\) 太大又把所有細節都抹平（擬合不足）。最好的 \(k\) 通常在中間。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>k = 1 draws a mosaic</strong>: with k = 1 every point owns the region of the plane that is closer to it than to any other point (a Voronoi diagram). Where are the borders straight lines, and where do islands appear around single points?"><strong>k = 1 畫出馬賽克</strong>：k = 1 時，每個點都擁有「離它比離其他點都近」的那塊地（沃羅諾伊圖）。邊界哪裡是直線？哪裡會圍著單獨一個點出現小島？</li>
+        <li data-en-html="<strong>Smoother with larger k</strong>: increase k step by step. What happens to the islands? Push k beyond the number of points: why does the whole plane turn one colour?"><strong>k 越大越平滑</strong>：一步一步加大 k，小島怎麼了？把 k 拉到比點數還大，為什麼整片平面變成同一種顏色？</li>
+        <li data-en-html="<strong>Circle or diamond</strong>: switch between “Euclidean” and “Manhattan”. The reach of the neighbours changes shape. Can you find a spot where the two choose different neighbours?"><strong>圓形還是菱形</strong>：在「歐氏」和「曼哈頓」之間切換，鄰居的範圍換了形狀。你能找到一個位置，讓兩種距離選出不同的鄰居嗎？</li>
+        <li data-en-html="<strong>The unit trap</strong>: on “Two blobs”, switch x2 to “× 100”. The regions turn into horizontal stripes and the accuracy collapses. Then tick “Standardise”."><strong>單位的陷阱</strong>：在「兩團」把 x2 改成「× 100」，區域變成一條條橫紋，正確率大跌。再勾選「標準化」看看。</li>
+        <li data-en-html="<strong>Honest testing</strong>: compare “Marking its own homework” with the leave-one-out accuracy at k = 1. Which one would you trust to predict how it does on new points?"><strong>誠實的考試</strong>：比較 k = 1 時「自己考自己」和留一法的正確率。哪一個比較能預測它遇到新點時的表現？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en-html="Points and the query snap to a 0.05 grid and are stored as whole numbers \(g = 20x\). Distances are compared with an exact whole-number key (\(\Delta g_1^2 + s^2\Delta g_2^2\) for Euclidean, \(|\Delta g_1| + s\,|\Delta g_2|\) for Manhattan; for standardised Euclidean \(\Delta g_1^2 V_2 + \Delta g_2^2 V_1\) with \(V = n\sum g^2 - (\sum g)^2\)), so “exactly as far” is decided without rounding error. Only standardised Manhattan distances involve square roots; they count as equal within a relative \(10^{-12}\).">資料點與查詢點都吸附在 0.05 的格點上，存成整數 \(g = 20x\)。比較遠近用精確的整數鍵（歐氏用 \(\Delta g_1^2 + s^2\Delta g_2^2\)、曼哈頓用 \(|\Delta g_1| + s\,|\Delta g_2|\)；標準化的歐氏用 \(\Delta g_1^2 V_2 + \Delta g_2^2 V_1\)，其中 \(V = n\sum g^2 - (\sum g)^2\)），所以「剛好一樣遠」沒有捨入誤差。只有標準化的曼哈頓距離要開根號，相對誤差在 \(10^{-12}\) 以內就算相等。</li>
+        <li data-en-html="In leave-one-out with “Standardise” ticked, the mean and standard deviation are computed from the other \(n-1\) points only, so the point being tested never influences its own test.">勾選「標準化」時，留一法的平均與標準差只用其他 \(n-1\) 個點來算，被拿出來考的點完全不影響自己的考題。</li>
+        <li data-en-html="The coloured regions classify the centre of every cell of a 150 × 150 grid. A rough 40 × 40 version is drawn first; the fine one is computed a few rows per frame so the page never freezes, and it is redone whenever the data, k or a setting changes. The paler the colour, the narrower the winning vote.">區域上色是把 150 × 150 個格子的中心點都分類一次。先畫一張 40 × 40 的粗略版，精細版每一幀算幾列，畫面不會卡住；資料、k 或設定一改就重算。顏色越淡，表示勝出的票數越接近。</li>
+        <li data-en="The unit tests check: the nearest neighbours agree with sorting all distances by brute force, including the order of equally distant points; every tie rule; k ≥ n always predicts the majority class; leave-one-out never uses the point being tested and matches a direct recount; standardising makes the results independent of the unit of x2; the coloured regions match direct classification; and the presets repeat exactly for the same set number.">單元測試檢查：最近鄰和「把所有距離排序」的暴力法一致（包括一樣遠的點的先後）；每一條平手規則；k ≥ n 時一定猜人數最多的類；留一法不會用到被考的點，而且和直接重算的結果相同；標準化之後結果和 x2 的單位無關；區域上色和逐點分類一致；同一個編號的預設資料完全重現。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul id="refs">
+        <li data-en="Curriculum (Taiwan, Information Technology, senior high): D-V-2, basic concepts of data mining and machine learning (data classification, machine learning, pattern recognition).">課綱對應：資D-V-2 資料探勘與機器學習的基本概念（資料分類、機器學習、模式識別）。</li>
+        <li data-en="The first description of the nearest-neighbour rule: E. Fix and J. L. Hodges, Jr. (1951), “Discriminatory Analysis. Nonparametric Discrimination: Consistency Properties”, Report No. 4, Project No. 21-49-004, USAF School of Aviation Medicine, Randolph Field, Texas. Reprinted in International Statistical Review 57(3), 233–247 (1989).">最近鄰法則的最早描述：E. Fix、J. L. Hodges, Jr.（1951）〈Discriminatory Analysis. Nonparametric Discrimination: Consistency Properties〉，Report No. 4，Project No. 21-49-004，USAF School of Aviation Medicine，Randolph Field，Texas。重刊於 International Statistical Review 57(3)，233–247（1989）。</li>
+        <li data-en="The classic analysis: T. M. Cover and P. E. Hart (1967), “Nearest neighbor pattern classification”, IEEE Transactions on Information Theory 13(1), 21–27 (with infinitely many samples, the error of the 1-nearest-neighbour rule is at most twice the smallest possible error).">經典分析：T. M. Cover、P. E. Hart（1967）〈Nearest neighbor pattern classification〉，IEEE Transactions on Information Theory 13(1)，21–27（樣本無限多時，1 最近鄰的錯誤率最多是理論上最小錯誤率的兩倍）。</li>
+        <li data-en="Textbook: T. Hastie, R. Tibshirani and J. Friedman (2009), The Elements of Statistical Learning, 2nd ed., Springer — Section 2.3.2 “Nearest-Neighbor Methods”, Section 7.10 “Cross-Validation”, Section 13.3 “k-Nearest-Neighbor Classifiers”.">教科書：T. Hastie、R. Tibshirani、J. Friedman（2009），《The Elements of Statistical Learning》第 2 版，Springer——2.3.2 節 Nearest-Neighbor Methods、7.10 節 Cross-Validation、13.3 節 k-Nearest-Neighbor Classifiers。</li>
+        <li data-en-html="Further reading: &lt;a href=&quot;https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;k-nearest neighbors algorithm (Wikipedia)&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/Voronoi_diagram&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Voronoi diagram (Wikipedia)&lt;/a&gt;">延伸閱讀：<a href="https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm" target="_blank" rel="noopener">k-nearest neighbors algorithm（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Voronoi_diagram" target="_blank" rel="noopener">Voronoi diagram（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/knn-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/knn.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="knn"></script>
+  <script src="js/missions/knn.js"></script>
+  <script src="js/stats.js" data-module="knn"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Text Encoding: ASCII, Big5 and UTF-8 | Astro Ni Science Lab">文字編碼：ASCII、Big5 與 UTF-8｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 文字編碼頁面專用的顏色代號（淺色＋兩組深色；由 js/text-encoding.js 讀取） */
+    :root { --te-b1: #0d9488; --te-b2: #2563eb; --te-b3: #ea580c; --te-b4: #c026d3; --te-pre: #64748b; --te-err: #dc2626; --te-ok: #15803d; --te-panel: #e7edf5; --te-sur: #7c3aed; --te-tile: #fbfdff; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --te-b1: #2dd4bf; --te-b2: #60a5fa; --te-b3: #fb923c; --te-b4: #e879f9; --te-pre: #94a3b8; --te-err: #f87171; --te-ok: #4ade80; --te-panel: #121a26; --te-sur: #b9a0ff; --te-tile: #1b2433; }
+    }
+    :root[data-theme="dark"] { --te-b1: #2dd4bf; --te-b2: #60a5fa; --te-b3: #fb923c; --te-b4: #e879f9; --te-pre: #94a3b8; --te-err: #f87171; --te-ok: #4ade80; --te-panel: #121a26; --te-sur: #b9a0ff; --te-tile: #1b2433; }
+
+    #cv { aspect-ratio: auto; height: 380px; touch-action: manipulation; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 260px; touch-action: manipulation; display: block; margin-top: 10px; }
+    .te button { min-height: 44px; }
+    .te [hidden] { display: none !important; }
+    .te .playbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .te .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .te .playbar2 button { flex: 1 1 auto; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .te .stage .status { margin: 6px 4px 0; min-height: 1.4em; }
+    .te .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .te .panel { grid-template-columns: minmax(0, 1fr); }
+    .te .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .seg { display: flex; width: 100%; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 2px; }
+    .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 6px; background: var(--bg); flex: 1 1 0; min-width: 0; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg-label { font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; display: block; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+    .chips button { flex: 1 1 auto; padding: 6px 10px; }
+    .txtrow { display: flex; gap: 8px; margin: 6px 0 0; align-items: stretch; }
+    .txtrow input { flex: 1 1 auto; min-width: 0; min-height: 44px; box-sizing: border-box; font: inherit; font-size: calc(17px * var(--fs, 1)); padding: 4px 8px;
+      border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .txtrow input.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(15px * var(--fs, 1)); letter-spacing: 0.02em; }
+    .txtrow input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .txtrow input.bad { border-color: var(--te-err); }
+    .txtrow button { flex: none; }
+    .cprow .pre { align-self: center; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-weight: 700; color: var(--muted); }
+    .msg { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 0; min-height: 1.2em; color: var(--muted); }
+    .msg.bad { color: var(--te-err); }
+    .msg.ok { color: var(--te-ok); font-weight: 600; }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .out { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: calc(19px * var(--fs, 1)); line-height: 1.5; min-height: 1.6em; overflow-wrap: anywhere; word-break: break-all; }
+    .out .e { color: var(--te-err); font-weight: 700; }
+    .out .cc { color: var(--muted); font-size: 0.7em; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; border: 1px solid var(--border); border-radius: 4px; padding: 0 3px; margin: 0 1px; vertical-align: 2px; }
+    .ops { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+    .tablewrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 10px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 8px; white-space: nowrap; }
+    #chainLog td, #roundLog td { text-align: left; }
+    #chainLog td.g { font-size: calc(15px * var(--fs, 1)); white-space: normal; word-break: break-all; min-width: 6em; }
+    #chainLog:empty, #roundLog:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* ASCII 表 */
+    .ascii { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 3px; margin: 10px 0 0; }
+    .ascii .h { font-size: calc(11px * var(--fs, 1)); color: var(--muted); text-align: center; font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .ascii button, .ascii span.c { min-height: 44px; min-width: 0; padding: 2px 0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; }
+    .ascii button { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: calc(16px * var(--fs, 1)); font-weight: 600; }
+    .ascii span.c { font-size: calc(10.5px * var(--fs, 1)); color: var(--muted); background: var(--bg); border: 1px dashed var(--border); font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .ascii small { font-size: calc(9.5px * var(--fs, 1)); font-weight: 400; color: var(--muted); }
+    .ascii .cur { outline: 2px solid var(--accent); outline-offset: -1px; background: var(--accent-soft); }
+    .ascii .lower { box-shadow: inset 0 -3px 0 var(--te-b2); }
+    .ascii .upper { box-shadow: inset 0 -3px 0 var(--te-b3); }
+    /* 挑戰 */
+    .quiz-q { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--accent-soft); font-size: calc(15.5px * var(--fs, 1)); min-height: 1.4em; line-height: 1.6; }
+    .quiz-q b { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+    .quiz-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; align-items: center; }
+    .quiz-row button { flex: 1 1 auto; }
+    .quiz-stat { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0 0; font-size: calc(13.5px * var(--fs, 1)); color: var(--muted); font-variant-numeric: tabular-nums; }
+    .quiz-stat b { color: var(--text); }
+    .legend { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 4px 0; font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); }
+    .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#data&quot;>Information Technology · Data Representation</a> / Text encoding"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#data">資訊科技・資料表示</a> ／ 文字編碼</nav>
+      <h1 data-en="Text Encoding: ASCII, Big5 and UTF-8">文字編碼：ASCII、Big5 與 UTF-8</h1>
+      <p data-en="A file never stores letters, only bytes. Every character first gets a number (its code point), and an encoding decides how that number becomes bytes. Take a text apart one character at a time, watch how UTF-8 spreads the bits of a code point over one to four bytes, compare it with Big5 and UTF-16, and then open the bytes with the wrong encoding on purpose: see exactly where the bytes are cut wrongly, which kinds of garbled text can be rescued, and which are lost for good.">檔案裡從來不存「字」，只存位元組。每個字先有一個號碼（碼位），再由「編碼」決定這個號碼要寫成哪幾個位元組。把一段文字一個字一個字拆開，看 UTF-8 怎麼把碼位的位元分裝進 1 到 4 個位元組，和 Big5、UTF-16 比一比；再故意用錯的編碼打開，看位元組在哪裡被切錯、哪些亂碼救得回來、哪些從此找不回來。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Next character” to step through the text. Then set the opening encoding to “Big5” and watch the same bytes being cut into different characters.">試試看：按「下一個字」一個一個看；再把開檔編碼換成「Big5」，看同一串位元組被切成別的字。</p>
+    <div class="lab te" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="選取的字的解剖圖：最上面是字與碼位，接著是碼位的二進位、UTF-8 的位元組（前綴位元與資料位元用不同顏色）、UTF-16 的碼元與 Big5 的位元組。點 UTF-8 那一列的任何一個位元可以把它翻轉。" data-en-aria-label="Anatomy of the selected character: the character and its code point at the top, then the code point in binary, its UTF-8 bytes (prefix bits and data bits in different colours), its UTF-16 code units and its Big5 bytes. Tap any bit in the UTF-8 row to flip it."></canvas>
+        <div class="playbar">
+          <button id="prevBtn" type="button" data-en="Previous character">上一個字</button>
+          <button id="nextBtn" type="button" data-en="Next character">下一個字</button>
+        </div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉亂碼接力的紀錄與挑戰紀錄；文字和編碼的選擇不變" data-en-title="Clear the relay log and the challenge log; the text and the chosen encodings stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <canvas id="cv2" aria-label="位元組長條：上面三條是同一段文字用 UTF-8、UTF-16、Big5 存起來的長度；下面是存檔後的每一個位元組，上方括號是原來的字，下方括號是用開檔編碼切出來的字，切錯的地方用紅色標出。點一塊位元組可以選取那個字。" data-en-aria-label="Byte strips: the three bars at the top are the lengths of the text stored as UTF-8, UTF-16 and Big5. Below are the saved bytes one by one, with brackets for the original characters above and for the characters cut out by the opening encoding below; wrong cuts are marked in red. Tap a byte to select that character."></canvas>
+        <div class="legend" aria-hidden="true">
+          <span><i style="background: var(--te-b1)"></i><span data-en="1 byte">1 位元組</span></span>
+          <span><i style="background: var(--te-b2)"></i><span data-en="2 bytes">2 位元組</span></span>
+          <span><i style="background: var(--te-b3)"></i><span data-en="3 bytes">3 位元組</span></span>
+          <span><i style="background: var(--te-b4)"></i><span data-en="4 bytes">4 位元組</span></span>
+          <span><i style="background: var(--te-pre)"></i><span data-en="prefix bits">前綴位元</span></span>
+          <span><i style="background: var(--te-err)"></i><span data-en="error">錯誤</span></span>
+        </div>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Text">文字</h2>
+          <label for="txt" class="seg-label" data-en="Type anything (up to 40 characters)">隨便打一段文字（最多 40 個字）</label>
+          <div class="txtrow">
+            <input id="txt" type="text" maxlength="80" autocomplete="off" spellcheck="false" aria-describedby="txtMsg" data-no-convert>
+          </div>
+          <p class="msg" id="txtMsg" aria-live="polite"></p>
+          <div class="chips" role="group" aria-label="範例" data-en-aria-label="Examples">
+            <button type="button" id="exHello">Hello</button>
+            <button type="button" id="exZh" data-en="Chinese">中文</button>
+            <button type="button" id="exEmoji" data-en="Emoji">表情符號</button>
+            <button type="button" id="exMix" data-en="Mixed">混合</button>
+            <button type="button" id="exAcc" data-en="Accents">重音字母</button>
+            <button type="button" id="exRare" data-en="Rare character">罕用字</button>
+          </div>
+          <label for="cpIn" class="seg-label" data-en="Add a character by its code point">用碼位加一個字</label>
+          <div class="txtrow cprow">
+            <span class="pre">U+</span>
+            <input id="cpIn" class="mono" type="text" maxlength="8" autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="4E2D" aria-describedby="cpMsg">
+            <button id="cpBtn" type="button" class="primary" data-en="Insert">插入</button>
+          </div>
+          <p class="msg" id="cpMsg" aria-live="polite" data-en="0 to 10FFFF in hexadecimal; the character goes after the selected one.">0 到 10FFFF 的十六進位數字；新的字放在選取的字後面。</p>
+          <dl class="readout">
+            <dt data-en="Characters (code points)">字元數（碼位）</dt><dd id="rN">—</dd>
+            <dt data-en="UTF-16 code units (JavaScript length)">UTF-16 碼元（JavaScript 的 length）</dt><dd id="rUnits">—</dd>
+            <dt>UTF-8</dt><dd id="rU8">—</dd>
+            <dt>UTF-16</dt><dd id="rU16">—</dd>
+            <dt>Big5</dt><dd id="rB5">—</dd>
+          </dl>
+          <p class="hint" data-en="The text stays in your browser; nothing is sent anywhere. Big5 is built from your browser’s own decoder when the page opens.">文字只在你的瀏覽器裡計算，不會傳到任何地方。Big5 的對照是頁面打開時用你的瀏覽器內建的解碼器建立的。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Save with one encoding, open with another">用一種編碼存，用另一種打開</h2>
+          <p class="seg-label" data-en="Encoding to save with">存檔編碼</p>
+          <div class="seg" role="group" aria-label="存檔編碼" data-en-aria-label="Encoding to save with">
+            <button type="button" id="w-utf8" aria-pressed="true">UTF-8</button>
+            <button type="button" id="w-big5" aria-pressed="false">Big5</button>
+            <button type="button" id="w-latin1" aria-pressed="false">Latin-1</button>
+          </div>
+          <p class="seg-label" data-en="Encoding to open with">開檔編碼</p>
+          <div class="seg" role="group" aria-label="開檔編碼" data-en-aria-label="Encoding to open with">
+            <button type="button" id="r-utf8" aria-pressed="true">UTF-8</button>
+            <button type="button" id="r-big5" aria-pressed="false">Big5</button>
+            <button type="button" id="r-latin1" aria-pressed="false">Latin-1</button>
+          </div>
+          <div class="out" id="mixOut" aria-live="polite" data-no-convert></div>
+          <p class="msg" id="mixMsg" aria-live="polite"></p>
+          <div class="ops">
+            <button id="pushBtn" type="button" class="primary" data-en="Carry on with this text">用這段亂碼繼續</button>
+            <button id="backBtn" type="button" disabled data-en="Back to the original">回到原文</button>
+          </div>
+          <label for="hexIn" class="seg-label" data-en="Bytes (hexadecimal)">位元組（十六進位）</label>
+          <div class="txtrow">
+            <input id="hexIn" class="mono" type="text" maxlength="640" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-describedby="hexMsg">
+            <button id="hexBtn" type="button" data-en="Apply">套用</button>
+          </div>
+          <p class="msg" id="hexMsg" aria-live="polite" data-en="Edit the bytes and press Enter or “Apply”; they are opened with the opening encoding (at most 200 bytes).">改這串位元組再按 Enter 或「套用」，就用開檔編碼打開（最多 200 個位元組）。</p>
+          <div class="ops">
+            <button id="cutBtn" type="button" data-en="Delete the first byte">刪掉第一個位元組</button>
+          </div>
+          <div class="tablewrap"><table class="data" id="chainLog"></table></div>
+          <p class="log-empty" id="chainEmpty" data-en="“Carry on with this text” treats the garbled text as a new text that will be saved again; every step is listed here.">「用這段亂碼繼續」會把亂碼當成新的文字，再存一次；每一次都列在這裡。</p>
+          <p class="hint" data-en="A character that the saving encoding does not have is written as “?” (3F). “Latin-1” here is windows-1252, which is what browsers use for pages labelled ISO-8859-1.">存檔編碼沒有的字一律寫成「?」（3F）。這裡的「Latin-1」是 windows-1252：瀏覽器遇到標成 ISO-8859-1 的網頁，就是用它來讀。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="UTF-8 challenge">UTF-8 挑戰</h2>
+          <p class="hint" data-en="Five questions in a round: write a code point as UTF-8 bytes, or read the code point out of UTF-8 bytes. Work it out with the bit diagram in your head (or on paper).">一回合 5 題：把碼位寫成 UTF-8 的位元組，或從 UTF-8 的位元組讀出碼位。在心裡（或紙上）畫出位元圖來算。</p>
+          <div class="quiz-row">
+            <button id="quizStart" type="button" class="primary" data-en="Start the challenge">開始挑戰</button>
+            <button id="quizStop" type="button" hidden data-en="Stop">結束挑戰</button>
+          </div>
+          <div class="quiz-q" id="quizQ" aria-live="polite" data-en="Press “Start the challenge”.">按「開始挑戰」。</div>
+          <div class="txtrow">
+            <input id="quizIn" class="mono" type="text" maxlength="40" autocomplete="off" spellcheck="false" autocapitalize="characters" aria-label="你的答案" data-en-aria-label="Your answer" disabled>
+            <button id="quizOk" type="button" class="primary" disabled data-en="Check">確定</button>
+          </div>
+          <div class="quiz-stat" id="quizStat"></div>
+          <div class="tablewrap"><table class="data" id="roundLog"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Finished rounds are listed here.">完成的回合會列在這裡。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="The ASCII table">ASCII 表</h2>
+          <p class="hint" data-en="Columns are the high hexadecimal digit, rows the low one. Dashed squares are control characters (they print nothing). Tap a character to add it to the text.">直行是十六進位的高位數字、橫列是低位數字；虛線格是控制字元（不印出任何東西）。點一個字就加進文字裡。</p>
+          <div class="ascii" id="asciiTab" role="group" aria-label="ASCII 表" data-en-aria-label="ASCII table"></div>
+          <p class="hint" data-en-html="An upper-case letter and its lower-case partner differ by exactly \(32 = 20_{16}\): only bit 5 (counting from 0) is different. Orange underline: upper case; blue underline: lower case.">大寫字母和對應的小寫字母剛好差 \(32 = 20_{16}\)：只有第 5 位（從 0 數起）不同。橘色底線是大寫、藍色底線是小寫。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="A number for every character">每個字先有一個號碼</h3>
+      <p data-en-html="Unicode gives every character a <strong>code point</strong>, written U+ followed by at least four hexadecimal digits: “A” is U+0041, “<span lang=&quot;zh-Hant&quot; data-no-convert>中</span>” is U+4E2D, “😀” is U+1F600. Code points run from U+0000 to U+10FFFF, 1 114 112 places in all, split into 17 planes of 65 536. An <strong>encoding</strong> is a rule that turns code points into bytes and back. ASCII (1963, revised as ANSI X3.4-1986) used only 7 bits, 0 to 127; its first 128 places are exactly the first 128 code points of Unicode.">Unicode 替每個字編一個號碼，叫做<strong>碼位</strong>（code point），寫成 U+ 加上至少四位十六進位數：「A」是 U+0041、「中」是 U+4E2D、「😀」是 U+1F600。碼位從 U+0000 到 U+10FFFF，一共 1 114 112 個，分成 17 個平面、每個平面 65 536 個。<strong>編碼</strong>就是把碼位寫成位元組（以及讀回來）的規則。ASCII（1963 年制定，後來修訂為 ANSI X3.4-1986）只用 7 個位元，0 到 127；它的 128 個字剛好就是 Unicode 最前面的 128 個碼位。</p>
+
+      <h3 data-en="UTF-8: the first byte tells how long the character is">UTF-8：第一個位元組說出這個字有多長</h3>
+      <div class="formula">\[ \begin{array}{ll} \text{U+0000–007F} & 0xxxxxxx \\ \text{U+0080–07FF} & 110xxxxx\;\,10xxxxxx \\ \text{U+0800–FFFF} & 1110xxxx\;\,10xxxxxx\;\,10xxxxxx \\ \text{U+10000–10FFFF} & 11110xxx\;\,10xxxxxx\;\,10xxxxxx\;\,10xxxxxx \end{array} \]</div>
+      <p data-en-html="The \(x\)s are the bits of the code point, filled in from the left. So a 1-byte character has 7 data bits, a 2-byte one 11, a 3-byte one 16 and a 4-byte one 21. The number of 1s at the start of the first byte is the length of the character; every following byte starts with 10 (a <strong>continuation byte</strong>). Example: U+4E2D = 0100 1110 0010 1101 needs 16 bits, so three bytes: <span class=&quot;mono&quot;>1110</span>0100 <span class=&quot;mono&quot;>10</span>111000 <span class=&quot;mono&quot;>10</span>101101 = E4 B8 AD.">\(x\) 依序填入碼位的位元。所以 1 位元組的字有 7 個資料位元，2 位元組有 11 個，3 位元組有 16 個，4 位元組有 21 個。第一個位元組開頭有幾個 1，這個字就有幾個位元組；後面的位元組一律以 10 開頭（<strong>延續位元組</strong>）。例：U+4E2D = 0100 1110 0010 1101 需要 16 位元，所以用三個位元組：<span class="mono">1110</span>0100 <span class="mono">10</span>111000 <span class="mono">10</span>101101 = E4 B8 AD。</p>
+      <p data-en-html="Rules that make UTF-8 safe: every character must use the <em>shortest</em> form (an “overlong” form such as C0 AF for “/” is illegal); the bytes C0, C1 and F5–FF never appear; nothing above U+10FFFF is allowed; and U+D800–DFFF (the surrogates, see below) may not be encoded. Because a continuation byte can never be mistaken for the start of a character, a reader that lands in the middle of a text loses at most one character and then finds its way again (UTF-8 is <strong>self-synchronising</strong>). Pure ASCII text is byte for byte the same in UTF-8.">讓 UTF-8 安全的規定：每個字都必須用<em>最短</em>的寫法（例如把「/」寫成 C0 AF 這種「過長編碼」是不合法的）；C0、C1、F5–FF 這幾個位元組永遠不會出現；不可超過 U+10FFFF；U+D800–DFFF（代理，見下）不可編碼。因為延續位元組不可能被當成字的開頭，從中間開始讀的人最多弄丟一個字，接著就能對回來（UTF-8 會<strong>自我同步</strong>）。純 ASCII 的文字，存成 UTF-8 一個位元組也不差。</p>
+
+      <h3 data-en="UTF-16 and surrogate pairs">UTF-16 與代理對</h3>
+      <p data-en-html="UTF-16 stores a character as one or two 16-bit <strong>code units</strong>. Characters up to U+FFFF take one unit. For a character beyond, subtract \(10000_{16}\) and split the 20 bits that are left into two halves of 10 bits:">UTF-16 用一個或兩個 16 位元的<strong>碼元</strong>存一個字。U+FFFF 以內的字用一個碼元；超過的字先減掉 \(10000_{16}\)，剩下的 20 個位元分成前後兩半、各 10 位元：</p>
+      <div class="formula">\[ c' = c - 10000_{16}, \qquad \text{hi} = \text{D800}_{16} + \lfloor c' / 400_{16} \rfloor, \qquad \text{lo} = \text{DC00}_{16} + (c' \bmod 400_{16}) \]</div>
+      <p data-en-html="The 2048 numbers D800–DFFF are reserved for these halves and are never characters themselves; this is also why Unicode stops at U+10FFFF (\(2^{20} + 2^{16}\) places). JavaScript strings are sequences of UTF-16 code units, so “😀”.length is 2. A half without its partner is a <strong>lone surrogate</strong>; the browser’s TextEncoder writes it as U+FFFD. This page writes UTF-16 big-endian (high byte first) without a byte order mark.">D800–DFFF 這 2048 個號碼保留給這兩半使用，本身永遠不是字；這也是 Unicode 只到 U+10FFFF 的原因（\(2^{20} + 2^{16}\) 個位置）。JavaScript 的字串是一串 UTF-16 碼元，所以「😀」的 length 是 2。少了另一半的叫做<strong>孤立代理</strong>，瀏覽器的 TextEncoder 會把它寫成 U+FFFD。本頁的 UTF-16 一律用大端序（高位元組在前），不加位元組順序記號。</p>
+
+      <h3 data-en="Big5">Big5</h3>
+      <p data-en-html="Big5 was drawn up in Taiwan in 1984 for Traditional Chinese. ASCII stays one byte; a Chinese character takes two: a lead byte 81–FE and a trail byte 40–7E or A1–FE. Common characters are mostly 2 bytes in Big5 but 3 bytes in UTF-8, so Chinese text in UTF-8 is about 1.5 times as long. Because a trail byte can lie in the ASCII range, Big5 is <em>not</em> self-synchronising: the trail byte 5C of characters such as <span lang=&quot;zh-Hant&quot; data-no-convert>許</span> (B3 5C) is the backslash “\”, a classic trap for programs that treat “\” as special. Browsers follow the Big5 of the WHATWG Encoding Standard, which is Big5 with the Hong Kong Supplementary Character Set (HKSCS). This page builds its Big5 table from the browser’s own decoder. When one character has several byte pairs, encoding uses the pair the standard picks (the first one outside the HKSCS-only range, the last one for six characters such as U+2550 and U+5341); decoding accepts all of them.">Big5 是 1984 年在臺灣制定的繁體中文編碼。ASCII 仍然是一個位元組，中文字用兩個：第一個位元組 81–FE，第二個 40–7E 或 A1–FE。常用字在 Big5 大多是 2 個位元組、在 UTF-8 是 3 個，所以中文存成 UTF-8 大約是 Big5 的 1.5 倍長。因為第二個位元組可能落在 ASCII 的範圍，Big5 <em>不會</em>自我同步；像「<span lang="zh-Hant" data-no-convert>許</span>」（B3 5C）這些字的第二個位元組 5C 就是反斜線「\」，把「\」當特殊符號的程式常常因此出錯。瀏覽器採用 WHATWG Encoding Standard 的 Big5，它以加上香港增補字符集（HKSCS）的 Big5 為基礎。本頁的 Big5 對照是用瀏覽器內建的解碼器建立的；同一個字對到好幾組位元組時，編碼採用標準指定的那一組（排除只屬於香港增補區的位置後取第一組，U+2550、U+5341 等六個字取最後一組），解碼時每一組都認得。</p>
+
+      <h3 data-en="How garbled text (mojibake) happens">亂碼是怎麼來的</h3>
+      <ul>
+        <li data-en-html="<strong>Wrong cuts</strong>: the bytes are correct, but the reader cuts them by the rules of another encoding. “café” saved as UTF-8 (63 61 66 C3 A9) and opened as Latin-1 becomes “cafÃ©”. Nothing is lost: save it again as Latin-1 and open it as UTF-8, and it comes back."><strong>切錯</strong>：位元組沒有錯，只是讀的人用另一種編碼的規則去切。「café」存成 UTF-8（63 61 66 C3 A9），用 Latin-1 打開就成了「cafÃ©」。這種亂碼什麼都沒丟：用 Latin-1 存回去、再用 UTF-8 打開，就回來了。</li>
+        <li data-en-html="<strong>Lost for good</strong>: when a decoder meets bytes that are illegal in its encoding, it puts U+FFFD “�” in their place, and the original bytes are gone. Saving that text again writes EF BF BD for every “�”. Read two of them (EF BF BD EF BF BD) as GBK, the encoding used for Simplified Chinese, and you get the famous “<span lang=&quot;zh-Hans&quot; data-no-convert>锟斤拷</span>”; read them as Big5 and you get “<span lang=&quot;zh-Hant&quot; data-no-convert>嚙踝蕭</span>”. A different family of “Chinese” noise comes from memory: Microsoft’s compiler fills the stack of a debug build with the byte CC, and CC CC read as GBK is “<span lang=&quot;zh-Hans&quot; data-no-convert>烫</span>” (as Big5 it is “<span lang=&quot;zh-Hant&quot; data-no-convert>昍</span>”)."><strong>從此找不回來</strong>：解碼器遇到在它的編碼裡不合法的位元組，就用 U+FFFD「�」代替，原來的位元組就丟了。這段文字再存一次，每個「�」都寫成 EF BF BD。兩個連在一起（EF BF BD EF BF BD）用簡體中文的 GBK 讀，就是有名的「<span lang="zh-Hans" data-no-convert>锟斤拷</span>」；用 Big5 讀則是「<span lang="zh-Hant" data-no-convert>嚙踝蕭</span>」。另一種「中文」雜訊來自記憶體：微軟的編譯器在偵錯版把堆疊填滿位元組 CC，CC CC 用 GBK 讀是「<span lang="zh-Hans" data-no-convert>烫</span>」（用 Big5 讀是「<span lang="zh-Hant" data-no-convert>昍</span>」）。</li>
+        <li data-en-html="<strong>A signature at the front</strong>: some editors put U+FEFF (EF BB BF), the byte order mark, at the start of a UTF-8 file. A program that does not expect it shows three strange characters at the very beginning."><strong>開頭的記號</strong>：有些編輯器會在 UTF-8 檔案的最前面放 U+FEFF（EF BB BF，位元組順序記號），不認得它的程式就會在第一行開頭顯示三個怪字。</li>
+      </ul>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Count the 1s</strong>: for “A”, “é”, “<span lang=&quot;zh-Hant&quot; data-no-convert>中</span>” and “😀”, how many 1s start the first UTF-8 byte? How many data bits are left in each byte?"><strong>數 1</strong>：「A」「é」「中」「😀」的第一個 UTF-8 位元組開頭各有幾個 1？每個位元組還剩幾個資料位元？</li>
+        <li data-en-html="<strong>Who is longer</strong>: type a Chinese sentence. Which is shortest, UTF-8, UTF-16 or Big5? Add some English letters: does the answer change?"><strong>誰比較長</strong>：打一句中文，UTF-8、UTF-16、Big5 誰最短？加幾個英文字母進去，答案會不會變？</li>
+        <li data-en-html="<strong>One bit apart</strong>: in the ASCII table, what is the difference between “A” and “a”? Flip one bit in the UTF-8 row and see."><strong>只差一位</strong>：ASCII 表裡「A」和「a」差多少？在 UTF-8 那一列翻轉一個位元試試看。</li>
+        <li data-en-html="<strong>Rescue or not</strong>: save “café” as UTF-8 and open it as Latin-1, then carry on and reverse it. Now save Chinese as Big5 and open it as UTF-8: why can this one never be rescued?"><strong>救不救得回來</strong>：把「café」存成 UTF-8、用 Latin-1 打開，再接著反過來做。換成把中文存成 Big5、用 UTF-8 打開：為什麼這次永遠救不回來？</li>
+        <li data-en-html="<strong>Starting in the middle</strong>: save a Chinese text as UTF-8 and delete its first byte. How many characters are lost?"><strong>從中間開始讀</strong>：把一段存成 UTF-8 的中文刪掉第一個位元組，弄丟幾個字？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="UTF-8 and UTF-16 are encoded and decoded by the page’s own code, written from the definitions in RFC 3629 and Chapter 3 of the Unicode Standard. Decoding follows the UTF-8 decoder of the WHATWG Encoding Standard: every error becomes one U+FFFD and a byte that might start the next character is read again. A byte order mark at the start is kept (like TextDecoder with ignoreBOM: true).">UTF-8、UTF-16 的編碼與解碼是本頁自己寫的程式，照 RFC 3629 與 Unicode 標準第 3 章的定義。解碼照 WHATWG Encoding Standard 的 UTF-8 解碼器：每個錯誤換成一個 U+FFFD，可能是下一個字開頭的位元組會重新讀。開頭的位元組順序記號保留不刪（相當於 TextDecoder 的 ignoreBOM: true）。</li>
+        <li data-en="Big5: when the page opens, all 19 782 two-byte pairs are decoded once by the browser’s TextDecoder('big5') to build the table; encoding looks characters up in it following the standard’s rule, and decoding follows the standard’s Big5 decoder. Latin-1 is windows-1252.">Big5：頁面打開時，用瀏覽器的 TextDecoder('big5') 把全部 19 782 組雙位元組各解碼一次，建立對照表；編碼照標準的規則反查，解碼照標準的 Big5 解碼器。Latin-1 是 windows-1252。</li>
+        <li data-en="The unit tests compare UTF-8 encoding with TextEncoder for every code point (including the boundaries U+007F, 0080, 07FF, 0800, FFFF, 10000 and 10FFFF), compare decoding with TextDecoder on 200 000 random byte strings full of illegal sequences (overlong forms, lone continuation bytes, encoded surrogates, values above U+10FFFF, cut-off characters), check surrogate pairs, check that every Big5 character comes back after encoding and decoding, and compare all 256 windows-1252 bytes with TextDecoder.">單元測試：每一個碼位的 UTF-8 編碼都和 TextEncoder 比對（包含邊界 U+007F、0080、07FF、0800、FFFF、10000、10FFFF）；20 萬串充滿不合法序列（過長編碼、孤立的延續位元組、編了代理、超過 U+10FFFF、被切斷的字）的隨機位元組，解碼結果和 TextDecoder 比對；檢查代理對；每一個 Big5 字編碼再解碼都回得來；windows-1252 的 256 個位元組都和 TextDecoder 比對。</li>
+        <li data-en="The text and bytes are limited to 40 characters and 200 bytes so that every byte can still be drawn.">文字最多 40 個字、位元組最多 200 個，讓每一個位元組都畫得出來。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): D-IV-2, ways to represent digital data (binary representation of data, the idea of encoding).">課綱對應：資D-IV-2 數位資料的表示方法（二進位資料表示法、編碼的概念）。</li>
+        <li data-en="The Unicode Standard, Chapter 3 (Conformance): D90–D92 (UTF-8, UTF-16), Table 3-6 (UTF-8 bit distribution), Table 3-7 (well-formed UTF-8 byte sequences), and section 3.9 on U+FFFD substitution of maximal subparts.">The Unicode Standard 第 3 章 Conformance：定義 D90–D92（UTF-8、UTF-16）、表 3-6（UTF-8 的位元分配）、表 3-7（合法的 UTF-8 位元組序列）、3.9 節以 U+FFFD 取代「最大子部分」的做法。</li>
+        <li data-en="F. Yergeau, RFC 3629: UTF-8, a transformation format of ISO 10646 (2003) — Section 3 (the bit layout, the range U+0000..U+10FFFF, no surrogates) and Section 10, Security Considerations (overlong forms such as 2F C0 AE 2E 2F).">F. Yergeau，RFC 3629〈UTF-8, a transformation format of ISO 10646〉（2003）：第 3 節（位元配置、只到 U+10FFFF、不可編碼代理）、第 10 節 Security Considerations（過長編碼，例如 2F C0 AE 2E 2F）。</li>
+        <li data-en="P. Hoffman and F. Yergeau, RFC 2781: UTF-16, an encoding of ISO 10646 (2000) — surrogate pairs and byte order.">P. Hoffman、F. Yergeau，RFC 2781〈UTF-16, an encoding of ISO 10646〉（2000）：代理對與位元組順序。</li>
+        <li data-en="ANSI X3.4-1986, Coded Character Set — 7-Bit American National Standard Code for Information Interchange (ASCII).">ANSI X3.4-1986〈Coded Character Set — 7-Bit American National Standard Code for Information Interchange〉（ASCII）。</li>
+        <li data-en="WHATWG, Encoding Standard: Big5 (index Big5, the Big5 decoder and encoder, the index Big5 pointer rule), windows-1252 and the UTF-8 decoder.">WHATWG〈Encoding Standard〉：Big5（index Big5、Big5 的解碼器與編碼器、index Big5 pointer 的規則）、windows-1252、UTF-8 解碼器。</li>
+        <li data-en="The 0xCC fill of the stack in debug builds: Microsoft C++ Team Blog, “2x-3x Performance Improvements for Debug Builds” (2021), on the /RTCs option.">偵錯版用 0xCC 填滿堆疊：Microsoft C++ Team Blog〈2x-3x Performance Improvements for Debug Builds〉（2021），談 /RTCs 選項。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/UTF-8&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>UTF-8 (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Big5&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Big5 (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Mojibake&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Mojibake (Wikipedia)</a>, <a href=&quot;https://encoding.spec.whatwg.org/&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>WHATWG Encoding Standard</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/UTF-8" target="_blank" rel="noopener">UTF-8（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Big5" target="_blank" rel="noopener">Big5（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Mojibake" target="_blank" rel="noopener">Mojibake（維基百科）</a>、<a href="https://encoding.spec.whatwg.org/" target="_blank" rel="noopener">WHATWG Encoding Standard</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/text-encoding-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/text-encoding.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="text-encoding"></script>
+  <script src="js/missions/text-encoding.js"></script>
+  <script src="js/stats.js" data-module="text-encoding"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

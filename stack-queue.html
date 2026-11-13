@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Stacks and Queues | Astro Ni Science Lab">堆疊與佇列｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 堆疊與佇列頁面專用的顏色代號（淺色＋兩組深色；由 js/stack-queue.js 讀取） */
+    :root { --sq-tray: #b9c6d6; --sq-floor: #e9e1d2; --sq-wood: #b98a5a; --sq-top: #7c3aed; --sq-front: #0f766e; --sq-rear: #c2410c; --sq-bad: #dc2626; --sq-ok: #15803d; --sq-rail: #7d6f60; --sq-num: #2563eb; --sq-op: #c2410c; --sq-br: #7c3aed;
+      --sq-i1: #e76f51; --sq-i2: #2a9d8f; --sq-i3: #e9b949; --sq-i4: #6d83c9; --sq-i5: #d16ba5; --sq-i6: #7fae6e; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --sq-tray: #4a5a6e; --sq-floor: #2b2721; --sq-wood: #8a6844; --sq-top: #c4a8ff; --sq-front: #2dd4bf; --sq-rear: #fb923c; --sq-bad: #f87171; --sq-ok: #4ade80; --sq-rail: #a59580; --sq-num: #93c5fd; --sq-op: #fb923c; --sq-br: #c4a8ff;
+        --sq-i1: #f4a261; --sq-i2: #4fd1c5; --sq-i3: #f6d878; --sq-i4: #93a8ec; --sq-i5: #f08cc8; --sq-i6: #a7d394; }
+    }
+    :root[data-theme="dark"] { --sq-tray: #4a5a6e; --sq-floor: #2b2721; --sq-wood: #8a6844; --sq-top: #c4a8ff; --sq-front: #2dd4bf; --sq-rear: #fb923c; --sq-bad: #f87171; --sq-ok: #4ade80; --sq-rail: #a59580; --sq-num: #93c5fd; --sq-op: #fb923c; --sq-br: #c4a8ff;
+      --sq-i1: #f4a261; --sq-i2: #4fd1c5; --sq-i3: #f6d878; --sq-i4: #93a8ec; --sq-i5: #f08cc8; --sq-i6: #a7d394; }
+
+    /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面 */
+    #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; cursor: default; }
+    .sq button { min-height: 44px; }
+    .sq [hidden] { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
+    .modes button { border: none; border-radius: 0; padding: 6px 4px; background: var(--bg); line-height: 1.25; }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    @media (max-width: 560px) {
+      .modes { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+      .modes button { grid-column: span 2; }
+      .modes button:nth-child(n+4) { grid-column: span 3; }
+    }
+    /* 模式一、二的操作按鈕 */
+    .ops { margin: 10px 2px 0; display: grid; gap: 8px; }
+    .oprow { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 8px; align-items: center; }
+    .opcap { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; line-height: 1.25; }
+    .opbtns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .opbtns button { padding: 4px 4px; line-height: 1.2; font-size: calc(14px * var(--fs, 1)); }
+    .opbtns button.go { border-color: var(--accent); }
+    @media (max-width: 560px) {
+      .oprow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+      .opbtns { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    .sq .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .sq .playbar button { padding: 6px 4px; line-height: 1.2; }
+    @media (max-width: 560px) { .sq .playbar { grid-template-columns: repeat(6, minmax(0, 1fr)); } .sq .playbar button { grid-column: span 2; } .sq .playbar button:nth-child(n+4) { grid-column: span 3; } }
+    .sq .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .sq .playbar2 button { flex: 1 1 auto; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .sq .stage .status { margin: 8px 4px 0; min-height: 2.8em; }
+    .sq .stage .status.bad { color: var(--sq-bad); }
+    .sq .slider input[type="range"] { height: 28px; margin: 0; }
+    .sq .checks label { min-height: 44px; }
+    .sq .checks input { width: 17px; height: 17px; }
+    .sq .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .sq .panel { grid-template-columns: minmax(0, 1fr); }
+    .sq .panel > .card { min-width: 0; }
+    /* 畫布下方的序列 */
+    .strip { margin: 8px 2px 0; padding: 7px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13.5px * var(--fs, 1)); min-height: 1.6em; overflow-wrap: anywhere; }
+    .strip p { margin: 0; }
+    .strip p + p { margin-top: 3px; }
+    .strip b { font-weight: 600; color: var(--muted); }
+    .strip .seq { font-variant-numeric: tabular-nums; font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; }
+    /* 面板 */
+    .seg-cap { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 10px 0 0; }
+    .sq .seg2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 6px 0 0; }
+    .sq .seg2 button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    .sq .seg2 button + button { border-left: 1px solid var(--border); }
+    .sq .seg2 button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .field-cap { display: block; font-size: calc(14px * var(--fs, 1)); margin: 0 0 4px; }
+    #expr { width: 100%; min-width: 0; box-sizing: border-box; min-height: 44px; font: inherit; font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; font-size: calc(16px * var(--fs, 1)); padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    #expr.bad { border-color: var(--sq-bad); box-shadow: 0 0 0 2px color-mix(in srgb, var(--sq-bad) 22%, transparent); }
+    .pick { display: grid; grid-template-columns: 4.2em minmax(0, 1fr); gap: 8px; align-items: center; margin: 10px 0 0; }
+    .pick label { font-size: calc(14px * var(--fs, 1)); }
+    .sq select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .sq .btns { margin: 10px 0 0; }
+    .sq .btns button { flex: 1 1 auto; }
+    #toEvalBtn:not(:disabled) { border-color: var(--accent); }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; }
+    dl.readout dd small { color: var(--muted); font-weight: 400; }
+    dl.readout dd.bad { color: var(--sq-bad); }
+    dl.readout dd.ok { color: var(--sq-ok); }
+    .theory { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; overflow-wrap: anywhere; }
+    .tablewrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; max-height: 340px; }
+    #logTab { width: 100%; }
+    #logTab td, #logTab th { font-variant-numeric: tabular-nums; padding: 3px 7px; text-align: left; vertical-align: top; }
+    #logTab td:first-child, #logTab th:first-child { text-align: right; }
+    #logTab td.bad { color: var(--sq-bad); font-weight: 600; }
+    #logTab td.ok { color: var(--sq-ok); font-weight: 600; }
+    #logTab td.mono { font-family: ui-monospace, "SFMono-Regular", Consolas, "Noto Sans Mono", monospace; font-size: 0.92em; overflow-wrap: anywhere; }
+    #logTab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+    .legend .sq-box { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#prog&quot;>Information Technology · Programming</a> / Stacks and queues"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#prog">資訊科技・程式設計</a> ／ 堆疊與佇列</nav>
+      <h1 data-en="Stacks and Queues">堆疊與佇列</h1>
+      <p data-en="You can only take the top plate off a pile, and the person at the front of a line is served first: that is a stack (last in, first out) and a queue (first in, first out). Push, pop, enqueue and dequeue for yourself and see what happens when they are full or empty; build a circular queue from an array whose end joins its start; then let a stack check brackets, evaluate postfix expressions, and follow Dijkstra’s shunting-yard algorithm as it turns an ordinary expression into postfix.">一疊盤子只能從最上面拿，排隊的人從最前面離開：這就是堆疊（後進先出）和佇列（先進先出）。動手放入、取出、排入、離開，看看滿了、空了會怎樣；再用陣列做一個首尾相接的環狀佇列；最後讓堆疊幫忙檢查括號、計算後序式，並跟著 Dijkstra 的調度場演算法，把平常寫的算式翻成後序式。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Push” three times, then “Pop” three times, and watch the order they come out in; then do the same with “Enqueue” and “Dequeue”.">試試看：按三次「放入（push）」，再按三次「取出（pop）」，看拿出來的順序；再用「排入（enqueue）」和「離開（dequeue）」做一樣的事。</p>
+    <div class="lab sq" id="lab">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+          <button type="button" data-mode="desk" aria-pressed="true" data-en="Stacks and queues">堆疊與佇列</button>
+          <button type="button" data-mode="ring" aria-pressed="false" data-en="Circular queue">環狀佇列</button>
+          <button type="button" data-mode="paren" aria-pressed="false" data-en="Bracket matching">括號配對</button>
+          <button type="button" data-mode="postfix" aria-pressed="false" data-en="Postfix evaluation">後序式求值</button>
+          <button type="button" data-mode="infix" aria-pressed="false" data-en="Infix to postfix">中序轉後序</button>
+        </div>
+        <canvas id="cv" aria-label="堆疊與佇列的畫布" data-en-aria-label="Stacks and queues canvas"></canvas>
+        <div class="strip" id="strip" aria-live="off"></div>
+
+        <!-- 模式一：堆疊與佇列 -->
+        <div class="ops" id="deskOps">
+          <div class="oprow">
+            <span class="opcap" id="capA" data-en="Stack">堆疊</span>
+            <div class="opbtns">
+              <button type="button" id="bPush" class="go" data-en="Push">放入（push）</button>
+              <button type="button" id="bPop" data-en="Pop">取出（pop）</button>
+              <button type="button" id="bTop" data-en="Top">看頂端（top）</button>
+            </div>
+          </div>
+          <div class="oprow" id="rowQ">
+            <span class="opcap" data-en="Queue">佇列</span>
+            <div class="opbtns">
+              <button type="button" id="bEnq" class="go" data-en="Enqueue">排入（enqueue）</button>
+              <button type="button" id="bDeq" data-en="Dequeue">離開（dequeue）</button>
+              <button type="button" id="bFront" data-en="Front">看前端（front）</button>
+              <button type="button" id="bRot" data-en="To the back" title="前端的人離開後立刻排到隊尾（算 2 次基本操作）" data-en-title="The person at the front leaves and joins the back at once (2 basic operations)">排到隊尾</button>
+            </div>
+          </div>
+          <div class="oprow" id="rowB" hidden>
+            <span class="opcap" data-en="Stack B">堆疊 B</span>
+            <div class="opbtns">
+              <button type="button" id="bPushB" class="go" data-en="Push B">放入 B</button>
+              <button type="button" id="bPopB" data-en="Pop B">取出 B</button>
+              <button type="button" id="bTopB" data-en="Top of B">看 B 頂端</button>
+            </div>
+          </div>
+          <div class="oprow">
+            <span class="opcap" data-en="Move">搬移</span>
+            <div class="opbtns">
+              <button type="button" id="bToL" data-en="Queue → stack" title="佇列前端的數離開，放入堆疊（算 2 次基本操作）" data-en-title="The number at the front of the queue leaves and is pushed onto the stack (2 basic operations)">佇列 → 堆疊</button>
+              <button type="button" id="bToR" data-en="Stack → queue" title="堆疊頂端的數取出，排入佇列（算 2 次基本操作）" data-en-title="The number on top of the stack is popped and enqueued (2 basic operations)">堆疊 → 佇列</button>
+              <button type="button" id="bAB" hidden title="從 A 取出，放入 B（算 2 次基本操作）" data-en-title="Pop from A and push onto B (2 basic operations)">A → B</button>
+              <button type="button" id="bBA" hidden title="從 B 取出，放入 A（算 2 次基本操作）" data-en-title="Pop from B and push onto A (2 basic operations)">B → A</button>
+              <button type="button" id="bClear" data-en="Empty both">清空</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模式二：環狀佇列 -->
+        <div class="ops" id="ringOps" hidden>
+          <div class="oprow">
+            <span class="opcap" data-en="Queue in an array">陣列佇列</span>
+            <div class="opbtns">
+              <button type="button" id="rEnq" class="go" data-en="Enqueue">排入（enqueue）</button>
+              <button type="button" id="rDeq" data-en="Dequeue">離開（dequeue）</button>
+              <button type="button" id="rClear" data-en="Empty it">清空</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 模式三、四、五：單步執行 -->
+        <div class="playbar" id="runBar" hidden>
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
+          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="resetBtn" type="button" data-en="Restart">重來</button>
+        </div>
+
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉操作紀錄與目前的內容，回到可以重新開始的狀態；滑桿與輸入的式子不變" data-en-title="Clear the log and the current contents so you can start again; the sliders and the typed expression stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend" id="legend"></div>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="exprCard" hidden>
+          <h2 id="exprHead" data-en="Expression">式子</h2>
+          <label class="field-cap" for="expr" id="exprCap" data-en="Type here">在這裡輸入</label>
+          <input id="expr" type="text" maxlength="60" autocomplete="off" autocapitalize="off" spellcheck="false">
+          <div class="pick"><label for="exSel" data-en="Examples">範例</label><select id="exSel"></select></div>
+          <div class="btns" id="evalRow" hidden><button id="toEvalBtn" type="button" data-en="Evaluate it" title="把轉出來的後序式送到「後序式求值」" data-en-title="Send the postfix result to “Postfix evaluation”">拿去求值</button></div>
+          <p class="hint" id="exprHint"></p>
+          <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="1" max="12" step="1" value="2" data-decimals="0"></div>
+        </section>
+
+        <section class="card" id="valCard">
+          <h2 data-en="What to put in">放進去的數</h2>
+          <div class="slider"><label for="val" data-en="Number to put in">要放的數</label><output id="valo"></output>
+            <input id="val" type="range" min="1" max="99" step="1" value="1" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="auto" type="checkbox" checked><span data-en="Add one after each put">放入後自動加一</span></label>
+          </div>
+          <p class="hint" data-en="Every push or enqueue puts in this number. With “Add one after each put” ticked you get 1, 2, 3, … so the order is easy to follow.">每次放入或排入都放這個數。勾選「放入後自動加一」時會依序放 1、2、3……，容易看出順序。</p>
+        </section>
+
+        <section class="card" id="deskCard">
+          <h2 data-en="Capacity and layout">容量與擺法</h2>
+          <div class="slider"><label for="cap" data-en="Capacity (most on each side)">容量（每一邊最多幾個）</label><output id="capo"></output>
+            <input id="cap" type="range" min="3" max="10" step="1" value="6" data-decimals="0"></div>
+          <p class="seg-cap" data-en="On the right:">右邊放：</p>
+          <div class="seg2" role="group" aria-label="右邊放" data-en-aria-label="On the right">
+            <button type="button" data-rk="queue" aria-pressed="true" data-en="Queue">佇列</button>
+            <button type="button" data-rk="stack" aria-pressed="false" data-en="Second stack">第二個堆疊</button>
+          </div>
+          <p class="hint" data-en="Changing the capacity or what is on the right empties both sides.">改容量或右邊放的東西，兩邊都會清空重來。</p>
+        </section>
+
+        <section class="card" id="ringCard" hidden>
+          <h2 data-en="The array">陣列</h2>
+          <div class="slider"><label for="ringN" data-en="Array cells N">陣列格數 N</label><output id="ringNo"></output>
+            <input id="ringN" type="range" min="4" max="12" step="1" value="8" data-decimals="0"></div>
+          <div class="checks">
+            <label><input id="wrap" type="checkbox" checked><span data-en="Wrap round (circular)">繞回（環狀）</span></label>
+          </div>
+          <p class="hint" data-en="Changing N or switching wrapping off empties the array (the number to put in stays).">改格數或取消繞回會清空陣列（要放的數不變）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+          <p class="theory" id="theory"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Log">操作紀錄</h2>
+          <div class="tablewrap"><table class="data" id="logTab"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every operation, and every run that reaches the end, is listed here (newest first).">每一次操作、每一次跑完都會記在這裡（最新的在最上面）。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="Stack: last in, first out">堆疊：後進先出</h3>
+      <p data-en-html="A <strong>stack</strong> has only one open end, the <strong>top</strong>: putting in (<em>push</em>) and taking out (<em>pop</em>) both happen there, so the last one in is the first one out (LIFO). A <strong>queue</strong> has two ends: new items join at the <strong>rear</strong> (<em>enqueue</em>) and leave from the <strong>front</strong> (<em>dequeue</em>), so the first to come is the first to go (FIFO). Each operation touches only one item at one end, so with an array (or a linked list) each takes the same, constant time, \(O(1)\), however many items are stored.">一個<strong>堆疊</strong>（stack）只有一個開口——<strong>頂端</strong>（top）：放入（<em>push</em>）和取出（<em>pop</em>）都在這裡，所以最後放進去的最先出來（後進先出，LIFO）。一個<strong>佇列</strong>（queue）有兩個開口：新來的從<strong>尾端</strong>（rear）排入（<em>enqueue</em>），從<strong>前端</strong>（front）離開（<em>dequeue</em>），所以先來的先走（先進先出，FIFO）。每個操作只動一端的一個元素，用陣列或鏈結串列實作時，不管裡面有多少東西，每次都只花固定的時間 \(O(1)\)。</p>
+      <div class="formula">\[ \textsf{push}(x):\ S[t] \leftarrow x,\ \ t \leftarrow t + 1 \qquad\qquad \textsf{pop}():\ t \leftarrow t - 1,\ \ \text{return } S[t] \]</div>
+      <p data-en-html="Memory is finite. Pushing onto a full stack is an <strong>overflow</strong>; popping from an empty one is an <strong>underflow</strong>. On this page both are refused and nothing changes. Stacks are everywhere: the browser’s “Back” button returns to the page you opened most recently, “Undo” cancels the last thing you did, and a program keeps its unfinished function calls on a call stack. Queues are just as common: a printer prints documents in the order they were sent, and a server answers requests first come, first served.">記憶體有限：堆疊滿了還要放入，叫<strong>溢位</strong>（overflow）；空了還要取出，叫<strong>下溢</strong>（underflow）。本頁兩種都會擋下來，內容不變。生活裡到處是堆疊：瀏覽器的「上一頁」回到最近打開的那一頁、「復原」取消最後做的那一步、程式把還沒做完的函式呼叫疊在呼叫堆疊上。佇列也一樣常見：印表機照送出的先後印文件，伺服器照先來後到回應請求。</p>
+
+      <h3 data-en="Which orders can a stack produce?">堆疊能排出哪些順序？</h3>
+      <p data-en-html="Push \(1, 2, \dots, n\) in order, popping whenever you like. How many different exit orders are possible? The answer is the <strong>Catalan number</strong> \(C_n\): 1, 2, 5, 14, 42, … For \(n = 3\) there are 5, and only \(3, 1, 2\) is impossible: if 3 comes out first, 1 and 2 are both still inside with 2 above 1, so 1 cannot leave before 2. Knuth uses a railway siding as the picture of a stack: a train runs in, some cars wait on the siding, and the order in which they come out is limited in exactly this way.">依序放入 \(1, 2, \dots, n\)，中間隨時可以取出，出場順序有幾種？答案是<strong>卡特蘭數</strong> \(C_n\)：1、2、5、14、42……。\(n = 3\) 時有 5 種，只有 \(3, 1, 2\) 做不到：3 先出來，表示 1 和 2 都還在裡面，而且 2 壓在 1 上面，1 不可能比 2 先走。Knuth 用鐵路的側線比喻堆疊：火車開進來，有些車廂先停在側線上等，開出去的順序正是受到這樣的限制。</p>
+      <div class="formula">\[ C_n = \frac{1}{n + 1}\binom{2n}{n}, \qquad C_1, C_2, C_3, C_4, C_5 = 1, 2, 5, 14, 42 \]</div>
+
+      <h3 data-en="Circular queue: front and rear go round">環狀佇列：front、rear 繞圈走</h3>
+      <p data-en-html="Build a queue from an array \(Q[0..N-1]\). <code>front</code> is the index of the first item and <code>rear</code> is the index of the next empty cell. Enqueue: \(Q[\text{rear}] \leftarrow x\), \(\text{rear} \leftarrow (\text{rear} + 1) \bmod N\). Dequeue: \(\text{front} \leftarrow (\text{front} + 1) \bmod N\). After \(N - 1\) an index goes back to 0, as if the array were bent into a ring, so the cells freed at the front are used again.">用一個陣列 \(Q[0..N-1]\) 做佇列：<code>front</code> 是第一個元素的位置，<code>rear</code> 是下一個空格的位置。排入：\(Q[\text{rear}] \leftarrow x\)，\(\text{rear} \leftarrow (\text{rear} + 1) \bmod N\)；離開：\(\text{front} \leftarrow (\text{front} + 1) \bmod N\)。走到 \(N - 1\) 之後回到 0，就像把陣列彎成一個圈，前面空出來的格子可以再用。</p>
+      <div class="formula">\[ \text{size} = (\text{rear} - \text{front} + N) \bmod N, \qquad \text{empty} \iff \text{front} = \text{rear}, \qquad \text{full} \iff (\text{rear} + 1) \bmod N = \text{front} \]</div>
+      <p data-en-html="<strong>This page keeps one cell empty</strong> (as in Cormen et al.): if all \(N\) cells were filled, rear would come round to equal front — exactly what “empty” looks like. So the queue holds at most \(N - 1\) items. (Another common design keeps a separate count, which allows all \(N\).) Untick “Wrap round” and you get a plain array queue: once rear reaches \(N\) nothing more fits, even when the front cells have been freed. This is called <strong>false overflow</strong>.">本頁的判斷<strong>永遠留一格空位</strong>（Cormen 等人教科書的做法）：如果 \(N\) 格全部放滿，rear 繞回來會等於 front，和「空」的樣子一模一樣，分不出來。所以最多放 \(N - 1\) 個。（另一種常見的做法是另外記一個「個數」，就能放滿 \(N\) 個。）取消「繞回（環狀）」就是一般的陣列佇列：rear 到了 \(N\) 就再也放不進去，即使前面的格子已經空出來——這叫<strong>假溢位</strong>。</p>
+
+      <h3 data-en="Checking brackets">用堆疊檢查括號</h3>
+      <p data-en-html="Read from left to right. An opening bracket <code>( [ {</code> is pushed. A closing bracket must meet an opening bracket of the same kind on top of the stack; then the pair matches and is popped. Everything else is skipped. There are three ways to fail: a closing bracket arrives when the stack is empty (<em>an extra closing bracket</em>); the top is a different kind (<em>brackets that do not match</em>); the text ends with brackets still on the stack (<em>an extra opening bracket</em>). Counting is not enough: in <code>([)]</code> every kind has as many closing as opening brackets, and it is still wrong. The depth of the stack, drawn under the text, is a mountain range: for a correct expression it starts at 0, never goes below 0 and ends at 0.">由左往右讀：左括號 <code>( [ {</code> 放入堆疊；右括號要碰上堆疊頂端同一種的左括號，才配對成功、把它取出；其他字元跳過。失敗有三種：右括號來了，堆疊卻是空的（<em>多了右括號</em>）；頂端的左括號種類不同（<em>左右不對應</em>）；讀完了，堆疊裡還有左括號（<em>多了左括號</em>）。只數個數是不夠的：<code>([)]</code> 每一種括號的左右個數都一樣，卻還是錯的。畫在文字下方的堆疊深度像一條山脈：正確的式子從 0 出發、永遠不低於 0、最後回到 0。</p>
+
+      <h3 data-en="Postfix expressions">後序式（逆波蘭式）</h3>
+      <p data-en-html="We usually write \((3 + 4) \times 2\) in <strong>infix</strong> form: each operator sits between its two operands, so we need brackets and precedence rules. In <strong>postfix</strong> form the operator comes after its operands: <code>3 4 + 2 ×</code>, and no brackets are ever needed. It is also called reverse Polish notation, after the Polish logician Jan Łukasiewicz, who wrote operators in front. To evaluate it, read from left to right: push every number; at an operator pop two numbers — <strong>the first one popped is the right operand \(b\)</strong>, the second is the left operand \(a\) — and push \(a \mathbin{\text{op}} b\). At the end exactly one number must be left: the answer.">平常寫的 \((3 + 4) \times 2\) 是<strong>中序式</strong>：運算子在兩個運算元中間，所以需要括號和優先順序。<strong>後序式</strong>把運算子寫在兩個運算元後面：<code>3 4 + 2 ×</code>，永遠不需要括號；它又叫逆波蘭式，因為波蘭邏輯學家 Łukasiewicz 曾把運算子寫在前面。計算方法是由左往右讀：數字放入堆疊；遇到運算子就取出兩個數——<strong>先取出的是右邊的運算元 \(b\)</strong>，後取出的才是左邊的 \(a\)——算出 \(a \mathbin{\text{op}} b\) 再放回去。讀完時堆疊裡必須剛好剩一個數，那就是答案。</p>
+      <div class="formula">\[ \texttt{3 4 + 2 *}:\quad [\,3\,] \to [\,3, 4\,] \to [\,7\,] \to [\,7, 2\,] \to [\,14\,] \]</div>
+      <p data-en-html="<strong>Whole numbers only.</strong> \(a \div b\) is rounded towards zero and \(a \,\%\, b\) is the remainder with the sign of \(a\), so \(a = (a \div b) \cdot b + a \,\%\, b\) always holds — the same rules as C and Java (Python’s <code>//</code> rounds down instead, so it differs for negative numbers). \(a \wedge b\) is a power with \(b \ge 0\) and \(0 \wedge 0 = 1\). Division by zero, a negative power, or a result beyond \(\pm(2^{53} - 1)\) stops the calculation with an explanation.">本頁<strong>只用整數</strong>：\(a \div b\) 向 0 取整，\(a \,\%\, b\) 是餘數、正負號和 \(a\) 相同，所以永遠 \(a = (a \div b) \cdot b + a \,\%\, b\)——和 C、Java 的規則一樣（Python 的 <code>//</code> 是往下取整，遇到負數結果不同）。\(a \wedge b\) 是次方，\(b \ge 0\)，\(0 \wedge 0 = 1\)。除以 0、負的指數、結果超過 \(\pm(2^{53} - 1)\)，都會停下來並說明原因。</p>
+      <div class="formula">\[ 7 \div 2 = 3,\ \ 7 \,\%\, 2 = 1; \qquad (0 - 7) \div 2 = -3,\ \ (0 - 7) \,\%\, 2 = -1 \]</div>
+
+      <h3 data-en="Infix to postfix: the shunting yard">中序轉後序：調度場演算法</h3>
+      <p data-en-html="In 1961 Edsger Dijkstra described this translation with a railway shunting yard. The expression arrives like a train from the right. Numbers run straight on to the output track on the left; operators first go down into a siding — a stack. Before a new operator enters the siding, the operators on top of it that must be done first leave for the output: those with <strong>higher precedence</strong>, or with <strong>equal precedence that are worked out from left to right</strong>. An opening bracket enters the siding as a barrier; a closing bracket sends every operator above the barrier to the output and then throws the pair of brackets away. When the expression ends, the operators left in the siding come out one by one.">1961 年，Dijkstra 用鐵路調車場比喻這個翻譯方法。式子像一列火車從右邊開過來：數字直接開到左邊的輸出軌；運算子先開進下方的側線——一個堆疊。新的運算子要進側線之前，側線頂端那些應該先算的運算子要先開到輸出：<strong>優先順序比較高</strong>的，或<strong>一樣高而且由左往右算</strong>的。左括號開進側線當作隔板；右括號把隔板上面的運算子全部送到輸出，再把這一對括號丟掉。式子讀完，側線裡剩下的運算子依序開出來。</p>
+      <div class="formula">\[ \text{precedence:}\quad {+}\ {-}\ \to 1, \qquad {\times}\ {\div}\ {\%}\ \to 2, \qquad {\wedge} \to 3\ \ (\text{right to left}) \]</div>
+      <p data-en-html="On this page \(\wedge\) groups from the right, as in today’s mathematics books and in Python’s <code>**</code>: \(2 \wedge 3 \wedge 2 = 2^{(3^2)} = 512\). So an incoming \(\wedge\) does not push out a \(\wedge\) already on top. The ALGOL 60 report (section 3.3.4.3) chose the opposite and worked powers from left to right. Leading minus signs are not supported; write \((0 - 3)\) instead.">本頁的 \(\wedge\) 是由右往左結合，和現在的數學課本、Python 的 <code>**</code> 一樣：\(2 \wedge 3 \wedge 2 = 2^{(3^2)} = 512\)；所以新來的 \(\wedge\) 不會把頂端的 \(\wedge\) 擠出去。ALGOL 60 的報告（3.3.4.3 節）的規定剛好相反，次方也由左往右算。本頁不支援負號開頭，請寫成 \((0 - 3)\)。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>LIFO and FIFO</strong>: push 1, 2, 3 and pop them all; then enqueue 1, 2, 3 and dequeue them all. Write down both exit orders."><strong>後進先出、先進先出</strong>：放入 1、2、3 再全部取出；再排入 1、2、3 再全部離開。把兩種出場順序寫下來比一比。</li>
+        <li data-en-html="<strong>Possible orders</strong>: pushing 1, 2, 3 in order and popping whenever you like, find all five exit orders. Why is 3, 1, 2 impossible? With 4 numbers, is 4, 1, 3, 2 possible?"><strong>出場順序</strong>：依序放入 1、2、3，隨時可以取出，把 5 種出場順序都找出來。為什麼 3、1、2 做不到？4 個數時，4、1、3、2 做得到嗎？</li>
+        <li data-en-html="<strong>Going round</strong>: in “Circular queue” with N = 8, how many items fit at most? Let rear pass \(N - 1\) and come back to 0: does the size formula still give the right answer?"><strong>繞一圈</strong>：在「環狀佇列」N = 8 時，最多能放幾個？讓 rear 走過 \(N - 1\) 回到 0，個數的公式還對嗎？</li>
+        <li data-en-html="<strong>Counting is not enough</strong>: in “Bracket matching”, try <code>([)]</code>. Every kind of bracket is balanced in number — where does it go wrong? Look at the mountain range under the text."><strong>只數個數不夠</strong>：在「括號配對」試試 <code>([)]</code>。每種括號的左右個數都相等，錯在哪裡？看看文字下面的山脈。</li>
+        <li data-en-html="<strong>Order of the operands</strong>: evaluate <code>7 2 -</code> and <code>2 7 -</code>. Why does it matter that the number popped first is the right operand?"><strong>運算元的先後</strong>：算算看 <code>7 2 -</code> 和 <code>2 7 -</code>。為什麼「先取出的是右邊的運算元」很重要？</li>
+        <li data-en-html="<strong>Two stacks, one queue</strong>: with “Second stack” on the right, can the two stacks work together so that numbers leave in the order they arrived? When is it safe to move A over to B?"><strong>兩個堆疊、一條隊伍</strong>：右邊放「第二個堆疊」，兩個堆疊能不能合作，讓數字照進來的順序出去？什麼時候才可以把 A 搬到 B？</li>
+      </ul>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="Stacks and queues: every button is one operation on an array. “Basic operations” counts each push, pop, enqueue, dequeue and look as 1, and each move between the two sides (and “To the back”) as 2: one take-out plus one put-in. A refused operation (overflow, underflow, full, empty) changes nothing and is not counted.">堆疊與佇列：每個按鈕就是對陣列做一次操作。「基本操作次數」把每次放入、取出、排入、離開、查看都算 1 次，兩邊之間的搬移（和「排到隊尾」）算 2 次：取出一次加放入一次。被擋下的操作（溢位、下溢、滿了、空的）內容不變，也不計次。</li>
+        <li data-en="Brackets, postfix and infix: the whole expression is first processed and every step is recorded; the canvas then plays the steps, and “Step back” goes back one recorded step. Each step handles one character (brackets) or one token (numbers and operators); one step of the shunting yard moves exactly one token.">括號、後序式、中序式：先把整個式子跑完，記下每一步，畫面再照著播放；「上一步」回到前一步的紀錄。括號配對每一步處理一個括號字元，後序式每一步處理一個數或一個運算子；調度場每一步剛好移動一個記號。</li>
+        <li data-en="What you type is read only in your browser by a small scanner written for this page (no eval, nothing is sent anywhere): at most 60 characters and 40 numbers and symbols; whole numbers from 0 to 99999; + − × ÷ % ^ and brackets; full-width characters, × and ÷ are accepted. Calculations use exact whole-number arithmetic (BigInt) up to ±(2^53 − 1).">輸入的式子只在你的瀏覽器裡，由本頁自己寫的掃描器讀取（不用 eval，也不送到任何地方）：最多 60 個字元、40 個數字和符號；數字是 0 到 99999 的整數；可以用 + − × ÷ % ^ 和括號，全形字、× ÷ 也可以。計算用精確的整數運算（BigInt），範圍到 ±(2^53 − 1)。</li>
+        <li data-en="The unit tests check bracket matching against the “keep deleting (), [] and {}” method on 87380 strings; the depth profile; integer division and remainder against Math.trunc on 20000 random pairs; the shunting yard against a recursive-descent parser on 3000 random expressions (with right-to-left and left-to-right powers); the circular queue against a simple reference on 20000 random operations, including wrap-round, full and empty; that the number of possible exit orders is the Catalan number and that 3, 1, 2 is impossible; that exactly 42 of the 120 orders of 5 numbers can be sorted by one pass through a stack, the ones without the pattern “middle, high, low”; and Josephus’ problem against its recursive formula.">單元測試：括號配對和「一直刪掉相鄰的 ()、[]、{}」的方法比對 87380 個字串；深度山脈；整數除法與餘數和 Math.trunc 比對 20000 組隨機數；調度場和遞迴下降解析器比對 3000 個隨機式子（次方由右往左、由左往右都比）；環狀佇列和簡單的參考做法比對 20000 次隨機操作，含繞回 0、滿、空；出場順序的種數等於卡特蘭數，而且 3、1、2 做不到；5 個數的 120 種排列中，剛好 42 種能經過一個堆疊一次就排好，正是不含「中、大、小」型樣的那些；約瑟夫問題和遞迴公式一致。</li>
+        <li data-en="The sliding, the glow and the sounds are only for the eye and the ear; the contents and the readings change at once, exactly as computed.">滑動、光暈和聲音只是為了好看好聽；內容和讀數是照計算結果立刻改變的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology, advanced elective “Advanced Programming”): Da-V-1, principles and applications of common data structures (stacks, queues); Da-V-2, programming implementations of common data structures (stacks, queues).">課綱對應（資訊科技加深加廣選修「進階程式設計」）：資Da-V-1 常見資料結構之原理與應用（堆疊、佇列）；資Da-V-2 常見資料結構之程式實作（堆疊、佇列）。</li>
+        <li data-en="D. E. Knuth, The Art of Computer Programming, Vol. 1: Fundamental Algorithms, 3rd ed. (1997), Section 2.2.1 “Stacks, queues, and deques” (the railway picture and its exercises on the orders a stack can produce).">D. E. Knuth《The Art of Computer Programming》第 1 卷《Fundamental Algorithms》第 3 版（1997），2.2.1 節〈Stacks, queues, and deques〉（鐵路側線的比喻，以及堆疊能排出哪些順序的習題）。</li>
+        <li data-en="T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms, 3rd ed. (2009), Section 10.1 “Stacks and queues” (the circular queue that keeps one cell empty; exercise 10.1-6, a queue from two stacks).">T. H. Cormen、C. E. Leiserson、R. L. Rivest、C. Stein《Introduction to Algorithms》第 3 版（2009），10.1 節〈Stacks and queues〉（留一格空位的環狀佇列；習題 10.1-6 用兩個堆疊做佇列）。</li>
+        <li data-en="E. W. Dijkstra (November 1961), “ALGOL-60 Translation”, ALGOL Bulletin Supplement no. 10, Mathematisch Centrum, Amsterdam, report MR 34/61; the shunting-yard picture is on page 7 of its part “Making a translator for ALGOL 60”.">E. W. Dijkstra（1961 年 11 月）〈ALGOL-60 Translation〉，ALGOL Bulletin Supplement nr. 10，阿姆斯特丹數學中心（Mathematisch Centrum）報告 MR 34/61；調車場的比喻在其中〈Making a translator for ALGOL 60〉一篇的第 7 頁。</li>
+        <li data-en="P. Naur (ed.), “Revised report on the algorithmic language ALGOL 60”, Communications of the ACM 6(1), 1–17 (1963), section 3.3.4.3 (2↑n↑k means (2^n)^k).">P. Naur 編〈Revised report on the algorithmic language ALGOL 60〉，Communications of the ACM 6(1)，1–17 頁（1963），3.3.4.3 節（2↑n↑k 的意思是 (2^n)^k）。</li>
+        <li data-en="Integer division: ISO/IEC 9899:1999 (C99), 6.5.5 (the quotient is truncated towards zero); The Java Language Specification, 15.17.2 and 15.17.3.">整數除法：ISO/IEC 9899:1999（C99）6.5.5 節（商向 0 截斷）；《The Java Language Specification》15.17.2、15.17.3 節。</li>
+        <li data-en="R. L. Graham, D. E. Knuth, O. Patashnik, Concrete Mathematics, 2nd ed. (1994), Section 1.3 “The Josephus problem”.">R. L. Graham、D. E. Knuth、O. Patashnik《Concrete Mathematics》第 2 版（1994），1.3 節〈The Josephus Problem〉。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Stack_(abstract_data_type)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Stack (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Queue_(abstract_data_type)&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Queue (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Circular_buffer&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Circular buffer (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Reverse_Polish_notation&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Reverse Polish notation (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Shunting_yard_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Shunting yard algorithm (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Stack_(abstract_data_type)" target="_blank" rel="noopener">Stack（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Queue_(abstract_data_type)" target="_blank" rel="noopener">Queue（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Circular_buffer" target="_blank" rel="noopener">Circular buffer（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Reverse_Polish_notation" target="_blank" rel="noopener">Reverse Polish notation（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Shunting_yard_algorithm" target="_blank" rel="noopener">Shunting yard algorithm（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/stack-queue-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/stack-queue.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="stack-queue"></script>
+  <script src="js/missions/stack-queue.js"></script>
+  <script src="js/stats.js" data-module="stack-queue"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>

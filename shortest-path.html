@@ -30,11 +30,11 @@
   <link rel="stylesheet" href="lab.css?v=202611131322">
   <style>
     /* 最短路徑頁面專用的顏色代號（淺色＋兩組深色；由 js/shortest-path.js 讀取） */
-    :root { --sp-land: #eef3e6; --sp-sea: #e4eef7; --sp-coast: #93ab95; --sp-road: #8b97a9; --sp-node: #9aa6b6; --sp-front: #d97706; --sp-done: #0f766e; --sp-cur: #7c3aed; --sp-path: #e11d48; --sp-check: #0891b2; --sp-bad: #dc2626; --sp-ok: #15803d; --sp-alt: #2563eb; }
+    :root { --sp-land: #eef3e6; --sp-sea: #e4eef7; --sp-coast: #93ab95; --sp-road: #8b97a9; --sp-node: #9aa6b6; --sp-front: #d97706; --sp-front-ink: #b45309; --sp-done: #0f766e; --sp-cur: #7c3aed; --sp-path: #e11d48; --sp-check: #0891b2; --sp-check-ink: #0e7490; --sp-bad: #dc2626; --sp-ok: #15803d; --sp-alt: #2563eb; }
     @media (prefers-color-scheme: dark) {
-      :root:not([data-theme="light"]) { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
+      :root:not([data-theme="light"]) { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-front-ink: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-check-ink: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
     }
-    :root[data-theme="dark"] { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
+    :root[data-theme="dark"] { --sp-land: #1b2721; --sp-sea: #0d1721; --sp-coast: #46634f; --sp-road: #6d7b90; --sp-node: #56667b; --sp-front: #fbbf24; --sp-front-ink: #fbbf24; --sp-done: #2dd4bf; --sp-cur: #c4a8ff; --sp-path: #fb7185; --sp-check: #22d3ee; --sp-check-ink: #22d3ee; --sp-bad: #f87171; --sp-ok: #4ade80; --sp-alt: #93c5fd; }
 
     /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面 */
     #cv { aspect-ratio: auto; height: 520px; touch-action: pan-y; cursor: default; }
@@ -107,7 +107,7 @@
     #distTab { width: 100%; }
     #distTab td:nth-child(2), #distTab th:nth-child(2) { text-align: right; }
     #distTab tr.done td:first-child { color: var(--sp-done); font-weight: 700; }
-    #distTab tr.queue td:first-child { color: var(--sp-front); font-weight: 700; }
+    #distTab tr.queue td:first-child { color: var(--sp-front-ink); font-weight: 700; }
     #distTab tr.cur td { background: var(--accent-soft); }
     #distTab td.bad { color: var(--sp-bad); font-weight: 700; }
     #logTab { width: 100%; }
@@ -160,7 +160,7 @@
           <span id="legQbf" style="display:none" data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-front)&quot;></span>Has a distance so far"><span class="dot" style="background:var(--sp-front)"></span>有暫定距離</span>
           <span data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-done)&quot;></span>Fixed (shortest distance known)"><span class="dot" style="background:var(--sp-done)"></span>已確定</span>
           <span style="color:var(--sp-cur)" data-en-html="<span class=&quot;dot&quot; style=&quot;background:var(--sp-cur)&quot;></span>Being processed"><span class="dot" style="background:var(--sp-cur)"></span>正在處理</span>
-          <span style="color:var(--sp-check)" data-en-html="<i style=&quot;background:var(--sp-check)&quot;></i>Edge being checked"><i style="background:var(--sp-check)"></i>正在檢查的邊</span>
+          <span style="color:var(--sp-check-ink)" data-en-html="<i style=&quot;background:var(--sp-check)&quot;></i>Edge being checked"><i style="background:var(--sp-check)"></i>正在檢查的邊</span>
           <span style="color:var(--sp-path)" data-en-html="<i style=&quot;background:var(--sp-path);height:5px&quot;></i>Shortest route"><i style="background:var(--sp-path);height:5px"></i>最短路線</span>
           <span style="color:var(--sp-alt)" data-en-html="<i class=&quot;dash&quot;></i>The other algorithm’s route"><i class="dash"></i>另一種演算法的路線</span>
         </div>
