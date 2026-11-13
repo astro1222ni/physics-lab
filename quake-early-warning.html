@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Earthquake Early Warning and the Blind Zone | Astro Ni Science Lab">地震預警與盲區｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 地震預警頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
+    :root {
+      --ew-p: #2563eb; --ew-s: #dc2626; --ew-blind: #b91c1c; --ew-alert: #ea580c; --ew-lead: #16a34a; --ew-on: #7c3aed;
+      --ew-sea0: #cfe3f3; --ew-sea1: #9fc4e2; --ew-land0: #e8eed9; --ew-land1: #c6d4a6; --ew-coast: #5f7f4a; --ew-st: #0f766e; --ew-epi: #f59e0b;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --ew-p: #60a5fa; --ew-s: #f87171; --ew-blind: #ef4444; --ew-alert: #fb923c; --ew-lead: #4ade80; --ew-on: #a78bfa;
+        --ew-sea0: #0c1d2e; --ew-sea1: #10283f; --ew-land0: #26331f; --ew-land1: #33452a; --ew-coast: #8fb37a; --ew-st: #2dd4bf; --ew-epi: #fbbf24;
+      }
+    }
+    :root[data-theme="dark"] {
+      --ew-p: #60a5fa; --ew-s: #f87171; --ew-blind: #ef4444; --ew-alert: #fb923c; --ew-lead: #4ade80; --ew-on: #a78bfa;
+      --ew-sea0: #0c1d2e; --ew-sea1: #10283f; --ew-land0: #26331f; --ew-land1: #33452a; --ew-coast: #8fb37a; --ew-st: #2dd4bf; --ew-epi: #fbbf24;
+    }
+    #cv { aspect-ratio: auto; height: 600px; touch-action: none; cursor: crosshair; }
+    @media (max-width: 560px) { #cv { height: 520px; } }
+    #gr { display: block; width: 100%; height: 250px; touch-action: pan-y pinch-zoom; border-radius: 8px; }
+    @media (max-width: 560px) { #gr { height: 240px; } }
+    .ew button { min-height: 44px; }
+    .ew .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
+    .ew .playbar button { flex: 1 1 auto; }
+    .ew .playbar .primary { font-weight: 700; }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .ew .slider input[type="range"] { height: 28px; margin: 0; }
+    .ew [hidden] { display: none !important; }
+    .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .card .hint b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+    dl.readout dt.wide, dl.readout dd.wide { grid-column: 1 / -1; }
+    dl.readout dd.wide { text-align: left; margin-top: -1px; }
+    dl.readout dd.big { font-weight: 700; }
+    .segw { display: flex; flex-wrap: wrap; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 4px 0 8px; }
+    .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 10px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
+    .segw button + button { border-left: 1px solid var(--border); }
+    .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+    .toggles { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 0; }
+    .toggles button { flex: 1 1 140px; text-align: left; padding: 6px 12px; display: flex; align-items: center; gap: 8px; }
+    .toggles button::before { content: ""; width: 16px; height: 16px; flex: none; border-radius: 4px; border: 2px solid var(--muted); box-sizing: border-box; }
+    .toggles button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+    .toggles button[aria-pressed="true"]::before { background: var(--accent); border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--surface); }
+    .presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px; }
+    .presets button { flex: 1 1 auto; padding: 4px 8px; font-size: calc(12.5px * var(--fs, 1)); }
+    .presets button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .chart-card { margin-top: 12px; }
+    .chart-card .segw { margin-top: 0; }
+    .site-row { display: flex; gap: 8px; align-items: center; margin: 2px 0 8px; }
+    .site-row label { font-size: calc(13px * var(--fs, 1)); color: var(--muted); flex: none; }
+    .site-row select { flex: 1 1 auto; min-height: 44px; font: inherit; padding: 4px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+    .lead-big { font-size: calc(22px * var(--fs, 1)); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .lead-big.ok { color: var(--ew-lead); }
+    .lead-big.bad { color: var(--ew-blind); }
+    .lead-big.none { color: var(--muted); font-size: calc(16px * var(--fs, 1)); }
+    .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
+    .runlog b { color: var(--text); }
+    .notes li { overflow-wrap: anywhere; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geo&quot;>Earth Science · Solid Earth</a> / Earthquake early warning"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geo">地球科學・固體地球</a> ／ 地震預警與盲區</nav>
+      <h1 data-en="Earthquake Early Warning and the Blind Zone">地震預警與盲區</h1>
+      <p data-en="A phone alarm before the shaking is a race between waves: the fast P wave reaches the seismic stations first, the computer works out the magnitude and sends the alert by radio at the speed of light, while the strong S wave is still on its way. Move the epicentre, change the depth and the station network, and find out who gets 30 seconds of warning — and who is shaken before any warning can arrive.">手機在搖晃之前響起，是一場波的賽跑：跑得快的 P 波先抵達地震站，電腦算出規模，用光速把警報送出去；這時破壞力大的 S 波還在路上。移動震央、改變深度與測站網，看看誰能提早 30 秒知道，誰又在警報之前就搖起來了。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: drag the star to move the epicentre, pick a place, then press “Earthquake!” and watch the P wave (blue) and the S wave (red) race across Taiwan.">試試看：拖曳星星移動震央、選一個地方，再按「發生地震」，看藍色的 P 波和紅色的 S 波怎麼掃過臺灣。</p>
+    <div class="lab ew" id="lab">
+      <div class="stage" id="stage">
+        <canvas id="cv" aria-label="臺灣地圖：震央、地震站、P 波與 S 波的波前、盲區與預警時間" data-en-aria-label="Map of Taiwan: epicentre, seismic stations, P- and S-wave fronts, the blind zone and the warning times"></canvas>
+        <div class="playbar">
+          <button id="go" class="primary" type="button">發生地震</button>
+          <button id="pause" type="button" data-en="Pause" disabled>暫停</button>
+          <button id="clear" type="button" data-en="Clear all" title="清除比較紀錄與畫面上的波；震央與設定不變" data-en-title="Clear the comparison log and the waves on the map; the epicentre and the settings are kept">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <div class="segw" role="group" aria-label="播放速度" data-en-aria-label="Playback speed" id="speedSeg">
+          <button type="button" data-speed="0.5" aria-pressed="false" data-en="Slow ×0.5">慢動作 ×0.5</button>
+          <button type="button" data-speed="1" aria-pressed="false" data-en="Real time ×1">真實速度 ×1</button>
+          <button type="button" data-speed="3" aria-pressed="true" data-en="Fast ×3">快轉 ×3</button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <p class="hint" data-en-html="Red disc: the <strong>blind zone</strong> — the S wave arrives before the alert. Green rings: 10, 20, 30… s of warning. Orange dashed circle: where the alert is sent (estimated intensity 4 or more). Triangles: seismic stations; the ones that triggered the alert light up.">紅色圓盤是<strong>盲區</strong>（S 波比警報先到）；綠色的圈是預警時間 10、20、30… 秒；橘色虛線圈是發警報的範圍（預估震度 4 級以上）；小三角形是地震站，觸發警報的那幾站會亮起來。</p>
+
+        <section class="chart-card">
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="time" aria-pressed="true" data-en="Timeline at this place">這個地方的時間軸</button>
+            <button type="button" data-chart="section" aria-pressed="false" data-en="Cross-section (depth)">剖面（深度）</button>
+          </div>
+          <canvas id="gr" aria-label="選定地點的時間軸：P 波、警報、S 波抵達的時刻" data-en-aria-label="Timeline at the chosen place: when the P wave, the alert and the S wave arrive"></canvas>
+          <p class="hint" id="chartHint">—</p>
+        </section>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="The earthquake">地震</h2>
+          <div class="presets" role="group" aria-label="真實的地震" data-en-aria-label="Real earthquakes" id="quakeSeg">
+            <button type="button" data-q="hualien2024" aria-pressed="true" data-en="2024 Hualien" title="2024 年 4 月 3 日花蓮外海，深 15.5 km，ML 7.2（Mw 約 7.4）" data-en-title="3 April 2024, off Hualien, 15.5 km deep, ML 7.2 (Mw about 7.4)">2024 花蓮</button>
+            <button type="button" data-q="chichi1999" aria-pressed="false" data-en="1999 Chi-Chi" title="1999 年 9 月 21 日南投集集，深 8 km，ML 7.3（Mw 7.6）" data-en-title="21 September 1999, Chi-Chi, Nantou, 8 km deep, ML 7.3 (Mw 7.6)">1999 集集</button>
+            <button type="button" data-q="meinong2016" aria-pressed="false" data-en="2016 Meinong" title="2016 年 2 月 6 日高雄美濃，深 14.6 km，ML 6.6（Mw 6.4）" data-en-title="6 February 2016, Meinong, Kaohsiung, 14.6 km deep, ML 6.6 (Mw 6.4)">2016 美濃</button>
+            <button type="button" data-q="chishang2022" aria-pressed="false" data-en="2022 Chishang" title="2022 年 9 月 18 日臺東池上，深 7.8 km，ML 6.8（Mw 約 6.9）" data-en-title="18 September 2022, Chishang, Taitung, 7.8 km deep, ML 6.8 (Mw about 6.9)">2022 池上</button>
+          </div>
+          <div class="slider"><label for="mag" data-en="Moment magnitude M">規模（地震矩規模）M</label><output></output>
+            <input id="mag" type="range" min="4" max="8" step="0.1" value="7.4" data-decimals="2"></div>
+          <div class="slider"><label for="dep" data-en="Focal depth h (km)">震源深度 h（km）</label><output></output>
+            <input id="dep" type="range" min="3" max="100" step="0.5" value="15.5" data-decimals="1"></div>
+          <p class="hint" id="epiHint">—</p>
+        </section>
+        <section class="card">
+          <h2 data-en="The warning system">預警系統</h2>
+          <div class="slider"><label for="spc" data-en="Station spacing (km)">地震站的間距（km）</label><output></output>
+            <input id="spc" type="range" min="5" max="50" step="1" value="20" data-decimals="1"></div>
+          <div class="slider"><label for="nst" data-en="Stations needed before the alert">要幾個站收到 P 波才發布</label><output></output>
+            <input id="nst" type="range" min="1" max="12" step="1" value="6" data-decimals="0"></div>
+          <div class="slider"><label for="proc" data-en="Computing and sending time (s)">計算與發送的時間（s）</label><output></output>
+            <input id="proc" type="range" min="0" max="15" step="0.5" value="4" data-decimals="1"></div>
+          <div class="slider"><label for="dm" data-en="Error of the first magnitude estimate">初報規模的誤差</label><output></output>
+            <input id="dm" type="range" min="-1.5" max="1" step="0.1" value="0" data-decimals="2"></div>
+          <div class="toggles" role="group" aria-label="預警系統的選項" data-en-aria-label="Warning system options">
+            <button type="button" id="onsiteBtn" aria-pressed="false" data-en="On-site warning" title="每個地方自己的儀器收到 P 波後 3 秒就自己發警報（不等測站網）" data-en-title="Each place’s own instrument raises its own alarm 3 s after its P wave arrives, without waiting for the network">現地型預警</button>
+            <button type="button" id="seaBtn" aria-pressed="false" data-en="Offshore stations (schematic)" title="在宜蘭與花東外海加上海底地震站（位置是示意）" data-en-title="Add seafloor stations off Yilan, Hualien and Taitung (positions are schematic)">外海地震站（示意）</button>
+          </div>
+          <dl class="readout">
+            <dt data-en="Alert sent at">發布警報</dt><dd id="rTa" class="big">—</dd>
+            <dt data-en="Blind zone radius">盲區半徑</dt><dd id="rRb" class="big">—</dd>
+            <dt data-en="Alert sent to (est. intensity ≥ 4)">發警報的範圍（預估 ≥ 4 級）</dt><dd id="rAl">—</dd>
+            <dt data-en="Actually intensity ≥ 4 within">實際 4 級以上的範圍</dt><dd id="rR4">—</dd>
+            <dt data-en="Stations in the network">測站數</dt><dd id="rNs">—</dd>
+          </dl>
+        </section>
+        <section class="card">
+          <h2 data-en="At this place">這個地方</h2>
+          <div class="site-row"><label for="site" data-en="Place">地點</label><select id="site"></select></div>
+          <p class="lead-big" id="lead">—</p>
+          <dl class="readout">
+            <dt data-en="Distance to epicentre / focus">震央距離／震源距離</dt><dd id="sD">—</dd>
+            <dt data-en="P wave arrives">P 波抵達</dt><dd id="sP">—</dd>
+            <dt data-en="S wave arrives">S 波抵達</dt><dd id="sS">—</dd>
+            <dt data-en="S − P time">S − P 時差</dt><dd id="sSP">—</dd>
+            <dt data-en="Intensity (model)">震度（模型）</dt><dd id="sI" class="big">—</dd>
+            <dt data-en="Estimated by the system">系統的預估</dt><dd id="sIe">—</dd>
+            <dt data-en="On-site warning">現地型預警</dt><dd id="sOn">—</dd>
+          </dl>
+          <p class="hint" data-en="Tap the map to choose any place, or tap a city.">點地圖可以選任何一個地方，也可以點城市。</p>
+        </section>
+        <section class="card">
+          <h2 data-en="Comparison log">比較紀錄</h2>
+          <p class="runlog" id="runlog" data-en="Each time you press “Earthquake!”, the result is kept here so you can compare.">每按一次「發生地震」，結果會記在這裡，方便比較。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="A race between two waves and a radio signal">兩種波與無線電的賽跑</h3>
+      <p data-en-html="An earthquake sends out a P wave (compressional, about \(v_P \approx 6\ \mathrm{km/s}\) in Taiwan’s crust) and an S wave (shear, \(v_S \approx 3.5\ \mathrm{km/s}\)). The S wave and the surface waves behind it carry most of the damaging shaking. A place at epicentral distance \(d\) from a focus at depth \(h\) is at focal distance \(R = \sqrt{d^2 + h^2}\), and the waves arrive at">地震同時送出 P 波（縱波，在臺灣的地殼裡約 \(v_P \approx 6\ \mathrm{km/s}\)）與 S 波（橫波，約 \(v_S \approx 3.5\ \mathrm{km/s}\)）。造成破壞的，主要是 S 波與後面的表面波。離震央 \(d\)、震源深 \(h\) 的地方，震源距離 \(R = \sqrt{d^2 + h^2}\)，兩種波抵達的時刻是</p>
+      <div class="formula">\[ t_P = \frac{R}{v_P}, \qquad t_S = \frac{R}{v_S} \]</div>
+      <p data-en-html="The network waits until \(N\) stations have felt the P wave, needs a few seconds \(t_{\mathrm{proc}}\) to work out the location and magnitude, and then broadcasts. Radio and phone signals travel 300 000 km/s, so for a few hundred kilometres the transmission itself takes no time. The alert time and the warning time at a place are">測站網等到 \(N\) 個站都收到 P 波，再花幾秒鐘 \(t_{\mathrm{proc}}\) 算出位置與規模，然後發布。無線電與手機訊號每秒跑 30 萬公里，幾百公里內的傳送幾乎不花時間。發布警報的時刻與某地的預警時間是</p>
+      <div class="formula">\[ T_a = t_{P,N} + t_{\mathrm{proc}}, \qquad \Delta t = t_S - T_a \]</div>
+      <h3 data-en="The blind zone">盲區</h3>
+      <p data-en-html="Where \(\Delta t \le 0\) the S wave arrives before the alert: this is the blind zone. Setting \(t_S = T_a\) gives its radius on the map:">\(\Delta t \le 0\) 的地方，S 波比警報先到，這就是盲區。令 \(t_S = T_a\)，就得到盲區在地圖上的半徑：</p>
+      <div class="formula">\[ r_b = \sqrt{(v_S T_a)^2 - h^2} \]</div>
+      <p data-en-html="and \(r_b = 0\) when \(v_S T_a \le h\): no blind zone at all.">當 \(v_S T_a \le h\) 時 \(r_b = 0\)：完全沒有盲區。</p>
+      <p data-en-html="A deeper earthquake is “farther away” for everyone, so its blind zone is smaller; a denser network or faster computers make \(T_a\) — and the blind zone — smaller. An <strong>on-site</strong> warning uses the instrument right where you are: once your own P wave arrives it takes \(t_{\mathrm{on}} \approx 3\ \mathrm{s}\) to decide, so the warning is \(R\,(1/v_S - 1/v_P) - t_{\mathrm{on}}\), and its blind zone ends at \(R \approx 25\ \mathrm{km}\).">震源越深，對每個地方來說都「比較遠」，盲區就小；測站越密、電腦越快，\(T_a\) 越小，盲區也越小。<strong>現地型預警</strong>用的是你所在地的儀器：自己收到 P 波後用 \(t_{\mathrm{on}} \approx 3\ \mathrm{s}\) 判斷，預警時間是 \(R\,(1/v_S - 1/v_P) - t_{\mathrm{on}}\)，盲區到 \(R \approx 25\ \mathrm{km}\) 為止。</p>
+      <h3 data-en="Who gets the alert: intensity">誰會收到警報：震度</h3>
+      <p data-en-html="The shaking is estimated with an attenuation relation fitted to Taiwanese records (Chang, Cotton &amp; Angelier, 2001). For shallow crustal earthquakes the peak ground acceleration \(A\) (gal = cm/s²) is">搖晃的大小用臺灣地震紀錄迴歸出來的衰減式估計（Chang、Cotton 與 Angelier，2001）。淺層地殼地震的地表最大加速度 \(A\)（gal = cm/s²）是</p>
+      <div class="formula">\[ \ln A = 2.8096 + 0.8993\,M - 0.4381\ln h - (1.0954 - 0.0079\,h)\ln d \]</div>
+      <p data-en-html="and for earthquakes in the subducting plate (used here for \(h \ge 35\ \mathrm{km}\))">隱沒板塊裡的地震（這裡用在 \(h \ge 35\ \mathrm{km}\)）是</p>
+      <div class="formula">\[ \ln A = 4.7141 + 0.8468\,M - 0.1745\ln h - 1.2972\ln R \]</div>
+      <p data-en-html="with \(d\), \(R\), \(h\) in km. Below 5 km the epicentral distance is taken as 5 km. The scatter is large: \(\sigma(\ln A) \approx 0.6\), so the real shaking is often half or twice the estimate, and soft basins such as Taipei and the Chianan Plain shake more. The Central Weather Administration intensity for level 4 and below is set by \(A\): 1 from 0.8, 2 from 2.5, 3 from 8, 4 from 25 gal; from 80 gal it is 5 or more, split further by ground velocity (not modelled here).">\(d\)、\(R\)、\(h\) 的單位都是 km。震央距離小於 5 km 時用 5 km 計算。這個估計的誤差很大：\(\sigma(\ln A) \approx 0.6\)，真實的搖晃常在估計值的一半到兩倍之間，臺北盆地、嘉南平原這類鬆軟的盆地平原又搖得更大。中央氣象署的震度在 4 級以下由 \(A\) 決定：0.8 gal 起 1 級、2.5 起 2 級、8 起 3 級、25 起 4 級；80 gal 以上是 5 級以上，再用地表速度細分（本模型不細分）。</p>
+      <p data-en-html="In this model the alert goes to every place whose <em>estimated</em> intensity — computed from the first magnitude estimate — is 4 or more, and no alert is sent if that estimate is below 5. In the 2024 Hualien earthquake the first estimate was too low, so places that later shook at intensity 4 or 5 received no alert; the “error of the first magnitude estimate” slider lets you recreate that.">本模型的發布條件：用「初報規模」算出的<em>預估</em>震度 4 級以上的地方都發警報；初報規模小於 5 就不發。2024 年花蓮地震的初報規模偏小，有些後來搖到 4、5 級的地方沒有收到警報；用「初報規模的誤差」滑桿可以重現這種情形。</p>
+      <h3 data-en="What to watch for">觀察重點</h3>
+      <ul>
+        <li data-en-html="With the 2024 Hualien preset, Taipei, about 120 km away, has roughly 30 s of warning, while Hualien city, inside the blind zone, shakes before the alert.">選「2024 花蓮」：約 120 km 外的臺北有將近 30 秒的預警時間；在盲區裡的花蓮市，搖晃比警報先到。</li>
+        <li data-en-html="The warning time grows by about 0.29 s for every extra kilometre (\(1/v_S\)), so the far side of Taiwan gains the most.">每遠 1 km，預警時間大約多 0.29 秒（\(1/v_S\)），所以離震央越遠的地方越有時間。</li>
+        <li data-en-html="Halve the station spacing, or cut the computing time, and watch the red disc shrink. Make the earthquake deep and it can vanish.">把測站間距減半，或縮短計算時間，看紅色圓盤怎麼縮小；把地震放深，盲區甚至會消失。</li>
+        <li data-en-html="Most damage happens close to the epicentre — exactly where the regional warning cannot help. That is why on-site warnings and earthquake-resistant buildings still matter.">破壞最大的地方通常就在震央附近——偏偏正是區域型預警幫不上忙的地方。所以現地型預警與耐震建築仍然很重要。</li>
+      </ul>
+      <h3 data-en="How it is simulated">模擬方法</h3>
+      <p data-en-html="The crust is uniform, so the rays are straight and the fronts are spheres; on the map each front is the circle \(\sqrt{(vt)^2 - h^2}\). The stations sit on a triangular grid over Taiwan (plus Penghu, Green Island and Orchid Island); the real network is denser in the west and sparser in the mountains. The map uses an equirectangular projection centred at 121°E, 23.7°N (distance error below 1.5%). Epicentres, depths and magnitudes of the presets are from the Central Weather Administration’s earthquake reports; the moment magnitudes are approximate.">地殼當成均勻的，射線是直線、波前是球面；地圖上的波前就是半徑 \(\sqrt{(vt)^2 - h^2}\) 的圓。地震站放在覆蓋臺灣的正三角形格點上（另加澎湖、綠島、蘭嶼）；真實的測站網西部較密、山區較疏。地圖用以東經 121°、北緯 23.7° 為中心的等距圓柱投影（距離誤差小於 1.5%）。四個真實地震的震央、深度與規模取自中央氣象署地震報告，地震矩規模是約略值。</p>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/earthquake-core.js"></script>
+  <script src="js/quake-early-warning-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/quake-early-warning.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="quake-early-warning"></script>
+  <script src="js/missions/quake-early-warning.js"></script>
+  <script src="js/stats.js" data-module="quake-early-warning"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
