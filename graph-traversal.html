@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Graph Traversal: DFS and BFS in a Maze | Astro Ni Science Lab">圖的走訪：DFS 與 BFS 走迷宮｜Astro Ni 科學實驗室</title>
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    /* 圖的走訪頁面專用的顏色代號（淺色＋兩組深色；由 js/graph-traversal.js 讀取） */
+    :root { --gt-dfs: #e8730c; --gt-dfs-deep: #b4490a; --gt-bfs: #2f6fd6; --gt-bfs-deep: #1d4aa8; --gt-path: #c0267a; --gt-wall: #4b5a6e; --gt-floor-a: #f3f5f7; --gt-floor-b: #e6eaef; --gt-start: #0f8f63; --gt-goal: #e0a800; --gt-edge: #9aa6b6; --gt-node: #a3adbb; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) { --gt-dfs: #fb923c; --gt-dfs-deep: #f97316; --gt-bfs: #6aa8fb; --gt-bfs-deep: #3b82f6; --gt-path: #f472b6; --gt-wall: #9aa9bd; --gt-floor-a: #172026; --gt-floor-b: #1d282f; --gt-start: #34d399; --gt-goal: #facc15; --gt-edge: #5f6f84; --gt-node: #5a6a7e; }
+    }
+    :root[data-theme="dark"] { --gt-dfs: #fb923c; --gt-dfs-deep: #f97316; --gt-bfs: #6aa8fb; --gt-bfs-deep: #3b82f6; --gt-path: #f472b6; --gt-wall: #9aa9bd; --gt-floor-a: #172026; --gt-floor-b: #1d282f; --gt-start: #34d399; --gt-goal: #facc15; --gt-edge: #5f6f84; --gt-node: #5a6a7e; }
+
+    /* 畫布高度由程式依模式與寬度決定；手機上可以照常捲動頁面（按在起點、終點或畫牆時才不捲動） */
+    #cv { aspect-ratio: auto; height: 560px; touch-action: pan-y; cursor: default; }
+    #cv2 { aspect-ratio: auto; height: 150px; touch-action: pan-y; margin-top: 10px; cursor: default; }
+    .gt button { min-height: 44px; }
+    .gt [hidden] { display: none !important; }
+    .modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin: 0 0 8px; }
+    .modes button { border: none; border-radius: 0; padding: 6px 6px; background: var(--bg); line-height: 1.25; }
+    .modes button + button { border-left: 1px solid var(--border); }
+    .modes button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .gt .playbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 10px 2px 0; }
+    .gt .playbar button { padding: 6px 4px; line-height: 1.2; }
+    @media (max-width: 560px) { .gt .playbar { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .gt .playbar2 { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 2px 0; }
+    .gt .playbar2 button { flex: 1 1 auto; }
+    #playBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+    .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
+    .sound-btn svg { width: 18px; height: 18px; flex: none; }
+    .sound-btn .wave { opacity: 0.25; }
+    .sound-btn[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
+    .sound-btn[aria-pressed="true"] .wave { opacity: 1; }
+    .gt .stage .status { margin: 6px 4px 0; min-height: 2.8em; }
+    .gt .slider input[type="range"] { height: 28px; margin: 0; }
+    .gt .checks label { min-height: 44px; }
+    .gt .checks input { width: 17px; height: 17px; }
+    .gt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .gt .panel { grid-template-columns: minmax(0, 1fr); }
+    .gt .panel > .card { min-width: 0; }
+    .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    /* 堆疊與佇列 */
+    .ds { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 2px 0; }
+    @media (max-width: 600px) { .ds { grid-template-columns: minmax(0, 1fr); } }
+    .ds-box { padding: 8px 10px; border-radius: 10px; background: var(--accent-soft); min-height: 64px; min-width: 0; }
+    .ds-h { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; margin: 0 0 4px; }
+    .ds-list { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-height: 28px; }
+    .ds-list .chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .ds-list .chip i { display: inline-block; width: 9px; height: 9px; flex: none; }
+    .ds-list .chip.dfs i { background: var(--gt-dfs); transform: rotate(45deg) scale(0.85); border-radius: 1px; }
+    .ds-list .chip.bfs i { background: var(--gt-bfs); border-radius: 50%; }
+    .ds-list .chip.is-top { border-color: var(--gt-dfs); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gt-dfs) 30%, transparent); font-weight: 600; }
+    .ds-list .chip.is-front { border-color: var(--gt-bfs); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gt-bfs) 30%, transparent); font-weight: 600; }
+    .ds-list .chip small { color: var(--muted); font-weight: 400; }
+    .ds-list .more { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); padding: 0 2px; }
+    .ds-list .empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
+    .ds-order { font-size: calc(13px * var(--fs, 1)); margin: 6px 0 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+    .ds-order b { letter-spacing: 0.06em; }
+    /* 一般圖：鄰接串列與鄰接矩陣 */
+    .repr { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: 10px; margin: 10px 2px 0; }
+    @media (max-width: 700px) { .repr { grid-template-columns: minmax(0, 1fr); } }
+    .repr-box { min-width: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); }
+    .repr-box h3 { font-size: calc(14px * var(--fs, 1)); margin: 0 0 6px; }
+    .adjlist { margin: 0; padding: 0; list-style: none; font-variant-numeric: tabular-nums; font-size: calc(14px * var(--fs, 1)); }
+    .adjlist li { padding: 2px 4px; border-radius: 6px; white-space: nowrap; }
+    .adjlist li b { display: inline-block; min-width: 1.6em; }
+    .adjlist li.s { background: color-mix(in srgb, var(--gt-start) 16%, transparent); }
+    .matwrap { overflow: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+    table.mat { border-collapse: separate; border-spacing: 2px; font-variant-numeric: tabular-nums; }
+    table.mat th { font-size: calc(13px * var(--fs, 1)); color: var(--muted); font-weight: 600; min-width: 22px; text-align: center; }
+    table.mat td { padding: 0; }
+    table.mat button { width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; border-radius: 6px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+    table.mat button.on { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--text); font-weight: 700; border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+    table.mat button:disabled { opacity: 0.45; cursor: default; }
+    .repr-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    /* 面板 */
+    .pick { display: grid; grid-template-columns: 5.6em minmax(0, 1fr); gap: 8px; align-items: center; margin: 0 0 8px; }
+    .pick label { font-size: calc(14px * var(--fs, 1)); }
+    .gt select { width: 100%; min-width: 0; min-height: 44px; font: inherit; font-size: calc(15px * var(--fs, 1)); padding: 4px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+    .gt .btns { margin: 8px 0 0; }
+    .gt .btns button { flex: 1 1 auto; }
+    #drawBtn[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
+    table.cmp { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
+    table.cmp th, table.cmp td { padding: 3px 4px; border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent); }
+    table.cmp th { text-align: right; font-weight: 600; white-space: nowrap; }
+    table.cmp th:first-child, table.cmp td:first-child { text-align: left; color: var(--muted); font-weight: 400; }
+    table.cmp td { text-align: right; white-space: nowrap; }
+    table.cmp th.d { color: var(--gt-dfs-deep); }
+    table.cmp th.b { color: var(--gt-bfs-deep); }
+    :root[data-theme="dark"] table.cmp th.d { color: var(--gt-dfs); }
+    :root[data-theme="dark"] table.cmp th.b { color: var(--gt-bfs); }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) table.cmp th.d { color: var(--gt-dfs); } :root:not([data-theme="light"]) table.cmp th.b { color: var(--gt-bfs); } }
+    dl.readout { grid-template-columns: minmax(0, 1fr) auto; margin-top: 10px; }
+    dl.readout dt { min-width: 0; }
+    dl.readout dd { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .theory { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    .tablewrap { overflow: auto; -webkit-overflow-scrolling: touch; margin: 8px 0 0; }
+    table.data td, table.data th { font-variant-numeric: tabular-nums; padding: 3px 6px; white-space: nowrap; }
+    #logTab { width: 100%; }
+    #logTab td, #logTab th { text-align: right; }
+    #logTab td:nth-child(2), #logTab th:nth-child(2) { text-align: left; }
+    #logTab:empty { display: none; }
+    .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
+    /* 圖例：顏色之外再用花紋與形狀區分（色弱也分得出來） */
+    .legend .sw { display: inline-block; width: 16px; height: 16px; border-radius: 3px; vertical-align: -3px; margin-right: 5px; border: 1px solid color-mix(in srgb, var(--text) 25%, transparent); }
+    .legend .sw-dfs { background: repeating-linear-gradient(135deg, var(--gt-dfs) 0 3px, color-mix(in srgb, var(--gt-dfs) 55%, var(--surface)) 3px 5.5px); }
+    .legend .sw-bfs { background: radial-gradient(circle, color-mix(in srgb, var(--surface) 80%, transparent) 1.3px, transparent 1.8px) 0 0 / 5.5px 5.5px, var(--gt-bfs); }
+    .legend .sw-floor { background: linear-gradient(90deg, var(--gt-floor-a) 50%, var(--gt-floor-b) 50%); }
+    .legend .shape { display: inline-block; vertical-align: -2px; margin-right: 5px; }
+    .legend i.path { background: var(--gt-path); height: 5px; }
+  </style>
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Graph traversal"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 圖的走訪</nav>
+      <h1 data-en="Graph Traversal: DFS and BFS in a Maze">圖的走訪：DFS 與 BFS 走迷宮</h1>
+      <p data-en="A maze is a graph: every square is a vertex, and two neighbouring squares with no wall between them are joined by an edge. Depth-first search (DFS) uses a stack: it follows one path as far as it can and backs up only at a dead end. Breadth-first search (BFS) uses a queue: it spreads out ring by ring, like a ripple. Race them side by side in the same maze and watch the stack and the queue grow: how many squares does each visit, and are the paths they find equally long? Draw your own walls, change the neighbour order, or switch to a general graph and compare its adjacency list with its adjacency matrix.">迷宮就是一張圖：每一格是一個點，相鄰兩格之間沒有牆就是一條邊。深度優先搜尋（DFS）用堆疊，一條路走到底，碰壁才退回；廣度優先搜尋（BFS）用佇列，像水波一樣一圈一圈往外擴。讓兩者在同一座迷宮裡並排賽跑，看堆疊和佇列怎麼長：各拜訪了幾格？找到的路一樣長嗎？也可以自己畫牆、換鄰居順序，或切到一般圖，對照鄰接串列與鄰接矩陣。</p>
+    </header>
+
+    <p class="try-hint" data-en="Try it: press “Play”. DFS (orange stripes) dives down one corridor and backs up only at a dead end; BFS (blue dots) spreads out layer by layer. The stack and the queue below grow along with them.">試試看：按「播放」。DFS（橘色斜線）一路鑽進一條走廊、碰壁才退回；BFS（藍色圓點）一層一層往外擴。下面的堆疊與佇列跟著一起長。</p>
+    <div class="lab gt" id="lab">
+      <div class="stage" id="stage">
+        <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
+          <button type="button" data-mode="maze" aria-pressed="true" data-en="Maze">迷宮</button>
+          <button type="button" data-mode="graph" aria-pressed="false" data-en="Graph">一般圖</button>
+        </div>
+        <canvas id="cv" tabindex="0" aria-label="走訪的畫布：上面（或左邊）是 DFS，下面（或右邊）是 BFS，兩邊是同一座迷宮。圓形是起點、星形是終點，可以拖曳。DFS 拜訪過的格子是橘色斜線，BFS 拜訪過的格子是藍色圓點。" data-en-aria-label="Traversal canvas: DFS on the top (or left) and BFS on the bottom (or right), in the same maze. The circle is the start and the star is the goal; both can be dragged. Squares visited by DFS are orange with stripes; squares visited by BFS are blue with dots."></canvas>
+        <div class="ds">
+          <div class="ds-box">
+            <p class="ds-h" id="stackHead" data-en="DFS stack (last in, first out; the top is on the right)">DFS 的堆疊（後進先出，最右邊是頂端）</p>
+            <div class="ds-list" id="stackList" aria-live="off"></div>
+            <p class="ds-order" id="orderD" hidden></p>
+          </div>
+          <div class="ds-box">
+            <p class="ds-h" id="queueHead" data-en="BFS queue (first in, first out; the left end comes out first)">BFS 的佇列（先進先出，最左邊先出來）</p>
+            <div class="ds-list" id="queueList" aria-live="off"></div>
+            <p class="ds-order" id="orderB" hidden></p>
+          </div>
+        </div>
+        <div class="playbar">
+          <button id="backBtn" type="button" data-en="Step back">上一步</button>
+          <button id="stepBtn" type="button" class="primary" data-en="Step">單步</button>
+          <button id="playBtn" type="button" aria-pressed="false" data-en="Play">播放</button>
+          <button id="endBtn" type="button" data-en="Run to the end">直接跑完</button>
+          <button id="resetBtn" type="button" data-en="Restart">重來</button>
+        </div>
+        <div class="playbar2">
+          <button id="wipeBtn" type="button" data-en="Clear all" title="清掉紀錄表，回到第 0 步；迷宮、牆、起點與終點都不變" data-en-title="Clear the log and go back to step 0; the maze, its walls, the start and the goal stay">全部清除</button>
+          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="legend">
+          <span data-en-html="<span class=&quot;sw sw-dfs&quot;></span>Visited by DFS (darker: still on the stack)"><span class="sw sw-dfs"></span>DFS 拜訪過（較深：還在堆疊裡）</span>
+          <span data-en-html="<span class=&quot;sw sw-bfs&quot;></span>Visited by BFS (lighter: farther away)"><span class="sw sw-bfs"></span>BFS 拜訪過（越淺越遠）</span>
+          <span data-en-html="<span class=&quot;sw sw-floor&quot;></span>Not visited yet"><span class="sw sw-floor"></span>還沒拜訪</span>
+          <span data-en-html="<svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><path d=&quot;M7 1 13 7 7 13 1 7Z&quot; fill=&quot;var(--gt-dfs-deep)&quot;/></svg>Top of the stack ◆ / <svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><circle cx=&quot;7&quot; cy=&quot;7&quot; r=&quot;5&quot; fill=&quot;none&quot; stroke=&quot;var(--gt-bfs-deep)&quot; stroke-width=&quot;2.4&quot;/></svg>in the queue ○"><svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 1 13 7 7 13 1 7Z" fill="var(--gt-dfs-deep)"/></svg>堆疊頂端 ◆／<svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="5" fill="none" stroke="var(--gt-bfs-deep)" stroke-width="2.4"/></svg>在佇列裡 ○</span>
+          <span class="maze-only" style="color:var(--gt-path)" data-en-html="<i class=&quot;path&quot;></i>Path found"><i class="path"></i>找到的路</span>
+          <span class="maze-only" data-en-html="<svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><circle cx=&quot;7&quot; cy=&quot;7&quot; r=&quot;6&quot; fill=&quot;var(--gt-start)&quot;/></svg>Start  <svg class=&quot;shape&quot; width=&quot;14&quot; height=&quot;14&quot; viewBox=&quot;0 0 14 14&quot; aria-hidden=&quot;true&quot;><path d=&quot;M7 .8l1.8 4.1 4.4.4-3.3 2.9 1 4.4L7 10.3l-3.9 2.3 1-4.4L.8 5.3l4.4-.4z&quot; fill=&quot;var(--gt-goal)&quot;/></svg>Goal"><svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><circle cx="7" cy="7" r="6" fill="var(--gt-start)"/></svg>起點　<svg class="shape" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 .8l1.8 4.1 4.4.4-3.3 2.9 1 4.4L7 10.3l-3.9 2.3 1-4.4L.8 5.3l4.4-.4z" fill="var(--gt-goal)"/></svg>終點</span>
+        </div>
+        <div class="repr" id="reprBox" hidden>
+          <div class="repr-box">
+            <h3 data-en="Adjacency list">鄰接串列</h3>
+            <ul class="adjlist" id="adjList"></ul>
+            <p class="repr-cap" id="listCap"></p>
+          </div>
+          <div class="repr-box">
+            <h3 data-en="Adjacency matrix (tap a cell to add or remove that edge)">鄰接矩陣（點格子可以加上或拿掉那條邊）</h3>
+            <div class="matwrap"><table class="mat" id="adjMat"></table></div>
+            <p class="repr-cap" id="matCap"></p>
+          </div>
+        </div>
+        <canvas id="cv2" aria-label="堆疊與佇列的長度隨步數的變化：實線是 DFS 的堆疊，虛線是 BFS 的佇列，直線是目前的步數。" data-en-aria-label="Length of the stack and of the queue against the step number: the solid line is the DFS stack, the dashed line the BFS queue, and the vertical line the current step."></canvas>
+        <p class="chart-cap" id="chartCap" data-en="Solid line: length of the DFS stack; dashed line: length of the BFS queue; across: step number.">實線：DFS 堆疊的長度；虛線：BFS 佇列的長度；橫軸：步數。</p>
+      </div>
+
+      <aside class="panel">
+        <section class="card" id="mazeCard">
+          <h2 data-en="Building the maze">建造迷宮</h2>
+          <div class="slider"><label for="size" data-en="Side n">邊長 n</label><output id="sizeo"></output>
+            <input id="size" type="range" min="4" max="40" step="1" value="12" data-decimals="0"></div>
+          <div class="pick"><label for="genSel" data-en="Made by">產生方式</label>
+            <select id="genSel">
+              <option value="dfs" data-en="Random DFS">隨機 DFS</option>
+              <option value="prim" data-en="Random Prim">隨機 Prim</option>
+              <option value="open" data-en="Open field">空地</option>
+            </select></div>
+          <div class="slider"><label for="loops" data-en="Open up walls">打通牆</label><output id="loopso"></output>
+            <input id="loops" type="range" min="0" max="40" step="1" value="0" data-decimals="0"></div>
+          <div class="btns">
+            <button id="newMaze" type="button" data-en="New maze">換一個迷宮</button>
+            <button id="drawBtn" type="button" aria-pressed="false" data-en="Draw walls">畫牆</button>
+            <button id="swapBtn" type="button" data-en="Swap start and goal">起點終點對調</button>
+          </div>
+          <p class="hint" id="mazeInfo"></p>
+          <p class="hint" id="drawHint" data-en="Random DFS gives long corridors, random Prim many short dead ends; both make a spanning tree (exactly one path between any two squares). “Open up walls” removes that percentage of the remaining inner walls, adding loops. With “Draw walls” on, tap or drag along a grid line to add or remove a wall; changing the side, the method or the percentage builds a new maze and the walls you drew are lost.">隨機 DFS 的走廊長、岔路少；隨機 Prim 有很多短短的死巷；兩者產生的都是生成樹（任兩格之間恰好一條路）。「打通牆」把剩下的內牆拿掉這個百分比，多出迴路。打開「畫牆」後，按在格線上或沿著格線拖曳，就能加上或拿掉牆；改邊長、產生方式或百分比會重新產生迷宮，自己畫的牆會不見。</p>
+        </section>
+
+        <section class="card" id="graphCard" hidden>
+          <h2 data-en="Building the graph">建造圖</h2>
+          <div class="pick"><label for="presetSel" data-en="Graph">圖</label>
+            <select id="presetSel">
+              <option value="sample" data-en="Sample graph">範例圖</option>
+              <option value="random" data-en="Random graph">隨機圖</option>
+            </select></div>
+          <div class="slider"><label for="gv" data-en="Vertices V">點數 V</label><output id="gvo"></output>
+            <input id="gv" type="range" min="5" max="10" step="1" value="8" data-decimals="0"></div>
+          <div class="btns"><button id="newGraph" type="button" data-en="New graph">換一張</button></div>
+          <div class="pick" style="margin-top:8px"><label for="gsSel" data-en="Start">起點</label><select id="gsSel"></select></div>
+          <p class="hint" id="graphInfo"></p>
+          <p class="hint" data-en="Tap a vertex on the canvas to make it the start. Tap a cell of the adjacency matrix below the canvas to add or remove an edge (the matrix stays symmetric).">點畫布上的點，可以把它設成起點；點畫布下方鄰接矩陣的格子，可以加上或拿掉一條邊（矩陣保持對稱）。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="How they walk">走法</h2>
+          <div class="pick"><label for="orderSel" data-en="Neighbour order">鄰居順序</label><select id="orderSel"></select></div>
+          <div class="checks">
+            <label><input id="early" type="checkbox" checked><span data-en="Stop at the goal">找到終點就停</span></label>
+            <label><input id="nums" type="checkbox" checked><span data-en="Visit order and distance in the squares">格子裡寫順序與距離</span></label>
+          </div>
+          <div class="slider"><label for="speed" data-en="Speed (steps per second)">速度（每秒幾步）</label><output id="speedo"></output>
+            <input id="speed" type="range" min="0" max="100" step="1" value="35" data-decimals="0"></div>
+          <p class="hint" id="orderHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <table class="cmp" id="cmpTab"></table>
+          <dl class="readout" id="graphRead"></dl>
+          <p class="theory" id="theory"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Log">紀錄</h2>
+          <div class="tablewrap"><table class="data" id="logTab"></table></div>
+          <p class="log-empty" id="logEmpty" data-en="Every run that reaches the end is listed here.">每跑完一次都會記在這裡。</p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The ideas behind it">背後的原理</h2>
+      <h3 data-en="A maze is a graph">迷宮是一張圖</h3>
+      <p data-en-html="A <strong>graph</strong> \(G = (V, E)\) is a set of vertices joined by edges. In an \(n \times n\) maze every square is a vertex (\(N = n^2\) of them) and every gap in a wall between two neighbouring squares is an edge, so a square has at most 4 neighbours and the maze has at most \(2n(n-1)\) edges. A computer can store a graph in two ways: an <strong>adjacency matrix</strong>, a \(V \times V\) table whose entry is 1 when the two vertices are joined, or an <strong>adjacency list</strong>, which keeps for each vertex the list of its neighbours. The matrix always takes \(V^2\) entries; the list takes only \(2E\) entries (each edge appears in the lists of both of its ends). A 40 × 40 maze has \(V = 1600\): its matrix would have 2 560 000 entries, while its list has at most \(2 \times 3120 = 6240\).">一張<strong>圖</strong> \(G = (V, E)\) 由點和連接點的邊組成。\(n \times n\) 的迷宮裡，每一格是一個點（共 \(N = n^2\) 個），相鄰兩格之間的牆打通了就是一條邊；每格最多 4 個鄰居，整座迷宮最多 \(2n(n-1)\) 條邊。電腦記一張圖有兩種常見的方法：<strong>鄰接矩陣</strong>是 \(V \times V\) 的表格，兩點相連的那一格寫 1；<strong>鄰接串列</strong>是替每個點列出它的鄰居。矩陣一定要 \(V^2\) 格；串列只要 \(2E\) 項（每條邊在兩端點的串列裡各出現一次）。40 × 40 的迷宮 \(V = 1600\)：矩陣有 2 560 000 格，串列最多只有 \(2 \times 3120 = 6240\) 項。</p>
+      <div class="formula" data-en-html="\[ \text{adjacency matrix: } V^2 \text{ entries} \qquad \text{adjacency list: } \sum_{v} \deg(v) = 2E \text{ entries} \]">\[ \text{鄰接矩陣：} V^2 \text{ 格} \qquad \text{鄰接串列：} \sum_{v} \deg(v) = 2E \text{ 項} \]</div>
+
+      <h3 data-en="DFS: all the way down, then back up">DFS：一條路走到底，碰壁才退回</h3>
+      <p data-en-html="Depth-first search is easiest to describe recursively: <em>visit(\(u\)): mark \(u\); for each neighbour \(v\) of \(u\), in order: if \(v\) is not marked, visit(\(v\))</em>. This page turns the recursion into an explicit <strong>stack</strong> (last in, first out). The stack always holds the path from the start to the square being explored. Each step looks at the square \(u\) on top: it carries on through \(u\)’s neighbours, in the chosen neighbour order, from where it stopped last time; at the first neighbour \(v\) that is not visited yet, it marks \(v\) and <strong>pushes</strong> it (a step forward). If \(u\) has no unvisited neighbour left, \(u\) is <strong>popped</strong> (a step back). The order of the visits is exactly that of the recursive version. Another common version pops a square and pushes <em>all</em> of its neighbours; it gives the same order only if the neighbours are pushed in reverse.">深度優先搜尋最容易用遞迴描述：<em>visit(\(u\))：標記 \(u\)；照順序看 \(u\) 的每個鄰居 \(v\)，還沒標記就 visit(\(v\))</em>。本頁把遞迴改寫成明確的<strong>堆疊</strong>（後進先出）：堆疊裡放的永遠是「從起點到目前這一格的路」。每一步看堆疊頂端那一格 \(u\)，照選定的鄰居順序，從上次看到的地方繼續往下找：找到第一個還沒拜訪的鄰居 \(v\)，就標記 \(v\)、把它<strong>推進</strong>堆疊（前進一步）；\(u\) 的鄰居都拜訪過了，就把 \(u\) <strong>彈出</strong>（退回一步）。這樣拜訪的順序和遞迴版完全相同。另一種常見寫法是「彈出一格、把它的鄰居全部推進去」，要把鄰居倒過來推，才會得到同樣的順序。</p>
+      <p data-en-html="Every reachable square is pushed once and popped once, so a complete DFS takes \(2V' - 1\) steps (\(V'\) = squares reachable from the start; the start is never pushed, it is there from the beginning). When DFS reaches the goal, the stack <em>is</em> the path it found — but it is just the first path it stumbled on, not necessarily the shortest.">每個走得到的格子恰好推進一次、彈出一次，所以完整的 DFS 共 \(2V' - 1\) 步（\(V'\) 是起點走得到的格數；起點一開始就在堆疊裡，不必推進）。DFS 走到終點時，堆疊本身就是它找到的路——不過那只是它第一條碰上的路，不一定最短。</p>
+
+      <h3 data-en="BFS: one layer at a time">BFS：一層一層往外擴</h3>
+      <p data-en-html="Breadth-first search uses a <strong>queue</strong> (first in, first out). Each step takes out the square \(u\) at the front and adds every unvisited neighbour of \(u\) to the back, marking it and writing down its distance \(d[v] = d[u] + 1\). The queue therefore holds at most two layers, \(d\) and \(d + 1\), in that order: BFS finishes every square at distance \(d\) before it touches distance \(d + 1\). That is why the first time it reaches a square, it has reached it along a <strong>shortest path</strong>, and following the arrows back to the start gives that path.">廣度優先搜尋用<strong>佇列</strong>（先進先出）。每一步從佇列前面取出一格 \(u\)，把 \(u\) 還沒拜訪的鄰居全部標記、記下距離 \(d[v] = d[u] + 1\)，排到佇列後面。所以佇列裡最多只有距離 \(d\) 和 \(d + 1\) 兩層，而且依序排好：距離 \(d\) 的格子全部處理完，才輪到 \(d + 1\)。因此 BFS 第一次碰到一格時，走的就是<strong>最短路</strong>；從終點沿著「從哪一格來」倒推回起點，就是那條路。</p>
+      <div class="formula" data-en-html="\[ d[v] = \min_{\text{path } P:\ s \leadsto v} \operatorname{len}(P), \qquad \text{queue} = \underbrace{v_i, \ldots}_{d} \; \underbrace{\ldots, v_j}_{d+1} \]">\[ d[v] = \min_{\text{路 } P:\ s \leadsto v} \operatorname{len}(P), \qquad \text{佇列} = \underbrace{v_i, \ldots}_{d} \; \underbrace{\ldots, v_j}_{d+1} \]</div>
+
+      <h3 data-en="Counting the work">數一數工作量</h3>
+      <p data-en-html="Both searches visit each reachable square exactly once and look at each passage from both ends, so a complete traversal checks a neighbour exactly \(2E'\) times (\(E'\) = passages in the reachable part) — the running time is \(O(V + E)\) for both. What differs is the <strong>memory</strong> and the <strong>order</strong>. The DFS stack can grow as long as the longest path it walks (on an open 32 × 32 field it snakes through all 1024 squares without backing up); the BFS queue is as wide as a layer (on an open field, about the length of a diagonal). With “Stop at the goal”, which one wins depends on where the goal is and on the neighbour order.">兩種搜尋都恰好拜訪每個走得到的格子一次，每條通道從兩端各看一次，所以完整走訪時都剛好檢查鄰居 \(2E'\) 次（\(E'\) 是走得到的那一塊的通道數），執行時間都是 \(O(V + E)\)。不同的是<strong>記憶空間</strong>和<strong>順序</strong>：DFS 的堆疊可以長到和它走的路一樣長（32 × 32 的空地上，它可以一路蛇行走完 1024 格都不退回）；BFS 的佇列和一層一樣寬（空地上大約是一條對角線的長度）。打開「找到終點就停」時，誰先找到，要看終點在哪裡、鄰居順序怎麼排。</p>
+      <div class="formula" data-en-html="\[ \text{complete traversal:}\ \ \text{DFS steps} = 2V' - 1, \quad \text{BFS steps} = V', \quad \text{neighbour checks} = 2E' \]">\[ \text{完整走訪：}\ \text{DFS 步數} = 2V' - 1, \quad \text{BFS 步數} = V', \quad \text{檢查鄰居} = 2E' \]</div>
+
+      <h3 data-en="Mazes, spanning trees and loops">迷宮、生成樹與迴路</h3>
+      <p data-en-html="A <strong>tree</strong> is a connected graph with no loop; with \(V\) vertices it has exactly \(V - 1\) edges, and between any two vertices there is exactly one path. Both maze makers on this page build a <strong>spanning tree</strong> of the grid. Random DFS (the “recursive backtracker”) carves a passage to a random unvisited neighbour and backs up at dead ends, giving long winding corridors; random Prim grows the maze from a random frontier square, giving many short dead ends. In a tree maze DFS and BFS must find the same path. Every wall you remove from a tree adds one independent loop; in general a graph with \(C\) connected pieces has \(E - V + C\) independent loops. Drawing your own walls can break the maze into pieces or create loops, so it need not be a tree any more.">連通而且沒有迴路的圖叫做<strong>樹</strong>：\(V\) 個點的樹恰好有 \(V - 1\) 條邊，任兩點之間恰好一條路。本頁的兩種迷宮產生器做出來的都是方格的<strong>生成樹</strong>。隨機 DFS（recursive backtracker）每次往一個隨機的、還沒去過的鄰格打通牆走過去，碰到死路就退回，所以走廊又長又彎；隨機 Prim 從已連上的區域旁隨機挑一格接上去，所以有很多短短的死巷。在樹狀的迷宮裡，DFS 和 BFS 一定找到同一條路。從樹上每拿掉一面牆，就多出一個獨立的迴路；一般來說，有 \(C\) 個連通塊的圖有 \(E - V + C\) 個獨立迴路。自己畫牆可能把迷宮隔成好幾塊，也可能多出迴路，那就不一定是樹了。</p>
+      <div class="formula" data-en-html="\[ \text{tree: } E = V - 1 \qquad \text{independent loops} = E - V + C \]">\[ \text{樹：} E = V - 1 \qquad \text{獨立迴路數} = E - V + C \]</div>
+
+      <h3 data-en="A black-and-white floor">黑白相間的地板</h3>
+      <p data-en-html="Colour the squares like a chessboard. Every move goes to a square of the other colour, so any path between two given squares has a length of the same parity (the parity of their row difference plus column difference). The path DFS finds can therefore only be longer than the BFS path by an <em>even</em> number of steps. Look at the faint chequered floor in the canvas.">把方格塗成棋盤那樣黑白相間：每走一步都換一種顏色，所以同兩格之間的每一條路，長度的奇偶都相同（和「列差＋行差」同奇偶）。因此 DFS 找到的路，只可能比 BFS 的路多出<em>偶數</em>步。畫布裡淡淡的棋盤格地板就是這個意思。</p>
+
+      <h3 data-en="Things to observe">觀察重點</h3>
+      <ul>
+        <li data-en-html="<strong>Two shapes of growth</strong>: play the default maze and watch the two boxes under the canvas. The stack grows and shrinks like a path being walked; the queue is a thin band moving outwards."><strong>兩種長法</strong>：播放預設的迷宮，看畫布下方的兩個框：堆疊像一條被走出來的路，一下變長、一下縮短；佇列像一條往外移動的細帶。</li>
+        <li data-en-html="<strong>Who finds the shortest path?</strong> Use “Open up walls” to add loops. Is the DFS path still as short as the BFS path? Does the difference ever come out odd?"><strong>誰找到最短的路？</strong>用「打通牆」加上迴路。DFS 的路還和 BFS 一樣短嗎？兩者的差會不會是奇數？</li>
+        <li data-en-html="<strong>Neighbour order</strong>: keep the maze, the start and the goal, and change only the order. Which algorithm’s path changes? Which one’s visit count changes the most?"><strong>鄰居順序</strong>：迷宮、起點、終點都不動，只換鄰居順序。誰的路會變？誰拜訪的格數變得最多？</li>
+        <li data-en-html="<strong>Memory</strong>: on an open field, run both to the end (switch off “Stop at the goal”) and compare the largest stack with the largest queue. Try a corner start and a centre start."><strong>記憶空間</strong>：在空地上把兩者都跑完（關掉「找到終點就停」），比較堆疊與佇列最長各是多少；起點放在角落和放在中央各試一次。</li>
+        <li data-en-html="<strong>Two ways to store a graph</strong>: in “Graph”, compare the number of entries in the adjacency matrix (\(V^2\)) with the adjacency list (\(2E\)). Which is smaller for a graph with few edges?"><strong>記圖的兩種方法</strong>：在「一般圖」比較鄰接矩陣（\(V^2\) 格）和鄰接串列（\(2E\) 項）的大小。邊很少的圖，哪一種比較省？</li>
+        <li data-en-html="<strong>Counting steps</strong>: after a complete traversal, check that DFS took \(2V' - 1\) steps, BFS \(V'\) steps, and both checked a neighbour \(2E'\) times."><strong>數步數</strong>：完整走訪以後，驗證 DFS 走了 \(2V' - 1\) 步、BFS 走了 \(V'\) 步，兩者檢查鄰居都是 \(2E'\) 次。</li>
+      </ul>
+
+      <h3 data-en="A little history">一點歷史</h3>
+      <p data-en-html="In the 19th century the French engineer Charles Pierre Trémaux described a way of getting through any maze by marking the passages already walked; Édouard Lucas published it in his <em>Récréations mathématiques</em> (1882). It is a version of depth-first search, and it walks every passage at most twice, once in each direction. Breadth-first search was first written down by Konrad Zuse in 1945, for finding the connected pieces of a graph, in his thesis on the Plankalkül programming language (published only in 1972). Edward F. Moore reinvented it in 1959 to find the shortest path through a maze, and C. Y. Lee used the same spreading wave in 1961 to route wires on circuit boards. In 1972 Robert Tarjan showed how depth-first search solves many graph problems in linear time. And in 1950 Claude Shannon built “Theseus”, a mechanical mouse that found its way through a 5 × 5 maze whose partitions could be moved, by trial and error and with a relay memory.">十九世紀，法國工程師 Charles Pierre Trémaux 提出一個走出任何迷宮的方法：在走過的通道上做記號。Édouard Lucas 在《Récréations mathématiques》（1882）裡把它寫了出來。這就是深度優先搜尋的一種，而且每條通道最多走兩次，一去一回。廣度優先搜尋最早由 Konrad Zuse 在 1945 年寫下，用來找圖的連通塊，寫在他關於程式語言 Plankalkül 的論文裡（到 1972 年才出版）；Edward F. Moore 在 1959 年重新發明它，用來找穿過迷宮的最短路；C. Y. Lee 在 1961 年用同樣往外擴的「波」替電路板上的導線找路。1972 年，Robert Tarjan 說明了深度優先搜尋能在線性時間內解決許多圖的問題。另外，Claude Shannon 在 1950 年做了一隻叫「忒修斯」（Theseus）的機器老鼠，在 5 × 5、隔間可以移動的迷宮裡靠試誤與繼電器記憶找到出口。</p>
+
+      <h3 data-en="How the page computes">計算方法</h3>
+      <ul>
+        <li data-en="Both searches are first run to the end and every step is recorded; the canvas then plays the recorded steps, and “Step back” replays from the beginning. One step of DFS is one push or one pop; one step of BFS takes one square out of the queue and adds all of its new neighbours. The two run side by side with the same step counter; when one has finished it waits.">兩種搜尋都先完整跑一遍，把每一步記下來，畫面再照著播放；「上一步」是從頭重播。DFS 的一步是推進一格或彈出一格；BFS 的一步是從佇列取出一格，並把它所有新的鄰居排進去。兩者用同一個步數計數並排執行，先做完的就停著等。</li>
+        <li data-en="“Visited” means marked: for DFS when a square is pushed, for BFS when it is added to the queue. With “Stop at the goal”, DFS stops at the step that pushes the goal (its stack is then the path found) and BFS stops at the end of the step that adds the goal to the queue.">「拜訪」就是被標記：DFS 是被推進堆疊的時候，BFS 是被排進佇列的時候。打開「找到終點就停」時，DFS 停在把終點推進堆疊的那一步（這時堆疊就是找到的路）；BFS 停在把終點排進佇列的那一步做完時。</li>
+        <li data-en="The neighbour order (for example up, right, down, left) is the order in which the four directions are tried. Maze makers use a seeded random number generator, so the same side, method and number always give the same maze. Squares are named (row, column), counted from the top-left corner starting at 1.">鄰居順序（例如上右下左）就是四個方向被嘗試的先後。迷宮產生器用有種子的亂數，同樣的邊長、產生方式和編號，每次都得到同一座迷宮。格子的名稱是（列, 行），從左上角開始，從 1 數起。</li>
+        <li data-en="The unit tests check that both maze makers always build a spanning tree (n = 2 to 40, many seeds; on small mazes every pair of squares is checked by listing every simple path), that this page’s DFS visits in the same order as the recursive version, that BFS distances agree with a brute-force search and with repeated relaxation on thousands of mazes, that both searches visit every reachable square exactly once with the step and check counts above, the parity rule, and that whenever the DFS tree and the BFS tree from the same start coincide the graph itself is a tree (20 000 random small graphs).">單元測試檢查：兩種迷宮產生器做出的一定是生成樹（n = 2 到 40、許多種子；小迷宮用「列舉所有簡單路徑」逐對檢查）；本頁的 DFS 拜訪順序和遞迴版相同；BFS 的距離在數千座迷宮上都和暴力搜尋、反覆鬆弛的結果一致；兩種搜尋都恰好拜訪每個走得到的格子一次，步數與檢查次數符合上面的公式；奇偶規則；以及從同一點出發 DFS 樹與 BFS 樹相同時，圖本身一定就是那棵樹（20 000 張隨機小圖）。</li>
+        <li data-en="The glows, the moving pulses and the sounds are only for the eye and the ear; the squares change at once, exactly as recorded.">光暈、脈動的標記和聲音只是為了好看好聽；格子是照著記錄立刻改變的。</li>
+      </ul>
+
+      <h3 data-en="References">參考資料</h3>
+      <ul>
+        <li data-en="Curriculum (Taiwan, Information Technology): A-V-1, important data structures and their uses (graphs; how to represent a graph; using trees and graphs to solve problems); Da-V-1, principles and uses of common data structures (stack, queue); A-V-3, analysing the efficiency of algorithms (counting the operations executed); A-V-2, important algorithms (recursion — the recursive form of DFS).">課綱對應：資A-V-1 重要資料結構的概念與應用（圖、圖的表示法、樹與圖於問題解決之應用）；資Da-V-1 常見資料結構之原理與應用（堆疊、佇列）；資A-V-3 演算法效能分析（指令執行次數）；資A-V-2 重要演算法的概念與應用（遞迴結構：DFS 的遞迴寫法）。</li>
+        <li data-en="T. H. Cormen, C. E. Leiserson, R. L. Rivest, C. Stein, Introduction to Algorithms, chapter “Elementary Graph Algorithms”: 3rd ed. (2009), Sections 22.1 (representations of graphs), 22.2 (breadth-first search) and 22.3 (depth-first search); 4th ed. (2022), Sections 20.1–20.3.">T. H. Cormen、C. E. Leiserson、R. L. Rivest、C. Stein《Introduction to Algorithms》〈Elementary Graph Algorithms〉章：第 3 版（2009）22.1 節（圖的表示法）、22.2 節（廣度優先搜尋）、22.3 節（深度優先搜尋）；第 4 版（2022）20.1–20.3 節。</li>
+        <li data-en="E. F. Moore (1959), “The shortest path through a maze”, Proceedings of an International Symposium on the Theory of Switching, Part II, Harvard University Press, 285–292; C. Y. Lee (1961), “An algorithm for path connections and its applications”, IRE Transactions on Electronic Computers EC-10(3), 346–365.">E. F. Moore（1959）〈The shortest path through a maze〉，國際交換理論研討會論文集第二部，哈佛大學出版社，285–292 頁；C. Y. Lee（1961）〈An algorithm for path connections and its applications〉，IRE Transactions on Electronic Computers EC-10(3)，346–365 頁。</li>
+        <li data-en="K. Zuse (1972), Der Plankalkül, GMD report no. 63 (written 1945); R. E. Tarjan (1972), “Depth-first search and linear graph algorithms”, SIAM Journal on Computing 1(2), 146–160.">K. Zuse（1972）《Der Plankalkül》，GMD 報告第 63 號（1945 年寫成）；R. E. Tarjan（1972）〈Depth-first search and linear graph algorithms〉，SIAM Journal on Computing 1(2)，146–160 頁。</li>
+        <li data-en="Trémaux’s method: É. Lucas (1882), Récréations mathématiques, vol. 1, Paris: Gauthier-Villars; S. Even (2011), Graph Algorithms, 2nd ed., Cambridge University Press, Section 3.1.">Trémaux 的方法：É. Lucas（1882）《Récréations mathématiques》第 1 卷，巴黎 Gauthier-Villars；S. Even（2011）《Graph Algorithms》第 2 版，劍橋大學出版社，3.1 節。</li>
+        <li data-en="C. E. Shannon (1952), “Presentation of a maze-solving machine”, in H. von Foerster (ed.), Cybernetics: Transactions of the Eighth Conference (March 1951), Josiah Macy, Jr. Foundation, 173–180.">C. E. Shannon（1952）〈Presentation of a maze-solving machine〉，收於 H. von Foerster 編《Cybernetics: Transactions of the Eighth Conference》（1951 年 3 月），Josiah Macy, Jr. 基金會，173–180 頁。</li>
+        <li data-en="J. Buck (2015), Mazes for Programmers, Pragmatic Bookshelf (recursive backtracker and Prim’s algorithm for making mazes).">J. Buck（2015）《Mazes for Programmers》，Pragmatic Bookshelf（用 recursive backtracker 與 Prim 演算法產生迷宮）。</li>
+        <li data-en-html="Further reading: <a href=&quot;https://en.wikipedia.org/wiki/Depth-first_search&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Depth-first search (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Breadth-first_search&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Breadth-first search (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Maze-solving_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Maze-solving algorithm (Wikipedia)</a>, <a href=&quot;https://en.wikipedia.org/wiki/Maze_generation_algorithm&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;>Maze generation algorithm (Wikipedia)</a>">延伸閱讀：<a href="https://en.wikipedia.org/wiki/Depth-first_search" target="_blank" rel="noopener">Depth-first search（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Breadth-first_search" target="_blank" rel="noopener">Breadth-first search（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Maze-solving_algorithm" target="_blank" rel="noopener">Maze-solving algorithm（維基百科）</a>、<a href="https://en.wikipedia.org/wiki/Maze_generation_algorithm" target="_blank" rel="noopener">Maze generation algorithm（維基百科）</a>（英文）</li>
+      </ul>
+    </section>
+
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/graph-traversal-core.js"></script>
+  <script src="js/sound.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/keys.js"></script>
+  <script src="js/graph-traversal.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="graph-traversal"></script>
+  <script src="js/missions/graph-traversal.js"></script>
+  <script src="js/stats.js" data-module="graph-traversal"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
