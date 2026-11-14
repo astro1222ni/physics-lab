@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title data-en="Heat Conduction and Thermal Expansion | Astro Ni Science Lab">熱傳導與熱膨脹｜Astro Ni 科學實驗室</title>
+  <meta name="description" content="把兩種材料串聯或並聯，觀察熱從高溫端傳到低溫端。比較接面溫度、各支路熱流率，再加熱或冷卻雙金屬片。">
+  <link rel="stylesheet" href="vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="lab.css">
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#thermo&quot;&gt;Heat&lt;/a&gt; / Temperature and heat"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#thermo">熱學</a> ／ 溫度與熱</nav>
+      <h1 data-en="Heat Conduction and Thermal Expansion">熱傳導與熱膨脹</h1>
+      <p data-en="Connect two materials in series or in parallel and watch heat flow from warm to cool. Compare the junction temperature and branch heat rates, then heat or cool a bimetallic strip.">把兩種材料串聯或並聯，觀察熱從高溫端傳到低溫端。比較接面溫度、各支路熱流率，再加熱或冷卻雙金屬片。</p>
+    </header>
+    <p class="try-hint" data-en="Try it: press “Start conduction” and find the junction between the materials on the temperature curve.">試試看：按「開始導熱」，沿著溫度曲線找出兩種材料的接面。</p>
+    <div class="lab sh">
+      <div class="stage">
+        <div class="btns view-bar">
+          <div id="views" class="lab-seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+            <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
+            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+          </div>
+          <div id="cameraOptions" hidden>
+            <div id="camera" class="btns cam3" role="group" aria-label="3D 視角" data-en-aria-label="3D camera">
+            <button type="button" id="camFace" data-en="Side view">看棒側面</button>
+            <button type="button" id="camSide" data-en="Section view">看棒剖面</button>
+            <button type="button" id="resetCam" data-en="Reset camera">重設視角</button>
+          </div>
+          </div>
+        </div>
+        <p class="hint" id="viewMsg" role="status" hidden></p>
+        <div id="view2"><!-- 實驗裝置與溫度–位置圖 -->
+          <canvas id="cv" role="img" aria-label="熱傳導的棒子、溫度對位置圖，或雙金屬片的剖面" data-en-aria-label="Heat-conducting rods and temperature versus position, or a bimetal strip cross-section"></canvas>
+        </div>
+        <div id="view3" hidden></div>
+        <div id="playback">
+          <div id="playbar" class="btns playbar" role="group" aria-label="導熱操作" data-en-aria-label="Conduction controls">
+            <button type="button" id="play" class="primary" data-en="Start conduction">開始導熱</button>
+            <button type="button" id="reset" data-en="Reset time">重設時間</button>
+            <button type="button" id="steady" data-en="Near steady state">快轉至近穩態</button>
+          </div>
+          <p class="status" id="speedNote"></p>
+          <div id="speedbar" class="lab-seg" role="group" aria-label="播放速度" data-en-aria-label="Playback speed">
+            <button type="button" id="speed1" data-speed="1" aria-pressed="false" data-en="1×">1×</button>
+            <button type="button" id="speed20" data-speed="20" aria-pressed="true" data-en="20×">20×</button>
+            <button type="button" id="speed200" data-speed="200" aria-pressed="false" data-en="200×">200×</button>
+          </div>
+        </div>
+        <p class="status" id="status"></p>
+        <div class="legend" id="legend"></div>
+        <p class="hint" id="stageHint"></p>
+      </div>
+
+      <aside class="panel">
+        <section class="card">
+          <h2 data-en="Experiment">實驗</h2>
+          <div id="modes" class="lab-seg" role="group" aria-label="實驗模式" data-en-aria-label="Experiment mode">
+            <button type="button" id="modeSeries" data-mode="series" aria-pressed="true" data-en="Series">串聯</button>
+            <button type="button" id="modeParallel" data-mode="parallel" aria-pressed="false" data-en="Parallel">並聯</button>
+            <button type="button" id="modeBimetal" data-mode="bimetal" aria-pressed="false" data-en="Bimetal strip">雙金屬片</button>
+          </div>
+          <p class="status" id="modeHint"></p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Materials">材料</h2>
+          <p class="status" id="materialLabelA"></p>
+          <div class="btns chips" id="materialA" role="group" aria-labelledby="materialLabelA"></div>
+          <p class="status" id="materialLabelB"></p>
+          <div class="btns chips" id="materialB" role="group" aria-labelledby="materialLabelB"></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Dimensions and temperatures">尺寸與溫度</h2>
+          <div class="slider">
+            <label for="length" data-en="Length L">長度 L</label><output id="lengtho" for="length"></output>
+            <input id="length" type="range" min="10" max="60" step="1" value="30" data-decimals="1">
+          </div>
+          <div id="rodControls">
+          <div class="slider">
+            <label for="area" data-en="Total area A">總截面積 A</label><output id="areao" for="area"></output>
+            <input id="area" type="range" min="0.5" max="20" step="0.5" value="4" data-decimals="2">
+          </div>
+          <div class="slider">
+            <label for="fraction" data-en="Rod A length share">A 棒的長度占比</label><output id="fractiono" for="fraction"></output>
+            <input id="fraction" type="range" min="20" max="80" step="1" value="50" data-decimals="1">
+          </div>
+          <div class="slider">
+            <label for="left" data-en-html="Left end T&lt;sub&gt;L&lt;/sub&gt;">左端溫度 T<sub>L</sub></label><output id="lefto" for="left"></output>
+            <input id="left" type="range" min="0" max="150" step="1" value="100" data-decimals="1">
+          </div>
+          <div class="slider">
+            <label for="right" data-en-html="Right end T&lt;sub&gt;R&lt;/sub&gt;">右端溫度 T<sub>R</sub></label><output id="righto" for="right"></output>
+            <input id="right" type="range" min="0" max="150" step="1" value="20" data-decimals="1">
+          </div>
+          </div>
+          <div id="stripControls" hidden>
+          <div class="slider">
+            <label for="thickness" data-en="Total strip thickness">雙金屬片總厚度</label><output id="thicknesso" for="thickness"></output>
+            <input id="thickness" type="range" min="0.8" max="4" step="0.1" value="1.5" data-decimals="2">
+          </div>
+          <div class="slider">
+            <label for="deltaT" data-en="Temperature change ΔT">溫度變化 ΔT</label><output id="deltaTo" for="deltaT"></output>
+            <input id="deltaT" type="range" min="-100" max="150" step="1" value="80" data-decimals="1">
+          </div>
+          </div>
+          <p class="status" data-en="Tap a slider value to type it directly.">點一下滑桿右側的數字，可以直接輸入。</p>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Readings">讀數</h2>
+          <dl class="readout" id="readout"></dl>
+          <p class="status" id="readNote" hidden></p>
+          <div class="btns"><button type="button" id="record" data-en="Record readings">記錄讀數</button></div>
+          <p class="status" id="recordNote" role="status" hidden></p>
+        </section>
+      </aside>
+    </div>
+
+    <section class="notes">
+      <h2 data-en="The physics behind it">背後的物理</h2>
+      <h3 data-en="Fourier’s law and thermal resistance">傅立葉定律與熱阻</h3>
+      <p data-en="The heat flow rate \(P\) is the energy crossing a section per second. Taking rightward flow as positive, the steady rate in a uniform rod is proportional to the temperature difference at its ends.">熱流率 \(P\) 是每秒通過截面的熱量。取向右為正，均勻棒在穩態的熱流率與兩端溫差成正比。</p>
+      <div class="formula">[ R=rac{L}{kA}, qquad P=rac{T_L-T_R}{R} ]</div>
+      <p data-en="In series, both sections carry the same steady heat rate, and the drop in the first section gives the junction temperature. In parallel, both rods contact the same reservoirs and split the heat flow.">串聯時，穩態下兩段的熱流率相同，接面溫度由第一段的溫降求出。並聯時兩棒接觸同一對熱庫，各自分擔熱流。</p>
+      <div class="formula">[ R_{m s}=R_A+R_B,quad T_{m j}=T_L-P R_A ]</div>
+      <div class="formula">[ rac{1}{R_{m p}}=rac{1}{R_A}+rac{1}{R_B},quad P=P_A+P_B ]</div>
+
+      <h3 data-en="From transient to steady conduction">從暫態到穩態</h3>
+      <p data-en="The rods start at 20 °C and their ends are brought into contact with fixed-temperature reservoirs. The sides are insulated, the series junction is ideal, and the parallel branches are insulated from one another. The solid curves show the current temperatures and the dashed curve shows the steady solution.">棒內初溫為 20 °C，起始時兩端接上固定溫度的熱庫。模型假設側面隔熱、串聯接觸理想、並聯支路彼此隔熱。圖上實線是當下溫度，虛線是穩態解。</p>
+      <div class="formula">[ ho cA,partial_t T = partial_x!left(kA,partial_x Tight) ]</div>
+      <p data-en="The net heat flow into each cell changes its stored heat. The solver uses finite volumes and backward Euler, with the two half-cell resistances setting the interface heat rate. The 3D view uses the same section temperatures and heat rates, with magnified cross-sectional dimensions and uniform temperature within each section.">每小段的熱量變化由兩側熱流差決定。模擬用有限體積法及後向歐拉法，接面熱流由兩個半格熱阻決定。3D 使用同一組截面溫度與熱流，橫向尺寸放大，截面內溫度均勻。</p>
+
+      <h3 data-en="Linear expansion and a bimetallic strip">線膨脹與雙金屬片</h3>
+      <div class="formula">[ Delta L=alpha LDelta T,qquad kappa=rac{3,(alpha_A-alpha_B)Delta T}{2h} ]</div>
+      <p data-en="The free length change is what each layer would undergo on its own. Once bonded, the layer that expands more under heating lies outside the bend and the strip curves toward the other layer. Cooling reverses the bend. The radius and tip displacement use an equal-thickness, equal-Young’s-modulus model with a uniform temperature change and small strain.">自由膨脹量是兩層分開時各自的長度變化。黏合後，受熱時膨脹較多的一層在外側，金屬片朝另一層彎曲。冷卻時彎曲方向對調。此處的半徑與端點位移採等厚、等楊氏模數、均勻升溫的小應變近似。</p>
+
+      <h3 data-en="What to look for">觀察重點</h3>
+      <ul>
+        <li data-en="Keep the end temperatures fixed and swap materials A and B. Compare the changes in junction temperature and steady heat rate.">把兩端溫差設成一樣，換一下 A、B 材料的位置。比較接面溫度和穩態熱流率各有什麼變化。</li>
+        <li data-en="Set both rods to the same material and length, then switch to parallel. Compare the total rate with each branch rate.">設定相同的材料和長度，再改成並聯。比較總熱流率與各支路熱流率。</li>
+        <li data-en="Change ΔT from positive to negative and relate each free length change to the bending direction.">在雙金屬片把 ΔT 由正值改成負值，看自由長度變化和彎曲方向如何對應。</li>
+      </ul>
+      <p data-en-html="Material properties are approximate room-temperature values. See &lt;a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenStax on heat transfer&lt;/a&gt;, &lt;a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/1-3-thermal-expansion&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;OpenStax on thermal expansion&lt;/a&gt;, &lt;a href=&quot;https://ocw.mit.edu/ans7870/18/18.03/s06/tools/HeatEquationHelp.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;MIT on the heat equation&lt;/a&gt;, and &lt;a href=&quot;https://doi.org/10.1364/JOSA.11.000233&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;Timoshenko’s bimetallic-strip model&lt;/a&gt;.">材料數值是常溫近似值。參考 <a href="https://openstax.org/books/university-physics-volume-2/pages/1-6-mechanisms-of-heat-transfer" target="_blank" rel="noopener">OpenStax 熱傳遞</a>、<a href="https://openstax.org/books/university-physics-volume-2/pages/1-3-thermal-expansion" target="_blank" rel="noopener">OpenStax 熱膨脹</a>、<a href="https://ocw.mit.edu/ans7870/18/18.03/s06/tools/HeatEquationHelp.html" target="_blank" rel="noopener">MIT 熱方程</a>、<a href="https://doi.org/10.1364/JOSA.11.000233" target="_blank" rel="noopener">Timoshenko 雙金屬片模型</a>。</p>
+    </section>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Science Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+  </div>
+
+  <script src="vendor/katex/katex.min.js"></script>
+  <script src="vendor/katex/contrib/auto-render.min.js"></script>
+  <script src="js/math.js"></script>
+  <script src="js/heat-conduction-core.js"></script>
+  <script src="js/numinput.js"></script>
+  <script src="js/drawkit.js"></script>
+  <script src="js/heat-conduction.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/missions.js" data-module="heat-conduction"></script>
+  <script src="js/missions/heat-conduction.js"></script>
+  <script src="js/stats.js" data-module="heat-conduction"></script>
+  <script src="js/comments.js"></script>
+</body>
+</html>
