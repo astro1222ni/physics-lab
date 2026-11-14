@@ -79,6 +79,12 @@
     loadIndex: function () { return loadIndex(); },
     /** 載入全站所有任務檔（只註冊，不在本頁判定）；多處呼叫只下載一次 */
     loadAll: function () { return loadAll(); },
+    /** 成績卡（js/sharecard.js，按下才載入）：存成圖片、分享到社群 */
+    share: function (opts) {
+      return loadAll().then(function () {
+        return window.LabShareCard ? null : loadScript(base + 'sharecard.js' + ver);
+      }).then(function () { if (window.LabShareCard) window.LabShareCard.open(opts); });
+    },
     /** 依完成紀錄（任務代號 → { stars }）算出各科星星 */
     subjectStars: function (done) { return subjectStars(done); },
     /** 任務的星星數（隱藏任務是等級的 2 倍）；排行榜、成就、每日任務都用這個算 */
@@ -627,6 +633,12 @@
       } else {
         panel.appendChild(el('p', 'ms-note', T('任務模式開啟中：操作實驗達成條件，就會自動完成任務。每個任務只能領一次星星。',
           'Mission mode is on: reach a goal by working the experiment and the mission completes automatically. Each mission pays out once.')));
+        if (state.ready && list.some(function (m) { return state.done[m.id]; })) {
+          const sh = el('button', 'ms-share', T('分享我的成績（存成圖片）', 'Share my results (as an image)'));
+          sh.type = 'button';
+          sh.addEventListener('click', function () { LabMission.share({ scope: 'mods', mods: [state.module] }); });
+          panel.appendChild(sh);
+        }
       }
       if (state.msg) panel.appendChild(el('p', 'ms-msg', state.msg));
       if (state.adminMsg) panel.appendChild(el('p', 'ms-note', state.adminMsg));

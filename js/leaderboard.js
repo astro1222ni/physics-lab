@@ -132,6 +132,11 @@
         row.appendChild(chip);
       });
       box.appendChild(row);
+      // 成績卡：存成圖片、分享到社群（js/sharecard.js，11/14）
+      const sh = el('button', 'primary lb-share', T('分享我的成績（存成圖片）', 'Share my results (as an image)'));
+      sh.type = 'button';
+      sh.addEventListener('click', function () { LM.share({ scope: 'all', ranks: Object.assign({}, myRank) }); });
+      box.appendChild(sh);
     }
 
     if (st.nickname) {
