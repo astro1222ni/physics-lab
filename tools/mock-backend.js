@@ -157,7 +157,16 @@
     serverOffset() { return Promise.resolve(+localStorage.getItem('mockoffset') || 0); },
     syncDefs(defs) { if (!user || !load().admins[user.uid]) return deny('syncDefs'); if (Object.values(defs).some(v => !(v >= 1 && v <= 20))) return deny('syncDefs: 星星數必須是 1–20'); const db = load(); Object.keys(defs).forEach(k => db.missionDefs[k] = { stars: defs[k] }); save(db); return Promise.resolve(); },
     isAdmin(uid) { return Promise.resolve(!!load().admins[uid]); },
-    get(path) { return Promise.resolve(get(load(), path)); },
+    get(path) {
+      // 模擬讀取規則：個人資料只有本人能讀；整個集合（profiles、completions…）只有管理員能讀（11/14 管理頁）
+      const ks = path.split('/'), PRIV = ['profiles', 'completions', 'bonus', 'userStats', 'achievements', 'daily', 'bag'];
+      if (PRIV.includes(ks[0])) {
+        const adm = user && load().admins[user.uid];
+        if (ks.length === 1 && !adm) return deny(path + ': 只有管理員能讀整個集合');
+        if (ks.length > 1 && !adm && (!user || ks[1] !== user.uid)) return deny(path + ': 不是本人');
+      }
+      return Promise.resolve(get(load(), path));
+    },
     update(map) {
       const before = load(), db = load(), t = clock();
       const touched = { daily: {}, bag: {}, scores: {} };

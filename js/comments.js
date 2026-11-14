@@ -203,6 +203,13 @@
       lb.href = 'leaderboard.html';
       lb.textContent = t('★ 我的星星與成就', '★ My stars & achievements');
       menu.appendChild(lb);
+      if (state.admin) { // 管理員：使用者與紀錄（admin.html，11/14）
+        const ad = document.createElement('a');
+        ad.className = 'lab-account-link';
+        ad.href = 'admin.html';
+        ad.textContent = t('管理頁：使用者與紀錄', 'Admin: users and records');
+        menu.appendChild(ad);
+      }
       menu.appendChild(button(t('設定暱稱', 'Change nickname'), null, function () { close(); askNickname(); }));
       menu.appendChild(button(t('登出', 'Sign out'), null, function () { close(); api.signOut(); }));
     }

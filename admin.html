@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <script src="js/settings.js?v=202611141056"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title data-en="Administrator | Astro Ni Lab">管理頁｜讓倪動手⚡高中全科模擬實驗室</title>
+  <link rel="stylesheet" href="lab.css?v=202611141056">
+</head>
+<body data-en-ready>
+  <div class="wrap">
+    <header class="top">
+      <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a>　<a href="leaderboard.html" data-en="Leaderboard">排行榜</a></nav>
+      <h1 data-en="Administrator: users and records">管理頁：使用者與紀錄</h1>
+      <p class="lb-note" data-en="Only the site administrator can see this page. Accounts are listed by nickname and random user ID; Google names and emails are never shown here. Do not share screenshots of this page.">這一頁只有網站管理員看得到。帳號以暱稱與隨機使用者代號列出，不會顯示 Google 姓名與電子郵件。請不要把這一頁的畫面外流。</p>
+    </header>
+
+    <section class="lb-admin adm-gate" id="gate" aria-live="polite"></section>
+
+    <section class="adm-main" id="main" hidden>
+      <div class="adm-tiles" id="tiles"></div>
+
+      <div class="lb-board">
+        <div class="adm-tools">
+          <label class="adm-search"><span data-en="Search">搜尋</span>
+            <input type="search" id="q" placeholder="暱稱或代號" data-en-placeholder="Nickname or ID" autocomplete="off"></label>
+          <label><span data-en="Sort by">排序</span>
+            <select id="sort">
+              <option value="recent" data-en="Last active">最近活動</option>
+              <option value="stars" data-en="Stars">星星</option>
+              <option value="done" data-en="Missions done">完成任務數</option>
+              <option value="seconds" data-en="Time spent">操作時間</option>
+              <option value="days" data-en="Days used">使用天數</option>
+              <option value="mods" data-en="Experiments opened">打開的實驗數</option>
+            </select></label>
+          <button type="button" id="csv" data-en="Export CSV">匯出 CSV</button>
+          <button type="button" id="reload" data-en="Reload">重新載入</button>
+        </div>
+        <p class="lb-note" id="count"></p>
+        <div class="adm-scroll">
+          <table class="adm-table" id="table">
+            <thead><tr>
+              <th data-en="Nickname">暱稱</th><th class="num" data-en="Stars">星星</th><th class="num" data-en="Missions">完成任務</th>
+              <th class="num" data-en="Achievements">成就</th><th class="num" data-en="Experiments">實驗數</th><th class="num" data-en="Days">使用天數</th>
+              <th class="num" data-en="Time">操作時間</th><th class="num" data-en="Last active">最近活動</th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <section class="lb-board adm-detail" id="detail" hidden tabindex="-1"></section>
+    </section>
+
+    <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
+  </div>
+
+  <script src="js/firebase-config.js?v=202611141056"></script>
+  <script src="js/missions.js?v=202611141056"></script>
+  <script src="js/missions/index.js?v=202611141056"></script>
+  <script src="js/achievements.js?v=202611141056"></script>
+  <script src="js/admin.js?v=202611141056"></script>
+  <script src="js/comments.js?v=202611141056"></script>
+</body>
+</html>

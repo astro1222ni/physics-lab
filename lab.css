@@ -1450,3 +1450,62 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 }
 .ni-zh::after { content: "倪"; } html[lang="en"] .ni-zh::after { content: none; } /* 英文模式只留 28 Ni；用 CSS 畫字，英文檢查才不會抓到中文 */
 .related .related-cross { border-style: dashed; } /* 跨科連結的卡片用虛線框，和同科的區分（11/14） */
+
+/* 管理頁（admin.html，11/14） */
+.adm-gate p { margin: 0 0 10px; }
+.adm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 16px; }
+.adm-tile { display: grid; gap: 2px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; }
+.adm-tile-v { font-size: calc(24px * var(--fs, 1)); font-weight: 800; font-variant-numeric: tabular-nums; }
+.adm-tile-k { color: var(--muted); font-size: calc(14px * var(--fs, 1)); }
+.adm-tile-n { color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+.adm-tools { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; margin-bottom: 10px; }
+.adm-tools label { display: grid; gap: 4px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
+.adm-tools input, .adm-tools select { min-height: 44px; padding: 0 10px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
+.adm-search input { width: min(16em, 70vw); }
+.adm-tools button, .adm-dhead button { min-height: 44px; }
+.adm-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.adm-table { width: 100%; border-collapse: collapse; font-size: calc(14px * var(--fs, 1)); }
+.adm-table th, .adm-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.adm-table th { color: var(--muted); font-weight: 700; position: sticky; top: 0; background: var(--surface); }
+.adm-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.adm-table tbody tr { cursor: pointer; }
+.adm-table tbody tr:hover, .adm-table tbody tr:focus-visible { background: var(--accent-soft); outline: none; }
+.adm-table tbody tr.on { background: var(--accent-soft); box-shadow: inset 4px 0 0 var(--accent); }
+.adm-sub tbody tr { cursor: default; }
+.adm-sub td { white-space: normal; }
+.adm-name span { font-weight: 700; display: block; }
+.adm-name small { color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+.adm-detail { border-left: 4px solid var(--accent); }
+.adm-dhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.adm-dhead h2 { margin: 0; }
+.adm-h3 { font-size: calc(16px * var(--fs, 1)); margin: 18px 0 8px; }
+.adm-kv { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 10px 0 0; }
+.adm-kv dt { color: var(--muted); }
+.adm-kv dd { margin: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) { .adm-kv { grid-template-columns: 1fr; gap: 0 0; } .adm-kv dd { margin-bottom: 6px; } }
+.adm-table th.num { text-align: right; }
+
+/* 成績卡（js/sharecard.js，11/14） */
+.lab-sc { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: max(12px, env(safe-area-inset-top)) 12px 12px; background: rgba(0, 0, 0, .55); overflow-y: auto; }
+.lab-sc-card { width: min(920px, 100%); max-height: calc(100dvh - 24px); overflow-y: auto; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .35); }
+.lab-sc-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); z-index: 1; }
+.lab-sc-head strong { font-size: calc(18px * var(--fs, 1)); }
+.lab-sc-x { width: 44px; height: 44px; font-size: 26px; line-height: 1; border-radius: 50%; }
+.lab-sc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 16px; }
+.lab-sc-prev img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); background: #0f2a33; }
+.lab-sc-tip, .lab-sc-note { margin: 8px 0 0; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+.lab-sc-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.lab-sc-fs { margin: 0; padding: 8px 12px 10px; border: 1px solid var(--border); border-radius: 10px; display: grid; gap: 2px; }
+.lab-sc-fs legend { font-weight: 700; font-size: calc(14px * var(--fs, 1)); padding: 0 4px; }
+.lab-sc-opt { display: flex; align-items: center; gap: 8px; min-height: 40px; cursor: pointer; }
+.lab-sc-opt input, .lab-sc-chip input { accent-color: var(--accent); width: 18px; height: 18px; flex: none; }
+.lab-sc-picks { display: flex; flex-wrap: wrap; gap: 6px; max-height: 180px; overflow-y: auto; }
+.lab-sc-picks:empty { display: none; }
+.lab-sc-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px 0 10px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: calc(14px * var(--fs, 1)); }
+.lab-sc-chip:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.lab-sc-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.lab-sc-acts button { min-height: 44px; }
+.lab-sc-msg { margin: 0; min-height: 1.2em; color: var(--accent); font-size: calc(14px * var(--fs, 1)); overflow-wrap: anywhere; }
+@media (max-width: 700px) { .lab-sc-body { grid-template-columns: 1fr; } .lab-sc-prev { max-width: 420px; margin: 0 auto; width: 100%; } }
+.lb-share { margin-top: 12px; }
+.ms-share { margin-top: 8px; }

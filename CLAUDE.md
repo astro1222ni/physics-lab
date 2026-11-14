@@ -40,6 +40,7 @@
 | `docs/directory/<科目>.json`、`tools/apply-directory.cjs` | 各科完整目錄（分支 → 章 → 已上線＋規劃中的實驗）；`node tools/apply-directory.cjs` 依目錄重建首頁的章目錄與章節順序（`--check` 只檢查）；格式見 `docs/directory/README.md` |
 | `daily.html`、`js/daily.js`、`js/daily-core.js`、`tests/daily-core.test.js` | 每日任務與寶物：臺灣時間 00:00 換新十個（簡單 4、中等 3、困難 3），每個一天完成一次；`daily-core.js` 是抽題、掉寶機率、持有數（純函式、有單元測試），另有寶物圖示與「我的寶物」格子（daily.html 與排行榜頁共用，排行榜頁直接載入它）；`daily.js` 是每日任務頁、實驗頁橫幅（網址帶 `?daily=<任務代號>`）、掉寶動畫與寫入 |
 | `leaderboard.html`、`js/leaderboard.js` | 排行榜，也就是帳號選單的「我的星星與成就」（全科總排名＋各科排名分頁、前 100 名、自己的全科與各科名次、我的寶物、公開設定、依科目分組的任務進度、我的成就、規則說明、管理員區） |
+| `admin.html`、`js/admin.js` | 管理頁（11/14 站長：「個人明細也要」）：只有 `admins/<uid>` 讀得到；列出每個帳號的暱稱、星星、完成任務、成就、使用天數與操作時間，點一列看個人明細（任務紀錄、成就、每日任務與寶物、每天打開的實驗），可匯出 CSV。資料庫規則在 profiles、completions、bonus、userStats、achievements、daily、bag 上一層開放管理員讀取；不顯示 Google 姓名與電子郵件；`noindex`、不進網站地圖；管理員的帳號選單有連結 |
 | `js/search.js`、`js/math.js` | 首頁搜尋；KaTeX 公式排版 |
 | `js/comments.js` | Google 登入與留言（只顯示自訂暱稱）；首次進站的登入提示（鼓勵完成任務，可按「先逛逛」跳過，每個瀏覽器只出現一次；實驗頁要先操作 3 次或在前景停留 40 秒才出現，首頁照舊）；`privacy.html` 為隱私說明 |
 | `js/firebase-config.js` | Firebase 網頁設定（公開值，非密碼） |

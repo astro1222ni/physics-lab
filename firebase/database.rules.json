@@ -106,6 +106,7 @@
       }
     },
     "profiles": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid",
@@ -146,6 +147,7 @@
       }
     },
     "completions": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$mid": {
@@ -160,6 +162,7 @@
       }
     },
     "bonus": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$mid": {
@@ -212,6 +215,7 @@
       }
     },
     "userStats": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
@@ -248,6 +252,7 @@
       }
     },
     "achievements": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         "$aid": {
@@ -261,6 +266,7 @@
       }
     },
     "daily": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
@@ -284,6 +290,7 @@
       }
     },
     "bag": {
+      ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists() && newData.parent().parent().child('daily').child($uid).child('at').val() === now && newData.parent().parent().child('daily').child($uid).child('n').val() >= 1 && (newData.parent().parent().child('daily').child($uid).child('d').val() !== root.child('daily').child($uid).child('d').val() || newData.parent().parent().child('daily').child($uid).child('n').val() === root.child('daily').child($uid).child('n').val() + 1)",
