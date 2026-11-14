@@ -1,4 +1,4 @@
-# AGENTS.md — 給 Codex 的工作規則（Astro Ni 科學實驗室）
+# AGENTS.md — 給 Codex 的工作規則（讓倪動手⚡高中全科模擬實驗室）
 
 這份是 Codex 的入口。完整的專案規則在 `CLAUDE.md`（架構、慣例、任務與星星、上線約定），目前狀態在 `HANDOFF.md`。動手前兩份都要讀。本檔只寫 Codex 和 Claude 分工時**另外**要守的事。
 

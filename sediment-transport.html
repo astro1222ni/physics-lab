@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Erosion, Transport and Deposition: the Hjulström Curve | Astro Ni Science Lab">侵蝕、搬運與沉積：Hjulström 曲線｜Astro Ni 科學實驗室</title>
+  <title data-en="Erosion, Transport and Deposition: the Hjulström Curve | Astro Ni Lab">侵蝕、搬運與沉積：Hjulström 曲線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="侵蝕、搬運與沉積：為什麼細砂最好挖、黏土反而要洪水？畫出 Hjulström 曲線，把顆粒丟進水管看誰先到底，再讓河流把泥沙從山上分選到海邊。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/sediment-transport.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/sediment-transport.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/sediment-transport.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="侵蝕、搬運與沉積：Hjulström 曲線｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="侵蝕、搬運與沉積：Hjulström 曲線｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="侵蝕、搬運與沉積：為什麼細砂最好挖、黏土反而要洪水？畫出 Hjulström 曲線，把顆粒丟進水管看誰先到底，再讓河流把泥沙從山上分選到海邊。">
   <meta property="og:url" content="https://lab.astroni.org/sediment-transport.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/sediment-transport.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"侵蝕、搬運與沉積：Hjulström 曲線","alternateName":"Erosion, Transport and Deposition: the Hjulström Curve","description":"侵蝕、搬運與沉積：為什麼細砂最好挖、黏土反而要洪水？畫出 Hjulström 曲線，把顆粒丟進水管看誰先到底，再讓河流把泥沙從山上分選到海邊。","url":"https://lab.astroni.org/sediment-transport.html","image":"https://lab.astroni.org/img/og/sediment-transport.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["固體地球（Solid Earth）","地表的作用（Surface Processes）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"侵蝕、搬運與沉積：Hjulström 曲線","alternateName":"Erosion, Transport and Deposition: the Hjulström Curve","description":"侵蝕、搬運與沉積：為什麼細砂最好挖、黏土反而要洪水？畫出 Hjulström 曲線，把顆粒丟進水管看誰先到底，再讓河流把泥沙從山上分選到海邊。","url":"https://lab.astroni.org/sediment-transport.html","image":"https://lab.astroni.org/img/og/sediment-transport.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["固體地球（Solid Earth）","地表的作用（Surface Processes）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 侵蝕、搬運與沉積頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -219,22 +219,22 @@
       <p data-en-html="Water viscosity uses Bingham’s formula (CRC Handbook) and its density the formula of Tanaka et al. (2001). The bed roughness is \(k_s = 2.5D\) with the smooth-to-rough blend \(z_0 = k_s/30 + \nu/(9u_*)\). The river from the mountains to the sea uses an illustrative speed profile \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\) with a constant depth of 1 m; real rivers change depth, width and slope together. The grains in the pictures are drawn much larger than scale.">水的黏度用 Bingham 式（CRC 手冊），密度用 Tanaka 等人（2001）的式子。河床粗糙度 \(k_s = 2.5D\)，光滑到粗糙的過渡用 \(z_0 = k_s/30 + \nu/(9u_*)\)。從山到海的河流用示意的流速分布 \(U(x) = U_{\mathrm{sea}} + (U_0 - U_{\mathrm{sea}})(1 - x)^{1.6}\)，水深固定 1 m；真實的河流水深、寬度和坡度會一起變化。畫面上的顆粒都畫得比實際大很多。</p>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/sediment-transport-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/sediment-transport.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="sediment-transport"></script>
-  <script src="js/missions/sediment-transport.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="sediment-transport"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/sediment-transport-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/sediment-transport.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="sediment-transport"></script>
+  <script src="js/missions/sediment-transport.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="sediment-transport"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

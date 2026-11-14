@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Exponents and Logarithms: Compound Interest, e and Log Scales | Astro Ni Science Lab">指數與對數：複利、e 與對數尺度｜Astro Ni 科學實驗室</title>
+  <title data-en="Exponents and Logarithms: Compound Interest, e and Log Scales | Astro Ni Lab">指數與對數：複利、e 與對數尺度｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/exp-log.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/exp-log.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/exp-log.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="指數與對數：複利、e 與對數尺度｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="指數與對數：複利、e 與對數尺度｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。">
   <meta property="og:url" content="https://lab.astroni.org/exp-log.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/exp-log.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"指數與對數：複利、e 與對數尺度","alternateName":"Exponents and Logarithms: Compound Interest, e and Log Scales","description":"把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。","url":"https://lab.astroni.org/exp-log.html","image":"https://lab.astroni.org/img/og/exp-log.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","指數與對數（Exponents and Logarithms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"指數與對數：複利、e 與對數尺度","alternateName":"Exponents and Logarithms: Compound Interest, e and Log Scales","description":"把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。","url":"https://lab.astroni.org/exp-log.html","image":"https://lab.astroni.org/img/og/exp-log.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","指數與對數（Exponents and Logarithms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 指數與對數頁面專用的顏色代號（淺色＋深色；由 js/exp-log.js 讀取） */
     :root { --el-exp: #c2410c; --el-log: #1d4ed8; --el-cont: #7c3aed; --el-simple: #64748b; --el-coin: #b7791f; --el-data: #0f766e; --el-res: #be185d; }
@@ -255,22 +255,22 @@
       </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/exp-log-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/exp-log.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="exp-log"></script>
-  <script src="js/missions/exp-log.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="exp-log"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/exp-log-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/exp-log.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="exp-log"></script>
+  <script src="js/missions/exp-log.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="exp-log"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

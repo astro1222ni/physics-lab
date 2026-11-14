@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Projectile Motion | Astro Ni Science Lab">拋體運動｜Astro Ni 科學實驗室</title>
+  <title data-en="Projectile Motion | Astro Ni Lab">拋體運動｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/projectile.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/projectile.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/projectile.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="拋體運動｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="拋體運動｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。">
   <meta property="og:url" content="https://lab.astroni.org/projectile.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/projectile.jpg">
@@ -24,11 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"拋體運動","alternateName":"Projectile Motion","description":"調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。","url":"https://lab.astroni.org/projectile.html","image":"https://lab.astroni.org/img/og/projectile.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","平面運動（Motion in a Plane）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"拋體運動","alternateName":"Projectile Motion","description":"調整初速、仰角與重力加速度，比較射程、最大高度與飛行時間；可開啟空氣阻力對照。","url":"https://lab.astroni.org/projectile.html","image":"https://lab.astroni.org/img/og/projectile.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","平面運動（Motion in a Plane）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 拋體運動頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     @media (max-width: 560px) { .stage canvas { aspect-ratio: 4 / 3; } }
@@ -281,23 +281,23 @@
       </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/projectile-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/projectile-3d.js?v=202611132254"></script>
-  <script src="js/projectile.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="projectile"></script>
-  <script src="js/missions/projectile.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="projectile"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/projectile-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/projectile-3d.js?v=202611140858"></script>
+  <script src="js/projectile.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="projectile"></script>
+  <script src="js/missions/projectile.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="projectile"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

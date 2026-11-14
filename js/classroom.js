@@ -90,7 +90,7 @@
       el.addEventListener('click', function (e) {
         e.preventDefault();
         bigQR(el.getAttribute('data-url') || location.href.split('#')[0],
-          T('用手機相機掃描，開啟 Astro Ni 科學實驗室', 'Scan with a phone camera to open Astro Ni Science Lab'));
+          T('用手機相機掃描，開啟 讓倪動手⚡高中全科模擬實驗室', 'Scan with a phone camera to open Astro Ni Lab'));
       });
     });
   }

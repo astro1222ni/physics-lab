@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Shortest Paths: Dijkstra’s Algorithm | Astro Ni Science Lab">最短路徑：Dijkstra 演算法｜Astro Ni 科學實驗室</title>
+  <title data-en="Shortest Paths: Dijkstra’s Algorithm | Astro Ni Lab">最短路徑：Dijkstra 演算法｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="導航怎麼找出最短的路？在臺灣地圖上一步一步看 Dijkstra 演算法由近到遠確定每個城市，數一數它檢查了幾條邊，和只數邊數的 BFS 比一比，再看一條負的權重怎麼讓它算錯。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/shortest-path.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/shortest-path.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/shortest-path.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="最短路徑：Dijkstra 演算法｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="最短路徑：Dijkstra 演算法｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="導航怎麼找出最短的路？在臺灣地圖上一步一步看 Dijkstra 演算法由近到遠確定每個城市，數一數它檢查了幾條邊，和只數邊數的 BFS 比一比，再看一條負的權重怎麼讓它算錯。">
   <meta property="og:url" content="https://lab.astroni.org/shortest-path.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/shortest-path.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"最短路徑：Dijkstra 演算法","alternateName":"Shortest Paths: Dijkstra’s Algorithm","description":"導航怎麼找出最短的路？在臺灣地圖上一步一步看 Dijkstra 演算法由近到遠確定每個城市，數一數它檢查了幾條邊，和只數邊數的 BFS 比一比，再看一條負的權重怎麼讓它算錯。","url":"https://lab.astroni.org/shortest-path.html","image":"https://lab.astroni.org/img/og/shortest-path.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","圖與最短路徑（Graphs and Shortest Paths）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"最短路徑：Dijkstra 演算法","alternateName":"Shortest Paths: Dijkstra’s Algorithm","description":"導航怎麼找出最短的路？在臺灣地圖上一步一步看 Dijkstra 演算法由近到遠確定每個城市，數一數它檢查了幾條邊，和只數邊數的 BFS 比一比，再看一條負的權重怎麼讓它算錯。","url":"https://lab.astroni.org/shortest-path.html","image":"https://lab.astroni.org/img/og/shortest-path.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","圖與最短路徑（Graphs and Shortest Paths）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 最短路徑頁面專用的顏色代號（淺色＋兩組深色；由 js/shortest-path.js 讀取） */
     :root { --sp-land: #eef3e6; --sp-sea: #e4eef7; --sp-coast: #93ab95; --sp-road: #8b97a9; --sp-node: #9aa6b6; --sp-front: #d97706; --sp-front-ink: #b45309; --sp-done: #0f766e; --sp-cur: #7c3aed; --sp-path: #e11d48; --sp-check: #0891b2; --sp-check-ink: #0e7490; --sp-bad: #dc2626; --sp-ok: #15803d; --sp-alt: #2563eb; }
@@ -326,22 +326,22 @@
       </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/shortest-path-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/shortest-path.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="shortest-path"></script>
-  <script src="js/missions/shortest-path.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="shortest-path"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/shortest-path-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/shortest-path.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="shortest-path"></script>
+  <script src="js/missions/shortest-path.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="shortest-path"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

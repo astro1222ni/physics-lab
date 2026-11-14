@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Matrices and Linear Transformations | Astro Ni Science Lab">矩陣與線性變換｜Astro Ni 科學實驗室</title>
+  <title data-en="Matrices and Linear Transformations | Astro Ni Lab">矩陣與線性變換｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="拖曳兩個基底箭頭，整張方格紙跟著變形：行列式就是每塊面積放大的倍數，小旗子翻面時它變成負的。找出只被拉長、方向不變的特徵向量，再到 3D 看 3×3 矩陣把單位立方體變成什麼。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/linear-transform.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/linear-transform.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/linear-transform.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="矩陣與線性變換｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="矩陣與線性變換｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="拖曳兩個基底箭頭，整張方格紙跟著變形：行列式就是每塊面積放大的倍數，小旗子翻面時它變成負的。找出只被拉長、方向不變的特徵向量，再到 3D 看 3×3 矩陣把單位立方體變成什麼。">
   <meta property="og:url" content="https://lab.astroni.org/linear-transform.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/linear-transform.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"矩陣與線性變換","alternateName":"Matrices and Linear Transformations","description":"拖曳兩個基底箭頭，整張方格紙跟著變形：行列式就是每塊面積放大的倍數，小旗子翻面時它變成負的。找出只被拉長、方向不變的特徵向量，再到 3D 看 3×3 矩陣把單位立方體變成什麼。","url":"https://lab.astroni.org/linear-transform.html","image":"https://lab.astroni.org/img/og/linear-transform.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["向量與空間（Vectors and Space）","矩陣（Matrices）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"矩陣與線性變換","alternateName":"Matrices and Linear Transformations","description":"拖曳兩個基底箭頭，整張方格紙跟著變形：行列式就是每塊面積放大的倍數，小旗子翻面時它變成負的。找出只被拉長、方向不變的特徵向量，再到 3D 看 3×3 矩陣把單位立方體變成什麼。","url":"https://lab.astroni.org/linear-transform.html","image":"https://lab.astroni.org/img/og/linear-transform.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["向量與空間（Vectors and Space）","矩陣（Matrices）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 矩陣與線性變換頁面專用的顏色代號（淺色＋深色；由 js/linear-transform.js 讀取） */
     :root { --lt-i: #dc2626; --lt-j: #15803d; --lt-k: #0369a1; --lt-pos: #4f46e5; --lt-neg: #e11d48; --lt-x: #7c3aed; --lt-ax: #c026d3; --lt-eig: #b45309; --lt-flag: #0f766e; --lt-target: #ea580c; }
@@ -283,22 +283,22 @@
       </ul>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/linear-transform-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/linear-transform.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="linear-transform"></script>
-  <script src="js/missions/linear-transform.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="linear-transform"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/linear-transform-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/linear-transform.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="linear-transform"></script>
+  <script src="js/missions/linear-transform.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="linear-transform"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

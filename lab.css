@@ -1418,3 +1418,34 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
   }
 }
+
+/* ---------- 11/14 改名「讓倪動手⚡高中全科模擬實驗室」：鎳元素格（28 Ni＝倪）、Astro Ni 的 A 和 I、四大類 ---------- */
+:root { --ai: #c2410c; --ni-top: #e8f1ef; --ni-bot: #cfe2dd; --ni-edge: #8fb5ab; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ai: #fb923c; --ni-top: #22333a; --ni-bot: #18262b; --ni-edge: #3f6a61; } }
+:root[data-theme="dark"] { --ai: #fb923c; --ni-top: #22333a; --ni-bot: #18262b; --ni-edge: #3f6a61; }
+.brand-row { display: flex; align-items: center; gap: 14px; }
+.brand-text { min-width: 0; }
+.ni-tile { flex: none; position: relative; display: grid; place-items: center; width: calc(66px * var(--fs, 1)); height: calc(66px * var(--fs, 1)); border-radius: 10px; border: 2px solid var(--ni-edge); background: linear-gradient(160deg, var(--ni-top), var(--ni-bot)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 3px 10px rgba(0, 0, 0, .10); color: var(--text); line-height: 1; }
+.ni-z { position: absolute; top: 5px; left: 7px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ni-sym { font-size: calc(29px * var(--fs, 1)); font-weight: 800; letter-spacing: -.01em; margin-top: 2px; }
+.ni-zh { position: absolute; bottom: 5px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+.brand-ai { letter-spacing: .06em; }
+.brand-ai .ai { color: var(--ai); font-weight: 800; }
+.top .brand-row h1 { margin: 2px 0 0; }
+@media (max-width: 420px) { .ni-tile { width: calc(56px * var(--fs, 1)); height: calc(56px * var(--fs, 1)); } .ni-sym { font-size: calc(24px * var(--fs, 1)); } .brand-row { gap: 11px; } }
+.domain-nav .dgroup { grid-column: 1 / -1; margin: 10px 0 -2px; font-size: calc(15px * var(--fs, 1)); font-weight: 800; letter-spacing: .08em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.domain-nav .dgroup::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.domain-nav .dgroup:first-child { margin-top: 0; }
+.domain-soon { display: flex; flex-direction: column; justify-content: center; gap: 4px; min-height: 64px; padding: 12px 16px; border: 1.5px dashed var(--border); border-radius: 14px; color: var(--muted); font-size: calc(13.5px * var(--fs, 1)); line-height: 1.45; }
+.domain-soon-t { font-weight: 800; font-size: calc(13px * var(--fs, 1)); letter-spacing: .06em; }
+.dgroup-band { margin: 34px 0 -6px; font-size: calc(15px * var(--fs, 1)); font-weight: 800; letter-spacing: .1em; color: var(--muted); display: flex; align-items: center; gap: 10px; }
+.dgroup-band::before, .dgroup-band::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.ai-egg { display: inline-block; margin-top: 6px; }
+/* 手機寬度：標誌與 Astro Ni Lab 一列（右邊留給登入與齒輪），主標題換到下面整行（11/14 英文與特大字會被按鈕擠窄） */
+@media (max-width: 560px) {
+  .top > .brand-row, .has-account .top > .brand-row { padding-right: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 11px; row-gap: 8px; align-items: center; }
+  .brand-row .brand-text { display: contents; }
+  .brand-row .brand-ai { padding-right: var(--head-reserve, 150px); }
+  .top .brand-row h1 { grid-column: 1 / -1; margin: 0; }
+}
+.ni-zh::after { content: "倪"; } html[lang="en"] .ni-zh::after { content: none; } /* 英文模式只留 28 Ni；用 CSS 畫字，英文檢查才不會抓到中文 */

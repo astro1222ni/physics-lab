@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Hubble’s Law and the Age of the Universe | Astro Ni Science Lab">哈伯定律與宇宙年齡｜Astro Ni 科學實驗室</title>
+  <title data-en="Hubble’s Law and the Age of the Universe | Astro Ni Lab">哈伯定律與宇宙年齡｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="星系彼此遠離，越遠的跑得越快。看空間本身怎麼拉長、把光的波長一起拉長；用造父變星和超新星量距離，畫出你自己的哈伯圖；再調配物質與暗能量，算出宇宙有多老。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/hubble-expansion.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/hubble-expansion.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/hubble-expansion.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="哈伯定律與宇宙年齡｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="哈伯定律與宇宙年齡｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="星系彼此遠離，越遠的跑得越快。看空間本身怎麼拉長、把光的波長一起拉長；用造父變星和超新星量距離，畫出你自己的哈伯圖；再調配物質與暗能量，算出宇宙有多老。">
   <meta property="og:url" content="https://lab.astroni.org/hubble-expansion.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/hubble-expansion.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"哈伯定律與宇宙年齡","alternateName":"Hubble’s Law and the Age of the Universe","description":"星系彼此遠離，越遠的跑得越快。看空間本身怎麼拉長、把光的波長一起拉長；用造父變星和超新星量距離，畫出你自己的哈伯圖；再調配物質與暗能量，算出宇宙有多老。","url":"https://lab.astroni.org/hubble-expansion.html","image":"https://lab.astroni.org/img/og/hubble-expansion.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","星系與宇宙（Galaxies and the Universe）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"哈伯定律與宇宙年齡","alternateName":"Hubble’s Law and the Age of the Universe","description":"星系彼此遠離，越遠的跑得越快。看空間本身怎麼拉長、把光的波長一起拉長；用造父變星和超新星量距離，畫出你自己的哈伯圖；再調配物質與暗能量，算出宇宙有多老。","url":"https://lab.astroni.org/hubble-expansion.html","image":"https://lab.astroni.org/img/og/hubble-expansion.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","星系與宇宙（Galaxies and the Universe）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     /* 哈伯定律頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
     :root {
@@ -211,22 +211,22 @@
       <p data-en-html="Expanding universe: 49 galaxies on a jittered grid, repeated in every direction; the expansion is uniform (\(\dot a\) constant, so \(H = H_0/a\) with \(H_0 = 70\)), and the light is integrated exactly, \(d\chi/dt = c/a\). Measuring: 7 real galaxies (distances and heliocentric velocities: representative values from NED) and 21 simulated galaxies in a universe with \(H_0 = 70\) and peculiar velocities of about 250 km/s; every measurement has a repeatable random error (Cepheids 0.15 mag, supernovae 0.12 mag, Hubble’s 1929 scale 0.35 mag and 7.2 times too close). All galaxies have \(z < 0.03\), where \(v = cz\) is accurate to about 2 %. Age: the Friedmann equation with radiation \(\Omega_r = 4.18\times10^{-5}/h^2\); the age is integrated exactly and \(a(t)\) is integrated with Runge–Kutta from \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\).">膨脹的宇宙：49 個星系排在微微錯開的格子上，往四面八方重複；膨脹是等速的（\(\dot a\) 固定，所以 \(H = H_0/a\)，\(H_0 = 70\)），光的路徑精確積分 \(d\chi/dt = c/a\)。量哈伯常數：7 個真實星系（距離與日心速度用 NED 的代表值）和 21 個模擬星系，模擬的宇宙 \(H_0 = 70\)、本動速度約 250 km/s；每次量測都有可重現的亂數誤差（造父變星 0.15 星等、超新星 0.12 星等、哈伯 1929 年的尺度 0.35 星等而且近了 7.2 倍）。所有星系 \(z < 0.03\)，\(v = cz\) 的誤差約 2 % 以內。宇宙年齡：Friedmann 方程含輻射 \(\Omega_r = 4.18\times10^{-5}/h^2\)；年齡精確積分，\(a(t)\) 用 Runge–Kutta 解 \(\ddot a/a = -\tfrac{H_0^2}{2}\left(2\Omega_r a^{-4} + \Omega_m a^{-3} - 2\Omega_\Lambda\right)\)。</p>
     </section>
 
-    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Science Lab</a> · All calculations run in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/hubble-expansion-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/hubble-expansion.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="hubble-expansion"></script>
-  <script src="js/missions/hubble-expansion.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="hubble-expansion"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/hubble-expansion-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/hubble-expansion.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="hubble-expansion"></script>
+  <script src="js/missions/hubble-expansion.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="hubble-expansion"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

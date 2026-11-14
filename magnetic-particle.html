@@ -2,9 +2,9 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611132254"></script>
+  <script src="js/settings.js?v=202611140858"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title data-en="Charged Particles in a Magnetic Field | Astro Ni Science Lab">帶電粒子在磁場中運動｜Astro Ni 科學實驗室</title>
+  <title data-en="Charged Particles in a Magnetic Field | Astro Ni Lab">帶電粒子在磁場中運動｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
   <meta name="description" content="調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/magnetic-particle.html">
@@ -12,8 +12,8 @@
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/magnetic-particle.html?lang=en">
   <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/magnetic-particle.html">
   <meta property="og:type" content="website">
-  <meta property="og:site_name" content="Astro Ni 科學實驗室">
-  <meta property="og:title" content="帶電粒子在磁場中運動｜Astro Ni 科學實驗室">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="帶電粒子在磁場中運動｜讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:description" content="調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。">
   <meta property="og:url" content="https://lab.astroni.org/magnetic-particle.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/magnetic-particle.jpg">
@@ -24,10 +24,10 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"帶電粒子在磁場中運動","alternateName":"Charged Particles in a Magnetic Field","description":"調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。","url":"https://lab.astroni.org/magnetic-particle.html","image":"https://lab.astroni.org/img/og/magnetic-particle.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"Astro Ni 科學實驗室","alternateName":"Astro Ni Science Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"帶電粒子在磁場中運動","alternateName":"Charged Particles in a Magnetic Field","description":"調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。","url":"https://lab.astroni.org/magnetic-particle.html","image":"https://lab.astroni.org/img/og/magnetic-particle.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611132254">
+  <link rel="stylesheet" href="lab.css?v=202611140858">
   <style>
     .slider input[type="range"] { height: 28px; margin: 0; } /* 和其他實驗頁一致，手指好抓 */
     /* 2D 畫布的光影代號（本頁專用，淺色＋深色；由 js/magnetic-particle.js 讀取）：磁場符號圓盤的內側亮邊。
@@ -280,22 +280,22 @@
       </ul>
     </section>
 
-    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Science Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">Astro Ni 科學實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
+    <footer class="site" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Astro Ni Lab&lt;/a&gt; · Everything is computed in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
   </div>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611132254"></script>
-  <script src="js/magnetic-particle-core.js?v=202611132254"></script>
-  <script src="js/sound.js?v=202611132254"></script>
-  <script src="js/numinput.js?v=202611132254"></script>
-  <script src="js/drawkit.js?v=202611132254"></script>
-  <script src="js/keys.js?v=202611132254"></script>
-  <script src="js/magnetic-particle.js?v=202611132254"></script>
-  <script src="js/firebase-config.js?v=202611132254"></script>
-  <script src="js/missions.js?v=202611132254" data-module="magnetic-particle"></script>
-  <script src="js/missions/magnetic-particle.js?v=202611132254"></script>
-  <script src="js/stats.js?v=202611132254" data-module="magnetic-particle"></script>
-  <script src="js/comments.js?v=202611132254"></script>
+  <script src="js/math.js?v=202611140858"></script>
+  <script src="js/magnetic-particle-core.js?v=202611140858"></script>
+  <script src="js/sound.js?v=202611140858"></script>
+  <script src="js/numinput.js?v=202611140858"></script>
+  <script src="js/drawkit.js?v=202611140858"></script>
+  <script src="js/keys.js?v=202611140858"></script>
+  <script src="js/magnetic-particle.js?v=202611140858"></script>
+  <script src="js/firebase-config.js?v=202611140858"></script>
+  <script src="js/missions.js?v=202611140858" data-module="magnetic-particle"></script>
+  <script src="js/missions/magnetic-particle.js?v=202611140858"></script>
+  <script src="js/stats.js?v=202611140858" data-module="magnetic-particle"></script>
+  <script src="js/comments.js?v=202611140858"></script>
 </body>
 </html>

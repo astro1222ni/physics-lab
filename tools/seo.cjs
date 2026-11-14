@@ -49,12 +49,12 @@ const labs = [];
 }
 if (!labs.length) { console.error('首頁找不到已上線的實驗卡片'); process.exit(1); }
 
-const SITE_ZH = 'Astro Ni 科學實驗室', SITE_EN = 'Astro Ni Science Lab';
+const SITE_ZH = '讓倪動手⚡高中全科模擬實驗室', SITE_EN = 'Astro Ni Lab';
 const pages = [
-  { slug: 'index', url: SITE, title: SITE_ZH + '｜高中互動模擬實驗', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '給高中生的互動模擬實驗室。', kind: 'home' },
-  { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 Astro Ni 科學實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。', kind: 'page' },
+  { slug: 'index', url: SITE, title: SITE_ZH + '｜Astro Ni', desc: (index.match(/<meta name="description" content="([^"]*)"/) || [])[1] ? ent(index.match(/<meta name="description" content="([^"]*)"/)[1]) : '給高中生的互動模擬實驗室。', kind: 'home' },
+  { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。', kind: 'page' },
   { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。', kind: 'page' },
-  { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: 'Astro Ni 科學實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
+  { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: '讓倪動手⚡高中全科模擬實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
 ].concat(labs.map(l => ({ slug: l.slug, url: SITE + l.slug + '.html', title: l.zh + '｜' + SITE_ZH, desc: l.dzh, kind: 'lab', lab: l })));
 
 function block(pg) {
@@ -203,7 +203,7 @@ if (NO_OG) process.exit(0);
     if (!FORCE && vers[l.slug] === v && fs.existsSync(path.join(outDir, l.slug + '.jpg'))) continue;
     const zhTitle = ogTitle(l.zh);
     const html = `<style>${CSS}</style><div class="card" style="--c:${TOKENS[l.branch.id] || '#196558'}">
-      <div class="brand">ASTRO NI SCIENCE LAB</div>
+      <div class="brand">ASTRO NI LAB・讓倪動手</div>
       <div class="text"><span class="tag">${esc(l.branch.zh)}・${esc(l.chapter.zh)}</span><h1>${zhTitle}</h1><h2>${esc(l.en)}</h2></div>
       <div class="shot"><img src="${dataUrl(f)}"></div>
       <div class="foot">互動模擬・免登入・繁體／简体／English</div></div>`;
@@ -221,8 +221,8 @@ if (NO_OG) process.exit(0);
     const v = crypto.createHash('sha1').update(pick.map(l => l.slug + (vers[l.slug] || '')).join()).digest('hex').slice(0, 10);
     if (FORCE || vers.index !== v || !fs.existsSync(path.join(outDir, 'index.jpg'))) {
       const html = `<style>${CSS}.text{top:150px;width:470px}h1{font-size:60px}</style><div class="card" style="--c:#196558">
-        <div class="brand">ASTRO NI SCIENCE LAB</div>
-        <div class="text"><h1>Astro Ni<br>科學實驗室</h1><h2>高中互動模擬實驗・${labs.length} 個<br>${labs.length} interactive labs</h2></div>
+        <div class="brand">ASTRO NI LAB・讓倪動手</div>
+        <div class="text"><h1>讓倪動手⚡<br>高中全科<br>模擬實驗室</h1><h2>${labs.length} 個互動模擬實驗<br>${labs.length} interactive labs</h2></div>
         <div class="grid">${pick.map(l => `<img src="${dataUrl(thumb(l.slug))}">`).join('')}</div>
         <div class="foot">lab.astroni.org</div></div>`;
       await page.setContent(html, { waitUntil: 'load' });
