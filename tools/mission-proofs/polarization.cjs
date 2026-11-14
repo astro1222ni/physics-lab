@@ -66,12 +66,16 @@ assert.equal(missions.length, 20);
 assert.equal(missions.filter(m => m.hidden).length, 10);
 assert.ok(missions.filter(m => m.hidden && m.level >= 7).length >= 3);
 assert.deepEqual(award([filters([0, 30]), filters([0, 45, 30]), reflect(1, 1.5, 42)]), [], '預設讀數不應觸發');
+assert.deepEqual(award([filters([0, 30]), filters([0, 45, 30]), reflect(1, 1.5, 42)], 'state-changed'), [],
+  '依序切換預設模式不應誤觸');
 const combinedSequence = [];
 for (const m of missions) {
   assert.doesNotMatch((m.hidden ? m.riddle.en : m.title.en + m.desc.en), /\p{Script=Han}/u);
   const sequence = cases[m.id.slice(slug.length + 1)];
   if (sequence.length > 1) assert.deepEqual(award(sequence.slice(0, 1)), [], '比較題需要第二次量測');
   assert.deepEqual(award(sequence), [m.id], '只完成目標任務 ' + m.id);
+  assert.deepEqual(award(sequence, 'state-changed'), m.hidden ? [m.id] : [],
+    '狀態事件只判定目標隱藏任務 ' + m.id);
   assert.deepEqual(award(sequence, 'automatic'), []);
   assert.deepEqual(award([...combinedSequence, ...sequence.slice(0, -1)]), award(combinedSequence),
     '先前任務的讀數不可替代 ' + m.id + ' 的最後一次量測');

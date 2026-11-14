@@ -29,6 +29,7 @@
   let view;
   let lastLegendKey = '';
   let lastReadingTime = -Infinity;
+  let reportedSteady = false;
   let thermalPaletteVersion = -1;
   let thermalPalette;
   let arrowScale;
@@ -75,6 +76,7 @@
   function resetModel() {
     stop();
     $('recordNote').hidden = true;
+    reportedSteady = false;
     const length = val('length') / 100;
     if (mode === 'bimetal') {
       const { a, b } = selected();
@@ -589,8 +591,17 @@
     const dt = last ? Math.min((now - last) / 1000, 1 / 30) : 0;
     last = now;
     C.advance(run, run.time + dt * speed);
-    if (run.time >= run.duration) { stop(); render(); return; }
-    if (now - lastRender >= (view.active ? 100 : 32)) { render(); lastRender = now; }
+    const finished = run.time >= run.duration;
+    if (finished || now - lastRender >= (view.active ? 100 : 32)) {
+      if (finished) stop();
+      render();
+      lastRender = now;
+      if (!reportedSteady && run.time > 0 && profiles.every(p => p.maxGap <= 0.5)) {
+        reportedSteady = true;
+        reportMission('state-changed');
+      }
+    }
+    if (finished) return;
     raf = requestAnimationFrame(tick);
   }
 
@@ -598,6 +609,16 @@
     if (next === mode) return;
     mode = next;
     resetModel();
+    reportMission('state-changed');
+  }
+
+  function reportMission(event) {
+    if (!window.LabMission || (window.LabShare && window.LabShare.restoring)) return;
+    const data = mode === 'bimetal'
+      ? { mode, ...selected(), length: val('length') / 100,
+        thickness: val('thickness') / 1000, deltaT: val('deltaT'), ...strip }
+      : C.measureConduction(run);
+    window.LabMission.emit(event, data);
   }
 
   for (const [id, slot] of [['materialA', 'a'], ['materialB', 'b']]) {
@@ -606,31 +627,45 @@
       button.type = 'button'; button.id = id + '-' + key;
       button.dataset.material = key;
       button.textContent = names(key);
-      button.addEventListener('click', () => { selected()[slot] = key; resetModel(); });
+      button.addEventListener('click', () => {
+        if (selected()[slot] === key) return;
+        selected()[slot] = key;
+        resetModel();
+        reportMission('state-changed');
+      });
       $(id).append(button);
     }
   }
-  Object.keys(controls).forEach(id => $(id).addEventListener('input', resetModel));
+  Object.keys(controls).forEach(id => {
+    $(id).addEventListener('input', resetModel);
+    $(id).addEventListener('change', () => reportMission('state-changed'));
+  });
   modeButtons.forEach(button => button.addEventListener('click', () => setMode(button.dataset.mode)));
   speedButtons.forEach(button => button.addEventListener('click', () => { speed = Number(button.dataset.speed); updateSettings(); render(); }));
   $('play').addEventListener('click', () => {
-    if (playing) stop();
+    const paused = playing;
+    if (paused) stop();
     else {
       if (run.time >= run.duration) resetModel();
       playing = true; raf = requestAnimationFrame(tick);
     }
     render();
+    if (paused) reportMission('state-changed');
   });
   $('reset').addEventListener('click', resetModel);
-  $('steady').addEventListener('click', () => { stop(); C.advance(run, run.duration); render(); });
+  $('steady').addEventListener('click', () => {
+    stop();
+    C.advance(run, run.duration);
+    render();
+    if (!reportedSteady) {
+      reportedSteady = true;
+      reportMission('state-changed');
+    }
+  });
   $('record').addEventListener('click', () => {
-    const data = mode === 'bimetal'
-      ? { mode, ...selected(), length: val('length') / 100,
-        thickness: val('thickness') / 1000, deltaT: val('deltaT'), ...strip }
-      : C.measureConduction(run);
     $('recordNote').textContent = T('已記錄目前讀數。', 'Current readings recorded.');
     $('recordNote').hidden = false;
-    if (window.LabMission) window.LabMission.emit('recorded', data);
+    reportMission('recorded');
   });
   document.addEventListener('visibilitychange', () => { last = 0; });
   window.addEventListener('lab:themechange', render);

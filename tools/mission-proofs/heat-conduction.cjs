@@ -48,7 +48,7 @@ const cases = {
   7: [rod({ mode: 'parallel', a: 'brass', cm2: 6, share: 31.2, left: 80 })],
   8: [rod({ mode: 'parallel', a: 'aluminum', cm2: 2.52, share: 40.5, left: 90, right: 10 })],
   9: [rod({ share: 60 }), rod({ a: 'steel', b: 'copper', share: 40 })],
-  10: [strip('aluminum', 'steel', 40, 2.59, 100)],
+  10: [strip('aluminum', 'steel', 40, 2.19, 100)],
   h1: [rod({ b: 'brass', left: 80, right: 80 }, 2)],
   h2: [strip('brass', 'brass', 30, 1.5, -60)],
   h3: [rod({ mode: 'parallel', b: 'glass' })],
@@ -75,12 +75,16 @@ assert.equal(missions.filter(m => m.hidden).length, 10);
 assert.ok(missions.filter(m => m.hidden && m.level >= 7).length >= 3);
 assert.deepEqual(award([rod({}, 0), rod({}, 10)]), [], '預設讀數不應觸發');
 assert.deepEqual(award([rod({}, 0), rod({}, 200)], 'automatic'), [], '自動播放不應觸發');
+assert.deepEqual(award([rod({}, 0), rod({}, 200), rod(), rod({ mode: 'parallel' }),
+  strip('aluminum', 'steel', 30, 1.5, 80)], 'state-changed'), [], '預設參數切換與播放到穩態均不應誤觸');
 const combinedSequence = [];
 for (const m of missions) {
   assert.doesNotMatch((m.hidden ? m.riddle.en : m.title.en + m.desc.en), /\p{Script=Han}/u);
   const sequence = cases[m.id.slice(slug.length + 1)];
   if (sequence.length > 1) assert.deepEqual(award(sequence.slice(0, 1)), [], '比較題需要第二次量測');
   assert.deepEqual(award(sequence), [m.id], '只完成目標任務 ' + m.id);
+  assert.deepEqual(award(sequence, 'state-changed'), m.hidden ? [m.id] : [],
+    '狀態事件只判定目標隱藏任務 ' + m.id);
   assert.deepEqual(award(sequence, 'automatic'), []);
   assert.deepEqual(award([...combinedSequence, ...sequence.slice(0, -1)]), award(combinedSequence),
     '先前任務的讀數不可替代 ' + m.id + ' 的最後一次量測');

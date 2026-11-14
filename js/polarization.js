@@ -469,6 +469,11 @@
     onCanvas(graph, drawChart);
   }
 
+  function reportMission(event) {
+    if (!window.LabMission || (window.LabShare && window.LabShare.restoring)) return;
+    window.LabMission.emit(event, { mode, ...state });
+  }
+
   graph.addEventListener('click', event => {
     const { width, left } = graph.getBoundingClientRect();
     const u = Math.max(0, Math.min(1, (event.clientX - left - 38) / (width - 56)));
@@ -476,18 +481,46 @@
     N.set($(id), u * (mode === 'reflection' ? 90 : 180));
   });
 
-  modeButtons.forEach(b => b.addEventListener('click', () => { mode = b.dataset.mode; update(); }));
-  $('sourceUnpolarized').addEventListener('click', () => { unpolarized = true; update(); });
-  $('sourceLinear').addEventListener('click', () => { unpolarized = false; update(); });
-  ['angleA', 'angleB', 'angleC', 'sourceAngle', 'n1', 'n2', 'incident', 'reflectionAnalyzer', 'components', 'brewsterMark']
-    .forEach(id => $(id).addEventListener('input', update));
+  modeButtons.forEach(b => b.addEventListener('click', () => {
+    if (mode === b.dataset.mode) return;
+    mode = b.dataset.mode;
+    update();
+    reportMission('state-changed');
+  }));
+  [['sourceUnpolarized', true], ['sourceLinear', false]].forEach(([id, next]) => {
+    $(id).addEventListener('click', () => {
+      if (unpolarized === next) return;
+      unpolarized = next;
+      update();
+      reportMission('state-changed');
+    });
+  });
+  ['angleA', 'angleB', 'angleC', 'sourceAngle', 'n1', 'n2', 'incident', 'reflectionAnalyzer'].forEach(id => {
+    $(id).addEventListener('input', update);
+    $(id).addEventListener('change', () => {
+      // The two values of a media preset represent one committed setting.
+      if (!applyingPreset) reportMission('state-changed');
+    });
+  });
+  ['components', 'brewsterMark'].forEach(id => $(id).addEventListener('input', update));
+  let applyingPreset = false;
   [['airGlass', 1, 1.5], ['glassAir', 1.5, 1]].forEach(([id, n1, n2]) => {
-    $(id).addEventListener('click', () => { N.set($('n1'), n1); N.set($('n2'), n2); });
+    $(id).addEventListener('click', () => {
+      if (val('n1') === n1 && val('n2') === n2) return;
+      applyingPreset = true;
+      try {
+        N.set($('n1'), n1);
+        N.set($('n2'), n2);
+      } finally {
+        applyingPreset = false;
+      }
+      reportMission('state-changed');
+    });
   });
   $('record').addEventListener('click', () => {
     $('recordNote').textContent = T('已記錄目前讀數。', 'Current readings recorded.');
     $('recordNote').hidden = false;
-    if (window.LabMission) window.LabMission.emit('recorded', { mode, ...state });
+    reportMission('recorded');
   });
   function drawScene2D() {
     const width = scene.clientWidth;

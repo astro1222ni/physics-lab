@@ -9,7 +9,7 @@
   // 常溫下的近似值。k：W/(m·K)，rho：kg/m³，c：J/(kg·K)，alpha：1/K。
   const materials = {
     copper: { zh: '銅', en: 'Copper', k: 390, rho: 8960, c: 385, alpha: 17e-6 },
-    aluminum: { zh: '鋁', en: 'Aluminum', k: 220, rho: 2700, c: 900, alpha: 25e-6 },
+    aluminum: { zh: '鋁', en: 'Aluminum', k: 220, rho: 2700, c: 900, alpha: 23e-6 },
     steel: { zh: '鋼', en: 'Steel', k: 50, rho: 7850, c: 450, alpha: 12e-6 },
     brass: { zh: '黃銅', en: 'Brass', k: 110, rho: 8500, c: 380, alpha: 19e-6 },
     glass: { zh: '玻璃', en: 'Glass', k: 1, rho: 2500, c: 840, alpha: 9e-6 }
@@ -163,7 +163,8 @@
   function expansion(a, b, length, thickness, deltaT) {
     const e1 = materials[a].alpha * deltaT;
     const e2 = materials[b].alpha * deltaT;
-    // 等厚、等楊氏模數、自由彎曲。正曲率表示朝下層（B）彎。
+    // Timoshenko 模型的等厚、等模數形式。假設兩片楊氏係數相等、可自由彎曲。
+    // 正曲率表示朝下層（B）彎。
     const curvature = 1.5 * (e1 - e2) / thickness;
     const arcLength = length * (1 + (e1 + e2) / 2);
     return { freeA: length * e1, freeB: length * e2, curvature, arcLength,

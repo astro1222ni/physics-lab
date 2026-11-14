@@ -17,7 +17,8 @@
     id: slug + '-' + number, level, title: { zh, en }, desc: { zh: descZh, en: descEn }, check: check(criterion)
   });
   const hidden = (number, level, zh, en, criterion) => ({
-    id: slug + '-h' + number, level, hidden: true, riddle: { zh, en }, check: check(criterion)
+    id: slug + '-h' + number, level, hidden: true, riddle: { zh, en },
+    check: (ev, mem) => (ev.type === 'recorded' || ev.type === 'state-changed') && criterion(ev.data, mem)
   });
 
   window.LabMission.register(slug, [

@@ -62,8 +62,8 @@ for (const mode of ['series', 'parallel']) {
 {
   const strip = C.expansion('aluminum', 'steel', 0.30, 0.0015, 80);
   const cool = C.expansion('aluminum', 'steel', 0.30, 0.0015, -80);
-  near(strip.freeA, 0.30 * 25e-6 * 80, 1e-12, '線膨脹');
-  near(strip.curvature, 1.5 * (25 - 12) * 1e-6 * 80 / 0.0015, 1e-12, '等厚等模數曲率');
+  near(strip.freeA, 0.30 * 23e-6 * 80, 1e-12, '線膨脹');
+  near(strip.curvature, 1.5 * (23 - 12) * 1e-6 * 80 / 0.0015, 1e-12, '等厚等模數曲率');
   assert.ok(strip.tip.y > 0 && cool.tip.y < 0, '加熱朝低膨脹層彎，冷卻轉向');
   assert.equal(C.expansion('steel', 'steel', 0.3, 0.0015, 100).tip.y, 0, '相同材料不彎');
   assert.equal(C.expansion('aluminum', 'steel', 0.3, 0.0015, 0).tip.y, 0, '零溫差不彎');
