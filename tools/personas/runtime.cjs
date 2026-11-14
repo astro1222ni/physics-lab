@@ -5,9 +5,11 @@ const path = require('node:path');
 const os = require('node:os');
 const { spawn } = require('node:child_process');
 const { setTimeout: sleep } = require('node:timers/promises');
+const { pathToFileURL } = require('node:url');
 
 const LOCK_FILE = 'G:/physics-lab-wt/規劃/音樂-工具/browser-lock.cjs';
 const LOCK_DIR = 'G:/physics-lab-wt/music-browser.lock';
+const LOCK_PRELOAD = path.join(__dirname, 'lock-console.cjs');
 const CHROME = 'C:/Program Files/Google/Chrome/Application/chrome.exe';
 const PAGE_WORKER_MAX_MS = 16 * 60_000;
 const CHILD_DEADLINE_MS = PAGE_WORKER_MAX_MS + 44 * 60_000;
@@ -27,7 +29,8 @@ function lockAge(token) {
 function childStatus(lock, CLI, token) {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(lock)) { reject(new Error('找不到共用瀏覽器鎖：' + lock)); return; }
-    const child = spawn(process.execPath, [lock, 'run', '--', process.execPath, CLI, '--page-worker=' + token], {
+    const preload = pathToFileURL(LOCK_PRELOAD).href;
+    const child = spawn(process.execPath, ['--import=' + preload, lock, 'run', '--', process.execPath, CLI, '--page-worker=' + token], {
       stdio: 'inherit', windowsHide: true
     });
     const expires = setTimeout(() => reject(new Error('等候共用瀏覽器鎖或單頁結果超時')), CHILD_DEADLINE_MS);

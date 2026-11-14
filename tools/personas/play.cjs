@@ -62,12 +62,13 @@ class Record {
 
   unshot = new Set();
 
-  async snapshot(driver, label) {
+  async snapshot(driver, label, element) {
     if (this.config.noShots || this.shots >= 24) return null;
     this.shots++;
     const dir = path.join(this.dir, 'personas', this.config.id);
     const filename = [this.config.slug, this.config.persona, label, this.shots].join('-') + '.png';
     try {
+      if (element) await driver.locator(element).scrollIntoViewIfNeeded({ timeout: 1400 });
       await deadline(driver.page.screenshot({ path: path.join(dir, filename), timeout: 3000 }), 3800, '截圖');
       return ['personas', this.config.id, filename].join('/');
     } catch { return null; }
@@ -77,8 +78,18 @@ class Record {
     if (!this.unshot.size) return;
     const items = [...this.unshot];
     this.unshot.clear();
-    const shot = await this.snapshot(driver, 'step-' + this.step);
-    for (const item of items) item.shot = shot;
+    const home = await driver.evaluate(() => [scrollX, scrollY]).catch(() => null);
+    const shots = new Map();
+    for (const item of items) {
+      const id = item.kind === 'slider' ? /（#([a-zA-Z0-9_-]+)）/.exec(item.msg)?.[1] : null;
+      const selector = id ? '[id="' + id + '"]' : null;
+      if (!shots.has(selector)) shots.set(selector, await this.snapshot(driver, 'step-' + this.step, selector));
+      item.shot = shots.get(selector);
+    }
+    if (home && shots.size && [...shots.keys()].some(Boolean)) {
+      // 取證不應改變下一次觸控的起始捲動位置。
+      await driver.evaluate(([x, y]) => scrollTo({ left: x, top: y, behavior: 'instant' }), home).catch(() => {});
+    }
   }
 
   async updateStars(driver) {
