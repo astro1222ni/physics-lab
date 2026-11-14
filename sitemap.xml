@@ -153,14 +153,6 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/specific-heat.html"/>
   </url>
   <url>
-    <loc>https://lab.astroni.org/heat-conduction.html</loc>
-    <lastmod>2026-11-14</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/heat-conduction.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/heat-conduction.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/heat-conduction.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/heat-conduction.html"/>
-  </url>
-  <url>
     <loc>https://lab.astroni.org/ideal-gas.html</loc>
     <lastmod>2026-11-14</lastmod>
     <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/ideal-gas.html"/>
@@ -255,14 +247,6 @@
     <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/thin-film.html?lang=zh-Hans"/>
     <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/thin-film.html?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/thin-film.html"/>
-  </url>
-  <url>
-    <loc>https://lab.astroni.org/polarization.html</loc>
-    <lastmod>2026-11-14</lastmod>
-    <xhtml:link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/polarization.html"/>
-    <xhtml:link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/polarization.html?lang=zh-Hans"/>
-    <xhtml:link rel="alternate" hreflang="en" href="https://lab.astroni.org/polarization.html?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/polarization.html"/>
   </url>
   <url>
     <loc>https://lab.astroni.org/electric-field.html</loc>

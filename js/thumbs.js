@@ -187,9 +187,7 @@
     "circle-of-fifths": "fcc535bc",
     "beats-tuning": "aafd9bf1",
     "reverb-room": "d00a0ef5",
-    "adsr-envelope": "7de08115",
-    "heat-conduction": "80ce7c3a",
-    "polarization": "c8ed0eb9"
+    "adsr-envelope": "7de08115"
   };
   /* VERSIONS-END */
 
