@@ -1449,3 +1449,4 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   .top .brand-row h1 { grid-column: 1 / -1; margin: 0; }
 }
 .ni-zh::after { content: "倪"; } html[lang="en"] .ni-zh::after { content: none; } /* 英文模式只留 28 Ni；用 CSS 畫字，英文檢查才不會抓到中文 */
+.related .related-cross { border-style: dashed; } /* 跨科連結的卡片用虛線框，和同科的區分（11/14） */

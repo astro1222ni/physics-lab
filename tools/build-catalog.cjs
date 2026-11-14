@@ -27,8 +27,10 @@ for (const m of html.matchAll(/<section class="branch" id="([^"]+)"[\s\S]*?<h2([
 for (const m of html.matchAll(/<section class="chapter( solo)?[^"]*" id="([^"]+)"[^>]*>\s*(?:<h3 class="chapter-head"[^>]*><span data-en="([^"]*)">([^<]*)<\/span>)?/g)) {
   marks.push({ at: m.index, kind: 'chapter', id: m[2], en: m[3] ? unesc(m[3]) : null, zh: m[4] ? m[4].trim() : null });
 }
-for (const m of html.matchAll(/<a class="module live" href="([^"]+)\.html" data-module="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)) {
-  const body = m[3];
+const KW = {};
+for (const m of html.matchAll(/<a class="module live" href="([^"]+)\.html" data-module="([^"]+)"([^>]*)>([\s\S]*?)<\/a>/g)) {
+  const body = m[4];
+  const kw = m[3].match(/data-keywords="([^"]*)"/); if (kw) KW[m[2]] = unesc(kw[1]);
   const h = body.match(/<h4 data-en="([^"]*)">([\s\S]*?)<\/h4>/);
   const p = body.match(/<p data-en="([^"]*)">([\s\S]*?)<\/p>/);
   marks.push({ at: m.index, kind: 'card', slug: m[2], en: h ? unesc(h[1]) : '', zh: h ? strip(h[2]) : m[2], den: p ? unesc(p[1]) : '', dzh: p ? strip(p[2]) : '' });
@@ -48,6 +50,43 @@ for (const k of marks) {
       c: chapter ? chapter.id : '', czh: chapter ? chapter.zh : '', cen: chapter ? chapter.en : ''
     });
   }
+}
+
+// 跨科相關實驗（11/14 站長要「相關實驗推薦」）：比對英文標題與說明的字、首頁卡片的關鍵字，
+// 依稀有程度加權，挑一個不同科目、分數夠高的實驗放在 x（實驗頁「相關實驗」的跨科卡片）
+{
+  const STOP = new Set('about above after again against their there these those which while where would could should other every through between using with from into your this that what when they them then than have will each such more most some very just over under also both only like make makes made watch change changes changing shows show compare learn their simulation interactive experiment explore'.split(' '));
+  const toks = x => {
+    const t = new Set();
+    (x.en + ' ' + (x.den || '')).toLowerCase().replace(/[^a-z\- ]/g, ' ').split(/\s+/).forEach(w => { w = w.replace(/ies$/, 'y').replace(/s$/, ''); if (w.length >= 5 && !STOP.has(w)) t.add('e:' + w); });
+    (KW[x.s] || '').split(/[\s,，、]+/).forEach(w => { if (w.length >= 2) t.add('k:' + w.toLowerCase()); });
+    return t;
+  };
+  const T = list.map(toks), df = {};
+  T.forEach(set => set.forEach(w => { df[w] = (df[w] || 0) + 1; }));
+  list.forEach((a, i) => {
+    let best = null;
+    list.forEach((b, j) => {
+      if (a.d === b.d) return;
+      let sc = 0, k = 0;
+      T[i].forEach(w => { if (T[j].has(w) && df[w] <= 12) { sc += Math.log(list.length / df[w]); if (w[0] === 'k') k++; } });
+      if (((k >= 2 && sc >= 12) || sc >= 30) && (!best || sc > best.sc)) best = { sc, s: b.s };
+    });
+    if (best) a.x = best.s;
+  });
+  // 手動指定（自動配對不理想或漏掉的；值為 null 表示不放跨科卡片）
+  const FIX = {
+    'ph-scale': 'enzyme-kinetics', 'acid-base-titration': 'exp-log', 'projectile': 'quadratic-function',
+    'earthquake': 'gps-trilateration', 'chords': 'standing-waves', 'circle-of-fifths': 'temperament',
+    'quadratic-function': 'projectile', 'gps-trilateration': 'earthquake', 'loudness': 'exp-log'
+  };
+  const has = new Set(list.map(x => x.s));
+  Object.keys(FIX).forEach(k => {
+    const a = list.find(x => x.s === k); if (!a) return;
+    const v = FIX[k];
+    if (v === null) delete a.x;
+    else if (has.has(v) && list.find(x => x.s === v).d !== a.d) a.x = v;
+  });
 }
 
 // 每個實驗最後更新日期：相關檔案最近一次 commit 的日期；還沒 commit 的修改算今天

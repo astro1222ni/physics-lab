@@ -11,13 +11,13 @@
  * 4. 首頁：.site-qr（本站網址 QR）點一下放大，方便投影讓全班掃描。
  * 5. 數據表（table.data／.runs／.rec／.picks／.hist／.log／.pts，或加 data-export 屬性；說明區除外，data-export="no" 不加）下方自動加「下載 CSV」（UTF-8 BOM，Excel 開中文不亂碼）與「複製表格」（貼進試算表）。
  * 6. 分享視窗另有 LINE、Google Classroom、嵌入網頁（iframe，網址加 ?embed=1：只留實驗本身，由 settings.js 加上 html.lab-embed）。
- * 7. 相關實驗：實驗頁捲到說明區附近時載入 js/catalog.js，在說明區後面列出 3 個相關實驗（同章 → 同分支 → 首頁相鄰），頁尾加「最後更新」日期。
+ * 7. 相關實驗：實驗頁捲到說明區附近時載入 js/catalog.js，在說明區後面列出 3 個相關實驗（同章 → 同分支 → 首頁相鄰），再加 1 個跨科實驗（目錄的 x 欄，11/14），頁尾加「最後更新」日期。
  * 8. 列印：深色模式自動換成淺色再印（畫布也重畫），頁首多一行班級、座號、姓名、日期的空格（不儲存）。
  */
 (function () {
   'use strict';
   // 目錄 catalog.js 的科目代號（首頁科目區塊的 id）→ 相關實驗標籤前面的科目名；物理不加
-  const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'], math: ['數學', 'Mathematics'] };
+  const DOMAIN_NAMES = { chemistry: ['化學', 'Chemistry'], biology: ['生物', 'Biology'], earth: ['地球科學', 'Earth Science'], math: ['數學', 'Mathematics'], info: ['資訊科技', 'Computer Science'], geog: ['地理', 'Geography'], music: ['音樂', 'Music'] };
   const S = window.LabSettings;
   const T = function (zh, en) { return S ? S.t(zh, en) : zh; };
   const ver = (((document.currentScript || {}).src || '').match(/\?v=\d+/) || [''])[0];
@@ -475,6 +475,9 @@
       (foot.querySelector('p') || foot).appendChild(u);
     }
     const rel = pickRelated(cat, me);
+    // 跨科卡片（11/14）：目錄的 x 欄由 tools/build-catalog.cjs 依關鍵字算出或手動指定
+    const cross = me.x && cat.find(function (x) { return x.s === me.x; });
+    if (cross && rel.indexOf(cross) < 0) { cross._cross = true; rel.push(cross); }
     if (!rel.length) return;
     const sec = document.createElement('section');
     sec.className = 'related';
@@ -496,7 +499,8 @@
       const tag = document.createElement('span');
       tag.className = 'related-tag';
       const dn = DOMAIN_NAMES[x.d];
-      tag.textContent = (dn ? T(dn[0] + '・', dn[1] + ' · ') : '') + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
+      if (x._cross) a.classList.add('related-cross');
+      tag.textContent = (x._cross ? T('跨科連結｜', 'Across subjects | ') : '') + (dn ? T(dn[0] + '・', dn[1] + ' · ') : (x._cross ? T('物理・', 'Physics · ') : '')) + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
       const t = document.createElement('h3');
       t.textContent = T(x.zh, x.en || x.zh);
       const p = document.createElement('p');
