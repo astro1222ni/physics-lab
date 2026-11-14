@@ -1090,7 +1090,7 @@ async function main() {
   return Object.values(report.pages).some(p => p.confirmed && p.confirmed.length) ? 1 : 0;
 }
 
-module.exports = { pageHash, sharedScripts, readLive, pageSource, loadMissions, loadExclude, exclOf, extractTerms, judgeTerms, quantities, judgeReading, parseShown, norm, matchName, REPORT, CACHE };
+module.exports = { pageHash, sharedScripts, readLive, pageSource, loadMissions, loadExclude, exclOf, extractTerms, judgeTerms, quantities, judgeReading, parseShown, norm, matchName, REPORT, CACHE, ptLib, check, rngOf };
 
 if (require.main === module) {
   main().then(code => process.exit(code), e => { console.error('✗ 試玩工具出錯：' + (e && e.stack || e)); process.exit(2); });

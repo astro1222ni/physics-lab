@@ -10,6 +10,7 @@
     "seo": "node tools/seo.cjs && node tools/build-catalog.cjs",
     "verify": "node tools/verify.cjs",
     "playtest": "node tools/playtest.cjs",
+    "personas": "node tools/personas.cjs",
     "hans": "node tools/build-hans.cjs",
     "serve": "python -m http.server 8000"
   },
