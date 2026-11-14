@@ -5,6 +5,7 @@ const { createHash } = require('node:crypto');
 const classic = require('../playtest.cjs');
 const { intervals } = require('./model.cjs');
 const { recipesFor } = require('./proofs.cjs');
+const { entriesFor, playReplay } = require('./expert/replay.cjs');
 const { deadline } = require('./driver.cjs');
 
 const startName = /開始|播放|發射|測量|操作|放入|排入|launch|play|start|measure|push|enqueue/i;
@@ -243,12 +244,15 @@ async function clueless(d) {
 
 async function expert(d) {
   const recipes = recipesFor(d.config.slug);
+  const entries = entriesFor(d.config.slug, d.config.habit.key);
+  if (entries.length) await playReplay(d, entries, recipes);
   if (!d.missions.length) return;
   for (const m of d.missions) {
     if (d.config.mission && d.config.mission !== m.id) continue;
     const recipe = recipes[m.id];
     const id = m.id;
     if (!recipe) {
+      if (entries.length) continue;
       d.rec.missions.push({ id, level: m.level, hidden: !!m.hidden, status: '缺少介面路徑', note: '本站的證明尚未轉成公開介面步驟' });
       continue;
     }
@@ -262,27 +266,30 @@ async function expert(d) {
     for (const item of recipe) {
       const r = await d.act(item);
       if (!r.ok) { failed = r; break; }
-      if (!item.op.startsWith('await-')) steps++;
+      if (!item.op.startsWith('await-')) steps += typeof r.result === 'number' ? r.result : 1;
     }
-    const completed = await d.page.waitForFunction(mark => {
+    const completed = await d.page.waitForFunction(({ key, expected }) => {
       const db = JSON.parse(localStorage.getItem('mdb') || '{}');
-      return Boolean(db.completions?.u1?.[mark]);
-    }, id, { timeout: 1500 }).then(() => true, () => false);
+      return db.completions?.u1?.[key]?.stars === expected;
+    }, { key: id, expected: m.level * (m.hidden ? 2 : 1) }, { timeout: 2600 }).then(() => true, () => false);
     const proof = await d.testMission(id);
     let badge = false;
     if (completed) {
       await d.expand();
-        const section = m.hidden ? '.ms-hcard' : '.ms-item';
+      const section = m.hidden ? '.ms-hcard' : '.ms-item';
       // 面板依難度排序，同級任務保持登錄順序。用順位核對簡體與英文也能找到對應卡。
       const ordered = d.missions.filter(x => !!x.hidden === !!m.hidden).sort((a, b) => a.level - b.level);
       const idx = ordered.findIndex(x => x.id === id);
-      badge = await d.evaluate(({ section, idx }) => !!document.querySelectorAll(section)[idx]?.querySelector('.ms-check'), { section, idx });
+      badge = await d.page.waitForFunction(({ section, idx }) => {
+        const row = document.querySelectorAll(section)[idx];
+        return Boolean(row?.checkVisibility() && row.querySelector('.ms-check'));
+      }, { section, idx }, { timeout: 1800 }).then(() => true, () => false);
       await d.rec.updateStars(d);
     }
     const note = failed ? failed.error : completed ? badge ? '本機假後端與任務面板已核對' : '假後端已寫入，面板比對待確認' :
-      proof.meets ? '實際事件通過本頁任務判定，假後端未取得星星' : '這條操作路徑未產生足以通過判定的事件';
-    if (!completed || !badge) d.rec.add(!completed && !failed && proof.meets ? 'confirmed' : 'pending', 'expert-mission', id + '：' + note, { mission: id });
-    d.rec.missions.push({ id, level: m.level, hidden: !!m.hidden, status: completed ? '✓ 已得星' : '未得星',
+      proof.meets ? '重算事件符合任務條件，假後端得星待複驗' : '這條操作路徑未產生足以通過判定的事件';
+    if (!completed || !badge) d.rec.add('pending', 'expert-mission', id + '：' + note, { mission: id });
+    d.rec.missions.push({ id, level: m.level, hidden: !!m.hidden, status: completed && badge ? '✓ 已得星' : '未得星', stars: completed ? m.level * (m.hidden ? 2 : 1) : 0,
       steps, firstStep: first + 1, lastStep: d.rec.step, elapsedMs: Math.round(performance.now() - start), note, ...proof });
     await d.rec.saveFindings(d);
   }

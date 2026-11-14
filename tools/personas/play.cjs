@@ -3,6 +3,7 @@
 const path = require('node:path');
 const { setTimeout: sleep } = require('node:timers/promises');
 const classic = require('../playtest.cjs');
+const { ops: expertActions } = require('./expert/actions.cjs');
 const { displayedPK, accurateConcentration } = require('./proofs.cjs');
 const { command, profiles } = require('./model.cjs');
 const { Driver, openContext, deadline } = require('./driver.cjs');
@@ -135,6 +136,7 @@ async function shownHydronium(d) {
 }
 
 async function perform(d, a) {
+  if (Object.hasOwn(expertActions, a.op)) return expertActions[a.op](d, a);
   switch (a.op) {
     case 'expand': return d.expand(a.publicOnly);
     case 'click': return d.click(a.target);

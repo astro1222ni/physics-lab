@@ -136,5 +136,6 @@ function stackQueue() {
 }
 
 const adapters = { projectile, 'ph-scale': phScale, 'stack-queue': stackQueue };
-const recipesFor = slug => adapters[slug]?.() || {};
+const compiled = { ...require('./expert/music.json'), ...require('./expert/geography.json') };
+const recipesFor = slug => adapters[slug]?.() || (compiled[slug] ? sequence(slug, compiled[slug]) : {});
 module.exports = { recipesFor, displayedPK, accurateConcentration };
