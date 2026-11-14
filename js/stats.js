@@ -1,5 +1,5 @@
 /*
- * stats.js — 瀏覽人次、操作次數、累計操作時間
+ * stats.js — 瀏覽次數、操作次數、累計操作時間
  *
  * 只累計匿名的數字，不收集任何個人資料。資料存放在 Firebase Realtime Database，
  * 透過 REST API 以「伺服器端遞增」寫入，多人同時使用也不會互相覆蓋。
@@ -10,7 +10,7 @@
  *             並在各模組卡片加上 data-module="…"，會顯示該模組的數字。
  *
  * 計算方式：
- *   瀏覽人次 ── 每載入一次模組頁面 +1
+ *   瀏覽次數 ── 每載入一次模組頁面 +1（不是去重後的人數，11/14 由「瀏覽人次」改名）
  *   操作次數 ── 拖曳畫布、放開滑桿、按按鈕、切換勾選，每個動作 +1
  *   操作時間 ── 頁面在前景，且最近 30 秒內有操作時才計時
  *   目前在線 ── 每分鐘一個計數器 /online/<分鐘>：開著（在前景）的分頁每分鐘在裡面加 1 一次
@@ -74,7 +74,7 @@
     item.hidden = false;
     el.querySelector('[data-k="online"]').textContent = fmtInt(n) + (EN ? '' : ' 人');
   }
-  // 瀏覽人次、操作次數用國際單位詞頭（站長 11/14：「改以前綴詞 k M G… 表示」）：
+  // 瀏覽次數、操作次數用國際單位詞頭（站長 11/14：「改以前綴詞 k M G… 表示」）：
   // 1,000 以上寫 3.39 k、246 k、1.25 M（取三位有效數字、無條件捨去），滑鼠停留看完整數字。
   function fmtSI(n) {
     const x = Math.floor(n || 0);
@@ -100,7 +100,7 @@
   }
   const ITEMS = EN
     ? [['Views', 'views'], ['Interactions', 'ops'], ['Time spent', 'seconds']]
-    : [['瀏覽人次', 'views'], ['操作次數', 'ops'], ['累計操作時間', 'seconds']];
+    : [['瀏覽次數', 'views'], ['操作次數', 'ops'], ['累計操作時間', 'seconds']];
   function insertAfterHeader(el) {
     const top = document.querySelector('header.top');
     if (top) top.insertAdjacentElement('afterend', el);

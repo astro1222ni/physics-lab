@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611142154"></script>
+  <script src="js/settings.js?v=202611142221"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Privacy | Astro Ni Lab">隱私說明｜讓倪動手⚡高中全科模擬實驗室</title>
-  <link rel="stylesheet" href="lab.css?v=202611142154">
+  <link rel="stylesheet" href="lab.css?v=202611142221">
   <style>
     .doc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px clamp(16px, 3vw, 28px); }
     .doc h2 { font-size: calc(18px * var(--fs, 1)); margin: 22px 0 6px; }
@@ -19,7 +19,7 @@
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 data-en="Privacy">隱私說明</h1>
-      <p data-en="Last updated: 12 November 2026">更新日期：2026 年 11 月 12 日（新增每日任務、寶物、各科排名與成就）</p>
+      <p data-en="Last updated: 14 November 2026">更新日期：2026 年 11 月 14 日（使用統計改寫成目前的做法：瀏覽次數、在線人數的計算方式）</p>
     </header>
 
     <div class="doc">
@@ -27,8 +27,9 @@
       <p data-en="All simulations run in your own browser. Using them needs no sign-in, and nothing you do in an experiment is sent to an AI service.">所有模擬都在你自己的瀏覽器中運算。使用實驗不需要登入，你在實驗中的操作也不會傳送到任何 AI 服務。</p>
 
       <h2 data-en="Usage statistics">使用統計</h2>
-      <p data-en="To show view counts, interaction counts and time spent, the site adds anonymous numbers to a Firebase database. Nothing that identifies you is recorded — no name, account, IP address or device information.">為了顯示瀏覽人次、操作次數與累計操作時間，網站會把匿名的數字累加到 Firebase 資料庫。這些數字不包含任何能辨識你的資料，例如姓名、帳號、IP 位址或裝置資訊。</p>
-      <p data-en="To show how many people are online now, each open page sends a heartbeat once a minute: a random code (made fresh for each browser tab) and which page it is on — nothing else. The code is deleted when you leave or switch away from the page.">為了顯示「目前在線」人數，每個開著的頁面每分鐘會送出一次「心跳」：一個隨機產生的代號（每個瀏覽器分頁各一個）與所在的頁面，沒有其他資料。離開或切換到其他頁面時，這個代號就會刪除。</p>
+      <p data-en="To show view counts (every page load counts once, so this is not a number of different people), interaction counts and time spent, the site adds anonymous numbers to a Firebase database. Nothing that identifies you is recorded — no name, account, IP address or device information.">為了顯示瀏覽次數（每載入一次頁面算一次，不是不同的人數）、操作次數與累計操作時間，網站會把匿名的數字累加到 Firebase 資料庫。這些數字不包含任何能辨識你的資料，例如姓名、帳號、IP 位址或裝置資訊。</p>
+      <p data-en="To show how many people are online now, each page that is open in the foreground adds 1 to a counter for the current minute, together with which page it is — nothing else, not even a random code. The counters are deleted after about 10 minutes. The number counts open pages, so one person with two tabs open counts twice.">為了顯示「目前在線」人數，每個在前景開著的頁面每分鐘在「這一分鐘」的計數器加 1，並記下是哪一頁，沒有其他資料，連隨機代號也沒有；計數器約 10 分鐘後刪除。這個數字算的是開著的頁面，同一個人開兩個分頁會算兩次。</p>
+      <p data-en="If the new counter cannot be written (for example while the database rules are being updated), the page falls back to the older method: once a minute it sends a heartbeat with a random code made fresh for each browser tab and which page it is on. That code is deleted when you leave or switch away from the page.">如果新的計數器暫時無法寫入（例如資料庫規則更新中），頁面會退回舊做法：每分鐘送出一次「心跳」，內容是每個瀏覽器分頁各自隨機產生的代號與所在頁面；離開或切換到其他頁面時，這個代號就會刪除。</p>
 
       <h2 data-en="Settings">設定</h2>
       <p data-en="Your language, text size and appearance choices, and whether you have already seen the sign-in welcome, are stored only in your own browser (localStorage) and are never uploaded.">你選擇的語言、字體大小與外觀，以及是否已看過登入提示，只存在你自己的瀏覽器（localStorage），不會上傳。</p>
@@ -58,7 +59,7 @@
 
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a>　<a href="about.html" data-en="About">關於本站</a></footer>
   </div>
-  <script src="js/firebase-config.js?v=202611142154"></script>
-  <script src="js/comments.js?v=202611142154"></script>
+  <script src="js/firebase-config.js?v=202611142221"></script>
+  <script src="js/comments.js?v=202611142221"></script>
 </body>
 </html>

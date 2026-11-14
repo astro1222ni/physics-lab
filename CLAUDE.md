@@ -32,7 +32,7 @@
 | `js/hans-map.js` | 簡體對照表，由 `tools/build-hans.cjs` 產生（名詞對照在該檔 `PHRASES`，長詞先轉；依科目覆寫在 `SUBJECT_PHRASES`，例如數學頁的「向量」不轉成物理用的「矢量」，頁面清單由任務清單的分支自動算出，**新增數學實驗後要重跑 `node tools/build-hans.cjs`**） |
 | `js/sound.js` | 共用音效（Web Audio 即時合成，壓縮器＋限幅器）：`tone`、`sweep`、`noise`、持續發聲 `voice`；手機小喇叭聽不到 200 Hz 以下，主要頻率放 250 Hz 以上 |
 | `js/numinput.js` | 點擊滑桿數字直接輸入數值（`LabNum.value/set/clear/register`） |
-| `js/stats.js` | 瀏覽人次、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝每分頁一個隨機代號的心跳，150 秒內有心跳算在線） |
+| `js/stats.js` | 瀏覽次數（每載入一次頁面 +1，不是人數；11/14 由「瀏覽人次」改名）、操作次數、累計操作時間、目前在線人數（Firebase Realtime Database，匿名數字；在線＝前景分頁每分鐘在 `/online/<分鐘>` 計數器加 1，算的是分頁不是人；寫不進去時退回舊的隨機代號心跳） |
 | `js/missions.js` | 任務模式「倪的星星」：`LabMission.register/emit`、任務面板、慶祝畫面、寫入完成紀錄；管理員登入時自動同步 `missionDefs` |
 | `js/missions/<模組>.js`、`js/missions/index.js` | 各實驗的任務定義；`index.js` 有三份清單：`LAB_MISSION_MODULES`（有任務的實驗）、`LAB_LIVE_MODULES`（已上線的實驗）、`LAB_MODULE_BRANCH`（實驗所屬分支），另有 `LAB_SUBJECTS`（八科：原本五科＋資訊科技 `info`、地理 `geog`、音樂 `music`）、`LAB_SUBJECT_OF(模組)`（實驗屬於哪一科，由分支推得）與 `LAB_SUBJECT_SHOWN(科目)`（新科標 `newSubject: true`，第一個實驗上線前排行榜與成就都不顯示這一科） |
 | `js/achievements.js` | 成就系統（等級系列＋單項成就＋跨科＋隱藏成就），分頁：全科、物理、化學、生物、地球科學、數學，新科有實驗後才出現；由 `missions.js` 自動載入；登入後才載入 `js/chapter-map.js`（章制霸用） |
