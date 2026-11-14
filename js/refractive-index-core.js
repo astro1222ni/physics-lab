@@ -349,11 +349,21 @@
    *   長方形：由直線 AB 追跡出真正的出射光，和直線 CD 比較 → { ang（夾角 rad）, off（C、D 到真正出射光的最大距離 cm） }
    *   半圓形：由直線 PO 在 O 的折射求出真正的光線方向，和直線 OP′ 比較。
    */
+  /**
+   * 長方形入射側兩針（不限哪一根在前）：從離上表面較遠的那根，朝較近的那根射向透明塊。
+   *   回傳 { p: 起點（較遠的針）, u: 單位方向 }；A、B 誰在上、誰在下都可以。
+   */
+  function incRay(b, A, B) {
+    const far = toLocal(b, A).y >= toLocal(b, B).y ? A : B, near = far === A ? B : A;
+    return { p: far, u: unit(sub(near, far)) };
+  }
+
   function alignError(b, n, shape, pins, dir) {
     if (shape === 'rect') {
       const A = pins.A, B = pins.B, Cp = pins.C, Dp = pins.D;
       if (!A || !B || !Cp || !Dp) return null;
-      const tr = trace(b, n, A, sub(B, A));
+      const ir = incRay(b, A, B);
+      const tr = trace(b, n, ir.p, ir.u);
       if (!tr.exited || tr.faces[0] !== 'top' || tr.faces[tr.faces.length - 1] !== 'bottom') return null;
       return {
         ang: lineAngle(tr.uOut, sub(Dp, Cp)),
@@ -446,9 +456,10 @@
   function pctError(meas, acc) { return (meas - acc) / acc * 100; }
 
   // ---------------- 理想插針（測試、任務證明用） ----------------
-  /** 長方形：A、B 決定入射線，沿真正的出射光放 C、D（距出射點 d1、d2 cm）與眼睛（距 de cm） */
+  /** 長方形：A、B 決定入射線（不限先後），沿真正的出射光放 C、D（距出射點 d1、d2 cm）與眼睛（距 de cm） */
   function idealRect(b, n, A, B, d1, d2, de) {
-    const tr = trace(b, n, A, sub(B, A));
+    const ir = incRay(b, A, B);
+    const tr = trace(b, n, ir.p, ir.u);
     if (!tr.exited) return null;
     const u = unit(tr.uOut);
     return { C: add(tr.pOut, mul(u, d1)), D: add(tr.pOut, mul(u, d2)), eye: add(tr.pOut, mul(u, de || d2 + 4)), pOut: tr.pOut, uOut: u };
@@ -470,7 +481,7 @@
     refract: refract, fresnelT: fresnelT, snell: snell, criticalAngle: criticalAngle, lateralShift: lateralShift,
     trace: trace, firstHit: firstHit, segmentHits: segmentHits, imageOf: imageOf, viewPin: viewPin,
     intersect: intersect, distToLine: distToLine, measureRect: measureRect, measureSemi: measureSemi,
-    alignError: alignError, reverseInfo: reverseInfo,
+    alignError: alignError, reverseInfo: reverseInfo, incRay: incRay,
     rng: rng, gauss: gauss, readAngle: readAngle, readLength: readLength, unknownN: unknownN, systematicRot: systematicRot,
     fitOrigin: fitOrigin, fitLine: fitLine, pctError: pctError,
     idealRect: idealRect, idealSemi: idealSemi

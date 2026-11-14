@@ -276,4 +276,32 @@ test('透明塊的範圍判斷與輪廓', () => {
   assert.ok(C.segmentHits(b, C.v(-3, 4), C.v(3, -10)) && !C.segmentHits(b, C.v(-3, 4), C.v(-3, 1)));
 });
 
+test('長方形插針不限順序：A、B 誰近誰遠、C、D 誰近誰遠，量到的角度都一樣', () => {
+  for (const t of [4, 6]) {
+    for (const rot of [0, rad(1.5)]) {
+      const b = C.makeBlock({ shape: 'rect', t: t, rot: rot });
+      for (const n of NS) {
+        for (const [A, B] of [[C.v(-5, 8), C.v(-2, 3)], [C.v(4, 7), C.v(1.5, 2)], [C.v(-1, 9), C.v(-0.5, 4)]]) {
+          const id = C.idealRect(b, n, A, B, 2, 6);
+          const id2 = C.idealRect(b, n, B, A, 2, 6);
+          assert.ok(id && id2, '理想插針要追得到出射光');
+          close(C.len(C.sub(id.C, id2.C)), 0, 1e-9, 'A、B 對調，出射光不變');
+          const ref = C.measureRect(b, A, B, id.C, id.D);
+          assert.ok(ref.ok);
+          for (const [p, q, r, s] of [[A, B, id.C, id.D], [B, A, id.C, id.D], [A, B, id.D, id.C], [B, A, id.D, id.C]]) {
+            const m = C.measureRect(b, p, q, r, s);
+            assert.ok(m.ok, '任何順序都要量得到');
+            close(m.th1, ref.th1, 1e-9); close(m.th2, ref.th2, 1e-9); close(m.th4, ref.th4, 1e-9);
+            const ir = C.incRay(b, p, q);
+            const tr = C.trace(b, n, ir.p, ir.u);
+            assert.deepStrictEqual(tr.faces, ['top', 'bottom'], '從上表面進、下表面出');
+            const al = C.alignError(b, n, 'rect', { A: p, B: q, C: r, D: s });
+            assert.ok(al && al.ang < 1e-9 && al.off < 1e-9, '對準誤差為 0');
+          }
+        }
+      }
+    }
+  }
+});
+
 console.log(`\n${passed} 項測試通過`);
