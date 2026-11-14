@@ -1419,16 +1419,16 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   }
 }
 
-/* ---------- 11/14 改名「讓倪動手⚡高中全科模擬實驗室」：鎳元素格（28 Ni＝倪）、Astro Ni 的 A 和 I、四大類 ---------- */
+/* ---------- 11/14 改名「讓倪動手⚡高中全科模擬實驗室」：鎳元素格（核種寫法：左上「倪」放在質量數的位置、左下原子序 28，站長 11/14 指定）、Astro Ni 的 A 和 I、四大類 ---------- */
 :root { --ai: #c2410c; --ni-top: #e8f1ef; --ni-bot: #cfe2dd; --ni-edge: #8fb5ab; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ai: #fb923c; --ni-top: #22333a; --ni-bot: #18262b; --ni-edge: #3f6a61; } }
 :root[data-theme="dark"] { --ai: #fb923c; --ni-top: #22333a; --ni-bot: #18262b; --ni-edge: #3f6a61; }
 .brand-row { display: flex; align-items: center; gap: 14px; }
 .brand-text { min-width: 0; }
 .ni-tile { flex: none; position: relative; display: grid; place-items: center; width: calc(66px * var(--fs, 1)); height: calc(66px * var(--fs, 1)); border-radius: 10px; border: 2px solid var(--ni-edge); background: linear-gradient(160deg, var(--ni-top), var(--ni-bot)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 3px 10px rgba(0, 0, 0, .10); color: var(--text); line-height: 1; }
-.ni-z { position: absolute; top: 5px; left: 7px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
-.ni-sym { font-size: calc(29px * var(--fs, 1)); font-weight: 800; letter-spacing: -.01em; margin-top: 2px; }
-.ni-zh { position: absolute; bottom: 5px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
+.ni-z { position: absolute; bottom: 5px; left: 7px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ni-sym { font-size: calc(29px * var(--fs, 1)); font-weight: 800; letter-spacing: -.01em; margin-left: calc(12px * var(--fs, 1)); }
+.ni-zh { position: absolute; top: 5px; left: 7px; font-size: calc(11px * var(--fs, 1)); font-weight: 700; color: var(--accent); }
 .brand-ai { letter-spacing: .06em; }
 .brand-ai .ai { color: var(--ai); font-weight: 800; }
 .top .brand-row h1 { margin: 2px 0 0; }

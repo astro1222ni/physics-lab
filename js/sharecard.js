@@ -112,9 +112,10 @@
     c.fillStyle = tg; c.fill();
     c.lineWidth = 3; c.strokeStyle = '#5f9f92'; c.stroke();
     c.fillStyle = '#cfe7e1'; c.textBaseline = 'alphabetic';
-    c.font = f(20, 700); c.textAlign = 'left'; c.fillText('28', tx + 12, ty + 28);
-    c.font = f(50, 800); c.textAlign = 'center'; c.fillStyle = '#ffffff'; c.fillText('Ni', tx + ts / 2, ty + 78);
-    c.font = f(20, 700); c.fillStyle = '#cfe7e1'; c.fillText('倪', tx + ts / 2, ty + 102);
+    // 核種寫法（站長 11/14）：左上「倪」放質量數的位置、左下原子序 28、Ni 偏右
+    c.font = f(20, 700); c.textAlign = 'left'; c.fillText('倪', tx + 12, ty + 30);
+    c.fillText('28', tx + 12, ty + ts - 12);
+    c.font = f(50, 800); c.textAlign = 'center'; c.fillStyle = '#ffffff'; c.fillText('Ni', tx + ts / 2 + 14, ty + ts / 2 + 18);
     c.textAlign = 'left';
     c.fillStyle = '#ffffff'; c.font = f(40, 800);
     c.fillText(fit(c, T('讓倪動手⚡高中全科模擬實驗室', 'Astro Ni Lab'), RW - ts - 28, 40, 800), tx + ts + 28, ty + 52);
