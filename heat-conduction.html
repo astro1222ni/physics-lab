@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js"></script>
+  <script src="js/settings.js?v=202611142154"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Heat Conduction and Thermal Expansion | Astro Ni Science Lab">熱傳導與熱膨脹｜Astro Ni 科學實驗室</title>
-  <meta name="description" content="把兩種材料串聯或並聯，觀察熱從高溫端傳到低溫端。比較接面溫度、各支路熱流率，再加熱或冷卻雙金屬片。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="把不同材料的導熱棒串聯或並聯，觀察局部熱流如何從暫態變成穩態。量出接面溫度與支路熱流，再加熱或冷卻雙金屬片，看看彎曲方向。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/heat-conduction.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/heat-conduction.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/heat-conduction.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/heat-conduction.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="熱傳導與熱膨脹｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="把不同材料的導熱棒串聯或並聯，觀察局部熱流如何從暫態變成穩態。量出接面溫度與支路熱流，再加熱或冷卻雙金屬片，看看彎曲方向。">
+  <meta property="og:url" content="https://lab.astroni.org/heat-conduction.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/heat-conduction.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="熱傳導與熱膨脹的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"熱傳導與熱膨脹","alternateName":"Heat Conduction and Thermal Expansion","description":"把不同材料的導熱棒串聯或並聯，觀察局部熱流如何從暫態變成穩態。量出接面溫度與支路熱流，再加熱或冷卻雙金屬片，看看彎曲方向。","url":"https://lab.astroni.org/heat-conduction.html","image":"https://lab.astroni.org/img/og/heat-conduction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["熱學（Heat）","溫度與熱（Temperature and Heat）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css">
+  <link rel="stylesheet" href="lab.css?v=202611142154">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -127,12 +147,17 @@
       <p data-en="The heat flow rate \(P\) is the energy crossing a section per second. Taking rightward flow as positive, the steady rate in a uniform rod is proportional to the temperature difference at its ends.">熱流率 \(P\) 是每秒通過截面的熱量。取向右為正，均勻棒在穩態的熱流率與兩端溫差成正比。</p>
       <div class="formula">[ R=rac{L}{kA}, qquad P=rac{T_L-T_R}{R} ]</div>
       <p data-en="In series, both sections carry the same steady heat rate, and the drop in the first section gives the junction temperature. In parallel, both rods contact the same reservoirs and split the heat flow.">串聯時，穩態下兩段的熱流率相同，接面溫度由第一段的溫降求出。並聯時兩棒接觸同一對熱庫，各自分擔熱流。</p>
-      <div class="formula">[ R_{m s}=R_A+R_B,quad T_{m j}=T_L-P R_A ]</div>
-      <div class="formula">[ rac{1}{R_{m p}}=rac{1}{R_A}+rac{1}{R_B},quad P=P_A+P_B ]</div>
+      <div class="formula">[ R_{
+m s}=R_A+R_B,quad T_{
+m j}=T_L-P R_A ]</div>
+      <div class="formula">[ rac{1}{R_{
+m p}}=rac{1}{R_A}+rac{1}{R_B},quad P=P_A+P_B ]</div>
 
       <h3 data-en="From transient to steady conduction">從暫態到穩態</h3>
       <p data-en="The rods start at 20 °C and their ends are brought into contact with fixed-temperature reservoirs. The sides are insulated, the series junction is ideal, and the parallel branches are insulated from one another. The solid curves show the current temperatures and the dashed curve shows the steady solution.">棒內初溫為 20 °C，起始時兩端接上固定溫度的熱庫。模型假設側面隔熱、串聯接觸理想、並聯支路彼此隔熱。圖上實線是當下溫度，虛線是穩態解。</p>
-      <div class="formula">[ ho cA,partial_t T = partial_x!left(kA,partial_x Tight) ]</div>
+      <div class="formula">[ 
+ho cA,partial_t T = partial_x!left(kA,partial_x T
+ight) ]</div>
       <p data-en="The net heat flow into each cell changes its stored heat. The solver uses finite volumes and backward Euler, with the two half-cell resistances setting the interface heat rate. The 3D view uses the same section temperatures and heat rates, with magnified cross-sectional dimensions and uniform temperature within each section.">每小段的熱量變化由兩側熱流差決定。模擬用有限體積法及後向歐拉法，接面熱流由兩個半格熱阻決定。3D 使用同一組截面溫度與熱流，橫向尺寸放大，截面內溫度均勻。</p>
 
       <h3 data-en="Linear expansion and a bimetallic strip">線膨脹與雙金屬片</h3>
@@ -152,15 +177,15 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js"></script>
-  <script src="js/heat-conduction-core.js"></script>
-  <script src="js/numinput.js"></script>
-  <script src="js/drawkit.js"></script>
-  <script src="js/heat-conduction.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/missions.js" data-module="heat-conduction"></script>
-  <script src="js/missions/heat-conduction.js"></script>
-  <script src="js/stats.js" data-module="heat-conduction"></script>
-  <script src="js/comments.js"></script>
+  <script src="js/math.js?v=202611142154"></script>
+  <script src="js/heat-conduction-core.js?v=202611142154"></script>
+  <script src="js/numinput.js?v=202611142154"></script>
+  <script src="js/drawkit.js?v=202611142154"></script>
+  <script src="js/heat-conduction.js?v=202611142154"></script>
+  <script src="js/firebase-config.js?v=202611142154"></script>
+  <script src="js/missions.js?v=202611142154" data-module="heat-conduction"></script>
+  <script src="js/missions/heat-conduction.js?v=202611142154"></script>
+  <script src="js/stats.js?v=202611142154" data-module="heat-conduction"></script>
+  <script src="js/comments.js?v=202611142154"></script>
 </body>
 </html>

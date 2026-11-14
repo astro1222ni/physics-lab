@@ -66,6 +66,8 @@ const PREP = {
                                  '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]', '[data-step="-0.1"]'], wait: 1500, anchorX: 1 },
   'resonance-tube':    { click: ['#strike', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn10', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1', '#dn1'], wait: 1500, anchor: 0.3 },
   'thin-film':         { click: ['#drain'], wait: 2500, anchor: 0.5 },
+  'heat-conduction':   { canvas: '#cv', click: ['#steady'], wait: 700, eval: "document.getElementById('cv').style.aspectRatio = '16 / 9'" },
+  'polarization':      { canvas: '#scene', anchor: 1, wait: 700, eval: "document.getElementById('modeThree').click(); LabNum.set(document.getElementById('angleC'), 90)" },
   'earthquake':        { click: ['[data-mode="earth"]', '#play'], wait: 4500, anchor: 0.5 },
   'molecular-shapes':  { canvas: '#view3 canvas', wait: 3500 },
   'diffusion-osmosis': { click: ['#mCell', '#qSea'], wait: 6000, anchor: 0 },

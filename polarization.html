@@ -2,12 +2,32 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js"></script>
+  <script src="js/settings.js?v=202611142154"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Polarization of Light | Astro Ni Science Lab">光的偏振｜Astro Ni 科學實驗室</title>
-  <meta name="description" content="轉動偏振片，量出透射光強。把第三片插在互相垂直的兩片之間，再從反射光找出布魯斯特角。">
+  <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
+  <meta name="description" content="旋轉偏振片量出透射光強，插入第三片讓互相垂直的兩片重新透光，再找布魯斯特角，轉動檢偏片讓反射光消失。">
+  <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/polarization.html">
+  <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/polarization.html?lang=zh-Hans">
+  <link rel="alternate" hreflang="en" href="https://lab.astroni.org/polarization.html?lang=en">
+  <link rel="alternate" hreflang="x-default" href="https://lab.astroni.org/polarization.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:title" content="光的偏振｜讓倪動手⚡高中全科模擬實驗室">
+  <meta property="og:description" content="旋轉偏振片量出透射光強，插入第三片讓互相垂直的兩片重新透光，再找布魯斯特角，轉動檢偏片讓反射光消失。">
+  <meta property="og:url" content="https://lab.astroni.org/polarization.html">
+  <meta property="og:image" content="https://lab.astroni.org/img/og/polarization.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="光的偏振的模擬畫面">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:locale:alternate" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"光的偏振","alternateName":"Polarization of Light","description":"旋轉偏振片量出透射光強，插入第三片讓互相垂直的兩片重新透光，再找布魯斯特角，轉動檢偏片讓反射光消失。","url":"https://lab.astroni.org/polarization.html","image":"https://lab.astroni.org/img/og/polarization.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css">
+  <link rel="stylesheet" href="lab.css?v=202611142154">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -138,14 +158,18 @@
       <h2 data-en="The physics behind it">背後的物理</h2>
       <h3 data-en="Polarizing filters and Malus’s law">偏振片與馬呂斯定律</h3>
       <p data-en="A light wave’s electric field oscillates in a plane perpendicular to the beam. An ideal polarizer passes the electric-field component along its transmission axis. For linearly polarized input, \(\theta\) is the angle between the field and that axis.">光的電場在垂直於傳播方向的平面振動。理想偏振片只讓沿透光軸的電場分量通過。若入射光已是線偏振，\(\theta\) 是電場方向與透光軸的夾角。</p>
-      <div class="formula">[ E_{parallel}=E_{m in}cos	heta,qquad I=I_{m in}cos^2	heta ]</div>
+      <div class="formula">[ E_{parallel}=E_{
+m in}cos	heta,qquad I=I_{
+m in}cos^2	heta ]</div>
       <p data-en="Unpolarized input loses half its intensity at its first ideal polarizer. Each later filter multiplies the intensity by the squared cosine of the angle from the previous axis. With the outer axes crossed and a middle filter at 45°, the output is \(I_0/8\) for unpolarized input.">無偏振光第一次經過理想偏振片，平均光強變成 \(I_0/2\)。之後每片乘上與上一片軸夾角的 \(\cos^2\theta\)。兩外片相差 90° 時，插入 45° 的中間片，無偏振入射時有 \(I_0/8\) 通過。</p>
 
       <h3 data-en="Fresnel equations and Brewster’s angle">菲涅耳公式與布魯斯特角</h3>
       <p data-en="At a flat boundary between lossless, nonmagnetic media, the s electric field is perpendicular to the plane of incidence and the p electric field is parallel to that plane. Angles are measured from the normal.">在兩種無吸收、非磁性介質的平界面，s 偏振的電場垂直入射面，p 偏振的電場平行入射面。角度相對界面法線量起。</p>
       <div class="formula">[ n_1sin	heta_i=n_2sin	heta_t ]</div>
-      <div class="formula">[ R_s=left(rac{n_1cos	heta_i-n_2cos	heta_t}{n_1cos	heta_i+n_2cos	heta_t}ight)^2 ]</div>
-      <div class="formula">[ R_p=left(rac{n_2cos	heta_i-n_1cos	heta_t}{n_2cos	heta_i+n_1cos	heta_t}ight)^2 ]</div>
+      <div class="formula">[ R_s=left(rac{n_1cos	heta_i-n_2cos	heta_t}{n_1cos	heta_i+n_2cos	heta_t}
+ight)^2 ]</div>
+      <div class="formula">[ R_p=left(rac{n_2cos	heta_i-n_1cos	heta_t}{n_2cos	heta_i+n_1cos	heta_t}
+ight)^2 ]</div>
       <p data-en="For distinct indices, Brewster’s angle satisfies \(\tan\theta_B=n_2/n_1\). The reflected and refracted rays are perpendicular and \(R_p=0\). Only the s component remains in the reflection of unpolarized light, while p-polarized input transmits entirely. At total internal reflection, \(R_s=R_p=1\).">兩側折射率不同時，布魯斯特角滿足 \(\tan\theta_B=n_2/n_1\)。這時反射線與折射線垂直、\(R_p=0\)。對無偏振入射光，反射光只剩 s 分量；p 入射光則完全透射。全反射時 \(R_s=R_p=1\)。</p>
 
       <h3 data-en="What to look for">觀察重點</h3>
@@ -164,15 +188,15 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js"></script>
-  <script src="js/polarization-core.js"></script>
-  <script src="js/numinput.js"></script>
-  <script src="js/drawkit.js"></script>
-  <script src="js/polarization.js"></script>
-  <script src="js/firebase-config.js"></script>
-  <script src="js/missions.js" data-module="polarization"></script>
-  <script src="js/missions/polarization.js"></script>
-  <script src="js/stats.js" data-module="polarization"></script>
-  <script src="js/comments.js"></script>
+  <script src="js/math.js?v=202611142154"></script>
+  <script src="js/polarization-core.js?v=202611142154"></script>
+  <script src="js/numinput.js?v=202611142154"></script>
+  <script src="js/drawkit.js?v=202611142154"></script>
+  <script src="js/polarization.js?v=202611142154"></script>
+  <script src="js/firebase-config.js?v=202611142154"></script>
+  <script src="js/missions.js?v=202611142154" data-module="polarization"></script>
+  <script src="js/missions/polarization.js?v=202611142154"></script>
+  <script src="js/stats.js?v=202611142154" data-module="polarization"></script>
+  <script src="js/comments.js?v=202611142154"></script>
 </body>
 </html>

@@ -74,9 +74,28 @@
     item.hidden = false;
     el.querySelector('[data-k="online"]').textContent = fmtInt(n) + (EN ? '' : ' 人');
   }
+  // 瀏覽人次、操作次數用國際單位詞頭（站長 11/14：「改以前綴詞 k M G… 表示」）：
+  // 1,000 以上寫 3.39 k、246 k、1.25 M（取三位有效數字、無條件捨去），滑鼠停留看完整數字。
+  function fmtSI(n) {
+    const x = Math.floor(n || 0);
+    const P = [[1e15, 'P'], [1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k']];
+    for (let i = 0; i < P.length; i++) {
+      if (x >= P[i][0]) {
+        const v = x / P[i][0];
+        const d = v >= 100 ? 0 : v >= 10 ? 1 : 2;
+        return (Math.floor(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d) + ' ' + P[i][1];
+      }
+    }
+    return String(x);
+  }
+  function setCount(el, k, n) {
+    const v = el.querySelector('[data-k="' + k + '"]');
+    v.textContent = fmtSI(n);
+    v.title = fmtInt(n);
+  }
   function fill(el, s) {
-    el.querySelector('[data-k="views"]').textContent = fmtInt(s.views);
-    el.querySelector('[data-k="ops"]').textContent = fmtInt(s.ops);
+    setCount(el, 'views', s.views);
+    setCount(el, 'ops', s.ops);
     el.querySelector('[data-k="seconds"]').textContent = fmtTime(s.seconds);
   }
   const ITEMS = EN
