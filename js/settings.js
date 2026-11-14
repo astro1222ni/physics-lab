@@ -384,7 +384,7 @@
 
 /* App 內建瀏覽器的登入（11/13）：LINE、Facebook、Instagram 的內建瀏覽器擋登入小視窗，改整頁跳轉時
  * 又因暫存被隔開而失敗（"missing initial state"）。LINE 支援 openExternalBrowser=1，按登入時改用手機的瀏覽器開同一頁；
- * IG、臉書（11/14）：Android 用 intent:// 交給 Chrome，iPhone 用 x-safari-https://，跳不過去才顯示提示。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
+ * IG、臉書：跳出頁內小視窗，按鈕用 intent://（Android→Chrome）或 x-safari-https://（iPhone→Safari），另附複製網址。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
 (function () {
   'use strict';
   const ua = navigator.userAgent || '';
@@ -394,6 +394,55 @@
     return '';
   }
   function t(zh, en) { return window.LabSettings ? LabSettings.t(zh, en) : zh; }
+  /* IG、臉書（11/14 第二版）：程式自動跳 intent:// 會被 App 擋下（站長 S26 實測），
+   * 改成頁內小視窗，放一顆真的連結按鈕讓學生自己按（使用者親手點的 intent 連結 App 才放行），再附複製網址與選單說明。 */
+  function sheet() {
+    const old = document.querySelector('.lab-iab'); if (old) old.remove();
+    const here = location.href.split('#')[0];
+    const isAndroid = /Android/i.test(ua), isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const href = isAndroid ? 'intent://' + here.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end'
+      : isIOS ? 'x-safari-' + here : '';
+    const box = document.createElement('div');
+    box.className = 'lab-iab';
+    box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+    const card = document.createElement('div'); card.className = 'lab-iab-card';
+    const h = document.createElement('h2'); h.textContent = t('請改用瀏覽器登入', 'Please sign in from your browser');
+    const p = document.createElement('p');
+    p.textContent = t('Instagram、Facebook 裡的內建瀏覽器不能用 Google 登入。按下面的按鈕，用手機的瀏覽器打開這一頁再登入。',
+      'Google sign-in does not work inside Instagram or Facebook. Tap the button below to open this page in your phone’s browser, then sign in.');
+    card.append(h, p);
+    if (href) {
+      const go = document.createElement('a');
+      go.className = 'lab-iab-go'; go.href = href; go.rel = 'noopener';
+      go.textContent = isAndroid ? t('用 Chrome 開啟這一頁', 'Open this page in Chrome') : t('用 Safari 開啟這一頁', 'Open this page in Safari');
+      card.append(go);
+    }
+    const copy = document.createElement('button');
+    copy.type = 'button'; copy.className = 'lab-iab-copy'; copy.textContent = t('複製網址', 'Copy link');
+    const url = document.createElement('input');
+    url.type = 'text'; url.readOnly = true; url.value = here; url.className = 'lab-iab-url'; url.setAttribute('aria-label', t('這一頁的網址', 'Page link'));
+    const msg = document.createElement('p'); msg.className = 'lab-iab-msg'; msg.setAttribute('aria-live', 'polite');
+    copy.addEventListener('click', function () {
+      const done = function () { msg.textContent = t('已複製，貼到瀏覽器的網址列就能打開。', 'Copied. Paste it into your browser’s address bar.'); };
+      const pick = function () { url.focus(); url.select(); try { if (document.execCommand('copy')) { done(); return; } } catch (e) {} msg.textContent = t('請長按上面的網址自己複製。', 'Press and hold the link above to copy it.'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(here).then(done, pick); else pick();
+    });
+    const hint = document.createElement('p'); hint.className = 'lab-iab-hint';
+    hint.textContent = isIOS
+      ? t('按鈕沒反應的話：按右上角「⋯」，選「在外部瀏覽器開啟」。', 'If nothing happens: tap “⋯” at the top right and choose “Open in external browser”.')
+      : t('按鈕沒反應的話：按右上角「⋮」，選「用瀏覽器開啟」或「在外部瀏覽器開啟」。', 'If nothing happens: tap “⋮” at the top right and choose “Open in browser”.');
+    const close = document.createElement('button');
+    close.type = 'button'; close.className = 'lab-iab-close'; close.textContent = t('先不要', 'Not now');
+    const shut = function () { box.remove(); document.removeEventListener('keydown', esc); };
+    const esc = function (e) { if (e.key === 'Escape') shut(); };
+    close.addEventListener('click', shut);
+    box.addEventListener('click', function (e) { if (e.target === box) shut(); });
+    document.addEventListener('keydown', esc);
+    card.append(url, copy, msg, hint, close);
+    box.append(card);
+    document.body.append(box);
+    (card.querySelector('.lab-iab-go') || copy).focus();
+  }
   window.LabInApp = {
     kind: kind,
     escape: function () {
@@ -404,27 +453,7 @@
         location.href = u.toString();
         return true;
       }
-      if (k === 'meta') {
-        // 11/14：IG、臉書直接跳到手機的瀏覽器。Android 用 intent:// 交給 Chrome；iPhone（iOS 17 以上）用 x-safari-https://。
-        // 跳不過去（頁面 1.5 秒內沒被切到背景）才顯示文字提示。
-        const here = location.href.split('#')[0];
-        const isAndroid = /Android/i.test(ua), isIOS = /iPhone|iPad|iPod/i.test(ua);
-        let target = '';
-        if (isAndroid) target = 'intent://' + here.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
-        else if (isIOS) target = 'x-safari-' + here;
-        const tip = function () {
-          alert(t('這個 App 的內建瀏覽器不能用 Google 登入。請按右上角的三個點選單，選「用瀏覽器開啟」（iPhone 選「在外部瀏覽器開啟」），再到瀏覽器裡登入。',
-            'Google sign-in does not work in this app’s built-in browser. Tap the menu at the top right, choose “Open in browser” (on iPhone, “Open in external browser”), then sign in there.'));
-        };
-        if (!target) { tip(); return true; }
-        let left = false;
-        const mark = function () { if (document.hidden) left = true; };
-        document.addEventListener('visibilitychange', mark);
-        window.addEventListener('pagehide', function () { left = true; }, { once: true });
-        location.href = target;
-        setTimeout(function () { document.removeEventListener('visibilitychange', mark); if (!left && !document.hidden) tip(); }, 1500);
-        return true;
-      }
+      if (k === 'meta') { sheet(); return true; }
       return false;
     }
   };
