@@ -384,7 +384,7 @@
 
 /* App 內建瀏覽器的登入（11/13）：LINE、Facebook、Instagram 的內建瀏覽器擋登入小視窗，改整頁跳轉時
  * 又因暫存被隔開而失敗（"missing initial state"）。LINE 支援 openExternalBrowser=1，按登入時改用手機的瀏覽器開同一頁；
- * 其他 App 顯示提示請學生改用瀏覽器開啟。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
+ * IG、臉書（11/14）：Android 用 intent:// 交給 Chrome，iPhone 用 x-safari-https://，跳不過去才顯示提示。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
 (function () {
   'use strict';
   const ua = navigator.userAgent || '';
@@ -405,8 +405,24 @@
         return true;
       }
       if (k === 'meta') {
-        alert(t('這個 App 的內建瀏覽器不能用 Google 登入。請按右上角的三個點選單，選「用瀏覽器開啟」，再到瀏覽器裡登入。',
-          'Google sign-in does not work in this app’s built-in browser. Tap the three-dot menu at the top right, choose “Open in browser”, then sign in there.'));
+        // 11/14：IG、臉書直接跳到手機的瀏覽器。Android 用 intent:// 交給 Chrome；iPhone（iOS 17 以上）用 x-safari-https://。
+        // 跳不過去（頁面 1.5 秒內沒被切到背景）才顯示文字提示。
+        const here = location.href.split('#')[0];
+        const isAndroid = /Android/i.test(ua), isIOS = /iPhone|iPad|iPod/i.test(ua);
+        let target = '';
+        if (isAndroid) target = 'intent://' + here.replace(/^https?:\/\//, '') + '#Intent;scheme=https;package=com.android.chrome;end';
+        else if (isIOS) target = 'x-safari-' + here;
+        const tip = function () {
+          alert(t('這個 App 的內建瀏覽器不能用 Google 登入。請按右上角的三個點選單，選「用瀏覽器開啟」（iPhone 選「在外部瀏覽器開啟」），再到瀏覽器裡登入。',
+            'Google sign-in does not work in this app’s built-in browser. Tap the menu at the top right, choose “Open in browser” (on iPhone, “Open in external browser”), then sign in there.'));
+        };
+        if (!target) { tip(); return true; }
+        let left = false;
+        const mark = function () { if (document.hidden) left = true; };
+        document.addEventListener('visibilitychange', mark);
+        window.addEventListener('pagehide', function () { left = true; }, { once: true });
+        location.href = target;
+        setTimeout(function () { document.removeEventListener('visibilitychange', mark); if (!left && !document.hidden) tip(); }, 1500);
         return true;
       }
       return false;
