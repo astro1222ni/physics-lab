@@ -307,7 +307,8 @@
       const g = C.measureRect(b, c.pins.A, c.pins.B, c.pins.C, c.pins.D);
       if (!g.ok) return { ok: false, why: g.why };
       // 光若先碰到側面（側面全反射後才從下表面出來），畫出的 OO′ 就不是真正的光路
-      const tr = C.trace(b, n, c.pins.A, C.sub(c.pins.B, c.pins.A));
+      const ir = C.incRay(b, c.pins.A, c.pins.B); // A、B 不限先後
+      const tr = C.trace(b, n, ir.p, ir.u);
       if (tr.faces.length !== 2 || tr.faces[0] !== 'top' || tr.faces[1] !== 'bottom') return { ok: false, why: 'side' };
       const th1 = C.readAngle(g.th1 / DEG, st.res, sigA, r), th2 = C.readAngle(g.th2 / DEG, st.res, sigA, r);
       const th3 = C.readAngle(g.th3 / DEG, st.res, sigA, r), th4 = C.readAngle(g.th4 / DEG, st.res, sigA, r);
@@ -477,8 +478,9 @@
     const b = block(), n = nNow(), k = key(), pn = cfg().pins;
     if (k === 'rect') {
       if (!pn.A || !pn.B) return;
-      const tr = C.trace(b, n, pn.A, C.sub(pn.B, pn.A));
-      if (tr.missed) { beam(c, [pn.A, extend(pn.A, C.sub(pn.B, pn.A), 40)], 0.8); return; }
+      const ir = C.incRay(b, pn.A, pn.B);
+      const tr = C.trace(b, n, ir.p, ir.u);
+      if (tr.missed) { beam(c, [ir.p, extend(ir.p, ir.u, 40)], 0.8); return; }
       beam(c, tr.pts.concat([extend(tr.pOut, tr.uOut, 40)]), 0.9);
       if (tr.refl) beam(c, [tr.refl.p, extend(tr.refl.p, tr.refl.u, 8)], Math.sqrt(tr.refl.R) * 0.7);
       return;
@@ -563,7 +565,7 @@
       halo(c, 'N', X(O.x) + 5, Y(O.y + 4.2) + 2, D.c.muted, 'left', 'middle', 12, 'italic 600');
       if (st.prot) protractor(c, O, rp);
       // 入射線延長（虛線）與側向位移
-      const uAB = C.unit(C.sub(pn.B, pn.A));
+      const uAB = C.unit(C.sub(O, farA)); // 入射方向（A、B 不限先後）
       const foot = C.add(pn.A, C.mul(uAB, C.dot(C.sub(O2, pn.A), uAB)));
       line(c, O, extend(foot, uAB, 1.2), D.alpha(D.c.pos, 0.45), 1.2, [6, 5]);
       // 光路：AB→O、OO′、O′→CD
@@ -1692,7 +1694,7 @@
 
   // 測試用（Playwright 與任務證明）：讀取狀態、直接放針
   window.__ri = {
-    st: st, CFG: CFG, views: views, alignInfo: alignInfo, measureNow: measureNow, groupStats: groupStats,
+    st: st, CFG: CFG, views: views, alignInfo: alignInfo, measureNow: measureNow, groupStats: groupStats, block: block, nNow: nNow,
     place: function (id, p) { touched = true; if (id === 'eye') cfg().eye = p; else cfg().pins[id] = p; invalidate(); }
   };
 })();
