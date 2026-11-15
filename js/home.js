@@ -17,6 +17,16 @@
     root.style.setProperty('--subject-key-min', Math.ceil(Math.max(...cards.map(a => a.getBoundingClientRect().height))) + 'px');
   }
   window.addEventListener('resize', equalKeys);
+  // 11/15 站長：四大類區塊點開才展開；記住每個人上次開了哪幾塊（只存在這台裝置）
+  document.querySelectorAll('details.subject-group').forEach(d => {
+    const open = read('labHomeGroups', {});
+    if (open[d.dataset.group]) d.open = true;
+    d.addEventListener('toggle', () => {
+      const o = read('labHomeGroups', {}); o[d.dataset.group] = d.open ? 1 : 0;
+      try { localStorage.setItem('labHomeGroups', JSON.stringify(o)); } catch (e) {}
+      if (d.open) equalKeys();
+    });
+  });
   const clock = () => Date.now() + (window.LAB_MISSIONS_BACKEND ? +(localStorage.getItem('mockoffset') || 0) : 0);
   function recent() { return Object.keys(hist).filter(s => catalog.some(x => x.s === s)).sort((a, b) => hist[b].t - hist[a].t).slice(0, 3).map(s => catalog.find(x => x.s === s)); }
   function thumb(x) { const img = el('img', 'module-thumb'); img.dataset.thumb = x.s; img.alt = ''; img.width = 96; img.height = 60; img.loading = 'lazy'; return img; }

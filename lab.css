@@ -1782,3 +1782,40 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .home-page .home-top > .brand-row { padding-top:0; padding-right:var(--head-reserve,150px); }
 @media (max-width:560px) { .home-page .home-top > .brand-row { padding-right:0; } }
 @media (min-width:1024px) { .home-page .home-top > .brand-row { margin-right:75px; } }
+/* 11/15 站長：四大類先收成四個區塊（點開才展開各科），手機一排兩科 */
+.home-page .subject-groups { gap:14px; }
+.sg-head { list-style:none; cursor:pointer; position:relative; display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:12px; row-gap:2px; align-items:center; min-height:64px; padding:14px 18px; border:2px solid var(--border); border-radius:16px; background:var(--surface); box-shadow:0 4px 0 var(--border); transition:transform 120ms ease-out,box-shadow 120ms ease-out; -webkit-tap-highlight-color:transparent; }
+.sg-head::-webkit-details-marker { display:none; }
+.sg-head::marker { content:''; }
+.sg-head h3 { grid-column:1; margin:0; display:flex; align-items:baseline; gap:10px; font-size:calc(22px * var(--fs,1)); font-weight:800; line-height:1.25; color:var(--text); }
+.sg-meta { grid-column:1; font-size:calc(14px * var(--fs,1)); font-weight:700; line-height:1.5; color:var(--accent); }
+.sg-names { grid-column:1; font-size:calc(13.5px * var(--fs,1)); line-height:1.5; color:var(--muted); word-break:keep-all; overflow-wrap:anywhere; }
+.sg-chev { grid-column:2; grid-row:1 / span 3; width:12px; height:12px; margin:0 6px 6px 0; border-right:3px solid var(--muted); border-bottom:3px solid var(--muted); transform:rotate(45deg); transition:transform 160ms ease-out; }
+.subject-group[open] > .sg-head { margin-bottom:16px; }
+.subject-group[open] > .sg-head .sg-chev { transform:rotate(-135deg); margin:6px 6px 0 0; }
+.sg-head:hover { border-color:var(--accent); }
+.sg-head:active { transform:translateY(3px); box-shadow:0 1px 0 var(--border); }
+.home-page .sg-head:focus-visible { outline:3px solid var(--accent); outline-offset:3px; }
+.subject-group .subject-soon { margin:10px 4px 0; }
+.subject-group:not([open]) .subject-soon { display:none; }
+.home-page .subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); column-gap:10px; row-gap:16px; }
+@media (max-width:560px) {
+  .home-page .subject-card { grid-template-columns:calc(34px * var(--fs,1)) minmax(0,1fr); column-gap:8px; row-gap:4px; padding:12px 10px 10px; min-height:0; }
+  .home-page .subject-card > svg { width:calc(34px * var(--fs,1)); height:calc(34px * var(--fs,1)); grid-row:1; align-self:start; }
+  .home-page .subject-name { flex-direction:column; align-items:flex-start; gap:0; }
+  .home-page .subject-name h3 { font-size:calc(22px * var(--fs,1)); }
+  .home-page .subject-branches { display:none; }
+  .home-page .subject-extra { grid-column:1 / -1; }
+}
+@media (min-width:1100px) {
+  .home-page .subject-groups { grid-template-columns:minmax(0,1fr); }
+  .home-page .group-sci { grid-column:auto; }
+  .home-page .subject-grid, .home-page .group-sci .subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion:reduce) { .sg-head, .sg-chev { transition:none; } }
+/* 手機兩欄：圖示放上面、科目名整行，「地球科學」「Information Technology」在特大字也不會從字中間斷開 */
+@media (max-width:560px) {
+  .home-page .subject-card { grid-template-columns:minmax(0,1fr); }
+  .home-page .subject-name h3 { word-break:keep-all; overflow-wrap:break-word; }
+  html[lang="en"] .home-page .subject-name h3 { font-size:calc(19px * var(--fs,1)); hyphens:auto; }
+}

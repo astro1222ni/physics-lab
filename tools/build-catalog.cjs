@@ -193,7 +193,11 @@ const groups = W.LAB_SUBJECT_GROUPS.map(g => {
   });
   const zh = '製作中：' + g.soon.map(s => s.zh).join('・'), en = 'Coming soon: ' + g.soon.map(s => s.en).join(' · ');
   const soon = g.soon.length ? text(esc(zh), en, 'p', 'class="subject-soon" role="note" aria-label="' + esc(zh) + '" data-en-aria-label="' + esc(en) + '"') : '';
-  return `<section class="subject-group group-${g.id}" aria-labelledby="group-${g.id}">${text(g.zh, g.en, 'h3', 'id="group-' + g.id + '"')}<div class="subject-grid">${cards.join('\n')}</div>${soon}</section>`;
+  // 11/15 站長：四大類先收成四個區塊，點開才展開各科（details／summary；home.js 記住開合）
+  const gs = subjects.filter(s => s.group === g.id), nLive = gs.reduce((n, s) => n + list.filter(x => x.d === s.dom).length, 0);
+  const names = text(esc(gs.map(s => s.zh).concat(g.soon.map(s => s.zh)).join('・')), gs.map(s => s.en).concat(g.soon.map(s => s.en)).join(' · '), 'span', 'class="sg-names"');
+  const meta = gs.length ? text(gs.length + ' 科・' + nLive + ' 個實驗', gs.length + (gs.length > 1 ? ' subjects' : ' subject') + ' · ' + nLive + ' labs', 'span', 'class="sg-meta"') : text('製作中', 'Coming soon', 'span', 'class="sg-meta"');
+  return `<details class="subject-group group-${g.id}" data-group="${g.id}"><summary class="sg-head">${text(g.zh, g.en, 'h3', 'id="group-' + g.id + '"')}${meta}${names}<span class="sg-chev" aria-hidden="true"></span></summary>${cards.length ? '<div class="subject-grid">' + cards.join('\n') + '</div>' : ''}${soon}</details>`;
 }).join('\n');
 home = marker(home, 'SUBJECTS', '<div class="subject-groups">' + groups + '</div>');
 const daily = require('../js/daily-core.js');
