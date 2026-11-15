@@ -1,9 +1,10 @@
 # 2026-11-15 首頁改版交接（home-v2，待 Claude 審查合併）
 
-- 首頁只放個人狀態、四大類八科入口、最新上架與本機推薦；八科頁名與流程以 CLAUDE.md 最後一節為準。下方舊交接內容保留為歷史紀錄，首頁結構以本節為準。
+- 首頁放個人狀態、獨立每日任務橫幅、四大類八科按鍵、最新上架與本機推薦各四張；科目按鍵沿用舊 domain-tab 字級，3／2／1 欄，製作中為文字列。八科頁名與流程以 CLAUDE.md 最後一節為準。下方保留歷史紀錄，首頁結構以本節為準。
 - 182 個實驗原樣搬到科目頁，184 頁舊導覽連結更新。catalog s/d/b/c 與 chapter-map 的固定基準由產生工具及單元測試檢查。
 - 新實驗卡片放科目頁；新科建科目頁、補 LAB_SUBJECTS.page/dom/group、移除 LAB_SUBJECT_GROUPS.soon，再跑 apply-directory、seo、fix-crumbs、build-hans。不可重跑 split-home。
-- 首頁帳號讀取四筆個人資料，沿用的登入權限判斷另讀 admins/<uid>；這筆額外讀取列為設計差異供審稿。沒有全 scores 查詢。
+- 首頁帳號只讀 profiles、scores、daily、completions、bag 各自 /<uid>，共五筆；原有登入權限另讀 admins/<uid>，訪客零筆，不查全 scores。每日進度沿用 daily，名次快取七天失效，寶物顯示剩餘數；入口登入支援 popup／redirect 回跳。
+- 上架日已用全分支歷史複核，原182筆日期正確（11/11–13）。Git證據綁定的首次建站批次不計後續新徽章；其他七日新增超過該科30%即停止產生。詳見修改清單第16項的實作例外。
 - 首頁相關試玩以 tools/playtest-home.cjs 處理，與物理任務試玩分開；總表原圖由 tools/review-home.cjs 產生。
 - 本分支未上線；只 commit 本次修改與交件單，總表不 commit，不執行 stamp。完整驗收數字見 交件-首頁改版.md。
 

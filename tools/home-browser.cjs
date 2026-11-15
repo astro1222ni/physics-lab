@@ -22,7 +22,7 @@ async function server() {
   return { srv, base: 'http://127.0.0.1:' + srv.address().port + '/' };
 }
 async function context(browser, base, opts = {}) {
-  const o = Object.assign({ w: 390, h: 900, lang: 'zh-Hant', theme: 'light', fs: 1, state: 'guest' }, opts);
+  const o = Object.assign({ w: 390, h: 844, lang: 'zh-Hant', theme: 'light', fs: 1, state: 'guest' }, opts);
   const ctx = await browser.newContext({ viewport: { width: o.w, height: o.h }, colorScheme: o.theme, hasTouch: o.w < 720, reducedMotion: 'reduce', javaScriptEnabled: o.js !== false });
   await ctx.route(u => !u.href.startsWith(base), r => r.abort());
   await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') });
@@ -34,13 +34,15 @@ async function context(browser, base, opts = {}) {
       localStorage.setItem('lab-settings', JSON.stringify({ lang: o.lang, theme: o.theme, fs: o.fs }));
       localStorage.setItem('lab-welcome-v1', 'skip');
       const uid = o.state === 'admin' ? 'admin1' : 'u1', now = Date.now();
-      const mdb = { profiles: { u1: { nickname: 'Explorer 07', pub: false }, admin1: { nickname: 'Astro Ni', pub: false } }, scores: {}, completions: {}, daily: {}, missionDefs: {}, admins: { admin1: true } };
+      const mdb = { profiles: { u1: { nickname: 'Explorer 07', pub: false }, admin1: { nickname: 'Astro Ni', pub: false } }, scores: {}, completions: {}, daily: {}, bag: {}, missionDefs: {}, admins: { admin1: true } };
       mdb.scores[uid] = { stars: 136, s: { phy: 108, math: 28 } };
+      mdb.bag[uid] = { cu: 18, ag: 7, au: 3, dia: 1, key: 0, used: { cu: 5, ag: 2, au: 1 } };
       mdb.completions[uid] = { 'projectile-1': { stars: 1 }, 'projectile-2': { stars: 2 }, 'projectile-3': { stars: 3 } };
       mdb.daily[uid] = { d: Math.floor((now + 8 * 3600000) / 86400000), n: 4, done: { a: true, b: true, c: true, d: true }, picks: [], at: now };
       localStorage.setItem('mdb', JSON.stringify(mdb)); localStorage.setItem('mocknext', uid);
       if (o.state === 'member' || o.state === 'admin') localStorage.setItem('mockuser', uid);
-      if (['member', 'admin', 'history'].includes(o.state)) localStorage.setItem('labHist', JSON.stringify({ projectile: { v: 8, s: 1200, o: 22, t: now }, 'newton-second': { v: 5, s: 600, o: 15, t: now - 86400000 }, 'incline-friction': { v: 2, s: 300, o: 6, t: now - 172800000 } }));
+      localStorage.setItem('labHomeSignedIn', ['member','admin'].includes(o.state) ? '1' : '0');
+      if (!o.noHistory && ['member', 'admin', 'history'].includes(o.state)) localStorage.setItem('labHist', JSON.stringify({ projectile: { v: 8, s: 1200, o: 22, t: now }, 'newton-second': { v: 5, s: 600, o: 15, t: now - 86400000 }, 'incline-friction': { v: 2, s: 300, o: 6, t: now - 172800000 } }));
       localStorage.setItem('labRank:' + uid, JSON.stringify({ rank: 12, at: now - 172800000 }));
     }
     window.LAB_STATS_DB = location.origin + '/__stats';
@@ -57,21 +59,42 @@ async function context(browser, base, opts = {}) {
     bind();
     const f = window.fetch.bind(window);
     window.fetch = (url, init) => { if (String(url).includes('/__stats/') && (!init || !init.method || init.method === 'GET')) window.__statsReads.push(String(url)); return f(url, init); };
-    document.addEventListener('DOMContentLoaded', () => { const s = document.querySelector('.my-status'); if (s) window.__statusHeightBefore = s.getBoundingClientRect().height; });
+    const sample = () => { const s=document.querySelector('.my-status'),d=document.querySelector('.daily-banner');if(s)window.__statusHeightBefore=s.getBoundingClientRect().height;if(d)window.__dailyHeightBefore=d.getBoundingClientRect().height; };
+    let queued=false;
+    const baseline=new MutationObserver(()=>{if(!queued&&document.querySelector('.status-skeleton .status-main')){queued=true;requestAnimationFrame(sample);baseline.disconnect();}});baseline.observe(document,{childList:true,subtree:true});
+    document.addEventListener('DOMContentLoaded',()=>{if(!queued){queued=true;requestAnimationFrame(sample);baseline.disconnect();}});
   }, o);
   return ctx;
 }
 async function ready(page, slug) {
-  if (slug === 'index') await page.waitForFunction(() => document.querySelectorAll('#recommendations .entry-card').length === 6 && document.querySelector('#home-status')?.getAttribute('aria-busy') === 'false');
+  if (slug === 'index') await page.waitForFunction(() => document.querySelectorAll('#recommendations .entry-card').length === 4 && document.querySelector('#home-status')?.getAttribute('aria-busy') === 'false' && Number.isFinite(window.__statusHeightBefore) && Number.isFinite(window.__dailyHeightBefore));
   else await page.waitForFunction(() => document.querySelector('.subject-count')?.textContent.length > 0);
   await page.evaluate(() => document.fonts.ready);
 }
 async function inspect(page) {
   return page.evaluate(() => {
     const sw = document.documentElement.scrollWidth, vw = innerWidth;
+    const smallText=[]; let mutedContrast=null;
+    if(document.body.classList.contains('home-page')) {
+      const fs=+getComputedStyle(document.documentElement).getPropertyValue('--fs')||1,walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+      for(let n;(n=walk.nextNode());){const e=n.parentElement;if(!n.textContent.trim()||e.closest('svg,script,style,.lab-settings,.lab-set-panel,.lab-gear,[aria-hidden="true"]')||!e.getClientRects().length)continue;const s=getComputedStyle(e);if(s.visibility!=='hidden'&&parseFloat(s.fontSize)+.05<12*fs)smallText.push({text:n.textContent.trim().slice(0,40),px:s.fontSize});}
+      const rgb=s=>(s.match(/[\d.]+/g)||[]).slice(0,3).map(Number),lum=c=>c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4}).reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0),contrast=(a,b)=>{const x=lum(a),y=lum(b);return(Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+      const fg=rgb(getComputedStyle(document.querySelector('.subject-branches')).color),dark=getComputedStyle(document.body).backgroundColor==='rgb(15, 21, 23)',faces=dark?[[37,44,53],[26,31,38]]:[[255,255,255],[241,244,247]];
+      const ratios=[];document.querySelectorAll('.subject-card').forEach(e=>{const wash=getComputedStyle(e).getPropertyValue('--key-wash').match(/[\d.]+/g).map(Number);for(const f of faces){ratios.push(contrast(fg,f),contrast(fg,f.map((n,i)=>n*(1-wash[3])+wash[i]*wash[3])));}});mutedContrast=Math.min(...ratios);
+    }
     const cards = [...document.querySelectorAll('.subject-card')].map(a => { const r = a.getBoundingClientRect(), h = getComputedStyle(a.querySelector('h3')); return { w: r.width, h: r.height, font: h.fontSize, y: r.top, bottom: r.bottom, href: a.getAttribute('href') }; });
     const cjk = []; if (document.documentElement.lang === 'en') { const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); for (let n; (n = walker.nextNode());) if (/[一-鿿]/.test(n.textContent) && !n.parentElement.closest('script,style,.lab-settings,.lab-set-panel,.lab-gear,body [lang^="zh"]')) cjk.push(n.textContent.slice(0, 50)); }
-    return { sw, vw, cards, cjk, account: window.__homeReads || [], privilege: window.__privilegeReads || [], stats: window.__statsReads || [], statusHeight: document.querySelector('.my-status')?.getBoundingClientRect().height, beforeHeight: window.__statusHeightBefore, recs: [...document.querySelectorAll('#recommendations .entry-card')].map(a => a.getAttribute('href')), current: document.querySelector('.subject-switch [aria-current]')?.getAttribute('href'), textbookHidden: document.querySelector('.textbook-control')?.hidden };
+    return { sw, vw, cards, cjk, smallText, mutedContrast, account: window.__homeReads || [], privilege: window.__privilegeReads || [], stats: window.__statsReads || [], statusHeight: document.querySelector('.my-status')?.getBoundingClientRect().height, beforeHeight: window.__statusHeightBefore, dailyHeight:document.querySelector('.daily-banner')?.getBoundingClientRect().height,beforeDailyHeight:window.__dailyHeightBefore, recs: [...document.querySelectorAll('#recommendations .entry-card')].map(a => a.getAttribute('href')), current: document.querySelector('.subject-switch [aria-current]')?.getAttribute('href'), textbookHidden: document.querySelector('.textbook-control')?.hidden };
   });
 }
-module.exports = { server, context, ready, inspect, subjects };
+async function primeImages(page) {
+  const before = await page.locator('img.module-thumb').evaluateAll(imgs => imgs.filter(i => !i.complete || !i.naturalWidth).length);
+  const height = await page.evaluate(() => document.documentElement.scrollHeight);
+  for(let y=0;y<height;y+=Math.max(250,Math.floor(page.viewportSize().height*.8))) { await page.evaluate(y=>scrollTo(0,y),y); await page.waitForTimeout(300); }
+  await page.evaluate(()=>scrollTo(0,document.documentElement.scrollHeight)); await page.waitForTimeout(300);
+  const images=await page.locator('img.module-thumb').evaluateAll(async imgs=>{await Promise.all(imgs.map(i=>i.decode().catch(()=>{})));return imgs.map(i=>({slug:i.dataset.thumb,loaded:i.complete&&i.naturalWidth>0,source:i.getAttribute('src')}));});
+  await page.evaluate(()=>scrollTo(0,0)); await page.waitForTimeout(50);
+  if(images.some(i=>!i.loaded))throw new Error('捲動解碼後仍有空白縮圖：'+images.filter(i=>!i.loaded).map(i=>i.slug).join(','));
+  return {before,afterMissing:0,images};
+}
+module.exports = { server, context, ready, inspect, primeImages, subjects };

@@ -8,13 +8,17 @@
   const count = document.querySelector('.subject-count'), n = domain.querySelectorAll('.module.live').length, chapters = domain.querySelectorAll('.chapter').length;
   count.textContent = T(n + ' 個實驗・' + chapters + ' 章', n + ' labs · ' + chapters + ' chapters');
   const switching = document.querySelector('.subject-switch'), current = switching.querySelector('[aria-current="page"]');
-  function center() { switching.scrollLeft = Math.max(0, current.offsetLeft - switching.offsetLeft - (switching.clientWidth - current.offsetWidth) / 2); }
+  const switchWrap = document.createElement('div'); switchWrap.className = 'scroll-cue subject-switch-wrap'; switching.before(switchWrap); switchWrap.appendChild(switching);
+  function fades(scroller, wrap) { wrap.classList.toggle('can-left', scroller.scrollLeft > 1); wrap.classList.toggle('can-right', scroller.scrollWidth - scroller.clientWidth - scroller.scrollLeft > 1); }
+  switching.addEventListener('scroll', () => fades(switching, switchWrap), { passive: true });
+  function center() { switching.scrollLeft = Math.max(0, current.offsetLeft - switching.offsetLeft - (switching.clientWidth - current.offsetWidth) / 2); fades(switching, switchWrap); }
   requestAnimationFrame(center);
   const nav = document.querySelector('.branch-nav'), branches = [...document.querySelectorAll('.branch')];
-  const bar = document.createElement('nav'); bar.className = 'subjbar'; bar.setAttribute('aria-label', T('跳到分支', 'Jump to a field'));
+  const bar = document.createElement('nav'); bar.className = 'subjbar scroll-cue'; bar.setAttribute('aria-label', T('跳到分支', 'Jump to a field'));
   const inner = document.createElement('div'); inner.className = 'subjbar-in'; bar.appendChild(inner);
   [...nav.querySelectorAll('a')].forEach(a => { const chip = a.cloneNode(true); chip.className = 'subjbar-chip'; chip.tabIndex = -1; inner.appendChild(chip); });
-  const top = document.createElement('button'); top.type = 'button'; top.className = 'to-top'; top.textContent = T('↑ 回頂端', '↑ Top'); top.setAttribute('aria-label', T('回到頁首', 'Back to top')); top.tabIndex = -1;
+  inner.addEventListener('scroll', () => fades(inner, bar), { passive: true });
+  const top = document.createElement('button'); top.type = 'button'; top.className = 'to-top'; top.textContent = '↑'; top.setAttribute('aria-label', T('回到頁首', 'Back to top')); top.tabIndex = -1;
   document.body.append(bar, top); document.documentElement.classList.add('has-subjbar');
   let shown, active = '', raf = false;
   function update() {
@@ -22,8 +26,8 @@
     if (shown !== on) { shown = on; [bar, top].forEach(e => { e.classList.toggle('show', on); e.setAttribute('aria-hidden', String(!on)); }); top.tabIndex = on ? 0 : -1; inner.querySelectorAll('a').forEach(a => a.tabIndex = on ? 0 : -1); }
     let id = branches[0]?.id;
     branches.forEach(b => { if (b.getBoundingClientRect().top < bar.offsetHeight + 40) id = b.id; });
-    if (active === id) return; active = id;
-    inner.querySelectorAll('a').forEach(a => { const match = a.hash === '#' + id; a.classList.toggle('on', match); if (match) { a.setAttribute('aria-current', 'location'); inner.scrollLeft = a.offsetLeft - (inner.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute('aria-current'); });
+    fades(inner, bar); if (active === id) return; active = id;
+    inner.querySelectorAll('a').forEach(a => { const match = a.hash === '#' + id; a.classList.toggle('on', match); if (match) { a.setAttribute('aria-current', 'location'); inner.scrollLeft = a.offsetLeft - (inner.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute('aria-current'); }); fades(inner, bar);
   }
   addEventListener('scroll', () => { if (!raf) { raf = true; requestAnimationFrame(update); } }, { passive: true }); addEventListener('resize', () => { center(); update(); });
   top.onclick = () => { scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); history.replaceState(null, '', location.pathname + location.search); const h = document.querySelector('h1'); h.tabIndex = -1; h.focus({ preventScroll: true }); };

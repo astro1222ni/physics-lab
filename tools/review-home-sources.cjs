@@ -25,7 +25,7 @@ assert.equal(index.match(/<meta name="google-site-verification"[^>]+>/)[0], old.
 assert(Buffer.byteLength(index) < 60 * 1024);
 for (const f of fs.readdirSync(ROOT).filter(f => f.endsWith('.html'))) assert(!/href=(?:"|&quot;)index\.html#/.test(read(f)), '殘留舊連結 ' + f);
 const latest = [...index.matchAll(/class="entry-card" href="([^"]+)\.html"/g)].map(m => C.LAB_CATALOG.find(x => x.s === m[1]));
-assert.equal(latest.length, 6); for (let i = 1; i < latest.length; i++) assert(latest[i - 1].l >= latest[i].l);
+assert.equal(latest.length, 4); for (let i = 1; i < latest.length; i++) assert(latest[i - 1].l >= latest[i].l);
 for (const s of subjects) assert(latest.filter(x => x.d === s.dom).length <= 2);
 for (const s of subjects) {
   const html = read(s.page + '.html'); assert(html.includes('CollectionPage') && html.includes('BreadcrumbList') && html.includes('hreflang="en"') && html.includes('og:image'));
@@ -33,5 +33,5 @@ for (const s of subjects) {
   assert(C.LAB_CATALOG.filter(x => x.d === s.dom).every(x => W.LAB_SUBJECT_OF(x.s) === s.id));
 }
 const result = { at: new Date().toISOString(), labs: before.size, moduleHTMLPages: modules.size, extraModules: [...modules].filter(s => !W.LAB_LIVE_MODULES.includes(s)), exactCards: true, exactModuleHTMLExceptCrumbsSEO: true, unchangedMissionLists: true, chapterSHA256: hash(read('js/chapter-map.js')), googleVerification: true, noOldHrefs: true, latest: latest.map(x => ({ s: x.s, d: x.d, l: x.l })), files: Object.fromEntries(['index', ...subjects.map(s => s.page)].map(s => [s + '.html', fs.statSync(path.join(ROOT, s + '.html')).size])) };
-fs.mkdirSync(path.join(ROOT, '.shots/home-v2'), { recursive: true }); fs.writeFileSync(path.join(ROOT, '.shots/home-v2/source-audit.json'), JSON.stringify(result, null, 1));
+fs.mkdirSync(path.join(ROOT, '.shots/home-v2-r2'), { recursive: true }); fs.writeFileSync(path.join(ROOT, '.shots/home-v2-r2/source-audit.json'), JSON.stringify(result, null, 1));
 console.log('來源稽核通過：' + before.size + ' 張原卡逐字相同、' + modules.size + ' 實驗頁僅導覽／SEO 變更、任務清單與章制霸不變、舊連結 0 處。');

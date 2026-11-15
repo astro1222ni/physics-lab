@@ -120,10 +120,14 @@
 
 - 八科頁：physics、chemistry、biology、earth-science、mathematics、information-technology、geography、music（皆在根目錄）。唯一頁名／分類來源是 LAB_SUBJECTS 與 LAB_SUBJECT_GROUPS。
 - 首頁沒有分支、章或完整實驗卡列。原本科目區完整搬到科目頁；實驗 slug、網址、任務、星星、成就、catalog 的 s/d/b/c 與章制霸對照不變。搬遷不變量在 tools/home-v2-invariants.json。
-- 新實驗卡片加入對應科目頁；新科目先建科目頁和目錄，再讓首頁的製作中框變成大卡。請勿再跑一次性 tools/split-home.cjs。
-- npm run seo 先 build-catalog，再 SEO：科目卡數字、規劃數、最新六張、上架日、相似實驗、搜尋索引、同步錨點轉址表、科目分享卡／結構化資料／網站地圖。科目頁為非實驗頁，不得進入任務試玩或縮圖的實驗清單。
+- 新實驗卡片加入對應科目頁；新科目先建科目頁和目錄，再讓首頁的製作中文字列變成科目按鍵。請勿再跑一次性 tools/split-home.cjs。
+- npm run seo 先 build-catalog，再 SEO：科目卡數字、規劃數、最新四張、上架日、相似實驗、搜尋索引、同步錨點轉址表、科目分享卡／結構化資料／網站地圖。科目頁為非實驗頁，不得進入任務試玩或縮圖的實驗清單。
 - search-index.js 只在聚焦搜尋或 ?q= 時載入。科目頁以 data-scope 限定本科，另連全科搜尋。home.js 在首次繪製後載入 catalog；LabThumbs.apply(root) 支援新卡與深淺色。
 - stats.js 的 labHist 只存本機，最多 200 筆；推薦純前端，日期固定排序，限制同章／同科數並保留跨科。排行榜將本人全科名次存 labRank:<uid>，首頁只顯示快取，不現算排名。
-- 首頁個人資料只讀 profiles/<uid>、scores/<uid>、daily/<uid>、completions/<uid>，共四筆且共用暱稱資料；既有登入選單另查一次 admins/<uid> 權限。未登入不查帳號節點，絕不讀全份 scores。統計為匿名節點，sessionStorage 快取五分鐘。
+- 首頁個人資料只讀 profiles/<uid>、scores/<uid>、daily/<uid>、completions/<uid>、bag/<uid>，共五筆且共用暱稱資料；既有登入選單另查一次 admins/<uid> 權限。未登入不查帳號節點，絕不讀全份 scores。統計為匿名節點，sessionStorage 快取五分鐘。
+- 首頁狀態摘要與唯一主色按鈕連到星星／成就，名次快取7天失效，五寶物顯示扣除已用後的剩餘數；每日任務獨立暖金橫幅，臺灣00:00換日。入口登入以sessionStorage.labAfterLogin保留popup／redirect目的地，取消不跳頁。
+- 科目按鍵沿用舊domain-tab的52 px圖示、23 px科名、13.5 px分支；3／2／1欄（1100／561斷點）、5 px厚邊、明算深淺色edge token。製作中只用文字列；最新與推薦各4張（同章／同科最多2、跨科至少1），冷啟動4科、8日涵蓋八科，跨科理由須x或cosine≥0.25。
+- 日期用全分支最早新增紀錄，含改名與舊路徑；catalog-launch.json綁定首次建站182筆，真實日期保留但不計後續新徽章，其他七日新增超過該科30%即失敗。
+- 科目整頁截圖前逐段捲動停300 ms，再等所有縮圖解碼；科目切換與黏頂列有24 px方向漸層，手機回頂端44 px圓形、頁底72 px。390×844首屏含完整每日橫幅與第一按鍵上緣；不再要求1280首屏全部八科。
 - 課本切換預留 hidden 結構。build-catalog 找到 docs/textbook/<科>.json 才啟用，保留 view=textbook 與本機版本選擇；本次沒有課本資料。
-- 本次工作不 stamp、不 push、不合併；供審稿素材在 .shots/home-v2/總表.html 與 總表/，後者不 commit。
+- 本次工作不 stamp、不 push、不合併；供審稿素材在 .shots/home-v2-r2/總表.html 與 總表/，後者不 commit。

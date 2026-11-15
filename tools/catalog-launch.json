@@ -1,0 +1,916 @@
+{
+  "sourceCommit": "26bf3f6fa3534a8def580853dbe6e5881d2b16c7",
+  "note": "首頁改版前的 182 個既有實驗。Git 最早始於 2026-11-11；此首次建站批次不計入後續新上架徽章，不修改真實上架日。每筆證據重查全歷史。",
+  "modules": {
+    "projectile": {
+      "path": "projectile.html",
+      "date": "2026-11-11",
+      "commit": "7f04fc7795632061493f6d205e30e27bde1322ce"
+    },
+    "collision": {
+      "path": "collision.html",
+      "date": "2026-11-11",
+      "commit": "7f04fc7795632061493f6d205e30e27bde1322ce"
+    },
+    "circular-motion": {
+      "path": "circular-motion.html",
+      "date": "2026-11-11",
+      "commit": "a5dcff498ad0e9fd83c8dbf58c3b1a3a45eb0e17"
+    },
+    "oscillation": {
+      "path": "oscillation.html",
+      "date": "2026-11-11",
+      "commit": "d24353222097df5d75e71a9dbb5e3b728ae04d0c"
+    },
+    "slit-interference": {
+      "path": "slit-interference.html",
+      "date": "2026-11-11",
+      "commit": "7f04fc7795632061493f6d205e30e27bde1322ce"
+    },
+    "refraction": {
+      "path": "refraction.html",
+      "date": "2026-11-11",
+      "commit": "d24353222097df5d75e71a9dbb5e3b728ae04d0c"
+    },
+    "electric-field": {
+      "path": "electric-field.html",
+      "date": "2026-11-11",
+      "commit": "de6d63e66423a7694f3d51ca4c517ac89e01ad4f"
+    },
+    "magnetic-particle": {
+      "path": "magnetic-particle.html",
+      "date": "2026-11-11",
+      "commit": "7f04fc7795632061493f6d205e30e27bde1322ce"
+    },
+    "lens-mirror": {
+      "path": "lens-mirror.html",
+      "date": "2026-11-11",
+      "commit": "90ee6022a799d3159ccaa703ffb9b5d149623889"
+    },
+    "doppler": {
+      "path": "doppler.html",
+      "date": "2026-11-11",
+      "commit": "0a2df449d19fbad771124f8d04f10abc4e8d46e2"
+    },
+    "standing-waves": {
+      "path": "standing-waves.html",
+      "date": "2026-11-11",
+      "commit": "d12c454a1d35acb56d906589517c5dc188a9a1a7"
+    },
+    "capacitor": {
+      "path": "capacitor.html",
+      "date": "2026-11-11",
+      "commit": "af4050dd3b4b8a3adf8cf1c9ed08f174d46340e5"
+    },
+    "kepler": {
+      "path": "kepler.html",
+      "date": "2026-11-11",
+      "commit": "287a1b14e8b32e4216c4814873dad5c66f712d28"
+    },
+    "dc-circuit": {
+      "path": "dc-circuit.html",
+      "date": "2026-11-11",
+      "commit": "f4c22f0c252b2c1cb8808e968d375f75a87ace74"
+    },
+    "photoelectric": {
+      "path": "photoelectric.html",
+      "date": "2026-11-11",
+      "commit": "6c2f7bb2264b985efb09498d3ead4fd2a3cce2c5"
+    },
+    "faraday": {
+      "path": "faraday.html",
+      "date": "2026-11-11",
+      "commit": "9bffe5966f0c84a8977f648a9f40899e1b534dd1"
+    },
+    "radioactive-decay": {
+      "path": "radioactive-decay.html",
+      "date": "2026-11-11",
+      "commit": "f8325045199ffe68d08e4073bef0f036bf19226a"
+    },
+    "hydrogen-spectrum": {
+      "path": "hydrogen-spectrum.html",
+      "date": "2026-11-11",
+      "commit": "87608e7639d115a8bd1707fdd877fc852ff0452d"
+    },
+    "specific-heat": {
+      "path": "specific-heat.html",
+      "date": "2026-11-11",
+      "commit": "b70eb9113c9e405d14b4aae3f7916d67a786298d"
+    },
+    "newton-second": {
+      "path": "newton-second.html",
+      "date": "2026-11-11",
+      "commit": "155a416317b5b16d5b93d7b2b05e6866f25677d0"
+    },
+    "incline-friction": {
+      "path": "incline-friction.html",
+      "date": "2026-11-11",
+      "commit": "b84cd6b27b8b90257c56b38d7d2ff111b93da089"
+    },
+    "ideal-gas": {
+      "path": "ideal-gas.html",
+      "date": "2026-11-11",
+      "commit": "5755bf87eb67e22e0b0c5a5f34091d59f19e104c"
+    },
+    "atwood": {
+      "path": "atwood.html",
+      "date": "2026-11-11",
+      "commit": "bac6ad13748079e9c5d5835812f7009566dbb2c2"
+    },
+    "elevator": {
+      "path": "elevator.html",
+      "date": "2026-11-11",
+      "commit": "f177eb2a619416c5ef2d933cc317f5afbf6e5e54"
+    },
+    "free-fall": {
+      "path": "free-fall.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "ripple-tank": {
+      "path": "ripple-tank.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "resonance-tube": {
+      "path": "resonance-tube.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "refractive-index": {
+      "path": "refractive-index.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "e-over-m": {
+      "path": "e-over-m.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "ohms-law": {
+      "path": "ohms-law.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "equipotential": {
+      "path": "equipotential.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "thin-lens": {
+      "path": "thin-lens.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "microwave": {
+      "path": "microwave.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "current-balance": {
+      "path": "current-balance.html",
+      "date": "2026-11-12",
+      "commit": "b848f53608248f04a3fdc56d3c14d1e6555a462b"
+    },
+    "measurement": {
+      "path": "measurement.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "angular-momentum": {
+      "path": "angular-momentum.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "thin-film": {
+      "path": "thin-film.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "moon-phases": {
+      "path": "moon-phases.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "earthquake": {
+      "path": "earthquake.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "torque-balance": {
+      "path": "torque-balance.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "energy-coaster": {
+      "path": "energy-coaster.html",
+      "date": "2026-11-12",
+      "commit": "5f9dbf87f9d957e267fc7f2138cbfac6ee6e1be4"
+    },
+    "seasons": {
+      "path": "seasons.html",
+      "date": "2026-11-12",
+      "commit": "14a4654d64fa11eb2c6e7dfcc375f2d77a9ced6e"
+    },
+    "current-magnetic-field": {
+      "path": "current-magnetic-field.html",
+      "date": "2026-11-12",
+      "commit": "14a4654d64fa11eb2c6e7dfcc375f2d77a9ced6e"
+    },
+    "mendelian-inheritance": {
+      "path": "mendelian-inheritance.html",
+      "date": "2026-11-12",
+      "commit": "8883b38f20ccc986dd6666056142d58215346562"
+    },
+    "acid-base-titration": {
+      "path": "acid-base-titration.html",
+      "date": "2026-11-12",
+      "commit": "d4005d34f2e430c4f939e1c020638d5877ffccb9"
+    },
+    "tides": {
+      "path": "tides.html",
+      "date": "2026-11-12",
+      "commit": "721c4213bbc8d53875300435c73598a5dbf60d3b"
+    },
+    "conic-sections": {
+      "path": "conic-sections.html",
+      "date": "2026-11-12",
+      "commit": "57392da1755c9045cfc8a3e12c56608f96cbc040"
+    },
+    "molecular-shapes": {
+      "path": "molecular-shapes.html",
+      "date": "2026-11-12",
+      "commit": "5a43872b0875af9fdb8b3036de1bc3632c6ec29e"
+    },
+    "diffusion-osmosis": {
+      "path": "diffusion-osmosis.html",
+      "date": "2026-11-12",
+      "commit": "dbe4aa16af0889ced078a3e28aae09a5d6ece30a"
+    },
+    "trig-functions": {
+      "path": "trig-functions.html",
+      "date": "2026-11-12",
+      "commit": "74a6546b967b9000684138c9da75c648c012a669"
+    },
+    "reaction-rate": {
+      "path": "reaction-rate.html",
+      "date": "2026-11-12",
+      "commit": "e30b654499cd59cc657afa069b9dd2a8429e1386"
+    },
+    "action-potential": {
+      "path": "action-potential.html",
+      "date": "2026-11-12",
+      "commit": "62421c28156c74a46370704d23607ca2376d9b27"
+    },
+    "cloud-formation": {
+      "path": "cloud-formation.html",
+      "date": "2026-11-12",
+      "commit": "158abc30f66388be69ef9d4d3ce197b8f3f8a95b"
+    },
+    "chemical-equilibrium": {
+      "path": "chemical-equilibrium.html",
+      "date": "2026-11-12",
+      "commit": "07041871a44bc13f9c1caa6078853c9a1328f542"
+    },
+    "coriolis": {
+      "path": "coriolis.html",
+      "date": "2026-11-12",
+      "commit": "bbeb87eb6bce345b87a0326b2606ead1f5b716c2"
+    },
+    "galton-board": {
+      "path": "galton-board.html",
+      "date": "2026-11-12",
+      "commit": "e1a6b616d41262f0f1982b6a26db6dcaa04602df"
+    },
+    "derivative": {
+      "path": "derivative.html",
+      "date": "2026-11-12",
+      "commit": "31e75f5e39820d7de4e9c0f6c8bfa12bfd20a1bc"
+    },
+    "heat-engine": {
+      "path": "heat-engine.html",
+      "date": "2026-11-12",
+      "commit": "43719d289a14d2f8581994f47b537a69fe4354cd"
+    },
+    "greenhouse": {
+      "path": "greenhouse.html",
+      "date": "2026-11-12",
+      "commit": "8cdfa7a7f539f8e6f77939dc40d5f6dca526a23b"
+    },
+    "electrochemistry": {
+      "path": "electrochemistry.html",
+      "date": "2026-11-12",
+      "commit": "d78470caec96f391e82755ec8242ab1ad59675dc"
+    },
+    "space-vectors": {
+      "path": "space-vectors.html",
+      "date": "2026-11-12",
+      "commit": "3ce4c2318bbaa3589200999a5a1be6c91a08e681"
+    },
+    "population-growth": {
+      "path": "population-growth.html",
+      "date": "2026-11-12",
+      "commit": "b9bf6c8f42371fae5948ffe18a9b17ff59321d75"
+    },
+    "hardy-weinberg": {
+      "path": "hardy-weinberg.html",
+      "date": "2026-11-12",
+      "commit": "f1e16071253b7e624a09d128817d796ccc5275a3"
+    },
+    "binary-numbers": {
+      "path": "binary-numbers.html",
+      "date": "2026-11-13",
+      "commit": "9418fc6262824f693d28592c326f291fb0e57586"
+    },
+    "binary-search": {
+      "path": "binary-search.html",
+      "date": "2026-11-13",
+      "commit": "8a56ef3e20d5d70505750a7ceb93fe30e2e951e1"
+    },
+    "sorting": {
+      "path": "sorting.html",
+      "date": "2026-11-13",
+      "commit": "dd9ac7cb0efd96211367885ee0fc3d5d097b79d8"
+    },
+    "logic-gates": {
+      "path": "logic-gates.html",
+      "date": "2026-11-13",
+      "commit": "8aa76c38fd2141a06a96c60edf7dc261bad3e690"
+    },
+    "cryptography": {
+      "path": "cryptography.html",
+      "date": "2026-11-13",
+      "commit": "a9feac0f71cf94beb25a63c26bb3f85a16848532"
+    },
+    "packet-routing": {
+      "path": "packet-routing.html",
+      "date": "2026-11-13",
+      "commit": "90e601dfa466bd1d9a07359acf63a63bfcab5a5d"
+    },
+    "data-compression": {
+      "path": "data-compression.html",
+      "date": "2026-11-13",
+      "commit": "77c792a43dc80a10a5dffd533219b3f651d0f28e"
+    },
+    "perceptron": {
+      "path": "perceptron.html",
+      "date": "2026-11-13",
+      "commit": "7ba91de9d415b53d141af1aa7e9f4a3e61eab29c"
+    },
+    "shortest-path": {
+      "path": "shortest-path.html",
+      "date": "2026-11-13",
+      "commit": "a723d697eb654d76b10afb2ef6b8c08fd6c2a2dd"
+    },
+    "image-digitization": {
+      "path": "image-digitization.html",
+      "date": "2026-11-13",
+      "commit": "15ab6359c92a84c266dbfb49879d7c16597d1ea1"
+    },
+    "temperament": {
+      "path": "temperament.html",
+      "date": "2026-11-13",
+      "commit": "6a9492d59d3fadd741746ff0a2b13387ef744526"
+    },
+    "harmonic-series": {
+      "path": "harmonic-series.html",
+      "date": "2026-11-13",
+      "commit": "51fb4d889775a3bab61377913379ebd8a16098e8"
+    },
+    "string-instrument": {
+      "path": "string-instrument.html",
+      "date": "2026-11-13",
+      "commit": "869da855e1adab4264e5140710181e087a27773e"
+    },
+    "consonance": {
+      "path": "consonance.html",
+      "date": "2026-11-13",
+      "commit": "ae47fbc71db4feb0f3a03d8b668cf122ac65f6b1"
+    },
+    "wind-instrument": {
+      "path": "wind-instrument.html",
+      "date": "2026-11-13",
+      "commit": "ab94aceb23ac598e8f7805248847ef4863642fc1"
+    },
+    "chords": {
+      "path": "chords.html",
+      "date": "2026-11-13",
+      "commit": "ab94aceb23ac598e8f7805248847ef4863642fc1"
+    },
+    "drum-modes": {
+      "path": "drum-modes.html",
+      "date": "2026-11-13",
+      "commit": "c8ebdb405e548d9fd7169228cba6b3fd88f981bd"
+    },
+    "pitch-frequency": {
+      "path": "pitch-frequency.html",
+      "date": "2026-11-13",
+      "commit": "f83b45af0fdc7ae5c1b07ae968bc36bc74843afb"
+    },
+    "polyrhythm": {
+      "path": "polyrhythm.html",
+      "date": "2026-11-13",
+      "commit": "19e32962bd0bf89ee918b32c81cff9afaee35826"
+    },
+    "scales-modes": {
+      "path": "scales-modes.html",
+      "date": "2026-11-13",
+      "commit": "42ca6faf04b61d19004166b3a7d175e6089b1f66"
+    },
+    "ac-generator": {
+      "path": "ac-generator.html",
+      "date": "2026-11-13",
+      "commit": "03fd51e5f3a87531a0644143b93919545040903d"
+    },
+    "brownian-motion": {
+      "path": "brownian-motion.html",
+      "date": "2026-11-13",
+      "commit": "61bfd9069be20b04536e39b7eada55d3ab7f9d87"
+    },
+    "blackbody": {
+      "path": "blackbody.html",
+      "date": "2026-11-13",
+      "commit": "788086c6be5780a61a3990d859e71daace8c92c2"
+    },
+    "paper-chromatography": {
+      "path": "paper-chromatography.html",
+      "date": "2026-11-13",
+      "commit": "5a384d8acec7748e39bb25d757102e8f31d4f339"
+    },
+    "flame-test": {
+      "path": "flame-test.html",
+      "date": "2026-11-13",
+      "commit": "a9e288766f645827e00e0ebc7a43a243b3419716"
+    },
+    "atomic-orbitals": {
+      "path": "atomic-orbitals.html",
+      "date": "2026-11-13",
+      "commit": "57b1558872a1268f8d1751143746312eb8e6b404"
+    },
+    "electron-configuration": {
+      "path": "electron-configuration.html",
+      "date": "2026-11-13",
+      "commit": "903b92fdbfa27557a33e41b94cc3dd19c47ce8ef"
+    },
+    "periodic-trends": {
+      "path": "periodic-trends.html",
+      "date": "2026-11-13",
+      "commit": "8b94e791724d58c43e20f5d2b5e0036e73e154b0"
+    },
+    "gas-diffusion": {
+      "path": "gas-diffusion.html",
+      "date": "2026-11-13",
+      "commit": "3ec1a8617aa92fe88d4238e150f0b09cac3ee6ff"
+    },
+    "phase-diagram": {
+      "path": "phase-diagram.html",
+      "date": "2026-11-13",
+      "commit": "421e650933c999da826801b3ca5e56dea3c0cb76"
+    },
+    "crystal-structures": {
+      "path": "crystal-structures.html",
+      "date": "2026-11-13",
+      "commit": "79a89ee10823a1f4355ee1daa4b7e967ae72d2a3"
+    },
+    "solution-concentration": {
+      "path": "solution-concentration.html",
+      "date": "2026-11-13",
+      "commit": "8fe242dcbd47ad47dde629e9f6b219edb7562d46"
+    },
+    "colligative-properties": {
+      "path": "colligative-properties.html",
+      "date": "2026-11-13",
+      "commit": "be3d8fc2fcc622464033b1e9d757b5230627f4e3"
+    },
+    "mole-concept": {
+      "path": "mole-concept.html",
+      "date": "2026-11-13",
+      "commit": "a8fad65bfdef18b44e062e8e59f4d3855767a66d"
+    },
+    "stoichiometry": {
+      "path": "stoichiometry.html",
+      "date": "2026-11-13",
+      "commit": "8dbe46dd9eab04633826a107cd94e50507e07e56"
+    },
+    "hess-law": {
+      "path": "hess-law.html",
+      "date": "2026-11-13",
+      "commit": "cecfac3f9e984b97130d1e724322b17cacc1a9d7"
+    },
+    "gibbs-free-energy": {
+      "path": "gibbs-free-energy.html",
+      "date": "2026-11-13",
+      "commit": "49268f1f1b96b847a8ece9d541d6ee8123b69a5d"
+    },
+    "iodine-clock": {
+      "path": "iodine-clock.html",
+      "date": "2026-11-13",
+      "commit": "94ed5d8377381c8f1fd4c074db5bac7785e4e1dd"
+    },
+    "solubility-equilibrium": {
+      "path": "solubility-equilibrium.html",
+      "date": "2026-11-13",
+      "commit": "7bd0c5b22e0d7a9430ee6aba9e386812c5c3af52"
+    },
+    "ph-scale": {
+      "path": "ph-scale.html",
+      "date": "2026-11-13",
+      "commit": "e17356e36ef8decc2686b76d9695eba38450abb1"
+    },
+    "buffer-solutions": {
+      "path": "buffer-solutions.html",
+      "date": "2026-11-13",
+      "commit": "d3b596c498e386aab06fbabf64dd3ffcc45467a3"
+    },
+    "metal-activity": {
+      "path": "metal-activity.html",
+      "date": "2026-11-13",
+      "commit": "8e476fb262313e0d367737768865feb6bbe407b6"
+    },
+    "redox-titration": {
+      "path": "redox-titration.html",
+      "date": "2026-11-13",
+      "commit": "e8e03cfc4d46de963e7dd5bf9e74167852444a3a"
+    },
+    "organic-isomers": {
+      "path": "organic-isomers.html",
+      "date": "2026-11-13",
+      "commit": "43346f5d11a1e86f5c0c14ed3c730598b323254d"
+    },
+    "esterification": {
+      "path": "esterification.html",
+      "date": "2026-11-13",
+      "commit": "c5ff9b85fd9409665483c9742f13efa1a8a751f3"
+    },
+    "polymerization": {
+      "path": "polymerization.html",
+      "date": "2026-11-13",
+      "commit": "7a42518a62be67f011f175615b04aeaf31e73764"
+    },
+    "water-hardness": {
+      "path": "water-hardness.html",
+      "date": "2026-11-13",
+      "commit": "d7a0b86761bfa929e59ebda9a2a90808f1f0e574"
+    },
+    "enzyme-kinetics": {
+      "path": "enzyme-kinetics.html",
+      "date": "2026-11-13",
+      "commit": "0829b3b58f19389d7447a6dc51bc889f47fbbaa6"
+    },
+    "cell-division": {
+      "path": "cell-division.html",
+      "date": "2026-11-13",
+      "commit": "7446745403d2feeaa52666824953bda65ae26598"
+    },
+    "gene-expression": {
+      "path": "gene-expression.html",
+      "date": "2026-11-13",
+      "commit": "df3669085e2a8875aa12b562f52d41d11cacb5ab"
+    },
+    "oxygen-hemoglobin": {
+      "path": "oxygen-hemoglobin.html",
+      "date": "2026-11-13",
+      "commit": "e05b5b02afc9971a2edeca5070c6d226ab0b15f6"
+    },
+    "blood-glucose": {
+      "path": "blood-glucose.html",
+      "date": "2026-11-13",
+      "commit": "aa860d70f5c61018bf46ada37e3a8aa5dcfbd397"
+    },
+    "energy-flow": {
+      "path": "energy-flow.html",
+      "date": "2026-11-13",
+      "commit": "8d333a5ce7ab6ab45e07ad845b1f677e4975129b"
+    },
+    "biomimicry": {
+      "path": "biomimicry.html",
+      "date": "2026-11-13",
+      "commit": "b1b9bba0a5316269e1e29ca3d418335f68662ac7"
+    },
+    "slime-mold": {
+      "path": "slime-mold.html",
+      "date": "2026-11-13",
+      "commit": "77fb1264fa7500233cd53085df3bb08501ddd9d2"
+    },
+    "parallax": {
+      "path": "parallax.html",
+      "date": "2026-11-13",
+      "commit": "f4242355a218d4985719464ed906bdf2721b3679"
+    },
+    "stars-hr": {
+      "path": "stars-hr.html",
+      "date": "2026-11-13",
+      "commit": "9c1df767f100501e69297edcf7499722da3c17e3"
+    },
+    "sun-energy": {
+      "path": "sun-energy.html",
+      "date": "2026-11-13",
+      "commit": "b4020aaa0366c5d6b61ccf35539a5dd77bd8eab9"
+    },
+    "hubble-expansion": {
+      "path": "hubble-expansion.html",
+      "date": "2026-11-13",
+      "commit": "1fe0dad68c01e72e5ce8ca716020f1d337658f88"
+    },
+    "magma-crystallization": {
+      "path": "magma-crystallization.html",
+      "date": "2026-11-13",
+      "commit": "b8c069d12e5b6f4749c5a178a2414db957d228eb"
+    },
+    "sediment-transport": {
+      "path": "sediment-transport.html",
+      "date": "2026-11-13",
+      "commit": "4ffbe9e1aa708caf64972352fd12d72e3760c60f"
+    },
+    "geologic-time": {
+      "path": "geologic-time.html",
+      "date": "2026-11-13",
+      "commit": "6afa47d2c3f6a609080ec044520e9d1777922118"
+    },
+    "seafloor-spreading": {
+      "path": "seafloor-spreading.html",
+      "date": "2026-11-13",
+      "commit": "3f107cf3a225caee91da65aa6a4078538d7b1e00"
+    },
+    "faults-folds": {
+      "path": "faults-folds.html",
+      "date": "2026-11-13",
+      "commit": "080643c631e0f5118581e21cddff427ebf26ba1c"
+    },
+    "quake-early-warning": {
+      "path": "quake-early-warning.html",
+      "date": "2026-11-13",
+      "commit": "2a43f6e898f2da7fdcfb38f45a8a7a24a3810eb7"
+    },
+    "atmosphere-layers": {
+      "path": "atmosphere-layers.html",
+      "date": "2026-11-13",
+      "commit": "1d6b2e89cb0c44430d8f8183f164cfe3895657a9"
+    },
+    "humidity-dewpoint": {
+      "path": "humidity-dewpoint.html",
+      "date": "2026-11-13",
+      "commit": "9b695584ec74275b4d746257684bb3acac70a1b4"
+    },
+    "fronts": {
+      "path": "fronts.html",
+      "date": "2026-11-13",
+      "commit": "a0f0a219adae50327d42dd820e09d27af0d4ea25"
+    },
+    "typhoon": {
+      "path": "typhoon.html",
+      "date": "2026-11-13",
+      "commit": "92b19e732024f65ee68e533466ad3ca3f2e03797"
+    },
+    "seawater": {
+      "path": "seawater.html",
+      "date": "2026-11-13",
+      "commit": "db87ab1b89b13fa6f86ff10f45c3b0adfa7a47a1"
+    },
+    "ekman-upwelling": {
+      "path": "ekman-upwelling.html",
+      "date": "2026-11-13",
+      "commit": "40534765280b27017c3faeb1764d09202677bd95"
+    },
+    "quadratic-function": {
+      "path": "quadratic-function.html",
+      "date": "2026-11-13",
+      "commit": "f0c84e96e72d40713f1accffc1fadb3d9928ede3"
+    },
+    "polynomial": {
+      "path": "polynomial.html",
+      "date": "2026-11-13",
+      "commit": "f1e63c7b73c8f8f8e51fd06018c03d2a8bb95cff"
+    },
+    "sequences-series": {
+      "path": "sequences-series.html",
+      "date": "2026-11-13",
+      "commit": "91ae9218fc92cfe52b76c46e54600b2d352ea30d"
+    },
+    "recursive-sequence": {
+      "path": "recursive-sequence.html",
+      "date": "2026-11-13",
+      "commit": "ee48e4fbbdee463d941bb35d901db7438499b92a"
+    },
+    "exp-log": {
+      "path": "exp-log.html",
+      "date": "2026-11-13",
+      "commit": "90a789d2cee173e3a00768f0ffd70e36cfae828b"
+    },
+    "linear-programming": {
+      "path": "linear-programming.html",
+      "date": "2026-11-13",
+      "commit": "8126b3473ed40e2bfb60ab7ecc48610860e7a016"
+    },
+    "complex-plane": {
+      "path": "complex-plane.html",
+      "date": "2026-11-13",
+      "commit": "5d6bac728fb80de4476fe7251832e3192d28557f"
+    },
+    "lines-circles": {
+      "path": "lines-circles.html",
+      "date": "2026-11-13",
+      "commit": "1a772528c9d9bd5d88f607bf33db97131afd2920"
+    },
+    "inscribed-angle": {
+      "path": "inscribed-angle.html",
+      "date": "2026-11-13",
+      "commit": "4605791a1e86d262253a58e88d94c462d15fded8"
+    },
+    "law-of-cosines": {
+      "path": "law-of-cosines.html",
+      "date": "2026-11-13",
+      "commit": "f6017bae8d2898bc12bcfd738cebc5a988f2c657"
+    },
+    "triangle-centers": {
+      "path": "triangle-centers.html",
+      "date": "2026-11-13",
+      "commit": "1511e8a12bb1cba8c0edf03272f34edc451cbb0d"
+    },
+    "plane-vectors": {
+      "path": "plane-vectors.html",
+      "date": "2026-11-13",
+      "commit": "8495b0052f093a63cc24ddc82e85a3a2e1a86add"
+    },
+    "linear-transform": {
+      "path": "linear-transform.html",
+      "date": "2026-11-13",
+      "commit": "595c82d05a4b52d4d3351fb2bb686dbccb9d6e47"
+    },
+    "pascal-triangle": {
+      "path": "pascal-triangle.html",
+      "date": "2026-11-13",
+      "commit": "a60bb154ac06be442ed0e93e2bb1c362b4cb6cff"
+    },
+    "regression": {
+      "path": "regression.html",
+      "date": "2026-11-13",
+      "commit": "25dd1c8dff74ecc498977922f6aee35fab2d6f37"
+    },
+    "limits": {
+      "path": "limits.html",
+      "date": "2026-11-13",
+      "commit": "d1ded7e63f73cbb3faa2436e335f741362aba85a"
+    },
+    "riemann-sum": {
+      "path": "riemann-sum.html",
+      "date": "2026-11-13",
+      "commit": "8919e8328c2456f182ef9318942748b1dda49508"
+    },
+    "twos-complement": {
+      "path": "twos-complement.html",
+      "date": "2026-11-13",
+      "commit": "c147293962da5d6dd76eb0e6a4e6c40243498200"
+    },
+    "text-encoding": {
+      "path": "text-encoding.html",
+      "date": "2026-11-13",
+      "commit": "6ec8a43a8de8120dfc49b4f6be1ba8b3e72b35c0"
+    },
+    "big-o": {
+      "path": "big-o.html",
+      "date": "2026-11-13",
+      "commit": "eeff1388d40ed30d9e48d3d85a11137131176892"
+    },
+    "hanoi": {
+      "path": "hanoi.html",
+      "date": "2026-11-13",
+      "commit": "3fdf167458f7e4ceaf9d3e029fe129cd1b903393"
+    },
+    "graph-traversal": {
+      "path": "graph-traversal.html",
+      "date": "2026-11-13",
+      "commit": "6630e9776cb4a14ea1990474cf9fa6dd497bd912"
+    },
+    "code-tracing": {
+      "path": "code-tracing.html",
+      "date": "2026-11-13",
+      "commit": "11d95b3ce21e9c5593afcbf9c823f35c903df34d"
+    },
+    "stack-queue": {
+      "path": "stack-queue.html",
+      "date": "2026-11-13",
+      "commit": "3ff834f1c3ea7af7d82fed2722c6f3b8cfd2a954"
+    },
+    "cpu-scheduling": {
+      "path": "cpu-scheduling.html",
+      "date": "2026-11-13",
+      "commit": "e44d6b8563d26382b78b8a96fe24103ad2222938"
+    },
+    "page-replacement": {
+      "path": "page-replacement.html",
+      "date": "2026-11-13",
+      "commit": "46036345e147f4bc68e5339e92d7673d93e7ecd4"
+    },
+    "knn": {
+      "path": "knn.html",
+      "date": "2026-11-13",
+      "commit": "e89902625df906f22548664f3603f928aa512bcd"
+    },
+    "time-zones": {
+      "path": "time-zones.html",
+      "date": "2026-11-13",
+      "commit": "ec18e112be2c648089540a4cd50b735e131a2917"
+    },
+    "map-projection": {
+      "path": "map-projection.html",
+      "date": "2026-11-13",
+      "commit": "93072c7ecbe88498a4081ecfcd56f2298b5f0aef"
+    },
+    "contour-map": {
+      "path": "contour-map.html",
+      "date": "2026-11-13",
+      "commit": "af5232334028f9420f9de5552bb54b38070120a5"
+    },
+    "gps-trilateration": {
+      "path": "gps-trilateration.html",
+      "date": "2026-11-13",
+      "commit": "079e05dca64e8662ee355fe2e950fad0a2d0452a"
+    },
+    "remote-sensing": {
+      "path": "remote-sensing.html",
+      "date": "2026-11-13",
+      "commit": "224aefe2994ff5d4536afafe6de337077b3280b1"
+    },
+    "gis-overlay": {
+      "path": "gis-overlay.html",
+      "date": "2026-11-13",
+      "commit": "efb61dbed48fb2ae33c7b38099076f6585627140"
+    },
+    "climograph": {
+      "path": "climograph.html",
+      "date": "2026-11-13",
+      "commit": "4a9e10fe3d8edc5f2b7115eabdddedd5e48227f8"
+    },
+    "river-meander": {
+      "path": "river-meander.html",
+      "date": "2026-11-13",
+      "commit": "16ea3f97cc6551b172891c271facacfa4730b040"
+    },
+    "population-pyramid": {
+      "path": "population-pyramid.html",
+      "date": "2026-11-13",
+      "commit": "4e34401297dddc5540e379f2d3e16699d3160faa"
+    },
+    "central-place": {
+      "path": "central-place.html",
+      "date": "2026-11-13",
+      "commit": "090a594052afe9635dcc96c54c6d0df9389b3379"
+    },
+    "urban-heat-island": {
+      "path": "urban-heat-island.html",
+      "date": "2026-11-13",
+      "commit": "3dfb9778330ef7dc512bc2bf1a28dd1d5e977e23"
+    },
+    "gravity-model": {
+      "path": "gravity-model.html",
+      "date": "2026-11-13",
+      "commit": "bb0db314654a0898b7d54be2178d9e7722d6e461"
+    },
+    "von-thunen": {
+      "path": "von-thunen.html",
+      "date": "2026-11-13",
+      "commit": "080fab64a4976f1b8fad46c8e8fb3a219595b330"
+    },
+    "missing-fundamental": {
+      "path": "missing-fundamental.html",
+      "date": "2026-11-13",
+      "commit": "378b487f2d9529df57be14f80bcfc727fb02ff69"
+    },
+    "loudness": {
+      "path": "loudness.html",
+      "date": "2026-11-13",
+      "commit": "545571a3604b0e076a055d378c8d6e7c3f67d98d"
+    },
+    "intervals": {
+      "path": "intervals.html",
+      "date": "2026-11-13",
+      "commit": "5266f5cc18e8fe79b3f8ecb196e8c3a4e6d2c194"
+    },
+    "pentatonic": {
+      "path": "pentatonic.html",
+      "date": "2026-11-13",
+      "commit": "f1f4f34d79acc9e3b56110e3aa92617739bf5d51"
+    },
+    "circle-of-fifths": {
+      "path": "circle-of-fifths.html",
+      "date": "2026-11-13",
+      "commit": "2224237f5e7eff6d06bfde84a7063d6d386777d8"
+    },
+    "beats-tuning": {
+      "path": "beats-tuning.html",
+      "date": "2026-11-13",
+      "commit": "8ebe7af048375d3055099884f64e1a5e1029f2c4"
+    },
+    "reverb-room": {
+      "path": "reverb-room.html",
+      "date": "2026-11-13",
+      "commit": "2ac4bcc9eaa98e09fde7f4ede3ff9566f630cf8c"
+    },
+    "adsr-envelope": {
+      "path": "adsr-envelope.html",
+      "date": "2026-11-13",
+      "commit": "d22b12e37584bbab825a2576fd62753bf41dd90e"
+    }
+  }
+}

@@ -11,17 +11,20 @@ async function playPage(browser, base, slug, opts) {
       check(r.sw <= r.vw, slug + ' ' + lang + ' 390 px 沒有橫向溢出'); check(!r.cjk.length, slug + ' ' + lang + ' 語言完整'); check(!errors.length, slug + ' 沒有頁面錯誤');
       if (slug === 'index') {
         check(r.cards.length === 8 && r.cards.every(c => Math.abs(c.w - r.cards[0].w) < 1 && c.h === r.cards[0].h && c.font === r.cards[0].font), '八科大卡尺寸與字級一致');
-        check(r.recs.length === 6, '冷啟動推薦六個實驗'); check(!r.account.length && !r.privilege.length, '訪客不讀帳號資料');
+        check(r.recs.length === 4, '冷啟動推薦四個實驗'); check(!r.account.length && !r.privilege.length, '訪客不讀帳號資料');
         await page.locator('#q').fill('momentum'); await page.waitForFunction(() => document.querySelectorAll('#search-results a').length > 0);
         check(await page.locator('.search-subject').count() > 0, '搜尋結果顯示科目標籤');
-        await page.locator('#q').press('Escape'); await page.locator('.status-signin').click(); await page.waitForFunction(() => document.querySelector('.status-nickname'));
-        const signed = await H.inspect(page); check(signed.account.length === 4 && signed.account.every(p => /^(profiles|scores|daily|completions)\/u1$/.test(p)), '登入只讀四個個人小節點');
+        await page.locator('#q').press('Escape'); await page.locator('.status-primary').click(); await page.waitForURL('**/leaderboard.html');
+        check(await page.evaluate(()=>!sessionStorage.getItem('labAfterLogin')), '登入成功先清除跳頁目的地');
+        await page.goto(base+'index.html'); await H.ready(page,'index');
+        const signed = await H.inspect(page); check(signed.account.length === 5 && signed.account.every(p => /^(profiles|scores|daily|completions|bag)\/u1$/.test(p)), '登入只讀五個個人小節點');
         check(!signed.account.includes('scores'), '從不讀整份 scores');
       } else {
         check(r.current === slug + '.html' && r.textbookHidden, '目前科目標示與隱藏課本切換正確');
         await page.locator('.branch-nav').evaluate(el => scrollTo(0, el.getBoundingClientRect().bottom + scrollY + 40));
         await page.waitForFunction(() => document.querySelector('.subjbar.show'));
         check(await page.locator('.to-top.show').count() === 1, '分支黏頂列與回頂端按鈕出現');
+        check(await page.locator('.subjbar').evaluate(e=>getComputedStyle(e).position==='fixed'&&Math.abs(e.getBoundingClientRect().top)<2),'分支列實際固定在視窗頂端');
       }
     } catch (e) { check(false, e.message.split('\n')[0]); }
     await ctx.close();

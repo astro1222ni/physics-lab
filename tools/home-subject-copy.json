@@ -1,0 +1,34 @@
+{
+  "physics": {
+    "zh": "力學・熱學・波動・光學・電磁・近代",
+    "en": "Mechanics · Heat · Waves · Optics · Electromagnetism · Modern"
+  },
+  "chemistry": {
+    "zh": "物質・反應・速率與平衡・酸鹼與氧化還原・有機",
+    "en": "Matter · Reactions · Rates & Equilibrium · Acids, Bases & Redox · Organic"
+  },
+  "biology": {
+    "zh": "細胞・遺傳・生理・生態・演化・生物科技",
+    "en": "Cells · Genetics · Physiology · Ecology · Evolution · Biotech"
+  },
+  "earth": {
+    "zh": "天文・固體地球・大氣・海洋",
+    "en": "Astronomy · Solid Earth · Atmosphere · Ocean"
+  },
+  "math": {
+    "zh": "代數・幾何・向量・機率統計・微積分",
+    "en": "Algebra · Geometry · Vectors · Probability · Calculus"
+  },
+  "info": {
+    "zh": "資料・演算法・程式・系統・網路・人工智慧",
+    "en": "Data · Algorithms · Programming · Systems · Networks · AI"
+  },
+  "geog": {
+    "zh": "地圖・空間資訊・氣候・地形・人口・產業",
+    "en": "Maps · GIS · Climate · Landforms · Population · Economy"
+  },
+  "music": {
+    "zh": "樂音・音律・和聲・樂器・節奏・聲音科技",
+    "en": "Tone · Tuning · Harmony · Instruments · Rhythm · Audio"
+  }
+}

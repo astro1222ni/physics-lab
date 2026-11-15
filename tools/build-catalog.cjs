@@ -10,6 +10,8 @@ const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const { W, subjects, read, asset, text, esc, marker, miniCard } = require('./home-data.cjs');
+const invariant = JSON.parse(read('tools/home-v2-invariants.json'));
+const subjectCopy = JSON.parse(read('tools/home-subject-copy.json'));
 const html = subjects.filter(s => fs.existsSync(path.join(ROOT, s.page + '.html'))).map(s => read(s.page + '.html')).join('\n');
 
 const unesc = s => s.replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -65,17 +67,22 @@ for (const k of marks) {
   };
   const T = list.map(toks), df = {};
   T.forEach(set => set.forEach(w => { df[w] = (df[w] || 0) + 1; }));
+  const idf = w => Math.log(list.length / df[w]);
+  const norm = T.map(set => Math.sqrt([...set].reduce((sum, w) => sum + idf(w) ** 2, 0)));
   list.forEach((a, i) => {
     let best = null;
     const similar = [];
     list.forEach((b, j) => {
       if (i === j || (a.d === b.d && a.c === b.c)) return;
-      let sc = 0, k = 0;
+      let sc = 0, k = 0, dot = 0;
+      T[i].forEach(w => { if (T[j].has(w)) dot += idf(w) ** 2; });
       T[i].forEach(w => { if (T[j].has(w) && df[w] <= 12) { sc += Math.log(list.length / df[w]); if (w[0] === 'k') k++; } });
-      similar.push({ sc, s: b.s });
+      similar.push({ sc, s: b.s, cosine: norm[i] && norm[j] ? dot / (norm[i] * norm[j]) : 0 });
       if (a.d !== b.d && ((k >= 2 && sc >= 12) || sc >= 30) && (!best || sc > best.sc)) best = { sc, s: b.s };
     });
-    a.r = similar.sort((a, b) => b.sc - a.sc || a.s.localeCompare(b.s)).slice(0, 6).map(x => x.s);
+    const ranked = similar.sort((a, b) => b.sc - a.sc || a.s.localeCompare(b.s)).slice(0, 6);
+    a.r = ranked.map(x => x.s);
+    a.rs = Object.fromEntries(ranked.map(x => [x.s, +x.cosine.toFixed(6)]));
     if (best) a.x = best.s;
   });
   // 手動指定（自動配對不理想或漏掉的；值為 null 表示不放跨科卡片）
@@ -96,16 +103,28 @@ for (const k of marks) {
 // 每個實驗最後更新日期：相關檔案最近一次 commit 的日期；還沒 commit 的修改算今天
 const { execFileSync } = require('child_process');
 const git = args => { try { return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8', windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }).trim(); } catch (e) { return ''; } };
-const previous = {}; new Function('window', read('js/catalog.js'))(previous);
+const { historyDates, checkFresh } = require('./catalog-dates.cjs');
+const firstDates = historyDates(list.map(x => x.s));
+const launch = JSON.parse(read('tools/catalog-launch.json'));
+const cohort = {};
+for (const [slug, proof] of Object.entries(launch.modules)) {
+  if (!invariant.catalog.some(x => x.s === slug)) throw new Error('首次建站批次不可加入後續實驗：' + slug);
+  const found = firstDates[slug];
+  if (!found || found.date !== proof.date || found.commit !== proof.commit || found.path !== proof.path) throw new Error('首次建站批次的歷史證據改變：' + slug);
+  cohort[slug] = proof.date;
+}
 const dirty = new Set(git(['status', '--porcelain']).split(/\r?\n/).map(l => l.slice(3).trim().replace(/^"|"$/g, '')).filter(Boolean));
 const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 for (const x of list) {
   const files = [x.s + '.html', 'js/' + x.s + '.js', 'js/' + x.s + '-core.js', 'js/' + x.s + '-3d.js', 'js/missions/' + x.s + '.js'].filter(f => fs.existsSync(path.join(ROOT, f)));
   x.u = files.some(f => dirty.has(f)) ? today : (git(['log', '-1', '--format=%cs', '--', ...files]) || today);
-  const prior = previous.LAB_CATALOG.find(p => p.s === x.s);
-  x.l = prior && prior.l || git(['log', '--diff-filter=A', '--follow', '--format=%cs', '--', x.s + '.html']).split(/\r?\n/).filter(Boolean).pop() || today;
+  const subject = subjects.find(s => s.dom === x.d), directory = JSON.parse(read('docs/directory/' + subject.id + '.json'));
+  x.l = firstDates[x.s]?.date || directory.launchDate;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(x.l || '') || !Number.isFinite(Date.parse(x.l)) || new Date(x.l + 'T00:00:00Z').toISOString().slice(0, 10) !== x.l || x.l > today) throw new Error('缺少有效上架日（Git 全歷史／目錄上線日）：' + x.s);
   x.n = (read('js/missions/' + x.s + '.js').match(/\bid:\s*['"][a-z0-9-]+['"]/g) || []).length;
 }
+// 首次建站的既有實驗不冒充本次新增；後續任何科的七日新增超過 30% 就停止，且尚未寫檔。
+const freshness = checkFresh(list, today, cohort);
 
 const out = '/* catalog.js — 全站實驗目錄（由 tools/build-catalog.cjs 從各科目頁產生，請勿手改；npm run seo 會更新） */\n' +
   'window.LAB_CATALOG = ' + JSON.stringify(list, null, 1).replace(/\n\s*/g, ' ').replace(/\}, \{/g, '},\n{') + ';\n';
@@ -121,7 +140,6 @@ const chapterOut =
   '/* chapter-map.js — 各章的已上線實驗（由 tools/build-catalog.cjs 從 index.html 產生，請勿手改；npm run seo 會更新） */\n' +
   'window.LAB_CHAPTERS = [\n' + chapters.map(c => JSON.stringify(c)).join(',\n') + '\n];\n';
 // 搬遷防護：先完成所有檢查，再寫任何產生檔。
-const invariant = JSON.parse(read('tools/home-v2-invariants.json'));
 const baseline = new Map(invariant.catalog.map(x => [x.s, x]));
 for (const s of baseline.keys()) if (!list.some(x => x.s === s)) throw new Error('搬遷前的實驗不見了 ' + s);
 if (list.length !== W.LAB_LIVE_MODULES.length || list.length < invariant.count || new Set(list.map(x => x.s)).size !== list.length) throw new Error('已上線實驗遺失或重複');
@@ -164,18 +182,22 @@ fs.writeFileSync(path.join(ROOT, 'js/search-index.js'), '/* 搜尋索引，由 t
 let home = read('index.html');
 const ordered = list.slice().sort((a, b) => b.l.localeCompare(a.l) || a.s.localeCompare(b.s));
 const latest = [], counts = {};
-for (const x of ordered) if ((counts[x.d] || 0) < 2 && latest.length < 6) { latest.push(x); counts[x.d] = (counts[x.d] || 0) + 1; }
+for (const x of ordered) if ((counts[x.d] || 0) < 2 && latest.length < 4) { latest.push(x); counts[x.d] = (counts[x.d] || 0) + 1; }
 home = marker(home, 'LATEST', latest.map(x => miniCard(x, text(x.l.slice(5).replace('-', '/') + ' 上架', 'Added ' + x.l.slice(5).replace('-', '/'), 'p', 'class="entry-note"'))).join('\n'));
 const groups = W.LAB_SUBJECT_GROUPS.map(g => {
   const cards = subjects.filter(s => s.group === g.id).map(s => {
     const a = asset(s), live = list.filter(x => x.d === s.dom), plan = dirs[s.id].branches.flatMap(b => b.chapters.flatMap(c => c.modules || [])).filter(m => !W.LAB_LIVE_MODULES.includes(m)).length;
-    const fresh = live.filter(x => { const days = (Date.parse(today) - Date.parse(x.l)) / 86400000; return days >= 0 && days < 7; }).length;
-    return `<a class="subject-card" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + ' labs', 'span', 'class="subject-live"')}<small>${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress') : ''}</small><span class="subject-new">${fresh ? text('新 +' + fresh, 'New +' + fresh) : ''}</span><span class="subject-stars" hidden></span></a>`;
+    const fresh = freshness[s.dom].incremental.length;
+    const branches = dirs[s.id].branches, copy = subjectCopy[s.dom] || {zh:branches.map(b => b.zh).join('・'),en:branches.map(b => b.en).join(' · ')};
+    return `<a class="subject-card sb-${s.id}" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}<div class="subject-name">${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + ' labs', 'span', 'class="subject-live"')}</div>${text(esc(copy.zh), copy.en, 'p', 'class="subject-branches"')}<div class="subject-extra">${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress', 'small') : ''}<span class="subject-stars" hidden></span></div>${fresh ? '<span class="subject-new">' + text('新 +' + fresh, '+' + fresh + ' new') + '</span>' : ''}</a>`;
   });
-  if (g.soon.length) cards.push('<div class="subject-soon">' + text('製作中', 'In progress', 'strong') + text(g.soon.map(s => s.zh).join('・'), g.soon.map(s => s.en).join(' · ')) + '</div>');
-  return `<section class="subject-group group-${g.id}" aria-labelledby="group-${g.id}">${text(g.zh, g.en, 'h3', 'id="group-' + g.id + '"')}<div class="subject-grid">${cards.join('\n')}</div></section>`;
+  const zh = '製作中：' + g.soon.map(s => s.zh).join('・'), en = 'Coming soon: ' + g.soon.map(s => s.en).join(' · ');
+  const soon = g.soon.length ? text(esc(zh), en, 'p', 'class="subject-soon" role="note" aria-label="' + esc(zh) + '" data-en-aria-label="' + esc(en) + '"') : '';
+  return `<section class="subject-group group-${g.id}" aria-labelledby="group-${g.id}">${text(g.zh, g.en, 'h3', 'id="group-' + g.id + '"')}<div class="subject-grid">${cards.join('\n')}</div>${soon}</section>`;
 }).join('\n');
 home = marker(home, 'SUBJECTS', '<div class="subject-groups">' + groups + '</div>');
+const daily = require('../js/daily-core.js');
+home = marker(home, 'TREASURE', daily.ITEMS.map(it => '<span data-treasure="' + it.id + '">' + daily.icon(it.id) + '</span>').join(''));
 home = marker(home, 'REDIRECT', '<script>/* 舊錨點保留：由科目清單與完整目錄產生 */\n(function(){var m=' + JSON.stringify(redirects) + ';var h;try{h=decodeURIComponent(location.hash.slice(1));}catch(e){return;}if(Object.prototype.hasOwnProperty.call(m,h))location.replace(m[h]+".html"+location.search+(' + JSON.stringify(subjects.map(s => s.dom)) + '.indexOf(h)>=0?"":"#"+encodeURIComponent(h)));})();\n</script>');
 fs.writeFileSync(path.join(ROOT, 'index.html'), home);
 const noCh = list.filter(x => !x.c).map(x => x.s);
