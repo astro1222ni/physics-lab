@@ -26,7 +26,7 @@
     "hydrogen-spectrum": "8a24406b",
     "specific-heat": "92ca1070",
     "newton-second": "fb0e93b7",
-    "incline-friction": "08f0de28",
+    "incline-friction": "dccf3a99",
     "ideal-gas": "62823f96",
     "atwood": "d3000b22",
     "elevator": "4c195732",

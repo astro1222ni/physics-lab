@@ -210,5 +210,81 @@ expect(1, run(mk({ theta: 35 }), 3).evs, true, '木頭 θ = 35°，放手 → �
   expect('h3', run(mk({ theta: 30, F: 9.7 }), 1).evs, false, 'F = 9.70 N → f = −0.1 N');
   expect('h3', run(mk({ theta: 30, mode: 'horiz', F: R2(2 * 9.8 * Math.tan(30 * D2R)) }), 1).evs, true, '水平 F = mg tan θ = ' + R2(2 * 9.8 * Math.tan(30 * D2R)) + ' N 也行（f = ' + (R2(2 * 9.8 * Math.tan(30 * D2R)) * Math.cos(30 * D2R) - 9.8).toFixed(4) + '）');
 }
+// 跨事件記憶與隱藏任務獨立性：每個情境重新建立各題的記憶。
+function feed(id, groups) { const m = byId(id); m.mem = {}; return groups.some(evs => evs.some(e => m.check(e, m.mem))); }
+function onlyHidden(want, groups) {
+  const bad = missions.filter(m => m.hidden && m.id !== 'incline-friction-' + want).filter(m => {
+    m.mem = {}; return groups.some(evs => evs.some(e => m.check(e, m.mem)));
+  }).map(m => m.id);
+  if (bad.length) { fail++; console.log('  ✗ ' + want + ' 連帶觸發了 ' + bad.join('、')); }
+  else console.log('  ✓ ' + want + ' 不連帶觸發其他隱藏任務');
+}
+function expectGroups(id, groups, want, note) {
+  const pass = feed(id, groups) === want;
+  if (!pass) fail++;
+  console.log((pass ? '  ✓ ' : '  ✗ ') + id + (want ? ' 達成：' : ' 不觸發：') + note);
+  if (want) onlyHidden(id, groups);
+}
+function raiseSlip(cfg) {
+  const c = mk(Object.assign({ theta: 5 }, cfg)); let s = IC.newState(0, 0, 0);
+  for (let i = 0; i < 100000; i++) {
+    c.theta += 0.004; const r = IC.step(P(c), s, 0.002, OPT); s = r.s;
+    if (r.ev.some(e => e.type === 'slip')) return [{ type: 'slip', data: snap(c, s, 0, { cause: 'raise', dir: 1 }) }];
+  }
+  throw Error('未找到臨界角');
+}
+function forceSlip(c, Fnew) {
+  const initial = run(c, 0.1), next = Object.assign({}, c, { F: Fnew });
+  if (initial.s.v !== 0) throw Error('加力前必須靜止');
+  const r = IC.step(P(next), initial.s, 0.1, OPT);
+  return initial.evs.concat(r.ev.filter(e => e.type === 'slip').map(e => ({ type: 'slip', data: snap(next, r.s, 0, { cause: 'force', dir: e.dir }) })));
+}
+function guessEv(gs, gk, ms, tries) {
+  return [{ type: 'guess', data: { mus: ms.mus, muk: ms.muk, gs, gk, errS: Math.abs(gs-ms.mus)/ms.mus, errK: Math.abs(gk-ms.muk)/ms.muk, tries } }];
+}
+expectGroups('h4', [raiseSlip({ m: 0.5 }), raiseSlip({ m: 4.5 })], true, '相差 4 kg、同一臨界角');
+expectGroups('h4', [raiseSlip({ m: 2 }), raiseSlip({ m: 2.5 })], false, '只相差 0.5 kg');
+expectGroups('h4', [raiseSlip({ m: 0.5 }), [{ type: 'slip', data: snap(mk({ m: 4.5, theta: 28 }), IC.newState(0, 0.01, 0), 0, { cause: 'tilt', dir: 1 }) }]], false, '第二次直接拉到 28°');
+for (const F of [15.9,15.83,15.6,16]) expectGroups('h5', [run(mk({ F }),1).evs], F===15.9 || F===15.83, '木頭 20°，F = '+F+' N');
+for (const F of [5.3,5]) expectGroups('h6', [run(mk({theta:30,mode:'horiz',F}),1).evs], F===5.3, '水平 30°，F = '+F+' N');
+expectGroups('h6', [run(mk({theta:60,mode:'horiz',F:2*9.8*Math.tan(30*D2R)}),1).evs], false, '60° 超過 2θc，滑下');
+for (const [surf,theta,v0,want] of [['steel',43.53,-3,true],['rubber',53.13,-3,true],['snow',9.46,-2,true],['steel',44,-3,false],['wood',26.56,-3,false]]) {
+  const r=run(mk({surf,theta,v0,start:'bottom'}),5);
+  const h=r.evs.find(e=>e.type==='hit'&&e.data.end==='bottom');
+  expectGroups('h7',[r.evs],want,surf+' '+theta+'°，回程比值 '+(h?(h.data.speed/Math.abs(v0)).toFixed(5):'不回來'));
+}
+for (const [surf,theta,F0,Fnew,want] of [['wood',60,4,81.7,true],['steel',50.5,3,93.6,true],['snow',79,16,92.6,true],['wood',60,16,100,false],['wood',58,4,51.6,false]]) {
+  const c=mk({surf,theta,m:want||theta===58?0.5:2,mode:'horiz',F:F0});
+  expectGroups('h8',[forceSlip(c,Fnew)],want,surf+' '+theta+'°、'+c.m+' kg，F = '+Fnew+' N');
+}
+{
+  let seed=11; const rnd=()=>{seed=seed*16807%2147483647;return(seed-1)/2147483646;};
+  let worstS=0,worstK=0,oldWorstK=0;
+  for(let i=0;i<40;i++) {
+    const ms=IC.mysterySurface(rnd), ev=raiseSlip({mus:ms.mus,muk:ms.muk,surf:'mystery'}), th=ev[0].data.theta;
+    const gs=Math.round(Math.tan(R2(th)*D2R)*10000)/10000;
+    const measure=(delta,digits)=>{
+      const theta=R2(th+delta),g=run(mk({theta,mus:ms.mus,muk:ms.muk,surf:'mystery'}),4).evs.find(e=>e.type==='gates').data;
+      const t1=Math.round(g.t1*1000)/1000,t2=Math.round(g.t2*1000)/1000;
+      const a=2/(t2*t2-t1*t1),q=Math.pow(10,digits);
+      return Math.round(IC.mukFromAccel(theta*D2R,a)*q)/q;
+    };
+    const gk=measure(3,4), events=guessEv(gs,gk,ms,2);
+    worstS=Math.max(worstS,events[0].data.errS);worstK=Math.max(worstK,events[0].data.errK);
+    oldWorstK=Math.max(oldWorstK,Math.abs(measure(8,3)-ms.muk)/ms.muk);
+    expectGroups('h9',[events],true,'神秘表面 '+(i+1)+'，第一次同時核對');
+    expectGroups('h9',[guessEv(gs,gk,ms,1)],false,'相同答案、第二次核對 '+(i+1));
+  }
+  console.log('      h9 最大誤差 μs '+(100*worstS).toFixed(3)+'%、μk '+(100*worstK).toFixed(3)+'%；原 -10 方法最大 μk '+(100*oldWorstK).toFixed(3)+'%');
+  expectGroups('h9',[guessEv(0.51,0.3,{mus:0.5,muk:0.3},2)],false,'第一次但 μs 超出 0.5%');
+}
+const wood35=run(mk({theta:35}),4).evs;
+expectGroups('h10',[wood35,run(mk({surf:'ice',theta:20.85}),4).evs],true,'木頭 35°、冰 20.85°，加速度相同');
+expectGroups('h10',[wood35,run(mk({surf:'ice',theta:21.5}),4).evs],false,'冰 21.5° 加速度不同');
+expectGroups('h10',[wood35,wood35],false,'相同材質不算');
+expectGroups('h10',[wood35,run(mk({surf:'glass',theta:39.52}),4).evs],false,'玻璃靜止釋放不滑，不是 clean');
+const levels=missions.filter(m=>m.hidden).map(m=>m.level).sort((a,b)=>a-b);
+if(JSON.stringify(levels)!=='[3,4,5,6,6,7,7,8,9,10]') {fail++;console.log('  ✗ 隱藏任務數量或等級不符');}
+else console.log('  ✓ 隱藏任務 10 個、7 級以上 5 個');
 console.log(fail ? '\n有 ' + fail + ' 項失敗' : '\n全部通過');
 process.exitCode = fail ? 1 : 0;

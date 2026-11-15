@@ -49,6 +49,7 @@
     raising: false, ramping: false, rampLeft: null,
     slow: false, graph: 'v',
     show: { comp: true, net: true, crit: true, marks: true },
+    show3: { cone: true, axes: true },
     cause: null,            // 最近一次改變的是什麼（判斷木塊為什麼開始滑）
     epoch: 0,               // 條件每改變一次加 1
     fx: [],                 // 純裝飾的短暫效果
@@ -179,7 +180,7 @@
   }
 
   function resize() {
-    const w = cvA.clientWidth;
+    const w = cvA.clientWidth || $('view3').clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     W = w;
@@ -241,6 +242,7 @@
     ao.addColorStop(1, LD.shadowInk(dk ? 0.22 : 0.06));
     c.fillStyle = ao;
     c.fillRect(R.x, SG.hy - 22, R.w, 22);
+    drawProtractor(c);
     // 地板（實驗桌）：頂面一條受光的窄帶，下面是由上而下加深的正面
     const floorB = R.y + R.h, topH = Math.max(5, Math.round(SG.floorH * 0.3));
     const tg = c.createLinearGradient(0, SG.hy, 0, SG.hy + topH);
@@ -275,6 +277,81 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     c.clearRect(0, 0, W, hB);
     [LB.fbd, LB.mg, LB.ff].forEach(function (Rb) { if (Rb) panelBg(c, Rb); });
+  }
+
+
+  /** 壓克力量角器：固定的刻度只在 bgA 重建時繪製。 */
+  function drawProtractor(c) {
+    const r = 0.9 * SG.k, x = SG.hx, y = SG.hy;
+    c.save();
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, alpha(colors.surface, colors.dark ? 0.10 : 0.55));
+    g.addColorStop(1, alpha(colors.surface, colors.dark ? 0.04 : 0.25));
+    c.fillStyle = g;
+    c.beginPath(); c.moveTo(x, y); c.arc(x, y, r, Math.PI, 1.5 * Math.PI); c.closePath(); c.fill();
+    c.strokeStyle = alpha(colors.text, 0.30); c.lineWidth = 1.2; c.stroke();
+    c.strokeStyle = alpha('#ffffff', colors.dark ? 0.12 : 0.9); c.lineWidth = 1;
+    c.beginPath(); c.arc(x, y, r - 2, Math.PI, 1.5 * Math.PI); c.stroke();
+    const a1 = r * D2R, step = a1 >= 2.2 ? 1 : 5;
+    c.lineCap = 'round';
+    for (let d = 0; d <= 90; d += step) {
+      const major = d % 10 === 0, five = d % 5 === 0, a = Math.PI + d * D2R;
+      const len = r * (major ? 0.13 : five ? 0.08 : 0.05);
+      c.strokeStyle = alpha(colors.text, major ? 0.75 : five ? 0.6 : 0.45); c.lineWidth = major ? 1.3 : 1;
+      c.beginPath(); c.moveTo(x + (r - len) * Math.cos(a), y + (r - len) * Math.sin(a));
+      c.lineTo(x + r * Math.cos(a), y + r * Math.sin(a)); c.stroke();
+    }
+    const nums = !LA.narrow && a1 * 10 * 0.78 >= 16 ? 10 : 30;
+    c.font = '500 11px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = alpha(colors.text, 0.7);
+    for (let d = 0; d <= 90; d += nums) {
+      const a = Math.PI + d * D2R;
+      c.fillText(String(d), x + r * 0.78 * Math.cos(a), y + r * 0.78 * Math.sin(a) - (d===0?6:0));
+    }
+    c.restore();
+  }
+
+  /** LCD 的避讓完全依器材幾何；沒有空位時保留側欄讀數。 */
+  function drawGateTimer(c, R, B, pills, hp, hr) {
+    const f = fsScale(), w = (LA.narrow ? 132 : 156) * f;
+    const row = LA.narrow ? 19 : 22, h = 18 + row * 2 + 8;
+    const candidates = [{x:R.x+R.w-w-8,y:R.y+8,w:w,h:h}, {x:R.x+8,y:pills[1].y+pills[1].h+6,w:w,h:h}];
+    const inside = (q,p) => p[0]>=q.x && p[0]<=q.x+q.w && p[1]>=q.y && p[1]<=q.y+q.h;
+    const overlap = (q,p) => q.x<p.x+p.w && q.x+q.w>p.x && q.y<p.y+p.h && q.y+q.h>p.y;
+    const hit = r => {
+      const q={x:r.x-6,y:r.y-6,w:r.w+12,h:r.h+12};
+      if(r.x<R.x || r.x+r.w>R.x+R.w || r.y+r.h>R.y+R.h) return true;
+      for(let i=0;i<=22;i++) if(inside(q,B.at(i*0.1,-0.02))) return true;
+      if(Math.hypot(hp[0]-Math.max(q.x,Math.min(q.x+q.w,hp[0])),hp[1]-Math.max(q.y,Math.min(q.y+q.h,hp[1])))<hr+4) return true;
+      if(GATES.some(g=>[-0.055,0.055].some(dx=>[-0.32,-0.27].some(y=>inside(q,B.at(X0+g+dx,y)))))) return true;
+      return pills.some(p=>overlap(q,p));
+    };
+    const r=candidates.find(q=>!hit(q)); if(!r) return;
+    const x=r.x,y=r.y;
+    c.save();
+    LD.block(c,x,y,w,h,shade(colors.field,colors.dark?-0.55:0.82),{r:8,shadow:true});
+    c.font='700 11px '+FONT;c.fillStyle=colors.muted;c.textAlign='left';c.textBaseline='middle';
+    c.fillText(T('光電計時器','Photogate timer'),x+8,y+10);
+    const px=x+6,py=y+20,pw=w-12,ph=h-25;
+    const lcd=colors.dark?'#0b1416':shade(colors.accent,0.9);
+    const lg=c.createLinearGradient(0,py,0,py+ph);
+    lg.addColorStop(0,shade(lcd,colors.dark?-0.3:-0.06));lg.addColorStop(0.25,lcd);lg.addColorStop(1,shade(lcd,colors.dark?0.04:0.35));
+    c.fillStyle=lg;roundRect(c,px,py,pw,ph,5);c.fill();
+    c.save();roundRect(c,px,py,pw,ph,5);c.clip();
+    const ins=c.createLinearGradient(0,py,0,py+6);ins.addColorStop(0,alpha('#000000',colors.dark?0.5:0.14));ins.addColorStop(1,alpha('#000000',0));c.fillStyle=ins;c.fillRect(px,py,pw,6);
+    c.fillStyle=alpha('#ffffff',colors.dark?0.035:0.28);c.beginPath();c.moveTo(px,py);c.lineTo(px+pw*0.55,py);c.lineTo(px+pw*0.35,py+ph);c.lineTo(px,py+ph);c.closePath();c.fill();c.restore();
+    c.strokeStyle=alpha(colors.text,colors.dark?0.2:0.16);c.lineWidth=1;roundRect(c,px+0.5,py+0.5,pw-1,ph-1,5);c.stroke();
+    [0,1].forEach(i=>{
+      const list=state.run&&state.phase!=='held'?state.run.gates[i]:[], gp=list&&list[list.length-1];
+      // 未觸發：等寬的「-.---」剛好落在每一格數字的中段（像 LCD 只亮中間那一劃），不會變成刪除線
+      const txt=gp?gp.t.toFixed(3):'-.---', yy=py+row*(i+0.5)+1;
+      c.textAlign='left';c.fillStyle=colors.muted;
+      let xx=px+5;parseSub('t_'+(i+1)).forEach(p=>{c.font=fontOf(LA.narrow?11:12,600,p.sub);c.fillText(p.t,xx,yy+(p.sub?3:0));xx+=c.measureText(p.t).width;});
+      c.font='700 '+(LA.narrow?13:15)+'px ui-monospace, "SF Mono", Menlo, Consolas, monospace';c.textAlign='right';
+      c.fillStyle=alpha(colors.dark?'#9ad':colors.text,colors.dark?0.06:0.05);c.fillText('8.888',px+pw-17,yy);
+      const ink=gp?(colors.dark?'#7ff0c8':shade(colors.accent,-0.2)):alpha(colors.text,0.45);
+      if(colors.dark&&gp){c.fillStyle=alpha(ink,0.18);c.fillText(txt,px+pw-16.2,yy+0.8);}
+      c.fillStyle=ink;c.fillText(txt,px+pw-17,yy);c.font='600 11px '+FONT;c.fillText('s',px+pw-4,yy);
+    });c.restore();
   }
 
   // ---------- 繪圖工具 ----------
@@ -413,6 +490,7 @@
     drawMotion(cB, LB.mg);
     drawFF(cB, LB.ff, fo);
     updateReadout(fo);
+    if (view3 && view3.active) view3.update();
   }
 
   // ---------- 斜面區 ----------
@@ -456,6 +534,14 @@
       pill(c, lbl, tx, ty, colors.pos, LA.narrow ? 11 : 12, { align: 'right', clamp: R, bgAlpha: 0.75 });
     }
 
+    // 量角器的動態楔形在木板與器材的後方。
+    const ar0 = 0.92 * 0.9 * k;
+    if (state.theta > 0) {
+      c.fillStyle = alpha(colors.accent, colors.dark ? 0.20 : 0.14);
+      c.beginPath(); c.moveTo(SG.hx, SG.hy); c.arc(SG.hx, SG.hy, ar0, Math.PI, Math.PI+B.th); c.closePath(); c.fill();
+      c.strokeStyle=alpha(colors.accent,0.7);c.lineWidth=1.4;
+      c.beginPath();c.arc(SG.hx,SG.hy,ar0,Math.PI,Math.PI+B.th);c.stroke();
+    }
     // 木板落在地板上的柔和陰影：靠鉸鏈（貼地）處較深，往抬高的一端（離地越高）越淡越寬
     const spanX = BOARD * B.cs * k, spanH = BOARD * B.sn * k, NSH = 8;
     for (let i = 0; i < NSH; i++) {
@@ -469,12 +555,11 @@
     const metal = metalColor(0.3, 0.3);
     if (suY < SG.hy - 3) {
       const sm = metalColor(0.25, 0.35);
-      LD.contactShadow(c, suX, SG.hy, 20, 0);
-      LD.tube(c, function (g) { g.moveTo(suX, SG.hy - 3); g.lineTo(suX, suY + 3); }, sm, 5.5);
-      // 底座（略有厚度的金屬板）
-      LD.block(c, suX - 16, SG.hy - 6, 32, 6, sm, { r: 2.5, shadow: false });
-      // 夾頭
-      LD.ball(c, suX, suY + 2, 5, sm, { glow: 0, shadow: false });
+      LD.contactShadow(c, suX, SG.hy, 0.2*k, 0);
+      LD.block(c,suX-0.17*k,SG.hy-0.035*k,0.34*k,0.035*k,sm,{r:3,shadow:false});
+      LD.tube(c,polyPath([[suX,SG.hy-0.03*k],[suX,suY+0.035*k]]),sm,Math.max(5,0.028*k));
+      LD.block(c,suX-0.035*k,suY+0.005*k,0.07*k,0.05*k,shade(sm,-0.15),{r:2.5,shadow:false});
+      LD.ball(c,suX-0.05*k,suY+0.03*k,Math.max(3,0.022*k),sm,{glow:0,shadow:false});
     }
 
     // 鉸鏈下的接觸陰影
@@ -513,6 +598,10 @@
       c.fillRect(ex, 0, cap, bt);
     });
     c.restore();
+    c.strokeStyle=alpha(shade(bm.base,-0.6),0.55);c.lineWidth=1;
+    c.beginPath();
+    for(let i=0;i<=17;i++) {const sx=(X0+i*0.1)*k;const len=Math.max(2,bt*(i%5===0?0.7:0.35));c.moveTo(sx,0);c.lineTo(sx,len);}
+    c.stroke();
     // 頂邊高光、底邊暗線
     c.lineCap = 'round';
     c.strokeStyle = alpha(shade(bm.base, 0.75), colors.dark ? 0.5 : 0.9);
@@ -525,11 +614,9 @@
     LD.block(c, 0, -PEG_H * k, PEG_W * k, PEG_H * k, metal, { r: 2, shadow: false });
     LD.block(c, (BOARD - STOP_W) * k, -STOP_H * k, STOP_W * k, STOP_H * k, metal, { r: 2, shadow: false });
 
-    // 光電門（立柱在木塊後面）
-    GATES.forEach(function (gx, i) { drawGatePost(c, (X0 + gx) * k, k, i); });
-
-    // 殘影：每 0.1 s 木塊的位置（像連續閃光照片）
+    // 殘影先畫，避免蓋住光電門立柱。
     if (state.show.marks && state.run) drawMarks(c, k, mats);
+    GATES.forEach(function (gx, i) { drawGatePost(c, (X0 + gx) * k, k, i); });
 
     // 木塊
     const bx = blockS(state.s.x) * k;
@@ -546,26 +633,23 @@
     LD.ball(c, SG.hx, SG.hy - 1, 5.5, metal, { glow: 0 });
 
     // 外力 F 的方向（不依比例）
-    if (Math.abs(state.F) > 1e-9) drawPushArrow(c, B, k);
+    if (Math.abs(state.F) > 1e-9) { drawForceTool(c, B, k); drawPushArrow(c, B, k); }
 
-    // 角度 θ：由鉸鏈向外漸淡的扇形＋細弧線
-    const ar = Math.min(0.42 * k, 60);
-    const ag = c.createRadialGradient(SG.hx, SG.hy, 0, SG.hx, SG.hy, ar);
-    ag.addColorStop(0, alpha(colors.accent, colors.dark ? 0.26 : 0.2));
-    ag.addColorStop(1, alpha(colors.accent, colors.dark ? 0.07 : 0.05));
-    c.fillStyle = ag;
-    c.beginPath(); c.moveTo(SG.hx, SG.hy); c.arc(SG.hx, SG.hy, ar, Math.PI, Math.PI + B.th, false); c.closePath(); c.fill();
-    c.strokeStyle = alpha(colors.text, 0.62);
-    c.lineWidth = 1.4;
-    c.lineCap = 'round';
-    c.beginPath(); c.arc(SG.hx, SG.hy, ar, Math.PI, Math.PI + B.th, false); c.stroke();
+    const ar = 0.92 * 0.9 * k;
     const mid = Math.PI + B.th / 2, lr = ar + (LA.narrow ? 28 : 34);
     const thTxt = 'θ = ' + fmtSlider(state.theta, elTheta) + '°', thSize = LA.narrow ? 12 : 13;
-    let lx = SG.hx + lr * Math.cos(mid), ly = SG.hy + lr * Math.sin(mid);
-    if (state.theta < 8) { lx = SG.hx - ar - 34; ly = SG.hy - 14; }
+    const pw = richWidth(c, parseSub(thTxt), thSize, 600) + 12, ph = thSize * fsScale() + 6;
+    // 標籤整塊放在量角器外緣之外（不蓋住刻度與數字）：沿角平分線往外推到底框最近的一點離鉸鏈 ≥ 量角器半徑 + 4 px
+    const Rp = 0.9 * k, clearOf = function (x, y) {
+      const qx = Math.max(x - pw / 2, Math.min(x + pw / 2, SG.hx)), qy = Math.max(y - ph / 2, Math.min(y + ph / 2, SG.hy));
+      return Math.hypot(qx - SG.hx, qy - SG.hy) >= Rp + 4;
+    };
+    let lr2 = lr;
+    for (let i = 0; i < 40 && !clearOf(SG.hx + lr2 * Math.cos(mid), SG.hy + lr2 * Math.sin(mid)); i++) lr2 += 4;
+    let lx = SG.hx + lr2 * Math.cos(mid), ly = SG.hy + lr2 * Math.sin(mid);
+    if (state.theta < 8) { lx = SG.hx - Rp - pw / 2 - 8; ly = SG.hy - 14; }
     else {
-      // 角度大時，角平分線上的標籤會壓到木板與殘影：改放在木板下方、弧線左邊（貼近地板）
-      const pw = richWidth(c, parseSub(thTxt), thSize, 600) + 12, ph = thSize * fsScale() + 6;
+      // 角度大時，角平分線上的標籤會壓到木板與殘影：改放在木板下方、量角器左邊（貼近地板）
       const under = function (x, y) { // 底框四角都在木板下方（地板那一側）而且在地板上方
         const nbx = -B.sn, nby = B.cs;
         return [[x - pw / 2, y - ph / 2], [x + pw / 2, y - ph / 2], [x - pw / 2, y + ph / 2], [x + pw / 2, y + ph / 2]].every(function (q) {
@@ -575,7 +659,7 @@
       if (!under(lx, ly)) {
         const fy = SG.hy - ph / 2 - 5;
         for (let i = 0; i < 4; i++) {
-          const fx = SG.hx - ar - pw / 2 - 8 - i * 24;
+          const fx = SG.hx - Rp - pw / 2 - 8 - i * 24;
           if (under(fx, fy)) { lx = fx; ly = fy; break; }
         }
       }
@@ -634,10 +718,11 @@
     const f1 = LA.narrow ? 12 : 13, f2 = LA.narrow ? 11 : 12;
     let y = R.y + 14;
     const tline = 't = ' + num(state.s.t, 2) + ' s' + (state.slow ? '  (' + SLOW + '×)' : '');
-    pill(c, tline, R.x + 8, y, colors.text, f1, { bgAlpha: 0.8 });
+    const timePill = pill(c, tline, R.x + 8, y, colors.text, f1, { bgAlpha: 0.8 });
     y += LA.narrow ? 21 : 24;
     const st = sceneStatus(fo);
-    pill(c, st.text, R.x + 8, y, st.color, f2, { bgAlpha: 0.8 });
+    const statusPill = pill(c, st.text, R.x + 8, y, st.color, f2, { bgAlpha: 0.8 });
+    drawGateTimer(c,R,B,[timePill,statusPill],hp,hr);
     c.restore();
   }
 
@@ -762,11 +847,18 @@
     const w = BL * k, h = BH * k, x = bx - w / 2;
     // 與斜面的接觸陰影（貼著木板表面）
     const sh = c.createRadialGradient(bx, 0, 1, bx, 0, w * 0.62);
-    sh.addColorStop(0, LD.shadowInk(colors.dark ? 0.55 : 0.3));
+    sh.addColorStop(0, LD.shadowInk(colors.dark ? 0.6 : 0.38));
     sh.addColorStop(1, LD.shadowInk(0));
     c.fillStyle = sh;
     c.beginPath(); c.ellipse(bx, 0.5, w * 0.64, Math.max(3, h * 0.24), 0, 0, Math.PI * 2); c.fill();
     solidBlock(c, bx, w, h, mt);
+    c.save();roundRect(c,bx-w/2,-h,w,h,Math.min(4,h*0.2));c.clip();
+    c.fillStyle=alpha(shade(mt.base,-0.18),0.55);
+    c.fillRect(bx-w/2,-h,w*0.12,h);c.fillRect(bx+w/2-w*0.12,-h,w*0.12,h);c.restore();
+    const ex=bx-w/2-0.016*k,er=Math.max(2.5,0.016*k);
+    c.strokeStyle=metalColor(0.1,0.5);c.lineWidth=1.5;
+    c.beginPath();c.moveTo(ex+er,-h/2);c.lineTo(bx-w/2,-h/2);c.stroke();
+    c.beginPath();c.arc(ex,-h/2,er,0,Math.PI*2);c.stroke();
     // 滑動中：木塊與斜面交界處淡淡的摩擦熱光（裝飾，只在滑動時）
     if (state.s.v !== 0 && !reducedMotion) {
       const heat = Math.min(1, fo.fk * Math.abs(state.s.v) / 60);
@@ -800,17 +892,17 @@
     // 像連續閃光照片：每個殘影是半透明的木塊輪廓，越舊越淡（位置仍然精確）
     const edge = shade(mt.base, colors.dark ? 0.35 : -0.35);
     const fill = c.createLinearGradient(0, -h, 0, 0);
-    fill.addColorStop(0, alpha(shade(mt.base, 0.3), colors.dark ? 0.1 : 0.22));
-    fill.addColorStop(1, alpha(mt.base, colors.dark ? 0.05 : 0.08));
+    fill.addColorStop(0, alpha(shade(mt.base, 0.3), colors.dark ? 0.07 : 0.10));
+    fill.addColorStop(1, alpha(mt.base, colors.dark ? 0.03 : 0.04));
     c.lineWidth = 1;
     xs.forEach(function (x, i) {
-      const age = xs.length > 1 ? i / (xs.length - 1) : 1, fa = 0.4 + 0.6 * age;
+      const age = xs.length > 1 ? i / (xs.length - 1) : 1, fa = 0.35 + 0.65 * age;
       const cx = (X0 + x) * k;
       c.globalAlpha = fa;
       c.fillStyle = fill;
-      c.strokeStyle = alpha(edge, 0.5);
+      c.strokeStyle = alpha(edge, 0.2 + 0.4 * age);
       roundRect(c, cx - w / 2 + 0.5, -h + 0.5, w - 1, h - 1, 3); c.fill(); c.stroke();
-      c.fillStyle = alpha(colors.text, 0.5);
+      c.fillStyle = alpha(colors.text, 0.6);
       c.beginPath(); c.arc(cx, -h / 2, 1.6, 0, Math.PI * 2); c.fill();
     });
     c.globalAlpha = 1;
@@ -825,13 +917,15 @@
 
   function drawGatePost(c, gx, k, i) {
     const top = -0.27 * k, metal = metalColor(0.15, 0.45);
-    const px = gx + 0.035 * k;
-    LD.tube(c, function (g) { g.moveTo(px, -1); g.lineTo(px, top + 4); }, metal, Math.max(2.8, 0.018 * k));
+    const px = gx + 0.045 * k;
+    LD.tube(c, function (g) { g.moveTo(px, -1); g.lineTo(px, top + 4); }, metal, Math.max(3, 0.02 * k));
+    LD.block(c,gx+0.02*k,-0.006*k,0.05*k,0.02*k+BT*k,metal,{r:2,shadow:false});
     // 感測頭（立體金屬盒）與指示燈：被擋住或剛觸發時亮起並發光
-    const hw = 0.09 * k, hh = 0.045 * k;
-    LD.block(c, gx - hw / 2, top - hh, hw, hh, metal, { r: 2.5, shadow: false });
+    const hw = 0.11 * k, hh = 0.05 * k;
+    LD.block(c, gx - hw / 2, top - hh, hw, hh, shade(colors.field,colors.dark?-0.55:0.1), { r: 3, shadow: false });
+    LD.ball(c,gx,top-1,2.2,shade(colors.pos,-0.25),{glow:0,shadow:false});
     const lit = gateBlocked(i) || gateFlash(i) > 0;
-    const lx = gx + hw * 0.28, ly = top - hh / 2, lr = Math.max(1.7, hh * 0.19);
+    const lx = gx + 0.035 * k, ly = top - hh / 2, lr = Math.max(1.7, hh * 0.19);
     if (lit) {
       const gl = c.createRadialGradient(lx, ly, 0, lx, ly, lr * 4.5);
       gl.addColorStop(0, alpha(colors.pos, colors.dark ? 0.6 : 0.45));
@@ -855,16 +949,69 @@
       c.lineWidth = 5;
       c.beginPath(); c.moveTo(gx, top); c.lineTo(gx, -1); c.stroke();
     }
-    c.strokeStyle = alpha(colors.pos, blocked ? 0.9 : 0.4 + 0.5 * fl);
-    c.lineWidth = blocked ? 1.6 : 1.1;
-    c.setLineDash([3, 3]);
+    c.strokeStyle = alpha(colors.pos, blocked ? 0.9 : 0.28 + 0.62 * fl);
+    c.lineWidth = blocked ? 1.6 : 1;
+    c.setLineDash(blocked ? [] : [3, 3]);
     c.beginPath(); c.moveTo(gx, top); c.lineTo(gx, -1); c.stroke();
     c.restore();
     // 編號（隨木板旋轉，保持可讀：在木板座標中畫，角度不大時看得清楚）
     c.save();
-    c.translate(gx, top - 0.045 * k - 9);
+    c.translate(gx, top - 0.05 * k - 9);
     c.rotate(-state.theta * D2R);
     pill(c, String(i + 1), 0, 0, colors.pos, 11, { align: 'center' });
+    c.restore();
+  }
+
+
+  /** 器材小字的位置：依序試 cands，避開木板上表面、兩個光電門（立柱、門頭、編號）與把手；都不行傳回 null（不寫字，說明文字裡有） */
+  function toolLabelSpot(c,B,text,cands) {
+    const pw=richWidth(c,parseSub(text),11,600)+12,ph=11*fsScale()+6,S=LA.scene,hp=B.at(0.02,BT/2);
+    const pts=[];for(let i=0;i<=22;i++)pts.push(B.at(i*0.1,-0.01));
+    GATES.forEach(g=>{for(let yy=-0.40;yy<=0;yy+=0.04)for(const dx of [-0.06,0,0.06])pts.push(B.at(X0+g+dx,yy));});
+    for(let a=0;a<8;a++)pts.push([hp[0]+16*Math.cos(a*Math.PI/4),hp[1]+16*Math.sin(a*Math.PI/4)]);pts.push(hp);
+    const free=q=>{const r={x:q[0]-pw/2-3,y:q[1]-ph/2-3,w:pw+6,h:ph+6};
+      if(r.x<S.x||r.x+r.w>S.x+S.w||r.y<S.y||r.y+r.h>S.y+S.h)return false;
+      return !pts.some(p=>p[0]>=r.x&&p[0]<=r.x+r.w&&p[1]>=r.y&&p[1]<=r.y+r.h);};
+    return cands(pw,ph).find(free)||null;
+  }
+
+  function drawForceTool(c,B,k) {
+    const bs=blockS(state.s.x),ctr=B.at(bs,-BH/2),metal=metalColor(0.1,0.5);
+    c.save();
+    if(state.mode==='along') {
+      const dir=state.F>0?-1:1, end=(bs+dir*(BL/2+0.016))*k;
+      c.translate(B.O[0],B.O[1]);c.rotate(B.th);c.translate(end,-BH*k/2);c.scale(dir,1);
+      c.strokeStyle=alpha(colors.text,0.55);c.lineWidth=1;c.beginPath();c.moveTo(0,0);c.lineTo(0.06*k,0);c.stroke();
+      const x=0.06*k,w=0.30*k,h=0.055*k;
+      LD.block(c,x,-h/2,w,h,shade(colors.field,colors.dark?-0.45:0.78),{r:0.0275*k,shadow:false});
+      c.fillStyle=alpha(colors.text,0.12);roundRect(c,x+w*0.1,-h*0.2,w*0.8,h*0.4,1);c.fill();
+      c.strokeStyle=alpha(colors.text,0.45);c.lineWidth=1;c.beginPath();
+      for(let i=0;i<=10;i++){const q=x+w*0.1+w*0.8*i/10;c.moveTo(q,-h*0.2);c.lineTo(q,h*0.2);}c.stroke();
+      const q=x+w*0.1+w*0.8*Math.min(Math.abs(state.F),100)/100;
+      c.strokeStyle=colors.pos;c.lineWidth=1.5;c.beginPath();c.moveTo(q,-h*0.22);c.lineTo(q,h*0.22);c.stroke();
+      c.strokeStyle=metal;c.beginPath();c.arc(x+w+0.02*k,0,0.02*k,0,2*Math.PI);c.stroke();
+      c.restore();
+      if(!LA.narrow){
+        // 字先試秤身「上方」（離開木板那一側），再往上、往外；避開木板、光電門與把手
+        const text=T('彈簧秤（示意）','Spring scale (schematic)');
+        const at=toolLabelSpot(c,B,text,(pw,ph)=>{const out=[];
+          [0.22,0.30,0.14].forEach(u=>{const p=B.at(bs+dir*(BL/2+u),-BH/2-0.055/2);out.push([p[0],p[1]-ph/2-4],[p[0],p[1]-ph/2-4-0.06*k]);});return out;});
+        if(at)pill(c,text,at[0],at[1],colors.muted,11,{align:'center',border:false});
+      }
+      return;
+    }
+    const lambda=Math.min((BL/2)/Math.max(1e-9,B.cs),(BH/2)/Math.max(1e-9,B.sn))*k;
+    // 桿長 0.24 m（示意）：0.36 m 時在 20°～40° 會穿過光電門 1 的門頭
+    const x=ctr[0]+lambda,y=ctr[1],len=0.24*k;
+    LD.block(c,x,y-0.045*k,0.025*k,0.09*k,metalColor(0.2,0.4),{r:2,shadow:false});
+    LD.tube(c,polyPath([[x+0.025*k,y],[x+len,y]]),metalColor(0.25,0.35),Math.max(4,0.022*k));
+    LD.block(c,x+len,y-0.025*k,0.06*k,0.05*k,shade(colors.field,colors.dark?-0.6:0.1),{r:3,shadow:false});
+    // 字依序試：握把右邊、桿子下方、握把下方；碰到光電門（門頭與編號）或木板就換下一個，都不行就不寫（說明文字裡有）
+    if(!LA.narrow){
+      const text=T('推桿（示意）','Push rod (schematic)');
+      const at=toolLabelSpot(c,B,text,(pw,ph)=>[[x+len+0.06*k+6+pw/2,y],[x+len/2,y+0.045*k+ph/2+4],[x+len+0.03*k,y+0.025*k+ph/2+4]]);
+      if(at)pill(c,text,at[0],at[1],colors.muted,11,{align:'center',border:false});
+    }
     c.restore();
   }
 
@@ -878,14 +1025,20 @@
       const dx = B.cs, dy = B.sn; // 沿斜面向下（畫布）
       const face = [ctr[0] + dx * (BL / 2) * k, ctr[1] + dy * (BL / 2) * k];
       if (state.F > 0) { ux = -dx; uy = -dy; x0 = face[0] + dx * (len + 3); y0 = face[1] + dy * (len + 3); }
-      else { ux = dx; uy = dy; x0 = face[0] + dx * 3; y0 = face[1] + dy * 3; }
+      else {
+        // 往下拉時彈簧秤就在這條線上：箭頭往外（離開木板）平移到秤身上方，不壓住秤的刻度
+        const off = 0.0275 * k + 7;
+        ux = dx; uy = dy; x0 = face[0] + dx * 3 + dy * off; y0 = face[1] + dy * 3 - dx * off;
+      }
     } else {
       // 水平推向斜面：從木塊右側往左推
       const right = Math.max(B.at(bs + BL / 2, -BH)[0], B.at(bs + BL / 2, 0)[0], B.at(bs - BL / 2, -BH)[0]);
-      ux = -1; uy = 0; x0 = right + len + 4; y0 = ctr[1];
+      ux = -1; uy = 0; x0 = right + len + 4; y0 = ctr[1] - (0.06*k + 6);
     }
     arrow(c, x0, y0, ux, uy, len, lw, colors.F, false);
-    const lx = x0 + ux * len * 0.5 - uy * 14, ly = y0 + uy * len * 0.5 + ux * 14;
+    LD.ball(c,x0,y0,lw*1.35,colors.F,{glow:0,shadow:false});
+    const sg = state.mode === 'along' && state.F < 0 ? -1 : 1; // 往下拉：F 字放在外側
+    const lx = x0 + ux * len * 0.5 - sg * uy * 14, ly = y0 + uy * len * 0.5 + sg * ux * 14;
     pill(c, 'F', lx, ly, colors.F, LA.narrow ? 12 : 13, { align: 'center', weight: 700 });
   }
 
@@ -966,6 +1119,19 @@
     c.beginPath(); c.moveTo(bx + bw - 0.5, by - 3); c.lineTo(bx + bw - 0.5, by + bh + 3); c.stroke();
     return by + bh + 6;
   }
+  function fbdNice(fo) {
+    return niceUp(Math.max(fo.W,Math.abs(state.F),fo.N,Math.abs(fo.P),mystery()?0:fo.fsMax,Math.abs(fo.f),Math.abs(fo.net),1e-6));
+  }
+  function fbdBar(R,kF) {
+    let bv=1;[1,2,5,10,20,50,100].forEach(b=>{if(b*kF<=R.w*0.32)bv=b;});return bv;
+  }
+  function fbdScale(fo) {
+    const R=LA.fbd||LB.fbd,narrow=R.w<260;
+    let lm=Math.min(R.w,R.h)*(narrow?0.34:0.37),cy=R.y+R.h*0.52;
+    const top=R.y+66,bot=R.y+R.h-22;
+    if(cy-lm<top||cy+lm>bot)lm=Math.min(lm,(bot-top)/2);
+    const nice=fbdNice(fo);return {nice:nice,bar:fbdBar(R,lm/nice)};
+  }
   function drawFBD(c, R, fo) {
     c.save();
     roundRect(c, R.x, R.y, R.w, R.h, 8);
@@ -977,8 +1143,7 @@
     const dx = cs, dy = sn;     // 沿斜面向下（畫布）
     const nx = sn, ny = -cs;    // 斜面法線（往外）
     const hide = mystery();
-    const maxF = Math.max(fo.W, Math.abs(state.F), fo.N, Math.abs(fo.P), hide ? 0 : fo.fsMax, Math.abs(fo.f), Math.abs(fo.net), 1e-6);
-    const nice = niceUp(maxF);
+    const nice = fbdNice(fo);
     const cx = R.x + R.w * 0.5;
     let cy = R.y + R.h * 0.52;
     let Lmax = Math.min(R.w, R.h) * (narrow ? 0.34 : 0.37);
@@ -1073,6 +1238,7 @@
       const sg = F < 0 ? -1 : 1;
       if (opt.hollow) hollowArrow(c, x0, y0, ux * sg, uy * sg, len, lw, color);
       else arrow(c, x0, y0, ux * sg, uy * sg, len, opt.thin ? lw * 0.75 : lw, color, opt.dash);
+      if (color === colors.F) LD.ball(c,x0,y0,lw*1.35,colors.F,{glow:0,shadow:false});
       segs.push([x0, y0, x0 + ux * sg * len, y0 + uy * sg * len]);
       const o = opt.off || 0; // 標籤沿斜面法線方向的偏移（摩擦力放在斜面下方，避免和其他標籤擠在一起）
       if (lbl) labels.push({ tx: x0 + ux * sg * len + nx * o, ty: y0 + uy * sg * len + ny * o, ux: ux * sg, uy: uy * sg, text: lbl, color: color, dash: opt.dash });
@@ -1115,9 +1281,7 @@
     }
     // 標籤：放在箭頭尖端的外側；避免互相重疊，也盡量不壓在箭頭與木塊上
     // 比例尺的位置（左下角）先保留，標籤不要壓在上面
-    const bars = [1, 2, 5, 10, 20, 50, 100];
-    let bv = bars[0];
-    bars.forEach(function (b) { if (b * kF <= R.w * 0.32) bv = b; });
+    const bv = fbdBar(R,kF);
     const bl = bv * kF, bx = R.x + 10, by = R.y + R.h - 12;
     c.font = fontOf(11, 600);
     const placed = [{ x: bx - 3, y: by - 11, w: bl + 18 + c.measureText(bv + ' N').width, h: 22 }];
@@ -1186,6 +1350,13 @@
     c.restore();
   }
 
+  // 窄版英文提示分行，字級固定至少 11 px。
+  function graphPrompt(c,text,x,y,width,size) {
+    c.save();c.font=fontOf(size,600);
+    const words=text.includes(' ')?text.split(' '):Array.from(text), lines=[];let line='';
+    words.forEach(w=>{const next=line+(line&&text.includes(' ')?' ':'')+w;if(c.measureText(next).width>width-12&&line){lines.push(line);line=w;}else line=next;});if(line)lines.push(line);
+    lines.forEach((v,i)=>pill(c,v,x,y+(i-(lines.length-1)/2)*(size*fsScale()+7),colors.muted,size,{align:'center',border:false}));c.restore();
+  }
   // ---------- 運動圖（x–t 或 v–t） ----------
   const WINDOWS = [2, 3, 5, 8, 10, 15, 20, 30, 45, 60, 90, 120, 180, 300, 600];
   function plotBox(R, padL) {
@@ -1316,7 +1487,8 @@
       sphereSmall(c, ax.X(last.t), ax.Y(isV ? last.v : last.x), col);
     }
     c.restore();
-    pill(c, isV ? T('v–t 圖', 'v–t graph') : T('x–t 圖', 'x–t graph'), R.x + 8, R.y + 13, col, P.nar ? 12 : 13, { weight: 700, border: false });
+    if(!state.run && !state.ghosts.length) graphPrompt(c,T('按「放手」開始記錄','Press “Release” to start recording'),P.x+P.w/2,P.y+P.h/2,P.w,LA.narrow?11:12);
+    pill(c, isV ? T('v–t 圖' , 'v–t graph') : T('x–t 圖', 'x–t graph'), R.x + 8, R.y + 13, col, P.nar ? 12 : 13, { weight: 700, border: false });
     c.textAlign = 'right';
     // 縱軸單位：寬的圖放在右上角；窄的圖（手機並排）放在標題下一行，避免和標題重疊
     const yUnit = isV ? T('v (m/s)，向下為正', 'v (m/s), down +') : T('x (m)', 'x (m)');
@@ -1415,7 +1587,9 @@
       muLabel('μ_sN', Math.max(P.y + 8, ax.Y(kk.fsMax) - 10));
       muLabel('μ_kN', Math.min(P.y + P.h - 8, ax.Y(kk.fk) + 10));
     }
-    pill(c, T('摩擦力 f–外力 F', 'Friction f vs force F'), R.x + 8, R.y + 13, colors.f, P.nar ? 12 : 13, { weight: 700, border: false });
+    // 右緣上半有 μsN、μkN 標籤：寬圖左右各讓 48 px；窄圖改短句、移到下半部
+    if(!state.ff.length) graphPrompt(c,P.nar?T('按「慢慢加力」畫圖','Press “Increase force”'):T('按「慢慢加力」畫出這張圖','Press “Increase force” to draw this graph'),P.x+P.w/2,P.nar?P.y+P.h*0.72:P.y+P.h/2-18,P.nar?P.w-8:P.w-96,LA.narrow?11:12);
+    pill(c, T('摩擦力 f–外力 F' , 'Friction f vs force F'), R.x + 8, R.y + 13, colors.f, P.nar ? 12 : 13, { weight: 700, border: false });
     if (P.nar) pill(c, T('f (N)，向下為正', 'f (N), down +'), R.x + 8, R.y + 34, colors.muted, f, { border: false });
     else pill(c, T('f (N)，向下為正', 'f (N), down +'), P.x + 4, P.y + 9, colors.muted, f, { border: false });
     pill(c, 'F (N)', R.x + R.w - 4, P.y + P.h - 9, colors.muted, f, { align: 'right', border: false });
@@ -2043,10 +2217,15 @@
     let th = Math.atan2(SG.hy - p[1], SG.hx - p[0]) / D2R;
     if (th < 0) th = SG.hy - p[1] >= 0 ? 90 : 0;
     th = Math.max(0, Math.min(90, Math.round(th * 10) / 10));
-    if (th === state.theta) return;
-    state.theta = th;
-    setSlider(elTheta, th);
-    changed('tilt');
+    setAngleFromDrag(th,false);
+  }
+  function setAngleFromDrag(deg,done) {
+    stopRaise(true);
+    const th=Math.max(0,Math.min(90,Math.round(deg*10)/10));
+    state.dragging=!done;
+    if(th!==state.theta){state.theta=th;setSlider(elTheta,th);changed('tilt');}
+    requestDraw();
+    if(done)commit();
   }
   cvA.addEventListener('pointerdown', function (e) {
     const p = ptOf(e);
@@ -2068,8 +2247,7 @@
     if (!state.dragging) return;
     state.dragging = false;
     cvA.style.cursor = state.hover ? 'grab' : 'default';
-    requestDraw();
-    commit();
+    setAngleFromDrag(state.theta,true);
   }
   cvA.addEventListener('pointerup', endDrag);
   cvA.addEventListener('pointercancel', endDrag);
@@ -2103,6 +2281,67 @@
     });
   }
 
+  // ---------- 3D：只傳遞共用核心的結果，不另外積分物理 ----------
+  let view3 = null, threeLib = null, loadToken = 0;
+  const stage = cvA.closest('.stage'), viewMsg = $('viewMsg');
+  function webglAvailable() {
+    try { const c=document.createElement('canvas');return !!(window.WebGLRenderingContext&&(c.getContext('webgl2')||c.getContext('webgl'))); }
+    catch(e) { return false; }
+  }
+  function loadThree() {
+    if(threeLib)return Promise.resolve(threeLib);
+    const base=new URL('vendor/three/',document.baseURI).href;
+    return Promise.all([import(base+'three.module.min.js'),import(base+'OrbitControls.js')]).then(mods=>{
+      threeLib={THREE:mods[0],OrbitControls:mods[1].OrbitControls};return threeLib;
+    });
+  }
+  function state3() {
+    const fo=forcesNow(),sc=fbdScale(fo),st=sceneStatus(fo);
+    return {
+      theta:state.theta,m:state.m,mode:state.mode,F:state.F,phase:state.phase,
+      x:state.s.x,v:state.s.v,t:state.s.t,slow:state.slow,mu:mu(),hide:mystery(),surf:state.surf,mats:SURF[state.surf]||SURF.wood,
+      fo:fo,nice:sc.nice,bar:sc.bar,show:{comp:state.show.comp,net:state.show.net,cone:state.show3.cone,axes:state.show3.axes},
+      gates:[{blocked:gateBlocked(0),flash:gateFlash(0)},{blocked:gateBlocked(1),flash:gateFlash(1)}],
+      status:st.text,statusColor:st.color,dragging:state.dragging,
+      slipping:state.fx.some(e=>e.type==='ring'&&e.color===colors.pos&&performance.now()-e.t0<e.dur),
+      animating:state.phase==='run'&&(state.s.v!==0||state.raising||state.ramping),effects:state.fx.length>0
+    };
+  }
+  function pressed3(mode) {
+    $('view2d').setAttribute('aria-pressed',String(mode==='2d'));$('view3d').setAttribute('aria-pressed',String(mode==='3d'));
+  }
+  function fail3D() {
+    if(view3){view3.dispose();view3=null;}
+    stage.classList.remove('is3d');pressed3('2d');
+    viewMsg.textContent=T('無法開啟 3D 檢視（這個瀏覽器不支援 WebGL，或 3D 程式載入失敗），維持 2D。','The 3D view could not be started (WebGL is not available or the 3D library failed to load), so the 2D view is kept.');resize();
+  }
+  function setView(mode) {
+    if(mode==='2d') {
+      loadToken++;pressed3('2d');if(view3){view3.dispose();view3=null;}stage.classList.remove('is3d');viewMsg.textContent='';resize();return;
+    }
+    if(view3&&view3.active)return;
+    const token=++loadToken;pressed3('3d');
+    if(!webglAvailable()||!window.InclineThree){fail3D();return;}
+    viewMsg.textContent=T('正在載入 3D 檢視…','Loading the 3D view…');
+    loadThree().then(lib=>{
+      if(token!==loadToken)return;
+      stage.classList.add('is3d');
+      view3=window.InclineThree.create(lib,{
+        host:$('view3'),hud:$('hud3'),T:T,
+        geo:{BOARD,BT,BL,BH,PEG_W,PEG_H,STOP_W,STOP_H,X0,XMIN,XMAX,GATES},material:material,state:state3,
+        setAngle:setAngleFromDrag,
+        lost:()=>{setView('2d');viewMsg.textContent=T('3D 繪圖環境中斷，已切回 2D。','The 3D graphics context was lost, so the view switched back to 2D.');}
+      });
+      viewMsg.textContent='';resize();draw();
+    }).catch(err=>{if(token===loadToken){console.warn('3D view unavailable:',err);fail3D();}});
+  }
+  $('view2d').addEventListener('click',()=>setView('2d'));
+  $('view3d').addEventListener('click',()=>setView('3d'));
+  $('camSide').addEventListener('click',()=>{if(view3)view3.viewFrom('side');});
+  $('camCone').addEventListener('click',()=>{if(view3)view3.viewFrom('cone');});
+  $('resetCam').addEventListener('click',()=>{if(view3)view3.resetCamera();});
+  [['s3cone','cone'],['s3axes','axes']].forEach(([id,key])=>$(id).addEventListener('change',()=>{state.show3[key]=$(id).checked;requestDraw();}));
+
   // ---------- 啟動 ----------
   readColors();
   state.theta = val(elTheta); state.m = val(elM); state.F = val(elF); state.v0 = val(elV0);
@@ -2118,7 +2357,7 @@
   updateSoundButton();
   renderRecords();
   graphLabel();
-  function themeChanged() { readColors(); if (LA) buildBackgrounds(); requestDraw(); }
+  function themeChanged() { readColors(); if (LA) buildBackgrounds(); if(view3)view3.onTheme(); requestDraw(); }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
