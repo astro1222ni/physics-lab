@@ -65,6 +65,13 @@
       if(index===7)unit.board.forEach(p=>nodes.push(E('p',tr(p))));
     }
     if(unit.sections[section].kind==='experiment')nodes.push(settings());
+    if(!hiddenAnswer&&new URLSearchParams(location.search).get('embed')!=='1'){
+      (st.videoKeys||[]).forEach(key=>{
+        const video=unit.videos[key];if(!video)return;
+        const link=E('a',T('▶ 看倪老師上課講這段（〔20〕','▶ Watch Mr. Ni explain this in class (in Chinese, ')+video.time+T('）',')'),'lp-lecture-link');
+        link.href=video.href;link.target='_blank';link.rel='noopener';nodes.push(link);
+      });
+    }
     LabPanel.setContent('concept',nodes);
     LabPanel.setStrip(body.split(/(?<=[。！？.!?])\s*/)[0],'concept');
   }

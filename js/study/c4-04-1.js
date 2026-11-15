@@ -2,9 +2,14 @@
 (function(root){
   'use strict';
   const S={script:'課程講稿',lecture:'課堂講法',warning:'上限提醒',formula:'範例解法',design:'單元自編'};
-  const step=(cap,body,source,extra)=>Object.assign({cap,body,source},extra || {});
+  const videos={
+    lecture:{time:'17:21',href:'https://youtu.be/IVTzpNB02hI?t=1041'},
+    warning:{time:'13:56',href:'https://youtu.be/IVTzpNB02hI?t=836'},
+    formula:{time:'19:41',href:'https://youtu.be/IVTzpNB02hI?t=1181'}
+  };
+  const step=(cap,body,source,extra)=>Object.assign({cap,body,source,videoKeys:Object.keys(videos).filter(k=>source.includes(S[k]))},extra || {});
   const board=[['未滑動：f = F，大小相等、方向相反。','At rest: f = F, equal magnitudes and opposite directions.'],['恰滑動：靜摩擦力剛好到達上限。','At the threshold: static friction has just reached its limit.'],['已滑動：換成動摩擦力，這裡是 19.6 N。','Sliding: friction is kinetic; here its magnitude is 19.6 N.']];
-  const data={id:'c4-04-1',title:['靜摩擦力會跟著外力變','Static friction follows the pull'],board,
+  const data={id:'c4-04-1',title:['靜摩擦力會跟著外力變','Static friction follows the pull'],board,videos,
     shortBoard:[['未滑動：f = F','At rest: f = F'],['恰滑動：f = 最大靜摩擦力','Threshold: f = static limit'],['已滑動：f = 動摩擦力','Sliding: f = kinetic friction']],
     photo:{kind:'illustration',alt:['手正在水平推一個三層落地書櫃，書櫃沒有滑動','A hand pushes a three-shelf bookcase horizontally; the bookcase stays at rest'],credit:['自製器材示意插畫','Original apparatus illustration'],context:['先觀察手和書櫃的接觸點，再想想誰在平衡推力。','Look at where the hand touches the bookcase. What balances the push?']},
     sections:[
@@ -81,7 +86,7 @@
       {t:['看摩擦力也是 5 N，朝左','See 5 N of friction acting left'],detail:['看箭頭 2 秒，或按「看到了」。','Watch the arrow for 2 seconds, or press “I see it”.'],check:s=>Math.abs(s.F-5)<.5&&s.f>0&&!s.moving,hold:2,ack:true},
       {t:['拉到 15 N，看兩支箭頭一起變長','Reach 15 N; see both arrows grow'],check:s=>Math.abs(s.F-15)<.5&&!s.moving,hold:.5},
       {t:['慢慢加力直到滑動，讀紅指針','Increase the pull to slipping; read the red marker'],detail:['紅色指針記住拉力計的最大讀數。剛開始滑時記下讀數；若再繼續加力，最大讀數也會更新。','The red marker retains the highest scale reading. Note the reading when slipping starts; pulling harder afterwards also raises this marker.'],check:s=>s.type==='slip',hold:0},
-      {t:['滑動中，把讀數維持在 20 N 左右 1 秒，觀察近似等速','While sliding, keep the reading near 20 N for 1 s; observe nearly steady speed'],detail:['先拉超過上限讓它滑，再把讀數調到 20 N 左右。讀數跟動摩擦力差不多時，速度變化很小；恰好 19.6 N 才是完全等速。從靜止直接拉約 20 N，不會讓它自己滑起來。','Start it sliding first, then adjust to about 20 N. Near the kinetic-friction reading, speed changes very little; exactly 19.6 N gives constant speed. A pull near 20 N alone will not start a slide from rest.'],check:s=>s.moving&&Math.abs(s.F-19.6)<.6,hold:1},
+      {t:['滑動中，把讀數維持在 20 N 左右 1 秒，看它慢慢加速','While sliding, keep the reading near 20 N for 1 s and watch it slowly accelerate'],detail:['用預設桌面，先拉超過上限讓木塊向右滑，再把讀數調到 20 N 左右。讀數恰為 20 N 時，動摩擦力為 19.6 N，合力 \\(20-19.6=0.4\\ \\mathrm{N}\\) 向右。5 kg 木塊的 \\(a=\\frac{0.4}{5}=0.08\\ \\mathrm{m/s^2}\\)，正在加速。要等速，拉力必須剛好是 19.6 N；小於 19.6 N 會減速。從靜止直接拉 20 N，不會讓它自己滑起來。','Use the default table. First pull past the limit to start the block sliding right, then adjust to about 20 N. At exactly 20 N, kinetic friction is 19.6 N, so the net force is \\(20-19.6=0.4\\ \\mathrm{N}\\) to the right. The 5 kg block has \\(a=\\frac{0.4}{5}=0.08\\ \\mathrm{m/s^2}\\): it is accelerating. Constant speed requires exactly 19.6 N; below 19.6 N it slows down. A 20 N pull will not start it sliding from rest.'],check:s=>s.moving&&s.F>19.6&&s.F<=20.6&&s.f>0&&s.net<0,hold:1},
       {t:['放手等停下，換邊輕拉，看方向翻轉','Release, wait for rest, then pull gently from the other side'],detail:['在「觀念」下方的設定勾「換邊拉」。朝左拉超過 3 N，保持靜止。','In the settings under Concept, enable “Pull from the other side”. Pull left above 3 N while remaining at rest.'],check:s=>s.F< -3&&!s.moving,hold:.5}
     ]
   };

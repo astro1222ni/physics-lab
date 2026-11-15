@@ -87,6 +87,7 @@ body[data-study-kind="prediction"] .study-options button[aria-pressed="false"] .
 .lp-content h3 { margin:0 0 8px; font-size:calc(18px * var(--fs,1)); line-height:1.5; }
 .lp-content p { margin:0 0 8px; }
 .lp-content small,.lp-source { font-size:calc(14px * var(--fs,1)); color:var(--ink-3); }
+.lp-lecture-link { display:flex; align-items:center; min-width:44px; min-height:44px; padding:8px 0; font-size:calc(14px * var(--fs,1)); line-height:1.5; color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .lp-content button { padding:6px 10px; }
 .lp-content select { width:100%; min-height:44px; font-size:calc(17px * var(--fs,1)); color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:6px; }
 .lp-content label { display:flex; align-items:center; gap:8px; min-height:44px; margin:4px 0; }
