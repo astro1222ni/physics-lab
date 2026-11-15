@@ -1,3 +1,14 @@
+# 2026-11-15 首頁改版交接（home-v2，待 Claude 審查合併）
+
+- 首頁只放個人狀態、四大類八科入口、最新上架與本機推薦；八科頁名與流程以 CLAUDE.md 最後一節為準。下方舊交接內容保留為歷史紀錄，首頁結構以本節為準。
+- 182 個實驗原樣搬到科目頁，184 頁舊導覽連結更新。catalog s/d/b/c 與 chapter-map 的固定基準由產生工具及單元測試檢查。
+- 新實驗卡片放科目頁；新科建科目頁、補 LAB_SUBJECTS.page/dom/group、移除 LAB_SUBJECT_GROUPS.soon，再跑 apply-directory、seo、fix-crumbs、build-hans。不可重跑 split-home。
+- 首頁帳號讀取四筆個人資料，沿用的登入權限判斷另讀 admins/<uid>；這筆額外讀取列為設計差異供審稿。沒有全 scores 查詢。
+- 首頁相關試玩以 tools/playtest-home.cjs 處理，與物理任務試玩分開；總表原圖由 tools/review-home.cjs 產生。
+- 本分支未上線；只 commit 本次修改與交件單，總表不 commit，不執行 stamp。完整驗收數字見 交件-首頁改版.md。
+
+---
+
 # 交接說明（雲端工作串 → 本機工作串「Astro Ni 科學實驗室」）
 
 交接日期：2026-11-11。接手的工作串請先讀完 **CLAUDE.md**（規則與慣例），再讀這份（目前狀態、工具、待辦）。

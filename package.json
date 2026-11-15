@@ -7,7 +7,7 @@
     "check": "node tools/check-pages.cjs",
     "shots": "node tools/check-pages.cjs --shots",
     "thumbs": "node tools/make-thumbs.cjs",
-    "seo": "node tools/seo.cjs && node tools/build-catalog.cjs",
+    "seo": "node tools/build-catalog.cjs && node tools/seo.cjs",
     "verify": "node tools/verify.cjs",
     "playtest": "node tools/playtest.cjs",
     "personas": "node tools/personas.cjs",

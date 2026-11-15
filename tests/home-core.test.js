@@ -1,0 +1,37 @@
+const assert = require('assert/strict');
+const fs = require('fs'), path = require('path'), crypto = require('crypto');
+const C = require('../js/home-core.js');
+const ROOT = path.resolve(__dirname, '..'), w = {};
+new Function('window', fs.readFileSync(path.join(ROOT, 'js/catalog.js'), 'utf8'))(w);
+const labs = w.LAB_CATALOG, now = Date.parse('2026-11-15T04:00:00Z');
+const ids = result => result.items.map(x => x.lab.s);
+const cold = C.recommend(labs, {}, {}, now);
+assert.equal(cold.items.length, 6);
+assert.equal(new Set(cold.items.map(x => x.lab.d)).size, 6);
+assert.deepEqual(ids(cold), ids(C.recommend(labs, {}, {}, now)));
+for (const x of cold.items) { const first = labs.find(p => p.d === x.lab.d); assert.equal(x.lab.b, first.b); assert.equal(x.lab.c, first.c); }
+const rotation = new Set();
+for (let i = 0; i < 32; i++) C.recommend(labs, {}, {}, now + i * 86400000).items.forEach(x => rotation.add(x.lab.d));
+assert.equal(rotation.size, 8, '各科在日期輪替中都有機會');
+const hist = { 'newton-second': { v: 8, s: 900, o: 20, t: now }, projectile: { v: 6, s: 1200, o: 16, t: now - 86400000 } };
+const done = C.doneCounts(labs, { 'projectile-1': {}, 'projectile-2': {}, 'newton-second-h1': {}, 'not-a-lab-1': {} });
+assert.equal(done.projectile, 2); assert.equal(done['newton-second'], 1);
+const personal = C.recommend(labs, hist, done, now, 'projectile');
+assert.equal(personal.items.length, 6);
+assert(personal.items.some(x => x.lab.d !== 'physics'));
+assert(personal.items.some(x => x.reason.type === 'chapter'));
+assert(personal.items.every(x => x.reason && !['projectile', 'newton-second'].includes(x.lab.s)));
+const counts = k => Object.values(personal.items.reduce((a, x) => { a[x.lab[k]] = (a[x.lab[k]] || 0) + 1; return a; }, {}));
+assert(Math.max(...counts('c')) <= 2); assert(Math.max(...counts('d')) <= 3);
+assert.deepEqual(ids(personal), ids(C.recommend(labs, hist, done, now, 'projectile')));
+const allDone = Object.fromEntries(labs.map(x => [x.s, x.n || 100]));
+assert.equal(C.recommend(labs, {}, allDone, now).items.length, 0);
+const sparse = Object.fromEntries(labs.slice(0, -8).map(x => [x.s, 1]));
+assert(C.recommend(labs, {}, sparse, now).items.every(x => !sparse[x.lab.s]));
+const huge = {}; for (let i = 0; i < 250; i++) huge['lab-' + i] = { v: 1, s: 2, o: 3, t: i };
+assert.equal(Object.keys(C.trimHistory(huge)).length, 200); assert(!C.trimHistory(huge)['lab-0']);
+assert.equal(C.day(Date.parse('2026-11-14T16:00:00Z')), '2026-11-15');
+const guard = JSON.parse(fs.readFileSync(path.join(ROOT, 'tools/home-v2-invariants.json')));
+for (const before of guard.catalog) { const { s, d, b, c } = labs.find(x => x.s === before.s) || {}; assert.deepEqual({ s, d, b, c }, before); }
+if (labs.length === guard.count) assert.equal(crypto.createHash('sha256').update(fs.readFileSync(path.join(ROOT, 'js/chapter-map.js'))).digest('hex'), guard.chapterSHA256);
+console.log('推薦、日期輪替、帳號任務合併、上限與搬遷不變量全部通過');

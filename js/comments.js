@@ -70,6 +70,7 @@
         getNickname: function (uid) { return D.get(r('profiles/' + uid + '/nickname')).then(function (s) { return s.val(); }); },
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },
         isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
+        homeRead: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
         watchComments: function (mod, cb) {
           live = true;
           D.onValue(D.query(r('comments/' + mod), D.orderByChild('createdAt'), D.limitToLast(100)), function (snap) {
@@ -132,7 +133,21 @@
   const state = { user: null, nickname: null, admin: false, comments: null, reports: {}, ready: false, busy: false, msg: '' };
   let api = null;
   const listeners = [];
-  function changed() { listeners.forEach(function (f) { f(); }); }
+  function changed() {
+    listeners.forEach(function (f) { f(); });
+    if (document.body && document.body.hasAttribute('data-home-v2')) window.dispatchEvent(new CustomEvent('lab:account', { detail: { user: state.user, admin: state.admin, ready: state.ready } }));
+  }
+  // 首頁沿用同一個登入連線，四個個人節點各讀一次；不載入任務引擎或排行榜。
+  const homeReads = {};
+  function readHome(uid) {
+    if (!homeReads[uid]) {
+      const backend = window.LAB_MISSIONS_BACKEND;
+      const get = p => backend ? backend.get(p) : api.homeRead(p);
+      homeReads[uid] = Promise.all(['profiles', 'scores', 'daily', 'completions'].map(p => get(p + '/' + uid))).then(r => ({ profile: r[0] || {}, score: r[1] || {}, daily: r[2] || {}, done: r[3] || {} }));
+    }
+    return homeReads[uid];
+  }
+  window.LabAccount = { state: function () { return { user: state.user, admin: state.admin, ready: state.ready }; }, readHome: readHome, signIn: function () { if (api) signIn(); } };
 
   // 把可能同步丟出錯誤的呼叫包成 Promise，並加上逾時，避免畫面卡住
   function guard(fn, ms) {
@@ -556,7 +571,8 @@
         if (user) closeWelcome('signed');
         else setTimeout(function () { whenEngaged(maybeWelcome); }, 600); // 讓頁面先出現；實驗頁等學生先操作幾下再提示
         if (user) {
-          Promise.all([api.getNickname(user.uid).catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
+          const nick = document.body.hasAttribute('data-home-v2') ? readHome(user.uid).then(function (d) { return d.profile.nickname; }) : api.getNickname(user.uid);
+          Promise.all([nick.catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
             if (!state.user || state.user.uid !== user.uid) return;
             state.nickname = r[0] || null;
             state.admin = !!r[1];

@@ -1056,7 +1056,7 @@ async function main() {
   if (!cache) cache = { version: VERSION, pages: {} };
 
   if (todo.length) {
-    const { launch } = require('./browser.cjs'); // Intel 內顯、低於標準優先權；4070 留給影片
+    const { launch } = require('G:/physics-lab/tools/browser.cjs');
     const server = await startServer();
     const base = 'http://127.0.0.1:' + server.address().port + '/';
     const browser = await launch();
@@ -1071,7 +1071,10 @@ async function main() {
       }
       const t = Date.now();
       let res;
-      try { res = await playPage(browser, base, slug, opts); } catch (e) {
+      try {
+        const entry = ['index', ...require('./home-data.cjs').subjects.map(s => s.page)];
+        res = entry.includes(slug) ? await require('./playtest-home.cjs').playPage(browser, base, slug, opts) : await playPage(browser, base, slug, opts);
+      } catch (e) {
         res = { sec: Math.round((Date.now() - t) / 1000), seed: opts.seed, steps: opts.steps, confirmed: [], pending: [{ level: 'pending', kind: 'tool', msg: '試玩工具出錯：' + e.message.split('\n')[0].slice(0, 200) }], accidental: [], emits: {}, dialogs: [], log: [] };
       }
       if (opts.until) { console.log(res.log.join('\n')); continue; }

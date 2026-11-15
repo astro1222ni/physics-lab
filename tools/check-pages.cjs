@@ -17,7 +17,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於標準優先權（減少 CPU 負擔）
+const { launch } = require('G:/physics-lab/tools/browser.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
@@ -29,7 +29,7 @@ if (missing.length) { console.error('✗ 找不到頁面：' + missing.join('、
 if (!pages.length) {
   const w = {};
   new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
-  pages = ['index', 'leaderboard'].concat(w.LAB_LIVE_MODULES || []);
+  pages = ['index', ...(w.LAB_SUBJECTS || []).map(s => s.page), 'leaderboard'].concat(w.LAB_LIVE_MODULES || []);
 }
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
@@ -60,6 +60,7 @@ server.listen(0, '127.0.0.1', async () => {
       const ctx = await browser.newContext({ viewport: { width: c.w, height: 900 }, colorScheme: c.scheme });
       // 本機連得到 Firebase：擋掉所有對外連線（統計、在線心跳、Firebase SDK），只留本機伺服器，避免寫進正式資料庫
       await ctx.route(u => !u.href.startsWith(base), r => r.abort());
+      await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') });
       await ctx.addInitScript(o => {
         localStorage.setItem('lab-settings', JSON.stringify({ lang: o.lang, theme: 'auto', fs: o.fs }));
         localStorage.setItem('lab-welcome-v1', 'skip');

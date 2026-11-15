@@ -18,7 +18,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於標準優先權（減少 CPU 負擔）
+const { launch } = require('G:/physics-lab/tools/browser.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const OUT = path.join(ROOT, 'img', 'thumbs');
@@ -221,7 +221,9 @@ server.listen(0, '127.0.0.1', async () => {
   fs.writeFileSync(tjs, src.replace(/\/\* VERSIONS-BEGIN[\s\S]*?VERSIONS-END \*\//, body));
 
   // 首頁：已上線卡片補上縮圖
-  const idx = path.join(ROOT, 'index.html');
+  // 下面依各科頁處理，首頁只保留入口卡片。
+  for (const sb of win.LAB_SUBJECTS.filter(s => fs.existsSync(path.join(ROOT, s.page + '.html')))) {
+  const idx = path.join(ROOT, sb.page + '.html');
   let html = fs.readFileSync(idx, 'utf8');
   let added = 0;
   html = html.replace(/(<a class="module live"[^>]*data-module="([\w-]+)"[^>]*>)(?!\s*<img class="module-thumb")(\s*)/g, (m, open, s, ws) => {
@@ -230,6 +232,7 @@ server.listen(0, '127.0.0.1', async () => {
     return open + ws + `<img class="module-thumb" data-thumb="${s}" alt="" width="${W}" height="${H}" loading="lazy" decoding="async">` + ws;
   });
   if (added) fs.writeFileSync(idx, html);
-  console.log(`\n版本表 ${Object.keys(ver).length} 個實驗；首頁新增縮圖 ${added} 張。` + (bad ? `\n有 ${bad} 張失敗。` : ''));
+  }
+  console.log(`\n版本表 ${Object.keys(ver).length} 個實驗；已檢查八個科目頁的縮圖。` + (bad ? `\n有 ${bad} 張失敗。` : ''));
   process.exit(bad ? 1 : 0);
 });

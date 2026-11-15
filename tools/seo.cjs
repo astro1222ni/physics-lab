@@ -29,13 +29,16 @@ const ent = s => String(s).replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"')
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const strip = s => ent(String(s).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 
-// ---------- 從首頁讀出每個實驗的標題、說明、分支、章名 ----------
+// ---------- 從各科目頁讀出每個實驗的標題、說明、分支、章名 ----------
 const index = read('index.html');
+const { subjects, asset } = require('./home-data.cjs');
+const subjectSource = subjects.map(s => read(s.page + '.html')).join('\n');
+const catalogWindow = {}; new Function('window', read('js/catalog.js'))(catalogWindow);
 const labs = [];
 {
   let branch = null, chapter = null;
   const re = /<section class="branch" id="([\w-]+)"[^>]*>[\s\S]*?<h2 data-en="([^"]*)">([^<]*)<\/h2>|<h3 class="chapter-head"[^>]*><span data-en="([^"]*)">([^<]*)<\/span><\/h3>|<section class="chapter[^"]*"[^>]*>|<a class="module live" href="([\w-]+)\.html" data-module="([\w-]+)"[^>]*>([\s\S]*?)<\/a>/g;
-  for (let m; (m = re.exec(index));) {
+  for (let m; (m = re.exec(subjectSource));) {
     if (m[1]) { branch = { id: m[1], en: ent(m[2]), zh: ent(m[3]) }; chapter = null; }
     else if (m[4] !== undefined) chapter = { en: ent(m[4]), zh: ent(m[5]) };
     else if (m[0].startsWith('<section class="chapter')) chapter = null;
@@ -43,7 +46,7 @@ const labs = [];
       const body = m[8];
       const h = body.match(/<h4 data-en="([^"]*)">([\s\S]*?)<\/h4>/);
       const p = body.match(/<p data-en="([^"]*)">([\s\S]*?)<\/p>/);
-      labs.push({ slug: m[7], zh: strip(h[2]), en: ent(h[1]), dzh: strip(p[2]), den: ent(p[1]), branch, chapter: chapter || { zh: branch.zh, en: branch.en } });
+      labs.push({ slug: m[7], zh: strip(h[2]), en: ent(h[1]), dzh: strip(p[2]), den: ent(p[1]), branch, chapter: chapter || { zh: branch.zh, en: branch.en }, subject: subjects.find(s => s.branches.includes(branch.id)) });
     }
   }
 }
@@ -55,7 +58,11 @@ const pages = [
   { slug: 'leaderboard', url: SITE + 'leaderboard.html', title: '倪的星星排行榜｜' + SITE_ZH, desc: '在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。', kind: 'page' },
   { slug: 'daily', url: SITE + 'daily.html', title: '每日任務｜' + SITE_ZH, desc: '每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。', kind: 'page' },
   { slug: 'about', url: SITE + 'about.html', title: '關於本站｜' + SITE_ZH, desc: '讓倪動手⚡高中全科模擬實驗室的作者、物理怎麼把關、引用格式與授權（CC BY-NC 4.0）。', kind: 'about' }
-].concat(labs.map(l => ({ slug: l.slug, url: SITE + l.slug + '.html', title: l.zh + '｜' + SITE_ZH, desc: l.dzh, kind: 'lab', lab: l })));
+].concat(subjects.map(s => {
+  const own = labs.filter(l => l.subject.id === s.id), names = [...new Set(own.map(l => l.branch.zh))];
+  return { slug: s.page, url: SITE + s.page + '.html', title: s.zh + '｜' + SITE_ZH,
+    desc: s.zh + '互動實驗：' + names.join('、') + '。' + own.length + ' 個實驗，調整條件、觀察變化，動手驗證課本裡的概念。', kind: 'subject', subject: s, labs: own };
+}), labs.map(l => ({ slug: l.slug, url: SITE + l.slug + '.html', title: l.zh + '｜' + SITE_ZH, desc: l.dzh, kind: 'lab', lab: l })));
 
 function block(pg) {
   const img = SITE + 'img/og/' + pg.slug + '.jpg';
@@ -91,15 +98,16 @@ function block(pg) {
       educationalLevel: 'High school', audience: { '@type': 'EducationalAudience', educationalRole: ['student', 'teacher'] },
       about: [l.branch.zh + '（' + l.branch.en + '）', l.chapter.zh + '（' + l.chapter.en + '）'],
       isAccessibleForFree: true, interactivityType: 'active',
-      isPartOf: { '@type': 'WebSite', name: SITE_ZH, alternateName: SITE_EN, url: SITE },
+      isPartOf: { '@type': 'CollectionPage', name: l.subject.zh, url: SITE + l.subject.page + '.html' },
       author: { '@type': 'Person', name: 'Astro Ni' },
       license: 'https://creativecommons.org/licenses/by-nc/4.0/'
     };
   } else if (pg.kind === 'home') {
     ld = { '@context': 'https://schema.org', '@type': 'WebSite', name: SITE_ZH, alternateName: SITE_EN, url: SITE, description: pg.desc, inLanguage: ['zh-Hant', 'zh-Hans', 'en'],
       license: 'https://creativecommons.org/licenses/by-nc/4.0/', author: { '@type': 'Person', name: 'Astro Ni' },
-      hasPart: labs.map(l => ({ '@type': 'LearningResource', name: l.zh, alternateName: l.en, url: SITE + l.slug + '.html' })) };
+      hasPart: subjects.map(s => ({ '@type': 'CollectionPage', name: s.zh, alternateName: s.en, url: SITE + s.page + '.html' })) };
   }
+  if (pg.kind === 'subject') ld = { '@context': 'https://schema.org', '@type': 'CollectionPage', name: pg.subject.zh, alternateName: pg.subject.en, description: pg.desc, url: pg.url, image: img, inLanguage: ['zh-Hant', 'zh-Hans', 'en'], isPartOf: { '@type': 'WebSite', name: SITE_ZH, url: SITE }, hasPart: pg.labs.map(l => ({ '@type': 'LearningResource', name: l.zh, alternateName: l.en, url: SITE + l.slug + '.html' })) };
   if (pg.kind === 'about') {
     ld = { '@context': 'https://schema.org', '@type': 'AboutPage', name: pg.title, url: pg.url, description: pg.desc, inLanguage: ['zh-Hant', 'zh-Hans', 'en'],
       isPartOf: { '@type': 'WebSite', name: SITE_ZH, alternateName: SITE_EN, url: SITE },
@@ -107,6 +115,12 @@ function block(pg) {
       license: 'https://creativecommons.org/licenses/by-nc/4.0/' };
   }
   if (ld) L.push('<script type="application/ld+json">' + JSON.stringify(ld).replace(/</g, '\\u003c') + '</script>');
+  if (pg.kind === 'lab' || pg.kind === 'subject') {
+    const s = pg.kind === 'lab' ? pg.lab.subject : pg.subject;
+    const crumbs = [{ name: '首頁', item: SITE }, { name: s.zh, item: SITE + s.page + '.html' }];
+    if (pg.kind === 'lab') crumbs.push({ name: pg.lab.branch.zh, item: SITE + s.page + '.html#' + pg.lab.branch.id }, { name: pg.lab.chapter.zh, item: SITE + s.page + '.html#' + (catalogWindow.LAB_CATALOG.find(x => x.s === pg.slug) || {}).c }, { name: pg.lab.zh, item: pg.url });
+    L.push('<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => Object.assign({ '@type': 'ListItem', position: i + 1 }, c)) }).replace(/</g, '\\u003c') + '</script>');
+  }
   L.push('<!-- SEO-END -->');
   return L.map(x => '  ' + x).join('\n');
 }
@@ -131,12 +145,14 @@ if (!OG_ONLY) {
   const urls = pages.map(pg => {
     const alts = [['zh-Hant', pg.url], ['zh-Hans', pg.url + '?lang=zh-Hans'], ['en', pg.url + '?lang=en'], ['x-default', pg.url]]
       .map(([h, u]) => `    <xhtml:link rel="alternate" hreflang="${h}" href="${esc(u)}"/>`).join('\n');
-    return `  <url>\n    <loc>${pg.url}</loc>\n    <lastmod>${today}</lastmod>\n${alts}\n  </url>`;
+    const own = pg.kind === 'subject' ? catalogWindow.LAB_CATALOG.filter(x => x.d === pg.subject.dom) : catalogWindow.LAB_CATALOG.filter(x => x.s === pg.slug);
+    const lastmod = own.map(x => x.u).sort().pop() || today;
+    return `  <url>\n    <loc>${pg.url}</loc>\n    <lastmod>${lastmod}</lastmod>\n${alts}\n  </url>`;
   });
   const xml = '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n' + urls.join('\n') + '\n</urlset>\n';
   const old = fs.existsSync(path.join(ROOT, 'sitemap.xml')) ? read('sitemap.xml') : '';
   // 只有網址清單變了才改日期，避免每次重跑都產生差異
-  if (old.replace(/<lastmod>[^<]*<\/lastmod>/g, '') !== xml.replace(/<lastmod>[^<]*<\/lastmod>/g, '')) { fs.writeFileSync(path.join(ROOT, 'sitemap.xml'), xml); console.log('更新 sitemap.xml：' + pages.length + ' 個網址'); }
+  if (old !== xml) { fs.writeFileSync(path.join(ROOT, 'sitemap.xml'), xml); console.log('更新 sitemap.xml：' + pages.length + ' 個網址'); }
   fs.writeFileSync(path.join(ROOT, 'robots.txt'), 'User-agent: *\nAllow: /\n\nSitemap: ' + SITE + 'sitemap.xml\n');
 }
 
@@ -144,7 +160,7 @@ if (NO_OG) process.exit(0);
 
 // ---------- 分享卡圖片（Playwright 畫 HTML 模板，存 JPG） ----------
 (async () => {
-  const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於標準優先權（減少 CPU 負擔）
+  const { launch } = require('G:/physics-lab/tools/browser.cjs'); // 指定的 Intel 內顯、低優先啟動器
   const outDir = path.join(ROOT, 'img/og');
   fs.mkdirSync(outDir, { recursive: true });
   const verFile = path.join(outDir, 'versions.json');
@@ -193,8 +209,24 @@ if (NO_OG) process.exit(0);
     .grid img{width:212px;height:119px;border-radius:12px;box-shadow:0 10px 26px rgba(20,40,40,.22);object-fit:cover}`;
   const browser = await launch();
   const page = await browser.newPage({ viewport: { width: 1200, height: 630 } });
+  // 部分 Intel 驅動在 setContent 後第一幀尚未提交時會拒絕擷取；等待兩幀再拍。
+  const shot = async options => {
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    try { return await page.screenshot(options); }
+    catch (e) { await page.waitForTimeout(350); return page.screenshot(options); }
+  };
+  try {
   await page.route(u => !u.href.startsWith('data:') && !u.href.startsWith('about:'), r => r.abort());
   let made = 0;
+  for (const s of subjects) {
+    const own = labs.filter(l => l.subject.id === s.id), a = asset(s);
+    const colorName = a.color.match(/--[\w-]+/)[0];
+    const color = (read('lab.css').match(new RegExp(colorName + ':\\s*([^;]+)')) || [])[1] || '#196558';
+    const v = crypto.createHash('sha1').update(s.zh + s.en + own.length + a.icon + '|subject-v1').digest('hex').slice(0, 10);
+    if (!FORCE && vers[s.page] === v && fs.existsSync(path.join(outDir, s.page + '.jpg'))) continue;
+    await page.setContent(`<style>${CSS}.text{width:650px;top:160px}.subject-icon{position:absolute;right:100px;top:170px;color:var(--c)}.subject-icon svg{width:250px;height:250px}h1{font-size:72px}</style><div class="card" style="--c:${color}"><div class="brand">ASTRO NI LAB・讓倪動手</div><div class="text"><span class="tag">${own.length} 個互動實驗</span><h1>${esc(s.zh)}</h1><h2>${esc(s.en)} · ${own.length} interactive labs</h2></div><div class="subject-icon">${a.icon}</div><div class="foot">lab.astroni.org · 動手試，親眼看。</div></div>`, { waitUntil: 'load' });
+    await shot({ path: path.join(outDir, s.page + '.jpg'), type: 'jpeg', quality: 86 }); vers[s.page] = v; made++;
+  }
   for (const l of labs) {
     const f = thumb(l.slug);
     if (!fs.existsSync(f)) { console.log('沒有縮圖，略過分享卡：' + l.slug + '（先跑 npm run thumbs -- ' + l.slug + '）'); continue; }
@@ -208,7 +240,7 @@ if (NO_OG) process.exit(0);
       <div class="shot"><img src="${dataUrl(f)}"></div>
       <div class="foot">互動模擬・免登入・繁體／简体／English</div></div>`;
     await page.setContent(html, { waitUntil: 'load' });
-    await page.screenshot({ path: path.join(outDir, l.slug + '.jpg'), type: 'jpeg', quality: 86 });
+    await shot({ path: path.join(outDir, l.slug + '.jpg'), type: 'jpeg', quality: 86 });
     vers[l.slug] = v; made++;
   }
   // 首頁拼貼
@@ -226,7 +258,7 @@ if (NO_OG) process.exit(0);
         <div class="grid">${pick.map(l => `<img src="${dataUrl(thumb(l.slug))}">`).join('')}</div>
         <div class="foot">lab.astroni.org</div></div>`;
       await page.setContent(html, { waitUntil: 'load' });
-      await page.screenshot({ path: path.join(outDir, 'index.jpg'), type: 'jpeg', quality: 86 });
+      await shot({ path: path.join(outDir, 'index.jpg'), type: 'jpeg', quality: 86 });
       vers.index = v; made++;
     }
     // 排行榜沿用首頁的分享卡
@@ -235,6 +267,6 @@ if (NO_OG) process.exit(0);
     fs.copyFileSync(path.join(outDir, 'index.jpg'), path.join(outDir, 'daily.jpg'));
   }
   fs.writeFileSync(verFile, JSON.stringify(vers, null, 1) + '\n');
-  await browser.close();
   console.log('分享卡：重做 ' + made + ' 張（img/og/）');
+  } finally { await browser.close(); }
 })();

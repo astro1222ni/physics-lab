@@ -112,6 +112,7 @@ const bySubject = {};
 for (const sub of Object.keys(SUBJECT_PHRASES)) {
   const S = W.LAB_SUBJECTS.find(x => x.id === sub);
   const pages = Object.keys(W.LAB_MODULE_BRANCH).filter(m => S.branches.includes(W.LAB_MODULE_BRANCH[m])).sort();
+  pages.push(S.page);
   bySubject[sub] = { pages: pages, phrases: SUBJECT_PHRASES[sub] };
 }
 const out = '/* 由 tools/build-hans.cjs 產生，請勿手動修改。字元對照取自 OpenCC（Apache-2.0）。 */\n' +

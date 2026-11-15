@@ -1,7 +1,7 @@
 {
  "projectile": "6035435330",
  "newton-second": "a274ba0e1b",
- "incline-friction": "59b2bb951e",
+ "incline-friction": "e26069fd54",
  "atwood": "8b65845b0b",
  "elevator": "455a270024",
  "circular-motion": "78f1cb3eb7",
@@ -183,5 +183,13 @@
  "reverb-room": "bf924545ea",
  "adsr-envelope": "941f1eaab9",
  "heat-conduction": "1731c7b73f",
- "polarization": "6fa01c37fc"
+ "polarization": "6fa01c37fc",
+ "physics": "0cc79b384a",
+ "chemistry": "d994846f9a",
+ "biology": "3c9aaf48b0",
+ "earth-science": "86064e42eb",
+ "mathematics": "8e7402ded2",
+ "information-technology": "f0113fc21d",
+ "geography": "8b594c199f",
+ "music": "9218c2e00f"
 }

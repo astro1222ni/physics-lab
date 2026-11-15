@@ -42,6 +42,7 @@
 
   const moduleId = script.getAttribute('data-module');
   const isSummary = script.hasAttribute('data-summary');
+  const subjectId = script.getAttribute('data-subject');
   if (moduleId && !/^[a-z0-9-]{1,40}$/.test(moduleId)) return;
 
   // ---------- 格式 ----------
@@ -293,25 +294,30 @@
   }
 
   // ======================= 首頁：所有模組的累計 =======================
-  if (isSummary) {
+  if (isSummary || subjectId) {
     const totalBar = bar(ITEMS, 'stats-total');
     totalBar.insertAdjacentHTML('afterbegin', '<span class="stats-title">' + (EN ? 'Site total' : '全站累計') + '</span>');
-    insertAfterHeader(totalBar);
+    if (isSummary) (document.getElementById('site-totals') || document.body).appendChild(totalBar);
     const refresh = function () {
-      getJSON('/stats').then(function (all) {
+      const ids = subjectId ? [...document.querySelectorAll('.module.live[data-module]')].map(c => c.dataset.module) : (window.LAB_LIVE_MODULES || []);
+      let cache = null;
+      try { cache = JSON.parse(sessionStorage.getItem('lab-stats-cache')); } catch (e) {}
+      const fresh = cache && Date.now() - cache.at < HOME_REFRESH * 1000;
+      let get;
+      if (fresh && (cache.complete || ids.every(id => Object.prototype.hasOwnProperty.call(cache.data, id)))) get = Promise.resolve(cache.data);
+      else if (isSummary) get = getJSON('/stats').then(all => { try { sessionStorage.setItem('lab-stats-cache', JSON.stringify({ at: Date.now(), complete: true, data: all || {} })); } catch (e) {} return all; });
+      else get = Promise.all(ids.map(id => getJSON('/stats/' + id).then(v => [id, v || {}]))).then(rows => { const data = Object.assign({}, fresh ? cache.data : {}, Object.fromEntries(rows)); try { sessionStorage.setItem('lab-stats-cache', JSON.stringify({ at: Date.now(), complete: false, data })); } catch (e) {} return data; });
+      get.then(function (all) {
         all = all || {};
         const sum = { views: 0, ops: 0, seconds: 0 };
         // 只加總首頁上列出的模組
-        const listed = {};
-        document.querySelectorAll('[data-module]').forEach(function (el) {
-          if (el !== script) listed[el.getAttribute('data-module')] = true;
-        });
+        const listed = {}; ids.forEach(id => listed[id] = true);
         Object.keys(listed).forEach(function (k) {
           const m = all[k] || {};
           ['views', 'ops', 'seconds'].forEach(function (f) { sum[f] += +m[f] || 0; });
         });
-        fill(totalBar, sum);
-        document.querySelectorAll('[data-module]').forEach(function (card) {
+        if (isSummary) fill(totalBar, sum);
+        document.querySelectorAll('.module.live[data-module]').forEach(function (card) {
           if (card === script) return;
           const s = all[card.getAttribute('data-module')] || {};
           let line = card.querySelector('.module-stats');
@@ -328,6 +334,7 @@
     };
     refresh();
     setInterval(function () { if (document.visibilityState === 'visible') refresh(); }, HOME_REFRESH * 1000);
+    // 科目頁不顯示這列，但仍計入全站在線人數。
     startPresence(totalBar, false);
     return;
   }
@@ -341,6 +348,19 @@
 
   let server = { views: 0, ops: 0, seconds: 0 };
   const pending = { views: 1, ops: 0, seconds: 0 }; // 這次載入算一次瀏覽
+  const local = { v: 1, s: 0, o: 0 }, recorded = { v: 0, s: 0, o: 0 };
+  function saveHistory() {
+    const dv = local.v - recorded.v, ds = local.s - recorded.s, dn = local.o - recorded.o;
+    if (!(dv || ds || dn)) return;
+    try {
+      const hist = JSON.parse(localStorage.getItem('labHist')) || {}, h = hist[moduleId] || {};
+      hist[moduleId] = { v: (+h.v || 0) + dv, s: (+h.s || 0) + ds, o: (+h.o || 0) + dn, t: Date.now() };
+      const keep = {}; Object.keys(hist).sort((a, b) => (+hist[b].t || 0) - (+hist[a].t || 0)).slice(0, 200).forEach(k => keep[k] = hist[k]);
+      localStorage.setItem('labHist', JSON.stringify(keep));
+      recorded.v = local.v; recorded.s = local.s; recorded.o = local.o;
+    } catch (e) { /* 瀏覽器禁止儲存也能操作實驗 */ }
+  }
+  saveHistory();
   let lastActive = -Infinity;
   let sending = false;
 
@@ -369,6 +389,7 @@
   }
   /** 給每分鐘的合併寫入用：要送的欄位，和送完之後的處理 */
   function statsParts() {
+    saveHistory();
     if (sending) return null;
     const sent = take();
     const body = {};
@@ -382,6 +403,7 @@
   }
   /** 離開或切到背景時：把還沒送出的統計單獨補送 */
   function flush() {
+    saveHistory();
     if (sending) return;
     const sent = take();
     const body = {};
@@ -414,7 +436,7 @@
 
   // ---------- 操作偵測 ----------
   function activity() { lastActive = performance.now(); }
-  function op() { pending.ops++; activity(); render(); }
+  function op() { pending.ops++; local.o++; activity(); render(); }
 
   document.addEventListener('change', function (e) {
     if (e.target.matches('input, select, textarea')) op();
@@ -433,7 +455,7 @@
   let sinceRefresh = 0;
   setInterval(function () {
     if (document.visibilityState !== 'visible') return;
-    if ((performance.now() - lastActive) / 1000 <= IDLE_LIMIT) { pending.seconds++; render(); }
+    if ((performance.now() - lastActive) / 1000 <= IDLE_LIMIT) { pending.seconds++; local.s++; render(); }
     if (++sinceRefresh >= REFRESH_EVERY) { sinceRefresh = 0; refresh(); }
   }, 1000);
 

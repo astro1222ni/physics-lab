@@ -10,7 +10,7 @@ const dir = path.join(__dirname, '..', 'tests');
 const files = fs.readdirSync(dir).filter(f => f.endsWith('.test.js')).sort();
 const failed = [];
 for (const f of files) {
-  const r = spawnSync(process.execPath, [path.join(dir, f)], { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [path.join(dir, f)], { encoding: 'utf8', windowsHide: true });
   const last = ((r.stdout || '').trim().split('\n').pop() || '').trim();
   if (r.status === 0) console.log('✓ ' + f + (last ? '　' + last : ''));
   else { failed.push(f); console.log('✗ ' + f + '\n' + (r.stdout || '') + (r.stderr || '')); }

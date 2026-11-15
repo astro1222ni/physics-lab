@@ -1,8 +1,8 @@
 /*
  * search.js — 首頁的實驗搜尋
  *
- * 從頁面上的實驗卡片（.module）建立索引：標題、分支、主題、說明與 data-keywords 同義詞。
- * 新增實驗時只要加卡片（可附 data-keywords），搜尋會自動涵蓋，不必改這支程式。
+ * 首次聚焦或帶 ?q= 時載入 build-catalog 產生的 search-index.js。
+ * 首頁搜尋全科；科目頁以 data-scope 篩選，保留中英、簡體與各科同義詞。
  */
 (function () {
   'use strict';
@@ -33,55 +33,44 @@
     return out.replace(/\\[()[\]]/g, ' ').replace(/[\\{}^_$]/g, '');
   }
 
-  // ---------- 建立索引 ----------
+  // 搜尋資料按需載入；首頁和科目頁共用，避免首次開啟就下載全站文字。
   const EN = window.LabSettings && window.LabSettings.lang === 'en';
-  function en(el) { return el ? el.getAttribute('data-en') || '' : ''; }
-  function enDesc(el) {
-    if (!el) return '';
-    const h = el.getAttribute('data-en-html');
-    if (h) { const d = document.createElement('div'); d.innerHTML = h; return d.textContent; }
-    return el.getAttribute('data-en') || '';
-  }
+  const scope = input.dataset.scope;
   const items = [];
-  document.querySelectorAll('.module').forEach(function (card) {
-    const section = card.closest('.branch');
-    // 卡片標題是 h4（分支 h2 → 章 h3 → 實驗 h4）；「主題」用卡片所在的章名（小分類）
-    const h3 = card.querySelector('h4, h3');
-    const chapter = card.closest('.chapter');
-    const topicEl = (chapter && chapter.querySelector('.chapter-head [data-en]')) || card.querySelector('.topic');
-    const title = (h3 || {}).textContent || '';
-    // 物理以外的科目，分支前面加上科目名，物理維持原樣（例如「地球科學・天文」「生物・遺傳」）
-    const domainEl = card.closest('.domain');
-    const domainH = domainEl && domainEl.id !== 'physics' ? domainEl.querySelector('.domain-head h2') : null;
-    const domainPre = domainH ? domainH.textContent || '' : '';
-    const branch = (domainPre ? domainPre + '・' : '') + (section ? (section.querySelector('.branch-head h2') || {}).textContent || '' : '');
-    const topic = (topicEl || {}).textContent || '';
-    const descEl = card.querySelector('h4 + p, h3 + p') || card.querySelector('p');
-    const desc = (descEl || {}).textContent || '';
-    const branchEl = section && section.querySelector('.branch-head h2');
-    const enBranch = en(branchEl);
-    const enText = { title: en(h3), topic: en(topicEl), branch: domainPre && enBranch ? (en(domainH) || domainPre) + ' · ' + enBranch : enBranch, desc: enDesc(descEl) };
-    // 英文標題、主題也拿來比對，所以中英文關鍵字都搜得到
-    const keywords = (card.getAttribute('data-keywords') || '').split(/\s+/).filter(Boolean)
-      .concat([enText.title, enText.topic, enText.branch].filter(Boolean));
-    items.push({
-      title: (EN && enText.title || title).trim(),
-      branch: (EN && enText.branch || branch).trim(),
-      topic: (EN && enText.topic || topic).trim(),
-      desc: (EN && enText.desc || desc).trim(),
-      keywords: keywords,
-      href: card.tagName === 'A' ? card.getAttribute('href') : null,
-      color: section ? section.style.getPropertyValue('--c') : '',
-      raw: { title: EN && enText.title || title, branch: branch, topic: topic, desc: desc + ' ' + enText.desc }
+  let loading;
+  function ensureIndex() {
+    if (loading) return loading;
+    loading = new Promise(function (resolve, reject) {
+      function ready() {
+        (window.LAB_SEARCH_INDEX || []).filter(function (x) { return !scope || x.d === scope; }).forEach(function (x) {
+          const sb = (window.LAB_SUBJECTS || []).find(function (s) { return s.dom === x.d; });
+          items.push({ title: EN ? x.en : x.zh, branch: EN ? x.ben : x.bzh, topic: EN ? x.cen : x.czh,
+            desc: EN ? x.den : x.dzh, subject: sb ? (EN ? sb.en : sb.zh) : '', subjectId: sb ? sb.id : '',
+            keywords: (x.keywords || '').split(/\s+/).concat([x.zh, x.en, x.czh, x.cen]),
+            href: x.live ? x.s + '.html' : null,
+            color: 'var(--d-' + (sb && sb.id === 'phy' ? 'phys' : sb && sb.id || 'phys') + ')',
+            raw: { title: EN ? x.en : x.zh, branch: (x.bzh || '') + ' ' + (x.ben || '') + ' ' + (sb ? sb.zh + ' ' + sb.en : ''), topic: (x.czh || '') + ' ' + (x.cen || ''), desc: (x.dzh || '') + ' ' + (x.den || '') }
+          });
+        });
+        items.forEach(buildNorm); resolve();
+      }
+      if (window.LAB_SEARCH_INDEX) { ready(); return; }
+      const script = document.createElement('script'); script.src = 'js/search-index.js?v=home-v2'; script.onload = ready; script.onerror = reject; document.head.appendChild(script);
     });
-  });
+    return loading;
+  }
+  input.addEventListener('focus', function () { ensureIndex().catch(function () {}); }, { once: true });
   function buildNorm(it) {
+    const hans = window.LabSettings && window.LabSettings.toHans;
+    const variant = function (s) { return norm((s || '') + (hans ? ' ' + hans(s || '', it.subjectId) : '')); };
+    it.searchKeywords = it.keywords.slice();
+    if (hans) it.searchKeywords = it.searchKeywords.concat(it.keywords.map(function (s) { return hans(s, it.subjectId); }));
     it.n = {
-      title: norm(it.raw.title),
-      branch: norm(it.raw.branch),
-      topic: norm(it.raw.topic),
-      desc: norm(it.raw.desc),
-      keywords: it.keywords.map(norm)
+      title: variant(it.raw.title),
+      branch: variant(it.raw.branch),
+      topic: variant(it.raw.topic),
+      desc: variant(it.raw.desc),
+      keywords: it.searchKeywords.map(norm)
     };
   }
   items.forEach(buildNorm);
@@ -98,7 +87,7 @@
       const kw = item.n.keywords.findIndex(function (k) { return k.indexOf(t) >= 0; });
       if (kw >= 0) {
         s = Math.max(s, item.n.keywords[kw] === t ? 16 : 12);
-        if (item.n.title.indexOf(t) < 0) hits.push(item.keywords[kw]);
+        if (item.n.title.indexOf(t) < 0) hits.push(item.searchKeywords[kw]);
       }
       if (item.n.topic.indexOf(t) >= 0 || item.n.branch.indexOf(t) >= 0) s = Math.max(s, 8);
       if (item.n.desc.indexOf(t) >= 0) s = Math.max(s, 4);
@@ -138,10 +127,16 @@
     indexedHans = true;
   }
 
-  function render() {
+  let renderSeq = 0;
+  async function render() {
+    const seq = ++renderSeq;
+    if (input.value.trim()) { try { await ensureIndex(); } catch (e) { status.textContent = EN ? "Search could not load. Try again later." : "搜尋暫時無法載入，請稍後再試。"; return; } }
+    if (seq !== renderSeq) return;
     reindex();
     const raw = input.value.trim();
     list.innerHTML = '';
+    const all = document.getElementById('search-all');
+    if (all) { all.replaceChildren(); all.hidden = !raw; if (raw) { const a = document.createElement('a'); a.href = 'index.html?q=' + encodeURIComponent(raw); a.textContent = EN ? 'Search all subjects for “' + raw + '” →' : '到全科搜尋「' + raw + '」→'; all.appendChild(a); } }
     if (!raw) { list.hidden = true; status.textContent = ''; return; }
     const terms = norm(raw).split(/\s+/).filter(Boolean);
     const results = items.map(function (it) { return score(it, terms); })
@@ -173,6 +168,7 @@
       const li = document.createElement('li');
       const box = document.createElement(it.href ? 'a' : 'div');
       box.className = 'search-item' + (it.href ? '' : ' soon');
+      box.dataset.hansSubject = it.subjectId;
       if (it.href) box.href = it.href;
       if (it.color) box.style.setProperty('--c', it.color);
 
@@ -184,12 +180,14 @@
       tag.textContent = it.href ? (EN ? 'Live' : '已上線') : (EN ? 'Planned' : '規劃中');
       const head = document.createElement('span');
       head.className = 'search-head';
+      const subject = document.createElement('span'); subject.className = 'search-subject'; subject.textContent = it.subject; head.appendChild(subject);
       head.appendChild(meta);
       head.appendChild(tag);
 
       const title = document.createElement('span');
       title.className = 'search-title';
-      highlight(title, it.title, terms);
+      const shownTitle = window.LabSettings && LabSettings.lang === 'zh-Hans' && LabSettings.toHans ? LabSettings.toHans(it.title, it.subjectId) : it.title;
+      highlight(title, shownTitle, terms);
 
       box.appendChild(head);
       box.appendChild(title);
