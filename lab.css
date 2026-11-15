@@ -1778,3 +1778,7 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   .subject-page .domain-head svg { width:34px; height:34px; }
   .subject-page .domain-head { gap:10px; }
 }
+/* 11/15 站長：首頁標頭（標誌、Astro Ni Lab、主標題）換回舊版 brand-row 的樣子，其他照新版 */
+.home-page .home-top > .brand-row { padding-top:0; padding-right:var(--head-reserve,150px); }
+@media (max-width:560px) { .home-page .home-top > .brand-row { padding-right:0; } }
+@media (min-width:1024px) { .home-page .home-top > .brand-row { margin-right:75px; } }
