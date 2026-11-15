@@ -4,42 +4,46 @@
   const script = document.currentScript;
   if (!document.querySelector('link[href*="study.css"]')) {
     const css = document.createElement('link'); css.rel = 'stylesheet';
-    css.href = new URL('../study.css?v=20261115study1', script.src).href; document.head.appendChild(css);
+    css.href = new URL('../study.css?v=20261115study2', script.src).href;
+    css.addEventListener('load',()=>window.dispatchEvent(new Event('resize')));
+    document.head.appendChild(css);
   }
   const T = (zh, en) => window.LabSettings ? LabSettings.t(zh, en) : zh;
   const tr = pair => Array.isArray(pair) ? T(pair[0], pair[1]) : String(pair || '');
   const names = { concept:['觀念','Concept'], steps:['步驟','Steps'], examples:['範例','Examples'], missions:['任務','Missions'] };
   function el(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent=text; if (cls) e.className=cls; return e; }
   function button(text, fn) { const b=el('button',text); b.type='button'; b.addEventListener('click',fn); return b; }
-  let panel, strip, dockTab, tab='concept', state='collapsed', stripText='', panes={}, tabButtons={}, onChange=null;
+  let panel, strip, dockTab, tab='concept', state='collapsed', stripText='', panes={}, tabButtons={}, onChange=null, strips={};
   let defs=[], current=0, done=[], heldAt=null, advanceAt=null, lastSnapshot=null, ack=false, wrapped=null;
   function isWide() { return matchMedia('(min-width:1240px) and (orientation:landscape)').matches; }
   function geometry() {
     const stage=document.getElementById('study-stage');
     if (stage && !matchMedia('(orientation:landscape)').matches) {
-      const edge=stage.getBoundingClientRect().bottom;
-      document.documentElement.style.setProperty('--lp-half-top',Math.max(120,Math.min(edge,innerHeight-180))+'px');
+      const graphic=stage.querySelector('canvas,iframe');let edge=(graphic||stage).getBoundingClientRect().bottom;
+      if(graphic?.tagName==='IFRAME'){try{const cv=graphic.contentDocument?.querySelector('#cv');if(cv)edge=graphic.getBoundingClientRect().top+cv.getBoundingClientRect().bottom;}catch(e){/* 同源才能讀取 */}}
+      document.documentElement.style.setProperty('--lp-half-top',Math.max(120,edge)+'px');
     }
     const controls=document.querySelector('.study-controls');
     if (controls) document.body.style.setProperty('--study-nav',controls.getBoundingClientRect().height+'px');
   }
   function setState(next) {
     if (!panel) return;
-    state=next; geometry(); document.documentElement.dataset.lpState=state;
+    state=next; document.documentElement.dataset.lpState=state; geometry();
     document.documentElement.classList.toggle('lp-docked',isWide()&&state!=='collapsed'&&!document.documentElement.classList.contains('ms-docked')&&!document.documentElement.classList.contains('lab-embed'));
     strip.setAttribute('aria-expanded',String(state!=='collapsed'));
     strip.setAttribute('aria-label',T('教學側板：','Learning panel: ')+stripText+' '+T('點擊切換高度','Click to change height'));
     panel.setAttribute('aria-hidden',String(state==='collapsed')); panel.inert=state==='collapsed';
-    if (onChange) onChange(state); window.dispatchEvent(new Event('resize'));
+    if(state!=='collapsed'&&panes[tab])panes[tab].scrollTop=0;
+    if (onChange) onChange(state); window.dispatchEvent(new Event('resize'));requestAnimationFrame(geometry);
   }
-  function setStrip(text) {
-    stripText=text || ''; if (!strip) return;
-    strip.querySelector('span').textContent=tr(names[tab])+'｜'+stripText;
+  function setStrip(text,key) {
+    strips[key||tab]=text||'';stripText=strips[tab]||'';if (!strip) return;
+    const name=tr(names[tab]);strip.querySelector('span').textContent=stripText.startsWith(name)?stripText:name+'｜'+stripText;
   }
   function select(next) {
     tab=next;
     Object.keys(panes).forEach(k=>{ panes[k].hidden=k!==tab; tabButtons[k].setAttribute('aria-selected',String(k===tab)); tabButtons[k].tabIndex=k===tab?0:-1; });
-    setStrip(stripText);
+    Object.values(panes).forEach(p=>p.scrollTop=0);setStrip(strips[tab]||'',tab);
   }
   function open(next) {
     if (!panel) mount({});
@@ -83,7 +87,7 @@
   }
   function content(key,nodes) {
     if (!panel) mount({}); const p=panes[key]; if(!p)return;
-    p.replaceChildren(...(Array.isArray(nodes)?nodes:[nodes]));
+    p.replaceChildren(...(Array.isArray(nodes)?nodes:[nodes]));p.scrollTop=0;
     if(window.renderMathInElement)renderMathInElement(p,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false});
   }
   function renderSteps() {
@@ -101,7 +105,7 @@
     const back=button(T('上一步','Back'),()=>moveStep(-1)), next=button(T('下一步','Next'),()=>moveStep(1));
     back.disabled=current===0; next.disabled=current>=defs.length-1; nav.append(back,next);
     content('steps',[el('h3',T('跟著做，別急著拉爆','Go gently, one step at a time')),list,nav]);
-    if(defs[current])setStrip(T('步驟 ','Step ')+(current+1)+'/'+defs.length+'：'+tr(defs[current].t));
+    if(defs[current])setStrip(T('步驟 ','Step ')+(current+1)+'/'+defs.length+'：'+tr(defs[current].t),'steps');
   }
   function moveStep(delta) {current=Math.max(0,Math.min(defs.length-1,current+delta)); heldAt=null; advanceAt=null;ack=false;renderSteps();}
   function define(steps) { defs=steps || []; current=0; done=[]; heldAt=null;advanceAt=null;lastSnapshot=null;ack=false;renderSteps(); }
@@ -135,15 +139,15 @@
   function showExample(example,opts) {
     opts=opts || {}; let lines=0, revealed=false;
     function render(){
-      const nodes=[el('h3',T('範例 ','Example ')+example.n),el('p',tr(example.q)),el('p',tr(example.src),'lp-source')];
+      const nodes=[el('p',tr(example.q),'lp-example-question')];
       if(!opts.embed){
         if(!revealed)nodes.push(button(T('看解答','Show solution'),()=>{revealed=true;lines=1;render();}));
         else {const sol=el('div',null,'lp-solution');example.sol.slice(0,lines).forEach(p=>sol.append(el('p',tr(p))));nodes.push(sol);
           if(lines<example.sol.length)nodes.push(button(T('下一行板書','Next solution line'),()=>{lines++;render();}));
         }
       }
-      if(example.note)nodes.push(el('p',tr(example.note),'lp-source'));
       content('examples',nodes);
+      setStrip(T('範例 ','Example ')+example.n+'：'+tr(example.q).slice(0,14)+'…','examples');
     }
     render(); if(opts.steps!==false)define(example.steps || []);
   }

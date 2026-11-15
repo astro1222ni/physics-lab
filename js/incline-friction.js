@@ -2,6 +2,8 @@
 (function () {
   'use strict';
   const IC = window.InclineCore;
+  const embedNoMu = new URLSearchParams(location.search).get('embed') === '1';
+  if (embedNoMu) document.documentElement.classList.add('embed-nomu');
   const $ = function (id) { return document.getElementById(id); };
   // 介面文字：英文模式用第二個字串（settings.js）
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -187,6 +189,7 @@
     LA = layoutA(w); LB = layoutB(w);
     SG = sceneGeom(LA.scene);
     hA = LA.H; hB = LB.H;
+    if (embedNoMu) hA = Math.max(280, Math.min(340, innerHeight - 110));
     if (cvA.style.height !== hA + 'px') cvA.style.height = hA + 'px';
     if (cvB.style.height !== hB + 'px') cvB.style.height = hB + 'px';
     cvA.width = Math.round(W * dpr); cvA.height = Math.round(hA * dpr);
@@ -480,15 +483,21 @@
     const fo = forcesNow();
     cA.setTransform(dpr, 0, 0, dpr, 0, 0);
     cA.clearRect(0, 0, W, hA);
+    if (embedNoMu || state.theta === 90 && window.LabExamples?.drawEmbedded) {
+      if (window.LabExamples?.drawEmbedded) LabExamples.drawEmbedded(cvA, snapshot());
+    } else {
     cA.drawImage(bgA, 0, 0, W, hA);
     drawScene(cA, LA.scene, fo);
     if (LA.fbd) drawFBD(cA, LA.fbd, fo);
+    }
+    if (!embedNoMu) {
     cB.setTransform(dpr, 0, 0, dpr, 0, 0);
     cB.clearRect(0, 0, W, hB);
     cB.drawImage(bgB, 0, 0, W, hB);
     if (LB.fbd) drawFBD(cB, LB.fbd, fo);
     drawMotion(cB, LB.mg);
     drawFF(cB, LB.ff, fo);
+    }
     updateReadout(fo);
     if (view3 && view3.active) view3.update();
   }
