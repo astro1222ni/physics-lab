@@ -93,6 +93,7 @@
   }
   function question(qid,show){
     currentQuestion=qid;const q=unit.questions[qid],div=E('div',null,'study-question');div.classList.toggle('revealed',reveal);
+    div.classList.toggle('study-prediction-question',unit.sections[section].kind==='prediction');
     div.append(E('h3',tr(q.q)));const options=E('div',null,'study-options');
     q.options.forEach((pair,i)=>{
       const wrap=E('div'),b=B('',()=>{answers[qid]=i;save();render();});b.setAttribute('aria-pressed',String((!teaching||reveal)&&answers[qid]===i));
@@ -109,6 +110,16 @@
       if(reveal)div.append(E('p',T('正解：','Answer: ')+'ABCD'[q.correct]+' '+tr(q.feedback[q.correct]),'study-feedback'));
     }
     return div;
+  }
+  function predictionSummary(){
+    const box=E('div',null,'study-prediction-summary');box.append(E('h3',T('你的預測','Your predictions')));
+    ['p1','p2'].forEach(id=>{
+      const q=unit.questions[id],a=answers[id],entry=E('section',null,'study-prediction-entry');entry.append(E('h4',tr(q.q)));
+      const choice=E('div',null,'study-prediction-choice');
+      if(Number.isInteger(a)){if(q.graph)choice.append(graphIcon(a));choice.append(E('p',T('你選了：','You chose: ')+'ABCD'[a]+' '+tr(q.options[a])));}
+      else choice.append(E('p',T('尚未作答','Not answered yet')));
+      entry.append(choice);box.append(entry);
+    });return box;
   }
   function photo(st){
     const box=E('div',null,'study-photo'),cv=E('canvas');cv.setAttribute('role','img');cv.setAttribute('aria-label',tr(unit.photo.alt));box.append(cv);
@@ -179,7 +190,7 @@
     $('study-footnote').hidden=!$('study-footnote').textContent;$('study-caption').setAttribute('aria-live',s.kind==='experiment'?'off':'polite');
     let view;
     if(s.kind==='photo')view=photo(st);
-    else if(s.kind==='prediction'){view=st.question?question(st.question,false):E('div',tr(st.cap),'study-board');}
+    else if(s.kind==='prediction'){view=st.question?question(st.question,false):predictionSummary();}
     else if(s.kind==='scene'){scene=targetScene(index);view=sceneView(false);}
     else if(s.kind==='experiment'){
       if(!experiment)experiment=newScene();scene=experiment;view=sceneView(true);
@@ -279,14 +290,14 @@
     ctx.strokeStyle=col('--study-ring');ctx.lineWidth=4;ctx.beginPath();ctx.arc(0,0,11,0,2*Math.PI);ctx.stroke();ctx.restore();ctx.restore();
     for(let n=0;n<=50;n+=10)text(String(n),X(a+(z-a)*n/50),cy+(desktop?3:1),sz.tick,col('--study-scale-ink'),'center','600');
     drawHand(ctx,X(ring),cy,s.left,(desktop?1.4:1)*(hover||drag?.kind==='ring'?1.06:1));
-    const forceScale=desktop?3:2,Fx=X(woodLeft+bw+8),Fy=cy-14;
+    const forceScale=desktop?3:2,Fx=X(woodLeft+bw+8),Fy=cy-(desktop?metalH/2+14:14);
     if(s.F){D.arrow(ctx,Fx,Fy,Fx+s.F*forceScale,Fy,D.c.pos,3);vectorLabel('F',Fx+s.F*forceScale,Fy-19,D.c.pos,sz.force);}
     if(k.f){const fY=table-3;D.arrow(ctx,center,fY,center-k.f*forceScale,fY,col('--fric'),3);label('f',center,table+9,sz.force,col('--fric'));}
     if(s.F&&k.kind==='static'){const y=table-bh-10;D.arrow(ctx,center,y,center+Math.sign(s.F)*44,y,D.c.muted,2,{dash:[4,5]});}
     label(k.kind==='static'?T('合力 0','Net force 0'):T('滑動中','Sliding'),center,table-bh-30,sz.small,k.kind==='static'?D.c.accent:col('--fric'));
-    if(s.showValues)label(Math.abs(s.F).toFixed(1)+' N',X(metalX+metalW/2),cy-(desktop?76:66),sz.read,D.c.text,true);
+    if(s.showValues)label(Math.abs(s.F).toFixed(1)+' N',X(metalX+metalW/2),cy-(desktop?(teaching?124:106):66),sz.read,D.c.text,true);
     const rulerX=r.w*.4,rulerY=table+8;ctx.strokeStyle=D.c.muted;ctx.lineWidth=1.3;ctx.beginPath();ctx.moveTo(rulerX,rulerY-4);ctx.lineTo(rulerX,rulerY+4);ctx.moveTo(rulerX,rulerY);ctx.lineTo(rulerX+22,rulerY);ctx.lineTo(rulerX+22,rulerY-4);ctx.stroke();text('10 cm',rulerX+30,rulerY,sz.small,D.c.muted,'left','600');
-    if(s.showValues)text(T('紅指針：','Peak reading: ')+s.peak.toFixed(1)+' N',r.w-12,r.h-14,sz.small,col('--study-peak'),'right','600');
+    if(s.showValues)text(T('紅指針：','Peak reading: ')+s.peak.toFixed(1)+' N',r.w-52,r.h-14,sz.small,col('--study-peak'),'right','600');
     geometry=geometry||{};geometry.ring={x:X(ring)+r.x,y:cy+r.y};geometry.block={x:(s.left?left:woodLeft)+r.x,y:table-bh+r.y,w:bw,h:bh};geometry.contact={x:center+r.x,y:table-3+r.y};geometry.fArrow={x0:center+r.x,x1:center-k.f*forceScale+r.x,y:table-3+r.y};ctx.restore();
   }
   function drawGraph(r){
