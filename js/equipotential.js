@@ -1303,14 +1303,16 @@
     $('rBulk').textContent = voltage().bulk.toFixed(2) + (state.ac ? T(' V（有效值）', ' V RMS') : ' V');
     $('rPolar').textContent = voltage().Vp.toFixed(2) + ' V';
   }
+  // 站長 11/16：「步驟要去找到那個『估算電場』，可是他卻找不到……實驗步驟可能還要再寫詳細一點」
+  // → 每一步寫出按鈕上的真實字樣與它在哪一張卡片。
   const STEPS = [
-    ['選擇電極、設定電壓，按「接通電源」。', 'Choose the electrodes and the voltage, then switch on the supply.'],
-    ['放好黑探針 N1（固定不動）；用三用電表時也可以把它夾到負極。', 'Place the black probe N1 and keep it still (with the multimeter you may clip it to the negative electrode).'],
-    ['移動紅探針 N2，找讀數為零（或目標電壓）的點，按「記錄」。', 'Move the red probe N2 to a point where the meter reads zero (or the target voltage) and press “Record”.'],
-    ['同一條線找至少 5 點；換 N1 位置（或目標電壓），描出至少 4 條等位線。', 'Find at least 5 points per line; move N1 (or change the target) and trace at least 4 lines.'],
-    ['勾選「連成平滑的等位線」。', 'Tick “Join the points … smooth curve”.'],
-    ['勾選「畫出電力線」，看它們與等位線垂直。', 'Tick “Draw field lines” and check that they cross the equipotentials at right angles.'],
-    ['把紅探針放在兩條線之間，按「估算電場」，與計算值比較。', 'Put the red probe between two lines, press “Estimate E” and compare with the computed value.']
+    ['在「電極與電源」卡選電極（兩圓形電極／平行長條／長條與圓形）、拉「電源電壓 V0」，再按同一張卡最下面的「接通電源」。', 'In “Electrodes and power supply”, pick the electrodes, set the supply voltage V0, then press “Switch on the supply” at the bottom of that card.'],
+    ['黑探針 N1 固定不動：在畫布上把它拖到紙上任一點；或按「電表與探針」卡的「黑探針夾到負極（0 V）」，讀數就直接是 N2 的電位。', 'Keep black N1 still: drag it to any point on the sheet, or press “Clip N1 to the negative electrode (0 V)” in “Meter and probes” so the reading is the potential of N2.'],
+    ['移動紅探針 N2（在畫布上拖，或用「電表與探針」卡的方向鍵、畫布右下角的「⠿ 微調」小盤細調），讓讀數為 0.00 V（N1 夾負極時，找目標電壓，例如 2.00 V），再按畫布正下方的「記錄」。', 'Move red N2 (drag it, or use the arrows in “Meter and probes” or the “⠿ Fine move” pad at the canvas corner) until the reading is 0.00 V (with N1 clipped, the target voltage such as 2.00 V), then press “Record” right under the canvas.'],
+    ['同一個讀數找至少 5 點，散開在整條線上；再換一個目標電壓（或移動 N1），描出至少 4 條等位線。', 'Find at least 5 points at the same reading, spread along the whole line; then change the target voltage (or move N1) and trace at least 4 lines.'],
+    ['在「作圖與分析」卡勾選「把同一條線的點連成平滑的等位線」。', 'In “Drawing and analysis”, tick “Join the points of each line with a smooth curve”.'],
+    ['同一張卡勾選「畫出與等位線垂直的電力線」，看電力線和等位線是不是處處垂直。', 'In the same card, tick “Draw field lines at right angles to them” and check they cross at right angles everywhere.'],
+    ['把紅探針放在兩條你描的等位線之間，按「作圖與分析」卡的「估算紅探針處的電場」，看「差異」一欄和計算值差多少。', 'Put the red probe between two lines you traced, press “Estimate E at the red probe” in “Drawing and analysis”, and read the “Difference” row.']
   ];
   function stepsDone() {
     const A = analysis(), sh = sheet();
@@ -1330,8 +1332,8 @@
     const ol = $('steps');
     ol.innerHTML = STEPS.map(function (s, i) {
       const cls = d[i] ? 'done' : i === now ? 'now' : '';
-      const text = i === 0 && state.medium === 'water' ? T('水槽保持水平、電極入水；選直流或交流、設定電壓，再接通電源。', 'Keep the tray level and electrodes immersed. Choose DC or AC, set the voltage and switch on.')
-        : i === 1 ? (state.medium === 'water' ? T('黑探針 N1 固定插在水中，或夾在負極金屬作參考。', 'Keep black N1 fixed in the water, or clip it to the negative metal as reference.') : T('黑探針 N1 固定輕觸紙面，或夾在負極作參考。', 'Keep black N1 lightly touching the paper, or clip it to the negative electrode.')) : T(s[0], s[1]);
+      const text = i === 0 && state.medium === 'water' ? T('水槽保持水平、電極入水；在「介質參數」卡選直流或交流，在「電極與電源」卡設定電壓，再按「接通電源」。', 'Keep the tray level and the electrodes immersed. Choose DC or AC in “Medium properties”, set the voltage in “Electrodes and power supply”, then press “Switch on the supply”.')
+        : i === 1 ? (state.medium === 'water' ? T('黑探針 N1 固定插在水中；或按「電表與探針」卡的「黑探針夾到負極（0 V）」作參考。', 'Keep black N1 fixed in the water, or clip it to the negative metal as reference.') : T('黑探針 N1 固定輕觸紙面：在畫布上把它拖到紙上任一點；或按「電表與探針」卡的「黑探針夾到負極（0 V）」作參考。', 'Keep black N1 lightly touching the paper, or clip it to the negative electrode.')) : T(s[0], s[1]);
       return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + symbols(text) + '</li>';
     }).join('');
   }

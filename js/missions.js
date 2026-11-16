@@ -57,6 +57,7 @@
       changed();
     },
     emit: function (type, data) {
+      lastEv[type] = { data: data || {}, seq: ++evSeq };
       if (!state.on || !state.user || !state.nickname) return;
       if (window.LabShare && window.LabShare.restoring) return; // 打開分享連結還原設定時不算完成任務
       const list = registry[state.module] || [];
@@ -71,8 +72,11 @@
         if (daily) { m.mem = {}; LD.completed(m, !state.done[m.id]); } // 判定記憶歸零：再領一次要重新做一遍
         if (!state.done[m.id]) complete(m);
       });
+      nearMiss(type, list);
     },
     all: function () { return registry; },
+    /** 任務還差什麼：[[ok（true／false／null＝接下來要做的動作）, 中文, English], …]；沒有定義或還沒資料時是 null */
+    needOf: function (m) { return needOf(m); },
     /** 實驗代號 → 科目（phy、chem、bio、earth、math）；需要 missions/index.js（loadIndex） */
     subjectOf: function (mod) { return window.LAB_SUBJECT_OF ? window.LAB_SUBJECT_OF(mod) : 'phy'; },
     /** 載入 missions/index.js（實驗清單、分支、科目） */
@@ -588,6 +592,94 @@
   }
 
   // ======================= 介面 =======================
+  // ======================= 還差什麼（站長 11/16） =======================
+  // 站長：「學生他會覺得他已經完成了那個任務，可是他卻不知道他自己少了些什麼東西。」
+  // 任務可以定義 need(ctx)：回傳逐條條件 [ok, 中文, English]，ok 為 null 表示「接下來要做的動作」；
+  // ctx.last(事件) 是該事件最後一次的資料、ctx.seq(事件) 是它的先後順序。needOn 列出「做了這個動作卻沒過關就提醒」的事件。
+  const lastEv = {}; let evSeq = 0;
+  const needOpen = {}, nearShown = {};
+  const needCtx = { last: function (t) { return lastEv[t] ? lastEv[t].data : null; }, seq: function (t) { return lastEv[t] ? lastEv[t].seq : 0; } };
+  function needOf(m) {
+    if (!m || m.hidden || typeof m.need !== 'function') return null;
+    try { const r = m.need(needCtx); return Array.isArray(r) && r.length ? r : null; } catch (e) { return null; }
+  }
+  function fillNeed(ul, m) {
+    const items = needOf(m);
+    ul.innerHTML = '';
+    if (!items) { ul.appendChild(el('li', 'ms-need-act', T('先動手操作一次，這裡就會列出還差哪些條件。', 'Try it once and the missing conditions will be listed here.'))); return; }
+    items.forEach(function (x) {
+      const li = el('li', x[0] === true ? 'ms-need-ok' : x[0] === false ? 'ms-need-no' : 'ms-need-act');
+      li.appendChild(el('span', 'ms-need-mark', x[0] === true ? '✓' : x[0] === false ? '✗' : '→'));
+      li.appendChild(el('span', null, T(x[1], x[2] || x[1])));
+      ul.appendChild(li);
+    });
+  }
+  function needBox(m) {
+    needTimer();
+    const det = el('details', 'ms-need');
+    det.appendChild(el('summary', null, T('還差什麼？', 'What’s missing?')));
+    const ul = el('ul'); det.appendChild(ul); det._m = m;
+    if (needOpen[m.id]) { det.open = true; fillNeed(ul, m); }
+    det.addEventListener('toggle', function () { needOpen[m.id] = det.open; if (det.open) fillNeed(ul, m); });
+    return det;
+  }
+  let needTick = 0; // 打開的「還差什麼」每秒更新一次（第一次出現時才啟動）
+  function needTimer() {
+    if (needTick) return;
+    needTick = setInterval(function () {
+      if (document.hidden) return;
+      document.querySelectorAll('details.ms-need[open]').forEach(function (d) { if (d._m) fillNeed(d.querySelector('ul'), d._m); });
+    }, 1000);
+  }
+  /** 做了動作卻沒過關、而且已經做到一半以上的條件：跳一張「差一點」，列出還沒做到的條件（同一個任務 20 秒內只跳一次） */
+  function nearMiss(type, list) {
+    let best = null;
+    list.forEach(function (m) {
+      if (m.hidden || state.done[m.id] || !m.needOn || m.needOn.indexOf(type) < 0) return;
+      const items = needOf(m); if (!items) return;
+      const known = items.filter(function (x) { return x[0] !== null; });
+      const ok = known.filter(function (x) { return x[0]; }).length;
+      const miss = known.filter(function (x) { return !x[0]; });
+      if (!miss.length || !ok || ok / known.length < 0.5) return;
+      const score = ok / known.length - m.level * 0.001;
+      if (!best || score > best.score) best = { m: m, miss: miss, score: score };
+    });
+    if (!best) return;
+    const now = Date.now();
+    if (nearShown[best.m.id] && now - nearShown[best.m.id] < 20000) return;
+    nearShown[best.m.id] = now;
+    showNear(best.m, best.miss);
+  }
+  let nearBox = null, nearTimer = 0;
+  function showNear(m, miss) {
+    if (!nearBox) {
+      nearBox = el('div', 'ms-near'); nearBox.setAttribute('role', 'status'); nearBox.setAttribute('aria-live', 'polite');
+      document.body.appendChild(nearBox);
+    }
+    nearBox.innerHTML = '';
+    const head = el('div', 'ms-near-head');
+    head.appendChild(el('strong', null, T('差一點！', 'Almost!') + ' ★' + starsOf(m) + ' ' + L(m.title)));
+    const x = el('button', 'ms-near-x', '×'); x.type = 'button'; x.setAttribute('aria-label', T('關閉', 'Close'));
+    x.addEventListener('click', function () { nearBox.hidden = true; });
+    head.appendChild(x); nearBox.appendChild(head);
+    const ul = el('ul');
+    miss.slice(0, 3).forEach(function (it) { ul.appendChild(el('li', null, '✗ ' + T(it[1], it[2] || it[1]))); });
+    nearBox.appendChild(ul);
+    const more = el('button', 'ms-near-more', T('看全部條件', 'See every condition')); more.type = 'button';
+    more.addEventListener('click', function () {
+      nearBox.hidden = true; needOpen[m.id] = true;
+      if (window.LabSide && LabSide.instance) LabSide.instance.open('missions');
+      listeners.forEach(function (fn) { fn(); });
+      setTimeout(function () {
+        const li = document.querySelector('[data-mid="' + m.id + '"]');
+        if (li && li.getClientRects().length) li.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }, 80);
+    });
+    nearBox.appendChild(more);
+    nearBox.hidden = false;
+    clearTimeout(nearTimer); nearTimer = setTimeout(function () { nearBox.hidden = true; }, 9000);
+  }
+
   function el(tag, cls, text) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -872,6 +964,8 @@
         if (done) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
         li.appendChild(head);
         li.appendChild(el('p', 'ms-desc', L(m.desc)));
+        li.dataset.mid = m.id;
+        if (!done && typeof m.need === 'function') li.appendChild(needBox(m));
         box.appendChild(li);
       });
       sec.appendChild(box);

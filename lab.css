@@ -1934,3 +1934,25 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
   .lb-fold-c > .lb-fold-body, .lb-fold-g > .lb-fold-body { padding-left: 12px; }
   .lb-fold > .lb-fold-sum::before { margin-right: 0; }
 }
+
+/* 任務「還差什麼」（站長 11/16：學生以為做完了，卻不知道少了什麼） */
+.ms-need { margin: 6px 0 0; font-size: calc(14px * var(--fs, 1)); }
+.ms-need > summary { cursor: pointer; color: var(--accent); font-weight: 700; min-height: 36px; display: flex; align-items: center; gap: 4px; list-style: none; }
+.ms-need > summary::-webkit-details-marker { display: none; }
+.ms-need > summary::before { content: '▸'; transition: transform .15s; }
+.ms-need[open] > summary::before { transform: rotate(90deg); }
+.ms-need ul, .ms-near ul { list-style: none; margin: 2px 0 0; padding: 0; display: grid; gap: 3px; }
+.ms-need li { display: flex; gap: 6px; line-height: 1.4; color: var(--text); }
+.ms-need-mark { flex: none; width: 1.2em; text-align: center; font-weight: 800; }
+.ms-need-ok { color: var(--muted) !important; }
+.ms-need-ok .ms-need-mark { color: var(--probe); }
+.ms-need-no .ms-need-mark { color: var(--pos); }
+.ms-need-act .ms-need-mark { color: var(--accent); }
+.ms-near { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 72px); z-index: 109;
+  width: min(440px, calc(100vw - 24px)); padding: 10px 12px 10px 14px; border: 1px solid var(--border); border-left: 5px solid var(--pos); border-radius: 12px;
+  background: var(--surface); color: var(--text); box-shadow: 0 8px 24px rgba(0, 0, 0, .22); font-size: calc(15px * var(--fs, 1)); line-height: 1.45; }
+.ms-near-head { display: flex; align-items: flex-start; gap: 8px; }
+.ms-near-head strong { flex: 1; min-width: 0; }
+.ms-near-x { flex: none; min-width: 36px; min-height: 36px; margin: -6px -6px 0 0; border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; }
+.ms-near li { color: var(--text); }
+.ms-near-more { margin-top: 6px; min-height: 40px; width: 100%; font-weight: 700; }

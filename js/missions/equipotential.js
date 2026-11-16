@@ -154,6 +154,166 @@
       check: function (ev) { const d = ev.data; return is(ev, 'record') && d.type === 'circles' && !d.onElectrode && d.corner <= 3 && d.E2 <= 0.05 * d.Ecent; }
     }
   ]);
+
+  // ===== 還差什麼（站長 11/16：「學生他會覺得他已經完成了那個任務，可是他卻不知道他自己少了些什麼東西」）=====
+  // 每個一般任務逐條列出條件：✓ 已做到、✗ 還沒做到（附現在的數值）、→ 接下來要按的鍵（寫明在哪一張卡片）。
+  // 條件讀「現在」的實驗狀態（EquipotentialLab.snapshot），估算類讀「上一次估算」的結果；只顯示，不參與判定。
+  (function () {
+    const S = function () { try { return window.EquipotentialLab ? EquipotentialLab.snapshot() : null; } catch (e) { return null; } };
+    const lastOf = function (c, t) { const a = c.last(t), b = c.last('water-' + t); if (!a) return b; if (!b) return a; return c.seq(t) >= c.seq('water-' + t) ? a : b; };
+    const it = function (ok, zh, en) { return [!!ok, zh, en]; };
+    const act = function (zh, en) { return [null, zh, en]; };
+    const f1 = function (v) { return isFinite(v) ? (Math.round(v * 10) / 10).toFixed(1) : '—'; };
+    const f2 = function (v) { return isFinite(v) ? (Math.round(v * 100) / 100).toFixed(2) : '—'; };
+    const pct = function (v) { return isFinite(v) ? (Math.round(Math.abs(v) * 1000) / 10).toFixed(1) + '%' : '—'; };
+    const TYPE = { circles: ['兩圓形電極', 'Two circles'], bars: ['平行長條', 'Parallel bars'], barCircle: ['長條與圓形', 'Bar and circle'] };
+    const typeIs = function (s, t) { return it(s.type === t, '電極選「' + TYPE[t][0] + '」（「電極與電源」卡）', 'Electrodes: “' + TYPE[t][1] + '” (Electrodes and power supply)'); };
+    const power = function (s) { return it(s.power, '接通電源（「電極與電源」卡的「接通電源」）', 'Supply on (“Switch on the supply” in Electrodes and power supply)'); };
+    const noisy = function (s) { return it(s.noise, '實驗條件選「含誤差」（「電表與探針」卡）', 'Conditions: “With errors” (Meter and probes card)'); };
+    const field = function (s) { return it(s.drawField, '勾「畫出與等位線垂直的電力線」（「作圖與分析」卡）', 'Tick “Draw field lines at right angles to them” (Drawing and analysis)'); };
+    const reading = function (s) { return s.power ? f2(s.reading) + ' V' : '電源沒接通'; };
+    const rec = act('然後按「記錄」（畫布正下方）', 'Then press “Record” (right under the canvas)');
+    const ESTBTN = ['按「估算紅探針處的電場」（「作圖與分析」卡）', 'Press “Estimate E at the red probe” (Drawing and analysis)'];
+    // 估算類：上一次估算的結果
+    function estItems(c, lim, extra) {
+      const e = lastOf(c, 'estimate');
+      if (!e) return [act('把紅探針放在兩條自己描的等位線之間，' + ESTBTN[0], 'Put the red probe between two lines you traced, then ' + ESTBTN[1].charAt(0).toLowerCase() + ESTBTN[1].slice(1))];
+      const out = [
+        it(!e.usesEl, '兩條線都要自己描（不能拿電極當其中一條線）' + (e.usesEl ? '：上一次用到了電極' : ''), 'Both lines must be your own (an electrode does not count)' + (e.usesEl ? ': last time an electrode was used' : '')),
+        it(isFinite(e.err) && Math.abs(e.err) <= lim + 1e-9, '估算值和計算值相差 ≤ ' + pct(lim) + '（上一次 ' + pct(e.err) + '）', 'Estimate within ' + pct(lim) + ' of the computed value (last time ' + pct(e.err) + ')')
+      ].concat(extra ? extra(e) : []);
+      out.push(act('調好後再' + ESTBTN[0] + '；描得越準、兩條線越近，誤差越小', 'Then ' + ESTBTN[1].charAt(0).toLowerCase() + ESTBTN[1].slice(1) + ' again; tighter, closer lines give a smaller error'));
+      return out;
+    }
+    // 描線類：找最接近完成的一條線
+    function bestGroup(s, n, span, vr) {
+      let best = null, bs = -1;
+      (s.groups || []).forEach(function (g) {
+        const sc = Math.min(g.n / n, 1) + (span ? Math.min(g.span / span, 1) : 0) + (g.vRange <= vr + 1e-9 ? 1 : 0);
+        if (sc > bs) { bs = sc; best = g; }
+      });
+      return best || { V: NaN, n: 0, span: 0, vRange: NaN };
+    }
+    function lineItems(s, n, span, vr) {
+      const g = bestGroup(s, n, span, vr);
+      return [
+        it(g.n >= n, '同一條等位線至少 ' + n + ' 點（目前最多的一條 ' + g.n + ' 點）', 'At least ' + n + ' points on one line (best line so far: ' + g.n + ')'),
+        it(g.span >= span, '這條線最遠的兩點相距至少 ' + span + ' cm（現在 ' + f1(g.span) + ' cm）', 'Its two farthest points at least ' + span + ' cm apart (now ' + f1(g.span) + ' cm)'),
+        it(g.n > 0 && g.vRange <= vr + 1e-9, '這條線各點真實電位相差 < ' + vr + ' V（現在 ' + f2(g.vRange) + ' V；每一點都要對準同一個讀數再記錄）', 'True potentials within ' + vr + ' V (now ' + f2(g.vRange) + ' V; null each point on the same reading before recording)')
+      ];
+    }
+    const nLines = function (s, n, vr) { return (s.groups || []).filter(function (g) { return g.n >= n && (vr == null || g.vRange <= vr + 1e-9); }).length; };
+
+    const NEED = {
+      'equipotential-1': { on: ['record', 'water-record'], f: function () {
+        const s = S(); if (!s) return null;
+        return [power(s),
+          it(!s.n1OnElectrode, '黑探針 N1 放在紙上：不在電極上、也不夾負極', 'Black N1 on the sheet: not on an electrode, not clipped'),
+          it(s.dist12 >= 2, '紅探針 N2 離 N1 至少 2 cm（現在 ' + f1(s.dist12) + ' cm）', 'Red N2 at least 2 cm from N1 (now ' + f1(s.dist12) + ' cm)'),
+          it(s.power && Math.abs(s.reading) <= 0.02 + 1e-9, '電表讀數在 ±0.02 V 以內（現在 ' + reading(s) + '）', 'Meter reads within ±0.02 V (now ' + reading(s) + ')'),
+          rec];
+      } },
+      'equipotential-2': { on: ['record', 'water-record'], f: function () {
+        const s = S(); if (!s) return null;
+        return [typeIs(s, 'circles'),
+          it(s.meter === 'dmm', '電表選「三用電表」（「電表與探針」卡）', 'Meter: “Multimeter” (Meter and probes)'),
+          it(s.V0 >= 2, '電源電壓至少 2 V（現在 ' + f1(s.V0) + ' V）', 'Supply at least 2 V (now ' + f1(s.V0) + ' V)'),
+          power(s),
+          it(s.clip, '按「黑探針夾到負極（0 V）」（「電表與探針」卡）', 'Press “Clip N1 to the negative electrode (0 V)” (Meter and probes)'),
+          it(!s.onElectrode, '紅探針 N2 不在電極上', 'Red N2 not on an electrode'),
+          it(s.power && Math.abs(s.reading - s.V0 / 2) <= 0.01 + 1e-9, '讀數剛好是電源的一半 ' + f2(s.V0 / 2) + ' V（±0.01；現在 ' + reading(s) + '）', 'Reading exactly half the supply, ' + f2(s.V0 / 2) + ' V (±0.01; now ' + reading(s) + ')'),
+          rec];
+      } },
+      'equipotential-3': { on: ['record', 'water-record'], f: function () {
+        const s = S(); if (!s) return null;
+        return [power(s)].concat(lineItems(s, 6, 8, 0.06), [act('再在這條線上記錄一點就會判定', 'Record one more point on that line to be checked')]);
+      } },
+      'equipotential-4': { on: ['fieldlines', 'water-fieldlines', 'record', 'water-record'], f: function () {
+        const s = S(); if (!s) return null;
+        const k = nLines(s, 4), nf = s.drawField ? (s.fields || []).length : 0;
+        return [it(k >= 3, '至少 3 條等位線、每條 4 點以上（現在 ' + k + ' 條）', 'At least 3 lines of 4+ points (now ' + k + ')'),
+          field(s),
+          it(nf >= 3, '畫出至少 3 條電力線（現在 ' + nf + ' 條；等位線不夠就畫不出來）', 'At least 3 field lines drawn (now ' + nf + '; they need enough equipotentials)'),
+          act('已經勾著的話，再記錄一點就會判定', 'If it is already ticked, record one more point to be checked')];
+      } },
+      'equipotential-5': { on: ['record', 'water-record', 'lines', 'water-lines'], f: function () {
+        const s = S(); if (!s) return null;
+        const whole = s.V0 >= 4 && Math.abs(s.V0 - Math.round(s.V0)) < 1e-9, miss = [];
+        if (whole) for (let v = 1; v <= s.V0 - 1; v++) {
+          const n = Math.max.apply(null, [0].concat((s.groups || []).filter(function (g) { return Math.abs(g.V - v) <= 0.05 + 1e-9; }).map(function (g) { return g.n; })));
+          if (n < 4) miss.push(v + ' V（' + n + ' 點）');
+        }
+        return [typeIs(s, 'circles'),
+          it(whole, '電源電壓是整數伏特、至少 4 V（現在 ' + f1(s.V0) + ' V）', 'Whole-number supply of at least 4 V (now ' + f1(s.V0) + ' V)'),
+          it(whole && !miss.length, whole ? (miss.length ? '1 V 到 ' + (s.V0 - 1) + ' V 每個整數都要一條 ≥ 4 點的線，還缺：' + miss.join('、') : '1 V 到 ' + (s.V0 - 1) + ' V 每個整數都有一條 ≥ 4 點的線') : '1 V、2 V…每個整數電位各描一條 ≥ 4 點的線',
+            whole ? (miss.length ? 'A line of 4+ points at every whole volt from 1 to ' + (s.V0 - 1) + ' V; missing: ' + miss.join(', ') : 'Every whole volt from 1 to ' + (s.V0 - 1) + ' V has a line of 4+ points') : 'A line of 4+ points at 1 V, 2 V, …'),
+          act('小技巧：按「黑探針夾到負極」，讀數就是電位，直接找 1.00 V、2.00 V……', 'Tip: clip N1 to the negative electrode so the reading is the potential, then look for 1.00 V, 2.00 V, …'), rec];
+      } },
+      'equipotential-6': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        return [typeIs(s, 'bars'), it(s.type === 'bars' && s.L >= 20, '長條長度 L 拉到 20 cm（從紙的一邊到另一邊；現在 ' + f1(s.L) + ' cm）', 'Bar length L = 20 cm, edge to edge (now ' + f1(s.L) + ' cm)'), power(s)].concat(estItems(c, 0.02));
+      } },
+      'equipotential-7': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        return [typeIs(s, 'circles'), power(s)].concat(estItems(c, 0.05, function (e) { return [it(e.distEl >= 2, '估算的位置離兩個電極都至少 2 cm（上一次 ' + f1(e.distEl) + ' cm）', 'At least 2 cm from both electrodes (last time ' + f1(e.distEl) + ' cm)')]; }));
+      } },
+      'equipotential-8': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        const m = this.mem && this.mem.s, cen = m && m.c > 0, out = m && m.e > 0;
+        return [typeIs(s, 'bars'),
+          it(s.type === 'bars' && s.L <= 12, '長條長度 L 不超過 12 cm（現在 ' + f1(s.L) + ' cm）', 'Bar length L at most 12 cm (now ' + f1(s.L) + ' cm)'),
+          power(s),
+          it(cen, '在正中央（離紙的中線 1.5 cm 內）估算一次，誤差 ≤ 10%', 'One estimate in the middle (within 1.5 cm of the centre line), within 10%'),
+          it(out, '在長條端點外面（比端點再往外至少 1 cm）估算一次，誤差 ≤ 10%', 'One estimate beyond the bar ends (at least 1 cm past an end), within 10%'),
+          it(cen && out && m.e <= 0.85 * m.c, '外面的電場比中央弱至少 15%' + (cen && out ? '（現在弱 ' + pct(1 - m.e / m.c) + '）' : ''), 'Outside at least 15% weaker than the middle' + (cen && out ? ' (now ' + pct(1 - m.e / m.c) + ' weaker)' : '')),
+          act('兩次都要在同一張方格紙上；' + ESTBTN[0], 'Both on the same sheet; ' + ESTBTN[1])];
+      } },
+      'equipotential-9': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        return [typeIs(s, 'circles'), power(s)].concat(estItems(c, 0.08, function (e) { const r = e.Ecent > 0 ? e.Ecalc / e.Ecent : NaN; return [it(r >= 2.5, '估算的位置電場至少是紙中心的 2.5 倍：靠近電極一點（上一次 ' + f1(r) + ' 倍）', 'Field at least 2.5× the centre value: move nearer an electrode (last time ' + f1(r) + '×)')]; }));
+      } },
+      'equipotential-10': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        return [noisy(s), power(s)].concat(estItems(c, 0.03, function (e) { return [it(e.dd >= 1.5, '兩條線相距至少 1.5 cm（上一次 ' + f1(e.dd) + ' cm）', 'Lines at least 1.5 cm apart (last time ' + f1(e.dd) + ' cm)')]; }));
+      } },
+      'equipotential-11': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        const k = nLines(s, 6);
+        return [noisy(s), typeIs(s, 'circles'), power(s),
+          it(k >= 5, '至少 5 條等位線、每條 6 點以上（現在 ' + k + ' 條）', 'At least 5 lines of 6+ points (now ' + k + ')'),
+          field(s)].concat(estItems(c, 0.05));
+      } },
+      'equipotential-12': { on: ['estimate', 'water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        const k = nLines(s, 5, 0.05);
+        return [noisy(s), typeIs(s, 'barCircle'), power(s),
+          it(k >= 5, '至少 5 條等位線、每條 5 點以上且各點真實電位相差 < 0.05 V（現在 ' + k + ' 條）', 'At least 5 lines of 5+ points within 0.05 V (now ' + k + ')')].concat(estItems(c, 0.04));
+      } },
+      'equipotential-13': { on: ['water-record'], f: function () {
+        const s = S(); if (!s) return null;
+        return [it(s.medium === 'water', '材質切到「水槽」（畫布上方）', 'Switch to “Water tray” (above the canvas)'), power(s)].concat(lineItems(s, 6, 8, 0.06), [act('再在這條線上記錄一點就會判定', 'Record one more point on that line to be checked')]);
+      } },
+      'equipotential-14': { on: ['mediumcompare'], f: function (c) {
+        const s = S(); if (!s) return null;
+        const m = c.last('mediumcompare');
+        if (!m) return [power(s), act('先在「導電紙」描一條至少 5 點的線，電極和電壓都不要改，再切到「水槽」描同一個電位的線', 'Trace a line of 5+ points on paper, keep electrodes and voltage, then switch to the water tray and trace the same potential')];
+        return [it(m.sameConfig, '兩邊的電極與電源電壓相同', 'Same electrodes and supply voltage in both'),
+          it(m.nA >= 5, '導電紙那條至少 5 點（現在 ' + m.nA + ' 點）', 'Paper line has 5+ points (now ' + m.nA + ')'),
+          it(m.nB >= 5, '水槽那條至少 5 點（現在 ' + m.nB + ' 點）', 'Water line has 5+ points (now ' + m.nB + ')'),
+          it(m.potentialDifference < 0.05, '兩條線的電位相差 < 0.05 V（現在 ' + f2(m.potentialDifference) + ' V）', 'Potentials differ by < 0.05 V (now ' + f2(m.potentialDifference) + ' V)'),
+          it(m.meanDistance < 0.3, '對應位置平均相距 < 0.3 cm（現在 ' + f2(m.meanDistance) + ' cm）', 'Mean distance < 0.3 cm (now ' + f2(m.meanDistance) + ' cm)'),
+          rec];
+      } },
+      'equipotential-15': { on: ['water-estimate'], f: function (c) {
+        const s = S(); if (!s) return null;
+        return [it(s.medium === 'water', '材質切到「水槽」（畫布上方）', 'Switch to “Water tray” (above the canvas)'), noisy(s),
+          it(!s.ac, '電源選「直流」（「介質參數」卡）', 'Source: “DC” (Medium properties)'), power(s),
+          it(s.clip, '按「黑探針夾到負極（0 V）」（「電表與探針」卡）', 'Press “Clip N1 to the negative electrode (0 V)” (Meter and probes)')
+        ].concat(estItems(c, 0.06, function (e) { return [it(e.distEl >= 2, '估算的位置離電極至少 2 cm（上一次 ' + f1(e.distEl) + ' cm）', 'At least 2 cm from the electrodes (last time ' + f1(e.distEl) + ' cm)')]; }));
+      } }
+    };
+    ((LabMission.all && LabMission.all().equipotential) || []).forEach(function (m) { const n = NEED[m.id]; if (n) { m.need = n.f; m.needOn = n.on; } });
+  })();
   // 任務清單保持可獨立載入；排行榜與每日任務不必載入實驗的物理核心。
   const finiteError = d => Number.isFinite(d.err) && Math.abs(d.err) < 0.10;
   const rules = [
