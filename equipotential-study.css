@@ -34,3 +34,6 @@ html.eq-study.lp-docked body,html.eq-study.ms-docked body{padding-right:0!import
 
 /* 水槽依寬度配置，半開抽屜讓出完整儀器與水域。 */
 @media(max-width:1239px){.eq-study[data-lp-state=half] .lp-panel,.eq-study[data-lp-state=half] .lp-strip{top:54dvh!important}}
+
+/* 主線將探針卡搬到記錄鍵下方；自學仍使用自己的操作列。 */
+.eq-study .stage>.eq-probe-card{display:none!important}
