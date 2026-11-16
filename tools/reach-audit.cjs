@@ -2,6 +2,7 @@
 // 站長 11/16：「手機頁面的這種『在單一頁或者是鄰近頁就可以操作完整』的這個原則……必須所有的實驗室都要做這樣的優化設定。」
 // 標準：≤ 1170 px（約一頁半）。分頁操作台（js/labdeck.js）裡沒選到的分頁不算距離（點一下分頁就到）。下載、複製表格不算操作。
 // 用法：node tools/reach-audit.cjs [輸出.json] [代號,代號…]；環境變數 W、H 改尺寸，SHOTS=資料夾 另存畫布＋操作台截圖。
+// 有模式入口的頁面預設量實驗模式；Q='mode=learn&study=1&seg=6' 這種寫法改量學習模式的某一段。
 const http = require('http'), fs = require('fs'), path = require('path');
 const ROOT = path.resolve(__dirname, '..'), OUT = process.argv[2] || path.join(ROOT, '.shots', 'reach-audit.json');
 const W = +(process.env.W || 412), H = +(process.env.H || 780);
@@ -23,7 +24,7 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
     try {
       // 有模式入口（js/modegate.js）的頁面量實驗模式；入口畫面底下的範例鈕等在實驗模式根本不會出現
       const gated = fs.readFileSync(path.join(ROOT, m + '.html'), 'utf8').includes('js/modegate.js');
-      await pg.goto('http://127.0.0.1:' + srv.address().port + '/' + m + '.html' + (gated ? '?mode=lab' : ''), { waitUntil: 'load', timeout: 30000 }); await pg.waitForTimeout(1200);
+      await pg.goto('http://127.0.0.1:' + srv.address().port + '/' + m + '.html' + (gated ? '?' + (process.env.Q || 'mode=lab') : ''), { waitUntil: 'load', timeout: 30000 }); await pg.waitForTimeout(1200);
       const r = await pg.evaluate(() => {
         const vis = e => { if (!e.getClientRects().length) return false; const s = getComputedStyle(e); return s.visibility !== 'hidden' && s.display !== 'none'; };
         const Y = e => e.getBoundingClientRect().top + scrollY;
