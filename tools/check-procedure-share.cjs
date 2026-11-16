@@ -104,38 +104,41 @@ async function flow(browser, base, opts) {
     await checkDraw(page, tag + '全部完成');
     pass(tag + '全部完成後重載仍保留 7/7 與原完成時間');
 
+    // 站長 11/16：步驟只給單一實驗的卡（老師檢核用），全部科目、選科目、多個實驗都不顯示
+    const noSteps = async (label) => {
+      assert.ok(!/實驗步驟|Procedure/.test(await copy(page)), label + '複製文字不該有實驗步驟');
+      assert.equal((await lastDraw(page)).filter(r => /實驗步驟|Procedure/.test(r.text)).length, 0, label + '卡面不該有實驗步驟');
+    };
     await page.locator('input[name="sc-scope"][value="all"]').check(); await ready(page);
-    assert.ok((await copy(page)).includes('完成實驗步驟的實驗：1 個'));
+    await noSteps(tag + '全部科目');
     await shot(page, tag + '-03-全部科目');
     await checkDraw(page, tag + '全部科目');
     await page.locator('input[name="sc-scope"][value="subj"]').check(); await ready(page);
     await page.locator('.lab-sc-picks input[value="phy"]').uncheck();
     await page.locator('.lab-sc-picks input[value="math"]').check(); await ready(page);
-    assert.ok((await copy(page)).includes('完成實驗步驟的實驗：0 個'));
+    await noSteps(tag + '選數學科');
     await page.locator('.lab-sc-picks input[value="math"]').uncheck();
     await page.locator('.lab-sc-picks input[value="phy"]').check(); await ready(page);
-    assert.ok((await copy(page)).includes('完成實驗步驟的實驗：1 個'));
+    await noSteps(tag + '選物理科');
     await shot(page, tag + '-04-選物理科目');
-    pass(tag + '全部科目與選科目依範圍計數、部分完成不算全部完成');
+    pass(tag + '全部科目與選科目不顯示實驗步驟');
 
     await page.locator('input[name="sc-scope"][value="mods"]').check(); await ready(page);
     for (const id of ['current-balance', 'projectile']) {
       await page.locator('.lab-sc-search').fill(id);
       await page.locator('.lab-sc-picks input[value="' + id + '"]').check(); await ready(page);
     }
-    const text = await copy(page);
-    assert.ok(text.includes('全部完成 7/7') && text.includes('實驗步驟 4/6'));
-    assert.ok(!text.includes('拋體運動: 實驗步驟'));
-    await shot(page, tag + '-05-多實驗含無引導步驟');
+    await noSteps(tag + '多個實驗');
+    await shot(page, tag + '-05-多實驗不顯示步驟');
     await checkDraw(page, tag + '混合清單');
-    pass(tag + '單一、多實驗各自顯示步驟，無引導實驗沒有步驟列');
+    pass(tag + '勾多個實驗時不顯示實驗步驟');
     for (const id of guided.filter(id => id !== 'equipotential' && id !== 'current-balance')) {
       await page.locator('.lab-sc-search').fill(id);
       await page.locator('.lab-sc-picks input[value="' + id + '"]').check();
     }
     await ready(page);
     const longText = await copy(page);
-    assert.equal((longText.match(/實驗步驟/g) || []).length, guided.length);
+    assert.equal((longText.match(/實驗步驟/g) || []).length, 0);
     let pageCount = 0, statuses = 0;
     do {
       await ready(page); await checkDraw(page, tag + '長清單第 ' + (pageCount + 1) + ' 張');
@@ -147,8 +150,8 @@ async function flow(browser, base, opts) {
       }
       await page.locator('.lab-sc-pages button').last().click();
     } while (pageCount < 20);
-    assert.ok(pageCount > 1); assert.equal(statuses, guided.length);
-    pass(tag + '長清單分張不遺漏十個實驗的步驟列、不溢出', { 張數: pageCount, 步驟列數: statuses });
+    assert.ok(pageCount > 1); assert.equal(statuses, 0);
+    pass(tag + '長清單照樣分張、不溢出、沒有步驟列', { 張數: pageCount });
     await page.locator('.lab-sc-x').click();
 
     for (const [lang, suffix, expected] of [['en', '英文', 'Procedure complete 7/7'], ['zh-Hans', '簡體', '实验步骤全部完成 7/7']]) {

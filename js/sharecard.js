@@ -473,7 +473,9 @@
       if (scope === 'mods') {
         const ms = Object.keys(pickM).filter(function (m) { return mods[m]; });
         total = sum(ms.map(function (m) { return mods[m]; }));
-        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: procedures[m] || procedureDefs[m] }; });
+        // 站長 11/16：實驗步驟只放在「單一個實驗」的成績卡，給老師檢核那一個實驗用；勾好幾個實驗、全部科目、選科目都不顯示
+        const one = ms.length === 1;
+        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: one ? (procedures[m] || procedureDefs[m]) : null }; });
         scopeLabel = ms.length === 1 ? modName(ms[0]) : T(ms.length + ' 個實驗', ms.length + ' experiments');
         if (ms.length === 1) url = SITE + ms[0] + '.html';
         sub = T('完成 ', 'Completed ') + total.d + ' / ' + total.n + T(' 個任務', ' missions');
@@ -482,8 +484,6 @@
       } else {
         const ss = scope === 'all' ? subjs.map(function (s) { return s.id; }) : subjs.map(function (s) { return s.id; }).filter(function (s) { return pickS[s]; });
         const inS = modsIn(function (k) { return ss.indexOf(mods[k].subj) >= 0; });
-        const completed = inS.filter(function (m) { return procedures[m.id] && procedures[m.id].complete; }).length;
-        procedureLabel = T('完成實驗步驟的實驗：' + completed + ' 個', 'Labs with procedure complete: ' + completed);
         total = sum(inS);
         if (ss.length === 1) {
           // 單一科目：明細列出這一科完成過任務的實驗（星星多的在前）
@@ -514,7 +514,8 @@
     function redraw() {
       const ticket = ++revision;
       acts.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
-      const selected = scope === 'mods' ? Object.keys(pickM).filter(function (m) { return mods[m]; }) : [];
+      let selected = scope === 'mods' ? Object.keys(pickM).filter(function (m) { return mods[m]; }) : [];
+      if (selected.length !== 1) selected = [];   // 只有單一實驗才讀步驟
       Promise.all(selected.map(function (m) { return loadProcedure(m).then(function (p) { procedureDefs[m] = p; }); })).then(function () {
         if (ticket !== revision || !card.isConnected) return;
         d = data(); pages = cardPages(d); pageIndex = 0; drawPage();
