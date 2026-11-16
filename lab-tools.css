@@ -61,3 +61,6 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 /* 模式入口保持乾淨，背景實驗的工具不能浮到入口上。 */
 .mg-open .lab-stepguide,.mg-open .lab-vpad,.mg-open .vpad-lens,.mg-open .labside-rail,.mg-open .labside-panel{display:none!important}
 .labside-active .mg-switch,.labside-active .mg-home{min-height:44px}
+
+/* 手機把步驟與指引開關放在參數說明之前，操作距離不超過一頁半。 */
+@media(max-width:880px){.eq>.panel>[data-lab-steps]{order:-1}}

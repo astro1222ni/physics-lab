@@ -2058,3 +2058,6 @@ html.mg-open, html.mg-open body { overflow: hidden; }
 .mg-switch, .mg-home { display: inline-flex; align-items: center; min-height: 36px; color: var(--accent); text-decoration: none; }
 .mg-home { margin-left: auto; color: var(--muted); }
 .ms-mode-note { margin: 4px 0 8px; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); }
+/* 實驗模式沒有範例、沒有學習說明側板（站長 11/16：「實驗模式不會有範例，實驗模式也不會有學習說明的側版」） */
+html[data-lab-mode="lab"] .ex-bar, html[data-lab-mode="lab"] .lp-panel, html[data-lab-mode="lab"] .lp-strip, html[data-lab-mode="lab"] .lp-dock-tab { display: none !important; }
+html[data-lab-mode="lab"].lp-docked body { padding-right: 0 !important; }

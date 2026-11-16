@@ -929,14 +929,17 @@
       const lm = document.documentElement.getAttribute('data-lab-mode');
       if (lm === 'lab' || lm === 'learn') {
         panel.appendChild(el('p', 'ms-mode-note', lm === 'lab'
-          ? T('實驗模式：在這裡賺一般與隱藏任務的星星；自學任務要到「學習模式」賺。', 'Lab mode: earn mission and hidden-mission stars here; self-study stars are earned in Learning mode.')
-          : T('學習模式：在這裡賺自學任務的星星；一般與隱藏任務要到「實驗模式」賺。星星合計在同一個實驗。', 'Learning mode: earn self-study stars here; mission and hidden-mission stars are earned in Lab mode. All stars add up for this lab.')));
+          ? T('實驗模式：這裡列一般與隱藏任務；自學任務在「學習模式」。上方星星是兩邊合計。', 'Lab mode: missions and hidden missions are listed here; self-study missions are in Learning mode. The star total above includes both.')
+          : T('學習模式：這裡列自學任務；一般與隱藏任務在「實驗模式」。上方星星是兩邊合計。', 'Learning mode: self-study missions are listed here; missions and hidden missions are in Lab mode. The star total above includes both.')));
       }
       const byLevel = function (a, b) { return a.level - b.level; };
       // 一般任務：寬螢幕預設展開；手機預設收合成一行，實驗不會被推得太遠
-      section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden && !m.study; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
-      section('hid', T('隱藏任務', 'Hidden missions'), list.filter(function (m) { return m.hidden; }).sort(byLevel), false, undone);
-      section('study', T('自學任務', 'Self-study missions'), list.filter(function (m) { return m.study; }).sort(byLevel), document.documentElement.getAttribute('data-lab-mode') === 'learn', undone);
+      // 實驗模式只列一般與隱藏任務，學習模式只列自學任務（站長：「實驗模式不應該出現自學的任務」）
+      if (lm !== 'learn') {
+        section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden && !m.study; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
+        section('hid', T('隱藏任務', 'Hidden missions'), list.filter(function (m) { return m.hidden; }).sort(byLevel), false, undone);
+      }
+      if (lm !== 'lab') section('study', T('自學任務', 'Self-study missions'), list.filter(function (m) { return m.study; }).sort(byLevel), lm === 'learn', undone);
     }
 
     /** 一區任務：標題按鈕（完成數、星星數、展開／收合）＋清單；開關狀態記在本機，全站共用 */
