@@ -1,4 +1,4 @@
-/* equipotential.js — 「等位線與電場（導電紙實驗）」的畫面與互動（物理計算在 equipotential-core.js） */
+/* equipotential.js — 「等位線與電場（導電紙與水槽）」的畫面與互動（物理計算在 equipotential-core.js） */
 (function () {
   'use strict';
   const EC = window.EquipotentialCore;
@@ -337,10 +337,16 @@
     els().forEach(function (e) { drawElectrode(g, e); });
   }
   function drawElectrode(g, e) {
-    const silver = state.medium === 'water' ? LD.mix(LD.c.pos, LD.c.probe, 0.44) : LD.mix(LD.c.surface, LD.c.text, LD.dark ? 0.45 : 0.28);
+    const silver = state.medium === 'water' ? copperInk() : LD.mix(LD.c.surface, LD.c.text, LD.dark ? 0.45 : 0.28);
     const rim = e.sign > 0 ? LD.c.pos : LD.c.neg;
     if (e.kind === 'circle') {
       const cx = X(e.x), cy = Y(e.y), r = e.r * G.s;
+      if (state.medium === 'water') {
+        const shadow = g.createRadialGradient(cx, cy + 3, r * 0.3, cx, cy + 3, r * 1.65);
+        shadow.addColorStop(0, LD.shadowInk(0.44)); shadow.addColorStop(1, LD.shadowInk(0));
+        g.fillStyle = shadow; g.beginPath(); g.ellipse(cx, cy + 3, r * 1.65, r * 1.12, 0, 0, Math.PI * 2); g.fill();
+        g.fillStyle = LD.shade(silver, -0.48); g.beginPath(); g.arc(cx, cy + 3, r, 0, Math.PI * 2); g.fill();
+      }
       g.save();
       g.shadowColor = LD.dark ? 'rgba(0,0,0,0.5)' : LD.alpha(LD.c.text, 0.25);
       g.shadowBlur = 5; g.shadowOffsetY = 1.5;
@@ -351,8 +357,12 @@
       g.fillStyle = gr;
       g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
       g.restore();
-      g.strokeStyle = rim; g.lineWidth = Math.max(1.5, Math.min(3, r * 0.25));
+      g.strokeStyle = state.medium === 'water' ? LD.shade(silver, 0.65) : rim; g.lineWidth = state.medium === 'water' ? 1.2 : Math.max(1.5, Math.min(3, r * 0.25));
       g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
+      if (state.medium === 'water') {
+        g.strokeStyle = LD.alpha(LD.shade(silver, 0.88), 0.92); g.lineWidth = 1.5;
+        g.beginPath(); g.arc(cx, cy, Math.max(1, r - 1.8), Math.PI * 1.1, Math.PI * 1.9); g.stroke();
+      }
       signText(g, e.sign, cx, cy, r);
     } else {
       const x = X(e.x0), y = Y(e.y1), w = (e.x1 - e.x0) * G.s, h = (e.y1 - e.y0) * G.s;
@@ -382,20 +392,27 @@
   /** 淺盤的內緣就是求解邊界；厚壁與高光畫在外側，不改變量測比例。 */
   function drawTray(g, x, y, w, h) {
     const aqua = waterInk();
-    LD.roundRect(g, x - 6, y - 6, w + 12, h + 16, 9);
+    g.save();
+    LD.roundRect(g, x - 6, y - 3, w + 12, h + 14, 9);
+    g.fillStyle = LD.alpha(LD.shade(aqua, -0.35), 0.8); g.fill();
+    LD.roundRect(g, x - 6, y - 6, w + 12, h + 12, 9);
     const rim = g.createLinearGradient(x, y - 6, x + w, y + h + 10);
-    rim.addColorStop(0, LD.alpha(LD.shade(aqua, 0.7), 0.65));
-    rim.addColorStop(0.45, LD.alpha(aqua, 0.15));
-    rim.addColorStop(1, LD.alpha(aqua, 0.65));
+    rim.addColorStop(0, LD.alpha(LD.shade(aqua, 0.85), 0.8));
+    rim.addColorStop(0.45, LD.alpha(aqua, 0.28));
+    rim.addColorStop(1, LD.alpha(aqua, 0.75));
     g.fillStyle = rim; g.fill();
     g.strokeStyle = LD.alpha(LD.shade(aqua, 0.8), 0.65); g.lineWidth = 1.4; g.stroke();
-    g.fillStyle = LD.alpha(aqua, LD.dark ? 0.10 : 0.07); g.fillRect(x, y, w, h);
-    g.strokeStyle = LD.alpha(aqua, 0.55); g.strokeRect(x, y, w, h);
+    // 厚壁只留在邊緣；內側重新露出墊紙，避免整盤被盤緣底色染深。
+    g.fillStyle = LD.mix(paperColor(), aqua, LD.dark ? 0.30 : 0.22); g.fillRect(x, y, w, h);
+    g.strokeStyle = LD.alpha(LD.shade(aqua, -0.25), 0.7); g.lineWidth = 2; g.strokeRect(x, y, w, h);
+    g.strokeStyle = LD.alpha(LD.shade(aqua, 0.95), 0.76); g.lineWidth = 1.3; g.strokeRect(x + 2, y + 2, w - 4, h - 4);
     g.beginPath(); g.moveTo(x + 8, y - 3); g.lineTo(x + w - 8, y - 3);
     g.moveTo(x + 3, y + 7); g.lineTo(x + 3, y + h - 7);
     g.strokeStyle = LD.alpha(LD.shade(aqua, 0.9), 0.8); g.lineWidth = 1; g.stroke();
+    g.restore();
   }
   function waterInk() { return LD.mix(LD.c.neg, LD.c.probe, 0.52); }
+  function copperInk() { return LD.mix(LD.c.pos, LD.c.equi, 0.55); }
   /** 在折線上 frac 的位置畫一個小箭頭 */
   function arrowOnPath(g, pts, frac, color, size) {
     if (pts.length < 3) return;
@@ -470,7 +487,10 @@
     }
     // 記錄點與線的名稱
     const sh = sheet();
-    const placed = [];   // 已放好的標籤框（避免互相重疊）
+    const placed = ['n1', 'n2'].map(function (id) {
+      const p = probeGeom(id);
+      return { x0: Math.min(p.tx - 16, p.hx - 8), x1: Math.max(p.tx + 28, p.hx + 8), y0: Math.min(p.ty - 18, p.hy - 8), y1: p.ty + 28 };
+    });   // 先替探針握把與標牌保留空間，再放線名。
     A.groups.forEach(function (g) {
       const col = potColor(g.V);
       g.idx.forEach(function (i) {
@@ -488,7 +508,7 @@
         let top = g.pts[0], bot = g.pts[0];
         g.pts.forEach(function (p) { if (p[1] > top[1]) top = p; if (p[1] < bot[1]) bot = p; });
         const text = G.s < 16 ? g.name : g.name + ' ' + fmt(g.V, 2) + ' V';
-        placeLabel(placed, text, col, [[X(top[0]), Y(top[1]) - 8], [X(bot[0]), Y(bot[1]) + 23], [X(top[0]), Y(top[1]) - 27], [X(bot[0]), Y(bot[1]) + 42]]);
+        placeLabel(placed, text, col, [[X(top[0]) - 28, Y(top[1]) - 8], [X(top[0]) + 28, Y(top[1]) - 8], [X(bot[0]) - 28, Y(bot[1]) + 23], [X(top[0]), Y(top[1]) - 27], [X(bot[0]), Y(bot[1]) + 42]]);
       }
     });
     // 電場估算
@@ -755,53 +775,84 @@
     });
     const level = phoneLevel();
     if (level > 0) for (let i = 0; i < 3; i++) {
-      const rr = r + 9 + i * 6 + (reduced ? 0 : Math.sin(fxTime * 6) * 1.5);
+      const phase = reduced ? (i + 0.4) / 3 : (fxTime * 1.25 + i / 3) % 1;
+      const rr = r + 5 + phase * (7 + level * 17);
       ctx.beginPath(); ctx.arc(cx, cy, rr, -0.55, 0.55);
-      ctx.strokeStyle = LD.alpha(col, (0.65 - i * 0.14) * level); ctx.lineWidth = 1.5; ctx.stroke();
+      ctx.strokeStyle = LD.alpha(col, (1 - phase) * 0.85 * level); ctx.lineWidth = 1.4 + level; ctx.stroke();
     }
-    LD.haloText(ctx, level ? T('音量', 'Level') + ' ' + Math.round(level * 100) + '%' : T('零點 · 安靜', 'Null · quiet'), cx, m.y + m.h - 4, LD.c.muted, 'center', 'middle', '600 10px ' + FF);
+    LD.haloText(ctx, level ? T('音量', 'Level') + ' ' + Math.round(level * 100) + ' %' : T('零點 · 安靜', 'Null · quiet'), cx, m.y + m.h - 6, LD.c.text, 'center', 'middle', '600 13px ' + FF);
   }
 
   // 水面裝飾與氣泡採實際幀間隔；只在前景、實驗區可見時運作。
   let fxTime = 0, fxRaf = 0, fxLast = 0, bubbleAt = 0, benchVisible = true;
   const wakes = [];
+  function addWake(p, force) {
+    if (state.medium !== 'water') return;
+    const last = wakes[wakes.length - 1];
+    if (!force && last && fxTime - last.t < 0.045 && Math.hypot(last.x - p.x, last.y - p.y) < 0.35) return;
+    if (reduced) wakes.length = 0;
+    wakes.push({ x: p.x, y: p.y, t: fxTime }); if (wakes.length > 24) wakes.shift();
+  }
   function bubblesOn() { return state.medium === 'water' && state.power && !state.ac && V0eff() > 1e-8; }
   function drawWater() {
     const aqua = waterInk();
+    const time = reduced ? 0 : fxTime;
     ctx.save();
     ctx.beginPath(); ctx.rect(X(0), Y(SH), SW * G.s, SH * G.s); ctx.clip();
     // 焦散用少量長波紋疊出光網，透明度保持低，格線與記錄仍清楚。
-    ctx.lineWidth = 1.2;
-    for (let j = 0; j < 9; j++) {
+    const glint = ctx.createLinearGradient(X(0), Y(SH), X(SW), Y(0));
+    glint.addColorStop(0, LD.alpha(LD.shade(aqua, 0.9), 0));
+    glint.addColorStop(0.34, LD.alpha(LD.shade(aqua, 0.9), 0));
+    glint.addColorStop(0.47, LD.alpha(LD.shade(aqua, 0.95), LD.dark ? 0.14 : 0.25));
+    glint.addColorStop(0.58, LD.alpha(LD.shade(aqua, 0.9), 0)); glint.addColorStop(1, LD.alpha(aqua, 0));
+    ctx.fillStyle = glint; ctx.fillRect(X(0), Y(SH), SW * G.s, SH * G.s);
+    ctx.lineWidth = 1.35;
+    for (let j = 0; j < 11; j++) {
       ctx.beginPath();
       for (let x = 0; x <= SW; x += 0.7) {
-        const y = (j + 0.5) * SH / 9 + 0.34 * Math.sin(x * 0.62 + fxTime * 0.24 + j) + 0.16 * Math.sin(x * 1.4 - fxTime * 0.19);
+        const y = (j + 0.5) * SH / 11 + 0.38 * Math.sin(x * 0.62 + time * 0.3 + j) + 0.23 * Math.sin(x * 1.4 - time * 0.2);
         if (!x) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
       }
-      ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.8), LD.dark ? 0.16 : 0.23); ctx.stroke();
+      if (!LD.dark) { ctx.strokeStyle = LD.alpha(aqua, 0.17); ctx.lineWidth = 2.6; ctx.stroke(); }
+      ctx.lineWidth = 1.35; ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.9), LD.dark ? 0.29 : 0.48); ctx.stroke();
+      ctx.beginPath();
+      for (let y = 0; y <= SH; y += 0.7) {
+        const x = j * SW / 10 + 0.5 * Math.sin(y * 0.7 - time * 0.22 + j);
+        if (!y) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+      }
+      if (!LD.dark) { ctx.strokeStyle = LD.alpha(aqua, 0.09); ctx.lineWidth = 2.2; ctx.stroke(); }
+      ctx.lineWidth = 1.35; ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.8), LD.dark ? 0.15 : 0.24); ctx.stroke();
     }
     els().forEach(function (e, index) {
       const c = elCenter(e), r = e.kind === 'circle' ? e.r * G.s + 2 : 5;
       ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.9), 0.72); ctx.lineWidth = 1.1;
       if (e.kind === 'circle') { ctx.beginPath(); ctx.ellipse(X(c.x), Y(c.y) + 1, r, r * 0.86, 0, 0, Math.PI * 2); ctx.stroke(); }
       else { ctx.strokeRect(X(e.x0) - 2, Y(e.y1) - 2, (e.x1 - e.x0) * G.s + 4, (e.y1 - e.y0) * G.s + 4); }
-      if (!bubblesOn() || reduced) return;
-      const count = e.sign < 0 ? 20 : 7;
+      if (!bubblesOn()) return;
+      const count = e.sign < 0 ? 24 : 8, streams = e.sign < 0 ? 4 : 2;
       for (let i = 0; i < count; i++) {
-        const age = (fxTime * (0.28 + (i % 3) * 0.05) + i * 0.618 + index * 0.21) % 1;
-        const a = i * 2.4, spread = e.kind === 'circle' ? e.r * G.s : (e.y1 - e.y0) * G.s * 0.46;
-        const bx = X(c.x) + (e.kind === 'circle' ? Math.cos(a) * spread : (i % 2 ? -4 : 4)) + Math.sin(age * 5 + i) * 1.4;
-        const by = Y(c.y) + Math.sin(a) * spread - age * (12 + G.s * 0.4);
-        const rad = 0.9 + age * 1.3;
-        ctx.beginPath(); ctx.arc(bx, by, age > 0.88 ? rad + (age - 0.88) * 35 : rad, 0, Math.PI * 2);
-        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.95), age > 0.88 ? (1 - age) * 5 : 0.68); ctx.lineWidth = 0.9; ctx.stroke();
+        const stream = i % streams, age = (time * (0.43 + stream * 0.025) + Math.floor(i / streams) / (count / streams) + stream * 0.11 + index * 0.17) % 1;
+        const a = (stream + 0.25) * Math.PI * 2 / streams;
+        const bx = X(c.x) + (e.kind === 'circle' ? Math.cos(a) * e.r * G.s : (stream % 2 ? 1 : -1) * ((e.x1 - e.x0) * G.s / 2 + 1)) + Math.sin(age * 7 + stream) * 1.65;
+        const originY = e.kind === 'circle' ? Y(c.y) - Math.sin(a) * e.r * G.s : Y(e.y0 + (stream + 0.5) * (e.y1 - e.y0) / streams);
+        const by = originY - age * (24 + G.s * 3.6), rad = 0.75 + ((i * 0.37) % 1) * 1.25;
+        const alpha = age > 0.86 ? (1 - age) / 0.14 : 1;
+        ctx.beginPath(); ctx.arc(bx, by, age > 0.95 ? Math.min(2, rad + (age - 0.95) * 18) : rad, 0, Math.PI * 2);
+        ctx.fillStyle = LD.alpha(LD.shade(aqua, 0.75), alpha * 0.12); ctx.fill();
+        if (!LD.dark) { ctx.strokeStyle = LD.alpha(LD.shade(aqua, -0.45), alpha * 0.6); ctx.lineWidth = 1.25; ctx.stroke(); }
+        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.98), alpha * 0.95); ctx.lineWidth = 0.75; ctx.stroke();
+        ctx.beginPath(); ctx.arc(bx - rad * 0.3, by - rad * 0.35, Math.max(0.32, rad * 0.25), 0, Math.PI * 2);
+        ctx.fillStyle = LD.alpha(LD.shade(aqua, 1), alpha * 0.95); ctx.fill();
       }
     });
-    if (!reduced) wakes.forEach(function (p) {
-      const age = fxTime - p.t;
-      if (age >= 0.9) return;
-      ctx.beginPath(); ctx.ellipse(X(p.x), Y(p.y), 3 + age * 15, 2 + age * 10, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = LD.alpha(aqua, 0.6 * (1 - age / 0.9)); ctx.lineWidth = 1; ctx.stroke();
+    wakes.forEach(function (p) {
+      const age = reduced ? 0.18 : time - p.t;
+      if (age >= 0.6) return;
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath(); ctx.ellipse(X(p.x), Y(p.y), 3 + age * 25 + i * 4.5, 2 + age * 19 + i * 3.4, 0, 0, Math.PI * 2);
+        ctx.strokeStyle = LD.alpha(LD.shade(aqua, -0.55), 0.38 * (1 - age / 0.6)); ctx.lineWidth = 3.1; ctx.stroke();
+        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.98), (0.98 - i * 0.16) * (1 - age / 0.6)); ctx.lineWidth = 1.5; ctx.stroke();
+      }
     });
     ctx.restore();
   }
@@ -810,7 +861,7 @@
     if (document.hidden || !benchVisible || state.medium !== 'water') { fxLast = 0; return; }
     fxTime += fxLast ? Math.min(1 / 30, (t - fxLast) / 1000) : 0;
     fxLast = t;
-    while (wakes.length && fxTime - wakes[0].t > 0.9) wakes.shift();
+    while (!reduced && wakes.length && fxTime - wakes[0].t > 0.6) wakes.shift();
     if (!stage.classList.contains('is3d')) requestDraw();
     if (bubblesOn() && window.LabSound && LabSound.enabled() && t - bubbleAt > 470) {
       bubbleAt = t;
@@ -824,6 +875,7 @@
     fxRaf = 0; fxLast = 0;
     if (!document.hidden && benchVisible && state.medium === 'water') fxRaf = requestAnimationFrame(effectsFrame);
     syncPhone();
+    if (view3) view3.update();
   }
 
   // ---------------------------------------------------------------------
@@ -852,7 +904,7 @@
     clearInterval(jitterTimer);
     jitterTimer = 0;
     state.jitter = 0; state.jitterI = 0;
-    if (!state.noise) return;
+    if (!state.noise || reduced) return;
     const r = EC.rng((Date.now() & 0xffff) + 7);
     jitterTimer = setInterval(function () {
       if (document.hidden) return;
@@ -892,10 +944,10 @@
       if (state.clip) { state.clip = false; }
       state.n1 = p; state.n1Touched = true;
     } else state.n2 = p;
+    addWake(p, false);
     probeMoved();
   }
   function probeMoved() {
-    if (state.medium === 'water' && !reduced) { const p = state.sel === 'n1' ? n1Pos() : state.n2; wakes.push({ x: p.x, y: p.y, t: fxTime }); if (wakes.length > 40) wakes.shift(); }
     nullFeedback();
     updateReadouts();
     kickNeedle();
@@ -922,6 +974,7 @@
       setProbe(id, wx(p.x), wy(p.y));
     } else return;
     const cur = id === 'n1' ? n1Pos() : state.n2;
+    addWake(cur, true); requestDraw();
     drag = { id: id, px: p.x, py: p.y, x: cur.x, y: cur.y, pid: ev.pointerId, grabbed: grabbed, moved: false };
     try { cv.setPointerCapture(ev.pointerId); } catch (e) { /* 忽略 */ }
     startVoice();
@@ -999,8 +1052,7 @@
   });
   if (window.LabKeys) {
     kb = window.LabKeys.attach(cv, {
-      label: T('實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動；鍵盤操作：Enter 切換探針，方向鍵移動 0.05 cm，Shift 加方向鍵移動 0.5 cm，Alt 加方向鍵移動 0.01 cm，R 記錄。',
-        'Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it. Keyboard: Enter picks a probe, the arrow keys move it 0.05 cm, Shift with an arrow key 0.5 cm, Alt with an arrow key 0.01 cm, R records.'),
+      label: benchAria(),
       items: KB_IDS.map(function (id) {
         return {
           name: function () { return probeName(id); },
@@ -1258,7 +1310,9 @@
     const ol = $('steps');
     ol.innerHTML = STEPS.map(function (s, i) {
       const cls = d[i] ? 'done' : i === now ? 'now' : '';
-      return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + symbols(T(s[0], s[1])) + '</li>';
+      const text = i === 0 && state.medium === 'water' ? T('水槽保持水平、電極入水；選直流或交流、設定電壓，再接通電源。', 'Keep the tray level and electrodes immersed. Choose DC or AC, set the voltage and switch on.')
+        : i === 1 ? (state.medium === 'water' ? T('黑探針 N1 固定插在水中，或夾在負極金屬作參考。', 'Keep black N1 fixed in the water, or clip it to the negative metal as reference.') : T('黑探針 N1 固定輕觸紙面，或夾在負極作參考。', 'Keep black N1 lightly touching the paper, or clip it to the negative electrode.')) : T(s[0], s[1]);
+      return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + symbols(text) + '</li>';
     }).join('');
   }
   function setStatus(s) { lastStatus = s; $('status').innerHTML = symbols(s); }
@@ -1271,6 +1325,29 @@
       : T('檢流計中央為零：指針偏右表示 N2 的電位比 N1 高。找指針回到正中央（0 μA）的點，就是與 N1 等電位的點。', 'Centre-zero galvanometer: a deflection to the right means N2 is at a higher potential than N1. Where the needle returns to the centre (0 μA), N2 is at the same potential as N1.'));
     $('galvAcHint').hidden = !state.ac;
     $('mediumHint').innerHTML = symbols(state.medium === 'water' ? (state.noise && !state.ac ? T('水深 1.0 cm · 0.1 % 食鹽水 · R□ = 500 Ω/□。直流極化：水中電壓 = V0 − Vp；負極金屬外會先跳一段電位。', 'Depth 1.0 cm · 0.1% salt water · R□ = 500 Ω/sq. DC polarization: bulk voltage = V0 − Vp; potential jumps just outside the negative metal.') : T('水深 1.0 cm · 0.1 % 食鹽水 · R□ = 500 Ω/□。均勻水槽與導電紙的正規化等位線相同。', 'Depth 1.0 cm · 0.1% salt water · R□ = 500 Ω/sq. A uniform tray and paper have the same normalized equipotentials.')) : T('導電紙 R□ = 5000 Ω/□。材質切換保留設定，各自保存方格紙記錄。', 'Paper R□ = 5000 Ω/sq. Switching medium keeps the settings; each medium has its own records.'));
+  }
+  /** 操作說明與報讀一併依材質更新；方格紙是兩種實驗共同的記錄媒介。 */
+  function benchAria(english) {
+    const tr = english ? function (zh, en) { return en; } : T;
+    const bench = state.medium === 'water'
+      ? tr('透明水槽俯視圖：底下墊方格紙，0.1 % 食鹽水深 1.0 cm，兩個銅電極與紅探針 N2、黑探針 N1 入水。', 'Top view of a transparent tray over grid paper: 0.1% salt water, 1.0 cm deep, with two copper electrodes and red N2 and black N1 immersed.')
+      : tr('導電紙實驗桌俯視圖：兩個電極、紅探針 N2 與黑探針 N1 輕觸紙面。', 'Top view of the conducting-paper bench: two electrodes, with red N2 and black N1 touching the paper.');
+    return bench + (state.ac ? tr('電源為 1 kHz 交流，電壓為有效值。', 'The source is 1 kHz AC; voltages are RMS.') : tr('電源為直流。', 'The source is DC.')) + tr('拖探針移動。Enter 換探針，方向鍵移動 0.05 cm，Shift 為 0.5 cm，Alt 為 0.01 cm，R 記錄。', 'Drag probes to move them. Enter selects a probe; arrows move 0.05 cm, Shift 0.5 cm, Alt 0.01 cm; R records.');
+  }
+  function mediumCopy() {
+    document.querySelectorAll('[data-medium-only]').forEach(function (el) { el.hidden = el.dataset.mediumOnly !== state.medium; });
+    cv.setAttribute('aria-label', benchAria());
+    cv.setAttribute('data-en-aria-label', benchAria(true));
+    $('landscapeHint').textContent = state.medium === 'water'
+      ? T('曲面高度＝水中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉，雙指或滾輪縮放。', 'Surface height = the water potential, using the 2D solution. This is a potential graph, not a rising water surface. Drag to rotate; pinch or scroll to zoom.')
+      : T('曲面高度＝導電紙上該點的電位，與 2D 共用數值解。拖曳旋轉，雙指或滾輪縮放。', 'Surface height = the potential on the paper, using the 2D solution. Drag to rotate; pinch or scroll to zoom.');
+    $('landscapeHint').removeAttribute('data-en');
+  }
+  function supplyStatus() {
+    if (!state.power) return T('電源關閉。', 'Supply off.');
+    if (state.medium === 'paper') return T('電源接通：紙上有穩定電流了。', 'Supply on: a steady current flows through the paper.');
+    return state.ac ? T('交流接通：水中以有效值量測，沒有極化與電解氣泡。', 'AC on: water measurements are RMS, with no polarization or electrolysis bubbles.')
+      : T('直流接通：水中電流依實際水側壓差計算；氣泡顯示電解。', 'DC on: current uses the actual water-side voltage; bubbles show electrolysis.');
   }
 
   // ---------------------------------------------------------------------
@@ -1408,7 +1485,7 @@
       } else state.offset = 0;
       document.querySelectorAll('[data-noise]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       setJitter();
-      setStatus(on ? T('含誤差：換上一張導電度略不均勻的紙，電表也有零點偏差與跳動。', 'With errors: a slightly non-uniform sheet, and the meter now has a zero offset and a flickering last digit.') : T('理想條件。', 'Ideal conditions.'));
+      setStatus(on ? (state.medium === 'water' ? T('含誤差：水中導電度略不均勻，電表有零點偏差與跳動；直流另有電極極化。', 'With errors: the liquid conductivity varies slightly, the meter has offset and jitter, and DC adds electrode polarization.') : T('含誤差：換上一張導電度略不均勻的紙，電表也有零點偏差與跳動。', 'With errors: a slightly non-uniform sheet, and the meter now has a zero offset and a flickering last digit.')) : T('理想條件。', 'Ideal conditions.'));
       configChanged(false);
     });
   });
@@ -1433,7 +1510,7 @@
       LabSound.noise({ dur: 0.04, gain: 0.3, filter: 2400, q: 1.5 });
       if (state.power) LabSound.tone({ freq: 520, dur: 0.12, type: 'sine', gain: 0.25 });
     }
-    setStatus(state.power ? state.medium === 'water' ? (state.ac ? T('交流接通：以有效值量測；沒有極化與電解氣泡。', 'AC on: RMS measurements, without polarization or electrolysis bubbles.') : T('直流接通：水中電流與氣泡依水中實際電壓顯示。', 'DC on: the bulk water voltage sets the current and bubbles.')) : T('電源接通：紙上有穩定電流了。', 'Supply on: a steady current flows through the paper.') : T('電源關閉。', 'Supply off.'));
+    setStatus(supplyStatus());
     previousReading = state.power ? Math.abs(meterNow().reading) : null;
     syncEffects();
     updateReadouts(); updateSteps(); kickNeedle(); requestDraw();
@@ -1465,6 +1542,7 @@
   });
 
   function mediumControls() {
+    mediumCopy();
     document.querySelectorAll('[data-medium]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.medium === state.medium)); });
     $('sourceMode').hidden = state.medium !== 'water';
     $('meterPhone').hidden = state.medium !== 'water';
@@ -1490,6 +1568,7 @@
       state.ac = b.dataset.ac === '1';
       if ((state.ac && state.meter === 'galv') || (!state.ac && state.meter === 'phone')) state.meter = 'dmm';
       mediumControls(); configChanged(false);
+      setStatus(supplyStatus());
     });
   });
 
@@ -1512,6 +1591,7 @@
   function env3() {
     return {
       host: host3, T: T,
+      isVisible: function () { return benchVisible && !document.hidden; },
       data: function () {
         const A = analysis(), sh = sheet();
         return {
@@ -1587,6 +1667,7 @@
   // 啟動
   // ---------------------------------------------------------------------
   function onTheme() {
+    mediumCopy();
     statKey = '';
     anaCache.key = '';
     renderTable();
