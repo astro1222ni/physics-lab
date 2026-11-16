@@ -310,8 +310,8 @@
           </dl>
         </section>
 
-        <section class="card">
-          <h2 data-en="Drawing and analysis">作圖與分析</h2>
+        <details class="card" open data-guide-card>
+          <summary data-en="Drawing and analysis">作圖與分析</summary>
           <div class="checks col">
             <label><input id="drawLines" type="checkbox"><span data-en="Join the points of each line with a smooth curve">把同一條線的點連成平滑的等位線</span></label>
             <label><input id="drawField" type="checkbox"><span data-en="Draw field lines at right angles to them">畫出與等位線垂直的電力線</span></label>
@@ -325,7 +325,7 @@
             <dt data-en="Difference">差異</dt><dd id="eErr">—</dd>
           </dl>
           <p class="hint" data-en="Put the red probe between two of your lines (an electrode also counts as an equipotential). Δd is measured between the nearest points of the two lines.">把紅探針放在兩條量到的等位線之間（電極本身也是等位線），Δd 是兩條線上離探針最近的兩點之間的距離。</p>
-        </section>
+        </details>
 
         <section class="card">
           <h2 data-en="Computed by the simulation (answer key)">模擬程式的計算值（對照答案）</h2>
@@ -500,6 +500,9 @@
   <script src="js/equipotential-3d.js?v=202611161343"></script>
   <script src="js/equipotential-rig3d.js?v=202611161343"></script>
   <script src="js/keys.js?v=202611161343"></script>
+  <script src="js/stepguide.js"></script>
+  <script src="js/vpad.js"></script>
+  <script src="js/labside.js"></script>
   <script src="js/equipotential.js?v=202611161343"></script>
   <script src="js/firebase-config.js?v=202611161343"></script>
   <script src="js/missions.js?v=202611161343" data-module="equipotential"></script>

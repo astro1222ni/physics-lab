@@ -1,0 +1,65 @@
+# 步驟指引、小鍵盤與實驗側板接法
+
+元件不計算物理、不變更任務條件，也不代按器材按鈕。先載入 `lab-tools.css`（各元件也會按需補載），再載入 `js/stepguide.js`、`js/vpad.js`、`js/labside.js`。文字使用 LabSettings；沒有設定元件時預設繁體。
+
+## LabStepGuide
+
+```js
+LabStepGuide.define([
+  { target: '#power', action: 'tap', hint: ['接通電源', 'Switch on'] },
+  { target: () => ({canvas:'#cv', at:()=>({x:100,y:80})}),
+    action:'drag', dx:60, dy:-20, opener:'#view2d',
+    hint:['拖動探針','Move the probe'] }
+], {key:'my-lab'});
+LabStepGuide.update(0, {key:'my-lab', auto:true});
+```
+
+- `target`：選擇器、元素、函式，或畫布點。`at()` 預設回傳畫布內的 CSS px；`client:true` 表示視窗 CSS 座標。
+- `to`：拖曳終點，格式同畫布點。亦可用 `dx`、`dy`（CSS px）。
+- `opener`：目標藏起來時先指向的按鈕，可為函式。收合 details 與 aria-controls 分頁也會自動尋找。
+- `hint`：繁／英陣列、文字或函式。`action` 可為 tap、tick、drag。
+- `key`：多組流程共用元件時用不同名稱，避免一般七步和自學七步互相覆蓋。
+- `auto:true`：目前步驟自動跟進；人工指定的步驟會留到實際步驟改變。
+- `hide()`、`setEnabled(bool)`、`toggleButton()`：隱藏提示、切換／儲存偏好、產生 44 px 開關。
+- 元件只捲動目標，不 click 目標；裝飾層不接收指標。滾動容器的裁切也算可視範圍。
+
+## LabVPad
+
+```js
+const pad=LabVPad.mount({
+  id:'my-lab', canvas:document.querySelector('#cv'), objects:['n1','n2'],
+  selected:()=>state.selected, select:id=>selectProbe(id),
+  move:(dx,dy,id)=>moveProbe(id,dx,dy), record:()=>recordPoint(),
+  point:id=>probeClientPoint(id), board:()=>boardClientRect(),
+  reading:()=>meterText(), visible:()=>view==='2d'
+});
+```
+
+- 實驗在 `move` 收到物理步距；預設 0.05，按鍵切換 0.01／0.05／0.5。斜向各軸都走一步。
+- `point` 回傳視窗 CSS 座標，`board` 回傳 left／right／top／bottom。放大鏡從原畫布擷取 40 px 範圍畫成 120 px，實際倍率三倍。
+- `visible` 控制 2D／3D 或非實驗情境；畫布離開視窗時自動收成圓鈕，回來後恢復原展開偏好。
+- `viewport` 可回傳 `{width,height}`，預留側邊標籤的空間。
+- 預設位置會讓開目前移動的探針；手動拖過後尊重自選位置。頂端把手可拖曳；不超出可見範圍，靠邊 14 px 內吸附，雙擊回預設。位置與收合偏好依 id 存本機，讀寫均有例外處理。
+- 方向鍵按下先走一步，350 ms 後開始每 80 ms 一步；放開、取消、失焦、換 3D 都停止。
+- 原實驗自行拖探針時呼叫 `pad.activity()`；兩秒後放大鏡淡出。`collapse(bool)`、`reset()`、`refresh()` 可由實驗主動呼叫。
+- `dispose()` 移除本元件的畫面及連發計時。
+
+## LabSide
+
+```js
+LabSide.mount({module:'my-lab',
+  steps:()=>procedureState(),
+  guide:i=>LabStepGuide.update(i,{key:'my-lab'}),
+  study:()=>studyActive,
+  focus:()=>document.querySelector('#stage').scrollIntoView({block:'start'})
+});
+```
+
+- `steps()` 回傳 `{html,done,current}` 陣列，必須讀原步驟資料，不複製另一套判定。
+- 任務讀 `LabMission.all()`、`_state.done`、`starsOf()`；僅顯示既有資料，隱藏任務不洩漏名稱與判定。
+- `study` 為真時收起三個右側標籤，改用 LabPanel 五個分頁。原 `.fb-tab` 被移入同一列；原留言程式不用改。
+- `LabSide.feedbackContent({beforeCompose})` 產生共用留言按鈕，呼叫 `LabComments.compose(text)`，只準備草稿。
+- `LabSide.instance.open('steps'|'missions'|'comments')`、`close()`、`refresh()` 可由頁面呼叫。
+- 桌機讓出 380 px，手機下方抽屜以把手拖高低；不鎖住畫布操作。
+
+等位線範例在 `js/equipotential-controls.js`；一般七步由 EquipotentialLab.steps／guides 提供，自學七步由 LabSteps 接相同指引。

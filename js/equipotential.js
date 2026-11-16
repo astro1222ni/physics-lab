@@ -199,23 +199,21 @@
   const G = { w: 0, h: 0, s: 10, bx: 0, by: 0, band: 100, dpr: 1 };
   function layout() {
     const w = cv.clientWidth || 600;
-    const mL = 24, mR = 10;
-    const learning = document.documentElement.classList.contains('eq-study');
     const small = innerWidth < 1240;
-    const openPanel = learning && small && document.documentElement.dataset.lpState !== 'collapsed';
-    const limit = learning ? (small ? (openPanel ? 220 : 326) : Math.max(390, innerHeight - 320)) : Infinity;
-    const bandLimit = learning ? (small ? 64 : 90) : 150;
-    const s = Math.min(25, (w - mL - mR) / SW, (limit - bandLimit - 34) / SH);
-    const bw = s * SW, bh = s * SH;
-    const band = learning ? bandLimit : Math.round(Math.max(96, Math.min(150, bh * 0.32)));
-    const h = Math.round(band + 10 + bh + 24);
-    G.w = w; G.h = h; G.s = s; G.band = band;
-    G.bx = Math.round(mL + (w - mL - mR - bw) / 2); G.by = band + 10;
+    const learning = document.documentElement.classList.contains('eq-study');
+    const mL = small ? 8 : 20, mR = small ? 8 : 12;
+    const band = small ? 68 : learning ? 76 : 110;
+    const maxS = learning && !small ? Math.max(20,(innerHeight-220-band-34)/SH) : 28;
+    const scale = Math.min(maxS,(w-mL-mR)/SW);
+    const bw = scale*SW, bh = scale*SH, h = Math.round(band+10+bh+28);
+    G.w=w;G.h=h;G.s=scale;G.band=band;
+    G.bx=Math.round(mL+(w-mL-mR-bw)/2);G.by=band+10;
     G.dpr = Math.min(window.devicePixelRatio || 1, 2.5);
     if (cv.style.height !== h + 'px') cv.style.height = h + 'px';
     const W = Math.round(w * G.dpr), H = Math.round(h * G.dpr);
     if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
   }
+  function smallTicks() { return innerWidth < 1240; }
   function X(x) { return G.bx + x * G.s; }
   function Y(y) { return G.by + (SH - y) * G.s; }
   function wx(px) { return (px - G.bx) / G.s; }
@@ -226,6 +224,7 @@
   // ---------------------------------------------------------------------
   const stat = document.createElement('canvas');
   let statKey = '';
+  let staticLabels=[],labelQueue=[],labelBoxes=[];
   function derived(name, fn) {
     const s = getSol();
     if (!(name in s.derived)) s.derived[name] = fn(s);
@@ -241,7 +240,7 @@
   function drawStatic() {
     const key = [G.w, G.h, G.dpr, LD.ver, getSol().key, state.medium, voltage().negative, V0eff(), state.showTheory, state.showStream, state.showHeat, state.V0, window.EquipotentialStudy?.theoryFractions].join('|');
     if (key === statKey) return;
-    statKey = key;
+    statKey = key;staticLabels=[];
     stat.width = cv.width; stat.height = cv.height;
     const g = stat.getContext('2d');
     g.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
@@ -289,7 +288,7 @@
     g.lineWidth = 1;
     g.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1);
     // 刻度數字（cm）
-    g.font = '10.5px ' + FF;
+    g.font = '12.5px ' + FF;
     // 水槽的盤緣壓在刻度數字下面：改用正文色並加一圈底色描邊，數字才不會被盤緣淡化（11/16 主串審稿）
     const onRim = state.medium === 'water';
     g.fillStyle = onRim ? LD.c.text : LD.c.muted;
@@ -297,7 +296,7 @@
     const label = function (t, x, y) { if (onRim) g.strokeText(t, x, y); g.fillText(t, x, y); };
     g.textAlign = 'center'; g.textBaseline = 'top';
     for (let x = 0; x <= SW; x += 5) label(String(x), X(x), y1 + 4);
-    g.textAlign = 'right'; g.textBaseline = 'middle';
+    g.textAlign = smallTicks() ? 'left' : 'right'; g.textBaseline = 'middle';
     for (let y = 5; y <= SH; y += 5) label(String(y), x0 - 4, Y(y));   // 0 只標在 x 軸
     g.textAlign = 'right'; g.textBaseline = 'top';
     label('cm', x0 - 8, y1 + 4);
@@ -341,7 +340,7 @@
         let p = best.pts[0];
         best.pts.forEach(function (q) { if (q[1] > p[1]) p = q; });
         const py = Math.max(Y(p[1]) + 13, Y(SH) + 15);
-        LD.pill(g, c.v + ' V', X(p[0]), py, LD.c.equi, 'center', '600 10.5px ' + FF);
+        staticLabels.push({text:c.v+' V',col:LD.c.equi,anchor:[X(p[0]),Y(p[1])],cands:[[X(p[0]),py]],priority:10});
       });
     }
     // 電極（銀色、外圈標正負）
@@ -389,10 +388,7 @@
       g.restore();
       g.strokeStyle = rim; g.lineWidth = 1.6;
       g.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-      // 正負號放在長條旁邊（長條太窄）
-      const sx = e.sign > 0 ? x - 9 : x + w + 9;
-      const sy = Y((e.y0 + e.y1) / 2);
-      signText(g, e.sign, sx, sy, 11);
+      // 端子及紅黑導線已標極性，長條旁不再加重複的正負記號。
     }
   }
   function signText(g, sign, x, y, r) {
@@ -463,7 +459,7 @@
     if (stage.classList.contains('is3d')) { if (view3) view3.update(); return; }
     layout();
     if (window.EquipotentialStudy && window.EquipotentialStudy.drawIntro(ctx, G)) return;
-    drawStatic();
+    drawStatic();labelQueue=staticLabels.slice();labelBoxes=[];
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(stat, 0, 0);
     ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
@@ -521,7 +517,7 @@
         g.pts.forEach(function (p) { if (p[1] > top[1]) top = p; if (p[1] < bot[1]) bot = p; });
         const given = g.idx.every(function(i){return sh.recs[i].given;});
         const text = given ? fmt(g.V, 2)+' V' : G.s < 16 ? g.name : g.name + ' ' + fmt(g.V, 2) + ' V';
-        placeLabel(placed, text, col, [[X(top[0]) - 28, Y(top[1]) - 8], [X(top[0]) + 28, Y(top[1]) - 8], [X(bot[0]) - 28, Y(bot[1]) + 23], [X(top[0]), Y(top[1]) - 27], [X(bot[0]), Y(bot[1]) + 42]]);
+        placeLabel(placed, text, col, [[X(top[0]) - 28, Y(top[1]) - 8], [X(top[0]) + 28, Y(top[1]) - 8], [X(bot[0]) - 28, Y(bot[1]) + 23], [X(top[0]), Y(top[1]) - 27], [X(bot[0]), Y(bot[1]) + 42]],[X(top[0]),Y(top[1])]);
       }
     });
     // 電場估算
@@ -532,24 +528,25 @@
     if (sh.est) drawEstimate(sh.est);   // 估算結果畫在探針上面，不被握把擋住
     drawBand();
     if (window.EquipotentialStudy) window.EquipotentialStudy.drawOverlay(ctx, { X: X, Y: Y, w: G.w, h: G.h });
+    paintLabels();
     if (!state.power) {
       LD.pill(ctx, T('電源未接通', 'Supply off'), X(SW / 2), Y(SH) + 22, LD.c.muted, 'center', '600 12px ' + FF);
     }
   }
-  /** 依序試候選位置，放在第一個不與其他標籤重疊的地方（都重疊就放第一個） */
-  function placeLabel(placed, text, col, cands) {
-    const font = '600 10.5px ' + FF;
-    ctx.font = font;
-    const w = ctx.measureText(text).width + 12, hh = 17;
-    const boxes = cands.map(function (c) {
-      const x = Math.min(Math.max(c[0], X(0) + w / 2 + 1), X(SW) - w / 2 - 1);
-      const y = Math.min(Math.max(c[1], Y(SH) + hh + 2), Y(0) - 2);
-      return { x0: x - w / 2 - 2, x1: x + w / 2 + 2, y0: y - hh - 1, y1: y + 1, x: x, y: y };
+  /** 標牌先統一排位，再畫在場線上方；不移動任何物理座標。 */
+  function placeLabel(placed,text,col,cands,anchor){labelQueue.push({text,col,cands,anchor:anchor||cands[0],priority:20});}
+  function queuePointLabel(text,x,y,col,sub){const px=X(x),py=Y(y);labelQueue.push({text,col,sub,anchor:[px,py],priority:sub?100:80,cands:[[px+30,py+28],[px-32,py-15],[px+35,py-18],[px-40,py+30],[px,py-42],[px,py+52]]});}
+  function paintLabels(){
+    const bodies=['n1','n2'].map(id=>{const p=probeGeom(id);return {x0:Math.min(p.tx,p.hx)-7,x1:Math.max(p.tx,p.hx)+7,y0:Math.min(p.ty,p.hy)-7,y1:Math.max(p.ty,p.hy)+7};});
+    if(smallTicks())bodies.push({x0:X(0),x1:X(0)+24,y0:Y(SH)-4,y1:Y(0)+4});
+    const overlaps=(a,b)=>Math.max(0,Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0))*Math.max(0,Math.min(a.y1,b.y1)-Math.max(a.y0,b.y0));
+    labelQueue.sort((a,b)=>b.priority-a.priority).forEach(item=>{const fs=item.sub?16:13.5,font='700 '+fs+'px '+FF;ctx.font=font;const metric=ctx.measureText(item.text),w=metric.width+16,h=Math.max(25,(metric.actualBoundingBoxAscent||fs)+9);const at=item.anchor||item.cands[0],cands=item.cands.slice();
+      for(const r of [45,70,105,145])for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]])cands.push([at[0]+r*dx,at[1]+r*dy]);
+      const boxes=cands.map(c=>{const x=Math.max(X(0)+w/2+3,Math.min(X(SW)-w/2-3,c[0])),y=Math.max(Y(SH)+h+3,Math.min(Y(0)-3,c[1]));return {x0:x-w/2,y0:y-h,x1:x+w/2,y1:y,x,y};});
+      const all=labelBoxes.concat(bodies);let best=boxes[0],score=Infinity;for(const box of boxes){const penalty=all.reduce((v,b)=>v+overlaps(box,b),0);if(penalty<score){best=box;score=penalty;}if(!penalty)break;}
+      labelBoxes.push(Object.assign({text:item.text},best));ctx.save();ctx.strokeStyle=LD.alpha(item.col,.65);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(at[0],at[1]);ctx.lineTo(best.x,best.y-h/2);ctx.stroke();LD.roundRect(ctx,best.x0,best.y0,w,h,6);ctx.fillStyle=LD.c['canvas-bg'];ctx.fill();ctx.strokeStyle=LD.alpha(item.col,.5);ctx.stroke();
+      ctx.fillStyle=item.col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font=font;if(item.sub){const main=ctx.measureText('N').width;ctx.textAlign='left';ctx.fillText('N',best.x-main/2-3,best.y-h/2);ctx.font='700 11.5px '+FF;ctx.fillText(item.sub,best.x+main/2-3,best.y-h/2+5);}else ctx.fillText(item.text,best.x,best.y-h/2);ctx.restore();
     });
-    const free = function (b) { return !placed.some(function (q) { return q.x0 < b.x1 && b.x0 < q.x1 && q.y0 < b.y1 && b.y0 < q.y1; }); };
-    const pick = boxes.find(free) || boxes[0];
-    placed.push(pick);
-    LD.pill(ctx, text, pick.x, pick.y, col, 'center', font);
   }
   function drawEstimate(e) {
     const ax = X(e.a[0]), ay = Y(e.a[1]), bx = X(e.b[0]), by = Y(e.b[1]);
@@ -614,19 +611,9 @@
     ctx.beginPath(); ctx.arc(g.tx, g.ty, 1.6, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = LD.alpha(col, 0.9); ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.arc(g.tx, g.ty, 4.2, 0, Math.PI * 2); ctx.stroke();
-    // 名稱 N1／N2（下標用小字自己畫）
-    const lx = g.tx - g.ux * 14 + (id === 'n1' ? -4 : 4), ly = g.ty - g.uy * 14;
-    probeLabel(ctx, id === 'n1' ? '1' : '2', lx, ly, col);
-  }
-  function probeLabel(g, sub, x, y, color) {
-    g.save();
-    g.font = '700 13px ' + FF;
-    const w = g.measureText('N').width;
-    LD.roundRect(g, x - 3, y - 13, w + 13, 21, 5);
-    g.fillStyle = LD.alpha(LD.c['canvas-bg'], 0.88); g.fill();
-    LD.haloText(g, 'N', x, y, color, 'left', 'alphabetic', '700 13px ' + FF);
-    LD.haloText(g, sub, x + w, y + 4, color, 'left', 'alphabetic', '700 9px ' + FF);
-    g.restore();
+    // 真正下標標牌和其他名稱一起避讓，保持針尖原座標。
+    const p=id==='n1'?n1Pos():state.n2;
+    queuePointLabel('N'+(id==='n1'?'1':'2'),p.x,p.y,col,id==='n1'?'1':'2');
   }
   function terminalPos(which) {
     const b = bandBoxes();
@@ -964,6 +951,7 @@
     probeMoved();
   }
   function probeMoved() {
+    if(!studyApplying)dispatchEvent(new CustomEvent('eqp:probemove'));
     nullFeedback();
     updateReadouts();
     kickNeedle();
@@ -1324,17 +1312,29 @@
       !!sh.est
     ];
   }
-  function updateSteps() {
-    const d = stepsDone();
-    let now = d.indexOf(false);
-    const ol = $('steps');
-    ol.innerHTML = STEPS.map(function (s, i) {
-      const cls = d[i] ? 'done' : i === now ? 'now' : '';
-      const text = i === 0 && state.medium === 'water' ? T('水槽保持水平、電極入水；選直流或交流、設定電壓，再接通電源。', 'Keep the tray level and electrodes immersed. Choose DC or AC, set the voltage and switch on.')
-        : i === 1 ? (state.medium === 'water' ? T('黑探針 N1 固定插在水中，或夾在負極金屬作參考。', 'Keep black N1 fixed in the water, or clip it to the negative metal as reference.') : T('黑探針 N1 固定輕觸紙面，或夾在負極作參考。', 'Keep black N1 lightly touching the paper, or clip it to the negative electrode.')) : T(s[0], s[1]);
-      return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + symbols(text) + '</li>';
-    }).join('');
+  function stepState(){const d=stepsDone(),now=d.indexOf(false);return STEPS.map(function(s,i){const text=i===0&&state.medium==='water'?T('水槽保持水平、電極入水；選直流或交流、設定電壓，再接通電源。','Keep the tray level and electrodes immersed. Choose DC or AC, set the voltage and switch on.'):i===1?(state.medium==='water'?T('黑探針 N1 固定插在水中，或夾在負極金屬作參考。','Keep black N1 fixed in the water, or clip it to the negative metal as reference.'):T('黑探針 N1 固定輕觸紙面，或夾在負極作參考。','Keep black N1 lightly touching the paper, or clip it to the negative electrode.')):T(s[0],s[1]);return {html:symbols(text),done:d[i],current:i===now};});}
+  function guideProbe(id,to){return {canvas:'#cv',client:true,at:function(){const p=to|| (id==='n1'?n1Pos():state.n2);const r=cv.getBoundingClientRect();return {x:r.left+X(p.x),y:r.top+Y(p.y)};}};}
+  function guideDefinitions(study){const label=function(id){return function(){return $(id).closest('label')||$(id);};};const focus=function(id){return function(){return guideProbe(id);};};const open=()=>stage.classList.contains('is3d')?$('view2d'):null;
+    if(study)return [
+      {target:()=>document.querySelector('#eq-study-tools button'),hint:()=>T('接通電源','Switch on the supply')},
+      {target:focus('n1'),to:guideProbe('n1',{x:15,y:3}),action:'drag',opener:open,hint:()=>T('固定黑探針','Place the black probe')},
+      {target:()=>state.power&&Math.abs(meterNow().reading)<=.02?document.querySelector('[data-vpad-record]'):guideProbe('n2'),action:'drag',opener:()=>stage.classList.contains('is3d')?$('view2d'):document.querySelector('.vpad-launch'),hint:()=>T('找零點並記錄','Find a null and record')},
+      {target:()=>analysis().groups.some(g=>g.pts.length>=6)?document.querySelector('#eq-study-tools button:nth-child(5)'):document.querySelector('[data-vpad-record]'),opener:()=>document.querySelector('.vpad-launch'),hint:()=>T('記錄六點，再連成等位線','Record six points, then join the line')},
+      {target:()=>document.querySelector('#eq-study-tools button:nth-child(6)'),hint:()=>T('換參考點','Change the reference')},
+      {target:()=>document.querySelector('#eq-study-tools button:nth-child(7)'),hint:()=>T('畫電力線','Draw field lines')},
+      {target:()=>document.querySelector('#eq-study-tools button:nth-child(8)'),hint:()=>T('估算電場','Estimate the field')}
+    ];
+    return [
+      {target:'#power',hint:()=>T('接通電源','Switch on the supply')},
+      {target:focus('n1'),action:'drag',opener:open,hint:()=>T('把黑探針固定在'+(state.medium==='water'?'水中':'紙面'),state.medium==='water'?'Keep the black probe in the water':'Keep the black probe on the paper')},
+      {target:focus('n2'),action:'drag',opener:open,hint:()=>T('拖紅探針找等電位點','Move the red probe to an equipotential point')},
+      {target:'#rec',hint:()=>T('記錄更多等位點','Record more equipotential points')},
+      {target:label('drawLines'),action:'tick',hint:()=>T('連成平滑的等位線','Join the equipotentials')},
+      {target:label('drawField'),action:'tick',hint:()=>T('畫出電力線','Draw field lines')},
+      {target:'#est',hint:()=>T('估算紅探針處的電場','Estimate the field at the red probe')}
+    ];
   }
+  function updateSteps(){const a=stepState();$('steps').innerHTML=a.map(s=>'<li class="'+(s.done?'done':s.current?'now':'')+'">'+s.html+'</li>').join('');if(window.LabStepGuide&&!window.EquipotentialStudy?.observing){LabStepGuide.define(guideDefinitions(false),{key:'equipotential'});LabStepGuide.update(a.findIndex(s=>s.current),{key:'equipotential',auto:true});}}
   function setStatus(s) { lastStatus = s; $('status').innerHTML = symbols(s); }
   function meterHint() {
     $('meterHint').innerHTML = symbols(state.meter === 'phone'
@@ -1784,8 +1784,14 @@
       Object.keys(state.sheets).forEach(function(k){const sh=state.sheets[k];if(sh.recs.some(function(r){return r.given;})){sh.recs=sh.recs.filter(function(r){return !r.given;});sh.rev++;sh.est=null;}});
       configChanged(false);
     },
-    tweak: nudge,
+    tweak: nudge, record:record, steps:stepState, guides:guideDefinitions,
+    labels:function(){return labelBoxes.map(b=>Object.assign({},b));},
+    label:queuePointLabel,
+    board:function(){const r=cv.getBoundingClientRect();return {left:r.left+X(0),right:r.left+X(SW),top:r.top+Y(SH),bottom:r.top+Y(0),width:SW*G.s,height:SH*G.s};},
     get selected() { return state.sel; },
+    get currentView() { return viewMode; },
+    get meterType() { return state.meter; },
+    probe: function(id) { return Object.assign({},id==='n1'?n1Pos():state.n2); },
     focus: select,
     screenPoint: function (x,y) { const r=cv.getBoundingClientRect(); return {x:r.left+X(x),y:r.top+Y(y)}; },
     view: setView, redraw: requestDraw,

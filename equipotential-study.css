@@ -23,16 +23,14 @@ html.eq-study.lp-docked body,html.eq-study.ms-docked body{padding-right:0!import
 .eq-study .eq-course-message:empty{display:none}.eq-study .eq-panel-condition{margin:3px 0 7px}
 @media(max-width:1239px){.eq-study #eq-study-heading{font-size:14px}.eq-study #eq-study-progress button{font-size:16px}.eq-study #eq-study-progress button::first-letter{font-size:inherit}.eq-study #eq-study-progress .eq-unit-name{display:none}.eq-study .eq-question h3{margin:5px 0}.eq-study .lp-content{line-height:1.45}}
 
-.eq-canvas-tools{position:relative}.eq-probe-pad{position:absolute;right:5px;bottom:5px;z-index:2;border:1px solid var(--border);border-radius:9px;background:var(--surface);box-shadow:0 3px 12px color-mix(in srgb,var(--text) 18%,transparent)}.eq-probe-pad button{min-width:44px;min-height:44px;padding:3px;font-size:15px;touch-action:none}.eq-probe-pad>button{width:100%;cursor:grab}.eq-pad-detail{display:none;padding:4px}.expanded>.eq-pad-detail{display:block}.eq-probe-zoom{width:144px!important;height:72px!important;aspect-ratio:auto!important}.eq-pad-grid{display:grid;grid-template-columns:repeat(3,48px);gap:0}.eq-pad-select{display:flex}.eq-pad-select button{flex:1}.stage.is3d .eq-probe-pad,.eq-study .eq-probe-pad{display:none}.eq-study[data-eq-guide] .eq-probe-pad{display:block}.eq-study[data-eq-guide]:not([data-lp-state=collapsed]) .eq-probe-pad{display:none}
 .eq-study[data-eq-guide] #eq-study-tools>button:first-child,.eq-study[data-eq-guide] #eq-study-tools>button:nth-child(4){outline:2px solid var(--accent);outline-offset:-2px}
 
-.eq-study #comments{display:none}.eq-feedback-tab{position:fixed;right:0;top:45%;z-index:8;writing-mode:vertical-rl;min-width:44px;min-height:88px;font-size:14px;padding:6px;border:1px solid var(--border);border-radius:8px 0 0 8px;background:var(--surface);color:var(--text)}.eq-study .eq-feedback-tab{top:auto;bottom:57px;font-size:12px;min-height:70px}.eq-feedback-dialog{background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;width:min(90vw,460px);max-height:90dvh;padding:15px}.eq-feedback-dialog button{min-height:44px;font-size:16px;margin:4px}.eq-feedback-dialog textarea{width:100%;height:240px;font-size:16px;background:var(--surface);color:var(--text)}
-
-.eq-study .eq-feedback-tab{display:none}.eq-study .eq-study-head strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.eq-study .eq-study-head>button:last-child{min-width:44px}.eq-study .lp-strip.has-caption .lp-strip-text{font-size:calc(17px * var(--fs,1));font-weight:750}
+.eq-study #comments{display:none}.eq-study .eq-study-head strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.eq-study .eq-study-head>button:last-child{min-width:44px}.eq-study .lp-strip.has-caption .lp-strip-text{font-size:calc(17px * var(--fs,1));font-weight:750}
 
 .eq-example-picker{display:flex;gap:5px;margin:0 0 6px}.eq-example-picker button{flex:1;min-height:44px;font-size:15px;padding:3px}.eq-example-picker [aria-pressed=true]{border:2px solid var(--accent);color:var(--accent)}.eq-relation{flex:1 1 44%;min-width:0}.eq-relation label{display:block;min-height:27px;font-size:16px}.eq-study .lp-example-question{margin:5px 0 8px}.eq-study .eq-example-checks{margin-top:6px;padding-top:6px}
 
 @media(min-width:1240px){.eq-study .stage.is3d #view3 canvas{height:calc(100dvh - 320px)!important;aspect-ratio:auto}.eq-study .eq-study-head{min-height:44px}}
 
-/* 主串 11/16：自學模式頂端已有 ✉ 留言鍵；主線右側「留言・回報」直立標籤在手機會壓到「記錄」鍵，自學時收起（第二輪改由 labside 統一排列） */
-.eq-study .fb-tab{display:none}
+
+/* 水槽依寬度配置，半開抽屜讓出完整儀器與水域。 */
+@media(max-width:1239px){.eq-study[data-lp-state=half] .lp-panel,.eq-study[data-lp-state=half] .lp-strip{top:54dvh!important}}
