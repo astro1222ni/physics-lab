@@ -35,7 +35,7 @@
       id: 'central-place-2', level: 2,
       title: { zh: '這裡買不到', en: 'Not sold here' },
       desc: { zh: '調整門檻、商品圈或人口密度，讓這種商品一家店都開不起來。', en: 'Change the threshold, range or density until not a single shop can survive.' },
-      check: function (ev) { const d = one(ev); return !!d && d.single.status === 'none'; }
+      check: function (ev) { const d = V(ev); return !!d && ((d.mode === 'single' && d.single.status === 'none') || (d.mode === 'hier' && !!d.good && d.good.L == null)); } // 站長 11/16「要放寬認定」：中地體系頁也算
     },
     {
       id: 'central-place-3', level: 2,

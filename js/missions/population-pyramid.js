@@ -65,13 +65,13 @@
     {
       id: 'population-pyramid-8', level: 5,
       title: { zh: '人口慣性', en: 'Population momentum' },
-      desc: { zh: '總生育率設成 2.1、淨遷入 0，到 2075 年人口還是比 2025 年少。', en: 'Set the fertility rate to 2.1 and net migration to 0: in 2075 the population is still smaller than in 2025.' },
+      desc: { zh: '在「自訂」裡，總生育率設成 2.1、淨遷入 0，到 2075 年人口還是比 2025 年少。', en: 'In “My own”: Set the fertility rate to 2.1 and net migration to 0: in 2075 the population is still smaller than in 2025.' },
       check: function (ev) { const d = P(ev); return !!d && d.mode === 'custom' && d.view === 'proj' && Math.abs(d.tfr - 2.1) <= 0.001 && d.net === 0 && d.year >= 2075 && d.total < d.total2025; }
     },
     {
       id: 'population-pyramid-9', level: 5,
       title: { zh: '靠移民撐住', en: 'Held up by migration' },
-      desc: { zh: '總生育率不超過 1.0，到 2075 年人口仍不少於 2025 年。', en: 'With a fertility rate of 1.0 or less, still have at least as many people in 2075 as in 2025.' },
+      desc: { zh: '在「自訂」裡，總生育率不超過 1.0，到 2075 年人口仍不少於 2025 年。', en: 'In “My own”: With a fertility rate of 1.0 or less, still have at least as many people in 2075 as in 2025.' },
       check: function (ev) { const d = P(ev); return !!d && d.mode === 'custom' && d.view === 'proj' && d.tfr <= 1.0 && d.year >= 2075 && d.total >= d.total2025; }
     },
     {
@@ -89,7 +89,7 @@
     {
       id: 'population-pyramid-12', level: 7,
       title: { zh: '百年後回到原點', en: 'Back where we started' },
-      desc: { zh: '總生育率不超過 1.5，讓 2125 年的人口和 2025 年相差不到 1%。', en: 'With a fertility rate of 1.5 or less, end 2125 within 1% of the 2025 population.' },
+      desc: { zh: '在「自訂」裡，總生育率不超過 1.5，讓 2125 年的人口和 2025 年相差不到 1%。', en: 'In “My own”: With a fertility rate of 1.5 or less, end 2125 within 1% of the 2025 population.' },
       check: function (ev) { const d = P(ev); return !!d && d.mode === 'custom' && d.view === 'proj' && d.tfr <= 1.5 && d.year === 2125 && Math.abs(d.total / d.total2025 - 1) < 0.01; }
     },
 

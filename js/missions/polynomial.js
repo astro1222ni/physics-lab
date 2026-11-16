@@ -36,7 +36,7 @@
       id: 'polynomial-4', level: 3,
       title: { zh: '兩端都朝下', en: 'Both ends down' },
       desc: { zh: '做出一個四次以上的多項式，讓圖形的左右兩端都往下。', en: 'Make a polynomial of degree 4 or more whose graph goes down at both ends.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'roots' && d.deg >= 4 && d.deg % 2 === 0 && d.a < 0; }
+      check: function (ev) { const d = ev.data; if (ev.type === 'trans') return d.base === 'quart' && d.a < 0; return ev.type === 'roots' && d.deg >= 4 && d.deg % 2 === 0 && d.a < 0; }
     },
     {
       id: 'polynomial-5', level: 4,

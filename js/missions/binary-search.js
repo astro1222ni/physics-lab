@@ -31,7 +31,7 @@
     {
       id: 'binary-search-3', level: 2,
       title: { zh: '第一眼就看到', en: 'Found at first glance' },
-      desc: { zh: '在至少 15 張「排好的」卡片中，讓二分搜尋只比 1 次就找到目標。', en: 'With at least 15 “Sorted” cards, make binary search find the target with just 1 comparison.' },
+      desc: { zh: '（一般的二分搜尋，不要勾「找第一個出現的位置」）在至少 15 張「排好的」卡片中，讓二分搜尋只比 1 次就找到目標。', en: '(Plain binary search — leave “Find the first occurrence” unticked.) With at least 15 “Sorted” cards, make binary search find the target with just 1 comparison.' },
       check: function (ev) { const d = ev.data; return ev.type === 'search' && sorted(d) && d.n >= 15 && d.binFound >= 0 && d.binCmp === 1; }
     },
     {
@@ -46,7 +46,7 @@
     {
       id: 'binary-search-5', level: 4,
       title: { zh: '最壞的情況', en: 'The worst case' },
-      desc: { zh: '在至少 100 張「排好的」卡片中，找一個讓二分搜尋比到最多次才找到的目標（決策樹有幾層就比幾次）。', en: 'With at least 100 “Sorted” cards, pick a target that binary search finds only after the most comparisons it can ever need (one for every level of the tree).' },
+      desc: { zh: '（一般的二分搜尋，不要勾「找第一個出現的位置」）在至少 100 張「排好的」卡片中，找一個讓二分搜尋比到最多次才找到的目標（決策樹有幾層就比幾次）。', en: '(Plain binary search — leave “Find the first occurrence” unticked.) With at least 100 “Sorted” cards, pick a target that binary search finds only after the most comparisons it can ever need (one for every level of the tree).' },
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'search' && sorted(d) && !d.first && d.n >= 100 && d.binFound >= 0 && d.binCmp === d.worst;

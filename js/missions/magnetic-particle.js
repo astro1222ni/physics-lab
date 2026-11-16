@@ -63,7 +63,7 @@
       check: function (ev) {
         const d = ev.data;
         return ev.type === 'exit' && d.axis === 'xy' && d.q !== 0 && d.B !== 0 && d.E !== 0 && !d.region &&
-          d.theta === 90 && d.v >= 4 && d.along >= 20 && d.maxDev <= 0.05;
+          d.v >= 4 && d.along >= 20 && d.maxDev <= 0.05;
       }
     },
     {

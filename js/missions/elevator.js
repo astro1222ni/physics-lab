@@ -35,7 +35,7 @@
       desc: { zh: '在電梯「往上運動」而體重計讀數「小於實重」的時刻按下暫停。', en: 'Press Pause at a moment when the elevator is moving up but the scale reads less than your true weight.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'pause' && !d.mystery && d.v > 0.05 && d.reading < d.m - 0.05;
+        return ev.type === 'pause' && d.v > 0.05 && d.reading < d.m - 0.05;
       }
     },
     {

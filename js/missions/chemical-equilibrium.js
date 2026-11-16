@@ -54,7 +54,7 @@
       id: 'chemical-equilibrium-3', level: 3,
       title: { zh: '冰水裡幾乎無色', en: 'Almost colourless in ice water' },
       desc: { zh: 'N2O4 ⇌ 2NO2：讓平衡混合物中 N2O4 的莫耳分率達到 0.90 以上。', en: 'N2O4 ⇌ 2NO2: make the mole fraction of N2O4 at equilibrium 0.90 or more.' },
-      check: function (ev) { return isS(ev, 'n2o4') && ev.data.Ar === 0 && ev.data.x.N2O4 >= 0.9; }
+      check: function (ev) { return isS(ev, 'n2o4') && ev.data.x.N2O4 >= 0.9; }
     },
     {
       id: 'chemical-equilibrium-4', level: 3,
@@ -96,7 +96,7 @@
       id: 'chemical-equilibrium-7', level: 5,
       title: { zh: '低溫高產率', en: 'High yield at low temperature' },
       desc: { zh: '哈柏法：在 550 K 以下、使用催化劑，達到平衡時 NH3 的莫耳分率在 0.60 以上。', en: 'Haber process: at 550 K or below, with the catalyst, reach equilibrium with a mole fraction of NH3 of 0.60 or more.' },
-      check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T <= 550 && d.cat && d.Ar === 0 && d.x.NH3 >= 0.6; }
+      check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T <= 550 && d.cat && d.x.NH3 >= 0.6; }
     },
     {
       id: 'chemical-equilibrium-8', level: 6,
@@ -108,7 +108,7 @@
       id: 'chemical-equilibrium-9', level: 6,
       title: { zh: '又快又多', en: 'Fast and plentiful' },
       desc: { zh: '哈柏法：在 700 K 以上達到平衡，而且 NH3 的莫耳分率在 0.40 以上。', en: 'Haber process: at 700 K or above, reach equilibrium with a mole fraction of NH3 of 0.40 or more.' },
-      check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T >= 700 && d.Ar === 0 && d.x.NH3 >= 0.4; }
+      check: function (ev) { const d = ev.data; return isS(ev, 'haber') && d.T >= 700 && d.x.NH3 >= 0.4; }
     },
     {
       id: 'chemical-equilibrium-10', level: 7,

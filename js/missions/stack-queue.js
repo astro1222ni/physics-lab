@@ -32,7 +32,17 @@
       id: 'stack-queue-2', level: 1,
       title: { zh: '先進先出', en: 'First in, first out' },
       desc: { zh: '用「排入（enqueue）」排進至少 3 個數，再用「離開（dequeue）」讓它們全部離開：離開的順序和排入的順序一樣。', en: 'Line up at least 3 numbers with “Enqueue”, then let them all leave with “Dequeue”: they leave in the order they came.' },
-      check: function (ev) { const c = ev.data.cycR; return desk(ev) && !!c && c.kind === 'queue' && c.pure && c.rots === 0 && c.pushed.length >= 3 && same(c.popped, c.pushed); }
+      check: function (ev, mem) {
+        const d = ev.data;
+        if (ring(ev)) { // 站長 11/16「要放寬認定」：環狀佇列分頁同樣的排入、離開也算；一輪要從空佇列排入第一個開始
+          if (d.op === 'clear') { mem.r = null; return false; }
+          if (!d.ok) return false;
+          if (d.op === 'enq') { if (d.size === 1) mem.r = { i: [], o: [] }; if (mem.r) mem.r.i.push(d.v); return false; }
+          if (d.op === 'deq' && mem.r) { mem.r.o.push(d.v); if (d.size === 0) { const r = mem.r; mem.r = null; return r.i.length >= 3 && same(r.o, r.i); } }
+          return false;
+        }
+        const c = d.cycR; return desk(ev) && !!c && c.kind === 'queue' && c.pure && c.rots === 0 && c.pushed.length >= 3 && same(c.popped, c.pushed);
+      }
     },
     {
       id: 'stack-queue-3', level: 2,

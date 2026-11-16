@@ -26,7 +26,7 @@
       id: 'current-magnetic-field-1', level: 1,
       title: { zh: '磁針動了！', en: 'The needle moved!' },
       desc: { zh: '厄斯特實驗：導線南北向、在磁針正上方或正下方，通電讓磁針停在偏轉至少 10° 的地方。', en: 'Ørsted’s experiment: with the wire north–south, directly above or below the needle, pass a current so the needle comes to rest at least 10° off.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'needle' && d.earth && d.I > 0 && aligned(d) && Math.abs(d.read) >= 10; }
+      check: function (ev) { const d = ev.data; return ev.type === 'needle' && d.I > 0 && aligned(d) && Math.abs(d.read) >= 10; }
     },
     {
       id: 'current-magnetic-field-2', level: 2,
@@ -49,7 +49,7 @@
     {
       id: 'current-magnetic-field-3', level: 3,
       title: { zh: '上下顛倒', en: 'Upside down' },
-      desc: { zh: '同樣的電流（大小與方向都相同）、同樣的距離 r：導線在磁針上方與下方各做一次（南北向、正上方或正下方），兩次停穩的偏角一樣大（至少 5°，相差 0.3° 內）、方向相反。', en: 'With the same current (size and direction) and the same distance r, put the wire above the needle and then below it (north–south, directly above or below). The two deflections at rest are equal in size (at least 5°, within 0.3°) and opposite in direction.' },
+      desc: { zh: '保留地磁（不要勾「忽略地磁」）。同樣的電流（大小與方向都相同）、同樣的距離 r：導線在磁針上方與下方各做一次（南北向、正上方或正下方），兩次停穩的偏角一樣大（至少 5°，相差 0.3° 內）、方向相反。', en: 'Keep Earth’s field on (leave “Ignore Earth’s field” unticked). With the same current (size and direction) and the same distance r, put the wire above the needle and then below it (north–south, directly above or below). The two deflections at rest are equal in size (at least 5°, within 0.3°) and opposite in direction.' },
       check: function (ev, mem) {
         const d = ev.data;
         if (ev.type !== 'needle' || !d.earth || !(d.I > 0) || !aligned(d)) return false;

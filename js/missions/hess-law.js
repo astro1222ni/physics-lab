@@ -53,7 +53,7 @@
       id: 'hess-law-7', level: 6,
       title: { zh: '找回散失的熱', en: 'Recover the lost heat' },
       desc: { zh: '用外插法求溫差，讓外插得到的 ΔT 比最高（最低）讀數的溫差大 5% 以上。', en: 'Use extrapolation so that the extrapolated ΔT is at least 5% larger than the ΔT from the highest (or lowest) reading.' },
-      check: function (ev) { const d = an(ev); return !!d && d.method === 'ext' && d.dText != null && d.dTraw != null && Math.abs(d.dTraw) > 0.5 && Math.abs(d.dText) >= 1.05 * Math.abs(d.dTraw); }
+      check: function (ev) { const d = an(ev) || (ev.type === 'calib' && ev.data ? ev.data : null); return !!d && d.method === 'ext' && d.dText != null && d.dTraw != null && Math.abs(d.dTraw) > 0.5 && Math.abs(d.dText) >= 1.05 * Math.abs(d.dTraw); }
     },
     {
       id: 'hess-law-8', level: 6,

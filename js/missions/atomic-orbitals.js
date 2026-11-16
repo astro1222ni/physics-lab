@@ -35,7 +35,7 @@
       id: 'atomic-orbitals-3', level: 3,
       title: { zh: '一層包一層', en: 'Shell inside shell' },
       desc: { zh: '在「3D 立體」選一個 n ≥ 2 的 s 軌域，勾選「切開一角」，看見裡面的球殼。', en: 'In the “3D view”, choose an s orbital with n ≥ 2 and tick “Cut away a corner” to see the shells inside.' },
-      check: function (ev) { const d = D(ev); return !!d && d.v3 && d.cut && d.l === 0 && d.n >= 2 && !d.sum && d.style !== 'cloud'; }
+      check: function (ev) { const d = D(ev); return !!d && d.v3 && d.cut && d.l === 0 && d.n >= 2; }
     },
     {
       id: 'atomic-orbitals-4', level: 3,

@@ -26,13 +26,13 @@
       id: 'reaction-rate-2', level: 2,
       title: { zh: '加熱就快', en: 'Heat speeds it up' },
       desc: { zh: '把溫度調到 700 K 以上，讓 A 用掉一半（半生期出現）。', en: 'Set the temperature to 700 K or more and let half of A react (a half-life appears).' },
-      check: function (ev) { const r = ev.data.run; return isT(ev) && r.T >= 700 && r.tHalf != null && !r.heat; }
+      check: function (ev) { const r = ev.data.run; return isT(ev) && r.T >= 700 && r.tHalf != null; }
     },
     {
       id: 'reaction-rate-3', level: 3,
       title: { zh: '量身訂做的半生期', en: 'A half-life made to order' },
       desc: { zh: '調整條件，讓半生期落在 250～350 ps 之間（目標 300 ps）。', en: 'Choose the conditions so that the half-life is between 250 and 350 ps (aim for 300 ps).' },
-      check: function (ev) { const r = ev.data.run; return isT(ev) && !r.heat && r.tHalf != null && r.tHalf >= 250 && r.tHalf <= 350; }
+      check: function (ev) { const r = ev.data.run; return isT(ev) && r.tHalf != null && r.tHalf >= 250 && r.tHalf <= 350; }
     },
     {
       id: 'reaction-rate-4', level: 4,

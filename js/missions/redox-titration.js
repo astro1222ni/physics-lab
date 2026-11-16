@@ -72,7 +72,7 @@
     {
       id: 'redox-titration-9', level: 6,
       title: { zh: '三十秒不褪色', en: 'Thirty seconds of pink' },
-      desc: { zh: '等粉紅色維持 30 秒以上（可以用「快轉等待」）再按「記錄終點」，終點和當量點相差不超過 0.05 mL。', en: 'Wait until the pink has lasted at least 30 s (“Fast-forward” helps) before you press “Record end point”; it must be within 0.05 mL of the equivalence point.' },
+      desc: { zh: '用已知濃度的系統（Fe2+ 或草酸），等粉紅色維持 30 秒以上（可以用「快轉等待」）再按「記錄終點」，終點和當量點相差不超過 0.05 mL。', en: 'With a known system (Fe2+ or oxalic acid): Wait until the pink has lasted at least 30 s (“Fast-forward” helps) before you press “Record end point”; it must be within 0.05 mL of the equivalence point.' },
       check: function (ev) { const d = ev.data; return isE(ev) && !d.mystery && d.pink && d.held >= 30 - E && Math.abs(d.err) <= 0.05 + E; }
     },
     {

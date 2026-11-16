@@ -32,7 +32,7 @@
     {
       id: 'earthquake-2', level: 3,
       title: { zh: '相差 5 秒', en: 'Five seconds apart' },
-      desc: { zh: '調整震源深度或測站位置，讓地震儀量到的 S−P 時間差是 5.00 秒（±0.05 s），並播完一次地震。', en: 'Adjust the focal depth or the station position so that the seismometer records an S−P time of 5.00 s (±0.05 s), and play a whole earthquake.' },
+      desc: { zh: '在「P、S 波與表面波」裡，調整震源深度或測站位置，讓地震儀量到的 S−P 時間差是 5.00 秒（±0.05 s），並播完一次地震。', en: 'In “P, S and surface waves”, adjust the focal depth or the station position so that the seismometer records an S−P time of 5.00 s (±0.05 s), and play a whole earthquake.' },
       check: function (ev) { return ev.type === 'quake1' && Math.abs(ev.data.sp - 5) <= 0.05; }
     },
     {

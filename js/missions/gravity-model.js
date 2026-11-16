@@ -60,7 +60,7 @@
       id: 'gravity-model-7', level: 4,
       title: { zh: '大城的商圈', en: 'A big city’s reach' },
       desc: { zh: '選兩座人口差 5 倍以上的城市，讓分界點離大城至少占全程的 70%。', en: 'Pick two cities whose populations differ more than five times, and push the break point at least 70% of the way from the big city.' },
-      check: function (ev) { const d = V(ev); return !!d && d.view === 'flows' && !!d.pair && d.pair.popRatio >= 5 && d.pair.fracBig >= 0.7; }
+      check: function (ev) { const d = V(ev); return !!d && !!d.pair && d.pair.popRatio >= 5 && d.pair.fracBig >= 0.7; }
     },
     {
       id: 'gravity-model-8', level: 3,
