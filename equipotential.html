@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611161350"></script>
+  <script src="js/settings.js?v=202611161449"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Lab">等位線與電場（導電紙實驗）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611161350">
+  <link rel="stylesheet" href="lab.css?v=202611161449">
   <link rel="stylesheet" href="study.css">
   <link rel="stylesheet" href="equipotential-study.css?v=202611161349">
   <style>
@@ -48,6 +48,10 @@
     .eq .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .eq .playbar > button { flex: 1 1 auto; }
     .eq .playbar #rec { font-weight: 700; min-width: 7em; flex-grow: 2; }
+    .eq .eq-probe-card { margin: 10px 2px 0; }
+    .eq .eq-probe-card h2 { margin-top: 0; }
+    .eq .eq-pc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 4px 18px; }
+    .eq .eq-pc-col { min-width: 0; }
     .eq .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
     .sound-btn svg { width: 18px; height: 18px; flex: none; }
     .sound-btn .wave { opacity: 0.25; }
@@ -205,6 +209,44 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 站長 11/16：「電表與探針……距離操作盤太遠了，要來回滾動操作是很困難的」→ 搬到記錄鍵正下方 -->
+        <section class="card eq-probe-card">
+          <h2 data-en="Meter and probes">電表與探針</h2>
+          <div class="eq-pc-grid">
+            <div class="eq-pc-col">
+            <p class="seg-label" id="selLabel" data-en="Probe to move:">要移動的探針：</p>
+            <div class="seg2" role="group" aria-labelledby="selLabel">
+              <button type="button" data-sel="n2" aria-pressed="true" data-en-html="Red N<sub>2</sub> (moving)">紅探針 N<sub>2</sub>（移動）</button>
+              <button type="button" data-sel="n1" aria-pressed="false" data-en-html="Black N<sub>1</sub> (fixed)">黑探針 N<sub>1</sub>（固定）</button>
+            </div>
+            <div class="nudge" role="group" aria-label="微調選取的探針（每次 0.05 cm）" data-en-aria-label="Nudge the selected probe (0.05 cm per press)">
+              <button type="button" data-nx="-1" data-ny="0" aria-label="向左" data-en-aria-label="Left">←</button>
+              <button type="button" data-nx="0" data-ny="1" aria-label="向上" data-en-aria-label="Up">↑</button>
+              <button type="button" data-nx="0" data-ny="-1" aria-label="向下" data-en-aria-label="Down">↓</button>
+              <button type="button" data-nx="1" data-ny="0" aria-label="向右" data-en-aria-label="Right">→</button>
+            </div>
+            <div class="checks"><label><input id="fine" type="checkbox"><span data-en="Fine drag (probe moves 1/5 of the finger)">精細拖曳（探針只走手指的 1/5）</span></label></div>
+            <div class="btns">
+              <button type="button" id="clip" data-en-html="Clip N<sub>1</sub> to the negative electrode (0 V)">黑探針夾到負極（0 V）</button>
+            </div>
+            </div>
+            <div class="eq-pc-col">
+            <p class="seg-label" id="meterLabel" data-en="Meter between the probes:">接在兩探針之間的電表：</p>
+            <div class="seg3 meter-seg" role="group" aria-labelledby="meterLabel">
+              <button type="button" data-meter="dmm" aria-pressed="true" data-en="Multimeter">三用電表</button>
+              <button type="button" id="meterGalv" data-meter="galv" aria-pressed="false" data-en="Galvanometer (null)">檢流計（零位法）</button>
+              <button type="button" id="meterPhone" data-meter="phone" aria-pressed="false" hidden data-en="Headphones">耳機</button>
+            </div>
+            <p id="galvAcHint" class="hint" hidden data-en="The needle cannot follow 1000 cycles per second: it would only tremble.">指針跟不上 1000 次／秒的來回，只會抖。</p>
+            <p class="seg-label" id="errLabel" data-en="Conditions:">實驗條件：</p>
+            <div class="seg2" role="group" aria-labelledby="errLabel">
+              <button type="button" data-noise="0" aria-pressed="true" data-en="Ideal">理想</button>
+              <button type="button" data-noise="1" aria-pressed="false" data-en="With errors">含誤差</button>
+            </div>
+            </div>
+          </div>
+          <p class="hint" id="meterHint"></p>
+        </section>
         <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
         <div class="legend">
           <span class="lg-mark" data-en-html="<i></i>Recorded points"><i></i>記錄點</span>
@@ -250,38 +292,6 @@
           <button type="button" id="power" aria-pressed="false" data-en="Switch on the supply">接通電源</button>
           <p class="hint" data-medium-only="paper" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
           <p class="hint" data-medium-only="water" hidden data-en="Keep the tray level and both copper electrodes immersed. The left electrode connects to the supply's red terminal, the right to the black reference terminal. AC voltages are RMS; DC with errors includes interface polarization. Each setting has its own grid-paper record.">水槽保持水平，兩個銅電極浸入水中。左電極接電源紅端，右電極接黑色參考端；交流電壓以有效值表示，含誤差直流另計界面極化。每組設定各有一份方格紙記錄。</p>
-        </section>
-
-        <section class="card">
-          <h2 data-en="Meter and probes">電表與探針</h2>
-          <p class="seg-label" id="meterLabel" data-en="Meter between the probes:">接在兩探針之間的電表：</p>
-          <div class="seg3 meter-seg" role="group" aria-labelledby="meterLabel">
-            <button type="button" data-meter="dmm" aria-pressed="true" data-en="Multimeter">三用電表</button>
-            <button type="button" id="meterGalv" data-meter="galv" aria-pressed="false" data-en="Galvanometer (null)">檢流計（零位法）</button>
-            <button type="button" id="meterPhone" data-meter="phone" aria-pressed="false" hidden data-en="Headphones">耳機</button>
-          </div>
-          <p id="galvAcHint" class="hint" hidden data-en="The needle cannot follow 1000 cycles per second: it would only tremble.">指針跟不上 1000 次／秒的來回，只會抖。</p>
-          <p class="seg-label" id="errLabel" data-en="Conditions:">實驗條件：</p>
-          <div class="seg2" role="group" aria-labelledby="errLabel">
-            <button type="button" data-noise="0" aria-pressed="true" data-en="Ideal">理想</button>
-            <button type="button" data-noise="1" aria-pressed="false" data-en="With errors">含誤差</button>
-          </div>
-          <p class="seg-label" id="selLabel" data-en="Probe to move:">要移動的探針：</p>
-          <div class="seg2" role="group" aria-labelledby="selLabel">
-            <button type="button" data-sel="n2" aria-pressed="true" data-en-html="Red N<sub>2</sub> (moving)">紅探針 N<sub>2</sub>（移動）</button>
-            <button type="button" data-sel="n1" aria-pressed="false" data-en-html="Black N<sub>1</sub> (fixed)">黑探針 N<sub>1</sub>（固定）</button>
-          </div>
-          <div class="nudge" role="group" aria-label="微調選取的探針（每次 0.05 cm）" data-en-aria-label="Nudge the selected probe (0.05 cm per press)">
-            <button type="button" data-nx="-1" data-ny="0" aria-label="向左" data-en-aria-label="Left">←</button>
-            <button type="button" data-nx="0" data-ny="1" aria-label="向上" data-en-aria-label="Up">↑</button>
-            <button type="button" data-nx="0" data-ny="-1" aria-label="向下" data-en-aria-label="Down">↓</button>
-            <button type="button" data-nx="1" data-ny="0" aria-label="向右" data-en-aria-label="Right">→</button>
-          </div>
-          <div class="checks"><label><input id="fine" type="checkbox"><span data-en="Fine drag (probe moves 1/5 of the finger)">精細拖曳（探針只走手指的 1/5）</span></label></div>
-          <div class="btns">
-            <button type="button" id="clip" data-en-html="Clip N<sub>1</sub> to the negative electrode (0 V)">黑探針夾到負極（0 V）</button>
-          </div>
-          <p class="hint" id="meterHint"></p>
         </section>
       </aside>
     </div>
@@ -491,29 +501,29 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611161350"></script>
-  <script src="js/equipotential-core.js?v=202611161350"></script>
-  <script src="js/sound.js?v=202611161350"></script>
-  <script src="js/numinput.js?v=202611161350"></script>
-  <script src="js/drawkit.js?v=202611161350"></script>
-  <script src="js/view3d-nav.js?v=202611161350"></script>
-  <script src="js/equipotential-3d.js?v=202611161350"></script>
-  <script src="js/equipotential-rig3d.js?v=202611161350"></script>
-  <script src="js/keys.js?v=202611161350"></script>
-  <script src="js/equipotential.js?v=202611161350"></script>
-  <script src="js/firebase-config.js?v=202611161350"></script>
-  <script src="js/missions.js?v=202611161350" data-module="equipotential"></script>
-  <script src="js/equipotential-study-core.js?v=202611161350"></script>
-  <script src="js/missions/equipotential.js?v=202611161350"></script>
-  <script src="js/stats.js?v=202611161350" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611161350"></script>
-  <script src="js/labpanel.js?v=202611161350"></script>
-  <script src="js/study.js?v=202611161350"></script>
-  <script src="js/examples.js?v=202611161350"></script>
-  <script src="js/examples/equipotential.js?v=202611161350"></script>
-  <script src="js/study/equipotential.js?v=202611161350"></script>
-  <script src="js/equipotential-study-card.js?v=202611161350"></script>
-  <script src="js/equipotential-study.js?v=202611161350"></script>
-  <script src="js/equipotential-controls.js?v=202611161350"></script>
+  <script src="js/math.js?v=202611161449"></script>
+  <script src="js/equipotential-core.js?v=202611161449"></script>
+  <script src="js/sound.js?v=202611161449"></script>
+  <script src="js/numinput.js?v=202611161449"></script>
+  <script src="js/drawkit.js?v=202611161449"></script>
+  <script src="js/view3d-nav.js?v=202611161449"></script>
+  <script src="js/equipotential-3d.js?v=202611161449"></script>
+  <script src="js/equipotential-rig3d.js?v=202611161449"></script>
+  <script src="js/keys.js?v=202611161449"></script>
+  <script src="js/equipotential.js?v=202611161449"></script>
+  <script src="js/firebase-config.js?v=202611161449"></script>
+  <script src="js/missions.js?v=202611161449" data-module="equipotential"></script>
+  <script src="js/equipotential-study-core.js?v=202611161449"></script>
+  <script src="js/missions/equipotential.js?v=202611161449"></script>
+  <script src="js/stats.js?v=202611161449" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611161449"></script>
+  <script src="js/labpanel.js?v=202611161449"></script>
+  <script src="js/study.js?v=202611161449"></script>
+  <script src="js/examples.js?v=202611161449"></script>
+  <script src="js/examples/equipotential.js?v=202611161449"></script>
+  <script src="js/study/equipotential.js?v=202611161449"></script>
+  <script src="js/equipotential-study-card.js?v=202611161449"></script>
+  <script src="js/equipotential-study.js?v=202611161449"></script>
+  <script src="js/equipotential-controls.js?v=202611161449"></script>
 </body>
 </html>
