@@ -21,9 +21,9 @@
     else if(n===5||n===8){restoreProject();}
     else if(n===6){if(own(L.snapshot())>=6)project();currentExample=0;}
     else {base(n===3?{n1:{x:15,y:3},n2:{x:15,y:13}}:{},[]);}
-    if(n!==4)LabSteps.setActive(false);L.redraw();
+    if(n!==4){LabSteps.setActive(false);window.LabStepGuide?.hide();}L.redraw();
   }
-  function step(n,i){message='';document.querySelectorAll('#eq-study-message,.eq-course-message').forEach(p=>p.replaceChildren());enteredAt=performance.now();
+  function step(n,i){if(n!==4)window.LabStepGuide?.hide();message='';document.querySelectorAll('#eq-study-message,.eq-course-message').forEach(p=>p.replaceChildren());enteredAt=performance.now();
     if(n===1&&i===2)L.view('rig');else if(n===1)L.view('2d');
     if(n===3){L.preset({showTheory:i>=2,showStream:i===4});}
     if(n===5&&i===3){L.preset({medium:'water',noise:true,ac:false,meter:'dmm',clip:true,n2:{x:15,y:10},showTheory:true});}
@@ -54,12 +54,12 @@
   function finishUnit(){const done=LabMission._state?.done||{},awarded=Array.from({length:16},(_,i)=>i+16).filter(n=>done['equipotential-'+n]);if(run.sections.every(Boolean)&&awarded.length===16)emit('unit-completed',8,{sections:run.sections.slice(),awarded});}
   function guideSnapshot(){const s=L.snapshot();return Object.assign(s,{ownPoints:own(s),good:s.paths.filter(g=>g.ownN>=6&&g.vRange<.06).length});}
   function defineGuide(){LabSteps.setActive(true);const t=U.sections[3].steps;
-    LabSteps.define(t.map((s,i)=>({t:s.cap,detail:s.body,hold:i<2?.25:0,check:x=>!!x.n1&&Array.isArray(x.records)&&[
+    LabSteps.define(t.map((s,i)=>Object.assign({},L.guides(true)[i],{t:s.cap,detail:s.body,hold:i<2?.25:0,check:x=>!!x.n1&&Array.isArray(x.records)&&[
       x.power,Math.hypot(x.n1.x-15,x.n1.y-3)<.4&&x.power,
       x.records.some(r=>!r.given&&Math.abs(r.reading)<=.02+1e-9),
       x.good>=1&&x.drawLines,x.good>=3,x.drawField&&x.fields.length>0,
       x.estimate&&Number.isFinite(x.estimate.err)&&Math.abs(x.estimate.err)<.1
-    ][i]})),{title:['跟著量，畫出自己的電場','Measure your own field']});
+    ][i]})),{key:'equipotential-study',title:['跟著量，畫出自己的電場','Measure your own field']});
   }
   function conditions(){const s=L.snapshot();if(section()===7&&flow.state.step===3)return T('水平水槽 · 左正右負 · 穩定 6 V；假設兩側深 1、2 cm（圖仍為等深示意）','Level tray · left +, right − · steady 6 V; assume depths of 1 and 2 cm (the view stays uniform-depth).');return s.medium==='water'?T('水槽水平 · 0.1 % 食鹽水 · 深 1.0 cm · 左正右負 · ','Level tray · 0.1% salt water · depth 1.0 cm · left +, right − · ')+s.V0.toFixed(1)+' V · '+(s.power?T('已穩定通電','steady supply'):T('等待接通電源','switch on next')):T('導電紙水平 · 左正右負 · ','Level conducting paper · left +, right − · ')+s.V0.toFixed(1)+' V · '+(s.power?T('已穩定通電','steady supply'):T('等待接通電源','switch on next'));}
   function lecture(key){const v=U.videos[key];if(!v)return null;const a=E('a',T('▶ 看倪老師上課講這段（〔9〕','▶ Watch Mr. Ni teach this (in Chinese, ')+v.time+T('）',')'),'lp-lecture-link');a.href=v.url;a.target='_blank';a.rel='noopener noreferrer';return a;}
@@ -143,10 +143,10 @@
       ctx.lineWidth=4.5;ctx.strokeStyle=bg;ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle=D.c.equi;ctx.stroke();
       ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.lineWidth=4.5;ctx.strokeStyle=bg;ctx.stroke();ctx.setLineDash([4,3]);ctx.lineWidth=2;ctx.strokeStyle=D.c.equi;ctx.stroke();ctx.setLineDash([]);
       ctx.beginPath();ctx.arc(cx,cy,2.4,0,Math.PI*2);ctx.fillStyle=D.c.equi;ctx.fill();ctx.restore();
-      // 標籤放左上方（紅探針的握把往右上斜，放左邊不會被擋）；窄畫面線名擠在上方，改放左下方
-      D.pill(ctx,wide?name+' ('+x+', '+y+')':name,cx-(wide?40:16),wide?cy-22:cy+30,D.c.equi,'center','700 '+(wide?13:15)+'px '+D.FONT);});}
+      // 點位沿用主線的十字準線；字牌交給共用避讓，保留座標並避開探針、線名與讀數。
+      L.label(wide?name+' ('+x+', '+y+')':name,x,y,D.c.equi);});}
   function boot(){P.mount({onChange:()=>L.redraw(),onTab(tab){if(tab!=='examples'||!flow)return;if(isStudy()&&section()!==6)flow.go(6,currentExample||1);else if(!currentExample)applyExample(1);}});const bar=$('eq-study-shell');header=bar;caption=$('eq-study-caption');tools=$('eq-study-tools');nav=$('eq-study-nav');menu=$('eq-study-progress');
-    flow=StudyFlow.embed({id:'equipotential',sections:U.sections,onClass(on){if(on)classRun=JSON.parse(JSON.stringify(run));else if(classRun){run=classRun;classRun=null;}},enter,step,canAdvance,finish,render,save,start(){const b=document.querySelector('.ms-toggle');if(b&&!LabMission._state.on)b.click();document.querySelector('.ms-dock-close')?.click();scrollTo({top:0,behavior:'instant'});if(innerWidth>=1240||[2,3,5,7,8].includes(section())){P.open('concept');}lastFrame=0;if(!raf)raf=requestAnimationFrame(animate);},close(){currentExample=0;LabSteps.setActive(false);L.discardGiven();L.redraw();}});
+    flow=StudyFlow.embed({id:'equipotential',sections:U.sections,onClass(on){if(on)classRun=JSON.parse(JSON.stringify(run));else if(classRun){run=classRun;classRun=null;}},enter,step,canAdvance,finish,render,save,start(){window.LabSide?.instance?.close();const b=document.querySelector('.ms-toggle');if(b&&!LabMission._state.on)b.click();document.querySelector('.ms-dock-close')?.click();scrollTo({top:0,behavior:'instant'});if(innerWidth>=1240||[2,3,5,7,8].includes(section())){P.open('concept');}lastFrame=0;if(!raf)raf=requestAnimationFrame(animate);},close(){currentExample=0;LabSteps.setActive(false);L.discardGiven();L.redraw();}});
     const begin=()=>{if(own(L.snapshot())>=6)project();flow.start(1,1);};$('studyBtn').onclick=begin;$('studyInvite').onclick=begin;$('eq-study-close').onclick=()=>{if(window.LabModeGate){location.href=LabModeGate.url({mode:'lab'});return;}flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
     LabMission.on('complete',m=>{if(m?.study){StudyFlow.cue('star');renderMissions();finishUnit();}});
     // 站長 11/16 回報：已登入仍顯示「回頁首登入」——側板在登入狀態讀回前就畫好，之後沒重畫。

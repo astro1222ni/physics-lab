@@ -33,7 +33,7 @@
     {
       id: 'equipotential-1', level: 1,
       title: { zh: '讀數歸零', en: 'A null reading' },
-      desc: { zh: '接通電源，黑探針 N1 放在紙上（不在電極上）；移動紅探針 N2 到離 N1 至少 2 cm、電表讀數為零（±0.02 V 以內）的地方，按「記錄」。', en: 'Switch on the supply and put the black probe N1 on the paper (not on an electrode). Move the red probe N2 to a point at least 2 cm from N1 where the meter reads zero (within ±0.02 V) and press “Record”.' },
+      desc: { zh: '接通電源，黑探針 N1 接觸導電紙或浸在水中（不在電極上）；移動紅探針 N2 到離 N1 至少 2 cm、電表讀數為零（±0.02 V 以內）的地方，按「記錄」。', en: 'Switch on the supply and put the black probe N1 on the paper or in the water (not on an electrode). Move the red probe N2 to a point at least 2 cm from N1 where the meter reads zero (within ±0.02 V) and press “Record”.' },
       check: function (ev) { const d = ev.data; return is(ev, 'record') && d.power && onPaper(d) && isNull(d) && d.dist12 >= 2; }
     },
     {
@@ -208,7 +208,7 @@
       'equipotential-1': { on: ['record', 'water-record'], f: function () {
         const s = S(); if (!s) return null;
         return [power(s),
-          it(!s.n1OnElectrode, '黑探針 N1 放在紙上：不在電極上、也不夾負極', 'Black N1 on the sheet: not on an electrode, not clipped'),
+          it(!s.n1OnElectrode, '黑探針 N1 放在' + (s.medium === 'water' ? '水中' : '紙上') + '：不在電極上、也不夾負極', 'Black N1 ' + (s.medium === 'water' ? 'in the water' : 'on the sheet') + ': not on an electrode, not clipped'),
           it(s.dist12 >= 2, '紅探針 N2 離 N1 至少 2 cm（現在 ' + f1(s.dist12) + ' cm）', 'Red N2 at least 2 cm from N1 (now ' + f1(s.dist12) + ' cm)'),
           it(s.power && Math.abs(s.reading) <= 0.02 + 1e-9, '電表讀數在 ±0.02 V 以內（現在 ' + reading(s) + '）', 'Meter reads within ±0.02 V (now ' + reading(s) + ')'),
           rec];
@@ -307,7 +307,7 @@
       'equipotential-15': { on: ['water-estimate'], f: function (c) {
         const s = S(); if (!s) return null;
         return [it(s.medium === 'water', '材質切到「水槽」（畫布上方）', 'Switch to “Water tray” (above the canvas)'), noisy(s),
-          it(!s.ac, '電源選「直流」（「介質參數」卡）', 'Source: “DC” (Medium properties)'), power(s),
+          it(!s.ac, '電源選「直流」（畫布上方）', 'Source: “DC” (above the canvas)'), power(s),
           it(s.clip, '按「黑探針夾到負極（0 V）」（「電表與探針」卡）', 'Press “Clip N1 to the negative electrode (0 V)” (Meter and probes)')
         ].concat(estItems(c, 0.06, function (e) { return [it(e.distEl >= 2, '估算的位置離電極至少 2 cm（上一次 ' + f1(e.distEl) + ' cm）', 'At least 2 cm from the electrodes (last time ' + f1(e.distEl) + ' cm)')]; }));
       } }
