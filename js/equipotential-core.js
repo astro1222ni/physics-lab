@@ -1,11 +1,12 @@
 /*
  * equipotential-core.js — 「等位線與電場」課本實驗的物理核心（與畫面無關，可在 Node 單獨測試）
  *
- * 實驗：直流電源接在均勻導電紙（碳質導電紙）上的兩個電極之間，紙上有穩定電流（不是真空中的靜電場）。
+ * 實驗：電源接在均勻導電紙或等深食鹽水槽的兩個電極之間，介質中有穩定電流（不是真空中的靜電場）。
  * 紙很薄、導電度 σ 均勻時，穩定電流滿足 ∇·J = 0、J = σE = −σ∇V，所以紙上的電位滿足拉普拉斯方程式
  *     ∇·(σ∇V) = 0      （σ 均勻時就是 ∇^2 V = 0）
  * 邊界條件：
- *   電極（金屬，電阻可忽略）上電位固定（Dirichlet）：正極 V = V0、負極 V = 0；
+ *   理想條件下電極界面電位固定（Dirichlet）：正極 V = V0、負極 V = 0；
+ *   水槽含誤差且用直流時，介質側電位依 voltageModel 扣除極化壓降，金屬端仍為 V0 與 0；
  *   紙的四邊不導電，電流不會流出去：∂V/∂n = 0（Neumann）。
  *
  * 數值方法：
@@ -28,9 +29,18 @@
   const SHEET_H = 20;        // 導電紙高（cm）
   const BAR_W = 0.5;         // 長條電極的寬度（cm）
   const R_SHEET = 5000;      // 導電紙的面電阻（Ω/□），一般碳質導電紙約數 kΩ/□
+  const R_WATER = 500;       // 0.1 % 食鹽水：ρ = 5 Ω·m、深度 0.01 m，R□ = ρ/h
   const GALV_R = 50000;      // 檢流計迴路的總電阻（內電阻＋探針接觸電阻，Ω）
   const GALV_FS = 50e-6;     // 檢流計滿刻度 ±50 μA
   const DMM_STEP = 0.01;     // 三用電表直流電壓檔的解析度（V）
+
+  function sheetResistance(cfg) { return cfg.medium === 'water' ? R_WATER : R_SHEET; }
+  /** 金屬端電壓與水中界面電位分開；1.7 V 是本模擬的集中極化壓降模型。 */
+  function voltageModel(cfg) {
+    const V0 = Math.max(0, Number(cfg.V0) || 0);
+    const Vp = cfg.medium === 'water' && cfg.noise && !cfg.ac ? Math.min(V0, 1.7) : 0;
+    return { V0: V0, Vp: Vp, bulk: V0 - Vp, negative: Vp * 0.9 / 1.7, positive: V0 - Vp * 0.8 / 1.7 };
+  }
 
   // ---------------------------------------------------------------------
   // 亂數（可重現）
@@ -56,14 +66,14 @@
   // 電極配置
   // ---------------------------------------------------------------------
   /**
-   * cfg：{ type: 'circles' | 'bars' | 'barCircle', d, a, L, V0, W?, H?, sigma?: { seed, amp } }
+   * cfg：{ type: 'circles' | 'bars' | 'barCircle', d, a, L, V0, medium?: 'paper' | 'water', noise?, ac?, W?, H?, sigma?: { seed, amp } }
    *   circles   ：兩個半徑 a 的圓形電極，圓心相距 d（左正右負）
    *   bars      ：兩條平行長條電極（寬 0.5 cm、長 L），內緣相距 d（左正右負）；L = 紙高時從紙的上緣接到下緣
    *   barCircle ：左邊長條（正極、長 L），右邊圓形（負極、半徑 a），長條內緣到圓心相距 d
    */
   function electrodes(cfg) {
     const W = cfg.W || SHEET_W, H = cfg.H || SHEET_H;
-    const xc = W / 2, yc = H / 2, V0 = cfg.V0;
+    const xc = W / 2, yc = H / 2, vm = voltageModel(cfg), V0 = vm.positive, Vn = vm.negative;
     const L = Math.min(cfg.L == null ? H : cfg.L, H);
     const bar = function (xInner, side, V, sign) {
       // side = −1：長條在內緣的左邊；+1：在右邊
@@ -71,9 +81,9 @@
       return { kind: 'rect', x0: x0, x1: x1, y0: yc - L / 2, y1: yc + L / 2, V: V, sign: sign };
     };
     const circ = function (x, V, sign) { return { kind: 'circle', x: x, y: yc, r: cfg.a, V: V, sign: sign }; };
-    if (cfg.type === 'bars') return [bar(xc - cfg.d / 2, -1, V0, 1), bar(xc + cfg.d / 2, 1, 0, -1)];
-    if (cfg.type === 'barCircle') return [bar(xc - cfg.d / 2, -1, V0, 1), circ(xc + cfg.d / 2, 0, -1)];
-    return [circ(xc - cfg.d / 2, V0, 1), circ(xc + cfg.d / 2, 0, -1)];
+    if (cfg.type === 'bars') return [bar(xc - cfg.d / 2, -1, V0, 1), bar(xc + cfg.d / 2, 1, Vn, -1)];
+    if (cfg.type === 'barCircle') return [bar(xc - cfg.d / 2, -1, V0, 1), circ(xc + cfg.d / 2, Vn, -1)];
+    return [circ(xc - cfg.d / 2, V0, 1), circ(xc + cfg.d / 2, Vn, -1)];
   }
 
   const EPS = 1e-9;
@@ -369,13 +379,14 @@
     }
     const sys = levels[0];
     const u = sys.V;
-    for (let f = 0; f < sys.nFree; f++) u[sys.node[f]] = cfg.V0 / 2;
+    const vm = voltageModel(cfg);
+    for (let f = 0; f < sys.nFree; f++) u[sys.node[f]] = (vm.positive + vm.negative) / 2;
     const tol = (opts.tol || 1e-9) * Math.max(Math.abs(cfg.V0), 1e-9);
     const out = pcg(levels, u, tol, opts.maxIt || 200);
     const res = out.res, cycles = out.it;
     const g = gradients(sys);
     return { W: sys.W, H: sys.H, h: sys.h, nx: sys.nx, ny: sys.ny, V: sys.V, Ex: g.Ex, Ey: g.Ey, fixed: sys.fixed,
-      els: sys.els, cfg: cfg, sig: sys.sig, cycles: cycles, res: res, ms: Date.now() - t0 };
+      els: sys.els, cfg: cfg, sig: sys.sig, voltage: vm, RSheet: sheetResistance(cfg), cycles: cycles, res: res, ms: Date.now() - t0 };
   }
 
   // ---------------------------------------------------------------------
@@ -384,7 +395,7 @@
   function clampXY(sol, x, y) {
     return [Math.min(Math.max(x, 0), sol.W), Math.min(Math.max(y, 0), sol.H)];
   }
-  /** 電位（V）：雙線性內插；在電極上就是電極的電位 */
+  /** 介質電位（V）：雙線性內插；電極內延伸介質側界面電位。碰金屬的探針改用 probePotentialAt。 */
   function potentialAt(sol, x, y) {
     const c = clampXY(sol, x, y); x = c[0]; y = c[1];
     const e = electrodeAt(sol.els, x, y);
@@ -393,6 +404,11 @@
     const i = Math.min(Math.floor(x / h), nx - 2), j = Math.min(Math.floor(y / h), sol.ny - 2);
     const u = x / h - i, v = y / h - j, k = j * nx + i, V = sol.V;
     return (1 - u) * (1 - v) * V[k] + u * (1 - v) * V[k + 1] + (1 - u) * v * V[k + nx] + u * v * V[k + nx + 1];
+  }
+  /** 探針碰到金屬時量金屬端電位；水中電位由 potentialAt 取得，界面有極化跳躍。 */
+  function probePotentialAt(sol, x, y) {
+    const e = electrodeAt(sol.els, x, y);
+    return e < 0 ? potentialAt(sol, x, y) : (sol.els[e].sign > 0 ? sol.cfg.V0 : 0);
   }
   /** 電場 E = −∇V（V/cm）：各格點的梯度做雙線性內插（只用電極外的格點） */
   function fieldAt(sol, x, y) {
@@ -426,7 +442,7 @@
       const sm = sol.sig ? sol.sig((i + 0.5) * h, j * h) : 1;
       F += w * sm * (V[j * nx + i] - V[j * nx + i + 1]);
     }
-    return F / R_SHEET;
+    return F / sheetResistance(sol.cfg);
   }
 
   // ---------------------------------------------------------------------
@@ -915,8 +931,26 @@
     return { a: [a.x, a.y], b: [b.x, b.y], dd: dd, dV: dV, E: dV / dd };
   }
 
+  /** 對照兩張實測圖：雙向量各記錄點到另一條折線的距離，避免取樣次序影響比對。 */
+  function compareEquipotentials(groupsA, groupsB) {
+    let best = null;
+    groupsA.forEach(function (a) {
+      if (!a.path || a.pts.length < 5) return;
+      groupsB.forEach(function (b) {
+        if (!b.path || b.pts.length < 5 || Math.abs(a.V - b.V) >= 0.05) return;
+        let sum = 0;
+        a.pts.forEach(function (p) { const q = nearestOnPath(b.path, p); sum += Math.hypot(p[0] - q.x, p[1] - q.y); });
+        b.pts.forEach(function (p) { const q = nearestOnPath(a.path, p); sum += Math.hypot(p[0] - q.x, p[1] - q.y); });
+        const mean = sum / (a.pts.length + b.pts.length);
+        if (!best || mean < best.meanDistance) best = { meanDistance: mean, potentialDifference: Math.abs(a.V - b.V), nA: a.pts.length, nB: b.pts.length, V: (a.V + b.V) / 2 };
+      });
+    });
+    return best;
+  }
+
   return {
-    SHEET_W: SHEET_W, SHEET_H: SHEET_H, BAR_W: BAR_W, R_SHEET: R_SHEET, GALV_R: GALV_R, GALV_FS: GALV_FS, DMM_STEP: DMM_STEP,
+    SHEET_W: SHEET_W, SHEET_H: SHEET_H, BAR_W: BAR_W, R_SHEET: R_SHEET, R_WATER: R_WATER, GALV_R: GALV_R, GALV_FS: GALV_FS, DMM_STEP: DMM_STEP,
+    sheetResistance: sheetResistance, voltageModel: voltageModel, probePotentialAt: probePotentialAt,
     rng: rng, gauss: gauss,
     electrodes: electrodes, inside: inside, electrodeAt: electrodeAt, distToElectrode: distToElectrode, outline: outline,
     sigmaField: sigmaField, build: build, solve: solve,
@@ -925,6 +959,6 @@
     twoCircleInfinite: twoCircleInfinite,
     dmmReading: dmmReading, galvCurrent: galvCurrent,
     groupRecords: groupRecords, orderPoints: orderPoints, smoothPath: smoothPath, pathLength: pathLength,
-    nearestOnPath: nearestOnPath, sketchFieldLines: sketchFieldLines, estimateField: estimateField
+    nearestOnPath: nearestOnPath, sketchFieldLines: sketchFieldLines, estimateField: estimateField, compareEquipotentials: compareEquipotentials
   };
 });

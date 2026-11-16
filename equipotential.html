@@ -36,6 +36,11 @@
     .eq #cv:focus-visible { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 4px var(--accent); }
     .eq + .eq { margin-top: 16px; }
     .eq button { min-height: 44px; }
+    .eq .panel { min-width: 0; grid-template-columns: minmax(0, 1fr); }
+    .eq .card { min-width: 0; overflow-wrap: anywhere; }
+    .eq .seg2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .eq .seg3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .eq .seg2 button, .eq .seg3 button { min-width: 0; overflow-wrap: anywhere; }
     .eq [hidden] { display: none !important; }
     .eq button:disabled { opacity: .45; cursor: not-allowed; }
     .eq .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
@@ -54,7 +59,13 @@
     .seg3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
     .seg2 button, .seg3 button { padding: 6px 6px; line-height: 1.3; }
     .seg2 button[aria-pressed="true"], .seg3 button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); font-weight: 700; color: var(--accent); }
-    .eq .slider input[type="range"] { height: 28px; margin: 0; }
+    .eq .slider input[type="range"] { height: 44px; margin: 0; }
+    .eq .lab-num { min-height: 44px; display: inline-flex; align-items: center; }
+    .eq .meter-seg:has(#meterPhone[hidden]) { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 600px) {
+      .eq .view-bar .seg { width: 100%; }
+      .eq .view-bar .seg button { flex: 1 1 0; padding: 6px 5px; font-size: calc(12px * var(--fs, 1)); }
+    }
     .eq .slider label sub, dl.readout sub, .eq .hint sub, table.data sub { font-size: .75em; }
     .eq .checks label { min-height: 44px; }
     .eq .checks input { width: 17px; height: 17px; flex: none; }
@@ -114,11 +125,14 @@
       background: radial-gradient(ellipse at 50% 42%, var(--canvas-bg) 55%, color-mix(in srgb, var(--canvas-bg) 93%, var(--text)) 100%);
     }
     @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
+    .stage.is-rig #view3 canvas { aspect-ratio: 4 / 3; }
     #view3 canvas:active { cursor: grabbing; }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
     .formula.multi .katex-display { margin: 4px 0; }
+    .notes .formula { max-width: 100%; min-width: 0; }
+    .formula.multi > .katex-display { min-width: 0; max-width: 100%; }
     .notes ol { padding-left: 1.4em; }
     .notes ol li, .notes ul li { margin: 2px 0; }
     .notes .q li { margin: 6px 0; }
@@ -129,7 +143,7 @@
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-electrostatics&quot;&gt;Electrostatics&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#em">電磁學</a> / <a href="physics.html#ch-electrostatics">靜電學</a></nav>
       <h1 data-en="Equipotential Lines and the Electric Field (Conducting Paper)">等位線與電場（導電紙實驗）</h1>
-      <p data-en="The textbook experiment: a DC supply drives a steady current through a sheet of carbon conducting paper between two silver electrodes. Touch the paper with two probes connected to a multimeter or a galvanometer, find the points where the meter reads zero (or a chosen voltage), press “Record”, and trace the equipotential lines. Then draw the field lines at right angles to them, estimate E = ΔV/Δd and compare it with the computed field. Switch to 3D to see the potential as a landscape.">課本的必做實驗：直流電源讓穩定電流流過碳質導電紙上的兩個銀電極之間。用接著三用電表或檢流計的兩支探針輕觸紙面，找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫出與等位線垂直的電力線，由 E = ΔV/Δd 估算電場，與程式算出的電場比較。切換到 3D 可以看到電位像一片起伏的地形。</p>
+      <p data-en="The textbook experiment: a DC supply drives a steady current through a sheet of carbon conducting paper between two silver electrodes. Touch the paper with two probes connected to a multimeter or a galvanometer, find the points where the meter reads zero (or a chosen voltage), press “Record”, and trace the equipotential lines. Then draw the field lines at right angles to them, estimate E = ΔV/Δd and compare it with the computed field. Switch to 3D to see the potential as a landscape. You can also switch to a salt-water tray, use an AC supply with headphones to hear the null point, or turn the apparatus around in 3D.">課本的必做實驗：直流電源讓穩定電流流過碳質導電紙上的兩個銀電極之間。用接著三用電表或檢流計的兩支探針輕觸紙面，找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫出與等位線垂直的電力線，由 E = ΔV/Δd 估算電場，與程式算出的電場比較。切換到 3D 可以看到電位像一片起伏的地形。也可以換成食鹽水槽、改用交流電源配耳機「聽」零點，或轉動 3D 器材看接線。</p>
     </header>
 
     <!-- 第一部分：實驗桌（導電紙、電極、探針、電源與電表） -->
@@ -140,6 +154,7 @@
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D lab bench">2D 實驗桌</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D potential landscape">3D 電位地形</button>
+            <button type="button" id="viewRig" aria-pressed="false" data-en="3D apparatus">3D 器材</button>
           </div>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
@@ -160,13 +175,30 @@
           <span class="lg-fl" data-en-html="<i></i>Field lines drawn from them"><i></i>依等位線畫的電力線</span>
           <span class="lg-th" data-en-html="<i></i>Computed equipotentials"><i></i>計算的等位線</span>
           <span class="lg-st" data-en-html="<i></i>Computed current lines"><i></i>計算的電流線</span>
-          <span class="lg-surf l3" data-en-html="<i></i>Height = potential (blue: low, red: high)"><i></i>高度＝電位（藍低、紅高）</span>
+          <span id="surfaceLegend" class="lg-surf l3" data-en-html="<i></i>Height = potential"><i></i>高度＝電位</span>
         </div>
         <p class="hint l2" data-en="Top view, drawn to scale: the paper is 30 cm × 20 cm with a 1 cm grid (the real carbon paper is black; it is drawn light here so the marks stand out). Drag a probe — or tap the paper to move the selected probe there. Turn on “fine drag” or use the arrow buttons for small steps.">俯視圖，依比例繪製：導電紙 30 cm × 20 cm，方格 1 cm（真實的碳質紙是黑色的，這裡畫成淺色以便看清記號）。拖曳探針，或點一下紙面把「選取的探針」移過去；打開「精細拖曳」或用方向鍵可以小步移動。</p>
-        <p class="hint l3" data-en="Height of the surface = potential at that point of the paper (same solution as the 2D view). Drag to rotate, pinch or scroll to zoom. Current flows straight “downhill”, along the steepest slope — that is why the field lines cross the equipotentials at right angles.">曲面的高度＝導電紙上該點的電位（與 2D 用同一個數值解）。拖曳旋轉，雙指或滾輪縮放。電流沿著「最陡的下坡」流，所以電力線與等位線（等高線）垂直。</p>
+        <p id="landscapeHint" class="hint l3" data-en="Surface height = potential in the medium, from the same solution as 2D. This is a voltage graph, not the shape of the water. Drag to rotate; pinch or scroll to zoom.">曲面高度＝介質中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉，雙指或滾輪縮放。</p>
+        <p id="rigHint" class="hint l3" hidden data-en="Apparatus overview (instruments schematic, not to scale). Probe and electrode positions match 2D. Drag a probe directly; drag empty space to orbit, pinch or scroll to zoom.">器材全景（儀器外形為示意，未依比例）。探針、電極位置與 2D 同步；直接拖探針可移動，拖空白處轉視角，雙指或滾輪縮放。</p>
       </div>
 
       <aside class="panel">
+        <section class="card">
+          <h2 data-en="Conducting medium">導電材質</h2>
+          <div class="seg2" id="medium" role="group" aria-label="導電材質" data-en-aria-label="Conducting medium">
+            <button id="mediumPaper" type="button" data-medium="paper" aria-pressed="true" data-en="Conducting paper">導電紙</button>
+            <button id="mediumWater" type="button" data-medium="water" aria-pressed="false" data-en="Water tray">水槽</button>
+          </div>
+          <div id="sourceMode" hidden>
+            <p class="seg-label" id="sourceLabel" data-en="Power source:">電源種類：</p>
+            <div class="seg2" role="group" aria-labelledby="sourceLabel">
+              <button id="sourceDC" type="button" data-ac="0" aria-pressed="true" data-en="DC">直流</button>
+              <button id="sourceAC" type="button" data-ac="1" aria-pressed="false" data-en="AC (1 kHz)">交流（1 kHz）</button>
+            </div>
+          </div>
+          <p id="mediumHint" class="hint"></p>
+          <p id="mediumCompare" class="hint" role="status"></p>
+        </section>
         <section class="card">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps"></ol>
@@ -194,10 +226,12 @@
         <section class="card">
           <h2 data-en="Meter and probes">電表與探針</h2>
           <p class="seg-label" id="meterLabel" data-en="Meter between the probes:">接在兩探針之間的電表：</p>
-          <div class="seg2" role="group" aria-labelledby="meterLabel">
+          <div class="seg3 meter-seg" role="group" aria-labelledby="meterLabel">
             <button type="button" data-meter="dmm" aria-pressed="true" data-en="Multimeter">三用電表</button>
-            <button type="button" data-meter="galv" aria-pressed="false" data-en="Galvanometer (null)">檢流計（零位法）</button>
+            <button type="button" id="meterGalv" data-meter="galv" aria-pressed="false" data-en="Galvanometer (null)">檢流計（零位法）</button>
+            <button type="button" id="meterPhone" data-meter="phone" aria-pressed="false" hidden data-en="Headphones">耳機</button>
           </div>
+          <p id="galvAcHint" class="hint" hidden data-en="The needle cannot follow 1000 cycles per second: it would only tremble.">指針跟不上 1000 次／秒的來回，只會抖。</p>
           <p class="seg-label" id="errLabel" data-en="Conditions:">實驗條件：</p>
           <div class="seg2" role="group" aria-labelledby="errLabel">
             <button type="button" data-noise="0" aria-pressed="true" data-en="Ideal">理想</button>
@@ -205,8 +239,8 @@
           </div>
           <p class="seg-label" id="selLabel" data-en="Probe to move:">要移動的探針：</p>
           <div class="seg2" role="group" aria-labelledby="selLabel">
-            <button type="button" data-sel="n2" aria-pressed="true" data-en="Red N2 (moving)">紅探針 N2（移動）</button>
-            <button type="button" data-sel="n1" aria-pressed="false" data-en="Black N1 (fixed)">黑探針 N1（固定）</button>
+            <button type="button" data-sel="n2" aria-pressed="true" data-en-html="Red N<sub>2</sub> (moving)">紅探針 N<sub>2</sub>（移動）</button>
+            <button type="button" data-sel="n1" aria-pressed="false" data-en-html="Black N<sub>1</sub> (fixed)">黑探針 N<sub>1</sub>（固定）</button>
           </div>
           <div class="nudge" role="group" aria-label="微調選取的探針（每次 0.05 cm）" data-en-aria-label="Nudge the selected probe (0.05 cm per press)">
             <button type="button" data-nx="-1" data-ny="0" aria-label="向左" data-en-aria-label="Left">←</button>
@@ -216,7 +250,7 @@
           </div>
           <div class="checks"><label><input id="fine" type="checkbox"><span data-en="Fine drag (probe moves 1/5 of the finger)">精細拖曳（探針只走手指的 1/5）</span></label></div>
           <div class="btns">
-            <button type="button" id="clip" data-en="Clip N1 to the negative electrode (0 V)">黑探針夾到負極（0 V）</button>
+            <button type="button" id="clip" data-en-html="Clip N<sub>1</sub> to the negative electrode (0 V)">黑探針夾到負極（0 V）</button>
           </div>
           <p class="hint" id="meterHint"></p>
         </section>
@@ -227,7 +261,7 @@
     <div class="lab eq">
       <div class="stage">
         <h2 data-en="Data: the points on the grid paper">數據表：方格紙上的記錄點</h2>
-        <p class="hint" data-en="Points measured with the same position of N1 and (almost) the same reading belong to one equipotential line. The potential of a line is the potential of N1 (measured from the negative electrode) plus the reading.">黑探針 N1 位置相同、讀數（幾乎）相同的點屬於同一條等位線。這條線的電位＝N1 的電位（對負極量得）＋讀數。</p>
+        <p class="hint" data-en-html="Points measured with the same position of N<sub>1</sub> and (almost) the same reading belong to one equipotential line. The potential of a line is the potential of N<sub>1</sub> (measured from the negative electrode) plus the reading.">黑探針 N<sub>1</sub> 位置相同、讀數（幾乎）相同的點屬於同一條等位線。這條線的電位＝N<sub>1</sub> 的電位（對負極量得）＋讀數。</p>
         <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <p class="tsum" id="tsum"></p>
       </div>
@@ -237,11 +271,13 @@
           <h2 data-en="Meter readings">讀數</h2>
           <dl class="readout">
             <dt id="rMeterLabel">電表讀數</dt><dd id="rMeter" class="big">—</dd>
-            <dt data-en="Red probe N2 (x, y)">紅探針 N2（x, y）</dt><dd id="rN2">—</dd>
-            <dt data-en="Black probe N1 (x, y)">黑探針 N1（x, y）</dt><dd id="rN1">—</dd>
+            <dt data-en-html="Red probe N<sub>2</sub> (x, y)">紅探針 N<sub>2</sub>（x, y）</dt><dd id="rN2">—</dd>
+            <dt data-en-html="Black probe N<sub>1</sub> (x, y)">黑探針 N<sub>1</sub>（x, y）</dt><dd id="rN1">—</dd>
             <dt data-en="Probe separation Δs">兩探針距離 Δs</dt><dd id="rDs">—</dd>
             <dt data-en-html="Two-probe estimate <span class=&quot;f&quot;>ΔV/Δs</span>">兩探針估算 <span class="f">ΔV/Δs</span></dt><dd id="rDvDs">—</dd>
             <dt data-en="Supply current I">電源輸出電流 I</dt><dd id="rI">—</dd>
+            <dt data-en="Voltage across the medium">介質實際電壓</dt><dd id="rBulk">—</dd>
+            <dt data-en="Polarization voltage drop">極化壓降</dt><dd id="rPolar">—</dd>
           </dl>
         </section>
 
@@ -270,8 +306,8 @@
             <label><input id="showHeat" type="checkbox"><span data-en="Potential shading">電位色階</span></label>
           </div>
           <dl class="readout">
-            <dt data-en="Potential at N2">N2 處的電位</dt><dd id="cV">—</dd>
-            <dt data-en="Field |E| at N2">N2 處的電場 |E|</dt><dd id="cE">—</dd>
+            <dt data-en-html="Potential at N<sub>2</sub>">N<sub>2</sub> 處的電位</dt><dd id="cV">—</dd>
+            <dt data-en-html="Field |E| at N<sub>2</sub>">N<sub>2</sub> 處的電場 |E|</dt><dd id="cE">—</dd>
             <dt data-en="Direction of E">E 的方向</dt><dd id="cDir">—</dd>
             <dt data-en="Current density |J|">電流密度 |J|</dt><dd id="cJ">—</dd>
             <dt data-en="Resistance between the electrodes">兩電極之間的電阻</dt><dd id="cR">—</dd>
@@ -292,6 +328,12 @@
 
       <h3 data-en="Apparatus">實驗器材</h3>
       <p data-en="Carbon conducting paper with printed silver electrodes (two dots, two parallel bars, …), DC power supply, a multimeter (or a galvanometer / microammeter), two metal probes, leads, grid paper. Some schools use an “electric field tray” instead: an acrylic tray of weak salt water with metal electrodes standing in it and grid paper underneath — the physics is the same.">碳質導電紙（印有銀電極：兩個圓點、兩條平行長條……）、直流電源供應器、三用電表（或檢流計、微安培計）、金屬探針 2 支、導線、方格紙。有些學校改用「電場形成盤」：壓克力盤裝淡食鹽水，放入金屬電極，盤下墊方格紙，原理完全相同。</p>
+
+      <h3 data-en="Water-tray notes">水槽小知識</h3>
+      <p data-en-html="Keep the tray horizontal: 0.1% salt water, uniform depth \(h=1.0\,\mathrm{cm}\), and model resistivity \(\rho\approx5\,\Omega\cdot\mathrm m\). Its sheet resistance is \(R_{\square}=\rho/h\approx500\,\Omega\), one tenth of the paper's. At the same voltage across the medium, the normalized potential pattern is the same and the current is ten times larger.">水槽水平放置，裝 0.1 % 食鹽水，均勻水深 \(h=1.0\,\mathrm{cm}\)，本模型取電阻率 \(\rho\approx5\,\Omega\cdot\mathrm m\)。面電阻 \(R_{\square}=\rho/h\approx500\,\Omega\)，為導電紙的十分之一。介質實際電壓相同時，正規化電位分布相同，電流大 10 倍。</p>
+      <p data-en="DC electrolysis produces hydrogen at the negative electrode. The model represents mainly chlorine at the positive electrode, with some gas dissolving, so fewer bubbles are visible there. Do not infer a 2:1 ratio. Bubbles illustrate electrolysis, not measured gas amounts; actual products also depend on concentration and electrode material.">直流電解時，負極有氫氣泡；本模型在正極示意以氯氣生成為主、部分溶入水中，因此可見氣泡較少。不可把兩邊當成 2：1。氣泡是電解示意，不代表實測產氣量；實際產物也會受濃度與電極材質影響。</p>
+      <p data-en-html="Only DC with errors includes polarization: \(V_p=\min(V_0,1.7\,\mathrm V)\), split between negative and positive interfaces in the ratio 0.9:0.8. The bulk voltage is \(V_{\rm water}=V_0-V_p\). At \(V_0\le1.7\,\mathrm V\), this simplified model has zero bulk field and current. Negative metal is at 0 V, but water just outside is at \(0.9V_p/1.7\): the reading jumps. Field estimates use the actual water voltage. The 1.7 V threshold is a model choice, not a universal electrolysis voltage.">只有「含誤差＋直流」納入極化：\(V_p=\min(V_0,1.7\,\mathrm V)\)，負、正極界面依 0.9：0.8 分配壓降。水中分到 \(V_{\rm water}=V_0-V_p\)；\(V_0\le1.7\,\mathrm V\) 時，本簡化模型的水中電場、電流為零。負極金屬是 0 V，剛移到外側水中就成為 \(0.9V_p/1.7\)，讀數會先跳一段。電場估算使用水中實際電壓。1.7 V 是模型設定，並非所有實驗共同的電解電壓。</p>
+      <p data-en-html="Classic AC null methods used telephone earpieces: the quietest tone identifies equal potentials. Audio-frequency AC reduces polarization. Here the 1 kHz model omits polarization and gas bubbles, and the multimeter reads RMS voltage. Headphone gain varies logarithmically with \(|\Delta V|\), becoming quiet at \(|\Delta V|\le0.02\,\mathrm V\). Turn sound on first. <a href=&quot;https://www.newton.k12.oh.us/LabElectricFieldLines.aspx&quot;>School description of the headphone method</a>; <a href=&quot;https://boxsand.physics.oregonstate.edu/sites/boxsand.physics.oregonstate.edu/files/Media-2/ph203_su17/labs/ph203_su17_lab5_Electric%20Potential.pdf&quot;>Oregon State University AC water-tray experiment</a>.">早期交流零點法用電話聽筒當偵測器：聲音最小的位置，就是兩點等電位。音頻交流可減少極化；此處 1 kHz 模型不納入極化與電解氣泡，三用電表讀交流有效值。耳機音量隨 \(|\Delta V|\) 呈對數感變化，\(|\Delta V|\le0.02\,\mathrm V\) 時安靜；使用前先開音效。延伸閱讀：<a href="https://www.newton.k12.oh.us/LabElectricFieldLines.aspx">學校實驗的耳機零點法</a>、<a href="https://boxsand.physics.oregonstate.edu/sites/boxsand.physics.oregonstate.edu/files/Media-2/ph203_su17/labs/ph203_su17_lab5_Electric%20Potential.pdf">奧勒岡州立大學交流水槽實驗</a>。</p>
 
       <h3 data-en="Principle">原理</h3>
       <p data-en-html="<strong>Equipotentials and field lines.</strong> Moving along an equipotential line costs no work, so the field has no component along it: <strong>field lines cross equipotential lines at right angles</strong> and point from high to low potential. Where the lines are close together the field is strong:"><strong>等位線與電力線。</strong>沿著等位線移動電荷不必作功，所以電場沒有沿著等位線的分量：<strong>電力線與等位線處處垂直</strong>，並由高電位指向低電位。等位線愈密，電場愈強：</p>
@@ -314,9 +356,9 @@
       <h3 data-en="Procedure">實驗步驟</h3>
       <ol>
         <li data-en="Connect the electrodes to the DC supply (left electrode to +) and switch it on.">把電極接到直流電源（左邊電極接正極），接通電源。</li>
-        <li data-en="Connect the two probes to the meter. Hold the black probe N1 still on the paper (or clip it to the negative electrode).">兩支探針接到電表。黑探針 N1 固定按在紙上某一點（或夾在負極上）。</li>
-        <li data-en="Slide the red probe N2 over the paper until the meter reads zero (or the chosen voltage, e.g. 1.00 V, 2.00 V…). Mark the point on the grid paper.">移動紅探針 N2，直到電表讀數為零（或選定的電壓，例如 1.00 V、2.00 V……），在方格紙上記下位置。</li>
-        <li data-en="Find at least five such points spread across the paper — one equipotential line. Then move N1 (or change the target voltage) and repeat for the next line.">在紙上不同地方找出至少 5 個這樣的點，就是一條等位線。再移動 N1（或換目標電壓），重複做下一條。</li>
+        <li data-en-html="Connect the two probes to the meter. Hold the black probe N<sub>1</sub> still on the paper (or clip it to the negative electrode).">兩支探針接到電表。黑探針 N<sub>1</sub> 固定按在紙上某一點（或夾在負極上）。</li>
+        <li data-en-html="Slide the red probe N<sub>2</sub> over the paper until the meter reads zero (or the chosen voltage, e.g. 1.00 V, 2.00 V…). Mark the point on the grid paper.">移動紅探針 N<sub>2</sub>，直到電表讀數為零（或選定的電壓，例如 1.00 V、2.00 V……），在方格紙上記下位置。</li>
+        <li data-en-html="Find at least five such points spread across the paper — one equipotential line. Then move N<sub>1</sub> (or change the target voltage) and repeat for the next line.">在紙上不同地方找出至少 5 個這樣的點，就是一條等位線。再移動 N<sub>1</sub>（或換目標電壓），重複做下一條。</li>
         <li data-en="Join the points of each line with a smooth curve.">把同一條線的點連成平滑曲線。</li>
         <li data-en="Draw field lines: start on the positive electrode, cross every equipotential at a right angle and end on the negative electrode; add arrows from high to low potential.">畫電力線：從正極出發，與每一條等位線垂直相交，終止於負極；箭頭由高電位指向低電位。</li>
         <li data-en-html="Pick a point between two lines, measure their distance \(\Delta d\), and calculate \(E \approx \Delta V/\Delta d\).">在兩條等位線之間選一點，量出兩線的距離 \(\Delta d\)，算出 \(E \approx \Delta V/\Delta d\)。</li>
@@ -345,7 +387,7 @@
 
       <h3 data-en="Things to try">觀察重點</h3>
       <ul>
-        <li data-en-html="<strong>The middle line</strong>: with two equal circular electrodes, clip N1 to the negative electrode and look for \(V_0/2\). The points lie on the perpendicular bisector — by symmetry."><strong>正中間的線</strong>：兩個相同的圓形電極，把 N1 夾到負極、找 \(V_0/2\) 的點：它們都在兩電極連線的中垂線上——對稱性。</li>
+        <li data-en-html="<strong>The middle line</strong>: with two equal circular electrodes, clip N<sub>1</sub> to the negative electrode and look for \(V_0/2\). The points lie on the perpendicular bisector — by symmetry."><strong>正中間的線</strong>：兩個相同的圓形電極，把 N<sub>1</sub> 夾到負極、找 \(V_0/2\) 的點：它們都在兩電極連線的中垂線上——對稱性。</li>
         <li data-en-html="<strong>Crowded near the electrodes</strong>: the 1 V lines are close together next to a small electrode and far apart in the middle. Make the electrodes smaller and the crowding gets worse."><strong>電極旁最擁擠</strong>：每隔 1 V 的等位線在小電極旁很密，中間很疏。把電極半徑調小，擠得更厲害。</li>
         <li data-en-html="<strong>A uniform field</strong>: parallel bars from edge to edge give equally spaced straight lines and E = V0/d everywhere between them. Shorten the bars and watch the lines bulge out around the ends."><strong>均勻電場</strong>：從紙邊接到紙邊的平行長條，等位線是等間距的直線，兩板之間處處 E = V<sub>0</sub>/d。把長條縮短，看等位線在兩端向外鼓出。</li>
         <li data-en-html="<strong>Behind the bars</strong>: with full-length bars there is no current behind a bar, and the whole region there is at the bar’s potential."><strong>長條的背後</strong>：從邊到邊的長條背後沒有電流，那一整塊都和長條同電位。</li>

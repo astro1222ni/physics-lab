@@ -83,7 +83,14 @@
       g.strokeStyle = LD.c['canvas-bg'];
       g.strokeText(text, w / 2, c.height / 2);
       g.fillStyle = color;
-      g.fillText(text, w / 2, c.height / 2);
+      if (/^N[12]$/.test(text)) {
+        g.clearRect(0, 0, c.width, c.height);
+        g.textAlign = 'left';
+        g.strokeText('N', 8, c.height / 2); g.fillText('N', 8, c.height / 2);
+        const nw = g.measureText('N').width;
+        g.font = '600 36px ' + LD.FONT;
+        g.strokeText(text.slice(1), 8 + nw, c.height / 2 + 15); g.fillText(text.slice(1), 8 + nw, c.height / 2 + 15);
+      } else g.fillText(text, w / 2, c.height / 2);
       const tex = new THREE.CanvasTexture(c);
       tex.colorSpace = THREE.SRGBColorSpace;
       const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false }));
@@ -101,8 +108,8 @@
     let surf = null, surfGeo = null, surfMat = null;
     const probes = {};
 
-    let k = 0;          // 每伏特的高度（cm/V）
-    function heightAt(sol, Veff, x, y) { return EC.potentialAt(sol, x, y) * Veff * k; }
+    let k = 0, waterOffset = 0;          // 每伏特的高度（cm/V）與負極水側電位
+    function heightAt(sol, Veff, x, y) { return (EC.potentialAt(sol, x, y) * Veff + waterOffset) * k; }
 
     function buildSurface(d) {
       const sol = d.sol;
@@ -133,15 +140,25 @@
       for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
         const gi = (j * st) * sol.nx + i * st, o = (j * nx + i) * 3;
         const u = sol.V[gi];
-        pos[o] = sx(i * st * sol.h); pos[o + 1] = sy(j * st * sol.h); pos[o + 2] = u * d.V0eff * k;
+        pos[o] = sx(i * st * sol.h); pos[o + 1] = sy(j * st * sol.h); pos[o + 2] = (u * d.V0eff + (d.offset || 0)) * k;
         let r, g, b;
         if (!on) { r = mid[0]; g = mid[1]; b = mid[2]; } else {
           const A = u < 0.5 ? neg : mid, B = u < 0.5 ? mid : pos2, t = u < 0.5 ? u * 2 : (u - 0.5) * 2;
           r = A[0] + (B[0] - A[0]) * t; g = A[1] + (B[1] - A[1]) * t; b = A[2] + (B[2] - A[2]) * t;
         }
+        if (d.medium === 'water') {
+          const aqua = LD.rgb(LD.mix(LD.c.neg, LD.c.probe, 0.52));
+          const tint = 0.46 + 0.43 * u;
+          r = aqua[0] * tint + 255 * (1 - tint); g = aqua[1] * tint + 255 * (1 - tint); b = aqua[2] * tint + 255 * (1 - tint);
+        }
         tmp.setRGB(r / 255, g / 255, b / 255, THREE.SRGBColorSpace);
         colA[o] = tmp.r; colA[o + 1] = tmp.g; colA[o + 2] = tmp.b;
       }
+      surfMat.transparent = d.medium === 'water';
+      surfMat.opacity = d.medium === 'water' ? 0.76 : 1;
+      surfMat.depthWrite = d.medium !== 'water';
+      surfMat.roughness = d.medium === 'water' ? 0.22 : 0.78;
+      surfMat.needsUpdate = true;
       surfGeo.attributes.position.needsUpdate = true;
       surfGeo.attributes.color.needsUpdate = true;
       surfGeo.computeVertexNormals();
@@ -191,7 +208,7 @@
       clearGroup(elGroup);
       const silver = LD.mix(LD.c.surface, LD.c.text, LD.dark ? 0.35 : 0.22);
       d.sol.els.forEach(function (e) {
-        const h = Math.max(0.3, (e.V > 0 ? d.V0eff * k : 0) + 0.3);
+        const h = Math.max(0.3, ((e.sign > 0 ? d.V0eff : 0) + (d.offset || 0)) * k + 0.3);
         const rim = e.sign > 0 ? LD.c.pos : LD.c.neg;
         const mat = new THREE.MeshStandardMaterial({ color: css(LD.mix(silver, rim, 0.18)), metalness: 0.55, roughness: 0.32 });
         let m;
@@ -225,8 +242,9 @@
       const V0 = d.V0, step = V0 <= 8 ? 1 : 2;
       const conMat = new THREE.LineBasicMaterial({ color: css(LD.c.equi), transparent: true, opacity: 0.9 });
       for (let v = step; v < V0 - 1e-9; v += step) {
-        env.contour(v / V0).forEach(function (l) {
-          const z = v * (d.V0eff / V0) * k + 0.05;
+        if (v <= (d.offset || 0) || v >= (d.offset || 0) + d.V0eff) continue;
+        env.contour((v - (d.offset || 0)) / d.V0eff).forEach(function (l) {
+          const z = v * k + 0.05;
           const g = new THREE.BufferGeometry().setFromPoints(l.pts.map(function (p) { return new THREE.Vector3(sx(p[0]), sy(p[1]), z); }));
           lineGroup.add(l.closed ? new THREE.LineLoop(g, conMat) : new THREE.Line(g, conMat));
         });
@@ -354,18 +372,19 @@
     function update() {
       if (!api.active) return;
       const d = env.data();
+      waterOffset = d.offset || 0;
       k = HMAX / (d.V0 || 1);
       const theme = LD.ver;
-      const kSurf = [d.sol.key, d.V0eff, d.V0, theme].join('|');
+      const kSurf = [d.medium, d.offset, d.sol.key, d.V0eff, d.V0, theme].join('|');
       if (keys.surf !== kSurf) { keys.surf = kSurf; buildSurface(d); }
       const kBoard = [d.V0, theme].join('|');
       if (keys.board !== kBoard) { keys.board = kBoard; buildBoard(d); }
-      const kEl = [d.sol.key, d.V0eff, d.V0, theme].join('|');
+      const kEl = [d.medium, d.offset, d.sol.key, d.V0eff, d.V0, theme].join('|');
       if (keys.el !== kEl) { keys.el = kEl; buildElectrodes(d); }
-      const kLines = [d.sol.key, d.V0eff, d.V0, theme, !!d.stream, d.drawLines, d.recs.length, d.groups.length,
+      const kLines = [d.medium, d.offset, d.sol.key, d.V0eff, d.V0, theme, !!d.stream, d.drawLines, d.recs.length, d.groups.length,
         d.recs.length ? d.recs[d.recs.length - 1].x : 0].join('|');
       if (keys.lines !== kLines) { keys.lines = kLines; buildLines(d); }
-      const kMarks = [d.sol.key, d.V0eff, theme, d.recs.length, d.recs.length ? d.recs[d.recs.length - 1].x : 0, d.groups.length].join('|');
+      const kMarks = [d.medium, d.offset, d.sol.key, d.V0eff, theme, d.recs.length, d.recs.length ? d.recs[d.recs.length - 1].x : 0, d.groups.length].join('|');
       if (keys.marks !== kMarks) { keys.marks = kMarks; buildMarks(d); }
       if (keys.probes !== theme) { keys.probes = theme; buildProbes(); }
       [['n1', d.n1], ['n2', d.n2]].forEach(function (p) {

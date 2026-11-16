@@ -270,4 +270,51 @@ test('求解速度：一般設定 1 秒內解完（網頁上拖滑桿要即時�
   }
 });
 
+test('均勻導電紙與水槽：各點 V/V0 相同，電流比為面電阻的反比', () => {
+  for (const type of ['circles', 'bars', 'barCircle']) {
+    const cfg = { type, d: 14, a: 0.75, L: 20, V0: 6 };
+    const paper = type === 'circles' ? solC : type === 'bars' ? solB : C.solve(cfg);
+    const water = C.solve(Object.assign({}, cfg, { medium: 'water' }));
+    for (let x = 0; x <= 30; x += 1.3) for (let y = 0; y <= 20; y += 1.7) {
+      near(C.potentialAt(paper, x, y) / cfg.V0, C.potentialAt(water, x, y) / cfg.V0, 1e-9, type + ' 的正規化電位');
+    }
+    near(C.currentAcross(water) / C.currentAcross(paper), C.R_SHEET / C.R_WATER, 1e-9, '電流比');
+  }
+});
+
+test('有限紙邊：1 V、5 V 封閉；2 V、4 V 碰上下邊；3 V 為 x = 15 cm', () => {
+  for (const v of [1, 5]) {
+    const lines = C.contour(solC, v);
+    assert.strictEqual(lines.length, 1);
+    assert.ok(lines[0].closed, v + ' V 必須封閉');
+    assert.ok(lines[0].pts.every(p => p[0] > 0 && p[0] < 30 && p[1] > 0 && p[1] < 20));
+  }
+  for (const [v, x] of [[2, 20.25], [4, 9.75]]) {
+    const line = C.contour(solC, v)[0];
+    assert.ok(!line.closed);
+    const ends = [line.pts[0], line.pts[line.pts.length - 1]].sort((a, b) => a[1] - b[1]);
+    near(ends[0][1], 0, 1e-9); near(ends[1][1], 20, 1e-9);
+    ends.forEach(p => near(p[0], x, 0.06, v + ' V 碰邊位置'));
+  }
+  C.contour(solC, 3).forEach(l => l.pts.forEach(p => near(p[0], 15, 1e-6)));
+});
+
+test('直流水槽極化：水中壓差 V0 − Vp、金屬與水的跳躍、低電壓截止、交流及理想模式', () => {
+  for (const V of [0, 1, 1.7, 6, 12]) {
+    const cfg = { type: 'bars', d: 14, L: 20, V0: V, medium: 'water', noise: true };
+    const vm = C.voltageModel(cfg), s = C.solve(cfg);
+    near(vm.Vp, Math.min(V, 1.7), 1e-12);
+    near(vm.positive - vm.negative, V - vm.Vp, 1e-12);
+    near(C.potentialAt(s, 15, 10), vm.negative + vm.bulk / 2, 1e-8);
+    near(C.fieldAt(s, 15, 10).E, vm.bulk / 14, 1e-8);
+    near(C.currentAcross(s), vm.bulk * 20 / (500 * 14), 1e-9);
+    near(C.probePotentialAt(s, 22.25, 10), 0, 1e-12, '負極金屬');
+    near(C.potentialAt(s, 23, 10), vm.negative, 1e-8, '負極外水中電位');
+    if (V <= 1.7) near(C.potentialAt(s, 1, 1), C.potentialAt(s, 29, 19), 1e-8, '水中等電位');
+    for (const mode of [{ ac: true }, { noise: false }, { medium: 'paper' }]) {
+      near(C.voltageModel(Object.assign({}, cfg, mode)).bulk, V, 1e-12, '無極化模式');
+    }
+  }
+});
+
 console.log(`\n${passed} 項通過`);
