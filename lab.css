@@ -1730,13 +1730,17 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
   .home-page .home-brand { margin-right:75px; }
 }
 @media (min-width:1100px) {
-  .home-personal { grid-template-columns:minmax(0,7fr) minmax(0,5fr); }
   .subject-groups { grid-template-columns:repeat(3,minmax(0,1fr)); gap:28px 14px; }
   .group-sci { grid-column:1/-1; }
   .subject-grid { grid-template-columns:minmax(0,1fr); }
   .group-sci .subject-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
 }
 @media (max-width:719px) { .home-page .wrap { padding-top:14px; } }
+/* 11/16 站長（平板橫放截圖）：「橫式的這兩排應該也是要左右分列才對，而且版面太浪費了」。
+   寬 ≥ 880 px，或橫放且寬 ≥ 720 px，「我的狀態」「每日任務」左右並排、等高，下方少留白 */
+@media (min-width:880px), (orientation:landscape) and (min-width:720px) {
+  .home-personal { grid-template-columns:minmax(0,7fr) minmax(0,5fr); align-items:stretch; margin-bottom:28px; }
+}
 @media (prefers-reduced-motion:reduce) {
   .subject-card,.treasure-fan > span { transition:none; }
   .subject-card:hover,.subject-card:active { transform:none; }
