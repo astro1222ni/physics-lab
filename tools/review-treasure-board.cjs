@@ -113,8 +113,9 @@ async function run() {
           const rows = await page.locator('#treasureList .tb-row').evaluateAll(els => els.slice(0, 3).map(el => ({ uid: el.dataset.uid, name: el.querySelector('.lb-name').textContent, rank: el.querySelector('.lb-rank').textContent })));
           assert.strictEqual(rows[0].uid, 'z-earliest'); assert.strictEqual(rows[0].name, C.treasureName('MaskedExplorer', false));
           assert.deepStrictEqual(rows.map(row => row.rank), ['1', '1', '3']);
-          assert.ok((await page.locator('#treasureMe').textContent()).includes(C.treasureTotals(ownBag)[metric].toLocaleString()));
-          if (metric === 'v') assert.match(await page.locator('#treasureList .tb-row .tb-score').first().textContent(), /^\d+(\.\d+)? [kMGTPE] 銅$/, '每列要用 k、M、G、T 前綴');
+          const own = C.treasureTotals(ownBag)[metric];
+          assert.ok((await page.locator('#treasureMe').textContent()).includes(metric === 'v' ? (own / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 }) + ' 顆鑽石' : own.toLocaleString()));
+          if (metric === 'v') assert.match(await page.locator('#treasureList .tb-row .tb-score').first().textContent(), /^[\d.,]+( [kMGTPE])? 鑽石$/, '總價值每列以鑽石為單位');
           assert.strictEqual(await page.locator('#treasureList [data-uid="u1"]').count(), 0);
           await audit(page); await shot(page, metric + '-' + config.tag);
         });
@@ -132,7 +133,7 @@ async function run() {
           assert.strictEqual(result.db.treasureBoard.u1.pub, false); assert.deepStrictEqual(result.db.treasureBoard.u1.ta, result.before);
           await page.waitForFunction(() => document.querySelector('#treasureMe').textContent.includes('S○'));
           await page.locator('[data-metric="v"]').click();
-          await page.waitForFunction(() => document.querySelector('#treasureMe').textContent.includes('12,345'));
+          await page.waitForFunction(() => document.querySelector('#treasureMe').textContent.includes('12.345 顆鑽石'));
           await audit(page); await shot(page, 'private-self-' + config.tag);
         });
         assert.deepStrictEqual(errors, []);
@@ -155,7 +156,7 @@ async function run() {
     });
     await check('沒有寶物時仍顯示本人名次', async () => {
       const { context, page, errors } = await open(browser, base, { width: 390, height: 844, theme: 'light', empty: true });
-      try { assert.ok((await page.locator('#treasureMe').textContent()).includes('總價值 0 銅')); await audit(page); assert.deepStrictEqual(errors, []); }
+      try { assert.ok((await page.locator('#treasureMe').textContent()).includes('總價值 0 顆鑽石')); await audit(page); assert.deepStrictEqual(errors, []); }
       finally { await context.close(); }
     });
     await check('其他分頁改名與設為不公開後，舊快取不會蓋回去', async () => {
