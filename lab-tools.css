@@ -99,3 +99,5 @@ html.labside-pulling .labside-edge{opacity:0}
 @media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active .labside-rail{top:62px}html.labside-active .labside-rail>button:not(.labside-fold),html.labside-active .labside-rail>.fb-tab{height:76px;min-height:76px}}
 /* 手指、閃光圈、捲動箭頭只屬於實驗步驟；側板開在任務或留言時不出現（站長 11/16：「只有實驗步驟才需要手指的那個指示跟捲動頁面的提示，任務就不用了」） */
 html[data-labside-tab=missions] .lab-stepguide,html[data-labside-tab=comments] .lab-stepguide{display:none!important}
+/* 指引按「指給我看」才出現，幾秒後淡出 */
+.lab-stepguide{transition:opacity .9s ease}.lab-stepguide.is-fading{opacity:0}
