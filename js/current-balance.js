@@ -1554,9 +1554,24 @@
     const rect=cv.getBoundingClientRect();let p;
     if(id==='nut')p=P(0,0,ZP+U1+.0025+st.nut*.001);
     else {const box=meters[id==='I1'?1:0];p=[box.x+box.w*.5,box.y+box.h*.5];}
-    return {x:rect.left+p[0],y:rect.top+p[1]};
+    const k=W?rect.width/W:1;   // 學習模式整張畫布用 transform 縮放顯示，螢幕座標要乘上縮放比例
+    return {x:rect.left+p[0]*k,y:rect.top+p[1]*k};
   }
-  window.CurrentBalanceLab={snapshot:()=>({...info(),knobs:{I1:st.I1,I2:st.I2},rows:rowsInfo().rows.map(r=>({...r})),analysis:analysis(),show:{...st.show},steps:st.steps.slice()}),preset,view:setView,redraw:requestDraw,tweak,screenPoint,
+  // 🎮 小鍵盤的預設空位（站長 11/16：鈕蓋到「從管口往內看」，「好，移開」）：畫布下半部畫著兩張放大圖，
+  // 所以停在 I₂、I₁ 兩台儀表之間的空地；空地不在畫面裡時，有左側留白就停在留白；都沒有才交給共用的預設位置。
+  function padHome(w,h){
+    const rect=cv.getBoundingClientRect(),a=meters[0],b=meters[1];if(!a||!b||!rect.width||!W)return null;
+    const k=rect.width/W,gap=(b.x-(a.x+a.w))*k,x=rect.left+(a.x+a.w)*k+(gap-w)/2,y=rect.top+(a.y+a.h/2)*k-h/2;
+    if(gap>=w+16&&y>=8&&y+h<=innerHeight-8)return {x,y};
+    // 手機儀表擠在一起沒有空隙：放在畫布正上方「2D 示意／3D 立體」那一列的右端（那裡是空的）；
+    // 這一列中線在畫面內就放，貼邊時由小鍵盤自己夾回畫面內
+    const bar=cv.closest('.stage')?.querySelector('.view-bar'),br=bar&&bar.getBoundingClientRect();
+    if(br&&br.width&&br.top+br.height/2>=8&&br.top+br.height/2<=innerHeight-8){const used=Math.max(...[...bar.children].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect().right),br.left);
+      if(br.right-used>=w+12)return {x:Math.min(rect.right,br.right)-w-4,y:br.top+br.height/2-h/2};}
+    if(rect.left>=w+16&&rect.bottom>innerHeight*.4)return {x:rect.left-w-8,y:innerHeight-h-8};
+    return null;
+  }
+  window.CurrentBalanceLab={padHome,snapshot:()=>({...info(),knobs:{I1:st.I1,I2:st.I2},rows:rowsInfo().rows.map(r=>({...r})),analysis:analysis(),show:{...st.show},steps:st.steps.slice()}),preset,view:setView,redraw:requestDraw,tweak,screenPoint,
     select(id){selectedFine=id;dispatchEvent(new Event('cb:select'));},get selected(){return selectedFine;},get three(){return view3;}};
   $('weightKind').addEventListener('change',e=>{st.weight=e.target.value;cutPiece();afterChange(true);});
   $('grainCount').addEventListener('change',e=>{st.grains=+e.target.value;cutPiece();afterChange(true);});
