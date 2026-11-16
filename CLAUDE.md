@@ -64,7 +64,7 @@
 ## 新增或修改模組的慣例
 
 - 頁面結構照現有模組：`.crumbs` 導覽（首頁／科目／分支／章）、`.lab`（畫布＋控制面板）、`.notes`（KaTeX 公式與觀察重點）、頁尾。
-- 頁尾前依序載入：KaTeX、`js/math.js`、物理核心、（有音效時）`js/sound.js`、`js/numinput.js`、頁面程式、`js/firebase-config.js`、`js/stats.js data-module="<模組>"`、`js/comments.js`。
+- 頁尾前依序載入：KaTeX、`js/math.js`、物理核心、（有音效時）`js/sound.js`、`js/numinput.js`、`js/labdeck.js`、頁面程式、`js/firebase-config.js`、`js/stats.js data-module="<模組>"`、`js/comments.js`。
 - **滑桿數字可直接輸入**（站長要求）：每個滑桿的數字放在同一個 `.slider` 的 `<output>`，由 `js/numinput.js` 自動變成可點擊輸入；讀值一律用 `LabNum.value(el)`，依實驗需要設定 `data-decimals`（打字精度可比滑桿細），`<output>` 顯示到該精度；非線性滑桿用 `LabNum.register`，程式改滑桿用 `LabNum.set` 或先 `LabNum.clear`。
 - **任務模式與倪的星星**（站長要求）：每個實驗設計約 8–12 個任務，難度 1–10 級（一般任務星星數 = 等級；隱藏任務 = 等級 × 2，算法統一用 `LabMission.starsOf`），另加 **10 個隱藏任務**（只給隱晦的提示句，完成時只說「隱藏任務完成」不說原因；站長 11/12 深夜：「每一個實驗的隱藏任務增加到十個」。已上線的隱藏任務代號、等級、判定都不改，新增的接著編號 `<代號>-h4`…`h10`；10 個分散在 3–10 級、至少 3 個在 7 級以上；每個都要有科學意義，不可以是「亂按 N 次」這種條件；任務證明要證明預設不觸發、彼此不連帶完成，試玩不可誤觸）。任務面板分「一般任務」「隱藏任務」兩區，各有展開／收合按鈕；橫式寬螢幕（≥ 1240 px）任務模式開啟時，面板變成貼在右側的一欄（`html.ms-docked`），收起時只留右邊緣的小標籤。任務必須靠操作實驗達成特定標準（例如兩發射程相等），並先用物理核心確認每個任務都做得到。寫在 `js/missions/<模組>.js`（`LabMission.register`），模組程式在關鍵時刻 `LabMission.emit('事件', {物理量})`；頁面載入 `js/missions.js data-module="<模組>"` 與任務檔（在 firebase-config.js 之後）；把模組加入 `js/missions/index.js`。新增任務後不必請站長手動同步：站長用管理員帳號登入並打開排行榜頁或該實驗頁時，`missions.js` 會自動比對 `missionDefs` 並補上新任務（排行榜頁的「同步任務清單」按鈕保留作手動備用）。
 - **全部清除**（站長要求）：會累積歷史紀錄的實驗（多條軌跡、比較用的舊軌跡、隨時間累積的圖表、統計直方圖等），在主要按鈕旁放「全部清除／Clear all」按鈕，清掉所有累積內容、回到可以重新開始的狀態，但保留目前的滑桿設定。
@@ -74,6 +74,13 @@
 - 深淺色切換：模組要監聽 `lab:themechange`，重新讀取顏色並重畫。
 - 科目頁：卡片放進對應科目頁的分支裡**對應課程的章**（`<section class="chapter" id="ch-…">`，章名不寫第幾章；細節見 HANDOFF.md 第十節），`data-module`、`data-keywords` 同義詞、`data-en`，已上線的卡片用 `<a class="module live">`；再跑 `node tools/apply-directory.cjs`、`npm run thumbs -- <代號>`、`npm run seo`、`node tools/fix-crumbs.cjs`、`node tools/build-hans.cjs`。
 - 手機 390 px 不可出現左右捲動；控制項觸控目標至少 44 px。
+- **手機上一頁或鄰近一頁就能操作完整**（11/16 站長：「必須所有的實驗室都要做這樣的優化設定」）：每個實驗頁在 `js/numinput.js` 後面載入 `js/labdeck.js`。寬度 ≤ 880 px（`.lab` 變單欄）時，右欄（`.lab > .panel`）裡有控制項的卡片自動收進主畫布正下方的分頁操作台，分頁名＝卡片標題；切換區被藏起來的卡片、分頁會跟著藏。要自己決定分頁時，卡片加 `data-deck="中文|English"`、`data-deck-order`，畫布下方放 `data-deck-anchor`（等位線就是這樣）；主開關加 `data-deck-top`；不要操作台的頁面在 `<body>` 加 `data-deck-auto="off"`。上線前跑 `npm run reach -- .shots/reach.json <代號>`：412×780 從主畫布頂到最遠看得到的操作控制項不可超過 1170 px。電腦版也一樣：步驟會叫學生按的鍵不可放在數據表或說明之後。
+- **手機、平板橫放**（11/16 站長：「萬一手機跟平板是橫着放的時候，它要如何呈現，纔能夠在單一個畫面不卷動太多的情況下，呈現所有的操作按鈕跟按鍵，還有拉條」）：`js/labdeck.js` 有三種擺法，`LabDeck.mode` 看得到。
+  - `stack`（≤ 880 px，手機直放、平板直放）：操作台在主畫布正下方。
+  - `drawer`（觸控、橫放、高 ≤ 600 px，手機橫放）：操作台固定在右邊、自己捲動，左邊是實驗；主畫布太高時只把「畫布那一塊」縮窄置中，讓畫布整個放得進一屏，播放列維持原寬；畫布高度寫死、縮窄也不會變矮的就不縮。body 右邊多留 40 px 給「留言・回報」「學習說明」側標籤。
+  - `panel`（觸控、寬 > 880 px，平板橫放）：操作台放進右欄頂端，右欄黏在螢幕上、自己捲動。
+  - 沒選到的分頁用 `.labdeck-away`（隱形、不佔高度、保留寬度），不可改回 `hidden`／`display:none`：分頁裡的畫布量到寬度 0 會畫出負半徑而出錯。drawer／panel 的 CSS 包在和 js 同樣的媒體查詢裡，轉向那一瞬間不會把畫布擠成一條縫。
+  - 滑鼠的電腦版不動。新做或大改實驗時用手機橫放 844×390、平板橫放 1180×820 各看一次。
 
 ## 任務、排行榜與成就（站長的設計決定）
 
