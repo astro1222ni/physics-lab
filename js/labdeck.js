@@ -10,13 +10,13 @@
   const T = function (a, b) { return window.LabSettings ? LabSettings.t(a, b) : a; };
   /* 三種擺法（站長 11/16：「萬一手機跟平板是橫着放的時候……單一個畫面不卷動太多……呈現所有的操作按鈕跟按鍵，還有拉條」）
    *   stack  ：寬度 ≤ 880 px（手機、平板直放）→ 操作台在主畫布正下方
-   *   drawer ：觸控裝置橫放、螢幕高 ≤ 600 px（手機橫放）→ 操作台固定在右側一整條、自己捲動；左邊畫布依螢幕高度縮放，畫布＋播放列剛好一屏
-   *   panel  ：觸控裝置、寬度 > 880 px（平板）→ 操作台放在右欄最上面，右欄黏在螢幕上、自己捲動
-   *   電腦（滑鼠）寬螢幕不改。 */
+   *   drawer ：橫放、螢幕高 ≤ 600 px（手機橫放；電腦視窗很矮時也一樣）→ 操作台固定在右側一整條、自己捲動；左邊畫布依螢幕高度縮放，畫布＋播放列剛好一屏
+   *   panel  ：寬度 > 880 px（平板橫放、電腦）→ 操作台放在右欄最上面，右欄黏在螢幕上、自己捲動
+   *   站長 11/16：「電腦的版面配置，改則與手機或平板的橫式版面配置雷同。」所以不再只限觸控裝置。 */
   const MM = function (q) { return window.matchMedia ? matchMedia(q) : { matches: false }; };
   const mq = MM('(max-width: 880px)');
-  const mqDrawer = MM('(pointer: coarse) and (orientation: landscape) and (max-height: 600px)');
-  const mqPanel = MM('(pointer: coarse) and (min-width: 881px)');
+  const mqDrawer = MM('(orientation: landscape) and (max-height: 600px)');
+  const mqPanel = MM('(min-width: 881px)');
   let anchorEl = null, mode = 'off', fitT = 0, fitN = 0;
   let deck = null, tabs = [], panes = [], cards = [], cur = 0, moved = false, offClass = '';
   const KEY = 'labdeck:' + location.pathname;

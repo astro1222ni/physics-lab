@@ -506,12 +506,15 @@
     const me = cat.find(function (x) { return x.s === SLUG; });
     const notes = document.querySelector('.notes');
     if (!me || !notes || document.querySelector('.related')) return;
-    // 頁尾：這個實驗最後更新的日期
+    // 頁尾：這個實驗最後更新的日期與時分（11/16 站長：「更新的包含日期，還有幾時幾分。」）
+    // 以 tools/stamp.py 寫進頁面的 <meta name="lab-updated">（臺灣時間）為準，連共用的操作台、側板改動都算；沒有才退回目錄的日期
     const foot = document.querySelector('footer.site');
-    if (foot && me.u && !foot.querySelector('.updated')) {
+    const metaU = document.querySelector('meta[name="lab-updated"]');
+    const upd = (metaU && metaU.content) || me.u;
+    if (foot && upd && !foot.querySelector('.updated')) {
       const u = document.createElement('span');
       u.className = 'updated';
-      u.textContent = T('　這個實驗最後更新：', ' · Last updated: ') + me.u.replace(/-/g, '/');
+      u.textContent = T('　這個實驗最後更新：', ' · Last updated: ') + upd.replace(/-/g, '/') + (metaU && metaU.content ? T('', ' (UTC+8)') : '');
       (foot.querySelector('p') || foot).appendChild(u);
     }
     const rel = pickRelated(cat, me);

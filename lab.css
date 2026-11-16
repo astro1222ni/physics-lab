@@ -1986,7 +1986,7 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
 .labdeck .seg, .labdeck .seg2, .labdeck .seg3 { margin-bottom: 4px; }
 /* 手機橫放（labdeck-drawer）：操作台固定在右側一整條，左邊主畫布那一塊照螢幕高度縮窄。
    規則包在和 labdeck.js 同一個媒體查詢裡：轉成直放的那一瞬間（js 還沒換 class）就不再套用，畫布不會被擠成一條縫 */
-@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+@media (orientation: landscape) and (max-height: 600px) {
 html.labdeck-drawer { --deck-w: clamp(260px, 38vw, 360px); }
 html.labdeck-drawer body { padding-right: var(--deck-w); } /* 側標籤蓋在畫面上，不另外留一條空白（站長 11/16：「整個畫面要滿版，然後那個側板會蓋到畫面上來」） */
 html.labdeck-drawer .labdeck { position: fixed; top: 0; right: 0; bottom: 0; z-index: 35; width: var(--deck-w); margin: 0; border-width: 0 0 0 1px; border-radius: 0;
@@ -2000,8 +2000,8 @@ html.labdeck-drawer .fb-tab, html.labdeck-drawer .lp-dock-tab { right: var(--dec
 html.labdeck-drawer .fb-tab { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); } /* 橫放螢幕矮，留言標籤放到底，不和「學習說明」疊在一起 */
 html.labdeck-drawer .lp-strip { left: calc((100% - var(--deck-w)) / 2); width: min(calc(100% - var(--deck-w)), 720px); }
 }
-/* 平板（labdeck-panel）：操作台在右欄最上面，右欄黏住螢幕、自己捲動 */
-@media (pointer: coarse) and (min-width: 881px) {
+/* 平板橫放與電腦（labdeck-panel）：操作台在右欄最上面，右欄黏住螢幕、自己捲動（站長 11/16：電腦版與平板橫放雷同） */
+@media (min-width: 881px) {
 /* 平板橫放：不再替側標籤留右邊空白，側標籤蓋在畫面上、可收到邊緣（站長 11/16） */
 html.labdeck-panel .labdeck { margin: 0 0 12px; overflow: clip; } /* clip 不算捲動容器，分頁列才能黏在右欄頂端 */
 html.labdeck-panel .labdeck-host { position: sticky; top: 8px; max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; align-self: start; }

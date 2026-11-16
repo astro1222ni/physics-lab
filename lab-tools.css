@@ -56,7 +56,7 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 @keyframes sg-arrow{50%{transform:translateY(6px)}}
 
 /* 手機橫放沿用主線右側操作台，三個側標籤與小鍵盤讓出它的寬度。 */
-@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-rail{right:calc(var(--deck-w) + 4px)}html.labside-active.labdeck-drawer .labdeck-tabs button{min-height:44px}}
+@media(orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-rail{right:calc(var(--deck-w) + 4px)}html.labside-active.labdeck-drawer .labdeck-tabs button{min-height:44px}}
 
 /* 模式入口保持乾淨，背景實驗的工具不能浮到入口上。 */
 .mg-open .lab-stepguide,.mg-open .lab-vpad,.mg-open .vpad-lens,.mg-open .labside-rail,.mg-open .labside-panel{display:none!important}
@@ -92,11 +92,11 @@ html.labside-railed.labside-pulling .labside-rail{visibility:visible;transition:
 html.labside-railed .labside-edge{display:block}
 .labside-edge[hidden]{display:none!important}
 @media(prefers-reduced-motion:reduce){.labside-rail{transition:none}.labside-edge::before{animation:none}}
-@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-edge{right:var(--deck-w)}}
+@media(orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-edge{right:var(--deck-w)}}
 @media(min-width:1240px){html.labside-docked .labside-edge{right:380px}}
 html.labside-pulling .labside-edge{opacity:0}
 .labside-rail>.labside-fold{border:2px solid var(--accent)!important;border-right:0!important;color:var(--accent);font-weight:800;background:var(--surface)}
-@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active .labside-rail{top:62px}html.labside-active .labside-rail>button:not(.labside-fold),html.labside-active .labside-rail>.fb-tab{height:76px;min-height:76px}}
+@media(orientation:landscape) and (max-height:600px){html.labside-active .labside-rail{top:62px}html.labside-active .labside-rail>button:not(.labside-fold),html.labside-active .labside-rail>.fb-tab{height:76px;min-height:76px}}
 /* 手指、閃光圈、捲動箭頭只屬於實驗步驟；側板開在任務或留言時不出現（站長 11/16：「只有實驗步驟才需要手指的那個指示跟捲動頁面的提示，任務就不用了」） */
 html[data-labside-tab=missions] .lab-stepguide,html[data-labside-tab=comments] .lab-stepguide{display:none!important}
 /* 指引按「指給我看」才出現，幾秒後淡出 */
