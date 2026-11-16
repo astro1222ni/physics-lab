@@ -139,6 +139,10 @@
     flow=StudyFlow.embed({id:'equipotential',sections:U.sections,onClass(on){if(on)classRun=JSON.parse(JSON.stringify(run));else if(classRun){run=classRun;classRun=null;}},enter,step,canAdvance,finish,render,save,start(){const b=document.querySelector('.ms-toggle');if(b&&!LabMission._state.on)b.click();document.querySelector('.ms-dock-close')?.click();scrollTo({top:0,behavior:'instant'});if(innerWidth>=1240||[2,3,5,7,8].includes(section())){P.open('concept');}lastFrame=0;if(!raf)raf=requestAnimationFrame(animate);},close(){currentExample=0;LabSteps.setActive(false);L.discardGiven();L.redraw();}});
     const begin=()=>{if(own(L.snapshot())>=6)project();flow.start(1,1);};$('studyBtn').onclick=begin;$('studyInvite').onclick=begin;$('eq-study-close').onclick=()=>{flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
     LabMission.on('complete',m=>{if(m?.study){StudyFlow.cue('star');renderMissions();finishUnit();}});
+    // 站長 11/16 回報：已登入仍顯示「回頁首登入」——側板在登入狀態讀回前就畫好，之後沒重畫。
+    // 登入完成（ready）、星星同步（synced）、改暱稱（profile）都重畫；登出或換帳號沒有事件，另外每秒比對一次帳號與完成數。
+    ['ready','synced','profile'].forEach(n=>LabMission.on(n,()=>renderMissions()));
+    {let seen='';setInterval(()=>{const s=LabMission._state||{},k=(s.user?.uid||'')+'|'+(s.ready?1:0)+'|'+Object.keys(s.done||{}).length;if(k!==seen){const first=!seen;seen=k;if(!first)renderMissions();}},1000);}
     setInterval(()=>{if(!isStudy()||document.hidden)return;const s=guideSnapshot();if(section()===4){LabSteps.feed(s);if(LabSteps.index+1!==flow.state.step)flow.go(4,LabSteps.index+1);if(!$('eq-step-tools')){const a=E('div',null,'eq-panel-tools');a.id='eq-step-tools';renderTools(a);$('lp-pane-steps').append(a);}}
       if(section()===4&&!D.reducedMotion()&&!raf)raf=requestAnimationFrame(animate);
       if(section()===1&&s.view==='rig'&&s.ready3D&&!run.flags.intro){run.flags.intro=true;emit('intro-viewed',1,{kind:'rig',ready:true});}
