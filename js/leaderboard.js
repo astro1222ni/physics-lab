@@ -29,9 +29,79 @@
     return s;
   }
 
+  // ---------- 多層收合（站長 11/16：「太長一串了，裡面所有的項目都要做收合。大抽屜裡面又有小抽屜……父、子、孫」） ----------
+  // 用原生 <details>；每個抽屜的開合記在本機（lbFold:<鍵>），下次進來維持原樣。
+  function fold(key, sumNodes, defOpen, cls) {
+    const d = el('details', 'lb-fold' + (cls ? ' ' + cls : ''));
+    let open = !!defOpen;
+    try { const v = localStorage.getItem('lbFold:' + key); if (v !== null) open = v === '1'; } catch (e) { /* 無法讀取就用預設 */ }
+    d.open = open;
+    const sm = el('summary', 'lb-fold-sum');
+    sumNodes.forEach(function (n) { sm.appendChild(n); });
+    d.appendChild(sm);
+    const body = el('div', 'lb-fold-body');
+    d.appendChild(body);
+    d.addEventListener('toggle', function () { try { localStorage.setItem('lbFold:' + key, d.open ? '1' : '0'); } catch (e) { /* 記不住也沒關係 */ } });
+    return { d: d, body: body };
+  }
+  // 父層：頁面上每一大區（「我的狀態」永遠展開）
+  const PARENT_OPEN = { board: true, treasureBoardPanel: true };
+  ['treasures', 'treasureBoardPanel', 'board', 'achievements', 'progress', 'rules', 'admin'].forEach(function (id) {
+    const sec = $(id); if (!sec) return;
+    const h2 = sec.querySelector(':scope > h2'); if (!h2) return;
+    const f = fold('p-' + id, [h2], PARENT_OPEN[id], 'lb-fold-p');
+    Array.prototype.slice.call(sec.childNodes).forEach(function (n) { f.body.appendChild(n); });
+    sec.appendChild(f.d);
+    // 子層：規則說明的每個小節
+    if (id === 'rules') {
+      let cur = null;
+      Array.prototype.slice.call(f.body.childNodes).forEach(function (n) {
+        if (n.nodeType === 1 && n.tagName === 'H3') {
+          const c = fold('r-' + (n.getAttribute('data-en') || n.textContent).toLowerCase().replace(/[^a-z0-9]+/g, '-'), [n], false, 'lb-fold-c');
+          f.body.appendChild(c.d); cur = c.body; return;
+        }
+        if (cur) cur.appendChild(n);
+      });
+    }
+  });
+  // 子層：排行清單先顯示前 10 名，第 11–100 名收起來
+  ['list', 'treasureList'].forEach(function (id) {
+    const ol = $(id); if (!ol) return;
+    ol.classList.add('lb-short');
+    const btn = el('button', 'lb-more'); btn.type = 'button'; btn.hidden = true;
+    btn.setAttribute('aria-controls', id);
+    ol.insertAdjacentElement('afterend', btn);
+    let expanded = false;
+    try { expanded = localStorage.getItem('lbFold:more-' + id) === '1'; } catch (e) { /* 忽略 */ }
+    function sync() {
+      const n = ol.querySelectorAll(':scope > li:not(.lb-empty)').length;
+      btn.hidden = n <= 10;
+      ol.classList.toggle('lb-short', !expanded);
+      btn.setAttribute('aria-expanded', String(expanded));
+      btn.textContent = expanded ? T('▲ 收起第 11 名以後', '▲ Show top 10 only') : T('▼ 展開第 11–' + n + ' 名', '▼ Show ranks 11–' + n);
+    }
+    btn.addEventListener('click', function () {
+      expanded = !expanded;
+      try { localStorage.setItem('lbFold:more-' + id, expanded ? '1' : '0'); } catch (e) { /* 忽略 */ }
+      sync();
+    });
+    new MutationObserver(sync).observe(ol, { childList: true });
+    sync();
+  });
+
   // 每日任務頁與排行榜使用同一張由核心機率公式產生的表。
   const dailyOdds = $('dailyOdds');
-  if (dailyOdds && window.LabDailyCore) dailyOdds.appendChild(window.LabDailyCore.oddsTable(document, T));
+  if (dailyOdds && window.LabDailyCore) {
+    const oddsBox = window.LabDailyCore.oddsTable(document, T);
+    dailyOdds.appendChild(oddsBox);
+    // 孫層：每日任務小節裡的兩張表各自收合
+    Array.prototype.slice.call(oddsBox.children).forEach(function (n, i) {
+      const cap = n.querySelector('caption');
+      const g = fold('g-odds-' + i, [el('span', null, cap ? cap.textContent : '')], false, 'lb-fold-g');
+      oddsBox.insertBefore(g.d, n); g.body.appendChild(n);
+      if (cap) cap.remove();   // 表題已寫在抽屜摘要上，不重複
+    });
+  }
 
   // ---------- 載入所有模組的任務檔（只註冊任務，不會在這頁判定） ----------
   const loaded = LM && LM.loadAll ? LM.loadAll() : Promise.resolve();
@@ -206,6 +276,27 @@
     return row;
   }
 
+  // 孫層：每個實驗一個抽屜，摘要是進度列，展開看每個任務完成沒（隱藏任務不露出標題）
+  function progressFold(m, all) {
+    const row = progressRow(m, all);
+    const sum = el('span', 'lb-prog');
+    Array.prototype.slice.call(row.childNodes).forEach(function (n) { sum.appendChild(n); });
+    const g = fold('m-' + m.id, [sum], false, 'lb-fold-g lb-fold-m');
+    const ul = el('ul', 'lb-mlist');
+    (all[m.id] || []).forEach(function (x) {
+      const ok = !!st.done[x.id];
+      const li = el('li', ok ? 'done' : null);
+      li.appendChild(el('span', 'lb-m-mark', ok ? '✓' : '○'));
+      li.appendChild(el('span', 'lb-m-name', x.hidden ? T('隱藏任務', 'Hidden mission') : (x.title ? T(x.title.zh, x.title.en) : x.id)));
+      li.appendChild(el('span', 'lb-m-star', (ok ? gotOf(x) : starsOf(x)) + ' ★'));
+      ul.appendChild(li);
+    });
+    g.body.appendChild(ul);
+    const go = el('a', 'lb-m-go', T('打開這個實驗 →', 'Open this lab →')); go.href = m.id + '.html';
+    g.body.appendChild(go);
+    return g.d;
+  }
+
   function renderProgress() {
     const sec = $('progress');
     if (!st.user || !st.ready) { sec.hidden = true; return; }
@@ -254,8 +345,20 @@
       const h = el('h3', 'lb-subj-head sb-' + sb.id);
       h.appendChild(el('span', null, T(sb.zh, sb.en)));
       h.appendChild(el('small', null, got + ' / ' + total + ' ★'));
-      wrap.appendChild(h);
-      mods.forEach(function (m) { wrap.appendChild(progressRow(m, all)); });
+      const c = fold('s-' + sb.id, [h], false, 'lb-fold-c');
+      wrap.appendChild(c.d);
+      // 科目（子）→ 分支（孫）→ 實驗（曾孫）→ 各任務
+      const BR = window.LAB_MODULE_BRANCH || {}, BN = window.LAB_BRANCH_NAMES || {}, order = [], groups = {};
+      mods.forEach(function (m) { const b = BR[m.id] || '-'; if (!groups[b]) { groups[b] = []; order.push(b); } groups[b].push(m); });
+      order.forEach(function (b) {
+        let bg = 0, bt = 0;
+        groups[b].forEach(function (m) { (all[m.id] || []).forEach(function (x) { bt += starsOf(x); bg += gotOf(x); }); });
+        const name = el('span', 'lb-br-name', BN[b] ? T(BN[b].zh, BN[b].en) : (b === '-' ? T('其他', 'Other') : b));
+        const num = el('small', 'lb-br-num', groups[b].length + T(' 個實驗・', ' labs · ') + bg + ' / ' + bt + ' ★');
+        const g = fold('b-' + b, [name, num], false, 'lb-fold-g lb-fold-br');
+        groups[b].forEach(function (m) { g.body.appendChild(progressFold(m, all)); });
+        c.body.appendChild(g.d);
+      });
     });
   }
 

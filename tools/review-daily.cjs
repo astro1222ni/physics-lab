@@ -77,7 +77,7 @@ async function open(browser, base, config, slug = 'daily') {
   await page.goto(base + slug + '.html' + (config.dailyMode ? '?daily=projectile-1' : ''), { waitUntil: 'load' });
   if (slug === 'daily' && !config.guest) await page.waitForFunction(() => window.LabDaily && LabDaily._D.loaded && LabMission._state.ready);
   if (config.dailyMode) await page.waitForFunction(() => window.LabDaily && LabDaily._D.loaded && document.querySelector('.dl-banner'));
-  else await page.waitForSelector('.dl-prob-table');
+  else { await page.waitForSelector('.dl-prob-table', { state: 'attached' }); await page.evaluate(() => document.querySelectorAll('#rules details').forEach(d => { d.open = true; })); await page.waitForSelector('.dl-prob-table'); }
   await page.evaluate(async () => { await document.fonts.ready; });
   return { ctx, page, errors };
 }

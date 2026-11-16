@@ -1898,3 +1898,39 @@ html.fb-open .fb-tab { visibility: hidden; }
 .fb-note { margin: 0; color: var(--muted); font-size: calc(13px * var(--fs, 1)); line-height: 1.6; }
 @media (max-width: 600px) { .fb-tab { width: 30px; padding: 10px 0; gap: 4px; font-size: calc(12px * var(--fs, 1)); border-width: 2px; } .fb-tab svg { width: 16px; height: 16px; } }
 @media print { .fb-tab, .fb-panel { display: none !important; } }
+
+/* 排行榜頁多層收合（站長 11/16：父、子、孫抽屜） */
+.lb-fold > .lb-fold-sum { list-style: none; display: flex; align-items: center; gap: 10px; min-height: 44px; cursor: pointer; border-radius: 10px; }
+.lb-fold > .lb-fold-sum::-webkit-details-marker { display: none; }
+.lb-fold > .lb-fold-sum::before { content: ""; flex: none; width: 9px; height: 9px; margin: 0 4px 0 2px; border-right: 2.5px solid var(--accent); border-bottom: 2.5px solid var(--accent); transform: rotate(-45deg); transition: transform .15s; }
+.lb-fold[open] > .lb-fold-sum::before { transform: rotate(45deg); }
+.lb-fold > .lb-fold-sum:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.lb-fold > .lb-fold-sum:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lb-fold > .lb-fold-sum > h2, .lb-fold > .lb-fold-sum > h3 { margin: 0; flex: 1; min-width: 0; }
+.lb-fold-c { border-top: 1px solid var(--border); }
+.lb-fold-c > .lb-fold-body { padding: 0 0 10px 22px; }
+.lb-fold-g { border-top: 1px dashed var(--border); }
+.lb-fold-g > .lb-fold-sum > .lb-prog { flex: 1; min-width: 0; border-top: 0; padding: 6px 0; }
+.lb-fold-g > .lb-fold-sum > span:only-child { font-weight: 700; }
+.lb-fold-g > .lb-fold-body { padding: 4px 0 10px 22px; }
+.lb-subj-head { display: flex; align-items: baseline; gap: 10px; }
+.lb-mlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.lb-mlist li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 4px 0; color: var(--muted); }
+.lb-mlist li.done { color: var(--text); }
+.lb-mlist .lb-m-mark { text-align: center; font-weight: 800; }
+.lb-mlist li.done .lb-m-mark { color: var(--ok, #16a34a); }
+.lb-mlist .lb-m-star { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-m-go { display: inline-flex; align-items: center; min-height: 44px; font-weight: 700; }
+ol.lb-short > li:nth-child(n+11) { display: none; }
+.lb-more { display: block; width: 100%; min-height: 44px; margin-top: 8px; border: 1px dashed var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; }
+.lb-more[hidden] { display: none; }
+.lb-fold-br > .lb-fold-sum { gap: 8px; }
+.lb-br-name { font-weight: 800; }
+.lb-br-num { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lb-fold-m { border-top: 1px dotted var(--border); }
+.lb-fold-m > .lb-fold-sum > .lb-prog { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.lb-fold-m > .lb-fold-sum > .lb-prog .lb-prog-num { grid-column: auto; white-space: nowrap; }
+@media (max-width: 600px) {
+  .lb-fold-c > .lb-fold-body, .lb-fold-g > .lb-fold-body { padding-left: 12px; }
+  .lb-fold > .lb-fold-sum::before { margin-right: 0; }
+}
