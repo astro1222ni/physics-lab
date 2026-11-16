@@ -38,3 +38,7 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 
 /* 獨立自學頁開留言時，兩個入口都留在抽屜可見範圍內。 */
 @media(max-width:1239px){html[data-lp-state=half] .study-page:has(#lp-tab-comments[aria-selected=true]) .lp-panel,html[data-lp-state=half] .study-page:has(#lp-tab-comments[aria-selected=true]) .lp-strip{top:min(var(--lp-half-top,38dvh),calc(100dvh - var(--study-nav,64px) - 340px))!important}}
+
+/* 手機先露出材質切換，完整說明仍可展開閱讀。 */
+.eq-intro{margin:6px 0}.eq-intro summary{min-height:44px;align-content:center;cursor:pointer;color:var(--accent);font-size:calc(16px * var(--fs,1));font-weight:700}.eq-intro p{margin:4px 0 8px}
+@media(min-width:881px){.eq-intro summary{display:none}}

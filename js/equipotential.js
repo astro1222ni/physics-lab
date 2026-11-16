@@ -1811,6 +1811,7 @@
     resetView: function () { if (view3) view3.resetCamera(); }
   };
 
+  const intro=document.querySelector('.eq-intro');if(intro){const wideIntro=matchMedia('(min-width:881px)'),syncIntro=()=>{intro.open=wideIntro.matches;};syncIntro();wideIntro.addEventListener('change',syncIntro);}
   readSliders();
   mediumControls();
   refreshOutputs();
