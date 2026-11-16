@@ -50,7 +50,7 @@
     }
     handle.addEventListener('pointerdown',e=>{if(innerWidth>=1240)return;sy=e.clientY;sh=height;handle.setPointerCapture(e.pointerId);});handle.addEventListener('pointermove',e=>{if(sy==null)return;height=Math.max(220,Math.min(innerHeight-100,sh+sy-e.clientY));doc.documentElement.style.setProperty('--labside-height',height+'px');});handle.addEventListener('pointerup',()=>{sy=null;});handle.addEventListener('pointercancel',()=>{sy=null;});
     doc.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false);});addEventListener('resize',()=>{doc.documentElement.classList.toggle('labside-docked',open&&innerWidth>=1240);});
-    function sync(){adoptFeedback();const study=!!o.study?.();rail.hidden=study;if(study&&open)setOpen(false);doc.documentElement.classList.toggle('labside-study',study);if(doc.documentElement.classList.contains('ms-docked'))doc.querySelector('.ms-dock-close')?.click();render(false);}
+    function sync(){adoptFeedback();const study=!!o.study?.();const panelOpen=innerWidth<1240&&window.LabPanel&&LabPanel.state!=='collapsed';rail.hidden=study||!!panelOpen;if(study&&open)setOpen(false);doc.documentElement.classList.toggle('labside-study',study);if(doc.documentElement.classList.contains('ms-docked'))doc.querySelector('.ms-dock-close')?.click();render(false);}
     setInterval(sync,250);window.LabMission?.on('complete',()=>render(true));sync();instance={open:k=>{tab=k;setOpen(true);},close:()=>setOpen(false),refresh:sync,get state(){return {open,tab,height};}};return instance;
   }
   window.LabSide={mount,feedbackContent,deviceLine,get instance(){return instance;}};
