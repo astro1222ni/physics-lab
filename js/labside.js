@@ -13,7 +13,15 @@
     const dark = th === 'dark' || (!th && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
     return window.innerWidth + '×' + window.innerHeight + '・' + (dark ? T('深色', 'dark') : T('淺色', 'light')) + '・' + (root.lang || '') + '・' + br + (os ? '・' + os : '');
   }
-  function feedbackContent(o){o=o||{};const box=E('div','lab-feedback-content');const compose=text=>{o.beforeCompose?.();if(window.LabComments)LabComments.compose(text);};box.append(E('p','',T('分享觀察、問問題，或回報哪一步的畫面、數字或按鈕有問題。','Share an observation, ask a question, or report a problem with a step, display or button.')),B(T('到本實驗的留言區留言','Go to this lab’s comments'),()=>compose()),B(T('回報 bug','Report a bug'),()=>compose(T('【Bug 回報】\n哪一步、按了什麼：\n看到什麼：\n應該是：\n（裝置：','[Bug report]\nWhat I did: \nWhat I saw: \nWhat I expected: \n(Device: ')+deviceLine()+T('）',')'))));return box;}
+  function feedbackContent(o){o=o||{};const box=E('div','lab-feedback-content');const compose=text=>{
+      o.beforeCompose?.();
+      if(window.LabComments){LabComments.compose(text);return;}
+      // 獨立自學頁沒有留言後端，改到指定的實驗頁使用同一套 compose。
+      const url=o.url||doc.body.dataset.commentsUrl;if(!url)return;
+      const target=new URL(url,location.href);if(target.origin!==location.origin)return;
+      const child=window.open(target.href,'_blank');if(!child)return;
+      let tries=0;const timer=setInterval(()=>{if(child.closed||++tries>100){clearInterval(timer);return;}try{if(child.LabComments){clearInterval(timer);child.LabComments.compose(text);child.opener=null;}}catch(e){clearInterval(timer);}},100);
+    };box.append(E('p','',T('分享觀察、問問題，或回報哪一步的畫面、數字或按鈕有問題。','Share an observation, ask a question, or report a problem with a step, display or button.')),B(T('到本實驗的留言區留言','Go to this lab’s comments'),()=>compose()),B(T('回報 bug','Report a bug'),()=>compose(T('【Bug 回報】\n哪一步、按了什麼：\n看到什麼：\n應該是：\n（裝置：','[Bug report]\nWhat I did: \nWhat I saw: \nWhat I expected: \n(Device: ')+deviceLine()+T('）',')'))));return box;}
   let instance;
   function mount(o){if(instance)return instance;const rail=E('nav','labside-rail');rail.setAttribute('aria-label',T('實驗側板','Lab side panels'));const pane=E('aside','labside-panel');pane.id='labside-panel';pane.setAttribute('aria-label',T('實驗步驟、任務與留言','Lab steps, missions and comments'));pane.hidden=true;const head=E('div','labside-head'),handle=B('⠿',()=>{},'labside-handle'),title=E('h2'),close=B(T('收起','Close'),()=>setOpen(false));handle.setAttribute('aria-label',T('拖曳調整側板高度','Drag to resize the drawer'));head.append(handle,title,close);const body=E('div','labside-content');pane.append(head,body);doc.body.append(rail,pane);doc.documentElement.classList.add('labside-active');
     const tabs={},names={steps:[T('步驟','Steps'),T('實驗步驟','Procedure')],missions:[T('任務','Missions'),T('本實驗的任務','Lab missions')],comments:[T('留言','Comments'),T('留言與 bug 回報','Comments and bug reports')]};let open=false,tab='steps',cache='',height=Math.round(innerHeight*.43),sy,sh,watching=false;
