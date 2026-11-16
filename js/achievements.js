@@ -689,7 +689,17 @@
           });
         }
         sec.appendChild(grid);
-        box.appendChild(sec);
+        // 子層：每個成就分類一個抽屜（站長 11/16 多層收合）；孫層是卡片裡原有的「稱號一覽」
+        const h3 = sec.querySelector(':scope > h3');
+        if (h3) {
+          const d = el('details', 'ac-cat lb-fold lb-fold-c'), sm = el('summary', 'lb-fold-sum'), key = 'lbFold:a-' + acTab + '-' + cat[0];
+          let open = false;
+          try { open = localStorage.getItem(key) === '1'; } catch (e) { /* 忽略 */ }
+          d.open = open; sm.appendChild(h3); d.appendChild(sm);
+          const body = el('div', 'lb-fold-body'); body.appendChild(grid); d.appendChild(body);
+          d.addEventListener('toggle', function () { try { localStorage.setItem(key, d.open ? '1' : '0'); } catch (e) { /* 忽略 */ } });
+          box.appendChild(d);
+        } else box.appendChild(sec);
       });
       if (acTab === 'all') box.appendChild(el('p', 'lb-note ac-stats', T('我的累計：操作 ', 'My totals: ') + c.ops.toLocaleString() + T(' 次・操作時間 ', ' interactions · ') +
         fmtVal({ time: true }, c.seconds) + T('・玩過 ', ' · ') + c.modules + T(' 種實驗・連續 ', ' experiments · streak ') + c.streak + T(' 天・累計 ', ' days · ') + c.totalDays + T(' 天', ' days in total')));

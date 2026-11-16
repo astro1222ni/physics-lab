@@ -12,7 +12,7 @@
  * 星星數 = 任務等級（1–10 顆「倪的星星」）；隱藏任務要自己猜，星星是等級的 2 倍（11/12 站長：「隱藏任務的星星給的數量要再更大方一點」）。
  * 補發：bonus/<uid>/<任務> 記錄完成後補上的星星（例如隱藏任務改成加倍以前完成的人）；完成紀錄的星星 + 補發 = 目前的星星數。
  * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth、math）與各科最後得星時間 sa/<科目>。
- * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；每天十個、每個一天只能完成一次。以前完成過的任務也能做，不再加星，但有機率掉寶。
+ * 每日任務：每天十個、每個一天一次；銅幣必掉，其他寶物獨立判定。寶物排行按累計獲得與總價值計算。
  */
 (function () {
   'use strict';
@@ -25,7 +25,7 @@
   const script = document.currentScript;
   const pageModule = script && script.getAttribute('data-module'); // 模組頁面才有；排行榜頁沒有
   const registry = {}; // moduleId → [mission]
-  const hooks = { complete: [], ready: [], synced: [] };
+  const hooks = { complete: [], ready: [], synced: [], profile: [] };
   function fire(name, arg) { hooks[name].forEach(function (f) { try { f(arg); } catch (e) { /* 忽略 */ } }); }
   const listeners = [];
   const state = {
@@ -62,7 +62,7 @@
       const list = registry[state.module] || [];
       const LD = window.LabDaily;
       list.forEach(function (m) {
-        // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，但有機率掉寶）；今天完成後就不再判定
+        // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，銅幣仍必掉）；今天完成後就不再判定
         const daily = state.daily === m.id && LD && LD.active(m.id);
         if ((state.done[m.id] && !daily) || m.pending) return;
         let ok = false;
@@ -85,6 +85,18 @@
         return window.LabShareCard ? null : loadScript(base + 'sharecard.js' + ver);
       }).then(function () { if (window.LabShareCard) window.LabShareCard.open(opts); });
     },
+    /** 回報本實驗的引導步驟；只保留最好成績，不改任務或各模組的判定。 */
+    reportSteps: reportSteps,
+    /** 讀取本人的步驟成績；省略代號時讀取本實驗，沒有紀錄則回傳 null。 */
+    steps: function (mod) { return procedureSummary(readProcedure(mod || pageModule)); },
+    /** 成績卡跨實驗統計使用；只讀目前這位玩家的本機紀錄。 */
+    allSteps: function () {
+      const out = {};
+      (window.LAB_MISSION_MODULES || Object.keys(registry).map(function (id) { return { id: id }; })).forEach(function (m) {
+        const result = LabMission.steps(m.id); if (result) out[m.id] = result;
+      });
+      return out;
+    },
     /** 依完成紀錄（任務代號 → { stars }）算出各科星星 */
     subjectStars: function (done) { return subjectStars(done); },
     /** 任務的星星數（隱藏任務是等級的 2 倍）；排行榜、成就、每日任務都用這個算 */
@@ -96,9 +108,86 @@
     // 排行榜頁用
     _state: state,
     _ready: function () { return api ? Promise.resolve(api) : (ready || Promise.resolve(null)); },
-    _autoSync: function () { return autoSync(); }
+    _autoSync: function () { return autoSync(); },
+    syncTreasure: function () { return syncTreasure(); }
   };
   window.LabMission = LabMission;
+
+  // ======================= 引導步驟：本人、本實驗、最好成績 =======================
+  // 現行 userStats 的白名單不接受步驟物件，因此只存本機，絕不試寫不合規的雲端欄位。
+  // 同一實驗可能有四步或七步等不同模式，分別保留，避免把較短流程的完成套到較長流程。
+  const procedureMemory = Object.create(null);
+  let procedureOwner = null, pendingProcedure = {}, guestProcedure = {};
+  function procedureKey(mod) { return 'lab-procedure:' + encodeURIComponent(procedureOwner || 'pending') + ':' + mod; }
+  function mergeProcedure(a, b) {
+    const out = {};
+    [a, b].forEach(function (record) { Object.keys(record || {}).forEach(function (key) {
+      const total = Number(key), v = record[key];
+      if (!Number.isInteger(total) || total <= 0 || total > 10000 || !v || !Number.isInteger(v.done) || v.done < 0 || v.done > total) return;
+      const old = out[key] || { done: 0, completedAt: 0 };
+      const at = Number.isFinite(v.completedAt) && v.completedAt > 0 && v.done === total ? v.completedAt : 0;
+      out[key] = { done: Math.max(old.done, v.done), completedAt: old.completedAt && at ? Math.min(old.completedAt, at) : old.completedAt || at };
+    }); });
+    return out;
+  }
+  function readProcedure(mod) {
+    if (!mod || !/^[a-z0-9-]{1,40}$/.test(mod)) return {};
+    const key = procedureKey(mod);
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) { /* 儲存被封鎖時仍保留本分頁成績。 */ }
+    return (procedureMemory[key] = mergeProcedure(stored, procedureMemory[key]));
+  }
+  function saveProcedure(mod, record) {
+    const key = procedureKey(mod);
+    procedureMemory[key] = record;
+    try { localStorage.setItem(key, JSON.stringify(record)); } catch (e) { /* 本分頁仍可分享，不要求開啟瀏覽器儲存。 */ }
+  }
+  function procedureSummary(record) {
+    const versions = Object.keys(record).map(function (total) {
+      return { done: record[total].done, total: Number(total), completedAt: record[total].completedAt || 0 };
+    });
+    if (!versions.length) return null;
+    versions.sort(function (a, b) {
+      return Number(!!b.completedAt) - Number(!!a.completedAt) || b.done - a.done || b.total - a.total;
+    });
+    const best = versions[0];
+    return { done: best.done, total: best.total, complete: !!best.completedAt, completedAt: best.completedAt,
+      bestDone: Math.max.apply(null, versions.map(function (v) { return v.done; })), versions: versions };
+  }
+  function reportSteps(done, total) {
+    if (!pageModule || !Number.isInteger(done) || !Number.isInteger(total) || total <= 0 || total > 10000 || done < 0 || done > total) return null;
+    const sample = {}; sample[total] = { done: done, completedAt: done === total ? Date.now() : 0 };
+    if (procedureOwner === null) {
+      pendingProcedure = mergeProcedure(pendingProcedure, sample);
+      return procedureSummary(pendingProcedure);
+    }
+    if (procedureOwner === 'guest') guestProcedure = mergeProcedure(guestProcedure, sample);
+    const old = readProcedure(pageModule), next = mergeProcedure(old, sample);
+    if (JSON.stringify(old) !== JSON.stringify(next)) saveProcedure(pageModule, next);
+    return procedureSummary(next);
+  }
+  function procedureAuth(user) {
+    const previous = procedureOwner;
+    procedureOwner = user ? user.uid : 'guest';
+    const carry = previous === null ? pendingProcedure : previous === 'guest' && user ? guestProcedure : {};
+    if (pageModule) {
+      // 只接續這次未登入操作的步驟；不搬移其他帳號或過去別人的訪客紀錄。
+      if (Object.keys(carry).length) saveProcedure(pageModule, mergeProcedure(readProcedure(pageModule), carry));
+    }
+    pendingProcedure = {};
+    guestProcedure = !user ? mergeProcedure(previous === 'guest' ? guestProcedure : {}, carry) : {};
+  }
+  function observeProcedure() {
+    if (!enabled) procedureAuth(null);
+    const root = pageModule && document.querySelector('ol.steps#steps');
+    if (!root) return;
+    function sample() {
+      const items = Array.prototype.filter.call(root.children, function (li) { return li.tagName === 'LI'; });
+      if (items.length) reportSteps(items.filter(function (li) { return li.classList.contains('done'); }).length, items.length);
+    }
+    new MutationObserver(sample).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    sample();
+  }
 
   // ======================= 載入全站清單與任務檔 =======================
   const base = script ? script.getAttribute('src').replace(/missions\.js.*$/, '') : 'js/';
@@ -111,6 +200,40 @@
     });
   }
   let indexP = null, allP = null;
+  let treasureCoreP = null, treasureSyncP = null, treasureSyncUid = null;
+  function treasureCore() {
+    if (window.LabDailyCore) return Promise.resolve(window.LabDailyCore);
+    // 先讓 HTML 裡的靜態腳本載入；避免登入補寫在解析途中重複載入核心，重設 SVG 代號。
+    if (document.readyState === 'loading') return new Promise(function (resolve) {
+      document.addEventListener('DOMContentLoaded', resolve, { once: true });
+    }).then(treasureCore);
+    if (!treasureCoreP) treasureCoreP = loadScript(base + 'daily-core.js' + ver).then(function () {
+      if (!window.LabDailyCore) { treasureCoreP = null; throw new Error('寶物核心載入失敗'); }
+      return window.LabDailyCore;
+    });
+    return treasureCoreP;
+  }
+  /** 登入補齊公開榜；同一帳號同時要求同步時共用一次查核。 */
+  function syncTreasure() {
+    if (!api || !state.user || !state.ready) return Promise.resolve(null);
+    const uid = state.user.uid;
+    if (treasureSyncP && treasureSyncUid === uid) return treasureSyncP;
+    treasureSyncUid = uid;
+    const job = treasureCore().then(function (C) {
+      return Promise.all([api.get('bag/' + uid), api.get('treasureBoard/' + uid), api.get('profiles/' + uid)]).then(function (r) {
+        if (!state.user || state.user.uid !== uid) return null;
+        // 其他分頁可能已改名或設為不公開，不能把本頁快取的舊設定寫回去。
+        const profile = r[2] || {}, name = profile.nickname, pub = profile.pub !== false;
+        if (!name) return null;
+        if (!r[1] && !C.treasureTotals(r[0]).v) return null;
+        if (C.treasureMatches(r[1], r[0], name, pub)) return r[1];
+        const record = C.treasureRecord(r[0], r[1], name, pub, api.now());
+        return api.update({ ['treasureBoard/' + uid]: record }).then(function () { return api.get('treasureBoard/' + uid); });
+      });
+    });
+    treasureSyncP = job;
+    return job.finally(function () { if (treasureSyncP === job) treasureSyncP = null; });
+  }
   function loadIndex() {
     if (!indexP) indexP = window.LAB_SUBJECT_OF ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver);
     return indexP;
@@ -219,6 +342,25 @@
         countAbove: function (stars, subj) {
           return D.get(D.query(r('scores'), D.orderByChild(subj ? 's/' + subj : 'stars'), D.startAt(stars + 1))).then(function (s) { return s.size; });
         },
+        topTreasures: function (n, metric) {
+          const key = /^(v|cu|ag|au|dia|key)$/.test(metric) ? metric : 'v';
+          const rows = function (snapshot) { const list = []; snapshot.forEach(function (child) { list.push(Object.assign({ uid: child.key }, child.val())); }); return list; };
+          return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.limitToLast(n))).then(function (snapshot) {
+            const list = rows(snapshot);
+            if (list.length < n) return list;
+            // 包含零枚的同分邊界也要補齊，依各項目的達到時間排序後才取前 100 名。
+            const edge = Math.min.apply(null, list.map(function (row) { return row[key] || 0; }));
+            return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.equalTo(edge))).then(function (same) {
+              const seen = {}; list.forEach(function (row) { seen[row.uid] = true; });
+              rows(same).forEach(function (row) { if (!seen[row.uid]) list.push(row); });
+              return list;
+            });
+          });
+        },
+        countTreasureAbove: function (value, metric) {
+          const key = /^(v|cu|ag|au|dia|key)$/.test(metric) ? metric : 'v';
+          return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.startAt(value + 1))).then(function (snapshot) { return snapshot.size; });
+        },
         /** 伺服器時間 − 本機時間（毫秒）：每日任務換日以伺服器時間為準 */
         serverOffset: function () {
           return new Promise(function (resolve) {
@@ -252,8 +394,20 @@
   if (enabled) {
     ready = (window.LAB_MISSIONS_BACKEND ? Promise.resolve(window.LAB_MISSIONS_BACKEND) : firebaseBackend()).then(function (b) {
       api = b;
+      // 任務、每日與排行榜入口共用此更新，讓個人設定和兩個公開榜一起寫入。
+      api.setNickname = function (uid, name) {
+        return treasureCore().then(function (C) { return C.updateTreasureProfile(api, uid, { nickname: name }); }).then(function () {
+          if (state.user && state.user.uid === uid) { state.nickname = name; changed(); fire('profile', state); }
+        });
+      };
+      api.setPub = function (uid, pub) {
+        return treasureCore().then(function (C) { return C.updateTreasureProfile(api, uid, { pub: pub }); }).then(function () {
+          if (state.user && state.user.uid === uid) { state.pub = pub; changed(); fire('profile', state); }
+        });
+      };
       api.onAuth(function (user) {
         state.user = user;
+        procedureAuth(user);
         state.nickname = null;
         state.done = {};
         state.ready = !user;
@@ -276,10 +430,11 @@
           fire('ready', state);
           syncSubjects(user.uid);
           syncBonus(user.uid);
+          syncTreasure().catch(function () { /* 規則未發布或網路失敗：下次登入再補，排行頁可重試 */ });
         });
       });
       return api;
-    }).catch(function () { state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
+    }).catch(function () { procedureAuth(null); state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
   }
 
   // ======================= 管理員：自動同步任務清單 =======================
@@ -727,6 +882,7 @@
   }
 
   function start() {
+    observeProcedure();
     // 模組的任務檔在本檔之後載入；等 DOM 完成再建立面板
     if (state.module) buildPanel();
     if (enabled && !window.LabAchievements && script) {
@@ -736,7 +892,7 @@
     }
     // 每日任務模式：載入每日任務的計算與介面
     if (enabled && state.daily && !window.LabDaily) {
-      (window.LabDailyCore ? Promise.resolve() : loadScript(base + 'daily-core.js' + ver)).then(function () {
+      treasureCore().then(function () {
         if (!window.LabDaily) return loadScript(base + 'daily.js' + ver);
       });
     }

@@ -26,6 +26,17 @@
 
   const modScript = document.querySelector('script[data-module]');
   const moduleId = modScript ? modScript.getAttribute('data-module') : null;
+  const accountScript = document.currentScript && document.currentScript.src;
+  let accountTreasureP = null;
+  function saveProfileNickname(uid, name) {
+    if (window.LabMission) return window.LabMission._ready().then(function (backend) { return backend.setNickname(uid, name); });
+    // 首頁及一般說明頁不一定有任務系統；改暱稱時才載入共用的寶物計算。
+    if (!accountTreasureP) accountTreasureP = window.LabDailyCore ? Promise.resolve() : new Promise(function (resolve, reject) {
+      const script = document.createElement('script'); script.src = accountScript.replace(/comments\.js/, 'daily-core.js');
+      script.onload = resolve; script.onerror = function () { accountTreasureP = null; reject(new Error('寶物資料載入失敗')); }; document.body.appendChild(script);
+    });
+    return accountTreasureP.then(function () { return window.LabDailyCore.updateTreasureProfile(api, uid, { nickname: name }); });
+  }
 
   // ======================= Firebase 後端 =======================
   function firebaseBackend() {
@@ -69,6 +80,9 @@
         signOut: function () { return Au.signOut(auth); },
         getNickname: function (uid) { return D.get(r('profiles/' + uid + '/nickname')).then(function (s) { return s.val(); }); },
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },
+        get: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
+        update: function (map) { return D.update(D.ref(db), map); },
+        now: function () { return D.serverTimestamp(); },
         isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
         homeRead: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
         watchComments: function (mod, cb) {
@@ -253,7 +267,7 @@
   function saveNickname(n) {
     n = cleanNick(n);
     if (!n) return Promise.resolve();
-    return guard(function () { return api.setNickname(state.user.uid, n); }).then(function () {
+    return guard(function () { return saveProfileNickname(state.user.uid, n); }).then(function () {
       state.nickname = n;
       state.editingNick = false;
       state.msg = '';
@@ -293,6 +307,28 @@
 
     let draft = '';
     let lastComposeKey = '';
+    // 給「留言與 bug 回報」側板用：把文字放進留言框、捲過去並聚焦（未登入時先存成草稿，登入後出現在框裡）
+    window.LabComments = {
+      compose: function (text) {
+        if (typeof text === 'string') draft = text;
+        const ta = sec.querySelector('.c-form textarea');
+        if (ta && typeof text === 'string') { ta.value = text; ta.dispatchEvent(new Event('input')); }
+        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 上方的縮圖、相關實驗會在捲動途中長高，平滑捲動停早了就再對齊一次
+        [700, 1400].forEach(function (ms) {
+          setTimeout(function () { const top = sec.getBoundingClientRect().top; if (top > 120 || top < -40) sec.scrollIntoView({ block: 'start' }); }, ms);
+        });
+        setTimeout(function () {
+          const t2 = sec.querySelector('.c-form textarea') || sec.querySelector('.c-compose button, .c-compose input');
+          if (t2) {
+            t2.focus({ preventScroll: true });
+            if (t2.setSelectionRange && typeof text === 'string') { const i = t2.value.indexOf('\n') > 0 ? t2.value.indexOf('\n', t2.value.indexOf('\n') + 1) : t2.value.length; t2.setSelectionRange(i, i); }
+          }
+        }, 450);
+      },
+      count: function () { return state.comments ? state.comments.length : null; }
+    };
+    buildFeedbackTab();
 
     function renderCompose() {
       const key = [state.ready, !!state.user, state.nickname, state.editingNick, state.busy].join('|');
@@ -436,6 +472,70 @@
   const WELCOME_KEY = 'lab-welcome-v1';
   const STAR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.6l2.9 6 6.5.8-4.8 4.5 1.2 6.5L12 17.2l-5.8 3.2 1.2-6.5L2.6 9.4l6.5-.8z"/></svg>';
   let welcome = null;
+  // ======================= 留言與 bug 回報側板（站長 11/16） =======================
+  // 站長原話：「每一個實驗都增加一個側板︰留言與 bug 回報。直接導入連到該實驗室的留言區」
+  // 11/16 先在等位線試，同日站長要求直接全站開啟（FEEDBACK_ALL = true）；要暫時只開部分實驗就改回 false、填 FEEDBACK_PILOT。
+  const FEEDBACK_ALL = true;
+  const FEEDBACK_PILOT = ['equipotential'];
+  function deviceLine() {
+    const ua = navigator.userAgent || '';
+    const br = /Edg\//.test(ua) ? 'Edge' : /OPR\//.test(ua) ? 'Opera' : /SamsungBrowser/.test(ua) ? 'Samsung' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : t('其他', 'other');
+    const os = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? 'iOS/iPadOS' : /Android/.test(ua) ? 'Android' : /Windows/.test(ua) ? 'Windows' : /Mac OS X/.test(ua) ? 'macOS' : /CrOS/.test(ua) ? 'ChromeOS' : /Linux/.test(ua) ? 'Linux' : '';
+    const root = document.documentElement;
+    const th = root.getAttribute('data-theme');
+    const dark = th === 'dark' || (!th && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    return window.innerWidth + '×' + window.innerHeight + '・' + (dark ? t('深色', 'dark') : t('淺色', 'light')) + '・' + (root.lang || '') + '・' + br + (os ? '・' + os : '');
+  }
+  function buildFeedbackTab() {
+    if (!moduleId || !(FEEDBACK_ALL || FEEDBACK_PILOT.indexOf(moduleId) >= 0)) return;
+    if (document.querySelector('.fb-tab')) return;
+    const tab = el('button', 'fb-tab');
+    tab.type = 'button';
+    tab.setAttribute('aria-haspopup', 'dialog');
+    tab.setAttribute('aria-expanded', 'false');
+    tab.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>';
+    tab.appendChild(el('span', null, t('留言・回報', 'Feedback')));
+    tab.setAttribute('aria-label', t('留言與 bug 回報', 'Comments and bug reports'));
+    const panel = el('aside', 'fb-panel');
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', t('留言與 bug 回報', 'Comments and bug reports'));
+    panel.hidden = true;
+    const head = el('div', 'fb-head');
+    head.appendChild(el('h2', null, t('留言與 bug 回報', 'Comments & bug reports')));
+    head.appendChild(button(t('關閉', 'Close'), 'fb-close', function () { toggle(false); }));
+    const intro = el('p', 'fb-intro', t('想分享觀察、問問題，或發現畫面怪怪的、數字不對、按了沒反應，都可以在這個實驗的留言區告訴倪老師。',
+      'Share an observation, ask a question, or tell Mr. Ni if something looks wrong, a number seems off or a button does nothing, right in this lab’s comments.'));
+    const count = el('p', 'fb-count');
+    const goC = button(t('💬 到本實驗的留言區留言', '💬 Go to this lab’s comments'), 'primary fb-big', function () {
+      toggle(false); if (window.LabComments) LabComments.compose();
+    });
+    const goB = button(t('🐞 回報 bug（幫你填好格式）', '🐞 Report a bug (template filled in)'), 'fb-big', function () {
+      toggle(false);
+      const tpl = t('【Bug 回報】\n哪一步、按了什麼：\n看到什麼：\n應該是：\n（裝置：', '[Bug report]\nWhat I did: \nWhat I saw: \nWhat I expected: \n(Device: ') + deviceLine() + t('）', ')');
+      if (window.LabComments) LabComments.compose(tpl);
+    });
+    const note = el('p', 'fb-note', t('留言要先用 Google 登入，只會公開你的暱稱。請不要寫姓名、學校、電話等個人資料。寫清楚「在第幾步、選了什麼」，倪老師比較好找到問題。',
+      'Posting needs a Google sign-in; only your nickname is shown. Please do not include your name, school or phone number. Saying which step and settings you used helps a lot.'));
+    [head, intro, count, goC, goB, note].forEach(function (n) { panel.appendChild(n); });
+    document.body.appendChild(tab);
+    document.body.appendChild(panel);
+    let last = null;
+    function toggle(on) {
+      panel.hidden = !on;
+      tab.setAttribute('aria-expanded', String(on));
+      document.documentElement.classList.toggle('fb-open', on);
+      if (on) {
+        last = document.activeElement;
+        const n = window.LabComments ? LabComments.count() : null;
+        count.textContent = n == null ? '' : n ? t('這個實驗目前有 ' + n + ' 則留言。', 'This lab has ' + n + ' comment' + (n === 1 ? '' : 's') + '.') : t('還沒有人留言，歡迎當第一個！', 'No comments yet. Be the first!');
+        goC.focus();
+      } else if (last && last.focus && document.contains(last)) last.focus({ preventScroll: true });
+    }
+    tab.addEventListener('click', function () { toggle(panel.hidden); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !panel.hidden) toggle(false); });
+    document.addEventListener('pointerdown', function (e) { if (!panel.hidden && !panel.contains(e.target) && !tab.contains(e.target)) toggle(false); });
+  }
+
   function welcomeSeen() { try { return !!localStorage.getItem(WELCOME_KEY); } catch (e) { return true; } }
   function welcomeMark(v) { try { localStorage.setItem(WELCOME_KEY, v); } catch (e) { /* 無法記錄時照樣關閉 */ } }
   // 實驗頁先讓學生玩一下：操作 3 次，或頁面在前景停留 40 秒，才跳登入提示（站長 11/12 同意）；首頁照舊

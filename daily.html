@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611160631"></script>
+  <script src="js/settings.js?v=202611161200"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Daily Missions | Astro Ni Lab">每日任務｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
+  <meta name="description" content="每天十個每日任務，每個一天完成一次：銅幣必掉，銀幣、金幣、鑽石與稀有鑰匙獨立掉落；機率依難度，數量權重固定。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/daily.html">
   <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/daily.html?lang=zh-Hans">
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/daily.html?lang=en">
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:title" content="每日任務｜讓倪動手⚡高中全科模擬實驗室">
-  <meta property="og:description" content="每天從實驗任務中隨機抽出十個每日任務，每個一天完成一次：有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙。">
+  <meta property="og:description" content="每天十個每日任務，每個一天完成一次：銅幣必掉，銀幣、金幣、鑽石與稀有鑰匙獨立掉落；機率依難度，數量權重固定。">
   <meta property="og:url" content="https://lab.astroni.org/daily.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/daily.jpg">
   <meta property="og:image:width" content="1200">
@@ -26,16 +26,18 @@
   <meta name="twitter:card" content="summary_large_image">
   <!-- SEO-END -->
 
-  <link rel="stylesheet" href="lab.css?v=202611160631">
+  <link rel="stylesheet" href="lab.css?v=202611161200">
+  <link rel="stylesheet" href="daily.css?v=202611161108" data-daily-style>
 </head>
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
       <nav class="crumbs"><a href="index.html" data-en="Lab home">實驗室首頁</a></nav>
       <h1 class="dl-h1"><span class="dl-h1-ico" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="4.5" width="18" height="16.5" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="15.2" r="2.7" fill="currentColor"/></svg></span><span data-en="Daily Missions">每日任務</span></h1>
-      <p data-en="Ten missions a day, drawn at random from the experiments’ missions. Clear them to collect copper, silver and gold coins, diamonds and rare keys. Each one counts once a day — when all ten are done, that’s it until tomorrow. A mission you have done before earns no extra stars, but treasure can still drop.">每天從實驗的任務中隨機抽出十個。完成就有機會收集銅幣、銀幣、金幣、鑽石與稀有鑰匙；每個每日任務一天只能完成一次，十個做完，這一天就結束。以前完成過的任務不會再加星，但一樣有機會掉寶。</p>
+      <p data-en="Ten daily missions, each counting once a day. Every clear guarantees copper coins; silver, gold, diamonds and rare keys are rolled independently, so all five can drop together. Drop chances depend only on difficulty, and amount weights are fixed. Previously claimed missions earn no more stars but follow the same drop rules.">每天十個每日任務，每個一天只能完成一次。完成必掉銅幣，銀幣、金幣、鑽石與稀有鑰匙各自獨立判定，最多五種一起掉！機率只看任務難度，數量權重固定。領過星星的任務不再加星，掉寶規則相同。</p>
     </header>
 
+    <p class="dl-links"><a href="leaderboard.html#treasure-board" data-en="Treasure rankings: compare all-time totals and value →">寶物排行：看看累計收集與總價值 →</a></p>
     <div id="dailyApp" class="dl-app" aria-live="polite"><p class="lb-note" data-en="Loading…">載入中…</p></div>
 
     <section class="lb-rules dl-rules" id="rules">
@@ -43,9 +45,9 @@
       <ul>
         <li data-en="Daily missions need a Google sign-in. Every day at 00:00 Taiwan time you get ten new missions: four easy (levels 1–3), three medium (4–6) and three hard (7–10). Hidden missions are never chosen.">每日任務需要登入 Google 帳號。每天臺灣時間 00:00 換新十個任務：簡單（1～3 級）4 個、中等（4～6 級）3 個、困難（7～10 級）3 個，不會抽到隱藏任務。</li>
         <li data-en="Press “Start the mission” to open the experiment in daily mode, then reach the goal as usual. Each daily mission counts once a day; when all ten are done, there are no more until tomorrow.">按「前往挑戰」會用每日任務模式打開實驗，照平常的方式達成目標。每個每日任務一天只能完成一次，十個都做完，這一天就不能再做了。</li>
-        <li data-en="Every daily mission you clear has a chance to drop treasure — the same chance whether the mission is new to you or not. A drop is always a single kind of treasure, never two kinds at once: 1–5 copper coins, 1–3 silver coins, 1–2 gold coins, 1 diamond or 1 rare key.">每完成一個每日任務，都有機會掉寶；新任務和以前做過的任務，掉寶機率一樣。每次掉寶只會掉一種，不會同時掉兩種：銅幣 1～5 枚、銀幣 1～3 枚、金幣 1～2 枚、鑽石 1 顆或稀有鑰匙 1 把。</li>
+        <li data-en="Every clear guarantees 1–5 copper coins. Silver coins (1–3), gold coins (1–2), diamonds (1) and rare keys (1) are rolled independently; several kinds or all five can drop together. New and previously claimed missions use the same rules.">每次完成必掉銅幣 1～5 枚。銀幣（1～3 枚）、金幣（1～2 枚）、鑽石（1 顆）、稀有鑰匙（1 把）各自獨立判定，可以同時掉多種，最多五種全掉。新任務與領過星星的任務規則相同。</li>
         <li data-en="A mission you have never cleared also earns its stars as usual (shown as “+N stars”). A mission whose stars you have already claimed (“N stars claimed”) earns no more.">以前沒完成過的任務，完成時照樣獲得星星（卡片上標「+N 顆星」）；已經領過星星的任務（標「N 顆星已領過」）不會再加星。</li>
-        <li data-en="The harder the mission, and the bigger your share of all the stars the site currently offers, the likelier a drop, the rarer the treasure and the more coins in it (a diamond or rare key is always just one). When new missions are added the site’s total grows, so your share — and your chances — fall unless you keep collecting. The table above lists the drop chance and how many of each treasure you can expect per mission.">任務越難、你持有的星星占全站目前總星數的比例越高，越容易掉寶、越容易掉出稀有寶物，掉到的錢幣也越多（鑽石與稀有鑰匙每次最多 1 個）。網站新增任務後總星數會變多，你的星星沒跟上，比例和掉寶機率就會下降。上方的表格列出掉寶機率，以及每完成一個任務平均可以拿到幾個寶物（期望值）。</li>
+        <li data-en="Drop chances depend only on mission difficulty: copper 100%, silver 30–60%, gold 10–28%, diamond 2–9%, rare key 0.5–3.5%. Stars and star share have no effect. Amount weights are fixed: copper 5:4:3:2:1, silver 3:2:1, gold 2:1; diamonds and keys are always 1. The table above gives the formulas, levels 1/5/10 and expected values.">掉落機率只看任務難度：銅幣 100%、銀幣 30～60%、金幣 10～28%、鑽石 2～9%、稀有鑰匙 0.5～3.5%，與星星數及星星比例無關。數量權重固定：銅幣 5:4:3:2:1、銀幣 3:2:1、金幣 2:1；鑽石與鑰匙各 1 個。上表列出公式、1／5／10 級機率與期望值。</li>
         <li data-en="“My treasures” shows two numbers: all-time (everything you have ever won) and left now. What treasures are for will be announced later; spending them will lower “left now” but never “all-time”.">「我的寶物」有兩個數字：累計獲得（總共拿過多少）和現在剩下。寶物的用途之後公布；之後用掉寶物時，現在剩下會減少，累計獲得不變。</li>
         <li data-en="Treasures can only be earned by doing experiments. Please play fair: results obtained by technical tricks may be removed.">寶物只能靠做實驗取得。請公平遊戲：以技術手段取得的寶物，管理員可以移除。</li>
       </ul>
@@ -55,12 +57,12 @@
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611160631"></script>
-  <script src="js/firebase-config.js?v=202611160631"></script>
-  <script src="js/missions.js?v=202611160631"></script>
-  <script src="js/missions/index.js?v=202611160631"></script>
-  <script src="js/daily-core.js?v=202611160631"></script>
-  <script src="js/daily.js?v=202611160631"></script>
-  <script src="js/comments.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611161200"></script>
+  <script src="js/firebase-config.js?v=202611161200"></script>
+  <script src="js/missions.js?v=202611161200"></script>
+  <script src="js/missions/index.js?v=202611161200"></script>
+  <script src="js/daily-core.js?v=202611161200"></script>
+  <script src="js/daily.js?v=202611161200"></script>
+  <script src="js/comments.js?v=202611161200"></script>
 </body>
 </html>

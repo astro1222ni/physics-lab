@@ -17,11 +17,14 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { launch } = require('G:/physics-lab/tools/browser.cjs');
+const { launch } = require('./browser.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
 const SHOTS = args.includes('--shots');
+// 指定驗收證據位置；未指定時維持原本的 .shots。
+const SHOT_DIR = process.env.LAB_SHOTS_DIR || path.join(ROOT, '.shots');
+const SHOT_PREFIX = process.env.LAB_SHOTS_PREFIX || '';
 // 頁面可用空格或逗號分開（npm run check -- a,b,c 也可以）
 let pages = args.filter(a => !a.startsWith('--')).flatMap(a => a.split(',')).map(a => a.trim().replace(/\.html$/, '')).filter(Boolean);
 const missing = pages.filter(p => !fs.existsSync(path.join(ROOT, p + '.html')));
@@ -52,7 +55,7 @@ const SUPS = /[⁰⁴-₟⃗]/;
 
 server.listen(0, '127.0.0.1', async () => {
   const base = 'http://127.0.0.1:' + server.address().port + '/';
-  if (SHOTS) fs.mkdirSync(path.join(ROOT, '.shots'), { recursive: true });
+  if (SHOTS) fs.mkdirSync(SHOT_DIR, { recursive: true });
   const browser = await launch();
   let bad = 0;
   for (const slug of pages) {
@@ -102,13 +105,13 @@ server.listen(0, '127.0.0.1', async () => {
         if (r.sups.length) probs.push('上標／下標數字字元：' + JSON.stringify(r.sups));
         const tag = `${slug} ${c.w}px ${c.scheme} ${c.lang} ×${c.fs}`;
         if (probs.length) { bad++; console.log('✗ ' + tag + '\n    ' + probs.join('\n    ')); } else console.log('✓ ' + tag);
-        if (SHOTS) await page.screenshot({ path: path.join(ROOT, '.shots', `${slug}-${c.w}-${c.scheme}-${c.lang}.png`) });
+        if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, `${SHOT_PREFIX}${slug}-${c.w}-${c.scheme}-${c.lang}.png`) });
       } catch (e) { bad++; console.log('✗ ' + slug + ' ' + c.w + ' 無法載入：' + e.message); }
       await ctx.close();
     }
   }
   await browser.close();
   server.close();
-  console.log(bad ? `\n有 ${bad} 個組合有問題。` : '\n全部通過。' + (SHOTS ? '截圖在 .shots/，請親自看過。' : ''));
+  console.log(bad ? `\n有 ${bad} 個組合有問題。` : '\n全部通過。' + (SHOTS ? '截圖在 ' + SHOT_DIR + '，請親自看過。' : ''));
   process.exit(bad ? 1 : 0);
 });

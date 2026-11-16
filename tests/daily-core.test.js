@@ -99,114 +99,115 @@ test('長期來看每個任務都抽得到（均勻）', () => {
   easy.forEach(m => near(count[m.id] || 0, exp, exp * 0.2, m.id));
 });
 
-test('掉寶機率加總為 1，且都大於 0', () => {
-  for (let lv = 1; lv <= 10; lv++) for (const s of [0, 10, 100, 1000, 5000]) {
-    const p = C.table(lv, s, 5000);
-    near(p.reduce((a, b) => a + b, 0), 1, 1e-12);
-    p.forEach(x => assert.ok(x > 0));
+test('1、5、10 級機率符合公式，五種獨立機率不必加總為 1', () => {
+  for (const [lv, expected] of [[1, [1, .30, .10, .02, .005]], [5, [1, 13 / 30, .18, 23 / 450, 11 / 600]], [10, [1, .60, .28, .09, .035]]]) {
+    C.dropChances(lv).forEach((p, i) => near(p, expected[i], 1e-12, lv + ' 級 ' + C.ITEMS[i].id));
+  }
+  for (let lv = 1; lv <= 10; lv++) {
+    const p = C.dropChances(lv);
+    assert.strictEqual(p[0], 1);
+    for (let i = 1; i < 5; i++) assert.ok(p[i] > 0 && p[i] < p[i - 1], '越稀有越難掉');
+    if (lv < 10) C.dropChances(lv + 1).slice(1).forEach((x, i) => assert.ok(x > p[i + 1]));
   }
 });
 
-test('兩個端點：1 級沒有星星、10 級拿到全站所有星星', () => {
-  const lo = C.table(1, 0, 500), hi = C.table(10, 500, 500);
-  const n = a => { const s = a.reduce((x, y) => x + y, 0); return a.map(x => x / s); };
-  n(C.W0).forEach((x, i) => near(lo[i], x, 1e-12, C.ITEMS[i].id));
-  n(C.W1).forEach((x, i) => near(hi[i], x, 1e-12, C.ITEMS[i].id));
-  near(lo[4], 0.002, 1e-12, '最低的鑰匙機率 0.2%');
-  near(hi[4], 0.05, 1e-12, '最高的鑰匙機率 5%');
+test('等級邊界：超出範圍限在 1–10，無效值當作 1 級', () => {
+  for (const lv of [0, -4, NaN, undefined]) assert.deepStrictEqual(C.dropChances(lv), C.dropChances(1));
+  for (const lv of [11, 100]) assert.deepStrictEqual(C.dropChances(lv), C.dropChances(10));
 });
 
-test('任務越難、星星越多，鑽石與鑰匙越容易掉、銅幣越少', () => {
-  for (const s of [0, 50, 500, 3000]) for (let lv = 1; lv < 10; lv++) {
-    const a = C.table(lv, s, 3000), b = C.table(lv + 1, s, 3000);
-    assert.ok(b[3] > a[3] && b[4] > a[4] && b[0] < a[0], `等級 ${lv}→${lv + 1}，星星 ${s}`);
+test('銅幣必掉；同次可五種全掉，依銅銀金鑽鑰排序且數量不超過上限', () => {
+  assert.deepStrictEqual(C.roll(1, () => 0), C.ITEMS.map(it => ({ item: it.id, qty: 1 })));
+  const solo = [0, .999999, .999999, .999999, .999999, .999999];
+  assert.deepStrictEqual(C.roll(10, () => solo.shift()), [{ item: 'cu', qty: 5 }]);
+  const hi = [0, .999999, 0, .999999, 0, .999999, 0, .999999, 0, .999999];
+  assert.deepStrictEqual(C.roll(10, () => hi.shift()), C.ITEMS.map(it => ({ item: it.id, qty: it.max })));
+  const rand = C.rng(42);
+  for (let n = 0; n < 10000; n++) {
+    const drops = C.roll(1 + n % 10, rand);
+    assert.ok(drops.length >= 1 && drops.length <= 5);
+    assert.strictEqual(drops[0].item, 'cu');
+    assert.strictEqual(new Set(drops.map(x => x.item)).size, drops.length);
+    drops.forEach(drop => {
+      const it = C.ITEMS.find(x => x.id === drop.item);
+      assert.ok(Number.isInteger(drop.qty) && drop.qty >= it.min && drop.qty <= it.max);
+    });
   }
-  for (let lv = 1; lv <= 10; lv++) for (const [s1, s2] of [[0, 10], [10, 100], [100, 1000], [1000, 1999]]) {
-    const a = C.table(lv, s1, 3000), b = C.table(lv, s2, 3000);
-    assert.ok(b[3] > a[3] && b[4] > a[4] && b[0] < a[0], `星星 ${s1}→${s2}，等級 ${lv}`);
+});
+
+test('機率界線：亂數等於機率時不掉，前面未掉仍可掉鑽石與鑰匙', () => {
+  for (const lv of [1, 5, 10]) {
+    const p = C.dropChances(lv), rolls = [0, 0, ...p.slice(1)];
+    assert.deepStrictEqual(C.roll(lv, () => rolls.shift()), [{ item: 'cu', qty: 1 }]);
+    const rareOnly = [0, 0, .999999, .999999, 0, 0, 0, 0];
+    assert.deepStrictEqual(C.roll(lv, () => rareOnly.shift()).map(x => x.item), ['cu', 'dia', 'key']);
   }
 });
 
-test('星星加成 ＝ 玩家星星 ÷ 全站總星數：0 是 0、拿滿是 1、遞增；全站總星數變多時下降', () => {
-  assert.strictEqual(C.starBoost(0, 500), 0);
-  assert.strictEqual(C.starBoost(500, 500), 1);
-  near(C.starBoost(125, 500), 0.25, 1e-12);
-  assert.strictEqual(C.starBoost(1e6, 500), 1, '超過也只到 1');
-  assert.strictEqual(C.starBoost(300, 0), 0, '全站總星數不明時不加成');
-  assert.strictEqual(C.starBoost(300), 0);
-  for (let s = 0; s < 500; s += 37) assert.ok(C.starBoost(s + 37, 500) > C.starBoost(s, 500));
-  for (let t = 400; t < 2000; t += 100) assert.ok(C.starBoost(300, t + 100) < C.starBoost(300, t), '總星數 ' + t + '→' + (t + 100));
+test('獨立性：三個等級各 20 萬次，頻率誤差在 1 個百分點內，聯合機率符合乘積', () => {
+  for (const lv of [1, 5, 10]) {
+    const rand = C.rng(111600 + lv), N = 200000, counts = [0, 0, 0, 0, 0];
+    const pairs = Array.from({ length: 5 }, () => Array(5).fill(0));
+    for (let n = 0; n < N; n++) {
+      const seen = new Set(C.roll(lv, rand).map(x => x.item));
+      C.ITEMS.forEach((it, i) => {
+        if (!seen.has(it.id)) return;
+        counts[i]++;
+        C.ITEMS.forEach((jt, j) => { if (seen.has(jt.id)) pairs[i][j]++; });
+      });
+    }
+    const p = C.dropChances(lv);
+    counts.forEach((count, i) => near(count / N, p[i], .01, lv + ' 級 ' + C.ITEMS[i].id));
+    for (let i = 1; i < 5; i++) for (let j = i + 1; j < 5; j++) {
+      near(pairs[i][j] / N, p[i] * p[j], .003, lv + ' 級 ' + C.ITEMS[i].id + ' 與 ' + C.ITEMS[j].id);
+    }
+    assert.strictEqual(counts[0], N);
+  }
 });
 
-test('全站總星數：所有實驗的所有任務等級加總', () => {
+test('數量權重及平均數固定，不隨等級改變', () => {
+  const weights = { cu: [5, 4, 3, 2, 1], ag: [3, 2, 1], au: [2, 1], dia: [1], key: [1] };
+  C.ITEMS.forEach(it => {
+    const w = weights[it.id], sum = w.reduce((a, b) => a + b, 0);
+    assert.deepStrictEqual(C.qtyTable(it.id), w.map(x => x / sum));
+    assert.strictEqual(C.qtyTable(it.id).length, it.max - it.min + 1);
+  });
+  near(C.qtyMean('cu'), 7 / 3, 1e-12); near(C.qtyMean('ag'), 5 / 3, 1e-12); near(C.qtyMean('au'), 4 / 3, 1e-12);
+  assert.strictEqual(C.qtyMean('dia'), 1); assert.strictEqual(C.qtyMean('key'), 1);
+});
+
+test('抽樣數量符合固定權重：1 級及 10 級各 20 萬次，誤差在 1 個百分點內', () => {
+  for (const lv of [1, 10]) {
+    const rand = C.rng(991116 + lv), counts = {}, totals = {};
+    for (let n = 0; n < 200000; n++) C.roll(lv, rand).forEach(drop => {
+      counts[drop.item] = counts[drop.item] || Array(5).fill(0);
+      counts[drop.item][drop.qty - 1]++;
+      totals[drop.item] = (totals[drop.item] || 0) + 1;
+    });
+    C.ITEMS.forEach(it => C.qtyTable(it.id).forEach((p, j) => near(counts[it.id][j] / totals[it.id], p, .01, lv + ' 級 ' + it.id + ' ×' + (j + 1))));
+  }
+});
+
+test('和星星無關：同等級不同星星與全站總星數，使用相同亂數結果完全相同', () => {
+  for (const lv of [1, 5, 10]) {
+    const samples = [[0, 500], [125, 500], [500, 500], [500, 50000]].map(([stars, total]) => {
+      const rand = C.rng(1611 + lv);
+      // 新介面只取等級與亂數；額外的舊星星資料也不能改變掉落及數量。
+      assert.deepStrictEqual(C.dropChances(lv, stars, total), C.dropChances(lv));
+      C.ITEMS.forEach(it => assert.deepStrictEqual(C.qtyTable(it.id, lv, stars, total), C.qtyTable(it.id)));
+      return Array.from({ length: 2000 }, () => C.roll(lv, rand, stars, total));
+    });
+    samples.slice(1).forEach(sample => assert.deepStrictEqual(sample, samples[0]));
+  }
+});
+
+test('星星比例與總星數保留給統計，隱藏任務的星星加倍', () => {
+  assert.strictEqual(C.starBoost(0, 500), 0); assert.strictEqual(C.starBoost(500, 500), 1);
+  near(C.starBoost(125, 500), .25, 1e-12);
+  assert.strictEqual(C.starBoost(1e6, 500), 1); assert.strictEqual(C.starBoost(300, 0), 0);
   assert.strictEqual(C.siteStars({ a: [{ level: 3 }, { level: 10 }], b: [{ level: 1 }], c: [] }), 14);
   assert.strictEqual(C.siteStars(null), 0);
-  // 隱藏任務的星星是等級的 2 倍
   assert.strictEqual(C.siteStars({ a: [{ level: 3 }, { level: 4, hidden: true }] }), 11);
-});
-
-test('每次完成的掉寶機率介於 27.5% 與 60% 之間，隨等級與星星遞增', () => {
-  near(C.repeatChance(1, 0, 500), 0.25, 1e-12);
-  near(C.repeatChance(10, 500, 500), 1, 1e-12);
-  near(C.repeatChance(1, 500, 500), 0.5, 1e-12);
-  near(C.repeatChance(10, 0, 500), 0.6, 1e-12);
-  near(C.repeatChance(5, 250, 500), ((0.25 + 0.35 * 4 / 9) + (0.5 + 0.5 * 4 / 9)) / 2, 1e-12);
-  for (let lv = 1; lv < 10; lv++) assert.ok(C.repeatChance(lv + 1, 100, 500) > C.repeatChance(lv, 100, 500));
-  assert.ok(C.repeatChance(5, 200, 800) < C.repeatChance(5, 200, 400), '星星沒增加、全站總星數變多 → 機率下降');
-});
-
-test('sure = true 時一定掉寶，數量在範圍內', () => {
-  const r = C.rng(42);
-  for (let i = 0; i < 5000; i++) {
-    const d = C.roll(1 + (i % 10), i, 5000, true, r);
-    assert.ok(d, '一定掉');
-    const it = C.ITEMS.find(x => x.id === d.item);
-    assert.ok(d.qty >= it.min && d.qty <= it.max && Number.isInteger(d.qty), d.item + ' ×' + d.qty);
-  }
-});
-
-test('抽樣分布符合機率表（蒙地卡羅，20 萬次）', () => {
-  const r = C.rng(7);
-  for (const [lv, s, t] of [[2, 0, 500], [9, 800, 1000]]) {
-    const N = 200000, cnt = [0, 0, 0, 0, 0];
-    let drops = 0;
-    for (let i = 0; i < N; i++) { const d = C.roll(lv, s, t, false, r); if (d) { drops++; cnt[C.ITEMS.findIndex(x => x.id === d.item)]++; } }
-    near(drops / N, C.repeatChance(lv, s, t), 0.005, '掉寶率');
-    const p = C.table(lv, s, t);
-    cnt.forEach((c, i) => near(c / drops, p[i], Math.max(0.004, p[i] * 0.08), C.ITEMS[i].id));
-  }
-});
-
-test('數量跟運氣連動：運氣 0 偏少、運氣 1 偏多；鑽石與鑰匙固定 1 個', () => {
-  // 運氣 0（1 級、沒有星星）：銅幣權重 5:4:3:2:1 → 平均 7/3；運氣 1（10 級、拿滿星星）倒過來 → 平均 11/3
-  near(C.qtyMean('cu', 1, 0, 500), 7 / 3, 1e-12); near(C.qtyMean('cu', 10, 500, 500), 11 / 3, 1e-12);
-  near(C.qtyMean('ag', 1, 0, 500), 5 / 3, 1e-12); near(C.qtyMean('ag', 10, 500, 500), 7 / 3, 1e-12);
-  near(C.qtyMean('au', 1, 0, 500), 4 / 3, 1e-12); near(C.qtyMean('au', 10, 500, 500), 5 / 3, 1e-12);
-  for (const id of ['dia', 'key']) for (const [lv, s] of [[1, 0], [10, 500]]) {
-    assert.deepStrictEqual(C.qtyTable(id, lv, s, 500), [1]);
-    assert.strictEqual(C.qtyMean(id, lv, s, 500), 1);
-  }
-  for (const id of ['cu', 'ag', 'au']) {
-    for (let lv = 1; lv <= 10; lv++) near(C.qtyTable(id, lv, 200, 500).reduce((a, b) => a + b, 0), 1, 1e-12);
-    for (let lv = 1; lv < 10; lv++) assert.ok(C.qtyMean(id, lv + 1, 200, 500) > C.qtyMean(id, lv, 200, 500), id + ' 等級 ' + lv);
-    assert.ok(C.qtyMean(id, 5, 400, 500) > C.qtyMean(id, 5, 100, 500), id + ' 星星比例越高越多');
-    assert.ok(C.qtyMean(id, 5, 200, 1000) < C.qtyMean(id, 5, 200, 400), id + ' 全站總星數變多、星星沒跟上 → 變少');
-  }
-});
-
-test('抽樣的數量分布符合 qtyTable（蒙地卡羅）', () => {
-  const r = C.rng(99);
-  for (const [lv, s] of [[1, 0], [10, 500]]) {
-    const cnt = {}, tot = {};
-    for (let i = 0; i < 150000; i++) {
-      const d = C.roll(lv, s, 500, true, r);
-      const it = C.ITEMS.find(x => x.id === d.item);
-      assert.ok(d.qty >= it.min && d.qty <= it.max, d.item + ' ×' + d.qty);
-      (cnt[d.item] = cnt[d.item] || []); cnt[d.item][d.qty - it.min] = (cnt[d.item][d.qty - it.min] || 0) + 1; tot[d.item] = (tot[d.item] || 0) + 1;
-    }
-    for (const id of ['cu', 'ag']) C.qtyTable(id, lv, s, 500).forEach((p, j) => near((cnt[id][j] || 0) / tot[id], p, 0.02, id + ' ×' + (j + 1) + '（' + lv + ' 級）'));
-    for (const id of ['dia', 'key']) if (tot[id]) assert.strictEqual(cnt[id].length, 1, id + ' 只會掉 1 個');
-  }
 });
 
 test('持有數：現在剩下 = 累計獲得 − 已使用，不會小於 0', () => {

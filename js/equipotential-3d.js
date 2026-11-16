@@ -14,7 +14,7 @@
     const T = env.T;
     const host = env.host;
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('電位的 3D 地形：高度代表電位（可拖曳旋轉、縮放）', '3D landscape of the potential: height = potential (drag to rotate, pinch or scroll to zoom)'));
+    canvas.setAttribute('aria-label', T('電位的 3D 地形：高度代表電位（可拖曳旋轉；切到「平移」可上下左右拖曳；雙指或滾輪朝該處放大）', '3D landscape of the potential: height = potential (drag to rotate; switch to Pan to drag the view; pinch or scroll to zoom there)'));
     host.appendChild(canvas);
     let renderer;
     try {
@@ -33,12 +33,13 @@
     camera.up.set(0, 0, 1);    // 電位（高度）朝上；必須在建立 OrbitControls 之前設定
     const viewDir = new THREE.Vector3(0.32, -1.25, 1.0).normalize();
     const controls = new lib.OrbitControls(camera, canvas);
-    const nav = window.LabView3DNav ? LabView3DNav.attach({THREE:THREE,controls:controls,host:env.host,canvas:canvas,radius:35,T:T}) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.minDistance = 12;
     controls.maxDistance = 220;
     controls.maxPolarAngle = Math.PI * 0.49;
+    // 站長 11/16：3D 也要能上下左右、斜向拖曳平移，朝游標放大（共用 js/view3d-nav.js）
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE: THREE, controls: controls, canvas: canvas, host: env.host, radius: Math.hypot(W, H) * 0.45, T: T }) : null;
 
     const hemi = new THREE.HemisphereLight(0xffffff, 0x8a8a8a, 1.5);
     hemi.position.set(0, 0, 1);
@@ -332,6 +333,7 @@
       camera.position.copy(center).addScaledVector(dir, dist * 0.94);
       camera.updateProjectionMatrix();
       controls.update();
+      if (nav) nav.home();
     }
 
     // ---- 繪製 ----
@@ -406,7 +408,8 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
-        if(nav)nav.dispose(); controls.dispose();
+        controls.dispose();
+        if (nav) nav.dispose();
         disposeObject(scene);
         renderer.dispose();
         renderer.forceContextLoss();

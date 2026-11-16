@@ -1359,8 +1359,8 @@
     cv.setAttribute('aria-label', benchAria());
     cv.setAttribute('data-en-aria-label', benchAria(true));
     $('landscapeHint').textContent = state.medium === 'water'
-      ? T('曲面高度＝水中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉，雙指或滾輪縮放。', 'Surface height = the water potential, using the 2D solution. This is a potential graph, not a rising water surface. Drag to rotate; pinch or scroll to zoom.')
-      : T('曲面高度＝導電紙上該點的電位，與 2D 共用數值解。拖曳旋轉，雙指或滾輪縮放。', 'Surface height = the potential on the paper, using the 2D solution. Drag to rotate; pinch or scroll to zoom.');
+      ? T('曲面高度＝水中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉；左下角切到「平移」可上下左右、斜向拖曳；雙指或滾輪朝該處放大。', 'Surface height = the water potential, using the 2D solution. This is a potential graph, not a rising water surface. Drag to rotate; switch to Pan (bottom left) to drag the view in any direction; pinch or scroll to zoom there.')
+      : T('曲面高度＝導電紙上該點的電位，與 2D 共用數值解。拖曳旋轉；左下角切到「平移」可上下左右、斜向拖曳；雙指或滾輪朝該處放大。', 'Surface height = the potential on the paper, using the 2D solution. Drag to rotate; switch to Pan (bottom left) to drag the view in any direction; pinch or scroll to zoom there.');
     $('landscapeHint').removeAttribute('data-en');
   }
   function supplyStatus() {
