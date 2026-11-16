@@ -322,7 +322,7 @@
     c.fillStyle = '#ffffff'; c.font = f(40, 800);
     c.fillText(fit(c, T('一起來動手做實驗！', 'Come and try the experiments!'), QW, 40, 800), X, fy + 36);
     c.fillStyle = '#ffd75e'; c.font = f(36, 700);
-    c.fillText(fit(c, d.url.replace(/^https:\/\//, '').replace(/\/$/, ''), QW, 36, 700), X, fy + 90);
+    c.fillText('lab.astroni.org', X, fy + 90);   // 站長 11/16：卡面只寫網域；QR code 仍連到該實驗頁
     c.fillStyle = '#b6d8d1'; c.font = f(28, 500);
     c.fillText(fit(c, T('免安裝・免登入就能操作；登入後完成任務收集星星', 'No install, no sign-in needed; sign in to collect stars'), QW, 28, 500), X, fy + 136);
     if (qr) {
