@@ -7,7 +7,7 @@
   function create(lib, env) {
     const THREE = lib.THREE, LD = window.LabDraw, T = env.T;
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('3D 器材全景。拖探針移動，拖空白轉視角，雙指縮放。', '3D apparatus. Drag a probe to move it, drag empty space to orbit, pinch to zoom.'));
+    canvas.setAttribute('aria-label', T('3D 器材全景。拖探針移動；拖空白轉視角，切到「平移」可上下左右拖曳；雙指或滾輪朝該處放大。', '3D apparatus. Drag a probe to move it; drag empty space to orbit, or switch to Pan to drag the view; pinch or scroll to zoom there.'));
     env.host.appendChild(canvas);
     let renderer;
     try { renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true }); }
@@ -23,6 +23,8 @@
     controls.enableDamping = true; controls.dampingFactor = 0.12;
     controls.minDistance = 25; controls.maxDistance = 150;
     controls.maxPolarAngle = Math.PI * 0.48;
+    // 站長 11/16：3D 也要能上下左右、斜向拖曳平移，朝游標放大（共用 js/view3d-nav.js）
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE: THREE, controls: controls, canvas: canvas, host: env.host, radius: 18, T: T }) : null;
     const hemi = new THREE.HemisphereLight(0xffffff, 0x6c7179, 2.2);
     hemi.position.set(0, 0, 40); scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 3);
@@ -326,6 +328,7 @@
       distance *= 1.02;
       controls.target.copy(center); camera.position.copy(center).addScaledVector(dir, distance);
       controls.update(); camera.updateProjectionMatrix();
+      if (nav) nav.home();
     }
     function requestRender() {
       if (raf || !active || document.hidden || (env.isVisible && !env.isVisible())) return;
@@ -381,7 +384,7 @@
     const api = {
       update: update, onTheme: update, resetCamera: function () { fit(); requestRender(); },
       dispose: function () {
-        active = false; if (raf) cancelAnimationFrame(raf); ro.disconnect(); controls.dispose();
+        active = false; if (raf) cancelAnimationFrame(raf); ro.disconnect(); controls.dispose(); if (nav) nav.dispose();
         document.removeEventListener('visibilitychange', visible); disposeObject(scene);
         renderer.dispose(); renderer.forceContextLoss(); canvas.remove();
       }

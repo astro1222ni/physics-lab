@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611161000"></script>
+  <script src="js/settings.js?v=202611161125"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Lab">等位線與電場（導電紙實驗）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611161000">
+  <link rel="stylesheet" href="lab.css?v=202611161125">
   <style>
     /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
@@ -208,8 +208,8 @@
         </div>
         <p class="hint l2" data-medium-only="paper" data-en="Top view, drawn to scale: the paper is 30 cm × 20 cm with a 1 cm grid (the real carbon paper is black; it is drawn light here so the marks stand out). Drag a probe — or tap the paper to move the selected probe there. Turn on “fine drag” or use the arrow buttons for small steps.">俯視圖，依比例繪製：導電紙 30 cm × 20 cm，方格 1 cm（真實的碳質紙是黑色的，這裡畫成淺色以便看清記號）。拖曳探針，或點一下紙面把「選取的探針」移過去；打開「精細拖曳」或用方向鍵可以小步移動。</p>
         <p class="hint l2" data-medium-only="water" hidden data-en="Top view, drawn to scale: a transparent acrylic tray, 30 cm × 20 cm, over 1 cm grid paper. The tray contains 0.1% salt water to a uniform depth of 1.0 cm. Dip or drag a probe in the water; use fine drag or the arrow buttons for small steps.">俯視圖，依比例繪製：30 cm × 20 cm 的透明壓克力淺盤，底下墊 1 cm 方格紙；盤內為 0.1 % 食鹽水，均勻水深 1.0 cm。點入或拖動水中的探針；精細拖曳與方向鍵可小步移動。</p>
-        <p id="landscapeHint" class="hint l3" data-en="Surface height = potential in the medium, from the same solution as 2D. This is a voltage graph, not the shape of the water. Drag to rotate; pinch or scroll to zoom.">曲面高度＝介質中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉，雙指或滾輪縮放。</p>
-        <p id="rigHint" class="hint l3" hidden data-en="Apparatus overview (instruments schematic, not to scale). Probe and electrode positions match 2D. Drag a probe directly; drag empty space to orbit, pinch or scroll to zoom.">器材全景（儀器外形為示意，未依比例）。探針、電極位置與 2D 同步；直接拖探針可移動，拖空白處轉視角，雙指或滾輪縮放。</p>
+        <p id="landscapeHint" class="hint l3" data-en="Surface height = potential in the medium, from the same solution as 2D. This is a voltage graph, not the shape of the water. Drag to rotate; switch to Pan (bottom left) to drag the view in any direction; pinch or scroll to zoom there.">曲面高度＝介質中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉；左下角切到「平移」可上下左右、斜向拖曳；雙指或滾輪朝該處放大。</p>
+        <p id="rigHint" class="hint l3" hidden data-en="Apparatus overview (instruments schematic, not to scale). Probe and electrode positions match 2D. Drag a probe directly; drag empty space to orbit; switch to Pan (bottom left) to drag the view in any direction; pinch or scroll to zoom there.">器材全景（儀器外形為示意，未依比例）。探針、電極位置與 2D 同步；直接拖探針可移動，拖空白處轉視角；左下角切到「平移」可上下左右、斜向拖曳；雙指或滾輪朝該處放大。</p>
       </div>
 
       <aside class="panel">
@@ -481,19 +481,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611161000"></script>
-  <script src="js/equipotential-core.js?v=202611161000"></script>
-  <script src="js/sound.js?v=202611161000"></script>
-  <script src="js/numinput.js?v=202611161000"></script>
-  <script src="js/drawkit.js?v=202611161000"></script>
-  <script src="js/equipotential-3d.js?v=202611161000"></script>
-  <script src="js/equipotential-rig3d.js?v=202611161000"></script>
-  <script src="js/keys.js?v=202611161000"></script>
-  <script src="js/equipotential.js?v=202611161000"></script>
-  <script src="js/firebase-config.js?v=202611161000"></script>
-  <script src="js/missions.js?v=202611161000" data-module="equipotential"></script>
-  <script src="js/missions/equipotential.js?v=202611161000"></script>
-  <script src="js/stats.js?v=202611161000" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611161000"></script>
+  <script src="js/math.js?v=202611161125"></script>
+  <script src="js/equipotential-core.js?v=202611161125"></script>
+  <script src="js/sound.js?v=202611161125"></script>
+  <script src="js/numinput.js?v=202611161125"></script>
+  <script src="js/drawkit.js?v=202611161125"></script>
+  <script src="js/view3d-nav.js?v=202611161125"></script>
+  <script src="js/equipotential-3d.js?v=202611161125"></script>
+  <script src="js/equipotential-rig3d.js?v=202611161125"></script>
+  <script src="js/keys.js?v=202611161125"></script>
+  <script src="js/equipotential.js?v=202611161125"></script>
+  <script src="js/firebase-config.js?v=202611161125"></script>
+  <script src="js/missions.js?v=202611161125" data-module="equipotential"></script>
+  <script src="js/missions/equipotential.js?v=202611161125"></script>
+  <script src="js/stats.js?v=202611161125" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611161125"></script>
 </body>
 </html>
