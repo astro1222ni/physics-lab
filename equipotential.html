@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611161525"></script>
+  <script src="js/settings.js?v=202611161540"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Lab">等位線與電場（導電紙實驗）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611161525">
+  <link rel="stylesheet" href="lab.css?v=202611161540">
   <link rel="stylesheet" href="study.css">
   <link rel="stylesheet" href="equipotential-study.css?v=202611161349">
   <style>
@@ -209,8 +209,10 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 站長 11/16：手機上操作鍵要集中在一頁內 → 寬度 < 768 px 時，標了 data-deck 的卡片收進這裡的分頁操作台（js/labdeck.js） -->
+        <div data-deck-anchor data-deck-off="eq-study" hidden></div>
         <!-- 站長 11/16：「電表與探針……距離操作盤太遠了，要來回滾動操作是很困難的」→ 搬到記錄鍵正下方 -->
-        <section class="card eq-probe-card">
+        <section class="card eq-probe-card" data-deck="電表與探針|Probes" data-deck-order="2">
           <h2 data-en="Meter and probes">電表與探針</h2>
           <div class="eq-pc-grid">
             <div class="eq-pc-col">
@@ -274,7 +276,7 @@
           <ol class="steps" id="steps"></ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電極與電源|Power" data-deck-order="1">
           <h2 data-en="Electrodes and power supply">電極與電源</h2>
           <div class="seg3" role="group" aria-label="電極形狀" data-en-aria-label="Electrode shape">
             <button type="button" data-type="circles" aria-pressed="true" data-en="Two circles">兩圓形電極</button>
@@ -289,7 +291,7 @@
             <input id="L" type="range" min="4" max="20" step="1" value="20" data-decimals="0"></div>
           <div class="slider"><label for="V0" data-en-html="Supply voltage V<sub>0</sub>">電源電壓 V<sub>0</sub></label><output id="V0o"></output>
             <input id="V0" type="range" min="1" max="12" step="0.5" value="6" data-decimals="1"></div>
-          <button type="button" id="power" aria-pressed="false" data-en="Switch on the supply">接通電源</button>
+          <button type="button" id="power" aria-pressed="false" data-deck-top data-en="Switch on the supply">接通電源</button>
           <p class="hint" data-medium-only="paper" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
           <p class="hint" data-medium-only="water" hidden data-en="Keep the tray level and both copper electrodes immersed. The left electrode connects to the supply's red terminal, the right to the black reference terminal. AC voltages are RMS; DC with errors includes interface polarization. Each setting has its own grid-paper record.">水槽保持水平，兩個銅電極浸入水中。左電極接電源紅端，右電極接黑色參考端；交流電壓以有效值表示，含誤差直流另計界面極化。每組設定各有一份方格紙記錄。</p>
         </section>
@@ -306,7 +308,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="讀數|Readings" data-deck-order="4">
           <h2 data-en="Meter readings">讀數</h2>
           <dl class="readout">
             <dt id="rMeterLabel">電表讀數</dt><dd id="rMeter" class="big">—</dd>
@@ -320,7 +322,7 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="作圖與分析|Analysis" data-deck-order="3">
           <h2 data-en="Drawing and analysis">作圖與分析</h2>
           <div class="checks col">
             <label><input id="drawLines" type="checkbox"><span data-en="Join the points of each line with a smooth curve">把同一條線的點連成平滑的等位線</span></label>
@@ -501,29 +503,30 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611161525"></script>
-  <script src="js/equipotential-core.js?v=202611161525"></script>
-  <script src="js/sound.js?v=202611161525"></script>
-  <script src="js/numinput.js?v=202611161525"></script>
-  <script src="js/drawkit.js?v=202611161525"></script>
-  <script src="js/view3d-nav.js?v=202611161525"></script>
-  <script src="js/equipotential-3d.js?v=202611161525"></script>
-  <script src="js/equipotential-rig3d.js?v=202611161525"></script>
-  <script src="js/keys.js?v=202611161525"></script>
-  <script src="js/equipotential.js?v=202611161525"></script>
-  <script src="js/firebase-config.js?v=202611161525"></script>
-  <script src="js/missions.js?v=202611161525" data-module="equipotential"></script>
-  <script src="js/equipotential-study-core.js?v=202611161525"></script>
-  <script src="js/missions/equipotential.js?v=202611161525"></script>
-  <script src="js/stats.js?v=202611161525" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611161525"></script>
-  <script src="js/labpanel.js?v=202611161525"></script>
-  <script src="js/study.js?v=202611161525"></script>
-  <script src="js/examples.js?v=202611161525"></script>
-  <script src="js/examples/equipotential.js?v=202611161525"></script>
-  <script src="js/study/equipotential.js?v=202611161525"></script>
-  <script src="js/equipotential-study-card.js?v=202611161525"></script>
-  <script src="js/equipotential-study.js?v=202611161525"></script>
-  <script src="js/equipotential-controls.js?v=202611161525"></script>
+  <script src="js/math.js?v=202611161540"></script>
+  <script src="js/equipotential-core.js?v=202611161540"></script>
+  <script src="js/sound.js?v=202611161540"></script>
+  <script src="js/numinput.js?v=202611161540"></script>
+  <script src="js/drawkit.js?v=202611161540"></script>
+  <script src="js/view3d-nav.js?v=202611161540"></script>
+  <script src="js/equipotential-3d.js?v=202611161540"></script>
+  <script src="js/equipotential-rig3d.js?v=202611161540"></script>
+  <script src="js/keys.js?v=202611161540"></script>
+  <script src="js/equipotential.js?v=202611161540"></script>
+  <script src="js/firebase-config.js?v=202611161540"></script>
+  <script src="js/missions.js?v=202611161540" data-module="equipotential"></script>
+  <script src="js/equipotential-study-core.js?v=202611161540"></script>
+  <script src="js/missions/equipotential.js?v=202611161540"></script>
+  <script src="js/stats.js?v=202611161540" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611161540"></script>
+  <script src="js/labpanel.js?v=202611161540"></script>
+  <script src="js/study.js?v=202611161540"></script>
+  <script src="js/examples.js?v=202611161540"></script>
+  <script src="js/examples/equipotential.js?v=202611161540"></script>
+  <script src="js/study/equipotential.js?v=202611161540"></script>
+  <script src="js/equipotential-study-card.js?v=202611161540"></script>
+  <script src="js/equipotential-study.js?v=202611161540"></script>
+  <script src="js/labdeck.js?v=202611161540"></script>
+  <script src="js/equipotential-controls.js?v=202611161540"></script>
 </body>
 </html>
