@@ -69,3 +69,5 @@ LabSide.mount({module:'my-lab',
 獨立自學頁可在 `<body data-comments-url="實驗代號.html">` 指定所屬實驗，或傳入 `feedbackContent({url})`。本頁沒有 `LabComments` 時會開啟該同源實驗頁，待 API 就緒後呼叫 `LabComments.compose`；只填草稿，不送出留言。嵌入實驗的 `.fb-tab` 由外層入口取代。
 
 任務側板會呼叫主線 `LabMission.needOf(m)` 顯示「還差什麼」，不重寫條件；展開的清單隨實驗即時更新。「看全部條件」優先捲到可見的共用側板，並展開該任務。`LabSide.instance.open(tab)` 保證開啟，重複呼叫不會把側板關掉。
+
+畫布只有少量露出、目前探針在可見範圍外，或頁面已捲離畫布時，小鍵盤先收成圓鈕；回到可操作的位置再展開。預設圓鈕放在可用範圍右下角，避免擋住上方的材質切換。放大鏡只在 `activity()` 之後出現。
