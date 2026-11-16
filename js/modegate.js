@@ -108,7 +108,7 @@
       ], T('開始自學 →', 'Start →'), T('★ 自學任務的星星在這裡賺', '★ Self-study stars are earned here')));
       cards.appendChild(card('teacher', url({ mode: 'learn', study: '1', class: '1' }), T('老師上課', 'Teacher: class mode'), [
         T('大字投影給全班看，方向鍵翻頁', 'Large type for the projector; arrow keys turn pages'),
-        T('預測題先讓大家選，按 A 再公布答案；可以舉手計票', 'Let everyone choose, press A to reveal; count raised hands'),
+        T('預測題先讓大家選，再按「公布答案」；可以舉手計票', 'Let everyone choose, then reveal the answer; count raised hands'),
         T('上課時不改學生自己的進度', 'Class mode does not change a student’s own progress')
       ], T('開始上課 →', 'Start class →'), ''));
     } else {

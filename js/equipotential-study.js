@@ -70,7 +70,7 @@
       if(q.diagrams)b.append(pattern(i));b.append(rich(E('span'),tr(p)));if(teaching?flow.state.reveal&&i===q.correct:!predict&&answers[id]===i)b.classList.add(i===q.correct?'correct':'wrong');opts.append(b);});box.append(opts);
     if(predict&&!teaching){const send=B(run.submitted[id]?T('已送出，稍後揭曉','Submitted; reveal later'):T('送出這題預測','Submit prediction'),()=>{if(!Number.isInteger(run.answers[id]))return;if(run.first[id]==null)run.first[id]=run.answers[id];run.submitted[id]=true;StudyFlow.cue('page');if(run.submitted.p1&&run.submitted.p2)emit('predictions-submitted',2,{submitted:2});save();renderQuestion();});send.disabled=!Number.isInteger(run.answers[id])||!!run.submitted[id];box.append(send);}
     else if(!predict&&(teaching?flow.state.reveal:Number.isInteger(answers[id]))){const answer=teaching?q.correct:answers[id],f=E('div',null,'study-feedback '+(answer===q.correct?'is-correct':'is-wrong'));f.append(rich(E('p'),tr(q.feedback[answer])));box.append(f);}
-    if(flow.state.teaching)box.append(B(flow.state.reveal?T('藏答案（A）','Hide answer (A)'):T('公布答案（A）','Reveal answer (A)'),()=>flow.reveal()));
+    if(flow.state.teaching)box.append(B(flow.state.reveal?T('藏答案','Hide answer'):T('公布答案','Reveal answer'),()=>flow.reveal()));
     return box;
   }
   function pattern(index){const cv=E('canvas',null,'eq-pattern');cv.width=90;cv.height=54;cv.setAttribute('aria-hidden','true');const g=cv.getContext('2d');g.strokeStyle=D.c.muted;g.lineWidth=1;g.strokeRect(1,1,88,52);g.strokeStyle=D.c.accent;g.lineWidth=2;[0,1].forEach(k=>{g.beginPath();if(index===3){g.moveTo(35+k*22,2);g.lineTo(35+k*22,52);}else if(index===0||index===2&&k===0)g.ellipse(58,27,9+k*9,13+k*6,0,0,Math.PI*2);else{g.moveTo(62+k*12,1);g.bezierCurveTo(24,14,24,40,62+k*12,53);}g.stroke();});return cv;}
@@ -112,7 +112,7 @@
     box.append(rich(E('p',null,'eq-course-message'),message));if(checks.done)box.append(E('p',T('✓ 這個範例已在實驗裡驗證','✓ This example is verified')));return box;
   }
   function leaveExample(){currentExample=0;if(isStudy())flow.close();L.discardGiven();const u=new URL(location.href);u.searchParams.delete('ex');history.replaceState(null,'',u);P.close();}
-  function appendExampleControls(){if(!currentExample)return;const pane=$('lp-pane-examples');$('eq-example-checks')?.remove();pane?.querySelector('.eq-example-picker')?.remove();const picker=E('div',null,'eq-example-picker');[1,2,3].forEach(n=>{const b=B(T('範例 ','Example ')+n,()=>applyExample(n));b.setAttribute('aria-pressed',String(n===currentExample));picker.append(b);});picker.append(B(T('自由實驗','Free lab'),leaveExample));pane?.prepend(picker);pane?.append(exampleControls());}
+  function appendExampleControls(){if(!currentExample)return;const pane=$('lp-pane-examples');$('eq-example-checks')?.remove();pane?.querySelector('.eq-example-picker')?.remove();const picker=E('div',null,'eq-example-picker');[1,2,3].forEach(n=>{const b=B(T('範例 ','Example ')+n,()=>applyExample(n));b.setAttribute('aria-pressed',String(n===currentExample));picker.append(b);});pane?.prepend(picker);pane?.append(exampleControls());}
   window.LabExampleAdapters=window.LabExampleAdapters||{};
   window.LabExampleAdapters.equipotential={apply(ex){currentExample=ex.n;run.exampleChecks[ex.n]=run.exampleChecks[ex.n]||{};base(ex.state,S.givenRecords(ex.state,ex.levels));L.redraw();},solution(ex,line){L.redraw();}};
   addEventListener('lab:examplechange',e=>{if(e.detail.slug!=='equipotential')return;if(isStudy()&&section()===6&&flow.state.step!==e.detail.n)flow.go(6,e.detail.n);appendExampleControls();});
