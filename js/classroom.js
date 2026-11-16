@@ -2,7 +2,7 @@
  * classroom.js — 上課好用的共用工具（由 js/settings.js 自動載入，每一頁都有，不必在 HTML 加標籤）
  *
  * 1. 投影模式：實驗頁上方工具列「投影」→ 全螢幕＋放大字、收起留言與頁尾；再按一次或 Esc 離開。
- * 2. 分享目前設定：「分享」→ 把實驗區的滑桿、選單、勾選框、模式按鈕寫進網址 #s=…，
+ * 2. 分享目前設定：「分享本實驗」→ 把實驗區的滑桿、選單、勾選框、模式按鈕寫進網址 #s=…，
  *    打開這個網址就還原同樣的設定；附 QR code（vendor/qrcode/qrcode.js，按下分享時才載入），可放大投影給全班掃描。
  *    畫布上拖曳的物件等額外狀態：模組可呼叫 LabShare.register({ get: () => 物件, set: (物件) => {} })。
  *    還原期間 LabShare.restoring = true，任務（missions.js）不會因為還原而被判定完成。
@@ -13,6 +13,7 @@
  * 6. 分享視窗另有 LINE、Google Classroom、嵌入網頁（iframe，網址加 ?embed=1：只留實驗本身，由 settings.js 加上 html.lab-embed）。
  * 7. 相關實驗：實驗頁捲到說明區附近時載入 js/catalog.js，在說明區後面列出 3 個相關實驗（同章 → 同分支 → 首頁相鄰），再加 1 個跨科實驗（目錄的 x 欄，11/14），頁尾加「最後更新」日期。
  * 8. 列印：深色模式自動換成淺色再印（畫布也重畫），頁首多一行班級、座號、姓名、日期的空格（不儲存）。
+ * 9. 分享我的成績：有任務的實驗可直接開成績卡；未登入時沿用任務登入提示，登入後接續開啟。
  */
 (function () {
   'use strict';
@@ -31,6 +32,7 @@
   const ICON = {
     projector: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 16v3M8 21h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     share: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 14h3v3h-3zM18 18h3v3h-3zM18 14h3M14 18v3" stroke="currentColor" stroke-width="2"/></svg>',
+    results: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.6 4.5 1.1 6.3-5.6-3-5.6 3 1.1-6.3L2.9 9.6l6.3-.9Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>',
     close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>'
   };
 
@@ -308,7 +310,8 @@
     bar.setAttribute('aria-label', T('上課工具', 'Classroom tools'));
     bar.innerHTML =
       '<button type="button" class="lab-tool" data-tool="projector" aria-pressed="false" title="' + T('全螢幕、放大字，適合投影（Esc 離開）', 'Full screen with larger text for projection (Esc to exit)') + '">' + ICON.projector + '<span>' + T('投影', 'Project') + '</span></button>' +
-      '<button type="button" class="lab-tool" data-tool="share" title="' + T('產生分享網址與 QR code（可包含目前設定）', 'Get a link and QR code (can include the current settings)') + '">' + ICON.share + '<span>' + T('分享', 'Share') + '</span></button>';
+      '<button type="button" class="lab-tool" data-tool="share" title="' + T('產生分享網址與 QR code（可包含目前設定）', 'Get a link and QR code (can include the current settings)') + '">' + ICON.share + '<span>' + T('分享本實驗', 'Share this lab') + '</span></button>';
+    initResultsTool(bar);
     if (document.documentElement.classList.contains('lab-embed')) {
       const full = document.createElement('a');
       full.className = 'lab-tool';
@@ -326,6 +329,43 @@
     document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && projOn) setProjector(false, pBtn); });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && projOn && !document.fullscreenElement && !document.querySelector('.lab-share, .lab-bigqr')) setProjector(false, pBtn);
+    });
+  }
+
+  function initResultsTool(bar) {
+    const LM = window.LabMission;
+    if (!LM || !LM.loadIndex) return;
+    LM.loadIndex().then(function () {
+      if (!(window.LAB_MISSION_MODULES || []).some(function (m) { return m.id === SLUG; })) return;
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'lab-tool'; btn.setAttribute('data-tool', 'results');
+      btn.innerHTML = ICON.results + '<span>' + T('分享我的成績', 'Share my results') + '</span>';
+      bar.querySelector('[data-tool="share"]').insertAdjacentElement('afterend', btn);
+      // 同分頁的登入轉址回來仍能接續；只對這次點選的實驗生效。
+      const key = 'lab-share-results';
+      let pending = false, opening = false;
+      try { pending = sessionStorage.getItem(key) === SLUG; } catch (e) { /* 無法儲存時仍支援彈出式登入 */ }
+      function openResults() {
+        if (opening || !LM._state.user || !LM._state.ready) return;
+        pending = false;
+        try { sessionStorage.removeItem(key); } catch (e) { /* 忽略 */ }
+        opening = true; btn.disabled = true;
+        LM.share({ scope: 'mods', mods: [SLUG] }).finally(function () { opening = false; btn.disabled = false; });
+      }
+      LM.on('ready', function () { if (pending) openResults(); });
+      if (pending) openResults();
+      btn.addEventListener('click', function () {
+        if (LM._state.user && LM._state.ready) { openResults(); return; }
+        pending = true;
+        try { sessionStorage.setItem(key, SLUG); } catch (e) { /* 忽略 */ }
+        if (LM._state.user) return; // 登入完成、成績尚在載入時，等 ready 再開。
+        const toggle = document.querySelector('.ms-toggle');
+        if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+        const panel = document.querySelector('.ms-panel'), dock = document.querySelector('.ms-dock-tab');
+        if (panel && panel.hidden && dock) dock.click();
+        const login = document.querySelector('.ms-signin');
+        if (login) { login.scrollIntoView({ block: 'center', behavior: 'smooth' }); login.focus({ preventScroll: true }); }
+      });
     });
   }
 

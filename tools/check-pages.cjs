@@ -17,7 +17,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { launch } = require('G:/physics-lab/tools/browser.cjs');
+const { launch } = require('./browser.cjs');
 
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2);
