@@ -284,13 +284,17 @@
     g.strokeRect(x0 + 0.5, y0 + 0.5, x1 - x0 - 1, y1 - y0 - 1);
     // 刻度數字（cm）
     g.font = '10.5px ' + FF;
-    g.fillStyle = LD.c.muted;
+    // 水槽的盤緣壓在刻度數字下面：改用正文色並加一圈底色描邊，數字才不會被盤緣淡化（11/16 主串審稿）
+    const onRim = state.medium === 'water';
+    g.fillStyle = onRim ? LD.c.text : LD.c.muted;
+    g.strokeStyle = LD.alpha(LD.c['canvas-bg'], 0.92); g.lineWidth = 3; g.lineJoin = 'round';
+    const label = function (t, x, y) { if (onRim) g.strokeText(t, x, y); g.fillText(t, x, y); };
     g.textAlign = 'center'; g.textBaseline = 'top';
-    for (let x = 0; x <= SW; x += 5) g.fillText(String(x), X(x), y1 + 4);
+    for (let x = 0; x <= SW; x += 5) label(String(x), X(x), y1 + 4);
     g.textAlign = 'right'; g.textBaseline = 'middle';
-    for (let y = 5; y <= SH; y += 5) g.fillText(String(y), x0 - 4, Y(y));   // 0 只標在 x 軸
+    for (let y = 5; y <= SH; y += 5) label(String(y), x0 - 4, Y(y));   // 0 只標在 x 軸
     g.textAlign = 'right'; g.textBaseline = 'top';
-    g.fillText('cm', x0 - 8, y1 + 4);
+    label('cm', x0 - 8, y1 + 4);
     // 計算的電流線（＝電力線）
     if (state.showStream && V0eff() > 0) {
       const lines = derived('stream', function (s) { return EC.streamlines(s, 14); });
@@ -829,18 +833,20 @@
       if (e.kind === 'circle') { ctx.beginPath(); ctx.ellipse(X(c.x), Y(c.y) + 1, r, r * 0.86, 0, 0, Math.PI * 2); ctx.stroke(); }
       else { ctx.strokeRect(X(e.x0) - 2, Y(e.y1) - 2, (e.x1 - e.x0) * G.s + 4, (e.y1 - e.y0) * G.s + 4); }
       if (!bubblesOn()) return;
-      const count = e.sign < 0 ? 24 : 8, streams = e.sign < 0 ? 4 : 2;
+      // 氣泡大小與數量隨畫面比例放大：電腦版（G.s 約 25 px/cm）不可小到看不見（11/16 主串審稿）
+      const k = Math.max(1, Math.min(2.2, G.s / 11));
+      const count = Math.round((e.sign < 0 ? 24 : 8) * Math.sqrt(k)), streams = e.sign < 0 ? 4 : 2;
       for (let i = 0; i < count; i++) {
         const stream = i % streams, age = (time * (0.43 + stream * 0.025) + Math.floor(i / streams) / (count / streams) + stream * 0.11 + index * 0.17) % 1;
         const a = (stream + 0.25) * Math.PI * 2 / streams;
         const bx = X(c.x) + (e.kind === 'circle' ? Math.cos(a) * e.r * G.s : (stream % 2 ? 1 : -1) * ((e.x1 - e.x0) * G.s / 2 + 1)) + Math.sin(age * 7 + stream) * 1.65;
         const originY = e.kind === 'circle' ? Y(c.y) - Math.sin(a) * e.r * G.s : Y(e.y0 + (stream + 0.5) * (e.y1 - e.y0) / streams);
-        const by = originY - age * (24 + G.s * 3.6), rad = 0.75 + ((i * 0.37) % 1) * 1.25;
+        const by = originY - age * (24 + G.s * 3.6), rad = (0.75 + ((i * 0.37) % 1) * 1.25) * k;
         const alpha = age > 0.86 ? (1 - age) / 0.14 : 1;
         ctx.beginPath(); ctx.arc(bx, by, age > 0.95 ? Math.min(2, rad + (age - 0.95) * 18) : rad, 0, Math.PI * 2);
-        ctx.fillStyle = LD.alpha(LD.shade(aqua, 0.75), alpha * 0.12); ctx.fill();
-        if (!LD.dark) { ctx.strokeStyle = LD.alpha(LD.shade(aqua, -0.45), alpha * 0.6); ctx.lineWidth = 1.25; ctx.stroke(); }
-        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.98), alpha * 0.95); ctx.lineWidth = 0.75; ctx.stroke();
+        ctx.fillStyle = LD.alpha(LD.shade(aqua, 0.75), alpha * (LD.dark ? 0.12 : 0.3)); ctx.fill();
+        if (!LD.dark) { ctx.strokeStyle = LD.alpha(LD.shade(aqua, -0.6), alpha * 0.9); ctx.lineWidth = 1.2 * k; ctx.stroke(); }
+        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.98), alpha * 0.95); ctx.lineWidth = 0.75 * k; ctx.stroke();
         ctx.beginPath(); ctx.arc(bx - rad * 0.3, by - rad * 0.35, Math.max(0.32, rad * 0.25), 0, Math.PI * 2);
         ctx.fillStyle = LD.alpha(LD.shade(aqua, 1), alpha * 0.95); ctx.fill();
       }
@@ -1347,7 +1353,9 @@
     if (!state.power) return T('電源關閉。', 'Supply off.');
     if (state.medium === 'paper') return T('電源接通：紙上有穩定電流了。', 'Supply on: a steady current flows through the paper.');
     return state.ac ? T('交流接通：水中以有效值量測，沒有極化與電解氣泡。', 'AC on: water measurements are RMS, with no polarization or electrolysis bubbles.')
-      : T('直流接通：水中電流依實際水側壓差計算；氣泡顯示電解。', 'DC on: current uses the actual water-side voltage; bubbles show electrolysis.');
+      : (state.noise
+        ? T('直流接通：兩極電解冒氣泡；「含誤差」計入電極極化，水中分到的電壓比電源小。', 'DC on: both electrodes bubble from electrolysis; “With errors” includes electrode polarization, so the water gets less than the supply voltage.')
+        : T('直流接通：兩極電解冒氣泡（負極的氫氣泡較多）；理想條件不計電極極化。', 'DC on: both electrodes bubble from electrolysis (more hydrogen at the negative one); ideal conditions ignore electrode polarization.'));
   }
 
   // ---------------------------------------------------------------------
