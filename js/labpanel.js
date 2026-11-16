@@ -4,6 +4,8 @@
   const script=document.currentScript;
   if(!document.querySelector('link[href*="study.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('../study.css?v=20261116r5',script.src).href;link.onload=()=>dispatchEvent(new Event('resize'));document.head.append(link);}
   const T=(a,b)=>window.LabSettings?LabSettings.t(a,b):a,tr=p=>Array.isArray(p)?T(p[0],p[1]):String(p||'');
+  // 底部摘要列是純文字：\(I_1\) 轉成 I₁、\(\mu_0\) 轉成 μ₀，不可整段刪掉（11/16 電流天平：「= 2.00 A」前面的 I₁ 不見了）
+  const SUB={0:'₀',1:'₁',2:'₂',3:'₃',4:'₄',5:'₅',6:'₆',7:'₇',8:'₈',9:'₉'},plainMath=t=>t.replace(/\\\(([\s\S]*?)\\\)/g,(m,x)=>x.replace(/\\mu/g,'μ').replace(/\\(?:mathrm|text)\{([^}]*)\}/g,'$1').replace(/_\{?(\d)\}?/g,(m,c)=>SUB[c]).replace(/\\quad|\\[,;:! ]/g,' ').replace(/[{}\\_^]/g,'').trim());
   const names={concept:['觀念','Concept'],steps:['步驟','Steps'],examples:['範例','Examples'],missions:['任務','Missions'],comments:['留言','Comments']};
   const E=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
   const B=(text,fn)=>{const b=E('button',text);b.type='button';b.addEventListener('click',fn);return b;};
@@ -52,7 +54,7 @@
         const sol=E('div',null,'lp-solution');sol.append(rich(E('p'),tr(ex.sol[lines-1])));const nav=E('div',null,'lp-solution-nav');nav.append(B(lines===1?T('回題目','Back to problem'):T('上一行','Previous line'),()=>{lines--;render();setState('half');}));
         const next=B(lines===ex.sol.length?T('最後一行','Last line'):T('下一行板書','Next line'),()=>{if(lines<ex.sol.length){lines++;render();setState('half');}});next.dataset.solutionNext='';next.disabled=lines===ex.sol.length;nav.append(E('span',lines+'/'+ex.sol.length),next);nodes.push(sol,nav);
       }}
-      content('examples',nodes);setStrip(T('範例 ','Example ')+ex.n+'：'+tr(ex.q).replace(/\\\([\s\S]*?\\\)/g,'').slice(0,20)+'…','examples');dispatchEvent(new CustomEvent('lab:solutionstep',{detail:{n:ex.n,line:lines}}));}
+      content('examples',nodes);setStrip(T('範例 ','Example ')+ex.n+'：'+plainMath(tr(ex.q)).slice(0,20)+'…','examples');dispatchEvent(new CustomEvent('lab:solutionstep',{detail:{n:ex.n,line:lines}}));}
     render();if(opts.steps===true)define(ex.steps||[]);
   }
   function wrap(){const m=window.LabMission;if(!m||!m.emit||m.emit===wrapped)return;const original=m.emit;wrapped=function(type,data){const s=Object.assign({},data,{type});if(!window.LabShare?.restoring){feed(s);dispatchEvent(new CustomEvent('lab:experimentstate',{detail:s}));}return original.apply(this,arguments);};m.emit=wrapped;}

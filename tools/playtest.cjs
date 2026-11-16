@@ -843,7 +843,9 @@ async function playPage(browser, base, slug, opts) {
   const defs = {};
   missions.forEach(m => { defs[m.id] = { stars: m.level }; });
   const mdb = { profiles: { u1: { nickname: '試玩員', pub: false } }, completions: {}, scores: {}, missionDefs: defs, admins: { admin1: true } };
-  const url = base + slug + '.html';
+  // 有模式入口（js/modegate.js，11/16 起）的頁面直接進實驗模式，不然整輪都卡在「選擇模式」畫面、什麼元件都點不到
+  const gated = fs.readFileSync(path.join(ROOT, slug + '.html'), 'utf8').includes('js/modegate.js');
+  const url = base + slug + '.html' + (gated ? '?mode=lab' : '');
   const namesBy = { zh: { vis: new Set(), all: new Set(), text: new Set() }, en: { vis: new Set(), all: new Set(), text: new Set() } };
   const accidental = [];
   let emits = {};

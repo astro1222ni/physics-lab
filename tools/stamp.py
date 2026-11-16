@@ -25,7 +25,7 @@ for f in files:
 # 指紋變了就把 <meta name="lab-updated"> 改成現在（臺灣時間），記在 tools/page-updated.json。js/classroom.js 讀它顯示在頁尾。
 import hashlib, json
 REC = root / 'tools' / 'page-updated.json'
-ref_pat = re.compile(r'(?:href|src)="((?:lab\.css|lab-tools\.css|js/[\w/.-]+\.js|vendor/[\w/.-]+\.(?:js|css)))(?:\?v=[\w-]+)?"')
+ref_pat = re.compile(r'(?:href|src)="((?:[\w-]+\.css|js/[\w/.-]+\.js|vendor/[\w/.-]+\.(?:js|css)))(?:\?v=[\w-]+)?"')  # 根目錄的 CSS 都算（lab.css、study.css、各實驗自學 CSS）
 meta_pat = re.compile(r'[ \t]*<meta name="lab-updated" content="[^"]*">\r?\n?')
 DYNAMIC = ['js/classroom.js', 'js/lab-layout.js']              # settings.js 執行時載入，每個實驗頁都有
 TOOLS_CSS = ('js/labside.js', 'js/stepguide.js', 'js/vpad.js', 'js/labpanel.js')  # 這些會自己載 lab-tools.css
@@ -40,7 +40,7 @@ def fingerprint(text):
     h = hashlib.sha1(meta_pat.sub('', re.sub(r'\?v=[\w-]+', '', text)).encode('utf-8'))
     for r in page_refs(text):
         p = root / r
-        h.update(r.encode()); h.update(p.read_bytes() if p.exists() else b'-')
+        h.update(r.encode()); h.update(p.read_bytes().replace(b'\r\n', b'\n') if p.exists() else b'-')  # 換行統一成 LF：git 換出來的檔不會被當成改過
     return h.hexdigest()[:16]
 
 try: rec = json.loads(REC.read_text(encoding='utf-8'))

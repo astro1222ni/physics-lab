@@ -46,13 +46,21 @@
   const st = {
     power: false, fromMin: false, I1: 0, I2: 0, s1: -1, s2: 1, // 一開始 ㄈ字形電路接反了（步驟 3 要學會把一個電流反向）
     len: 2.5, hung: false, piece: null, nut: APP.nutX0, mode: 'ideal', realSol: false, part: 1, graph: 1,
-    show: { labels: true, field: true, force: true, flow: !LD.reducedMotion() },
+    show: { labels: true, field: true, force: true, flow: !LD.reducedMotion(), optical: false, hand: false },
+    weight: 'wire', grains: 1,
     rows: [], steps: [false, false, false, false, false, false], combos: {}
   };
   const beam = { th: 0, om: 0 };
   let resting = true, flowT = 0;
+  let deliberate = false, presetting = false, selectedFine = 'nut', sweepToken = 0, lastOptical = 0;
 
   function cutPiece() {
+    if (st.weight === 'rice') {
+      const masses = window.CurrentBalanceStudyCore.rice(st.grains);
+      const m = masses.reduce((sum, x) => sum + x, 0);
+      st.piece = { len: 0, m, mg: Math.round(C.meter(m * 1e6, st.mode === 'real' ? cal.eS : 0, 1)), grains: st.grains };
+      return;
+    }
     const dev = st.mode === 'real' ? rnd(0.02) : 0;
     const m = C.wireMass(st.len / 100, dev);
     const mg = Math.round(C.meter(m * 1e6, st.mode === 'real' ? cal.eS : 0, 1));
@@ -81,7 +89,7 @@
   function Fbc() { return I1t() * I2t() * (st.realSol ? REAL.bcForce : FBC_IDEAL); }
 
   // ---------- 畫布版面 ----------
-  let dpr = 1, W = 0, H = 0, s = 1000, ox = 0, oy = 0, narrow = false, aRef = 40;
+  let dpr = 1, W = 0, H = 0, s = 1000, ox = 0, oy = 0, narrow = false, compact = false, aRef = 40;
   let meters = [], insA = null, insB = null, sceneH = 0;
   const tok = {};
   function readTokens() {
@@ -93,12 +101,14 @@
     W = cv.clientWidth;
     if (!W) return false;
     narrow = W < 600;
-    s = W / (WX1 - WX0);
-    ox = -WX0 * s; oy = WY1 * s;
-    sceneH = (WY1 - WY0) * s;
+    compact = matchMedia('(orientation:landscape) and (max-height:600px)').matches;
+    s = (W - (st.show.optical ? 100 : 0)) / (WX1 - WX0);
+    if(compact)s=Math.min(s,126/(WY1-WY0));
+    ox = -WX0 * s + (W-(st.show.optical?100:0)-(WX1-WX0)*s)/2; oy = WY1 * s;
+    sceneH = Math.max(st.show.optical ? 110 : 0, (WY1 - WY0) * s);
     aRef = Math.max(16, Math.min(56, 0.026 * s));
     // 電表列：螺線管電源、天平電源、電子秤（放在各自裝置的下方）
-    const my = Math.round(sceneH + 6), mh = narrow ? 64 : 78;
+    const my = Math.round(sceneH + 6), mh = compact ? 44 : narrow ? 64 : 78;
     if (narrow) {
       const mw = (W - 16) / 3;
       meters = [0, 1, 2].map(function (i) { return { x: i * (mw + 8), y: my, w: mw, h: mh }; });
@@ -112,7 +122,7 @@
     const iy = my + mh + 10, ih = narrow ? 190 : 206, iw = (W - 10) / 2;
     insA = { x: 0, y: iy, w: iw, h: ih };
     insB = { x: iw + 10, y: iy, w: iw, h: ih };
-    H = Math.round(iy + ih + 2);
+    H = compact ? my + mh + 4 : Math.round(iy + ih + 2);
     return true;
   }
   function resize() {
@@ -633,7 +643,16 @@
     g.beginPath(); g.moveTo(hk[0], hk[1]); g.lineTo(hb[0], hb[1] - 0.0014 * s);
     g.arc(hb[0] - 0.0012 * s, hb[1] - 0.0014 * s, 0.0012 * s, 0, Math.PI * 0.9); g.stroke();
     let wireBottom = hb[1];
-    if (st.hung) {
+    if (st.hung && st.weight === 'rice') {
+      for (let k = 0; k < st.grains; k++) {
+        const x = hb[0] + (k % 3 - 1) * 5, y = hb[1] + 9 + Math.floor(k / 3) * 6;
+        const fill = g.createLinearGradient(x-3,y-4,x+3,y+4);
+        fill.addColorStop(0, SH(tok.card,.22)); fill.addColorStop(1, SH(tok.card,-.22));
+        g.fillStyle = fill; g.strokeStyle = A(LD.c.muted,.7); g.lineWidth = .7;
+        g.beginPath(); g.ellipse(x,y,2.1,4.6,-.4,0,Math.PI*2); g.fill(); g.stroke();
+      }
+      wireBottom = hb[1] + 15 + Math.floor((st.grains-1)/3)*6;
+    } else if (st.hung) {
       const half = st.piece.len / 200 * s, d = Math.max(1.6, 0.0013 * s), wd = Math.max(1.5, 0.0008 * s);
       wireBottom = hb[1] - 0.0012 * s + half;
       LD.tube(g, function (cc) {
@@ -715,7 +734,7 @@
     // 標籤
     if (st.show.labels) {
       const qb = PB(UBC, -ARM, BT);
-      if (!narrow) {
+      {
         LD.haloText(g, 'b', qb[0] - 4, qb[1] + 2, LD.c.text, 'right', 'top', font(11.5, 'italic 600'));
         const qc = PB(UBC, ARM, BT);
         LD.haloText(g, 'c', qc[0] - 3, qc[1] - 3, LD.c.text, 'right', 'bottom', font(11.5, 'italic 600'));
@@ -725,7 +744,7 @@
       const kp = P(-POSTX, 0, ZP);
       tag(g, T('支點 K', 'Pivot K'), kp[0] + 10, kp[1] - 0.026 * s, LD.c.text, 'left', avoid, -1, kp);
       if (st.hung) {
-        tag(g, T('漆包線 ', 'Wire ') + st.piece.mg + ' mg', hb[0] - 10, wireBottom + 4 + (narrow ? 16 : 20), LD.c.text, 'right', avoid, 1, [hb[0] - 2, wireBottom - 2]);
+        tag(g, (st.weight === 'rice' ? T('米粒 ', 'Rice ') : T('漆包線 ', 'Wire ')) + st.piece.mg + ' mg', hb[0] - 10, wireBottom + 4 + (narrow ? 16 : 20), LD.c.text, 'right', avoid, 1, [hb[0] - 2, wireBottom - 2]);
       } else if (!narrow) {
         tag(g, T('掛勾', 'Hook'), hb[0] - 10, hb[1] + 22, LD.c.muted, 'right', avoid, 1, [hb[0] - 2, hb[1]]);
       }
@@ -733,8 +752,8 @@
       tag(g, T('歸零螺母', 'Zero nut'), np[0] - 8, np[1] - (narrow ? 14 : 22), LD.c.text, 'right', avoid, -1, np);
     }
     g.restore();
-    drawMouth(g, insA);
-    drawMag(g, insB);
+    if(!compact){drawMouth(g, insA);drawMag(g, insB);}
+    else LD.pill(g,(isLevel()?T('水平 ','Level '):T('指針偏移 ','Pointer offset '))+tipUp().toFixed(2)+' mm'+(resting?'':T(' · 擺動中',' · swinging')),W/2,sceneH-10,isLevel()?LD.c.probe:LD.c.text,'center',font(14,'700'));
   }
   /** 轉軸銷：side = −1 前（觀察者這側）、+1 後 */
   function pin(g, PB, side) {
@@ -962,6 +981,26 @@
     ctx.drawImage(stCv, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     drawDynamic(ctx);
+    if (st.show.optical) drawOptical(ctx);
+    window.CurrentBalanceStudy?.overlay(ctx, { W, H, s, P, sceneH, insA, insB, points:[
+      ['b',P(-ARM,-UBC*Math.sin(beam.th)+BT*Math.cos(beam.th),ZP+UBC*Math.cos(beam.th)+BT*Math.sin(beam.th))],
+      ['c',P(ARM,-UBC*Math.sin(beam.th)+BT*Math.cos(beam.th),ZP+UBC*Math.cos(beam.th)+BT*Math.sin(beam.th))],
+      ['K',P(-POSTX,0,ZP)]
+    ] });
+  }
+
+  /** 牆上直尺用放大視窗呈現；光路距離與讀數仍取真正的 2.00 m。 */
+  function drawOptical(g) {
+    const mm = window.CurrentBalanceStudyCore.optical(beam.th) * 1000;
+    const x = W-86, y = 7, w = 82, h = 98, mid = y+30+(h-52)/2;
+    g.save(); LD.roundRect(g,x,y,w,h,6); g.fillStyle=A(LD.c.surface,.95); g.fill();
+    g.strokeStyle=A(LD.c.muted,.6); g.lineWidth=1; g.stroke();
+    for(let v=-10;v<=10;v+=5){const yy=mid+v*(h-52)/20;g.strokeStyle=LD.c.muted;g.beginPath();g.moveTo(x+40,yy);g.lineTo(x+49+(v===0?8:0),yy);g.stroke();LD.haloText(g,String(v),x+35,yy,LD.c.text,'right','middle',font(10));}
+    const yy=mid+Math.max(-10,Math.min(10,mm))*(h-52)/20;
+    g.fillStyle=LD.c.pos;g.beginPath();g.arc(x+58,yy,3.5,0,Math.PI*2);g.fill();
+    LD.haloText(g,T('光點 mm','Spot mm'),x+w/2,y+10,LD.c.text,'center','middle',font(10,'700'));
+    LD.haloText(g,mm.toFixed(1)+' mm',x+w/2,y+h-5,LD.c.pos,'center','bottom',font(11,'700'));g.restore();
+    const side=window.LabSound;if(side?.enabled()&&lastOptical*mm<0&&Math.abs(mm)<20)side.tone({freq:900,dur:.025,gain:.025});lastOptical=mm;
   }
 
   // =====================================================================
@@ -1024,7 +1063,7 @@
     setHTML('rF', st.power ? (I1m() * APP.L * B * 1e4).toFixed(2) + sup4 : '—');
     $('power').textContent = st.power ? T('關閉電源', 'Power off') : T('開啟電源', 'Power on');
     $('power').setAttribute('aria-pressed', String(st.power));
-    $('hang').textContent = st.hung ? T('取下漆包線', 'Take the wire off') : T('掛上天平', 'Hang it on the balance');
+    $('hang').textContent = st.hung ? (st.weight==='rice'?T('取下米粒','Take rice off'):T('取下漆包線', 'Take the wire off')) : T('掛上天平', 'Hang it on the balance');
     $('hang').setAttribute('aria-pressed', String(st.hung));
     $('rev1').setAttribute('aria-pressed', String(st.s1 < 0));
     $('rev2').setAttribute('aria-pressed', String(st.s2 < 0));
@@ -1037,22 +1076,22 @@
     const bal = isLevel() ? T('天平水平', 'the balance is level')
       : (tp > 0 ? T('外端偏高 ', 'the outer end is ') + Math.abs(tp).toFixed(1) + T(' mm', ' mm high') : T('外端偏低 ', 'the outer end is ') + Math.abs(tp).toFixed(1) + T(' mm', ' mm low'));
     const cur = st.power ? T('電流表 I1 = ' + I1m().toFixed(2) + ' A、I2 = ' + I2m().toFixed(2) + ' A', 'ammeters I1 = ' + I1m().toFixed(2) + ' A, I2 = ' + I2m().toFixed(2) + ' A') : T('電源關閉', 'power off');
-    const wire = st.hung ? T('外端掛著 ' + st.piece.mg + ' mg 的漆包線', 'a ' + st.piece.mg + ' mg piece of wire hangs on the outer end') : T('掛勾上沒有東西', 'nothing on the hook');
+    const wire = st.hung ? (st.weight==='rice'?T('外端掛著 '+st.grains+' 粒米、共 '+st.piece.mg+' mg',st.grains+' grain(s) of rice, '+st.piece.mg+' mg total, hang on the outer end'):T('外端掛著 ' + st.piece.mg + ' mg 的漆包線', 'a ' + st.piece.mg + ' mg piece of wire hangs on the outer end')) : T('掛勾上沒有東西', 'nothing on the hook');
     const t = T('電流天平示意圖：剖開一半的螺線管與伸進管內的ㄈ字形電路。目前' + cur + '，' + wire + '，' + bal + '。',
       'Diagram of the current balance: a solenoid cut open with the U-shaped circuit reaching into it. Now ' + cur + ', ' + wire + ', and ' + bal + '.');
     if (cv.getAttribute('aria-label') !== t) cv.setAttribute('aria-label', t);
     // 英文模式也同步 data-en-aria-label，免得載入完成時被 HTML 的靜態英文蓋回去
     if (cv.hasAttribute('data-en-aria-label') && T('0', '1') === '1') cv.setAttribute('data-en-aria-label', t);
   }
-  function analysis() {
-    return C.analyze(st.rows.map(function (r) { return { part: r.part, m: r.m * 1e-6, I1: r.I1, I2: r.I2 }; }));
+  function analysis(onlyOwn) {
+    return C.analyze(st.rows.filter(r=>!onlyOwn||!r.given).map(function (r) { return { part: r.part, m: r.m * 1e-6, I1: r.I1, I2: r.I2 }; }));
   }
   function updateSteps() {
     const s0 = st.steps;
     if (resting && isLevel() && !st.hung && !(I1t() > 0 && I2t() > 0)) s0[0] = true;
     if (st.power && st.fromMin) s0[1] = true;
     if (magDown() && st.I1 >= 0.995 && st.I1 <= 3.005 && st.I2 >= 1) s0[2] = true;
-    const An = analysis();
+    const An = analysis(true);
     if (An.p1.n >= 1) s0[3] = true;
     if (An.p1.distinctM >= 5) s0[4] = true;
     if (An.p2.distinctM >= 5) s0[5] = true;
@@ -1102,26 +1141,33 @@
   function flash(html, ms) { setStatus(html); pinned = performance.now() + (ms || 4000); }
 
   // ---------- 任務事件 ----------
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  function emit(type, data) {
+    if(presetting)return;
+    dispatchEvent(new CustomEvent('cb:action', {detail:{type,data,userAction:deliberate}}));
+    if (deliberate && !window.CurrentBalanceStudy?.teaching && window.LabMission) window.LabMission.emit(type, data);
+  }
   function info() {
     return {
       power: st.power, fromMin: st.fromMin, I1: I1t(), I2: I2t(), I1m: I1m(), I2m: I2m(), s1: st.s1, s2: st.s2,
       magDown: magDown(), currents: currents(), hung: st.hung, mg: st.piece.mg, mTrue: st.piece.m * 1e6, len: st.piece.len,
       nut: st.nut, zeroOff: zeroOffMg(), tip: tipUp(), level: isLevel(), rest: resting, stop: atStop(),
-      mode: st.mode, realSol: st.realSol, part: st.part, combos: Object.keys(st.combos).length
+      mode: st.mode, realSol: st.realSol, part: st.part, combos: Object.keys(st.combos).length,
+      optical:st.show.optical, spotMm:window.CurrentBalanceStudyCore.optical(beam.th)*1000,
+      weight:st.weight, grains:st.grains, view:view3?.active?'3d':'2d', hand:st.show.hand
     };
   }
   function onSettle() {
     if (currents()) st.combos[st.s1 + ',' + st.s2] = true;
     updateReadouts();
     stepStatus();
-    if (isLevel() && st.hung && currents()) chime();
+    if (isLevel() && deliberate) chime();
     emit('state', info());
     if (view3 && view3.active) view3.update();
     requestDraw();
   }
   /** 使用者改變了設定：重算、重畫、通知任務 */
   function afterChange(user) {
+    if (user) deliberate = true;
     disturb();
     updateReadouts();
     stepStatus();
@@ -1164,16 +1210,16 @@
   function outs() {
     $('I1o').textContent = val(elI1).toFixed(3) + ' A';
     $('I2o').textContent = val(elI2).toFixed(3) + ' A';
-    $('wlo').textContent = val(elWl).toFixed(1) + ' cm';
-    $('nuto').textContent = val(elNut).toFixed(2) + ' mm';
+    $('wlo').textContent = val(elWl).toFixed(3) + ' cm';
+    $('nuto').textContent = val(elNut).toFixed(3) + ' mm';
   }
   function read() { st.I1 = val(elI1); st.I2 = val(elI2); st.nut = val(elNut); }
   [elI1, elI2, elNut].forEach(function (el) {
-    el.addEventListener('input', function () { read(); outs(); afterChange(false); });
-    el.addEventListener('change', function () { read(); outs(); afterChange(true); });
+    el.addEventListener('input', function () { if(presetting)return; deliberate=true; read(); outs(); afterChange(false); });
+    el.addEventListener('change', function () { if(presetting)return; deliberate=true; read(); outs(); afterChange(true); });
   });
-  elWl.addEventListener('input', function () { st.len = val(elWl); cutPiece(); outs(); afterChange(false); });
-  elWl.addEventListener('change', function () { st.len = val(elWl); if (st.piece.len !== st.len) cutPiece(); outs(); afterChange(true); });
+  elWl.addEventListener('input', function () { if(presetting)return; deliberate=true; st.len = val(elWl); cutPiece(); outs(); afterChange(false); });
+  elWl.addEventListener('change', function () { if(presetting)return; deliberate=true; st.len = val(elWl); if (st.piece.len !== st.len) cutPiece(); outs(); afterChange(true); });
   $('power').addEventListener('click', function () {
     st.power = !st.power;
     if (st.power) {
@@ -1186,7 +1232,7 @@
   });
   $('rev1').addEventListener('click', function () { st.s1 = -st.s1; clickSound(); afterChange(true); });
   $('rev2').addEventListener('click', function () { st.s2 = -st.s2; clickSound(); afterChange(true); });
-  $('hang').addEventListener('click', function () { st.hung = !st.hung; clickSound(); afterChange(true); });
+  $('hang').addEventListener('click', function () { st.hung = !st.hung; clickSound(); if(st.weight==='rice'&&st.hung)sound()?.noise({dur:.09,gain:.12,filter:2600}); afterChange(true); });
   function setMode(m) {
     if (m === st.mode) return;
     st.mode = m;
@@ -1208,10 +1254,12 @@
   $('modeIdeal').addEventListener('click', function () { setMode('ideal'); });
   $('modeReal').addEventListener('click', function () { setMode('real'); });
   $('realSol').addEventListener('change', function (ev) { st.realSol = ev.target.checked; modeHint(); afterChange(true); });
-  [['showLabels', 'labels'], ['showField', 'field'], ['showForce', 'force'], ['showFlow', 'flow']].forEach(function (p) {
+  [['showLabels', 'labels'], ['showField', 'field'], ['showForce', 'force'], ['showFlow', 'flow'], ['showOptical','optical'], ['showHand','hand']].forEach(function (p) {
     $(p[0]).addEventListener('change', function (ev) {
       st.show[p[1]] = ev.target.checked; requestDraw(); kick();
+      if(p[1]==='optical')resize();
       if (view3 && view3.active) view3.update();
+      deliberate=true; emit('display',info());
     });
   });
   function setPart(p) {
@@ -1233,15 +1281,16 @@
   $('g2').addEventListener('click', function () { setGraph(2); });
 
   // ---------- 記錄與數據表 ----------
-  function rowsInfo() {
-    const An = analysis();
-    const rows = st.rows.map(function (r, i) {
+  function rowsInfo(onlyOwn) {
+    const An = analysis(onlyOwn);
+    const rows = st.rows.filter(r=>!onlyOwn||!r.given).map(function (r, i) {
       const w = An.rows[i];
       return Object.assign({ F: w.F, B: w.B, mu0: w.mu0, err: w.mu0 / C.MU0 - 1 }, r);
     });
     return { An: An, rows: rows };
   }
   $('record').addEventListener('click', function () {
+    deliberate=true;
     if (!st.power) { flash(T('請先開啟電源。', 'Switch the power on first.')); return; }
     if (!st.hung) { flash(T('先剪一段漆包線、按「掛上天平」，再把天平調到平衡。', 'Hang a piece of wire on the balance first, then balance it.')); return; }
     if (!(I1m() > 0 && I2m() > 0)) { flash(T('兩個電流表的讀數都要大於 0。', 'Both ammeters must read more than 0.')); return; }
@@ -1254,7 +1303,8 @@
     if (st.rows.length >= 30) { flash(T('數據表最多 30 筆，請先刪除一些。', 'The table holds at most 30 rows; delete some first.')); return; }
     const row = {
       part: st.part, m: st.piece.mg, I1: I1m(), I2: I2m(), mode: st.mode, realSol: st.realSol,
-      zeroOff: Math.round(zeroOffMg() * 100) / 100, mTrue: st.piece.m * 1e6, tip: tipUp()
+      zeroOff: Math.round(zeroOffMg() * 100) / 100, mTrue: st.piece.m * 1e6, tip: tipUp(),
+      optical:st.show.optical,spotMm:window.CurrentBalanceStudyCore.optical(beam.th)*1000,weight:st.weight,grains:st.grains,len:st.piece.len
     };
     // 同一個實驗裡，固定的電流換了？
     const same = st.rows.filter(function (r) { return r.part === row.part; });
@@ -1263,7 +1313,7 @@
     st.rows.push(row);
     clickSound();
     renderTable();
-    const R = rowsInfo(), last = R.rows[R.rows.length - 1];
+    const R = rowsInfo(true), last = R.rows[R.rows.length - 1];
     let msg = T('已記錄第 ' + st.rows.length + ' 筆：μ<sub>0</sub> = ' + (last.mu0 * 1e7).toFixed(3) + ' × 10<sup>−7</sup> T·m/A。',
       'Row ' + st.rows.length + ' recorded: μ<sub>0</sub> = ' + (last.mu0 * 1e7).toFixed(3) + ' × 10<sup>−7</sup> T·m/A.');
     if (changed) msg += T(' 注意：這個實驗的 ' + (row.part === 1 ? SUB1 : SUB2) + ' 應該保持不變。', ' Note: ' + (row.part === 1 ? SUB1 : SUB2) + ' should stay the same in this part.');
@@ -1276,6 +1326,8 @@
       p2: { n: An.p2.n, B: An.p2.B, Bth: An.p2.Bth, err: An.p2.err, mu0: An.p2.mu0, distinctM: An.p2.distinctM || 0, I2spread: An.p2.I2spread },
       mu0Mean: An.mu0Mean, meanErr: An.meanErr
     });
+    if(st.show.optical&&Math.abs(row.spotMm)<=2)emit('optical-record',{recorded:true,...info()});
+    if(st.weight==='rice'&&st.grains===1)emit('rice-record',{recorded:true,...info()});
   });
   $('undo').addEventListener('click', function () {
     if (!st.rows.length) return;
@@ -1420,6 +1472,7 @@
       nut: st.nut, show: st.show, realSol: st.realSol, flowT: flowT, flowing: flowing(), lines: st.show.field ? fieldLines() : null,
       F: Fbc(), Fside: Math.abs(REAL.sideForce) * I1t() * I2t() / 2, uSide: USIDE, W: st.hung ? st.piece.m * G : 0, FREF: FREF,
       level: isLevel(), tip: tipUp(), mg: st.piece.mg, I1m: I1m(), I2m: I2m()
+      ,weight:st.weight,grains:st.grains
     };
   }
   function setPressed(mode) {
@@ -1443,6 +1496,8 @@
         viewMsg.textContent = '';
         $('resetCam').hidden = false;
         view3.update();
+        if(st.show.hand)view3.focusHand();
+        emit('view',info());
         kick();
       }).catch(function (err) {
         if (token !== loadToken) return;
@@ -1472,6 +1527,65 @@
   $('view2d').addEventListener('click', function () { setView('2d'); });
   $('view3d').addEventListener('click', function () { setView('3d'); });
   $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
+
+  /** 自學只呼叫這組公開操作；不寫入任務或自造量測完成。 */
+  function preset(config, rows) {
+    presetting=true;deliberate=false;sweepToken++;
+    const allowed=['power','fromMin','I1','I2','s1','s2','len','hung','nut','mode','realSol','part','weight','grains'];
+    for(const key of allowed)if(Object.hasOwn(config,key))st[key]=config[key];
+    for(const [id,key] of [['I1','I1'],['I2','I2'],['nut','nut'],['wl','len']]){if(window.LabNum)LabNum.set($(id),st[key]);else $(id).value=st[key];}
+    if(config.show)Object.assign(st.show,config.show);
+    if(rows)st.rows=rows.map(r=>({...r}));
+    cutPiece();beam.th=C.eqAngle(torque());beam.om=0;resting=true;
+    $('realSol').checked=st.realSol;$('weightKind').value=st.weight;$('grainCount').value=st.grains;
+    for(const [id,key] of [['showOptical','optical'],['showHand','hand']])$(id).checked=st.show[key];
+    $('modeIdeal').setAttribute('aria-pressed',String(st.mode==='ideal'));$('modeReal').setAttribute('aria-pressed',String(st.mode==='real'));
+    outs();modeHint();updateReadouts();renderTable();presetting=false;deliberate=false;afterChange(false);kick();
+  }
+  function tweak(dx,dy,id) {
+    const horizontal=dx||dy, vertical=dy;
+    const change=(key,delta)=>{const el=$(key),value=Math.max(+el.min,Math.min(+el.max,val(el)+delta));if(window.LabNum)LabNum.set(el,value);else el.value=value;};
+    // 單軸器材用水平鍵；斜向可同時微調相鄰旋鈕，上下反向也可單獨調整選中值。
+    change(id, horizontal);
+    if(dx&&dy&&id!=='nut')change(id==='I1'?'I2':'I1',vertical);
+    read();outs();afterChange(true);dispatchEvent(new Event('cb:fine'));
+  }
+  function screenPoint(id) {
+    const rect=cv.getBoundingClientRect();let p;
+    if(id==='nut')p=P(0,0,ZP+U1+.0025+st.nut*.001);
+    else {const box=meters[id==='I1'?1:0];p=[box.x+box.w*.5,box.y+box.h*.5];}
+    return {x:rect.left+p[0],y:rect.top+p[1]};
+  }
+  window.CurrentBalanceLab={snapshot:()=>({...info(),knobs:{I1:st.I1,I2:st.I2},rows:rowsInfo().rows.map(r=>({...r})),analysis:analysis(),show:{...st.show},steps:st.steps.slice()}),preset,view:setView,redraw:requestDraw,tweak,screenPoint,
+    select(id){selectedFine=id;dispatchEvent(new Event('cb:select'));},get selected(){return selectedFine;},get three(){return view3;}};
+  $('weightKind').addEventListener('change',e=>{st.weight=e.target.value;cutPiece();afterChange(true);});
+  $('grainCount').addEventListener('change',e=>{st.grains=+e.target.value;cutPiece();afterChange(true);});
+  $('newRice').addEventListener('click',()=>{st.weight='rice';$('weightKind').value='rice';cutPiece();sound()?.noise({dur:.08,gain:.12,filter:3000});afterChange(true);});
+  /** 一鍵輪試仍經過真實轉動並等停穩，不把計算列當成自己的平衡記錄。 */
+  $('tryWiring').addEventListener('click',async()=>{
+    if(!currents()){flash(T('先開電源，並把兩個電流設為大於 0，再輪試接線方向。','Switch on and set both currents above zero before testing the wiring directions.'));return;}
+    const token=++sweepToken,button=$('tryWiring');button.disabled=true;
+    const start={s1:st.s1,s2:st.s2};const result=[];
+    $('wiringBody').replaceChildren();
+    try{for(const [s1,s2] of [[1,1],[-1,1],[-1,-1],[1,-1]]){
+      if(token!==sweepToken||!currents())break;st.s1=s1;st.s2=s2;afterChange(true);
+      await new Promise(resolve=>{const timer=setInterval(()=>{if(resting||token!==sweepToken){clearInterval(timer);resolve();}},100);});
+      if(token!==sweepToken||!currents())break;result.push({s1,s2,down:s1*s2>0});const tr=document.createElement('tr');
+      for(const text of [s1>0?'+':'−',s2>0?'+':'−',s1*s2>0?T('↓ 向下拉','↓ Down'):T('↑ 向上推','↑ Up')]){const td=document.createElement('td');td.textContent=text;tr.append(td);}tr.classList.toggle('down',s1*s2>0);$('wiringBody').append(tr);
+      $('wiringResult').textContent=T('同號兩組向下；異號兩組向上。','Same signs pull down; opposite signs push up.');
+    }if(token===sweepToken){const sample=window.CurrentBalanceStudyCore.wiring(st.I1,st.I2,zeroOffMg()*1e-6),mean=window.CurrentBalanceStudyCore.wiringMean(sample);$('wiringResult').textContent+=T(' 固定零偏與地磁模型：四向帶符號平均相當於 ',' Fixed-offset / Earth-field model: the signed four-way mean is ')+(mean*1e6).toFixed(1)+T(' mg。這是模型推算，不加入自己的量測表。',' mg. These model values are not added to your measurements.');}}
+    finally{if(token===sweepToken){st.s1=start.s1;st.s2=start.s2;afterChange(true);}button.disabled=false;}
+  });
+
+  // 在圖上拖動螺母或電流表旋鈕，不必捲到滑桿才能調整。
+  let dragging=null;
+  cv.addEventListener('pointerdown',e=>{const r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;const n=screenPoint('nut');
+    if(Math.hypot(e.clientX-n.x,e.clientY-n.y)<25)dragging={id:'nut',x,value:st.nut};
+    else for(const id of ['I1','I2']){const box=meters[id==='I1'?1:0];if(x>=box.x&&x<=box.x+box.w&&y>=box.y&&y<=box.y+box.h)dragging={id,x,value:st[id]};}
+    if(dragging){selectedFine=dragging.id;cv.setPointerCapture(e.pointerId);e.preventDefault();dispatchEvent(new Event('cb:select'));}});
+  cv.addEventListener('pointermove',e=>{if(!dragging)return;const r=cv.getBoundingClientRect(),id=dragging.id,el=$(id),scale=id==='nut'?.05:.01;
+    const value=Math.max(+el.min,Math.min(+el.max,dragging.value+(e.clientX-r.left-dragging.x)*scale));if(window.LabNum)LabNum.set(el,value);else el.value=value;read();outs();afterChange(true);dispatchEvent(new Event('cb:fine'));});
+  for(const name of ['pointerup','pointercancel'])cv.addEventListener(name,()=>{dragging=null;});
 
   // ---------- 啟動 ----------
   function onTheme() {

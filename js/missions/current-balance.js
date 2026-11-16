@@ -3,6 +3,35 @@
   'use strict';
   if (!window.LabMission) return;
 
+  // 自學事件一次只判一個里程碑；上課示範、還原與非本實驗事件一律不領星。
+  function studyTask(n, level, title, titleEn, desc, descEn, act, seg, test) {
+    return {id:'current-balance-'+n,level,study:true,title:{zh:title,en:titleEn},desc:{zh:desc,en:descEn},
+      check(e){const d=e.data||{};return e.type==='study'&&d.module==='current-balance'&&d.userAction===true&&!d.teaching&&!d.restoring&&d.act===act&&d.seg===seg&&!!test(d);}};
+  }
+  function taskDefinitions() {
+    const finite=(v)=>Number.isFinite(v), first=d=>d.firstCorrect===2;
+    return [
+      studyTask(14,1,'一粒米的疑問','A grain-sized question','看過 Kibble 天平照片，再放上一粒米。','Inspect the Kibble balance photograph, then place one grain.','intro-completed',1,d=>d.photoSeen&&d.riceSeen),
+      studyTask(15,2,'先猜再說','Predict first','兩題預測都送出，答案稍後揭曉。','Submit both predictions before revealing answers.','predictions-submitted',2,d=>d.submitted===2),
+      studyTask(16,3,'神準預言家','Perfect predictions','兩題預測第一次都答對，再揭曉。','Get both predictions right on the first attempt, then reveal.','predictions-perfect',2,d=>first(d)&&d.revealed),
+      studyTask(17,3,'觀念五連','Five connected ideas','看完五張觀念卡，實際打開 3D 右手開掌。','Inspect all five concept cards, including the 3D right hand.','concepts-completed',3,d=>d.cardsSeen===5&&d.handSeen),
+      studyTask(18,4,'歸零','Zero the balance','動手實驗時不通電、不掛物，歸零並停穩。','In the hands-on section, zero the unloaded balance with power off and let it settle.','zero-completed',4,d=>!d.power&&!d.hung&&d.rest&&d.level&&finite(d.zeroOff)&&Math.abs(d.zeroOff)<.8),
+      studyTask(19,5,'第一筆數據','Your first measurement','第 4 段平衡後記錄第一筆自己的數據。','Record your first balanced measurement in Section 4.','first-recorded',4,d=>d.ownN>=1&&d.recorded&&d.rest&&d.level&&!d.given),
+      studyTask(20,6,'五筆數據','Five measured masses','實驗一固定 I1，量五筆、五種質量。','In Part 1, keep I1 fixed and measure five different masses.','five-recorded',4,d=>d.n>=5&&d.distinctM>=5&&finite(d.I1spread)&&d.I1spread<=.011&&!d.given),
+      studyTask(21,6,'量出 μ0','Measure μ0','由自己的五筆斜率求 μ0，誤差小於 5%。','Use the slope of your own five rows to find μ0 within 5%.','mu-calculated',4,d=>d.n>=5&&d.distinctM>=5&&finite(d.err)&&Math.abs(d.err)<.05&&finite(d.answerErr)&&Math.abs(d.answerErr)<.05),
+      studyTask(22,4,'對答案','Compare your answer','比對自己的 μ0，並揭曉兩題預測。','Compare your measured μ0 and reveal both predictions.','answer-compared',5,d=>d.n>=5&&d.submitted===2&&d.revealed&&finite(d.mu0)&&d.mu0>0),
+      studyTask(23,5,'真實的螺線管','The real solenoid','比較長螺線管與真實管口的力矩差異。','Compare the long-solenoid and real-mouth torque models.','models-compared',5,d=>d.idealSeen&&d.realSeen&&finite(d.ratio)&&d.ratio>=.88&&d.ratio<=.94),
+      studyTask(24,4,'範例一','Example one','算線長，再在原實驗平衡、記錄、驗算。','Calculate wire length, balance it, record and verify in the real simulation.','example-one-checked',6,d=>d.example===1&&d.ownRecord&&d.balanced&&finite(d.lengthError)&&d.lengthError<.1),
+      studyTask(25,5,'範例二','Example two','把雙曲線改畫成直線，再由斜率求 μ0。','Transform the hyperbola into a straight line and find μ0 from its slope.','example-two-checked',6,d=>d.example===2&&d.linear&&finite(d.err)&&Math.abs(d.err)<.05),
+      studyTask(26,6,'範例三','Example three','由給定資料判斷不為零的截距來自未歸零。','Identify an unzeroed balance as the cause of the nonzero intercept.','example-three-checked',6,d=>d.example===3&&d.cause==='zero'&&finite(d.intercept)&&Math.abs(d.intercept)>.0003),
+      studyTask(27,4,'隨堂全對','Three correct answers','隨堂三題全答對，可以重答。','Answer all three quick checks correctly; retries are allowed.','quiz-correct',7,d=>d.correct===3),
+      studyTask(28,7,'一次全對','Perfect first attempt','隨堂三題第一次就全答對。','Answer all three quick checks correctly on the first attempt.','quiz-perfect',7,d=>d.firstCorrect===3),
+      studyTask(29,5,'我量出的 μ0','My measured μ0','用自己的五筆做成果圖卡，成功分享或存圖。','Create a card from your own five rows and share or save it.','card-exported',8,d=>d.n>=5&&d.distinctM>=5&&d.exported===true&&['download','share'].includes(d.method)),
+      studyTask(30,8,'自學全通','Complete self-study','完成八段，並取得本單元 14–29 的自學星星。','Complete all eight sections and earn study missions 14–29.','unit-completed',8,d=>Array.isArray(d.sections)&&d.sections.length===8&&d.sections.every(v=>v===true)&&Array.isArray(d.awarded)&&Array.from({length:16},(_,i)=>i+14).every(n=>d.awarded.includes(n)))
+    ];
+  }
+  window.CurrentBalanceStudyTasks={taskDefinitions};
+
   // 事件（js/current-balance.js 回報；質量 mg、電流 A、指針 mm）：
   //   'state'：放開滑桿、按按鈕、天平停穩時
   //     { power, fromMin（開電源時兩個旋鈕都在 0）, I1, I2（真實電流）, I1m, I2m（電表讀數）, s1, s2（±1 接線方向）,
@@ -127,6 +156,9 @@
         return near(p1.mu0, p2.mu0, 0.01) && rows(d).every(careful);
       }
     },
+    {id:'current-balance-12',level:5,title:{"zh":"光槓桿","en":"Optical lever"},desc:{"zh":"開光槓桿，光點離零線 2 mm 以內，天平停穩後記錄。","en":"Enable the optical lever and record when the spot is within 2 mm of zero and the beam is still."},check(e){const d=e.data||{};return e.type==='optical-record'&&d.recorded&&d.optical&&d.rest&&d.level&&Number.isFinite(d.spotMm)&&Math.abs(d.spotMm)<=2;}},
+    {id:'current-balance-13',level:4,title:{"zh":"抬起一粒米","en":"Lift one grain"},desc:{"zh":"米粒模式掛一粒，平衡並停穩後記錄。","en":"Hang one grain in rice mode, balance it, let it settle and record."},check(e){const d=e.data||{};return e.type==='rice-record'&&d.recorded&&d.weight==='rice'&&d.grains===1&&d.hung&&d.currents&&d.rest&&d.level;}},
+    ...taskDefinitions(),
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'current-balance-h1', level: 4, hidden: true,
@@ -144,4 +176,88 @@
       check: function (ev) { const d = ev.data; return ev.type === 'state' && d.rest && d.level && d.hung && d.currents && d.mg >= 290; }
     }
   ]);
+
+  // ======================= 還差什麼（站長 11/16：「步驟跟一般任務都需要有」） =======================
+  // 每個一般任務的 need() 回傳逐條 [ok, 中文, English]，ok 為 null 是接下來要做的動作；讀 CurrentBalanceLab 的目前狀態與記錄。
+  (function () {
+    const S = function () { return window.CurrentBalanceLab ? window.CurrentBalanceLab.snapshot() : null; };
+    const it = function (ok, zh, en) { return [!!ok, zh, en]; };
+    const act = function (zh, en) { return [null, zh, en]; };
+    const f1 = function (v) { return isFinite(v) ? Number(v).toFixed(1) : '—'; };
+    const f2 = function (v) { return isFinite(v) ? Number(v).toFixed(2) : '—'; };
+    const pct = function (v) { return isFinite(v) ? (v * 100).toFixed(1) + '%' : '—'; };
+    const tipTxt = function (s) { return f1(Math.abs(s.tip)) + ' mm ' + (s.tip >= 0 ? '偏高' : '偏低'); };
+    const tipEn = function (s) { return f1(Math.abs(s.tip)) + ' mm ' + (s.tip >= 0 ? 'high' : 'low'); };
+    const lvl = function (s) { return it(s.level && s.rest, '天平水平並停穩（目前 ' + tipTxt(s) + (s.rest ? '' : '，還在擺') + '）', 'Balance level and still (now ' + tipEn(s) + (s.rest ? '' : ', still swinging') + ')'); };
+    const rec = act('按「記錄」', 'Press “Record”');
+    const p1rows = function (s) { return (s.rows || []).filter(function (r) { return r.part === 1; }); };
+    const p1items = function (A, maxErr) { const p = A.p1 || {}; return [
+      it(p.n >= 5, '實驗一至少 5 筆（目前 ' + (p.n || 0) + ' 筆）', 'At least 5 rows in Part 1 (now ' + (p.n || 0) + ')'),
+      it(p.distinctM >= 5, '5 種不同質量（目前 ' + (p.distinctM || 0) + ' 種）', 'Five different masses (now ' + (p.distinctM || 0) + ')'),
+      it(p.n > 0 && p.I1spread <= 0.011, 'I1 全程不變（差 0.01 A 內' + (p.n > 1 ? '；目前差 ' + f2(p.I1spread) + ' A' : '') + '）', 'I1 fixed (within 0.01 A' + (p.n > 1 ? '; now ' + f2(p.I1spread) + ' A apart' : '') + ')'),
+      it(isFinite(p.err) && Math.abs(p.err) <= maxErr + 1e-12, 'B–I2 斜率算出的 μ0 誤差 ' + pct(maxErr) + ' 內（目前 ' + pct(p.err) + '）', 'μ0 from the B–I2 slope within ' + pct(maxErr) + ' (now ' + pct(p.err) + ')')]; };
+    const p2items = function (A, maxErr) { const p = A.p2 || {}; return [
+      it(p.n >= 5, '實驗二至少 5 筆（目前 ' + (p.n || 0) + ' 筆）', 'At least 5 rows in Part 2 (now ' + (p.n || 0) + ')'),
+      it(p.distinctM >= 5, '5 種不同質量（目前 ' + (p.distinctM || 0) + ' 種）', 'Five different masses (now ' + (p.distinctM || 0) + ')'),
+      it(p.n > 0 && p.I2spread <= 0.011, 'I2 全程不變（差 0.01 A 內' + (p.n > 1 ? '；目前差 ' + f2(p.I2spread) + ' A' : '') + '）', 'I2 fixed (within 0.01 A' + (p.n > 1 ? '; now ' + f2(p.I2spread) + ' A apart' : '') + ')'),
+      it(isFinite(p.err) && Math.abs(p.err) <= maxErr + 1e-12, 'F–I1 斜率算出的 B 誤差 ' + pct(maxErr) + ' 內（目前 ' + pct(p.err) + '）', 'B from the F–I1 slope within ' + pct(maxErr) + ' (now ' + pct(p.err) + ')')]; };
+    const careful = function (s) { return [
+      it(s.mode === 'real', '選「含誤差」模式', 'Choose “With errors”'),
+      it(!s.realSol, '不勾「真實螺線管」（用長螺線管近似）', 'Leave “Real solenoid” unticked'),
+      it(Math.abs(s.zeroOff) <= 1, '已歸零（目前相當於 ' + f1(s.zeroOff) + ' mg）', 'Zeroed (now worth ' + f1(s.zeroOff) + ' mg)')]; };
+    const badRows = function (rows) { return rows.filter(function (x) { return !(x.mode === 'real' && !x.realSol && Math.abs(x.zeroOff) <= 1); }).length; };
+    const NEED = {
+      'current-balance-1': function () { const s = S(); if (!s) return null; return [
+        it(!s.currents, '沒有電流：電流轉到 0 或關掉電源', 'No current: knobs at 0 or power off'),
+        it(!s.hung, '掛勾上不掛東西', 'Nothing on the hook'),
+        it(s.level, '轉「歸零螺母」讓指針對準水平刻線（目前 ' + tipTxt(s) + '）', 'Turn the zero nut until the pointer is level (now ' + tipEn(s) + ')'),
+        it(s.rest, '等天平停穩', 'Wait for it to settle')]; },
+      'current-balance-2': function () { const s = S(); if (!s) return null; return [
+        it(s.power && s.fromMin, '兩個旋鈕都在 0 時按「開啟電源」' + (s.power && !s.fromMin ? '（先關掉、轉到 0 再開）' : ''), 'Press “Power on” with both knobs at 0' + (s.power && !s.fromMin ? ' (switch off, turn to 0, switch on)' : '')),
+        it(s.magDown, s.currents ? 'bc 受力向下（外端下垂就按其中一個「反向」）' : '把兩個電流調大', s.currents ? 'bc pushed down (if the end drops, press one “Reverse”)' : 'Turn both currents up'),
+        it(s.tip >= 1, '指針翹高至少 1 mm（目前 ' + tipTxt(s) + '）', 'Pointer at least 1 mm high (now ' + tipEn(s) + ')')]; },
+      'current-balance-3': function () { const s = S(); if (!s) return null; return [
+        it(s.power && s.currents, '電源開著、兩個電流都有', 'Power on with both currents'),
+        it(s.hung, '剪一段漆包線，按「掛上天平」', 'Cut a piece of wire and hang it on'), lvl(s), rec]; },
+      'current-balance-4': function () { const s = S(); if (!s) return null; const r = p1rows(s); return [
+        it(r.length >= 2, '實驗一至少記 2 筆（目前 ' + r.length + ' 筆）', 'At least 2 rows in Part 1 (now ' + r.length + ')'),
+        act('同一個 I1，兩段漆包線的質量剛好差 2 倍（3% 內），各自調 I2 平衡後記錄；I2 也會差 2 倍', 'At the same I1, balance two wires whose masses differ by exactly 2× (within 3%) and record both; I2 should also differ by 2×')]; },
+      'current-balance-5': function () { const s = S(); if (!s) return null; const rows = s.rows || []; let best = 0;
+        rows.forEach(function (a) { rows.forEach(function (b) { if (a !== b && Math.abs(a.m - b.m) <= 1 && a.I1 > 0 && b.I1 > 0) best = Math.max(best, Math.max(a.I1, b.I1) / Math.min(a.I1, b.I1)); }); });
+        return [
+          it(best > 0, '同一段漆包線（質量差 1 mg 內）至少記 2 筆', 'At least 2 rows with the same wire (within 1 mg)'),
+          it(best >= 1.8, '兩筆的 I1 相差 1.8 倍以上（目前最多 ' + (best ? best.toFixed(2) : '—') + ' 倍）', 'I1 differs by 1.8× or more (best so far ' + (best ? best.toFixed(2) : '—') + '×)'),
+          act('不換漆包線，改變 I1 後調另一個電流重新平衡；兩筆的 I1 × I2 要差 2% 內', 'Keep the wire, change I1 and rebalance with the other current; I1 × I2 must agree within 2%')]; },
+      'current-balance-6': function () { const s = S(); if (!s) return null; return p1items(s.analysis, 0.02).concat([rec]); },
+      'current-balance-7': function () { const s = S(); if (!s) return null; return p2items(s.analysis, 0.02).concat([rec]); },
+      'current-balance-8': function () { const s = S(); if (!s) return null; const r = p1rows(s), k = r.filter(function (x) { return Math.abs(x.zeroOff) >= 3; }).length, line = s.analysis.p1 && s.analysis.p1.line, b = line ? line.intercept : NaN; return [
+        it(Math.abs(s.zeroOff) >= 3, '故意不歸零：相當於多掛或少掛 3 mg 以上（目前 ' + f1(s.zeroOff) + ' mg）', 'Leave it unzeroed by 3 mg or more (now ' + f1(s.zeroOff) + ' mg)'),
+        it(r.length >= 3 && k === r.length, '實驗一至少 3 筆、每一筆都沒歸零（目前 ' + k + ' / ' + r.length + ' 筆）', 'At least 3 Part 1 rows, all unzeroed (now ' + k + ' of ' + r.length + ')'),
+        it(isFinite(b) && Math.abs(b) >= 3e-4, 'B–I2 最佳直線截距超過 0.3 mT（目前 ' + (isFinite(b) ? f2(b * 1e3) + ' mT' : '—') + '）', 'Intercept of the B–I2 line above 0.3 mT (now ' + (isFinite(b) ? f2(b * 1e3) + ' mT' : '—') + ')')]; },
+      'current-balance-9': function () { const s = S(); if (!s) return null; const l = (s.rows || []).filter(function (r) { return r.realSol && Math.abs(r.zeroOff) <= 1 && isFinite(r.err); }), e = l.length ? l.reduce(function (t, r) { return t + r.err; }, 0) / l.length : NaN; return [
+        it(s.realSol, '勾選「真實螺線管」', 'Tick “Real solenoid”'),
+        it(Math.abs(s.zeroOff) <= 1, '已歸零（目前相當於 ' + f1(s.zeroOff) + ' mg）', 'Zeroed (now worth ' + f1(s.zeroOff) + ' mg)'),
+        it(l.length >= 3, '真實螺線管、歸零後至少 3 筆（目前 ' + l.length + ' 筆）', 'At least 3 such rows (now ' + l.length + ')'),
+        it(e >= -0.12 && e <= -0.06, 'μ0 平均比 4π × 10^-7 小 6%–12%（目前 ' + pct(e) + '）', 'Mean μ0 6–12% below 4π × 10^-7 (now ' + pct(e) + ')')]; },
+      'current-balance-10': function () { const s = S(); if (!s) return null; const r = p1rows(s), bad = badRows(r); return careful(s).concat(p1items(s.analysis, 0.03), [
+        it(r.length > 0 && !bad, '實驗一每一筆都在上面的條件下記錄' + (bad ? '（有 ' + bad + ' 筆不符：按「全部清除」重做）' : ''), 'Every Part 1 row taken under these conditions' + (bad ? ' (' + bad + ' do not: press “Clear all”)' : ''))]); },
+      'current-balance-11': function () { const s = S(); if (!s) return null; const A = s.analysis, rows = s.rows || [], bad = badRows(rows), a = A.p1 && A.p1.mu0, b = A.p2 && A.p2.mu0, d = a && b ? Math.abs(a - b) / b : NaN; return careful(s).concat(p1items(A, 0.03), p2items(A, 0.03), [
+        it(isFinite(d) && d <= 0.01, '兩個實驗的 μ0 彼此相差 1% 內（目前 ' + pct(d) + '）', 'The two μ0 values agree within 1% (now ' + pct(d) + ')'),
+        it(rows.length > 0 && !bad, '每一筆都在上面的條件下記錄' + (bad ? '（有 ' + bad + ' 筆不符）' : ''), 'Every row taken under these conditions' + (bad ? ' (' + bad + ' do not)' : ''))]); },
+      'current-balance-12': function () { const s = S(); if (!s) return null; return [
+        it(s.optical, '在「顯示」卡勾選「光槓桿」', 'Tick “Optical lever” in Display'),
+        it(s.hung && s.currents, '掛上東西、兩個電流都開', 'Something hung and both currents on'), lvl(s),
+        it(isFinite(s.spotMm) && Math.abs(s.spotMm) <= 2, '光點離零線 2 mm 內（目前 ' + f1(s.spotMm) + ' mm）', 'Spot within 2 mm of zero (now ' + f1(s.spotMm) + ' mm)'), rec]; },
+      'current-balance-13': function () { const s = S(); if (!s) return null; return [
+        it(s.weight === 'rice', '重物選「米粒」', 'Choose “Rice” as the weight'),
+        it(s.weight === 'rice' && s.grains === 1, '米粒數選 1 粒（目前 ' + s.grains + ' 粒）', 'One grain (now ' + s.grains + ')'),
+        it(s.hung, '按「掛上天平」', 'Hang it on the balance'),
+        it(s.currents, '兩個電流都開', 'Both currents on'), lvl(s), rec]; }
+    };
+    const ON = { 'current-balance-12': ['optical-record', 'record'], 'current-balance-13': ['rice-record', 'record'] };
+    ((LabMission.all && LabMission.all()['current-balance']) || []).forEach(function (m) {
+      const f = NEED[m.id]; if (!f) return; m.need = f;
+      const n = +m.id.split('-').pop(); if (ON[m.id] || n >= 3) m.needOn = ON[m.id] || ['record'];
+    });
+  })();
 })();

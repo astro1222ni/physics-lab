@@ -46,7 +46,8 @@
     function setOpen(on){open=!!on&&!o.study?.();pane.hidden=!open;doc.documentElement.classList.toggle('labside-open',open);doc.documentElement.dataset.labsideTab=open?tab:'';doc.documentElement.classList.toggle('labside-docked',open&&innerWidth>=1240);doc.documentElement.style.setProperty('--labside-height',height+'px');Object.entries(tabs).forEach(([k,b])=>{b.setAttribute('aria-expanded',String(open&&tab===k));});if(open){title.textContent=names[tab][1];render(true);if(innerWidth<1240)o.focus?.();}dispatchEvent(new Event('resize'));}
     function show(k){tab=k;setOpen(!open||body.dataset.tab!==k);body.dataset.tab=k;}
     function symbols(node,text){
-      String(text).split(/(N[12]|V0)/g).forEach(s=>{if(/^(N[12]|V0)$/.test(s)){node.append(doc.createTextNode(s[0]),E('sub','',s[1]));}else node.append(doc.createTextNode(s));});return node;
+      // N1、N2、V0（等位線）與 I1、I2、μ0（電流天平）的數字寫成下標
+      String(text).split(/(N[12]|V0|I[12]|μ0)/g).forEach(s=>{if(/^(N[12]|V0|I[12]|μ0)$/.test(s)){node.append(doc.createTextNode(s.slice(0,-1)),E('sub','',s.slice(-1)));}else node.append(doc.createTextNode(s));});return node;
     }
     function fillNeed(det,m){
       const list=window.LabMission?.needOf?.(m),ul=det.querySelector('ul');ul.replaceChildren();

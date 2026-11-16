@@ -1,0 +1,89 @@
+/* 電流天平專用的自學與操作台；共用元件維持原接法。 */
+.cb select,.cb input[type=number]{min-height:44px;max-width:100%;font:inherit;border:1px solid var(--border);border-radius:7px;color:var(--text);background:var(--surface);padding:5px}
+.cb .cb-rice-count,.cb-fine-bar,.cb .ex-bar{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:5px 0}.cb-fine-bar button,.cb .ex-bar button{min-height:44px;flex:1;padding:4px;font-size:calc(14px * var(--fs,1))}.cb .slider input[type=range]{min-height:44px}.cb [data-fine][aria-pressed=true]{border-color:var(--accent);color:var(--accent);font-weight:800}.cb #view3{position:relative}.cb #cv{touch-action:pan-y}
+.cb-data .seg2{margin-top:0}.cb-data .grid{align-items:start}.cb-data .tablewrap{max-height:260px}.cb-study-head{display:flex;align-items:center;gap:5px;padding-right:42px}.cb-study-head strong{flex:1;min-width:0;font-size:16px}.cb-study-head button,.cb-study-head a{min-height:44px;display:grid;place-items:center;font-size:14px;padding:4px}.cb-study #cb-study-shell{display:block!important}.cb-study .wrap{max-width:none;width:auto;margin:0;padding:6px}.cb-study .top,.cb-study .try-hint,.cb-study .notes,.cb-study footer,.cb-study .stats-bar,.cb-study .lab-tools,.cb-study .ms-wrap,.cb-study .ms-account,.cb-study .lab-account{display:none!important}.cb-study .lab.cb{margin:0}.cb-study .stage{padding:6px}.cb-study .stage>.legend,.cb-study .stage>.hint{display:none!important}.cb-study #cb-study-progress{display:grid;grid-template-columns:repeat(8,1fr);gap:3px;margin:4px 0}.cb-study #cb-study-progress button{min-width:0;min-height:44px;padding:3px;font-size:14px}.cb-study #cb-study-progress [aria-current]{border-color:var(--accent);color:var(--accent);font-weight:800}.cb-study .cb-caption{display:block;font-size:calc(17px * var(--fs,1));font-weight:800;line-height:1.4;padding:8px 10px;margin:5px 0;background:var(--study-caption-bg,var(--accent-soft));border-left:4px solid var(--accent);border-radius:8px}.cb-study .key{color:var(--study-key,var(--accent))}.cb-study #cb-study-tools,.cb-study #cb-study-nav{display:flex;gap:5px;flex-wrap:wrap;margin:4px 0}.cb-study #cb-study-tools button{flex:1 1 27%;min-height:44px;font-size:14px;padding:4px}.cb-study #cb-study-nav button{flex:1;min-height:44px;padding:4px;font-size:15px}.cb-study #cb-study-message{display:block;margin:4px 0;font-size:14px;line-height:1.4}.cb-study #cb-study-message:empty{display:none}.cb-study .lab.cb>.panel{display:none!important}.cb-study.cb-slide .labdeck,.cb-study.cb-slide #dataCard,.cb-study.cb-slide #cv,.cb-study.cb-slide .view-bar,.cb-study.cb-slide #view3,.cb-study.cb-slide .playbar,.cb-study.cb-slide .cb-fine-bar,.cb-study.cb-slide .ex-bar,.cb-study.cb-slide .status{display:none!important}.cb-study.cb-slide #cb-course-visual{display:block!important}.cb-study:not(.cb-slide) #cb-course-visual{display:none!important}.cb-study:not(.cb-slide) .stage>.view-bar{margin:3px 0}.cb-study:not(.cb-slide) #cb-study-tools:empty{display:none}.cb-study .cb-photo{margin:0}.cb-study .cb-photo img{display:block;width:100%;height:170px;object-fit:contain;background:var(--canvas-bg)}.cb-photo figcaption{font-size:12px;line-height:1.2}.cb-study .cb-diagram{width:100%;height:176px;display:block}.cb-study .cb-condition{font-size:calc(13px * var(--fs,1));padding:5px 8px;margin:4px 0;line-height:1.35;background:var(--accent-soft);border-radius:6px}.cb-study .lp-content{font-size:calc(16px * var(--fs,1));line-height:1.45;padding:8px 11px}.cb-study .lp-content h3{font-size:16px;margin:4px 0}.cb-study .lp-content p{margin:5px 0}.cb-study .study-options{display:grid;grid-template-columns:1fr;gap:5px}.cb-study .study-options button{height:auto;min-height:44px;line-height:1.3;padding:5px 8px;font-size:16px;display:flex;align-items:center;gap:7px}.cb-study .study-options .study-letter{flex:0 0 20px}.cb-study .study-feedback{font-size:15px;padding:6px}.cb-study .cb-question>button{width:100%;min-height:44px;margin-top:5px}.cb-example-controls{border-top:1px solid var(--border);margin-top:7px;padding-top:5px}.cb-example-controls button,.cb-example-controls select,.cb-example-controls input{min-height:44px;max-width:100%;margin:3px}.cb-example-controls input{width:106px}.cb-study-task{border-bottom:1px solid var(--border);padding:6px}.cb-study-task p{font-size:14px}.cb-study .cb-example-plot{width:100%;height:200px;display:block}.cb-study .cb-study-info{font-size:14px}.cb-study .fb-tab,.cb-study #comments{display:none}.cb-study .lp-tabs button{min-width:0;padding:5px;font-size:14px}.cb-feedback button{min-height:44px;width:100%;margin:5px 0}.cb-study .lab-comments{display:none}
+.cb-share-dialog{width:min(94vw,540px);max-height:94dvh;overflow:auto;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:12px}.cb-share-dialog::backdrop{background:#0008}.cb-share-dialog canvas{display:block;width:min(100%,320px);height:auto;margin:8px auto}.cb-share-dialog button{min-height:44px;font:inherit}.cb-share-dialog h2{font-size:20px;margin:4px}.cb-share-dialog .cb-share-actions{display:flex;gap:6px;flex-wrap:wrap}.cb-share-dialog .cb-share-actions button{flex:1}.cb-share-dialog p{font-size:14px}
+@media(max-width:880px){.cb-data .grid{display:flex;flex-direction:column}.cb-data .grid>figure{order:-1;width:100%}.cb .labdeck .card{padding:8px}.cb-study:not(.cb-slide) .cb-caption{margin:3px 0}.cb-study .stage>.status{font-size:13px;line-height:1.3}.cb-study .stage>.playbar{gap:4px;margin-top:4px}.cb-study .playbar button{font-size:13px;padding:4px}.cb-study:not(.cb-slide) .ex-bar{display:none}}
+@media(max-width:1239px){.cb-study body{padding-bottom:60px}.cb-study .lp-strip{width:100%;max-width:720px;bottom:0;height:52px;min-height:52px;font-size:15px}.cb-study .lp-panel{width:100%;max-width:720px;padding-top:52px;bottom:0}.cb-study[data-lp-state=half] .lp-panel,.cb-study[data-lp-state=half] .lp-strip{top:42dvh!important}.cb-study[data-lp-state=full] .lp-panel,.cb-study[data-lp-state=full] .lp-strip{top:25dvh!important}.cb-study .lp-strip-label{display:none}.cb-study .lp-strip-text{font-size:16px!important}.cb-study:not([data-lp-state=collapsed]) #cb-study-progress,.cb-study:not([data-lp-state=collapsed]) .cb-caption,.cb-study:not([data-lp-state=collapsed]) #cb-study-tools,.cb-study:not([data-lp-state=collapsed]) #cb-study-nav{display:none!important}}
+@media(min-width:1240px){.cb-study .wrap{margin-right:380px!important}.cb-study .lp-panel,.cb-study .lp-strip{width:380px;right:0;top:0!important;bottom:0!important;left:auto;transform:none}.cb-study .lp-strip{height:62px;bottom:auto!important}.cb-study .lp-panel{padding-top:62px}.cb-study .lab.cb{display:block}.cb-study .cb-photo img{height:290px}.cb-study .cb-diagram{height:260px}html.cb-study.lp-docked body,html.cb-study.ms-docked body{padding-right:0!important}.cb-study #view3 canvas{height:420px!important}.cb-study .cb-study-head{min-height:44px}}
+@media(orientation:landscape) and (max-height:600px){.cb-study .cb-study-head{min-height:30px}.cb-study #cb-study-progress{margin:1px 0}.cb-study #cb-study-progress button{min-height:32px}.cb-study.cb-slide .cb-diagram{height:120px}.cb-study .cb-photo img{height:132px}.cb-study .lp-panel,.cb-study .lp-strip{width:320px;max-width:42vw;left:auto;right:0;top:0!important;bottom:0;transform:none}.cb-study .lp-panel{padding-top:48px}.cb-study .lp-strip{height:48px;bottom:auto}.cb-study[data-lp-state=collapsed] .lp-strip{top:auto!important;bottom:0}.cb-study:not([data-lp-state=collapsed]) .wrap{margin-right:320px}.cb-study:not([data-lp-state=collapsed]) #cb-study-progress,.cb-study:not([data-lp-state=collapsed]) #cb-study-caption{display:block!important}.cb-study:not([data-lp-state=collapsed]) #cb-study-progress{display:grid!important}}
+.cb-study.lab-projector .cb-caption{font-size:calc(24px * var(--fs,1))}.cb-study.lab-projector .lp-content,.cb-study.lab-projector .study-options button{font-size:calc(21px * var(--fs,1))}
+@media(min-width:1240px){.cb-study:not(.cb-slide) .lab.cb{display:grid;grid-template-columns:minmax(0,1fr) 275px;gap:10px}.cb-study:not(.cb-slide) .lab.cb>.panel{display:block!important}.cb-study:not(.cb-slide) .cb-data{grid-column:1/-1}}
+
+/* 自學標頭已有回實驗與上課切換，收起重複模式列。 */
+.cb-inline-nav{display:flex;gap:6px;margin-top:7px}.cb-inline-nav button{flex:1;min-height:44px;font:inherit}.cb-study .lp-dock-tab{display:none}
+@media(min-width:1240px){.cb-study:not(.cb-slide) .lab.cb{display:grid;grid-template-columns:minmax(0,1fr) 275px}.cb-study:not(.cb-slide) .lab.cb>.panel{display:block!important}.cb-study .cb-data{grid-column:1/-1}}
+
+.cb-panel-tools{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0}.cb-panel-tools button{flex:1 1 42%;min-height:44px;font:inherit;padding:5px}
+
+@media(max-width:600px){.cb-study.cb-slide .cb-diagram{height:148px}.cb-study[data-lp-state=half] .lp-panel,.cb-study[data-lp-state=half] .lp-strip{top:34dvh!important}.cb-study .cb-condition{font-size:12px;line-height:1.25;margin:3px 0}.cb-study .lp-content{line-height:1.35}}
+
+.cb-wiring-table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}.cb-wiring-table th,.cb-wiring-table td{padding:5px;border-bottom:1px solid var(--border);text-align:center}.cb-wiring-table .down{background:var(--accent-soft);font-weight:750}
+
+@media(min-width:1240px){.cb-study[data-lp-state=collapsed] .wrap{margin-right:0!important}.cb-study:not(.cb-slide):not([data-cb-hands]) .lab.cb>.panel{display:none!important}.cb-study:not(.cb-slide):not([data-cb-hands]) .lab.cb{display:block}}
+
+@media(max-width:600px){.cb-study .cb-photo img{height:150px}}
+
+/* 橫放只保留一個右欄：說明開啟時覆蓋操作台，關閉便回到原操作台。 */
+@media(orientation:landscape) and (max-height:600px){
+ html.cb-study.labdeck-drawer .wrap{margin-right:0!important;padding:4px}
+ html.cb-study.labdeck-drawer .stage{display:flex;flex-direction:column;padding:4px;gap:0}
+ html.cb-study.labdeck-drawer .cb-study-head{height:44px;min-height:44px}
+ html.cb-study.labdeck-drawer .cb-study-head strong{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ html.cb-study.labdeck-drawer #cb-study-shell{order:0}
+ html.cb-study.labdeck-drawer #cb-study-progress{display:grid!important;margin:0;gap:2px}
+ html.cb-study.labdeck-drawer #cb-study-progress button{min-height:44px;height:44px;padding:2px}
+ html.cb-study.labdeck-drawer .view-bar{order:1;margin:0!important;min-height:44px}
+ html.cb-study.labdeck-drawer .view-msg{order:2;margin:0}
+ html.cb-study.labdeck-drawer #cv,html.cb-study.labdeck-drawer #view3,html.cb-study.labdeck-drawer #cb-course-visual{order:3}
+ html.cb-study.labdeck-drawer #view3 canvas{height:190px!important;aspect-ratio:auto}
+ html.cb-study.labdeck-drawer .playbar{order:4;margin:2px 0!important;gap:3px;flex-wrap:nowrap}
+ html.cb-study.labdeck-drawer .playbar button{min-width:0;padding:3px;font-size:12px}
+ html.cb-study.labdeck-drawer .cb-fine-bar{order:5;margin:2px 0}
+ html.cb-study.labdeck-drawer #cb-study-caption{order:6}
+ html.cb-study.labdeck-drawer #cb-study-tools{order:7}
+ html.cb-study.labdeck-drawer #cb-study-nav{order:8}
+ html.cb-study.labdeck-drawer .status{order:9}
+ html.cb-study.labdeck-drawer .ex-bar{order:10}
+ html.cb-study.labdeck-drawer .cb-diagram{height:auto!important;aspect-ratio:1000/380}
+ html.cb-study.labdeck-drawer:not([data-lp-state=collapsed]) .labdeck{visibility:hidden}
+ html.cb-study.labdeck-drawer:not([data-lp-state=collapsed]) .lp-panel{left:auto!important;right:0!important;top:0!important;bottom:0!important;transform:none!important;width:var(--deck-w)!important;max-width:none!important;padding-top:72px}
+ html.cb-study.labdeck-drawer:not([data-lp-state=collapsed]) .lp-strip{left:auto!important;right:0!important;top:0!important;bottom:auto!important;transform:none!important;width:var(--deck-w)!important;max-width:none!important;height:72px;min-height:72px}
+ html.cb-study.labdeck-drawer[data-lp-state=collapsed] .lp-strip{display:none!important}
+ html.cb-study.labdeck-drawer .lp-tabs button{font-size:13px;padding:3px}
+}
+@media(min-width:881px) and (max-width:1239px){
+ html.cb-study.labdeck-panel .wrap{margin-right:0!important}
+ html.cb-study.labdeck-panel[data-cb-hands] .lab.cb{display:grid;grid-template-columns:minmax(0,1fr) 320px}
+ html.cb-study.labdeck-panel[data-cb-hands] .lab.cb>.panel{display:block!important}
+ html.cb-study.labdeck-panel:not([data-cb-hands]):not([data-lp-state=collapsed]) .wrap{margin-right:360px!important}
+ html.cb-study.labdeck-panel:not([data-cb-hands]) .lab.cb{display:block}
+ html.cb-study.labdeck-panel:not([data-lp-state=collapsed]) .lp-panel{left:auto!important;right:0!important;top:0!important;bottom:0!important;transform:none!important;width:360px;max-width:none;padding-top:72px}
+ html.cb-study.labdeck-panel:not([data-lp-state=collapsed]) .lp-strip{left:auto!important;right:0!important;top:0!important;bottom:auto!important;transform:none!important;width:360px;max-width:none;height:72px;min-height:72px}
+ html.cb-study.labdeck-panel[data-lp-state=collapsed] .lp-strip{display:none!important}
+}
+/* 標頭圖示也保留完整觸控面積。 */
+.cb-study-head button,.cb-study-head a{min-width:44px;flex-shrink:0}
+/* 沒選範例的實驗模式先完整呈現原器材；點範例才開逐行解答。 */
+html[data-lab-mode=lab]:not(.cb-example) .lp-strip,html[data-lab-mode=lab]:not(.cb-example) .lp-dock-tab,html[data-lab-mode=lab]:not(.cb-example) .lp-panel{display:none!important}
+/* 原理圖保持原始比例；寬螢幕把段落列留在標頭，避免把器材與標籤壓扁。 */
+.cb-study .cb-diagram{height:auto!important;aspect-ratio:1000/380}
+@media(min-width:881px) and (max-width:1239px){.cb-study:not([data-lp-state=collapsed]) #cb-study-progress{display:grid!important}}
+@media(orientation:landscape) and (max-height:600px){.cb-study .v3nav-hint{display:none}.cb-study .v3nav button{white-space:nowrap}}
+/* 矮橫放把送出與換步鍵放到左圖下方；右欄同時看得到完整三個選項。 */
+@media(orientation:landscape) and (max-height:600px){
+ html.cb-study.cb-slide .lp-content{font-size:14px;line-height:1.25;padding:6px 8px}
+ html.cb-study.cb-slide .cb-condition{font-size:12px;line-height:1.2;padding:4px;margin:2px 0 4px}
+ html.cb-study.cb-slide .study-options{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+ html.cb-study.cb-slide .study-options button{font-size:13px;line-height:1.25;gap:3px;padding:4px}
+ html.cb-study.cb-slide .study-letter{flex-basis:12px}
+ html.cb-study.cb-slide .cb-question>button[data-submit]{position:fixed;left:9px;bottom:10px;width:200px;min-height:44px}
+ html.cb-study.cb-slide:not([data-lp-state=collapsed]) .cb-inline-nav{position:fixed;left:219px;bottom:10px;width:calc(100vw - var(--deck-w) - 269px);margin:0}
+}
+/* 自學已有九步指引，原六步總覽留在實驗模式；桌面先呈現旋鈕與歸零。 */
+.cb-study #cb-procedure,.cb-study .labdeck-tabs [aria-controls=cb-procedure]{display:none!important}
+@media(orientation:landscape) and (max-height:600px){html.labdeck-drawer .cb .playbar{flex-wrap:nowrap;gap:3px}html.labdeck-drawer .cb .playbar button{min-width:0;flex:1;padding:3px;font-size:12px}}
+/* 自學標頭與側板已有入口；收掉重複側標籤，避免蓋住右欄電流讀值。 */
+html.cb-study .lp-dock-tab,html.cb-study .ms-dock-tab{display:none!important}
+/* 範例圖保持比例；座標與單位以手機至少約 14 px 排字。 */
+.cb-study .cb-example-plot{height:auto;aspect-ratio:720/350}
