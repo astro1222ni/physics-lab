@@ -57,3 +57,7 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 
 /* 手機橫放沿用主線右側操作台，三個側標籤與小鍵盤讓出它的寬度。 */
 @media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-rail{right:calc(var(--deck-w) + 4px)}html.labside-active.labdeck-drawer .labdeck-tabs button{min-height:44px}}
+
+/* 模式入口保持乾淨，背景實驗的工具不能浮到入口上。 */
+.mg-open .lab-stepguide,.mg-open .lab-vpad,.mg-open .vpad-lens,.mg-open .labside-rail,.mg-open .labside-panel{display:none!important}
+.labside-active .mg-switch,.labside-active .mg-home{min-height:44px}

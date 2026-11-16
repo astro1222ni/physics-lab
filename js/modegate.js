@@ -75,7 +75,8 @@
   /** 入口或學習模式選單（蓋住整頁、自己捲動） */
   function gate() {
     const h1 = document.querySelector('header h1, h1');
-    const name = h1 ? h1.textContent.trim() : document.title;
+    // 標題可能有依材質隱藏的文字，只取目前畫面上看得到的一份。
+    const name = h1 ? h1.innerText.trim() : document.title;
     const box = el('div', 'mg-gate'); box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'mg-title');
     const inner = el('div', 'mg-in');
     const top = el('div', 'mg-top');
