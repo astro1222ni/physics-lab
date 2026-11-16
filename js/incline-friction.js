@@ -189,7 +189,7 @@
     LA = layoutA(w); LB = layoutB(w);
     SG = sceneGeom(LA.scene);
     hA = LA.H; hB = LB.H;
-    if (embedNoMu) hA = Math.max(280, Math.min(340, innerHeight - 110));
+    if (embedNoMu) hA = Math.max(180, Math.min(W >= 600 ? 360 : 258, innerHeight - (document.documentElement.classList.contains('ex-fixed') ? 54 : 116)));
     if (cvA.style.height !== hA + 'px') cvA.style.height = hA + 'px';
     if (cvB.style.height !== hB + 'px') cvB.style.height = hB + 'px';
     cvA.width = Math.round(W * dpr); cvA.height = Math.round(hA * dpr);
@@ -1666,7 +1666,7 @@
   }
 
   // ---------- 音效（sound.js；音效關閉時完全不呼叫） ----------
-  function sound() { const S = window.LabSound; return S && S.enabled() ? S : null; }
+  function sound() { if (embedNoMu) return null; const S = window.LabSound; return S && S.enabled() ? S : null; }
   let scrape = null, grainAt = 0;
   /** 滑動時的摩擦聲：音量隨「摩擦生熱的功率」μkN·|v| 增加，音高隨速率升高（主要頻率 ≥ 300 Hz） */
   function updateScrape(fo) {
@@ -2135,6 +2135,13 @@
     commit();
   }
   function forceTexts() {
+    if (embedNoMu) {
+      $('forceLabel').textContent = state.mode === 'along' ? T('沿斜面向上拉 F', 'Upslope pull F') : T('水平拉向牆面 F', 'Horizontal pull towards wall F');
+      $('forceLabel').setAttribute('data-en', state.mode === 'along' ? 'Upslope pull F' : 'Horizontal pull towards wall F');
+      $('forceHint').textContent = '';
+      $('forceHint').setAttribute('data-en', '');
+      return;
+    }
     $('forceLabel').textContent = state.mode === 'along' ? T('外力 F（正：往上推）', 'Force F (+ pushes up)') : T('水平外力 F（推向斜面）', 'Horizontal force F (towards the slope)');
     $('forceHint').textContent = state.mode === 'along'
       ? T('F > 0 沿斜面往上推，F < 0 沿斜面往下拉。', 'F > 0 pushes up along the incline; F < 0 pulls down along it.')

@@ -1,157 +1,72 @@
-/* 通用教學側板。只攔截 emit 轉交引導步驟，不改寫原任務判定。 */
-(function () {
+/* 自學與實驗共用側板；原任務事件仍原樣轉交。 */
+(function(){
   'use strict';
-  const script = document.currentScript;
-  if (!document.querySelector('link[href*="study.css"]')) {
-    const css = document.createElement('link'); css.rel = 'stylesheet';
-    css.href = new URL('../study.css?v=20261115study2', script.src).href;
-    css.addEventListener('load',()=>window.dispatchEvent(new Event('resize')));
-    document.head.appendChild(css);
+  const script=document.currentScript;
+  if(!document.querySelector('link[href*="study.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('../study.css?v=20261116r5',script.src).href;link.onload=()=>dispatchEvent(new Event('resize'));document.head.append(link);}
+  const T=(a,b)=>window.LabSettings?LabSettings.t(a,b):a,tr=p=>Array.isArray(p)?T(p[0],p[1]):String(p||'');
+  const names={concept:['觀念','Concept'],steps:['步驟','Steps'],examples:['範例','Examples'],missions:['任務','Missions']};
+  const E=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
+  const B=(text,fn)=>{const b=E('button',text);b.type='button';b.addEventListener('click',fn);return b;};
+  function rich(node,text){text=String(text);node.replaceChildren();let at=0;for(const m of String(text).matchAll(/\[\[([\s\S]*?)\]\]/g)){node.append(document.createTextNode(text.slice(at,m.index)),E('strong',m[1],'key'));at=m.index+m[0].length;}node.append(document.createTextNode(String(text).slice(at)));math(node);return node;}
+  function math(node){if(window.renderMathInElement)renderMathInElement(node,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false});}
+  let panel,strip,dock,panes={},buttons={},state='collapsed',tab='concept',strips={},options={},context={},wrapped;
+  let activeSteps=true;let defs=[],current=0,done=[],heldAt=null,advanceAt=null,lastSnapshot=null,ack=false;
+  const wide=()=>matchMedia('(min-width:1240px) and (orientation:landscape)').matches;
+  function geometry(){
+    if(strip&&state!=='collapsed')document.documentElement.style.setProperty('--lp-strip-h',strip.getBoundingClientRect().height+'px');const stage=document.getElementById('study-stage'),nav=document.querySelector('.study-controls');if(nav)document.body.style.setProperty('--study-nav',nav.getBoundingClientRect().height+'px');
+    if(stage&&!matchMedia('(orientation:landscape)').matches){let graphic=stage.querySelector('.study-visual,.study-photo,.study-iframe,.study-question,.study-summary')||stage,edge=graphic.getBoundingClientRect().bottom;
+      if(graphic.tagName==='IFRAME'){try{const cv=graphic.contentDocument?.getElementById('cv');if(cv)edge=graphic.getBoundingClientRect().top+cv.getBoundingClientRect().bottom;}catch(e){}}
+      const bottom=innerHeight-(nav?.getBoundingClientRect().height||64);document.documentElement.style.setProperty('--lp-half-top',Math.max(116,Math.min(edge,bottom-240))+'px');}
   }
-  const T = (zh, en) => window.LabSettings ? LabSettings.t(zh, en) : zh;
-  const tr = pair => Array.isArray(pair) ? T(pair[0], pair[1]) : String(pair || '');
-  const names = { concept:['觀念','Concept'], steps:['步驟','Steps'], examples:['範例','Examples'], missions:['任務','Missions'] };
-  function el(tag, text, cls) { const e = document.createElement(tag); if (text != null) e.textContent=text; if (cls) e.className=cls; return e; }
-  function button(text, fn) { const b=el('button',text); b.type='button'; b.addEventListener('click',fn); return b; }
-  let panel, strip, dockTab, tab='concept', state='collapsed', stripText='', panes={}, tabButtons={}, onChange=null, strips={};
-  let defs=[], current=0, done=[], heldAt=null, advanceAt=null, lastSnapshot=null, ack=false, wrapped=null;
-  function isWide() { return matchMedia('(min-width:1240px) and (orientation:landscape)').matches; }
-  function geometry() {
-    const stage=document.getElementById('study-stage');
-    if (stage && !matchMedia('(orientation:landscape)').matches) {
-      const graphic=stage.querySelector('canvas,iframe');let edge=(graphic||stage).getBoundingClientRect().bottom;
-      if(graphic?.tagName==='IFRAME'){try{const cv=graphic.contentDocument?.querySelector('#cv');if(cv)edge=graphic.getBoundingClientRect().top+cv.getBoundingClientRect().bottom;}catch(e){/* 同源才能讀取 */}}
-      document.documentElement.style.setProperty('--lp-half-top',Math.max(120,edge)+'px');
-    }
-    const controls=document.querySelector('.study-controls');
-    if (controls) document.body.style.setProperty('--study-nav',controls.getBoundingClientRect().height+'px');
-  }
-  function setState(next) {
-    if (!panel) return;
-    state=next; document.documentElement.dataset.lpState=state; geometry();
-    document.documentElement.classList.toggle('lp-docked',isWide()&&state!=='collapsed'&&!document.documentElement.classList.contains('ms-docked')&&!document.documentElement.classList.contains('lab-embed'));
-    strip.setAttribute('aria-expanded',String(state!=='collapsed'));
-    strip.setAttribute('aria-label',T('教學側板：','Learning panel: ')+stripText+' '+T('點擊切換高度','Click to change height'));
-    panel.setAttribute('aria-hidden',String(state==='collapsed')); panel.inert=state==='collapsed';
-    if(state!=='collapsed'&&panes[tab])panes[tab].scrollTop=0;
-    if (onChange) onChange(state); window.dispatchEvent(new Event('resize'));requestAnimationFrame(geometry);
-  }
-  function setStrip(text,key) {
-    strips[key||tab]=text||'';stripText=strips[tab]||'';if (!strip) return;
-    const name=tr(names[tab]);strip.querySelector('span').textContent=stripText.startsWith(name)?stripText:name+'｜'+stripText;
-  }
-  function select(next) {
-    tab=next;
-    Object.keys(panes).forEach(k=>{ panes[k].hidden=k!==tab; tabButtons[k].setAttribute('aria-selected',String(k===tab)); tabButtons[k].tabIndex=k===tab?0:-1; });
-    Object.values(panes).forEach(p=>p.scrollTop=0);setStrip(strips[tab]||'',tab);
-  }
-  function open(next) {
-    if (!panel) mount({});
-    if (document.documentElement.classList.contains('ms-docked')) document.querySelector('.ms-dock-close')?.click();
-    if (next && panes[next]) select(next);
-    setState('half');
-  }
-  function mount(options) {
-    if (panel) return api;
-    options=options || {}; onChange=options.onChange || null;
-    panel=el('aside',null,'lp-panel'); panel.id='learning-panel'; panel.setAttribute('aria-label',T('教學側板','Learning panel'));
-    const tabs=el('div',null,'lp-tabs'); tabs.setAttribute('role','tablist');
-    tabs.setAttribute('aria-label',T('教學分頁','Learning tabs')); panel.append(tabs);
-    (options.tabs || Object.keys(names)).forEach(k=>{
-      const b=button(tr(names[k]),()=>select(k)); b.id='lp-tab-'+k; b.setAttribute('role','tab'); b.setAttribute('aria-controls','lp-pane-'+k);
-      b.addEventListener('keydown',e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return; e.preventDefault(); const keys=Object.keys(panes); const n=(keys.indexOf(k)+(e.key==='ArrowRight'?1:-1)+keys.length)%keys.length; select(keys[n]); tabButtons[keys[n]].focus();});
-      tabButtons[k]=b; tabs.append(b);
-      const p=el('section',null,'lp-content'); p.id='lp-pane-'+k; p.setAttribute('role','tabpanel'); p.setAttribute('aria-labelledby',b.id); panes[k]=p; panel.append(p);
-    });
-    strip=button('',()=>setState(state==='collapsed'?'half':state==='half'?'full':'collapsed')); strip.className='lp-strip'; strip.setAttribute('aria-controls',panel.id); strip.append(el('span'));
-    dockTab=button(T('教學側板','Learning panel'),()=>open(tab)); dockTab.className='lp-dock-tab';
-    document.body.append(panel,strip,dockTab);
-    let y=0;
-    strip.addEventListener('pointerdown',e=>{y=e.clientY; strip.setPointerCapture(e.pointerId);});
-    strip.addEventListener('pointerup',e=>{if(Math.abs(e.clientY-y)<24)return; e.preventDefault(); setState(e.clientY<y?(state==='collapsed'?'half':'full'):(state==='full'?'half':'collapsed')); strip.addEventListener('click',e=>e.stopImmediatePropagation(),{once:true,capture:true});});
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'){const active=panel.contains(document.activeElement); setState('collapsed'); if(active)strip.focus();}});
-    document.addEventListener('pointerdown',e=>{if(e.target.closest('.study-scene canvas, .study-photo'))setState('collapsed');});
-    window.addEventListener('resize',geometry); window.addEventListener('scroll',geometry,{passive:true});
+  function updateStrip(){if(!strip)return;const name=tab==='concept'&&context.label?tr(context.label):tr(names[tab]);const cue=strips[tab]||T('點開看看這一頁','Open this page’s help');
+    strip.replaceChildren(E('small',name,'lp-strip-label'));const text=E('span',null,'lp-strip-text');const useCaption=state!=='collapsed'&&!wide()&&context.caption;rich(text,useCaption?context.caption:cue);strip.append(text,E('span',state==='collapsed'?'⌃':'⌄','lp-chevron'));
+    strip.classList.toggle('has-caption',!!useCaption);strip.setAttribute('aria-label',name+' '+(useCaption?context.caption:cue).replace(/\[\[|\]\]/g,''));strip.setAttribute('aria-expanded',String(state!=='collapsed'));}
+  function setState(next){if(!panel)return;state=next;document.documentElement.dataset.lpState=state;document.documentElement.classList.toggle('lp-docked',wide()&&state!=='collapsed'&&!document.documentElement.classList.contains('ms-docked')&&!document.documentElement.classList.contains('lab-embed'));
+    panel.inert=state==='collapsed';panel.setAttribute('aria-hidden',String(state==='collapsed'));updateStrip();geometry();if(state!=='collapsed')panes[tab].scrollTop=0;options.onChange?.(state);dispatchEvent(new Event('resize'));requestAnimationFrame(geometry);}
+  function setStrip(text,key){strips[key||tab]=text||'';updateStrip();}
+  function select(next){if(!panes[next])return;tab=next;Object.entries(panes).forEach(([k,p])=>{p.hidden=k!==tab;buttons[k].setAttribute('aria-selected',String(k===tab));buttons[k].tabIndex=k===tab?0:-1;p.scrollTop=0;});updateStrip();options.onTab?.(tab);}
+  function open(next){if(!panel)mount({});if(document.documentElement.classList.contains('ms-docked'))document.querySelector('.ms-dock-close')?.click();if(next)select(next);setState('half');}
+  function content(key,nodes){if(!panel)mount({});const p=panes[key];if(!p)return;p.replaceChildren(...(Array.isArray(nodes)?nodes:[nodes]));p.scrollTop=0;math(p);}
+  function mount(opts){if(panel)return api;options=opts||{};panel=E('aside',null,'lp-panel');panel.id='learning-panel';panel.setAttribute('aria-label',T('學習說明','Learning help'));const tabs=E('div',null,'lp-tabs');tabs.setAttribute('role','tablist');panel.append(tabs);
+    for(const k of options.tabs||Object.keys(names)){const b=B(tr(names[k]),()=>select(k));b.id='lp-tab-'+k;b.setAttribute('role','tab');b.setAttribute('aria-controls','lp-pane-'+k);buttons[k]=b;tabs.append(b);const p=E('section',null,'lp-content');p.id='lp-pane-'+k;p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby',b.id);panes[k]=p;panel.append(p);
+      b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const a=Object.keys(panes),i=a.indexOf(k),n=a[(i+(e.key==='ArrowRight'?1:-1)+a.length)%a.length];select(n);buttons[n].focus();};}
+    strip=B('',()=>setState(state==='collapsed'?'half':state==='half'?'full':'collapsed'));strip.className='lp-strip';strip.setAttribute('aria-controls',panel.id);dock=B(T('學習說明','Learning help'),()=>open(tab));dock.className='lp-dock-tab';document.body.append(panel,strip,dock);
+    let sy=0;strip.onpointerdown=e=>{sy=e.clientY;strip.setPointerCapture(e.pointerId);};strip.onpointerup=e=>{if(Math.abs(e.clientY-sy)<24)return;e.preventDefault();setState(e.clientY<sy?(state==='collapsed'?'half':'full'):(state==='full'?'half':'collapsed'));strip.addEventListener('click',e=>e.stopImmediatePropagation(),{once:true,capture:true});};
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')setState('collapsed');});addEventListener('resize',geometry);addEventListener('scroll',geometry,{passive:true});
     new MutationObserver(()=>{if(document.documentElement.classList.contains('ms-docked')&&state!=='collapsed')setState('collapsed');}).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
-    select(tab); setState(isWide()&&!document.documentElement.classList.contains('lab-projector')?'half':'collapsed');
-    const missions=panes.missions;
-    missions.append(el('h3',T('把觀念拿去試試看','Put the idea to work')),
-      el('p',T('斜面實驗有原本的任務與星星。教學側板會先收起，留給任務面板。','The incline experiment has its own missions and stars. This learning panel closes when you open missions.')),
-      button(T('開任務模式','Open mission mode'),()=>{
-        setState('collapsed'); const b=document.querySelector('.ms-toggle');
-        if(b){if(!window.LabMission?._state.on)b.click();else document.querySelector('.ms-dock-tab')?.click();
-          if(!isWide())document.querySelector('.ms-panel')?.scrollIntoView({block:'start'});
-        }else if(options.onMissions)options.onMissions();
-      }));
-    return api;
+    content('missions',[E('h3',T('想挑戰星星嗎？','Ready to earn stars?')),E('p',T('到完整的斜面實驗做任務，每完成一個就拿星星。先把這個觀念帶過去試試看！','Try missions in the full incline experiment. Complete a mission to earn stars and put this idea to work.')),B(T('去做任務','Try missions'),()=>{setState('collapsed');const b=document.querySelector('.ms-toggle');if(b){if(!window.LabMission?._state.on)b.click();else document.querySelector('.ms-dock-tab')?.click();}else options.onMissions?.();})]);
+    Object.keys(panes).forEach(k=>{if(k!=='missions')content(k,[E('p',T('先選一個範例，或打開這頁的說明。','Choose an example or open this page’s explanation.'))]);strips[k]=T('點開看看','Open to explore');});select('concept');setState(wide()&&!document.documentElement.classList.contains('lab-projector')?'half':'collapsed');return api;
   }
-  function content(key,nodes) {
-    if (!panel) mount({}); const p=panes[key]; if(!p)return;
-    p.replaceChildren(...(Array.isArray(nodes)?nodes:[nodes]));p.scrollTop=0;
-    if(window.renderMathInElement)renderMathInElement(p,{delimiters:[{left:'\\(',right:'\\)',display:false}],throwOnError:false});
+  function renderSteps(){if(!panel)return;const list=E('ol',null,'lp-steps');defs.forEach((s,i)=>{const li=E('li',null,(done[i]?'done ':'')+(i===current?'now':''));const title=B('',()=>{current=i;heldAt=null;advanceAt=null;ack=false;renderSteps();});rich(title,(i+1)+'. '+tr(s.t));li.append(title);if(i===current){const detail=E('div',null,'lp-step-detail');detail.append(rich(E('p'),tr(s.detail||s.t)));if(s.ack)detail.append(B(T('看到了','I see it'),()=>{ack=true;feed(lastSnapshot||{});}));li.append(detail);}list.append(li);});const nav=E('div',null,'lp-step-nav'),prev=B(T('上一步','Back'),()=>move(-1)),next=B(T('下一步','Next'),()=>move(1));prev.disabled=current===0;next.disabled=current>=defs.length-1;nav.append(prev,next);content('steps',[E('h3',T('跟著做，慢慢拉','Follow along, pull gently')),list,nav]);if(defs[current])setStrip((current+1)+'/'+defs.length+'：'+tr(defs[current].t),'steps');}
+  function move(d){current=Math.max(0,Math.min(defs.length-1,current+d));heldAt=null;advanceAt=null;ack=false;renderSteps();}
+  function define(a){defs=a||[];current=0;done=[];heldAt=null;advanceAt=null;lastSnapshot=null;ack=false;renderSteps();}
+  function feed(s){if(!activeSteps||window.LabShare?.restoring||!defs.length||document.hidden)return;lastSnapshot=s;const step=defs[current];if(!step)return;const now=performance.now();if(advanceAt!==null){if(now>=advanceAt){advanceAt=null;if(current<defs.length-1)move(1);}return;}if(done[current])return;const ok=(step.ack&&ack)||(step.check&&step.check(s));if(!ok){heldAt=null;return;}if(heldAt==null)heldAt=now;if(!(step.ack&&ack)&&now-heldAt<(step.hold||0)*1000)return;done[current]=true;advanceAt=now+800;renderSteps();strip.classList.add('lp-complete');setTimeout(()=>strip.classList.remove('lp-complete'),800);dispatchEvent(new CustomEvent('lab:stepcomplete',{detail:{index:current,total:defs.length}}));}
+  function showExample(ex,opts){opts=opts||{};let lines=0;
+    function render(){const nodes=[];if(!lines||opts.embed)nodes.push(rich(E('p',null,'lp-example-question'),tr(ex.q)));
+      if(!opts.embed){if(!lines){const show=B(T('看解答','Show solution'),()=>{lines=1;render();setState('half');});show.dataset.solutionNext='';nodes.push(show);}else{
+        const sol=E('div',null,'lp-solution');sol.append(rich(E('p'),tr(ex.sol[lines-1])));const nav=E('div',null,'lp-solution-nav');nav.append(B(lines===1?T('回題目','Back to problem'):T('上一行','Previous line'),()=>{lines--;render();setState('half');}));
+        const next=B(lines===ex.sol.length?T('最後一行','Last line'):T('下一行板書','Next line'),()=>{if(lines<ex.sol.length){lines++;render();setState('half');}});next.dataset.solutionNext='';next.disabled=lines===ex.sol.length;nav.append(E('span',lines+'/'+ex.sol.length),next);nodes.push(sol,nav);
+      }}
+      content('examples',nodes);setStrip(T('範例 ','Example ')+ex.n+'：'+tr(ex.q).replace(/\\\([\s\S]*?\\\)/g,'').slice(0,20)+'…','examples');dispatchEvent(new CustomEvent('lab:solutionstep',{detail:{n:ex.n,line:lines}}));}
+    render();if(opts.steps===true)define(ex.steps||[]);
   }
-  function renderSteps() {
-    if(!panel)return;
-    const list=el('ol',null,'lp-steps');
-    defs.forEach((s,i)=>{
-      const li=el('li',null,(done[i]?'done ':'')+(i===current?'now':''));
-      li.append(button((i+1)+'. '+tr(s.t),()=>{current=i;heldAt=null;advanceAt=null;ack=false;renderSteps();}));
-      if(i===current){const detail=el('div',null,'lp-step-detail'); detail.append(el('p',tr(s.detail || s.t)));
-        if(s.ack)detail.append(button(T('看到了','I see it'),()=>{ack=true;feed(lastSnapshot || {});}));
-        li.append(detail);
-      }list.append(li);
-    });
-    const nav=el('div',null,'lp-step-nav');
-    const back=button(T('上一步','Back'),()=>moveStep(-1)), next=button(T('下一步','Next'),()=>moveStep(1));
-    back.disabled=current===0; next.disabled=current>=defs.length-1; nav.append(back,next);
-    content('steps',[el('h3',T('跟著做，別急著拉爆','Go gently, one step at a time')),list,nav]);
-    if(defs[current])setStrip(T('步驟 ','Step ')+(current+1)+'/'+defs.length+'：'+tr(defs[current].t),'steps');
-  }
-  function moveStep(delta) {current=Math.max(0,Math.min(defs.length-1,current+delta)); heldAt=null; advanceAt=null;ack=false;renderSteps();}
-  function define(steps) { defs=steps || []; current=0; done=[]; heldAt=null;advanceAt=null;lastSnapshot=null;ack=false;renderSteps(); }
-  function feed(snapshot) {
-    if(window.LabShare?.restoring)return;
-    lastSnapshot=snapshot; const s=defs[current]; if(!s)return;
-    const now=performance.now();
-    if(advanceAt!==null){if(now>=advanceAt){advanceAt=null;if(current<defs.length-1)moveStep(1);}return;}
-    if(done[current])return;
-    const ok=(s.ack&&ack)||(s.check&&s.check(snapshot));
-    if(!ok){heldAt=null;return;} if(heldAt===null)heldAt=now;
-    if(!(s.ack&&ack)&&now-heldAt<(s.hold || 0)*1000)return;
-    done[current]=true;heldAt=null;advanceAt=now+800;
-    renderSteps(); strip?.classList.add('lp-complete'); setTimeout(()=>strip?.classList.remove('lp-complete'),800);
-    window.dispatchEvent(new CustomEvent('lab:stepcomplete',{detail:{index:current,total:defs.length}}));
-  }
-  function wrapMissions() {
-    const mission=window.LabMission; if(!mission || wrapped===mission.emit)return;
-    const original=mission.emit;
-    wrapped=function(type,data){
-      const snap=Object.assign({},data,{type:type});
-      if(!window.LabShare?.restoring){feed(snap);window.dispatchEvent(new CustomEvent('lab:experimentstate',{detail:snap}));}
-      return original.apply(this,arguments);
-    };
-    mission.emit=wrapped;
-  }
-  // 原 emit 仍被呼叫一次。未登入也能做引導；restoring 時兩邊均不判定。
-  function ready(){wrapMissions(); if(document.querySelector('.ex-bar'))mount({});}
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
-  setInterval(()=>{wrapMissions();if(lastSnapshot&&defs.length&&!document.hidden)feed(lastSnapshot);},200);
-  function showExample(example,opts) {
-    opts=opts || {}; let lines=0, revealed=false;
-    function render(){
-      const nodes=[el('p',tr(example.q),'lp-example-question')];
-      if(!opts.embed){
-        if(!revealed)nodes.push(button(T('看解答','Show solution'),()=>{revealed=true;lines=1;render();}));
-        else {const sol=el('div',null,'lp-solution');example.sol.slice(0,lines).forEach(p=>sol.append(el('p',tr(p))));nodes.push(sol);
-          if(lines<example.sol.length)nodes.push(button(T('下一行板書','Next solution line'),()=>{lines++;render();}));
-        }
-      }
-      content('examples',nodes);
-      setStrip(T('範例 ','Example ')+example.n+'：'+tr(example.q).slice(0,14)+'…','examples');
-    }
-    render(); if(opts.steps!==false)define(example.steps || []);
-  }
-  const api=window.LabPanel={ mount,open,close:()=>setState('collapsed'),setStrip,setContent:content,setTab:select,showExample,
-    setHeight:setState,get state(){return state;},get tab(){return tab;},element:el,button,tr };
-  window.LabSteps={define,feed,get index(){return current;},get done(){return done.slice();},get steps(){return defs.slice();}};
+  function wrap(){const m=window.LabMission;if(!m||!m.emit||m.emit===wrapped)return;const original=m.emit;wrapped=function(type,data){const s=Object.assign({},data,{type});if(!window.LabShare?.restoring){feed(s);dispatchEvent(new CustomEvent('lab:experimentstate',{detail:s}));}return original.apply(this,arguments);};m.emit=wrapped;}
+  const api=window.LabPanel={mount,open,close:()=>setState('collapsed'),setStrip,setContent:content,setTab:select,setHeight:setState,showExample,setContext:c=>{context=c||{};if(buttons.concept)buttons.concept.textContent=tr(context.label||names.concept);updateStrip();},rich,math,element:E,button:B,tr,get state(){return state;},get tab(){return tab;}};
+  window.LabSteps={define,feed,setActive:on=>{if(activeSteps!==!!on)heldAt=null;activeSteps=!!on;},get index(){return current;},get done(){return done.slice();},get steps(){return defs.slice();}};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{wrap();if(document.querySelector('.ex-bar'))mount({});});else wrap();setInterval(()=>{wrap();if(lastSnapshot&&defs.length&&!document.hidden)feed(lastSnapshot);},200);
+})();
+
+/* 共享的器材與真正下標；自學頁和精簡斜面圖共用。 */
+(function(){
+  const D=window.LabDraw,fs=()=>parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||1;
+  const color=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+  const font=(n,w,italic)=>`${italic?'italic ':''}${w||600} ${n*fs()/(1+(fs()-1)*.7)}px system-ui`;
+  function sub(c,base,index,x,y,n,col,align){c.save();c.font=font(n,700,true);const a=c.measureText(base).width;c.font=font(n*.68,600);const b=c.measureText(index||'').width,w=a+(index?b+1:0);if(align==='center')x-=w/2;if(align==='right')x-=w;c.textAlign='left';c.textBaseline='alphabetic';c.fillStyle=col;c.font=font(n,700,true);c.fillText(base,x,y);if(index){c.font=font(n*.68,600);c.fillText(index,x+a+1,y+n*.28*fs());}c.restore();return w;}
+  function spring(c,ax,ay,bx,by,opts){opts=opts||{};const l=Math.hypot(bx-ax,by-ay),a=Math.atan2(by-ay,bx-ax),turns=opts.turns||10,r=opts.r||7;c.save();c.translate(ax,ay);c.rotate(a);c.lineJoin='round';c.lineCap='round';c.strokeStyle=opts.dark||'#5b6570';c.lineWidth=3;c.beginPath();c.moveTo(0,0);c.lineTo(8,0);for(let i=0;i<=turns*20;i++){const t=i/(turns*20),x=8+(l-16)*t,y=Math.sin(t*Math.PI*2*turns)*r;c.lineTo(x,y);}c.lineTo(l,0);c.stroke();c.strokeStyle=opts.light||'#e4e9ed';c.lineWidth=1.3;c.beginPath();for(let i=0;i<=turns*20;i++){const t=i/(turns*20),x=8+(l-16)*t,y=Math.sin(t*Math.PI*2*turns)*r-1;i?c.lineTo(x,y):c.moveTo(x,y);}c.stroke();c.strokeStyle='#aeb8c2';c.lineWidth=3;c.beginPath();c.arc(l+7,0,7,0,2*Math.PI);c.stroke();c.restore();}
+  function hand(c,x,y,dir,scale){c.save();c.translate(x,y);c.scale((dir||1)*(scale||1),scale||1);c.lineWidth=1.1;c.strokeStyle='#956341';const skin=c.createLinearGradient(0,-18,0,22);skin.addColorStop(0,'#f2d0a6');skin.addColorStop(.55,'#ddb187');skin.addColorStop(1,'#bf8e64');c.fillStyle=skin;
+    c.beginPath();c.moveTo(14,-12);c.bezierCurveTo(31,-17,49,-13,67,-10);c.lineTo(72,13);c.bezierCurveTo(49,10,32,11,17,16);c.quadraticCurveTo(4,20,-1,10);c.quadraticCurveTo(-11,9,-7,0);c.quadraticCurveTo(-8,-12,1,-13);c.quadraticCurveTo(7,-19,14,-12);c.closePath();c.fill();c.stroke();
+    for(let i=0;i<4;i++){c.beginPath();c.moveTo(2+i*7,-13+(i===3?2:0));c.bezierCurveTo(-1+i*7,-5,8+i*6,4,4+i*6,8);c.stroke();}c.beginPath();c.moveTo(-5,1);c.bezierCurveTo(4,11,13,9,18,2);c.stroke();c.fillStyle='#edc6a6';D.roundRect(c,2,-9,5,6,2);c.fill();
+    const sleeve=c.createLinearGradient(58,-22,58,25);sleeve.addColorStop(0,'#577d91');sleeve.addColorStop(1,'#294657');c.fillStyle=sleeve;c.strokeStyle='#203d4e';c.beginPath();c.moveTo(59,-18);c.lineTo(122,-28);c.lineTo(128,32);c.lineTo(66,20);c.closePath();c.fill();c.stroke();c.strokeStyle='#88a3ae';c.beginPath();c.moveTo(64,-16);c.lineTo(71,20);c.moveTo(77,-17);c.lineTo(87,24);c.stroke();c.restore();}
+  function block(c,x,y,w,h){D.contactShadow(c,x+w/2,y+h,w*.58,0);c.fillStyle=color('--study-wood-top')||'#d8ab73';c.beginPath();c.moveTo(x,y);c.lineTo(x+9,y-7);c.lineTo(x+w+9,y-7);c.lineTo(x+w,y);c.closePath();c.fill();c.fillStyle=color('--study-edge');c.beginPath();c.moveTo(x+w,y);c.lineTo(x+w+9,y-7);c.lineTo(x+w+9,y+h-7);c.lineTo(x+w,y+h);c.closePath();c.fill();D.block(c,x,y,w,h,color('--study-wood'),{r:4,shadow:false});c.strokeStyle=color('--study-grain');c.lineWidth=1;for(let i=0;i<4;i++){c.beginPath();c.moveTo(x+5,y+10+i*(h-16)/4);c.bezierCurveTo(x+w*.25,y+2+i*(h-16)/4,x+w*.65,y+16+i*(h-16)/4,x+w-5,y+8+i*(h-16)/4);c.stroke();}}
+  window.StudyDraw={font,subscript:sub,spring,hand,block,color};
 })();

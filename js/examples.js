@@ -1,83 +1,39 @@
-/* 既有實驗只需掛點＋三個 script。狀態還原沿用 classroom.js。 */
+/* 三個範例共用同一份物理實驗；解答逐行和受力圖同步。 */
 (function(){
   'use strict';
-  const registry=window.LAB_EXAMPLE_DATA || (window.LAB_EXAMPLE_DATA={});
-  const T=(a,b)=>window.LabSettings?LabSettings.t(a,b):a;
-  const embed=new URLSearchParams(location.search).get('embed')==='1';
-  let selected=null, waiting=null;
-  const labels=[['範例一','Example 1'],['範例二','Example 2'],['範例三','Example 3']];
-  function concept(){
-    LabPanel.setContent('concept',[
-      LabPanel.element('h3',T('先判斷接觸面有沒有滑','First ask whether the surfaces slip')),
-      LabPanel.element('p',T('還沒滑：先找其他力想讓木塊往哪滑，再用平衡找出需要的靜摩擦力。上限只告訴你撐不撐得住。','Before slipping, find which way the other forces would drive the block, then use equilibrium to find the static friction needed. The limit tells you whether it can hold.')),
-      LabPanel.element('p',T('已經滑：摩擦力和接觸面的相對滑動方向相反。範例的「看解答」一次只多出一行，先自己想。','Once sliding, friction opposes relative motion at the contact. Reveal each solution one line at a time and think first.'))
-    ]);
-  }
+  const registry=window.LAB_EXAMPLE_DATA||(window.LAB_EXAMPLE_DATA={}),T=(a,b)=>LabSettings.t(a,b),embed=new URLSearchParams(location.search).get('embed')==='1';
+  let selected,waiting,solutionLine=0,embeddedGeometry;
+  function concept(){LabPanel.setContent('concept',[LabPanel.element('h3',T('先判斷接觸面有沒有滑','First check whether the surfaces slip')),LabPanel.rich(LabPanel.element('p'),T('還沒滑：先找其他力想讓木塊往哪滑，再用平衡求需要的 \\(f_s\\)。\\(f_{s,\\max}\\) 只告訴你撐不撐得住。','Before slipping, find which way the other forces would drive the block. Use equilibrium to find the needed \\(f_s\\); \\(f_{s,\\max}\\) tells you whether it can hold.')),LabPanel.rich(LabPanel.element('p'),T('已經滑：\\(f_k\\) 和接觸面的相對滑動方向相反。解答一次只多一行，先自己想。','Once sliding, \\(f_k\\) opposes relative motion at the contact. Reveal one solution line at a time and think first.'))]);}
+  function limitExample(ex){if(embed){document.documentElement.classList.toggle('ex-fixed',ex.n===1);const input=document.getElementById('force');input.min=ex.n===3?'20':'0';input.max=ex.n===1?'0':ex.n===2?'10':'40';input.disabled=ex.n===1;}}
   function define(slug,data){registry[slug]=data;mount();}
-  function apply(slug,n,open){
-    const ex=(registry[slug] || []).find(x=>x.n===Number(n));if(!ex)return false;
-    if(!window.LabShare){waiting={slug,n,open};return false;}
-    // reset 也在還原保護內；LabShare.restore 自己延後解除 restoring。
-    LabShare.restoring=true;
-    document.getElementById('reset')?.click();
-    LabShare.restore(ex.state); selected=ex;
-    document.querySelectorAll('.ex-bar[data-examples="'+slug+'"] button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.example===ex.n)));
-    LabPanel.mount({});concept();LabPanel.showExample(ex,{embed:embed});
-    LabPanel.setStrip(T('範例 ','Example ')+ex.n+'：'+LabPanel.tr(ex.q).slice(0,14)+'…','examples');
-    if(open!==false)LabPanel.open('examples');
-    const u=new URL(location.href);u.searchParams.set('ex',ex.n);history.replaceState(null,'',u);
-    window.dispatchEvent(new CustomEvent('lab:examplechange',{detail:{slug:slug,n:ex.n}}));
-    window.dispatchEvent(new Event('resize'));
-    return true;
-  }
-  function mount(){
-    document.querySelectorAll('.ex-bar').forEach(root=>{
-      if(root.children.length)return;const slug=root.dataset.examples;
-      (registry[slug] || []).forEach(ex=>{
-        const pair=labels[ex.n-1];const b=document.createElement('button');b.type='button';b.textContent=T(pair[0],pair[1]);b.dataset.example=ex.n;b.setAttribute('aria-pressed','false');
-        b.addEventListener('click',()=>apply(slug,ex.n));root.append(b);
-      });
-    });
-  }
-  let embeddedGeometry=null;
-  // 只替換範例與直立牆面的呈現；受力、滑動及任務事件仍來自原頁核心。
+  function apply(slug,n,open){const ex=registry[slug]?.find(x=>x.n===+n);if(!ex)return false;if(!window.LabShare){waiting={slug,n,open};return false;}limitExample(ex);LabShare.restoring=true;document.getElementById('reset')?.click();LabShare.restore(ex.state);limitExample(ex);selected=ex;solutionLine=0;
+    document.querySelectorAll('.ex-bar[data-examples="'+slug+'"] button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.example===ex.n)));LabPanel.mount({});concept();LabPanel.showExample(ex,{embed,steps:!embed});if(open!==false&&!embed)LabPanel.open('examples');const u=new URL(location.href);u.searchParams.set('ex',ex.n);history.replaceState(null,'',u);dispatchEvent(new CustomEvent('lab:examplechange',{detail:{slug,n:ex.n}}));dispatchEvent(new Event('resize'));return true;}
+  function mount(){document.querySelectorAll('.ex-bar').forEach(root=>{if(root.children.length)return;const slug=root.dataset.examples;registry[slug]?.forEach(ex=>{const b=LabPanel.button(T(['範例一','範例二','範例三'][ex.n-1],'Example '+ex.n),()=>apply(slug,ex.n));b.dataset.example=ex.n;b.setAttribute('aria-pressed','false');root.append(b);});});}
+  function solution(n,line){if(!selected||selected.n!==+n)return;solutionLine=line;let F=selected.state.i.force;if(n===2&&line>=3)F=line===3?6.7:0;if(n===3&&line>=3)F=40;if(window.LabShare){LabShare.restore({...selected.state,i:{...selected.state.i,force:F}});limitExample(selected);}dispatchEvent(new Event('resize'));}
   function drawEmbedded(cv,s){
-    const c=cv.getContext('2d'),w=cv.clientWidth,h=cv.clientHeight,dpr=cv.width/w,D=window.LabDraw,cs=getComputedStyle(document.documentElement),get=n=>cs.getPropertyValue(n).trim();
-    if(!get('--study-wood'))return; // 動態樣式載入後由 load 事件重畫，避免空色值進入漸層。
+    const c=cv.getContext('2d'),w=cv.clientWidth,h=cv.clientHeight,dpr=cv.width/w,D=LabDraw,P=StudyDraw;if(!P.color('--study-wood'))return;const col=P.color,font=P.font,fric=col('--fric'),wide=w>=600,sc=wide?3:2.5,physics=InclineCore.components({theta:s.theta*Math.PI/180,m:s.m,F:s.F,mode:s.mode,mus:s.mus,muk:s.muk,g:9.8}),scaleText=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--fs'))||1;
     c.setTransform(dpr,0,0,dpr,0,0);D.backdrop(c,w,h);c.lineCap='round';c.lineJoin='round';
-    const fs=parseFloat(cs.getPropertyValue('--fs'))||1,correction=fs/(1+(fs-1)*.7),f=n=>'700 '+(n*correction)+'px system-ui';
-    const txt=(t,x,y,n=14,col=D.c.text,align='left')=>{c.font=f(n);c.textAlign=align;c.textBaseline='middle';c.strokeStyle=D.c['canvas-bg'];c.lineWidth=4;c.strokeText(t,x,y);c.fillStyle=col;c.fillText(t,x,y);};
-    const body=(x,y,bw,bh)=>{D.contactShadow(c,x+bw/2,y+bh,bw*.5,0);D.block(c,x,y,bw,bh,get('--study-wood'),{r:4,shadow:false});c.strokeStyle=get('--study-grain');for(let j=0;j<4;j++){c.beginPath();c.moveTo(x+4,y+10+j*(bh-16)/4);c.bezierCurveTo(x+20,y+2+j*(bh-16)/4,x+bw-15,y+18+j*(bh-16)/4,x+bw-4,y+7+j*(bh-16)/4);c.stroke();}};
-    txt(s.kind==='kinetic'?T('滑動中','Sliding'):T('靜止','At rest'),12,20,16,D.c.accent);
-    txt(T('上限 ','limit ')+s.fsMax.toFixed(2)+' N',w-12,20,16,D.c.accent,'right');
-    const wall=Math.abs(s.theta-90)<.01,fric=get('--fric');
-    if(wall){
-      const wx=w*.65,top=50,hh=h-82,bw=Math.max(70,Math.min(92,w*.235)),bh=Math.max(56,bw*.76),by=h*.49-bh/2,bx=wx-bw;
-      D.block(c,wx,top,28,hh,get('--study-edge'),{r:2,shadow:false});c.strokeStyle=get('--study-grain');for(let j=0;j<5;j++){c.beginPath();c.moveTo(wx+4+j*4,top+5);c.bezierCurveTo(wx-1+j*4,top+hh*.3,wx+10+j*4,top+hh*.6,wx+4+j*4,top+hh-4);c.stroke();}
-      body(bx,by,bw,bh);txt(s.m.toFixed(1)+' kg',bx+bw/2,by+bh/2,16,D.c.text,'center');
-      const fx=bx-8,fy=by+bh/2,forceTail=Math.min(-8,fx-s.F*4);
-      if(s.mode==='horiz'&&s.F){D.arrow(c,forceTail,fy,fx,fy,D.c.pos,3);txt('F '+s.F.toFixed(1)+' N',Math.max(12,fx-Math.abs(s.F)*2),fy-22,18,D.c.pos);}
-      else if(s.F){D.arrow(c,bx+bw/2,by+bh/2,bx+bw/2,by+bh/2-s.F*4,D.c.pos,3);txt('F '+s.F.toFixed(1)+' N',bx-6,by-18,18,D.c.pos);}
-      const cy=by+bh/2;D.arrow(c,wx-3,cy,wx-3,cy+s.f*4,fric,3);txt('f '+Math.abs(s.f).toFixed(2)+' N',wx+34,cy+s.f*4,18,fric);
-      embeddedGeometry={wall:{x:wx,y:top,w:28,h:hh},block:{x:bx,y:by,w:bw,h:bh},fArrow:{x:wx-3,y0:cy,y1:cy+s.f*4},forceArrow:{x0:forceTail,x1:fx,y:fy}};
+    const txt=(text,x,y,n=15,color=D.c.text,align='center')=>D.pill(c,text,x,y,color,align,font(n,700));
+    const sub=(i,text,x,y,n=18,color=fric,align='center')=>{c.save();c.font=font(n,700);const tail=c.measureText(text).width;c.font=font(n,700,true);const base=c.measureText('f').width;c.font=font(n*.68,600);const small=c.measureText(i).width;const tw=tail+base+small+18,l=align==='left'?x:align==='right'?x-tw:x-tw/2;D.roundRect(c,l,y-n*scaleText-4,tw,n*scaleText*1.5+6,7);c.fillStyle=D.alpha(D.c['canvas-bg'],.94);c.fill();c.strokeStyle=D.alpha(color,.25);c.lineWidth=1;c.stroke();P.subscript(c,'f',i,l+7,y,n,color);c.font=font(n,700);c.textAlign='left';c.textBaseline='alphabetic';c.fillStyle=color;c.fillText(text,l+base+small+8,y);c.restore();};
+    txt((s.kind==='kinetic'?T('滑動中','Sliding'):T('靜止','At rest'))+' · '+s.m.toFixed(1)+' kg',12,29,16,D.c.accent,'left');if(solutionLine>=4||!embed)sub('s,max',' = '+s.fsMax.toFixed(2)+' N',w-10,30,15,D.c.accent,'right');
+    const wall=Math.abs(s.theta-90)<.01,line=embed?solutionLine:Math.max(3,solutionLine),num=line>=2;
+    if(wall){const wx=w*.46,bw=wide?112:76,bh=wide?84:58,by=h*.56-bh/2,bx=wx-bw,cy=by+bh/2,hook={x:wx,y:cy},springStart=wx+30,ppm=wide?650:350,L=(.16+Math.abs(s.F)/500)*ppm,ring={x:springStart+L,y:cy};
+      D.block(c,wx,38,22,h-68,col('--study-edge'),{r:4,shadow:false});c.strokeStyle=col('--study-grain');for(let i=0;i<5;i++){c.beginPath();c.moveTo(wx+4+i*3,42);c.bezierCurveTo(wx+i*3,h*.4,wx+10+i*3,h*.7,wx+5+i*3,h-37);c.stroke();}P.block(c,bx,by,bw,bh);
+      if(s.F){P.spring(c,springStart,cy,ring.x-7,cy,{r:5});c.strokeStyle=D.c.muted;c.fillStyle=D.c['canvas-bg'];c.lineWidth=2;c.beginPath();c.ellipse(wx+10,cy,7,11,0,0,Math.PI*2);c.fill();c.stroke();c.strokeStyle=col('--study-rope');c.lineWidth=3;c.beginPath();c.moveTo(wx-2,cy);c.lineTo(springStart,cy);c.stroke();P.hand(c,ring.x,cy,1,wide?.95:.65);D.arrow(c,hook.x,cy-42,hook.x+s.F*sc,cy-42,D.c.pos,3);txt('F = '+s.F.toFixed(1)+' N',hook.x+s.F*sc/2,cy-10,18,D.c.pos);}
+      const fA={x0:wx-2,y0:cy,x1:wx-2,y1:cy+s.f*sc};if(line){D.arrow(c,fA.x0,fA.y0,fA.x1,fA.y1,fric,3);sub(s.kind==='kinetic'?'k':'s',num?' = '+Math.abs(s.f).toFixed(2)+' N':'',bx+bw*.48,by+bh+20,18,fric);D.arrow(c,bx+bw/2,cy,bx+bw/2,cy+physics.W*sc,D.c.neg,2.5);const mgText=num?'mg = '+physics.W.toFixed(2)+' N':'mg';c.save();c.font=font(14,700);const mgWidth=c.measureText(mgText).width+12;c.restore();txt(mgText,Math.max(mgWidth+10,bx-12),wide?by+bh*.8:by-12,14,D.c.neg,'right');}
+      txt(T('光滑牆孔','Smooth opening'),w-10,h-8,14,D.c.muted,'right');embeddedGeometry={wall:{x:wx,y:38,w:22,h:h-68},block:{x:bx,y:by,w:bw,h:bh},contact:{x:wx-2,y:cy},fArrow:fA,spring:{length:.16+Math.abs(s.F)/500,ppm,ring},solutionLine};
     }else{
-      const a=s.theta*Math.PI/180,co=Math.cos(a),si=Math.sin(a),length=Math.min(w-56,(h-85)/Math.max(.2,si)),end={x:w-22,y:h-44},start={x:end.x-length*co,y:end.y-length*si};
-      const dist=Math.max(46,Math.min(length-46,48+s.x*length/2.2)),p={x:start.x+dist*co,y:start.y+dist*si},bw=84,bh=64;
-      c.save();c.translate(start.x,start.y);c.rotate(a);D.block(c,0,0,length,14,get('--study-edge'),{r:2,shadow:false});c.strokeStyle=get('--study-grain');for(let j=0;j<3;j++){c.beginPath();c.moveTo(5,3+j*3);c.bezierCurveTo(length*.3,1+j*3,length*.6,8+j*3,length-5,3+j*3);c.stroke();}body(dist-bw/2,-bh,bw,bh);c.restore();
-      txt(s.m.toFixed(1)+' kg',p.x+si*bh/2,p.y-co*bh/2,18,D.c.text,'center');
-      const scale=4,fEnd={x:p.x+s.f*scale*co,y:p.y+s.f*scale*si};D.arrow(c,p.x,p.y,fEnd.x,fEnd.y,fric,3);txt('f '+Math.abs(s.f).toFixed(2)+' N',Math.max(12,Math.min(w-125,p.x-28)),p.y+27,18,fric);
-      if(s.F){const o={x:p.x+si*bh*.55,y:p.y-co*bh*.55};const dx=s.mode==='horiz'?s.F*4:-s.F*4*co,dy=s.mode==='horiz'?0:-s.F*4*si;D.arrow(c,o.x,o.y,o.x+dx,o.y+dy,D.c.pos,3);txt('F '+s.F.toFixed(1)+' N',Math.max(12,o.x-35),Math.max(48,o.y-33),18,D.c.pos);}
-      txt('θ = '+s.theta.toFixed(1)+'°',w-12,h-18,16,D.c.muted,'right');embeddedGeometry={block:{x:p.x,y:p.y,w:bw,h:bh},contact:p,fArrow:{x0:p.x,y0:p.y,x1:fEnd.x,y1:fEnd.y}};
-    }
-    cv.dataset.nomumode=String(embed);txt(T('器材與力方向示意','Apparatus and force directions'),12,h-18,14,D.c.muted);
+      const a=s.theta*Math.PI/180,co=Math.cos(a),si=Math.sin(a),length=Math.min(w-40,(h-(wide?100:120))/Math.max(.18,si)),end={x:(w+length*co)/2,y:h-36},start={x:end.x-length*co,y:end.y-length*si},dist=length*.68,bw=wide?110:76,bh=wide?78:53,contact={x:start.x+dist*co,y:start.y+dist*si},ppm=wide?650:430,L=(.16+Math.abs(s.F)/500)*ppm,hook={x:dist-bw/2,y:-bh*.55},ring={x:hook.x-L,y:hook.y};
+      c.save();c.translate(start.x,start.y);c.rotate(a);D.contactShadow(c,length*.58,22,length*.46,0);D.block(c,0,0,length,13,col('--study-table'),{r:4,shadow:false});D.block(c,0,13,length,7,col('--study-edge'),{r:2,shadow:false});c.strokeStyle=col('--study-grain');for(let j=0;j<3;j++){c.beginPath();c.moveTo(5,3+j*3);c.bezierCurveTo(length*.3,j*3,length*.7,8+j*3,length-6,3+j*3);c.stroke();}P.block(c,dist-bw/2,-bh,bw,bh);
+      if(s.F){P.spring(c,hook.x,hook.y,ring.x+7,ring.y,{r:5});c.save();c.translate(ring.x,ring.y);c.rotate(-a);P.hand(c,0,0,-1,wide?.95:.65);c.restore();D.arrow(c,hook.x,hook.y-39,hook.x-s.F*sc,hook.y-39,D.c.pos,3);}
+      if(line){D.arrow(c,dist,-2,dist+s.f*sc,-2,fric,3);D.arrow(c,dist-bw*.3,-bh*.6,dist-bw*.3+physics.Wpar*sc,-bh*.6,D.c.neg,2.5);}
+      c.restore();const xy=(x,y)=>({x:start.x+x*co-y*si,y:start.y+x*si+y*co});const bc=xy(dist,-bh*.55);if(s.F){const fp=xy(hook.x-s.F*sc/2,hook.y-44);txt('F = '+s.F.toFixed(1)+' N',fp.x,Math.max(30*scaleText,fp.y-9),18,D.c.pos);}
+      if(line){const sp=xy(dist+s.f*sc/2,23);sub(s.kind==='kinetic'?'k':'s',num?' = '+Math.abs(s.f).toFixed(2)+' N':'',Math.max(70,Math.min(w-76,sp.x)),sp.y+13,18,fric);const gp=xy(dist-bw*.3+physics.Wpar*sc/2,-bh*.6);const weightText=num?T('重力分量 ','Weight component ')+physics.Wpar.toFixed(2)+' N':T('重力分量','Weight component');c.save();c.font=font(14,700);const weightWidth=c.measureText(weightText).width+12;c.restore();txt(weightText,Math.min(w-12,Math.max(weightWidth+12,bc.x+bw*.65+weightWidth)),gp.y-12,14,D.c.neg,'right');}
+      txt('θ = '+s.theta.toFixed(1)+'°',w-10,h-8,15,D.c.muted,'right');embeddedGeometry={block:{x:bc.x,y:bc.y,w:bw,h:bh},contact,fArrow:{x0:contact.x,y0:contact.y,x1:contact.x+s.f*sc*co,y1:contact.y+s.f*sc*si},spring:{length:.16+Math.abs(s.F)/500,ppm,ring:xy(ring.x,ring.y)},solutionLine};
+    }cv.dataset.nomumode=String(embed);
   }
-
-  function ready(){mount();const slug=document.querySelector('.ex-bar')?.dataset.examples;if(!slug)return;
-    if(embed){document.documentElement.classList.add('embed-nomu');const bar=document.querySelector('.ex-bar'),lab=document.querySelector('.inc');if(bar&&lab)lab.prepend(bar);}
-    const n=new URLSearchParams(location.search).get('ex');
-    if(n)apply(slug,n,true);else{LabPanel.mount({});concept();LabPanel.showExample(registry[slug][0],{embed:embed});LabPanel.setStrip(T('選一題，讓實驗替你擺好器材','Choose an example to set up the experiment'));}
-  }
-  document.addEventListener('lab:shareready',()=>{if(waiting){const w=waiting;waiting=null;apply(w.slug,w.n,w.open);}});
-  window.LabExamples={define,apply,drawEmbedded,get:slug=>registry[slug] || [],get selected(){return selected;},get embeddedGeometry(){return embeddedGeometry;}};
+  function ready(){mount();const slug=document.querySelector('.ex-bar')?.dataset.examples;if(!slug)return;if(embed){document.documentElement.classList.add('embed-nomu');const bar=document.querySelector('.ex-bar'),lab=document.querySelector('.inc');if(bar&&lab)lab.prepend(bar);}const n=new URLSearchParams(location.search).get('ex');if(n)apply(slug,n,!embed);else{LabPanel.mount({});concept();LabPanel.showExample(registry[slug][0],{embed});LabPanel.setStrip(T('選一題，讓實驗替你擺好器材','Choose an example to set up the experiment'));}}
+  document.addEventListener('lab:shareready',()=>{if(waiting){const p=waiting;waiting=null;apply(p.slug,p.n,p.open);}});addEventListener('lab:solutionstep',e=>solution(e.detail.n,e.detail.line));
+  window.LabExamples={define,apply,solution,drawEmbedded,get:slug=>registry[slug]||[],get selected(){return selected;},get embeddedGeometry(){return embeddedGeometry;},get solutionLine(){return solutionLine;}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
 })();
