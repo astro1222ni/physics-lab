@@ -44,3 +44,7 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 @media(min-width:881px){.eq-intro summary{display:none}}
 
 @media(max-width:880px){.eq .view-bar>.seg{order:1}.eq .view-bar>.medium-tools{order:2}.eq .view-bar>#studyBtn{order:3}.eq .view-bar>#resetCam{order:4}}
+
+@media(max-width:880px){html.labside-active:not(.labside-study) .eq .view-bar>.seg{width:auto;min-width:0;flex:1 1 0}html.labside-active:not(.labside-study) .eq .view-bar>#studyBtn{order:1;flex:0 0 auto;font-size:calc(14px * var(--fs,1));padding:5px 7px}}
+
+@media(max-width:880px){html.labside-active:not(.labside-study) .eq .view-bar>.seg button{word-break:keep-all;overflow-wrap:anywhere}}
