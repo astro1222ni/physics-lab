@@ -30,8 +30,8 @@
   let mode = q.get('mode');
   if (q.get('study') === '1') mode = 'learn';
   else if (mode !== 'lab' && mode !== 'learn') {
-    // 範例、分享設定、嵌入：別人給的連結是要直接看實驗
-    mode = (q.has('ex') || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
+    // 範例、材質、分享設定、嵌入：別人給的連結是要直接看實驗
+    mode = (q.has('ex') || ['paper', 'water'].includes(q.get('medium')) || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
   }
   const studying = mode === 'learn' && q.get('study') === '1';
   const html = document.documentElement;
@@ -48,6 +48,8 @@
     const u = new URL(location.href);
     ['mode', 'study', 'class', 'seg', 'step', 'ex'].forEach(function (k) { u.searchParams.delete(k); });
     Object.keys(params || {}).forEach(function (k) { u.searchParams.set(k, params[k]); });
+    // 舊的材質直連仍進實驗；回入口要移除材質，避免又被導回實驗。
+    if (!params || Object.keys(params).length === 0) u.searchParams.delete('medium');
     u.hash = '';
     return u.pathname.split('/').pop() + u.search;
   }
