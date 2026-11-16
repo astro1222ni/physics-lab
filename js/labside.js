@@ -26,6 +26,22 @@
   function mount(o){if(instance)return instance;const rail=E('nav','labside-rail');rail.setAttribute('aria-label',T('實驗側板','Lab side panels'));const pane=E('aside','labside-panel');pane.id='labside-panel';pane.setAttribute('aria-label',T('實驗步驟、任務與留言','Lab steps, missions and comments'));pane.hidden=true;const head=E('div','labside-head'),handle=B('⠿',()=>{},'labside-handle'),title=E('h2'),close=B(T('收起','Close'),()=>setOpen(false));handle.setAttribute('aria-label',T('拖曳調整側板高度','Drag to resize the drawer'));head.append(handle,title,close);const body=E('div','labside-content');pane.append(head,body);doc.body.append(rail,pane);doc.documentElement.classList.add('labside-active');
     const tabs={},names={steps:[T('步驟','Steps'),T('實驗步驟','Procedure')],missions:[T('任務','Missions'),T('本實驗的任務','Lab missions')],comments:[T('留言','Comments'),T('留言與 bug 回報','Comments and bug reports')]};const needOpen={};let open=false,tab='steps',cache='',height=Math.round(innerHeight*.43),sy,sh,watching=false;
     for(const k of ['steps','missions']){const b=B(names[k][0],()=>show(k));b.id='labside-tab-'+k;b.setAttribute('aria-controls',pane.id);b.setAttribute('aria-expanded','false');rail.append(b);tabs[k]=b;}
+    // 收起／拉出側標籤（站長 11/16：箭頭提醒可以收起；收起後像三星手機一樣從側面拉出來）
+    const fold=B('›',()=>setRail(false),'labside-fold');fold.setAttribute('aria-label',T('收起側邊標籤','Hide side tabs'));fold.title=T('收起側邊標籤（從右邊緣可以再拉出來）','Hide side tabs (pull them back from the right edge)');rail.prepend(fold);
+    const edge=B('',()=>{if(!edgeSwiped)setRail(true);},'labside-edge');edge.setAttribute('aria-label',T('拉出側邊標籤：步驟、任務、留言','Show side tabs: steps, missions, comments'));doc.body.append(edge);
+    let railOn=true,edgeSwiped=false;try{railOn=localStorage.getItem('labside-rail')!=='0';}catch(e){}
+    function setRail(on){railOn=!!on;doc.documentElement.classList.toggle('labside-railed',!railOn);doc.documentElement.classList.remove('labside-pulling');rail.style.transform='';edge.setAttribute('aria-expanded',String(railOn));try{localStorage.setItem('labside-rail',railOn?'1':'0');}catch(e){}if(railOn&&doc.activeElement===edge)(tabs.steps||fold).focus();if(!railOn&&rail.contains(doc.activeElement))edge.focus();}
+    setRail(railOn);
+    // 從邊緣往左拉：側標籤跟著手指出來，拉超過一半就留著；從側標籤往右撥：收起
+    let px=null,pdx=0;
+    edge.addEventListener('pointerdown',e=>{px=e.clientX;pdx=0;edgeSwiped=false;edge.setPointerCapture(e.pointerId);});
+    edge.addEventListener('pointermove',e=>{if(px==null)return;pdx=Math.max(0,px-e.clientX);if(pdx<6)return;edgeSwiped=true;const w=rail.offsetWidth+8;doc.documentElement.classList.add('labside-pulling');rail.style.transform='translateX('+Math.max(0,w-pdx)+'px)';});
+    const edgeEnd=()=>{if(px==null)return;px=null;if(edgeSwiped){setRail(pdx>(rail.offsetWidth+8)/2);setTimeout(()=>{edgeSwiped=false;},0);}};
+    edge.addEventListener('pointerup',edgeEnd);edge.addEventListener('pointercancel',()=>{px=null;edgeSwiped=false;setRail(false);});
+    let rx=null,ry=0;
+    rail.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;rx=e.clientX;ry=e.clientY;});
+    rail.addEventListener('pointerup',e=>{if(rx==null)return;const dx=e.clientX-rx,dy=Math.abs(e.clientY-ry);rx=null;if(dx>28&&dx>dy){rail.addEventListener('click',ev=>{ev.preventDefault();ev.stopImmediatePropagation();},{capture:true,once:true});setRail(false);}});
+    rail.addEventListener('pointercancel',()=>{rx=null;});
     function adoptFeedback(){const b=doc.querySelector('.fb-tab');if(!b)return;if(!rail.contains(b)){rail.append(b);b.replaceChildren(doc.createTextNode(names.comments[0]));b.setAttribute('aria-controls',pane.id);b.addEventListener('click',e=>{e.preventDefault();e.stopImmediatePropagation();show('comments');},{capture:true});tabs.comments=b;}b.hidden=!!o.study?.();}
     function setOpen(on){open=!!on&&!o.study?.();pane.hidden=!open;doc.documentElement.classList.toggle('labside-open',open);doc.documentElement.classList.toggle('labside-docked',open&&innerWidth>=1240);doc.documentElement.style.setProperty('--labside-height',height+'px');Object.entries(tabs).forEach(([k,b])=>{b.setAttribute('aria-expanded',String(open&&tab===k));});if(open){title.textContent=names[tab][1];render(true);if(innerWidth<1240)o.focus?.();}dispatchEvent(new Event('resize'));}
     function show(k){tab=k;setOpen(!open||body.dataset.tab!==k);body.dataset.tab=k;}
@@ -63,8 +79,8 @@
     }
     handle.addEventListener('pointerdown',e=>{if(innerWidth>=1240)return;sy=e.clientY;sh=height;handle.setPointerCapture(e.pointerId);});handle.addEventListener('pointermove',e=>{if(sy==null)return;height=Math.max(220,Math.min(innerHeight-100,sh+sy-e.clientY));doc.documentElement.style.setProperty('--labside-height',height+'px');});handle.addEventListener('pointerup',()=>{sy=null;});handle.addEventListener('pointercancel',()=>{sy=null;});
     doc.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false);});addEventListener('resize',()=>{doc.documentElement.classList.toggle('labside-docked',open&&innerWidth>=1240);});
-    function sync(){adoptFeedback();const study=!!o.study?.();const panelOpen=innerWidth<1240&&window.LabPanel&&LabPanel.state!=='collapsed';rail.hidden=study||!!panelOpen;if(study&&open)setOpen(false);doc.documentElement.classList.toggle('labside-study',study);if(doc.documentElement.classList.contains('ms-docked'))doc.querySelector('.ms-dock-close')?.click();render(false);}
-    setInterval(sync,250);window.LabMission?.on('complete',()=>render(true));sync();instance={open:k=>{tab=k;setOpen(true);},close:()=>setOpen(false),refresh:sync,get state(){return {open,tab,height};}};return instance;
+    function sync(){adoptFeedback();const study=!!o.study?.();const panelOpen=innerWidth<1240&&window.LabPanel&&LabPanel.state!=='collapsed';rail.hidden=study||!!panelOpen;edge.hidden=rail.hidden;if(study&&open)setOpen(false);doc.documentElement.classList.toggle('labside-study',study);if(doc.documentElement.classList.contains('ms-docked'))doc.querySelector('.ms-dock-close')?.click();render(false);}
+    setInterval(sync,250);window.LabMission?.on('complete',()=>render(true));sync();instance={open:k=>{tab=k;setOpen(true);},close:()=>setOpen(false),refresh:sync,showRail:()=>setRail(true),hideRail:()=>setRail(false),get railOpen(){return railOn;},get state(){return {open,tab,height};}};return instance;
   }
   window.LabSide={mount,feedbackContent,deviceLine,get instance(){return instance;}};
 })();
