@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Remote Sensing: False Colour and NDVI | Astro Ni Lab">遙測：假色影像與植生指標 NDVI｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"遙測：假色影像與植生指標 NDVI","alternateName":"Remote Sensing: False Colour and NDVI","description":"植物在紅光很暗、在近紅外很亮。把衛星的 7 個波段換著組成影像，算出 NDVI，看一整年的稻田灌水、轉綠、變黃，乾旱與霧霾又讓數字怎麼變。","url":"https://lab.astroni.org/remote-sensing.html","image":"https://lab.astroni.org/img/og/remote-sensing.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["空間資訊科技（Geospatial Technology）","空間資料與定位（Spatial Data and Positioning）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"遙測：假色影像與植生指標 NDVI","alternateName":"Remote Sensing: False Colour and NDVI","description":"植物在紅光很暗、在近紅外很亮。把衛星的 7 個波段換著組成影像，算出 NDVI，看一整年的稻田灌水、轉綠、變黃，乾旱與霧霾又讓數字怎麼變。","url":"https://lab.astroni.org/remote-sensing.html","image":"https://lab.astroni.org/img/og/remote-sensing.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["空間資訊科技（Geospatial Technology）","空間資料與定位（Spatial Data and Positioning）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"地理","url":"https://lab.astroni.org/geography.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"空間資訊科技","item":"https://lab.astroni.org/geography.html#gis"},{"@type":"ListItem","position":4,"name":"空間資料與定位","item":"https://lab.astroni.org/geography.html#ch-gis-data"},{"@type":"ListItem","position":5,"name":"遙測：假色影像與植生指標 NDVI","item":"https://lab.astroni.org/remote-sensing.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 遙測頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root { --rs-veg: #2e8b3a; --rs-soil: #a8794a; --rs-water: #2f6fd0; --rs-urban: #7d7f86; --rs-sand: #d9b860; --rs-probe: #e0a100; --rs-band: #6b7f99; }
@@ -73,7 +74,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#gis&quot;>Geography · Geospatial Technology</a> / Remote sensing"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#gis">地理・空間資訊科技</a> ／ 遙測與 NDVI</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;geography.html&quot;&gt;Geography&lt;/a&gt; / &lt;a href=&quot;geography.html#gis&quot;&gt;Geospatial Technology&lt;/a&gt; / &lt;a href=&quot;geography.html#ch-gis-data&quot;&gt;Spatial Data and Positioning&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="geography.html">地理</a> / <a href="geography.html#gis">空間資訊科技</a> / <a href="geography.html#ch-gis-data">空間資料與定位</a></nav>
       <h1 data-en="Remote Sensing: False Colour and NDVI">遙測：假色影像與植生指標 NDVI</h1>
       <p data-en="A satellite camera splits sunlight into bands, some of them invisible to us. Plants are dark in red light but very bright in near-infrared, water is dark in both, and soil and concrete sit in between. Put the bands into a picture in different ways and the landscape tells you what is growing, what is flooded and what is dry — for a whole year of rice in an invented river valley.">衛星相機把陽光分成好幾個波段，有些是我們看不到的。植物在紅光很暗、在近紅外線卻很亮；水兩個都暗；土壤和水泥在中間。把波段用不同的方式組成影像，地表就會告訴你哪裡長了作物、哪裡淹了水、哪裡乾掉了。這裡是一個虛構河谷裡一整年的稻田。</p>
     </header>
@@ -184,16 +185,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/remote-sensing-core.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/remote-sensing.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="remote-sensing"></script>
-  <script src="js/missions/remote-sensing.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="remote-sensing"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/remote-sensing-core.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/remote-sensing.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="remote-sensing"></script>
+  <script src="js/missions/remote-sensing.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="remote-sensing"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

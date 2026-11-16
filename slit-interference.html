@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Double-Slit Interference and Single-Slit Diffraction | Astro Ni Lab">雙狹縫干涉與單狹縫繞射｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"雙狹縫干涉與單狹縫繞射","alternateName":"Double-Slit Interference and Single-Slit Diffraction","description":"調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。","url":"https://lab.astroni.org/slit-interference.html","image":"https://lab.astroni.org/img/og/slit-interference.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"雙狹縫干涉與單狹縫繞射","alternateName":"Double-Slit Interference and Single-Slit Diffraction","description":"調整波長、縫寬、縫距與屏幕距離，觀察光強分布與明暗條紋的間距。","url":"https://lab.astroni.org/slit-interference.html","image":"https://lab.astroni.org/img/og/slit-interference.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["光學（Optics）","物理光學（Physical Optics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"光學","item":"https://lab.astroni.org/physics.html#optics"},{"@type":"ListItem","position":4,"name":"物理光學","item":"https://lab.astroni.org/physics.html#ch-physical-optics"},{"@type":"ListItem","position":5,"name":"雙狹縫干涉與單狹縫繞射","item":"https://lab.astroni.org/slit-interference.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 本頁專用樣式：只使用 lab.css 的顏色變數，深色模式自動跟著切換 */
     /* 本頁專用色彩代號（--si-*）：俯視示意圖與屏幕是「暗室」，兩種模式都偏暗；--si-shadow 為強度圖上的投影 */
@@ -87,7 +88,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#optics&quot;&gt;Optics&lt;/a&gt; / Physical optics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#optics">光學</a> ／ 物理光學</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#optics&quot;&gt;Optics&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-physical-optics&quot;&gt;Physical Optics&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#optics">光學</a> / <a href="physics.html#ch-physical-optics">物理光學</a></nav>
       <h1 data-en="Double-Slit Interference and Single-Slit Diffraction">雙狹縫干涉與單狹縫繞射</h1>
       <p data-en="Change the wavelength, slit width, slit separation and screen distance, and watch the colour, spacing and intensity of the bright and dark fringes on the screen. Click or drag on the intensity graph below to read off the values at any point.">調整波長、縫寬、縫距與屏幕距離，觀察屏幕上明暗條紋的顏色、間距與光強分布；在下方的強度圖上點擊或拖曳可讀出各點數值。</p>
     </header>
@@ -262,16 +263,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/slit-interference-core.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/slit-interference.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="slit-interference"></script>
-  <script src="js/missions/slit-interference.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="slit-interference"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/slit-interference-core.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/slit-interference.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="slit-interference"></script>
+  <script src="js/missions/slit-interference.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="slit-interference"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

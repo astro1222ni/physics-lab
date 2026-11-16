@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Inclines and Friction | Astro Ni Lab">斜面與摩擦力｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"斜面與摩擦力","alternateName":"Inclines and Friction","description":"抬高斜面找出木塊開始滑動的臨界角，看靜摩擦力「需要多少給多少」再降為動摩擦力；用光電門量下滑加速度求 μk，並沿斜面或水平推木塊。","url":"https://lab.astroni.org/incline-friction.html","image":"https://lab.astroni.org/img/og/incline-friction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","牛頓運動定律（Newton's Laws of Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"斜面與摩擦力","alternateName":"Inclines and Friction","description":"抬高斜面找出木塊開始滑動的臨界角，看靜摩擦力「需要多少給多少」再降為動摩擦力；用光電門量下滑加速度求 μk，並沿斜面或水平推木塊。","url":"https://lab.astroni.org/incline-friction.html","image":"https://lab.astroni.org/img/og/incline-friction.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","牛頓運動定律（Newton's Laws of Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"力學","item":"https://lab.astroni.org/physics.html#mech"},{"@type":"ListItem","position":4,"name":"牛頓運動定律","item":"https://lab.astroni.org/physics.html#ch-newton"},{"@type":"ListItem","position":5,"name":"斜面與摩擦力","item":"https://lab.astroni.org/incline-friction.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 斜面與摩擦力頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 上方畫布（斜面＋受力圖）可以拖曳木板，不讓頁面捲動；下方畫布（圖表）讓手機可以在上面捲動頁面 */
@@ -128,7 +129,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Newton’s laws"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 牛頓運動定律</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#mech&quot;&gt;Mechanics&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-newton&quot;&gt;Newton&amp;#x27;s Laws of Motion&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#mech">力學</a> / <a href="physics.html#ch-newton">牛頓運動定律</a></nav>
       <h1 data-en="Inclines and Friction">斜面與摩擦力</h1>
       <p data-en-html="A block sits on a board that you can tilt. Change the angle, the mass and the surfaces in contact; watch static friction adjust itself up to its maximum μ<sub>s</sub>N and then drop to kinetic friction μ<sub>k</sub>N. Raise the board slowly to find the critical angle, time the slide with two photogates to measure μk, and push the block along the incline or horizontally.">木塊放在可以抬高的木板上。改變斜面角度、質量與接觸面的材質，觀察靜摩擦力「需要多少給多少」，直到最大靜摩擦力 μ<sub>s</sub>N 後滑動、改為動摩擦力 μ<sub>k</sub>N。慢慢抬高斜面找出臨界角，用兩個光電門量下滑時間求出動摩擦係數，也可以沿斜面或水平推木塊。</p>
     </header>

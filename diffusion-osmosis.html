@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Diffusion and Osmosis: Brownian Motion, Membranes and Cells | Astro Ni Lab">擴散與滲透：布朗運動、半透膜與細胞的漲縮｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"擴散與滲透：布朗運動、半透膜與細胞的漲縮","alternateName":"Diffusion and Osmosis: Brownian Motion, Membranes and Cells","description":"拿掉隔板，看粒子隨機擴散、均方位移隨時間直線上升；在 U 形管裡看水穿過半透膜，直到液柱撐住滲透壓；再把紅血球和植物細胞放進低張、等張、高張溶液，看它們脹大、溶血、皺縮或質壁分離。","url":"https://lab.astroni.org/diffusion-osmosis.html","image":"https://lab.astroni.org/img/og/diffusion-osmosis.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["細胞與分子（Cells and Molecules）","細胞膜與物質運輸（Membranes and Transport）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"擴散與滲透：布朗運動、半透膜與細胞的漲縮","alternateName":"Diffusion and Osmosis: Brownian Motion, Membranes and Cells","description":"拿掉隔板，看粒子隨機擴散、均方位移隨時間直線上升；在 U 形管裡看水穿過半透膜，直到液柱撐住滲透壓；再把紅血球和植物細胞放進低張、等張、高張溶液，看它們脹大、溶血、皺縮或質壁分離。","url":"https://lab.astroni.org/diffusion-osmosis.html","image":"https://lab.astroni.org/img/og/diffusion-osmosis.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["細胞與分子（Cells and Molecules）","細胞膜與物質運輸（Membranes and Transport）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"生物","url":"https://lab.astroni.org/biology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"細胞與分子","item":"https://lab.astroni.org/biology.html#cell"},{"@type":"ListItem","position":4,"name":"細胞膜與物質運輸","item":"https://lab.astroni.org/biology.html#ch-membrane"},{"@type":"ListItem","position":5,"name":"擴散與滲透：布朗運動、半透膜與細胞的漲縮","item":"https://lab.astroni.org/diffusion-osmosis.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 擴散與滲透頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -137,7 +138,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#cell&quot;>Biology · Cells and Molecules</a> / Diffusion and osmosis"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#cell">生物・細胞與分子</a> ／ 擴散與滲透</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;biology.html&quot;&gt;Biology&lt;/a&gt; / &lt;a href=&quot;biology.html#cell&quot;&gt;Cells and Molecules&lt;/a&gt; / &lt;a href=&quot;biology.html#ch-membrane&quot;&gt;Membranes and Transport&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="biology.html">生物</a> / <a href="biology.html#cell">細胞與分子</a> / <a href="biology.html#ch-membrane">細胞膜與物質運輸</a></nav>
       <h1 data-en="Diffusion and Osmosis: Brownian Motion, Membranes and Cells That Swell or Shrink">擴散與滲透：布朗運動、半透膜與細胞的漲縮</h1>
       <p data-en="Molecules in water never stop jostling, so every dissolved particle staggers about at random. One particle has no preferred direction, yet a crowd of them drifts from where it is crowded to where it is sparse — that is diffusion. Put a membrane in the way that lets water through but stops the solute, and it is the water that moves instead, toward the side with more solute — that is osmosis. Watch the particles spread and check that their mean square displacement grows in step with time, measure osmotic pressure with a U-tube, then drop a red blood cell and a plant cell into solutions of different strength and watch them swell, burst or pull away from their walls.">水裡的分子一刻也不停地互相碰撞，所以每個溶解的粒子都東倒西歪地亂走。單一個粒子沒有偏好的方向，一大群粒子卻會從擠的地方往空的地方散開——這就是擴散。如果在中間放一層只讓水通過、擋住溶質的膜，移動的就換成水：水往溶質多的那一邊跑——這就是滲透。看粒子怎麼散開，驗證均方位移與時間成正比；用 U 形管量滲透壓；再把紅血球和植物細胞放進不同濃度的溶液，看它們膨脹、破裂或與細胞壁分開。</p>
     </header>
@@ -393,17 +394,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/diffusion-osmosis-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/diffusion-osmosis.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="diffusion-osmosis"></script>
-  <script src="js/missions/diffusion-osmosis.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="diffusion-osmosis"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/diffusion-osmosis-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/diffusion-osmosis.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="diffusion-osmosis"></script>
+  <script src="js/missions/diffusion-osmosis.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="diffusion-osmosis"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

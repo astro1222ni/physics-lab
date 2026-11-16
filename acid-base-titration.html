@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Acid–Base Titration | Astro Ni Lab">酸鹼滴定｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"酸鹼滴定","alternateName":"Acid–Base Titration","description":"用滴定管把 NaOH 一滴一滴加進鹽酸或醋酸，看 pH 計與指示劑的顏色變化、即時畫出滴定曲線；找出當量點與半當量點、選對指示劑，再挑戰未知弱酸的濃度與 Ka。","url":"https://lab.astroni.org/acid-base-titration.html","image":"https://lab.astroni.org/img/og/acid-base-titration.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["酸鹼與氧化還原（Acids, Bases and Redox）","酸鹼反應（Acid–Base Reactions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"酸鹼滴定","alternateName":"Acid–Base Titration","description":"用滴定管把 NaOH 一滴一滴加進鹽酸或醋酸，看 pH 計與指示劑的顏色變化、即時畫出滴定曲線；找出當量點與半當量點、選對指示劑，再挑戰未知弱酸的濃度與 Ka。","url":"https://lab.astroni.org/acid-base-titration.html","image":"https://lab.astroni.org/img/og/acid-base-titration.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["酸鹼與氧化還原（Acids, Bases and Redox）","酸鹼反應（Acid–Base Reactions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"化學","url":"https://lab.astroni.org/chemistry.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":3,"name":"酸鹼與氧化還原","item":"https://lab.astroni.org/chemistry.html#acidbase"},{"@type":"ListItem","position":4,"name":"酸鹼反應","item":"https://lab.astroni.org/chemistry.html#ch-acidbase"},{"@type":"ListItem","position":5,"name":"酸鹼滴定","item":"https://lab.astroni.org/acid-base-titration.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 酸鹼滴定頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -138,7 +139,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#acidbase&quot;&gt;Chemistry · Acids, Bases and Redox&lt;/a&gt; / Acid–Base Titration"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#acidbase">化學・酸鹼與氧化還原</a> ／ 酸鹼滴定</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;chemistry.html&quot;&gt;Chemistry&lt;/a&gt; / &lt;a href=&quot;chemistry.html#acidbase&quot;&gt;Acids, Bases and Redox&lt;/a&gt; / &lt;a href=&quot;chemistry.html#ch-acidbase&quot;&gt;Acid–Base Reactions&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="chemistry.html">化學</a> / <a href="chemistry.html#acidbase">酸鹼與氧化還原</a> / <a href="chemistry.html#ch-acidbase">酸鹼反應</a></nav>
       <h1 data-en="Acid–Base Titration">酸鹼滴定</h1>
       <p data-en-html="A burette of standard sodium hydroxide, a conical flask of acid on a magnetic stirrer, an indicator and a pH meter. Add the base drop by drop, watch the colour and the pH, and the titration curve draws itself as you go. Find the equivalence point and the half-equivalence point, choose the right indicator, then use what you have learnt to find the concentration and K&lt;sub&gt;a&lt;/sub&gt; of an unknown weak acid.">滴定管裝著濃度已知的氫氧化鈉，錐形瓶裡是待測的酸，放在磁石攪拌器上，再加指示劑、插上 pH 計。一滴一滴加入鹼，看顏色與 pH 怎麼變，滴定曲線也跟著畫出來。找出當量點與半當量點、選對指示劑，最後用學到的方法，求出未知弱酸的濃度與 K<sub>a</sub>。</p>
     </header>
@@ -391,17 +392,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/acid-base-titration-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/acid-base-titration-3d.js?v=202611151631"></script>
-  <script src="js/acid-base-titration.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="acid-base-titration"></script>
-  <script src="js/missions/acid-base-titration.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="acid-base-titration"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/acid-base-titration-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/acid-base-titration-3d.js?v=202611160631"></script>
+  <script src="js/acid-base-titration.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="acid-base-titration"></script>
+  <script src="js/missions/acid-base-titration.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="acid-base-titration"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Heat Engines and the First Law of Thermodynamics | Astro Ni Lab">熱機循環與熱力學第一定律｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"熱機循環與熱力學第一定律","alternateName":"Heat Engines and the First Law of Thermodynamics","description":"在 P–V 圖上跟著卡諾、汽油、柴油、史特林與噴射引擎的循環走一圈，用 ΔU = Q + W 記下每段能量帳；倒轉成冰箱與熱泵，或拖曳頂點設計自己的引擎，再到 3D 看狀態曲面上的路徑。","url":"https://lab.astroni.org/heat-engine.html","image":"https://lab.astroni.org/img/og/heat-engine.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["熱學（Heat）","氣體與熱力學（Gases and Thermodynamics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"熱機循環與熱力學第一定律","alternateName":"Heat Engines and the First Law of Thermodynamics","description":"在 P–V 圖上跟著卡諾、汽油、柴油、史特林與噴射引擎的循環走一圈，用 ΔU = Q + W 記下每段能量帳；倒轉成冰箱與熱泵，或拖曳頂點設計自己的引擎，再到 3D 看狀態曲面上的路徑。","url":"https://lab.astroni.org/heat-engine.html","image":"https://lab.astroni.org/img/og/heat-engine.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["熱學（Heat）","氣體與熱力學（Gases and Thermodynamics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"熱學","item":"https://lab.astroni.org/physics.html#thermo"},{"@type":"ListItem","position":4,"name":"氣體與熱力學","item":"https://lab.astroni.org/physics.html#ch-gas-thermo"},{"@type":"ListItem","position":5,"name":"熱機循環與熱力學第一定律","item":"https://lab.astroni.org/heat-engine.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 本頁專用的顏色代號（淺色＋深色）：由 js/heat-engine.js 與 js/heat-engine-3d.js 讀取 */
     :root {
@@ -154,7 +155,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#thermo&quot;>Heat</a> / Heat engines"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#thermo">熱學</a> ／ 熱機循環與熱力學第一定律</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#thermo&quot;&gt;Heat&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-gas-thermo&quot;&gt;Gases and Thermodynamics&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#thermo">熱學</a> / <a href="physics.html#ch-gas-thermo">氣體與熱力學</a></nav>
       <h1 data-en="Heat Engines and the First Law of Thermodynamics">熱機循環與熱力學第一定律</h1>
       <p data-en-html="A gas in a cylinder is heated, expands, pushes a piston, is cooled and compressed again — and comes back to where it started. Over one cycle its internal energy does not change, yet it has turned part of the heat it took in into work. Follow the cycle point by point on the P–V diagram, keep the books for every stage with the first law ΔU = Q + W, and compare the Carnot cycle with the idealized cycles behind petrol engines (Otto), diesels, Stirling engines and jet engines (Brayton). Run any cycle backwards to get a refrigerator or a heat pump, draw your own cycle by dragging its corners, and switch to 3D to see every cycle as a path on the surface T = PV/(nR).">汽缸裡的氣體被加熱、膨脹推動活塞，再被冷卻、壓縮，最後回到原來的狀態。轉完一圈，它的內能沒有改變，卻把吸進來的一部分熱變成了功。在 P–V 圖上逐點跟著循環走，用熱力學第一定律 ΔU = Q + W 記下每一段的能量帳，並比較卡諾循環和汽油引擎（奧圖）、柴油引擎（狄塞爾）、史特林引擎、噴射引擎（布雷頓）背後的理想化循環。把任何循環倒過來轉就成了冰箱或熱泵；也可以拖曳頂點畫出自己的循環，或切換到 3D，看每個循環都是狀態曲面 T = PV/(nR) 上的一條路徑。</p>
     </header>
@@ -416,18 +417,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/heat-engine-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/heat-engine-3d.js?v=202611151631"></script>
-  <script src="js/heat-engine.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="heat-engine"></script>
-  <script src="js/missions/heat-engine.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="heat-engine"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/heat-engine-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/heat-engine-3d.js?v=202611160631"></script>
+  <script src="js/heat-engine.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="heat-engine"></script>
+  <script src="js/missions/heat-engine.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="heat-engine"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

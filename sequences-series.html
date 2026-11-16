@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Arithmetic and Geometric Sequences and Series | Astro Ni Lab">等差、等比數列與級數｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"等差、等比數列與級數","alternateName":"Arithmetic and Geometric Sequences and Series","description":"像少年高斯一樣把數列倒過來疊上去，看等比級數一步步逼近極限，再把三角形的點拼成長方形。","url":"https://lab.astroni.org/sequences-series.html","image":"https://lab.astroni.org/img/og/sequences-series.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","數列與級數（Sequences and Series）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"等差、等比數列與級數","alternateName":"Arithmetic and Geometric Sequences and Series","description":"像少年高斯一樣把數列倒過來疊上去，看等比級數一步步逼近極限，再把三角形的點拼成長方形。","url":"https://lab.astroni.org/sequences-series.html","image":"https://lab.astroni.org/img/og/sequences-series.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","數列與級數（Sequences and Series）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"數學","url":"https://lab.astroni.org/mathematics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":3,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":4,"name":"數列與級數","item":"https://lab.astroni.org/mathematics.html#ch-sequence"},{"@type":"ListItem","position":5,"name":"等差、等比數列與級數","item":"https://lab.astroni.org/sequences-series.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 數列頁面專用的顏色代號（淺色＋深色；由 js/sequences-series.js 讀取） */
     :root { --ss-pos: #2563eb; --ss-neg: #ea580c; --ss-pair: #7c3aed; --ss-sum: #0d9488; --ss-lim: #db2777; --ss-dot1: #2563eb; --ss-dot2: #ea580c; --ss-target: #475569; --ss-ok: #0d9488; --ss-bad: #dc2626; }
@@ -86,7 +87,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Sequences and Series"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 數列與級數</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;mathematics.html&quot;&gt;Mathematics&lt;/a&gt; / &lt;a href=&quot;mathematics.html#algebra&quot;&gt;Algebra and Functions&lt;/a&gt; / &lt;a href=&quot;mathematics.html#ch-sequence&quot;&gt;Sequences and Series&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="mathematics.html">數學</a> / <a href="mathematics.html#algebra">代數與函數</a> / <a href="mathematics.html#ch-sequence">數列與級數</a></nav>
       <h1 data-en="Arithmetic and Geometric Sequences and Series">等差、等比數列與級數</h1>
       <p data-en="Each term is a bar. An arithmetic sequence climbs by the same step; turn a copy upside down and every pair adds up to the same height, which is how the young Gauss added 1 to 100. A geometric sequence multiplies by the same ratio; when the ratio is between −1 and 1 the bars shrink and the running total closes in on a limit. Then count dots arranged as triangles and squares.">每一項是一根長條。等差數列每次加同樣的量；把它倒過來疊上去，每一對都一樣高——少年高斯就是這樣算出 1 加到 100。等比數列每次乘同樣的倍數；公比在 −1 和 1 之間時，長條越來越短，部分和越來越靠近一個極限。最後數一數排成三角形和正方形的點。</p>
     </header>
@@ -227,17 +228,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/sequences-series-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/sequences-series.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="sequences-series"></script>
-  <script src="js/missions/sequences-series.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="sequences-series"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/sequences-series-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/sequences-series.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="sequences-series"></script>
+  <script src="js/missions/sequences-series.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="sequences-series"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

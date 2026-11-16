@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Reverberation and Concert Halls: Sabine’s Formula | Astro Ni Lab">迴響與音樂廳：賽賓公式｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"迴響與音樂廳：賽賓公式","alternateName":"Reverberation and Concert Halls: Sabine’s Formula","description":"為什麼在浴室唱歌特別好聽、空教室卻聽不清楚？改變房間大小、每一面的材料和人數，用賽賓公式算迴響時間，聽聽迴響，看鏡像源與反射路徑。","url":"https://lab.astroni.org/reverb-room.html","image":"https://lab.astroni.org/img/og/reverb-room.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["空間、錄音與數位音樂（Space, Recording and Digital Music）","空間聲學（Room Acoustics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"迴響與音樂廳：賽賓公式","alternateName":"Reverberation and Concert Halls: Sabine’s Formula","description":"為什麼在浴室唱歌特別好聽、空教室卻聽不清楚？改變房間大小、每一面的材料和人數，用賽賓公式算迴響時間，聽聽迴響，看鏡像源與反射路徑。","url":"https://lab.astroni.org/reverb-room.html","image":"https://lab.astroni.org/img/og/reverb-room.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["空間、錄音與數位音樂（Space, Recording and Digital Music）","空間聲學（Room Acoustics）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"音樂","url":"https://lab.astroni.org/music.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"音樂","item":"https://lab.astroni.org/music.html"},{"@type":"ListItem","position":3,"name":"空間、錄音與數位音樂","item":"https://lab.astroni.org/music.html#audio"},{"@type":"ListItem","position":4,"name":"空間聲學","item":"https://lab.astroni.org/music.html#ch-room-acoustics"},{"@type":"ListItem","position":5,"name":"迴響與音樂廳：賽賓公式","item":"https://lab.astroni.org/reverb-room.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 迴響頁面專用的顏色代號（淺色＋兩組深色；由 js/reverb-room.js 與 js/reverb-room-3d.js 讀取） */
     :root {
@@ -132,7 +133,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#audio&quot;>Music · Space, Recording and Digital Music</a> / Room Acoustics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#audio">音樂・空間、錄音與數位音樂</a> ／ 空間聲學</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;music.html&quot;&gt;Music&lt;/a&gt; / &lt;a href=&quot;music.html#audio&quot;&gt;Space, Recording and Digital Music&lt;/a&gt; / &lt;a href=&quot;music.html#ch-room-acoustics&quot;&gt;Room Acoustics&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="music.html">音樂</a> / <a href="music.html#audio">空間、錄音與數位音樂</a> / <a href="music.html#ch-room-acoustics">空間聲學</a></nav>
       <h1 data-en="Reverberation and Concert Halls: Sabine’s Formula">迴響與音樂廳：賽賓公式</h1>
       <p data-en="Why does singing in the bathroom sound so good, while a bare classroom makes speech hard to follow? After a sound stops, it keeps bouncing between the walls and dies away little by little. Change the size of the room, the material of each surface and the number of people, and see — and hear — how long the sound lingers, using the formula Wallace Sabine found in 1898 and its improved form by Carl Eyring.">為什麼在浴室唱歌特別好聽，空蕩的教室卻讓人聽不清楚老師在說什麼？聲音停下來以後，還會在牆壁之間來回反射，一點一點消失。改變房間的大小、每一面的材料和人數，用賽賓在 1898 年找到的公式（以及艾林改良的版本），看看、也聽聽聲音會留多久。</p>
     </header>
@@ -324,18 +325,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/music-theory.js?v=202611151631"></script>
-  <script src="js/reverb-room-core.js?v=202611151631"></script>
-  <script src="js/music-audio.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/reverb-room.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="reverb-room"></script>
-  <script src="js/missions/reverb-room.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="reverb-room"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/music-theory.js?v=202611160631"></script>
+  <script src="js/reverb-room-core.js?v=202611160631"></script>
+  <script src="js/music-audio.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/reverb-room.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="reverb-room"></script>
+  <script src="js/missions/reverb-room.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="reverb-room"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

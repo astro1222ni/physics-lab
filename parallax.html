@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stellar Parallax and the Parsec | Astro Ni Lab">恆星視差與秒差距｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"恆星視差與秒差距","alternateName":"Stellar Parallax and the Parsec","description":"地球繞太陽一年，近的恆星在天上畫出小橢圓。像貝索一樣拍照、用最小平方法量出比鄰星的距離，再看依巴谷和 Gaia 怎麼把尺伸到銀河的另一頭。","url":"https://lab.astroni.org/parallax.html","image":"https://lab.astroni.org/img/og/parallax.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","天文觀測（Astronomical Observation）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"恆星視差與秒差距","alternateName":"Stellar Parallax and the Parsec","description":"地球繞太陽一年，近的恆星在天上畫出小橢圓。像貝索一樣拍照、用最小平方法量出比鄰星的距離，再看依巴谷和 Gaia 怎麼把尺伸到銀河的另一頭。","url":"https://lab.astroni.org/parallax.html","image":"https://lab.astroni.org/img/og/parallax.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["天文（Astronomy）","天文觀測（Astronomical Observation）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"地球科學","url":"https://lab.astroni.org/earth-science.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地球科學","item":"https://lab.astroni.org/earth-science.html"},{"@type":"ListItem","position":3,"name":"天文","item":"https://lab.astroni.org/earth-science.html#astro"},{"@type":"ListItem","position":4,"name":"天文觀測","item":"https://lab.astroni.org/earth-science.html#ch-observe"},{"@type":"ListItem","position":5,"name":"恆星視差與秒差距","item":"https://lab.astroni.org/parallax.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 恆星視差頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用）。太空背景在淺色與深色模式都是暗的。 */
     :root {
@@ -77,7 +78,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#astro&quot;>Earth Science · Astronomy</a> / Stellar parallax"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#astro">地球科學・天文</a> ／ 恆星視差</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;earth-science.html&quot;&gt;Earth Science&lt;/a&gt; / &lt;a href=&quot;earth-science.html#astro&quot;&gt;Astronomy&lt;/a&gt; / &lt;a href=&quot;earth-science.html#ch-observe&quot;&gt;Astronomical Observation&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="earth-science.html">地球科學</a> / <a href="earth-science.html#astro">天文</a> / <a href="earth-science.html#ch-observe">天文觀測</a></nav>
       <h1 data-en="Stellar Parallax and the Parsec">恆星視差與秒差距</h1>
       <p data-en="As the Earth goes round the Sun, nearby stars trace tiny ellipses against the distant background. Watch the ellipse a year at a time, take photographs with Tycho’s eye, Bessel’s heliometer or the Gaia satellite and measure the distance yourself, then stretch the baseline out to the edge of the Solar System.">地球繞著太陽轉，近的恆星就在遙遠的背景前畫出小小的橢圓。看一整年的視差橢圓，用第谷的肉眼、貝索的量日儀或 Gaia 衛星拍照，自己量出恆星的距離；再把基線拉長到太陽系的邊緣。</p>
     </header>
@@ -223,17 +224,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/parallax-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/parallax.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="parallax"></script>
-  <script src="js/missions/parallax.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="parallax"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/parallax-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/parallax.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="parallax"></script>
+  <script src="js/missions/parallax.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="parallax"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

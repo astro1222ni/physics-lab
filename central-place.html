@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Central Place Theory: Thresholds, Ranges and Hexagons | Astro Ni Lab">中地理論：門檻、商品圈與六角形市場區｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"中地理論：門檻、商品圈與六角形市場區","alternateName":"Central Place Theory: Thresholds, Ranges and Hexagons","description":"一家店要有夠多顧客，顧客也要願意走那麼遠。看商店佈滿平原、市場區擠成六邊形，再比較市場、交通、行政三種原則的中地體系。","url":"https://lab.astroni.org/central-place.html","image":"https://lab.astroni.org/img/og/central-place.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["人口與都市（Population and Cities）","聚落與中地（Settlements and Central Places）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"中地理論：門檻、商品圈與六角形市場區","alternateName":"Central Place Theory: Thresholds, Ranges and Hexagons","description":"一家店要有夠多顧客，顧客也要願意走那麼遠。看商店佈滿平原、市場區擠成六邊形，再比較市場、交通、行政三種原則的中地體系。","url":"https://lab.astroni.org/central-place.html","image":"https://lab.astroni.org/img/og/central-place.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["人口與都市（Population and Cities）","聚落與中地（Settlements and Central Places）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"地理","url":"https://lab.astroni.org/geography.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"人口與都市","item":"https://lab.astroni.org/geography.html#population"},{"@type":"ListItem","position":4,"name":"聚落與中地","item":"https://lab.astroni.org/geography.html#ch-central-place"},{"@type":"ListItem","position":5,"name":"中地理論：門檻、商品圈與六角形市場區","item":"https://lab.astroni.org/central-place.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 中地理論頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -97,7 +98,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#population&quot;>Geography · Population and Cities</a> / Central place theory"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#population">地理・人口與都市</a> ／ 中地理論</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;geography.html&quot;&gt;Geography&lt;/a&gt; / &lt;a href=&quot;geography.html#population&quot;&gt;Population and Cities&lt;/a&gt; / &lt;a href=&quot;geography.html#ch-central-place&quot;&gt;Settlements and Central Places&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="geography.html">地理</a> / <a href="geography.html#population">人口與都市</a> / <a href="geography.html#ch-central-place">聚落與中地</a></nav>
       <h1 data-en="Central Place Theory: Thresholds, Ranges and Hexagons">中地理論：門檻、商品圈與六角形市場區</h1>
       <p data-en="Why are villages, towns and cities spaced the way they are, and why are there so many more villages than cities? On a uniform plain where everyone shops at the nearest place, a shop needs enough customers (the threshold) who are willing to travel that far (the range). Watch shops fill the plain until their market areas become hexagons, then build Christaller's hierarchy of central places.">村莊、鄉鎮、城市為什麼隔著那樣的距離？為什麼村莊比城市多那麼多？在一片均質平原上，每個人都到最近的地方買東西；一家店要有足夠的顧客（門檻），而顧客也要願意走那麼遠（商品圈）。看商店怎麼佈滿平原，市場區怎麼變成六邊形，再搭出克里斯泰勒的中地體系。</p>
     </header>
@@ -269,16 +270,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/central-place-core.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/central-place.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="central-place"></script>
-  <script src="js/missions/central-place.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="central-place"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/central-place-core.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/central-place.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="central-place"></script>
+  <script src="js/missions/central-place.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="central-place"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

@@ -40,7 +40,7 @@
       const db = D.getDatabase(app);
       const provider = new Au.GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
-      Au.getRedirectResult(auth).catch(function () { /* 沒有進行中的轉址登入 */ });
+      Au.getRedirectResult(auth).catch(function () { try { sessionStorage.removeItem('labAfterLogin'); } catch (e) {} });
       const r = function (p) { return D.ref(db, p); };
       // 免費方案同時連線上限 100：分頁切到背景 3 分鐘就斷開即時連線，回到前景再接上（只在已經連過線時才處理，避免替沒用到資料庫的訪客開連線）
       let live = false, off = false, offTimer = null;
@@ -70,6 +70,7 @@
         getNickname: function (uid) { return D.get(r('profiles/' + uid + '/nickname')).then(function (s) { return s.val(); }); },
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },
         isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
+        homeRead: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
         watchComments: function (mod, cb) {
           live = true;
           D.onValue(D.query(r('comments/' + mod), D.orderByChild('createdAt'), D.limitToLast(100)), function (snap) {
@@ -132,7 +133,21 @@
   const state = { user: null, nickname: null, admin: false, comments: null, reports: {}, ready: false, busy: false, msg: '' };
   let api = null;
   const listeners = [];
-  function changed() { listeners.forEach(function (f) { f(); }); }
+  function changed() {
+    listeners.forEach(function (f) { f(); });
+    if (document.body && document.body.hasAttribute('data-home-v2')) window.dispatchEvent(new CustomEvent('lab:account', { detail: { user: state.user, admin: state.admin, ready: state.ready } }));
+  }
+  // 首頁沿用同一個登入連線，四個個人節點各讀一次；不載入任務引擎或排行榜。
+  const homeReads = {};
+  function readHome(uid) {
+    if (!homeReads[uid]) {
+      const backend = window.LAB_MISSIONS_BACKEND;
+      const get = p => backend ? backend.get(p) : api.homeRead(p);
+      homeReads[uid] = Promise.all(['profiles', 'scores', 'daily', 'completions', 'bag'].map(p => get(p + '/' + uid))).then(r => ({ profile: r[0] || {}, score: r[1] || {}, daily: r[2] || {}, done: r[3] || {}, bag: r[4] || {} }));
+    }
+    return homeReads[uid];
+  }
+  window.LabAccount = { state: function () { return { user: state.user, admin: state.admin, ready: state.ready }; }, readHome: readHome, googleIcon: function () { return G_ICON; }, signIn: function () { if (api) return signIn(); } };
 
   // 把可能同步丟出錯誤的呼叫包成 Promise，並加上逾時，避免畫面卡住
   function guard(fn, ms) {
@@ -144,7 +159,13 @@
 
   function signIn() {
     state.msg = '';
-    api.signIn().catch(function (e) { state.msg = errText(e); changed(); });
+    return api.signIn().catch(function (e) { try { sessionStorage.removeItem('labAfterLogin'); } catch (_) {} state.msg = errText(e); changed(); });
+  }
+
+  function afterLogin() {
+    let destination; try { destination = sessionStorage.getItem('labAfterLogin'); sessionStorage.removeItem('labAfterLogin'); } catch (e) { return false; }
+    if (destination !== 'leaderboard' && destination !== 'daily') return false;
+    location.assign(destination + '.html'); return true;
   }
 
   // ======================= 右上角登入按鈕 =======================
@@ -547,6 +568,8 @@
     ready.then(function (backend) {
       api = backend;
       api.onAuth(function (user) {
+        try { localStorage.setItem('labHomeSignedIn', user ? '1' : '0'); } catch (e) {}
+        if (user && afterLogin()) return;
         state.user = user;
         state.nickname = null;
         state.admin = false;
@@ -556,7 +579,8 @@
         if (user) closeWelcome('signed');
         else setTimeout(function () { whenEngaged(maybeWelcome); }, 600); // 讓頁面先出現；實驗頁等學生先操作幾下再提示
         if (user) {
-          Promise.all([api.getNickname(user.uid).catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
+          const nick = document.body.hasAttribute('data-home-v2') ? readHome(user.uid).then(function (d) { return d.profile.nickname; }) : api.getNickname(user.uid);
+          Promise.all([nick.catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
             if (!state.user || state.user.uid !== user.uid) return;
             state.nickname = r[0] || null;
             state.admin = !!r[1];

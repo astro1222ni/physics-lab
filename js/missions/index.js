@@ -365,15 +365,32 @@ window.LAB_MODULE_BRANCH = {
 
 /* 各科目與各自的分支（各科排名、各科成就用）。順序就是畫面上的順序；新增科目的分支時一起更新。 */
 window.LAB_SUBJECTS = [
-  { id: 'phy', zh: '物理', en: 'Physics', branches: ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'] },
-  { id: 'chem', zh: '化學', en: 'Chemistry', branches: ['matter', 'reaction', 'equilibrium', 'acidbase', 'organic'] },
-  { id: 'bio', zh: '生物', en: 'Biology', branches: ['cell', 'genetics', 'physiology', 'ecology', 'evolution', 'biotech'] },
-  { id: 'earth', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] },
-  { id: 'math', zh: '數學', en: 'Mathematics', branches: ['algebra', 'geometry', 'vectors', 'probability', 'calculus'] },
+  { id: 'phy', page: 'physics', dom: 'physics', group: 'sci', zh: '物理', en: 'Physics', branches: ['mech', 'thermo', 'wave', 'optics', 'em', 'modern'] },
+  { id: 'chem', page: 'chemistry', dom: 'chemistry', group: 'sci', zh: '化學', en: 'Chemistry', branches: ['matter', 'reaction', 'equilibrium', 'acidbase', 'organic'] },
+  { id: 'bio', page: 'biology', dom: 'biology', group: 'sci', zh: '生物', en: 'Biology', branches: ['cell', 'genetics', 'physiology', 'ecology', 'evolution', 'biotech'] },
+  { id: 'earth', page: 'earth-science', dom: 'earth', group: 'sci', zh: '地球科學', en: 'Earth Science', branches: ['astro', 'geo', 'atmo', 'ocean'] },
+  { id: 'math', page: 'mathematics', dom: 'math', group: 'sci', zh: '數學', en: 'Mathematics', branches: ['algebra', 'geometry', 'vectors', 'probability', 'calculus'] },
   // 11/12 深夜站長要求加入的三科：第一個實驗上線前，排行榜與成就都不顯示這一科（LAB_SUBJECT_SHOWN）
-  { id: 'info', zh: '資訊科技', en: 'Information Technology', branches: ['data', 'algo', 'prog', 'system', 'network', 'ai'], newSubject: true },
-  { id: 'geog', zh: '地理', en: 'Geography', branches: ['mapping', 'gis', 'climate', 'landform', 'population', 'economy'], newSubject: true },
-  { id: 'music', zh: '音樂', en: 'Music', branches: ['tone', 'tuning', 'harmony', 'instruments', 'rhythm', 'audio'], newSubject: true }
+  { id: 'info', page: 'information-technology', dom: 'info', group: 'sci', zh: '資訊科技', en: 'Information Technology', branches: ['data', 'algo', 'prog', 'system', 'network', 'ai'], newSubject: true },
+  { id: 'geog', page: 'geography', dom: 'geog', group: 'hum', zh: '地理', en: 'Geography', branches: ['mapping', 'gis', 'climate', 'landform', 'population', 'economy'], newSubject: true },
+  { id: 'music', page: 'music', dom: 'music', group: 'arts', zh: '音樂', en: 'Music', branches: ['tone', 'tuning', 'harmony', 'instruments', 'rhythm', 'audio'], newSubject: true }
+];
+/* 首頁與科目切換的唯一分類來源；未上線科目只顯示不可點的製作中框。 */
+window.LAB_SUBJECT_GROUPS = [
+  { id: 'sci', zh: '數理', en: 'Math & Science', soon: [] },
+  { id: 'hum', zh: '人文與社會', en: 'Humanities & Social Studies', soon: [
+    { page: 'chinese', zh: '國文', en: 'Chinese' }, { page: 'english', zh: '英文', en: 'English' },
+    { page: 'history', zh: '歷史', en: 'History' }, { page: 'civics', zh: '公民與社會', en: 'Civics' }
+  ] },
+  { id: 'arts', zh: '藝能科', en: 'Arts & Life Skills', soon: [
+    { page: 'visual-arts', zh: '美術', en: 'Visual Arts' }, { page: 'physical-education', zh: '體育', en: 'PE' },
+    { page: 'health', zh: '健康與護理', en: 'Health' }, { page: 'home-economics', zh: '家政', en: 'Home Economics' },
+    { page: 'living-technology', zh: '生活科技', en: 'Living Technology' }
+  ] },
+  { id: 'other', zh: '其他', en: 'More Subjects', soon: [
+    { page: 'defense-education', zh: '全民國防', en: 'Defense Education' },
+    { page: 'career-planning', zh: '生涯規劃', en: 'Career Planning' }, { page: 'inquiry', zh: '探究與實作', en: 'Inquiry Projects' }
+  ] }
 ];
 /* 這一科要不要出現在排行榜與成就的分頁：原本五科一直顯示（沒有實驗時寫「製作中」）；新科要等第一個實驗上線 */
 window.LAB_SUBJECT_SHOWN = function (sid) {

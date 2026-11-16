@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Spring Oscillator and Pendulum | Astro Ni Lab">彈簧振子與單擺｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"彈簧振子與單擺","alternateName":"Spring Oscillator and Pendulum","description":"拉開彈簧振子或單擺後放手，觀察 x–t、v–t、a–t 圖與動能、位能交換；比較大角度單擺的精確週期與小角度近似。","url":"https://lab.astroni.org/oscillation.html","image":"https://lab.astroni.org/img/og/oscillation.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","週期運動（Periodic Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"彈簧振子與單擺","alternateName":"Spring Oscillator and Pendulum","description":"拉開彈簧振子或單擺後放手，觀察 x–t、v–t、a–t 圖與動能、位能交換；比較大角度單擺的精確週期與小角度近似。","url":"https://lab.astroni.org/oscillation.html","image":"https://lab.astroni.org/img/og/oscillation.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","週期運動（Periodic Motion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"力學","item":"https://lab.astroni.org/physics.html#mech"},{"@type":"ListItem","position":4,"name":"週期運動","item":"https://lab.astroni.org/physics.html#ch-periodic"},{"@type":"ListItem","position":5,"name":"彈簧振子與單擺","item":"https://lab.astroni.org/oscillation.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 彈簧振子與單擺頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .lab.osc { grid-template-areas: "scene panel" "graphs panel"; grid-template-rows: auto 1fr; }
@@ -127,7 +128,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Simple harmonic motion"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 簡諧運動</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#mech&quot;&gt;Mechanics&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-periodic&quot;&gt;Periodic Motion&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#mech">力學</a> / <a href="physics.html#ch-periodic">週期運動</a></nav>
       <h1 data-en="Spring Oscillator and Pendulum">彈簧振子與單擺</h1>
       <p data-en="Pull the block or the pendulum bob aside and let go. Watch the x–t, v–t and a–t graphs and the exchange between kinetic and potential energy, and compare a large-angle pendulum with the small-angle approximation.">把木塊或擺錘拉開後放手，觀察 x–t、v–t、a–t 圖與動能、位能的交換；比較大角度單擺與小角度近似的差別。</p>
     </header>
@@ -390,18 +391,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/oscillation-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/oscillation-3d.js?v=202611151631"></script>
-  <script src="js/oscillation.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="oscillation"></script>
-  <script src="js/missions/oscillation.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="oscillation"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/oscillation-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/oscillation-3d.js?v=202611160631"></script>
+  <script src="js/oscillation.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="oscillation"></script>
+  <script src="js/missions/oscillation.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="oscillation"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

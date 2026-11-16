@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Meandering Rivers: Oxbow Lakes and a Wandering Channel | Astro Ni Lab">曲流、牛軛湖與河道變遷｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"曲流、牛軛湖與河道變遷","alternateName":"Meandering Rivers: Oxbow Lakes and a Wandering Channel","description":"看平坦谷底上的河流幾百年間越彎越大、往下游移動，直到截彎取直留下牛軛湖；點任何一個彎看凹岸與凸岸的剖面，也可以自己動手截彎取直。","url":"https://lab.astroni.org/river-meander.html","image":"https://lab.astroni.org/img/og/river-meander.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["地形與水文（Landforms and Water）","河流地形（River Landforms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"曲流、牛軛湖與河道變遷","alternateName":"Meandering Rivers: Oxbow Lakes and a Wandering Channel","description":"看平坦谷底上的河流幾百年間越彎越大、往下游移動，直到截彎取直留下牛軛湖；點任何一個彎看凹岸與凸岸的剖面，也可以自己動手截彎取直。","url":"https://lab.astroni.org/river-meander.html","image":"https://lab.astroni.org/img/og/river-meander.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["地形與水文（Landforms and Water）","河流地形（River Landforms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"地理","url":"https://lab.astroni.org/geography.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"地理","item":"https://lab.astroni.org/geography.html"},{"@type":"ListItem","position":3,"name":"地形與水文","item":"https://lab.astroni.org/geography.html#landform"},{"@type":"ListItem","position":4,"name":"河流地形","item":"https://lab.astroni.org/geography.html#ch-fluvial"},{"@type":"ListItem","position":5,"name":"曲流、牛軛湖與河道變遷","item":"https://lab.astroni.org/river-meander.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 曲流頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -89,7 +90,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#landform&quot;>Geography · Landforms and Water</a> / Meandering rivers"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#landform">地理・地形與水文</a> ／ 曲流</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;geography.html&quot;&gt;Geography&lt;/a&gt; / &lt;a href=&quot;geography.html#landform&quot;&gt;Landforms and Water&lt;/a&gt; / &lt;a href=&quot;geography.html#ch-fluvial&quot;&gt;River Landforms&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="geography.html">地理</a> / <a href="geography.html#landform">地形與水文</a> / <a href="geography.html#ch-fluvial">河流地形</a></nav>
       <h1 data-en="Meandering Rivers: Oxbow Lakes and a Wandering Channel">曲流、牛軛湖與河道變遷</h1>
       <p data-en="A river on a flat valley floor never stays straight. In every bend the water scours the outer bank and drops sand on the inner bank, so the bend grows and slides downstream until two loops touch and the river takes a shortcut, leaving an oxbow lake behind. Watch centuries go by in seconds, look at a cross-section of any bend, and try straightening the river yourself.">平坦谷底上的河流不會一直是直的。每個彎道的水都在沖刷外側的河岸、在內側堆積泥沙，彎道越長越大、一邊往下游移，直到兩個彎碰在一起，河流抄近路，留下一個牛軛湖。在這裡幾秒鐘就過了幾百年：看任何一個彎道的橫剖面，也可以自己動手把河道截彎取直。</p>
     </header>
@@ -250,16 +251,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/river-meander-core.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/river-meander.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="river-meander"></script>
-  <script src="js/missions/river-meander.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="river-meander"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/river-meander-core.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/river-meander.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="river-meander"></script>
+  <script src="js/missions/river-meander.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="river-meander"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

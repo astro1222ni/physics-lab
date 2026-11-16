@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Oxygen and Haemoglobin | Astro Ni Lab">氧氣與血紅素｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"氧氣與血紅素","alternateName":"Oxygen and Haemoglobin","description":"看血紅素怎麼在肺裡裝氧、在組織裡放氧。用酸、二氧化碳、體溫和 2,3-BPG 推動 S 形曲線，比較胎兒血紅素與肌紅素，看上高山、跑馬拉松、吸到一氧化碳時血液還能送多少氧；再用 MWC 模型量出四個亞基合作的程度。","url":"https://lab.astroni.org/oxygen-hemoglobin.html","image":"https://lab.astroni.org/img/og/oxygen-hemoglobin.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["生理（Physiology）","循環與呼吸（Circulation and Breathing）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"氧氣與血紅素","alternateName":"Oxygen and Haemoglobin","description":"看血紅素怎麼在肺裡裝氧、在組織裡放氧。用酸、二氧化碳、體溫和 2,3-BPG 推動 S 形曲線，比較胎兒血紅素與肌紅素，看上高山、跑馬拉松、吸到一氧化碳時血液還能送多少氧；再用 MWC 模型量出四個亞基合作的程度。","url":"https://lab.astroni.org/oxygen-hemoglobin.html","image":"https://lab.astroni.org/img/og/oxygen-hemoglobin.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["生理（Physiology）","循環與呼吸（Circulation and Breathing）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"生物","url":"https://lab.astroni.org/biology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生理","item":"https://lab.astroni.org/biology.html#physiology"},{"@type":"ListItem","position":4,"name":"循環與呼吸","item":"https://lab.astroni.org/biology.html#ch-circulation"},{"@type":"ListItem","position":5,"name":"氧氣與血紅素","item":"https://lab.astroni.org/oxygen-hemoglobin.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 氧氣與血紅素頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -114,7 +115,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#physiology&quot;>Biology · Physiology</a> / Oxygen and haemoglobin"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#physiology">生物・生理</a> ／ 氧氣與血紅素</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;biology.html&quot;&gt;Biology&lt;/a&gt; / &lt;a href=&quot;biology.html#physiology&quot;&gt;Physiology&lt;/a&gt; / &lt;a href=&quot;biology.html#ch-circulation&quot;&gt;Circulation and Breathing&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="biology.html">生物</a> / <a href="biology.html#physiology">生理</a> / <a href="biology.html#ch-circulation">循環與呼吸</a></nav>
       <h1 data-en="Oxygen and Haemoglobin">氧氣與血紅素</h1>
       <p data-en="Every red blood cell carries about 270 million haemoglobin molecules. In the lungs they load up with oxygen; in a working muscle they must let most of it go. The S-shaped oxygen dissociation curve makes both possible — and acid, carbon dioxide, heat and 2,3-BPG slide it sideways exactly when the tissues need more. Climb a mountain, run a marathon or breathe carbon monoxide and see how much oxygen your blood can still deliver; then look inside the molecule to see where the S shape comes from.">每個紅血球裡大約有 2.7 億個血紅素分子。在肺裡，它們要裝滿氧；在用力的肌肉裡，又要把大部分的氧放掉。S 形的氧解離曲線讓兩件事都做得到——而且酸、二氧化碳、體溫和 2,3-BPG 會在組織最需要的時候把曲線往右推。爬高山、跑馬拉松、吸到一氧化碳時，血液還能送多少氧？再走進分子裡，看看 S 形是從哪裡來的。</p>
     </header>
@@ -283,17 +284,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/oxygen-hemoglobin-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/oxygen-hemoglobin.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="oxygen-hemoglobin"></script>
-  <script src="js/missions/oxygen-hemoglobin.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="oxygen-hemoglobin"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/oxygen-hemoglobin-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/oxygen-hemoglobin.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="oxygen-hemoglobin"></script>
+  <script src="js/missions/oxygen-hemoglobin.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="oxygen-hemoglobin"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

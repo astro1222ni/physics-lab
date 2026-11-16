@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Centres of a Triangle and the Euler Line | Astro Ni Lab">三角形的四心與歐拉線｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"三角形的四心與歐拉線","alternateName":"Centres of a Triangle and the Euler Line","description":"中線、中垂線、角平分線、高，每一組都交在一點。拖曳頂點看：G、O、H 永遠排成一直線，而且永遠 1 : 2。","url":"https://lab.astroni.org/triangle-centers.html","image":"https://lab.astroni.org/img/og/triangle-centers.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["三角與幾何（Trigonometry and Geometry）","三角形的邊角關係（Solving Triangles）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"三角形的四心與歐拉線","alternateName":"Centres of a Triangle and the Euler Line","description":"中線、中垂線、角平分線、高，每一組都交在一點。拖曳頂點看：G、O、H 永遠排成一直線，而且永遠 1 : 2。","url":"https://lab.astroni.org/triangle-centers.html","image":"https://lab.astroni.org/img/og/triangle-centers.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["三角與幾何（Trigonometry and Geometry）","三角形的邊角關係（Solving Triangles）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"數學","url":"https://lab.astroni.org/mathematics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":3,"name":"三角與幾何","item":"https://lab.astroni.org/mathematics.html#geometry"},{"@type":"ListItem","position":4,"name":"三角形的邊角關係","item":"https://lab.astroni.org/mathematics.html#ch-triangle"},{"@type":"ListItem","position":5,"name":"三角形的四心與歐拉線","item":"https://lab.astroni.org/triangle-centers.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 四心頁面專用的顏色代號（淺色＋深色；由 js/triangle-centers.js 讀取） */
     :root { --tc-g: #d97706; --tc-o: #7c3aed; --tc-i: #0d9488; --tc-h: #e11d48; --tc-n: #16a34a; --tc-e: #0369a1; --tc-tri: #475569; --tc-ok: #0d9488; --tc-bad: #dc2626; }
@@ -85,7 +86,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#geometry&quot;>Mathematics · Trigonometry and Geometry</a> / Centres of a Triangle"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#geometry">數學・三角與幾何</a> ／ 三角形的四心</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;mathematics.html&quot;&gt;Mathematics&lt;/a&gt; / &lt;a href=&quot;mathematics.html#geometry&quot;&gt;Trigonometry and Geometry&lt;/a&gt; / &lt;a href=&quot;mathematics.html#ch-triangle&quot;&gt;Solving Triangles&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="mathematics.html">數學</a> / <a href="mathematics.html#geometry">三角與幾何</a> / <a href="mathematics.html#ch-triangle">三角形的邊角關係</a></nav>
       <h1 data-en="Centres of a Triangle and the Euler Line">三角形的四心與歐拉線</h1>
       <p data-en="Three medians, three perpendicular bisectors, three angle bisectors, three altitudes — each trio meets in a single point. Drag the corners and watch the four centres move: three of them never leave one straight line, and they keep the ratio 1 : 2 on it.">三條中線、三條中垂線、三條角平分線、三條高，每一組都交在同一點。拖曳頂點看四個心怎麼移動：其中三個永遠排在同一條直線上，而且在線上一直保持 1 : 2。</p>
     </header>
@@ -205,17 +206,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/triangle-centers-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/triangle-centers.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="triangle-centers"></script>
-  <script src="js/missions/triangle-centers.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="triangle-centers"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/triangle-centers-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/triangle-centers.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="triangle-centers"></script>
+  <script src="js/missions/triangle-centers.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="triangle-centers"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

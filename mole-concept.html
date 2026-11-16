@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Mole and Avogadro's Number | Astro Ni Lab">莫耳與亞佛加厥數｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"莫耳與亞佛加厥數","alternateName":"The Mole and Avogadro's Number","description":"把兩種物質放上天平，在質量、莫耳數、粒子數、氣體體積之間換算；用放大鏡一路放大到看見單一分子；再用油膜法自己估計亞佛加厥數。","url":"https://lab.astroni.org/mole-concept.html","image":"https://lab.astroni.org/img/og/mole-concept.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["化學反應與能量（Reactions and Energy）","化學計量（Stoichiometry）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"莫耳與亞佛加厥數","alternateName":"The Mole and Avogadro's Number","description":"把兩種物質放上天平，在質量、莫耳數、粒子數、氣體體積之間換算；用放大鏡一路放大到看見單一分子；再用油膜法自己估計亞佛加厥數。","url":"https://lab.astroni.org/mole-concept.html","image":"https://lab.astroni.org/img/og/mole-concept.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["化學反應與能量（Reactions and Energy）","化學計量（Stoichiometry）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"化學","url":"https://lab.astroni.org/chemistry.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":3,"name":"化學反應與能量","item":"https://lab.astroni.org/chemistry.html#reaction"},{"@type":"ListItem","position":4,"name":"化學計量","item":"https://lab.astroni.org/chemistry.html#ch-stoich"},{"@type":"ListItem","position":5,"name":"莫耳與亞佛加厥數","item":"https://lab.astroni.org/mole-concept.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 莫耳與亞佛加厥數頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .mc canvas { aspect-ratio: auto; touch-action: auto; }
@@ -108,7 +109,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#reaction&quot;&gt;Chemistry · Reactions and Energy&lt;/a&gt; / The Mole and Avogadro's Number"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#reaction">化學・化學反應與能量</a> ／ 莫耳與亞佛加厥數</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;chemistry.html&quot;&gt;Chemistry&lt;/a&gt; / &lt;a href=&quot;chemistry.html#reaction&quot;&gt;Reactions and Energy&lt;/a&gt; / &lt;a href=&quot;chemistry.html#ch-stoich&quot;&gt;Stoichiometry&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="chemistry.html">化學</a> / <a href="chemistry.html#reaction">化學反應與能量</a> / <a href="chemistry.html#ch-stoich">化學計量</a></nav>
       <h1 data-en="The Mole and Avogadro's Number">莫耳與亞佛加厥數</h1>
       <p data-en="Put two substances on a balance and convert between mass, amount (mol), number of particles and gas volume. One mole of copper, of water and of hydrogen weigh and fill very different amounts — yet they hold exactly the same number of particles. Zoom in, power of ten by power of ten, until single molecules appear, then estimate Avogadro's number yourself from a film of oleic acid one molecule thick.">把兩種物質放上天平，在質量、莫耳數、粒子數、氣體體積之間互相換算。1 莫耳的銅、水、氫氣，重量與大小差很多，粒子數卻一模一樣。再用放大鏡一次放大十倍，一直放大到看見單一個分子；最後用一層只有一個分子厚的油酸膜，自己估計亞佛加厥數。</p>
     </header>
@@ -359,17 +360,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/mole-concept-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/mole-concept-3d.js?v=202611151631"></script>
-  <script src="js/mole-concept.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="mole-concept"></script>
-  <script src="js/missions/mole-concept.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="mole-concept"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/mole-concept-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/mole-concept-3d.js?v=202611160631"></script>
+  <script src="js/mole-concept.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="mole-concept"></script>
+  <script src="js/missions/mole-concept.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="mole-concept"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

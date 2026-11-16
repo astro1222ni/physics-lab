@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Sorting Algorithms Compared | Astro Ni Lab">排序演算法比較｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"排序演算法比較","alternateName":"Sorting Algorithms Compared","description":"泡沫、選擇、插入、合併、快速五種排序，一步一步把同一份資料排好。數一數比較與交換的次數、和公式對照，讓五種一起賽跑，再看誰會打亂相同值的順序。","url":"https://lab.astroni.org/sorting.html","image":"https://lab.astroni.org/img/og/sorting.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","排序（Sorting）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"排序演算法比較","alternateName":"Sorting Algorithms Compared","description":"泡沫、選擇、插入、合併、快速五種排序，一步一步把同一份資料排好。數一數比較與交換的次數、和公式對照，讓五種一起賽跑，再看誰會打亂相同值的順序。","url":"https://lab.astroni.org/sorting.html","image":"https://lab.astroni.org/img/og/sorting.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","排序（Sorting）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"資訊科技","url":"https://lab.astroni.org/information-technology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"演算法","item":"https://lab.astroni.org/information-technology.html#algo"},{"@type":"ListItem","position":4,"name":"排序","item":"https://lab.astroni.org/information-technology.html#ch-sorting"},{"@type":"ListItem","position":5,"name":"排序演算法比較","item":"https://lab.astroni.org/sorting.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 排序頁面專用的顏色代號（淺色＋兩組深色；由 js/sorting.js 讀取）
        狀態：一般長條、比較中、交換中、已就位、樞紐、寫回（合併）、暫存區；演算法：泡沫、選擇、插入、合併、快速 */
@@ -111,7 +112,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Sorting"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 排序</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;information-technology.html&quot;&gt;Information Technology&lt;/a&gt; / &lt;a href=&quot;information-technology.html#algo&quot;&gt;Algorithms&lt;/a&gt; / &lt;a href=&quot;information-technology.html#ch-sorting&quot;&gt;Sorting&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="information-technology.html">資訊科技</a> / <a href="information-technology.html#algo">演算法</a> / <a href="information-technology.html#ch-sorting">排序</a></nav>
       <h1 data-en="Sorting Algorithms Compared">排序演算法比較</h1>
       <p data-en="Five ways to put the same list in order: bubble, selection, insertion, merge and quick sort. Step through each one, watch the bars move, and count how many comparisons and swaps it makes — then check the counts against the textbook formulas. Race all five on the same data to see how the shape of the data decides who wins, and which of them shuffle equal values out of their original order.">同一份資料，五種排序各有各的做法：泡沫、選擇、插入、合併、快速。一步一步看長條怎麼移動，數一數每種演算法比較了幾次、交換了幾次，再對照課本的公式；讓五種一起賽跑，看資料的樣子怎麼決定誰快誰慢，以及誰會打亂相同值的原本順序。</p>
     </header>
@@ -298,17 +299,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/sorting-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/sorting.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="sorting"></script>
-  <script src="js/missions/sorting.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="sorting"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/sorting-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/sorting.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="sorting"></script>
+  <script src="js/missions/sorting.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="sorting"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

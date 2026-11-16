@@ -1,5 +1,5 @@
 /*
- * apply-directory.cjs — 把各科的「目錄」（分支 → 章 → 實驗）套到首頁 index.html
+ * apply-directory.cjs — 把各科的「目錄」（分支 → 章 → 實驗）套到自己的科目頁
  *
  * 目錄檔：docs/directory/<科目>.json（phy、chem、bio、earth、math），格式見 docs/directory/README.md。
  * 目錄裡列的是「已上線＋規劃中」的全部實驗；首頁只顯示已上線的卡片，其餘的章顯示「製作中」。
@@ -39,7 +39,9 @@ W.LAB_SUBJECTS.forEach(s => { SUBJ[s.id] = s; });
 const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escText = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-let html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const HD = require('./home-data.cjs');
+const subjectPages = W.LAB_SUBJECTS.filter(s => fs.existsSync(path.join(ROOT, s.page + '.html')));
+let html = subjectPages.map(s => fs.readFileSync(path.join(ROOT, s.page + '.html'), 'utf8')).join('\n');
 const errors = [];
 const notes = [];
 
@@ -59,6 +61,7 @@ function branchBlock(src, id) {
 const liveWhere = {}; // 模組 → { branch, chapter }
 Object.keys(W.LAB_MODULE_BRANCH).length; // 只用來確認載入成功
 for (const s of W.LAB_SUBJECTS) for (const b of s.branches) {
+  if (!subjectPages.some(p => p.id === s.id)) continue;
   const blk = branchBlock(html, b);
   // 新科（newSubject）還沒放上首頁時沒有分支區塊，略過；放上首頁以後照樣檢查
   if (!blk) { if (!(s.newSubject && !html.includes('<section class="domain" id="' + s.id + '"'))) errors.push('首頁找不到分支 ' + b + ' 的區塊（或結構和預期不同）'); continue; }
@@ -76,7 +79,7 @@ for (const s of W.LAB_SUBJECTS) for (const b of s.branches) {
 
 const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter(f => /^[a-z]+\.json$/.test(f)) : [];
 const dirs = files.map(f => ({ f: f, d: JSON.parse(fs.readFileSync(path.join(DIR, f), 'utf8')) }))
-  .filter(x => !only.length || only.includes(x.d.subject));
+  .filter(x => (!only.length || only.includes(x.d.subject)) && subjectPages.some(s => s.id === x.d.subject));
 if (!dirs.length) { console.log('沒有要套用的目錄檔（' + path.relative(ROOT, DIR) + '）'); process.exit(0); }
 
 // 全站檢查：章 id、模組不可重複
@@ -138,7 +141,7 @@ for (const { d } of dirs) {
       for (const c of b.chapters) {
         const live = (c.modules || []).filter(mo => liveWhere[mo]);
         if (live.length) nav += '        <a href="#' + c.id + '" data-en="' + esc(c.en) + '">' + escText(c.zh) + '</a>\n';
-        else { nav += '        <span class="soon" title="實驗製作中" data-en-title="Experiments coming soon" data-en="' + esc(c.en) + '">' + escText(c.zh) + '</span>\n'; soonCh++; }
+        else { nav += '        <span class="soon" id="' + c.id + '" title="實驗製作中" data-en-title="Experiments coming soon" data-en="' + esc(c.en) + '">' + escText(c.zh) + '</span>\n'; soonCh++; }
       }
       nav += '      </nav>\n';
     }
@@ -169,5 +172,9 @@ for (const { d } of dirs) {
 notes.forEach(n => console.log('  ' + n));
 if (!changed) { console.log('✓ 首頁已經和目錄一致'); process.exit(0); }
 if (CHECK) { console.log('有 ' + changed + ' 個分支和目錄不一致（--check 不寫檔）'); process.exit(1); }
-fs.writeFileSync(path.join(ROOT, 'index.html'), html);
-console.log('✓ 已依目錄更新首頁 ' + changed + ' 個分支（接著跑 npm run seo、python tools/stamp.py）');
+for (const s of subjectPages) {
+  const f = path.join(ROOT, s.page + '.html'), old = fs.readFileSync(f, 'utf8');
+  const next = old.replace(HD.section(old, s.dom), HD.section(html, s.dom));
+  if (next !== old) fs.writeFileSync(f, next);
+}
+console.log('✓ 已依目錄更新科目頁 ' + changed + ' 個分支（接著跑 npm run seo）');

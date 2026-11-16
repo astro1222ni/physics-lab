@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Tracing Code: Variables, Branches and Loops | Astro Ni Lab">程式追蹤：變數、選擇與迴圈｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"程式追蹤：變數、選擇與迴圈","alternateName":"Tracing Code: Variables, Branches and Loops","description":"像電腦一樣一行一行執行程式：看每個變數怎麼改變、每個條件是真是假、迴圈跑了幾圈。先猜輸出再驗證，還能對照 C 與 Python 的寫法。","url":"https://lab.astroni.org/code-tracing.html","image":"https://lab.astroni.org/img/og/code-tracing.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["程式設計（Programming）","程式的流程（Control Flow）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"程式追蹤：變數、選擇與迴圈","alternateName":"Tracing Code: Variables, Branches and Loops","description":"像電腦一樣一行一行執行程式：看每個變數怎麼改變、每個條件是真是假、迴圈跑了幾圈。先猜輸出再驗證，還能對照 C 與 Python 的寫法。","url":"https://lab.astroni.org/code-tracing.html","image":"https://lab.astroni.org/img/og/code-tracing.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["程式設計（Programming）","程式的流程（Control Flow）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"資訊科技","url":"https://lab.astroni.org/information-technology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"程式設計","item":"https://lab.astroni.org/information-technology.html#prog"},{"@type":"ListItem","position":4,"name":"程式的流程","item":"https://lab.astroni.org/information-technology.html#ch-control"},{"@type":"ListItem","position":5,"name":"程式追蹤：變數、選擇與迴圈","item":"https://lab.astroni.org/code-tracing.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 程式追蹤頁面專用的顏色代號（淺色＋兩組深色；由 js/code-tracing.js 讀取） */
     :root { --ct-num-ink: #92400e; --ct-kw: #8b3fd9; --ct-ty: #0e7490; --ct-num: #b45309; --ct-str: #15803d; --ct-fn: #1d4ed8; --ct-com: #7d8a8e; --ct-esc: #c2410c;
@@ -149,7 +150,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#prog&quot;>Information Technology · Programming</a> / Tracing code"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#prog">資訊科技・程式設計</a> ／ 程式追蹤</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;information-technology.html&quot;&gt;Information Technology&lt;/a&gt; / &lt;a href=&quot;information-technology.html#prog&quot;&gt;Programming&lt;/a&gt; / &lt;a href=&quot;information-technology.html#ch-control&quot;&gt;Control Flow&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="information-technology.html">資訊科技</a> / <a href="information-technology.html#prog">程式設計</a> / <a href="information-technology.html#ch-control">程式的流程</a></nav>
       <h1 data-en="Tracing Code: Variables, Branches and Loops">程式追蹤：變數、選擇與迴圈</h1>
       <p data-en="Read a program the way a computer runs it: one line at a time, keeping track of every variable. Pick one of 22 short programs, change the marked numbers, predict what it will print, then step through it — the current line lights up, the boxes that change flash, and every condition shows whether it came out true or false. The same program is also shown in Python, with the places where the two languages disagree marked.">像電腦一樣讀程式：一次一行，記住每一個變數現在是多少。從 22 支小程式裡挑一支，改改標出來的數字，先預測它會印出什麼，再一步一步執行——目前這一行會亮起來、改變的格子會閃一下、每個條件都告訴你是真是假。同一支程式也可以換成 Python 的寫法，兩種語言結果不同的地方會標出來。</p>
     </header>
@@ -319,17 +320,17 @@ A → B → S → C → B → S → C → … → B（false）</pre>
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/code-tracing-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/code-tracing.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="code-tracing"></script>
-  <script src="js/missions/code-tracing.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="code-tracing"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/code-tracing-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/code-tracing.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="code-tracing"></script>
+  <script src="js/missions/code-tracing.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="code-tracing"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

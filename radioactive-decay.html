@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Radioactive Decay and Half-Life | Astro Ni Lab">放射性衰變與半衰期｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"放射性衰變與半衰期","alternateName":"Radioactive Decay and Half-Life","description":"成千上萬個原子核隨機衰變，看出指數衰減、半衰期與活度；比較真實核種、衰變鏈的暫態平衡，還能聽蓋革計數器、擲骰子比喻。","url":"https://lab.astroni.org/radioactive-decay.html","image":"https://lab.astroni.org/img/og/radioactive-decay.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["近代物理（Modern Physics）","原子核（The Atomic Nucleus）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"放射性衰變與半衰期","alternateName":"Radioactive Decay and Half-Life","description":"成千上萬個原子核隨機衰變，看出指數衰減、半衰期與活度；比較真實核種、衰變鏈的暫態平衡，還能聽蓋革計數器、擲骰子比喻。","url":"https://lab.astroni.org/radioactive-decay.html","image":"https://lab.astroni.org/img/og/radioactive-decay.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["近代物理（Modern Physics）","原子核（The Atomic Nucleus）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"近代物理","item":"https://lab.astroni.org/physics.html#modern"},{"@type":"ListItem","position":4,"name":"原子核","item":"https://lab.astroni.org/physics.html#ch-nuclear"},{"@type":"ListItem","position":5,"name":"放射性衰變與半衰期","item":"https://lab.astroni.org/radioactive-decay.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 放射性衰變頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     /* 畫布高度由程式依寬度決定（原子核方陣＋N(t) 圖＋活度圖）；畫布沒有拖曳操作，手機可在上面捲動頁面 */
@@ -72,7 +73,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#modern&quot;>Modern Physics</a> / Nuclear physics"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#modern">近代物理</a> ／ 原子核</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#modern&quot;&gt;Modern Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-nuclear&quot;&gt;The Atomic Nucleus&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#modern">近代物理</a> / <a href="physics.html#ch-nuclear">原子核</a></nav>
       <h1 data-en="Radioactive Decay and Half-Life">放射性衰變與半衰期</h1>
       <p data-en="Every radioactive nucleus decays at random: nobody can say when a particular nucleus will decay, yet every nucleus has the same 1/2 chance of decaying within one half-life, so in that time the expected number left is halved — and the larger the group, the closer the count comes to exactly half. Watch thousands of nuclei decay, compare the count with the exponential law, listen to the Geiger counter, try real isotopes, a decay chain, and a table full of dice.">每個放射性原子核都是隨機衰變的：沒有人能預測某一個原子核何時衰變，但每個原子核在一段固定時間內衰變的機率都是 1/2，這段時間就是半衰期：每經過一個半衰期，剩下數量的期望值減半；原子核越多，實際剩下的越接近一半。觀察成千上萬個原子核衰變，比較數量與指數衰減的理論，聽聽蓋革計數器的聲音，再試試真實核種、衰變鏈，以及一桌子的骰子。</p>
     </header>
@@ -267,16 +268,16 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/radioactive-decay-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/radioactive-decay.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="radioactive-decay"></script>
-  <script src="js/missions/radioactive-decay.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="radioactive-decay"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/radioactive-decay-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/radioactive-decay.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="radioactive-decay"></script>
+  <script src="js/missions/radioactive-decay.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="radioactive-decay"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

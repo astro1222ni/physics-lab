@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Graph Traversal: DFS and BFS in a Maze | Astro Ni Lab">圖的走訪：DFS 與 BFS 走迷宮｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"圖的走訪：DFS 與 BFS 走迷宮","alternateName":"Graph Traversal: DFS and BFS in a Maze","description":"迷宮就是一張圖。讓深度優先搜尋和廣度優先搜尋在同一座迷宮並排賽跑：看堆疊怎麼一路疊高、佇列怎麼一圈一圈往外擴，比一比誰拜訪的格子多、誰的路比較短；也能自己畫牆，或切到一般圖對照鄰接串列與鄰接矩陣。","url":"https://lab.astroni.org/graph-traversal.html","image":"https://lab.astroni.org/img/og/graph-traversal.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","圖與最短路徑（Graphs and Shortest Paths）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"圖的走訪：DFS 與 BFS 走迷宮","alternateName":"Graph Traversal: DFS and BFS in a Maze","description":"迷宮就是一張圖。讓深度優先搜尋和廣度優先搜尋在同一座迷宮並排賽跑：看堆疊怎麼一路疊高、佇列怎麼一圈一圈往外擴，比一比誰拜訪的格子多、誰的路比較短；也能自己畫牆，或切到一般圖對照鄰接串列與鄰接矩陣。","url":"https://lab.astroni.org/graph-traversal.html","image":"https://lab.astroni.org/img/og/graph-traversal.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","圖與最短路徑（Graphs and Shortest Paths）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"資訊科技","url":"https://lab.astroni.org/information-technology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"演算法","item":"https://lab.astroni.org/information-technology.html#algo"},{"@type":"ListItem","position":4,"name":"圖與最短路徑","item":"https://lab.astroni.org/information-technology.html#ch-graph"},{"@type":"ListItem","position":5,"name":"圖的走訪：DFS 與 BFS 走迷宮","item":"https://lab.astroni.org/graph-traversal.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 圖的走訪頁面專用的顏色代號（淺色＋兩組深色；由 js/graph-traversal.js 讀取） */
     :root { --gt-dfs: #e8730c; --gt-dfs-deep: #b4490a; --gt-bfs: #2f6fd6; --gt-bfs-deep: #1d4aa8; --gt-path: #c0267a; --gt-wall: #4b5a6e; --gt-floor-a: #f3f5f7; --gt-floor-b: #e6eaef; --gt-start: #0f8f63; --gt-goal: #e0a800; --gt-edge: #9aa6b6; --gt-node: #a3adbb; }
@@ -138,7 +139,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Graph traversal"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 圖的走訪</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;information-technology.html&quot;&gt;Information Technology&lt;/a&gt; / &lt;a href=&quot;information-technology.html#algo&quot;&gt;Algorithms&lt;/a&gt; / &lt;a href=&quot;information-technology.html#ch-graph&quot;&gt;Graphs and Shortest Paths&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="information-technology.html">資訊科技</a> / <a href="information-technology.html#algo">演算法</a> / <a href="information-technology.html#ch-graph">圖與最短路徑</a></nav>
       <h1 data-en="Graph Traversal: DFS and BFS in a Maze">圖的走訪：DFS 與 BFS 走迷宮</h1>
       <p data-en="A maze is a graph: every square is a vertex, and two neighbouring squares with no wall between them are joined by an edge. Depth-first search (DFS) uses a stack: it follows one path as far as it can and backs up only at a dead end. Breadth-first search (BFS) uses a queue: it spreads out ring by ring, like a ripple. Race them side by side in the same maze and watch the stack and the queue grow: how many squares does each visit, and are the paths they find equally long? Draw your own walls, change the neighbour order, or switch to a general graph and compare its adjacency list with its adjacency matrix.">迷宮就是一張圖：每一格是一個點，相鄰兩格之間沒有牆就是一條邊。深度優先搜尋（DFS）用堆疊，一條路走到底，碰壁才退回；廣度優先搜尋（BFS）用佇列，像水波一樣一圈一圈往外擴。讓兩者在同一座迷宮裡並排賽跑，看堆疊和佇列怎麼長：各拜訪了幾格？找到的路一樣長嗎？也可以自己畫牆、換鄰居順序，或切到一般圖，對照鄰接串列與鄰接矩陣。</p>
     </header>
@@ -328,17 +329,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/graph-traversal-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/graph-traversal.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="graph-traversal"></script>
-  <script src="js/missions/graph-traversal.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="graph-traversal"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/graph-traversal-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/graph-traversal.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="graph-traversal"></script>
+  <script src="js/missions/graph-traversal.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="graph-traversal"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

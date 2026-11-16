@@ -8,7 +8,7 @@ import pathlib, re, sys, time
 root = pathlib.Path(__file__).resolve().parent.parent
 ver = time.strftime('%Y%m%d%H%M')
 # js/ 底下的子資料夾（例如 js/missions/）也要加，任務說明改了才不會讀到舊快取
-pat = re.compile(r'((?:href|src)="(?:lab\.css|js/(?:[\w-]+/)*[\w.-]+\.js))(?:\?v=\w+)?"')
+pat = re.compile(r'((?:href|src)="(?:lab\.css|js/(?:[\w-]+/)*[\w.-]+\.js))(?:\?v=[\w-]+)?"')
 only = [a for a in sys.argv[1:] if a.endswith('.html')]
 files = [root / a for a in only] if only else sorted(root.glob('*.html'))
 for f in files:

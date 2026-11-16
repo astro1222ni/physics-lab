@@ -12,7 +12,7 @@
 
 ## General requirements
 - Physics core DOM-free (UMD like the others), analytic/exact where possible; Node tests (Traditional Chinese names) against analytic results, limits and conservation laws; all must pass.
-- Page: crumbs (index.html#<branch> / branch / topic), intro, controls, readouts with units, notes with KaTeX formulas + 觀察重點 + 模擬方法, footer.
+- Page: crumbs (Home / subject page / subject page#<branch> / chapter), intro, controls, readouts with units, notes with KaTeX formulas + 觀察重點 + 模擬方法, footer. The lead puts the lab card on its subject page and runs tools/fix-crumbs.cjs.
 - Full English (data-en*, T(zh,en) for all JS/canvas strings, <body data-en-ready>); zh-Hans automatic.
 - numinput: every slider value clickable/typeable via js/numinput.js, LabNum.value everywhere, sensible data-decimals, LabNum.register for non-linear sliders, LabNum.set/clear for presets.
 - Sound where it teaches something (#soundBtn toggle, off by default, ≥ 250 Hz main energy); 全部清除 button if anything accumulates.

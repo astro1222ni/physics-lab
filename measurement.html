@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Measurement and Uncertainty: Vernier Caliper and Micrometer | Astro Ni Lab">測量與不確定度（游標尺與螺旋測微器）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"測量與不確定度（游標尺與螺旋測微器）","alternateName":"Measurement and Uncertainty: Vernier Caliper and Micrometer","description":"用游標尺夾圓棒、量圓管內徑與孔深，找出對齊的副尺刻線；轉螺旋測微器估讀到 0.001 mm；再反覆測量，算平均與不確定度，分清精密和準確。","url":"https://lab.astroni.org/measurement.html","image":"https://lab.astroni.org/img/og/measurement.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","測量與不確定度（Measurement and Uncertainty）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"測量與不確定度（游標尺與螺旋測微器）","alternateName":"Measurement and Uncertainty: Vernier Caliper and Micrometer","description":"用游標尺夾圓棒、量圓管內徑與孔深，找出對齊的副尺刻線；轉螺旋測微器估讀到 0.001 mm；再反覆測量，算平均與不確定度，分清精密和準確。","url":"https://lab.astroni.org/measurement.html","image":"https://lab.astroni.org/img/og/measurement.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["力學（Mechanics）","測量與不確定度（Measurement and Uncertainty）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"力學","item":"https://lab.astroni.org/physics.html#mech"},{"@type":"ListItem","position":4,"name":"測量與不確定度","item":"https://lab.astroni.org/physics.html#ch-measurement"},{"@type":"ListItem","position":5,"name":"測量與不確定度（游標尺與螺旋測微器）","item":"https://lab.astroni.org/measurement.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 測量與不確定度頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .ms canvas { aspect-ratio: auto; cursor: default; }
@@ -132,7 +133,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#mech&quot;>Mechanics</a> / Measurement and uncertainty"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#mech">力學</a> ／ 測量與不確定度</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#mech&quot;&gt;Mechanics&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-measurement&quot;&gt;Measurement and Uncertainty&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#mech">力學</a> / <a href="physics.html#ch-measurement">測量與不確定度</a></nav>
       <h1 data-en="Measurement and Uncertainty: Vernier Caliper and Micrometer">測量與不確定度（游標尺與螺旋測微器）</h1>
       <p data-en="Learn to really read two precision instruments. Slide the vernier caliper onto a rod, into a tube or down a hole, find the vernier line that lines up and type in your reading; turn the micrometer onto a wire or a thin sheet and estimate to 0.001 mm. Switch on zero error to practise correcting a systematic error. Then measure the same rod again and again: watch the histogram grow, work out the mean, the standard deviation and the uncertainty, and see what “precise” and “accurate” really mean.">真正學會讀兩種精密量具：把游標尺夾住圓棒、伸進圓管、插進孔裡，找出對齊的副尺刻線，自己輸入讀數；轉動螺旋測微器夾住細線或薄片，估讀到 0.001 mm。打開「零點誤差」，練習修正系統誤差。再對同一根圓棒反覆測量，看直方圖長出來，算出平均值、標準差與不確定度，分清楚「精密」和「準確」。</p>
     </header>
@@ -378,17 +379,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/measurement-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/measurement.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="measurement"></script>
-  <script src="js/missions/measurement.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="measurement"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/measurement-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/measurement.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="measurement"></script>
+  <script src="js/missions/measurement.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="measurement"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Quadratic Functions: Vertex, Discriminant and Completing the Square | Astro Ni Lab">二次函數：頂點、判別式與配方｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"二次函數：頂點、判別式與配方","alternateName":"Quadratic Functions: Vertex, Discriminant and Completing the Square","description":"拖曳頂點看兩種式子一起變，用判別式數出根與切線，再用真的面積拼塊把正方形補完整。","url":"https://lab.astroni.org/quadratic-function.html","image":"https://lab.astroni.org/img/og/quadratic-function.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","二次函數（Quadratic Functions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"二次函數：頂點、判別式與配方","alternateName":"Quadratic Functions: Vertex, Discriminant and Completing the Square","description":"拖曳頂點看兩種式子一起變，用判別式數出根與切線，再用真的面積拼塊把正方形補完整。","url":"https://lab.astroni.org/quadratic-function.html","image":"https://lab.astroni.org/img/og/quadratic-function.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","二次函數（Quadratic Functions）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"數學","url":"https://lab.astroni.org/mathematics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":3,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":4,"name":"二次函數","item":"https://lab.astroni.org/mathematics.html#ch-quadratic"},{"@type":"ListItem","position":5,"name":"二次函數：頂點、判別式與配方","item":"https://lab.astroni.org/quadratic-function.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 二次函數頁面專用的顏色代號（淺色＋深色；由 js/quadratic-function.js 讀取） */
     :root { --qf-curve: #2563eb; --qf-vtx: #7c3aed; --qf-root: #db2777; --qf-axis: #0d9488; --qf-line: #ea580c; --qf-max: #dc2626; --qf-min: #0284c7; --qf-sq: #2563eb; --qf-rect: #ea580c; --qf-corner: #16a34a; --qf-target: #475569; --qf-bad: #dc2626; --qf-ok: #0d9488; }
@@ -91,7 +92,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Quadratic Functions"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 二次函數</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;mathematics.html&quot;&gt;Mathematics&lt;/a&gt; / &lt;a href=&quot;mathematics.html#algebra&quot;&gt;Algebra and Functions&lt;/a&gt; / &lt;a href=&quot;mathematics.html#ch-quadratic&quot;&gt;Quadratic Functions&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="mathematics.html">數學</a> / <a href="mathematics.html#algebra">代數與函數</a> / <a href="mathematics.html#ch-quadratic">二次函數</a></nav>
       <h1 data-en="Quadratic Functions: Vertex, Discriminant and Completing the Square">二次函數：頂點、判別式與配方</h1>
       <p data-en-html="Drag the vertex of a parabola and watch y = ax<sup>2</sup> + bx + c and y = a(x − h)<sup>2</sup> + k change together. The discriminant tells how many times the graph meets the x-axis — or a straight line. Then build x<sup>2</sup> + px out of a square and two rectangles, and fill in the missing corner: that corner is what “completing the square” completes.">拖曳拋物線的頂點，看 y = ax<sup>2</sup> + bx + c 和 y = a(x − h)<sup>2</sup> + k 一起改變。判別式告訴你圖形和 x 軸——或一條直線——碰到幾次。再用一個正方形和兩個長方形拼出 x<sup>2</sup> + px，把缺的那一角補上：「配方」配的就是這一角。</p>
     </header>
@@ -277,17 +278,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/quadratic-function-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/quadratic-function.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="quadratic-function"></script>
-  <script src="js/missions/quadratic-function.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="quadratic-function"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/quadratic-function-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/quadratic-function.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="quadratic-function"></script>
+  <script src="js/missions/quadratic-function.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="quadratic-function"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

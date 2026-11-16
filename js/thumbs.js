@@ -199,9 +199,10 @@
     const t = document.documentElement.getAttribute('data-theme');
     return t ? t === 'dark' : !!(mq && mq.matches);
   }
-  function apply() {
+  function apply(root) {
+    if (!root || typeof root.querySelectorAll !== 'function') root = document;
     const theme = isDark() ? 'dark' : 'light';
-    document.querySelectorAll('img.module-thumb[data-thumb]').forEach(function (img) {
+    root.querySelectorAll('img.module-thumb[data-thumb]').forEach(function (img) {
       const s = img.getAttribute('data-thumb');
       if (!V[s]) { img.hidden = true; return; }
       const src = 'img/thumbs/' + s + '-' + L + '-' + theme + '.webp?v=' + V[s];

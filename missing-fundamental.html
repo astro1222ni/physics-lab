@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Missing Fundamental | Astro Ni Lab">缺基頻：聽到不存在的音｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"缺基頻：聽到不存在的音","alternateName":"The Missing Fundamental","description":"拿掉基頻，耳朵照樣聽到它——手機小喇叭、電話線、平移實驗，看週期與自相關怎麼決定音高。","url":"https://lab.astroni.org/missing-fundamental.html","image":"https://lab.astroni.org/img/og/missing-fundamental.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["樂音與聽覺（Musical Tone and Hearing）","音高與音色（Pitch and Timbre）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"缺基頻：聽到不存在的音","alternateName":"The Missing Fundamental","description":"拿掉基頻，耳朵照樣聽到它——手機小喇叭、電話線、平移實驗，看週期與自相關怎麼決定音高。","url":"https://lab.astroni.org/missing-fundamental.html","image":"https://lab.astroni.org/img/og/missing-fundamental.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["樂音與聽覺（Musical Tone and Hearing）","音高與音色（Pitch and Timbre）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"音樂","url":"https://lab.astroni.org/music.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"音樂","item":"https://lab.astroni.org/music.html"},{"@type":"ListItem","position":3,"name":"樂音與聽覺","item":"https://lab.astroni.org/music.html#tone"},{"@type":"ListItem","position":4,"name":"音高與音色","item":"https://lab.astroni.org/music.html#ch-pitch"},{"@type":"ListItem","position":5,"name":"缺基頻：聽到不存在的音","item":"https://lab.astroni.org/missing-fundamental.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 缺基頻頁面專用的顏色代號（淺色＋兩組深色；由 js/missing-fundamental.js 與 js/missing-fundamental-3d.js 讀取）
        bar 喇叭放出的成分、gone 被拿掉的成分、pitch 聽到的音高（不存在的那個音）、wave 合成波形、full 完整音（A）、acf 自相關、filt 濾波器、band 週期色帶 */
@@ -126,7 +127,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#tone&quot;>Music · Musical Tone and Hearing</a> / Pitch and timbre"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#tone">音樂・樂音與聽覺</a> ／ 音高與音色</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;music.html&quot;&gt;Music&lt;/a&gt; / &lt;a href=&quot;music.html#tone&quot;&gt;Musical Tone and Hearing&lt;/a&gt; / &lt;a href=&quot;music.html#ch-pitch&quot;&gt;Pitch and Timbre&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="music.html">音樂</a> / <a href="music.html#tone">樂音與聽覺</a> / <a href="music.html#ch-pitch">音高與音色</a></nav>
       <h1 data-en="The Missing Fundamental">缺基頻：聽到不存在的音</h1>
       <p data-en-html="A phone’s tiny speaker can hardly move any air below about 200 Hz, yet you can still follow the bass line of a song on it. On the telephone a man’s voice has its fundamental cut away, yet you still know how high he is speaking. Take the lowest harmonic out of a note — or the lowest three — and the ear keeps hearing the <strong>same pitch</strong>, at a frequency the speaker is not playing at all. The reason is the <strong>period</strong>: the harmonics that remain still line up every \(1/f_0\) seconds, and the pitch follows that repetition, which is the greatest common divisor of the frequencies. Switch harmonics on and off, put the sound through a phone speaker or a telephone line, shift every component by the same amount, and watch the waveform and its autocorrelation keep the beat.">手機的小喇叭幾乎推不動 200 Hz 以下的空氣，我們卻仍然聽得出歌裡的貝斯在彈哪個音；電話把男生聲音的基頻切掉了，我們照樣知道他說話多低。把一個音最低的泛音拿掉——甚至拿掉最低的三根——耳朵聽到的仍然是<strong>同一個音高</strong>，而喇叭根本沒有放出那個頻率。祕密在<strong>週期</strong>：剩下的泛音每隔 \(1/f_0\) 秒仍然會對齊一次，音高跟著這個重複走，也就是各頻率的最大公因數。在這裡一根一根開關泛音、讓聲音經過手機小喇叭或電話線、把所有成分一起平移，看波形和自相關怎麼守住節拍。</p>
     </header>
@@ -298,18 +299,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/music-theory.js?v=202611151631"></script>
-  <script src="js/missing-fundamental-core.js?v=202611151631"></script>
-  <script src="js/music-audio.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/missing-fundamental.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="missing-fundamental"></script>
-  <script src="js/missions/missing-fundamental.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="missing-fundamental"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/music-theory.js?v=202611160631"></script>
+  <script src="js/missing-fundamental-core.js?v=202611160631"></script>
+  <script src="js/music-audio.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/missing-fundamental.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="missing-fundamental"></script>
+  <script src="js/missions/missing-fundamental.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="missing-fundamental"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

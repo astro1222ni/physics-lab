@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Exponents and Logarithms: Compound Interest, e and Log Scales | Astro Ni Lab">指數與對數：複利、e 與對數尺度｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"指數與對數：複利、e 與對數尺度","alternateName":"Exponents and Logarithms: Compound Interest, e and Log Scales","description":"把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。","url":"https://lab.astroni.org/exp-log.html","image":"https://lab.astroni.org/img/og/exp-log.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","指數與對數（Exponents and Logarithms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"指數與對數：複利、e 與對數尺度","alternateName":"Exponents and Logarithms: Compound Interest, e and Log Scales","description":"把錢複利得越來越頻繁，看總額逼近由 e 決定的上限；把指數曲線對 y = x 鏡射得到對數，找出兩條曲線剛好相切的底數；再把成長與衰變畫在對數刻度上拉成直線。","url":"https://lab.astroni.org/exp-log.html","image":"https://lab.astroni.org/img/og/exp-log.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["代數與函數（Algebra and Functions）","指數與對數（Exponents and Logarithms）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"數學","url":"https://lab.astroni.org/mathematics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"數學","item":"https://lab.astroni.org/mathematics.html"},{"@type":"ListItem","position":3,"name":"代數與函數","item":"https://lab.astroni.org/mathematics.html#algebra"},{"@type":"ListItem","position":4,"name":"指數與對數","item":"https://lab.astroni.org/mathematics.html#ch-explog"},{"@type":"ListItem","position":5,"name":"指數與對數：複利、e 與對數尺度","item":"https://lab.astroni.org/exp-log.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 指數與對數頁面專用的顏色代號（淺色＋深色；由 js/exp-log.js 讀取） */
     :root { --el-exp: #c2410c; --el-log: #1d4ed8; --el-cont: #7c3aed; --el-simple: #64748b; --el-coin: #b7791f; --el-data: #0f766e; --el-res: #be185d; }
@@ -84,7 +85,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algebra&quot;>Mathematics · Algebra and Functions</a> / Exponents and logarithms"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algebra">數學・代數與函數</a> ／ 指數與對數</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;mathematics.html&quot;&gt;Mathematics&lt;/a&gt; / &lt;a href=&quot;mathematics.html#algebra&quot;&gt;Algebra and Functions&lt;/a&gt; / &lt;a href=&quot;mathematics.html#ch-explog&quot;&gt;Exponents and Logarithms&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="mathematics.html">數學</a> / <a href="mathematics.html#algebra">代數與函數</a> / <a href="mathematics.html#ch-explog">指數與對數</a></nav>
       <h1 data-en="Exponents and Logarithms: Compound Interest, e and Log Scales">指數與對數：複利、e 與對數尺度</h1>
       <p data-en-html="Compound your money more and more often and watch the total creep up to a ceiling set by the number e. Reflect the curve y = a<sup>x</sup> in the line y = x to get its inverse, the logarithm, and find the one base for which the two curves just touch. Then put exponential data on a logarithmic axis, where growth and decay turn into straight lines you can fit by eye.">把錢複利得越來越頻繁，總額會慢慢逼近一個由 e 決定的上限。把曲線 y = a<sup>x</sup> 對直線 y = x 鏡射，就得到它的反函數——對數；找出讓兩條曲線剛好相切的那個底數。最後把指數成長或衰變的資料畫在對數刻度上，曲線變成直線，用眼睛就能擬合。</p>
     </header>
@@ -260,17 +261,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/exp-log-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/exp-log.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="exp-log"></script>
-  <script src="js/missions/exp-log.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="exp-log"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/exp-log-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/exp-log.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="exp-log"></script>
+  <script src="js/missions/exp-log.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="exp-log"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

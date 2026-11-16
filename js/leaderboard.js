@@ -296,6 +296,7 @@
           if (!sc) { delete myRank.all; return; }
           return api.countAbove(sc.stars).then(function (n) {
             myRank.all = n + 1;
+            try { localStorage.setItem('labRank:' + st.user.uid, JSON.stringify({ rank: n + 1, at: Date.now() })); } catch (e) { /* 無法保存時首頁顯示名次連結 */ }
             if (window.LabAchievements) {
               // 排行榜成就：進入前 10 名時才數排行榜總人數（門檻要求至少 100、1,000 人）
               const size = n < 10 ? api.countAbove(0) : Promise.resolve(t === 'all' ? top.length : 0);

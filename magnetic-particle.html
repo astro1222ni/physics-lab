@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Charged Particles in a Magnetic Field | Astro Ni Lab">帶電粒子在磁場中運動｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"帶電粒子在磁場中運動","alternateName":"Charged Particles in a Magnetic Field","description":"調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。","url":"https://lab.astroni.org/magnetic-particle.html","image":"https://lab.astroni.org/img/og/magnetic-particle.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"帶電粒子在磁場中運動","alternateName":"Charged Particles in a Magnetic Field","description":"調整電荷、質量、速度與磁場，顯示圓周半徑、週期與勞侖茲力。","url":"https://lab.astroni.org/magnetic-particle.html","image":"https://lab.astroni.org/img/og/magnetic-particle.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["電磁學（Electromagnetism）","電流的磁效應（Magnetic Effects of Currents）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"物理","url":"https://lab.astroni.org/physics.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"物理","item":"https://lab.astroni.org/physics.html"},{"@type":"ListItem","position":3,"name":"電磁學","item":"https://lab.astroni.org/physics.html#em"},{"@type":"ListItem","position":4,"name":"電流的磁效應","item":"https://lab.astroni.org/physics.html#ch-magnetism"},{"@type":"ListItem","position":5,"name":"帶電粒子在磁場中運動","item":"https://lab.astroni.org/magnetic-particle.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     .slider input[type="range"] { height: 28px; margin: 0; } /* 和其他實驗頁一致，手指好抓 */
     /* 2D 畫布的光影代號（本頁專用，淺色＋深色；由 js/magnetic-particle.js 讀取）：磁場符號圓盤的內側亮邊。
@@ -89,7 +90,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / Magnetic effects of currents"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#em">電磁學</a> ／ 電流的磁效應</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-magnetism&quot;&gt;Magnetic Effects of Currents&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#em">電磁學</a> / <a href="physics.html#ch-magnetism">電流的磁效應</a></nav>
       <h1 data-en="Charged Particles in a Magnetic Field">帶電粒子在磁場中運動</h1>
       <p data-en="Set the charge, mass, speed and magnetic field, then press “Launch” to watch the particle move in a circle — or, when v is not perpendicular to B, in a helix (switch to the 3D view). Add an electric field to build a velocity selector and see E×B drift. Click or drag on the 2D canvas to move the starting point.">調整電荷、質量、速度與磁場，按「發射」觀察粒子的圓周運動；速度與磁場不垂直時則是螺旋運動（可切換 3D 檢視）。再加上電場，做出速度選擇器與 E×B 漂移。點擊或拖曳 2D 畫布可改變出發點。</p>
     </header>
@@ -285,17 +286,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/magnetic-particle-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/magnetic-particle.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="magnetic-particle"></script>
-  <script src="js/missions/magnetic-particle.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="magnetic-particle"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/magnetic-particle-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/magnetic-particle.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="magnetic-particle"></script>
+  <script src="js/missions/magnetic-particle.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="magnetic-particle"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Stoichiometry and Limiting Reactants | Astro Ni Lab">化學計量與限量試劑｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,11 +24,12 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"化學計量與限量試劑","alternateName":"Stoichiometry and Limiting Reactants","description":"鎂帶與鹽酸反應，用排水集氣法收集氫氣。找出限量試劑與理論產量，扣除水的飽和蒸氣壓、對齊液面、讀彎月面，求氣體莫耳體積與鎂的原子量。","url":"https://lab.astroni.org/stoichiometry.html","image":"https://lab.astroni.org/img/og/stoichiometry.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["化學反應與能量（Reactions and Energy）","化學計量（Stoichiometry）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"化學計量與限量試劑","alternateName":"Stoichiometry and Limiting Reactants","description":"鎂帶與鹽酸反應，用排水集氣法收集氫氣。找出限量試劑與理論產量，扣除水的飽和蒸氣壓、對齊液面、讀彎月面，求氣體莫耳體積與鎂的原子量。","url":"https://lab.astroni.org/stoichiometry.html","image":"https://lab.astroni.org/img/og/stoichiometry.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["化學反應與能量（Reactions and Energy）","化學計量（Stoichiometry）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"化學","url":"https://lab.astroni.org/chemistry.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"化學","item":"https://lab.astroni.org/chemistry.html"},{"@type":"ListItem","position":3,"name":"化學反應與能量","item":"https://lab.astroni.org/chemistry.html#reaction"},{"@type":"ListItem","position":4,"name":"化學計量","item":"https://lab.astroni.org/chemistry.html#ch-stoich"},{"@type":"ListItem","position":5,"name":"化學計量與限量試劑","item":"https://lab.astroni.org/stoichiometry.html"}]}</script>
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 化學計量與限量試劑頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .st canvas { aspect-ratio: auto; touch-action: auto; }
@@ -96,7 +97,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Lab home&lt;/a&gt; / &lt;a href=&quot;index.html#reaction&quot;&gt;Chemistry · Reactions and Energy&lt;/a&gt; / Stoichiometry and Limiting Reactants"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#reaction">化學・化學反應與能量</a> ／ 化學計量與限量試劑</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;chemistry.html&quot;&gt;Chemistry&lt;/a&gt; / &lt;a href=&quot;chemistry.html#reaction&quot;&gt;Reactions and Energy&lt;/a&gt; / &lt;a href=&quot;chemistry.html#ch-stoich&quot;&gt;Stoichiometry&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="chemistry.html">化學</a> / <a href="chemistry.html#reaction">化學反應與能量</a> / <a href="chemistry.html#ch-stoich">化學計量</a></nav>
       <h1 data-en="Stoichiometry and Limiting Reactants">化學計量與限量試劑</h1>
       <p data-en-html="Drop a magnesium ribbon into hydrochloric acid and collect the hydrogen over water in an upside-down measuring cylinder: Mg + 2HCl → MgCl&lt;sub&gt;2&lt;/sub&gt; + H&lt;sub&gt;2&lt;/sub&gt;. Change the mass of magnesium, the amount of acid, the temperature and the air pressure. Which reactant runs out first? How much hydrogen do you get? Read the cylinder, subtract the vapour pressure of water (Dalton's law), convert to STP and find the molar volume of a gas — or the atomic mass of magnesium.">把鎂帶放進鹽酸，用倒立在水槽裡的量筒以排水集氣法收集氫氣：Mg + 2HCl → MgCl<sub>2</sub> + H<sub>2</sub>。改變鎂的質量、鹽酸的量、溫度與大氣壓，看誰先用完（限量試劑）、能產生多少氫氣。讀出量筒刻度，扣掉水的飽和蒸氣壓（道耳頓分壓定律），換算成標準狀況，求出氣體的莫耳體積或鎂的原子量。</p>
     </header>
@@ -275,17 +276,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/stoichiometry-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/stoichiometry.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="stoichiometry"></script>
-  <script src="js/missions/stoichiometry.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="stoichiometry"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/stoichiometry-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/stoichiometry.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="stoichiometry"></script>
+  <script src="js/missions/stoichiometry.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="stoichiometry"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>

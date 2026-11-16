@@ -39,11 +39,12 @@ const warn = (area, page, msg) => report.warnings.push({ area, page, msg });
 const w = {};
 new Function('window', fs.readFileSync(path.join(ROOT, 'js/missions/index.js'), 'utf8'))(w);
 const LIVE = w.LAB_LIVE_MODULES || [];
-const PAGES = only.length ? only : ['index', 'leaderboard', 'about'].concat(LIVE);
+const ENTRY = ['index', ...(w.LAB_SUBJECTS || []).map(s => s.page)];
+const PAGES = only.length ? only : ENTRY.concat(['leaderboard', 'about'], LIVE);
 
 function run(label, cmd, cmdArgs) {
   const t = Date.now();
-  const r = spawnSync(cmd, cmdArgs, { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20 });
+  const r = spawnSync(cmd, cmdArgs, { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20 });
   const ok = r.status === 0;
   report.steps[label] = { ok, sec: Math.round((Date.now() - t) / 1000) };
   console.log((ok ? '✓ ' : '✗ ') + label + '（' + report.steps[label].sec + ' 秒）');
@@ -77,7 +78,7 @@ if (!AUDIT) {
   for (const f of files) {
     const hv = hashOf(f);
     if (cache[f] === hv) { skipped++; continue; }
-    const r = spawnSync(process.execPath, [path.join(dir, f)], { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 600000 });
+    const r = spawnSync(process.execPath, [path.join(dir, f)], { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 600000 });
     if (r.status !== 0) {
       delete cache[f];
       const tail = (((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-3).join(' / ')).slice(0, 300);
@@ -96,18 +97,19 @@ if (!AUDIT) {
   const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
   const exists = f => fs.existsSync(path.join(ROOT, f));
   const index = read('index.html');
+  const subjectHTML = (w.LAB_SUBJECTS || []).map(s => read(s.page + '.html')).join('\n');
   const thumbs = exists('js/thumbs.js') ? read('js/thumbs.js') : '';
   const SUPS = /[⁰⁴-₟⃗]/;
   for (const s of LIVE) {
     for (const f of [s + '.html', 'js/' + s + '.js', 'js/missions/' + s + '.js']) if (!exists(f)) err('檔案', s + ' 缺少 ' + f);
-    if (!index.includes('data-module="' + s + '"')) err('首頁', s + ' 沒有首頁卡片');
-    if (!new RegExp('data-thumb="' + s + '"').test(index)) warn('首頁', s, '卡片沒有縮圖（npm run thumbs -- ' + s + '）');
+    if ((subjectHTML.match(new RegExp('data-module="' + s + '"', 'g')) || []).length !== 1) err('首頁', s + ' 的科目頁卡片不是恰好一張');
+    if (!new RegExp('data-thumb="' + s + '"').test(subjectHTML)) warn('首頁', s, '卡片沒有縮圖（npm run thumbs -- ' + s + '）');
     if (!new RegExp('["\']' + s + '["\']\\s*:').test(thumbs)) warn('首頁', s, '縮圖版本表沒有這個實驗（npm run thumbs -- ' + s + '）');
     if (!fs.readdirSync(path.join(ROOT, 'tools/mission-proofs')).some(f => f.startsWith(s + '.') || f.startsWith(s + '-'))) warn('任務', s, '沒有任務證明腳本 tools/mission-proofs/');
     if (!(w.LAB_MISSION_MODULES || []).some(m => (m.id || m) === s)) warn('任務', s, '不在 LAB_MISSION_MODULES');
     if (!(w.LAB_MODULE_BRANCH || {})[s]) err('任務', s + ' 不在 LAB_MODULE_BRANCH');
   }
-  for (const p of ['index', 'leaderboard', 'about'].concat(LIVE)) {
+  for (const p of ENTRY.concat(['leaderboard', 'about'], LIVE)) {
     const f = p + '.html';
     if (!exists(f)) continue;
     const h = read(f);
@@ -140,7 +142,7 @@ function playtest() {
   const pages = only.length ? only.filter(s => LIVE.includes(s)) : [];
   if (only.length && !pages.length) return; // 指定的頁面都不是實驗（例如只查首頁）
   const t = Date.now();
-  const r = spawnSync(process.execPath, [path.join(ROOT, 'tools/playtest.cjs'), '--changed', '--quiet'].concat(pages), { cwd: ROOT, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 4 * 3600 * 1000 });
+  const r = spawnSync(process.execPath, [path.join(ROOT, 'tools/playtest.cjs'), '--changed', '--quiet'].concat(pages), { cwd: ROOT, windowsHide: true, encoding: 'utf8', maxBuffer: 64 << 20, timeout: 4 * 3600 * 1000 });
   const sec = Math.round((Date.now() - t) / 1000);
   let rep = null;
   try { rep = JSON.parse(fs.readFileSync(path.join(ROOT, '.shots/playtest-report.json'), 'utf8')); } catch (e) { rep = null; }
@@ -175,10 +177,12 @@ function finish() {
   process.exit(report.errors.length ? 1 : 0);
 }
 
+run('科目導覽檢查', process.execPath, [path.join(ROOT, 'tools/fix-crumbs.cjs'), '--check']);
+run('科目目錄檢查', process.execPath, [path.join(ROOT, 'tools/apply-directory.cjs'), '--check']);
 if (QUICK) finish();
 else {
   // 4. 介面稽核（Playwright，390 px 淺色繁體）：觸控目標、文字對比、說明文字、頁面重量
-  const { launch } = require('./browser.cjs'); // Intel 內顯算畫面、低於標準優先權（減少 CPU 負擔）
+  const { launch } = require('G:/physics-lab/tools/browser.cjs');
   const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
     '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf' };
   let bytes = 0;
@@ -197,6 +201,7 @@ else {
     for (const slug of PAGES) {
       const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, colorScheme: 'light', hasTouch: true });
       await ctx.route(u => !u.href.startsWith(base), r => r.abort());
+      await ctx.addInitScript({ path: path.join(ROOT, 'tools/mock-backend.js') });
       await ctx.addInitScript(() => {
         localStorage.setItem('lab-settings', JSON.stringify({ lang: 'zh-Hant', theme: 'auto', fs: 1 }));
         localStorage.setItem('lab-welcome-v1', 'skip');

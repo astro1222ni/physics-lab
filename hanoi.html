@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611151631"></script>
+  <script src="js/settings.js?v=202611160631"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="The Tower of Hanoi | Astro Ni Lab">河內塔｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -24,10 +24,11 @@
   <meta property="og:locale:alternate" content="zh_CN">
   <meta property="og:locale:alternate" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"河內塔","alternateName":"The Tower of Hanoi","description":"一次搬一個盤、大盤不能壓小盤，把整疊搬到另一根柱子。在 3D 裡親手解，看遞迴一層一層展開，找出藏在步驟裡的尺和所有狀態圖裡的謝爾賓斯基三角形，再算算傳說中的 64 個盤子要搬多久。","url":"https://lab.astroni.org/hanoi.html","image":"https://lab.astroni.org/img/og/hanoi.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","遞迴（Recursion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"WebSite","name":"讓倪動手⚡高中全科模擬實驗室","alternateName":"Astro Ni Lab","url":"https://lab.astroni.org/"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"LearningResource","name":"河內塔","alternateName":"The Tower of Hanoi","description":"一次搬一個盤、大盤不能壓小盤，把整疊搬到另一根柱子。在 3D 裡親手解，看遞迴一層一層展開，找出藏在步驟裡的尺和所有狀態圖裡的謝爾賓斯基三角形，再算算傳說中的 64 個盤子要搬多久。","url":"https://lab.astroni.org/hanoi.html","image":"https://lab.astroni.org/img/og/hanoi.jpg","inLanguage":["zh-Hant","zh-Hans","en"],"learningResourceType":["Simulation","Interactive resource"],"educationalLevel":"High school","audience":{"@type":"EducationalAudience","educationalRole":["student","teacher"]},"about":["演算法（Algorithms）","遞迴（Recursion）"],"isAccessibleForFree":true,"interactivityType":"active","isPartOf":{"@type":"CollectionPage","name":"資訊科技","url":"https://lab.astroni.org/information-technology.html"},"author":{"@type":"Person","name":"Astro Ni"},"license":"https://creativecommons.org/licenses/by-nc/4.0/"}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"資訊科技","item":"https://lab.astroni.org/information-technology.html"},{"@type":"ListItem","position":3,"name":"演算法","item":"https://lab.astroni.org/information-technology.html#algo"},{"@type":"ListItem","position":4,"name":"遞迴","item":"https://lab.astroni.org/information-technology.html#ch-recursion"},{"@type":"ListItem","position":5,"name":"河內塔","item":"https://lab.astroni.org/hanoi.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611151631">
+  <link rel="stylesheet" href="lab.css?v=202611160631">
   <style>
     /* 河內塔頁面專用的顏色代號（淺色＋兩組深色；由 js/hanoi.js 與 js/hanoi-3d.js 讀取） */
     :root {
@@ -146,7 +147,7 @@
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
-      <nav class="crumbs" data-en-html="<a href=&quot;index.html&quot;>Lab home</a> / <a href=&quot;index.html#algo&quot;>Information Technology · Algorithms</a> / Tower of Hanoi"><a href="index.html">實驗室首頁</a> ／ <a href="index.html#algo">資訊科技・演算法</a> ／ 河內塔</nav>
+      <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;information-technology.html&quot;&gt;Information Technology&lt;/a&gt; / &lt;a href=&quot;information-technology.html#algo&quot;&gt;Algorithms&lt;/a&gt; / &lt;a href=&quot;information-technology.html#ch-recursion&quot;&gt;Recursion&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="information-technology.html">資訊科技</a> / <a href="information-technology.html#algo">演算法</a> / <a href="information-technology.html#ch-recursion">遞迴</a></nav>
       <h1 data-en="The Tower of Hanoi">河內塔</h1>
       <p data-en="Move the whole tower to another peg — one disc at a time, and never a bigger disc on a smaller one. The neatest way to think about it is recursion: to move n discs, first move n − 1 of them out of the way. Solve it yourself, watch the recursion unfold call by call, see why the disc moved at step k follows the marks on a ruler, and discover the Sierpiński triangle hidden in the map of all positions.">把整疊盤子搬到另一根柱子上：一次只能搬一個，大盤不能壓在小盤上。最漂亮的想法是遞迴——要搬 n 個盤子，先把上面 n − 1 個搬開。自己動手解解看，再看遞迴一層一層展開、第 k 步搬哪一個盤為什麼跟尺上的刻度一樣，還有所有狀態畫成的地圖裡藏著的謝爾賓斯基三角形。</p>
     </header>
@@ -350,17 +351,17 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611151631"></script>
-  <script src="js/hanoi-core.js?v=202611151631"></script>
-  <script src="js/sound.js?v=202611151631"></script>
-  <script src="js/numinput.js?v=202611151631"></script>
-  <script src="js/drawkit.js?v=202611151631"></script>
-  <script src="js/keys.js?v=202611151631"></script>
-  <script src="js/hanoi.js?v=202611151631"></script>
-  <script src="js/firebase-config.js?v=202611151631"></script>
-  <script src="js/missions.js?v=202611151631" data-module="hanoi"></script>
-  <script src="js/missions/hanoi.js?v=202611151631"></script>
-  <script src="js/stats.js?v=202611151631" data-module="hanoi"></script>
-  <script src="js/comments.js?v=202611151631"></script>
+  <script src="js/math.js?v=202611160631"></script>
+  <script src="js/hanoi-core.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611160631"></script>
+  <script src="js/numinput.js?v=202611160631"></script>
+  <script src="js/drawkit.js?v=202611160631"></script>
+  <script src="js/keys.js?v=202611160631"></script>
+  <script src="js/hanoi.js?v=202611160631"></script>
+  <script src="js/firebase-config.js?v=202611160631"></script>
+  <script src="js/missions.js?v=202611160631" data-module="hanoi"></script>
+  <script src="js/missions/hanoi.js?v=202611160631"></script>
+  <script src="js/stats.js?v=202611160631" data-module="hanoi"></script>
+  <script src="js/comments.js?v=202611160631"></script>
 </body>
 </html>
