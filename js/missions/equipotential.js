@@ -20,7 +20,11 @@
   const NULL_V = 0.02;
   const isNull = function (d) { return Math.abs(d.reading) <= NULL_V + 1e-9; };
   const onPaper = function (d) { return !d.onElectrode && !d.n1OnElectrode; };
-  const est = function (ev) { return ev.type === 'estimate' && ev.data.power && isFinite(ev.data.err); };
+  // 站長 11/16：學生在水槽描線畫電力線，★4「與等位線垂直」卻不算；說明沒限導電紙，站長裁定「水槽也算」。
+  // 一般任務 1–12、h1–h3 同時認導電紙事件與同名的 water- 事件（只放寬，不收回任何人的星星）；
+  // 專屬水槽或紙水比對的 13–15、自學 16–32 照舊。
+  const is = function (ev, t) { return ev.type === t || ev.type === 'water-' + t; };
+  const est = function (ev) { return is(ev, 'estimate') && ev.data.power && isFinite(ev.data.err); };
   const fullGroups = function (d, n, vr) {
     return d.groups.filter(function (g) { return g.n >= n && (vr == null || g.vRange <= vr + 1e-9); }).length;
   };
@@ -30,7 +34,7 @@
       id: 'equipotential-1', level: 1,
       title: { zh: '讀數歸零', en: 'A null reading' },
       desc: { zh: '接通電源，黑探針 N1 放在紙上（不在電極上）；移動紅探針 N2 到離 N1 至少 2 cm、電表讀數為零（±0.02 V 以內）的地方，按「記錄」。', en: 'Switch on the supply and put the black probe N1 on the paper (not on an electrode). Move the red probe N2 to a point at least 2 cm from N1 where the meter reads zero (within ±0.02 V) and press “Record”.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'record' && d.power && onPaper(d) && isNull(d) && d.dist12 >= 2; }
+      check: function (ev) { const d = ev.data; return is(ev, 'record') && d.power && onPaper(d) && isNull(d) && d.dist12 >= 2; }
     },
     {
       id: 'equipotential-2', level: 2,
@@ -38,20 +42,20 @@
       desc: { zh: '兩圓形電極、三用電表、電源至少 2 V：把黑探針夾到負極，找一點讀數剛好等於電源電壓的一半（±0.01 V），按「記錄」。', en: 'Two circular electrodes, the multimeter, a supply of at least 2 V: clip N1 to the negative electrode, find a point where the reading is exactly half the supply voltage (±0.01 V) and press “Record”.' },
       check: function (ev) {
         const d = ev.data;
-        return ev.type === 'record' && d.type === 'circles' && d.meter === 'dmm' && d.clip && d.V0 >= 2 && !d.onElectrode && Math.abs(d.reading - d.V0 / 2) <= 0.01 + 1e-9;
+        return is(ev, 'record') && d.type === 'circles' && d.meter === 'dmm' && d.clip && d.V0 >= 2 && !d.onElectrode && Math.abs(d.reading - d.V0 / 2) <= 0.01 + 1e-9;
       }
     },
     {
       id: 'equipotential-3', level: 3,
       title: { zh: '描出一條等位線', en: 'Trace one equipotential' },
       desc: { zh: '同一條等位線記錄至少 6 點，最遠的兩點相距至少 8 cm，而且這些點的真實電位彼此相差不到 0.06 V。', en: 'Record at least 6 points of the same equipotential line, with the two farthest points at least 8 cm apart and the true potentials of all the points within 0.06 V of each other.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'record' && d.groupN >= 6 && d.groupSpan >= 8 && d.groupVRange <= 0.06 + 1e-9; }
+      check: function (ev) { const d = ev.data; return is(ev, 'record') && d.groupN >= 6 && d.groupSpan >= 8 && d.groupVRange <= 0.06 + 1e-9; }
     },
     {
       id: 'equipotential-4', level: 4,
       title: { zh: '與等位線垂直', en: 'At right angles' },
       desc: { zh: '至少描出 3 條各有 4 點以上的等位線，勾選「畫出與等位線垂直的電力線」，畫出至少 3 條電力線。', en: 'Trace at least 3 equipotential lines of 4 or more points each, then tick “Draw field lines at right angles to them” and get at least 3 field lines.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'fieldlines' && d.drawField && d.nCurves >= 3 && d.nLines >= 3; }
+      check: function (ev) { const d = ev.data; return is(ev, 'fieldlines') && d.drawField && d.nCurves >= 3 && d.nLines >= 3; }
     },
     {
       id: 'equipotential-5', level: 5,
@@ -59,7 +63,7 @@
       desc: { zh: '兩圓形電極、電源電壓為整數伏特（至少 4 V）：1 V、2 V……一直到比電源少 1 V，每一個整數電位都描出一條至少 4 點的等位線（線的電位與整數相差不到 0.05 V）。', en: 'Two circular electrodes and a whole-number supply voltage of at least 4 V: trace an equipotential line of at least 4 points at every whole-number potential 1 V, 2 V, … up to 1 V below the supply (each line within 0.05 V of its whole number).' },
       check: function (ev) {
         const d = ev.data;
-        if ((ev.type !== 'record' && ev.type !== 'lines') || d.type !== 'circles' || d.V0 < 4 || Math.abs(d.V0 - Math.round(d.V0)) > 1e-9) return false;
+        if ((!is(ev, 'record') && !is(ev, 'lines')) || d.type !== 'circles' || d.V0 < 4 || Math.abs(d.V0 - Math.round(d.V0)) > 1e-9) return false;
         for (let v = 1; v <= d.V0 - 1; v++) {
           if (!d.groups.some(function (g) { return g.n >= 4 && Math.abs(g.V - v) <= 0.05 + 1e-9; })) return false;
         }
@@ -137,17 +141,17 @@
     {
       id: 'equipotential-h1', level: 5, hidden: true,
       riddle: { zh: '城牆的背後，一絲風也吹不進來。', en: 'Behind the city wall, not a breath of wind gets in.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'record' && d.fullBars && d.behind && !d.onElectrode; }
+      check: function (ev) { const d = ev.data; return is(ev, 'record') && d.fullBars && d.behind && !d.onElectrode; }
     },
     {
       id: 'equipotential-h2', level: 6, hidden: true,
       riddle: { zh: '相隔天涯的兩個人，心跳竟然一模一樣。', en: 'Two people worlds apart, and their hearts beat exactly alike.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'record' && onPaper(d) && isNull(d) && d.dist12 >= 16; }
+      check: function (ev) { const d = ev.data; return is(ev, 'record') && onPaper(d) && isNull(d) && d.dist12 >= 16; }
     },
     {
       id: 'equipotential-h3', level: 7, hidden: true,
       riddle: { zh: '世界的角落，連河水都忘了流動。', en: 'In the corner of the world, even the river forgets to flow.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'record' && d.type === 'circles' && !d.onElectrode && d.corner <= 3 && d.E2 <= 0.05 * d.Ecent; }
+      check: function (ev) { const d = ev.data; return is(ev, 'record') && d.type === 'circles' && !d.onElectrode && d.corner <= 3 && d.E2 <= 0.05 * d.Ecent; }
     }
   ]);
   // 任務清單保持可獨立載入；排行榜與每日任務不必載入實驗的物理核心。
