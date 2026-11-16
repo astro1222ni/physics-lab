@@ -4,9 +4,8 @@
  *   - 換日：一律以臺灣時間（UTC+8）凌晨 00:00 為界，用伺服器時間計算，改本機時鐘沒有用。
  *   - 每天十個每日任務：簡單（1–3 級）4 個、中等（4–6 級）3 個、困難（7–10 級）3 個，從現有的一般任務抽出（不含隱藏任務），
  *     同一個人同一天結果固定，盡量來自不同實驗。每個今天只能完成一次，十個做完這一天就結束。
- *   - 掉寶：銅幣、銀幣、金幣、鑽石、稀有鑰匙，每次完成最多一件。每完成一個每日任務都依 repeatChance 的機率掉寶（25%–100%：星星比例 0 時 ★1–★10 為 25%–60%，全拿滿時 50%–100%），
- *     以前沒領過星星的任務照樣得星，但掉寶機率和做過的任務一樣（11/12 站長）。任務等級越高、玩家的星星占全站總星數的比例越高，掉寶與稀有寶物的機率越高，
- *     掉到的數量也越偏多（銅幣 1–5、銀幣 1–3、金幣 1–2；鑽石與稀有鑰匙最多 1 個）。
+ *   - 掉寶（11/16 站長）：五種寶物各自獨立判定；銅幣必掉，其他機率只隨任務等級提高，星星不影響機率與數量。
+ *     數量權重固定：銅幣 1–5 枚（5:4:3:2:1）、銀幣 1–3 枚（3:2:1）、金幣 1–2 枚（2:1），鑽石與稀有鑰匙各 1 個。
  *   - 持有數：累計獲得（只增不減）與現在剩下（累計獲得 − 已使用）；另有寶物圖示與「我的寶物」格子（瀏覽器用）。
  */
 (function (root, factory) {
@@ -87,7 +86,7 @@
   }
 
   // ---------- 掉寶 ----------
-  // sym：銅、銀、金用元素符號；鑽石是碳（C）的晶體
+  // 銅、銀、金用元素符號；鑽石是碳（C）的晶體
   const ITEMS = [
     { id: 'cu', zh: '銅幣', en: 'Copper coin', sym: 'Cu', min: 1, max: 5 },
     { id: 'ag', zh: '銀幣', en: 'Silver coin', sym: 'Ag', min: 1, max: 3 },
@@ -95,13 +94,9 @@
     { id: 'dia', zh: '鑽石', en: 'Diamond', sym: 'C', min: 1, max: 1 },
     { id: 'key', zh: '稀有鑰匙', en: 'Rare key', sym: '', min: 1, max: 1 }
   ];
-  // 權重：運氣 0（1 級任務、星星比例 0）→ 運氣 1（10 級任務、拿到全站所有星星），兩端之間在對數上內插
-  const W0 = [70, 22, 6.5, 1.3, 0.2];
-  const W1 = [30, 32, 22, 11, 5];
   /**
-   * 星星加成 0–1 ＝ 玩家目前的星星 ÷ 全站目前可以拿到的總星數（11/12 站長）。
-   * 全站新增任務、總星數變多時，玩家的星星沒跟上，比例就下降，掉寶機率也跟著下降。
-   * total 不明（任務清單還沒載入）時當作 0，不會高估。
+   * 星星比例 0–1 ＝ 玩家星星 ÷ 全站總星數；保留供統計使用，掉寶不使用（11/16 站長）。
+   * total 不明（任務清單還沒載入）時當作 0。
    */
   function starBoost(stars, total) {
     const S = Math.max(0, +stars || 0), T = +total || 0;
@@ -114,60 +109,71 @@
     return t;
   }
   function clampLevel(level) { return Math.max(1, Math.min(10, Math.round(+level) || 1)); }
-  /** 運氣 0–1：任務等級占 60%、星星比例占 40% */
-  function luck(level, stars, total) { return 0.6 * (clampLevel(level) - 1) / 9 + 0.4 * starBoost(stars, total); }
-  /** 掉落各寶物的機率（加總為 1），順序同 ITEMS */
-  function table(level, stars, total) {
-    const r = luck(level, stars, total);
-    const w = W0.map(function (b, i) { return Math.pow(b, 1 - r) * Math.pow(W1[i], r); });
-    const sum = w.reduce(function (a, b) { return a + b; }, 0);
-    return w.map(function (x) { return x / sum; });
-  }
-  /** 完成一個每日任務時掉寶的機率（新任務與做過的任務一樣；11/12 站長） */
-  // 11/13 站長：星星比例 0 時 ★1 的 25% 到 ★10 的 60%；全拿滿時 ★1 的 50% 到 ★10 的 100%；中間依比例線性內插
-  function repeatChance(level, stars, total) {
-    const L = clampLevel(level), b = starBoost(stars, total);
-    const lo = 0.25 + 0.35 * (L - 1) / 9, hi = 0.5 + 0.5 * (L - 1) / 9;
-    return Math.min(1, lo + b * (hi - lo));
+  /** 五種各自的掉落機率，順序同 ITEMS；彼此獨立，不必加總為 1。只使用任務等級。 */
+  function dropChances(level) {
+    const t = (clampLevel(level) - 1) / 9;
+    return [1, 0.30 + 0.30 * t, 0.10 + 0.18 * t, 0.02 + 0.07 * t, 0.005 + 0.030 * t];
   }
   /**
-   * 掉到某種寶物時，各數量的機率（由少到多，加總為 1）。跟掉寶機率用同一個運氣（任務難度＋星星比例；11/12 站長「掉寶數量也隨之連動」）：
-   * 運氣 0 時越少越容易（銅幣 1–5 枚的權重 5:4:3:2:1），運氣 1 時倒過來（1:2:3:4:5），中間線性內插。
-   * 鑽石與稀有鑰匙最多 1 個（站長），所以固定 [1]。
+   * 掉到某種寶物時，各數量的固定機率（由少到多，加總為 1），與等級、星星無關。
+   * 銅幣權重 5:4:3:2:1，銀幣 3:2:1，金幣 2:1；鑽石與稀有鑰匙固定 [1]。
    */
-  function qtyTable(itemId, level, stars, total) {
+  function qtyTable(itemId) {
     const it = ITEMS.filter(function (x) { return x.id === itemId; })[0];
     if (!it) return [1];
     const n = it.max - it.min + 1;
     if (n <= 1) return [1];
-    const r = luck(level, stars, total);
     const w = [];
-    for (let j = 0; j < n; j++) w.push((1 - r) * (n - j) + r * (j + 1));
+    for (let j = 0; j < n; j++) w.push(n - j);
     const sum = w.reduce(function (a, b) { return a + b; }, 0);
     return w.map(function (x) { return x / sum; });
   }
   /** 掉到某種寶物時的平均數量 */
-  function qtyMean(itemId, level, stars, total) {
+  function qtyMean(itemId) {
     const it = ITEMS.filter(function (x) { return x.id === itemId; })[0];
     if (!it) return 1;
-    return qtyTable(itemId, level, stars, total).reduce(function (a, p, j) { return a + p * (it.min + j); }, 0);
+    return qtyTable(itemId).reduce(function (a, p, j) { return a + p * (it.min + j); }, 0);
   }
   /**
-   * 擲一次：依 repeatChance 決定有沒有掉；sure = true 時一定掉（目前每日任務不用，保留給之後的活動）。
-   * 掉的話只掉一種寶物；數量照 qtyTable（銅幣 1–5、銀幣 1–3、金幣 1–2，運氣越好越偏多；鑽石與鑰匙 1）。
-   * 回傳 { item, qty } 或 null（沒掉）。rand 預設 Math.random，測試時可傳入可重現的亂數。
+   * 每種寶物各擲一次判定是否掉落，成功後另外抽數量；各擲骰不共用同一個亂數值。
+   * 回傳 [{ item, qty }, …]，至少有銅幣，依銅、銀、金、鑽石、鑰匙排序。
+   * rand 預設 Math.random，測試可傳入可重現的亂數；介面不接收星星。
    */
-  function roll(level, stars, total, sure, rand) {
+  function roll(level, rand) {
     rand = rand || Math.random;
-    if (!sure && rand() >= repeatChance(level, stars, total)) return null;
-    const p = table(level, stars, total);
-    let u = rand(), i = 0;
-    while (i < p.length - 1 && u >= p[i]) { u -= p[i]; i++; }
-    const it = ITEMS[i];
-    const q = qtyTable(it.id, level, stars, total);
-    let v = rand(), j = 0;
-    while (j < q.length - 1 && v >= q[j]) { v -= q[j]; j++; }
-    return { item: it.id, qty: Math.min(it.max, it.min + j) };
+    const chances = dropChances(level), out = [];
+    ITEMS.forEach(function (it, i) {
+      if (rand() >= chances[i]) return;
+      const q = qtyTable(it.id);
+      let v = rand(), j = 0;
+      while (j < q.length - 1 && v >= q[j]) { v -= q[j]; j++; }
+      out.push({ item: it.id, qty: it.min + j });
+    });
+    return out;
+  }
+
+  /** 每日頁與排行榜共用同一張機率表，避免規則說明與計算脫節。 */
+  function oddsTable(doc, T) {
+    const mk = function (tag, cls, text) { const e = doc.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const table = mk('table', 'dl-prob-table');
+    table.appendChild(mk('caption', null, T('每次完成：五種寶物獨立判定', 'Each clear: five independent treasure rolls')));
+    const labels = [T('寶物', 'Treasure'), T('掉落機率', 'Drop chance'), T('1 級', 'Level 1'), T('5 級', 'Level 5'), T('10 級', 'Level 10'), T('數量／權重', 'Amount / weights')];
+    const head = mk('thead'), hr = mk('tr');
+    labels.forEach(function (label) { const th = mk('th', null, label); th.scope = 'col'; hr.appendChild(th); });
+    head.appendChild(hr); table.appendChild(head);
+    const formulas = ['100%', '0.30 + 0.30t', '0.10 + 0.18t', '0.02 + 0.07t', '0.005 + 0.030t'];
+    const quantities = ['1–5 / 5:4:3:2:1', '1–3 / 3:2:1', '1–2 / 2:1', '1', '1'];
+    const body = mk('tbody');
+    ITEMS.forEach(function (it, i) {
+      const tr = mk('tr', 'r-' + it.id), th = mk('th'); th.scope = 'row';
+      const art = mk('span', 'dl-ico sm'); art.innerHTML = icon(it.id); th.appendChild(art);
+      th.appendChild(mk('span', null, T(it.zh, it.en))); tr.appendChild(th);
+      const vals = [formulas[i]].concat([1, 5, 10].map(function (lv) { return (100 * dropChances(lv)[i]).toFixed(i < 3 ? 0 : 1).replace(/\.0$/, '') + '%'; })).concat(quantities[i]);
+      vals.forEach(function (text, j) { const td = mk('td', j === 0 ? 'dl-prob-formula' : j === 4 ? 'dl-prob-qty' : 'dl-prob-value', text); td.setAttribute('data-label', labels[j + 1]); tr.appendChild(td); });
+      body.appendChild(tr);
+    });
+    table.appendChild(body);
+    return table;
   }
 
   // 每個每日任務今天只能完成一次；兩次完成至少隔 GAP 毫秒（資料庫規則：10 秒）。
@@ -185,6 +191,58 @@
       const total = n(bag[it.id]);
       const u = Math.min(total, n(used[it.id]));
       return { id: it.id, zh: it.zh, en: it.en, total: total, used: u, left: total - u };
+    });
+  }
+
+  // ---------- 寶物排行：只計累計獲得，不扣已使用 ----------
+  const TREASURE_WEIGHTS = { cu: 1, ag: 10, au: 100, dia: 1000, key: 10000 };
+  const TREASURE_METRICS = ['v', 'cu', 'ag', 'au', 'dia', 'key'];
+  function treasureTotals(bag) {
+    const out = { v: 0 };
+    holdings(bag).forEach(function (h) { out[h.id] = h.total; out.v += h.total * TREASURE_WEIGHTS[h.id]; });
+    return out;
+  }
+  /** 和 LabMission.mask 相同；供沒有載入任務系統的帳號選單使用。 */
+  function treasureName(name, pub) {
+    if (pub !== false) return String(name || '');
+    const ch = Array.from(String(name || ''));
+    if (ch.length <= 1) return '＊';
+    if (ch.length === 2) return ch[0] + '＊';
+    return ch[0] + '○'.repeat(Math.min(ch.length - 2, 8)) + ch[ch.length - 1];
+  }
+  /** at 是本次更新；ta 是各項目達到目前累計量的時間，未改變的項目保留時間。 */
+  function treasureRecord(bag, previous, name, pub, stamp) {
+    const out = treasureTotals(bag), old = previous || {};
+    out.at = stamp; out.name = treasureName(name, pub); out.pub = pub !== false; out.ta = {};
+    TREASURE_METRICS.forEach(function (key) {
+      const t = old.ta && old.ta[key];
+      out.ta[key] = old[key] === out[key] && typeof t === 'number' && t > 0 && t <= old.at ? t : stamp;
+    });
+    return out;
+  }
+  function treasureMatches(record, bag, name, pub) {
+    if (!record || record.name !== treasureName(name, pub) || record.pub !== (pub !== false) || !(record.at > 0)) return false;
+    const totals = treasureTotals(bag);
+    return TREASURE_METRICS.every(function (key) { return record[key] === totals[key] && record.ta && record.ta[key] > 0 && record.ta[key] <= record.at; });
+  }
+  function rankTreasures(rows, metric) {
+    const key = TREASURE_METRICS.indexOf(metric) >= 0 ? metric : 'v';
+    const list = rows.filter(function (row) { return row.v > 0; }).map(function (row) { return Object.assign({}, row); });
+    const time = function (row) { return (row.ta && row.ta[key]) || row.at || 0; };
+    list.sort(function (a, b) { return (b[key] - a[key]) || (time(a) - time(b)) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0); });
+    let rank = 0, previous = null;
+    list.forEach(function (row, i) { if (row[key] !== previous) rank = i + 1; previous = row[key]; row.rank = rank; });
+    return list;
+  }
+  /** 暱稱及公開設定和兩個公開榜一起更新；不改星星及各項目的達到時間。 */
+  function updateTreasureProfile(api, uid, changes) {
+    return Promise.all(['profiles/', 'scores/', 'bag/', 'treasureBoard/'].map(function (prefix) { return api.get(prefix + uid); })).then(function (r) {
+      const profile = Object.assign({}, r[0] || {}, changes), map = {};
+      Object.keys(changes).forEach(function (key) { map['profiles/' + uid + '/' + key] = changes[key]; });
+      const pub = profile.pub !== false, name = treasureName(profile.nickname, pub);
+      if (r[1]) { map['scores/' + uid + '/name'] = name; map['scores/' + uid + '/pub'] = pub; }
+      if (profile.nickname && (treasureTotals(r[2]).v > 0 || r[3])) map['treasureBoard/' + uid] = treasureRecord(r[2], r[3], profile.nickname, pub, api.now());
+      return api.update(map);
     });
   }
 
@@ -272,8 +330,11 @@
   return {
     DAY: DAY, TW: TW, dayNumber: dayNumber, dayStart: dayStart, msToReset: msToReset, dateOf: dateOf,
     hash: hash, rng: rng, BANDS: BANDS, PER_DAY: PER_DAY, bandOf: bandOf, pick: pick,
-    ITEMS: ITEMS, W0: W0, W1: W1, starBoost: starBoost, siteStars: siteStars, luck: luck, table: table,
-    repeatChance: repeatChance, qtyTable: qtyTable, qtyMean: qtyMean, roll: roll, GAP: GAP,
-    holdings: holdings, icon: icon, bagGrid: bagGrid
+    ITEMS: ITEMS, starBoost: starBoost, siteStars: siteStars, dropChances: dropChances,
+    qtyTable: qtyTable, qtyMean: qtyMean, roll: roll, GAP: GAP,
+    holdings: holdings, icon: icon, bagGrid: bagGrid, oddsTable: oddsTable,
+    TREASURE_WEIGHTS: TREASURE_WEIGHTS, TREASURE_METRICS: TREASURE_METRICS,
+    treasureTotals: treasureTotals, treasureName: treasureName, treasureRecord: treasureRecord,
+    treasureMatches: treasureMatches, rankTreasures: rankTreasures, updateTreasureProfile: updateTreasureProfile
   };
 });

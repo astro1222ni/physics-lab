@@ -294,7 +294,6 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists() && newData.parent().parent().child('daily').child($uid).child('at').val() === now && newData.parent().parent().child('daily').child($uid).child('n').val() >= 1 && (newData.parent().parent().child('daily').child($uid).child('d').val() !== root.child('daily').child($uid).child('d').val() || newData.parent().parent().child('daily').child($uid).child('n').val() === root.child('daily').child($uid).child('n').val() + 1)",
-        ".validate": "(newData.child('cu').val() !== data.child('cu').val() ? 1 : 0) + (newData.child('ag').val() !== data.child('ag').val() ? 1 : 0) + (newData.child('au').val() !== data.child('au').val() ? 1 : 0) + (newData.child('dia').val() !== data.child('dia').val() ? 1 : 0) + (newData.child('key').val() !== data.child('key').val() ? 1 : 0) <= 1",
         "cu": {
           ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 5"
         },
@@ -312,6 +311,57 @@
         },
         "dm": {
           ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 1"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "treasureBoard": {
+      ".read": true,
+      ".indexOn": [
+        "v",
+        "cu",
+        "ag",
+        "au",
+        "dia",
+        "key"
+      ],
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && newData.exists()",
+        ".validate": "newData.hasChildren(['v', 'cu', 'ag', 'au', 'dia', 'key', 'at', 'name', 'pub', 'ta']) && newData.child('ta').hasChildren(['v', 'cu', 'ag', 'au', 'dia', 'key']) && newData.child('at').val() === now && newData.child('v').val() === newData.child('cu').val() + 10 * newData.child('ag').val() + 100 * newData.child('au').val() + 1000 * newData.child('dia').val() + 10000 * newData.child('key').val() && newData.child('cu').val() === (newData.parent().parent().child('bag').child($uid).child('cu').exists() ? newData.parent().parent().child('bag').child($uid).child('cu').val() : 0) && newData.child('ag').val() === (newData.parent().parent().child('bag').child($uid).child('ag').exists() ? newData.parent().parent().child('bag').child($uid).child('ag').val() : 0) && newData.child('au').val() === (newData.parent().parent().child('bag').child($uid).child('au').exists() ? newData.parent().parent().child('bag').child($uid).child('au').val() : 0) && newData.child('dia').val() === (newData.parent().parent().child('bag').child($uid).child('dia').exists() ? newData.parent().parent().child('bag').child($uid).child('dia').val() : 0) && newData.child('key').val() === (newData.parent().parent().child('bag').child($uid).child('key').exists() ? newData.parent().parent().child('bag').child($uid).child('key').val() : 0) && (newData.child('v').val() === data.child('v').val() || newData.child('ta').child('v').val() === now) && (newData.child('cu').val() === data.child('cu').val() || newData.child('ta').child('cu').val() === now) && (newData.child('ag').val() === data.child('ag').val() || newData.child('ta').child('ag').val() === now) && (newData.child('au').val() === data.child('au').val() || newData.child('ta').child('au').val() === now) && (newData.child('dia').val() === data.child('dia').val() || newData.child('ta').child('dia').val() === now) && (newData.child('key').val() === data.child('key').val() || newData.child('ta').child('key').val() === now) && newData.child('pub').val() === (newData.parent().parent().child('profiles').child($uid).child('pub').exists() ? newData.parent().parent().child('profiles').child($uid).child('pub').val() : true) && (newData.child('pub').val() === false || newData.child('name').val() === newData.parent().parent().child('profiles').child($uid).child('nickname').val())",
+        "v": {
+          ".validate": "newData.isNumber() && newData.val() === newData.parent().child('cu').val() + 10 * newData.parent().child('ag').val() + 100 * newData.parent().child('au').val() + 1000 * newData.parent().child('dia').val() + 10000 * newData.parent().child('key').val()"
+        },
+        "cu": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() === (newData.parent().parent().parent().child('bag').child($uid).child('cu').exists() ? newData.parent().parent().parent().child('bag').child($uid).child('cu').val() : 0)"
+        },
+        "ag": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() === (newData.parent().parent().parent().child('bag').child($uid).child('ag').exists() ? newData.parent().parent().parent().child('bag').child($uid).child('ag').val() : 0)"
+        },
+        "au": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() === (newData.parent().parent().parent().child('bag').child($uid).child('au').exists() ? newData.parent().parent().parent().child('bag').child($uid).child('au').val() : 0)"
+        },
+        "dia": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() === (newData.parent().parent().parent().child('bag').child($uid).child('dia').exists() ? newData.parent().parent().parent().child('bag').child($uid).child('dia').val() : 0)"
+        },
+        "key": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() === (newData.parent().parent().parent().child('bag').child($uid).child('key').exists() ? newData.parent().parent().parent().child('bag').child($uid).child('key').val() : 0)"
+        },
+        "at": {
+          ".validate": "newData.isNumber() && newData.val() === now"
+        },
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 20"
+        },
+        "pub": {
+          ".validate": "newData.isBoolean()"
+        },
+        "ta": {
+          ".validate": "newData.hasChildren(['v', 'cu', 'ag', 'au', 'dia', 'key'])",
+          "$metric": {
+            ".validate": "$metric.matches(/^(v|cu|ag|au|dia|key)$/) && newData.isNumber() && newData.val() > 0 && newData.val() <= now && ((data.exists() && data.isNumber() && data.val() > 0 && data.val() <= data.parent().parent().child('at').val() && newData.parent().parent().child($metric).val() === data.parent().parent().child($metric).val()) ? newData.val() === data.val() : newData.val() === now)"
+          }
         },
         "$other": {
           ".validate": false

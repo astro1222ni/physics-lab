@@ -5,11 +5,11 @@
  *   1. daily.html（頁面有 #dailyApp）：今天的十個每日任務、換日倒數、我的寶物、掉寶機率、規則。
  *   2. 實驗頁網址加 ?daily=<任務代號>（missions.js 自動載入本檔）：實驗上方顯示每日任務橫幅；
  *      任務達成時 missions.js 呼叫 LabDaily.completed(m, 這次是否也拿到星星)，在這裡擲骰、寫入、播放掉寶動畫。
- * 每個每日任務今天只能完成一次，十個做完這一天就結束（11/12 站長）。每次完成依機率掉寶（新任務照樣得星，掉寶機率和做過的任務一樣）。
+ * 每個每日任務今天只能完成一次，十個做完這一天就結束。五種寶物獨立判定、銅幣必掉；機率只看難度，數量權重固定（11/16 站長）。
  * 資料（資料庫規則見 firebase/database.rules.json）：
  *   daily/<uid> = { d: 臺灣日序, picks: [十個任務代號], n: 今天完成了幾個（最多 10）, at: 上次完成的伺服器時間, done: { 任務代號: true } }
  *   bag/<uid>   = { cu, ag, au, dia, key（累計獲得，只增不減）, dm（累計完成的每日任務數）, used: { 寶物: 已使用數 }（之後的消費功能用） }
- *   每完成一個每日任務寫一次：n 加一、done 加一筆、dm 加一，掉寶時該寶物再加上數量（一次最多一種寶物，規則會檢查）。
+ *   每完成一個每日任務只 update 一次：n 加一、done 加一筆、dm 加一，各種掉落的寶物一起加上數量。
  * 換日：臺灣時間 00:00，以伺服器時間為準。
  */
 (function () {
@@ -21,14 +21,18 @@
   const st = LM._state;
   const app = document.getElementById('dailyApp');
 
+  // 實驗頁由 missions.js 動態載入本檔；沿用同一版本號載入每日任務的獨立樣式。
+  if (!document.querySelector('link[data-daily-style]')) {
+    const css = document.createElement('link'), src = new URL(document.currentScript.src);
+    css.rel = 'stylesheet'; css.href = new URL('../daily.css', src).href + src.search;
+    css.setAttribute('data-daily-style', ''); document.head.appendChild(css);
+  }
+
   const D = { api: null, uid: null, offset: 0, rec: null, bag: {}, loaded: false, failed: false, saveFailed: false, msg: '', waiting: null };
   let queue = Promise.resolve();
 
   function now() { return Date.now() + D.offset; }
   function today() { return C.dayNumber(now()); }
-  function stars() { return Object.keys(st.done || {}).reduce(function (a, id) { return a + (+st.done[id].stars || 0); }, 0); }
-  /** 全站目前可以拿到的總星數（所有實驗的所有任務，和排行榜「全部任務」的總數一樣） */
-  function siteTotal() { return C.siteStars(LM.all()); }
   function modOf(id) { return String(id).replace(/-(h?\d+)$/, ''); }
   function findMission(id) {
     const list = LM.all()[modOf(id)] || [];
@@ -53,7 +57,7 @@
   /** 今天的每日任務、而且今天還沒完成（只有這時候才判定、掉寶） */
   function active(id) { return isPick(id) && !doneToday(id); }
   function ev(x) { return x >= 0.1 ? x.toFixed(2) : x >= 0.01 ? x.toFixed(3) : x.toFixed(4); }
-  function pct(x) { const v = 100 * x; return (v >= 10 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toFixed(2)) + '%'; }
+  function pct(x) { return (100 * x).toFixed(1).replace(/\.0$/, '') + '%'; }
 
   // ======================= 圖示 =======================
   const icon = C.icon; // 寶物圖示在 daily-core.js（排行榜頁也用）
@@ -90,7 +94,11 @@
     const chips = el('div', 'dl-chips');
     if (st.done[m.id]) chips.appendChild(el('span', 'dl-chip got', T('星星已領過：不再加星', 'Stars already claimed: none to add')));
     else chips.appendChild(el('span', 'dl-chip new', T('新任務：完成得 ' + m.level + ' 顆星', 'New: clear it for ' + m.level + ' stars')));
-    chips.appendChild(el('span', 'dl-chip gold', T('掉寶機率 ', 'Treasure chance ') + pct(C.repeatChance(m.level, stars(), siteTotal()))));
+    chips.appendChild(el('span', 'dl-chip gold', T('銅幣必掉 · 五種獨立擲骰', 'Copper guaranteed · 5 independent rolls')));
+    const p = C.dropChances(m.level);
+    chips.appendChild(el('span', 'dl-chip dl-chip-odds', T('另有機會：', 'Also: ') + C.ITEMS.slice(1).map(function (it, i) {
+      return T(it.zh, it.en) + ' ' + pct(p[i + 1]);
+    }).join(T('、', ', '))));
     return chips;
   }
   function bandChip(level) {
@@ -206,8 +214,10 @@
   /** 寫入前先向伺服器重讀今天的紀錄（別的分頁可能剛記過），還不到 10 秒就等，等完再讀一次 */
   function writeWhenReady(m, newStars) {
     const uid = D.uid;
-    return D.api.get('daily/' + uid).catch(function () { return null; }).then(function (r) {
+    return Promise.all([D.api.get('daily/' + uid), D.api.get('bag/' + uid), D.api.get('treasureBoard/' + uid), D.api.get('profiles/' + uid)]).then(function (records) {
       if (D.uid !== uid) return;
+      const r = records[0];
+      D.bag = records[1] || {};
       if (r && D.rec && r.d === D.rec.d) { D.rec.n = +r.n || 0; D.rec.at = +r.at || 0; D.rec.done = Object.assign({}, r.done || {}); }
       if (!isPick(m.id) || doneToday(m.id)) { pendingSet(m.id, false); D.waiting = null; render(); return; }
       // 資料庫規則：兩次完成的伺服器時間至少隔 10 秒（多留 0.3 秒，避免時鐘誤差剛好差一點被擋）
@@ -217,57 +227,117 @@
         waitTick(); render();
         return delay(wait + 300).then(function () { return writeWhenReady(m, newStars); });
       }
-      const drop = C.roll(m.level, stars(), siteTotal(), false);
+      const drops = C.roll(m.level);
       const P = 'daily/' + uid + '/', B = 'bag/' + uid + '/';
       const map = {};
       map[P + 'n'] = ((D.rec && D.rec.n) || 0) + 1;
       map[P + 'at'] = D.api.now();
       map[P + 'done/' + m.id] = true;
       map[B + 'dm'] = D.api.inc(1);
-      if (drop) map[B + drop.item] = D.api.inc(drop.qty);
+      drops.forEach(function (drop) { map[B + drop.item] = D.api.inc(drop.qty); });
+      const nextBag = Object.assign({}, D.bag);
+      drops.forEach(function (drop) { nextBag[drop.item] = (nextBag[drop.item] || 0) + drop.qty; });
+      const profile = records[3] || {};
+      map['treasureBoard/' + uid] = C.treasureRecord(nextBag, records[2], profile.nickname || st.nickname, profile.pub !== false, D.api.now());
       return D.api.update(map).then(function () {
         pendingSet(m.id, false); D.waiting = null;
         D.rec.n = ((D.rec && D.rec.n) || 0) + 1;
         D.rec.at = now();
         D.rec.done = D.rec.done || {}; D.rec.done[m.id] = true;
-        if (drop) D.bag[drop.item] = (D.bag[drop.item] || 0) + drop.qty;
+        drops.forEach(function (drop) { D.bag[drop.item] = (D.bag[drop.item] || 0) + drop.qty; });
         D.bag.dm = (D.bag.dm || 0) + 1;
         D.msg = '';
-        const left = picks().length - doneCount();
-        if (drop) setTimeout(function () { showDrop(drop); }, newStars ? 2500 : 0); // 有星星時，等星星的慶祝畫面結束
-        else toast(T('這次沒有掉寶（掉寶機率 ' + pct(C.repeatChance(m.level, stars(), siteTotal())) + '）。', 'No treasure this time (drop chance ' + pct(C.repeatChance(m.level, stars(), siteTotal())) + ').') +
-          (left ? T('今天還有 ' + left + ' 個每日任務。', ' ' + left + ' daily missions left today.') : T('今天的每日任務全部完成了！', ' All of today’s daily missions are done!')));
-        try { window.dispatchEvent(new CustomEvent('lab:loot', { detail: { item: drop ? drop.item : null, qty: drop ? drop.qty : 0, first: newStars, bag: Object.assign({}, D.bag) } })); } catch (e) { /* 忽略 */ }
+        // 有新星星時等原本的慶祝畫面結束；多次完成的掉寶畫面另以佇列依序播放。
+        setTimeout(function () { showDrops(drops); }, newStars ? 2500 : 0);
+        try { window.dispatchEvent(new CustomEvent('lab:loot', { detail: { drops: drops, first: newStars, bag: Object.assign({}, D.bag) } })); } catch (e) { /* 忽略 */ }
         render();
       }, function () {
         pendingSet(m.id, false); D.waiting = null;
         D.msg = T('這次完成沒有記錄成功（網路或資料庫規則的問題），請再做一次。', 'This clear was not recorded (network or database rules) — please try again.');
         render();
       });
+    }).catch(function () {
+      pendingSet(m.id, false); D.waiting = null;
+      D.msg = T('無法核對每日紀錄與寶物，這次尚未記錄，請稍後再試。', 'Could not check your daily record and treasures. This clear was not recorded; please try again.');
+      render();
     });
   }
 
   // ======================= 掉寶動畫與提示 =======================
   const SOUND = { cu: [659, 880], ag: [784, 1047, 1319], au: [880, 1175, 1568], dia: [988, 1319, 1760, 2093], key: [523, 784, 1047, 1568, 2093] };
-  function showDrop(drop) {
-    const ov = el('div', 'dl-drop r-' + drop.item);
+  let dropQueue = Promise.resolve();
+  function playNotes(notes, gain) {
+    const sound = window.LabSound;
+    if (sound && sound.enabled()) notes.forEach(function (freq, i) { sound.tone({ freq: freq, dur: 0.18, gain: gain, delay: i * 0.08, type: 'triangle' }); });
+  }
+  function showDrops(drops) {
+    dropQueue = dropQueue.then(function () { return dropSequence(drops); }).catch(function () { /* 動畫失敗不影響已儲存的寶物 */ });
+  }
+  async function dropSequence(drops) {
+    const ov = el('div', 'dl-loot');
     ov.setAttribute('role', 'status');
-    const box = el('div', 'dl-drop-box');
-    box.appendChild(el('div', 'dl-drop-kicker', T('掉寶了！', 'Treasure!')));
-    const art = el('div', 'dl-drop-art');
+    ov.setAttribute('aria-live', 'polite');
+    const box = el('div', 'dl-loot-box r-cu');
+    const kicker = el('div', 'dl-drop-kicker', T('每日任務完成', 'Daily mission cleared'));
+    box.appendChild(kicker);
+    const title = el('h2', 'dl-loot-title', T('寶物來了！', 'Treasure incoming!'));
+    box.appendChild(title);
+    const progress = el('p', 'dl-loot-progress'); box.appendChild(progress);
+    const art = el('div', 'dl-drop-art dl-loot-art');
     art.appendChild(el('span', 'dl-rays'));
-    const ic = el('span', 'dl-ico');
-    ic.innerHTML = icon(drop.item);
-    art.appendChild(ic);
+    const ic = el('span', 'dl-ico'); art.appendChild(ic);
     box.appendChild(art);
-    box.appendChild(el('div', 'dl-drop-name', itemName(drop.item) + ' ×' + drop.qty));
-    if (drop.item === 'key' || drop.item === 'dia') box.appendChild(el('div', 'dl-drop-rare', drop.item === 'key' ? T('稀有！', 'Rare!') : T('閃閃發亮！', 'Sparkling!')));
+    const name = el('div', 'dl-drop-name'); box.appendChild(name);
+    const list = el('div', 'dl-loot-list');
+    const tiles = drops.map(function (drop) {
+      const tile = el('div', 'dl-loot-tile r-' + drop.item);
+      tile.setAttribute('data-item', drop.item);
+      const img = el('span', 'dl-ico'); img.innerHTML = icon(drop.item); tile.appendChild(img);
+      tile.appendChild(el('span', 'dl-loot-label', itemName(drop.item)));
+      tile.appendChild(el('strong', 'dl-loot-qty', '×' + drop.qty));
+      list.appendChild(tile); return tile;
+    });
+    box.appendChild(list);
+    const collect = el('button', 'dl-loot-collect', T('收下寶物', 'Collect treasures'));
+    collect.type = 'button'; collect.hidden = true; box.appendChild(collect);
     ov.appendChild(box);
     document.body.appendChild(ov);
-    const S = window.LabSound;
-    if (S && S.enabled()) (SOUND[drop.item] || []).forEach(function (f, i) { S.tone({ freq: f, dur: 0.16, gain: 0.4, delay: i * 0.09, type: 'triangle' }); });
-    const close = function () { ov.classList.add('out'); setTimeout(function () { ov.remove(); }, 300); };
-    setTimeout(close, drop.item === 'key' || drop.item === 'dia' ? 3400 : 2600);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (let i = 0; i < drops.length; i++) {
+      const drop = drops[i];
+      box.className = 'dl-loot-box r-' + drop.item;
+      ic.innerHTML = icon(drop.item);
+      name.textContent = itemName(drop.item) + ' ×' + drop.qty;
+      progress.textContent = T('第 ' + (i + 1) + ' / ' + drops.length + ' 種寶物', 'Treasure ' + (i + 1) + ' / ' + drops.length);
+      // 重新建立圖示可讓每種寶物各彈出一次；已揭曉的數量留在下方清單。
+      art.classList.remove('revealing'); void art.offsetWidth; art.classList.add('revealing');
+      tiles[i].classList.add('revealed');
+      playNotes(SOUND[drop.item], 0.3);
+      await delay(reduced ? 200 : 700);
+    }
+    const allFive = C.ITEMS.every(function (it) { return drops.some(function (drop) { return drop.item === it.id; }); });
+    if (allFive) {
+      box.className = 'dl-loot-box dl-loot-all r-au';
+      title.textContent = T('五寶齊發', 'All Five Treasures!');
+      kicker.textContent = T('銅・銀・金・鑽石・鑰匙', 'COPPER · SILVER · GOLD · DIAMOND · KEY');
+      progress.textContent = T('同一次完成，五種寶物全都到手！', 'One clear. All five treasures are yours!');
+      art.hidden = true;
+      name.textContent = T('這份好運，值得慶祝！', 'A lucky moment worth celebrating!');
+      // 手機喇叭可聽的上行音階與和弦；所有主頻均高於 250 Hz。
+      playNotes([523.25, 659.25, 783.99, 1046.5, 1318.51, 1567.98, 2093], 0.32);
+      const sound = window.LabSound;
+      if (sound && sound.enabled()) [523.25, 659.25, 783.99].forEach(function (freq) { sound.tone({ freq: freq, dur: 0.65, gain: 0.14, delay: 0.64, type: 'triangle' }); });
+    } else {
+      title.textContent = T('這次的收穫', 'Your treasures');
+      progress.textContent = T('已獲得 ' + drops.length + ' 種寶物', drops.length + ' treasure kinds collected');
+    }
+    collect.hidden = false;
+    await new Promise(function (resolve) {
+      let closed = false;
+      const close = function () { if (closed) return; closed = true; clearTimeout(timer); ov.classList.add('out'); setTimeout(function () { ov.remove(); resolve(); }, 250); };
+      const timer = setTimeout(close, allFive ? 4600 : 3000);
+      collect.addEventListener('click', close, { once: true });
+    });
   }
   function toast(text) {
     let box = document.getElementById('dl-toasts');
@@ -390,14 +460,15 @@
     if (!D.api) { app.appendChild(el('p', 'lb-note', T('每日任務暫時無法載入。', 'Daily missions could not be loaded.'))); return; }
     if (!st.user) {
       const box = el('section', 'dl-signin-box');
-      box.appendChild(el('p', null, T('每日任務需要登入 Google 帳號：每天臺灣時間 00:00 換新十個任務，完成可以掉落銅幣、銀幣、金幣、鑽石，運氣好還有稀有鑰匙。',
-        'Daily missions need a Google sign-in: ten new missions every day at 00:00 Taiwan time, dropping copper, silver and gold coins, diamonds — and, with luck, a rare key.')));
+      box.appendChild(el('p', null, T('每日任務需要登入 Google 帳號：每天臺灣時間 00:00 換新十個任務，每次完成銅幣必掉，銀幣、金幣、鑽石與稀有鑰匙各自獨立判定，也可能五種全掉。',
+        'Sign in with Google for ten daily missions at 00:00 Taiwan time. Every clear guarantees copper; silver, gold, diamonds and rare keys are rolled independently, so all five can drop together.')));
       const b = el('button', 'primary', T('用 Google 帳號登入', 'Sign in with Google'));
       b.type = 'button';
       b.addEventListener('click', function () { D.api.signIn().catch(function () {}); });
       box.appendChild(b);
       app.appendChild(box);
       app.appendChild(bagSection(true));
+      app.appendChild(oddsSection());
       return;
     }
     if (!st.ready || (!D.loaded && !D.failed)) { app.appendChild(el('p', 'lb-note', T('載入中…', 'Loading…'))); return; }
@@ -478,77 +549,27 @@
 
   function oddsSection() {
     const sec = el('section', 'dl-odds');
-    const S = stars();
     sec.appendChild(el('h2', null, T('掉寶機率', 'Drop chances')));
-    const TT = siteTotal(), pctS = TT ? Math.round(100 * C.starBoost(S, TT)) : 0;
-    sec.appendChild(el('p', 'lb-note', T('依你目前的 ' + S.toLocaleString() + ' 顆星計算：全站目前一共有 ' + TT.toLocaleString() + ' 顆星可以拿，你拿到 ' + pctS + '%。任務越難、你拿到的比例越高，越容易掉寶，也越容易掉出稀有寶物。網站新增任務後總星數會變多，比例沒跟上的話，掉寶機率就會下降。',
-      'Based on your ' + S.toLocaleString() + ' stars: the whole site currently has ' + TT.toLocaleString() + ' stars to earn, and you hold ' + pctS + '% of them. Harder missions and a bigger share make drops — and rare treasures — likelier. When new missions are added the total grows, so your chances drop unless your share keeps up.')));
-    const wrap = el('div', 'dl-table-wrap');
-    const tb = el('table', 'dl-table');
-    const thead = el('thead');
-    const hr = el('tr');
-    hr.appendChild(el('th', null, T('任務', 'Mission')));
-    hr.appendChild(el('th', 'dl-rep-col', T('掉寶機率', 'Drop chance')));
-    C.ITEMS.forEach(function (it) {
-      const th = el('th', 'r-' + it.id);
-      const ic = el('span', 'dl-ico sm'); ic.innerHTML = icon(it.id);
-      th.appendChild(ic);
-      th.appendChild(el('span', null, T(it.zh, it.en)));
-      hr.appendChild(th);
+    sec.appendChild(el('p', 'lb-note', T('每次完成至少獲得 1 枚銅幣。五種寶物各自獨立擲骰，可以同時掉落；其他寶物的機率隨任務難度提高，與星星數及星星比例無關。',
+      'Every clear guarantees at least 1 copper coin. All five treasures are rolled independently and can drop together. Harder missions raise the other drop chances; stars and star share have no effect.')));
+    sec.appendChild(el('p', 'lb-note', T('L 是任務等級（1–10），t = (L − 1) / 9。表中的百分比經四捨五入；數量與權重固定，不隨難度或星星改變。',
+      'L is the mission level (1–10), and t = (L − 1) / 9. Percentages are rounded. Amounts and weights are fixed, regardless of difficulty or stars.')));
+    sec.appendChild(C.oddsTable(document, T));
+    sec.appendChild(el('h3', 'dl-odds-sub', T('每次完成的平均收穫', 'Average treasures per clear')));
+    const table = el('table', 'dl-table dl-ev-table'), head = el('thead'), hr = el('tr');
+    [T('寶物', 'Treasure'), T('1 級', 'Level 1'), T('5 級', 'Level 5'), T('10 級', 'Level 10')].forEach(function (label) {
+      const th = el('th', null, label); th.scope = 'col'; hr.appendChild(th);
     });
-    thead.appendChild(hr);
-    tb.appendChild(thead);
+    head.appendChild(hr); table.appendChild(head);
     const body = el('tbody');
-    // 今天的任務用到的等級（去掉重複、由低到高）；還沒有任務時列 1、5、10 級
-    const levels = picks().map(findMission).filter(Boolean).map(function (m) { return m.level; })
-      .filter(function (lv, i, a) { return a.indexOf(lv) === i; }).sort(function (x, y) { return x - y; });
-    (levels.length ? levels : [1, 5, 10]).forEach(function (lv) {
-      const tr = el('tr');
-      const th = el('th', null, (levels.length ? T(C.bandOf(lv).zh, C.bandOf(lv).en) + ' ' : '') + '★' + lv);
-      // 窄螢幕把「掉寶機率」改寫在任務名稱下面，表格才不會超出畫面
-      th.appendChild(el('span', 'dl-rep-inline', T('掉寶 ', 'Drop ') + pct(C.repeatChance(lv, S, TT))));
-      tr.appendChild(th);
-      tr.appendChild(el('td', 'dl-rep-col', pct(C.repeatChance(lv, S, TT))));
-      // 期望值（11/13 站長「改為期望值」）：完成一個每日任務平均拿到幾個＝掉寶機率 × 掉到這一種的機率 × 掉到時的平均數量
-      const rep = C.repeatChance(lv, S, TT);
-      C.table(lv, S, TT).forEach(function (p, i) { tr.appendChild(el('td', null, ev(rep * p * C.qtyMean(C.ITEMS[i].id, lv, S, TT)))); });
+    C.ITEMS.forEach(function (it, i) {
+      const tr = el('tr'), th = el('th', null, T(it.zh, it.en)); th.scope = 'row'; tr.appendChild(th);
+      [1, 5, 10].forEach(function (lv) { tr.appendChild(el('td', null, ev(C.dropChances(lv)[i] * C.qtyMean(it.id)))); });
       body.appendChild(tr);
     });
-    tb.appendChild(body);
-    wrap.appendChild(tb);
-    sec.appendChild(wrap);
-    sec.appendChild(el('p', 'lb-note', T('銅幣到鑰匙各欄是期望值：完成一個這種難度的每日任務，平均可以拿到幾個（＝掉寶機率 × 掉到這一種的機率 × 掉到時的平均數量）。例如 0.05 表示平均完成 20 個才拿到 1 個。每次掉寶只掉一種，新任務和做過的任務一樣。',
-      'The copper-to-key columns are expected values: how many you get on average per daily mission of that difficulty (drop chance × chance of that kind × average amount). For example, 0.05 means about 1 in every 20 missions. A drop is always one kind of treasure, the same for new missions and ones you have done.')));
-
-    // 掉到時的數量：和掉寶機率同一組條件（任務難度＋星星比例），越好越偏多；鑽石與鑰匙最多 1 個（11/12 站長）
-    sec.appendChild(el('h3', 'dl-odds-sub', T('掉到時的平均數量', 'Average amount when it drops')));
-    const wrap2 = el('div', 'dl-table-wrap');
-    const tb2 = el('table', 'dl-table dl-qty');
-    const head2 = el('thead'), hr2 = el('tr');
-    hr2.appendChild(el('th', null, T('任務', 'Mission')));
-    C.ITEMS.forEach(function (it) {
-      const th = el('th', 'r-' + it.id);
-      const ic = el('span', 'dl-ico sm'); ic.innerHTML = icon(it.id);
-      th.appendChild(ic);
-      th.appendChild(el('span', null, T(it.zh, it.en)));
-      hr2.appendChild(th);
-    });
-    head2.appendChild(hr2);
-    tb2.appendChild(head2);
-    const body2 = el('tbody');
-    (levels.length ? levels : [1, 5, 10]).forEach(function (lv) {
-      const tr = el('tr');
-      tr.appendChild(el('th', null, (levels.length ? T(C.bandOf(lv).zh, C.bandOf(lv).en) + ' ' : '') + '★' + lv));
-      C.ITEMS.forEach(function (it) {
-        tr.appendChild(el('td', null, it.max > it.min ? C.qtyMean(it.id, lv, S, TT).toFixed(1) : String(it.min)));
-      });
-      body2.appendChild(tr);
-    });
-    tb2.appendChild(body2);
-    wrap2.appendChild(tb2);
-    sec.appendChild(wrap2);
-    sec.appendChild(el('p', 'lb-note', T('數量的範圍：銅幣 1–5 枚、銀幣 1–3 枚、金幣 1–2 枚；任務越難、你的星星比例越高，越容易一次掉好幾枚。鑽石與稀有鑰匙每次最多 1 個。',
-      'Amounts: copper 1–5, silver 1–3, gold 1–2 — harder missions and a bigger star share make bigger handfuls likelier. A diamond or rare key is always just one.')));
+    table.appendChild(body); sec.appendChild(table);
+    sec.appendChild(el('p', 'lb-note', T('期望值＝該寶物的掉落機率 × 掉到時的平均數量。銅幣平均 2.33 枚、銀幣 1.67 枚、金幣 1.33 枚；鑽石與稀有鑰匙各 1 個。新任務與領過星星的任務採用相同掉寶規則。',
+      'Expected value = that treasure’s drop chance × its average amount when it drops. The fixed average amounts are 2.33 copper, 1.67 silver, 1.33 gold, and 1 diamond or key. New and previously claimed missions use the same drop rules.')));
     return sec;
   }
 
