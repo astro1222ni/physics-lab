@@ -67,3 +67,5 @@ LabSide.mount({module:'my-lab',
 補充：`action` 也可傳回傳動作字串的函式，方便先指向探針選擇鈕，再顯示拖曳手勢。小鍵盤的 `refresh()` 會立即同步外部的物件選擇；實驗切換探針時應呼叫它，避免下一次指標操作落在舊位置。放大鏡會避開小鍵盤及目前針尖，使用者自己拖放的小鍵盤位置仍優先保留。
 
 獨立自學頁可在 `<body data-comments-url="實驗代號.html">` 指定所屬實驗，或傳入 `feedbackContent({url})`。本頁沒有 `LabComments` 時會開啟該同源實驗頁，待 API 就緒後呼叫 `LabComments.compose`；只填草稿，不送出留言。嵌入實驗的 `.fb-tab` 由外層入口取代。
+
+任務側板會呼叫主線 `LabMission.needOf(m)` 顯示「還差什麼」，不重寫條件；展開的清單隨實驗即時更新。「看全部條件」優先捲到可見的共用側板，並展開該任務。`LabSide.instance.open(tab)` 保證開啟，重複呼叫不會把側板關掉。

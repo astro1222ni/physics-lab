@@ -35,3 +35,6 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 
 /* 嵌入實驗由外層自學側板提供留言入口，避免重複標籤。 */
 .lab-embed .fb-tab{display:none!important}
+
+/* 獨立自學頁開留言時，兩個入口都留在抽屜可見範圍內。 */
+@media(max-width:1239px){html[data-lp-state=half] .study-page:has(#lp-tab-comments[aria-selected=true]) .lp-panel,html[data-lp-state=half] .study-page:has(#lp-tab-comments[aria-selected=true]) .lp-strip{top:min(var(--lp-half-top,38dvh),calc(100dvh - var(--study-nav,64px) - 340px))!important}}

@@ -671,8 +671,8 @@
       if (window.LabSide && LabSide.instance) LabSide.instance.open('missions');
       listeners.forEach(function (fn) { fn(); });
       setTimeout(function () {
-        const li = document.querySelector('[data-mid="' + m.id + '"]');
-        if (li && li.getClientRects().length) li.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        const li = document.querySelector('.labside-mission[data-mid="' + m.id + '"]') || document.querySelector('[data-mid="' + m.id + '"]');
+        if (li && li.getClientRects().length) { const detail = li.querySelector('details.ms-need'); if (detail) detail.open = true; li.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
       }, 80);
     });
     nearBox.appendChild(more);
