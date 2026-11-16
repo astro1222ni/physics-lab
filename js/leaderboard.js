@@ -446,9 +446,19 @@
     const d = x >= 100 ? 0 : x >= 10 ? 1 : 2, k = Math.pow(10, d);
     return (Math.floor(x * k + 1e-9) / k).toFixed(d) + ' ' + units[i];
   }
+  // 站長 11/16：「寶物的總值請以鑽石為單位計算。」資料庫的 v 仍以銅幣存（規則檢查加權和），只在顯示時換成鑽石（1 鑽石 = 1000 銅）
+  function diamonds(v, short) {
+    v = Math.max(0, Math.floor(Number(v) || 0));
+    if (short && v >= 1e6) return siShort(Math.floor(v / 1000));
+    return (v / 1000).toLocaleString(undefined, { maximumFractionDigits: 3 });
+  }
   function treasureAmount(row, metric, short) {
+    if (metric === 'v') {
+      const d = diamonds(row && row.v, short);
+      return short ? T(d + ' 鑽石', d + ' diamonds') : T('總價值 ' + d + ' 顆鑽石', 'Value ' + d + ' diamonds');
+    }
     const value = short ? siShort(row && row[metric]) : Number(row && row[metric] || 0).toLocaleString();
-    return metric === 'v' ? (short ? T(value + ' 銅', value + ' copper') : T('總價值 ' + value + ' 銅', 'Value ' + value + ' copper')) : value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
+    return value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
   }
   function treasureTabs() {
     const box = $('treasureTabs'); box.innerHTML = '';
@@ -508,7 +518,7 @@
   TC.ITEMS.forEach(function (item) {
     const cell = el('div', 'tb-value r-' + item.id), art = el('span', 'dl-ico sm'); art.innerHTML = TC.icon(item.id); cell.appendChild(art);
     cell.appendChild(el('span', null, T(item.zh, item.en)));
-    cell.appendChild(el('strong', null, TC.TREASURE_WEIGHTS[item.id].toLocaleString() + T(' 銅', ' copper')));
+    cell.appendChild(el('strong', null, diamonds(TC.TREASURE_WEIGHTS[item.id]) + T(' 鑽石', ' diamonds')));
     $('treasureValues').appendChild(cell);
   });
   if (LM) LM.on('profile', function () { refresh(); if (!$('treasureBoardPanel').hidden) refreshTreasure(); });
