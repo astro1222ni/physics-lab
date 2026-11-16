@@ -29,6 +29,10 @@
     return s;
   }
 
+  // 每日任務頁與排行榜使用同一張由核心機率公式產生的表。
+  const dailyOdds = $('dailyOdds');
+  if (dailyOdds && window.LabDailyCore) dailyOdds.appendChild(window.LabDailyCore.oddsTable(document, T));
+
   // ---------- 載入所有模組的任務檔（只註冊任務，不會在這頁判定） ----------
   const loaded = LM && LM.loadAll ? LM.loadAll() : Promise.resolve();
 

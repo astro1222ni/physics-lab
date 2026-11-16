@@ -10,7 +10,7 @@
  * 資料存在 localStorage 'mdb'，並模擬資料庫規則（firebase/database.rules.json）：
  *   任務只能領一次、星星數必須等於 missionDefs（1–20）、總分遞增正確、各科星星只增不減且加總不超過總星數；
  *   補發 bonus/<uid>/<任務>：只增不減、完成紀錄 + 補發 = missionDefs、總分剛好加上差額、必須和總分一起寫；
- *   每日任務的換日、兩次掉寶至少隔 10 秒、每天最多 45 次；寶物每次增加的上限、必須和每日任務一起寫入。
+ *   每日任務的換日、兩次完成至少隔 10 秒、每天最多 10 次；五種寶物可同時增加，各有上限，必須和每日任務一起寫入。
  * 任務完成前要先同步任務清單：以管理員登入並打開任何實驗頁或排行榜頁（missions.js 會自動同步），
  * 或直接在 'mdb'.missionDefs 預先放入 { 任務代號: { stars: 等級 } }。
  */
@@ -82,7 +82,6 @@
     if (!n) return 'bag: 不能刪除';
     if (!newDaily || newDaily.at !== t || !(newDaily.n >= 1)) return 'bag: 必須同時寫入每日任務';
     if (oldDaily && oldDaily.d === newDaily.d && newDaily.n !== oldDaily.n + 1) return 'bag: 每日任務次數必須加一';
-    if (['cu', 'ag', 'au', 'dia', 'key'].filter(k => ((o && o[k]) ?? null) !== (n[k] ?? null)).length > 1) return 'bag: 一次最多一種寶物';
     for (const k of Object.keys(n)) {
       if (JSON.stringify(n[k]) === JSON.stringify(o && o[k])) continue; // 和正式規則一樣：只檢查有變動的欄位
       if (MAX[k] == null) return 'bag: 多餘欄位 ' + k;

@@ -294,7 +294,6 @@
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
         ".write": "auth != null && auth.uid === $uid && newData.exists() && newData.parent().parent().child('daily').child($uid).child('at').val() === now && newData.parent().parent().child('daily').child($uid).child('n').val() >= 1 && (newData.parent().parent().child('daily').child($uid).child('d').val() !== root.child('daily').child($uid).child('d').val() || newData.parent().parent().child('daily').child($uid).child('n').val() === root.child('daily').child($uid).child('n').val() + 1)",
-        ".validate": "(newData.child('cu').val() !== data.child('cu').val() ? 1 : 0) + (newData.child('ag').val() !== data.child('ag').val() ? 1 : 0) + (newData.child('au').val() !== data.child('au').val() ? 1 : 0) + (newData.child('dia').val() !== data.child('dia').val() ? 1 : 0) + (newData.child('key').val() !== data.child('key').val() ? 1 : 0) <= 1",
         "cu": {
           ".validate": "newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 5"
         },

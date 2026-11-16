@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611160631"></script>
+  <script src="js/settings.js?v=202611161029"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Ni Stars Leaderboard | Astro Ni Lab">倪的星星排行榜｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -27,7 +27,8 @@
   <!-- SEO-END -->
 
 
-  <link rel="stylesheet" href="lab.css?v=202611160631">
+  <link rel="stylesheet" href="lab.css?v=202611161029">
+  <link rel="stylesheet" href="daily.css?v=202611161029" data-daily-style>
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -90,8 +91,10 @@
       </ul>
       <h3 data-en="Daily missions">每日任務</h3>
       <ul>
-        <li data-en="Every day at 00:00 Taiwan time you get ten daily missions, each counting once a day. Each one you clear may drop copper, silver or gold coins, a diamond or a rare key; a mission that has already paid its stars earns no more. Details are on the daily missions page.">每天臺灣時間 00:00 換新十個每日任務，每個一天只能完成一次；每完成一個都有機會掉落銅幣、銀幣、金幣、鑽石或稀有鑰匙，但已經領過星星的任務不會再加星。詳細規則在每日任務頁。</li>
+        <li data-en="Ten daily missions refresh at 00:00 Taiwan time. Each counts once a day and guarantees at least 1 copper coin. All five treasures are rolled independently, so several kinds or all five can drop together. Previously claimed missions earn no more stars but use the same drop rules.">每天臺灣時間 00:00 換新十個每日任務，每個一天只能完成一次；完成至少得到 1 枚銅幣。五種寶物各自獨立判定，可以一次掉多種，最多五寶齊發！領過星星的任務不再加星，掉寶規則相同。</li>
+        <li data-en="Only difficulty affects drop chances; stars and star share have no effect. Let L be the mission level (1–10) and t = (L − 1) / 9. The table gives rounded percentages. Amounts and weights are fixed at every level.">只有任務難度會影響掉落機率，與星星數及星星比例無關。L 為任務等級（1～10），t = (L − 1) / 9；下表百分比經四捨五入，數量與權重固定。</li>
       </ul>
+      <div id="dailyOdds"></div>
       <h3 data-en="Fair play">公平競賽</h3>
       <ul>
         <li data-en="Please earn your stars by doing the experiments. The administrator may remove results obtained by technical tricks.">請靠操作實驗賺取星星；以技術手段取得的成績，管理員可以移除。</li>
@@ -108,13 +111,13 @@
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611160631"></script>
-  <script src="js/firebase-config.js?v=202611160631"></script>
-  <script src="js/missions.js?v=202611160631"></script>
-  <script src="js/missions/index.js?v=202611160631"></script>
-  <script src="js/achievements.js?v=202611160631"></script>
-  <script src="js/daily-core.js?v=202611160631"></script>
-  <script src="js/leaderboard.js?v=202611160631"></script>
-  <script src="js/comments.js?v=202611160631"></script>
+  <script src="js/sound.js?v=202611161029"></script>
+  <script src="js/firebase-config.js?v=202611161029"></script>
+  <script src="js/missions.js?v=202611161029"></script>
+  <script src="js/missions/index.js?v=202611161029"></script>
+  <script src="js/achievements.js?v=202611161029"></script>
+  <script src="js/daily-core.js?v=202611161029"></script>
+  <script src="js/leaderboard.js?v=202611161029"></script>
+  <script src="js/comments.js?v=202611161029"></script>
 </body>
 </html>
