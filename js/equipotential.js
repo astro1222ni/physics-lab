@@ -1326,8 +1326,24 @@
         : i===1&&state.medium==='water'
           ? T('黑探針 N1 已經插在水中當參考點，不用動它，接通電源後這步自動打勾；或按「電表與探針」卡的「黑探針夾到負極（0 V）」作參考。','Black N1 is already in the water as the reference — leave it; this step ticks itself once the supply is on. Or press “Clip N1 to the negative electrode (0 V)” in “Meter and probes” for a metal reference.')
           : T(s[0],s[1]);
-      return {html:symbols(text),done:d[i],current:i===now};
+      return {html:symbols(text),done:d[i],current:i===now,need:stepNeed(i)};
     });
+  }
+  // 每一步「還差什麼？」：逐條 [ok, 中文, English]，ok 為 null 是接下來要做的動作（和任務的 need 同一套格式）
+  // 站長 11/16：「但是還缺什麼？這個設計很好，步驟跟一般任務都需要有。」
+  function stepNeed(i){
+    const A=analysis(),sh=sheet(),water=state.medium==='water';
+    if(i===0)return [[state.power,'按「接通電源」','Press “Switch on the supply”']];
+    if(i===1)return [[state.clip||n1Resting(),water?'黑探針 N1 插在水中、不在電極上（不用動它）':'黑探針 N1 在紙上、不在電極上（不用動它）',water?'Black N1 is in the water, not on an electrode (leave it)':'Black N1 is on the sheet, not on an electrode (leave it)'],[state.power,'電源已接通','Supply is on']];
+    if(i===2){const m=meterNow(),r=m.reading;const out=[[state.power,'電源已接通','Supply is on']];
+      if(state.clip)out.push([null,'移動紅探針 N2 到想找的電壓（例如 2.00 V）','Move red N2 to the voltage you want (e.g. 2.00 V)']);
+      else out.push([state.power&&Math.abs(r)<=.02,'讀數為 0.00 V（±0.02 V 內），目前 '+(state.power?r.toFixed(2)+' V':'—'),'Reading 0.00 V (within ±0.02 V); now '+(state.power?r.toFixed(2)+' V':'—')]);
+      out.push([sh.recs.length>0,'按「記錄」記下這一點','Press “Record” to save the point']);return out;}
+    if(i===3){const n=A.groups.filter(function(g){return g.pts.length>=5;}).length,cur=A.groups.length?Math.max.apply(null,A.groups.map(function(g){return g.pts.length;})):0;
+      return [[n>=4,'至少 4 條等位線、每條 5 點以上：目前 '+n+' 條','At least 4 lines with 5+ points each: '+n+' so far'],[cur>=5||n>=4,'這一條先找到 5 點，散開在整條線上（最多的一條有 '+cur+' 點）','Get 5 points spread along this line (best line has '+cur+')'],[null,'再換一個目標電壓（或移動 N1）描下一條','Then change the target voltage (or move N1) for the next line']];}
+    if(i===4)return [[A.groups.some(function(g){return g.pts.length>=3;}),'至少一條線有 3 點以上','At least one line has 3+ points'],[!!state.drawLines,'在「作圖與分析」卡勾選「把同一條線的點連成平滑的等位線」','Tick “Join the points of each line” in “Drawing and analysis”']];
+    if(i===5)return [[!!state.drawField,'勾選「畫出與等位線垂直的電力線」','Tick “Draw field lines at right angles to them”'],[sketch().lines.length>0,'畫面上出現電力線（要先有連好的等位線）','Field lines appear (needs joined equipotentials)']];
+    return [[null,'把紅探針放在兩條你描的等位線之間','Put the red probe between two lines you traced'],[!!sh.est,'按「估算紅探針處的電場」','Press “Estimate E at the red probe”']];
   }
   function guideProbe(id,to){return {canvas:'#cv',client:true,at:function(){const p=to|| (id==='n1'?n1Pos():state.n2);const r=cv.getBoundingClientRect();return {x:r.left+X(p.x),y:r.top+Y(p.y)};}};}
   function guideDefinitions(study){const label=function(id){return function(){return $(id).closest('label')||$(id);};};const focus=function(id,study){return function(){return state.sel===id?guideProbe(id):document.querySelector(study?'#eq-study-tools button:nth-child('+(id==='n1'?2:3)+')':'[data-sel="'+id+'"]');};};const gesture=id=>()=>state.sel===id?'drag':'tap';const open=()=>stage.classList.contains('is3d')?$('view2d'):null;
@@ -1350,7 +1366,9 @@
       {target:'#est',hint:()=>T('估算紅探針處的電場','Estimate the field at the red probe')}
     ];
   }
-  function updateSteps(){const a=stepState();$('steps').innerHTML=a.map(s=>'<li class="'+(s.done?'done':s.current?'now':'')+'">'+s.html+'</li>').join('');if(window.LabStepGuide&&!window.EquipotentialStudy?.observing){LabStepGuide.define(guideDefinitions(false),{key:'equipotential'});LabStepGuide.update(a.findIndex(s=>s.current),{key:'equipotential',auto:true});}}
+  function needHtml(list){return list.map(function(x){return '<li class="'+(x[0]===true?'ms-need-ok':x[0]===false?'ms-need-no':'ms-need-act')+'"><span class="ms-need-mark">'+(x[0]===true?'✓':x[0]===false?'✗':'→')+'</span><span>'+symbols(T(x[1],x[2]||x[1]))+'</span></li>';}).join('');}
+  let stepNeedOpen=true;$('steps').addEventListener('toggle',function(e){if(e.target.matches&&e.target.matches('details.step-need'))stepNeedOpen=e.target.open;},true);
+  function updateSteps(){const a=stepState();$('steps').innerHTML=a.map(s=>'<li class="'+(s.done?'done':s.current?'now':'')+'">'+s.html+(s.current&&s.need?'<details class="ms-need step-need"'+(stepNeedOpen?' open':'')+'><summary>'+T('還差什麼？','What’s missing?')+'</summary><ul>'+needHtml(s.need)+'</ul></details>':'')+'</li>').join('');if(window.LabStepGuide&&!window.EquipotentialStudy?.observing){LabStepGuide.define(guideDefinitions(false),{key:'equipotential'});LabStepGuide.update(a.findIndex(s=>s.current),{key:'equipotential',auto:true});}}
   function setStatus(s) { lastStatus = s; $('status').innerHTML = symbols(s); }
   function meterHint() {
     $('meterHint').innerHTML = symbols(state.meter === 'phone'
