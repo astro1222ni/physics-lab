@@ -426,11 +426,28 @@ function isolated(events, id) {
   if (hit.length !== 1 || hit[0] !== id) { failures.push(id + ' 不獨立：' + hit.join('、')); return false; }
   return true;
 }
+// 站長 11/16 裁定「水槽也算」：一般任務 1–12、h1–h3 也認水槽事件，所以水槽任務 13、15 可連帶完成條件同樣成立的一般任務；
+// 但不可連帶其他專屬任務（14、自學 16–32）。
+const GENERAL = new Set(['1','2','3','4','5','6','7','8','9','10','11','12','h1','h2','h3'].map(n => 'equipotential-' + n));
+function waterIsolated(ev, id) {
+  const hit = [...fire(ev)];
+  const bad = hit.filter(h => h !== id && !GENERAL.has(h));
+  if (!hit.includes(id) || bad.length) { failures.push(id + ' 不獨立：' + hit.join('、')); return false; }
+  return true;
+}
+prove('equipotential-4', '（水槽也算）水槽、兩圓、N1 夾負極、2、3、4 V 各 4 點，勾選畫電力線', () => {
+  const lab = Lab({ medium: 'water' }), ev = []; lab.clip = true;
+  [2, 3, 4].forEach(v => traceRows(lab, v, [3, 7, 13, 17], 8.8, 21.2, ev));
+  const f = fieldlines(lab);
+  ev.push(['fieldlines', f]);
+  const hit = fire(ev);
+  return { ok: hit.has('equipotential-4') && f.medium === 'water', info: '量測線 ' + f.nCurves + ' 條、電力線 ' + f.nLines + ' 條；水槽事件 water-fieldlines 也完成 4' };
+});
 prove('equipotential-13', '水槽理想直流，夾負極，在 2.00 V 線取 6 點', () => {
   const lab = Lab({ medium: 'water' }), ev = []; lab.clip = true;
   traceRows(lab, 2, [2, 5, 8, 12, 15, 18], 15, 29.5, ev);
   const d = ev[ev.length - 1][1];
-  return { ok: isolated(ev, 'equipotential-13'), info: '跨距 ' + d.groupSpan.toFixed(2) + ' cm、真實電位差 ' + d.groupVRange.toFixed(4) + ' V；只完成 13' };
+  return { ok: waterIsolated(ev, 'equipotential-13'), info: '跨距 ' + d.groupSpan.toFixed(2) + ' cm、真實電位差 ' + d.groupVRange.toFixed(4) + ' V；完成 13（可連帶一般任務 3）' };
 });
 prove('equipotential-14', '相同兩圓、6 V，紙與水在 2.00 V 各取 5 點', () => {
   const paper = Lab({}), water = Lab({ medium: 'water' }), ev = [];
@@ -443,7 +460,7 @@ prove('equipotential-15', '水槽含誤差直流，邊到邊長條，夾負極�
   const lab = Lab({ medium: 'water', type: 'bars', noise: true, seed: 1 }), ev = []; lab.clip = true;
   [2.4, 3.3].forEach(v => traceRows(lab, v, [4, 8, 12, 16], 9, 21, ev));
   const e = estimate(lab, [15, 10]); if (e) ev.push(['estimate', e]);
-  return { ok: isolated(ev, 'equipotential-15'), info: e ? '水中電壓 ' + lab.vm().bulk.toFixed(2) + ' V、誤差 ' + (e.err * 100).toFixed(2) + ' %、距電極 ' + e.distEl.toFixed(2) + ' cm；只完成 15' : '沒有估算結果' };
+  return { ok: waterIsolated(ev, 'equipotential-15'), info: e ? '水中電壓 ' + lab.vm().bulk.toFixed(2) + ' V、誤差 ' + (e.err * 100).toFixed(2) + ' %、距電極 ' + e.distEl.toFixed(2) + ' cm；完成 15（可連帶一般估算任務）' : '沒有估算結果' };
 });
 (function () {
   for (const mode of [{}, { noise: true }, { ac: true, meter: 'phone' }]) {
