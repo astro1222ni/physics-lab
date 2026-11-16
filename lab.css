@@ -1956,3 +1956,21 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
 .ms-near-x { flex: none; min-width: 36px; min-height: 36px; margin: -6px -6px 0 0; border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; }
 .ms-near li { color: var(--text); }
 .ms-near-more { margin-top: 6px; min-height: 40px; width: 100%; font-weight: 700; }
+
+/* 手機操作台 js/labdeck.js（站長 11/16：操作鍵集中在畫布下方、滑桿間距縮小） */
+.labdeck { margin: 8px 0 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.labdeck-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-bottom: 1px solid var(--border); background: var(--bg); }
+.labdeck-tabs button { min-height: 44px; margin: 0; padding: 4px 2px; border: 0; border-radius: 0; background: transparent; color: var(--muted);
+  font-weight: 700; font-size: calc(14px * var(--fs, 1)); line-height: 1.2; }
+.labdeck-tabs button + button { border-left: 1px solid var(--border); }
+.labdeck-tabs button[aria-selected="true"] { color: var(--accent); background: var(--surface); box-shadow: inset 0 -3px 0 var(--accent); }
+.labdeck-pane > .card { margin: 0; padding: 6px 10px 8px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.labdeck-pane > .card > h2 { display: none; }
+.labdeck .slider { margin: 0 0 2px; gap: 0 8px; align-items: center; }
+.labdeck .slider .lab-num { min-height: 28px !important; height: 28px; } /* 看不見的 ::after 仍把觸控範圍放大到約 44 px */
+.labdeck .slider input[type="range"] { height: 30px !important; margin: 0; }
+/* 「接通電源」這類主開關放在分頁最上面（data-deck-top），不用往下找 */
+.labdeck-pane > .card { display: flex; flex-direction: column; }
+.labdeck-pane [data-deck-top] { order: -1; margin: 0 0 6px; }
+.labdeck .hint { margin: 4px 0; font-size: calc(13px * var(--fs, 1)); }
+.labdeck .seg, .labdeck .seg2, .labdeck .seg3 { margin-bottom: 4px; }

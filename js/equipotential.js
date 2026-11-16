@@ -1295,7 +1295,7 @@
   // 站長 11/16：「步驟要去找到那個『估算電場』，可是他卻找不到……實驗步驟可能還要再寫詳細一點」
   // → 每一步寫出按鈕上的真實字樣與它在哪一張卡片。
   const STEPS = [
-    ['在「電極與電源」卡選電極（兩圓形電極／平行長條／長條與圓形）、拉「電源電壓 V0」，再按同一張卡最下面的「接通電源」。', 'In “Electrodes and power supply”, pick the electrodes, set the supply voltage V0, then press “Switch on the supply” at the bottom of that card.'],
+    ['在「電極與電源」卡選電極（兩圓形電極／平行長條／長條與圓形）、拉「電源電壓 V0」，再按同一張卡的「接通電源」（手機在畫布下方的「電極與電源」分頁）。', 'In “Electrodes and power supply”, pick the electrodes, set the supply voltage V0, then press “Switch on the supply” in that card (on a phone: the “Power” tab under the canvas).'],
     ['黑探針 N1 固定不動：在畫布上把它拖到紙上任一點；或按「電表與探針」卡的「黑探針夾到負極（0 V）」，讀數就直接是 N2 的電位。', 'Keep black N1 still: drag it to any point on the sheet, or press “Clip N1 to the negative electrode (0 V)” in “Meter and probes” so the reading is the potential of N2.'],
     ['移動紅探針 N2（在畫布上拖，或用「電表與探針」卡的方向鍵、浮動的「⠿ 微調」小鍵盤細調），讓讀數為 0.00 V（N1 夾負極時，找目標電壓，例如 2.00 V），再按畫布正下方的「記錄」。', 'Move red N2 (drag it, or use the arrows in “Meter and probes” or the floating “⠿ Fine move” keypad) until the reading is 0.00 V (with N1 clipped, the target voltage such as 2.00 V), then press “Record” right under the canvas.'],
     ['同一個讀數找至少 5 點，散開在整條線上；再換一個目標電壓（或移動 N1），描出至少 4 條等位線。', 'Find at least 5 points at the same reading, spread along the whole line; then change the target voltage (or move N1) and trace at least 4 lines.'],

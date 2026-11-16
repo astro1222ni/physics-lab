@@ -210,8 +210,10 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <!-- 站長 11/16：手機上操作鍵要集中在一頁內 → 寬度 ≤ 880 px（單欄）時，標了 data-deck 的卡片收進這裡的分頁操作台（js/labdeck.js） -->
+        <div data-deck-anchor data-deck-off="eq-study" hidden></div>
         <!-- 站長 11/16：「電表與探針……距離操作盤太遠了，要來回滾動操作是很困難的」→ 搬到記錄鍵正下方 -->
-        <section class="card eq-probe-card">
+        <section class="card eq-probe-card" data-deck="電表與探針|Probes" data-deck-order="2">
           <h2 data-en="Meter and probes">電表與探針</h2>
           <div class="eq-pc-grid">
             <div class="eq-pc-col">
@@ -248,6 +250,23 @@
           </div>
           <p class="hint" id="meterHint"></p>
         </section>
+        <!-- 站長 11/16：「估算電場找不到……按鍵在很下面」→ 搬到電表與探針卡正下方，平板、電腦不必捲到數據表後面 -->
+        <details class="card eq-analysis-card" open data-guide-card data-deck="作圖與分析|Analysis" data-deck-order="3">
+          <summary data-en="Drawing and analysis">作圖與分析</summary>
+          <div class="checks col">
+            <label><input id="drawLines" type="checkbox"><span data-en="Join the points of each line with a smooth curve">把同一條線的點連成平滑的等位線</span></label>
+            <label><input id="drawField" type="checkbox"><span data-en="Draw field lines at right angles to them">畫出與等位線垂直的電力線</span></label>
+          </div>
+          <div class="btns"><button type="button" id="est" data-en="Estimate E at the red probe">估算紅探針處的電場</button></div>
+          <dl class="readout" id="estOut">
+            <dt data-en="Lines used">用到的兩條線</dt><dd id="eLines">—</dd>
+            <dt data-en="Distance between them Δd">兩線距離 Δd</dt><dd id="eDd">—</dd>
+            <dt data-en-html="Estimate <span class=&quot;f&quot;>ΔV/Δd</span>">估算 <span class="f">ΔV/Δd</span></dt><dd id="eEst">—</dd>
+            <dt data-en="Computed (midpoint)">計算值（中點）</dt><dd id="eCalc">—</dd>
+            <dt data-en="Difference">差異</dt><dd id="eErr">—</dd>
+          </dl>
+          <p class="hint" data-en="Put the red probe between two of your lines (an electrode also counts as an equipotential). Δd is measured between the nearest points of the two lines.">把紅探針放在兩條量到的等位線之間（電極本身也是等位線），Δd 是兩條線上離探針最近的兩點之間的距離。</p>
+        </details>
         <p class="sr-only" id="srMeter" role="status" aria-live="polite"></p>
         <div class="legend">
           <span class="lg-mark" data-en-html="<i></i>Recorded points"><i></i>記錄點</span>
@@ -275,7 +294,7 @@
           <ol class="steps" id="steps"></ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電極與電源|Power" data-deck-order="1">
           <h2 data-en="Electrodes and power supply">電極與電源</h2>
           <div class="seg3" role="group" aria-label="電極形狀" data-en-aria-label="Electrode shape">
             <button type="button" data-type="circles" aria-pressed="true" data-en="Two circles">兩圓形電極</button>
@@ -290,7 +309,7 @@
             <input id="L" type="range" min="4" max="20" step="1" value="20" data-decimals="0"></div>
           <div class="slider"><label for="V0" data-en-html="Supply voltage V<sub>0</sub>">電源電壓 V<sub>0</sub></label><output id="V0o"></output>
             <input id="V0" type="range" min="1" max="12" step="0.5" value="6" data-decimals="1"></div>
-          <button type="button" id="power" aria-pressed="false" data-en="Switch on the supply">接通電源</button>
+          <button type="button" id="power" aria-pressed="false" data-deck-top data-en="Switch on the supply">接通電源</button>
           <p class="hint" data-medium-only="paper" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
           <p class="hint" data-medium-only="water" hidden data-en="Keep the tray level and both copper electrodes immersed. The left electrode connects to the supply's red terminal, the right to the black reference terminal. AC voltages are RMS; DC with errors includes interface polarization. Each setting has its own grid-paper record.">水槽保持水平，兩個銅電極浸入水中。左電極接電源紅端，右電極接黑色參考端；交流電壓以有效值表示，含誤差直流另計界面極化。每組設定各有一份方格紙記錄。</p>
         </section>
@@ -307,7 +326,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="讀數|Readings" data-deck-order="4">
           <h2 data-en="Meter readings">讀數</h2>
           <dl class="readout">
             <dt id="rMeterLabel">電表讀數</dt><dd id="rMeter" class="big">—</dd>
@@ -320,23 +339,6 @@
             <dt data-en="Polarization voltage drop">極化壓降</dt><dd id="rPolar">—</dd>
           </dl>
         </section>
-
-        <details class="card" open data-guide-card>
-          <summary data-en="Drawing and analysis">作圖與分析</summary>
-          <div class="checks col">
-            <label><input id="drawLines" type="checkbox"><span data-en="Join the points of each line with a smooth curve">把同一條線的點連成平滑的等位線</span></label>
-            <label><input id="drawField" type="checkbox"><span data-en="Draw field lines at right angles to them">畫出與等位線垂直的電力線</span></label>
-          </div>
-          <div class="btns"><button type="button" id="est" data-en="Estimate E at the red probe">估算紅探針處的電場</button></div>
-          <dl class="readout" id="estOut">
-            <dt data-en="Lines used">用到的兩條線</dt><dd id="eLines">—</dd>
-            <dt data-en="Distance between them Δd">兩線距離 Δd</dt><dd id="eDd">—</dd>
-            <dt data-en-html="Estimate <span class=&quot;f&quot;>ΔV/Δd</span>">估算 <span class="f">ΔV/Δd</span></dt><dd id="eEst">—</dd>
-            <dt data-en="Computed (midpoint)">計算值（中點）</dt><dd id="eCalc">—</dd>
-            <dt data-en="Difference">差異</dt><dd id="eErr">—</dd>
-          </dl>
-          <p class="hint" data-en="Put the red probe between two of your lines (an electrode also counts as an equipotential). Δd is measured between the nearest points of the two lines.">把紅探針放在兩條量到的等位線之間（電極本身也是等位線），Δd 是兩條線上離探針最近的兩點之間的距離。</p>
-        </details>
 
         <section class="card">
           <h2 data-en="Computed by the simulation (answer key)">模擬程式的計算值（對照答案）</h2>
@@ -528,6 +530,7 @@
   <script src="js/study/equipotential.js?v=202611161543"></script>
   <script src="js/equipotential-study-card.js?v=202611161543"></script>
   <script src="js/equipotential-study.js?v=202611161543"></script>
+  <script src="js/labdeck.js?v=202611161548"></script>
   <script src="js/equipotential-controls.js?v=202611161543"></script>
 </body>
 </html>
