@@ -975,14 +975,16 @@
   // 3D 檢視時在 3D 畫面正下方另畫一張指針放大（站長 11/17：「3D 立體的時候，看不到指針的偏移量的特寫，根本沒辦法做實驗。也沒有指針偏移量的讀數。」）
   const mag3 = $('mag3');
   function drawMag3() {
-    if (!mag3 || !st.piece || !(view3 && view3.active)) return;
+    // 3D 檢視，或手機橫放的 2D（畫布太矮、底下兩張小圖畫不下）都用這張
+    const in3d = !!(view3 && view3.active);
+    if (!mag3 || !st.piece || !(in3d || compact)) return;
     const w = mag3.clientWidth, h = mag3.clientHeight;
     if (!w || !h) return;
     const d = Math.min(3, window.devicePixelRatio || 1), pw = Math.round(w * d), ph = Math.round(h * d);
     if (mag3.width !== pw || mag3.height !== ph) { mag3.width = pw; mag3.height = ph; }
     const g = mag3.getContext('2d');
     g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, h);
-    drawMag(g, { x: 0, y: 0, w: w, h: h }, true);
+    drawMag(g, { x: 0, y: 0, w: w, h: h }, in3d);
   }
   function draw() {
     if (!W || !st.piece) return;
@@ -999,6 +1001,7 @@
       ['c',P(ARM,-UBC*Math.sin(beam.th)+BT*Math.cos(beam.th),ZP+UBC*Math.cos(beam.th)+BT*Math.sin(beam.th))],
       ['K',P(-POSTX,0,ZP)]
     ] });
+    if (compact) drawMag3();
   }
 
   /** 牆上直尺用放大視窗呈現；光路距離與讀數仍取真正的 2.00 m。 */
@@ -1573,15 +1576,21 @@
   // 🎮 小鍵盤的預設空位（站長 11/16：鈕蓋到「從管口往內看」，「好，移開」）：畫布下半部畫著兩張放大圖，
   // 所以停在 I₂、I₁ 兩台儀表之間的空地；空地不在畫面裡時，有左側留白就停在留白；都沒有才交給共用的預設位置。
   function padHome(w,h){
-    const rect=cv.getBoundingClientRect(),a=meters[0],b=meters[1];if(!a||!b||!rect.width||!W)return null;
-    const k=rect.width/W,gap=(b.x-(a.x+a.w))*k,x=rect.left+(a.x+a.w)*k+(gap-w)/2,y=rect.top+(a.y+a.h/2)*k-h/2;
-    if(gap>=w+16&&y>=8&&y+h<=innerHeight-8)return {x,y};
+    const rect=cv.getBoundingClientRect(),a=meters[0],b=meters[1];
+    if(a&&b&&rect.width&&W){
+      const k=rect.width/W,gap=(b.x-(a.x+a.w))*k,x=rect.left+(a.x+a.w)*k+(gap-w)/2,y=rect.top+(a.y+a.h/2)*k-h/2;
+      if(gap>=w+16&&y>=8&&y+h<=innerHeight-8)return {x,y};
+    }
+    // 3D 或手機橫放時有「指針放大」：放在它右邊的空白（指針與刻度在左半）
+    const mr=mag3&&mag3.getBoundingClientRect();
+    if(mr&&mr.width&&mr.height){const x=mr.right-w-10,y=mr.top+mr.height/2-h/2;if(x>=mr.left+mr.width*.6&&y>=8&&y+h<=innerHeight-8)return {x,y};}
+    const ref=rect.width?rect:$('view3').getBoundingClientRect();
     // 手機儀表擠在一起沒有空隙：放在畫布正上方「2D 示意／3D 立體」那一列的右端（那裡是空的）；
     // 這一列中線在畫面內就放，貼邊時由小鍵盤自己夾回畫面內
     const bar=cv.closest('.stage')?.querySelector('.view-bar'),br=bar&&bar.getBoundingClientRect();
     if(br&&br.width&&br.top+br.height/2>=8&&br.top+br.height/2<=innerHeight-8){const used=Math.max(...[...bar.children].filter(e=>e.getClientRects().length).map(e=>e.getBoundingClientRect().right),br.left);
-      if(br.right-used>=w+12)return {x:Math.min(rect.right,br.right)-w-4,y:br.top+br.height/2-h/2};}
-    if(rect.left>=w+16&&rect.bottom>innerHeight*.4)return {x:rect.left-w-8,y:innerHeight-h-8};
+      if(br.right-used>=w+12)return {x:Math.min(ref.right,br.right)-w-4,y:br.top+br.height/2-h/2};}
+    if(ref.width&&ref.left>=w+16&&ref.bottom>innerHeight*.4)return {x:ref.left-w-8,y:innerHeight-h-8};
     return null;
   }
   window.CurrentBalanceLab={padHome,snapshot:()=>({...info(),knobs:{I1:st.I1,I2:st.I2},rows:rowsInfo().rows.map(r=>({...r})),analysis:analysis(),show:{...st.show},steps:st.steps.slice()}),preset,view:setView,redraw:requestDraw,tweak,screenPoint,
