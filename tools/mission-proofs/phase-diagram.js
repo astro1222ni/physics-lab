@@ -133,7 +133,7 @@ report('h6：CO2 −52 °C 等溫加壓（先在 20 atm 是液體，約 ' + (PD.
 p = page('iodine', K(120), ATM); path(p, 'press', 1e8);
 report('h6 用碘也可以：120 °C 等溫加壓（約 ' + (PD.pmelt('iodine', K(120)) / 1e6).toFixed(1) + ' MPa 凝固）', p, ['phase-diagram-h6']);
 p = page('water', K(-10), 1e4); path(p, 'depress', 1);
-report('反例：冰減壓昇華（h1 要用加熱）', p, [], ['phase-diagram-h1']);
+report('h1 也可以：冰在三相點以下等溫減壓直接昇華（站長 11/16「要放寬認定」）', p, ['phase-diagram-h1']);
 p = page('co2', K(25), 3 * ATM); path(p, 'cool', K(-100));
 report('反例：CO2 在 3 atm 冷卻凝華（h3 要在 1 atm）', p, [], ['phase-diagram-h3']);
 p = page('co2', K(-70), 30 * ATM); path(p, 'heat', K(0));

@@ -77,7 +77,7 @@
     {
       id: 'gis-overlay-6', level: 4,
       title: { zh: '一塊校地', en: 'A plot for a school' },
-      desc: { zh: '學校：每一條都用上、不放寬，點一格每一條都通過的地。', en: 'School: with every rule on and none relaxed, tap a cell that passes them all.' },
+      desc: { zh: '在「布林疊合」裡，學校：每一條都用上、不放寬，點一格每一條都通過的地。', en: 'In Boolean overlay, School: with every rule on and none relaxed, tap a cell that passes them all.' },
       check: function (ev) { const d = V(ev); return strict(d, 'school') && d.method === 'bool' && !!d.probe && d.probe.ok; }
     },
     {

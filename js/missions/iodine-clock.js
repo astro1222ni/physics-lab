@@ -33,7 +33,7 @@
     {
       id: 'iodine-clock-3', level: 3,
       title: { zh: '碘離子加倍', en: 'Double the iodide' },
-      desc: { zh: '同一個反應、同一溫度，只把碘化鉀的體積加倍（其他都不變）做兩次，兩次的速率比在 1.85–2.15 之間。', en: 'With the same reaction and temperature, do two runs where only the volume of potassium iodide is doubled (nothing else changes). The ratio of the two rates must be 1.85–2.15.' },
+      desc: { zh: '過硫酸根、勾著「保持離子強度」（預設已勾），同一個反應、同一溫度，只把碘化鉀的體積加倍（其他都不變）做兩次，兩次的速率比在 1.85–2.15 之間。', en: 'Persulfate with “Keep the ionic strength” ticked (the default): With the same reaction and temperature, do two runs where only the volume of potassium iodide is doubled (nothing else changes). The ratio of the two rates must be 1.85–2.15.' },
       check: function (ev) {
         const d = run(ev);
         if (!d || !(d.rate > 0)) return false;

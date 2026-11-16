@@ -77,7 +77,7 @@
         en: 'Without touching the number of harmonics, pick at least four of “Piano”, “Organ”, “Strings”, “Pluck” and “Percussion” and play a note with each: the spectrum is exactly the same — only the envelope changes — yet they sound like different instruments.' },
       check: function (ev, mem) {
         const d = ev.data;
-        if (!rel(ev) || !d.preset || d.edited) return false;
+        if (!(rel(ev) || revDone(ev)) || !d.preset || d.edited) return false; // 站長 11/16「要放寬認定」：倒放也算
         if (mem.N !== d.N || mem.high !== d.high) { mem.N = d.N; mem.high = d.high; mem.seen = {}; }
         mem.seen[d.preset] = true;
         return Object.keys(mem.seen).length >= 4;

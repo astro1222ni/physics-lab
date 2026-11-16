@@ -10,37 +10,48 @@
   if (!window.LabMission) return;
   const near = function (v, w, tol) { return Math.abs(v - w) <= (tol == null ? 1e-6 : tol); };
   const zero = function (D) { return Math.abs(D) < 1e-9; };
+  // 站長 11/16「要放寬認定」：「拋物線與直線」模式也能調同一條拋物線，換算出拋物線本身的 D 與實根（算法同 quadratic-function-core.js）
+  const para = function (ev) {
+    const d = ev.data;
+    if (ev.type === 'graph') return d;
+    if (ev.type !== 'line') return null;
+    const a = d.a, b = d.b, c = d.c, D = b * b - 4 * a * c;
+    let roots = [];
+    if (Math.abs(D) < 1e-9) roots = [-b / (2 * a)];
+    else if (D > 0) { const sq = Math.sqrt(D), q = -0.5 * (b + (b >= 0 ? sq : -sq)); let r1 = q / a, r2 = q !== 0 ? c / q : -r1; if (q === 0) { r1 = Math.sqrt(-c / a); r2 = -r1; } roots = r1 < r2 ? [r1, r2] : [r2, r1]; }
+    return { a: a, b: b, c: c, h: d.h, k: d.k, D: D, roots: roots };
+  };
 
   LabMission.register('quadratic-function', [
     {
       id: 'quadratic-function-1', level: 1,
       title: { zh: '頂點搬家', en: 'Move the vertex' },
       desc: { zh: '把頂點移到 (2, −3)。', en: 'Move the vertex to (2, −3).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && near(d.h, 2) && near(d.k, -3); }
+      check: function (ev) { const d = para(ev); return !!d && near(d.h, 2) && near(d.k, -3); }
     },
     {
       id: 'quadratic-function-2', level: 2,
       title: { zh: '輕輕碰一下', en: 'Just a touch' },
       desc: { zh: '讓圖形剛好碰到 x 軸（D = 0），而且頂點不在原點。', en: 'Make the graph just touch the x-axis (D = 0), with the vertex away from the origin.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && zero(d.D) && !near(d.h, 0); }
+      check: function (ev) { const d = para(ev); return !!d && zero(d.D) && !near(d.h, 0); }
     },
     {
       id: 'quadratic-function-3', level: 2,
       title: { zh: '永遠是正的', en: 'Always positive' },
       desc: { zh: '讓 f(x) 對每一個 x 都大於 0，而且 b ≠ 0。', en: 'Make f(x) > 0 for every x, with b ≠ 0.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && d.a > 0 && d.D < 0 && !zero(d.D) && !near(d.b, 0); }
+      check: function (ev) { const d = para(ev); return !!d && d.a > 0 && d.D < 0 && !zero(d.D) && !near(d.b, 0); }
     },
     {
       id: 'quadratic-function-4', level: 3,
       title: { zh: '倒過來的山，兩根都正', en: 'Upside down, both roots positive' },
       desc: { zh: '開口向下，而且兩個實根都是正數。', en: 'Open downward with two real roots, both positive.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && d.a < 0 && d.roots.length === 2 && d.roots[0] > 1e-9; }
+      check: function (ev) { const d = para(ev); return !!d && d.a < 0 && d.roots.length === 2 && d.roots[0] > 1e-9; }
     },
     {
       id: 'quadratic-function-5', level: 4,
       title: { zh: '指定的根與截距', en: 'Given roots and intercept' },
       desc: { zh: '讓兩個根是 −2 和 3，而且圖形經過 (0, 12)。', en: 'Make the roots −2 and 3, with the graph passing through (0, 12).' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && d.roots.length === 2 && near(d.roots[0], -2) && near(d.roots[1], 3) && near(d.c, 12); }
+      check: function (ev) { const d = para(ev); return !!d && d.roots.length === 2 && near(d.roots[0], -2) && near(d.roots[1], 3) && near(d.c, 12); }
     },
     {
       id: 'quadratic-function-6', level: 5,
@@ -97,7 +108,7 @@
     {
       id: 'quadratic-function-h3', level: 4, hidden: true,
       riddle: { zh: '三個點，三條邊一樣長。', en: 'Three points, three equal sides.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'graph' && d.roots.length === 2 && near(d.a * d.k, -3); }
+      check: function (ev) { const d = para(ev); return !!d && d.roots.length === 2 && near(d.a * d.k, -3); }
     }
   ]);
 })();

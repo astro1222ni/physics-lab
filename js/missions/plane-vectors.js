@@ -9,6 +9,14 @@
   if (!window.LabMission) return;
   const nz = function (u) { return u[0] !== 0 || u[1] !== 0; };
   const slanted = function (u) { return u[0] !== 0 && u[1] !== 0; };
+  // 站長 11/16「要放寬認定」：線性組合模式的 a、b 和內積模式共用，換算成同樣的量（挑戰中不算）
+  const vecs = function (ev) {
+    const d = ev.data;
+    if (ev.type === 'dot') return d;
+    if (ev.type !== 'lin' || d.chal) return null;
+    const a = d.a, b = d.b;
+    return { a: a, b: b, det: d.det, dot: a[0] * b[0] + a[1] * b[1], aa: a[0] * a[0] + a[1] * a[1], bb: b[0] * b[0] + b[1] * b[1] };
+  };
   const near = function (v, w, tol) { return Math.abs(v - w) <= tol; };
 
   LabMission.register('plane-vectors', [
@@ -52,19 +60,19 @@
       id: 'plane-vectors-7', level: 4,
       title: { zh: '反方向的半個影子', en: 'Half a shadow, backwards' },
       desc: { zh: '讓 b 在 a 上的正射影剛好是 −a/2。', en: 'Make the projection of b on a exactly −a/2.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'dot' && nz(d.a) && nz(d.b) && 2 * d.dot === -d.aa; }
+      check: function (ev) { const d = vecs(ev); return !!d && nz(d.a) && nz(d.b) && 2 * d.dot === -d.aa; }
     },
     {
       id: 'plane-vectors-8', level: 3,
       title: { zh: '面積 10', en: 'Area 10' },
       desc: { zh: '讓 a、b 張出的平行四邊形面積剛好是 10，而且兩個向量都不在座標軸上。', en: 'Make the parallelogram spanned by a and b have area exactly 10, with neither vector on an axis.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'dot' && Math.abs(d.det) === 10 && slanted(d.a) && slanted(d.b); }
+      check: function (ev) { const d = vecs(ev); return !!d && Math.abs(d.det) === 10 && slanted(d.a) && slanted(d.b); }
     },
     {
       id: 'plane-vectors-9', level: 5,
       title: { zh: '一樣長又垂直', en: 'Equal and perpendicular' },
       desc: { zh: '讓 |a| = |b| = 5、a ⊥ b，而且 a 不在座標軸上。', en: 'Make |a| = |b| = 5 and a ⊥ b, with a not on an axis.' },
-      check: function (ev) { const d = ev.data; return ev.type === 'dot' && d.aa === 25 && d.bb === 25 && d.dot === 0 && slanted(d.a); }
+      check: function (ev) { const d = vecs(ev); return !!d && d.aa === 25 && d.bb === 25 && d.dot === 0 && slanted(d.a); }
     },
     {
       id: 'plane-vectors-10', level: 4,

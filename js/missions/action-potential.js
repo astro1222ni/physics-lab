@@ -39,7 +39,7 @@
       desc: { zh: '在同樣的溫度、離子與藥物條件、同樣的脈衝寬度下，用兩個相差至少 3 倍的強度各引發一個動作電位，而且兩個峰值相差不到 5 mV。刺激加大三倍，動作電位幾乎沒有變大。', en: 'Under the same temperature, ions and drugs and the same pulse width, fire one action potential with a stimulus and another with one at least 3 times stronger — with peaks less than 5 mV apart. Triple the stimulus, and the spike hardly grows.' },
       check: function (ev, mem) {
         const d = ev.data;
-        if (!(single(ev) && d.fired1 && d.a1 > 0)) return false;
+        if (!(ev.type === 'stim' && d.mode !== 'step' && d.fired1 && d.a1 > 0)) return false; // 站長 11/16「要放寬認定」：成對脈衝的第一發也算
         const prev = (mem.fired || []).filter(function (p) { return p.env === d.env && Math.abs(p.dur - d.dur) < 1e-6; });
         const ok = prev.some(function (p) { const r = Math.max(p.a1, d.a1) / Math.min(p.a1, d.a1); return r >= 3 && Math.abs(p.peak - d.peak1) < 5; });
         remember(mem, 'fired', { env: d.env, dur: d.dur, a1: d.a1, peak: d.peak1 });

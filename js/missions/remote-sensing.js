@@ -29,7 +29,7 @@
       id: 'remote-sensing-2', level: 2,
       title: { zh: '紅色的森林', en: 'A red forest' },
       desc: { zh: '換成標準假色（5-4-3），看健康的植物變成紅色。', en: 'Switch to colour infrared (5-4-3) and watch healthy plants turn red.' },
-      check: function (ev) { const d = V(ev); return !!d && img(d) && d.layer === 'rgb' && d.comp === 'cir'; }
+      check: function (ev) { const d = V(ev); return !!d && img(d) && d.layer === 'rgb' && (d.comp === 'cir' || (!!d.rgb && d.rgb[0] === 5 && d.rgb[1] === 4 && d.rgb[2] === 3)); }
     },
     {
       id: 'remote-sensing-3', level: 2,

@@ -22,7 +22,7 @@
     {
       id: 'hydrogen-spectrum-1', level: 1,
       title: { zh: '第一道紅光', en: 'The first red light' },
-      desc: { zh: '讓電子由 n = 3 掉到 n = 2，放出巴耳末系的紅色譜線 Hα（656 nm）。', en: 'Make the electron fall from n = 3 to n = 2 and emit the red Balmer line Hα (656 nm).' },
+      desc: { zh: '在「單一原子」模式中，讓電子由 n = 3 掉到 n = 2，放出巴耳末系的紅色譜線 Hα（656 nm）。', en: 'In “One atom” mode, Make the electron fall from n = 3 to n = 2 and emit the red Balmer line Hα (656 nm).' },
       check: function (ev) { return ev.type === 'emit' && ev.data.from === 3 && ev.data.to === 2; }
     },
     {
@@ -38,7 +38,7 @@
     {
       id: 'hydrogen-spectrum-3', level: 3,
       title: { zh: '一階一階走下樓', en: 'Down the stairs, one step at a time' },
-      desc: { zh: '讓電子從 n = 4 依序掉到 n = 3、n = 2、n = 1，連續放出三個光子（中間不做其他躍遷）。三個光子的能量加起來是多少？', en: 'Starting from n = 4, make the electron fall to n = 3, then n = 2, then n = 1, emitting three photons in a row (no other jumps in between). What do the three energies add up to?' },
+      desc: { zh: '在「單一原子」模式中，讓電子從 n = 4 依序掉到 n = 3、n = 2、n = 1，連續放出三個光子（中間不做其他躍遷）。三個光子的能量加起來是多少？', en: 'In “One atom” mode, Starting from n = 4, make the electron fall to n = 3, then n = 2, then n = 1, emitting three photons in a row (no other jumps in between). What do the three energies add up to?' },
       check: function (ev, mem) {
         if (chainBreak(ev)) { mem.step = 0; return false; }
         if (ev.type !== 'emit') return false;

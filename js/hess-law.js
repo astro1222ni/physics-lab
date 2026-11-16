@@ -275,7 +275,7 @@
         T('（模擬的設定值是 ' + H.C_CAL + ' J/K，相差 ', '(the value set in the simulation is ' + H.C_CAL + ' J/K: off by ') + signed(err, 1) + ' J/K' + T('）已填入熱容量欄。', '.) It has been entered in the heat-capacity box.');
       $('inC').value = num(C, 1).replace('−', '-');
       addRow({ kind: 'cal', meth: meth, dT: A.dT, C: C, n: null, dH: null, ref: null, err: null, Ccal: C });
-      if (userActed && window.LabMission) window.LabMission.emit('calib', { C: C, err: err, method: meth });
+      if (userActed && window.LabMission) window.LabMission.emit('calib', { C: C, err: err, method: meth, dTraw: A.dTraw, dText: A.fitOk ? A.dText : null });
       ding(Math.abs(err) <= 5);
       return;
     }

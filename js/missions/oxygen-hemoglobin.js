@@ -24,7 +24,7 @@
     {
       id: 'oxygen-hemoglobin-2', level: 2,
       title: { zh: '肌肉裡的倉庫', en: 'The store in the muscle' },
-      desc: { zh: '換成肌紅素，用探針找出它飽和度 50%（誤差 1% 以內）的氧分壓。可以點數字直接輸入。', en: 'Switch to myoglobin and use the probe to find the oxygen pressure at which it is 50% saturated (within 1%). You can type the number directly.' },
+      desc: { zh: '（不能有 CO）換成肌紅素，用探針找出它飽和度 50%（誤差 1% 以內）的氧分壓。可以點數字直接輸入。', en: '(No CO.) Switch to myoglobin and use the probe to find the oxygen pressure at which it is 50% saturated (within 1%). You can type the number directly.' },
       check: function (ev) { const d = oxy(ev); return !!d && d.type === 'Mb' && d.ppm === 0 && Math.abs(d.Sp - 0.5) <= 0.01; }
     },
     {

@@ -94,7 +94,7 @@
     {
       id: 'phase-diagram-h1', level: 3, hidden: true,
       riddle: { zh: '沒有濕過，就乾了。', en: 'Dried without ever getting wet.' },
-      check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'sublime' && d.mode === 'heat'; }
+      check: function (ev) { const d = cr(ev); return !!d && d.sub === 'water' && d.kind === 'sublime' && (d.mode === 'heat' || d.mode === 'depress'); }
     },
     {
       id: 'phase-diagram-h2', level: 4, hidden: true,
