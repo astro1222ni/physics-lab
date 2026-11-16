@@ -3,6 +3,35 @@
   'use strict';
   if (!window.LabMission) return;
 
+  // 自學事件一次只判一個里程碑；上課示範、還原與非本實驗事件一律不領星。
+  function studyTask(n, level, title, titleEn, desc, descEn, act, seg, test) {
+    return {id:'current-balance-'+n,level,study:true,title:{zh:title,en:titleEn},desc:{zh:desc,en:descEn},
+      check(e){const d=e.data||{};return e.type==='study'&&d.module==='current-balance'&&d.userAction===true&&!d.teaching&&!d.restoring&&d.act===act&&d.seg===seg&&!!test(d);}};
+  }
+  function taskDefinitions() {
+    const finite=(v)=>Number.isFinite(v), first=d=>d.firstCorrect===2;
+    return [
+      studyTask(14,1,'一粒米的疑問','A grain-sized question','看過 Kibble 天平照片，再放上一粒米。','Inspect the Kibble balance photograph, then place one grain.','intro-completed',1,d=>d.photoSeen&&d.riceSeen),
+      studyTask(15,2,'先猜再說','Predict first','兩題預測都送出，答案稍後揭曉。','Submit both predictions before revealing answers.','predictions-submitted',2,d=>d.submitted===2),
+      studyTask(16,3,'神準預言家','Perfect predictions','兩題預測第一次都答對，再揭曉。','Get both predictions right on the first attempt, then reveal.','predictions-perfect',2,d=>first(d)&&d.revealed),
+      studyTask(17,3,'觀念五連','Five connected ideas','看完五張觀念卡，實際打開 3D 右手開掌。','Inspect all five concept cards, including the 3D right hand.','concepts-completed',3,d=>d.cardsSeen===5&&d.handSeen),
+      studyTask(18,4,'歸零','Zero the balance','動手實驗時不通電、不掛物，歸零並停穩。','In the hands-on section, zero the unloaded balance with power off and let it settle.','zero-completed',4,d=>!d.power&&!d.hung&&d.rest&&d.level&&finite(d.zeroOff)&&Math.abs(d.zeroOff)<.8),
+      studyTask(19,5,'第一筆數據','Your first measurement','第 4 段平衡後記錄第一筆自己的數據。','Record your first balanced measurement in Section 4.','first-recorded',4,d=>d.ownN>=1&&d.recorded&&d.rest&&d.level&&!d.given),
+      studyTask(20,6,'五筆數據','Five measured masses','實驗一固定 I1，量五筆、五種質量。','In Part 1, keep I1 fixed and measure five different masses.','five-recorded',4,d=>d.n>=5&&d.distinctM>=5&&finite(d.I1spread)&&d.I1spread<=.011&&!d.given),
+      studyTask(21,6,'量出 μ0','Measure μ0','由自己的五筆斜率求 μ0，誤差小於 5%。','Use the slope of your own five rows to find μ0 within 5%.','mu-calculated',4,d=>d.n>=5&&d.distinctM>=5&&finite(d.err)&&Math.abs(d.err)<.05&&finite(d.answerErr)&&Math.abs(d.answerErr)<.05),
+      studyTask(22,4,'對答案','Compare your answer','比對自己的 μ0，並揭曉兩題預測。','Compare your measured μ0 and reveal both predictions.','answer-compared',5,d=>d.n>=5&&d.submitted===2&&d.revealed&&finite(d.mu0)&&d.mu0>0),
+      studyTask(23,5,'真實的螺線管','The real solenoid','比較長螺線管與真實管口的力矩差異。','Compare the long-solenoid and real-mouth torque models.','models-compared',5,d=>d.idealSeen&&d.realSeen&&finite(d.ratio)&&d.ratio>=.88&&d.ratio<=.94),
+      studyTask(24,4,'範例一','Example one','算線長，再在原實驗平衡、記錄、驗算。','Calculate wire length, balance it, record and verify in the real simulation.','example-one-checked',6,d=>d.example===1&&d.ownRecord&&d.balanced&&finite(d.lengthError)&&d.lengthError<.1),
+      studyTask(25,5,'範例二','Example two','把雙曲線改畫成直線，再由斜率求 μ0。','Transform the hyperbola into a straight line and find μ0 from its slope.','example-two-checked',6,d=>d.example===2&&d.linear&&finite(d.err)&&Math.abs(d.err)<.05),
+      studyTask(26,6,'範例三','Example three','由給定資料判斷不為零的截距來自未歸零。','Identify an unzeroed balance as the cause of the nonzero intercept.','example-three-checked',6,d=>d.example===3&&d.cause==='zero'&&finite(d.intercept)&&Math.abs(d.intercept)>.0003),
+      studyTask(27,4,'隨堂全對','Three correct answers','隨堂三題全答對，可以重答。','Answer all three quick checks correctly; retries are allowed.','quiz-correct',7,d=>d.correct===3),
+      studyTask(28,7,'一次全對','Perfect first attempt','隨堂三題第一次就全答對。','Answer all three quick checks correctly on the first attempt.','quiz-perfect',7,d=>d.firstCorrect===3),
+      studyTask(29,5,'我量出的 μ0','My measured μ0','用自己的五筆做成果圖卡，成功分享或存圖。','Create a card from your own five rows and share or save it.','card-exported',8,d=>d.n>=5&&d.distinctM>=5&&d.exported===true&&['download','share'].includes(d.method)),
+      studyTask(30,8,'自學全通','Complete self-study','完成八段，並取得本單元 14–29 的自學星星。','Complete all eight sections and earn study missions 14–29.','unit-completed',8,d=>Array.isArray(d.sections)&&d.sections.length===8&&d.sections.every(v=>v===true)&&Array.isArray(d.awarded)&&Array.from({length:16},(_,i)=>i+14).every(n=>d.awarded.includes(n)))
+    ];
+  }
+  window.CurrentBalanceStudyTasks={taskDefinitions};
+
   // 事件（js/current-balance.js 回報；質量 mg、電流 A、指針 mm）：
   //   'state'：放開滑桿、按按鈕、天平停穩時
   //     { power, fromMin（開電源時兩個旋鈕都在 0）, I1, I2（真實電流）, I1m, I2m（電表讀數）, s1, s2（±1 接線方向）,
@@ -127,6 +156,9 @@
         return near(p1.mu0, p2.mu0, 0.01) && rows(d).every(careful);
       }
     },
+    {id:'current-balance-12',level:5,title:{"zh":"光槓桿","en":"Optical lever"},desc:{"zh":"開光槓桿，光點離零線 2 mm 以內，天平停穩後記錄。","en":"Enable the optical lever and record when the spot is within 2 mm of zero and the beam is still."},check(e){const d=e.data||{};return e.type==='optical-record'&&d.recorded&&d.optical&&d.rest&&d.level&&Number.isFinite(d.spotMm)&&Math.abs(d.spotMm)<=2;}},
+    {id:'current-balance-13',level:4,title:{"zh":"抬起一粒米","en":"Lift one grain"},desc:{"zh":"米粒模式掛一粒，平衡並停穩後記錄。","en":"Hang one grain in rice mode, balance it, let it settle and record."},check(e){const d=e.data||{};return e.type==='rice-record'&&d.recorded&&d.weight==='rice'&&d.grains===1&&d.hung&&d.currents&&d.rest&&d.level;}},
+    ...taskDefinitions(),
     // ---------- 隱藏任務：只給隱晦的提示 ----------
     {
       id: 'current-balance-h1', level: 4, hidden: true,

@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <script src="js/settings.js?v=202611161711"></script>
+  <script src="js/modegate.js" data-lab="自由操作天平、記錄與分析｜光槓桿、米粒與四向接線" data-lab-en="Operate, record and analyze|Optical lever, rice and four wirings" data-learn="八段引導自學、78 顆星｜老師上課、逐行範例" data-learn-en="Eight guided sections, 78 stars|Class mode and stepwise examples"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Current Balance | Astro Ni Lab">電流天平｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -30,6 +31,9 @@
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="lab.css?v=202611161711">
+  <link rel="stylesheet" href="study.css">
+  <link rel="stylesheet" href="lab-tools.css">
+  <link rel="stylesheet" href="current-balance-study.css">
   <style>
     /* 本頁專用的顏色代號（淺色＋深色）：由 js/current-balance.js 與 js/current-balance-3d.js 讀取 */
     :root {
@@ -158,6 +162,10 @@
     <p class="try-hint" data-en-html="<span>Try it: press “Power on”, set I<sub>1</sub> to 2 A, press “Hang it on the balance”, then slowly adjust I<sub>2</sub> until the pointer is level again.</span>"><span>試試看：按「開啟電源」，I<sub>1</sub> 調到 2 A、按「掛上天平」，再慢慢調 I<sub>2</sub> 讓指針回到水平。</span></p>
     <div class="lab cb">
       <div class="stage" id="stage">
+        <section id="cb-study-shell" hidden>
+          <div class="cb-study-head"><strong id="cb-study-heading"></strong><button id="cb-panel-toggle" type="button" aria-label="切換說明與操作" data-en-aria-label="Toggle help and controls">☷</button><button id="cb-class" type="button" data-en="Class mode">上課</button><a href="?mode=lab" data-en="Back to lab">回實驗</a></div>
+          <nav id="cb-study-progress" aria-label="八段自學" data-en-aria-label="Eight study sections"></nav>
+        </section>
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D diagram">2D 示意</button>
@@ -168,13 +176,26 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" role="img" aria-label="電流天平實驗裝置的立體示意圖：剖開一半的螺線管、伸進管內的ㄈ字形電路、支點、掛在外端的漆包線、歸零螺母與水平指標；下方是從管口往內看的右手開掌定則、指針放大鏡、兩台電源供應器的電流表與電子秤。" data-en-aria-label="Diagram of the current balance: a solenoid cut open, the U-shaped circuit reaching into it, the pivot, the piece of enamelled wire on the outer end, the zero-adjusting nut and the level pointer; below, the view into the solenoid from its mouth with the right-hand rule, a magnifier for the pointer, the ammeters of the two power supplies and the electronic scale."></canvas>
         <div id="view3"></div>
-        <div class="playbar">
+        <div id="cb-course-visual" hidden></div>
+        <p id="cb-study-caption" class="cb-caption" hidden></p>
+        <div id="cb-study-tools" hidden></div>
+        <div id="cb-study-nav" data-guide-avoid hidden></div>
+        <p id="cb-study-message" role="status" hidden></p>
+        <div class="playbar" data-guide-avoid>
           <button type="button" id="power" aria-pressed="false" data-en="Power on">開啟電源</button>
           <button type="button" id="record" class="primary" data-en="Record">記錄</button>
           <button type="button" id="undo" data-en="Delete last row">刪除上一筆</button>
           <button type="button" id="clearAll" data-en="Clear all" title="清除數據表與分析圖；旋鈕、漆包線與歸零螺母的設定不變" data-en-title="Clear the data table and the graph; knob, wire and nut settings are kept">全部清除</button>
           <button type="button" id="soundBtn" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-deck-anchor></div>
+        <div class="cb-fine-bar" data-guide-avoid id="cb-fine-bar">
+          <button type="button" data-fine="nut" data-en="Fine: nut">微調：螺母</button>
+          <button type="button" data-fine="I1" data-en-html="Fine: I<sub>1</sub>">微調 I<sub>1</sub></button>
+          <button type="button" data-fine="I2" data-en-html="Fine: I<sub>2</sub>">微調 I<sub>2</sub></button>
+          <span id="cb-guide-toggle"></span>
+        </div>
+        <div class="ex-bar" data-examples="current-balance"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--neg)" data-en-html="<i style=&quot;background:var(--neg)&quot;></i>Magnetic field B"><i style="background:var(--neg)"></i>磁場 B</span>
@@ -183,11 +204,11 @@
           <span style="color:var(--probe)" data-en-html="<i style=&quot;background:var(--probe)&quot;></i>Weight mg"><i style="background:var(--probe)"></i>重量 mg</span>
         </div>
         <p class="hint l2" data-en="The front half of the solenoid is cut away so that you can see the circuit inside. Lengths along the solenoid and the tilt of the balance are drawn to scale; force arrows share one scale (in the ideal model F and mg are equal when the balance is level).">螺線管前半部剖開，看得到裡面的電路。沿螺線管方向的長度與天平的傾斜都依比例繪製；受力箭頭用同一個比例（理想模型中，天平水平時 F 與 mg 一樣長）。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Everything is drawn to scale in centimetres; the tilt, the forces and the field lines come from the same physics as the 2D view.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。所有物件依實際尺寸（公分）繪製；天平的傾斜、受力與磁力線都由與 2D 相同的物理計算而來。</p>
+        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. The apparatus is drawn to scale in centimetres; the hand and optical path are teaching illustrations. Tilt, forces and field lines share the 2D physics.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。器材依實際尺寸（公分）繪製；手掌與光路為教學示意。天平的傾斜、受力與磁力線都由與 2D 相同的物理計算而來。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" id="cb-procedure" data-deck="步驟|Procedure" data-deck-order="5">
           <h2 data-en="Procedure">實驗步驟</h2>
           <div class="seg2" role="group" aria-label="選擇實驗" data-en-aria-label="Choose the experiment">
             <button type="button" id="part1" aria-pressed="true" data-en-html="Part 1: fix I<sub>1</sub>, adjust I<sub>2</sub>">實驗一：固定 I<sub>1</sub>、調 I<sub>2</sub></button>
@@ -203,7 +224,7 @@
           </ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電流|Currents" data-deck-order="1">
           <h2 data-en="Power supplies">電源供應器</h2>
           <div class="slider"><label for="I1" data-en-html="Balance current I<sub>1</sub> (knob, U-shaped circuit)">天平電流 I<sub>1</sub>（旋鈕，ㄈ字形電路）</label><output id="I1o"></output>
             <input id="I1" type="range" min="0" max="4" step="0.01" value="0" data-decimals="3"></div>
@@ -211,25 +232,32 @@
           <div class="slider"><label for="I2" data-en-html="Solenoid current I<sub>2</sub> (knob)">螺線管電流 I<sub>2</sub>（旋鈕）</label><output id="I2o"></output>
             <input id="I2" type="range" min="0" max="5" step="0.01" value="0" data-decimals="3"></div>
           <div class="rev"><button type="button" id="rev2" aria-pressed="false" data-en-html="Reverse I<sub>2</sub>">I<sub>2</sub> 反向</button></div>
+          <button type="button" id="tryWiring" data-en="Try all four wirings">四種接線輪試</button>
+          <table id="wiringTable" class="cb-wiring-table"><thead><tr><th data-en-html="I<sub>1</sub> sign">I<sub>1</sub> 方向</th><th data-en-html="I<sub>2</sub> sign">I<sub>2</sub> 方向</th><th data-en="Force on bc">bc 受力</th></tr></thead><tbody id="wiringBody"></tbody></table>
+          <p id="wiringResult" class="hint" role="status"></p>
+          <p class="hint" data-en="Same signs pull bc down; opposite signs push it up. Signed averaging cancels fixed zero and Earth-field terms. At 2.50 A Earth is 0.28% of the solenoid field.">同號讓 bc 向下，異號讓 bc 向上。四向帶符號取平均可消去固定零偏與地磁項；2.50 A 時地磁約占 0.28 %。</p>
           <p class="hint" data-en="Record the ammeter readings (on the supplies), not the knob settings. Tap a number to type a more precise value.">記錄要用電源供應器上電流表的讀數，不是旋鈕的設定。點一下數字可以輸入更精確的值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="掛重物|Load" data-deck-order="2">
           <h2 data-en="Small weight: enamelled wire">小重物：漆包線</h2>
+          <label for="weightKind" data-en="Weight type">重物種類</label>
+          <select id="weightKind"><option value="wire" data-en="Enamelled wire">漆包線</option><option value="rice" data-en="Rice (22 ± 2 mg per grain)">米粒（每粒 22 ± 2 mg）</option></select>
+          <div class="cb-rice-count"><label for="grainCount" data-en="Grains">米粒數</label><select id="grainCount"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select><button type="button" id="newRice" data-en="New grains">換米粒</button></div>
           <div class="slider"><label for="wl" data-en="Length of the piece you cut">剪下的長度</label><output id="wlo"></output>
-            <input id="wl" type="range" min="0.5" max="7.5" step="0.1" value="2.5" data-decimals="1"></div>
+            <input id="wl" type="range" min="0.5" max="7.5" step="0.1" value="2.5" data-decimals="3"></div>
           <div class="btns"><button type="button" id="hang" aria-pressed="false" data-en="Hang it on the balance">掛上天平</button></div>
           <p class="hint" data-en="About 40 mg per centimetre. Changing the length means cutting a new piece, which is weighed on the electronic scale (1 mg resolution) before you hang it on the hook — the hook is exactly as far from the pivot as bc.">每公分約 40 mg。改變長度就是剪一段新的線，先放上電子秤（最小讀數 1 mg）稱重，再掛到掛勾上——掛勾與支點的距離恰好等於 bc 到支點的距離（等臂）。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="歸零|Zero" data-deck-order="3">
           <h2 data-en="Zero adjustment">歸零</h2>
           <div class="slider"><label for="nut" data-en="Zero nut position on the screw">歸零螺母在螺桿上的位置</label><output id="nuto"></output>
-            <input id="nut" type="range" min="0" max="20" step="0.05" value="10" data-decimals="2"></div>
+            <input id="nut" type="range" min="0" max="20" step="0.05" value="10" data-decimals="3"></div>
           <p class="hint" data-en="Moving the nut outward makes the outer end heavier. Zero the balance with no current and nothing on the hook.">螺母往外移，外端就變重。要在沒有電流、掛勾上沒有東西時歸零。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="儀器|Model" data-deck-order="4">
           <h2 data-en="Instruments">儀器</h2>
           <div class="seg2" role="group" aria-label="儀器" data-en-aria-label="Instruments">
             <button type="button" id="modeIdeal" aria-pressed="true" data-en="Ideal">理想</button>
@@ -241,7 +269,7 @@
           <p class="hint" id="modeHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="讀數|Readings" data-deck-order="7">
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout">
             <dt data-en="Balance (pointer)">天平（指針）</dt><dd id="rTilt">—</dd>
@@ -255,17 +283,21 @@
           <p class="hint" data-en-html="Solenoid: N = 1000 turns, length 25.0 cm, so n = 4000 turns/m. The segment bc is L = 3.00 cm long; both arms are 14.0 cm.">螺線管：N = 1000 匝、長 25.0 cm，n = 4000 匝/m。bc 段長 L = 3.00 cm；兩臂都是 14.0 cm。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="6">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
+            <label><input id="showOptical" type="checkbox"><span data-en="Optical lever · D = 2.00 m">光槓桿 · D = 2.00 m</span></label>
+            <label><input id="showHand" type="checkbox"><span data-en="3D right hand">3D 右手開掌</span></label>
             <label><input id="showLabels" type="checkbox" checked><span data-en="Labels">名稱標示</span></label>
             <label><input id="showField" type="checkbox" checked><span data-en="Magnetic field">磁場</span></label>
             <label><input id="showForce" type="checkbox" checked><span data-en="Forces">受力箭頭</span></label>
             <label><input id="showFlow" type="checkbox" checked><span data-en="Moving charges (current)">電流流動</span></label>
           </div>
+          <a href="https://youtu.be/iKhBJKr4cTE?t=61" target="_blank" rel="noopener noreferrer" data-en="▶ Mr. Ni’s right-hand rule [19] 1:01 (Chinese)">▶ 倪老師右手開掌〔19〕1:01</a>
+          <p class="hint" data-en="Optical spot: D tan(2θ), D = 2.00 m; at small angles, 2Dθ. The 3D optical path and hand are compressed teaching illustrations.">光點位移為 D tan(2θ)，D = 2.00 m；小角度時為 2Dθ。3D 光路與手掌是縮尺教學示意。</p>
         </section>
       </aside>
-      <section class="card cb-data" id="dataCard">
+      <section class="card cb-data" id="dataCard" data-deck="數據|Data" data-deck-order="9">
         <h2 data-en="Data table and analysis">數據表與分析</h2>
         <div class="grid">
           <div>
@@ -414,15 +446,28 @@
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
   <script src="js/math.js?v=202611161711"></script>
   <script src="js/current-balance-core.js?v=202611161711"></script>
+  <script src="js/current-balance-study-core.js"></script>
   <script src="js/sound.js?v=202611161711"></script>
   <script src="js/numinput.js?v=202611161711"></script>
   <script src="js/labdeck.js?v=202611161711"></script>
   <script src="js/drawkit.js?v=202611161711"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/current-balance-extras3d.js"></script>
   <script src="js/current-balance-3d.js?v=202611161711"></script>
   <script src="js/current-balance.js?v=202611161711"></script>
   <script src="js/firebase-config.js?v=202611161711"></script>
   <script src="js/missions.js?v=202611161711" data-module="current-balance"></script>
   <script src="js/missions/current-balance.js?v=202611161711"></script>
+  <script src="js/labpanel.js"></script>
+  <script src="js/study.js"></script>
+  <script src="js/examples.js"></script>
+  <script src="js/examples/current-balance.js"></script>
+  <script src="js/stepguide.js"></script>
+  <script src="js/vpad.js"></script>
+  <script src="js/study/current-balance.js"></script>
+  <script src="js/current-balance-study-card.js"></script>
+  <script src="js/current-balance-study.js"></script>
+  <script src="js/current-balance-controls.js"></script>
   <script src="js/stats.js?v=202611161711" data-module="current-balance"></script>
   <script src="js/comments.js?v=202611161711"></script>
 </body>

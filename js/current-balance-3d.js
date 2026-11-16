@@ -59,6 +59,7 @@
     controls.minDistance = 8;
     controls.maxDistance = 220;
     controls.target.copy(target0);
+    const nav=window.LabView3DNav?.attach({THREE,controls,canvas,host:env.host,radius:45,T});
 
     // ---- 環境反射（簡單的攝影棚），讓銅與金屬有真實的反光 ----
     const pmrem = new THREE.PMREMGenerator(renderer);
@@ -538,7 +539,7 @@
       bc: label(T('bc 段', 'segment bc'), '#e8eef0', V(UBC + ZP, 5.6, 3.5), V(UBC + ZP, 0.2, 0)),
       piv: label(T('支點 K', 'Pivot K'), '#e8eef0', V(ZP + 2.5, 5.2, 3.5), V(ZP, 0, POSTX + 0.2)),
       nut: label(T('歸零螺母', 'Zero nut'), '#f1d58f', V(ZP + 13, 4.2, 2.5), V(ZP + 15, 0.3, 0)),
-      wire: label(T('漆包線', 'Wire'), '#f2a58e', V(ZP + 9, -4.3, 4), V(ZP + UH, -2, 0)),
+      wire: label(T('掛重物', 'Load'), '#f2a58e', V(ZP + 9, -4.3, 4), V(ZP + UH, -2, 0)),
       card: label(T('水平刻度', 'Level scale'), '#e8eef0', V(ZP + 18.2, 5.6, -1.5), V((CARD.x0 + CARD.x1) / 2, CARD.y1, CARD.z)),
       sup2: label(T('螺線管電源', 'Solenoid supply'), '#c3ccd0', V(dev2.x, YT + dev2.h + 0.9, dev2.z + 1)),
       sup1: label(T('天平電源', 'Balance supply'), '#c3ccd0', V(dev1.x, YT + dev1.h + 0.9, dev1.z + 1)),
@@ -612,6 +613,14 @@
       controls.update();
     }
 
+    function fitHand(){
+      // 把拇指、四指與掌心三支方向箭頭都留在畫面內；橫放需替下方導覽鍵留空間。
+      controls.target.set(-6,3.5,3.5);
+      const direction=new THREE.Vector3(7,6,12).normalize();
+      camera.position.copy(controls.target).addScaledVector(direction,camera.aspect>1.8?23:20);
+      camera.updateProjectionMatrix();controls.update();
+    }
+
     // ---- 繪製 ----
     let raf = 0;
     function renderNow() {
@@ -633,7 +642,7 @@
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
-      if (Math.abs(camera.aspect - lastAspect) > 0.01) { lastAspect = camera.aspect; fit(false); }
+      if (Math.abs(camera.aspect - lastAspect) > 0.01) { lastAspect = camera.aspect; if(cur?.show.hand)fitHand();else fit(false); }
       const ls = camera.aspect < 1.1 ? 0.036 : LS;
       labels.forEach(function (l) { l.scale.set(ls * l.userData.k, ls, 1); });
       if (cur) update(); else requestRender();
@@ -671,6 +680,7 @@
       }
       for (; k < flowDots.length; k++) flowDots[k].visible = false;
     }
+    const extras=window.CurrentBalanceExtras3D.create(THREE,scene,T,tok);
     function update() {
       const s = env.state();
       cur = s;
@@ -678,7 +688,7 @@
       nutM.position.set(U1 + 0.25 + s.nut * 0.1, 0, 0);
       const hk = world(UH, -BT);
       hookG.position.set(hk[0], hk[1], 0);
-      if (s.hung) { if (Math.abs(wireLen - s.len) > 1e-9) rebuildWire(s.len); wireMesh.visible = true; }
+      if (s.hung && s.weight !== 'rice') { if (Math.abs(wireLen - s.len) > 1e-9) rebuildWire(s.len); wireMesh.visible = true; }
       else if (wireMesh) wireMesh.visible = false;
       // 繞線電流方向
       const on2 = s.power && s.I2 > 0;
@@ -725,6 +735,7 @@
         if (l.userData.leader) l.userData.leader.visible = vis;
       });
       placeFlow();
+      extras.update(s);
       requestRender();
     }
 
@@ -733,14 +744,17 @@
       update: update,
       frame: function () { update(); if (raf) { cancelAnimationFrame(raf); raf = 0; } renderNow(); },
       onTheme: function () { applyColors(); update(); },
-      resetCamera: function () { fit(true); requestRender(); },
+      resetCamera: function () { fit(true);nav?.home(); requestRender(); },
+      navigation:nav,
+      focusHand(){fitHand();nav?.home();requestRender();},
+      cameraState:()=>({position:camera.position.toArray(),target:controls.target.toArray()}),
       dispose: function () {
         api.active = false;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
-        controls.dispose();
+        nav?.dispose();controls.dispose();
         scene.traverse(function (o) {
           if (o.geometry) o.geometry.dispose();
           if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(function (m) { if (m.map) m.map.dispose(); m.dispose(); });
@@ -757,6 +771,7 @@
     const w0 = canvas.clientWidth, h0 = canvas.clientHeight;
     if (w0 && h0) { renderer.setSize(w0, h0, false); camera.aspect = w0 / h0; camera.updateProjectionMatrix(); lastAspect = camera.aspect; }
     fit(true);
+    nav?.home();
     return api;
   }
 

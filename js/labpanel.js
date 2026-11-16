@@ -4,7 +4,7 @@
   const script=document.currentScript;
   if(!document.querySelector('link[href*="study.css"]')){const link=document.createElement('link');link.rel='stylesheet';link.href=new URL('../study.css?v=20261116r5',script.src).href;link.onload=()=>dispatchEvent(new Event('resize'));document.head.append(link);}
   const T=(a,b)=>window.LabSettings?LabSettings.t(a,b):a,tr=p=>Array.isArray(p)?T(p[0],p[1]):String(p||'');
-  const names={concept:['觀念','Concept'],steps:['步驟','Steps'],examples:['範例','Examples'],missions:['任務','Missions']};
+  const names={concept:['觀念','Concept'],steps:['步驟','Steps'],examples:['範例','Examples'],missions:['任務','Missions'],comments:['留言','Comments']};
   const E=(tag,text,cls)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;if(cls)e.className=cls;return e;};
   const B=(text,fn)=>{const b=E('button',text);b.type='button';b.addEventListener('click',fn);return b;};
   function rich(node,text){text=String(text);node.replaceChildren();let at=0;for(const m of String(text).matchAll(/\[\[([\s\S]*?)\]\]/g)){node.append(document.createTextNode(text.slice(at,m.index)),E('strong',m[1],'key'));at=m.index+m[0].length;}node.append(document.createTextNode(String(text).slice(at)));math(node);return node;}
@@ -28,7 +28,7 @@
   function open(next){if(!panel)mount({});if(document.documentElement.classList.contains('ms-docked'))document.querySelector('.ms-dock-close')?.click();if(next)select(next);setState('half');}
   function content(key,nodes){if(!panel)mount({});const p=panes[key];if(!p)return;p.replaceChildren(...(Array.isArray(nodes)?nodes:[nodes]));p.scrollTop=0;math(p);}
   function mount(opts){if(panel){Object.assign(options,opts||{});return api;}options=opts||{};panel=E('aside',null,'lp-panel');panel.id='learning-panel';panel.setAttribute('aria-label',T('學習說明','Learning help'));const tabs=E('div',null,'lp-tabs');tabs.setAttribute('role','tablist');panel.append(tabs);
-    for(const k of options.tabs||Object.keys(names)){const b=B(tr(names[k]),()=>select(k));b.id='lp-tab-'+k;b.setAttribute('role','tab');b.setAttribute('aria-controls','lp-pane-'+k);buttons[k]=b;tabs.append(b);const p=E('section',null,'lp-content');p.id='lp-pane-'+k;p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby',b.id);panes[k]=p;panel.append(p);
+    for(const k of options.tabs||['concept','steps','examples','missions']){const b=B(tr(names[k]),()=>select(k));b.id='lp-tab-'+k;b.setAttribute('role','tab');b.setAttribute('aria-controls','lp-pane-'+k);buttons[k]=b;tabs.append(b);const p=E('section',null,'lp-content');p.id='lp-pane-'+k;p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby',b.id);panes[k]=p;panel.append(p);
       b.onkeydown=e=>{if(!['ArrowLeft','ArrowRight'].includes(e.key))return;e.preventDefault();const a=Object.keys(panes),i=a.indexOf(k),n=a[(i+(e.key==='ArrowRight'?1:-1)+a.length)%a.length];select(n);buttons[n].focus();};}
     strip=B('',()=>setState(state==='collapsed'?'half':state==='half'?'full':'collapsed'));strip.className='lp-strip';strip.setAttribute('aria-controls',panel.id);dock=B(T('學習說明','Learning help'),()=>open(tab));dock.className='lp-dock-tab';document.body.append(panel,strip,dock);
     let sy=0;strip.onpointerdown=e=>{sy=e.clientY;strip.setPointerCapture(e.pointerId);};strip.onpointerup=e=>{if(Math.abs(e.clientY-sy)<24)return;e.preventDefault();setState(e.clientY<sy?(state==='collapsed'?'half':'full'):(state==='full'?'half':'collapsed'));strip.addEventListener('click',e=>e.stopImmediatePropagation(),{once:true,capture:true});};

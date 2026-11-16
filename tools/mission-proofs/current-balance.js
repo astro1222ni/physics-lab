@@ -6,6 +6,8 @@ const __ROOT = require('path').resolve(__dirname, '..', '..') + '/';
 const C = require(__ROOT + 'js/current-balance-core.js');
 global.window = { LabMission: { register(id, list) { global.M = list; } } }; global.LabMission = global.window.LabMission;
 require(__ROOT + 'js/missions/current-balance.js');
+const allM=M.slice();
+global.M=M.filter(m=>!m.study&&!/-1[23]$/.test(m.id));
 
 const APP = C.APP, G = C.G;
 let done = {}, cal = { e1: 0, e2: 0, eS: 0 }, dev = 0;
@@ -144,3 +146,4 @@ if (missing.length) console.log('做不到：', missing);
 console.log(allOk ? '\n全部任務都做得到。' : '\n有任務做不到或被誤觸發。');
 cal = { e1: 0, e2: 0, eS: 0 }; dev = 0;
 process.exitCode = allOk ? 0 : 1;
+require('./current-balance-new.cjs').prove(allM);
