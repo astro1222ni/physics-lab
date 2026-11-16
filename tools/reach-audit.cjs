@@ -21,7 +21,9 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
     await ctx.route(/^https?:\/\/(?!127\.0\.0\.1)/, r => r.abort());
     const pg = await ctx.newPage();
     try {
-      await pg.goto('http://127.0.0.1:' + srv.address().port + '/' + m + '.html', { waitUntil: 'load', timeout: 30000 }); await pg.waitForTimeout(1200);
+      // 有模式入口（js/modegate.js）的頁面量實驗模式；入口畫面底下的範例鈕等在實驗模式根本不會出現
+      const gated = fs.readFileSync(path.join(ROOT, m + '.html'), 'utf8').includes('js/modegate.js');
+      await pg.goto('http://127.0.0.1:' + srv.address().port + '/' + m + '.html' + (gated ? '?mode=lab' : ''), { waitUntil: 'load', timeout: 30000 }); await pg.waitForTimeout(1200);
       const r = await pg.evaluate(() => {
         const vis = e => { if (!e.getClientRects().length) return false; const s = getComputedStyle(e); return s.visibility !== 'hidden' && s.display !== 'none'; };
         const Y = e => e.getBoundingClientRect().top + scrollY;
