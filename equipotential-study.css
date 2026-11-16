@@ -40,5 +40,6 @@ html.eq-study.lp-docked body,html.eq-study.ms-docked body{padding-right:0!import
 
 /* 主串 11/16：「電表與探針」搬到記錄鍵下方，自學模式照舊隱藏（自學有自己的操作列） */
 .eq-study .stage>.eq-probe-card{display:none!important}
+.eq-study .stage>.eq-analysis-card{display:none!important}
 /* 主串 11/16：一般模式已有主線右側「留言・回報」標籤，Codex 自做的留言標籤一律收起，避免兩個（第二輪改由 labside 統一） */
 .eq-feedback-tab{display:none!important}

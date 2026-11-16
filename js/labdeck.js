@@ -2,13 +2,13 @@
  * 站長 11/16：「手機的頁面，將可以操縱切換的鈕……儘可能全部集中在同一頁，或者至少最多跨一頁？不要跨到好幾頁，
  * 如果捲動到最下面才找得到，這對手機使用者非常不友善。」「旋鈕跟滑桿的間距要縮小」
  * 用法：要搬的卡片加 data-deck="中文|English"（可加 data-deck-order 排序），放操作台的位置加一個 data-deck-anchor 元素。
- * 寬度 < 768 px 時，卡片搬進錨點後面的分頁操作台，一次顯示一張；變寬就搬回原位。卡片內的 id、事件、狀態都不變。
+ * 寬度 ≤ 880 px（.lab 變單欄）時，卡片搬進錨點後面的分頁操作台，一次顯示一張；變寬就搬回原位。卡片內的 id、事件、狀態都不變。
  * 分頁按鈕有 aria-controls，步驟指引（stepguide）要指的控制項在別的分頁時，會先指分頁按鈕。 */
 (function () {
   'use strict';
   const doc = document;
   const T = function (a, b) { return window.LabSettings ? LabSettings.t(a, b) : a; };
-  const mq = window.matchMedia ? matchMedia('(max-width: 767px)') : null;
+  const mq = window.matchMedia ? matchMedia('(max-width: 880px)') : null;
   let deck = null, tabs = [], panes = [], cards = [], cur = 0, moved = false, offClass = '';
   const KEY = 'labdeck:' + location.pathname;
 
