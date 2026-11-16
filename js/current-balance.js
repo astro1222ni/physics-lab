@@ -143,7 +143,7 @@
   function requestDraw() {
     if (drawPending) return;
     drawPending = true;
-    requestAnimationFrame(function () { drawPending = false; if (!(view3 && view3.active)) draw(); });
+    requestAnimationFrame(function () { drawPending = false; if (!(view3 && view3.active)) draw(); else drawMag3(); });
   }
 
   // ---------- 小工具 ----------
@@ -903,11 +903,11 @@
     }
   }
   // ---------- 放大圖二：指針與水平刻度 ----------
-  function drawMag(g, b) {
+  function drawMag(g, b, in3d) {
     const x0 = b.x + 8, y0 = b.y + 28, w = b.w - 16, h = b.h - 28 - 34;
     const k = h / 0.019;               // ±9.5 mm
     const mag = Math.round(k / s);
-    panel(g, b, T('指針放大 ×', 'Pointer close-up ×') + mag);
+    panel(g, b, in3d ? T('指針放大（指針尖端對水平刻線）', 'Pointer close-up (tip vs level mark)') : T('指針放大 ×', 'Pointer close-up ×') + mag);   // 3D 沒有 2D 圖的比例尺，不寫倍率
     const cx = x0 + w * 0.4, cy = y0 + h / 2, zt = ZP + UTIP;
     const MX = function (z) { return cx + (z - zt) * k; }, MY = function (y) { return cy - y * k; };
     g.save();
@@ -972,6 +972,18 @@
     if (sub) LD.haloText(g, sub, b.x + b.w / 2, b.y + b.h - 4, LD.c.muted, 'center', 'alphabetic', font(11, '600'));
   }
 
+  // 3D 檢視時在 3D 畫面正下方另畫一張指針放大（站長 11/17：「3D 立體的時候，看不到指針的偏移量的特寫，根本沒辦法做實驗。也沒有指針偏移量的讀數。」）
+  const mag3 = $('mag3');
+  function drawMag3() {
+    if (!mag3 || !st.piece || !(view3 && view3.active)) return;
+    const w = mag3.clientWidth, h = mag3.clientHeight;
+    if (!w || !h) return;
+    const d = Math.min(3, window.devicePixelRatio || 1), pw = Math.round(w * d), ph = Math.round(h * d);
+    if (mag3.width !== pw || mag3.height !== ph) { mag3.width = pw; mag3.height = ph; }
+    const g = mag3.getContext('2d');
+    g.setTransform(d, 0, 0, d, 0, 0); g.clearRect(0, 0, w, h);
+    drawMag(g, { x: 0, y: 0, w: w, h: h }, true);
+  }
   function draw() {
     if (!W || !st.piece) return;
     const key = staticKey();
@@ -1028,7 +1040,7 @@
       if (atRest()) { resting = true; onSettle(); }
     }
     if (flowing()) flowT += dt;
-    if (view3 && view3.active) view3.frame(); else draw();
+    if (view3 && view3.active) { view3.frame(); drawMag3(); } else draw();
     if (t - lastTilt > 90 || resting) { lastTilt = t; updateTilt(); }
     if (needLoop()) raf = requestAnimationFrame(loop); else lastT = 0;
   }
@@ -1496,6 +1508,7 @@
         viewMsg.textContent = '';
         $('resetCam').hidden = false;
         view3.update();
+        requestDraw();
         if(st.show.hand)view3.focusHand();
         emit('view',info());
         kick();
@@ -1647,7 +1660,7 @@
     let lastG = 0;
     new ResizeObserver(function () { if (gcv.clientWidth !== lastG) { lastG = gcv.clientWidth; drawGraph(); } }).observe(gcv);
   }
-  window.addEventListener('resize', function () { resize(); drawGraph(); });
+  window.addEventListener('resize', function () { resize(); drawGraph(); requestDraw(); });
   resize();
   kick();
 })();

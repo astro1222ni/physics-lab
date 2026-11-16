@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-<meta name="lab-updated" content="2026-11-16 22:11">
-  <script src="js/settings.js?v=202611162211"></script>
+<meta name="lab-updated" content="2026-11-17 06:39">
+  <script src="js/settings.js?v=202611170639"></script>
   <!-- 站長 11/16：「實驗模式與學習模式還是要分開，在不同的頁面跟介面」→ 入口選擇畫面與模式列（js/modegate.js） -->
-  <script src="js/modegate.js?v=202611162211" data-lab="轉歸零螺母、開電源、調 I_1 與 I_2，讓掛了漆包線的天平回到水平｜記錄五種長度，畫 B–I_2 與 F–I_1 圖，算出真空磁導率 μ_0｜開光槓桿、掛一粒米、輪試四種接線，或切到 3D 看器材" data-lab-en="Zero the nut, switch on and set I_1 and I_2 until the loaded balance is level again|Record five lengths, plot B–I_2 and F–I_1 and work out μ_0|Try the optical lever, a single grain of rice, all four wirings, or the 3D apparatus" data-learn="八段自學：先預測，再動手量出自己的 μ_0，最後和理論比對｜步驟指引會指出要按哪顆鈕；範例一二三一鍵套進器材｜老師可開上課模式，大字投影給全班" data-learn-en="Eight sections: predict, measure your own μ_0, then compare with theory|The step guide points to the next control; examples 1–3 load straight into the apparatus|Teachers can switch to class mode for large-type projection"></script>
+  <script src="js/modegate.js?v=202611170639" data-lab="轉歸零螺母、開電源、調 I_1 與 I_2，讓掛了漆包線的天平回到水平｜記錄五種長度，畫 B–I_2 與 F–I_1 圖，算出真空磁導率 μ_0｜開光槓桿、掛一粒米、輪試四種接線，或切到 3D 看器材" data-lab-en="Zero the nut, switch on and set I_1 and I_2 until the loaded balance is level again|Record five lengths, plot B–I_2 and F–I_1 and work out μ_0|Try the optical lever, a single grain of rice, all four wirings, or the 3D apparatus" data-learn="八段自學：先預測，再動手量出自己的 μ_0，最後和理論比對｜步驟指引會指出要按哪顆鈕；範例一二三一鍵套進器材｜老師可開上課模式，大字投影給全班" data-learn-en="Eight sections: predict, measure your own μ_0, then compare with theory|The step guide points to the next control; examples 1–3 load straight into the apparatus|Teachers can switch to class mode for large-type projection"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Current Balance | Astro Ni Lab">電流天平｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -32,7 +32,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611162211">
+  <link rel="stylesheet" href="lab.css?v=202611170639">
   <link rel="stylesheet" href="study.css?v=20261116cb1">
   <link rel="stylesheet" href="lab-tools.css?v=20261116cb1">
   <link rel="stylesheet" href="current-balance-study.css?v=20261116cb1">
@@ -118,6 +118,14 @@
     }
     @media (max-width: 600px) { #view3 canvas { aspect-ratio: 1 / 1; } }
     #view3 canvas:active { cursor: grabbing; }
+    #mag3 { display: block; width: min(100%, 520px); height: 206px; margin: 8px auto 0; background: transparent; }
+    @media (max-width: 600px) { #mag3 { height: 190px; } }
+    .stage:not(.is3d) #mag3 { display: none; }
+    /* 手機橫放（矮螢幕）：3D 改寬扁比例（器材本來就是長條形），下方指針放大變矮，捲到畫面頂端時一屏看得到兩者 */
+    @media (orientation: landscape) and (max-height: 600px) {
+      #view3 canvas { aspect-ratio: 21 / 9; }
+      #mag3 { height: 150px; margin-top: 6px; }
+    }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
@@ -178,6 +186,7 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" role="img" aria-label="電流天平實驗裝置的立體示意圖：剖開一半的螺線管、伸進管內的ㄈ字形電路、支點、掛在外端的漆包線、歸零螺母與水平指標；下方是從管口往內看的右手開掌定則、指針放大鏡、兩台電源供應器的電流表與電子秤。" data-en-aria-label="Diagram of the current balance: a solenoid cut open, the U-shaped circuit reaching into it, the pivot, the piece of enamelled wire on the outer end, the zero-adjusting nut and the level pointer; below, the view into the solenoid from its mouth with the right-hand rule, a magnifier for the pointer, the ammeters of the two power supplies and the electronic scale."></canvas>
         <div id="view3"></div>
+        <canvas id="mag3" class="l3" role="img" aria-label="指針放大：指針尖端相對水平刻線的偏移與讀數" data-en-aria-label="Pointer close-up: how far the pointer tip is from the level mark, with the reading"></canvas>
         <div id="cb-course-visual" hidden></div>
         <p id="cb-study-caption" class="cb-caption" hidden></p>
         <div id="cb-study-tools" hidden></div>
@@ -446,32 +455,32 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611162211"></script>
-  <script src="js/current-balance-core.js?v=202611162211"></script>
-  <script src="js/current-balance-study-core.js?v=202611162211"></script>
-  <script src="js/sound.js?v=202611162211"></script>
-  <script src="js/numinput.js?v=202611162211"></script>
-  <script src="js/labdeck.js?v=202611162211"></script>
-  <script src="js/drawkit.js?v=202611162211"></script>
-  <script src="js/view3d-nav.js?v=202611162211"></script>
-  <script src="js/current-balance-extras3d.js?v=202611162211"></script>
-  <script src="js/current-balance-3d.js?v=202611162211"></script>
-  <script src="js/current-balance.js?v=202611162211"></script>
-  <script src="js/firebase-config.js?v=202611162211"></script>
-  <script src="js/missions.js?v=202611162211" data-module="current-balance"></script>
-  <script src="js/missions/current-balance.js?v=202611162211"></script>
-  <script src="js/labpanel.js?v=202611162211"></script>
-  <script src="js/study.js?v=202611162211"></script>
-  <script src="js/examples.js?v=202611162211"></script>
-  <script src="js/examples/current-balance.js?v=202611162211"></script>
-  <script src="js/stepguide.js?v=202611162211"></script>
-  <script src="js/vpad.js?v=202611162211"></script>
-  <script src="js/labside.js?v=202611162211"></script>
-  <script src="js/study/current-balance.js?v=202611162211"></script>
-  <script src="js/current-balance-study-card.js?v=202611162211"></script>
-  <script src="js/current-balance-study.js?v=202611162211"></script>
-  <script src="js/current-balance-controls.js?v=202611162211"></script>
-  <script src="js/stats.js?v=202611162211" data-module="current-balance"></script>
-  <script src="js/comments.js?v=202611162211"></script>
+  <script src="js/math.js?v=202611170639"></script>
+  <script src="js/current-balance-core.js?v=202611170639"></script>
+  <script src="js/current-balance-study-core.js?v=202611170639"></script>
+  <script src="js/sound.js?v=202611170639"></script>
+  <script src="js/numinput.js?v=202611170639"></script>
+  <script src="js/labdeck.js?v=202611170639"></script>
+  <script src="js/drawkit.js?v=202611170639"></script>
+  <script src="js/view3d-nav.js?v=202611170639"></script>
+  <script src="js/current-balance-extras3d.js?v=202611170639"></script>
+  <script src="js/current-balance-3d.js?v=202611170639"></script>
+  <script src="js/current-balance.js?v=202611170639"></script>
+  <script src="js/firebase-config.js?v=202611170639"></script>
+  <script src="js/missions.js?v=202611170639" data-module="current-balance"></script>
+  <script src="js/missions/current-balance.js?v=202611170639"></script>
+  <script src="js/labpanel.js?v=202611170639"></script>
+  <script src="js/study.js?v=202611170639"></script>
+  <script src="js/examples.js?v=202611170639"></script>
+  <script src="js/examples/current-balance.js?v=202611170639"></script>
+  <script src="js/stepguide.js?v=202611170639"></script>
+  <script src="js/vpad.js?v=202611170639"></script>
+  <script src="js/labside.js?v=202611170639"></script>
+  <script src="js/study/current-balance.js?v=202611170639"></script>
+  <script src="js/current-balance-study-card.js?v=202611170639"></script>
+  <script src="js/current-balance-study.js?v=202611170639"></script>
+  <script src="js/current-balance-controls.js?v=202611170639"></script>
+  <script src="js/stats.js?v=202611170639" data-module="current-balance"></script>
+  <script src="js/comments.js?v=202611170639"></script>
 </body>
 </html>
