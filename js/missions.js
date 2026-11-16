@@ -47,7 +47,18 @@
   function starsOf(m) { return m ? (m.hidden ? HIDDEN_X : 1) * m.level : 0; }
 
   // ======================= 公開介面 =======================
+  // 實驗模式／學習模式分開（站長 11/16：「同一個實驗的實驗模式跟學習模式的星星數是統一計算，但是要賺取星星，要各自到這兩個不同的界面去賺取」）
+  // js/modegate.js 在 <html data-lab-mode> 寫 lab／learn／choose：實驗模式只判定一般與隱藏任務，學習模式只判定自學任務（study: true），入口畫面都不判定。
+  // 沒有 modegate 的頁面沒有這個屬性，照舊全部判定。
+  function modeAllows(m) {
+    const mode = document.documentElement.getAttribute('data-lab-mode');
+    if (!mode) return true;
+    if (mode === 'lab') return !m.study;
+    if (mode === 'learn') return !!m.study;
+    return false;
+  }
   const LabMission = {
+    modeAllows: modeAllows,
     register: function (moduleId, missions) {
       const have = {};
       (registry[moduleId] || []).forEach(function (m) { have[m.id] = true; });
@@ -66,6 +77,7 @@
         // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，銅幣仍必掉）；今天完成後就不再判定
         const daily = state.daily === m.id && LD && LD.active(m.id);
         if ((state.done[m.id] && !daily) || m.pending) return;
+        if (!modeAllows(m)) return;
         let ok = false;
         try { ok = !!m.check({ type: type, data: data || {} }, m.mem); } catch (e) { ok = false; }
         if (!ok) return;
@@ -914,11 +926,17 @@
       fBtn.addEventListener('click', function () { setPref('ms-undone', undone ? '0' : '1'); render(); });
       tools.appendChild(fBtn);
       panel.appendChild(tools);
+      const lm = document.documentElement.getAttribute('data-lab-mode');
+      if (lm === 'lab' || lm === 'learn') {
+        panel.appendChild(el('p', 'ms-mode-note', lm === 'lab'
+          ? T('實驗模式：在這裡賺一般與隱藏任務的星星；自學任務要到「學習模式」賺。', 'Lab mode: earn mission and hidden-mission stars here; self-study stars are earned in Learning mode.')
+          : T('學習模式：在這裡賺自學任務的星星；一般與隱藏任務要到「實驗模式」賺。星星合計在同一個實驗。', 'Learning mode: earn self-study stars here; mission and hidden-mission stars are earned in Lab mode. All stars add up for this lab.')));
+      }
       const byLevel = function (a, b) { return a.level - b.level; };
       // 一般任務：寬螢幕預設展開；手機預設收合成一行，實驗不會被推得太遠
       section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden && !m.study; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
       section('hid', T('隱藏任務', 'Hidden missions'), list.filter(function (m) { return m.hidden; }).sort(byLevel), false, undone);
-      section('study', T('自學任務', 'Self-study missions'), list.filter(function (m) { return m.study; }).sort(byLevel), false, undone);
+      section('study', T('自學任務', 'Self-study missions'), list.filter(function (m) { return m.study; }).sort(byLevel), document.documentElement.getAttribute('data-lab-mode') === 'learn', undone);
     }
 
     /** 一區任務：標題按鈕（完成數、星星數、展開／收合）＋清單；開關狀態記在本機，全站共用 */

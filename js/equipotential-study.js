@@ -147,7 +147,7 @@
       D.pill(ctx,wide?name+' ('+x+', '+y+')':name,cx-(wide?40:16),wide?cy-22:cy+30,D.c.equi,'center','700 '+(wide?13:15)+'px '+D.FONT);});}
   function boot(){P.mount({onChange:()=>L.redraw(),onTab(tab){if(tab!=='examples'||!flow)return;if(isStudy()&&section()!==6)flow.go(6,currentExample||1);else if(!currentExample)applyExample(1);}});const bar=$('eq-study-shell');header=bar;caption=$('eq-study-caption');tools=$('eq-study-tools');nav=$('eq-study-nav');menu=$('eq-study-progress');
     flow=StudyFlow.embed({id:'equipotential',sections:U.sections,onClass(on){if(on)classRun=JSON.parse(JSON.stringify(run));else if(classRun){run=classRun;classRun=null;}},enter,step,canAdvance,finish,render,save,start(){const b=document.querySelector('.ms-toggle');if(b&&!LabMission._state.on)b.click();document.querySelector('.ms-dock-close')?.click();scrollTo({top:0,behavior:'instant'});if(innerWidth>=1240||[2,3,5,7,8].includes(section())){P.open('concept');}lastFrame=0;if(!raf)raf=requestAnimationFrame(animate);},close(){currentExample=0;LabSteps.setActive(false);L.discardGiven();L.redraw();}});
-    const begin=()=>{if(own(L.snapshot())>=6)project();flow.start(1,1);};$('studyBtn').onclick=begin;$('studyInvite').onclick=begin;$('eq-study-close').onclick=()=>{flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
+    const begin=()=>{if(own(L.snapshot())>=6)project();flow.start(1,1);};$('studyBtn').onclick=begin;$('studyInvite').onclick=begin;$('eq-study-close').onclick=()=>{if(window.LabModeGate){location.href=LabModeGate.url({mode:'lab'});return;}flow.close();L.discardGiven();};$('clearAll').addEventListener('click',()=>{if(!isStudy())leaveExample();});$('eq-class').onclick=()=>flow.classMode(!flow.state.teaching);
     LabMission.on('complete',m=>{if(m?.study){StudyFlow.cue('star');renderMissions();finishUnit();}});
     // 站長 11/16 回報：已登入仍顯示「回頁首登入」——側板在登入狀態讀回前就畫好，之後沒重畫。
     // 登入完成（ready）、星星同步（synced）、改暱稱（profile）都重畫；登出或換帳號沒有事件，另外每秒比對一次帳號與完成數。
@@ -157,7 +157,7 @@
       if(section()===4&&!D.reducedMotion()&&!raf)raf=requestAnimationFrame(animate);
       if(section()===1&&s.view==='rig'&&s.ready3D&&!run.flags.intro){run.flags.intro=true;emit('intro-viewed',1,{kind:'rig',ready:true});}
     },250);
-    const q=new URLSearchParams(location.search);if(q.get('study')==='1'){const seg=+q.get('seg')||(q.has('ex')?6:1);flow.start(seg,+q.get('step')||(seg===6?+q.get('ex')||1:1));}else if(!q.has('ex'))P.close();renderMissions();
+    const q=new URLSearchParams(location.search);if(q.get('study')==='1'){const seg=+q.get('seg')||(q.has('ex')?6:1);flow.start(seg,+q.get('step')||(seg===6?+q.get('ex')||1:1));if(q.get('class')==='1'&&!flow.state.teaching)flow.classMode(true);}else if(!q.has('ex'))P.close();renderMissions();
   }
   window.EquipotentialStudy={get active(){return isStudy();},get observing(){return isStudy()||!!currentExample;},get state(){return flow?.state;},get progress(){return JSON.parse(JSON.stringify(run));},get flow(){return flow;},get theoryFractions(){return isStudy()&&section()===7&&flow.state.step===1?[1/6,2/6,3/6,4/6,5/6]:null;},drawIntro:intro,drawOverlay:overlay,notify:tell,exported(method){const s=L.snapshot();if(own(s)>=6){run.flags.card=true;emit('card-exported',8,{ownPoints:own(s),method,exported:true});render();}},shareProject(){return L.snapshot();}};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot);else boot();
