@@ -332,9 +332,10 @@
   let treasureMetric = 'v', treasureGeneration = 0;
   const treasureTitles = { v: ['寶物總價值', 'Total treasure value'], cu: ['銅幣', 'Copper coins'], ag: ['銀幣', 'Silver coins'], au: ['金幣', 'Gold coins'], dia: ['鑽石', 'Diamonds'], key: ['稀有鑰匙', 'Rare keys'] };
   const treasureTitle = function (key) { return T(treasureTitles[key][0], treasureTitles[key][1]); };
-  function treasureAmount(row, metric) {
+  // short：榜單每列只寫數字＋單位（「總價值」已在分頁與本人卡上），手機才不會把「銅」擠到第二行（主串 11/16）
+  function treasureAmount(row, metric, short) {
     const value = Number(row && row[metric] || 0).toLocaleString();
-    return metric === 'v' ? T('總價值 ' + value + ' 銅', 'Value ' + value + ' copper') : value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
+    return metric === 'v' ? (short ? T(value + ' 銅', value + ' copper') : T('總價值 ' + value + ' 銅', 'Value ' + value + ' copper')) : value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
   }
   function treasureTabs() {
     const box = $('treasureTabs'); box.innerHTML = '';
@@ -365,7 +366,7 @@
         const li = el('li', 'lb-row tb-row' + (row.uid === uid ? ' me' : '') + (row.rank <= 3 ? ' podium p' + row.rank : ''));
         li.dataset.uid = row.uid; li.appendChild(el('span', 'lb-rank', String(row.rank)));
         li.appendChild(el('span', 'lb-name', row.pub === false ? LM.mask(row.name) : String(row.name || '?')));
-        li.appendChild(el('strong', 'tb-score', treasureAmount(row, metric))); list.appendChild(li);
+        li.appendChild(el('strong', 'tb-score', treasureAmount(row, metric, true))); list.appendChild(li);
       });
       if (!rows.length) list.appendChild(el('li', 'lb-empty', T('還沒有人收集寶物，完成每日任務就能上榜！', 'No treasures collected yet. Clear a daily mission to join the board!')));
       const mine = $('treasureMe'); mine.innerHTML = '';

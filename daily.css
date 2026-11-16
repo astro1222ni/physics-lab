@@ -13,7 +13,7 @@
 .tb-myvalue { grid-column: 2; grid-row: 1 / span 2; font-size: calc(24px * var(--fs, 1)); color: var(--daily); font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .tb-me small { grid-column: 1 / -1; color: var(--muted); }
 .tb-row { grid-template-columns: 2.6em minmax(0, 1fr) auto; min-height: 44px; }
-.tb-score { max-width: 18em; text-align: right; color: var(--daily); font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tb-score { text-align: right; color: var(--daily); font-size: calc(15px * var(--fs, 1)); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tb-values { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
 .tb-value { flex: 1 1 140px; display: flex; gap: 7px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--surface); font-size: calc(13px * var(--fs, 1)); }
 .tb-value strong { margin-left: auto; color: var(--rc); white-space: nowrap; }
@@ -23,7 +23,7 @@
   .tb-me { grid-template-columns: minmax(0, 1fr); padding: 14px; }
   .tb-myvalue { grid-column: 1; grid-row: auto; font-size: calc(22px * var(--fs, 1)); }
   .tb-row { padding: 9px 6px; gap: 6px; }
-  .tb-score { max-width: 9em; font-size: calc(12px * var(--fs, 1)); }
+  .tb-score { font-size: calc(14px * var(--fs, 1)); }
 }
 .dl-prob-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
 .dl-prob-table caption { text-align: left; font-weight: 800; margin-bottom: 10px; color: var(--text); }
