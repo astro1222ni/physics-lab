@@ -965,6 +965,7 @@
     document.querySelectorAll('[data-sel]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-sel') === id)); });
     if (kb && kb.index() !== KB_IDS.indexOf(id)) kb.select(KB_IDS.indexOf(id));
     requestDraw();
+    window.dispatchEvent(new Event('eqp:probeselect'));
   }
   cv.addEventListener('pointerdown', function (ev) {
     if (stage.classList.contains('is3d')) return;
@@ -1314,11 +1315,11 @@
   }
   function stepState(){const d=stepsDone(),now=d.indexOf(false);return STEPS.map(function(s,i){const text=i===0&&state.medium==='water'?T('水槽保持水平、電極入水；選直流或交流、設定電壓，再接通電源。','Keep the tray level and electrodes immersed. Choose DC or AC, set the voltage and switch on.'):i===1?(state.medium==='water'?T('黑探針 N1 固定插在水中，或夾在負極金屬作參考。','Keep black N1 fixed in the water, or clip it to the negative metal as reference.'):T('黑探針 N1 固定輕觸紙面，或夾在負極作參考。','Keep black N1 lightly touching the paper, or clip it to the negative electrode.')):T(s[0],s[1]);return {html:symbols(text),done:d[i],current:i===now};});}
   function guideProbe(id,to){return {canvas:'#cv',client:true,at:function(){const p=to|| (id==='n1'?n1Pos():state.n2);const r=cv.getBoundingClientRect();return {x:r.left+X(p.x),y:r.top+Y(p.y)};}};}
-  function guideDefinitions(study){const label=function(id){return function(){return $(id).closest('label')||$(id);};};const focus=function(id){return function(){return guideProbe(id);};};const open=()=>stage.classList.contains('is3d')?$('view2d'):null;
+  function guideDefinitions(study){const label=function(id){return function(){return $(id).closest('label')||$(id);};};const focus=function(id,study){return function(){return state.sel===id?guideProbe(id):document.querySelector(study?'#eq-study-tools button:nth-child('+(id==='n1'?2:3)+')':'[data-sel="'+id+'"]');};};const gesture=id=>()=>state.sel===id?'drag':'tap';const open=()=>stage.classList.contains('is3d')?$('view2d'):null;
     if(study)return [
       {target:()=>document.querySelector('#eq-study-tools button'),hint:()=>T('接通電源','Switch on the supply')},
-      {target:focus('n1'),to:guideProbe('n1',{x:15,y:3}),action:'drag',opener:open,hint:()=>T('固定黑探針','Place the black probe')},
-      {target:()=>state.power&&Math.abs(meterNow().reading)<=.02?document.querySelector('[data-vpad-record]'):guideProbe('n2'),action:'drag',opener:()=>stage.classList.contains('is3d')?$('view2d'):document.querySelector('.vpad-launch'),hint:()=>T('找零點並記錄','Find a null and record')},
+      {target:focus('n1',true),to:guideProbe('n1',{x:15,y:3}),action:gesture('n1'),opener:open,hint:()=>T('固定黑探針','Place the black probe')},
+      {target:()=>state.sel!=='n2'?document.querySelector('#eq-study-tools button:nth-child(3)'):state.power&&Math.abs(meterNow().reading)<=.02?document.querySelector('[data-vpad-record]'):guideProbe('n2'),action:()=>state.sel!=='n2'||state.power&&Math.abs(meterNow().reading)<=.02?'tap':'drag',opener:()=>stage.classList.contains('is3d')?$('view2d'):document.querySelector('.vpad-launch'),hint:()=>T('找零點並記錄','Find a null and record')},
       {target:()=>analysis().groups.some(g=>g.pts.length>=6)?document.querySelector('#eq-study-tools button:nth-child(5)'):document.querySelector('[data-vpad-record]'),opener:()=>document.querySelector('.vpad-launch'),hint:()=>T('記錄六點，再連成等位線','Record six points, then join the line')},
       {target:()=>document.querySelector('#eq-study-tools button:nth-child(6)'),hint:()=>T('換參考點','Change the reference')},
       {target:()=>document.querySelector('#eq-study-tools button:nth-child(7)'),hint:()=>T('畫電力線','Draw field lines')},
@@ -1326,8 +1327,8 @@
     ];
     return [
       {target:'#power',hint:()=>T('接通電源','Switch on the supply')},
-      {target:focus('n1'),action:'drag',opener:open,hint:()=>T('把黑探針固定在'+(state.medium==='water'?'水中':'紙面'),state.medium==='water'?'Keep the black probe in the water':'Keep the black probe on the paper')},
-      {target:focus('n2'),action:'drag',opener:open,hint:()=>T('拖紅探針找等電位點','Move the red probe to an equipotential point')},
+      {target:focus('n1'),action:gesture('n1'),opener:open,hint:()=>T('把黑探針固定在'+(state.medium==='water'?'水中':'紙面'),state.medium==='water'?'Keep the black probe in the water':'Keep the black probe on the paper')},
+      {target:focus('n2'),action:gesture('n2'),opener:open,hint:()=>T('拖紅探針找等電位點','Move the red probe to an equipotential point')},
       {target:'#rec',hint:()=>T('記錄更多等位點','Record more equipotential points')},
       {target:label('drawLines'),action:'tick',hint:()=>T('連成平滑的等位線','Join the equipotentials')},
       {target:label('drawField'),action:'tick',hint:()=>T('畫出電力線','Draw field lines')},

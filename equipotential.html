@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611161449"></script>
+  <script src="js/settings.js?v=202611161521"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Lab">等位線與電場（導電紙實驗）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,9 +29,9 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611161449">
-  <link rel="stylesheet" href="study.css">
-  <link rel="stylesheet" href="equipotential-study.css?v=202611161349">
+  <link rel="stylesheet" href="lab.css?v=202611161521">
+  <link rel="stylesheet" href="study.css?v=202611161521">
+  <link rel="stylesheet" href="equipotential-study.css?v=202611161521">
   <style>
     /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
@@ -159,13 +159,14 @@
     .notes ol li, .notes ul li { margin: 2px 0; }
     .notes .q li { margin: 6px 0; }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161521">
 </head>
 <body data-en-ready>
   <div class="wrap">
     <header class="top">
       <nav class="crumbs" data-en-html="&lt;a href=&quot;index.html&quot;&gt;Home&lt;/a&gt; / &lt;a href=&quot;physics.html&quot;&gt;Physics&lt;/a&gt; / &lt;a href=&quot;physics.html#em&quot;&gt;Electromagnetism&lt;/a&gt; / &lt;a href=&quot;physics.html#ch-electrostatics&quot;&gt;Electrostatics&lt;/a&gt;"><a href="index.html">首頁</a> / <a href="physics.html">物理</a> / <a href="physics.html#em">電磁學</a> / <a href="physics.html#ch-electrostatics">靜電學</a></nav>
-      <h1 data-en="Equipotential Lines and the Electric Field (Conducting Paper)">等位線與電場（導電紙實驗）</h1>
-      <p data-en="The textbook experiment: a DC supply drives a steady current through a sheet of carbon conducting paper between two silver electrodes. Touch the paper with two probes connected to a multimeter or a galvanometer, find the points where the meter reads zero (or a chosen voltage), press “Record”, and trace the equipotential lines. Then draw the field lines at right angles to them, estimate E = ΔV/Δd and compare it with the computed field. Switch to 3D to see the potential as a landscape. You can also switch to a salt-water tray, use an AC supply with headphones to hear the null point, or turn the apparatus around in 3D.">課本的必做實驗：直流電源讓穩定電流流過碳質導電紙上的兩個銀電極之間。用接著三用電表或檢流計的兩支探針輕觸紙面，找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫出與等位線垂直的電力線，由 E = ΔV/Δd 估算電場，與程式算出的電場比較。切換到 3D 可以看到電位像一片起伏的地形。也可以換成食鹽水槽、改用交流電源配耳機「聽」零點，或轉動 3D 器材看接線。</p>
+      <h1><span data-medium-only="paper" data-en="Equipotential Lines and the Electric Field (Conducting Paper)">等位線與電場（導電紙實驗）</span><span data-medium-only="water" hidden data-en="Equipotential Lines and the Electric Field (Water Tray)">等位線與電場（水槽實驗）</span></h1>
+      <p><span data-medium-only="paper" data-en="The textbook experiment: a DC supply drives a steady current through a sheet of carbon conducting paper between two silver electrodes. Touch the paper with two probes connected to a multimeter or a galvanometer, find the points where the meter reads zero (or a chosen voltage), press “Record”, and trace the equipotential lines. Then draw the field lines at right angles to them, estimate E = ΔV/Δd and compare it with the computed field. Switch to 3D to see the potential as a landscape. You can also switch to a salt-water tray, use an AC supply with headphones to hear the null point, or turn the apparatus around in 3D.">課本的必做實驗：直流電源讓穩定電流流過碳質導電紙上的兩個銀電極之間。用接著三用電表或檢流計的兩支探針輕觸紙面，找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫出與等位線垂直的電力線，由 E = ΔV/Δd 估算電場，與程式算出的電場比較。切換到 3D 可以看到電位像一片起伏的地形。也可以換成食鹽水槽、改用交流電源配耳機「聽」零點，或轉動 3D 器材看接線。</span><span data-medium-only="water" hidden data-en="Place a transparent shallow acrylic tray horizontally over graph paper. Fill it with 0.1 % salt water to a depth of 1.0 cm. Connect the copper electrodes to the supply, immerse both probes, find zero or a chosen voltage, and press “Record” to trace equipotentials. Draw field lines and estimate E = ΔV/Δd. With DC, observe electrolysis bubbles and electrode polarization; with AC and headphones, listen for the null. Switch to 3D to explore the potential landscape or the complete apparatus.">在水平放置的透明壓克力淺盤中，加入水深 1.0 cm 的 0.1 % 食鹽水，底下墊方格紙。兩個銅電極接通電源後，用兩支浸入水中的探針找出讀數為零（或指定電壓）的點，按「記錄」，描出等位線；再畫電力線，由 E = ΔV/Δd 估算電場。直流下可觀察電解氣泡與電極極化，改用交流與耳機則可「聽」零點。切換 3D 可看電位地形或整套器材。</span></p>
     </header>
 
     <!-- 第一部分：實驗桌（導電紙、電極、探針、電源與電表） -->
@@ -501,32 +502,32 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611161343"></script>
-  <script src="js/equipotential-core.js?v=202611161343"></script>
-  <script src="js/sound.js?v=202611161343"></script>
-  <script src="js/numinput.js?v=202611161343"></script>
-  <script src="js/drawkit.js?v=202611161343"></script>
-  <script src="js/view3d-nav.js?v=202611161343"></script>
-  <script src="js/equipotential-3d.js?v=202611161343"></script>
-  <script src="js/equipotential-rig3d.js?v=202611161343"></script>
-  <script src="js/keys.js?v=202611161343"></script>
-  <script src="js/stepguide.js"></script>
-  <script src="js/vpad.js"></script>
-  <script src="js/labside.js"></script>
-  <script src="js/equipotential.js?v=202611161343"></script>
-  <script src="js/firebase-config.js?v=202611161343"></script>
-  <script src="js/missions.js?v=202611161343" data-module="equipotential"></script>
-  <script src="js/equipotential-study-core.js?v=202611161343"></script>
-  <script src="js/missions/equipotential.js?v=202611161343"></script>
-  <script src="js/stats.js?v=202611161343" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611161343"></script>
-  <script src="js/labpanel.js?v=202611161343"></script>
-  <script src="js/study.js?v=202611161343"></script>
-  <script src="js/examples.js?v=202611161343"></script>
-  <script src="js/examples/equipotential.js?v=202611161343"></script>
-  <script src="js/study/equipotential.js?v=202611161343"></script>
-  <script src="js/equipotential-study-card.js?v=202611161343"></script>
-  <script src="js/equipotential-study.js?v=202611161343"></script>
-  <script src="js/equipotential-controls.js?v=202611161343"></script>
+  <script src="js/math.js?v=202611161521"></script>
+  <script src="js/equipotential-core.js?v=202611161521"></script>
+  <script src="js/sound.js?v=202611161521"></script>
+  <script src="js/numinput.js?v=202611161521"></script>
+  <script src="js/drawkit.js?v=202611161521"></script>
+  <script src="js/view3d-nav.js?v=202611161521"></script>
+  <script src="js/equipotential-3d.js?v=202611161521"></script>
+  <script src="js/equipotential-rig3d.js?v=202611161521"></script>
+  <script src="js/keys.js?v=202611161521"></script>
+  <script src="js/stepguide.js?v=202611161521"></script>
+  <script src="js/vpad.js?v=202611161521"></script>
+  <script src="js/labside.js?v=202611161521"></script>
+  <script src="js/equipotential.js?v=202611161521"></script>
+  <script src="js/firebase-config.js?v=202611161521"></script>
+  <script src="js/missions.js?v=202611161521" data-module="equipotential"></script>
+  <script src="js/equipotential-study-core.js?v=202611161521"></script>
+  <script src="js/missions/equipotential.js?v=202611161521"></script>
+  <script src="js/stats.js?v=202611161521" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611161521"></script>
+  <script src="js/labpanel.js?v=202611161521"></script>
+  <script src="js/study.js?v=202611161521"></script>
+  <script src="js/examples.js?v=202611161521"></script>
+  <script src="js/examples/equipotential.js?v=202611161521"></script>
+  <script src="js/study/equipotential.js?v=202611161521"></script>
+  <script src="js/equipotential-study-card.js?v=202611161521"></script>
+  <script src="js/equipotential-study.js?v=202611161521"></script>
+  <script src="js/equipotential-controls.js?v=202611161521"></script>
 </body>
 </html>

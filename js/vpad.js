@@ -5,12 +5,24 @@
   function delta(index,step){return {x:directions[index][0]*step,y:directions[index][1]*step};}
   function position(x,y,w,h,vw,vh,snap){const maxX=Math.max(8,vw-w-8),maxY=Math.max(8,vh-h-8);x=Math.max(8,Math.min(maxX,x));y=Math.max(8,Math.min(maxY,y));if(snap){if(x<22)x=8;if(maxX-x<14)x=maxX;if(y<22)y=8;if(maxY-y<14)y=maxY;}return {x,y};}
   function repeat(fn,clock){clock=clock||root;let timeout,interval,stopped=false;fn();timeout=clock.setTimeout(()=>{if(stopped)return;fn();interval=clock.setInterval(fn,80);},350);return ()=>{stopped=true;clock.clearTimeout(timeout);clock.clearInterval(interval);};}
-  const api={delta,position,repeat};if(!root.document)return api;
+  // 放大鏡選擇水域四角，優先避開小鍵盤及正在操作的針尖。
+  function lensPosition(board,point,pad,vw,vh){
+    const overlap=(a,b)=>Math.max(0,Math.min(a.right,b.right)-Math.max(a.left,b.left))*Math.max(0,Math.min(a.bottom,b.bottom)-Math.max(a.top,b.top));
+    const tip={left:point.x-22,right:point.x+22,top:point.y-22,bottom:point.y+22};
+    const candidates=[];
+    for(const x of [board.left+8,board.right-132])for(const y of [board.top+8,board.bottom-124]){
+      const p={x:Math.max(8,Math.min(vw-132,x)),y:Math.max(8,Math.min(vh-156,y))};
+      const box={left:p.x,right:p.x+124,top:p.y,bottom:p.y+154};
+      candidates.push({p,score:overlap(box,pad)*10+overlap(box,tip)*30});
+    }
+    candidates.sort((a,b)=>a.score-b.score);return candidates[0].p;
+  }
+  const api={delta,position,repeat,lensPosition};if(!root.document)return api;
   const doc=root.document,script=doc.currentScript,T=(a,b)=>root.LabSettings?LabSettings.t(a,b):a;
   if(!doc.querySelector('link[href*="lab-tools.css"]')){const l=doc.createElement('link');l.rel='stylesheet';l.href=new URL('../lab-tools.css'+new URL(script.src).search,script.src).href;doc.head.append(l);}
   function mount(o){const E=(tag,cls,text)=>{const e=doc.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;},button=(cls,text,fn)=>{const b=E('button',cls,text);b.type='button';if(fn)b.addEventListener('click',fn);return b;};
     const pad=E('div','lab-vpad '+(o.className||''));pad.setAttribute('role','group');pad.setAttribute('aria-label',T('探針八向微調小鍵盤','Eight-direction probe control'));doc.body.append(pad);const ids=o.objects||['n1','n2'],steps=o.steps||[.01,.05,.5],key='lab-vpad:'+o.id;
-    let step=o.step||.05,collapsed=false,auto=false,drag,stopRepeat=null,coords=null,lastMove=0,hidden=true,lastViewport=null,expandedHeight=248,custom=false;
+    let step=o.step||.05,collapsed=false,auto=false,drag,stopRepeat=null,coords=null,lastMove=0,hidden=true,lastViewport=null,expandedHeight=248,custom=false,canvasSize=null;
     try{const s=JSON.parse(localStorage.getItem(key)||'null');if(s&&Number.isFinite(s.x)&&Number.isFinite(s.y)){coords={x:s.x,y:s.y};custom=s.custom!==false;collapsed=!!s.collapsed;}}catch(e){}
     const launch=button('vpad-launch','🎮',()=>{collapsed=false;render();save();});launch.setAttribute('aria-label',T('展開微調小鍵盤','Open fine-move keypad'));pad.append(launch);
     const body=E('div','vpad-body'),head=E('div','vpad-head'),handle=button('vpad-handle',T('⠿ 微調','⠿ Fine move'));handle.title=T('拖曳移動；雙擊回預設位置','Drag to move; double-click to reset');head.append(handle,button('vpad-collapse','−',()=>{collapsed=true;render();save();}));head.lastChild.setAttribute('aria-label',T('收成圓鈕','Collapse to a round button'));body.append(head);
@@ -31,10 +43,14 @@
     handle.addEventListener('pointerup',()=>{if(drag?.moved){apply(true);save();handle.addEventListener('click',e=>e.stopImmediatePropagation(),{capture:true,once:true});}drag=null;});handle.addEventListener('pointercancel',()=>{drag=null;});handle.addEventListener('dblclick',()=>{custom=false;coords=null;apply(false);save();});
     function avoidSelected(){if(custom||drag||stopRepeat||hidden||collapsed||auto)return;const p=o.point(o.selected()),r=pad.getBoundingClientRect();if(p.x>r.left-12&&p.x<r.right+12&&p.y>r.top-12&&p.y<r.bottom+12){coords=null;render();}}
     function activity(){lastMove=performance.now();paintLens();setTimeout(avoidSelected,0);}
-    function paintLens(){const live=performance.now()-lastMove<2000&&!hidden;if(!live){lens.classList.remove('is-active');return;}const r=o.canvas.getBoundingClientRect(),p=o.point(o.selected()),point={x:p.x-r.left,y:p.y-r.top},ratio=o.canvas.width/r.width,c=zoom.getContext('2d');lens.hidden=false;lens.classList.add('is-active');const board=o.board?o.board():r,side=p.x>(board.left+board.right)/2?board.left+8:board.right-128;lens.style.left=Math.max(8,Math.min(innerWidth-128,side))+'px';lens.style.top=Math.max(8,Math.min(innerHeight-156,board.top+8))+'px';
+    function paintLens(){const live=performance.now()-lastMove<2000&&!hidden;if(!live){lens.classList.remove('is-active');return;}const r=o.canvas.getBoundingClientRect(),p=o.point(o.selected()),point={x:p.x-r.left,y:p.y-r.top},ratio=o.canvas.width/r.width,c=zoom.getContext('2d');lens.hidden=false;lens.classList.add('is-active');const board=o.board?o.board():r,at=lensPosition(board,p,pad.getBoundingClientRect(),innerWidth,innerHeight);lens.style.left=at.x+'px';lens.style.top=at.y+'px';
       c.clearRect(0,0,240,240);c.save();c.beginPath();c.arc(120,120,118,0,Math.PI*2);c.clip();c.drawImage(o.canvas,(point.x-20)*ratio,(point.y-20)*ratio,40*ratio,40*ratio,0,0,240,240);c.restore();const ink=getComputedStyle(doc.documentElement).getPropertyValue('--accent');c.strokeStyle=ink;c.lineWidth=2;c.beginPath();c.moveTo(108,120);c.lineTo(132,120);c.moveTo(120,108);c.lineTo(120,132);c.stroke();reading.textContent='×3 · '+o.reading();
     }
-    function refresh(){const r=o.canvas.getBoundingClientRect(),eligible=(!o.visible||o.visible())&&!!o.canvas.getClientRects().length;hidden=!eligible||r.bottom<24||r.top>innerHeight-24;pad.hidden=!eligible;const v=viewport();if(lastViewport&&(v.width!==lastViewport.width||v.height!==lastViewport.height))apply(false);const was=auto;auto=hidden||(!collapsed&&viewport().height<expandedHeight+16); if(was!==auto)render();if(!eligible)stop();paintLens();}
+    function refresh(){const r=o.canvas.getBoundingClientRect(),eligible=(!o.visible||o.visible())&&!!o.canvas.getClientRects().length;hidden=!eligible||r.bottom<24||r.top>innerHeight-24;pad.hidden=!eligible;renderSelected();
+      const resized=!canvasSize||canvasSize.width!==r.width||canvasSize.height!==r.height;
+      canvasSize={width:r.width,height:r.height};
+      if(resized&&eligible&&!custom&&!drag&&!stopRepeat){coords=null;apply(false);}
+      const v=viewport();if(lastViewport&&(v.width!==lastViewport.width||v.height!==lastViewport.height))apply(false);const was=auto;auto=hidden||(!collapsed&&viewport().height<expandedHeight+16); if(was!==auto)render();if(!eligible)stop();avoidSelected();paintLens();}
     addEventListener('resize',()=>{apply(false);refresh();});addEventListener('scroll',refresh,{passive:true});addEventListener('blur',stop);doc.addEventListener('visibilitychange',()=>{if(doc.hidden)stop();});render();refresh();setTimeout(()=>{if(!localStorageSafe()){coords=null;render();}},150);function localStorageSafe(){try{return !!localStorage.getItem(key);}catch(e){return false;}}const timer=setInterval(()=>{renderSelected();refresh();},80);
     function renderSelected(){const id=o.selected();if(selector.dataset.object!==id)render();}
     return {element:pad,lens,activity,refresh,collapse(on){collapsed=!!on;render();save();},reset(){custom=false;coords=null;collapsed=false;render();save();},get state(){return {step,selected:o.selected(),collapsed:collapsed||auto,auto,position:coords};},dispose(){stop();clearInterval(timer);pad.remove();lens.remove();}};

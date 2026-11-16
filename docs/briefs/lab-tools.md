@@ -63,3 +63,5 @@ LabSide.mount({module:'my-lab',
 - 桌機讓出 380 px，手機下方抽屜以把手拖高低；不鎖住畫布操作。
 
 等位線範例在 `js/equipotential-controls.js`；一般七步由 EquipotentialLab.steps／guides 提供，自學七步由 LabSteps 接相同指引。
+
+補充：`action` 也可傳回傳動作字串的函式，方便先指向探針選擇鈕，再顯示拖曳手勢。小鍵盤的 `refresh()` 會立即同步外部的物件選擇；實驗切換探針時應呼叫它，避免下一次指標操作落在舊位置。放大鏡會避開小鍵盤及目前針尖，使用者自己拖放的小鍵盤位置仍優先保留。
