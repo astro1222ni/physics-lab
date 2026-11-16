@@ -1,4 +1,30 @@
-/* 每日掉寶與機率表：每日任務、排行榜及每日模式的實驗頁共用。 */
+/* 每日掉寶、寶物排行與機率表：每日任務、排行榜及每日模式的實驗頁共用。 */
+.tb-kind-tabs { display: flex; gap: 8px; margin-top: 20px; }
+.dl-links > a[href$="#treasure-board"] { display: inline-flex; align-items: center; min-height: 44px; }
+.tb-kind-tabs button, .tb-tab { min-height: 44px; padding: 10px 18px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: calc(14px * var(--fs, 1)); font-weight: 700; cursor: pointer; }
+.tb-kind-tabs button[aria-selected="true"], .tb-tab.selected { background: var(--daily); border-color: var(--daily); color: var(--bg); }
+.tb-kind-tabs button:focus-visible, .tb-tab:focus-visible { outline: 2px solid var(--daily); outline-offset: 3px; }
+.tb-board { border-top: 3px solid var(--daily); }
+.tb-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0; }
+.tb-tabs .tb-tab { font-size: calc(13px * var(--fs, 1)); padding: 9px 14px; }
+.tb-me { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; align-items: center; padding: 16px 18px; margin-bottom: 16px; border: 1px solid color-mix(in srgb, var(--daily) 50%, var(--border)); border-radius: 14px; background: linear-gradient(125deg, var(--daily-soft), var(--surface)); }
+.tb-myname { color: var(--muted); font-size: calc(13px * var(--fs, 1)); overflow-wrap: anywhere; }
+.tb-myrank { grid-column: 1; color: var(--text); font-size: calc(18px * var(--fs, 1)); }
+.tb-myvalue { grid-column: 2; grid-row: 1 / span 2; font-size: calc(24px * var(--fs, 1)); color: var(--daily); font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tb-me small { grid-column: 1 / -1; color: var(--muted); }
+.tb-row { grid-template-columns: 2.6em minmax(0, 1fr) auto; min-height: 44px; }
+.tb-score { max-width: 18em; text-align: right; color: var(--daily); font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tb-values { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 20px; }
+.tb-value { flex: 1 1 140px; display: flex; gap: 7px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; color: var(--text); background: var(--surface); font-size: calc(13px * var(--fs, 1)); }
+.tb-value strong { margin-left: auto; color: var(--rc); white-space: nowrap; }
+@media (max-width: 600px) {
+  .tb-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .tb-tabs .tb-tab { min-width: 0; padding: 9px 5px; overflow-wrap: anywhere; }
+  .tb-me { grid-template-columns: minmax(0, 1fr); padding: 14px; }
+  .tb-myvalue { grid-column: 1; grid-row: auto; font-size: calc(22px * var(--fs, 1)); }
+  .tb-row { padding: 9px 6px; gap: 6px; }
+  .tb-score { max-width: 9em; font-size: calc(12px * var(--fs, 1)); }
+}
 .dl-prob-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
 .dl-prob-table caption { text-align: left; font-weight: 800; margin-bottom: 10px; color: var(--text); }
 .dl-prob-table th, .dl-prob-table td { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }

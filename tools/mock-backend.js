@@ -91,6 +91,27 @@
     return null;
   }
 
+  // ---------- 規則：公開寶物排行 ----------
+  const TREASURE = ['v', 'cu', 'ag', 'au', 'dia', 'key'];
+  function checkTreasure(old, next, bag, t, profile) {
+    if (oldRules()) return 'treasureBoard: 舊規則沒有這個節點';
+    if (!next) return 'treasureBoard: 不能刪除';
+    const fields = TREASURE.concat(['at', 'name', 'pub', 'ta']);
+    if (fields.some(k => next[k] == null) || Object.keys(next).some(k => !fields.includes(k))) return 'treasureBoard: 缺少或多餘欄位';
+    if (next.at !== t) return 'treasureBoard: at 必須是現在時間';
+    if (typeof next.name !== 'string' || next.name.length < 1 || next.name.length > 20 || typeof next.pub !== 'boolean') return 'treasureBoard: 暱稱或公開設定不符';
+    if (next.pub !== (!profile || profile.pub !== false) || (next.pub && next.name !== (profile && profile.nickname))) return 'treasureBoard: 必須使用最新的個人公開設定';
+    for (const key of TREASURE.slice(1)) if (typeof next[key] !== 'number' || next[key] < 0 || next[key] !== ((bag && bag[key]) || 0)) return 'treasureBoard: ' + key + ' 必須等於寶物袋';
+    if (next.v !== next.cu + 10 * next.ag + 100 * next.au + 1000 * next.dia + 10000 * next.key) return 'treasureBoard: 總價值不符';
+    if (typeof next.ta !== 'object' || TREASURE.some(k => next.ta[k] == null) || Object.keys(next.ta).some(k => !TREASURE.includes(k))) return 'treasureBoard: 達到時間欄位不符';
+    for (const key of TREASURE) {
+      const prev = old && old.ta && old.ta[key];
+      const keep = old && old[key] === next[key] && typeof prev === 'number' && prev > 0 && prev <= old.at;
+      if (typeof next.ta[key] !== 'number' || next.ta[key] <= 0 || next.ta[key] > t || next.ta[key] !== (keep ? prev : t)) return 'treasureBoard: ' + key + ' 達到時間不符';
+    }
+    return null;
+  }
+
   window.LAB_MISSIONS_BACKEND = {
     onAuth(cb) { cbs.push(cb); setTimeout(() => cb(user), 5); },
     signIn() { user = { uid: localStorage.getItem('mocknext') || 'u1' }; localStorage.setItem('mockuser', user.uid); cbs.forEach(c => c(user)); return Promise.resolve(); },
@@ -153,6 +174,15 @@
       return Promise.resolve(list.concat(all.slice(0, -n).filter(r => v(r) === edge)));
     },
     countAbove(stars, subj) { const db = load(); return Promise.resolve(Object.values(db.scores).filter(s => (subj ? ((s.s && s.s[subj]) || -Infinity) : s.stars) >= stars + 1).length); },
+    topTreasures(n, metric = 'v') {
+      if (!TREASURE.includes(metric)) return deny('treasureBoard: 排序欄位不符');
+      const all = Object.entries(load().treasureBoard || {}).map(([uid, row]) => ({ uid, ...row })).sort((a, b) => a[metric] - b[metric] || a.uid.localeCompare(b.uid));
+      const list = all.slice(-n);
+      if (list.length < n) return Promise.resolve(list);
+      const edge = Math.min(...list.map(row => row[metric]));
+      return Promise.resolve(list.concat(all.slice(0, -n).filter(row => row[metric] === edge)));
+    },
+    countTreasureAbove(value, metric = 'v') { return Promise.resolve(Object.values(load().treasureBoard || {}).filter(row => row.v > 0 && row[metric] > value).length); },
     serverOffset() { return Promise.resolve(+localStorage.getItem('mockoffset') || 0); },
     syncDefs(defs) { if (!user || !load().admins[user.uid]) return deny('syncDefs'); if (Object.values(defs).some(v => !(v >= 1 && v <= 20))) return deny('syncDefs: 星星數必須是 1–20'); const db = load(); Object.keys(defs).forEach(k => db.missionDefs[k] = { stars: defs[k] }); save(db); return Promise.resolve(); },
     isAdmin(uid) { return Promise.resolve(!!load().admins[uid]); },
@@ -168,10 +198,10 @@
     },
     update(map) {
       const before = load(), db = load(), t = clock();
-      const touched = { daily: {}, bag: {}, scores: {} };
+      const touched = { daily: {}, bag: {}, scores: {}, treasureBoard: {} };
       for (const [path, v0] of Object.entries(map)) {
         const ks = path.split('/');
-        if (['daily', 'bag', 'userStats', 'achievements'].includes(ks[0]) && (!user || ks[1] !== user.uid)) return deny(path + ': 不是本人');
+        if (['daily', 'bag', 'userStats', 'achievements', 'treasureBoard', 'profiles', 'scores'].includes(ks[0]) && (!user || ks[1] !== user.uid)) return deny(path + ': 不是本人');
         let o = db;
         ks.slice(0, -1).forEach(k => { o[k] = o[k] || {}; o = o[k]; });
         const last = ks[ks.length - 1];
@@ -183,10 +213,11 @@
       for (const uid of Object.keys(touched.daily)) { const why = checkDaily(get(before, 'daily/' + uid), get(db, 'daily/' + uid), t); if (why) return deny(why); }
       for (const uid of Object.keys(touched.bag)) { const why = checkBag(get(before, 'bag/' + uid), get(db, 'bag/' + uid), get(before, 'daily/' + uid), get(db, 'daily/' + uid), t); if (why) return deny(why); }
       for (const uid of Object.keys(touched.scores)) { const why = checkScore(get(before, 'scores/' + uid), get(db, 'scores/' + uid), t); if (why) return deny(why); }
+      for (const uid of Object.keys(touched.treasureBoard)) { const why = checkTreasure(get(before, 'treasureBoard/' + uid), get(db, 'treasureBoard/' + uid), get(db, 'bag/' + uid), t, get(db, 'profiles/' + uid)); if (why) return deny(why); }
       save(db); window.__writes = (window.__writes || 0) + 1; return Promise.resolve();
     },
     inc(n) { return { __inc: n }; },
     now() { return { __now: NOW }; }
   };
-  window.LAB_COMMENTS_BACKEND = { onAuth(cb) { cbs.push(cb); setTimeout(() => cb(user), 5); }, signIn() { return window.LAB_MISSIONS_BACKEND.signIn(); }, signOut() {}, getNickname: uid => Promise.resolve((load().profiles[uid] || {}).nickname || null), setNickname: (u, n) => window.LAB_MISSIONS_BACKEND.setNickname(u, n), isAdmin: uid => Promise.resolve(!!load().admins[uid]), watchComments(m, cb) { cb([]); }, watchReports(m, cb) { cb({}); }, post() { return Promise.resolve(); }, remove() { return Promise.resolve(); }, report() { return Promise.resolve(); } };
+  window.LAB_COMMENTS_BACKEND = { onAuth(cb) { cbs.push(cb); setTimeout(() => cb(user), 5); }, signIn() { return window.LAB_MISSIONS_BACKEND.signIn(); }, signOut() {}, getNickname: uid => Promise.resolve((load().profiles[uid] || {}).nickname || null), setNickname: (u, n) => window.LAB_MISSIONS_BACKEND.setNickname(u, n), get: p => window.LAB_MISSIONS_BACKEND.get(p), update: m => window.LAB_MISSIONS_BACKEND.update(m), now: () => window.LAB_MISSIONS_BACKEND.now(), isAdmin: uid => Promise.resolve(!!load().admins[uid]), watchComments(m, cb) { cb([]); }, watchReports(m, cb) { cb({}); }, post() { return Promise.resolve(); }, remove() { return Promise.resolve(); }, report() { return Promise.resolve(); } };
 })();

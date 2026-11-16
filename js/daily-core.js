@@ -194,6 +194,58 @@
     });
   }
 
+  // ---------- 寶物排行：只計累計獲得，不扣已使用 ----------
+  const TREASURE_WEIGHTS = { cu: 1, ag: 10, au: 100, dia: 1000, key: 10000 };
+  const TREASURE_METRICS = ['v', 'cu', 'ag', 'au', 'dia', 'key'];
+  function treasureTotals(bag) {
+    const out = { v: 0 };
+    holdings(bag).forEach(function (h) { out[h.id] = h.total; out.v += h.total * TREASURE_WEIGHTS[h.id]; });
+    return out;
+  }
+  /** 和 LabMission.mask 相同；供沒有載入任務系統的帳號選單使用。 */
+  function treasureName(name, pub) {
+    if (pub !== false) return String(name || '');
+    const ch = Array.from(String(name || ''));
+    if (ch.length <= 1) return '＊';
+    if (ch.length === 2) return ch[0] + '＊';
+    return ch[0] + '○'.repeat(Math.min(ch.length - 2, 8)) + ch[ch.length - 1];
+  }
+  /** at 是本次更新；ta 是各項目達到目前累計量的時間，未改變的項目保留時間。 */
+  function treasureRecord(bag, previous, name, pub, stamp) {
+    const out = treasureTotals(bag), old = previous || {};
+    out.at = stamp; out.name = treasureName(name, pub); out.pub = pub !== false; out.ta = {};
+    TREASURE_METRICS.forEach(function (key) {
+      const t = old.ta && old.ta[key];
+      out.ta[key] = old[key] === out[key] && typeof t === 'number' && t > 0 && t <= old.at ? t : stamp;
+    });
+    return out;
+  }
+  function treasureMatches(record, bag, name, pub) {
+    if (!record || record.name !== treasureName(name, pub) || record.pub !== (pub !== false) || !(record.at > 0)) return false;
+    const totals = treasureTotals(bag);
+    return TREASURE_METRICS.every(function (key) { return record[key] === totals[key] && record.ta && record.ta[key] > 0 && record.ta[key] <= record.at; });
+  }
+  function rankTreasures(rows, metric) {
+    const key = TREASURE_METRICS.indexOf(metric) >= 0 ? metric : 'v';
+    const list = rows.filter(function (row) { return row.v > 0; }).map(function (row) { return Object.assign({}, row); });
+    const time = function (row) { return (row.ta && row.ta[key]) || row.at || 0; };
+    list.sort(function (a, b) { return (b[key] - a[key]) || (time(a) - time(b)) || (a.uid < b.uid ? -1 : a.uid > b.uid ? 1 : 0); });
+    let rank = 0, previous = null;
+    list.forEach(function (row, i) { if (row[key] !== previous) rank = i + 1; previous = row[key]; row.rank = rank; });
+    return list;
+  }
+  /** 暱稱及公開設定和兩個公開榜一起更新；不改星星及各項目的達到時間。 */
+  function updateTreasureProfile(api, uid, changes) {
+    return Promise.all(['profiles/', 'scores/', 'bag/', 'treasureBoard/'].map(function (prefix) { return api.get(prefix + uid); })).then(function (r) {
+      const profile = Object.assign({}, r[0] || {}, changes), map = {};
+      Object.keys(changes).forEach(function (key) { map['profiles/' + uid + '/' + key] = changes[key]; });
+      const pub = profile.pub !== false, name = treasureName(profile.nickname, pub);
+      if (r[1]) { map['scores/' + uid + '/name'] = name; map['scores/' + uid + '/pub'] = pub; }
+      if (profile.nickname && (treasureTotals(r[2]).v > 0 || r[3])) map['treasureBoard/' + uid] = treasureRecord(r[2], r[3], profile.nickname, pub, api.now());
+      return api.update(map);
+    });
+  }
+
   // ---------- 寶物圖示（SVG 字串）：銅、銀、金幣刻元素符號；鑽石是碳的晶體；鑰匙最稀有 ----------
   let gid = 0;
   const COIN = {
@@ -280,6 +332,9 @@
     hash: hash, rng: rng, BANDS: BANDS, PER_DAY: PER_DAY, bandOf: bandOf, pick: pick,
     ITEMS: ITEMS, starBoost: starBoost, siteStars: siteStars, dropChances: dropChances,
     qtyTable: qtyTable, qtyMean: qtyMean, roll: roll, GAP: GAP,
-    holdings: holdings, icon: icon, bagGrid: bagGrid, oddsTable: oddsTable
+    holdings: holdings, icon: icon, bagGrid: bagGrid, oddsTable: oddsTable,
+    TREASURE_WEIGHTS: TREASURE_WEIGHTS, TREASURE_METRICS: TREASURE_METRICS,
+    treasureTotals: treasureTotals, treasureName: treasureName, treasureRecord: treasureRecord,
+    treasureMatches: treasureMatches, rankTreasures: rankTreasures, updateTreasureProfile: updateTreasureProfile
   };
 });

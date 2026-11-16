@@ -261,10 +261,7 @@
 
   function setPub(pub) {
     const uid = st.user.uid;
-    st.pub = pub;
-    api.setPub(uid, pub).then(function () {
-      if (myScore) return api.rename(uid, myScore, pub ? st.nickname : LM.mask(st.nickname), pub);
-    }).then(refresh).catch(function () { refresh(); });
+    api.setPub(uid, pub).catch(function () { renderMe(); });
   }
 
   /** 自己在各科的名次：每次載入頁面算一次，之後每 5 分鐘更新（每科一次查詢） */
@@ -330,6 +327,77 @@
     }).catch(function () { $('syncMsg').textContent = T('同步失敗：請確認你是管理員，且資料庫規則已更新。', 'Sync failed: check you are an administrator and the database rules are up to date.'); });
   });
 
+  // ---------- 寶物排行：總價值與五種累計量，公開榜不讀取別人的 bag ----------
+  const TC = window.LabDailyCore;
+  let treasureMetric = 'v', treasureGeneration = 0;
+  const treasureTitles = { v: ['寶物總價值', 'Total treasure value'], cu: ['銅幣', 'Copper coins'], ag: ['銀幣', 'Silver coins'], au: ['金幣', 'Gold coins'], dia: ['鑽石', 'Diamonds'], key: ['稀有鑰匙', 'Rare keys'] };
+  const treasureTitle = function (key) { return T(treasureTitles[key][0], treasureTitles[key][1]); };
+  function treasureAmount(row, metric) {
+    const value = Number(row && row[metric] || 0).toLocaleString();
+    return metric === 'v' ? T('總價值 ' + value + ' 銅', 'Value ' + value + ' copper') : value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
+  }
+  function treasureTabs() {
+    const box = $('treasureTabs'); box.innerHTML = '';
+    TC.TREASURE_METRICS.forEach(function (key) {
+      const button = el('button', 'tb-tab' + (treasureMetric === key ? ' selected' : ''), treasureTitle(key));
+      button.type = 'button'; button.setAttribute('role', 'tab'); button.setAttribute('aria-selected', String(treasureMetric === key));
+      button.setAttribute('aria-controls', 'treasureList'); button.dataset.metric = key;
+      button.addEventListener('click', function () { treasureMetric = key; treasureTabs(); refreshTreasure(); box.querySelector('[data-metric="' + key + '"]').focus(); });
+      box.appendChild(button);
+    });
+  }
+  function refreshTreasure() {
+    if (!api || !TC) return;
+    const generation = ++treasureGeneration, metric = treasureMetric, uid = st.user && st.user.uid;
+    $('treasureList').innerHTML = ''; $('treasureList').appendChild(el('li', 'lb-empty', T('載入中…', 'Loading…')));
+    let syncFailed = false;
+    const own = uid && st.ready ? LM.syncTreasure().catch(function () { syncFailed = true; return null; }) : Promise.resolve(null);
+    own.then(function (mine) {
+      return Promise.all([api.topTreasures(100, metric), uid ? api.get('bag/' + uid) : null]).then(function (r) {
+        const totals = mine || TC.treasureTotals(r[1]);
+        return Promise.all([r[0], totals, uid ? api.countTreasureAbove(totals[metric] || 0, metric) : null]);
+      });
+    }).then(function (r) {
+      if (generation !== treasureGeneration || uid !== (st.user && st.user.uid)) return;
+      const list = $('treasureList'); list.innerHTML = '';
+      const rows = TC.rankTreasures(r[0], metric).slice(0, 100);
+      rows.forEach(function (row) {
+        const li = el('li', 'lb-row tb-row' + (row.uid === uid ? ' me' : '') + (row.rank <= 3 ? ' podium p' + row.rank : ''));
+        li.dataset.uid = row.uid; li.appendChild(el('span', 'lb-rank', String(row.rank)));
+        li.appendChild(el('span', 'lb-name', row.pub === false ? LM.mask(row.name) : String(row.name || '?')));
+        li.appendChild(el('strong', 'tb-score', treasureAmount(row, metric))); list.appendChild(li);
+      });
+      if (!rows.length) list.appendChild(el('li', 'lb-empty', T('還沒有人收集寶物，完成每日任務就能上榜！', 'No treasures collected yet. Clear a daily mission to join the board!')));
+      const mine = $('treasureMe'); mine.innerHTML = '';
+      if (uid) {
+        const publicName = r[1].name || st.nickname || T('倪', 'You'), publicSetting = r[1].pub == null ? st.pub : r[1].pub;
+        mine.appendChild(el('span', 'tb-myname', publicSetting ? publicName : LM.mask(publicName)));
+        mine.appendChild(el('strong', 'tb-myrank', syncFailed ? T('排行資料尚未同步，請稍後重試', 'Ranking is not synced yet; please try again') : T('倪的名次：第 ' + (r[2] + 1) + ' 名', 'Your rank: ' + (r[2] + 1))));
+        mine.appendChild(el('span', 'tb-myvalue', treasureAmount(r[1], metric)));
+        if (!TC.treasureTotals(r[1]).v) mine.appendChild(el('small', null, T('完成每日任務即可開始收集；零枚也會顯示倪的名次。', 'Start collecting with a daily mission. Your rank is shown even at zero.')));
+      } else mine.appendChild(el('span', 'lb-note', T('登入後會顯示倪的名次，即使不在前 100 名也看得到。', 'Sign in to see your rank, even outside the top 100.')));
+    }).catch(function () {
+      if (generation !== treasureGeneration) return;
+      $('treasureList').innerHTML = ''; $('treasureList').appendChild(el('li', 'lb-empty', T('寶物排行暫時無法載入，請稍後再試。', 'The treasure ranking could not be loaded; please try again later.')));
+      $('treasureMe').textContent = T('目前無法取得名次。', 'Your rank is unavailable right now.');
+    });
+  }
+  function boardKind(kind) {
+    const treasure = kind === 'treasure';
+    $('board').hidden = treasure; $('treasureBoardPanel').hidden = !treasure;
+    $('starsBoardButton').setAttribute('aria-selected', String(!treasure)); $('treasureBoardButton').setAttribute('aria-selected', String(treasure));
+    if (treasure) refreshTreasure();
+  }
+  $('starsBoardButton').addEventListener('click', function () { boardKind('stars'); });
+  $('treasureBoardButton').addEventListener('click', function () { boardKind('treasure'); });
+  treasureTabs();
+  TC.ITEMS.forEach(function (item) {
+    const cell = el('div', 'tb-value r-' + item.id), art = el('span', 'dl-ico sm'); art.innerHTML = TC.icon(item.id); cell.appendChild(art);
+    cell.appendChild(el('span', null, T(item.zh, item.en)));
+    cell.appendChild(el('strong', null, TC.TREASURE_WEIGHTS[item.id].toLocaleString() + T(' 銅', ' copper')));
+    $('treasureValues').appendChild(cell);
+  });
+  if (LM) LM.on('profile', function () { refresh(); if (!$('treasureBoardPanel').hidden) refreshTreasure(); });
   renderTabs();
   let autoSynced = 0; // 本頁載入時 missions.js 已自動同步的任務數
   if (LM) LM.on('synced', function (n) { autoSynced += n; });
@@ -338,6 +406,7 @@
   LM._ready().then(function (b) {
     api = b;
     if (!api) { renderMe(); return; }
+    if (location.hash === '#treasure-board') { boardKind('treasure'); $('treasureBoardPanel').scrollIntoView({ block: 'start' }); }
     let lastUid = null;
     api.onAuth(function (user) {
       const uid = user && user.uid;
@@ -356,12 +425,12 @@
     });
     refresh();
     // 每 60 秒自動更新排行榜與名次（只在頁面顯示時）
-    setInterval(function () { if (document.visibilityState === 'visible') refresh(); }, 60000);
+    setInterval(function () { if (document.visibilityState === 'visible') { refresh(); if (!$('treasureBoardPanel').hidden) refreshTreasure(); } }, 60000);
     // 登入狀態或任務資料載入後重新整理
     let wasReady = null;
     setInterval(function () {
       const key = (st.user && st.user.uid) + '|' + st.ready;
-      if (key !== wasReady) { wasReady = key; loaded.then(refresh); }
+      if (key !== wasReady) { wasReady = key; loaded.then(refresh); if (!$('treasureBoardPanel').hidden) refreshTreasure(); }
     }, 400);
   }).catch(function () { renderMe(); });
 })();

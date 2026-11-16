@@ -2,11 +2,11 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611161029"></script>
+  <script src="js/settings.js?v=202611161108"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Ni Stars Leaderboard | Astro Ni Lab">倪的星星排行榜｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
-  <meta name="description" content="在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。">
+  <meta name="description" content="在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科星星排行、寶物累計與總價值排行、任務進度與成就。">
   <link rel="alternate" hreflang="zh-Hant" href="https://lab.astroni.org/leaderboard.html">
   <link rel="alternate" hreflang="zh-Hans" href="https://lab.astroni.org/leaderboard.html?lang=zh-Hans">
   <link rel="alternate" hreflang="en" href="https://lab.astroni.org/leaderboard.html?lang=en">
@@ -14,7 +14,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="讓倪動手⚡高中全科模擬實驗室">
   <meta property="og:title" content="倪的星星排行榜｜讓倪動手⚡高中全科模擬實驗室">
-  <meta property="og:description" content="在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科排行榜、任務進度與成就。">
+  <meta property="og:description" content="在 讓倪動手⚡高中全科模擬實驗室完成任務、收集倪的星星：全科與各科星星排行、寶物累計與總價值排行、任務進度與成就。">
   <meta property="og:url" content="https://lab.astroni.org/leaderboard.html">
   <meta property="og:image" content="https://lab.astroni.org/img/og/leaderboard.jpg">
   <meta property="og:image:width" content="1200">
@@ -27,8 +27,8 @@
   <!-- SEO-END -->
 
 
-  <link rel="stylesheet" href="lab.css?v=202611161029">
-  <link rel="stylesheet" href="daily.css?v=202611161029" data-daily-style>
+  <link rel="stylesheet" href="lab.css?v=202611161108">
+  <link rel="stylesheet" href="daily.css?v=202611161108" data-daily-style>
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -46,6 +46,17 @@
       <div id="bagBox" aria-live="polite"></div>
     </section>
 
+    <div class="tb-kind-tabs" role="tablist" aria-label="排行種類" data-en-aria-label="Ranking type">
+      <button type="button" id="starsBoardButton" role="tab" aria-controls="board" aria-selected="true" data-en="Star rankings">星星排行</button>
+      <button type="button" id="treasureBoardButton" role="tab" aria-controls="treasureBoardPanel" aria-selected="false" data-en="Treasure rankings">寶物排行</button>
+    </div>
+    <section id="treasureBoardPanel" class="lb-board tb-board" hidden>
+      <h2 id="treasure-board" data-en="Treasure rankings · top 100">寶物排行・前 100 名</h2>
+      <p class="lb-note" data-en="Ranked by all-time treasures earned, without subtracting what you have spent. Choose total value or a treasure type.">依拿過的累計總數排名，不扣已使用；可比總價值，也可各比一種寶物。</p>
+      <div id="treasureTabs" class="tb-tabs" role="tablist" aria-label="寶物種類" data-en-aria-label="Treasure type"></div>
+      <div id="treasureMe" class="tb-me" aria-live="polite"></div>
+      <ol id="treasureList" class="lb-list" role="tabpanel" aria-labelledby="treasure-board" aria-live="polite"></ol>
+    </section>
     <section id="board" class="lb-board">
       <h2 id="boardTitle" data-en="Top 100">前 100 名</h2>
       <div class="sb-tabs" id="boardTabs" role="tablist" aria-label="排行榜科目" data-en-aria-label="Ranking by subject"></div>
@@ -95,6 +106,13 @@
         <li data-en="Only difficulty affects drop chances; stars and star share have no effect. Let L be the mission level (1–10) and t = (L − 1) / 9. The table gives rounded percentages. Amounts and weights are fixed at every level.">只有任務難度會影響掉落機率，與星星數及星星比例無關。L 為任務等級（1～10），t = (L − 1) / 9；下表百分比經四捨五入，數量與權重固定。</li>
       </ul>
       <div id="dailyOdds"></div>
+      <h3 data-en="Treasure rankings">寶物排行</h3>
+      <ul>
+        <li data-en="Treasure rankings use all-time totals earned, not what you have left. Total value is measured in copper; there are also separate copper, silver, gold, diamond and rare-key tabs.">寶物排行計算「累計獲得」，不是目前持有數。總價值以銅幣為單位，另有銅幣、銀幣、金幣、鑽石與稀有鑰匙五個分頁。</li>
+        <li data-en="Each ranking shows the top 100 publicly and always shows your own rank when signed in. Equal totals share a rank; whoever reached that total earlier is listed first. Changing your nickname or collecting another treasure does not reset that time. Hidden nicknames show only their first and last characters.">各榜公開前 100 名，登入後一定看得到自己的名次。同分同名次，先達到的排前面；改暱稱或取得其他種類寶物不會重設原有達到時間。不公開時只顯示暱稱頭尾字。</li>
+        <li data-en="Ten copper coins equal one silver coin; ten silver equal one gold; ten gold equal one diamond; ten diamonds equal one rare key. These values are for ranking, not an exchange feature.">十枚銅幣等值一枚銀幣，十枚銀幣等值一枚金幣，十枚金幣等值一顆鑽石，十顆鑽石等值一把稀有鑰匙。這是排行計價，尚未提供兌換功能。</li>
+      </ul>
+      <div id="treasureValues" class="tb-values"></div>
       <h3 data-en="Fair play">公平競賽</h3>
       <ul>
         <li data-en="Please earn your stars by doing the experiments. The administrator may remove results obtained by technical tricks.">請靠操作實驗賺取星星；以技術手段取得的成績，管理員可以移除。</li>
@@ -111,13 +129,13 @@
     <footer class="site"><a href="index.html" data-en="Astro Ni Lab">讓倪動手⚡高中全科模擬實驗室</a>　<a href="about.html" data-en="About">關於本站</a>　<a href="privacy.html" data-en="Privacy">隱私說明</a></footer>
   </div>
 
-  <script src="js/sound.js?v=202611161029"></script>
-  <script src="js/firebase-config.js?v=202611161029"></script>
-  <script src="js/missions.js?v=202611161029"></script>
-  <script src="js/missions/index.js?v=202611161029"></script>
-  <script src="js/achievements.js?v=202611161029"></script>
-  <script src="js/daily-core.js?v=202611161029"></script>
-  <script src="js/leaderboard.js?v=202611161029"></script>
-  <script src="js/comments.js?v=202611161029"></script>
+  <script src="js/sound.js?v=202611161108"></script>
+  <script src="js/firebase-config.js?v=202611161108"></script>
+  <script src="js/missions.js?v=202611161108"></script>
+  <script src="js/missions/index.js?v=202611161108"></script>
+  <script src="js/achievements.js?v=202611161108"></script>
+  <script src="js/daily-core.js?v=202611161108"></script>
+  <script src="js/leaderboard.js?v=202611161108"></script>
+  <script src="js/comments.js?v=202611161108"></script>
 </body>
 </html>

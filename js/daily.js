@@ -214,8 +214,10 @@
   /** 寫入前先向伺服器重讀今天的紀錄（別的分頁可能剛記過），還不到 10 秒就等，等完再讀一次 */
   function writeWhenReady(m, newStars) {
     const uid = D.uid;
-    return D.api.get('daily/' + uid).catch(function () { return null; }).then(function (r) {
+    return Promise.all([D.api.get('daily/' + uid), D.api.get('bag/' + uid), D.api.get('treasureBoard/' + uid), D.api.get('profiles/' + uid)]).then(function (records) {
       if (D.uid !== uid) return;
+      const r = records[0];
+      D.bag = records[1] || {};
       if (r && D.rec && r.d === D.rec.d) { D.rec.n = +r.n || 0; D.rec.at = +r.at || 0; D.rec.done = Object.assign({}, r.done || {}); }
       if (!isPick(m.id) || doneToday(m.id)) { pendingSet(m.id, false); D.waiting = null; render(); return; }
       // 資料庫規則：兩次完成的伺服器時間至少隔 10 秒（多留 0.3 秒，避免時鐘誤差剛好差一點被擋）
@@ -233,6 +235,10 @@
       map[P + 'done/' + m.id] = true;
       map[B + 'dm'] = D.api.inc(1);
       drops.forEach(function (drop) { map[B + drop.item] = D.api.inc(drop.qty); });
+      const nextBag = Object.assign({}, D.bag);
+      drops.forEach(function (drop) { nextBag[drop.item] = (nextBag[drop.item] || 0) + drop.qty; });
+      const profile = records[3] || {};
+      map['treasureBoard/' + uid] = C.treasureRecord(nextBag, records[2], profile.nickname || st.nickname, profile.pub !== false, D.api.now());
       return D.api.update(map).then(function () {
         pendingSet(m.id, false); D.waiting = null;
         D.rec.n = ((D.rec && D.rec.n) || 0) + 1;
@@ -250,6 +256,10 @@
         D.msg = T('這次完成沒有記錄成功（網路或資料庫規則的問題），請再做一次。', 'This clear was not recorded (network or database rules) — please try again.');
         render();
       });
+    }).catch(function () {
+      pendingSet(m.id, false); D.waiting = null;
+      D.msg = T('無法核對每日紀錄與寶物，這次尚未記錄，請稍後再試。', 'Could not check your daily record and treasures. This clear was not recorded; please try again.');
+      render();
     });
   }
 

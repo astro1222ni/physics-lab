@@ -26,6 +26,17 @@
 
   const modScript = document.querySelector('script[data-module]');
   const moduleId = modScript ? modScript.getAttribute('data-module') : null;
+  const accountScript = document.currentScript && document.currentScript.src;
+  let accountTreasureP = null;
+  function saveProfileNickname(uid, name) {
+    if (window.LabMission) return window.LabMission._ready().then(function (backend) { return backend.setNickname(uid, name); });
+    // 首頁及一般說明頁不一定有任務系統；改暱稱時才載入共用的寶物計算。
+    if (!accountTreasureP) accountTreasureP = window.LabDailyCore ? Promise.resolve() : new Promise(function (resolve, reject) {
+      const script = document.createElement('script'); script.src = accountScript.replace(/comments\.js/, 'daily-core.js');
+      script.onload = resolve; script.onerror = function () { accountTreasureP = null; reject(new Error('寶物資料載入失敗')); }; document.body.appendChild(script);
+    });
+    return accountTreasureP.then(function () { return window.LabDailyCore.updateTreasureProfile(api, uid, { nickname: name }); });
+  }
 
   // ======================= Firebase 後端 =======================
   function firebaseBackend() {
@@ -69,6 +80,9 @@
         signOut: function () { return Au.signOut(auth); },
         getNickname: function (uid) { return D.get(r('profiles/' + uid + '/nickname')).then(function (s) { return s.val(); }); },
         setNickname: function (uid, n) { return D.set(r('profiles/' + uid + '/nickname'), n); },
+        get: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
+        update: function (map) { return D.update(D.ref(db), map); },
+        now: function () { return D.serverTimestamp(); },
         isAdmin: function (uid) { return D.get(r('admins/' + uid)).then(function (s) { return s.val() === true; }).catch(function () { return false; }); },
         homeRead: function (path) { return D.get(r(path)).then(function (s) { return s.val(); }); },
         watchComments: function (mod, cb) {
@@ -253,7 +267,7 @@
   function saveNickname(n) {
     n = cleanNick(n);
     if (!n) return Promise.resolve();
-    return guard(function () { return api.setNickname(state.user.uid, n); }).then(function () {
+    return guard(function () { return saveProfileNickname(state.user.uid, n); }).then(function () {
       state.nickname = n;
       state.editingNick = false;
       state.msg = '';

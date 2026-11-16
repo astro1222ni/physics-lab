@@ -12,7 +12,7 @@
  * 星星數 = 任務等級（1–10 顆「倪的星星」）；隱藏任務要自己猜，星星是等級的 2 倍（11/12 站長：「隱藏任務的星星給的數量要再更大方一點」）。
  * 補發：bonus/<uid>/<任務> 記錄完成後補上的星星（例如隱藏任務改成加倍以前完成的人）；完成紀錄的星星 + 補發 = 目前的星星數。
  * 各科排名：scores/<uid> 另外記錄各科星星 s/<科目>（phy、chem、bio、earth、math）與各科最後得星時間 sa/<科目>。
- * 每日任務：網址加 ?daily=<任務代號> 進入每日任務模式（js/daily.js）；每天十個、每個一天只能完成一次。以前完成過的任務也能做，不再加星，但有機率掉寶。
+ * 每日任務：每天十個、每個一天一次；銅幣必掉，其他寶物獨立判定。寶物排行按累計獲得與總價值計算。
  */
 (function () {
   'use strict';
@@ -25,7 +25,7 @@
   const script = document.currentScript;
   const pageModule = script && script.getAttribute('data-module'); // 模組頁面才有；排行榜頁沒有
   const registry = {}; // moduleId → [mission]
-  const hooks = { complete: [], ready: [], synced: [] };
+  const hooks = { complete: [], ready: [], synced: [], profile: [] };
   function fire(name, arg) { hooks[name].forEach(function (f) { try { f(arg); } catch (e) { /* 忽略 */ } }); }
   const listeners = [];
   const state = {
@@ -62,7 +62,7 @@
       const list = registry[state.module] || [];
       const LD = window.LabDaily;
       list.forEach(function (m) {
-        // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，但有機率掉寶）；今天完成後就不再判定
+        // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，銅幣仍必掉）；今天完成後就不再判定
         const daily = state.daily === m.id && LD && LD.active(m.id);
         if ((state.done[m.id] && !daily) || m.pending) return;
         let ok = false;
@@ -96,7 +96,8 @@
     // 排行榜頁用
     _state: state,
     _ready: function () { return api ? Promise.resolve(api) : (ready || Promise.resolve(null)); },
-    _autoSync: function () { return autoSync(); }
+    _autoSync: function () { return autoSync(); },
+    syncTreasure: function () { return syncTreasure(); }
   };
   window.LabMission = LabMission;
 
@@ -111,6 +112,40 @@
     });
   }
   let indexP = null, allP = null;
+  let treasureCoreP = null, treasureSyncP = null, treasureSyncUid = null;
+  function treasureCore() {
+    if (window.LabDailyCore) return Promise.resolve(window.LabDailyCore);
+    // 先讓 HTML 裡的靜態腳本載入；避免登入補寫在解析途中重複載入核心，重設 SVG 代號。
+    if (document.readyState === 'loading') return new Promise(function (resolve) {
+      document.addEventListener('DOMContentLoaded', resolve, { once: true });
+    }).then(treasureCore);
+    if (!treasureCoreP) treasureCoreP = loadScript(base + 'daily-core.js' + ver).then(function () {
+      if (!window.LabDailyCore) { treasureCoreP = null; throw new Error('寶物核心載入失敗'); }
+      return window.LabDailyCore;
+    });
+    return treasureCoreP;
+  }
+  /** 登入補齊公開榜；同一帳號同時要求同步時共用一次查核。 */
+  function syncTreasure() {
+    if (!api || !state.user || !state.ready) return Promise.resolve(null);
+    const uid = state.user.uid;
+    if (treasureSyncP && treasureSyncUid === uid) return treasureSyncP;
+    treasureSyncUid = uid;
+    const job = treasureCore().then(function (C) {
+      return Promise.all([api.get('bag/' + uid), api.get('treasureBoard/' + uid), api.get('profiles/' + uid)]).then(function (r) {
+        if (!state.user || state.user.uid !== uid) return null;
+        // 其他分頁可能已改名或設為不公開，不能把本頁快取的舊設定寫回去。
+        const profile = r[2] || {}, name = profile.nickname, pub = profile.pub !== false;
+        if (!name) return null;
+        if (!r[1] && !C.treasureTotals(r[0]).v) return null;
+        if (C.treasureMatches(r[1], r[0], name, pub)) return r[1];
+        const record = C.treasureRecord(r[0], r[1], name, pub, api.now());
+        return api.update({ ['treasureBoard/' + uid]: record }).then(function () { return api.get('treasureBoard/' + uid); });
+      });
+    });
+    treasureSyncP = job;
+    return job.finally(function () { if (treasureSyncP === job) treasureSyncP = null; });
+  }
   function loadIndex() {
     if (!indexP) indexP = window.LAB_SUBJECT_OF ? Promise.resolve() : loadScript(base + 'missions/index.js' + ver);
     return indexP;
@@ -219,6 +254,25 @@
         countAbove: function (stars, subj) {
           return D.get(D.query(r('scores'), D.orderByChild(subj ? 's/' + subj : 'stars'), D.startAt(stars + 1))).then(function (s) { return s.size; });
         },
+        topTreasures: function (n, metric) {
+          const key = /^(v|cu|ag|au|dia|key)$/.test(metric) ? metric : 'v';
+          const rows = function (snapshot) { const list = []; snapshot.forEach(function (child) { list.push(Object.assign({ uid: child.key }, child.val())); }); return list; };
+          return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.limitToLast(n))).then(function (snapshot) {
+            const list = rows(snapshot);
+            if (list.length < n) return list;
+            // 包含零枚的同分邊界也要補齊，依各項目的達到時間排序後才取前 100 名。
+            const edge = Math.min.apply(null, list.map(function (row) { return row[key] || 0; }));
+            return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.equalTo(edge))).then(function (same) {
+              const seen = {}; list.forEach(function (row) { seen[row.uid] = true; });
+              rows(same).forEach(function (row) { if (!seen[row.uid]) list.push(row); });
+              return list;
+            });
+          });
+        },
+        countTreasureAbove: function (value, metric) {
+          const key = /^(v|cu|ag|au|dia|key)$/.test(metric) ? metric : 'v';
+          return D.get(D.query(r('treasureBoard'), D.orderByChild(key), D.startAt(value + 1))).then(function (snapshot) { return snapshot.size; });
+        },
         /** 伺服器時間 − 本機時間（毫秒）：每日任務換日以伺服器時間為準 */
         serverOffset: function () {
           return new Promise(function (resolve) {
@@ -252,6 +306,17 @@
   if (enabled) {
     ready = (window.LAB_MISSIONS_BACKEND ? Promise.resolve(window.LAB_MISSIONS_BACKEND) : firebaseBackend()).then(function (b) {
       api = b;
+      // 任務、每日與排行榜入口共用此更新，讓個人設定和兩個公開榜一起寫入。
+      api.setNickname = function (uid, name) {
+        return treasureCore().then(function (C) { return C.updateTreasureProfile(api, uid, { nickname: name }); }).then(function () {
+          if (state.user && state.user.uid === uid) { state.nickname = name; changed(); fire('profile', state); }
+        });
+      };
+      api.setPub = function (uid, pub) {
+        return treasureCore().then(function (C) { return C.updateTreasureProfile(api, uid, { pub: pub }); }).then(function () {
+          if (state.user && state.user.uid === uid) { state.pub = pub; changed(); fire('profile', state); }
+        });
+      };
       api.onAuth(function (user) {
         state.user = user;
         state.nickname = null;
@@ -276,6 +341,7 @@
           fire('ready', state);
           syncSubjects(user.uid);
           syncBonus(user.uid);
+          syncTreasure().catch(function () { /* 規則未發布或網路失敗：下次登入再補，排行頁可重試 */ });
         });
       });
       return api;
@@ -735,7 +801,7 @@
     }
     // 每日任務模式：載入每日任務的計算與介面
     if (enabled && state.daily && !window.LabDaily) {
-      (window.LabDailyCore ? Promise.resolve() : loadScript(base + 'daily-core.js' + ver)).then(function () {
+      treasureCore().then(function () {
         if (!window.LabDaily) return loadScript(base + 'daily.js' + ver);
       });
     }

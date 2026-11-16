@@ -11,6 +11,7 @@ const ROOT = path.resolve(__dirname, '..');
 const OUT = process.env.LAB_DAILY_EVIDENCE || 'G:/physics-lab-wt/規劃/流程對照-紀錄/daily-drop';
 const SHOTS = path.join(OUT, 'shots');
 const C = require('../js/daily-core.js');
+const NO_SHOTS = process.argv.includes('--no-shots');
 const report = { startedAt: new Date().toISOString(), checks: [], lootCases: [], shots: [], blockedRequests: 0 };
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.png': 'image/png' };
 const server = http.createServer((req, res) => {
@@ -28,6 +29,7 @@ async function check(name, fn) {
   console.log('✓ ' + name);
 }
 async function shot(page, name, selector) {
+  if (NO_SHOTS) return;
   const file = path.join(SHOTS, name + '.png');
   if (selector) await page.locator(selector).screenshot({ path: file, animations: 'disabled' });
   else await page.screenshot({ path: file });
@@ -132,7 +134,7 @@ async function reward(page, kind) {
   assert.deepStrictEqual(state.review.events[0].drops, expected);
   assert.deepStrictEqual(state.review.order, expected.map(d => d.item));
   assert.strictEqual(state.review.maps.length, 1, '每次完成只 update 一次');
-  const keys = ['daily/u1/n', 'daily/u1/at', 'daily/u1/done/projectile-1', 'bag/u1/dm', ...expected.map(d => 'bag/u1/' + d.item)];
+  const keys = ['daily/u1/n', 'daily/u1/at', 'daily/u1/done/projectile-1', 'bag/u1/dm', 'treasureBoard/u1', ...expected.map(d => 'bag/u1/' + d.item)];
   assert.deepStrictEqual(state.review.maps[0].slice().sort(), keys.sort());
   assert.strictEqual(state.db.daily.u1.n, 1);
   assert.strictEqual(state.db.daily.u1.done['projectile-1'], true);
@@ -212,6 +214,16 @@ async function run() {
         assert.strictEqual(await page.locator('link[data-daily-style]').count(), 1);
         await reward(page, 'multi'); await pageAudit(page);
         assert.deepStrictEqual(errors, []);
+      } finally { await ctx.close(); }
+    });
+    await check('其他分頁已改設定時，掉寶仍採最新暱稱與公開設定', async () => {
+      const { ctx, page, errors } = await open(browser, base, { width: 390, height: 844, theme: 'dark' });
+      try {
+        await page.evaluate(async () => LabDailyCore.updateTreasureProfile(LabDaily._D.api, 'u1', { nickname: 'ChangedExplorer', pub: false }));
+        assert.strictEqual(await page.evaluate(() => LabMission._state.nickname), 'Tester');
+        const state = await reward(page, 'multi');
+        assert.strictEqual(state.db.treasureBoard.u1.name, C.treasureName('ChangedExplorer', false));
+        assert.strictEqual(state.db.treasureBoard.u1.pub, false); assert.deepStrictEqual(errors, []);
       } finally { await ctx.close(); }
     });
     await check('未登入仍可閱讀完整機率表', async () => {

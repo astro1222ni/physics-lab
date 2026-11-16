@@ -39,7 +39,7 @@
 | `js/chapter-map.js` | 各章的已上線實驗，由 `tools/build-catalog.cjs` 從各科目頁產生（`npm run seo` 會更新，請勿手改） |
 | `docs/directory/<科目>.json`、`tools/apply-directory.cjs` | 各科完整目錄（分支 → 章 → 已上線＋規劃中的實驗）；`node tools/apply-directory.cjs` 依目錄重建各科目頁的章目錄與章節順序（`--check` 只檢查）；格式見 `docs/directory/README.md` |
 | `daily.html`、`js/daily.js`、`js/daily-core.js`、`tests/daily-core.test.js` | 每日任務與寶物：臺灣時間 00:00 換新十個（簡單 4、中等 3、困難 3），每個一天完成一次；`daily-core.js` 是抽題、掉寶機率、持有數（純函式、有單元測試），另有寶物圖示與「我的寶物」格子（daily.html 與排行榜頁共用，排行榜頁直接載入它）；`daily.js` 是每日任務頁、實驗頁橫幅（網址帶 `?daily=<任務代號>`）、掉寶動畫與寫入 |
-| `leaderboard.html`、`js/leaderboard.js` | 排行榜，也就是帳號選單的「我的星星與成就」（全科總排名＋各科排名分頁、前 100 名、自己的全科與各科名次、我的寶物、公開設定、依科目分組的任務進度、我的成就、規則說明、管理員區） |
+| `leaderboard.html`、`js/leaderboard.js` | 排行榜，也就是帳號選單的「我的星星與成就」（全科總排名＋各科排名分頁、前 100 名、自己的全科與各科名次、六種寶物排行與本人名次、我的寶物、公開設定、依科目分組的任務進度、我的成就、規則說明、管理員區） |
 | `admin.html`、`js/admin.js` | 管理頁（11/14 站長：「個人明細也要」）：只有 `admins/<uid>` 讀得到；列出每個帳號的暱稱、星星、完成任務、成就、使用天數與操作時間，點一列看個人明細（任務紀錄、成就、每日任務與寶物、每天打開的實驗），可匯出 CSV。資料庫規則在 profiles、completions、bonus、userStats、achievements、daily、bag 上一層開放管理員讀取；不顯示 Google 姓名與電子郵件；`noindex`、不進網站地圖；管理員的帳號選單有連結 |
 | `js/sharecard.js` | 成績卡（11/14 站長要求）：`LabMission.share(opts)` 按下才載入；畫 1080×1350 圖卡（全部科目／選科目／選實驗，名字可選完整、頭尾字、不顯示），手機用 `navigator.share` 分享到 IG、LINE、FB，另有存成圖片、複製圖片、複製文字；入口在排行榜「我的星星」與任務面板。科目範圍不寫全站分母、進度條和自己最多的一科比（全站總數太大會讓學生洩氣） |
 | `js/search.js`、`js/search-index.js`、`js/math.js` | 按需載入的全科／本科搜尋；KaTeX 公式排版 |
@@ -81,6 +81,11 @@
 - 每個任務只能領一次星星，星星數 = 難度等級（1–10）。隱藏任務的提示句要**非常非常隱晦**，完成時只恭喜、不說原因。
 - **隱藏任務星星加倍**（11/12 晚上站長：「隱藏任務的星星給的數量要再更大方一點，因爲畢竟要瞎猜」，選「加倍並補發」）：隱藏任務 = 等級 × 2（最多 20 顆，規則上限 20）。`missionDefs` 存的是星星數，管理員開排行榜頁或實驗頁時自動同步成新數字；加倍以前就完成的人，登入後由 `missions.js` 的 `syncBonus` 自動補發差額，寫在 `bonus/<uid>/<任務>`（只增不減、完成紀錄 + 補發 = missionDefs、必須和 `scores` 一起寫且 `last` = 該任務、總分剛好加上差額）。`state.done[任務].stars` 是含補發的實得星數。以後若再改星數，照同一套：改 `starsOf`、改規則上限、請站長貼規則、再開排行榜頁同步。
 - 排行榜公開前 100 名，登入後一定看得到自己的名次。同分同名次，先達到的人排前面。
+- **寶物排行**（11/16 站長：「寶物收集的數量也要有一個排行榜。那個數量指的是拿過累計的總數量，不是他目前持有的數量。」選定「總價值＋分頁」）：在排行榜頁提供寶物總價值及銅幣、銀幣、金幣、鑽石、稀有鑰匙六個分頁。只計 bag 累計獲得，不扣 used；總價值＝cu＋10ag＋100au＋1000dia＋10000key，以銅幣為單位（例如「總價值 12,345 銅」）。站長原話：「十枚銅幣等效一枚銀幣，10枚銀幣等效1枚金幣，10枚金幣等效1顆鑽石，10顆鑽石等效1把稀有鑰匙。」這是排行價值，尚非兌換功能。
+  - `treasureBoard/<uid>` 公開記錄 v、cu、ag、au、dia、key、at、name、pub、ta；各量必須等於同次寫入後的 bag，v 必須等於加權和，at 必須為伺服器現在時間，只有本人能寫。bag 本身仍不公開。每次掉寶和 bag、dm、daily 同一次 update，讀取失敗不擲骰、不寫入。
+  - `ta/<項目>` 記錄達到目前該項累計量的時間；只有該項數值改變才更新，改名或取得其他種類不重設。各榜公開前 100 名、同分同名次、先達到的排前；邊界同分者先補齊再排序。登入後顯示自己的名次（包含 100 名外及零枚），不公開時依 `LabMission.mask` 遮名。
+  - 已有寶物的帳號登入後，公開榜缺少或與 bag／暱稱／公開設定不一致時自動補寫；一致時不重寫。舊 bag 沒有各項歷史時間，第一次補寫以當時伺服器時間開始排序，不能聲稱還原歷史先後。暱稱／公開設定與星星榜、寶物榜同筆更新，保留原有達到時間。
+
 - 暱稱公開顯示，使用者要為自己的暱稱負責。選擇不公開時，只顯示第一個與最後一個字（`LabMission.mask`）。
 - 成就分公開與隱藏兩種，不加星星。站長說「以後實驗會非常非常多」，所以成就要做長遠：系列等級的門檻用數量級（k、M、G、T），級數很多，稱號要有意境。
 - 規則說明寫在排行榜頁，學生看得到。改了規則或判定方式，要同步更新說明。
@@ -115,7 +120,7 @@
 
 ## Firebase（專案 astro-ni-physics-lab）
 
-- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`bonus/`（隱藏任務加倍的補發）、`scores/`（含各科 `s/`、`sa/`）、`userStats/`、`achievements/`、`daily/`（每日任務：日序 `d`、`picks`、掉寶次數 `n`、時間 `at`、`done`）、`bag/`（寶物）。
+- Realtime Database（新加坡）：`stats/`、`presence/`、`comments/`、`profiles/`、`reports/`、`rateLimit/`、`admins/`、`missionDefs/`、`completions/`、`bonus/`（隱藏任務加倍的補發）、`scores/`（含各科 `s/`、`sa/`）、`userStats/`、`achievements/`、`daily/`（每日任務：日序 `d`、`picks`、掉寶次數 `n`、時間 `at`、`done`）、`bag/`（私人寶物累計）、`treasureBoard/`（公開寶物排行，六項索引及各項達到時間）。
 - 免費方案（Spark）限制：同時連線 100、儲存 1 GB、每月下載 10 GB。
 - 新增管理員：請對方先在網站登入一次 → Firebase 主控台 Authentication「使用者」取得 UID → Realtime Database「資料」在 `admins` 底下新增 `UID: true`（布林值，不能有引號）。
 - 雲端工作環境連不到 Firebase 與 gstatic；本機可以連，但測試一律用 `tools/mock-backend.js`，不要寫入正式資料庫。正式驗證請站長在網站上操作。
