@@ -55,13 +55,14 @@ async function loaded(page, base, slug, lang = '') {
   if (lang === 'zh-Hans') await page.waitForFunction(() => !!window.LabSettings.toHans);
 }
 async function cardReady(page) {
-  await page.waitForFunction(() => document.querySelector('.lab-sc-prev img')?.naturalWidth === 1080);
+  await page.waitForFunction(() => document.querySelector('.lab-sc-prev img')?.naturalWidth === 1080 && !document.querySelector('.lab-sc-acts button:disabled'));
 }
 async function shot(page, name, picker = false) {
   if (picker) await page.evaluate(() => {
     const card = document.querySelector('.lab-sc-card'), side = document.querySelector('.lab-sc-side'), head = document.querySelector('.lab-sc-head');
     card.scrollTop += side.getBoundingClientRect().top - head.getBoundingClientRect().bottom - 12;
   });
+  if (process.argv.includes('--no-shots')) return;
   await page.screenshot({ path: path.join(OUT, name + '.png') });
   report.截圖.push(name + '.png');
 }

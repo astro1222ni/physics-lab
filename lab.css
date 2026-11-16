@@ -1501,6 +1501,10 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .lab-sc-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; padding: 16px; }
 .lab-sc-prev img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, .25); background: #0f2a33; }
 .lab-sc-tip, .lab-sc-note { margin: 8px 0 0; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
+.lab-sc-pages { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 10px; }
+.lab-sc-pages[hidden] { display: none; }
+.lab-sc-pages button { min-width: 44px; min-height: 44px; }
+.lab-sc-pages button:disabled { opacity: .45; cursor: default; }
 .lab-sc-side { display: grid; gap: 12px; align-content: start; min-width: 0; }
 .lab-sc-fs { margin: 0; padding: 8px 12px 10px; border: 1px solid var(--border); border-radius: 10px; display: flex; flex-wrap: wrap; gap: 2px 12px; }
 .lab-sc-fs legend { font-weight: 700; font-size: calc(14px * var(--fs, 1)); padding: 0 4px; }

@@ -104,6 +104,44 @@
     });
   }
 
+  function procedureText(p) {
+    if (!p.total) return T('實驗步驟：尚無紀錄', 'Procedure not recorded');
+    return (p.complete ? T('✓ 實驗步驟全部完成 ', 'Procedure complete ') : T('實驗步驟 ', 'Procedure ')) + p.done + '/' + p.total;
+  }
+  const procedurePages = {};
+  function loadProcedure(mod) {
+    const saved = LM.steps && LM.steps(mod);
+    if (saved) return Promise.resolve(saved);
+    const root = mod === LM.module && document.querySelector('ol.steps#steps');
+    if (root) return Promise.resolve({ done: 0, total: root.children.length, complete: false });
+    // 未玩過的實驗只讀原頁的步驟結構，不載入或執行它的物理程式。
+    // 動態清單尚無總數時明寫「尚無紀錄」，不把任務數當成步驟數。
+    if (!procedurePages[mod]) procedurePages[mod] = fetch(base + mod + '.html').then(function (r) {
+      if (!r.ok) return null;
+      return r.text().then(function (html) {
+        const steps = new DOMParser().parseFromString(html, 'text/html').querySelector('ol.steps#steps');
+        return steps ? { done: 0, total: steps.children.length, complete: false } : null;
+      });
+    }).catch(function () { return null; });
+    return procedurePages[mod];
+  }
+
+  // 以實際列高分張，長清單每個實驗都有自己的位置，文字不縮成讀不清的小字。
+  function cardPages(data) {
+    const capacity = H - 170 - 40 - 776 - (data.procedureLabel ? 48 : 0);
+    const pages = [], rows = [];
+    let height = 0;
+    data.rows.forEach(function (row) {
+      const h = row.procedure ? 116 : 74;
+      if (height + h > capacity && rows.length) { pages.push(rows.splice(0)); height = 0; }
+      rows.push(row); height += h;
+    });
+    if (rows.length || !pages.length) pages.push(rows);
+    return pages.map(function (part, i) {
+      return Object.assign({}, data, { rows: part, rowMax: Math.max.apply(null, data.rows.map(function (r) { return r.s; }).concat([1])), scopeLabel: data.scopeLabel + (pages.length > 1 ? ' · ' + (i + 1) + '/' + pages.length : '') });
+    });
+  }
+
   // ---------- 載入：所有任務定義、QR 程式庫 ----------
   let qrLib = null;
   function loadQR() {
@@ -233,12 +271,18 @@
     });
     y += 118 + 40;
 
+    if (d.procedureLabel) {
+      c.fillStyle = '#9fe0be'; c.font = f(30, 700);
+      c.fillText(fit(c, d.procedureLabel, RW, 30, 700), X, y + 22);
+      y += 48;
+    }
+
     // 明細列：名稱、進度條、數字
-    const rowH = 74, fy0 = H - 170 - 40;
-    let rowsMax = Math.max(1, Math.floor((fy0 - y) / rowH));
-    if (d.rows.length > rowsMax) rowsMax = Math.max(1, Math.floor((fy0 - y - 34) / rowH)); // 留一行「還有幾項」
-    const maxS = Math.max.apply(null, d.rows.map(function (r) { return r.s; }).concat([1]));
-    d.rows.slice(0, rowsMax).forEach(function (r) {
+    const fy0 = H - 170 - 40;
+    const maxS = d.rowMax || Math.max.apply(null, d.rows.map(function (r) { return r.s; }).concat([1]));
+    d.rows.forEach(function (r) {
+      const rowH = r.procedure ? 116 : 74;
+      if (y + rowH > fy0) return; // 對直接呼叫繪圖介面的外部工具也保留邊界。
       const col = SC[r.subj] || '#5eb8ff';
       c.fillStyle = col; rr(c, X, y + 8, 10, 46, 5); c.fill();
       c.fillStyle = '#ffffff'; c.font = f(30, 700);
@@ -250,12 +294,19 @@
       rr(c, X + 26, y + 48, RW - 26, 12, 6); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
       const p = d.ofAll ? (r.S ? r.s / r.S : 0) : r.s / maxS; // 選實驗：占該實驗全部星星；科目：和自己最多的一科比
       if (p > 0) { rr(c, X + 26, y + 48, Math.max(12, (RW - 26) * p), 12, 6); c.fillStyle = col; c.fill(); }
+      if (r.procedure) {
+        const step = r.procedure;
+        c.fillStyle = step.complete ? '#9fe0be' : '#cfe7e1'; c.font = f(32, step.complete ? 700 : 500);
+        c.fillText(fit(c, procedureText(step), RW - 26, 32, step.complete ? 700 : 500), X + 26, y + 91);
+        if (!step.complete) {
+          rr(c, X + 26, y + 100, RW - 26, 8, 4); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
+          if (step.done > 0 && step.total > 0) {
+            rr(c, X + 26, y + 100, (RW - 26) * step.done / step.total, 8, 4); c.fillStyle = '#9fe0be'; c.fill();
+          }
+        }
+      }
       y += rowH;
     });
-    if (d.rows.length > rowsMax) {
-      c.fillStyle = '#9cc7bf'; c.font = f(24, 500);
-      c.fillText(T('還有 ' + (d.rows.length - rowsMax) + ' 項…', '…and ' + (d.rows.length - rowsMax) + ' more'), X + 26, y + 24);
-    }
 
     // 頁尾：網址、QR code
     const fy = H - 170;
@@ -337,6 +388,14 @@
     const img = el('img'); img.alt = T('成績卡預覽', 'Report card preview');
     prev.appendChild(img);
     prev.appendChild(el('p', 'lab-sc-tip', T('手機也可以長按圖片儲存。', 'On a phone you can also long-press the image to save it.')));
+    const pager = el('div', 'lab-sc-pages'); pager.hidden = true;
+    pager.setAttribute('aria-label', T('成績卡換頁', 'Report card pages'));
+    const previous = el('button', null, T('上一張', 'Previous')), next = el('button', null, T('下一張', 'Next'));
+    previous.type = next.type = 'button';
+    const pageLabel = el('span'); pageLabel.setAttribute('role', 'status');
+    pager.appendChild(previous); pager.appendChild(pageLabel); pager.appendChild(next); prev.appendChild(pager);
+    const pageTip = el('p', 'lab-sc-tip', T('多張成績卡可換頁，逐張儲存、複製或分享。', 'Use the page buttons to save, copy or share each card.'));
+    pageTip.hidden = true; prev.appendChild(pageTip);
 
     // 範圍
     const fs1 = el('fieldset', 'lab-sc-fs');
@@ -408,12 +467,13 @@
       const name = nameMode === 'full' ? st.nickname : nameMode === 'mask' ? LM.mask(st.nickname) : '';
       const ach = window.LabAchievements && window.LabAchievements._me ? Object.keys(window.LabAchievements._me.got || {}).length : null;
       const ranks = opts.ranks || {};
-      let rows = [], total, scopeLabel, sub = '', url = SITE, chips;
+      let rows = [], total, scopeLabel, sub = '', url = SITE, chips, procedureLabel = '';
+      const procedures = LM.allSteps ? LM.allSteps() : {};
       const modsIn = function (pred) { return Object.keys(mods).filter(pred).map(function (k) { return mods[k]; }); };
       if (scope === 'mods') {
         const ms = Object.keys(pickM).filter(function (m) { return mods[m]; });
         total = sum(ms.map(function (m) { return mods[m]; }));
-        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S }; });
+        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: procedures[m] || procedureDefs[m] }; });
         scopeLabel = ms.length === 1 ? modName(ms[0]) : T(ms.length + ' 個實驗', ms.length + ' experiments');
         if (ms.length === 1) url = SITE + ms[0] + '.html';
         sub = T('完成 ', 'Completed ') + total.d + ' / ' + total.n + T(' 個任務', ' missions');
@@ -422,6 +482,8 @@
       } else {
         const ss = scope === 'all' ? subjs.map(function (s) { return s.id; }) : subjs.map(function (s) { return s.id; }).filter(function (s) { return pickS[s]; });
         const inS = modsIn(function (k) { return ss.indexOf(mods[k].subj) >= 0; });
+        const completed = inS.filter(function (m) { return procedures[m.id] && procedures[m.id].complete; }).length;
+        procedureLabel = T('完成實驗步驟的實驗：' + completed + ' 個', 'Labs with procedure complete: ' + completed);
         total = sum(inS);
         if (ss.length === 1) {
           // 單一科目：明細列出這一科完成過任務的實驗（星星多的在前）
@@ -443,30 +505,53 @@
         else if (ach != null) chips.push([String(ach), T('成就', 'Achievements')]);
         else chips.push([String(ss.length), T('科目', 'Subjects')]);
       }
-      return { name: name, date: date, total: total, rows: rows, scopeLabel: scopeLabel, sub: sub, chips: chips, url: url, ofAll: scope === 'mods' };
+      return { name: name, date: date, total: total, rows: rows, scopeLabel: scopeLabel, sub: sub, chips: chips, url: url, ofAll: scope === 'mods', procedureLabel: procedureLabel };
     }
 
     const canvas = el('canvas');
-    let blob = null, d = null;
+    const procedureDefs = {};
+    let blob = null, d = null, pages = [], pageIndex = 0, revision = 0;
     function redraw() {
-      d = data();
+      const ticket = ++revision;
+      acts.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      const selected = scope === 'mods' ? Object.keys(pickM).filter(function (m) { return mods[m]; }) : [];
+      Promise.all(selected.map(function (m) { return loadProcedure(m).then(function (p) { procedureDefs[m] = p; }); })).then(function () {
+        if (ticket !== revision || !card.isConnected) return;
+        d = data(); pages = cardPages(d); pageIndex = 0; drawPage();
+      });
+    }
+    function drawPage() {
+      const ticket = ++revision, page = pages[pageIndex];
+      acts.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      pager.hidden = pageTip.hidden = pages.length <= 1;
+      previous.disabled = pageIndex === 0; next.disabled = pageIndex + 1 === pages.length;
+      pageLabel.textContent = (pageIndex + 1) + ' / ' + pages.length;
       let qr = null;
       if (window.qrcode) { qr = window.qrcode(0, 'M'); qr.addData(d.url, 'Byte'); qr.make(); }
-      draw(canvas, d, qr);
+      draw(canvas, page, qr);
       blob = null;
       canvas.toBlob(function (b) {
+        if (ticket !== revision || !card.isConnected || !b) return;
         blob = b;
         if (img.src) URL.revokeObjectURL(img.src);
+        img.alt = T('成績卡預覽', 'Report card preview') + ' · ' + page.scopeLabel + ' · ' + (page.procedureLabel || page.rows.filter(function (r) { return r.procedure; }).map(function (r) { return r.name + ': ' + procedureText(r.procedure); }).join('; '));
         img.src = URL.createObjectURL(b);
+        acts.querySelectorAll('button').forEach(function (button) { button.disabled = false; });
       }, 'image/png');
       msg.textContent = '';
     }
+    previous.addEventListener('click', function () { if (pageIndex > 0) { pageIndex--; drawPage(); } });
+    next.addEventListener('click', function () { if (pageIndex + 1 < pages.length) { pageIndex++; drawPage(); } });
     function fileName() {
       const n = new Date();
-      return 'astro-ni-lab-' + n.getFullYear() + String(n.getMonth() + 1).padStart(2, '0') + String(n.getDate()).padStart(2, '0') + '.png';
+      return 'astro-ni-lab-' + n.getFullYear() + String(n.getMonth() + 1).padStart(2, '0') + String(n.getDate()).padStart(2, '0') + (pages.length > 1 ? '-' + (pageIndex + 1) : '') + '.png';
     }
     function whenBlob() { return blob ? Promise.resolve(blob) : new Promise(function (res) { canvas.toBlob(res, 'image/png'); }); }
-    function shareText() { return T('我在「讓倪動手⚡高中全科模擬實驗室」拿到 ' + d.total.s + ' 顆倪的星星！一起來動手做實驗：', 'I earned ' + d.total.s + ' Ni stars at Astro Ni Lab! Try the experiments: ') + d.url; }
+    function shareText() {
+      const detail = d.procedureLabel || d.rows.filter(function (r) { return r.procedure; }).map(function (r) { return r.name + ': ' + procedureText(r.procedure); }).join('\n');
+      const text = T('我在「讓倪動手⚡高中全科模擬實驗室」拿到 ' + d.total.s + ' 顆倪的星星！一起來動手做實驗：', 'I earned ' + d.total.s + ' Ni stars at Astro Ni Lab! Try the experiments: ') + d.url + (detail ? '\n' + detail : '');
+      return window.LabSettings && window.LabSettings.toHans ? window.LabSettings.toHans(text) : text;
+    }
 
     // 分享（手機的分享選單）
     const probe = new File([new Blob([''], { type: 'image/png' })], 'x.png', { type: 'image/png' });
