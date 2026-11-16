@@ -85,6 +85,18 @@
         return window.LabShareCard ? null : loadScript(base + 'sharecard.js' + ver);
       }).then(function () { if (window.LabShareCard) window.LabShareCard.open(opts); });
     },
+    /** 回報本實驗的引導步驟；只保留最好成績，不改任務或各模組的判定。 */
+    reportSteps: reportSteps,
+    /** 讀取本人的步驟成績；省略代號時讀取本實驗，沒有紀錄則回傳 null。 */
+    steps: function (mod) { return procedureSummary(readProcedure(mod || pageModule)); },
+    /** 成績卡跨實驗統計使用；只讀目前這位玩家的本機紀錄。 */
+    allSteps: function () {
+      const out = {};
+      (window.LAB_MISSION_MODULES || Object.keys(registry).map(function (id) { return { id: id }; })).forEach(function (m) {
+        const result = LabMission.steps(m.id); if (result) out[m.id] = result;
+      });
+      return out;
+    },
     /** 依完成紀錄（任務代號 → { stars }）算出各科星星 */
     subjectStars: function (done) { return subjectStars(done); },
     /** 任務的星星數（隱藏任務是等級的 2 倍）；排行榜、成就、每日任務都用這個算 */
@@ -99,6 +111,82 @@
     _autoSync: function () { return autoSync(); }
   };
   window.LabMission = LabMission;
+
+  // ======================= 引導步驟：本人、本實驗、最好成績 =======================
+  // 現行 userStats 的白名單不接受步驟物件，因此只存本機，絕不試寫不合規的雲端欄位。
+  // 同一實驗可能有四步或七步等不同模式，分別保留，避免把較短流程的完成套到較長流程。
+  const procedureMemory = Object.create(null);
+  let procedureOwner = null, pendingProcedure = {}, guestProcedure = {};
+  function procedureKey(mod) { return 'lab-procedure:' + encodeURIComponent(procedureOwner || 'pending') + ':' + mod; }
+  function mergeProcedure(a, b) {
+    const out = {};
+    [a, b].forEach(function (record) { Object.keys(record || {}).forEach(function (key) {
+      const total = Number(key), v = record[key];
+      if (!Number.isInteger(total) || total <= 0 || total > 10000 || !v || !Number.isInteger(v.done) || v.done < 0 || v.done > total) return;
+      const old = out[key] || { done: 0, completedAt: 0 };
+      const at = Number.isFinite(v.completedAt) && v.completedAt > 0 && v.done === total ? v.completedAt : 0;
+      out[key] = { done: Math.max(old.done, v.done), completedAt: old.completedAt && at ? Math.min(old.completedAt, at) : old.completedAt || at };
+    }); });
+    return out;
+  }
+  function readProcedure(mod) {
+    if (!mod || !/^[a-z0-9-]{1,40}$/.test(mod)) return {};
+    const key = procedureKey(mod);
+    let stored = {};
+    try { stored = JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) { /* 儲存被封鎖時仍保留本分頁成績。 */ }
+    return (procedureMemory[key] = mergeProcedure(stored, procedureMemory[key]));
+  }
+  function saveProcedure(mod, record) {
+    const key = procedureKey(mod);
+    procedureMemory[key] = record;
+    try { localStorage.setItem(key, JSON.stringify(record)); } catch (e) { /* 本分頁仍可分享，不要求開啟瀏覽器儲存。 */ }
+  }
+  function procedureSummary(record) {
+    const versions = Object.keys(record).map(function (total) {
+      return { done: record[total].done, total: Number(total), completedAt: record[total].completedAt || 0 };
+    });
+    if (!versions.length) return null;
+    versions.sort(function (a, b) {
+      return Number(!!b.completedAt) - Number(!!a.completedAt) || b.done - a.done || b.total - a.total;
+    });
+    const best = versions[0];
+    return { done: best.done, total: best.total, complete: !!best.completedAt, completedAt: best.completedAt,
+      bestDone: Math.max.apply(null, versions.map(function (v) { return v.done; })), versions: versions };
+  }
+  function reportSteps(done, total) {
+    if (!pageModule || !Number.isInteger(done) || !Number.isInteger(total) || total <= 0 || total > 10000 || done < 0 || done > total) return null;
+    const sample = {}; sample[total] = { done: done, completedAt: done === total ? Date.now() : 0 };
+    if (procedureOwner === null) {
+      pendingProcedure = mergeProcedure(pendingProcedure, sample);
+      return procedureSummary(pendingProcedure);
+    }
+    if (procedureOwner === 'guest') guestProcedure = mergeProcedure(guestProcedure, sample);
+    const old = readProcedure(pageModule), next = mergeProcedure(old, sample);
+    if (JSON.stringify(old) !== JSON.stringify(next)) saveProcedure(pageModule, next);
+    return procedureSummary(next);
+  }
+  function procedureAuth(user) {
+    const previous = procedureOwner;
+    procedureOwner = user ? user.uid : 'guest';
+    const carry = previous === null ? pendingProcedure : previous === 'guest' && user ? guestProcedure : {};
+    if (pageModule) {
+      // 只接續這次未登入操作的步驟；不搬移其他帳號或過去別人的訪客紀錄。
+      if (Object.keys(carry).length) saveProcedure(pageModule, mergeProcedure(readProcedure(pageModule), carry));
+    }
+    pendingProcedure = {};
+    guestProcedure = !user ? mergeProcedure(previous === 'guest' ? guestProcedure : {}, carry) : {};
+  }
+  function observeProcedure() {
+    if (!enabled) procedureAuth(null);
+    const root = pageModule && document.querySelector('ol.steps#steps');
+    if (!root) return;
+    function sample() {
+      const items = Array.prototype.filter.call(root.children, function (li) { return li.tagName === 'LI'; });
+      if (items.length) reportSteps(items.filter(function (li) { return li.classList.contains('done'); }).length, items.length);
+    }
+    new MutationObserver(sample).observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+    sample();
+  }
 
   // ======================= 載入全站清單與任務檔 =======================
   const base = script ? script.getAttribute('src').replace(/missions\.js.*$/, '') : 'js/';
@@ -254,6 +342,7 @@
       api = b;
       api.onAuth(function (user) {
         state.user = user;
+        procedureAuth(user);
         state.nickname = null;
         state.done = {};
         state.ready = !user;
@@ -279,7 +368,7 @@
         });
       });
       return api;
-    }).catch(function () { state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
+    }).catch(function () { procedureAuth(null); state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
   }
 
   // ======================= 管理員：自動同步任務清單 =======================
@@ -726,6 +815,7 @@
   }
 
   function start() {
+    observeProcedure();
     // 模組的任務檔在本檔之後載入；等 DOM 完成再建立面板
     if (state.module) buildPanel();
     if (enabled && !window.LabAchievements && script) {

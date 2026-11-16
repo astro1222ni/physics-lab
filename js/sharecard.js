@@ -31,6 +31,117 @@
   function subjName(id) { const s = SUBJ.filter(function (x) { return x.id === id; })[0]; return s ? L(s) : id; }
   function live(id) { const lv = window.LAB_LIVE_MODULES; return !lv || lv.indexOf(id) >= 0; }
 
+  // 沿用現有目錄的名稱與說明，不另建關鍵字清單；科目頁上已有的卡片同義詞也一起比對。
+  let catalogP = null;
+  function loadCatalog() {
+    if (window.LAB_CATALOG) return Promise.resolve();
+    if (!catalogP) catalogP = new Promise(function (resolve) {
+      const s = document.createElement('script');
+      s.src = base + 'js/catalog.js' + ver;
+      s.onload = s.onerror = resolve;
+      document.head.appendChild(s);
+    });
+    return catalogP;
+  }
+  function searchText(text) {
+    text = String(text || '').normalize('NFKC').toLowerCase();
+    const settings = window.LabSettings;
+    return settings && settings.toHans ? settings.toHans(text) : text;
+  }
+  function modKeywords(id) {
+    const m = modList().filter(function (it) { return it.id === id; })[0] || {};
+    const c = (window.LAB_CATALOG || []).filter(function (it) { return it.s === id; })[0] || {};
+    const words = [id, m.zh, m.en, c.zh, c.en, c.dzh, c.den];
+    document.querySelectorAll('[data-module][data-keywords]').forEach(function (card) {
+      if (card.getAttribute('data-module') === id) words.push(card.getAttribute('data-keywords'));
+    });
+    return words.filter(Boolean).join(' ');
+  }
+
+  // 使用既有的個人使用紀錄；成就系統已載入時直接重用，否則只讀本人節點。
+  function loadActivity() {
+    const me = window.LabAchievements && window.LabAchievements._me;
+    if (me && me.loaded) return Promise.resolve(me.stats || {});
+    const uid = LM._state.user.uid;
+    return new Promise(function (resolve) {
+      const timer = setTimeout(function () { resolve({}); }, 5000);
+      Promise.resolve(LM._ready ? LM._ready() : null).then(function (api) {
+        return api && api.get ? api.get('userStats/' + uid) : {};
+      }).catch(function () { return {}; }).then(function (stats) { clearTimeout(timer); resolve(stats || {}); });
+    });
+  }
+
+  function orderedMods(mods, opts, stats) {
+    const order = (window.LAB_LIVE_MODULES || modList().map(function (m) { return m.id; })).slice().reverse()
+      .filter(function (id) { return mods[id]; });
+    const launch = {}, completed = {}, visited = {};
+    order.forEach(function (id, i) { launch[id] = i; });
+    Object.keys(LM._state.done || {}).forEach(function (id) {
+      const mod = id.replace(/-(h?\d+)$/, '');
+      completed[mod] = Math.max(completed[mod] || 0, +LM._state.done[id].at || 0);
+    });
+    Object.keys(stats.modules || {}).forEach(function (id) { if (stats.modules[id]) visited[id] = 0; });
+    Object.keys(stats.days || {}).forEach(function (day) {
+      if (!/^\d{8}$/.test(day)) return;
+      // 雲端每天打開的實驗只有日期，沿用臺灣日期精度，不虛構當天的操作時刻。
+      const at = Date.parse(day.slice(0, 4) + '-' + day.slice(4, 6) + '-' + day.slice(6) + 'T00:00:00+08:00');
+      Object.keys(stats.days[day] || {}).forEach(function (id) {
+        if (stats.days[day][id]) visited[id] = Math.max(visited[id] || 0, at || 0);
+      });
+    });
+    try {
+      const history = JSON.parse(localStorage.getItem('labHist') || '{}') || {};
+      Object.keys(history).forEach(function (id) {
+        const h = history[id];
+        if (h && (h.v > 0 || h.o > 0 || h.s > 0)) visited[id] = Math.max(visited[id] || 0, +h.t || 0);
+      });
+    } catch (e) { /* 本機紀錄無法讀取時，仍可依本人的雲端紀錄排序。 */ }
+    const current = LM.module && (opts.mods || []).indexOf(LM.module) >= 0 ? LM.module : null;
+    function group(id) { return id in completed ? 0 : id in visited ? 1 : 2; }
+    return order.sort(function (a, b) {
+      return Number(b === current) - Number(a === current) || group(a) - group(b) ||
+        (group(a) === 0 ? completed[b] - completed[a] : (visited[b] || 0) - (visited[a] || 0)) || launch[a] - launch[b];
+    });
+  }
+
+  function procedureText(p) {
+    if (!p.total) return T('實驗步驟：尚無紀錄', 'Procedure not recorded');
+    return (p.complete ? T('✓ 實驗步驟全部完成 ', 'Procedure complete ') : T('實驗步驟 ', 'Procedure ')) + p.done + '/' + p.total;
+  }
+  const procedurePages = {};
+  function loadProcedure(mod) {
+    const saved = LM.steps && LM.steps(mod);
+    if (saved) return Promise.resolve(saved);
+    const root = mod === LM.module && document.querySelector('ol.steps#steps');
+    if (root) return Promise.resolve({ done: 0, total: root.children.length, complete: false });
+    // 未玩過的實驗只讀原頁的步驟結構，不載入或執行它的物理程式。
+    // 動態清單尚無總數時明寫「尚無紀錄」，不把任務數當成步驟數。
+    if (!procedurePages[mod]) procedurePages[mod] = fetch(base + mod + '.html').then(function (r) {
+      if (!r.ok) return null;
+      return r.text().then(function (html) {
+        const steps = new DOMParser().parseFromString(html, 'text/html').querySelector('ol.steps#steps');
+        return steps ? { done: 0, total: steps.children.length, complete: false } : null;
+      });
+    }).catch(function () { return null; });
+    return procedurePages[mod];
+  }
+
+  // 以實際列高分張，長清單每個實驗都有自己的位置，文字不縮成讀不清的小字。
+  function cardPages(data) {
+    const capacity = H - 170 - 40 - 776 - (data.procedureLabel ? 48 : 0);
+    const pages = [], rows = [];
+    let height = 0;
+    data.rows.forEach(function (row) {
+      const h = row.procedure ? 116 : 74;
+      if (height + h > capacity && rows.length) { pages.push(rows.splice(0)); height = 0; }
+      rows.push(row); height += h;
+    });
+    if (rows.length || !pages.length) pages.push(rows);
+    return pages.map(function (part, i) {
+      return Object.assign({}, data, { rows: part, rowMax: Math.max.apply(null, data.rows.map(function (r) { return r.s; }).concat([1])), scopeLabel: data.scopeLabel + (pages.length > 1 ? ' · ' + (i + 1) + '/' + pages.length : '') });
+    });
+  }
+
   // ---------- 載入：所有任務定義、QR 程式庫 ----------
   let qrLib = null;
   function loadQR() {
@@ -160,12 +271,18 @@
     });
     y += 118 + 40;
 
+    if (d.procedureLabel) {
+      c.fillStyle = '#9fe0be'; c.font = f(30, 700);
+      c.fillText(fit(c, d.procedureLabel, RW, 30, 700), X, y + 22);
+      y += 48;
+    }
+
     // 明細列：名稱、進度條、數字
-    const rowH = 74, fy0 = H - 170 - 40;
-    let rowsMax = Math.max(1, Math.floor((fy0 - y) / rowH));
-    if (d.rows.length > rowsMax) rowsMax = Math.max(1, Math.floor((fy0 - y - 34) / rowH)); // 留一行「還有幾項」
-    const maxS = Math.max.apply(null, d.rows.map(function (r) { return r.s; }).concat([1]));
-    d.rows.slice(0, rowsMax).forEach(function (r) {
+    const fy0 = H - 170 - 40;
+    const maxS = d.rowMax || Math.max.apply(null, d.rows.map(function (r) { return r.s; }).concat([1]));
+    d.rows.forEach(function (r) {
+      const rowH = r.procedure ? 116 : 74;
+      if (y + rowH > fy0) return; // 對直接呼叫繪圖介面的外部工具也保留邊界。
       const col = SC[r.subj] || '#5eb8ff';
       c.fillStyle = col; rr(c, X, y + 8, 10, 46, 5); c.fill();
       c.fillStyle = '#ffffff'; c.font = f(30, 700);
@@ -177,12 +294,19 @@
       rr(c, X + 26, y + 48, RW - 26, 12, 6); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
       const p = d.ofAll ? (r.S ? r.s / r.S : 0) : r.s / maxS; // 選實驗：占該實驗全部星星；科目：和自己最多的一科比
       if (p > 0) { rr(c, X + 26, y + 48, Math.max(12, (RW - 26) * p), 12, 6); c.fillStyle = col; c.fill(); }
+      if (r.procedure) {
+        const step = r.procedure;
+        c.fillStyle = step.complete ? '#9fe0be' : '#cfe7e1'; c.font = f(32, step.complete ? 700 : 500);
+        c.fillText(fit(c, procedureText(step), RW - 26, 32, step.complete ? 700 : 500), X + 26, y + 91);
+        if (!step.complete) {
+          rr(c, X + 26, y + 100, RW - 26, 8, 4); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
+          if (step.done > 0 && step.total > 0) {
+            rr(c, X + 26, y + 100, (RW - 26) * step.done / step.total, 8, 4); c.fillStyle = '#9fe0be'; c.fill();
+          }
+        }
+      }
       y += rowH;
     });
-    if (d.rows.length > rowsMax) {
-      c.fillStyle = '#9cc7bf'; c.font = f(24, 500);
-      c.fillText(T('還有 ' + (d.rows.length - rowsMax) + ' 項…', '…and ' + (d.rows.length - rowsMax) + ' more'), X + 26, y + 24);
-    }
 
     // 頁尾：網址、QR code
     const fy = H - 170;
@@ -220,13 +344,20 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(box);
     card.appendChild(el('p', 'lab-sc-note', T('準備中…', 'Preparing…')));
-    Promise.all([LM.loadAll ? LM.loadAll() : null, loadQR()]).then(function () { build(card, opts); });
+    const uid = LM._state.user.uid;
+    Promise.all([LM.loadAll ? LM.loadAll() : null, loadQR(), loadCatalog(), loadActivity()]).then(function (result) {
+      if (card.isConnected && LM._state.user && LM._state.user.uid === uid) build(card, opts, result[3]);
+    });
   }
 
-  function build(card, opts) {
+  function build(card, opts, stats) {
     const st = LM._state;
     const mods = tally();
-    const played = Object.keys(mods).filter(function (k) { return mods[k].d > 0; });
+    // 先依最近完成，再依既有操作紀錄；未玩過的才用上線倒序。一般勾選不改變順序。
+    const ordered = orderedMods(mods, opts, stats);
+    const keywords = {};
+    ordered.forEach(function (id) { keywords[id] = modKeywords(id); });
+    const played = ordered.filter(function (k) { return mods[k].d > 0; });
     const subjs = SUBJ.filter(function (s) { return Object.keys(mods).some(function (k) { return mods[k].subj === s.id; }); });
     let scope = opts.scope || 'all';
     const pickS = {}, pickM = {};
@@ -257,6 +388,14 @@
     const img = el('img'); img.alt = T('成績卡預覽', 'Report card preview');
     prev.appendChild(img);
     prev.appendChild(el('p', 'lab-sc-tip', T('手機也可以長按圖片儲存。', 'On a phone you can also long-press the image to save it.')));
+    const pager = el('div', 'lab-sc-pages'); pager.hidden = true;
+    pager.setAttribute('aria-label', T('成績卡換頁', 'Report card pages'));
+    const previous = el('button', null, T('上一張', 'Previous')), next = el('button', null, T('下一張', 'Next'));
+    previous.type = next.type = 'button';
+    const pageLabel = el('span'); pageLabel.setAttribute('role', 'status');
+    pager.appendChild(previous); pager.appendChild(pageLabel); pager.appendChild(next); prev.appendChild(pager);
+    const pageTip = el('p', 'lab-sc-tip', T('多張成績卡可換頁，逐張儲存、複製或分享。', 'Use the page buttons to save, copy or share each card.'));
+    pageTip.hidden = true; prev.appendChild(pageTip);
 
     // 範圍
     const fs1 = el('fieldset', 'lab-sc-fs');
@@ -269,7 +408,15 @@
       fs1.appendChild(lab);
     });
     side.appendChild(fs1);
+    const search = el('input', 'lab-sc-search');
+    search.type = 'search'; search.autocomplete = 'off';
+    search.placeholder = T('搜尋實驗：名稱或關鍵字', 'Search experiments: name or keyword');
+    search.setAttribute('aria-label', search.placeholder);
+    search.setAttribute('aria-controls', 'lab-sc-picks');
+    search.addEventListener('input', picks);
+    side.appendChild(search);
     const pickBox = el('div', 'lab-sc-picks');
+    pickBox.id = 'lab-sc-picks';
     side.appendChild(pickBox);
 
     // 名字
@@ -293,14 +440,21 @@
 
     function picks() {
       pickBox.innerHTML = '';
+      search.hidden = scope !== 'mods';
       if (scope === 'all') return;
+      const query = searchText(search.value).trim();
       const list = scope === 'subj'
         ? subjs.map(function (s) { return { id: s.id, name: L(s), on: pickS }; })
-        : played.map(function (m) { return { id: m, name: modName(m), on: pickM }; });
-      if (!list.length) { pickBox.appendChild(el('p', 'lab-sc-note', T('還沒有完成任務的實驗。', 'No experiments with completed missions yet.'))); return; }
+        : ordered.filter(function (id) { return !query || searchText(keywords[id]).includes(query); })
+          .map(function (m) { return { id: m, name: modName(m), on: pickM }; });
+      pickBox.scrollTop = 0;
+      if (!list.length) {
+        const note = el('p', 'lab-sc-note', T('找不到符合的實驗', 'No matching experiments'));
+        note.setAttribute('role', 'status'); pickBox.appendChild(note); return;
+      }
       list.forEach(function (it) {
         const lab = el('label', 'lab-sc-chip');
-        const cb = el('input'); cb.type = 'checkbox'; cb.checked = !!it.on[it.id];
+        const cb = el('input'); cb.type = 'checkbox'; cb.value = it.id; cb.checked = !!it.on[it.id];
         cb.addEventListener('change', function () { if (cb.checked) it.on[it.id] = true; else delete it.on[it.id]; redraw(); });
         lab.appendChild(cb); lab.appendChild(el('span', null, it.name));
         pickBox.appendChild(lab);
@@ -313,12 +467,15 @@
       const name = nameMode === 'full' ? st.nickname : nameMode === 'mask' ? LM.mask(st.nickname) : '';
       const ach = window.LabAchievements && window.LabAchievements._me ? Object.keys(window.LabAchievements._me.got || {}).length : null;
       const ranks = opts.ranks || {};
-      let rows = [], total, scopeLabel, sub = '', url = SITE, chips;
+      let rows = [], total, scopeLabel, sub = '', url = SITE, chips, procedureLabel = '';
+      const procedures = LM.allSteps ? LM.allSteps() : {};
       const modsIn = function (pred) { return Object.keys(mods).filter(pred).map(function (k) { return mods[k]; }); };
       if (scope === 'mods') {
         const ms = Object.keys(pickM).filter(function (m) { return mods[m]; });
         total = sum(ms.map(function (m) { return mods[m]; }));
-        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S }; });
+        // 站長 11/16：實驗步驟只放在「單一個實驗」的成績卡，給老師檢核那一個實驗用；勾好幾個實驗、全部科目、選科目都不顯示
+        const one = ms.length === 1;
+        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: one ? (procedures[m] || procedureDefs[m]) : null }; });
         scopeLabel = ms.length === 1 ? modName(ms[0]) : T(ms.length + ' 個實驗', ms.length + ' experiments');
         if (ms.length === 1) url = SITE + ms[0] + '.html';
         sub = T('完成 ', 'Completed ') + total.d + ' / ' + total.n + T(' 個任務', ' missions');
@@ -348,30 +505,54 @@
         else if (ach != null) chips.push([String(ach), T('成就', 'Achievements')]);
         else chips.push([String(ss.length), T('科目', 'Subjects')]);
       }
-      return { name: name, date: date, total: total, rows: rows, scopeLabel: scopeLabel, sub: sub, chips: chips, url: url, ofAll: scope === 'mods' };
+      return { name: name, date: date, total: total, rows: rows, scopeLabel: scopeLabel, sub: sub, chips: chips, url: url, ofAll: scope === 'mods', procedureLabel: procedureLabel };
     }
 
     const canvas = el('canvas');
-    let blob = null, d = null;
+    const procedureDefs = {};
+    let blob = null, d = null, pages = [], pageIndex = 0, revision = 0;
     function redraw() {
-      d = data();
+      const ticket = ++revision;
+      acts.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      let selected = scope === 'mods' ? Object.keys(pickM).filter(function (m) { return mods[m]; }) : [];
+      if (selected.length !== 1) selected = [];   // 只有單一實驗才讀步驟
+      Promise.all(selected.map(function (m) { return loadProcedure(m).then(function (p) { procedureDefs[m] = p; }); })).then(function () {
+        if (ticket !== revision || !card.isConnected) return;
+        d = data(); pages = cardPages(d); pageIndex = 0; drawPage();
+      });
+    }
+    function drawPage() {
+      const ticket = ++revision, page = pages[pageIndex];
+      acts.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+      pager.hidden = pageTip.hidden = pages.length <= 1;
+      previous.disabled = pageIndex === 0; next.disabled = pageIndex + 1 === pages.length;
+      pageLabel.textContent = (pageIndex + 1) + ' / ' + pages.length;
       let qr = null;
       if (window.qrcode) { qr = window.qrcode(0, 'M'); qr.addData(d.url, 'Byte'); qr.make(); }
-      draw(canvas, d, qr);
+      draw(canvas, page, qr);
       blob = null;
       canvas.toBlob(function (b) {
+        if (ticket !== revision || !card.isConnected || !b) return;
         blob = b;
         if (img.src) URL.revokeObjectURL(img.src);
+        img.alt = T('成績卡預覽', 'Report card preview') + ' · ' + page.scopeLabel + ' · ' + (page.procedureLabel || page.rows.filter(function (r) { return r.procedure; }).map(function (r) { return r.name + ': ' + procedureText(r.procedure); }).join('; '));
         img.src = URL.createObjectURL(b);
+        acts.querySelectorAll('button').forEach(function (button) { button.disabled = false; });
       }, 'image/png');
       msg.textContent = '';
     }
+    previous.addEventListener('click', function () { if (pageIndex > 0) { pageIndex--; drawPage(); } });
+    next.addEventListener('click', function () { if (pageIndex + 1 < pages.length) { pageIndex++; drawPage(); } });
     function fileName() {
       const n = new Date();
-      return 'astro-ni-lab-' + n.getFullYear() + String(n.getMonth() + 1).padStart(2, '0') + String(n.getDate()).padStart(2, '0') + '.png';
+      return 'astro-ni-lab-' + n.getFullYear() + String(n.getMonth() + 1).padStart(2, '0') + String(n.getDate()).padStart(2, '0') + (pages.length > 1 ? '-' + (pageIndex + 1) : '') + '.png';
     }
     function whenBlob() { return blob ? Promise.resolve(blob) : new Promise(function (res) { canvas.toBlob(res, 'image/png'); }); }
-    function shareText() { return T('我在「讓倪動手⚡高中全科模擬實驗室」拿到 ' + d.total.s + ' 顆倪的星星！一起來動手做實驗：', 'I earned ' + d.total.s + ' Ni stars at Astro Ni Lab! Try the experiments: ') + d.url; }
+    function shareText() {
+      const detail = d.procedureLabel || d.rows.filter(function (r) { return r.procedure; }).map(function (r) { return r.name + ': ' + procedureText(r.procedure); }).join('\n');
+      const text = T('我在「讓倪動手⚡高中全科模擬實驗室」拿到 ' + d.total.s + ' 顆倪的星星！一起來動手做實驗：', 'I earned ' + d.total.s + ' Ni stars at Astro Ni Lab! Try the experiments: ') + d.url + (detail ? '\n' + detail : '');
+      return window.LabSettings && window.LabSettings.toHans ? window.LabSettings.toHans(text) : text;
+    }
 
     // 分享（手機的分享選單）
     const probe = new File([new Blob([''], { type: 'image/png' })], 'x.png', { type: 'image/png' });
