@@ -24,6 +24,7 @@
   // ---------------------------------------------------------------------
   const state = {
     type: 'circles', d: 14, a: 0.75, L: 20, V0: 6, power: false,
+    medium: new URLSearchParams(location.search).get('medium') === 'water' ? 'water' : 'paper', ac: false,
     meter: 'dmm', noise: false, seed: 1,
     n2: { x: 18.5, y: 13.5 }, n1: { x: 11.5, y: 5.5 }, clip: false, sel: 'n2', fine: false,
     sheets: {},                // 設定代號 → { recs: [], est: null, rev }
@@ -41,11 +42,11 @@
   // ---------------------------------------------------------------------
   const solCache = new Map();
   function cfgOf(V0) {
-    const c = { type: state.type, d: state.d, a: state.a, L: state.L, V0: V0 == null ? 1 : V0 };
+    const c = { type: state.type, d: state.d, a: state.a, L: state.L, V0: V0 == null ? 1 : V0, medium: state.medium };
     if (state.noise) c.sigma = { seed: state.seed, amp: SIGMA_AMP };
     return c;
   }
-  function solKey(h) { return [state.type, state.d, state.a, state.L, state.noise ? state.seed : 0, h].join('|'); }
+  function solKey(h) { return [state.medium, state.type, state.d, state.a, state.L, state.noise ? state.seed : 0, h].join('|'); }
   let preview = false;   // 拖曳滑桿時先用較粗的網格
   function getSol() {
     const h = preview ? 0.25 : 0.125;
@@ -60,8 +61,15 @@
     }
     return s;
   }
-  function V0eff() { return state.power ? state.V0 : 0; }
-  function potAt(x, y) { return V0eff() * EC.potentialAt(getSol(), x, y); }
+  function voltage() { return EC.voltageModel(Object.assign({}, state, { V0: state.power ? state.V0 : 0 })); }
+  function V0eff() { return voltage().bulk; }
+  function potAt(x, y) { return voltage().negative + V0eff() * EC.potentialAt(getSol(), x, y); }
+  function probePotAt(x, y) {
+    const e = EC.electrodeAt(els(), x, y);
+    return e < 0 ? potAt(x, y) : (els()[e].sign > 0 && state.power ? state.V0 : 0);
+  }
+  function supplyCurrent() { return EC.currentAcross(getSol()) * V0eff(); }
+  function symbols(text) { return text.replace(/N([12])/g, 'N<sub>$1</sub>').replace(/V0/g, 'V<sub>0</sub>'); }
   function fieldAt(x, y) { const f = EC.fieldAt(getSol(), x, y), k = V0eff(); return { ex: f.ex * k, ey: f.ey * k, E: f.E * k }; }
   function els() { return getSol().els; }
   function negEl() { return els().find(function (e) { return e.sign < 0; }); }
@@ -85,7 +93,7 @@
   // ---------------------------------------------------------------------
   // 方格紙（每一種設定一張）與記錄
   // ---------------------------------------------------------------------
-  function sheetKey() { return [state.type, state.d, state.a, state.L, state.V0, state.noise ? state.seed : 0].join('|'); }
+  function sheetKey(medium) { const m = medium || state.medium; return [m, m === 'paper' ? false : state.ac, state.type, state.d, state.a, state.L, state.V0, state.noise ? state.seed : 0].join('|'); }
   function sheet() {
     const k = sheetKey();
     if (!state.sheets[k]) state.sheets[k] = { recs: [], est: null, rev: 0 };
@@ -98,7 +106,7 @@
     const key = sheetKey() + '#' + sh.rev + '#' + LD.ver;
     if (anaCache.key === key) return anaCache;
     const recs = sh.recs;
-    const groups = EC.groupRecords(recs.map(function (r) { return { n1x: r.n1x, n1y: r.n1y, reading: r.reading, V1: r.V1 }; }));
+    const groups = EC.groupRecords(recs.map(function (r) { return { n1x: r.n1x, n1y: r.n1y, reading: r.lineReading == null ? r.reading : r.lineReading, V1: r.V1 }; }));
     groups.forEach(function (g, n) {
       g.name = 'L' + (n + 1);
       g.pts = g.idx.map(function (i) { return [recs[i].x, recs[i].y]; });
@@ -127,9 +135,10 @@
     list.forEach(function (g) { if (!kept.some(function (k) { return Math.abs(k.V - g.V) < 0.15; })) kept.push(g); });
     kept.sort(function (a, b) { return b.V - a.V; });
     const pe = posEl(), ne = negEl();
-    const curves = [{ V: state.V0, path: elPath(pe), isElectrode: true, center: pe.kind === 'circle' ? [pe.x, pe.y] : null }];
-    kept.forEach(function (g) { if (g.V < state.V0 - 0.05 && g.V > 0.05) curves.push({ V: g.V, path: g.path, g: g }); });
-    curves.push({ V: 0, path: elPath(ne), isElectrode: true, center: ne.kind === 'circle' ? [ne.x, ne.y] : null });
+    const vm = voltage();
+    const curves = [{ V: vm.positive, path: elPath(pe), isElectrode: true, center: pe.kind === 'circle' ? [pe.x, pe.y] : null }];
+    kept.forEach(function (g) { if (g.V < vm.positive - 0.05 && g.V > vm.negative + 0.05) curves.push({ V: g.V, path: g.path, g: g }); });
+    curves.push({ V: vm.negative, path: elPath(ne), isElectrode: true, center: ne.kind === 'circle' ? [ne.x, ne.y] : null });
     return curves;
   }
   function sketch() {
@@ -138,7 +147,8 @@
     const curves = curvesForSketch(3);
     const nMeasured = curves.length - 2;
     const measured = curves.filter(function (c) { return !c.isElectrode; }).map(function (c) { return { V: c.V, path: c.path }; });
-    A.sketch = { lines: nMeasured >= 1 ? EC.sketchFieldLines(measured, { els: els(), V0: state.V0, nSeeds: 9 }) : [], nMeasured: nMeasured, curves: curves };
+    const vm = voltage(), waterEls = els().map(function (e) { return Object.assign({}, e, { V: e.sign > 0 ? vm.positive : vm.negative }); });
+    A.sketch = { lines: nMeasured >= 1 && vm.bulk > 0 ? EC.sketchFieldLines(measured, { els: waterEls, V0: state.V0, nSeeds: 9 }) : [], nMeasured: nMeasured, curves: curves };
     return A.sketch;
   }
 
@@ -152,9 +162,10 @@
   /** 目前的電表讀數：{ dV（真值）, reading（以 V 表示，含誤差與取捨）, text, I（檢流計，A）} */
   function meterNow() {
     const p1 = n1Pos(), p2 = state.n2;
-    const V1 = potAt(p1.x, p1.y), V2 = potAt(p2.x, p2.y), dV = V2 - V1;
-    if (state.meter === 'dmm') {
-      const r = EC.dmmReading(dV, state.noise ? { offset: state.offset, jitter: state.jitter } : null);
+    const V1 = probePotAt(p1.x, p1.y), V2 = probePotAt(p2.x, p2.y), dV = V2 - V1;
+    if (state.meter !== 'galv') {
+      const r0 = EC.dmmReading(state.ac ? Math.abs(dV) : dV, state.noise ? { offset: state.offset, jitter: state.jitter } : null);
+      const r = state.ac ? Math.max(0, r0) : r0;
       return { V1: V1, V2: V2, dV: dV, reading: r, text: fmtSigned(r, 2) + ' V', unit: 'V' };
     }
     const I = EC.galvCurrent(dV, state.noise ? { jitterI: state.jitterI } : null);
@@ -222,7 +233,7 @@
     });
   }
   function drawStatic() {
-    const key = [G.w, G.h, G.dpr, LD.ver, getSol().key, V0eff(), state.showTheory, state.showStream, state.showHeat, state.V0].join('|');
+    const key = [G.w, G.h, G.dpr, LD.ver, getSol().key, state.medium, voltage().negative, V0eff(), state.showTheory, state.showStream, state.showHeat, state.V0].join('|');
     if (key === statKey) return;
     statKey = key;
     stat.width = cv.width; stat.height = cv.height;
@@ -237,6 +248,7 @@
     g.fillStyle = paperColor();
     g.fillRect(x0, y0, x1 - x0, y1 - y0);
     g.restore();
+    if (state.medium === 'water') drawTray(g, x0, y0, x1 - x0, y1 - y0);
     // 電位色階
     if (state.showHeat && V0eff() > 0) {
       const s = getSol(), hi = heatImage();
@@ -296,9 +308,9 @@
     }
     // 計算的等位線（每 1 V）
     if (state.showTheory && V0eff() > 0) {
-      const V0 = state.V0, levels = [];
-      for (let v = 1; v < V0 - 1e-9; v += 1) levels.push(v);
-      const cs = derived('contours' + V0, function (s) { return levels.map(function (v) { return { v: v, lines: EC.contour(s, v / V0) }; }); });
+      const vm = voltage(), levels = [];
+      for (let v = 1; v < vm.positive - 1e-9; v += 1) if (v > vm.negative) levels.push(v);
+      const cs = derived('contours' + vm.bulk + ':' + vm.negative, function (s) { return levels.map(function (v) { return { v: v, lines: EC.contour(s, (v - vm.negative) / vm.bulk) }; }); });
       g.save();
       g.setLineDash([2, 4]);
       g.lineCap = 'round';
@@ -325,7 +337,7 @@
     els().forEach(function (e) { drawElectrode(g, e); });
   }
   function drawElectrode(g, e) {
-    const silver = LD.mix(LD.c.surface, LD.c.text, LD.dark ? 0.45 : 0.28);
+    const silver = state.medium === 'water' ? LD.mix(LD.c.pos, LD.c.probe, 0.44) : LD.mix(LD.c.surface, LD.c.text, LD.dark ? 0.45 : 0.28);
     const rim = e.sign > 0 ? LD.c.pos : LD.c.neg;
     if (e.kind === 'circle') {
       const cx = X(e.x), cy = Y(e.y), r = e.r * G.s;
@@ -366,6 +378,24 @@
     const fs = Math.max(11, Math.min(16, r * 1.3));
     LD.haloText(g, sign > 0 ? '+' : '−', x, y + 0.5, sign > 0 ? LD.c.pos : LD.c.neg, 'center', 'middle', '700 ' + fs.toFixed(1) + 'px ' + FF);
   }
+
+  /** 淺盤的內緣就是求解邊界；厚壁與高光畫在外側，不改變量測比例。 */
+  function drawTray(g, x, y, w, h) {
+    const aqua = waterInk();
+    LD.roundRect(g, x - 6, y - 6, w + 12, h + 16, 9);
+    const rim = g.createLinearGradient(x, y - 6, x + w, y + h + 10);
+    rim.addColorStop(0, LD.alpha(LD.shade(aqua, 0.7), 0.65));
+    rim.addColorStop(0.45, LD.alpha(aqua, 0.15));
+    rim.addColorStop(1, LD.alpha(aqua, 0.65));
+    g.fillStyle = rim; g.fill();
+    g.strokeStyle = LD.alpha(LD.shade(aqua, 0.8), 0.65); g.lineWidth = 1.4; g.stroke();
+    g.fillStyle = LD.alpha(aqua, LD.dark ? 0.10 : 0.07); g.fillRect(x, y, w, h);
+    g.strokeStyle = LD.alpha(aqua, 0.55); g.strokeRect(x, y, w, h);
+    g.beginPath(); g.moveTo(x + 8, y - 3); g.lineTo(x + w - 8, y - 3);
+    g.moveTo(x + 3, y + 7); g.lineTo(x + 3, y + h - 7);
+    g.strokeStyle = LD.alpha(LD.shade(aqua, 0.9), 0.8); g.lineWidth = 1; g.stroke();
+  }
+  function waterInk() { return LD.mix(LD.c.neg, LD.c.probe, 0.52); }
   /** 在折線上 frac 的位置畫一個小箭頭 */
   function arrowOnPath(g, pts, frac, color, size) {
     if (pts.length < 3) return;
@@ -408,6 +438,7 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(stat, 0, 0);
     ctx.setTransform(G.dpr, 0, 0, G.dpr, 0, 0);
+    if (state.medium === 'water') drawWater();
     const A = analysis();
     // 學生畫的電力線（在等位線下面）
     if (state.drawField) {
@@ -551,7 +582,17 @@
     ctx.beginPath(); ctx.arc(g.tx, g.ty, 4.2, 0, Math.PI * 2); ctx.stroke();
     // 名稱 N1／N2（下標用小字自己畫）
     const lx = g.tx - g.ux * 14 + (id === 'n1' ? -4 : 4), ly = g.ty - g.uy * 14;
-    LD.vecLabel(ctx, 'N', id === 'n1' ? '1' : '2', lx, ly, col);
+    probeLabel(ctx, id === 'n1' ? '1' : '2', lx, ly, col);
+  }
+  function probeLabel(g, sub, x, y, color) {
+    g.save();
+    g.font = '700 13px ' + FF;
+    const w = g.measureText('N').width;
+    LD.roundRect(g, x - 3, y - 13, w + 13, 21, 5);
+    g.fillStyle = LD.alpha(LD.c['canvas-bg'], 0.88); g.fill();
+    LD.haloText(g, 'N', x, y, color, 'left', 'alphabetic', '700 13px ' + FF);
+    LD.haloText(g, sub, x + w, y + 4, color, 'left', 'alphabetic', '700 9px ' + FF);
+    g.restore();
   }
   function terminalPos(which) {
     const b = bandBoxes();
@@ -638,7 +679,7 @@
     // 電源供應器
     const s = b.sup;
     LD.block(ctx, s.x, s.y, s.w, s.h, body, { r: 7 });
-    LD.haloText(ctx, T('直流電源', 'DC supply'), s.x + 8, s.y + 14, LD.c.muted, 'left', 'alphabetic', '600 10.5px ' + FF);
+    LD.haloText(ctx, state.ac ? T('交流 1 kHz', 'AC 1 kHz') : T('直流電源', 'DC supply'), s.x + 8, s.y + 14, LD.c.muted, 'left', 'alphabetic', '600 10.5px ' + FF);
     const on = state.power;
     // 電源指示燈
     const led = on ? LD.c.probe : LD.mix(LD.c.muted, LD.c.surface, 0.4);
@@ -647,7 +688,7 @@
     const lh = Math.max(20, Math.min(32, s.h * 0.34));
     lcd(s.x + 8, s.y + 20, s.w - 16, lh, state.V0.toFixed(1), 'V', on);
     if (on && s.h > 100) {
-      const I = EC.currentAcross(getSol()) * state.V0 * 1000;
+      const I = supplyCurrent() * 1000;
       LD.haloText(ctx, 'I = ' + I.toFixed(2) + ' mA', s.x + 8, s.y + 20 + lh + 13, LD.c.muted, 'left', 'alphabetic', '600 10.5px ' + FF);
     }
     const tp = terminalPos('sup+'), tn = terminalPos('sup-');
@@ -655,12 +696,13 @@
     post(tn.x, tn.y, blk, '−');
     // 電表
     const m = b.met;
+    if (state.meter === 'phone') { drawHeadphones(m); return; }
     const mBody = state.meter === 'dmm' ? LD.mix(LD.c.equi, LD.c.surface, LD.dark ? 0.55 : 0.45) : body;
     LD.block(ctx, m.x, m.y, m.w, m.h, mBody, { r: 7 });
     const mn = meterNow();
     if (state.meter === 'dmm') {
-      LD.haloText(ctx, T('三用電表 DCV', 'Multimeter DCV'), m.x + 8, m.y + 14, LD.c.text, 'left', 'alphabetic', '600 10.5px ' + FF);
-      const shown = EC.dmmReading(mn.dV, state.noise ? { offset: state.offset, jitter: state.jitter } : null);
+      LD.haloText(ctx, state.ac ? T('三用電表 ACV', 'Multimeter ACV') : T('三用電表 DCV', 'Multimeter DCV'), m.x + 8, m.y + 14, LD.c.text, 'left', 'alphabetic', '600 10.5px ' + FF);
+      const shown = mn.reading;
       lcd(m.x + 8, m.y + 20, m.w - 16, lh, fmtSigned(shown, 2).replace('+', ''), 'V', true);
     } else {
       LD.haloText(ctx, T('檢流計 μA', 'Galvanometer μA'), m.x + 8, m.y + 14, LD.c.text, 'left', 'alphabetic', '600 10.5px ' + FF);
@@ -698,6 +740,90 @@
     ctx.strokeStyle = LD.c.pos; ctx.lineWidth = 1.6; ctx.stroke();
     ctx.restore();
     LD.ball(ctx, cx, cy, 3, LD.c.text, { glow: 0, shadow: false });
+  }
+
+  function phoneLevel() {
+    const v = Math.abs(meterNow().dV);
+    return !state.power || v <= 0.02 ? 0 : Math.min(1, Math.log1p((v - 0.02) / 0.02) / Math.log1p(state.V0 / 0.02));
+  }
+  function drawHeadphones(m) {
+    const col = waterInk(), cx = m.x + m.w / 2, cy = m.y + m.h * 0.55, r = Math.min(27, m.h * 0.30);
+    LD.haloText(ctx, T('耳機 · 1 kHz', 'Headphones · 1 kHz'), cx, m.y + 12, LD.c.text, 'center', 'middle', '600 11px ' + FF);
+    LD.tube(ctx, function (g) { g.arc(cx, cy, r, Math.PI, 2 * Math.PI); }, col, 7);
+    [-1, 1].forEach(function (sgn) {
+      LD.block(ctx, cx + sgn * r - 6, cy - 7, 12, 23, LD.mix(col, LD.c.text, 0.3), { r: 5 });
+    });
+    const level = phoneLevel();
+    if (level > 0) for (let i = 0; i < 3; i++) {
+      const rr = r + 9 + i * 6 + (reduced ? 0 : Math.sin(fxTime * 6) * 1.5);
+      ctx.beginPath(); ctx.arc(cx, cy, rr, -0.55, 0.55);
+      ctx.strokeStyle = LD.alpha(col, (0.65 - i * 0.14) * level); ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    LD.haloText(ctx, level ? T('音量', 'Level') + ' ' + Math.round(level * 100) + '%' : T('零點 · 安靜', 'Null · quiet'), cx, m.y + m.h - 4, LD.c.muted, 'center', 'middle', '600 10px ' + FF);
+  }
+
+  // 水面裝飾與氣泡採實際幀間隔；只在前景、實驗區可見時運作。
+  let fxTime = 0, fxRaf = 0, fxLast = 0, bubbleAt = 0, benchVisible = true;
+  const wakes = [];
+  function bubblesOn() { return state.medium === 'water' && state.power && !state.ac && V0eff() > 1e-8; }
+  function drawWater() {
+    const aqua = waterInk();
+    ctx.save();
+    ctx.beginPath(); ctx.rect(X(0), Y(SH), SW * G.s, SH * G.s); ctx.clip();
+    // 焦散用少量長波紋疊出光網，透明度保持低，格線與記錄仍清楚。
+    ctx.lineWidth = 1.2;
+    for (let j = 0; j < 9; j++) {
+      ctx.beginPath();
+      for (let x = 0; x <= SW; x += 0.7) {
+        const y = (j + 0.5) * SH / 9 + 0.34 * Math.sin(x * 0.62 + fxTime * 0.24 + j) + 0.16 * Math.sin(x * 1.4 - fxTime * 0.19);
+        if (!x) ctx.moveTo(X(x), Y(y)); else ctx.lineTo(X(x), Y(y));
+      }
+      ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.8), LD.dark ? 0.16 : 0.23); ctx.stroke();
+    }
+    els().forEach(function (e, index) {
+      const c = elCenter(e), r = e.kind === 'circle' ? e.r * G.s + 2 : 5;
+      ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.9), 0.72); ctx.lineWidth = 1.1;
+      if (e.kind === 'circle') { ctx.beginPath(); ctx.ellipse(X(c.x), Y(c.y) + 1, r, r * 0.86, 0, 0, Math.PI * 2); ctx.stroke(); }
+      else { ctx.strokeRect(X(e.x0) - 2, Y(e.y1) - 2, (e.x1 - e.x0) * G.s + 4, (e.y1 - e.y0) * G.s + 4); }
+      if (!bubblesOn() || reduced) return;
+      const count = e.sign < 0 ? 20 : 7;
+      for (let i = 0; i < count; i++) {
+        const age = (fxTime * (0.28 + (i % 3) * 0.05) + i * 0.618 + index * 0.21) % 1;
+        const a = i * 2.4, spread = e.kind === 'circle' ? e.r * G.s : (e.y1 - e.y0) * G.s * 0.46;
+        const bx = X(c.x) + (e.kind === 'circle' ? Math.cos(a) * spread : (i % 2 ? -4 : 4)) + Math.sin(age * 5 + i) * 1.4;
+        const by = Y(c.y) + Math.sin(a) * spread - age * (12 + G.s * 0.4);
+        const rad = 0.9 + age * 1.3;
+        ctx.beginPath(); ctx.arc(bx, by, age > 0.88 ? rad + (age - 0.88) * 35 : rad, 0, Math.PI * 2);
+        ctx.strokeStyle = LD.alpha(LD.shade(aqua, 0.95), age > 0.88 ? (1 - age) * 5 : 0.68); ctx.lineWidth = 0.9; ctx.stroke();
+      }
+    });
+    if (!reduced) wakes.forEach(function (p) {
+      const age = fxTime - p.t;
+      if (age >= 0.9) return;
+      ctx.beginPath(); ctx.ellipse(X(p.x), Y(p.y), 3 + age * 15, 2 + age * 10, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = LD.alpha(aqua, 0.6 * (1 - age / 0.9)); ctx.lineWidth = 1; ctx.stroke();
+    });
+    ctx.restore();
+  }
+  function effectsFrame(t) {
+    fxRaf = 0;
+    if (document.hidden || !benchVisible || state.medium !== 'water') { fxLast = 0; return; }
+    fxTime += fxLast ? Math.min(1 / 30, (t - fxLast) / 1000) : 0;
+    fxLast = t;
+    while (wakes.length && fxTime - wakes[0].t > 0.9) wakes.shift();
+    if (!stage.classList.contains('is3d')) requestDraw();
+    if (bubblesOn() && window.LabSound && LabSound.enabled() && t - bubbleAt > 470) {
+      bubbleAt = t;
+      LabSound.sweep({ from: 780 + (Math.sin(fxTime * 7) + 1) * 180, to: 1500, dur: 0.035, gain: 0.018 });
+    }
+    if (!reduced || (bubblesOn() && window.LabSound && LabSound.enabled())) fxRaf = requestAnimationFrame(effectsFrame);
+    else fxLast = 0;
+  }
+  function syncEffects() {
+    if (fxRaf) cancelAnimationFrame(fxRaf);
+    fxRaf = 0; fxLast = 0;
+    if (!document.hidden && benchVisible && state.medium === 'water') fxRaf = requestAnimationFrame(effectsFrame);
+    syncPhone();
   }
 
   // ---------------------------------------------------------------------
@@ -769,9 +895,12 @@
     probeMoved();
   }
   function probeMoved() {
+    if (state.medium === 'water' && !reduced) { const p = state.sel === 'n1' ? n1Pos() : state.n2; wakes.push({ x: p.x, y: p.y, t: fxTime }); if (wakes.length > 40) wakes.shift(); }
+    nullFeedback();
     updateReadouts();
     kickNeedle();
     updateVoice();
+    syncPhone();
     requestDraw();
     if (view3) view3.update();
   }
@@ -933,6 +1062,22 @@
   }
   function stopVoice() { if (voice) { voice.stop(0.12); voice = null; } }
 
+  let phoneVoice = null, previousReading = null;
+  function syncPhone() {
+    const on = state.meter === 'phone' && state.medium === 'water' && state.ac && state.power && !document.hidden && benchVisible && window.LabSound && LabSound.enabled();
+    if (!on) { if (phoneVoice) phoneVoice.stop(0.05); phoneVoice = null; return; }
+    if (!phoneVoice || !phoneVoice.playing) phoneVoice = LabSound.voice({ freq: 1000, type: 'sine', gain: 0 });
+    phoneVoice.set({ freq: 1000, gain: phoneLevel() * 0.15 }, 0.04);
+  }
+  function nullFeedback() {
+    const reading = Math.abs(meterNow().reading);
+    if (state.power && previousReading !== null && previousReading > 0.02 + 1e-9 && reading <= 0.02 + 1e-9 && window.LabSound) {
+      LabSound.tone({ freq: 1320, dur: 0.15, gain: 0.25 });
+      LabSound.tone({ freq: 1980, dur: 0.12, delay: 0.025, gain: 0.10 });
+    }
+    previousReading = state.power ? reading : null;
+  }
+
   // ---------------------------------------------------------------------
   // 記錄、刪除、清除
   // ---------------------------------------------------------------------
@@ -948,7 +1093,7 @@
     const V1 = state.clip ? 0 : m.V1;
     const rec = { x: Math.min(SW, Math.max(0, mx)), y: Math.min(SH, Math.max(0, my)), xt: p2.x, yt: p2.y,
       n1x: +p1.x.toFixed(3), n1y: +p1.y.toFixed(3), clip: state.clip, V1: V1, V2: m.V2, dV: m.dV,
-      reading: m.reading, text: m.text, meter: state.meter };
+      reading: m.reading, lineReading: state.ac ? Math.sign(m.dV) * m.reading : m.reading, text: m.text, meter: state.meter };
     sh.recs.push(rec);
     sh.rev++;
     const A = analysis();
@@ -958,6 +1103,12 @@
     if (window.LabSound) {
       LabSound.tone({ freq: 330 + 420 * Math.max(0, Math.min(1, m.V2 / state.V0)), dur: 0.11, type: 'sine', gain: 0.32 });
       LabSound.noise({ dur: 0.03, gain: 0.18, filter: 3200, q: 1 });
+      const chimeKey = rec.n1x + '|' + rec.n1y + '|' + fmt(g.V, 1);
+      sh.chimed = sh.chimed || {};
+      if (g.pts.length === 6 && !sh.chimed[chimeKey]) {
+        sh.chimed[chimeKey] = true;
+        [523.25, 659.25, 783.99].forEach(function (freq, i) { LabSound.tone({ freq: freq, dur: 0.18, delay: 0.04 + i * 0.045, gain: 0.12 }); });
+      }
     }
     afterChange();
     emitRecord(rec, g);
@@ -980,6 +1131,7 @@
   });
   $('clearAll').addEventListener('click', function () {
     state.sheets = {};
+    $('mediumCompare').textContent = '';
     state.estimated = false;
     anaCache.key = '';
     setStatus(T('已清除所有記錄點、等位線與估算結果（設定保留）。', 'All points, lines and estimates were cleared (settings kept).'));
@@ -996,8 +1148,8 @@
     const Vp = potAt(P[0], P[1]);
     const cands = A.groups.filter(function (g) { return g.path && g.pts.length >= 2; }).map(function (g) { return { V: g.V, path: g.path, name: g.name, g: g }; });
     const pe = posEl(), ne = negEl();
-    cands.push({ V: state.V0, path: elPath(pe), name: T('正極', '+ electrode'), el: true });
-    cands.push({ V: 0, path: elPath(ne), name: T('負極', '− electrode'), el: true });
+    cands.push({ V: voltage().positive, path: elPath(pe), name: state.medium === 'water' ? T('正極水側', '+ interface') : T('正極', '+ electrode'), el: true });
+    cands.push({ V: voltage().negative, path: elPath(ne), name: state.medium === 'water' ? T('負極水側', '− interface') : T('負極', '− electrode'), el: true });
     let up = null, dn = null;
     cands.forEach(function (c) {
       if (c.V >= Vp && (!up || c.V < up.V || (c.V === up.V && !c.el))) up = c;
@@ -1059,23 +1211,25 @@
   }
   function updateReadouts() {
     const m = meterNow(), p1 = n1Pos(), p2 = state.n2;
-    $('rMeterLabel').textContent = state.meter === 'dmm' ? T('電表讀數 V(N2) − V(N1)', 'Meter reading V(N2) − V(N1)') : T('檢流計電流', 'Galvanometer current');
+    $('rMeterLabel').innerHTML = state.meter === 'galv' ? T('檢流計電流', 'Galvanometer current') : state.ac ? symbols(T('交流有效值 |V(N2) − V(N1)|', 'AC RMS |V(N2) − V(N1)|')) : symbols(T('電表讀數 V(N2) − V(N1)', 'Meter reading V(N2) − V(N1)'));
     $('rMeter').textContent = state.power ? minus(m.text) : '0';
     $('rN2').textContent = '(' + p2.x.toFixed(2) + ', ' + p2.y.toFixed(2) + ') cm';
     $('rN1').textContent = state.clip ? T('夾在負極（0 V）', 'clipped to − (0 V)') : '(' + p1.x.toFixed(2) + ', ' + p1.y.toFixed(2) + ') cm';
     const ds = Math.hypot(p2.x - p1.x, p2.y - p1.y);
     $('rDs').textContent = ds.toFixed(2) + ' cm';
     $('rDvDs').textContent = state.meter === 'dmm' && state.power && ds > 0.05 && !state.clip ? minus((m.reading / ds).toFixed(3)) + ' V/cm' : '—';
-    const I = EC.currentAcross(getSol()) * V0eff();
+    const I = supplyCurrent();
     $('rI').textContent = state.power ? (I * 1000).toFixed(3) + ' mA' : '0';
     // 計算值
     const Vp = potAt(p2.x, p2.y), f = fieldAt(p2.x, p2.y);
     $('cV').textContent = state.power ? Vp.toFixed(3) + ' V' : '0';
     $('cE').textContent = state.power ? f.E.toFixed(3) + ' V/cm' + T('（', ' (') + (f.E * 100).toFixed(1) + T(' V/m）', ' V/m)') : '0';
     $('cDir').textContent = state.power && f.E > 1e-6 ? minus((Math.atan2(f.ey, f.ex) * 180 / Math.PI).toFixed(0)) + '°' + T('（由 +x 逆時針）', ' (from +x, counter-clockwise)') : '—';
-    $('cJ').textContent = state.power ? (f.E * 100 / EC.R_SHEET * 1000).toFixed(3) + ' mA/m' : '0';
+    $('cJ').textContent = state.power ? (f.E * 100 / EC.sheetResistance(state) * 1000).toFixed(3) + ' mA/m' : '0';
     const I1 = EC.currentAcross(getSol());
     $('cR').textContent = I1 > 0 ? (1 / I1 / 1000).toFixed(2) + ' kΩ' : '—';
+    $('rBulk').textContent = voltage().bulk.toFixed(2) + (state.ac ? T(' V（有效值）', ' V RMS') : ' V');
+    $('rPolar').textContent = voltage().Vp.toFixed(2) + ' V';
   }
   const STEPS = [
     ['選擇電極、設定電壓，按「接通電源」。', 'Choose the electrodes and the voltage, then switch on the supply.'],
@@ -1104,24 +1258,31 @@
     const ol = $('steps');
     ol.innerHTML = STEPS.map(function (s, i) {
       const cls = d[i] ? 'done' : i === now ? 'now' : '';
-      return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + T(s[0], s[1]) + '</li>';
+      return '<li' + (cls ? ' class="' + cls + '"' : '') + '>' + symbols(T(s[0], s[1])) + '</li>';
     }).join('');
   }
-  function setStatus(s) { lastStatus = s; $('status').textContent = s; }
+  function setStatus(s) { lastStatus = s; $('status').innerHTML = symbols(s); }
   function meterHint() {
-    $('meterHint').textContent = state.meter === 'dmm'
+    $('meterHint').innerHTML = symbols(state.meter === 'phone'
+      ? (window.LabSound && LabSound.enabled() ? T('聽 1 kHz 的聲音：音量越小越接近等電位，讀數 ≤ 0.02 V 就安靜。交流讀數是有效值。', 'Listen at 1 kHz: a quieter tone means closer to equal potential; at ≤ 0.02 V it is quiet. AC readings are RMS.') : T('耳機找零點：請先開啟「音效」，再移動探針，聽聲音最小的位置。', 'Headphone null detection: turn sound on first, then move a probe and listen for the quietest point.'))
+      : state.ac ? T('三用電表讀交流電壓有效值 |V(N2) − V(N1)|。1 kHz 交流在本模型中沒有極化；零點仍是 ≤ 0.02 V。', 'The multimeter reads AC RMS |V(N2) − V(N1)|. The 1 kHz AC model has no polarization; the null tolerance is still ≤ 0.02 V.')
+      : state.meter === 'dmm'
       ? T('三用電表顯示 V(N2) − V(N1)，解析度 0.01 V。把 N1 夾到負極，讀數就是 N2 的電位：可以直接找 1.00 V、2.00 V…… 的點。', 'The multimeter shows V(N2) − V(N1) to 0.01 V. Clip N1 to the negative electrode and the reading is the potential of N2: look directly for 1.00 V, 2.00 V, …')
-      : T('檢流計中央為零：指針偏右表示 N2 的電位比 N1 高。找指針回到正中央（0 μA）的點，就是與 N1 等電位的點。', 'Centre-zero galvanometer: a deflection to the right means N2 is at a higher potential than N1. Where the needle returns to the centre (0 μA), N2 is at the same potential as N1.');
+      : T('檢流計中央為零：指針偏右表示 N2 的電位比 N1 高。找指針回到正中央（0 μA）的點，就是與 N1 等電位的點。', 'Centre-zero galvanometer: a deflection to the right means N2 is at a higher potential than N1. Where the needle returns to the centre (0 μA), N2 is at the same potential as N1.'));
+    $('galvAcHint').hidden = !state.ac;
+    $('mediumHint').innerHTML = symbols(state.medium === 'water' ? (state.noise && !state.ac ? T('水深 1.0 cm · 0.1 % 食鹽水 · R□ = 500 Ω/□。直流極化：水中電壓 = V0 − Vp；負極金屬外會先跳一段電位。', 'Depth 1.0 cm · 0.1% salt water · R□ = 500 Ω/sq. DC polarization: bulk voltage = V0 − Vp; potential jumps just outside the negative metal.') : T('水深 1.0 cm · 0.1 % 食鹽水 · R□ = 500 Ω/□。均勻水槽與導電紙的正規化等位線相同。', 'Depth 1.0 cm · 0.1% salt water · R□ = 500 Ω/sq. A uniform tray and paper have the same normalized equipotentials.')) : T('導電紙 R□ = 5000 Ω/□。材質切換保留設定，各自保存方格紙記錄。', 'Paper R□ = 5000 Ω/sq. Switching medium keeps the settings; each medium has its own records.'));
   }
 
   // ---------------------------------------------------------------------
   // 任務事件
   // ---------------------------------------------------------------------
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
+  // 水槽事件用獨立名稱，既有導電紙任務的函式與門檻完整保留，避免同一操作連帶領星。
+  function emit(type, data) { if (window.LabMission) window.LabMission.emit(state.medium === 'water' ? 'water-' + type : type, data); }
   function common() {
     const A = analysis();
     return {
       type: state.type, d: state.d, a: state.a, L: state.L, V0: state.V0, power: state.power, noise: state.noise, meter: state.meter,
+      medium: state.medium, ac: state.ac, clip: state.clip, bulkVoltage: V0eff(),
       fullBars: state.type !== 'circles' && state.L >= SH,
       groups: A.groups.map(function (g) { return { V: g.V, n: g.pts.length, span: g.span, vRange: g.vRange }; }),
       total: sheet().recs.length, drawLines: state.drawLines, drawField: state.drawField
@@ -1148,6 +1309,22 @@
   function emitRecord(rec, g) {
     emit('record', Object.assign(common(), probeInfo(), { x: rec.xt, y: rec.yt, mx: rec.x, my: rec.y, reading: rec.reading,
       groupN: g.pts.length, groupV: g.V, groupSpan: g.span, groupVRange: g.vRange }));
+    compareMedia();
+  }
+  function compareMedia() {
+    if (state.medium !== 'water' || !state.power) return;
+    const other = state.sheets[sheetKey('paper')];
+    if (!other || other.recs.length < 5) return;
+    const groups = EC.groupRecords(other.recs);
+    groups.forEach(function (g) {
+      g.pts = g.idx.map(function (i) { return [other.recs[i].x, other.recs[i].y]; });
+      const o = EC.orderPoints(g.pts); g.path = EC.smoothPath(o.pts, o.closed, 10);
+    });
+    const match = EC.compareEquipotentials(analysis().groups, groups);
+    if (match) {
+      $('mediumCompare').textContent = T('紙／水兩條實測線：平均距離 ', 'Paper / water measured lines: mean distance ') + match.meanDistance.toFixed(3) + ' cm';
+      if (window.LabMission) LabMission.emit('mediumcompare', Object.assign(common(), match, { sameConfig: true }));
+    }
   }
   function emitProbe() { if (state.power) emit('probe', Object.assign(common(), probeInfo())); }
   function emitLines() { emit('lines', common()); }
@@ -1184,10 +1361,13 @@
   function configChanged(fast) {
     preview = !!fast;
     readSliders();
+    $('mediumCompare').textContent = '';
     refreshOutputs();
     stopVoice();
     if (!fast) { anaCache.key = ''; renderTable(); renderEst(sheet().est); updateSteps(); }
     updateReadouts();
+    previousReading = state.power ? Math.abs(meterNow().reading) : null;
+    meterHint(); syncEffects();
     kickNeedle();
     requestDraw();
     if (view3 && !fast) view3.update();
@@ -1205,6 +1385,7 @@
   });
   document.querySelectorAll('[data-meter]').forEach(function (b) {
     b.addEventListener('click', function () {
+      if (b.disabled || b.hidden) return;
       state.meter = b.getAttribute('data-meter');
       document.querySelectorAll('[data-meter]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
       meterHint();
@@ -1212,6 +1393,8 @@
       state.needle = 0;
       kickNeedle();
       requestDraw();
+      stopVoice(); syncPhone(); previousReading = Math.abs(meterNow().reading);
+      if (view3) view3.update();
     });
   });
   document.querySelectorAll('[data-noise]').forEach(function (b) {
@@ -1250,7 +1433,9 @@
       LabSound.noise({ dur: 0.04, gain: 0.3, filter: 2400, q: 1.5 });
       if (state.power) LabSound.tone({ freq: 520, dur: 0.12, type: 'sine', gain: 0.25 });
     }
-    setStatus(state.power ? T('電源接通：紙上有穩定電流了。', 'Supply on: a steady current flows through the paper.') : T('電源關閉。', 'Supply off.'));
+    setStatus(state.power ? state.medium === 'water' ? (state.ac ? T('交流接通：以有效值量測；沒有極化與電解氣泡。', 'AC on: RMS measurements, without polarization or electrolysis bubbles.') : T('直流接通：水中電流與氣泡依水中實際電壓顯示。', 'DC on: the bulk water voltage sets the current and bubbles.')) : T('電源接通：紙上有穩定電流了。', 'Supply on: a steady current flows through the paper.') : T('電源關閉。', 'Supply off.'));
+    previousReading = state.power ? Math.abs(meterNow().reading) : null;
+    syncEffects();
     updateReadouts(); updateSteps(); kickNeedle(); requestDraw();
     if (view3) view3.update();
   });
@@ -1276,13 +1461,42 @@
     updateSoundButton();
   });
   window.addEventListener('lab:settingschange', function (ev) {
-    if (ev.detail && ev.detail.name === 'sound') updateSoundButton();
+    if (ev.detail && ev.detail.name === 'sound') { updateSoundButton(); meterHint(); syncEffects(); requestDraw(); }
+  });
+
+  function mediumControls() {
+    document.querySelectorAll('[data-medium]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.medium === state.medium)); });
+    $('sourceMode').hidden = state.medium !== 'water';
+    $('meterPhone').hidden = state.medium !== 'water';
+    $('meterPhone').disabled = !state.ac;
+    $('meterGalv').disabled = state.ac;
+    document.querySelectorAll('[data-ac]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.ac === '1') === state.ac)); });
+    document.querySelectorAll('[data-meter]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.meter === state.meter)); });
+    $('rigHint').hidden = viewMode !== 'rig';
+    $('landscapeHint').hidden = viewMode !== '3d';
+    $('surfaceLegend').hidden = viewMode !== '3d';
+  }
+  document.querySelectorAll('[data-medium]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.medium = b.dataset.medium;
+      if (state.medium === 'paper') { state.ac = false; if (state.meter === 'phone') state.meter = 'dmm'; }
+      mediumControls(); configChanged(false);
+      setStatus(state.medium === 'water' ? T('換成水槽：電極、電壓與探針位置保留；使用水槽的記錄。', 'Water tray selected: electrode, voltage and probe settings kept; showing the tray records.') : T('換回導電紙與它的記錄。', 'Back to the paper and its records.'));
+    });
+  });
+  document.querySelectorAll('[data-ac]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (state.medium !== 'water') return;
+      state.ac = b.dataset.ac === '1';
+      if ((state.ac && state.meter === 'galv') || (!state.ac && state.meter === 'phone')) state.meter = 'dmm';
+      mediumControls(); configChanged(false);
+    });
   });
 
   // ---------------------------------------------------------------------
   // 3D 電位地形（three.js 只在切換到 3D 時才載入）
   // ---------------------------------------------------------------------
-  let view3 = null, threeLib = null, loadToken = 0;
+  let view3 = null, threeLib = null, loadToken = 0, viewMode = '2d';
   const host3 = $('view3'), viewMsg = $('viewMsg');
   function webglAvailable() {
     try { const c = document.createElement('canvas'); return !!(window.WebGLRenderingContext && (c.getContext('webgl2') || c.getContext('webgl'))); } catch (e) { return false; }
@@ -1301,7 +1515,8 @@
       data: function () {
         const A = analysis(), sh = sheet();
         return {
-          sol: getSol(), V0: state.V0, V0eff: V0eff(), power: state.power,
+          sol: getSol(), V0: state.V0, V0eff: V0eff(), offset: voltage().negative, power: state.power,
+          medium: state.medium, ac: state.ac, meter: state.meter, reading: meterNow().text, phoneLevel: phoneLevel(), current: supplyCurrent(),
           recs: sh.recs, groups: A.groups, n1: n1Pos(), n2: state.n2, clip: state.clip,
           showStream: state.showStream, showTheory: state.showTheory, drawLines: state.drawLines,
           potColor: potColor,
@@ -1309,6 +1524,8 @@
         };
       },
       contour: function (level) { return EC.contour(getSol(), level); },
+      moveProbe: function (id, x, y) { select(id); setProbe(id, x, y); },
+      endProbe: function () { emitProbe(); },
       onLost: function () {
         setView('2d');
         viewMsg.textContent = T('3D 繪圖環境中斷，已切回 2D。', 'The 3D graphics context was lost, so the view switched back to 2D.');
@@ -1316,21 +1533,26 @@
     };
   }
   function setPressed(mode) {
+    stage.classList.toggle('is-rig', mode === 'rig');
     $('view2d').setAttribute('aria-pressed', String(mode === '2d'));
     $('view3d').setAttribute('aria-pressed', String(mode === '3d'));
-    $('resetCam').hidden = mode !== '3d';
+    $('viewRig').setAttribute('aria-pressed', String(mode === 'rig'));
+    $('resetCam').hidden = mode === '2d';
+    viewMode = mode;
+    mediumControls();
   }
   function setView(mode) {
-    if (mode === '3d') {
-      if (view3) return;
+    if (mode !== '2d') {
+      if (viewMode === mode && view3) return;
+      if (view3) { view3.dispose(); view3 = null; }
       const token = ++loadToken;
-      setPressed('3d');
-      if (!webglAvailable() || !window.Equipotential3D) { fail3D(); return; }
+      setPressed(mode);
+      if (!webglAvailable() || !window.Equipotential3D || !window.EquipotentialRig3D) { fail3D(); return; }
       viewMsg.textContent = T('正在載入 3D 檢視…', 'Loading the 3D view…');
       loadThree().then(function (lib) {
         if (token !== loadToken) return;
         preview = false;
-        view3 = window.Equipotential3D.create(lib, env3());
+        view3 = (mode === 'rig' ? window.EquipotentialRig3D : window.Equipotential3D).create(lib, env3());
         stage.classList.add('is3d');
         viewMsg.textContent = '';
         requestAnimationFrame(function () { if (view3) view3.update(); });
@@ -1358,6 +1580,7 @@
   }
   $('view2d').addEventListener('click', function () { setView('2d'); });
   $('view3d').addEventListener('click', function () { setView('3d'); });
+  $('viewRig').addEventListener('click', function () { setView('rig'); });
   $('resetCam').addEventListener('click', function () { if (view3) view3.resetCamera(); });
 
   // ---------------------------------------------------------------------
@@ -1378,6 +1601,8 @@
     requestDraw();
   }
   window.addEventListener('lab:themechange', onTheme);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopVoice(); syncEffects(); });
+  if (window.IntersectionObserver) new IntersectionObserver(function (entries) { benchVisible = entries[0].isIntersecting; syncEffects(); }, { rootMargin: '150px' }).observe(stage);
   if (window.matchMedia) {
     const dm = window.matchMedia('(prefers-color-scheme: dark)');
     if (dm.addEventListener) dm.addEventListener('change', onTheme);
@@ -1391,7 +1616,7 @@
     if (!window.LabShare) return false;
     window.LabShare.register({
       get: function () {
-        return { n2: [r4(state.n2.x), r4(state.n2.y)], n1: [r4(state.n1.x), r4(state.n1.y)], clip: state.clip, sel: state.sel };
+        return { n2: [r4(state.n2.x), r4(state.n2.y)], n1: [r4(state.n1.x), r4(state.n1.y)], clip: state.clip, sel: state.sel, medium: state.medium, ac: state.ac };
       },
       set: function (o) {
         if (!o || typeof o !== 'object') return;
@@ -1403,6 +1628,11 @@
         if (p1) { if (p1.x !== state.n1.x || p1.y !== state.n1.y) state.n1Touched = true; state.n1 = p1; }
         if (typeof o.clip === 'boolean') { state.clip = o.clip; if (o.clip) state.n1Touched = true; }
         if (o.sel === 'n1' || o.sel === 'n2') select(o.sel);
+        if (o.medium === 'paper' || o.medium === 'water') state.medium = o.medium;
+        if (typeof o.ac === 'boolean') state.ac = state.medium === 'water' && o.ac;
+        if ((!state.ac || state.medium !== 'water') && state.meter === 'phone') state.meter = 'dmm';
+        if (state.ac && state.meter === 'galv') state.meter = 'dmm';
+        mediumControls(); meterHint(); syncEffects();
         probeMoved();
         updateSteps();
       }
@@ -1412,6 +1642,7 @@
   if (!regShare()) window.addEventListener('load', regShare);
 
   readSliders();
+  mediumControls();
   refreshOutputs();
   powerBtn();
   meterHint();
@@ -1421,4 +1652,5 @@
   updateReadouts();
   setStatus(T('先按「接通電源」，再移動探針。', 'Switch on the supply first, then move the probes.'));
   requestDraw();
+  syncEffects();
 })();

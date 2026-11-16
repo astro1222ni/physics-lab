@@ -4,7 +4,7 @@
   if (!window.LabMission) return;
 
   // 事件（js/equipotential.js 發出；位置 cm、電位 V、電場 V/cm）：
-  //   共同欄位 { type: 'circles' | 'bars' | 'barCircle', d, a, L, V0, power, noise, meter: 'dmm' | 'galv', fullBars,
+  //   共同欄位 { type: 'circles' | 'bars' | 'barCircle', d, a, L, V0, power, noise, medium, ac, meter: 'dmm' | 'galv' | 'phone', fullBars,
   //             groups: [{ V, n, span, vRange }]（目前這張方格紙上依 N1 位置與讀數分好的組＝等位線）, total, drawLines, drawField }
   //     fullBars = 長條電極從紙的一邊到另一邊（L = 20 cm）；vRange = 同一組各點真實電位的最大差；span = 同一組兩點的最大距離
   //   record：按「記錄」{ …共同欄位, x, y（紅探針 N2）, x1, y1（黑探針 N1）, clip（N1 夾在負極）, reading（電表讀數，以 V 表示）,
@@ -15,6 +15,8 @@
   //   fieldlines：勾選「畫出與等位線垂直的電力線」{ …共同欄位, nCurves（至少 4 點的量測等位線條數）, nLines（畫出的電力線條數）}
   //   estimate：按「估算電場」{ …共同欄位, Eest, Ecalc, err（相對誤差）, dd, dV, x, y（Δd 線段中點）, VA, VB,
   //             usesEl（用了電極當等位線）, distEl（中點到最近電極的距離）, Ecent, sheet（方格紙代號）}
+  // 水槽沿用相同資料、事件名稱加 water-；舊任務判定完整保留，水槽不連帶完成導電紙任務。
+  // mediumcompare：兩材質相同設定的實測線比對 { sameConfig, nA, nB, potentialDifference, meanDistance }。
   const NULL_V = 0.02;
   const isNull = function (d) { return Math.abs(d.reading) <= NULL_V + 1e-9; };
   const onPaper = function (d) { return !d.onElectrode && !d.n1OnElectrode; };
@@ -113,6 +115,24 @@
       title: { zh: '長條與圓', en: 'Bar and circle' },
       desc: { zh: '「含誤差」、長條與圓形電極：描出至少 5 條等位線，每條至少 5 點、各點真實電位相差不到 0.05 V；再用自己描的線估算電場，與計算值相差不到 4%。', en: '“With errors”, bar and circle: trace at least 5 equipotential lines, each with at least 5 points whose true potentials differ by less than 0.05 V; then estimate the field from your own lines, within 4% of the computed value.' },
       check: function (ev) { const d = ev.data; return est(ev) && d.noise && d.type === 'barCircle' && fullGroups(d, 5, 0.05) >= 5 && !d.usesEl && Math.abs(d.err) <= 0.04; }
+    },
+    {
+      id: 'equipotential-13', level: 3,
+      title: { zh: '水裡的等位線', en: 'Equipotentials in water' },
+      desc: { zh: '水槽接通電源，同一條等位線記錄至少 6 點，最遠兩點至少相距 8 cm，各點真實電位差小於 0.06 V。', en: 'Switch on the water tray. Record at least 6 points on one equipotential, spanning at least 8 cm, with true potentials differing by less than 0.06 V.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'water-record' && d.medium === 'water' && d.power && d.bulkVoltage > 0 && d.groupN >= 6 && d.groupSpan >= 8 && d.groupVRange < 0.06; }
+    },
+    {
+      id: 'equipotential-14', level: 6,
+      title: { zh: '水和紙一樣嗎', en: 'Water and paper: the same?' },
+      desc: { zh: '相同電極與電源電壓，在導電紙、水槽各描一條至少 5 點的等位線：兩線電位差小於 0.05 V，對應位置的平均距離小於 0.3 cm。先描紙，再切換水槽。', en: 'With the same electrodes and supply voltage, trace a line of at least 5 points in each medium. Their potentials must differ by less than 0.05 V and corresponding positions by less than 0.3 cm on average. Trace the paper first, then the water.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'mediumcompare' && d.power && d.sameConfig && d.nA >= 5 && d.nB >= 5 && d.potentialDifference < 0.05 && d.meanDistance < 0.3; }
+    },
+    {
+      id: 'equipotential-15', level: 8,
+      title: { zh: '看穿極化', en: 'See through polarization' },
+      desc: { zh: '水槽、含誤差、直流，黑探針夾負極。用兩條自己描的等位線估算電場，與水中計算值相差小於 6 %，估算中點離電極至少 2 cm。', en: 'Water tray, with errors, DC; clip the black probe to the negative metal. Estimate the field from two lines you traced, within 6% of the computed bulk-water field, at least 2 cm from the electrodes.' },
+      check: function (ev) { const d = ev.data; return ev.type === 'water-estimate' && d.medium === 'water' && d.power && d.noise && !d.ac && d.clip && d.bulkVoltage > 0 && !d.usesEl && d.distEl >= 2 && isFinite(d.err) && Math.abs(d.err) < 0.06; }
     },
     {
       id: 'equipotential-h1', level: 5, hidden: true,

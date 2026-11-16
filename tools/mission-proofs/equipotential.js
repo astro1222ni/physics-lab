@@ -30,7 +30,7 @@ function assertUI(o) {
 // ---------------------------------------------------------------------
 const solCache = new Map();
 function Lab(o) {
-  const s = Object.assign({ type: 'circles', d: 14, a: 0.75, L: 20, V0: 6, noise: false, seed: 1, meter: 'dmm' }, o);
+  const s = Object.assign({ type: 'circles', d: 14, a: 0.75, L: 20, V0: 6, noise: false, seed: 1, meter: 'dmm', medium: 'paper', ac: false }, o);
   assertUI(s);
   if (s.type !== 'bars') s.d = Math.min(s.d, SW - 2 * s.a - 1);
   const rnd = EC.rng(1000 + s.seed * 7919);
@@ -47,8 +47,10 @@ function Lab(o) {
     drawLines: false, drawField: false,
     offset: s.noise ? (rnd() * 2 - 1) * OFFSET_MAX : 0, jitter: 0, jitterI: 0
   };
-  lab.V0eff = function () { return lab.power ? s.V0 : 0; };
-  lab.pot = function (x, y) { return lab.V0eff() * EC.potentialAt(sol, x, y); };
+  lab.vm = function () { return EC.voltageModel(Object.assign({}, s, { V0: lab.power ? s.V0 : 0 })); };
+  lab.V0eff = function () { return lab.vm().bulk; };
+  lab.pot = function (x, y) { return lab.vm().negative + lab.V0eff() * EC.potentialAt(sol, x, y); };
+  lab.probePot = function (x, y) { const e = EC.electrodeAt(sol.els, x, y); return e < 0 ? lab.pot(x, y) : sol.els[e].sign > 0 && lab.power ? s.V0 : 0; };
   lab.field = function (x, y) { const f = EC.fieldAt(sol, x, y), k = lab.V0eff(); return { ex: f.ex * k, ey: f.ey * k, E: f.E * k }; };
   lab.neg = function () { return sol.els.find(e => e.sign < 0); };
   lab.pos = function () { return sol.els.find(e => e.sign > 0); };
@@ -63,9 +65,9 @@ function Lab(o) {
   };
   lab.meter = function () {
     const p1 = lab.n1Pos(), p2 = lab.n2;
-    const V1 = lab.pot(p1.x, p1.y), V2 = lab.pot(p2.x, p2.y), dV = V2 - V1;
-    if (s.meter === 'dmm') {
-      const r = EC.dmmReading(dV, s.noise ? { offset: lab.offset, jitter: lab.jitter } : null);
+    const V1 = lab.probePot(p1.x, p1.y), V2 = lab.probePot(p2.x, p2.y), dV = V2 - V1;
+    if (s.meter !== 'galv') {
+      const r = EC.dmmReading(s.ac ? Math.abs(dV) : dV, s.noise ? { offset: lab.offset, jitter: lab.jitter } : null);
       return { V1, V2, dV, reading: r };
     }
     const I = EC.galvCurrent(dV, s.noise ? { jitterI: lab.jitterI } : null);
@@ -90,7 +92,7 @@ function elPath(e) {
 }
 function analysis(lab) {
   const recs = lab.recs;
-  const groups = EC.groupRecords(recs.map(r => ({ n1x: r.n1x, n1y: r.n1y, reading: r.reading, V1: r.V1 })));
+  const groups = EC.groupRecords(recs.map(r => ({ n1x: r.n1x, n1y: r.n1y, reading: r.lineReading == null ? r.reading : r.lineReading, V1: r.V1 })));
   groups.forEach((g, n) => {
     g.name = 'L' + (n + 1);
     g.pts = g.idx.map(i => [recs[i].x, recs[i].y]);
@@ -108,7 +110,7 @@ function analysis(lab) {
 function common(lab) {
   const s = lab.s, G = analysis(lab);
   return {
-    type: s.type, d: s.d, a: s.a, L: s.L, V0: s.V0, power: lab.power, noise: s.noise, meter: s.meter,
+    type: s.type, d: s.d, a: s.a, L: s.L, V0: s.V0, power: lab.power, noise: s.noise, meter: s.meter, medium: s.medium, ac: s.ac, clip: lab.clip, bulkVoltage: lab.V0eff(),
     fullBars: s.type !== 'circles' && s.L >= SH,
     groups: G.map(g => ({ V: g.V, n: g.pts.length, span: g.span, vRange: g.vRange })),
     total: lab.recs.length, drawLines: lab.drawLines, drawField: lab.drawField
@@ -138,7 +140,7 @@ function record(lab) {
   const p1 = lab.n1Pos(), p2 = lab.n2;
   const mx = lab.s.noise ? p2.x + MARK_SIGMA * EC.gauss(lab.rnd) : p2.x, my = lab.s.noise ? p2.y + MARK_SIGMA * EC.gauss(lab.rnd) : p2.y;
   const rec = { x: Math.min(SW, Math.max(0, mx)), y: Math.min(SH, Math.max(0, my)), xt: p2.x, yt: p2.y,
-    n1x: +p1.x.toFixed(3), n1y: +p1.y.toFixed(3), clip: lab.clip, V1: lab.clip ? 0 : m.V1, V2: m.V2, dV: m.dV, reading: m.reading };
+    n1x: +p1.x.toFixed(3), n1y: +p1.y.toFixed(3), clip: lab.clip, V1: lab.clip ? 0 : m.V1, V2: m.V2, dV: m.dV, reading: m.reading, lineReading: lab.s.ac ? Math.sign(m.dV) * m.reading : m.reading };
   lab.recs.push(rec);
   const G = analysis(lab);
   const g = G.find(q => q.idx.indexOf(lab.recs.length - 1) >= 0);
@@ -151,8 +153,8 @@ function estimate(lab, P) {
   lab.n2 = { x: P[0], y: P[1] };
   const G = analysis(lab), Vp = lab.pot(P[0], P[1]);
   const cands = G.filter(g => g.path && g.pts.length >= 2).map(g => ({ V: g.V, path: g.path }));
-  cands.push({ V: lab.s.V0, path: elPath(lab.pos()), el: true });
-  cands.push({ V: 0, path: elPath(lab.neg()), el: true });
+  cands.push({ V: lab.vm().positive, path: elPath(lab.pos()), el: true });
+  cands.push({ V: lab.vm().negative, path: elPath(lab.neg()), el: true });
   let up = null, dn = null;
   cands.forEach(c => {
     if (c.V >= Vp && (!up || c.V < up.V || (c.V === up.V && !c.el))) up = c;
@@ -243,6 +245,7 @@ function fire(events) {
   const hit = new Set();
   const mem = {};
   events.forEach(([type, data]) => {
+    if (data.medium === 'water' && ['record', 'probe', 'lines', 'fieldlines', 'estimate'].includes(type)) type = 'water-' + type;
     Object.keys(defs).forEach(id => { mem[id] = mem[id] || {}; if (defs[id].check({ type, data }, mem[id])) hit.add(id); });
   });
   return hit;
@@ -416,6 +419,50 @@ prove('equipotential-h3', '兩圓，紅探針放在紙角 (0.5, 0.5) 記錄', ()
 });
 
 // ---------------------------------------------------------------------
+// 第一階段新增任務：用完整操作事件序列確認不連帶完成舊任務或其他新增任務。
+// ---------------------------------------------------------------------
+function isolated(events, id) {
+  const hit = [...fire(events)];
+  if (hit.length !== 1 || hit[0] !== id) { failures.push(id + ' 不獨立：' + hit.join('、')); return false; }
+  return true;
+}
+prove('equipotential-13', '水槽理想直流，夾負極，在 2.00 V 線取 6 點', () => {
+  const lab = Lab({ medium: 'water' }), ev = []; lab.clip = true;
+  traceRows(lab, 2, [2, 5, 8, 12, 15, 18], 15, 29.5, ev);
+  const d = ev[ev.length - 1][1];
+  return { ok: isolated(ev, 'equipotential-13'), info: '跨距 ' + d.groupSpan.toFixed(2) + ' cm、真實電位差 ' + d.groupVRange.toFixed(4) + ' V；只完成 13' };
+});
+prove('equipotential-14', '相同兩圓、6 V，紙與水在 2.00 V 各取 5 點', () => {
+  const paper = Lab({}), water = Lab({ medium: 'water' }), ev = [];
+  [paper, water].forEach(lab => { lab.clip = true; traceRows(lab, 2, [3, 6, 10, 14, 17], 15, 29.5, ev); });
+  const match = EC.compareEquipotentials(analysis(water), analysis(paper));
+  ev.push(['mediumcompare', Object.assign(common(water), match, { sameConfig: true })]);
+  return { ok: isolated(ev, 'equipotential-14'), info: '平均距離 ' + match.meanDistance.toFixed(4) + ' cm、電位差 ' + match.potentialDifference.toFixed(4) + ' V；只完成 14' };
+});
+prove('equipotential-15', '水槽含誤差直流，邊到邊長條，夾負極；2.40、3.30 V 各取 4 點後估算', () => {
+  const lab = Lab({ medium: 'water', type: 'bars', noise: true, seed: 1 }), ev = []; lab.clip = true;
+  [2.4, 3.3].forEach(v => traceRows(lab, v, [4, 8, 12, 16], 9, 21, ev));
+  const e = estimate(lab, [15, 10]); if (e) ev.push(['estimate', e]);
+  return { ok: isolated(ev, 'equipotential-15'), info: e ? '水中電壓 ' + lab.vm().bulk.toFixed(2) + ' V、誤差 ' + (e.err * 100).toFixed(2) + ' %、距電極 ' + e.distEl.toFixed(2) + ' cm；只完成 15' : '沒有估算結果' };
+});
+(function () {
+  for (const mode of [{}, { noise: true }, { ac: true, meter: 'phone' }]) {
+    const lab = Lab(Object.assign({ medium: 'water' }, mode)), ev = [];
+    lab.power = false; if (record(lab)) failures.push('水槽關閉電源仍可記錄');
+    lab.power = true; ev.push(['probe', Object.assign(common(lab), probeInfo(lab))], ['record', record(lab)], ['lines', common(lab)]);
+    const e = estimate(lab, [18.5, 13.5]); if (e) ev.push(['estimate', e]);
+    const hit = fire(ev); if (hit.size) failures.push('水槽預設觸發：' + [...hit].join('、'));
+  }
+  const checks = [
+    ['equipotential-13', 'water-record', { medium: 'water', power: true, bulkVoltage: 4.3, groupN: 6, groupSpan: 8, groupVRange: 0.06 }],
+    ['equipotential-14', 'mediumcompare', { power: true, sameConfig: false, nA: 5, nB: 5, potentialDifference: 0, meanDistance: 0 }],
+    ['equipotential-15', 'water-estimate', { medium: 'water', power: true, noise: true, ac: true, clip: true, bulkVoltage: 6, usesEl: false, distEl: 3, err: 0 }]
+  ];
+  checks.forEach(([id, type, data]) => { if (defs[id].check({ type, data }, {})) failures.push(id + ' 接受不合格資料'); });
+  console.log('水槽直流／含誤差／交流耳機預設與新增任務反例：' + (failures.length ? '有問題' : '全部通過'));
+})();
+
+// ---------------------------------------------------------------------
 // 結果
 // ---------------------------------------------------------------------
 console.log('');
@@ -427,7 +474,7 @@ ids.forEach(id => {
   const name = m.hidden ? '（隱藏）' : m.title.zh;
   if (!p) { bad++; console.log('✗ ' + id + ' ' + name + '：沒有證明'); return; }
   if (!p.ok) bad++;
-  console.log((p.ok ? '✓ ' : '✗ ') + id + '（' + m.level + ' 星）' + name + '：' + p.note);
+  console.log((p.ok ? '✓ ' : '✗ ') + id + '（' + m.level + ' 級，' + (m.level * (m.hidden ? 2 : 1)) + ' 星）' + name + '：' + p.note);
 });
 if (failures.length) { console.log('\n問題：\n  ' + failures.join('\n  ')); bad++; }
 console.log(bad ? '\n有 ' + bad + ' 項沒有通過。' : '\n' + ids.length + ' 個任務都做得到，預設狀態不會觸發任務。');
