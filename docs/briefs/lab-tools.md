@@ -72,7 +72,7 @@ LabSide.mount({module:'my-lab',
 
 畫布只有少量露出、目前探針在可見範圍外，或頁面已捲離畫布時，小鍵盤先收成圓鈕；回到可操作的位置再展開。預設圓鈕放在可用範圍右下角，避免擋住上方的材質切換。放大鏡只在 `activity()` 之後出現。
 
-入口若使用主線 `LabModeGate`，驗收與老師連結應明確寫 `?mode=lab` 或 `?mode=learn&study=1`。側板仍列出全部任務，並說明各模式的領星範圍；實際是否判定完全交給 `LabMission.modeAllows`，不在側板另寫限制。
+入口若使用主線 `LabModeGate`，驗收與老師連結應明確寫 `?mode=lab` 或 `?mode=learn&study=1`。側板依最新主線的 `LabMission.modeAllows` 分列各模式任務；沒有模式入口的實驗仍列全部任務，並說明領星範圍；實際是否判定完全交給 `LabMission.modeAllows`，不在側板另寫限制。
 
 自學底部收合列會納入目標可用範圍；只有一部分露出的按鈕仍顯示捲動箭頭，捲到完整可按後才顯示手勢。
 
