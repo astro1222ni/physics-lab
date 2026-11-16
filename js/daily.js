@@ -556,18 +556,20 @@
       'L is the mission level (1–10), and t = (L − 1) / 9. Percentages are rounded. Amounts and weights are fixed, regardless of difficulty or stars.')));
     sec.appendChild(C.oddsTable(document, T));
     sec.appendChild(el('h3', 'dl-odds-sub', T('每次完成的平均收穫', 'Average treasures per clear')));
+    // 十個等級各一列（站長 11/16：★1–★10 都要有）
+    const wrap = el('div', 'dl-table-wrap');
     const table = el('table', 'dl-table dl-ev-table'), head = el('thead'), hr = el('tr');
-    [T('寶物', 'Treasure'), T('1 級', 'Level 1'), T('5 級', 'Level 5'), T('10 級', 'Level 10')].forEach(function (label) {
+    [T('任務', 'Mission')].concat(C.ITEMS.map(function (it) { return T(it.zh, it.en); })).forEach(function (label) {
       const th = el('th', null, label); th.scope = 'col'; hr.appendChild(th);
     });
     head.appendChild(hr); table.appendChild(head);
     const body = el('tbody');
-    C.ITEMS.forEach(function (it, i) {
-      const tr = el('tr'), th = el('th', null, T(it.zh, it.en)); th.scope = 'row'; tr.appendChild(th);
-      [1, 5, 10].forEach(function (lv) { tr.appendChild(el('td', null, ev(C.dropChances(lv)[i] * C.qtyMean(it.id)))); });
+    for (let lv = 1; lv <= 10; lv++) {
+      const tr = el('tr'), th = el('th', null, '★' + lv); th.scope = 'row'; tr.appendChild(th);
+      C.ITEMS.forEach(function (it, i) { tr.appendChild(el('td', null, ev(C.dropChances(lv)[i] * C.qtyMean(it.id)))); });
       body.appendChild(tr);
-    });
-    table.appendChild(body); sec.appendChild(table);
+    }
+    table.appendChild(body); wrap.appendChild(table); sec.appendChild(wrap);
     sec.appendChild(el('p', 'lb-note', T('期望值＝該寶物的掉落機率 × 掉到時的平均數量。銅幣平均 2.33 枚、銀幣 1.67 枚、金幣 1.33 枚；鑽石與稀有鑰匙各 1 個。新任務與領過星星的任務採用相同掉寶規則。',
       'Expected value = that treasure’s drop chance × its average amount when it drops. The fixed average amounts are 2.33 copper, 1.67 silver, 1.33 gold, and 1 diamond or key. New and previously claimed missions use the same drop rules.')));
     return sec;

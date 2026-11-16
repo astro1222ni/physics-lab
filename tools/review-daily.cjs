@@ -169,7 +169,7 @@ async function run() {
         const { ctx, page, errors } = await open(browser, base, config, 'leaderboard');
         try {
           await pageAudit(page);
-          assert.strictEqual(await page.locator('#dailyOdds tbody tr').count(), 5);
+          assert.strictEqual(await page.locator('#dailyOdds .dl-prob-table tbody tr').count(), 5); assert.strictEqual(await page.locator('#dailyOdds .dl-lv-table tbody tr').count(), 10);
           await shot(page, 'leaderboard-rules-' + config.tag, '#dailyOdds');
           assert.deepStrictEqual(errors, []);
         } finally { await ctx.close(); }
@@ -228,7 +228,7 @@ async function run() {
     });
     await check('未登入仍可閱讀完整機率表', async () => {
       const { ctx, page, errors } = await open(browser, base, { width: 390, height: 844, theme: 'light', guest: true });
-      try { await pageAudit(page); assert.strictEqual(await page.locator('.dl-prob-table tbody tr').count(), 5); assert.deepStrictEqual(errors, []); }
+      try { await pageAudit(page); assert.strictEqual(await page.locator('.dl-prob-table tbody tr').count(), 5); assert.strictEqual(await page.locator('.dl-lv-table tbody tr').count(), 10, '★1–★10 都要列'); assert.deepStrictEqual(errors, []); }
       finally { await ctx.close(); }
     });
     await check('寫入失敗不發寶物事件、不增加本機寶物、不播放動畫', async () => {

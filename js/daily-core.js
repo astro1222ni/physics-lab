@@ -153,11 +153,38 @@
   }
 
   /** 每日頁與排行榜共用同一張機率表，避免規則說明與計算脫節。 */
+  // 站長 11/16：「每次任務應該是一、二、三……十星的都要有」→ 一級一列列出五種寶物的機率；公式與數量另一張小表
+  function pct(p, i) { return (100 * p).toFixed(i < 3 ? 0 : 1).replace(/\.0$/, '') + '%'; }
   function oddsTable(doc, T) {
     const mk = function (tag, cls, text) { const e = doc.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+    const box = mk('div', 'dl-odds-box');
+    // 一、十個等級 × 五種寶物
+    const wrap = mk('div', 'dl-table-wrap');
+    const lv = mk('table', 'dl-table dl-lv-table');
+    lv.appendChild(mk('caption', null, T('各等級任務的掉落機率（★1–★10）', 'Drop chance by mission level (★1–★10)')));
+    const lh = mk('thead'), lhr = mk('tr');
+    const c0 = mk('th', null, T('任務', 'Mission')); c0.scope = 'col'; lhr.appendChild(c0);
+    ITEMS.forEach(function (it) {
+      const th = mk('th'); th.scope = 'col';
+      const art = mk('span', 'dl-ico sm'); art.innerHTML = icon(it.id); th.appendChild(art);
+      th.appendChild(mk('span', null, T(it.zh, it.en))); lhr.appendChild(th);
+    });
+    lh.appendChild(lhr); lv.appendChild(lh);
+    const lb = mk('tbody');
+    for (let L = 1; L <= 10; L++) {
+      const tr = mk('tr', 'lv-' + L), th = mk('th'); th.scope = 'row';
+      const b = bandOf(L);
+      th.appendChild(mk('span', 'dl-lv-band', b ? T(b.zh, b.en) : ''));
+      th.appendChild(mk('span', 'dl-lv-star', '★' + L));
+      tr.appendChild(th);
+      dropChances(L).forEach(function (p, i) { tr.appendChild(mk('td', null, pct(p, i))); });
+      lb.appendChild(tr);
+    }
+    lv.appendChild(lb); wrap.appendChild(lv); box.appendChild(wrap);
+    // 二、公式與數量（每種寶物一列）
     const table = mk('table', 'dl-prob-table');
-    table.appendChild(mk('caption', null, T('每次完成：五種寶物獨立判定', 'Each clear: five independent treasure rolls')));
-    const labels = [T('寶物', 'Treasure'), T('掉落機率', 'Drop chance'), T('1 級', 'Level 1'), T('5 級', 'Level 5'), T('10 級', 'Level 10'), T('數量／權重', 'Amount / weights')];
+    table.appendChild(mk('caption', null, T('五種寶物各自獨立判定：公式與數量', 'Five independent rolls: formula and amount')));
+    const labels = [T('寶物', 'Treasure'), T('掉落機率', 'Drop chance'), T('數量／權重', 'Amount / weights')];
     const head = mk('thead'), hr = mk('tr');
     labels.forEach(function (label) { const th = mk('th', null, label); th.scope = 'col'; hr.appendChild(th); });
     head.appendChild(hr); table.appendChild(head);
@@ -168,12 +195,11 @@
       const tr = mk('tr', 'r-' + it.id), th = mk('th'); th.scope = 'row';
       const art = mk('span', 'dl-ico sm'); art.innerHTML = icon(it.id); th.appendChild(art);
       th.appendChild(mk('span', null, T(it.zh, it.en))); tr.appendChild(th);
-      const vals = [formulas[i]].concat([1, 5, 10].map(function (lv) { return (100 * dropChances(lv)[i]).toFixed(i < 3 ? 0 : 1).replace(/\.0$/, '') + '%'; })).concat(quantities[i]);
-      vals.forEach(function (text, j) { const td = mk('td', j === 0 ? 'dl-prob-formula' : j === 4 ? 'dl-prob-qty' : 'dl-prob-value', text); td.setAttribute('data-label', labels[j + 1]); tr.appendChild(td); });
+      [formulas[i], quantities[i]].forEach(function (text, j) { const td = mk('td', j === 0 ? 'dl-prob-formula' : 'dl-prob-qty', text); td.setAttribute('data-label', labels[j + 1]); tr.appendChild(td); });
       body.appendChild(tr);
     });
-    table.appendChild(body);
-    return table;
+    table.appendChild(body); box.appendChild(table);
+    return box;
   }
 
   // 每個每日任務今天只能完成一次；兩次完成至少隔 GAP 毫秒（資料庫規則：10 秒）。

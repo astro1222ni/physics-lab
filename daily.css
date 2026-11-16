@@ -84,3 +84,18 @@
   .dl-loot, .dl-loot-box, .dl-loot-tile.revealed, .dl-loot-art.revealing > .dl-ico, .dl-loot-all::before { animation: none; }
   .dl-loot.out { transition: none; }
 }
+/* 十級掉落機率表（站長 11/16：★1–★10 都要列） */
+.dl-lv-table caption { text-align: left; font-weight: 800; margin-bottom: 10px; color: var(--text); }
+.dl-lv-table thead th { text-align: center; }
+.dl-lv-table thead th .dl-ico { display: block; margin: 0 auto 3px; }
+.dl-lv-table tbody th { white-space: nowrap; }
+.dl-lv-band { color: var(--muted); font-weight: 600; margin-right: 6px; font-size: calc(12px * var(--fs, 1)); }
+.dl-lv-star { color: var(--daily); font-weight: 800; }
+.dl-lv-table tr.lv-4 > *, .dl-lv-table tr.lv-7 > * { border-top: 2px solid var(--border); }
+.dl-ev-table { table-layout: auto; }
+@media (max-width: 600px) {
+  .dl-lv-table, .dl-ev-table { font-size: calc(12.5px * var(--fs, 1)); }
+  .dl-lv-table th, .dl-lv-table td, .dl-ev-table th, .dl-ev-table td { padding: 6px 4px; }
+  .dl-lv-band { display: block; margin: 0; font-size: calc(11px * var(--fs, 1)); }
+  .dl-lv-table thead th, .dl-ev-table thead th { white-space: normal; font-size: calc(11.5px * var(--fs, 1)); }
+}
