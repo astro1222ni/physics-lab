@@ -101,3 +101,10 @@ html.labside-pulling .labside-edge{opacity:0}
 html[data-labside-tab=missions] .lab-stepguide,html[data-labside-tab=comments] .lab-stepguide{display:none!important}
 /* 指引按「指給我看」才出現，幾秒後淡出 */
 .lab-stepguide{transition:opacity .9s ease}.lab-stepguide.is-fading{opacity:0}
+
+/* 手機把步驟與指引開關放在參數說明之前，操作距離不超過一頁半。 */
+@media(max-width:880px){html[data-lab-mode=lab] .eq>.panel>[data-lab-steps]{order:-1}}
+
+/* 側板停靠（寬 ≥ 1240）時，用區域名稱排版的實驗（電流天平 .lab.cb 的 "stage panel" "data panel"）也要改成上下一欄，
+   不然欄數變一欄、區域還是兩欄，畫布被擠成 0 寬（站長 11/16：「你這電腦橫式的版面是在搞什麼？」） */
+@media(min-width:1240px){.labside-docked .lab.cb,html.labside-active.lp-docked:not(.labside-study) .lab.cb{grid-template-areas:"stage" "panel" "data";grid-template-rows:auto}}

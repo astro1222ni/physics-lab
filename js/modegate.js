@@ -42,8 +42,8 @@
   }
   if (q.get('study') === '1') mode = 'learn';
   else if (mode !== 'lab' && mode !== 'learn') {
-    // 分享設定、嵌入：別人給的連結是要直接看實驗
-    mode = (/(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
+    // 材質、分享設定、嵌入直接看實驗；範例已在前面轉到學習模式。
+    mode = (['paper', 'water'].includes(q.get('medium')) || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
   }
   const studying = mode === 'learn' && q.get('study') === '1';
   const html = document.documentElement;
@@ -60,6 +60,8 @@
     const u = new URL(location.href);
     ['mode', 'study', 'class', 'seg', 'step', 'ex'].forEach(function (k) { u.searchParams.delete(k); });
     Object.keys(params || {}).forEach(function (k) { u.searchParams.set(k, params[k]); });
+    // 舊的材質直連仍進實驗；回入口要移除材質，避免又被導回實驗。
+    if (!params || Object.keys(params).length === 0) u.searchParams.delete('medium');
     u.hash = '';
     return u.pathname.split('/').pop() + u.search;
   }
@@ -72,12 +74,17 @@
   };
 
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  /** 重點文字裡的 I_1、μ_0 排成真正的下標 <sub>（站規不用 ₁、₀ 這類 Unicode 下標字元） */
+  function subs(node, text) {
+    let at = 0; String(text).replace(/_(\w)/g, function (m, c, i) { node.appendChild(document.createTextNode(text.slice(at, i))); node.appendChild(el('sub', null, c)); at = i + m.length; return m; });
+    node.appendChild(document.createTextNode(text.slice(at))); return node;
+  }
   function card(kind, href, title, list, go, stars) {
     const a = el('a', 'mg-card mg-' + kind); a.href = href;
     const ic = el('span', 'mg-icon'); ic.innerHTML = ICON[kind]; a.appendChild(ic);
     const body = el('span', 'mg-body');
     body.appendChild(el('span', 'mg-name', title));
-    if (list.length) { const ul = el('ul', 'mg-points'); list.forEach(function (t) { ul.appendChild(el('li', null, t)); }); body.appendChild(ul); }
+    if (list.length) { const ul = el('ul', 'mg-points'); list.forEach(function (t) { ul.appendChild(subs(el('li'), t)); }); body.appendChild(ul); }
     if (stars) { const s = el('span', 'mg-stars', stars); s.setAttribute('data-mg-stars', kind); body.appendChild(s); }
     body.appendChild(el('span', 'mg-go', go));
     a.appendChild(body);

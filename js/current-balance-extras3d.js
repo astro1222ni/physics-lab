@@ -32,8 +32,30 @@
     const optical=new THREE.Group();root.add(optical);
     const mirror=add(new THREE.BoxGeometry(.12,1.1,1.1),new THREE.MeshStandardMaterial({color:0xdde9f0,metalness:1,roughness:.08}),optical);
     const laserMat=new THREE.LineBasicMaterial({color:tokens.pos,transparent:true,opacity:.85});const ray=new THREE.Line(new THREE.BufferGeometry(),laserMat);optical.add(ray);
-    const ruler=add(new THREE.BoxGeometry(.15,4,2),new THREE.MeshStandardMaterial({color:tokens.card||0xf7f4ec,roughness:.7}),optical);ruler.position.set(21,3,1.8);
-    const spot=add(new THREE.SphereGeometry(.16,12,8),new THREE.MeshBasicMaterial({color:tokens.pos}),optical);
+    // 白屏要有尺規（站長 11/16：「白屏上也要有尺規，我才知道那個光點是打在原本的零點上啊」）：
+    // 和 2D 牆上直尺同一把尺：−10～+10 mm、每 1 mm 短刻線、每 5 mm 長刻線標數字、0 點綠色基準線，底下即時讀數。
+    const MM=.14,RANGE=11;   // 每 mm 在屏上的高度（世界單位）；超出 ±11 mm 光點停在屏緣
+    const sc=document.createElement('canvas');sc.width=256;sc.height=512;const sg=sc.getContext('2d');
+    const scaleTex=new THREE.CanvasTexture(sc);if('colorSpace' in scaleTex&&THREE.SRGBColorSpace)scaleTex.colorSpace=THREE.SRGBColorSpace;scaleTex.anisotropy=4;
+    let shownMm=null;
+    function drawScale(mm){
+      const H=512,mid=H/2,k=MM/4*H;   // 屏高 4 → 512 px
+      sg.fillStyle='#f7f4ec';sg.fillRect(0,0,256,H);
+      sg.strokeStyle='#b9b2a2';sg.lineWidth=3;sg.strokeRect(1.5,1.5,253,H-3);
+      sg.strokeStyle='#1f9d6b';sg.lineWidth=4;sg.beginPath();sg.moveTo(14,mid);sg.lineTo(242,mid);sg.stroke();   // 0 點基準線
+      sg.textAlign='right';sg.textBaseline='middle';
+      for(let v=-10;v<=10;v++){const y=mid-v*k,major=v%5===0;
+        sg.strokeStyle=v===0?'#1f9d6b':'#2c2c2c';sg.lineWidth=major?4:2;sg.beginPath();sg.moveTo(major?96:118,y);sg.lineTo(150,y);sg.stroke();
+        if(major){sg.fillStyle=v===0?'#1f9d6b':'#2c2c2c';sg.font='700 34px system-ui,sans-serif';sg.fillText(v>0?'+'+v:v<0?'−'+(-v):'0',86,y);}}
+      sg.textAlign='center';sg.fillStyle='#2c2c2c';sg.font='700 26px system-ui,sans-serif';sg.fillText('mm',200,30);
+      if(mm!=null){sg.fillStyle='#c0392b';sg.font='700 30px system-ui,sans-serif';sg.fillText(T('光點 ','Spot ')+(mm>0?'+':mm<0?'−':'')+Math.abs(mm).toFixed(1)+' mm',128,H-30);}
+      scaleTex.needsUpdate=true;
+    }
+    drawScale(0);
+    const screenMat=new THREE.MeshStandardMaterial({color:tokens.card||0xf7f4ec,roughness:.7}),faceMat=new THREE.MeshStandardMaterial({map:scaleTex,roughness:.75});
+    // BoxGeometry 六面順序 +x、−x、+y、−y、+z、−z；光從 −x 那一側打過來，尺規畫在 −x 面
+    const ruler=add(new THREE.BoxGeometry(.15,4,2),[screenMat,faceMat,screenMat,screenMat,screenMat,screenMat],optical);ruler.position.set(21,3,1.8);
+    const spot=add(new THREE.SphereGeometry(.13,12,8),new THREE.MeshBasicMaterial({color:tokens.pos}),optical);
     function update(s){
       hand.visible=arrows.visible=!!s.show.hand;
       const origin=new THREE.Vector3(-8,7,5);
@@ -44,7 +66,10 @@
       [I,B,F].forEach((dir,i)=>{helpers[i].arrow.position.copy(origin);helpers[i].arrow.setDirection(dir);helpers[i].text.position.copy(origin).addScaledVector(dir,6.6);});
       rice.visible=s.hung&&s.weight==='rice';rice.position.set(1.5+14*Math.cos(s.th),-14*Math.sin(s.th)-.15,0);rice.children.forEach((g,i)=>g.visible=i<s.grains);
       optical.visible=!!s.show.optical;mirror.position.set(1.5,.8,0);mirror.rotation.z=-s.th;
-      const y=3+Math.max(-1.75,Math.min(1.75,200*Math.tan(2*s.th)/2));spot.position.set(20.9,y,1.8);
+      // 光點讀數和 2D 同一個公式（屏距 2.00 m）：mm = D·tan2θ
+      const core=window.CurrentBalanceStudyCore,mm=(core?core.optical(s.th):2*Math.tan(2*s.th))*1000;
+      const y=3+Math.max(-RANGE,Math.min(RANGE,mm))*MM;spot.position.set(20.9,y,1.8);
+      const r=Math.round(mm*10)/10;if(optical.visible&&r!==shownMm){shownMm=r;drawScale(r);}
       ray.geometry.setFromPoints([new THREE.Vector3(8,6,8),mirror.position.clone(),spot.position.clone()]);
     }
     return {update,dispose(){root.removeFromParent();}};
