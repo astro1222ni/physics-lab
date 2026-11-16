@@ -104,6 +104,9 @@
     });
   }
 
+  // 站長 11/16：「字體都太小了，手機看根本看不清楚……留那麼多空白乾嘛？」→ 全面放大；列高與分張用同一組常數
+  const FOOT = 190, ROWS_TOP = 828;
+  function rowHeight(row) { return row.procedure ? 186 : 92; }
   function procedureText(p) {
     if (!p.total) return T('實驗步驟：尚無紀錄', 'Procedure not recorded');
     return (p.complete ? T('✓ 實驗步驟全部完成 ', 'Procedure complete ') : T('實驗步驟 ', 'Procedure ')) + p.done + '/' + p.total;
@@ -128,11 +131,11 @@
 
   // 以實際列高分張，長清單每個實驗都有自己的位置，文字不縮成讀不清的小字。
   function cardPages(data) {
-    const capacity = H - 170 - 40 - 776 - (data.procedureLabel ? 48 : 0);
+    const capacity = (H - FOOT) - 40 - ROWS_TOP - (data.procedureLabel ? 56 : 0);
     const pages = [], rows = [];
     let height = 0;
     data.rows.forEach(function (row) {
-      const h = row.procedure ? 116 : 74;
+      const h = rowHeight(row);
       if (height + h > capacity && rows.length) { pages.push(rows.splice(0)); height = 0; }
       rows.push(row); height += h;
     });
@@ -216,7 +219,7 @@
 
     const X = 72, RW = W - X * 2;
     // 標誌：週期表鎳格
-    const tx = X, ty = 64, ts = 112;
+    const tx = X, ty = 60, ts = 124;
     rr(c, tx, ty, ts, ts, 16);
     const tg = c.createLinearGradient(tx, ty, tx, ty + ts);
     tg.addColorStop(0, '#2a4a52'); tg.addColorStop(1, '#173238');
@@ -224,84 +227,87 @@
     c.lineWidth = 3; c.strokeStyle = '#5f9f92'; c.stroke();
     c.fillStyle = '#cfe7e1'; c.textBaseline = 'alphabetic';
     // 核種寫法（站長 11/14）：左上「倪」放質量數的位置、左下原子序 28、Ni 偏右
-    c.font = f(20, 700); c.textAlign = 'left'; c.fillText('倪', tx + 12, ty + 30);
+    c.font = f(22, 700); c.textAlign = 'left'; c.fillText('倪', tx + 12, ty + 32);
     c.fillText('28', tx + 12, ty + ts - 12);
-    c.font = f(50, 800); c.textAlign = 'center'; c.fillStyle = '#ffffff'; c.fillText('Ni', tx + ts / 2 + 14, ty + ts / 2 + 18);
+    c.font = f(56, 800); c.textAlign = 'center'; c.fillStyle = '#ffffff'; c.fillText('Ni', tx + ts / 2 + 14, ty + ts / 2 + 20);
     c.textAlign = 'left';
-    c.fillStyle = '#ffffff'; c.font = f(40, 800);
-    c.fillText(fit(c, T('讓倪動手⚡高中全科模擬實驗室', 'Astro Ni Lab'), RW - ts - 28, 40, 800), tx + ts + 28, ty + 52);
-    c.fillStyle = '#9cc7bf'; c.font = f(26, 500);
-    c.fillText(T('Astro Ni Lab・倪的星星成績卡', 'Ni Stars report card'), tx + ts + 28, ty + 94);
+    c.fillStyle = '#ffffff'; c.font = f(46, 800);
+    c.fillText(fit(c, T('讓倪動手⚡高中全科模擬實驗室', 'Astro Ni Lab'), RW - ts - 28, 46, 800), tx + ts + 28, ty + 56);
+    c.fillStyle = '#9cc7bf'; c.font = f(32, 500);
+    c.fillText(fit(c, T('Astro Ni Lab・倪的星星成績卡', 'Ni Stars report card'), RW - ts - 28, 32, 500), tx + ts + 28, ty + 104);
 
     // 名字與範圍
-    let y = 270;
-    c.fillStyle = '#ffffff'; c.font = f(54, 800);
-    c.fillText(fit(c, d.name || T('一位實驗家', 'A young scientist'), RW, 54, 800), X, y);
-    y += 50;
-    c.fillStyle = '#9cc7bf'; c.font = f(30, 500);
-    c.fillText(fit(c, d.scopeLabel + '　' + d.date, RW, 30, 500), X, y);
+    let y = 268;
+    c.fillStyle = '#ffffff'; c.font = f(68, 800);
+    c.fillText(fit(c, d.name || T('一位實驗家', 'A young scientist'), RW, 68, 800), X, y);
+    y += 56;
+    c.fillStyle = '#b6d8d1'; c.font = f(36, 600);
+    c.fillText(fit(c, d.scopeLabel + '　' + d.date, RW, 36, 600), X, y);
 
     // 大星星
     y += 40;
-    rr(c, X, y, RW, 230, 28);
+    rr(c, X, y, RW, 260, 28);
     c.fillStyle = 'rgba(255,255,255,0.06)'; c.fill();
     c.strokeStyle = 'rgba(255,201,60,0.55)'; c.lineWidth = 2; c.stroke();
-    star(c, X + 120, y + 115, 78);
-    c.fillStyle = '#ffd75e'; c.font = f(120, 800);
-    c.fillText(String(d.total.s), X + 230, y + 150);
+    star(c, X + 124, y + 130, 86);
+    c.fillStyle = '#ffd75e'; c.font = f(140, 800);
+    c.fillText(String(d.total.s), X + 240, y + 166);
     const sw = c.measureText(String(d.total.s)).width;
-    c.fillStyle = '#e8d9a8'; c.font = f(34, 600);
-    c.fillText(d.ofAll ? '/ ' + d.total.S + T(' 顆星', ' stars') : T('顆倪的星星', 'Ni stars'), X + 240 + sw, y + 148);
-    c.fillStyle = '#cfe7e1'; c.font = f(30, 500);
-    c.fillText(fit(c, d.sub, RW - 260, 30, 500), X + 232, y + 196);
-    y += 230;
+    c.fillStyle = '#e8d9a8'; c.font = f(42, 700);
+    c.fillText(fit(c, d.ofAll ? '/ ' + d.total.S + T(' 顆星', ' stars') : T('顆倪的星星', 'Ni stars'), RW - 260 - sw, 42, 700), X + 252 + sw, y + 164);
+    c.fillStyle = '#e2f1ed'; c.font = f(38, 600);
+    c.fillText(fit(c, d.sub, RW - 270, 38, 600), X + 242, y + 222);
+    y += 260;
 
     // 三格小統計
     y += 28;
     const cw = (RW - 2 * 20) / 3;
     d.chips.forEach(function (ch, i) {
       const cx = X + i * (cw + 20);
-      rr(c, cx, y, cw, 118, 20);
+      rr(c, cx, y, cw, 140, 20);
       c.fillStyle = 'rgba(255,255,255,0.07)'; c.fill();
-      c.fillStyle = '#ffffff'; c.font = f(46, 800); c.textAlign = 'center';
-      c.fillText(fit(c, ch[0], cw - 24, 46, 800), cx + cw / 2, y + 60);
-      c.fillStyle = '#9cc7bf'; c.font = f(24, 500);
-      c.fillText(fit(c, ch[1], cw - 24, 24, 500), cx + cw / 2, y + 96);
+      c.fillStyle = '#ffffff'; c.font = f(58, 800); c.textAlign = 'center';
+      c.fillText(fit(c, ch[0], cw - 24, 58, 800), cx + cw / 2, y + 70);
+      c.fillStyle = '#b6d8d1'; c.font = f(32, 600);
+      c.fillText(fit(c, ch[1], cw - 24, 32, 600), cx + cw / 2, y + 116);
       c.textAlign = 'left';
     });
-    y += 118 + 40;
+    y += 140 + 36;
 
     if (d.procedureLabel) {
-      c.fillStyle = '#9fe0be'; c.font = f(30, 700);
-      c.fillText(fit(c, d.procedureLabel, RW, 30, 700), X, y + 22);
-      y += 48;
+      c.fillStyle = '#9fe0be'; c.font = f(36, 700);
+      c.fillText(fit(c, d.procedureLabel, RW, 36, 700), X, y + 28);
+      y += 56;
     }
 
     // 明細列：名稱、進度條、數字
-    const fy0 = H - 170 - 40;
+    const fy0 = H - FOOT - 40;
     const maxS = d.rowMax || Math.max.apply(null, d.rows.map(function (r) { return r.s; }).concat([1]));
+    if (d.rows.length === 1) y += Math.max(0, Math.floor((fy0 - y - rowHeight(d.rows[0])) / 2));   // 單一實驗：那一列放在剩餘空間中間，不留一大片空白
     d.rows.forEach(function (r) {
-      const rowH = r.procedure ? 116 : 74;
+      const rowH = rowHeight(r);
       if (y + rowH > fy0) return; // 對直接呼叫繪圖介面的外部工具也保留邊界。
       const col = SC[r.subj] || '#5eb8ff';
-      c.fillStyle = col; rr(c, X, y + 8, 10, 46, 5); c.fill();
-      c.fillStyle = '#ffffff'; c.font = f(30, 700);
-      c.fillText(fit(c, r.name, RW * 0.5, 30, 700), X + 26, y + 34);
-      c.fillStyle = '#9cc7bf'; c.font = f(24, 500); c.textAlign = 'right';
-      c.fillText(d.ofAll ? r.d + ' / ' + r.n + T(' 任務　', ' missions · ') + r.s + ' / ' + r.S + ' ★'
-        : r.d + T(' 個任務　', (r.d === 1 ? ' mission · ' : ' missions · ')) + r.s + ' ★', X + RW, y + 34);
+      c.fillStyle = col; rr(c, X, y + 6, 12, 54, 6); c.fill();
+      const nums = d.ofAll ? r.d + ' / ' + r.n + T(' 任務　', ' missions · ') + r.s + ' / ' + r.S + ' ★'
+        : r.d + T(' 個任務　', (r.d === 1 ? ' mission · ' : ' missions · ')) + r.s + ' ★';
+      c.font = f(30, 600); const nw = c.measureText(nums).width;
+      c.fillStyle = '#ffffff'; c.font = f(38, 700);
+      c.fillText(fit(c, r.name, RW - 28 - nw - 28, 38, 700), X + 28, y + 42);
+      c.fillStyle = '#b6d8d1'; c.font = f(30, 600); c.textAlign = 'right';
+      c.fillText(nums, X + RW, y + 42);
       c.textAlign = 'left';
-      rr(c, X + 26, y + 48, RW - 26, 12, 6); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
+      rr(c, X + 28, y + 58, RW - 28, 14, 7); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
       const p = d.ofAll ? (r.S ? r.s / r.S : 0) : r.s / maxS; // 選實驗：占該實驗全部星星；科目：和自己最多的一科比
-      if (p > 0) { rr(c, X + 26, y + 48, Math.max(12, (RW - 26) * p), 12, 6); c.fillStyle = col; c.fill(); }
+      if (p > 0) { rr(c, X + 28, y + 58, Math.max(14, (RW - 28) * p), 14, 7); c.fillStyle = col; c.fill(); }
       if (r.procedure) {
         const step = r.procedure;
-        c.fillStyle = step.complete ? '#9fe0be' : '#cfe7e1'; c.font = f(32, step.complete ? 700 : 500);
-        c.fillText(fit(c, procedureText(step), RW - 26, 32, step.complete ? 700 : 500), X + 26, y + 91);
+        c.fillStyle = step.complete ? '#9fe0be' : '#e2f1ed'; c.font = f(46, 700);
+        c.fillText(fit(c, procedureText(step), RW - 28, 46, 700), X + 28, y + 134);
         if (!step.complete) {
-          rr(c, X + 26, y + 100, RW - 26, 8, 4); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
+          rr(c, X + 28, y + 154, RW - 28, 14, 7); c.fillStyle = 'rgba(255,255,255,0.10)'; c.fill();
           if (step.done > 0 && step.total > 0) {
-            rr(c, X + 26, y + 100, (RW - 26) * step.done / step.total, 8, 4); c.fillStyle = '#9fe0be'; c.fill();
+            rr(c, X + 28, y + 154, (RW - 28) * step.done / step.total, 14, 7); c.fillStyle = '#9fe0be'; c.fill();
           }
         }
       }
@@ -309,17 +315,18 @@
     });
 
     // 頁尾：網址、QR code
-    const fy = H - 170;
+    const fy = H - FOOT;
     c.strokeStyle = 'rgba(255,255,255,0.15)'; c.lineWidth = 2;
     c.beginPath(); c.moveTo(X, fy - 24); c.lineTo(X + RW, fy - 24); c.stroke();
-    c.fillStyle = '#ffffff'; c.font = f(34, 800);
-    c.fillText(T('一起來動手做實驗！', 'Come and try the experiments!'), X, fy + 30);
-    c.fillStyle = '#ffd75e'; c.font = f(32, 700);
-    c.fillText(d.url.replace(/^https:\/\//, '').replace(/\/$/, ''), X, fy + 78);
-    c.fillStyle = '#9cc7bf'; c.font = f(22, 500);
-    c.fillText(T('免安裝・免登入就能操作；登入後完成任務收集星星', 'No install, no sign-in needed; sign in to collect stars'), X, fy + 116);
+    const QW = RW - 156 - 24;
+    c.fillStyle = '#ffffff'; c.font = f(40, 800);
+    c.fillText(fit(c, T('一起來動手做實驗！', 'Come and try the experiments!'), QW, 40, 800), X, fy + 36);
+    c.fillStyle = '#ffd75e'; c.font = f(36, 700);
+    c.fillText(fit(c, d.url.replace(/^https:\/\//, '').replace(/\/$/, ''), QW, 36, 700), X, fy + 90);
+    c.fillStyle = '#b6d8d1'; c.font = f(28, 500);
+    c.fillText(fit(c, T('免安裝・免登入就能操作；登入後完成任務收集星星', 'No install, no sign-in needed; sign in to collect stars'), QW, 28, 500), X, fy + 136);
     if (qr) {
-      const n = qr.getModuleCount(), q = 132, m = 8, cell = (q - m * 2) / n, qx = X + RW - q, qy = fy - 4;
+      const n = qr.getModuleCount(), q = 156, m = 8, cell = (q - m * 2) / n, qx = X + RW - q, qy = fy - 4;
       rr(c, qx, qy, q, q, 12); c.fillStyle = '#ffffff'; c.fill();
       c.fillStyle = '#0f2a33';
       for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (qr.isDark(r, k)) c.fillRect(qx + m + k * cell, qy + m + r * cell, Math.ceil(cell), Math.ceil(cell));
