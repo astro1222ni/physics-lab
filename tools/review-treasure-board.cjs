@@ -114,6 +114,7 @@ async function run() {
           assert.strictEqual(rows[0].uid, 'z-earliest'); assert.strictEqual(rows[0].name, C.treasureName('MaskedExplorer', false));
           assert.deepStrictEqual(rows.map(row => row.rank), ['1', '1', '3']);
           assert.ok((await page.locator('#treasureMe').textContent()).includes(C.treasureTotals(ownBag)[metric].toLocaleString()));
+          if (metric === 'v') assert.match(await page.locator('#treasureList .tb-row .tb-score').first().textContent(), /^\d+(\.\d+)? [kMGTPE] 銅$/, '每列要用 k、M、G、T 前綴');
           assert.strictEqual(await page.locator('#treasureList [data-uid="u1"]').count(), 0);
           await audit(page); await shot(page, metric + '-' + config.tag);
         });

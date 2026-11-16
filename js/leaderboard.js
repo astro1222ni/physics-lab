@@ -333,8 +333,18 @@
   const treasureTitles = { v: ['寶物總價值', 'Total treasure value'], cu: ['銅幣', 'Copper coins'], ag: ['銀幣', 'Silver coins'], au: ['金幣', 'Gold coins'], dia: ['鑽石', 'Diamonds'], key: ['稀有鑰匙', 'Rare keys'] };
   const treasureTitle = function (key) { return T(treasureTitles[key][0], treasureTitles[key][1]); };
   // short：榜單每列只寫數字＋單位（「總價值」已在分頁與本人卡上），手機才不會把「銅」擠到第二行（主串 11/16）
+  // 站長 11/16：榜單每列用 k、M、G、T 前綴（三位有效數字、無條件捨去，不會把 999,999 寫成 1000 k）
+  function siShort(n) {
+    n = Math.max(0, Math.floor(Number(n) || 0));
+    if (n < 1000) return String(n);
+    const units = ['k', 'M', 'G', 'T', 'P', 'E'];
+    let i = -1, x = n;
+    while (x >= 1000 && i < units.length - 1) { x /= 1000; i++; }
+    const d = x >= 100 ? 0 : x >= 10 ? 1 : 2, k = Math.pow(10, d);
+    return (Math.floor(x * k + 1e-9) / k).toFixed(d) + ' ' + units[i];
+  }
   function treasureAmount(row, metric, short) {
-    const value = Number(row && row[metric] || 0).toLocaleString();
+    const value = short ? siShort(row && row[metric]) : Number(row && row[metric] || 0).toLocaleString();
     return metric === 'v' ? (short ? T(value + ' 銅', value + ' copper') : T('總價值 ' + value + ' 銅', 'Value ' + value + ' copper')) : value + T(metric === 'dia' ? ' 顆' : metric === 'key' ? ' 把' : ' 枚', '');
   }
   function treasureTabs() {
@@ -366,7 +376,7 @@
         const li = el('li', 'lb-row tb-row' + (row.uid === uid ? ' me' : '') + (row.rank <= 3 ? ' podium p' + row.rank : ''));
         li.dataset.uid = row.uid; li.appendChild(el('span', 'lb-rank', String(row.rank)));
         li.appendChild(el('span', 'lb-name', row.pub === false ? LM.mask(row.name) : String(row.name || '?')));
-        li.appendChild(el('strong', 'tb-score', treasureAmount(row, metric, true))); list.appendChild(li);
+        const score = el('strong', 'tb-score', treasureAmount(row, metric, true)); score.title = treasureAmount(row, metric); li.appendChild(score); list.appendChild(li);
       });
       if (!rows.length) list.appendChild(el('li', 'lb-empty', T('還沒有人收集寶物，完成每日任務就能上榜！', 'No treasures collected yet. Clear a daily mission to join the board!')));
       const mine = $('treasureMe'); mine.innerHTML = '';
