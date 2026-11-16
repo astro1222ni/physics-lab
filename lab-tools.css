@@ -54,3 +54,6 @@ html.labside-active:not(.labside-study) .lp-dock-tab,html.labside-active:not(.la
 
 /* 箭頭只動圖示，點擊範圍固定，觸控與試玩都能穩定點到。 */
 @keyframes sg-arrow{50%{transform:translateY(6px)}}
+
+/* 手機橫放沿用主線右側操作台，三個側標籤與小鍵盤讓出它的寬度。 */
+@media(pointer:coarse) and (orientation:landscape) and (max-height:600px){html.labside-active.labdeck-drawer .labside-rail{right:calc(var(--deck-w) + 4px)}html.labside-active.labdeck-drawer .labdeck-tabs button{min-height:44px}}

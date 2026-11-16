@@ -1959,18 +1959,51 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
 
 /* 手機操作台 js/labdeck.js（站長 11/16：操作鍵集中在畫布下方、滑桿間距縮小） */
 .labdeck { margin: 8px 0 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
-.labdeck-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border-bottom: 1px solid var(--border); background: var(--bg); }
-.labdeck-tabs button { min-height: 44px; margin: 0; padding: 4px 2px; border: 0; border-radius: 0; background: transparent; color: var(--muted);
-  font-weight: 700; font-size: calc(14px * var(--fs, 1)); line-height: 1.2; }
-.labdeck-tabs button + button { border-left: 1px solid var(--border); }
-.labdeck-tabs button[aria-selected="true"] { color: var(--accent); background: var(--surface); box-shadow: inset 0 -3px 0 var(--accent); }
+/* 分頁超過四個就換第二列（每列最多四個），全部看得到，不用左右滑 */
+.labdeck-tabs { display: flex; flex-wrap: wrap; border-bottom: 1px solid var(--border); background: var(--bg); }
+.labdeck-tabs[hidden] { display: none; }
+.labdeck-tabs button { flex: 1 1 0; min-width: 24%; min-height: 44px; margin: 0; padding: 4px 3px; border: 0; border-radius: 0; background: transparent; color: var(--muted);
+  font-weight: 700; font-size: calc(14px * var(--fs, 1)); line-height: 1.2; box-shadow: inset 1px 0 var(--border), inset 0 -1px var(--border);
+  overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.labdeck-tabs button[hidden] { display: none; }
+.labdeck-tabs button[aria-selected="true"] { color: var(--accent); background: var(--surface); box-shadow: inset 1px 0 var(--border), inset 0 -3px 0 var(--accent); }
+.labdeck { position: relative; }
+.labdeck-pane.labdeck-away { position: absolute; left: 0; right: 0; top: 0; height: 0; overflow: hidden; visibility: hidden; pointer-events: none; } /* 沒選到的分頁：隱形但保留寬度，畫布不會量到 0 */
 .labdeck-pane > .card { margin: 0; padding: 6px 10px 8px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
 .labdeck-pane > .card > h2 { display: none; }
+.labdeck-pane > .labdeck-gone { display: none !important; } /* 原本所在的切換區被藏起來了 */
+.labdeck-pane > .card > h2:has(button, input, select) { display: flex; } /* 標題列裡有按鍵時保留 */
+/* 同一分頁放兩張以上的卡：第二張起留標題和分隔線，學生知道換了一組 */
+.labdeck-pane > .card:not(.labdeck-first) { border-top: 1px solid var(--border); padding-top: 8px; }
+.labdeck-pane > .card:not(.labdeck-first) > h2 { display: block; margin: 0 0 4px; font-size: calc(14px * var(--fs, 1)); color: var(--muted); }
 .labdeck .slider { margin: 0 0 2px; gap: 0 8px; align-items: center; }
 .labdeck .slider .lab-num { min-height: 28px !important; height: 28px; } /* 看不見的 ::after 仍把觸控範圍放大到約 44 px */
 .labdeck .slider input[type="range"] { height: 30px !important; margin: 0; }
 /* 「接通電源」這類主開關放在分頁最上面（data-deck-top），不用往下找 */
-.labdeck-pane > .card { display: flex; flex-direction: column; }
+.labdeck-pane > .card:has(> [data-deck-top]) { display: flex; flex-direction: column; }
 .labdeck-pane [data-deck-top] { order: -1; margin: 0 0 6px; }
 .labdeck .hint { margin: 4px 0; font-size: calc(13px * var(--fs, 1)); }
 .labdeck .seg, .labdeck .seg2, .labdeck .seg3 { margin-bottom: 4px; }
+/* 手機橫放（labdeck-drawer）：操作台固定在右側一整條，左邊主畫布那一塊照螢幕高度縮窄。
+   規則包在和 labdeck.js 同一個媒體查詢裡：轉成直放的那一瞬間（js 還沒換 class）就不再套用，畫布不會被擠成一條縫 */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 600px) {
+html.labdeck-drawer { --deck-w: clamp(260px, 38vw, 360px); }
+html.labdeck-drawer body { padding-right: calc(var(--deck-w) + 40px); } /* 多留 40 px 給「留言・回報」「學習說明」側標籤，不蓋到畫布 */
+html.labdeck-drawer .labdeck { position: fixed; top: 0; right: 0; bottom: 0; z-index: 35; width: var(--deck-w); margin: 0; border-width: 0 0 0 1px; border-radius: 0;
+  overflow-y: auto; overscroll-behavior: contain; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) 0;
+  box-shadow: -4px 0 14px color-mix(in srgb, var(--text) 10%, transparent); }
+html.labdeck-drawer .labdeck-tabs { position: sticky; top: 0; z-index: 1; }
+html.labdeck-drawer .labdeck-tabs button { min-width: 32%; min-height: 40px; font-size: calc(13px * var(--fs, 1)); }
+html.labdeck-drawer .lab { display: block; margin-left: auto; margin-right: auto; }
+html.labdeck-drawer .lab > * + * { margin-top: 16px; }
+html.labdeck-drawer .fb-tab, html.labdeck-drawer .lp-dock-tab { right: var(--deck-w); }
+html.labdeck-drawer .fb-tab { bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); } /* 橫放螢幕矮，留言標籤放到底，不和「學習說明」疊在一起 */
+html.labdeck-drawer .lp-strip { left: calc((100% - var(--deck-w)) / 2); width: min(calc(100% - var(--deck-w)), 720px); }
+}
+/* 平板（labdeck-panel）：操作台在右欄最上面，右欄黏住螢幕、自己捲動 */
+@media (pointer: coarse) and (min-width: 881px) {
+html.labdeck-panel body { padding-right: 40px; } /* 平板橫放：右欄黏在螢幕邊，讓出側標籤的位置，不蓋到數值 */
+html.labdeck-panel .labdeck { margin: 0 0 12px; overflow: clip; } /* clip 不算捲動容器，分頁列才能黏在右欄頂端 */
+html.labdeck-panel .labdeck-host { position: sticky; top: 8px; max-height: calc(100dvh - 16px); overflow-y: auto; overscroll-behavior: contain; align-self: start; }
+html.labdeck-panel .labdeck-tabs { position: sticky; top: 0; z-index: 1; }
+}
