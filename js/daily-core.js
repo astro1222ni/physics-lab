@@ -66,7 +66,7 @@
    */
   function pick(pool, uid, day, keep) {
     const r = rng(hash(String(uid) + ':' + day));
-    const sorted = pool.slice().sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
+    const sorted = pool.filter(function (m) { return !m.study; }).sort(function (a, b) { return a.id < b.id ? -1 : a.id > b.id ? 1 : 0; });
     const usedMod = {}, usedId = {}, out = [];
     const kept = sorted.filter(function (m) { return (keep || []).indexOf(m.id) >= 0; });
     kept.forEach(function (m) { usedMod[m.module] = true; usedId[m.id] = true; });

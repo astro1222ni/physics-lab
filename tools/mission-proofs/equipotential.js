@@ -462,6 +462,31 @@ prove('equipotential-15', '水槽含誤差直流，邊到邊長條，夾負極�
   console.log('水槽直流／含誤差／交流耳機預設與新增任務反例：' + (failures.length ? '有問題' : '全部通過'));
 })();
 
+// 自學任務：每一個條件由獨立的操作事件完成，不靠預設或瀏覽題目領星。
+const SC = window.EquipotentialStudyTasks;
+const studyPayloads = [
+  {kind:'stream',seconds:4}, {submitted:2}, {firstCorrect:2,revealed:true}, {cardsSeen:5},
+  {power:true,recorded:true,reading:0}, {power:true,groupN:6,vRange:.01,drawLines:true},
+  {groups:3,drawField:true,fieldCurves:9}, {estimated:true,err:.04},
+  {ownPoints:18,showTheory:true,drawLines:true},
+  {paperSeen:true,waterSeen:true,sameConfig:true,points:18,meanDistance:0},
+  {example:1,estimated:true,err:0}, {example:2,judgement:true,verifiedA:true,verifiedB:true},
+  {example:3,voltageCorrect:true,fieldCorrect:true}, {correct:3}, {correct:3,firstCorrect:3},
+  {ownPoints:18,method:'download',exported:true},
+  {sections:Array(8).fill(true),awarded:Array.from({length:16},(_,i)=>i+16)}
+];
+SC.rules.forEach(([n,level,zh,en,act,seg],i)=>{
+  const data=Object.assign({module:'equipotential',userAction:true,act,seg},studyPayloads[i]);
+  prove('equipotential-'+n,'獨立自學操作「'+zh+'」',()=>({ok:isolated([['study',data]],'equipotential-'+n),info:'只完成本項；上課／還原／非本人操作均拒絕'}));
+  for(const invalid of [{}, {...data,userAction:false}, {...data,teaching:true}, {...data,restoring:true}, {...data,seg:0}, {...data,module:'other'}]) {
+    if(defs['equipotential-'+n].check({type:'study',data:invalid},{})) failures.push('自學反例 '+n);
+  }
+});
+if(SC.taskDefinitions().reduce((sum,m)=>sum+m.level,0)!==78)failures.push('自學星星不是 78');
+const completion={module:'equipotential',userAction:true,act:'unit-completed',seg:8,sections:Array(8).fill(true),awarded:Array.from({length:16},(_,i)=>i+16)};
+for(let n=16;n<=31;n++)if(defs['equipotential-32'].check({type:'study',data:{...completion,awarded:completion.awarded.filter(k=>k!==n)}},{}))failures.push('32 缺少 '+n+' 仍通過');
+console.log('自學 16–32：17 個、78 星；逐項可達、預設不觸發、相互獨立，32 依賴全數 16–31。');
+
 // ---------------------------------------------------------------------
 // 結果
 // ---------------------------------------------------------------------

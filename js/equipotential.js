@@ -2,6 +2,7 @@
 (function () {
   'use strict';
   const EC = window.EquipotentialCore;
+  let studyApplying = false;
   const LD = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
@@ -199,9 +200,14 @@
   function layout() {
     const w = cv.clientWidth || 600;
     const mL = 24, mR = 10;
-    const s = Math.min(25, (w - mL - mR) / SW);
+    const learning = document.documentElement.classList.contains('eq-study');
+    const small = innerWidth < 1240;
+    const openPanel = learning && small && document.documentElement.dataset.lpState !== 'collapsed';
+    const limit = learning ? (small ? (openPanel ? 220 : 326) : Math.max(390, innerHeight - 320)) : Infinity;
+    const bandLimit = learning ? (small ? 64 : 90) : 150;
+    const s = Math.min(25, (w - mL - mR) / SW, (limit - bandLimit - 34) / SH);
     const bw = s * SW, bh = s * SH;
-    const band = Math.round(Math.max(96, Math.min(150, bh * 0.32)));
+    const band = learning ? bandLimit : Math.round(Math.max(96, Math.min(150, bh * 0.32)));
     const h = Math.round(band + 10 + bh + 24);
     G.w = w; G.h = h; G.s = s; G.band = band;
     G.bx = Math.round(mL + (w - mL - mR - bw) / 2); G.by = band + 10;
@@ -233,7 +239,7 @@
     });
   }
   function drawStatic() {
-    const key = [G.w, G.h, G.dpr, LD.ver, getSol().key, state.medium, voltage().negative, V0eff(), state.showTheory, state.showStream, state.showHeat, state.V0].join('|');
+    const key = [G.w, G.h, G.dpr, LD.ver, getSol().key, state.medium, voltage().negative, V0eff(), state.showTheory, state.showStream, state.showHeat, state.V0, window.EquipotentialStudy?.theoryFractions].join('|');
     if (key === statKey) return;
     statKey = key;
     stat.width = cv.width; stat.height = cv.height;
@@ -313,8 +319,9 @@
     // 計算的等位線（每 1 V）
     if (state.showTheory && V0eff() > 0) {
       const vm = voltage(), levels = [];
-      for (let v = 1; v < vm.positive - 1e-9; v += 1) if (v > vm.negative) levels.push(v);
-      const cs = derived('contours' + vm.bulk + ':' + vm.negative, function (s) { return levels.map(function (v) { return { v: v, lines: EC.contour(s, (v - vm.negative) / vm.bulk) }; }); });
+      const fractions=window.EquipotentialStudy?.theoryFractions;
+      if(fractions)fractions.forEach(function(f){levels.push(vm.negative+f*vm.bulk);});else for (let v = 1; v < vm.positive - 1e-9; v += 1) if (v > vm.negative) levels.push(v);
+      const cs = derived('contours' + vm.bulk + ':' + vm.negative + ':' + levels.join(','), function (s) { return levels.map(function (v) { return { v: v, lines: EC.contour(s, (v - vm.negative) / vm.bulk) }; }); });
       g.save();
       g.setLineDash([2, 4]);
       g.lineCap = 'round';
@@ -455,6 +462,7 @@
   function draw() {
     if (stage.classList.contains('is3d')) { if (view3) view3.update(); return; }
     layout();
+    if (window.EquipotentialStudy && window.EquipotentialStudy.drawIntro(ctx, G)) return;
     drawStatic();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(stat, 0, 0);
@@ -498,7 +506,7 @@
     A.groups.forEach(function (g) {
       const col = potColor(g.V);
       g.idx.forEach(function (i) {
-        const r = sh.recs[i], px = X(r.x), py = Y(r.y), k = 4;
+        const r = sh.recs[i]; if(r.given)return; const px = X(r.x), py = Y(r.y), k = 4;
         ctx.save();
         ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(px - k, py - k); ctx.lineTo(px + k, py + k); ctx.moveTo(px + k, py - k); ctx.lineTo(px - k, py + k);
@@ -511,7 +519,8 @@
         // 線名＋電位（畫面窄時只寫線名），先試最上方那一點的上方，擋到別的標籤就換位置
         let top = g.pts[0], bot = g.pts[0];
         g.pts.forEach(function (p) { if (p[1] > top[1]) top = p; if (p[1] < bot[1]) bot = p; });
-        const text = G.s < 16 ? g.name : g.name + ' ' + fmt(g.V, 2) + ' V';
+        const given = g.idx.every(function(i){return sh.recs[i].given;});
+        const text = given ? fmt(g.V, 2)+' V' : G.s < 16 ? g.name : g.name + ' ' + fmt(g.V, 2) + ' V';
         placeLabel(placed, text, col, [[X(top[0]) - 28, Y(top[1]) - 8], [X(top[0]) + 28, Y(top[1]) - 8], [X(bot[0]) - 28, Y(bot[1]) + 23], [X(top[0]), Y(top[1]) - 27], [X(bot[0]), Y(bot[1]) + 42]]);
       }
     });
@@ -522,6 +531,7 @@
     drawKeyFocus();
     if (sh.est) drawEstimate(sh.est);   // 估算結果畫在探針上面，不被握把擋住
     drawBand();
+    if (window.EquipotentialStudy) window.EquipotentialStudy.drawOverlay(ctx, { X: X, Y: Y, w: G.w, h: G.h });
     if (!state.power) {
       LD.pill(ctx, T('電源未接通', 'Supply off'), X(SW / 2), Y(SH) + 22, LD.c.muted, 'center', '600 12px ' + FF);
     }
@@ -694,7 +704,7 @@
   }
   function post(x, y, color, label) {
     LD.ball(ctx, x, y, 5, color, { glow: 0 });
-    if (label) LD.haloText(ctx, label, x, y - 10, LD.c.muted, 'center', 'alphabetic', '600 9.5px ' + FF);
+    if (label) LD.haloText(ctx, label, x, y + (G.band < 80 ? 14 : -10), LD.c.muted, 'center', 'alphabetic', '600 9.5px ' + FF);
   }
   function drawBand() {
     const b = bandBoxes();
@@ -1249,6 +1259,10 @@
     const sh = sheet(), A = analysis();
     const head = '<thead><tr><th>' + T('線', 'Line') + '</th><th>#</th><th>x<small>(cm)</small></th><th>y<small>(cm)</small></th><th>' +
       T('讀數', 'Reading') + '</th><th>' + T('線的電位', 'Line potential') + '<small>(V)</small></th></tr></thead>';
+    if(sh.recs.length&&sh.recs.every(function(r){return r.given;})){
+      $('tbl').innerHTML=head+'<tbody><tr class="empty"><td colspan="6">'+T('這是題目給定的線，不列作你的實測記錄；可到自學第 4 段描點。','These are given curves, not your measured records. Trace your own points in Section 4.')+'</td></tr></tbody>';
+      $('tsum').textContent=''; return;
+    }
     if (!sh.recs.length) {
       $('tbl').innerHTML = head + '<tbody><tr class="empty"><td colspan="6">' + T('還沒有記錄點。移動紅探針到讀數為零（或目標電壓）的地方，按「記錄」。', 'No points yet. Move the red probe to where the meter reads zero (or the target voltage) and press “Record”.') + '</td></tr></tbody>';
       $('tsum').textContent = '';
@@ -1362,7 +1376,14 @@
   // 任務事件
   // ---------------------------------------------------------------------
   // 水槽事件用獨立名稱，既有導電紙任務的函式與門檻完整保留，避免同一操作連帶領星。
-  function emit(type, data) { if (window.LabMission) window.LabMission.emit(state.medium === 'water' ? 'water-' + type : type, data); }
+  function emit(type, data) {
+    if (studyApplying) return;
+    if (window.EquipotentialStudy && window.EquipotentialStudy.observing) {
+      window.dispatchEvent(new CustomEvent('eqp:action', { detail: { type: type, data: data } }));
+      return;
+    }
+    if (window.LabMission) window.LabMission.emit(state.medium === 'water' ? 'water-' + type : type, data);
+  }
   function common() {
     const A = analysis();
     return {
@@ -1397,6 +1418,7 @@
     compareMedia();
   }
   function compareMedia() {
+    if (window.EquipotentialStudy && window.EquipotentialStudy.observing) return;
     if (state.medium !== 'water' || !state.power) return;
     const other = state.sheets[sheetKey('paper')];
     if (!other || other.recs.length < 5) return;
@@ -1729,6 +1751,46 @@
     return true;
   }
   if (!regShare()) window.addEventListener('load', regShare);
+
+  /** 自學與範例只調用這份實驗狀態，設定題目時不偽造學生的操作事件。 */
+  window.EquipotentialLab = {
+    snapshot: function () {
+      const A = analysis(), sh = sheet();
+      return Object.assign({}, common(), probeInfo(), {
+        n1: Object.assign({}, n1Pos()), n2: Object.assign({}, state.n2),
+        showTheory: state.showTheory, view: viewMode,
+        ready3D: !!view3, records: JSON.parse(JSON.stringify(sh.recs)), estimate: sh.est,
+        paths: A.groups.map(function (g) { return { V:g.V, pts:g.pts, path:g.path, n:g.pts.length, ownN:g.idx.filter(function(i){return !sh.recs[i].given;}).length, vRange:g.vRange }; }),
+        fields: state.drawField ? sketch().lines : [], els: els(), given: sh.recs.some(function (r) { return r.given; })
+      });
+    },
+    preset: function (o, records) {
+      studyApplying = true;
+      try {
+        ['type','medium','ac','noise','meter','power','clip','drawLines','drawField','showTheory','showHeat','showStream'].forEach(function (k) { if (o[k] != null) state[k] = o[k]; });
+        [['d',elD],['a',elA],['L',elL],['V0',elV]].forEach(function (p) { if (o[p[0]] != null) { if (window.LabNum) LabNum.set(p[1],o[p[0]]); else p[1].value=o[p[0]]; } });
+        if (o.n1) state.n1 = clampP(o.n1.x,o.n1.y);
+        if (o.n2) state.n2 = clampP(o.n2.x,o.n2.y);
+        document.querySelectorAll('[data-type]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.type===state.type)); });
+        document.querySelectorAll('[data-noise]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.dataset.noise==='1')===state.noise)); });
+        [['drawLines','drawLines'],['drawField','drawField'],['showTheory','showTheory'],['showHeat','showHeat'],['showStream','showStream']].forEach(function (p) { $(p[0]).checked=state[p[1]]; });
+        readSliders();
+        if (records) { const sh=sheet(); sh.recs=JSON.parse(JSON.stringify(records)); sh.rev++; sh.est=null; }
+        setJitter(); mediumControls(); powerBtn(); configChanged(false); updateSteps();
+      } finally { studyApplying=false; }
+    },
+    move: function (id,x,y) { select(id); setProbe(id,x,y); emitProbe(); },
+    discardGiven: function () {
+      Object.keys(state.sheets).forEach(function(k){const sh=state.sheets[k];if(sh.recs.some(function(r){return r.given;})){sh.recs=sh.recs.filter(function(r){return !r.given;});sh.rev++;sh.est=null;}});
+      configChanged(false);
+    },
+    tweak: nudge,
+    get selected() { return state.sel; },
+    focus: select,
+    screenPoint: function (x,y) { const r=cv.getBoundingClientRect(); return {x:r.left+X(x),y:r.top+Y(y)}; },
+    view: setView, redraw: requestDraw,
+    resetView: function () { if (view3) view3.resetCamera(); }
+  };
 
   readSliders();
   mediumControls();

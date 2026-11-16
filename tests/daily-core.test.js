@@ -233,4 +233,10 @@ test('難度分段', () => {
   assert.strictEqual(C.bandOf(10).id, 'hard');
 });
 
+test('自學任務不進每日抽題，舊保留清單也不能帶回自學任務', () => {
+  const pool=Array.from({length:10},(_,i)=>({id:'normal-'+i,module:'m'+i,level:i+1}));
+  pool.push({id:'study-only',module:'study',level:4,study:true});
+  for(let day=0;day<100;day++) assert(!C.pick(pool,'u',day,['study-only']).includes('study-only'));
+});
+
 console.log(`${passed} 項測試通過`);

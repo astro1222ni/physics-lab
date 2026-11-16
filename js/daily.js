@@ -136,7 +136,7 @@
     const all = LM.all();
     Object.keys(all).forEach(function (k) {
       if (live.indexOf(k) < 0) return;
-      all[k].forEach(function (m) { if (!m.hidden) pool.push({ id: m.id, module: k, level: m.level }); });
+      all[k].forEach(function (m) { if (!m.hidden && !m.study) pool.push({ id: m.id, module: k, level: m.level }); });
     });
     const ids = C.pick(pool, D.uid, d, legacy ? picks() : null);
     const done = legacy && D.rec.done ? D.rec.done : {};

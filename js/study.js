@@ -87,6 +87,7 @@
 /* 八段自學：每次只前進一步；受力與運動一律沿用 InclineCore。 */
 (function(){
   'use strict';
+  if (!document.querySelector('.study-page')) return;
   const T=(a,b)=>LabSettings.t(a,b),tr=p=>Array.isArray(p)?T(p[0],p[1]):String(p||'');
   const $=id=>document.getElementById(id),E=(tag,text,cls)=>LabPanel.element(tag,text,cls),B=(text,fn)=>LabPanel.button(text,fn),rich=(node,text)=>LabPanel.rich(node,text);
   const C=InclineCore,D=LabDraw,V=StudyVisual3D,P=StudyDraw;
@@ -250,4 +251,43 @@
     addEventListener('lab:solutionstep',e=>{if(unit.sections[section].kind==='examples')document.querySelector('.study-iframe')?.contentWindow?.LabExamples?.solution(e.detail.n,e.detail.line);});
     new MutationObserver(()=>{const on=document.documentElement.classList.contains('lab-projector');if(on!==teaching)classMode(on);}).observe(document.documentElement,{attributes:true,attributeFilter:['class']});if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setupClassControl);else setupClassControl();render();}
   window.Study={mount,go,next:()=>next(false),replay:()=>{voicedStars.clear();render();},classMode,get state(){return {section:section+1,step:index+1,stars:stars.slice(),answers:{...answers},teaching};},get scene(){return scene;},get geometry(){return geometry;},get visits(){return [...visits];},get audioLog(){return audioLog.slice();},get rendering(){return {raf:!!frame,three:V.stats};}};
+})();
+
+/* 融入既有實驗的八段入口；原摩擦力樣品的 Study.mount 與場景保持原樣。 */
+(function () {
+  'use strict';
+  const T=(a,b)=>LabSettings.t(a,b);
+  function cue(kind) {
+    if (!window.LabSound?.enabled() || document.hidden) return;
+    const tones=kind==='correct'?[660,990]:kind==='star'?[660,825,990,1320]:kind==='wrong'?[300]:[530];
+    tones.forEach((freq,i)=>LabSound.tone({freq,dur:kind==='page'?.045:.16,gain:kind==='page'?.025:.055,delay:i*.11}));
+    dispatchEvent(new CustomEvent('study:sound',{detail:{event:kind,frequencies:tones}}));
+  }
+  function embed(options) {
+    let section=0,step=0,active=false,teaching=false,reveal=false;
+    function paint(){options.render({section:section+1,step:step+1,active,teaching,reveal});}
+    function go(n,k,reset) {
+      const old=section;section=Math.max(0,Math.min(7,n-1));step=Math.max(0,Math.min(options.sections[section].steps.length-1,(k||1)-1));reveal=false;
+      if (old!==section || reset) options.enter(section+1,!!reset);
+      options.step?.(section+1,step+1);const u=new URL(location.href);u.searchParams.set('study','1');u.searchParams.set('seg',section+1);u.searchParams.set('step',step+1);history.replaceState(null,'',u);
+      cue('page');paint();options.save?.();
+    }
+    function next() {
+      if (!teaching && options.canAdvance?.(section+1,step+1)===false) return;
+      if (step===options.sections[section].steps.length-1) {
+        if (!teaching && options.finish?.(section+1)===false) { paint();return; }
+        if (section<7) go(section+2,1);else paint();
+      } else go(section+1,step+2);
+    }
+    function prev(){if(step)go(section+1,step);else if(section)go(section,options.sections[section-1].steps.length);}
+    function classMode(on){options.onClass?.(on);teaching=on;reveal=false;document.documentElement.classList.toggle('lab-projector',on);paint();dispatchEvent(new Event('resize'));}
+    const api={start(n,k){active=true;document.documentElement.classList.add('eq-study');options.enter(n||1,true);go(n||1,k||1);LabPanel.close();options.start?.();dispatchEvent(new Event('resize'));},
+      close(){if(teaching){options.onClass?.(false);teaching=false;document.documentElement.classList.remove('lab-projector');}active=false;document.documentElement.classList.remove('eq-study');LabPanel.close();options.close?.();const u=new URL(location.href);['study','seg','step'].forEach(k=>u.searchParams.delete(k));history.replaceState(null,'',u);dispatchEvent(new Event('resize'));},
+      go,next,prev,reset(){options.enter(section+1,true);go(section+1,1);},classMode,reveal(){reveal=!reveal;paint();},paint,cue,
+      emit(act,seg,data){if(teaching||window.LabShare?.restoring)return;LabMission.emit('study',Object.assign({module:options.id,seg,act,userAction:true,teaching:false,restoring:false},data||{}));},
+      get state(){return {section:section+1,step:step+1,active,teaching,reveal};}};
+    document.addEventListener('keydown',e=>{if(!active||!teaching||e.defaultPrevented||e.ctrlKey||e.altKey||e.metaKey||e.target.closest('input,select,textarea,.lab-set-panel'))return;const k=e.key.toLowerCase();if(/^[1-8]$/.test(k)){e.preventDefault();go(+k,1);}else if(['arrowright','pagedown',' '].includes(k)){e.preventDefault();next();}else if(['arrowleft','pageup'].includes(k)){e.preventDefault();prev();}else if(k==='a'){e.preventDefault();api.reveal();}else if(k==='r'){e.preventDefault();api.reset();}});
+    return api;
+  }
+  window.StudyFlow={embed,cue};
 })();

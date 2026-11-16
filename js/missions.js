@@ -669,8 +669,9 @@
       panel.appendChild(tools);
       const byLevel = function (a, b) { return a.level - b.level; };
       // 一般任務：寬螢幕預設展開；手機預設收合成一行，實驗不會被推得太遠
-      section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
+      section('pub', T('一般任務', 'Missions'), list.filter(function (m) { return !m.hidden && !m.study; }).sort(byLevel), !!(dockMq && dockMq.matches), undone);
       section('hid', T('隱藏任務', 'Hidden missions'), list.filter(function (m) { return m.hidden; }).sort(byLevel), false, undone);
+      section('study', T('自學任務', 'Self-study missions'), list.filter(function (m) { return m.study; }).sort(byLevel), false, undone);
     }
 
     /** 一區任務：標題按鈕（完成數、星星數、展開／收合）＋清單；開關狀態記在本機，全站共用 */

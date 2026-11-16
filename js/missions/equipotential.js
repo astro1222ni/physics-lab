@@ -150,4 +150,51 @@
       check: function (ev) { const d = ev.data; return ev.type === 'record' && d.type === 'circles' && !d.onElectrode && d.corner <= 3 && d.E2 <= 0.05 * d.Ecent; }
     }
   ]);
+  // 任務清單保持可獨立載入；排行榜與每日任務不必載入實驗的物理核心。
+  const finiteError = d => Number.isFinite(d.err) && Math.abs(d.err) < 0.10;
+  const rules = [
+    [16,1,'河水與等高線','River and contours','intro-viewed',1,d=>d.kind==='stream'&&d.seconds>=4||d.kind==='rig'&&d.ready===true],
+    [17,2,'先猜再說','Predict first','predictions-submitted',2,d=>d.submitted===2],
+    [18,3,'神準預言家','A perfect prediction','predictions-perfect',2,d=>d.firstCorrect===2&&d.revealed===true],
+    [19,3,'觀念五連','Five connected ideas','concepts-viewed',3,d=>d.cardsSeen===5],
+    [20,4,'第一個零點','Your first null','null-recorded',4,d=>d.power&&d.recorded&&Math.abs(d.reading)<=.02+1e-9],
+    [21,5,'第一條線','Your first line','line-completed',4,d=>d.power&&d.groupN>=6&&d.vRange<.06&&d.drawLines],
+    [22,6,'等位線三兄弟','Three equipotentials','field-drawn',4,d=>d.groups>=3&&d.drawField&&d.fieldCurves>0],
+    [23,6,'我也會算電場','I can measure the field','field-estimated',4,d=>d.estimated&&finiteError(d)],
+    [24,4,'對答案','Check your lines','theory-compared',5,d=>d.ownPoints>=6&&d.showTheory&&d.drawLines],
+    [25,5,'紙與水','Paper and water','media-compared',5,d=>d.paperSeen&&d.waterSeen&&d.sameConfig&&d.points>=6&&d.meanDistance<.3],
+    [26,4,'範例一','Example one','example-one-verified',6,d=>d.example===1&&d.estimated&&finiteError(d)],
+    [27,5,'範例二','Example two','example-two-verified',6,d=>d.example===2&&d.judgement&&d.verifiedA&&d.verifiedB],
+    [28,6,'範例三','Example three','example-three-verified',6,d=>d.example===3&&d.voltageCorrect&&d.fieldCorrect],
+    [29,4,'隨堂全對','All three understood','quiz-completed',7,d=>d.correct===3],
+    [30,7,'一次全對','Right on the first try','quiz-perfect',7,d=>d.correct===3&&d.firstCorrect===3],
+    [31,5,'我的電場圖','My field map','card-exported',8,d=>d.ownPoints>=6&&['download','share'].includes(d.method)&&d.exported===true],
+    [32,8,'自學全通','Self-study complete','unit-completed',8,d=>Array.isArray(d.sections)&&d.sections.length===8&&d.sections.every(Boolean)&&Array.from({length:16},(_,i)=>i+16).every(n=>(d.awarded||[]).includes(n))]
+  ];
+  const descriptions = [
+    ['看完四秒溪流動畫，或親自開啟可操作的 3D 器材。','Watch the four-second stream or open the interactive apparatus.'],
+    ['送出兩題預測，答案稍後揭曉。','Submit both predictions; answers are revealed later.'],
+    ['兩題第一次都答對，於對答案時核對。','Get both predictions right first try, then reveal them.'],
+    ['逐張讀完五張觀念卡。','Read all five concept cards.'],
+    ['通電後記錄一個讀數在 ±0.02 V 內的點。','Record a null within ±0.02 V with the supply on.'],
+    ['同一條線至少六點，電位差小於 0.06 V，並連線。','Join six points on one line with a potential range below 0.06 V.'],
+    ['三條等位線各至少六點，再畫電力線。','Trace six points on each of three equipotentials, then draw field lines.'],
+    ['用自己的線估算電場，誤差小於 10 %。','Estimate the field from your lines with less than 10% error.'],
+    ['在至少六個自己的點上疊計算線比對。','Overlay computed curves on six or more of your measured points.'],
+    ['以相同設定，把同一組線放在紙與等深水槽比較。','Compare the same contours on paper and in a uniform-depth tray.'],
+    ['在範例一按估算驗算，誤差小於 10 %。','Verify Example 1 with Estimate E and less than 10% error.'],
+    ['範例二判斷對，並在 A、B 各估算驗證。','Predict Example 2 correctly and verify by estimating at A and B.'],
+    ['範例三分別答對電位與電場的大小關係。','Answer both potential and field rankings in Example 3.'],
+    ['三題都答對後按檢查，可重答。','Answer all three checks correctly, allowing retries, then check them.'],
+    ['本次三題首次作答全對，再收下紀錄。','Get all three right first try in this run, then claim the record.'],
+    ['以自己的實測線製作圖卡，成功分享或存圖。','Create a card from your measured lines and share or save it.'],
+    ['八段完成，而且自學任務 16–31 都已拿到。','Complete all eight sections and earn study missions 16–31.']
+  ];
+  function taskDefinitions() {
+    return rules.map(([n,level,zh,en,act,seg,check]) => ({id:'equipotential-'+n,level,study:true,title:{zh,en},
+      desc:{zh:descriptions[n-16][0],en:descriptions[n-16][1]},
+      check:ev=>ev.type==='study'&&ev.data&&ev.data.module==='equipotential'&&ev.data.userAction===true&&!ev.data.teaching&&!ev.data.restoring&&ev.data.act===act&&ev.data.seg===seg&&check(ev.data)}));
+  }
+  window.EquipotentialStudyTasks={taskDefinitions,rules};
+  LabMission.register('equipotential',taskDefinitions());
 })();

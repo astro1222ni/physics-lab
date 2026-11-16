@@ -20,6 +20,7 @@
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
     camera.up.set(0, 0, 1);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({THREE:THREE,controls:controls,host:env.host,canvas:canvas,radius:35,T:T}) : null;
     controls.enableDamping = true; controls.dampingFactor = 0.12;
     controls.minDistance = 25; controls.maxDistance = 150;
     controls.maxPolarAngle = Math.PI * 0.48;
@@ -325,7 +326,7 @@
       }); });
       distance *= 1.02;
       controls.target.copy(center); camera.position.copy(center).addScaledVector(dir, distance);
-      controls.update(); camera.updateProjectionMatrix();
+      controls.update(); if(nav)nav.home(); camera.updateProjectionMatrix();
     }
     function requestRender() {
       if (raf || !active || document.hidden || (env.isVisible && !env.isVisible())) return;
@@ -381,7 +382,7 @@
     const api = {
       update: update, onTheme: update, resetCamera: function () { fit(); requestRender(); },
       dispose: function () {
-        active = false; if (raf) cancelAnimationFrame(raf); ro.disconnect(); controls.dispose();
+        active = false; if (raf) cancelAnimationFrame(raf); ro.disconnect(); if(nav)nav.dispose(); controls.dispose();
         document.removeEventListener('visibilitychange', visible); disposeObject(scene);
         renderer.dispose(); renderer.forceContextLoss(); canvas.remove();
       }

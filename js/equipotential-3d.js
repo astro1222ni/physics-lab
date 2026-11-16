@@ -33,6 +33,7 @@
     camera.up.set(0, 0, 1);    // 電位（高度）朝上；必須在建立 OrbitControls 之前設定
     const viewDir = new THREE.Vector3(0.32, -1.25, 1.0).normalize();
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({THREE:THREE,controls:controls,host:env.host,canvas:canvas,radius:35,T:T}) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.minDistance = 12;
@@ -398,14 +399,14 @@
       active: true,
       update: update,
       onTheme: function () { update(); },
-      resetCamera: function () { fit(true); requestRender(); },
+      resetCamera: function () { fit(true); if(nav)nav.home(); requestRender(); },
       dispose: function () {
         api.active = false;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
-        controls.dispose();
+        if(nav)nav.dispose(); controls.dispose();
         disposeObject(scene);
         renderer.dispose();
         renderer.forceContextLoss();

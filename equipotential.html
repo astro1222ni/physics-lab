@@ -30,6 +30,8 @@
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
   <link rel="stylesheet" href="lab.css?v=202611161000">
+  <link rel="stylesheet" href="study.css">
+  <link rel="stylesheet" href="equipotential-study.css?v=20261116eqp2">
   <style>
     /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
@@ -166,12 +168,17 @@
     <p class="try-hint" data-en="Try it: press “Switch on the supply”, move the red probe to where the meter reads 0 and press “Record”; record a few more points and watch the line take shape.">試試看：按「接通電源」，把紅探針移到讀數為 0 處按「記錄」，多記幾點看等位線的形狀。</p>
     <div class="lab eq">
       <div class="stage" id="stage">
+        <section id="eq-study-shell" aria-label="自學進度" data-en-aria-label="Study progress">
+          <div class="eq-study-head"><strong id="eq-study-heading"></strong><button id="eq-class" type="button" aria-pressed="false" data-en="Class mode">上課模式</button><button id="eq-study-close" type="button" data-en="Exit study">回實驗</button></div>
+          <div id="eq-study-progress"></div><p id="eq-condition" class="eq-condition"></p>
+        </section>
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D lab bench">2D 實驗桌</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D potential landscape">3D 電位地形</button>
             <button type="button" id="viewRig" aria-pressed="false" data-en="3D apparatus">3D 器材</button>
           </div>
+          <button id="studyBtn" type="button" data-en="🎓 Self-study">🎓 自學模式</button>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           <div class="medium-tools">
           <div class="mini-seg" id="medium" role="group" aria-label="導電材質" data-en-aria-label="Conducting medium">
@@ -190,6 +197,7 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" tabindex="0" aria-label="實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動；鍵盤操作：Enter 切換探針，方向鍵移動 0.05 cm，Shift 加方向鍵移動 0.5 cm，Alt 加方向鍵移動 0.01 cm，R 記錄。" data-en-aria-label="Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it. Keyboard: Enter picks a probe, the arrow keys move it 0.05 cm, Shift with an arrow key 0.5 cm, Alt with an arrow key 0.01 cm, R records."></canvas>
         <div id="view3"></div>
+        <p id="eq-study-caption" aria-live="polite"></p><div id="eq-study-tools"></div><div id="eq-study-nav"></div><p id="eq-study-message" aria-live="polite"></p>
         <div class="playbar">
           <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
           <button id="undo" type="button" data-en="Delete last point">刪除最後一點</button>
@@ -214,6 +222,7 @@
 
       <aside class="panel">
         <section class="card">
+          <div class="ex-bar" data-examples="equipotential"></div>
           <h2 data-en="Medium properties">介質參數</h2>
           <p id="mediumHint" class="hint"></p>
           <p id="mediumCompare" class="hint" role="status"></p>
@@ -338,6 +347,7 @@
 
     <section class="notes">
       <h2 data-en="About the experiment">實驗說明</h2>
+      <p><button id="studyInvite" type="button" data-en="🎓 Try the eight-section self-study: predict, measure and make your own field map.">🎓 跟著八段自學：先預測、再量測，畫出自己的電場圖。</button></p>
 
       <div data-medium-only="paper">
       <h3 data-en="Aims">實驗目的</h3>
@@ -486,14 +496,24 @@
   <script src="js/sound.js?v=202611161000"></script>
   <script src="js/numinput.js?v=202611161000"></script>
   <script src="js/drawkit.js?v=202611161000"></script>
-  <script src="js/equipotential-3d.js?v=202611161000"></script>
-  <script src="js/equipotential-rig3d.js?v=202611161000"></script>
+  <script src="js/view3d-nav.js?v=20261116eqp2"></script>
+  <script src="js/equipotential-3d.js?v=20261116eqp2"></script>
+  <script src="js/equipotential-rig3d.js?v=20261116eqp2"></script>
   <script src="js/keys.js?v=202611161000"></script>
-  <script src="js/equipotential.js?v=202611161000"></script>
+  <script src="js/equipotential.js?v=20261116eqp2"></script>
   <script src="js/firebase-config.js?v=202611161000"></script>
-  <script src="js/missions.js?v=202611161000" data-module="equipotential"></script>
-  <script src="js/missions/equipotential.js?v=202611161000"></script>
+  <script src="js/missions.js?v=20261116eqp2" data-module="equipotential"></script>
+  <script src="js/equipotential-study-core.js?v=20261116eqp2"></script>
+  <script src="js/missions/equipotential.js?v=20261116eqp2"></script>
   <script src="js/stats.js?v=202611161000" data-module="equipotential"></script>
   <script src="js/comments.js?v=202611161000"></script>
+  <script src="js/labpanel.js?v=20261116eqp2"></script>
+  <script src="js/study.js?v=20261116eqp2"></script>
+  <script src="js/examples.js?v=20261116eqp2"></script>
+  <script src="js/examples/equipotential.js?v=20261116eqp2"></script>
+  <script src="js/study/equipotential.js?v=20261116eqp2"></script>
+  <script src="js/equipotential-study-card.js?v=20261116eqp2"></script>
+  <script src="js/equipotential-study.js?v=20261116eqp2"></script>
+  <script src="js/equipotential-controls.js?v=20261116eqp2"></script>
 </body>
 </html>
