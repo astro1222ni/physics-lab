@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="utf-8">
-  <script src="js/settings.js?v=202611160631"></script>
+  <script src="js/settings.js?v=202611161000"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title data-en="Equipotential Lines and Electric Field (Conducting Paper) | Astro Ni Lab">等位線與電場（導電紙實驗）｜讓倪動手⚡高中全科模擬實驗室</title>
   <!-- SEO-BEGIN（tools/seo.cjs 自動產生，請勿手改） -->
@@ -29,7 +29,7 @@
   <!-- SEO-END -->
 
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611160631">
+  <link rel="stylesheet" href="lab.css?v=202611161000">
   <style>
     /* 等位線與電場頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .eq #cv { aspect-ratio: auto; height: 520px; cursor: default; outline: none; }
@@ -129,6 +129,22 @@
     #view3 canvas:active { cursor: grabbing; }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
+    /* 材質與電源沿用原元件，手機放視角列下一排，桌機靠右。 */
+    .medium-tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .mini-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+    .eq .mini-seg button { min-height: 44px; padding: 5px 9px; border: 0; border-radius: 0; font-size: calc(15px * var(--fs, 1)); line-height: 1.2; background: var(--bg); }
+    .mini-seg button + button { border-left: 1px solid var(--border); }
+    .mini-seg button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; box-shadow: inset 0 -2px var(--accent); }
+    [data-medium-only][hidden] { display: none !important; }
+    @media (max-width: 600px) {
+      .medium-tools { margin: 0; width: 100%; justify-content: space-between; flex-wrap: wrap; }
+      .eq .view-bar { gap: 6px; }
+      .eq .view-bar > .seg { order: 0; }
+      .medium-tools { order: 2; }
+      .eq #resetCam { order: 3; }
+      .eq .mini-seg button { padding: 5px 8px; }
+      .stage.is-rig #view3 canvas { aspect-ratio: 1.12; }
+    }
     .formula.multi { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; column-gap: 2.4em; }
     .formula.multi .katex-display { margin: 4px 0; }
     .notes .formula { max-width: 100%; min-width: 0; }
@@ -157,6 +173,19 @@
             <button type="button" id="viewRig" aria-pressed="false" data-en="3D apparatus">3D 器材</button>
           </div>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          <div class="medium-tools">
+          <div class="mini-seg" id="medium" role="group" aria-label="導電材質" data-en-aria-label="Conducting medium">
+            <button id="mediumPaper" type="button" data-medium="paper" aria-pressed="true" data-en="Paper">導電紙</button>
+            <button id="mediumWater" type="button" data-medium="water" aria-pressed="false" data-en="Water tray">水槽</button>
+          </div>
+          <div id="sourceMode" hidden>
+            <p class="sr-only" id="sourceLabel" data-en="Power source:">電源種類：</p>
+            <div class="mini-seg" role="group" aria-labelledby="sourceLabel">
+              <button id="sourceDC" type="button" data-ac="0" aria-pressed="true" data-en="DC">直流</button>
+              <button id="sourceAC" type="button" data-ac="1" aria-pressed="false" data-en="AC (1 kHz)">交流（1 kHz）</button>
+            </div>
+          </div>
+          </div>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" tabindex="0" aria-label="實驗桌俯視圖：導電紙上的兩個電極、紅色探針 N2 與黑色探針 N1，上方是直流電源供應器與電表。拖曳探針移動；鍵盤操作：Enter 切換探針，方向鍵移動 0.05 cm，Shift 加方向鍵移動 0.5 cm，Alt 加方向鍵移動 0.01 cm，R 記錄。" data-en-aria-label="Top view of the bench: the conducting paper with two electrodes, the red probe N2 and the black probe N1, with the DC supply and the meter above it. Drag a probe to move it. Keyboard: Enter picks a probe, the arrow keys move it 0.05 cm, Shift with an arrow key 0.5 cm, Alt with an arrow key 0.01 cm, R records."></canvas>
@@ -177,25 +206,15 @@
           <span class="lg-st" data-en-html="<i></i>Computed current lines"><i></i>計算的電流線</span>
           <span id="surfaceLegend" class="lg-surf l3" data-en-html="<i></i>Height = potential"><i></i>高度＝電位</span>
         </div>
-        <p class="hint l2" data-en="Top view, drawn to scale: the paper is 30 cm × 20 cm with a 1 cm grid (the real carbon paper is black; it is drawn light here so the marks stand out). Drag a probe — or tap the paper to move the selected probe there. Turn on “fine drag” or use the arrow buttons for small steps.">俯視圖，依比例繪製：導電紙 30 cm × 20 cm，方格 1 cm（真實的碳質紙是黑色的，這裡畫成淺色以便看清記號）。拖曳探針，或點一下紙面把「選取的探針」移過去；打開「精細拖曳」或用方向鍵可以小步移動。</p>
+        <p class="hint l2" data-medium-only="paper" data-en="Top view, drawn to scale: the paper is 30 cm × 20 cm with a 1 cm grid (the real carbon paper is black; it is drawn light here so the marks stand out). Drag a probe — or tap the paper to move the selected probe there. Turn on “fine drag” or use the arrow buttons for small steps.">俯視圖，依比例繪製：導電紙 30 cm × 20 cm，方格 1 cm（真實的碳質紙是黑色的，這裡畫成淺色以便看清記號）。拖曳探針，或點一下紙面把「選取的探針」移過去；打開「精細拖曳」或用方向鍵可以小步移動。</p>
+        <p class="hint l2" data-medium-only="water" hidden data-en="Top view, drawn to scale: a transparent acrylic tray, 30 cm × 20 cm, over 1 cm grid paper. The tray contains 0.1% salt water to a uniform depth of 1.0 cm. Dip or drag a probe in the water; use fine drag or the arrow buttons for small steps.">俯視圖，依比例繪製：30 cm × 20 cm 的透明壓克力淺盤，底下墊 1 cm 方格紙；盤內為 0.1 % 食鹽水，均勻水深 1.0 cm。點入或拖動水中的探針；精細拖曳與方向鍵可小步移動。</p>
         <p id="landscapeHint" class="hint l3" data-en="Surface height = potential in the medium, from the same solution as 2D. This is a voltage graph, not the shape of the water. Drag to rotate; pinch or scroll to zoom.">曲面高度＝介質中該點的電位，與 2D 共用數值解；這是電位圖，並非水面真的起伏。拖曳旋轉，雙指或滾輪縮放。</p>
         <p id="rigHint" class="hint l3" hidden data-en="Apparatus overview (instruments schematic, not to scale). Probe and electrode positions match 2D. Drag a probe directly; drag empty space to orbit, pinch or scroll to zoom.">器材全景（儀器外形為示意，未依比例）。探針、電極位置與 2D 同步；直接拖探針可移動，拖空白處轉視角，雙指或滾輪縮放。</p>
       </div>
 
       <aside class="panel">
         <section class="card">
-          <h2 data-en="Conducting medium">導電材質</h2>
-          <div class="seg2" id="medium" role="group" aria-label="導電材質" data-en-aria-label="Conducting medium">
-            <button id="mediumPaper" type="button" data-medium="paper" aria-pressed="true" data-en="Conducting paper">導電紙</button>
-            <button id="mediumWater" type="button" data-medium="water" aria-pressed="false" data-en="Water tray">水槽</button>
-          </div>
-          <div id="sourceMode" hidden>
-            <p class="seg-label" id="sourceLabel" data-en="Power source:">電源種類：</p>
-            <div class="seg2" role="group" aria-labelledby="sourceLabel">
-              <button id="sourceDC" type="button" data-ac="0" aria-pressed="true" data-en="DC">直流</button>
-              <button id="sourceAC" type="button" data-ac="1" aria-pressed="false" data-en="AC (1 kHz)">交流（1 kHz）</button>
-            </div>
-          </div>
+          <h2 data-en="Medium properties">介質參數</h2>
           <p id="mediumHint" class="hint"></p>
           <p id="mediumCompare" class="hint" role="status"></p>
         </section>
@@ -220,7 +239,8 @@
           <div class="slider"><label for="V0" data-en-html="Supply voltage V<sub>0</sub>">電源電壓 V<sub>0</sub></label><output id="V0o"></output>
             <input id="V0" type="range" min="1" max="12" step="0.5" value="6" data-decimals="1"></div>
           <button type="button" id="power" aria-pressed="false" data-en="Switch on the supply">接通電源</button>
-          <p class="hint" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
+          <p class="hint" data-medium-only="paper" data-en="The left electrode is connected to the positive terminal, the right one to the negative terminal (0 V). Each electrode setting has its own sheet of grid paper.">左邊電極接正極，右邊接負極（0 V）。每一種電極設定用一張自己的方格紙。</p>
+          <p class="hint" data-medium-only="water" hidden data-en="Keep the tray level and both copper electrodes immersed. The left electrode connects to the supply's red terminal, the right to the black reference terminal. AC voltages are RMS; DC with errors includes interface polarization. Each setting has its own grid-paper record.">水槽保持水平，兩個銅電極浸入水中。左電極接電源紅端，右電極接黑色參考端；交流電壓以有效值表示，含誤差直流另計界面極化。每組設定各有一份方格紙記錄。</p>
         </section>
 
         <section class="card">
@@ -319,6 +339,7 @@
     <section class="notes">
       <h2 data-en="About the experiment">實驗說明</h2>
 
+      <div data-medium-only="paper">
       <h3 data-en="Aims">實驗目的</h3>
       <ol>
         <li data-en="Use the steady current in a conducting sheet to find points of equal potential and draw equipotential lines.">利用導電紙上的穩定電流，找出電位相等的點，描出等位線。</li>
@@ -415,6 +436,44 @@
         <li data-en="The sheet resistance (5 kΩ per square), the galvanometer (±50 μA full scale, 50 kΩ in its circuit), the 0.01 V multimeter resolution and the error sizes are values chosen for this simulation (see “How the simulation works”). For a uniform sheet the potential pattern does not depend on the sheet resistance; it only sets the size of the current.">導電紙面電阻 5 kΩ/□、檢流計（滿刻度 ±50 μA、迴路 50 kΩ）、三用電表解析度 0.01 V 與各項誤差大小，都是本模擬設定的數值（見「模擬方法」）。均勻的導電紙上，電位分布與面電阻無關，面電阻只影響電流大小。</li>
         <li data-en-html="Further reading: <a href=&quot;https://openstax.org/books/university-physics-volume-2/pages/7-5-equipotential-surfaces-and-conductors&quot;>OpenStax University Physics Vol. 2 — 7.5 Equipotential Surfaces and Conductors</a>; <a href=&quot;https://hyperphysics.gsu.edu/hbase/electric/equipot.html&quot;>HyperPhysics: Equipotential Lines</a>.">延伸閱讀：<a href="https://openstax.org/books/university-physics-volume-2/pages/7-5-equipotential-surfaces-and-conductors">OpenStax University Physics 第二冊 7.5 等位面與導體</a>、<a href="https://hyperphysics.gsu.edu/hbase/electric/equipot.html">HyperPhysics：等位線</a>（英文）。</li>
       </ul>
+      </div>
+      <div data-medium-only="water" hidden>
+      <h3 data-en="Aims and apparatus">目的與器材</h3>
+      <p data-en-html="Map equipotentials in a level, transparent acrylic tray (30 cm × 20 cm) with 1 cm grid paper underneath. The 0.1% salt water is 1.0 cm deep. Immerse two copper electrodes and two probes; use a DC or 1 kHz AC supply and a multimeter. DC also supports the galvanometer; AC supports headphones as the null detector.">在水平的透明壓克力淺盤（30 cm × 20 cm）中描出等位線；底下墊 1 cm 方格紙，0.1 % 食鹽水深 1.0 cm。兩個銅電極與兩支探針浸入水中，搭配直流或 1 kHz 交流電源、三用電表；直流也可用檢流計，交流可用耳機找零點。</p>
+      <h3 data-en="Principle and boundaries">原理與邊界</h3>
+      <p data-en-html="A uniform, shallow conducting liquid carries steady current without accumulating charge. Thus \(\vec J=\sigma\vec E=-\sigma\nabla V\) and \(\nabla\cdot\vec J=0\), giving Laplace's equation. No current passes through the insulating tray walls: \(\partial V/\partial n=0\). Field lines run along a wall, while equipotential lines meet it at right angles.">均勻、等深的導電液體在穩定通電時不堆積電荷，因此 \(\vec J=\sigma\vec E=-\sigma\nabla V\)、\(\nabla\cdot\vec J=0\)，得到拉普拉斯方程式。絕緣盤壁沒有電流穿出，故 \(\partial V/\partial n=0\)：電力線沿著盤壁，等位線垂直盤壁。</p>
+      <div class="formula multi">\[\vec E=-\nabla V\]\[E\approx\frac{\Delta V}{\Delta d}\]</div>
+      <p data-en-html="Let \(V_+\) and \(V_-\) denote the water-side electrode potentials and \(\Delta V_{\rm w}=V_+-V_-\). The symmetric middle line has potential \((V_++V_-)/2\); with parallel bars reaching both the top and bottom tray walls, \(E=\Delta V_{\rm w}/d\). Polarization changes the interface values, so a probe clipped to negative metal does not necessarily read half the supply at the geometric midpoint.">令 \(V_+\)、\(V_-\) 為兩電極水側的電位，\(\Delta V_{\rm w}=V_+-V_-\)。對稱中線的電位是 \((V_++V_-)/2\)；平行長條延伸至盤內上下邊界時，兩極之間 \(E=\Delta V_{\rm w}/d\)。極化會改變界面電位，因此夾在負極金屬的探針，在幾何中點不一定讀到電源電壓的一半。</p>
+      <p data-en-html="For two small circular electrodes far from the walls, the two-dimensional potential approaches \(V=V_-+\Delta V_{\rm w}/2+[\Delta V_{\rm w}/(2\ln K)]\ln(r_-/r_+)\). Here \(r_+\) and \(r_-\) are distances to the electrode centres; for centre spacing \(d\) and radius \(a\ll d\), \(K\approx d/a\). This is a line-charge approximation, not the three-dimensional potential of two point charges. Finite tray walls change the curves.">兩個小圓形電極離盤壁很遠時，二維電位接近 \(V=V_-+\Delta V_{\rm w}/2+[\Delta V_{\rm w}/(2\ln K)]\ln(r_-/r_+)\)。其中 \(r_+\)、\(r_-\) 為到兩電極中心的距離；中心距 \(d\)、半徑 \(a\ll d\) 時，\(K\approx d/a\)。這是線電荷近似，並非兩個點電荷的三維電位；有限大的盤壁會改變曲線。</p>
+      <h3 data-en="Procedure">水槽操作步驟</h3>
+      <ol>
+        <li data-en="Keep the tray horizontal, the liquid uniformly 1.0 cm deep and the electrodes immersed; choose DC or AC and set the supply voltage, then switch on.">盤子水平、水深均勻為 1.0 cm，電極浸入水中；選直流或交流、設定電壓，再接通電源。</li>
+        <li data-en-html="Keep black N<sub>1</sub> fixed in the water, or clip it to the negative metal as a reference. In DC with errors, remember the potential jump between metal and water.">黑探針 N<sub>1</sub> 固定插在水中，或夾到負極金屬作參考；含誤差直流時，要注意金屬與水之間的電位跳躍。</li>
+        <li data-en-html="Move red N<sub>2</sub> through the water to a zero reading (within 0.02 V) or a chosen voltage and record the point on the grid. With AC headphones, turn sound on and listen for the quietest point.">移動水中的紅探針 N<sub>2</sub>，找到零讀數（0.02 V 以內）或目標電壓後，記錄到方格紙；使用交流耳機時先開音效，聽聲音最小的位置。</li>
+        <li data-en-html="Record at least six well-spread points on one line; keep N<sub>1</sub> fixed while tracing that line. Move N<sub>1</sub> or change the target for another line, then join the points smoothly.">同一條線找至少六個分散的點，描這條線時 N<sub>1</sub> 保持固定；換 N<sub>1</sub> 或目標電壓再描另一條，將點連成平滑等位線。</li>
+        <li data-en="Draw field lines perpendicular to the equipotentials. Put the red probe between two measured lines, estimate E from their potential difference and spacing, and compare it with the computed water field.">畫出與等位線垂直的電力線。紅探針放在兩條實測線之間，以電位差除以間距估算電場，再和水中的計算值比較。</li>
+      </ol>
+      <h3 data-en="Precautions and questions">注意事項與討論</h3>
+      <ul>
+        <li data-en="Keep the depth and salt concentration uniform. Dip the tips without scraping the tray, and align recorded positions with the grid underneath. Switch off after use.">保持水深與鹽水濃度均勻；探針尖端入水、不刮盤底，記錄位置對準盤下方格；用完關閉電源。</li>
+        <li data-en="A zero detector reading means equal probe potentials, not zero current throughout the water. AC reads RMS; a galvanometer cannot follow 1 kHz reversals.">偵測器讀零，表示兩探針等電位，並不代表整槽水沒有電流。交流讀有效值，檢流計跟不上 1 kHz 的來回。</li>
+        <li data-en="Why do equipotentials meet insulating walls at right angles? Why is the field weak in the corners? Would a tray deeper on one side keep the same pattern?">為什麼等位線垂直絕緣盤壁？為什麼角落電場弱？若水槽一側較深，等位線還會相同嗎？</li>
+      </ul>
+      <h3 data-en="Water-tray notes">水槽小知識</h3>
+      <p data-en-html="Keep the tray horizontal: 0.1% salt water, uniform depth \(h=1.0\,\mathrm{cm}\), and model resistivity \(\rho\approx5\,\Omega\cdot\mathrm m\). Its sheet resistance is \(R_{\square}=\rho/h\approx500\,\Omega\), one tenth of the paper's. At the same voltage across the medium, the normalized potential pattern is the same and the current is ten times larger.">水槽水平放置，裝 0.1 % 食鹽水，均勻水深 \(h=1.0\,\mathrm{cm}\)，本模型取電阻率 \(\rho\approx5\,\Omega\cdot\mathrm m\)。面電阻 \(R_{\square}=\rho/h\approx500\,\Omega\)，為導電紙的十分之一。介質實際電壓相同時，正規化電位分布相同，電流大 10 倍。</p>
+      <p data-en="DC electrolysis produces hydrogen at the negative electrode. The model represents mainly chlorine at the positive electrode, with some gas dissolving, so fewer bubbles are visible there. Do not infer a 2:1 ratio. Bubbles illustrate electrolysis, not measured gas amounts; actual products also depend on concentration and electrode material.">直流電解時，負極有氫氣泡；本模型在正極示意以氯氣生成為主、部分溶入水中，因此可見氣泡較少。不可把兩邊當成 2：1。氣泡是電解示意，不代表實測產氣量；實際產物也會受濃度與電極材質影響。</p>
+      <p data-en-html="Only DC with errors includes polarization: \(V_p=\min(V_0,1.7\,\mathrm V)\), split between negative and positive interfaces in the ratio 0.9:0.8. The bulk voltage is \(V_{\rm water}=V_0-V_p\). At \(V_0\le1.7\,\mathrm V\), this simplified model has zero bulk field and current. Negative metal is at 0 V, but water just outside is at \(0.9V_p/1.7\): the reading jumps. Field estimates use the actual water voltage. The 1.7 V threshold is a model choice, not a universal electrolysis voltage.">只有「含誤差＋直流」納入極化：\(V_p=\min(V_0,1.7\,\mathrm V)\)，負、正極界面依 0.9：0.8 分配壓降。水中分到 \(V_{\rm water}=V_0-V_p\)；\(V_0\le1.7\,\mathrm V\) 時，本簡化模型的水中電場、電流為零。負極金屬是 0 V，剛移到外側水中就成為 \(0.9V_p/1.7\)，讀數會先跳一段。電場估算使用水中實際電壓。1.7 V 是模型設定，並非所有實驗共同的電解電壓。</p>
+      <p data-en-html="Classic AC null methods used telephone earpieces: the quietest tone identifies equal potentials. Audio-frequency AC reduces polarization. Here the 1 kHz model omits polarization and gas bubbles, and the multimeter reads RMS voltage. Headphone gain varies logarithmically with \(|\Delta V|\), becoming quiet at \(|\Delta V|\le0.02\,\mathrm V\). Turn sound on first. <a href=&quot;https://www.newton.k12.oh.us/LabElectricFieldLines.aspx&quot;>School description of the headphone method</a>; <a href=&quot;https://boxsand.physics.oregonstate.edu/sites/boxsand.physics.oregonstate.edu/files/Media-2/ph203_su17/labs/ph203_su17_lab5_Electric%20Potential.pdf&quot;>Oregon State University AC water-tray experiment</a>.">早期交流零點法用電話聽筒當偵測器：聲音最小的位置，就是兩點等電位。音頻交流可減少極化；此處 1 kHz 模型不納入極化與電解氣泡，三用電表讀交流有效值。耳機音量隨 \(|\Delta V|\) 呈對數感變化，\(|\Delta V|\le0.02\,\mathrm V\) 時安靜；使用前先開音效。延伸閱讀：<a href="https://www.newton.k12.oh.us/LabElectricFieldLines.aspx">學校實驗的耳機零點法</a>、<a href="https://boxsand.physics.oregonstate.edu/sites/boxsand.physics.oregonstate.edu/files/Media-2/ph203_su17/labs/ph203_su17_lab5_Electric%20Potential.pdf">奧勒岡州立大學交流水槽實驗</a>。</p>
+
+
+      <h3 data-en="3D views and computed values">3D 視角與計算值</h3>
+      <p data-en-html="The apparatus view shows the real flat water level, immersed probes, copper electrodes and leads. In the separate potential landscape, height means \(V(x,y)\), not a rising water surface. Both views use the same electrode and probe coordinates. The computed potentials and field estimates use the actual water-side voltages.">器材視角呈現實際平坦的水位、入水探針、銅電極與接線；另一個電位地形視角的高度代表 \(V(x,y)\)，並不是水面真的隆起。兩個視角共用電極與探針座標，計算電位與電場估算都採用水側實際電壓。</p>
+      <h3 data-en="Simulation method">模擬方法</h3>
+      <p data-en-html="The 30 cm × 20 cm liquid region uses a 0.125 cm finite-volume grid, fixed interface potentials and insulating walls. A multigrid-preconditioned conjugate-gradient solver computes a unit-voltage solution; the actual water voltage and negative interface offset scale it. The current is the flux through the middle section divided by 500 Ω per square. The meter resolves 0.01 V; current per unit width is reported in mA/m.">30 cm × 20 cm 水域使用間距 0.125 cm 的有限體積網格，界面電位固定、盤壁絕緣。以多重網格作前置條件的共軛梯度法求單位電壓解，再依水中實際壓差與負極水側偏移縮放；中央截面的通量除以面電阻 500 Ω/□ 得到電流。電表解析度 0.01 V；每單位寬度的電流以 mA/m 表示。</p>
+      <p data-en-html="With errors, conductivity has smooth variations of about ±4%, the meter offset is up to ±0.015 V, digit jitter has standard deviation 0.008 V (galvanometer 0.15 μA), and marking error is about 0.05 cm. DC additionally includes the stated polarization model. The answer key uses the current liquid state. Field-line reconstruction uses the measured lines and the water-side electrode potentials, not ideal metal voltages.">含誤差時，導電度有約 ±4 % 的平滑起伏，電表零點偏差最多 ±0.015 V、跳動標準差 0.008 V（檢流計 0.15 μA），描點誤差約 0.05 cm；直流另加入上述極化模型。對照答案採用目前液體的狀態。由實測線重建電力線時，使用水側電極電位，並非直接套用理想金屬端電壓。</p>
+      <h3 data-en="References and model assumptions">參考與模型設定</h3>
+      <p data-en="The resistivity, 500 Ω per square, 1.7 V polarization threshold and error sizes are chosen model parameters. Gas bubbles show electrolysis qualitatively, not a measured gas amount. See the AC and headphone laboratory references above.">電阻率、面電阻 500 Ω/□、1.7 V 極化門檻與誤差量，都是本模擬的設定；氣泡只定性呈現電解，不代表實測產氣量。交流與耳機零點法的實驗來源見上列連結。</p>
+      </div>
     </section>
 
     <footer class="site" data-en-html="<a href=&quot;index.html&quot;>Astro Ni Lab</a> · All calculations run in your browser."><a href="index.html">讓倪動手⚡高中全科模擬實驗室</a>・所有運算都在你的瀏覽器中完成。</footer>
@@ -422,18 +481,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611160631"></script>
-  <script src="js/equipotential-core.js?v=202611160631"></script>
-  <script src="js/sound.js?v=202611160631"></script>
-  <script src="js/numinput.js?v=202611160631"></script>
-  <script src="js/drawkit.js?v=202611160631"></script>
-  <script src="js/equipotential-3d.js?v=202611160631"></script>
-  <script src="js/keys.js?v=202611160631"></script>
-  <script src="js/equipotential.js?v=202611160631"></script>
-  <script src="js/firebase-config.js?v=202611160631"></script>
-  <script src="js/missions.js?v=202611160631" data-module="equipotential"></script>
-  <script src="js/missions/equipotential.js?v=202611160631"></script>
-  <script src="js/stats.js?v=202611160631" data-module="equipotential"></script>
-  <script src="js/comments.js?v=202611160631"></script>
+  <script src="js/math.js?v=202611161000"></script>
+  <script src="js/equipotential-core.js?v=202611161000"></script>
+  <script src="js/sound.js?v=202611161000"></script>
+  <script src="js/numinput.js?v=202611161000"></script>
+  <script src="js/drawkit.js?v=202611161000"></script>
+  <script src="js/equipotential-3d.js?v=202611161000"></script>
+  <script src="js/equipotential-rig3d.js?v=202611161000"></script>
+  <script src="js/keys.js?v=202611161000"></script>
+  <script src="js/equipotential.js?v=202611161000"></script>
+  <script src="js/firebase-config.js?v=202611161000"></script>
+  <script src="js/missions.js?v=202611161000" data-module="equipotential"></script>
+  <script src="js/missions/equipotential.js?v=202611161000"></script>
+  <script src="js/stats.js?v=202611161000" data-module="equipotential"></script>
+  <script src="js/comments.js?v=202611161000"></script>
 </body>
 </html>
