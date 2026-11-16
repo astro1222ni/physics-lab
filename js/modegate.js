@@ -8,13 +8,14 @@
  *
  * 網址約定（每個實驗都一樣）：
  *   代號.html                       入口選擇畫面（實驗模式｜學習模式）
- *   代號.html?mode=lab              實驗模式：原本的實驗；?ex=N 範例、#s= 分享設定、?embed=1 嵌入也直接進實驗模式
+ *   代號.html?mode=lab              實驗模式：原本的實驗，沒有範例鈕、沒有「學習說明」側板；#s= 分享設定、?embed=1 嵌入也直接進實驗模式
+ *   代號.html?ex=N                  範例屬於學習模式：轉到 ?mode=learn&study=1&seg=6&ex=N
  *   代號.html?mode=learn            學習模式選單（學生自學｜老師上課）
  *   代號.html?mode=learn&study=1    學生自學（各實驗的自學程式讀 study=1，可加 &seg=N&step=M）
  *   代號.html?mode=learn&study=1&class=1  老師上課（一進來就開上課模式）
  * 結果寫在 <html data-lab-mode="choose|lab|learn">：
  *   - js/missions.js 依此分開判定：實驗模式只算一般與隱藏任務，學習模式只算自學任務（study: true），入口畫面都不算。
- *   - 實驗模式藏起頁面裡標 data-learn-entry 的元素（原本的「🎓 自學模式」入口）。
+ *   - 實驗模式藏起頁面裡標 data-learn-entry 的元素（原本的「🎓 自學模式」入口），lab.css 另外藏起範例鈕 .ex-bar 與學習說明側板 .lp-*。
  *
  * 用法：在 <head> 的 settings.js 後面放
  *   <script src="js/modegate.js?v=…" data-lab="實驗模式重點｜…" data-lab-en="…|…" data-learn="學習模式重點｜…" data-learn-en="…|…"></script>
@@ -28,10 +29,21 @@
   const T = function (zh, en) { return S ? S.t(zh, en) : zh; };
   const q = new URLSearchParams(location.search);
   let mode = q.get('mode');
+  // 範例屬於學習模式（站長 11/16：「實驗模式不會有範例，實驗模式也不會有學習說明的側版」）：
+  // 分享出去的 ?ex=N 改進學習模式的範例段；明寫 ?mode=lab 的就把 ex 拿掉，留在實驗模式
+  if (q.has('ex') && q.get('study') !== '1') {
+    if (mode !== 'lab') {
+      const u = new URL(location.href); const n = q.get('ex');
+      ['mode', 'study', 'class', 'seg', 'step', 'ex'].forEach(function (k) { u.searchParams.delete(k); });
+      u.searchParams.set('mode', 'learn'); u.searchParams.set('study', '1'); u.searchParams.set('seg', '6'); u.searchParams.set('ex', n);
+      location.replace(u.href); return;
+    }
+    q.delete('ex'); const u = new URL(location.href); u.searchParams.delete('ex'); history.replaceState(null, '', u.href);
+  }
   if (q.get('study') === '1') mode = 'learn';
   else if (mode !== 'lab' && mode !== 'learn') {
-    // 範例、分享設定、嵌入：別人給的連結是要直接看實驗
-    mode = (q.has('ex') || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
+    // 分享設定、嵌入：別人給的連結是要直接看實驗
+    mode = (/(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
   }
   const studying = mode === 'learn' && q.get('study') === '1';
   const html = document.documentElement;
