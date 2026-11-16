@@ -3,6 +3,7 @@
 const assert=require('assert'),G=require('../js/stepguide.js'),P=require('../js/vpad.js');
 const view={left:0,right:412,top:40,bottom:740},rect=(x,y,w=80,h=44)=>({left:x,top:y,right:x+w,bottom:y+h,width:w,height:h});
 assert.equal(G.classify(rect(20,100),view,true),'inside');assert.equal(G.classify(rect(20,-10),view,true),'above');assert.equal(G.classify(rect(20,760),view,true),'below');assert.equal(G.classify(rect(20,100),view,false),'hidden');assert.equal(G.classify(rect(500,100),view,true),'outside');assert.equal(G.classify(rect(20,140),{...view,top:200},true),'above');
+assert.equal(G.classify(rect(20,720),view,true),'below','按鈕只露一部分時先捲動');assert.equal(G.classify(rect(20,20),view,true),'above','上緣遮住半顆按鈕時先捲動');
 for(const step of [.01,.05,.5])for(const [i,x,y] of [[0,-1,1],[1,0,1],[2,1,1],[3,-1,0],[5,1,0],[6,-1,-1],[7,0,-1],[8,1,-1]]){const d=P.delta(i,step);assert.equal(d.x,x*step);assert.equal(d.y,y*step);}
 assert.deepStrictEqual(P.position(-20,900,204,240,412,780,true),{x:8,y:532});assert.deepStrictEqual(P.position(15,17,204,240,412,780,true),{x:8,y:8});assert.deepStrictEqual(P.position(180,300,204,240,390,780,false),{x:178,y:300});
 const glass=P.lensPosition(rect(28,76,322,208),{x:227,y:140},rect(8,55,166,248),412,780);
