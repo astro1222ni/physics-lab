@@ -54,6 +54,25 @@
     return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : 0;
   }
   function dayKey(t) { const d = new Date(t); return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); }
+  // 表格用的短寫法（站長 11/17：「左右間隔太大了，儘量往左邊密。我這樣一頁才能看到全部的數據。」）；個人明細仍用完整寫法
+  function fmtDurShort(s) {
+    s = Math.floor(s || 0);
+    const y = Math.floor(s / (365 * 86400)), d = Math.floor((s % (365 * 86400)) / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    if (y) return y + T('年', 'y') + d + T('天', 'd');
+    if (d) return d + T('天', 'd') + h + T('時', 'h');
+    if (h) return h + T('時', 'h') + m + T('分', 'm');
+    if (m) return m + T('分', 'm');
+    return s + T('秒', 's');
+  }
+  function fmtLastShort(u) {
+    const thisYear = String(new Date().getFullYear());
+    if (u.last && (!u.lastDay || dayKey(u.last) >= u.lastDay)) {
+      const d = new Date(u.last);
+      return (String(d.getFullYear()) === thisYear ? '' : d.getFullYear() + '/') + pad(d.getMonth() + 1) + '/' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+    if (!u.lastDay) return '—';
+    return (u.lastDay.slice(0, 4) === thisYear ? '' : u.lastDay.slice(0, 4) + '/') + u.lastDay.slice(4, 6) + '/' + u.lastDay.slice(6, 8) + T(' 僅日期', ' (date)');
+  }
   function fmtLast(u) {
     if (u.last && (!u.lastDay || dayKey(u.last) >= u.lastDay)) return fmtTime(u.last);
     return u.lastDay ? dayLabel(u.lastDay) + T('（只記到日期）', ' (date only)') : '—';
@@ -172,12 +191,14 @@
       tr.tabIndex = 0;
       if (open === u.uid) tr.className = 'on';
       const nameTd = el('td', 'adm-name');
-      nameTd.appendChild(el('span', null, u.nick || T('（未設暱稱）', '(no nickname)')));
+      const nm = el('span', null, u.nick || T('（未設暱稱）', '(no nickname)'));
+      nm.title = u.nick || '';
+      nameTd.appendChild(nm);
       nameTd.appendChild(el('small', null, u.uid.slice(0, 8) + '…'));
       tr.appendChild(nameTd);
       [u.stars, u.done, u.nAch, u.mods.length, u.days.length].forEach(function (v) { tr.appendChild(el('td', 'num', String(v))); });
-      tr.appendChild(el('td', 'num', fmtDur(u.seconds)));
-      tr.appendChild(el('td', 'num', fmtLast(u)));
+      tr.appendChild(el('td', 'num', fmtDurShort(u.seconds)));
+      tr.appendChild(el('td', 'num', fmtLastShort(u)));
       const pick = function () { open = u.uid; renderRows(); renderDetail(u); };
       tr.addEventListener('click', pick);
       tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });

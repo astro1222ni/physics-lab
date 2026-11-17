@@ -1482,6 +1482,17 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
 .adm-sub td { white-space: normal; }
 .adm-name span { font-weight: 700; display: block; }
 .adm-name small { color: var(--muted); font-family: ui-monospace, Consolas, monospace; }
+/* 表格收緊：長暱稱用「…」截斷，不再把整欄撐寬（站長 11/17：「左右間隔太大了，儘量往左邊密。我這樣一頁才能看到全部的數據。」） */
+.adm-name span { max-width: 12em; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 600px) {
+  .adm-main .lb-board { margin-left: -10px; margin-right: -10px; padding-left: 6px; padding-right: 6px; }
+  .adm-table { font-size: calc(12.5px * var(--fs, 1)); }
+  .adm-table th, .adm-table td { padding: 7px 3px; }
+  .adm-table th:first-child, .adm-table td:first-child { padding-left: 2px; }
+  .adm-table th:last-child, .adm-table td:last-child { padding-right: 2px; }
+  .adm-name span { max-width: 6.5em; }
+  .adm-name small { font-size: calc(10.5px * var(--fs, 1)); }
+}
 .adm-detail { border-left: 4px solid var(--accent); }
 .adm-dhead { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .adm-dhead h2 { margin: 0; }
