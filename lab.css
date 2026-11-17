@@ -1960,6 +1960,8 @@ ol.lb-short > li:nth-child(n+11) { display: none; }
 .ms-near-x { flex: none; min-width: 36px; min-height: 36px; margin: -6px -6px 0 0; border: 0; background: transparent; color: var(--muted); font-size: 22px; line-height: 1; }
 .ms-near li { color: var(--text); }
 .ms-near-more { margin-top: 6px; min-height: 40px; width: 100%; font-weight: 700; }
+.ms-info p { margin: 4px 0 0; line-height: 1.45; }
+a.ms-near-more { display: flex; align-items: center; justify-content: center; min-height: 44px; text-decoration: none; color: var(--accent); border: 1px solid var(--accent); border-radius: 10px; }
 
 /* 手機操作台 js/labdeck.js（站長 11/16：操作鍵集中在畫布下方、滑桿間距縮小） */
 .labdeck { margin: 8px 0 0; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); overflow: hidden; }
@@ -2059,6 +2061,8 @@ html.mg-open, html.mg-open body { overflow: hidden; }
 .mg-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin: 0 0 10px; padding: 6px 60px 6px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); font-size: calc(14px * var(--fs, 1)); }
 .mg-cur { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
 .mg-cur svg { width: 20px; height: 20px; color: var(--accent); }
+.mg-total { display: inline-flex; align-items: center; white-space: nowrap; font-weight: 700; color: var(--text); background: var(--star-soft); border: 1px solid var(--star); border-radius: 999px; padding: 2px 10px; }
+.mg-total[hidden] { display: none; }
 .mg-switch, .mg-home { display: inline-flex; align-items: center; min-height: 36px; color: var(--accent); text-decoration: none; }
 .mg-home { margin-left: auto; color: var(--muted); }
 .ms-mode-note { margin: 4px 0 8px; padding: 6px 10px; border-radius: 10px; background: var(--accent-soft); font-size: calc(13px * var(--fs, 1)); }

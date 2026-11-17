@@ -43,7 +43,8 @@
   if (q.get('study') === '1') mode = 'learn';
   else if (mode !== 'lab' && mode !== 'learn') {
     // 材質、分享設定、嵌入直接看實驗；範例已在前面轉到學習模式。
-    mode = (['paper', 'water'].includes(q.get('medium')) || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1') ? 'lab' : 'choose';
+    // 每日任務只抽一般任務（實驗模式才判定），所以 ?daily= 直接進實驗模式，不停在選擇畫面（11/17 同學反映重做沒星星）
+    mode = (['paper', 'water'].includes(q.get('medium')) || /(^|[#&])s=/.test(location.hash.slice(1)) || q.get('embed') === '1' || q.get('daily')) ? 'lab' : 'choose';
   }
   const studying = mode === 'learn' && q.get('study') === '1';
   const html = document.documentElement;
@@ -138,11 +139,19 @@
     cur.innerHTML = ICON[mode === 'lab' ? 'lab' : (q.get('class') === '1' ? 'teacher' : 'student')];
     cur.appendChild(document.createTextNode(mode === 'lab' ? T('實驗模式', 'Lab mode') : (q.get('class') === '1' ? T('學習模式・老師上課', 'Learning mode · class') : T('學習模式・學生自學', 'Learning mode · self-study'))));
     nav.appendChild(cur);
+    // 本實驗已得星星（兩個模式合計，另列各模式）：學習模式只列自學任務，學生才不會以為實驗模式賺的星星不見了
+    const stars = el('span', 'mg-total'); stars.setAttribute('data-mg-total', ''); stars.hidden = true; nav.appendChild(stars);
     const sw = el('a', 'mg-switch', mode === 'lab' ? T('換到學習模式 →', 'Switch to Learning mode →') : T('換到實驗模式 →', 'Switch to Lab mode →'));
     sw.href = mode === 'lab' ? url({ mode: 'learn' }) : url({ mode: 'lab' });
     nav.appendChild(sw);
     const home = el('a', 'mg-home', T('選擇模式', 'Choose a mode')); home.href = url(); nav.appendChild(home);
     if (head && head.parentNode) head.parentNode.insertBefore(nav, head.nextSibling); else document.body.insertBefore(nav, document.body.firstChild);
+    let hooked = false, n = 0;
+    const id = setInterval(function () {
+      starsNow();
+      if (!hooked && window.LabMission && LabMission.on) { hooked = true; ['ready', 'synced', 'complete'].forEach(function (ev) { LabMission.on(ev, starsNow); }); }
+      if (hooked && ++n > 15) clearInterval(id);
+    }, 800);
   }
 
   /** 卡片上的星星進度（登入後才有）：這個實驗各模式已得／全部 */
@@ -156,6 +165,13 @@
       return [xs.reduce(function (a, m) { return a + (st.done && st.done[m.id] ? (st.done[m.id].stars || 0) : 0); }, 0), xs.length];
     };
     const lab = sum(function (m) { return !m.study; }), learn = sum(function (m) { return m.study; });
+    document.querySelectorAll('[data-mg-total]').forEach(function (s) {
+      const show = !!(st.user && st.ready);
+      s.hidden = !show; if (!show) return;
+      const all = lab[0] + learn[0];
+      s.textContent = T('★ 本實驗 ', '★ This lab: ') + all + T(' 顆星', ' stars') + (learn[1] ? T('（實驗 ', ' (lab ') + lab[0] + T('・學習 ', ' · learning ') + learn[0] + T('）', ')') : '');
+      s.title = T('兩種模式的星星合計在同一個實驗；一般與隱藏任務在實驗模式賺，自學任務在學習模式賺。', 'Stars from both modes add up for this lab: missions and hidden missions are earned in Lab mode, self-study missions in Learning mode.');
+    });
     document.querySelectorAll('[data-mg-stars]').forEach(function (s) {
       const k = s.getAttribute('data-mg-stars'), v = k === 'lab' ? lab : learn;
       if (!v[1]) return;

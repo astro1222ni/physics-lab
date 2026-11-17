@@ -73,17 +73,21 @@
       if (window.LabShare && window.LabShare.restoring) return; // 打開分享連結還原設定時不算完成任務
       const list = registry[state.module] || [];
       const LD = window.LabDaily;
+      let why = null, gained = false;
       list.forEach(function (m) {
         // 今天還沒完成的每日任務：以前完成過也照樣判定（不再加星，銅幣仍必掉）；今天完成後就不再判定
         const daily = state.daily === m.id && LD && LD.active(m.id);
-        if ((state.done[m.id] && !daily) || m.pending) return;
-        if (!modeAllows(m)) return;
+        if (m.pending) return;
+        if ((state.done[m.id] && !daily) || !modeAllows(m)) { if (!why) why = explainNoStars(m, type, data); return; }
         let ok = false;
         try { ok = !!m.check({ type: type, data: data || {} }, m.mem); } catch (e) { ok = false; }
         if (!ok) return;
-        if (daily) { m.mem = {}; LD.completed(m, !state.done[m.id]); } // 判定記憶歸零：再領一次要重新做一遍
-        if (!state.done[m.id]) complete(m);
+        if (daily) { m.mem = {}; m.gotHere = true; lastGain = Date.now(); LD.completed(m, !state.done[m.id]); } // 判定記憶歸零：再領一次要重新做一遍
+        if (!state.done[m.id]) { complete(m); gained = true; }
+        else if (daily) gained = true;
       });
+      // 同一個動作有拿到星星（例如學習模式的自學事件稍後才到）就不說明：延後一下，期間有人得星就取消
+      if (why && !gained) setTimeout(function () { if (Date.now() - lastGain > 4000) why(); }, 2500);
       nearMiss(type, list);
     },
     all: function () { return registry; },
@@ -560,7 +564,7 @@
   let queue = Promise.resolve();
   function complete(m) {
     if (!api || !state.user) return;
-    m.pending = true;
+    m.pending = true; m.gotHere = true; lastGain = Date.now();
     queue = queue.then(function () { return completeNow(m); }, function () { return completeNow(m); });
   }
   function completeNow(m) {
@@ -644,6 +648,48 @@
     }, 1000);
   }
   /** 做了動作卻沒過關、而且已經做到一半以上的條件：跳一張「差一點」，列出還沒做到的條件（同一個任務 20 秒內只跳一次） */
+  // ======================= 為什麼這次沒有星星（11/17 同學反映：「星星不見了，重做任務也沒給星星」） =======================
+  // 已完成過的任務再做一次，或在學習模式做到實驗模式的任務：條件達成時說明一次（不寫入、不給星），學生才知道不是壞掉。
+  // 隱藏任務不提示（不能洩漏條件）；老師上課模式不提示。每個任務每次開頁最多一次。
+  const explained = {}; let lastGain = 0;
+  function explainNoStars(m, type, data) {
+    if (m.hidden || m.gotHere || explained[m.id]) return null; // 這一頁剛拿到星星的任務不必再說
+    const done = !!state.done[m.id];
+    const gate = window.LabModeGate, mode = document.documentElement.getAttribute('data-lab-mode');
+    if (!done && (mode !== 'learn' || m.study || (gate && gate.classMode))) return null;
+    let ok = false;
+    try { ok = !!m.check({ type: type, data: data || {} }, m.mem); } catch (e) { ok = false; }
+    const was = m.whyOk; m.whyOk = ok;
+    if (!ok || was) return null; // 只在條件「剛成立」時說明；一直維持成立（例如天平停在水平）不重複
+    return function () { showWhy(m, done, gate); };
+  }
+  function showWhy(m, done, gate) {
+    explained[m.id] = true;
+    const got = done ? (state.done[m.id].stars || starsOf(m)) : starsOf(m);
+    if (done) showInfo(T('這個任務之前已經完成', 'You already finished this mission'),
+      T('「' + L(m.title) + '」的 ' + got + ' 顆星之前已經領了，每個任務只能領一次。換一個還沒完成的任務試試看！', 'The ' + got + ' stars for “' + L(m.title) + '” were already earned; each mission pays out once. Try a mission you have not finished yet!'));
+    else showInfo(T('這是實驗模式的任務', 'This is a Lab-mode mission'),
+      T('「' + L(m.title) + '」（★' + got + '）要在實驗模式完成才會拿到星星；學習模式只算自學任務。', '“' + L(m.title) + '” (★' + got + ') pays out in Lab mode; Learning mode only counts self-study missions.'),
+      gate && gate.url ? [T('換到實驗模式 →', 'Switch to Lab mode →'), gate.url({ mode: 'lab' })] : null);
+  }
+  let infoBox = null;
+  function showInfo(title, body, link) {
+    if (!infoBox) {
+      infoBox = el('div', 'ms-near ms-info'); infoBox.setAttribute('role', 'status'); infoBox.setAttribute('aria-live', 'polite');
+      document.body.appendChild(infoBox);
+    }
+    if (nearBox) nearBox.hidden = true;
+    infoBox.innerHTML = '';
+    const head = el('div', 'ms-near-head');
+    head.appendChild(el('strong', null, title));
+    const x = el('button', 'ms-near-x', '×'); x.type = 'button'; x.setAttribute('aria-label', T('關閉', 'Close'));
+    x.addEventListener('click', function () { infoBox.hidden = true; });
+    head.appendChild(x); infoBox.appendChild(head);
+    infoBox.appendChild(el('p', null, body));
+    if (link) { const a = el('a', 'ms-near-more', link[0]); a.href = link[1]; infoBox.appendChild(a); }
+    infoBox.hidden = false;
+    clearTimeout(infoBox._t); infoBox._t = setTimeout(function () { infoBox.hidden = true; }, 9000);
+  }
   function nearMiss(type, list) {
     let best = null;
     list.forEach(function (m) {
@@ -664,6 +710,7 @@
   }
   let nearBox = null, nearTimer = 0;
   function showNear(m, miss) {
+    if (infoBox && !infoBox.hidden) return; // 剛說明過為什麼沒有星星，先不疊另一個提示
     if (!nearBox) {
       nearBox = el('div', 'ms-near'); nearBox.setAttribute('role', 'status'); nearBox.setAttribute('aria-live', 'polite');
       document.body.appendChild(nearBox);
