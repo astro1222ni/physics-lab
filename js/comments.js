@@ -145,6 +145,7 @@
 
   // ======================= 狀態 =======================
   const state = { user: null, nickname: null, admin: false, comments: null, reports: {}, ready: false, busy: false, msg: '' };
+  let hookedProfile = false; // 任務系統的暱稱變動只掛一次
   let api = null;
   const listeners = [];
   function changed() {
@@ -682,10 +683,18 @@
           const nick = document.body.hasAttribute('data-home-v2') ? readHome(user.uid).then(function (d) { return d.profile.nickname; }) : api.getNickname(user.uid);
           Promise.all([nick.catch(function () { return null; }), api.isAdmin(user.uid)]).then(function (r) {
             if (!state.user || state.user.uid !== user.uid) return;
-            state.nickname = r[0] || null;
+            const ms = window.LabMission && window.LabMission._state; // 任務系統可能剛自動取好暱稱（11/17）
+            state.nickname = r[0] || (ms && ms.user && ms.user.uid === user.uid && ms.nickname) || null;
             state.admin = !!r[1];
             changed();
           });
+          // 任務系統自動取暱稱或改暱稱後，帳號選單跟著換
+          if (window.LabMission && !hookedProfile) {
+            hookedProfile = true;
+            window.LabMission.on('profile', function (ms) {
+              if (state.user && ms && ms.user && ms.user.uid === state.user.uid && ms.nickname && ms.nickname !== state.nickname) { state.nickname = ms.nickname; changed(); }
+            });
+          }
         }
       });
       if (moduleId) watchWhenNear();

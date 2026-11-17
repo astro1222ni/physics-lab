@@ -74,7 +74,7 @@
       // 登入狀態還沒確定、星星紀錄還在讀、還沒取暱稱：操作先記下來，之後補判定（站長 11/17：學生做了任務卻沒星星）
       if (!authKnown || (state.user && (!state.ready || !state.nickname))) {
         hold(type, data);
-        if (authKnown && state.ready && !state.nickname) shadowCheck(type, data, 'nickname');
+        if (authKnown && state.ready && !state.nickname && !autoNaming) shadowCheck(type, data, 'nickname');
         return;
       }
       if (!state.user) { shadowCheck(type, data, 'login'); return; }
@@ -470,6 +470,7 @@
             state.done = mergeBonus(r[1] || {}, r[2] || {});
             state.ready = true;
             loadFailed = false;
+            if (!state.nickname) autoNick(user.uid); // 站長 11/17：「取暱稱這件事情好像有點麻煩」→ 自動取一個，想換再改
             changed();
             fire('ready', state);
             flush();
@@ -702,10 +703,37 @@
     if (!state.on) return;
     b.forEach(function (e) { judge(e[0], e[1], true); });
   }
+  // ---------- 自動取暱稱（站長 11/17：「如果要取暱稱才能拿星星，感覺好像有點麻煩」，選定「第一次登入就自動取一個好玩的隨機暱稱」） ----------
+  // 形容詞＋科學名詞＋三位數，不含個人資料；寫進 profiles/<uid>/nickname（本人本來就能改），之後在右上角帳號選單「設定暱稱」可換。
+  // 寫入失敗時退回原本的暱稱欄。
+  const NICK_ADJ = ['好奇的', '勇敢的', '安靜的', '閃亮的', '認真的', '快樂的', '冷靜的', '熱情的', '靈巧的', '專注的', '溫柔的', '機智的', '悠哉的', '堅定的', '自在的', '迅捷的', '耐心的', '明亮的'];
+  const NICK_NOUN = ['電子', '質子', '中子', '光子', '夸克', '鎳原子', '氫原子', '碳原子', '分子', '星雲', '彗星', '行星', '脈衝星', '極光', '彩虹', '磁鐵', '齒輪', '透鏡', '稜鏡', '擺錘', '彈簧', '細胞', '粒線體', '葉綠體', '酵素', '火山', '冰河', '季風', '珊瑚', '三葉蟲', '向量', '質數', '圓周率', '音符', '和弦', '經緯線'];
+  const NICK_ADJ_EN = ['Curious', 'Brave', 'Quiet', 'Shiny', 'Keen', 'Happy', 'Calm', 'Eager', 'Nimble', 'Focused', 'Gentle', 'Clever', 'Easygoing', 'Steady', 'Free', 'Swift', 'Patient', 'Bright'];
+  const NICK_NOUN_EN = ['Electron', 'Proton', 'Neutron', 'Photon', 'Quark', 'Nickel', 'Comet', 'Nebula', 'Planet', 'Pulsar', 'Aurora', 'Rainbow', 'Magnet', 'Gear', 'Lens', 'Prism', 'Pendulum', 'Spring', 'Cell', 'Enzyme', 'Volcano', 'Glacier', 'Coral', 'Trilobite', 'Vector', 'Prime', 'Pi', 'Chord'];
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function makeNick() {
+    const n = String(100 + Math.floor(Math.random() * 900));
+    return EN ? pick(NICK_ADJ_EN) + ' ' + pick(NICK_NOUN_EN) + ' ' + n : pick(NICK_ADJ) + pick(NICK_NOUN) + ' ' + n;
+  }
+  let autoNaming = false;
+  function autoNick(uid) {
+    if (autoNaming || !api || !api.setNickname) return;
+    autoNaming = true;
+    const name = makeNick();
+    guard(function () { return api.setNickname(uid, name); }).then(function () {
+      autoNaming = false;
+      if (!state.user || state.user.uid !== uid) return;
+      state.nickname = name;
+      changed(); fire('ready', state); fire('profile', state);
+      flush();
+      showInfo(T('已經幫你取好暱稱', 'We picked a nickname for you'),
+        T('你的暱稱是「' + name + '」，完成任務就會記錄星星。想換名字：點右上角的帳號按鈕 →「設定暱稱」。', 'Your nickname is “' + name + '” — completed missions now earn stars. To change it: tap the account button at the top right → “Change nickname”.'));
+    }, function () { autoNaming = false; changed(); });
+  }
   function blocker() {
     if (!enabled || !authKnown) return null;
     if (!state.user) return 'login';
-    if (!state.ready) return 'loading';
+    if (!state.ready || autoNaming) return 'loading';
     if (!state.nickname) return 'nickname';
     if (!state.on) return 'off';
     return null;
