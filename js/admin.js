@@ -40,9 +40,16 @@
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
     return h ? h + T(' 小時 ', ' h ') + m + T(' 分', ' min') : m + T(' 分', ' min');
   }
-  function dayToTime(k) { // 'YYYYMMDD' → 當天中午的時間
+  // 使用統計（userStats/days）只記日期、沒有時間。11/17 站長看到全部顯示「12:00」：以前把只有日期的紀錄當成當天中午，
+  // 比早上真實的得星時間還晚，還會出現還沒到的時間。現在：排序與活躍人數用當天 00:00；顯示時有真實時間就寫時間，只有日期就寫「只記到日期」。
+  function dayToTime(k) { // 'YYYYMMDD' → 當天 00:00
     const m = /^(\d{4})(\d{2})(\d{2})$/.exec(k);
-    return m ? new Date(+m[1], +m[2] - 1, +m[3], 12).getTime() : 0;
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]).getTime() : 0;
+  }
+  function dayKey(t) { const d = new Date(t); return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()); }
+  function fmtLast(u) {
+    if (u.last && (!u.lastDay || dayKey(u.last) >= u.lastDay)) return fmtTime(u.last);
+    return u.lastDay ? dayLabel(u.lastDay) + T('（只記到日期）', ' (date only)') : '—';
   }
   function dayLabel(k) { return k.slice(0, 4) + '/' + k.slice(4, 6) + '/' + k.slice(6, 8); }
   function subjName(id) { const s = SUBJ.filter(function (x) { return x.id === id; })[0]; return s ? L(s) : id; }
@@ -72,7 +79,8 @@
       Object.keys(comp).forEach(function (k) { last = Math.max(last, comp[k].at || 0); });
       Object.keys(ach).forEach(function (k) { last = Math.max(last, ach[k].at || 0); });
       if (daily && daily.at) last = Math.max(last, daily.at);
-      if (days.length) last = Math.max(last, dayToTime(days[days.length - 1]));
+      const lastDay = days.length ? days[days.length - 1] : '';
+      const act = Math.max(last, lastDay ? dayToTime(lastDay) : 0); // 排序、活躍人數用
       let stars = 0;
       Object.keys(comp).forEach(function (k) { stars += (+comp[k].stars || 0) + (+bonus[k] || 0); });
       return {
@@ -80,7 +88,7 @@
         stars: Math.max(stars, sc.stars || 0), s: sc.s || {}, comp: comp, bonus: bonus,
         done: Object.keys(comp).length, ach: ach, nAch: Object.keys(ach).length,
         mods: Object.keys(us.modules || {}), days: days, seconds: us.seconds || 0, ops: us.ops || 0, comments: us.comments || 0,
-        flags: Object.keys(us.flags || {}), usDays: us.days || {}, daily: daily, bag: bag, last: last
+        flags: Object.keys(us.flags || {}), usDays: us.days || {}, daily: daily, bag: bag, last: last, lastDay: lastDay, act: act
       };
     });
   }
@@ -113,8 +121,8 @@
     const now = Date.now(), wk = now - 7 * 864e5, mo = now - 30 * 864e5;
     const sum = function (f) { return users.reduce(function (a, u) { return a + f(u); }, 0); };
     box.appendChild(tile(T('帳號數', 'Accounts'), String(users.length)));
-    box.appendChild(tile(T('近 7 天活躍', 'Active in 7 days'), String(users.filter(function (u) { return u.last >= wk; }).length),
-      T('近 30 天 ', '30 days: ') + users.filter(function (u) { return u.last >= mo; }).length));
+    box.appendChild(tile(T('近 7 天活躍', 'Active in 7 days'), String(users.filter(function (u) { return u.act >= wk; }).length),
+      T('近 30 天 ', '30 days: ') + users.filter(function (u) { return u.act >= mo; }).length));
     box.appendChild(tile(T('有星星的人', 'With stars'), String(users.filter(function (u) { return u.stars > 0; }).length)));
     box.appendChild(tile(T('完成任務（人次）', 'Missions done'), sum(function (u) { return u.done; }).toLocaleString()));
     box.appendChild(tile(T('累計操作時間', 'Total time'), fmtDur(sum(function (u) { return u.seconds; }))));
@@ -124,11 +132,11 @@
     const q = ($('q').value || '').trim().toLowerCase();
     const key = $('sort').value;
     const f = {
-      recent: function (u) { return u.last; }, stars: function (u) { return u.stars; }, done: function (u) { return u.done; },
+      recent: function (u) { return u.act; }, stars: function (u) { return u.stars; }, done: function (u) { return u.done; },
       seconds: function (u) { return u.seconds; }, days: function (u) { return u.days.length; }, mods: function (u) { return u.mods.length; }
-    }[key] || function (u) { return u.last; };
+    }[key] || function (u) { return u.act; };
     return users.filter(function (u) { return !q || u.nick.toLowerCase().indexOf(q) >= 0 || u.uid.toLowerCase().indexOf(q) >= 0; })
-      .sort(function (a, b) { return f(b) - f(a) || b.last - a.last; });
+      .sort(function (a, b) { return f(b) - f(a) || b.act - a.act || b.last - a.last; });
   }
 
   function renderRows() {
@@ -146,7 +154,7 @@
       tr.appendChild(nameTd);
       [u.stars, u.done, u.nAch, u.mods.length, u.days.length].forEach(function (v) { tr.appendChild(el('td', 'num', String(v))); });
       tr.appendChild(el('td', 'num', fmtDur(u.seconds)));
-      tr.appendChild(el('td', 'num', fmtTime(u.last)));
+      tr.appendChild(el('td', 'num', fmtLast(u)));
       const pick = function () { open = u.uid; renderRows(); renderDetail(u); };
       tr.addEventListener('click', pick);
       tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
@@ -184,7 +192,7 @@
     kv(dl, T('使用者代號', 'User ID'), u.uid);
     kv(dl, T('排行榜顯示', 'Leaderboard name'), u.pub ? T('公開暱稱', 'Nickname shown') : T('不公開（只顯示頭尾字）', 'Hidden (first and last characters only)'));
     kv(dl, T('星星', 'Stars'), String(u.stars) + (Object.keys(u.s).length ? T('（', ' (') + Object.keys(u.s).map(function (k) { return subjName(k) + ' ' + u.s[k]; }).join(T('、', ', ')) + T('）', ')') : ''));
-    kv(dl, T('最近活動', 'Last active'), fmtTime(u.last));
+    kv(dl, T('最近活動', 'Last active'), fmtLast(u));
     kv(dl, T('操作', 'Interactions'), u.ops.toLocaleString() + T(' 次，累計 ', ' · ') + fmtDur(u.seconds) + T('，留言 ', ' · comments ') + u.comments);
     kv(dl, T('使用天數', 'Days used'), u.days.length + (u.days.length ? T('（第一天 ', ' (first ') + dayLabel(u.days[0]) + T('）', ')') : ''));
     sec.appendChild(dl);
