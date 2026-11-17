@@ -37,8 +37,15 @@
   function fmtDur(s) {
     s = Math.floor(s || 0);
     if (s < 60) return s + T(' 秒', ' s');
-    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
-    return h ? h + T(' 小時 ', ' h ') + m + T(' 分', ' min') : m + T(' 分', ' min');
+    // 滿 24 小時進位成天、滿 365 天進位成年（站長 11/17：「累積操作時間進位成天，然後如果已經滿一年之後，就進位至年。」）
+    const y = Math.floor(s / (365 * 86400)), d = Math.floor((s % (365 * 86400)) / 86400);
+    const h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    const parts = [];
+    if (y) parts.push(y + T(' 年', ' y'));
+    if (y || d) parts.push(d + T(' 天', ' d'));
+    if (y || d || h) parts.push(h + T(' 小時', ' h'));
+    parts.push(m + T(' 分', ' min'));
+    return parts.join(' ');
   }
   // 使用統計（userStats/days）只記日期、沒有時間。11/17 站長看到全部顯示「12:00」：以前把只有日期的紀錄當成當天中午，
   // 比早上真實的得星時間還晚，還會出現還沒到的時間。現在：排序與活躍人數用當天 00:00；顯示時有真實時間就寫時間，只有日期就寫「只記到日期」。
