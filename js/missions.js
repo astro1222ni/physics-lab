@@ -69,8 +69,23 @@
     },
     emit: function (type, data) {
       lastEv[type] = { data: data || {}, seq: ++evSeq };
-      if (!state.on || !state.user || !state.nickname) return;
+      if (!enabled) return;
       if (window.LabShare && window.LabShare.restoring) return; // 打開分享連結還原設定時不算完成任務
+      // 登入狀態還沒確定、星星紀錄還在讀、還沒取暱稱：操作先記下來，之後補判定（站長 11/17：學生做了任務卻沒星星）
+      if (!authKnown || (state.user && (!state.ready || !state.nickname))) {
+        hold(type, data);
+        if (authKnown && state.ready && !state.nickname) shadowCheck(type, data, 'nickname');
+        return;
+      }
+      if (!state.user) { shadowCheck(type, data, 'login'); return; }
+      if (!state.on) { shadowCheck(type, data, 'off'); return; }
+      judge(type, data, false);
+    },
+    /** 現在為什麼不會記錄星星：'login'、'loading'、'nickname'、'off'，正常記錄時是 null（側板任務分頁用） */
+    blocker: function () { return blocker(); },
+    /** 側板任務分頁頂端的說明框（登入鈕、暱稱欄、讀取中、打開任務模式）；正常記錄時回傳 null */
+    statusBox: function () { const k = blocker(); return k ? statusBox(k) : null; },
+    _judge: function (type, data, replay) {
       const list = registry[state.module] || [];
       const LD = window.LabDaily;
       let why = null, gained = false;
@@ -86,6 +101,7 @@
         if (!state.done[m.id]) { complete(m); gained = true; }
         else if (daily) gained = true;
       });
+      if (replay) return; // 補判定剛才記下的操作：不再跳「差一點」或說明
       // 同一個動作有拿到星星（例如學習模式的自學事件稍後才到）就不說明：延後一下，期間有人得星就取消
       if (why && !gained) setTimeout(function () { if (Date.now() - lastGain > 4000) why(); }, 2500);
       nearMiss(type, list);
@@ -427,31 +443,47 @@
       };
       api.onAuth(function (user) {
         state.user = user;
+        authKnown = true;
+        loadFailed = false;
         procedureAuth(user);
         state.nickname = null;
         state.done = {};
         state.ready = !user;
         changed();
-        if (!user) return;
+        if (!user) { held.length = 0; return; }
         // 管理員登入時，自動把本頁任務同步到資料庫（不必再手動按「同步任務清單」）
         if (api.isAdmin) api.isAdmin(user.uid).then(function (a) {
           if (!a || !state.user || state.user.uid !== user.uid) return;
           adminUid = user.uid;
           afterLoad(autoSync);
         });
-        Promise.all([api.getProfile(user.uid).catch(function () { return {}; }), api.getDone(user.uid).catch(function () { return {}; }),
-          api.getBonus ? api.getBonus(user.uid).catch(function () { return {}; }) : Promise.resolve({})]).then(function (r) {
-          if (!state.user || state.user.uid !== user.uid) return;
-          state.nickname = r[0].nickname || null;
-          state.pub = r[0].pub !== false;
-          state.done = mergeBonus(r[1] || {}, r[2] || {});
-          state.ready = true;
-          changed();
-          fire('ready', state);
-          syncSubjects(user.uid);
-          syncBonus(user.uid);
-          syncTreasure().catch(function () { /* 規則未發布或網路失敗：下次登入再補，排行頁可重試 */ });
-        });
+        // 讀不到暱稱或完成紀錄時重試，不再當成「沒暱稱、什麼都沒完成」（那樣學生看不到星星，任務也不判定）
+        let tries = 0;
+        const attempt = function () {
+          guard(function () {
+            return Promise.all([api.getProfile(user.uid), api.getDone(user.uid),
+              api.getBonus ? api.getBonus(user.uid).catch(function () { return {}; }) : Promise.resolve({})]);
+          }, 20000).then(function (r) {
+            if (!state.user || state.user.uid !== user.uid) return;
+            state.nickname = (r[0] || {}).nickname || null;
+            state.pub = (r[0] || {}).pub !== false;
+            state.done = mergeBonus(r[1] || {}, r[2] || {});
+            state.ready = true;
+            loadFailed = false;
+            changed();
+            fire('ready', state);
+            flush();
+            syncSubjects(user.uid);
+            syncBonus(user.uid);
+            syncTreasure().catch(function () { /* 規則未發布或網路失敗：下次登入再補，排行頁可重試 */ });
+          }, function () {
+            if (!state.user || state.user.uid !== user.uid) return;
+            tries++;
+            if (tries >= 3) { loadFailed = true; changed(); } // 先告訴學生連線不穩，背景繼續重試
+            setTimeout(attempt, Math.min(30000, 2000 * Math.pow(2, tries - 1)));
+          });
+        };
+        attempt();
       });
       return api;
     }).catch(function () { procedureAuth(null); state.msg = T('任務系統暫時無法載入。', 'Missions could not be loaded right now.'); changed(); });
@@ -652,6 +684,120 @@
   // 已完成過的任務再做一次，或在學習模式做到實驗模式的任務：條件達成時說明一次（不寫入、不給星），學生才知道不是壞掉。
   // 隱藏任務不提示（不能洩漏條件）；老師上課模式不提示。每個任務每次開頁最多一次。
   const explained = {}; let lastGain = 0;
+
+  // ======================= 為什麼完全沒在記錄星星（11/17 站長：「他在實驗模式裏面也看不到他過去完成的任務賺到的星星，然後他現在在實驗模式完成任務也不會得到星星」） =======================
+  // 清查正式資料：有學生登入了卻沒取暱稱。側板任務分頁沒有登入鈕與暱稱欄（原本只在舊任務面板），沒暱稱時又默默不判定。
+  // 現在：沒登入、星星紀錄還在讀、沒取暱稱、任務模式關著，都在側板任務分頁頂端說清楚；做到任務條件時另跳一次說明。
+  // 還在讀紀錄或還沒取暱稱時，操作先記下來（最多 3000 筆），讀完或取好暱稱後補判定，剛剛做到的任務照樣得星。
+  let authKnown = false, loadFailed = false;
+  const held = [];
+  function judge(type, data, replay) { return LabMission._judge(type, data, replay); }
+  function hold(type, data) {
+    held.push([type, data]);
+    if (held.length > 3000) held.shift();
+  }
+  function flush() {
+    if (!state.user || !state.ready || !state.nickname) return;
+    const b = held.splice(0);
+    if (!state.on) return;
+    b.forEach(function (e) { judge(e[0], e[1], true); });
+  }
+  function blocker() {
+    if (!enabled || !authKnown) return null;
+    if (!state.user) return 'login';
+    if (!state.ready) return 'loading';
+    if (!state.nickname) return 'nickname';
+    if (!state.on) return 'off';
+    return null;
+  }
+  // 不能記星時，用另一份判定記憶看看「是不是剛做到某個任務」；做到了就說明一次（每種原因每次開頁一次）
+  const nudged = {};
+  function shadowCheck(type, data, kind) {
+    if (nudged[kind]) return;
+    const list = registry[state.module] || [];
+    let hit = null;
+    list.forEach(function (m) {
+      if (hit || state.done[m.id] || !modeAllows(m)) return;
+      m.smem = m.smem || {};
+      let ok = false;
+      try { ok = !!m.check({ type: type, data: data || {} }, m.smem); } catch (e) { ok = false; }
+      if (ok) hit = m;
+    });
+    if (!hit) return;
+    nudged[kind] = true;
+    const name = hit.hidden ? T('一個隱藏任務', 'a hidden mission') : '「' + L(hit.title) + '」';
+    const nameEn = hit.hidden ? 'a hidden mission' : '“' + L(hit.title) + '”';
+    const msg = kind === 'login'
+      ? T('你剛剛做到了' + name + '，但還沒登入，星星不會記錄。登入 Google 帳號後再做一次就會得星。', 'You just completed ' + nameEn + ', but you are not signed in, so no stars were recorded. Sign in with Google and do it again to earn them.')
+      : kind === 'nickname'
+        ? T('你剛剛做到了' + name + '！先取一個暱稱，剛剛做到的就會補記星星。', 'You just completed ' + nameEn + '! Choose a nickname and the stars will be recorded.')
+        : T('你剛剛做到了' + name + '，但任務模式關著，星星沒有記錄。打開任務模式，再做一次就會得星。', 'You just completed ' + nameEn + ', but Mission mode is off, so no stars were recorded. Turn it on and do it again.');
+    showInfo(T('星星還沒有記錄', 'No stars recorded yet'), msg, null, statusAction(kind));
+  }
+  function statusAction(kind) {
+    if (kind === 'login') {
+      const b = el('button', 'primary ms-signin', T('用 Google 帳號登入', 'Sign in with Google')); b.type = 'button';
+      b.addEventListener('click', function () { if (api) api.signIn().catch(function () {}); });
+      return b;
+    }
+    if (kind === 'nickname') return nickForm();
+    if (kind === 'off') {
+      const b = el('button', 'primary', T('打開任務模式', 'Turn on Mission mode')); b.type = 'button'; b.setAttribute('data-ms-turn-on', '');
+      b.addEventListener('click', function () {
+        const t = document.querySelector('.ms-toggle');
+        if (t && !state.on) t.click();
+        if (infoBox) infoBox.hidden = true;
+      });
+      return b;
+    }
+    if (kind === 'loading' && loadFailed) {
+      const b = el('button', 'primary', T('重新整理這一頁', 'Reload this page')); b.type = 'button';
+      b.addEventListener('click', function () { location.reload(); });
+      return b;
+    }
+    return null;
+  }
+  function statusBox(kind) {
+    const box = el('div', 'ms-gate');
+    box.setAttribute('data-ms-gate', kind);
+    box.setAttribute('role', 'status');
+    const text = {
+      login: T('要先登入 Google 帳號，完成任務才會記錄「倪的星星」。', 'Sign in with Google to record Ni stars for the missions you complete.'),
+      loading: loadFailed
+        ? T('連線不穩，讀不到你的星星紀錄。請確認網路後重新整理這一頁；你的星星都還在。', 'The connection is unstable and your stars could not be loaded. Check the network and reload — your stars are safe.')
+        : T('正在讀取你的星星紀錄…現在做的操作會先記下來，讀完就補算。', 'Loading your stars… What you do now is kept and counted once they load.'),
+      nickname: T('還沒取暱稱，星星不會記錄。取好暱稱後，剛剛做到的任務會自動補算。', 'You have no nickname yet, so stars are not recorded. Choose one and what you just did will be counted.'),
+      off: T('任務模式關著：做到任務也不會記錄星星。', 'Mission mode is off: completed missions are not recorded.')
+    }[kind];
+    box.appendChild(el('p', null, text));
+    const a = statusAction(kind);
+    if (a) box.appendChild(a);
+    return box;
+  }
+  let nickSeq = 0;
+  function nickForm() {
+    const f = el('form', 'ms-nick');
+    const id = 'ms-nick-input' + (nickSeq++ ? '-' + nickSeq : '');
+    const lab = el('label', null, T('先取一個暱稱（1–20 字）。暱稱會公開顯示在排行榜上，請為自己的暱稱負責。',
+      'Choose a nickname (1–20 characters). It is shown publicly on the leaderboard — you are responsible for it.'));
+    lab.htmlFor = id;
+    const inp = el('input'); inp.id = id; inp.maxLength = 20; inp.autocomplete = 'off';
+    const save = el('button', 'primary', T('儲存暱稱', 'Save')); save.type = 'submit';
+    f.appendChild(lab); f.appendChild(inp); f.appendChild(save);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const v = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+      if (!v || !api || !state.user) return;
+      save.disabled = true;
+      guard(function () { return api.setNickname(state.user.uid, v); }).then(function () {
+        state.nickname = v;
+        if (infoBox) infoBox.hidden = true;
+        changed(); fire('ready', state);
+        flush();
+      }).catch(function () { save.disabled = false; state.msg = T('暱稱儲存失敗，請再試一次。', 'Could not save the nickname.'); changed(); });
+    });
+    return f;
+  }
   function explainNoStars(m, type, data) {
     if (m.hidden || m.gotHere || explained[m.id]) return null; // 這一頁剛拿到星星的任務不必再說
     const done = !!state.done[m.id];
@@ -673,7 +819,7 @@
       gate && gate.url ? [T('換到實驗模式 →', 'Switch to Lab mode →'), gate.url({ mode: 'lab' })] : null);
   }
   let infoBox = null;
-  function showInfo(title, body, link) {
+  function showInfo(title, body, link, node) {
     if (!infoBox) {
       infoBox = el('div', 'ms-near ms-info'); infoBox.setAttribute('role', 'status'); infoBox.setAttribute('aria-live', 'polite');
       document.body.appendChild(infoBox);
@@ -687,8 +833,10 @@
     head.appendChild(x); infoBox.appendChild(head);
     infoBox.appendChild(el('p', null, body));
     if (link) { const a = el('a', 'ms-near-more', link[0]); a.href = link[1]; infoBox.appendChild(a); }
+    if (node) infoBox.appendChild(node);
     infoBox.hidden = false;
-    clearTimeout(infoBox._t); infoBox._t = setTimeout(function () { infoBox.hidden = true; }, 9000);
+    clearTimeout(infoBox._t);
+    if (!node) infoBox._t = setTimeout(function () { infoBox.hidden = true; }, 9000); // 有按鈕或暱稱欄時留著，等學生自己按或關
   }
   function nearMiss(type, list) {
     let best = null;
@@ -921,21 +1069,9 @@
         b.addEventListener('click', function () { if (api) api.signIn().catch(function () {}); });
         panel.appendChild(b);
       } else if (state.ready && !state.nickname) {
-        const f = el('form', 'ms-nick');
-        const lab = el('label', null, T('先取一個暱稱（1–20 字）。暱稱會公開顯示在排行榜上，請為自己的暱稱負責。',
-          'Choose a nickname (1–20 characters). It is shown publicly on the leaderboard — you are responsible for it.'));
-        lab.htmlFor = 'ms-nick-input';
-        const inp = el('input'); inp.id = 'ms-nick-input'; inp.maxLength = 20;
-        const save = el('button', 'primary', T('儲存暱稱', 'Save')); save.type = 'submit';
-        f.appendChild(lab); f.appendChild(inp); f.appendChild(save);
-        f.addEventListener('submit', function (e) {
-          e.preventDefault();
-          const v = String(inp.value || '').replace(/\s+/g, ' ').trim().slice(0, 20);
-          if (!v) return;
-          guard(function () { return api.setNickname(state.user.uid, v); }).then(function () { state.nickname = v; changed(); fire('ready', state); })
-            .catch(function () { state.msg = T('暱稱儲存失敗，請再試一次。', 'Could not save the nickname.'); changed(); });
-        });
-        panel.appendChild(f);
+        panel.appendChild(nickForm());
+      } else if (!state.ready) {
+        panel.appendChild(statusBox('loading'));
       } else {
         panel.appendChild(el('p', 'ms-note', T('任務模式開啟中：操作實驗達成條件，就會自動完成任務。每個任務只能領一次星星。',
           'Mission mode is on: reach a goal by working the experiment and the mission completes automatically. Each mission pays out once.')));
