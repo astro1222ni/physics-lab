@@ -115,9 +115,25 @@
     $('main').hidden = true;
   }
 
+  // 數量級前綴詞（站長 11/17：「這些數字一樣用數量級前綴詞」）：和頁尾統計（stats.js 的 fmtSI）同一套，
+  // 滿 1,000 用 k、M、G、T、P，保留三位有效數字（例：2,139 → 2.13 k）；滑鼠移上去（title）看完整數字。
+  function fmtSI(n) {
+    const x = Math.floor(n || 0);
+    const P = [[1e15, 'P'], [1e12, 'T'], [1e9, 'G'], [1e6, 'M'], [1e3, 'k']];
+    for (let i = 0; i < P.length; i++) {
+      if (x >= P[i][0]) {
+        const v = x / P[i][0];
+        const d = v >= 100 ? 0 : v >= 10 ? 1 : 2;
+        return (Math.floor(v * Math.pow(10, d)) / Math.pow(10, d)).toFixed(d) + ' ' + P[i][1];
+      }
+    }
+    return String(x);
+  }
   function tile(label, value, note) {
     const t = el('div', 'adm-tile');
-    t.appendChild(el('span', 'adm-tile-v', value));
+    const v = el('span', 'adm-tile-v', typeof value === 'number' ? fmtSI(value) : value);
+    if (typeof value === 'number' && value >= 1000) v.title = value.toLocaleString();
+    t.appendChild(v);
     t.appendChild(el('span', 'adm-tile-k', label));
     if (note) t.appendChild(el('span', 'adm-tile-n', note));
     return t;
@@ -127,11 +143,11 @@
     box.innerHTML = '';
     const now = Date.now(), wk = now - 7 * 864e5, mo = now - 30 * 864e5;
     const sum = function (f) { return users.reduce(function (a, u) { return a + f(u); }, 0); };
-    box.appendChild(tile(T('帳號數', 'Accounts'), String(users.length)));
-    box.appendChild(tile(T('近 7 天活躍', 'Active in 7 days'), String(users.filter(function (u) { return u.act >= wk; }).length),
-      T('近 30 天 ', '30 days: ') + users.filter(function (u) { return u.act >= mo; }).length));
-    box.appendChild(tile(T('有星星的人', 'With stars'), String(users.filter(function (u) { return u.stars > 0; }).length)));
-    box.appendChild(tile(T('完成任務（人次）', 'Missions done'), sum(function (u) { return u.done; }).toLocaleString()));
+    box.appendChild(tile(T('帳號數', 'Accounts'), users.length));
+    box.appendChild(tile(T('近 7 天活躍', 'Active in 7 days'), users.filter(function (u) { return u.act >= wk; }).length,
+      T('近 30 天 ', '30 days: ') + fmtSI(users.filter(function (u) { return u.act >= mo; }).length)));
+    box.appendChild(tile(T('有星星的人', 'With stars'), users.filter(function (u) { return u.stars > 0; }).length));
+    box.appendChild(tile(T('完成任務（人次）', 'Missions done'), sum(function (u) { return u.done; })));
     box.appendChild(tile(T('累計操作時間', 'Total time'), fmtDur(sum(function (u) { return u.seconds; }))));
   }
 
