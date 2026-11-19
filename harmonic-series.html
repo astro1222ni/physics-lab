@@ -39,8 +39,9 @@
     }
     :root[data-theme="dark"] { --hs-wave: #7aa7ff; --hs-low: #5eead4; --hs-high: #fb923c; --hs-ideal: #ff74b0; --hs-cent: #fbbf24; --hs-string: #cbd5e1; }
 
-    /* 畫布高度由程式依寬度決定。波形與弦的小圖不攔觸控（手機照常捲動）；頻譜可以直接拖曳長條 */
-    #cv { aspect-ratio: auto; height: 300px; touch-action: auto; cursor: default; }
+    /* 波形與弦的小圖不攔觸控（手機照常捲動）；頻譜可以直接拖曳長條 */
+    #stage { container-type: inline-size; }
+    #cv { aspect-ratio: auto; height: clamp(260px, 42cqi, 330px); touch-action: auto; cursor: default; }
     #spec { aspect-ratio: auto; height: 230px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: none; cursor: pointer; }
     #str { aspect-ratio: auto; height: 120px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
     .hs [hidden] { display: none !important; }
@@ -118,6 +119,25 @@
     .legend i.band { height: 10px; border-radius: 3px; opacity: .5; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    @container (max-width: 599px) { #cv { height: clamp(220px, 66cqi, 280px); } }
+    /* 橫放時保留檢視列和播放鍵的實際高度，畫布依剩餘空間重畫。 */
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-main {
+        display: flex; flex-direction: column; height: calc(100dvh - 32px); max-height: 460px;
+        padding-inline-end: 18px;
+      }
+      .stage-main > * { flex: none; }
+      .stage-main > #cv, .stage-main > #view3 { flex: 1 1 0; min-height: 0; }
+      .stage:not(.is3d) #view3 { display: none; }
+      #view3 .t3-wrap, #view3 canvas { height: 100%; aspect-ratio: auto; }
+      .stage-main .playbar { gap: 6px; margin: 6px 0 0; }
+      .stage-main .playbar button { padding-inline: 6px; }
+      .stage.is3d .view-bar { display: grid; grid-template-columns: auto 1fr; gap: 4px; }
+      .stage.is3d .faces { grid-column: 1 / -1; grid-row: 2; flex-wrap: nowrap; }
+      .stage.is3d .faces button { flex: 1 1 0; }
+      .stage.is3d #resetCam { grid-column: 2; grid-row: 1; justify-self: end; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -131,28 +151,31 @@
     <p class="try-hint" data-en="Try it: press “Play”, then “Add harmonics one by one”, and listen to the same pitch grow brighter and brighter.">試試看：按「播放」，再按「一個一個加上泛音」，聽同一個音高怎麼越來越亮。</p>
     <div class="lab hs" id="lab">
       <div class="stage" id="stage">
-        <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+        <div class="stage-main">
+          <div class="view-bar">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+            </div>
+            <div class="faces l3" role="group" aria-label="3D 視角" data-en-aria-label="3D viewpoint">
+              <button type="button" id="faceFront" data-en="Front: waveform (time domain)">正面看：波形（時域）</button>
+              <button type="button" id="faceSide" data-en="Side: spectrum (frequency domain)">側面看：頻譜（頻域）</button>
+            </div>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           </div>
-          <div class="faces l3" role="group" aria-label="3D 視角" data-en-aria-label="3D viewpoint">
-            <button type="button" id="faceFront" data-en="Front: waveform (time domain)">正面看：波形（時域）</button>
-            <button type="button" id="faceSide" data-en="Side: spectrum (frequency domain)">側面看：頻譜（頻域）</button>
+          <p class="view-msg" id="viewMsg" role="status"></p>
+          <canvas id="cv" role="img" aria-label="合成波形：兩個週期的波形（所有泛音加起來），淡色帶是正負均方根，圓點是峰值。" data-en-aria-label="Combined waveform: two periods of the sum of all the harmonics; the pale band is plus and minus the RMS value and the dot marks the peak."></canvas>
+          <div id="view3"></div>
+          <div class="playbar">
+            <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+            <button id="build" type="button" data-en="Add harmonics one by one" title="從基頻開始，每 0.7 秒加入下一個泛音" data-en-title="Starting from the fundamental, add the next harmonic every 0.7 seconds">一個一個加上泛音</button>
+            <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
           </div>
-          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
-        </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="合成波形：兩個週期的波形（所有泛音加起來），淡色帶是正負均方根，圓點是峰值。" data-en-aria-label="Combined waveform: two periods of the sum of all the harmonics; the pale band is plus and minus the RMS value and the dot marks the peak."></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
-          <button id="build" type="button" data-en="Add harmonics one by one" title="從基頻開始，每 0.7 秒加入下一個泛音" data-en-title="Starting from the fundamental, add the next harmonic every 0.7 seconds">一個一個加上泛音</button>
-          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--hs-wave)&quot;></i>Combined waveform"><i style="background:var(--hs-wave)"></i>合成波形</span>
           <span data-en-html="<i class=&quot;band&quot; style=&quot;background:var(--accent)&quot;></i>± RMS"><i class="band" style="background:var(--accent)"></i>± 均方根</span>
@@ -167,7 +190,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="音色|Timbre" data-deck-order="1">
           <h2 data-en="Timbre">音色</h2>
           <div class="presets" id="presets" role="group" aria-label="預設音色" data-en-aria-label="Preset tones">
             <button type="button" data-preset="pure" aria-pressed="false" data-en="Pure tone">純音</button>
@@ -184,7 +207,7 @@
           <p class="hint" data-en-html="The flute, clarinet, oboe, violin and voice are <strong>approximations</strong> tuned by hand from harmonics: a real instrument's spectrum changes with pitch, loudness and player. The square, sawtooth and triangle waves use their exact Fourier coefficients.">長笛、單簧管、雙簧管、小提琴、人聲是自己用泛音調出來的<strong>近似</strong>：真實樂器的頻譜隨音高、力度、演奏者而變。方波、鋸齒波、三角波用精確的傅立葉係數。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="基頻與泛音|Pitch &amp; harmonics" data-deck-order="2">
           <h2 data-en="Fundamental and harmonics">基頻與泛音</h2>
           <div class="slider"><label for="f0" data-en-html="Fundamental f<sub>0</sub> (Hz)">基頻 f<sub>0</sub>（Hz）</label><output id="f0o"></output>
             <input id="f0" type="range" min="0" max="1000" step="1" value="333" data-decimals="1"></div>
@@ -204,7 +227,7 @@
           <button type="button" id="solo" aria-pressed="false" data-share-skip data-en="Hear only this harmonic">只聽這一個泛音</button>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="相位|Phase" data-deck-order="3">
           <h2 data-en="Phase">相位</h2>
           <div class="hrow">
             <div class="seg" role="group" aria-label="相位" data-en-aria-label="Phase">

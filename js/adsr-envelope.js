@@ -275,12 +275,9 @@
   let dpr = 1, cw = 300, ch = 320, sw = 300, sh = 150;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 3);
-    const w = cv.clientWidth || $('stage').clientWidth - 22;
-    if (w > 0) {
-      cw = w;
-      const nar = cw < 600;
-      ch = Math.round(nar ? Math.max(250, Math.min(cw * 0.78, 310)) : Math.max(300, Math.min(cw * 0.44, 360)));
-      if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    if (cv.clientWidth && cv.clientHeight) {
+      cw = cv.clientWidth;
+      ch = cv.clientHeight;
       cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     }
     sw = scope.clientWidth || cw;
@@ -333,7 +330,10 @@
   let dragSpan = null;     // 拖曳中固定時間軸，避免邊拖邊縮放
   function geom(sn) {
     const nar = cw < 600;
-    const L = nar ? 44 : 54, Rr = cw - (nar ? 12 : 18), Tp = nar ? 52 : 54, Bt = ch - (nar ? 28 : 30);
+    ctx.font = fnt(nar ? 12 : 13, 600);
+    const labelH = D.textHeight(ctx.measureText('包絡 ADSR'), 16) + 3;
+    const titleBottom = 5 + labelH;
+    const L = nar ? 44 : 54, Rr = cw - (nar ? 12 : 18), Tp = titleBottom + labelH + 16, Bt = ch - (nar ? 28 : 30);
     let span;
     if (sn.rev) span = sn.L;
     else span = Math.max(sn.hold, sn.p.A + sn.p.D) + sn.p.R;
@@ -349,7 +349,7 @@
     const aAt = state.scale === 'db'
       ? function (y) { const d = DB_MIN + (Bt - y) / (Bt - Tp) * (0 - DB_MIN + 4); return d <= DB_MIN + 0.5 ? 0 : AC.fromDb(d); }
       : function (y) { return (Bt - y) / (Bt - Tp) * top; };
-    return { L: L, Rr: Rr, Tp: Tp, Bt: Bt, span: span, X: X, Y: Y, tAt: tAt, aAt: aAt, nar: nar };
+    return { L: L, Rr: Rr, Tp: Tp, Bt: Bt, titleBottom: titleBottom, span: span, X: X, Y: Y, tAt: tAt, aAt: aAt, nar: nar };
   }
   /** 依目前的音算 t 時刻的振幅與段落 */
   function shownLevel(sn, t) { return sn.rev ? AC.revLevel(t, sn.p, sn.H) : AC.level(t, sn.p, sn.hold); }
@@ -540,7 +540,7 @@
     // 標題
     const title = sn.rev ? T('倒放：整個音左右反過來（虛線是正放）', 'Reversed: the whole note flipped (dashed = forwards)')
       : state.scale === 'db' ? T('包絡（分貝刻度）', 'Envelope (decibels)') : T('包絡（振幅刻度）', 'Envelope (amplitude)');
-    D.pill(c, title, g.L, 15, C.text, 'left', fnt(nar ? 11.5 : 12.5, 600));
+    D.pill(c, title, g.L, g.titleBottom, C.text, 'left', fnt(nar ? 12 : 13, 600));
     if (state.scale === 'lin' && !nar) D.haloText(c, T('淡藍色的振盪是放慢的示意', 'the faint oscillation is slowed down'), g.Rr, 15, alpha(C['ad-wave'], 0.9), 'right', 'middle', f11);
   }
 
@@ -1135,11 +1135,11 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    let lw = 0, lw2 = 0;
-    new ResizeObserver(function () {
-      const a = cv.clientWidth, b = scope.clientWidth;
-      if (a !== lw || b !== lw2) { lw = a; lw2 = b; resize(); }
-    }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      if ((cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch)) || scope.clientWidth !== sw) resize();
+    });
+    observer.observe(cv);
+    observer.observe(scope);
   } else window.addEventListener('resize', resize);
   resize();
 })();

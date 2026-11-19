@@ -523,7 +523,10 @@
       note.style.top = portrait ? '6px' : 'auto';
       note.style.bottom = portrait ? 'auto' : '6px';
       const t = Math.tan(camera.fov * Math.PI / 360);
-      const dist = Math.max(needH / t, needW / (t * aspect)) * 1.08;
+      // 兩端文字以螢幕像素為單位，留出半個標籤寬度再對準整根管子。
+      const margin = 6 + Math.max(lbL.el.offsetWidth, lbR.el.offsetWidth, lbEnd.el.offsetWidth) / 2;
+      const usableAspect = Math.max(w / 2, w - 2 * margin) / h;
+      const dist = Math.max(needH / t, needW / (t * usableAspect)) * 1.08;
       controls.target.copy(target);
       camera.position.copy(target).addScaledVector(dir, dist);
       camera.near = Math.max(0.2, dist / 100);

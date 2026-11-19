@@ -252,12 +252,9 @@
   let dpr = 1, cw = 300, ch = 300, sw = 300, sh = 230, tw = 300, th = 120;
   function resize() {
     dpr = Math.min(window.devicePixelRatio || 1, 3);
-    const w = cv.clientWidth || $('stage').clientWidth - 22;
-    if (w > 0) {
-      cw = w;
-      const nar = cw < 600;
-      ch = Math.round(nar ? Math.max(220, Math.min(cw * 0.66, 280)) : Math.max(260, Math.min(cw * 0.42, 330)));
-      if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
+    if (cv.clientWidth && cv.clientHeight) {
+      cw = cv.clientWidth;
+      ch = cv.clientHeight;
       cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     }
     sw = spec.clientWidth || cw;
@@ -306,7 +303,11 @@
     c.setTransform(dpr, 0, 0, dpr, 0, 0);
     D.backdrop(c, cw, ch);
     const nar = cw < 600;
-    const L = nar ? 40 : 50, Rr = cw - (nar ? 10 : 16), Tp = nar ? 34 : 38, Bt = ch - (nar ? 26 : 28);
+    const rmsFont = fnt(12, 600);
+    c.font = rmsFont;
+    const rmsLabel = T('均方根 ', 'RMS ') + num(RS.rms, 3);
+    const readoutH = D.textHeight(c.measureText(rmsLabel), 16) + 10;
+    const L = nar ? 40 : 50, Rr = cw - (nar ? 10 : 16), Tp = nar ? 34 : 38, Bt = ch - (nar ? 26 : 28) - readoutH;
     const mid = (Tp + Bt) / 2, half = (Bt - Tp) / 2;
     const comp = RS.comp;
     let need = Math.max(RS.peak, shape ? Math.abs(shape.A) : 0, 0.05);
@@ -415,9 +416,7 @@
       if (yb > Bt - 2) yb = py - 5;
       D.pill(c, s, Rr - 6, yb, C.probe, 'right', fnt(nar ? 11 : 12, 600));
     }
-    if (RS.rms > 0 && Bt - Tp > 120) {
-      D.haloText(c, T('均方根 ', 'RMS ') + num(RS.rms, 3), L + 6, Y(RS.rms) - 6, alpha(C.accent, 0.95), 'left', 'alphabetic', fnt(nar ? 10.5 : 11.5, 600));
-    }
+    D.pill(c, rmsLabel, L, ch - 4, C.accent, 'left', rmsFont);
 
     // 播放中的游標（慢動作）
     const vis = state.vis;
@@ -1106,11 +1105,11 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    let lw = 0, lw2 = 0;
-    new ResizeObserver(function () {
-      const a = cv.clientWidth, b = spec.clientWidth;
-      if (a !== lw || b !== lw2) { lw = a; lw2 = b; resize(); }
-    }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      if ((cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch)) || spec.clientWidth !== sw) resize();
+    });
+    observer.observe(cv);
+    observer.observe(spec);
   } else window.addEventListener('resize', resize);
   resize();
 })();

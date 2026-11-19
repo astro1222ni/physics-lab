@@ -40,7 +40,8 @@
     :root[data-theme="dark"] { --ad-a: #fb923c; --ad-d: #fbbf24; --ad-s: #5eead4; --ad-r: #c4b5fd; --ad-wave: #7aa7ff; --ad-ghost: #94a3b8; }
 
     /* 包絡圖可以拖曳節點（攔觸控）；示波器只是顯示（手機照常捲動） */
-    #cv { aspect-ratio: auto; height: 320px; touch-action: none; cursor: default; }
+    #stage { container-type: inline-size; }
+    #cv { aspect-ratio: auto; height: clamp(300px, 44cqi, 360px); touch-action: none; cursor: default; }
     #scope { aspect-ratio: auto; height: 150px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; touch-action: auto; cursor: default; }
     .ad [hidden] { display: none !important; }
     .ad button { min-height: 44px; }
@@ -99,6 +100,7 @@
     @media (max-width: 420px) { .kbd button.key { min-height: 80px; } .kbd button.key small { display: none; } }
     /* 2D／3D 檢視切換 */
     .view-bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+    .graph-keys { flex: 1 1 9em; text-align: end; color: var(--muted); font-size: calc(12px * var(--fs, 1)); line-height: 1.35; }
     .stage.is3d #cv { display: none; }
     .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none !important; }
     #view3 canvas {
@@ -129,6 +131,22 @@
     .eq .katex { font-size: 1.0em; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    @container (max-width: 599px) { #cv { height: clamp(250px, 78cqi, 310px); } }
+    /* 橫放時保留檢視列和播放鍵的實際高度，畫布依剩餘空間重畫。 */
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-main {
+        display: flex; flex-direction: column; height: calc(100dvh - 32px); max-height: 460px;
+        padding-inline-end: 18px;
+      }
+      .stage-main > * { flex: none; }
+      .stage-main > #cv, .stage-main > #view3 { flex: 1 1 0; min-height: 0; }
+      .stage:not(.is3d) #view3 { display: none; }
+      #view3 .t3-wrap, #view3 canvas { height: 100%; aspect-ratio: auto; }
+      .stage-main .playbar { gap: 6px; margin: 6px 0 0; }
+      .stage-main .playbar button { padding-inline: 6px; }
+      .stage-main .chart-note { line-height: 1.35; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -142,25 +160,29 @@
     <p class="try-hint" data-en="Try it: press “Piano”, hold a key for 2 seconds, then press “Organ” and compare.">試試看：按「鋼琴」，按住一個琴鍵 2 秒，再換「風琴」比比看。</p>
     <div class="lab ad" id="lab">
       <div class="stage" id="stage">
-        <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+        <div class="stage-main">
+          <div class="view-bar">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+            </div>
+            <span class="graph-keys l2" data-en="Enter selects a dot. Arrow keys adjust it.">Enter 選取圓點，方向鍵微調</span>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           </div>
-          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
-        </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" aria-label="包絡圖：橫軸是時間，縱軸是振幅（或分貝）。起音、衰減、延持、釋音四段用不同顏色；拖曳圓點可以改變各段的時間和延持的高度。" data-en-aria-label="Envelope graph: time across, level (or decibels) up. Attack, decay, sustain and release are drawn in different colours; drag the dots to change the times and the sustain level."></canvas>
-        <div id="view3"></div>
-        <p class="chart-note l2" data-en-html="Drag the dots: the peak sets A, the end of the decay sets D and S, the release point sets the hold time, and the last dot sets R. Tap anywhere else to look at the waveform at that moment (or focus the graph and use Enter and the arrow keys).">拖曳圓點：頂點調 A，衰減的終點調 D 和 S，放開的點調按住時間，最後一點調 R。點其他地方，示波器就顯示那一刻的波形（也可以點一下圖，用 Enter 和方向鍵）。</p>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
-          <button id="rev" type="button" aria-pressed="false" data-en="Reverse" title="把整個音的包絡左右反過來（倒著播放）" data-en-title="Flip the whole note’s envelope back to front (play it backwards)">倒放</button>
-          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <p class="view-msg" id="viewMsg" role="status"></p>
+          <canvas id="cv" aria-label="包絡圖：橫軸是時間，縱軸是振幅（或分貝）。起音、衰減、延持、釋音四段用不同顏色；拖曳圓點可以改變各段的時間和延持的高度。" data-en-aria-label="Envelope graph: time across, level (or decibels) up. Attack, decay, sustain and release are drawn in different colours; drag the dots to change the times and the sustain level."></canvas>
+          <div id="view3"></div>
+          <div class="playbar">
+            <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
+            <button id="rev" type="button" aria-pressed="false" data-en="Reverse" title="把整個音的包絡左右反過來（倒著播放）" data-en-title="Flip the whole note’s envelope back to front (play it backwards)">倒放</button>
+            <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
+          <p class="chart-note l2" data-en="Drag the peak for A, the decay end for D and S, the release point for hold time, or the last dot for R. Tap the graph to inspect the waveform.">拖曳頂點調 A、衰減終點調 D 和 S、放開點調按住時間、末點調 R。點圖上其他位置，可在示波器檢視那一刻的波形。</p>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
+        <div data-deck-anchor hidden></div>
         <div class="kbd-wrap">
           <div class="kbd-title"><h3 data-en="Keys">琴鍵</h3><span data-en="Hold to play, let go to release · computer keys A–K">按住才響，放開進入釋音・電腦鍵盤 A–K</span></div>
           <div class="kbd" id="kbd" role="group" aria-label="琴鍵：C4 到 C5。按住發聲，放開進入釋音。" data-en-aria-label="Keys: C4 to C5. Hold to sound, let go to release."></div>
@@ -177,7 +199,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="預設|Presets" data-deck-order="1">
           <h2 data-en="Presets">預設</h2>
           <div class="presets" id="presets" role="group" aria-label="預設包絡" data-en-aria-label="Preset envelopes">
             <button type="button" data-preset="piano" aria-pressed="false" data-en="Piano">鋼琴</button>
@@ -190,7 +212,7 @@
           <p class="hint" data-en-html="All five use <strong>the same spectrum</strong> (the harmonics below); only the envelope changes. They are <strong>approximations</strong>: a real piano note, for example, decays in two stages and its timbre changes as it fades.">五個預設用<strong>同一個頻譜</strong>（下面的泛音），只換包絡。它們都是<strong>近似</strong>：例如真的鋼琴分兩段衰減，音色也會邊消失邊變。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="包絡 ADSR|Envelope ADSR" data-deck-order="2">
           <h2 data-en="Envelope ADSR">包絡 ADSR</h2>
           <div class="slider"><label for="sA" data-en-html="<i class=&quot;seg-dot&quot; style=&quot;background:var(--ad-a)&quot;></i>Attack A (s)"><i class="seg-dot" style="background:var(--ad-a)"></i>起音 A（s）</label><output id="sAo"></output>
             <input id="sA" type="range" min="0" max="1000" step="1" value="344" data-decimals="4"></div>
@@ -212,7 +234,7 @@
           <p class="hint" data-en-html="The sound never starts in less than 15 ms or stops in less than 30 ms, to protect your ears (the graph shows the values you set). Exponential: the decay and release are straight lines in decibels, and R is the time to fall 60 dB.">為了保護耳朵，實際發聲的起音不短於 15 ms、結尾不短於 30 ms（圖上畫的是你設定的值）。指數：衰減與釋音在分貝刻度上是直線，R 是掉 60 dB 的時間。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="音色與檢視|Timbre and view" data-deck-order="3">
           <h2 data-en="Timbre and view">音色與檢視</h2>
           <div class="slider"><label for="sN" data-en="Number of harmonics N">泛音數 N</label><output id="sNo"></output>
             <input id="sN" type="range" min="1" max="12" step="1" value="8" data-decimals="0"></div>

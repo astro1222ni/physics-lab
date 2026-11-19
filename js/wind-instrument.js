@@ -90,22 +90,23 @@
   const cv2 = $('cv2'), ctx2 = cv2.getContext('2d');
   let dpr = 1, cw = 300, ch = 380, Lo = null, cw2 = 300, ch2 = 170;
   function layout() {
-    const narrow = cw < 560;
+    const compact = ch < 310;
+    const narrow = cw < 560 || compact;
     const pad = narrow ? 8 : 14;
-    const tunerH = narrow ? 46 : 50;
-    const tubeT = pad + tunerH + (narrow ? 8 : 12);
+    const tunerH = compact ? 40 : narrow ? 46 : 50;
+    const tubeT = pad + tunerH + (compact ? 4 : narrow ? 8 : 12);
     const labH = narrow ? 20 : 24;
-    const boreMax = narrow ? 32 : 44;
-    const wallMax = narrow ? 8 : 10;
+    const boreMax = compact ? 24 : narrow ? 32 : 44;
+    const wallMax = compact ? 5 : narrow ? 8 : 10;
     const tubeY = tubeT + labH + wallMax + boreMax / 2;
     const dimT = tubeY + boreMax / 2 + wallMax + 4;       // 尺寸線（L、δ、拇指孔）
     const scaleT = dimT + (narrow ? 18 : 20);              // 比例尺與「放大示意」
     const graphT = scaleT + (narrow ? 22 : 24);
-    const graphH = narrow ? 128 : 156;
+    const graphH = ch - graphT - pad;
     const x0 = pad + (narrow ? 46 : 70);
     const x1 = cw - pad - (narrow ? 22 : 40);
     return { narrow: narrow, pad: pad, tunerT: pad, tunerH: tunerH, tubeT: tubeT, labH: labH, boreMax: boreMax, wallMax: wallMax, tubeY: tubeY,
-      dimT: dimT, scaleT: scaleT, graphT: graphT, graphH: graphH, gy: graphT + graphH / 2, ay: graphH / 2 - 30, H: graphT + graphH + pad, x0: x0, x1: x1 };
+      dimT: dimT, scaleT: scaleT, graphT: graphT, graphH: graphH, gy: graphT + graphH / 2, ay: Math.max(2, graphH / 2 - 30), x0: x0, x1: x1 };
   }
   /** 長度比例：管子模式依管長微調（短管也看得清楚），直笛固定比例 */
   let K = 1000;
@@ -143,14 +144,13 @@
   }
   function resize() {
     fitEq();
-    const w = cv.clientWidth;
-    if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
-    cw = w;
-    Lo = layout();
-    ch = Lo.H;
-    if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
-    cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+    if (cv.clientWidth && cv.clientHeight) {
+      cw = cv.clientWidth;
+      ch = cv.clientHeight;
+      Lo = layout();
+      cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+    }
     cw2 = cv2.clientWidth || cw;
     ch2 = cw2 < 560 ? 160 : 180;
     if (cv2.style.height !== ch2 + 'px') cv2.style.height = ch2 + 'px';
@@ -476,11 +476,17 @@
       if (inf.type === 'open') ends.push([inf.sStart, 0]);
       ends.forEach(function (e) {
         const a = X(e[0]), b = X(e[1]);
-        if (b - a < 1.5) return;
+        if (b <= a) return;
         c.strokeStyle = C['wi-end']; c.lineWidth = 2;
         c.beginPath(); c.moveTo(a, y); c.lineTo(b, y); c.stroke();
-        c.fillStyle = C['wi-end']; c.font = fnt(narrow ? 11 : 12, 700); c.textAlign = 'center'; c.textBaseline = 'top';
-        c.fillText('δ', (a + b) / 2, y + 3);
+        const mid = (a + b) / 2, font = fnt(14, 700);
+        c.font = font;
+        const size = c.measureText('δ'), width = size.width + 12;
+        const onRight = e[0] >= 0 && b + 8 + width <= cw - Lo.pad;
+        const edge = onRight ? b + 8 : a - 8;
+        c.lineWidth = 1;
+        c.beginPath(); c.moveTo(mid, y); c.lineTo(edge, y - 4); c.stroke();
+        D.pill(c, 'δ', edge, y - 4 + (D.textHeight(size, 16) + 3) / 2, C['wi-end'], onRight ? 'left' : 'right', font);
       });
     } else {
       c.font = fnt(narrow ? 10 : 11, 600); c.fillStyle = inf.holes[0] === 1 ? C.accent : C.muted;
@@ -525,11 +531,23 @@
     // 軸
     c.strokeStyle = alpha(C.text, 0.3); c.lineWidth = 1;
     c.beginPath(); c.moveTo(Lo.pad + 8, Math.round(gy) + 0.5); c.lineTo(cw - Lo.pad - 8, Math.round(gy) + 0.5); c.stroke();
-    // 管子實際的兩端（灰色點線）
+    // 對齊實際管口與有效開口；尺寸線、比例尺和駐波圖標題各自留白。
+    c.font = fnt(12, 600);
+    const guidesTop = top + D.textHeight(c.measureText('壓力 p'), 16) + 9;
     c.save();
     c.setLineDash([2, 3]); c.strokeStyle = alpha(C.muted, 0.6); c.lineWidth = 1;
     c.beginPath();
-    [0, inf.L].forEach(function (sx) { const x = Math.round(X(sx)) + 0.5; c.moveTo(x, Lo.dimT - 2); c.lineTo(x, bot - 4); });
+    [0, inf.L].forEach(function (sx) { const x = Math.round(X(sx)) + 0.5; c.moveTo(x, guidesTop); c.lineTo(x, bot - 4); });
+    c.stroke();
+    const ends = [inf.sEnd];
+    if (inf.type === 'open' && inf.sStart < -1e-6) ends.push(inf.sStart);
+    c.setLineDash([5, 4]); c.strokeStyle = C['wi-end']; c.lineWidth = 1.6;
+    c.beginPath();
+    ends.forEach(function (sx) {
+      const x = Math.round(X(sx)) + 0.5;
+      c.moveTo(x, Lo.tubeT + Lo.labH - 2); c.lineTo(x, Lo.dimT + 2);
+      c.moveTo(x, guidesTop); c.lineTo(x, bot - 4);
+    });
     c.stroke();
     c.restore();
     // 包絡（振幅的範圍）
@@ -592,15 +610,7 @@
     // 和腹點的標籤擠在一起時，改放到軸的下方
     const clash = nx0 < ra.x + ra.w + 4 && nx0 + nw > ra.x - 4 && gy - 6 - ra.h < ra.y + ra.h + 4;
     D.pill(c, tn, nRight ? xn + 8 : xn - 8, clash ? gy + 8 + ra.h : gy - 6, C['wi-p'], nRight ? 'left' : 'right', lf);
-    // 有效開口（紫色虛線，從管子上方畫到圖的底部）
-    c.save();
-    c.setLineDash([5, 4]); c.strokeStyle = C['wi-end']; c.lineWidth = 1.6;
-    c.beginPath();
-    const ends = [inf.sEnd];
-    if (inf.type === 'open' && inf.sStart < -1e-6) ends.push(inf.sStart);
-    ends.forEach(function (sx) { const x = Math.round(X(sx)) + 0.5; c.moveTo(x, Lo.tubeT + Lo.labH - 2); c.lineTo(x, bot - 4); });
-    c.stroke();
-    c.restore();
+    // 有效開口的文字放在曲線下方。
     c.font = lf;
     const ex = X(inf.sEnd), xMinL = Lo.pad + 4, xMaxR = cw - Lo.pad - 4;
     let endTxt = inf.inst === 'recorder' && inf.first >= 0 ? T('有效開口（' + holeName(inf.first) + '下方 ' + num(inf.holeDelta * 1000, 1) + ' mm）', 'Effective open end (' + num(inf.holeDelta * 1000, 1) + ' mm below ' + holeName(inf.first) + ')') : T('有效開口', 'Effective open end');
@@ -618,11 +628,11 @@
     else tag = T('放慢約 ' + slowText(inf.f) + ' 倍', 'Slowed ≈ ' + slowText(inf.f) + '×');
     const rt = D.pill(c, tag, cw - Lo.pad - 8, top + 20, state.blow ? C['wi-good'] : C.muted, 'right', fnt(narrow ? 10 : 11, 600));
     // 左上的圖說：和右上的標籤擠在一起時換短的說法
-    c.font = fnt(narrow ? 10.5 : 11.5, 600); c.textAlign = 'left'; c.textBaseline = 'top'; c.fillStyle = C.muted;
+    c.font = fnt(12, 600);
     const capRoom = rt.x - 10 - (Lo.pad + 10);
     const caps = [T('沿著管子：壓力 p、空氣位移 ξ', 'Along the tube: pressure p, air displacement ξ'), T('壓力 p、位移 ξ', 'Pressure p, displacement ξ'), T('p、ξ', 'p, ξ')];
     const cap = caps.find(function (t) { return c.measureText(t).width <= capRoom; }) || caps[caps.length - 1];
-    c.fillText(cap, Lo.pad + 10, top + 6);
+    D.haloText(c, cap, Lo.pad + 10, top + 6, C.muted, 'left', 'top', fnt(12, 600));
     c.restore();
   }
   function slowText(f) {
@@ -949,8 +959,8 @@
   }
   function updateNotes() {
     if (state.inst === 'recorder') {
-      $('instNote').textContent = T('C 調高音直笛（示意）：內徑 12.5 mm 的圓柱管，唇口到管尾 320.5 mm，8 個孔。點畫布上的孔、下面的孔按鈕或常用指法。',
-        'Soprano recorder in C (illustration): a 12.5 mm cylinder, 320.5 mm from the labium to the foot, 8 holes. Tap the holes on the canvas, the hole buttons or a common fingering.');
+      $('instNote').textContent = T('C 調高音直笛以內徑 12.5 mm 的圓柱管模擬，唇口到管尾長 320.5 mm，共有 8 個孔。可選常用指法，也可在畫布或「直笛的指法」分頁逐孔按放。',
+        'This model of a soprano recorder in C has a 12.5 mm cylindrical bore, a length of 320.5 mm from labium to foot, and 8 holes. Choose a common fingering, or change individual holes on the diagram or the Recorder fingering tab.');
       $('tubeNote').textContent = T('直笛模式：管型、管長、內徑與管口修正由直笛決定（灰色是實際使用的值）；振動模式由拇指孔決定，半開 = 第 2 模式。',
         'Recorder mode: the kind of tube, length, bore and end correction are fixed by the recorder (the grey values are the ones used); the thumb hole picks the mode, half-open = mode 2.');
     } else {
@@ -1382,8 +1392,11 @@
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); if (ev.detail && ev.detail.name === 'fs') setTimeout(fitEq, 50); });
   try { window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function () { reducedMotion = D.reducedMotion(); requestDraw(); }); } catch (e) { /* 舊瀏覽器 */ }
   if (window.ResizeObserver) {
-    let lastW = 0, lastW2 = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== lastW2) { lastW = cv.clientWidth; lastW2 = cv2.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      if ((cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch)) || cv2.clientWidth !== cw2) resize();
+    });
+    observer.observe(cv);
+    observer.observe(cv2);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopAll(false); });
   resize();

@@ -50,8 +50,9 @@
       --wi-wood: #c9a46b; --wi-wood2: #6e4521; --wi-reed: #b08a38; --wi-finger: #d79c78; --wi-end: #c084fc;
     }
 
-    /* 畫布高度由程式依寬度決定。只有按在管口或按孔上才攔下觸控，其他時候手機可以照常捲動頁面 */
-    #cv { aspect-ratio: auto; height: 380px; touch-action: pan-y; }
+    /* 只有按在管口或按孔上才攔下觸控，其他時候手機可以照常捲動頁面 */
+    #stage { container-type: inline-size; }
+    #cv { aspect-ratio: auto; height: 382px; touch-action: pan-y; }
     #cv2 { aspect-ratio: auto; height: 170px; display: block; width: 100%; border-radius: 8px; margin: 10px 0 0; background: var(--canvas-bg); }
     .wi button { min-height: 44px; }
     .wi [hidden] { display: none !important; }
@@ -73,8 +74,8 @@
     .wi .panel > .card { min-width: 0; }
     .wi .card h3.sub { font-size: calc(14px * var(--fs, 1)); margin: 12px 0 4px; color: var(--muted); font-weight: 600; }
     /* 依樂器顯示不同的控制項 */
-    .wi:not([data-inst="recorder"]) .rec-only { display: none !important; }
-    .wi[data-inst="recorder"] .tube-only { display: none !important; }
+    body:has(.wi[data-inst="tube"]) .rec-only { display: none !important; }
+    body:has(.wi[data-inst="recorder"]) .tube-only { display: none !important; }
     .wi .slider input:disabled { opacity: .55; }
     .wi .slider.locked output { color: var(--muted); }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
@@ -149,6 +150,21 @@
     .wi3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
       background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
     .wi3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+    @container (max-width: 559px) { #cv { height: 310px; } }
+    /* 橫放時保留檢視列和播放鍵的實際高度，畫布依剩餘空間重畫。 */
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage-main {
+        display: flex; flex-direction: column; height: calc(100dvh - 32px); max-height: 460px;
+        padding-inline-end: 18px;
+      }
+      .stage-main > * { flex: none; }
+      .stage-main > .cvwrap, .stage-main > #view3 { flex: 1 1 0; min-height: 0; }
+      .stage:not(.is3d) #view3 { display: none; }
+      .cvwrap #cv, #view3 canvas { height: 100%; aspect-ratio: auto; }
+      .stage-main .playbar { gap: 6px; margin: 6px 0 0; }
+      .stage-main .playbar button { padding-inline: 6px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -162,27 +178,30 @@
     <p class="try-hint" data-en="Try it: press “Blow”, switch from “Open pipe” to “Closed pipe”, then try “Mode 2” on each — octave or twelfth?">試試看：按「吹氣」，把「開管」換成「閉管」，再各試「第 2 模式」：跳八度還是十二度？</p>
     <div class="lab wi" id="lab" data-inst="tube">
       <div class="stage" id="stage">
-        <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+        <div class="stage-main">
+          <div class="view-bar">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
+            </div>
+            <div class="view-tools">
+              <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+            </div>
           </div>
-          <div class="view-tools">
-            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
+          <p class="view-msg" id="viewMsg" role="status"></p>
+          <div class="cvwrap">
+            <canvas id="cv" tabindex="0" aria-label="管樂器畫布：上面是調音表，中間是管子的剖面（色帶是壓力的駐波，小點是空氣），下面是沿著管子的壓力與空氣位移。拖曳管子右端可以改變管長；直笛模式點孔可以按住或放開。" data-en-aria-label="Wind instrument canvas: a tuner on top, the tube in section in the middle (the colour band is the pressure standing wave, the dots are the air), and the pressure and air displacement along the tube underneath. Drag the right end of the tube to change its length; on the recorder, tap a hole to cover or uncover it."></canvas>
           </div>
-        </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <div class="cvwrap">
-          <canvas id="cv" tabindex="0" aria-label="管樂器畫布：上面是調音表，中間是管子的剖面（色帶是壓力的駐波，小點是空氣），下面是沿著管子的壓力與空氣位移。拖曳管子右端可以改變管長；直笛模式點孔可以按住或放開。" data-en-aria-label="Wind instrument canvas: a tuner on top, the tube in section in the middle (the colour band is the pressure standing wave, the dots are the air), and the pressure and air displacement along the tube underneath. Drag the right end of the tube to change its length; on the recorder, tap a hole to cover or uncover it."></canvas>
-        </div>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="blow" type="button" class="primary" aria-pressed="false" data-en="▶ Blow">▶ 吹氣</button>
-          <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除吹奏紀錄並停止吹氣；管子、直笛與滑桿的設定不變" data-en-title="Clear the playing record and stop blowing; the tube, recorder and slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <div id="view3"></div>
+          <div class="playbar">
+            <button id="blow" type="button" class="primary" aria-pressed="false" data-en="▶ Blow">▶ 吹氣</button>
+            <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除吹奏紀錄並停止吹氣；管子、直笛與滑桿的設定不變" data-en-title="Clear the playing record and stop blowing; the tube, recorder and slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="hint" id="earHint" data-en="Wearing headphones? Turn the volume down first: a short tube overblown can go above 4000 Hz and sound piercing. The timbres are approximations made from harmonics; one breath lasts at most 12 seconds.">戴耳機的同學先把音量調小：短管超吹的音可能超過 4000 Hz，很尖。音色是用泛音合成的近似；一口氣最多吹 12 秒。</p>
         <p class="hf-warn" id="hfWarn" hidden data-en="This note is above 4 kHz: if you are wearing headphones, turn the volume down first.">這個音超過 4 kHz：戴耳機的同學先把音量調小。</p>
         <p class="hint" id="lowHint" hidden></p>
@@ -199,7 +218,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="樂器|Instrument" data-deck-order="1">
           <h2 data-en="Instrument">樂器</h2>
           <div class="seg full" id="insts" role="group" aria-label="樂器" data-en-aria-label="Instrument">
             <button type="button" id="instTube" data-inst="tube" aria-pressed="true" data-en="A tube">一根管子</button>
@@ -210,19 +229,19 @@
             <button type="button" data-preset="clarinet" data-en-html="Clarinet<small>≈ D3</small>">單簧管<small>≈ D3</small></button>
             <button type="button" data-preset="pan" data-en-html="Pan pipe<small>A4</small>">排笛的一根管<small>A4</small></button>
           </div>
+          <h3 class="sub rec-only" data-en="Common fingerings (baroque)">常用指法（巴洛克式）</h3>
+          <div class="fings rec-only" id="fings" role="group" aria-label="常用指法" data-en-aria-label="Common fingerings">
+            <button type="button" data-f="C5">C5</button><button type="button" data-f="D5">D5</button><button type="button" data-f="E5">E5</button><button type="button" data-f="F5">F5</button>
+            <button type="button" data-f="G5">G5</button><button type="button" data-f="A5">A5</button><button type="button" data-f="B5">B5</button><button type="button" data-f="C6">C6</button>
+          </div>
           <p class="hint" id="instNote"></p>
         </section>
 
-        <section class="card rec-only">
+        <section class="card rec-only" data-deck="直笛的指法|Recorder fingering" data-deck-order="2">
           <h2 data-en="Recorder fingering">直笛的指法</h2>
           <div class="handlbl" aria-hidden="true"><span data-en="Thumb (back)">拇指（背面）</span><span data-en="Left 1">左手 1</span><span data-en="Left 2">左手 2</span><span data-en="Left 3">左手 3</span></div>
           <div class="holes" id="holes" role="group" aria-label="按孔：點一下按住或放開；拇指孔依序是按住、半開、放開" data-en-aria-label="Holes: tap to cover or uncover; the thumb hole goes covered, half-open, open"></div>
           <div class="handlbl" aria-hidden="true"><span data-en="Right 4">右手 4</span><span data-en="Right 5">右手 5</span><span data-en="Right 6">右手 6</span><span data-en="Right 7">右手 7</span></div>
-          <h3 class="sub" data-en="Common fingerings (baroque)">常用指法（巴洛克式）</h3>
-          <div class="fings" id="fings" role="group" aria-label="常用指法" data-en-aria-label="Common fingerings">
-            <button type="button" data-f="C5">C5</button><button type="button" data-f="D5">D5</button><button type="button" data-f="E5">E5</button><button type="button" data-f="F5">F5</button>
-            <button type="button" data-f="G5">G5</button><button type="button" data-f="A5">A5</button><button type="button" data-f="B5">B5</button><button type="button" data-f="C6">C6</button>
-          </div>
           <div class="slider"><label for="pull" data-en="Head joint pulled out (mm)">頭管拉出（mm）</label><output id="pullo"></output>
             <input id="pull" type="range" min="0" max="10" step="0.1" value="0" data-decimals="2"></div>
           <p class="hint" data-en="Players pull the head joint out a little to bring a recorder that is too high back down.">演奏者把頭管拉出一點點，讓偏高的直笛降回來。</p>
@@ -230,7 +249,7 @@
           <p class="hint" id="fingNote" data-en-html="<span class=&quot;fgd&quot;><i class=&quot;c&quot;></i></span> covered, <span class=&quot;fgd&quot;><i class=&quot;o&quot;></i></span> open, <span class=&quot;fgd&quot;><i class=&quot;h&quot;></i></span> half-open; the first dot is the thumb hole. The hole positions were worked out with this simplified model at 20 °C, so the fingerings come out in tune there; a real recorder (conical bore, double holes) differs a little. Green: within ±5 cents."><span class="fgd"><i class="c"></i></span> 按住、<span class="fgd"><i class="o"></i></span> 放開、<span class="fgd"><i class="h"></i></span> 半開；第一個圓點是拇指孔。孔的位置是用這個簡化模型在 20 °C 反推出來的，所以在 20 °C 每個指法都準；真的直笛（錐形管、雙孔）會有一點差別。綠色：±5 音分以內。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="管子|The tube" data-deck-order="3">
           <h2 data-en="The tube">管子</h2>
           <div class="row">
             <span class="lbl" data-en="Kind of tube">管型</span>
@@ -263,7 +282,7 @@
           <p class="hint" id="tubeNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="空氣|The air" data-deck-order="4">
           <h2 data-en="The air">空氣</h2>
           <div class="slider"><label for="temp" data-en="Air temperature T (°C)">氣溫 T（°C）</label><output id="tempo"></output>
             <input id="temp" type="range" min="0" max="40" step="0.1" value="20" data-decimals="2"></div>
