@@ -182,7 +182,17 @@
         "s/math",
         "s/info",
         "s/geog",
-        "s/music"
+        "s/music",
+        "s/civ",
+        "s/health",
+        "s/pe",
+        "s/art",
+        "s/chn",
+        "s/eng",
+        "s/hist",
+        "s/def",
+        "s/career",
+        "s/inq"
       ],
       "$uid": {
         ".write": "auth != null && auth.uid === $uid && newData.exists()",
@@ -199,14 +209,14 @@
         },
         "at": {},
         "s": {
-          ".validate": "newData.hasChildren() && (newData.child('phy').exists() ? newData.child('phy').val() : 0) + (newData.child('chem').exists() ? newData.child('chem').val() : 0) + (newData.child('bio').exists() ? newData.child('bio').val() : 0) + (newData.child('earth').exists() ? newData.child('earth').val() : 0) + (newData.child('math').exists() ? newData.child('math').val() : 0) + (newData.child('info').exists() ? newData.child('info').val() : 0) + (newData.child('geog').exists() ? newData.child('geog').val() : 0) + (newData.child('music').exists() ? newData.child('music').val() : 0) <= newData.parent().child('stars').val()",
+          ".validate": "newData.hasChildren() && (newData.child('phy').exists() ? newData.child('phy').val() : 0) + (newData.child('chem').exists() ? newData.child('chem').val() : 0) + (newData.child('bio').exists() ? newData.child('bio').val() : 0) + (newData.child('earth').exists() ? newData.child('earth').val() : 0) + (newData.child('math').exists() ? newData.child('math').val() : 0) + (newData.child('info').exists() ? newData.child('info').val() : 0) + (newData.child('geog').exists() ? newData.child('geog').val() : 0) + (newData.child('music').exists() ? newData.child('music').val() : 0) + (newData.child('civ').exists() ? newData.child('civ').val() : 0) + (newData.child('health').exists() ? newData.child('health').val() : 0) + (newData.child('pe').exists() ? newData.child('pe').val() : 0) + (newData.child('art').exists() ? newData.child('art').val() : 0) + (newData.child('chn').exists() ? newData.child('chn').val() : 0) + (newData.child('eng').exists() ? newData.child('eng').val() : 0) + (newData.child('hist').exists() ? newData.child('hist').val() : 0) + (newData.child('def').exists() ? newData.child('def').val() : 0) + (newData.child('career').exists() ? newData.child('career').val() : 0) + (newData.child('inq').exists() ? newData.child('inq').val() : 0) <= newData.parent().child('stars').val()",
           "$subj": {
-            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math|info|geog|music)$/) && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0)"
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math|info|geog|music|civ|health|pe|art|chn|eng|hist|def|career|inq)$/) && newData.isNumber() && newData.val() >= (data.exists() ? data.val() : 0)"
           }
         },
         "sa": {
           "$subj": {
-            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math|info|geog|music)$/) && newData.isNumber() && (newData.val() === now || (data.exists() && newData.val() === data.val()))"
+            ".validate": "$subj.matches(/^(phy|chem|bio|earth|math|info|geog|music|civ|health|pe|art|chn|eng|hist|def|career|inq)$/) && newData.isNumber() && (newData.val() === now || (data.exists() && newData.val() === data.val()))"
           }
         },
         "$other": {
