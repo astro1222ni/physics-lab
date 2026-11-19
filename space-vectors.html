@@ -121,6 +121,17 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend i.fill { opacity: .45; height: 10px; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
+    html.labdeck-drawer .stage:not(.is3d) #view3 { display: none; }
+    html.labdeck-drawer .stage.is3d #view3 { flex: 1 1 0; min-height: 0; }
+    html.labdeck-drawer #view3 > div, html.labdeck-drawer #view3 canvas { height: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -134,20 +145,22 @@
     <p class="try-hint" data-en="Try it: drag the picture sideways to turn it, then switch to “Cross product” and change b — watch a × b stay perpendicular to both.">試試看：在圖上左右拖曳轉動視角；再切到「外積與面積」，改變 b，看 a × b 是不是永遠和兩個向量都垂直。</p>
     <div class="lab sv" id="lab" data-mode="inner">
       <div class="stage" id="stage">
-        <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D drawing">2D 斜視圖</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D space">3D 空間</button>
+        <div class="plot-controls">
+          <div class="view-bar">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D drawing">2D 斜視圖</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D space">3D 空間</button>
+            </div>
+            <button type="button" id="resetCam" data-en="Reset view">重設視角</button>
           </div>
-          <button type="button" id="resetCam" data-en="Reset view">重設視角</button>
-        </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="空間向量畫布：坐標軸、向量與它們圍出的圖形，畫成可以轉動的立體圖。左右拖曳轉動視角，方向鍵也可以轉動。" data-en-aria-label="Space vectors canvas: the axes, the vectors and the shapes they span, drawn as a picture you can turn. Drag left and right to turn the view, or use the arrow keys."></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="spin" type="button" class="primary" data-en="Turn slowly">自動旋轉</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄；向量設定不變" data-en-title="Clear the challenge record; the vectors are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <p class="view-msg" id="viewMsg" role="status"></p>
+          <canvas id="cv" tabindex="0" aria-label="空間向量畫布：坐標軸、向量與它們圍出的圖形，畫成可以轉動的立體圖。左右拖曳轉動視角，方向鍵也可以轉動。" data-en-aria-label="Space vectors canvas: the axes, the vectors and the shapes they span, drawn as a picture you can turn. Drag left and right to turn the view, or use the arrow keys."></canvas>
+          <div id="view3"></div>
+          <div class="playbar">
+            <button id="spin" type="button" class="primary" data-en="Turn slowly">自動旋轉</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄；向量設定不變" data-en-title="Clear the challenge record; the vectors are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

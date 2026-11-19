@@ -129,15 +129,16 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
-    const narrow = cw < 640;
-    if (narrow) {
+    const drawer = window.LabDeck?.mode === 'drawer';
+    if (cw < 640 && !drawer) {
       const S = cw - 12, Tn = Math.round(Math.max(150, S * 0.52));
       ch = S + Tn + 22;
       L = { narrow: true, A: { x: 6, y: 6, w: S, h: S }, B: { x: 6, y: S + 16, w: S, h: Tn } };
     } else {
-      ch = 500;
-      const S = ch - 12;
-      L = { narrow: false, A: { x: 6, y: 6, w: S, h: S }, B: { x: S + 16, y: 6, w: cw - S - 22, h: S } };
+      ch = drawer ? cv.clientHeight : 500;
+      const S = drawer ? Math.min(ch - 12, Math.round((cw - 22) * 0.52)) : ch - 12;
+      const y = (ch - S) / 2;
+      L = { narrow: false, A: { x: 6, y: y, w: S, h: S }, B: { x: S + 16, y: 6, w: cw - S - 22, h: ch - 12 } };
     }
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
@@ -248,7 +249,8 @@
       D.ball(c, X(x1), Y(x1), 7, C.accent, { glow: 0.35 });
       rText(c, 'a_1', X(x1) + 10, Y(x1) - 12, C.accent, 'left', 12.5, 700);
     }
-    rText(c, 'y = f(x)', b.x + 8, b.y + 12, C['rs-curve'], 'left', 12, 700);
+    const above = window.LabDeck?.mode === 'drawer' && b.y >= 20;
+    rText(c, 'y = f(x)', b.x + 8, above ? b.y - 9 : b.y + 12, C['rs-curve'], 'left', 12, 700);
     if (!q.full && m >= s.length) D.pill(c, T('下一項沒有定義，數列停在這裡', 'The next term is undefined; the sequence stops here'), b.x + b.w / 2, b.y + b.h - 18, C['rs-bad'], 'center', fnt(11.5, 700));
   }
 
@@ -459,9 +461,8 @@
       if (L.narrow) { drawTiles(ctx, qf, m); drawRatio(ctx, qf, m); }
       else {
         // 寬螢幕：左邊比值、右邊正方形
-        const S = ch - 12;
-        L.A0 = { x: 6, y: 6, w: cw - S - 22, h: S };
-        L.B0 = { x: cw - S - 6, y: 6, w: S, h: S };
+        L.A0 = { x: 6, y: L.B.y, w: L.B.w, h: L.B.h };
+        L.B0 = { x: cw - L.A.w - 6, y: L.A.y, w: L.A.w, h: L.A.h };
         drawRatio(ctx, qf, m); drawTiles(ctx, qf, m);
       }
     }
@@ -874,8 +875,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refreshOutputs();

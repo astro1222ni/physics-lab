@@ -88,6 +88,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -101,10 +109,12 @@
     <p class="try-hint" data-en="Try it: drag the purple vertex straight down until it touches the x-axis. The two roots slide together and merge, and the discriminant becomes exactly 0.">試試看：把紫色的頂點往下拖到剛好碰到 x 軸。兩個根滑到一起合成一個，判別式剛好變成 0。</p>
     <div class="lab qf" id="lab" data-mode="graph" data-form="std" data-dom="0">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="二次函數畫布：圖形模式可以拖曳拋物線的頂點；直線模式另外可以上下拖曳直線和 y 軸的交點；配方模式可以拖曳正方形的角改變 x。" data-en-aria-label="Quadratic canvas: in graph mode drag the vertex of the parabola; in line mode you can also drag where the line crosses the y-axis up and down; in completing-the-square mode drag the corner of the square to change x."></canvas>
-        <div class="playbar">
-          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄、配方回到第 1 步；函數的設定不變" data-en-title="Clear the challenge record and go back to step 1 of completing the square; the function is kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="二次函數畫布：圖形模式可以拖曳拋物線的頂點；直線模式另外可以上下拖曳直線和 y 軸的交點；配方模式可以拖曳正方形的角改變 x。" data-en-aria-label="Quadratic canvas: in graph mode drag the vertex of the parabola; in line mode you can also drag where the line crosses the y-axis up and down; in completing-the-square mode drag the corner of the square to change x."></canvas>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄、配方回到第 1 步；函數的設定不變" data-en-title="Clear the challenge record and go back to step 1 of completing the square; the function is kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

@@ -55,7 +55,11 @@
     .pf .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .pf .panel { grid-template-columns: minmax(0, 1fr); }
     .pf .panel > .card { min-width: 0; }
-    .pf:not([data-mode="roots"]) .mr, .pf:not([data-mode="ivt"]) .mi, .pf:not([data-mode="trans"]) .mt { display: none !important; }
+    body:has(.pf:not([data-mode="roots"])) .mr, body:has(.pf:not([data-mode="ivt"])) .mi, body:has(.pf:not([data-mode="trans"])) .mt { display: none !important; }
+    .mode-picker { padding: 6px 10px 8px; }
+    .mode-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .mode-heading button { min-height: 44px; }
+    .mode-picker h2 { margin: 0; font-size: calc(14px * var(--fs, 1)); }
     .modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
     .modes button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 12px; line-height: 1.3; text-align: left; }
     .modes button[aria-pressed="true"], .pick button[aria-pressed="true"], .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); border-color: var(--accent); font-weight: 600; }
@@ -90,6 +94,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -103,10 +115,12 @@
     <p class="try-hint" data-en="Try it: drag one root onto another. The two crossings merge into a single touch — the graph bounces off the axis instead of crossing it.">試試看：把一個根拖到另一個根上。兩個交點合成一個切點——圖形碰到 x 軸就彈回去，不再穿過。</p>
     <div class="lab pf" id="lab" data-mode="roots">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="多項式畫布：根與圖形模式可以左右拖曳 x 軸上的根；勘根模式可以拖曳區間的兩端；平移伸縮模式可以拖曳對稱中心。" data-en-aria-label="Polynomial canvas: in roots mode drag the roots along the x-axis; in root-trapping mode drag the two ends of the interval; in transformation mode drag the centre of symmetry."></canvas>
-        <div class="playbar">
-          <button id="clear" type="button" data-en="Clear all" title="清除二分法的步驟與挑戰紀錄；滑桿設定不變" data-en-title="Clear the bisection steps and the challenge record; the sliders are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="多項式畫布：根與圖形模式可以左右拖曳 x 軸上的根；勘根模式可以拖曳區間的兩端；平移伸縮模式可以拖曳對稱中心。" data-en-aria-label="Polynomial canvas: in roots mode drag the roots along the x-axis; in root-trapping mode drag the two ends of the interval; in transformation mode drag the centre of symmetry."></canvas>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除二分法的步驟與挑戰紀錄；滑桿設定不變" data-en-title="Clear the bisection steps and the challenge record; the sliders are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
@@ -124,16 +138,19 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
-          <h2 data-en="Mode">模式</h2>
+        <div id="modePicker" class="mode-picker">
+          <div class="mode-heading">
+            <h2 data-en="Mode">模式</h2>
+            <button id="newChal" class="mr" type="button" data-en="New challenge">出一題</button>
+          </div>
           <div class="modes" role="group" aria-label="模式" data-en-aria-label="Mode">
             <button type="button" data-mode="roots" aria-pressed="true" data-en-html="Roots and graph<small>multiplicity, inequalities</small>">根與圖形<small>重根、不等式</small></button>
             <button type="button" data-mode="ivt" aria-pressed="false" data-en-html="Trapping a root<small>sign change, bisection</small>">勘根定理<small>異號、二分法</small></button>
             <button type="button" data-mode="trans" aria-pressed="false" data-en-html="Shift and stretch<small>y = a f(b(x − h)) + k</small>">平移與伸縮<small>y = a f(b(x − h)) + k</small></button>
           </div>
-        </section>
+        </div>
 
-        <section class="card mr">
+        <section class="card mr" data-controls-for="roots">
           <h2 data-en="Roots">根</h2>
           <div class="roots" id="rootPick" role="group" aria-label="選一個根" data-en-aria-label="Choose a root"></div>
           <div class="slider"><label for="rx" data-en="Selected root">選取的根</label><output id="rxo"></output>
@@ -167,7 +184,7 @@
           <p class="hint" data-en="Drag a root on the picture, or pick it above and type its value. Roots dragged onto the same place merge and their multiplicities add up. The degree can be at most 6.">在圖上拖曳根，或在上面選一個根再打入它的值。拖到同一個位置的根會合併、重數相加。次數最多 6。</p>
         </section>
 
-        <section class="card mi">
+        <section class="card mi" data-controls-for="ivt">
           <h2 data-en="Function f(x)">函數 f(x)</h2>
           <div class="pick" id="fnPick" role="group" aria-label="選函數" data-en-aria-label="Choose a function">
             <button type="button" data-fn="w" aria-pressed="true">x³ − 2x − 5</button>
@@ -191,7 +208,7 @@
           <p class="hint" data-en="Bisection keeps the half whose two ends still have opposite signs. Each step halves the width, so ten steps shrink it about a thousand times.">二分法保留兩端仍然異號的那一半。每一步寬度減半，十步大約縮小一千倍。</p>
         </section>
 
-        <section class="card mt">
+        <section class="card mt" data-controls-for="trans">
           <h2 data-en="Original graph y = f(x)">原來的圖形 y = f(x)</h2>
           <div class="pick" id="basePick" role="group" aria-label="選原來的函數" data-en-aria-label="Choose the original function">
             <button type="button" data-base="cube" aria-pressed="true">x³</button>
@@ -246,7 +263,6 @@
           <h2 data-en="Challenge: read the polynomial off its graph">挑戰：看圖寫多項式</h2>
           <p class="hint" data-en="A dashed graph appears with one marked point. Place roots, multiplicities and a so that your graph lies exactly on it, then submit.">出現一條虛線圖形和一個標出來的點。放好根、重數和 a，讓你的圖形和它完全重合，再送出。</p>
           <div class="chal">
-            <button id="newChal" type="button" data-en="New challenge">出一題</button>
             <button id="submitC" type="button" hidden data-en="Submit">送出</button>
             <button id="quitChal" type="button" hidden data-en="Give up">放棄這題</button>
           </div>

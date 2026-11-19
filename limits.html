@@ -83,6 +83,14 @@
     #log:empty, #apt:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -96,10 +104,12 @@
     <p class="try-hint" data-en="Try it: set ε to 0.01 for 1/n and slide N until the status says every term from N on stays in the band — then check whether N − 1 would also work.">試試看：數列 1/n 把 ε 調成 0.01，移動 N 直到狀態列說「第 N 項以後都在帶子裡」，再看看 N − 1 行不行。</p>
     <div class="lab lm" id="lab" data-mode="seq">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="極限畫布：數列模式可以上下拖曳帶子的邊改 ε、左右拖曳 N；函數模式可以拖曳 δ 與 ε 的邊；級數模式畫出部分和怎麼一步步靠近總和。" data-en-aria-label="Limits canvas: in sequence mode drag the band edge up or down to change ε and drag N left or right; in function mode drag the δ and ε edges; in series mode the partial sums step towards the total."></canvas>
-        <div class="playbar">
-          <button id="clear" type="button" data-en="Clear all" title="清除逼近的紀錄、挑戰紀錄，N 回到 1；滑桿設定不變" data-en-title="Clear the approach table and the challenge record and put N back to 1; the sliders are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="極限畫布：數列模式可以上下拖曳帶子的邊改 ε、左右拖曳 N；函數模式可以拖曳 δ 與 ε 的邊；級數模式畫出部分和怎麼一步步靠近總和。" data-en-aria-label="Limits canvas: in sequence mode drag the band edge up or down to change ε and drag N left or right; in function mode drag the δ and ε edges; in series mode the partial sums step towards the total."></canvas>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除逼近的紀錄、挑戰紀錄，N 回到 1；滑桿設定不變" data-en-title="Clear the approach table and the challenge record and put N back to 1; the sliders are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

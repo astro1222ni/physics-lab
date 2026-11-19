@@ -83,6 +83,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -96,11 +104,13 @@
     <p class="try-hint" data-en-html="Try it: pick a<sub>n+1</sub> = r a<sub>n</sub>(1 − a<sub>n</sub>), set n = 60 and slowly raise r from 2.8. Somewhere past 3 the cobweb stops closing in on one point and starts bouncing between two.">試試看：選 a<sub>n+1</sub> = r a<sub>n</sub>(1 − a<sub>n</sub>)，把 n 調到 60，再把 r 從 2.8 慢慢調大。超過 3 之後，蛛網不再收進一個點，而是在兩個點之間來回跳。</p>
     <div class="lab rs" id="lab" data-mode="cob" data-fn="lin">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="遞迴數列畫布：蛛網圖與每一項的折線圖。可以左右拖曳蛛網圖上的起點改變首項。" data-en-aria-label="Recursive sequence canvas: a cobweb diagram and a plot of each term. Drag the starting point on the cobweb left and right to change the first term."></canvas>
-        <div class="playbar">
-          <button id="play" type="button" data-en="Draw step by step">一步一步畫</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄；滑桿設定不變" data-en-title="Clear the challenge record; the sliders are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="遞迴數列畫布：蛛網圖與每一項的折線圖。可以左右拖曳蛛網圖上的起點改變首項。" data-en-aria-label="Recursive sequence canvas: a cobweb diagram and a plot of each term. Drag the starting point on the cobweb left and right to change the first term."></canvas>
+          <div class="playbar">
+            <button id="play" type="button" data-en="Draw step by step">一步一步畫</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄；滑桿設定不變" data-en-title="Clear the challenge record; the sliders are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

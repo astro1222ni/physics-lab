@@ -77,6 +77,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -90,10 +98,12 @@
     <p class="try-hint" data-en="Try it: drag the line slowly towards the circle and watch the distance d and the discriminant Δ change sign at the same moment.">試試看：把直線慢慢拖向圓，看距離 d 和判別式 Δ 在同一個時刻變號。</p>
     <div class="lab lc" id="lab" data-mode="line">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="直線與圓畫布：坐標平面上的圓、直線、圓心到直線的垂線段、交點與弦，或圓外一點的兩條切線；可以拖曳圓心、半徑把手、直線與點 P。" data-en-aria-label="Lines and circles canvas: a circle and a line on the coordinate plane with the perpendicular from the centre, the crossing points and the chord, or the two tangents from a point outside; drag the centre, the radius handle, the line and the point P."></canvas>
-        <div class="playbar">
-          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，圓、直線與點回到一開始的位置" data-en-title="Clear the challenge record and put the circle, line and point back where they started">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="直線與圓畫布：坐標平面上的圓、直線、圓心到直線的垂線段、交點與弦，或圓外一點的兩條切線；可以拖曳圓心、半徑把手、直線與點 P。" data-en-aria-label="Lines and circles canvas: a circle and a line on the coordinate plane with the perpendicular from the centre, the crossing points and the chord, or the two tangents from a point outside; drag the centre, the radius handle, the line and the point P."></canvas>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，圓、直線與點回到一開始的位置" data-en-title="Clear the challenge record and put the circle, line and point back where they started">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

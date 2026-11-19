@@ -82,7 +82,8 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
-    ch = cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     PR = { x: 6, y: 6, w: cw - 12, h: ch - 12 };
@@ -121,7 +122,7 @@
     return { x0: cx - sx / 2, y0: cy - sy / 2, s: s };
   }
   function updateView(now) {
-    if (state.drag || state.play) return viewCur;
+    if ((state.drag || state.play) && viewCur) return viewCur;
     const tv = fitView(contentBox());
     if (!viewCur || reduceMotion.matches) { viewCur = tv; viewTween = null; return viewCur; }
     const same = Math.abs(tv.x0 - viewCur.x0) < 1e-6 && Math.abs(tv.y0 - viewCur.y0) < 1e-6 && Math.abs(tv.s - viewCur.s) < 1e-6;
@@ -202,7 +203,11 @@
     const yAx = clampv(Y(0), b.y + 12, b.y + b.h - 4), xAx = clampv(X(0), b.x + 4, b.x + b.w - 24);
     for (let g = Math.ceil(vb[0] / st) * st; g <= vb[1]; g += st) {
       if (Math.abs(g) < 1e-9) continue;
-      D.haloText(c, fmt(r6(g)), X(g), Math.min(yAx + 3, b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
+      const tick = fmt(r6(g));
+      c.font = fnt(10.5);
+      const inset = c.measureText(tick).width / 2 + 3;
+      const x = window.LabDeck?.mode === 'drawer' ? clampv(X(g), b.x + inset, b.x + b.w - inset) : X(g);
+      D.haloText(c, tick, x, Math.min(yAx + 3, b.y + b.h - 14), C.muted, 'center', 'top', fnt(10.5));
     }
     for (let g = Math.ceil(vb[2] / st) * st; g <= vb[3]; g += st) {
       if (Math.abs(g) < 1e-9 || Y(g) < b.y + 26) continue; // 最上面一格留給「虛軸」
@@ -926,8 +931,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refresh();

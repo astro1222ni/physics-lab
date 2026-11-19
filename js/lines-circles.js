@@ -67,7 +67,8 @@
   let dpr = 1, cw = 300, ch = 480, F = null;
   function layout() {
     const narrow = cw < 600;
-    const H = narrow ? Math.round(Math.max(330, Math.min(cw * 1.08, 440))) : 500;
+    const H = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(330, Math.min(cw * 1.08, 440))) : 500;
     const pad = 10, top = pad, bottom = H - pad;
     const k = (bottom - top) / 21;           // y 方向 −10.5 到 10.5
     const cx = cw / 2;
@@ -635,8 +636,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   updateReadouts();

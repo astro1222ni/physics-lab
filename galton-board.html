@@ -112,6 +112,17 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 4px 4px 0; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
+    html.labdeck-drawer .stage:not(.is3d) #view3 { display: none; }
+    html.labdeck-drawer .stage.is3d #view3 { flex: 1 1 0; min-height: 0; }
+    html.labdeck-drawer #view3 > div, html.labdeck-drawer #view3 canvas { height: 100%; }
   </style>
 </head>
 <body data-en-ready>
@@ -125,20 +136,22 @@
     <p class="try-hint" data-en="Try it: press “Drop 100”, watch the balls pile up, then switch on “Normal curve” and compare.">試試看：按「放 100 顆」，看球一顆顆堆起來，再打開「常態曲線」比一比。</p>
     <div class="lab gb" id="lab">
       <div class="stage" id="stage">
-        <div class="view-bar">
-          <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
-            <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
-            <button type="button" id="view3d" aria-pressed="false" data-en="3D board">3D 釘板</button>
+        <div class="plot-controls">
+          <div class="view-bar">
+            <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
+              <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
+              <button type="button" id="view3d" aria-pressed="false" data-en="3D board">3D 釘板</button>
+            </div>
+            <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           </div>
-          <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
-        </div>
-        <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" tabindex="0" aria-label="高爾頓板畫布：上面是一排排釘子，下面是收集球的格子與長條圖。點一下格子可以選取它，看它的機率與路徑數。" data-en-aria-label="Galton board canvas: rows of pegs above and the bins with their bar chart below. Tap a bin to select it and see its probability and number of paths."></canvas>
-        <div id="view3"></div>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="Keep dropping">連續落球</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉所有落下的球與差距圖；層數、p 等設定不變" data-en-title="Remove all the balls and the gap chart; the number of rows, p and the other settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          <p class="view-msg" id="viewMsg" role="status"></p>
+          <canvas id="cv" tabindex="0" aria-label="高爾頓板畫布：上面是一排排釘子，下面是收集球的格子與長條圖。點一下格子可以選取它，看它的機率與路徑數。" data-en-aria-label="Galton board canvas: rows of pegs above and the bins with their bar chart below. Tap a bin to select it and see its probability and number of paths."></canvas>
+          <div id="view3"></div>
+          <div class="playbar">
+            <button id="play" type="button" class="primary" data-en="Keep dropping">連續落球</button>
+            <button id="clear" type="button" data-en="Clear all" title="清掉所有落下的球與差距圖；層數、p 等設定不變" data-en-title="Remove all the balls and the gap chart; the number of rows, p and the other settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

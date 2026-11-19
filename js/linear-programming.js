@@ -112,7 +112,8 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
-    ch = cw < 640 ? Math.round(clampv(cw * 1.08, 340, 560)) : 520;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : cw < 640 ? Math.round(clampv(cw * 1.08, 340, 560)) : 520;
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     PR = { x: 6, y: 6, w: cw - 12, h: ch - 12 };
@@ -155,7 +156,7 @@
   }
   function targetView() { return fitView(contentBox()); }
   function updateView(now) {
-    if (state.drag || state.sweep) return viewCur;
+    if ((state.drag || state.sweep) && viewCur) return viewCur;
     const tv = targetView();
     if (!viewCur || reduceMotion.matches) { viewCur = tv; viewTween = null; return viewCur; }
     const same = Math.abs(tv.x0 - viewCur.x0) < 1e-6 && Math.abs(tv.y0 - viewCur.y0) < 1e-6 && Math.abs(tv.s - viewCur.s) < 1e-6;
@@ -320,16 +321,23 @@
         c.beginPath(); c.arc(X(v[0]), Y(v[1]), 4.5, 0, Math.PI * 2); c.fill(); c.stroke();
       }
     });
+    const boxes = [];
+    const drawer = window.LabDeck?.mode === 'drawer';
+    const gridLabel = T('格線間距 ', 'Grid spacing ') + fmt(st) + T(' 單位', ' unit' + (st === 1 ? '' : 's'));
+    if (drawer) {
+      c.font = fnt(10.5, 600);
+      boxes.push({ x: b.x + 6, y: b.y + b.h - 27, w: c.measureText(gridLabel).width + 16, h: 24 });
+    }
     // (p, q) 方向
     if (state.showDir && pq > 1e-9) {
       const bx = verts.length && R.bounded ? X(gx) : b.x + b.w * 0.5, by = verts.length && R.bounded ? Y(gy) : b.y + b.h * 0.5;
       const Lp = 54, ex = bx + state.p / pq * Lp, ey = by - state.q / pq * Lp;
       D.arrow(c, bx, by, ex, ey, C['lp-level'], 2.6);
       const sg = state.sense === 'min' ? T('z 變大（求最小時往反方向）', 'z grows (go the other way for the minimum)') : T('z 變大', 'z grows');
-      D.pill(c, '(' + fmt(state.p) + ', ' + fmt(state.q) + ')  ' + sg, ex + (state.p >= 0 ? 6 : -6), ey + (state.q >= 0 ? -4 : 20), C['lp-level'], state.p >= 0 ? 'left' : 'right', fnt(11, 700));
+      const directionBox = D.pill(c, '(' + fmt(state.p) + ', ' + fmt(state.q) + ')  ' + sg, ex + (state.p >= 0 ? 6 : -6), ey + (state.q >= 0 ? -4 : 20), C['lp-level'], state.p >= 0 ? 'left' : 'right', fnt(11, 700));
+      if (drawer) boxes.push(directionBox);
     }
     // 頂點的 z 值（標籤彼此避開，也避開點 P 與頂點本身）
-    const boxes = [];
     const Ppx = X(state.P.x), Ppy = Y(state.P.y);
     c.font = fnt(12, 700);
     const pW = c.measureText('P').width + 12;
@@ -404,7 +412,7 @@
     else if (opt.status === 'unbounded') { msg = state.sense === 'max' ? T('z 沒有最大值', 'z has no largest value') : T('z 沒有最小值', 'z has no smallest value'); mcol = C['lp-bad']; }
     else if (opt.status === 'edge') { msg = T('整條邊都是最佳解', 'A whole edge is best'); mcol = C['lp-best']; }
     if (msg) D.pill(c, msg, b.x + b.w / 2, b.y + 28, mcol, 'center', fnt(12.5, 700));
-    D.pill(c, T('格線間距 ', 'Grid spacing ') + fmt(st) + T(' 單位', ' unit' + (st === 1 ? '' : 's')), b.x + 8, b.y + b.h - 6, C.muted, 'left', fnt(10.5, 600));
+    D.pill(c, gridLabel, b.x + 8, b.y + b.h - 6, C.muted, 'left', fnt(10.5, 600));
     // 鍵盤焦點
     if (kb && kb.focused()) {
       c.strokeStyle = C.accent; c.lineWidth = 1.5; c.setLineDash([5, 4]);
@@ -1048,8 +1056,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refresh();

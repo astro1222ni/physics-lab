@@ -109,7 +109,8 @@
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
     const narrow = cw < 600;
-    ch = narrow ? Math.round(Math.max(340, Math.min(cw * 1.08, 440))) : 480;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(340, Math.min(cw * 1.08, 440))) : 480;
     F = { narrow: narrow, W: cw, H: ch, P: { x0: narrow ? 42 : 52, x1: cw - 12, y0: 14, y1: ch - 30 } };
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
@@ -890,8 +891,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   updateReadouts();

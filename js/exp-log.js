@@ -85,22 +85,26 @@
   let dpr = 1, cw = 300, ch = 460, L = null;
   function layout() {
     const narrow = cw < 600;
+    const drawer = window.LabDeck?.mode === 'drawer';
     const left = narrow ? 44 : 56, right = cw - (narrow ? 12 : 18);
     if (state.mode === 'compound') {
       const h1 = narrow ? 230 : 290, h2 = narrow ? 150 : 170, gap = narrow ? 44 : 48;
-      const t1 = 22, b1 = t1 + h1, t2 = b1 + gap, b2 = t2 + h2;
-      return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: t2, b2: b2, H: b2 + 34 };
+      const t1 = 22, H = drawer ? cv.clientHeight : t1 + h1 + gap + h2 + 34;
+      const b1 = t1 + Math.round((H - t1 - gap - 34) * h1 / (h1 + h2));
+      return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: b1 + gap, b2: H - 34, H: H };
     }
     if (state.mode === 'inverse') {
-      const H = narrow ? Math.round(Math.max(330, Math.min(cw * 1.05, 440))) : Math.round(Math.max(420, Math.min(cw * 0.66, 540)));
+      const H = drawer ? cv.clientHeight
+        : narrow ? Math.round(Math.max(330, Math.min(cw * 1.05, 440))) : Math.round(Math.max(420, Math.min(cw * 0.66, 540)));
       return { narrow: narrow, left: 10, right: cw - 10, top: 10, bottom: H - 10, H: H };
     }
     // semilog：寬畫面左右並排，窄畫面上下疊
     if (narrow) {
-      const h = 210, t1 = 22, b1 = t1 + h, t2 = b1 + 52, b2 = t2 + h;
+      const t1 = 22, h = drawer ? (cv.clientHeight - t1 - 52 - 34) / 2 : 210;
+      const b1 = t1 + h, t2 = b1 + 52, b2 = t2 + h;
       return { narrow: true, panels: [{ x0: left, x1: right, y0: t1, y1: b1 }, { x0: left, x1: right, y0: t2, y1: b2 }], H: b2 + 34 };
     }
-    const mid = cw / 2, t1 = 24, b1 = t1 + 330;
+    const mid = cw / 2, t1 = 24, b1 = drawer ? cv.clientHeight - 38 : t1 + 330;
     return { narrow: false, panels: [{ x0: left, x1: mid - 22, y0: t1, y1: b1 }, { x0: mid + 46, x1: right, y0: t1, y1: b1 }], H: b1 + 38 };
   }
   function resize() {
@@ -258,6 +262,7 @@
       labs.push({ v: q.As, t: num(q.As, 4), col: C['el-simple'], f: fnt(11.5, 600) });
       labs.forEach(function (o) { o.y = F.Y(o.v) - 11; });
       labs.sort(function (p, q2) { return p.y - q2.y; });
+      if (window.LabDeck?.mode === 'drawer') labs[0].y = Math.max(L.t1 + 8, labs[0].y);
       for (let i = 1; i < labs.length; i++) if (labs[i].y - labs[i - 1].y < 17) labs[i].y = labs[i - 1].y + 17;
       const over = labs[labs.length - 1].y - (L.b1 - 10);
       if (over > 0) labs.forEach(function (o) { o.y -= over; });
@@ -696,7 +701,22 @@
     resize();
     emitNow();
   }
-  document.querySelectorAll('.modes button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); }); });
+  // 模式選擇在各操作分頁上方，抽屜和直放操作台都能直接切換。
+  const modePicker = $('modePicker'), modeHome = modePicker.parentElement;
+  function placeModePicker() {
+    const deck = document.querySelector('.labdeck');
+    const host = deck && !deck.hidden ? deck : modeHome;
+    if (modePicker.parentElement !== host) host.prepend(modePicker);
+  }
+  document.addEventListener('DOMContentLoaded', placeModePicker);
+  window.addEventListener('resize', placeModePicker);
+  document.querySelectorAll('.modes button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const mode = b.dataset.mode;
+      setMode(mode);
+      window.LabDeck?.reveal(document.querySelector('[data-controls-for="' + mode + '"]'));
+    });
+  });
 
   // ---------- 播放（看著錢長大） ----------
   function startPlay() {
@@ -874,8 +894,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden && state.play) stopPlay(false); });
   resize();

@@ -73,20 +73,27 @@
     const n = state.n, narrow = cw < 600;
     const padX = narrow ? 8 : 16, axisW = narrow ? 34 : 44;
     const inner = cw - 2 * padX - axisW;
-    const bw = Math.min(inner / (n + 1), narrow ? 40 : 54);
+    const baseBW = Math.min(inner / (n + 1), narrow ? 40 : 54);
     const cx = padX + axisW + inner / 2;
-    const rh = Math.max(9, Math.min(bw * 0.866, (narrow ? 200 : 250) / Math.max(n, 1)));
+    const baseRH = Math.max(9, Math.min(baseBW * 0.866, (narrow ? 200 : 250) / Math.max(n, 1)));
+    const drawer = window.LabDeck?.mode === 'drawer';
+    const H = cv.clientHeight || $('view3').clientHeight || ch;
+    const footer = narrow ? 50 : 54;
+    // 釘陣的水平間距與列距等比縮放，下方保留直方圖和格號。
+    const scale = drawer ? Math.min(1, Math.max(1, H - footer - 62) * 0.56 / (n * baseRH)) : 1;
+    const bw = baseBW * scale, rh = baseRH * scale;
     const ballR = Math.max(2.2, Math.min(bw * 0.25, rh * 0.36, 8));
     const pegR = Math.max(1.6, Math.min(bw * 0.12, rh * 0.16, 5));
     const top = 10, hopH = narrow ? 30 : 40;
     const yp0 = top + hopH + Math.max(ballR * 2 + 6, rh * 0.6);
     const binsTop = yp0 + (n - 1) * rh + rh * 0.75 + pegR;
-    const binsH = narrow ? Math.max(160, Math.min(cw * 0.52, 230)) : Math.max(170, Math.min(cw * 0.28, 250));
+    const binsH = drawer ? Math.max(1, H - binsTop - footer)
+      : narrow ? Math.max(160, Math.min(cw * 0.52, 230)) : Math.max(170, Math.min(cw * 0.28, 250));
     const baseY = binsTop + binsH;
     return {
       narrow: narrow, padX: padX, axisW: axisW, bw: bw, cx: cx, rh: rh, ballR: ballR, pegR: pegR,
       top: top, hopH: hopH, yp0: yp0, binsTop: binsTop, binsH: binsH, baseY: baseY,
-      H: Math.round(baseY + (narrow ? 50 : 54)),
+      H: Math.round(baseY + footer),
       left: cx - (n + 1) / 2 * bw, right: cx + (n + 1) / 2 * bw
     };
   }
@@ -984,8 +991,12 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== cw2) { lastW = cv.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed || cv2.clientWidth !== cw2) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
+    observer.observe(cv2);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopPlay(); });
   resize();

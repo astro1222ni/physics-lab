@@ -83,7 +83,8 @@
   let dpr = 1, cw = 300, ch = 480, F = null;
   function layout() {
     const narrow = cw < 600;
-    const H = narrow ? Math.round(Math.max(330, Math.min(cw * 1.02, 430))) : 500;
+    const H = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(330, Math.min(cw * 1.02, 430))) : 500;
     const pad = 10, top = pad, bottom = H - pad;
     const k = (bottom - top) / 8.4;          // y 方向 −4.2 到 4.2
     return { narrow: narrow, H: H, r: { x0: pad, x1: cw - pad, y0: top, y1: bottom }, k: k, ox: cw / 2, oy: (top + bottom) / 2 };
@@ -898,8 +899,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   updateReadouts();

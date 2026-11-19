@@ -86,6 +86,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -99,12 +107,14 @@
     <p class="try-hint" data-en="Try it: press “Sweep” and watch the orange line slide across the region. The last point it touches is the best answer. Then change p and q and see the winner jump to another corner.">試試看：按「掃描」，看橘色的等高線掃過可行域，最後碰到的那一點就是最好的答案。再改 p、q，看最佳解跳到別的頂點。</p>
     <div class="lab lp" id="lab">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="線性規劃畫布：坐標平面上的限制線、塗色的可行域、目標函數的等高線與點 P。拖曳限制線可以平移它，拖曳橘色等高線可以改 k，點一下平面可以把 P 移過去。" data-en-aria-label="Linear programming canvas: constraint lines, the shaded feasible region, the level line of the objective and the point P. Drag a constraint line to slide it, drag the orange level line to change k, and tap the plane to move P there."></canvas>
-        <div class="playbar">
-          <button id="sweep" type="button" class="primary" data-en="Sweep">掃描</button>
-          <button id="mark" type="button" data-en="Record P">記下 P</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除記下的點與挑戰紀錄；限制式與目標函數不變" data-en-title="Clear the recorded points and the challenge record; the constraints and the objective are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="線性規劃畫布：坐標平面上的限制線、塗色的可行域、目標函數的等高線與點 P。拖曳限制線可以平移它，拖曳橘色等高線可以改 k，點一下平面可以把 P 移過去。" data-en-aria-label="Linear programming canvas: constraint lines, the shaded feasible region, the level line of the objective and the point P. Drag a constraint line to slide it, drag the orange level line to change k, and tap the plane to move P there."></canvas>
+          <div class="playbar">
+            <button id="sweep" type="button" class="primary" data-en="Sweep">掃描</button>
+            <button id="mark" type="button" data-en="Record P">記下 P</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除記下的點與挑戰紀錄；限制式與目標函數不變" data-en-title="Clear the recorded points and the challenge record; the constraints and the objective are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

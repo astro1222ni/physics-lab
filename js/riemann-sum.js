@@ -91,10 +91,14 @@
   function layout() {
     const narrow = cw < 600;
     const left = narrow ? 46 : 58, right = cw - (narrow ? 12 : 18);
-    const h1 = narrow ? 270 : 340, t1 = 16, b1 = t1 + h1;
-    if (!state.showErr) return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, H: b1 + 30 };
-    const h2 = narrow ? 170 : 190, t2 = b1 + 52, b2 = t2 + h2;
-    return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: t2, b2: b2, H: b2 + 34 };
+    const t1 = 16, h1 = narrow ? 270 : 340, h2 = narrow ? 170 : 190;
+    const drawer = window.LabDeck?.mode === 'drawer';
+    const gap = drawer ? 40 : 52, footer = drawer ? 26 : 34;
+    const H = drawer ? cv.clientHeight : t1 + h1 + (state.showErr ? gap + h2 + footer : 30);
+    if (!state.showErr) return { narrow: narrow, left: left, right: right, t1: t1, b1: H - 30, H: H };
+    const available = H - t1 - gap - footer;
+    const b1 = t1 + Math.round(available * (drawer ? 0.52 : h1 / (h1 + h2)));
+    return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: b1 + gap, b2: H - footer, H: H };
   }
   function resize() {
     const w = cv.clientWidth;
@@ -320,7 +324,7 @@
     c.strokeStyle = alpha(C.text, 0.45); c.lineWidth = 1;
     c.beginPath(); c.moveTo(P.x0, P.y0); c.lineTo(P.x0, P.y1); c.lineTo(P.x1, P.y1); c.stroke();
     c.restore();
-    D.haloText(c, 'n', P.x1, P.y1 + 24, C.muted, 'right', 'middle', fnt(11.5, 700, true));
+    D.haloText(c, 'n', P.x1, P.y1 + (window.LabDeck?.mode === 'drawer' ? 18 : 24), C.muted, 'right', 'middle', fnt(11.5, 700, true));
     // 各條曲線（目前的取法畫粗）
     const cur = state.rule === 'ul' ? ['upper', 'lower'] : [state.rule];
     const order = show.filter(function (k) { return cur.indexOf(k) < 0; }).concat(cur.filter(function (k) { return show.indexOf(k) >= 0; }));
@@ -774,8 +778,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth && cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden && state.play) stopPlay(false); });
   resize();

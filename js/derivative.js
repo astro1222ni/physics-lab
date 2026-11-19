@@ -80,8 +80,10 @@
     const left = narrow ? 38 : 48, right = cw - (narrow ? 10 : 16);
     const t1 = 10, h1 = narrow ? Math.round(Math.max(230, Math.min(cw * 0.7, 300))) : Math.round(Math.max(270, Math.min(cw * 0.42, 340)));
     const gap = narrow ? 30 : 34;
-    const t2 = t1 + h1 + gap, h2 = narrow ? 150 : 175;
-    return { narrow: narrow, left: left, right: right, t1: t1, b1: t1 + h1, t2: t2, b2: t2 + h2, H: t2 + h2 + (narrow ? 26 : 28) };
+    const h2 = narrow ? 150 : 175, footer = narrow ? 26 : 28;
+    const H = window.LabDeck?.mode === 'drawer' ? cv.clientHeight : t1 + h1 + gap + h2 + footer;
+    const b1 = t1 + Math.round((H - t1 - gap - footer) * h1 / (h1 + h2));
+    return { narrow: narrow, left: left, right: right, t1: t1, b1: b1, t2: b1 + gap, b2: H - footer, H: H };
   }
   let VX = [-4, 4], VY = [-1, 1], VD = [-1, 1];
   function updateView() { VX = F().x; VY = DC.viewY(state.fn, state.k, 'f'); VD = DC.viewY(state.fn, state.k, 'd'); }
@@ -981,8 +983,12 @@
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   const stage = $('stage');
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== cw2) { lastW = cv.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed || cv2.clientWidth !== cw2) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
+    observer.observe(cv2);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) { stopPlay(); } });
   resize();

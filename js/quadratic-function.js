@@ -70,7 +70,8 @@
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
     const narrow = cw < 600;
-    ch = narrow ? Math.round(Math.max(340, Math.min(cw * 1.05, 440))) : 500;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(340, Math.min(cw * 1.05, 440))) : 500;
     const P0 = { x0: 6, x1: cw - 6, y0: 6, y1: ch - 6 };
     const s = (P0.y1 - P0.y0) / 16.6; // 縱向 −8.3 到 8.3
     F = { narrow: narrow, P: P0, s: s, cx: (P0.x0 + P0.x1) / 2, cy: (P0.y0 + P0.y1) / 2 };
@@ -192,7 +193,8 @@
       if (!inView(r, 0)) return;
       D.ball(c, X(r), Y(0), q.roots.length === 1 ? 7.5 : 6.5, C['qf-root'], { glow: q.roots.length === 1 ? 0.5 : 0.25 });
       const lab = q.roots.length === 1 ? T('二重根 ', 'double root ') + fmt(r, 3) : fmt(r, 3);
-      D.pill(c, lab, X(r), Y(0) + (a > 0 ? 22 : -16) * (q.k * a > 0 ? 1 : 1), C['qf-root'], q.roots.length === 2 ? (i === 0 ? 'right' : 'left') : 'center', fnt(11.5, 700));
+      const labelY = window.LabDeck?.mode === 'drawer' ? -10 : a > 0 ? 22 : -16;
+      D.pill(c, lab, X(r), Y(0) + labelY, C['qf-root'], q.roots.length === 2 ? (i === 0 ? 'right' : 'left') : 'center', fnt(11.5, 700));
     });
     // 區間上的最大最小
     if (q.dom) {
@@ -840,8 +842,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refreshOutputs();

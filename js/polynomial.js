@@ -105,7 +105,8 @@
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
     const narrow = cw < 600;
-    ch = narrow ? Math.round(Math.max(380, Math.min(cw * 1.15, 470))) : 500;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(380, Math.min(cw * 1.15, 470))) : 500;
     layout();
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
@@ -580,11 +581,20 @@
   // ---------- 根的清單 ----------
   function renderRootPick() {
     const box = $('rootPick');
-    let h = '';
+    // 保留既有按鈕，切換根或改重數時，鍵盤焦點仍停在同一個操作項。
+    while (box.children.length > state.roots.length) box.lastElementChild.remove();
     state.roots.forEach(function (r, i) {
-      h += '<button type="button" data-i="' + i + '" aria-pressed="' + (i === state.sel) + '">x = ' + fmt(r.x, 4) + (r.m > 1 ? ' ×' + r.m : '') + '</button>';
+      let button = box.children[i];
+      if (!button) {
+        button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.i = i;
+        box.appendChild(button);
+      }
+      button.setAttribute('aria-pressed', String(i === state.sel));
+      const label = 'x = ' + fmt(r.x, 4) + (r.m > 1 ? ' ×' + r.m : '');
+      if (button.textContent !== label) button.textContent = label;
     });
-    if (box.innerHTML !== h) box.innerHTML = h;
     document.querySelectorAll('#mulPick button').forEach(function (b) {
       const sr = state.roots[state.sel];
       b.setAttribute('aria-pressed', String(!!sr && +b.getAttribute('data-m') === sr.m));
@@ -749,7 +759,22 @@
     refresh();
     emitMode();
   }
-  document.querySelectorAll('.modes button').forEach(function (b) { b.addEventListener('click', function () { setMode(b.getAttribute('data-mode')); }); });
+  // 模式選擇在各操作分頁上方，抽屜和直放操作台都能直接切換。
+  const modePicker = $('modePicker'), modeHome = modePicker.parentElement;
+  function placeModePicker() {
+    const deck = document.querySelector('.labdeck');
+    const host = deck && !deck.hidden ? deck : modeHome;
+    if (modePicker.parentElement !== host) host.prepend(modePicker);
+  }
+  document.addEventListener('DOMContentLoaded', placeModePicker);
+  window.addEventListener('resize', placeModePicker);
+  document.querySelectorAll('.modes button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      const mode = b.dataset.mode;
+      setMode(mode);
+      window.LabDeck?.reveal(document.querySelector('[data-controls-for="' + mode + '"]'));
+    });
+  });
 
   // ---------- 全部清除 ----------
   $('clear').addEventListener('click', function () {
@@ -951,7 +976,11 @@
     for (const id in eqKey) delete eqKey[id];
     refresh();
   }
-  $('newChal').addEventListener('click', function () { if (state.chal) quitChal(true); startChal(); });
+  $('newChal').addEventListener('click', function () {
+    if (state.chal) quitChal(true);
+    startChal();
+    window.LabDeck?.reveal($('quitChal'));
+  });
   $('submitC').addEventListener('click', submitC);
   $('quitChal').addEventListener('click', function () { quitChal(false); });
   function renderLog() {
@@ -1004,8 +1033,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refreshOutputs();

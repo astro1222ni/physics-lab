@@ -83,6 +83,14 @@
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .ov { text-decoration: overline; }
     .legend .sq { width: 10px; height: 10px; border-radius: 2px; opacity: .55; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -96,11 +104,13 @@
     <p class="try-hint" data-en="Try it: turn on “Squared residuals”, then drag a single point far away from the others — watch one huge square pull the whole line towards it.">試試看：打開「殘差平方」，再把一個點拖到離大家很遠的地方：一個超大的正方形會把整條直線拉過去。</p>
     <div class="lab rg" id="lab">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="散布圖畫布：點一下加點、拖曳移動點；畫出迴歸直線、殘差、殘差平方、平均點與相關係數的計量表。" data-en-aria-label="Scatter plot canvas: tap to add a point and drag points to move them; shows the regression line, residuals, squared residuals, the mean point and a gauge for the correlation coefficient."></canvas>
-        <div class="playbar">
-          <button id="undo" type="button" data-en="Undo">復原</button>
-          <button id="clear" type="button" data-en="Clear all" title="清掉所有的點與挑戰紀錄；勾選的顯示方式不變" data-en-title="Remove every point and the challenge record; the display options are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="散布圖畫布：點一下加點、拖曳移動點；畫出迴歸直線、殘差、殘差平方、平均點與相關係數的計量表。" data-en-aria-label="Scatter plot canvas: tap to add a point and drag points to move them; shows the regression line, residuals, squared residuals, the mean point and a gauge for the correlation coefficient."></canvas>
+          <div class="playbar">
+            <button id="undo" type="button" data-en="Undo">復原</button>
+            <button id="clear" type="button" data-en="Clear all" title="清掉所有的點與挑戰紀錄；勾選的顯示方式不變" data-en-title="Remove every point and the challenge record; the display options are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

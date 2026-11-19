@@ -82,6 +82,14 @@
     #log:empty { display: none; }
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -95,10 +103,12 @@
     <p class="try-hint" data-en-html="Try it: drag the tip of <strong>b</strong> until it lies on the line of <strong>a</strong>. The slanted grid collapses onto a single line — most points can no longer be reached.">試試看：把 <strong>b</strong> 的箭頭拖到 <strong>a</strong> 所在的直線上。斜坐標格子塌成一條線——大部分的點再也到不了。</p>
     <div class="lab pv" id="lab" data-mode="lin">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="平面向量畫布：拖曳 a、b 的箭頭改變向量（落在整數格點）；線性組合模式可以拖曳點 P。" data-en-aria-label="Plane vector canvas: drag the tips of a and b to change the vectors (they snap to whole-number grid points); in linear-combination mode drag the point P."></canvas>
-        <div class="playbar">
-          <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，P 回到 a + b；向量設定不變" data-en-title="Clear the challenge record and put P back at a + b; the vectors are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="平面向量畫布：拖曳 a、b 的箭頭改變向量（落在整數格點）；線性組合模式可以拖曳點 P。" data-en-aria-label="Plane vector canvas: drag the tips of a and b to change the vectors (they snap to whole-number grid points); in linear-combination mode drag the point P."></canvas>
+          <div class="playbar">
+            <button id="clear" type="button" data-en="Clear all" title="清除挑戰紀錄，P 回到 a + b；向量設定不變" data-en-title="Clear the challenge record and put P back at a + b; the vectors are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

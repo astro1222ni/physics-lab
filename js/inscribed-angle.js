@@ -86,7 +86,8 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
-    ch = cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     PR = { x: 6, y: 6, w: cw - 12, h: ch - 12 };
@@ -929,8 +930,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   // 滑桿起始值
   state.R = val(sliders.R); state.th1 = val(sliders.th1); state.th2 = val(sliders.th2);

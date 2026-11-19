@@ -87,6 +87,14 @@
   let dpr = 1, cw = 300, ch = 520, L = null;
   function layout() {
     const narrow = cw < 600;
+    if (window.LabDeck?.mode === 'drawer') {
+      // 散布圖維持正方形，右半部留給相關係數與殘差讀數。
+      const H = cv.clientHeight, left = narrow ? 34 : 46;
+      const side = Math.min(H - 42, Math.round((cw - left - 22) * 0.50));
+      const top = Math.max(12, (H - side - 20) / 2);
+      return { narrow: narrow, plot: { x0: left, x1: left + side, y0: top, y1: top + side },
+        gauge: { x0: left + side + 16, x1: cw - 10, y0: 16 }, H: H };
+    }
     if (narrow) {
       const left = 34, right = cw - 10, side = right - left, top = 12;
       const y1 = top + side;
@@ -361,12 +369,14 @@
     if (!rows.length) { D.haloText(c, '—', g.x0, y + 6, C.muted, 'left', 'middle', fnt(12)); y += 24; }
     const vmax = Math.max.apply(null, rows.map(function (r) { return r.v; }).concat([1e-9])) * 1.08;
     const nameW = L.narrow ? Math.min(118, w * 0.4) : Math.min(132, w * 0.42), valW = 54;
+    const barBelow = window.LabDeck?.mode === 'drawer' && w < 240;
     rows.forEach(function (r) {
       D.haloText(c, r.name, g.x0, y + 7, C.muted, 'left', 'middle', fnt(11.5));
-      const x0 = g.x0 + nameW, x1 = g.x1 - valW, bw = Math.max(2, (x1 - x0) * r.v / vmax);
-      c.save(); D.roundRect(c, x0, y, bw, 14, 4); c.fillStyle = alpha(r.col, 0.8); c.fill(); c.restore();
+      const x0 = barBelow ? g.x0 : g.x0 + nameW, x1 = barBelow ? g.x1 : g.x1 - valW;
+      const bw = Math.max(2, (x1 - x0) * r.v / vmax);
+      c.save(); D.roundRect(c, x0, barBelow ? y + 19 : y, bw, barBelow ? 8 : 14, 4); c.fillStyle = alpha(r.col, 0.8); c.fill(); c.restore();
       D.haloText(c, num(r.v, r.v >= 100 ? 1 : 2), g.x1, y + 7, C.text, 'right', 'middle', fnt(12, 600));
-      y += 22;
+      y += barBelow ? 36 : 22;
     });
     if (mineOn && minS != null && minS > 1e-9) {
       D.haloText(c, T('我的 ÷ 最小 = ', 'mine ÷ least = ') + num(s.mineSse / minS, 3), g.x1, y + 2, s.mineSse <= 1.02 * minS + 1e-9 ? C['rg-data'] : C.muted, 'right', 'top', fnt(11.5, 600));
@@ -809,8 +819,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refreshLock();

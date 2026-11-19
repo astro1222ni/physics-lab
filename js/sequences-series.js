@@ -135,7 +135,8 @@
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
     const narrow = cw < 600;
-    ch = narrow ? Math.round(Math.max(360, Math.min(cw * 1.1, 460))) : 500;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : narrow ? Math.round(Math.max(360, Math.min(cw * 1.1, 460))) : 500;
     F = { narrow: narrow, P: { x0: 6, x1: cw - 6, y0: 6, y1: ch - 6 } };
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
@@ -752,8 +753,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refreshOutputs();

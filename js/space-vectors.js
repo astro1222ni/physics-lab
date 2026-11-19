@@ -77,13 +77,16 @@
   let dpr = 1, cw = 300, ch = 420, L = null;
   function layout() {
     const narrow = cw < 600;
+    const drawer = window.LabDeck?.mode === 'drawer';
     const hm = narrow ? Math.round(Math.max(320, Math.min(cw * 1.0, 420))) : Math.round(Math.max(400, Math.min(cw * 0.7, 540)));
     let vh = 0, pw = 0, gap = narrow ? 6 : 10;
     if (state.show.views) {
       pw = Math.floor(Math.min(narrow ? 999 : 210, (cw - 2 * gap - 8) / 3));
+      if (drawer) pw = Math.min(pw, Math.round(cv.clientHeight * 0.32));
       vh = pw + (narrow ? 22 : 26) + 8;
     }
-    return { narrow: narrow, hm: hm, pw: pw, gap: gap, vh: vh, H: hm + vh };
+    const H = drawer ? cv.clientHeight : hm + vh;
+    return { narrow: narrow, hm: H - vh, pw: pw, gap: gap, vh: vh, H: H };
   }
   function resize() {
     const w = cv.clientWidth;
@@ -197,7 +200,11 @@
     const len = Math.hypot(dx, dy);
     if (len < 1) { dx = 1; dy = -1; } else { dx /= len; dy /= len; }
     const off = (px || 15) * 0.95;
-    D.haloText(c, text, at.x + dx * off, at.y + dy * off, color, 'center', 'middle', fnt(px || 15, 700, italic !== false));
+    let x = at.x + dx * off, y = at.y + dy * off;
+    if (window.LabDeck?.mode === 'drawer' && (y < off || y > L.hm - off)) {
+      x = at.x + off; y = Math.max(off, Math.min(L.hm - off, at.y));
+    }
+    D.haloText(c, text, x, y, color, 'center', 'middle', fnt(px || 15, 700, italic !== false));
   }
   function poly(c, pts, fill, stroke, width, dash) {
     if (pts.length < 2) return;
@@ -342,8 +349,9 @@
         poly(c, [[0, 0, 0]].concat(pts), alpha(C.accent, 0.13), null);
         strokePath(c, pts, alpha(C.accent, 0.9), 1.6);
         const pm = P(SV.scale(pts[14], 1.9));
-        if (!hide) D.haloText(c, 'θ = ' + num(ang, 1) + '°', pm.x, pm.y, C.accent, 'center', 'middle', fnt(12.5, 700));
-        else D.haloText(c, 'θ', pm.x, pm.y, C.accent, 'center', 'middle', fnt(13, 700, true));
+        const text = hide ? 'θ' : 'θ = ' + num(ang, 1) + '°';
+        if (window.LabDeck?.mode === 'drawer') D.pill(c, text, 8, 25, C.accent, 'left', fnt(12, 700));
+        else D.haloText(c, text, pm.x, pm.y, C.accent, 'center', 'middle', hide ? fnt(13, 700, true) : fnt(12.5, 700));
       }
     }
     const items = [vecItem('a', a, C['sv-a']), vecItem('b', b, C['sv-b'])];
@@ -1062,8 +1070,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden && state.spinning) setSpin(false); });
   if (reducedMotion) setSpin(false);

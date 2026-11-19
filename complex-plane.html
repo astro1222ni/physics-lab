@@ -80,6 +80,14 @@
     .log-empty { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 8px 0 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .legend .dash { background: none !important; border-top: 2px dashed currentColor; height: 0 !important; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -93,12 +101,14 @@
     <p class="try-hint" data-en="Try it: in “Multiply”, drag the blue point z and press “Play”. Watch the grid turn by the angle of z and stretch by |z|. Then put z on i.">試試看：在「乘法」拖曳藍色的點 z，再按「播放」，看整張方格紙轉過 z 的角度、伸縮 |z| 倍。再把 z 放到 i 上看看。</p>
     <div class="lab cx" id="lab">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="複數平面畫布：實軸、虛軸、單位圓與可以拖曳的點 z、w，以及加法、乘法、次方或方根的結果。" data-en-aria-label="Complex plane canvas: the real and imaginary axes, the unit circle, the draggable points z and w, and the result of adding, multiplying, raising to a power or taking roots."></canvas>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="Play">播放</button>
-          <button id="mark" type="button" data-en="Record">記下這一組</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除記下的結果與挑戰紀錄；z、w 與 n 不變" data-en-title="Clear the recorded results and the challenge record; z, w and n are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="複數平面畫布：實軸、虛軸、單位圓與可以拖曳的點 z、w，以及加法、乘法、次方或方根的結果。" data-en-aria-label="Complex plane canvas: the real and imaginary axes, the unit circle, the draggable points z and w, and the result of adding, multiplying, raising to a power or taking roots."></canvas>
+          <div class="playbar">
+            <button id="play" type="button" class="primary" data-en="Play">播放</button>
+            <button id="mark" type="button" data-en="Record">記下這一組</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除記下的結果與挑戰紀錄；z、w 與 n 不變" data-en-title="Clear the recorded results and the challenge record; z, w and n are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">

@@ -105,7 +105,8 @@
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
-    ch = cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
+    ch = window.LabDeck?.mode === 'drawer' ? cv.clientHeight
+      : cw < 640 ? Math.round(clampv(cw * 1.02, 340, 560)) : 520;
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     PR = { x: 6, y: 6, w: cw - 12, h: ch - 12 };
@@ -251,6 +252,16 @@
       const dx = L.dx || 0, dy = L.dy || 0;
       const cands = L.center ? [[-w / 2, -h / 2], [-w / 2, -h / 2 - 16], [-w / 2, -h / 2 + 16], [-w / 2 - 20, -h / 2], [-w / 2 + 20, -h / 2]]
         : [[10, -10 - h], [10, 8], [-10 - w, -10 - h], [-10 - w, 8], [-w / 2, -16 - h], [-w / 2, 14], [16, -h / 2], [-16 - w, -h / 2]];
+      const drawer = window.LabDeck?.mode === 'drawer';
+      if (drawer && L.center) {
+        // 三邊、三角與正方形面積擠在一起時，從錨點旁往外找空位。
+        for (let radius = 24; radius <= 96; radius += 12) {
+          for (let i = 0; i < 8; i++) {
+            const angle = i * Math.PI / 4;
+            cands.push([Math.cos(angle) * radius - w / 2, Math.sin(angle) * radius - h / 2]);
+          }
+        }
+      }
       let pos = null;
       for (let k = 0; k < cands.length; k++) {
         const bx = L.x + dx + cands[k][0], by = L.y + dy + cands[k][1];
@@ -261,6 +272,13 @@
       if (!pos) {
         if (L.pri < 2) return;
         pos = { x: clampv(L.x + dx + 10, PR.x + 4, PR.x + PR.w - w - 4), y: clampv(L.y + dy - 10 - h, PR.y + 4, PR.y + PR.h - h - 4) };
+      }
+      if (drawer && L.center) {
+        const endX = clampv(L.x, pos.x, pos.x + w), endY = clampv(L.y, pos.y, pos.y + h);
+        if (Math.hypot(endX - L.x, endY - L.y) > 6) {
+          c.strokeStyle = alpha(L.col, 0.65); c.lineWidth = 1;
+          c.beginPath(); c.moveTo(L.x, L.y); c.lineTo(endX, endY); c.stroke();
+        }
       }
       boxes.push(D.pill(c, L.text, pos.x + w / 2, pos.y + h, L.col, 'center', L.font || fnt(11.5, 700)));
     });
@@ -810,8 +828,11 @@
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && ev.detail.name === 'lang') themeChanged(); });
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe($('stage'));
+    const observer = new ResizeObserver(function () {
+      const changed = cv.clientWidth && (cv.clientWidth !== cw || cv.clientHeight !== ch);
+      if (changed) requestAnimationFrame(resize);
+    });
+    observer.observe(cv);
   } else window.addEventListener('resize', resize);
   resize();
   refresh();

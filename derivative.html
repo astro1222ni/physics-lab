@@ -94,6 +94,14 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
     .chart-note { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+    .plot-controls { display: contents; }
+    html.labdeck-drawer .stage { padding-inline-end: 32px; }
+    html.labdeck-drawer .plot-controls {
+      display: flex; flex-direction: column;
+      height: calc(100dvh - 38px); /* 留出實驗台內距與上下邊界 */
+    }
+    html.labdeck-drawer .plot-controls > * { flex: none; }
+    html.labdeck-drawer #cv { flex: 1 1 0; min-height: 0; }
   </style>
 </head>
 <body data-en-ready>
@@ -107,11 +115,13 @@
     <p class="try-hint" data-en="Try it: press “Let h → 0” and watch the orange secant turn into the pink tangent. Then press “Walk along the curve” to trace f′(x) underneath.">試試看：按「讓 h → 0」，看橘色的割線慢慢轉成粉紅色的切線；再按「沿著曲線走」，在下方描出 f′(x)。</p>
     <div class="lab dv" id="lab" data-fn="cubic">
       <div class="stage" id="stage">
-        <canvas id="cv" tabindex="0" aria-label="導數畫布：上面是函數 y = f(x)、切點 A、另一點 B 與割線、切線；下面是導函數 y = f′(x)，兩格共用 x 軸。在圖上左右拖曳移動切點 A，拖曳點 B 改變 h。" data-en-aria-label="Derivative canvas: on top the function y = f(x) with the point of tangency A, a second point B, the secant and the tangent; underneath the derivative y = f′(x), sharing the x-axis. Drag left and right on the graphs to move A, and drag B to change h."></canvas>
-        <div class="playbar">
-          <button id="play" type="button" class="primary" data-en="Walk along the curve">沿著曲線走</button>
-          <button id="clear" type="button" data-en="Clear all" title="清除描出來的導函數與挑戰紀錄；滑桿設定不變" data-en-title="Clear the traced derivative and the challenge record; the slider settings are kept">全部清除</button>
-          <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+        <div class="plot-controls">
+          <canvas id="cv" tabindex="0" aria-label="導數畫布：上面是函數 y = f(x)、切點 A、另一點 B 與割線、切線；下面是導函數 y = f′(x)，兩格共用 x 軸。在圖上左右拖曳移動切點 A，拖曳點 B 改變 h。" data-en-aria-label="Derivative canvas: on top the function y = f(x) with the point of tangency A, a second point B, the secant and the tangent; underneath the derivative y = f′(x), sharing the x-axis. Drag left and right on the graphs to move A, and drag B to change h."></canvas>
+          <div class="playbar">
+            <button id="play" type="button" class="primary" data-en="Walk along the curve">沿著曲線走</button>
+            <button id="clear" type="button" data-en="Clear all" title="清除描出來的導函數與挑戰紀錄；滑桿設定不變" data-en-title="Clear the traced derivative and the challenge record; the slider settings are kept">全部清除</button>
+            <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
+          </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
