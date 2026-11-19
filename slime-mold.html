@@ -29,7 +29,8 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"生物與科技","item":"https://lab.astroni.org/biology.html#biotech"},{"@type":"ListItem","position":4,"name":"仿生與生物運算","item":"https://lab.astroni.org/biology.html#ch-bioinspired"},{"@type":"ListItem","position":5,"name":"黏菌找路：迷宮與鐵路網","item":"https://lab.astroni.org/slime-mold.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611171020">
+  <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 黏菌找路頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -121,9 +122,25 @@
     .sm3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .sm3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .sm3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .sm3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .sm3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .sm3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .sm3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
+    .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
   </style>
 </head>
 <body data-en-ready>
@@ -137,9 +154,11 @@
     <p class="try-hint" data-en="Try it: press “Grow” and watch the dead ends fade first. Then set μ to 0.5 and grow again.">試試看：按「開始生長」，看死路怎麼先消失；再把 μ 調到 0.5 重來一次。</p>
 
     <h2 class="lab-title" data-en-html="1 · A slime mould in a maze<small>Tubes that carry more flow grow thicker (Nakagaki 2000, Tero 2007)</small>">一・迷宮裡的黏菌<small>流得多的管子變粗（Nakagaki 2000、Tero 2007）</small></h2>
-    <div class="lab sm" id="lab1">
+    <div class="lab sm" id="lab1" data-no-spill>
       <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="洋菜膠上的迷宮：黃色是黏菌的管子，越粗表示導度越大；兩片燕麥是食物。可以拖曳燕麥換位置，或點選畫布後用方向鍵移動。旁邊是剩下的管子隨時間變化的圖" data-en-aria-label="A maze on agar: the yellow lines are the slime mould’s tubes, thicker for more conductance; the two oat flakes are food. Drag an oat flake to move it, or focus the canvas and use the arrow keys. Beside it, a graph of how much tube is left over time"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="洋菜膠上的迷宮：黃色是黏菌的管子，越粗表示導度越大；兩片燕麥是食物。可以拖曳燕麥換位置，或點選畫布後用方向鍵移動。旁邊是剩下的管子隨時間變化的圖" data-en-aria-label="A maze on agar: the yellow lines are the slime mould’s tubes, thicker for more conductance; the two oat flakes are food. Drag an oat flake to move it, or focus the canvas and use the arrow keys. Beside it, a graph of how much tube is left over time"></canvas>
+        </div>
         <div class="playbar">
           <button id="run1" type="button" class="primary" data-en="Grow">開始生長</button>
           <button id="finish1" type="button" data-en="Jump to the end">直接看結果</button>
@@ -148,6 +167,7 @@
           <button id="clear1" type="button" data-en="Clear all" title="重新鋪滿並清除紀錄表，設定不變" data-en-title="Fill the maze again and clear the table; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
@@ -155,7 +175,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="管子怎麼調整|How the tubes adapt" data-deck-order="1" data-section="lab1">
           <h2 data-en="How the tubes adapt">管子怎麼調整</h2>
           <div class="slider"><label for="mu" data-en-html="Exponent μ in f(Q) = |Q|<sup>μ</sup>">指數 μ（f(Q) = |Q|<sup>μ</sup>）</label><output id="muo"></output>
             <input id="mu" type="range" min="0.3" max="2.5" step="0.05" value="1" data-decimals="2"></div>
@@ -163,7 +183,7 @@
           <div class="slider"><label for="noise" data-en="Unevenness of the starting tubes">起始管徑的不均勻</label><output id="noiseo"></output>
             <input id="noise" type="range" min="0" max="0.5" step="0.01" value="0.1" data-decimals="2"></div>
         </section>
-        <section class="card">
+        <section class="card" data-deck="迷宮|The maze" data-deck-order="2" data-section="lab1">
           <h2 data-en="The maze">迷宮</h2>
           <div class="slider"><label for="mw" data-en="Width (cells)">寬（格）</label><output id="mwo"></output>
             <input id="mw" type="range" min="6" max="24" step="1" value="12" data-decimals="0"></div>
@@ -181,7 +201,7 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · A slime mould railway for Taiwan<small>Food on many cities: cost, distance and fault tolerance (Tero et al. 2010)</small>">二・黏菌設計的臺灣鐵路<small>食物放在好幾個城市：成本、距離與容錯（Tero 等 2010）</small></h2>
-    <div class="lab sm" id="lab2">
+    <div class="lab sm" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -191,7 +211,9 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv2" tabindex="0" aria-label="臺灣地圖：黃色是黏菌的管子，燕麥片是放了食物的城市，深色虛線是臺鐵主要路線；旁邊是黏菌網、臺鐵與最小生成樹的總長、平均距離與容錯比較。點城市名稱可以放上或拿掉食物" data-en-aria-label="A map of Taiwan: the yellow lines are the slime mould’s tubes, the oat flakes are cities with food, the dark dashed line is the main railway; beside it, the length, mean distance and fault tolerance of the slime mould network, the railway and the minimum spanning tree. Tap a city name to add or remove its food"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="臺灣地圖：黃色是黏菌的管子，燕麥片是放了食物的城市，深色虛線是臺鐵主要路線；旁邊是黏菌網、臺鐵與最小生成樹的總長、平均距離與容錯比較。點城市名稱可以放上或拿掉食物" data-en-aria-label="A map of Taiwan: the yellow lines are the slime mould’s tubes, the oat flakes are cities with food, the dark dashed line is the main railway; beside it, the length, mean distance and fault tolerance of the slime mould network, the railway and the minimum spanning tree. Tap a city name to add or remove its food"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
           <button id="run2" type="button" class="primary" data-en="Grow">開始生長</button>
@@ -199,13 +221,14 @@
           <button id="reset2" type="button" data-en="Start again" title="重新鋪滿整個臺灣" data-en-title="Cover the whole island again">重來</button>
           <button id="clear2" type="button" data-en="Clear all" title="重新鋪滿並清除紀錄表，設定不變" data-en-title="Cover the island again and clear the table; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="食物放在哪些城市|Food on the cities" data-deck-order="1" data-section="lab2">
           <h2 data-en="Food on the cities">食物放在哪些城市</h2>
           <div class="cities" id="cities" role="group" aria-label="城市" data-en-aria-label="Cities"></div>
           <div class="city-tools">
@@ -214,7 +237,7 @@
           </div>
           <p class="hint" data-en="Changing the cities starts the growth again.">換城市會重新開始生長。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="黏菌|The slime mould" data-deck-order="2" data-section="lab2">
           <h2 data-en="The slime mould">黏菌</h2>
           <div class="slider"><label for="I0" data-en-html="Flow from each food source I<sub>0</sub>">每個食物源的流量 I<sub>0</sub></label><output id="I0o"></output>
             <input id="I0" type="range" min="0.2" max="6" step="0.05" value="1" data-decimals="2"></div>
@@ -292,18 +315,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/slime-mold-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/slime-mold.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="slime-mold"></script>
-  <script src="js/missions/slime-mold.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="slime-mold"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/slime-mold-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/vpad.js"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/slime-mold.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="slime-mold"></script>
+  <script src="js/missions/slime-mold.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="slime-mold"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

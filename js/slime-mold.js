@@ -1,6 +1,12 @@
 /* slime-mold.js — 「黏菌找路」的畫面與互動（模型全部在 slime-mold-core.js；3D 在 slime-mold-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches && canvas.id === 'cv2' ? Math.max(680, width) : width;
+  }
   const S = window.SlimeCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -92,8 +98,7 @@
   // =====================================================================
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h, dpr: dpr };
@@ -130,7 +135,10 @@
     }
   }
   function title(g, s, x, y, col) { D.haloText(g, s, x, y, col || D.c.text, 'left', 'middle', '600 12px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   /** 管徑：導度 D ∝ r⁴（Poiseuille），所以畫的寬度 ∝ D^(1/4) */
   function widthOf(Dv, Dref, wmax) { return wmax * Math.pow(Math.min(1, Dv / Dref), 0.25); }
   /** 燕麥片 */
@@ -270,15 +278,15 @@
   }
 
   function resize1() {
-    const w = cv.clientWidth || 300;
-    const wide = w >= 640;
-    const h = 440;
+    const w = drawingWidth(cv) || 300;
+    const wide = w >= 640 || shortLandscape.matches;
+    const h = shortLandscape.matches ? Math.max(190, Math.min(320, innerHeight - 108)) : 440;
     const r = fit(cv, ctx, h);
     W1 = r.w; H1 = r.h;
     const Wc = m1.maze.W, Hc = m1.maze.H;
     let area, chart;
     if (wide) {
-      const cw = Math.min(300, Math.max(230, W1 * 0.32));
+      const cw = shortLandscape.matches ? W1 * 0.38 : Math.min(300, Math.max(230, W1 * 0.32));
       area = { x0: 10, y0: 10, x1: W1 - cw - 18, y1: H1 - 10 };
       chart = { x0: W1 - cw + 30, y0: 54, x1: W1 - 14, y1: H1 - 58 };
     } else {
@@ -290,6 +298,9 @@
     L1 = { wide: wide, area: area, chart: chart, cs: cs, mx: area.x0 + (area.x1 - area.x0 - mw) / 2, my: area.y0 + (area.y1 - area.y0 - mh) / 2, mw: mw, mh: mh };
     request();
   }
+  window.addEventListener('resize', function () {
+    if (shortLandscape.matches && H1 !== Math.max(190, Math.min(320, innerHeight - 108))) resize1();
+  });
   function cellXY(c) { const i = c % m1.maze.W, j = (c - i) / m1.maze.W; return [L1.mx + (i + 0.5) * L1.cs, L1.my + (j + 0.5) * L1.cs]; }
   function cellAt(pt) {
     const i = Math.floor((pt[0] - L1.mx) / L1.cs), j = Math.floor((pt[1] - L1.my) / L1.cs);
@@ -361,7 +372,7 @@
     g.stroke();
     g.restore();
     // 食物
-    const sel = kb1 && kb1.focused() ? kb1.index() : -1;
+    const sel = kb1 ? kb1.index() : -1;
     m1.foods.forEach(function (f, k) { const p = cellXY(f); oat(g, p[0], p[1], cs * 0.36, k ? 0.5 : -0.4, sel === k || m1.dragK === k); });
     m1.foods.forEach(function (f, k) {
       const p = cellXY(f);
@@ -434,6 +445,7 @@
     m1.foods.forEach(function (f, k) { const p = cellXY(f), d = Math.hypot(p[0] - pt[0], p[1] - pt[1]); if (d < bd) { bd = d; best = k; } });
     if (best < 0) return;
     m1.dragK = best;
+    if (kb1) kb1.select(best);
     cv.setPointerCapture(ev.pointerId);
     ev.preventDefault();
     request();
@@ -452,19 +464,24 @@
     reset1();
     setStatus(T('食物換了位置：按「開始生長」讓黏菌重新找路。', 'The food moved: press “Grow” to let the mould find its way again.'));
   }
+  function moveOat(k, dx, dy) {
+    const w = m1.maze.W, cell = m1.foods[k];
+    const x = Math.max(0, Math.min(w - 1, cell % w + dx));
+    const y = Math.max(0, Math.min(m1.maze.H - 1, Math.floor(cell / w) - dy));
+    const next = y * w + x;
+    if (next === cell || next === m1.foods[1 - k]) return false;
+    m1.foods[k] = next;
+    foodsChanged();
+    return true;
+  }
   const kb1 = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('迷宮：Enter 切換燕麥片 A、B，方向鍵把它移到相鄰的格子。', 'Maze: Enter switches between oat flakes A and B; the arrow keys move it to the next cell.'),
     items: [0, 1].map(function (k) {
       return {
         name: function () { return T('燕麥片 ', 'Oat flake ') + (k ? 'B' : 'A'); },
         move: function (dx, dy, big) {
-          const Wc = m1.maze.W, Hc = m1.maze.H, c = m1.foods[k], st = big ? 3 : 1;
-          let i = c % Wc, j = (c - i) / Wc;
-          i = Math.max(0, Math.min(Wc - 1, i + dx * st)); j = Math.max(0, Math.min(Hc - 1, j + dy * st));
-          const nc = j * Wc + i;
-          if (nc === c || nc === m1.foods[1 - k]) return false;
-          m1.foods[k] = nc; foodsChanged();
-          return true;
+          const step = big ? 3 : 1;
+          return moveOat(k, dx * step, dy * step);
         },
         describe: function () {
           const c = m1.foods[k], i = c % m1.maze.W, j = (c - i) / m1.maze.W;
@@ -473,7 +490,11 @@
         }
       };
     }),
-    onChange: function () { request(); }
+    onChange: function () {
+      const target = $('oatTarget');
+      if (target) target.textContent = 'AB'[kb1.index()] + ' ⇄';
+      request();
+    }
   }) : null;
 
   // =====================================================================
@@ -584,7 +605,7 @@
     bbox = { x0: x0, x1: x1, y0: y0, y1: y1 };
   })();
   function resize2() {
-    const w = cv2.clientWidth || 300, wide = w >= 640;
+    const w = drawingWidth(cv2) || 300, wide = w >= 640;
     const h = wide ? 600 : 860;
     const r = fit(cv2, ctx2, h);
     W2 = r.w; H2 = r.h;
@@ -1073,7 +1094,7 @@
   setStatus2(T('先用預設值按「開始生長」，再把 I0 調大、把山區阻力調高，看網路怎麼變。', 'Press “Grow” with the defaults, then raise I0 and the mountain resistance and see how the network changes.'));
   if (reducedMotion) $('status2').textContent += T('（已偵測到「減少動態效果」：直接顯示結果。）', ' (Reduced motion is on: results are shown at once.)');
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   resize1(); resize2();
@@ -1089,4 +1110,89 @@
     setCities: function (ids) { net.on = CITY.map(function (c) { return ids.indexOf(c.id) >= 0; }); renderCities(); reset2(); },
     setView: setView
   };
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
+
+  function mountKeypad() {
+    const canvas = cv, name = T('燕麥片', 'Oat flake');
+    function point() {
+      return cellXY(m1.foods[kb1.index()]);
+    }
+    function screenPoint() {
+      const rect = canvas.getBoundingClientRect();
+      if (!(L1 && kb1)) return { x: rect.left, y: rect.top };
+      const [x, y] = point(), scale = rect.width / drawingWidth(canvas);
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    }
+    const activate = () => kb1.select(1 - kb1.index());
+    const pad = LabVPad.mount({
+      id: 'slime-mold', canvas, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: activate, record: activate,
+      move: (dx, dy) => moveOat(kb1.index(), dx, dy), point: screenPoint, reading: () => { const cell = m1.foods[kb1.index()]; return 'AB'[kb1.index()] + ' (' + (cell % m1.maze.W + 1) + ', ' + (Math.floor(cell / m1.maze.W) + 1) + ')'; },
+      visible: () => {
+        const r = canvas.getBoundingClientRect();
+        return L1 && kb1 && r.width > 0 && r.bottom > 32 && r.top < innerHeight - 32;
+      },
+      home: (w, h) => {
+        const r = canvas.getBoundingClientRect();
+        const left = screenPoint().x > r.left + r.width / 2;
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+      }
+    });
+    // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。
+    pad.element.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', name + ' ' + b.textContent));
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部放大', ' close-up'));
+    const center = document.createElement('button');
+    center.type = 'button';
+    center.className = 'vpad-select';
+    center.style.gridArea = '2 / 2';
+    center.textContent = 'A ⇄';
+    center.setAttribute('aria-label', T('切換燕麥片', 'Switch oat flake'));
+    center.addEventListener('click', activate);
+    pad.element.querySelector('.vpad-select').replaceWith(center);
+    pad.element.querySelector('.vpad-footer').textContent = T('每次 1 格', '1 cell per move');
+    center.id = 'oatTarget';
+    try { if (!localStorage.getItem('lab-vpad:slime-mold')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();
