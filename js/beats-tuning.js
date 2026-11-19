@@ -143,7 +143,13 @@
   }
 
   // ---------- 改設定 ----------
-  function resetTaps() { if (state.taps.length || state.tapRes) { state.taps = []; state.tapRes = null; updateClear(); } }
+  function resetTaps() {
+    if (!state.taps.length && !state.tapRes) return;
+    state.taps = [];
+    state.tapRes = null;
+    setHTML('rdTap', '—');
+    updateClear();
+  }
   let lastKey = '';
   function changed(final, src) {
     analyze();
