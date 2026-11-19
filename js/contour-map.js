@@ -317,15 +317,25 @@
     c.restore();
   }
 
-  /** 計曲線的高度標示：沿線放，字的上方朝向高處（地形圖的習慣），彼此不重疊 */
+  /** 計曲線的高程沿線正向排字，避開剖面和端點。 */
   function drawLabels(c, g) {
     if (!state.lines) return;
     const P = getPaths(g), placed = [], fs = cvSize.w < 520 ? 10 : 11;
     const font = '600 ' + fs + 'px ' + FONT;
     c.save();
     c.beginPath(); c.rect(g.ox, g.oy, g.side, g.side); c.clip();
+    c.font = font;
+    const aProfile = state.A && toS(state.A, g), bProfile = state.B && toS(state.B, g);
+    function nearProfile(x, y, radius) {
+      if (!aProfile || !bProfile) return false;
+      const dx = bProfile[0] - aProfile[0], dy = bProfile[1] - aProfile[1];
+      const t = Math.max(0, Math.min(1, ((x - aProfile[0]) * dx + (y - aProfile[1]) * dy) / (dx * dx + dy * dy || 1)));
+      return Math.hypot(x - aProfile[0] - t * dx, y - aProfile[1] - t * dy) <= radius + 4 ||
+        Math.min(Math.hypot(x - aProfile[0], y - aProfile[1]), Math.hypot(x - bProfile[0], y - bProfile[1])) <= radius + 12;
+    }
     P.forEach(function (L) {
       if (!L.index || L.level <= state.sea) return;
+      const radius = Math.hypot(c.measureText(String(L.level)).width, fs + 3) / 2;
       L.L.lines.forEach(function (ln) {
         let run = 60;
         for (let i = 1; i < ln.pts.length - 1; i++) {
@@ -337,9 +347,9 @@
           if (x < g.ox + 18 || x > g.ox + g.side - 18 || y < g.oy + 12 || y > g.oy + g.side - 12) continue;
           if (placed.some(function (p) { return Math.hypot(p[0] - x, p[1] - y) < 46; })) continue;
           let ang = Math.atan2(q[1] - a[1], q[0] - a[0]);
-          const gr = K.grad(TR, ln.pts[i][0], ln.pts[i][1]);
-          const up = [Math.sin(ang), -Math.cos(ang)];                    // 字的上方（螢幕座標）
-          if (up[0] * gr[0] + up[1] * (-gr[1]) < 0) ang += Math.PI;      // 讓字的上方朝高處
+          if (nearProfile(x, y, radius)) continue;
+          if (ang > Math.PI / 2) ang -= Math.PI;
+          if (ang < -Math.PI / 2) ang += Math.PI;
           placed.push([x, y]); run = 0;
           c.save(); c.translate(x, y); c.rotate(ang);
           D.haloText(c, String(L.level), 0, 0, C['cm-index'], 'center', 'middle', font);
@@ -745,6 +755,7 @@
   cv.addEventListener('pointerdown', function (ev) {
     if (ev.button > 0) return;
     const q = ptr(ev), h = hitHandle(q[0], q[1]);
+    if (h && kb) kb.select(h === 'A' ? 1 : h === 'B' ? 2 : 0);
     drag = h ? { kind: h, moved: false } : { kind: 'new', x0: q[0], y0: q[1], moved: false };
     cv.setPointerCapture(ev.pointerId); cv.classList.add('dragging'); ev.preventDefault();
   });
@@ -755,6 +766,7 @@
     if (drag.kind === 'new') {
       if (!drag.moved && Math.hypot(q[0] - drag.x0, q[1] - drag.y0) < 8) return;
       if (!drag.moved) { drag.moved = true; state.A = clampXY(fromS(drag.x0, drag.y0, g)); }
+      if (kb && kb.index() !== 2) kb.select(2);
       acted(); state.B = p;
     } else {
       drag.moved = true; acted();
@@ -770,6 +782,7 @@
     if (d.kind === 'new' && !d.moved) {
       const p = fromS(q[0], q[1], g);
       if (p[0] >= 0 && p[0] <= SIZE && p[1] >= 0 && p[1] <= SIZE) {
+        if (kb) kb.select(0);
         acted(); state.probe = p;
         const s = K.slope(TR, p[0], p[1]);
         setStatus(T('量測點：高度 ' + num(TR.h(p[0], p[1]), 0) + ' m，坡度 ' + num(s.pct, 1) + '%（' + num(s.deg, 1) + '°），' + CLS_ZH[s.cls] + '。',
@@ -786,34 +799,33 @@
   cv.addEventListener('pointercancel', function () { drag = null; cv.classList.remove('dragging'); requestDraw(); });
 
   // ---------- 鍵盤 ----------
-  if (window.LabKeys) {
-    const step = function (p, dx, dy, big) { const s = big ? 100 : 10; return clampXY([p[0] + dx * s, p[1] + dy * s]); };
-    const where = function (p) { return num(p[0] / 1000, 2) + ', ' + num(p[1] / 1000, 2) + ' km'; };
-    window.LabKeys.attach(cv, {
-      label: T('等高線地圖。方向鍵移動量測點（每步 10 m，Shift 100 m）；Enter 換成移動剖面的 A 或 B。', 'Contour map. Arrow keys move the measuring point (10 m a step, Shift 100 m); Enter switches to moving A or B of the profile.'),
-      items: [{
-        name: function () { return T('量測點', 'Measuring point'); },
-        move: function (dx, dy, big) { acted(); state.probe = step(state.probe || [SIZE / 2, SIZE / 2], dx, dy, big); afterChange(true); return true; },
-        describe: function () {
-          if (!state.probe) return T('還沒有量測點', 'no measuring point yet');
-          const s = K.slope(TR, state.probe[0], state.probe[1]);
-          return where(state.probe) + T('，高度 ', ', height ') + num(TR.h(state.probe[0], state.probe[1]), 0) + ' m' + T('，坡度 ', ', slope ') + num(s.pct, 1) + '%';
-        }
-      }, {
-        name: function () { return T('剖面起點 A', 'Profile start A'); },
-        move: function (dx, dy, big) { acted(); if (!state.A) { state.A = DEF.A.slice(); state.B = state.B || DEF.B.slice(); } state.A = step(state.A, dx, dy, big); afterChange(true); return true; },
-        describe: function () { return state.A ? 'A ' + where(state.A) + T('，高度 ', ', height ') + num(TR.h(state.A[0], state.A[1]), 0) + ' m' : T('沒有剖面線', 'no profile line'); }
-      }, {
-        name: function () { return T('剖面終點 B', 'Profile end B'); },
-        move: function (dx, dy, big) { acted(); if (!state.B) { state.B = DEF.B.slice(); state.A = state.A || DEF.A.slice(); } state.B = step(state.B, dx, dy, big); afterChange(true); return true; },
-        describe: function () {
-          const P = prof();
-          return state.B ? 'B ' + where(state.B) + T('，高度 ', ', height ') + num(TR.h(state.B[0], state.B[1]), 0) + ' m' + (P ? T('，平均坡度 ', ', average slope ') + num(P.avg, 1) + '%' + T(P.visible ? '，看得到 A' : '，看不到 A', P.visible ? ', can see A' : ', cannot see A') : '') : T('沒有剖面線', 'no profile line');
-        }
-      }],
-      onChange: function () { requestDraw(); }
-    });
-  }
+  const step = function (p, dx, dy, big) { const s = big ? 100 : 10; return clampXY([p[0] + dx * s, p[1] + dy * s]); };
+  const where = function (p) { return num(p[0] / 1000, 2) + ', ' + num(p[1] / 1000, 2) + ' km'; };
+  const keyControls = {
+    label: T('等高線地圖。方向鍵移動量測點（每步 10 m，Shift 100 m）；Enter 換成移動剖面的 A 或 B。', 'Contour map. Arrow keys move the measuring point (10 m a step, Shift 100 m); Enter switches to moving A or B of the profile.'),
+    items: [{
+      name: function () { return T('量測點', 'Measuring point'); },
+      move: function (dx, dy, big) { acted(); state.probe = step(state.probe || [SIZE / 2, SIZE / 2], dx, dy, big); afterChange(true); return true; },
+      describe: function () {
+        if (!state.probe) return T('還沒有量測點', 'no measuring point yet');
+        const s = K.slope(TR, state.probe[0], state.probe[1]);
+        return where(state.probe) + T('，高度 ', ', height ') + num(TR.h(state.probe[0], state.probe[1]), 0) + ' m' + T('，坡度 ', ', slope ') + num(s.pct, 1) + '%';
+      }
+    }, {
+      name: function () { return T('剖面起點 A', 'Profile start A'); },
+      move: function (dx, dy, big) { acted(); if (!state.A) { state.A = DEF.A.slice(); state.B = state.B || DEF.B.slice(); } state.A = step(state.A, dx, dy, big); afterChange(true); return true; },
+      describe: function () { return state.A ? 'A ' + where(state.A) + T('，高度 ', ', height ') + num(TR.h(state.A[0], state.A[1]), 0) + ' m' : T('沒有剖面線', 'no profile line'); }
+    }, {
+      name: function () { return T('剖面終點 B', 'Profile end B'); },
+      move: function (dx, dy, big) { acted(); if (!state.B) { state.B = DEF.B.slice(); state.A = state.A || DEF.A.slice(); } state.B = step(state.B, dx, dy, big); afterChange(true); return true; },
+      describe: function () {
+        const P = prof();
+        return state.B ? 'B ' + where(state.B) + T('，高度 ', ', height ') + num(TR.h(state.B[0], state.B[1]), 0) + ' m' + (P ? T('，平均坡度 ', ', average slope ') + num(P.avg, 1) + '%' + T(P.visible ? '，看得到 A' : '，看不到 A', P.visible ? ', can see A' : ', cannot see A') : '') : T('沒有剖面線', 'no profile line');
+      }
+    }],
+    onChange: function () { requestDraw(); }
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   // ---------- 分享：島嶼、設定、量測點、剖面線 ----------
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
@@ -990,4 +1002,78 @@
     line: function (A, B) { acted(); state.A = A; state.B = B; afterChange(true); },
     terrain: function () { return TR; },
     redraw: function () { interacting = false; rasterKey = ''; drawMap(); drawProfile(); } };
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint(id) {
+    const p = id === 'probe' ? state.probe || [SIZE / 2, SIZE / 2] : state[id] || DEF[id];
+    return toS(p, geom());
+  }
+  if (window.LabVPad && kb) {
+    const name = T('等高線', 'Contour map');
+    const targets = ['probe', 'A', 'B'];
+    const pad = LabVPad.mount({
+      id: 'contour-map', canvas: cv, step: 1, steps: [1],
+      objects: targets, selected: () => targets[kb.index()], select: id => kb.select(targets.indexOf(id)),
+      move: (dx, dy) => keyControls.items[kb.index()].move(dx, dy, false),
+      visible: () => !stage.classList.contains('is3d'),
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint(id);
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint(targets[kb.index()]);
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      reading: function () {
+        const p = kb.index() === 0 ? state.probe : state[kb.index() === 1 ? 'A' : 'B'];
+        return p ? num(TR.h(p[0], p[1]), 0) + ' m' : '—';
+      }
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:contour-map'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + T('微調', 'Move');
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    // 共用中央鍵會重畫成探針編號，改用本頁的物件名稱與同一個鍵盤選取索引。
+    const target = document.createElement('button');
+    target.type = 'button';
+    target.className = 'geo-target';
+    panel.querySelector('.vpad-select').replaceWith(target);
+    const names = [T('測點', 'Point'), 'A', 'B'];
+    function labelTarget() {
+      target.textContent = names[kb.index()];
+      target.setAttribute('aria-label', T('切換移動對象，目前為', 'Switch target, currently ') + keyControls.items[kb.index()].name());
+      target.title = target.getAttribute('aria-label');
+    }
+    target.addEventListener('click', function () {
+      kb.select((kb.index() + 1) % targets.length);
+    });
+    keyControls.onChange = function () { labelTarget(); requestDraw(); };
+    labelTarget();
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部三倍放大', ' detail at three-times magnification'));
+    cv.addEventListener('pointerup', () => requestAnimationFrame(pad.activity));
+    cv.addEventListener('lab:keymove', pad.activity);
+    cv.addEventListener('pointerdown', () => requestAnimationFrame(pad.activity));
+    cv.addEventListener('pointermove', e => { if (e.buttons === 1) requestAnimationFrame(pad.activity); });
+  }
+
 })();

@@ -59,6 +59,7 @@
     .pick select { min-height: 44px; font-size: calc(14px * var(--fs, 1)); border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 6px; }
     .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
     .row button { flex: 1 1 auto; }
+    body:has(.labdeck-away #gPop) .town-actions { display: none; }
     table.tab { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
     table.tab th, table.tab td { overflow-wrap: anywhere; padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
     table.tab th:first-child, table.tab td:first-child { text-align: left; }
@@ -66,7 +67,15 @@
     dl.readout dd.big { font-weight: 700; }
     .notes li { overflow-wrap: anywhere; }
     .notes .katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0; }
+    .vpad-lens .vpad-reading { white-space: normal; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    .lab-vpad .geo-target { grid-area: 2 / 2; padding: 1px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: calc(13px * var(--fs, 1)); line-height: 1.1; overflow-wrap: anywhere; }
+    .geo-target::after { content: "⇄"; display: block; font-size: 13px; line-height: 1; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -87,6 +96,7 @@
           </div>
         </div>
         <canvas id="cv" aria-label="臺灣本島的城市與互動流量；點一座城市當作出發地" data-en-aria-label="Cities of Taiwan and their interactions; tap a city to start from it"></canvas>
+        <div class="row town-actions"><button type="button" id="townBtn" aria-pressed="false" data-en="＋ Add a new town">＋ 加入新市鎮</button></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="cvHint"></p>
@@ -117,7 +127,6 @@
         </section>
         <section class="card">
           <h2 data-en="A new town">新市鎮</h2>
-          <div class="row"><button type="button" id="townBtn" aria-pressed="false" data-en="＋ Add a new town">＋ 加入新市鎮</button></div>
           <div class="slider" id="popRow"><label for="gPop" data-en="Population (10,000s)">人口（萬人）</label><output></output>
             <input id="gPop" type="range" min="1" max="300" step="1" value="50" data-decimals="0"></div>
           <p class="hint" id="townHint" data-en="Drag the orange town on the map (or use the arrow keys).">在地圖上拖曳橘色的新市鎮（或用方向鍵）。</p>
@@ -167,17 +176,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201007"></script>
-  <script src="js/gravity-model-core.js?v=202611201007"></script>
-  <script src="js/numinput.js?v=202611201007"></script>
-  <script src="js/labdeck.js?v=202611201007"></script>
-  <script src="js/drawkit.js?v=202611201007"></script>
-  <script src="js/keys.js?v=202611201007"></script>
-  <script src="js/gravity-model.js?v=202611201007"></script>
-  <script src="js/firebase-config.js?v=202611201007"></script>
-  <script src="js/missions.js?v=202611201007" data-module="gravity-model"></script>
-  <script src="js/missions/gravity-model.js?v=202611201007"></script>
-  <script src="js/stats.js?v=202611201007" data-module="gravity-model"></script>
-  <script src="js/comments.js?v=202611201007"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/gravity-model-core.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/vpad.js?v=202611171020"></script>
+  <script src="js/gravity-model.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="gravity-model"></script>
+  <script src="js/missions/gravity-model.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="gravity-model"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

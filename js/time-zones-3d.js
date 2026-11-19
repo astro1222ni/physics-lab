@@ -23,7 +23,8 @@
     const wrap = document.createElement('div');
     wrap.className = 'c3-wrap';
     const canvas = document.createElement('canvas');
-    canvas.setAttribute('aria-label', T('3D 地球儀（可拖曳旋轉、縮放）：太陽從一側照來，一瓣一瓣的是時區，兩條亮線是日期改變的地方', '3D globe (drag to rotate, pinch or scroll to zoom): the Sun shines from one side, the slices are time zones, and the two bright seams are where the date changes'));
+    canvas.setAttribute('aria-label', T('3D 地球儀（可旋轉、平移與縮放）：太陽從一側照來，一瓣一瓣的是時區，兩條亮線是日期改變的地方', '3D globe (rotate, pan or zoom): the Sun shines from one side, the slices are time zones, and the two bright seams are where the date changes'));
+    canvas.tabIndex = 0;
     wrap.appendChild(canvas);
     const hud = document.createElement('div');
     hud.className = 'c3-hud';
@@ -52,9 +53,9 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
     controls.minDistance = 1.8;
     controls.maxDistance = 9;
+    const nav = LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: 1, T });
 
     // 光：太陽（方向光）＋很弱的環境光，讓夜半球還看得到輪廓
     const amb = new THREE.AmbientLight(0x8aa0c8, 0.22);
@@ -343,10 +344,13 @@
       const P = presetFor(kind);
       if (!animate || B.reducedMotion) {
         camAnim = null;
-        camera.position.copy(P.pos); controls.target.set(0, 0, 0); controls.update(); render();
+        camera.position.copy(P.pos);
+        controls.target.set(0, 0, 0);
+        nav.home();
+        controls.update(); render();
         return;
       }
-      camAnim = { t0: performance.now(), dur: 900, p0: camera.position.clone(), p1: P.pos };
+      camAnim = { t0: performance.now(), dur: 900, p0: camera.position.clone(), p1: P.pos, target: controls.target.clone() };
       B.request();
     }
     function stepCam() {
@@ -358,6 +362,8 @@
       const v = A.p0.clone().normalize().lerp(A.p1.clone().normalize(), e);
       if (v.lengthSq() < 1e-6) v.set(0, 1, 0);
       camera.position.copy(v.normalize().multiplyScalar(r0 + (r1 - r0) * e));
+      controls.target.copy(A.target).multiplyScalar(1 - e);
+      nav.home();
       if (u >= 1) camAnim = null;
     }
     const _v = new THREE.Vector3(), _e = new THREE.Vector3(), _d = new THREE.Vector3();
@@ -439,6 +445,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (earthTex) earthTex.dispose();

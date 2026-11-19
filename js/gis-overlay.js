@@ -210,7 +210,10 @@
     D.pill(ctx, T('城', 'Town'), SX(v, K.TOWN.x), SY(v, K.TOWN.y + 0.3), C.text, 'center', f);
     D.pill(ctx, T('村', 'Village'), SX(v, K.VILLAGE.x), SY(v, K.VILLAGE.y + 0.15), C.text, 'center', f);
     D.pill(ctx, T('活動斷層', 'Active fault'), SX(v, 3.9), SY(v, 10.9), C['go-fault'], 'left', f);
-    D.pill(ctx, T('海', 'Sea'), SX(v, 0.38), SY(v, 1.0), D.shade(C['go-river'], D.dark ? 0.3 : -0.3), 'center', f);
+    const sea = T('海', 'Sea');
+    ctx.font = f;
+    const seaX = Math.max(SX(v, 0.38), v.x0 + ctx.measureText(sea).width / 2 + 8);
+    D.pill(ctx, sea, seaX, Math.min(SY(v, 1), v.y0 + v.H - 40), D.shade(C['go-river'], D.dark ? 0.3 : -0.3), 'center', f);
     D.pill(ctx, T('河', 'River'), SX(v, 13.6), SY(v, K.riverY(13.6) + 0.25), D.shade(C['go-river'], D.dark ? 0.3 : -0.3), 'center', f);
   }
   function scaleBar(v, right) {
@@ -416,7 +419,9 @@
     setOut(el.slope, num(cfg.slope.v, cfg.slope.v % 1 ? 1 : 0)); setOut(el.flood, num(cfg.flood.v, 2));
     setOut(el.fault, grp(cfg.fault.v)); setOut(el.road, grp(cfg.road.v)); setOut(el.town, grp(cfg.town.v));
     CR.forEach(function (c) { setOut(el['w' + c], String(state.w[c] || 0)); });
-    setText('rFlood', area(FL.area) + T('（住宅 ', ' (housing ') + area(FL.town) + T('）', ')'));
+    const floodArea = v => num(v, v >= 10 ? 1 : 2) + T(' 平方公里', ' km<sup>2</sup>');
+    setHTML('rFlood', '<span class="area-value">' + floodArea(FL.area) + '</span><wbr><span class="area-value">' +
+      T('（住宅 ', ' (housing ') + floodArea(FL.town) + T('）', ')') + '</span>');
     document.querySelectorAll('.crit').forEach(function (box) {
       const c = box.getAttribute('data-c'), q = cfg[c];
       box.classList.toggle('off', !q.on);
@@ -651,7 +656,7 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
 
-  if (window.LabKeys) window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('虛構縣的地圖。方向鍵一次移動一格（Shift 一次 5 格）。', 'Map of the invented county. Arrow keys move one cell (Shift for 5).'),
     items: [{
       name: function () { return T('查看的格子', 'Inspected cell'); },
@@ -666,7 +671,8 @@
       describe: function () { return $('status').textContent; }
     }],
     onChange: function () { requestDraw(); }
-  });
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
@@ -705,4 +711,64 @@
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
   setStatus(T(FAC_SAY.incinerator[0], FAC_SAY.incinerator[1]) + ' ' + T('綠色的格子每一條都通過。', 'Green cells pass every rule.'));
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const v = mapView(), p = K.xyOf(state.probe < 0 ? 24 * NX + 32 : state.probe);
+    return [SX(v, p[0]), SY(v, p[1])];
+  }
+  if (window.LabVPad && kb) {
+    const name = T('網格', 'Cell');
+    const pad = LabVPad.mount({
+      id: 'gis-overlay', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => state.view === 'map',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      reading: function () {
+        const k = state.probe;
+        if (k < 0) return '—';
+        if (state.layer === 'z') return num(L.z[k], 1) + ' m';
+        if (state.layer !== 'result') return cellValue(state.layer, k);
+        return state.method === 'weight' ? num(W.score[k], 1) + T(' 分', ' pts') : B.mask[k] ? T('通過', 'Pass') : T('未通過', 'Fail');
+      }
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:gis-overlay'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部三倍放大', ' detail at three-times magnification'));
+    cv.addEventListener('lab:keymove', pad.activity);
+    cv.addEventListener('pointerdown', () => requestAnimationFrame(pad.activity));
+    cv.addEventListener('pointermove', e => { if (e.buttons === 1) requestAnimationFrame(pad.activity); });
+  }
+
 })();

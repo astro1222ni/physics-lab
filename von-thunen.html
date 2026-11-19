@@ -91,7 +91,12 @@
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
     .notes .tablewrap { overflow-x: auto; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -256,17 +261,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201007"></script>
-  <script src="js/von-thunen-core.js?v=202611201007"></script>
-  <script src="js/numinput.js?v=202611201007"></script>
-  <script src="js/labdeck.js?v=202611201007"></script>
-  <script src="js/drawkit.js?v=202611201007"></script>
-  <script src="js/keys.js?v=202611201007"></script>
-  <script src="js/von-thunen.js?v=202611201007"></script>
-  <script src="js/firebase-config.js?v=202611201007"></script>
-  <script src="js/missions.js?v=202611201007" data-module="von-thunen"></script>
-  <script src="js/missions/von-thunen.js?v=202611201007"></script>
-  <script src="js/stats.js?v=202611201007" data-module="von-thunen"></script>
-  <script src="js/comments.js?v=202611201007"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/von-thunen-core.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/vpad.js?v=202611171020"></script>
+  <script src="js/von-thunen.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="von-thunen"></script>
+  <script src="js/missions/von-thunen.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="von-thunen"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

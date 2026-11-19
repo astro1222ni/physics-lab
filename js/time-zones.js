@@ -191,6 +191,7 @@
     const c = ctx, w = cvSize.w, h = cvSize.h;
     D.backdrop && c.clearRect(0, 0, w, h);
     drawBase(c);
+    const reserved = [];
     const sub = K.sun(state.day, state.utc);
     const strip = state.zones ? stripH() : 0;
     const shares = K.dateShares(state.day, state.utc);
@@ -231,7 +232,10 @@
       const lf = '600 ' + (w >= 900 ? 10.5 : 9.5) + 'px ' + FONT;
       [[23.44, '北回歸線', 'Tropic of Cancer', C['tz-sun']], [-23.44, '南回歸線', 'Tropic of Capricorn', C['tz-sun']],
         [66.56, '北極圈', 'Arctic Circle', C['muted']], [-66.56, '南極圈', 'Antarctic Circle', C['muted']], [0, '赤道', 'Equator', C['muted']]].forEach(function (a) {
-        D.haloText(c, T(a[1], a[2]), 4, Y(a[0]) - 3, a[3], 'left', 'alphabetic', lf);
+        const name = T(a[1], a[2]), baseline = Y(a[0]) - 3;
+        D.haloText(c, name, 4, baseline, a[3], 'left', 'alphabetic', lf);
+        c.font = lf;
+        reserved.push([2, baseline - 12, 6 + c.measureText(name).width, baseline + 3]);
       });
     }
 
@@ -279,7 +283,8 @@
         const label = dateTxt(+k);
         c.font = fb;
         if (wd < c.measureText(label).width + 16) return;
-        D.pill(c, label, (m.a + m.b) / 2, h - 6, col, 'center', fb);
+        const pill = D.pill(c, label, (m.a + m.b) / 2, h - 6, col, 'center', fb);
+        reserved.push([pill.x, pill.y, pill.x + pill.w, pill.y + pill.h]);
       });
     }
 
@@ -302,11 +307,17 @@
     // 飛行航線：飛過的（淡）、預定航線（虛線）、正在飛的（實線＋飛機）
     drawFlights(c);
 
-    // 城市
-    if (state.cities) drawCities(c);
-
-    // 量測點
-    drawProbe(c);
+    if (state.cities) {
+      for (const city of K.CITIES) {
+        const [x, y] = cityXY(city), tp = city.id === 'taipei', r = tp ? 3.6 : 2.6;
+        c.beginPath(); c.arc(x, y, r, 0, 2 * Math.PI);
+        c.fillStyle = tp ? C.accent : C['tz-city']; c.fill();
+        c.strokeStyle = D.dark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)'; c.lineWidth = 1.2; c.stroke();
+        reserved.push([x - r - 1, y - r - 1, x + r + 1, y + r + 1]);
+      }
+    }
+    drawProbe(c, reserved, strip);
+    if (state.cities) drawCityNames(c, reserved, strip);
 
     // 上方時區列：偏移與此刻的區時
     if (state.zones) drawZoneStrip(c, strip);
@@ -347,34 +358,39 @@
   }
 
   function cityXY(cy) { return [X(cy.lon), Y(cy.lat)]; }
-  function drawCities(c) {
-    const w = cvSize.w, showNames = w >= 760;
-    const placed = [];
-    const fn = '600 ' + (w >= 1000 ? 11 : 10) + 'px ' + FONT;
-    const order = K.CITIES.slice().sort(function (a, b) { return (b.id === 'taipei') - (a.id === 'taipei'); });
-    order.forEach(function (cy) {
-      const p = cityXY(cy), isTp = cy.id === 'taipei';
-      c.beginPath(); c.arc(p[0], p[1], isTp ? 3.6 : 2.6, 0, 2 * Math.PI);
-      c.fillStyle = isTp ? C['accent'] : C['tz-city']; c.fill();
-      c.strokeStyle = D.dark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.9)'; c.lineWidth = 1.2; c.stroke();
-      if (!showNames && !isTp) return;
-      if (state.probe.city === cy.id) return;
-      c.font = fn;
-      const name = cityName(cy), tw = c.measureText(name).width;
-      const tries = [[6, -4, 'left'], [-6, -4, 'right'], [6, 11, 'left'], [-6, 11, 'right']];
-      for (let k = 0; k < tries.length; k++) {
-        const t = tries[k], x0 = t[2] === 'left' ? p[0] + t[0] : p[0] + t[0] - tw, y0 = p[1] + t[1] - 10;
-        const box = [x0 - 2, y0, x0 + tw + 2, y0 + 12];
-        if (box[0] < 0 || box[2] > w || box[1] < 18) continue;
-        if (placed.some(function (b) { return !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]); })) continue;
-        placed.push(box);
-        D.haloText(c, name, p[0] + t[0], p[1] + t[1], isTp ? C['accent'] : C['tz-city'], t[2], 'alphabetic', fn);
-        break;
+  const overlaps = (a, b) => a[0] < b[2] + 1 && a[2] > b[0] - 1 && a[1] < b[3] + 1 && a[3] > b[1] - 1;
+  function drawCityNames(c, reserved, strip) {
+    const w = cvSize.w, h = cvSize.h;
+    const face = '600 ' + (w >= 1000 ? 11 : 10) + 'px ' + FONT;
+    for (const city of K.CITIES) {
+      const taipei = city.id === 'taipei';
+      if (state.probe.city === city.id || (w < 760 && !taipei)) continue;
+      const [cx, cy] = cityXY(city), name = cityName(city);
+      c.font = face;
+      const width = c.measureText(name).width;
+      let position;
+      for (const lift of [-5, 11, -18, 23, -32, 37]) {
+        for (const dir of [1, -1]) {
+          const x = cx + dir * 7, y = cy + lift, left = dir > 0 ? x : x - width;
+          const box = [left - 2, y - 11, left + width + 2, y + 3];
+          if (box[0] < 1 || box[2] > w - 1 || box[1] < strip + 1 || box[3] >= h) continue;
+          if (reserved.some(b => overlaps(box, b))) continue;
+          position = { x, y, dir, box, lift }; break;
+        }
+        if (position) break;
       }
-    });
+      if (!position) continue;
+      const { x, y, dir, box, lift } = position;
+      if (Math.abs(lift) > 12) {
+        c.save(); c.beginPath(); c.moveTo(cx + dir * 3, cy); c.lineTo(x, y - 4);
+        c.strokeStyle = D.alpha(C['tz-city'], 0.65); c.lineWidth = 1; c.stroke(); c.restore();
+      }
+      D.haloText(c, name, x, y, taipei ? C.accent : C['tz-city'], dir > 0 ? 'left' : 'right', 'alphabetic', face);
+      reserved.push(box);
+    }
   }
 
-  function drawProbe(c) {
+  function drawProbe(c, reserved, strip) {
     const P = probePlace(), x = X(P.lon), y = Y(P.lat), w = cvSize.w;
     c.save();
     c.fillStyle = D.alpha(C['tz-probe'], 0.18);
@@ -390,12 +406,28 @@
     const label = (cy ? cityName(cy) + ' ' : '') + hm(P.clock) + (w >= 520 ? ' · ' + dateTxt(P.day) : '');
     const fnt = '700 ' + (w < 560 ? 11 : 12) + 'px ' + FONT;
     c.font = fnt;
-    const tw = c.measureText(label).width + 12;
-    let lx = x + 14, al = 'left';
-    if (lx + tw > w - 4) { lx = x - 14; al = 'right'; }
-    let ly = y - 10;
-    if (ly < 40) ly = y + 26;
-    D.pill(c, label, lx, ly, C['tz-probe'], al, fnt);
+    const metrics = c.measureText(label), tw = metrics.width + 12, th = D.textHeight(metrics, 15) + 3;
+    const ring = kb && kb.focused() ? 17 : 13;
+    reserved.push([x - ring, y - ring, x + ring, y + ring]);
+    // 貼近測點，留出城市、回歸線地名和上方時區列所占的空間。
+    let best, lowest = Infinity;
+    for (const offset of [-12, th + 12, -24, th + 25, -40, th + 40]) {
+      for (const dx of [15, -15 - tw, -tw / 2]) {
+        const left = Math.max(3, Math.min(w - tw - 3, x + dx));
+        const bottom = Math.max(strip + th + 3, Math.min(cvSize.h - 3, y + offset));
+        const box = [left, bottom - th, left + tw, bottom];
+        const score = reserved.filter(b => overlaps(box, b)).length * 1000 + Math.hypot(left + tw / 2 - x, bottom - th / 2 - y);
+        if (score < lowest) { best = box; lowest = score; }
+      }
+    }
+    const endX = Math.max(best[0], Math.min(best[2], x)), endY = Math.max(best[1], Math.min(best[3], y));
+    const length = Math.hypot(endX - x, endY - y);
+    if (length > ring) {
+      c.beginPath(); c.moveTo(x + (endX - x) * ring / length, y + (endY - y) * ring / length); c.lineTo(endX, endY);
+      c.strokeStyle = C['tz-probe']; c.lineWidth = 1; c.stroke();
+    }
+    D.pill(c, label, best[0], best[3], C['tz-probe'], 'left', fnt);
+    reserved.push(best);
     c.restore();
   }
 
@@ -747,27 +779,25 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', function () { drag = null; cv.classList.remove('dragging'); requestDraw(); });
 
-  let kb = null;
-  if (window.LabKeys) {
-    kb = window.LabKeys.attach(cv, {
-      label: T('世界地圖。方向鍵移動量測點（每步 1°，Shift 10°）。', 'World map. Arrow keys move the measuring point (1° a step, Shift 10°).'),
-      items: [{
-        name: function () { return T('量測點', 'Measuring point'); },
-        move: function (dx, dy, big) {
-          acted();
-          const P = probePlace(), s = big ? 10 : 1;
-          state.probe = { lon: Math.round(K.n180(P.lon + dx * s) * 100) / 100, lat: Math.max(-89.9, Math.min(89.9, Math.round((P.lat + dy * s) * 100) / 100)), city: null };
-          $('selCity').value = '';
-          afterChange(true); return true;
-        },
-        describe: function () {
-          const P = probePlace();
-          return placeName() + T('，', ', ') + dateTxt(P.day) + ' ' + hm(P.clock) + T('，太陽仰角 ', ', Sun altitude ') + num(P.alt, 1) + '°';
-        }
-      }],
-      onChange: function () { requestDraw(); }
-    });
-  }
+  const keyControls = {
+    label: T('世界地圖。方向鍵移動量測點（每步 1°，Shift 10°）。', 'World map. Arrow keys move the measuring point (1° a step, Shift 10°).'),
+    items: [{
+      name: function () { return T('量測點', 'Measuring point'); },
+      move: function (dx, dy, big) {
+        acted();
+        const P = probePlace(), s = big ? 10 : 1;
+        state.probe = { lon: Math.round(K.n180(P.lon + dx * s) * 100) / 100, lat: Math.max(-89.9, Math.min(89.9, Math.round((P.lat + dy * s) * 100) / 100)), city: null };
+        $('selCity').value = '';
+        afterChange(true); return true;
+      },
+      describe: function () {
+        const P = probePlace();
+        return placeName() + T('，', ', ') + dateTxt(P.day) + ' ' + hm(P.clock) + T('，太陽仰角 ', ', Sun altitude ') + num(P.alt, 1) + '°';
+      }
+    }],
+    onChange: function () { requestDraw(); }
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
@@ -971,4 +1001,54 @@
     set: function (o) { acted(); if (o.day != null) state.day = o.day; if (o.utc != null) state.utc = o.utc; if (o.probe) state.probe = o.probe; if (o.center != null) state.center = o.center; normTime(); syncSliders(); afterChange(true); },
     fly: function (dep, arr, h) { state.dep = dep; state.arr = arr; state.dur = h; refillSelects(); $('fly').click(); },
     redraw: function () { drawMap(); } };
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const p = state.probe;
+    return [X(p.lon), Y(p.lat)];
+  }
+  if (window.LabVPad && kb) {
+    const name = T('量測點', 'Map point');
+    const pad = LabVPad.mount({
+      id: 'time-zones', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => !stage.classList.contains('is3d'),
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      lens: false
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:time-zones'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+  }
+
 })();

@@ -53,11 +53,12 @@
     .segw button { flex: 1 1 auto; border: none; border-radius: 0; min-height: 44px; padding: 4px 8px; background: var(--bg); font-size: calc(13px * var(--fs, 1)); }
     .segw button + button { border-left: 1px solid var(--border); }
     .segw button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
-    .rgb { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 4px 0 8px; }
+    .rgb { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(5.75rem, 100%), 1fr)); gap: 6px; margin: 4px 0 8px; }
     .rgb label { display: flex; flex-direction: column; gap: 2px; font-size: calc(13px * var(--fs, 1)); font-weight: 700; }
-    .rgb select { min-height: 44px; font-size: calc(14px * var(--fs, 1)); border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 6px; }
+    .rgb select { box-sizing: border-box; width: 100%; min-width: 0; min-height: 44px; font-size: calc(14px * var(--fs, 1)); border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); padding: 0 6px; }
     .row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 0; }
     .row button { flex: 1 1 auto; }
+    body:has(.labdeck-away #rDay) .rs-year { display: none; }
     table.tab { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: calc(13px * var(--fs, 1)); font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
     table.tab th, table.tab td { overflow-wrap: anywhere; padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
     table.tab th:first-child, table.tab td:first-child { text-align: left; }
@@ -70,7 +71,12 @@
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
     .notes .tablewrap { overflow-x: auto; }
+    .lab-vpad .vpad-handle { font-size: calc(14px * var(--fs, 1)); line-height: 1.15; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      #cv { max-height: calc(100dvh - 78px); }
+    }
   </style>
+  <link rel="stylesheet" href="lab-tools.css?v=202611161712">
 </head>
 <body data-en-ready>
   <div class="wrap">
@@ -96,6 +102,7 @@
           </div>
         </div>
         <canvas id="cv" aria-label="虛構河谷的衛星影像；點一個像元看它的光譜" data-en-aria-label="Satellite image of an invented river valley; tap a pixel to read its spectrum"></canvas>
+        <div class="row rs-year"><button type="button" id="play" aria-pressed="false" data-en="▶ Run the year">▶ 播放一年</button></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
         <p class="hint" id="cvHint"></p>
@@ -125,7 +132,6 @@
             <dt data-en="Date">日期</dt><dd id="rDate">—</dd>
             <dt data-en="The rice">稻田</dt><dd id="rRice">—</dd>
           </dl>
-          <div class="row"><button type="button" id="play" aria-pressed="false" data-en="▶ Run the year">▶ 播放一年</button></div>
           <div class="slider"><label for="rDrought" data-en="Drought (0–1)" title="缺水讓葉子的葉綠素和水分減少，土壤也變乾" data-en-title="Less chlorophyll and leaf water, drier soil">乾旱程度（0–1）</label><output></output>
             <input id="rDrought" type="range" min="0" max="1" step="0.05" value="0" data-decimals="2"></div>
           <div class="slider"><label for="rTurb" data-en="Muddy river (0–1)" title="大雨後河水帶很多泥沙" data-en-title="After heavy rain the river carries mud">河水混濁度（0–1）</label><output></output>
@@ -186,17 +192,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201007"></script>
-  <script src="js/remote-sensing-core.js?v=202611201007"></script>
-  <script src="js/numinput.js?v=202611201007"></script>
-  <script src="js/labdeck.js?v=202611201007"></script>
-  <script src="js/drawkit.js?v=202611201007"></script>
-  <script src="js/keys.js?v=202611201007"></script>
-  <script src="js/remote-sensing.js?v=202611201007"></script>
-  <script src="js/firebase-config.js?v=202611201007"></script>
-  <script src="js/missions.js?v=202611201007" data-module="remote-sensing"></script>
-  <script src="js/missions/remote-sensing.js?v=202611201007"></script>
-  <script src="js/stats.js?v=202611201007" data-module="remote-sensing"></script>
-  <script src="js/comments.js?v=202611201007"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/remote-sensing-core.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/vpad.js?v=202611171020"></script>
+  <script src="js/remote-sensing.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="remote-sensing"></script>
+  <script src="js/missions/remote-sensing.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="remote-sensing"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

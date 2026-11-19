@@ -52,6 +52,7 @@
     #cv { aspect-ratio: 2 / 1.12; touch-action: none; cursor: crosshair; }
     @media (max-width: 560px) { #cv { aspect-ratio: 2 / 1.25; } }
     .rm.cutmode #cv { cursor: cell; }
+    .rm.cutmode .section-nav { display: none; }
     .subviews { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
     .subviews canvas { flex: 1 1 300px; min-width: 0; height: 190px; aspect-ratio: auto; }
     @media (max-width: 560px) { .subviews canvas { flex-basis: 100%; height: 170px; } }
@@ -86,6 +87,16 @@
     .notes li { overflow-wrap: anywhere; }
     .notes table { border-collapse: collapse; margin: 6px 0 10px; font-size: calc(14px * var(--fs, 1)); }
     .notes th, .notes td { border: 1px solid var(--border); padding: 4px 10px; text-align: left; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .river-workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(128px, 32%); gap: 6px; align-items: center; }
+      #cv { max-height: calc(100dvh - 190px); }
+      .river-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+      .rm .river-controls .playbar { display: contents; }
+      .rm.cutmode .river-controls .section-nav { display: none; }
+      .river-controls button { min-width: 44px; padding: 3px 4px; font-size: calc(12px * var(--fs, 1)); text-wrap: balance; overflow-wrap: anywhere; }
+      .subviews { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+      .subviews canvas { width: 100%; height: clamp(108px, 30dvh, 158px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -110,16 +121,24 @@
             <button type="button" data-spd="100" aria-pressed="false" data-en="100 yr/s" title="每秒 100 年（電腦慢時會自動放慢）" data-en-title="100 years per second (slows down on slow devices)">100 年/秒</button>
           </div>
         </div>
-        <canvas id="cv" aria-label="河谷俯視圖：水由左往右流；點河道看橫剖面，切到人工截彎後點彎道可以截彎取直" data-en-aria-label="Valley seen from above, water flowing left to right; tap the river for a cross-section, or switch to Cut a bend and tap a bend"></canvas>
+        <div class="river-workspace">
+          <canvas id="cv" aria-label="河谷俯視圖：水由左往右流；點河道看橫剖面，切到人工截彎後點彎道可以截彎取直" data-en-aria-label="Valley seen from above, water flowing left to right; tap the river for a cross-section, or switch to Cut a bend and tap a bend"></canvas>
+          <div class="river-controls">
+            <div class="playbar section-nav" role="group" aria-label="移動橫剖面" data-en-aria-label="Move the cross-section">
+              <button type="button" data-section-step="-1" data-en="← Upstream">← 往上游</button>
+              <button type="button" data-section-step="1" data-en="Downstream →">往下游 →</button>
+            </div>
+            <div class="playbar">
+              <button id="run" type="button" data-en="Play">播放</button>
+              <button id="step" type="button" data-en="+1 year" title="往前走一年（暫停時微調用）" data-en-title="Move on one year (for fine control while paused)">往前 1 年</button>
+              <button id="newRiver" type="button" data-en="New valley" title="換一條新的河谷（不同的初始彎曲），從頭開始" data-en-title="Start again in a new valley with different small initial wiggles">換一條河谷</button>
+              <button id="clear" type="button" data-en="Clear all" title="同一條河谷從頭開始：清掉牛軛湖、舊河道和彎曲度紀錄；滑桿設定不變" data-en-title="Start this valley again: remove oxbow lakes, old channels and the sinuosity record; the sliders stay">全部清除</button>
+            </div>
+          </div>
+        </div>
         <div class="subviews">
           <canvas id="xs" aria-label="河道橫剖面" data-en-aria-label="Channel cross-section"></canvas>
           <canvas id="sg" aria-label="彎曲度隨時間的變化" data-en-aria-label="Sinuosity through time"></canvas>
-        </div>
-        <div class="playbar">
-          <button id="run" type="button" data-en="Play">播放</button>
-          <button id="step" type="button" data-en="+1 year" title="往前走一年（暫停時微調用）" data-en-title="Move on one year (for fine control while paused)">往前 1 年</button>
-          <button id="newRiver" type="button" data-en="New valley" title="換一條新的河谷（不同的初始彎曲），從頭開始" data-en-title="Start again in a new valley with different small initial wiggles">換一條河谷</button>
-          <button id="clear" type="button" data-en="Clear all" title="同一條河谷從頭開始：清掉牛軛湖、舊河道和彎曲度紀錄；滑桿設定不變" data-en-title="Start this valley again: remove oxbow lakes, old channels and the sinuosity record; the sliders stay">全部清除</button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
@@ -252,17 +271,18 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201007"></script>
-  <script src="js/river-meander-core.js?v=202611201007"></script>
-  <script src="js/numinput.js?v=202611201007"></script>
-  <script src="js/labdeck.js?v=202611201007"></script>
-  <script src="js/drawkit.js?v=202611201007"></script>
-  <script src="js/keys.js?v=202611201007"></script>
-  <script src="js/river-meander.js?v=202611201007"></script>
-  <script src="js/firebase-config.js?v=202611201007"></script>
-  <script src="js/missions.js?v=202611201007" data-module="river-meander"></script>
-  <script src="js/missions/river-meander.js?v=202611201007"></script>
-  <script src="js/stats.js?v=202611201007" data-module="river-meander"></script>
-  <script src="js/comments.js?v=202611201007"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/river-meander-core.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/vpad.js?v=202611171020"></script>
+  <script src="js/river-meander.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="river-meander"></script>
+  <script src="js/missions/river-meander.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="river-meander"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

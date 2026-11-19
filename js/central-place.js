@@ -785,11 +785,13 @@
     });
     return best ? { x: best.x, y: best.y } : null;
   }
-  function setProbe(x, y, act, force, snapPx) {
+  function setProbe(x, y, act, force, snapPx, from) {
     const W = halfWidth() * 3;
     x = Math.max(-W, Math.min(W, x)); y = Math.max(-W, Math.min(W, y));
     const sn = snapPx ? snapToPlace(x, y, snapPx) : null;
-    state.probe = sn || { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 };
+    // 方向鍵從吸附點向外走時，仍要能走出第一步。靠近時沿用原來的吸附範圍。
+    const snap = sn && (!from || Math.hypot(x - sn.x, y - sn.y) < Math.hypot(from.x - sn.x, from.y - sn.y));
+    state.probe = snap ? sn : { x: Math.round(x * 1000) / 1000, y: Math.round(y * 1000) / 1000 };
     afterChange(force, act || 'probe');
   }
   function probeStatus() {
@@ -843,21 +845,22 @@
   cv.addEventListener('pointerup', endDrag);
   cv.addEventListener('pointercancel', endDrag);
 
-  if (window.LabKeys) window.LabKeys.attach(cv, {
+  const keyControls = {
     label: T('平原的地圖。方向鍵移動消費者（Shift 一次 10 格），靠近商店或中地時會對準。', 'Map of the plain. Arrow keys move the shopper (Shift for 10 steps); it snaps onto nearby shops or places.'),
     items: [{
       name: function () { return T('消費者', 'The shopper'); },
       move: function (dx, dy, big) {
         acted();
         const v = mapView(), st = niceStep(v.W / 40) * (big ? 10 : 1), p = state.probe || { x: 0, y: 0 };
-        setProbe(p.x + dx * st, p.y + dy * st, 'probe', true, 4);
+        setProbe(p.x + dx * st, p.y + dy * st, 'probe', true, 4, p);
         probeStatus();
         return true;
       },
       describe: function () { return $('status').textContent; }
     }],
     onChange: function () { requestDraw(); }
-  });
+  };
+  const kb = window.LabKeys && LabKeys.attach(cv, keyControls);
 
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
     get: function () {
@@ -895,4 +898,54 @@
   if (window.ResizeObserver) new ResizeObserver(function () { fit(); requestDraw(); }).observe(cv);
   setStatus(T('一種商品、門檻 2,000 人、商品圈 5 公里：店排成三角形格子，市場區是六邊形。按「看商店開張」看它怎麼形成。', 'One good, threshold 2,000 people, range 5 km: the shops form a triangular grid with hexagonal market areas. Press “Watch shops open” to see how.'));
   requestDraw();
+  // 小鍵盤只提供方向。一步的距離、重畫和任務快照沿用原操作。
+  function padPoint() {
+    const v = mapView(), p = state.probe || { x: 0, y: 0 };
+    return [SX(v, p.x), SY(v, p.y)];
+  }
+  if (window.LabVPad && kb) {
+    const name = T('消費者', 'Shopper');
+    const pad = LabVPad.mount({
+      id: 'central-place', canvas: cv, step: 1, steps: [1],
+      objects: ['point'], selected: () => 'point', select: () => {},
+      move: (dx, dy) => keyControls.items[0].move(dx, dy, false),
+      visible: () => state.mode !== 'hier' || state.view !== '3d',
+      point: function (id) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        return { x: r.left + p[0], y: r.top + p[1] };
+      },
+      home: function (w, h) {
+        const r = cv.getBoundingClientRect(), p = padPoint();
+        if (w < 80) {
+          // 小圓鈕先放在模式列的空位，避免遮到底部比例尺。
+          const bar = cv.closest('.stage').querySelector('.view-bar');
+          const y = bar.getBoundingClientRect().bottom - h, x = r.right - w - 4;
+          if (y >= 0 && y + h <= innerHeight && [...bar.querySelectorAll('button')].every(button => {
+            const b = button.getBoundingClientRect();
+            return !b.width || b.right <= x - 4 || b.bottom <= y || b.top >= y + h;
+          })) return { x, y };
+          return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6, y: r.top + Math.min(60, r.height / 5) };
+        }
+        return { x: p[0] >= r.width / 2 ? r.left + 6 : r.right - w - 6,
+          y: Math.max(r.top + 4, Math.min(innerHeight - h - 8, r.bottom - h - 4)) };
+      },
+      lens: false
+    });
+    const panel = pad.element;
+    // 首次開啟先留出完整地圖，之後沿用學生儲存的展開狀態與位置。
+    try {
+      const saved = JSON.parse(localStorage.getItem('lab-vpad:central-place'));
+      if (!saved || !Number.isFinite(saved.x) || !Number.isFinite(saved.y)) {
+        pad.collapse(saved?.collapsed !== false);
+      } else if (saved.collapsed == null && matchMedia('(max-width: 480px) and (orientation: portrait)').matches) {
+        pad.collapse(true);
+      }
+    } catch (e) { pad.collapse(true); }
+    panel.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    panel.querySelector('.vpad-handle').textContent = '⠿ ' + name;
+    panel.querySelector('.vpad-footer').remove();
+    panel.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', T('移動 ', 'Move ') + b.textContent));
+    panel.querySelector('.vpad-select').remove();
+  }
+
 })();
