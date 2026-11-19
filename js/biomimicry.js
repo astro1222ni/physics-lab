@@ -1,6 +1,12 @@
 /* biomimicry.js — 「仿生學：蓮葉效應與壁虎的腳」的畫面與互動（物理全部在 biomimicry-core.js；3D 在 biomimicry-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const B = window.BioMimCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -136,8 +142,7 @@
   // =====================================================================
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h, dpr: dpr };
@@ -149,7 +154,10 @@
   }
   function title(g, s, x, y, col, align) { D.haloText(g, s, x, y, col || D.c.text, align || 'left', 'middle', '600 12px ' + FONT); }
   function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   function rngOf(seed) { let s = seed % 2147483647; if (s <= 0) s += 2147483646; return function () { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; }; }
   function arrow(g, x0, y0, x1, y1, col, w, dash) {
     g.save();
@@ -404,7 +412,7 @@
       side: { x: px + pw + 30, y: 12, w: W1 - (px + pw + 30) - 12, h: H1 - 24 } };
   }
   function resize1() {
-    W1 = cv.clientWidth || 300;
+    W1 = drawingWidth(cv) || 300;
     H1 = W1 < 640 ? 400 + 330 : 470;
     fit(cv, ctx, H1);
     L1 = layout1();
@@ -465,13 +473,11 @@
     g.restore();
     D.roundRect(g, L.px, L.py, L.pw, L.ph, 12);
     g.strokeStyle = D.alpha(D.shade(C['bm-leaf2'], -0.3), 0.9); g.lineWidth = 1.5; g.stroke();
-    // 滴管游標（鍵盤或滑鼠移動中）
-    if (kb1 && kb1.focused()) {
-      const x = X(st1.cursor.x), y = Y(st1.cursor.y);
-      g.setLineDash([4, 3]); g.strokeStyle = D.c.accent; g.lineWidth = 2;
-      g.beginPath(); g.arc(x, y, 9, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
-      g.beginPath(); g.moveTo(x - 4, y); g.lineTo(x + 4, y); g.moveTo(x, y - 4); g.lineTo(x, y + 4); g.stroke();
-    }
+    // 讓觸控微調時也看得到下一滴落點。
+    const x = X(st1.cursor.x), y = Y(st1.cursor.y);
+    g.setLineDash([4, 3]); g.strokeStyle = D.c.accent; g.lineWidth = 2;
+    g.beginPath(); g.arc(x, y, 9, 0, 2 * Math.PI); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.moveTo(x - 4, y); g.lineTo(x + 4, y); g.moveTo(x, y - 4); g.lineTo(x, y + 4); g.stroke();
     // 下坡方向、比例尺、傾斜示意
     const tilt = val(el.tilt);
     small(g, T('上坡', 'uphill'), L.px + L.pw / 2, L.py - 10, D.c.muted, 'center');
@@ -672,15 +678,18 @@
     const base = T('放了一顆 ', 'Placed a ') + num(val(el.vol), 0) + T(' µL 的水珠：', ' µL drop: ') + modeName(s.mode) + T('，接觸角 ', ', contact angle ') + deg(s.theta) + T('，', '; ') + roll;
     return base + (s.roll != null && tilt > s.roll ? T('——現在就滾下去了。', ' — so it rolls now.') : T('。', '.'));
   }
+  function moveDropper(dx, dy) {
+    st1.cursor.x = Math.max(0.3, Math.min(PLATE.W - 0.3, st1.cursor.x + dx));
+    st1.cursor.y = Math.max(0.3, Math.min(PLATE.L - 0.3, st1.cursor.y - dy));
+    request();
+  }
   const kb1 = window.LabKeys ? window.LabKeys.attach(cv, {
     label: T('葉面畫布：方向鍵移動滴管位置，按「滴一滴」放水珠。', 'Leaf canvas: arrow keys move the dropper; press “Add a drop” to place a drop.'),
     items: [{
       name: T('滴管', 'Dropper'),
       move: function (dx, dy, big) {
         const s = big ? 2 : 0.5;
-        st1.cursor.x = Math.max(0.3, Math.min(PLATE.W - 0.3, st1.cursor.x + dx * s));
-        st1.cursor.y = Math.max(0.3, Math.min(PLATE.L - 0.3, st1.cursor.y - dy * s));
-        request();
+        moveDropper(dx * s, dy * s);
       },
       describe: function () { return T('滴管在離左緣 ', 'Dropper ') + num(st1.cursor.x, 1) + T(' mm、離上緣 ', ' mm from the left, ') + num(st1.cursor.y, 1) + T(' mm。', ' mm from the top.'); }
     }],
@@ -843,7 +852,7 @@
     return { narrow: false, scene: { x: 0, y: 0, w: sw, h: H2 }, hier: { x: sw + 10, y: 10, w: W2 - sw - 20, h: 190 }, chart: { x: sw + 10, y: 210, w: W2 - sw - 20, h: H2 - 220 } };
   }
   function resize2() {
-    W2 = cv2.clientWidth || 300;
+    W2 = drawingWidth(cv2) || 300;
     H2 = W2 < 640 ? 740 : 460;
     fit(cv2, ctx2, H2);
     request();
@@ -1078,7 +1087,7 @@
     const load = loadV();
     return { n: n, R: R, F: F, load: load, hold: F >= load / 1000 * B.G };
   }
-  function resize3() { W3 = cv3.clientWidth || 300; H3 = W3 < 640 ? 520 : 300; fit(cv3, ctx3, H3); request(); }
+  function resize3() { W3 = drawingWidth(cv3) || 300; H3 = W3 < 640 ? 520 : 300; fit(cv3, ctx3, H3); request(); }
   function drawPad() {
     const g = ctx3;
     g.clearRect(0, 0, W3, H3);
@@ -1413,7 +1422,7 @@
   setStatus('status2', T('把牆慢慢轉到天花板（180°），再調小貼住的剛毛比例，看壁虎什麼時候撐不住。', 'Turn the wall slowly to a ceiling (180°), then lower the share of setae in contact and see when the gecko lets go.'));
   setStatus('status3', T('一平方毫米的黏著墊：尖端分得越細，能吊起的砝碼越重。', 'A one-square-millimetre pad: the finer it is split, the heavier the weight it can hold.'));
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2); watch(cv3, resize3);
   } else window.addEventListener('resize', function () { resize1(); resize2(); resize3(); });
   resize1(); resize2(); resize3();
@@ -1430,4 +1439,88 @@
     settleToe: function () { for (let i = 0; i < 100; i++) stepGecko(0.02); request(); },
     hang: hang, setView: setView
   };
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
+
+  function mountKeypad() {
+    const canvas = cv, name = T('滴管', 'Dropper');
+    function point() {
+      return [L1.px + st1.cursor.x * L1.sc, L1.py + st1.cursor.y * L1.sc];
+    }
+    function screenPoint() {
+      const rect = canvas.getBoundingClientRect();
+      if (!(L1)) return { x: rect.left, y: rect.top };
+      const [x, y] = point(), scale = rect.width / drawingWidth(canvas);
+      return { x: rect.left + x * scale, y: rect.top + y * scale };
+    }
+    const activate = () => $('dropBtn').click();
+    const pad = LabVPad.mount({
+      id: 'biomimicry', canvas, step: 0.5, steps: [0.5],
+      objects: ['point'], selected: () => 'point', select: activate, record: activate,
+      move: moveDropper, point: screenPoint, reading: () => num(st1.cursor.x, 1) + ', ' + num(st1.cursor.y, 1) + ' mm',
+      visible: () => {
+        const r = canvas.getBoundingClientRect();
+        return L1 && r.width > 0 && r.bottom > 32 && r.top < innerHeight - 32;
+      },
+      home: (w, h) => {
+        const r = canvas.getBoundingClientRect();
+        const left = screenPoint().x > r.left + r.width / 2;
+        return { x: left ? r.left + 6 : r.right - w - 6, y: Math.max(8, Math.min(innerHeight - h - 8, r.top + 8)) };
+      }
+    });
+    // 共用元件預設是兩支電表探針；中央格和步距改用本實驗的名稱與單位。
+    pad.element.setAttribute('aria-label', name + T('八向微調', ' eight-direction control'));
+    pad.element.querySelectorAll('[data-direction]').forEach(b => b.setAttribute('aria-label', name + ' ' + b.textContent));
+    pad.lens.querySelector('canvas').setAttribute('aria-label', name + T('局部放大', ' close-up'));
+    const center = document.createElement('button');
+    center.type = 'button';
+    center.className = 'vpad-select';
+    center.style.gridArea = '2 / 2';
+    center.textContent = T('滴一滴', 'Drop');
+    center.setAttribute('aria-label', T('滴一滴', 'Drop'));
+    center.addEventListener('click', activate);
+    pad.element.querySelector('.vpad-select').replaceWith(center);
+    pad.element.querySelector('.vpad-footer').textContent = T('每軸 0.5 mm', '0.5 mm per axis');
+    try { if (!localStorage.getItem('lab-vpad:biomimicry')) pad.collapse(true); } catch (e) { pad.collapse(true); }
+  }
+  mountKeypad();
 })();
