@@ -98,6 +98,21 @@
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .legend .star { color: var(--star); } }
     :root[data-theme="dark"] .legend .star { color: var(--star); }
     .notes table.mendel td, .notes table.mendel th { font-variant-numeric: tabular-nums; }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -111,7 +126,9 @@
     <p class="try-hint" data-en="Try it: press +10 a few times and watch how far the ratio wanders from 3 : 1, then press +1000.">試試看：先按幾次 +10，看比例離 3 : 1 有多遠，再按 +1000。</p>
     <div class="lab mi">
       <div class="stage">
-        <canvas id="cv" role="img" aria-label="豌豆雜交畫布：上方是母本與父本和它們的配子，中間是受精，下方是收成的子代" data-en-aria-label="Pea cross: the two parents and their gametes at the top, fertilisation in the middle, the harvested offspring below"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" role="img" aria-label="豌豆雜交畫布：上方是母本與父本和它們的配子，中間是受精，下方是收成的子代" data-en-aria-label="Pea cross: the two parents and their gametes at the top, fertilisation in the middle, the harvested offspring below"></canvas>
+        </div>
         <div class="playbar">
           <span class="pb-label" data-en="Offspring">產生子代</span>
           <button id="sow1" type="button" class="primary" aria-label="產生 1 個子代" data-en-aria-label="Produce 1 offspring">+1</button>
@@ -123,7 +140,9 @@
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
-        <canvas id="cv2" role="img" aria-label="龐氏方格與子代比例長條圖" data-en-aria-label="Punnett square and bar chart of the offspring ratios"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" role="img" aria-label="龐氏方格與子代比例長條圖" data-en-aria-label="Punnett square and bar chart of the offspring ratios"></canvas>
+        </div>
         <div class="legend" id="legend"></div>
         <p class="hint" id="stageHint"></p>
       </div>
