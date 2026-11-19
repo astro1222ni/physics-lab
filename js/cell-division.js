@@ -1,6 +1,12 @@
 /* cell-division.js — 「細胞分裂」的畫面與互動（計算全部在 cell-division-core.js；3D 在 cell-division-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const K = window.CellCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -94,8 +100,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -106,7 +111,10 @@
     g.strokeStyle = D.alpha(D.c.border, 0.9); g.lineWidth = 1; g.stroke();
   }
   function small(g, s, x, y, col, align, base, size, weight) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', (weight ? weight + ' ' : '') + (size || 11) + 'px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   function chipHTML(list, attr, cur, dis) {
     return list.map(function (o) {
       return '<button type="button" ' + attr + '="' + o.k + '" aria-pressed="' + (o.k === cur) + '"' + (dis ? ' disabled' : '') + '>' + T(o.zh, o.en) + '</button>';
@@ -356,7 +364,7 @@
   // 2D 細胞
   // =====================================================================
   function layout1() {
-    const w = cv.clientWidth || 360;
+    const w = drawingWidth(cv) || 360;
     const h = w < 520 ? Math.round(Math.max(300, Math.min(380, w * 0.95))) : 470;
     const s = fit(cv, ctx, h);
     st1.W = s.w; st1.H = s.h;
@@ -770,7 +778,7 @@
     t.innerHTML = h + '</tbody>';
   }
   function layout2() {
-    const w = cv2.clientWidth || 360;
+    const w = drawingWidth(cv2) || 360;
     const h = w < 560 ? 560 : 400;
     const s = fit(cv2, ctx2, h);
     st2.W = s.w; st2.H = s.h;
@@ -1083,7 +1091,7 @@
     request1(); request2();
   });
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cvg, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
 
@@ -1104,4 +1112,47 @@
     setView: setView, redraw: function () { request1(); request2(); },
     stage: function () { return stageData(true); }, done: doneData, batch: stats2
   };
+  $('timePrev').addEventListener('click', function () { keyItem.move(-1, 0, false); });
+  $('timeNext').addEventListener('click', function () { keyItem.move(1, 0, false); });
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
 })();
