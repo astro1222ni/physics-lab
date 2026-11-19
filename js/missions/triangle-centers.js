@@ -56,7 +56,15 @@
       id: 'triangle-centers-7', level: 4,
       title: { zh: '一比二', en: 'One to two' },
       desc: { zh: '讓歐拉線上的 OG 剛好是 1（誤差 0.01 以內），看 GH 是多少。', en: 'Make OG on the Euler line exactly 1 (to within 0.01) and read GH.' },
-      check: function (ev) { return tc(ev) && Math.abs(ev.data.OG - 1) <= 0.01; }
+      check: function (ev) { return tc(ev) && Math.abs(ev.data.OG - 1) <= 0.01; },
+      // 11/14 Codex 試玩：讀數 1.010 附近看不出到底有沒有達標，這裡列出四位小數與是否在 0.99–1.01 之間
+      need: function (ctx) {
+        const d = ctx.last('tc');
+        if (!d || !d.ok) return [[null, '拖曳頂點，讓三角形成立（不能三點共線）。', 'Drag the corners to make a proper triangle.']];
+        const og = d.OG, okv = Math.abs(og - 1) <= 0.01;
+        return [[okv, 'OG = ' + og.toFixed(4) + (okv ? '（在 0.99～1.01 之間，已達標）' : og > 1 ? '（比 1.01 大，再縮小一點）' : '（比 0.99 小，再放大一點）'),
+          'OG = ' + og.toFixed(4) + (okv ? ' (between 0.99 and 1.01: done)' : og > 1 ? ' (above 1.01: make it a little smaller)' : ' (below 0.99: make it a little larger)')]];
+      }
     },
     {
       id: 'triangle-centers-8', level: 5,
