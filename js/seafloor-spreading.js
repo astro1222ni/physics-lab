@@ -596,12 +596,16 @@
     const g = parseFloat(String($('guess').value).replace(',', '.'));
     if (!(g > 0)) { setHTML('guessMsg', T('請輸入一個正的數字（cm/yr）。', 'Enter a positive number (cm/yr).')); return; }
     acted();
-    const u = state.mystery.u, err = Math.abs(g - u) / u;
+    // 消除十進位輸入相減的浮點尾差，例如剛好差 1% 時仍應達標。
+    const u = state.mystery.u, err = Number((Math.abs(g - u) / u).toPrecision(12));
     emit('guess', { u: u, g: g, err: err });
     const S = sound();
     if (err <= 0.05) {
       if (S) { S.tone({ freq: 660, dur: 0.12, gain: 0.16 }); setTimeout(function () { S.tone({ freq: 990, dur: 0.2, gain: 0.14 }); }, 120); }
-      endMystery(T('答對了！答案 <b>' + num(u, 2) + '</b> cm/yr，你差 ' + num(err * 100, 1) + '%。', 'Correct! The answer is <b>' + num(u, 2) + '</b> cm/yr; you were ' + num(err * 100, 1) + '% off.'));
+      const percent = num(err * 100, 2);
+      const shown = err > 0.01 && percent === '1.00' ? '&gt;1.00%' : percent + '%';
+      const mark = err <= 0.01 ? T('達到 1% 門檻', 'within the 1% target') : T('超過 1% 門檻', 'outside the 1% target');
+      endMystery(T('答對了！答案 ', 'Correct! The answer is ') + '<b>' + num(u, 2) + '</b> cm/yr' + T('，相對誤差 ', ', relative error ') + shown + T('（', ' (') + mark + T('）。', ').'));
     } else {
       if (S) S.tone({ freq: 330, dur: 0.18, gain: 0.14 });
       setHTML('guessMsg', T('還差一點：' + (g > u ? '猜得太大' : '猜得太小') + '（差超過 5%）。再量量看！', 'Not yet: ' + (g > u ? 'too high' : 'too low') + ' (more than 5% off). Measure again!'));
