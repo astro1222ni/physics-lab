@@ -1,6 +1,12 @@
 /* enzyme-kinetics.js — 「酵素動力學」的畫面與互動（計算全部在 enzyme-kinetics-core.js；3D 在 enzyme-kinetics-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const E = window.EnzymeCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -97,8 +103,7 @@
   function emit(type, data) { if (window.LabMission) window.LabMission.emit(type, data); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h };
@@ -110,7 +115,10 @@
   }
   function title(g, s, x, y, col, align) { D.haloText(g, s, x, y, col || D.c.text, align || 'left', 'middle', '600 12px ' + FONT); }
   function small(g, s, x, y, col, align, base) { D.haloText(g, s, x, y, col || D.c.muted, align || 'left', base || 'middle', '11px ' + FONT); }
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
   /** 坐標軸與格線 */
   function axes(g, p, xt, yt, X, Y, xfmt, yfmt) {
     g.font = '11px ' + FONT; g.fillStyle = D.c.muted;
@@ -317,7 +325,7 @@
     return { narrow: false, rack: { x: 0, y: 0, w: rw, h: H1 }, prog: { x: rw + 8, y: 8, w: W1 - rw - 16, h: H1 / 2 - 12 }, scan: { x: rw + 8, y: H1 / 2 + 4, w: W1 - rw - 16, h: H1 / 2 - 12 } };
   }
   function resize1() {
-    W1 = cv.clientWidth || 300;
+    W1 = drawingWidth(cv) || 300;
     H1 = W1 < 640 ? 680 : 470;
     fit(cv, ctx, H1);
     request();
@@ -605,7 +613,7 @@
     const w = (W2 - 24) / 2;
     return { a: { x: 8, y: 8, w: w, h: H2 - 16 }, b: { x: 16 + w, y: 8, w: w, h: H2 - 16 } };
   }
-  function resize2() { W2 = cv2.clientWidth || 300; H2 = W2 < 640 ? 624 : 420; fit(cv2, ctx2, H2); request(); }
+  function resize2() { W2 = drawingWidth(cv2) || 300; H2 = W2 < 640 ? 624 : 420; fit(cv2, ctx2, H2); request(); }
   function drawMM(R, ss) {
     const g = ctx2;
     panel(g, R.x, R.y, R.w, R.h);
@@ -924,7 +932,7 @@
   setStatus('status', T('五支試管一開始都一樣（37 °C、pH 6.8）。點一支試管改它的溫度或 pH，再按「開始反應」。', 'The five tubes start out the same (37 °C, pH 6.8). Tap a tube to change its temperature or pH, then press “Start”.'));
   setStatus('status2', T('神秘酵素的 Km、Vmax 都不知道：選一個受質濃度，按「量一次初速度」。', 'The mystery enzyme’s Km and Vmax are unknown: choose a substrate concentration and press “Measure the initial rate”.'));
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
   resize1(); resize2();
@@ -941,4 +949,45 @@
     truth: function () { return { Km: sample.Km, Vmax: sample.Vmax, myst: myst }; },
     measure: measure, guess: guess, newEnzyme: newEnzyme, setView: setView
   };
+
+  // 同頁的各段各有一張主畫布，讓操作台隨著正在看的那一段移動。
+  document.addEventListener('DOMContentLoaded', function () {
+    const deck = document.querySelector('.labdeck');
+    if (!deck) return;
+    const sections = Array.from(document.querySelectorAll('.lab[data-no-spill]'));
+    const cards = Array.from(deck.querySelectorAll('[data-section]'));
+    let active = null, lastMode = '', frame = 0;
+    function placeDeck() {
+      frame = 0;
+      const section = sections.filter(s => s.getBoundingClientRect().top < innerHeight * 0.45).pop() || sections[0];
+      const mode = LabDeck.mode;
+      if (section === active && mode === lastMode) return;
+      const boundary = active && sections[Math.max(sections.indexOf(active), sections.indexOf(section))];
+      const top = boundary && boundary.getBoundingClientRect().top;
+      active = section;
+      lastMode = mode;
+      if (mode === 'panel') section.querySelector('.panel').prepend(deck);
+      if (mode === 'stack') section.querySelector('[data-section-anchor]').after(deck);
+      for (const s of sections) s.querySelector('.panel').classList.toggle('labdeck-host', mode === 'panel' && s === section);
+      for (const card of cards) card.hidden = card.dataset.section !== section.id;
+      const visible = cards.filter(card => !card.hidden);
+      if (visible.length && visible.every(card => card.closest('[inert]'))) LabDeck.reveal(visible[0]);
+      if (mode === 'stack' && boundary && top >= 0 && top < innerHeight) {
+        window.scrollBy({ top: boundary.getBoundingClientRect().top - top, behavior: 'instant' });
+      }
+    }
+    function schedule() { if (!frame) frame = requestAnimationFrame(placeDeck); }
+    deck.addEventListener('keydown', function (e) {
+      if (!e.target.matches('[role="tab"]') || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+      const tabs = Array.from(deck.querySelectorAll('[role="tab"]:not([hidden])'));
+      const next = tabs[(tabs.indexOf(e.target) + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      e.preventDefault();
+      e.stopPropagation();
+      next.click();
+      next.focus();
+    }, true);
+    addEventListener('scroll', schedule, { passive: true });
+    addEventListener('resize', schedule);
+    placeDeck();
+  });
 })();
