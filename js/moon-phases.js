@@ -1731,7 +1731,7 @@
     snapCache = null;
   }
   function startTween(t1, done, dur) {
-    const wasRunning = state.running;
+    const wasRunning = state.tween ? state.tween.resume : state.running;
     state.running = false;
     state.tween = { t0: state.t, t1: t1, start: performance.now(), dur: reducedMotion ? 0 : (dur || 1200), done: done, resume: wasRunning };
     updateButtons();
@@ -1937,7 +1937,6 @@
   });
   function jumpPhase(target, kind) {
     acted(); clearDemo();
-    if (state.tween) return;
     const t1 = K.findPhase(state.el, state.t, target, 1);
     startTween(t1, function () {
       const sn = snap();
@@ -2293,11 +2292,14 @@
     raf = 0;
     const dt = lastFrame ? Math.min(1 / 30, (now - lastFrame) / 1000) : 0;
     lastFrame = now;
+    const wasJumping = !!state.tween;
     let moved = false;
     if (state.tween) { stepTween(now); moved = true; }
     else if (state.running && !document.hidden) { advance(state.rate / 24 * dt); moved = true; }
     if (moved) syncSliders();
-    drawAll(moved);
+    // 跳到終點時同步刷新月面、天空與讀數，連按造成的舊跳轉不會再覆寫。
+    const jumpFinished = wasJumping && !state.tween;
+    drawAll(moved && !jumpFinished);
     drawPending = false;
     if (state.running || state.tween || (view3 && view3.active && view3.busy())) raf = requestAnimationFrame(loop);
     else lastFrame = 0;

@@ -125,6 +125,19 @@
     .k3-hud span:empty { display: none; }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #view3 canvas { max-height: max(130px, calc(100dvh - 178px)); }
+      #cv, #chart, #shCv, #bmCv { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -172,7 +185,7 @@
           <span style="color:var(--ss-sun-text)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ss-sun)&quot;></i>Subsolar point (Sun overhead)"><i class="dot" style="background:var(--ss-sun)"></i>直射點（太陽在天頂）</span>
         </div>
         <p class="hint l2" data-en-html="Left: the Earth's orbit seen slightly from above (sizes not to scale). The axis keeps the same direction all year, so the northern hemisphere leans toward the Sun in June and away from it in December. Right: the sky above the observer — the dome is the sky, the flat ellipse is the horizon, and the yellow arc is today's path of the Sun. Press <b>Play</b> to run the day, or choose <b>One year</b> to watch the seasons go by.">左邊：從斜上方看地球的公轉軌道（尺寸未按比例）。地軸的方向一整年都不變，所以 6 月北半球傾向太陽、12 月背向太陽。右邊：觀察者頭頂的天空——半球是天空、扁圓是地平面，黃色弧線是今天太陽走的路徑。按<b>播放</b>讓一天動起來，或選<b>一年</b>看四季輪替。</p>
-        <p class="hint l3" data-en-html="Drag to rotate, scroll or pinch to zoom, right-drag or two-finger drag to pan. Everything is computed by the same code as the 2D view. In the orbit scene the sizes of the Sun and the Earth are not to scale.">拖曳旋轉，滾輪或雙指縮放，右鍵或雙指拖曳平移。所有位置都由與 2D 畫面相同的程式計算；地球繞日的場景中，太陽與地球的大小未按比例。</p>
+        <p class="hint l3" data-en-html="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. Everything is computed by the same code as the 2D view. In the orbit scene the sizes of the Sun and the Earth are not to scale.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。所有位置都由與 2D 畫面相同的程式計算；地球繞日的場景中，太陽與地球的大小未按比例。</p>
         <div class="subviews">
           <figure>
             <canvas id="shCv" role="img" aria-label="竿影俯視圖：竿子、影子的方向與長度、影子尖端的軌跡"></canvas>
@@ -195,7 +208,7 @@
         </section>
 
         <section class="card">
-          <h2 data-en="Date and time">日期與時刻</h2>
+          <h2 data-en="Date">日期</h2>
           <div class="seg4" id="seasonBtns" role="group" aria-label="二分二至" data-en-aria-label="Equinoxes and solstices">
             <button type="button" data-season="mar" aria-pressed="false" data-en="Mar equinox">春分</button>
             <button type="button" data-season="jun" aria-pressed="false" data-en="Jun solstice">夏至</button>
@@ -205,6 +218,10 @@
           <div class="slider"><label for="day" data-en="Date (2026)">日期（2026 年）</label><output id="dayo"></output>
             <input id="day" type="range" min="1" max="365" step="1" value="172" data-decimals="0"></div>
           <div class="datepick"><label for="datePick" data-en="Pick a date:">直接選日期：</label><input type="date" id="datePick" min="2026-01-01" max="2026-12-31" value="2026-06-21"><button type="button" id="today" data-en="Today">今天</button></div>
+        </section>
+
+        <section class="card">
+          <h2 data-en="Time and playback">時刻與播放</h2>
           <div class="slider"><label for="clock" data-en="Local clock time (hours)">當地鐘錶時間（小時）</label><output id="clocko"></output>
             <input id="clock" type="range" min="0" max="24" step="0.05" value="9.5" data-decimals="3"></div>
           <div class="seg4 jump" role="group" aria-label="跳到" data-en-aria-label="Jump to">
@@ -337,19 +354,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/seasons-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/seasons-3d.js?v=202611200802"></script>
-  <script src="js/seasons.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="seasons"></script>
-  <script src="js/missions/seasons.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="seasons"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/seasons-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/seasons-3d.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/seasons.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="seasons"></script>
+  <script src="js/missions/seasons.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="seasons"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

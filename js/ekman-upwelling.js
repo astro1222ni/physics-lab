@@ -175,7 +175,7 @@
   // =====================================================================
   function drawMain() {
     if (!cvSize || !E) return;
-    const g = ctx, W = cvSize.w, H = cvSize.h, wide = W >= 700, fs = wide ? 11.5 : 10.5;
+    const g = ctx, W = cvSize.w, H = cvSize.h, wide = W >= 700 || W > H * 1.4, fs = wide ? 11.5 : 10.5;
     g.clearRect(0, 0, W, H);
     g.fillStyle = C['canvas-bg']; g.fillRect(0, 0, W, H);
     if (state.mode === 'spiral') drawSpiral(g, W, H, wide, fs);
@@ -721,11 +721,12 @@
       : m === 'coast'
         ? T('左：岸邊溫躍層隨時間線性抬升，碰到虛線（表層暖水的厚度）冷水就露出海面；右：岸邊海面溫度。', 'Left: the thermocline at the coast rises steadily with time; when it reaches the dashed line (the warm-layer thickness) cold water surfaces. Right: sea-surface temperature at the coast.')
         : T('紅線是西太平洋、藍線是東太平洋的溫躍層深度。信風越強，兩邊差越大；紅色底是類似聖嬰、藍色底是類似反聖嬰。', 'Red: thermocline depth in the west Pacific; blue: in the east. Stronger trades make the difference larger; red shading = El Niño-like, blue = La Niña-like.'));
-    $('hint3d').textContent = m === 'spiral'
-      ? T('3D：每一層深度一支海流箭頭，顏色越深越深；細線連起箭頭尖端就是艾克曼螺旋，粉紅圈是探測深度。拖曳旋轉、滾輪或兩指縮放。', '3D: one arrow per depth (darker = deeper); the thin line joining their tips is the Ekman spiral and the pink ring is the probe depth. Drag to rotate; scroll or pinch to zoom.')
+    const sceneHint = m === 'spiral'
+      ? T('3D：每一層深度一支海流箭頭，顏色越深越深；細線連起箭頭尖端就是艾克曼螺旋，粉紅圈是探測深度。', '3D: one arrow per depth (darker = deeper); the thin line joining their tips is the Ekman spiral and the pink ring is the probe depth.')
       : m === 'coast'
-        ? T('3D：正面是垂直海岸的溫度剖面，頂面是海面溫度，旁邊是陸地；深度方向放大。拖曳旋轉、滾輪或兩指縮放。', '3D: the front face is the temperature section across the coast, the top is the sea-surface temperature, with the land beside it; depth exaggerated. Drag to rotate; scroll or pinch to zoom.')
-        : T('3D：沿著赤道的海洋長方塊，半透明面是溫躍層（20 °C），雲在最暖的海面上空；海面高度與深度方向都放大。拖曳旋轉、滾輪或兩指縮放。', '3D: a block of ocean along the equator; the translucent surface is the thermocline (20 °C) and the cloud sits over the warmest water; sea level and depth are exaggerated. Drag to rotate; scroll or pinch to zoom.');
+        ? T('3D：正面是垂直海岸的溫度剖面，頂面是海面溫度，旁邊是陸地；深度方向放大。', '3D: the front face is the temperature section across the coast, the top is the sea-surface temperature, with the land beside it; depth exaggerated.')
+        : T('3D：沿著赤道的海洋長方塊，半透明面是溫躍層（20 °C），雲在最暖的海面上空；海面高度與深度方向都放大。', '3D: a block of ocean along the equator; the translucent surface is the thermocline (20 °C) and the cloud sits over the warmest water; sea level and depth are exaggerated.');
+    $('hint3d').textContent = sceneHint + T('選「旋轉」或「平移」後拖曳畫面，用滾輪或雙指縮放。', ' Choose Rotate or Pan, then drag. Scroll or pinch to zoom.');
     $('hint2d').textContent = m === 'spiral'
       ? T('左：從上往下看，每支箭頭是一個深度的海流（顏色越深越深），虛線是箭頭尖端連成的螺旋；右：斜看的水柱。選取畫布後：左右方向鍵＝風向，上下＝風速。', 'Left: seen from above, each arrow is the current at one depth (darker = deeper) and the dashed curve joins their tips; right: a tilted view of the water column. With the canvas focused: left/right = wind direction, up/down = wind speed.')
       : m === 'coast'

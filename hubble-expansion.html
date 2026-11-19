@@ -72,6 +72,16 @@
     .big-num { font-size: calc(20px * var(--fs, 1)); font-weight: 800; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
     .notes li { overflow-wrap: anywhere; }
     .warn { color: var(--hb-warn); font-weight: 700; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>

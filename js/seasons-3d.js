@@ -54,6 +54,7 @@
 
     const camera = new THREE.PerspectiveCamera(36, 1.4, 0.05, 3000);
     const controls = new lib.OrbitControls(camera, canvas);
+    const nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: env.host, radius: AU, T }) : null;
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.minDistance = 2;
@@ -605,6 +606,7 @@
       const tv = Math.tan(camera.fov * Math.PI / 360), th = tv * camera.aspect;
       const dir = v.dir.clone().normalize();
       controls.target.copy(v.target);
+      if (nav) nav.home();
       const right = new THREE.Vector3().crossVectors(V(0, 1, 0), dir).normalize();
       const up = new THREE.Vector3().crossVectors(dir, right);
       let d = 5;
@@ -632,6 +634,11 @@
         const dir = toSun.clone().multiplyScalar(0.35).addScaledVector(side, 0.9).add(V(0, 0.45, 0)).normalize();
         controls.target.copy(pos);
         camera.position.copy(pos).addScaledVector(dir, RE * 8.5);
+      }
+      if (nav) {
+        // 追蹤地球時，平移界限跟著地心移動，保留學生選定的視野偏移。
+        const target = controls.target.clone();
+        controls.target.copy(pos); nav.home(); controls.target.copy(target);
       }
       lastEarth = pos.clone();
     }
@@ -1008,7 +1015,12 @@
       if (name !== 'orbit') camEarth = false;
       lastEarth = null;
       const sv = saved[name];
-      if (sv) { camera.position.copy(sv.p); controls.target.copy(sv.t); camEarth = name === 'orbit' && sv.earth; controls.update(); }
+      if (sv) {
+        controls.target.copy(defaultView().target);
+        if (nav) nav.home();
+        camera.position.copy(sv.p); controls.target.copy(sv.t);
+        camEarth = name === 'orbit' && sv.earth; controls.update();
+      }
       else fit();
       controls.minDistance = name === 'orbit' ? 1.2 : 2;
       if (!quiet) update();
@@ -1034,6 +1046,7 @@
         raf = 0;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
         document.removeEventListener('visibilitychange', onVisible);
+        if (nav) nav.dispose();
         controls.dispose();
         [so, ss].forEach(function (sc) {
           sc.traverse(function (o) {

@@ -81,6 +81,16 @@
     .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
     .runlog b { color: var(--text); }
     .notes li { overflow-wrap: anywhere; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -109,10 +119,6 @@
         <p class="hint" id="cvHint">—</p>
 
         <section class="chart-card">
-          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
-            <button type="button" data-chart="Tt" aria-pressed="true" data-en="Temperature and crystals over time">溫度與結晶的歷程</button>
-            <button type="button" data-chart="IG" aria-pressed="false" data-en="Nucleation and growth rates">成核與成長速率</button>
-          </div>
           <canvas id="gr" aria-label="取樣點的溫度與結晶比例隨時間的變化" data-en-aria-label="Temperature and crystal fraction at the sample point over time"></canvas>
           <p class="hint" id="chartHint">—</p>
         </section>
@@ -120,14 +126,24 @@
 
       <aside class="panel">
         <div id="coolPanel">
+          <section class="card" data-deck-order="3">
+            <h2 data-en="Cooling charts">冷卻圖表</h2>
+            <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+              <button type="button" data-chart="Tt" aria-pressed="true" data-en="Temperature and crystals over time">溫度與結晶的歷程</button>
+              <button type="button" data-chart="IG" aria-pressed="false" data-en="Nucleation and growth rates">成核與成長速率</button>
+            </div>
+          </section>
           <section class="card">
-            <h2 data-en="Magma and magma body">岩漿與岩體</h2>
+            <h2 data-en="Magma type">岩漿種類</h2>
             <div class="presets" role="group" aria-label="真實的岩石" data-en-aria-label="Real rocks" id="presetSeg"></div>
             <div class="segw" role="group" aria-label="岩漿的種類" data-en-aria-label="Kind of magma" id="typeSeg">
               <button type="button" data-type="basalt" aria-pressed="true" data-en="Basaltic">玄武岩質</button>
               <button type="button" data-type="andesite" aria-pressed="false" data-en="Andesitic">安山岩質</button>
               <button type="button" data-type="rhyolite" aria-pressed="false" data-en="Rhyolitic">流紋岩質</button>
             </div>
+          </section>
+          <section class="card" data-deck-order="1">
+            <h2 data-en="Body and sampling point">岩體與取樣點</h2>
             <div class="slider"><label for="size" data-en="Half-thickness of the body a (m)">岩體的半厚 a（m）</label><output></output>
               <input id="size" type="range" min="-2" max="3.4771" step="0.01" value="0.6021"></div>
             <div class="slider"><label for="dep" data-en="Depth z (km)">深度 z（km）</label><output></output>

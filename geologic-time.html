@@ -104,6 +104,18 @@
     .rowbtn { display: flex; flex-wrap: wrap; gap: 6px; }
     .rowbtn button { flex: 1 1 auto; }
     .sel-name { font-weight: 700; margin: 2px 0 6px; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -137,15 +149,15 @@
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" aria-label="地層剖面" data-en-aria-label="Cross-section of the strata"></canvas>
         <div id="view3"></div>
-        <div class="legend" id="legend" aria-hidden="true"></div>
         <div class="playbar">
           <button id="playBtn" type="button" data-en="Play">播放</button>
           <button id="clearBtn" type="button" data-en="Clear all" title="清掉量測紀錄與排好的順序，時間回到開頭；剖面選擇不變" data-en-title="Clear the measurements and your sequence and go back to the start; the chosen section stays">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div class="legend" id="legend" aria-hidden="true"></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint l2" id="hint2d">—</p>
-        <p class="hint l3" id="hint3d" data-en="Drag to turn the block, pinch or scroll to zoom. The front face is the same cross-section as in 2D; the top is the land surface at the chosen time.">拖曳可以轉動方塊，雙指或滾輪縮放。正面就是 2D 的剖面；頂面是所選時間的地表。</p>
+        <p class="hint l3" id="hint3d" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. The front face is the same cross-section as in 2D; the top is the land surface at the chosen time.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。正面就是 2D 的剖面；頂面是所選時間的地表。</p>
 
         <section class="chart-card" id="chartCard">
           <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
@@ -263,18 +275,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/geologic-time-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/geologic-time.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="geologic-time"></script>
-  <script src="js/missions/geologic-time.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="geologic-time"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/geologic-time-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/geologic-time.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="geologic-time"></script>
+  <script src="js/missions/geologic-time.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="geologic-time"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

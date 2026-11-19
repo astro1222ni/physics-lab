@@ -74,6 +74,16 @@
     .runlog { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; line-height: 1.6; font-variant-numeric: tabular-nums; }
     .runlog b { color: var(--text); }
     .notes li { overflow-wrap: anywhere; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -104,19 +114,25 @@
         <p class="hint" id="cvHint">—</p>
 
         <section class="chart-card">
-          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
-            <button type="button" data-chart="a" aria-pressed="true">—</button>
-            <button type="button" data-chart="b" aria-pressed="false">—</button>
-          </div>
           <canvas id="gr" aria-label="圖表" data-en-aria-label="Chart"></canvas>
           <p class="hint" id="chartHint">—</p>
         </section>
       </div>
 
       <aside class="panel">
+        <section class="card" data-deck-order="3">
+          <h2 data-en="Charts">圖表</h2>
+          <div class="segw" role="group" aria-label="下方的圖" data-en-aria-label="Lower chart" id="chartSeg">
+            <button type="button" data-chart="a" aria-pressed="true">—</button>
+            <button type="button" data-chart="b" aria-pressed="false">—</button>
+          </div>
+        </section>
         <section class="card">
           <h2 data-en="The star">恆星</h2>
           <div class="presets" role="group" aria-label="真實的恆星" data-en-aria-label="Real stars" id="starSeg"></div>
+        </section>
+        <section class="card" data-deck-order="1">
+          <h2 data-en="Distance and motion">距離與自行</h2>
           <div class="slider"><label for="dist" data-en="Distance d (pc)">距離 d（pc）</label><output></output>
             <input id="dist" type="range" min="0" max="4" step="0.001" value="0.115"></div>
           <div class="slider"><label for="beta" data-en="Ecliptic latitude β (°)">黃緯 β（°）</label><output></output>

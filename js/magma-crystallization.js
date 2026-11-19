@@ -150,7 +150,7 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h, dpr: dpr };
   }
-  function sideWide() { return !!cvSize && cvSize.w >= 640; }
+  function sideWide() { return !!cvSize && (cvSize.w >= 640 || cvSize.w > cvSize.h * 1.4); }
   function resizeCv() { const was = sideWide(); cvSize = fit(cv, ctx); grSize = fit(gr, gtx); xtl = null; if (was !== sideWide() && typeof updateReadouts === 'function') updateReadouts(); requestDraw(); }
 
   /** 目前畫面上的時間（s，第二階段）與那時的狀態 */
@@ -176,7 +176,7 @@
 
   // ---------- 冷卻：版面 ----------
   function coolLay(W, H) {
-    const wide = W >= 640;
+    const wide = W >= 640 || W > H * 1.4;
     if (wide) {
       const sw = Math.round(W * 0.55);
       const Rr = Math.min((W - sw) / 2 - 22, H / 2 - 62);
@@ -418,7 +418,7 @@
 
   // ---------- 斜長石：相圖與晶體 ----------
   function plagLay(W, H) {
-    if (W >= 640) {
+    if (W >= 640 || W > H * 1.4) {
       const pw = Math.round(W * 0.6);
       return { pd: { x: 56, y: 22, w: pw - 80, h: H - 74 }, xt: { x: pw + 4, y: 20, w: W - pw - 16, h: H - 40 } };
     }

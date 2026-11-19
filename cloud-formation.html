@@ -129,6 +129,18 @@
     table.data td.rate { font-weight: 700; }
     table.data tr.empty td { text-align: center; color: var(--muted); }
     @media (max-width: 420px) { table.data th, table.data td { padding: 4px 4px; } }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #tz { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -171,7 +183,7 @@
           <span style="color:var(--cf-rain)" data-en-html="<i class=&quot;dash&quot;></i>Cloud base"><i class="dash"></i>雲底</span>
         </div>
         <p class="hint l2" data-en-html="Tap the cross-section to move the <b>air parcel</b> there (time stops); press “Play” to let the wind carry it again. Heights are stretched compared with distances; the top-right corner says by how much.">點一下剖面，可以把<b>氣塊</b>移到那裡（時間暫停）；按「播放」讓風繼續推著它走。高度比水平距離誇大，右上角寫著誇大的倍數。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The clouds, the cloud base, the rain and the parcel come from the same calculation as the 2D cross-section; change them with the sliders.">拖曳旋轉，滾輪或雙指縮放。雲、雲底、雨與氣塊都和 2D 剖面是同一份計算；用滑桿調整。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. The clouds, the cloud base, the rain and the parcel come from the same calculation as the 2D cross-section; change them with the sliders.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。雲、雲底、雨與氣塊都和 2D 剖面是同一份計算；用滑桿調整。</p>
 
         <div class="views">
           <figure class="view">
@@ -329,18 +341,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/cloud-formation-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/cloud-formation.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="cloud-formation"></script>
-  <script src="js/missions/cloud-formation.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="cloud-formation"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/cloud-formation-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/cloud-formation.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="cloud-formation"></script>
+  <script src="js/missions/cloud-formation.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="cloud-formation"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

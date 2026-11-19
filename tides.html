@@ -116,6 +116,18 @@
     .t3-hud span:empty { display: none; }
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #tideCv, #sideCv { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -149,14 +161,7 @@
           <button id="clear" type="button" data-en="Clear all" title="清除潮位曲線的紀錄與高潮標記，滑桿設定不變" data-en-title="Clear the recorded tide curve and the high-tide marks; slider settings are kept">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div class="stepbar" role="group" aria-label="跳到" data-en-aria-label="Jump">
-          <button type="button" id="stepH" data-en="+1 hour">+1 小時</button>
-          <button type="button" id="nextHigh" data-en="Next high tide">下一次高潮</button>
-          <button type="button" id="stepLD" data-en="+1 lunar day" title="前進 24 小時 50 分：月球回到同一個子午線" data-en-title="Go forward 24 h 50 min: the Moon returns to the same meridian">+1 太陰日</button>
-          <button type="button" id="stepD" data-en="+1 day">+1 天</button>
-          <button type="button" id="nextSpring" data-en="Next spring tide" title="跳到下一次新月或滿月（月球、太陽與地球排成一直線）" data-en-title="Jump to the next new or full moon (Sun, Earth and Moon in a line)">下一次大潮</button>
-          <button type="button" id="nextNeap" data-en="Next neap tide" title="跳到下一次上弦或下弦（月球與太陽相隔 90°）" data-en-title="Jump to the next first or last quarter (Moon and Sun 90° apart)">下一次小潮</button>
-        </div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span style="color:var(--td-water)" data-en-html="<i style=&quot;background:var(--td-water)&quot;></i>Ocean (bulges exaggerated)"><i style="background:var(--td-water)"></i>海水（隆起誇大）</span>
@@ -165,7 +170,7 @@
           <span style="color:var(--td-sun-text)" data-en-html="<i class=&quot;dash&quot;></i>Sun’s bulge axis"><i class="dash"></i>太陽隆起的方向</span>
         </div>
         <p class="hint l2" data-en-html="Drag the <b>Moon</b> around the Earth to change its phase, or drag the green <b>observing site</b> to turn the Earth (change the time of day). The bulges are exaggerated about 2.5 million times and the distances are not to scale; the corner of the picture says by how much.">拖曳<b>月球</b>繞地球改變月相，或拖曳綠色的<b>觀測點</b>轉動地球（改變一天中的時刻）。海水隆起誇大約 250 萬倍，距離也沒有依比例；畫面角落寫著誇大的倍數。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The water shell, the force arrows and the site come from the same calculation as the 2D view; change them with the sliders.">拖曳旋轉，滾輪或雙指縮放。水殼、引潮力箭頭與觀測點都和 2D 畫面是同一份計算；用滑桿調整。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. The water shell, the force arrows and the site come from the same calculation as the 2D view; change them with the sliders.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。水殼、引潮力箭頭與觀測點都和 2D 畫面是同一份計算；用滑桿調整。</p>
 
         <div class="views">
           <figure class="view">
@@ -173,15 +178,6 @@
             <figcaption data-en-html="<b>Why the two daily tides differ</b> — cut through the axis and the Moon"><b>為什麼一天兩次高潮不一樣高</b>——沿地軸與月球的截面</figcaption>
           </figure>
           <figure class="view">
-            <div class="curvebar">
-              <span class="lbl" data-en="Tide at the site — show">觀測點的潮位——顯示</span>
-              <div class="segw" role="group" aria-label="曲線的時間長度" data-en-aria-label="Length of the curve">
-                <button type="button" data-win="1" aria-pressed="false" data-en="1 day">1 天</button>
-                <button type="button" data-win="3" aria-pressed="true" data-en="3 days">3 天</button>
-                <button type="button" data-win="15" aria-pressed="false" data-en="15 days">15 天</button>
-                <button type="button" data-win="30" aria-pressed="false" data-en="30 days">30 天</button>
-              </div>
-            </div>
             <canvas id="tideCv" role="img" aria-label="觀測點的潮位曲線：虛線是預報、實線是播放時記下的紀錄，標出大潮與小潮；點一下或拖曳可以跳到那個時刻" data-en-aria-label="Tide curve at the site: dashed is the forecast, solid is what was recorded while playing, with spring and neap tides marked; tap or drag to jump to that time"></canvas>
             <figcaption data-en-html="<b>Tide curve</b> — dashed: forecast; solid: recorded while time runs. Tap or drag on it to jump in time."><b>潮位曲線</b>——虛線是預報，實線是時間前進時記下的紀錄；在曲線上點一下或拖曳可以跳到那個時刻。</figcaption>
           </figure>
@@ -189,7 +185,29 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="快轉|Jump" data-deck-order="0">
+          <h2 data-en="Jump">快轉</h2>
+          <div class="stepbar" role="group" aria-label="跳到" data-en-aria-label="Jump">
+            <button type="button" id="stepH" data-en="+1 hour">+1 小時</button>
+            <button type="button" id="nextHigh" data-en="Next high tide">下一次高潮</button>
+            <button type="button" id="stepLD" data-en="+1 lunar day" title="前進 24 小時 50 分：月球回到同一個子午線" data-en-title="Go forward 24 h 50 min: the Moon returns to the same meridian">+1 太陰日</button>
+            <button type="button" id="stepD" data-en="+1 day">+1 天</button>
+            <button type="button" id="nextSpring" data-en="Next spring tide" title="跳到下一次新月或滿月（月球、太陽與地球排成一直線）" data-en-title="Jump to the next new or full moon (Sun, Earth and Moon in a line)">下一次大潮</button>
+            <button type="button" id="nextNeap" data-en="Next neap tide" title="跳到下一次上弦或下弦（月球與太陽相隔 90°）" data-en-title="Jump to the next first or last quarter (Moon and Sun 90° apart)">下一次小潮</button>
+          </div>
+        </section>
+        <section class="card" data-deck="潮位曲線|Tide curve" data-deck-order="2">
+          <h2 data-en="Tide curve">潮位曲線</h2>
+          <div class="curvebar">
+            <div class="segw" role="group" aria-label="曲線的時間長度" data-en-aria-label="Length of the curve">
+              <button type="button" data-win="1" aria-pressed="false" data-en="1 day">1 天</button>
+              <button type="button" data-win="3" aria-pressed="true" data-en="3 days">3 天</button>
+              <button type="button" data-win="15" aria-pressed="false" data-en="15 days">15 天</button>
+              <button type="button" data-win="30" aria-pressed="false" data-en="30 days">30 天</button>
+            </div>
+          </div>
+        </section>
+        <section class="card" data-deck="月球|The Moon" data-deck-order="1">
           <h2 data-en="The Moon">月球</h2>
           <div class="slider"><label for="psi" data-en="Angle from the Sun ψ (°): 0 new, 90 first quarter, 180 full">與太陽的夾角 ψ（°）：0 新月、90 上弦、180 滿月</label><output id="psio"></output>
             <input id="psi" type="range" min="0" max="360" step="1" value="40" data-decimals="1"></div>
@@ -200,7 +218,7 @@
           <p class="hint" data-en-html="The mean perigee and apogee are about <b>0.945</b> and <b>1.055</b> times the mean distance (the actual distance can reach about 0.93 to 1.06 times), and its declination swings between about <b>±18°</b> and <b>±28.6°</b> every month (the limits change over 18.6 years). Here the declination and distance stay fixed while time runs, so you can compare.">平均近地點、遠地點約為平均距離的 <b>0.945</b>、<b>1.055</b> 倍（實際可到約 0.93～1.06 倍）；赤緯每個月在南北之間來回，最大約 <b>±18°</b> 到 <b>±28.6°</b>（18.6 年一個循環）。這裡播放時赤緯與距離固定不變，方便比較。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="太陽與觀測點|The Sun and the site" data-deck-order="3">
           <h2 data-en="The Sun and the site">太陽與觀測點</h2>
           <div class="checks">
             <label><input id="sunOn" type="checkbox" checked><span data-en="Add the Sun’s tidal force">加入太陽的引潮力</span></label>
@@ -210,7 +228,7 @@
           <p class="hint" data-en="The site sits at 121° E, Taiwan’s longitude; 23.5° N is near the Tropic of Cancer in central Taiwan. The Sun is kept on the celestial equator (around an equinox).">觀測點在東經 121°（臺灣的經度）；北緯 23.5° 約在臺灣中部的北回歸線附近。太陽固定在天赤道上（相當於春分或秋分前後）。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="時間|Time" data-deck-order="4">
           <h2 data-en="Time">時間</h2>
           <div class="slider"><label for="hr" data-en="Local time at the site (h)">觀測點的地方時（時）</label><output id="hro"></output>
             <input id="hr" type="range" min="0" max="23.99" step="0.25" value="6" data-decimals="2"></div>
@@ -219,7 +237,7 @@
           <p class="hint" data-en="Time turns the Earth (once in 24 h relative to the Sun) and moves the Moon (once in 29.53 days relative to the Sun). Tap a number to type an exact value.">時間會轉動地球（相對太陽 24 小時一圈），也會推動月球（相對太陽 29.53 天一圈）。點一下數字可以直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="5">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showForce" type="checkbox" checked><span data-en="Tidal-force arrows">引潮力箭頭</span></label>
@@ -320,18 +338,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/tides-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/tides.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="tides"></script>
-  <script src="js/missions/tides.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="tides"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/tides-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/tides.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="tides"></script>
+  <script src="js/missions/tides.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="tides"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

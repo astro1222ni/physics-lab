@@ -52,7 +52,13 @@
     controls.enableDamping = true;
     controls.dampingFactor = 0.12;
     controls.rotateSpeed = 0.7;
-    controls.enablePan = false;
+    let nav = null, navRadius = 0;
+    function setNavRadius(radius) {
+      if (radius === navRadius) return;
+      navRadius = radius;
+      if (nav) { nav.dispose(); controls.stopListenToKeyEvents(); }
+      nav = window.LabView3DNav ? LabView3DNav.attach({ THREE, controls, canvas, host: wrap, radius: radius, T }) : null;
+    }
     controls.zoomSpeed = 1.4;
 
     // 背景星空（畫在螢幕空間的貼圖，不跟著尺度變）
@@ -248,6 +254,13 @@
         camera.position.copy(tgt).add(off);
         if (camAnim) { camAnim = null; }
       }
+      if (!prev || lay.span !== prev.span) {
+        const target = controls.target.clone();
+        controls.target.set(lay.cx, 0, 0);
+        setNavRadius(lay.span / 2);
+        if (nav) nav.home();
+        controls.target.copy(target);
+      }
       setLimits();
     }
     function setLimits() {
@@ -273,13 +286,16 @@
       const P = presetFor(kind);
       if (!animate || B.reducedMotion) {
         camAnim = null;
-        camera.position.copy(P.pos); controls.target.copy(P.tgt); controls.update(); render();
+        camera.position.copy(P.pos); controls.target.copy(P.tgt);
+        if (nav) nav.home();
+        controls.update(); render();
         return;
       }
       // 尺度差很多時用對數插值距離，避免一下子衝太快
       camAnim = { t0: performance.now(), dur: 900, p0: camera.position.clone(), t0v: controls.target.clone(), p1: P.pos, t1: P.tgt };
       B.request();
     }
+    controls.addEventListener('start', function () { camAnim = null; });
     function stepCam() {
       if (!camAnim) return;
       const A = camAnim;
@@ -291,6 +307,7 @@
       const len = Math.exp(Math.log(l0) * (1 - e) + Math.log(l1) * e);
       controls.target.copy(tg);
       camera.position.copy(tg).add(dir.multiplyScalar(len));
+      if (nav) nav.home();
       if (u >= 1) camAnim = null;
     }
 
@@ -359,7 +376,11 @@
       placeLabels();
       renderer.render(scene, camera);
     }
-    function sizeOf(w) { return w < 560 ? 420 : 500; }
+    function sizeOf(w) {
+      const natural = w < 560 ? 420 : 500;
+      return matchMedia('(orientation: landscape) and (max-height: 600px)').matches
+        ? Math.min(natural, Math.max(130, innerHeight - 178)) : natural;
+    }
     function resize3() {
       const w = wrap.clientWidth;
       if (!w) return;
@@ -403,6 +424,7 @@
       dispose: function () {
         api.active = false;
         if (ro) ro.disconnect(); else window.removeEventListener('resize', resize3);
+        if (nav) nav.dispose();
         controls.dispose();
         disposeObject(scene);
         if (scene.background && scene.background.dispose) scene.background.dispose();

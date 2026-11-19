@@ -103,6 +103,8 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .notes li { overflow-wrap: anywhere; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
   </style>
 </head>
 <body data-en-ready>
@@ -163,7 +165,7 @@
         </div>
         <p class="hint only-turn" data-en-html="The ball slides without friction. Left: the turntable seen by someone standing on the ground. Right: the same throw seen by someone riding the turntable — for them the target never moves. The arrows on the right are the forces the rider needs to explain the curve (per kilogram).">球在盤面上滑動、沒有摩擦。左邊：站在地上的人看到的轉盤；右邊：同一次發射，站在盤上一起轉的人看到的樣子——對他來說目標從來沒有動。右邊的箭頭是盤上的人為了解釋「轉彎」所需要的力（每公斤）。</p>
         <p class="hint only-earth l2" data-en-html="Tap the map (or move the cross-hair with the arrow keys and press Enter) to release a parcel of air with the starting wind set on the right. The map is 2000 km across; the <b>latest</b> parcel shows its forces.">點一下地圖（或用方向鍵移動十字游標再按 Enter），用右邊設定的初速放出一團空氣。地圖寬 2000 km；<b>最新</b>放出的那一團會畫出它受的力。</p>
-        <p class="hint only-earth l3" data-en="Drag to rotate, scroll or pinch to zoom. The arrow through the poles is the Earth’s spin Ω; at the chosen place it splits into a vertical part Ω sin φ, which turns the winds, and a horizontal part.">拖曳旋轉，滾輪或雙指縮放。穿過兩極的箭頭是地球自轉 Ω；在選定的地點，它分成垂直的 Ω sin φ（讓風轉彎的就是這一份）與水平的部分。</p>
+        <p class="hint only-earth l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. The arrow through the poles is the Earth’s spin Ω; at the chosen place it splits into a vertical part Ω sin φ, which turns the winds, and a horizontal part.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。穿過兩極的箭頭是地球自轉 Ω；在選定的地點，它分成垂直的 Ω sin φ（讓風轉彎的就是這一份）與水平的部分。</p>
       </div>
 
       <aside class="panel">
@@ -296,18 +298,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/coriolis-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/coriolis.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="coriolis"></script>
-  <script src="js/missions/coriolis.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="coriolis"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/coriolis-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/coriolis.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="coriolis"></script>
+  <script src="js/missions/coriolis.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="coriolis"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

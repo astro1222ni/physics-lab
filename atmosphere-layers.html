@@ -109,6 +109,18 @@
     .view-msg { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 0 0 8px; }
     .view-msg:empty { display: none; }
     .notes li { overflow-wrap: anywhere; }
+    #view3 .v3nav { position: relative; inset: auto; padding: 4px 8px; min-height: 52px; }
+    #view3 [class$="-hud"] { bottom: 52px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .stage { --plot-height: max(150px, calc(100dvh - 126px)); }
+      #cv, #gr { max-height: var(--plot-height); }
+      html.labdeck-drawer .labdeck { bottom: 48px; }
+      html.labdeck-drawer .fb-tab { z-index: 36; right: 0; bottom: 0; width: var(--deck-w); height: 48px;
+        flex-direction: row; justify-content: center; padding: 4px 10px; border-radius: 0; }
+      html.labdeck-drawer .fb-tab span { writing-mode: horizontal-tb; }
+      .stage .playbar { gap: 4px; margin-block: 4px; }
+      .stage .playbar button { min-height: 44px; padding-inline: 6px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -167,23 +179,29 @@
           <button type="button" id="stdBtn" aria-pressed="true" data-en="Standard atmosphere (dashed)" title="ΔT 不是 0 時，用虛線畫出標準大氣來比較" data-en-title="When ΔT is not 0, draw the standard atmosphere as a dashed line for comparison">標準大氣（虛線）</button>
         </div>
         <p class="hint l2" data-en-html="Left: the sky by height, with the four layers. Middle: temperature. Right: the quantity you choose. The horizontal line is the probe — drag it, or use the slider. The orange dots are what the balloon’s instruments measured on the way up.">左：天空與四個分層；中：溫度；右：你選的量。橫線是探測點——直接拖曳，或用滑桿。橘色小點是氣球上的儀器一路量到的溫度。</p>
-        <p class="hint l3" data-en="Drag to rotate, scroll or pinch to zoom. The shells are the four layers; their thickness is stretched 20 times so you can see them — at true scale the whole atmosphere is thinner than the skin of an apple.">拖曳旋轉，滾輪或雙指縮放。幾層球殼是大氣的四個分層；厚度放大了 20 倍才看得到——照真實比例，整個大氣層比蘋果皮還薄。</p>
+        <p class="hint l3" data-en="Choose Rotate or Pan, then drag. Point to a detail and scroll to zoom in, or pinch to zoom. The shells are the four layers; their thickness is stretched 20 times so you can see them — at true scale the whole atmosphere is thinner than the skin of an apple.">選「旋轉」或「平移」後拖曳畫面。把游標移到想看的位置，滾動滾輪即可放大，也可用雙指縮放。幾層球殼是大氣的四個分層；厚度放大了 20 倍才看得到——照真實比例，整個大氣層比蘋果皮還薄。</p>
 
         <section class="chart-card">
-          <div class="segw" role="group" aria-label="氣球圖表" data-en-aria-label="Balloon chart" id="chartSeg">
-            <button type="button" data-chart="time" aria-pressed="true" data-en="Height vs time">高度與時間</button>
-            <button type="button" data-chart="size" aria-pressed="false" data-en="Diameter vs height">直徑與高度</button>
-          </div>
           <canvas id="gr" aria-label="探空氣球的高度隨時間的變化" data-en-aria-label="Height of the weather balloon against time"></canvas>
           <p class="hint" id="chartHint">—</p>
         </section>
       </div>
 
       <aside class="panel">
+        <section class="card" data-deck-order="3">
+          <h2 data-en="Balloon chart">氣球圖表</h2>
+          <div class="segw" role="group" aria-label="氣球圖表" data-en-aria-label="Balloon chart" id="chartSeg">
+            <button type="button" data-chart="time" aria-pressed="true" data-en="Height vs time">高度與時間</button>
+            <button type="button" data-chart="size" aria-pressed="false" data-en="Diameter vs height">直徑與高度</button>
+          </div>
+        </section>
         <section class="card">
           <h2 data-en="Probe height">探測高度</h2>
           <div class="slider"><label for="z" data-en="Height above sea level (km)">海拔高度（km）</label><output></output>
             <input id="z" type="range" min="0" max="120" step="0.01" value="0" data-decimals="3"></div>
+        </section>
+        <section class="card" data-deck-order="1">
+          <h2 data-en="Reference heights">參考高度</h2>
           <div class="presets" role="group" aria-label="參考高度" data-en-aria-label="Reference heights">
             <button type="button" data-z="0" data-en="Sea level" title="海平面" data-en-title="Sea level">海平面</button>
             <button type="button" data-z="3.952" data-en="Yushan 3952 m" title="玉山主峰 3952 m，臺灣最高峰" data-en-title="Yushan (Jade Mountain), 3952 m, the highest peak in Taiwan">玉山 3952 m</button>
@@ -304,18 +322,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611200802"></script>
-  <script src="js/atmosphere-layers-core.js?v=202611200802"></script>
-  <script src="js/sound.js?v=202611200802"></script>
-  <script src="js/numinput.js?v=202611200802"></script>
-  <script src="js/labdeck.js?v=202611200802"></script>
-  <script src="js/drawkit.js?v=202611200802"></script>
-  <script src="js/keys.js?v=202611200802"></script>
-  <script src="js/atmosphere-layers.js?v=202611200802"></script>
-  <script src="js/firebase-config.js?v=202611200802"></script>
-  <script src="js/missions.js?v=202611200802" data-module="atmosphere-layers"></script>
-  <script src="js/missions/atmosphere-layers.js?v=202611200802"></script>
-  <script src="js/stats.js?v=202611200802" data-module="atmosphere-layers"></script>
-  <script src="js/comments.js?v=202611200802"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/atmosphere-layers-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/atmosphere-layers.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="atmosphere-layers"></script>
+  <script src="js/missions/atmosphere-layers.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="atmosphere-layers"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>
