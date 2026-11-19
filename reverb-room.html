@@ -129,6 +129,28 @@
     .rv3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
       background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
     .rv3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+
+    .chart-picker { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      .stage:not(.is3d) .chart-picker { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: calc(14px * var(--fs, 1)); }
+      .chart-picker select { min-height: 44px; min-width: 0; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+      .stage { display: flex; flex-direction: column; }
+      .stage > :is(.view-bar, .view-msg, .playbar) { order: -3; }
+      .stage > :is(.cvwrap, #view3, #cv2) { order: -2; }
+      .stage > .labdeck { order: -1; }
+      .stage[data-chart="plan"] #cv2, .stage.is3d #cv2, .stage:not([data-chart="plan"]) .cvwrap { display: none; }
+      .stage[data-chart="plan"] .chart-note { display: none; }
+    }
+    #stage > .playbar { margin: 0 0 8px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      .stage > :is(.cvwrap, #cv2, #view3) { width: calc(100% - 20px); }
+      .rv .playbar { gap: 4px; }
+      .rv .playbar button { min-width: 44px; padding-inline: 6px; }
+      .rv .playbar .seg button { flex-basis: auto; }
+      #stage > .view-bar, #stage > .playbar { margin-bottom: 2px; }
+      #view3 canvas { max-height: calc(100dvh - 104px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -141,21 +163,24 @@
 
     <p class="try-hint" data-en="Try it: press “▶ Clap”, then set “People” to 35 and clap again — watch how much faster the decay curve drops.">試試看：按「▶ 拍手」，再把「人數」調到 35 再拍一次，看衰減曲線掉得快多少。</p>
     <div class="lab rv" id="lab">
-      <div class="stage" id="stage">
+      <div class="stage" id="stage" data-chart="plan">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D plan">2D 平面圖</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
           </div>
+          <label class="chart-picker"><span data-en="Chart">圖表</span>
+            <select id="chartView" aria-controls="cv cv2">
+              <option value="plan" data-en="Floor plan">房間平面圖</option>
+              <option value="decay" data-en="Sound decay">聲音衰減</option>
+              <option value="echo" data-en="Echo arrivals">反射聲抵達時間</option>
+            </select>
+          </label>
           <div class="view-tools">
             <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           </div>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <div class="cvwrap">
-          <canvas id="cv" tabindex="0"></canvas>
-        </div>
-        <div id="view3"></div>
         <div class="playbar">
           <button id="clap" type="button" class="primary" data-en="▶ Clap">▶ 拍手</button>
           <button id="melody" type="button" data-en="▶ Twinkle">▶ 小星星</button>
@@ -166,6 +191,11 @@
           </div>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div class="cvwrap">
+          <canvas id="cv" tabindex="0"></canvas>
+        </div>
+        <div id="view3"></div>
+        <div data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="hint" data-en="The sound is an approximation: a clap of filtered noise or a simple synthesized melody, sent through early reflections and a reverberation tail that dies away in exactly the T60 shown. “Dry” switches the room off.">聲音是近似：拍手是濾波後的雜訊、旋律是簡單合成的音色，再加上早期反射和衰減時間剛好等於畫面上 T60 的迴響尾巴。「乾聲」就是把房間關掉。</p>
         <p class="hint" id="longHint" hidden></p>
@@ -177,11 +207,11 @@
           <span data-en-html="<i class=&quot;dash&quot;></i>Line from an image source"><i class="dash"></i>鏡像源的直線</span>
         </div>
         <canvas id="cv2" role="img" aria-label="左：聲音衰減曲線（分貝對時間），實線是賽賓公式、虛線是艾林公式；右：聽者收到的聲音（直達聲、一次與二次反射、迴響尾巴）；下：常見用途建議的迴響時間。" data-en-aria-label="Left: the decay curve (decibels against time), solid for Sabine and dashed for Eyring. Right: what the listener receives (direct sound, first and second reflections, reverberation tail). Bottom: reverberation times usually recommended for different uses."></canvas>
-        <p class="chart-note" data-en-html="The decay curve is a straight line in decibels: the level drops by \(60/T_{60}\) dB every second. In the echogram each spike is one path; its height is the level compared with the direct sound (distance and wall absorption), and the shaded tail is a sketch of the dense late reverberation with the same slope.">衰減曲線用分貝畫是一條直線：每秒降低 \(60/T_{60}\) 分貝。右邊每一根尖峰是一條聲音的路徑，高度是它和直達聲相比的強弱（依距離和牆面吸收算），陰影的尾巴是後來密密麻麻的迴響（示意，斜率相同）。</p>
+        <p class="chart-note" data-en-html="The decay curve is a straight line in decibels: the level drops by \(60/T_{60}\) dB every second. In the echogram each spike is one path; its height is the level compared with the direct sound (distance and wall absorption), and the shaded tail is a sketch of the dense late reverberation with the same slope.">衰減曲線用分貝畫是一條直線：每秒降低 \(60/T_{60}\) 分貝。反射聲圖中的每一根尖峰是一條聲音的路徑，高度是它和直達聲相比的強弱（依距離和牆面吸收算），陰影的尾巴是後來密密麻麻的迴響（示意，斜率相同）。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="房間|Room" data-deck-order="1">
           <h2 data-en="Room">房間</h2>
           <div class="presets" id="presets" role="group" aria-label="房間預設" data-en-aria-label="Room presets">
             <button type="button" data-preset="classroom" aria-pressed="true" data-en="Classroom">教室</button>
@@ -194,7 +224,7 @@
           <p class="hint" id="presetNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="大小|Size" data-deck-order="2">
           <h2 data-en="Size">大小</h2>
           <div class="slider"><label for="len" data-en="Length L (m)">長 L（m）</label><output id="leno"></output>
             <input id="len" type="range" min="2" max="80" step="0.1" value="9" data-decimals="2"></div>
@@ -204,20 +234,20 @@
             <input id="hei" type="range" min="2" max="35" step="0.1" value="3.2" data-decimals="2"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="材料|Surfaces" data-deck-order="3">
           <h2 data-en="Surfaces (absorption at 500 Hz)">每一面的材料（500 Hz 吸音係數）</h2>
           <div class="mats" id="mats"></div>
           <p class="hint" data-en-html="The absorption coefficient \(\alpha\) is the fraction of sound energy a surface does not send back. An open window sends nothing back: \(\alpha = 1\).">吸音係數 \(\alpha\) 是聲能碰到這一面時「沒有被反射回來」的比例。打開的窗戶什麼都不反射：\(\alpha = 1\)。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="聽眾|Audience" data-deck-order="4">
           <h2 data-en="Audience">聽眾</h2>
           <div class="slider"><label for="ppl" data-en="People">人數</label><output id="pplo"></output>
             <input id="ppl" type="range" min="0" max="144" step="1" value="0" data-decimals="0"></div>
           <p class="hint" id="pplNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="公式與顯示|Model and display" data-deck-order="5">
           <h2 data-en="Formula and display">公式與顯示</h2>
           <div class="seg full" id="formulaSeg" role="group" aria-label="計算迴響時間的公式" data-en-aria-label="Formula for the reverberation time">
             <button type="button" data-formula="sabine" aria-pressed="true" data-en="Sabine">賽賓</button>
@@ -255,7 +285,7 @@
           <div class="tablewrap"><table class="rv-t" id="absTable"></table></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="比較|Compare" data-deck-order="6">
           <h2 data-en="Rooms to compare">比較的房間</h2>
           <div class="rowbtns">
             <button type="button" id="rec" data-en="＋ Keep this room">＋ 記下這個房間</button>

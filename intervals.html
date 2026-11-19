@@ -147,6 +147,19 @@
     .it tr.on td { background: var(--accent-soft); font-weight: 700; }
     .it tr:hover td { background: color-mix(in srgb, var(--accent-soft) 60%, transparent); }
     .it td.odd { color: var(--iv-gap); }
+
+    .chart-picker { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      .stage:not(.is3d) .chart-picker { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: calc(14px * var(--fs, 1)); }
+      .chart-picker select { min-height: 44px; min-width: 0; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    }
+    #stage > .playbar { margin: 0 0 8px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      .stage > :is(#cv, #view3) { width: calc(100% - 20px); }
+      #stage > .view-bar, #stage > .playbar { margin-bottom: 2px; }
+      #view3 canvas { max-height: calc(100dvh - 104px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -165,45 +178,24 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D staff and ruler">2D 譜與音分尺</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D interval blocks">3D 音程積木</button>
           </div>
+          <label class="chart-picker"><span data-en="Chart">圖表</span>
+            <select id="chartView" aria-controls="cv">
+              <option value="staff" data-en="Staff and interval">五線譜與音程</option>
+              <option value="ruler" data-en="Cents ruler and stack">音分尺與疊音程</option>
+            </select>
+          </label>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="五線譜上的兩個音、音分尺上的音程長條與疊音程"></canvas>
-        <div id="view3"></div>
-
-        <div class="kbwrap">
-          <button type="button" class="kbnav" id="kbDown" hidden aria-label="鍵盤往低八度" data-en-aria-label="Keyboard one octave lower">◀</button>
-          <div class="piano" id="piano" role="group" aria-label="鍵盤：點一個鍵設定上方音或下方音" data-en-aria-label="Keyboard: tap a key to set the upper or lower note"></div>
-          <button type="button" class="kbnav" id="kbUp" hidden aria-label="鍵盤往高八度" data-en-aria-label="Keyboard one octave higher">▶</button>
-        </div>
-        <div class="seg-row" style="margin:8px 2px 0">
-          <span data-en="Keyboard sets the">點鍵盤設定</span>
-          <div class="seg" role="group" id="kbSeg" aria-label="點鍵盤設定" data-en-aria-label="Keyboard sets the">
-            <button type="button" data-kb="upper" aria-pressed="true" data-en="Upper note">上方音</button>
-            <button type="button" data-kb="lower" aria-pressed="false" data-en="Lower note">下方音</button>
-          </div>
-        </div>
-        <p class="piano-hint" data-en="A black key has two names: the page spells the upper note so the interval gets the plainest name (major, minor or perfect when possible). Use “Respell (enharmonic)” to try the other name.">黑鍵有兩種寫法：點鍵盤時，網頁會選讓音程名字最單純的寫法（盡量是大、小、完全）。想看另一種寫法，按「等音（換個寫法）」。</p>
-
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
           <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div class="playopts">
-          <div class="field"><label for="pmode" data-en="Playing">播放方式</label>
-            <select id="pmode">
-              <option value="both" selected data-en="One after the other, then together">先後再同時</option>
-              <option value="melodic" data-en="One after the other only">只有先後</option>
-              <option value="harmonic" data-en="Together only">只有同時</option>
-            </select></div>
-          <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
-            <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
-            <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
-          </div>
-          <div class="slider"><label for="dur" data-en="Length of each note (s)">每個音的長度（秒）</label><output id="durO"></output>
-            <input id="dur" type="range" min="0.3" max="1.5" step="0.1" value="0.7" data-decimals="1"></div>
-        </div>
+        <canvas id="cv" role="img" aria-label="五線譜上的兩個音、音分尺上的音程長條與疊音程"></canvas>
+        <div id="view3"></div>
+        <div data-deck-anchor hidden></div>
+
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--iv-lo)&quot;></i>Lower note"><i style="background:var(--iv-lo)"></i>下方音</span>
@@ -216,8 +208,44 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="鍵盤|Keyboard" data-deck-order="5">
+          <h2 data-en="Keyboard">鍵盤</h2>
+          <div class="kbwrap">
+            <button type="button" class="kbnav" id="kbDown" hidden aria-label="鍵盤往低八度" data-en-aria-label="Keyboard one octave lower">◀</button>
+            <div class="piano" id="piano" role="group" aria-label="鍵盤：點一個鍵設定上方音或下方音" data-en-aria-label="Keyboard: tap a key to set the upper or lower note"></div>
+            <button type="button" class="kbnav" id="kbUp" hidden aria-label="鍵盤往高八度" data-en-aria-label="Keyboard one octave higher">▶</button>
+          </div>
+          <div class="seg-row" style="margin:8px 2px 0">
+            <span data-en="Keyboard sets the">點鍵盤設定</span>
+            <div class="seg" role="group" id="kbSeg" aria-label="點鍵盤設定" data-en-aria-label="Keyboard sets the">
+              <button type="button" data-kb="upper" aria-pressed="true" data-en="Upper note">上方音</button>
+              <button type="button" data-kb="lower" aria-pressed="false" data-en="Lower note">下方音</button>
+            </div>
+          </div>
+          <p class="piano-hint" data-en="A black key has two names: the page spells the upper note so the interval gets the plainest name (major, minor or perfect when possible). Use “Respell (enharmonic)” to try the other name.">黑鍵有兩種寫法：點鍵盤時，網頁會選讓音程名字最單純的寫法（盡量是大、小、完全）。想看另一種寫法，按「等音（換個寫法）」。</p>
+        </section>
+        <section class="card" data-deck="播放設定|Playback" data-deck-order="6">
+          <h2 data-en="Playback">播放設定</h2>
+          <div class="playopts">
+            <div class="field"><label for="pmode" data-en="Playing">播放方式</label>
+              <select id="pmode">
+                <option value="both" selected data-en="One after the other, then together">先後再同時</option>
+                <option value="melodic" data-en="One after the other only">只有先後</option>
+                <option value="harmonic" data-en="Together only">只有同時</option>
+              </select></div>
+            <div class="slider"><label for="dur" data-en="Length of each note (s)">每個音的長度（秒）</label><output id="durO"></output>
+              <input id="dur" type="range" min="0.3" max="1.5" step="0.1" value="0.7" data-decimals="1"></div>
+          </div>
+        </section>
+        <section class="card" data-deck="音程|Interval" data-deck-order="1">
           <h2 data-en="Interval">音程</h2>
+          <div class="seg-row">
+            <span data-en="Tuning">音律</span>
+            <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
+              <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+              <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
+            </div>
+          </div>
           <div class="field">
             <label for="loLetter" data-en="Lower note">下方音</label>
             <div class="two-sel">
@@ -277,7 +305,7 @@
           <dl class="readout" id="readout"></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="疊音程|Stack" data-deck-order="2">
           <h2 data-en="Stacking intervals">疊音程</h2>
           <div class="btnrow">
             <button type="button" id="push" data-en="+ Stack it on">＋ 疊上去</button>
@@ -291,7 +319,7 @@
           <p class="hint" data-en="“+ Stack it on” adds the interval chosen above to the top of the stack (up to four blocks, three octaves). Frequencies multiply, cents add — and the page compares the result with the table ratio. If the interval chosen above lands on the same key as the stack, the two are compared as well.">按「＋ 疊上去」就把上面選的音程接到疊好的音上面（最多四塊、三個八度）。頻率相乘、音分相加；網頁會把結果和表上的比值比一比。上面選的音程如果和疊出來的音落在同一個鍵上，也會並排比一比。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="音程表|Interval table" data-deck-order="3">
           <h2 data-en="Interval table">音程表</h2>
           <div class="tablewrap"><table class="it" id="ivTable"></table></div>
           <p class="hint" data-en="Tap a row to choose that interval above the current lower note. The red product shows the one inversion pair in this table that does not multiply to exactly 2.">點一列就把那個音程放到目前的下方音上。紅色的那一格，是這張表裡唯一轉位相乘不剛好等於 2 的一對。</p>

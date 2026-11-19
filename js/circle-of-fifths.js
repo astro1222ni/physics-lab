@@ -13,6 +13,8 @@
   const AU = window.MusicAudio;
   const FONT = D.FONT;
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const alpha = D.alpha, mix = D.mix, shade = D.shade;
@@ -54,7 +56,10 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + (size * fs).toFixed(1) + 'px ' + FONT;
+  }
   const cycleColor = function (i) { return [C['cf-key'], C['cf-sharp'], C['cf-flat'], C['cf-target'], C['cf-c5'], C['cf-c6']][i % 6]; };
   const sideColor = function (j) { return j > 0 ? C['cf-sharp'] : j < 0 ? C['cf-flat'] : C.muted; };
 
@@ -276,7 +281,8 @@
 
   // ---------- 右側分頁 ----------
   function setPanel(p) {
-    if (state.panel === p) return;
+    chartView.value = p;
+    stage.dataset.chart = p;
     state.panel = p;
     renderSegs();
     resize();
@@ -483,14 +489,17 @@
     // 標題、兩行五線譜（各 9 格線距＋音名）、升降記號順序兩列、比較的標題（和 drawSigPanel 的排版一致）
     return Math.round(130 * fs + 18 * staffS(w - 16) + 60);
   }
-  function staffS(w) { return Math.max(7, Math.min(10.5, w / 36)); }
+  function staffS(w) { return Math.max(7, Math.min(compactCharts.matches && innerHeight <= 600 ? 7.5 : 10.5, w / 36)); }
   function resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const total = cvrow.clientWidth || 600;
-    wide = total >= 660;
+    wide = !compactCharts.matches && total >= 660;
     cvrow.classList.toggle('wide', wide);
     W1 = cv.clientWidth || total; W2 = cv2.clientWidth || total;
-    if (wide) {
+    if (compactCharts.matches) {
+      H1 = Math.round(Math.min(W1, 420, Math.max(200, innerHeight - 98)));
+      H2 = Math.min(panelHeight(W2), Math.max(232, innerHeight - 62));
+    } else if (wide) {
       const hp = Math.max(panelHeight(W2), 380);
       const hd = Math.round(Math.min(W1 + 30, 520));
       H1 = H2 = Math.max(hp, hd);
@@ -1109,11 +1118,13 @@
     }
     if (now - state.aT0 < 760 && !D.reducedMotion()) more = true;
     if (!view3 || !view3.active) {
-      drawDial(now);
-      D.backdrop(ctx2, W2, H2);
-      if (state.panel === 'heat') drawHeatPanel(ctx2);
-      else if (state.panel === 'k') drawKPanel(ctx2, now);
-      else drawSigPanel(ctx2);
+      if (cv.clientWidth) drawDial(now);
+      if (cv2.clientWidth) {
+        D.backdrop(ctx2, W2, H2);
+        if (state.panel === 'heat') drawHeatPanel(ctx2);
+        else if (state.panel === 'k') drawKPanel(ctx2, now);
+        else drawSigPanel(ctx2);
+      }
     }
     if (view3 && view3.active) view3.frame();
     if (more) requestDraw(); else lastT = 0;
@@ -1234,7 +1245,13 @@
       if (o.m === 'major' || o.m === 'minor') state.mode = o.m;
       if (CF.isUnit(o.a)) { state.a = state.aFrom = mod(o.a, 12); }
       if (o.o === 'fifths' || o.o === 'chrom') state.order = o.o;
-      if (['sig', 'heat', 'k'].indexOf(o.v) >= 0) state.panel = o.v;
+      if (['sig', 'heat', 'k'].indexOf(o.v) >= 0) {
+        state.panel = o.v;
+        if (o.v !== 'sig' || chartView.value !== 'dial') {
+          chartView.value = o.v;
+          stage.dataset.chart = o.v;
+        }
+      }
       const tv = elTarget.value;
       if (tv) { const q = tv.split(':'); state.target = { j: parseInt(q[0], 10), mode: q[1] === 'minor' ? 'minor' : 'major' }; }
       readK(false);
@@ -1280,9 +1297,25 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  chartView.addEventListener('change', function () {
+    if (chartView.value === 'dial') {
+      stage.dataset.chart = 'dial';
+      resize();
+    } else {
+      setPanel(chartView.value);
+    }
+  });
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cvrow.clientWidth !== lastW) { lastW = cvrow.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   resize();
 })();

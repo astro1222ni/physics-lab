@@ -15,6 +15,8 @@
   const AU = window.MusicAudio;
   const FONT = D.FONT;
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const alpha = D.alpha, shade = D.shade, mix = D.mix;
@@ -48,7 +50,10 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + (size * fs).toFixed(1) + 'px ' + FONT;
+  }
   const brickColor = function (i) { return C['iv-b' + (1 + (i % 4))]; };
 
   // ---------- 數字與文字 ----------
@@ -537,6 +542,10 @@
       L.card = { x: 8, y: y, w: W - 16, h: cardH };
       y += cardH + 6;
     }
+    if (compactCharts.matches) {
+      if (chartView.value === 'staff') { H = y + 2; return; }
+      y = 8;
+    }
     L.ruler = { x: 8, y: y, w: W - 16, h: rulerH };
     y += rulerH + 6;
     L.stack = { x: 8, y: y, w: W - 16, h: stackH };
@@ -923,10 +932,14 @@
 
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawStaff(now);
-    drawCard();
-    drawRuler(now);
-    drawStack();
+    if (!compactCharts.matches || chartView.value === 'staff') {
+      drawStaff(now);
+      drawCard();
+    }
+    if (!compactCharts.matches || chartView.value === 'ruler') {
+      drawRuler(now);
+      drawStack();
+    }
   }
 
   // ---------- 動畫迴圈 ----------
@@ -1099,9 +1112,18 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  chartView.addEventListener('change', resize);
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   resize();
 })();

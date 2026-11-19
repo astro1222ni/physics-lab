@@ -16,6 +16,8 @@
   const AU = window.MusicAudio;
   const FONT = D.FONT;
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const NUM = window.LabNum;
   const val = function (el) { return NUM ? NUM.value(el) : +el.value; };
@@ -54,7 +56,10 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + (size * fs).toFixed(1) + 'px ' + FONT;
+  }
 
   // ---------- 數字與文字 ----------
   function fx(v, d) { if (v == null || !isFinite(v)) return '—'; let s = v.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
@@ -342,7 +347,19 @@
   let W = 600, H = 600, L = null;
   function layout() {
     const g = 8;
-    if (W >= 620) {
+    if (compactCharts.matches) {
+      const page = chartView.value;
+      const h = Math.round((page === 'spec' ? 260 : 206) + 50 * (fs - 1));
+      const gap = 4, half = Math.floor((W - 3 * gap) / 2);
+      H = h + 2 * gap;
+      L = { wide: false };
+      if (page === 'meter') {
+        L.meter = { x: gap, y: gap, w: half, h: h };
+        L.tuner = { x: 2 * gap + half, y: gap, w: W - 3 * gap - half, h: h };
+      } else {
+        L[page] = { x: gap, y: gap, w: W - 2 * gap, h: h };
+      }
+    } else if (W >= 620) {
       const hT = Math.round(178 + 46 * (fs - 1)), hM = Math.round(214 + 50 * (fs - 1)), hS = Math.round(196 + 52 * (fs - 1));
       const wm = Math.round((W - 3 * g) * 0.42), ww = Math.round((W - 3 * g) * 0.4);
       L = {
@@ -752,11 +769,11 @@
 
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawMeter(now);
-    drawTuner();
-    drawWave();
-    drawEnv(now);
-    drawSpectrum();
+    if (L.meter) drawMeter(now);
+    if (L.tuner) drawTuner();
+    if (L.wave) drawWave();
+    if (L.env) drawEnv(now);
+    if (L.spec) drawSpectrum();
   }
 
   // ---------- 畫布的文字說明（螢幕閱讀器） ----------
@@ -942,9 +959,18 @@
       resize();
     }
   });
+  chartView.addEventListener('change', resize);
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   resize();
 })();

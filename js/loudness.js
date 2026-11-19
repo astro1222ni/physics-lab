@@ -14,6 +14,8 @@
   const AU = window.MusicAudio;
   const FONT = D.FONT;
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const alpha = D.alpha, shade = D.shade, mix = D.mix;
@@ -52,7 +54,10 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + (size * fs).toFixed(1) + 'px ' + FONT;
+  }
 
   // ---------- 數字 ----------
   function fx(v, d) { if (v == null || !isFinite(v)) return '—'; let s = v.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
@@ -438,9 +443,11 @@
   function layoutChart() {
     const narrow = W < 520;
     H = Math.round(clamp(W * (narrow ? 0.92 : 0.6), 300, 500) + 24 * (fs - 1));
+    if (compactCharts.matches) H = Math.min(H, Math.max(180, innerHeight - 108));
     const head = narrow ? Math.round(36 * fs + 10) : Math.round(22 * fs + 10);
     P = { x0: Math.round(30 + 14 * fs), y0: head + 4, x1: W - 12, y1: H - Math.round(22 * fs + 10), narrow: narrow, head: head };
   }
+  const contourLabelHz = 700;
   const CONTOURS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
   const NS = 180;
   function contourPts(LN) {
@@ -538,7 +545,7 @@
         c.restore();
       }
       // 曲線的名字：放在 1 kHz 線的左邊一點（曲線在 1 kHz 的高度就是它的 phon 數）
-      const fl = 700, yl = Y(LC.splFromPhon(fl, LN));
+      const fl = contourLabelHz, yl = Y(LC.splFromPhon(fl, LN));
       if (yl > P.y0 + 6 && yl < P.y1 - 4) D.haloText(c, String(LN), X(fl) - 3, yl - 3, shade(C['ld-curve'], D.dark ? 0.1 : -0.15), 'right', 'bottom', fnt(10, 700));
     });
     // 聽閾曲線
@@ -624,12 +631,16 @@
     }
     // 標籤
     const lab = a.audible ? fx(a.phon, 1) + ' phon · ' + soneTxt(a.sone) + ' sone' : T('聽不到（低於聽閾 ' + fx(-a.above, 1) + ' dB）', 'inaudible (' + fx(-a.above, 1) + ' dB below threshold)');
+    const coordinates = fTxt(a.f) + '・' + fx(a.Lp, 1) + ' dB';
     ctx.font = fnt(11.5, 700);
-    const tw = ctx.measureText(lab).width + 12;
-    const right = x + 14 + tw < P.x1 - 2;
+    const labelWidth = ctx.measureText(lab).width;
+    ctx.font = fnt(10.5, 600);
+    const tw = Math.max(labelWidth, ctx.measureText(coordinates).width) + 12;
+    // 兩側都放得下時，將讀值排在遠離曲線標號的一側。
+    const right = x + 14 + tw <= P.x1 && (x - 14 - tw < P.x0 || x >= X(contourLabelHz));
     const lx = right ? x + 12 : x - 12, ly = y - 10 < P.y0 + 24 ? y + 30 : y - 10;
     D.pill(ctx, lab, lx, ly, a.audible ? C['ld-pt'] : C.muted, right ? 'left' : 'right', fnt(11.5, 700));
-    D.pill(ctx, fTxt(a.f) + '・' + fx(a.Lp, 1) + ' dB', lx, ly + 18 * fs + 4, C.muted, right ? 'left' : 'right', fnt(10.5, 600));
+    D.pill(ctx, coordinates, lx, ly + 18 * fs + 4, C.muted, right ? 'left' : 'right', fnt(10.5, 600));
   }
 
   // 拖曳與點選
@@ -711,7 +722,11 @@
     const head = Math.round(20 * fs + 8);
     const addH = head + 4 * rowH + Math.round(26 * fs) + 14;
     const timeH = Math.max(stack ? 210 : addH, Math.round(200 + 30 * (fs - 1)));
-    if (stack) {
+    if (compactCharts.matches) {
+      SH = Math.max(addH, timeH) + 12;
+      const box = { x: 6, y: 6, w: SW - 12, h: SH - 12 };
+      SL = { add: box, time: box, rowH: rowH, head: head };
+    } else if (stack) {
       SH = addH + 10 + timeH;
       SL = { stack: true, add: { x: 6, y: 6, w: SW - 12, h: addH - 6 }, time: { x: 6, y: addH + 10, w: SW - 12, h: timeH - 6 }, rowH: rowH, head: head };
     } else {
@@ -881,9 +896,12 @@
       else more = true;
     }
     const is3 = view3 && view3.active;
-    if (!is3) drawChart(now);
-    D.backdrop(sx, SW, SH);
-    drawAdd(); drawTime();
+    if (!is3 && cv.clientWidth) drawChart(now);
+    if (cvS.clientWidth) {
+      D.backdrop(sx, SW, SH);
+      if (!compactCharts.matches || chartView.value === 'sum') drawAdd();
+      if (!compactCharts.matches || chartView.value === 'time') drawTime();
+    }
     if (is3) view3.frame();
     if (more) requestDraw();
   }
@@ -1046,11 +1064,23 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  chartView.addEventListener('change', function () {
+    stage.dataset.chart = chartView.value;
+    resize();
+  });
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0, lastS = 0;
     new ResizeObserver(function () {
       if (cv.clientWidth !== lastW || cvS.clientWidth !== lastS) { lastW = cv.clientWidth; lastS = cvS.clientWidth; resize(); }
     }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   resize();
 })();

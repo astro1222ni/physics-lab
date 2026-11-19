@@ -15,6 +15,8 @@
   const MT = window.MusicTheory;
   const FONT = D.FONT;
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const val = function (el) { return window.LabNum ? window.LabNum.value(el) : +el.value; };
   const alpha = D.alpha, mix = D.mix;
@@ -82,7 +84,10 @@
       .forEach(function (k) { Cc[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + (size * fs).toFixed(1) + 'px ' + FONT;
+  }
   const stepColor = function (s) { return s === 1 ? Cc['pt-h'] : s === 2 ? Cc['pt-w'] : s === 3 ? Cc['pt-m3'] : Cc['pt-a']; };
   const stepCls = function (s) { return s === 1 ? 'h' : s === 2 ? 'w' : s === 3 ? 'm' : 'a'; };
   const stepWord = function (s) { return s === 1 ? T('半', 'H') : s === 2 ? T('全', 'M2') : s === 3 ? T('小三', 'm3') : String(s); };
@@ -649,7 +654,13 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   let W = 600, H = 420, L = null;
   function layout() {
-    if (W >= 640) {
+    if (compactCharts.matches) {
+      const clock = chartView.value === 'clock';
+      const ideal = clock ? Math.min(W, 380) : Math.round(274 + 50 * (fs - 1));
+      H = Math.min(ideal, Math.max(200, innerHeight - 100));
+      const R = Math.min(W / 2 - 28, H / 2 - 28);
+      L = { wide: false, cx: W / 2, cy: H / 2, R: R, chart: { x: 8, y: 6, w: W - 16, h: H - 12 } };
+    } else if (W >= 640) {
       H = Math.round(Math.max(400, Math.min(520, W * 0.5)));
       const lw = Math.round(W * 0.47);
       const R = Math.max(90, Math.min(lw / 2 - 30, H / 2 - 30));
@@ -663,8 +674,11 @@
     }
   }
   function resize() {
+    // 側欄換位時，主欄可能暫縮成只剩內距。等鐘面放得下外圈與內多邊形再量。
+    const width = cv.clientWidth;
+    if (width < 2 * (28 + 24)) return;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = cv.clientWidth || cv.parentElement.clientWidth || 600;
+    W = width;
     layout();
     cv.style.height = H + 'px';
     cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
@@ -953,15 +967,15 @@
 
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawClock(now);
-    drawStrings(now);
+    if (!compactCharts.matches || chartView.value === 'clock') drawClock(now);
+    if (!compactCharts.matches || chartView.value === 'strings') drawStrings(now);
   }
 
   cv.addEventListener('click', function (e) {
     if (!L) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     const dx = x - L.cx, dy = y - L.cy, d = Math.hypot(dx, dy);
-    if (d <= L.R + 4 && d >= L.R * 0.6) {
+    if ((!compactCharts.matches || chartView.value === 'clock') && d <= L.R + 4 && d >= L.R * 0.6) {
       const a = Math.atan2(dy, dx) + Math.PI / 2;
       const cell = mod(Math.round(a / TAU * 12), 12);
       const pc = state.arr === 'fifths' ? mod(7 * cell, 12) : cell;
@@ -970,22 +984,23 @@
       return;
     }
     const g = L.chart;
-    if (strCols && x >= g.x && x <= g.x + g.w && y >= g.y + 20 && y <= g.y + g.h) {
+    if ((!compactCharts.matches || chartView.value === 'strings') && strCols && x >= g.x && x <= g.x + g.w && y >= g.y + 20 && y <= g.y + g.h) {
       const i = Math.floor((x - strCols.x0) / strCols.colW);
       if (i >= 0 && i < C.gen) tapString(i);
     }
   });
   cv.addEventListener('mousemove', function (e) {
-    if (!L || !strCols) return;
+    if (!L) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     const g = L.chart, d = Math.hypot(x - L.cx, y - L.cy);
-    const overStr = x >= g.x && x <= g.x + g.w && y >= g.y + 20 && y <= g.y + g.h && Math.floor((x - strCols.x0) / strCols.colW) < C.gen;
-    cv.style.cursor = overStr || (d <= L.R + 4 && d >= L.R * 0.6) ? 'pointer' : 'default';
+    const overStr = (!compactCharts.matches || chartView.value === 'strings') && strCols && x >= g.x && x <= g.x + g.w && y >= g.y + 20 && y <= g.y + g.h && Math.floor((x - strCols.x0) / strCols.colW) < C.gen;
+    const overClock = (!compactCharts.matches || chartView.value === 'clock') && d <= L.R + 4 && d >= L.R * 0.6;
+    cv.style.cursor = overStr || overClock ? 'pointer' : 'default';
   });
 
   function updateCanvasLabels() {
-    cv.setAttribute('aria-label', T('鐘面：' + scaleName() + '，音是 ' + A.names.join(' ') + '，步伐 ' + A.steps.join(' ') + '。旁邊（手機在下面）是三分損益的弦：' + C.notes.map(function (x) { return chainRole(x) + ' ' + fmtLen(x.len.value); }).join('、') + '。點弦可以聽，點鐘面的格子可以加入或移出音。',
-      'Clock: ' + scaleName() + ', notes ' + A.names.join(' ') + ', steps ' + A.steps.join(' ') + '. Beside it (below on phones): the strings made by the rule: ' + C.notes.map(function (x) { return chainRole(x) + ' ' + fmtLen(x.len.value); }).join(', ') + '. Tap a string to hear it, tap a cell of the clock to add or remove a note.'));
+    cv.setAttribute('aria-label', T('鐘面：' + scaleName() + '，音是 ' + A.names.join(' ') + '，步伐 ' + A.steps.join(' ') + '。三分損益的弦：' + C.notes.map(function (x) { return chainRole(x) + ' ' + fmtLen(x.len.value); }).join('、') + '。點弦可以聽，點鐘面的格子可以加入或移出音。',
+      'Clock: ' + scaleName() + ', notes ' + A.names.join(' ') + ', steps ' + A.steps.join(' ') + '. Strings made by the rule: ' + C.notes.map(function (x) { return chainRole(x) + ' ' + fmtLen(x.len.value); }).join(', ') + '. Tap a string to hear it, tap a cell of the clock to add or remove a note.'));
   }
 
   // ---------- 動畫迴圈 ----------
@@ -1015,7 +1030,7 @@
     if (state.flash && now - state.flash.t0 < 500) more = true;
     if (state.strFlash && now - state.strFlash.t0 < 750) more = true;
     if (state.grow && now - state.grow.t0 < 460) more = true;
-    if (!view3 || !view3.active) draw(now);
+    if (L && (!view3 || !view3.active)) draw(now);
     if (view3 && view3.active) view3.frame();
     if (more) requestDraw();
   }
@@ -1168,9 +1183,18 @@
   }
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
+  chartView.addEventListener('change', resize);
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   resize();
 })();

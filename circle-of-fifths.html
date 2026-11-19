@@ -48,10 +48,10 @@
     #cv2 { height: 420px; touch-action: pan-y; }
     .cf [hidden] { display: none !important; }
     .cf button { min-height: 44px; }
-    .cf .turnbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 2px 0; }
-    .cf .turnbar button { font-weight: 600; padding-left: 4px; padding-right: 4px; white-space: nowrap; }
-    @media (max-width: 420px) { .cf .turnbar button { font-size: calc(14px * var(--fs, 1)); } }
-    .cf .turnbar small { display: block; font-weight: 400; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
+    .turnbar { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 10px; }
+    .turnbar button { font-weight: 600; padding-left: 4px; padding-right: 4px; white-space: nowrap; }
+    @media (max-width: 420px) { .turnbar button { font-size: calc(14px * var(--fs, 1)); } }
+    .turnbar small { display: block; font-weight: 400; color: var(--muted); font-size: calc(12px * var(--fs, 1)); }
     .cf .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .cf .playbar button { flex: 1 1 auto; }
     .cf .playbar .sound-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); }
@@ -123,6 +123,22 @@
     .rsp { white-space: nowrap; font-weight: 600; }
     .twobtn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+
+    .chart-picker { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      .stage:not(.is3d) .chart-picker { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: calc(14px * var(--fs, 1)); }
+      .chart-picker select { min-height: 44px; min-width: 0; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+      .stage #panelSeg, .stage[data-chart="dial"] #cv2, .stage:not([data-chart="dial"]) #cv { display: none; }
+    }
+    #stage > .playbar { margin: 0 0 8px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      .stage > :is(#cvrow, #view3) { width: calc(100% - 20px); }
+      #stage > .view-bar, #stage > .playbar { margin-bottom: 2px; }
+      #view3 canvas { max-height: calc(100dvh - 104px); }
+      #view3 .t3-hud { position: static; display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      #view3 .t3-hud > div { position: static; flex-flow: row wrap; max-width: 100%; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -135,7 +151,7 @@
 
     <p class="try-hint" data-en="Try it: press “Dominant ▶” to bring G to the top, see which sharp the key signature gains, then keep turning.">試試看：按「屬調 ▶」把 G 轉到最上面，看調號多了哪個升記號，再一路轉下去。</p>
     <div class="lab cf" id="lab">
-      <div class="stage" id="stage">
+      <div class="stage" id="stage" data-chart="dial">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D circle">2D 五度圈</button>
@@ -146,37 +162,30 @@
             <button type="button" data-panel="heat" aria-pressed="false" data-en="Common notes">共同音</button>
             <button type="button" data-panel="k" aria-pressed="false" data-en="Times k">乘 k</button>
           </div>
+          <label class="chart-picker"><span data-en="Chart">圖表</span>
+            <select id="chartView" aria-controls="cv cv2">
+              <option value="dial" data-en="Circle of fifths">五度圈</option>
+              <option value="sig" data-en="Key signature">調號</option>
+              <option value="heat" data-en="Common-note map">共同音熱圖</option>
+              <option value="k" data-en="Times k">乘 k</option>
+            </select>
+          </label>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <div class="cvrow" id="cvrow"><canvas id="cv"></canvas><canvas id="cv2"></canvas></div>
-        <div id="view3"></div>
-        <div class="l3row l3">
-          <button type="button" id="flat" aria-pressed="false" data-en="Squash the spiral into a circle (equal temperament)">把螺旋壓成圓（平均律）</button>
-        </div>
-        <p class="piano-hint l3" style="font-size:calc(13px * var(--fs, 1));color:var(--muted);margin:8px 4px 0" data-en="3D: every key sits on a spiral. Going round is the circle of fifths; going up is adding sharps, going down is adding flats. After one full turn you are back above your starting point, twelve accidentals higher: the vertical posts join keys that are played on the same piano keys but written differently (F♯ and G♭ major, C♯ and D♭ major…). Squash the spiral and the posts shrink to nothing — that is what equal temperament does. Drag to rotate, scroll or pinch to zoom.">3D：每個調都在一條螺旋上。繞圈就是五度圈；往上是加升記號，往下是加降記號。繞完一整圈，你回到起點的正上方，但多了 12 個記號：直立的柱子連起來的，是彈同一組鍵、寫法卻不同的兩個調（F♯ 與 G♭ 大調、C♯ 與 D♭ 大調……）。把螺旋壓扁，柱子縮成一點——十二平均律做的就是這件事。拖曳旋轉，滾輪或雙指縮放。</p>
-
-        <div class="turnbar">
-          <button type="button" id="ccw" data-en-html="◀ Subdominant<small>one more ♭</small>">◀ 下屬調<small>多一個 ♭</small></button>
-          <button type="button" id="cw" data-en-html="Dominant ▶<small>one more ♯</small>">屬調 ▶<small>多一個 ♯</small></button>
-        </div>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
           <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div class="playopts">
-          <div class="field"><label for="what" data-en="What to play">播放內容</label>
-            <select id="what">
-              <option value="triad" selected data-en="Tonic chord">主三和弦</option>
-              <option value="scale" data-en="Scale">音階</option>
-              <option value="cadence" data-en="Cadence I–IV–V–I">終止式 I–IV–V–I</option>
-              <option value="modulate" data-en="Modulation demo">轉調示範</option>
-              <option value="kseq" data-en="Times-k sequence">乘 k 的序列</option>
-            </select></div>
-          <div class="slider"><label for="tempo" data-en="Speed (beats per minute)">速度（每分鐘幾拍）</label><output id="tempoO"></output>
-            <input id="tempo" type="range" min="60" max="180" step="4" value="96" data-decimals="0"></div>
+        <div class="cvrow" id="cvrow"><canvas id="cv"></canvas><canvas id="cv2"></canvas></div>
+        <div id="view3"></div>
+        <div data-deck-anchor hidden></div>
+        <div class="l3row l3">
+          <button type="button" id="flat" aria-pressed="false" data-en="Squash the spiral into a circle (equal temperament)">把螺旋壓成圓（平均律）</button>
         </div>
+        <p class="piano-hint l3" style="font-size:calc(13px * var(--fs, 1));color:var(--muted);margin:8px 4px 0" data-en="3D: every key sits on a spiral. Going round is the circle of fifths; going up is adding sharps, going down is adding flats. After one full turn you are back above your starting point, twelve accidentals higher: the vertical posts join keys that are played on the same piano keys but written differently (F♯ and G♭ major, C♯ and D♭ major…). Squash the spiral and the posts shrink to nothing — that is what equal temperament does. Drag to rotate, scroll or pinch to zoom.">3D：每個調都在一條螺旋上。繞圈就是五度圈；往上是加升記號，往下是加降記號。繞完一整圈，你回到起點的正上方，但多了 12 個記號：直立的柱子連起來的，是彈同一組鍵、寫法卻不同的兩個調（F♯ 與 G♭ 大調、C♯ 與 D♭ 大調……）。把螺旋壓扁，柱子縮成一點——十二平均律做的就是這件事。拖曳旋轉，滾輪或雙指縮放。</p>
+
         <p class="status" id="status" aria-live="polite"></p>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--cf-key)&quot;></i>Current key"><i style="background:var(--cf-key)"></i>目前的調</span>
@@ -188,8 +197,27 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="播放設定|Playback" data-deck-order="6">
+          <h2 data-en="Playback">播放設定</h2>
+          <div class="playopts">
+            <div class="field"><label for="what" data-en="What to play">播放內容</label>
+              <select id="what">
+                <option value="triad" selected data-en="Tonic chord">主三和弦</option>
+                <option value="scale" data-en="Scale">音階</option>
+                <option value="cadence" data-en="Cadence I–IV–V–I">終止式 I–IV–V–I</option>
+                <option value="modulate" data-en="Modulation demo">轉調示範</option>
+                <option value="kseq" data-en="Times-k sequence">乘 k 的序列</option>
+              </select></div>
+            <div class="slider"><label for="tempo" data-en="Speed (beats per minute)">速度（每分鐘幾拍）</label><output id="tempoO"></output>
+              <input id="tempo" type="range" min="60" max="180" step="4" value="96" data-decimals="0"></div>
+          </div>
+        </section>
+        <section class="card" data-deck="調|Key" data-deck-order="1">
           <h2 data-en="Key">調</h2>
+          <div class="turnbar">
+            <button type="button" id="ccw" data-en-html="◀ Subdominant<small>one more ♭</small>">◀ 下屬調<small>多一個 ♭</small></button>
+            <button type="button" id="cw" data-en-html="Dominant ▶<small>one more ♯</small>">屬調 ▶<small>多一個 ♯</small></button>
+          </div>
           <div class="segrow"><span data-en="Mode">調式</span>
             <div class="seg" id="modeSeg" role="group" aria-label="調式" data-en-aria-label="Mode">
               <button type="button" data-mode="major" aria-pressed="true" data-en="Major">大調</button>
@@ -206,7 +234,7 @@
           <dl class="readout" id="keyRead"></dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="轉調|Modulation" data-deck-order="2">
           <h2 data-en="Compare and modulate">比較與轉調</h2>
           <div class="field"><label for="target" data-en="Compare with">比較的調</label>
             <select id="target"></select></div>
@@ -214,7 +242,7 @@
           <p class="hint" data-en="To hear the change, choose “Modulation demo” in “What to play”: I–IV–V–I in the current key, then IV–V–I in the compared key.">想聽聽看，就在「播放內容」選「轉調示範」：先在目前的調彈 I–IV–V–I，再到比較的調彈 IV–V–I。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="共同音|Common notes" data-deck-order="3">
           <h2 data-en="Common-note map">共同音熱圖</h2>
           <div class="segrow"><span data-en="Order">順序</span>
             <div class="seg" id="orderSeg" role="group" aria-label="熱圖的順序" data-en-aria-label="Order of the map">
@@ -224,7 +252,7 @@
           <p class="hint" data-en="How many notes two major keys share (a minor key has the same notes as its relative major). Tap a cell: its row becomes the current key and its column the compared key.">兩個大調共用幾個音（小調和它的關係大調用同一組音）。點一格：那一列變成目前的調、那一欄變成比較的調。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="乘 k|Times k" data-deck-order="4">
           <h2 data-en="Times k">乘 k</h2>
           <div class="slider"><label for="kk" data-en="Times k">乘 k</label><output id="kkO"></output>
             <input id="kk" type="range" min="1" max="11" step="1" value="7" data-decimals="0"></div>
@@ -236,7 +264,7 @@
           <p class="hint" data-en="Start at the tonic and keep adding k semitones. “× k rearrange” moves every note n to slot k·n (mod 12) — with k = 7 the semitone circle becomes the circle of fifths.">從主音出發，每次往上加 k 個半音。「× k 重排」把每個音 n 搬到第 k·n（除以 12 的餘數）格——k = 7 時，半音圈就變成五度圈。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="足跡|Footprints" data-deck-order="5">
           <h2 data-en="Footprints">足跡</h2>
           <dl class="readout" id="footRead"></dl>
           <div class="twobtn">

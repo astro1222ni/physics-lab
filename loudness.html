@@ -120,6 +120,25 @@
     .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
     .notes table.lv { border-collapse: collapse; margin: 8px 0; font-size: calc(14px * var(--fs, 1)); font-variant-numeric: tabular-nums; }
     .notes table.lv th, .notes table.lv td { border-bottom: 1px solid var(--border); padding: 3px 10px; text-align: left; }
+
+    .chart-picker { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      .stage:not(.is3d) .chart-picker { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: calc(14px * var(--fs, 1)); }
+      .chart-picker select { min-height: 44px; min-width: 0; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+      .stage { display: flex; flex-direction: column; }
+      .stage > :is(.view-bar, .view-msg, .playbar) { order: -3; }
+      .stage > :is(#cv, #view3, #cvSum) { order: -2; }
+      .stage > .labdeck { order: -1; }
+      .stage[data-chart="contours"] #cvSum, .stage.is3d #cvSum, .stage:not([data-chart="contours"]) #cv { display: none; }
+      .stage:not([data-chart="contours"]) .only2d, .stage[data-chart="contours"] .chart-cap { display: none; }
+    }
+    #stage > .playbar { margin: 0 0 8px; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      .stage > :is(#cv, #cvSum, #view3) { width: calc(100% - 20px); }
+      #stage > .view-bar, #stage > .playbar { margin-bottom: 2px; }
+      #view3 canvas { max-height: calc(100dvh - 104px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -132,7 +151,7 @@
 
     <p class="try-hint" data-en="Try it: turn on “Lock to a contour”, slide the frequency from 1 kHz down to 50 Hz and watch how many decibels it takes.">試試看：打開「鎖定在等響曲線上」，把頻率從 1 kHz 拉到 50 Hz，看聲壓級要加多少。</p>
     <div class="lab ld" id="lab">
-      <div class="stage" id="stage">
+      <div class="stage" id="stage" data-chart="contours">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
             <button type="button" id="view2d" aria-pressed="true" data-en="2D contours">2D 等響曲線</button>
@@ -142,27 +161,35 @@
             <button type="button" data-hmode="phon" aria-pressed="true" data-en="Height: phon">高度：phon</button>
             <button type="button" data-hmode="sone" aria-pressed="false" data-en="Height: sone">高度：sone</button>
           </div>
+          <label class="chart-picker"><span data-en="Chart">圖表</span>
+            <select id="chartView" aria-controls="cv cvSum">
+              <option value="contours" data-en="Equal-loudness contours">等響曲線</option>
+              <option value="sum" data-en="Adding decibels">分貝相加</option>
+              <option value="time" data-en="Safe listening time">安全聆聽時間</option>
+            </select>
+          </label>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv"></canvas>
-        <div id="view3"></div>
-        <p class="hint only2d" data-en="Drag on the chart (or use the sliders) to move the red point. Each curve joins the pure tones that sound equally loud; its name in phon is its level at 1 kHz. Below the green threshold curve nothing can be heard. Dashed parts lie outside the range the standard covers.">在圖上拖曳（或用滑桿）移動紅點。每一條曲線連起「聽起來一樣響」的純音，它的 phon 數就是它在 1 kHz 的分貝數。綠色的聽閾曲線以下什麼也聽不到；虛線的部分超出標準的有效範圍。</p>
-        <p class="hint l3" data-en="3D: across the floor run frequency (left to right, logarithmic) and sound pressure level (front to back); the height is the loudness level (or the loudness in sone). The equal-loudness contours are the contour lines of this surface. Drag to rotate, scroll or pinch to zoom.">3D：地面的兩個方向是頻率（左到右、對數刻度）與聲壓級（前到後），高度是響度級（或以 sone 計的響度）。等響曲線就是這個曲面的等高線。拖曳旋轉，滾輪或雙指縮放。</p>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
           <button id="cmp1k" type="button" data-en="1 kHz, then this">先 1 kHz 再這個頻率</button>
           <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <canvas id="cv"></canvas>
+        <div id="view3"></div>
+        <div data-deck-anchor hidden></div>
+        <p class="hint only2d" data-en="Drag on the chart (or use the sliders) to move the red point. Each curve joins the pure tones that sound equally loud; its name in phon is its level at 1 kHz. Below the green threshold curve nothing can be heard. Dashed parts lie outside the range the standard covers.">在圖上拖曳（或用滑桿）移動紅點。每一條曲線連起「聽起來一樣響」的純音，它的 phon 數就是它在 1 kHz 的分貝數。綠色的聽閾曲線以下什麼也聽不到；虛線的部分超出標準的有效範圍。</p>
+        <p class="hint l3" data-en="3D: across the floor run frequency (left to right, logarithmic) and sound pressure level (front to back); the height is the loudness level (or the loudness in sone). The equal-loudness contours are the contour lines of this surface. Drag to rotate, scroll or pinch to zoom.">3D：地面的兩個方向是頻率（左到右、對數刻度）與聲壓級（前到後），高度是響度級（或以 sone 計的響度）。等響曲線就是這個曲面的等高線。拖曳旋轉，滾輪或雙指縮放。</p>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="safety" data-en-html="<b>Hearing protection:</b> the page cannot know how loud your speaker or headphones really are — every decibel here is a simulated value on the chart, not what reaches your ears. Playback is always gentle and capped: setting 120 dB does <em>not</em> play anything loud. Do not use your ears to “test” the threshold of hearing or very loud levels. Tones above 4 kHz are piercing: if you wear headphones, turn the volume down first. Phone speakers can hardly play below about 200 Hz."><b>聽力保護：</b>網頁不知道你的喇叭或耳機實際有多大聲——這裡的分貝都是圖上的模擬值，不是你耳朵聽到的值。試聽一律用溫和的音量，而且有上限：把聲壓級拉到 120 dB <em>不會</em>真的放很大聲。不要用耳朵去「測試」聽閾或很大的音量。4 kHz 以上的純音很刺耳：戴耳機的同學先把音量調小。手機的小喇叭幾乎放不出 200 Hz 以下的聲音。</p>
-        <canvas id="cvSum" role="img" aria-label="分貝相加與安全聆聽時間"></canvas>
-        <p class="chart-cap" data-en="Left: adding sound sources and stepping back (levels at 1 m, then at the distance you chose). Right: how long you may listen each day at a given A-weighted level (NIOSH: 85 dBA for 8 hours, half the time for every 3 dB more).">左：聲源相加與退後（先算 1 公尺處，再換到你選的距離）。右：某個 A 加權聲級每天可以聽多久（NIOSH：85 dBA 8 小時，每多 3 dB 時間減半）。</p>
+        <canvas id="cvSum" role="img" aria-label="分貝相加與安全聆聽時間" data-en-aria-label="Adding decibels and safe listening time"></canvas>
+        <p class="chart-cap" data-en="Adding sound sources and stepping back (levels at 1 m, then at the distance you chose). Safe listening time: how long you may listen each day at a given A-weighted level (NIOSH: 85 dBA for 8 hours, half the time for every 3 dB more).">聲源相加與退後（先算 1 公尺處，再換到你選的距離）。安全聆聽時間是指某個 A 加權聲級每天可以聽多久（NIOSH：85 dBA 8 小時，每多 3 dB 時間減半）。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="頻率與聲級|Frequency and level" data-deck-order="1">
           <h2 data-en="A point on the chart">等響曲線上的點</h2>
           <div class="slider"><label for="freq" data-en="Frequency f (Hz)">頻率 f（Hz）</label><output id="freqo"></output>
             <input id="freq" type="range" min="0" max="1000" step="1" value="500" data-decimals="1"></div>
@@ -184,7 +211,7 @@
           <p class="hint" id="lockHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="讀數|Readings" data-deck-order="2">
           <h2 data-en="Readings">讀數</h2>
           <dl class="readout" id="readout">
             <dt data-en="Loudness level">響度級</dt><dd class="big" id="rPhon">—</dd>
@@ -203,7 +230,7 @@
           <div class="tablewrap" id="recWrap"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="分貝相加|Adding decibels" data-deck-order="3">
           <h2 data-en="Adding decibels">分貝相加</h2>
           <div class="presets six dyn" role="group" aria-label="力度記號（示意值）" data-en-aria-label="Dynamics (rough values)">
             <button type="button" data-dyn="pp"><b>pp</b><small>50</small></button>
@@ -232,7 +259,7 @@
           <p class="hint" data-en="The distance slider doubles the distance every 4 notches (0.5 m to 32 m); tap the number to type any distance.">距離滑桿每 4 格距離加倍（0.5 m 到 32 m）；點數字可以打任何距離。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="聆聽時間|Listening time" data-deck-order="4">
           <h2 data-en="Safe listening time">安全聆聽時間</h2>
           <div class="slider"><label for="lv" data-en="A-weighted level (dBA)">A 加權聲級（dBA）</label><output id="lvo"></output>
             <input id="lv" type="range" min="70" max="115" step="0.5" value="80" data-decimals="1"></div>

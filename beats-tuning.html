@@ -130,6 +130,17 @@
     table.etb th, table.etb td { padding: 4px 10px; border-bottom: 1px solid var(--border); text-align: right; }
     table.etb th:first-child, table.etb td:first-child { text-align: left; }
     .etb-wrap { overflow-x: auto; }
+
+    .chart-picker { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      .stage:not(.is3d) .chart-picker { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: calc(14px * var(--fs, 1)); }
+      .chart-picker select { min-height: 44px; min-width: 0; max-width: 100%; padding: 4px 8px; font: inherit; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      .stage > :is(#cv, #view3) { width: calc(100% - 20px); }
+      #view3 canvas { max-height: calc(100dvh - 104px); }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -148,6 +159,14 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D meters">2D 儀表</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D beat spiral">3D 拍的螺旋</button>
           </div>
+          <label class="chart-picker"><span data-en="Chart">圖表</span>
+            <select id="chartView" aria-controls="cv">
+              <option value="meter" data-en="Beat meter and tuner">拍頻計與調音器</option>
+              <option value="wave" data-en="Waveforms">波形</option>
+              <option value="env" data-en="Loudness envelope">響度包絡</option>
+              <option value="spec" data-en="Overtone spectrum">泛音頻譜</option>
+            </select>
+          </label>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
@@ -179,13 +198,13 @@
           <span data-en-html="<i style=&quot;background:var(--bt-beat)&quot;></i>The pair of overtones that beats"><i style="background:var(--bt-beat)"></i>打拍的那一對泛音</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--bt-lamp)&quot;></i>Beat lamp"><i class="dot" style="background:var(--bt-lamp)"></i>拍頻計的燈</span>
         </div>
-        <p class="hint l2" data-en="Top: the beat meter and the tuner. Middle: the real waveforms over a few thousandths of a second, and the loudness envelope of the beating pair over a few seconds. Bottom: the overtones of both notes; the two that nearly coincide are the ones that beat. The timbres are synthesized approximations.">上面是拍頻計與調音器；中間是幾毫秒內的真實波形，以及打拍那一對泛音幾秒內的響度包絡；下面是兩個音的泛音，幾乎重合的那兩根就是在打拍的。音色是合成的近似。</p>
+        <p class="hint l2" data-en="The meter and tuner show the beat rate and tuning. The waveforms span a few milliseconds; the envelope spans several seconds. In the spectrum, the two nearly coincident overtones are the ones that beat. The timbres are synthesized approximations.">拍頻計與調音器顯示拍頻和音準。波形顯示幾毫秒內的振動，包絡顯示幾秒內的響度變化。頻譜中幾乎重合的那兩根泛音就是在打拍的。音色是合成的近似。</p>
         <p class="hint l3" data-en-html="3D: time runs from left to right. In a frame that turns with the reference overtone, the beating overtone of the tuned note is a little arrow going round and round; the tip of the sum traces a spiral. Its distance from the axis is the loudness, and the way it turns (anticlockwise = sharp, clockwise = flat, looking along time) tells you which way to turn the peg. Drag to rotate, scroll or pinch to zoom.">3D：時間從左往右。在「跟著參考泛音一起轉」的座標裡，待調音那根泛音是一支不停繞圈的小箭頭，兩者相加的尖端畫出一條螺旋。螺旋離中心軸的距離就是響度；順著時間看，逆時針轉是偏高、順時針轉是偏低——告訴你弦軸該往哪邊轉。拖曳旋轉，滾輪或雙指縮放。</p>
         <p class="hint" data-en="Pure tones are pure sine waves, so they play for at most 4 seconds (hearing protection); tones with overtones play for 12 seconds. Phone speakers barely play below 200 Hz — choose “With overtones” for low notes. If you wear earphones, turn the volume down first.">純音是純正弦波，最多響 4 秒（保護聽力）；帶泛音的音響 12 秒。手機小喇叭聽不太到 200 Hz 以下，低音請選「帶泛音」。戴耳機的同學先把音量調小。</p>
       </div>
 
       <aside class="panel">
-        <section class="card" data-deck="兩個音|Two notes">
+        <section class="card" data-deck="兩個音|Two notes" data-deck-order="1">
           <h2 data-en="Two notes">兩個音</h2>
           <div class="slider"><label for="ref" data-en-html="Reference note f<sub>1</sub> (Hz)">參考音 f<sub>1</sub>（Hz）</label><output id="refo"></output>
             <input id="ref" type="range" min="33" max="81" step="1" value="69" data-decimals="2"></div>
@@ -201,7 +220,7 @@
           <p class="hint" id="ivHint"></p>
         </section>
 
-        <section class="card" data-deck="目標與音色|Target and timbre">
+        <section class="card" data-deck="目標與音色|Target and timbre" data-deck-order="2">
           <h2 data-en="Target and timbre">目標與音色</h2>
           <p class="grp-label" id="tgLabel" data-en="Target">目標</p>
           <div class="seg full" role="group" aria-labelledby="tgLabel">
@@ -230,7 +249,7 @@
           </dl>
         </section>
 
-        <section class="card" data-deck="調音紀錄|Tuning log">
+        <section class="card" data-deck="調音紀錄|Tuning log" data-deck-order="3">
           <h2 data-en="Tuning log">調音紀錄</h2>
           <div class="recbar">
             <button id="record" type="button" data-en="Log this tuning">記下這次調音</button>

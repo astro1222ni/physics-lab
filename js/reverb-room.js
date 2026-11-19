@@ -11,6 +11,8 @@
   const C = window.ReverbCore, MA = window.MusicAudio, D = window.LabDraw, MT = window.MusicTheory;
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const $ = function (id) { return document.getElementById(id); };
+  const compactCharts = matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
+  const chartView = $('chartView');
   const FONT = 'system-ui, -apple-system, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif';
   const lab = $('lab'), stage = $('stage'), cv = $('cv'), cv2 = $('cv2');
   const ctx = cv.getContext('2d'), ctx2 = cv2.getContext('2d');
@@ -39,7 +41,10 @@
       .forEach(function (k) { COL[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
   }
   const matCol = function (k) { return COL['rv-' + k] || COL.muted; };
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + FONT; }
+  function fnt(px, weight) {
+    const size = compactCharts.matches ? Math.max(11, px) : px;
+    return (weight ? weight + ' ' : '') + size + 'px ' + FONT;
+  }
   function num(v, dec) {
     if (v == null || !isFinite(v)) return '—';
     let s = v.toFixed(dec);
@@ -272,16 +277,17 @@
     const L = state.cfg.L, W = state.cfg.W;
     const pad = cw < 480 ? 10 : 18, top = 40, bot = cw < 480 ? 46 : 34;
     let s = (cw - 2 * pad) / (L * (1 + 2 * MARGIN));
-    const maxH = cw < 480 ? 420 : 500;
+    const normalH = cw < 480 ? 420 : 500;
+    const maxH = compactCharts.matches ? Math.min(normalH, Math.max(190, innerHeight - 108)) : normalH;
     if (W * s * (1 + 2 * MARGIN) > maxH - top - bot) s = (maxH - top - bot) / (W * (1 + 2 * MARGIN));
-    const roomH = W * s, H = Math.max(cw < 480 ? 250 : 300, Math.round(roomH * (1 + 2 * MARGIN) + top + bot));
+    const roomH = W * s, H = Math.max(Math.min(maxH, cw < 480 ? 250 : 300), Math.round(roomH * (1 + 2 * MARGIN) + top + bot));
     const ox = cw / 2 - L * s / 2, oy = top + (H - top - bot) / 2 + roomH / 2;
     return { s: s, ox: ox, oy: oy, pad: pad, H: H, top: top, bot: bot, narrow: cw < 480 };
   }
   const X = function (x) { return P.ox + x * P.s; };
   const Y = function (y) { return P.oy - y * P.s; };
   function resize() {
-    const w = cv.clientWidth;
+    const w = cv.clientWidth || cv2.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
@@ -290,7 +296,7 @@
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     cw2 = cv2.clientWidth || cw;
-    ch2 = cw2 >= 640 ? 300 : 560;
+    ch2 = compactCharts.matches ? Math.min(338, Math.max(202, innerHeight - 104)) : (cw2 >= 640 ? 300 : 560);
     if (cv2.style.height !== ch2 + 'px') cv2.style.height = ch2 + 'px';
     cv2.width = Math.round(cw2 * dpr); cv2.height = Math.round(ch2 * dpr);
     requestDraw();
@@ -567,7 +573,10 @@
     c.clearRect(0, 0, cw2, ch2);
     const wide = cw2 >= 640;
     const bandH = wide ? 74 : 84;
-    if (wide) {
+    if (compactCharts.matches) {
+      if (chartView.value === 'echo') drawEcho(c, 0, 0, cw2, ch2 - bandH);
+      else drawDecay(c, 0, 0, cw2, ch2 - bandH, now);
+    } else if (wide) {
       const h = ch2 - bandH;
       drawDecay(c, 0, 0, cw2 / 2, h, now);
       drawEcho(c, cw2 / 2, 0, cw2 / 2, h);
@@ -762,8 +771,8 @@
     raf = 0;
     const now = performance.now();
     if (state.play && (now - state.play.t0) / 1000 > state.play.life) { state.play = null; updateStopBtn(); }
-    if (!stage.classList.contains('is3d')) draw(now);
-    drawCharts(now);
+    if (cv.clientWidth) draw(now);
+    if (cv2.clientWidth) drawCharts(now);
     if (view3 && view3.active) view3.frame();
     if ((state.play || (view3 && view3.active && view3.busy())) && !document.hidden) raf = requestAnimationFrame(frame);
   }
@@ -1108,10 +1117,22 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   window.addEventListener('lab:settingschange', function (ev) { if (ev.detail && (ev.detail.name === 'lang' || ev.detail.name === 'fs')) themeChanged(); });
+  chartView.addEventListener('change', function () {
+    stage.dataset.chart = chartView.value;
+    resize();
+  });
+  compactCharts.addEventListener('change', resize);
+  let lastViewportHeight = innerHeight;
+  window.addEventListener('resize', function () {
+    if (!window.ResizeObserver || lastViewportHeight !== innerHeight) {
+      lastViewportHeight = innerHeight;
+      resize();
+    }
+  });
   if (window.ResizeObserver) {
     let lastW = 0, lastW2 = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== lastW2) { lastW = cv.clientWidth; lastW2 = cv2.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopAll(false); else requestDraw(); });
   resize();
 })();
