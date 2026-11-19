@@ -1,6 +1,12 @@
 /* energy-flow.js — 「生態系的能量流動」的畫面與互動（計算全部在 energy-flow-core.js；3D 在 energy-flow-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const K = window.EFCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -190,6 +196,7 @@
         (n + 1) + '・' + lvName(n) + '</button>';
     }
     $('lvChips').innerHTML = h;
+    $('biomassLvChips').innerHTML = h;
   }
   function loadPreset(k) {
     st.preset = k; st.custom = false;
@@ -273,8 +280,7 @@
   function say(s) { const e = $('srSay'); e.textContent = ''; setTimeout(function () { e.textContent = s; }, 30); }
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    c.style.height = h + 'px';
+    const w = drawingWidth(c) || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: h, dpr: dpr };
@@ -327,7 +333,7 @@
     return Math.max(330, Math.round(170 + N * (narrow ? 66 : 62)));
   }
   function layout1() {
-    const w = cv.clientWidth || 300;
+    const w = drawingWidth(cv) || 300;
     const s = fit(cv, g1, height1(w));
     const narrow = s.w < 560;
     const bw = narrow ? Math.min(176, s.w * 0.46) : Math.min(250, s.w * 0.34);
@@ -627,7 +633,8 @@
   // 點方塊選階層
   cv.addEventListener('click', function (ev) {
     if (!L1) return;
-    const rc = cv.getBoundingClientRect(), x = ev.clientX - rc.left, y = ev.clientY - rc.top, G = geom();
+    const rc = cv.getBoundingClientRect(), scale = drawingWidth(cv) / rc.width, G = geom();
+    const x = (ev.clientX - rc.left) * scale, y = (ev.clientY - rc.top) * scale;
     for (let n = 0; n < G.N; n++) {
       if (x >= G.x0 && x <= G.x1 && Math.abs(y - G.ys[n]) <= L1.bh / 2) { selectLevel(n); return; }
     }
@@ -655,7 +662,7 @@
   const cv2 = $('cv2'), g2 = cv2.getContext('2d');
   let L2 = null, raf2 = 0;
   function layout2() {
-    const w = cv2.clientWidth || 300;
+    const w = drawingWidth(cv2) || 300;
     const s = fit(cv2, g2, Math.round(110 + st.p.N * (w < 560 ? 46 : 48)));
     L2 = { w: s.w, h: s.h, narrow: s.w < 560 };
   }
@@ -852,10 +859,12 @@
     renderPresets(); renderLvChips(); syncSliders(); renderOutputs(); recompute(); scheduleEmit();
     setStatus(T('已恢復「' + K.PRESETS[k].zh + '」的預設值（營養階層數不變）。', 'The “' + K.PRESETS[k].en + '” values are back (the number of levels is kept).'));
   });
-  $('lvChips').addEventListener('click', function (ev) {
+  function chooseLevel(ev) {
     const b = ev.target.closest('button[data-l]'); if (!b) return;
     selectLevel(+b.getAttribute('data-l'));
-  });
+  }
+  $('lvChips').addEventListener('click', chooseLevel);
+  $('biomassLvChips').addEventListener('click', chooseLevel);
   $('kinds').addEventListener('click', function (ev) {
     const b = ev.target.closest('button[data-k]'); if (!b) return;
     st.view = b.getAttribute('data-k');
@@ -897,7 +906,7 @@
   if (window.IntersectionObserver) {
     new IntersectionObserver(function (ents) {
       ents.forEach(function (e) { visible1 = e.isIntersecting; if (visible1) request1(); });
-    }).observe(cv);
+    }).observe(cv.parentElement);
   }
   document.addEventListener('visibilitychange', function () { visible1 = !document.hidden; if (visible1) request1(); });
 
@@ -915,7 +924,7 @@
     if (view3 && view3.active) view3.onTheme();
   });
   if (window.ResizeObserver) {
-    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (c.clientWidth && c.clientWidth !== lw) { lw = c.clientWidth; fn(); } }).observe(c); };
+    const watch = function (c, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(c) && drawingWidth(c) !== lw) { lw = drawingWidth(c); fn(); } }).observe(c.parentElement); };
     watch(cv, resize1); watch(cv2, resize2);
   } else window.addEventListener('resize', function () { resize1(); resize2(); });
 
