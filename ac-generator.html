@@ -77,6 +77,12 @@
     .ag .btnrow { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 0; }
     .ag .btnrow button { flex: 1 1 8em; }
     .ag .btnrow button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+    .dc-monitor { flex-basis: 100%; margin: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: calc(14px * var(--fs, 1)); }
+    .dc-values { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; font-variant-numeric: tabular-nums; }
+    .dc-state { display: inline-flex; align-items: center; gap: .4em; font-weight: 650; }
+    .dc-state::before { content: ""; width: .7em; height: .7em; border-radius: 50%; background: var(--muted); }
+    .dc-state[data-state="decaying"]::before { background: #c78512; }
+    .dc-state[data-state="steady"]::before { background: var(--probe); }
     .ag .playbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 2px 0; }
     .ag .playbar button { flex: 1 1 auto; }
     .ag .playbar #record { font-weight: 700; flex: 2 1 10em; }
@@ -101,7 +107,8 @@
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 14px; background: var(--bg); }
     .seg button + button { border-left: 1px solid var(--border); }
-    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--accent); color: var(--surface); font-weight: 600; }
+    #genViews button { padding-inline: 9px; }
     .stage.is3d #cv { display: none; }
     .stage:not(.is3d) .l3, .stage.is3d .l2 { display: none; }
     #view3 { position: relative; }
@@ -154,7 +161,7 @@
       <p data-en-html="Turn a coil in a magnetic field and the flux through it rises and falls: out comes an alternating emf. See why the emf is largest exactly when the flux is zero, swap the slip rings for a commutator to get pulsating DC, and feel Lenz’s law — the more current you draw, the harder the turbine has to push. Then send the electricity through an iron-core transformer (and find out why a battery cannot be transformed), and finally across a long transmission line: step the voltage up, watch the line current and the losses fall, and step it back down to 110 V for the houses at the end.">讓線圈在磁場中轉動，穿過線圈的磁通量時增時減，就產生了交流電動勢。看看為什麼磁通量為零的那一刻電動勢反而最大；把滑環換成換向器，得到脈動直流；體會冷次定律——取用的電流越大，水輪機就要出越大的力。接著把電送進鐵心變壓器（順便弄清楚電池為什麼不能變壓），最後送上長長的輸電線：把電壓升高，看線電流與線損一起下降，再降回 110 V 送進家家戶戶。</p>
     </header>
 
-    <p class="try-hint" data-en="Try it: drag the coil in the end view to 90°, where the flux is zero — then press Play and watch the emf peak at that very moment.">試試看：在端視圖把線圈拖到 90°（磁通量為零），再按「播放」，看電動勢是不是正好在這一刻最大。</p>
+    <p class="try-hint" data-en="Try it: select End view and drag the coil to 90°, where the flux is zero. Switch to the oscilloscope to read the emf at that angle, then press Play.">試試看：切到「端視」，把線圈拖到 90°（磁通量為零）。切到「示波器」讀此時的電動勢，再按「播放」。</p>
     <div class="lab ag">
       <div class="stage" id="stage">
         <div class="view-bar">
@@ -162,10 +169,15 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D view">2D 平面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
           </div>
+          <div id="genViews" class="seg l2" role="tablist" aria-label="發電機圖像" data-en-aria-label="Generator diagram">
+            <button type="button" id="genOblique" data-gen-view="obl" role="tab" aria-controls="genPlot" aria-selected="true" data-en="Oblique">斜視</button>
+            <button type="button" id="genEnd" data-gen-view="end" role="tab" aria-controls="genPlot" aria-selected="false" tabindex="-1" data-en="End view">端視</button>
+            <button type="button" id="genScope" data-gen-view="scope" role="tab" aria-controls="genPlot" aria-selected="false" tabindex="-1" data-en="Oscilloscope">示波器</button>
+          </div>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv"></canvas>
+        <div id="genPlot" class="l2" role="tabpanel" aria-labelledby="genOblique"><canvas id="cv"></canvas></div>
         <div id="view3"></div>
         <div class="opts3 checks" id="opts3">
           <label><input id="s3field" type="checkbox" checked><span data-en="Field lines">磁力線</span></label>
@@ -186,7 +198,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card ag">
           <h2 data-en="What to study">實驗模式</h2>
           <div class="modes" role="group" aria-label="實驗模式" data-en-aria-label="Mode">
             <button type="button" id="mGen" aria-pressed="true" data-en-html="Generator<small>coil in a field</small>">發電機<small>線圈在磁場中轉</small></button>
@@ -195,7 +207,7 @@
           </div>
         </section>
 
-        <section class="card" id="cardGen">
+        <section class="card ag" id="cardGen">
           <h2 data-en="Generator">發電機</h2>
           <div class="seg2" role="group" aria-label="輸出方式" data-en-aria-label="Output">
             <button type="button" id="gSlip" aria-pressed="true" data-en-html="Slip rings<small>alternating current</small>">滑環<small>輸出交流</small></button>
@@ -221,12 +233,23 @@
           <p class="hint" data-en="The turning rate is kept constant by whatever drives the shaft (a water turbine, say): it supplies exactly the torque the magnetic force takes away.">轉速由帶動轉軸的外力（例如水輪機）維持固定：它提供的力矩正好抵銷磁力造成的阻力矩。</p>
         </section>
 
-        <section class="card" id="cardXf" hidden>
+        <section class="card ag" id="cardXf" hidden>
           <h2 data-en="Transformer">變壓器</h2>
           <div class="seg3" role="group" aria-label="一次側電源" data-en-aria-label="Primary supply">
             <button type="button" id="xAC" aria-pressed="true" data-en-html="AC supply<small>fixed</small>">交流電源<small>固定</small></button>
             <button type="button" id="xGen" aria-pressed="false" data-en-html="Generator<small>from mode 1</small>">接發電機<small>第一個模式</small></button>
             <button type="button" id="xDC" aria-pressed="false" data-en-html="DC supply<small>battery</small>">直流電源<small>電池</small></button>
+          </div>
+          <div class="btnrow" id="xSwBox" hidden>
+            <button type="button" id="xSwitch" data-en="Close the switch">接通開關</button>
+            <div class="dc-monitor">
+              <div class="dc-values">
+                <span class="dc-state" id="dcState" role="status"></span>
+                <span><span data-en="Time constant">時間常數</span> τ = <b id="dcTime"></b></span>
+                <span>V<sub>2</sub> = <b id="dcVoltage"></b></span>
+              </div>
+              <p class="hint" id="dcWait" hidden></p>
+            </div>
           </div>
           <div id="xSrcBox">
             <div class="slider"><label for="xV" id="xVlab" data-en-html="Supply voltage V<sub>1</sub> (rms)">電源電壓 V<sub>1</sub>（有效值）</label><output id="xVo"></output>
@@ -235,9 +258,6 @@
               <input id="xF" type="range" min="1" max="100" step="1" value="60" data-decimals="1"></div>
           </div>
           <p class="hint" id="xGenHint" hidden data-en="The generator’s emf, frequency and coil resistance r are set in the Generator mode. Feeding a transformer it uses its slip rings.">發電機的電動勢、頻率與線圈電阻 r 在「發電機」模式設定；接到變壓器時一律用滑環輸出。</p>
-          <div class="btnrow" id="xSwBox" hidden>
-            <button type="button" id="xSwitch" data-en="Close the switch">接通開關</button>
-          </div>
           <div class="slider"><label for="xN1" data-en-html="Primary turns N<sub>1</sub>">一次線圈匝數 N<sub>1</sub></label><output id="xN1o"></output>
             <input id="xN1" type="range" min="10" max="1000" step="1" value="200" data-decimals="0"></div>
           <div class="slider"><label for="xN2" data-en-html="Secondary turns N<sub>2</sub>">二次線圈匝數 N<sub>2</sub></label><output id="xN2o"></output>
@@ -246,7 +266,7 @@
             <input id="xRL" type="range" min="0" max="1000" step="1" value="425"></div>
         </section>
 
-        <section class="card" id="cardGrid" hidden>
+        <section class="card ag" id="cardGrid" hidden>
           <h2 data-en="Transmission">輸電</h2>
           <div class="slider"><label for="tVg" data-en-html="Generator voltage V<sub>g</sub> (rms)">發電機電壓 V<sub>g</sub>（有效值）</label><output id="tVgo"></output>
             <input id="tVg" type="range" min="1" max="25" step="0.1" value="11" data-decimals="2"></div>

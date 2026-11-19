@@ -34,6 +34,9 @@
   <style>
     /* 水波槽實驗頁面專用樣式（只使用 lab.css 的顏色變數，深色模式自動適用） */
     .rt #cv { aspect-ratio: 40 / 31; cursor: crosshair; }
+    @media (orientation: landscape) and (max-height: 600px) {
+      .rt #cv { width: min(100%, calc((100dvh - 72px) * 40 / 31)); margin-inline: auto; }
+    }
     .rt button { min-height: 44px; }
     .rt [hidden] { display: none !important; }
     /* 2D／3D 檢視切換（與帶電粒子相同的樣式） */
@@ -67,7 +70,7 @@
     .meas { margin-top: 12px; border-top: 1px solid var(--border); padding: 12px 4px 0; }
     .meas h2 { font-size: calc(15px * var(--fs, 1)); margin: 0 0 6px; }
     .meas h3 { font-size: calc(14px * var(--fs, 1)); margin: 14px 0 6px; color: var(--muted); }
-    .meas .hint, .rt .card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
+    .meas .hint, .rt .card .hint, .rt.card .hint { font-size: calc(13px * var(--fs, 1)); color: var(--muted); margin: 6px 0 0; }
     .readbox { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; font-size: calc(14px * var(--fs, 1)); }
     .readbox .r { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed var(--border); padding: 2px 0; }
     .readbox .r span:first-child { color: var(--muted); }
@@ -153,6 +156,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false" data-share-skip><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span class="l2"><i style="background:var(--text);opacity:.25"></i><span data-en="Bright band = crest (focusing)">亮紋 = 波峰（會聚光）</span></span>
           <span class="l2"><i style="background:var(--text);opacity:.8"></i><span data-en="Dark band = trough">暗紋 = 波谷</span></span>
@@ -161,27 +165,14 @@
           <span class="l3"><span data-en="3D: wave height exaggerated 30×; drag to rotate, pinch or scroll to zoom">3D：波高放大 30 倍；拖曳旋轉、雙指或滾輪縮放</span></span>
         </div>
 
-        <section class="meas" aria-labelledby="measH">
-          <h2 id="measH" data-en="Measure and record">量測與記錄</h2>
-          <div class="readbox" id="readbox" aria-live="off"></div>
-          <div class="nrow" id="nRow">
-            <span id="nLabel" data-en="Wavelengths spanned by the ruler N:">直尺跨過的波長數 N：</span>
-            <span class="stepper"><button type="button" id="nMinus" aria-label="N 減 1" data-en-aria-label="N minus 1">−</button><output id="nOut">5</output><button type="button" id="nPlus" aria-label="N 加 1" data-en-aria-label="N plus 1">+</button></span>
-          </div>
-          <div class="recs" id="recs"></div>
-          <p class="hint" id="recHint"></p>
-          <h3 id="tableH" data-en="Data table">數據表</h3>
+        <section class="meas" aria-labelledby="tableH">
+          <h2 id="tableH" data-en="Data table">數據表</h2>
           <div class="tablewrap"><table class="data" id="dataTable"></table></div>
-          <div class="btns" style="margin-top:8px"><button type="button" id="undo" data-en="Delete last entry">刪除最後一筆</button></div>
           <h3 data-en="Analysis">分析</h3>
           <div class="ana">
             <canvas id="graph" role="img" aria-label="分析圖：數據點與最佳直線"></canvas>
             <div>
               <dl class="readout" id="anaOut"></dl>
-              <div class="mrow" id="mRow">
-                <label for="mInput" data-en="Magnification M you use:">換算用的放大率 M：</label>
-                <input id="mInput" type="number" inputmode="decimal" min="1" max="3" step="0.01" value="1.00">
-              </div>
               <p class="hint" id="anaHint"></p>
             </div>
           </div>
@@ -189,7 +180,18 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card rt" aria-labelledby="measH" data-deck="量測記錄|Measure" data-deck-order="1">
+          <h2 id="measH" data-en="Measure and record">量測與記錄</h2>
+          <div class="nrow" id="nRow">
+            <span id="nLabel" data-en="Wavelengths spanned by the ruler N:">直尺跨過的波長數 N：</span>
+            <span class="stepper"><button type="button" id="nMinus" aria-label="N 減 1" data-en-aria-label="N minus 1">−</button><output id="nOut">5</output><button type="button" id="nPlus" aria-label="N 加 1" data-en-aria-label="N plus 1">+</button></span>
+          </div>
+          <div class="recs" id="recs"></div>
+          <div class="btns" style="margin-top:8px"><button type="button" id="undo" data-en="Delete last entry">刪除最後一筆</button></div>
+          <p class="hint" id="recHint"></p>
+          <div class="readbox" id="readbox" aria-live="off"></div>
+        </section>
+        <section class="card rt" data-deck="實驗項目|Experiment" data-deck-order="2">
           <h2 data-en="Experiment">實驗項目</h2>
           <div class="partgrid" role="group" aria-label="實驗項目" data-en-aria-label="Experiment part">
             <button type="button" id="part1" aria-pressed="true" data-en="1 Setup &amp; λ">1 架設與波長</button>
@@ -198,16 +200,16 @@
             <button type="button" id="part4" aria-pressed="false" data-en="4 Diffraction">4 繞射</button>
             <button type="button" id="part5" aria-pressed="false" data-en="5 Interference">5 干涉</button>
           </div>
-          <ol class="steps" id="steps"></ol>
           <p class="seg-label" id="modeLabel" data-en="Measurement conditions:">量測條件：</p>
           <div class="seg2" role="group" aria-labelledby="modeLabel">
             <button type="button" id="modeIdeal" aria-pressed="true" data-en="Ideal">理想</button>
             <button type="button" id="modeReal" aria-pressed="false" data-en="With errors">含誤差</button>
           </div>
           <p class="hint" id="modeHint"></p>
+          <ol class="steps" id="steps"></ol>
         </section>
 
-        <section class="card">
+        <section class="card rt" data-deck="波源與閃頻|Waves &amp; strobe" data-deck-order="3">
           <h2 data-en="Wave generator &amp; stroboscope">起波器與閃頻儀</h2>
           <p class="seg-label" id="srcLabel" data-en="Wave generator:">起波器：</p>
           <div class="seg3" role="group" aria-labelledby="srcLabel">
@@ -232,7 +234,7 @@
           <p class="hint" data-en="Tap a number to type an exact value. Slow motion only exists in the simulation; with the stroboscope on, real time shows the strobe effect best.">點一下數字可直接輸入精確數值。慢動作是模擬才有的功能；打開閃頻儀時用真實速度最能看出閃頻效果。</p>
         </section>
 
-        <section class="card" id="objCard">
+        <section class="card rt" id="objCard" data-deck="障礙物|Barriers" data-deck-order="4">
           <h2 id="objH" data-en="Barrier">障礙物</h2>
           <div id="objRefl">
             <div class="seg3" role="group" aria-label="障礙物形狀" data-en-aria-label="Barrier shape">
@@ -266,7 +268,7 @@
           <p class="hint" id="objHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card rt" data-deck="水槽與光源|Tank &amp; lamp" data-deck-order="5">
           <h2 data-en="Tank &amp; lamp">水槽與光源</h2>
           <div class="slider"><label for="h" data-en="Water depth h">水深 h</label><output id="ho"></output>
             <input id="h" type="range" min="4" max="12" step="0.1" value="8" data-decimals="2"></div>
@@ -286,6 +288,10 @@
           </div>
           <div class="slider" id="boxLamp" hidden><label for="lamp" data-en="Lamp height above the water L">燈到水面的高度 L</label><output id="lampo"></output>
             <input id="lamp" type="range" min="30" max="150" step="1" value="60" data-decimals="1"></div>
+          <div class="mrow" id="mRow">
+            <label for="mInput" data-en="Magnification M you use:">換算用的放大率 M：</label>
+            <input id="mInput" type="number" inputmode="decimal" min="1" max="3" step="0.01" value="1.00">
+          </div>
           <dl class="readout" style="margin-top:8px">
             <dt data-en="Tank (inside)">水槽內部</dt><dd>36.0 cm × 27.0 cm</dd>
             <dt data-en="Water surface to paper d">水面到白紙 d</dt><dd>25.0 cm</dd>

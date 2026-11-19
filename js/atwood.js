@@ -212,7 +212,19 @@
     const W = worldBox();
     const ww = W.x1 - W.x0, wh = W.y1 - W.y0;
     let world, side, infoBelow;
-    if (narrow) {
+    const shortView = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+    if (shortView && state.mode !== 3) {
+      // 橫放時把計時器與速度圖移到裝置旁，下緣留給釋放與停錶鍵。
+      const h = Math.max(220, innerHeight - 72), sw = Math.round(cw * 0.37);
+      world = { x: 0, y: 0, w: cw - sw - 8, h: h };
+      side = { x: cw - sw, y: 0, w: sw, h: h };
+      infoBelow = false;
+    } else if (shortView) {
+      const h = Math.max(230, innerHeight - 72), below = Math.min(116, Math.round(h * 0.38));
+      world = { x: 0, y: 0, w: cw, h: h - below - 6 };
+      side = { x: 0, y: world.h + 6, w: cw, h: below };
+      infoBelow = true;
+    } else if (narrow) {
       const wH = Math.max(210, Math.min(state.mode === 1 ? 480 : 430, cw * wh / ww + 10));
       world = { x: 0, y: 0, w: cw, h: wH };
       side = { x: 0, y: wH + 6, w: cw, h: 128 };
@@ -2362,6 +2374,9 @@
       b.tabIndex = on ? 0 : -1;
       $('panel' + (i + 1)).hidden = !on;
     });
+    document.querySelectorAll('[data-motion-for]').forEach(function (card) {
+      card.hidden = Number(card.dataset.motionFor) !== m;
+    });
     $('showComp').closest('label').hidden = m !== 4;
     if (focus) tabs[m - 1].focus();
     paramsChanged();
@@ -2452,7 +2467,8 @@
       if (cv.clientWidth !== lastW || fcv.clientWidth !== lastFW) { lastW = cv.clientWidth; lastFW = fcv.clientWidth; resize(); }
     }).observe(cv);
     new ResizeObserver(function () { if (fcv.clientWidth !== lastFW) { lastFW = fcv.clientWidth; resize(); } }).observe(fcv);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
   resize();
   if (reducedMotion) setStatus(T('已偵測到「減少動態效果」設定：裝飾動畫已關閉。', 'Reduced motion is on: decorative animations are off.'));
 })();

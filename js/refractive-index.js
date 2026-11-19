@@ -104,6 +104,10 @@
     const semi = st.shape === 'semi';
     YSPAN = semi ? 22 : 26; YB = YT - YSPAN;
     s = clamp((W - 2 * M) / (semi ? 19 : 24), 12, 22);
+    // 橫放時整張作圖紙和畫線鍵要一起看得到。
+    if (matchMedia('(orientation: landscape) and (max-height: 600px)').matches) {
+      s = Math.min(s, Math.max(7, (innerHeight - 68 - TB - 2 * M) / YSPAN));
+    }
     H = Math.round(TB + 2 * M + YSPAN * s);
     if (Math.abs(cv.clientHeight - H) > 0.5) cv.style.height = H + 'px';
     dpr = Math.min(2.5, window.devicePixelRatio || 1);
@@ -1641,7 +1645,8 @@
       const a = cv.clientWidth, b = vc.clientWidth, g = gc.clientWidth;
       if (a !== lastW || b !== lastVW || g !== lastGW) { lastW = a; lastVW = b; lastGW = g; relayout(); }
     }).observe(document.querySelector('.wrap'));
-  } else window.addEventListener('resize', relayout);
+  }
+  window.addEventListener('resize', relayout);
   window.addEventListener('lab:themechange', function () { readExtra(); staticLayer = null; dataDirty = true; invalidate(); syncBoxes(); });
   readT();
   syncBoxes();

@@ -140,7 +140,6 @@
     <div class="lab oh">
       <div class="stage">
         <canvas id="cv" role="img" aria-label="實驗桌：毫安培計、待測元件、伏特計、可變電阻箱與直流電源供應器，以紅黑導線連接，導線上的小點代表移動的電荷" data-en-aria-label="The lab bench: milliammeter, the component under test, voltmeter, decade resistance box and DC power supply joined by red and black leads; the dots on the leads are moving charges"></canvas>
-        <canvas id="mv" role="img" aria-label="兩個電表的錶面特寫：指針、刻度、目前的檔位與讀數" data-en-aria-label="Close-up of the two meter faces: needle, scale, selected range and reading"></canvas>
         <div class="playbar">
           <button id="rec" class="primary" type="button" data-en="Record">記錄</button>
           <button id="undo" type="button" data-en="Remove last point">移除最後一點</button>
@@ -149,6 +148,8 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <canvas id="mv" role="img" aria-label="兩個電表的錶面特寫：指針、刻度、目前的檔位與讀數" data-en-aria-label="Close-up of the two meter faces: needle, scale, selected range and reading"></canvas>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--equi)&quot;></i>Moving charge (conventional current)"><i class="dot" style="background:var(--equi)"></i>移動的電荷（傳統電流方向）</span>
           <span style="color:var(--pos)" data-en-html="<i style=&quot;background:var(--pos)&quot;></i>Red lead (+)"><i style="background:var(--pos)"></i>紅色導線（＋）</span>
@@ -159,7 +160,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="步驟|Steps" data-deck-order="5">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps">
             <li data-step="0" data-en="Zero the meters: with no current, each needle must rest on 0 (in “With errors” mode press “Zero the meters”).">電表歸零：沒有電流時指針要指在 0（含誤差模式要按「電表歸零」）。</li>
@@ -172,7 +173,7 @@
           </ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="電源|Power supply" data-deck-order="1">
           <h2 data-en="Power supply and resistance box">電源與可變電阻箱</h2>
           <div class="slider"><label for="emf" data-en-html="Supply voltage (emf) ε">電源供應器的輸出（電動勢）ε</label><output id="emfo"></output>
             <input id="emf" type="range" min="0" max="15" step="0.05" value="1" data-decimals="2"></div>
@@ -181,7 +182,7 @@
           <p class="hint" data-en="The supply has an internal resistance of 0.5 Ω (including its leads). The resistance box limits the current; its four dials give 0–9999 Ω. Tap a number to type an exact value.">電源內電阻（含導線）0.5 Ω。電阻箱用來限制電流，四個旋鈕可調 0–9999 Ω。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="元件|Component" data-deck-order="2">
           <h2 data-en="Component under test">待測元件</h2>
           <div class="elems" role="group" aria-label="選擇待測元件" data-en-aria-label="Choose the component under test">
             <button type="button" data-el="a" aria-pressed="false" data-en="Cu wire a">銅線 a</button>
@@ -193,14 +194,14 @@
             <button type="button" data-el="X" aria-pressed="false" data-en="Mystery X">神秘電阻 X</button>
             <button type="button" data-el="lamp" aria-pressed="false" data-en="Bulb">小燈泡</button>
           </div>
-          <p class="info" id="elInfo">—</p>
           <div class="zerorow">
             <button type="button" id="reveal" hidden data-en="Peel off the tape (show the colour code)">撕開膠帶（看色環）</button>
             <button type="button" id="newLamp" hidden data-en="Fit a new bulb">換一顆新燈泡</button>
           </div>
+          <p class="info" id="elInfo">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="接法|Connection" data-deck-order="3">
           <h2 data-en="Connection and meters">接法與電表</h2>
           <p class="seg-label" id="mLabel" data-en="Where the voltmeter is connected:">伏特計接在哪裡：</p>
           <div class="seg2 methods" role="group" aria-labelledby="mLabel">
@@ -213,6 +214,10 @@
               <span data-en-html="Ammeter inside<small>V across A + R</small>">安培計內接法<small>伏特計跨安培計＋元件</small></span>
             </button>
           </div>
+        </section>
+
+        <section class="card" data-deck="電表|Meters" data-deck-order="4">
+          <h2 data-en="Meter ranges and zero adjustment">電表檔位與歸零</h2>
           <p class="seg-label" id="aLabel" data-en="Milliammeter range:">毫安培計檔位：</p>
           <div class="seg3" id="rangeA" role="group" aria-labelledby="aLabel">
             <button type="button" data-r="0" aria-pressed="false">5 mA</button>
@@ -224,7 +229,6 @@
             <button type="button" data-r="0" aria-pressed="true">3 V</button>
             <button type="button" data-r="1" aria-pressed="false">15 V</button>
           </div>
-          <p class="info" id="meterInfo">—</p>
           <p class="seg-label" id="eLabel" data-en="Readings:">讀數：</p>
           <div class="seg2" id="modeSeg" role="group" aria-labelledby="eLabel">
             <button type="button" data-mode="ideal" aria-pressed="true" data-en="Ideal">理想</button>
@@ -233,6 +237,7 @@
           <div class="zerorow">
             <button type="button" id="zeroBtn" hidden data-en="Zero the meters (turn the screws)">電表歸零（轉動歸零螺絲）</button>
           </div>
+          <p class="info" id="meterInfo">—</p>
           <p class="hint" id="modeHint" data-en="Ideal: you read exactly where the needle points. With errors: the needles start slightly off zero, and each reading is estimated to half of the smallest division with a small random error. The meters’ internal resistances are always there.">理想：指針指到哪就讀到哪。含誤差：指針一開始沒有對準 0，每次讀數估讀到最小刻度的一半，並帶有小小的隨機誤差。兩種模式下，電表的內電阻都存在。</p>
         </section>
       </aside>

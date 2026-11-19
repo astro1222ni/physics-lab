@@ -186,7 +186,7 @@
   const phase = {};        // 各導線上電荷的位移
 
   function benchLayout(W) {
-    const wide = W >= 560;
+    const wide = W >= 560 || (W >= 400 && matchMedia('(orientation: landscape) and (max-height: 600px)').matches);
     let s, ox = 0, H, R;
     if (wide) {
       s = W / 820; H = Math.round(468 * s);

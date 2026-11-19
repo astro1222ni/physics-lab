@@ -35,7 +35,7 @@
     /* 畫布高度由程式依寬度與實驗部分決定；畫布沒有拖曳操作，手機可在上面捲動頁面 */
     .ff canvas { aspect-ratio: auto; touch-action: auto; cursor: default; }
     #cv { height: 440px; }
-    #tcv { height: 250px; }
+    #tcv { display: block; width: 100%; height: 250px; margin-top: 8px; border-radius: 8px; background: var(--canvas-bg); }
     #gcv { height: 480px; }
     .ff + .ff { margin-top: 16px; }
     .ff button { min-height: 44px; }
@@ -142,17 +142,28 @@
           </div>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="hint" id="sceneHint"></p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card ff" data-deck="紙帶記錄|Record tape" data-deck-order="1">
+          <h2 id="tapeTitle" data-en="The paper tape">紙帶</h2>
+          <div class="gbtns" data-deck-top>
+            <button type="button" id="rec" class="primary" data-en="Record">記錄</button>
+            <button type="button" id="recAll" data-en="Record all">全部記錄</button>
+            <button type="button" id="undoRow" data-en="Delete the last row">刪除最後一列</button>
+          </div>
+          <canvas id="tcv" role="img" aria-label="取下的紙帶：點痕、每隔 n 個點畫的計數線、對齊第 0 點的直尺與讀數放大鏡"></canvas>
+          <p class="hint" id="tapeHint"></p>
+        </section>
+        <section class="card" data-deck="步驟|Steps" data-deck-order="5">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps"></ol>
           <p class="stepnote" id="stepNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="裝置|Apparatus" data-deck-order="2">
           <h2 data-en="Apparatus">裝置</h2>
           <div class="slider" id="boxH"><label for="h" data-en="Height difference of the track ends h">軌道兩端的高度差 h</label><output id="ho"></output>
             <input id="h" type="range" min="1" max="60" step="0.5" value="20" data-decimals="2"></div>
@@ -171,7 +182,7 @@
           <p class="hint" id="freqInfo">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="誤差|Errors" data-deck-order="4">
           <h2 data-en="Errors">誤差</h2>
           <div class="seg2" role="group" aria-label="理想或含誤差" data-en-aria-label="Ideal or with errors">
             <button type="button" id="idealBtn" aria-pressed="true" data-en="Ideal">理想</button>
@@ -195,29 +206,20 @@
       </aside>
     </div>
 
-    <!-- 第二部分：紙帶、數據表與圖表 -->
+    <!-- 第二部分：圖表與數據表 -->
     <div class="lab ff">
       <div class="stage">
-        <h2 id="tapeTitle" data-en="The paper tape">紙帶</h2>
-        <p class="hint" id="tapeHint"></p>
-        <canvas id="tcv" role="img" aria-label="取下的紙帶：點痕、每隔 n 個點畫的計數線、對齊第 0 點的直尺與讀數放大鏡"></canvas>
-        <div class="gbtns">
-          <button type="button" id="rec" class="primary" data-en="Record">記錄</button>
-          <button type="button" id="recAll" data-en="Record all">全部記錄</button>
-          <button type="button" id="undoRow" data-en="Delete the last row">刪除最後一列</button>
-        </div>
-        <div class="tablewrap"><table class="data" id="tbl"></table></div>
-
-        <h2 style="margin-top:16px" id="graphTitle" data-en="Graphs">圖表</h2>
-        <p class="hint" id="graphHint"></p>
-        <canvas id="gcv" role="img" aria-label="由數據表畫出的 x–t 圖、v–t 圖、a–t 圖與各次實驗的 a–sinθ 圖"></canvas>
+        <h2 id="graphTitle" data-en="Graphs">圖表</h2>
         <div class="gbtns" id="sumBtns">
           <button type="button" id="undoSum" data-en="Remove the last point of the a–sinθ graph">移除 a–sinθ 圖的最後一點</button>
         </div>
+        <p class="hint" id="graphHint"></p>
+        <canvas id="gcv" role="img" aria-label="由數據表畫出的 x–t 圖、v–t 圖、a–t 圖與各次實驗的 a–sinθ 圖"></canvas>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
       </div>
 
       <aside class="panel">
-        <section class="card" id="cardTape">
+        <section class="card" id="cardTape" data-deck="紙帶設定|Tape settings" data-deck-order="3">
           <h2 data-en="Marking the tape">紙帶處理</h2>
           <div class="slider"><label for="n" data-en="Draw a line every n dots">每隔 n 個點畫一條線</label><output id="no"></output>
             <input id="n" type="range" min="1" max="10" step="1" value="4" data-decimals="0"></div>

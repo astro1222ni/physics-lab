@@ -35,7 +35,7 @@
     .ri canvas { aspect-ratio: auto; }
     #cv { height: 560px; outline: none; }
     #cv:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
-    #view { height: 180px; margin-top: 8px; touch-action: pan-y; cursor: ew-resize; }
+    #view { display: block; width: 100%; height: 180px; margin-top: 8px; border-radius: 8px; background: var(--canvas-bg); touch-action: pan-y; cursor: ew-resize; }
     #graph { height: 340px; touch-action: auto; cursor: default; }
     .ri + .ri { margin-top: 16px; }
     .ri button { min-height: 44px; }
@@ -134,23 +134,26 @@
         </div>
         <p class="status" id="status" aria-live="off"></p>
         <p class="sr-only" id="srStatus" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
 
-        <div class="view-head">
-          <h2 data-en="What the eye sees">眼睛看到的景象</h2>
-          <span id="viewNote" data-en="horizontal angles magnified; the lower part of each pin is seen through the block">水平方向放大；針的下半段是透過透明塊看到的</span>
-        </div>
-        <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體"></canvas>
-        <div class="viewbar">
-          <div class="seg2" role="group" aria-label="視野" data-en-aria-label="Field of view">
-            <button type="button" data-zoom="wide" aria-pressed="true" data-en-html="Wide&lt;small&gt;±12°&lt;/small&gt;">廣角<small>±12°</small></button>
-            <button type="button" data-zoom="zoom" aria-pressed="false" data-en-html="Magnified ×4&lt;small&gt;±3°&lt;/small&gt;">放大 ×4<small>±3°</small></button>
+        <section class="card ri" data-deck="對準插針|Align pins" data-deck-order="1">
+          <div class="view-head">
+            <h2 data-en="What the eye sees">眼睛看到的景象</h2>
+            <span id="viewNote" data-en="horizontal angles magnified; the lower part of each pin is seen through the block">水平方向放大；針的下半段是透過透明塊看到的</span>
           </div>
-          <div class="nudge">
-            <button type="button" id="nudgeL" aria-label="選取的物體向左微移" data-en-aria-label="Nudge the selected object left">◀</button>
-            <span class="sel" id="selName">—</span>
-            <button type="button" id="nudgeR" aria-label="選取的物體向右微移" data-en-aria-label="Nudge the selected object right">▶</button>
+          <canvas id="view" aria-label="眼睛看到的景象：針的上半段直接看到，下半段透過透明塊看到折射後的像；左右拖曳可微調選取的物體"></canvas>
+          <div class="viewbar">
+            <div class="seg2" role="group" aria-label="視野" data-en-aria-label="Field of view">
+              <button type="button" data-zoom="wide" aria-pressed="true" data-en-html="Wide&lt;small&gt;±12°&lt;/small&gt;">廣角<small>±12°</small></button>
+              <button type="button" data-zoom="zoom" aria-pressed="false" data-en-html="Magnified ×4&lt;small&gt;±3°&lt;/small&gt;">放大 ×4<small>±3°</small></button>
+            </div>
+            <div class="nudge">
+              <button type="button" id="nudgeL" aria-label="選取的物體向左微移" data-en-aria-label="Nudge the selected object left">◀</button>
+              <span class="sel" id="selName">—</span>
+              <button type="button" id="nudgeR" aria-label="選取的物體向右微移" data-en-aria-label="Nudge the selected object right">▶</button>
+            </div>
           </div>
-        </div>
+        </section>
         <div class="legend">
           <span style="color:var(--pos)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pos)&quot;></i>Pins on the incident side"><i class="dot" style="background:var(--pos)"></i>入射側的針</span>
           <span style="color:var(--neg)" data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--neg)&quot;></i>Pins on the viewing side"><i class="dot" style="background:var(--neg)"></i>觀察側的針</span>
@@ -166,12 +169,12 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="步驟|Steps" data-deck-order="4">
           <h2 data-en="Procedure">實驗步驟</h2>
           <ol class="steps" id="steps"></ol>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="透明塊|Block" data-deck-order="2">
           <h2 data-en="Block and material">透明塊與材料</h2>
           <p class="seg-label" id="shapeLabel" data-en="Shape:">形狀：</p>
           <div class="seg2" role="group" aria-labelledby="shapeLabel">
@@ -185,7 +188,7 @@
             <button type="button" data-mat="crown" aria-pressed="true" data-en-html="Crown glass&lt;small&gt;1.52&lt;/small&gt;">冕牌玻璃<small>1.52</small></button>
             <button type="button" data-mat="unknown" aria-pressed="false" data-en-html="Unknown&lt;small&gt;n = ?&lt;/small&gt;">未知樣品<small>n = ?</small></button>
           </div>
-          <p class="hint" id="matHint">—</p>
+          <button type="button" class="reveal" id="reveal" hidden data-en="Reveal the unknown sample’s n">揭曉未知樣品的折射率</button>
           <div id="rectBox">
             <div class="slider"><label for="t" data-en="Block thickness t (between L and L′)">透明塊厚度 t（L 到 L′）</label><output id="to"></output>
               <input id="t" type="range" min="2" max="8" step="0.1" value="6" data-decimals="2"></div>
@@ -197,9 +200,10 @@
               <button type="button" data-dir="rev" aria-pressed="false" data-en-html="Curved face&lt;small&gt;total internal reflection&lt;/small&gt;">弧面<small>延伸：全反射</small></button>
             </div>
           </div>
+          <p class="hint" id="matHint">—</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="量測工具|Tools" data-deck-order="3">
           <h2 data-en="Measuring tools and errors">量測工具與誤差</h2>
           <p class="seg-label" id="resLabel" data-en="Protractor reading resolution:">量角器讀到：</p>
           <div class="seg2" role="group" aria-labelledby="resLabel">
@@ -215,6 +219,13 @@
             <label><input id="hint" type="checkbox"><span data-en="Show the true light path (hint)">顯示真正的光路（提示）</span></label>
             <label><input id="prot" type="checkbox" checked><span data-en="Protractor and angle marks">量角器與角度標示</span></label>
           </div>
+          <div id="methodBox" hidden>
+            <p class="seg-label" id="methodLabel" data-en="Semicircle rows: sines from">半圓形的數據，sin 值來自：</p>
+            <div class="seg2" role="group" aria-labelledby="methodLabel">
+              <button type="button" data-method="prot" aria-pressed="true" data-en-html="Protractor&lt;small&gt;sin θ&lt;/small&gt;">量角器<small>sin θ</small></button>
+              <button type="button" data-method="ruler" aria-pressed="false" data-en-html="Ruler&lt;small&gt;x / R&lt;/small&gt;">直尺<small>x / R</small></button>
+            </div>
+          </div>
           <p class="hint" data-en="The ruler’s smallest division is 1 mm; lengths are read to 0.1 mm by estimation.">直尺最小刻度 1 mm，長度估計到 0.1 mm。</p>
         </section>
 
@@ -227,24 +238,16 @@
         <h2 data-en-html="Data table and the sin θ&lt;sub&gt;1&lt;/sub&gt;–sin θ&lt;sub&gt;2&lt;/sub&gt; graph">數據表與 sin θ<sub>1</sub>–sin θ<sub>2</sub> 圖</h2>
         <canvas id="graph" role="img" aria-label="sin θ1 對 sin θ2 的數據點、過原點的最佳直線與公認值直線"></canvas>
         <div class="legend" id="gLegend"></div>
-        <div class="tablewrap"><table class="data" id="tbl"></table></div>
         <div class="gbtns">
           <button type="button" id="undo" data-en="Remove the last row">移除最後一筆</button>
         </div>
+        <div class="tablewrap"><table class="data" id="tbl"></table></div>
       </div>
 
       <aside class="panel">
         <section class="card">
           <h2 data-en="Analysis">分析結果</h2>
-          <div id="methodBox" hidden>
-            <p class="seg-label" id="methodLabel" data-en="Semicircle rows: sines from">半圓形的數據，sin 值來自：</p>
-            <div class="seg2" role="group" aria-labelledby="methodLabel">
-              <button type="button" data-method="prot" aria-pressed="true" data-en-html="Protractor&lt;small&gt;sin θ&lt;/small&gt;">量角器<small>sin θ</small></button>
-              <button type="button" data-method="ruler" aria-pressed="false" data-en-html="Ruler&lt;small&gt;x / R&lt;/small&gt;">直尺<small>x / R</small></button>
-            </div>
-          </div>
           <dl class="readout" id="fit" style="margin-top:8px"></dl>
-          <button type="button" class="reveal" id="reveal" hidden data-en="Reveal the unknown sample’s n">揭曉未知樣品的折射率</button>
           <p class="hint" data-en="Each material has its own best-fit line through the origin; the analysis is for the material selected now.">每種材料各有一條過原點的最佳直線；這裡顯示目前選取的材料。</p>
         </section>
       </aside>

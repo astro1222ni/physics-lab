@@ -22,7 +22,7 @@
   // 狀態
   // =====================================================================
   const st = {
-    mode: 'gen', comm: false, open: false, xsrc: 'ac', vrated: 110, playing: !reduced,
+    mode: 'gen', genView: 'obl', comm: false, open: false, xsrc: 'ac', vrated: 110, playing: !reduced,
     theta: 0, xt: 0, rows: [], show3: { field: true, vec: true, dots: true },
     dc: { phase: 'idle', t: 0, im0: 0, pulsed: false, steadySaid: false }
   };
@@ -170,7 +170,12 @@
   function fsc() { return (window.LabSettings && +window.LabSettings.get('fs')) || 1; }
   function canvasH(w) {
     const nw = w < 640;
-    if (st.mode === 'gen') return nw ? Math.round(w * 0.66 + w * 0.6 + 3 * 92 * Math.min(1.15, fsc()) + 40) : Math.round(clamp(w * 0.40, 250, 330) + clamp(w * 0.33, 230, 290) + 30);
+    if (st.mode === 'gen') {
+      // 三個分頁共用同一塊畫布，切圖時播放列留在原處。
+      const height = clamp(w * 0.7, 290 * Math.min(1.15, fsc()), 360);
+      const shortView = matchMedia('(orientation: landscape) and (max-height: 600px)').matches;
+      return Math.round(shortView ? Math.min(height, Math.max(210, innerHeight - 138)) : height);
+    }
     if (st.mode === 'xf') return nw ? Math.round(w * 0.86 + 200 + 30) : Math.round(clamp(w * 0.44, 270, 350) + clamp(w * 0.24, 170, 210) + 30);
     return nw ? Math.round(w * 0.78 + 170 + 190 + 40) : Math.round(clamp(w * 0.36, 240, 300) + 200 + 30);
   }
@@ -178,22 +183,14 @@
     const m = 10;
     narrow = W < 640;
     if (st.mode === 'gen') {
-      if (!narrow) {
-        const th = Math.round(clamp(W * 0.40, 250, 330));
-        const ow = Math.round((W - 3 * m) * 0.6);
-        box.obl = { x: m, y: m, w: ow, h: th };
-        box.end = { x: 2 * m + ow, y: m, w: W - 3 * m - ow, h: th };
-        box.scope = { x: m, y: 2 * m + th, w: W - 2 * m, h: H - 3 * m - th };
-      } else {
-        const oh = Math.round(W * 0.66), eh = Math.round(W * 0.6);
-        box.obl = { x: m, y: m, w: W - 2 * m, h: oh };
-        box.end = { x: m, y: 2 * m + oh, w: W - 2 * m, h: eh };
-        box.scope = { x: m, y: 3 * m + oh + eh, w: W - 2 * m, h: H - 4 * m - oh - eh };
+      const plot = { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
+      box[st.genView] = plot;
+      if (st.genView === 'obl') fitOblique();
+      if (st.genView === 'end') {
+        const top = 26;
+        const radius = Math.min(plot.w * (narrow ? 0.215 : 0.32), (plot.h - top - (narrow ? 14 : 66)) * 0.5);
+        box.endC = { x: plot.x + plot.w * (narrow ? 0.33 : 0.5), y: plot.y + top + (plot.h - top - (narrow ? 0 : 50)) / 2, r: radius };
       }
-      fitOblique();
-      const e = box.end, top = 26;
-      const R = Math.min(e.w * (narrow ? 0.215 : 0.32), (e.h - top - (narrow ? 14 : 66)) * 0.5);
-      box.endC = { x: narrow ? e.x + e.w * 0.33 : e.x + e.w / 2, y: e.y + top + (e.h - top - (narrow ? 0 : 50)) / 2, r: R };
     } else if (st.mode === 'xf') {
       const ph = narrow ? Math.round(W * 0.86) : Math.round(clamp(W * 0.44, 270, 350));
       box.pic = { x: m, y: m, w: W - 2 * m, h: ph };
@@ -260,7 +257,7 @@
     if (title) D.haloText(g, title, b.x + 10, b.y + 14, D.c.muted, 'left', 'middle', font(12));
   }
   function buildLayer() {
-    const k = [W, H, dpr, key, D.ver, window.LabSettings && window.LabSettings.lang, fsc(), st.dc.phase, st.dc.phase === 'idle' ? 0 : st.dc.im0].join('|');
+    const k = [W, H, dpr, key, st.genView, D.ver, window.LabSettings && window.LabSettings.lang, fsc(), st.dc.phase, st.dc.phase === 'idle' ? 0 : st.dc.im0].join('|');
     if (k === layerKey) return;
     layerKey = k;
     layer.width = cv.width; layer.height = cv.height;
@@ -268,15 +265,15 @@
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     D.backdrop(g, W, H);
     if (st.mode === 'gen') {
-      panel(g, box.obl, '');
-      panel(g, box.end, T('端視圖', 'End view'));
-      panel(g, box.scope, '');
-      drawFieldLines(g, false);     // 後半的磁力線先畫，被磁鐵擋住的部分自然蓋掉
-      drawMagnets(g);
-      const pb = P(0, GEO.my + 0.025, -GEO.mz);
-      rich(g, ['B'], pb.x, pb.y, D.c.field, 'center', 13, '700');
-      drawEndStatic(g);
-      drawGenScope(g);
+      panel(g, box[st.genView], st.genView === 'end' ? T('端視圖', 'End view') : '');
+      if (st.genView === 'obl') {
+        drawFieldLines(g, false);     // 後半的磁力線先畫，被磁鐵擋住的部分自然蓋掉
+        drawMagnets(g);
+        const pb = P(0, GEO.my + 0.025, -GEO.mz);
+        // 上方讀數列的下緣在 24 px，窄畫面也要留出磁場標記的位置。
+        rich(g, ['B'], pb.x, Math.max(pb.y, box.obl.y + 37), D.c.field, 'center', 13, '700');
+      } else if (st.genView === 'end') drawEndStatic(g);
+      else drawGenScope(g);
     } else if (st.mode === 'xf') {
       panel(g, box.pic, '');
       panel(g, box.scope, '');
@@ -602,8 +599,8 @@
     g.setLineDash([2, 3]); g.strokeStyle = D.alpha(D.c.field, 0.6);
     g.beginPath(); g.moveTo(e.x, e.y); g.lineTo(e.x + R * 0.95, e.y); g.stroke();
     g.restore();
-    const mid = -dg / 2 * Math.PI / 180;
-    rich(g, ['θ = ' + Math.round(dg) + '°'], e.x + Math.cos(mid) * R * 0.46 + 2, e.y + Math.sin(mid) * R * 0.46, D.c.accent, 'left', 12.5, '700');
+    // 角弧留在線圈中央，角度讀數放在圖名旁，拖到任何角度都不會被線圈遮住。
+    rich(g, ['θ = ' + Math.round(dg) + '°'], box.end.x + 78, box.end.y + 14, D.c.accent, 'left', 12.5, '700');
     // 線圈（端視：一條線段）
     const kb0 = kb && kb.focused() && kb.index() === 0;
     D.tube(g, function (q) { q.moveTo(ax, ay); q.lineTo(bx, by); }, tok.copper, clamp(coilWidth() * 0.9, 3, 9));
@@ -1281,7 +1278,11 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.drawImage(layer, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    if (st.mode === 'gen') { drawGenDynamic(ctx); drawEndDynamic(ctx); genCursor(ctx); }
+    if (st.mode === 'gen') {
+      if (st.genView === 'obl') drawGenDynamic(ctx);
+      else if (st.genView === 'end') drawEndDynamic(ctx);
+      else genCursor(ctx);
+    }
     else if (st.mode === 'xf') { drawXfDynamic(ctx); xfCursor(ctx); }
     else drawGridDynamic(ctx);
   }
@@ -1332,7 +1333,7 @@
     if (roAcc > 0.12 || st.dc.t >= 8 * tau) { roAcc = 0; updateReadouts(); }
     if (st.dc.phase === 'on' && before < 6 * tau && st.dc.t >= 6 * tau && userActed) {
       emitXf();
-      if (!st.dc.steadySaid) { st.dc.steadySaid = true; say(T('磁通量已經穩定：二次側電壓回到零，一次側只剩電阻限制電流 ', 'The flux is steady now: the secondary voltage is back to zero, and only the copper resistance limits the primary current ') + fq(DC.imFinal, 'A') + T('。', '.')); }
+      if (!st.dc.steadySaid) { st.dc.steadySaid = true; say(T('磁通量已經穩定，二次側電壓接近零，一次側電流趨近 ', 'The flux has settled. The secondary voltage is close to zero and the primary current approaches ') + fq(DC.imFinal, 'A') + T('。', '.')); }
     }
   }
   function lapDone() {
@@ -1407,6 +1408,25 @@
   // =====================================================================
   let roKey = '';
   function row(dt, dd, cls) { return '<dt' + (cls && /sep/.test(cls) ? ' class="sep"' : '') + '>' + dt + '</dt><dd' + (cls ? ' class="' + cls + '"' : '') + '>' + dd + '</dd>'; }
+  function updateDCMonitor(v2) {
+    const tau = dcTau();
+    // 以本次切換瞬間的電壓為準，切斷或尚未完全放電就再接通也適用。
+    const settled = Math.abs(v2) <= Math.abs(dcNow(0).v2) * 0.01;
+    const state = st.dc.phase === 'idle' ? 'idle' : settled ? 'steady' : 'decaying';
+    const label = state === 'idle' ? T('待接通', 'Switch open') : settled ? T('穩定', 'Stable') : T('衰減中', 'Decaying');
+    const lamp = $('dcState'), wait = $('dcWait');
+    if (lamp.dataset.state !== state) lamp.dataset.state = state;
+    if (lamp.textContent !== label) lamp.textContent = label;
+    $('dcTime').textContent = fq(tau, 's');
+    $('dcVoltage').textContent = fq(v2, 'V');
+    wait.hidden = state === 'idle';
+    if (!wait.hidden) {
+      const msg = settled
+        ? T('二次側電壓的大小已降至本次切換初值的 1% 以下。', 'The secondary voltage magnitude is at or below 1% of its value just after switching.')
+        : T('等二次側電壓接近 0（約 5τ，模擬時間 ', 'Wait for the secondary voltage to approach 0 (about 5τ, or ') + fq(5 * tau, 's') + T('）。', ' in simulated time).');
+      if (wait.textContent !== msg) wait.textContent = msg;
+    }
+  }
   function updateReadouts() {
     let h = '';
     if (st.mode === 'gen') {
@@ -1426,13 +1446,14 @@
       h += row(T('匝數比 N<sub>2</sub>/N<sub>1</sub>', 'Turns ratio N<sub>2</sub>/N<sub>1</sub>'), sig3(X.ratio), 'em');
       if (dcm) {
         const s = dcNow();
+        updateDCMonitor(s.v2);
         h += row(T('電池電壓 V', 'Battery voltage V'), fq(X.V1, 'V'), 'sep');
         h += row(T('二次側電壓（此刻）', 'Secondary voltage (now)'), fq(s.v2, 'V'), 'em');
+        h += row(T('時間常數 τ', 'Time constant τ'), fq(dcTau(), 's'));
         h += row(T('接通瞬間的 v<sub>2</sub>', 'v<sub>2</sub> just after closing'), fq(DC.v2Peak, 'V'));
         h += row(T('一次側電流（此刻）', 'Primary current (now)'), fq(s.i1, 'A'));
         h += row(T('穩定後一次側電流 V/R<sub>1</sub>', 'Steady primary current V/R<sub>1</sub>'), fq(DC.imFinal, 'A'));
         h += row(T('一次線圈電阻 R<sub>1</sub>', 'Primary resistance R<sub>1</sub>'), fq(DC.R1, 'Ω'), 'sep');
-        h += row(T('時間常數 τ', 'Time constant τ'), fq(DC.tau, 's'));
       } else {
         if (st.xsrc === 'gen') h += row(T('發電機 ε<sub>rms</sub>（f）', 'Generator ε<sub>rms</sub> (f)'), fq(X.Vemf, 'V') + ' (' + sig3(X.f) + ' Hz)');
         h += row(T('一次側 V<sub>1</sub>', 'Primary V<sub>1</sub>'), fq(X.V1, 'V'), 'sep');
@@ -1625,9 +1646,45 @@
   }
   $('tV110').addEventListener('click', function () { setVrated(110, true); });
   $('tV220').addEventListener('click', function () { setVrated(220, true); });
+  const diagramTabs = Array.from($('genViews').querySelectorAll('[role="tab"]'));
+  function syncDiagramTabs() {
+    const gen = st.mode === 'gen', plot = $('genPlot');
+    $('genViews').hidden = !gen;
+    if (gen) plot.setAttribute('role', 'tabpanel');
+    else {
+      plot.removeAttribute('role');
+      plot.removeAttribute('aria-labelledby');
+      cv.removeAttribute('aria-labelledby');
+    }
+    diagramTabs.forEach(function (tab) {
+      const active = tab.dataset.genView === st.genView;
+      tab.setAttribute('aria-selected', String(active));
+      tab.tabIndex = active ? 0 : -1;
+      if (gen && active) {
+        plot.setAttribute('aria-labelledby', tab.id);
+        cv.setAttribute('aria-labelledby', tab.id);
+      }
+    });
+  }
+  diagramTabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () {
+      st.genView = tab.dataset.genView;
+      syncDiagramTabs();
+      resize();
+    });
+    tab.addEventListener('keydown', function (e) {
+      const n = diagramTabs.length;
+      const dest = { ArrowLeft: (i + n - 1) % n, ArrowRight: (i + 1) % n, Home: 0, End: n - 1 }[e.key];
+      if (dest == null) return;
+      e.preventDefault();
+      diagramTabs[dest].focus();
+      diagramTabs[dest].click();
+    });
+  });
   function setMode(m, user) {
     if (MODES.indexOf(m) < 0) return;
     st.mode = m;
+    syncDiagramTabs();
     MODES.forEach(function (k) { $(MBTN[k]).setAttribute('aria-pressed', String(k === m)); $(MCARD[k]).hidden = k !== m; });
     $('record').disabled = false;
     if (voice) { voice.stop(0.1); voice = null; }
@@ -1661,7 +1718,7 @@
   hit.setAttribute('aria-hidden', 'true');
   stage.appendChild(hit);
   function placeHit() {
-    if (st.mode !== 'gen' || !box.endC) { hit.hidden = true; return; }
+    if (st.mode !== 'gen' || st.genView !== 'end' || !box.endC) { hit.hidden = true; return; }
     hit.hidden = false;
     const e = box.endC, r = e.r * 1.05;
     hit.style.left = (cv.offsetLeft + e.x - r) + 'px';

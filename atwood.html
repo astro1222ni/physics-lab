@@ -146,6 +146,7 @@
         </div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--field)&quot;></i>Weight mg"><i style="background:var(--field)"></i>重力 mg</span>
           <span data-en-html="<i style=&quot;background:var(--b-mech)&quot;></i>Tension T"><i style="background:var(--b-mech)"></i>張力 T</span>
@@ -200,7 +201,7 @@
 
       <aside class="panel">
         <!-- ===================== 1 阿特午機 ===================== -->
-        <section class="card" id="panel1" role="tabpanel" aria-labelledby="tab1">
+        <section class="card" id="panel1" role="tabpanel" aria-labelledby="tab1" data-deck="裝置|Apparatus" data-deck-order="1">
           <h2 data-en="Atwood machine">阿特午機</h2>
           <div class="slider"><label for="a1m1" data-en-html="Left mass m<sub>1</sub> (released from height h)">左邊質量 m<sub>1</sub>（從高度 h 釋放）</label><output id="a1m1o"></output>
             <input id="a1m1" type="range" min="0.05" max="2" step="0.01" value="0.7" data-decimals="3"></div>
@@ -211,6 +212,9 @@
             <button type="button" id="move12" data-en-html="m<sub>1</sub> → m<sub>2</sub><small>Δm decreases</small>">m<sub>1</sub> → m<sub>2</sub><small>Δm 變小</small></button>
             <button type="button" id="move21" data-en-html="m<sub>2</sub> → m<sub>1</sub><small>Δm increases</small>">m<sub>2</sub> → m<sub>1</sub><small>Δm 變大</small></button>
           </div>
+        </section>
+        <section class="card" data-motion-for="1" data-deck="運動條件|Motion" data-deck-order="2">
+          <h2 data-en="Release conditions">釋放條件</h2>
           <div class="slider"><label for="a1h" data-en="Drop height h">落下高度 h</label><output id="a1ho"></output>
             <input id="a1h" type="range" min="0.2" max="1" step="0.05" value="0.8" data-decimals="3"></div>
           <div class="slider"><label for="a1v" data-en-html="Initial speed v<sub>0</sub> (m<sub>1</sub> downward)">初速 v<sub>0</sub>（m<sub>1</sub> 向下）</label><output id="a1vo"></output>
@@ -219,12 +223,15 @@
         </section>
 
         <!-- ===================== 2 桌面＋懸掛 ===================== -->
-        <section class="card" id="panel2" role="tabpanel" aria-labelledby="tab2" hidden>
+        <section class="card" id="panel2" role="tabpanel" aria-labelledby="tab2" data-deck="裝置|Apparatus" data-deck-order="1" hidden>
           <h2 data-en="Block on a table + hanging mass">桌面木塊＋懸掛物</h2>
           <div class="slider"><label for="a2M" data-en="Block on the table M">桌上木塊 M</label><output id="a2Mo"></output>
             <input id="a2M" type="range" min="0.1" max="3" step="0.05" value="1" data-decimals="3"></div>
           <div class="slider"><label for="a2m" data-en="Hanging mass m">懸掛物 m</label><output id="a2mo"></output>
             <input id="a2m" type="range" min="0.01" max="2" step="0.01" value="0.5" data-decimals="3"></div>
+        </section>
+        <section class="card" data-motion-for="2" data-deck="運動條件|Motion" data-deck-order="2" hidden>
+          <h2 data-en="Friction and release conditions">摩擦與釋放條件</h2>
           <div class="slider"><label for="a2us" data-en-html="Static friction coefficient μ<sub>s</sub>">靜摩擦係數 μ<sub>s</sub></label><output id="a2uso"></output>
             <input id="a2us" type="range" min="0" max="1" step="0.01" value="0.4" data-decimals="3"></div>
           <div class="slider"><label for="a2uk" data-en-html="Kinetic friction coefficient μ<sub>k</sub>">動摩擦係數 μ<sub>k</sub></label><output id="a2uko"></output>
@@ -237,7 +244,7 @@
         </section>
 
         <!-- ===================== 3 推拉連體 ===================== -->
-        <section class="card" id="panel3" role="tabpanel" aria-labelledby="tab3" hidden>
+        <section class="card" id="panel3" role="tabpanel" aria-labelledby="tab3" data-deck="裝置|Apparatus" data-deck-order="1" hidden>
           <h2 data-en="Blocks pushed or pulled">推拉連體木塊</h2>
           <p class="seg-label" id="pushLabel" data-en="The force F:">外力 F：</p>
           <div class="seg2" role="group" aria-labelledby="pushLabel">
@@ -255,6 +262,9 @@
             <input id="a3m2" type="range" min="0.2" max="3" step="0.05" value="1.5" data-decimals="3"></div>
           <div class="slider" id="box3m3"><label for="a3m3" data-en-html="Mass m<sub>3</sub> (right)">質量 m<sub>3</sub>（右）</label><output id="a3m3o"></output>
             <input id="a3m3" type="range" min="0.2" max="3" step="0.05" value="2" data-decimals="3"></div>
+        </section>
+        <section class="card" data-motion-for="3" data-deck="運動條件|Motion" data-deck-order="2" hidden>
+          <h2 data-en="Forces and initial conditions">受力與初始條件</h2>
           <div class="slider"><label for="a3F" data-en="Applied force F (horizontal)">外力 F（水平）</label><output id="a3Fo"></output>
             <input id="a3F" type="range" min="0" max="40" step="0.5" value="15" data-decimals="2"></div>
           <div class="slider"><label for="a3us" data-en-html="Static friction coefficient μ<sub>s</sub> (floor)">靜摩擦係數 μ<sub>s</sub>（地面）</label><output id="a3uso"></output>
@@ -269,7 +279,7 @@
         </section>
 
         <!-- ===================== 4 斜面＋懸掛 ===================== -->
-        <section class="card" id="panel4" role="tabpanel" aria-labelledby="tab4" hidden>
+        <section class="card" id="panel4" role="tabpanel" aria-labelledby="tab4" data-deck="裝置|Apparatus" data-deck-order="1" hidden>
           <h2 data-en="Block on an incline + hanging mass">斜面木塊＋懸掛物</h2>
           <div class="slider"><label for="a4M" data-en="Block on the incline M">斜面上的木塊 M</label><output id="a4Mo"></output>
             <input id="a4M" type="range" min="0.1" max="3" step="0.05" value="1" data-decimals="3"></div>
@@ -277,6 +287,9 @@
             <input id="a4m" type="range" min="0.01" max="2" step="0.01" value="1" data-decimals="3"></div>
           <div class="slider"><label for="a4th" data-en="Incline angle θ">斜面傾角 θ</label><output id="a4tho"></output>
             <input id="a4th" type="range" min="0" max="60" step="1" value="30" data-decimals="1"></div>
+        </section>
+        <section class="card" data-motion-for="4" data-deck="運動條件|Motion" data-deck-order="2" hidden>
+          <h2 data-en="Friction and release conditions">摩擦與釋放條件</h2>
           <div class="slider"><label for="a4us" data-en-html="Static friction coefficient μ<sub>s</sub>">靜摩擦係數 μ<sub>s</sub></label><output id="a4uso"></output>
             <input id="a4us" type="range" min="0" max="1" step="0.01" value="0.3" data-decimals="3"></div>
           <div class="slider"><label for="a4uk" data-en-html="Kinetic friction coefficient μ<sub>k</sub>">動摩擦係數 μ<sub>k</sub></label><output id="a4uko"></output>
@@ -288,7 +301,7 @@
           <p class="hint" data-en-html="μ<sub>k</sub> cannot exceed μ<sub>s</sub>. Tap a number to type an exact value.">μ<sub>k</sub> 不會大於 μ<sub>s</sub>。點一下數字可直接輸入精確數值。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="計時|Timing" data-deck-order="3">
           <h2 data-en="Timing">計時方式</h2>
           <div class="seg2" role="group" aria-label="計時方式" data-en-aria-label="Timing method">
             <button type="button" id="timeGate" aria-pressed="true" data-en="Photogate timer">光電計時器</button>
@@ -297,7 +310,7 @@
           <p class="hint" id="timeHint" data-en="The photogate timer starts when the body is released and stops automatically, to 0.001 s.">光電計時器在釋放時開始、物體抵達時自動停止，讀到 0.001 s。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="顯示|Display" data-deck-order="4">
           <h2 data-en="Display">顯示</h2>
           <div class="checks">
             <label><input id="showForces" type="checkbox"><span data-en="Forces on the apparatus">實驗圖上畫力</span></label>

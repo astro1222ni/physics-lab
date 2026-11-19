@@ -182,10 +182,15 @@
     const msg = T('第 ', 'Photo ') + st.photos + T(' 張照片，這張數到 ', ': counted ') + ph.counts.reduce(function (s, c) { return s + c; }, 0) +
       T(' 顆、累計 ', ' particles, ') + f.counted + T(' 顆。', ' in total. ') +
       (isFinite(f.fit.H) ? T('擬合的標高 H = ', 'Fitted scale height H = ') + lenUM(f.fit.H) + ' μm' + T('（理論 ', ' (theory ') + lenUM(S.sp.H) + ' μm' + T('）。', ').') : '');
-    say(msg); $('srState').textContent = msg;
+    say(''); $('srState').textContent = msg;
     renderTable(); renderAna(); drawGraph(); updateReadouts();
     if (view3 && view3.active) view3.update();
     requestDraw();
+    // 學生從下方選擇沉降模式後拍照時，讓槽內顆粒、計數鍵和結果一起入鏡。
+    const observation = $('observation'), rect = observation.getBoundingClientRect();
+    if (rect.height <= innerHeight && (rect.top < 0 || rect.bottom > innerHeight)) {
+      observation.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
   }
 
   // =====================================================================
@@ -358,7 +363,8 @@
   // =====================================================================
   function sedGeom() {
     const narrow = W < 560;
-    const top = 44, bot = narrow ? 40 : 34, left = narrow ? 50 : 62;
+    const compact = W < 340;
+    const top = compact ? 62 : 44, bot = compact ? 56 : narrow ? 40 : 34, left = narrow ? 50 : 62;
     const chartW = narrow ? Math.round(W * 0.3) : Math.round(clamp(W * 0.28, 150, 240));
     const ww = W - left - chartW - 26, hh = H - top - bot;
     return { x0: left, y0: top, w: ww, h: hh, cx0: left + ww + 16, cw: chartW };
@@ -397,7 +403,7 @@
     // 右側計數圖的框
     g.strokeStyle = D.alpha(D.c.text, 0.35); g.lineWidth = 1;
     g.beginPath(); g.moveTo(G.cx0, G.y0); g.lineTo(G.cx0, G.y0 + G.h); g.lineTo(G.cx0 + G.cw, G.y0 + G.h); g.stroke();
-    D.haloText(g, T('各層累計顆粒數', 'Count per layer'), G.cx0, G.y0 - 22, D.c.text, 'left', 'middle', font(11, '700'));
+    D.haloText(g, T('各層累計顆粒數', 'Count per layer'), W - 8, G.y0 - 22, D.c.text, 'right', 'middle', font(11, '700'));
     return c;
   }
   function drawSed() {
@@ -451,8 +457,9 @@
     }
     // 標示
     const accel = S.sp.relax / 4;
-    D.pill(ctx, MAT_NAME(S.material) + T('，', ', ') + 'a = ' + sig(S.a, 3) + ' μm，H = ' + lenUM(S.sp.H) + ' μm', G.x0, H - 8, D.c.text, 'left', font(11, '700'));
-    if (!reduced) D.pill(ctx, (st.paused ? T('已暫停', 'Paused') : T('動畫加速 ×', 'Sped up ×') + sig(accel, 2)), G.x0 + G.w, 28, D.c.muted, 'right', font(11, '600'));
+    const compact = W < 340;
+    D.pill(ctx, MAT_NAME(S.material) + T('，', ', ') + 'a = ' + sig(S.a, 3) + T(' μm，H = ', ' μm, H = ') + lenUM(S.sp.H) + ' μm', compact ? 8 : G.x0, H - (compact ? 29 : 8), D.c.text, 'left', font(11, '700'));
+    if (!reduced) D.pill(ctx, (st.paused ? T('已暫停', 'Paused') : T('動畫加速 ×', 'Sped up ×') + sig(accel, 2)), compact ? 8 : G.x0 + G.w, compact ? 21 : 28, D.c.muted, compact ? 'left' : 'right', font(11, '600'));
     D.pill(ctx, T('照片 ', 'Photos ') + st.photos + T(' 張', ''), W - 8, H - 8, D.c.text, 'right', font(11, '700'));
   }
 
@@ -643,6 +650,9 @@
     if (st.mode === 'sed') {
       sedEnsure();
       const f = st.sedFit, S = st.sedS;
+      $('photoCount').textContent = st.lastCounts ? st.lastCounts.reduce(function (sum, n) { return sum + n; }, 0) : '—';
+      $('totalCount').textContent = f ? f.counted : 0;
+      $('fitHeight').textContent = f && isFinite(f.fit.H) ? lenUM(f.fit.H) + ' μm' : '—';
       if (f && isFinite(f.fit.H)) {
         h += rowHtml(T('照片／累計顆粒數', 'Photos / particles counted'), st.photos + ' / ' + f.counted);
         h += rowHtml(T('擬合的標高 H', 'Fitted scale height H'), lenUM(f.fit.H) + (isFinite(f.fit.se) ? ' ± ' + sig(f.fit.se * 1e6, 2) : '') + ' μm' + T('（理論 ', ' (theory ') + lenUM(S.sp.H) + ' μm）'.replace('）', T('）', ')')), 'em');
@@ -817,6 +827,8 @@
     $('liqBox').hidden = m !== 'micro';
     $('sedLiquid').hidden = m !== 'sed';
     $('matBox').hidden = m !== 'sed';
+    $('sedCounter').hidden = m !== 'sed';
+    $('observation').classList.toggle('sed-observation', m === 'sed');
     $('aBox').hidden = m === 'md';
     $('microBox').hidden = m !== 'micro';
     $('mdBox').hidden = m !== 'md';
