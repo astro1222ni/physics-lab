@@ -447,7 +447,6 @@
     const head = narrow ? Math.round(36 * fs + 10) : Math.round(22 * fs + 10);
     P = { x0: Math.round(30 + 14 * fs), y0: head + 4, x1: W - 12, y1: H - Math.round(22 * fs + 10), narrow: narrow, head: head };
   }
-  const contourLabelHz = 700;
   const CONTOURS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
   const NS = 180;
   function contourPts(LN) {
@@ -544,9 +543,6 @@
         c.stroke();
         c.restore();
       }
-      // 曲線的名字：放在 1 kHz 線的左邊一點（曲線在 1 kHz 的高度就是它的 phon 數）
-      const fl = contourLabelHz, yl = Y(LC.splFromPhon(fl, LN));
-      if (yl > P.y0 + 6 && yl < P.y1 - 4) D.haloText(c, String(LN), X(fl) - 3, yl - 3, shade(C['ld-curve'], D.dark ? 0.1 : -0.15), 'right', 'bottom', fnt(10, 700));
     });
     // 聽閾曲線
     c.save();
@@ -584,6 +580,39 @@
       if (i) ctx.lineTo(X(f), Y(L)); else ctx.moveTo(X(f), Y(L));
     }
   }
+  function drawContourNumbers(blocked) {
+    const font = fnt(10, 700);
+    ctx.font = font; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+    const m = ctx.measureText('100');
+    const width = m.width + 3, above = m.actualBoundingBoxAscent + 3, below = m.actualBoundingBoxDescent + 3;
+    const preferred = X(2000) - 3;
+    // 優先整列留在同一個頻率。當讀數或圓點擋到時，找最近的可用位置。
+    const candidates = [preferred, X(500) - 3, X(4000) - 3];
+    blocked.forEach(function (r) { candidates.push(r.x - 5, r.x + r.w + width + 5); });
+    const anchors = candidates.map(function (x) { return clamp(x, P.x0 + width + 3, P.x1 - 5); })
+      .sort(function (a, b) { return Math.abs(a - preferred) - Math.abs(b - preferred); });
+    let best = [];
+    for (const x of anchors) {
+      const f = fOfX(x + 3);
+      const positions = CONTOURS.map(function (level) { return { level: level, x: x, y: Y(LC.splFromPhon(f, level)) - 3 }; })
+        .filter(function (p) {
+          return p.y - above >= P.y0 && p.y + below <= P.y1 && !blocked.some(function (r) {
+            return p.x + 3 > r.x && p.x - width < r.x + r.w && p.y + below > r.y && p.y - above < r.y + r.h;
+          });
+        });
+      if (positions.length > best.length) best = positions;
+      if (best.length === CONTOURS.length) break;
+    }
+    const ink = shade(C['ld-curve'], D.dark ? 0.1 : -0.15);
+    best.forEach(function (p) {
+      D.haloText(ctx, String(p.level), p.x, p.y, ink, 'right', 'bottom', font);
+    });
+  }
+  function badgeSize(text, font) {
+    ctx.font = font;
+    const m = ctx.measureText(text);
+    return { w: m.width + 12, h: ((m.fontBoundingBoxAscent + m.fontBoundingBoxDescent) || 15) + 3 };
+  }
   function drawChart(now) {
     buildLayer();
     ctx.drawImage(layer, 0, 0, W, H);
@@ -599,11 +628,13 @@
     }
     // 十字準線
     const x = X(a.f), y = Y(clamp(a.Lp, LC.LP_MIN, LC.LP_MAX));
+    const blocked = [{ x: x - 11, y: y - 11, w: 22, h: 22 }];
     ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = alpha(C['ld-pt'], 0.55); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x, P.y1); ctx.lineTo(x, y); ctx.moveTo(P.x0, y); ctx.lineTo(x, y); ctx.stroke(); ctx.restore();
     // 同樣響的 1 kHz 點（空心）與連線
     if (a.audible && a.lp1k != null && Math.abs(a.f - 1000) > 5) {
       const y1 = Y(clamp(a.lp1k, LC.LP_MIN, LC.LP_MAX));
+      blocked.push({ x: X(1000) - 6, y: y1 - 6, w: 12, h: 12 });
       ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = alpha(C['ld-pt'], 0.4); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(X(1000), y1); ctx.stroke(); ctx.restore();
       ctx.beginPath(); ctx.arc(X(1000), y1, 4.5, 0, Math.PI * 2); ctx.fillStyle = C['canvas-bg']; ctx.fill();
       ctx.strokeStyle = C['ld-pt']; ctx.lineWidth = 2; ctx.stroke();
@@ -630,17 +661,27 @@
       D.roundRect(ctx, x - 14, y - 14, 28, 28, 7); ctx.stroke(); ctx.restore();
     }
     // 標籤
-    const lab = a.audible ? fx(a.phon, 1) + ' phon · ' + soneTxt(a.sone) + ' sone' : T('聽不到（低於聽閾 ' + fx(-a.above, 1) + ' dB）', 'inaudible (' + fx(-a.above, 1) + ' dB below threshold)');
+    let lab = a.audible ? fx(a.phon, 1) + ' phon · ' + soneTxt(a.sone) + ' sone' : T('聽不到（低於聽閾 ' + fx(-a.above, 1) + ' dB）', 'inaudible (' + fx(-a.above, 1) + ' dB below threshold)');
     const coordinates = fTxt(a.f) + '・' + fx(a.Lp, 1) + ' dB';
-    ctx.font = fnt(11.5, 700);
-    const labelWidth = ctx.measureText(lab).width;
-    ctx.font = fnt(10.5, 600);
-    const tw = Math.max(labelWidth, ctx.measureText(coordinates).width) + 12;
-    // 兩側都放得下時，將讀值排在遠離曲線標號的一側。
-    const right = x + 14 + tw <= P.x1 && (x - 14 - tw < P.x0 || x >= X(contourLabelHz));
-    const lx = right ? x + 12 : x - 12, ly = y - 10 < P.y0 + 24 ? y + 30 : y - 10;
-    D.pill(ctx, lab, lx, ly, a.audible ? C['ld-pt'] : C.muted, right ? 'left' : 'right', fnt(11.5, 700));
-    D.pill(ctx, coordinates, lx, ly + 18 * fs + 4, C.muted, right ? 'left' : 'right', fnt(10.5, 600));
+    const labFont = fnt(11.5, 700), coordFont = fnt(10.5, 600);
+    let labBox = badgeSize(lab, labFont);
+    if (!a.audible && labBox.w > P.x1 - P.x0 - 6) {
+      lab = T('低於聽閾 ' + fx(-a.above, 1) + ' dB', fx(-a.above, 1) + ' dB below threshold');
+      labBox = badgeSize(lab, labFont);
+    }
+    const coordBox = badgeSize(coordinates, coordFont);
+    const width = Math.max(labBox.w, coordBox.w), height = labBox.h + coordBox.h + 4;
+    const fitsLeft = x - 12 - width >= P.x0 + 3, fitsRight = x + 12 + width <= P.x1 - 3;
+    const align = fitsRight && (!fitsLeft || x >= X(1000)) ? 'left' : fitsLeft ? 'right' : 'center';
+    const lx = align === 'left' ? x + 12 : align === 'right' ? x - 12
+      : clamp(x, P.x0 + 3 + width / 2, P.x1 - 3 - width / 2);
+    // 靠近上緣時把讀數放在圓點下方，留出痛覺閾的文字。
+    const roomTop = Y(126) + 10 * fs;
+    const top = align === 'center' ? y - 12 - height : y - height / 2;
+    const ly = clamp(top < roomTop ? y + 12 : top, roomTop, P.y1 - 3 - height);
+    blocked.push(D.pill(ctx, lab, lx, ly + labBox.h, a.audible ? C['ld-pt'] : C.muted, align, labFont));
+    blocked.push(D.pill(ctx, coordinates, lx, ly + height, C.muted, align, coordFont));
+    drawContourNumbers(blocked);
   }
 
   // 拖曳與點選

@@ -546,6 +546,8 @@
     c.beginPath(); c.arc(cx, cy, R + 3, 0, TAU); c.fillStyle = mix(C.surface, C['canvas-bg'], 0.3); c.fill();
     c.restore();
     const px = Math.max(11, Math.min(17, R / 11.5));
+    const minorPx = Math.max(12, px * 0.84), sigPx = Math.max(11, px * 0.72);
+    const sigInk = function (j) { return mix(sideColor(j), C.text, 0.55); };
     const pe = playingEvent();
     const soundingJ = pe ? (pe.key === 2 && A.t ? A.t : null) : null;
     for (let p = 0; p < 12; p++) {
@@ -573,10 +575,10 @@
       // 文字
       const majY = (R + g.r1) / 2, minY = (g.r1 + g.r2) / 2, sigY = (g.r2 + g.r3) / 2;
       const isCur = p === state.pos;
-      const majCol = isCur && A.mode === 'major' ? C['cf-key'] : C.text, minCol = isCur && A.mode === 'minor' ? C['cf-key'] : alpha(C.text, 0.85);
+      const majCol = isCur && A.mode === 'major' ? C['cf-key'] : C.text, minCol = isCur && A.mode === 'minor' ? C['cf-key'] : C.text;
       label2(c, CF.keyLabel(cj.prim, 'major'), cj.alt != null ? CF.keyLabel(cj.alt, 'major') : null, P(a, majY), majCol, px, 700);
-      label2(c, CF.keyLabel(cj.prim, 'minor'), cj.alt != null ? CF.keyLabel(cj.alt, 'minor') : null, P(a, minY), minCol, px * 0.84, 600);
-      label2(c, sigShort(cj.prim), cj.alt != null ? sigShort(cj.alt) : null, P(a, sigY), sideColor(cj.prim), px * 0.72, 700);
+      label2(c, CF.keyLabel(cj.prim, 'minor'), cj.alt != null ? CF.keyLabel(cj.alt, 'minor') : null, P(a, minY), minCol, minorPx, 700, C.text);
+      label2(c, sigShort(cj.prim), cj.alt != null ? sigShort(cj.alt) : null, P(a, sigY), sigInk(cj.prim), sigPx, 700, sigInk(cj.alt));
       // 足跡
       const vm = state.visited, keysAt = function (m) { return Object.keys(vm).some(function (k) { const q = k.split('|'); return q[1] === m && mod(+q[0], 12) === p; }); };
       if (keysAt('major')) { const q = P(a, R - 5.5); c.beginPath(); c.arc(q.x, q.y, 2.4, 0, TAU); c.fillStyle = alpha(C['cf-key'], 0.85); c.fill(); }
@@ -641,10 +643,13 @@
     }
   }
   /** 一格裡的兩行字：主要寫法＋另一種寫法（小字） */
-  function label2(c, a, b, q, color, px, weight) {
+  function label2(c, a, b, q, color, px, weight, altInk) {
     if (b == null) { D.haloText(c, a, q.x, q.y, color, 'center', 'middle', fnt(px, weight)); return; }
-    D.haloText(c, a, q.x, q.y - px * 0.42 * fs, color, 'center', 'middle', fnt(px * 0.9, weight));
-    D.haloText(c, b, q.x, q.y + px * 0.5 * fs, alpha(C.muted, 0.95), 'center', 'middle', fnt(px * 0.68, 500));
+    const aPx = altInk ? Math.max(11, px * 0.9) : px * 0.9;
+    const bPx = altInk ? Math.max(11, px * 0.68) : px * 0.68;
+    const gap = (altInk ? Math.max(11, px * 0.92) : px * 0.92) * fs;
+    D.haloText(c, a, q.x, q.y - gap * 0.46, color, 'center', 'middle', fnt(aPx, weight));
+    D.haloText(c, b, q.x, q.y + gap * 0.54, altInk || alpha(C.muted, 0.95), 'center', 'middle', fnt(bPx, altInk ? 650 : 500));
   }
 
   // ---------- 拖曳轉盤、點格子 ----------

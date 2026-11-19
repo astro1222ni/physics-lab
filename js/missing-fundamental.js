@@ -395,18 +395,28 @@
       }
     });
 
-    // 標籤：聽到的音高
+    // 音高標籤留在圖框上方，和長條頂端的泛音序號分開。
+    const shortTitle = T('頻譜：喇叭放出的成分（點長條開關）', 'Spectrum (tap a bar to switch it)');
+    let title = nar ? shortTitle : T('頻譜：喇叭真正放出的成分（點長條可以開關）', 'Spectrum: what the speaker really plays (tap a bar to switch it)');
+    const titleFont = fnt(nar ? 11 : 12.5, 600);
+    const titleX = L - (nar ? 34 : 44) + 6;
+    let titleY = Tp - 8;
     if (p) {
-      const out = p > fmax;
       const s = T('聽到的音高 ', 'Pitch heard ') + hz(p) + ' Hz' + (R.missing ? T('（這裡沒有聲音）', ' (nothing here)') : '');
-      c.font = fnt(nar ? 11 : 12, 700);
-      const w = c.measureText(s).width + 12;
-      const xp = out ? Rr : X(p);
-      const px = Math.max(L + w / 2 + 2, Math.min(Rr - w / 2 - 2, xp));
-      D.pill(c, s, px, Tp + 16, C['mf-pitch'], 'center', fnt(nar ? 11 : 12, 700));
+      const pitchFont = fnt(nar ? 11 : 12, 700);
+      c.font = pitchFont;
+      const m = c.measureText(s);
+      const room = Rr - titleX - m.width - 32;
+      c.font = titleFont;
+      if (c.measureText(title).width > room) title = shortTitle;
+      let pitchY = titleY;
+      if (c.measureText(title).width > room) {
+        pitchY = Tp - 3;
+        titleY = pitchY - ((m.fontBoundingBoxAscent + m.fontBoundingBoxDescent) || 15) - 5;
+      }
+      D.pill(c, s, Rr, pitchY, C['mf-pitch'], 'right', pitchFont);
     }
-    // 標題
-    D.pill(c, (nar ? T('頻譜：喇叭放出的成分（點長條開關）', 'Spectrum (tap a bar to switch it)') : T('頻譜：喇叭真正放出的成分（點長條可以開關）', 'Spectrum: what the speaker really plays (tap a bar to switch it)')), L - (nar ? 34 : 44) + 6, Tp - 10, C.text, 'left', fnt(nar ? 11 : 12.5, 600));
+    D.pill(c, title, titleX, titleY, C.text, 'left', titleFont);
   }
 
   // ---------------- 波形 ----------------

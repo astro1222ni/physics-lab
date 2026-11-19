@@ -876,7 +876,11 @@
     [yHi, yLo].forEach(function (y) { ctx.beginPath(); ctx.moveTo(x0, Math.round(y) + 0.5); ctx.lineTo(x1, Math.round(y) + 0.5); ctx.stroke(); });
     ctx.restore();
     const loLab = state.order === 'sun' ? T('宮 ÷ 2（高八度）', 'gong ÷ 2 (octave up)') : T('八度範圍的下限', 'bottom of the octave');
-    D.haloText(ctx, loLab + ' ' + fmtLen(loLen), x1 - 2, yLo + 3, Cc.muted, 'right', 'top', fnt(10, 600));
+    // 在圖首用相同的虛線標示下限，讓數值和弦柱各有空間。
+    const loY = g.y + 10 + 15 * fs;
+    ctx.save(); ctx.setLineDash([4, 4]); ctx.strokeStyle = Cc.muted; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0, loY + 6 * fs); ctx.lineTo(x0 + 16, loY + 6 * fs); ctx.stroke(); ctx.restore();
+    D.haloText(ctx, loLab + ' ' + fmtLen(loLen), x0 + 22, loY, Cc.muted, 'left', 'top', fnt(10, 600));
     // 琴橋（底座）
     D.block(ctx, x0 - 4, yb, x1 - x0 + 8, 8, Cc['pt-wood'], { r: 3 });
     // 每一根弦
@@ -885,6 +889,7 @@
     const pl = playingNow();
     const lenFont = fnt(colW > 46 ? 11 : 10, 700);
     const narrowCols = colW < 40 * fs;
+    const lengthLabels = [];
     for (let i = 0; i < ncol; i++) {
       const xc = x0 + (i + 0.5) * colW;
       const x = C.notes[i];
@@ -915,11 +920,9 @@
       // 弦長
       const lt = fmtLen(x.len.value);
       ctx.font = lenFont;
-      {
-        const tight = narrowCols && ctx.measureText(lt).width + 4 > colW;
-        const ly = yt - 9 - (tight && i % 2 === 1 ? 13 * fs : 0);
-        D.haloText(ctx, lt, xc, ly, x.int ? Cc.text : Cc['pt-extra'], 'center', 'bottom', tight ? fnt(9.5, 700) : lenFont);
-      }
+      const tight = narrowCols && ctx.measureText(lt).width + 4 > colW;
+      const ly = yt - 9 - (tight && i % 2 === 1 ? 13 * fs : 0);
+      lengthLabels.push({ text: lt, x: xc, y: ly, color: x.int ? Cc.text : Cc['pt-extra'], font: tight ? fnt(9.5, 700) : lenFont });
       // 名稱與音名
       let nm = x.role ? roleT(x.role) : '#' + (i + 1);
       let npx = 12.5; ctx.font = fnt(npx, 700);
@@ -935,23 +938,23 @@
         const xp = xc - colW, ypv = yb - pv.len.value * sc;
         const up = x.op === 'sun';
         const colr = up ? Cc['pt-sun'] : Cc['pt-yi'];
-        const ya = Math.min(ypv, yt) - (narrowCols ? 14 : 22);
+        const mid = (xp + xc) / 2;
+        const end = xc - 6;
+        // 曲線從弦柱兩側接入，兩端與柱頂等高，柱頂上方留給弦長。
         ctx.save();
         ctx.strokeStyle = alpha(colr, 0.75); ctx.lineWidth = 1.4; ctx.setLineDash([]);
-        ctx.beginPath(); ctx.moveTo(xp + 3, ypv - 6); ctx.quadraticCurveTo((xp + xc) / 2, ya, xc - 3, yt - 6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xp + 6, ypv); ctx.bezierCurveTo(mid, ypv, mid, yt, end, yt); ctx.stroke();
         // 箭頭尖
-        const ang = Math.atan2((yt - 6) - ya, (xc - 3) - (xp + xc) / 2);
-        ctx.beginPath(); ctx.moveTo(xc - 3, yt - 6);
-        ctx.lineTo(xc - 3 - 6 * Math.cos(ang - 0.45), yt - 6 - 6 * Math.sin(ang - 0.45));
-        ctx.lineTo(xc - 3 - 6 * Math.cos(ang + 0.45), yt - 6 - 6 * Math.sin(ang + 0.45));
+        ctx.beginPath(); ctx.moveTo(end, yt);
+        ctx.lineTo(end - 5, yt - 2.5); ctx.lineTo(end - 5, yt + 2.5);
         ctx.closePath(); ctx.fillStyle = alpha(colr, 0.85); ctx.fill();
         ctx.restore();
         // 窄欄（產生很多個音、手機）只畫箭頭的顏色，不放小牌，免得蓋住弦長
         const opTxt = up ? '×2/3' : '×4/3';
         ctx.font = fnt(10, 700);
         if (!narrowCols && ctx.measureText(opTxt).width + 10 <= colW * 1.15) {
-          const my = ((ypv - 6) + 2 * ya + (yt - 6)) / 4;
-          D.pill(ctx, opTxt, (xp + xc) / 2, my + 8 * fs, colr, 'center', fnt(10, 700));
+          const my = (ypv + yt) / 2;
+          D.pill(ctx, opTxt, mid, my + 8 * fs, colr, 'center', fnt(10, 700));
         }
       }
     }
@@ -960,9 +963,12 @@
       const xa = x0 + 0.5 * colW, xb = x0 + 12.5 * colW, ya = yb - C.notes[0].len.value * sc, yb2 = yb - C.notes[12].len.value * sc;
       ctx.save(); ctx.setLineDash([2, 3]); ctx.strokeStyle = alpha(Cc['pt-extra'], 0.8); ctx.lineWidth = 1.2;
       ctx.beginPath(); ctx.moveTo(xa, ya); ctx.lineTo(xb + colW * 0.4, ya); ctx.stroke(); ctx.restore();
-      D.haloText(ctx, T('第 13 根比宮短 ', '13th is shorter by ') + fx(C.comma.len, 2), g.x + g.w - 10, g.y + 13 + 15 * fs, Cc['pt-extra'], 'right', 'top', fnt(10.5, 700));
+      D.haloText(ctx, T('第 13 根比宮短 ', '13th is shorter by ') + fx(C.comma.len, 2), x1, g.y + 12 + 27 * fs, Cc['pt-extra'], 'right', 'top', fnt(10.5, 700));
       void yb2;
     }
+    lengthLabels.forEach(function (lab) {
+      D.haloText(ctx, lab.text, lab.x, lab.y, lab.color, 'center', 'bottom', lab.font);
+    });
   }
 
   function draw(now) {
