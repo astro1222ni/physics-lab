@@ -12,6 +12,7 @@
   'use strict';
   if (window.LabShareCard) return;
   const LM = window.LabMission;
+  const { render: renderFormula, plain } = window.LabCatalogText;
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const L = function (o) { return o ? T(o.zh, o.en || o.zh) : ''; };
   const SITE = 'https://lab.astroni.org/';
@@ -28,6 +29,7 @@
   function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function modList() { return window.LAB_MISSION_MODULES || []; }
   function modName(id) { const m = modList().filter(function (x) { return x.id === id; })[0]; return m ? L(m) : id; }
+  function plainModName(id) { return plain(modName(id)); }
   function subjName(id) { const s = SUBJ.filter(function (x) { return x.id === id; })[0]; return s ? L(s) : id; }
   function live(id) { const lv = window.LAB_LIVE_MODULES; return !lv || lv.indexOf(id) >= 0; }
 
@@ -44,7 +46,7 @@
     return catalogP;
   }
   function searchText(text) {
-    text = String(text || '').normalize('NFKC').toLowerCase();
+    text = plain(text).normalize('NFKC').toLowerCase();
     const settings = window.LabSettings;
     return settings && settings.toHans ? settings.toHans(text) : text;
   }
@@ -476,7 +478,7 @@
         const lab = el('label', 'lab-sc-chip');
         const cb = el('input'); cb.type = 'checkbox'; cb.value = it.id; cb.checked = !!it.on[it.id];
         cb.addEventListener('change', function () { if (cb.checked) it.on[it.id] = true; else delete it.on[it.id]; redraw(); });
-        lab.appendChild(cb); lab.appendChild(el('span', null, it.name));
+        lab.appendChild(cb); lab.appendChild(renderFormula(el('span'), it.name));
         pickBox.appendChild(lab);
       });
     }
@@ -495,8 +497,8 @@
         total = sum(ms.map(function (m) { return mods[m]; }));
         // 站長 11/16：實驗步驟只放在「單一個實驗」的成績卡，給老師檢核那一個實驗用；勾好幾個實驗、全部科目、選科目都不顯示
         const one = ms.length === 1;
-        rows = ms.map(function (m) { const t = mods[m]; return { name: modName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: one ? (procedures[m] || procedureDefs[m]) : null }; });
-        scopeLabel = ms.length === 1 ? modName(ms[0]) : T(ms.length + ' 個實驗', ms.length + ' experiments');
+        rows = ms.map(function (m) { const t = mods[m]; return { name: plainModName(m), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S, procedure: one ? (procedures[m] || procedureDefs[m]) : null }; });
+        scopeLabel = ms.length === 1 ? plainModName(ms[0]) : T(ms.length + ' 個實驗', ms.length + ' experiments');
         if (ms.length === 1) url = SITE + ms[0] + '.html';
         sub = T('完成 ', 'Completed ') + total.d + ' / ' + total.n + T(' 個任務', ' missions');
         chips = [[String(total.d), T('完成任務', 'Missions done')], [Math.round(total.S ? 100 * total.s / total.S : 0) + '%', T('星星進度', 'Star progress')],
@@ -508,7 +510,7 @@
         if (ss.length === 1) {
           // 單一科目：明細列出這一科完成過任務的實驗（星星多的在前）
           rows = inS.filter(function (t) { return t.d > 0; }).sort(function (a, b) { return b.s - a.s; })
-            .map(function (t) { return { name: modName(t.id), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S }; });
+            .map(function (t) { return { name: plainModName(t.id), subj: t.subj, d: t.d, n: t.n, s: t.s, S: t.S }; });
         } else {
           rows = ss.map(function (s) {
             const t = sum(inS.filter(function (m) { return m.subj === s; }));

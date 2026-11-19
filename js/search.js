@@ -11,6 +11,7 @@
   const list = document.getElementById('search-results');
   const status = document.getElementById('search-status');
   if (!input || !list) return;
+  const { render: renderFormula, plain } = window.LabCatalogText;
 
   // ---------- 文字正規化：全形轉半形、小寫、常見簡體字轉繁體 ----------
   const S2T = {};
@@ -62,7 +63,7 @@
   input.addEventListener('focus', function () { ensureIndex().catch(function () {}); }, { once: true });
   function buildNorm(it) {
     const hans = window.LabSettings && window.LabSettings.toHans;
-    const variant = function (s) { return norm((s || '') + (hans ? ' ' + hans(s || '', it.subjectId) : '')); };
+    const variant = function (s) { const text = plain(s); return norm(text + (hans ? ' ' + hans(text, it.subjectId) : '')); };
     it.searchKeywords = it.keywords.slice();
     if (hans) it.searchKeywords = it.searchKeywords.concat(it.keywords.map(function (s) { return hans(s, it.subjectId); }));
     it.n = {
@@ -70,7 +71,7 @@
       branch: variant(it.raw.branch),
       topic: variant(it.raw.topic),
       desc: variant(it.raw.desc),
-      keywords: it.searchKeywords.map(norm)
+      keywords: it.searchKeywords.map(function (s) { return norm(plain(s)); })
     };
   }
   items.forEach(buildNorm);
@@ -97,24 +98,35 @@
     return { item: item, score: total, hits: hits, live: item.href ? 1 : 0 };
   }
 
-  function highlight(el, text, terms) {
-    // 在原文中標出符合的片段（比對時使用正規化後的文字，長度一致時才標示）
+  function highlight(el, value, terms) {
+    renderFormula(el, value);
+    // 用純文字找位置，再逐文字節點上色，保留跨上下標的命中。
+    const text = el.textContent;
     const n = norm(text);
-    if (n.length !== text.length) { el.textContent = text; return; }
+    if (n.length !== text.length) return;
     const marks = new Array(text.length).fill(false);
     terms.forEach(function (t) {
       let i = n.indexOf(t);
       while (t && i >= 0) { for (let k = i; k < i + t.length; k++) marks[k] = true; i = n.indexOf(t, i + 1); }
     });
-    let i = 0;
-    while (i < text.length) {
-      let j = i;
-      while (j < text.length && marks[j] === marks[i]) j++;
-      const part = text.slice(i, j);
-      if (marks[i]) { const m = document.createElement('mark'); m.textContent = part; el.appendChild(m); }
-      else el.appendChild(document.createTextNode(part));
-      i = j;
-    }
+    if (!marks.includes(true)) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+    let offset = 0;
+    nodes.forEach(function (node) {
+      const end = offset + node.length, parts = document.createDocumentFragment();
+      for (let i = offset; i < end;) {
+        let j = i + 1;
+        while (j < end && marks[j] === marks[i]) j++;
+        const part = text.slice(i, j);
+        if (marks[i]) { const m = document.createElement('mark'); m.textContent = part; parts.appendChild(m); }
+        else parts.appendChild(document.createTextNode(part));
+        i = j;
+      }
+      node.replaceWith(parts);
+      offset = end;
+    });
   }
 
   const SUGGEST = EN ? ['field', 'momentum', 'light', 'wave', 'magnetic'] : ['電場', '動量', '折射', '干涉', '磁場', '波'];
@@ -174,7 +186,7 @@
 
       const meta = document.createElement('span');
       meta.className = 'search-meta';
-      meta.textContent = it.branch + (it.topic && it.topic !== it.branch ? (EN ? ' · ' : '・') + it.topic : '');
+      renderFormula(meta, it.branch + (it.topic && it.topic !== it.branch ? (EN ? ' · ' : '・') + it.topic : ''));
       const tag = document.createElement('span');
       tag.className = 'tag' + (it.href ? '' : ' soon');
       tag.textContent = it.href ? (EN ? 'Live' : '已上線') : (EN ? 'Planned' : '規劃中');
@@ -186,15 +198,25 @@
 
       const title = document.createElement('span');
       title.className = 'search-title';
-      const shownTitle = window.LabSettings && LabSettings.lang === 'zh-Hans' && LabSettings.toHans ? LabSettings.toHans(it.title, it.subjectId) : it.title;
-      highlight(title, shownTitle, terms);
+      const toHans = LabSettings.lang === 'zh-Hans' && LabSettings.toHans;
+      highlight(title, toHans ? toHans(it.title, it.subjectId) : it.title, terms);
 
       box.appendChild(head);
       box.appendChild(title);
-      if (r.hits.length) {
+      let shownDesc = '';
+      if (it.desc && terms.some(function (t) { return it.n.desc.includes(t); })) {
+        const desc = document.createElement('span');
+        desc.className = 'search-why search-desc';
+        shownDesc = toHans ? toHans(it.desc, it.subjectId) : it.desc;
+        highlight(desc, shownDesc, terms);
+        box.appendChild(desc);
+      }
+      const descText = norm(plain(shownDesc));
+      const hits = [...new Set(r.hits)].filter(function (h) { return !descText.includes(norm(plain(h))); });
+      if (hits.length) {
         const why = document.createElement('span');
         why.className = 'search-why';
-        why.textContent = (EN ? 'Matches: ' : '相關：') + r.hits.filter(function (h, i, a) { return a.indexOf(h) === i; }).join('、');
+        renderFormula(why, (EN ? 'Matches: ' : '相關：') + hits.join('、'));
         box.appendChild(why);
       }
       li.appendChild(box);

@@ -9,34 +9,33 @@
 const fs = require('fs');
 const path = require('path');
 const ROOT = path.join(__dirname, '..');
-const { W, subjects, read, asset, text, esc, marker, miniCard } = require('./home-data.cjs');
+const { W, subjects, read, asset, text, esc, readCatalogText, formulaLabel, marker, miniCard } = require('./home-data.cjs');
+const { plain } = require('../js/settings.js');
 const invariant = JSON.parse(read('tools/home-v2-invariants.json'));
 const subjectCopy = JSON.parse(read('tools/home-subject-copy.json'));
 const html = subjects.filter(s => fs.existsSync(path.join(ROOT, s.page + '.html'))).map(s => read(s.page + '.html')).join('\n');
 
-const unesc = s => s.replace(/&#x([0-9a-f]+);/gi, (m, h) => String.fromCodePoint(parseInt(h, 16))).replace(/&#(\d+);/g, (m, d) => String.fromCodePoint(+d)).replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-const strip = s => unesc(s.replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 // 科目區塊（物理、化學、生物、地球科學…）的起點：卡片屬於它前面最近的那一個區塊
 const domains = [...html.matchAll(/<section class="domain" id="([^"]+)"/g)].map(m => ({ at: m.index, id: m[1] }));
 const domainOf = at => { let d = 'physics'; for (const x of domains) if (x.at < at) d = x.id; return d; };
 
 // 依序找出分支、章、卡片的位置
 const marks = [];
-for (const m of html.matchAll(/<section class="branch" id="([^"]+)"[\s\S]*?<h2([^>]*)>([\s\S]*?)<\/h2>/g)) {
-  const en = (m[2].match(/data-en="([^"]*)"/) || [])[1] || '';
-  marks.push({ at: m.index, kind: 'branch', id: m[1], en: unesc(en), zh: strip(m[3]) });
+for (const m of html.matchAll(/<section class="branch" id="([^"]+)"[\s\S]*?<h2((?:[^>"']|"[^"]*"|'[^']*')*)>([\s\S]*?)<\/h2>/g)) {
+  const en = (m[2].match(/\bdata-en(?:-html)?="([^"]*)"/) || [])[1] || '';
+  marks.push({ at: m.index, kind: 'branch', id: m[1], en: readCatalogText(en), zh: readCatalogText(m[3]) });
 }
 // 一般的章有章名；分支只有一章時（class="chapter solo"）沒有章名，用分支名稱代替
-for (const m of html.matchAll(/<section class="chapter( solo)?[^"]*" id="([^"]+)"[^>]*>\s*(?:<h3 class="chapter-head"[^>]*><span data-en="([^"]*)">([^<]*)<\/span>)?/g)) {
-  marks.push({ at: m.index, kind: 'chapter', id: m[2], en: m[3] ? unesc(m[3]) : null, zh: m[4] ? m[4].trim() : null });
+for (const m of html.matchAll(/<section class="chapter( solo)?[^"]*" id="([^"]+)"[^>]*>\s*(?:<h3 class="chapter-head"[^>]*><span data-en(?:-html)?="([^"]*)">([\s\S]*?)<\/span>)?/g)) {
+  marks.push({ at: m.index, kind: 'chapter', id: m[2], en: m[3] ? readCatalogText(m[3]) : null, zh: m[4] ? readCatalogText(m[4]) : null });
 }
 const KW = {};
 for (const m of html.matchAll(/<a class="module live" href="([^"]+)\.html" data-module="([^"]+)"([^>]*)>([\s\S]*?)<\/a>/g)) {
   const body = m[4];
-  const kw = m[3].match(/data-keywords="([^"]*)"/); if (kw) KW[m[2]] = unesc(kw[1]);
-  const h = body.match(/<h4 data-en="([^"]*)">([\s\S]*?)<\/h4>/);
-  const p = body.match(/<p data-en="([^"]*)">([\s\S]*?)<\/p>/);
-  marks.push({ at: m.index, kind: 'card', slug: m[2], en: h ? unesc(h[1]) : '', zh: h ? strip(h[2]) : m[2], den: p ? unesc(p[1]) : '', dzh: p ? strip(p[2]) : '' });
+  const kw = m[3].match(/data-keywords="([^"]*)"/); if (kw) KW[m[2]] = plain(readCatalogText(kw[1]));
+  const h = body.match(/<h4 data-en(?:-html)?="([^"]*)">([\s\S]*?)<\/h4>/);
+  const p = body.match(/<p data-en(?:-html)?="([^"]*)">([\s\S]*?)<\/p>/);
+  marks.push({ at: m.index, kind: 'card', slug: m[2], en: h ? readCatalogText(h[1]) : '', zh: h ? readCatalogText(h[2]) : m[2], den: p ? readCatalogText(p[1]) : '', dzh: p ? readCatalogText(p[2]) : '' });
 }
 marks.sort((a, b) => a.at - b.at);
 
@@ -61,7 +60,7 @@ for (const k of marks) {
   const STOP = new Set('about above after again against their there these those which while where would could should other every through between using with from into your this that what when they them then than have will each such more most some very just over under also both only like make makes made watch change changes changing shows show compare learn their simulation interactive experiment explore'.split(' '));
   const toks = x => {
     const t = new Set();
-    (x.en + ' ' + (x.den || '')).toLowerCase().replace(/[^a-z\- ]/g, ' ').split(/\s+/).forEach(w => { w = w.replace(/ies$/, 'y').replace(/s$/, ''); if (w.length >= 5 && !STOP.has(w)) t.add('e:' + w); });
+    plain(x.en + ' ' + (x.den || '')).toLowerCase().replace(/[^a-z\- ]/g, ' ').split(/\s+/).forEach(w => { w = w.replace(/ies$/, 'y').replace(/s$/, ''); if (w.length >= 5 && !STOP.has(w)) t.add('e:' + w); });
     (KW[x.s] || '').split(/[\s,，、]+/).forEach(w => { if (w.length >= 2) t.add('k:' + w.toLowerCase()); });
     return t;
   };
@@ -163,16 +162,18 @@ for (const s of subjects) {
   redirects[s.dom] = s.page;
   for (const b of d.branches) {
     redirects[b.id] = s.page;
+    const bzh = readCatalogText(b.zh), ben = readCatalogText(b.en);
     for (const c of b.chapters) {
       redirects[c.id] = s.page;
-      for (const mo of c.modules || []) if (!list.some(x => x.s === mo)) search.push({ s: mo, zh: c.zh + '・新實驗製作中', en: c.en + ' · New lab in progress', dzh: '這個實驗還在製作，先試試同章已上線的實驗。', den: 'This lab is in progress. Try a live lab in the same chapter.', d: s.dom, b: b.id, bzh: b.zh, ben: b.en, c: c.id, czh: c.zh, cen: c.en, live: false, keywords: mo.replace(/-/g, ' ') });
+      const czh = readCatalogText(c.zh), cen = readCatalogText(c.en);
+      for (const mo of c.modules || []) if (!list.some(x => x.s === mo)) search.push({ s: mo, zh: czh + '・新實驗製作中', en: cen + ' · New lab in progress', dzh: '這個實驗還在製作，先試試同章已上線的實驗。', den: 'This lab is in progress. Try a live lab in the same chapter.', d: s.dom, b: b.id, bzh, ben, c: c.id, czh, cen, live: false, keywords: mo.replace(/-/g, ' ') });
     }
   }
   let page = read(s.page + '.html');
   page = page.replace(/data-subject="([^"]+)"(?! data-hans-subject)/g, 'data-subject="$1" data-hans-subject="$1"');
   // 製作中的章也提供穩定落點，不改章代號。
-  page = page.replace(/<span class="soon"(?! id=)([^>]*data-en="[^"]*"[^>]*)>([\s\S]*?)<\/span>/g, (m, attrs, name) => {
-    const c = d.branches.flatMap(b => b.chapters).find(c => esc(c.en) === (attrs.match(/data-en="([^"]*)"/) || [])[1]);
+  page = page.replace(/<span class="soon"(?! id=)([^>]*data-en(?:-html)?="([^"]*)"[^>]*)>([\s\S]*?)<\/span>/g, (m, attrs, en, name) => {
+    const c = d.branches.flatMap(b => b.chapters).find(c => readCatalogText(c.en) === readCatalogText(en));
     return c ? '<span class="soon" id="' + c.id + '"' + attrs + '>' + name + '</span>' : m;
   });
   if (fs.existsSync(path.join(ROOT, 'docs/textbook/' + s.id + '.json'))) page = page.replace('class="textbook-control" hidden', 'class="textbook-control" data-source="docs/textbook/' + s.id + '.json" hidden');
@@ -189,7 +190,7 @@ const groups = W.LAB_SUBJECT_GROUPS.map(g => {
     const a = asset(s), live = list.filter(x => x.d === s.dom), plan = dirs[s.id].branches.flatMap(b => b.chapters.flatMap(c => c.modules || [])).filter(m => !W.LAB_LIVE_MODULES.includes(m)).length;
     const fresh = freshness[s.dom].incremental.length;
     const branches = dirs[s.id].branches, copy = subjectCopy[s.dom] || {zh:branches.map(b => b.zh).join('・'),en:branches.map(b => b.en).join(' · ')};
-    return `<a class="subject-card sb-${s.id}" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}<div class="subject-name">${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + ' labs', 'span', 'class="subject-live"')}</div>${text(esc(copy.zh), copy.en, 'p', 'class="subject-branches"')}<div class="subject-extra">${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress', 'small') : ''}<span class="subject-stars" hidden></span></div>${fresh ? '<span class="subject-new">' + text('新 +' + fresh, '+' + fresh + ' new') + '</span>' : ''}</a>`;
+    return `<a class="subject-card sb-${s.id}" href="${s.page}.html" data-subject="${s.id}" data-hans-subject="${s.id}" style="--c:${a.color}">${a.icon}<div class="subject-name">${text(s.zh, s.en, 'h3')}${text(live.length + ' 個實驗', live.length + ' labs', 'span', 'class="subject-live"')}</div>${formulaLabel(readCatalogText(copy.zh), readCatalogText(copy.en), 'p', 'class="subject-branches"')}<div class="subject-extra">${plan ? text('另有 ' + plan + ' 個製作中', plan + ' more in progress', 'small') : ''}<span class="subject-stars" hidden></span></div>${fresh ? '<span class="subject-new">' + text('新 +' + fresh, '+' + fresh + ' new') + '</span>' : ''}</a>`;
   });
   const zh = '製作中：' + g.soon.map(s => s.zh).join('・'), en = 'Coming soon: ' + g.soon.map(s => s.en).join(' · ');
   const soon = g.soon.length ? text(esc(zh), en, 'p', 'class="subject-soon" role="note" aria-label="' + esc(zh) + '" data-en-aria-label="' + esc(en) + '"') : '';

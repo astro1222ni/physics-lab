@@ -266,7 +266,7 @@
     const total = list.reduce(function (a, x) { return a + starsOf(x); }, 0);
     const row = el('a', 'lb-prog');
     row.href = m.id + '.html';
-    row.appendChild(el('span', 'lb-prog-name', T(m.zh, m.en)));
+    row.appendChild(LabCatalogText.render(el('span', 'lb-prog-name'), T(m.zh, m.en)));
     const bar = el('span', 'lb-prog-bar');
     const fill = el('span', 'lb-prog-fill');
     fill.style.width = (total ? 100 * got / total : 0) + '%';
@@ -353,7 +353,7 @@
       order.forEach(function (b) {
         let bg = 0, bt = 0;
         groups[b].forEach(function (m) { (all[m.id] || []).forEach(function (x) { bt += starsOf(x); bg += gotOf(x); }); });
-        const name = el('span', 'lb-br-name', BN[b] ? T(BN[b].zh, BN[b].en) : (b === '-' ? T('其他', 'Other') : b));
+        const name = LabCatalogText.render(el('span', 'lb-br-name'), BN[b] ? T(BN[b].zh, BN[b].en) : (b === '-' ? T('其他', 'Other') : b));
         const num = el('small', 'lb-br-num', groups[b].length + T(' 個實驗・', ' labs · ') + bg + ' / ' + bt + ' ★');
         const g = fold('b-' + b, [name, num], false, 'lb-fold-g lb-fold-br');
         groups[b].forEach(function (m) { g.body.appendChild(progressFold(m, all)); });

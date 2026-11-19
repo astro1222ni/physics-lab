@@ -37,7 +37,7 @@ W.LAB_SUBJECTS.forEach(s => { SUBJ[s.id] = s; });
 
 // 首頁的英文屬性把撇號寫成 &#x27;，照同樣寫法，套用現況目錄時首頁才會一字不差
 const esc = t => String(t).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#x27;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const escText = t => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const { html: formulaHTML, plain } = require('../js/settings.js');
 
 const HD = require('./home-data.cjs');
 const subjectPages = W.LAB_SUBJECTS.filter(s => fs.existsSync(path.join(ROOT, s.page + '.html')));
@@ -133,15 +133,20 @@ for (const { d } of dirs) {
     const headEnd = block.indexOf('      </header>\n') + '      </header>\n'.length;
     const head = block.slice(0, headEnd);
     const oldNav = (block.match(/ {6}<nav class="chapter-nav"[^>]*>/) || [])[0];
-    const bzh = (head.match(/<h2[^>]*>([^<]+)<\/h2>/) || [])[1] || b.id;
-    const ben = (head.match(/<h2 data-en="([^"]+)"/) || [])[1] || b.id;
+    const bzh = plain(HD.readCatalogText((head.match(/<h2(?:[^>"']|"[^"]*"|'[^']*')*>([\s\S]*?)<\/h2>/) || [])[1] || b.id));
+    const ben = plain(HD.readCatalogText((head.match(/<h2 data-en(?:-html)?="([^"]+)"/) || [])[1] || b.id));
     let nav = '';
     if (!solo) {
-      nav = (oldNav || '      <nav class="chapter-nav" aria-label="' + esc(bzh) + '的各章" data-en-aria-label="Chapters in ' + ben + '">') + '\n';
+      nav = (oldNav || '      <nav class="chapter-nav" aria-label="' + esc(bzh) + '的各章" data-en-aria-label="Chapters in ' + esc(ben) + '">') + '\n';
       for (const c of b.chapters) {
         const live = (c.modules || []).filter(mo => liveWhere[mo]);
-        if (live.length) nav += '        <a href="#' + c.id + '" data-en="' + esc(c.en) + '">' + escText(c.zh) + '</a>\n';
-        else { nav += '        <span class="soon" id="' + c.id + '" title="實驗製作中" data-en-title="Experiments coming soon" data-en="' + esc(c.en) + '">' + escText(c.zh) + '</span>\n'; soonCh++; }
+        const zh = HD.readCatalogText(c.zh), en = HD.readCatalogText(c.en);
+        // 導覽連結是 flex 容器，公式與內文放在同一個元素內才能貼齊基線。
+        const formatted = plain(zh) !== zh || plain(en) !== en;
+        const translation = formatted ? '' : ' ' + HD.formulaTranslation(en);
+        const label = formatted ? HD.formulaLabel(zh, en) : formulaHTML(zh);
+        if (live.length) nav += '        <a href="#' + c.id + '"' + translation + '>' + label + '</a>\n';
+        else { nav += '        <span class="soon" id="' + c.id + '" title="實驗製作中" data-en-title="Experiments coming soon"' + translation + '>' + label + '</span>\n'; soonCh++; }
       }
       nav += '      </nav>\n';
     }
@@ -155,7 +160,7 @@ for (const { d } of dirs) {
       anyLive = true;
       if (solo) chapters += '        <section class="chapter solo" id="' + c.id + '" style="--n:' + live.length + '">\n';
       else chapters += '        <section class="chapter" id="' + c.id + '" aria-labelledby="h-' + c.id + '" style="--n:' + live.length + '">\n' +
-        '          <h3 class="chapter-head" id="h-' + c.id + '"><span data-en="' + esc(c.en) + '">' + escText(c.zh) + '</span></h3>\n';
+        '          <h3 class="chapter-head" id="h-' + c.id + '">' + HD.formulaLabel(HD.readCatalogText(c.zh), HD.readCatalogText(c.en)) + '</h3>\n';
       chapters += '          <div class="modules">\n' + live.map(mo => liveWhere[mo].card).join('') + '          </div>\n        </section>\n';
     }
     if (!anyLive) chapters += '        <p class="branch-soon" data-en="Experiments for this branch are being built — check back soon.">這個分支的實驗製作中，敬請期待。</p>\n';

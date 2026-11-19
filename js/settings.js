@@ -15,6 +15,21 @@
 (function () {
   'use strict';
 
+  // 目錄文字在畫面上只允許無屬性的上下標。建置工具也用同一份轉換。
+  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
+  const asText = value => String(value == null ? '' : value);
+  function formulaHTML(value) {
+    return asText(value).replace(/[&<>"']/g, ch => entities[ch])
+      .replace(/&lt;(\/?(?:sub|sup))&gt;/g, '<$1>');
+  }
+  const catalogText = {
+    html: formulaHTML,
+    plain: value => asText(value).replace(/<\/?(?:sub|sup)>/g, ''),
+    render: function (el, value) { el.innerHTML = formulaHTML(value); return el; }
+  };
+  if (typeof module === 'object' && module.exports) { module.exports = catalogText; return; }
+  window.LabCatalogText = catalogText;
+
   const KEY = 'lab-settings';
   // 分享連結的設定碼（#s=…）：頁面程式可能會改寫網址的 #，先在這裡記下來給 classroom.js 還原
   window.LAB_SHARE_HASH = /^#s=[\w-]+/.test(location.hash) ? location.hash : '';
@@ -387,6 +402,7 @@
  * IG、臉書：跳出頁內小視窗，按鈕用 intent://（Android→Chrome）或 x-safari-https://（iPhone→Safari），另附複製網址。escape() 回傳 true 表示已處理，登入程式就不要再呼叫 Firebase。 */
 (function () {
   'use strict';
+  if (typeof window === 'undefined') return;
   const ua = navigator.userAgent || '';
   function kind() {
     if (/\bLine\//i.test(ua)) return 'line';

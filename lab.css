@@ -421,7 +421,7 @@ a.search-item:hover, a.search-item:focus-visible { border-color: var(--c, var(--
 .search-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
 .search-meta { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--c, var(--accent)); }
 .search-title { font-size: calc(17px * var(--fs, 1)); font-weight: 700; }
-.search-title mark { background: var(--accent-soft); background: color-mix(in srgb, var(--c, var(--accent)) 24%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.search-title mark, .search-desc mark { background: var(--accent-soft); background: color-mix(in srgb, var(--c, var(--accent)) 24%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
 .search-why { font-size: calc(13px * var(--fs, 1)); color: var(--muted); }
 a.search-item .search-title::after { content: " →"; color: var(--c, var(--accent)); }
 
@@ -1424,6 +1424,9 @@ html.has-subjbar .branch, html.has-subjbar .chapter { scroll-margin-top: calc(74
     font-size: calc(13.5px * var(--fs, 1)); line-height: 1.5;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden;
   }
+  .related .module.live .module-thumb { grid-column: 1; grid-row: 1 / span 3; }
+  .related .module.live > :is(.related-tag, h3, p) { grid-column: 2; }
+  .related .related-tag { margin-top: 0; }
 }
 
 /* ---------- 11/14 改名「讓倪動手⚡高中全科模擬實驗室」：鎳元素格（核種寫法：左上「倪」放在質量數的位置、左下原子序 28，站長 11/14 指定）、Astro Ni 的 A 和 I、四大類 ---------- */

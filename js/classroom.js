@@ -502,6 +502,7 @@
     return out;
   }
   function renderRelated() {
+    const { render: renderFormula } = window.LabCatalogText;
     const cat = window.LAB_CATALOG || [];
     const me = cat.find(function (x) { return x.s === SLUG; });
     const notes = document.querySelector('.notes');
@@ -543,11 +544,11 @@
       tag.className = 'related-tag';
       const dn = DOMAIN_NAMES[x.d];
       if (x._cross) a.classList.add('related-cross');
-      tag.textContent = (x._cross ? T('跨科連結｜', 'Across subjects | ') : '') + (dn ? T(dn[0] + '・', dn[1] + ' · ') : (x._cross ? T('物理・', 'Physics · ') : '')) + T(x.bzh, x.ben || x.bzh) + (x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '');
-      const t = document.createElement('h3');
-      t.textContent = T(x.zh, x.en || x.zh);
-      const p = document.createElement('p');
-      p.textContent = T(x.dzh, x.den || x.dzh);
+      const category = (x._cross ? T('跨科連結｜', 'Across subjects | ') : '') + (dn ? T(dn[0] + '・', dn[1] + ' · ') : (x._cross ? T('物理・', 'Physics · ') : ''));
+      const chapter = x.czh && x.czh !== x.bzh ? T('・' + x.czh, ' · ' + (x.cen || x.czh)) : '';
+      renderFormula(tag, category + T(x.bzh, x.ben || x.bzh) + chapter);
+      const t = renderFormula(document.createElement('h3'), T(x.zh, x.en || x.zh));
+      const p = renderFormula(document.createElement('p'), T(x.dzh, x.den || x.dzh));
       a.appendChild(img); a.appendChild(tag); a.appendChild(t); a.appendChild(p);
       grid.appendChild(a);
     });

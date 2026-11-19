@@ -3,6 +3,7 @@
   'use strict';
   const T = (zh, en) => window.LabSettings ? LabSettings.t(zh, en) : zh;
   const status = document.getElementById('home-status'); if (!status) return;
+  const { render: renderFormula, plain } = window.LabCatalogText;
   const version = document.currentScript.src.split('?')[1] || 'v=home-v2';
   function load(file) { return new Promise((resolve, reject) => { const s = document.createElement('script'); s.src = 'js/' + file + '?' + version; s.onload = resolve; s.onerror = reject; document.head.appendChild(s); }); }
   function el(tag, cls, value) { const e = document.createElement(tag); if (cls) e.className = cls; if (value != null) e.textContent = value; return e; }
@@ -31,7 +32,7 @@
   function recent() { return Object.keys(hist).filter(s => catalog.some(x => x.s === s)).sort((a, b) => hist[b].t - hist[a].t).slice(0, 3).map(s => catalog.find(x => x.s === s)); }
   function thumb(x) { const img = el('img', 'module-thumb'); img.dataset.thumb = x.s; img.alt = ''; img.width = 96; img.height = 60; img.loading = 'lazy'; return img; }
   function makeRecent(x, progress) {
-    const a = link(x.s + '.html', '', 'recent-lab'); a.dataset.hansSubject = window.LAB_SUBJECTS.find(s => s.dom === x.d).id; a.appendChild(thumb(x)); const box = el('span'); box.appendChild(el('strong', '', title(x)));
+    const a = link(x.s + '.html', '', 'recent-lab'); a.dataset.hansSubject = window.LAB_SUBJECTS.find(s => s.dom === x.d).id; a.appendChild(thumb(x)); const box = el('span'); box.appendChild(renderFormula(el('strong'), title(x)));
     if (progress != null) box.appendChild(el('small', '', T('完成 ' + progress + '/' + x.n, progress + '/' + x.n + ' missions done')));
     a.appendChild(box); return a;
   }
@@ -131,7 +132,7 @@
     const root = document.getElementById('recommendations'); root.replaceChildren();
     result.items.forEach(it => {
       const x = it.lab, sb = window.LAB_SUBJECTS.find(s => s.dom === x.d), a = link(x.s + '.html', '', 'entry-card'), subjectCard = document.querySelector('.subject-card[data-subject="' + sb.id + '"]');
-      a.dataset.hansSubject = sb.id; a.style.setProperty('--c', subjectCard.style.getPropertyValue('--c')); a.appendChild(thumb(x)); a.appendChild(el('span', 'subject-tag', T(sb.zh, sb.en))); a.appendChild(el('h3', '', title(x)));
+      a.dataset.hansSubject = sb.id; a.style.setProperty('--c', subjectCard.style.getPropertyValue('--c')); a.appendChild(thumb(x)); a.appendChild(el('span', 'subject-tag', T(sb.zh, sb.en))); a.appendChild(renderFormula(el('h3'), title(x)));
       const p = it.reason && result.byId[it.reason.source], type = it.reason?.type; let reason;
       if (p) { const name = core.shortName(title(p));
         if (type === 'chapter') reason = T('同一章：你玩過〈' + name + '〉', 'Same chapter as ' + name);
@@ -139,7 +140,7 @@
         else if (type === 'branch') reason = T('同一領域：你玩過〈' + name + '〉', 'Same field as ' + name);
         else reason = T('因為你玩過〈' + name + '〉', 'Because you tried ' + name);
       } else reason = type === 'starter' ? T(x.bzh + '入門', 'Starter · ' + x.ben) : T('換個領域，試試新的發現。', 'Try a new field. Find a new idea.');
-      const note = el('p', 'entry-note', reason); note.title = reason; a.appendChild(note); root.appendChild(a);
+      const note = renderFormula(el('p', 'entry-note'), reason); note.title = plain(reason); a.appendChild(note); root.appendChild(a);
     });
     if (window.LabThumbs) LabThumbs.apply(root);
   }

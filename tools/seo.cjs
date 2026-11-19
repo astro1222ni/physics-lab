@@ -17,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { plain } = require('../js/settings.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://lab.astroni.org/';
@@ -27,29 +28,18 @@ const OG_ONLY = args.includes('--og-only'); // 只做分享卡圖片，不改任
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const ent = s => String(s).replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const strip = s => ent(String(s).replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
 
-// ---------- 從各科目頁讀出每個實驗的標題、說明、分支、章名 ----------
+// ---------- 沿用已清理的目錄，供 meta、結構化資料和分享圖使用的文字一律去掉上下標標籤 ----------
 const index = read('index.html');
 const { subjects, asset } = require('./home-data.cjs');
-const subjectSource = subjects.map(s => read(s.page + '.html')).join('\n');
 const catalogWindow = {}; new Function('window', read('js/catalog.js'))(catalogWindow);
-const labs = [];
-{
-  let branch = null, chapter = null;
-  const re = /<section class="branch" id="([\w-]+)"[^>]*>[\s\S]*?<h2 data-en="([^"]*)">([^<]*)<\/h2>|<h3 class="chapter-head"[^>]*><span data-en="([^"]*)">([^<]*)<\/span><\/h3>|<section class="chapter[^"]*"[^>]*>|<a class="module live" href="([\w-]+)\.html" data-module="([\w-]+)"[^>]*>([\s\S]*?)<\/a>/g;
-  for (let m; (m = re.exec(subjectSource));) {
-    if (m[1]) { branch = { id: m[1], en: ent(m[2]), zh: ent(m[3]) }; chapter = null; }
-    else if (m[4] !== undefined) chapter = { en: ent(m[4]), zh: ent(m[5]) };
-    else if (m[0].startsWith('<section class="chapter')) chapter = null;
-    else if (m[7]) {
-      const body = m[8];
-      const h = body.match(/<h4 data-en="([^"]*)">([\s\S]*?)<\/h4>/);
-      const p = body.match(/<p data-en="([^"]*)">([\s\S]*?)<\/p>/);
-      labs.push({ slug: m[7], zh: strip(h[2]), en: ent(h[1]), dzh: strip(p[2]), den: ent(p[1]), branch, chapter: chapter || { zh: branch.zh, en: branch.en }, subject: subjects.find(s => s.branches.includes(branch.id)) });
-    }
-  }
-}
+const catalog = catalogWindow.LAB_CATALOG;
+const labs = catalog.map(x => ({
+  slug: x.s, zh: plain(x.zh), en: plain(x.en), dzh: plain(x.dzh),
+  branch: { id: x.b, zh: plain(x.bzh), en: plain(x.ben) },
+  chapter: { id: x.c, zh: plain(x.czh), en: plain(x.cen) },
+  subject: subjects.find(s => s.dom === x.d)
+}));
 if (!labs.length) { console.error('首頁找不到已上線的實驗卡片'); process.exit(1); }
 
 const SITE_ZH = '讓倪動手⚡高中全科模擬實驗室', SITE_EN = 'Astro Ni Lab';
@@ -118,7 +108,7 @@ function block(pg) {
   if (pg.kind === 'lab' || pg.kind === 'subject') {
     const s = pg.kind === 'lab' ? pg.lab.subject : pg.subject;
     const crumbs = [{ name: '首頁', item: SITE }, { name: s.zh, item: SITE + s.page + '.html' }];
-    if (pg.kind === 'lab') crumbs.push({ name: pg.lab.branch.zh, item: SITE + s.page + '.html#' + pg.lab.branch.id }, { name: pg.lab.chapter.zh, item: SITE + s.page + '.html#' + (catalogWindow.LAB_CATALOG.find(x => x.s === pg.slug) || {}).c }, { name: pg.lab.zh, item: pg.url });
+    if (pg.kind === 'lab') crumbs.push({ name: pg.lab.branch.zh, item: SITE + s.page + '.html#' + pg.lab.branch.id }, { name: pg.lab.chapter.zh, item: SITE + s.page + '.html#' + pg.lab.chapter.id }, { name: pg.lab.zh, item: pg.url });
     L.push('<script type="application/ld+json">' + JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: crumbs.map((c, i) => Object.assign({ '@type': 'ListItem', position: i + 1 }, c)) }).replace(/</g, '\\u003c') + '</script>');
   }
   L.push('<!-- SEO-END -->');
@@ -134,7 +124,7 @@ for (const pg of OG_ONLY ? [] : pages) {
   const before = s;
   s = s.replace(/\n?[ \t]*<!-- SEO-BEGIN[\s\S]*?<!-- SEO-END -->/, '');
   s = s.replace(/\n[ \t]*<meta name="description"[^>]*>/g, ''); // 舊的說明由工具統一產生
-  s = s.replace(/(<title[^>]*>[\s\S]*?<\/title>)/, '$1\n' + block(pg));
+  s = s.replace(/<title[^>]*>[\s\S]*?<\/title>/, title => title + '\n' + block(pg));
   if (s !== before) { fs.writeFileSync(f, s); changed++; }
 }
 console.log('更新 meta：' + changed + ' 頁');
@@ -145,7 +135,7 @@ if (!OG_ONLY) {
   const urls = pages.map(pg => {
     const alts = [['zh-Hant', pg.url], ['zh-Hans', pg.url + '?lang=zh-Hans'], ['en', pg.url + '?lang=en'], ['x-default', pg.url]]
       .map(([h, u]) => `    <xhtml:link rel="alternate" hreflang="${h}" href="${esc(u)}"/>`).join('\n');
-    const own = pg.kind === 'subject' ? catalogWindow.LAB_CATALOG.filter(x => x.d === pg.subject.dom) : catalogWindow.LAB_CATALOG.filter(x => x.s === pg.slug);
+    const own = pg.kind === 'subject' ? catalog.filter(x => x.d === pg.subject.dom) : catalog.filter(x => x.s === pg.slug);
     const lastmod = own.map(x => x.u).sort().pop() || today;
     return `  <url>\n    <loc>${pg.url}</loc>\n    <lastmod>${lastmod}</lastmod>\n${alts}\n  </url>`;
   });
