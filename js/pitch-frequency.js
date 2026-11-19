@@ -25,6 +25,7 @@
   const WIN_MS = 10;                         // 波形窗固定 10 ms
   const PLAY_MAX = 6;                        // 「▶ 播放」的持續音最長幾秒（純音由 MusicAudio 限制在 4 秒以內）
   const CMP_DUR = 1.25, CMP_GAP = 0.3;       // 「先 A 後 B」每個音幾秒、中間空幾秒
+  const MAX_RECS = 12;
   const PARTIALS = { pure: [1], soft: [1, 0.45, 0.26, 0.15, 0.09, 0.05] };
   const GAIN = 0.32;
 
@@ -38,7 +39,11 @@
     offHintShown: false, hmode: 'lin'
   };
   const cur = function () { return PC.analyze(state.f, state.a4); };
-  const lite = function () { const a = cur(); return { f: state.f, a4: state.a4, midi: a.midi, name: a.name, cents: a.cents }; };
+  function note(f, a4) {
+    const a = PC.analyze(f, a4);
+    return { f: f, a4: a4, midi: a.midi, name: a.name, cents: a.cents };
+  }
+  const lite = function () { return note(state.f, state.a4); };
 
   // ---------- 色彩與字體 ----------
   let C = {}, fs = 1;
@@ -85,11 +90,22 @@
   // 控制項
   // =====================================================================
   const elF = $('freq'), elFo = $('freqo'), elA = $('a4'), elAo = $('a4o');
-  if (window.LabNum) window.LabNum.register(elF, { toValue: PC.fFromPos, toPos: PC.posFromF, min: PC.F_MIN, max: PC.F_MAX, decimals: 2 });
+  const freqPosition = function (f) { return Math.round(PC.posFromF(f)); };
+  if (window.LabNum) {
+    // 讀數重新開啟輸入框時，沿用目前位置所對應的精確設定。
+    window.LabNum.register(elF, {
+      toValue: function (pos) { return pos === freqPosition(state.f) ? state.f : PC.fFromPos(pos); },
+      toPos: PC.posFromF, min: PC.F_MIN, max: PC.F_MAX, decimals: 2
+    });
+    window.LabNum.register(elA, {
+      toValue: function (pos) { return pos === Math.round(state.a4) ? state.a4 : pos; },
+      min: +elA.min, max: +elA.max
+    });
+  }
   /** 讓滑桿的位置跟上 state（不送事件；打字的精確值以 state 為準） */
   function syncSliders() {
     if (window.LabNum) { window.LabNum.clear(elF); window.LabNum.clear(elA); }
-    elF.value = String(Math.round(PC.posFromF(state.f)));
+    elF.value = String(freqPosition(state.f));
     elA.value = String(Math.round(state.a4));
     elFo.textContent = fx(state.f, 2);
     elAo.textContent = fx(state.a4, Math.abs(state.a4 - Math.round(state.a4)) > 1e-9 ? 2 : 0);
@@ -255,21 +271,25 @@
     });
     setHTML('recWrap', h + '</tbody></table>');
   }
+  function comparison(A, B) {
+    return { A: A, B: B, cents: PC.cents(A.f, B.f), dHz: B.f - A.f };
+  }
   $('storeA').addEventListener('click', function () { state.A = lite(); renderMem(); requestDraw(); say(T('存成 A：', 'Stored as A: ') + describe(cur())); });
   $('storeB').addEventListener('click', function () { state.B = lite(); renderMem(); requestDraw(); say(T('存成 B：', 'Stored as B: ') + describe(cur())); });
   $('cmp').addEventListener('click', function () {
     if (!(state.A && state.B)) { say(T('先用「存成 A」「存成 B」存兩個音。', 'First store two notes with “Store as A” and “Store as B”.')); return; }
     stopEverything();
     const on = soundCheck();
-    const A = state.A, B = state.B, c = PC.cents(A.f, B.f), dHz = B.f - A.f;
+    const A = state.A, B = state.B, record = comparison(A, B);
+    const c = record.cents, dHz = record.dHz;
     if (on) {
       const t0 = AU.now() + 0.05, P = PARTIALS[state.timbre];
       AU.tone({ f0: A.f, partials: P, dur: CMP_DUR, gain: GAIN, attack: 0.03, release: 0.2, at: t0 });
       AU.tone({ f0: B.f, partials: P, dur: CMP_DUR, gain: GAIN, attack: 0.03, release: 0.2, at: t0 + CMP_DUR + CMP_GAP });
     }
     state.cmp = { t0: performance.now() };
-    state.recs.push({ A: A, B: B, cents: c, dHz: dHz });
-    if (state.recs.length > 12) state.recs.shift();
+    state.recs.push(record);
+    if (state.recs.length > MAX_RECS) state.recs.shift();
     renderRecs(); updateStop(); requestDraw();
     emit('compare', { A: Object.assign({}, A), B: Object.assign({}, B), cents: c, dHz: dHz });
     say(T('A → B：相差 ' + sg(dHz, 2) + ' Hz，音程 ' + sg(c, 1) + ' 音分（' + fx(Math.abs(c) / 100, 2) + ' 個半音），頻率比 ' + fx(B.f / A.f, 4) + '。',
@@ -329,7 +349,11 @@
   $('stop').addEventListener('click', function () { stopEverything(); say(T('已停止。', 'Stopped.')); });
   AU.onChange(function () { if (state.voice && !AU.playing()) state.voice = null; updateStop(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && busy()) stopEverything(); });
-  document.addEventListener('visibilitychange', function () { if (document.hidden) stopEverything(); });
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) return;
+    stopEverything();
+    saveSession();
+  });
 
   // 狀態列、音效開關
   let sayTimer = 0;
@@ -949,18 +973,57 @@
   });
 
   // ---------- 分享目前設定：頻率與標準音（精確值）、兩個記憶（寫法、音色、唱名由 classroom.js 記錄） ----------
+  function pitchSettings() { return { f: state.f, a: state.a4, A: state.A, B: state.B }; }
+  function restoreNote(x) {
+    if (!x || !Number.isFinite(x.f) || !Number.isFinite(x.a4)) return null;
+    return note(PC.clampF(x.f), PC.clampA4(x.a4));
+  }
+  function applyPitchSettings(o) {
+    if (Number.isFinite(o.a)) state.a4 = PC.clampA4(o.a);
+    if (Number.isFinite(o.f)) state.f = PC.clampF(o.f);
+    state.A = restoreNote(o.A);
+    state.B = restoreNote(o.B);
+  }
   (window.LAB_SHARE_EXTRAS = window.LAB_SHARE_EXTRAS || []).push({
-    get: function () { return { f: state.f, a: state.a4, A: state.A, B: state.B }; },
+    get: pitchSettings,
     set: function (o) {
       if (!o || typeof o !== 'object') return;
-      const okNum = function (v) { return typeof v === 'number' && isFinite(v); };
-      if (okNum(o.a)) state.a4 = PC.clampA4(o.a);
-      if (okNum(o.f)) state.f = PC.clampF(o.f);
-      const okMem = function (x) { return x && okNum(x.f) && okNum(x.a4) ? (function () { const f = PC.clampF(x.f), a4 = PC.clampA4(x.a4), q = PC.analyze(f, a4); return { f: f, a4: a4, midi: q.midi, name: q.name, cents: q.cents }; })() : null; };
-      state.A = okMem(o.A); state.B = okMem(o.B);
+      applyPitchSettings(o);
       state.committed = lite();
       syncSliders(); renderA4Hint(); renderMem(); freqChanged(true);
     }
+  });
+
+  // 分享連結由 classroom.js 套用，與同一分頁的續作設定各自保留。
+  const SESSION_KEY = 'lab:pitch-frequency:v1';
+  const shared = /^#s=[\w-]+/.test(window.LAB_SHARE_HASH || location.hash);
+  function saveSession() {
+    if (shared) return;
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+        ...pitchSettings(), timbre: state.timbre, flat: state.flat, solfege: state.solfege,
+        recs: state.recs, hmode: state.hmode,
+        view: $('view3d').getAttribute('aria-pressed') === 'true' ? '3d' : '2d'
+      }));
+    } catch (e) { /* 瀏覽器不允許暫存時仍可操作。 */ }
+  }
+  function readSession() {
+    if (shared) return null;
+    try {
+      const saved = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+      return saved && typeof saved === 'object' ? saved : null;
+    } catch (e) { return null; }
+  }
+  function restoreComparison(r) {
+    const A = restoreNote(r && r.A), B = restoreNote(r && r.B);
+    return A && B ? comparison(A, B) : null;
+  }
+  window.addEventListener('pagehide', saveSession);
+  window.addEventListener('pageshow', function (e) {
+    if (!e.persisted) return;
+    // 快取保留這份文件的實驗狀態。回來時讓播放維持停止。
+    state.committed = lite();
+    stopEverything();
   });
 
   // 給測試用的介面（不影響畫面）
@@ -984,6 +1047,15 @@
   readColors();
   state.f = PC.clampF(val(elF));
   state.a4 = PC.clampA4(val(elA));
+  const saved = readSession();
+  if (saved) {
+    applyPitchSettings(saved);
+    state.timbre = saved.timbre === 'pure' ? 'pure' : 'soft';
+    state.flat = saved.flat === true;
+    state.solfege = saved.solfege === true;
+    state.hmode = saved.hmode === 'log' ? 'log' : 'lin';
+    if (Array.isArray(saved.recs)) state.recs = saved.recs.slice(-MAX_RECS).map(restoreComparison).filter(Boolean);
+  }
   state.committed = lite();
   document.querySelectorAll('.slider').forEach(function (s) { if (s.querySelector('#freq, #a4')) s.setAttribute('data-share-skip', ''); });
   document.querySelector('.presets').setAttribute('data-share-skip', '');
@@ -1008,4 +1080,5 @@
   } else window.addEventListener('resize', resize);
   resize();
   scrollToCurrent(true);
+  if (saved && saved.view === '3d') setView('3d');
 })();
