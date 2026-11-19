@@ -1,6 +1,12 @@
 /* diffusion-osmosis.js — 「擴散與滲透」的畫面與互動（物理計算全部在 diffusion-osmosis-core.js；3D 在 diffusion-osmosis-3d.js，切換時才載入） */
 (function () {
   'use strict';
+
+  const shortLandscape = matchMedia('(orientation: landscape) and (max-height: 600px)');
+  function drawingWidth(canvas) {
+    const width = canvas.parentElement.clientWidth;
+    return shortLandscape.matches ? Math.max(720, width) : width;
+  }
   const K = window.DiffOsmoCore;
   const D = window.LabDraw;
   const $ = function (id) { return document.getElementById(id); };
@@ -74,9 +80,8 @@
   const pcv = $('plot'), pctx = pcv.getContext('2d');
   function fit(c, g, h) {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = c.clientWidth || 300;
-    if (h) c.style.height = h + 'px';
-    const hh = c.clientHeight || h || 300;
+    const w = drawingWidth(c) || 300;
+    const hh = h || 300;
     c.width = Math.round(w * dpr); c.height = Math.round(hh * dpr);
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     return { w: w, h: hh, dpr: dpr };
@@ -87,8 +92,8 @@
     if (S.mode === 'osmo') return Math.round(clamp(w * 0.62, 400, 520));
     return w >= 560 ? Math.round(clamp(w * 0.5, 340, 420)) : 560;
   }
-  function resizeMain() { mainSize = fit(cv, ctx, mainHeight(cv.clientWidth || 300)); requestDraw(); }
-  function resizePlot() { plotSize = fit(pcv, pctx, pcv.clientWidth < 420 ? 200 : 230); requestDraw(); }
+  function resizeMain() { mainSize = fit(cv, ctx, mainHeight(drawingWidth(cv) || 300)); requestDraw(); }
+  function resizePlot() { plotSize = fit(pcv, pctx, drawingWidth(pcv) < 420 ? 200 : 230); requestDraw(); }
 
   // =====================================================================
   // 擴散：畫面
@@ -1225,7 +1230,16 @@
 
   // ---------- 畫布：點粒子追蹤、拖活塞 ----------
   let pdrag = null;
-  function evPos(c, ev) { const r = c.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+  function evPos(c, ev) {
+    const r = c.getBoundingClientRect(), scale = drawingWidth(c) / r.width;
+    return [(ev.clientX - r.left) * scale, (ev.clientY - r.top) * scale];
+  }
+  function movePiston(delta) {
+    OS.P = clamp(Math.round((OS.P + delta) * 100) / 100, 0, 6);
+    if (window.LabNum) window.LabNum.set(elP, OS.P);
+    refreshOutputs();
+    updateReadouts();
+  }
   function hitPiston(p) { return S.mode === 'osmo' && pistonHit && p[0] >= pistonHit.x0 && p[0] <= pistonHit.x1 && p[1] >= pistonHit.y0 && p[1] <= pistonHit.y1; }
   function nearestParticle(p) {
     const L = layoutDiff(mainSize.w), q = [0, 0, 0];
@@ -1278,7 +1292,7 @@
         acted();
         if (S.mode === 'diff') { const d = dx || dy; if (!d) return false; trackParticle(((DF.track[DF.track.length - 1] || 0) + d * (big ? 10 : 1) + DF.cloud.N) % DF.cloud.N, true); return true; }
         // 滲透：往下（或往右）＝把活塞往下壓
-        if (S.mode === 'osmo') { const d = -dy || dx; if (!d) return false; OS.P = clamp(Math.round((OS.P + d * (big ? 0.5 : 0.05)) * 100) / 100, 0, 6); if (window.LabNum) window.LabNum.set(elP, OS.P); refreshOutputs(); updateReadouts(); return true; }
+        if (S.mode === 'osmo') { const d = -dy || dx; if (!d) return false; movePiston(d * (big ? 0.5 : 0.05)); return true; }
         const d = dx || dy; if (!d) return false;
         CS.C = clamp(CS.C + d * (big ? 10 : 1), 0, 600); if (window.LabNum) window.LabNum.set(elCC, CS.C); refreshOutputs(); updateReadouts(); return true;
       },
@@ -1417,7 +1431,7 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    const watch = function (el, fn) { let lw = 0; new ResizeObserver(function () { if (el.clientWidth !== lw) { lw = el.clientWidth; fn(); } }).observe(el); };
+    const watch = function (el, fn) { let lw = 0; new ResizeObserver(function () { if (drawingWidth(el) !== lw) { lw = drawingWidth(el); fn(); } }).observe(el.parentElement); };
     watch(cv, resizeMain); watch(pcv, resizePlot);
   } else window.addEventListener('resize', function () { resizeMain(); resizePlot(); });
   resizeMain(); resizePlot();
@@ -1427,4 +1441,7 @@
   requestDraw();
   // 測試用（Playwright）：讀取狀態
   window.__do = { S: S, DF: DF, OS: OS, CS: CS, K: K, missionData: missionData, pistonHit: function () { return pistonHit; } };
+
+  $('pistonPrev').addEventListener('click', function () { acted(); movePiston(-0.05); });
+  $('pistonNext').addEventListener('click', function () { acted(); movePiston(0.05); });
 })();
