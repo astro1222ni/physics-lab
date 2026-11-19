@@ -57,7 +57,7 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (Math.max(11, px) * fs).toFixed(1) + 'px ' + FONT; }
   const stepColor = function (s) { return s === 1 ? C['sm-h'] : s === 2 ? C['sm-w'] : C['sm-a']; };
   const stepCls = function (s) { return s === 1 ? 'h' : s === 2 ? 'w' : 'a'; };
   const stepWord = function (s) { return s === 1 ? T('半', 'H') : s === 2 ? T('全', 'W') : s === 3 ? T('增二', 'A2') : String(s); };
@@ -539,16 +539,23 @@
   // =====================================================================
   const cv = $('cv'), ctx = cv.getContext('2d');
   let W = 600, H = 420, L = null;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
-    const lab = 0;
-    if (W >= 640) {
+    if (compactPlots.matches) {
+      H = Math.min(W, 360, Math.max(170, window.innerHeight - 132));
+      L = {
+        view: plotView.value, cx: W / 2, cy: H / 2, R: Math.min(W, H) / 2 - 12,
+        grid: { x: 4, y: 4, w: W - 8, h: H - 8 }
+      };
+    } else if (W >= 640) {
       H = Math.round(Math.max(380, Math.min(500, W * 0.52)));
       const lw = Math.round(W * 0.5);
       const R = Math.max(90, Math.min(lw / 2 - 16, H / 2 - 16));
       L = { wide: true, cx: lw / 2, cy: H / 2, R: R, grid: { x: lw + 4, y: 12, w: W - lw - 16, h: H - 24 } };
     } else {
       const R = Math.max(80, Math.min(W / 2 - 12, 175));
-      const clockH = 2 * R + 24 + lab;
+      const clockH = 2 * R + 24;
       const gridH = Math.round(70 + 8 * 30 * Math.max(1, fs * 0.92));
       H = clockH + gridH;
       L = { wide: false, cx: W / 2, cy: 12 + R, R: R, grid: { x: 8, y: clockH, w: W - 16, h: gridH - 10 } };
@@ -767,8 +774,8 @@
   }
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawClock(now);
-    drawGrid(now);
+    if (L.view !== 'grid') drawClock(now);
+    if (L.view !== 'clock') drawGrid(now);
   }
 
   // 點畫布：鐘面的格子 → 加入或移出音；階梯的列 → 換調式
@@ -776,7 +783,7 @@
     if (!L) return;
     const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
     const dx = x - L.cx, dy = y - L.cy, d = Math.hypot(dx, dy);
-    if (d <= L.R + 4 && d >= L.R * 0.45) {
+    if (L.view !== 'grid' && d <= L.R + 4 && d >= L.R * 0.45) {
       let a = Math.atan2(dy, dx) + Math.PI / 2;
       const pc = mod(Math.round(a / TAU * 12), 12);
       const m = 60 + pc;
@@ -784,15 +791,15 @@
       return;
     }
     const g = L.grid;
-    if (x >= g.x && x <= g.x + g.w) {
+    if (L.view !== 'clock' && x >= g.x && x <= g.x + g.w) {
       const row = gridRows.filter(function (q) { return q.id && y >= q.y0 && y < q.y1; })[0];
       if (row) { const b = document.querySelector('[data-ladder="' + row.id + '"]'); if (b) b.click(); }
     }
   });
 
   function updateCanvasLabels() {
-    cv.setAttribute('aria-label', T('鐘面：' + scaleName() + '，音是 ' + A.names.join(' ') + '，步伐 ' + stepsText(A.steps) + '。旁邊（手機在下面）是主音 ' + A.tonicName + ' 的亮暗階梯：七個調式由亮到暗，每一列只比上一列低一個音。也可以用下方的鍵盤選音。',
-      'Clock: ' + scaleName() + ', notes ' + A.names.join(' ') + ', steps ' + stepsText(A.steps) + '. Beside it (below on phones): the brightness ladder on ' + A.tonicName + ', seven modes from bright to dark, each row one note lower than the row above. The keyboard below can also pick notes.'));
+    cv.setAttribute('aria-label', T('鐘面：' + scaleName() + '，音是 ' + A.names.join(' ') + '，步伐 ' + stepsText(A.steps) + '。亮暗階梯的主音是 ' + A.tonicName + '，七個調式由亮到暗，每一列只比上一列低一個音。也可以用鍵盤選音。',
+      'Clock: ' + scaleName() + ', notes ' + A.names.join(' ') + ', steps ' + stepsText(A.steps) + '. The brightness ladder on ' + A.tonicName + ' shows seven modes from bright to dark, each row one note lower than the row above. You can also use the keyboard to pick notes.'));
   }
 
   // ---------- 動畫迴圈 ----------
@@ -965,6 +972,8 @@
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
 })();

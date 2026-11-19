@@ -109,6 +109,27 @@
     dl.readout dd { font-variant-numeric: tabular-nums; text-align: right; }
     dl.readout dd small { color: var(--muted); font-weight: 400; }
     dl.readout dd .pat { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .04em; word-break: break-all; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -127,6 +148,10 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D necklaces">2D 項鍊</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D torus knot">3D 環面結</button>
           </div>
+          <select id="plotView" aria-controls="cv" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="neck" data-en="Rhythm necklaces">節奏項鍊</option>
+            <option value="tl" data-en="Time grid">時間格</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
@@ -138,18 +163,19 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--pr-v1)&quot;></i>Voice 1"><i style="background:var(--pr-v1)"></i>聲部 1</span>
           <span data-en-html="<i style=&quot;background:var(--pr-v2)&quot;></i>Voice 2"><i style="background:var(--pr-v2)"></i>聲部 2</span>
           <span data-en-html="<i style=&quot;background:var(--pr-v3)&quot;></i>Voice 3"><i style="background:var(--pr-v3)"></i>聲部 3</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--pr-sync)&quot;></i>All voices together"><i class="dot" style="background:var(--pr-sync)"></i>全部一起落拍</span>
         </div>
-        <p class="hint l2" data-en="Tap a bead on a necklace (or a box in the time grid) to add or remove an accent. Keyboard: focus the picture, Enter picks a voice, ← → move along its beats, ↑ or ↓ toggles the accent.">點項鍊上的珠子（或下面時間格裡的格子）可以加上或拿掉重音。鍵盤：聚焦畫面後，Enter 選聲部，← → 移動到哪一格，↑ 或 ↓ 切換那一格有沒有重音。</p>
+        <p class="hint l2" data-en="Tap a bead on a necklace (or a box in the time grid) to add or remove an accent. Keyboard: focus the picture, Enter picks a voice, ← → move along its beats, ↑ or ↓ toggles the accent.">點項鍊上的珠子（或時間格裡的格子）可以加上或拿掉重音。鍵盤：聚焦畫面後，Enter 選聲部，← → 移動到哪一格，↑ 或 ↓ 切換那一格有沒有重音。</p>
         <p class="hint l3" data-en-html="3D: going around the ring is voice A’s cycle, going around the tube is voice B’s cycle; time runs along the line. The line closes only when both cycles end together. Drag to rotate, scroll or pinch to zoom.">3D：沿著大圈走是聲部 A 的循環，繞著管子走是聲部 B 的循環；時間沿著線前進。兩個循環同時走完，線才接回起點。拖曳旋轉，滾輪或雙指縮放。</p>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="對齊與速度|Timing" data-deck-order="1">
           <h2 data-en="Timing">對齊與速度</h2>
           <div class="seg full" role="group" aria-label="對齊方式" data-en-aria-label="Alignment">
             <button type="button" data-align="cycle" aria-pressed="true" data-en="Same cycle">同一個循環</button>
@@ -160,7 +186,7 @@
             <input id="bpm" type="range" min="40" max="200" step="1" value="180" data-decimals="0"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="傳統節奏型|Patterns" data-deck-order="2">
           <h2 data-en="Traditional rhythms (Toussaint 2005)">傳統節奏型（Toussaint 2005）</h2>
           <div class="presets" id="presets" role="group" aria-label="傳統節奏型" data-en-aria-label="Traditional rhythms">
             <button type="button" data-preset="tresillo" data-en="Cuban tresillo">古巴 tresillo</button>
@@ -172,7 +198,7 @@
           <p class="hint" id="presetHint" data-en="Each button puts the rhythm in voice 1 and a steady four-beat pulse in voice 2.">每個按鈕把節奏型放進聲部 1，聲部 2 是穩定的四拍。</p>
         </section>
 
-        <section class="card voice" id="card0">
+        <section class="card voice" id="card0" data-deck="聲部 1|Voice 1" data-deck-order="3">
           <h2><span class="sw" style="background:var(--pr-v1)"></span><span data-en="Voice 1 (reference)">聲部 1（基準）</span></h2>
           <div class="seg full tim" role="group" aria-label="聲部 1 的音色" data-en-aria-label="Voice 1 sound">
             <button type="button" data-tim="0:low" aria-pressed="false" data-en="Low drum">低鼓</button>
@@ -189,7 +215,7 @@
           <p class="vread" id="vr0"></p>
         </section>
 
-        <section class="card voice" id="card1">
+        <section class="card voice" id="card1" data-deck="聲部 2|Voice 2" data-deck-order="4">
           <h2><span class="sw" style="background:var(--pr-v2)"></span><span data-en="Voice 2">聲部 2</span></h2>
           <label class="chk"><input type="checkbox" id="on1" checked><span data-en="Turn on voice 2">開啟聲部 2</span></label>
           <div class="seg full tim" role="group" aria-label="聲部 2 的音色" data-en-aria-label="Voice 2 sound">
@@ -207,7 +233,7 @@
           <p class="vread" id="vr1"></p>
         </section>
 
-        <section class="card voice off" id="card2">
+        <section class="card voice off" id="card2" data-deck="聲部 3|Voice 3" data-deck-order="5">
           <h2><span class="sw" style="background:var(--pr-v3)"></span><span data-en="Voice 3">聲部 3</span></h2>
           <label class="chk"><input type="checkbox" id="on2"><span data-en="Turn on voice 3">開啟聲部 3</span></label>
           <div class="seg full tim" role="group" aria-label="聲部 3 的音色" data-en-aria-label="Voice 3 sound">

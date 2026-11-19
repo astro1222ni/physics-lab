@@ -108,6 +108,27 @@
     dl.readout dd small { color: var(--muted); font-weight: 400; }
     .ok-txt { color: var(--cs-calm); font-weight: 700; }
     .bad-txt { color: var(--cs-rough); font-weight: 700; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -126,6 +147,11 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D curve">2D 曲線</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D chord surface">3D 和弦曲面</button>
           </div>
+          <select id="plotView" aria-controls="cv" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="curve" data-en="Dissonance curve">不協和曲線</option>
+            <option value="spec" data-en="Spectrum">頻譜</option>
+            <option value="wave" data-en="Beat waveform">拍頻波形</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
@@ -138,6 +164,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="pinbar l2">
           <button id="pin" type="button" data-en="Keep this curve" title="把目前的曲線留在圖上（虛線），換了音色或下方音之後可以比較；最多 4 條" data-en-title="Keep the current curve on the chart (dashed) to compare after changing the timbre or the lower note; up to 4">留下這條曲線</button>
           <button id="clear" type="button" disabled data-en="Clear all" title="清掉留下的舊曲線；滑桿與音色設定不變" data-en-title="Remove the kept curves; the sliders and timbre stay as they are">全部清除</button>
@@ -157,13 +184,17 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="兩個音|Two notes" data-deck-order="1">
           <h2 data-en="Two notes">兩個音</h2>
           <div class="slider"><label for="f1" data-en-html="Lower note f<sub>1</sub> (Hz)">下方音 f<sub>1</sub>（Hz）</label><output id="f1o"></output>
             <input id="f1" type="range" min="0" max="3600" step="1" value="1500" data-decimals="2"></div>
           <p class="hint tight" id="f1Note"></p>
           <div class="slider"><label for="rr" data-en-html="Frequency ratio r = f<sub>2</sub> / f<sub>1</sub>">頻率比 r = f<sub>2</sub> / f<sub>1</sub></label><output id="rro"></output>
             <input id="rr" type="range" min="0" max="1442" step="1" value="100" data-decimals="4"></div>
+        </section>
+
+        <section class="card" data-deck="音程|Intervals" data-deck-order="2">
+          <h2 data-en="Intervals">音程</h2>
           <div class="jumprow">
             <span data-en="Interval buttons jump to:">音程按鈕跳到：</span>
             <div class="seg" role="group" aria-label="音程按鈕跳到的比值" data-en-aria-label="Ratio used by the interval buttons">
@@ -189,7 +220,7 @@
           <p class="hint" id="jumpHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="音色|Timbre" data-deck-order="3">
           <h2 data-en="Timbre (both notes)">音色（兩個音一樣）</h2>
           <div class="seg full" role="group" aria-label="音色" data-en-aria-label="Timbre">
             <button type="button" data-mode="pure" aria-pressed="false" data-en="Pure tone">純音</button>
@@ -223,11 +254,11 @@
           </dl>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="三音和弦|Three notes" data-deck-order="4">
           <h2 data-en="Three-note chord (3D surface)">三音和弦（3D 曲面）</h2>
           <div class="slider"><label for="r2" data-en-html="Top note’s frequency ratio r<sub>2</sub>">最高音的頻率比 r<sub>2</sub></label><output id="r2o"></output>
             <input id="r2" type="range" min="0" max="1200" step="1" value="900" data-decimals="4"></div>
-          <button id="playChord" type="button" style="width:100%" data-en="▶ Play chord">▶ 播放和弦</button>
+          <button id="playChord" data-deck-top type="button" style="width:100%" data-en="▶ Play chord">▶ 播放和弦</button>
           <dl class="readout" style="margin-top:10px">
             <dt data-en="Three notes (Hz)">三個音（Hz）</dt><dd id="chF">—</dd>
             <dt data-en-html="Dissonance D<sub>3</sub>">不協和度 D<sub>3</sub></dt><dd id="chD">—</dd>

@@ -37,7 +37,7 @@
       .forEach(function (k) { C2[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     rgbCache = null;
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + px + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + Math.max(11, px) + 'px ' + FONT; }
   function num(v, dec) {
     if (v == null || !isFinite(v)) return '—';
     let s = v.toFixed(dec);
@@ -314,14 +314,18 @@
   // 畫布尺寸與版面
   // =====================================================================
   let dpr = 1, cw = 0, ch = 0, cw2 = 0, ch2 = 0, Lo = null;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
     const pad = cw < 480 ? 14 : 22;
-    const size = Math.min(cw - 2 * pad, 430);
-    const top = 38;
-    return { pad: pad, size: size, cx: cw / 2, cy: top + size / 2 + 8, R: size / 2, top: top, H: top + size + (cw < 560 ? 62 : 44), two: cw < 560 };
+    const top = 38, footer = cw < 560 ? 62 : 44;
+    const maxSize = compactPlots.matches ? Math.max(80, window.innerHeight - 132 - top - footer) : 430;
+    const size = Math.min(cw - 2 * pad, 430, maxSize);
+    return { pad: pad, size: size, cx: cw / 2, cy: top + size / 2 + 8, R: size / 2, top: top, H: top + size + footer, two: cw < 560 };
   }
   function resize() {
-    const w = cv.clientWidth;
+    stage.dataset.plot = compactPlots.matches ? plotView.value : 'all';
+    const w = cv.clientWidth || cv2.clientWidth;
     if (!w) return;
     dpr = Math.min(window.devicePixelRatio || 1, 3);
     cw = w;
@@ -330,7 +334,7 @@
     if (cv.style.height !== ch + 'px') cv.style.height = ch + 'px';
     cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
     cw2 = cv2.clientWidth || cw;
-    ch2 = cw2 < 560 ? 170 : 190;
+    ch2 = compactPlots.matches ? Math.min(240, Math.max(160, innerHeight - 132)) : (cw2 < 560 ? 170 : 190);
     if (cv2.style.height !== ch2 + 'px') cv2.style.height = ch2 + 'px';
     cv2.width = Math.round(cw2 * dpr); cv2.height = Math.round(ch2 * dpr);
     requestDraw();
@@ -451,7 +455,7 @@
     let txt = name;
     if (state.sel !== 'all') { const o = C.mode(inf, state.sel); txt += T('・模態 ', ' · mode ') + modeName(o.key) + '  ' + hz(o.f); }
     else txt += T('・基準 ', ' · reference ') + modeName(inf.baseKey) + '  ' + hz(inf.fBase);
-    D.pill ? D.pill(c, Lo.pad, 10, txt, { font: fnt(13, 600) }) : (c.fillStyle = C2.text, c.fillText(txt, Lo.pad, 24));
+    D.pill(c, txt, Lo.pad, 28, C2.text, 'left', fnt(13, 600));
     const slow = Math.round(inf.fLow / VIS_HZ);
     c.font = fnt(12);
     c.fillStyle = C2.muted;
@@ -498,6 +502,7 @@
     }
     barHit = [];
     const bw = Math.max(4, Math.min(10, W / 70));
+    const labels = [];
     inf.modes.forEach(function (o) {
       const x = X(o.h);
       barHit.push({ x: x, key: o.key });
@@ -518,9 +523,27 @@
         c.fillStyle = g;
         c.fillRect(x - bw / 2, top + H - H * lv, bw, H * lv);
       }
-      if (o.rel > 0.25 && W > 300) {
-        c.fillStyle = C2.text; c.textAlign = 'center'; c.font = fnt(10);
-        c.fillText(modeName(o.key).replace(/ /g, ''), x, top + H - hgt - 4);
+      if ((isSel || o.rel > 0.25) && W > 300) {
+        labels.push({ text: modeName(o.key).replace(/ /g, ''), x: x, y: top + H - hgt - 4, selected: isSel });
+      }
+    });
+    // 優先標示選取與振幅較大的模態，相鄰的峰以不同高度標示。
+    labels.sort(function (a, b) { return Number(b.selected) - Number(a.selected) || a.y - b.y; });
+    const placed = [];
+    c.font = fnt(11); c.textAlign = 'center';
+    labels.forEach(function (label) {
+      const half = c.measureText(label.text).width / 2 + 2;
+      const x = Math.max(padL + half, Math.min(padL + W - half, label.x));
+      for (let y = label.y; y >= 11; y -= 15) {
+        if (placed.some(function (p) { return Math.abs(p.x - x) < p.half + half && Math.abs(p.y - y) < 14; })) continue;
+        if (y < label.y) {
+          c.strokeStyle = D.alpha(C2.muted, 0.75); c.lineWidth = 1;
+          c.beginPath(); c.moveTo(x, y + 2); c.lineTo(label.x, label.y + 2); c.stroke();
+        }
+        c.strokeStyle = C2.surface; c.lineWidth = 3; c.strokeText(label.text, x, y);
+        c.fillStyle = C2.text; c.fillText(label.text, x, y);
+        placed.push({ x: x, y: y, half: half });
+        break;
       }
     });
     c.textAlign = 'left';
@@ -540,8 +563,8 @@
     raf = 0;
     const now = performance.now();
     if (state.hit && (now - state.hit.t0) / 1000 > state.hit.life) state.hit = null;
-    if (!stage.classList.contains('is3d')) draw(now);
-    drawSpectrum(now);
+    if (cv.clientWidth) draw(now);
+    if (cv2.clientWidth) drawSpectrum(now);
     if (view3 && view3.active) view3.frame();
     if ((state.hit || (state.sel !== 'all' && !reducedMotion) || (view3 && view3.active && view3.busy())) && !document.hidden) raf = requestAnimationFrame(frame);
   }
@@ -889,7 +912,9 @@
   if (window.ResizeObserver) {
     let lastW = 0, lastW2 = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW || cv2.clientWidth !== lastW2) { lastW = cv.clientWidth; lastW2 = cv2.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   document.addEventListener('visibilitychange', function () { if (document.hidden) stopAll(false); else requestDraw(); });
   resize();
 })();

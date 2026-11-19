@@ -52,7 +52,7 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (Math.max(11, px) * fs).toFixed(1) + 'px ' + FONT; }
 
   // ---------- 數字格式 ----------
   function fx(v, d) { if (v == null || !isFinite(v)) return '—'; let s = v.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
@@ -529,8 +529,13 @@
   // =====================================================================
   const cv = $('cv'), ctx = cv.getContext('2d');
   let W = 600, H = 520, L = null;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
-    if (W >= 620) {
+    if (compactPlots.matches) {
+      H = Math.min(300, Math.max(170, window.innerHeight - 132));
+      L = { [plotView.value]: { x: 4, y: 4, w: W - 8, h: H - 8 } };
+    } else if (W >= 620) {
       const ch = Math.round(Math.max(250, Math.min(330, W * 0.36)) + 34 * (fs - 1));
       const bh = Math.round(Math.max(232, Math.min(270, W * 0.29)) + 56 * (fs - 1));
       const sw = Math.round((W - 24) * 0.55);
@@ -849,9 +854,9 @@
 
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawCurve(now);
-    drawSpectrum();
-    drawWave(now);
+    if (L.curve) drawCurve(now);
+    if (L.spec) drawSpectrum();
+    if (L.wave) drawWave(now);
   }
   function updateCanvasLabel() {
     const a = analysis();
@@ -862,7 +867,11 @@
 
   // ---------- 拖曳曲線上的游標 ----------
   function evPos(e) { const b = cv.getBoundingClientRect(); return { x: e.clientX - b.left, y: e.clientY - b.top }; }
-  function inCurve(p) { const g = cgeo(); return p.x >= g.px0 - 12 && p.x <= g.px1 + 12 && p.y >= g.py0 - 24 && p.y <= g.py1 + 22 * fs; }
+  function inCurve(p) {
+    if (!L || !L.curve) return false;
+    const g = cgeo();
+    return p.x >= g.px0 - 12 && p.x <= g.px1 + 12 && p.y >= g.py0 - 24 && p.y <= g.py1 + 22 * fs;
+  }
   function setRFromCents(c, src) {
     const cc = clamp(Math.round(c), 0, Math.ceil(Core.C_MAX));
     elR.value = String(cc);
@@ -883,7 +892,7 @@
   cv.addEventListener('pointermove', function (e) {
     const p = evPos(e);
     if (!state.drag) { cv.style.cursor = inCurve(p) ? 'ew-resize' : 'default'; return; }
-    if (e.pointerId !== state.drag.id) return;
+    if (e.pointerId !== state.drag.id || !L.curve) return;
     if (!state.drag.live) {
       const dx = p.x - state.drag.x0, dy = p.y - state.drag.y0;
       if (Math.abs(dx) > 6 && Math.abs(dx) > Math.abs(dy)) { state.drag.live = true; cv.classList.add('dragging'); }
@@ -897,6 +906,7 @@
     if (!d || (e && e.pointerId !== d.id)) return;
     state.drag = null;
     cv.classList.remove('dragging');
+    if (!L.curve) return;
     if (!d.live && e && e.type === 'pointerup') setRFromCents(cgeo().C(evPos(e).x));     // 輕點一下：游標跳過去
     if (d.live || (e && e.type === 'pointerup')) rChanged(true, 'slider');
     requestDraw();
@@ -1089,6 +1099,8 @@
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
 })();

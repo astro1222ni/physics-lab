@@ -72,7 +72,7 @@
       'mf-bar', 'mf-gone', 'mf-pitch', 'mf-wave', 'mf-full', 'mf-acf', 'mf-filt', 'mf-band']
       .forEach(function (k) { C[k] = s.getPropertyValue('--' + k).trim() || '#888888'; });
   }
-  function fnt(px, weight, italic) { return (italic ? 'italic ' : '') + (weight ? weight + ' ' : '') + px + 'px ' + FONT; }
+  function fnt(px, weight, italic) { return (italic ? 'italic ' : '') + (weight ? weight + ' ' : '') + Math.max(11, px) + 'px ' + FONT; }
 
   // ---------- 數字格式 ----------
   function num(v, dec) {
@@ -227,9 +227,16 @@
   // =====================================================================
   const cv = $('cv'), ctx = cv.getContext('2d');
   let dpr = 1, cw = 300, ch = 560, LY = null;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
     const nar = cw < 600;
     const L = nar ? 38 : 50, Rr = cw - (nar ? 10 : 16);
+    if (compactPlots.matches) {
+      const H = Math.min(300, Math.max(170, window.innerHeight - 132));
+      const top = nar ? 46 : 40, bottom = H - 34;
+      return { view: plotView.value, nar: nar, L: L, R: Rr, t1: top, b1: bottom, t2: top, b2: bottom, t3: top, b3: bottom, H: H };
+    }
     const t1 = nar ? 46 : 40, h1 = nar ? 150 : 172;
     const b1 = t1 + h1;
     const t2 = b1 + (nar ? 62 : 58), h2 = nar ? 118 : 138;
@@ -517,9 +524,9 @@
     if (!stage.classList.contains('is3d') && LY) {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       D.backdrop(ctx, cw, ch);
-      drawSpectrum(ctx);
-      drawWave(ctx);
-      drawAcf(ctx);
+      if (!LY.view || LY.view === 'spectrum') drawSpectrum(ctx);
+      if (!LY.view || LY.view === 'wave') drawWave(ctx);
+      if (!LY.view || LY.view === 'acf') drawAcf(ctx);
     }
     if (!raf && (state.ab || (state.vis && !state.vis.sound) || (state.vis && voiceModal))) raf = requestAnimationFrame(frame);
   }
@@ -762,7 +769,7 @@
 
   // ---------- 頻譜：點長條開關 ----------
   function harmAt(x, y) {
-    if (!SP || y < SP.Tp - 4 || y > SP.Bt + 30) return 0;
+    if (!SP || (LY.view && LY.view !== 'spectrum') || y < SP.Tp - 4 || y > SP.Bt + 30) return 0;
     let best = 0, bd = Infinity;
     R.comps.forEach(function (c) { if (c.f < MC.F_AUDIBLE || c.f > SP.fmax) return; const d = Math.abs(SP.X(c.f) - x); if (d < bd) { bd = d; best = c.k; } });
     const tol = Math.max(14, (SP.X(state.f0) - SP.X(0)) / 2);
@@ -947,7 +954,9 @@
   if (window.ResizeObserver) {
     let lw = 0;
     new ResizeObserver(function () { const a = cv.clientWidth; if (a !== lw) { lw = a; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
   void TAU;
 })();

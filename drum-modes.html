@@ -70,9 +70,9 @@
     .dm .panel { grid-template-columns: minmax(0, 1fr); }
     .dm .panel > .card { min-width: 0; }
     /* 圓形鼓（理想膜、定音鼓）與方板顯示不同的控制項；單一模態時才有「只聽這個模態」 */
-    .dm[data-drum="plate"] .circ-only { display: none !important; }
-    .dm:not([data-drum="plate"]) .plate-only { display: none !important; }
-    .dm[data-sel="all"] .single-only { display: none !important; }
+    body:has(.dm[data-drum="plate"]) .circ-only { display: none !important; }
+    body:has(.dm:not([data-drum="plate"])) .plate-only { display: none !important; }
+    body:has(.dm[data-sel="all"]) .single-only { display: none !important; }
     .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; max-width: 100%; }
     .seg button { border: none; border-radius: 0; min-height: 44px; padding: 6px 10px; background: var(--bg); }
     .seg button + button { border-left: 1px solid var(--border); }
@@ -125,6 +125,35 @@
     .dm3-lbl { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: calc(12px * var(--fs, 1)); font-weight: 600; padding: 1px 7px; border-radius: 999px;
       background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent); color: var(--text); font-variant-numeric: tabular-nums; }
     .dm3-lbl.note { font-weight: 400; color: var(--muted); border: none; background: color-mix(in srgb, var(--canvas-bg) 80%, transparent); }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    #stage:not(.is3d) .view-tools { display: none; }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+      #stage[data-plot]:not([data-plot="spectrum"]):not(.is3d) #cv2,
+      #stage[data-plot]:not([data-plot="spectrum"]):not(.is3d) .chart-note { display: none; }
+      #stage[data-plot="spectrum"]:not(.is3d) { display: flex; flex-direction: column; }
+      #stage[data-plot="spectrum"]:not(.is3d) .cvwrap { display: none; }
+      #stage[data-plot="spectrum"]:not(.is3d) .view-bar { order: -3; }
+      #stage[data-plot="spectrum"]:not(.is3d) .view-msg { order: -2; }
+      #stage[data-plot="spectrum"]:not(.is3d) #cv2 { order: -1; margin-top: 0; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -143,6 +172,10 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D view">3D 立體</button>
           </div>
+          <select id="plotView" aria-controls="cv cv2" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="drum" data-en="Drumhead">鼓面</option>
+            <option value="spectrum" data-en="Mode spectrum">模態頻譜</option>
+          </select>
           <div class="view-tools">
             <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
           </div>
@@ -159,6 +192,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="hint" id="earHint" data-en="Wearing headphones? Turn the volume down first: a small, tight drum and the plate’s high modes can be shrill. The sound is an approximation made by adding the modes.">戴耳機的同學先把音量調小：小而緊的鼓、方板的高次模態可能很尖。聲音是把各個模態加起來合成的近似。</p>
         <p class="hint" id="lowHint" hidden></p>
         <div class="legend">
@@ -173,7 +207,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="鼓的種類|Drum" data-deck-order="1">
           <h2 data-en="Kind of drum">鼓的種類</h2>
           <div class="seg full" id="drums" role="group" aria-label="鼓的種類" data-en-aria-label="Kind of drum">
             <button type="button" data-drum="membrane" aria-pressed="true" data-en="Ideal membrane">理想膜</button>
@@ -183,7 +217,7 @@
           <p class="hint" id="drumNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="大小與張力|Size &amp; tension" data-deck-order="2">
           <h2 data-en="Size and tension">大小與張力</h2>
           <div class="circ-only">
             <div class="slider"><label for="rad" data-en="Radius a (cm)">半徑 a（cm）</label><output id="rado"></output>
@@ -201,7 +235,7 @@
           </div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="敲擊點|Strike point" data-deck-order="3">
           <h2 data-en="Striking point">敲擊點</h2>
           <div class="circ-only">
             <div class="slider"><label for="sr" data-en="From the centre r/a">離中心 r/a</label><output id="sro"></output>
@@ -218,7 +252,7 @@
           <p class="hint" data-en="You can also tap the drumhead to strike there, or drag to find a spot and let go to strike.">也可以直接在鼓面上點一下（就敲在那裡），或按住拖曳找位置、放開才敲。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="單一模態|Mode" data-deck-order="4">
           <h2 data-en="One mode at a time">單一模態</h2>
           <div class="modepick">
             <label for="modeSel" data-en="Mode">模態</label>
@@ -230,7 +264,7 @@
           <button type="button" class="wide single-only" id="hearMode" data-en="▶ Hear this mode alone">▶ 只聽這個模態</button>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="阻尼|Damping" data-deck-order="5">
           <h2 data-en="Damping">阻尼</h2>
           <div class="slider"><label for="damp" data-en="Damping γ (1/s, lowest mode)">阻尼 γ（1/s，最低模態）</label><output id="dampo"></output>
             <input id="damp" type="range" min="0.3" max="8" step="0.1" value="1.2" data-decimals="2"></div>

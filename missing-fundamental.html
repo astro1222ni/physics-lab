@@ -123,6 +123,27 @@
     table.rec tr.same td { background: color-mix(in srgb, var(--mf-pitch) 10%, transparent); }
     .rec-empty { color: var(--muted); font-size: calc(13px * var(--fs, 1)); margin: 8px 0 0; }
     .rec-wrap { overflow-x: auto; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -141,6 +162,11 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D plane">2D 平面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D waterfall">3D 瀑布圖</button>
           </div>
+          <select id="plotView" aria-controls="cv" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="spectrum" data-en="Spectrum">頻譜</option>
+            <option value="wave" data-en="Waveform">波形</option>
+            <option value="acf" data-en="Autocorrelation">自相關</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
@@ -153,6 +179,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <p class="hf-warn" id="hfWarn" hidden data-en="Some components are above 4 kHz: if you are wearing headphones, turn the volume down first.">有成分超過 4 kHz：戴耳機的同學先把音量調小。</p>
         <div class="legend l2">
           <span style="color:var(--mf-bar)" data-en-html="<i style=&quot;background:var(--mf-bar)&quot;></i>From the speaker"><i style="background:var(--mf-bar)"></i>喇叭放出的成分</span>
@@ -165,7 +192,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="泛音|Harmonics" data-deck-order="1">
           <h2 data-en="Harmonics">泛音</h2>
           <p class="grp-label" id="hLabel" data-en="Harmonic switches (press to turn on or off)">泛音開關（按一下開或關）</p>
           <div class="harm" id="harm" role="group" aria-labelledby="hLabel"></div>
@@ -178,14 +205,14 @@
           <p class="hint" data-en-html="Before any filter, the k-th harmonic has amplitude \(1/\sqrt{k}\). A dashed button is switched on but blocked by the filter.">濾波前，第 k 根的振幅是 \(1/\sqrt{k}\)。按鈕是虛線框的，表示開著、卻被濾波器擋掉了。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="基頻|Fundamental" data-deck-order="2">
           <h2 data-en="Fundamental">基頻</h2>
           <div class="slider"><label for="f0" data-en-html="Fundamental f<sub>0</sub> (Hz)">基頻 f<sub>0</sub>（Hz）</label><output id="f0o"></output>
             <input id="f0" type="range" min="100" max="400" step="1" value="200" data-decimals="0"></div>
           <p class="hint" id="f0Note"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="喇叭與濾波|Filter" data-deck-order="3">
           <h2 data-en="Speaker and filter">喇叭與濾波</h2>
           <div class="filt" role="group" aria-label="濾波" data-en-aria-label="Filter">
             <button type="button" data-filter="none" aria-pressed="true" data-en="No filter">不濾波</button>
@@ -198,7 +225,7 @@
           <p class="hint" id="filtNote"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="位移實驗|Shift" data-deck-order="4">
           <h2 data-en="Advanced: the shift experiment">進階：位移實驗</h2>
           <div class="slider"><label for="delta" data-en="Shift everything by Δ (Hz)">全部平移 Δ（Hz）</label><output id="deltao"></output>
             <input id="delta" type="range" min="-150" max="150" step="1" value="0" data-decimals="0"></div>
@@ -218,7 +245,7 @@
           <p class="pitch-big" id="rPitch"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="聲音紀錄|Sound log" data-deck-order="5">
           <h2 data-en="Sound log">聲音紀錄</h2>
           <div class="recbar">
             <button id="record" type="button" data-en="Record this sound">記錄這個聲音</button>

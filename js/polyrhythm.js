@@ -56,7 +56,7 @@
       .forEach(function (k) { C[k] = cs.getPropertyValue('--' + k).trim() || '#888888'; });
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (Math.max(11, px) * fs).toFixed(1) + 'px ' + FONT; }
   /** 放不下時把字縮小（最小到 75%），再放不下就換行成兩行 */
   function fitText(text, x, y, maxW, px, weight) {
     ctx.font = fnt(px, weight);
@@ -453,11 +453,16 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   let W = 600, H = 460, L = null;
   function onVoices() { return [0, 1, 2].filter(function (i) { return state.voices[i].on; }); }
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
     const rows = onVoices().length + 1;
     const rowH = Math.round(34 + 10 * (fs - 1));
     const tlH = Math.round(46 + 22 * fs) + rows * rowH + 34;
-    if (W >= 720) {
+    if (compactPlots.matches) {
+      H = plotView.value === 'tl' ? tlH + 8 : Math.min(W, 360, Math.max(170, window.innerHeight - 132));
+      L = { wide: false, rowH: rowH, [plotView.value]: { x: 4, y: 4, w: W - 8, h: H - 8 } };
+    } else if (W >= 720) {
       const S = Math.round(Math.max(300, Math.min(420, W * 0.44)));
       L = { wide: true, neck: { x: 8, y: 8, w: S, h: Math.max(S, tlH) }, tl: { x: S + 16, y: 8, w: W - S - 24, h: Math.max(S, tlH) }, rowH: rowH };
       H = Math.max(S, tlH) + 16;
@@ -726,8 +731,8 @@
   function draw(now) {
     D.backdrop(ctx, W, H);
     const b = state.play ? beatNow() : 0;
-    drawNecklace(now, b);
-    drawTimeline(now, state.play ? gOfBeat(b) : null);
+    if (L.neck) drawNecklace(now, b);
+    if (L.tl) drawTimeline(now, state.play ? gOfBeat(b) : null);
   }
   function updateCanvasLabel() {
     const a = analysis();
@@ -742,16 +747,19 @@
     if (!L) return null;
     const a = analysis();
     // 項鍊上的珠子（最近的，24 px 以內）
-    const g = neckGeo();
-    let best = null, bd = 24;
-    g.rings.forEach(function (rg) {
-      const n = state.voices[rg.i].n;
-      for (let j = 0; j < n; j++) {
-        const x = g.cx + rg.R * Math.cos(ang(j, n)), y = g.cy + rg.R * Math.sin(ang(j, n)), d = Math.hypot(p.x - x, p.y - y);
-        if (d < bd) { bd = d; best = { i: rg.i, j: j }; }
-      }
-    });
-    if (best) return best;
+    if (L.neck) {
+      const g = neckGeo();
+      let best = null, bd = 24;
+      g.rings.forEach(function (rg) {
+        const n = state.voices[rg.i].n;
+        for (let j = 0; j < n; j++) {
+          const x = g.cx + rg.R * Math.cos(ang(j, n)), y = g.cy + rg.R * Math.sin(ang(j, n)), d = Math.hypot(p.x - x, p.y - y);
+          if (d < bd) { bd = d; best = { i: rg.i, j: j }; }
+        }
+      });
+      if (best) return best;
+    }
+    if (!L.tl) return null;
     // 時間格
     const G = tlGeo(), rows = onVoices();
     if (p.x < G.x0 || p.x > G.x1) return null;
@@ -1012,6 +1020,8 @@
   if (window.ResizeObserver) {
     let lastW = 0;
     new ResizeObserver(function () { if (cv.clientWidth !== lastW) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
 })();

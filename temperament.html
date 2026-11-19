@@ -146,6 +146,34 @@
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dia { width: 9px; height: 9px; transform: rotate(45deg); border-radius: 1px; }
     .chart-cap { font-size: calc(12.5px * var(--fs, 1)); color: var(--muted); margin: 6px 4px 0; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+      #stage[data-plot]:not([data-plot="beats"]):not(.is3d) #cvBeat,
+      #stage[data-plot]:not([data-plot="beats"]):not(.is3d) .chart-cap { display: none; }
+      #stage[data-plot="beats"]:not(.is3d) { display: flex; flex-direction: column; }
+      #stage[data-plot="beats"]:not(.is3d) #cv { display: none; }
+      #stage[data-plot="beats"]:not(.is3d) .view-bar { order: -3; }
+      #stage[data-plot="beats"]:not(.is3d) .view-msg { order: -2; }
+      #stage[data-plot="beats"]:not(.is3d) #cvBeat { order: -1; margin-top: 0; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -164,13 +192,16 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D clock">2D 鐘面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D helix">3D 螺旋</button>
           </div>
+          <select id="plotView" aria-controls="cv cvBeat" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="clock" data-en="Clock">鐘面</option>
+            <option value="detail" data-en="Cent offsets">音分偏差</option>
+            <option value="beats" data-en="Beats">拍頻圖</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" role="img" aria-label="音律畫布"></canvas>
         <div id="view3"></div>
-        <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5" data-en-aria-label="Keyboard: C4 to C5"><span class="above" id="above" aria-hidden="true"></span></div>
-        <p class="piano-hint" data-en="Tap keys to pick or drop notes (up to three); hold a key to keep it sounding. The small dot marks the tonic.">點鍵盤選音或取消（最多三個音），按住會一直響；小圓點是主音。</p>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
           <button id="compare" type="button" data-en="Compare tunings" title="同樣的音依序用五度相生、純律、十二平均律各彈一次" data-en-title="Play the same notes in Pythagorean, just and equal temperament, one after another">比較三種音律</button>
@@ -178,6 +209,7 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--tm-pyth)&quot;></i>Pythagorean"><i style="background:var(--tm-pyth)"></i>五度相生</span>
           <span data-en-html="<i style=&quot;background:var(--tm-just)&quot;></i>Just"><i style="background:var(--tm-just)"></i>純律</span>
@@ -192,7 +224,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="音律|Tuning" data-deck-order="1">
           <h2 data-en="Tuning">音律</h2>
           <div class="seg kinds" role="group" aria-label="音律" data-en-aria-label="Tuning">
             <button type="button" data-kind="pythagorean" aria-pressed="true" data-en="Pythagorean">五度相生</button>
@@ -211,8 +243,10 @@
           <p class="hint" id="kindHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="鍵盤與選音|Notes" data-deck-order="2">
           <h2 data-en="Notes and readings">選音與讀數</h2>
+          <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5" data-en-aria-label="Keyboard: C4 to C5"><span class="above" id="above" aria-hidden="true"></span></div>
+          <p class="piano-hint" data-en="Tap keys to pick or drop notes (up to three); hold a key to keep it sounding. The small dot marks the tonic.">點鍵盤選音或取消（最多三個音），按住會一直響；小圓點是主音。</p>
           <div class="presets" role="group" aria-label="快速選音（從主音起算）" data-en-aria-label="Quick picks (from the tonic)">
             <button type="button" data-preset="M3" data-en="Major third">大三度</button>
             <button type="button" data-preset="m3" data-en="Minor third">小三度</button>
@@ -223,7 +257,7 @@
           <div id="readout" aria-live="off"></div>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="疊五度|Stack fifths" data-deck-order="3">
           <h2 data-en="Stacking fifths">五度疊疊樂</h2>
           <div class="stackbtns">
             <button type="button" id="stackOne" class="primary" data-en="Stack a fifth">再疊一個五度</button>
@@ -242,7 +276,7 @@
           <p class="hint" data-en="Each stacked fifth multiplies the frequency by the fifth’s ratio, then halves it whenever it climbs past an octave. The size of the fifth follows the tuning: pure 3/2 for Pythagorean and just, 700 cents for equal temperament, 701.955 − w for the regular temperament.">每疊一個五度，頻率就乘上五度的比值，超過一個八度就除以 2 拉回來。五度的大小跟著音律：五度相生和純律疊純五度 3/2，十二平均律疊 700 音分，調和律疊 701.955 − w 音分。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="五度收窄|Narrow fifths" data-deck-order="4">
           <h2 data-en="Narrowing the fifths (regular temperament)">五度收窄（調和律）</h2>
           <div class="slider"><label for="ww" data-en="Narrow each fifth by w (cents)">五度收窄 w（音分）</label><output id="wwo"></output>
             <input id="ww" type="range" min="0" max="8" step="0.01" value="0" data-decimals="3"></div>
@@ -256,7 +290,7 @@
           <p class="hint" data-en="All twelve notes come from one chain of fifths, five below and six above the tonic. Moving the slider switches the tuning to “Regular”. w = 0 is Pythagorean tuning. Tap the number to type w to 0.001.">十二個音都由同一條五度鏈產生（主音往下 5 個、往上 6 個）。拖曳滑桿時，音律會自動切到「調和律」。w = 0 就是五度相生。點一下數字可以把 w 打到 0.001。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="誤差地圖|Error map" data-deck-order="5">
           <h2 data-en="Interval error map">音程誤差地圖</h2>
           <p class="hint" id="emapHint" style="margin-top:0"></p>
           <div class="tablewrap"><table class="emap" id="emap"></table></div>

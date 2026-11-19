@@ -144,6 +144,33 @@
     .legend i.band { height: 10px; border-radius: 3px; opacity: .55; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
     .legend .dot { width: 9px; height: 9px; border-radius: 50%; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+      #stage[data-plot]:not([data-plot="keyboard"]):not(.is3d) #kb { display: none; }
+      #stage[data-plot="keyboard"]:not(.is3d) { display: flex; flex-direction: column; }
+      #stage[data-plot="keyboard"]:not(.is3d) #cv { display: none; }
+      #stage[data-plot="keyboard"]:not(.is3d) .view-bar { order: -3; }
+      #stage[data-plot="keyboard"]:not(.is3d) .view-msg { order: -2; }
+      #stage[data-plot="keyboard"]:not(.is3d) #kb { order: -1; margin-top: 0; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -169,12 +196,16 @@
             <button type="button" id="faceIso" data-en="Angled">斜看</button>
             <button type="button" id="grow" data-run="0" data-en="Grow the curve">讓曲線長出來</button>
           </div>
+          <select id="plotView" aria-controls="cv kb" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="wave" data-en="Combined wave">合成波形</option>
+            <option value="ladder" data-en="Harmonic ladder">泛音列階梯</option>
+            <option value="keyboard" data-en="Keyboard">鍵盤</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv" role="img" aria-label="上面是和弦的合成波形，純律時色帶標出每一個重複的週期 T；下面是泛音列階梯，和弦的每個音放在虛擬基頻的第幾根泛音上。" data-en-aria-label="Top: the combined waveform of the chord; in just intonation the bands mark each repeat of the period T. Bottom: the harmonic ladder, with each chord note on its rung of the virtual fundamental’s harmonic series."></canvas>
+        <canvas id="cv" role="img" aria-label="合成波形中的色帶標出純律和弦的重複週期 T。泛音列階梯顯示各和弦音對應虛擬基頻的第幾根泛音。" data-en-aria-label="The bands on the waveform mark each period T of a just chord. The harmonic ladder locates each chord note in the virtual fundamental’s harmonic series."></canvas>
         <div id="view3"></div>
-        <canvas id="kb" role="img" aria-label="鍵盤：和弦音用顏色標出" data-en-aria-label="Keyboard with the chord notes coloured"></canvas>
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play chord">▶ 播放和弦</button>
           <button id="arp" type="button" data-en="Arpeggio" title="由低到高一個一個彈，最後一起響" data-en-title="Play the notes one at a time from low to high, then let them ring together">分解和弦</button>
@@ -182,10 +213,10 @@
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
+        <canvas id="kb" role="img" aria-label="鍵盤：和弦音用顏色標出" data-en-aria-label="Keyboard with the chord notes coloured"></canvas>
         <p class="hf-warn" id="hfWarn" hidden data-en="The highest harmonic is above 4 kHz: if you are wearing headphones, turn the volume down first.">最高的泛音超過 4 kHz：戴耳機的同學先把音量調小。</p>
         <p class="hint" data-en="Phone speakers hardly play anything below about 200 Hz: low roots (C3–G3) sound faint on a phone, and the virtual fundamental is never actually played — your ear fills it in. Headphones or a proper speaker work best.">手機喇叭幾乎放不出 200 Hz 以下的聲音：低的根音（C3–G3）在手機上會很小聲；虛擬基頻本來就沒有發出聲音，是耳朵自己「補」出來的。戴耳機或接喇叭聽得最清楚。</p>
-        <div class="slider" id="spanBox"><label for="span" data-en="Time shown (ms)">顯示的時間（ms）</label><output id="spano"></output>
-          <input id="span" type="range" min="0" max="1000" step="1" value="482" data-decimals="1"></div>
         <div class="legend">
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-r)&quot;></i>Root"><i class="dot" style="background:var(--ch-r)"></i>根音</span>
           <span data-en-html="<i class=&quot;dot&quot; style=&quot;background:var(--ch-3)&quot;></i>Third (fourth in sus4)"><i class="dot" style="background:var(--ch-3)"></i>三音（掛四是四音）</span>
@@ -198,7 +229,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card" id="chordCard">
+        <section class="card" id="chordCard" data-deck="和弦|Chord" data-deck-order="1">
           <h2 data-en="Chord">和弦</h2>
           <div class="types" id="types" role="group" aria-label="和弦種類" data-en-aria-label="Kind of chord"></div>
           <div class="rootrow">
@@ -207,6 +238,10 @@
             <select id="root"></select>
             <button type="button" id="rootUp" aria-label="根音升高半音" data-en-aria-label="Root up a semitone">▶</button>
           </div>
+        </section>
+
+        <section class="card" data-share-skip data-deck="音律與轉位|Tuning &amp; inversion" data-deck-order="2">
+          <h2 data-en="Tuning and inversion">音律與轉位</h2>
           <h3 class="sub" data-en="Tuning">音律</h3>
           <div class="seg full" id="tuning" role="group" aria-label="音律" data-en-aria-label="Tuning">
             <button type="button" data-tuning="just" aria-pressed="false" data-en="Just intonation">純律</button>
@@ -221,11 +256,17 @@
           </div>
           <h3 class="sub" data-en="Notes on or off">和弦音（點一下開關）</h3>
           <div class="tones" id="tones" role="group" aria-label="和弦音的開關" data-en-aria-label="Switch chord notes on or off"></div>
+        </section>
+
+        <section class="card" data-share-skip data-deck="音色與時間|Timbre &amp; time" data-deck-order="3">
+          <h2 data-en="Tone colour and time">音色與時間</h2>
           <h3 class="sub" data-en="Tone colour">音色</h3>
           <div class="seg full" id="timbre" role="group" aria-label="音色" data-en-aria-label="Tone colour">
             <button type="button" data-timbre="organ" aria-pressed="true" data-en="Organ (approx.)">風琴（近似）</button>
             <button type="button" data-timbre="pure" aria-pressed="false" data-en="Pure tone">純音</button>
           </div>
+          <div class="slider" id="spanBox"><label for="span" data-en="Time shown (ms)">顯示的時間（ms）</label><output id="spano"></output>
+            <input id="span" type="range" min="0" max="1000" step="1" value="482" data-decimals="1"></div>
           <p class="hint" id="chordHint"></p>
         </section>
 
@@ -238,14 +279,14 @@
           <p class="hint" id="tableHint"></p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="聽過的和弦|Chord log" data-deck-order="5">
           <h2 data-en="Chords you have played">聽過的和弦</h2>
+          <div class="rowbtns"><button type="button" id="clearLog" data-en="Clear all" title="清掉比較表；和弦的設定不變" data-en-title="Empty the comparison table; the chord settings are kept">全部清除</button></div>
           <div class="tablewrap"><table class="nt" id="logTable"></table></div>
           <p class="log-empty" id="logEmpty" data-en="Each time you press “▶ Play chord” or “Arpeggio” the chord is added here, so you can compare periods.">每按一次「▶ 播放和弦」或「分解和弦」，就把那個和弦記在這裡，方便比較週期。</p>
-          <div class="rowbtns"><button type="button" id="clearLog" data-en="Clear all" title="清掉比較表；和弦的設定不變" data-en-title="Empty the comparison table; the chord settings are kept">全部清除</button></div>
         </section>
 
-        <section class="card" id="progCard">
+        <section class="card" id="progCard" data-deck="和弦進行|Progression" data-deck-order="4">
           <h2 data-en="Chord progression">和弦進行</h2>
           <div class="seg full" id="progs" role="group" aria-label="和弦進行" data-en-aria-label="Progression">
             <button type="button" data-prog="I-IV-V-I" aria-pressed="true">I–IV–V–I</button>
@@ -258,7 +299,7 @@
             <button type="button" data-pmode="just" aria-pressed="false" data-en="Just (fixed scale)">純律（固定音階）</button>
             <button type="button" data-pmode="adaptive" aria-pressed="false" data-en="Just (common notes held)">純律（共同音不動）</button>
           </div>
-          <div class="rowbtns"><button type="button" id="progPlay" class="primary" data-en="▶ Play progression">▶ 播放和弦進行</button></div>
+          <div class="rowbtns" data-deck-top><button type="button" id="progPlay" class="primary" data-en="▶ Play progression">▶ 播放和弦進行</button></div>
           <ol class="prog-list" id="progList"></ol>
           <p class="prog-drift" id="progDrift"></p>
           <p class="hint" data-en="The key is the root chosen above. Tap a chord in the list to hear it on its own. The voices are generated by the page (bass on the root, the three upper voices take the shortest path); this is not any particular song.">調性就是上面選的根音。點清單裡的和弦可以單獨聽。聲部由程式自己產生（低音彈根音，上方三個聲部走最近的路），不是任何一首歌。</p>

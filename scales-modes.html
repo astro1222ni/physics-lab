@@ -176,6 +176,27 @@
     .refbox { margin: 10px 0 0; font-size: calc(13.5px * var(--fs, 1)); }
     .refbox:empty { display: none; }
     .legend i.dash { background: none !important; border-top: 2px dashed currentColor; height: 0; }
+
+    #plotView {
+      display: none; font: inherit; padding: 4px 8px; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    }
+    @media (max-width: 880px), (orientation: landscape) and (max-height: 600px) {
+      #stage:not(.is3d) #plotView { display: block; width: auto; max-width: 100%; min-height: 44px; }
+    }
+    @media (orientation: landscape) and (max-height: 600px) {
+      html.labdeck-drawer #stage { margin-inline-end: 24px; }
+      html.labdeck-drawer .labdeck-tabs button { min-height: 44px; }
+      #view3 canvas { max-height: calc(100dvh - 132px); }
+      #stage .playbar { gap: 6px; }
+      #stage .playbar button { min-height: 44px; padding-inline: 8px; }
+    }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel #lab > .panel { padding-inline-end: 28px; }
+    }
+    @media (max-width: 600px) and (orientation: portrait) {
+      #stage { padding-inline-end: 16px; }
+    }
   </style>
 </head>
 <body data-en-ready>
@@ -194,44 +215,23 @@
             <button type="button" id="view2d" aria-pressed="true" data-en="2D clock">2D 鐘面</button>
             <button type="button" id="view3d" aria-pressed="false" data-en="3D tower of modes">3D 調式之塔</button>
           </div>
+          <select id="plotView" aria-controls="cv" aria-label="2D 圖表" data-en-aria-label="2D chart" data-share-skip>
+            <option value="clock" data-en="Scale clock">音階鐘面</option>
+            <option value="grid" data-en="Brightness ladder">亮暗階梯</option>
+          </select>
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
         <canvas id="cv" role="img" aria-label="音階鐘面與亮暗階梯"></canvas>
         <div id="view3"></div>
 
-        <div class="stepcap"><b data-en="Step bar">步伐條</b><span id="stepSeq"></span></div>
-        <div class="stepbar" id="stepbar" role="group" aria-label="步伐條：點一格聽那兩個相鄰的音" data-en-aria-label="Step bar: tap a step to hear its two notes">
-          <div class="track" id="track"></div>
-          <div class="win" aria-hidden="true"></div>
-          <div class="names" id="stepNames" aria-hidden="true"></div>
-        </div>
-        <p class="piano-hint" data-en="Blocks are as wide as their steps: whole step = 2 semitones, half step = 1. The bright window is one octave; the faded ends show that the same row of steps keeps going. Tap a step to hear its two notes.">每一格的寬度就是步伐的大小：全音 2 個半音、半音 1 個半音。框起來的一段剛好一個八度，兩端淡淡的部分表示同一串步伐一直重複下去。點一格就聽到那兩個相鄰的音。</p>
-
-        <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5，點鍵把音加進或移出音階" data-en-aria-label="Keyboard C4 to C5: tap a key to add it to or remove it from the scale"></div>
-        <p class="piano-hint" data-en="Tap a key (or a cell of the clock) to add or remove that note and build your own scale; the tonic always stays. The badge on a key is its scale degree.">點鍵盤（或鐘面上的格子）就能把那個音加進或移出音階，自己拼音階；主音一定留著。鍵上的小圓標是第幾級。</p>
-
         <div class="playbar">
           <button id="play" type="button" class="primary" data-en="▶ Play">▶ 播放</button>
           <button id="stop" type="button" disabled data-en="■ Stop">■ 停止</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
-        <div class="playopts">
-          <div class="field"><label for="dir" data-en="Direction">方向</label>
-            <select id="dir">
-              <option value="up" selected data-en="Up">上行</option>
-              <option value="down" data-en="Down">下行</option>
-              <option value="updown" data-en="Up and down">上行再下行</option>
-              <option value="arp" data-en="Tonic-chord arpeggio">主三和弦琶音</option>
-            </select></div>
-          <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
-            <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
-            <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
-          </div>
-          <div class="slider"><label for="tempo" data-en="Speed (notes per minute)">速度（每分鐘幾個音）</label><output id="tempoO"></output>
-            <input id="tempo" type="range" min="60" max="240" step="10" value="120" data-decimals="0"></div>
-        </div>
         <p class="status" id="status" aria-live="polite"></p>
+        <div data-deck-anchor hidden></div>
         <div class="legend">
           <span data-en-html="<i style=&quot;background:var(--sm-w)&quot;></i>Whole step (W)"><i style="background:var(--sm-w)"></i>全音（全）</span>
           <span data-en-html="<i style=&quot;background:var(--sm-h)&quot;></i>Half step (H)"><i style="background:var(--sm-h)"></i>半音（半）</span>
@@ -244,7 +244,7 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="音階|Scale" data-deck-order="1">
           <h2 data-en="Scale">音階</h2>
           <div class="field">
             <label for="tonic" data-en="Tonic">主音</label>
@@ -275,7 +275,40 @@
           <p class="hint" data-en="The black-key tonics come in two spellings: B♭ major is written with flats, A♯ major would need double sharps — try both.">黑鍵主音有升、降兩種寫法：B♭ 大調用降記號寫，A♯ 大調卻要用到重升記號，兩種都試試看。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="鍵盤與步伐|Keys &amp; steps" data-deck-order="2">
+          <h2 data-en="Keyboard and steps">鍵盤與步伐</h2>
+          <div class="stepcap"><b data-en="Step bar">步伐條</b><span id="stepSeq"></span></div>
+          <div class="stepbar" id="stepbar" role="group" aria-label="步伐條：點一格聽那兩個相鄰的音" data-en-aria-label="Step bar: tap a step to hear its two notes">
+            <div class="track" id="track"></div>
+            <div class="win" aria-hidden="true"></div>
+            <div class="names" id="stepNames" aria-hidden="true"></div>
+          </div>
+          <p class="piano-hint" data-en="Blocks are as wide as their steps: whole step = 2 semitones, half step = 1. The bright window is one octave; the faded ends show that the same row of steps keeps going. Tap a step to hear its two notes.">每一格的寬度就是步伐的大小：全音 2 個半音、半音 1 個半音。框起來的一段剛好一個八度，兩端淡淡的部分表示同一串步伐一直重複下去。點一格就聽到那兩個相鄰的音。</p>
+
+          <div class="piano" id="piano" role="group" aria-label="鍵盤：C4 到 C5，點鍵把音加進或移出音階" data-en-aria-label="Keyboard C4 to C5: tap a key to add it to or remove it from the scale"></div>
+          <p class="piano-hint" data-en="Tap a key (or a cell of the clock) to add or remove that note and build your own scale; the tonic always stays. The badge on a key is its scale degree.">點鍵盤（或鐘面上的格子）就能把那個音加進或移出音階，自己拼音階；主音一定留著。鍵上的小圓標是第幾級。</p>
+        </section>
+
+        <section class="card" data-deck="播放設定|Playback" data-deck-order="3">
+          <h2 data-en="Playback">播放設定</h2>
+          <div class="playopts">
+            <div class="field"><label for="dir" data-en="Direction">方向</label>
+              <select id="dir">
+                <option value="up" selected data-en="Up">上行</option>
+                <option value="down" data-en="Down">下行</option>
+                <option value="updown" data-en="Up and down">上行再下行</option>
+                <option value="arp" data-en="Tonic-chord arpeggio">主三和弦琶音</option>
+              </select></div>
+            <div class="seg" role="group" aria-label="音律" data-en-aria-label="Tuning" id="tuneSeg">
+              <button type="button" data-tune="equal" aria-pressed="true" data-en="Equal temperament">十二平均律</button>
+              <button type="button" data-tune="just" aria-pressed="false" data-en="Just intonation">純律</button>
+            </div>
+            <div class="slider"><label for="tempo" data-en="Speed (notes per minute)">速度（每分鐘幾個音）</label><output id="tempoO"></output>
+              <input id="tempo" type="range" min="60" max="240" step="10" value="120" data-decimals="0"></div>
+          </div>
+        </section>
+
+        <section class="card" data-deck="亮暗階梯|Brightness" data-deck-order="4">
           <h2 data-en="Brightness ladder">亮暗階梯</h2>
           <div class="ladder" id="ladder" role="group" aria-label="亮暗階梯：由亮到暗的七個調式" data-en-aria-label="Brightness ladder: the seven modes from brightest to darkest">
             <button type="button" data-ladder="lydian" aria-pressed="false"><span data-en="Lydian">利底亞</span><small>+21</small></button>
@@ -302,7 +335,7 @@
           <p class="hint" data-en="How many pairs of notes lie 1, 2, 3, 4, 5 or 6 semitones apart (larger gaps are counted the other way round: 7 = 12 − 5).">音階裡任兩個音相差 1、2、3、4、5、6 個半音的各有幾對（超過 6 的從另一邊算：7 個半音算成 12 − 7 = 5）。</p>
         </section>
 
-        <section class="card">
+        <section class="card" data-deck="比較|Compare" data-deck-order="5">
           <h2 data-en="Compare">比較</h2>
           <div class="twobtn">
             <button type="button" id="pin" data-en="Remember this scale">記住這個音階</button>

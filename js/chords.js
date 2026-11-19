@@ -59,7 +59,7 @@
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
   function roleColor(role) { return C[{ R: 'ch-r', '3': 'ch-3', '4': 'ch-3', '5': 'ch-5', '7': 'ch-7' }[role] || 'ch-r']; }
-  function fnt(px, w) { return (w ? w + ' ' : '') + px + 'px ' + FONT; }
+  function fnt(px, w) { return (w ? w + ' ' : '') + Math.max(11, px) + 'px ' + FONT; }
 
   // ---------- 文字 ----------
   function num(v, dec) { return v == null || !isFinite(v) ? '—' : v.toFixed(dec).replace('-', '−'); }
@@ -490,8 +490,11 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   const kbc = $('kb'), kctx = kbc.getContext('2d');
   let L = null, KB = null;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
     const W = cv.clientWidth || cv.parentElement.clientWidth || 600;
+    const view = compactPlots.matches ? plotView.value : 'all';
     const narrow = W < 560;
     const s = 0.88 + 0.12 * fs;
     const titleH = Math.round(26 * fs) + 8;
@@ -503,12 +506,13 @@
     const nameRow = Math.round(17 * fs) + 3;
     const nameH = 2 * nameRow + 6;
     const zoneH = Math.round(15 * fs) + 6;
-    const wy0 = titleH, wy1 = wy0 + waveH, ly0 = wy1 + axisH + 10;
+    const wy0 = titleH, wy1 = wy0 + waveH, ly0 = view === 'ladder' ? 4 : wy1 + axisH + 10;
     const ry0 = ly0 + lTitle + numH, ry1 = ry0 + railH;
-    const H = ry1 + nameH + zoneH + 6;
-    L = { W: W, H: H, narrow: narrow, x0: 12, x1: W - 12, wy0: wy0, wy1: wy1, ly0: ly0, ry0: ry0, ry1: ry1, numY: ry0 - 4, numRow: Math.round(14 * fs) + 1, nameY: ry1 + 5, nameRow: nameRow, zoneY: ry1 + nameH + 2 };
+    const H = view === 'wave' ? wy1 + axisH + 6 : ry1 + nameH + zoneH + 6;
+    L = { W: W, H: H, view: view, narrow: narrow, x0: 12, x1: W - 12, wy0: wy0, wy1: wy1, ly0: ly0, ry0: ry0, ry1: ry1, numY: ry0 - 4, numRow: Math.round(14 * fs) + 1, nameY: ry1 + 5, nameRow: nameRow, zoneY: ry1 + nameH + 2 };
   }
   function resize() {
+    stage.dataset.plot = compactPlots.matches ? plotView.value : 'all';
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     layout();
     cv.style.height = L.H + 'px';
@@ -941,8 +945,11 @@
     if (L) {
       ctx.clearRect(0, 0, L.W, L.H);
       D.backdrop(ctx, L.W, L.H);
-      if (!$('stage').classList.contains('is3d')) { drawWave(); drawLadder(); }
-      drawKb();
+      if (!stage.classList.contains('is3d')) {
+        if (L.view === 'all' || L.view === 'wave') drawWave();
+        if (L.view === 'all' || L.view === 'ladder') drawLadder();
+      }
+      if (kbc.clientWidth) drawKb();
     }
     updateHF();
     if (busy()) raf = requestAnimationFrame(frame);
@@ -1159,6 +1166,8 @@
       const a = cv.clientWidth, b = kbc.clientWidth;
       if (a !== lw || b !== lk) { lw = a; lk = b; resize(); }
     }).observe(stage);
-  } else window.addEventListener('resize', resize);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
 })();

@@ -57,7 +57,7 @@
     fs = Math.max(1, Math.min(1.45, parseFloat(cs.getPropertyValue('--fs')) || 1));
   }
   const KC = function (k) { return C['tm-' + (k === 'pythagorean' ? 'pyth' : k === 'regular' ? 'reg' : k)]; };
-  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (px * fs).toFixed(1) + 'px ' + FONT; }
+  function fnt(px, weight) { return (weight ? weight + ' ' : '') + (Math.max(11, px) * fs).toFixed(1) + 'px ' + FONT; }
 
   // ---------- 數字格式 ----------
   function fx(v, d) { if (v == null || !isFinite(v)) return '—'; let s = v.toFixed(d); if (/^-0(\.0+)?$/.test(s)) s = s.slice(1); return s.replace('-', '−'); }
@@ -564,9 +564,19 @@
   const cv = $('cv'), ctx = cv.getContext('2d');
   const cvB = $('cvBeat'), ctxB = cvB.getContext('2d');
   let W = 600, H = 420, L = null, WB = 600, HB = 150;
+  const plotView = $('plotView');
+  const compactPlots = window.matchMedia('(max-width: 880px), (orientation: landscape) and (max-height: 600px)');
   function layout() {
     const lab = 18 * fs + 10;                      // 外圈音名需要的空間
-    if (W >= 620) {
+    if (compactPlots.matches) {
+      H = Math.min(350, W, Math.max(160, window.innerHeight - 132));
+      const stripH = Math.round(30 + 42 * fs);
+      L = {
+        view: plotView.value, cx: W / 2, cy: H / 2, R: Math.max(30, Math.min(W, H) / 2 - lab - 4),
+        strip: { x: 6, y: 4, w: W - 12, h: stripH - 8 },
+        chart: { x: 6, y: stripH, w: W - 12, h: H - stripH - 4 }
+      };
+    } else if (W >= 620) {
       H = Math.round(Math.max(410, Math.min(520, W * 0.56)));
       const lw = Math.round(W * 0.5), stripH = Math.round(30 + 42 * fs);
       const R = Math.max(80, Math.min(lw / 2 - lab - 6, (H - stripH - 12) / 2 - lab));
@@ -579,6 +589,7 @@
     }
   }
   function resize() {
+    stage.dataset.plot = compactPlots.matches ? plotView.value : 'all';
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     W = cv.clientWidth || cv.parentElement.clientWidth || 600;
     layout();
@@ -825,9 +836,11 @@
   }
   function draw(now) {
     D.backdrop(ctx, W, H);
-    drawClock(now);
-    drawStrip();
-    drawChart();
+    if (!L.view || L.view === 'clock') drawClock(now);
+    if (!L.view || L.view === 'detail') {
+      drawStrip();
+      drawChart();
+    }
   }
 
   // ---------- 拍頻畫布 ----------
@@ -905,8 +918,8 @@
 
   function updateCanvasLabels() {
     const n = state.stack, p = TC.stackPoint(n, fifth());
-    cv.setAttribute('aria-label', T('鐘面：' + kname(state.kind) + '，主音 ' + TC.TONIC_NAMES[state.tonic] + '。疊了 ' + n + ' 個五度' + (n ? '，最後一個離 C ' + sg(p.offC, 2) + ' 音分' : '') + '。右邊（手機在下面）是三種音律相對十二平均律的偏差長條圖。',
-      'Clock face: ' + kname(state.kind) + ', tonic ' + TC.TONIC_NAMES[state.tonic] + '. ' + n + ' fifths stacked' + (n ? ', the last one ' + sg(p.offC, 2) + ' cents from C' : '') + '. Beside it (below on phones): bar chart of each tuning’s offset from equal temperament.'));
+    cv.setAttribute('aria-label', T('鐘面：' + kname(state.kind) + '，主音 ' + TC.TONIC_NAMES[state.tonic] + '。疊了 ' + n + ' 個五度' + (n ? '，最後一個離 C ' + sg(p.offC, 2) + ' 音分' : '') + '。音分偏差圖比較各音律與十二平均律的差異。',
+      'Clock face: ' + kname(state.kind) + ', tonic ' + TC.TONIC_NAMES[state.tonic] + '. ' + n + ' fifths stacked' + (n ? ', the last one ' + sg(p.offC, 2) + ' cents from C' : '') + '. The cent-offset chart compares each tuning with equal temperament.'));
     const pairs = beatPairs();
     cvB.setAttribute('aria-label', pairs.length ? T('拍頻圖：', 'Beat chart: ') + pairs.map(function (q) { return q.label + ' ' + fx(q.beat, 2) + ' Hz'; }).join(T('；', '; '))
       : T('拍頻圖：選兩個以上的音才看得到。', 'Beat chart: select two or more notes.'));
@@ -930,8 +943,8 @@
       }
     }
     if (Object.keys(state.held).length && !D.reducedMotion()) more = true;
-    if (!view3 || !view3.active) draw(now);
-    drawBeat(now);
+    if (cv.clientWidth) draw(now);
+    if (cvB.clientWidth) drawBeat(now);
     if (view3 && view3.active) view3.frame();
     if (more) requestDraw();
   }
@@ -1067,8 +1080,14 @@
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', themeChanged);
   window.addEventListener('lab:themechange', themeChanged);
   if (window.ResizeObserver) {
-    let lastW = 0;
-    new ResizeObserver(function () { if (cv.clientWidth !== lastW || Math.abs((cvB.clientWidth || 0) - WB) > 1) { lastW = cv.clientWidth; resize(); } }).observe(stage);
-  } else window.addEventListener('resize', resize);
+    let lastW = 0, lastBeatW = 0;
+    new ResizeObserver(function () {
+      if (cv.clientWidth !== lastW || cvB.clientWidth !== lastBeatW) {
+        lastW = cv.clientWidth; lastBeatW = cvB.clientWidth; resize();
+      }
+    }).observe(stage);
+  }
+  window.addEventListener('resize', resize);
+  plotView.addEventListener('change', resize);
   resize();
 })();
