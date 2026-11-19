@@ -625,7 +625,7 @@
     setHTML('rHalfR', lin ? '—' : secText(AC.half(tR)));
     setHTML('rSlope', lin ? T('—<small>（線性不是定值）</small>', '—<small> (not constant)</small>') : num(AC.slopeD(p), 1) + '、' + num(AC.slopeR(p), 1) + ' <small>dB/s</small>');
     const t20 = AC.timeToDb(p, -20);
-    setHTML('rT20', t20 === Infinity ? T('不會<small>（延持高於 −20 dB）</small>', 'never<small> (sustain above −20 dB)</small>') : secText(t20));
+    setHTML('rT20', t20 === Infinity ? T('不會<small>（延持高於 −20 dB）</small>', 'never<small> (sustain above −20 dB)</small>') : (t20 < 0.1 ? secText(t20) : num(t20, 3) + ' s'));
     const sn = shownNote();
     const span = AC.audibleSpan(sn.p, sn.rev ? { rev: true, H: sn.H } : { hold: sn.hold }, -40);
     const f0 = cur ? cur.f0 : keyOf(state.key).f;
