@@ -29,7 +29,8 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首頁","item":"https://lab.astroni.org/"},{"@type":"ListItem","position":2,"name":"生物","item":"https://lab.astroni.org/biology.html"},{"@type":"ListItem","position":3,"name":"演化與多樣性","item":"https://lab.astroni.org/biology.html#evolution"},{"@type":"ListItem","position":4,"name":"天擇與族群遺傳","item":"https://lab.astroni.org/biology.html#ch-popgen"},{"@type":"ListItem","position":5,"name":"哈溫平衡、遺傳漂變與天擇","item":"https://lab.astroni.org/hardy-weinberg.html"}]}</script>
   <!-- SEO-END -->
   <link rel="stylesheet" href="vendor/katex/katex.min.css">
-  <link rel="stylesheet" href="lab.css?v=202611201021">
+  <link rel="stylesheet" href="lab.css?v=202611171020">
+  <link rel="stylesheet" href="lab-tools.css">
   <style>
     /* 哈溫平衡頁面專用樣式（顏色只用 lab.css 的變數與下面的頁面代號，深色模式自動適用） */
     :root {
@@ -109,9 +110,25 @@
     .hw3-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(12px * var(--fs, 1)); line-height: 1.45; }
     .hw3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; max-width: 70%; }
     .hw3-hud .tl { left: 10px; top: 8px; align-items: flex-start; }
-    .hw3-hud .br { right: 10px; bottom: 8px; align-items: flex-end; }
+    .hw3-hud .br { right: 10px; bottom: 59px; align-items: flex-end; }
     .hw3-hud span { background: color-mix(in srgb, var(--surface) 82%, transparent); border-radius: 8px; padding: 1px 8px; color: var(--text); font-variant-numeric: tabular-nums; }
     .hw3-hud span.m { color: var(--muted); }
+    .bio-figure { min-width: 0; }
+    .bio-figure > :is(#cv, #cv2) {
+      width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 72px);
+      margin-inline: auto; aspect-ratio: auto;
+    }
+    html.labdeck-stack .lab { margin-right: 8px; }
+    html.ms-docked:not(.ms-dock-closed) .lab { margin-right: 28px; }
+    @media (max-width: 1239px) {
+      .wrap > .ms-wrap { margin-inline-end: 28px; }
+    }
+    html.labdeck-drawer .lab { margin-right: 20px; }
+    html.labdeck-drawer .bio-figure > :is(#cv, #cv2) { max-height: calc(100dvh - 108px); }
+    @media (min-width: 881px) and (max-width: 1220px) {
+      html.labdeck-panel .lab { margin-right: 28px; }
+    }
+    .vpad-footer { justify-content: center; color: var(--muted); font-size: calc(13px * var(--fs, 1)); }
   </style>
 </head>
 <body data-en-ready>
@@ -125,16 +142,20 @@
     <p class="try-hint" data-en="Try it: press “Next generation” once and watch the point jump onto the purple curve. Then set selfing to 100% and press it again.">試試看：按一次「下一代」，看點怎麼一步跳到紫色的曲線上；再把自花授粉調到 100%，多按幾次。</p>
 
     <h2 class="lab-title" data-en-html="1 · A bed of snapdragons<small>Random mating, selfing and the Hardy–Weinberg test</small>">一・一片金魚草花圃<small>隨機交配、自花授粉與哈溫平衡的檢定</small></h2>
-    <div class="lab hw" id="lab1">
+    <div class="lab hw" id="lab1" data-no-spill>
       <div class="stage">
-        <canvas id="cv" tabindex="0" aria-label="金魚草花圃：紅花 AA、粉紅花 Aa、白花 aa；旁邊是基因型三角圖、配子方格與基因型比例。可拖曳三角圖中的起點，或點選畫布後用方向鍵移動" data-en-aria-label="A bed of snapdragons: red AA, pink Aa, white aa; with the genotype triangle, the gamete square and the genotype bars. Drag the starting point in the triangle, or focus the canvas and move it with the arrow keys"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv" tabindex="0" aria-label="金魚草花圃：紅花 AA、粉紅花 Aa、白花 aa；旁邊是基因型三角圖、配子方格與基因型比例。可拖曳三角圖中的起點，或點選畫布後用方向鍵移動" data-en-aria-label="A bed of snapdragons: red AA, pink Aa, white aa; with the genotype triangle, the gamete square and the genotype bars. Drag the starting point in the triangle, or focus the canvas and move it with the arrow keys"></canvas>
+        </div>
         <div class="playbar">
           <button id="next1" type="button" class="primary" data-en="Next generation">下一代</button>
           <button id="next10" type="button" data-en="10 generations">跑 10 代</button>
+          <button id="test1" type="button" data-en="Draw a sample and test">抽樣並檢定</button>
           <button id="back1" type="button" data-en="Back to start" title="回到第 0 代，設定不變" data-en-title="Back to generation 0; the settings stay">回到起點</button>
           <button id="clearAll" type="button" data-en="Clear all" title="回到第 0 代並清除檢定紀錄，設定不變" data-en-title="Back to generation 0 and clear the test record; the settings stay">全部清除</button>
           <button id="soundBtn" type="button" class="sound-btn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 9v6h4l5 4V5L8 9H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/></svg><span id="soundLabel">音效：關</span></button>
         </div>
+        <div data-section-anchor data-deck-anchor hidden></div>
         <p class="status" id="status" aria-live="polite"></p>
         <p class="sr-only" id="srSay" aria-live="polite"></p>
         <div class="legend" id="legend"></div>
@@ -142,25 +163,24 @@
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="起始的族群|Starting population" data-deck-order="1" data-section="lab1">
           <h2 data-en="Starting population">起始的族群</h2>
           <div class="slider"><label for="fAA" data-en="Red flowers AA (share)">紅花 AA 的比例</label><output id="fAAo"></output>
-            <input id="fAA" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+            <input id="fAA" type="range" min="0" max="1" step="0.001" value="0.5" data-decimals="3"></div>
           <div class="slider"><label for="faa" data-en="White flowers aa (share)">白花 aa 的比例</label><output id="faao"></output>
-            <input id="faa" type="range" min="0" max="1" step="0.01" value="0.5" data-decimals="3"></div>
+            <input id="faa" type="range" min="0" max="1" step="0.001" value="0.5" data-decimals="3"></div>
           <p class="hint" id="hintAa" data-en="The rest are pink Aa. You can also drag the white dot in the triangle.">其餘是粉紅花 Aa。也可以在三角圖上拖曳白色圓點。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="交配方式|How they mate" data-deck-order="2" data-section="lab1">
           <h2 data-en="How they mate">交配方式</h2>
           <div class="slider"><label for="sig" data-en="Self-pollination σ (share of seeds)">自花授粉的比例 σ</label><output id="sigo"></output>
             <input id="sig" type="range" min="0" max="1" step="0.01" value="0" data-decimals="3"></div>
           <p class="hint" data-en="The rest of the seeds come from random mating. Snapdragon flowers can be bagged and hand-pollinated, so both are possible in a garden.">其餘的種子來自隨機交配。金魚草的花可以套袋、人工授粉，所以在花圃裡兩種都做得到。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="抽樣檢定|Sample and test" data-deck-order="3" data-section="lab1">
           <h2 data-en="Sample and test">抽樣檢定</h2>
           <div class="slider"><label for="nS" data-en="Plants in the sample n">抽樣的株數 n</label><output id="nSo"></output>
             <input id="nS" type="range" min="20" max="2000" step="10" value="100" data-decimals="0"></div>
-          <button id="test1" type="button" class="wide" data-en="Draw a sample and test">抽樣並檢定</button>
           <p class="hint" data-en="A χ² test with 1 degree of freedom at the 5% level: is the sample consistent with Hardy–Weinberg proportions?">自由度 1、顯著水準 5% 的卡方檢定：樣本和哈溫比例相符嗎？</p>
         </section>
         <section class="card">
@@ -171,7 +191,7 @@
     </div>
 
     <h2 class="lab-title" data-en-html="2 · Many populations evolving at once<small>Genetic drift, natural selection, mutation and migration (the Wright–Fisher model)</small>">二・許多族群一起演化<small>遺傳漂變、天擇、突變與遷移（Wright–Fisher 模型）</small></h2>
-    <div class="lab hw" id="lab2">
+    <div class="lab hw" id="lab2" data-no-spill>
       <div class="stage" id="stage2">
         <div class="view-bar">
           <div class="seg" role="group" aria-label="檢視方式" data-en-aria-label="View">
@@ -181,20 +201,25 @@
           <button type="button" id="resetCam" hidden data-en="Reset camera">重設視角</button>
         </div>
         <p class="view-msg" id="viewMsg" role="status"></p>
-        <canvas id="cv2" tabindex="0" aria-label="每個族群的 A 頻率隨世代的變化、某一代 A 頻率的分布，以及平均異型合子度。點一下或拖曳上方的圖可以選世代，也可以用方向鍵" data-en-aria-label="The frequency of A in every population against generation, the spread of frequencies at one generation, and the mean heterozygosity. Tap or drag the top graph to pick a generation, or use the arrow keys"></canvas>
+        <div class="bio-figure">
+          <canvas id="cv2" tabindex="0" aria-label="每個族群的 A 頻率隨世代的變化、某一代 A 頻率的分布，以及平均異型合子度。點一下或拖曳上方的圖可以選世代，也可以用方向鍵" data-en-aria-label="The frequency of A in every population against generation, the spread of frequencies at one generation, and the mean heterozygosity. Tap or drag the top graph to pick a generation, or use the arrow keys"></canvas>
+        </div>
         <div id="view3"></div>
         <div class="playbar">
+          <button type="button" id="genPrev" data-en="Inspect previous generation">檢視前一代</button>
+          <button type="button" id="genNext" data-en="Inspect next generation">檢視後一代</button>
           <button id="run2" type="button" class="primary" data-en="Evolve">開始演化</button>
           <button id="pause2" type="button" data-en="Pause">暫停</button>
           <button id="clear2" type="button" data-en="Clear all" title="清除紀錄表，設定不變" data-en-title="Clear the table; the settings stay">全部清除</button>
         </div>
+        <div data-section-anchor hidden></div>
         <p class="status" id="status2" aria-live="polite"></p>
         <div class="legend" id="legend2"></div>
         <div class="tablewrap"><table class="data runs" id="runs2"></table></div>
       </div>
 
       <aside class="panel">
-        <section class="card">
+        <section class="card" data-deck="族群|Populations" data-deck-order="1" data-section="lab2">
           <h2 data-en="Populations">族群</h2>
           <div class="slider"><label for="N" data-en="Individuals per population N">每個族群的個體數 N</label><output id="No"></output>
             <input id="N" type="range" min="2" max="5000" step="1" value="50" data-decimals="0"></div>
@@ -206,7 +231,7 @@
             <input id="gens" type="range" min="10" max="1000" step="1" value="100" data-decimals="0"></div>
           <p class="hint" data-en="Each population has 2N copies of the gene, so the frequency moves in steps of 1/(2N). Tap a number to type an exact value.">每個族群有 2N 個基因，所以頻率一次變 1/(2N)。點一下數字可直接輸入精確數值。</p>
         </section>
-        <section class="card">
+        <section class="card" data-deck="天擇（相對適應度）|Natural selection (relative fitness)" data-deck-order="2" data-section="lab2">
           <h2 data-en="Natural selection (relative fitness)">天擇（相對適應度）</h2>
           <div class="seg2" role="group" aria-label="常見的天擇" data-en-aria-label="Common kinds of selection" id="selSeg">
             <button type="button" data-sel="neutral" aria-pressed="true" data-en="Neutral">中性</button>
@@ -214,6 +239,9 @@
             <button type="button" data-sel="lethal" aria-pressed="false" data-en="aa lethal">aa 致死</button>
             <button type="button" data-sel="het" aria-pressed="false" data-en="Aa best">Aa 最有利</button>
           </div>
+        </section>
+        <section class="card" data-deck="各基因型的適應度|Genotype fitness" data-deck-order="3" data-section="lab2">
+          <h2 data-en="Genotype fitness">各基因型的適應度</h2>
           <div class="slider"><label for="wAA" data-en-html="Fitness of AA, w<sub>AA</sub>">AA 的適應度 w<sub>AA</sub></label><output id="wAAo"></output>
             <input id="wAA" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
           <div class="slider"><label for="wAa" data-en-html="Fitness of Aa, w<sub>Aa</sub>">Aa 的適應度 w<sub>Aa</sub></label><output id="wAao"></output>
@@ -221,12 +249,15 @@
           <div class="slider"><label for="waa" data-en-html="Fitness of aa, w<sub>aa</sub>">aa 的適應度 w<sub>aa</sub></label><output id="waao"></output>
             <input id="waa" type="range" min="0" max="2" step="0.01" value="1" data-decimals="3"></div>
         </section>
-        <section class="card">
-          <h2 data-en="Mutation and migration">突變與遷移</h2>
+        <section class="card" data-deck="突變|Mutation" data-deck-order="4" data-section="lab2">
+          <h2 data-en="Mutation">突變</h2>
           <div class="slider"><label for="mu" data-en="Mutation A → a, u (per gene per generation)">突變 A → a 的機率 u（每個基因每代）</label><output id="muo"></output>
             <input id="mu" type="range" min="0" max="0.01" step="0.0001" value="0" data-decimals="5"></div>
           <div class="slider"><label for="nu" data-en="Mutation a → A, v">突變 a → A 的機率 v</label><output id="nuo"></output>
             <input id="nu" type="range" min="0" max="0.01" step="0.0001" value="0" data-decimals="5"></div>
+        </section>
+        <section class="card" data-deck="遷移|Migration" data-deck-order="5" data-section="lab2">
+          <h2 data-en="Migration">遷移</h2>
           <div class="slider"><label for="mig" data-en="Migrants m (share of each generation)">移入者的比例 m（每代）</label><output id="migo"></output>
             <input id="mig" type="range" min="0" max="0.2" step="0.001" value="0" data-decimals="4"></div>
           <div class="slider"><label for="pm" data-en-html="Frequency of A in the migrants, p<sub>m</sub>">移入者的 A 頻率 p<sub>m</sub></label><output id="pmo"></output>
@@ -312,18 +343,20 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201021"></script>
-  <script src="js/hardy-weinberg-core.js?v=202611201021"></script>
-  <script src="js/sound.js?v=202611201021"></script>
-  <script src="js/numinput.js?v=202611201021"></script>
-  <script src="js/labdeck.js?v=202611201021"></script>
-  <script src="js/drawkit.js?v=202611201021"></script>
-  <script src="js/keys.js?v=202611201021"></script>
-  <script src="js/hardy-weinberg.js?v=202611201021"></script>
-  <script src="js/firebase-config.js?v=202611201021"></script>
-  <script src="js/missions.js?v=202611201021" data-module="hardy-weinberg"></script>
-  <script src="js/missions/hardy-weinberg.js?v=202611201021"></script>
-  <script src="js/stats.js?v=202611201021" data-module="hardy-weinberg"></script>
-  <script src="js/comments.js?v=202611201021"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/hardy-weinberg-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js"></script>
+  <script src="js/vpad.js"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/hardy-weinberg.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="hardy-weinberg"></script>
+  <script src="js/missions/hardy-weinberg.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="hardy-weinberg"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>
