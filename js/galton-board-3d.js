@@ -261,6 +261,14 @@
       const dv = (fitH / 2) / Math.tan(vf / 2), dh = (fitW / 2) / Math.tan(hf / 2);
       return Math.max(dv, dh) * 1.08 + DEPTH;
     }
+    // 站長 11/16：3D 要能平移、朝游標縮放（共用 js/view3d-nav.js）。對焦時才接上，範圍跟著場景大小
+    let nav = null, navR = 0;
+    function navSync(r) {
+      if (!window.LabView3DNav || !(r > 0)) return;
+      if (nav && Math.abs(r - navR) > 0.2 * navR) { nav.dispose(); nav = null; }
+      if (!nav) { navR = r; nav = LabView3DNav.attach({ THREE: THREE, controls: controls, host: wrap, radius: r, T: T }); }
+      nav.home();
+    }
     function resetCamera() {
       const d = fitDistance();
       controls.target.copy(fitC);
@@ -270,6 +278,7 @@
       camera.near = fitR * 0.01; camera.far = fitR * 40;
       camera.updateProjectionMatrix();
       controls.update();
+      navSync(fitR);
       requestRender();
     }
 
@@ -342,6 +351,7 @@
       },
       resetCamera: function () { resetCamera(); },
       dispose: function () {
+        if (nav) { nav.dispose(); nav = null; }
         api.active = false;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;

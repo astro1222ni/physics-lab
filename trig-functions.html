@@ -90,6 +90,7 @@
     .t3-hud > div { position: absolute; display: flex; flex-direction: column; gap: 4px; }
     .t3-hud .tl { left: 8px; top: 8px; align-items: flex-start; max-width: 60%; }
     .t3-hud .bl { left: 8px; bottom: 8px; align-items: flex-start; max-width: calc(100% - 16px); }
+    .t3-wrap:has(.v3nav) .t3-hud .bl { bottom: 62px; } /* 左下角讓給「旋轉｜平移」鈕 */
     .t3-hud span { padding: 1px 8px; border-radius: 999px; color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums;
       background: color-mix(in srgb, var(--canvas-bg) 86%, transparent); border: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
     .t3-hud span.m { color: var(--muted); font-weight: 500; }
@@ -308,18 +309,19 @@
 
   <script src="vendor/katex/katex.min.js"></script>
   <script src="vendor/katex/contrib/auto-render.min.js"></script>
-  <script src="js/math.js?v=202611201855"></script>
-  <script src="js/trig-functions-core.js?v=202611201855"></script>
-  <script src="js/sound.js?v=202611201855"></script>
-  <script src="js/numinput.js?v=202611201855"></script>
-  <script src="js/labdeck.js?v=202611201855"></script>
-  <script src="js/drawkit.js?v=202611201855"></script>
-  <script src="js/keys.js?v=202611201855"></script>
-  <script src="js/trig-functions.js?v=202611201855"></script>
-  <script src="js/firebase-config.js?v=202611201855"></script>
-  <script src="js/missions.js?v=202611201855" data-module="trig-functions"></script>
-  <script src="js/missions/trig-functions.js?v=202611201855"></script>
-  <script src="js/stats.js?v=202611201855" data-module="trig-functions"></script>
-  <script src="js/comments.js?v=202611201855"></script>
+  <script src="js/math.js?v=202611171020"></script>
+  <script src="js/trig-functions-core.js?v=202611171020"></script>
+  <script src="js/sound.js?v=202611171020"></script>
+  <script src="js/numinput.js?v=202611171020"></script>
+  <script src="js/labdeck.js?v=202611171020"></script>
+  <script src="js/view3d-nav.js?v=202611171020"></script>
+  <script src="js/drawkit.js?v=202611171020"></script>
+  <script src="js/keys.js?v=202611171020"></script>
+  <script src="js/trig-functions.js?v=202611171020"></script>
+  <script src="js/firebase-config.js?v=202611171020"></script>
+  <script src="js/missions.js?v=202611171020" data-module="trig-functions"></script>
+  <script src="js/missions/trig-functions.js?v=202611171020"></script>
+  <script src="js/stats.js?v=202611171020" data-module="trig-functions"></script>
+  <script src="js/comments.js?v=202611171020"></script>
 </body>
 </html>

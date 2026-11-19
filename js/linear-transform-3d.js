@@ -230,6 +230,14 @@
         if (moving) requestRender();
       });
     }
+    // 站長 11/16：3D 要能平移、朝游標縮放（共用 js/view3d-nav.js）。對焦時才接上，範圍跟著場景大小
+    let nav = null, navR = 0;
+    function navSync(r) {
+      if (!window.LabView3DNav || !(r > 0)) return;
+      if (nav && Math.abs(r - navR) > 0.2 * navR) { nav.dispose(); nav = null; }
+      if (!nav) { navR = r; nav = LabView3DNav.attach({ THREE: THREE, controls: controls, host: wrap, radius: r, T: T }); }
+      nav.home();
+    }
     function resetCamera() {
       const e = L.viewBasis(B.yaw0, B.pitch0).e;
       const dist = (Math.max(G, R) + 0.5) * (camera.aspect < 1 ? 4.1 : 3.3);
@@ -237,6 +245,7 @@
       controls.target.set(0.3, 0.3, 0.8);
       camera.updateProjectionMatrix();
       controls.update();
+      navSync(Math.max(G, R) + 0.5);
       requestRender();
     }
     function resize3() {
@@ -290,6 +299,7 @@
       },
       resetCamera: function () { resetCamera(); },
       dispose: function () {
+        if (nav) { nav.dispose(); nav = null; }
         api.active = false;
         if (raf) cancelAnimationFrame(raf);
         raf = 0;
