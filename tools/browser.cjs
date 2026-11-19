@@ -52,15 +52,109 @@ function lowerPriority() {
   try { os.setPriority(0, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch (e) { /* 沒有權限就算了 */ }
 }
 
-/** 啟動 Chromium：Intel 內顯、低於標準優先權。opts 會傳給 chromium.launch（args 會合併）。 */
+/*
+ * 3. 全機瀏覽器位子（站長 11/20 同意小幫手建議：整台電腦的網頁自動測試同時最多 2～3 組）。
+ *    原因：記憶體從 96 GB 降到 64 GB，11/20 07:0x 同時 11 組、40 支無頭瀏覽器，
+ *    可用記憶體掉到 3～4 GB，擋住 4070 的影片工作兩小時。
+ *    和 G:/physics-lab-wt/規劃/音樂-工具/browser-lock.cjs 共用同一組位子與號碼牌，先來先用。
+ *    - 已經由 browser-lock.cjs 包著（環境變數 LAB_BROWSER_SLOT）就不再排隊。
+ *    - 同一個程式第一次開瀏覽器時取位子，最後一個瀏覽器關掉就還；子程序繼承，不重複取。
+ *    - 沒有 G:/physics-lab-wt（雲端、別台電腦）或 LAB_BROWSER_NOQUEUE=1 時不排隊。
+ */
+const SLOT_BASE = process.env.LAB_BROWSER_SLOT_BASE || 'G:/physics-lab-wt/music-browser.lock'; // 測試可另指位子資料夾
+const SLOT_MAX = 3;
+const SLOT_STALE = 25 * 60 * 1000;
+const TICKET_STALE = 2 * 60 * 1000;
+const SLOT_GIVE_UP = 180 * 60 * 1000;
+let slotDir = null, slotBeat = null, openBrowsers = 0;
+const nap = ms => new Promise(r => setTimeout(r, ms));
+
+function slotFree(dir) {
+  try {
+    const st = fs.statSync(dir);
+    if (Date.now() - st.mtimeMs > SLOT_STALE) { fs.rmSync(dir, { recursive: true, force: true }); return true; }
+    return false;
+  } catch (e) { return true; }
+}
+
+function releaseSlot() {
+  if (!slotDir) return;
+  clearInterval(slotBeat); slotBeat = null;
+  try { fs.rmSync(slotDir, { recursive: true, force: true }); } catch (e) { /* 忽略 */ }
+  if (process.env.LAB_BROWSER_SLOT === slotDir) delete process.env.LAB_BROWSER_SLOT;
+  slotDir = null;
+}
+
+async function takeSlot() {
+  if (slotDir || process.platform !== 'win32' || process.env.LAB_BROWSER_SLOT || process.env.LAB_BROWSER_NOQUEUE === '1') return;
+  if (!fs.existsSync(path.dirname(SLOT_BASE))) return;
+  const slots = [SLOT_BASE];
+  for (let i = 2; i <= SLOT_MAX; i++) slots.push(SLOT_BASE + '-' + i);
+  const waitDir = SLOT_BASE + '.wait';
+  try { fs.mkdirSync(waitDir, { recursive: true }); } catch (e) { /* 忽略 */ }
+  const t0 = Date.now();
+  const ticketName = String(t0).padStart(15, '0') + '-' + process.pid + '-' + Math.random().toString(36).slice(2, 8) + '.txt';
+  const ticket = path.join(waitDir, ticketName);
+  const label = process.argv.slice(1).join(' ');
+  const touch = () => {
+    try {
+      if (!fs.existsSync(ticket)) fs.writeFileSync(ticket, label + '\n' + new Date(t0).toISOString());
+      else { const n = new Date(); fs.utimesSync(ticket, n, n); }
+    } catch (e) { /* 忽略 */ }
+  };
+  const ahead = () => {
+    let names;
+    try { names = fs.readdirSync(waitDir).filter(n => n.endsWith('.txt')).sort(); } catch (e) { return 0; }
+    let n = 0;
+    for (const name of names) {
+      if (name === ticketName) return n;
+      const p = path.join(waitDir, name);
+      try { if (Date.now() - fs.statSync(p).mtimeMs > TICKET_STALE) { fs.rmSync(p, { force: true }); continue; } } catch (e) { continue; }
+      n++;
+    }
+    return n;
+  };
+  let lastTouch = 0, said = false;
+  try {
+    while (!slotDir) {
+      if (Date.now() - lastTouch > 20000) { touch(); lastTouch = Date.now(); }
+      const free = slots.filter(slotFree);
+      if (ahead() < free.length) {
+        for (const dir of free) { try { fs.mkdirSync(dir); slotDir = dir; break; } catch (e) { /* 被搶走了 */ } }
+      }
+      if (slotDir) break;
+      if (Date.now() - t0 > SLOT_GIVE_UP) throw new Error('等了 180 分鐘還拿不到瀏覽器位子（全機最多 ' + SLOT_MAX + ' 組）');
+      if (!said) { console.log('（瀏覽器排隊中：全機最多 ' + SLOT_MAX + ' 組網頁測試，照先來先用排隊）'); said = true; }
+      await nap(3000);
+    }
+  } finally {
+    try { fs.rmSync(ticket, { force: true }); } catch (e) { /* 忽略 */ }
+  }
+  try { fs.writeFileSync(path.join(slotDir, 'owner.txt'), 'browser.cjs ' + label + '\n' + new Date().toISOString()); } catch (e) { /* 忽略 */ }
+  if (said) console.log('（拿到瀏覽器位子：' + (slots.indexOf(slotDir) + 1) + ' 號）');
+  process.env.LAB_BROWSER_SLOT = slotDir; // 子程序繼承，不再重複排隊
+  slotBeat = setInterval(() => { try { const n = new Date(); fs.utimesSync(slotDir, n, n); } catch (e) { /* 忽略 */ } }, 60000);
+  slotBeat.unref();
+  process.once('exit', releaseSlot);
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGBREAK', 'SIGHUP']) {
+    try { process.once(sig, () => { releaseSlot(); process.exit(130); }); } catch (e) { /* 這個平台沒有這個訊號 */ }
+  }
+}
+
+/** 啟動 Chromium：Intel 內顯、低於標準優先權、全機排隊。opts 會傳給 chromium.launch（args 會合併）。 */
 async function launch(opts) {
   lowerPriority(); // 子行程（Chromium）會繼承「低於標準」
+  await takeSlot();
   const { chromium } = require('playwright');
   const luid = intelLuid();
   const gpuArgs = luid ? ['--use-angle=d3d11', '--use-adapter-luid=' + luid, '--ignore-gpu-blocklist', '--enable-gpu-rasterization'] : [];
   const o = Object.assign({}, opts || {});
   o.args = gpuArgs.concat(o.args || []);
-  const browser = await chromium.launch(o);
+  let browser;
+  try { browser = await chromium.launch(o); }
+  catch (e) { if (openBrowsers === 0) releaseSlot(); throw e; }
+  openBrowsers++;
+  browser.on('disconnected', () => { openBrowsers--; if (openBrowsers <= 0) { openBrowsers = 0; releaseSlot(); } });
   browser.labGpu = luid ? 'Intel 內顯' : '軟體算繪（CPU）';
   return browser;
 }
