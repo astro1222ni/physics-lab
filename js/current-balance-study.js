@@ -2,7 +2,9 @@
 (function () {
   'use strict';
   const C=CurrentBalanceCore,S=CurrentBalanceStudyCore,U=CurrentBalanceStudyData,L=CurrentBalanceLab,P=LabPanel,D=LabDraw;
-  const T=(a,b)=>LabSettings.t(a,b),tr=P.tr,E=P.element,B=(text,fn)=>{const b=rich(P.button('',fn),text);if(text)b.setAttribute('aria-label',text);return b;},rich=(node,text)=>P.rich(node,String(text).replace(/\bI([12])\b/g,'\\(I_$1\\)').replace(/μ0/g,'\\(\\mu_0\\)')),$=id=>document.getElementById(id);
+  const T=(a,b)=>LabSettings.t(a,b),tr=P.tr,E=P.element,B=(text,fn)=>{const b=rich(P.button('',fn),text);if(text)b.setAttribute('aria-label',text);return b;},$=id=>document.getElementById(id);
+  const mathSymbols=text=>String(text).replace(/\bI([12])\b/g,'\\(I_$1\\)').replace(/μ0/g,'\\(\\mu_0\\)');
+  const rich=(node,text)=>P.rich(node,mathSymbols(text));
   const KEY='current-balance-study:v1',blank=()=>({answers:{},first:{},submitted:{},quizFirst:{},sections:Array(8).fill(false),cards:[],hands:Array(9).fill(false),flags:{},examples:{},project:null});
   let diagramFrame=0;
   let run=blank(),flow,teachingCopy,teachingRows,currentExample=0,exampleApplying=false,enteredAt=0,message='',linear=false,compareIdeal=false,compareReal=false,rendering=false;
@@ -68,7 +70,12 @@
   function checkQuiz(){if(isTeacher())return;const correct=['q1','q2','q3'].filter(k=>run.answers[k]===U.questions[k].correct).length,firstCorrect=['q1','q2','q3'].filter(k=>run.quizFirst[k]===U.questions[k].correct).length;if(correct===3){emit('quiz-correct',7,{correct});if(firstCorrect===3)emit('quiz-perfect',7,{firstCorrect});}}
   function lecture(key){const data=U.videos[key],a=E('a',tr(data.label),'lp-lecture-link');a.href=data.url;a.target='_blank';a.rel='noopener noreferrer';return a;}
   function feedback(){const box=E('div',null,'cb-feedback');box.append(E('h3',T('留言與 bug 回報','Comments and bug reports')),B(T('到本實驗留言','Comment on this experiment'),()=>{P.close();LabComments?.compose('');}),B(T('回報操作問題','Report a problem'),()=>{P.close();LabComments?.compose(T('電流天平問題回報\n發生步驟：\n預期結果：\n實際結果：\n裝置：','Current balance problem\nSteps:\nExpected:\nObserved:\nDevice:')+navigator.userAgent);}));return box;}
-  function tasks(){const all=LabMission.all()?.['current-balance']||[],done=LabMission._state?.done||{};return all.filter(m=>m.study).map(m=>{const div=E('div',null,'cb-study-task');div.append(rich(E('strong'),(done[m.id]?'✓ ':'☆ ')+tr([m.title.zh,m.title.en])+' · '+m.level),rich(E('p'),tr([m.desc.zh,m.desc.en])));return div;});}
+  function studyTaskText(node,text){
+    LabCatalogText.render(node,mathSymbols(text));
+    P.math(node);
+    return node;
+  }
+  function tasks(){const all=LabMission.all()?.['current-balance']||[],done=LabMission._state?.done||{};return all.filter(m=>m.study).map(m=>{const div=E('div',null,'cb-study-task');div.append(studyTaskText(E('strong'),(done[m.id]?'✓ ':'☆ ')+tr([m.title.zh,m.title.en])+' · '+m.level),studyTaskText(E('p'),tr([m.desc.zh,m.desc.en])));return div;});}
   function render(){if(!flow||rendering)return;rendering=true;try{const state=flow.state,n=state.section,i=state.step,s=U.sections[n-1].steps[i-1];if(!state.active)return;
     const slide=![4,6].includes(n)&&!(n===3&&i===2)&&!(n===5&&i===2&&L.snapshot().view==='3d');document.documentElement.classList.toggle('cb-slide',slide);document.documentElement.classList.add('cb-study');document.documentElement.toggleAttribute('data-cb-hands',[4,6].includes(n));
     for(const id of ['cb-study-shell','cb-study-caption','cb-study-tools','cb-study-nav','cb-study-message'])$(id).hidden=false;

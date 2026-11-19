@@ -18,6 +18,7 @@
   if (!LM || !C || window.LabDaily) return;
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const L = function (o) { return o ? T(o.zh, o.en || o.zh) : ''; };
+  const { render: renderFormula } = window.LabCatalogText;
   const st = LM._state;
   const app = document.getElementById('dailyApp');
 
@@ -374,8 +375,8 @@
     head.appendChild(back);
     banner.appendChild(head);
     if (m) {
-      banner.appendChild(el('strong', 'dl-banner-title', L(m.title)));
-      banner.appendChild(el('p', 'dl-banner-desc', L(m.desc)));
+      banner.appendChild(renderFormula(el('strong', 'dl-banner-title'), L(m.title)));
+      banner.appendChild(renderFormula(el('p', 'dl-banner-desc'), L(m.desc)));
     }
     const line = el('p', 'dl-banner-status');
     if (!st.user) {
@@ -513,9 +514,9 @@
         top.appendChild(pc);
       }
       card.appendChild(top);
-      card.appendChild(el('span', 'dl-card-mod', moduleName(modOf(id))));
-      card.appendChild(el('h3', 'dl-card-title', L(m.title)));
-      card.appendChild(el('p', 'dl-card-desc', L(m.desc)));
+      card.appendChild(renderFormula(el('span', 'dl-card-mod'), moduleName(modOf(id))));
+      card.appendChild(renderFormula(el('h3', 'dl-card-title'), L(m.title)));
+      card.appendChild(renderFormula(el('p', 'dl-card-desc'), L(m.desc)));
       if (today_) {
         card.appendChild(el('p', 'dl-card-closed', T('今天已經完成，這個每日任務明天 00:00 才會換新。', 'Cleared today — this daily mission is closed until 00:00.')));
         const open = el('a', 'dl-open', T('打開實驗（不再計分）', 'Open the experiment (no more rewards)'));

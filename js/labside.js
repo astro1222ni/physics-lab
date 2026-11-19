@@ -51,10 +51,20 @@
       // N1、N2、V0（等位線）與 I1、I2、μ0（電流天平）的數字寫成下標
       String(text).split(/(N[12]|V0|I[12]|μ0)/g).forEach(s=>{if(/^(N[12]|V0|I[12]|μ0)$/.test(s)){node.append(doc.createTextNode(s.slice(0,-1)),E('sub','',s.slice(-1)));}else node.append(doc.createTextNode(s));});return node;
     }
+    function missionSymbols(node,text){
+      LabCatalogText.render(node,text);
+      // 只在上下標元素外套用既有的實驗符號排版。
+      for(const child of Array.from(node.childNodes)){
+        if(child.nodeType===Node.TEXT_NODE&&/(N[12]|V0|I[12]|μ0)/.test(child.data)){
+          child.replaceWith(symbols(doc.createDocumentFragment(),child.data));
+        }
+      }
+      return node;
+    }
     function fillNeed(det,m){
       const list=window.LabMission?.needOf?.(m),ul=det.querySelector('ul');ul.replaceChildren();
       if(!list){ul.append(E('li','ms-need-act',T('先動手操作一次，這裡就會列出還差哪些條件。','Try it once and the missing conditions will be listed here.')));return;}
-      for(const item of list){const li=E('li',item[0]===true?'ms-need-ok':item[0]===false?'ms-need-no':'ms-need-act');li.append(E('span','ms-need-mark',item[0]===true?'✓':item[0]===false?'✗':'→'),symbols(E('span'),T(item[1],item[2]||item[1])));ul.append(li);}
+      for(const item of list){const li=E('li',item[0]===true?'ms-need-ok':item[0]===false?'ms-need-no':'ms-need-act');li.append(E('span','ms-need-mark',item[0]===true?'✓':item[0]===false?'✗':'→'),missionSymbols(E('span'),T(item[1],item[2]||item[1])));ul.append(li);}
     }
     const stepNeedOpen={};
     function fillStepNeed(det,list){const ul=det.querySelector('ul');ul.replaceChildren();for(const item of list){const li=E('li',item[0]===true?'ms-need-ok':item[0]===false?'ms-need-no':'ms-need-act');li.append(E('span','ms-need-mark',item[0]===true?'✓':item[0]===false?'✗':'→'),symbols(E('span'),T(item[1],item[2]||item[1])));ul.append(li);}}
@@ -77,8 +87,8 @@
         const h=E('h3','labside-ms-head');h.append(E('span','ms-sec-name',name),E('span','ms-sec-count',nd+' / '+a.length),badge(got+' / '+tot,T('已得 '+got+' 顆，共 '+tot+' 顆倪的星星',got+' of '+tot+' Ni stars')));section.append(h);
         const box=E(kind==='hidden'?'ul':'ol',kind==='hidden'?'ms-hgrid':'ms-list');
         for(const m of a){const d=!!done[m.id],row=E('li',(kind==='hidden'?'ms-hcard':'ms-item')+' labside-mission'+(d?' done':''));row.dataset.mission=m.id;row.dataset.mid=m.id;
-          const head=E('div','ms-head');head.append(badge('×'+sOf(m),sOf(m)+T(' 顆倪的星星',' Ni stars')));if(kind!=='hidden')head.append(E('strong','ms-title',T(m.title.zh,m.title.en)));if(d)head.append(E('span','ms-check',T('✓ 已完成','✓ Done')));row.append(head);
-          if(kind==='hidden'){if(m.riddle)row.append(E('p','ms-desc',T('「'+m.riddle.zh+'」','“'+m.riddle.en+'”')));}else if(m.desc)row.append(symbols(E('p','ms-desc'),T(m.desc.zh,m.desc.en)));
+          const head=E('div','ms-head');head.append(badge('×'+sOf(m),sOf(m)+T(' 顆倪的星星',' Ni stars')));if(kind!=='hidden')head.append(LabCatalogText.render(E('strong','ms-title'),T(m.title.zh,m.title.en)));if(d)head.append(E('span','ms-check',T('✓ 已完成','✓ Done')));row.append(head);
+          if(kind==='hidden'){if(m.riddle)row.append(LabCatalogText.render(E('p','ms-desc'),T('「'+m.riddle.zh+'」','“'+m.riddle.en+'”')));}else if(m.desc)row.append(missionSymbols(E('p','ms-desc'),T(m.desc.zh,m.desc.en)));
         if(!m.hidden&&!done[m.id]&&typeof m.need==='function'){
           const det=E('details','ms-need');det.dataset.labsideNeed=m.id;det.append(E('summary','',T('還差什麼？','What’s missing?')),E('ul'));det.open=!!needOpen[m.id];if(det.open)fillNeed(det,m);det.addEventListener('toggle',()=>{needOpen[m.id]=det.open;if(det.open)fillNeed(det,m);});row.append(det);
         }

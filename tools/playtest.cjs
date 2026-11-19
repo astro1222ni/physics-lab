@@ -36,6 +36,7 @@ const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
 const crypto = require('crypto');
+const { plain } = require('../js/settings.js');
 
 const ROOT = path.resolve(__dirname, '..');
 const VERSION = 1; // 檢查方式有實質改變時加一，--changed 會全部重跑
@@ -111,7 +112,8 @@ function extractTerms(missions) {
     if (m.hidden) continue;
     for (const lang of ['zh', 'en']) {
       const list = [];
-      [m.title && m.title[lang], m.desc && m.desc[lang]].forEach(s => {
+      [m.title && m.title[lang], m.desc && m.desc[lang]].forEach(text => {
+        const s = plain(text);
         if (!s) return;
         const rx = lang === 'zh' ? /「([^「」]{1,40})」/g : /[“"]([^“”"]{1,60})[”"]|‘([^‘’]{1,40})’/g;
         for (const mm of s.matchAll(rx)) {
@@ -163,7 +165,7 @@ function judgeTerms(terms, namesBy, ex, missions, src) {
   const items = [];
   const res = new Map();
   const skip = new Set(ex.terms.map(norm));
-  (missions || []).forEach(m => { if (m.title) ['zh', 'en'].forEach(l => { if (m.title[l]) skip.add(norm(m.title[l])); }); }); // 引用別的任務標題
+  (missions || []).forEach(m => { if (m.title) ['zh', 'en'].forEach(l => { if (m.title[l]) skip.add(norm(plain(m.title[l]))); }); }); // 引用別的任務標題
   for (const t of terms.filter(x => x.lang === 'zh').concat(terms.filter(x => x.lang === 'en'))) {
     if (skip.has(norm(t.term))) { res.set(t, 'skip'); continue; }
     // 公式（例如「斜率 × (M + m)」）、不是操作情境的單一個字（例如「負」的試探電荷）：不是元件名稱

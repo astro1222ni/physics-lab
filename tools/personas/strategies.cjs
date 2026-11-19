@@ -2,6 +2,7 @@
 
 const { setTimeout: sleep } = require('node:timers/promises');
 const { createHash } = require('node:crypto');
+const { plain } = require('../../js/settings.js');
 const classic = require('../playtest.cjs');
 const { intervals } = require('./model.cjs');
 const { recipesFor } = require('./proofs.cjs');
@@ -27,7 +28,7 @@ const setValue = (item, value) => action('value', item.selector, { value: String
 const rangeKey = (item, key) => action('press', item.selector, { key });
 const mainCanvas = controls => controls.filter(x => x.kind === 'canvas').sort((a, b) => b.width * b.height - a.width * a.height)[0];
 const larger = (a, b) => b.width * b.height - a.width * a.height;
-const pureText = s => String(s || '').replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+const pureText = s => plain(String(s || '').replace(/<br\s*\/?>/gi, ' ')).replace(/\s+/g, ' ').trim();
 
 async function welcome(d) {
   if (await d.visible('.lab-welcome-skip')) await d.act(action('click', '.lab-welcome-skip'));

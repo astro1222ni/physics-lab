@@ -287,7 +287,7 @@
       const ok = !!st.done[x.id];
       const li = el('li', ok ? 'done' : null);
       li.appendChild(el('span', 'lb-m-mark', ok ? '✓' : '○'));
-      li.appendChild(el('span', 'lb-m-name', x.hidden ? T('隱藏任務', 'Hidden mission') : (x.title ? T(x.title.zh, x.title.en) : x.id)));
+      li.appendChild(LabCatalogText.render(el('span', 'lb-m-name'), x.hidden ? T('隱藏任務', 'Hidden mission') : (x.title ? T(x.title.zh, x.title.en) : x.id)));
       li.appendChild(el('span', 'lb-m-star', (ok ? gotOf(x) : starsOf(x)) + ' ★'));
       ul.appendChild(li);
     });

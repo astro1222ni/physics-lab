@@ -10,6 +10,7 @@
   const LM = window.LabMission;
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const L = function (o) { return o ? T(o.zh, o.en || o.zh) : ''; };
+  const { render: renderFormula } = window.LabCatalogText;
   const $ = function (id) { return document.getElementById(id); };
   const MODS = window.LAB_MISSION_MODULES || [];
   const SUBJ = window.LAB_SUBJECTS || [];
@@ -208,14 +209,22 @@
 
   function h3(sec, text) { sec.appendChild(el('h3', 'adm-h3', text)); }
   function kv(dl, k, v) { dl.appendChild(el('dt', null, k)); dl.appendChild(el('dd', null, v)); }
-  function table(head, rows, numCols) {
-    numCols = numCols || [];
+  function table(head, rows, numCols = [], formulaCols = []) {
     const w = el('div', 'adm-scroll'), t = el('table', 'adm-table adm-sub');
     const tr = el('tr');
     head.forEach(function (h, i) { tr.appendChild(el('th', numCols.indexOf(i) >= 0 ? 'num' : null, h)); });
     const th = el('thead'); th.appendChild(tr); t.appendChild(th);
     const tb = el('tbody');
-    rows.forEach(function (r) { const x = el('tr'); r.forEach(function (c, i) { x.appendChild(el('td', numCols.indexOf(i) >= 0 ? 'num' : null, c)); }); tb.appendChild(x); });
+    rows.forEach(function (r) {
+      const x = el('tr');
+      r.forEach(function (c, i) {
+        const td = el('td', numCols.includes(i) ? 'num' : null);
+        if (formulaCols.includes(i)) renderFormula(td, c);
+        else if (c != null) td.textContent = c;
+        x.appendChild(td);
+      });
+      tb.appendChild(x);
+    });
     t.appendChild(tb); w.appendChild(t);
     return w;
   }
@@ -256,7 +265,7 @@
     }).sort(function (a, b) { return b.at - a.at; });
     if (rows.length) {
       sec.appendChild(el('p', 'lb-note', Object.keys(bySubj).map(function (k) { return subjName(k) + T(' ', ': ') + bySubj[k].n + T(' 個／', ' done, ') + bySubj[k].s + ' ★'; }).join(T('　', ' · '))));
-      sec.appendChild(table([T('時間', 'Time'), T('科目', 'Subject'), T('實驗', 'Experiment'), T('任務', 'Mission'), '★'], rows.map(function (r) { return r.cells; }), [4]));
+      sec.appendChild(table([T('時間', 'Time'), T('科目', 'Subject'), T('實驗', 'Experiment'), T('任務', 'Mission'), '★'], rows.map(function (r) { return r.cells; }), [4], [2, 3]));
     } else sec.appendChild(el('p', 'lb-note', T('還沒有完成任務。', 'No missions yet.')));
 
     // 成就
@@ -283,7 +292,7 @@
       const ms = Object.keys(u.usDays[k] || {});
       return [dayLabel(k), ms.map(function (m) { return modName[m] ? L(modName[m]) : m; }).join(T('、', ', ')), String(ms.length)];
     });
-    if (dayRows.length) sec.appendChild(table([T('日期', 'Date'), T('打開的實驗', 'Experiments opened'), T('個數', 'Count')], dayRows, [2]));
+    if (dayRows.length) sec.appendChild(table([T('日期', 'Date'), T('打開的實驗', 'Experiments opened'), T('個數', 'Count')], dayRows, [2], [1]));
     if (u.days.length > 60) sec.appendChild(el('p', 'lb-note', T('只列最近 60 天。', 'Showing the latest 60 days.')));
     if (u.flags.length) sec.appendChild(el('p', 'lb-note', T('特殊紀錄：', 'Flags: ') + u.flags.map(function (f) {
       return { night: T('深夜（23–4 點）用過', 'used late at night'), dawn: T('清晨（4–6 點）用過', 'used at dawn'), lang: T('切換過語言', 'switched language'), mm: T('開過任務模式', 'used mission mode') }[f] || f;

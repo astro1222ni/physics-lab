@@ -15,7 +15,7 @@
 (function () {
   'use strict';
 
-  // 目錄文字在畫面上只允許無屬性的上下標。建置工具也用同一份轉換。
+  // 目錄與任務文字在畫面上只允許無屬性的上下標。建置工具也用同一份轉換。
   const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#x27;' };
   const asText = value => String(value == null ? '' : value);
   function formulaHTML(value) {
@@ -24,7 +24,7 @@
   }
   const catalogText = {
     html: formulaHTML,
-    plain: value => asText(value).replace(/<\/?(?:sub|sup)>/g, ''),
+    plain: value => asText(value).replace(/<!--[\s\S]*?-->|<\/?[a-z][\w:-]*(?=[\s/>])(?:[^"'<>]|"[^"]*"|'[^']*')*>/gi, ''),
     render: function (el, value) { el.innerHTML = formulaHTML(value); return el; }
   };
   if (typeof module === 'object' && module.exports) { module.exports = catalogText; return; }

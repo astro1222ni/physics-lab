@@ -20,6 +20,7 @@
   const SDK = 'https://www.gstatic.com/firebasejs/10.12.2/';
   const T = function (zh, en) { return window.LabSettings ? window.LabSettings.t(zh, en) : zh; };
   const L = function (o) { return o ? T(o.zh, o.en || o.zh) : ''; };
+  const catalogText = window.LabCatalogText;
   const EN = window.LabSettings && window.LabSettings.lang === 'en';
 
   const script = document.currentScript;
@@ -659,7 +660,7 @@
     items.forEach(function (x) {
       const li = el('li', x[0] === true ? 'ms-need-ok' : x[0] === false ? 'ms-need-no' : 'ms-need-act');
       li.appendChild(el('span', 'ms-need-mark', x[0] === true ? '✓' : x[0] === false ? '✗' : '→'));
-      li.appendChild(el('span', null, T(x[1], x[2] || x[1])));
+      li.appendChild(catalogText.render(el('span'), T(x[1], x[2] || x[1])));
       ul.appendChild(li);
     });
   }
@@ -753,8 +754,9 @@
     });
     if (!hit) return;
     nudged[kind] = true;
-    const name = hit.hidden ? T('一個隱藏任務', 'a hidden mission') : '「' + L(hit.title) + '」';
-    const nameEn = hit.hidden ? 'a hidden mission' : '“' + L(hit.title) + '”';
+    const title = catalogText.plain(L(hit.title));
+    const name = hit.hidden ? T('一個隱藏任務', 'a hidden mission') : '「' + title + '」';
+    const nameEn = hit.hidden ? 'a hidden mission' : '“' + title + '”';
     const msg = kind === 'login'
       ? T('你剛剛做到了' + name + '，但還沒登入，星星不會記錄。登入 Google 帳號後再做一次就會得星。', 'You just completed ' + nameEn + ', but you are not signed in, so no stars were recorded. Sign in with Google and do it again to earn them.')
       : kind === 'nickname'
@@ -840,10 +842,11 @@
   function showWhy(m, done, gate) {
     explained[m.id] = true;
     const got = done ? (state.done[m.id].stars || starsOf(m)) : starsOf(m);
+    const title = catalogText.plain(L(m.title));
     if (done) showInfo(T('這個任務之前已經完成', 'You already finished this mission'),
-      T('「' + L(m.title) + '」的 ' + got + ' 顆星之前已經領了，每個任務只能領一次。換一個還沒完成的任務試試看！', 'The ' + got + ' stars for “' + L(m.title) + '” were already earned; each mission pays out once. Try a mission you have not finished yet!'));
+      T('「' + title + '」的 ' + got + ' 顆星之前已經領了，每個任務只能領一次。換一個還沒完成的任務試試看！', 'The ' + got + ' stars for “' + title + '” were already earned; each mission pays out once. Try a mission you have not finished yet!'));
     else showInfo(T('這是實驗模式的任務', 'This is a Lab-mode mission'),
-      T('「' + L(m.title) + '」（★' + got + '）要在實驗模式完成才會拿到星星；學習模式只算自學任務。', '“' + L(m.title) + '” (★' + got + ') pays out in Lab mode; Learning mode only counts self-study missions.'),
+      T('「' + title + '」（★' + got + '）要在實驗模式完成才會拿到星星；學習模式只算自學任務。', '“' + title + '” (★' + got + ') pays out in Lab mode; Learning mode only counts self-study missions.'),
       gate && gate.url ? [T('換到實驗模式 →', 'Switch to Lab mode →'), gate.url({ mode: 'lab' })] : null);
   }
   let infoBox = null;
@@ -893,12 +896,12 @@
     }
     nearBox.innerHTML = '';
     const head = el('div', 'ms-near-head');
-    head.appendChild(el('strong', null, T('差一點！', 'Almost!') + ' ★' + starsOf(m) + ' ' + L(m.title)));
+    head.appendChild(catalogText.render(el('strong'), T('差一點！', 'Almost!') + ' ★' + starsOf(m) + ' ' + L(m.title)));
     const x = el('button', 'ms-near-x', '×'); x.type = 'button'; x.setAttribute('aria-label', T('關閉', 'Close'));
     x.addEventListener('click', function () { nearBox.hidden = true; });
     head.appendChild(x); nearBox.appendChild(head);
     const ul = el('ul');
-    miss.slice(0, 3).forEach(function (it) { ul.appendChild(el('li', null, '✗ ' + T(it[1], it[2] || it[1]))); });
+    miss.slice(0, 3).forEach(function (it) { ul.appendChild(catalogText.render(el('li'), '✗ ' + T(it[1], it[2] || it[1]))); });
     nearBox.appendChild(ul);
     const more = el('button', 'ms-near-more', T('看全部條件', 'See every condition')); more.type = 'button';
     more.addEventListener('click', function () {
@@ -963,7 +966,7 @@
     }
     box.appendChild(burst);
     box.appendChild(el('div', 'ms-celebrate-title', m.hidden ? T('隱藏任務完成！', 'Hidden mission complete!') : T('任務完成！', 'Mission complete!')));
-    if (!m.hidden) box.appendChild(el('div', 'ms-celebrate-name', L(m.title)));
+    if (!m.hidden) box.appendChild(catalogText.render(el('div', 'ms-celebrate-name'), L(m.title)));
     const gain = el('div', 'ms-celebrate-gain');
     gain.innerHTML = STAR;
     gain.appendChild(el('span', null, '+' + (m.gained || starsOf(m)) + T(' 顆倪的星星', ' Ni stars')));
@@ -1185,17 +1188,17 @@
           head.appendChild(starBadge(starsOf(m)));
           if (done) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
           li.appendChild(head);
-          li.appendChild(el('p', 'ms-desc', T('「', '“') + L(m.riddle) + T('」', '”')));
+          li.appendChild(catalogText.render(el('p', 'ms-desc'), T('「', '“') + L(m.riddle) + T('」', '”')));
           box.appendChild(li);
           return;
         }
         const li = el('li', 'ms-item' + (done ? ' done' : ''));
         const head = el('div', 'ms-head');
         head.appendChild(starBadge(starsOf(m)));
-        head.appendChild(el('strong', 'ms-title', L(m.title)));
+        head.appendChild(catalogText.render(el('strong', 'ms-title'), L(m.title)));
         if (done) head.appendChild(el('span', 'ms-check', T('✓ 已完成', '✓ Done')));
         li.appendChild(head);
-        li.appendChild(el('p', 'ms-desc', L(m.desc)));
+        li.appendChild(catalogText.render(el('p', 'ms-desc'), L(m.desc)));
         li.dataset.mid = m.id;
         if (!done && typeof m.need === 'function') li.appendChild(needBox(m));
         box.appendChild(li);
